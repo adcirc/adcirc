@@ -91,12 +91,12 @@ c***********************************************************************
 C
       MODULE HARM
 C
-      USE SIZES, ONLY : SZ, MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR
+      USE SIZES, ONLY : SZ, MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR,
+     &                   WRITE_LOCAL_HARM_FILES
       USE GLOBAL, ONLY : screenMessage, logMessage, DEBUG, ECHO, INFO,
-     &                   WARNING, ERROR, setMessageSource,
+     &                   WARNING, ERROR, setMessageSource, pi,
      &                   unsetMessageSource, allMessage, scratchMessage
 C
-      REAL(8),PRIVATE,PARAMETER :: PI=3.141592653589793D0
 C
       ! jgf49.44: parameters describing the harmonic constituents to be
       ! included in the harmonic analysis of model results
@@ -224,6 +224,13 @@ C
       REAL(SZ), ALLOCATABLE, TARGET :: VAVDIF(:)
       REAL(SZ), ALLOCATABLE, TARGET :: VVADIF(:)
 
+      !jgf51.52.01: Variables used in adcpost.
+      REAL(SZ), ALLOCATABLE,TARGET :: XELAV(:)
+      REAL(SZ), ALLOCATABLE,TARGET :: YELAV(:)
+      REAL(SZ), ALLOCATABLE,TARGET :: XELVA(:)
+      REAL(SZ), ALLOCATABLE,TARGET :: YELVA(:)
+     
+
 C-----------------END OF DECLARATIONS---------------------------------------
 
       CONTAINS
@@ -254,8 +261,8 @@ C
       ALLOCATE ( INAMEFR(MNHARF) )
 C
       ALLOCATE ( EMAG(MNHARF,MNSTAE), PHASEDE(MNHARF,MNSTAE) )
-      ALLOCATE ( UMAG(MNHARF,MNSTAE), PHASEDU(MNHARF,MNSTAE) )
-      ALLOCATE ( VMAG(MNHARF,MNSTAE), PHASEDV(MNHARF,MNSTAE) )
+      ALLOCATE ( UMAG(MNHARF,MNSTAV), PHASEDU(MNHARF,MNSTAV) )
+      ALLOCATE ( VMAG(MNHARF,MNSTAV), PHASEDV(MNHARF,MNSTAV) )
       ALLOCATE ( EMAGT(MNHARF,MNP), PHASEDEN(MNHARF,MNP) )
       ALLOCATE ( UMAGT(MNHARF,MNP), PHASEDUT(MNHARF,MNP) )
       ALLOCATE ( VMAGT(MNHARF,MNP), PHASEDVT(MNHARF,MNP) )
@@ -309,10 +316,10 @@ C                    S U B R O U T I N E
 C     A L L O C A T E   F U L L   D O M A I N   H A   I O   A R R A Y S
 C--------------------------------------------------------------------
 C     jgf49.44: Allocates memory for the full domain arrays for i/o
-C     purposes.
+C     purposes when executing in parallel.
 C--------------------------------------------------------------------
       SUBROUTINE allocateFullDomainHAIOArrays()
-      USE GLOBAL, ONLY : NP_G, NSTAE_G, NSTAV_G
+      USE GLOBAL, ONLY : NSTAE_G, NSTAV_G, NP_G
       IMPLICIT NONE
 C
       call setMessageSource("allocateFullDomainHAIOArrays")
@@ -335,7 +342,6 @@ C
          ALLOCATE(XVELVA_g(NP_G))
          ALLOCATE(YVELVA_g(NP_G))
       ENDIF
-
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -350,7 +356,8 @@ C--------------------------------------------------------------------
 C     jgf50.97: Writes LHS matrix to a file for use in debugging.
 C--------------------------------------------------------------------
       SUBROUTINE writeHA(timesec, it)
-      USE GLOBAL, ONLY : myproc, globaldir
+      USE SIZES, ONLY : globaldir
+      USE GLOBAL, ONLY : myproc
       IMPLICIT NONE     
       REAL(8) :: timesec ! time in seconds since cold start
       INTEGER :: it      ! current adcirc time step number
@@ -467,8 +474,11 @@ C     jgf49.44: Initializes harmonic analysis arrays and parameters.
 C     Based on HACOLDS, written by rl.
 C--------------------------------------------------------------------
       SUBROUTINE initHarmonicParameters()
-      USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES
-      USE GLOBAL, ONLY : ITHS, NSTAE, NSTAV, NP, myProc, MNPROC
+      USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES, MNPROC,
+     &                   WRITE_LOCAL_HARM_FILES, 
+     &                   WRITE_LOCAL_HOT_START_FILES
+      USE GLOBAL, ONLY : ITHS, NSTAE, NSTAV, myProc, NHSTAR
+      USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER :: i, j, n           ! loop counters
 C
@@ -484,6 +494,35 @@ C
          call unsetMessageSource()
          RETURN ! EARLY RETURN if harmonic analysis is not part of this run
       ENDIF
+      ! 
+      ! jgf51.44: If subdomain harmonic analysis files will be written
+      ! in parallel, subdomain hotstart files are also required for
+      ! saving the load vectors and rhs of the harmonic analysis problem.
+      if ( (mnproc.gt.1).and.
+     &     (write_local_harm_files.eqv..true.) ) then
+         call logMessage(INFO,'Subdomain harmonic analysis files '
+     &                // 'were specified with -m on the command line.')
+         if ( (NHSTAR.ne.0).and.
+     &        (write_local_hot_start_files.eqv..false.) ) then  
+            call logMessage(INFO,'Fulldomain hotstart files will be '
+     &                            // 'created by default.')
+            call allMessage(ERROR,'Fulldomain hotstart output files '
+     &       // 'cannot be used in combination with subdomain harmonic '
+     &       // 'analysis output files. '
+     &       // 'The -s argument can be used on the ADCIRC command '
+     &       // 'line to specify that hotstart files should be written '
+     &       // 'for each subdomain; this is required for the writing '
+     &       // 'of harmonic analysis output (fort.51 etc) '
+     &       // ' to subdomains.') 
+             call harmonicTerminate()
+         endif
+         if ( (NHSTAR.ne.0).and. 
+     &        (write_local_hot_start_files.eqv..true.) ) then
+            call logMessage(INFO,'Subdomain hotstart files will '
+     &       // 'contain subdomain harmonic analysis data.')
+         endif
+      endif
+      
       IHABEG = ITHAS + NHAINC
       ICHA=0
       icall=0
@@ -527,9 +566,10 @@ C
 C     jgf49.44: Initialize all the full domain i/o arrays to zero, if
 C     they will be used (i.e., if we are in serial or if we might be
 C     reading or writing full domain arrays in parallel).
-      IF ( (MNPROC.gt.1).and.
-     &   ( (myProc.eq.0)
-     &          .or.(READ_LOCAL_HOT_START_FILES.eqv..false.) ) ) THEN
+      if ( (WRITE_LOCAL_HARM_FILES.eqv..false.).and.
+     &     (READ_LOCAL_HOT_START_FILES.eqv..false.).and.
+     &     (MNPROC.gt.1).and.
+     &     (myProc.eq.0) ) then
          GLOELV_g(:,:) = 0.d0
          STAELV_g(:,:) = 0.d0
          GLOULV_g(:,:) = 0.d0
@@ -544,8 +584,7 @@ C     reading or writing full domain arrays in parallel).
             XVELVA_g(:) = 0.d0
             YVELVA_g(:) = 0.d0
          ENDIF
-      ENDIF
-
+      endif
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -570,7 +609,8 @@ C--------------------------------------------------------------------
       SUBROUTINE updateHarmonicAnalysis(it, timeh)
       USE GLOBAL, ONLY : ET00, UU00, VV00, ETA2, UU2, VV2,
      &                   STAIE1, STAIE2, STAIE3, STAIV1, STAIV2, STAIV3,
-     &                   NP, NSTAE, NSTAV, NNE, NNV, NM
+     &                   NSTAE, NSTAV, NNE, NNV
+      USE MESH, ONLY : NP, NM
       IMPLICIT NONE
       INTEGER, intent(in) :: it    ! current ADCIRC timestep
       REAL(8), intent(in) :: timeh ! time (sec) incl. STATIM and REFTIM
@@ -973,7 +1013,9 @@ C     stations as specified. Also finishes time series reconstruction
 C     if necessary.
 C--------------------------------------------------------------------
       SUBROUTINE solveHarmonicAnalysis(ITIME)
-      USE GLOBAL, ONLY : NP, STATIM, REFTIM, DTDP, LOCALDIR
+      USE SIZES, ONLY : LOCALDIR
+      USE GLOBAL, ONLY : STATIM, REFTIM, DTDP
+      USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER, intent(in) :: ITIME
       INTEGER :: I
@@ -1501,7 +1543,7 @@ c
             if(phasedut(i,n).ge.360.d0) phasedut(i,n)=phasedut(i,n)-360.d0
             phasedvt(i,n)=convrd*phasevg(i)+haface(i)
             if(phasedvt(i,n).lt.0.) phasedvt(i,n)=phasedvt(i,n)+360.d0
-            if(phasedvt(i,n).ge.360.d0) phasedv(i,n)=phasedvt(i,n)-360.d0
+            if(phasedvt(i,n).ge.360.d0) phasedvt(i,n)=phasedvt(i,n)-360.d0
  6636       format(2x,e16.8,1x,f11.4,2x,e16.8,1x,f11.4)
          end do
 
@@ -1636,9 +1678,10 @@ C     file. Based on HAHOTS, written by rl.
 C--------------------------------------------------------------------
       SUBROUTINE readBinaryHAHotstart(lun, counter)
       USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
-      USE GLOBAL, ONLY : NP, NP_G, NSTAE, NSTAE_G, NSTAV, NSTAV_G,
-     &                   binaryRead3D, ITHS, NODES_LG, IMAP_STAE_LG,
+      USE GLOBAL, ONLY : NSTAE, NSTAE_G, NSTAV, NSTAV_G,
+     &                   ITHS, IMAP_STAE_LG, NP_G, NODES_LG,
      &                   IMAP_STAV_LG
+      USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER, intent(in) :: lun          ! i/o logical unit number
       INTEGER, intent(inout) :: counter   ! i/o record
@@ -1876,8 +1919,10 @@ C     by comparing with parameters read from the fort.15.
 C     Based on HAHOTS, written by rl.
 C--------------------------------------------------------------------
       SUBROUTINE checkHAHotstart()
-      USE GLOBAL, ONLY : NP_G, NSTAE_G, NSTAV_G, MYPROC,
-     &                   NSCREEN, SCREENUNIT
+      USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES
+      USE GLOBAL, ONLY : NSTAE_G, NSTAV_G, MYPROC, NSTAE, NSTAV,
+     &                   NSCREEN, SCREENUNIT, NP_G
+      USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER :: i    ! loop counter
       REAL(SZ) FDIFF  ! difference between frequencies btw hotstart and fort.15
@@ -1894,10 +1939,14 @@ C
       if(nz.ne.inz) iflag=1
       if(nf.ne.inf) iflag=1
       if(mm.ne.imm) iflag=1
-      if (myProc.eq.0) then
+      if ((myProc.eq.0).and.(read_local_hot_start_files.eqv..false.)) then
          if(np_g.ne.inp) iflag=1
          if(nstae_g.ne.instae) iflag=1
          if(nstav_g.ne.instav) iflag=1
+      else if (READ_LOCAL_HOT_START_FILES.eqv..true.) then
+         if(np.ne.inp) iflag=1
+         if(nstae.ne.instae) iflag=1
+         if(nstav.ne.instav) iflag=1
       endif
       if(nhase.ne.inhase) iflag=1
       if(nhasv.ne.inhasv) iflag=1
@@ -2077,6 +2126,47 @@ C
 C----------------------------------------------------------------------
       END SUBROUTINE harmonicTerminate
 C----------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      B I N A R Y   R E A D   3 D
+C--------------------------------------------------------------------
+C     jgf49.44: Same as binaryRead2D except it reads data with
+C     both horizontal and vertical lengths. Also used for reading
+C     harmonic analysis arrays from binary hotstart file.
+C--------------------------------------------------------------------
+      SUBROUTINE binaryRead3D(array, iLength, jLength, lun,
+     &                        counter)
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG
+      IMPLICIT NONE
+      REAL(SZ), intent(out), dimension(ilength,jlength) :: array ! data to read from the hotstart file
+      INTEGER, intent(in) :: iLength  ! the number of horiz values to read
+      INTEGER, intent(in) :: jLength  ! the number of layers
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+C
+      INTEGER i,j      ! array indices
+C
+      call setMessageSource("binaryRead3D")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+       DO j=1, jLength
+          DO i=1, iLength
+            READ(lun,REC=counter) array(i,j)
+            counter = counter + 1
+          END DO
+       END DO
+C
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE binaryRead3D
+C--------------------------------------------------------------------
+
 
 C--------------------------------------------------------------
       END MODULE HARM

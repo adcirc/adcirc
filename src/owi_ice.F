@@ -504,8 +504,8 @@ C
 C***********************************************************************
 
       SUBROUTINE NCICE1_INTERP_BASIN(NP)
-      USE GLOBAL,ONLY : SLAM,SFEA,RAD2DEG
-
+      USE GLOBAL,ONLY : RAD2DEG
+      USE MESH, ONLY : SLAM, SFEA
       IMPLICIT NONE
 
       INTEGER   NP,I,J,K,XI,YI
@@ -595,7 +595,8 @@ C
 C***********************************************************************
 
       SUBROUTINE NCICE1_INTERP_REGION(NP)
-      USE GLOBAL,ONLY : SLAM,SFEA,RAD2DEG
+      USE GLOBAL, ONLY : RAD2DEG
+      USE MESH, ONLY : SLAM,SFEA
       IMPLICIT NONE
 
       INTEGER   NP,I,J,K,XI,YI

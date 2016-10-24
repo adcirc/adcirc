@@ -36,15 +36,18 @@
       !
       !=================================================================
       MODULE NETCDFIO
-      USE SIZES, ONLY : SZ
+      USE SIZES, ONLY : SZ, OFF, ASCII, BINARY, SPARSE_ASCII, NETCDF3,
+     &   NETCDF4, XDMF
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
-     &     screenMessage, logMessage, allMessage, setMessageSource,
-     &     unsetMessageSource, scratchMessage
+     &   screenMessage, logMessage, allMessage, setMessageSource,
+     &   unsetMessageSource, scratchMessage
+     &     
       USE NETCDF        ! enables the fortran 90 interface to netcdf
       IMPLICIT NONE
       include 'netcdf.inc' ! enables the fortran 77 interface to netcdf
 C
       REAL(8), PARAMETER ::  doubleval=-99999.d0
+      INTEGER, PARAMETER :: intFillValue=-99999
 C
       TYPE, PRIVATE :: meshStructure
          LOGICAL :: initialized = .false.
@@ -110,8 +113,6 @@ C
          INTEGER, ALLOCATABLE ::  nbdvnc(:,:) ! boundary array
          INTEGER, ALLOCATABLE ::  nvellnc(:)  ! boundary array
          INTEGER, ALLOCATABLE ::  nvdllnc(:)  ! boundary array
-         INTEGER, ALLOCATABLE ::  nodecodenc(:)
-         INTEGER, ALLOCATABLE ::  noffnc(:)
          INTEGER, ALLOCATABLE ::  ibtypenc(:)     ! boundary array
          INTEGER, ALLOCATABLE ::  ibtypeenc(:)
          INTEGER, ALLOCATABLE ::  nmnc(:,:)
@@ -123,13 +124,11 @@ C
       type(meshStructure), private, save, target :: adcircMesh
 
       TYPE, PRIVATE :: fileData
-         INTEGER record_counter
-         INTEGER ncformat   ! netcdf file format to create
-         LOGICAL createFile ! .true. if a new netCDF file must be created p
-         CHARACTER*20 FILEFORT
-         CHARACTER*24 FILENAME
-         CHARACTER*3 FILEEXT
-         LOGICAL fileFound  ! .true. if the netCDF file is present
+         INTEGER :: record_counter
+         INTEGER :: ncformat   ! netcdf file format to create
+         LOGICAL :: createFile ! .true. if a new netCDF file must be created p
+         CHARACTER(len=1024) :: filename
+         LOGICAL :: fileFound  ! .true. if the netCDF file is present
       END Type fileData
 
       TYPE, PRIVATE :: timeData
@@ -199,11 +198,13 @@ C
       type(nodalData), private, save :: pr         ! for fort.73
       type(nodalData), private, save :: currentVel ! for fort.64
       type(nodalData), private, save :: windVel    ! for fort.74
-      type(nodalData), private, save :: EtaMax     ! for maxele.63
-      type(nodalData), private, save :: PrMin      ! for minpr.63
-      type(nodalData), private, save :: UMax       ! for maxvel.63
-      type(nodalData), private, save :: WVMax      ! for maxwvel.63
-      type(nodalData), private, save :: RSMax      ! for rads_max.63
+      type(nodalData), private, save :: weirElev   ! for fort.77
+      type(nodalData), private, save :: tau0nc     ! for fort.90
+      type(nodalData), private, save, target :: EtaMax     ! for maxele.63
+      type(nodalData), private, save, target :: PrMin      ! for minpr.63
+      type(nodalData), private, save, target :: UMax       ! for maxvel.63
+      type(nodalData), private, save, target :: WVMax      ! for maxwvel.63
+      type(nodalData), private, save, target :: RSMax      ! for rads_max.63
       type(nodalData), private, save :: rads       ! for rads.64
 #if defined CSWAN || defined ADCSWAN
       type(nodalData), private, save :: sw_hs      ! for swan_HS.63
@@ -225,6 +226,13 @@ C
       type(nodalData), private, save :: velocity3D   ! for fort.45
       type(nodalData), private, save :: turbulence3D ! for fort.46
       type(nodalData), private, save :: futureSurfaceTemperature ! for fort.47
+
+      !jgf52.08.03: inundation data
+      type(nodalData), private, save :: coldDry  ! for initiallydry.63
+      type(nodalData), private, save, target :: maxInDep ! for maxinundepth.63
+      type(nodalData), private, save, target :: inTime   ! for inundationtime.63
+      type(nodalData), private, save :: eRisInun ! for endrisinginun.63
+      type(nodalData), private, save, target :: evrDry ! for everdried.63
 C
       TYPE, PRIVATE :: hotstartData
          INTEGER lun               ! ADCIRC's logical unit number
@@ -295,6 +303,9 @@ C
       INTEGER, ALLOCATABLE, TARGET :: fullDomainVelocityStationList(:)
       ! used to specify the array of indexes to be used in a mapping
       INTEGER, POINTER :: fullDomainIndexList(:)
+      ! usually initialized by readNetCDFHotstart(); otherwise in
+      ! readAndMapToSubdomainMinMaxNetCDF()
+      LOGICAL :: fullDomainIndexListsInitialized = .false.
 C
       CHARACTER(1024) :: att_text ! scratch variable for attribute text
 C
@@ -305,7 +316,7 @@ C     ZCobell:
 
       private initStationFile, initNodalDataFile,createNetCDFOutputFile,
      &   updateMetaData, initNetCDFCoord, defineMeshVariables,
-     &   putMeshVariables, setNetCDFFileName, writeStationData,
+     &   putMeshVariables, writeStationData,
      &   writeNodalData, setRecordCounterAndStoreTime,
      &   defineCoordinateAttributes, defineMetaData,
      &   defineTimeAttributes, getDimensions,
@@ -320,32 +331,40 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E   I N I T   N E T C D F  O U T P U T  F I L E
+C     S U B R O U T I N E   I N I T  N E T C D F  O U T P U T  F I L E
 C-----------------------------------------------------------------------
 C     jgf49.17.02 Allocates memory for NetCDF operations.
 C-----------------------------------------------------------------------
-      SUBROUTINE initNetCDFOutputFile(lun, descript1, reterr, descript2,
+      SUBROUTINE initNetCDFOutputFile(descript1, reterr, descript2,
      &   descript3)
       USE GLOBAL, ONLY : OutputDataDescript_t
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
       IMPLICIT NONE
-      INTEGER, intent(in) :: lun
       TYPE(OutputDataDescript_t) :: descript1
       TYPE(OutputDataDescript_t), OPTIONAL :: descript2
       TYPE(OutputDataDescript_t), OPTIONAL :: descript3
-      LOGICAL reterr
+      LOGICAL, intent(out) :: reterr
 C
       call setMessageSource("initNetCDFOutputFile")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 C
-      ! don't allocate or initialize anything if this output type is not
-      ! using netcdf
-      IF ((ABS(descript1 % specifier).ne.3).and.
-     &    (ABS(descript1 % specifier).ne.5) ) THEN
+      reterr = .false.
+      ! Don't allocate or initialize anything if this is a pure output file,
+      ! (not an input/output file like max/min files) and the format is
+      ! specified as something other than netcdf.
+      IF ( ( (ABS(descript1 % specifier).ne.NETCDF3).and.
+     &       (ABS(descript1 % specifier).ne.NETCDF4).and.
+     &       (descript1 % readMaxMin .eqv..false.) ) .or.
+           ! jgf52.08.14: If this is an input/output file (like a max/min
+           ! file), we may still need to initialize the file so we can read
+           ! the data from a previous run. But not if the file format specifier
+           ! is OFF (i.e., 0) because won't be writing the file, so we don't
+           ! need to initialize or read it.
+     &       (descript1 % specifier.eq.0) ) then
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Return.")
 #endif
@@ -353,92 +372,106 @@ C
          RETURN
       ENDIF
 C
-      reterr = .false.
-      SELECT CASE(lun)
+      SELECT CASE(descript1 % lun)
          CASE(41)
             CALL initStationFile(densityStations3D,
-     &           lun, descript1, reterr)
+     &           descript1, reterr)
          CASE(42)
-            CALL initStationFile(velocityStations3D, lun,
+            CALL initStationFile(velocityStations3D, 
      &           descript1, reterr)
          CASE(43)
-            CALL initStationFile(turbulenceStations3D, lun,
+            CALL initStationFile(turbulenceStations3D,
      &           descript1, reterr)
          CASE(44)
-            CALL initNodalDataFile(density3D, lun,
+            CALL initNodalDataFile(density3D, 
      &           descript1, reterr, descript2, descript3)
          CASE(45)
-            CALL initNodalDataFile(velocity3D, lun,
+            CALL initNodalDataFile(velocity3D, 
      &           descript1, reterr, descript2, descript3)
          CASE(46)
-            CALL initNodalDataFile(turbulence3D, lun,
+            CALL initNodalDataFile(turbulence3D, 
      &           descript1, reterr, descript2, descript3)
          CASE(47)
             CALL initNodalDataFile(futureSurfaceTemperature,
-     &           lun, descript1, reterr)
+     &           descript1, reterr)
          CASE(61)
-            CALL initStationFile(elevSta, lun, descript1, reterr)
+            CALL initStationFile(elevSta, descript1, reterr)
          CASE(62)
-            CALL initStationFile(velSta, lun, descript1, reterr)
+            CALL initStationFile(velSta, descript1, reterr)
          CASE(63)
-            CALL initNodalDataFile(elev, lun, descript1, reterr)
+            CALL initNodalDataFile(elev, descript1, reterr)
          CASE(64)
-            CALL initNodalDataFile(currentVel, lun, descript1, reterr)
+            CALL initNodalDataFile(currentVel, descript1, reterr)
          CASE(71)
-            CALL initStationFile(prSta, lun, descript1, reterr)
+            CALL initStationFile(prSta, descript1, reterr)
          CASE(72)
-            CALL initStationFile(wVelSta, lun, descript1, reterr)
+            CALL initStationFile(wVelSta, descript1, reterr)
          CASE(73)
-            CALL initNodalDataFile(pr, lun, descript1, reterr)
+            CALL initNodalDataFile(pr, descript1, reterr)
          CASE(74)
-            CALL initNodalDataFile(windVel, lun, descript1, reterr)
-#if defined CSWAN || defined ADCSWAN
+            CALL initNodalDataFile(windVel, descript1, reterr)
+         CASE(90)
+            CALL initNodalDataFile(tau0nc, descript1, reterr)
+         CASE(77)
+            CALL initNodalDataFile(weirElev, descript1, reterr)
          CASE(164)
-            CALL initNodalDataFile(rads, lun, descript1, reterr)
+            CALL initNodalDataFile(rads, descript1, reterr)
+#if defined CSWAN || defined ADCSWAN
          CASE(301)
-            CALL initNodalDataFile(sw_hs, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_hs, descript1, reterr)
          CASE(302)
-            CALL initNodalDataFile(sw_dir, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_dir, descript1, reterr)
          CASE(303)
-            CALL initNodalDataFile(sw_tm01, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_tm01, descript1, reterr)
          CASE(304)
-            CALL initNodalDataFile(sw_tps, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_tps, descript1, reterr)
          CASE(305)
-            CALL initNodalDataFile(sw_wind, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_wind, descript1, reterr)
          CASE(306)
-            CALL initNodalDataFile(sw_tm02, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_tm02, descript1, reterr)
          CASE(307)
-            CALL initNodalDataFile(sw_tmm10, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_tmm10, descript1, reterr)
 #endif
          CASE(311)
-            CALL initNodalDataFile(EtaMax, lun, descript1, reterr)
+            CALL initNodalDataFile(EtaMax, descript1, reterr)
          CASE(312)
-            CALL initNodalDataFile(UMax, lun, descript1, reterr)
+            CALL initNodalDataFile(UMax, descript1, reterr)
          CASE(313)
-            CALL initNodalDataFile(PrMin, lun, descript1, reterr)
+            CALL initNodalDataFile(PrMin, descript1, reterr)
          CASE(314)
-            CALL initNodalDataFile(WVMax, lun, descript1, reterr)
+            CALL initNodalDataFile(WVMax, descript1, reterr)
          CASE(315)
-            CALL initNodalDataFile(RSMax, lun, descript1, reterr)
+            CALL initNodalDataFile(RSMax, descript1, reterr)
 #if defined CSWAN || defined ADCSWAN
          CASE(316)
-            CALL initNodalDataFile(sw_hs_max, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_hs_max, descript1, reterr)
          CASE(317)
-            CALL initNodalDataFile(sw_dir_max, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_dir_max, descript1, reterr)
          CASE(318)
-            CALL initNodalDataFile(sw_tm01_max, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_tm01_max, descript1, reterr)
          CASE(319)
-            CALL initNodalDataFile(sw_tps_max, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_tps_max, descript1, reterr)
          CASE(320)
-            CALL initNodalDataFile(sw_wind_max, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_wind_max, descript1, reterr)
          CASE(321)
-            CALL initNodalDataFile(sw_tm02_max, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_tm02_max, descript1, reterr)
          CASE(322)
-            CALL initNodalDataFile(sw_tmm10_max, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_tmm10_max, descript1, reterr)
 #endif
+         CASE(400)
+            CALL initNodalDataFile(inTime, descript1, reterr)
+         CASE(401)
+            CALL initNodalDataFile(maxInDep, descript1, reterr)
+         CASE(402)
+            CALL initNodalDataFile(coldDry, descript1, reterr)
+         CASE(403)
+            CALL initNodalDataFile(eRisInun, descript1, reterr)
+         CASE(404)
+            CALL initNodalDataFile(evrDry, descript1, reterr)
+
          CASE DEFAULT
             write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for files with unit number ",i0,".")') descript1 % lun
             call allMessage(ERROR,scratchMessage)
       END SELECT
 C
@@ -457,23 +490,25 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Sets up netCDF variables and allocates memory for a
 C     station.
 C-----------------------------------------------------------------------
-      SUBROUTINE initStationFile(sta, lun, descript1, reterr)
-      USE GLOBAL, ONLY : SNAMLEN, OutputDataDescript_t, ICS, RAD2DEG,
+      SUBROUTINE initStationFile(sta, descript1, reterr)
+      USE SIZES, ONLY : MNPROC
+      USE GLOBAL, ONLY : SNAMLEN, OutputDataDescript_t, RAD2DEG,
      &                   IHOT, NWS, STATNAME, STATNAMEV,
      &                   STATNAMEM, IDEN
       USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET
+      USE MESH, ONLY : ICS
 #ifdef NCMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
       IMPLICIT NONE
 C
       type(stationData), intent(inout) :: sta
-      INTEGER, intent(in) :: lun
       type(OutputDataDescript_t), intent(inout) :: descript1
+      LOGICAL, intent(out) :: reterr
 C
       INTEGER i,j
       INTEGER iret  ! success or failure of the netcdf call
-      LOGICAL reterr
+
 C
 !     date_string variables for time attribute
       character date_string*40
@@ -481,6 +516,7 @@ C
       character big_ben*10
       character zone*5
       integer values(8)
+      integer :: stationLuns3D(3) = (/ 41, 42, 43 /)
 C
       call setMessageSource("initStationFile")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -501,7 +537,7 @@ C
       sta % num_stations = descript1 % num_fd_records
       ALLOCATE(sta%myTime%timenc(sta%myTime%timenc_len))
 C
-      IF ((lun.eq.41).or.(lun.eq.42).or.(lun.eq.43)) THEN
+      if (any(stationLuns3D.eq.descript1 % lun)) then 
          sta%num_v_nodes = descript1 % num_items_per_record
       ENDIF
 C
@@ -510,14 +546,16 @@ C     Memory allocation for the station
       ALLOCATE(sta%y(sta%num_stations))
 C
 C     Initialize netCDF output file, creating a new one if necessary.
-      CALL createNetCDFOutputFile(sta%ncid, sta%myFile, lun, sta%myTime,
+      CALL createNetCDFOutputFile(sta%ncid, sta%myFile, sta%myTime,
      &                            descript1, reterr)
 C
 C     if we didn't need to create a file, update metadata and return
-      IF (sta%myFile%createFile.eqv..false.) THEN
-         IF (reterr.eqv..false.) THEN
+      !jgf52.08.22: Only update metadata if running in serial; in
+      !parallel the metadata was updated by adcprep
+      IF ( sta%myFile%createFile.eqv..false.) THEN
+         if ( (reterr.eqv..false.).and.(mnproc.eq.1) ) then
             CALL updateMetaData(sta%ncid,sta%myFile)
-         ENDIF
+         endif
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Return.")
 #endif
@@ -541,7 +579,7 @@ C     Create station dimension and station name dimension
       CALL check_err(iret)
       iret = nf90_def_dim(sta%ncid, 'namelen', SNAMLEN, sta%slen_dim_id)
       CALL check_err(iret)
-      IF ((lun.eq.41).or.(lun.eq.42).or.(lun.eq.43)) THEN
+      IF (any(stationLuns3D.eq.descript1%lun)) THEN
          iret = nf90_def_dim(sta%ncid, 'num_v_nodes', sta%num_v_nodes,
      &       sta%num_v_nodes_dim_id)
          sta%station_data_dims_3D(1) = sta%num_sta_dim_id
@@ -577,7 +615,7 @@ C     different types of data in the station files. The labels and
 C     units will also vary according to the coordinate system ADCIRC
 C     is using (spherical or cartesian, according to the value of ICS)
 C     as well as the units system (english or si according to the value of g).
-      SELECT CASE(lun)
+      SELECT CASE(descript1 % lun)
          CASE(41) !       F O R T . 4 1
             iret = nf90_def_var(sta%ncid, 'sigmat', NF90_DOUBLE,
      &             sta%station_data_dims_3D, sta%u_station_data_id)
@@ -745,11 +783,11 @@ C
                CALL check_err(iret)
             endif
             CALL putUnitsAttribute(sta%ncid,sta%u_station_data_id,
-     &      'm s-2', 'ft s-1')
+     &      'm s-1', 'ft s-1')
             CALL putUnitsAttribute(sta%ncid,sta%v_station_data_id,
-     &      'm s-2','ft s-1')
+     &      'm s-1','ft s-1')
             CALL putUnitsAttribute(sta%ncid,sta%w_station_data_id,
-     &      'm s-2','ft s-1')
+     &      'm s-1','ft s-1')
             sta%statnames => STATNAMEV3D
 
          CASE(43) !       F O R T . 4 3
@@ -801,7 +839,7 @@ C
      &            trim(att_text))
                CALL check_err(iret)
 C            CALL putUnitsAttribute(sta%ncid,sta%u_station_data_id,
-C     &      'm s-2', 'ft s-1') !TODO: jgf49.48.01: units for q20??
+C     &      'm s-1', 'ft s-1') !TODO: jgf49.48.01: units for q20??
             CALL putUnitsAttribute(sta%ncid,sta%v_station_data_id,
      &      "meters","n/a")
             CALL putUnitsAttribute(sta%ncid,sta%w_station_data_id,
@@ -899,7 +937,7 @@ C     &      'm s-2', 'ft s-1') !TODO: jgf49.48.01: units for q20??
             endif
 
             CALL putUnitsAttribute(sta%ncid, sta%u_station_data_id,
-     &      'm s-2', 'ft s-1')
+     &      'm s-1', 'ft s-1')
             iret = nf90_put_att(sta%ncid, sta%u_station_data_id,
      &             '_FillValue', doubleval)
             CALL check_err(iret)
@@ -907,7 +945,7 @@ C     &      'm s-2', 'ft s-1') !TODO: jgf49.48.01: units for q20??
      &             'dry_Value', doubleval)
             CALL check_err(iret)
             CALL putUnitsAttribute(sta%ncid, sta%v_station_data_id,
-     &      'm s-2','ft s-1')
+     &      'm s-1','ft s-1')
             iret = nf90_put_att(sta%ncid, sta%v_station_data_id,
      &      '_FillValue', doubleval)
             CALL check_err(iret)
@@ -1045,9 +1083,9 @@ C
 
             if (abs(nws).gt.2.and.abs(nws).lt.100) then
                call putUnitsAttribute(sta%ncid, sta%u_station_data_id,
-     &              'm s-2', 'ft s-1')
+     &              'm s-1', 'ft s-1')
                call putUnitsAttribute(sta%ncid, sta%v_station_data_id,
-     &              'm s-2', 'ft s-1')
+     &              'm s-1', 'ft s-1')
             else
                call putUnitsAttribute(sta%ncid, sta%u_station_data_id,
      &              'm2 s-2', 'ft s-2')
@@ -1065,7 +1103,7 @@ C
 
          CASE DEFAULT
             write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for station files with unit number ",i0,".")') descript1 % lun
             call allMessage(ERROR,scratchMessage)
       END SELECT
       iret = nf90_put_att(sta%ncid,sta%u_station_data_id,
@@ -1091,7 +1129,7 @@ C     jgf50.44: Automatically turn on compression if we are using the
 C     netcdf4 file format.
 #ifdef NETCDF_CAN_DEFLATE
       IF (abs(descript1%specifier).eq.5) THEN
-         SELECT CASE(lun)
+         SELECT CASE(descript1 % lun)
          CASE(41)
             iret = nf_def_var_deflate(sta%ncid, sta%u_station_data_id,
      &          1, 1, 2)
@@ -1129,7 +1167,7 @@ C     netcdf4 file format.
             CALL check_err(iret)
          CASE DEFAULT ! should be unreachable
             write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for station files with unit number ",i0,".")') descript1 % lun
             call allMessage(ERROR,scratchMessage)
          END SELECT
       ENDIF
@@ -1177,22 +1215,23 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Sets up netCDF variables and allocates memory for
 C     full domain data.
 C-----------------------------------------------------------------------
-      SUBROUTINE initNodalDataFile(dat, lun, descript1, reterr,
+      SUBROUTINE initNodalDataFile(dat, descript1, reterr,
      &   descript2, descript3)
-      USE GLOBAL, ONLY : OutputDataDescript_t, ICS, NWS, NE_G, C3D,IDEN,
-     &                    MNWPROC 
+      USE SIZES, ONLY : MNWPROC, MNPROC
+      USE GLOBAL, ONLY : OutputDataDescript_t, NWS, C3D, IDEN, NE_G, NP_G
       USE GLOBAL_3DVS, ONLY : NFEN
+      USE MESH, ONLY : ICS
       IMPLICIT NONE
 C
       type(nodalData), intent(inout) :: dat
-      INTEGER, intent(in) :: lun
       type(OutputDataDescript_t), intent(inout) :: descript1
       type(OutputDataDescript_t), intent(inout), optional :: descript2
       type(OutputDataDescript_t), intent(inout), optional :: descript3
-      LOGICAL :: reterr
+      LOGICAL, intent(out) :: reterr
 C
       INTEGER n    ! node counter
       INTEGER iret ! success or failure of netcdf call
+      REAL(SZ),ALLOCATABLE :: defaultValue(:)
       CHARACTER(len=1024) :: att_text  ! metadata
 C
       call setMessageSource("initNodalDataFile")
@@ -1202,7 +1241,7 @@ C
       reterr = .false.
       dat%myMesh => adcircMesh
       IF (dat%myMesh%initialized .eqv..false.) THEN
-         dat%myMesh%num_nodes = descript1 % num_fd_records
+         dat%myMesh%num_nodes = NP_G
          dat%myMesh%num_elems = NE_G
          IF (C3D.eqv..true.) THEN
             dat%myMesh%num_v_nodes = NFEN
@@ -1210,23 +1249,39 @@ C
          dat%myMesh%nface_len = 3
       ENDIF
       ALLOCATE(dat%myTime%timenc(dat%myTime%timenc_len))
+      ALLOCATE(defaultValue(dat%myMesh%num_nodes))
+      defaultValue(:) = descript1%initial_value
 C
 C     Initialize netCDF output file, creating a new one if necessary.
-      CALL createNetCDFOutputFile(dat%ncid, dat%myFile, lun, dat%myTime,
+      CALL createNetCDFOutputFile(dat%ncid, dat%myFile, dat%myTime,
      &                            descript1, reterr)
-C
-C     if we didn't need to create a file, update metadata and return
+      !
+      ! if we didn't need to create a file, update metadata and return
       IF (dat%myFile%createFile.eqv..false.) THEN
-         IF (reterr.eqv..false.) THEN
-Cobell...The writers don't read the fort.15, so they need to 
-C        assume ADCPREP has placed the correct info on the first
-C        pass, then call updateMetaData. 
+         IF ( (reterr.eqv..false.) .and.
+     &        ( (abs(descript1%specifier).eq.NETCDF3) .or.
+     &          (abs(descript1%specifier).eq.NETCDF4) ) ) then
+            !
+            ! jgf52.08.25: This subroutine is called in the case where 
+            ! a non-NetCDF min/max file will be written, but a NetCDF min/max
+            ! file will be read. If this is the case, then don't update metadata
+            ! in the netcdf file.
+            !
+Cobell...   The writers don't read the fort.15, so they need to 
+C           assume ADCPREP has placed the correct info on the first
+C           pass, then call updateMetaData. 
             IF ((MNWPROC.GT.0).AND.
      &           (writerReadMetaData.eqv..false.)) THEN
                 CALL ReadMetaData(dat%ncid,dat%myFile)
                 writerReadMetaData=.TRUE.
+                dat%myMesh%num_nodes = NP_G
+                dat%myMesh%num_elems = NE_G
             ENDIF    
-            CALL updateMetaData(dat%ncid,dat%myFile)
+            ! jgf52.08.22: Only update meta data in serial, in parallel
+            ! this was updated by adcprep
+            if (mnproc.eq.1) then
+               CALL updateMetaData(dat%ncid,dat%myFile)
+            endif
          ENDIF
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Return.")
@@ -1240,7 +1295,7 @@ C
       ENDIF
       CALL defineMeshVariables(dat%ncid, dat%myMesh, dat%myFile)
 c
-      SELECT CASE(lun)
+      SELECT CASE(descript1 % lun)
 C
          CASE(44)
             dat%nodal_data_dims_3D(1) = dat%myMesh%num_nodes_dim_id
@@ -1394,11 +1449,11 @@ C
                CALL check_err(iret)
             endif
             CALL putUnitsAttribute(dat%ncid,dat%u_nodal_data_id,
-     &         'm s-2', 'ft s-1')
+     &         'm s-1', 'ft s-1')
             CALL putUnitsAttribute(dat%ncid,dat%v_nodal_data_id,
-     &         'm s-2', 'ft s-1')
+     &         'm s-1', 'ft s-1')
             CALL putUnitsAttribute(dat%ncid,dat%w_nodal_data_id,
-     &         'm s-2', 'ft s-1')
+     &         'm s-1', 'ft s-1')
 
          CASE(46) !       F O R T . 4 6
             dat%nodal_data_dims_3D(1) = dat%myMesh%num_nodes_dim_id
@@ -1502,6 +1557,35 @@ C
             iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
      &             '_FillValue', doubleval)
             CALL check_err(iret)
+C
+         CASE(90)
+C
+            dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
+            dat%varnames(1) = 'tau0'
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &         NF90_DOUBLE, dat%nodal_data_dims, dat%nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'long_name', 'primitive weighting in continuity equation')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'standard_name', 'primitive_weighting_in_continuity_equation')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'coordinates', 'time y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)            
+            CALL putUnitsAttribute(dat%ncid, dat%nodal_data_id,
+     &           '1', '1')
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             '_FillValue', doubleval)
+            CALL check_err(iret)
 C            
          CASE(311)            
 C                 
@@ -1558,6 +1642,7 @@ C
             iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
      &             '_FillValue', doubleval)            
             CALL check_err(iret)
+
 C
          CASE(64)
 C
@@ -1618,9 +1703,9 @@ C
                CALL check_err(iret)
             endif
             CALL putUnitsAttribute(dat%ncid, dat%u_nodal_data_id,
-     &           'm s-2', 'ft s-1')
+     &           'm s-1', 'ft s-1')
             CALL putUnitsAttribute(dat%ncid, dat%v_nodal_data_id,
-     &           'm s-2', 'ft s-1')
+     &           'm s-1', 'ft s-1')
             iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
      &           '_FillValue',  doubleval)
             CALL check_err(iret)
@@ -1672,7 +1757,7 @@ C
                CALL check_err(iret)
                iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
      &                'long_name',
-     &         'time of maximum water column vertically averaged velocity')
+     &       'time of maximum water column vertically averaged velocity')
                CALL check_err(iret)
                iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
      &         'standard_name', 'maximum_water_velocity')
@@ -1701,7 +1786,7 @@ C
                CALL check_err(iret)
             endif            
             CALL putUnitsAttribute(dat%ncid, dat%max_nodal_data_id,
-     &           'm s-2', 'ft s-1')
+     &           'm s-1', 'ft s-1')
             CALL putUnitsAttribute(dat%ncid, dat%time_max_nodal_data_id,
      &           'sec', 'sec')
             iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
@@ -1734,6 +1819,7 @@ C
             iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
      &           'mesh',  'adcirc_mesh')
             CALL check_err(iret)
+
 C            
          CASE(73)
 C
@@ -1792,7 +1878,8 @@ C
      &             'standard_name', 'minimum_air_pressure_at_sea_level')
             CALL check_err(iret)
             iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
-     &             'standard_name', 'time_of_minimum_air_pressure_at_sea_level')
+     &             'standard_name', 
+     &         'time_of_minimum_air_pressure_at_sea_level')
             CALL check_err(iret)
             iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,'units',
      &             'meters of water')
@@ -1928,14 +2015,14 @@ C
             select case(abs(nws))
                case(1,2)
                call putUnitsAttribute(dat%ncid, dat%u_nodal_data_id,
-     &              'm2 s-2', 'ft s-2')
+     &              'm2 s-2', 'lbf s-2')
                call putUnitsAttribute(dat%ncid, dat%v_nodal_data_id,
-     &              'm2 s-2', 'ft s-2')
+     &              'm2 s-2', 'lbf s-2')
                case default
                call putUnitsAttribute(dat%ncid, dat%u_nodal_data_id,
-     &              'm s-2', 'ft s-1')
+     &              'm s-1', 'ft s-1')
                call putUnitsAttribute(dat%ncid, dat%v_nodal_data_id,
-     &              'm s-2', 'ft s-1')
+     &              'm s-1', 'ft s-1')
             end select
             iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
      &             '_FillValue', doubleval)
@@ -2021,7 +2108,8 @@ C
      &                    'standard_name','maximum_surface_wind_stress')
                      CALL check_err(iret)
                      iret=nf90_put_att(dat%ncid,dat%time_max_nodal_data_id,
-     &                    'standard_name','time_of_maximum_surface_wind_stress')
+     &                    'standard_name',
+     &                    'time_of_maximum_surface_wind_stress')
                      CALL check_err(iret)
                   case default
                   iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
@@ -2041,12 +2129,12 @@ C
             select case(abs(nws))
                case(1,2)
                call putUnitsAttribute(dat%ncid, dat%max_nodal_data_id,
-     &              'm2 s-2', 'ft s-2')
+     &              'm2 s-2', 'lbf ft-2')
                call putUnitsAttribute(dat%ncid, dat%time_max_nodal_data_id,
      &              'sec', 'sec')
                case default
                call putUnitsAttribute(dat%ncid, dat%max_nodal_data_id,
-     &              'm s-2', 'ft s-1')
+     &              'm s-1', 'ft s-1')
                call putUnitsAttribute(dat%ncid, dat%time_max_nodal_data_id,
      &              'sec', 'sec')
             end select
@@ -2092,7 +2180,8 @@ C
      &             'long_name', 'maximum radiation stress gradient')
             CALL check_err(iret)
             iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
-     &             'long_name', 'time of maximum radiation stress gradient')
+     &             'long_name', 
+     &             'time of maximum radiation stress gradient')
             CALL check_err(iret)
             iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
      &             'standard_name', 'maximum_radiation_stress')
@@ -2101,7 +2190,7 @@ C
      &             'standard_name', 'time_of_maximum_radiation_stress')
             CALL check_err(iret)
             CALL putUnitsAttribute(dat%ncid, dat%max_nodal_data_id,
-     &           'm-2 s-2', 'ft-2 s-2')
+     &           'm-2 s-2', 'lbf ft-2')
             CALL putUnitsAttribute(dat%ncid, dat%time_max_nodal_data_id,
      &           'sec', 'sec')
             iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
@@ -2129,8 +2218,34 @@ C
      &             'mesh', 'adcirc_mesh')
             CALL check_err(iret)
 
-#if defined CSWAN || defined ADCSWAN
-C
+        CASE(77)
+            dat%varnames(1) = 'weir_dz'
+            dat%nodal_data_dims_max(1) = dat%myMesh%num_nodes_dim_id
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &        NF90_DOUBLE,dat%nodal_data_dims_max,dat%nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &           'long_name',
+     &           'elevation change in weir boundary condition')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &           'standard_name','weir_elevation_change')
+            CALL check_err(iret)
+            CALL putUnitsAttribute(dat%ncid, dat%nodal_data_id,
+     &           'm', 'ft')
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &           'location', 'node')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'coordinates', 'y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             '_FillValue', 0.0d0)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)
+
          CASE(164)
 C
             dat%varnames(1) = 'radstress_x'
@@ -2183,6 +2298,9 @@ C
             iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
      &             'mesh', 'adcirc_mesh')
             CALL check_err(iret)
+C
+
+#if defined CSWAN || defined ADCSWAN
 C
 C
          CASE(301)
@@ -2531,9 +2649,9 @@ C
      &                 'm2 s-2', 'ft s-2')
                case default
                call putUnitsAttribute(dat%ncid, dat%u_nodal_data_id,
-     &                 'm s-2', 'ft s-1')
+     &                 'm s-1', 'ft s-1')
                call putUnitsAttribute(dat%ncid, dat%v_nodal_data_id,
-     &                 'm s-2', 'ft s-1')
+     &                 'm s-1', 'ft s-1')
             end select
             iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
      &             '_FillValue', doubleval)
@@ -2610,7 +2728,7 @@ C
      &                 'm2 s-2', 'ft s-2')
                case default
                call putUnitsAttribute(dat%ncid, dat%max_nodal_data_id,
-     &                 'm s-2', 'ft s-1')
+     &                 'm s-1', 'ft s-1')
             end select
             iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
      &             '_FillValue', doubleval)
@@ -2746,11 +2864,236 @@ C
             iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
      &            'mesh', 'adcirc_mesh')
             CALL check_err(iret) 
+#endif  
+         ! inundationtime.63 
+         CASE(400)            
+C                 
+            dat%varnames(1) = 'inun_time'
+            dat%varnames(2) = 'onset_inun_time'            
+            dat%nodal_data_dims_max(1) = dat%myMesh%num_nodes_dim_id
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &      NF90_DOUBLE, dat%nodal_data_dims_max, dat%max_nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(2)),
+     &      NF90_DOUBLE, dat%nodal_data_dims_max, dat%time_max_nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &      'long_name', 'total time of inundation beyond the threshold')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &            'long_name', 
+     &            'time of onset of inundation beyond the threshold')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &             'standard_name', 
+     &             'total_time_of_inundation_beyond_the_threshold')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &             'standard_name', 
+     &             'time_of_onset_of_inundation_beyond_the_threshold')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &             'coordinates', 'y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &             'coordinates', 'y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)            
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)  
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)                        
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)    
+            CALL putUnitsAttribute(dat%ncid, dat%max_nodal_data_id,
+     &           'm', 'ft')
+            CALL putUnitsAttribute(dat%ncid, dat%time_max_nodal_data_id,
+     &           'sec', 'sec')
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &             '_FillValue', doubleval)            
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &             '_FillValue', doubleval)            
+            CALL check_err(iret)
+
+         ! maxinundepth.63 
+         CASE(401)            
+C                 
+            dat%varnames(1) = 'inun_max'
+            dat%varnames(2) = 'time_of_inun_max'            
+            dat%nodal_data_dims_max(1) = dat%myMesh%num_nodes_dim_id
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &      NF90_DOUBLE, dat%nodal_data_dims_max, dat%max_nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(2)),
+     &      NF90_DOUBLE, dat%nodal_data_dims_max, dat%time_max_nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &            'long_name', 'maximum water inundation depth'//
+     &            'above geoid')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &            'long_name', 'time of maximum water inundation depth'//
+     &            'above geoid')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &             'standard_name', 'maximum_water_inundation_depth')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &             'standard_name', 
+     &             'time_of_maximum_water_inundation_depth')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &             'coordinates', 'y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &             'coordinates', 'y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)            
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)  
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)                        
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)    
+            CALL putUnitsAttribute(dat%ncid, dat%max_nodal_data_id,
+     &           'm', 'ft')
+            CALL putUnitsAttribute(dat%ncid, dat%time_max_nodal_data_id,
+     &           'sec', 'sec')
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &             '_FillValue', doubleval)            
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &             '_FillValue', doubleval)            
+            CALL check_err(iret)
+
+        ! initiallydry.63
+        CASE(402)
+C
+            dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
+            dat%varnames(1) = 'initiallydry'
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &         NF90_INT, dat%nodal_data_dims, dat%nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'long_name', 
+     &            'dry nodes at cold start')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'standard_name', 'initially_dry')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'coordinates', 'time y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)         
+
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             '_FillValue', intFillValue)
+            CALL check_err(iret)
+
+        ! endrisinginun.63
+        CASE(403)
+C
+            dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
+            dat%varnames(1) = 'endrisinginun'
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &         NF90_INT, dat%nodal_data_dims, dat%nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'long_name', 
+     &            'rising inundation at the end of the simulation')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'standard_name', 'end_rising_inundation')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'coordinates', 'time y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)            
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             '_FillValue', intFillValue)
+            CALL check_err(iret)
 C            
-#endif
+         ! everdried.63 
+         CASE(404)            
+C                 
+            dat%varnames(1) = 'everdried'
+            dat%varnames(2) = 'time_of_everdried'            
+            dat%nodal_data_dims_max(1) = dat%myMesh%num_nodes_dim_id
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &      NF90_DOUBLE, dat%nodal_data_dims_max, dat%max_nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(2)),
+     &      NF90_DOUBLE, dat%nodal_data_dims_max, dat%time_max_nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &            'long_name', 'ever dried')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &            'long_name', 
+     &            'time of most recent drying occurrence')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &             'standard_name', 'ever_dried')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &             'standard_name', 
+     &             'time_of_most_recent_drying_occurrence')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &             'coordinates', 'y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &             'coordinates', 'y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)            
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)  
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)                        
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)    
+            CALL putUnitsAttribute(dat%ncid, dat%max_nodal_data_id,
+     &           'unitless', 'unitless')
+            CALL putUnitsAttribute(dat%ncid, dat%time_max_nodal_data_id,
+     &           'sec', 'sec')
+            iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
+     &             '_FillValue', doubleval)            
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
+     &             '_FillValue', doubleval)            
+            CALL check_err(iret)
+
          CASE DEFAULT
             write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for files with unit number ",i0,".")') descript1 % lun
             call allMessage(ERROR,scratchMessage)
       END SELECT
 
@@ -2765,12 +3108,13 @@ C
      &      '_FillValue',  doubleval)
          CALL check_err(iret)
       ENDIF
+
 C
 C     jgf50.44: Automatically turn on compression if we are using the
 C     netcdf4 file format.
 #ifdef NETCDF_CAN_DEFLATE
-      IF (abs(descript1%specifier).eq.5) THEN
-         SELECT CASE(lun)
+      IF (abs(descript1%specifier).eq.NETCDF4) THEN
+         SELECT CASE(descript1 % lun)
          CASE(44)
             iret = nf_def_var_deflate(dat%ncid, dat%u_nodal_data_id,
      &          1, 1, 2)
@@ -2795,7 +3139,7 @@ C     netcdf4 file format.
             iret = nf_def_var_deflate(dat%ncid, dat%w_nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
-         CASE(47,63,73,301:304,306,307)
+         CASE(47,63,73,77,90,301:304,306,307,402,403)
             iret = nf_def_var_deflate(dat%ncid, dat%nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
@@ -2806,7 +3150,7 @@ C     netcdf4 file format.
             iret = nf_def_var_deflate(dat%ncid, dat%v_nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
-         CASE(311:315)  !adcirc max/min values
+         CASE(311:315,400,401,404)  !adcirc max/min values
             iret = nf_def_var_deflate(dat%ncid, dat%max_nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
@@ -2819,7 +3163,7 @@ C     netcdf4 file format.
             CALL check_err(iret)
          CASE DEFAULT ! should be unreachable
             write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for files with unit number ",i0,".")') descript1 % lun
             call allMessage(ERROR,scratchMessage)
          END SELECT
       ENDIF
@@ -2839,10 +3183,26 @@ C     Leave define mode
 C
 C     write mesh to netcdf file
       CALL putMeshVariables(dat%ncid,dat%myMesh)
+      ! 
+      ! jgf52.08.11: Initialize max/min values b/c they will be read in
+      ! at the start of a hotstart run. The square of the initialized 
+      ! values will be compared with the sum of the squares of
+      ! vector values in the live running code. Uninitialized values
+      ! of -99999 become large and positive when squared, meaning that
+      ! we will never be able set a new peak in the running code if 
+      ! we leave the max/min values uninitialized.   
+      IF ( (dat%myFile%createFile.eqv..true.).and.
+     &     (descript1%readMaxMin.eqv..true.)) THEN
+          iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,defaultValue)
+          CALL check_err(iret)
+      ENDIF
 C
 C     now close the initialized netcdf file
       iret = nf90_close(dat%ncid)
       CALL check_err(iret)
+      
+      call logMessage(INFO,'Initialized "'//trim(dat%myFile%filename)//
+     &   '" file.') 
 
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -2852,104 +3212,15 @@ C-----------------------------------------------------------------------
       END SUBROUTINE initNodalDataFile
 C-----------------------------------------------------------------------
 
-C-----------------------------------------------------------------------
-C     S U B R O U T I N E  S E T  N E T C D F  F I L E  N A M E
-C-----------------------------------------------------------------------
-C     jgf49.41 Sets the name of the netcdf file.
-C-----------------------------------------------------------------------
-      SUBROUTINE setNetCDFFileName(lun, myFile)
-      IMPLICIT NONE
-      INTEGER, intent(in) :: lun ! logical unit number
-      INTEGER             :: dlun ! dummy logical unit number
-      INTEGER             :: dlen ! length of char
-      TYPE(fileData) :: myFile
-C
-      call setMessageSource("setNetCDFFileName")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      IF(lun.EQ.164)THEN
-        myFile%FILEFORT = 'rads.'
-        dlun=64
-      ELSEIF(lun.EQ.301)THEN
-        myFile%FILEFORT = 'swan_HS.'
-        dlun=63
-      ELSEIF(lun.EQ.302)THEN
-        myFile%FILEFORT = 'swan_DIR.'
-        dlun=63
-      ELSEIF(lun.EQ.303)THEN
-        myFile%FILEFORT = 'swan_TM01.'
-        dlun=63
-      ELSEIF(lun.EQ.304)THEN
-        myFile%FILEFORT = 'swan_TPS.'
-        dlun=63
-      ELSEIF(lun.EQ.305)THEN
-        myFile%FILEFORT = 'swan_WIND.'
-        dlun=64
-      ELSEIF(lun.EQ.306)THEN
-        myFile%FILEFORT = 'swan_TM02.'
-        dlun=63
-      ELSEIF(lun.EQ.307)THEN
-        myFile%FILEFORT = 'swan_TMM10.'
-        dlun=63
-      ELSEIF(lun.EQ.311)THEN
-        myFile%FILEFORT = 'maxele.'
-        dlun=63
-      ELSEIF(lun.EQ.312)THEN
-        myFile%FILEFORT = 'maxvel.'
-        dlun=63
-      ELSEIF(lun.EQ.313)THEN
-        myFile%FILEFORT = 'minpr.'
-        dlun=63
-      ELSEIF(lun.EQ.314)THEN
-        myFile%FILEFORT = 'maxwvel.'
-        dlun=63
-      ELSEIF(lun.EQ.315)THEN
-        myFile%FILEFORT = 'maxrs.'
-        dlun=63
-      ELSEIF(lun.EQ.316)THEN
-        myFile%FILEFORT = 'swan_HS_max.'
-        dlun=63
-      ELSEIF(lun.EQ.317)THEN
-        myFile%FILEFORT = 'swan_DIR_max.'
-        dlun=63
-      ELSEIF(lun.EQ.318)THEN
-        myFile%FILEFORT = 'swan_TM01_max.'
-        dlun=63
-      ELSEIF(lun.EQ.319)THEN
-        myFile%FILEFORT = 'swan_TPS_max.'
-        dlun=63
-      ELSEIF(lun.EQ.320)THEN
-        myFile%FILEFORT = 'swan_WIND_max.'
-        dlun=63
-      ELSEIF(lun.EQ.321)THEN
-        myFile%FILEFORT = 'swan_TM02_max.'
-        dlun=63
-      ELSEIF(lun.EQ.322)THEN
-        myFile%FILEFORT = 'swan_TMM10_max.'
-        dlun=63
-      ELSE
-        myFile%FILEFORT = 'fort.'
-        dlun=lun
-      ENDIF
-      myFile%FILEEXT = '.nc'
-      WRITE(myFile%FILENAME,'(A,I2,A3)')
-     &      TRIM(myFile%FILEFORT), dlun, myFile%FILEEXT
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C-----------------------------------------------------------------------
-      END SUBROUTINE setNetCDFFileName
-C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E  C R E A T E  N E T C D F  O U T P U T  F I L E
 C-----------------------------------------------------------------------
 C     jgf49.22 Creates a new netcdf output file if needed.
 C-----------------------------------------------------------------------
-      SUBROUTINE createNetCDFOutputFile(ncid, myFile, lun, myTime,
+      SUBROUTINE createNetCDFOutputFile(ncid, myFile, myTime,
      &                                  descript, ret_error)
+      USE SIZES, ONLY : globaldir
       USE GLOBAL, ONLY : OutputDataDescript_t, IHOT, DEBUG, ERROR,
      &                   screenUnit, allMessage, scratchMessage
 #ifdef CMPI
@@ -2958,7 +3229,6 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, intent(out) :: ncid
       TYPE(fileData), intent(inout) :: myFile
-      INTEGER, intent(in) :: lun
       TYPE(timeData), intent(inout) :: myTime
       TYPE(OutputDataDescript_t), intent(inout) :: descript
       LOGICAL, intent(out) :: ret_error
@@ -2972,7 +3242,21 @@ C
       ret_error = .false.
       myFile%createFile = .false.
       myFile%fileFound = .false.
-      CALL setNetCDFFileName(lun,myFile)
+      
+      ! create file name 
+      select case(descript%lun)
+      case(67)
+         myFile%filename = trim(globaldir)//'/fort.67.nc'
+      case(68)
+         myFile%filename = trim(globaldir)//'/fort.68.nc'
+      case default
+         ! trim(globaldir) has already been prepended to
+         ! descript%file_name
+         myFile%filename = trim(descript%file_name) // '.nc'
+      end select
+      !jgfdebug 
+      !write(6,*) 'myFile%filename=',trim(myFile%filename),
+      !&  ' descript%file_name=',trim(descript%file_name)
 C
 C     jgf49.17.02: Simplified the criteria for creating a new netCDF
 C     output file: coldstart, overwrite upon hotstart, or output
@@ -2980,7 +3264,7 @@ C     that does not already exist. These criteria do not apply to
 C     netcdf hotstart files; we will always write those when called
 C     upon to create them.
       INQUIRE(FILE=myFile%FILENAME,EXIST=myFile%fileFound)
-      IF ((lun.ne.67).and.(lun.ne.68)) THEN
+      IF ((descript%lun.ne.67).and.(descript%lun.ne.68)) THEN
          IF ((IHOT.EQ.0).OR.(descript%specifier.lt.0).OR.
      &      (myFile%fileFound.eqv..false.)) THEN
 #ifdef CMPI
@@ -2991,24 +3275,32 @@ C     upon to create them.
             ! access to the full domain mesh and control files, whose
             ! data must also be stored in the netcdf output file
             IF (myFile%fileFound.eqv..false.) THEN
-               write(screenUnit,'(3A)')
-     &           "ERROR: The NetCDF output file '",TRIM(myFile%FILENAME),
-     &     "' was not found. It should have been created by adcprep."
-               write(screenUnit,'(A)') 
-     &          "ERROR: ADCIRC execution terminated."
+               write(scratchMessage,'(a,a,a)')
+     &            "The NetCDF output file '",TRIM(myFile%FILENAME),
+     &            "' was not found. "//
+     &            "It should have been created by adcprep."
+               call allMessage(ERROR,scratchMessage)
                ret_error = .true.
             ENDIF
 #else
             ! these lines are executed by serial adcirc and adcprep
-            myFile%createFile = .true.
-            myFile%record_counter = 0
+            !
+            ! jgf52.08.25: It may be a non-NetCDF min/max will be written, 
+            ! but a netcdf min/max file of the same type may be read. In this
+            ! case, don't create a  netcdf min/max file of this type. 
+            if ( (abs(descript%specifier).eq.NETCDF3) .or.
+     &           (abs(descript%specifier).eq.NETCDF4) ) then
+               myFile%createFile = .true.
+               myFile%record_counter = 0
+            endif
 #endif
          ENDIF
       ELSE
          ! these lines are executed to create netcdf hotstart files
 #ifdef CMPI
          IF (myFile%fileFound.eqv..true.) THEN
-            call screenMessage(DEBUG,"Hotstart file was created by adcprep.")
+            call screenMessage(DEBUG,
+     &      "Hotstart file was created by adcprep.")
             myFile%createFile = .false.
          ELSE
              call screenMessage(ERROR,"Hotstart file is missing.")
@@ -3091,9 +3383,11 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Initializes NetCDF coordinates.
 C-----------------------------------------------------------------------
       SUBROUTINE initNetCDFCoord(myMesh)
-      USE GLOBAL, ONLY : RAD2DEG, NBOU, NVEL, NOPE, NP_G, SLAM0, SFEA0,
-     &                   NBVV, NVDLL, NBDV, NVELL, NETA, X, Y, SLAM,
-     &                   SFEA, ICS, IBTYPEE, IBTYPE, NM, NE_G
+      USE GLOBAL, ONLY : NP_G, NE_G, RAD2DEG
+      USE MESH, ONLY : X, Y, SLAM, SFEA, ICS, NM, 
+     &  SLAM0, SFEA0
+      USE BOUNDARIES, ONLY : NBOU, NVEL, NOPE, NBVV, NVDLL, NBDV, NVELL, 
+     &  NETA, IBTYPEE, IBTYPE
       IMPLICIT NONE
       type(meshStructure), intent(inout) :: myMesh
       INTEGER :: i, j, k  ! array indices
@@ -3243,9 +3537,13 @@ C
             CALL writeNodalData(pr, lun, descript1, timesec)
          CASE(74)
             CALL writeNodalData(windVel, lun, descript1, timesec)
-#ifdef CSWAN
+         CASE(77)
+            CALL writeNodalData(weirElev, lun, descript1, timesec)
+         CASE(90)
+            CALL writeNodalData(tau0nc, lun, descript1, timesec)
          CASE(164)
             CALL writeNodalData(rads, lun, descript1, timesec)
+#if defined CSWAN || defined ADCSWAN
          CASE(301)
             CALL writeNodalData(sw_hs, lun, descript1, timesec)
          CASE(302)
@@ -3271,7 +3569,7 @@ C
             CALL writeNodalData(WVMax, lun, descript1, timesec)
          CASE(315)
             CALL writeNodalData(RSMax, lun, descript1, timesec)
-#ifdef CSWAN
+#if defined CSWAN || defined ADCSWAN
          CASE(316)
             CALL writeNodalData(sw_hs_max, lun, descript1, timesec)
          CASE(317)
@@ -3287,9 +3585,20 @@ C
          CASE(322)
             CALL writeNodalData(sw_tmm10_max, lun, descript1, timesec)
 #endif
+         CASE(400)
+            CALL writeNodalData(inTime, lun, descript1, timesec)
+         CASE(401)
+            CALL writeNodalData(maxInDep, lun, descript1, timesec)
+         CASE(402)
+            CALL writeNodalData(coldDry, lun, descript1, timesec)
+         CASE(403)
+            CALL writeNodalData(eRisInun, lun, descript1, timesec)
+         CASE(404)
+            CALL writeNodalData(evrDry, lun, descript1, timesec)
+
          CASE DEFAULT
             write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for files with unit number ",i0,".")') lun
             call allMessage(ERROR,scratchMessage)         
       END SELECT
 C
@@ -3301,148 +3610,6 @@ C
 C-----------------------------------------------------------------------
       END SUBROUTINE writeOutArrayNetCDF
 C-----------------------------------------------------------------------
-
-Cobell - This routine is reached through writer.F. A dummy descript is
-C        Assembled so that old routines can be used.
-C----------------------------------------------------------------------------------
-C     S U B R O U T I N E   W R I T E  O U T  A R R A Y  N E T C D F   W R I T E R
-C----------------------------------------------------------------------------------
-      SUBROUTINE writeOutArrayNetCDFWriter(lun, timesec, it, 
-     &  items_per_record, alternate_value, values1, values2)
-      USE GLOBAL, ONLY : OutputDataDescript_t,ScreenUnit,SZ
-C
-      IMPLICIT NONE
-C     args
-      INTEGER, intent(in) :: lun ! logical unit number of file to write to
-      REAL(SZ), intent(in) :: timesec ! seconds since cold start
-      INTEGER, intent(in) :: it   ! number of time steps since cold start
-      INTEGER, intent(in) :: items_per_record
-      REAL(SZ), intent(in), target :: values1(:)
-      REAL(SZ), intent(in), optional, target :: values2(:)
-      REAL(SZ), intent(in) :: alternate_value
-      LOGICAL,SAVE :: FirstCall63 = .TRUE.
-      LOGICAL,SAVE :: FirstCall64 = .TRUE.
-      LOGICAL,SAVE :: FirstCall73 = .TRUE.
-      LOGICAL,SAVE :: FirstCall74 = .TRUE.
-      LOGICAL,SAVE :: FirstCall164 = .TRUE.
-      LOGICAL,SAVE :: FirstCall301 = .TRUE.
-      LOGICAL,SAVE :: FirstCall302 = .TRUE.
-      LOGICAL,SAVE :: FirstCall303 = .TRUE.
-      LOGICAL,SAVE :: FirstCall304 = .TRUE.
-      LOGICAL,SAVE :: FirstCall305 = .TRUE.
-      LOGICAL,SAVE :: FirstCall306 = .TRUE.
-      LOGICAL,SAVE :: FirstCall307 = .TRUE.
-      LOGICAL :: reterr
-      INTEGER :: I
-      TYPE(OutputDataDescript_t) :: descript1
-
-      call setMessageSource("writeOutArrayNetCDFWriter")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE) || defined(WRITER_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-C
-
-Cobell ... Assemble a dummy OutputDataDescript_t variable to appease
-C          the routines that follow. Only parallel case is considered.
-      Descript1%alternate_value = alternate_value
-      Descript1%array_g => values1
-      Descript1%num_fd_records = SIZE(values1)
-      IF(items_per_record.eq.2)THEN
-        Descript1%array2_g => values2
-      ENDIF
-
-      SELECT CASE(lun)
-         CASE(63)
-            IF(FirstCall63)THEN
-                CALL initNodalDataFile(elev, lun, descript1, reterr)
-                FirstCall63 = .FALSE.
-            ENDIF   
-                CALL writeNodalData(elev, lun, descript1, timesec)
-         CASE(64)
-            IF(FirstCall64)THEN
-                CALL initNodalDataFile(currentVel, lun, descript1, reterr)
-                FirstCall64 = .FALSE.
-            ENDIF
-            CALL writeNodalData(currentVel, lun, descript1, timesec)
-         CASE(73)
-            IF(FirstCall73)THEN
-                CALL initNodalDataFile(pr, lun, descript1, reterr)
-                FirstCall73 = .FALSE.
-            ENDIF
-            CALL writeNodalData(pr, lun, descript1, timesec)
-         CASE(74)
-            IF(FirstCall74)THEN
-                CALL initNodalDataFile(windVel, lun, descript1, reterr)
-                FirstCall74 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(windVel, lun, descript1, timesec)
-         CASE(164)
-            IF(FirstCall164)THEN
-                CALL initNodalDataFile(rads, lun, descript1, reterr)
-                FirstCall164 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(rads, lun, descript1, timesec)
-#ifdef CSWAN            
-         CASE(301)
-            IF(FirstCall301)THEN
-                CALL initNodalDataFile(sw_hs, lun, descript1, reterr)
-                FirstCall301 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(sw_hs, lun, descript1, timesec)
-         CASE(302)
-            IF(FirstCall302)THEN
-                CALL initNodalDataFile(sw_dir, lun, descript1, reterr)
-                FirstCall302 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(sw_dir, lun, descript1, timesec)
-         CASE(303)
-            IF(FirstCall303)THEN
-                CALL initNodalDataFile(sw_tm01, lun, descript1, reterr)
-                FirstCall303 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(sw_tm01, lun, descript1, timesec)
-         CASE(304)
-            IF(FirstCall304)THEN
-                CALL initNodalDataFile(sw_tps, lun, descript1, reterr)
-                FirstCall304 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(sw_tps, lun, descript1, timesec)
-         CASE(305)
-            IF(FirstCall305)THEN
-                CALL initNodalDataFile(sw_wind, lun, descript1, reterr)
-                FirstCall305 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(sw_wind, lun, descript1, timesec)
-         CASE(306)
-            IF(FirstCall306)THEN
-                CALL initNodalDataFile(sw_tm02, lun, descript1, reterr)
-                FirstCall306 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(sw_tm02, lun, descript1, timesec)
-         CASE(307)
-            IF(FirstCall307)THEN
-                CALL initNodalDataFile(sw_tmm10, lun, descript1, reterr)
-                FirstCall307 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(sw_tmm10, lun, descript1, timesec)
-#endif
-         CASE DEFAULT
-            write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
-            call allMessage(ERROR,scratchMessage)         
-      END SELECT
-C
-
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE) || defined(WRITER_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C-----------------------------------------------------------------------
-      END SUBROUTINE writeOutArrayNetCDFWriter
-C-----------------------------------------------------------------------
-
-
-
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E    W R I T E  S T A T I O N  D A T A
@@ -3675,7 +3842,7 @@ C
 
       CASE DEFAULT
             write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for station files with unit number ",i0,".")') lun
             call allMessage(ERROR,scratchMessage)               
       END SELECT
 !
@@ -3698,7 +3865,7 @@ C     jgf49.17.02 Writes data to a full domain file.
 C-----------------------------------------------------------------------
       SUBROUTINE writeNodalData(dat, lun, descript1, timesec,
      &   descript2, descript3 )
-      USE SIZES, ONLY : MNPROC
+      USE SIZES, ONLY : MNPROC, MYPROC
       USE GLOBAL, ONLY : SNAMLEN, OutputDataDescript_t, NODECODE,
      &                   scratchMessage, IDEN
 
@@ -3717,13 +3884,18 @@ C
       INTEGER kount3D(3), start3D(3)
       INTEGER iret ! success or failure of the netcdf call
       INTEGER num_values ! number of values in the array
+      INTEGER,ALLOCATABLE  :: tempIntArray(:)
+      REAL(SZ),ALLOCATABLE :: tempArray(:)
 C
       call setMessageSource("writeNodalData")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 C
-      
+      write(scratchMessage,'("Rank ",i0," writing to ",a,".")') myproc,
+     &   trim(dat%myFile%filename)
+      call allMessage(DEBUG,scratchMessage)
+
       iret = nf90_open(dat%myFile%FILENAME, NF_WRITE, dat%ncid)
       CALL check_err(iret)
       dat%myTime%timenc(dat%myTime%timenc_len)=timesec
@@ -3820,6 +3992,12 @@ C
          CALL check_err(iret)
          iret=nf90_inq_varid(dat%ncid,"windy",dat%v_nodal_data_id)
          CALL check_err(iret)
+      CASE(77)
+         iret=nf90_inq_varid(dat%ncid,"weir_dz",dat%nodal_data_id)
+         CALL check_err(iret)
+      CASE(90)
+         iret=nf90_inq_varid(dat%ncid, "tau0", dat%nodal_data_id)
+         CALL check_err(iret)
       CASE(164)
         iret=nf90_inq_varid(dat%ncid, "radstress_x",dat%u_nodal_data_id)
         CALL check_err(iret)
@@ -3850,6 +4028,7 @@ C
         iret=nf90_inq_varid(dat%ncid, "swan_TMM10", dat%nodal_data_id)
         CALL check_err(iret)
 #endif        
+
       CASE(311)
         iret=nf90_inq_varid(dat%ncid, "zeta_max", dat%max_nodal_data_id)
         CALL check_err(iret)
@@ -3914,9 +4093,43 @@ C
      &  dat%max_nodal_data_id)
         CALL check_err(iret) 
 #endif
+
+      ! inundationtime.63
+      CASE(400)
+        iret=nf90_inq_varid(dat%ncid, "inun_time", 
+     &          dat%max_nodal_data_id)
+        CALL check_err(iret)
+        iret=nf90_inq_varid(dat%ncid, "onset_inun_time", 
+     &          dat%time_max_nodal_data_id)
+        CALL check_err(iret)
+      ! maxinundepth.63
+      CASE(401)
+        iret=nf90_inq_varid(dat%ncid, "inun_max", 
+     &          dat%max_nodal_data_id)
+        CALL check_err(iret)
+        iret=nf90_inq_varid(dat%ncid, "time_of_inun_max", 
+     &          dat%time_max_nodal_data_id)
+        CALL check_err(iret)
+      ! initiallydry.63
+      CASE(402)
+        iret=nf90_inq_varid(dat%ncid, "initiallydry",dat%nodal_data_id)
+        CALL check_err(iret)         
+      ! endrisinginun.63
+      CASE(403)
+        iret=nf90_inq_varid(dat%ncid, "endrisinginun",dat%nodal_data_id)
+        CALL check_err(iret)
+      CASE(404)
+        iret=nf90_inq_varid(dat%ncid, "everdried", 
+     &          dat%max_nodal_data_id)
+        CALL check_err(iret)
+        iret=nf90_inq_varid(dat%ncid, "time_of_everdried", 
+     &          dat%time_max_nodal_data_id)
+        CALL check_err(iret)
+
+
       CASE DEFAULT
          write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for files with unit number ",i0,".")') lun
          call allMessage(ERROR,scratchMessage)                     
       END SELECT
 C
@@ -3947,10 +4160,10 @@ C     Write the array values
       CASE(316,317,318,319,321,322)  !swan max/min
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
-               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
-     &            merge(descript1%array,
-     &                  spread(descript1%alternate_value,1,kount(1)),
-     &                         nodecode.gt.0))
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,tempArray)
             ELSE
                iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
      &            descript1%array)
@@ -3964,16 +4177,15 @@ C     Write the array values
       CASE(311,313)  !adcirc max/min only
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
-               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
-     &            merge(descript1%array,
-     &                  spread(descript1%alternate_value,1,kount(1)),
-     &                         nodecode.gt.0))
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,tempArray)
                CALL check_err(iret)
-               iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id,
-     &            merge(descript1%array2,
-     &                  spread(descript1%alternate_value,1,kount(1)),
-     &                         nodecode.gt.0))
-                CALL check_err(iret)
+               tempArray = merge(descript1%array2,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id,tempArray)
+               CALL check_err(iret)
             ELSE
                iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
      &            descript1%array)
@@ -3990,18 +4202,17 @@ C     Write the array values
      &            descript1%array2_g)
             CALL check_err(iret)
          ENDIF
-      CASE(312,314,315)  !adcirc max/min
+      CASE(312,314,315,400,401,404)  !adcirc max/min
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
-               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
-     &              merge(descript1%array,
-     &                 spread(descript1%alternate_value,1,kount(1)),
-     &                       nodecode.gt.0))
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,tempArray)
                CALL check_err(iret)
-               iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id,
-     &              merge(descript1%array2,
-     &                 spread(descript1%alternate_value,1,kount(1)),
-     &                       nodecode.gt.0))
+               tempArray = merge(descript1%array2,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id,tempArray)
                CALL check_err(iret)
             ELSE
                iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
@@ -4022,10 +4233,11 @@ C     Write the array values
       CASE(320)  !swan max/min
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
-               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
-     &          merge(descript1%array,
-     &                spread(descript1%alternate_value,1,kount(1)),
-     &                       nodecode.gt.0))
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,tempArray)
+               CALL check_err(iret)
             ELSE
                iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
      &             descript1%array)
@@ -4036,14 +4248,13 @@ C     Write the array values
      &            descript1%array_g)
             CALL check_err(iret)
          ENDIF         
-      CASE(47,63,73,301,302,303,304,306,307)
+      CASE(47,63,73,77,90,301,302,303,304,306,307)
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
-               iret = nf90_put_var(dat%ncid, dat%nodal_data_id,
-     &            merge(descript1%array,
-     &                  spread(descript1%alternate_value,1,kount(1)),
-     &                         nodecode.gt.0),
-     &            start, kount)
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%nodal_data_id,tempArray,start,kount)
             ELSE
                iret = nf90_put_var(dat%ncid, dat%nodal_data_id,
      &            descript1%array, start, kount)
@@ -4057,16 +4268,14 @@ C     Write the array values
       CASE(64,74,164,305)
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
-               iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,
-     &          merge(descript1%array,
-     &                spread(descript1%alternate_value,1,kount(1)),
-     &                       nodecode.gt.0),
-     &          start, kount)
-               iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id,
-     &          merge(descript1%array2,
-     &                spread(descript1%alternate_value,1,kount(1)),
-     &                       nodecode.gt.0),
-     &          start, kount)
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%nodal_data_id,tempArray,start,kount)
+               CALL check_err(iret)
+               tempArray = merge(descript1%array2,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id,tempArray,start,kount)
                CALL check_err(iret)
             ELSE
                iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,
@@ -4084,9 +4293,26 @@ C     Write the array values
      &            descript1%array2_g, start, kount)
             CALL check_err(iret)
          ENDIF
+      CASE(402,403)  ! integers at nodes (e.g., initiallydry.63, endrisinginun.63)
+         IF (MNPROC.eq.1) THEN ! SERIAL
+            IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
+               allocate(tempIntArray(1:dat%myMesh%num_nodes))
+               tempIntArray = merge(descript1%iarray,
+     &              spread(int(descript1%alternate_value),1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%nodal_data_id,tempIntArray,start,kount)
+            ELSE
+               iret = nf90_put_var(dat%ncid, dat%nodal_data_id,
+     &            descript1%iarray, start, kount)
+            ENDIF
+            CALL check_err(iret)
+         ELSE
+            iret = nf90_put_var(dat%ncid, dat%nodal_data_id,
+     &            descript1%iarray_g, start, kount)
+            CALL check_err(iret)
+         ENDIF         
       CASE DEFAULT
             write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for files with unit number ",i0,".")') lun
             call allMessage(ERROR,scratchMessage)                     
       END SELECT
 !
@@ -4114,7 +4340,7 @@ C     inserted data will remain, due to the inability of netcdf to
 C     delete data from files.
 C-----------------------------------------------------------------------
       SUBROUTINE setRecordCounterAndStoreTime(ncid, f, t)
-      USE GLOBAL, ONLY : scratchMessage
+      USE GLOBAL, ONLY : scratchMessage, scratchFormat
       IMPLICIT NONE
 C
       INTEGER, intent(in) :: ncid
@@ -4129,7 +4355,6 @@ C
       INTEGER :: counti(1), starti(1)
       INTEGER :: iret  ! success or failure of netcdf call
       INTEGER :: i     ! loop counter
-
 C
       call setMessageSource("setRecordCounterAndStoreTime")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -4176,11 +4401,13 @@ C     counter based on this relationship.
             ! not what the user intended ... but apparently there is no
             ! way to delete data from netcdf files:
             ! http://www.unidata.ucar.edu/support/help/MailArchives/netcdf/msg02367.html
-            write(scratchMessage,123) trim(f%FILENAME), t%timenc(1)
+            scratchFormat = 
+     &      '("Overwriting pre-existing data in netcdf file ",a,'//
+     &      '" for time=",f17.8,". ' //
+     &      'Subsequent data in netcdf file remain unchanged.")'
+            write(scratchMessage,scratchFormat)
+     &          trim(f%FILENAME), t%timenc(1)
             CALL allMessage(INFO,scratchMessage)
- 123        format('Overwriting pre-existing data in netcdf file ',A,
-     &         ' for time=',F15.8,
-     &         '. Subsequent data in the netcdf file remain unchanged.')
             f%record_counter = i
          ENDIF
          deallocate(storedTimes)
@@ -4212,8 +4439,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE initNetCDFHotstart(lun, Elev1Descript,
      &   Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
      &   NodeCodeDescript, NOFFDescript, ncerror)
-      USE GLOBAL, ONLY : OutputDataDescript_t, ICS, G, IM, NE_G, NP_G,
-     &   IMHS, C3D
+      USE GLOBAL, ONLY : OutputDataDescript_t, G, IM, IMHS, C3D, NE_G, NP_G
+      USE MESH, ONLY : ICS
       IMPLICIT NONE
 C
       INTEGER, intent(in) :: lun
@@ -4255,7 +4482,8 @@ C     Point to the hotstart file we want to work on.
       ENDIF
 C
 C     Initialize netCDF hotstart file, creating a new one
-      CALL createNetCDFOutputFile(hs%ncid, hs%myFile, lun, hs%myTime,
+      Elev1Descript % lun = lun
+      CALL createNetCDFOutputFile(hs%ncid, hs%myFile, hs%myTime,
      &                            Elev1Descript, ncerror)
       ! return an error flag to the calling routine if something went
       ! wrong when we tried to create the netcdf file
@@ -4366,7 +4594,7 @@ C     U V E L
      &       'standard_name', 'u_velocity')
       CALL check_err(iret)
       CALL putUnitsAttribute(hs%ncid, hs%vel%u_nodal_data_id,
-     &        'm s-2', 'ft s-1')
+     &        'm s-1', 'ft s-1')
       CALL check_err(iret)
       iret = nf90_put_att(hs%ncid, hs%vel%u_nodal_data_id,
      &        '_FillValue', doubleval)
@@ -4397,7 +4625,7 @@ C     V V E L
      &            'standard_name','v_velocity')
       CALL check_err(iret)
       CALL putUnitsAttribute(hs%ncid, hs%vel%v_nodal_data_id,
-     &        'm s-2', 'ft s-1')
+     &        'm s-1', 'ft s-1')
       CALL check_err(iret)
       iret = nf90_put_att(hs%ncid, hs%vel%v_nodal_data_id,
      &            '_FillValue', doubleval)
@@ -4448,11 +4676,11 @@ C     N O F F
       CALL check_err(iret)
       att_text = "wet or dry state of element where 1 indicates that"
      & //" the element is wet and 0 indicates that it is dry"
-      iret = nf90_put_att(hs%ncid, hs%nodecodenc%nodal_data_id,
+      iret = nf90_put_att(hs%ncid, hs%noffnc%nodal_data_id,
      &      'long_name', trim(att_text))
       CALL check_err(iret)
       att_text = "element_wet_or_dry"
-      iret = nf90_put_att(hs%ncid, hs%nodecodenc%nodal_data_id,
+      iret = nf90_put_att(hs%ncid, hs%noffnc%nodal_data_id,
      &      'standard_name', trim(att_text))
       CALL check_err(iret)
 C
@@ -5813,7 +6041,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE writeNetCDFHotstart(lun, Elev1Descript,
      &        Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
      &        NodeCodeDescript, NOFFDescript, timesec, it)
-      USE GLOBAL, ONLY : OutputDataDescript_t, MNPROC,
+      USE SIZES, ONLY : globaldir, mnproc
+      USE GLOBAL, ONLY : OutputDataDescript_t,
      &                   im, iestp, nscoue, ivstp, imhs,
      &                   nscouv, icstp, nscouc, ipstp, iwstp, nscoum,
      &                   igep, nscouge, igvp, nscougv, igcp, nscougc,
@@ -5837,6 +6066,7 @@ C
       INTEGER elekount(2) ! for elementally based data
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
+      CHARACTER(len=10) :: fext
 C
       call setMessageSource("writeNetCDFHotstart")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -5851,7 +6081,11 @@ C     Point to the hotstart file we want to work on
       ENDIF
       hs%myMesh => adcircMesh
 C
-      CALL setNetCDFFileName(lun, hs%myFile)
+      ! create file name
+      write(fext,'(i0)') lun
+      hs%myFile%filename = trim(globaldir)//'/fort.'//trim(fext)//'.nc'
+      call logMessage(INFO,'Opening hotstart file "'
+     &    //trim(hs%myFile%filename)//'" for writing.')
 C
       iret = nf90_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)
@@ -6041,7 +6275,13 @@ C     going on to the next one.
 C
 C     now close the netcdf file
       iret = nf90_close(hs%ncid)
-      CALL check_err(iret)
+      CALL check_err(iret)      
+      !
+      ! jgf52.17: If we started with this hotstart file, the 
+      ! metadata still reflects the fort.15 from the previous run, 
+      ! instead of this one, so we need to update it. 
+      CALL updateMetaData(hs%ncid,hs%myFile)
+      
 C
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -6061,7 +6301,7 @@ C-----------------------------------------------------------------------
      &            GLOELVDescript, STAELVDescript,
      &            GLOULVDescript, GLOVLVDescript,
      &            STAULVDescript, STAVLVDescript)
-      USE SIZES, ONLY : MNHARF, MNPROC
+      USE SIZES, ONLY : MNHARF, MNPROC, globaldir
       USE GLOBAL, ONLY : OutputDataDescript_t, NSTAE_G, NSTAV_G
       USE HARM, ONLY : nz, nf, mm, nhase, nhasv, nhage, nhagv, icall,
      &                 nfreq, timeud, itud, namefr, hafreq, haff,
@@ -6093,8 +6333,6 @@ C     Point to the hotstart file we want to work on
       ELSE
          hs => hs68
       ENDIF
-C
-      CALL setNetCDFFileName(lun, hs%myFile)
 C
       iret = nf90_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)
@@ -6346,7 +6584,7 @@ C-----------------------------------------------------------------------
      &            ELAVDescript, ELVADescript,
      &            XVELAVDescript, YVELAVDescript,
      &            XVELVADescript, YVELVADescript)
-      USE SIZES, ONLY : MNHARF, MNPROC
+      USE SIZES, ONLY : MNHARF, MNPROC, globaldir
       USE GLOBAL, ONLY : OutputDataDescript_t, NSTAE_G, NSTAV_G
       USE HARM, ONLY : nhase, nhasv, nhage, nhagv, ntsteps
       IMPLICIT NONE
@@ -6375,8 +6613,6 @@ C     Point to the hotstart file we want to work on
       ELSE
          hs => hs68
       ENDIF
-C
-      CALL setNetCDFFileName(lun, hs%myFile)
 C
       iret = nf90_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)
@@ -6497,7 +6733,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE writeNetCDFHotstart3D(lun,DUUDescript,
      &      DUVDescript, DVVDescript, UUDescript, VVDescript,
      &      BSXDescript, BSYDescript)
-      USE SIZES, ONLY : MNPROC
+      USE SIZES, ONLY : MNPROC, globaldir
       USE GLOBAL, ONLY : OutputDataDescript_t
       USE GLOBAL_3DVS, ONLY : n3dsd, i3dsdrec, n3dsv, i3dsvrec,
      &   n3dst, i3dstrec, n3dgd, i3dgdrec, n3dgv, i3dgvrec,
@@ -6529,8 +6765,6 @@ C     Point to the hotstart file we want to work on
       ELSE
          hs => hs68
       ENDIF
-C
-      CALL setNetCDFFileName(lun, hs%myFile)
 C
       iret = nf90_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)
@@ -6685,7 +6919,7 @@ C     jgf49.49.02 Writes 3D data to hotstart file for a single variable
 C     of rank 2.
 C-----------------------------------------------------------------------
       SUBROUTINE writeNetCDFHotstart3DVar(lun, descript)
-      USE SIZES, ONLY : MNPROC
+      USE SIZES, ONLY : MNPROC, globaldir
       USE GLOBAL, ONLY : OutputDataDescript_t
       IMPLICIT NONE
 C
@@ -6708,8 +6942,6 @@ C     Point to the hotstart file we want to work on
       ELSE
          hs => hs68
       ENDIF
-C
-      CALL setNetCDFFileName(lun, hs%myFile)
 C
       iret = nf90_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)
@@ -6864,14 +7096,14 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Reads data from the hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstart(lun, timeLoc)
+      USE SIZES, ONLY : globaldir, mnproc
       USE GLOBAL, ONLY : OutputDataDescript_t, FileFmtRev, FileFmtMinor,
      &                   FileFmtMajor, imhs, iths, iestp, nscoue, ivstp,
      &                   nscouv, icstp, nscouc, ipstp, iwstp, nscoum,
      &                   igep, nscouge, igvp, nscougv, igcp, nscougc,
      &                   igpp, igwp, nscougw, ETA1, ETA2, EtaDisc,
-     &                   UU2, VV2, NNODECODE, NOFF, NODES_LG,
-     &                   IMAP_EL_LG, MNPROC, MYPROC, NE, NP, IM,
-     &                   NP_G, NE_G
+     &                   UU2, VV2, NNODECODE, NOFF, 
+     &                   MYPROC, IM, NP_G, NE_G, NODES_LG, IMAP_EL_LG
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
@@ -6880,6 +7112,7 @@ C
       INTEGER, intent(in) :: lun
       REAL(8), intent(out) :: timeLoc
 C
+
       INTEGER i,j
       INTEGER counti(1), starti(1), n
       INTEGER kount(2), start(2)
@@ -6888,6 +7121,7 @@ C
 
       INTEGER :: sd_node_number    ! subdomain index to map
       INTEGER :: sd_element_number ! subdomain index to map
+      CHARACTER(len=10) :: fext
 C
       call setMessageSource("readNetCDFHotstart")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -6903,13 +7137,19 @@ C     Point to the hotstart file we want to work on
 C
       hs%myMesh => adcircMesh
       hs%myFile%fileFound = .false.
-      CALL setNetCDFFileName(lun,hs%myFile)
+      ! create file name
+      write(fext,'(i0)') lun
+      hs%myFile%filename = trim(globaldir)//'/fort.'//trim(fext)//'.nc'
+      call logMessage(INFO,'Opening hot start file "'
+     &               //trim(hs%myFile%filename)//'" for reading.')
 C
 C     Open fulldomain file
       INQUIRE(FILE=hs%myFile%FILENAME,EXIST=hs%myFile%fileFound)
       IF (hs%myFile%fileFound.eqv..false.) THEN
-         WRITE(*,*) "ERROR: The file ",hs%myFile%FILENAME,
-     &      " was not found; ADCIRC terminating."
+         write(scratchMessage,'(a,a,a)') 'The file ',
+     &       trim(adjustl(hs%myFile%FILENAME)),
+     &       ' was not found; ADCIRC terminating.'
+         call allMessage(ERROR,scratchMessage)
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
@@ -7000,26 +7240,8 @@ C        NOFF
 
       ELSE       ! parallel
 C
-         ! make a list of full domain nodes that correspond to this
-         ! subdomain's nodes
-         allocate(fullDomainNodeList(np))
-         ! loop over subdomain indexes to form a list of corresponding
-         ! fulldomain indexes
-         forall (sd_node_number=1:np)
-            ! get the corresponding fulldomain indexes
-            fullDomainNodeList(sd_node_number)
-     &         = ABS(nodes_lg(sd_node_number))
-         end forall
-         ! make a list of full domain elements that correspond to this
-         ! subdomain's elements
-         allocate(fullDomainElementList(ne))
-         ! loop over subdomain indexes to form a list of corresponding
-         ! fulldomain indexes
-         forall (sd_element_number=1:ne)
-            ! get the corresponding fulldomain indexes
-            fullDomainElementList(sd_element_number)
-     &         = ABS(imap_el_lg(sd_element_number))
-         end forall
+         ! Create the fulldomain node and element index lists for this subdomain
+         call createFullDomainIndexLists()
          !
          ! get fulldomain data and map the data to this subdomain
          fullDomainIndexList => fullDomainNodeList
@@ -7127,7 +7349,7 @@ C     Read in model parameters to ADCIRC variables
       CALL check_err(iret)
 C
       DEALLOCATE(hs%myTime%timenc)
-      hs%myTime%initialized = .false. !..zc50.93 - reinitilize if we write a hot start later
+      hs%myTime%initialized = .false. !..zc50.93 - reinitialize if we write a hot start later
 C
 C     now close the netcdf file
       iret = nf90_close(hs%ncid)
@@ -7139,6 +7361,301 @@ C
       call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE readNetCDFHotstart
+C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C                    S U B R O U T I N E
+C                 R E A D   A N D   M A P   T O   
+C         S U B D O M A I N   M I N   M A X   N E T C D F
+C-----------------------------------------------------------------------
+C     jgf52.08.03: Read in the min/max values from a previous run 
+C     at hotstart. In order to read min/max data from netCDF, we also
+C     have to be writing that min/max data in netCDF. TODO: relax this
+C     limitation.  
+C-----------------------------------------------------------------------
+      subroutine readAndMapToSubdomainMaxMinNetCDF(descript, timeloc)
+      use sizes, only : mnproc
+      use global, only : OutputDataDescript_t, allMessage, logMessage, nfover
+      implicit none
+      type(OutputDataDescript_t), intent(inout) :: descript
+      real(8), intent(in) :: timeloc ! adcirc time in seconds since cold start
+C
+      type(nodalData), pointer :: dat
+      integer :: i,j
+      integer :: counti(1), starti(1)
+      integer :: kount(2), start(2)
+      integer :: iret ! success or failure of the netcdf call
+      logical :: timestampsFound   !.true. if file contains time of occurrence dataset
+      character(len=1024) :: vn    ! min/max variable name in netcdf file
+      character(len=1025) :: tvn   ! time of min/max occurrence variable name in netcdf 
+
+      call setMessageSource("readAndMapToSubdomainMaxMinNetCDF")
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+C
+      select case(descript % lun)  
+      case(311) ! maxele 
+         dat => EtaMax
+         vn = 'zeta_max'
+         tvn = 'time_of_zeta_max'
+      case(312) ! maxvel
+         dat => UMax
+         vn = 'vel_max'
+         tvn = 'time_of_vel_max'
+      case(313) ! minpr
+         dat => PrMin
+         vn = 'pressure_min'
+         tvn = 'time_of_pressure_min'
+      case(314) ! maxwvel
+         dat => WVMax
+         vn = 'wind_max'
+         tvn = 'time_of_wind_max' 
+      case(315) ! maxrs
+         dat => RSMax
+         vn = 'radstress_max'
+         tvn = 'time_of_radstress_max'
+      case(400) ! inundationtime
+         dat => inTime
+         vn = 'inun_time'
+         tvn = 'onset_inun_time'
+      case(401) ! maxinundepth
+         dat => maxInDep
+         vn = 'inun_max'
+         tvn = 'time_of_inun_max'
+      case(404) ! everdried
+         dat => evrDry
+         vn = 'everdried'
+         tvn = 'time_of_everdried'
+      case default
+         call allMessage(ERROR,'Files of the type "'
+     &  //trim(descript % file_name)//'.nc" cannot be read by ADCIRC.')
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         RETURN ! RETURN RETURN  
+      end select    
+
+      dat%myFile%filename = trim(descript % file_name)//'.nc'
+      call logMessage(INFO,'Opening file "'
+     &               //trim(dat%myFile%filename)//'" for reading.')
+C
+C     Open fulldomain file
+      inquire(file=dat%myfile%filename,exist=dat%myfile%filefound)
+      if (dat%myFile%fileFound.eqv..false.) then
+         call allMessage(INFO,'The file "'//trim(dat%myFile%FILENAME)//
+     &       '" was not found.')
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         RETURN ! RETURN RETURN  
+      else
+         ! the file was found, let's open it
+         iret = nf90_open(dat%myFile%FILENAME, NF90_NOWRITE, dat%ncid)
+         call check_err(iret)
+      endif
+C
+C     nodes and elements
+      dat%myMesh => adcircMesh
+!
+!     Inquire variables
+      call getDimensions(dat%ncid, dat%myTime, dat%myMesh, dat%myFile)
+      !
+      ! jgf52.08.21: If the netcdf min/max file contains no time records,
+      ! it was just created by adcprep, and there are no data to load.
+      if ( dat%myFile%record_counter.eq.0 ) then 
+         call logMessage(INFO,'The file '//trim(dat%myFile%filename)//
+     &      'contains no data, '//
+     &      'so the min/max record will be started anew.')
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         !
+         ! now close the netcdf file
+         iret = nf90_close(dat%ncid)
+         CALL check_err(iret)
+         return ! EARLY RETURN
+      endif
+      !
+      ! jgf52.08.20: Read time and reject min/max data that correspond
+      ! to a future time. This can happen when an analyst hotstarts a run,
+      ! allows it to complete, then makes some adjustments to the input and 
+      ! then tries to re-run it while forgetting to remove or replace the 
+      ! min/max file from the previous attempt. 
+      !
+      ! It is hard to imagine a scenario where someone would want to keep 
+      ! the min/max record from the previous attempt under these circumstances.
+      ! As a result, I am logging it as an error but allowing the run to 
+      ! continue if non-fatal override is enabled, since it would be 
+      ! annoying to have ADCIRC bomb out every time the analyst mistakenly
+      ! leaves a min/max file in place.         
+      iret=nf90_inq_varid(dat%ncid, "time", dat%myTime%timenc_id)
+      CALL check_err(iret)
+      starti(1)=1  ! min/max files have one element in the time array
+      counti(1)=1
+      iret = nf90_get_var(dat%ncid, dat%myTime%timenc_id,
+     &    dat%myTime%timenc, starti, counti)
+      CALL check_err(iret)
+      if (  dat%myTime%timenc(1) .gt. timeloc ) then
+         call allMessage(ERROR,'Max/min file '//trim(dat%myFile%filename)//
+     &     ' contains data written after the hotstart time. '// 
+     &   ' It may have been produced using different input parameters, '//
+     &     'perhaps during a previously attempted hot start run. '//
+     &     ' Its values will not be read.')
+         if (nfover.eq.0) then
+            call allMessage(ERROR,
+     &       'Execution terminated due to invalid '//
+     &        trim(dat%myFile%filename)//' file.')
+             call netcdfTerminate()
+         else
+            call allMessage(INFO,'The record for '//
+     &        trim(dat%myFile%filename)//
+     &        ' will be started anew and exection will continue.')       
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+             call allMessage(DEBUG,"Return.")
+#endif
+             call unsetMessageSource()
+             !
+             ! now close the netcdf file
+             iret = nf90_close(dat%ncid)
+             CALL check_err(iret)
+             return ! EARLY RETURN
+         endif
+      endif
+
+      dat%myFile%record_counter = 1
+      kount(1)=dat%myMesh%num_nodes
+      kount(2)=dat%myTime%timenc_len
+      start(1)=1
+      start(2)=dat%myFile%record_counter
+      !
+      ! get array variable ids
+      !call logMessage(DEBUG,'netcdf var is '//trim(vn))
+      iret=nf90_inq_varid(dat%ncid,trim(vn),dat%max_nodal_data_id)
+      CALL check_err(iret)
+      timestampsFound = .true.
+      iret=nf90_inq_varid(dat%ncid,trim(tvn),dat%time_max_nodal_data_id)
+      if ( iret.ne.NF90_NOERR ) then
+         call logMessage(INFO,'The file "'//trim(dat%myFile%filename)//
+     &  '" does not contain time of occurrence for the min/max data. '//
+     &  'As a result, time of occurrence will be initialized to -99999.')
+         timestampsFound = .false.
+      endif    
+      !
+      ! serial
+      if (mnproc.eq.1) then
+
+         if (descript % isInteger.eqv..true.) then
+            ! integer
+            iret = nf90_get_var(dat%ncid, dat%max_nodal_data_id,
+     &             descript % iarray, start, kount)
+            call check_err(iret)
+         else
+            ! float
+            iret = nf90_get_var(dat%ncid, dat%max_nodal_data_id,
+     &             descript % array, start, kount)
+            call check_err(iret)
+         endif
+         ! time of occurrence
+         if (timestampsFound.eqv..true.) then
+            iret = nf90_get_var(dat%ncid, dat%time_max_nodal_data_id,
+     &             descript % array2, start, kount)
+            call check_err(iret)
+         endif
+C
+      else       ! parallel
+C
+         ! Create the fulldomain node and element index lists for this subdomain
+         ! if it has not already happened for the reading of the netcdf
+         ! hotstart file.
+         if (fullDomainIndexListsInitialized.eqv..false.) then
+            call createFullDomainIndexLists()
+         endif 
+         !
+         ! get fulldomain data and map the data to this subdomain
+         fullDomainIndexList => fullDomainNodeList
+         if ( descript % isInteger.eqv..true.) then
+            ! integer
+            call mapFullDomainToSubdomain(dat%ncid, dat%myMesh%num_nodes,
+     &          dat%max_nodal_data_id, subdomain_ints=descript%iarray)         
+         else
+            ! float
+            call mapFullDomainToSubdomain(dat%ncid, dat%myMesh%num_nodes,
+     &          dat%max_nodal_data_id, subdomain_reals=descript%array)
+         endif 
+         ! time of occurrence
+         if (timestampsFound.eqv..true.) then
+            call mapFullDomainToSubdomain(dat%ncid, dat%myMesh%num_nodes,
+     &       dat%time_max_nodal_data_id, subdomain_reals=descript%array2)
+         endif
+      endif
+C
+C     now close the netcdf file
+      iret = nf90_close(dat%ncid)
+      CALL check_err(iret)
+
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      end subroutine readAndMapToSubdomainMaxMinNetCDF
+C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C        C R E A T E   F U L L D O M A I N   I N D E X   L I S T S 
+C-----------------------------------------------------------------------
+C     jgf52.08.03 Create fulldomain node and element index lists for 
+C     this subdomain. This subroutine uses code originally found in
+C     readNetCDFHotstart; these lists need to be created for reading
+C     min/max files as well as hotstart files. If a netCDF hotstart
+C     file was already read, these index lists will have already been
+C     initialized, so we wouldn't have to do it again. 
+C-----------------------------------------------------------------------
+      subroutine createFullDomainIndexLists()
+      use mesh, only : ne, np
+      use global, only : nodes_lg, imap_el_lg
+      implicit none
+      integer :: sd_element_number
+      integer :: sd_node_number
+      call setMessageSource("createFullDomainIndexLists")
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ! make a list of full domain nodes that correspond to this
+      ! subdomain's nodes
+      allocate(fullDomainNodeList(np))
+      ! loop over subdomain indexes to form a list of corresponding
+      ! fulldomain indexes
+      forall (sd_node_number=1:np)
+         ! get the corresponding fulldomain indexes
+         fullDomainNodeList(sd_node_number)
+     &         = ABS(nodes_lg(sd_node_number))
+      end forall
+      ! make a list of full domain elements that correspond to this
+      ! subdomain's elements
+      allocate(fullDomainElementList(ne))
+      ! loop over subdomain indexes to form a list of corresponding
+      ! fulldomain indexes
+      forall (sd_element_number=1:ne)
+         ! get the corresponding fulldomain indexes
+         fullDomainElementList(sd_element_number)
+     &         = abs(imap_el_lg(sd_element_number))
+      end forall
+      fullDomainIndexListsInitialized = .true.
+
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      end subroutine createFullDomainIndexLists
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
@@ -7299,11 +7816,12 @@ C
 #endif
 !
 !     Inquire variables
+      time_struct%timenc_dim_id = 0
       iret=nf90_inquire(ncid,ndim,nvar,natt,time_struct%timenc_dim_id)
       CALL check_err(iret)
-      iret=nf90_inquire_dimension(ncid, time_struct%timenc_dim_id,
-     &     len=file_struct%record_counter)
-      CALL check_err(iret)
+       iret=nf90_inquire_dimension(ncid, time_struct%timenc_dim_id,
+     &        len=file_struct%record_counter)
+       CALL check_err(iret)
 C
       iret=nf90_inq_dimid(ncid, "node", mesh_struct%num_nodes_dim_id)
       CALL check_err(iret)
@@ -7332,14 +7850,15 @@ C-----------------------------------------------------------------------
 C     jgf49.44.11 Reads harmonic analysis data from the hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstartHarmonic(lun)
-      USE SIZES, ONLY : MNPROC
-      USE GLOBAL, ONLY : OutputDataDescript_t, NP, NODES_LG,
+      USE SIZES, ONLY : MNPROC, globaldir
+      USE GLOBAL, ONLY : OutputDataDescript_t, NODES_LG,
      &                   IMAP_STAE_LG, NSTAE, IMAP_STAV_LG, NSTAV,MYPROC
       USE HARM, ONLY : GLOELV, STAELV, GLOULV, GLOVLV, STAULV, STAVLV,
      &                 NHASE, NHASV, NHAGE, NHAGV, MNHARF, ICHA, INZ,
      &                 INZ, INF, IMM, INSTAE, INSTAV, INHASE, INHASV,
      &                 INHASE, INHAGE, INHAGV, ICALL, INFREQ, TIMEUD,
      &                 ITUD, HA, INAMEFR, INP, IFF, IFACE, IFREQ
+      USE MESH, ONLY : NP
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
@@ -7354,6 +7873,7 @@ C
       INTEGER sd_station_number
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
+      type(OutputDataDescript_t) :: descript
 C
       call setMessageSource("readNetCDFHotstartHarmonic")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -7369,7 +7889,6 @@ C     Point to the hotstart file we want to work on
 C
       hs%myMesh => adcircMesh
       hs%myFile%fileFound = .false.
-      CALL setNetCDFFileName(lun,hs%myFile)
 C
 C     Open fulldomain file
       INQUIRE(FILE=hs%myFile%FILENAME,EXIST=hs%myFile%fileFound)
@@ -7498,9 +8017,13 @@ C     STAELV - station elevation
      &          STAELV, start, kount)
             CALL check_err(iret)
          ELSE
-            call mapFullDomainToSubdomainMByNP(hs%ncid,
-     &         2*MNHARF, hs%staelv%num_stations,
-     &         hs%staelv%station_data_id, subdomain_reals=STAELV)
+         ! jgf52.30.12: Fix segfault by checking number of stations 
+         ! (provided by Damrongsak Wirasaet)
+            IF ( NSTAE > 0 ) THEN
+               call mapFullDomainToSubdomainMByNP(hs%ncid,
+     &            2*MNHARF, hs%staelv%num_stations,
+     &            hs%staelv%station_data_id, subdomain_reals=STAELV)
+            ENDIF
          ENDIF
       ENDIF
 C     STAULV/STAVLV - station u and v velocity
@@ -7523,12 +8046,16 @@ C     STAULV/STAVLV - station u and v velocity
      &          STAVLV, start, kount)
             CALL check_err(iret)
          ELSE
-            call mapFullDomainToSubdomainMByNP(hs%ncid,
-     &         2*MNHARF, hs%stavellv%num_stations,
-     &         hs%stavellv%u_station_data_id, subdomain_reals=STAULV)
-            call mapFullDomainToSubdomainMByNP(hs%ncid,
-     &         2*MNHARF, hs%stavellv%num_stations,
-     &         hs%stavellv%v_station_data_id, subdomain_reals=STAVLV)
+            ! jgf52.30.12: Fix segfault by checking number of stations 
+            ! (provided by Damrongsak Wirasaet)
+            IF ( NSTAV > 0 ) THEN
+               call mapFullDomainToSubdomainMByNP(hs%ncid,
+     &            2*MNHARF, hs%stavellv%num_stations,
+     &            hs%stavellv%u_station_data_id, subdomain_reals=STAULV)
+               call mapFullDomainToSubdomainMByNP(hs%ncid,
+     &            2*MNHARF, hs%stavellv%num_stations,
+     &            hs%stavellv%v_station_data_id, subdomain_reals=STAVLV)
+            ENDIF
          ENDIF
       ENDIF
 C
@@ -7653,10 +8180,11 @@ C-----------------------------------------------------------------------
 C     jgf49.44.11 Reads harmonic analysis data from the hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstartHarmonicMeansVariances(lun)
-      USE SIZES, ONLY : MNPROC
-      USE GLOBAL, ONLY : OutputDataDescript_t, NP, NODES_LG
+      USE SIZES, ONLY : MNPROC, globaldir
+      USE GLOBAL, ONLY : OutputDataDescript_t, NODES_LG
       USE HARM, ONLY : ELAV, ELVA, XVELAV, YVELAV, XVELVA, YVELVA,
      &                 NTSTEPS, NHAGE, NHAGV
+      USE MESH, ONLY : NP
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
@@ -7668,6 +8196,7 @@ C
       INTEGER kount(2), start(2)
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
+      type(OutputDataDescript_t) :: descript
 C
       call setMessageSource("readNetCDFHotstartHarmonicMeansVariances")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -7683,7 +8212,6 @@ C     Point to the hotstart file we want to work on
 C
       hs%myMesh => adcircMesh
       hs%myFile%fileFound = .false.
-      CALL setNetCDFFileName(lun,hs%myFile)
 C
 C     Open fulldomain file
       INQUIRE(FILE=hs%myFile%FILENAME,EXIST=hs%myFile%fileFound)
@@ -7788,12 +8316,13 @@ C-----------------------------------------------------------------------
 C     jgf49.48.03 Reads 3D data from the hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstart3D(lun)
-      USE SIZES, ONLY : MNPROC
-      USE GLOBAL, ONLY : OutputDataDescript_t, NP, NP_G, IDEN,
-     &   duu1, duv1, dvv1, uu2, vv2, bsx1, bsy1
+      USE SIZES, ONLY : MNPROC, globaldir
+      USE GLOBAL, ONLY : OutputDataDescript_t, IDEN,
+     &   duu1, duv1, dvv1, uu2, vv2, bsx1, bsy1, NP_G
       USE GLOBAL_3DVS, ONLY : q, iy, nfen, sigt, sal, temp, wz, q20,
      &   l, n3dsd, i3dsdrec, n3dsv, i3dsvrec, n3dst, i3dstrec, n3dgd,
      &   i3dgdrec, n3dgv, i3dgvrec, n3dgt, i3dgtrec
+      USE MESH, ONLY : NP
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
@@ -7825,7 +8354,6 @@ C     Point to the hotstart file we want to work on
 C
       hs%myMesh => adcircMesh
       hs%myFile%fileFound = .false.
-      CALL setNetCDFFileName(lun,hs%myFile)
 C
 C     Open fulldomain file
       INQUIRE(FILE=hs%myFile%FILENAME,EXIST=hs%myFile%fileFound)
@@ -8090,8 +8618,8 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Defines data that are common to all netCDF files.
 C-----------------------------------------------------------------------
       subroutine defineMeshVariables(ncid, myMesh, myFile)
-      USE GLOBAL, ONLY : RAD2DEG, SLAM0, SFEA0, C3D, AGRID,
-     &                    scratchMessage
+      USE GLOBAL, ONLY : RAD2DEG, C3D, scratchMessage
+      USE MESH, ONLY : SLAM0, SFEA0, AGRID
       USE GLOBAL_3DVS, ONLY : NFEN
       USE SIZES, ONLY : SZ
       USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
@@ -8456,7 +8984,7 @@ C     either x and y in Cartesian length (feet or meters) or latitude
 C     and longitude depending on the value of ICS.
 C-----------------------------------------------------------------------
       subroutine defineCoordinateAttributes(ncid, xid, yid)
-      USE GLOBAL, ONLY : ICS
+      USE MESH, ONLY : ICS
       IMPLICIT NONE
       INTEGER ncid
       INTEGER xid
@@ -8527,7 +9055,8 @@ C     to the specified file.
 C-----------------------------------------------------------------------
       subroutine putMeshVariables(ncid, myMesh)
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : DP, C3D
+      USE MESH, ONLY : DP
+      USE GLOBAL, ONLY : C3D
       USE GLOBAL_3DVS, ONLY : SIGMA
       USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
       USE VERSION
@@ -8645,13 +9174,15 @@ C     to the specified file.
 C-----------------------------------------------------------------------
       subroutine defineMetaData(ncid)
       USE VERSION
-      USE GLOBAL, ONLY : RUNDES, AGRID, title, institution, source,
+      USE MESH, ONLY : ICS, AGRID, SLAM0, SFEA0
+      USE GLOBAL, ONLY : RUNDES, title, institution, source,
      &                   history, references, comments, host,
      &                   convention, contact, dtdp, ihot,
-     &                   ics, nolifa, nolica, nolicat,
+     &                   nolifa, nolica, nolicat,
      &                   ncor, ntip, nws, nramp, statim,
      &                   reftim, rnday, dramp, a00, b00, c00, h0,
-     &                   cori, ntif, nbfr, RAD2DEG, SLAM0, SFEA0, C3D
+     &                   cori, ntif, nbfr, RAD2DEG, C3D, inunThresh,
+     &                   inundationOutput, runid
       USE GLOBAL_3DVS, ONLY : iden, islip, kp, z0s, z0b, theta1, theta2,
      &   ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd, nvsd, nltd,
      &   nvtd, alp4
@@ -8695,6 +9226,12 @@ C     back to degrees to write them back out
       iret = nf90_put_att(ncid, NF_GLOBAL, 'agrid',
      &        trim(adjustl(agrid)))
       CALL check_err(iret)
+      iret = nf90_put_att(ncid, NF_GLOBAL, 'rundes',
+     &       trim(adjustl(rundes)))
+      CALL check_err(iret)
+      iret = nf90_put_att(ncid, NF_GLOBAL, 'runid',
+     &       trim(adjustl(runid)))
+      CALL check_err(iret)      
       iret = nf90_put_att(ncid, NF_GLOBAL, 'title',
      &        trim(adjustl(title)))
       CALL check_err(iret)
@@ -8844,6 +9381,11 @@ C     back to degrees to write them back out
             CALL check_err(iret)
          ENDIF
       ENDIF
+      if (inundationOutput.eqv..true.) then
+         iret = nf90_put_att(ncid, NCGLOBAL,'inunThresh', inunThresh)
+         CALL check_err(iret)
+      endif
+
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -8883,7 +9425,8 @@ C     in the specified file.
 C-----------------------------------------------------------------------
       subroutine updateMetaData(ncid,myFile)
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : ihot, nramp, rnday, dramp, a00, b00, c00, h0
+      USE GLOBAL, ONLY : ihot, nramp, rnday, dramp, a00, b00, c00, h0,
+     &                    rundes, runid
       USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
       USE VERSION
       IMPLICIT NONE
@@ -8907,6 +9450,10 @@ C     Open existing NetCDF file
       CALL check_err(iret)
 C
       iret = nf90_redef (ncid)
+      CALL check_err(iret)
+      iret = nf90_put_att(ncid, NCGLOBAL, 'rundes', trim(adjustl(rundes)))
+      CALL check_err(iret)
+      iret = nf90_put_att(ncid, NCGLOBAL, 'runid', trim(adjustl(runid)))
       CALL check_err(iret)
       iret = nf90_put_att(ncid, NCGLOBAL, 'ihot', ihot)
       CALL check_err(iret)
@@ -8960,11 +9507,12 @@ C-----------------------------------------------------------------------
       SUBROUTINE ReadMetaData(ncid,myFile)
 C-----------------------------------------------------------------------
         USE SIZES,ONLY:SZ
-        USE GLOBAL,ONLY:ihot,nramp,rnday,dramp,a00,b00,c00,h0
+        USE GLOBAL,ONLY:ihot,nramp,rnday,dramp,a00,b00,c00,h0,np_g,ne_g,
+     &                   rundes,runid
         USE NodalAttributes,ONLY:nwp,nolibf,tau0,cf,eslm
         USE VERSION
         IMPLICIT NONE
-        INTEGER :: NCID
+        INTEGER :: NCID,dimid_node,dimid_nele
         TYPE(fileData),INTENT(INOUT) :: myFile
         INTEGER :: iret
 
@@ -8973,6 +9521,8 @@ C-----------------------------------------------------------------------
         call allMessage(DEBUG,"Enter.")
 #endif
         CALL CHECK_ERR(nf90_open(myFile%FILENAME,NF_NOWRITE,NCID))
+        CALL CHECK_ERR(nf90_get_att(NCID,NCGLOBAL,'rundes',rundes))
+        CALL CHECK_ERR(nf90_get_att(NCID,NCGLOBAL,'runid',runid))
         CALL CHECK_ERR(nf90_get_att(NCID,NCGLOBAL,'ihot',ihot))
         CALL CHECK_ERR(nf90_get_att(NCID,NCGLOBAL,'nramp',nramp))
         CALL CHECK_ERR(nf90_get_att(NCID,NCGLOBAL,'tau0',tau0))
@@ -8984,6 +9534,10 @@ C-----------------------------------------------------------------------
         CALL CHECK_ERR(nf90_get_att(NCID,NCGLOBAL,'h0',h0))
         CALL CHECK_ERR(nf90_get_att(NCID,NCGLOBAL,'cf',cf))
         CALL CHECK_ERR(nf90_get_att(NCID,NCGLOBAL,'eslm',eslm))
+        CALL CHECK_ERR(nf90_inq_dimid(NCID,"node",dimid_node))
+        CALL CHECK_ERR(nf90_inq_dimid(NCID,"nele",dimid_nele))
+        CALL CHECK_ERR(nf90_inquire_dimension(ncid,dimid_node,len=NP_G))
+        CALL CHECK_ERR(nf90_inquire_dimension(ncid,dimid_nele,len=NE_G))
         CALL CHECK_ERR(nf90_close(NCID))
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
         CALL allMessage(DEBUG,"Enter.")
@@ -9045,27 +9599,14 @@ C-----------------------------------------------------------------------
 #endif
       IMPLICIT NONE
       INTEGER, intent(in) :: iret
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      REAL, ALLOCATABLE :: dummy(:)
-#endif
+
       call setMessageSource("check_err")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
       if (iret .ne. NF_NOERR) then
          call allMessage(ERROR,nf90_strerror(iret))
-         call allMessage(ERROR,"ADCIRC execution terminated.")
-#ifdef CMPI
-         call msg_fini()
-#endif
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-         ! intentionally create a segmentation fault so that we can get
-         ! a stack trace to determine the line number of the netcdf call
-         ! that went bad ... this assumes that the code was compiled with
-         ! debugging symbols, bounds checking, and stack trace turned on.
-         dummy(1) = 99.9d0
-#endif
-         stop
+         call netcdfTerminate()
       endif
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -9074,6 +9615,56 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       end subroutine check_err
 C-----------------------------------------------------------------------
+
+
+!-----------------------------------------------------------------------
+!     S U B R O U T I N E   N E T C D F   T E R M I N A T E
+!-----------------------------------------------------------------------
+      SUBROUTINE netcdfTerminate(NO_MPI_FINALIZE)
+#ifdef CMPI
+      USE MESSENGER
+#endif
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
+     &   allMessage, DEBUG, ECHO, INFO, WARNING, ERROR  
+      IMPLICIT NONE 
+      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+      REAL, ALLOCATABLE :: dummy(:)
+#endif
+C
+      call setMessageSource("netcdfTerminate")
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      call allMessage(INFO,"ADCIRC Terminating.")
+
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+         ! intentionally create a segmentation fault so that we can get
+         ! a stack trace to determine the line number of the netcdf call
+         ! that went bad ... this assumes that the code was compiled with
+         ! debugging symbols, bounds checking, and stack trace turned on.
+         dummy(1) = 99.9d0
+#endif
+
+#ifdef CMPI
+      subdomainFatalError = .true.
+      IF (PRESENT(NO_MPI_FINALIZE)) THEN
+        CALL MSG_FINI(NO_MPI_FINALIZE)
+      ELSE
+        CALL MSG_FINI()
+      ENDIF
+#endif
+      STOP 
+C
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
+!-----------------------------------------------------------------------
+      END SUBROUTINE netcdfTerminate
+!-----------------------------------------------------------------------
+
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   S E T   A D C I R C   P A R A M E T E R S
@@ -9096,7 +9687,7 @@ C-----------------------------------------------------------------------
      &   base_date_p, NE_G_p,
      &   NBOU_p, NVEL_p, NOPE_p, NP_G_p, SLAM0_p, SFEA0_p, NBVV_p,
      &   NVDLL_p, NBDV_p, NVELL_p, X_p, Y_p,
-     &   IBTYPE_p, IBTYPEE_p, SLAM_p, SFEA_p,
+     &   IBTYPE_p, IBTYPEE_p, SLAM_p, SFEA_p, 
      &   NODECODE_p, G_p, FileFmtRev_p, FileFmtMinor_p,
      &   FileFmtMajor_p, im_p, iestp_p, nscoue_p, ivstp_p, nscouv_p,
      &   icstp_p, nscouc_p, ipstp_p, iwstp_p, nscoum_p, igep_p,
@@ -9111,20 +9702,21 @@ C-----------------------------------------------------------------------
      &   nabout_p, nscreen_p,
      &   nfen_p,iden_p, islip_p, kp_p, z0s_p, z0b_p, theta1_p, theta2_p,
      &   ievc_p, evmin_p, evcon_p, alp1_p, alp2_p, alp3_p, igc_p,nlsd_p,
-     &   nvsd_p, nltd_p, nvtd_p, alp4_p, C3D_p)
-      USE GLOBAL, ONLY :
-     &   base_date, NE_G, NBOU,
-     &   NVEL, NOPE, NP_G, SLAM0, SFEA0, NBVV, NVDLL, NBDV, NVELL, X, Y,
-     &   IBTYPE, IBTYPEE,
-     &   SLAM, SFEA, SNAMLEN, RAD2DEG, NODECODE, G, FileFmtRev,
+     &   nvsd_p, nltd_p, nvtd_p, alp4_p, C3D_p, RUNID_p)
+      USE MESH, ONLY : X, Y, SLAM, SFEA, NM, DP, ICS,
+     &   SLAM0, SFEA0, AGRID
+      USE BOUNDARIES, ONLY : NBOU, NVEL, NOPE, NBVV, NVDLL, NBDV, NVELL, 
+     &   IBTYPE, IBTYPEE, NETA
+      USE GLOBAL, ONLY : base_date, SNAMLEN, RAD2DEG, NODECODE, G, 
+     &   FileFmtRev, NP_G, NE_G, 
      &   FileFmtMinor, FileFmtMajor, im, iestp, nscoue, ivstp, nscouv,
      &   icstp, nscouc, ipstp, iwstp, nscoum, igep, nscouge, igvp,
-     &   nscougv, igcp, nscougc, igpp, igwp, nscougw, NM,
-     &   DP, RUNDES, AGRID, title, institution, source, history,
+     &   nscougv, igcp, nscougc, igpp, igwp, nscougw,
+     &   RUNDES, title, institution, source, history,
      &   references, comments, host, convention, contact, dtdp, ihot,
-     &   ics, nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
+     &   nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
      &   reftim, rnday, dramp, a00, b00, c00, h0, cori, ntif, nbfr,
-     &   myProc, screenUnit, neta, nabout, nscreen, C3D
+     &   myProc, screenUnit, nabout, nscreen, C3D, runid
       USE GLOBAL_3DVS, ONLY :
      &   nfen, n3dsd, i3dsdrec, n3dsv, i3dsvrec,
      &   n3dst, i3dstrec, n3dgd, i3dgdrec, n3dgv, i3dgvrec,
@@ -9182,6 +9774,7 @@ C     Declare the argument variables coming in from adcprep.
       INTEGER, intent(in) :: NM_p(:,:)
       REAL(SZ), intent(in) :: DP_p(:)
       CHARACTER(80), intent(in) :: RUNDES_p
+      CHARACTER(80), intent(in) :: RUNID_p
       CHARACTER(80), intent(in) :: AGRID_p
       CHARACTER(80), intent(in) :: title_p
       CHARACTER(80), intent(in) :: institution_p
@@ -9312,6 +9905,7 @@ C
       ALLOCATE(DP(NP_G_p))
       DP = DP_p
       RUNDES = RUNDES_p
+      RUNID = RUNID_p
       AGRID = AGRID_p
       title = title_p
       institution = institution_p

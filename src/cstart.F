@@ -12,19 +12,23 @@ C******************************************************************************
 C
       SUBROUTINE COLDSTART()
 C
+      USE SIZES
       USE GLOBAL
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
-      USE SIZES
+      USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4
+      USE BOUNDARIES, ONLY : NETA, NFLUXF, NOPE, NVEL, LBCODEI
       USE HARM
       USE WIND
       USE GLOBAL_IO
+      USE SUBDOMAIN, ONLY : subdomainOn, readFort015
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE OWIWIND,ONLY : NWS12INIT,NWS12GET    ! sb added 09/xx/2006
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
-      USE NodalAttributes, ONLY :
-     &         STARTDRY, GeoidOffset, LoadGeoidOffset,
-     &         OutputTau0, LoadRiver_et_WSE, River_et_WSE !jgf47.06
+      USE NODALATTRIBUTES, ONLY : outputTau0
+      USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
+     &    initInundationOutput
+      USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
 
       IMPLICIT NONE
 
@@ -33,7 +37,7 @@ C
       INTEGER NC1, NC2, NC3, NCELE
 
       REAL(SZ) HTOT
-      REAL(SZ) HollandTime, AsymmetricTime
+      REAL(SZ) HollandTime, AsymmetricTime, GeneralAsymTime
       REAL(SZ) :: PRBCKGRND_MH2O  !tcm v49.16 20100617
 !kmd - Evan's updates for rivers above MSL
 !      REAL(SZ),ALLOCATABLE :: et_WSE(:)
@@ -47,6 +51,7 @@ C     was requested.
 c.... tcm v50.66.02 additions for time varying bathymetry
       CHARACTER(80) :: CDUM80
 C
+
       call setMessageSource("coldstart")
 #if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -54,6 +59,13 @@ C
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
 
+C SET UP TIME VARYING WEIRS IF NECESSARY
+       CALL WEIR_SETUP()
+
+      if (subdomainOn) then
+         call readFort015() ! NCSU Subdomain Modeling
+      endif
+      
 C------------------------------------------------------------------------------
 C... tcm v50.66.01 Time Varying Bathymetry
 C------------------------------------------------------------------------------
@@ -104,45 +116,6 @@ C...     DEPTHS ARE > OR = TO H0.
 C
 C------------------------------------------------------------------------------
 C
-
-! kmd - Evan's updates for rivers above MSL
-! open the fort.88 files if needed
-!      INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.88',EXIST=FOUND)
-!      IF (FOUND) THEN
-!         ALLOCATE (et_WSE(NP) )
-!         OPEN (88, FILE=TRIM(INPUTDIR)//'/'//'fort.88')
-!         DO I=1,NP
-!            READ(88,*) et_WSE(i)
-!         END DO
-!         River_above_MSL=.TRUE.
-!      END IF
-
-! tcm v51.27 20140502 Changed from using a fort.88 file
-! to a nodal attribute
-      IF (LoadRiver_et_WSE) then
-         River_above_MSL=.TRUE.
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,2788)
-         WRITE(16,2788)
- 2788    FORMAT(/,1X,'INITIAL RIVER ELEVATIONS WERE SPECIFIED AS A NODAL',
-     &        /,1x,'ATTRIBUTE AND WILL BE USED.',/)         
-      ENDIF
-
-      ! tcm v51.27 Check to see if a fort.88 file is supplied
-      ! if so issue a warning.      
-      INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.88',EXIST=FOUND)
-      IF (FOUND) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,2789)
-         WRITE(16,2789)
- 2789    FORMAT(/,1X,'--------WARNING--WARNING--WARNING---------',
-     &         /,1x,'A FORT.88 FILE WAS FOUND BUT IS NO LONGER SUPPORTED.',
-     &        /,1x,'INITIAL RIVER ELEVATIONS MUST BE SET AS A NODAL ATTRIBUTE.',/)
-      ENDIF
-
-C
 C.... tcm v49.16 20100617
 C.... convert background pressure from millibars to meters of water
       PRBCKGRND_MH2O = 100.0D0*PRBCKGRND/(RHOWAT0*G)
@@ -152,71 +125,28 @@ C...  SET AT REST INITIAL CONDITION OVER WHOLE DOMAIN
 C...  IF BOTTOM IS ABOVE THE GEIOD -> DRY NODE
 C...  IF BOTTOM IS INITIALLY BELOW THE GEOID AND STARTDRY=1 -> DRY NODE
 C...
-      DO I=1,NP
-         UU1(I) =0.D0
-         VV1(I) =0.D0
-         UU2(I) =0.D0
-         VV2(I) =0.D0
-         QX1(I) =0.D0
-         QY1(I) =0.D0
-         QX2(I) =0.D0
-         QY2(I) =0.D0
-C     jgf46.01 Added the ability to include steric effects.
-         IF (LoadGeoidOffset) THEN
-            ETA2(I)=GeoidOffset(I)
-         ELSE
-            ETA2(I)=0.D0
-         ENDIF
-! kmd - Evan's updates for rivers above MSL
-! It is only necessary to read in and reset the ETA2 values
-! in this case for the cold start conditions.
-!         IF (River_above_MSL) THEN
-!            IF (LoadGeoidOffset) THEN
-!               IF (et_WSE(i).GT.GeoidOffset(I)) THEN
-!                  ETA2(I)=et_WSE(i)
-!               END IF
-!            ELSE
-!               IF (et_WSE(i).GT.0.d0) THEN
-!                  ETA2(I)=et_WSE(i)
-!               END IF
-!            END IF
-!         END IF
-! tcm v51.27 20140502 Made the GeoidOffset and Initial
-!            River Elevation an additive quantitiy 
-!            instead of the max of the two         
-         IF (River_above_MSL) then
-           IF (LoadGeoidOffSet) then
-              IF (River_et_WSE(I).GT.0.d0)
-     &                ETA2(I) = River_et_WSE(I) + GeoidOffset(I)
-           ELSE
-              IF (River_et_WSE(I).GT.0.d0) ETA2(I) = River_et_WSE(I)
-           ENDIF
-         ENDIF
-
-
-         NNODECODE(I)=1
-         IF(NOLIFA.EQ.2) THEN
-            HTOT=DP(I)+ETA2(I)
-            IF(HTOT.LE.H0) THEN
-               NNODECODE(I)=0
-               ETA2(I)=H0-DP(I)
-            ELSE
-               IF(STARTDRY(I).EQ.1) THEN
-                  NNODECODE(I)=0
-                  ETA2(I)=H0-DP(I)
-               ENDIF
-            ENDIF
-         ENDIF
-         ETA1(I)=ETA2(I)
-         ETAS(I)=0.D0
-         CH1(I)=0.d0
-      END DO
-C...
-C...  INITIALIZE DRY ELEMENT CODE
-C...
-      DO I=1,NE
-         NOFF(I)=1
-      END DO
+      UU1(:) = 0.D0
+      VV1(:) = 0.D0
+      UU2(:) = 0.D0
+      VV2(:) = 0.D0
+      QX1(:) = 0.D0
+      QY1(:) = 0.D0
+      QX2(:) = 0.D0
+      QY2(:) = 0.D0
+      ETA2(:) = 0.D0
+      ETAS(:) = 0.D0
+      CH1(:) = 0.d0
+      !
+      ! Set the initial wet/dry state and water surface elevation
+      call setColdWetDryStateAndWaterSurfaceElevation()  
+      !
+      ! jgf52.08.01: Initialize inundation arrays if necessary. This
+      ! can only be called after nnodecode has been set via 
+      ! setColdWetDryState() in coldstart() or hstart().
+      if (inundationOutput.eqv..true.) then
+         call initInundationOutput()
+      endif
+         
 C...
 C...  INITIALIZE THE ELEVATION SPECIFIED BOUNDARY CONDITION IF IT
 C...  REQUIRES THE USE OF THE UNIT 19 FILE.
@@ -229,16 +159,19 @@ C...
          WRITE(16,1977)
  1977    FORMAT(/,1X,'ELEVATION SPECIFIED INFORMATION READ FROM UNIT ',
      &        '19',/)
-         OPEN(19,FILE=TRIM(INPUTDIR)//'/'//'fort.19')
-         READ(19,*) ETIMINC
-         DO J=1,NETA
-            READ(19,*) ESBIN1(J)
-         END DO
-         DO J=1,NETA
-            READ(19,*) ESBIN2(J)
-         END DO
-         ETIME1 = STATIM*86400.D0
-         ETIME2 = ETIME1 + ETIMINC
+         ! NCSU Subdomain Modeling
+         if (subdomainOn.eqv..false.) then
+            OPEN(19,FILE=TRIM(INPUTDIR)//'/'//'fort.19')
+            READ(19,*) ETIMINC
+            DO J=1,NETA
+               READ(19,*) ESBIN1(J)
+            END DO
+            DO J=1,NETA
+               READ(19,*) ESBIN2(J)
+            END DO
+            ETIME1 = STATIM*86400.D0
+            ETIME2 = ETIME1 + ETIMINC
+         endif
       ENDIF
 C
 C....INITIALIZE THE NORMAL FLOW BOUNDARY CONDITION
@@ -452,6 +385,13 @@ C     RJW Merged:
          OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
         CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
       ENDIF
+      
+!    jie added nws = 20: generalized asymmetric vortex model
+      IF(NWS.EQ.20) THEN
+         GeneralAsymTime = STATIM*86400.D0
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+        CALL NWS20GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,GeneralAsymTime,ICS)
+      ENDIF      
 
       ! jgf49.1001 Added NWS=29, asymmetric vortex wind (NWS19) embedded in
       ! OWI (NWS12) basin scale wind field.
@@ -521,7 +461,17 @@ C....tcm v51.06.02: Added NWS=16,-16 for reading ASCII GFDL Met data
       IF (ABS(NWS).EQ.16) THEN
          CALL INIT_GFDL(STATIM*86400.0)
       ENDIF
-
+      !
+      ! jgf52.14: Implementing Casey's fix for uninitialized
+      ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
+      ! by the parametric vortex meteorological models but are used in
+      ! the padcswan_init() subroutine to initialize the SWAN wind 
+      ! velocities. Failure to initialize them causes NaNs in the 
+      ! solution. 
+      if ( (abs(nws).eq.8).or.(abs(nws).eq.19).or.(abs(nws).eq.20)) then
+         WVNX1 = WVNX2
+         WVNY1 = WVNY2
+      endif
 
 C...INPUT RADIATION STRESS INFORMATION FROM UNIT 23
 C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
@@ -542,29 +492,14 @@ C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
          RSTIME2 = RSTIME1+RSTIMINC
          IF(NRS.EQ.1) THEN
            OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
-           CALL RSGET(RSNX1,RSNY1,NP)
-           CALL RSGET(RSNX2,RSNY2,NP)
+           CALL RSGET(RSNX1,RSNY1)
+           CALL RSGET(RSNX2,RSNY2)
          ENDIF
          IF(NRS.EQ.2) THEN
            CALL RS2INIT(RSNX1,RSNY1,NP)
            CALL RS2GET(RSNX1,RSNY1,NP)
            CALL RS2GET(RSNX2,RSNY2,NP)
          ENDIF
-#ifdef CSWAN
-Casey 090302: Added this call to initialize the radiation stress gradients.
-         IF(NRS.EQ.3) THEN
-           IF(.NOT.ALLOCATED(RSNX1)) ALLOCATE(RSNX1(1:NP))
-           IF(.NOT.ALLOCATED(RSNX2)) ALLOCATE(RSNX2(1:NP))
-           IF(.NOT.ALLOCATED(RSNY1)) ALLOCATE(RSNY1(1:NP))
-           IF(.NOT.ALLOCATED(RSNY2)) ALLOCATE(RSNY2(1:NP))
-           DO I=1,NP
-             RSNX1(I) = 0.D0
-             RSNX2(I) = 0.D0
-             RSNY1(I) = 0.D0
-             RSNY2(I) = 0.D0
-           ENDDO
-         ENDIF
-#endif
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
          WRITE(16,1112)
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1981)
@@ -601,35 +536,6 @@ C...
             TIP2(I)=0.0
          END DO
       endif
-CWET...
-CWET...THE FOLLOWING LINES ARE FOR WETTING AND DRYING
-CWET...Dry any landlocked nodes by checking that they are connected to at
-CWET...least 1 functioning element.
-CWET...
-      IF(NOLIFA.EQ.2) THEN
-         DO I=1,NP
-            MJU(I)=0
-         ENDDO
-         DO I=1,NE
-            NM1=NM(I,1)
-            NM2=NM(I,2)
-            NM3=NM(I,3)
-            NC1=NNODECODE(NM1)
-            NC2=NNODECODE(NM2)
-            NC3=NNODECODE(NM3)
-            NCELE=NC1*NC2*NC3*NOFF(I)
-            MJU(NM1)=MJU(NM1)+NCELE
-            MJU(NM2)=MJU(NM2)+NCELE
-            MJU(NM3)=MJU(NM3)+NCELE
-         ENDDO
-         DO I=1,NP
-            IF((NNODECODE(I).EQ.1).AND.(MJU(I).EQ.0)) THEN
-               NNODECODE(I)=0
-               IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9883) I
-               WRITE(16,9883) I
-            ENDIF
-         ENDDO
-      ENDIF
 
 C....INITIALIZE ELEVATION STATION SPOOL COUNTER
 C....OPEN ELEVATION STATION OUTPUT FILE
@@ -643,8 +549,13 @@ C...
  3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
 
       IF(ABS(NOUTE).EQ.1) THEN
-         CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61',
-     &    NSTAE_G, NSTAE, HEADER61)
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61',
+     &       NSTAE_G, NSTAE, HEADER61)
+         else 
+            CALL OPEN_GBL_FILE(61, TRIM(LOCALDIR)//'/'//'fort.61',
+     &       NSTAE_G, NSTAE, HEADER61)
+         endif
          IESTP=2
       ENDIF
 
@@ -698,8 +609,13 @@ C...
       IVSTP=0
 
       IF(ABS(NOUTV).EQ.1) THEN
-         CALL OPEN_GBL_FILE(62, TRIM(GLOBALDIR)//'/'//'fort.62',
-     $    NSTAV_G, NSTAV, HEADER62)
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(62, TRIM(GLOBALDIR)//'/'//'fort.62',
+     &          NSTAV_G, NSTAV, HEADER62)
+         else
+            CALL OPEN_GBL_FILE(62, TRIM(LOCALDIR)//'/'//'fort.62',
+     &          NSTAV_G, NSTAV, HEADER62)         
+         endif
          IVSTP=2
       ENDIF
 
@@ -753,8 +669,13 @@ C...
       ICSTP=0
 
       IF(ABS(NOUTC).EQ.1) THEN
-         CALL OPEN_GBL_FILE(81, TRIM(GLOBALDIR)//'/'//'fort.81',
-     $    NSTAC_G, NSTAC, HEADER81)
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(81, TRIM(GLOBALDIR)//'/'//'fort.81',
+     &          NSTAC_G, NSTAC, HEADER81)
+         else
+            CALL OPEN_GBL_FILE(81, TRIM(LOCALDIR)//'/'//'fort.81',
+     &          NSTAC_G, NSTAC, HEADER81)
+         endif 
          ICSTP=2
       ENDIF
 
@@ -810,18 +731,33 @@ C...
       IICESTP = 0  ! v49.64.01 tcm -added ice stations
 
       IF(ABS(NOUTM).EQ.1) THEN
-         CALL OPEN_GBL_FILE(71, TRIM(GLOBALDIR)//'/'//'fort.71',
-     $    NSTAM_G, NSTAM, HEADER71)
-         IPSTP=2
-         CALL OPEN_GBL_FILE(72, TRIM(GLOBALDIR)//'/'//'fort.72',
-     $     NSTAM_G, NSTAM, HEADER72)
-         IWSTP=2
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(71, TRIM(GLOBALDIR)//'/'//'fort.71',
+     &          NSTAM_G, NSTAM, HEADER71)
+            IPSTP=2
+            CALL OPEN_GBL_FILE(72, TRIM(GLOBALDIR)//'/'//'fort.72',
+     &         NSTAM_G, NSTAM, HEADER72)
+            IWSTP=2
 ! V49.64.01 TCM -ADDED ICE STATIONS
-         IF(NCICE.NE.0) THEN
-            CALL OPEN_GBL_FILE(91, TRIM(GLOBALDIR)//'/'//'fort.91',
-     $     NSTAM_G, NSTAM, HEADER91)
-            IICESTP=2
-         ENDIF
+            IF(NCICE.NE.0) THEN
+               CALL OPEN_GBL_FILE(91, TRIM(GLOBALDIR)//'/'//'fort.91',
+     &             NSTAM_G, NSTAM, HEADER91)
+                IICESTP=2
+            ENDIF
+         else
+            CALL OPEN_GBL_FILE(71, TRIM(LOCALDIR)//'/'//'fort.71',
+     &          NSTAM_G, NSTAM, HEADER71)
+            IPSTP=2
+            CALL OPEN_GBL_FILE(72, TRIM(LOCALDIR)//'/'//'fort.72',
+     &         NSTAM_G, NSTAM, HEADER72)
+            IWSTP=2
+! V49.64.01 TCM -ADDED ICE STATIONS
+            IF(NCICE.NE.0) THEN
+               CALL OPEN_GBL_FILE(91, TRIM(LOCALDIR)//'/'//'fort.91',
+     &             NSTAM_G, NSTAM, HEADER91)
+                IICESTP=2
+            ENDIF
+         endif 
       ENDIF
 
       IF(ABS(NOUTM).EQ.2) THEN
@@ -925,8 +861,13 @@ C...
       IBSTP=0
 
       IF ((NDDT.NE.0).AND.(ABS(NOUTE).EQ.1)) THEN
-         CALL OPEN_GBL_FILE(75, TRIM(GLOBALDIR)//'/'//'fort.75',
-     &    NSTAE_G, NSTAE, HEADER61)  !no need to create a header75
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(75, TRIM(GLOBALDIR)//'/'//'fort.75',
+     &         NSTAE_G, NSTAE, HEADER61)  !no need to create a header75
+         else
+            CALL OPEN_GBL_FILE(75, TRIM(LOCALDIR)//'/'//'fort.75',
+     &         NSTAE_G, NSTAE, HEADER61)  !no need to create a header75
+         endif       
          IBSTP=2
       ENDIF
 
@@ -981,26 +922,69 @@ C...
       IGEP=0
 
       IF((ABS(NOUTGE).EQ.1).OR.(ABS(NOUTGE).EQ.4)) THEN
-         CALL OPEN_GBL_FILE(63, TRIM(GLOBALDIR)//'/'//'fort.63',
-     $    NP_G, NP, HEADER63)
-
-C   kmd48.33 add the ability to output the sponge layer
-          IF (OUTPUTSPONGE) THEN
-           CALL writeDomainHeader(92,
-     &          TRIM(GLOBALDIR)//'/'//'fort.92',
-     $           NP_G, NP, 'sponge     ')
-          END IF
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(63, TRIM(GLOBALDIR)//'/'//'fort.63',
+     &       NP_G, NP, HEADER63)
+C            kmd48.33 add the ability to output the sponge layer
+             IF (OUTPUTSPONGE) THEN
+                 CALL writeDomainHeader(92,
+     &             TRIM(GLOBALDIR)//'/'//'fort.92',
+     &             NP_G, NP, 'sponge     ')
+             END IF
 C
-C        jgf47.06 Tau0 output is produced on the same schedule as
-C        global elevation
-         IF (OutputTau0) THEN
+C           jgf47.06 Tau0 output is produced on the same schedule as
+C           global elevation
+            IF (OutputTau0) THEN
 Casey 090302: Corrected the unit number from 10 to 90.
-            CALL writeDomainHeader(90,
-     &           TRIM(GLOBALDIR)//'/'//'fort.tau0',
+               CALL writeDomainHeader(90,
+     &              TRIM(GLOBALDIR)//'/'//'fort.90',
+     &              NP_G, NP, 'Tau0      ')
+            ENDIF
+         else
+
+            CALL OPEN_GBL_FILE(63, TRIM(LOCALDIR)//'/'//'fort.63',
+     &         NP_G, NP, HEADER63)
+C              kmd48.33 add the ability to output the sponge layer
+            IF (OUTPUTSPONGE) THEN
+               CALL writeDomainHeader(92,
+     &           TRIM(LOCALDIR)//'/'//'fort.92',
+     &           NP_G, NP, 'sponge     ')
+            END IF
+C
+C           jgf47.06 Tau0 output is produced on the same schedule as
+C           global elevation
+            IF (OutputTau0.eqv..true.) THEN
+Casey 090302: Corrected the unit number from 10 to 90.
+               CALL writeDomainHeader(90,
+     &           TRIM(GLOBALDIR)//'/'//'fort.90',
      $           NP_G, NP, 'Tau0      ')
-         ENDIF
+            ENDIF
+         endif
          IGEP=2
       ENDIF
+
+      ! jgf52.04.03: Create files for nodecode and noff output 
+      ! (wet/dry state of nodes and wet/dry state of elements)      
+      IF (ABS(NOUTGE).NE.0) then
+         if (outputNodeCode.eqv..true.) then
+            if (write_local_files.eqv..true.) then
+               call writeDomainHeader(101,trim(localdir)//'/'//
+     &            'nodecode.63',NP_G, NP, 'nodecode    ')
+            else
+               call writeDomainHeader(101,trim(globaldir)//'/'//
+     &            'nodecode.63',NP_G, NP, 'nodecode    ')
+            endif
+         endif
+         if (outputNOFF.eqv..true.) then
+            if (write_local_files.eqv..true.) then
+               call writeDomainHeader(102,trim(localdir)//'/'//
+     &            'noff.100',NE_G, NE, 'noff       ')
+            else
+               call writeDomainHeader(102,trim(globaldir)//'/'//
+     &            'noff.100',NE_G, NE, 'noff       ')
+            endif
+         endif
+      endif
 
       IF(ABS(NOUTGE).EQ.2) THEN
          OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
@@ -1054,10 +1038,15 @@ C...
 !kmd - changed for -4 option      IF((ABS(NOUTGV).EQ.1)) THEN
 !Casey 090828: Added the possibility of NOUTGV = +/- 4.
       IF((ABS(NOUTGV).EQ.1).OR.(ABS(NOUTGV).EQ.4)) THEN
-         CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
-     $    NP_G, NP, HEADER64)
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
+     &        NP_G, NP, HEADER64)
+         else
+            CALL OPEN_GBL_FILE(64, TRIM(LOCALDIR)//'/'//'fort.64',
+     &        NP_G, NP, HEADER64)
+         endif
          IGVP=2
-         ENDIF
+      ENDIF
 
       IF(ABS(NOUTGV).EQ.2) THEN
          OPEN(64,FILE=TRIM(LOCALDIR)//'/'//'fort.64',
@@ -1098,6 +1087,58 @@ C...
          IGVP=IGVP+5
          CLOSE(64)
          ENDIF
+
+
+Cobell - Open the fort.77 (weir elevation change) file
+         IF(USE_TVW)THEN
+            NSCOU_TVW = 0
+            IG_TVW = 0
+            IF((ABS(NOUT_TVW).EQ.1).OR.(ABS(NOUT_TVW).EQ.4))THEN
+                CALL OPEN_GBL_FILE(77,TRIM(GLOBALDIR)//'/'//'fort.77',
+     &              NP_G,NP,HEADER77)
+                IG_TVW = 2
+            ENDIF   
+            IF(ABS(NOUT_TVW).EQ.2)THEN
+                OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
+     &              ACCESS='DIRECT',RECL=NBYTE)
+                IF(NBYTE.EQ.4) THEN
+                    DO I=1,8
+                        WRITE(77,REC=IG_TVW+I) RDES4(I)
+                    ENDDO
+                    IG_TVW=IG_TVW+8
+                    DO I=1,6
+                        WRITE(77,REC=IG_TVW+I) RID4(I)
+                    ENDDO
+                    IG_TVW=IG_TVW+6
+                    DO I=1,6
+                        WRITE(77,REC=IG_TVW+I) AID4(I)
+                    ENDDO
+                    IG_TVW=IG_TVW+6
+                ENDIF
+                IF(NBYTE.EQ.8) THEN
+                    DO I=1,4
+                        WRITE(77,REC=IG_TVW+I) RDES8(I)
+                    ENDDO
+                    IG_TVW=IG_TVW+4
+                    DO I=1,3
+                        WRITE(77,REC=IG_TVW+I) RID8(I)
+                    ENDDO
+                    IG_TVW=IG_TVW+3
+                    DO I=1,3
+                        WRITE(77,REC=IG_TVW+I) AID8(I)
+                    ENDDO
+                    IG_TVW=IG_TVW+3
+                ENDIF
+                WRITE(77,REC=IG_TVW+1) NDSETS_TVW
+                WRITE(77,REC=IG_TVW+2) NP
+                WRITE(77,REC=IG_TVW+3) DT*NSPOOL_TVW
+                WRITE(77,REC=IG_TVW+4) NSPOOL_TVW
+                WRITE(77,REC=IG_TVW+5) 2
+                IG_TVW=IG_TVW+5
+                CLOSE(77)
+            ENDIF    
+         ENDIF    
+            
 C...
 C....INITIALIZE GLOBAL WIND and pressure SPOOL COUNTER
 C....OPEN GLOBAL WIND and pressure OUTPUT FILEs
@@ -1113,18 +1154,35 @@ C...
 !Casey 090302: Added the possibility of NOUTGW = +/- 4.
 !kmd - changed for -4 option      IF((ABS(NOUTGW).EQ.1)) THEN
       IF((ABS(NOUTGW).EQ.1).OR.(ABS(NOUTGW).EQ.4)) THEN
-         CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
-     $    NP_G, NP, HEADER73)
-         IGPP=2
-         CALL OPEN_GBL_FILE(74, TRIM(GLOBALDIR)//'/'//'fort.74',
-     $     NP_G, NP, HEADER74)
-         IGWP=2
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
+     &         NP_G, NP, HEADER73)
+            IGPP=2
+            CALL OPEN_GBL_FILE(74, TRIM(GLOBALDIR)//'/'//'fort.74',
+     $        NP_G, NP, HEADER74)
+            IGWP=2
 ! tcm v49.64.01 added for ice
-         IF(NCICE.NE.0) then
-            CALL OPEN_GBL_FILE(93, TRIM(GLOBALDIR)//'/'//'fort.93',
-     $        NP_G, NP, HEADER93)
-            IGIP=2
-         ENDIF
+            IF(NCICE.NE.0) then
+               CALL OPEN_GBL_FILE(93, TRIM(GLOBALDIR)//'/'//'fort.93',
+     $           NP_G, NP, HEADER93)
+               IGIP=2
+            ENDIF
+         else
+         
+            CALL OPEN_GBL_FILE(73, TRIM(LOCALDIR)//'/'//'fort.73',
+     &            NP_G, NP, HEADER73)
+            IGPP=2
+            CALL OPEN_GBL_FILE(74, TRIM(LOCALDIR)//'/'//'fort.74',
+     $        NP_G, NP, HEADER74)
+            IGWP=2
+! tcm v49.64.01 added for ice
+            IF(NCICE.NE.0) then
+               CALL OPEN_GBL_FILE(93, TRIM(LOCALDIR)//'/'//'fort.93',
+     $           NP_G, NP, HEADER93)
+               IGIP=2
+            ENDIF
+         
+         endif
       ENDIF
 
       IF(ABS(NOUTGW).EQ.2) THEN
@@ -1220,8 +1278,13 @@ C...
 Casey 090302: Added the output of radiation stress gradients.
          IGRadS=0
          IF((ABS(NOUTGW).EQ.1).OR.(ABS(NOUTGW).EQ.4)) THEN
-            CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
-     &          NP_G, NP, HEADER74)
+            if (write_local_files.eqv..false.) then
+               CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
+     &             NP_G, NP, HEADER74)
+            else
+               CALL OPEN_GBL_FILE(164, TRIM(LOCALDIR)//'/'//'rads.64',
+     &             NP_G, NP, HEADER74)
+            endif
             IGRadS=2
          ENDIF
          IF(ABS(NOUTGW).EQ.2) THEN
@@ -1325,7 +1388,7 @@ C...
       ENDIF
 C
  1112 FORMAT(/,1X,79('_'))
- 9883 FORMAT(' !!! NODE ',I6,' DRIED (LANDLOCKING)')
+
 
 
 C... TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
@@ -1342,8 +1405,13 @@ C...
       
       IF ((NDDT.NE.0).AND.
      &       ((ABS(NOUTGE).EQ.1).OR.(ABS(NOUTGE).EQ.4))) THEN
-         CALL OPEN_GBL_FILE(76, TRIM(GLOBALDIR)//'/'//'fort.76',
-     &    NP_G, NP, HEADER63)  !NO NEED TO CREATE HEADER76
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(76, TRIM(GLOBALDIR)//'/'//'fort.76',
+     &       NP_G, NP, HEADER63)  !NO NEED TO CREATE HEADER76
+         else
+            CALL OPEN_GBL_FILE(76, TRIM(LOCALDIR)//'/'//'fort.76',
+     &       NP_G, NP, HEADER63)  !NO NEED TO CREATE HEADER76 
+         endif 
          IGBP=2
       ENDIF
 
@@ -1404,13 +1472,6 @@ c     if (C3DDSS) then
 c       CALL DSSSTUP(DT,NT)
 c     endif
 C...
-      ! tcmv51.27 20140502 Added to remove this nodal attribute
-      ! as it is only used at Cold Start
-      IF (LoadRiver_et_WSE) THEN
-         IF (ALLOCATED (River_et_WSE) ) THEN
-            DEALLOCATE (River_et_WSE)
-         ENDIF
-      ENDIF
 
 #if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -1430,18 +1491,22 @@ c******************************************************************************
 
       SUBROUTINE COLDSTART_3D()
       USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
+      USE WRITE_OUTPUT, ONLY : initOutput3D
       USE GLOBAL_3DVS
       USE GLOBAL, ONLY : BCFLAG_TEMP, RES_BC_FLAG, BCFLAG_LNM,
      &                   RBCTIME1, BCSTATIM, RBCTIME2,
-     &                   RBCTIMEINC, NBD, SBCTIME1,
+     &                   RBCTIMEINC, SBCTIME1,
      &                   SBCTIME2, SBCSTATIM, TTBCTIME1,
      &                   TTBCTIME2, TBCSTATIM, SBCTIMEINC,
      &                   TBCTIMEINC, TTBCTIMEINC, TTBCSTATIM,
-     &                   TBCTIME1, TBCTIME2, q_heat1, q_heat2, NP_G,
+     &                   TBCTIME1, TBCTIME2, q_heat1, q_heat2, 
      &                   LNM_BC, LNM_BC1, LNM_BC2, RIVBCTIMINC,
-     &                   RIVBCTIME1, RIVBCTIME2, totalbcrivernodes,
-     &                   NOPE, RIVBCSTATIM, DEBUG, setMessageSource,
-     &                   unsetMessageSource, allMessage
+     &                   RIVBCTIME1, RIVBCTIME2, 
+     &                   RIVBCSTATIM, DEBUG, setMessageSource,
+     &                   unsetMessageSource, allMessage, NP_G
+      USE MESH, ONLY : NP, AGRID
+      USE BOUNDARIES, ONLY : NETA, NOPE, NBD,
+     &  totalbcrivernodes, bndbcriver
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       IMPLICIT NONE
 
@@ -1825,5 +1890,179 @@ C.... Set up a few final odds and ends for a 3D run
       RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE COLDSTART_3D
+C----------------------------------------------------------------------
+
+C----------------------------------------------------------------------
+C                      S U B R O U T I N E     
+C           S E T   C O L D   W E T   D R Y   S T A T E
+C       A N D   W A T E R   S U R F A C E   E L E V A T I O N 
+C----------------------------------------------------------------------
+C     jgf52.08.01: Sets value of nnodecode at cold start. The values
+C     of nnodecode are copied to the nodecode array in totalAreaCalc().
+C     This is called from subroutine hotstart() for use in producing 
+C     detailed inundation output only. When called from hotstart(),
+C     the hotstart wet/dry state and water surface elevation ends up
+C     overwriting the values computed here. 
+C----------------------------------------------------------------------
+      subroutine setColdWetDryStateAndWaterSurfaceElevation()
+      use sizes, only : inputdir
+      use mesh, only : dp, np, mju, ne, nm
+      use global, only : eta2, nnodecode, noff, logMessage, allMessage,
+     &   scratchMessage, INFO, h0, setMessageSource, unsetMessageSource,
+     &   DEBUG, WARNING, INFO, scratchMessage, eta1, nolifa, River_above_MSL
+      use nodalattributes, only : loadStartDry, STARTDRY, GeoidOffset, 
+     &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE !jgf47.06
+      implicit none
+      integer :: nm1, nm2, nm3  ! node numbers around the element
+      integer :: nc1, nc2, nc3  ! nodecodes around the element
+      integer :: ncele          ! wet dry state of the element
+      integer :: i 
+      ! jgf52.08.24: Investigate reasons why a node was dried by the
+      ! setColdWetDryState() subroutine.  
+      character(len=1000), allocatable :: dryReason(:)
+      logical, allocatable :: dryReasonInitialized(:)
+      logical :: found ! .true. if obsolete init river elevation file was found
+      !
+      call setMessageSource(
+     &   "setColdWetDryStateAndWaterSurfaceElevation")
+#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      !
+      ! tcm v51.27 20140502 Changed from using a fort.88 file
+      ! to a nodal attribute
+      IF (LoadRiver_et_WSE.eqv..true.) then
+         River_above_MSL=.true.
+         call allMessage(INFO,
+     &      'Initial river elevations were specified as a nodal '
+     &       //'attribute and will be used.')
+      ENDIF
+      !
+      ! tcm v51.27 Check to see if a fort.88 file is supplied
+      ! if so issue a warning.      
+      inquire(file=trim(inputdir)//'/'//'fort.88',exist=found)
+      if (found.eqv..true.) then
+         call allMessage(WARNING,
+     &    'A fort.88 file was found but is no longer supported. '
+     &   //'Initial river elevations must be set as a nodal attribute.')
+      endif
+      !
+      ! jgf46.01 Added the ability to include steric effects.
+      if (LoadGeoidOffset.eqv..true.) then
+         ETA2(:)=GeoidOffset(:)
+      endif
+      !
+      ! tcm v51.27 20140502 Made the GeoidOffset and Initial River Elevation
+      ! an additive quantity instead of the max of the two.
+      !
+      ! jgf52.08.01: Simplified to just adding the initial river elevation to 
+      ! eta2 wherever the initial river elevation is greater than zero.
+      if (LoadRiver_et_WSE.eqv..true.) then
+         where (River_et_WSE.GT.0.d0) 
+            eta2 = eta2 + River_et_WSE 
+         end where
+         ! tcmv51.27 20140502 Added to remove this nodal attribute
+         ! as it is only used at Cold Start
+         deallocate (River_et_WSE)
+      endif
+      !
+      ! Set all nodes to wet by default.
+      nnodecode(:)=1
+      ! set all elements to wet by default.
+      noff(:)=1        
+      !
+      ! If wetting and drying is active, set the nodal wet dry state
+      if (nolifa.eq.2) then
+         !
+         ! jgf52.08.23: Collect, store, and report the reasons why each
+         ! node was dried. 
+         allocate(dryReason(np))
+         allocate(dryReasonInitialized(np))
+         dryReasonInitialized = .false.
+         do i=1,np      
+            ! set dry areas based on eta2
+            if (dp(i)+eta2(i).le.h0) then
+               nnodecode(i) = 0
+               write(dryReason(i),'("node=",i0)') i
+               write(scratchMessage,
+     &            '(" dp+eta2<=h0: ",f10.3," + ",f10.3," <= ",f6.3)') 
+     &            dp(i), eta2(i), h0
+               dryReason(i) = trim(dryReason(i)) // trim(scratchMessage)
+               dryReasonInitialized(i) = .true.
+            endif
+            if ((loadStartDry.eqv..true.).and.(startDry(i).eq.1)) then
+               nnodecode(i) = 0
+               if (dryReasonInitialized(i).eqv..false.) then
+                  write(dryReason(i),'("node=",i0)') i
+                  dryReasonInitialized(i) = .true.
+               else
+                  dryReason(i) = trim(dryReason(i)) // ", "
+               endif
+               dryReason(i) = trim(dryReason(i)) // "startDry=1"
+            endif       
+         end do
+         !
+         ! Dry any landlocked nodes by checking that they are connected to at
+         ! least 1 functioning element.
+         mju(:)=0
+         do i=1,ne
+            nm1=nm(i,1)
+            nm2=nm(i,2)
+            nm3=nm(i,3)
+            nc1=nnodecode(nm1)
+            nc2=nnodecode(nm2)
+            nc3=nnodecode(nm3)
+            ncele=nc1*nc2*nc3*noff(i)
+            mju(nm1)=mju(nm1)+ncele
+            mju(nm2)=mju(nm2)+ncele
+            mju(nm3)=mju(nm3)+ncele
+         enddo
+         do i=1,np
+            if((nnodecode(i).eq.1).and.(mju(i).eq.0)) then
+               nnodecode(i)=0
+               write(scratchMessage,9883) I
+               call allMessage(INFO,scratchMessage)
+               if (dryReasonInitialized(i).eqv..false.) then
+                  write(dryReason(i),'("node=",i0)') i
+                  dryReasonInitialized(i) = .true.
+               else
+                  dryReason(i) = trim(dryReason(i)) // ", "
+               endif
+               dryReason(i) = trim(dryReason(i)) // " landlocked"
+            endif
+         enddo
+ 9883    format('Node ',i0,' dried (landlocking).')
+         !
+         !jgf52.08.23: Report the reasons why a node was initially dried.
+         call logMessage(DEBUG,
+     &      "Nodes were set to an initially dry state "
+     &      // "for the following reasons:")
+         do i=1,np
+            if (nnodecode(i).eq.0) then
+               if (dryReasonInitialized(i).eqv..false.) then
+                  write(dryReason(i),
+     &            '("node=",i0," This node is dry for no good reason.")') i
+                  dryReasonInitialized(i) = .true.
+               endif
+               call logMessage(DEBUG,trim(dryReason(i)))
+            endif
+         end do 
+         ! release memory 
+         deallocate(dryReason)
+         deallocate(dryReasonInitialized)
+         !
+         ! Finish initializing water surface elevation (eta2 and eta1)
+         where (nnodecode.eq.0) 
+            eta2=h0-dp
+         end where
+      endif
+      eta1(:) = eta2(:) 
+
+#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C----------------------------------------------------------------------
+      end subroutine setColdWetDryStateAndWaterSurfaceElevation
 C----------------------------------------------------------------------
 

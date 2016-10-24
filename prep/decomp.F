@@ -196,35 +196,68 @@ C  Re-construct Local-to-Global Element Map: IMAP_EL_LG(:,PE)
 C  Rule:  Add an element if it has an resident node or
 C         has the dual Weir node of a resident or ghost node
 
+      EL_SHARE(:) = -1
       IF (NWEIR.GT.0) THEN
-        DO I = 1,NPROC
-           NELP(I) = 0
-c          print *, "PE = ",I-1
-           DO K = 1,NELG
-              N1 = NNEG(1,K)
-              N2 = NNEG(2,K)
-              N3 = NNEG(3,K)
-              PE1 = IMAP_NOD_GL(1,N1)   ! Is any vertex a resident node?
-              PE2 = IMAP_NOD_GL(1,N2)
-              PE3 = IMAP_NOD_GL(1,N3)   ! belong to a Weir-node pair ?
-              CALL SEARCH3(WEIRP_LG(1,I),NWEIRP(I),N1,N2,N3,INDX)
-              CALL SEARCH3(WEIRDP_LG(1,I),NWEIRP(I),N1,N2,N3,INDX2)
-              IF ((PE1.EQ.I).OR.(PE2.EQ.I).OR.(PE3.EQ.I)
-     &          .OR.(INDX.NE.0).OR.(INDX2.NE.0)) THEN
-c                print *, K, PE1,PE2,PE3,INDX,INDX2
-                NELP(I) = NELP(I) + 1
-                KK = K
-                if (EL_SHARE(NELP(I)) > -1) KK = -K
-                IMAP_EL_LG(NELP(I),I) = KK
-                EL_SHARE(NELP(I))     = I
-              ENDIF
-           ENDDO
+         DO I = 1,NPROC
+            NELP(I) = 0
+c           print *, "PE = ",I-1
+            DO K = 1,NELG
+               N1 = NNEG(1,K)
+               N2 = NNEG(2,K)
+               N3 = NNEG(3,K)
+               PE1 = IMAP_NOD_GL(1,N1)   ! Is any vertex a resident node?
+               PE2 = IMAP_NOD_GL(1,N2)
+               PE3 = IMAP_NOD_GL(1,N3)   ! belong to a Weir-node pair ?
+               CALL SEARCH3(WEIRP_LG(1,I),NWEIRP(I),N1,N2,N3,INDX)
+               CALL SEARCH3(WEIRDP_LG(1,I),NWEIRP(I),N1,N2,N3,INDX2)
+               ! if any vertex is a resident vertex, or is a weir node
+               ! paired to a resident vertex
+               IF ((PE1.EQ.I).OR.(PE2.EQ.I).OR.(PE3.EQ.I)
+     &             .OR.(INDX.NE.0).OR.(INDX2.NE.0)) THEN
+c                 print *, K, PE1,PE2,PE3,INDX,INDX2
+                  ! increment the number of elements on this subdomain
+                  NELP(I) = NELP(I) + 1
+                  ! add the fulldomain element number to the mapping;
+                  ! make it negative if some other subdomain has already
+                  ! listed it as a resident element (the first subdomain
+                  ! that has an element that maps to a fulldomain element
+                  ! claims it as a resident; the next subdomain(s) that
+                  ! have an element that maps to this fulldomain element
+                  ! will have that element number listed as negative, 
+                  ! or "ghost" in their mapping tables (first come, first
+                  ! served)
+                  IF (EL_SHARE(K) > -1) THEN
+                     IMAP_EL_LG(NELP(I),I) = -K
+                  ELSE
+                     IMAP_EL_LG(NELP(I),I) = K
+                  ENDIF
+                  ! in any case, record the fact that a subdomain has already
+                  ! claimed this element as a resident 
+                  EL_SHARE(K) = I
+               ENDIF
+            ENDDO
          IF (NELP(I).GT.MNEP) STOP 'NELP(I) > MNEP'
-c       print *, "Number of elements on PE",I-1," = ",NELP(I)
-c       DO J = 1, NELP(I)
-c          print *, J, IMAP_EL_LG(J,I)
-c       ENDDO
-        ENDDO
+c           print *, "Number of elements on PE",I-1," = ",NELP(I)
+c           DO J = 1, NELP(I)
+c              print *, J, IMAP_EL_LG(J,I)
+c           ENDDO
+         ENDDO
+      ELSE
+         ! jgf: If there are no weirs, then go back through the element
+         ! mapping and leave the first subdomain element that maps to a 
+         ! particular fulldomain element as a "resident" with a positive
+         ! fulldomain element number in IMAP_EL_LG, while giving subsequent 
+         ! subdomain elements that map to that same fulldomain element  
+         ! a negative value in IMAP_EL_LG (marking them as "ghosts").
+         DO I=1,NPROC
+            DO J=1,NELP(I)
+               K = IMAP_EL_LG(J,I)
+               IF (EL_SHARE(K).gt.-1) THEN
+                  IMAP_EL_LG(J,I) = -IMAP_EL_LG(J,I)
+               ENDIF
+               EL_SHARE(K) = I
+            END DO
+         END DO
       ENDIF
 
 C STEP 6:
@@ -272,38 +305,53 @@ c     ENDDO
 C STEP 7:
 C--Construct Local Element Connectivity Table for each PE: NNEP(3,I,PE)
 C
+      ! loop over subdomains
       DO I = 1,NPROC
+         ! ITEMP = number of nodes on this subdomain
          ITEMP = NNODP(I)
+         ! loop over local nodes on this subdomain
          DO J = 1,NNODP(I)
+            ! make array of corresponding fulldomain node numbers
             ITVECT(J) = IMAP_NOD_LG(J,I)
          ENDDO
+         ! loop over elements on this subdomain
          DO J = 1,NELP(I)
+            ! grab fulldomain element number, whether ghost or resident element
             IELG = abs(IMAP_EL_LG(J,I))
+            ! loop over nodes on this element
             DO M = 1,3
+               ! get fulldomain node number on this element
                IG1 = NNEG(M,IELG)
+               ! look for the fulldomain node number in the list of 
+               ! fulldomain nodes in this domain
                CALL LOCATE(ITVECT,ITEMP,IG1,K)
+               ! if the fulldomain node number on this element below
+               ! the range of fulldomain node numbers on this subdomain...
                IF (K.LE.0) THEN
-                 IF (IMAP_NOD_LG(K+1,I).EQ.IG1) THEN
-                   NNEP(M,J,I) = K+1
-                 ELSE
-                   STOP 'ERROR IN IMAP_NOD_LG'
-                 ENDIF
+                  ! if the next index value matches
+                  IF (IMAP_NOD_LG(K+1,I).EQ.IG1) THEN
+                     ! add the next index value to the local element
+                     ! connectivity table
+                     NNEP(M,J,I) = K+1
+                  ELSE
+                     STOP 'ERROR IN IMAP_NOD_LG'
+                  ENDIF
                ELSEIF (K.GE.NNODP(I))THEN
-                 IF (IMAP_NOD_LG(K,I).EQ.IG1) THEN
-                   NNEP(M,J,I) = K
-                 ELSE
-                   STOP 'ERROR IN IMAP_NOD_LG'
-                 ENDIF
+                  IF (IMAP_NOD_LG(K,I).EQ.IG1) THEN
+                     NNEP(M,J,I) = K
+                  ELSE
+                     STOP 'ERROR IN IMAP_NOD_LG'
+                  ENDIF
                ELSE
-                 IF (IMAP_NOD_LG(K,I).EQ.IG1) THEN
-                   NNEP(M,J,I) = K
-                 ELSEIF (IMAP_NOD_LG(K+1,I).EQ.IG1) THEN
-                   NNEP(M,J,I) = K+1
-                 ELSE
-                   STOP 'ERROR IN IMAP_NOD_LG'
-                 ENDIF
+                  IF (IMAP_NOD_LG(K,I).EQ.IG1) THEN
+                     NNEP(M,J,I) = K
+                  ELSEIF (IMAP_NOD_LG(K+1,I).EQ.IG1) THEN
+                     NNEP(M,J,I) = K+1
+                  ELSE
+                     STOP 'ERROR IN IMAP_NOD_LG'
+                  ENDIF
                ENDIF
-           ENDDO
+            ENDDO
          ENDDO
       ENDDO
 
@@ -311,48 +359,90 @@ C STEP 8:
 C--Compute the number of communicating PEs and their
 C  list for each PE:  NUMM_COMM_PE(PE) and COMM_PE_NUM(IPE,PE)
 C
+      !
+      ! ITVECT is a list of the neighboring subdomain numbers  
+      ! corresponding to this subdomain's ghost nodes
+      ! 
+      ! loop over subdomains
       DO I = 1,NPROC
-         NUM_COMM_PE(I) = 0
-         ITEMP = 0
+         NUM_COMM_PE(I) = 0  ! zero the num of neighboring subdomains
+         ITEMP = 0           ! zero the number of ghost nodes on this subdomain
+         ! loop over subdomain nodes
          DO J = 1,NNODP(I)
+            ! get corresponding fulldomain node number
             INDX = IMAP_NOD_LG(J,I)
+            ! use fulldomain node number to get number of subdomain
+            ! where this node is a resident
             IPR = IMAP_NOD_GL(1,INDX)
+            ! if the subdomain of residence is not this one
             IF (IPR.NE.I)THEN
-              ITEMP = ITEMP + 1
-              ITVECT(ITEMP) = IPR
+               ! increment number of ghost nodes on this subdomain
+               ITEMP = ITEMP + 1
+               ! add the subdomain number to which the ghost node belongs
+               ! to the list of neighboring subdomains
+               ITVECT(ITEMP) = IPR
             ENDIF
          ENDDO
          IF (ITEMP.EQ.0) THEN
-           NUM_COMM_PE(I) = 0
+            NUM_COMM_PE(I) = 0
          ELSE
-           IF (ITEMP.GT.VTMAX) stop 'step8 decomp'
-           CALL SORT(ITEMP,ITVECT)
-           COMM_PE_NUM(1,I) = ITVECT(1)
-           ITOT = 1
-           DO J = 1,ITEMP
-             IF (ITVECT(J).NE.COMM_PE_NUM(ITOT,I)) THEN
-               ITOT = ITOT + 1
-               COMM_PE_NUM(ITOT,I) = ITVECT(J)
-             ENDIF
-           ENDDO
-           NUM_COMM_PE(I) = ITOT
-           IF (NUM_COMM_PE(I).GT.MNPROC) STOP 'NUM_COMM_PE>MNPROC'
+            IF (ITEMP.GT.VTMAX) stop 'step8 decomp'
+            ! sort the list of neighboring subdomains numbers in ascending order
+            CALL SORT(ITEMP,ITVECT)
+            ! set the first neighboring subdomain
+            COMM_PE_NUM(1,I) = ITVECT(1)
+            ! reset the subdomain neighbor counter
+            ITOT = 1
+            ! loop over the subdomain numbers of the ghost nodes 
+            ! in this subdomain        
+            DO J = 1,ITEMP
+               ! if the subdomain number is not a duplicate
+               IF (ITVECT(J).NE.COMM_PE_NUM(ITOT,I)) THEN
+                  ! increment the number of neighboring subdomains
+                  ITOT = ITOT + 1
+                  ! record the number of the neighboring subdomain
+                  COMM_PE_NUM(ITOT,I) = ITVECT(J)
+               ENDIF
+            ENDDO
+            ! set the total number of neighbor subdomains for this
+            ! subdomain
+            NUM_COMM_PE(I) = ITOT
+            IF (NUM_COMM_PE(I).GT.MNPROC) STOP 'NUM_COMM_PE>MNPROC'
          ENDIF
       ENDDO
 
 Casey 110518: Added this change from Seizo.
 !     Send <=> Receive Proc CHECK & CORRECTION !st3 06.19.2009
+      ! loop over subdomains
       DO I = 1, NPROC
+         ! loop over subdomains neighboring this one
          DO J = 1, NUM_COMM_PE(I)
+            ! get neighboring subdomain number
             INDX = COMM_PE_NUM(J,I)
-            ITOT = 0
+            ! zero the flag indicating that this subdomain is listed
+            ! as the neighboring subdomain's neighbor 
+            ITOT = 0   
+            ! loop over the subdomains neighboring this neighbor 
             DO K = 1, NUM_COMM_PE(INDX)
+               ! get the neighbor's neighboring subdomain number
                INDX2 = COMM_PE_NUM(K,INDX)
+               ! set a flag if this subdomain is listed as the 
+               ! neighbor's neighbor
                IF( I == INDX2 ) ITOT = 1
             ENDDO
+            ! if the flag was not set
             IF( ITOT == 0 ) THEN
+               ! increment neighbor's number of subdomain neighbors 
                NUM_COMM_PE(INDX) = NUM_COMM_PE(INDX) + 1
+               ! add this subdomain to this list of neighbors for
+               ! the neighboring subdomain
                COMM_PE_NUM( NUM_COMM_PE(INDX), INDX )  = I
+               ! I don't see how this can happen, so I am adding a 
+               ! warning message to provide an alert when it does
+               ! so that I can examine it more closely. 
+               write(6,'(a,i0,a,i0,a)') 'WARNING: Subdomain ',I, 
+     &       ' added to the list of subdomain neighbors of subdomain ',
+     &         INDX,'.' 
             ENDIF
          ENDDO
       ENDDO

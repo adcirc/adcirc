@@ -1,7 +1,7 @@
 C----------------------------------------------------------------------
-C                     W R I T E   O U T P U T . F
+C      M O D U L E    W R I T E   O U T P U T 
 C----------------------------------------------------------------------
-C jgf48.03 This file contains all the subroutines that write output to
+C jgf48.03 This module contains all the subroutines that write output to
 C files. It was created to consolidate all the output routines that
 C were located in other parts of the code, to make it easier to incorporate
 C them into globalio, and to make it easier to add new output modes or
@@ -10,1359 +10,110 @@ C
 C tcm48.4618 Fixed Bug in writing out global elevation values that are
 C dry.
 C----------------------------------------------------------------------
-
-
+      MODULE WRITE_OUTPUT
 C----------------------------------------------------------------------
-C       S U B R O U T I N E   W R I T E _ O U T P U T _ 2 D
-C----------------------------------------------------------------------
-C
-C     R.L. 8/22/05 Subroutine to write primary 2D model output not
-C     including hotstart and harmonic analysis.
-C
-C----------------------------------------------------------------------
-      SUBROUTINE WRITE_OUTPUT_2D (IT,TimeLoc)
-      USE ADCIRC_MOD,ONLY: ADCIRC_TERMINATE
-      USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
-     &                  GLOBALDIR
-C RJW added MYPROC, MNPROC
-      USE GLOBAL
-      USE GLOBAL_IO, ONLY: storeOne, storeTwo, store63, HEADER_MAX,
-     &    open_gbl_file, write_gbl_file, write_gbl_63_skip_drynode,
-     &    write_gbl_file_skip_default, collectFullDomainArray,
-     &    packOne, unpackOne, packTwo, unpackTwo, pack63, pack83,
-     &    open_minmax_file
-      USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim
-#ifdef CMPI
-      USE WRITER, ONLY : WRITE_GBL_FILE_THROUGH_WRITER,
-     $     FLUSH_WRITERS, WRITER_STOREONE,
-     $     WRITER_STORETWO, WRITER_STORE63, WRITER_INIT
-      USE MESSENGER, ONLY : msg_fini, msg_lbcast
-#endif
-#ifdef ADCNETCDF
-      USE NETCDFIO, ONLY : initNetCDFOutputFile
-#endif
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : OutputDataDescript_t, setMessageSource, 
+     &  unsetMessageSource, DEBUG, allMessage, screenMessage, ERROR,
+     &  netcdf_avail
 
-      IMPLICIT NONE
-      INTEGER, intent(in) :: IT
-      REAL(8), intent(in) :: TimeLoc
+      !
+      !    2 D   D A T A
+      !
+#ifdef CSWAN
+      integer, parameter :: numOutputDescript2D = 45
+#else
+      integer, parameter :: numOutputDescript2D = 31
+#endif      
+      type descript2D_ptr_t
+         type(OutputDataDescript_t), pointer :: descript2D
+      end type descript2D_ptr_t
+      type(descript2D_ptr_t), allocatable :: ptr(:)
+      !
+      type(OutputDataDescript_t), target :: ElevStaDescript
+      type(OutputDataDescript_t), target :: VelStaDescript
+      type(OutputDataDescript_t), target :: ElevDescript
+      type(OutputDataDescript_t), target :: Tau0Descript
+      type(OutputDataDescript_t), target :: VelDescript
+      type(OutputDataDescript_t), target :: PrStaDescript
+      type(OutputDataDescript_t), target :: WindVelStaDescript
+      type(OutputDataDescript_t), target :: PrDescript
+      type(OutputDataDescript_t), target :: WindVelDescript
+      type(OutputDataDescript_t), target :: ConcStaDescript
+      type(OutputDataDescript_t), target :: ConcDescript
+      !tcm v49.64.01 added for ice
+      type(OutputDataDescript_t), target :: IceDescript    
+      !tcm v49.64.01 added for ice stations
+      type(OutputDataDescript_t), target :: IceStaDescript 
+      type(OutputDataDescript_t), target :: EtaMaxDescript
+      type(OutputDataDescript_t), target :: UMaxDescript
+      type(OutputDataDescript_t), target :: WVMaxDescript
+      type(OutputDataDescript_t), target :: PrMinDescript
+      type(OutputDataDescript_t), target :: RSMaxDescript
+      type(OutputDataDescript_t), target :: SpongeDescript
+      type(OutputDataDescript_t), target :: ESLDescript
+      !tcm v50.66.01 added time varying bathy
+      type(OutputDataDescript_t), target :: BathyDescript   
+      !tcm v50.66.01 added time varying bathy stations
+      type(OutputDataDescript_t), target :: BathyStaDescript 
+      ! Casey 090302: Added this type for output of radiation stress gradients.
+      ! tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
+      type(OutputDataDescript_t), target :: RSDescript
+      !jgf52.05: Added for regular output of wet/dry quantities.
+      type(OutputDataDescript_t), target :: noffOutDescript
+      type(OutputDataDescript_t), target :: nodeCodeOutDescript 
 
-      INTEGER I                       !local loop counters
-      INTEGER NC1, NC2, NC3, NCEle
-      INTEGER NM1, NM2, NM3
-      INTEGER,SAVE :: countsponge=1
-
-      REAL(SZ) C1, C2, C3
-      REAL(SZ) EE1, EE2, EE3
-      REAL(SZ) H2, H2N1, H2N2, H2N3
-      REAL(SZ) U11, U22, U33
-      REAL(SZ) V11, V22, V33
-      REAL(SZ) CIC11,CIC22,CIC33  ! v49.64.01 tcm -- added for ice
-C
-      type(OutputDataDescript_t), SAVE :: ElevStaDescript
-      type(OutputDataDescript_t), SAVE :: VelStaDescript
-      type(OutputDataDescript_t), SAVE :: ElevDescript
-      type(OutputDataDescript_t), SAVE :: Tau0Descript
-      type(OutputDataDescript_t), SAVE :: VelDescript
-      type(OutputDataDescript_t), SAVE :: PrStaDescript
-      type(OutputDataDescript_t), SAVE :: WindVelStaDescript
-      type(OutputDataDescript_t), SAVE :: PrDescript
-      type(OutputDataDescript_t), SAVE :: WindVelDescript
-      type(OutputDataDescript_t), SAVE :: ConcStaDescript
-      type(OutputDataDescript_t), SAVE :: ConcDescript
-      type(OutputDataDescript_t), SAVE :: IceDescript    !tcm v49.64.01 added for ice
-      type(OutputDataDescript_t), SAVE :: IceStaDescript !tcm v49.64.01 added for ice stations
-      type(OutputDataDescript_t), SAVE :: EtaMaxDescript
-      type(OutputDataDescript_t), SAVE :: UMaxDescript
-      type(OutputDataDescript_t), SAVE :: WVMaxDescript
-      type(OutputDataDescript_t), SAVE :: PrMinDescript
-      type(OutputDataDescript_t), SAVE :: RSMaxDescript
-      type(OutputDataDescript_t), SAVE :: SpongeDescript
-      type(OutputDataDescript_t), SAVE :: ESLDescript
-      type(OutputDataDescript_t), SAVE :: BathyDescript   !tcm v50.66.01 added time varying bathy
-      type(OutputDataDescript_t), SAVE :: BathyStaDescript !tcm v50.66.01 added time varying bathy stations
-!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-!#ifdef CSWAN
-Casey 090302: Added this type for output of radiation stress gradients.
-      type(OutputDataDescript_t), SAVE :: RSDescript
-!#endif
+Cobell Added a descript for time varying weir tracking
+      type(OutputDataDescript_t), target :: weirElevDescript
 
 C     jgf48.03 Full domain arrays used when writing globalio output.
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ET00_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: UU00_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: VV00_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: TAU0VAR_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMP00_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMU00_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMV00_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: Pr2_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNXOut_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNYOut_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CC00_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CICEOut_g(:)  !tcm v49.64.01 added for ice
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMICE00_g(:)  !tcm v49.64.01 added for ice
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ETAMAX_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: UMAX_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: PRMIN_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNOUTMAX_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNMAX_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: sponge_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ESLONOFF_G(:) !zc added for ESL On/Off output
-      REAL(SZ), SAVE, Allocatable, Target :: DPOut_g(:)    !tcm v50.66.01 added time varying bathy
-      REAL(SZ), SAVE, Allocatable, Target :: DP00_g(:)  !tcm v50.66.01 added time varying bathy
-!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-!#ifdef CSWAN
-Casey 090302: Added these arrays for output of radiation stress gradients.
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNXOut_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNYOut_g(:)
-!#endif
-      LOGICAL, dimension(14) :: netcdf_error
-      LOGICAL, SAVE :: FirstCall = .true.
+      real(sz), allocatable, target :: et00_g(:)
+      real(sz), allocatable, target :: uu00_g(:)
+      real(sz), allocatable, target :: vv00_g(:)
+      real(sz), allocatable, target :: tau0var_g(:)
+      real(sz), allocatable, target :: rmp00_g(:)
+      real(sz), allocatable, target :: rmu00_g(:)
+      real(sz), allocatable, target :: rmv00_g(:)
+      real(sz), allocatable, target :: pr2_g(:)
+      real(sz), allocatable, target :: wvnxout_g(:)
+      real(sz), allocatable, target :: wvnyout_g(:)
+      real(sz), allocatable, target :: cc00_g(:)
+      real(sz), allocatable, target :: ciceout_g(:)  !tcm v49.64.01 added for ice
+      real(sz), allocatable, target :: rmice00_g(:)  !tcm v49.64.01 added for ice
+      real(sz), allocatable, target :: etamax_g(:)
+      real(sz), allocatable, target :: umax_g(:)
+      real(sz), allocatable, target :: prmin_g(:)
+      real(sz), allocatable, target :: wvnoutmax_g(:)
+      real(sz), allocatable, target :: rsnmax_g(:)
+      real(sz), allocatable, target :: sponge_g(:)
+      real(sz), allocatable, target :: eslonoff_g(:) !zc added for esl on/off output
+      real(sz), allocatable, target :: dpout_g(:)    !tcm v50.66.01 added time varying bathy
+      real(sz), allocatable, target :: dp00_g(:)  !tcm v50.66.01 added time varying bathy
+      ! Casey 090302: Added these arrays for output of radiation stress gradients.
+      ! tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
+      real(sz), allocatable, target :: rsnxout_g(:)
+      real(sz), allocatable, target :: rsnyout_g(:)
 
-      IF (FirstCall) THEN
+      !jgf52.05: Added for normal output of wet/dry quantities.
+      integer, allocatable, target :: nodecode_out_g(:)
+      integer, allocatable, target :: noff_out_g(:)
 
-         ! fort.61
-C         write(16,*) 'Allocating ElevStaDescript' !jgfdebug48.03
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(ET00_g(NSTAE_G))
-         ENDIF
-         ElevStaDescript % specifier            = NOUTE
-         ElevStaDescript % initial_value        = 0.0
-         ElevStaDescript % num_items_per_record = 1
-         ElevStaDescript % num_fd_records       = NSTAE_G
-         ElevStaDescript % num_records_this     = NSTAE
-         ElevStaDescript % imap                 => IMAP_STAE_LG
-         ElevStaDescript % array                => ET00
-         ElevStaDescript % array_g              => ET00_g
-         ElevStaDescript % ConsiderWetDry       = .TRUE.
-         ElevStaDescript % alternate_value      = -99999.0
-         ElevStaDescript % field_name           = 'ElevSta'
-         IF (ICS.eq.1) THEN
-         ElevStaDescript % x_coord              => XEL ! use orig coord
-         ElevStaDescript % y_coord              => YEL
-         ELSE
-            ElevStaDescript % x_coord              => SLEL ! radians
-            ElevStaDescript % y_coord              => SFEL
-         ENDIF
-
-         ! fort.62
-C         write(16,*) 'Allocating VelStaDescript' !jgfdebug48.03
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(UU00_g(NSTAV_G))
-            ALLOCATE(VV00_g(NSTAV_G))
-         ENDIF
-         VelStaDescript % specifier            = NOUTV
-         VelStaDescript % initial_value        = 0.0
-         VelStaDescript % num_items_per_record = 2
-         VelStaDescript % num_fd_records       = NSTAV_G
-         VelStaDescript % num_records_this     = NSTAV
-         VelStaDescript % imap                 => IMAP_STAV_LG
-         VelStaDescript % array                => UU00
-         VelStaDescript % array2               => VV00
-         VelStaDescript % array_g              => UU00_g
-         VelStaDescript % array2_g             => VV00_g
-         VelStaDescript % ConsiderWetDry       = .FALSE.
-         VelStaDescript % alternate_value      = 0.0
-         VelStaDescript % field_name           = 'VelSta'
-         IF (ICS.eq.1) THEN
-         VelStaDescript % x_coord              => XEV ! use orig coord
-         VelStaDescript % y_coord              => YEV
-         ELSE
-            VelStaDescript % x_coord              => SLEV ! radians
-            VelStaDescript % y_coord              => SFEV
-         ENDIF
-
-         ! fort.63
-         ElevDescript % specifier            = NOUTGE
-         ElevDescript % initial_value        = 0.0
-         ElevDescript % num_items_per_record = 1
-         ElevDescript % num_fd_records       = NP_G
-         ElevDescript % num_records_this     = NP
-         ElevDescript % imap                 => NODES_LG
-         ElevDescript % array                => ETA2
-         ElevDescript % array_g              => ETA2_g
-         ElevDescript % ConsiderWetDry       = .TRUE.
-         ElevDescript % alternate_value      = -99999.0
-         ElevDescript % field_name           = 'Elev'
-
-         ! tau0
-C         write(16,*) 'Allocating Tau0Descript' !jgfdebug48.03
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(TAU0VAR_g(NP_G))
-         ENDIF
-         Tau0Descript % specifier            = 1  ! hard-code to ascii text
-         Tau0Descript % initial_value        = 0.0
-         Tau0Descript % num_items_per_record = 1
-         Tau0Descript % num_fd_records       = NP_G
-         Tau0Descript % num_records_this     = NP
-         Tau0Descript % imap                 => NODES_LG
-         Tau0Descript % array                => TAU0VAR
-         Tau0Descript % array_g              => TAU0VAR_g
-         Tau0Descript % ConsiderWetDry       = .FALSE.
-         Tau0Descript % alternate_value      = 0.0
-         Tau0Descript % field_name           = 'Tau0'
-
-         ! sponge layer
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(sponge_g(NP_G))
-         ENDIF
-         SpongeDescript % specifier            = 1  ! hard-code to ascii text
-         SpongeDescript % initial_value        = 0.0
-         SpongeDescript % num_items_per_record = 1
-         SpongeDescript % num_fd_records       = NP_G
-         SpongeDescript % num_records_this     = NP
-         SpongeDescript % imap                 => NODES_LG
-         SpongeDescript % array                => sponge
-         SpongeDescript % array_g              => sponge_g
-
-         ! fort.64
-         VelDescript % specifier            = NOUTGV
-         VelDescript % initial_value        = 0.0
-         VelDescript % num_items_per_record = 2
-         VelDescript % num_fd_records       = NP_G
-         VelDescript % num_records_this     = NP
-         VelDescript % imap                 => NODES_LG
-         VelDescript % array                => UU2
-         VelDescript % array2               => VV2
-         VelDescript % array_g              => UU2_g
-         VelDescript % array2_g             => VV2_g
-         VelDescript % ConsiderWetDry       = .FALSE.
-         VelDescript % alternate_value      = 0.0
-         VelDescript % field_name           = 'Vel'
-
-         ! fort.71
-C         write(16,*) 'Allocating PrStaDescript' !jgfdebug48.03
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(RMP00_g(NSTAM_G))
-         ENDIF
-         PrStaDescript % specifier            = NOUTM
-         PrStaDescript % initial_value        = 0.0
-         PrStaDescript % num_items_per_record = 1
-         PrStaDescript % num_fd_records       = NSTAM_G
-         PrStaDescript % num_records_this     = NSTAM
-         PrStaDescript % imap                 => IMAP_STAM_LG
-         PrStaDescript % array                => RMP00
-         PrStaDescript % array_g              => RMP00_g
-         PrStaDescript % ConsiderWetDry       = .FALSE.
-         PrStaDescript % alternate_value      = 0.0
-         PrStaDescript % field_name           = 'PrSta'
-         IF (ICS.eq.1) THEN
-         PrStaDescript % x_coord           => XEM ! use orig coord
-         PrStaDescript % y_coord           => YEM ! use orig coord
-         ELSE
-            PrStaDescript % x_coord           => SLEM ! radians
-            PrStaDescript % y_coord           => SFEM 
-         ENDIF
-
-         ! fort.72
-C         write(16,*) 'Allocating WindVelStaDescript' !jgfdebug48.03
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(RMU00_g(NSTAM_G))
-            ALLOCATE(RMV00_g(NSTAM_G))
-         ENDIF
-         WindVelStaDescript % specifier            = NOUTM
-         WindVelStaDescript % initial_value        = 0.0
-         WindVelStaDescript % num_items_per_record = 2
-         WindVelStaDescript % num_fd_records       = NSTAM_G
-         WindVelStaDescript % num_records_this     = NSTAM
-         WindVelStaDescript % imap                 => IMAP_STAM_LG
-         WindVelStaDescript % array                => RMU00
-         WindVelStaDescript % array_g              => RMU00_g
-         WindVelStaDescript % array2               => RMV00
-         WindVelStaDescript % array2_g             => RMV00_g
-         WindVelStaDescript % ConsiderWetDry       = .FALSE.
-         WindVelStaDescript % alternate_value      = 0.0
-         WindVelStaDescript % field_name           = 'WindVelSta'
-
-         ! fort.73
-C         write(16,*) 'Allocating PrDescript' !jgfdebug48.03
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(Pr2_g(NP_G))
-         ENDIF
-         PrDescript % specifier            = NOUTGW
-         PrDescript % initial_value        = 0.0
-         PrDescript % num_items_per_record = 1
-         PrDescript % num_fd_records       = NP_G
-         PrDescript % num_records_this     = NP
-         PrDescript % imap                 => NODES_LG
-         PrDescript % array                => Pr2
-         PrDescript % array_g              => Pr2_g
-         PrDescript % ConsiderWetDry       = .FALSE.
-         PrDescript % alternate_value      = 0.0
-         PrDescript % field_name           = 'Pr'
-         IF (ICS.eq.1) THEN
-            WindVelStaDescript % x_coord           => XEM ! use orig coord
-            WindVelStaDescript % y_coord           => YEM ! use orig coord
-         ELSE
-            WindVelStaDescript % x_coord           => SLEM ! use orig coord
-            WindVelStaDescript % y_coord           => SFEM ! use orig coord
-         ENDIF
-
-         ! fort.74
-C         write(16,*) 'Allocating WindVelDescript' !jgfdebug48.03
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(WVNXOut_g(NP_G))
-            ALLOCATE(WVNYOut_g(NP_G))
-         ENDIF
-         WindVelDescript % specifier            = NOUTGW
-         WindVelDescript % initial_value        = 0.0
-         WindVelDescript % num_items_per_record = 2
-         WindVelDescript % num_fd_records       = NP_G
-         WindVelDescript % num_records_this     = NP
-         WindVelDescript % imap                 => NODES_LG
-         WindVelDescript % array                => WVNXOut
-         WindVelDescript % array_g              => WVNXOut_g
-         WindVelDescript % array2               => WVNYOut
-         WindVelDescript % array2_g             => WVNYOut_g
-         WindVelDescript % ConsiderWetDry       = .FALSE.
-         WindVelDescript % alternate_value      = 0.0
-         WindVelDescript % field_name           = 'WindVel'
-
-         ! fort.75  !tcm v50.66.01 Added for Time Varying Bathymetry
-C         write(16,*) 'Allocating BathyStaDescript'
-         IF (NDDT.NE.0 ) then
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(DP00_g(NSTAE_G))
-            ENDIF
-            BathyStaDescript % specifier            = NOUTE
-            BathyStaDescript % initial_value        = 0.0
-            BathyStaDescript % num_items_per_record = 1
-            BathyStaDescript % num_fd_records       = NSTAE_G
-            BathyStaDescript % num_records_this     = NSTAE
-            BathyStaDescript % imap                 => IMAP_STAE_LG
-            BathyStaDescript % array                => DP00
-            BathyStaDescript % array_g              => DP00_g
-            BathyStaDescript % ConsiderWetDry       = .FALSE.
-            BathyStaDescript % alternate_value      = 0.d0
-            BathyStaDescript % field_name           = 'BathySta'
-            IF (ICS.eq.2) THEN
-               BathyStaDescript % x_coord           => SLEL
-               BathyStaDescript % y_coord           => SFEL
-            ELSE
-               BathyStaDescript % x_coord           => XEL
-               BathyStaDescript % y_coord           => YEL
-            ENDIF
-         ENDIF
-
-         ! fort.76  !tcm v50.66.01  Added for Time Varying Bathymetry
-C         write(16,*) 'Allocating BathyDescript'
-         IF (NDDT.NE.0) then
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(DPOUT_g(NP_G))
-            ENDIF
-            BathyDescript % specifier            = NOUTGE
-            BathyDescript % initial_value        = 0.0
-            BathyDescript % num_items_per_record = 1
-            BathyDescript % num_fd_records       = NP_G
-            BathyDescript % num_records_this     = NP
-            BathyDescript % imap                 => NODES_LG
-            BathyDescript % array                => DP
-            BathyDescript % array_g              => DPOut_g
-            BathyDescript % ConsiderWetDry       = .FALSE.
-            BathyDescript % alternate_value      = 0.0
-            BathyDescript % field_name           = 'Bathy'
-         ENDIF
-
-         ! fort.93
-C         write(16,*) 'Allocating IceDescript' !tcm v49.64.01 added for ice
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(CICEOUT_g(NP_G))
-         ENDIF
-         IceDescript % specifier            = NOUTGW
-         IceDescript % initial_value        = 0.0
-         IceDescript % num_items_per_record = 1
-         IceDescript % num_fd_records       = NP_G
-         IceDescript % num_records_this     = NP
-         IceDescript % imap                 => NODES_LG
-         IceDescript % array                => CICEOUT
-         IceDescript % array_g              => CICEOUT_g
-         IceDescript % ConsiderWetDry       = .FALSE.
-         IceDescript % alternate_value      = 0.0
-         IceDescript % field_name           = 'Ice'
-
-C... v49.64.01 tcm -- added for ice stations
-         ! fort.91
-C         write(16,*) 'Allocating IceStaDescript'
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(RMICE00_g(NSTAM_G))
-         ENDIF
-         IceStaDescript % specifier            = NOUTM
-         IceStaDescript % initial_value        = 0.0
-         IceStaDescript % num_items_per_record = 1
-         IceStaDescript % num_fd_records       = NSTAM_G
-         IceStaDescript % num_records_this     = NSTAM
-         IceStaDescript % imap                 => IMAP_STAM_LG
-         IceStaDescript % array                => RMICE00
-         IceStaDescript % array_g              => RMICE00_g
-         IceStaDescript % ConsiderWetDry       = .FALSE.
-         IceStaDescript % alternate_value      = 0.0
-         IceStaDescript % field_name           = 'IceSta'
-         IF (ICS.eq.1) THEN
-         IceStaDescript % x_coord           => XEM ! use orig coord
-         IceStaDescript % y_coord           => YEM
-         ELSE
-            IceStaDescript % x_coord           => SLEM ! radians
-            IceStaDescript % y_coord           => SFEM
-         ENDIF
-
-!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-         IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
-!#ifdef CSWAN   !tcm
-Casey 090302: Copied these lines for the rads.64 file.
-         ! rads.64
-C         write(16,*) 'Allocating RSDescript' !jgfdebug48.03
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(RSNXOUT_g(NP_G))
-               ALLOCATE(RSNYOUT_g(NP_G))
-            ENDIF
-C........Radiation Stress
-            RSDescript % specifier            = NOUTGW
-            RSDescript % initial_value        = 0.0
-            RSDescript % num_items_per_record = 2
-            RSDescript % num_fd_records       = NP_G
-            RSDescript % num_records_this     = NP
-            RSDescript % imap                 => NODES_LG
-            RSDescript % array                => RSNXOUT
-            RSDescript % array_g              => RSNXOUT_g
-            RSDescript % array2               => RSNYOUT
-            RSDescript % array2_g             => RSNYOUT_g
-            RSDescript % alternate_value      = -99999.0
-            RSDescript % field_name           = 'RadStress'
-            RSDescript % file_name            = "rads.64"
-         ENDIF
-!#endif
-
-         ! fort.81
-C         write(16,*) 'Allocating ConcStaDescript' !jgfdebug48.03
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(CC00_g(NP_G))
-         ENDIF
-         ConcStaDescript % specifier            = NOUTC
-         ConcStaDescript % initial_value        = 0.0
-         ConcStaDescript % num_items_per_record = 1
-         ConcStaDescript % num_fd_records       = NSTAC_G
-         ConcStaDescript % num_records_this     = NSTAC
-         ConcStaDescript % imap                 => IMAP_STAC_LG
-         ConcStaDescript % array                => CC00
-         ConcStaDescript % array_g              => CC00_g
-         ConcStaDescript % ConsiderWetDry       = .FALSE.
-         ConcStaDescript % alternate_value      = 0.0
-         ConcStaDescript % field_name           = 'ConcSta'
-         IF (ICS.eq.1) THEN
-            ConcStaDescript % x_coord           => XEC ! use orig coord
-            ConcStaDescript % y_coord           => YEC
-         ELSE
-            ConcStaDescript % x_coord           => SLEC ! radians
-            ConcStaDescript % y_coord           => SFEC
-         ENDIF
-
-         ! fort.83
-C         write(16,*) 'Allocating ConcDescript' !jgfdebug48.03
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(CH1_g(NP_G))
-         ENDIF
-         ConcDescript % specifier            = NOUTGC
-         ConcDescript % initial_value        = 0.0
-         ConcDescript % num_items_per_record = 1
-         ConcDescript % num_fd_records       = NP_G
-         ConcDescript % num_records_this     = NP
-         ConcDescript % imap                 => NODES_LG
-         ConcDescript % array                => CH1
-         ConcDescript % array_g              => CH1_g
-         ConcDescript % ConsiderWetDry       = .FALSE.
-         ConcDescript % alternate_value      = 0.0
-         ConcDescript % field_name           = 'Conc'
-
-C        maxele.63
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(ETAMAX_g(NP_G))
-            ALLOCATE (ETAMAX_Time_G(NP_G))
-         ENDIF
-         EtaMaxDescript % specifier            = NOUTGE
-         EtaMaxDescript % initial_value        = 0.0
-         EtaMaxDescript % num_items_per_record = 2   !overloading this value to account for time stamps along with values
-         EtaMaxDescript % num_fd_records       = NP_G
-         EtaMaxDescript % num_records_this     = NP
-         EtaMaxDescript % imap                 => NODES_LG
-         EtaMaxDescript % array                => ETAMAX
-         EtaMaxDescript % array_g              => ETAMAX_G
-!         EtaMaxDescript % hotstart             => HOT_ETAMAX
-!         EtaMaxDescript % hotstart_g           => HOT_ETAMAX_G
-         EtaMaxDescript % array2               => ETAMAX_Time
-         EtaMaxDescript % array2_g             => ETAMAX_Time_G
-         EtaMaxDescript % ConsiderWetDry       = .FALSE.
-         EtaMaxDescript % alternate_value      = 0.0
-         EtaMaxDescript % field_name           = 'EtaMax'
-         EtaMaxDescript % file_name            = 'maxele.63'
-C        maxvel.63
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(UMAX_g(NP_G))
-            ALLOCATE (UMAX_Time_G(NP_G))
-         ENDIF
-         UMaxDescript % specifier              = NOUTGV
-         UMaxDescript % initial_value          = 0.0
-         UMaxDescript % num_items_per_record   = 2
-         UMaxDescript % num_fd_records         = NP_G
-         UMaxDescript % num_records_this       = NP
-         UMaxDescript % imap                   => NODES_LG
-         UMaxDescript % array                  => UMAX
-         UMaxDescript % array_g                => UMAX_G
-!         UMaxDescript % hotstart               => HOT_UMAX
-!         UMaxDescript % hotstart_g             => HOT_UMAX_G
-         UMaxDescript % array2                 => UMAX_Time
-         UMaxDescript % array2_g               => UMAX_Time_G
-         UMaxDescript % ConsiderWetDry         = .FALSE.
-         UMaxDescript % alternate_value        = 0.0
-         UMaxDescript % field_name             = 'UMax'
-         UMaxDescript % file_name              = 'maxvel.63'
-C        prmin.63
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(PRMIN_g(NP_G))
-            ALLOCATE (PRMIN_Time_G(NP_G))
-         ENDIF
-         PrMinDescript % specifier             = NOUTGW
-         PrMinDescript % initial_value         = 0.0
-         PrMinDescript % num_items_per_record  = 2
-         PrMinDescript % num_fd_records        = NP_G
-         PrMinDescript % num_records_this      = NP
-         PrMinDescript % imap                  => NODES_LG
-         PrMinDescript % array                 => PRMIN
-         PrMinDescript % array_g               => PRMIN_G
-!         PrMinDescript % hotstart              => HOT_PRMIN
-!         PrMinDescript % hotstart_g            => HOT_PRMIN_G
-         PrMinDescript % array2                => PRMIN_Time
-         PrMinDescript % array2_g              => PRMIN_Time_G
-         PrMinDescript % ConsiderWetDry        = .FALSE.
-         PrMinDescript % alternate_value       = 0.0
-         PrMinDescript % field_name            = 'PrMin'
-         PrMinDescript % file_name             = 'minpr.63'
-C        maxwvel.63
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(WVNOUTMAX_g(NP_G))
-            ALLOCATE (WVNOUTMAX_Time_G(NP_G))
-         ENDIF
-         WVMaxDescript % specifier             = NOUTGW
-         WVMaxDescript % initial_value         = 0.0
-         WVMaxDescript % num_items_per_record  = 2
-         WVMaxDescript % num_fd_records        = NP_G
-         WVMaxDescript % num_records_this      = NP
-         WVMaxDescript % imap                  => NODES_LG
-         WVMaxDescript % array                 => WVNOUTMAX
-         WVMaxDescript % array_g               => WVNOUTMAX_G
-!         WVMaxDescript % hotstart              => HOT_WVNOUTMAX
-!         WVMaxDescript % hotstart_g            => HOT_WVNOUTMAX_G
-         WVMaxDescript % array2                => WVNOUTMAX_Time
-         WVMaxDescript % array2_g              => WVNOUTMAX_Time_G
-         WVMaxDescript % ConsiderWetDry        = .FALSE.
-         WVMaxDescript % alternate_value       = 0.0
-         WVMaxDescript % field_name            = 'WVMax'
-         WVMaxDescript % file_name             = 'maxwvel.63'
-C        maxrs.63
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(RSNMAX_g(NP_G))
-            ALLOCATE (RSNMAX_Time_G(NP_G))
-         ENDIF
-         RSMaxDescript % specifier             = NOUTGW
-         RSMaxDescript % initial_value         = 0.0
-         RSMaxDescript % num_items_per_record  = 2
-         RSMaxDescript % num_fd_records        = NP_G
-         RSMaxDescript % num_records_this      = NP
-         RSMaxDescript % imap                  => NODES_LG
-         RSMaxDescript % array                 => RSNMAX
-         RSMaxDescript % array_g               => RSNMAX_G
-!         RSMaxDescript % hotstart              => HOT_RSNMAX
-!         RSMaxDescript % hotstart_g            => HOT_RSNMAX_G
-         RSMaxDescript % array2                => RSNMAX_Time
-         RSMaxDescript % array2_g              => RSNMAX_Time_G
-         RSMaxDescript % ConsiderWetDry        = .FALSE.
-         RSMaxDescript % alternate_value       = 0.0
-         RSMaxDescript % field_name            = 'RSMax'
-         RSMaxDescript % file_name             = 'maxrs.63'
-C        ESLNodes.63
-         IF(LoadEleSlopeLim)THEN
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-                ALLOCATE(ESLONOFF_G(NP_G))
-            ENDIF
-            ESLDescript % specifier            = 1
-            ESLDescript % initial_value        = 0.0
-            ESLDescript % num_items_per_record = 1
-            ESLDescript % num_fd_records       = NP_G
-            ESLDescript % num_records_this     = NP
-            ESLDescript % imap                 => NODES_LG
-            ESLDescript % array                => ESLONOFF
-            ESLDescript % array_g              => ESLONOFF_G
-!            ESLDescript % hotstart             => HOT_ESLONOFF
-!            ESLDescript % hotstart_g           => HOT_ESLONOFF_G
-            ESLDescript % ConsiderWetDry       = .FALSE.
-            ESLDescript % alternate_value      = 0.0
-            ESLDescript % field_name           = 'ESLActive'
-            ESLDescript % file_name            = 'ESLNodes.63'
-         ENDIF
-C
-#ifdef ADCNETCDF
-         netcdf_error = .false.
-         ! jgf49.43.11: if netcdf is not required for a particular output file,
-         ! the associated subroutine call will do nothing and just return
-         IF (myProc.eq.0) THEN
-            CALL initNetCDFOutputFile(61,ElevStaDescript, netcdf_error(1))
-            CALL initNetCDFOutputFile(62,VelStaDescript, netcdf_error(2))
-            CALL initNetCDFOutputFile(63,ElevDescript, netcdf_error(3))
-            CALL initNetCDFOutputFile(64,VelDescript, netcdf_error(4))
-            CALL initNetCDFOutputFile(71,PrStaDescript, netcdf_error(5))
-            CALL initNetCDFOutputFile(72,WindVelStaDescript,
-     &                                netcdf_error(6))
-            CALL initNetCDFOutputFile(73,PrDescript, netcdf_error(7))
-            CALL initNetCDFOutputFile(74,WindVelDescript, netcdf_error(8))
-            CALL initNetCDFOutputFile(311,EtaMaxDescript,netcdf_error(10))
-            CALL initNetCDFOutputFile(312,UMaxDescript,netcdf_error(11))
-            CALL initNetCDFOutputFile(313,PrMinDescript,netcdf_error(12))
-            CALL initNetCDFOutputFile(314,WVMaxDescript,netcdf_error(13))
-            CALL initNetCDFOutputFile(315,RSMaxDescript,netcdf_error(14))
-            IF(ABS(NRS).EQ.3.OR.ABS(NRS).EQ.4)THEN
-                CALL initNetCDFOutputFile(164,RSDescript, netcdf_error(9))
-            ENDIF    
-         ENDIF
-Cobell - We no longer need this bcast if we set subdomainFatalError first
-C        CALL msg_lbcast(netcdf_error,14)
-         DO i=1,14
-            IF (netcdf_error(i).eqv..true.) THEN
-               CALL ADCIRC_TERMINATE()               
-               STOP
-            ENDIF
-         ENDDO
-#endif
-C
-         FirstCall = .false.
-      ENDIF
-
-C...  Output elevation recording station information if noute<>0 and the
-C...  time step falls within the specified window calculate elevation
-C...  solutions at stations using interpolation
-
-      IF(NOUTE.NE.0) THEN
-         IF((IT.GT.NTCYSE).AND.(IT.LE.NTCYFE)) THEN
-             NSCOUE=NSCOUE+1
-             NCCOUE=NSCOUE
-         ENDIF
-         IF(NSCOUE.EQ.NSPOOLE) THEN
-            DO I=1,NSTAE
-               EE1=ETA2(NM(NNE(I),1))
-               EE2=ETA2(NM(NNE(I),2))
-               EE3=ETA2(NM(NNE(I),3))
-               NC1=NODECODE(NM(NNE(I),1))
-               NC2=NODECODE(NM(NNE(I),2))
-               NC3=NODECODE(NM(NNE(I),3))
-               NCELE=NC1*NC2*NC3*NOFF(NNE(I))
-               IF(NCELE.EQ.1) ET00(I)=EE1*STAIE1(I)+EE2*STAIE2(I)
-     &                                             +EE3*STAIE3(I)
-               IF(NCELE.EQ.0) ET00(I)=-99999.
-            END DO
-C
-C           save elevation recording station data to file
-Casey 090302: Added file name.
-            CALL writeOutArray(61, TimeLoc, IT, ElevStaDescript,
-     &                         packOne, unpackOne, IESTP,
-     &                         'fort.61        ')
-
-c.....     tcm v50.66.01 added for time varying bathymetry
-c.....     save bathymetry recording station data to file
-            IF (NDDT.NE.0) THEN
-               DO I=1,NSTAE
-                  EE1=DP(NM(NNE(I),1))
-                  EE2=DP(NM(NNE(I),2))
-                  EE3=DP(NM(NNE(I),3))
-                  DP00(I)=EE1*STAIE1(I)+EE2*STAIE2(I)
-     &                                 +EE3*STAIE3(I)
-               ENDDO
-               CALL writeOutArray(75,TimeLoc,IT,BathyStaDescript,
-     &                         packOne, unpackOne, IBSTP,
-     &                         'fort.75        ')
-            ENDIF
-
-C            write(16,*) 'Finished with fort.61 output routine.' !jgfdebug48.03
-            NSCOUE=0
-            NCCOUE=NSCOUE
-         ENDIF
-      ENDIF
-
-C...  OUTPUT VELOCITY RECORDING STATION TIME SERIES INFORMATION IF
-C...  NOUTV<>0 AND THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
-C...  CALCULATE VELOCITY SOLUTIONS AT STATIONS USING INTERPOLATION
-C...
-      IF(NOUTV.NE.0) THEN
-         IF((IT.GT.NTCYSV).AND.(IT.LE.NTCYFV)) THEN
-             NSCOUV=NSCOUV+1
-             NCCOUV=NSCOUV
-         ENDIF
-         IF(NSCOUV.EQ.NSPOOLV) THEN
-C            write(16,*) 'About to write fort.62 file.' !jgfdebug48.03
-            DO I=1,NSTAV
-               U11=UU2(NM(NNV(I),1))
-               U22=UU2(NM(NNV(I),2))
-               U33=UU2(NM(NNV(I),3))
-               V11=VV2(NM(NNV(I),1))
-               V22=VV2(NM(NNV(I),2))
-               V33=VV2(NM(NNV(I),3))
-               UU00(I)=U11*STAIV1(I)+U22*STAIV2(I)+U33*STAIV3(I)
-               VV00(I)=V11*STAIV1(I)+V22*STAIV2(I)+V33*STAIV3(I)
-            END DO
-C
-C           save velocity recording station data to file
-Casey 090302: Added file name.
-            CALL writeOutArray(62, TimeLoc, IT, VelStaDescript,
-     &                         packTwo, unpackTwo, IVSTP,
-     &                         'fort.62        ')
-
-C            write(16,*) 'Finished with fort.62 output routine.' !jgfdebug48.03
-            NSCOUV=0
-            NCCOUV=NSCOUV
-         ENDIF
-      ENDIF
-
-C...  OUTPUT CONCENTRATION RECORDING STATION INFORMATION IF NOUTC<>0
-C...  AND THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW CALCULATE
-C...  CONCENTRATION SOLUTIONS AT STATIONS USING INTERPOLATION
-C...
-      IF(NOUTC.NE.0) THEN
-         IF((IT.GT.NTCYSC).AND.(IT.LE.NTCYFC)) NSCOUC=NSCOUC+1
-         IF(NSCOUC.EQ.NSPOOLC) THEN
-            DO I=1,NSTAC
-               NM1=NM(NNC(I),1)
-               NM2=NM(NNC(I),2)
-               NM3=NM(NNC(I),3)
-               H2N1=DP(NM1)+IFNLFA*ETA2(NM1)
-               H2N2=DP(NM2)+IFNLFA*ETA2(NM2)
-               H2N3=DP(NM3)+IFNLFA*ETA2(NM3)
-               C1=CH1(NM1)/H2N1
-               C2=CH1(NM2)/H2N2
-               C3=CH1(NM3)/H2N3
-               NC1=NODECODE(NM1)
-               NC2=NODECODE(NM2)
-               NC3=NODECODE(NM3)
-               NCELE=NC1*NC2*NC3*NOFF(NNC(I))
-               IF(NCELE.EQ.1) CC00(I)=C1*STAIC1(I)+C2*STAIC2(I)
-     &                                            +C3*STAIC3(I)
-               IF(NCELE.EQ.0) CC00(I)=-99999.0
-            END DO
-C
-C           save concentration recording station data to file
-Casey 090302: Added file name.
-            CALL writeOutArray(81, TimeLoc, IT, ConcStaDescript,
-     &                         packOne, unpackOne, ICSTP,
-     &                         'fort.81        ')
-
-C            write(16,*) 'Finished with fort.81 output routine.' !jgfdebug48.03
-            NSCOUC=0
-         ENDIF
-      ENDIF
-
-C...  OUTPUT METEOROLOGICAL RECORDING STATION INFORMATION IF NWS>0 AND
-C...  THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW CALCULATE
-C...  METEOROLOGICAL SOLUTIONS AT STATIONS USING INTERPOLATION
-C...
-      IF((NWS.NE.0).AND.(NOUTM.NE.0)) THEN
-         IF((IT.GT.NTCYSM).AND.(IT.LE.NTCYFM)) THEN
-            NSCOUM=NSCOUM+1
-            NCCOUM=NSCOUM
-         ENDIF
-         IF(NSCOUM.EQ.NSPOOLM) THEN
-C            write(16,*) 'About to write fort.71,72 files.' !jgfdebug48.03
-            DO I=1,NSTAM
-               NM1=NM(NNM(I),1)
-               NM2=NM(NNM(I),2)
-               NM3=NM(NNM(I),3)
-               U11=wvnxout(NM1)
-               U22=wvnxout(NM2)
-               U33=wvnxout(NM3)
-               V11=wvnyout(NM1)
-               V22=wvnyout(NM2)
-               V33=wvnyout(NM3)
-               P11=PR2(NM1)
-               P22=PR2(NM2)
-               P33=PR2(NM3)
-               RMU00(I)=U11*STAIM1(I)+U22*STAIM2(I)+U33*STAIM3(I)
-               RMV00(I)=V11*STAIM1(I)+V22*STAIM2(I)+V33*STAIM3(I)
-               RMP00(I)=P11*STAIM1(I)+P22*STAIM2(I)+P33*STAIM3(I)
-            END DO
-C... v49.64.01 tcm -- added support for ice station output
-C           IF using ICE fields, collect ice station data fort.91
-            IF (NCICE.NE.0) THEN
-               DO I = 1,NSTAM
-                  NM1=NM(NNM(I),1)
-                  NM2=NM(NNM(I),2)
-                  NM3=NM(NNM(I),3)
-                  CIC11 = CICEOUT(NM1)
-                  CIC22 = CICEOUT(NM2)
-                  CIC33 = CICEOUT(NM3)
-                  RMICE00(I) = CIC11*STAIM1(I) +
-     &                         CIC22*STAIM2(I)+CIC33*STAIM3(I)
-               END DO
-            ENDIF
-C
-C           save atmospheric pressure recording station data to file
-Casey 090302: Added file name.
-            CALL writeOutArray(71, TimeLoc, IT, PrStaDescript,
-     &                         packOne, unpackOne, IPSTP,
-     &                         'fort.71        ')
-C
-C           save wind velocity recording station data to file
-Casey 090302: Added file name.
-            CALL writeOutArray(72, TimeLoc, IT, WindVelStaDescript,
-     &                         packTwo, unpackTwo, IWSTP,
-     &                         'fort.72        ')
-c  V49.64.01 TCM -- ADDED ICE STATIONS
-C           save ice field recording station data to file
-            IF(NCICE.NE.0) THEN
-               CALL writeOutArray(91, TimeLoc, IT, IceStaDescript,
-     &                         packOne, unpackOne, IICESTP,
-     &                         'fort.91        ')
-            ENDIF
-
-            NSCOUM=0
-            NCCOUM=NSCOUM
-         ENDIF
-      ENDIF
-C...   OUTPUT GLOBAL ELEVATION DATA IF NOUTGE<>0 AND THE
-C.... TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
-C...
-      IF(NOUTGE.NE.0) THEN
-         IF((IT.GT.NTCYSGE).AND.(IT.LE.NTCYFGE)) THEN
-            NSCOUGE=NSCOUGE+1
-            NCCOUGE=NSCOUGE
-         ENDIF
-         IF(NSCOUGE.EQ.NSPOOLGE) THEN
-!         IF(MYPROC.EQ.0) PRINT *, "W: B-write ", NSCOUGE
-C
-Casey 090302: Added outer IF statement.
-            IF((ABS(NOUTGE).EQ.1).OR.
-     &         (ABS(NOUTGE).EQ.2).OR.
-     &         (ABS(NOUTGE).EQ.3).OR.
-     &         (ABS(NOUTGE).EQ.5)) THEN
-C           save fulldomain elevation data to file
-
-C....tcm v50.27 added using writer processors for full domain output
-               if(ABS(NOUTGE).eq.1.OR.ABS(NOUTGE).EQ.3.OR.
-     &            ABS(NOUTGE).EQ.5) then
-#ifdef CMPI
-Casey 090302: Changed descript to ElevDescript.
-                  IF(MNWPROC.GT.0) THEN
-                     CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $              (63,TRIM(GLOBALDIR)//'/'//'fort.63',ElevDescript,TimeLoc,it,
-     $                 writer_store63, -99999.D0)
-
-                     !tcm v50.66.01 added for time varying bathymetry
-                   if (nddt.ne.0) call WRITE_GBL_FILE_THROUGH_WRITER
-     $              (76,TRIM(GLOBALDIR)//'/'//'fort.76',BathyDescript,TimeLoc,it,
-     $                 writer_storeOne, 0.D0)
-
-                  ELSE
-                     CALL writeOutArray(63, TimeLoc, IT, ElevDescript,
-     &                            pack63, unpackOne, IGEP,
-     &                            'fort.63        ')
-                     !tcm v50.66.01 added for time varying bathymetry
-                     if (nddt.ne.0) CALL writeOutArray(76, TimeLoc, IT,
-     &                      BathyDescript,packOne, unpackOne, IGBP,
-     &                            'fort.76        ')
-
-                  ENDIF
-#else
-                  CALL writeOutArray(63, TimeLoc, IT, ElevDescript,
-     &                            pack63, unpackOne, IGEP,
-     &                            'fort.63        ')
-
-                  !tcm v50.66.01 added for time varying bathymetry
-                  if (nddt.ne.0) CALL writeOutArray(76, TimeLoc, IT,
-     &                   BathyDescript,packOne, unpackOne, IGBP,
-     &                            'fort.76        ')
-#endif
-               else
-Casey 090302: Added file name.
-                  CALL writeOutArray(63, TimeLoc, IT, ElevDescript,
-     &                            pack63, unpackOne, IGEP,
-     &                            'fort.63        ')
-
-                  !tcm v50.66.01 added for time varying bathymetry
-                  if (nddt.ne.0) CALL writeOutArray(76, TimeLoc, IT,
-     &                   BathyDescript,packOne, unpackOne, IGBP,
-     &                            'fort.76        ')
-
-               endif
-C
-C              jgf47.06: Write out tau0 if it is time varying and the user has
-C              requested it with tau0 = -4 in fort.15.
-               IF (OUTPUTTAU0) THEN
-Casey 090302: Added file name.
-                  CALL writeOutArray(90, TimeLoc, IT, Tau0Descript,
-     &                               packOne, unpackOne, IGEP,
-     &                               'fort.90        ')
-               ENDIF
-C
-C           kmd48.33bc: Write out sponge layer so user can see which nodes
-C           are included in the sponge layer. Note only outputs if spongedist
-C           given in fort.15 is not equal to zero.
-               IF ((OUTPUTSPONGE).AND.(countsponge.eq.1)) THEN
-                  CALL writeOutArray(92, TimeLoc, IT, SpongeDescript,
-     &                               packOne, unpackOne, IGEP,
-     &                               'fort.92        ')
-                  countsponge=countsponge + 1 ! only need to output once as it does not change with time
-               ENDIF
-
-C          jgf47.08 Made sparse output an option (if NOUTGE=-4 or 4 in fort.15)
-            ELSEIF(ABS(NOUTGE).EQ.4) THEN
-C              jgf47.08 Create compact output
-C              jgf48.03 TODO: Make this globalio compliant.
-C              kmd - updated
-#ifdef CMPI
-Casey 090302: Changed descript to ElevDescript.
-              IF(MNWPROC.GT.0) THEN
-                 CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $              (63,TRIM(GLOBALDIR)//'/'//'fort.63',ElevDescript,TimeLoc,it,
-     $                 writer_store63, -99999.D0)
-
-                  !tcm v50.66.01 added for time varying bathymetry
-                  !this will be a full record not compact
-                 if (nddt.ne.0) CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $              (63,TRIM(GLOBALDIR)//'/'//'fort.76',BathyDescript,TimeLoc,it,
-     $                 writer_storeOne, 0.D0)
-
-              ELSE
-                 CALL WRITE_GBL_63_SKIP_DRYNODE  ! sb 11/10/2006
-     $                (63, TRIM(GLOBALDIR)//'/'//'fort.63',
-     $                 ElevDescript, TimeLoc,it, store63)
-
-                  !tcm v50.66.01 added for time varying bathymetry
-                  ! note that this will be a full record not compact
-                  IF (NDDT.NE.0) CALL writeOutArray(76, TimeLoc, IT,
-     &                   BathyDescript,packOne, unpackOne, IGBP,
-     &                         'fort.76        ')
-
-              ENDIF
-#else
-              CALL WRITE_GBL_63_SKIP_DRYNODE  ! sb 11/10/2006
-     $            (63, TRIM(GLOBALDIR)//'/'//'fort.63',
-     &               ElevDescript, TimeLoc,it, store63)
-
-              !tcm v50.66.01 added for time varying bathymetry
-              ! note that this will be a full record not compact
-              IF (NDDT.NE.0) CALL writeOutArray(76, TimeLoc, IT,
-     &                BathyDescript,packOne, unpackOne, IGBP,
-     &                      'fort.76        ')
-
-#endif
-              IGEP=IGEP+1+NP
-              IGBP=IGBP+1+NP
-           ENDIF
-C           write(16,*) 'Finished with fort.63 output routine.' !jgfdebug48.03
-           NSCOUGE=0
-           NCCOUGE=NSCOUGE
-!         IF(MYPROC.EQ.0) PRINT *, "W: B-write after ", NSCOUGE
-         ENDIF
-      ENDIF
-
-C...  OUTPUT GLOBAL VELOCITY DATA IF NOUTGV<>0 AND THE
-C.... TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
-C...
-      IF(NOUTGV.NE.0) THEN
-         IF((IT.GT.NTCYSGV).AND.(IT.LE.NTCYFGV)) THEN
-            NSCOUGV=NSCOUGV+1
-            NCCOUGV=NSCOUGV
-         ENDIF
-         IF(NSCOUGV.EQ.NSPOOLGV) THEN
-Casey 090302: Added outer IF statement.
-            IF((ABS(NOUTGV).EQ.1).OR.
-     &         (ABS(NOUTGV).EQ.2).OR.
-     &         (ABS(NOUTGV).EQ.5).OR.
-     &         (ABS(NOUTGV).EQ.3)) THEN
-
-C....tcm v50.27 added using writer processors for full domain output
-               if(ABS(NOUTGV).eq.1.OR.ABS(NOUTGV).eq.3.OR.
-     &            ABS(NOUTGV).EQ.5) then
-#ifdef CMPI
-Casey 090302: Changed descript to VelDescript.
-                  IF(MNWPROC.GT.0) THEN
-                     CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                (64,TRIM(GLOBALDIR)//'/'//'fort.64',VelDescript,TimeLoc,it,
-     $                 writer_storeTwo, 0.D0)
-                  ELSE
-                     CALL writeOutArray(64, TimeLoc, IT, VelDescript,
-     &                         packTwo, unpackTwo, IGVP,
-     &                         'fort.64        ')
-                  ENDIF
-#else
-                  CALL writeOutArray(64, TimeLoc, IT, VelDescript,
-     &                         packTwo, unpackTwo, IGVP,
-     &                         'fort.64        ')
-#endif
-               else
-Casey 090302: Added file name.
-                  CALL writeOutArray(64, TimeLoc, IT, VelDescript,
-     &                         packTwo, unpackTwo, IGVP,
-     &                         'fort.64        ')
-               endif
-            ELSEIF (ABS(NOUTGV).EQ.4) THEN
-            ! jgf48.03 TODO: Make this globalio compliant.
-            ! kmd - updated
-#ifdef CMPI
-Casey 090302: Changed descript to VelDescript.
-                  IF(MNWPROC.GT.0) THEN
-                    CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                (64,TRIM(GLOBALDIR)//'/'//'fort.64',VelDescript,TimeLoc,it,
-     $                 writer_storeTwo, 0.D0)
-                  ELSE
-                    CALL WRITE_GBL_FILE_SKIP_DEFAULT ! sb 11/10/2006
-     $                   (64, TRIM(GLOBALDIR)//'/'//'fort.64',
-     $                   VelDescript, TimeLoc, it, storeTwo,0.d0)
-                  ENDIF
-#else
-                  CALL WRITE_GBL_FILE_SKIP_DEFAULT ! sb 11/10/2006
-     $                 (64, TRIM(GLOBALDIR)//'/'//'fort.64',
-     $                 VelDescript, TimeLoc, it, storeTwo,0.d0)
-#endif
-            ENDIF
-            NSCOUGV=0  ! kmd49 - added this back into the code
-            NCCOUGV=NSCOUGV
-         ENDIF
-      ENDIF
-
-C...
-C...  OUTPUT GLOBAL WIND STRESS and atmospheric pressure data IF
-C.... NOUTGW<>0 AND THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
-C...
-      IF((NWS.NE.0).AND.(NOUTGW.NE.0)) THEN
-         IF((IT.GT.NTCYSGW).AND.(IT.LE.NTCYFGW)) THEN
-             NSCOUGW=NSCOUGW+1
-             NCCOUGW=NSCOUGW
-         ENDIF
-         IF(NSCOUGW.EQ.NSPOOLGW) THEN
-Casey 090302: Added outer IF statement.
-            IF((ABS(NOUTGW).EQ.1).OR.
-     &         (ABS(NOUTGW).EQ.2).OR.
-     &         (ABS(NOUTGW).EQ.5).OR.
-     &         (ABS(NOUTGW).EQ.3)) THEN
-C           save atmospheric pressure recording station data to file
-C....tcm v50.27 added using writer processors for full domain output
-               IF(ABS(NOUTGW).eq.1.OR.ABS(NOUTGW).EQ.3.OR.
-     &            ABS(NOUTGW).EQ.5) then
-#ifdef CMPI
-Casey 090302: Changed descript to VelDescript.
-                  IF(MNWPROC.GT.0) THEN
-                     CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                  (73,TRIM(GLOBALDIR)//'/'//'fort.73',PrDescript,TimeLoc,
-     $                   it,writer_storeOne, 0.D0)
-                     CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                   (74,TRIM(GLOBALDIR)//'/'//'fort.74',
-     &                   WindVelDescript,TimeLoc,it,writer_storeTwo, 0.D0)
-                     IF(NCICE.NE.0) then
-                        CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                       (93,TRIM(GLOBALDIR)//'/'//'fort.93',
-     $                       IceDescript,TimeLoc,it,writer_storeOne, 0.D0)
-                     ENDIF
-!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-                     IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
-!#ifdef CSWAN
-                        CALL WRITE_GBL_FILE_THROUGH_WRITER
-     &                      (164,TRIM(GLOBALDIR)//'/'//'rads.64',RSDescript,
-     &                       TimeLoc,it,writer_storeTwo, 0.D0)
-                     ENDIF
-!#endif
-                  ELSE  !no writer processors
-
-                     CALL writeOutArray(73, TimeLoc, IT, PrDescript,
-     &                            packOne, unpackOne, IGPP,
-     &                            'fort.73        ')
-C           save wind velocity global data to file
-Casey 090302: Added file name.
-                     CALL writeOutArray(74, TimeLoc, IT, WindVelDescript,
-     &                            packTwo, unpackTwo, IGWP,
-     &                            'fort.74        ')
-                     IF (NCICE.NE.0) THEN
-C TCM V49.64.01 -- ADDED ICE SUPPORT
-C           save global ICE data to file
-                        CALL writeOutArray(93, TimeLoc, IT, IceDescript,
-     &                         packOne, unpackOne, IGIP,
-     &                         'fort.93        ')
-                     ENDIF
-!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-                     IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
-!#ifdef CSWAN
-Casey 090302: Added these lines for output of radiation stresses.
-                        CALL writeOutArray(164,TimeLoc, IT, RSDescript,
-     &                             packTwo, unpackTwo, IGRadS,
-     &                            'rads.64        ')
-                     ENDIF
-!#endif
-                  ENDIF  !test for writer processors
-
-#else
-       !Not parallel
-                  CALL writeOutArray(73, TimeLoc, IT, PrDescript,
-     &                            packOne, unpackOne, IGPP,
-     &                            'fort.73        ')
-C           save wind velocity global data to file
-Casey 090302: Added file name.
-                  CALL writeOutArray(74, TimeLoc, IT, WindVelDescript,
-     &                            packTwo, unpackTwo, IGWP,
-     &                            'fort.74        ')
-                  IF (NCICE.NE.0) THEN
-C TCM V49.64.01 -- ADDED ICE SUPPORT
-C           save global ICE data to file
-                     CALL writeOutArray(93, TimeLoc, IT, IceDescript,
-     &                         packOne, unpackOne, IGIP,
-     &                         'fort.93        ')
-                  ENDIF
-!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-                  IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
-!#ifdef CSWAN
-Casey 090302: Added these lines for output of radiation stresses.
-                     CALL writeOutArray(164,TimeLoc, IT, RSDescript,
-     &                               packTwo, unpackTwo, IGRadS,
-     &                               'rads.64        ')
-                  ENDIF
-!#endif
-
-#endif
-               ELSE  ! abs(noutgw) == 2 or 3
-
-Casey 090302: Added file name.
-                  CALL writeOutArray(73, TimeLoc, IT, PrDescript,
-     &                            packOne, unpackOne, IGPP,
-     &                            'fort.73        ')
-C           save wind velocity global data to file
-Casey 090302: Added file name.
-                  CALL writeOutArray(74, TimeLoc, IT, WindVelDescript,
-     &                            packTwo, unpackTwo, IGWP,
-     &                            'fort.74        ')
-                  IF (NCICE.NE.0) THEN
-C TCM V49.64.01 -- ADDED ICE SUPPORT
-C           save global ICE data to file
-                     CALL writeOutArray(93, TimeLoc, IT, IceDescript,
-     &                         packOne, unpackOne, IGIP,
-     &                         'fort.93        ')
-                  ENDIF
-!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-                  IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
-!#ifdef CSWAN
-Casey 090302: Added these lines for output of radiation stresses.
-                     CALL writeOutArray(164,TimeLoc, IT, RSDescript,
-     &                            packTwo, unpackTwo, IGRadS,
-     &                            'rads.64        ')
-                  ENDIF
-!#endif
-               ENDIF  !test for abs(noutgw) == 1
-
-C           jgf48.03 TODO: Make this globalio compliant.
-            ELSEIF (ABS(NOUTGW).EQ.4) THEN
-#ifdef CMPI
-Casey 090302: Changed descript to PrDescript
-               IF(MNWPROC.GT.0) THEN
-                 CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $             (73,TRIM(GLOBALDIR)//'/'//'fort.73',PrDescript,TimeLoc,it,
-     $              writer_storeOne, 0.D0)
-               ELSE
-                 CALL WRITE_GBL_FILE_SKIP_DEFAULT
-     $             (73, TRIM(GLOBALDIR)//'/'//'fort.73',
-     $              PrDescript, TimeLoc, it, storeOne,0.d0)
-               ENDIF
-#else
-               CALL WRITE_GBL_FILE_SKIP_DEFAULT
-     $            (73, TRIM(GLOBALDIR)//'/'//'fort.73',
-     $               PrDescript, TimeLoc, it, storeOne,0.d0)
-#endif
-C           ENDIF
-C           jgf48.03 TODO: Make this globalio compliant.
-C           IF (ABS(NOUTGW).EQ.4) THEN
-#ifdef CMPI
-Casey 090302: Changed descript to WindVelDescript
-               IF(MNWPROC.GT.0) THEN
-                 CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                   (74,TRIM(GLOBALDIR)//'/'//'fort.74',
-     &                   WindVelDescript,TimeLoc,it,
-     $                   writer_storeTwo, 0.D0)
-               ELSE
-                 CALL WRITE_GBL_FILE_SKIP_DEFAULT
-     $                   (74, TRIM(GLOBALDIR)//'/'//'fort.74',
-     $                   WindVelDescript, TimeLoc, it, storeTwo,0.d0)
-               ENDIF
-#else
-               CALL WRITE_GBL_FILE_SKIP_DEFAULT
-     $              (74, TRIM(GLOBALDIR)//'/'//'fort.74',
-     $              WindVelDescript, TimeLoc, it, storeTwo,0.d0)
-#endif
-
-C  ! tcm v49.64.01 ADDED for ICE
-C           jgf48.03 TODO: Make this globalio compliant.
-               IF (NCICE.NE.0) THEN
-#ifdef CMPI
-                  IF(MNWPROC.GT.0) THEN
-                    CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                (93,TRIM(GLOBALDIR)//'/'//'fort.93',
-     $                IceDescript,TimeLoc,it,writer_storeOne, 0.D0)
-                  ELSE
-                     CALL WRITE_GBL_FILE_SKIP_DEFAULT
-     $                 (93, TRIM(GLOBALDIR)//'/'//'fort.93',
-     $                 IceDescript, TimeLoc, it, storeOne,0.d0)
-                  ENDIF
-#else
-                  CALL WRITE_GBL_FILE_SKIP_DEFAULT
-     $               (93, TRIM(GLOBALDIR)//'/'//'fort.93',
-     $               IceDescript, TimeLoc, it, storeOne,0.d0)
-#endif
-               ENDIF
-!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-               IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
-!#ifdef CSWAN
-Casey 090302: Added these lines for output of radiation stresses.
-#ifdef CMPI
-                  IF(MNWPROC.GT.0) THEN
-                    CALL WRITE_GBL_FILE_THROUGH_WRITER
-     &                   (164,TRIM(GLOBALDIR)//'/'//'rads.64',
-     &                   RSDescript,TimeLoc,it,
-     &                   writer_storeTwo, 0.D0)
-                  ELSE
-                     CALL WRITE_GBL_FILE_SKIP_DEFAULT
-     &                 (164, TRIM(GLOBALDIR)//'/'//'rads.64',
-     &                 RSDescript, TimeLoc, it, storeTwo, 0.D0)
-                  ENDIF
-#else
-                  CALL WRITE_GBL_FILE_SKIP_DEFAULT
-     &              (164, TRIM(GLOBALDIR)//'/'//'rads.64',
-     &              RSDescript, TimeLoc, it, storeTwo, 0.D0)
-#endif
-!#endif           
-               ENDIF
-            ENDIF
-            NSCOUGW=0
-            NCCOUGW=NSCOUGW
-         ENDIF
-      ENDIF
-
-C...  OUTPUT GLOBAL CONCENTRATION DATA IF NOUTGC<>0 AND THE
-C.... TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
-C...
-      IF(NOUTGC.NE.0) THEN
-         IF((IT.GT.NTCYSGC).AND.(IT.LE.NTCYFGC)) NSCOUGC=NSCOUGC+1
-         IF(NSCOUGC.EQ.NSPOOLGC) THEN
-C
-C           save fulldomain concentration data to file
-C           jgf48.03 TODO: add the proper processingi (see below).
-Casey 090302: Added file name.
-            CALL writeOutArray(83, TimeLoc, IT, ConcDescript,
-     &                         pack83, unpackOne, IGCP,
-     &                         'fort.83        ')
-C               DO I=1,NP
-C                  H2=DP(I)+IFNLFA*ETA2(I)
-C                  C1=CH1(I)/H2
-C                  IF(NODECODE(I).EQ.1) WRITE(83,2453) I,C1
-C                  IF(NODECODE(I).EQ.0) WRITE(83,2453) I,-99999.
-C               ENDDO
-            NSCOUGC=0
-         ENDIF
-      ENDIF
-
-#ifdef CMPI
-Csb 02/09/2007
-C...  Communicate writer processors and let them write out what
-C...  they have.
-      CALL FLUSH_WRITERS()
-#endif
-
-
-Csb 11/11/2006
-C...   OUTPUT MAXIMUM/MINIMUM GLOBAL DATA AT THE LAST TIME STEP.
-C...
-C     jgf48.4636 Updated to newer data structure, so that we can
-C     compare with values from hot start, so that mins and maxes
-C     can be preserved across hot starts.
-C     tcmv51.20.01 Changed from pack/unpack one to pack/unpack two
-C       as max/min are now initialized from file during hotstart
-C       for all processors, not just myproc=0.
-      IF(IT.EQ.NT) THEN
-         CALL writeOutArrayMinMax(311, TimeLoc, IT, 2, EtaMaxDescript,
-     &        packTwo, unpackTwo)
-         CALL writeOutArrayMinMax(312, TimeLoc, IT, 2, UMaxDescript,
-     &        packTwo, unpackTwo)
-         IF (NWS.NE.0) THEN
-            CALL writeOutArrayMinMax(313, TimeLoc, IT, 2, PrMinDescript,
-     &           packTwo, unpackTwo)
-            CALL writeOutArrayMinMax(314, TimeLoc, IT, 2, WVMaxDescript,
-     &           packTwo, unpackTwo)
-            IF (NRS.NE.0) THEN
-               CALL writeOutArrayMinMax(315, TimeLoc, IT, 2, RSMaxDescript,
-     &              packTwo, unpackTwo)
-            ENDIF
-         ENDIF
-C       OUTPUT THE NODES WHERE THE ELEMENTAL SLOPE LIMITER HAS BEEN
-C       TURNED ON DURING THE RUN
-         IF(LoadEleSlopeLim)THEN
-            CALL writeOutArrayMinMax(323, TimeLoc, IT, 1, ESLDescript,
-     &               packOne, unpackOne)  !no time stamps so only one pack/unpack
-         ENDIF
-      ENDIF
-
-      RETURN
- 2120 FORMAT(2X,1pE20.10E3,5X,I10)
- 2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
- 2454 FORMAT(2X,I8,2(2X,1pE20.10E3))
-C-----------------------------------------------------------------------
-      END SUBROUTINE WRITE_OUTPUT_2D
-C-----------------------------------------------------------------------
-
-C----------------------------------------------------------------------
-C       S U B R O U T I N E
-C          W R I T E  H A R M O N I C   A N A L Y S I S   O U T P U T
-C----------------------------------------------------------------------
-C     jgf49.44: Subroutine to write harmonic analysis output files
-C     in serial or in parallel using globalio.
-C----------------------------------------------------------------------
-      SUBROUTINE writeHarmonicAnalysisOutput(ITIME)
-      USE SIZES, ONLY : SZ, MNHARF, LOCALDIR, GLOBALDIR,
-     &                  WRITE_LOCAL_FILES, MNPROC, MYPROC
-C RJW added MNPROC and MYPROC
-C removed from global  myProc, MNPROC,
-      USE GLOBAL, ONLY : OutputDataDescript_t, NSTAE_G,
-     &                   NOUTE, NSTAE, IMAP_STAE_LG, ICS, SLEL,
-     &                   XEL, SFEL, YEL, NSTAV_G, NSTAV,  MNP,
-     &                   IMAP_STAV_LG, SLEV, XEV, SFEV,
-     &                   YEV, NP_G, NP, NODES_LG, screenMessage, DEBUG,
-     &                   setMessageSource, unsetMessageSource
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
-      USE GLOBAL_IO, ONLY:
-     &    open_gbl_file, write_gbl_file, collectFullDomainArray,
-     &    packOne, unpackOne, packTwo, unpackTwo, packMbyNP, unpackMbyNP
-      USE HARM, ONLY :
-     &    emag, phasede, umag, vmag, phasedu, phasedv, emagt, phaseden,
-     &    umagt, vmagt, phasedut, phasedvt, elav_g, elva_g,
-     &    xvelav_g, xvelva_g, yvelav_g, yvelva_g,
-     &    elav, elva, xvelav, uav, uavdif, nhase, nhasv, nhage, nhagv,
-     &    charmv, fmv, eav, esq, eavdif, evadif, iharind, ITHAS,
-     &    xvelva, usq, uvadif, yvelav, vav, vavdif, yvelva, vsq, vvadif
-
-#ifdef CMPI
-      USE MESSENGER, ONLY : msg_fini, msg_lbcast
-#endif
-
-      IMPLICIT NONE
-      INTEGER I, J, N                      !local loop counters
-      INTEGER, intent(in) :: ITIME  !tcm v49.64.02 added
-C
-      type(OutputDataDescript_t), SAVE :: HAElevStaMagDescript
-      type(OutputDataDescript_t), SAVE :: HAElevStaPhaseDescript
-C
-      type(OutputDataDescript_t), SAVE :: HAVelStaUMagDescript
-      type(OutputDataDescript_t), SAVE :: HAVelStaVMagDescript
-      type(OutputDataDescript_t), SAVE :: HAVelStaUPhaseDescript
-      type(OutputDataDescript_t), SAVE :: HAVelStaVPhaseDescript
-C
-      type(OutputDataDescript_t), SAVE :: HAElevMagDescript
-      type(OutputDataDescript_t), SAVE :: HAElevPhaseDescript
-C
-      type(OutputDataDescript_t), SAVE :: HAVelUMagDescript
-      type(OutputDataDescript_t), SAVE :: HAVelVMagDescript
-      type(OutputDataDescript_t), SAVE :: HAVelUPhaseDescript
-      type(OutputDataDescript_t), SAVE :: HAVelVPhaseDescript
-C
-      type(OutputDataDescript_t), SAVE :: MVDescript
-C
-      type(OutputDataDescript_t), SAVE :: dummyDescript
+      !
+      !  H A R M O N I C   A N A L Y S I S   D A T A 
+      !
+      type(OutputDataDescript_t) :: HAElevStaMagDescript
+      type(OutputDataDescript_t) :: HAElevStaPhaseDescript
+      type(OutputDataDescript_t) :: HAVelStaUMagDescript
+      type(OutputDataDescript_t) :: HAVelStaVMagDescript
+      type(OutputDataDescript_t) :: HAVelStaUPhaseDescript
+      type(OutputDataDescript_t) :: HAVelStaVPhaseDescript
+      type(OutputDataDescript_t) :: HAElevMagDescript
+      type(OutputDataDescript_t) :: HAElevPhaseDescript
+      type(OutputDataDescript_t) :: HAVelUMagDescript
+      type(OutputDataDescript_t) :: HAVelVMagDescript
+      type(OutputDataDescript_t) :: HAVelUPhaseDescript
+      type(OutputDataDescript_t) :: HAVelVPhaseDescript
+      type(OutputDataDescript_t) :: MVDescript
 C
 C     Fulldomain Stations in parallel:
       REAL(SZ), ALLOCATABLE, TARGET :: EMAG_g(:,:)    ! elevation magnitudes
@@ -1393,19 +144,1643 @@ C
       REAL(SZ), ALLOCATABLE, TARGET :: VSQ_g(:)
       REAL(SZ), ALLOCATABLE, TARGET :: VAVDIF_g(:)
       REAL(SZ), ALLOCATABLE, TARGET :: VVADIF_g(:)
+      !
+      !    3 D   D A T A 
+      !
+      type(OutputDataDescript_t) :: SigTStaDescript
+      type(OutputDataDescript_t) :: SalStaDescript
+      type(OutputDataDescript_t) :: TempStaDescript
+      type(OutputDataDescript_t) :: QSurfKp1Descript
+      type(OutputDataDescript_t) :: RealQStaDescript
+      type(OutputDataDescript_t) :: ImaginaryQStaDescript
+      type(OutputDataDescript_t) :: WZStaDescript
+      type(OutputDataDescript_t) :: Q20StaDescript
+      type(OutputDataDescript_t) :: LStaDescript
+      type(OutputDataDescript_t) :: EVStaDescript
+      type(OutputDataDescript_t) :: SigTDescript
+      type(OutputDataDescript_t) :: SalDescript
+      type(OutputDataDescript_t) :: TempDescript
+      type(OutputDataDescript_t) :: RealQDescript
+      type(OutputDataDescript_t) :: ImaginaryQDescript
+      type(OutputDataDescript_t) :: WZDescript
+      type(OutputDataDescript_t) :: Q20Descript
+      type(OutputDataDescript_t) :: LDescript
+      type(OutputDataDescript_t) :: EVDescript
+C
+C     parts of complex variables
+      REAL(SZ), ALLOCATABLE, TARGET :: rp(:,:) !real part subdomain data
+      REAL(SZ), ALLOCATABLE, TARGET :: ip(:,:) !imaginary part subdom dat
+      REAL(SZ), ALLOCATABLE, TARGET :: rp_g(:,:) !real part fulldomain
+      REAL(SZ), ALLOCATABLE, TARGET :: ip_g(:,:) !imaginary part fulldom
+      REAL(SZ), ALLOCATABLE, TARGET :: rpSta(:,:) !real part subd sta
+      REAL(SZ), ALLOCATABLE, TARGET :: ipSta(:,:) !im part subdom sta
+      REAL(SZ), ALLOCATABLE, TARGET :: rpSta_g(:,:) !real part fd sta
+      REAL(SZ), ALLOCATABLE, TARGET :: ipSta_g(:,:) !im part fd sta
+C
+      REAL(SZ), ALLOCATABLE, TARGET :: qsurfkp1_g(:)
+C
+      REAL(SZ), ALLOCATABLE, TARGET :: q20Sta_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: lSta_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: EVSta_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: SigTSta_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: SalSta_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: TempSta_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: WZSta_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: TVW_g(:)
+      !
+      !  H O T S T A R T   D A T A 
+      !
+      type(OutputDataDescript_t) :: Elev1Descript
+      type(OutputDataDescript_t) :: Elev2Descript
+      type(OutputDataDescript_t) :: HotstartVelDescript
+      type(OutputDataDescript_t) :: CH1Descript
+      type(OutputDataDescript_t) :: EtaDiscDescript
+      type(OutputDataDescript_t) :: NodeCodeDescript
+      type(OutputDataDescript_t) :: NOFFDescript
+      type(OutputDataDescript_t) :: HarmElevFDLVDescript
+      type(OutputDataDescript_t) :: HarmElevSLVDescript
+      type(OutputDataDescript_t) :: HarmUVelFDLVDescript
+      type(OutputDataDescript_t) :: HarmVVelFDLVDescript
+      type(OutputDataDescript_t) :: HarmUVelSLVDescript
+      type(OutputDataDescript_t) :: HarmVVelSLVDescript
+      type(OutputDataDescript_t) :: ELAVDescript
+      type(OutputDataDescript_t) :: ELVADescript
+      type(OutputDataDescript_t) :: XVELAVDescript
+      type(OutputDataDescript_t) :: YVELAVDescript
+      type(OutputDataDescript_t) :: XVELVADescript
+      type(OutputDataDescript_t) :: YVELVADescript
+      !
+      !  S W A N  O U T P U T  D A T A
+      !
+#ifdef CSWAN
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanHSDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanDIRDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTM01Descript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTPSDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanWindDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTM02Descript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTMM10Descript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanHSMaxDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanDIRMaxDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTM01MaxDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTPSMaxDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanWindMaxDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTM02MaxDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTMM10MaxDescript
+      !...Spool Counters
+      INTEGER, TARGET                          :: SWAN_HS_SPOOL,
+     &                                            SWAN_TPS_SPOOL,
+     &                                            SWAN_DIR_SPOOL,
+     &                                            SWAN_TM01_SPOOL,
+     &                                            SWAN_TM02_SPOOL,
+     &                                            SWAN_TMM10_SPOOL,
+     &                                            SWAN_WIND_SPOOL   
+      !...File position
+      INTEGER, TARGET                          :: SWAN_HS_POS,
+     &                                            SWAN_TPS_POS,
+     &                                            SWAN_DIR_POS,
+     &                                            SWAN_TM01_POS,
+     &                                            SWAN_TM02_POS,
+     &                                            SWAN_TMM10_POS,
+     &                                            SWAN_WIND_POS  
+#endif
+      !
+      !   I N U N D A T I O N   O U T P U T   D A T A
+      !
+      ! Casey 120523: Add Nishant's changes for the Texas ASGS.
+      ! jgf52.08.01: Additions for detailed inundation output products. 
+      !
+      ! initiallyDry is 1 for a node that is dry at cold start. 
+      integer, allocatable, target :: initiallyDry(:)
+      integer, allocatable, target :: initiallyDry_g(:)
+      type(OutputDataDescript_t), target :: initiallyDryDescript
+      !
+      ! endRisingInun is 1 if the total water depth increases at a node
+      ! that was initiallyDry, if that increase occurs between the 
+      ! penultimate and ultimate time steps of the simulation (i.e.,
+      ! the water is still rising when the simulation ends)
+      integer, allocatable, target :: endRisingInun(:)
+      integer, allocatable, target :: endRisingInun_g(:)
+      type(OutputDataDescript_t), target :: endRisingInunDescript
+      !
+      ! maxInunDepth is used for a new min/max file, where the maximum
+      ! total water column depth of inundation is recorded. 
+      real(sz), allocatable, target :: maxInunDepth(:)
+      real(sz), allocatable, target :: maxInunDepth_time(:)
+      real(sz), allocatable, target :: maxInunDepth_g(:)
+      real(sz), allocatable, target :: maxInunDepth_time_g(:)
+      type(OutputDataDescript_t), target :: maxInunDepthDescript 
+      !
+      ! penultimateNodeCode is used as a temp array to record the
+      ! wet/dry state on the 2nd to last time step
+      integer, allocatable, target :: penultimateNodeCode(:)
+      !
+      ! inundationTime records the total time an initiallyDry node
+      ! has been wet (deeper than thresh)
+      type(OutputDataDescript_t), target :: inundationTimeDescript
+      real(sz), allocatable, target :: inundationTime(:)
+      ! record the time of onset of inundation beyond the threshold
+      real(sz), allocatable, target :: inundationTime_onset(:)
+      real(sz), allocatable, target :: inundationTime_g(:)
+      real(sz), allocatable, target :: inundationTime_onset_g(:)
+      !
+      ! everDried is used to record whether a node has ever become dry,
+      ! which is useful to know when computing tidal phases and amplitudes 
+      real(sz), allocatable, target :: everDried(:)
+      real(sz), allocatable, target :: everDried_time(:)
+      real(sz), allocatable, target :: everDried_g(:)
+      real(sz), allocatable, target :: everDried_time_g(:)
+      type(OutputDataDescript_t), target :: everDriedDescript 
+
+      ! jgf52.05: Set via fort.15 namelist in read_input.F.
+      logical :: outputNodeCode = .false.
+      logical :: outputNOFF = .false.           
+
+C     ---------
+      CONTAINS
+C     ---------
+
+C----------------------------------------------------------------------
+C       S U B R O U T I N E   I N I T   O U T P U T   2 D 
+C----------------------------------------------------------------------
+C     jgf51.21.24: Initialize 2D output data structures.
+C----------------------------------------------------------------------
+      SUBROUTINE initOutput2D(timeloc)
+      USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
+     &                  GLOBALDIR, OFF, ASCII, NETCDF3, NETCDF4, XDMF, 
+     &                  numFormats, write_local_files, localdir, 
+     &                  controlFileName
+      USE GLOBAL, ONLY : imap_stae_lg, imap_stav_lg, et00, eta2,
+     &   nscoue, iestp, nne, staie1, staie2, staie3, xel, yel, 
+     &   slel, sfel, uu00, vv00, uu2, vv2, nscouv, ivstp, nnv,
+     &   staiv1, staiv2, staiv3, xev, yev, slev, sfev, nscouge,
+     &   igep, nodes_lg, eta2_g, nscougt, itau0p, nscougs, igsp,
+     &   sponge, nscougv, igvp, uu2_g, vv2_g, imap_stam_lg, rmp00,
+     &   pr2, nscoum, ipstp, nnm, staim1, staim2, staim3,
+     &   xem, yem, slem, sfem, rmu00, rmv00, wvnxout, wvnyout, 
+     &   iwstp, nscougw, igpp, igwp, dp00, ibstp, igbp, igip, 
+     &   ciceout, rmice00, iicestp, igrads, rsnxout, rsnyout, 
+     &   imap_stac_lg, cc00, ch1, xec, yec, slec, sfec, ch1_g,
+     &   nscougc, igcp, ch1, ch1_g, etamax_time_g, etamax, 
+     &   etamax_time, umax_time_g, umax, umax_time, prmin_time_g,
+     &   prmin, wvnoutmax_time_g, wvnoutmax_time, rsnmax_time_g,
+     &   rsnmax_time, eslonoff, prmin_time, wvnoutmax, rsnmax, 
+     &   nstae_g, noute, nstae, 
+     &   ntcyse, ntcyfe, nspoole, nstav_g, noutv, nstav, ntcysv, 
+     &   ntcyfv, nspoolv, noutge, ntcysge, ntcyfge, nspoolge, 
+     &   np_g, outputsponge, noutgv, ntcysgv, nspoolgv, nstam_g,
+     &   noutm, nstam, ntcyfgv, ntcysm, ntcyfm, nspoolm, nws, 
+     &   noutgw, ntcysgw, ntcyfgw, nspoolgw, nddt, ncice, nrs, 
+     &   noutc, nstac_g, nstac, im, noutgc, ntcyfgc, ntcysgc,
+     &   nspoolgc, INFO, scratchMessage, allMessage, nscougi, nscougp,
+     &   nscours, nscoub, nscougb, nscoui, nscoup, 
+     &   use_tvw, nout_tvw, ntcys_tvw, ntcyf_tvw, ig_tvw, tvw, 
+     &   nspool_tvw, nscou_tvw,
+     &   nodeCodeOutSpoolCounter, noffOutSpoolCounter, noffOutFilePos,
+     &   nodeCodeOutFilePos, NE_G, IMAP_EL_LG, nodecode, noff,
+     &   fauxFilePosition, initiallyDrySpoolCounter, 
+     &   inundationOutput, ihot, logMessage
+      USE MESH, ONLY : NP, NE, DP, NM, ICS
+      USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim,
+     &  elemental_slope_limiter_grad_max,elemental_slope_limiter_active
+      USE GLOBAL_IO, ONLY : readAndMapToSubdomainMaxMin
+#ifdef ADCNETCDF
+      USE NETCDFIO, ONLY : initNetCDFOutputFile, 
+     &                      readAndMapToSubdomainMaxMinNetCDF
+#endif
+#ifdef ADCXDMF
+      USE XDMFIO, ONLY : initOutputXDMF, writeControlXDMF
+      USE CONTROL, ONLY : readControlFile
+#ifdef CMPI
+      USE WRITER, ONLY : sendInitWriterXDMF
+#endif
+#endif
+      implicit none
+C
+      real(8), intent(in) :: timeloc
+      character(len=20) :: extString ! string version of integer file extension
+      logical :: fileFound = .false. ! .true. if the file exists
+      logical :: nerr
+      integer :: i 
+C
+      call setMessageSource("initOutput2D")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif 
+      !
+      ! jgf52.21.24: Create an array of pointers to all the 2D output 
+      ! data structures, which enables us to iterate over them; this
+      ! simplifies the task of setting default values as well as writing
+      ! output
+      allocate(ptr(numOutputDescript2D))
+      ptr(1)%descript2D => ElevStaDescript
+      ptr(2)%descript2D => VelStaDescript
+      ptr(3)%descript2D => ElevDescript
+      ptr(4)%descript2D => Tau0Descript
+      ptr(5)%descript2D => VelDescript        
+      ptr(6)%descript2D => PrStaDescript        
+      ptr(7)%descript2D => WindVelStaDescript
+      ptr(8)%descript2D => PrDescript
+      ptr(9)%descript2D => WindVelDescript
+      ptr(10)%descript2D => ConcStaDescript         
+      ptr(11)%descript2D => ConcDescript
+      ptr(12)%descript2D => IceDescript
+      ptr(13)%descript2D => IceStaDescript
+      ptr(14)%descript2D => EtaMaxDescript        
+      ptr(15)%descript2D => UMaxDescript        
+      ptr(16)%descript2D => WVMaxDescript
+      ptr(17)%descript2D => PrMinDescript
+      ptr(18)%descript2D => RSMaxDescript
+      ptr(19)%descript2D => SpongeDescript        
+      ptr(20)%descript2D => ESLDescript
+      ptr(21)%descript2D => BathyDescript
+      ptr(22)%descript2D => BathyStaDescript
+      ptr(23)%descript2D => RSDescript 
+      ptr(24)%descript2D => weirElevDescript
+      ptr(25)%descript2D => nodeCodeOutDescript 
+      ptr(26)%descript2D => noffOutDescript
+      ptr(27)%descript2D => inundationTimeDescript
+      ptr(28)%descript2D => maxInunDepthDescript
+      ptr(29)%descript2D => endRisingInunDescript
+      ptr(30)%descript2D => initiallyDryDescript
+      ptr(31)%descript2D => everDriedDescript
+
+!... For SWAN, there are additional output arrays
+#ifdef CSWAN
+      ptr(32)%descript2D => SwanHSDescript 
+      ptr(33)%descript2D => SwanHSMaxDescript
+      ptr(34)%descript2D => SwanDIRDescript
+      ptr(35)%descript2D => SwanDIRMaxDescript
+      ptr(36)%descript2D => SwanTM01Descript
+      ptr(37)%descript2D => SwanTM01MaxDescript
+      ptr(38)%descript2D => SwanTPSDescript
+      ptr(39)%descript2D => SwanTPSMaxDescript
+      ptr(40)%descript2D => SwanWindDescript
+      ptr(41)%descript2D => SwanWindMaxDescript
+      ptr(42)%descript2D => SwanTM02Descript
+      ptr(43)%descript2D => SwanTM02MaxDescript
+      ptr(44)%descript2D => SwanTMM10Descript
+      ptr(45)%descript2D => SwanTMM10MaxDescript
+#endif    
+      ! 
+      ! jgf51.21.24: Set some defaults
+      do i=1,numOutputDescript2D
+         ptr(i) % descript2D % specifier = OFF
+         ptr(i) % descript2D % writeFlag = .true.
+         ptr(i) % descript2D % initial_value = 0.d0
+         ptr(i) % descript2D % num_items_per_record = 1
+         ptr(i) % descript2D % num_fd_records = np_g
+         ptr(i) % descript2D % num_records_this = np
+         ptr(i) % descript2D % imap => nodes_lg                     
+         ptr(i) % descript2D % considerWetDry = .false.            
+         ptr(i) % descript2D % alternate_value = -99999.0
+         ptr(i) % descript2D % isStation = .false.  
+         ptr(i) % descript2D % divideByDepth = .false. 
+         ! jgf52.08.03: initiallydry.63 already initialized and written by now 
+         if (trim(ptr(i)%descript2D%field_name).ne.'initiallyDry') then      
+            allocate(ptr(i) % descript2D % writerFormats(numFormats))
+         endif
+         ptr(i) % descript2D % writerFormats(:) = -99999
+         ptr(i) % descript2D % useWriter = .false.
+         ptr(i) % descript2D % file_extension = -99999
+         ptr(i) % descript2D % file_basename = 'fort'
+         ptr(i) % descript2D % initialized = .false.
+         ptr(i) % descript2D % minmax_timestamp = .false.
+         ptr(i) % descript2D % readMaxMin = .false.
+         ptr(i) % descript2D % isInteger = .false.
+      end do
+
+      ! fort.61
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(ET00_g(NSTAE_G))
+      ENDIF
+      ElevStaDescript % lun                  = 61
+      ElevStaDescript % specifier            = NOUTE
+      ElevStaDescript % num_fd_records       = NSTAE_G
+      ElevStaDescript % num_records_this     = NSTAE
+      ElevStaDescript % imap                 => IMAP_STAE_LG
+      ElevStaDescript % array                => ET00
+      ElevStaDescript % array_g              => ET00_g
+      ElevStaDescript % interped_array       => ETA2
+      ElevStaDescript % ConsiderWetDry       = .TRUE.
+      ElevStaDescript % field_name           = 'ElevSta'
+      ElevStaDescript % isStation            = .true.
+      ElevStaDescript % startTimeStep           = NTCYSE
+      ElevStaDescript % endTimeStep             = NTCYFE
+      ElevStaDescript % outputTimeStepIncrement = NSPOOLE
+      ElevStaDescript % spoolCounter            => NSCOUE
+      ElevStaDescript % filepos                 => IESTP
+      ElevStaDescript % elements                => NNE
+      ElevStaDescript % interp_fac1             => STAIE1 
+      ElevStaDescript % interp_fac2             => STAIE2
+      ElevStaDescript % interp_fac3             => STAIE3
+      IF (ICS.eq.1) THEN
+         ElevStaDescript % x_coord              => XEL ! use orig coord
+         ElevStaDescript % y_coord              => YEL
+      ELSE
+         ElevStaDescript % x_coord              => SLEL ! radians
+         ElevStaDescript % y_coord              => SFEL
+      ENDIF
+      !
+      ! fort.62
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(UU00_g(NSTAV_G))
+         ALLOCATE(VV00_g(NSTAV_G))
+      ENDIF
+      VelStaDescript % lun                  = 62
+      VelStaDescript % specifier            = NOUTV
+      VelStaDescript % num_items_per_record = 2
+      VelStaDescript % num_fd_records       = NSTAV_G
+      VelStaDescript % num_records_this     = NSTAV
+      VelStaDescript % imap                 => IMAP_STAV_LG
+      VelStaDescript % array                => UU00
+      VelStaDescript % array2               => VV00
+      VelStaDescript % array_g              => UU00_g
+      VelStaDescript % array2_g             => VV00_g
+      VelStaDescript % interped_array       => UU2
+      VelStaDescript % interped_array2      => VV2
+      VelStaDescript % field_name           = 'VelSta'
+      VelStaDescript % isStation            = .true.
+      VelStaDescript % startTimeStep           = NTCYSV
+      VelStaDescript % endTimeStep             = NTCYFV
+      VelStaDescript % outputTimeStepIncrement = NSPOOLV
+      VelStaDescript % spoolCounter            => NSCOUV
+      VelStaDescript % filepos                 => IVSTP
+      VelStaDescript % elements                => NNV
+      VelStaDescript % interp_fac1             => STAIV1 
+      VelStaDescript % interp_fac2             => STAIV2
+      VelStaDescript % interp_fac3             => STAIV3
+      IF (ICS.eq.1) THEN
+         VelStaDescript % x_coord              => XEV ! use orig coord
+         VelStaDescript % y_coord              => YEV
+      ELSE
+         VelStaDescript % x_coord              => SLEV ! radians
+         VelStaDescript % y_coord              => SFEV
+      ENDIF
+
+      ! fort.63
+      ElevDescript % lun                  = 63
+      ElevDescript % specifier            = NOUTGE
+      ElevDescript % startTimeStep           = NTCYSGE 
+      ElevDescript % endTimeStep             = NTCYFGE
+      ElevDescript % outputTimeStepIncrement = NSPOOLGE
+      ElevDescript % spoolCounter            => NSCOUGE
+      ElevDescript % filepos                 => IGEP
+      ElevDescript % array                => ETA2
+      ElevDescript % array_g              => ETA2_g
+      ElevDescript % ConsiderWetDry       = .TRUE.
+      ElevDescript % field_name           = 'Elev'
+      ElevDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
+
+      ! tau0 fort.90
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(TAU0VAR_g(NP_G))
+      ENDIF
+      Tau0Descript % lun                  = 90  
+      Tau0Descript % specifier            = NOUTGE      
+      Tau0Descript % startTimeStep           = NTCYSGE 
+      Tau0Descript % endTimeStep             = NTCYFGE
+      Tau0Descript % outputTimeStepIncrement = NSPOOLGE
+      Tau0Descript % spoolCounter            => NSCOUGT
+      Tau0Descript % filepos                 => ITAU0P
+      Tau0Descript % array                => TAU0VAR
+      Tau0Descript % array_g              => TAU0VAR_g
+      Tau0Descript % field_name           = 'Tau0'
+      ! jgf51.52.30: Fixing the writing of tau0 so it only occurs 
+      ! when tau0=-x.1
+      Tau0Descript % writeFlag            = OutputTau0
+
+      ! sponge layer fort.92
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(sponge_g(NP_G))
+      ENDIF
+      SpongeDescript % lun                  = 92
+      SpongeDescript % specifier            = ASCII
+      SpongeDescript % startTimeStep           = NTCYSGE 
+      SpongeDescript % endTimeStep             = NTCYFGE
+      SpongeDescript % outputTimeStepIncrement = NSPOOLGE
+      SpongeDescript % spoolCounter            => NSCOUGS
+      SpongeDescript % filepos                 => IGSP
+      SpongeDescript % array                => sponge
+      SpongeDescript % array_g              => sponge_g
+      SpongeDescript % writeFlag            = outputsponge
+ 
+      ! NodeCode output
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(NodeCode_out_g(NP_G))
+      ENDIF
+      nodeCodeOutDescript % lun                     = 101
+      if ( NOUTGE.ne.0 ) then       
+         nodeCodeOutDescript % specifier            = ASCII
+      endif
+      nodeCodeOutDescript % startTimeStep           = NTCYSGE 
+      nodeCodeOutDescript % endTimeStep             = NTCYFGE
+      nodeCodeOutDescript % outputTimeStepIncrement = NSPOOLGE
+      nodeCodeOutDescript % spoolCounter    => nodeCodeOutSpoolCounter
+      nodeCodeOutDescript % filepos         => nodeCodeOutFilePos
+      nodeCodeOutDescript % iarray               => NODECODE
+      nodeCodeOutDescript % iarray_g             => NodeCode_out_g
+      nodeCodeOutDescript % field_name           = 'NodeCode'
+      nodeCodeOutDescript % file_basename        = 'nodecode'
+      nodeCodeOutDescript % file_extension       = 63
+      nodeCodeOutDescript % writeFlag            = outputNodeCode
+      nodeCodeOutDescript % isInteger            = .true.
+
+      ! NOFF output
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(NOFF_out_g(NE_G))
+      ENDIF
+      noffOutDescript % lun                  = 102
+      if ( NOUTGE.ne.0 ) then       
+         noffOutDescript % specifier            = ASCII
+      endif
+      noffOutDescript % startTimeStep           = NTCYSGE 
+      noffOutDescript % endTimeStep             = NTCYFGE
+      noffOutDescript % outputTimeStepIncrement = NSPOOLGE
+      noffOutDescript % spoolCounter            => noffOutSpoolCounter
+      noffOutDescript % filepos                 => noffOutFilePos
+      noffOutDescript % num_fd_records       = NE_G
+      noffOutDescript % num_records_this     = NE
+      noffOutDescript % imap                 => IMAP_EL_LG
+      noffOutDescript % iarray                => NOFF
+      noffOutDescript % iarray_g              => noff_out_g
+      noffOutDescript % field_name           = 'NOFF'
+      noffOutDescript % file_basename        = 'noff'
+      noffOutDescript % file_extension       = 100
+      noffOutDescript % writeFlag            = outputNOFF
+      noffOutDescript % isInteger            = .true.
+
+      ! fort.64
+      VelDescript % lun                  = 64
+      VelDescript % specifier            = NOUTGV
+      VelDescript % startTimeStep           = NTCYSGV 
+      VelDescript % endTimeStep             = NTCYFGV
+      VelDescript % outputTimeStepIncrement = NSPOOLGV
+      VelDescript % spoolCounter            => NSCOUGV
+      VelDescript % filepos                 => IGVP
+      VelDescript % num_items_per_record = 2
+      VelDescript % array                => UU2
+      VelDescript % array2               => VV2
+      VelDescript % array_g              => UU2_g
+      VelDescript % array2_g             => VV2_g
+      VelDescript % field_name           = 'Vel'
+      VelDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
+
+      ! fort.71
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(RMP00_g(NSTAM_G))
+      ENDIF
+      NSCOUP = NSCOUM ! jgf51.51: So we don't share a spool counter.
+      PrStaDescript % lun                  = 71
+      PrStaDescript % specifier            = NOUTM
+      PrStaDescript % num_fd_records       = NSTAM_G
+      PrStaDescript % num_records_this     = NSTAM
+      PrStaDescript % imap                 => IMAP_STAM_LG
+      PrStaDescript % array                => RMP00
+      PrStaDescript % array_g              => RMP00_g
+      PrStaDescript % interped_array       => PR2
+      PrStaDescript % field_name           = 'PrSta'
+      PrStaDescript % isStation            = .true.
+      PrStaDescript % startTimeStep           = NTCYSM
+      PrStaDescript % endTimeStep             = NTCYFM
+      PrStaDescript % outputTimeStepIncrement = NSPOOLM
+      PrStaDescript % spoolCounter            => NSCOUP
+      PrStaDescript % filepos                 => IPSTP
+      PrStaDescript % elements                => NNM
+      PrStaDescript % interp_fac1             => STAIM1 
+      PrStaDescript % interp_fac2             => STAIM2
+      PrStaDescript % interp_fac3             => STAIM3
+      IF (ICS.eq.1) THEN
+         PrStaDescript % x_coord           => XEM ! use orig coord
+         PrStaDescript % y_coord           => YEM ! use orig coord
+      ELSE
+         PrStaDescript % x_coord           => SLEM ! radians
+         PrStaDescript % y_coord           => SFEM 
+      ENDIF
+      if (nws.eq.0) then
+         PrStaDescript % writeFlag         = .false. 
+      endif
+
+      ! fort.72
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(RMU00_g(NSTAM_G))
+         ALLOCATE(RMV00_g(NSTAM_G))
+      ENDIF
+      WindVelStaDescript % lun                  = 72
+      WindVelStaDescript % specifier            = NOUTM
+      WindVelStaDescript % num_items_per_record = 2
+      WindVelStaDescript % num_fd_records       = NSTAM_G
+      WindVelStaDescript % num_records_this     = NSTAM
+      WindVelStaDescript % imap                 => IMAP_STAM_LG
+      WindVelStaDescript % array                => RMU00
+      WindVelStaDescript % array_g              => RMU00_g
+      WindVelStaDescript % array2               => RMV00
+      WindVelStaDescript % array2_g             => RMV00_g
+      WindVelStaDescript % interped_array       => wvnxout
+      WindVelStaDescript % interped_array2      => wvnyout
+      WindVelStaDescript % isStation            = .true.
+      WindVelStaDescript % field_name           = 'WindVelSta'
+      WindVelStaDescript % startTimeStep           = NTCYSM
+      WindVelStaDescript % endTimeStep             = NTCYFM
+      WindVelStaDescript % outputTimeStepIncrement = NSPOOLM
+      WindVelStaDescript % spoolCounter            => NSCOUM
+      WindVelStaDescript % filepos                 => IWSTP
+      WindVelStaDescript % elements                => NNM
+      WindVelStaDescript % interp_fac1             => STAIM1 
+      WindVelStaDescript % interp_fac2             => STAIM2
+      WindVelStaDescript % interp_fac3             => STAIM3
+      IF (ICS.eq.1) THEN
+         WindVelStaDescript % x_coord           => XEM ! use orig coord
+         WindVelStaDescript % y_coord           => YEM ! use orig coord
+      ELSE
+         WindVelStaDescript % x_coord           => SLEM ! radians
+         WindVelStaDescript % y_coord           => SFEM 
+      ENDIF
+      if (nws.eq.0) then
+         WindVelStaDescript % writeFlag         = .false. 
+      endif
+
+      ! fort.73
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(Pr2_g(NP_G))
+      ENDIF
+      PrDescript % lun                  = 73
+      PrDescript % specifier            = NOUTGW
+      PrDescript % startTimeStep           = NTCYSGW 
+      PrDescript % endTimeStep             = NTCYFGW
+      PrDescript % outputTimeStepIncrement = NSPOOLGW
+      PrDescript % spoolCounter            => NSCOUGP
+      PrDescript % filepos                 => IGPP
+      PrDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
+      PrDescript % array                => Pr2
+      PrDescript % array_g              => Pr2_g
+      PrDescript % field_name           = 'Pr'
+      if (nws.eq.0) then
+         PrDescript % writeFlag         = .false. 
+      endif
+
+      ! fort.74
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(WVNXOut_g(NP_G))
+         ALLOCATE(WVNYOut_g(NP_G))
+      ENDIF
+      WindVelDescript % lun                  = 74
+      WindVelDescript % specifier            = NOUTGW
+      WindVelDescript % startTimeStep           = NTCYSGW 
+      WindVelDescript % endTimeStep             = NTCYFGW
+      WindVelDescript % outputTimeStepIncrement = NSPOOLGW
+      WindVelDescript % spoolCounter            => NSCOUGW
+      WindVelDescript % filepos                 => IGWP
+      WindVelDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
+      WindVelDescript % num_items_per_record = 2
+      WindVelDescript % array                => WVNXOut
+      WindVelDescript % array_g              => WVNXOut_g
+      WindVelDescript % array2               => WVNYOut
+      WindVelDescript % array2_g             => WVNYOut_g
+      WindVelDescript % field_name           = 'WindVel'
+      if (nws.eq.0) then
+         WindVelDescript % writeFlag         = .false. 
+      endif
+
+      ! fort.75  !tcm v50.66.01 Added for Time Varying Bathymetry
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(DP00_g(NSTAE_G))
+      ENDIF
+      NSCOUB = NSCOUE ! jgf51.51: So we don't share a spool counter.
+      BathyStaDescript % lun                  = 75
+      BathyStaDescript % specifier            = NOUTE
+      BathyStaDescript % num_fd_records       = NSTAE_G
+      BathyStaDescript % num_records_this     = NSTAE
+      BathyStaDescript % imap                 => IMAP_STAE_LG
+      BathyStaDescript % array                => DP00
+      BathyStaDescript % array_g              => DP00_g
+      BathyStaDescript % interped_array       => DP
+      BathyStaDescript % field_name           = 'BathySta'
+      BathyStaDescript % isStation            = .true.
+      BathyStaDescript % startTimeStep           = NTCYSE
+      BathyStaDescript % endTimeStep             = NTCYFE
+      BathyStaDescript % outputTimeStepIncrement = NSPOOLE
+      BathyStaDescript % spoolCounter            => NSCOUB
+      BathyStaDescript % filepos                 => IBSTP
+      BathyStaDescript % elements                => NNE
+      BathyStaDescript % interp_fac1             => STAIE1 
+      BathyStaDescript % interp_fac2             => STAIE2
+      BathyStaDescript % interp_fac3             => STAIE3
+      IF (ICS.eq.2) THEN
+         BathyStaDescript % x_coord           => SLEL
+         BathyStaDescript % y_coord           => SFEL
+      ELSE
+         BathyStaDescript % x_coord           => XEL
+         BathyStaDescript % y_coord           => YEL
+      ENDIF
+      if (nddt.eq.0) then
+         BathyStaDescript % writeFlag         = .false.
+      endif
+
+      ! fort.76  !tcm v50.66.01  Added for Time Varying Bathymetry
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(DPOUT_g(NP_G))
+      ENDIF
+      NSCOUGB = NSCOUGE !jgf51.51: So we don't share a spool counter. 
+      BathyDescript % lun                  = 76
+      BathyDescript % specifier            = NOUTGE
+      BathyDescript % startTimeStep           = NTCYSGE 
+      BathyDescript % endTimeStep             = NTCYFGE
+      BathyDescript % outputTimeStepIncrement = NSPOOLGE
+      BathyDescript % spoolCounter            => NSCOUGB
+      BathyDescript % filepos                 => IGBP
+      BathyDescript % array                => DP
+      BathyDescript % array_g              => DPOut_g
+      BathyDescript % field_name           = 'Bathy'
+      BathyDescript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      if (nddt.eq.0) then
+         BathyDescript % writeFlag         = .false.
+      endif
+      ! jgf51.21.24: Don't use sparse output or XDMF for time varying
+      ! bathy, even if they were specified for fulldomain elevation file
+      if ((abs(noutge).eq.4).or.(abs(noutge).eq.7)) then
+         BathyDescript % specifier         = ASCII
+      endif
+
+      IF(USE_TVW)THEN
+         IF((MNPROC.GT.1).AND.(MYPROC.EQ.0))THEN
+             ALLOCATE(TVW_G(NP_G))
+         ENDIF
+         weirElevDescript % lun                    = 77
+         weirElevDescript % Specifier              = NOUT_TVW
+         weirELevDescript % startTimeStep          = NTCYS_TVW 
+         weirElevDescript % endTimeStep            = NTCYF_TVW
+         weirElevDescript % outputTimeStepIncrement = NSPOOL_TVW
+         weirElevDescript % spoolCounter           => NSCOU_TVW
+         weirElevDescript % filepos                => IG_TVW
+         weirElevDescript % num_fd_records         = NP_G
+         weirElevDescript % num_records_this       = NP
+         weirElevDescript % imap                   => NODES_LG
+         weirElevDescript % array                  => TVW
+         weirElevDescript % array_g                => TVW_G
+         weirElevDescript % ConsiderWetDry         = .FALSE.
+         weirElevDescript % field_name             = 'weir_dz'
+         weirElevDescript % writerFormats(1:4)     = (/ 1, 3, 4, 5 /)
+         weirElevDescript % alternate_value        = 0.0D0
+      ENDIF   
+
+      ! fort.93
+C         write(16,*) 'Allocating IceDescript' !tcm v49.64.01 added for ice
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(CICEOUT_g(NP_G))
+      ENDIF
+      IceDescript % lun                  = 93
+      IceDescript % specifier            = NOUTGW
+      IceDescript % startTimeStep           = NTCYSGW 
+      IceDescript % endTimeStep             = NTCYFGW
+      IceDescript % outputTimeStepIncrement = NSPOOLGW
+      IceDescript % spoolCounter            => NSCOUGI
+      IceDescript % filepos                 => IGIP
+      IceDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
+      IceDescript % array                => CICEOUT
+      IceDescript % array_g              => CICEOUT_g
+      IceDescript % field_name           = 'Ice'
+      if (ncice.eq.0) then
+         IceDescript % writeFlag         = .false.
+      endif
+
+C... v49.64.01 tcm -- added for ice stations
+      ! fort.91
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(RMICE00_g(NSTAM_G))
+      ENDIF
+      NSCOUI = NSCOUM !jgf51.51: So we don't share a spool counter.
+      IceStaDescript % lun                  = 91
+      IceStaDescript % specifier            = NOUTM
+      IceStaDescript % num_fd_records       = NSTAM_G
+      IceStaDescript % num_records_this     = NSTAM
+      IceStaDescript % imap                 => IMAP_STAM_LG
+      IceStaDescript % array                => RMICE00
+      IceStaDescript % array_g              => RMICE00_g
+      IceStaDescript % field_name           = 'IceSta'
+      IceStaDescript % isStation            = .true.
+      IceStaDescript % startTimeStep           = NTCYSM
+      IceStaDescript % endTimeStep             = NTCYFM
+      IceStaDescript % outputTimeStepIncrement = NSPOOLM
+      IceStaDescript % spoolCounter            => NSCOUI
+      IceStaDescript % filepos                 => IICESTP
+      IceStaDescript % elements                => NNM
+      IceStaDescript % interp_fac1             => STAIM1 
+      IceStaDescript % interp_fac2             => STAIM2
+      IceStaDescript % interp_fac3             => STAIM3
+      IceStaDescript % interped_array       => CICEOUT       
+      IF (ICS.eq.1) THEN
+         IceStaDescript % x_coord           => XEM ! use orig coord
+         IceStaDescript % y_coord           => YEM
+      ELSE
+         IceStaDescript % x_coord           => SLEM ! radians
+         IceStaDescript % y_coord           => SFEM
+      ENDIF
+      if (ncice.eq.0) then
+         IceStaDescript % writeFlag         = .false.
+      endif
+
+      ! Casey 090302: Copied these lines for the rads.64 file.
+      ! tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
+      ! rads.64
+      ! Radiation Stress
+      IF ( (MNPROC.gt.1).and.(MyProc.eq.0).and.(nrs.ne.0) ) THEN
+         ALLOCATE(RSNXOUT_g(NP_G))
+         ALLOCATE(RSNYOUT_g(NP_G))
+      ENDIF
+      RSDescript % lun                  = 164
+      if (nrs.eq.0) then
+         RSDescript % specifier            = OFF
+      else
+         RSDescript % specifier            = NOUTGW
+      endif
+      RSDescript % startTimeStep           = NTCYSGW 
+      RSDescript % endTimeStep             = NTCYFGW
+      RSDescript % outputTimeStepIncrement = NSPOOLGW
+      RSDescript % spoolCounter            => NSCOURS
+      RSDescript % filepos                 => IGRadS
+      RSDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
+      RSDescript % num_items_per_record = 2
+      RSDescript % array                => RSNXOUT
+      RSDescript % array_g              => RSNXOUT_g
+      RSDescript % array2               => RSNYOUT
+      RSDescript % array2_g             => RSNYOUT_g
+      RSDescript % alternate_value      = -99999.0
+      RSDescript % considerWetDry       = .true.
+      RSDescript % field_name           = 'RadStress'
+      RSDescript % file_basename            = 'rads'
+      RSDescript % file_extension       = 64
+      if (nrs.eq.0) then
+         RSDescript % writeFlag         = .false.
+      endif
+#ifndef CSWAN
+      ! jgf52.30.02: Turn off rads.64 if compiled without SWAN but
+      ! NRS erroneously set to 3. 
+      if (nrs.eq.3) then
+         RSDescript % writeFlag         = .false.
+      endif
+#endif
+
+      ! fort.81
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(CC00_g(NP_G))
+      ENDIF
+      ConcStaDescript % lun                  = 81
+      ConcStaDescript % specifier            = NOUTC
+      ConcStaDescript % num_fd_records       = NSTAC_G
+      ConcStaDescript % num_records_this     = NSTAC
+      ConcStaDescript % imap                 => IMAP_STAC_LG
+      ConcStaDescript % array                => CC00
+      ConcStaDescript % array_g              => CC00_g
+      ConcStaDescript % field_name           = 'ConcSta'
+      ConcStaDescript % isStation            = .true.         
+      ConcStaDescript % divideByDepth        = .true.         
+      ConcStaDescript % interped_array       => CH1
+      IF (ICS.eq.1) THEN
+         ConcStaDescript % x_coord           => XEC ! use orig coord
+         ConcStaDescript % y_coord           => YEC
+      ELSE
+         ConcStaDescript % x_coord           => SLEC ! radians
+         ConcStaDescript % y_coord           => SFEC
+      ENDIF
+      if (im.ne.10) then
+         ConcStaDescript % writeFlag         = .false.
+      endif
+
+      ! fort.83
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(CH1_g(NP_G))
+      ENDIF
+      ConcDescript % lun                  = 83
+      ConcDescript % specifier            = NOUTGC
+      ConcDescript % startTimeStep           = NTCYSGC 
+      ConcDescript % endTimeStep             = NTCYFGC
+      ConcDescript % outputTimeStepIncrement = NSPOOLGC
+      ConcDescript % spoolCounter            => NSCOUGC
+      ConcDescript % filepos                 => IGCP      
+      ConcDescript % array                => CH1
+      ConcDescript % array_g              => CH1_g
+      ConcDescript % field_name           = 'Conc'
+      ConcDescript % divideByDepth        = .true.
+      if (im.ne.10) then
+         ConcDescript % writeFlag         = .false.
+      endif
+
+C     maxele.63
+      IF ( mnproc.gt.1 ) THEN
+         ALLOCATE(ETAMAX_g(NP_G))
+         ALLOCATE (ETAMAX_Time_G(NP_G))
+         ETAMAX_g(:) = -99999.d0
+         ETAMAX_Time_G(:) = -99999.d0
+      ENDIF
+      EtaMaxDescript % lun                 = 311
+      EtaMaxDescript % specifier            = NOUTGE
+      EtaMaxDescript % num_items_per_record = 2   !overloading this value to account for time stamps along with values
+      EtaMaxDescript % array                => ETAMAX
+      EtaMaxDescript % array_g              => ETAMAX_G
+      EtaMaxDescript % array2               => ETAMAX_Time
+      EtaMaxDescript % array2_g             => ETAMAX_Time_G
+      EtaMaxDescript % field_name           = 'EtaMax'
+      EtaMaxDescript % file_basename        = 'maxele'
+      EtaMaxDescript % file_extension       = 63
+      EtaMaxDescript % writeFlag            = .false.
+      EtaMaxDescript % minmax_timestamp     = .true.
+      EtaMaxDescript % readMaxMin           = .true.
+      if ( EtaMaxDescript % specifier .eq. XDMF ) then
+         EtaMaxDescript % specifier = ASCII
+      endif
+      ETAMAX(:) = -99999.d0
+      ETAMAX_Time(:) = -99999.d0
+
+C     maxvel.63
+      IF (mnproc.gt.1)  THEN
+         ALLOCATE(UMAX_g(NP_G))
+         ALLOCATE (UMAX_Time_G(NP_G))
+         UMAX_g(:) = 0.d0
+         UMAX_Time_G(:) = -99999.d0
+      ENDIF
+      UMaxDescript % lun                    = 312
+      UMaxDescript % num_items_per_record   = 2
+      UMaxDescript % specifier              = NOUTGV
+      UMaxDescript % array                  => UMAX
+      UMaxDescript % array_g                => UMAX_G
+      UMaxDescript % array2                 => UMAX_Time
+      UMaxDescript % array2_g               => UMAX_Time_G
+      UMaxDescript % field_name             = 'UMax'
+      UMaxDescript % file_basename          = 'maxvel'
+      UMaxDescript % file_extension         = 63
+      UMaxDescript % writeFlag              = .false.
+      UMaxDescript % minmax_timestamp       = .true.
+      UMaxDescript % readMaxMin             = .true.
+      if ( UMaxDescript % specifier .eq. XDMF ) then
+         UMaxDescript % specifier = ASCII
+      endif
+      UMAX(:) = 0.d0
+      UMAX_Time(:) = -99999.d0
+
+C     prmin.63
+      IF (mnproc.gt.1) THEN
+         ALLOCATE(PRMIN_g(NP_G))
+         ALLOCATE (PRMIN_Time_G(NP_G))
+         PRMIN_g(:) = 99999.d0
+         PRMIN_Time_G(:) = -99999.d0
+      ENDIF
+      PrMinDescript % lun                   = 313
+      PrMinDescript % num_items_per_record  = 2
+      PrMinDescript % specifier             = NOUTGW
+      PrMinDescript % array                 => PRMIN
+      PrMinDescript % array_g               => PRMIN_G
+      PrMinDescript % array2                => PRMIN_Time
+      PrMinDescript % array2_g              => PRMIN_Time_G
+      PrMinDescript % field_name            = 'PrMin'
+      PrMinDescript % file_basename         = 'minpr'
+      PrMinDescript % file_extension        = 63
+      PrMinDescript % writeFlag             = .false.
+      PrMinDescript % minmax_timestamp      = .true.
+      if (nws.ne.0) then
+         PrMinDescript % readMaxMin         = .true.
+      endif
+      if ( PrMinDescript % specifier .eq. XDMF ) then
+         PrMinDescript % specifier = ASCII
+      endif
+      PRMIN(:) = 99999.d0
+      PRMIN_Time(:) = -99999.d0
+
+C     maxwvel.63
+      IF (mnproc.gt.1) THEN
+         ALLOCATE(WVNOUTMAX_g(NP_G))
+         ALLOCATE (WVNOUTMAX_Time_G(NP_G))
+         WVNOUTMAX_g(:) = 0.d0
+         WVNOUTMAX_Time_G(:) = -99999.d0
+      ENDIF
+      WVMaxDescript % lun                   = 314
+      WVMaxDescript % specifier             = NOUTGW
+      WVMaxDescript % num_items_per_record  = 2
+      WVMaxDescript % array                 => WVNOUTMAX
+      WVMaxDescript % array_g               => WVNOUTMAX_G
+      WVMaxDescript % array2                => WVNOUTMAX_Time
+      WVMaxDescript % array2_g              => WVNOUTMAX_Time_G
+      WVMaxDescript % field_name            = 'WVMax'
+      WVMaxDescript % file_basename         = 'maxwvel'
+      WVMaxDescript % file_extension        = 63
+      WVMaxDescript % writeFlag             = .false.
+      WVMaxDescript % minmax_timestamp      = .true.
+      if (nws.ne.0) then
+         WVMaxDescript % readMaxMin         = .true.
+      endif
+      if ( WVMaxDescript % specifier .eq. XDMF ) then
+         WVMaxDescript % specifier = ASCII
+      endif
+      WVNOUTMAX(:) = 0.d0
+      WVNOUTMAX_Time(:) = -99999.d0
+C
+C     maxrs.63
+      IF (mnproc.gt.1) THEN
+         ALLOCATE(RSNMAX_g(NP_G))
+         ALLOCATE (RSNMAX_Time_G(NP_G))
+         RSNMAX_g(:) = 0.d0
+         RSNMAX_Time_G(:) = -99999.d0
+      ENDIF
+      RSMaxDescript % lun                   = 315
+      RSMaxDescript % specifier             = NOUTGW
+      RSMaxDescript % num_items_per_record  = 2
+      RSMaxDescript % array2                => RSNMAX_Time
+      RSMaxDescript % array2_g              => RSNMAX_Time_G
+      RSMaxDescript % array                 => RSNMAX
+      RSMaxDescript % array_g               => RSNMAX_G
+      RSMaxDescript % field_name            = 'RSMax'
+      RSMaxDescript % file_basename         = 'maxrs'
+      RSMaxDescript % file_extension        = 63
+      RSMaxDescript % writeFlag             = .false.
+      RSMaxDescript % minmax_timestamp      = .true.
+      if (nrs.ne.0) then
+         RSMaxDescript % readMaxMin         = .true.
+      endif
+      if ( RSMaxDescript % specifier .eq. XDMF ) then
+         RSMaxDescript % specifier = ASCII
+      endif   
+      RSNMAX(:) = 0.d0
+      RSNMAX_Time(:) = -99999.d0
+
+!     ESLNodes.63
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(ESLONOFF_g(NP_G))
+         ESLONOFF_g(:) = 0.d0
+      ENDIF
+      ESLDescript % lun                  = 323
+      ESLDescript % specifier            = ASCII
+      ESLDescript % array                => ESLONOFF
+      ESLDescript % array_g              => ESLONOFF_G
+      ESLDescript % field_name           = 'ESLActive'
+      ESLDescript % file_basename        = 'ESLNodes'
+      ESLDescript % file_extension       = 63
+      ESLDescript % writeFlag            = .false.       
+      ESLONOFF(:) = 0.d0
+      !
+      !  D E T A I L E D    I N U N D A T I O N    O U T P U T
+      !
+      ! inundationtime.63 (works like a min/max file)
+      if (mnproc.gt.1) then
+         allocate(inundationTime_g(NP_G))
+         allocate(inundationTime_onset_g(NP_G))
+         inundationTime_g(:) = 0.d0
+         inundationTime_onset_g(:) = -99999.d0
+      endif
+      InundationTimeDescript % lun                  = 400
+      InundationTimeDescript % specifier            = NOUTGE
+      InundationTimeDescript % num_items_per_record = 2   
+      InundationTimeDescript % array                => inundationTime
+      InundationTimeDescript % array_g              => inundationTime_g
+      InundationTimeDescript % array2               => inundationTime_onset
+      InundationTimeDescript % array2_g             => inundationTime_onset_g
+      InundationTimeDescript % field_name           = 'inundationTime'
+      InundationTimeDescript % file_basename        = 'inundationtime'
+      InundationTimeDescript % file_extension       = 63
+      InundationTimeDescript % writeFlag            = .false.
+      InundationTimeDescript % minmax_timestamp     = .true.
+      InundationTimeDescript % readMaxMin           = inundationOutput
+      if ( InundationTimeDescript % specifier .eq. XDMF ) then
+         InundationTimeDescript % specifier = ASCII
+      endif
+      !
+      ! maxinundepth.63 (works like a min/max file)
+      if (mnproc.gt.1) then
+         allocate(MaxInunDepth_g(NP_G))
+         allocate(MaxInunDepth_time_g(NP_G))
+         MaxInunDepth_g(:) = -99999.d0
+         MaxInunDepth_time_g(:) = -99999.d0
+      endif
+      MaxInunDepthDescript % lun                  = 401
+      MaxInunDepthDescript % specifier            = NOUTGE
+      MaxInunDepthDescript % num_items_per_record = 2   
+      MaxInunDepthDescript % array                => maxInunDepth
+      MaxInunDepthDescript % array_g              => maxInunDepth_g
+      MaxInunDepthDescript % array2               => maxInunDepth_time
+      MaxInunDepthDescript % array2_g             => maxInunDepth_time_g
+      MaxInunDepthDescript % field_name           = 'maxInunDepth'
+      MaxInunDepthDescript % file_basename        = 'maxinundepth'
+      MaxInunDepthDescript % file_extension       = 63
+      MaxInunDepthDescript % writeFlag            = .false.
+      MaxInunDepthDescript % minmax_timestamp     = .true.
+      MaxInunDepthDescript % readMaxMin           = inundationOutput
+      if ( MaxInunDepthDescript % specifier .eq. XDMF ) then
+         MaxInunDepthDescript % specifier = ASCII
+      endif
+      !
+      ! endrisinginun.63 (1 if water is rising at end of simulation)
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(endRisingInun_g(NP_G))
+         endRisingInun_g(:) = 0
+      ENDIF
+      EndRisingInunDescript % lun                  = 403
+      EndRisingInunDescript % specifier            = NOUTGE
+      EndRisingInunDescript % filepos              => fauxFilePosition
+      EndRisingInunDescript % iarray               => endRisingInun
+      EndRisingInunDescript % iarray_g             => endRisingInun_g
+      EndRisingInunDescript % field_name           = 'endRisingInun'
+      EndRisingInunDescript % file_basename        = 'endrisinginun'
+      EndRisingInunDescript % file_extension       = 63
+      EndRisingInunDescript % isInteger            = .true.
+      EndRisingInunDescript % writeFlag            = inundationOutput
+      ! write_flag set to .false. immediately after file initialization
+      if ( EndRisingInunDescript % specifier .eq. XDMF ) then
+         EndRisingInunDescript % specifier = ASCII
+      endif
+      ! jgf52.08.03: We write this as a regular file, rather than 
+      ! a min/max file, and we never want to append, we always want
+      ! to overwrite. 
+      if ( EndRisingInunDescript % specifier .gt.0 ) then
+         EndRisingInunDescript % specifier = - EndRisingInunDescript % specifier
+      endif
+      !
+      ! everdried.63 (works like a min/max file)
+      if (mnproc.gt.1) then
+         allocate(EverDried_g(NP_G))
+         allocate(EverDried_time_g(NP_G))
+         EverDried_g(:) = 1.d0
+         EverDried_time_g(:) = -99999.d0
+      endif
+      EverDriedDescript % lun                  = 404
+      EverDriedDescript % specifier            = NOUTGE
+      EverDriedDescript % num_items_per_record = 2   
+      EverDriedDescript % initial_value        = 0.d0   
+      EverDriedDescript % array                => EverDried
+      EverDriedDescript % array_g              => EverDried_g
+      EverDriedDescript % array2               => EverDried_time
+      EverDriedDescript % array2_g             => EverDried_time_g
+      EverDriedDescript % field_name           = 'everDried'
+      EverDriedDescript % file_basename        = 'everdried'
+      EverDriedDescript % file_extension       = 63
+      EverDriedDescript % writeFlag            = .false.
+      EverDriedDescript % minmax_timestamp     = .true.
+      EverDriedDescript % readMaxMin           = inundationOutput
+      if ( EverDriedDescript % specifier .eq. XDMF ) then
+         EverDriedDescript % specifier = ASCII
+      endif
+
+#ifdef CSWAN      
+      CALL initSwanOutput() !...couple2swan.F --> performs same process as above
+#endif
+      !
+      ! create file names
+      do i=1, numOutputDescript2D
+         ! set the file extension to be the same as the logical unit number (lun)
+         ! by default if it doesn't have a special value already set
+         ! in the code above
+         if ( ptr(i) % descript2D % file_extension .eq. -99999 ) then
+            ptr(i) % descript2D % file_extension = ptr(i) % descript2D % lun
+         endif
+         ! write the integer file extension to a character string
+         write(extString,'(i0)') ptr(i) % descript2D % file_extension
+         !
+         ! construct the file name based on the type of run that is occurring
+         ! (serial or parallel, write to local files, etc)
+         !
+         ! jgf: netCDF and XDMF files are always fulldomain...
+         !
+         if (((mnproc.gt.1).and.(WRITE_LOCAL_FILES.eqv..false.)).or.
+     &        (ptr(i) % descript2D % specifier.eq.NETCDF3).or.
+     &        (ptr(i) % descript2D % specifier.eq.NETCDF4).or.
+     &        (ptr(i) % descript2D % specifier.eq.XDMF) ) then
+            ptr(i) % descript2D % file_name = 
+     &         trim(globaldir) // '/' //
+     &         trim(ptr(i) % descript2D % file_basename) // 
+     &         '.' // trim(extString)
+         else
+            ptr(i) % descript2D % file_name = 
+     &         trim(localdir) // '/' //
+     &         trim(ptr(i) % descript2D % file_basename) // 
+     &         '.' // trim(extString)
+         endif
+         
+      end do
+      !
+      ! determine whether writer processors will be used for each type 
+      ! of data
+      if (mnwproc.gt.0) then
+         do i=1, numOutputDescript2D
+            ! if the chosen output format is supported by 
+            ! writer processors, then use writer processors for 
+            ! this output type
+            if ( ptr(i) % descript2D % writeFlag .eqv. .true.) then
+               if ( any(ptr(i) % descript2D % writerFormats(:) .eq. 
+     &               abs(ptr(i) % descript2D % specifier) )  ) then
+                  ptr(i) % descript2D % useWriter = .true.
+                  write(scratchMessage,'(a,a,a)') 'Output file ',
+     &               trim(ptr(i) % descript2D % file_name),
+     &             ' will be written via dedicated writer processor(s).'
+                  call allMessage(INFO,scratchMessage)
+               endif
+            endif
+         end do
+      endif
+      !
+      ! jgf49.43.11: if netcdf is not required for a particular output file,
+      ! the associated subroutine call will do nothing and just return
+      if (myProc.eq.0) then
+         do i=1, numOutputDescript2D
+            nerr = .false.
+            if ( ptr(i) % descript2D % writeFlag .eqv. .true.) then
+               select case(abs(ptr(i) % descript2D % specifier))
+               case(NETCDF3, NETCDF4)
+#ifdef ADCNETCDF
+                  call initNetCDFOutputFile(ptr(i) % descript2D, nerr)
+                  if (nerr.eqv..true.) then
+                     call allMessage(ERROR,
+     &             'There was an issue with NetCDF file initialization.')
+                     call terminate()         
+                  endif
+                  ptr(i) % descript2D % initialized = .true.
+#endif
+               ! jgf51.21.24: Initialize XDMF output files
+               case(XDMF)
+#ifdef ADCXDMF
+                  if (ptr(i) % descript2D % useWriter.eqv..false.) then
+                     call readControlFile(controlFileName,.false.)
+                     call initOutputXDMF(ptr(i) % descript2D) 
+                     call writeControlXDMF(ptr(i) % descript2D % xdmfMD 
+     &                                     % xdmfFortranObj)
+                     ptr(i) % descript2D % initialized = .true.
+#ifdef CMPI
+                  else
+                     ! make writer read mesh; the writing of the 
+                     ! mesh to the XDMF output file will be performed
+                     ! when actual output data are written to the file
+                     call sendInitWriterXDMF(ptr(i) % descript2D)
+#endif
+                  endif
+#endif
+               case default 
+                  ! special initialization not required for ASCII or SPARSE_ASCII
+               end select
+            endif
+         end do
+      endif
+      !
+      ! jgf52.08.03: If inundationOutput is .true. and endrisinginun.63 
+      ! has been initialized, turn it off so it doesn't get written 
+      ! during time stepping.
+      EndRisingInunDescript % writeFlag = .false.
+      !
+      !
+      !  R E A D   M I N   /   M A X   F I L E S   A T   H O T S T A R T
+      ! 
+      ! jgf48.4635 If the maxele.63 (etc) files are present, we need to
+      ! load them up, to preserve high water marks across hotstarts.
+      ! If they are not present, thats okay too.
+      !
+      !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+      !  Begin TCM v51.20.01 Mods for MaxMin Files to local Variables
+      !      Including reading time stamp for max/min when available.
+      ! Note:  Global initalizes the TimeStamp Values to 0.0d0
+      !   If timestamp values are not found, then they will return
+      !   with an initial value of -99999.d0 to begin the hstart runs.
+      !   This includes the case of the max/min files not being present.
+      ! 
+      ! jgf52.08.03: Moved the reading of min/max files from hotstart()
+      ! subroutine to here. 
+      !
+      ! jgf52.08.03: Look for ascii-formatted files and load those if 
+      ! found; otherwise try to load netcdf-formatted files using new
+      ! netcdf reading capability. 
+      !
+      ! jgf52.08.20: Check the timestamp on the min/max data; only load
+      ! min/max data at hotstart if the timestamp is earlier than the 
+      ! current adcirc time. 
+      if (ihot.ne.0) then
+         do i=1, numOutputDescript2D
+            fileFound = .false.
+            if ( ptr(i) % descript2D % readMaxMin.eqv..true.) then
+               call logMessage(INFO,'Attempting to read ' //
+     &            trim(ptr(i) % descript2D % file_name) //
+     &            ' to continue the min/max record.')
+               call readAndMapToSubdomainMaxMin(ptr(i) % descript2D, 
+     &            timeloc, fileFound)
+#ifdef ADCNETCDF
+               if ((fileFound.eqv..false.).and.
+     &              (netcdf_avail.eqv..true.) ) then
+                  ! check to see if the file exists before trying to 
+                  ! initialize it
+                  inquire(file=trim(ptr(i) % descript2D % file_name)//
+     &             '.nc',exist=fileFound)
+                  if (fileFound.eqv..true.) then
+                      nerr = .false.
+                     if (myproc.eq.0) then
+C                      ! initialize it if it wasn't initialized above
+                       if (ptr(i) % descript2D % initialized.eqv..false.) then
+                           call initNetCDFOutputFile(ptr(i) % descript2D, nerr)
+                           if (nerr.eqv..true.) then
+                              call allMessage(ERROR,
+     &                        "Failed to initialize "//
+     &                        trim(ptr(i)%descript2D%file_name)//".")
+                              call terminate()
+                           endif
+                        endif
+                     endif
+                     ptr(i) % descript2D % initialized = .true.
+                     ! if there wasn't an initialization error, read in
+                     ! the min/max values for use in this simulation
+                     call readAndMapToSubdomainMaxMinNetCDF(
+     &                  ptr(i) % descript2D, timeloc)
+                  else
+                     call logMessage(INFO,'The file "'//
+     &                   trim(ptr(i) % descript2D % file_name)//
+     &                   '" was not found.')
+                  endif
+               endif
+#endif
+            endif
+         enddo
+         IF (LoadEleSlopeLim) THEN
+            CALL readAndMapToSubdomainMaxMin(ESLDescript,timeloc,fileFound)
+            ! must set the elemental slope limiter active values as well
+            !
+            ! jgf51.46: Really should only turn on the slope limiter if
+            ! the slope limiter was turned on in the run that produced
+            ! these values (as opposed to just recording the places
+            ! where the slope was exceeded). However, this isn't really
+            ! practical because it would require knowledge of the 
+            ! elemental_slope_limiter nodal attribute from the 
+            ! previous simulation. We don't have access to that. 
+            !
+            ! Also, we don't want to turn the slope limiter on in places 
+            ! where the analyst does not want it to be turned on, and only 
+            ! wants to record the places where the slope is exceeded. So
+            ! I am adding a check for positive values of the nodal
+            ! attribute, and only turning on the slope limiter there. 
+            DO I = 1,NP
+               if ( (ESLONOFF(I).eq.1.d0).and.
+     &         (elemental_slope_limiter_grad_max(i).ge.0.d0) ) then
+                  elemental_slope_limiter_active(I) = .true.
+               else
+                  elemental_slope_limiter_active(I) = .false.
+               endif
+            ENDDO
+         ENDIF
+      endif ! ihot.ne.0
+      !
+      ! End  TCM v51.20.01 Mods for MaxMin Files to Local Variables
+      !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+     
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C----------------------------------------------------------------------
+      end subroutine initOutput2D
+C----------------------------------------------------------------------
+
+C----------------------------------------------------------------------
+C       S U B R O U T I N E   W R I T E   O U T P U T   2 D
+C----------------------------------------------------------------------
+C
+C     R.L. 8/22/05 Subroutine to write primary 2D model output not
+C     including hotstart and harmonic analysis.
+C
+C----------------------------------------------------------------------
+      SUBROUTINE writeOutput2D(IT,TimeLoc)
+      USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
+     &                  GLOBALDIR, OFF
+      USE GLOBAL
+      USE MESH, ONLY : NP, NE, DP, NM, ICS
+      USE GLOBAL_IO, ONLY: storeOne, storeTwo,
+     &    packOne, unpackOne, packTwo, unpackTwo
+      USE NodalAttributes, ONLY : LoadEleSlopeLim
+#ifdef CMPI
+      USE WRITER, ONLY : sendDataToWriter, flush_writers, writer_init
+#endif
+      IMPLICIT NONE
+      INTEGER, intent(in) :: IT
+      REAL(8), intent(in) :: TimeLoc
+      INTEGER :: i,j
+
+      call setMessageSource("writeOutput2D")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif 
+
+      do i=1,numOutputDescript2D
+         !
+         ! if these data should not be written at all, due to circumstances
+         ! particular to each data type, then skip this
+         ! output data type and go to the next one
+         if ( ptr(i) % descript2D % writeFlag.eqv..false. ) then
+            cycle
+         endif
+         !
+         ! if this output was not selected in the input file, go to the next one 
+         if (ptr(i) % descript2D % specifier.eq.OFF) then
+            cycle
+         endif
+         !
+         ! if we are in the time step window where output should be produced,
+         ! increment the spool counter for this output type
+         if ( (it.gt.ptr(i) % descript2D % startTimeStep).and.
+     &        (it.le.ptr(i) % descript2D % endTimeStep) ) then
+            ptr(i) % descript2D % spoolCounter = 
+     &          ptr(i) % descript2D % spoolCounter + 1
+         endif
+         !
+         ! if the spool counter for this output type does not match the 
+         ! output time step increment for this output type, then go to 
+         ! the next data type
+         if (ptr(i) % descript2D % spoolCounter.ne.
+     &       ptr(i) % descript2D % outputTimeStepIncrement) then
+            cycle
+         endif
+         !
+         ! if this is station data, compute the solution at the station
+         ! location via spatial interpolation using the three surrrounding
+         ! nodes
+         if ( ptr(i) % descript2D % isStation .eqv. .true. ) then
+            call stationDataInterp(ptr(i) % descript2D)
+         endif
+         !
+         ! write out the array based on the specified file format and the 
+         ! type of data, using writer processors if appropriate
+         !
+         !  W R I T E   U S I N G   D E D I C A T E D   W R I T E R
+         !
+         if ( ptr(i) % descript2D % useWriter .eqv. .true. ) then
+            if ( ptr(i) % descript2D % num_items_per_record .eq. 1 ) then
+#ifdef CMPI
+               call sendDataToWriter(ptr(i) % descript2D, timeLoc, it, 
+     &               packOne)       
+            else   
+               call sendDataToWriter(ptr(i) % descript2D, timeLoc, it, 
+     &               packTwo)          
+#endif
+            endif
+         else
+            !
+            !  W R I T E   U S I N G   P R O C E S S O R   0
+            ! 
+            if ( ptr(i) % descript2D % num_items_per_record .eq. 1 ) then
+                  call writeOutArray(TimeLoc, IT, ptr(i) % descript2D,
+     &                               packOne, unpackOne)
+            else
+               call writeOutArray(TimeLoc, IT, ptr(i) % descript2D,
+     &                            packTwo, unpackTwo)
+            endif
+         endif            
+         !
+         ! set the spool counter back to zero, now that we've written these data
+         ptr(i) % descript2D % spoolCounter = 0
+         !
+         ! special cases:
+         !
+         ! sponge only outputs once
+         if ( ptr(i) % descript2D % lun .eq. 92 ) then 
+            ptr(i) % descript2D % writeFlag = .false.
+         endif
+
+      end do
+
+#ifdef CMPI
+Csb 02/09/2007
+C...  Communicate writer processors and let them write out what
+C...  they have.
+      !write(6,'(a)') 'DEBUG: Calling flush_writers()'
+      CALL FLUSH_WRITERS()
+#endif
+
+Csb 11/11/2006
+C...   OUTPUT MAXIMUM/MINIMUM GLOBAL DATA AT THE LAST TIME STEP.
+C...
+C     jgf48.4636 Updated to newer data structure, so that we can
+C     compare with values from hot start, so that mins and maxes
+C     can be preserved across hot starts.
+C     tcmv51.20.01 Changed from pack/unpack one to pack/unpack two
+C       as max/min are now initialized from file during hotstart
+C       for all processors, not just myproc=0.
+      if (it.eq.nt) then
+         CALL writeOutArrayMinMax(311, TimeLoc, IT, 2, EtaMaxDescript,
+     &        packTwo, unpackTwo)
+         CALL writeOutArrayMinMax(312, TimeLoc, IT, 2, UMaxDescript,
+     &        packTwo, unpackTwo)
+         IF (NWS.NE.0) THEN
+            CALL writeOutArrayMinMax(313, TimeLoc, IT, 2, PrMinDescript,
+     &           packTwo, unpackTwo)
+            CALL writeOutArrayMinMax(314, TimeLoc, IT, 2, WVMaxDescript,
+     &           packTwo, unpackTwo)
+            IF (NRS.NE.0) THEN
+               CALL writeOutArrayMinMax(315, TimeLoc, IT, 2, RSMaxDescript,
+     &              packTwo, unpackTwo)
+            ENDIF
+         ENDIF
+         !
+         ! OUTPUT THE NODES WHERE THE ELEMENTAL SLOPE LIMITER HAS BEEN
+         ! TURNED ON DURING THE RUN
+         IF (LoadEleSlopeLim) THEN
+            CALL writeOutArrayMinMax(323, TimeLoc, IT, 1, ESLDescript,
+     &               packOne, unpackOne)  !no time stamps so only one pack/unpack
+         ENDIF
+
+C        OUTPUT THE SWAN MAXIMUM FILES         
+#ifdef CSWAN
+         IF(Swan_OutputHS)
+     &      CALL writeOutArrayMinMax(316,TimeLoc,IT,1,SwanHSMaxDescript,packOne,unpackOne)
+         IF(Swan_OutputDIR)
+     &      CALL writeOutArrayMinMax(317,TimeLoc,IT,1,SwanDIRMaxDescript,packOne,unpackOne)
+         IF(Swan_OutputTM01)
+     &      CALL writeOutArrayMinMax(318,TimeLoc,IT,1,SwanTM01MaxDescript,packOne,unpackOne)
+         IF(Swan_OutputTM02)
+     &      CALL writeOutArrayMinMax(321,TimeLoc,IT,1,SwanTM02MaxDescript,packOne,unpackOne)
+         IF(Swan_OutputTMM10)
+     &      CALL writeOutArrayMinMax(322,TimeLoc,IT,1,SwanTMM10MaxDescript,packOne,unpackOne)
+         IF(Swan_OutputTPS)
+     &      CALL writeOutArrayMinMax(319,TimeLoc,IT,1,SwanTPSMaxDescript,packOne,unpackOne)
+         IF(Swan_OutputWind)
+     &      CALL writeOutArrayMinMax(320,TimeLoc,IT,1,SwanWindMaxDescript,packTwo,unpackTwo)
+#endif
+         ! Write the inundationtime.63, maxinundepth.63, everDried.63, and 
+         ! endrisinginun.63 files at the end of the simulation.
+         if (inundationOutput.eqv..true.) then
+            call writeOutArrayMinMax(400, TimeLoc, IT, 2, 
+     &         InundationTimeDescript, packTwo, unpackTwo)
+            call writeOutArrayMinMax(401, TimeLoc, IT, 2, 
+     &         MaxInunDepthDescript, packTwo, unpackTwo)        
+            call writeOutArray(timeLoc, it,
+     &          EndRisingInunDescript, packOne, unpackOne)
+            call writeOutArrayMinMax(404, TimeLoc, IT, 2, 
+     &         everDriedDescript, packTwo, unpackTwo)
+         endif
+
+      ENDIF
+
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
+      RETURN
+ 2120 FORMAT(2X,1pE20.10E3,5X,I10)
+ 2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
+ 2454 FORMAT(2X,I8,2(2X,1pE20.10E3))
+C-----------------------------------------------------------------------
+      END SUBROUTINE writeOutput2D
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C      S U B R O U T I N E   S T A T I O N   D A T A   I N T E R P
+C-----------------------------------------------------------------------
+C     jgf51.21.24: Spatially interpolate the solution at a station using
+C     the solution at the three surrounding nodes; performs the 
+C     the interpolation on both components for output data that contains
+C     two components.
+C-----------------------------------------------------------------------
+      subroutine stationDataInterp(descript)
+      use global
+      implicit none
+      type(OutputDataDescript_t), intent(inout) :: descript
+
+      call setMessageSource("stationDataInterp")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif 
+
+      call stationArrayInterp(descript, descript % interped_array,
+     &       descript % array)    
+      if ( descript % num_items_per_record .eq. 2 ) then
+         call stationArrayInterp(descript, descript % interped_array2,
+     &         descript % array2)
+      endif
+
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
+C-----------------------------------------------------------------------
+      end subroutine stationDataInterp
+C-----------------------------------------------------------------------         
+
+
+C-----------------------------------------------------------------------         
+C      S U B R O U T I N E   S T A T I O N   A R R A Y   I N T E R P
+C-----------------------------------------------------------------------         
+C     jgf51.21.24: Performs station interpolations on a single array.
+C-----------------------------------------------------------------------            
+      subroutine stationArrayInterp(descript, fromArray, toArray)
+      use sizes, only : sz
+      use global, only : nodecode, OutputDataDescript_t, IFNLFA, ETA2, NOFF,
+     &                   allMessage, DEBUG, setMessageSource, unsetMessageSource 
+      use mesh, only : dp, nm
+      implicit none
+      type(OutputDataDescript_t), intent(inout) :: descript
+      real(sz), intent(in) :: fromArray(:)
+      real(sz), intent(out) :: toArray(:)
+      integer :: e
+      real(sz) :: d1, d2, d3
+      real(sz) :: H2N1, H2N2, H2N3
+      integer :: ncele
+      integer :: i, j
+
+      call setMessageSource("stationArrayInterp")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif 
+
+      do j=1, descript % num_records_this
+         e = descript % elements(j)
+         d1 = fromArray(nm(e,1))
+         d2 = fromArray(nm(e,2))
+         d3 = fromArray(nm(e,3))
+         !
+         ! if the value should be divided by the total depth
+         if ( descript % divideByDepth .eqv. .true.) then            
+            H2N1=DP(NM(e,1))+IFNLFA*ETA2(nm(e,1))
+            H2N2=DP(NM(e,2))+IFNLFA*ETA2(NM(e,2))
+            H2N3=DP(NM(e,3))+IFNLFA*ETA2(NM(e,3))
+            d1=d1/H2N1
+            d2=d2/H2N2
+            d3=d3/H2N3
+         endif
+         !
+         ! perform spatial interpolation
+         toArray(j) = d1 * descript % interp_fac1(j) +
+     &                d2 * descript % interp_fac2(j) +
+     &                d3 * descript % interp_fac3(j) 
+         ! 
+         ! if the station output should have a special value in a 
+         ! dry element, apply the special value if necessary
+         ! jgf52.04.03: Removed NOFF from consideration when 
+         ! determining wet/dry state for station interpolation purposes.
+         if (descript % considerWetDry .eqv..true. ) then
+            ncele = nodecode(nm(e,1)) * nodecode(nm(e,2)) * 
+     &             nodecode(nm(e,3)) 
+            if (ncele.eq.0) then
+               toArray(j) = descript % alternate_value
+            endif
+         endif
+        
+      end do
+
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
+C----------------------------------------------------------------------      
+      end subroutine stationArrayInterp
+C----------------------------------------------------------------------
+
+
+
+C----------------------------------------------------------------------
+C       S U B R O U T I N E
+C          W R I T E  H A R M O N I C   A N A L Y S I S   O U T P U T
+C----------------------------------------------------------------------
+C     jgf49.44: Subroutine to write harmonic analysis output files
+C     in serial or in parallel using globalio.
+C----------------------------------------------------------------------
+      SUBROUTINE writeHarmonicAnalysisOutput(ITIME)
+      USE SIZES, ONLY : SZ, MNHARF, LOCALDIR, GLOBALDIR,
+     &                  WRITE_LOCAL_FILES, MNPROC, MYPROC, MNP,
+     &                  WRITE_LOCAL_HARM_FILES
+C RJW added MNPROC and MYPROC
+C removed from global  myProc, MNPROC,
+      USE GLOBAL, ONLY : OutputDataDescript_t, NSTAE_G,
+     &                   NOUTE, NSTAE, IMAP_STAE_LG, SLEL,
+     &                   XEL, SFEL, YEL, NSTAV_G, NSTAV,
+     &                   IMAP_STAV_LG, SLEV, XEV, SFEV,
+     &                   YEV, screenMessage, DEBUG,
+     &                   setMessageSource, unsetMessageSource,
+     &                   NE_G, NP_G, NODES_LG
+      USE MESH, ONLY : NP, NE, ICS
+      USE GLOBAL_IO, ONLY:
+     &    open_gbl_file, collectFullDomainArray,
+     &    packOne, unpackOne, packTwo, unpackTwo, packMbyNP, unpackMbyNP
+      USE HARM, ONLY :
+     &    emag, phasede, umag, vmag, phasedu, phasedv, emagt, phaseden,
+     &    umagt, vmagt, phasedut, phasedvt, elav_g, elva_g,
+     &    xvelav_g, xvelva_g, yvelav_g, yvelva_g,
+     &    elav, elva, xvelav, uav, uavdif, nhase, nhasv, nhage, nhagv,
+     &    charmv, fmv, eav, esq, eavdif, evadif, iharind, ITHAS,
+     &    xvelva, usq, uvadif, yvelav, vav, vavdif, yvelva, vsq, vvadif
+
+#ifdef CMPI
+      USE MESSENGER, ONLY : msg_fini, msg_lbcast
+#endif
+
+      IMPLICIT NONE
+      INTEGER I, J, N                      !local loop counters
+      INTEGER, intent(in) :: ITIME  !tcm v49.64.02 added
+
 C
       LOGICAL, SAVE :: FirstCall = .true.
 C
       call setMessageSource("writeHarmonicAnalysisOutput")
-#ifdef WRITE_OUTPUT_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+
 #endif
       ! JUST RETURN if harmonic analysis was not specified
       ! tcm v49.64.02 -added itime le ithas to be
       ! consistent with what is in solveHarmonicAnalysis
       IF ((IHARIND.eq.0).or.(ITIME.LE.ITHAS)) THEN
-#ifdef WRITE_OUTPUT_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
          RETURN
       ENDIF
@@ -1415,11 +1790,12 @@ C     a check of FirstCall is not necessary. However, we'll still do it, in
 C     case the subroutine is ever called more than once in some future
 C     scenario.
       IF (FirstCall) THEN
+         !
+         ! Chris S. 05/08/14 Add explicit filename to each magnitude 
+         ! (only do for u magnitude for velocity) descriptor
+         ! instead of building fn within writeOutHarmonicArrays() subroutine     
          IF (NHASE.ne.0) THEN
             ! fort.51 magnitude
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-              ALLOCATE(EMAG_g(MNHARF,NSTAE_G))
-            ENDIF
             HAElevStaMagDescript % specifier            = NHASE
             HAElevStaMagDescript % initial_value        = 0.0
             HAElevStaMagDescript % num_items_per_record = MNHARF
@@ -1427,9 +1803,16 @@ C     scenario.
             HAElevStaMagDescript % num_records_this     = NSTAE
             HAElevStaMagDescript % imap                 => IMAP_STAE_LG
             HAElevStaMagDescript % array2D              => EMAG
-            HAElevStaMagDescript % array2D_g            => EMAG_g
             HAElevStaMagDescript % ConsiderWetDry       = .FALSE.
+            HAElevStaMagDescript % file_name            = 'fort.51'
             HAElevStaMagDescript % field_name           = 'HAElevStaMag'
+            HAElevStaMagDescript % array2D_g            => null()            
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(EMAG_g(MNHARF,NSTAE_G))
+               ENDIF
+               HAElevStaMagDescript % array2D_g         => EMAG_g
+            ENDIF            
             IF (ICS.eq.2) THEN
                HAElevStaMagDescript % x_coord           => SLEL
                HAElevStaMagDescript % y_coord           => SFEL
@@ -1438,9 +1821,6 @@ C     scenario.
                HAElevStaMagDescript % y_coord           => YEL
             ENDIF
             ! fort.51 phase
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(PHASEDE_g(MNHARF,NSTAE_G))
-            ENDIF
             HAElevStaPhaseDescript % specifier            = NHASE
             HAElevStaPhaseDescript % initial_value        = 0.0
             HAElevStaPhaseDescript % num_items_per_record = MNHARF
@@ -1448,9 +1828,15 @@ C     scenario.
             HAElevStaPhaseDescript % num_records_this     = NSTAE
             HAElevStaPhaseDescript % imap                => IMAP_STAE_LG
             HAElevStaPhaseDescript % array2D              => PHASEDE
-            HAElevStaPhaseDescript % array2D_g            => PHASEDE_g
+            HAElevStaPhaseDescript % array2D_g            => null()
             HAElevStaPhaseDescript % ConsiderWetDry       = .FALSE.
             HAElevStaPhaseDescript % field_name     = 'HAElevStaPhase'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(PHASEDE_g(MNHARF,NSTAE_G))
+               ENDIF
+               HAElevStaPhaseDescript % array2D_g         => PHASEDE_g
+            ENDIF
             IF (ICS.eq.2) THEN
                HAElevStaPhaseDescript % x_coord           => SLEL
                HAElevStaPhaseDescript % y_coord           => SFEL
@@ -1463,9 +1849,6 @@ C
 C
          IF (NHASV.ne.0) THEN
             ! fort.52 u velocity magnitude
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(UMAG_g(MNHARF,NSTAV_G))
-            ENDIF
             HAVelStaUMagDescript % specifier            = NHASV
             HAVelStaUMagDescript % initial_value        = 0.0
             HAVelStaUMagDescript % num_items_per_record = MNHARF
@@ -1473,10 +1856,17 @@ C
             HAVelStaUMagDescript % num_records_this     = NSTAV
             HAVelStaUMagDescript % imap                 => IMAP_STAV_LG
             HAVelStaUMagDescript % array2D              => UMAG
-            HAVelStaUMagDescript % array2D_g            => UMAG_g
+            HAVelStaUMagDescript % array2D_g            => null()
             HAVelStaUMagDescript % ConsiderWetDry       = .FALSE.
             HAVelStaUMagDescript % alternate_value      = 0.0
             HAVelStaUMagDescript % field_name           = 'HAVelStaUMag'
+            HAVelStaUMagDescript % file_name            = 'fort.52'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(UMAG_g(MNHARF,NSTAV_G))
+               ENDIF
+               HAVelStaUMagDescript % array2D_g            => UMAG_g
+            ENDIF
             IF (ICS.eq.2) THEN
                HAVelStaUMagDescript % x_coord           => SLEV
                HAVelStaUMagDescript % y_coord           => SFEV
@@ -1485,9 +1875,6 @@ C
                HAVelStaUMagDescript % y_coord           => YEV
             ENDIF
             ! fort.52 v velocity magnitude
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(VMAG_g(MNHARF,NSTAV_G))
-            ENDIF
             HAVelStaVMagDescript % specifier            = NHASV
             HAVelStaVMagDescript % initial_value        = 0.0
             HAVelStaVMagDescript % num_items_per_record = MNHARF
@@ -1495,10 +1882,16 @@ C
             HAVelStaVMagDescript % num_records_this     = NSTAV
             HAVelStaVMagDescript % imap                 => IMAP_STAV_LG
             HAVelStaVMagDescript % array2D              => VMAG
-            HAVelStaVMagDescript % array2D_g            => VMAG_g
+            HAVelStaVMagDescript % array2D_g            => null()
             HAVelStaVMagDescript % ConsiderWetDry       = .FALSE.
             HAVelStaVMagDescript % alternate_value      = 0.0
             HAVelStaVMagDescript % field_name           = 'HAVelStaVMag'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(VMAG_g(MNHARF,NSTAV_G))
+               ENDIF
+               HAVelStaVMagDescript % array2D_g            => VMAG_g
+            ENDIF
             IF (ICS.eq.2) THEN
                HAVelStaVMagDescript % x_coord           => SLEV
                HAVelStaVMagDescript % y_coord           => SFEV
@@ -1507,9 +1900,6 @@ C
                HAVelStaVMagDescript % y_coord           => YEV
             ENDIF
             ! fort.52 u velocity phase
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(PHASEDU_g(MNHARF,NSTAV_G))
-            ENDIF
             HAVelStaUPhaseDescript % specifier            = NHASV
             HAVelStaUPhaseDescript % initial_value        = 0.0
             HAVelStaUPhaseDescript % num_items_per_record = MNHARF
@@ -1517,10 +1907,16 @@ C
             HAVelStaUPhaseDescript % num_records_this     = NSTAV
             HAVelStaUPhaseDescript % imap         => IMAP_STAV_LG
             HAVelStaUPhaseDescript % array2D              => PHASEDU
-            HAVelStaUPhaseDescript % array2D_g            => PHASEDU_g
+            HAVelStaUPhaseDescript % array2D_g            => null()
             HAVelStaUPhaseDescript % ConsiderWetDry       = .FALSE.
             HAVelStaUPhaseDescript % alternate_value      = 0.0
             HAVelStaUPhaseDescript % field_name   = 'HAVelStaUPhase'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(PHASEDU_g(MNHARF,NSTAV_G))
+               ENDIF
+               HAVelStaUPhaseDescript % array2D_g            => PHASEDU_g
+            ENDIF
             IF (ICS.eq.2) THEN
                HAVelStaUPhaseDescript % x_coord           => SLEV
                HAVelStaUPhaseDescript % y_coord           => SFEV
@@ -1529,9 +1925,6 @@ C
                HAVelStaUPhaseDescript % y_coord           => YEV
             ENDIF
             ! fort.52 v velocity phase
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(PHASEDV_g(MNHARF,NSTAV_G))
-            ENDIF
             HAVelStaVPhaseDescript % specifier            = NHASV
             HAVelStaVPhaseDescript % initial_value        = 0.0
             HAVelStaVPhaseDescript % num_items_per_record = MNHARF
@@ -1539,10 +1932,16 @@ C
             HAVelStaVPhaseDescript % num_records_this     = NSTAV
             HAVelStaVPhaseDescript % imap            => IMAP_STAV_LG
             HAVelStaVPhaseDescript % array2D              => PHASEDV
-            HAVelStaVPhaseDescript % array2D_g            => PHASEDV_g
+            HAVelStaVPhaseDescript % array2D_g            => null()
             HAVelStaVPhaseDescript % ConsiderWetDry       = .FALSE.
             HAVelStaVPhaseDescript % alternate_value      = 0.0
             HAVelStaVPhaseDescript % field_name      = 'HAVelStaVPhase'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(PHASEDV_g(MNHARF,NSTAV_G))
+               ENDIF
+               HAVelStaVPhaseDescript % array2D_g            => PHASEDV_g
+            ENDIF
             IF (ICS.eq.2) THEN
                HAVelStaVPhaseDescript % x_coord           => SLEV
                HAVelStaVPhaseDescript % y_coord           => SFEV
@@ -1556,9 +1955,6 @@ C
 C
          IF (NHAGE.ne.0) THEN
             ! fort.53 Full Domain Elevation Magnitude
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(EMAGT_g(MNHARF,NP_G))
-            ENDIF
             HAElevMagDescript % specifier            = NHAGE
             HAElevMagDescript % initial_value        = 0.0
             HAElevMagDescript % num_items_per_record = MNHARF
@@ -1566,14 +1962,18 @@ C
             HAElevMagDescript % num_records_this     = NP
             HAElevMagDescript % imap                 => NODES_LG
             HAElevMagDescript % array2D              => EMAGT
-            HAElevMagDescript % array2D_g            => EMAGT_g
+            HAElevMagDescript % array2D_g            => null()
             HAElevMagDescript % ConsiderWetDry       = .FALSE.
             HAElevMagDescript % alternate_value      = -99999.0
             HAElevMagDescript % field_name           = 'HAElevMag'
-            ! fort.53 Full Domain Elevation Phase
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(PHASEDEN_g(MNHARF,NP_G))
+            HAElevMagDescript % file_name            = 'fort.53'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(EMAGT_g(MNHARF,NP_G))
+               ENDIF
+               HAElevMagDescript % array2D_g            => EMAGT_g
             ENDIF
+            ! fort.53 Full Domain Elevation Phase
             HAElevPhaseDescript % specifier            = NHAGE
             HAElevPhaseDescript % initial_value        = 0.0
             HAElevPhaseDescript % num_items_per_record = MNHARF
@@ -1581,19 +1981,22 @@ C
             HAElevPhaseDescript % num_records_this     = NP
             HAElevPhaseDescript % imap                 => NODES_LG
             HAElevPhaseDescript % array2D              => PHASEDEN
-            HAElevPhaseDescript % array2D_g            => PHASEDEN_g
+            HAElevPhaseDescript % array2D_g            => null()
             HAElevPhaseDescript % ConsiderWetDry       = .FALSE.
             HAElevPhaseDescript % alternate_value      = -99999.0
             HAElevPhaseDescript % field_name           = 'HAElevPhase'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(PHASEDEN_g(MNHARF,NP_G))
+               ENDIF
+               HAElevPhaseDescript % array2D_g            => PHASEDEN_g
+            ENDIF
 
          ENDIF
 C
 C
          IF (NHAGV.ne.0) THEN
             ! fort.54 Full Domain U Velocity Magnitude
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(UMAGT_g(MNHARF,NP_G))
-            ENDIF
             HAVelUMagDescript % specifier            = NHAGV
             HAVelUMagDescript % initial_value        = 0.0
             HAVelUMagDescript % num_items_per_record = MNHARF
@@ -1601,14 +2004,18 @@ C
             HAVelUMagDescript % num_records_this     = NP
             HAVelUMagDescript % imap                 => NODES_LG
             HAVelUMagDescript % array2D              => UMAGT
-            HAVelUMagDescript % array2D_g            => UMAGT_g
+            HAVelUMagDescript % array2D_g            => null()
             HAVelUMagDescript % ConsiderWetDry       = .FALSE.
             HAVelUMagDescript % alternate_value      = -99999.0
             HAVelUMagDescript % field_name           = 'HAVelUMag'
+            HAVelUMagDescript % file_name            = 'fort.54'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(UMAGT_g(MNHARF,NP_G))
+               ENDIF
+               HAVelUMagDescript % array2D_g            => UMAGT_g
+            ENDIF            
             ! fort.54 Full Domain V Velocity Magnitude
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(VMAGT_g(MNHARF,NP_G))
-            ENDIF
             HAVelVMagDescript % specifier            = NHAGV
             HAVelVMagDescript % initial_value        = 0.0
             HAVelVMagDescript % num_items_per_record = MNHARF
@@ -1616,14 +2023,17 @@ C
             HAVelVMagDescript % num_records_this     = NP
             HAVelVMagDescript % imap                 => NODES_LG
             HAVelVMagDescript % array2D              => VMAGT
-            HAVelVMagDescript % array2D_g            => VMAGT_g
+            HAVelVMagDescript % array2D_g            => null()
             HAVelVMagDescript % ConsiderWetDry       = .FALSE.
             HAVelVMagDescript % alternate_value      = -99999.0
             HAVelVMagDescript % field_name           = 'HAVelVMag'
-            ! fort.54 Full Domain U Velocity Phase
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(PHASEDUT_g(MNHARF,NP_G))
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(VMAGT_g(MNHARF,NP_G))
+               ENDIF
+               HAVelVMagDescript % array2D_g            => VMAGT_g
             ENDIF
+            ! fort.54 Full Domain U Velocity Phase
             HAVelUPhaseDescript % specifier            = NHAGV
             HAVelUPhaseDescript % initial_value        = 0.0
             HAVelUPhaseDescript % num_items_per_record = MNHARF
@@ -1631,14 +2041,17 @@ C
             HAVelUPhaseDescript % num_records_this     = NP
             HAVelUPhaseDescript % imap                 => NODES_LG
             HAVelUPhaseDescript % array2D              => PHASEDUT
-            HAVelUPhaseDescript % array2D_g            => PHASEDUT_g
+            HAVelUPhaseDescript % array2D_g            => null()
             HAVelUPhaseDescript % ConsiderWetDry       = .FALSE.
             HAVelUPhaseDescript % alternate_value      = -99999.0
             HAVelUPhaseDescript % field_name           = 'HAVelUPhase'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(PHASEDUT_g(MNHARF,NP_G))
+               ENDIF
+               HAVelUPhaseDescript % array2D_g            => PHASEDUT_g
+            ENDIF            
             ! fort.54 Full Domain V Velocity Phase
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(PHASEDVT_g(MNHARF,NP_G))
-            ENDIF
             HAVelVPhaseDescript % specifier            = NHAGV
             HAVelVPhaseDescript % initial_value        = 0.0
             HAVelVPhaseDescript % num_items_per_record = MNHARF
@@ -1646,10 +2059,16 @@ C
             HAVelVPhaseDescript % num_records_this     = NP
             HAVelVPhaseDescript % imap                 => NODES_LG
             HAVelVPhaseDescript % array2D              => PHASEDVT
-            HAVelVPhaseDescript % array2D_g            => PHASEDVT_g
+            HAVelVPhaseDescript % array2D_g            => null()
             HAVelVPhaseDescript % ConsiderWetDry       = .FALSE.
             HAVelVPhaseDescript % alternate_value      = -99999.0
             HAVelVPhaseDescript % field_name           = 'HAVelVPhase'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(PHASEDVT_g(MNHARF,NP_G))
+               ENDIF
+               HAVelVPhaseDescript % array2D_g            => PHASEDVT_g
+            ENDIF
          ENDIF
 C
 C        ! fort.55 means and variance calculations
@@ -1657,14 +2076,7 @@ C        ! fort.55 means and variance calculations
 C        ! fort.55 will use the same output format (ascii, netcdf, etc)
 C        ! as the full domain elevation harmonic analysis file (fort.53)
          IF (CHARMV.eqv..true.) THEN
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(eav_g(NP_g),eavdif_g(NP_G),
-     &                  esq_g(NP_G),evadif_g(NP_G))
-               ALLOCATE(uav_g(NP_g),uavdif_g(NP_G),
-     &                  usq_g(NP_G),uvadif_g(NP_G))
-               ALLOCATE(vav_g(NP_g),vavdif_g(NP_G),
-     &                  vsq_g(NP_G),vvadif_g(NP_G))
-            ENDIF
+
             ! MVDescript is used over and over for different arrays
             MVDescript % specifier            = NHAGE
             MVDescript % initial_value        = 0.0
@@ -1673,115 +2085,128 @@ C        ! as the full domain elevation harmonic analysis file (fort.53)
             MVDescript % num_records_this     = NP
             MVDescript % imap                 => NODES_LG
             MVDescript % array                => ELAV
-            MVDescript % array_g              => ELAV_g
+            MVDescript % array_g              => null()
             MVDescript % ConsiderWetDry       = .false.
             MVDescript % alternate_value      = -99999.0
             MVDescript % field_name           = 'HAMeansVariances'
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) .and. 
+     &         WRITE_LOCAL_HARM_FILES.eqv..false. ) THEN
+               ALLOCATE(eav_g(NP_g),eavdif_g(NP_G),
+     &                  esq_g(NP_G),evadif_g(NP_G))
+               ALLOCATE(uav_g(NP_g),uavdif_g(NP_G),
+     &                  usq_g(NP_G),uvadif_g(NP_G))
+               ALLOCATE(vav_g(NP_g),vavdif_g(NP_G),
+     &                  vsq_g(NP_G),vvadif_g(NP_G))
+               MVDescript % array_g              => ELAV_g
+            ENDIF
          ENDIF
       ENDIF  ! firstcall
 C
-C     Collect fulldomain data if running in parallel.
+C     Collect fulldomain data if running in parallel, and we are not
+C     writing subdomain harmonic analysis output files. 
 #ifdef CMPI
-      IF (NHASE.ne.0) THEN
-         CALL collectFullDomainArray(HAElevStaMagDescript,
+      if (write_local_harm_files.eqv..false.) then
+         IF (NHASE.ne.0) THEN
+            CALL collectFullDomainArray(HAElevStaMagDescript,
      &             packMbyNP, unpackMbyNP)
-         CALL collectFullDomainArray(HAElevStaPhaseDescript,
+            CALL collectFullDomainArray(HAElevStaPhaseDescript,
      &             packMbyNP, unpackMbyNP)
-      ENDIF
-      IF (NHASV.ne.0) THEN
-         CALL collectFullDomainArray(HAVelStaUMagDescript,
+         ENDIF
+         IF (NHASV.ne.0) THEN
+            CALL collectFullDomainArray(HAVelStaUMagDescript,
      &             packMbyNP, unpackMbyNP)
-         CALL collectFullDomainArray(HAVelStaVMagDescript,
+            CALL collectFullDomainArray(HAVelStaVMagDescript,
      &             packMbyNP, unpackMbyNP)
-         CALL collectFullDomainArray(HAVelStaUPhaseDescript,
+            CALL collectFullDomainArray(HAVelStaUPhaseDescript,
      &             packMbyNP, unpackMbyNP)
-         CALL collectFullDomainArray(HAVelStaVPhaseDescript,
+            CALL collectFullDomainArray(HAVelStaVPhaseDescript,
      &             packMbyNP, unpackMbyNP)
-      ENDIF
-      IF (NHAGE.ne.0) THEN
-         CALL collectFullDomainArray(HAElevMagDescript,
+         ENDIF
+         IF (NHAGE.ne.0) THEN
+            CALL collectFullDomainArray(HAElevMagDescript,
      &             packMbyNP, unpackMbyNP)
-         CALL collectFullDomainArray(HAElevPhaseDescript,
+            CALL collectFullDomainArray(HAElevPhaseDescript,
      &             packMbyNP, unpackMbyNP)
-      ENDIF
-      IF (NHAGV.ne.0) THEN
-         CALL collectFullDomainArray(HAVelUMagDescript,
+         ENDIF
+         IF (NHAGV.ne.0) THEN
+            CALL collectFullDomainArray(HAVelUMagDescript,
      &             packMbyNP, unpackMbyNP)
-         CALL collectFullDomainArray(HAVelVMagDescript,
+            CALL collectFullDomainArray(HAVelVMagDescript,
      &             packMbyNP, unpackMbyNP)
-         CALL collectFullDomainArray(HAVelUPhaseDescript,
+            CALL collectFullDomainArray(HAVelUPhaseDescript,
      &             packMbyNP, unpackMbyNP)
-         CALL collectFullDomainArray(HAVelVPhaseDescript,
+            CALL collectFullDomainArray(HAVelVPhaseDescript,
      &             packMbyNP, unpackMbyNP)
-      ENDIF
-      IF (CHARMV.eqv..true.) THEN
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => eav
-         MVDescript%array_g => eav_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => eavdif
-         MVDescript%array_g => eavdif_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => elva
-         MVDescript%array_g => elva_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => esq
-         MVDescript%array_g => esq_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => evadif
-         MVDescript%array_g => evadif_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => xvelav
-         MVDescript%array_g => xvelav_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => uav
-         MVDescript%array_g => uav_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => uavdif
-         MVDescript%array_g => uavdif_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => xvelva
-         MVDescript%array_g => xvelva_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => usq
-         MVDescript%array_g => usq_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => uvadif
-         MVDescript%array_g => uvadif_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => yvelav
-         MVDescript%array_g => yvelav_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => vav
-         MVDescript%array_g => vav_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => vavdif
-         MVDescript%array_g => vavdif_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => yvelva
-         MVDescript%array_g => yvelva_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => vsq
-         MVDescript%array_g => vsq_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => vvadif
-         MVDescript%array_g => vvadif_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-      ENDIF
+         ENDIF
+         IF (CHARMV.eqv..true.) THEN
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => eav
+            MVDescript%array_g => eav_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => eavdif
+            MVDescript%array_g => eavdif_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => elva
+            MVDescript%array_g => elva_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => esq
+            MVDescript%array_g => esq_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => evadif
+            MVDescript%array_g => evadif_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => xvelav
+            MVDescript%array_g => xvelav_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => uav
+            MVDescript%array_g => uav_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => uavdif
+            MVDescript%array_g => uavdif_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => xvelva
+            MVDescript%array_g => xvelva_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => usq
+            MVDescript%array_g => usq_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => uvadif
+            MVDescript%array_g => uvadif_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => yvelav
+            MVDescript%array_g => yvelav_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => vav
+            MVDescript%array_g => vav_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => vavdif
+            MVDescript%array_g => vavdif_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => yvelva
+            MVDescript%array_g => yvelva_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => vsq
+            MVDescript%array_g => vsq_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => vvadif
+            MVDescript%array_g => vvadif_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+         ENDIF
+      endif
 #endif
 c
 c     Now write data to file; format according to the file type specifier.
 C
 c     Harmonic analysis at elevation stations (fort.51).
       call writeOutHarmonicArrays(51, 1, HAElevStaMagDescript,
-     &        HAElevStaPhaseDescript, dummyDescript, dummyDescript)
+     &        HAElevStaPhaseDescript)
 C     Harmonic analysis at velocity stations (fort.52).
       call writeOutHarmonicArrays(52, 2, HAVelStaUMagDescript,
      &        HAVelStaUPhaseDescript, HAVelStaVMagDescript,
      &        HAVelStaVPhaseDescript)
 C     Harmonic analysis at all nodes for elevation (fort.53).
       call writeOutHarmonicArrays(53, 1, HAElevMagDescript,
-     &        HAElevPhaseDescript, dummyDescript, dummyDescript)
+     &        HAElevPhaseDescript)
 C     Harmonic analysis at all nodes for velocity (fort.54).
       call writeOutHarmonicArrays(54, 2,HAVelUMagDescript,
      &        HAVelUPhaseDescript, HAVelVMagDescript,
@@ -1790,7 +2215,7 @@ C
 C     Means and variance calculations, if specified (fort.55).
       if ((CHARMV.eqv..true.).and.(FMV.gt.1.0d-3)) then
          IF ((MNPROC.gt.1).and.(MyProc.eq.0)
-     &        .and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
+     &        .and.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
             OPEN(55,FILE=TRIM(GLOBALDIR)//'/'//'fort.55',
      &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
             WRITE(55,*) NP_G
@@ -1808,7 +2233,7 @@ C     Means and variance calculations, if specified (fort.55).
             END DO
             CLOSE(55)
          ENDIF
-         IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
+         IF ((MNPROC.eq.1).or.(WRITE_LOCAL_HARM_FILES.eqv..true.)) THEN
             OPEN(55,FILE=TRIM(LOCALDIR)//'/'//'fort.55',
      &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
             WRITE(55,*) NP
@@ -1829,8 +2254,8 @@ C     Means and variance calculations, if specified (fort.55).
       ENDIF
 
  7637 format(2x,3(1pE16.8E3,1x),2x,3(1pE16.8E3,1x))
-#ifdef WRITE_OUTPUT_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 C-----------------------------------------------------------------------
@@ -1847,40 +2272,36 @@ C     format. Only ascii is supported at this point.
 C-----------------------------------------------------------------------
       SUBROUTINE writeOutHarmonicArrays(lun, sets, mag1, ph1, mag2, ph2)
       USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, LOCALDIR, GLOBALDIR,
-     & MYPROC
+     & MYPROC, HARMDIR, WRITE_LOCAL_HARM_FILES
       USE HARM, ONLY : nf, nfreq, hafreq, haff, haface, namefr
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenMessage,
-     &                   DEBUG, setMessageSource, unsetMessageSource
-c     & ,myproc
+      USE GLOBAL, ONLY : OutputDataDescript_t, screenMessage, ERROR,
+     &                   DEBUG, setMessageSource, unsetMessageSource,
+     &                   allMessage, scratchMessage
       IMPLICIT NONE
       INTEGER, intent(in) :: lun  ! adcirc logical unit number for i/o
       INTEGER, intent(in) :: sets ! how many sets of mags/phases to write
       type(OutputDataDescript_t), intent(in) :: mag1
       type(OutputDataDescript_t), intent(in) :: ph1
-      type(OutputDataDescript_t), intent(in) :: mag2
-      type(OutputDataDescript_t), intent(in) :: ph2
+      ! jgf51.44: The following two arguments will be present if nsets=2
+      type(OutputDataDescript_t), optional, intent(in) :: mag2
+      type(OutputDataDescript_t), optional, intent(in) :: ph2
 C
       INTEGER :: i,j,n           ! loop counters
-C     local vars
-      CHARACTER(7) :: fn     ! outfile name (valid for lun between 10 and 99)
 C
       call setMessageSource("writeOutHarmonicArrays")
-#ifdef WRITE_OUTPUT_TRACE
-      call screen(DEBUG,"Enter.")
+
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
 C
-C     initialize output file name
-      fn(1:5) = 'fort.'
-      WRITE(fn(6:7),2) lun
-
 C     write data according to format specifier from fort.15 (e.g., NHASE)
       SELECT CASE (mag1%specifier)
       CASE(0) ! no output; do nothing
       CASE(1) ! ascii text
          IF ( (MNPROC.gt.1).and.(MyProc.eq.0)
-     &        .and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
-            OPEN(lun,FILE=TRIM(GLOBALDIR)//'/'//fn, STATUS='REPLACE',
-     &           ACCESS='SEQUENTIAL',ACTION='WRITE')
+     &        .and.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+            OPEN(lun,FILE=TRIM(GLOBALDIR)//'/'//trim(mag1%file_name), 
+     &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
             write(lun,*) nfreq+nf
             do j=1,nfreq+nf
                write(lun,3679) hafreq(j),HAFF(j),HAFACE(j),namefr(j)
@@ -1903,9 +2324,9 @@ C     write data according to format specifier from fort.15 (e.g., NHASE)
             CLOSE(lun)
          ENDIF
 C
-         IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
-            OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//fn,STATUS='REPLACE',
-     &           ACCESS='SEQUENTIAL',ACTION='WRITE')
+         IF ((MNPROC.eq.1).or.(WRITE_LOCAL_HARM_FILES.eqv..true.)) THEN
+            OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//trim(mag1%file_name),
+     &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
             write(lun,*) nfreq+nf
             do j=1,nfreq+nf
                write(lun,3679) hafreq(j),HAFF(j),HAFACE(j),namefr(j)
@@ -1928,20 +2349,21 @@ C
             CLOSE(lun)
          ENDIF
       CASE(3,5)
-         write(*,*)
-     & "ERROR: Harmonic analysis output is not yet available in NetCDF."
+         call allMessage(ERROR,
+     & 'ERROR: Harmonic analysis output is not yet available in NetCDF.')
       CASE DEFAULT
-        write(*,*)
-     &     "ERROR: Invalid harmonic analysis format specifier: ",
-     &     mag1%specifier
+         write(scratchMessage,'(a,i0,a)') 
+     &  'Invalid harmonic analysis format specifier: ',mag1%specifier,'.'
+         call allMessage(ERROR,scratchMessage)
       END SELECT
 
  2    FORMAT(I2)
  6635 format(2x,1pE16.8E3,1x,0pf11.4)
  6636 format(2x,1pE16.8E3,1x,0pf11.4,2x,1pE16.8E3,1x,0pf11.4)
  3679 format(1x,e20.10,1x,f10.7,1x,f12.8,1x,a10)
-#ifdef WRITE_OUTPUT_TRACE
-      call screen(DEBUG,"Return.")
+
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 C-----------------------------------------------------------------------
@@ -1960,10 +2382,12 @@ C----------------------------------------------------------------------
      &   WRITE_LOCAL_FILES, NBYTE, Myproc
 C RJW added myproc
 C MYPROC,
-      USE GLOBAL, ONLY : RUNDES, RUNID, AGRID, RDES4, RID4,
-     &   AID4, RDES8, RID8, AID8, DTDP, IHOT, DEBUG, scratchMessage,
+      USE GLOBAL, ONLY : RUNDES, RUNID, RDES4, RID4,
+     &   RDES8, RID8, DTDP, IHOT, DEBUG, scratchMessage,
      &   logMessage, ERROR, allMessage
       USE GLOBAL_3DVS, ONLY : NFEN
+      USE MESH, ONLY : AGRID, AID4, AID8
+
       IMPLICIT NONE
 C
       INTEGER, intent(in) :: lun       ! ADCIRC logical unit number
@@ -1979,6 +2403,16 @@ C
       INTEGER :: N ! loop counter
       INTEGER :: ios ! i/o status, 0 indicates success
 C
+      call setMessageSource("initOutput3D")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif 
+C
+
+
+
+
+
       ios=0
 C
 C     form file name from lun
@@ -2113,6 +2547,10 @@ C
       ENDIF
 C
 
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
  499  FORMAT(1X,A32,2X,A24,2X,A24)
 C..RJW bug fix in 498 (kendra found this)
  498  FORMAT(1X,I10,1X,I10,1X,1pE15.7E3,1X,I10,1X,I10,1X,I3)
@@ -2146,8 +2584,9 @@ C-----------------------------------------------------------------------
 C RJW added MYPROC
       USE GLOBAL, ONLY : ScreenUnit, BCFLAG_TEMP, scratchMessage,
      &    DEBUG, INFO, WARNING, ERROR, screenMessage, setMessageSource,
-     &    unsetMessageSource, allMessage, OutputDataDescript_t,
-     &    NP_G, NODES_LG
+     &    unsetMessageSource, allMessage, OutputDataDescript_t, NP_G,
+     &    NODES_LG
+      USE MESH, ONLY : NP, ICS, NM
       USE GLOBAL_3DVS
       USE GLOBAL_IO, ONLY: packNPbyM, unpackNPbyM,
      &    collectFullDomainArray, packOne, unpackOne
@@ -2175,48 +2614,9 @@ C RJW added MYPROC
       LOGICAL, SAVE :: FirstCall = .true.
       LOGICAL, dimension(14) :: netcdf_error
 C
-      type(OutputDataDescript_t), save :: SigTStaDescript
-      type(OutputDataDescript_t), save :: SalStaDescript
-      type(OutputDataDescript_t), save :: TempStaDescript
-      type(OutputDataDescript_t), save :: QSurfKp1Descript
-      type(OutputDataDescript_t), save :: RealQStaDescript
-      type(OutputDataDescript_t), save :: ImaginaryQStaDescript
-      type(OutputDataDescript_t), save :: WZStaDescript
-      type(OutputDataDescript_t), save :: Q20StaDescript
-      type(OutputDataDescript_t), save :: LStaDescript
-      type(OutputDataDescript_t), save :: EVStaDescript
-      type(OutputDataDescript_t), save :: SigTDescript
-      type(OutputDataDescript_t), save :: SalDescript
-      type(OutputDataDescript_t), save :: TempDescript
-      type(OutputDataDescript_t), save :: RealQDescript
-      type(OutputDataDescript_t), save :: ImaginaryQDescript
-      type(OutputDataDescript_t), save :: WZDescript
-      type(OutputDataDescript_t), save :: Q20Descript
-      type(OutputDataDescript_t), save :: LDescript
-      type(OutputDataDescript_t), save :: EVDescript
 C
-C     parts of complex variables
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: rp(:,:) !real part subdomain data
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: ip(:,:) !imaginary part subdom dat
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: rp_g(:,:) !real part fulldomain
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: ip_g(:,:) !imaginary part fulldom
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: rpSta(:,:) !real part subd sta
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: ipSta(:,:) !im part subdom sta
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: rpSta_g(:,:) !real part fd sta
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: ipSta_g(:,:) !im part fd sta
-C
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: qsurfkp1_g(:)
-C
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: q20Sta_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: lSta_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: EVSta_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: SigTSta_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: SalSta_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: TempSta_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: WZSta_g(:,:)
-C
-      call setMessageSource("writeoutput3D")
-#ifdef WRITE_OUTPUT_TRACE
+      call setMessageSource("writeOutput3D")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 C
@@ -2230,6 +2630,7 @@ C
          ALLOCATE(rpSta(MNSTA3DV,NFEN),ipSta(MNSTA3DV,NFEN))
 C
          SigTStaDescript % specifier            =  I3DSD
+         SigTStaDescript % lun                  =  41
          SigTStaDescript % initial_value        =  0.0
          SigTStaDescript % num_items_per_record =  NFEN
          SigTStaDescript % num_fd_records       =  NSTA3DD_G
@@ -2249,6 +2650,7 @@ C
          ENDIF
 
          SalStaDescript % specifier            =  I3DSD
+         SalStaDescript % lun                  =  41
          SalStaDescript % initial_value        =  0.0
          SalStaDescript % num_items_per_record =  NFEN
          SalStaDescript % num_fd_records       =  NSTA3DD_G
@@ -2268,6 +2670,7 @@ C
          ENDIF
 
          TempStaDescript % specifier            =  I3DSD
+         TempStaDescript % lun                  =  41
          TempStaDescript % initial_value        =  0.0
          TempStaDescript % num_items_per_record =  NFEN
          TempStaDescript % num_fd_records       =  NSTA3DD_G
@@ -2287,6 +2690,7 @@ C
          ENDIF
 
          RealQStaDescript % specifier            =  I3DSV
+         RealQStaDescript % lun                  =  42
          RealQStaDescript % initial_value        =  0.0
          RealQStaDescript % num_items_per_record =  NFEN
          RealQStaDescript % num_fd_records       =  NSta3DV_G
@@ -2306,6 +2710,7 @@ C
          ENDIF
 
          ImaginaryQStaDescript % specifier            =  I3DSV
+         ImaginaryQStaDescript % lun                  =  42
          ImaginaryQStaDescript % initial_value        =  0.0
          ImaginaryQStaDescript % num_items_per_record =  NFEN
          ImaginaryQStaDescript % num_fd_records       =  NSTA3DV_G
@@ -2325,6 +2730,7 @@ C
          ENDIF
 
          WZStaDescript % specifier            =  I3DSV
+         WZStaDescript % lun                  =  42
          WZStaDescript % initial_value        =  0.0
          WZStaDescript % num_items_per_record =  NFEN
          WZStaDescript % num_fd_records       =  NSTA3DV_G
@@ -2344,6 +2750,7 @@ C
          ENDIF
 
          Q20StaDescript % specifier            =  I3DST
+         Q20StaDescript % lun                  =  43
          Q20StaDescript % initial_value        =  0.0
          Q20StaDescript % num_items_per_record =  NFEN
          Q20StaDescript % num_fd_records       =  NSta3DT_G
@@ -2362,7 +2769,8 @@ C
             Q20StaDescript % y_coord           => SFET  ! 
          ENDIF
 
-         LStaDescript % specifier        =  I3DST
+         LStaDescript % specifier            =  I3DST
+         LStaDescript % lun                  =  43
          LStaDescript % initial_value        =  0.0
          LStaDescript % num_items_per_record =  NFEN
          LStaDescript % num_fd_records       =  NSTA3DT_G
@@ -2382,6 +2790,7 @@ C
          ENDIF
 
          EVStaDescript % specifier            =  I3DST
+         EVStaDescript % lun                  =  43
          EVStaDescript % initial_value        =  0.0
          EVStaDescript % num_items_per_record =  NFEN
          EVStaDescript % num_fd_records       =  NSTA3DT_G
@@ -2401,6 +2810,7 @@ C
          ENDIF
 
          QSurfKp1Descript % specifier            =  I3DGD
+         QSurfKp1Descript % lun                  =  47
          QSurfKp1Descript % initial_value        =  0.0
          QSurfKp1Descript % num_items_per_record =  1
          QSurfKp1Descript % num_fd_records     =  NP_G
@@ -2413,6 +2823,7 @@ C
          QSurfKp1Descript % field_name           = 'qsurfkp1'
 
          SigTDescript % specifier            =  I3DGD
+         SigTDescript % lun                  =  44
          SigTDescript % initial_value        =  0.0
          SigTDescript % num_items_per_record =  NFEN
          SigTDescript % num_fd_records        =  NP_G
@@ -2425,6 +2836,7 @@ C
          SigTDescript % field_name           = 'SigmaT'
 
          SalDescript % specifier            =  I3DGD
+         SalDescript % lun                  =  44
          SalDescript % initial_value        =  0.0
          SalDescript % num_items_per_record =  NFEN
          SalDescript % num_fd_records       =  NP_G
@@ -2437,6 +2849,7 @@ C
          SalDescript % field_name           = 'Salinity'
 
          TempDescript % specifier            =  I3DGD
+         TempDescript % lun                  =  44
          TempDescript % initial_value        =  0.0
          TempDescript % num_items_per_record =  NFEN
          TempDescript % num_fd_records       =  NP_G
@@ -2449,6 +2862,7 @@ C
          TempDescript % field_name           = 'Temperature'
 
          RealQDescript % specifier            =  I3DGV
+         RealQDescript % lun                  =  45
          RealQdescript % initial_value        =  0.0
          RealQDescript % num_items_per_record =  NFEN
          RealQDescript % num_fd_records       =  NP_G
@@ -2461,6 +2875,7 @@ C
          RealQDescript % field_name           = 'RealQ'
 
          ImaginaryQDescript % specifier            =  I3DGV
+         ImaginaryQDescript % lun                  =  45
          ImaginaryQDescript % initial_value        =  0.0
          ImaginaryQDescript % num_items_per_record =  NFEN
          ImaginaryQDescript % num_fd_records       =  NP_G
@@ -2473,6 +2888,7 @@ C
          ImaginaryQDescript % field_name           = 'ImaginaryQ'
 
          WZDescript % specifier            =  I3DGV
+         WZDescript % lun                  =  45
          WZDescript % initial_value        =  0.0
          WZDescript % num_items_per_record =  NFEN
          WZDescript % num_fd_records       =  NP_G
@@ -2485,6 +2901,7 @@ C
          WZDescript % field_name           = 'WZ'
 
          Q20Descript % specifier            =  I3DGT
+         Q20Descript % lun                  =  46
          Q20Descript % initial_value        =  0.0
          Q20Descript % num_items_per_record =  NFEN
          Q20Descript % num_fd_records       =  NP_G
@@ -2497,6 +2914,7 @@ C
          Q20Descript % field_name           = 'q20'
 
          LDescript % specifier            =  I3DGT
+         LDescript % lun                  =  46
          LDescript % initial_value        =  0.0
          LDescript % num_items_per_record =  NFEN
          LDescript % num_fd_records       =  NP_G
@@ -2509,6 +2927,7 @@ C
          LDescript % field_name           = 'L'
 
          EVDescript % specifier            =  I3DGT
+         EVDescript % lun                  =  46
          EVDescript % initial_value        =  0.0
          EVDescript % num_items_per_record =  NFEN
          EVDescript % num_fd_records       =  NP_G
@@ -2525,19 +2944,19 @@ C
          ! jgf49.48.01: if netcdf is not required for a particular output file,
          ! the associated subroutine call will do nothing and just return
          IF (myProc.eq.0) THEN
-            CALL initNetCDFOutputFile(41, SigTStaDescript,
+            CALL initNetCDFOutputFile(SigTStaDescript,
      &           netcdf_error(1), SalStaDescript, TempStaDescript)
-            CALL initNetCDFOutputFile(42, RealQStaDescript,
+            CALL initNetCDFOutputFile(RealQStaDescript,
      &           netcdf_error(2), ImaginaryQStaDescript, WZStaDescript)
-            CALL initNetCDFOutputFile(43, Q20StaDescript,
+            CALL initNetCDFOutputFile(Q20StaDescript,
      &           netcdf_error(3), LStaDescript, EVStaDescript)
-            CALL initNetCDFOutputFile(44, SigTDescript,
+            CALL initNetCDFOutputFile(SigTDescript,
      &           netcdf_error(4), SalDescript, TempDescript)
-            CALL initNetCDFOutputFile(45, RealQDescript,
+            CALL initNetCDFOutputFile(RealQDescript,
      &           netcdf_error(5), ImaginaryQDescript, WZDescript)
-            CALL initNetCDFOutputFile(46, Q20Descript,
+            CALL initNetCDFOutputFile(Q20Descript,
      &           netcdf_error(6), LDescript, EVDescript)
-            CALL initNetCDFOutputFile(47, QSurfKp1Descript,
+            CALL initNetCDFOutputFile(QSurfKp1Descript,
      &           netcdf_error(7))
          ENDIF
 #ifdef CMPI
@@ -3446,12 +3865,14 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
          ENDIF
       ENDIF
 
-#ifdef WRITE_OUTPUT_TRACE
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       RETURN
-      END
+C-----------------------------------------------------------------------
+      end subroutine writeOutput3D
+C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   W R I T E  O U T  A R R A Y
@@ -3459,176 +3880,212 @@ C-----------------------------------------------------------------------
 C     jgf48.03 This subroutine was created to write out a column
 C     vector (i.e., nodal data such as water surface elevation or
 C     pressure) to a file.
+C
+C     jgf51.21.24: Updated arguments to take into account the more
+C     comprehensive information found in the OutputDataDescript_t.
 C-----------------------------------------------------------------------
-Casey 090302: Added the filename as the last argument.
-      SUBROUTINE writeOutArray(lun, TimeLoc, it, descript, pack_cmd,
-     &                         unpack_cmd, filepos, fn)
-
+      SUBROUTINE writeOutArray(TimeLoc, it, descript, pack_cmd,
+     &                         unpack_cmd)
       USE SIZES
       USE GLOBAL
-      USE GLOBAL_IO, ONLY : collectFullDomainArray
+      USE GLOBAL_IO, ONLY : collectFullDomainArray, storeOne, writeSparse
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY : writeOutArrayNetCDF
 #endif
+#ifdef ADCXDMF
+      USE XDMFIO, ONLY : writeOutArrayXDMF
+#endif
       IMPLICIT NONE
 C     args
-      INTEGER, intent(in) :: lun ! logical unit number of file to write to
       REAL(8), intent(in) :: TimeLoc ! seconds since cold start
       INTEGER, intent(in) :: it   ! number of time steps since cold start
-      type(OutputDataDescript_t), intent(in) :: descript !describes output data
+      type(OutputDataDescript_t), intent(inout) :: descript !describes output data
       EXTERNAL :: pack_cmd   ! subroutine used to pack data on subdomain
       EXTERNAL :: unpack_cmd ! subroutine used to unpack data on proc 0
-      INTEGER, intent(inout) :: filepos  ! current position in the output file
-C     local vars
-Casey 090302: Increase the length of the filename from 7 to 15.
-      CHARACTER(15) :: fn     ! outfile name (valid for lun between 10 and 99)
       INTEGER :: I           ! loop counter
 
-C     initialize output file name
-Casey 090302: The filename is now passed as an input argument.
-C     fn(1:5) = 'fort.'
-C     WRITE(fn(6:7),2) lun
+      call setMessageSource("writeOutArray")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+      call allMessage(DEBUG,TRIM(descript%file_name))
+#endif 
 
 C     collect up the data from subdomains if running in parallel
       IF ((MNPROC.gt.1).and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
-C         write(16,*) 'About to collectFullDomainArray' !jgfdebug48.03
          CALL collectFullDomainArray(descript, pack_cmd, unpack_cmd)
       ENDIF
 
 C     write data according to format specifier from fort.15 (e.g., NOUTE)
       SELECT CASE (ABS(descript % specifier))
 
-      CASE(1) !ascii text
+      CASE(ASCII) 
 
-C         write(16,*) 'About to open globalio text file.' !jgfdebug48.03
          IF ( (MNPROC.gt.1).and.(MyProc.eq.0)
      &        .and.(.not.WRITE_LOCAL_FILES)) THEN
 
-            OPEN(lun,FILE=TRIM(GLOBALDIR)//'/'//fn,
+            OPEN(descript % lun, file=trim(descript % file_name),
      &           ACCESS='SEQUENTIAL',POSITION='APPEND')
-            WRITE(lun,2120) TimeLoc,IT
+            WRITE(descript % lun,2120) TimeLoc,IT
             IF (descript % num_items_per_record .eq. 1) THEN
                DO I=1, descript % num_fd_records
-C                  WRITE(16,*) I ! jgfdebug48.03
-                  WRITE(lun,2453) I, descript % array_g(I)
+                  if ( descript % isInteger .eqv. .true. ) then 
+                     write(descript % lun,2452) I, descript % iarray_g(I)
+                  else
+                     write(descript % lun,2453) I, descript % array_g(I)
+                  endif
                ENDDO
             ENDIF
             IF (descript % num_items_per_record .eq. 2) THEN
                DO I=1, descript % num_fd_records
-C                  WRITE(16,*) I ! jgfdebug48.03
-                  WRITE(lun,2454) I, descript % array_g(I),
+                  WRITE(descript % lun,2454) I, descript % array_g(I),
      &                               descript % array2_g(I)
                ENDDO
             ENDIF
-C            WRITE(16,*) 'About to close globalio text file.'!jgfdebug48.03
-            CLOSE(lun)
+            CLOSE(descript % lun)
          ENDIF
 
          IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES)) THEN
-            OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//fn,
+            OPEN(descript % lun, file=trim(descript % file_name),
      &           ACCESS='SEQUENTIAL',POSITION='APPEND')
-            WRITE(lun,2120) TimeLoc,IT
+            WRITE(descript % lun,2120) TimeLoc,IT
             IF (descript % num_items_per_record .eq. 1) THEN
 !......TCM - v48.4618 -- Fixed dry node output for serial run case
-               IF ((trim(descript % field_name) .eq. 'Elev').and.
-     &             (descript % ConsiderWetDry .EQV. .TRUE.)) THEN
+               IF (descript % ConsiderWetDry .EQV. .TRUE.) THEN
                   DO I=1, descript % num_records_this
-                     if(NODECODE(I).EQ.1) THEN
-                        WRITE(lun,2453) I, descript % array(I)
-                     ELSE
-                        WRITE(lun,2453) I, descript % alternate_value  !-99999.0 for dry nodes
-                     ENDIF
-                  END DO
-               ELSE
+                     ! jgf52.25: Station data that should take wet dry state
+                     ! into account have already done so in subroutine stationArrayInterp()
+                     ! above. For stations, it doesn't make sense to check the nodecode.
+                     if ( (descript%isStation.eqv..false.).and.(NODECODE(I).EQ.0)) then
+                        if ( descript % isInteger .eqv. .true. ) then 
+                           write(descript % lun,2452) I, int(descript % alternate_value)
+                        else
+                           write(descript % lun,2453) I, descript % alternate_value
+                        endif
+                     else
+                        if ( descript % isInteger .eqv. .true. ) then 
+                           write(descript % lun,2452) I, descript % iarray(i)
+                        else
+                           write(descript % lun,2453) I, descript % array(i)
+                        endif
+                     endif
+                  end do
+               else
                   DO I=1, descript % num_records_this
-                     WRITE(lun,2453) I, descript % array(I)
+                     if ( descript % isInteger .eqv. .true. ) then 
+                        write(descript % lun,2452) I, descript % iarray(I)
+                     else
+                        write(descript % lun,2453) I, descript % array(I)
+                     endif
                   END DO
                ENDIF
             ENDIF
             IF (descript % num_items_per_record .eq. 2) THEN
                DO I=1, descript % num_records_this
-                  WRITE(lun,2454) I, descript % array(I),
+                  WRITE(descript % lun,2454) I, descript % array(I),
      &                               descript % array2(I)
                END DO
             ENDIF
-            CLOSE(lun)
+            CLOSE(descript % lun)
          ENDIF
-         filepos = filepos+1+descript % num_records_this
+         descript % filepos = descript % filepos + 1
+     &                        + descript % num_records_this
 
-      CASE(2) !binary (nonportable)
+      CASE(BINARY) ! nonportable
 
          IF ( (MNPROC.gt.1).and.(MyProc.eq.0)
      &         .and.(.not.WRITE_LOCAL_FILES)) THEN
-            OPEN(lun,FILE=TRIM(GLOBALDIR)//'/'//fn,
+            OPEN(descript%lun,FILE=trim(descript%file_name),
      &           ACCESS='DIRECT',RECL=NBYTE)
-            WRITE(lun,REC=filepos+1) TimeLoc
-            WRITE(lun,REC=filepos+2) IT
-            filepos = filepos + 2
+            WRITE(descript % lun,REC=descript % filepos+1) TimeLoc
+            WRITE(descript % lun,REC=descript % filepos+2) IT
+            descript%filepos = descript%filepos + 2
             IF ( descript % num_items_per_record .eq. 1 ) THEN
                DO I=1, descript % num_fd_records
-                  WRITE(lun,REC=filepos+I) descript % array_g(I)
+                  WRITE(descript % lun,REC=descript % filepos+I)
+     &               descript % array_g(I)
                END DO
             ENDIF
             IF ( descript % num_items_per_record .eq. 2 ) THEN
                DO I=1, descript % num_fd_records
-                  WRITE(lun,REC=filepos+2*I-1) descript % array_g(I)
-                  WRITE(lun,REC=filepos+2*I)   descript % array2_g(I)
+                  WRITE(descript % lun,REC=descript % filepos+2*I-1)
+     &                descript % array_g(I)
+                  WRITE(descript % lun,REC=descript % filepos+2*I)
+     &                descript % array2_g(I)
                END DO
             ENDIF
-            CLOSE(lun)
+            CLOSE(descript%lun)
          ENDIF
 
          IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES)) THEN
-            OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//fn,
+            OPEN(descript % lun,FILE=TRIM(descript % file_name),
      &           ACCESS='DIRECT',RECL=NBYTE)
-            WRITE(lun,REC=filepos+1) TimeLoc
-            WRITE(lun,REC=filepos+2) IT
-            filepos = filepos + 2
+            WRITE(descript % lun,REC=descript % filepos+1) TimeLoc
+            WRITE(descript % lun,REC=descript % filepos+2) IT
+            descript % filepos = descript % filepos + 2
             IF ( descript % num_items_per_record .eq. 1 ) THEN
                IF ((trim(descript % field_name) .eq. 'Elev').and.
      &             (descript % ConsiderWetDry .EQV. .TRUE.)) THEN
                   DO I=1, descript % num_records_this
                      if(NODECODE(I).EQ.1) THEN
-                        WRITE(lun,REC=filepos+I) descript % array(I)
+                        WRITE(descript % lun,REC=descript % filepos+I) descript % array(I)
                      ELSE
-                        WRITE(lun,REC=filepos+I)
+                        WRITE(descript % lun,REC=descript % filepos+I)
      &                    descript % alternate_value !-99999.0 for dry nodes
                      ENDIF
                   END DO
                ELSE
                   DO I=1, descript % num_records_this
-                     WRITE(lun,REC=filepos+I) descript % array(I)
+                     WRITE(descript % lun,REC=descript % filepos+I) descript % array(I)
                   END DO
                ENDIF
             ENDIF
             IF ( descript % num_items_per_record .eq. 2 ) THEN
                DO I=1, descript % num_records_this
                   !tcmv48.4618 -- changed from array_g to array
-                  WRITE(lun,REC=filepos+2*I-1) descript % array(I)
+                  WRITE(descript % lun,REC=descript % filepos+2*I-1) descript % array(I)
                   !tcmv48.4618 -- changed from array2_g to array2
-                  WRITE(lun,REC=filepos+2*I)   descript % array2(I)
+                  WRITE(descript % lun,REC=descript % filepos+2*I)   descript % array2(I)
                END DO
             ENDIF
-            CLOSE(lun)
+            CLOSE(descript % lun)
          ENDIF
-         filepos = filepos + descript % num_records_this
+         descript % filepos = descript % filepos + descript % num_records_this
 
-      CASE(3,5) !netcdf (portable)
+      CASE(SPARSE_ASCII)
+         CALL writeSparse(descript, timeLoc, it, storeOne) 
+
+      CASE(NETCDF3, NETCDF4) ! (portable)
 #ifdef ADCNETCDF
          IF (MYPROC.EQ.0) THEN
-            CALL writeOutArrayNetCDF(lun, TimeLoc, it, descript)
+            CALL writeOutArrayNetCDF(descript % lun, TimeLoc, it, descript)
          ENDIF
 #else
-         WRITE(ScreenUnit,*) 'ERROR: NetCDF is not available.'
-         WRITE(16,*) 'ERROR: NetCDF is not available.'
+         call allMessage(ERROR, 'NetCDF was specified.')
+         call allMessage(ERROR,
+     &   'This executable was not compiled with NetCDF support.')
+         call terminate()
 #endif
 
+      CASE(XDMF)
+#ifdef ADCXDMF
+         IF (MYPROC.EQ.0) THEN
+            CALL writeOutArrayXDMF(TimeLoc, it, descript)
+         ENDIF
+#endif
       CASE DEFAULT
-         WRITE(ScreenUnit,*) 'ERROR: Invalid output specifier.'
+         write(scratchMessage,'(a,i0)') 'Invalid output specifier: ',
+     &       abs(descript % specifier)
+         call allMessage(ERROR, scratchMessage)
       END SELECT
+
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 
  2    FORMAT(I2)
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
+ 2452 FORMAT(2x, i8, 2x, i8, 2x, i8, 2x, i8)
  2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
  2454 FORMAT(2X,I8,2(2X,1pE20.10E3))
 C-----------------------------------------------------------------------
@@ -3648,10 +4105,11 @@ C-----------------------------------------------------------------------
 
       USE SIZES
       USE GLOBAL
+      USE MESH, ONLY : NP
       USE GLOBAL_IO, ONLY : collectFullDomainArray, HEADER_MAX,
      &                      open_minmax_file
 #ifdef ADCNETCDF
-      USE NetCDFIO, ONLY :  writeOutArrayNetCDF
+      USE NetCDFIO, ONLY :  initNetCDFOutputFile, writeOutArrayNetCDF
 #endif
       IMPLICIT NONE
 
@@ -3660,12 +4118,17 @@ C     args
       REAL(8), intent(in) :: TimeLoc ! seconds since cold start
       INTEGER, intent(in) :: it   ! number of time steps since cold start
       INTEGER, intent(in) :: nrecs_this  !number of records to write tcm v51.20.06 
-      type(OutputDataDescript_t), intent(in) :: descript !describes output data
+      type(OutputDataDescript_t), intent(inout) :: descript !describes output data
       EXTERNAL :: pack_cmd   ! subroutine used to pack data on subdomain
       EXTERNAL :: unpack_cmd ! subroutine used to unpack data on proc 0
       CHARACTER(len=3) :: cmp ! comparison to make vs hotstart val ('min' or 'max')
+      LOGICAL :: nerr       ! error code from netcdf initialization
       INTEGER :: I          ! loop counter
-
+C
+      call setMessageSource("writeOutArrayMinMax")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif 
 C     collect up the data from subdomains if running in parallel
       IF ((MNPROC.gt.1).and.(.not.WRITE_LOCAL_FILES)) THEN
          CALL collectFullDomainArray(descript, pack_cmd, unpack_cmd)
@@ -3674,33 +4137,28 @@ C     collect up the data from subdomains if running in parallel
 C     write data in ascii text only (other output formats are not supported)
       SELECT CASE (ABS(descript % specifier))
 
-      CASE(0,1,2,4) !ascii text
-         CALL OPEN_MINMAX_FILE(lun, TRIM(GLOBALDIR)//'/'
-     &           // descript%file_name, NP_G, NP, nrecs_this,HEADER_MAX)
+      CASE(OFF,ASCII,BINARY,SPARSE_ASCII) ! just write ascii text
+
+         call logMessage(INFO,'Opening min/max file "'//
+     &          trim(descript%file_name)//'" for writing.')
+
          IF ((MNPROC.gt.1).and.(MyProc.eq.0).and.
      &        (.not.WRITE_LOCAL_FILES)) THEN
-            OPEN(lun,
-     &           FILE=TRIM(GLOBALDIR)//'/'//TRIM(descript%file_name),
+            CALL OPEN_MINMAX_FILE(lun, descript%file_name, 
+     &                             NP_G, NP, nrecs_this,HEADER_MAX)
+            OPEN(lun,FILE=TRIM(descript%file_name),
      &           ACCESS='SEQUENTIAL',POSITION='APPEND')
             WRITE(lun,2120) TimeLoc,IT
-!            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN
-               DO I=1, descript % num_fd_records
-                  WRITE(lun,2453) I, descript % array_g(I)
-               ENDDO
-!            ELSE IF ( descript%file_name.eq."minpr.63" ) THEN
-!                   DO I=1, descript % num_fd_records
-!                     WRITE(lun,2453) I, MIN(descript % array_g(I),
-!     &                   descript % hotstart_g(I))
-!                  ENDDO
-!            ELSE
-!               DO I=1, descript % num_fd_records
-!                  WRITE(lun,2453) I, MAX(descript % array_g(I),
-!     &                descript % hotstart_g(I))
-!               ENDDO
-!            ENDIF
+            DO I=1, descript % num_fd_records
+               if ( descript % isInteger .eqv. .true. ) then 
+                  write(descript % lun,2452) I, descript % iarray_g(I)
+               else
+                  write(lun,2453) I, descript % array_g(I)
+               endif
+            ENDDO
 
             !tcm v51.20.01 additions for time stamp output
-            if (descript%file_name.ne."ESLNodes.63") then
+            if (descript%minmax_timestamp) then
                WRITE(lun,2120) TimeLoc,IT
                DO I=1, descript % num_fd_records
                   WRITE(lun,2453) I, descript % array2_g(I)
@@ -3711,28 +4169,20 @@ C     write data in ascii text only (other output formats are not supported)
          ENDIF
 
          IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES)) THEN
-            CALL OPEN_MINMAX_FILE(lun, TRIM(LOCALDIR)//'/'
-     &           // descript%file_name, NP_G, NP, nrecs_this, HEADER_MAX)
-            OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//TRIM(descript%file_name),
+            CALL OPEN_MINMAX_FILE(lun, descript%file_name, NP_G, NP, 
+     &           nrecs_this, HEADER_MAX)
+            OPEN(lun,FILE=TRIM(descript%file_name),
      &           ACCESS='SEQUENTIAL',POSITION='APPEND')
             WRITE(lun,2120) TimeLoc,IT
-!            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN
-               DO I=1, descript % num_records_this
-                  WRITE(lun,2453) I, descript % array(I)
-               ENDDO
-!            ELSE IF ( descript%file_name.eq."minpr.63" ) THEN
-!               DO I=1, descript % num_records_this
-!                  WRITE(lun,2453) I, MIN(descript % array(I),
-!     &                descript % hotstart(I))
-!               ENDDO
-!            ELSE
-!               DO I=1, descript % num_records_this
-!                  WRITE(lun,2453) I, MAX(descript % array(I),
-!     &                descript % hotstart(I))
-!               ENDDO
-!            ENDIF
+            DO I=1, descript % num_records_this
+               if ( descript % isInteger .eqv. .true. ) then 
+                  write(descript % lun,2452) I, descript % iarray(I)
+               else
+                  write(lun,2453) I, descript % array(I)
+               endif
+            ENDDO
             !tcm v51.20.01 additions for time stamp output
-            if (descript%file_name.ne."ESLNodes.63") then
+            if (descript%minmax_timestamp) then
                WRITE(lun,2120) TimeLoc,IT
                DO I=1, descript % num_records_this
                   WRITE(lun,2453) I, descript % array2(I)
@@ -3742,21 +4192,37 @@ C     write data in ascii text only (other output formats are not supported)
             close(lun)  !tcm v51.20.01 added close 
          ENDIF
 Casey 120830: Reversed the next two lines.
-      CASE(3,5) !netcdf (portable)
+      CASE(NETCDF3,NETCDF4) !netcdf (portable)
 #ifdef ADCNETCDF
          IF (MYPROC.EQ.0) THEN
-             CALL writeOutArrayNetCDF(lun, TimeLoc, it, descript)
+         call logMessage(INFO,'Opening min/max file "'//
+     &          trim(descript%file_name)//'" for writing.')
+            descript % writeFlag = .true.
+            ! jgf52.08.03: TODO: Is there ever a case where 
+            ! we've gotten to this point and any of the min/max files
+            ! have not been initialized?
+            if ( descript % initialized.eqv..false.) then
+               call initNetCDFOutputFile(descript, nerr)
+               descript % initialized = .true.
+            endif
+            CALL writeOutArrayNetCDF(lun, TimeLoc, it, descript)
          ENDIF
 #else
-         WRITE(ScreenUnit,*) 'ERROR: NetCDF is not available.'
-         WRITE(16,*) 'ERROR: NetCDF is not available.'
+         call allMessage(ERROR,'NetCDF is not available.')
 #endif
       CASE DEFAULT
-         WRITE(ScreenUnit,*) 'ERROR: Invalid output specifier.'
+         write(scratchMessage,'(a,i0)') 'Invalid output specifier: ',
+     &       abs(descript % specifier)
+         call allMessage(ERROR, scratchMessage)
       END SELECT
 
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
  2    FORMAT(I2)
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
+ 2452 FORMAT(2x, i8, 2x, i8, 2x, i8, 2x, i8)
  2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
  2454 FORMAT(2X,I8,2(2X,1pE20.10E3))
 C-----------------------------------------------------------------------
@@ -3764,7 +4230,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E   W R I T E  H O T S T A R T
+C        S U B R O U T I N E    W R I T E   H O T S T A R T
 C-----------------------------------------------------------------------
 C     jgf48.03 This subroutine was created from code in timestep.F to
 C     write hotstart files.
@@ -3774,10 +4240,10 @@ C-----------------------------------------------------------------------
       USE SIZES
       USE GLOBAL
       USE HARM
-      USE GLOBAL_IO, ONLY: packOne, unpackOne, packOneInt, unpackOneInt,
+      USE GLOBAL_IO, ONLY: packOne, unpackOne, 
      &    packTwo, unpackTwo, packMbyNP, unpackMbyNP, HEADER_MAX,
-     &    collectFullDomainArray, collectFullDomainIntArray
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+     &    collectFullDomainArray
+      USE MESH, ONLY : NP, NE
 #ifdef CMPI
       USE MESSENGER
 #endif
@@ -3801,13 +4267,6 @@ C-----------------------------------------------------------------------
       INTEGER npx, nex
       CHARACTER*9 :: itstr  !tcm v51.26 added for time-stamped hot start file name adjustments
 C
-      type(OutputDataDescript_t), SAVE :: Elev1Descript
-      type(OutputDataDescript_t), SAVE :: Elev2Descript
-      type(OutputDataDescript_t), SAVE :: VelDescript
-      type(OutputDataDescript_t), SAVE :: CH1Descript
-      type(OutputDataDescript_t), SAVE :: EtaDiscDescript
-      type(OutputDataDescript_t), SAVE :: NodeCodeDescript
-      type(OutputDataDescript_t), SAVE :: NOFFDescript
       LOGICAL ncerror
       INTEGER numHotstartWrites ! number writes to hot start files
       INTEGER nextLun           ! next LUN to write to, after initial write
@@ -3816,18 +4275,6 @@ C     !jgf49.44: harmonic analysis vars
       INTEGER N ! number of stations
       INTEGER NSTAEX  ! num of elev stations in either fulldomain or subdomain
       INTEGER NSTAVX  ! num of vel stations in either fulldomain or subdomain
-      type(OutputDataDescript_t), SAVE :: HarmElevFDLVDescript
-      type(OutputDataDescript_t), SAVE :: HarmElevSLVDescript
-      type(OutputDataDescript_t), SAVE :: HarmUVelFDLVDescript
-      type(OutputDataDescript_t), SAVE :: HarmVVelFDLVDescript
-      type(OutputDataDescript_t), SAVE :: HarmUVelSLVDescript
-      type(OutputDataDescript_t), SAVE :: HarmVVelSLVDescript
-      type(OutputDataDescript_t), SAVE :: ELAVDescript
-      type(OutputDataDescript_t), SAVE :: ELVADescript
-      type(OutputDataDescript_t), SAVE :: XVELAVDescript
-      type(OutputDataDescript_t), SAVE :: YVELAVDescript
-      type(OutputDataDescript_t), SAVE :: XVELVADescript
-      type(OutputDataDescript_t), SAVE :: YVELVADescript
 C
       LOGICAL, SAVE :: FirstCall = .true.
 C
@@ -3857,16 +4304,16 @@ C
          Elev2Descript % array                => ETA2
          Elev2Descript % array_g              => ETA2_g
 
-         VelDescript % specifier            = NHSTAR
-         VelDescript % initial_value        = 0.0
-         VelDescript % num_items_per_record = 2
-         VelDescript % num_fd_records       = NP_G
-         VelDescript % num_records_this     = NP
-         VelDescript % imap                 => NODES_LG
-         VelDescript % array                => UU2
-         VelDescript % array2               => VV2
-         VelDescript % array_g              => UU2_g
-         VelDescript % array2_g             => VV2_g
+         HotstartVelDescript % specifier            = NHSTAR
+         HotstartVelDescript % initial_value        = 0.0
+         HotstartVelDescript % num_items_per_record = 2
+         HotstartVelDescript % num_fd_records       = NP_G
+         HotstartVelDescript % num_records_this     = NP
+         HotstartVelDescript % imap                 => NODES_LG
+         HotstartVelDescript % array                => UU2
+         HotstartVelDescript % array2               => VV2
+         HotstartVelDescript % array_g              => UU2_g
+         HotstartVelDescript % array2_g             => VV2_g
 
          IF (IM.eq.10) THEN
             CH1Descript % specifier            = NHSTAR
@@ -3889,22 +4336,24 @@ C
          EtaDiscDescript % array_g              => EtaDisc_g
 
          NodeCodeDescript % specifier            = NHSTAR
-         NodeCodeDescript % int_initial_value        = 0
+         NodeCodeDescript % initial_value        = 0.d0
          NodeCodeDescript % num_items_per_record = 1
          NodeCodeDescript % num_fd_records       = NP_G
          NodeCodeDescript % num_records_this     = NP
          NodeCodeDescript % imap                 => NODES_LG
          NodeCodeDescript % iarray               => NODECODE
          NodeCodeDescript % iarray_g             => NODECODE_g
+         NodeCodeDescript % isInteger            = .true.
 
          NOFFDescript % specifier            = NHSTAR
-         NOFFDescript % int_initial_value        = 0
+         NOFFDescript % initial_value        = 0.d0
          NOFFDescript % num_items_per_record = 1
          NOFFDescript % num_fd_records       = NE_G
          NOFFDescript % num_records_this     = NE
          NOFFDescript % imap                 => IMAP_EL_LG
          NOFFDescript % iarray               => NOFF
          NOFFDescript % iarray_g             => NOFF_g
+         NOFFDescript % isInteger            = .true.
 C
          IF (IHARIND.eq.1) THEN
             HarmElevFDLVDescript % specifier            = NHSTAR
@@ -4028,19 +4477,19 @@ C              jgf49.35 TODO: Allocate arrays to write 3D data
                CALL initNetCDFHotstart(hss%lun, Elev1Descript,
      &         Elev2Descript, VelDescript, CH1Descript,
      &         EtaDiscDescript, NodeCodeDescript, NOFFDescript, ncerror)
-               IF ( ncerror.eqv..true. ) CALL ADCIRC_Terminate()
+               IF ( ncerror.eqv..true. ) CALL terminate()
                IF (IHARIND.eq.1) THEN
                   CALL initNetCDFHotstartHarmonic(hss%lun,
      &            HarmElevFDLVDescript, HarmElevSLVDescript,
      &            HarmUVelFDLVDescript, HarmVVelFDLVDescript,
      &            HarmUVelSLVDescript, HarmVVelSLVDescript, ncerror)
-                  IF ( ncerror.eqv..true. ) CALL ADCIRC_Terminate()
+                  IF ( ncerror.eqv..true. ) CALL terminate()
                   IF (CHARMV.eqv..true.) THEN
                      CALL initNetCDFHotstartHarmonicMeansVariances(
      &                  hss%lun, ELAVDescript, ELVADescript,
      &                  XVELAVDescript, YVELAVDescript, XVELVADescript,
      &                  YVELVADescript,ncerror)
-                     IF ( ncerror.eqv..true. ) CALL ADCIRC_Terminate()
+                     IF ( ncerror.eqv..true. ) CALL terminate()
                   ENDIF
                ENDIF
                ! Determine if we need to init both hotstart files, i.e., if the
@@ -4057,19 +4506,19 @@ C              jgf49.35 TODO: Allocate arrays to write 3D data
      &            Elev2Descript, VelDescript, CH1Descript,
      &            EtaDiscDescript, NodeCodeDescript, NOFFDescript,
      &            ncerror)
-                  IF ( ncerror.eqv..true. ) CALL ADCIRC_Terminate()
+                  IF ( ncerror.eqv..true. ) CALL terminate()
                   IF (IHARIND.eq.1) THEN
                      CALL initNetCDFHotstartHarmonic(nextLun,
      &               HarmElevFDLVDescript, HarmElevSLVDescript,
      &               HarmUVelFDLVDescript, HarmVVelFDLVDescript,
      &               HarmUVelSLVDescript, HarmVVelSLVDescript, ncerror)
-                     IF ( ncerror.eqv..true. ) CALL ADCIRC_Terminate()
+                     IF ( ncerror.eqv..true. ) CALL terminate()
                      IF (CHARMV.eqv..true.) THEN
                         CALL initNetCDFHotstartHarmonicMeansVariances(
      &                     nextLun, ELAVDescript, ELVADescript,
      &                     XVELAVDescript, YVELAVDescript,
      &                     XVELVADescript, YVELVADescript, ncerror)
-                        IF ( ncerror.eqv..true. ) CALL ADCIRC_Terminate()
+                        IF ( ncerror.eqv..true. ) CALL terminate()
                      ENDIF
                   ENDIF
                ENDIF
@@ -4081,7 +4530,6 @@ C
       ENDIF
 
 C     collect up the data from subdomains if running in parallel
-ckmd48.33bc - changed the NOFF and NodeCode calls
 #ifdef CMPI
       IF (WRITE_LOCAL_HOT_START_FILES.eqv..FALSE.) THEN
          CALL collectFullDomainArray(Elev1Descript, packOne, unpackOne)
@@ -4092,26 +4540,17 @@ ckmd48.33bc - changed the NOFF and NodeCode calls
          ENDIF
          CALL collectFullDomainArray(EtaDiscDescript,
      &             packOne, unpackOne)
-         CALL collectFullDomainIntArray(NodeCodeDescript,
-     &             packOneInt, unpackOneInt, 1)
-         CALL collectFullDomainIntArray(NOFFDescript,
-     &             packOneInt, unpackOneInt, 2)
-!         TCM v48.4638 20090902 -- NOFF could have the wrong
-!         values after globalizing because there are no rules for which
-!         processor owns an element and Noff is an elemental value
-!         The way around is to take the minimum of (Noff, 1) as
-!         NOFF is supposed to be either 0 or 1.
-!
-!        jgf48.4642 Modified syntax to operate directly on NOFF array
-!        instead of the pointer to the NOFF array (i.e.
-!        NOFFDescript%iarray) b/c g95 choked on the original syntax.
-!         WHERE (NOFF.gt.1) NOFF = 1
+         CALL collectFullDomainArray(NodeCodeDescript,
+     &             packOne, unpackOne)
+         CALL collectFullDomainArray(NOFFDescript,
+     &             packOne, unpackOne)
 
-!         TCM49.14 20100604 -- Neither of the previous fixes for NOFF
-!             worked.  The correct way is to fix NOFF_G
-!             the Global list which is owned only by MyProc = 0
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            WHERE (NOFF_G.gt.1) NOFF_G = 1
+            if (any(NOFF_G.gt.1)) then
+               call allMessage(ERROR,
+     &            'Some values of NOFF are greater than 1.')
+               call terminate()
+            endif
          endif
 C
 C        Collect harmonic analysis data if needed.
@@ -4182,7 +4621,7 @@ C        program to exit immediately after writing the hotstart file.
                WRITE(itstr,'(I9.9)') IT
                hss % filename(9:17) = itstr
             ENDIF
-            OPEN(hss % lun ,FILE=TRIM(HOTSTARTDIR)//'/'//trim(hss % filename),
+            OPEN(hss % lun ,FILE=TRIM(LOCALDIR)//'/'//trim(hss % filename),
      $      ACCESS='DIRECT',STATUS='REPLACE',RECL=8)
             IHOTSTP=1
             WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion
@@ -4312,14 +4751,19 @@ C...
 C...  IF APPROPRIATE ADD HARMONIC ANALYSIS INFORMATION TO HOT START FILE
 C...
          IF((IHARIND.EQ.1).AND.(IT.GT.ITHAS)) THEN
-            IF ((MNPROC.eq.1).or.WRITE_LOCAL_HOT_START_FILES) THEN
+            IF ((MNPROC.eq.1).or.(WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN
                NSTAEX = NSTAE
                NSTAVX = NSTAV
             ELSE
                NSTAEX = NSTAE_G
                NSTAVX = NSTAV_G
             ENDIF
-            IF ((MyPROC.eq.0).or.WRITE_LOCAL_HOT_START_FILES) THEN
+            !
+            ! In serial (or in parallel with a fulldomain hotstart file)
+            ! only processor 0 will write these data to the hotstart file. 
+            ! In parallel, with subdomain hotstart files, all processors
+            ! will write these data to subdomain hotstart files.  
+            IF ((MyPROC.eq.0).or.(WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN
                WRITE(hss % lun,REC=IHOTSTP) ICHA
                WRITE(hss % lun,REC=IHOTSTP+1) NZ
                WRITE(hss % lun,REC=IHOTSTP+2) NF
@@ -4360,9 +4804,13 @@ c
                      IHOTSTP = IHOTSTP + 1
                   END DO
                END DO
-C
-C              In serial, write load vectors to hotstart file.
-#ifndef CMPI
+            ENDIF
+            ! 
+            ! In serial, or in parallel with subdomain hotstart files,
+            ! write load vectors to hotstart file(s).
+            !
+            if ( (mnproc.eq.1).or.
+     &            (write_local_hot_start_files.eqv..true.) ) then
                IF(NHASE.ne.0) THEN
                   do n=1,NSTAE
                      do i=1,mm
@@ -4371,7 +4819,6 @@ C              In serial, write load vectors to hotstart file.
                      end do
                   end do
                ENDIF
-C
                IF(NHASV.ne.0) THEN
                   do N=1,NSTAV
                      do i=1,mm
@@ -4382,7 +4829,6 @@ C
                      end do
                   end do
                ENDIF
-C
                IF(NHAGE.ne.0) THEN
                   do n=1,np
                      do i=1,mm
@@ -4391,7 +4837,6 @@ C
                      end do
                   end do
                ENDIF
-C
                IF(NHAGV.ne.0) THEN
                   do n=1,np
                      do i=1,mm
@@ -4402,63 +4847,62 @@ C
                      end do
                   end do
                ENDIF
-#else
-C
-C              In parallel, write the full domain load vectors to hotstart
-C              file.
+            endif
+            !
+            ! In parallel, if fulldomain hotstart files are required,
+            ! processor 0 will write the full domain load vectors to the 
+            ! fulldomain hotstart file.
+            IF ( (mnproc.gt.1).and.
+     &           (write_local_hot_start_files.eqv..false.).and.
+     &           (myproc.eq.0)) THEN
                IF(NHASE.ne.0) THEN
                   do n=1,NSTAE_G
                      do i=1,mm
                         WRITE(hss % lun,REC=IHOTSTP)
-     &                           HarmElevSLVDescript % array2D_g(i,n)
+     &                        HarmElevSLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
                      end do
                   end do
                ENDIF
-C
                IF(NHASV.ne.0) THEN
                   do N=1,NSTAV_G
                      do i=1,mm
                         WRITE(hss % lun,REC=IHOTSTP)
-     &                              HarmUVelSLVDescript % array2D_g(i,n)
+     &                           HarmUVelSLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
                         WRITE(hss % lun,REC=IHOTSTP)
-     &                              HarmVVelSLVDescript % array2D_g(i,n)
+     &                           HarmVVelSLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
                      end do
                   end do
                ENDIF
-C
                IF(NHAGE.ne.0) THEN
                   do n=1,np_g
                      do i=1,mm
                         WRITE(hss % lun,REC=IHOTSTP)
-     &                            HarmElevFDLVDescript % array2D_g(i,n)
+     &                        HarmElevFDLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
                      end do
                   end do
                ENDIF
-C
                IF(NHAGV.ne.0) THEN
                   do n=1,np_g
                      do i=1,mm
                         WRITE(hss % lun,REC=IHOTSTP)
-     &                          HarmUVelFDLVDescript % array2D_g(i,n)
+     &                       HarmUVelFDLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
                         WRITE(hss % lun,REC=IHOTSTP)
-     &                           HarmVVelFDLVDescript % array2D_g(i,n)
+     &                       HarmVVelFDLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
                      end do
                   end do
                ENDIF
-#endif
-            ENDIF ! myProc.eq.0 .or. write_local_hotstart_files
+            ENDIF
          ENDIF  ! IHARIND
 C
-         if (CHARMV.and.
-     &           ((MNPROC.eq.1).or.WRITE_LOCAL_HOT_START_FILES)) then
-            IF((IHARIND.EQ.1).AND.(IT.GT.ITMV)) THEN
-
+         if ((CHARMV.eqv..true.).and.(IHARIND.eq.1).and.(IT.gt.ITMV)) then
+            if ( (MNPROC.eq.1).or.
+     &           (WRITE_LOCAL_HOT_START_FILES.eqv..true.)) then
                WRITE(hss % lun,REC=IHOTSTP) NTSTEPS
                IHOTSTP=IHOTSTP+1
                IF(NHAGE.ne.0) THEN
@@ -4482,10 +4926,10 @@ C
                   END DO
                ENDIF
             ENDIF
-         endif                   !  charmv
-C
-         if (CHARMV.and.(MNPROC.gt.1).and.(MYPROC.eq.0)) then
-            IF((IHARIND.EQ.1).AND.(IT.GT.ITMV)) THEN
+C 
+            IF ((MNPROC.gt.1).and.
+     &           (write_local_hot_start_files.eqv..false.).and.
+     &           (MYPROC.eq.0)) then
                WRITE(hss % lun,REC=IHOTSTP) NTSTEPS
                IHOTSTP=IHOTSTP+1
                IF(NHAGE.ne.0) THEN
@@ -4741,8 +5185,8 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
          STOP
       ENDIF
 
-#ifdef WRITE_OUTPUT_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 C-----------------------------------------------------------------------
@@ -4763,7 +5207,9 @@ C-----------------------------------------------------------------------
       SUBROUTINE WriteWarnElev(TimeLoc, it)
       USE SIZES
       USE GLOBAL
-      USE GLOBAL_IO, ONLY: collectFullDomainArray, unpackOne, pack63
+      USE GLOBAL_IO, ONLY: collectFullDomainArray, unpackOne
+      USE MESH, ONLY : NP
+      USE GLOBAL_IO, ONLY: packOne, unpackOne
 #ifdef CMPI
       USE MESSENGER
 #endif
@@ -4774,6 +5220,11 @@ C
       INTEGER I ! node loop counter
       type(OutputDataDescript_t), SAVE :: DebugElevDescript
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ETA_DEBUG_g(:)
+
+      call setMessageSource("writeWarnElev")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif 
 C
 C     Open the file and write the header on the first warning. Format
 C     the actual header data to make it look more or less like a fort.63
@@ -4787,8 +5238,9 @@ C     file.
          !jgf49.0601: if running in parallel, also initialize a fulldomain file
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(ETA_DEBUG_g(NP_G))
-         ENDIF
-         DebugElevDescript % specifier            = 1 ! TODO: make configurable
+         ENDIF       
+         DebugElevDescript % lun                  = 69
+         DebugElevDescript % specifier            = ASCII ! TODO: make configurable
          DebugElevDescript % initial_value        = 0.0
          DebugElevDescript % num_items_per_record = 1
          DebugElevDescript % num_fd_records       = NP_G
@@ -4797,8 +5249,18 @@ C     file.
          DebugElevDescript % array                => ETA2
          DebugElevDescript % array_g              => ETA_DEBUG_g
          DebugElevDescript % ConsiderWetDry       = .TRUE.
+         DebugElevDescript % filepos              => IGDP
          DebugElevDescript % alternate_value      = -99999.0
          DebugElevDescript % field_name           = 'DebugElev'
+         DebugElevDescript % writeFlag            = .true.
+         DebugElevDescript % isStation            = .false.  
+         DebugElevDescript % divideByDepth        = .false.           
+         allocate(DebugElevDescript % writerFormats(numFormats))
+         DebugElevDescript % writerFormats(:)     = -99999         
+         DebugElevDescript % useWriter            = .false.
+         DebugElevDescript % file_extension       = 69
+         DebugElevDescript % file_basename        = 'fort'
+         DebugElevDescript % file_name            = 'fort.69'
 
          OPEN(69,FILE=TRIM(GLOBALDIR)//'/'//'fort.69')
          WRITE(69,'(A80)') TRIM(RUNDES)
@@ -4823,12 +5285,9 @@ C     Open the file and append the new elevation data.
       ENDDO
       CLOSE(69)
 
-
 #ifdef CMPI
       !jgf49.0601: if running in parallel, also append to fulldomain file
-      CALL writeOutArray(69, TimeLoc, IT, DebugElevDescript,
-     &                         pack63, unpackOne, IGEP,
-     &                         'fort.69        ')
+      CALL writeOutArray(timeLoc, IT, DebugElevDescript, packOne, unpackOne)
 #endif
 C
       WarnElevDumpCounter = WarnElevDumpCounter+1
@@ -4844,8 +5303,777 @@ C     If we have exceeded the user's limit, terminate the run.
          STOP
       ENDIF
 C
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE WriteWarnElev
 C-----------------------------------------------------------------------
 
+      SUBROUTINE terminate(NO_MPI_FINALIZE)
+#ifdef CMPI
+      USE MESSENGER
+#endif
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
+     &   allMessage, DEBUG, ECHO, INFO, WARNING, ERROR  
+      IMPLICIT NONE 
+      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+C
+      call setMessageSource("terminate")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      call allMessage(INFO,"ADCIRC Terminating.")
+
+#ifdef CMPI
+      subdomainFatalError = .true.
+      IF (PRESENT(NO_MPI_FINALIZE)) THEN
+        CALL MSG_FINI(NO_MPI_FINALIZE)
+      ELSE
+        CALL MSG_FINI()
+      ENDIF
+#endif
+      STOP 
+C
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
+      END SUBROUTINE terminate
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E  i n i t S w a n O u t p u t
+C-----------------------------------------------------------------------
+C THIS ROUTINE WILL PERFORM THE ASSIGNMENT AND ALLOCATIONS FOR THE 
+C SWAN OUTPUT VARIABLES USED IN WRITE_OUTPUT.F
+C-----------------------------------------------------------------------
+#ifdef CSWAN
+      SUBROUTINE initSwanOutput()
+          USE SIZES, ONLY : MNPROC, OFF, ASCII, BINARY, NETCDF3, 
+     &                       NETCDF4, XDMF
+          USE GLOBAL
+          USE MESH 
+          IMPLICIT NONE
+
+      call setMessageSource("initSwanOutput")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif 
+
+C.....Allocate SWAN specific local/global arrays if that output is selected 
+      IF(SWAN_OutputHS)THEN
+        IF(MYPROC.EQ.0.AND.MNPROC.GT.1)THEN
+            ALLOCATE(SWAN_HSOut_g(1:NP_G))
+            ALLOCATE(SWAN_HSMaxOut_g(1:NP_G))
+        ENDIF
+        ALLOCATE(SWAN_HSOut(NP))
+        ALLOCATE(SWAN_HSMaxOut(NP))
+        SWAN_HSMaxOut(:) = -99999D0
+      ENDIF
+      IF(SWAN_OutputDIR)THEN
+        IF(MYPROC.EQ.0.AND.MNPROC.GT.1)THEN
+            ALLOCATE(SWAN_DIROut_g(NP_G))
+            ALLOCATE(SWAN_DIRMaxOut_g(NP_G))
+        ENDIF
+        ALLOCATE(SWAN_DIROut(NP))
+        ALLOCATE(SWAN_DIRMaxOut(NP))
+        SWAN_DIRMaxOut(:) = -99999D0
+      ENDIF
+      IF(SWAN_OutputTM01)THEN
+        IF(MYPROC.EQ.0.AND.MNPROC.GT.1)THEN
+            ALLOCATE(SWAN_TM01Out_g(NP_G))
+            ALLOCATE(SWAN_TM01MaxOut_g(NP_G))
+        ENDIF
+        ALLOCATE(SWAN_TM01Out(NP))
+        ALLOCATE(SWAN_TM01MaxOut(NP))
+        SWAN_TM01MaxOut(:) = -99999D0
+      ENDIF
+      IF(SWAN_OutputTPS)THEN
+        IF(MYPROC.EQ.0.AND.MNPROC.GT.1)THEN
+            ALLOCATE(SWAN_TPSOut_g(NP_G))
+            ALLOCATE(SWAN_TPSMaxOut_g(NP_G))
+        ENDIF
+        ALLOCATE(SWAN_TPSOut(NP))
+        ALLOCATE(SWAN_TPSMaxOut(NP))
+        SWAN_TPSMaxOut(:) = -99999D0
+      ENDIF
+      IF(SWAN_OutputTM02)THEN
+        IF(MYPROC.EQ.0.AND.MNPROC.GT.1)THEN
+            ALLOCATE(SWAN_TM02Out_g(NP_G))
+            ALLOCATE(SWAN_TM02MaxOut_g(NP_G))
+        ENDIF
+        ALLOCATE(SWAN_TM02Out(NP))
+        ALLOCATE(SWAN_TM02MaxOut(NP))
+        SWAN_TM02MaxOut(:) = -99999D0
+      ENDIF
+      IF(SWAN_OutputTMM10)THEN
+        IF(MYPROC.EQ.0.AND.MNPROC.GT.1)THEN
+            ALLOCATE(SWAN_TMM10Out_g(NP_G))
+            ALLOCATE(SWAN_TMM10MaxOut_g(NP_G))
+        ENDIF
+        ALLOCATE(SWAN_TMM10Out(NP))
+        ALLOCATE(SWAN_TMM10MaxOut(NP))
+        SWAN_TMM10MaxOut(:) = -99999D0
+      ENDIF
+      IF(SWAN_OutputWind)THEN
+        IF(MYPROC.EQ.0.AND.MNPROC.GT.1)THEN
+            ALLOCATE(Swan_WindXOut_g(NP_G),Swan_WindYOut_g(NP_G))
+            ALLOCATE(Swan_WindMaxOut_g(NP_G))
+        ENDIF
+        ALLOCATE(SWAN_WindXOut(NP),SWAN_WindYOut(NP))
+        ALLOCATE(SWAN_WindMaxOut(NP))
+        SWAN_WindMaxOut(:) = -99999D0
+      ENDIF
+C.....Significant Wave Height
+      IF(SWAN_OutputHS)THEN
+          SwanHSDescript % specifier        = NOUTGW
+      ELSE
+          SwanHSDescript % specifier        = OFF
+      ENDIF    
+      SwanHSDescript % lun                  = 301
+      SwanHSDescript % filepos              => SWAN_HS_POS
+      SwanHSDescript % initial_value        = 0.0
+      SwanHSDescript % num_items_per_record = 1
+      SwanHSDescript % num_fd_records       = NP_G
+      SwanHSDescript % num_records_this     = NP
+      SwanHSDescript % imap                 => NODES_LG
+      SwanHSDescript % array                => SWAN_HSOut
+      SwanHSDescript % array_g              => SWAN_HSOut_g
+      SwanHSDescript % ConsiderWetDry       = .FALSE.
+      SwanHSDescript % alternate_value      = -99999.0
+      SwanHSDescript % field_name           = "swan_HS"
+      SwanHSDescript % file_basename        = "swan_HS"
+      SwanHSDescript % file_extension       = 63
+      SwanHSDescript % startTimeStep        = NTCYSGW
+      SwanHSDescript % endTimeStep          = NTCYFGW
+      SwanHSDescript % outputTimeStepIncrement = NSPOOLGW
+      SwanHSDescript % spoolCounter         => SWAN_HS_SPOOL
+      SwanHSDescript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      SwanHSDescript % writeFlag            = .true.
+          
+      IF(Swan_OutputHS)THEN
+          SwanHSMaxDescript % specifier        = NOUTGW
+      ELSE
+          SwanHSMaxDescript % specifier        = OFF
+      ENDIF
+      SwanHSMaxDescript % lun                  = 316
+      SwanHSMaxDescript % initial_value        = 0.0
+      SwanHSMaxDescript % num_items_per_record = 1
+      SwanHSMaxDescript % num_fd_records       = NP_G
+      SwanHSMaxDescript % num_records_this     = NP
+      SwanHSMaxDescript % imap                 => NODES_LG
+      SwanHSMaxDescript % array                => SWAN_HSMaxOut
+      SwanHSMaxDescript % array_g              => SWAN_HSMaxOut_g
+      SwanHSMaxDescript % ConsiderWetDry       = .FALSE.
+      SwanHSMaxDescript % alternate_value      = -99999.0
+      SwanHSMaxDescript % field_name           = "swan_HS_max"
+      SwanHSMaxDescript % file_basename        = "swan_HS_max"
+      SwanHSMaxDescript % file_extension       = 63
+      SwanHSMaxDescript % writeFlag            = .false.
+      
+C.....Mean Wave Direction
+      IF(SWAN_OutputDIR)THEN
+          SwanDIRDescript % specifier        = NOUTGW
+      ELSE
+          SwanDIRDescript % specifier        = OFF
+      ENDIF
+      SwanDIRDescript % lun                  = 302
+      SwanDIRDescript % filepos              => SWAN_DIR_POS
+      SwanDIRDescript % initial_value        = 0.0
+      SwanDIRDescript % num_items_per_record = 1
+      SwanDIRDescript % num_fd_records       = NP_G
+      SwanDIRDescript % num_records_this     = NP
+      SwanDIRDescript % imap                 => NODES_LG
+      SwanDIRDescript % array                => SWAN_DIROut
+      SwanDIRDescript % array_g              => SWAN_DIROut_g
+      SwanDIRDescript % ConsiderWetDry       = .FALSE.
+      SwanDIRDescript % alternate_value      = -99999.0
+      SwanDIRDescript % file_basename        = "swan_DIR"
+      SwanDIRDescript % file_extension       = 63
+      SwanDIRDescript % field_name           = "swan_DIR"
+      SwanDIRDescript % startTimeStep        = NTCYSGW
+      SwanDIRDescript % endTimeStep          = NTCYFGW
+      SwanDIRDescript % outputTimeStepIncrement = NSPOOLGW
+      SwanDIRDescript % spoolCounter         => SWAN_DIR_SPOOL
+      SwanDIRDescript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      SwanDIRDescript % writeFlag            = .true.
+      
+      IF(SWAN_OutputDir)THEN
+          SwanDIRMaxDescript % specifier        = NOUTGW
+      ELSE
+          SwanDIRMaxDescript % specifier        = OFF
+      ENDIF
+      SwanDIRMaxDescript % lun                  = 317
+      SwanDIRMaxDescript % initial_value        = 0.0
+      SwanDIRMaxDescript % num_items_per_record = 1
+      SwanDIRMaxDescript % num_fd_records       = NP_G
+      SwanDIRMaxDescript % num_records_this     = NP
+      SwanDIRMaxDescript % imap                 => NODES_LG
+      SwanDIRMaxDescript % array                => SWAN_DIRMaxOut
+      SwanDIRMaxDescript % array_g              => SWAN_DIRMaxOut_g
+      SwanDIRMaxDescript % ConsiderWetDry       = .FALSE.
+      SwanDIRMaxDescript % alternate_value      = -99999.0
+      SwanDIRMaxDescript % file_basename        = "swan_DIR_max"
+      SwanDIRMaxDescript % file_extension       = 63
+      SwanDIRMaxDescript % field_name           = "swan_DIR_max"
+      SwanDIRMaxDescript % writeFlag            = .false.
+
+C.....Mean Wave Period (TM01)
+      IF(SWAN_OutputTM01)THEN
+          SwanTM01Descript % specifier        = NOUTGW
+      ELSE
+          SwanTM01Descript % specifier        = OFF
+      ENDIF
+      SwanTM01Descript % lun                  = 303
+      SwanTM01Descript % filepos              => SWAN_TM01_POS
+      SwanTM01Descript % initial_value        = 0.0
+      SwanTM01Descript % num_items_per_record = 1
+      SwanTM01Descript % num_fd_records       = NP_G
+      SwanTM01Descript % num_records_this     = NP
+      SwanTM01Descript % imap                 => NODES_LG
+      SwanTM01Descript % array                => SWAN_TM01Out
+      SwanTM01Descript % array_g              => SWAN_TM01Out_g
+      SwanTM01Descript % ConsiderWetDry       = .FALSE.
+      SwanTM01Descript % alternate_value      = -99999.0
+      SwanTM01Descript % file_basename        = "swan_TM01"
+      SwanTM01Descript % file_extension       = 63
+      SwanTM01Descript % field_name           = "swan_TM01"
+      SwanTM01Descript % startTimeStep        = NTCYSGW
+      SwanTM01Descript % endTimeStep          = NTCYFGW
+      SwanTM01Descript % outputTimeStepIncrement = NSPOOLGW
+      SwanTM01Descript % spoolCounter         => SWAN_TM01_SPOOL
+      SwanTM01Descript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      SwanTM01Descript % writeFlag            = .true.
+     
+      IF(SWAN_OutputTM01)THEN
+          SwanTM01MaxDescript % specifier        = NOUTGW
+      ELSE
+          SwanTM01MaxDescript % specifier        = OFF
+      ENDIF
+      SwanTM01MaxDescript % lun                  = 318
+      SwanTM01MaxDescript % initial_value        = 0.0
+      SwanTM01MaxDescript % num_items_per_record = 1
+      SwanTM01MaxDescript % num_fd_records       = NP_G
+      SwanTM01MaxDescript % num_records_this     = NP
+      SwanTM01MaxDescript % imap                 => NODES_LG
+      SwanTM01MaxDescript % array                => SWAN_TM01MaxOut
+      SwanTM01MaxDescript % array_g              => SWAN_TM01MaxOut_g
+      SwanTM01MaxDescript % ConsiderWetDry       = .FALSE.
+      SwanTM01MaxDescript % alternate_value      = -99999.0
+      SwanTM01MaxDescript % file_basename        = "swan_TM01_max"
+      SwanTM01MaxDescript % file_extension       = 63
+      SwanTM01MaxDescript % field_name           = "swan_TM01_max"
+      SwanTM01MaxDescript % writeFlag            = .false.
+
+C.....Peak Wave Period (TPS)
+      IF(SWAN_OutputTPS)THEN
+          SwanTPSDescript % specifier        = NOUTGW
+      ELSE
+          SwanTPSDescript % specifier        = OFF
+      ENDIF
+      SwanTPSDescript % lun                  = 304
+      SwanTPSDescript % filepos              => SWAN_TPS_POS
+      SwanTPSDescript % initial_value        = 0.0
+      SwanTPSDescript % num_items_per_record = 1
+      SwanTPSDescript % num_fd_records       = NP_G
+      SwanTPSDescript % num_records_this     = NP
+      SwanTPSDescript % imap                 => NODES_LG
+      SwanTPSDescript % array                => SWAN_TPSOut
+      SwanTPSDescript % array_g              => SWAN_TPSOut_g
+      SwanTPSDescript % ConsiderWetDry       = .FALSE.
+      SwanTPSDescript % alternate_value      = -99999.0
+      SwanTPSDescript % file_basename        = "swan_TPS"
+      SwanTPSDescript % file_extension       = 63
+      SwanTPSDescript % field_name           = "swan_TPS"
+      SwanTPSDescript % startTimeStep        = NTCYSGW
+      SwanTPSDescript % endTimeStep          = NTCYFGW
+      SwanTPSDescript % outputTimeStepIncrement = NSPOOLGW
+      SwanTPSDescript % spoolCounter         => SWAN_TPS_SPOOL
+      SwanTPSDescript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      SwanTPSDescript % writeFlag            = .true.
+      
+      IF(SWAN_OutputTPS)THEN
+          SwanTPSMaxDescript % specifier        = NOUTGW
+      ELSE
+          SwanTPSMaxDescript % specifier        = OFF
+      ENDIF
+      SwanTPSMaxDescript % lun                  = 319
+      SwanTPSMaxDescript % initial_value        = 0.0
+      SwanTPSMaxDescript % num_items_per_record = 1
+      SwanTPSMaxDescript % num_fd_records       = NP_G
+      SwanTPSMaxDescript % num_records_this     = NP
+      SwanTPSMaxDescript % imap                 => NODES_LG
+      SwanTPSMaxDescript % array                => SWAN_TPSMaxOut
+      SwanTPSMaxDescript % array_g              => SWAN_TPSMaxOut_g
+      SwanTPSMaxDescript % ConsiderWetDry       = .FALSE.
+      SwanTPSMaxDescript % alternate_value      = -99999.0
+      SwanTPSMaxDescript % file_basename        = "swan_TPS_max"
+      SwanTPSMaxDescript % file_extension       = 63
+      SwanTPSMaxDescript % field_name           = "swan_TPS_max"
+      SwanTPSMaxDescript % writeFlag            = .false.
+
+C.....SWAN Wind Values (WINDX,WINDY)
+      IF(SWAN_OutputWind)THEN
+          SwanWindDescript % specifier        = NOUTGW
+      ELSE
+          SwanWindDescript % specifier        = OFF
+      ENDIF
+      SwanWindDescript % lun                  = 305
+      SwanWindDescript % filepos              => SWAN_WIND_POS
+      SwanWindDescript % initial_value        = 0.0
+      SwanWindDescript % num_items_per_record = 2
+      SwanWindDescript % num_fd_records       = NP_G
+      SwanWindDescript % num_records_this     = NP
+      SwanWindDescript % imap                 => NODES_LG
+      SwanWindDescript % array                => SWAN_WindXOut
+      SwanWindDescript % array_g              => SWAN_WindXOut_g
+      SwanWindDescript % array2               => SWAN_WindYOut
+      SwanWindDescript % array2_g             => SWAN_WindYOut_g
+      SwanWindDescript % ConsiderWetDry       = .FALSE.
+      SwanWindDescript % alternate_value      = -99999.0
+      SwanWindDescript % file_basename        = "swan_WIND"
+      SwanWindDescript % file_extension       = 64
+      SwanWindDescript % field_name           = "swan_WIND"
+      SwanWindDescript % startTimeStep        = NTCYSGW
+      SwanWindDescript % endTimeStep          = NTCYFGW
+      SwanWindDescript % outputTimeStepIncrement = NSPOOLGW
+      SwanWindDescript % spoolCounter         => SWAN_WIND_SPOOL
+      SwanWindDescript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      SwanWindDescript % writeFlag            = .true.
+      
+      IF(SWAN_OutputWind)THEN
+          SwanWindMaxDescript % specifier        = NOUTGW
+      ELSE
+          SwanWindMaxDescript % specifier        = OFF
+      ENDIF
+      SwanWindMaxDescript % lun                  = 320
+      SwanWindMaxDescript % initial_value        = 0.0
+      SwanWindMaxDescript % num_items_per_record = 1
+      SwanWindMaxDescript % num_fd_records       = NP_G
+      SwanWindMaxDescript % num_records_this     = NP
+      SwanWindMaxDescript % imap                 => NODES_LG
+      SwanWindMaxDescript % array                => SWAN_WindMaxOut
+      SwanWindMaxDescript % array_g             => SWAN_WindMaxOut_g
+      SwanWindMaxDescript % ConsiderWetDry       = .FALSE.
+      SwanWindMaxDescript % alternate_value      = -99999.0
+      SwanWindMaxDescript % file_basename        = "swan_WIND_max"
+      SwanWindMaxDescript % file_extension       = 63
+      SwanWindMaxDescript % field_name           = "swan_WIND_max"
+      SwanWindMaxDescript % writeFlag            = .false.
+
+C.....Mean Wave Period (TM02)
+      IF(SWAN_OutputTM02)THEN
+          SwanTM02Descript % specifier        = NOUTGW
+      ELSE
+          SwanTM02Descript % specifier        = OFF
+      ENDIF
+      SwanTM02Descript % lun                  = 306
+      SwanTM02Descript % filepos              => SWAN_TM02_POS
+      SwanTM02Descript % initial_value        = 0.0
+      SwanTM02Descript % num_items_per_record = 1
+      SwanTM02Descript % num_fd_records       = NP_G
+      SwanTM02Descript % num_records_this     = NP
+      SwanTM02Descript % imap                 => NODES_LG
+      SwanTM02Descript % array                => SWAN_TM02Out
+      SwanTM02Descript % array_g              => SWAN_TM02Out_g
+      SwanTM02Descript % ConsiderWetDry       = .FALSE.
+      SwanTM02Descript % alternate_value      = -99999.0
+      SwanTM02Descript % file_basename        = "swan_TM02"
+      SwanTM02Descript % file_extension       = 63
+      SwanTM02Descript % field_name           = "swan_TM02"
+      SwanTM02Descript % startTimeStep        = NTCYSGW
+      SwanTM02Descript % endTimeStep          = NTCYFGW
+      SwanTM02Descript % outputTimeStepIncrement = NSPOOLGW
+      SwanTM02Descript % spoolCounter         => SWAN_TM02_SPOOL
+      SwanTM02Descript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      SwanTM02Descript % writeFlag            = .true.
+      
+      IF(SWAN_OutputTM02)THEN
+          SwanTM02MaxDescript % specifier        = NOUTGW
+      ELSE
+          SwanTM02MaxDescript % specifier        = OFF
+      ENDIF
+      SwanTM02MaxDescript % lun                  = 321
+      SwanTM02MaxDescript % initial_value        = 0.0
+      SwanTM02MaxDescript % num_items_per_record = 1
+      SwanTM02MaxDescript % num_fd_records       = NP_G
+      SwanTM02MaxDescript % num_records_this     = NP
+      SwanTM02MaxDescript % imap                 => NODES_LG
+      SwanTM02MaxDescript % array                => SWAN_TM02MaxOut
+      SwanTM02MaxDescript % array_g             => SWAN_TM02MaxOut_g
+      SwanTM02MaxDescript % ConsiderWetDry       = .FALSE.
+      SwanTM02MaxDescript % alternate_value      = -99999.0
+      SwanTM02MaxDescript % file_basename        = "swan_TM02_max"
+      SwanTM02MaxDescript % file_extension       = 63
+      SwanTM02MaxDescript % field_name           = "swan_TM02_max"
+      SwanTM02MaxDescript % writeFlag            = .false.
+
+C.....Mean Wave Period (TMM10)
+      IF(SWAN_OutputTMM10)THEN
+          SwanTMM10Descript % specifier        = NOUTGW
+      ELSE
+          SwanTMM10Descript % specifier        = OFF
+      ENDIF
+      SwanTMM10Descript % lun                  = 307
+      SwanTMM10Descript % filepos              => SWAN_TMM10_POS
+      SwanTMM10Descript % initial_value        = 0.0
+      SwanTMM10Descript % num_items_per_record = 1
+      SwanTMM10Descript % num_fd_records       = NP_G
+      SwanTMM10Descript % num_records_this     = NP
+      SwanTMM10Descript % imap                 => NODES_LG
+      SwanTMM10Descript % array                => SWAN_TMM10Out
+      SwanTMM10Descript % array_g              => SWAN_TMM10Out_g
+      SwanTMM10Descript % ConsiderWetDry       = .FALSE.
+      SwanTMM10Descript % alternate_value      = -99999.0
+      SwanTMM10Descript % file_basename        = "swan_TMM10"
+      SwanTMM10Descript % file_extension       = 63
+      SwanTMM10Descript % field_name           = "swan_TMM10"
+      SwanTMM10Descript % startTimeStep        = NTCYSGW
+      SwanTMM10Descript % endTimeStep          = NTCYFGW
+      SwanTMM10Descript % outputTimeStepIncrement = NSPOOLGW
+      SwanTMM10Descript % spoolCounter         => SWAN_TMM10_SPOOL
+      SwanTMM10Descript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      SwanTMM10Descript % writeFlag            = .true.
+      
+      IF(SWAN_OutputTMM10)THEN
+          SwanTMM10MaxDescript % specifier        = NOUTGW
+      ELSE
+          SwanTMM10MaxDescript % specifier        = OFF
+      ENDIF
+      SwanTMM10MaxDescript % lun                  = 322
+      SwanTMM10MaxDescript % initial_value        = 0.0
+      SwanTMM10MaxDescript % num_items_per_record = 1
+      SwanTMM10MaxDescript % num_fd_records       = NP_G
+      SwanTMM10MaxDescript % num_records_this     = NP
+      SwanTMM10MaxDescript % imap                 => NODES_LG
+      SwanTMM10MaxDescript % array               => SWAN_TMM10MaxOut
+      SwanTMM10MaxDescript % array_g             => SWAN_TMM10MaxOut_g
+      SwanTMM10MaxDescript % ConsiderWetDry       = .FALSE.
+      SwanTMM10MaxDescript % alternate_value      = -99999.0
+      SwanTMM10MaxDescript % file_basename        = "swan_TMM10_max"
+      SwanTMM10MaxDescript % file_extension       = 63
+      SwanTMM10MaxDescript % field_name           = "swan_TMM10_max"
+      SwanTMM10MaxDescript % writeFlag            = .false.
+
+
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
+      RETURN
+C-----------------------------------------------------------------------
+      END SUBROUTINE initSwanOutput
+C-----------------------------------------------------------------------
+#endif
+
+C-----------------------------------------------------------------------
+C      S U B R O U T I N E   I N I T   I N U N D A T I O N   O U T P U T
+C-----------------------------------------------------------------------
+C     jgf52.08.01: Initialize output variables and arrays for detailed
+C     inundation output. These variables must be initialized prior
+C     to the call to initOutput2D() because the initiallyDry array
+C     depends on the coldstart values in the nnodecode array, which
+C     are not available after the call to hstart().
+C
+C     The initiallydry.63 file must be written during the initialization
+C     process (coldstart and hotstart), rather than waiting for the first
+C     call to writeOutput2D().
+C-----------------------------------------------------------------------
+      subroutine initInundationOutput()
+      use sizes, only : mnp, globaldir, localdir, write_local_files, 
+     &    OFF, ASCII, NETCDF3, NETCDF4, XDMF, mnproc, myproc, numFormats
+      use global, only : nnodecode, np_g, OutputDataDescript_t, noutge,
+     &    fauxFilePosition, nodes_lg
+      use global_io, only : writeDomainHeader, packOne, unpackOne
+      use mesh, only : np
+#ifdef ADCNETCDF
+      use netcdfio, only : initNetCDFOutputFile
+#endif
+      implicit none
+      logical :: nerr = .false. !.true. if there was an issue with netcdf init
+      call setMessageSource("initInundationOutput")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      ! jgf52.08.01: Additions for detailed inundation output. 
+      allocate(initiallyDry(mnp))
+      allocate(endRisingInun(mnp))
+      allocate(maxInunDepth(mnp))
+      allocate(maxInunDepth_time(mnp))
+      allocate(penultimateNodeCode(mnp))
+      allocate(inundationTime(mnp))
+      allocate(inundationTime_onset(mnp))
+      allocate(everDried(mnp))
+      allocate(everDried_time(mnp))
+
+      initiallyDry(:) = 0
+      
+      where (nnodecode.eq.0) 
+         initiallyDry = 1
+      end where
+      endRisingInun(:) = 0
+      maxInunDepth(:) = -99999.d0 
+      maxInunDepth_time(:) = 0.d0 
+      penultimateNodeCode(:) = 0
+      inundationTime(:) = 0.d0       
+      inundationTime_onset(:) = -99999.d0
+      everDried(:) = 1.d0
+      everDried_time = -99999.d0        
+      !
+      ! initiallydry.63 (nodes that are deemed dry upon cold start)
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         allocate(initiallyDry_g(NP_G))
+         initiallyDry_g(:) = 0  ! all wet by default
+      ENDIF
+      InitiallyDryDescript % lun                  = 402
+      InitiallyDryDescript % specifier            = NOUTGE
+      InitiallyDryDescript % iarray               => initiallyDry
+      InitiallyDryDescript % iarray_g             => initiallyDry_g
+      InitiallyDryDescript % field_name           = 'initiallyDry'
+      InitiallyDryDescript % file_basename        = 'initiallydry'
+      InitiallyDryDescript % file_extension       = 63
+      InitiallyDryDescript % filepos              => fauxFilePosition
+      InitiallyDryDescript % isInteger            = .true.
+      InitiallyDryDescript % writeFlag            = .false.
+      InitiallyDryDescript % initial_value        = 0.0
+      InitiallyDryDescript % num_items_per_record = 1
+      InitiallyDryDescript % num_fd_records       = np_g
+      InitiallyDryDescript % num_records_this     = np
+      InitiallyDryDescript % imap                 => nodes_lg                     
+      InitiallyDryDescript % considerWetDry       = .false.            
+      InitiallyDryDescript % alternate_value      = -99999.0
+      InitiallyDryDescript % isStation            = .false.  
+      InitiallyDryDescript % divideByDepth        = .false.  
+      allocate(InitiallyDryDescript % writerFormats(numFormats))
+      InitiallyDryDescript % writerFormats(:)     = -99999
+      InitiallyDryDescript % useWriter            = .false.
+      InitiallyDryDescript % initialized          = .false.
+      InitiallyDryDescript % minmax_timestamp     = .false.
+      InitiallyDryDescript % readMaxMin           = .false.
+
+      if ( WRITE_LOCAL_FILES.eqv..true. ) then
+         InitiallyDryDescript % file_name = 
+     &       trim(localdir)//'/'//'initiallydry.63'
+      else
+         InitiallyDryDescript % file_name =       
+     &        trim(globaldir)//'/'//'initiallydry.63'
+      endif      
+      if ( InitiallyDryDescript % specifier .eq. XDMF ) then
+         InitiallyDryDescript % specifier = ASCII
+      endif     
+      ! 
+      select case(abs(InitiallyDryDescript % specifier))
+      case(OFF)
+         ! don't need to initialize or write anything
+      case(ASCII) 
+         if ( WRITE_LOCAL_FILES.eqv..true. ) then
+            call writeDomainHeader(402,
+     &      trim(localdir)//'/'//'initiallydry.63',
+     &             NP_G, NP, 'initDry   ')
+         else
+            if (myproc.eq.0) then
+               call writeDomainHeader(402,
+     &         trim(globaldir)//'/'//'initiallydry.63',
+     &             NP_G, NP, 'initDry   ')
+            endif
+         endif
+#ifdef ADCNETCDF         
+      case(NETCDF3,NETCDF4)
+         ! jgf52.08.05: Only processor 0 needs to initialize the file.
+         if (myproc.eq.0) then
+            call initNetCDFOutputFile(InitiallyDryDescript, nerr)
+            if (nerr.eqv..true.) then
+               call allMessage(ERROR,
+     &      'There was an issue with NetCDF file initialization for "'//
+     &        trim(InitiallyDryDescript%file_name)//'".')
+               call terminate()         
+            endif
+         endif
+         InitiallyDryDescript % initialized = .true.
+#endif
+      case default
+         call allMessage(ERROR,'The initiallydry.63 file cannot '//
+     &      'be written in the specified format.')
+      end select
+      !
+      ! Now write the data rather than waiting for the call to 
+      ! writeOutput2D() at the end of the timestepping loop.    
+      call writeOutArray(0.d0, 1, InitiallyDryDescript, 
+     &     packOne, unpackOne)
+
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      end subroutine initInundationOutput
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C                     S U B R O U T I N E
+C         C O L L E C T   I N U N D A T I O N   D A T A
+C-----------------------------------------------------------------------
+C     jgf52.08.01: Collect data used for inundation output.
+C-----------------------------------------------------------------------
+      subroutine collectInundationData(timeloc, it)
+      use sizes, only : mnp
+      use global, only : nodecode, dtdp, eta1, eta2, nt, inunThresh
+      use mesh, only : dp
+      implicit none
+      real(8), intent(in) :: timeloc ! time in s since cold start
+      integer, intent(in) :: it     ! timesteps since cold start
+
+      call setMessageSource("collectInundationData")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ! 
+      ! Accumulate total time inundated in initally dry areas
+      ! that are currently wet and have a total water depth greater
+      ! than the specified threshold. 
+      !
+      ! jgf52.08.03: The original code I received compared eta2 (water
+      ! surface elevation relative to the mesh datum) to the inundation 
+      ! threshold (e.g., inunThresh=0.6), but I don't think that 
+      ! makes sense. So I changed this code so it compares the inundation
+      ! threshold to the total water depth.  
+      where ( (initiallyDry.eq.1).and.(nodecode.eq.1).and.
+     &            ((eta2+dp).ge.inunThresh) )
+         inundationTime = inundationTime + dtdp
+      end where
+      !
+      ! record the time of onset of inundation beyond the threshold
+      where ( (initiallyDry.eq.1).and.(nodecode.eq.1).and.
+     &         ((eta2+dp).ge.inunThresh).and.
+     &         (inundationTime_onset.lt.0.d0) )
+            inundationTime_onset = timeloc
+      end where
+      !
+      ! jgf52.08.01: I don't understand why we are accumulating 
+      ! inundation time in normally wet areas but I am keeping this
+      ! here for backward compatibility.
+      where ( initiallyDry.eq.0 )
+         inundationTime = inundationTime + dtdp
+         inundationTime_onset = 0.d0
+      end where
+      ! 
+      ! Record the maximum depth of inundation in initially dry areas
+      ! that are currently wet with a total water depth greater than the 
+      ! threshold value. 
+      where ( (initiallyDry.eq.1).and.(nodecode.eq.1).and.
+     &             ((eta2+dp).gt.maxInunDepth) )
+         maxInunDepth = eta2 + dp
+         ! record time of occurrence for the maximum inundation
+         maxInunDepth_time = timeloc
+      end where 
+      !
+      ! On the next to last time step, record the wet/dry state
+      if (it.eq.nt-1) then
+         endRisingInun(:) = 0
+         penultimateNodeCode(:) = nodecode(:)
+      endif
+      !
+      ! For nodes that were initially dry, but wet on the next-to-last
+      ! time step, and are experiencing increasing water level on the
+      ! last time step set a flag.
+      ! jgf52.08.03: Added a check to make sure the node is also wet
+      ! on the very last time step, just in case. 
+      if (it.eq.nt) then
+         where ( (initiallyDry.eq.1).and.(penultimateNodeCode.eq.1)
+     &           .and. (nodecode.eq.1) .and. (eta2.gt.eta1) )
+            endRisingInun = 1
+         end where
+      endif
+      !
+      ! jgf52.08.15: Adding everDried data set for use with keeping
+      ! track of which nodes have dried because this affects the 
+      ! computation of harmonic analysis results
+      where ( nodecode.eq.0 ) 
+         everDried = -99999.d0
+         ! record the total amount of time this node was dry during the
+         ! simulation
+         everDried_time = everDried_time + dtdp
+      end where
+      
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      end subroutine collectInundationData
+C-----------------------------------------------------------------------
+
+
+
+C-----------------------------------------------------------------------
+C                     S U B R O U T I N E
+C            C O L L E C T   M I N   M A X   D A T A
+C-----------------------------------------------------------------------
+C     jgf52.08.01: Collect data used for min/max output. Removed
+C     from subroutine timestep() and placed here.
+C-----------------------------------------------------------------------
+      subroutine collectMinMaxData(timeloc)
+      use global, only : nodecode, eta2, uu2, vv2, pr2, wvnxout, wvnyout,
+     &  rsnx2, rsny2, etamax, etamax_time, umax, umax_time, prmin,
+     &  prmin_time, wvnoutmax, wvnoutmax_time, rsnmax, rsnmax_time
+      use mesh, only : np
+      implicit none
+      real(8), intent(in) :: timeloc ! time in s since cold start
+      real(sz), allocatable, save :: minMaxTemp(:) ! temp value for min/max comparisons
+      integer :: i
+
+      call setMessageSource("collectMinMaxData")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ! jgf52.08.20: Allocate space for temp calculations.
+      if (allocated(minMaxTemp).eqv..false.) then
+         allocate(minMaxTemp(np))
+      endif
+
+C...  jgf50.44: Collect time that min/max occurs as well.
+      where ( (nodecode.eq.1).and.(eta2.gt.etamax) ) 
+         etamax = eta2
+         etamax_time = timeLoc !tcm v51.20.01
+      end where
+      
+      minMaxTemp = uu2**2+vv2**2
+      where ( minMaxTemp.gt.umax**2 )
+         umax = sqrt(uu2**2+vv2**2)
+         umax_time = timeLoc   !tcm v51.20.01
+      end where
+      
+      where (pr2.lt.prmin) 
+         prmin = pr2
+         prmin_time = timeLoc !tcm v51.20.01
+      end where
+      
+      minMaxTemp = wvnxout**2+wvnyout**2 
+      where (minMaxTemp.gt.wvnoutmax**2)
+         wvnoutmax = sqrt(wvnxout**2+wvnyout**2)
+         wvnoutmax_time = timeLoc
+      end where
+
+      minMaxTemp = rsnx2**2+rsny2**2       
+      where (minMaxTemp.gt.rsnmax**2) 
+         rsnmax = sqrt(rsnx2**2+rsny2**2)
+         rsnmax_time = timeLoc
+      end where
+
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      end subroutine collectMinMaxData
+C-----------------------------------------------------------------------
+
+
+      !-----------------------------------------------------------------
+      end module write_output
+      !-----------------------------------------------------------------

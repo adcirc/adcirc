@@ -11,8 +11,8 @@ C******************************************************************************
 
 
       SUBROUTINE VSSTUP()
-c      USE GLOBAL, ONLY : ScreenUnit !jgfdebug
       USE GLOBAL_3DVS
+      USE MESH, ONLY : NP      
       IMPLICIT NONE
       INTEGER :: NH, N
 C
@@ -99,23 +99,23 @@ c                                                                             *
 c******************************************************************************
 
       SUBROUTINE VSSOL(IT,TimeLoc)
-Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit,
 C   kmd48.33bc added variable declarations for baroclinic boundary conditions
 c.RJW merged 08282008 Casey 071219: Added the following variable declarations from GLOBAL.
-      USE GLOBAL, ONLY : NODELE, NODECODE, NOFF,
-     &                   NETA, NBD, RES_BC_FLAG,
+      USE GLOBAL, ONLY : NODECODE, NOFF,
+     &                   RES_BC_FLAG,
      &                   SBCTIME1, SBCTIME2, TBCTIME1,
      &                   TBCTIME2, SBCTIMEINC, TBCTIMEINC,
      &                   SBCRATIO, TBCRATIO, sponge,
-     &                   BCFLAG_TEMP, SFAC, BCRivRATIO,
-     &                   RIVBCTIMINC, RIVBCTIME1, RIVBCTIME2,
-     &                   totalbcrivernodes, NOPE,
-     &                   TK
-Cjgfdebug     &      , H0
+     &                   BCFLAG_TEMP, BCRivRATIO,
+     &                   RIVBCTIMINC, RIVBCTIME1, RIVBCTIME2,TK,
 Casey 140701: Prevent depths from becoming negative in bottom roughness calculations.
-     &               , H0
-
+     &                   H0
       USE GLOBAL_3DVS
+      USE WRITE_OUTPUT, ONLY : writeOutput3D
+      USE MESH, ONLY : NP, DP, NM, X, Y, NODELE, AREAS, LBArray_Pointer,  
+     &                  NEITABELE, NEITAB, NNEIGH, SFAC
+      USE BOUNDARIES, ONLY : NOPE, NETA, NBD, LBCODEI, 
+     &   BndBCRiver, totalbcrivernodes, SIII, CSII
       USE NodalAttributes, ONLY: EVM,
      &     ManningsN, LoadManningsN,
 Corbitt 120328: Local Advection
@@ -123,11 +123,8 @@ Corbitt 120328: Local Advection
      &     Z0b_var, LoadZ0B_var
 #ifdef CMPI
       USE MESSENGER
+#endif      
       IMPLICIT NONE
-Cjgfdebug      REAL(SZ) :: DUMV1(1),DUMV2(1)
-#else
-      IMPLICIT NONE
-#endif
 
 c.RJW merged 08282008 Casey 071219: Added the following local variable declarations.
       INTEGER :: NCELE
@@ -263,7 +260,8 @@ Cjgfdebug      COMPLEX(SZ) :: UnDqDX,VnDqDY  !derivatives used in lateral advect
       COMPLEX(SZ) :: DqDX2A(MNFEN)  !horizontal derivatives of complex
       COMPLEX(SZ) :: DqDY2A(MNFEN)  !velocity used in w calc
 ! arash Feb/18/2016
-      REAL(SZ)    :: length, length_max, Neighbor_Node
+      INTEGER     :: Neighbor_Node
+      REAL(SZ)    :: length, length_max
       REAL(SZ)    :: velocity_magnitude, element_peclet_number
 
 C   kmd48.33bc added the following variables for boundary conditions
@@ -2756,7 +2754,6 @@ Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
 Cjgfdebug      USE GLOBAL_3DVS, EXCEPT_BSX => BSX ,EXCEPT_BSY => BSY
       USE GLOBAL_3DVS
 Crjwdebug     USE NodalAttributes, ONLY : Z0B_var
-C>>>>>>> IOOS_w_3D/src/vsmy.F
       IMPLICIT NONE
 
       COMPLEX(SZ) :: dQdz,dQdz1,dQdz2
@@ -4039,7 +4036,8 @@ C   kmd48.33bc need to add variables for new equation of state
      &                        SIGMA, EQNSTATE, A, B, setMessageSource,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
 Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
-      USE GLOBAL, ONLY : NP,RHOWAT0, DP, ETA2, IFNLFA, G
+      USE GLOBAL, ONLY : RHOWAT0, ETA2, IFNLFA, G
+      USE MESH, ONLY : NP, DP
       IMPLICIT NONE
       INTEGER NH,N
       REAL(SZ) :: T_alpha=0.00017d0, S_beta=0.00076d0
@@ -4302,7 +4300,8 @@ C*****************************************************************************
 
        Subroutine Gaussian_filter_complex ( X, Y, NeiTab, NNeigh, quantity, NP, NFEN, MNEI )
 
-       Use Global,      Only : IFNLFA, DP, ETA2
+       Use Global,      Only : IFNLFA, ETA2
+       Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B, Biharmonic_viscosity_modified_Leith
 
        Implicit none
@@ -4497,7 +4496,8 @@ C*****************************************************************************
 
        Subroutine Gaussian_filter_complex_new ( X, Y, NeiTab, NNeigh, quantity, NP, NFEN, MNEI )
 
-       Use Global,      Only : IFNLFA, DP, ETA2
+       Use Global,      Only : IFNLFA, ETA2
+       USE Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B, Biharmonic_viscosity_modified_Leith
 
        Implicit none
@@ -4814,7 +4814,8 @@ C**********************************************************************
 
        Subroutine Gaussian_filter_real ( X, Y, NeiTab, NNeigh, quantity, NP, NFEN, MNEI )
 
-       Use Global,      Only : IFNLFA, DP, ETA2
+       Use Global,      Only : IFNLFA, ETA2
+       Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B, qkp1, Biharmonic_viscosity_modified_Leith
 
        Implicit none
@@ -5130,4 +5131,41 @@ C*************************************************************************
 C**********************************************************************
       END SUBROUTINE linear_vertical_interpolation_real
 C**********************************************************************
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      B I N A R Y   W R I T E   2 D
+C--------------------------------------------------------------------
+C     jgf49.49.01: Writes a real(sz) array with the specified length
+C     to a binary hotstart file; takes the file counter as an
+C     input argument and returns the new value of the file counter
+C     at the end of the write.
+C--------------------------------------------------------------------
+      SUBROUTINE binaryWrite2D(array, length, lun, counter)
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, DEBUG,
+     &                    allMessage
+      IMPLICIT NONE
+      REAL(SZ), intent(in), dimension(length) :: array ! data to write
+      INTEGER, intent(in) :: length  ! the number of values to write
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to write to
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+C
+      INTEGER i      ! array index
+C
+      call setMessageSource("binaryWrite2D")
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+       DO i=1, length
+          WRITE(lun,REC=counter) array(i)
+          counter = counter + 1
+       END DO
+C
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE binaryWrite2D
+C--------------------------------------------------------------------
 

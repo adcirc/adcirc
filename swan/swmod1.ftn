@@ -26,7 +26,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -184,7 +184,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -306,7 +306,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -409,7 +409,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -552,7 +552,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -621,11 +621,11 @@
 !
 !  6. Parameter variables
 !
-!     NMOVAR [  74]  maximum number of output variables                   40.85 40.64 40.61 40.51 40.21 40.41
+!     NMOVAR [ 171]  maximum number of output variables                   41.62 40.85 40.64 40.61 40.51 40.21 40.41
 !     MOUTPA [  50]  number of output parameters                          40.87
 !
       INTEGER NMOVAR, MOUTPA
-      PARAMETER (NMOVAR = 74, MOUTPA=50)                                  40.35 41.15 40.85 40.87 40.64 40.61 40.51 40.21 40.41
+      PARAMETER (NMOVAR = 171, MOUTPA=50)                                 41.62 40.35 41.15 40.85 40.87 40.64 40.61 40.51 40.21 40.41
 !
 !  7. Local variables
 !
@@ -1426,7 +1426,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1499,6 +1499,7 @@
 ! grid(13): fluid mud layer
 !
 ! ALPG(NUMGRD)  [    0.] direction of the x-axis w.r.t. user coordinates
+! CCURV         [ FALSE] correction curvilinear grid
 ! COSPG(NUMGRD) [    1.] cos of ALPG
 ! COSVC         [CALCUL] =COS(-ALPG(2)),
 !                        cos of angle of current input grid w.r.t. user coordinates
@@ -1570,6 +1571,7 @@
       LOGICAL VARWI,       VARWLV,      DYNDEP
       LOGICAL VARAST
       LOGICAL VARNPL,      VARTUR,      VARMUD
+      LOGICAL CCURV                                                       41.53
 !
 !     *** variables for input files ***
 !
@@ -1633,7 +1635,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1914,6 +1916,7 @@
 !                  direction of user coordinates w.r.t. computational coordinates
 ! ALOCMP [ FALSE]  if True, array COMPDA must be re-allocated
 ! ALPC   [    0.]  direction of x-axis of computational grid w.r.t. user coordinates
+! COSLAT [    10]  cos of latitude; =1 for Cartesian coordinates
 ! COSPC  [CALCUL] =COS(ALPC)
 ! DX     [CALCUL] =XCLEN/MXS; mesh size in x-direction of computational grid
 ! DY     [CALCUL] =YCLEN/MYS; mesh size in y-direction of computational grid
@@ -1970,6 +1973,7 @@
       INTEGER             MXC,         MYC,         NX,          NY
       INTEGER             NGRBND
       INTEGER             ILMAX
+      REAL                COSLAT(MICMAX)
       REAL                ALCP,        ALPC,        COSPC,       DDIR
       REAL                DX,          DXRP,        DY,          DYRP
       REAL                FRINTF,      FRINTH,      SHIG,        SINPC
@@ -1979,7 +1983,7 @@
       REAL                XCGMIN,      XCGMAX,      YCGMIN,      YCGMAX
       LOGICAL             FULCIR
       LOGICAL ::          ALOCMP = .FALSE.                                40.97
-!$OMP THREADPRIVATE(IXCGRD,IYCGRD,KCGRD)
+!$OMP THREADPRIVATE(IXCGRD,IYCGRD,KCGRD,COSLAT)
 !
 !     *** physical parameters ***
 !
@@ -2540,7 +2544,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2630,7 +2634,6 @@
 !
 !     *** higher order propagation and spherical coordinates ***
 !
-! COSLAT [    10] cos of latitude; =1 for Cartesian coordinates
 ! KREPTX [     0] if >0, the domain repeats itself in x-direction (primarily intended for
 !                 propagation around the globe)
 ! KSPHER [     0] indicates whether spherical coordinates are used, and which projection method
@@ -2655,8 +2658,7 @@
       INTEGER PROPSS,    PROPSN,    PROJ_METHOD
       INTEGER PROPFL
       REAL    WAVAGE,    REARTH,    LENDEG
-      REAL    COSLAT(10)
-!$OMP THREADPRIVATE(COSLAT,PROPSL)
+!$OMP THREADPRIVATE(PROPSL)
 !
 !  8. Subroutines and functions used
 !
@@ -2696,7 +2698,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as

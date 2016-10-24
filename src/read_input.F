@@ -19,20 +19,24 @@ C-----------------------------------------------------------------------
       SUBROUTINE READ_INPUT()
       USE SIZES               !since GLOBAL uses SIZES, is this necessary?
       USE GLOBAL
+      USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP,
+     &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries, 
+     &   freeMesh
+      USE BOUNDARIES, ONLY : ANGINN, COSTSET, NETA, NVEL, NVELME, 
+     &   NFLUXF, NBD, ME2GW, LBCODEI, NBV
       USE GLOBAL_IO
       USE KDTREE2_MODULE     ! V49.48.02 tcm -- added for fast searching
       USE GLOBAL_3DVS, ONLY: C3D_PTrans, NSTA3DD, NSTA3DV, NSTA3DT,
      &    I3DSD,I3DSV,I3DST,I3DGD,I3DGV,I3DGT, NSTA3DD_G, NSTA3DV_G,
      &    NSTA3DT_G
+      USE SUBDOMAIN, ONLY : subdomainOn
+      USE WRITE_OUTPUT, ONLY : outputNodeCode, outputNOFF
       USE HARM
+      USE WEIR
+      USE TIME_VARYING_WEIR_BOUNDARY
       USE WIND
       USE ITPACKV
-C#ifdef CMPI      
-C      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate,ADCIRC_LOCALTERMINATE,
-C     &  ADCIRC_CHECKLOCALTERMINATE
-C#else
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate    
-C#endif     
       USE VERSION
 !     jgf46.00
       USE NodalAttributes, ONLY :
@@ -47,18 +51,14 @@ Casey 100205: Enable hot-start file generation by SWAN.
       USE Couple2Swan, ONLY: SwanHotStartUnit
 #endif
       IMPLICIT NONE
-      INTEGER I, J, K, N, ICK, IPRBI                 !local loop counters
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
+      INTEGER NTimeVaryingWeir
       INTEGER IDUM80
       INTEGER IMDig1,IMDig2,IMDig3,IMDig4,IMDig5,IMDig6
       REAL(SZ) RampVal
-      REAL(SZ) ZNGFicNodeDist,ZNGFicNodeDistTemp
       CHARACTER(len=80) :: CDUM80
       LOGICAL fileFound
-!     v49.48.02 tcm added these local variable for computing
-!     multiple values like element radius and areas, etc...
-      REAL(SZ) X2MX1,X3MX2,X1MX3,Y2MY1,Y3MY2,Y1MY3
-      REAL(SZ) LENED1,LENED2,LENED3
+      INTEGER :: I, J, JKI
 C
 #if defined CSWAN || defined ADCSWAN
       ! jgf50.60.09: Namelist for turning SWAN output files on or off
@@ -66,19 +66,25 @@ C
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
-!
-! kmd - variables for river boundary condition in baroclinic simulation
-      INTEGER riverval, BCRiver
-      NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir
+      CHARACTER(len=1000) namelistSpecifier ! used in log messages
+      NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir,
+     &  invertedBarometerOnElevationBoundary
+      NAMELIST /subdomainModeling/ subdomainOn
+      NAMELIST /wetDryControl/ outputNodeCode, outputNOFF, noffActive
+      NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
+      NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
+     &                      TOUTF_TVW,NSPOOL_TVW
+      
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
+      CHARACTER(len=2000) :: origLineTVW
       INTEGER :: commentStart            ! location of fort.15 comment start
       INTEGER :: ios = 0                 ! i/o status of read operation
 
-      LOGICAL :: FLG_IBLEN2   ! TCM V51.15 20130906 ADDED for special case of
-                               ! interior boundaries of length 2 in parallel jobs
-      LOGICAL :: calcTheta    ! .true. if theta is to be calculated at a flux boundary node
-
+      !jgf51.52.35: for log messages about IDEN
+      character(len=100) :: densityRunType ! diagnostic or prognostic
+      character(len=100) :: densityDimensions ! 2DDI or 3D
+      character(len=100) :: densityForcingType ! sigmaT, salinity, etc
 
       !tcm v51.20.04 Additions for External Station Location File
       INTEGER :: IOS_STATIONS = 0
@@ -97,49 +103,10 @@ C
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       NAMELIST /waveCoupling/ WaveWindMultiplier
 
-#ifdef ADCNETCDF
-      LOGICAL, PARAMETER :: NETCDF_AVAIL = .true.
-#else
-      LOGICAL, PARAMETER :: NETCDF_AVAIL = .false.
-#endif
       call setMessageSource("read_input")
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-C
-C     jgf46.00 Zero out all the variables in the Nodal Attributes
-C     Module.
-      CALL initNAModule()
-C
-C     jgf50.32: Initialize default values in wind module.
-      CALL initWindModule()
-
-c     tcm v50.66.01 addition for time varying bathymetry
-      NDDT = 0  !set the default value for time varying bathymetry e.g. no changes
-      ios_nddt = 0
-C
-C...
-C...  OPEN UNIT 14 AND 15 INPUT FILES
-C...
-      fileFound = .false.
-      CALL openFileForRead(14,TRIM(INPUTDIR)//'/'//'fort.14',ios)
-      IF (ios.gt.0) THEN
-         CALL ADCIRC_Terminate()
-      ENDIF
-      CALL openFileForRead(15,TRIM(INPUTDIR)//'/'//'fort.15',ios)
-      IF (ios.gt.0) THEN
-         CALL ADCIRC_Terminate()
-      ENDIF
-
-
-C
-C...GENERAL PURPOSE FORMAT STATEMENTS
-C...
- 1112 FORMAT(/,1X,79('_'))
- 9972 FORMAT(////,1X,'!!!!!!!!!! INPUT ERROR !!!!!!!!!',/)
- 9973 FORMAT(/,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
- 9974 FORMAT(/,1X,'!!!!!! EXECUTION WILL CONTINUE !!!!!!!!',//)
-
 C...
 C...PRINT OUT HEADER FOR OUTPUT INCLUDING VERSION NUMBER AND COPYRIGHT
 C...
@@ -164,7 +131,6 @@ C...
      &     //,7X,
      &     'NO PART OF THIS CODE MAY BE REPRODUCED OR REDISTRIBUTED',
      &     /,10X,'WITHOUT THE WRITTEN PERMISSION OF THE AUTHORS',//)
-
 C...
 C...  WRITE OUT HEADER INFORMATION DESCRIBING HOW THE CODE HAS BE SET UP
 C...
@@ -195,9 +161,49 @@ C...
 #ifdef CSCA
       WRITE(16,*) '      - CODE OPTIMIZED FOR A SCALAR COMPUTER'
 #endif
+      write(16,1112) 
+C
+C     jgf46.00 Zero out all the variables in the Nodal Attributes
+C     Module.
+      CALL initNAModule()
+C
+C     jgf50.32: Initialize default values in wind module.
+      CALL initWindModule()
 
-      WRITE(16,*) '      - CODE WILL USE JCG ITERATIVE GWCE SOLVER'
-      WRITE(16,1112)
+c     tcm v50.66.01 addition for time varying bathymetry
+      NDDT = 0  !set the default value for time varying bathymetry e.g. no changes
+      ios_nddt = 0
+C
+      fileFound = .false.
+C
+C     jgf51.12.11: moved the reading of the mesh and boundaries file
+C     (called fort.14 by default) to the mesh module. Also added the
+C     capability to read different formats and use nondefault filenames
+C     via command line options in sizes.F.
+      call readMesh()
+C
+C     ALLOCATE ARRAYS Dimensioned by MNP and MNE
+      call alloc_main1a()
+      ! jgf51.21.13: Allocate boundary condition arrays dimensioned by
+      ! mnope and mneta
+      call alloc_main2()
+      ! jgf51.21.13: Allocate boundary condition arrays dimensioned by
+      ! mnvel 
+      call alloc_main3()
+C...
+C...  OPEN UNIT 15 INPUT FILE (control parameters and periodic boundary conditions)
+C...
+      CALL openFileForRead(15,TRIM(INPUTDIR)//'/'//'fort.15',ios)
+      IF (ios.gt.0) THEN
+         CALL ADCIRC_Terminate()
+      ENDIF
+C
+C...GENERAL PURPOSE FORMAT STATEMENTS for subtly expressed error messages
+C...
+ 1112 FORMAT(/,1X,79('_'))
+ 9972 FORMAT(////,1X,'!!!!!!!!!! INPUT ERROR !!!!!!!!!',/)
+ 9973 FORMAT(/,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
+ 9974 FORMAT(/,1X,'!!!!!! EXECUTION WILL CONTINUE !!!!!!!!',//)
 
 
 c...  tcm v50.66.02 Addtions for Time Varying Bathymetry
@@ -210,49 +216,43 @@ C...
 C...  After this search and read, we will close the file and then reopen it
 c...  for further processing the traditional non-namelist components.
 C...
+      namelistSpecifier = 'TimeBatyhControl'
       READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT) 
-
-      IF (IOS_NDDT < 0) THEN
-c.....   it is possible for the namelist to be present in the file and occuring at the end 
-c.....   of the file with no line breaks after the ending "\" which causes the iostat to 
-c.....   return a negative value.  By checking to be sure a namelist variable was set to
-c....    a non-default value we can determine this was the case.
-         IF (NDDT.NE.0) THEN
-!            WRITE(*,*) 'NAMELIST PRESENT, BUT AT THE END OF FILE WITH',
-!     &                 ' NO ADVANCING CHARACTER'
+      call logNamelistReadStatus(namelistSpecifier, ios_nddt)     
+c     it is possible for the namelist to be present in the file and 
+C     occuring at the end of the file with no line breaks after the 
+C     ending "\" which causes the iostat to return a negative value.
+C     By checking to be sure a namelist variable was set to
+c     a non-default value we can determine this was the case.
+      select case(ios_nddt)
+      case(:-1) 
+         if (nddt.ne.0) then
+            call allMessage(WARNING,
+     &        'TimeBathyControl NAMELIST PRESENT, BUT AT THE '
+     &     // 'END OF FILE WITH NO ADVANCING CHARACTER.')
             found_tbc_nml = .true.
-         ELSE
-!            WRITE(*,*) 'NAMELIST NOT PRESENT'
-         ENDIF
-      ELSEIF (IOS_NDDT == 0) THEN
-!         WRITE(*,*) 'NAME LIST PRESENT AND CORRECT'
+         endif
+      case(0)
          found_tbc_nml = .true.
-      ELSE
+      case(1:)
          found_tbc_nml = .true.
-         WRITE(ScreenUnit,*) 'THERE WAS A PROBLEM PROCESSING THE TimeBathyControl NAMELIST'
-         WRITE(16,*) 'THERE WAS A PROBLEM PROCESSING THE TimeBathyControl NAMELIST'
-         WRITE(ScreenUnit,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.'
-         WRITE(16,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.'
-         CALL ADCIRC_TERMINATE()
-      ENDIF
-      CLOSE(UNIT=15)          
-
-c.....REOPEN THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
-      CALL openFileForRead(15,TRIM(INPUTDIR)//'/'//'fort.15',ios)
-      IF (ios.gt.0) THEN
-         CALL ADCIRC_Terminate()
-      ENDIF
+         call allMessage(ERROR,
+     &   'THERE WAS A PROBLEM PROCESSING THE TimeBathyControl NAMELIST '
+     &    //'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.')
+         call adcirc_terminate()
+      end select     
+      write(scratchMessage,'(a,l,a,i0,a,e15.8,a,e15.8)') 
+     &  'found_tbc_nml=',found_tbc_nml,
+     &  ' nddt=',nddt,' btiminc=',btiminc,' bchgtiminc=',bchgtiminc
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
 
 #if defined CSWAN || defined ADCSWAN
       ! jgf50.60.08: Add a namelist for the user to turn SWAN output
       ! on and off. Similar to tcm's timevaryingbathy namelist.
-      READ(UNIT=15,NML=SWANOutputControl,IOSTAT=IOS)
-      IF (IOS.gt.0) THEN
-         call logMessage(INFO,
-     &      "The SWANOutputControl namelist was not found.")
-         call logMessage(INFO,
-     &    "The default values for SWANOutputControl will be used.")
-      ENDIF
+      namelistSpecifier = 'SWANOutputControl'
+      read(unit=15,nml=SWANOutputControl,iostat=ios)
+      call logNamelistReadStatus(namelistSpecifier, ios)     
       call logMessage(ECHO,
      &    "The values of SWANOutputControl are as follows:")
       write(scratchMessage,*) "SWAN_OutputHS=",SWAN_OutputHS,
@@ -263,32 +263,90 @@ c.....REOPEN THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
      &    " SWAN_OutputTM02=",SWAN_OutputTM02, 
      &    " SWAN_OutputTMM10=",SWAN_OutputTMM10
       call logMessage(ECHO,trim(scratchMessage))
-      REWIND(15)
+      rewind(15)
 #endif
+      !
+      ! jgf51.42: Add a namelist for the user to control subdomain
+      ! modeling. 
+      namelistSpecifier = 'subdomainModeling'
+      read(unit=15,nml=subdomainModeling,iostat=ios)
+      call logNamelistReadStatus(namelistSpecifier, ios)
+      write(scratchMessage,*) "subdomainOn=",subdomainOn
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+      !
       ! jgf50.60.13: Add a namelist for the user to control met forcing.
       ! Similar to tcm's timevaryingbathy namelist.
-      READ(UNIT=15,NML=metControl,IOSTAT=IOS)
-      IF (IOS.gt.0) THEN
-         call logMessage(INFO,
-     &      "The metControl namelist was not found.")
-         call logMessage(INFO,
-     &    "The default values for metControl will be used.")     
-      ENDIF
+      namelistSpecifier = 'metControl'
+      read(unit=15,nml=metControl,iostat=ios)
+      call logNamelistReadStatus(namelistSpecifier, ios)
       write(scratchMessage,*) "WindDragLimit=",WindDragLimit,
-     & " DragLawString=",DragLawString, "rhoAir=",rhoAir
+     & " DragLawString=",DragLawString, " rhoAir=",rhoAir,
+     & ' invertedBarometerOnElevationBoundary=', 
+     &   invertedBarometerOnElevationBoundary 
       call logMessage(ECHO,trim(scratchMessage))
-      REWIND(15)
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      READ(UNIT=15,NML=waveCoupling,IOSTAT=IOS)
-      IF(IOS.gt.0)THEN
-         CALL logMessage(INFO,
-     &      "The waveCoupling namelist was not found.")
-         CALL logMessage(INFO,
-     &    "The default values for waveCoupling will be used.")
+      rewind(15)
+
+      !...Read in time varying weir control from fort.15
+      NOUT_TVW = -99999
+      TOUTS_TVW = -99999
+      TOUTF_TVW = -99999
+      NSPOOL_TVW = -99999
+      READ(UNIT=15,NML=TVWControl,IOSTAT=IOS)
+      IF(IOS.NE.0)THEN
+        CALL logMessage(INFO,"The tvwControl namelist was not found.")
+        found_tvw_nml = .FALSE.
+      ELSE
+        CALL logMessage(INFO,"The tvwControl namelist was found.")
+        found_tvw_nml = .TRUE.
+        IF(USE_TVW)THEN
+            IF(NOUT_TVW.EQ.-99999D0)THEN
+                NOUT_TVW=NOUTGE
+                IF(TOUTS_TVW.EQ.-99999D0)TOUTS_TVW=TOUTSGE
+                IF(TOUTF_TVW.EQ.-99999D0)TOUTF_TVW=TOUTFGE
+                IF(NSPOOL_TVW.EQ.-99999D0)NSPOOL_TVW=NSPOOLGE
+            ELSE
+                IF(TOUTS_TVW.EQ.-99999D0)TOUTS_TVW=TOUTSGE
+                IF(TOUTF_TVW.EQ.-99999D0)TOUTF_TVW=TOUTFGE
+                IF(NSPOOL_TVW.EQ.-99999D0)NSPOOL_TVW=NSPOOLGE
+            ENDIF    
+        ELSE
+            NOUT_TVW = 0
+        ENDIF   
       ENDIF
-      WRITE(scratchMessage,*) "WaveWindMultiplier=",WaveWindMultiplier
-      CALL logMessage(ECHO,TRIM(scratchMessage))
       REWIND(15)
+
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+      namelistSpecifier = 'waveCoupling'
+      read(unit=15,nml=waveCoupling,iostat=ios)
+      call logNamelistReadStatus(namelistSpecifier,ios)
+      write(scratchMessage,*) "WaveWindMultiplier=",WaveWindMultiplier
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+      !
+      ! jgf52.05: Add a namelist for the user to control
+      ! output of NODECODE and NOFF.
+      namelistSpecifier = 'wetDryControl'
+      read(unit=15,nml=wetDryControl,iostat=IOS)
+      call logNameListReadStatus(namelistSpecifier,ios)
+      write(scratchMessage,'(a,l)') "outputNodeCode=",outputNodeCode
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "outputNOFF=",outputNOFF
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "noffActive=",noffActive
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+
+      ! jgf52.08.01: Add a namelist for the user to control
+      ! output of detailed inundation data. 
+      namelistSpecifier = 'inundationOutputControl'
+      READ(UNIT=15,NML=inundationOutputControl,IOSTAT=IOS)
+      call logNamelistReadStatus(namelistSpecifier,ios)
+      write(scratchMessage,'(a,l)') "inundationOutput=",inundationOutput
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,e15.8)') "inunThresh=",inunThresh
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
 C...  IDENTIFICATION
@@ -310,25 +368,7 @@ C...
          RDES8(I)=RUNDES(J:J+7)
          RID8(I) =RUNID (J:J+7)
       end do
-C
-C     jgf46.00 Relocated the reading of the number of nodes and the
-C     number of elements from the grid file to this position in the read
-C     input subroutine. It is needed in the processing of the nodal
-C     attributes file.
-      READ(14,'(A80)') AGRID
 
-      do I=1,20
-         J=(I-1)*4+1
-         AID4(I)=AGRID(J:J+3)
-      end do
-      do I=1,10
-         J=(I-1)*8+1
-         AID8(I)=AGRID(J:J+7)
-      end do
-
-      READ(14,*) NE,NP
-      MNP  = NP
-      MNE  = NE
 C...
 C... READ AND PROCESS NFOVER - NONFATAL ERROR OVERRIDE OPTION
 C...
@@ -458,7 +498,7 @@ C     its own file name based on the unit number, and ignores hss%filename.
             useNetCDF = .true.
          ENDIF
       CASE DEFAULT
-         write(scratchMessage,'("IHOT=",I3," is not valid.")') IHOT
+         write(scratchMessage,'("IHOT=",i0," is not valid.")') IHOT
          call allMessage(ERROR,scratchMessage)
          call ADCIRC_Terminate()
       END SELECT
@@ -726,39 +766,48 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
          CALL ADCIRC_Terminate()
       ENDIF
 
-
       IDEN=0
-      IF (CBaroclinic) READ(15,*) IDEN
-      IF (IDEN.EQ.0) THEN
-      ELSEIF (IDEN.EQ.1) THEN
-         C2D_BTrans    = .TRUE.
-         WRITE(16,*) '    2DDI Prognostic Baroclinic ADCIRC run with ',
-     &               'SigmaT forcing'
-      ELSEIF (IDEN.EQ.-1) THEN
-         WRITE(16,*) '    2DDI Diagnostic Baroclinic ADCIRC run with ',
-     &               'SigmaT forcing'
-      ELSEIF (IDEN.EQ.2) THEN
-         C2D_BTrans    = .TRUE.
-         WRITE(16,*) '    2DDI Prognostic Baroclinic ADCIRC run with ',
-     &               'Salinity forcing'
-      ELSEIF (IDEN.EQ.-2) THEN
-         WRITE(16,*) '    2DDI Diagnostic Baroclinic ADCIRC run with ',
-     &               'Salinity forcing'
-      ELSEIF (IDEN.EQ.3) THEN
-         C2D_BTrans    = .TRUE.
-         WRITE(16,*) '    2DDI Prognostic Baroclinic ADCIRC run with ',
-     &               'Temperature forcing'
-      ELSEIF (IDEN.EQ.-3) THEN
-         WRITE(16,*) '    2DDI Diagnostic Baroclinic ADCIRC run with ',
-     &               'Temperature forcing'
-      ELSEIF (IDEN.EQ.4) THEN
-         C2D_BTrans    = .TRUE.
-         WRITE(16,*) '    2DDI Prognostic Baroclinic ADCIRC run with ',
-     &               'Salinity and Temperature forcing'
-      ELSEIF (IDEN.EQ.-4) THEN
-         WRITE(16,*) '    2DDI Diagnostic Baroclinic ADCIRC run with ',
-     &               'Salinity and Temperature forcing'
-      ENDIF
+      if (CBaroclinic.eqv..true.) then
+         READ(15,*) IDEN
+         ! jgf51.52.35: Removed 0 as a valid choice for IDEN because the
+         ! choice between baroclinic and barotropic is specified by IM; 
+         ! also removed "2DDI" from the log messages because the choice 
+         ! between 2DDI and 3D is specified by IM.  
+         write(scratchMessage,'("IDEN is set to ",i0,".")') IDEN
+         call logMessage(ECHO,scratchMessage)
+         !
+         densityRunType = ' diagnostic '
+         if (iden.lt.0) then
+            densityRunType = ' prognostic '
+         endif
+         !        
+         densityDimensions = ' 2DDI '
+         if (C3D.eqv..true.) then
+            densityDimensions = ' 3D '
+         endif
+         !
+         select case(abs(iden))
+         case(1)
+            densityForcingType = ' sigmaT '       
+         case(2)
+            densityForcingType = ' salinity '
+         case(3)
+            densityForcingType = ' temperature '
+         case(4)
+            densityForcingType = ' salinity and temperature '         
+         case default
+            call allMessage(ERROR,
+     &       'The absolute value of IDEN must be 1, 2, 3, or 4.')
+            call adcirc_terminate()
+         end select
+        call logMessage(INFO,'This run will be'//trim(densityDimensions)
+     &    //trim(densityRunType)//'baroclinic with'
+     &    //trim(densityForcingType)//'forcing.')
+         !
+         if ( (C2DDI.eqv..true.).and.(CBaroclinic.eqv..true.) ) then
+            C2D_BTrans = .true.
+         endif 
+      endif
 
 
       WRITE(16,*) ' '
@@ -927,33 +976,35 @@ C...
      &        'parameter) is not an allowable value')
          CALL ADCIRC_Terminate()
       ENDIF
-
-      IF((NOLIFA.GE.1).AND.(NOLICAT.EQ.0)) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
-            WRITE(ScreenUnit,9972)
-            WRITE(ScreenUnit,*) 'NOLICAT =',NOLICAT
-            WRITE(ScreenUnit,9726)
-            IF(NFOVER.EQ.1) THEN
-               WRITE(ScreenUnit,9974)
-            ELSE
-               WRITE(ScreenUnit,9973)
-            ENDIF
-         ENDIF
-         WRITE(16,9972)
-         WRITE(16,*) 'NOLICAT =',NOLICAT
-         WRITE(16,9726)
-         WRITE(16,9974)
+      !
+      ! jgf52.05: Removed this error message because it is alarming
+      ! and because it contradicts common practice. 
+C      IF((NOLIFA.GE.1).AND.(NOLICAT.EQ.0)) THEN
+C         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
+C            WRITE(ScreenUnit,9972)
+C            WRITE(ScreenUnit,*) 'NOLICAT =',NOLICAT
+C            WRITE(ScreenUnit,9726)
+C            IF(NFOVER.EQ.1) THEN
+C               WRITE(ScreenUnit,9974)
+C            ELSE
+C               WRITE(ScreenUnit,9973)
+C            ENDIF
+C         ENDIF
+C         WRITE(16,9972)
+C         WRITE(16,*) 'NOLICAT =',NOLICAT
+C         WRITE(16,9726)
+C         WRITE(16,9974)
  9726    FORMAT(/,1X,'Your selection of NOLICAT (a UNIT 15 input ',
      &        'parameter) is inconsistent with your ',
      &        /,1X,'selection of NOLIFA and may lead to mass ',
      &        'balance problems')
-         IF(NFOVER.EQ.1) THEN
-            if (myproc == 0) WRITE(ScreenUnit,9974)
-         ELSE
-            if (myproc == 0) WRITE(ScreenUnit,9973)
-            call ADCIRC_Terminate()
-         ENDIF
-      ENDIF
+C         IF(NFOVER.EQ.1) THEN
+C            if (myproc == 0) WRITE(ScreenUnit,9974)
+C         ELSE
+C            if (myproc == 0) WRITE(ScreenUnit,9973)
+C            call ADCIRC_Terminate()
+C         ENDIF
+C      ENDIF
 
       IF((NOLIFA.EQ.0).AND.(NOLICAT.EQ.1)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
@@ -968,7 +1019,7 @@ C...
          ENDIF
          WRITE(16,9972)
          WRITE(16,*) 'NOLICAT =',NOLICAT
-         WRITE(16,9726)
+         WRITE(16,9727)
          WRITE(16,9974)
          IF(NFOVER.EQ.1) THEN
             if (myproc == 0) WRITE(ScreenUnit,9974)
@@ -982,7 +1033,7 @@ C...
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
             WRITE(ScreenUnit,*) 'NOLICAT =',NOLICAT
-            WRITE(ScreenUnit,9727)
+            WRITE(ScreenUnit,9726)
             IF(NFOVER.EQ.1) THEN
                WRITE(ScreenUnit,9974)
             ELSE
@@ -1132,6 +1183,7 @@ C     jgf46.03 Added NWS=8 (Holland wind model)
 C     jgf46.16 Merged:
 C     cf & cm  Added NWS=9 (asymmetric hurricane winds)
 C     rjw      Added NWS=19(asymmetric hurricane winds v2.0)
+C     jie      ADDed NWS=20(generalized asymmetric vortex winds)
 C     sb46.28sb01 Added NWS=12 (OWI format) 09/xx/2006
 C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
 C     tcm v49.46 Added NWS = 4xx for tight coupling with STWAVE
@@ -1473,6 +1525,32 @@ C     rjw added nws = 19: asymmetric hurricane winds v2.0
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
 
+C     jie added nws = 20: generalized asymmetric wind model
+      IF(NWS.EQ.20) THEN
+         WRITE(16,2404) NWS
+ 2404    FORMAT(/,5X,'NWS = ',I3,
+     &    /,9X,'THE GENERALIZED ASYMMETRIC VORTEX MODEL',
+     &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
+     &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',
+     &    /,9X,
+     &    'WHICH IS CREATED FROM TEH ATCF FILE USING THE ASWIP PROGRAM',
+     &    /,9X,'THE UNIT 22 FILE BEGINS AT TIME=STATIM.',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
+     &    /,9X,'WITH THE MODEL TIME STEP.')
+      ENDIF
+      IF(NWS.EQ.-20) THEN
+         WRITE(16,2405) NWS
+ 2405    FORMAT(/,5X,'NWS = ',I3,
+     &    /,9X,'HTHE GENERALIZED ASYMMETRIC VORTEX MODEL',
+     &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
+     &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',
+     &    /,9X,
+     &    'WHICH IS CREATED FROM TEH ATCF FILE USING THE ASWIP PROGRAM',
+     &    /,9X,'THE UNIT 22 FILE BEGINS AT THE TIME OF THE HOT START',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
+     &    /,9X,'WITH THE MODEL TIME STEP.')
+      ENDIF
+
 C....Surface Wave Stresses
 C     jgf49.1001 Added option to embed NWS19 in a NAM background wind field
       IF(NWS.EQ.29) THEN
@@ -1547,6 +1625,7 @@ Casey 090302: Added the following lines.
 
 C     NWS=4xx added for STWAVE tighly coupled run  (v49.46 tcm)
       IF(NRS.EQ.4) THEN
+         CPL2STWAVE = .TRUE.  !flag indicating coupling with STWAVE 
          WRITE(16,2394) NRS
  2394    FORMAT(/,5X,'NRS = ',I2,
      &    /,9X,'WAVE RADIATION STRESS IS USED TO FORCE THE COMPUTATION',
@@ -1977,6 +2056,34 @@ c         CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
 c     &        WindRefTime, MyProc, NScreen, ScreenUnit)
       ENDIF
 
+C     jie added nws = 20: generalized asymmetric vortex model
+C     2014.07 read in the geofactor, which controls the on or off
+C     of the Coriolis term in the geostrophic balance
+
+      IF(ABS(NWS).EQ.20) THEN
+C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &          GEOFACTOR       
+         ELSEIF ((NCICE.EQ.0).AND.(NRS.GE.1)) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &           GEOFACTOR,RSTIMINC
+         ELSEIF ((NCICE.GE.1).AND.(NRS.EQ.0)) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &           GEOFACTOR,CICE_TIMINC
+         ELSEIF ((NCICE.GE.1).AND.(NRS.GE.1)) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &           GEOFACTOR,RSTIMINC,CICE_TIMINC
+         ELSE
+         ENDIF
+C LETS not use this now but have the option to i nthe future
+c            WRITE(16,6111) IREFMO,IREFDAY,IREFYR,IREFHR
+c 6112       FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
+c     &           I2,'/',I2,'/',I2,'  ',I2,'H',/)
+c         CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
+c     &        WindRefTime, MyProc, NScreen, ScreenUnit)
+      ENDIF
+
 C     jgf49.1001 Added NWS29 format for embedding an asymmetric vortex inside
 C     an OWI basin scale met field derived from NAM winds.
       IF(ABS(NWS).EQ.29) THEN
@@ -2244,177 +2351,19 @@ C     jgf46.00 Read longitude and latitude on which the CPP coordinate
 C     projection is centered (in degrees) if ICS = 2. (The reading of
 C     the top of the grid file, including NE and NP, was moved nearer to
 C     the beginning of this subroutine.)
-C
       READ(15,*) SLAM0,SFEA0
-      SLAM0=SLAM0*DEG2RAD
-      SFEA0=SFEA0*DEG2RAD
       WRITE(16,1112)
       WRITE(16,246)
  246  FORMAT(//,1X,'GRID INFORMATION',//)
 
-C ALLOCATE ARRAYS Dimensioned by MNP and MNE
-      call alloc_main1a()
-C...
-C...  IF ICS=1 INPUT NODAL COORDINATES AND BATHYMETRY FROM UNIT 14
-C.... IF EITHER NTIP=1 OR NCOR=1, COMPUTE THE INVERSE CPP PROJECTION
-C...  IF ICS=2 INPUT NODAL COORDINATES AND BATHYMETRY FROM UNIT 14
-C.... AND COMPUTE CPP PROJECTED COORDINATES
-C...
-      IF(ICS.EQ.1) THEN
-         DO I=1,NP
-            READ(14,*) JKI,X(JKI),Y(JKI),DP(JKI)
-            IF(JKI.NE.I) THEN
-               IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99801)
-               WRITE(16,99801)
-99801          FORMAT(////,1X,'!!!!!!!!!!  WARNING - NONFATAL ',
-     &              'INPUT ERROR  !!!!!!!!!',
-     &              //,1X,'YOUR NODE NUMBERING IS NOT SEQUENTIAL ',
-     &              'CHECK YOUR UNIT 14 INPUT FILE CAREFULLY',//)
-            ENDIF
-            IF((NTIP.GE.1).OR.(NCOR.EQ.1)) THEN
-               CALL INVCP(X(JKI),Y(JKI),SLAM(JKI),SFEA(JKI),SLAM0,SFEA0)
-            ENDIF
-         END DO
-      ENDIF
-      IF(ICS.EQ.2) THEN
-         DO I=1,NP
-            READ(14,*) JKI,SLAM(JKI),SFEA(JKI),DP(JKI)
-            IF(JKI.NE.I) THEN
-               IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99801)
-               WRITE(16,99801)
-            ENDIF
-            SLAM(JKI)=DEG2RAD*SLAM(JKI)
-            SFEA(JKI)=DEG2RAD*SFEA(JKI)
-            CALL CPP(X(JKI),Y(JKI),SLAM(JKI),SFEA(JKI),SLAM0,SFEA0)
-         END DO
-      ENDIF
-C...
-C...  IF ICS=1 SET THE SFAC VECTOR EQUAL TO UNITY
-C...  IF ICS=2 COMPUTE THE SFAC VECTOR IN ORDER TO ADJUST EQUATIONS TO CPP
-C...  COORDINATES
-C...
-      IF(ICS.EQ.1) THEN
-         DO I=1,NP
-            SFAC(I)=1.0d0
-         END DO
-      ENDIF
-      IF(ICS.EQ.2) THEN
-         DO I=1,NP
-            SFAC(I)=COS(SFEA0)/COS(SFEA(I))
-         END DO
-      ENDIF
-
-C...
-C...  IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
-C...  DEPTHS ARE > OR = TO H0.
-C...
-      IF((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
-         DO I=1,NP
-            IF(DP(I).LT.H0) DP(I)=H0
-         END DO
-      ENDIF
-
-C...
-C...  Read and process the global connectivity table from unit 14
-C...
-      DO I=1,NE
-         READ(14,*) JKI,NHY,NM(JKI,1),NM(JKI,2),NM(JKI,3)
-         IF(JKI.NE.I) THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99802)
-            WRITE(16,99802)
-99802       FORMAT(////,1X,'!!!!!!!!!!  WARNING - NONFATAL ',
-     &                    'INPUT ERROR  !!!!!!!!!',
-     &              //,1X,'YOUR ELEMENT NUMBERING IS NOT SEQUENTIAL ',
-     &               /,1X,'CHECK YOUR UNIT 14 INPUT FILE CAREFULLY',//)
-         ENDIF
-
-C     check that sufficient accuracy is provided by the code to handle
-C     the input grid
-
-         X1=X(NM(JKI,1))
-         X2=X(NM(JKI,2))
-         X3=X(NM(JKI,3))
-         Y1=Y(NM(JKI,1))
-         Y2=Y(NM(JKI,2))
-         Y3=Y(NM(JKI,3))
-C...v49.48.02 tcm added these to reuse the computed values
-         X2mX1 = x2-x1
-         X3mX2 = x3-x2
-         X1mX3 = x1-x3
-         Y2mY1 = y2-y1
-         Y3mY2 = y3-y2
-         Y1mY3 = y1-y3
-
-         AVGXY=(ABS(X1)+ABS(X2)+ABS(X3)+ABS(Y1)+ABS(Y2)+ABS(Y3))/6.d0
-
-C v49.48.02 tcm -- These are the lengths of each element edge
-         LENED1=((X2mX1)**2+(Y2mY1)**2)**0.5d0
-         LENED2=((X3mX2)**2+(Y3mY2)**2)**0.5d0
-         LENED3=((X1mX3)**2+(Y1mY3)**2)**0.5d0
-
-!         DIF1R=AVGXY/(((X2-X1)**2+(Y2-Y1)**2)**0.5d0)
-!         DIF2R=AVGXY/(((X3-X2)**2+(Y3-Y2)**2)**0.5d0)
-!         DIF3R=AVGXY/(((X3-X1)**2+(Y3-Y1)**2)**0.5d0)
-!         DIF1R=LOG10(DIF1R)
-!         DIF2R=LOG10(DIF2R)
-!         DIF3R=LOG10(DIF3R)
-! v49.48.02 rewrote to use the edge lengths which get used below also
-         DIF1R=AVGXY/LENED1
-         DIF2R=AVGXY/LENED2
-         DIF3R=AVGXY/LENED3
-         DIF1R=LOG10(DIF1R)
-         DIF2R=LOG10(DIF2R)
-         DIF3R=LOG10(DIF3R)
-
-         IF((DIF1R.GT.NPREC).OR.(DIF2R.GT.NPREC).OR.
-     &                          (DIF3R.GT.NPREC))THEN
-           IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9898) JKI
-           WRITE(16,9898) JKI
- 9898      FORMAT(////,1X,'!!!!!!!!!!  WARNING  !!!!!!!!!',
-     &              //,1X,'IF THE GRID COORDINATES HAVE 32 BITS ',
-     &                    '(APPROX 7 DIGITS) OF PRECISION',
-     &               /,1X,'A ROBUST MODEL SOLUTION CAN NOT BE ',
-     &                    'GUARANTEED AT ELEMENT NO. ',I10,
-     &              //,1X,'MORE PRECISION MUST BE USED IN THE GRID',//)
-           ENDIF
-
-C     compute and store 2 x element areas
-c.... v49.48.02 tcm rewrote 2 x area to reuse values already being used
-!         AREAS(JKI)=(X1-X3)*(Y2-Y3)+(X3-X2)*(Y1-Y3)
-         AREAS(JKI)=(X1mX3)*(-Y3mY2)+(X3mX2)*(Y1mY3)
-
-C     check to insure that the nodal ordering in the connectivity table is
-C     counter clockwise around the elements
-         IF(AREAS(JKI).LT.0.0) THEN
-           IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9899) JKI
-           WRITE(16,9899) JKI
- 9899      FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
-     &              //,1X,'IN THE CONNECTIVITY TABLE, THE NODES AROUND',
-     &                    ' ELEMENT ',I6,
-     &               /,1X,'MUST BE SPECIFIED IN COUNTERCLOCKWISE ORDER',
-     &                    ' - CHECK INPUT ',
-     &              //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED ',
-     &                    '!!!!!!',//)
-            CALL ADCIRC_Terminate()
-         ENDIF
-
-C...
-C... v49.48.02 tcm -- compute element barycenters and element radius
-           bcxy(1,jki) = (x1+x2+x3)/3.d0
-           bcxy(2,jki) = (y1+y2+y3)/3.d0
-
-C...     compute the radius of the circle that circumscribes
-C...     the element then scale it by 50% larger to allow for
-C...     a buffer later on
-
-           RMAX(JKI) = 1.5D0*(LENED1*LENED2*LENED3)/(2.D0*AREAS(JKI))
-
-        END DO  !End loop over elements
-
-C... v49.48.02 tcm -- Allocate space for kdtree search
+C     jgf51.12.13: Adjust node table based on ics, nolifa, h0,
+C     slam0, sfea0. Check for sufficient precision. Compute neighbor table.
+      call initializeMesh()
+            
+C...  v49.48.02 tcm -- Allocate space for kdtree search
 C...       Be sure the maximum search depth is not larger than
 C...       the number of elements being kept
-        IF (NE.LT.SRCHDP) SRCHDP = NE
+      IF (NE.LT.SRCHDP) SRCHDP = NE
 
 C...  Create the search tree
       tree => kdtree2_create(bcxy,rearrange=.true.,sort=.true.)
@@ -2422,60 +2371,6 @@ C...  Create the search tree
 C...  allocate space for the search results from the tree
 C...  this space will be deallocated later in the subroutine
       ALLOCATE(KDRESULTS(SRCHDP))
-
-C...
-C...  Compute neighbor tables.
-C...
-
-C     estimate the number of neighbor nodes around any node = number of
-C     elements containing that node.  This is correct for non-boundary
-C     nodes and one too small for boundary nodes
-
-      DO I=1, NP
-        NNeigh(I) = 0
-        ENDDO
-
-      DO I=1,NE
-        NNeigh(NM(I,1))=NNeigh(NM(I,1))+1
-        NNeigh(NM(I,2))=NNeigh(NM(I,2))+1
-        NNeigh(NM(I,3))=NNeigh(NM(I,3))+1
-        ENDDO
-
-C     determine the maximum NNeigh
-
-      MNei=0
-      DO I=1,NP
-        IF(NNeigh(I).GT.MNei) MNei=NNeigh(I)
-        ENDDO
-
-C     estimate the maximum array space needed for the neighbor table by
-C     increasing this number by 2, to provide array space for the node itself
-C     and in case the maximum number of nodes occurs at a boundary node
-
-      MNei = MNei+2
-
-C     allocate space for neighbor tables
-
-      call alloc_main1b()
-
-C     compute the neighbor table and redo NNeigh array
-
-      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1196)
-      WRITE(16,1196)
- 1196 FORMAT(/,1X,'THE NEIGHBOR TABLE IS BEING COMPUTED ',/)
-
-C...TCM -- v48.4635 -- 20090814 -- Added screenunit to call to neighb
-C...         Bug reported by Mary Cialone
-      CALL NEIGHB(NE,NP,NM,NNeigh,NeiTab,NeiTabEle,NeiMin,NeiMax,
-     &     X,Y,NScreen,ScreenUnit)
-
-      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
-     &     WRITE(ScreenUnit,1195) NEIMIN,NEIMAX,NEIMAX
-      WRITE(16,1195) NEIMIN,NEIMAX,NEIMAX
- 1195 FORMAT(1X,'THE NEIGHBOR TABLE IS COMPLETED ',
-     &   /,5X,'THE MINIMUM NUMBER OF NEIGHBORS FOR ANY NODE = ',I3,
-     &   /,5X,'1+THE MAXIMUM NUMBER OF NEIGHBORS FOR ANY NODE = ',I3,
-     &   /,5X,'THE PARAMETER MNEI CAN BE SET AS SMALL AS ',I3,/)
 
 C...
 C...IF A 2DDI BAROCLINIC RUN, READ IN INITIAL CONDITION DENSITY FIELDS
@@ -2609,7 +2504,7 @@ C
      &     '  SLAM0 = ',F9.4,' DEGREES',
      &     /,5X,'LATITUDE  ABOUT WHICH CPP PROJECTION IS CENTERED',
      &     '  SFEA0 = ',F9.4,' DEGREES',/)
-      IF(NABOUT.NE.1) THEN
+      IF(NABOUT.LT.1) THEN
          WRITE(16,24)
  24      FORMAT(/,1X,'NODAL COORDINATES AND BATHYMETRY :')
          IF(ICS.EQ.1) THEN
@@ -2637,7 +2532,7 @@ C
             DO I=1,NP
                WRITE (16,9228) I,SLAM(I)*RAD2DEG,SFEA(I)*RAD2DEG,
      &              X(I),Y(I),DP(I)
- 9228          FORMAT(1X,I6,2(1X,F14.8),2(1X,F15.1),1X,F10.2)
+ 9228          FORMAT(1X,i0,2(1X,F14.8),2(1X,F15.1),1X,F10.2)
             END DO
          ENDIF
       ELSE
@@ -2708,11 +2603,6 @@ C     initialized in the call to InitNodalAttr.
  11       FORMAT(5X,'Constant lateral stress coefficient =',E15.8,//)
         ENDIF
       ENDIF
-C
-C     jgf46.00 Initialize nodal attributes, now that grid has been read
-C     in from unit 14 file.
-C     RJW IOOS move until after ZOB definition
-C      CALL InitNodalAttr(DP, NP, G, NScreen, ScreenUnit, MyProc, NAbOut)
 C...
 C...  READ CORIOLIS INFORMATION AND COMPUTE THE CORIOLIS VECTOR
 C...  OUTPUT RESULTING CORIOLIS INFORMATION
@@ -2750,7 +2640,6 @@ C...
             END DO
          ENDIF
       ENDIF
-
 C...
 C...  READ AND PROCESS INFORMATION ABOUT THE TIDAL POTENTIAL CONSTITUENTS
 C...
@@ -2795,7 +2684,6 @@ C...  LINES TO USE EARTH LOAD/SELF-ATTRACTION PART OF TIDAL POTENTIAL FORCING
          END DO
          CLOSE(24)
       ENDIF
-
 C...
 C...  OUTPUT TO UNIT 16 INFORMATION ABOUT TIDAL POTENTIAL FORCING
 C...  OUTPUT WILL VARY DEPENDING ON VALUES OF NTIP,NTIF AND NCOR
@@ -2824,7 +2712,6 @@ C...
 C...
 C...  CHECK CONSISTENCY OF INPUT PARAMETERS NTIF AND NTIP
 C...
-
       IF(((NTIP.EQ.0).AND.(NTIF.NE.0)).OR.((NTIP.NE.0).AND.
      &     (NTIF.EQ.0))) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9961)
@@ -2854,153 +2741,67 @@ C...  PRINT OUT LAT/LON VALUES TO BE USED IN COMPUTING TIDAL POTENTIAL
 C...  IF NOT ALREADY DONE SO IN CORIOLIS SECTION AND TIDAL POTENTIAL IS
 C...  ACTIVATED WITH NTIP=1
 C...
-        IF(NTIP.GE.1) THEN
-           IF(ICS.EQ.1) THEN
-              WRITE(16,3605)
- 3605         FORMAT(/,5X,'LONGITUDES AND LATITUDES ARE USED TO',
+      IF(NTIP.GE.1) THEN
+         IF(ICS.EQ.1) THEN
+            WRITE(16,3605)
+ 3605      FORMAT(/,5X,'LONGITUDES AND LATITUDES ARE USED TO',
      &             ' COMPUTE THE TIDAL POTENTIAL FUNCTION',
      &             /,7X,'AND ARE BASED ON AN INVERSE CPP PROJECTION ',
      &             'OF THE INPUT COORDINATES',/)
-           ELSE
-              WRITE(16,2109)
- 2109         FORMAT(/,5X,'LONGITUDES AND LATITUDES ARE USED TO',
+         ELSE
+            WRITE(16,2109)
+ 2109       FORMAT(/,5X,'LONGITUDES AND LATITUDES ARE USED TO',
      &             ' COMPUTE THE TIDAL POTENTIAL FUNCTION',
      &             /,7X,'AND ARE BASED ON INPUT NODAL COORDINATES ',/)
-           ENDIF
-        ENDIF
+         ENDIF
+      ENDIF
 C...
 C...  INPUT FROM UNIT 15 THE TIDAL FORCING FREQUENCIES ON THE ELEVATION
 C...  SPECIFIED BOUNDARIES: INCLUDING NBFR, FREQUENCIES, NODAL FACTORS,
 C...  EQUILIBRIUM ARGUMENTS AND AN ELEVATION BOUNDARY CONDITION
 C...  ALPHANUMERIC DESCRIPTOR
 C...
- 1893   READ(15,*) NBFR
-        MNBFR = NBFR
-        IF (NBFR.EQ.0) MNBFR = 1
+1893  READ(15,*) NBFR
+      MNBFR = NBFR
+      IF (NBFR.EQ.0) MNBFR = 1
 
-C     - Allocate arrays dimensioned by MNBFR
-        call alloc_main5()
+C     Allocate arrays dimensioned by MNBFR
+      call alloc_main5()
 
-        WRITE(16,1112)
-        WRITE(16,2106)
- 2106   FORMAT(//,1X,'ELEVATION SPECIFIED BOUNDARY FORCING INFORMATION '
+      WRITE(16,1112)
+      WRITE(16,2106)
+ 2106 FORMAT(//,1X,'ELEVATION SPECIFIED BOUNDARY FORCING INFORMATION '
      &       ,//)
-        WRITE(16,20) NBFR
- 20     FORMAT(/,5X,'NUMBER OF PERIODIC, ELEVATION SPECIFIED ',
+      WRITE(16,20) NBFR
+ 20   FORMAT(/,5X,'NUMBER OF PERIODIC, ELEVATION SPECIFIED ',
      &       'CONSTITUENTS =',I5)
-        IF(NBFR.GE.1) WRITE(16,21)
- 21     FORMAT(/,7X,'CONSTITUENT #',4X,'FREQUENCY',4X,'NODAL FACTOR',
+      IF(NBFR.GE.1) WRITE(16,21)
+ 21   FORMAT(/,7X,'CONSTITUENT #',4X,'FREQUENCY',4X,'NODAL FACTOR',
      &       3X,'EQU.ARG (DEG)',2X,'CONSTITUENT',/)
-        DO I=1,NBFR
-           READ(15,'(A5)') BOUNTAG(I)
-           READ(15,*) AMIG(I),FF(I),FACE(I)
-           WRITE(16,1850) I,AMIG(I),FF(I),FACE(I),BOUNTAG(I)
- 1850      FORMAT(12X,I2,6X,F16.12,2X,F10.7,2X,F10.3,10X,A5)
-           FACE(I)=FACE(I)*DEG2RAD
-           IF(AMIG(I).EQ.0.) THEN
-              PER(I)=0.
-           ELSE
-              PER(I)=2.D0*PI/AMIG(I)
-           ENDIF
-        END DO
-C...
-C...  INPUT ELEVATION BOUNDARY FORCING NODE NUMBER INFORMATION FROM
-C...  UNIT 14 AND OUTPUT TO UNIT 16
-C...
-C...  INPUT THE TOTAL NUMBER OF ELEVATION BOUNDARY SEGMENTS
-C...
-      READ(14,*) NOPE
-
-      WRITE(16,1852) NOPE
-1852  FORMAT(///,5X,'TOTAL NUMBER OF ELEVATION BOUNDARY FORCING',
-     &         ' SEGMENTS ',' = ',I5)
-C...
-C...INPUT THE TOTAL NUMBER OF ELEVATION BOUNDARY NODES
-C...
-      READ(14,*) NETA
-      WRITE(16,1854) NETA
- 1854 FORMAT(/,5X,'TOTAL NUMBER OF ELEVATION SPECIFIED BOUNDARY NODES ='
-     &        ,I6)
-
-C allocate arrays dimensioned by NOPE and NETA
-      MNOPE = NOPE
-      IF (NOPE.EQ.0) MNOPE = 1
-      MNETA = NETA
-      IF (NETA.EQ.0) MNETA = 1
-      call alloc_main2()
-C...
-C...  INPUT THE NODE NUMBERS ON EACH ELEVATION BOUNDARY FORCING SEGMENT
-C...  NOTE: In the future, if a boundary type is included for each
-C...  elevation segment it would be possible to distinguish between
-C...  periodic and aperiodic B.C.s This would require another NBD type
-C...  array.
-C...
-      JNMM=0
-      DO K=1,NOPE
-         READ(14,*) NVDLL(K)
-         IBTYPEE(K) = 0 ! jgf49.32 for some reason this is not read in,
-                       ! even though it is in the documentation
-         WRITE(16,281) K,NVDLL(K)
- 281     FORMAT(//,5X,'TOTAL NUMBER OF NODES ON ELEVATION SPECIFIED',
-     &              ' BOUNDARY SEGMENT ',2X,I2,2X,'=',1X,I5,/)
-         DO I=1,NVDLL(K)
-            READ(14,*) NBDV(K,I)
-            WRITE(16,1855) NBDV(K,I)
- 1855       FORMAT(7X,I7)
-            NBD(JNMM+I)=NBDV(K,I)
-         END DO
-         JNMM=JNMM+NVDLL(K)
-      END DO !k=1,nope
-
-C...
-C...  CHECK TO MAKE SURE THAT JNMM EQUALS NETA
-C...
-       IF(NETA.NE.JNMM) THEN
-          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9945)
-          WRITE(16,9945)
- 9945     FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL INPUT ERROR ',
-     &     '!!!!!!!!!',
-     &    //,1X,'THE INPUT PARAMETER NETA FROM UNIT 14 DOES NOT MATCH ',
-     &    'THE TOTAL NUMBER OF BOUNDARY NODES',
-     &    /,1X,' FROM ALL THE SPECIFIED SEGMENTS COMBINED')
-
-          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-          WRITE(16,9973)
-          CALL ADCIRC_Terminate()
-       ENDIF
-
-C...
-C...  SET UP TO READ IN TIME SERIES ELEVATION SPECIFIED BOUNDARY
-C...  CONDITIONS IF APPROPRIATE
-C...
-        IF((NBFR.EQ.0).AND.(NOPE.GT.0)) THEN
-           WRITE(16,1871)
- 1871      FORMAT(/,5X,'TIME SERIES ELEVATION SPECIFIED VALUES ',
-     &          'WILL BE READ FROM UNIT 19',
-     &          /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE ',
-     &          /,9X,'ELEVATION DATA WITH THE MODEL TIME STEP.')
-        ENDIF
+      DO I=1,NBFR
+         READ(15,'(A5)') BOUNTAG(I)
+         READ(15,*) AMIG(I),FF(I),FACE(I)
+         WRITE(16,1850) I,AMIG(I),FF(I),FACE(I),BOUNTAG(I)
+ 1850    FORMAT(12X,I2,6X,F16.12,2X,F10.7,2X,F10.3,10X,A5)
+         FACE(I)=FACE(I)*DEG2RAD
+         IF(AMIG(I).EQ.0.) THEN
+            PER(I)=0.
+         ELSE
+            PER(I)=2.D0*PI/AMIG(I)
+         ENDIF
+      END DO
 
 C...  INPUT FORCING CONDITIONS ON PERIODIC ELEVATION SPECIFIED
 C...  BOUNDARIES FOR EACH OF THE ELEVATION FORCING FREQUENCIES FROM UNIT
-C...  15 AND OUTPUT TO UNIT 16
+C...  15
 C...
-        DO I=1,NBFR
-           WRITE(16,29) I,BOUNTAG(I)
- 29        FORMAT(////,5X,'ELEVATION BOUNDARY TIDAL FORCING FOR',
-     &          ' CONSTITUENT NUMBER',I4,1X,'DESIGNATED : ',A5)
-           READ(15,'(A10)') ALPHA
-           WRITE(16,31) ALPHA
- 31        FORMAT(9X,'VERIFICATION OF CONSTITUENT : ',A10,/)
-           WRITE(16,30)
- 30        FORMAT(14X,'NODE',11X,'AMPL.',9X,'PHASE(DEG)',/)
-           DO J=1,NETA
-              READ(15,*) EMO(I,J),EFA(I,J)
-              WRITE(16,1870) NBD(J),EMO(I,J),EFA(I,J)
- 1870         FORMAT(10X,I8,4X,F14.5,4X,F12.3)
-              EFA(I,J)=EFA(I,J)*DEG2RAD
-           END DO
-        END DO
+      ALLOCATE(ELEVALPHA(NBFR))
+      DO I=1,NBFR
+         READ(15,'(A10)') ELEVALPHA(i)
+         DO J=1,NETA
+            READ(15,*) EMO(I,J),EFA(I,J)
+         END DO
+      END DO
 
 C.....READ THE MINIMUM INNER ANGLE FOR WHICH VELOCITY AT FLOW BOUNDARY NODES
 C.....WILL BE ZEROED IN THE TANGENTIAL DIRECTIONS WHEN NORMAL FLOW IS AN
@@ -3015,1093 +2816,34 @@ C.....ESSENTIAL B.C.
      &  /,9X,'INNER ANGLES LESS THAN ANGINN WILL HAVE BOTH NORMAL ',
      &  /,9X,'AND TANGENTIAL VELOCITY COMPONENTS ZEROED',/)
       COSTSET=COS(ANGINN*DEG2RAD)
-
-C...
-C... INPUT FLOW BOUNDARY INFORMATION FROM UNIT 14 AND OUTPUT TO UNIT 16
-C...
-
-C...  INTERIOR NODES, LBCODE=-1, COS=0, SIN=1
-C...  BOUNDARY NODES, LBCODE=LBCODEI=IBTYPE,
-C...  COS & SIN DETERMINED FROM NORMAL DIRECTION IN ALL CASES, ALTHOUGH THIS
-C...  INFORMATION IS ONLY USED WHEN NORMAL FLOW IS AN ESSENTIAL B.C. AND
-C...  FREE TANGENTIAL SLIP IS ALLOWED.
-
-C...  INPUT THE TOTAL NUMBER OF FLOW BOUNDARY SEGMENTS
-
-      WRITE(16,1112)
-      WRITE(16,1878)
-1878  FORMAT(//,1X,'FLOW BOUNDARY INFORMATION ',/)
-      READ(14,*) NBOU
-
-      WRITE(16,1879) NBOU
- 1879 FORMAT(//,5X,'THE TOTAL NUMBER OF FLOW BOUNDARY SEGMENTS = ',I5)
-
-C.....INPUT THE TOTAL NUMBER OF FLOW BOUNDARY NODES
-
-      READ(14,*) NVEL
-      WRITE(16,1881) NVEL
-1881  FORMAT(/,5X,'THE TOTAL NUMBER OF FLOW BOUNDARY NODES = ',I8)
-
-      MNBOU = NBOU
-      IF (NBOU.EQ.0) MNBOU = 1
-      MNVEL = NVEL*2    !Cvjp  -  11/28/99 -  upper bound guess for MNVEL
-
-C...  Allocate space for nonperiodic zero and nonzero normal flow
-C...  boundary arrays including barriers
-
-      call alloc_main3()
-
-C.....INPUT THE NUMBER OF NODES IN THE NEXT FLOW BOUNDARY SEGMENT
-C.....AND THE BOUNDARY TYPE
-
-      JGW=0
-      JME=0
-      NFLUXF=0
-      NFLUXB=0
-      NFLUXIB=0
-      NFLUXIBP=0
-      NFLUXRBC=0
-      NFLUXGBC=0
-      NVELEXT=0
-! kmd - add variables for river boundary conditions
-      riverval=0
-      bcriversec=0
-      BCRiver=0
-      totalbcrivernodes=0
-
-      DO K=1,NBOU
-         READ(14,*) NVELL(K),IBTYPE(K)
-! kmd - added for river boundary conditions
-         IF ((ABS(IBTYPE(K)/100)).EQ.1) THEN
-            IF (C3D.AND.(IDEN.LE.0)) THEN
-               IBTYPE(K)=(ABS(IBTYPE(K))-100)*(IBTYPE(K)/ABS(IBTYPE(K)))
-            ELSE IF (C3D.AND.(IDEN.GE.1)) THEN
-               BCRiver=1
-               BndBCRiver=.TRUE.
-               bcriversec=bcriversec+1
-               BCRNVELL(bcriversec)=NVELL(K)
-               IBTYPE(K)=(ABS(IBTYPE(K))-100)*(IBTYPE(K)/ABS(IBTYPE(K)))
-            END IF
-         END IF
-C     check that IBTYPE parameter has been set properly
-C     jgf46.21 Added IBTYPE=52.
-
-         IF((IBTYPE(K).NE.0).AND.(IBTYPE(K).NE.10).AND.
-     &       (IBTYPE(K).NE.20)
-     &      .AND.(IBTYPE(K).NE.1).AND.(IBTYPE(K).NE.11).AND.
-     &      (IBTYPE(K).NE.21)
-     &      .AND.(IBTYPE(K).NE.2).AND.(IBTYPE(K).NE.12).AND.
-     &      (IBTYPE(K).NE.22)
-     &      .AND.(IBTYPE(K).NE.52)
-     &      .AND.(IBTYPE(K).NE.3).AND.(IBTYPE(K).NE.13).AND.
-     &      (IBTYPE(K).NE.23)
-     &      .AND.(IBTYPE(K).NE.4).AND.(IBTYPE(K).NE.24)
-     &      .AND.(IBTYPE(K).NE.5).AND.(IBTYPE(K).NE.25)
-     &      .AND.(IBType(K).NE.30).AND.(IBType(K).NE.32)
-     &      .AND.(IBType(K).NE.40).AND.(IBType(K).NE.41) )THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9985) K
-            WRITE(16,9985) K
- 9985       FORMAT(////,1X,'!!!!!!!!!! WARNING - FATAL ERROR !!!!!!!!!',
-     &           //,1X,'THE FLOW BOUNDARY TYPE PARAMETER IBTYPE ',
-     &           'HAS NOT BEEN SET CORRECTLY FOR ',
-     &           /,1X,'FLOW BOUNDARY SEGMENT NO. ',I8,
-     &           /,1X,'USER MUST CORRECT UNIT 14 INPUT FILE',
-     &           //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED ',
-     &           '!!!!!!',//)
-            CALL ADCIRC_Terminate()
-         ENDIF
-
-C     write out flow boundary information to unit 16
-
-         IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
-            WRITE(16,28) K,NVELL(K),K,2*NVELL(K)
- 28         FORMAT(///,5X,'TOTAL NUMBER OF PAIRS FOR FLOW BOUNDARY',
-     &           ' SEGMENT',2X,I4,2X,'=',2X,I5,
-     &           /,5X,'TOTAL NUMBER OF NODES FOR FLOW BOUNDARY',
-     &           ' SEGMENT',2X,I4,2X,'=',2X,I5)
-         ELSE
-            WRITE(16,128) K,NVELL(K)
- 128        FORMAT(///,5X,'TOTAL NUMBER OF NODES FOR FLOW BOUNDARY',
-     &           ' SEGMENT',2X,I4,2X,'=',2X,I5)
-         ENDIF
-
-C     continue processing flow boundary information
-
-         IF(IBTYPE(K).EQ.0) THEN
-            WRITE(16,2340)
- 2340       FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
-     &           7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
-     &           7X,'AND FREE TANGENTIAL SLIP',/)
-         ENDIF
-         IF(IBTYPE(K).EQ.1) THEN
-            WRITE(16,2341)
- 2341       FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BOUNDARY WITH:',/,
-     &           7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
-     &           7X,'AND FREE TANGENTIAL SLIP',/)
-         ENDIF
-         IF(IBTYPE(K).EQ.2) THEN
-            NFLUXF=1
-            WRITE(16,2342)
- 2342       FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
-     &           7X,'SPECIFIED NORMAL FLOW AS AN ESSENTIAL B.C.',/,
-     &           7X,'AND FREE TANGENTIAL SLIP',/)
-         ENDIF
-         IF(IBTYPE(K).EQ.3) THEN
-           NFLUXB=1
-           WRITE(16,2344)
- 2344      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
-     &            7X,'A BARRIER WHICH ALLOWS FREE SURFACE',
-     &               ' SUPERCRITICAL OUTFLOW',/,
-     &            7X,'FROM THE DOMAIN ONCE THE BARRIER HAS BEEN',
-     &               ' OVERTOPPED',/,
-     &            7X,'AND FREE TANGENTIAL SLIP',/)
-           ENDIF
-         IF(IBTYPE(K).EQ.4) THEN
-           NFLUXIB=1
-           WRITE(16,2345)
- 2345      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
-     &            7X,'WITH CROSS BARRIER FLOW TREATED AS AN ESSENTIAL ',
-     &               ' NORMAL FLOW BOUNDARY CONDITION',/,
-     &            7X,'WHICH LEAVES/ENTERS THE DOMAIN ON ONE SIDE OF ',
-     &               ' THE BARRIER AND ENTERS/LEAVES THE DOMAIN ON THE',
-     &          /,7X,'CORRESPONDING OPPOSITE SIDE OF THE BARRIER ',/,
-     &            7X,'FLOW RATE AND DIRECTION ARE BASED ON BARRIER ',
-     &               ' HEIGHT, SURFACE WATER ELEVATION',/,
-     &            7X,'ON BOTH SIDES OF THE BARRIER, BARRIER COEFFICIEN',
-     &               'T AND THE APPROPRIATE BARRIER FLOW FORMULA',/,
-     &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
-           ENDIF
-         IF(IBTYPE(K).EQ.5) THEN
-           NFLUXIB=1
-           NFLUXIBP=1
-           WRITE(16,2347)
- 2347      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
-     &            7X,'WITH ADDITIONAL CROSS BARRIER PIPES ',
-     &               'LOCATED UNDER THE CROWN ',/,
-     &            7X,'CROSS BARRIER FLOW IS TREATED AS AN ESSENTIAL',
-     &               ' NORMAL FLOW BOUNDARY CONDITION',/,
-     &            7X,'WHICH LEAVES/ENTERS THE DOMAIN ON ONE SIDE OF ',
-     &               ' THE BARRIER AND ENTERS/LEAVES THE DOMAIN ON THE',
-     &          /,7X,'CORRESPONDING OPPOSITE SIDE OF THE BARRIER ',/,
-     &            7X,'FLOW RATE AND DIRECTION ARE BASED ON BARRIER ',
-     &               ' HEIGHT, SURFACE WATER ELEVATION',/,
-     &            7X,'ON BOTH SIDES OF THE BARRIER, BARRIER COEFFICIEN',
-     &               'T AND THE APPROPRIATE BARRIER FLOW FORMULA',/,
-     &            7X,'IN ADDITION CROSS BARRIER PIPE FLOW RATE AND ',
-     &               ' DIRECTION ARE BASED ON PIPE CROWN HEIGHT, ',/,
-     &            7X,'SURFACE WATER ELEVATION ON BOTH SIDES OF THE B',
-     &               'ARRIER, PIPE FRICTION COEFFICIENT, PIPE DIAMETER',
-     &          /,7X,' AND THE APPROPRIATE PIPE FLOW FORMULA',/,
-     &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
-           ENDIF
-         IF(IBTYPE(K).EQ.10) THEN
-           WRITE(16,2350)
- 2350      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
-     &            7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
-     &            7X,'AND NO TANGENTIAL SLIP',/)
-           ENDIF
-         IF(IBTYPE(K).EQ.11) THEN
-           WRITE(16,2351)
- 2351      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BOUNDARY WITH:',/,
-     &            7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
-     &            7X,'AND NO TANGENTIAL SLIP',/)
-           ENDIF
-         IF(IBTYPE(K).EQ.12) THEN
-           NFLUXF=1
-           WRITE(16,2352)
- 2352      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
-     &            7X,'SPECIFIED NORMAL FLOW AS AN ESSENTIAL B.C.',/,
-     &            7X,'AND NO TANGENTIAL SLIP',/)
-           ENDIF
-         IF(IBTYPE(K).EQ.13) THEN
-           NFLUXB=1
-           WRITE(16,2353)
- 2353      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
-     &            7X,'A BARRIER WHICH ALLOWS FREE SURFACE',
-     &               ' SUPERCRITICAL OUTFLOW',/,
-     &            7X,'FROM THE DOMAIN ONCE THE BARRIER HAS BEEN',
-     &               ' OVERTOPPED',/,
-     &            7X,'AND NO TANGENTIAL SLIP',/)
-           ENDIF
-         IF(IBTYPE(K).EQ.20) THEN
-           WRITE(16,2354)
- 2354      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
-     &            7X,'NO NORMAL FLOW AS A NATURAL B.C.',/,
-     &            7X,'AND FREE TANGENTIAL SLIP',/)
-           ENDIF
-         IF(IBTYPE(K).EQ.21) THEN
-           WRITE(16,2355)
- 2355      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BOUNDARY WITH:',/,
-     &            7X,'NO NORMAL FLOW AS A NATURAL B.C.',/,
-     &            7X,'AND FREE TANGENTIAL SLIP',/)
-           ENDIF
-         IF(IBTYPE(K).EQ.22) THEN
-           NFLUXF=1
-           WRITE(16,2356)
- 2356      FORMAT(5X,'THIS SEGMENT IS A EXTERNAL BOUNDARY WITH:',/,
-     &            7X,'SPECIFIED NORMAL FLOW AS A NATURAL B.C.',/,
-     &            7X,'AND FREE TANGENTIAL SLIP',/)
-           ENDIF
-         IF(IBTYPE(K).EQ.23) THEN
-           NFLUXB=1
-           WRITE(16,2357)
- 2357      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
-     &            7X,'A BARRIER WHICH ALLOWS FREE SURFACE',
-     &               ' SUPERCRITICAL OUTFLOW',/,
-     &            7X,'FROM THE DOMAIN ONCE THE BARRIER HAS BEEN',
-     &               ' OVERTOPPED',/,
-     &            7X,' IMPLEMENTED AS A NATURAL BOUNDARY CONDITION',
-     &            7X,'FREE TANGENTIAL SLIP IS ALSO ALLOWED',/)
-           ENDIF
-         IF(IBTYPE(K).EQ.24) THEN
-           NFLUXIB=1
-           WRITE(16,2358)
- 2358      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
-     &            7X,'WITH CROSS BARRIER FLOW TREATED AS A NATURAL ',
-     &               ' NORMAL FLOW BOUNDARY CONDITION',/,
-     &            7X,'WHICH LEAVES/ENTERS THE DOMAIN ON ONE SIDE OF ',
-     &               ' THE BARRIER AND ENTERS/LEAVES THE DOMAIN ON THE',
-     &          /,7X,'CORRESPONDING OPPOSITE SIDE OF THE BARRIER ',/,
-     &            7X,'FLOW RATE AND DIRECTION ARE BASED ON BARRIER ',
-     &               ' HEIGHT, SURFACE WATER ELEVATION',/,
-     &            7X,'ON BOTH SIDES OF THE BARRIER, BARRIER COEFFICIEN',
-     &               'T AND THE APPROPRIATE BARRIER FLOW FORMULA',/,
-     &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
-           ENDIF
-         IF(IBTYPE(K).EQ.25) THEN
-           NFLUXIB=1
-           NFLUXIBP=1
-           WRITE(16,2359)
- 2359      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
-     &            7X,'WITH ADDITIONAL CROSS BARRIER PIPES ',
-     &               'LOCATED UNDER THE CROWN ',/,
-     &            7X,'CROSS BARRIER FLOW IS TREATED AS A NATURAL',
-     &               ' NORMAL FLOW BOUNDARY CONDITION',/,
-     &            7X,'WHICH LEAVES/ENTERS THE DOMAIN ON ONE SIDE OF ',
-     &               ' THE BARRIER AND ENTERS/LEAVES THE DOMAIN ON THE',
-     &          /,7X,'CORRESPONDING OPPOSITE SIDE OF THE BARRIER ',/,
-     &            7X,'FLOW RATE AND DIRECTION ARE BASED ON BARRIER ',
-     &               ' HEIGHT, SURFACE WATER ELEVATION',/,
-     &            7X,'ON BOTH SIDES OF THE BARRIER, BARRIER COEFFICIEN',
-     &               'T AND THE APPROPRIATE BARRIER FLOW FORMULA',/,
-     &            7X,'IN ADDITION CROSS BARRIER PIPE FLOW RATE AND ',
-     &               ' DIRECTION ARE BASED ON PIPE CROWN HEIGHT, ',/,
-     &            7X,'SURFACE WATER ELEVATION ON BOTH SIDES OF THE B',
-     &               'ARRIER, PIPE FRICTION COEFFICIENT, PIPE DIAMETER',
-     &          /,7X,'AND THE APPROPRIATE PIPE FLOW FORMULA',/,
-     &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
-           ENDIF
-         IF(IBType(K).EQ.30) THEN
-           NFluxRBC=1
-           WRITE(16,2360)
- 2360      FORMAT(5X,'This segment is an outward radiating boundary:',/,
-     &            7X,'the GWCE is forced with normal flux.  A wave ',
-     &               'radiation condition',
-     &            7X,'is used to relate the time derivative of the ',
-     &               'normal flux to',/,
-     &            7X,'the time derivative of the elevation.  The ',
-     &               'momentum equations',/,
-     &            7X,'are used to compute the velocity field the same ',
-     &               'as for a nonboundary node.',/)
-           ENDIF
-         IF(IBType(K).EQ.32) THEN
-           NFluxRBC=1
-           NFluxF=1
-           WRITE(16,2356)
- 2362      FORMAT(5X,'This segment is a combined specified normal ',
-     &               'flux and outward radiating boundary.',/,
-     &            7X,'The GWCE is forced with the total normal flux ',
-     &               'computed by adding the specified',/,
-     &            7X,'normal flux and the flux associated with the ',
-     &               'outward radiating wave.',/,
-     &            7X,'The latter is determine from a Sommerfeld type ',
-     &               'condition, flux=celerity*wave elevation',/,
-     &            7X,'The momentum equations are used to compute the',/,
-     &            7X,'velocity field the same as for a nonboundary ',
-     &               'node',/)
-           ENDIF
-         IF(IBType(K).EQ.40) THEN
-           NFluxGBC=1
-           WRITE(16,2370)
- 2370      FORMAT(5X,'This segment is a zero normal velocity gradient ',
-     &               'boundary:',/,
-     &            7X,'the GWCE is forced with normal flux',/,
-     &            7X,'the momentum eqs are sacrificed in favor of ',
-     &               'setting the velocity at a',/,
-     &            7X,'boundary node equal to the value at a fictitious',
-     &               ' point inside the domain.',/,
-     &            7X,'The fictitious point lies on the inward directed',
-     &               ' normal to the boundary',/,
-     &            7X,'a distance equal to the distance from the ',
-     &               'boundary node to its farthest',/,
-     &            7X,'neighbor. This should ensure that the fictitious',
-     &               ' point does not',/,
-     &            7X,'fall into an element that contains the boundary ',
-     &               'node.',/,
-     &            7X,'The velocity at the fictitious point is ',
-     &               'determined by interpolation.',/)
-           ENDIF
-         IF(IBType(K).EQ.41) THEN
-           NFluxGBC=1
-           WRITE(16,2371)
- 2371      FORMAT(5X,'This segment is a zero normal velocity gradient ',
-     &               'boundary:',/,
-     &            7X,'the GWCE is forced with normal flux',/,
-     &            7X,'the momentum eqs are sacrificed in favor of eqs ',
-     &               'that set the velocity',/,
-     &            7X,'gradient normal to the boundary equal to zero ',
-     &               'in the Galerkin sense.',/)
-         ENDIF
-         IF(IBTYPE(K).EQ.52) THEN
-            NFLUXF=1
-            IBTYPE52=.TRUE.
-            WRITE(16,6532)
- 6532       FORMAT(5X,'This segment uses a specified periodic normal ',
-     &          'flux as a natural b.c. combined with outward ',
-     &          7X,'radiating boundary. The GWCE is forced with the ,'
-     &          'total normal flux computed by adding the',/,
-     &          7X,'specified normal flux and the flux associated ',
-     &          'with the outward radiating wave.',/,
-     &          7X,'The latter is determined from ',
-     &          'flux=celerity*wave elevation',/,
-     &          7X,'The momentum equations are used to compute the',/,
-     &          7X,'velocity field the same as for a nonboundary ',
-     &          'node.',/)
-         ENDIF
-
-C...  For NON BARRIER type boundaries, read the node numbers for the Kth
-C...  boundary segment
-
-         IF((IBTYPE(K).NE. 3).AND.(IBTYPE(K).NE.13).AND.
-     &      (IBTYPE(K).NE.23).AND.
-     &      (IBTYPE(K).NE. 4).AND.(IBTYPE(K).NE.24).AND.
-     &      (IBTYPE(K).NE. 5).AND.(IBTYPE(K).NE.25)) THEN
-            DO I=1,NVELL(K)
-               READ(14,*) NBVV(K,I)
-! kmd - add information for river boundary condition
-               IF ((IBTYPE(K).EQ.2).OR.(IBTYPE(K).EQ.12).OR.
-     &           (IBTYPE(K).EQ.22).OR.
-     &           (IBTYPE(K).EQ.52)) THEN
-                  IF (BCRiver.EQ.1) THEN
-                    totalbcrivernodes=totalbcrivernodes+1
-                    riverval=riverval+1
-                    BCRNBVV(bcriversec,riverval)=NBVV(K,I)
-                  END IF
-               END IF
-            END DO
-            NPRBI=1
-            NPIPE=0
-            BCRiver=0  !  kmd - reset river boundary value
-         ENDIF
-
-C...  For EXTERNAL BARRIER type boundaries, read the node number, the
-C...  barrier elevation above the Geoid and the coefficient of free
-C...  surface super-critical flow for the nodes in the Kth boundary
-C...  segment.
-
-         IF((IBTYPE(K).EQ.3).OR.(IBTYPE(K).EQ.13).OR.
-     &         (IBTYPE(K).EQ.23)) THEN
-            DO I=1,NVELL(K)
-               READ(14,*) NBVV(K,I),BARLANHTR(I),BARLANCFSPR(I)
-            END DO
-            NPRBI=1
-            NPIPE=0
-         ENDIF
-
-C...  For INTERNAL BARRIER type boundaries, read the node number, the
-C...  paired node number, the barrier elevation above the Geoid and the
-C...  coefficients of supercritical and subcritical flow for the nodes
-C...  in the Kth boundary segment.
-
-         IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
-            DO I=1,NVELL(K)
-               READ(14,*) NBVV(K,I),IBCONNR(I),BARINHTR(I),BARINCFSBR(I)
-     &              ,BARINCFSPR(I)
-            END DO
-            NPRBI=2
-            NPIPE=0
-         ENDIF
-
-C...  For INTERNAL BARRIER WITH CROSS BARRIER PIPES type boundaries,
-C...  read the node number, the paired node number, the barrier
-C...  elevation above the Geoid, the coefficients of supercritical and
-C...  subcritical flow, the cross barrier pipe height, the cross barrier
-C...  pipe coefficient and the cross barrier pipe diameter for the nodes
-C...  in the Kth boundary segment.
-
-         IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
-            DO I=1,NVELL(K)
-               READ(14,*)NBVV(K,I),IBCONNR(I),BARINHTR(I),BARINCFSBR(I),
-     &             BARINCFSPR(I),PIPEHTR(I),PIPECOEFR(I),
-     &             PIPEDIAMR(I)
-            END DO
-            NPRBI=2
-            NPIPE=1
-         ENDIF
-
-C...  PROCESS INFORMATION FOR VARIOUS TYPES OF FLOW BOUNDARY SEGMENTS
-
-         DO IPRBI=1,NPRBI
-
-C...  LOAD PAIRED NODES INTO PRIMARY PROCESSING VECTORS AND RESET
-C...  CONNECTING NODES FOR BACK FACE THUS BACK/CONNECTING NODES ARE
-C...  BEING LOADED AS PRIMARY NODES AND FRONT NODES ARE RELOADED AS
-C...  CONNECTING NODES NOTE THAT THE CLOCKWISE ORIENTATION OF ISLAND
-C...  TYPE BOUNDARIES IS BEING MAINTAINED WHEN BACK NODES ARE RELOADED
-C...  AS PRIMARY NODES ADDITIONAL INTERNAL BARRIER BOUNDARY INFORMATION
-C...  IS ALSO RESET
-
-            IF(IPRBI.EQ.2) THEN
-               DO I=1,NVELL(K)
-                  NTRAN1(I)=NBVV(K,I)
-                  NTRAN2(I)=IBCONNR(I)
-                  BTRAN3(I)=BARINHTR(I)
-                  BTRAN4(I)=BARINCFSBR(I)
-                  BTRAN5(I)=BARINCFSPR(I)
-                  IF(NPIPE.EQ.1) THEN
-                     BTRAN6(I)=PIPEHTR(I)
-                     BTRAN7(I)=PIPECOEFR(I)
-                     BTRAN8(I)=PIPEDIAMR(I)
-                  ENDIF
-               END DO  !I=1,NVELL(K)
-
-               DO I=1,NVELL(K)
-                  NBVV(K,I)=NTRAN2(NVELL(K)+1-I)
-                  IBCONNR(I)=NTRAN1(NVELL(K)+1-I)
-                  BARINHTR(I)=BTRAN3(NVELL(K)+1-I)
-                  BARINCFSBR(I)=BTRAN4(NVELL(K)+1-I)
-                  BARINCFSPR(I)=BTRAN5(NVELL(K)+1-I)
-                  IF(NPIPE.EQ.1) THEN
-                     PIPEHTR(I)=BTRAN6(NVELL(K)+1-I)
-                     PIPECOEFR(I)=BTRAN7(NVELL(K)+1-I)
-                     PIPEDIAMR(I)=BTRAN8(NVELL(K)+1-I)
-                  ENDIF
-               END DO  !I=1,NVELL(K)
-            ENDIF
-
-C...  WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES
-
-            IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
-               IF(IPRBI.EQ.1) THEN
-                  WRITE(16,1842)
- 1842          FORMAT(/,5X,'FRONT FACE OF INTERNAL BARRIER BOUNDARY',/)
-               ELSE
-                  WRITE(16,1843)
- 1843          FORMAT(/,5X,'BACK FACE OF INTERNAL BARRIER BOUNDARY',/)
-               ENDIF
-            ENDIF
-
-C...  WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES WITH
-C...  CROSS BARRIER PIPES
-
-            IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
-               IF(IPRBI.EQ.1) THEN
-                  WRITE(16,1844)
- 1844             FORMAT(/,5X,'FRONT FACE OF INTERNAL BARRIER BOUNDARY',
-     &                 ' WITH CROSS BARRIER PIPES',/)
-               ELSE
-                  WRITE(16,1845)
- 1845             FORMAT(/,5X,'BACK FACE OF INTERNAL BARRIER BOUNDARY',
-     &                 ' WITH CROSS BARRIER PIPES',/)
-               ENDIF
-            ENDIF
-
-C...  WRITE OUT GENERAL HEADER FOR BOUNDARY INFORMATION
-
-            WRITE(16,1841)
- 1841 FORMAT('    JGW    JME    ME2GW   NODE #  BNDRY CODE   INNER',
-     &      ' ANGLE',7X,'COS',13X,'SIN',9X,'0.667*BNDRY LEN',/)
-
-C...  COMPLETE THE BOUNDARY ARRAY FOR THE Kth FLOW BOUNDARY SEGMENT
-
-            FLG_IBLEN2 = .FALSE.   !ADDED TCM V51.15 20130906 
-            NBVV(K,0)=NBVV(K,1) !UNCLOSED EXTERNAL
-            IF((IBTYPE(K).EQ.1).OR.(IBTYPE(K).EQ.11).OR.
-     &            (IBTYPE(K).EQ.21)) THEN
-               IF(NBVV(K,NVELL(K)).NE.NBVV(K,1)) THEN !CLOSE AN UNCLOSED INTERNAL
-
-                  IF (NVELL(K).EQ.2) FLG_IBLEN2 = .TRUE.   !ADDED TCM V51.15 20130906 
-
-                  NVELL(K)=NVELL(K)+1
-                  NBVV(K,NVELL(K))=NBVV(K,1)
-                  !tcm 20130906 -- Closing can be problematic for parallel jobs
-                  ! where it is possible that only part of the internal boundary
-                  ! is in the domain
-               ENDIF
-            ENDIF
-            IF(NBVV(K,NVELL(K)).EQ.NBVV(K,1)) THEN !CLOSED EXTERNAL OR INTERNAL
-               NBVV(K,0)=NBVV(K,NVELL(K)-1)
-            ENDIF
-            NBVV(K,NVELL(K)+1)=NBVV(K,NVELL(K))
-
-C...  PUT BOUNDARY INFORMATION INTO 2 TYPES OF ARRAYS, ONE FOR THE GWCE
-C...  B.C. AND ONE FOR THE MOMENTUM EQUATION B.C.
-c
-C...  THE GWCE ARRAYS INCLUDE EVERY NODE IN THE UNIT 14 FILE, I.E.,
-C...  NODES ARE REPEATED WHERE SPECIFIED NORMAL FLOW AND NO NORMAL FLOW
-C...  BOUNDARIES MEET AND AT THE BEGINNING AND END OF CLOSED EXTERNAL
-C...  BOUNDARIES AND ISLANDS.
-c
-C...  THE MOMENTUM EQUATION ARRAYS ARE KEYED TO THE GWCE ARRAYS VIA THE
-C...  ARRAY ME2GW WHICH INDICATES THE LOCATION IN THE GWCE ARRAYS THAT
-C...  THE APPROPRIATE M.E. VALUE LIES.
-c
-C...  THE M.E. ARRAYS DO NOT REPEAT NODES THAT ARE DUPLICATED IN THE
-C...  UNIT 14 FILE, I.E., WHEN SPECIFIED NORMAL FLOW AND NO NORMAL FLOW
-C...  BOUNDARIES MEET, THE SPECIFIED NORMAL FLOW BOUNDARY CONDITION
-C...  TAKES PRECEDENT.  ALSO THE BEGINNING AND ENDING NODES OF CLOSED
-C...  EXTERNAL AND ISLAND BOUNDARIES ARE NOT REPEATED.
-
-            DO I=1,NVELL(K)
-
-C...  SET UP THE GWCE BOUNDARY ARRAYS WHICH CONSIST OF
-C...  BOUNDARY NODE NUMBERS
-C...  BOUNDARY CODES
-C...  0.66667*LENGTH OF EACH BOUNDARY SEGMENT.  NOTE, THE LENGTH OF THE
-C...  LAST BOUNDARY SEGMENT ON EACH BOUNDARY SHOULD BE ZERO
-C     jgf46.21 Added IBTYPE=52.
-               JGW=JGW+1
-               IF((IBTYPE(K).EQ.0).OR.(IBTYPE(K).EQ.10).OR.
-     &           (IBTYPE(K).EQ.20).OR.
-     &             (IBTYPE(K).EQ.2).OR.(IBTYPE(K).EQ.12).OR.
-     &             (IBTYPE(K).EQ.22).OR.
-     &             (IBTYPE(K).EQ.52).OR.
-     &             (IBTYPE(K).EQ.3).OR.(IBTYPE(K).EQ.13).OR.
-     &             (IBTYPE(K).EQ.23).OR.
-     &             (IBType(K).EQ.30).OR.(IBType(K).EQ.32).OR.
-     &             (IBType(K).EQ.40).OR.(IBType(K).EQ.41)) THEN
-                  NVELEXT=NVELEXT+1
-               ENDIF
-               NBV(JGW)=NBVV(K,I)
-               NBVI=NBVV(K,I)
-               NBVJ=NBVV(K,I+1)
-               DELX=X(NBVJ)-X(NBVI)
-               DELY=Y(NBVJ)-Y(NBVI)
-               BNDLEN2O3(JGW)=2.D0*(SQRT(DELX*DELX+DELY*DELY))/3.D0
-
-C...  COMPUTE THE INCLUDED ANGLE AND TEST TO DETERMINE WHETHER TO ZERO
-C...  TANGENTIAL VELOCITIES
-
-C...  NOTE:.IMPLEMENTATION FOR ICS=2 REQUIRES COMPUTING ALL COORDINATES
-C...  IN A LOCALIZED SYSTEM (I.E. THE TRANSFORMATION IS CENTERED AT
-C...  X0,Y0)
-
-               IF(ICS.EQ.1) THEN
-                  XL0=X(NBVV(K,I))
-                  XL1=X(NBVV(K,I-1))
-                  XL2=X(NBVV(K,I+1))
-                  YL0=Y(NBVV(K,I))
-                  YL1=Y(NBVV(K,I-1))
-                  YL2=Y(NBVV(K,I+1))
-               ELSE
-                  CALL CPP(XL0,YL0,SLAM(NBVV(K,I)),SFEA(NBVV(K,I)),
-     &                 SLAM(NBVV(K,I)),SFEA(NBVV(K,I)))
-                  CALL CPP(XL1,YL1,SLAM(NBVV(K,I-1)),SFEA(NBVV(K,I-1)),
-     &                 SLAM(NBVV(K,I)),SFEA(NBVV(K,I)))
-                  CALL CPP(XL2,YL2,SLAM(NBVV(K,I+1)),SFEA(NBVV(K,I+1)),
-     &                 SLAM(NBVV(K,I)),SFEA(NBVV(K,I)))
-               ENDIF
-
-C...  NOTE: INTERIOR ANGLE AT ENDS OF BOUNDARIES MUST BE EQUAL, EITHER:
-C...  A FICTITIOUSLY LARGE VALUE IF THE BOUNDARY IS NOT CLOSED OR A TRUE
-C...  VALUE IF THE BOUNDARY IS CLOSED
-
-               calcTheta = .true.
-               ! jgf51.15: special treatment at the start and
-               ! end of the boundary
-               IF (I.eq.1) THEN ! start of boundary
-                  ! jgf51.15: if ADCIRC previously had to close an 
-                  ! unclosed external boundary 
-                  IF (NBVV(K,1).EQ.NBVV(K,0)) THEN
-                     THETA=-9999999.d0    ! set to a fictitiously large val
-                     CROSS=0.d0
-                     COSTHETA=COSTSET     !COSTSET = COS(ANGINN*DEG2RAD)
-                     calcTheta = .false.
-                  ENDIF
-               ENDIF
-               IF (I.eq.NVELL(K)) THEN ! end of boundary
-                  ! set properties equal to those from start of boundary
-                  THETA=THETA1
-                  CROSS=CROSS1
-                  COSTHETA=COSTHETA1
-                  calcTheta = .false.
-               ENDIF
-               IF (calcTheta.eqv..true.) THEN
-                  ! jgf51.15: calculate the properties of the interior
-                  ! angle of the boundary
-                  VL1X=XL1-XL0
-                  VL1Y=YL1-YL0
-                  VL2X=XL2-XL0
-                  VL2Y=YL2-YL0
-                  DOTVEC=VL1X*VL2X+VL1Y*VL2Y
-                  VECNORM=(SQRT(VL1X**2 + VL1Y**2))*
-     &                    (SQRT(VL2X**2 + VL2Y**2))
-                  COSTHETA=DOTVEC/VECNORM
-                  IF(COSTHETA.GT.1.0d0) COSTHETA=1.0d0
-                  IF(COSTHETA.LT.-1.0d0) COSTHETA=-1.0d0
-                  THETA=RAD2DEG*ACOS(COSTHETA)
-                  CROSS=-VL1X*VL2Y+VL2X*VL1Y
-                  IF(CROSS.LT.0) THETA=360.d0-THETA
-               ENDIF
-               IF (I.eq.1) THEN
-                  ! jgf51.15: record the properties at the
-                  ! start of the boundary, for re-use at the end 
-                  THETA1=THETA 
-                  CROSS1=CROSS
-                  COSTHETA1=COSTHETA
-               ENDIF
-
-C...  CHECK WHETHER ANGLE IS LESS THAN MINIMUM ANGLE, IF SO CHANGE THE
-C...  BOUNDARY CODE TO ZERO TANGENTIAL VELOCITIES
-
-               LBCODEI(JGW)=IBTYPE(K)
-               IF((COSTHETA.GT.COSTSET).AND.(CROSS.GT.0.0)) THEN
-                  IF(IBTYPE(K).EQ.0) LBCODEI(JGW)=10
-                  IF(IBTYPE(K).EQ.1) LBCODEI(JGW)=11
-                  IF(IBTYPE(K).EQ.2) LBCODEI(JGW)=12
-                  IF(IBTYPE(K).EQ.3) LBCODEI(JGW)=13
-                  IF((IBTYPE(K).GE.0).AND.(IBTYPE(K).LE.3)) THEN
-                     WRITE(16,1856) NBVV(K,I),THETA
- 1856                FORMAT(2X,I7,4X,'THE INNER ANGLE = ',F8.2,1X,
-     &                    'TANGENTIAL SLIP WILL BE ZEROED')
-                  ENDIF
-               ENDIF
-
-C...  COMPUTE COS AND SIN OF OUTWARD NORMAL REGARDLESS OF BOUNDARY TYPE
-
-               X1=X(NBVV(K,I-1))
-               X2=X(NBVV(K,I+1))
-               Y1=Y(NBVV(K,I-1))
-               Y2=Y(NBVV(K,I+1))
-               ! TCM V51.15 20130906 ADDED TEST TO HANDLE SPECIAL CASE WHEN THE ORIGINAL
-               ! INTERIOR BOUNDARY HAD LENGTH 2 AND IBTYPE=1,11, OR 21 AND WAS FORCED CLOSED
-               IF (FLG_IBLEN2 .EQV. .TRUE.) THEN
-                  X2=X(NBVV(K,I))
-                  Y2=Y(NBVV(K,I))
-               ENDIF
-               XL=SQRT((X1-X2)**2+(Y1-Y2)**2)
-               CSII(JGW)=SFAC(NBVV(K,I))*(Y2-Y1)/XL
-               SIII(JGW)=(X1-X2)/XL
-
-C...  Compute the location of and the element containing the fictitious
-C...  node used for a zero normal velocity gradient boundary condition
-C...  (type 40)
-
-               IF(IBType(K).EQ.40) Then
-                  ZNGFicNodeDist=0.d0
-
-                  DO N=2,NNeigh(NBVI)
-                     ZNGFicNodeDistTemp=SQRT( 
-     &                     (X(NeiTab(NBVI,N))-X(NBVI))**2
-     &                    +(Y(NeiTab(NBVI,N))-Y(NBVI))**2 )
-
-                     IF(ZNGFicNodeDist.LT.ZNGFicNodeDistTemp)
-     &                    ZNGFicNodeDist=ZNGFicNodeDistTemp
-
-                  ENDDO  !N=2,NNeigh(NBVI)
-
-                  ZNGFicNodeDist=1.001d0*ZNGFicNodeDist
-                  X4=X(NBVI)-ZNGFicNodeDist*CSII(JGW)
-                  Y4=Y(NBVI)-ZNGFicNodeDist*SIII(JGW)
-                  AEMIN=1.0E+25
-
-                  DO N=1,NE
-                     N1=NM(N,1)
-                     N2=NM(N,2)
-                     N3=NM(N,3)
-                     X1=X(N1)
-                     X2=X(N2)
-                     X3=X(N3)
-                     Y1=Y(N1)
-                     Y2=Y(N2)
-                     Y3=Y(N3)
-                     A1=(X4-X3)*(Y2-Y3)+(X2-X3)*(Y3-Y4)
-                     A2=(X4-X1)*(Y3-Y1)-(Y4-Y1)*(X3-X1)
-                     A3=(Y4-Y1)*(X2-X1)-(X4-X1)*(Y2-Y1)
-                     AA=ABS(A1)+ABS(A2)+ABS(A3)
-                     AE=ABS(AA-AREAS(N))/AREAS(N)
-                     IF(AE.LT.AEMIN) THEN
-                        AEMIN=AE
-                        NEleZNG(JGW)=N
-                     ENDIF
-                  ENDDO  !N=1,NE
-
-                  IF(AEMIN.GT.1.0E-5) THEN
-                     if (NSCREEN.ne.0.and.myproc.eq.0) then
-                        WRITE(ScreenUnit,9770) NBVI
-                     endif
-                     WRITE(16,9770) NBVI
- 9770                FORMAT(///,1X,'!!!!!!!!!!  ERROR !!!!!!!!!',//,
-     &                1X,'Zero Normal Velocity Gradient Boundary Node ',
-     &                   'Number ',I10,
-     &                3X,'does not appear to have a fictitious node ',
-     &                   'located within the domain.',
-     &                3X,'This should be checked.')
-                  ENDIF
-
-C...  Pre-compute the information required to interpolate at zero normal
-C...  gradient fictitious nodes
-
-                  N1=NM(NEleZNG(JGW),1)
-                  N2=NM(NEleZNG(JGW),2)
-                  N3=NM(NEleZNG(JGW),3)
-                  X1=X(N1)
-                  X2=X(N2)
-                  X3=X(N3)
-                  Y1=Y(N1)
-                  Y2=Y(N2)
-                  Y3=Y(N3)
-                  ZNGIF1(JGW)=((X4-X3)*(Y2-Y3)+(X2-X3)*(Y3-Y4))
-     &                 /AREAS(NEleZNG(JGW))
-                  ZNGIF2(JGW)=((X4-X1)*(Y3-Y1)-(Y4-Y1)*(X3-X1))
-     &                 /AREAS(NEleZNG(JGW))
-                  ZNGIF3(JGW)=(-(X4-X1)*(Y2-Y1)+(Y4-Y1)*(X2-X1))
-     &                 /AREAS(NEleZNG(JGW))
-c             WRITE(2,*) 'For Boundary Node # ',NBVV(K,I)
-c             WRITE(2,*) 'The fictitious point is ',X4,Y4
-c             WRITE(2,*) 'which is located in element # ',NEleZNG(JGW)
-c             WRITE(2,*) 'The interpolating factors are ',ZNGIF1(JGW),
-c    &                                           ZNGIF2(JGW),ZNGIF3(JGW)
-c             WRITE(2,*) ' '
-               ENDIF
-
-C...
-C...  SET UP THE MOMENTUM EQUATION BOUNDARY ARRAY WHICH CONSISTS OF A
-C...  KEY TO THE GWCE BOUNDARY CONDITION ARRAY
-C...
-               IF(I.EQ.1) THEN  !DEAL WITH FIRST NODE IN L.B. SEG
-                  IF(JGW.EQ.1) THEN !VERY FIRST L.B. SEG
-                     JME=JME+1  !M.E. USES IT
-                     ME2GW(JME)=JGW
-                  ENDIF
-                  IF(JGW.NE.1) THEN
-                     IF(NBV(JGW).NE.NBV(JGW-1)) THEN !L.B. SEGS DON'T OVERLAP
-                        JME=JME+1 !M.E. USES IT
-                        ME2GW(JME)=JGW
-                     ENDIF
-                     IF(NBV(JGW).EQ.NBV(JGW-1)) THEN !L.B. SEGS OVERLAP
-                        IF((LBCODEI(JGW).EQ.2) .OR. ! M.E. USES IT ONLY
-     &                       (LBCODEI(JGW).EQ.12).OR. ! IF IT IS
-     &                       (LBCODEI(JGW).EQ.22).OR. ! SPECIFIED FLOW,
-     &                       (LBCODEI(JGW).EQ.3) .OR. ! AN OVERFLOW BARRIER
-     &                       (LBCODEI(JGW).EQ.13).OR. ! OR A RADIATION
-     &                       (LBCODEI(JGW).EQ.23).OR. ! BOUNDARY
-     &                       (LBCODEI(JGW).EQ.30).OR.
-     &                       (LBCODEI(JGW).EQ.32).OR.
-     &                       (LBCODEI(JGW).EQ.40).OR.
-     &                       (LBCODEI(JGW).EQ.41).OR.
-     &                       (LBCODEI(JGW).EQ.52)) ME2GW(JME)=JGW
-                     ENDIF
-                  ENDIF
-               ENDIF
-               IF((I.GT.1).AND.(I.LT.NVELL(K))) THEN !IF NOT FIRST OR
-                  JME=JME+1     !LAST NODE
-                  ME2GW(JME)=JGW !M.E. USES IT
-               ENDIF
-               IF(I.EQ.NVELL(K)) THEN !DEAL WITH LAST NODE ON BOUNDARY
-                  IF((NBV(JGW).NE.NBVV(K,1)).AND. !IF UNCLOSED BOUNDARY
-     &                 (NBV(JGW).NE.NBV(1))) THEN !M.E. USES IT
-                     JME=JME+1
-                     ME2GW(JME)=JGW
-                  ENDIF
-                  IF(NBVV(K,I).EQ.NBV(1)) THEN !IF OVERLAPS WITH VERY FIRST
-                     IF((LBCODEI(JGW).EQ.2) .OR. ! L.B. NODE
-     &                    (LBCODEI(JGW).EQ.12).OR. ! M.E. USES IT ONLY IF IT IS
-     &                    (LBCODEI(JGW).EQ.22).OR. ! SPECIFIED FLOW,
-     &                    (LBCODEI(JGW).EQ.3) .OR. ! AN OVERFLOW BARRIER OR
-     &                    (LBCODEI(JGW).EQ.13).OR. ! A RADIATION
-     &                    (LBCODEI(JGW).EQ.23).OR. ! BOUNDARY
-     &                    (LBCODEI(JGW).EQ.30).OR.
-     &                    (LBCODEI(JGW).EQ.32).OR.
-     &                    (LBCODEI(JGW).EQ.40).OR.
-     &                    (LBCODEI(JGW).EQ.41).OR.
-     &                    (LBCODEI(JGW).EQ.52)) ME2GW(1)=JGW
-                  ENDIF
-               ENDIF
-
-C...........LOAD EXTERNAL BARRIER BOUNDARY INFORMATION INTO THE CORRECT VECTORS
-               IF((IBTYPE(K).EQ.3).OR.(IBTYPE(K).EQ.13)
-     &          .OR.(IBTYPE(K).EQ.23)) THEN
-                  BARLANHT(JGW)=BARLANHTR(I)
-                  BARLANCFSP(JGW)=BARLANCFSPR(I)
-               ENDIF
-
-C...........LOAD INTERNAL BARRIER BOUNDARY INFORMATION INTO THE CORRECT VECTORS
-               IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
-                  IBCONN(JGW)=IBCONNR(I)
-                  BARINHT(JGW)=BARINHTR(I)
-                  BARINCFSB(JGW)=BARINCFSBR(I)
-                  BARINCFSP(JGW)=BARINCFSPR(I)
-               ENDIF
-
-C...........LOAD INTERNAL BARRIER WITH PIPES BOUNDARY INFORMATION INTO
-C............THE CORRECT VECTORS
-               IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
-                  IBCONN(JGW)=IBCONNR(I)
-                  BARINHT(JGW)=BARINHTR(I)
-                  BARINCFSB(JGW)=BARINCFSBR(I)
-                  BARINCFSP(JGW)=BARINCFSPR(I)
-                  PIPEHT(JGW)=PIPEHTR(I)
-                  PIPECOEF(JGW)=PIPECOEFR(I)
-                  PIPEDIAM(JGW)=PIPEDIAMR(I)
-               ENDIF
-
-C...........WRITE OUT BOUNDARY CONDITION ARRAY INFORMATION
-
-               WRITE(16,1857) JGW,JME,ME2GW(JME),NBV(JGW),LBCODEI(JGW),
-     &              THETA,CSII(JGW),SIII(JGW),BNDLEN2O3(JGW)
- 1857          FORMAT(1X,I6,1X,I6,1X,I6,3X,I8,3X,I4,8X,E12.4,2X,E16.8,
-     &              1X,E16.8,2X,E16.8)
-
-C...........CHECK EXTERNAL BARRIER HEIGHTS AGAINST DEPTHS
-               IF((IBTYPE(K).EQ.3).OR.(IBTYPE(K).EQ.13)
-     &          .OR.(IBTYPE(K).EQ.23)) THEN
-                  IF(BARLANHT(JGW).LT.-DP(NBV(JGW))) THEN
-                     IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
-                        WRITE(ScreenUnit,8367)
-     &                    JGW,NBV(JGW),BARLANHT(JGW),DP(NBV(JGW))
-                        ENDIF
-                     WRITE(16,8367) JGW,NBV(JGW),BARLANHT(JGW),
-     &                DP(NBV(JGW))
- 8367            FORMAT(////,1X,'!!!!!!!!!!  FATAL INPUT ERROR   !!!'
-     &           ,'!!!!!!!!!',//,
-     &           1X,'AT BOUNDARY NODE NO.',I6,' (GLOBAL NODE NO.',
-     &           I6, ' AND OF EXTERNAL BARRIER TYPE) ',/,
-     &           2X,'THE EXTERNAL BARRIER HEIGHT = ',E12.5,
-     &           2X,'IS EXCEEDED BY THE DEPTH SPECIFIED AT ',/,2X
-     &           ,'THE ASSOCIATED GLOBAL NODE = ',E12.5,/,2X,
-     &           'USER MUST SPECIFY CONSISTENT BARRIER HEIGHTS',
-     &           ' AND DEPTHS')
-                     IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
-                        WRITE(ScreenUnit,9973)
-                     ENDIF
-                     WRITE(16,9973)
-                     CALL ADCIRC_Terminate()
-C#ifdef CMPI
-C                     CALL ADCIRC_LOCALTERMINATE()
-C#endif
-                     STOP
-                  ENDIF
-               ENDIF
-C...........CHECK INTERNAL BARRIER HEIGHTS AGAINST DEPTHS
-               IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
-                  IF(BARINHT(JGW).LT.-DP(NBV(JGW))) THEN
-                     IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
-                        WRITE(ScreenUnit,8368)
-     &                    JGW,NBV(JGW),BARINHT(JGW),DP(NBV(JGW))
-                     ENDIF
-                     WRITE(16,8368) JGW,NBV(JGW),BARINHT(JGW),
-     &                    DP(NBV(JGW))
- 8368            FORMAT(////,1X,'!!!!!!!!!!  FATAL INPUT ERROR   !!!'
-     &           ,'!!!!!!!!!',//,
-     &           1X,'AT BOUNDARY NODE NO.',I6,' (GLOBAL NODE NO. ',
-     &           I6,' AND OF INTERNAL BARRIER TYPE) ',/,
-     &           2X,'THE INTERNAL BARRIER HEIGHT = ',E12.5,
-     &           2X,'IS EXCEEDED BY THE DEPTH SPECIFIED AT ',/,2X
-     &           ,'THE ASSOCIATED GLOBAL NODE = ',E12.5,/,2X,
-     &           'USER MUST SPECIFY CONSISTENT BARRIER HEIGHTS',
-     &           ' AND DEPTHS')
-                     IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
-                        WRITE(ScreenUnit,9973)
-                     ENDIF
-                     WRITE(16,9973)
-                     CALL ADCIRC_Terminate()
-Ci#ifdef CMPI                     
-C                     CALL ADCIRC_LOCALTERMINATE()
-C#endif                     
-                     STOP
-                  ENDIF
-               ENDIF
-
-C...........CHECK INTERNAL BARRIER WITH PIPES BARRIER HEIGHTS AGAINST DEPTHS
-               IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
-                  IF(BARINHT(JGW).LT.-DP(NBV(JGW))) THEN
-                     IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
-                        WRITE(ScreenUnit,8370)
-     &                    JGW,NBV(JGW),BARINHT(JGW),DP(NBV(JGW))
-                     ENDIF
-                     WRITE(16,8370) JGW,NBV(JGW),BARINHT(JGW),
-     &                    DP(NBV(JGW))
- 8370            FORMAT(////,1X,'!!!!!!!!!!  FATAL INPUT ERROR   !!!'
-     &           ,'!!!!!!!!!',//,
-     &           1X,'AT BOUNDARY NODE NO.',I6,' (GLOBAL NODE NO. ',
-     &           I6,' AND OF INTERNAL BARRIER TYPE) ',/,
-     &           2X,'THE INTERNAL BARRIER HEIGHT = ',E12.5,
-     &           2X,'IS EXCEEDED BY THE DEPTH SPECIFIED AT ',/,2X
-     &           ,'THE ASSOCIATED GLOBAL NODE = ',E12.5,/,2X,
-     &           'USER MUST SPECIFY CONSISTENT BARRIER HEIGHTS',
-     &           ' AND DEPTHS')
-                     IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
-                        WRITE(ScreenUnit,9973)
-                     ENDIF
-                     WRITE(16,9973)
-                     CALL ADCIRC_Terminate()
-C#ifdef CMPI
-C                     CALL ADCIRC_LOCALTERMINATE()
-C#endif
-                     STOP
-                  ENDIF
-               ENDIF
-C...  CHECK INTERNAL BARRIER WITH PIPES PIPE HEIGHTS AGAINST DEPTHS
-               IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
-                  IF(PIPEHT(JGW).LT.-DP(NBV(JGW))) THEN
-                     IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
-                        WRITE(ScreenUnit,8372)
-     &                    JGW,NBV(JGW),BARINHT(JGW),DP(NBV(JGW))
-                     ENDIF
-                     WRITE(16,8372) JGW,NBV(JGW),BARINHT(JGW),
-     &                    DP(NBV(JGW))
- 8372            FORMAT(////,1X,'!!!!!!!!!!  FATAL INPUT ERROR   !!!'
-     &           ,'!!!!!!!!!',//,
-     &           1X,'AT BOUNDARY NODE NO.',I6,' (GLOBAL NODE NO. ',
-     &           I6,' AND OF INTERNAL BARRIER TYPE) ',/,
-     &           2X,'THE BARRIER PIPE HEIGHT = ',E12.5,
-     &           2X,'IS EXCEEDED BY THE DEPTH SPECIFIED AT ',/,2X
-     &           ,'THE ASSOCIATED GLOBAL NODE = ',E12.5,/,2X,
-     &           'USER MUST SPECIFY CONSISTENT PIPE HEIGHTS',
-     &           ' AND DEPTHS')
-                     IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
-                        WRITE(ScreenUnit,9973)
-                     ENDIF
-                     WRITE(16,9973)
-                     CALL ADCIRC_Terminate()
-C#ifdef CMPI
-C                     CALL ADCIRC_LOCALTERMINATE()
-C#endif
-                     STOP
-                  ENDIF
-               ENDIF
-
-C...  CHECK FOR OVERLAPPING OF AN INTERNAL BARRIER BOUNDARY WITH
-C...  ANY EXTERNAL BARRIER BOUNDARY. IF THIS DOES OCCUR, TAKE
-C...  APPROPRIATE ACTION
-               IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24).OR.
-     &              (IBTYPE(K).EQ.5)
-     &              .OR.(IBTYPE(K).EQ.25)) THEN
-
-                  DO ICK=1,NVELEXT
-
-C...  CHECK IF OVERLAP EXISTS
-                     IF(NBV(ICK).EQ.NBV(JGW)) THEN
-C...  CHECK FOR ILLEGAL OVERLAPS
-                        IF((LBCODEI(ICK).EQ.2).OR.
-     &                   (LBCODEI(ICK).EQ.3).OR.(LBCODEI(ICK).EQ.12).OR.
-     &                   (LBCODEI(ICK).EQ.13)) THEN
-                           IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
-                              WRITE(ScreenUnit,8567)
-     &                             JGW,NBV(JGW),ICK,NBV(ICK)
-                           ENDIF
-                           WRITE(16,8567) JGW,NBV(JGW),ICK,NBV(ICK)
- 8567                      FORMAT(////,1X,
-     &                          '!!!!!!!!!!  FATAL INPUT ERROR   !!!'
-     &               ,'!!!!!!!!!',//,
-     &               1X,'BOUNDARY NODE NO. ',I6,' (GLOBAL NODE NO. ',
-     &               I9, 'AND OF INTERNAL BARRIER TYPE) ',/,
-     &               2X,'OVERLAPS BOUNDARY NODE NO.',I6,' (GLOBAL NODE'
-     &               ,' NO.',I6,' )',/,
-     &               2X,'THIS IS AN ILLEGAL TYPE OVERLAP !! - INTERNAL '
-     &               ,'BARRIER BOUNDARIES CAN ONLY OVERLAP WITH ',
-     &               'NO NORMAL FLOW EXTERNAL BOUNDARIES',/
-     &               2X,'(I.E. IBTYPE=0,10,20)')
-                           IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
-                              WRITE(ScreenUnit,9973)
-                           ENDIF
-                           WRITE(16,9973)
-                           CALL ADCIRC_Terminate()
-                        ENDIF
-C...  CHECK FOR OVERLAPS WHICH REQUIRE ADJUSTMENTS OF BOUNDARY
-C...  CODE ON THE EXTERNAL BOUNDARY
-                        IF(((IBTYPE(K).EQ.4).AND.(LBCODEI(ICK).EQ.0))
-     &                       .OR.((IBTYPE(K).EQ.5)
-     &                       .AND.(LBCODEI(ICK).EQ.0))) THEN
-                           WRITE(16,8568) JGW,ICK,ICK
- 8568                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',
-     &               'BOUNDARY NODE',I7,' (WHICH IS AN ESSENTIAL INTER'
-     &               ,'NAL BARRIER BOUNDARY NODE)', /,2X,
-     &               'AND BOUNDARY NODE',I7,' (WHICH IS AN ESSENTIAL ',
-     &               'EXTERNAL NO NORMAL FLOW WITH SLIP BOUNDARY',
-     &               ' NODE),',/,2X,
-     &               'THE BOUNDARY TYPE FOR BOUNDARY NODE ',I7,
-     &               ' IS BEING RESET TO IBTYPE=20',/,2X,
-     &               '(NATURAL NO NORMAL FLOW WITH SLIP BOUNDARY) ')
-                           LBCODEI(ICK)=20
-                        ENDIF
-                        IF(((IBTYPE(K).EQ.4).AND.(LBCODEI(ICK).EQ.10))
-     &                       .OR.((IBTYPE(K).EQ.5)
-     &                       .AND.(LBCODEI(ICK).EQ.10))) THEN
-                           WRITE(16,8569) JGW,ICK,ICK
- 8569                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',
-     &               'BOUNDARY NODE ',I7,' (WHICH IS AN ESSENTIAL INTER'
-     &               ,'NAL BARRIER BOUNDARY NODE)', /,2X,
-     &               'AND BOUNDARY NODE',I7,' (WHICH IS AN ESSENTIAL ',
-     &               'EXTERNAL NO NORMAL FLOW WITH NO SLIP BOUNDARY',
-     &               ' NODE),',/,2X,
-     &               'THE BOUNDARY TYPE FOR BOUNDARY NODE ',I7,
-     &               ' IS BEING RESET TO IBTYPE=20',/,2X,
-     &               '(NATURAL NO NORMAL FLOW WITH SLIP BOUNDARY) ')
-                           LBCODEI(ICK)=20
-                        ENDIF
-                        IF(((IBTYPE(K).EQ.24).AND.(LBCODEI(ICK).EQ.10))
-     &                       .OR.((IBTYPE(K).EQ.25)
-     &                       .AND.(LBCODEI(ICK).EQ.10))) THEN
-                           WRITE(16,8570) JGW,ICK,ICK
- 8570                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',
-     &               'BOUNDARY NODE',I7,' (WHICH IS A NATURAL INTERNAL'
-     &               ,' BARRIER BOUNDARY NODE)', /,2X,
-     &              'AND BOUNDARY NODE',I7,' (WHICH IS AN ESSENTIAL ',
-     &              'EXTERNAL NO NORMAL FLOW WITH NO SLIP BOUNDARY',
-     &              ' NODE),',/,2X,
-     &              'THE BOUNDARY TYPE FOR BOUNDARY NODE',I7,
-     &                   ' IS BEING RESET TO IBTYPE=0',/,2X,
-     &               '(ESSENTIAL NO NORMAL FLOW WITH SLIP BOUNDARY) ')
-                           LBCODEI(ICK)=0
-                        ENDIF
-                     ENDIF
-                  END DO  !ICK=1,NVELEXT
-
-               ENDIF
-
-            END DO  ! I = 1,NVELL(K)
-         END DO  !IPRBI=1,NPRBI
-      END DO   ! K=1,NBOU
-
-C...  ONCE ALL FLOW BOUNDARY NODES HAVE BEEN PROCESSED, CHECK TO MAKE
-C...  SURE THAT JGW LE MNVEL.  NOTE, JME MUST BE < JGW.
-
-      IF(MNVEL.LT.JGW) THEN
-        IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9947)
-        WRITE(16,9947)
- 9947   FORMAT(////,1X,'!!!!!!!!!!  FATAL INPUT ERROR   !!!!!!!!!!!!',
-     &    //,1X,'THE DIMENSION PARAMETER MNVEL IS LESS THAN ',
-     &          'THE TOTAL NUMBER OF FLOW BOUNDARY NODES',
-     &    /,1X,'FROM ALL THE SPECIFIED FLOW SEGMENTS COMBINED',/)
-        IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-          WRITE(16,9973)
-          CALL ADCIRC_Terminate()
-C#ifdef CMPI
-C          CALL ADCIRC_LOCALTERMINATE()
-C#endif
-          STOP
-        ENDIF
-
-      NVEL=JGW
-      NVELME=JME
-
-C.....TRANSFER FLOW BOUNDARY INFORMATION INTO NODAL ARRAYS
-
-      DO I=1,NP
-         LBArray_Pointer(I)=-1
-         CSI(I)=0.
-         SII(I)=1.
+      ! 
+      ! jgf51.21.12: Now that the value of anginn has been read, 
+      ! the boundaries can be checked and the boundary arrays can
+      ! be constructed. This initialization also determines if there
+      ! are flux boundaries in the mesh, and sets the value of 
+      ! nfluxf accordingly. The nfluxf value is required for further
+      ! parsing of the fort.15 control file; it determines whether
+      ! the value of NFFR should be read below. 
+      call initializeBoundaries()
+      !
+      ! jgf51.21.12: Now write out log messages that include NBD (the
+      ! NBD array was also computed in the call to initializeBoundaries().
+      DO I=1,NBFR
+         WRITE(16,29) I,BOUNTAG(I)
+ 29      FORMAT(////,5X,'ELEVATION BOUNDARY TIDAL FORCING FOR',
+     &        ' CONSTITUENT NUMBER',i0,1X,'DESIGNATED : ',A5)
+         WRITE(16,31) ELEVALPHA(i)
+ 31      FORMAT(9X,'VERIFICATION OF CONSTITUENT : ',A10,/)
+         WRITE(16,30)
+ 30      FORMAT(14X,'NODE',11X,'AMPL.',9X,'PHASE(DEG)',/)
+         DO J=1,NETA
+            WRITE(16,1870) NBD(J),EMO(I,J),EFA(I,J)
+ 1870       FORMAT(10X,I8,4X,F14.5,4X,F12.3)
+            EFA(I,J)=EFA(I,J)*DEG2RAD
+         END DO
       END DO
 
-      DO I=1,NVELME
-         J=ME2GW(I)
-         LBArray_Pointer(NBV(J))=J
-         CSI(NBV(J))=CSII(J)
-         SII(NBV(J))=SIII(J)
-      END DO
-
+   
 C...IF ANY NON ZERO NORMAL FLOW BOUNDARIES WERE SPECIFIED, (NFLUXF=1)
 C.....READ FORCING INFORMATION FROM UNIT 15 FILE
 
@@ -4117,7 +2859,7 @@ C     from time=hotstart time
          READ(15,*) NFFR
          MNFFR = NFFR
          IF (NFFR.EQ.0) MNFFR = 1
-        IF (NFFR.EQ.-1) MNFFR = 1
+         IF (NFFR.EQ.-1) MNFFR = 1
 
 C.....Allocate space for periodic normal flow boundary conditions
          call alloc_main6()
@@ -4133,21 +2875,21 @@ Ckmd  Added in a NFFR=-1 for reading information from the fort.20 files
 C     for hot starting the run, so file does not have to include all
 C     river data from time=0.
 
-        WRITE(16,1112)
-        WRITE(16,2200)
+         WRITE(16,1112)
+         WRITE(16,2200)
  2200   FORMAT(//,1X,'NORMAL FLOW BOUNDARY FORCING INFORMATION ',//)
-        IF((NFFR.EQ.0).OR.(NFFR.EQ.-1)) THEN
-          WRITE(16,2201)
- 2201     FORMAT(/,5X,'NORMAL FLOW VALUES WILL BE READ FROM UNIT 20 ',
+         IF((NFFR.EQ.0).OR.(NFFR.EQ.-1)) THEN
+            WRITE(16,2201)
+ 2201      FORMAT(/,5X,'NORMAL FLOW VALUES WILL BE READ FROM UNIT 20 ',
      &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE FLOW DATA ',
      &    /,9X,'WITH THE MODEL TIME STEP.')
-          ENDIF
-        IF((NFFR.NE.0).AND.(NFFR.NE.-1)) THEN
-          WRITE(16,2202) NFFR
- 2202     FORMAT(/,5X,'NUMBER OF PERIODIC NORMAL FLOW CONSTITUENTS =',
+         ENDIF
+         IF((NFFR.NE.0).AND.(NFFR.NE.-1)) THEN
+            WRITE(16,2202) NFFR
+ 2202      FORMAT(/,5X,'NUMBER OF PERIODIC NORMAL FLOW CONSTITUENTS =',
      &                                                               I5)
             WRITE(16,2203)
- 2203       FORMAT(/,7X,'CONSTITUENT #',4X,'FREQUENCY',4X,'NODAL FACTOR',
+ 2203      FORMAT(/,7X,'CONSTITUENT #',4X,'FREQUENCY',4X,'NODAL FACTOR',
      &         3X,'EQU.ARG (DEG)',2X,'CONSTITUENT',/)
             DO I=1,NFFR
                READ(15,'(A5)') FBOUNTAG(I)
@@ -4164,7 +2906,6 @@ C     river data from time=0.
 
 C.......INPUT PERIODIC NORMAL FLOW FORCING CONDITIONS ON DESIGNATED FLOW BOUNDARIES
 C........FOR EACH OF THE FORCING FREQUENCIES FROM UNIT 15 AND OUTPUT TO UNIT 16
-
             DO I=1,NFFR
                WRITE(16,2206) I,FBOUNTAG(I)
  2206          FORMAT(////,5X,'PERIODIC NORMAL FLOW CONSTITUENT ',
@@ -4192,104 +2933,6 @@ C........FOR EACH OF THE FORCING FREQUENCIES FROM UNIT 15 AND OUTPUT TO UNIT 16
             END DO
          ENDIF
       ENDIF
-
-C...IF ANY EXTERNAL BARRIER BOUNDARIES WERE SPECIFIED, (NFLUXB=1)
-C.....WRITE OUT EXTERNAL BARRIER BOUNDARY INFORMATION TO UNIT 16 FILE
-C.....NOTE THAT THIS INFORMATION WAS READ IN FROM THE UNIT 14 FILE
-
-      IF(NFLUXB.EQ.1) THEN
-
-C.....WRITE OUT INFO ON SPECIFIED EXTERNAL BARRIER BOUNDARIES
-
-        WRITE(16,1112)
-        WRITE(16,2220)
- 2220   FORMAT(//,1X,'EXTERNAL BARRIER BOUNDARY INFORMATION ',/)
-
-C.......OUTPUT ELEVATION OF EXTERNAL BARRIER NODES ABOVE THE GEOID AND
-C........THE COEFFICIENT OF FREE SURFACE SUPERCRITICAL FLOW AT
-C........DESIGNATED EXTERNAL BARRIER BOUNDARY NODES TO UNIT 16
-        WRITE(16,2224)
- 2224   FORMAT(//,9X,'NODE',10X,'BARRIER HEIGHT',
-     &                     6X,'SUPER-CRIT. EXTERNAL BAR. COEF.',/)
-        DO J=1,NVEL
-          IF((LBCODEI(J).EQ.3).OR.(LBCODEI(J).EQ.13)
-     &       .OR.(LBCODEI(J).EQ.23)) THEN
-            WRITE(16,2225) NBV(J),BARLANHT(J),BARLANCFSP(J)
- 2225       FORMAT(5X,I8,6X,F14.5,15X,F12.3)
-          ENDIF
-        END DO
-      ENDIF
-
-C...IF ANY INTERNAL BARRIER BOUNDARIES WERE SPECIFIED, (NFLUXIB=1)
-C.....WRITE INTERNAL BARRIER BOUNDARY INFORMATION TO UNIT 16 FILE
-
-      IF(NFLUXIB.EQ.1) THEN
-
-C.....WRITE OUT INFO ON SPECIFIED INTERNAL BARRIER BOUNDARIES
-
-        WRITE(16,1112)
-        WRITE(16,2320)
- 2320   FORMAT(//,1X,'INTERNAL BARRIER BOUNDARY INFORMATION ',/)
-
-C.......WRITE CONNECTION NODE NUMBER AND ELEVATION OF THE INTERNAL BARRIER
-C........NODES ABOVE THE GEOID AND THE COEFFICIENTS OF FREE SURFACE SUPERCRITICAL
-C........AND SUBCRITICAL FLOW AT DESIGNATED INTERNAL BARRIER BOUNDARY NODES
-C........TO UNIT 16 (NOTE THAT THIS INFORMATION WAS INPUT FROM THE UNIT 14
-C........FILE WITH BOUNDARY NODE INFORMATION)
-        WRITE(16,2324)
- 2324   FORMAT(//,9X,'NODE',6X,'CONNECTED NODE',6X,'BARRIER HEIGHT',
-     &                4X,'SUB-CRIT. INT. BAR. COEF.',
-     &                4X,'SUPER-CRIT. INT. BAR. COEF.',/)
-        DO J=1,NVEL
-          IF((LBCODEI(J).EQ.4).OR.(LBCODEI(J).EQ.24)) THEN
-            WRITE(16,2325) NBV(J),IBCONN(J),BARINHT(J),
-     &                     BARINCFSB(J),BARINCFSP(J)
- 2325       FORMAT(5X,I8,7X,I8,6X,F14.5,12X,F12.3,17X,F12.3)
-          ENDIF
-       END DO
-      ENDIF
-
-cjjwm001 - begin add
-C...IF ANY INTERNAL BARRIER BOUNDARIES WITH CROSS BARRIER PIPES
-C.....WERE SPECIFIED, (NFLUXIBP=1)
-C.....WRITE INTERNAL BARRIER BOUNDARY INFORMATION WITH CROSS
-C.....BARRIER PIPE INFORMATION TO UNIT 16 FILE
-
-      IF(NFLUXIBP.EQ.1) THEN
-
-C.....WRITE OUT INFO ON SPECIFIED INTERNAL BARRIER BOUNDARIES
-
-        WRITE(16,1112)
-        WRITE(16,2326)
- 2326   FORMAT(//,1X,'INTERNAL BARRIER BOUNDARY WITH CROSS BARRIER',
-     &   ' PIPE INFORMATION ',/)
-
-C.......WRITE CONNECTION NODE NUMBER AND ELEVATION OF THE INTERNAL BARRIER
-C........NODES ABOVE THE GEOID AND THE COEFFICIENTS OF FREE SURFACE SUPERCRITICAL
-C........AND SUBCRITICAL FLOW AT DESIGNATED INTERNAL BARRIER BOUNDARY NODES
-C........IN ADDITION TO CROSS BARRIER PIPE CROWN HEIGHT, CROSS BARRIER PIPE
-C........COEFFICIENT AND CROSS BARRIER PIPE DIAMETER TO UNIT 16
-C........(NOTE THAT THIS INFORMATION WAS INPUT FROM THE UNIT 14 FILE WITH
-C........BOUNDARY NODE INFORMATION)
-        WRITE(16,2327)
- 2327   FORMAT(//,7X,'NODE',4X,'CONNECTED NODE',4X,'BARRIER HEIGHT',
-     &                4X,'SUB-CRIT INT BAR COEF',
-     &                4X,'SUPER-CRIT INT BAR COEF',
-     &                4X,'PIPEHT  ',
-     &                4X,'PIPECOEF',
-     &                4X,'PIPEDIAM',/)
-        DO J=1,NVEL
-          IF((LBCODEI(J).EQ.5).OR.(LBCODEI(J).EQ.25)) THEN
-            WRITE(16,2328) NBV(J),IBCONN(J),BARINHT(J),
-     &                     BARINCFSB(J),BARINCFSP(J),
-     &                     PIPEHT(J),PIPECOEF(J),PIPEDIAM(J)
- 2328       FORMAT(3X,I8,5X,I8,4X,F14.5,8X,F12.3,12X,F12.3,
-     &              2X,F10.5,2X,F10.5,2X,F10.5)
-          ENDIF
-       END DO
-      ENDIF
-cjjwm001 - end add
-
 C...
 C...READ IN INFORMATION CONCERNING OUTPUT REQUIREMENTS FROM UNIT 15 AND
 C...OUTPUT THIS TO UNIT 16
@@ -4324,10 +2967,12 @@ C....CHECK INPUT PARAMETER NOUTE
             CALL logMessage(INFO,'UNIT 61 FORMAT WILL BE BINARY.')
          CASE(3)
             useNetCDF = .true.
+            useNetCDFOutput = .true.
             CALL logMessage(INFO,
      &       'UNIT 61 WILL BE NETCDF CLASSIC MODEL / NETCDF3 FORMAT.')
          CASE(5)
             useNetCDF = .true.
+            useNetCDFOutput = .true.
             CALL logMessage(INFO,
      &  'UNIT 61 WILL BE NETCDF CLASSIC MODEL / NETCDF4 (HDF5) FORMAT.')
          CASE(4,6:)
@@ -4464,10 +3109,12 @@ C....CHECK INPUT PARAMETER NOUTV
             CALL logMessage(INFO,'UNIT 62 FORMAT WILL BE BINARY.')
          CASE(3)
             useNetCDF = .true.
+            useNetCDFOutput = .true.
             CALL logMessage(INFO,
      &       'UNIT 62 WILL BE NETCDF CLASSIC MODEL / NETCDF3 FORMAT.')
          CASE(5)
             useNetCDF = .true.
+            useNetCDFOutput = .true.
             CALL logMessage(INFO,
      &  'UNIT 62 WILL BE NETCDF CLASSIC MODEL / NETCDF4 (HDF5) FORMAT.')
          CASE(4,6:)
@@ -4603,10 +3250,12 @@ C...     CHECK INPUT PARAMETER NOUTC
                CALL logMessage(INFO,'UNIT 81 FORMAT WILL BE BINARY.')
             CASE(3)
                useNetCDF = .true.
+               useNetCDFOutput = .true.
                CALL logMessage(INFO,
      &       'UNIT 81 WILL BE NETCDF CLASSIC MODEL / NETCDF3 FORMAT.')
             CASE(5)
                useNetCDF = .true.
+               useNetCDFOutput = .true.
                CALL logMessage(INFO,
      &  'UNIT 81 WILL BE NETCDF CLASSIC MODEL / NETCDF4 (HDF5) FORMAT.')
             CASE(4,6:)
@@ -4750,11 +3399,13 @@ C...     CHECK INPUT PARAMETER NOUTM
      &          'UNIT 71 AND 72 FORMATS WILL BE BINARY.')
             CASE(3)
                useNetCDF = .true.
+               useNetCDFOutput = .true.
                CALL logMessage(INFO,
      &          'UNIT 71 AND 72 FORMATS WILL BE NETCDF CLASSIC MODEL'
      &           //' / NETCDF3 FORMAT.')
             CASE(5)
                useNetCDF = .true.
+               useNetCDFOutput = .true.
                CALL logMessage(INFO,
      &         'UNIT 71 AND 72 FORMATS WILL BE NETCDF CLASSIC MODEL'
      &         //' / NETCDF4 (HDF5) FORMAT.')
@@ -4892,6 +3543,7 @@ C...  CHECK INPUT PARAMETER NOUTGE
             CALL logMessage(INFO,'UNIT 63 FORMAT WILL BE BINARY.')
          CASE(3)
             useNetCDF = .true.
+            useNetCDFOutput = .true.
             CALL logMessage(INFO,
      &          'UNIT 63 FORMAT WILL BE NETCDF CLASSIC MODEL'
      &           //' / NETCDF3 FORMAT.')
@@ -4900,10 +3552,14 @@ C...  CHECK INPUT PARAMETER NOUTGE
      &       'UNIT 63 FORMAT WILL BE COMPACT ASCII.')
          CASE(5)
             useNetCDF = .true.
+            useNetCDFOutput = .true.
             CALL logMessage(INFO,
      &         'UNIT 63 FORMAT WILL BE NETCDF CLASSIC MODEL'
      &         //' / NETCDF4 (HDF5) FORMAT.')
-         CASE(6:)
+         CASE(7)
+            useXDMF = .true.
+            call logMessage(INFO,'UNIT 63 FORMAT WILL BE XDMF.')              
+         CASE(6,8:)
             call allMessage(ERROR,"This NOUTGE value is invalid.")
             call ADCIRC_Terminate()
          CASE DEFAULT
@@ -4948,7 +3604,6 @@ C...  WRITE NOUTGE,TOUTSGE,TOUTFGE,NTCYSGE,NTCYFGE,NSPOOLGE TO UNIT 16
      &        //,5X,'INFORMATION WILL BE SPOOLED TO UNIT 63 EVERY ',
      &              'NSPOOLGE =',I8,' TIME STEPS')
       ENDIF
-
 C...
 C...  INPUT INFORMATION ABOUT GLOBAL VELOCITY DATA OUTPUT
 C...
@@ -4974,6 +3629,7 @@ C...  CHECK INPUT PARAMETER NOUTGV
             CALL logMessage(INFO,'UNIT 64 FORMAT WILL BE BINARY.')
          CASE(3)
             useNetCDF = .true.
+            useNetCDFOutput = .true.
             CALL logMessage(INFO,
      &          'UNIT 64 FORMAT WILL BE NETCDF CLASSIC MODEL'
      &           //' / NETCDF3 FORMAT.')
@@ -4982,10 +3638,14 @@ C...  CHECK INPUT PARAMETER NOUTGV
      &       'UNIT 64 FORMAT WILL BE COMPACT ASCII.')
          CASE(5)
             useNetCDF = .true.
+            useNetCDFOutput = .true.
             CALL logMessage(INFO,
      &         'UNIT 64 FORMAT WILL BE NETCDF CLASSIC MODEL'
      &         //' / NETCDF4 (HDF5) FORMAT.')
-         CASE(6:)
+         CASE(7)
+            useXDMF = .true.
+            CALL logMessage(INFO,'UNIT 64 FORMAT WILL BE XDMF.')
+         CASE(6,8:)
             call allMessage(ERROR,"This NOUTGV value is invalid.")
             call ADCIRC_Terminate()
          CASE DEFAULT
@@ -5030,6 +3690,36 @@ C...  WRITE NOUTGV,TOUTSGV,TOUTFGV,NTCYSGV,NTCYFGV,NSPOOLGV TO UNIT 16
      &         'NSPOOLGV =',I8,' TIME STEPS')
 
        ENDIF
+
+
+
+C...  COMPUTE PARAMETERS FOR TIME VARIABLE WEIR OUTPUT
+      IF(USE_TVW.AND.NOUT_TVW.NE.0)THEN
+        ALLOCATE(TVW(1:MNP))
+        TVW(:) = 0D0
+#ifdef IBM      
+        NTCYS_TVW=INT((TOUTS_TVW-STATIM)*(86400.D0/DTDP) + 0.5d0,
+     &      KIND(0.0d0))
+        NTCYF_TVW=INT((TOUTF_TVW-STATIM)*(86400.D0/DTDP) + 0.5d0,
+     &      KIND(0.0d0))   
+#else
+        NTCYS_TVW=INT((TOUTS_TVW-STATIM)*(86400.D0/DTDP) + 0.5d0)
+        NTCYF_TVW=INT((TOUTF_TVW-STATIM)*(86400.D0/DTDP) + 0.5d0)
+#endif        
+        IF(NTCYF_TVW.GT.NT)NTCYF_TVW=NT
+        IF(NSPOOL_TVW.EQ.0)THEN
+            NDSETS_TVW = 0
+        ELSE
+#ifdef IBM       
+             NDSETS_TVW=INT((NTCYF_TVW-NTCYS_TVW)/NSPOOL_TVW,KIND(0D0))
+#else
+             NDSETS_TVW=INT((NTCYF_TVW-NTCYS_TVW)/NSPOOL_TVW)
+#endif             
+        ENDIF
+      ENDIF
+
+
+             
 
 C...
 C...  IF TRANSPORT IS INCLUDED IN THE RUN, INPUT INFORMATION ABOUT GLOBAL
@@ -5134,6 +3824,7 @@ C...  CHECK INPUT PARAMETER NOUTGW
      &          'UNIT 73 AND 74 FORMATS WILL BE BINARY.')
             CASE(3)
                useNetCDF = .true.
+               useNetCDFOutput = .true.
                CALL logMessage(INFO,
      &          'UNIT 73 AND 74 FORMATS WILL BE NETCDF CLASSIC MODEL'
      &           //' / NETCDF3 FORMAT.')
@@ -5142,10 +3833,14 @@ C...  CHECK INPUT PARAMETER NOUTGW
      &          'UNIT 73 AND 74 FORMATS WILL BE COMPACT ASCII.')
             CASE(5)
                useNetCDF = .true.
+               useNetCDFOutput = .true.
                CALL logMessage(INFO,
      &         'UNIT 73 AND 74 FORMATS WILL BE NETCDF CLASSIC MODEL'
      &         //' / NETCDF4 (HDF5) FORMAT.')
-            CASE(6:)
+            CASE(7)
+               CALL logMessage(INFO,
+     &            'UNIT 73 AND 74 FORMATS WILL BE XDMF.')
+            CASE(6,8:)
                call allMessage(ERROR,"This NOUTGW value is invalid.")
                call ADCIRC_Terminate()
             CASE DEFAULT
@@ -5190,7 +3885,6 @@ C...  WRITE NOUTGW,TOUTSGW,TOUTFGW,NTCYSGW,NTCYFGW,NSPOOLGW TO UNIT 16
      &                'NSPOOLGW =',I8,' TIME STEPS')
 
          ENDIF
-
       ENDIF
 
 C...
@@ -5388,7 +4082,7 @@ C        initialize parameter arrays needed by iterative solver
          CALL DFAULT(IPARM,RPARM)
          IPARM(1)=ITMAX
          IPARM(2)=ISLDIA
-         OPEN(33,FILE=TRIM(LOCALDIR)//'/'//'fort.33',STATUS='REPLACE')
+         !cms51.06: moved opening of fort.33 to openLogFile sub in global.F
          IPARM(4)=33
          RPARM(1)=CONVCR
          NW = 4*NP + 4*ITMAX
@@ -5408,20 +4102,9 @@ C     RJWW jgf46.00 Initialize nodal attributes, now that grid has been read
 C     in from unit 14 file.
 C     RJW IOOS move until after ZOB definition
       CALL InitNodalAttr(DP, NP, G, NScreen, ScreenUnit, MyProc, NAbOut)
-
-
-C...  INITIALIZE AVERAGING FOR INTERNAL BARRIER WATER LEVELS
-C...  BARAVGWT=0.000 -> NO AVERAGING PERFORMED
-cjjwm001 changed one line
-      BARAVGWT=0.000D0
-      IBSTART=0
-      DO I=1,NVEL
-         RBARWL1AVG(I)=0.D0
-         RBARWL2AVG(I)=0.D0
-      END DO
+CS
 
 C...  INITIALIZE NIBNODECODE(I)
-
       DO I=1,NP
          NIBNODECODE(I)=0
       END DO
@@ -5430,9 +4113,7 @@ C - tcm v50.66.02 -- additions for time varying bathymetry
 C - allocate global arrays for time varying bathymetry
       if (abs(nddt).ne.0) call ALLOC_MAIN13()
 
-
 C - allocate arrays dealing with wind forcing
-
       call alloc_main12()
 
       if (mnproc == 1) then
@@ -5469,6 +4150,7 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
       IF(ABS(NWS).EQ.16) WRITE(16,4026) ! tcm v51.06.02  !gfdl met data
       IF(NWS.EQ.19) WRITE(16,4018)      !rjw added nws = 19
       IF(NWS.EQ.19) WRITE(16,4019)      !rjw added nws = 19
+      IF(NWS.EQ.20) WRITE(16,4020)      !jie added nws = 20
       IF((NFREQ.EQ.0).OR.(FMV.EQ.0.)) WRITE(16,4021)
       IF((NFREQ.GE.1).AND.(FMV.NE.0.)) WRITE(16,4022)
       IF(ILUMP.EQ.0) WRITE(16,4031)
@@ -5515,6 +4197,7 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
  4033 FORMAT(' *   Also, OWI format wind vel and pres will be used,*')
  4018 FORMAT(' *   Asymmetric hurricane wind and pressure forcing  *')
  4019 FORMAT(' *              will be used,                        *')
+ 4020 FORMAT(' *   Generalized Asymmetric Vortex Model forcing     *')
  4021 FORMAT(' *   means and variance calculation will NOT be made,*')
  4022 FORMAT(' *   means and variance calculation will be made,    *')
  4031 FORMAT(' *   the GWCE matrix will be left in consistent form *')
@@ -5539,6 +4222,24 @@ C
      &     //" libraries in order to enable NetCDF input or output.")
          CALL ADCIRC_Terminate()
       ENDIF
+      
+      if ((useNetCDFOutput.eqv..true.).and.
+     &    (WRITE_LOCAL_FILES.eqv..true.)) then
+         call allMessage(ERROR,'Some of the output file format '
+     &      //'specifications in the fort.15 were for NetCDF format. '
+     &      //'However, the command line option -L was also used to '
+     &      //'specify local (subdomain) output files. The problem is '
+     &      //'that ADCIRC cannot produce subdomain output files in '
+     &      //'NetCDF format. '
+     &      //'Please change output file formats to ASCII in the ' 
+     &      //'fort.15 so the output files can be written '
+     &      //'as subdomain output files. ' 
+     &      //'Alternatively, remove the -L command line '
+     &      //'option so that fulldomain output files are produced '
+     &      //'in NetCDF format.')
+         call adcirc_terminate()
+      endif
+         
 
       IF (useNetCDF.eqv..true.) THEN
          CALL logMessage(INFO,"Now reading metadata from fort.15 file"
@@ -5566,19 +4267,16 @@ C
          READ(15,'(A80)',err=99999,end=99998,iostat=ios) base_date
          CALL logMessage(ECHO,"metadata, base_date: "//trim(base_date))
       ENDIF
+C...
+C...  CLOSE FORT.15
+C...
+      CLOSE(15)
 
 C
 C... v49.48.02 tcm -- Deallocating rmax, bcxy and kdresults
 C...                 used for searching and finding points in elements
       IF(ALLOCATED(KDRESULTS)) DEALLOCATE(KDRESULTS)
-      IF(ALLOCATED(RMAX)) DEALLOCATE(RMAX)
-      IF(ALLOCATED(BCXY)) DEALLOCATE(BCXY)
-
-C...
-C...  CLOSE FILES FORT.14 and FORT.15
-C...
-      CLOSE(14)
-      CLOSE(15)
+      call freeMesh()
 
 C... zc50.80 - All compute processors pass through here and check if anyone
 C              encountered an error while reading the input files.
@@ -5633,15 +4331,17 @@ c******************************************************************************
       SUBROUTINE READ_INPUT_3D(StaTime,NT)
       USE SIZES
 C    kmd48.33bc - added the variables from Global
-      USE GLOBAL, ONLY: NETA, RES_BC_FLAG, BCSTATIM, RBCTIME1,
+      USE GLOBAL, ONLY: RES_BC_FLAG, BCSTATIM, RBCTIME1,
      &                  RBCTIME2, SBCTIME1, SBCTIME2, TBCTIME1,
-     &                  TBCTIME2,RBCTIMEINC, SBCTIMEINC,
+     &                  TBCTIME2, RBCTIMEINC, SBCTIMEINC,
      &                  TBCTIMEINC, SBCSTATIM, TBCSTATIM,
      &                  BCFLAG_LNM, BCFLAG_TEMP, TTBCSTATIM,
-     &                  TTBCTIMEINC, SPONGEDIST, NBD, Sponge,
+     &                  TTBCTIMEINC, SPONGEDIST, Sponge,
      &                  scratchMessage, INFO, DEBUG, ERROR, allMessage,
      &                  setMessageSource, logMessage, unsetMessageSource,
-     &                  OUTPUTSPONGE, NOPE, screenMessage, ECHO
+     &                  OUTPUTSPONGE, screenMessage, ECHO, sec2day
+      USE MESH, ONLY : NP, DP, X, Y, CPP
+      USE BOUNDARIES, ONLY : NETA, NOPE, NBD
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE GLOBAL_3DVS
       USE NodalAttributes, ONLY : Z0b_var
@@ -5667,6 +4367,7 @@ C    kmd48.33bc - additional variables for sponge layers
       REAL(SZ),ALLOCATABLE :: compdist(:)
       INTEGER :: BCnode, counter
       INTEGER, ALLOCATABLE :: nodedist(:)
+      INTEGER :: IDen3D ! second instance of IDEN in the fort.15 file
       INTEGER :: ios   ! i/o status of read operation
 C
       call setMessageSource("read_input_3D")
@@ -5688,23 +4389,18 @@ C...
  300  FORMAT(//,1X,'3D SOLUTION INFORMATION',/)
 
 C...  SPECIFY WHETHER A BAROTROPIC OR BAROCLINIC RUN
-
-      READ(15,*) IDen
-      WRITE(16,421) IDen
- 421  FORMAT(/,5X,'IDen = ',I3)
-      IF(ABS(IDen).GT.4) THEN
-        IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-          WRITE(screenunit,350)
-          WRITE(screenunit,423)
-        ENDIF
-        WRITE(16,350)
-        WRITE(16,423)
- 423    FORMAT(/,2X,'    IDen MUST = -4, -3, -2, -1, 0, 1, 2, 3, 4')
-        CALL ADCIRC_Terminate()
-      ENDIF
-
-      IF(IDen.NE.0) CBaroclinic = .TRUE.
-      IF(IDen.GT.0) C3D_BTrans  = .TRUE.
+      !
+      ! jgf51.52.35: Made this consistent with the previous read of IDEN.
+      ! Not sure why we read IDEN twice, but need to keep this for backward
+      ! compatibility. 
+      READ(15,*) IDen3D
+      if (IDen3D.ne.IDEN) then
+         call allMessage(ERROR,'Both IDEN values must be the same.')
+         call adcirc_terminate()
+      endif
+      if (IDen.GT.0) then
+         C3D_BTrans  = .TRUE.
+      endif
 
 C...  READ IN THE TYPE OF BOTTOM BOUNDARY CONDITION AND THE SLIP COEFFICIENTS
 
@@ -6117,78 +4813,86 @@ C    kmd48.33bc - added in the information of the 3D boundary conditions
 C                 these boundary conditions are the level of no motion,
 C                 salinity and temperature forcings.
       IF (CBAROCLINIC) THEN
-        READ(15,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP !bc flags for elevation and temperature
-        WRITE(16,429) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP
- 429  FORMAT(/,5x,'RES_BC_FLAG = ',I3,5X,'BCFLAG_LNM = ',I3,5X,
+         READ(15,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP !bc flags for elevation and temperature
+         WRITE(16,429) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP
+ 429     FORMAT(/,5x,'RES_BC_FLAG = ',I3,5X,'BCFLAG_LNM = ',I3,5X,
      &    'BCFLAG_TEMP = ',I3)
-       IF ((RES_BC_FLAG.LT.0)) THEN  ! Diagnostic
-         IF (ABS(RES_BC_FLAG).GE.1) THEN ! only have one set of values to read
-           IF (NOPE.GT.0) THEN
-             READ(15,*) RBCTIMEINC
-             READ(15,*) BCSTATIM
-             WRITE(16,430) RBCTIMEINC
-           END IF
-         END IF
-       ELSE IF ((RES_BC_FLAG.GT.0)) THEN
-         IF (ABS(RES_BC_FLAG).EQ.1) THEN ! only read in the elevation changes
-           IF (NOPE.GT.0) THEN
-             READ(15,*) RBCTIMEINC
-             READ(15,*) BCSTATIM
-             WRITE(16,430) RBCTIMEINC
- 430         FORMAT(/,5X,'Read in elevation boundary conditions
+         !
+         !jgf51.52.35: Make sure the RES_BC_FLAG value matches the IDEN value.
+         if (RES_BC_FLAG.ne.IDEN) then
+            call allMessage(ERROR,
+     & 'The value of RES_BC_FLAG must be the same as the value of IDEN.')
+            call adcirc_terminate()
+         endif         
+         ! 
+         IF ((RES_BC_FLAG.LT.0)) THEN  ! Diagnostic
+            IF (ABS(RES_BC_FLAG).GE.1) THEN ! only have one set of values to read
+               IF (NOPE.GT.0) THEN
+                  READ(15,*) RBCTIMEINC
+                  READ(15,*) BCSTATIM
+                  WRITE(16,430) RBCTIMEINC
+               END IF
+            END IF
+         ELSE IF ((RES_BC_FLAG.GT.0)) THEN
+            IF (ABS(RES_BC_FLAG).EQ.1) THEN ! only read in the elevation changes
+               IF (NOPE.GT.0) THEN
+                  READ(15,*) RBCTIMEINC
+                  READ(15,*) BCSTATIM
+                  WRITE(16,430) RBCTIMEINC
+ 430             FORMAT(/,5X,'Read in elevation boundary conditions
      &                every', E9.2 ,'seconds')
-           END IF
-         ELSE IF ((ABS(RES_BC_FLAG).EQ.2)) THEN
-           IF (NOPE.GT.0) THEN
-             READ(15,*) RBCTIMEINC, SBCTIMEINC
-             READ(15,*) BCSTATIM, SBCSTATIM
-             WRITE(16,431) RBCTIMEINC, SBCTIMEINC
- 431         FORMAT(/,5X,'Read in elevation boundary conditions
+               END IF
+            ELSE IF ((ABS(RES_BC_FLAG).EQ.2)) THEN
+               IF (NOPE.GT.0) THEN
+                  READ(15,*) RBCTIMEINC, SBCTIMEINC
+                  READ(15,*) BCSTATIM, SBCSTATIM
+                  WRITE(16,431) RBCTIMEINC, SBCTIMEINC
+ 431              FORMAT(/,5X,'Read in elevation boundary conditions
      &                every', E9.2 ,'seconds and salinity
      &                boundary conditions every', E9.2,
      &                'seconds')
-           END IF
-         ELSE IF ((ABS(RES_BC_FLAG).EQ.3)) THEN
-           IF (NOPE.GT.0) THEN
-             READ(15,*) RBCTIMEINC, TBCTIMEINC
-             READ(15,*) BCSTATIM, TBCSTATIM
-             WRITE(16,432) RBCTIMEINC, TBCTIMEINC
- 432         FORMAT(/,5X,'Read in elevation boundary conditions
+               END IF
+            ELSE IF ((ABS(RES_BC_FLAG).EQ.3)) THEN
+               IF (NOPE.GT.0) THEN
+                  READ(15,*) RBCTIMEINC, TBCTIMEINC
+                  READ(15,*) BCSTATIM, TBCSTATIM
+                  WRITE(16,432) RBCTIMEINC, TBCTIMEINC
+ 432              FORMAT(/,5X,'Read in elevation boundary conditions
      &                every', E9.2 ,'seconds and temperature
      &                boundary conditions every', E9.2,
      &                'seconds')
-             IF (BCFLAG_TEMP.NE.0) THEN
-                 READ(15,*) TTBCTIMEINC, TTBCSTATIM
-                 WRITE(16,434) TTBCTIMEINC
- 434             FORMAT(/,5X,'Read in the top temperature
+                  IF (BCFLAG_TEMP.NE.0) THEN
+                     READ(15,*) TTBCTIMEINC, TTBCSTATIM
+                     WRITE(16,434) TTBCTIMEINC
+ 434                 FORMAT(/,5X,'Read in the top temperature
      &                   boundary condition every', E9.2 ,'
      &                   seconds.')
-             END IF
-           END IF
-         ELSE IF ((ABS(RES_BC_FLAG).EQ.4)) THEN
-           IF (NOPE.GT.0) THEN
-             READ(15,*) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
-             READ(15,*) BCSTATIM, SBCSTATIM, TBCSTATIM
-             WRITE(16,433) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
- 433         FORMAT(/,5X,'Read in elevation boundary conditions
+                  END IF
+               END IF
+            ELSE IF ((ABS(RES_BC_FLAG).EQ.4)) THEN
+               IF (NOPE.GT.0) THEN
+                  READ(15,*) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
+                  READ(15,*) BCSTATIM, SBCSTATIM, TBCSTATIM
+                  WRITE(16,433) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
+ 433              FORMAT(/,5X,'Read in elevation boundary conditions
      &                every', E9.2 ,'seconds and salinity
      &                boundary conditions every', E9.2,
      &                'seconds and temperature boundary conditions
      &                every', E9.2, 'seconds')
-             IF (BCFLAG_TEMP.NE.0) THEN
-                 READ(15,*) TTBCTIMEINC, TTBCSTATIM
-                 WRITE(16,434) TTBCTIMEINC
-             END IF
-           END IF
-         ELSE
-             WRITE(16,350)
-             WRITE(16,*) 'RES_BC_FLAG = ',RES_BC_FLAG
-             WRITE(16,9722)
- 9722    FORMAT(/,1X,'Your selection of RES_BC_FLAG (a UNIT 15 input ',
+                  IF (BCFLAG_TEMP.NE.0) THEN
+                     READ(15,*) TTBCTIMEINC, TTBCSTATIM
+                     WRITE(16,434) TTBCTIMEINC
+                 END IF
+               END IF
+            ELSE
+               WRITE(16,350)
+               WRITE(16,*) 'RES_BC_FLAG = ',RES_BC_FLAG
+               WRITE(16,9722)
+ 9722         FORMAT(/,1X,'Your selection of RES_BC_FLAG (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-             CALL ADCIRC_Terminate()
+               CALL ADCIRC_Terminate()
+            END IF
          END IF
-       END IF
       END IF
 
 C    kmd48.33bc - added distance information for the sponge layer.
@@ -6538,8 +5242,9 @@ C-----------------------------------------------------------------------
      &                        lat, lon, sta1, sta2, sta3, stat_lun,
      &                        Description)
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, SLAM0, SFEA0, ICS, parse, CPP,
+      USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, parse,
      &   a2f, DEBUG, allMessage, setMessageSource, unsetMessageSource
+      USE MESH, ONLY : ICS, CPP, SLAM0, SFEA0
       IMPLICIT NONE
       CHARACTER(50) :: names(num_stations)
       INTEGER num_stations, stat_lun
@@ -6617,12 +5322,11 @@ C-----------------------------------------------------------------------
 
       SUBROUTINE kdtsearch(InputXCoordinate, InputYCoordinate,
      &     OutputElement, StationNumber, Description)
-
       use sizes, only : sz, MyProc
-      use global, only : NE,NM,X,Y,Areas,NFOver,NScreen, ScreenUnit,
-     &                   rmax,bcxy,kdresults,srchdp,tree, DEBUG,
-     &                   screenMessage, allMessage,
-     &                   setMessageSource, unsetMessageSource
+      use global, only : NFOver, NScreen, ScreenUnit, srchdp, tree, 
+     &   kdresults, DEBUG, screenMessage, allMessage, setMessageSource, 
+     &   unsetMessageSource
+      use mesh, only : ne, nm, x, y, areas, rmax, bcxy 
       use adcirc_mod, only : adcirc_terminate
       use kdtree2_module
 #ifdef CMPI
@@ -6761,9 +5465,9 @@ C-----------------------------------------------------------------------
       SUBROUTINE CoordinateToElement(InputXCoordinate, InputYCoordinate,
      &     OutputElement, StationNumber, Description)
       USE SIZES, ONLY : SZ, MyProc
-      USE GLOBAL, ONLY: NE, NM, X, Y, Areas, NFOver, NScreen, 
-     & screenMessage, allMessage,
+      USE GLOBAL, ONLY: NFOver, NScreen, screenMessage, allMessage,
      & DEBUG, ScreenUnit, setMessageSource, unsetMessageSource
+      USE MESH, ONLY : NE, NM, X, Y, Areas
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
@@ -6871,8 +5575,9 @@ C-----------------------------------------------------------------------
       SUBROUTINE ComputeInterpolatingFactors(InputXCoordinate,
      &     InputYCoordinate, InputElement, Factor1, Factor2, Factor3)
 
-      USE GLOBAL, ONLY : NM, X, Y, Areas, DEBUG, screenMessage,
+      USE GLOBAL, ONLY : DEBUG, screenMessage,
      &    setMessageSource, unsetMessageSource, allMessage
+      USE MESH, ONLY : NM, X, Y, Areas
       IMPLICIT NONE
       REAL(8), intent(in) :: InputXCoordinate                  ! cartesian
       REAL(8), intent(in) :: InputYCoordinate                  ! cartesian
@@ -6905,5 +5610,53 @@ C
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE ComputeInterpolatingFactors
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C                    S U B R O U T I N E   
+C          L O G   N A M E L I S T   R E A D   S T A T U S
+C-----------------------------------------------------------------------
+C     jgf52.08.02: Record the i/o status associated with reading the
+C     namelist using the negative, zero, or positive value of ios. 
+C-----------------------------------------------------------------------
+      subroutine logNamelistReadStatus(nmlname, ios)
+      use global, only : logMessage, scratchMessage, DEBUG, ECHO, INFO,
+     &   WARNING, ERROR, setMessageSource, unsetMessageSource,
+     &   allMessage
+      implicit none
+      character(len=1000), intent(in) :: nmlname
+      integer, intent(in) :: ios
+
+      call setMessageSource("logNameListReadStatus")
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      
+      select case(ios)
+      ! negative value indicates that we reached the end of the file
+      ! before reading the namelist (not an error, since namelists
+      ! are generally used for optional input)
+      case(:-1) 
+         call logMessage(INFO,
+     &      'End-of-file when searching for '//trim(nmlName)//'.')
+      ! zero indicates success
+      case(0)
+         call logMessage(INFO,
+     &      'The '//trim(nmlName)//' namelist was found.')
+      ! positive values indicate some sort of i/o error, other than
+      ! reaching the end-file before finding the namelist
+      case(1:)
+         write(scratchMessage,'(a,i0,a)')
+     &      'Could not read '//trim(nmlName)//
+     &     ' namelist. The Fortran i/o error code was ',ios,'.'
+         call allMessage(ERROR,scratchMessage)
+      end select    
+      
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      end subroutine logNamelistReadStatus
 C-----------------------------------------------------------------------
 

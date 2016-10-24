@@ -1290,7 +1290,7 @@ C
            WRITE(51,'(A80)') NFREQMSG
            DO I=1, NFREQ  
              READ(LOC2(IPROC),'(A80)') HEADER(I)
-             WRITE(51,'(A80)') HEADER(I)
+             WRITE(51,*) trim(HEADER(I))
            ENDDO
            READ(LOC2(IPROC),*) NUMSTNS
            WRITE(51,*) NSTAE
@@ -1328,7 +1328,7 @@ C
           DO IFREQ=1, NFREQ
              IREC = IFREQ + (J-1)*NFREQ
              READ(8,REC=IREC) HARDAT(IFREQ)
-             WRITE(51,'(A80)') HARDAT(IFREQ)
+             WRITE(51,*) trim(HARDAT(IFREQ))
           ENDDO
       ENDDO        
 C
@@ -1514,10 +1514,10 @@ C
          IF (IPROC.EQ.1) THEN
            READ(LOC2(IPROC),'(A80)')  NFREQMSG
            READ(NFREQMSG,*) NFREQ 
-           WRITE(53,'(A80)') NFREQMSG
+           WRITE(53,*) trim(NFREQMSG)
            DO I=1, NFREQ  
              READ(LOC2(IPROC),'(A80)') HEADER(I)
-             WRITE(53,'(A80)') HEADER(I)
+             WRITE(53,*) trim(HEADER(I))
            ENDDO
            READ(LOC2(IPROC),*) NP1
            WRITE(53,*) NNODG
@@ -1559,7 +1559,7 @@ C
          DO IFREQ=1, NFREQ 
             IREC = IFREQ + (J-1)*NFREQ
             READ(8,REC=IREC) HARDAT(IFREQ)    
-            WRITE(53,'(A80)') HARDAT(IFREQ)
+            WRITE(53,*) trim(HARDAT(IFREQ))
          ENDDO
       ENDDO        
 C
@@ -1630,10 +1630,10 @@ C
          IF (IPROC.EQ.1) THEN
            READ(LOC2(IPROC),'(A80)')  NFREQMSG
            READ(NFREQMSG,*) NFREQ 
-           WRITE(54,'(A80)') NFREQMSG
+           WRITE(54,*) trim(NFREQMSG)
            DO I=1, NFREQ  
              READ(LOC2(IPROC),'(A80)') HEADER(I)
-             WRITE(54,'(A80)') HEADER(I)
+             WRITE(54,*) trim(HEADER(I))
            ENDDO
            READ(LOC2(IPROC),*) NP1
            WRITE(54,*) NNODG
@@ -1675,7 +1675,7 @@ C
          DO IFREQ=1, NFREQ 
             IREC = IFREQ + (J-1)*NFREQ
             READ(8,REC=IREC) HARDAT(IFREQ)    
-            WRITE(54,'(A80)') HARDAT(IFREQ)
+            WRITE(54,*) trim(HARDAT(IFREQ))
          ENDDO
       ENDDO        
 C
@@ -3421,6 +3421,11 @@ C  jgf Updated for v45.06 09/07/2005                                        C
 C                                                                           C
 C---------------------------------------------------------------------------C
 C
+      USE HARM, ONLY : FNAM8, HAFREQ, HAFF, HAFACE, HA, STAELV, STAULV,
+     &                  STAVLV, GLOELV, GLOULV, GLOVLV, ELAV, ELVA, 
+     &                  CHARMV, ICHA, IHARIND, ITHAS, MM, XELAV, YELAV,
+     &                  XELVA, YELVA, ICALL, ITMV, ITUD, NF, NFREQ, NZ,
+     &                  TIMEUD, NAMEFR, NTSTEPS
       IMPLICIT NONE
       LOGICAL FOUND
 C     LOGICAL CHARMV
@@ -3441,14 +3446,15 @@ C  kmd48.33bc updates for 3d output of hotstart information
       REAL(SZ),ALLOCATABLE :: SAL(:,:),TEMP(:,:)
 
       REAL(8) TIMEHSF
+      INTEGER :: NSTAEX, NSTAVX
 
 C  kmd48.33bc updates for 3d output of hotstart information
       INTEGER InputFileFmtVn,K
       INTEGER N3DSD,I3DSDRec,N3DSV,I3DSVRec,N3DST,I3DSTRec,N3DGD,
      &        I3DGDRec,N3DGV,I3DGVRec,N3DGT,I3DGTRec
       INTEGER NPX,NEX,NPG,NEG
-
-
+      !
+      INTEGER :: N
 C
 C Allocate local work arrays
 C
@@ -3772,6 +3778,154 @@ C  kmd48.33bc add in the 3D barotropic and baroclinic information
                CLOSE(LOCHSF)
             END DO
          END IF
+
+c kmd 50 update to include harmonics in hotstart files
+
+         IF ((IHARIND.EQ.1).AND.(ITHSF.GT.ITHAS)) THEN 
+            DO IPROC=1,NPROC
+               IF(IHOT.EQ.67) LOCFN(1:14) = 'PE0000/fort.67'
+               IF(IHOT.EQ.68) LOCFN(1:14) = 'PE0000/fort.68'
+               LOCHSF=LOC2(IPROC)
+               WRITE(LOCFN(3:6),'(I4.4)') (IPROC-1)
+               OPEN (LOCHSF,FILE=LOCFN,ACCESS='DIRECT',RECL=8)
+               IF ((IM.EQ.10).AND.((IM.EQ.1).OR.(IM.EQ.2).OR. 
+     &             (IM.EQ.11).OR.(IM.EQ.21).OR.(IM.EQ.31))) THEN
+                  IHOTSTP=8+(NNODP(IPROC)*7)+(NELP(IPROC)*1)+31+
+     &                    (NNODP(IPROC)*7)+(NNODP(IPROC)*NFEN*5)
+               ELSE IF ((IM.EQ.10).AND.((IM.NE.1).OR.(IM.NE.2).OR.
+     &                  (IM.NE.11).OR.(IM.NE.21).OR.(IM.NE.31))) THEN 
+                  IHOTSTP=8+(NNODP(IPROC)*7)+(NELP(IPROC)*1)+31
+               ELSE IF ((IM.NE.10).AND.((IM.EQ.1).OR.(IM.EQ.2).OR. 
+     &             (IM.EQ.11).OR.(IM.EQ.21).OR.(IM.EQ.31))) THEN
+                  IHOTSTP=8+(NNODP(IPROC)*6)+(NELP(IPROC)*1)+31+
+     &                    (NNODP(IPROC)*7)+(NNODP(IPROC)*NFEN*5)
+               ELSE IF ((IM.NE.10).AND.((IM.NE.1).OR.(IM.NE.2).OR.
+     &                  (IM.NE.11).OR.(IM.NE.21).OR.(IM.NE.31))) THEN 
+                  IHOTSTP=8+(NNODP(IPROC)*6)+(NELP(IPROC)*1)+31
+               END IF
+               IF ((IDEN.EQ.1).OR.(IDEN.EQ.2).OR.
+     &             (IDEN.EQ.3)) THEN 
+                  IHOTSTP=IHOTSTP+(NNODP(IPROC)*NFEN*1)
+               ELSE IF (IDEN.EQ.4) THEN 
+                  IHOTSTP=IHOTSTP+(NNODP(IPROC)*NFEN*2) 
+               END IF 
+               IHOTSTP=IHOTSTP+1
+               READ(LOCHSF,REC=IHOTSTP) ICHA
+               READ(LOCHSF,REC=IHOTSTP+1) NZ 
+               READ(LOCHSF,REC=IHOTSTP+2) NF 
+               READ(LOCHSF,REC=IHOTSTP+3) MM 
+               READ(LOCHSF,REC=IHOTSTP+4) NPX 
+               READ(LOCHSF,REC=IHOTSTP+5) NSTAEX 
+               READ(LOCHSF,REC=IHOTSTP+6) NSTAVX
+               READ(LOCHSF,REC=IHOTSTP+7) NHASE
+               READ(LOCHSF,REC=IHOTSTP+8) NHASV 
+               READ(LOCHSF,REC=IHOTSTP+9) NHAGE
+               READ(LOCHSF,REC=IHOTSTP+10) NHAGV 
+               READ(LOCHSF,REC=IHOTSTP+11) ICALL 
+               READ(LOCHSF,REC=IHOTSTP+12) NFREQ 
+               IHOTSTP = IHOTSTP + 12
+            
+               DO I=1,NFREQ+NF
+                  FNAME=NAMEFR(I) 
+                  READ(LOCHSF,REC=IHOTSTP+1) FNAM8(1)
+                  READ(LOCHSF,REC=IHOTSTP+2) FNAM8(2)
+                  IHOTSTP = IHOTSTP + 2 
+                  READ(LOCHSF,REC=IHOTSTP+1) HAFREQ(I)
+                  READ(LOCHSF,REC=IHOTSTP+2) HAFF(I)
+                  READ(LOCHSF,REC=IHOTSTP+3) HAFACE(I)
+                  IHOTSTP=IHOTSTP+3
+               END DO 
+
+C --       Write out time of most recent H.A. update
+
+               READ(LOCHSF,REC=IHOTSTP+1) TIMEUD
+               READ(LOCHSF,REC=IHOTSTP+2) ITUD
+               IHOTSTP=IHOTSTP+2
+ 
+C --       Write out LHS Matrix 
+
+               IHOTSTP=IHOTSTP+1
+               DO I=1,MM
+                  DO K=1,MM
+                     READ(LOCHSF,REC=IHOTSTP) HA(I,K)
+                     IHOTSTP=IHOTSTP+1 
+                  END DO 
+               END DO 
+
+C --      Read in load vectors to hotstart file.
+               IF (NHASE.NE.0) THEN 
+                 DO N=1,NSTAEX 
+                    DO I=1,MM
+                       READ(LOCHSF,REC=IHOTSTP) STAELV(I,N)
+                       IHOTSTP=IHOTSTP+1
+                    END DO 
+                 END DO 
+               END IF 
+
+               IF (NHASV.NE.0) THEN 
+                 DO N=1,NSTAVX 
+                    DO I=1,MM
+                       READ(LOCHSF,REC=IHOTSTP) STAULV(I,N)
+                       IHOTSTP=IHOTSTP+1
+                       READ(LOCHSF,REC=IHOTSTP) STAVLV(I,N)
+                       IHOTSTP=IHOTSTP+1
+                    END DO 
+                 END DO 
+               END IF 
+
+               IF (NHAGE.NE.0) THEN 
+                 DO N=1,NNODP(IPROC)
+                    DO I=1,MM
+                       INDX=IMAP_NOD_LG(I,IPROC) 
+                       READ(LOCHSF,REC=IHOTSTP) GLOELV(I,INDX)
+                       IHOTSTP=IHOTSTP+1
+                    END DO 
+                 END DO 
+               END IF 
+
+               IF (NHAGV.NE.0) THEN 
+                 DO N=1,NNODP(IPROC) 
+                    DO I=1,MM
+                       INDX=IMAP_NOD_LG(I,IPROC)
+                       READ(LOCHSF,REC=IHOTSTP) GLOULV(I,INDX)
+                       IHOTSTP=IHOTSTP+1
+                       READ(LOCHSF,REC=IHOTSTP) GLOVLV(I,INDX)
+                       IHOTSTP=IHOTSTP+1
+                    END DO 
+                 END DO 
+               END IF 
+
+               IF (CHARMV) THEN 
+                 IF ((IHARIND.EQ.1).AND.(ITHSF.GT.ITMV)) THEN 
+                  READ(LOCHSF,REC=IHOTSTP) NTSTEPS
+                  IHOTSTP=IHOTSTP+1
+                  IF (NHAGE.NE.0) THEN 
+                     DO I=1,NNODP(IPROC)
+                        INDX=IMAP_NOD_LG(I,IPROC)
+                        READ(LOCHSF,REC=IHOTSTP) ELAV(INDX)
+                        IHOTSTP=IHOTSTP+1
+                        READ(LOCHSF,REC=IHOTSTP) ELVA(INDX)
+                        IHOTSTP=IHOTSTP+1
+                     END DO 
+                  END IF 
+                  IF (NHAGV.NE.0) THEN 
+                     DO I=1,NNODP(IPROC)
+                        INDX=IMAP_NOD_LG(I,IPROC)
+                        READ(LOCHSF,REC=IHOTSTP) XELAV(INDX)
+                        IHOTSTP=IHOTSTP+1
+                        READ(LOCHSF,REC=IHOTSTP) YELAV(INDX)
+                        IHOTSTP=IHOTSTP+1
+                        READ(LOCHSF,REC=IHOTSTP) XELVA(INDX)
+                        IHOTSTP=IHOTSTP+1
+                        READ(LOCHSF,REC=IHOTSTP) YELVA(INDX)
+                        IHOTSTP=IHOTSTP+1
+                     END DO 
+                  END IF 
+                 END IF 
+               END IF 
+               CLOSE(LOCHSF)
+            END DO 
+         END IF 
 
 
 C--Open Appropriate Hot Start File based on the value of IHOT from the fort.15 file 
@@ -5098,3 +5252,268 @@ C---------------------------------------------------------------------------
 C     End of subroutine post47
 C---------------------------------------------------------------------------
 
+      !------------------------------------------------------------------
+      !  S U B R O U T I N E   M E R G E   S U B D O M A I N   F I L E S
+      !------------------------------------------------------------------
+      ! jgf52.04.03: Merge subdomain output files back into a fulldomain
+      ! output file. Developed to handle nodecode and noff and to 
+      ! analyze whether ghost and resident values really are the 
+      ! same in all cases.
+      !------------------------------------------------------------------
+      subroutine mergeSubdomainFiles(filename)
+      use post_global
+      implicit none
+      character(len=2048), intent(in) :: filename ! e.g. "fort.63" 
+      integer, parameter :: NODE = 1         ! nodally based data
+      integer, parameter :: ELEMENT = 2      ! elementally based data
+      integer, parameter :: INTEGERTYPE = 1  ! for integer data
+      integer, parameter :: REALTYPE = 2     ! for real(8) data
+      integer :: dataType     ! set to INTEGERTYPE or REALTYPE
+      integer :: dataLocation ! set to NODE or ELEMENT
+  
+      real(8) :: dataVal(3)  ! real values read from subdomain
+      integer :: iRawValue  ! integer value read from subdomain
+      integer :: ite        ! time step associated with dataset
+      real(8) :: timeoute    ! time associated with dataset
+      real(8) :: timeInc     ! time increment at which datasets were written 
+      integer :: tsInc      ! time step increment at which datasets were written 
+      integer :: numFullDomainValues
+      integer :: numSubDomainValues
+      integer :: numSets  ! number of time dependent datasets
+      integer :: numVals  ! number of values in the subdomain file
+      integer :: irtype   ! physical dimensionality of data (1, 2, or 3)
+      real(8), allocatable :: fullDomainReal(:,:) ! dim (irtype,fdVals)
+      integer, allocatable :: fullDomainInteger(:) ! dim (fdvals)
+      integer :: fdLocation  ! fulldomain node or element number
+      logical, allocatable :: setYet(:) ! .true. if the fulldomain value has been set
+      logical, allocatable :: ambiguous(:) ! .true. if resident val != ghost val
+      logical :: initialized ! .true. if data arrays have been allocated
+      logical :: found       ! .true. if the subdomain file was found
+      integer, allocatable  ::  loc2(:)
+      character(len=2048), allocatable  ::  locname(:)
+      character(len=2048) ::  outputFmt ! format string
+      character(len=85) :: inline ! file metadata header
+     
+      integer :: i, j, k, n, iproc ! loop counters
+      integer :: idum              ! toss the subdomain node number
+      !
+      ! allocate memory for arrays dimensioned by number of subdomains 
+      allocate (loc2(mnproc))
+      allocate (locname(mnproc))    
+      ! set default datatype
+      dataType = REALTYPE
+      ! noff is the only data type that is elementally based
+      if ((trim(filename).eq.'noff.100').or.
+     &    (trim(filename).eq.'nodecode.63')) then
+         dataType = INTEGERTYPE
+      endif
+      initialized = .false.
+      ! 
+      ! Loop over subdomains; find and open subdomain output files.
+      do iproc = 1,nproc
+         ! find and open subdomain output files.
+         locname(iproc) = 'PE0000/'//trim(filename)
+         write(locname(iproc)(3:6),'(i4.4)') (iproc-1)
+         loc2(iproc) = 105 + (iproc-1)
+         inquire(file=locname(iproc),exist=found)
+         if (found) then
+           open(loc2(iproc),file=locname(iproc))
+         else
+           write(*,'(a)') 'ERROR: Could not find "'//
+     &        trim(locname(iproc))//
+     &        '". Subdomain files of this type will not be merged.'
+           return
+         endif
+      end do      
+      ! 
+      ! Loop over subdomains; read off header lines and initialize 
+      ! arrays based on the characteristics of the file
+      do iproc = 1,nproc
+         ! read metadata header
+         read(loc2(iproc),'(a85)')  inline
+         ! read file characteristics header
+         read(loc2(iproc),*)  numSets, numVals, timeInc, tsInc, irtype
+         !
+         ! Determine if this is a nodal or elemental quantity and 
+         ! allocate fulldomain arrays to hold the data
+         if ( (numVals.ne.nnodp(iproc)) .and. 
+     &           (numVals.ne.nelp(iproc)) ) then
+            write(*,'(a,i0,a,i0,a,i0,a)') 
+     &      'ERROR: The number of values per data set in the file "'//
+     &       trim(locname(iproc))//
+     &      '" does not match the number of nodes or elements '//
+     &      'in the subdomain; numVals=',numVals,
+     &      ' number of nodes=',nnodp(iproc),
+     &      ' number of elements=',nelp(iproc),'.'
+            stop
+         endif
+         ! allocate data for fulldomain arrays
+         if (initialized.eqv..false.) then
+            if (numVals.eq.nnodp(iproc)) then
+               dataLocation = NODE
+               numFullDomainValues = nnodg
+            endif
+            if (numVals.eq.nelp(iproc)) then
+               dataLocation = ELEMENT
+               numFullDomainValues = nelg
+            endif         
+             if (dataType.eq.REALTYPE) then
+               allocate(fulldomainReal(irtype,numFullDomainValues))
+            endif
+            if (dataType.eq.INTEGERTYPE) then
+               allocate(fulldomainInteger(numFullDomainValues))
+            endif
+            allocate(setYet(numFullDomainValues))
+            allocate(ambiguous(numFullDomainValues))
+            setYet(:) = .false.
+            ambiguous(:) = .false.
+            initialized = .true.
+         endif
+      enddo
+      !
+      ! open fulldomain file and write header
+      open(unit=100,file=trim(filename))
+      write(100,'(a85)') inline
+      write(100,3645) numSets,numFullDomainValues,timeInc,tsInc,irtype
+3645  format(1x,i0,1x,i0,1x,e15.7,1x,i0,1x,i0)
+C
+C     jgf46.00 The loop over data sets is an infinite loop because the
+C     number of data sets at the top of the file will be wrong if the
+C     run was hot started.
+C
+      do ! loop infinitely over time dependent data sets
+         !
+         ! loop over subdomains
+         do iproc=1,nproc
+            ! read time and timestep
+            read(loc2(iproc),fmt=2120,end=9999) timeoute,ite
+            ! determine the number of lines in the dataset
+            select case(dataLocation)          
+            case(NODE) 
+               numSubdomainValues = nnodp(iproc)
+            case(ELEMENT)
+               numSubdomainValues = nelp(iproc)
+            case default
+               write(*,'(a)') 'ERROR: Unrecognized data location.'
+               stop
+            end select
+            !
+            ! read all the datavalues in this subdomain, mapping them
+            ! to their fulldomain positions 
+            do k = 1,numSubdomainValues
+               !
+               ! Read the data according to its type
+               if (dataType.eq.REALTYPE) then
+                  read(loc2(iproc),fmt=*,end=9999) idum,
+     &                 (dataVal(j),j=1,irtype)
+               endif
+               if (dataType.eq.INTEGERTYPE) then
+                  read(loc2(iproc),fmt=*,end=9999) idum, iRawValue
+               endif
+               !
+               ! Map the data according to its location.
+               if (dataLocation.eq.NODE) then
+                  ! look up fulldomain node number
+                  fdLocation = imap_nod_lg(k,iproc)
+               endif
+               if (dataLocation.eq.ELEMENT) then
+                  ! look up fulldomain element number, taking absolute
+                  ! value so we can also process "ghost" elements
+                  fdLocation = abs(imap_el_lg(k,iproc))
+               endif
+               !
+               ! Check/set the data (resident and ghost values should match)
+               if (setYet(fdLocation).eqv..true.) then
+                  ! check to ensure that the value we've read from the 
+                  ! subdomain for this fulldomain location matches the 
+                  ! value we've already written to that fulldomain location
+                  if (dataType.eq.REALTYPE) then
+                     do j=1,irtype
+                        ! this .ne. is subject to round off error
+                        if (dataVal(j).ne.fullDomainReal(j,fdLocation)) then
+                           write(*,*) 'ERROR: Differing values for '//
+     &     'full domain location ',fdLocation,'. Subdomain ',iproc,
+     &     ' has the value(s) ',(dataVal(n),n=1,irtype),' whereas '//
+     &     'the value(s) ',(fullDomainReal(n,fdLocation),n=1,irtype),
+     &     ' were already mapped.'
+                           ambiguous(fdLocation) = .true.
+                           exit ! break out of the irtype loop
+                        endif 
+                     end do
+                  endif
+                  if (dataType.eq.INTEGERTYPE) then
+                     if ( iRawValue.ne.fullDomainInteger(fdLocation) ) then
+                        outputFmt = '("ERROR: fd ",i0," Subdomain ",i0,"'//
+     &                   ' sd value ",i0," vs  fd val ",i0).'
+                        write(*,fmt=outputFmt) fdLocation, iproc, 
+     &                   iRawValue, fullDomainInteger(fdLocation)
+                        ambiguous(fdLocation) = .true.
+                     endif
+                  endif
+               endif
+               if (dataType.eq.REALTYPE) then
+                  fullDomainReal(:,fdLocation) = dataVal(:)
+               endif
+               if (dataType.eq.INTEGERTYPE) then
+                  fullDomainInteger(fdLocation) = iRawValue
+               endif
+               setYet(fdLocation) = .true.
+            enddo ! next subdomain value
+
+         enddo ! next subdomain
+         ! all the subdomain values for this dataset have been mapped 
+         ! 
+         ! check to see if there were any fulldomain values that did not
+         ! get set???
+         do i=1, numFullDomainValues
+            if (setYet(i).eqv..false.) then
+               write(*,'(a,i0,a)') 'ERROR: Fulldomain location ',i,
+     &            ' was never mapped.'
+            endif
+         end do
+         !
+         ! where the value at the resident location did not match the 
+         ! value at the ghost location, set the ambiguous flag
+         do i = 1,numFullDomainValues
+            if (ambiguous(i).eqv..true.) then
+               if (dataType.eq.REALTYPE) then
+                  fullDomainReal(1:3,i) = -16384.d0
+               endif
+               if (dataType.eq.INTEGERTYPE) then
+                  fullDomainInteger(i) = -1
+               endif
+            endif
+         end do 
+         !
+         ! write this time dependent dataset header into the full domain file 
+         write(100,2120) timeoute,ite
+         ! write the mapped values for all subdomains into the fulldomain file
+         ! for this dataset
+         do i = 1,numFullDomainValues
+            if (dataType.eq.REALTYPE) then
+               write(100,'(2x,i8,3(2x,e15.8))') 
+     &             i,(fullDomainReal(j,i),j=1,irtype)
+            endif
+            if (dataType.eq.INTEGERTYPE) then
+               write(100,'(2x,i8,2x,i0)') i, fullDomainInteger(i)
+            endif
+         enddo 
+         !              
+         ! clear flags for the next dataset
+         setYet(:) = .false. 
+         ambiguous(:) = .false.
+         fullDomainInteger(:) = -99  
+      enddo ! next time dependent dataset
+
+9999  close(100) ! jump to here when we run out of time dependent data
+      do iproc = 1,nproc
+         close(loc2(iproc))
+      enddo
+C
+ 2120 format(2x,e20.10,5x,i10)
+ 2453 format(2x,i8,3(2x,e15.8))
+c
+      return
+      !------------------------------------------------------------------
+      end subroutine mergeSubdomainFiles
+      !------------------------------------------------------------------

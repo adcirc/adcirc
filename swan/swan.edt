@@ -6,7 +6,7 @@
 !   SET  [level]  [nor]  [depmin]  [maxmes]                                 &
 !        [maxerr]  [grav]  [rho] [cdcap] [inrhog]                           &
 !        [hsrerr]  CARTesian|NAUTical  [pwtail]                             &
-!        [froudmax]  [sort]  [printf]  [prtest]
+!        [froudmax]  [sort]  CURV  [printf]  [prtest]
 !
 !   MODE  / STATIONARY \  / TWODimensional
 !         \ DYNAMIC    /  \ ONEDimensional
@@ -15,7 +15,7 @@
 !                \ SPHErical      CCM|QC  /
 !
 !   CGRID  / REGular [xpc] [ypc] [alpc] [xlenc] [ylenc] [mxc] [myc] \
-!         <  CURVilinear [mxc] [myc]  (EXC [xexc] [yexc])            >      &
+!         <  CURVilinear [mxc] [myc]  (EXC [xexc] [yexc]) [alpc]     >      &
 !          \ UNSTRUCtured                                           /
 !
 !          / CIRcle               \
@@ -135,7 +135,7 @@
 !              |
 !              |    RIPples [S] [D]
 !
-!   TRIad [itriad] [trfac] [cutfr] [a] [b] [urcrit] [urslim]
+!   TRIad [itriad] [trfac] [cutfr] [a] [b] [p] [urcrit] [urslim]
 !
 !   VEGEtation  < [height] [diamtr] [nstems] [drag] >
 !
@@ -146,8 +146,10 @@
 !   LIMiter [ursell] [qb]
 !
 !               | -> TRANSm [trcoef]                        |
-!   OBSTacle   <                                            |
-!               |       | -> GODA [hgt] [alpha] [beta]       >              &
+!               |  TRANS1d < [trcoef] >                     |
+!               |  TRANS2d < [trcoef] >                     |
+!   OBSTacle   <                                             >              &
+!               |       | -> GODA [hgt] [alpha] [beta]      |
 !               |  DAM <                                    |
 !                       |    DANGremond [hgt] [slope] [Bk]  |
 !
@@ -174,7 +176,7 @@
 !                   <                            >  [limiter]   )           &
 !                    | NONSTat  [mxitns]        |
 !
-!           ( DIRimpl [cdd] [cdlim]  WNUMber                    )           &
+!           ( DIRimpl [cdd]  DEP|WNUM                           )           &
 !
 !           ( REFRLim [frlim] [power]                           )           &
 !
@@ -224,7 +226,8 @@
 !             DHSIGN|DRTM01|LEAK|TSEC|XP|YP|DIST|SETUP|TMM10|RTMM10|DEPTH|  &
 !             TMBOT|QP|BFI|NPLANT|WATLEV|BOTLEV|TPS|DISBOT|DISSURF|DISWCAP| &
 !             GENE|GENW|REDI|REDQ|REDT|PROPA|PROPX|PROPT|PROPS|RADS|LWAVP|  &
-!             DISTUR|TURB|DISMUD >                                          &
+!             DISTUR|TURB|DISMUD|                                           &
+!             PTHSIGN|PTRTP|PTWLEN|PTDIR|PTDSPR|PTWFRAC|PTSTEEP|PARTIT >    &
 !             ([unit]) (OUTPUT [tbegblk] [deltblk] SEC|MIN|HR|DAY)
 !
 !   TABLE   'sname'  HEADER | NOHEADER | INDEXED 'fname'                    &
@@ -233,7 +236,8 @@
 !             DHSIGN|DRTM01|LEAK|TIME|TSEC|XP|YP|DIST|SETUP|TMM10|RTMM10|   &
 !             DEPTH|TMBOT|QP|BFI|WATLEV|BOTLEV|TPS|DISBOT|DISSURF|DISWCAP|  &
 !             GENE|GENW|REDI|REDQ|REDT|PROPA|PROPX|PROPT|PROPS|RADS|LWAVP|  &
-!             DISTUR|TURB|DISMUD >                                          &
+!             DISTUR|TURB|DISMUD|                                           &
+!             PTHSIGN|PTRTP|PTWLEN|PTDIR|PTDSPR|PTWFRAC|PTSTEEP >           &
 !             ([unit]) (OUTPUT [tbegtbl] [delttbl] SEC|MIN|HR|DAY)
 !
 !   SPECout 'sname'  SPEC1D|SPEC2D  ABS|REL   'fname'                       &

@@ -4,12 +4,11 @@ C******************************************************************************
 C
       MODULE MESSENGER
       USE SIZES
-      USE GLOBAL, ONLY: C3D, COMM, NODES_LG, IMAP_EL_LG,
+      USE GLOBAL, ONLY: C3D, COMM,
      &    IMAP_STAE_LG, IMAP_STAV_LG, IMAP_STAM_LG, IMAP_STAC_LG,
-     &    COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, WRITER_ID, SIG_VAL,
-     &    SIG_WRITE, SIG_TERM, SIG_PAUSE, FLOAT_TYPE, REALTYPE,
-     &    DBLETYPE,
-     &    DEBUG, ECHO, INFO, WARNING, ERROR,
+     &    COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, WRITER_ID, 
+     &    SIG_TERM, FLOAT_TYPE, REALTYPE, DBLETYPE,
+     &    DEBUG, ECHO, INFO, WARNING, ERROR, CPL2STWAVE,Flag_ElevError,
      &    screenMessage, logMessage, allMessage, setMessageSource,
      &    unsetMessageSource, scratchMessage     
      
@@ -29,11 +28,14 @@ C--------------------------------------------------------------------------
 
 C  Message-Passing Array space
 
-      INTEGER ::  MPI_COMM_ADCIRC                     ! Local communicator
-      INTEGER ::  NEIGHPROC, RDIM, IERR
-      INTEGER ::  TAG = 100
-      INTEGER ::  COMM_COMP                           ! COMMUNICATOR FOR COMPUTATION
-      INTEGER ::  GROUP_WORLD, GROUP_COMP, GROUP_WRITER_ONLY
+      INTEGER :: MPI_COMM_ADCIRC ! Local communicator
+      INTEGER :: NEIGHPROC  ! number of subdomains neighboring this one
+      INTEGER :: RDIM  ! total send/recieve requests when passing info 
+                        ! between subdomain neighbors, =2*neighproc
+      INTEGER :: IERR  ! error status of mpi subroutine call
+      INTEGER :: TAG = 100
+      INTEGER :: COMM_COMP                           ! COMMUNICATOR FOR COMPUTATION
+      INTEGER :: GROUP_WORLD, GROUP_COMP, GROUP_WRITER_ONLY
       INTEGER, ALLOCATABLE ::  GROUP_WRITER(:)        ! GROUPS FOR GLOBAL FILE WRITING
       INTEGER, ALLOCATABLE ::  GROUP_WRITEH(:)        ! GROUPS FOR HOTSTART FILE WRITING !st3 100711
       INTEGER, ALLOCATABLE ::  GROUP_HSLEEP(:)        ! GROUPS FOR HOTSTART FILE WRITING !st3 100711
@@ -53,6 +55,7 @@ C  Message-Passing Array space
       REAL(SZ),ALLOCATABLE :: SENDBUF(:,:), RECVBUF(:,:)
       !jgf50.82: Create a flag for unrecoverable issue on a subdomain
       LOGICAL :: subdomainFatalError ! true if mpi_abort should be called
+
 C
 C
       CONTAINS
@@ -78,7 +81,7 @@ C----------------------------------------------------------------------
 #endif
       INTEGER, OPTIONAL :: MPI_COMM
       INTEGER :: I
-      INTEGER, ALLOCATABLE :: RANKS(:),WRANKS(:)
+      INTEGER, ALLOCATABLE :: RANKS(:)  ! array of mpi ranks for compute processors
       INTEGER :: SENDBUF, RECVBUF
       INTEGER :: IRANK_SLEEP(2)        !st3 100711  for hsfile
 C
@@ -118,34 +121,38 @@ C.......Duplicate communicator
 
 C...  Create a communicator for computation
       DO I=1,MNPROC
-        RANKS(I) = I-1
+         RANKS(I) = I-1
       ENDDO
-
+      !
+      ! jgf51.21.27: Create group and communicator consisting
+      ! only of compute processors
       CALL MPI_COMM_GROUP(MPI_COMM_ADCIRC,GROUP_WORLD,IERR)
       CALL MPI_GROUP_INCL(GROUP_WORLD,MNPROC,RANKS,GROUP_COMP,IERR)
       CALL MPI_COMM_CREATE(MPI_COMM_ADCIRC,GROUP_COMP,COMM_COMP,IERR)
-
       WRITER_ID = 0
-
+      !
+      ! if we have dedicated writer processors, then for each one
+      ! create a group and communicator that includes
+      ! that one dedicated writer processor and all the compute 
+      ! processors ... so if we have 4 dedicated writer processors
+      ! there will be 4 writer communicators and 4 writer groups
+      ! ... in each one of these the writer is the highest rank processor
+      ! in the group (the writer will be of rank mnproc)
       IF(MNWPROC > 0) THEN
-C...  Allocate memory for groups and communicators
-        ALLOCATE(WRANKS(MNWPROC))
-        ALLOCATE(GROUP_WRITER(MNWPROC),COMM_WRITER(MNWPROC))
-
-C...  Create communicators for global file writings
-        DO I=1,MNWPROC
-          RANKS(MNPROC+1) = MNPROC - 1 + I
-
-          CALL MPI_GROUP_INCL(GROUP_WORLD,MNPROC+1,RANKS,
+C...     Allocate memory for groups and communicators
+         ALLOCATE(GROUP_WRITER(MNWPROC),COMM_WRITER(MNWPROC))
+C...     Create communicators for global file writings
+         DO I=1,MNWPROC
+            RANKS(MNPROC+1) = MNPROC - 1 + I
+            CALL MPI_GROUP_INCL(GROUP_WORLD,MNPROC+1,RANKS,
      &                        GROUP_WRITER(I),IERR)
-          CALL MPI_COMM_CREATE(MPI_COMM_ADCIRC,GROUP_WRITER(I),
+            CALL MPI_COMM_CREATE(MPI_COMM_ADCIRC,GROUP_WRITER(I),
      &                        COMM_WRITER(I),IERR)
 
-          IF(MYPROC == MNPROC - 1 + I) THEN
-            WRITER_ID = I
-          ENDIF
-        ENDDO
-
+            IF(MYPROC == MNPROC - 1 + I) THEN
+               WRITER_ID = I
+            ENDIF
+         ENDDO
       ENDIF
 !st3 for hsfile 05.14.2010
 #ifdef ADCNETCDF
@@ -188,8 +195,6 @@ C...  Create communicators for global file writings
 C---------------------------------------------------------------------      
       END SUBROUTINE MSG_INIT
 C---------------------------------------------------------------------
-
-
 
 
 C---------------------------------------------------------------------
@@ -239,6 +244,17 @@ C
          ! as the error code        
          CALL MPI_ABORT(MPI_COMM_ADCIRC,MYPROC,IERR)
       ENDIF
+
+      ! tcm v51.32  added a "go nuclear" option for killing
+      ! all MPI processes when Elevation Greater than Error 
+      ! elevation is exceeded, not just the mpi processes owned
+      ! by ADCIRC when coupled with STWAVE via CSTORM-MS
+      ! Note: mpi_comm_world is defined in mpich.f
+      IF (CPL2STWAVE.eqv..true.) then
+         IF (Flag_ElevError.eqv..true.) then
+            call mpi_abort(mpi_comm_world,myproc,ierr)
+         endif
+      endif
 
       IF (PRESENT(NO_MPI_FINALIZE)) THEN
          IF (.NOT.NO_MPI_FINALIZE) THEN
@@ -649,19 +665,28 @@ C---------------------------------------------------------------------
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
-      INTEGER,  INTENT(IN) ::  NMSG
+      INTEGER,  INTENT(IN) ::  NMSG ! number of arrays to pass
       REAL(SZ), INTENT(INOUT) ::  VEC1(*),VEC2(*),VEC3(*)
-      INTEGER :: N,I,J,NCOUNT,NFINI,TOT
+      integer :: j  ! loop counter for neighboring subdomains
+      integer :: i  ! loop counter for nodes shared with a neighboring subdomain
+      integer :: nfini ! number of just-completed requests
+      integer :: n     ! loop counter for just-completed requests
+      integer :: tot   ! total number of completed requests
+      integer :: ncount ! num values passed to a particular subdomain neighbor
 C
       call setMessageSource("updater")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.") 
 #endif
 C 
+      ! 
+      ! loop over neighboring subdomains
       DO J=1,NEIGHPROC
          NCOUNT = 0
+         ! loop over nodes shared as ghost nodes with this neighboring subdomain
          DO I=1,NNODSEND(J)
             NCOUNT = NCOUNT+1
+            ! store the array values in the send buffer            
             SENDBUF(NCOUNT,J)=VEC1(ISENDLOC(I,J))
          ENDDO
          IF (NMSG.GT.1) THEN
@@ -677,7 +702,9 @@ C
            ENDDO
          ENDIF
       ENDDO
-
+      !
+      ! receive and send data to each neighboring subdomain, populating
+      ! the request handler array
       IF (NMSG.EQ.1) THEN
         DO J=1,NEIGHPROC
            CALL MPI_IRECV( RECVBUF(1,J), NNODRECV(J),
@@ -701,29 +728,39 @@ C
         ENDDO
       ENDIF
 
-      IF (NMSG.EQ.1) THEN
-        TOT = 0
-        DO WHILE (TOT.LT.RDIM)
-           DO N=1, RDIM
-              INDX(N) = 0
-           ENDDO
-           CALL MPI_WAITSOME( RDIM,REQ_R1,NFINI,INDX,STAT_R1,IERR )
-           TOT = TOT + NFINI
-           DO N=1, NFINI
-              IF (INDX(N).GT.0.AND.INDX(N).LE.RDIM)  THEN
-                IF (INDX(N).LE.NEIGHPROC) THEN
-                  J = INDX(N)
-                  NCOUNT = 0
-                  DO I=1,NNODRECV(J)
-                     NCOUNT = NCOUNT+1
-                     VEC1(IRECVLOC(I,J)) = RECVBUF(NCOUNT,J)
-                  ENDDO
-                ENDIF
-              ENDIF
-           ENDDO
-        ENDDO
-        GOTO 999
-      ELSEIF (NMSG.EQ.2) THEN
+      SELECT CASE(NMSG)
+      CASE(1)
+         TOT = 0
+         ! keep looping until the total number of completed communications 
+         ! equals the total number that were requested
+         DO WHILE (TOT.LT.RDIM)
+            DO N=1, RDIM
+               INDX(N) = 0 ! zero out the array of just-completed requests
+            ENDDO
+            CALL MPI_WAITSOME( RDIM,REQ_R1,NFINI,INDX,STAT_R1,IERR )
+            ! add the number of just-completed requests to the total
+            TOT = TOT + NFINI
+            ! loop over the just-completed requests
+            DO N=1, NFINI
+               ! if the request has just completed (TODO: I don't see how
+               ! indx(n) can be greater than rdim
+               IF (INDX(N).GT.0.AND.INDX(N).LE.RDIM)  THEN
+                  ! if the request that just completed is a receive
+                  IF (INDX(N).LE.NEIGHPROC) THEN
+                     ! j = subdomain neighbor number that sent this data
+                     J = INDX(N)
+                     NCOUNT = 0
+                     DO I=1,NNODRECV(J)
+                        NCOUNT = NCOUNT+1
+                        ! update this subdomain's ghost value with the real 
+                        ! value from the other subdomain
+                        VEC1(IRECVLOC(I,J)) = RECVBUF(NCOUNT,J)
+                     ENDDO
+                  ENDIF
+               ENDIF
+            ENDDO
+         ENDDO
+      CASE(2)
         TOT = 0
         DO WHILE (TOT.LT.RDIM)
            DO N=1, RDIM
@@ -748,8 +785,7 @@ C
               ENDIF
            ENDDO
         ENDDO
-        GOTO 999
-      ELSE
+      CASE DEFAULT
         TOT = 0
         DO WHILE (TOT.LT.RDIM)
            DO N=1, RDIM
@@ -779,10 +815,7 @@ cdebug     print *, myproc, tot,nfini,INDX(1),INDX(2)
               ENDIF
            ENDDO
         ENDDO
-        GOTO 999
-      ENDIF
-
- 999  CONTINUE
+      END SELECT
  
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -792,7 +825,6 @@ cdebug     print *, myproc, tot,nfini,INDX(1),INDX(2)
 C--------------------------------------------------------------------- 
       END SUBROUTINE UPDATER
 C---------------------------------------------------------------------
-
 
 C---------------------------------------------------------------------
 C     S U B R O U T I N E   U P D A T E R 3 D 

@@ -40,6 +40,7 @@ C   Add prep15 ONLY command      ( V. Parr 10/2006 )
 C   Add prephot ONLY command     ( V. Parr 10/2006 )
 C   Added NWS=19 asymmetric holland v2.0 ( R. Weaver 07/2009)
 c   Removed NWS=3 and NWS=6      (T.C. Massey 11/2009)
+C   Add NWS=20 generalized asymmetric hurricane vortex (Jie 5/2013)
 C
 C----------------------------------------------------------------------------
 C
@@ -91,7 +92,12 @@ C
 C----------------------------------------------------------------------------
 C
       PROGRAM ADCPREP
-      USE GLOBAL, ONLY : screenUnit, myProc, initLogging
+      USE GLOBAL, ONLY : screenUnit, myProc, initLogging, Rearth, deg2rad,
+     &   rad2deg
+      USE SIZES, ONLY : meshFileName, meshFileNameSpecified, meshType, 
+     &  ASCII, XDMF, naFileNameSpecified, naFileName, naType, controlFileName,
+     &  controlType, controlFileNameSpecified, globaldir
+      USE SUBPREP, ONLY : readFort015prep
       USE PRE_GLOBAL
       USE VERSION
       use memory_usage
@@ -102,6 +108,15 @@ C
       INTEGER :: IARGC    ! function to return command line arguments
       INTEGER :: I        ! loop counter for command line arguments
       CHARACTER(2048) :: CMDLINEARG ! content of cmd line arg
+C
+      ! set the names of the log levels for use in log messages
+      call initLogging()
+      ! set the present working directory as the directory containing 
+      ! the fulldomain input files as the
+      globaldir = '.'
+
+      !jgf51.42: NCSU Subdomain Modeling
+      call readFort015prep()
 
 C  Define File Format Version
 
@@ -109,12 +124,6 @@ C  Define File Format Version
      &                                FileFmtMinor,
      &                                FileFmtRev)
 
-C
-C     Initialize constants for case ICS = 2 inputs.
-C
-      R  =  6378206.4D0
-      DEG2RAD = 3.141592653589793D0/180.0D0
-      RAD2DEG = 180.0D0/3.141592653589793D0
 C
 C     Initialize flags.
 C
@@ -129,6 +138,18 @@ C
       PREP_20 = .FALSE.
       !PREP_88 = .FALSE.
       MNPROC = 0
+C
+      ! jgf51.21.27: Add defaults for file types now that we support the
+      ! loading of different file types.
+      naType = ASCII
+      naFileNameSpecified = .false. 
+      naFileName = 'fort.13'
+      meshType = ASCII
+      meshFileNameSpecified = .false.
+      meshFileName = 'fort.14'
+      controlType = ASCII
+      controlFileNameSpecified = .false. 
+      controlFileName = 'fort.15'
 C
 C--Init Memory Usage
 C
@@ -161,10 +182,47 @@ C     having to do a prep all and without having to add menu items).
                I = I + 1
                CALL GETARG(I,CMDLINEARG)
                READ(CMDLINEARG,*) MNPROC
-            CASE DEFAULT
-               WRITE(*,*) "WARNING: Command line argument '",
-     &            TRIM(CMDLINEARG),"' was not recognized."
-            END SELECT
+            ! jgf51.21.27: Added options related to the mesh file 
+            case("-MFT","-mft","--MFT","--mft") ! mesh file type 
+                  i = i + 1
+                  call getarg(i, CMDLINEARG)
+                  select case(trim(cmdlinearg))
+                  case("ASCII","Ascii","ascii")
+                     meshType = ASCII ! this is the default anyway
+                  case("XDMF","Xdmf","xdmf")
+                     meshType = XDMF
+                  case default
+                     write(*,*) "WARNING: The mesh file type '",
+     &                   trim(cmdlinearg),
+     &               "' is not valid. Valid types are ascii and xdmf."
+                  end select
+            case("-MFN","-mfn","--MFN","--mfn") ! mesh file name
+               meshFileNameSpecified = .true.
+               i = i + 1
+               call getarg(i,meshFileName)                                 
+            ! jgf51.21.27: Added options related to the nodal attributes file
+            case("-NFT","-nft","--NFT","--nft") ! nodal attributes file type 
+                  i = i + 1
+                  call getarg(i, CMDLINEARG)
+                  select case(trim(cmdlinearg))
+                  case("ASCII","Ascii","ascii")
+                     naType = ASCII ! this is the default anyway
+                  case("XDMF","Xdmf","xdmf")
+                     naType = XDMF
+                  case default
+                     write(*,*) 
+     &                   "WARNING: The nodal attributes file type '",
+     &                   trim(cmdlinearg),
+     &               "' is not valid. Valid types are ascii and xdmf."
+                  end select
+            case("--NFN","--nfn") ! nodal attributes file name
+                  naFileNameSpecified = .true.
+                  i = i + 1
+                  call getarg(i,naFileName)                                 
+            case default
+                  write(*,*) "WARNING: The command line option '",
+     &                  trim(cmdlinearg),"' is not valid and will be ignored."
+            end select
          END DO
          ! Conk out if MNPROC was not specified
          IF (MNPROC.EQ.0) THEN
@@ -294,6 +352,11 @@ C---------------------------------------------------------------------------
 C
       SUBROUTINE PREPINPUT()
       USE PRE_GLOBAL
+      use sizes, only : naType, meshType, controlType, ASCII, XDMF,
+     &   naFileName, meshFileName, controlFileName, formatString
+      use mesh, only : readMeshXDMF
+      use subprep, only : subdomainOn, enforceBN, subPrep020, subPrep021,
+     &   subPrep019
 !tcm v50.85
 #ifdef WINDOWS
       USE IFPORT
@@ -322,33 +385,70 @@ C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
 
 C-- If ONLY processing hotstart File(s) ( fort.67-68 )
       if (HOT_LOCAL .or. HOT_GLOBAL) then
-        write(*,'(/)')
-        write(*,*) 'Writing subdomain hotstart file for each subdomain'
-        CALL RELOCALIZE()
-        if (HOT_LOCAL)  CALL HOTLOCALIZE()
-        if (HOT_GLOBAL) CALL HOTGLOBALIZE()
-        GO TO 9999
+         write(*,'(/)')
+         write(*,*) 'Writing subdomain hotstart file for each subdomain'
+         CALL RELOCALIZE()
+         if (HOT_LOCAL)  CALL HOTLOCALIZE()
+         if (HOT_GLOBAL) CALL HOTGLOBALIZE()
+         GO TO 9999
+      endif
+C
+C--   Read the Global Grid File ( Unit 14 )
+C
+      select case(meshType)
+      case(ASCII)
+         call sizeup14()
+         if ( (partition.eqv..false.) .and. 
+     &        (hot_local.eqv..false.) .and. 
+     &        (hot_global.eqv..false.) ) then
+            call sizeup15()
+         endif
+         call alloc_main1()
+         call prepRead14()  ! use the existing read14 from prep/read_global.f
+      case(XDMF)
+         call readMeshXDMF() ! from src/mesh.F
+         ! copy mesh parameters from mesh module into pre_global module
+         call getMeshParametersXDMF() ! defined in prep/read_global.F
+         call sizeup15()
+      case default
+         write(6,'(a,i0,a)') 'ERROR: The mesh type ',meshType,
+     &     ' is invalid'
+         stop
+      end select
+      print *, 'Global Grid file read successfully.'
+      !
+      ! if XDMF output format was indicated for any file, then write
+      ! the names of the fulldomain input files for later use by
+      ! XDMF output routines
+      if (useXDMF.eqv..true.) then
+         open(unit=30,file='fulldomainInputFiles',
+     &       status='replace',action='write')
+         write(30,'(a)') 'naType'
+         write(30,'(a)') trim(formatString(naType))
+         write(30,'(a)') 'naFileName'
+         write(30,'(a)') trim(naFileName)
+         write(30,'(a)') 'meshType'
+         write(30,'(a)') trim(formatString(meshType))
+         write(30,'(a)') 'meshFileName'
+         write(30,'(a)') trim(meshFileName)
+         write(30,'(a)') 'controlType'
+         write(30,'(a)') trim(formatString(controlType))
+         write(30,'(a)') 'controlFileName'
+         write(30,'(a)') trim(controlFileName)
+         close(30)      
       endif
 
-      CALL SIZEUP()
-      CALL ALLOC_MAIN1()
-C
-C-- Read the Global Grid File ( Unit 14 )
-C
-      CALL READ14()
-      print *, 'Global Grid file read successfully.'
-
-C-- If ONLY localizing Run Info File ( fort.15 )
+C--   If ONLY localizing Run Info File ( fort.15 )
       if (PREP_15) then
-        CALL READ15()
-        print *, 'Global Run Info file read successfully.'
-        CALL RELOCALIZE()
-        CALL PREP15()
-        !jgf48.07 Initialize netCDF output files
-        IF (useNetCDF) THEN
-           write(*,*) "INFO: Initializing the netCDF output files."
-           ! call netCDF module
-           CALL PREPNETCDF()
+         CALL READ15()
+         print *, 'Global Run Info file read successfully.'
+         CALL RELOCALIZE()
+         CALL PREP15()
+         !jgf48.07 Initialize netCDF output files
+         IF (useNetCDF) THEN
+            write(*,*) "INFO: Initializing the netCDF output files."
+            ! call netCDF module
+            CALL PREPNETCDF()
          ENDIF
          GO TO 9999
       endif
@@ -369,21 +469,6 @@ C   -- initially read in within the READ14() subroutine.
             GOTO 9999
          endif
       ENDIF
-C
-Ca    IF ONLY decomposing a fort.88 (river elev init) file.
-!        kmd - Evan's changes for rivers above MSL
-!    tcmv51.27 commneted out, fort.88 was replaced with nodal attribute
-!      IF (PREP_88.eqv..true.) THEN
-!         IF ((EXIST_FLUX.NE.0).AND.(River_above_MSL)) THEN
-!            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN
-!               WRITE(*,*)
-!     &            "INFO: Decomposing fort.88 (river init) file."
-!               CALL RELOCALIZE()
-!               CALL PREP88()
-!               GOTO 9999
-!            END IF
-!         END IF
-!      END IF
 C
 C-- Partition Nodes with METIS 4.0 Graph Partition Library
 C
@@ -551,16 +636,22 @@ C
         write(*,*) 'file for each PE.'
         CALL PREP13()
       endif
-
 C
 C-- If required write a Local fort.19 file for each PE
 C
-      IF (PREP_ALL) THEN
-         IF ((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN
-            print *, "Ready to Write Local UNIT 19 File for each PE"
-            CALL PREP19()
+
+      if (subdomainOn) then                     ! NCSU Subdomain
+          if (enforceBN.eq.1) call subprep019() ! NCSU Subdomain
+          if (enforceBN.eq.2) call subprep020() ! NCSU Subdomain
+          if (enforceBN.eq.2) call subprep021() ! NCSU Subdomain
+      else                                       ! NCSU Subdomain
+         IF (PREP_ALL) THEN
+            IF ((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN
+               print *, "Ready to Write Local UNIT 19 File for each PE"
+               CALL PREP19()
+            ENDIF
          ENDIF
-      ENDIF
+      endif ! NCSU Subdomain
 C
 C-- Write a Local Flux File ( fort.20 ) for each PE if needed
 C   -- EXIST_FLUX and other variables are set when the fort.14 is
@@ -571,15 +662,6 @@ C
             CALL PREP20()
          endif
       ENDIF
-! kmd - Evan's changes for rivers above MSL
-! tcm v51.27 fort.88 was replaced by nodal attribute
-!      IF (PREP_ALL) THEN
-!         IF ((EXIST_FLUX.NE.0).AND.(River_above_MSL)) THEN
-!            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN
-!               CALL PREP88()
-!            END IF
-!         END IF
-!      END IF
 C
 C-- If required write a Local Wind Stress file for each PE
 C
@@ -599,7 +681,8 @@ C     jgfdebug46.02 Added NWS=45
 C     jgf46.02 Added NWS=8
 C     jgf46.16 Merged:
 C     cf & cm added NWS=9: asymmetric hurricane wind model
-C     rjw added NWS=9: asymmetric hurricane wind model v2.0
+C     rjw added NWS=19: asymmetric hurricane wind model v2.0
+C     jie added NWS=20: generalized asymmetric vortex model
 c     tcm_v49.04 NWS=3 and NWS=6 no longer need fort.22 decomposition
             IF((NWS.EQ.1).OR.(ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.
      &           (ABS(NWS).EQ.5).OR.(NWS.EQ.7).OR.

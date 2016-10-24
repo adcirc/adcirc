@@ -23,7 +23,7 @@ C  v40.02m002 - 12/22 - jjw/vjp - Vic suggested to avoid compiler conflicts   *
 C  v40.02m001 - 12/21 - jjw - add cross barrier pipes cjjwm001                *
 C                                                                             *
 C******************************************************************************
-C
+
       SUBROUTINE HOTSTART()
 C
 C**************************************************************************
@@ -32,7 +32,14 @@ C     HOT START PROGRAM SETUP ROUTINE
 C
 C**************************************************************************
 C
+      !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
+      USE SIZES, ONLY : inputDir, globalDir, mnproc
       USE GLOBAL
+      USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4
+      USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXIB, NFLUXIBP,
+     &    NOPE, NVEL, BndBCRiver, LBCODEI, NBV, BARLANHT, BARLANCFSP,
+     &    IBCONN, BARINHT, BARINCFSP, BARINCFSB, PIPEHT, PIPECOEF,
+     &    PIPEDIAM
       USE GLOBAL_IO
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT,
      &    qsurf, NFEN, DUU, DUV, DVV, UU, VV, BSX, BSY, Q, WZ, q20, l,
@@ -40,10 +47,10 @@ C
      &    I3DSTRec, N3DGD, I3DGDRec, N3DGV, I3DGVRec, N3DGT, I3DGTRec,
      &    DUU_g, DUV_g, DVV_g, UU_g, VV_g, BSX_g, BSY_g, Q_g, WZ_g,
      &    q20_g, l_g, SigT_g, Sal_g, Temp_g, iy
-C
-      USE SIZES
+      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, readFort015, 
+     &                       openFort019h
 #ifdef CMPI
-      USE MESSENGER,ONLY:COMM,IERR
+      USE MESSENGER,ONLY: COMM, IERR, UPDATER
 #endif      
       USE HARM, ONLY : IHARIND, IHABEG, ITHAS, NHAINC, ICHA, CHARMV,
      &                 NHAGE, NHAGV, NHASE, NHASV, readBinaryHAHotstart,
@@ -61,17 +68,30 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
      &                     readNetCDFHotstartHarmonicMeansVariances
 #endif
       USE NodalAttributes, ONLY :
-     &     nolibf, nwp, tau0, cf, eslm,
-     &     LoadDirEffRLen, LoadCanopyCoef,
+     &     nolibf, nwp, tau0, cf, eslm, GeoidOffset, 
+     &     LoadDirEffRLen, LoadCanopyCoef, LoadGeoidOffset,
      &     ApplyDirectionalWindReduction, ApplyCanopyCoefficient,
-     &     OutputTau0, LoadEleSlopeLim, elemental_slope_limiter_active,
+     &     OutputTau0, 
      &     LoadRiver_et_WSE, River_et_WSE
+      USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
+      USE WRITE_OUTPUT, ONLY : initInundationOutput,
+     &   inundationTime, inundationTime_onset, maxInunDepth, 
+     &   maxInunDepth_time, outputNodeCode, outputNOFF
       IMPLICIT NONE
 #ifdef CMPI       
 #ifndef HAVE_MPI_MOD
-                  include 'mpif.h'
+      include 'mpif.h'
 #endif
 #endif
+      interface
+         SUBROUTINE binaryRead2D(array, length, lun, counter)
+         USE SIZES, ONLY : SZ
+         REAL(SZ), intent(out) :: array(:) ! the data to read from the hotstart file
+         INTEGER, intent(in) :: length  ! the number of values to read
+         INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+         INTEGER, intent(inout) :: counter ! i/o position in the file
+         end subroutine
+      end interface
       INTEGER IT
       INTEGER I, J, NH, N              !local loop counters
       INTEGER NCyc, NA, InputFileFmtVn
@@ -158,9 +178,25 @@ C     kmd -- Added variables for initial conditions
 #if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-C
+      !
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
+      !
+      ! In order to produce inundation output, we need to compute the
+      ! areas that were initially dry at cold start. 
+      if (inundationOutput.eqv..true.) then
+         call setColdWetDryStateAndWaterSurfaceElevation()
+         !
+         ! jgf52.08.01: This can only be called after nnodecode has been set
+         ! via setColdWetDryState().
+         call initInundationOutput()
+      endif
+      !
+      !
+      ! NCSU Subdomain Modeling
+      if (subdomainOn) then
+         call readFort015() 
+      endif
 C
 C     -----------------------------------
 C
@@ -185,8 +221,7 @@ C        Determine if the hot start file exists.
          ENDIF
          IF ((MNPROC.eq.1).or.
      &       (READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-            INQUIRE(FILE=TRIM(INPUTDIR)//'/'//hsfn,
-     &         EXIST=fileFound)
+            INQUIRE(FILE=trim(inputDir)//'/'//hsfn, EXIST=fileFound)
          ELSE
             ! look for fulldomain hotstart file
             INQUIRE(FILE=TRIM(GBLINPUTDIR)//'/'//hsfn,
@@ -266,6 +301,8 @@ C        jgf46.34 Added support for IBTYPE=52.
             CALL readAndMapToSubdomain2D(CH1, IHOT, IHOTSTP, moderbin)
          ENDIF
          CALL readAndMapToSubdomainInt2D(NNODECODE, IHOT, IHOTSTP, moderbin)
+         ! jgf52.08.01: subroutine timestep() uses nodecode. Set it here.
+         nodecode(:) = nnodecode(:)
          CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
 C
          READ(IHOT,*) IESTP
@@ -377,7 +414,6 @@ C...
          CLOSE(IHOT)  ! close portable ascii hotstart file
 C
 C
-
       CASE(67,68) ! non-portable binary file format
 
 C...
@@ -492,6 +528,8 @@ C        jgf46.34 Added support for IBTYPE=52.
             CALL readAndMapToSubdomain2D(CH1, IHOT, IHOTSTP, moderbin)
          ENDIF
          CALL readAndMapToSubdomainInt2D(NNODECODE, IHOT, IHOTSTP, moderbin)
+         !jgf52.08.01: Subroutine timestep() uses nodecode. Set it here.
+         nodecode(:) = nnodecode(:)
          CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
 C
          READ(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
@@ -777,7 +815,11 @@ C     momentum equations
              METONLY = .TRUE. ! set flag
          ENDIF
       ENDIF
+
+C.....SETUP POSSIBILITY OF TIME VARIABLE WEIRS
+      CALL WEIR_SETUP()
 C
+
 C.... SET POSITIONS IN BOUNDARY CONDITION, WIND AND OUTPUT FILES
 C
       WRITE(16,1112)
@@ -798,6 +840,10 @@ C......INITIALLY, ZERO OUT THE NORMAL FLOW ON ALL BOUNDARIES
 C.... FIND THE PROPER PLACE IN THE APERIODIC ELEVATION SPECIFIED
 C.... BOUNDARY CONDITION FILE IF IT IS REQURIED.
 
+       if(subdomainOn.and.enforceBN.eq.1) then ! NCSU Subdomain
+           call openFort019H(TimeLoc)          ! NCSU Subdomain
+       endif                                   ! NCSU Subdomain
+
       IF((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
          WRITE(16,1112)
@@ -805,19 +851,30 @@ C.... BOUNDARY CONDITION FILE IF IT IS REQURIED.
          WRITE(16,1976)
  1976    FORMAT(/,1X,'LOCATING ELEVATION SPECIFIED INFORMATION IN ',
      &        'UNIT 19',/)
-         OPEN(19,FILE=TRIM(INPUTDIR)//'/'//'fort.19')
-         READ(19,*) ETIMINC
-         ETIME1=STATIM*86400.D0
-         ETIME2=ETIME1+ETIMINC
-         DO J=1,NETA
-            READ(19,*) ESBIN1(J)
-         END DO
-         DO J=1,NETA
-            READ(19,*) ESBIN2(J)
-         END DO
-         DO IT=1,ITHS-1
-            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
-            IF(TIMEIT.GT.ETIME2) THEN
+
+         if ((subdomainOn.eqv..false.).or.(enforceBN.ne.1)) then ! NCSU Subdomain
+            OPEN(19,FILE=TRIM(INPUTDIR)//'/'//'fort.19')
+            READ(19,*) ETIMINC
+            ETIME1=STATIM*86400.D0
+            ETIME2=ETIME1+ETIMINC
+            DO J=1,NETA
+               READ(19,*) ESBIN1(J)
+            END DO
+            DO J=1,NETA
+               READ(19,*) ESBIN2(J)
+            END DO
+            DO IT=1,ITHS-1
+               TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
+               IF(TIMEIT.GT.ETIME2) THEN
+                  ETIME1=ETIME2
+                  ETIME2=ETIME1+ETIMINC
+                  DO J=1,NETA
+                     ESBIN1(J)=ESBIN2(J)
+                     READ(19,*) ESBIN2(J)
+                  END DO
+               ENDIF
+            END DO
+            IF(TimeLoc.GT.ETIME2) THEN
                ETIME1=ETIME2
                ETIME2=ETIME1+ETIMINC
                DO J=1,NETA
@@ -825,16 +882,8 @@ C.... BOUNDARY CONDITION FILE IF IT IS REQURIED.
                   READ(19,*) ESBIN2(J)
                END DO
             ENDIF
-         END DO
-         IF(TimeLoc.GT.ETIME2) THEN
-            ETIME1=ETIME2
-            ETIME2=ETIME1+ETIMINC
-            DO J=1,NETA
-               ESBIN1(J)=ESBIN2(J)
-               READ(19,*) ESBIN2(J)
-            END DO
+            ETRATIO=(TIMEIT-ETIME1)/ETIMINC
          ENDIF
-         ETRATIO=(TIMEIT-ETIME1)/ETIMINC
       ENDIF
 
 C......FIND PROPER PLACE IN THE APERIODIC NORMAL FLOW BOUNDARY CONDITION
@@ -1912,6 +1961,41 @@ C  tcm v49.16 20100617
             WVNYOUT(I)=RampMete2*WindY
          ENDDO
       ENDIF
+      
+!     jie added nws = 20: generalized asymmetric vortex model
+
+      IF(ABS(NWS).EQ.20) THEN
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+             CALL NWS20GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TimeLoc, ICS)
+         DO I=1,NP
+            WindX = WVNX2(I)
+            WindY = WVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PRN2(I)
+            PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WindX
+            WVNYOUT(I)=RampMete2*WindY
+         ENDDO
+      ENDIF            
 C
 C     jgf49.1001 Added NWS29, asymmetric vortex winds (NWS19)
 C     embedded in an OWI basin scale gridded met field (NWS12)
@@ -2312,35 +2396,75 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
              WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
           END DO
        ENDIF
+      !
+      ! jgf52.14: Implementing Casey's fix for uninitialized
+      ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
+      ! by the parametric vortex meteorological models but are used in
+      ! the padcswan_init() subroutine to initialize the SWAN wind 
+      ! velocities. Failure to initialize them causes NaNs in the 
+      ! solution. 
+      if ( (abs(nws).eq.8).or.(abs(nws).eq.19).or.(abs(nws).eq.20)) then 
+         WVNX1 = WVNX2
+         WVNY1 = WVNY2
+      endif
+
+
 C
 C
 C--------------------END MET FORCING---------------------------------------
 
 C......RESTART THE WAVE RADIATION STRESS
-
+        
+        ! jgf51.46: Fixed initialization issue due to mishandling the 
+        ! cases where NRS.eq.3 (SWAN coupling) or NRS.eq.4 (STWAVE
+        ! coupling). The code was adding the wave radiation stresses
+        ! to wind stresses whenever NRS.gt.0, but in the case of 
+        ! NRS.eq.3 or NRS.eq.4, the wave radiation stresses were 
+        ! uninitialized. This resulted in NaNs getting into the solution
+        ! upon hotstarting. I fixed this by initializing RSNX1 and
+        ! RSNY1 to 0.0 immediately after the arrays are allocated. 
         IF(NRS.GE.1) THEN ! sb46.28sb03
-          RSTIME1 = TimeLoc
-          RSTIME2 = RSTIME1 + RSTIMINC
-C          IF (MYPROC.EQ.0) THEN
-C             PRINT *, "Made it to the radiation stress"
-C             PRINT *, TIMELOC, RSTIME2, NRS
-C          END IF
-          ! NRS=2 was added. sb46.28sb03 09/xx/2006
-          IF(NRS.EQ.1) THEN
-            OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
-            CALL RSGET(RSNX1,RSNY1,NP)
-            CALL RSGET(RSNX2,RSNY2,NP)
-          ENDIF
-          IF(NRS.EQ.2) THEN
-            CALL RS2INIT(RSNX1,RSNY1,NP)
-            CALL RS2GET(RSNX1,RSNY1,NP)
-            CALL RS2GET(RSNX2,RSNY2,NP)
-          ENDIF
-          DO I=1,NP
-            WSX2(I) = WSX2(I)+RampWRad2*RSNX1(I)
-            WSY2(I) = WSY2(I)+RampWRad2*RSNY1(I)
-          END DO
+           RSTIME1 = TimeLoc
+           RSTIME2 = RSTIME1 + RSTIMINC
+           SELECT CASE(NRS)
+           CASE(1)           
+              OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
+              CALL RSGET(RSNX1,RSNY1)
+              CALL RSGET(RSNX2,RSNY2)
+           CASE(2)
+              ! NRS=2 was added. sb46.28sb03 09/xx/2006
+              CALL RS2INIT(RSNX1,RSNY1,NP)
+              CALL RS2GET(RSNX1,RSNY1,NP)
+              CALL RS2GET(RSNX2,RSNY2,NP)
+           CASE(3,4)
+              ! do nothing, initialization takes place in timestep.F
+           CASE DEFAULT
+              write(scratchMessage,'(a,i0,a)') 
+     &        'The NRS parameter cannot have the value ',NRS,'.' 
+              call allMessage(ERROR,scratchMessage)           
+           END SELECT
+           ! 
+           ! Add wave radiation stress to the wind stress. RSNX1 and
+           ! RSNY1 were initialized to 0.0 for NRS.eq.3 and NRS.eq.4.
+           WSX2(:) = WSX2(:) + RampWRad2 * RSNX1(:)
+           WSY2(:) = WSY2(:) + RampWRad2 * RSNY1(:)
         ENDIF
+
+!           IF(NRS.EQ.1) THEN
+!              OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
+!              CALL RSGET(RSNX1,RSNY1,NP)
+!              CALL RSGET(RSNX2,RSNY2,NP)
+!          ENDIF
+!          IF(NRS.EQ.2) THEN
+!            ! NRS=2 was added. sb46.28sb03 09/xx/2006
+!            CALL RS2INIT(RSNX1,RSNY1,NP)
+!            CALL RS2GET(RSNX1,RSNY1,NP)
+!            CALL RS2GET(RSNX2,RSNY2,NP)
+!          ENDIF
+!          DO I=1,NP
+!            WSX2(I) = WSX2(I)+RampWRad2*RSNX1(I)
+!            WSY2(I) = WSY2(I)+RampWRad2*RSNY1(I)
+!          END DO
 
        if (CTIP) then
 Cjromo 11-01-00  Initialize TIP2 for HOTSTART
@@ -2394,7 +2518,6 @@ cjjw/vjpm002 - modified/added the following 5 lines
            END DO
          ENDIF
       endif     !   CTIP
-
 
 C...
 C....SET UP TO RESTART TIMESERIES OUTPUT FILES
@@ -2472,8 +2595,13 @@ C...
         CLOSE(61)                    ! DO THIS TO FLUSH THE WRITE BUFFER
       ENDIF
       IF(NOUTE.EQ.-1) THEN
-        CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61',
-     $    NSTAE_G, NSTAE, HEADER61)
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61',
+     $        NSTAE_G, NSTAE, HEADER61)
+         else
+            CALL OPEN_GBL_FILE(61, TRIM(LOCALDIR)//'/'//'fort.61',
+     $        NSTAE_G, NSTAE, HEADER61)
+         endif
         IESTP=2
       ENDIF
 
@@ -2545,8 +2673,13 @@ C...
         CLOSE(62)                    ! DO THIS TO FLUSH THE WRITE BUFFER
       ENDIF
       IF(NOUTV.EQ.-1) THEN
-        CALL OPEN_GBL_FILE(62, TRIM(GLOBALDIR)//'/'//'fort.62',
-     $    NSTAV_G, NSTAV, HEADER62)
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(62, TRIM(GLOBALDIR)//'/'//'fort.62',
+     $         NSTAV_G, NSTAV, HEADER62)
+         else
+            CALL OPEN_GBL_FILE(62, TRIM(LOCALDIR)//'/'//'fort.62',
+     $         NSTAV_G, NSTAV, HEADER62)
+         endif
         IVSTP=2
       ENDIF
       IF(NOUTV.EQ.2) THEN
@@ -2616,8 +2749,13 @@ C...
         CLOSE(81)                    ! DO THIS TO FLUSH THE WRITE BUFFER
       ENDIF
       IF(NOUTC.EQ.-1) THEN
-        CALL OPEN_GBL_FILE(81, TRIM(GLOBALDIR)//'/'//'fort.81',
-     $    NSTAC_G, NSTAC, HEADER81)
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(81, TRIM(GLOBALDIR)//'/'//'fort.81',
+     $       NSTAC_G, NSTAC, HEADER81)
+         else 
+            CALL OPEN_GBL_FILE(81, TRIM(LOCALDIR)//'/'//'fort.81',
+     $       NSTAC_G, NSTAC, HEADER81)
+         endif
         ICSTP=2
         CLOSE(81)
       ENDIF
@@ -2755,18 +2893,36 @@ C
         ENDIF
       ENDIF
       IF(NOUTM.EQ.-1) THEN
-        CALL OPEN_GBL_FILE(71, TRIM(GLOBALDIR)//'/'//'fort.71',
-     $    NSTAM_G, NSTAM, HEADER71)
-        IPSTP=2
-        CALL OPEN_GBL_FILE(72, TRIM(GLOBALDIR)//'/'//'fort.72',
-     $    NSTAM_G, NSTAM, HEADER72)
-        IWSTP=2
-!       v49.64.01 tcm added ice station support
-        IF(NCICE.NE.0) THEN
-           CALL OPEN_GBL_FILE(91, TRIM(GLOBALDIR)//'/'//'fort.91',
-     $       NSTAM_G, NSTAM, HEADER91)
-           IICESTP=2
-        ENDIF
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(71, TRIM(GLOBALDIR)//'/'//'fort.71',
+     $         NSTAM_G, NSTAM, HEADER71)
+            IPSTP=2
+            CALL OPEN_GBL_FILE(72, TRIM(GLOBALDIR)//'/'//'fort.72',
+     $         NSTAM_G, NSTAM, HEADER72)
+            IWSTP=2
+!           v49.64.01 tcm added ice station support
+            IF(NCICE.NE.0) THEN
+               CALL OPEN_GBL_FILE(91, TRIM(GLOBALDIR)//'/'//'fort.91',
+     $            NSTAM_G, NSTAM, HEADER91)
+               IICESTP=2
+            ENDIF
+
+         else
+         
+            CALL OPEN_GBL_FILE(71, TRIM(LOCALDIR)//'/'//'fort.71',
+     $         NSTAM_G, NSTAM, HEADER71)
+            IPSTP=2
+            CALL OPEN_GBL_FILE(72, TRIM(LOCALDIR)//'/'//'fort.72',
+     $         NSTAM_G, NSTAM, HEADER72)
+            IWSTP=2
+!           v49.64.01 tcm added ice station support
+            IF(NCICE.NE.0) THEN
+               CALL OPEN_GBL_FILE(91, TRIM(LOCALDIR)//'/'//'fort.91',
+     $            NSTAM_G, NSTAM, HEADER91)
+               IICESTP=2
+            ENDIF
+         
+         endif
       ENDIF
       IF(NOUTM.EQ.2) THEN
         OPEN(71,FILE=TRIM(LOCALDIR)//'/'//'fort.71',
@@ -2850,8 +3006,13 @@ C...
         CLOSE(75)                    ! DO THIS TO FLUSH THE WRITE BUFFER
       ENDIF
       IF ((NDDT.NE.0).AND.(NOUTE.EQ.-1)) THEN
-        CALL OPEN_GBL_FILE(75, TRIM(GLOBALDIR)//'/'//'fort.75',
-     $    NSTAE_G, NSTAE, HEADER61)
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(75, TRIM(GLOBALDIR)//'/'//'fort.75',
+     $         NSTAE_G, NSTAE, HEADER61)
+         else
+            CALL OPEN_GBL_FILE(75, TRIM(LOCALDIR)//'/'//'fort.75',
+     $         NSTAE_G, NSTAE, HEADER61)         
+         endif 
         IESTP=2
       ENDIF
 
@@ -2937,34 +3098,55 @@ C     kmd48.33bc - changed NDSETSE for use of new DTDPHS
         ENDIF
 
 Casey 090310: Added the possibility for NOUTGE = -4.
-        IF((NOUTGE.EQ.-1).OR.(NOUTGE.EQ.-4)) THEN
+      IF((NOUTGE.EQ.-1).OR.(NOUTGE.EQ.-4)) THEN
+         if (write_local_files.eqv..false.) then      
            CALL OPEN_GBL_FILE(63, TRIM(GLOBALDIR)//'/'//'fort.63',
      $         NP_G, NP, HEADER63)
 C
 C        jgf47.06 Tau0 output is produced on the same schedule as
 C        global elevation
-           IF (OUTPUTTAU0) THEN
+            IF (outputTau0.eqv..true.) THEN
 Casey 090310: Corrected the unit number from 10 to 90.
-               CALL writeDomainHeader(90,
-     &              TRIM(GLOBALDIR)//'/'//'fort.tau0',
+                CALL writeDomainHeader(90,
+     &              TRIM(GLOBALDIR)//'/'//'fort.90',
      $               NP_G, NP, 'Tau0      ')
-           ENDIF
+            ENDIF
 
 C kmd48.33bc - information for writing out the sponge layer
-           IF(OUTPUTSPONGE) THEN
-              CALL writeDomainHeader(92,
-     &             TRIM(GLOBALDIR)//'/'//'fort.92',
-     $             NP_G, NP, 'sponge      ')
-           END IF
+            IF(OUTPUTSPONGE) THEN
+               CALL writeDomainHeader(92,
+     &                TRIM(GLOBALDIR)//'/'//'fort.92',
+     $                NP_G, NP, 'sponge      ')
+            END IF
+          
+         else
+          
+            CALL OPEN_GBL_FILE(63, TRIM(LOCALDIR)//'/'//'fort.63',
+     $            NP_G, NP, HEADER63)
+C             jgf47.06 Tau0 output is produced on the same schedule as
+C              global elevation
+            IF (OUTPUTTAU0) THEN
+Casey 090310: Corrected the unit number from 10 to 90.
+               CALL writeDomainHeader(90,
+     &                 TRIM(LOCALDIR)//'/'//'fort.90',
+     $                  NP_G, NP, 'Tau0      ')
+            ENDIF
+C kmd48.33bc - information for writing out the sponge layer
+            IF(OUTPUTSPONGE) THEN
+               CALL writeDomainHeader(92,
+     &                TRIM(LOCALDIR)//'/'//'fort.92',
+     $                NP_G, NP, 'sponge      ')
+            END IF
 
-           IGEP=2
-        ENDIF
-        IF(NOUTGE.EQ.2) THEN
+         endif
+         IGEP=2
+      ENDIF
+      IF(NOUTGE.EQ.2) THEN
           OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
      &          ACCESS='DIRECT',RECL=NBYTE)
 c         WRITE(63,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
           CLOSE(63)                         ! DO THIS TO FLUSH THE WRITE BUFFER
-        ENDIF
+      ENDIF
 
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL VELOCITY OUTPUT FILE
@@ -3031,16 +3213,93 @@ C  kmd48.33bc - change the NDSETSV for the change in the DTDP
           IGVP=IGVP+5
           CLOSE(64)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
-        IF((NOUTGV.EQ.-1).OR.(NOUTGV.EQ.-4)) THEN
-          CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
-     $      NP_G, NP, HEADER64)
-          IGVP=2
-        ENDIF
+      IF((NOUTGV.EQ.-1).OR.(NOUTGV.EQ.-4)) THEN
+         if (write_local_files.eqv..false.) then 
+            CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
+     $         NP_G, NP, HEADER64)
+         else
+            CALL OPEN_GBL_FILE(64, TRIM(LOCALDIR)//'/'//'fort.64',
+     $         NP_G, NP, HEADER64)
+         endif
+      IGVP=2
+      ENDIF
         IF(NOUTGV.EQ.2) THEN
           OPEN(64,FILE=TRIM(LOCALDIR)//'/'//'fort.64',
      &          ACCESS='DIRECT',RECL=NBYTE)
 c         WRITE(64,REC=ITEMPSTP+1) NDSETSV  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
           CLOSE(64)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+        ENDIF
+
+
+
+Cobell - Open the fort.77 (weir elevation change) if necessary
+        IF(NOUT_TVW.LT.0.AND.USE_TVW) THEN
+          IG_TVW=0
+          NSCOU_TVW=0
+          IF((NTCYS_TVW.LT.ITHS).AND.(NSPOOL_TVW.GT.0)) THEN
+            NTCYS_TVW=NTCYS_TVW+((REAL(ITHS)-REAL(NTCYS_TVW))/
+     &              REAL(NSPOOL_TVW))*REAL(NSPOOL_TVW)
+            IF(NTCYS_TVW.LT.ITHS) NTCYS_TVW=NTCYS_TVW+NSPOOL_TVW
+            IF(DTDP.NE.DTDPHS) THEN
+              NDSETS_TVW=((NTCYF_TVW*DTDP)-(NTCYS_TVW*DTDPHS))/
+     &                (NSPOOL_TVW*DTDP)
+            ELSE
+              NDSETS_TVW=(NTCYF_TVW-NTCYS_TVW)/NSPOOL_TVW
+            ENDIF
+          ENDIF
+          WRITE(16,1057)
+ 1057     FORMAT(//,' A NEW WEIR ELEVATION FILE WILL BE STARTED')
+        ENDIF
+
+        IF(NOUT_TVW.EQ.-2) THEN
+          OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+          IF(NBYTE.EQ.4) THEN
+            DO I=1,8
+              WRITE(77,REC=IG_TVW+I) RDES4(I)
+              ENDDO
+            IG_TVW=IG_TVW+8
+            DO I=1,6
+              WRITE(77,REC=IG_TVW+I) RID4(I)
+              ENDDO
+            IG_TVW=IG_TVW+6
+            DO I=1,6
+              WRITE(77,REC=IG_TVW+I) AID4(I)
+            ENDDO
+            IG_TVW=IG_TVW+6
+          ENDIF
+          IF(NBYTE.EQ.8) THEN
+            DO I=1,4
+              WRITE(77,REC=IG_TVW+I) RDES8(I)
+            ENDDO
+            IG_TVW=IG_TVW+4
+            DO I=1,3
+              WRITE(77,REC=IG_TVW+I) RID8(I)
+            ENDDO
+            IG_TVW=IG_TVW+3
+            DO I=1,3
+              WRITE(77,REC=IG_TVW+I) AID8(I)
+            ENDDO
+            IG_TVW=IG_TVW+3
+          ENDIF
+          WRITE(77,REC=IG_TVW+1) NDSETS_TVW
+          WRITE(77,REC=IG_TVW+2) NP
+          WRITE(77,REC=IG_TVW+3) DT*NSPOOL_TVW
+          WRITE(77,REC=IG_TVW+4) NSPOOL_TVW
+          WRITE(77,REC=IG_TVW+5) 1
+          IG_TVW=IG_TVW+5
+          CLOSE(77)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+        ENDIF
+        IF((NOUT_TVW.EQ.-1).OR.(NOUT_TVW.EQ.-4)) THEN
+           CALL OPEN_GBL_FILE(77, TRIM(GLOBALDIR)//'/'//'fort.77',
+     $         NP_G, NP, HEADER77)
+           IG_TVW=2
+        ENDIF
+        IF(NOUT_TVW.EQ.2) THEN
+          OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+c         WRITE(77,REC=ITEMPSTP+1) NDSETS_TVW  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+          CLOSE(77)                           ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
 
 C...
@@ -3271,20 +3530,37 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
         ENDIF
 
 Casey 090310: Added the possibility for NOUTGW = -4.
-        IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
-          CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
-     $      NP_G, NP, HEADER73)
-          IGPP=2
-          CALL OPEN_GBL_FILE(74, TRIM(GLOBALDIR)//'/'//'fort.74',
-     $      NP_G, NP, HEADER74)
-          IGWP=2
+      IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
+         if (write_local_files.eqv..false.) then  
+            CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
+     $         NP_G, NP, HEADER73)
+            IGPP=2
+            CALL OPEN_GBL_FILE(74, TRIM(GLOBALDIR)//'/'//'fort.74',
+     $        NP_G, NP, HEADER74)
+            IGWP=2
 ! TCM V49.64.01 -- ADDED ICE SUPPORT
-          IF (NCICE.NE.0) THEN
-            CALL OPEN_GBL_FILE(93, TRIM(GLOBALDIR)//'/'//'fort.93',
-     $        NP_G, NP, HEADER93)
-            IGIP=2
-          ENDIF
-        ENDIF
+            IF (NCICE.NE.0) THEN
+               CALL OPEN_GBL_FILE(93, TRIM(GLOBALDIR)//'/'//'fort.93',
+     $           NP_G, NP, HEADER93)
+               IGIP=2
+            ENDIF
+            
+         else
+            CALL OPEN_GBL_FILE(73, TRIM(LOCALDIR)//'/'//'fort.73',
+     $         NP_G, NP, HEADER73)
+            IGPP=2
+            CALL OPEN_GBL_FILE(74, TRIM(LOCALDIR)//'/'//'fort.74',
+     $        NP_G, NP, HEADER74)
+            IGWP=2
+! TCM V49.64.01 -- ADDED ICE SUPPORT
+            IF (NCICE.NE.0) THEN
+               CALL OPEN_GBL_FILE(93, TRIM(LOCALDIR)//'/'//'fort.93',
+     $           NP_G, NP, HEADER93)
+               IGIP=2
+            ENDIF
+         endif
+            
+      ENDIF
 
 ! tcm v50.75 removed ifdef cswan and added test for nrs=3 or 4
         IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
@@ -3333,8 +3609,13 @@ Casey 090310: Added the output of radiation stress gradients.
               CLOSE(164)                    ! DO THIS TO FLUSH THE WRITE BUFFER
            ENDIF
            IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
-              CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
-     &            NP_G, NP, HEADER74)
+              if (write_local_files.eqv..false.) then
+                 CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
+     &               NP_G, NP, HEADER74)
+              else
+                 CALL OPEN_GBL_FILE(164, TRIM(LOCALDIR)//'/'//'rads.64',
+     &               NP_G, NP, HEADER74)
+              endif
               IGRadS=2
            ENDIF
         ENDIF
@@ -3427,8 +3708,13 @@ C...
 
         IF ((NDDT.NE.0).AND.
      &            ((NOUTGE.EQ.-1).OR.(NOUTGE.EQ.-4))) THEN
-           CALL OPEN_GBL_FILE(76, TRIM(GLOBALDIR)//'/'//'fort.76',
-     &         NP_G, NP, HEADER63)
+           if (write_local_files.eqv..false.) then
+              CALL OPEN_GBL_FILE(76, TRIM(GLOBALDIR)//'/'//'fort.76',
+     &            NP_G, NP, HEADER63)
+           else
+              CALL OPEN_GBL_FILE(76, TRIM(LOCALDIR)//'/'//'fort.76',
+     &            NP_G, NP, HEADER63)
+           endif
            IGBP=2
         ENDIF
         IF ((NDDT.NE.0).AND.(NOUTGE.EQ.2)) THEN
@@ -3439,48 +3725,32 @@ c          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO B
         ENDIF
 
 
-C
-C     jgf48.4635 If the maxele.63 (etc) files are present, we need to
-C     load them up, to preserve high water marks across hotstarts.
-C     If they are not present, thats okay too.
-      
-      IF(LoadEleSlopeLim)THEN
-        IF(MNPROC.GT.1)ALLOCATE(HOT_ESLONOFF_G(NP_G))
-        ALLOCATE(HOT_ESLONOFF(NP))
-      ENDIF  
-
-CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-C  Begin TCM v51.20.01 Mods for MaxMin Files to local Variables
-C      Including reading time stamp for max/min when available
-C
-      ! Note:  Global initalizes the TimeStamp Values to 0.0d0
-      !   If timestamp values are not found, then they will return
-      !   with an initial value of -99999.d0 to begin the hstart runs.
-      !   this includes the case of the max/min files not being present
-
-      CALL readAndMapToSubdomainMaxMin('maxele.63',EtaMax,EtaMax_Time) !,0,2)
-      CALL readAndMapToSubdomainMaxMin('maxvel.63',UMax,UMax_Time)
-      CALL readAndMapToSubdomainMaxMin('maxwvel.63',WVNOutmax,WVNOutMax_Time)
-      CALL readAndMapToSubdomainMaxMin('minpr.63',PrMin,PrMin_Time)
-      CALL readAndMapToSubdomainMaxMin('maxrs.63',RSNMax,RSNMax_Time)
-
-      IF (LoadEleSlopeLim) THEN
-!         HOT_ESLONOFF(:) = 0.d0 ! initialize the value
-!         CALL readMinMax('ESLNodes.63',HOT_ESLONOFF)
-         CALL readAndMapToSubdomainMaxMin('ESLNodes.63',ESLONOFF)
-         !must set the elemental slope limiter active values as well
-         DO I = 1,NP
-            if (ESLONOFF(I).eq.1.d0) then
-               elemental_slope_limiter_active(I) = .true.
+      ! jgf52.08.08: Create files for nodecode and noff output 
+      ! (wet/dry state of nodes and wet/dry state of elements)      
+      IF (ABS(NOUTGE).NE.0) then
+         if (outputNodeCode.eqv..true.) then
+            if (write_local_files.eqv..true.) then
+               call writeDomainHeader(101,trim(localdir)//'/'//
+     &            'nodecode.63',NP_G, NP, 'nodecode    ')
             else
-               elemental_slope_limiter_active(I) = .false.
+               call writeDomainHeader(101,trim(globaldir)//'/'//
+     &            'nodecode.63',NP_G, NP, 'nodecode    ')
             endif
-         ENDDO
-      ENDIF  
-C
-C  End  TCM v51.20.01 Mods for MaxMin Files to Local Variables
-CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-C
+         endif
+         if (outputNOFF.eqv..true.) then
+            if (write_local_files.eqv..true.) then
+               call writeDomainHeader(102,trim(localdir)//'/'//
+     &            'noff.100',NE_G, NE, 'noff       ')
+            else
+               call writeDomainHeader(102,trim(globaldir)//'/'//
+     &            'noff.100',NE_G, NE, 'noff       ')
+            endif
+         endif
+      endif
+
+      ! jgf52.08.03: Reading of min/max data moved to initOutput2D()
+      ! subroutine in write_output module. 
+      
 
       ! tcmv51.27 20140502 Added to remove this nodal attribute
       ! as it is only used at Cold Start but read at hot start as well
@@ -3489,7 +3759,6 @@ C
             DEALLOCATE (River_et_WSE)
          ENDIF
       ENDIF
-
 
  1112 FORMAT(/,1X,79('_'))
  1197 FORMAT(/,1X,'THE E29 MET GRID INTERPOLATING FACTORS ARE ',
@@ -3518,7 +3787,10 @@ c******************************************************************************
 
       SUBROUTINE HOTSTART_3D(TimeLoc,ITHS)
       USE GLOBAL_3DVS
-
+      USE MESH, ONLY : NP, AGRID
+      USE WRITE_OUTPUT, ONLY : initOutput3D
+      USE BOUNDARIES, ONLY : NOPE, NETA, NBD, totalbcrivernodes, 
+     &   BndBCRiver 
 C   kmd48.33bc - variable information needed from the global.F file
 ! kmd - added variables for river information
       USE GLOBAL, ONLY : RES_BC_FLAG, RBCTIME1, RBCTIME2,
@@ -3533,13 +3805,10 @@ C   kmd48.33bc - variable information needed from the global.F file
      &                   q_heat1, q_heat2, HFLUX, TTBCRATIO,
      &                   setMessageSource, unsetMessageSource,
      &                   DEBUG, ECHO, INFO, WARNING, ERROR, 
-     &                   NP_G, allMessage, screenMessage,
-     &                   NBD, RIVBCTIMINC, RIVBCTIME1,RIVBCTIME2,
-     &                   totalbcrivernodes, BCRivRATIO, NOPE,
-     &                   RIVBCSTATIM
-
+     &                   allMessage, screenMessage,
+     &                   RIVBCTIMINC, RIVBCTIME1,RIVBCTIME2,
+     &                   BCRivRATIO, RIVBCSTATIM, NP_G     
       IMPLICIT NONE
-
       INTEGER :: IRType                  !number of fields in output file
       INTEGER :: NH, N                   !horizontal & vertical loop counters
 !      REAL(SZ) :: RealPartOfQ
@@ -4157,3 +4426,508 @@ C----------------------------------------------------------------------
       END SUBROUTINE calcTS
 C----------------------------------------------------------------------
 
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      B I N A R Y   R E A D   2 D
+C--------------------------------------------------------------------
+C     jgf49.44: Reads a real(sz) array with the specified length
+C     from a binary hotstart file; takes the file counter as an
+C     input argument and returns the new value of the file counter
+C     at the end of the read. Its called "2D" even though it reads
+C     a 1D fortran array because the array represents a 2D physical
+C     quantity in an unstructured mesh.
+C--------------------------------------------------------------------
+      SUBROUTINE binaryRead2D(array, length, lun, counter)
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG
+      IMPLICIT NONE
+      INTEGER, intent(in) :: length
+      REAL(SZ), intent(out) :: array(length) ! the data to read from the hotstart file
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+C
+      INTEGER i      ! array index
+C
+      call setMessageSource("binaryRead2D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+       DO i=1, length
+          READ(lun,REC=counter) array(i)
+          counter = counter + 1
+       END DO
+C
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE binaryRead2D
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      R E A L   R E A D   2 D
+C--------------------------------------------------------------------
+C     kmd: Reads a real(sz) array with the specified length
+C     from an initial condition file in ascii format; it has the
+C     same format as the binary version but does not require the
+C     file counter.
+C--------------------------------------------------------------------
+      SUBROUTINE realRead2D(array, length, lun )
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG
+      IMPLICIT NONE
+      REAL(SZ), intent(out), dimension(length) :: array ! the data to read from the hotstart file
+      INTEGER, intent(in) :: length  ! the number of values to read
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+C
+      INTEGER i      ! array index
+C
+      call setMessageSource("realRead2D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+       DO i=1, length
+          READ(lun,*) array(i)
+       END DO
+C
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE realRead2D
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      B I N A R Y   I N T   R E A D   2 D
+C--------------------------------------------------------------------
+C     jgf49.44: Same as binaryRead2D except it reads an integer.
+C--------------------------------------------------------------------
+      SUBROUTINE binaryIntRead2D(array, length, lun, counter)
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG
+      IMPLICIT NONE
+      INTEGER, intent(out), dimension(length) :: array ! the data to read from the hotstart file
+      INTEGER, intent(in) :: length  ! the number of values to read
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+C
+      INTEGER i      ! array index
+C
+      call setMessageSource("binaryIntRead2D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+C
+       DO i=1, length
+          READ(lun,REC=counter) array(i)
+          counter = counter + 1
+       END DO
+C
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE binaryIntRead2D
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      R E A L   I N T   R E A D   2 D
+C--------------------------------------------------------------------
+C     kmd: Same as realRead2D except it reads an integer.
+C--------------------------------------------------------------------
+      SUBROUTINE realIntRead2D(array, length, lun)
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG
+      IMPLICIT NONE
+      INTEGER, intent(out), dimension(length) :: array ! the data to read from the hotstart file
+      INTEGER, intent(in) :: length  ! the number of values to read
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+C
+      INTEGER i      ! array index
+C
+      call setMessageSource("realIntRead2D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+C
+       DO i=1, length
+          READ(lun,*) array(i)
+       END DO
+C
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE realIntRead2D
+C--------------------------------------------------------------------
+
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      R E A L   R E A D   3 D
+C--------------------------------------------------------------------
+C     kmd: Same as realRead2D except it reads data with
+C     both horizontal and vertical lengths.
+C--------------------------------------------------------------------
+      SUBROUTINE realRead3D(array, iLength, jLength, lun)
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG
+      IMPLICIT NONE
+      REAL(SZ), intent(out), dimension(ilength,jlength) :: array ! data to read from the hotstart file
+      INTEGER, intent(in) :: iLength  ! the number of horiz values to read
+      INTEGER, intent(in) :: jLength  ! the number of layers
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+C
+      INTEGER i,j      ! array indices
+C
+      call setMessageSource("realRead3D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+       DO j=1, jLength
+          DO i=1, iLength
+            READ(lun,*) array(i,j)
+          END DO
+       END DO
+C
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE realRead3D
+C--------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C            R E A D  A N D  M A P  T O  S U B D O M A I N  2 D
+C-----------------------------------------------------------------------
+C     jgf49.48.04 Reads a fulldomain array in binary format and maps
+C     to a subdomain array.
+C     kmd: Updated to include a real format option
+C-----------------------------------------------------------------------
+      subroutine readAndMapToSubdomain2D(sd_array, lun, counter, method)
+      USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
+      USE GLOBAL, ONLY : ERROR, setMessageSource, allMessage,
+     &                    unsetMessageSource, DEBUG, NP_G, NODES_LG
+      USE MESH, ONLY : NP
+      IMPLICIT NONE
+C
+      REAL(SZ), intent(out), dimension(np) :: sd_array ! subdomain array
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+      INTEGER, intent(in) :: method  ! logical to determine binary or real
+      INTEGER :: sd_node_number
+      INTEGER :: fd_node_number
+C
+      REAL(SZ), allocatable, dimension(:) :: fd_array ! full domain array
+C
+      call setMessageSource("readAndMapToSubdomain2D")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ! serial
+      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+         IF (method.EQ.1) THEN
+            CALL binaryRead2D(sd_array, NP, lun, counter)
+         ELSE IF (method.EQ.2) THEN
+            CALL realRead2D(sd_array, NP, lun)
+         ELSE
+            call allMessage(ERROR,
+     &          "Passing of binary or real information incorrect")
+            STOP
+         END IF
+      ! parallel
+      ELSE
+         IF (method.EQ.1) THEN
+            allocate(fd_array(NP_G))
+            CALL binaryRead2D(fd_array, NP_G, lun, counter)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number) = fd_array(fd_node_number)
+            END DO
+            deallocate(fd_array)
+         ELSE IF (method.EQ.2) THEN
+            allocate(fd_array(NP_G))
+            CALL realRead2D(fd_array, NP_G, lun)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number) = fd_array(fd_node_number)
+            END DO
+            deallocate(fd_array)
+         ELSE
+            WRITE(16,*) "Passing of binary or real
+     &         information incorrect"
+            STOP
+         END IF
+      ENDIF
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE readAndMapToSubdomain2D
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C            R E A D  A N D  M A P  T O  S U B D O M A I N  I N T  2 D
+C-----------------------------------------------------------------------
+C     jgf49.48.04 Reads a fulldomain array in binary format and maps
+C     to a subdomain array.
+C     kmd: Updated to include real format option
+C-----------------------------------------------------------------------
+      subroutine readAndMapToSubdomainInt2D(sd_array, lun, counter, method)
+      USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG, NP_G, NODES_LG
+      USE MESH, ONLY : NP
+      IMPLICIT NONE
+C
+      INTEGER, intent(out), dimension(np) :: sd_array ! subdomain array
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+      INTEGER, intent(in) :: method ! logical to determine binary or real
+      INTEGER :: sd_node_number
+      INTEGER :: fd_node_number
+C
+      INTEGER, allocatable, dimension(:) :: fd_array ! full domain array
+C
+      call setMessageSource("readAndMapToSubdomainInt2D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ! serial
+      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+         IF (method.EQ.1) THEN
+           CALL binaryIntRead2D(sd_array, NP, lun, counter)
+         ELSE IF (method.EQ.2) THEN
+           CALL realIntRead2D(sd_array, NP, lun)
+         ELSE
+            WRITE(16,*) "Passing of binary or real
+     &         information incorrect"
+            STOP
+         END IF
+      ! parallel
+      ELSE
+         IF (method.EQ.1) THEN
+            allocate(fd_array(NP_G))
+            CALL binaryIntRead2D(fd_array, NP_G, lun, counter)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number) = fd_array(fd_node_number)
+            END DO
+            deallocate(fd_array)
+         ELSE IF (method.EQ.2) THEN
+            allocate(fd_array(NP_G))
+            CALL realIntRead2D(fd_array, NP_G, lun)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number) = fd_array(fd_node_number)
+            END DO
+            deallocate(fd_array)
+         ELSE
+            WRITE(16,*) "Passing of binary or real
+     &         information incorrect"
+            STOP
+         END IF
+      ENDIF
+C
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE readAndMapToSubdomainInt2D
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C            R E A D  A N D  M A P  E L E
+C                 T O  S U B D O M A I N  I N T  2 D
+C-----------------------------------------------------------------------
+C     jgf49.48.04 Reads a fulldomain array in binary format and maps
+C     to a subdomain array (for elemental mappings as opposed to node
+C     mapping).
+C     kmd : Updated to include a real format option
+C-----------------------------------------------------------------------
+      subroutine readAndMapEleToSubdomainInt2D(sd_array, lun, counter,method)
+      USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG, NE_G, IMAP_EL_LG
+      USE MESH, ONLY : NE
+      IMPLICIT NONE
+C
+      INTEGER, intent(out), dimension(ne) :: sd_array ! subdomain array
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+      INTEGER, intent(in) :: method ! logical to determine binary or real
+      INTEGER :: sd_ele_number
+      INTEGER :: fd_ele_number
+C
+      INTEGER, allocatable, dimension(:) :: fd_array ! full domain array
+C
+      call setMessageSource("readAndMapEleToSubdomainInt2D")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ! serial
+      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+         IF (method.EQ.1) THEN
+            CALL binaryIntRead2D(sd_array, NE, lun, counter)
+         ELSE IF (method.EQ.2) THEN
+            CALL realIntRead2D(sd_array, NE, lun)
+         ELSE
+            WRITE(16,*) "Passing of binary or real
+     &         information incorrect"
+            STOP
+         END IF
+      ! parallel
+      ELSE
+         IF (method.EQ.1) THEN
+            allocate(fd_array(NE_G))
+            CALL binaryIntRead2D(fd_array, NE_G, lun, counter)
+            ! loop over subdomain nodes
+            DO sd_ele_number=1,ne
+               ! get the corresponding fulldomain ele number
+               fd_ele_number = abs(IMAP_EL_LG(sd_ele_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_ele_number) = fd_array(fd_ele_number)
+            END DO
+            deallocate(fd_array)
+         ELSE IF (method.EQ.2) THEN
+            allocate(fd_array(NE_G))
+            CALL realIntRead2D(fd_array, NE_G, lun)
+            ! loop over subdomain nodes
+            DO sd_ele_number=1,ne
+               ! get the corresponding fulldomain ele number
+               fd_ele_number = abs(IMAP_EL_LG(sd_ele_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_ele_number) = fd_array(fd_ele_number)
+            END DO
+            deallocate(fd_array)
+         ELSE
+            WRITE(16,*) "Passing of binary or real
+     &         information incorrect"
+            STOP
+         END IF
+      ENDIF
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE readAndMapEleToSubdomainInt2D
+C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C            R E A D  A N D  M A P  T O  S U B D O M A I N  3 D
+C-----------------------------------------------------------------------
+C     jgf49.48.04 Reads a fulldomain array in binary format and maps
+C     to a subdomain array.
+C     kmd : Updated to include a real format option
+C-----------------------------------------------------------------------
+      subroutine readAndMapToSubdomain3D(sd_array, nfen, lun, counter,method)
+      USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG, NP_G, NODES_LG
+      USE MESH, ONLY : NP
+      USE HARM, ONLY : binaryRead3D
+      IMPLICIT NONE
+C
+      REAL(SZ), intent(out), dimension(np,nfen) :: sd_array ! subdomain array
+      INTEGER, intent(in) :: nfen    ! number of vertical layers
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+      INTEGER, intent(in) :: method ! logical to determine binary or real
+      INTEGER :: sd_node_number
+      INTEGER :: fd_node_number
+C
+      REAL(SZ), allocatable, dimension(:,:) :: fd_array ! full domain array
+C
+      call setMessageSource("readAndMapToSubdomain3D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ! serial
+      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+         IF (method.EQ.1) THEN
+            CALL binaryRead3D(sd_array, NP, NFEN, lun, counter)
+         ELSE IF (method.EQ.2) THEN
+            CALL realRead3D(sd_array, NP, NFEN, lun)
+         ELSE
+            WRITE(16,*) "Passing of binary or real
+     &         information incorrect"
+            STOP
+         END IF
+      ! parallel
+      ELSE
+         IF (method.EQ.1) THEN
+            allocate(fd_array(NP_G,NFEN))
+            CALL binaryRead3D(fd_array, NP_G, NFEN, lun, counter)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number,:) = fd_array(fd_node_number,:)
+            END DO
+            deallocate(fd_array)
+         ELSE IF (method.EQ.2) THEN
+            allocate(fd_array(NP_G,NFEN))
+            CALL realRead3D(fd_array, NP_G, NFEN, lun)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number,:) = fd_array(fd_node_number,:)
+            END DO
+            deallocate(fd_array)
+         ELSE
+            WRITE(16,*) "Passing of binary or real
+     &         information incorrect"
+            STOP
+         END IF
+      ENDIF
+C
+
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE readAndMapToSubdomain3D
+C-----------------------------------------------------------------------

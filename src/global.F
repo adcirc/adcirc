@@ -11,8 +11,9 @@ C******************************************************************************
 
 C
       MODULE GLOBAL
-      USE SIZES
       USE VERSION
+      USE SIZES, ONLY : SZ, MNP, MNE, MNBFR, MNETA, MNSTAE, MNSTAV, 
+     &   MNEI, MNTIF, MNVEL, MYPROC, MNFFR, MNSTAC, MNSTAM
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
       IMPLICIT NONE
       SAVE
@@ -20,34 +21,26 @@ C...
 C...SET GLOBAL PHYSICAL CONSTANTS
 C...
       REAL(sz) :: g = 9.80665 !default gravitational acceleration
-
 C.....nominal density of water RHOWAT0
       REAL(SZ), PARAMETER ::  RhoWat0=1000.D0
-
 C.....Sigma T value of reference density
       REAL(SZ), PARAMETER ::  SigT0=RHOWAT0-1000.D0
-
-
 C.....Background Atmospheric Pressure in mb
       REAL(SZ), PARAMETER :: PRBCKGRND = 1013.0d0   !tcm 20100617 v49.16 Added
       REAL(8) :: rhoAir = 1.15d0         ! kg/m^3
       REAL(8) :: windReduction = 0.9d0
       REAL(8) :: one2ten = 0.8928d0
       REAL(8) :: ten2one = 1.d0/0.8928d0
-
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       REAL(SZ) :: WaveWindMultiplier = 1.D0
-
 C.....PI etc
       REAL(8), PARAMETER ::  PI=3.141592653589793D0
       REAL(8), PARAMETER ::  DEG2RAD = PI/180.D0  ! degrees to radians
       REAL(8), PARAMETER ::  RAD2DEG = 180.D0/PI  ! radians to degrees
       REAL(8), PARAMETER ::  e=2.718281828459045d0
-
 C.....Days to seconds conversion
       REAL(8), PARAMETER :: day2sec=24.d0*3600.d0
       REAL(8), PARAMETER :: sec2day=1.d0/day2sec
-
       ! jgf50.38.03: Additional useful constants
       REAL(8), PARAMETER :: Rearth = 6378206.4d0 ! radius of earth (m)
       REAL(8), PARAMETER :: nm2m = 1852.d0 ! nautical miles to meters
@@ -56,22 +49,16 @@ C.....Days to seconds conversion
       REAL(8), PARAMETER :: ms2kt = 1.d0 / kt2ms ! m/s to knots
       REAL(8), PARAMETER :: omega = 2.0d0*pi / 86164.2d0
       REAL(8), PARAMETER :: mb2pa = 100.d0
-
-C.....parameters used in barrier overflow
-      REAL(SZ), PARAMETER ::  BARMIN=0.04D0
-
 C     jgf46.21 Added support for IBTYPE=52.
-      LOGICAL :: IBTYPE52 = .FALSE.
       REAL(SZ),ALLOCATABLE, TARGET ::   ElevDisc(:)
       REAL(SZ) FluxSettlingTime
       INTEGER  FluxSettlingIT
-
 C... v49.48 tcm -- added for coupling with STWAVE (NRS=4)
       REAL(8)  :: STARTWAVE   ! Start of Wave Service
       REAL(8)  :: ENDWAVE     ! End of Wave Service
-
+      LOGICAL  :: CPL2STWAVE = .FALSE.  !Coupled to STWAVE (NRS=4)
+      LOGICAL  :: Flag_ElevError = .FALSE.  
 C      real(sz) rampriver,drampriver,rampriver1,rampriver2
-
 C     jgf46.08 Fine grained ramp functions (jgf46.21 split flux b.c.s)
       REAL(SZ) RampExtFlux,DRampExtFlux ! Ramp for external flux b.c.s
       REAL(SZ) RampIntFlux,DRampIntFlux ! Ramp for internal flux b.c.s
@@ -89,30 +76,39 @@ C     jgf46.10 user-controlled warning, dump and error levels on elevations
       INTEGER WarnElevDumpLimit ! max dumps; ADCIRC terminates if exceeded
       INTEGER WarnElevDumpCounter ! counter for number of elev dumps to fort.69
       REAL(SZ) ErrorElev      ! ADCIRC terminates if this elev is exceeded
-C
       INTEGER :: screenUnit = 6 ! jgf46.19 I/O unit where screen output is sent
-
       INTEGER :: Terminate_LocalProc = 0 ! zc - allow a single processor to initiate code shutdown
-
 C
 C     Variables related to hotstarting.
       type HOTSTART_t
-        character(20)     :: filename  !tcm v51.26 changed from 10 to 20 to allow for time-stamped names
+        character(20)     :: filename
         integer           :: lun
       end type HOTSTART_t
 
       type(HOTSTART_t):: hss
 
-      INTEGER             :: NP_G, NE_G  ! global number of nodes, elements
-C     global number of elevation, velocity, and meteorological stations
-      INTEGER             :: NSTAE_G, NSTAV_G, NSTAM_G
-      INTEGER             :: NSTAC_G     ! number of concentration stations
+      !-----------------------------------------------------------------
+      !        F U L L   D O M A I N   V A R I A B L E S   
+      !                  O N L Y   U S E D   
+      !        I N   P A R A L L E L   E X E C U T I O N
+      !-----------------------------------------------------------------
+      ! jgf51.21.25: The variables in this section are only used in
+      ! parallel execution but they are declared here (rather than in
+      ! the messenger module) because they are used in many different 
+      ! modules, including harm.F, write_output.F, globalio.F et al.
+      !-----------------------------------------------------------------
+      integer :: comm        ! MPI communicator.
+      integer :: np_g, ne_g  ! global (full domain) number of nodes, elements
 
-      INTEGER             :: COMM        ! MPI communicator.
-      INTEGER             :: FileFmtVersion      ! File format version.
-!      INTEGER             :: FileFmtMajor = 1
-!      INTEGER             :: FileFmtMinor = 2
-!      INTEGER             :: FileFmtRev   = 0
+C     jgf48.03 Arrays for mapping subdomain nodes and elements to full
+C     domain ... used in globalio module but allocated and populated
+C     in messenger module
+      integer,allocatable,target :: nodes_lg(:)
+      integer,allocatable,target :: imap_el_lg(:) 
+C
+C     global number of elevation, velocity, and meteorological stations
+      integer :: nstae_g, nstav_g, nstam_g
+      integer :: nstac_g     ! number of concentration stations
 C
 C     jgf49.44: These variables represent fulldomain arrays and are
 C     used in hstart.F for reading fulldomain hotstart files as well as in
@@ -128,9 +124,82 @@ C     for writing fulldomain hotstart files.
       INTEGER, ALLOCATABLE, TARGET :: NodeCode_g(:)
       INTEGER, ALLOCATABLE :: NNodeCode_g(:)
       INTEGER, ALLOCATABLE, TARGET :: NOFF_g(:)
-C...
-C...DECLARE ALL ARRAYS
-C...
+      ! full domain min and max files in parallel
+      !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
+      REAL(SZ),ALLOCATABLE, TARGET :: HOT_ETAMAX_G(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: ETAMAX_Time(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: ETAMAX_Time_G(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: HOT_UMAX_G(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: UMAX_Time(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: UMAX_Time_G(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: HOT_PrMin_G(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: PrMin_Time(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: PrMin_Time_G(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: HOT_WVNOutMax_G(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: WVNOutMax_Time(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: WVNOutMax_Time_G(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax_g(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time_G(:) 
+     
+#if defined CSWAN || defined ADCSWAN
+      !...Global SWAN Arrays
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIROut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM01Out_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TPSOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDXOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDYOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02Out_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10Out_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSMaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIRMaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM01MaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TPSMaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDMaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02MaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10MaxOut_g(:)
+#endif
+      
+      ! mappings from subdomain to fulldomain for stations
+      integer,allocatable,target :: imap_stae_lg(:)
+      integer,allocatable,target :: imap_stav_lg(:)
+      integer,allocatable,target :: imap_stam_lg(:)
+      integer,allocatable,target :: imap_stac_lg(:)
+C
+C     jgf48.03 Variable, arrays, and datastructure that are used by both
+C     globalio and writer modules
+      integer, parameter :: BUFSIZE_MAX = 131072
+      real(sz) :: buf(BUFSIZE_MAX)
+      real(sz) :: resultBuf(BUFSIZE_MAX)
+      integer :: integerBuffer(BUFSIZE_MAX)
+      integer :: integerResultBuffer(BUFSIZE_MAX)
+      integer                    :: float_type
+C
+C     jgf48.03 Variables shared between messenger and writer modules
+      integer ::  realtype, dbletype
+      !
+      ! there is a separate mpi communicator for each dedicated
+      ! writer processor; their communicator ids are stored in the 
+      ! following array
+      integer, allocatable ::  comm_writer(:)
+      ! communicators for hotstart file writing !st3
+      integer, allocatable ::  comm_writeh(:), comm_hsleep(:)
+      !
+      ! = 0 if this is a compute proc; > 0 if this is a writer node
+      integer :: writer_id
+      ! following signals are used in messenger.f and writer.f
+      integer, parameter :: sig_val   = 1
+      integer, parameter :: sig_write = 100
+      integer, parameter :: sig_mesh = 14   ! signal to read mesh for xdmf output
+      integer, parameter :: sig_term  = 999  ! signal to terminate adc_writer
+!  tcm v49.48.01
+      integer, parameter :: sig_pause = 99 ! signal to pause adc_writer
+      !----------------------------------------------------------------
+C     End of variables shared between messenger and other modules
+      !----------------------------------------------------------------
+C     
+      INTEGER             :: FileFmtVersion      ! File format version.
 
 c..RJW merged 09/02/2008 Casey 071219: Added the following variable declaration for 3D mass balance.
 C             RESELEM is the number of processors on which each element appears.
@@ -143,38 +212,33 @@ c.
       !jgf50.44: Added variable to record the time that the min or max
       ! has occurred
       REAL(SZ),ALLOCATABLE, TARGET ::  ETA1(:), ETA2(:), UU2(:), VV2(:)
-
       REAL(SZ),ALLOCATABLE, TARGET ::  ETAMAX(:) ! v46.50 sb 11/11/2006
-      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX(:)
-      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX_G(:)
-      REAL(SZ),ALLOCATABLE, TARGET ::  ETAMAX_Time(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
-      REAL(SZ),ALLOCATABLE, TARGET ::  ETAMAX_Time_G(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
-#ifndef NUVMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  UMAX(:) ! v46.50 sb 11/11/2006
-      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX(:)
-      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX_G(:)
-      REAL(SZ),ALLOCATABLE, TARGET ::  UMAX_Time(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
-      REAL(SZ),ALLOCATABLE, TARGET ::  UMAX_Time_G(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
-#endif
       REAL(SZ),ALLOCATABLE, TARGET ::  ET00(:), UU00(:), VV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMICE00(:), CICEOUT(:) !v49.64.01 tcm -added for ice concentration
       REAL(SZ),ALLOCATABLE, TARGET ::  Pr2(:), WVNXOut(:), WVNYOut(:)
-
       REAL(SZ),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
-      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin(:)
-      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin_G(:)
-      REAL(SZ),ALLOCATABLE, TARGET ::  PrMin_Time(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
-      REAL(SZ),ALLOCATABLE, TARGET ::  PrMin_Time_G(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
-#ifndef NWVMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
-      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax(:)
-      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax_G(:)
-      REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax_Time(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
-      REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax_Time_G(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
-#endif
-
-      REAL(SZ),ALLOCATABLE, TARGET ::  DP(:)  !TCM V50.66.01 FOR TIME VARYING BATHYMETRY
+      
+#if defined CSWAN || defined ADCSWAN     
+      !...Local SWAN Arrays
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIROut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM01Out(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TPSOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDXOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDYOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02Out(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10Out(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSMaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIRMaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM01MaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TPSMaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDMaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02MaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10MaxOut(:)
+#endif      
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef CSWAN
@@ -193,8 +257,15 @@ Cobell 20120510: Added logicals for turning on/off swan output files
       LOGICAL                      :: SWAN_OutputTMM10 = .TRUE.
       LOGICAL                      :: SWAN_OutputAgg(7)
 #endif
+
+Cobell - Added for Time Varying Weirs, Set to default values
+      LOGICAL                      :: USE_TVW = .FALSE.     !..From namelist, used time varying weirs
+      CHARACTER(80)                :: TVW_FILE = 'fort.tvw' !..From namelist, file for time varying weirs
+      REAL(SZ),ALLOCATABLE,TARGET  :: TVW(:)                !..Current elevation of weirs, for output
+
+
 Cobell -  Added the following for output of ESL at end of run
-      REAL(SZ),ALLOCATABLE, TARGET :: ESLONOFF(:),HOT_ESLONOFF(:),HOT_ESLONOFF_G(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: ESLONOFF(:)
 
       REAL(SZ),ALLOCATABLE, TARGET ::  CC00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  EtaDisc(:) ! vjp 9/2006 added for hotstart file
@@ -204,40 +275,41 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE ::   QX1(:),QX2(:),QY1(:),QY2(:)
       REAL(SZ),ALLOCATABLE ::   QX0(:),QY0(:)
       REAL(SZ),ALLOCATABLE ::   TK0(:),TK2(:)
-!      REAL(SZ),ALLOCATABLE ::   DP(:),SFAC(:)  !TCM V50.66.01 FOR TIME VARYING BATHYMETRY
-      REAL(SZ),ALLOCATABLE :: SFAC(:)
       REAL(SZ),ALLOCATABLE ::  DP1(:),DP2(:) !TCM V50.66.01 FOR TIME VARYING BATHYMETRY
       REAL(SZ),ALLOCATABLE ::   MOM_LV_X(:),MOM_LV_Y(:),GWCE_LV(:)
       REAL(SZ),ALLOCATABLE ::   CORIF(:)
       REAL(SZ),ALLOCATABLE ::   TPK(:),FFT(:)
       REAL(SZ),ALLOCATABLE ::   FACET(:),ETRF(:)
+      REAL(SZ),ALLOCATABLE ::   FFF(:),FFACE(:)
       REAL(SZ),ALLOCATABLE ::   ESBIN1(:),ESBIN2(:)
       REAL(SZ),ALLOCATABLE ::   TEMP_LV_A(:,:),TEMP_LV_B(:,:)
       REAL(SZ),ALLOCATABLE ::   QN0(:),QN1(:),QN2(:)
       REAL(SZ),ALLOCATABLE ::   EN0(:),EN1(:),EN2(:)
-      REAL(SZ),ALLOCATABLE ::   BNDLEN2O3(:)
-      REAL(SZ),ALLOCATABLE ::   CSII(:),SIII(:)
-      REAL(SZ),ALLOCATABLE ::   ZNGIF1(:),ZNGIF2(:),ZNGIF3(:)
       REAL(SZ),ALLOCATABLE ::   QNAM(:,:),QNPH(:,:)
       REAL(SZ),ALLOCATABLE ::   ENAM(:,:),ENPH(:,:)
       REAL(SZ),ALLOCATABLE ::   QNIN1(:),QNIN2(:)
       REAL(SZ),ALLOCATABLE ::   ENIN1(:),ENIN2(:)
-      REAL(SZ),ALLOCATABLE ::   CSI(:),SII(:)
-      REAL(SZ),ALLOCATABLE ::   STAIE1(:),STAIE2(:),STAIE3(:)
-      REAL(8), ALLOCATABLE, TARGET :: XEV(:) ! x coords of current vel stations
-      REAL(8), ALLOCATABLE, TARGET :: YEV(:) ! y coords of current vel stations
-      REAL(8), ALLOCATABLE, TARGET :: SLEV(:)! longitudes of current vel sta
-      REAL(8), ALLOCATABLE, TARGET :: SFEV(:)! latitudes of current vel sta
+      !
+      ! spatial interpolating factors for elevation stations
+      real(sz),allocatable, target :: staie1(:),staie2(:),staie3(:)
+      real(8), allocatable, target :: xev(:) ! x coords of current vel stations
+      real(8), allocatable, target :: yev(:) ! y coords of current vel stations
+      real(8), allocatable, target :: slev(:)! longitudes of current vel sta
+      real(8), allocatable, target :: sfev(:)! latitudes of current vel sta
 
-      REAL(SZ),ALLOCATABLE ::   STAIV1(:),STAIV2(:),STAIV3(:)
-      REAL(8), ALLOCATABLE, TARGET ::   XEC(:),YEC(:),SLEC(:),SFEC(:)
-      REAL(SZ),ALLOCATABLE ::   STAIC1(:),STAIC2(:),STAIC3(:)
-      REAL(8), ALLOCATABLE, TARGET :: XEM(:) ! x coords of met stations
-      REAL(8), ALLOCATABLE, TARGET :: YEM(:) ! y coords of met stations
-      REAL(8), ALLOCATABLE, TARGET :: SLEM(:) ! longitudes of met stations
-      REAL(8), ALLOCATABLE, TARGET :: SFEM(:) ! latitudes of met stations
+      ! spatial interpolating factors for velocity stations
+      real(sz),allocatable, target ::   staiv1(:),staiv2(:),staiv3(:)
+      real(8), allocatable, target ::   xec(:),yec(:),slec(:),sfec(:)
+      ! spatial interpolating factors for concentration stations
+      real(sz),allocatable ::   staic1(:),staic2(:),staic3(:)
 
-      REAL(SZ),ALLOCATABLE ::   STAIM1(:),STAIM2(:),STAIM3(:)
+      ! spatial interpolating factors for meteorological stations
+      real(sz),allocatable, target ::   staim1(:),staim2(:),staim3(:)
+      real(8), allocatable, target :: xem(:) ! x coords of met stations
+      real(8), allocatable, target :: yem(:) ! y coords of met stations
+      real(8), allocatable, target :: slem(:) ! longitudes of met stations
+      real(8), allocatable, target :: sfem(:) ! latitudes of met stations
+
       REAL(SZ),ALLOCATABLE ::   TRANS_LV_B(:),TRANS_LV_A(:)
       REAL(SZ),ALLOCATABLE ::   SOURSIN(:)
       REAL(SZ),ALLOCATABLE ::   WSX1(:),WSY1(:),PR1(:)
@@ -247,12 +319,7 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE ::   RSNX1(:),RSNY1(:),RSNX2(:),RSNY2(:)
       REAL(SZ),ALLOCATABLE ::   CICE1(:),CICE2(:)   !v49.64.01 tcm -- added
                                                     !for ice concentration
-
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax(:) ! v46.50 sb 11/11/2006
-      REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax(:)
-      REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax_g(:)
-      REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
-      REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time_G(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
 
       REAL(SZ),ALLOCATABLE :: TK(:)
       REAL(8),ALLOCATABLE :: EMO(:,:),EFA(:,:)
@@ -260,7 +327,7 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(8),ALLOCATABLE,TARGET :: YEL(:)  ! y-coords of elevation stations
       REAL(8),ALLOCATABLE,TARGET :: SLEL(:) ! latitudes of elevation stations
       REAL(8),ALLOCATABLE,TARGET :: SFEL(:) ! longitudes of elevation stations
-      REAL(8),ALLOCATABLE ::   AREAS(:), TotalArea(:)
+
       REAL(SZ),ALLOCATABLE ::   AUV11(:),AUV12(:),AUV13(:),AUV14(:)
       REAL(SZ),ALLOCATABLE, TARGET ::   DUU1(:),DUV1(:),DVV1(:)
       REAL(SZ),ALLOCATABLE, TARGET ::   BSX1(:),BSY1(:)
@@ -271,95 +338,64 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE ::   WKSP(:),RPARM(:)
       REAL(SZ),ALLOCATABLE ::   ABD(:,:),ZX(:)
       REAL(SZ),ALLOCATABLE ::   LSXX(:),LSXY(:),LSYX(:),LSYY(:)
+      INTEGER  NBFR,NCOR,NE2,NP2
 
 C    kmd48.33bc - added variables for the levels of no motion and top temperature boundary condition
       REAL(SZ),ALLOCATABLE ::   LNM_BC1(:), LNM_BC2(:), LNM_BC(:) ! level of no motion
       REAL(SZ),ALLOCATABLE ::   q_heat1(:), q_heat2(:), HFLUX(:)  ! top temperature
       REAL(SZ),ALLOCATABLE, TARGET :: Sponge(:)  ! sponge information for boundary conditions
-
       INTEGER,ALLOCATABLE, TARGET ::    NOFF(:), NODECODE(:)
-      INTEGER,ALLOCATABLE ::    ME2GW(:)
-      INTEGER,ALLOCATABLE ::    NBV(:),LBCODEI(:)
-      INTEGER,ALLOCATABLE ::    NEleZNG(:)
+      ! jgf52.08.08: Enable analyst to remove NOFF from wetting and
+      ! drying algorithm; .true. by default to conform with prior
+      ! ADCIRC versions. 
+      LOGICAL :: noffActive = .true.
       INTEGER,ALLOCATABLE ::    NNODECODE(:)
       INTEGER,ALLOCATABLE ::    NOFFOLD(:)
       INTEGER,ALLOCATABLE ::    NIBCNT(:)
-      INTEGER,ALLOCATABLE ::    NM(:,:)
-      INTEGER,ALLOCATABLE ::    NNEIGH(:),MJU(:),NODELE(:)
-      INTEGER,ALLOCATABLE ::    NEITAB(:,:),NEITABELE(:,:)
       INTEGER,ALLOCATABLE ::    NIBNODECODE(:)
-      INTEGER,ALLOCATABLE ::    LBArray_Pointer(:)
-      INTEGER,ALLOCATABLE ::    NNC(:)
-      INTEGER,ALLOCATABLE ::    NNE(:)
-      INTEGER,ALLOCATABLE ::    NNV(:)
-      INTEGER,ALLOCATABLE ::    NNM(:)
+      !
+      ! lists of elements containing each station 
+      integer, allocatable, target :: nnc(:) ! concentration station elements
+      integer, allocatable, target :: nne(:) ! elevation station elements
+      integer, allocatable, target :: nnv(:) ! velocity station elements
+      integer, allocatable, target :: nnm(:) ! meteorological station elements
+      !
       INTEGER,ALLOCATABLE ::    IWKSP(:),IPARM(:),IPV(:)
-      INTEGER,ALLOCATABLE ::    NVDLL(:),NBD(:)
-      INTEGER,ALLOCATABLE ::    NBDV(:,:)
-      INTEGER,ALLOCATABLE ::    NVELL(:)
-      INTEGER,ALLOCATABLE ::    NBVV(:,:)
-      INTEGER,ALLOCATABLE ::    IBTYPE(:)  !jgf49.32 now ibtype is an array
-      INTEGER,ALLOCATABLE ::    IBTYPEE(:) !jgf49.32 added ibtypee
-! kmd - added for rivers in baroclinic simulation
-      INTEGER,ALLOCATABLE ::    BCRNBVV(:,:)
-      INTEGER,ALLOCATABLE ::    BCRNVELL(:)
 C
 C.....for buoyancy forcing
       REAL(SZ),ALLOCATABLE ::   DASigT(:), DASalt(:), DATemp(:)
       REAL(SZ),ALLOCATABLE ::   VIDBCPDXOH(:), VIDBCPDYOH(:)
-
 C.....for scalar transport
       REAL(SZ),ALLOCATABLE ::   DAConc(:)
-
-C.....for internal barrier boundaries with flowthrough pipes
-      REAL(SZ),ALLOCATABLE ::   BARLANHTR(:),BARLANCFSPR(:)
-      REAL(SZ),ALLOCATABLE ::   BARINHTR(:),BARINCFSBR(:),BARINCFSPR(:)
-      REAL(SZ),ALLOCATABLE ::   PIPEHTR(:),PIPECOEFR(:),PIPEDIAMR(:)
-      REAL(SZ),ALLOCATABLE ::   BARLANHT(:),BARLANCFSP(:)
-      REAL(SZ),ALLOCATABLE ::   FFF(:),FFACE(:)
-      REAL(SZ),ALLOCATABLE ::   BTRAN3(:),BTRAN4(:),BTRAN5(:)
-      REAL(SZ),ALLOCATABLE ::   BTRAN6(:),BTRAN7(:),BTRAN8(:)
-      REAL(SZ),ALLOCATABLE ::   BARINHT(:),BARINCFSB(:),BARINCFSP(:)
-      REAL(SZ),ALLOCATABLE ::   PIPEHT(:),PIPECOEF(:),PIPEDIAM(:)
-      REAL(SZ),ALLOCATABLE ::   RBARWL1AVG(:),RBARWL2AVG(:)
-      REAL(SZ),ALLOCATABLE ::   RPIPEWL1AVG(:),RPIPEWL2AVG(:)
-      INTEGER, ALLOCATABLE ::   IBCONN(:),IBCONNR(:),NTRAN1(:),NTRAN2(:)
-
 C.....for wet/dry
       REAL(SZ)                  HABSMIN,HOFF
-
 cjjw...added 2 lines
 C.....for matrix conditioning,global to allow for reading in from hotstart file
       REAL(SZ)                  EP !jgf45.08 EP global for predictor-corrector
-C...
-C...DECLARE COMMON BLOCKS
-C...
+
       REAL(SZ) DT
 C
-      INTEGER NP,NOLICA,NOLIFA,IHOT,ICS,IDen
+      INTEGER NOLICA,NOLIFA,IHOT,IDen
       INTEGER :: NSCREEN = 1
-
 C...
 C...DECLARE REAL(8) AND CHAR VARIABLES, EQUIVALENCES
 C...
       REAL(8) STATIM,REFTIM,DTDP
-      REAL(8) AVGXY,DIF1R,DIF2R,DIF3R
-      REAL(8) AEMIN,AE,AA,A1,A2,A3,X1,X2,X3,X4,Y1,Y2,Y3,Y4
-      REAL(8) XL0,XL1,XL2,YL0,YL1,YL2,SLAM0,SFEA0
       REAL(8) WREFTIM,WTIMED,WTIME2,WTIME1,WTIMINC,QTIME1,QTIME2
       REAL(8) FTIMINC,ETIMINC,RSTIME1,RSTIME2,RSTIMINC
-      REAL(8) DELX,DELY,DIST,DELDIST,DELETA
+
+      REAL(8) DIST,DELDIST,DELETA
       REAL(8),ALLOCATABLE :: AMIG(:),AMIGT(:),FAMIG(:)
       REAL(8),ALLOCATABLE :: PER(:),PERT(:),FPER(:)
       REAL(8),ALLOCATABLE :: FREQ(:),FF(:),FACE(:)
-      REAL(8),ALLOCATABLE :: SLAM(:),SFEA(:),X(:),Y(:)
-C    kmd48.33 - variable added
-      REAL(8) DTDPHS  ! time step for hot start
 
-      CHARACTER(80)             :: RUNDES, RUNID, AGRID, AGRID2, AFRIC
-      CHARACTER(4)              :: RDES4(20),RID4(20),AID4(20)
+
+      REAL(8) DTDPHS  !kmd48.33 - added time step for hot start
+      CHARACTER(80)             :: RUNDES, RUNID, AFRIC
+      CHARACTER(4)              :: RDES4(20),RID4(20)
       CHARACTER(8)              :: RDES8(10),RID8(10),AID8(10)
-      CHARACTER(10)             :: ALPHA
+      CHARACTER(10)             :: ALPHA ! periodic constituent name
+      CHARACTER(10),ALLOCATABLE :: ELEVALPHA(:) ! periodic constituent name
       CHARACTER(5),ALLOCATABLE  :: TIPOTAG(:),BOUNTAG(:),FBOUNTAG(:)
 
 c.ral v45.02 to fix compiler problem, see also change in read_input.F
@@ -407,8 +443,7 @@ C    kmd48.33bc  - logical statement for hot start using different time step
       ! different from the time step size in the hotstart file; also
       ! true for IDEN=1, 3D baroclinic runs 
       LOGICAL :: CHOTHS              = .FALSE.
-! kmd - logical statement for rivers in baroclinic simulation
-      LOGICAL :: BndBCRiver          = .FALSE.
+
 ! kmd - Evan's updates for rivers above MSL
       LOGICAL :: River_above_MSL     = .FALSE.
 
@@ -424,62 +459,91 @@ C     size has changed after a hotstart.
       REAL(SZ) TOUTSC
       REAL(SZ) TOUTSE,TOUTFE
       REAL(SZ) TOUTSV,TOUTFV
-      REAL(SZ) TOUTFGC, TOUTFGE, TOUTFGV, TOUTFGW
-      REAL(SZ) TOUTFM, TOUTSGC, TOUTSGE, TOUTSGV, TOUTSGW, TOUTSM
-C...
-C...EXPLICITLY DECLARE ADDITIONAL VARIABLES
-C...
+      REAL(SZ) TOUTFGC, TOUTFGE, TOUTFGV, TOUTFGW, TOUTF_TVW
+      REAL(SZ) TOUTFM, TOUTSGC, TOUTSGE, TOUTSGV, TOUTSGW, TOUTSM, TOUTS_TVW
+
+      REAL(SZ),ALLOCATABLE ::   RPIPEWL1AVG(:),RPIPEWL2AVG(:)
       INTEGER  NODEDRYMIN,NODEWETMIN
-      INTEGER  IM,JGW,JKI,JME
-      INTEGER  JNMM,KMIN,N1,N2,N3
+      INTEGER  IM
       INTEGER :: NABOUT = 0
-      INTEGER  NBFR,NBOU,NBVI,NBVJ,NCOR,NE,NE2,NP2
-      INTEGER  NEIMIN,NEIMAX,NETA,NFFR
-      INTEGER  NFLUXB,NFLUXF,NFLUXIB,NFLUXRBC
-      INTEGER  NFLUXGBC
-      INTEGER  NFLUXIBP,NPIPE
-      INTEGER  NFOVER,NHG,NHY,NOLICAT,NOPE,NOUTC
-      INTEGER  NOUTE,NSPOOLE,NOUTV,NSPOOLV,NPRBI
+      INTEGER  NFFR
+      INTEGER  NFOVER,NHG,NHY,NOLICAT,NOUTC
+      INTEGER  NOUTE,NSPOOLE,NOUTV,NSPOOLV
       INTEGER  NRAMP,NRS,NSTAE,NSTARTDRY,NSTAV,NT,NTCYFE
       INTEGER  NTCYFV,NTCYSE,NTCYSV,NTIF,NTIP,NTRSPE,NTRSPV
-      INTEGER  NVEL,NVELEXT,NVELME,NWLAT,NWLON,NWS
-      INTEGER  IBSTART, ICSTP, IDSETFLG, IER
-      INTEGER  IESTP
+      INTEGER  NTCYS_TVW,NTCYF_TVW
+      INTEGER  NWLAT,NWLON,NWS
+      INTEGER  ICSTP, IDSETFLG, IER
+
 Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  IFNLCAT, IFNLCT, IFNLFA, IFNLCTE, IFNLCATE
-      INTEGER  IFWIND, IGCP, IGEP, IGPP, IGVP, IGWP
-      INTEGER  IHOTSTP, ILUMP, IMHS, IPSTP
+      INTEGER  IFWIND
+      ! 
+      ! fulldomain (a.k.a. global) file position counters
+      integer, target :: igcp ! concentration
+      integer, target :: igep ! elevation
+      integer, target :: igpp ! barometric pressure
+      integer, target :: igvp ! water velocity
+      integer, target :: igwp ! wind velocity
+      integer, target :: itau0p ! position in tau0 output file for variable tau0
+      integer, target :: igsp ! sponge layer output
+      integer, target :: igdp ! debug elevation
+      ! station file position counters
+      integer, target :: ivstp ! file position in velocity station file
+      integer, target :: iwstp ! file position in wind velocity station file
+      integer, target :: ipstp ! position in barometric pressure station file
+      integer, target :: iestp ! file position in station elevation file 
+      integer, target :: ig_tvw ! file position in weir elevation file
+      integer, target :: nodeCodeOutFilePos
+      integer, target :: noffOutFilePos
+      ! jgf52.08.03: Some files (e.g., initiallydry.63 and endrisinginun.63)
+      ! are only written once, but are written using the same subroutines
+      ! that write time varying output files; the output subroutine increments
+      ! the file position counter; so we have to have a fake file position 
+      ! counter even for output files that are only written once.
+      integer, target :: fauxFilePosition 
+
+      INTEGER  IHOTSTP, ILUMP, IMHS
       INTEGER  IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN, ISLDIA
       INTEGER  ITIME, ITEMPSTP, ITEST
-      INTEGER  ITHS, ITITER, ITMAX, IVSTP, IWSTP, IWTIME, IWTIMEP
+      INTEGER  ITHS, ITITER, ITMAX    
+      INTEGER IWTIME, IWTIMEP
+      
       INTEGER  IWYR, J12, J13, J21, J23, J31, J32
       INTEGER  JJ, KEMAX, KVMAX, LRC, LUMPT
       INTEGER  MBW, MDF, NBDJ, NBNCTOT, NBW
       INTEGER  NCBND, NCTOT, NDRY, NDSETSC
       INTEGER  NCChange !jgf45.06 flag indicating wetting / drying has occurred
-      INTEGER  NDSETSE, NDSETSV, NDSETSW, NEle
+      INTEGER  NDSETSE, NDSETSV, NDSETSW, NDSETS_TVW,NEle
       INTEGER  NHSINC, NHSTAR
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef CSWAN 
 Casey 090302: Added a variable for output of radiation stress gradients.
-      INTEGER  IGRadS
+      INTEGER, TARGET :: IGRadS
 !#endif
-
       INTEGER  NNBB, NNBB1, NNBB2
       INTEGER  NNBB1R, NNBB1L, NNBB2R, NNBB2L ! sb46.28.sb05.05 11/01/2006
       INTEGER  NNBB1WN, NNBB2WN               ! sb46.28.sb05.05 WN stands for wet neighbors 11/01/2006
-      INTEGER  NOUTGC, NOUTGE, NOUTGV, NOUTGW, NOUTM
-      INTEGER  NSCOUC, NSCOUE, NSCOUGC, NSCOUGE, NSCOUGV
-      INTEGER  NSCOUGW, NSCOUM, NSCOUV, NSPOOLC, NSPOOLGC, NSPOOLGE
-      INTEGER  NSPOOLGV, NSPOOLGW, NSPOOLM
+      INTEGER  NOUTGC, NOUTGE, NOUTGV, NOUTGW, NOUTM, NOUT_TVW
+      INTEGER, TARGET :: NSCOUC, NSCOUE, NSCOUGC, NSCOUGE, NSCOUGV ! output spool counters
+      INTEGER, TARGET :: NSCOUGW, NSCOURS, NSCOUGP, NSCOUM, NSCOUV ! output spool counters
+      INTEGER, TARGET :: NSCOUGI, NSCOUGT, NSCOUGS  ! output spool counters
+      INTEGER, TARGET :: NSCOU_TVW ! output spool counters
+      INTEGER, TARGET :: NSCOUP ! output spool counter for fort.71 (bar. press. sta.)
+      INTEGER, TARGET :: NSCOUI ! output spool counter for fort.91 (ice sta.)     
+      integer, target :: nodeCodeOutSpoolCounter
+      integer, target :: noffOutSpoolCounter
+      integer, target :: initiallyDrySpoolCounter
+      
+      INTEGER :: NSPOOLC, NSPOOLGC, NSPOOLGE ! output increments
+      INTEGER :: NSPOOLGV, NSPOOLGW, NSPOOLM, NSPOOL_TVW ! output increments
       INTEGER  NSTAC, NSTAM, NTCYFC, NTCYFGC, NTCYFGE
       INTEGER  NTCYFGV, NTCYFGW
       INTEGER  NTCYFM, NTCYSC, NTCYSGC, NTCYSGE
       INTEGER  NTCYSGV, NTCYSGW, NTCYSM
       INTEGER  NTRSPC, NTRSPM, NUMITR, NW, NWET, NWSEGWI, NWSGGWI
       INTEGER  NP_GLOBAL
-
-C    kmd48.33bc - added variables for 3D boundary conditions
+C     kmd48.33bc - added variables for 3D boundary conditions
       INTEGER  RES_BC_FLAG  ! boundary condition flag for salinity and temperature
       INTEGER  BCFLAG_LNM   ! boundary condition flag for levels of no motion
       INTEGER  BCFLAG_TEMP  ! boundary condition flag for heat flux (top temperature)
@@ -493,16 +557,14 @@ C    kmd48.33bc - added variables for 3D boundary conditions
       REAL(SZ) TTBCSTATIM, TTBCRATIO
       REAL(SZ) SPONGEDIST  ! distance information for the sponge layer
       LOGICAL :: OUTPUTSPONGE  =  .FALSE.
-! kmd - variables for river boundary conditions
-      INTEGER  totalbcrivernodes  ! nodes for the river boundary conditions for baroclinic
-      INTEGER  bcriversec  ! river boundary information
+
       REAL(SZ) RIVBCTIMINC, RIVBCTIME1, RIVBCTIME2  ! time information for river - baroclinic
       REAL(SZ) BCRivRATIO, RIVBCSTATIM
 
-      REAL(SZ) ADVECX, ADVECY, AGIRD, ARG
+      REAL(SZ) ADVECX, ADVECY, ARG
       REAL(SZ) ARG1, ARG2, ARGJ, ARGJ1, ARGJ2
       REAL(SZ) AUV21, AUV22
-      REAL(SZ) BARAVGWT, BEDSTR, BNDLEN2O3NC
+      REAL(SZ) BEDSTR, BNDLEN2O3NC
       REAL(SZ) CELERITY, COND, CONVCR
       REAL(SZ) DT2, DTO2, DTOHPP
       REAL(SZ) ETIME1, ETIME2, ETRATIO
@@ -510,7 +572,6 @@ C    kmd48.33bc - added variables for 3D boundary conditions
 
       REAL(SZ) P11, P22, P33
       REAL(SZ) QFORCEI, QFORCEJ
-
       REAL(SZ) QUNORM, QUTemp, QVNORM, RAMP, RAMP1, RAMP2, RBARWL
       REAL(SZ) RBARWL1,RBARWL1F, RBARWL2, RBARWL2F, RFF, RFF1, RFF2
       REAL(SZ) SADVDTO3
@@ -519,19 +580,20 @@ C    kmd48.33bc - added variables for 3D boundary conditions
       REAL(SZ) TKWET
       REAL(SZ) VEL, VELABS
       REAL(SZ) VELMAX
-      REAL(SZ) A00,B00,C00,ANGINN
-      REAL(SZ) CORI,COSTHETA,COSTHETA1,COSTSET,CROSS,CROSS1
-      REAL(SZ) DAY,DOTVEC,DRAMP,DUM1,DUM2
-      REAL(SZ) H0
-      REAL(SZ) RNDAY,THETA,THETA1
-      REAL(SZ) XL
-      REAL(SZ) VECNORM,VL1X,VL1Y,VL2X,VL2Y,WLATMAX
-      REAL(SZ) WLONMIN,WLATINC,WLONINC, VELMIN
 
+      REAL(SZ) A00,B00,C00
+      REAL(SZ) CORI
+      REAL(SZ) DAY,DRAMP,DUM1,DUM2
+      REAL(SZ) H0
+      REAL(SZ) RNDAY
+      REAL(SZ) WLATMAX
+      REAL(SZ) WLONMIN,WLATINC,WLONINC, VELMIN
       REAL(8)  RNP_GLOBAL
       REAL(8)  REFSEC   ! required to run in either 32-bit or 64-bit
 
-      LOGICAL :: useNetCDF = .false.
+      LOGICAL :: useNetCDF = .false. ! .true. if netcdf is used at all
+      LOGICAL :: useNetCDFOutput = .false. ! only for output, not hotstart
+      LOGICAL :: useXDMF = .false.
 ! CF Start addition for NETCDF I/O 6/21/06
 !     -----------------
 !     Attribute general
@@ -561,51 +623,78 @@ C    kmd48.33bc - added variables for 3D boundary conditions
       INTEGER NCCOUE,NCCOUM,NCCOUV,NCCOUW
       INTEGER NCCOUGE,NCCOUGW,NCCOUGV
 
+#ifdef ADCNETCDF
+      LOGICAL, PARAMETER :: netcdf_avail = .true. 
+#else
+      LOGICAL, PARAMETER :: netcdf_avail = .false. ! .true. if NetCDF support was compiled in
+#endif
+      
 ! CF Finish addition for NETCDF I/O
 
 ! TCM v49.64.01 Addition for Ice Concentration Fields
-      INTEGER :: NCICE,IGIP,IICESTP
+      INTEGER :: NCICE
+      INTEGER, TARGET :: IGIP ! position in fulldomain Ice output file
+      INTEGER, TARGET :: IICESTP ! position in station Ice output file
       REAL(8) :: CICE_TIMINC,CICE_TIME1,CICE_TIME2
 
 ! TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
       INTEGER :: NDDT  !FLAG TO USE TIME VARYING BATHYMETRY
       REAL(8) :: BTIME1,BTIME2  !TIMES FOR TIME VARYING BATHYMETRY Records
       REAL(8) :: BTIME_END  !time that 
-      INTEGER :: IGBP,NDSETSB,NTCYFGB,NTCYSGB,NSCOUGB,NTRSPB  !variables related to global bathymetry output file
-      INTEGER :: NTCYSB,NTCYFB,NSCOUB,IBSTP            !variables realted to station bathymetry output file
+      !variables related to global bathymetry output file
+      INTEGER, TARGET :: IGBP ! position in global bathy output file
+      INTEGER :: NDSETSB,NTCYFGB,NTCYSGB,NTRSPB
+      INTEGER, TARGET :: NSCOUGB
+      !variables related to station bathymetry output file
+      INTEGER :: NTCYSB,NTCYFB
+      INTEGER, TARGET :: NSCOUB
+      INTEGER, TARGET :: IBSTP  ! position in station bathy output file      
       REAL(8) :: BTIMINC ! TIME INCREMENT (SECONDS) FOR BATHYMETRY CHANGES USED FOR TIME VARYING BATHYMETRY
       REAL(8) :: BCHGTIMINC ! time increment (seconds) over which bathymetry changes during a btimeinc interval
       REAL(SZ),ALLOCATABLE, TARGET ::  DP00(:)
-
-C     jgf48.03 Arrays for mapping subdomain nodes and elements to full
-C     domain ... used in globalio module but allocated and populated
-C     in messenger module
-      integer,allocatable,target :: nodes_lg(:)
-      integer,allocatable,target :: imap_el_lg(:)
-      integer,allocatable,target :: imap_stae_lg(:)
-      integer,allocatable,target :: imap_stav_lg(:)
-      integer,allocatable,target :: imap_stam_lg(:)
-      integer,allocatable,target :: imap_stac_lg(:)
-      integer                    :: float_type
-C     jgf48.03 Variable, arrays, and datastructure that are used by both
-C     globalio and writer modules
-      integer, parameter :: BUFSIZE_MAX = 131072
-      real(sz) :: buf(BUFSIZE_MAX)
-      real(sz) :: resultBuf(BUFSIZE_MAX)
-      integer :: integerBuffer(BUFSIZE_MAX)
-      integer :: integerResultBuffer(BUFSIZE_MAX)
+      ! 
+      ! all info needed for self describing dataset in XDMF
+      type xdmfMetaData_t
+         integer*8 :: xdmfFortranObj  ! object associated with the file
+         integer :: depthID    ! index of the depth attribute
+         integer :: geometryID ! index of the Geometry data in the output file
+         real(8), allocatable :: tempCoord(:,:) ! holds Geometry data
+         integer :: topologyID ! index of the Topology data in the output file
+         integer, allocatable :: xdmf_nm(:,:)  ! 0-offset connectivity array
+         logical :: createdIDs        ! .true. if infoIDs have been created 
+         character(80) :: variable_name 
+         integer :: variable_name_id
+         character(80) :: long_name 
+         integer :: long_name_id
+         character(80) :: standard_name
+         integer :: standard_name_id
+         character(80) :: coordinates
+         integer :: coordinates_id
+         character(80) :: units
+         integer :: units_id
+         character(80) :: positive
+         integer :: positive_id
+         real(sz), allocatable :: data_array3(:,:)
+      end type xdmfMetaData_t
+      !
+      ! info required for dedicated writers
+      type writerData_t
+         logical :: bufferInitialized  !.true. if memory has been allocated
+         logical :: bufferLoaded       !.true. if buffered data must be written
+         real(sz) :: myTime
+         integer :: myTimeStep
+      end type writerData_t
 C
 C     jgf48.03 the following data structure is used to describe
 C     the size and shape of the output data.
-C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name elements to the structure
-C     TCMv51.20.01 removed hotstart and hotstart_g and replaced with maxmin_time and maxmin_time_g
-
+C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name 
+C     elements to the structure
       type OutputDataDescript_t
-        CHARACTER(12)     :: file_name ! name of output file
+        integer           :: lun
+        CHARACTER(1024)   :: file_name ! name of output file
         character(20)     :: field_name !Name of the field associated with the data structure
         integer           :: specifier  ! output format from fort.15 (NOUTE,etc)
         REAL(SZ)          :: initial_value
-        integer           :: int_initial_value
         logical           :: ConsiderWetDry ! Flag for considering nodes wet/dry status
         real(sz)          :: alternate_value  ! Value that can be used as an alternate value
         REAL(SZ), pointer :: x_coord(:) ! x-coord or longitude (station or mesh)
@@ -624,34 +713,46 @@ C     TCMv51.20.01 removed hotstart and hotstart_g and replaced with maxmin_time
         REAL(SZ), pointer :: array2(:) ! 2nd component of vector
         REAL(SZ), pointer :: array3(:) ! 3rd component of vector
         REAL(SZ), pointer :: array2D(:,:) ! subdomain matrix
+        logical :: isInteger ! .true. if this is an integer array
         INTEGER, pointer  :: iarray_g(:) ! full domain integer
         REAL(SZ), pointer :: array_g(:)  ! full domain data scalar etc
         REAL(SZ), pointer :: array2_g(:) ! full domain 2nd vec component
         REAL(SZ), pointer :: array3_g(:) ! full domain 3rd vec component
         REAL(SZ), pointer :: array2D_g(:,:) ! fulldomain matrix
-!        REAL(SZ), pointer :: hotstart(:) ! from hotstart (used by min max)  !tcm v51.20.01 this no longer needed
-!        REAL(SZ), pointer :: hotstart_g(:) ! from hotstart (used by min max) !tcm v51.20.01 this no longer needed
+        REAL(SZ), pointer :: hotstart(:) ! from hotstart (used by min max)
+        REAL(SZ), pointer :: hotstart_g(:) ! from hotstart (used by min max)
+        logical :: writeFlag ! .true. if the data should be written during this run
+        logical :: isStation ! .true. if the data represent a recording station
+        logical :: divideByDepth ! .true. if the solution must be divided by depth b/f output
+        integer, allocatable :: writerFormats(:) ! formats that dedicated writers can write
+        logical :: useWriter ! .true. if a dedicated writer should be used to write these data
+        integer :: file_extension  ! end of the file name       
+        character(len=32) :: file_basename  ! usually 'fort' but sometimes 'rads' etc
+        real(sz), pointer :: interped_array(:) ! array that stations spatially interpolate
+        real(sz), pointer :: interped_array2(:) ! array2 that stations spatially interpolate
+        integer :: startTimeStep ! time step after which output should begin
+        integer :: endTimeStep   ! last time step when output should occur    
+        integer :: outputTimeStepIncrement ! num time steps between outputs          
+        integer, pointer :: spoolCounter ! counts time steps between outputs
+        integer, pointer :: filepos ! keeps track of position in output files
+        integer, pointer :: elements(:) ! array of elements that contain the stations
+        real(sz), pointer :: interp_fac1(:) ! array of interp. factors for stations
+        real(sz), pointer :: interp_fac2(:) ! array of interp. factors for stations        
+        real(sz), pointer :: interp_fac3(:) ! array of interp. factors for stations
+        logical :: initialized ! .true. if initialization has occurred (netcdf, xdmf)
+        logical :: minmax_timestamp ! .true. if a time stamp will be written to a max file
+        logical :: readMaxMin ! .true. if max/min file should be read upon hotstart
+        type(xdmfMetaData_t) :: xdmfMD ! used if this data will be written to XDMF
+        type(writerData_t) :: wMD ! used if this data will be written by dedicated writer
       end type OutputDataDescript_t
+      !
+      ! inunThresh is used to set a minimum inundation depth for 
+      ! accumulating inundationTime for detailed inundation output
+      real(sz) :: inunThresh = 0.6d0
+      !
+      ! inundationOutput can be set to .true. in read_input()
+      logical :: inundationOutput = .false. 
 
-      INTEGER ITAU0P ! position in tau0 output file for variable tau0
-C
-C     jgf48.03 Variables shared between messenger and writer modules
-      INTEGER ::  REALTYPE, DBLETYPE
-      ! COMMUNICATORS FOR GLOBAL FILE WRITING
-      INTEGER, ALLOCATABLE ::  COMM_WRITER(:)
-      ! COMMUNICATORS FOR HOTSTART FILE WRITING !st3
-      INTEGER, ALLOCATABLE ::  COMM_WRITEH(:), COMM_HSLEEP(:)
-
-      ! = 0 if this is a compute proc; > 0 if this is a writer node
-      INTEGER :: WRITER_ID
-      ! Following signals are used in messenger.F and writer.F
-      INTEGER :: SIG_VAL   = 1
-      INTEGER :: SIG_WRITE = 100
-      INTEGER :: SIG_TERM  = 999  ! signal to terminate adc_writer
-!  tcm v49.48.01
-      integer :: SIG_PAUSE = 99 ! signal to pause adc_writer
-
-C     End of variables shared between messenger and writer modules
 C
 C     jgf49.44: Log levels, in order from largest amount of log messages
 C     written (DEBUG) to fewest log messages written (ERROR). Compared
@@ -666,32 +767,15 @@ C
       CHARACTER(len=10), dimension(5) :: logLevelNames
       CHARACTER(len=50), dimension(50) :: messageSources ! subroutine names
       CHARACTER(len=1024) :: scratchMessage ! used for formatted messages
+      CHARACTER(len=1024) :: scratchFormat  ! used for Fortran format strings
       INTEGER :: sourceNumber ! index into messageSources for current sub
 
 C     v49.48.01 tcm 20110126 Variables related to kdtree searches
-      REAL(SZ), ALLOCATABLE :: BCXY(:,:), RMAX(:)
       INTEGER :: SRCHDP=100
       TYPE(KDTREE2), POINTER :: TREE
       TYPE(KDTREE2_RESULT), ALLOCATABLE :: KDRESULTS(:)
 
-C-------------------end of data declarations----------------------------------C
-
       CONTAINS
-
-C******************************************************************************
-C                                                                             *
-C    Transform from lon,lat (lamda,phi) coordinates into CPP coordinates.     *
-C    Lon,Lat must be in radians.                                              *
-C                                                                             *
-C******************************************************************************
-      SUBROUTINE CPP(X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0)
-      IMPLICIT NONE
-      REAL*8 X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0,R
-      R=6378206.4d0
-      X=R*(RLAMBDA-RLAMBDA0)*COS(PHI0)
-      Y=PHI*R
-      RETURN
-      END SUBROUTINE CPP
 
 C--------------------------------------------------------------------
 C     S U B R O U T I N E    I N I T   L O G G I N G
@@ -722,15 +806,20 @@ C     jgf50.65: Open the log file; this must be called after make dirname
 C     so that we know where to put this log file.
 C--------------------------------------------------------------------
       SUBROUTINE openLogFile()
+      use sizes, only : localDir
       IMPLICIT NONE
 C...
 C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
 C...
+C     cms51.06: moved fort.33 file from read_input.F to here
 #ifdef CMPI
       OPEN(16,FILE=trim(localdir)//'/'//'fort.16', ACTION='WRITE',
      &    STATUS='REPLACE')
+      OPEN(33,FILE=trim(localdir)//'/'//'fort.33', ACTION='WRITE',
+     &    STATUS='REPLACE')
 #else
       OPEN(16,FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
+      OPEN(33,FILE='fort.33', ACTION='WRITE', STATUS='REPLACE')
 #endif
 C--------------------------------------------------------------------
       END SUBROUTINE openLogFile
@@ -766,16 +855,16 @@ C
             IF (level.ge.NABOUT) THEN
 #ifdef FULL_STACK
                write(screenUnit,331,advance="no")
-     7             trim(logLevelNames(level+2)),
+     &             trim(logLevelNames(level+2)),
      &             (trim(messageSources(j)),j=1,sourceNumber)
                write(screenUnit,332) trim(message)
 #else
                write(screenUnit,333) trim(logLevelNames(level+2)),
      &             trim(messageSources(sourceNumber)), trim(message)
 #endif
-#ifdef FLUSH_MESSAGES
+!#ifdef FLUSH_MESSAGES
                flush(screenUnit)
-#endif
+!#endif
             ENDIF
          ENDIF
       ENDIF
@@ -815,9 +904,9 @@ C
          write(16,333) trim(logLevelNames(level+2)),
      &       trim(messageSources(sourceNumber)), trim(message)
 #endif
-#ifdef FLUSH_MESSAGES
+!#ifdef FLUSH_MESSAGES
                flush(16)
-#endif
+!#endif
       ENDIF
 331   FORMAT(A,": ",A,50(:,"->",A))
 332   FORMAT(": ",A)
@@ -837,8 +926,9 @@ C--------------------------------------------------------------------
       INTEGER, intent(in) :: level
       CHARACTER(*), intent(in) :: message
 C
-      call logMessage(level, message)
       call screenMessage(level, message)
+      call logMessage(level, message)
+
 C--------------------------------------------------------------------
       END SUBROUTINE allMessage
 C--------------------------------------------------------------------
@@ -875,600 +965,6 @@ C--------------------------------------------------------------------
       END SUBROUTINE unsetMessageSource
 C--------------------------------------------------------------------
 
-
-C--------------------------------------------------------------------
-C                    S U B R O U T I N E
-C     A L L O C A T E   F U L L   D O M A I N   I O   A R R A Y S
-C--------------------------------------------------------------------
-C     jgf49.44: Allocates memory for the full domain arrays for i/o
-C     purposes; these arrays are both read from and written to hotstart
-C     files. Arrays that are only written are allocated in the
-C     subroutine that does the writing.
-C--------------------------------------------------------------------
-      SUBROUTINE allocateFullDomainIOArrays()
-      IMPLICIT NONE
-C
-      call setMessageSource("allocateFullDomainIOArrays")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      ALLOCATE(ETA1_g(NP_G))
-      ALLOCATE(ETA2_g(NP_G))
-      ALLOCATE(UU2_g(NP_G))
-      ALLOCATE(VV2_g(NP_G))
-      IF (IM.eq.10) THEN
-         ALLOCATE(CH1_g(NP_G))
-      ENDIF
-      ALLOCATE(EtaDisc_g(NP_G))
-      ALLOCATE(NodeCode_g(NP_G))
-      ALLOCATE(NOFF_g(NE_G))
-      ALLOCATE(NNodeCode_g(NP_G))
-C
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C--------------------------------------------------------------------
-      END SUBROUTINE allocateFullDomainIOArrays
-C--------------------------------------------------------------------
-
-C--------------------------------------------------------------------
-C     S U B R O U T I N E      B I N A R Y   R E A D   2 D
-C--------------------------------------------------------------------
-C     jgf49.44: Reads a real(sz) array with the specified length
-C     from a binary hotstart file; takes the file counter as an
-C     input argument and returns the new value of the file counter
-C     at the end of the read. Its called "2D" even though it reads
-C     a 1D fortran array because the array represents a 2D physical
-C     quantity in an unstructured mesh.
-C--------------------------------------------------------------------
-      SUBROUTINE binaryRead2D(array, length, lun, counter)
-      USE SIZES, ONLY : SZ
-      IMPLICIT NONE
-      REAL(SZ), intent(out), dimension(:) :: array ! the data to read from the hotstart file
-      INTEGER, intent(in) :: length  ! the number of values to read
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
-      INTEGER, intent(inout) :: counter ! i/o position in the file
-C
-      INTEGER i      ! array index
-C
-      call setMessageSource("binaryRead2D")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-       DO i=1, length
-          READ(lun,REC=counter) array(i)
-          counter = counter + 1
-       END DO
-C
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C--------------------------------------------------------------------
-      END SUBROUTINE binaryRead2D
-C--------------------------------------------------------------------
-
-C--------------------------------------------------------------------
-C     S U B R O U T I N E      R E A L   R E A D   2 D
-C--------------------------------------------------------------------
-C     kmd: Reads a real(sz) array with the specified length
-C     from an initial condition file in ascii format; it has the
-C     same format as the binary version but does not require the
-C     file counter.
-C--------------------------------------------------------------------
-      SUBROUTINE realRead2D(array, length, lun )
-      USE SIZES, ONLY : SZ
-      IMPLICIT NONE
-      REAL(SZ), intent(out), dimension(:) :: array ! the data to read from the hotstart file
-      INTEGER, intent(in) :: length  ! the number of values to read
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
-C
-      INTEGER i      ! array index
-C
-      call setMessageSource("realRead2D")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-       DO i=1, length
-          READ(lun,*) array(i)
-       END DO
-C
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C--------------------------------------------------------------------
-      END SUBROUTINE realRead2D
-C--------------------------------------------------------------------
-
-C--------------------------------------------------------------------
-C     S U B R O U T I N E      B I N A R Y   W R I T E   2 D
-C--------------------------------------------------------------------
-C     jgf49.49.01: Writes a real(sz) array with the specified length
-C     to a binary hotstart file; takes the file counter as an
-C     input argument and returns the new value of the file counter
-C     at the end of the write.
-C--------------------------------------------------------------------
-      SUBROUTINE binaryWrite2D(array, length, lun, counter)
-      USE SIZES, ONLY : SZ
-      IMPLICIT NONE
-      REAL(SZ), intent(in), dimension(:) :: array ! data to write
-      INTEGER, intent(in) :: length  ! the number of values to write
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to write to
-      INTEGER, intent(inout) :: counter ! i/o position in the file
-C
-      INTEGER i      ! array index
-C
-      call setMessageSource("binaryWrite2D")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-       DO i=1, length
-          WRITE(lun,REC=counter) array(i)
-          counter = counter + 1
-       END DO
-C
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C--------------------------------------------------------------------
-      END SUBROUTINE binaryWrite2D
-C--------------------------------------------------------------------
-
-C--------------------------------------------------------------------
-C     S U B R O U T I N E      B I N A R Y   I N T   R E A D   2 D
-C--------------------------------------------------------------------
-C     jgf49.44: Same as binaryRead2D except it reads an integer.
-C--------------------------------------------------------------------
-      SUBROUTINE binaryIntRead2D(array, length, lun, counter)
-      USE SIZES, ONLY : SZ
-      IMPLICIT NONE
-      INTEGER, intent(out), dimension(:) :: array ! the data to read from the hotstart file
-      INTEGER, intent(in) :: length  ! the number of values to read
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
-      INTEGER, intent(inout) :: counter ! i/o position in the file
-C
-      INTEGER i      ! array index
-C
-      call setMessageSource("binaryIntRead2D")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-C
-       DO i=1, length
-          READ(lun,REC=counter) array(i)
-          counter = counter + 1
-       END DO
-C
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C--------------------------------------------------------------------
-      END SUBROUTINE binaryIntRead2D
-C--------------------------------------------------------------------
-
-C--------------------------------------------------------------------
-C     S U B R O U T I N E      R E A L   I N T   R E A D   2 D
-C--------------------------------------------------------------------
-C     kmd: Same as realRead2D except it reads an integer.
-C--------------------------------------------------------------------
-      SUBROUTINE realIntRead2D(array, length, lun)
-      USE SIZES, ONLY : SZ
-      IMPLICIT NONE
-      INTEGER, intent(out), dimension(:) :: array ! the data to read from the hotstart file
-      INTEGER, intent(in) :: length  ! the number of values to read
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
-C
-      INTEGER i      ! array index
-C
-      call setMessageSource("realIntRead2D")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-C
-       DO i=1, length
-          READ(lun,*) array(i)
-       END DO
-C
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C--------------------------------------------------------------------
-      END SUBROUTINE realIntRead2D
-C--------------------------------------------------------------------
-
-C--------------------------------------------------------------------
-C     S U B R O U T I N E      B I N A R Y   R E A D   3 D
-C--------------------------------------------------------------------
-C     jgf49.44: Same as binaryRead2D except it reads data with
-C     both horizontal and vertical lengths. Also used for reading
-C     harmonic analysis arrays from binary hotstart file.
-C--------------------------------------------------------------------
-      SUBROUTINE binaryRead3D(array, iLength, jLength, lun,
-     &                        counter)
-      USE SIZES, ONLY : SZ
-      IMPLICIT NONE
-      REAL(SZ), intent(out), dimension(:,:) :: array ! data to read from the hotstart file
-      INTEGER, intent(in) :: iLength  ! the number of horiz values to read
-      INTEGER, intent(in) :: jLength  ! the number of layers
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
-      INTEGER, intent(inout) :: counter ! i/o position in the file
-C
-      INTEGER i,j      ! array indices
-C
-      call setMessageSource("binaryRead3D")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-       DO j=1, jLength
-          DO i=1, iLength
-            READ(lun,REC=counter) array(i,j)
-            counter = counter + 1
-          END DO
-       END DO
-C
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C--------------------------------------------------------------------
-      END SUBROUTINE binaryRead3D
-C--------------------------------------------------------------------
-
-C--------------------------------------------------------------------
-C     S U B R O U T I N E      R E A L   R E A D   3 D
-C--------------------------------------------------------------------
-C     kmd: Same as realRead2D except it reads data with
-C     both horizontal and vertical lengths.
-C--------------------------------------------------------------------
-      SUBROUTINE realRead3D(array, iLength, jLength, lun)
-      USE SIZES, ONLY : SZ
-      IMPLICIT NONE
-      REAL(SZ), intent(out), dimension(:,:) :: array ! data to read from the hotstart file
-      INTEGER, intent(in) :: iLength  ! the number of horiz values to read
-      INTEGER, intent(in) :: jLength  ! the number of layers
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
-C
-      INTEGER i,j      ! array indices
-C
-      call setMessageSource("realRead3D")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-       DO j=1, jLength
-          DO i=1, iLength
-            READ(lun,*) array(i,j)
-          END DO
-       END DO
-C
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C--------------------------------------------------------------------
-      END SUBROUTINE realRead3D
-C--------------------------------------------------------------------
-
-C-----------------------------------------------------------------------
-C     S U B R O U T I N E
-C            R E A D  A N D  M A P  T O  S U B D O M A I N  2 D
-C-----------------------------------------------------------------------
-C     jgf49.48.04 Reads a fulldomain array in binary format and maps
-C     to a subdomain array.
-C     kmd: Updated to include a real format option
-C-----------------------------------------------------------------------
-      subroutine readAndMapToSubdomain2D(sd_array, lun, counter, method)
-      USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
-
-      IMPLICIT NONE
-C
-      REAL(SZ), intent(out), dimension(:) :: sd_array ! subdomain array
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
-      INTEGER, intent(inout) :: counter ! i/o position in the file
-      INTEGER, intent(in) :: method  ! logical to determine binary or real
-      INTEGER :: sd_node_number
-      INTEGER :: fd_node_number
-C
-      REAL(SZ), allocatable, dimension(:) :: fd_array ! full domain array
-C
-      call setMessageSource("readAndMapToSubdomain2D")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      ! serial
-      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-         IF (method.EQ.1) THEN
-            CALL binaryRead2D(sd_array, NP, lun, counter)
-         ELSE IF (method.EQ.2) THEN
-            CALL realRead2D(sd_array, NP, lun)
-         ELSE
-            call allMessage(ERROR,
-     &          "Passing of binary or real information incorrect")
-            STOP
-         END IF
-      ! parallel
-      ELSE
-         IF (method.EQ.1) THEN
-            allocate(fd_array(NP_G))
-            CALL binaryRead2D(fd_array, NP_G, lun, counter)
-            ! loop over subdomain nodes
-            DO sd_node_number=1,np
-               ! get the corresponding fulldomain node number
-               fd_node_number = ABS(NODES_LG(sd_node_number))
-               ! fill in the subdomain arrays with the corresponding
-               ! fulldomain values
-               sd_array(sd_node_number) = fd_array(fd_node_number)
-            END DO
-            deallocate(fd_array)
-         ELSE IF (method.EQ.2) THEN
-            allocate(fd_array(NP_G))
-            CALL realRead2D(fd_array, NP_G, lun)
-            ! loop over subdomain nodes
-            DO sd_node_number=1,np
-               ! get the corresponding fulldomain node number
-               fd_node_number = ABS(NODES_LG(sd_node_number))
-               ! fill in the subdomain arrays with the corresponding
-               ! fulldomain values
-               sd_array(sd_node_number) = fd_array(fd_node_number)
-            END DO
-            deallocate(fd_array)
-         ELSE
-            WRITE(16,*) "Passing of binary or real
-     &         information incorrect"
-            STOP
-         END IF
-      ENDIF
-C
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C-----------------------------------------------------------------------
-      END SUBROUTINE readAndMapToSubdomain2D
-C-----------------------------------------------------------------------
-
-C-----------------------------------------------------------------------
-C     S U B R O U T I N E
-C            R E A D  A N D  M A P  T O  S U B D O M A I N  I N T  2 D
-C-----------------------------------------------------------------------
-C     jgf49.48.04 Reads a fulldomain array in binary format and maps
-C     to a subdomain array.
-C     kmd: Updated to include real format option
-C-----------------------------------------------------------------------
-      subroutine readAndMapToSubdomainInt2D(sd_array, lun, counter, method)
-      USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
-      IMPLICIT NONE
-C
-      INTEGER, intent(out), dimension(:) :: sd_array ! subdomain array
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
-      INTEGER, intent(inout) :: counter ! i/o position in the file
-      INTEGER, intent(in) :: method ! logical to determine binary or real
-      INTEGER :: sd_node_number
-      INTEGER :: fd_node_number
-C
-      INTEGER, allocatable, dimension(:) :: fd_array ! full domain array
-C
-      call setMessageSource("readAndMapToSubdomainInt2D")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      ! serial
-      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-         IF (method.EQ.1) THEN
-           CALL binaryIntRead2D(sd_array, NP, lun, counter)
-         ELSE IF (method.EQ.2) THEN
-           CALL realIntRead2D(sd_array, NP, lun)
-         ELSE
-            WRITE(16,*) "Passing of binary or real
-     &         information incorrect"
-            STOP
-         END IF
-      ! parallel
-      ELSE
-         IF (method.EQ.1) THEN
-            allocate(fd_array(NP_G))
-            CALL binaryIntRead2D(fd_array, NP_G, lun, counter)
-            ! loop over subdomain nodes
-            DO sd_node_number=1,np
-               ! get the corresponding fulldomain node number
-               fd_node_number = ABS(NODES_LG(sd_node_number))
-               ! fill in the subdomain arrays with the corresponding
-               ! fulldomain values
-               sd_array(sd_node_number) = fd_array(fd_node_number)
-            END DO
-            deallocate(fd_array)
-         ELSE IF (method.EQ.2) THEN
-            allocate(fd_array(NP_G))
-            CALL realIntRead2D(fd_array, NP_G, lun)
-            ! loop over subdomain nodes
-            DO sd_node_number=1,np
-               ! get the corresponding fulldomain node number
-               fd_node_number = ABS(NODES_LG(sd_node_number))
-               ! fill in the subdomain arrays with the corresponding
-               ! fulldomain values
-               sd_array(sd_node_number) = fd_array(fd_node_number)
-            END DO
-            deallocate(fd_array)
-         ELSE
-            WRITE(16,*) "Passing of binary or real
-     &         information incorrect"
-            STOP
-         END IF
-      ENDIF
-C
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C-----------------------------------------------------------------------
-      END SUBROUTINE readAndMapToSubdomainInt2D
-C-----------------------------------------------------------------------
-
-
-
-C-----------------------------------------------------------------------
-C     S U B R O U T I N E
-C            R E A D  A N D  M A P  E L E
-C                 T O  S U B D O M A I N  I N T  2 D
-C-----------------------------------------------------------------------
-C     jgf49.48.04 Reads a fulldomain array in binary format and maps
-C     to a subdomain array (for elemental mappings as opposed to node
-C     mapping).
-C     kmd : Updated to include a real format option
-C-----------------------------------------------------------------------
-      subroutine readAndMapEleToSubdomainInt2D(sd_array, lun, counter,method)
-      IMPLICIT NONE
-C
-      INTEGER, intent(out), dimension(:) :: sd_array ! subdomain array
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
-      INTEGER, intent(inout) :: counter ! i/o position in the file
-      INTEGER, intent(in) :: method ! logical to determine binary or real
-      INTEGER :: sd_ele_number
-      INTEGER :: fd_ele_number
-C
-      INTEGER, allocatable, dimension(:) :: fd_array ! full domain array
-C
-      call setMessageSource("readAndMapEleToSubdomainInt2D")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      ! serial
-      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-         IF (method.EQ.1) THEN
-            CALL binaryIntRead2D(sd_array, NE, lun, counter)
-         ELSE IF (method.EQ.2) THEN
-            CALL realIntRead2D(sd_array, NE, lun)
-         ELSE
-            WRITE(16,*) "Passing of binary or real
-     &         information incorrect"
-            STOP
-         END IF
-      ! parallel
-      ELSE
-         IF (method.EQ.1) THEN
-            allocate(fd_array(NE_G))
-            CALL binaryIntRead2D(fd_array, NE_G, lun, counter)
-            ! loop over subdomain nodes
-            DO sd_ele_number=1,ne
-               ! get the corresponding fulldomain ele number
-               fd_ele_number = ABS(IMAP_EL_LG(sd_ele_number))
-               ! fill in the subdomain arrays with the corresponding
-               ! fulldomain values
-               sd_array(sd_ele_number) = fd_array(fd_ele_number)
-            END DO
-            deallocate(fd_array)
-         ELSE IF (method.EQ.2) THEN
-            allocate(fd_array(NE_G))
-            CALL realIntRead2D(fd_array, NE_G, lun)
-            ! loop over subdomain nodes
-            DO sd_ele_number=1,ne
-               ! get the corresponding fulldomain ele number
-               fd_ele_number = ABS(IMAP_EL_LG(sd_ele_number))
-               ! fill in the subdomain arrays with the corresponding
-               ! fulldomain values
-               sd_array(sd_ele_number) = fd_array(fd_ele_number)
-            END DO
-            deallocate(fd_array)
-         ELSE
-            WRITE(16,*) "Passing of binary or real
-     &         information incorrect"
-            STOP
-         END IF
-      ENDIF
-C
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C-----------------------------------------------------------------------
-      END SUBROUTINE readAndMapEleToSubdomainInt2D
-C-----------------------------------------------------------------------
-
-
-C-----------------------------------------------------------------------
-C     S U B R O U T I N E
-C            R E A D  A N D  M A P  T O  S U B D O M A I N  3 D
-C-----------------------------------------------------------------------
-C     jgf49.48.04 Reads a fulldomain array in binary format and maps
-C     to a subdomain array.
-C     kmd : Updated to include a real format option
-C-----------------------------------------------------------------------
-      subroutine readAndMapToSubdomain3D(sd_array, nfen, lun, counter,method)
-      USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
-
-      IMPLICIT NONE
-C
-      REAL(SZ), intent(out), dimension(:,:) :: sd_array ! subdomain array
-      INTEGER, intent(in) :: nfen    ! number of vertical layers
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
-      INTEGER, intent(inout) :: counter ! i/o position in the file
-      INTEGER, intent(in) :: method ! logical to determine binary or real
-      INTEGER :: sd_node_number
-      INTEGER :: fd_node_number
-C
-      REAL(SZ), allocatable, dimension(:,:) :: fd_array ! full domain array
-C
-      call setMessageSource("readAndMapToSubdomain3D")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      ! serial
-      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-         IF (method.EQ.1) THEN
-            CALL binaryRead3D(sd_array, NP, NFEN, lun, counter)
-         ELSE IF (method.EQ.2) THEN
-            CALL realRead3D(sd_array, NP, NFEN, lun)
-         ELSE
-            WRITE(16,*) "Passing of binary or real
-     &         information incorrect"
-            STOP
-         END IF
-      ! parallel
-      ELSE
-         IF (method.EQ.1) THEN
-            allocate(fd_array(NP_G,NFEN))
-            CALL binaryRead3D(fd_array, NP_G, NFEN, lun, counter)
-            ! loop over subdomain nodes
-            DO sd_node_number=1,np
-               ! get the corresponding fulldomain node number
-               fd_node_number = ABS(NODES_LG(sd_node_number))
-               ! fill in the subdomain arrays with the corresponding
-               ! fulldomain values
-               sd_array(sd_node_number,:) = fd_array(fd_node_number,:)
-            END DO
-            deallocate(fd_array)
-         ELSE IF (method.EQ.2) THEN
-            allocate(fd_array(NP_G,NFEN))
-            CALL realRead3D(fd_array, NP_G, NFEN, lun)
-            ! loop over subdomain nodes
-            DO sd_node_number=1,np
-               ! get the corresponding fulldomain node number
-               fd_node_number = ABS(NODES_LG(sd_node_number))
-               ! fill in the subdomain arrays with the corresponding
-               ! fulldomain values
-               sd_array(sd_node_number,:) = fd_array(fd_node_number,:)
-            END DO
-            deallocate(fd_array)
-         ELSE
-            WRITE(16,*) "Passing of binary or real
-     &         information incorrect"
-            STOP
-         END IF
-      ENDIF
-C
-
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C-----------------------------------------------------------------------
-      END SUBROUTINE readAndMapToSubdomain3D
-C-----------------------------------------------------------------------
-
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   O P E N  F I L E  F O R  R E A D
 C-----------------------------------------------------------------------
@@ -1491,13 +987,13 @@ C
 C
 C     Check to see if file exists
       write(scratchMessage,21) lun
-  21  format("Searching for file to open on unit ",I5,"...")
+  21  format("Searching for file to open on unit ",i0,"...")
       call logMessage(INFO,trim(scratchMessage))
       inquire(FILE=trim(filename),EXIST=fileFound)
       if (fileFound.eqv..false.) then
          write(scratchMessage,23) trim(filename)
   23     format("The file '",A,"' was not found.")
-         call allMessage(ERROR,scratchMessage)
+         call allMessage(INFO,scratchMessage)
          errorIO = 1
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Return.")
@@ -1563,41 +1059,44 @@ C     ----------------------------------------------------------------
       END FUNCTION sphericalDistance
 C     ----------------------------------------------------------------
 
-
 C...
 C...Allocate space for Arrays dimensioned by MNE and MNP
 C...
       SUBROUTINE ALLOC_MAIN1a()
       IMPLICIT NONE
-C
-      ALLOCATE ( SLAM(MNP),SFEA(MNP),X(MNP),Y(MNP))
-      ALLOCATE ( DP(MNP),SFAC(MNP))
-      ALLOCATE ( NM(MNE,3))
+C  
+      !jgfdebug TODO: rationalize initialization of these variables
       ALLOCATE ( ETAS(MNP))
       ALLOCATE ( GWCE_LV(MNP))
       ALLOCATE ( UU1(MNP),VV1(MNP))
+      uu1(:) = 0.d0
+      vv1(:) = 0.d0
       ALLOCATE ( QX1(MNP),QY1(MNP))
+      qx1(:) = 0.d0
+      qy1(:) = 0.d0
       ALLOCATE ( NNODECODE(MNP))
+      nnodecode(:) = 0
       ALLOCATE ( NOFF(MNE),NOFFOLD(MNE))
-      ALLOCATE ( NNEIGH(MNP),MJU(MNP),NODELE(MNP))
+      noff(:) = 0
+      noffold(:) = 0
       ALLOCATE ( NIBNODECODE(MNP))
       ALLOCATE ( CH1(MNP),TRANS_LV_B(MNP),TRANS_LV_A(MNP))
       ALLOCATE ( SOURSIN(MNP))
       ALLOCATE ( TK(MNP))
-      ALLOCATE ( AREAS(MNE), TotalArea(MNP))
-      ALLOCATE ( UU2(MNP),VV2(MNP))
-      ALLOCATE ( QX2(MNP),QY2(MNP))
-      ALLOCATE ( ETA1(MNP),ETA2(MNP), EtaDisc(MNP))
 
-      ALLOCATE ( ETAMAX(MNP)) ! v46.50 sb 11/11/2006
-      ALLOCATE ( ETAMAX_Time(MNP)) ! tcm v51.20.01 
-      ALLOCATE ( UMAX(MNP)) ! v46.50 sb 11/11/2006
-      ALLOCATE ( UMAX_Time(MNP)) ! tcm v51.20.01 
+      ALLOCATE ( UU2(MNP),VV2(MNP))
+      uu2(:) = 0.d0
+      vv2(:) = 0.d0
+      ALLOCATE ( QX2(MNP),QY2(MNP))
+      qx2(:) = 0.d0
+      qy2(:) = 0.d0
+      ALLOCATE ( ETA1(MNP),ETA2(MNP))
+      eta1(:) = 0.d0
+      eta2(:) = 0.d0
 
       ALLOCATE ( CORIF(MNP))
       ALLOCATE ( MOM_LV_X(MNP),MOM_LV_Y(MNP))
-      ALLOCATE ( LBArray_Pointer(MNP))
-      ALLOCATE ( CSI(MNP),SII(MNP))
+
       ALLOCATE ( NODECODE(MNP))
       ALLOCATE ( NIBCNT(MNP) )
       ALLOCATE ( DASigT(MNP),DATemp(MNP),DASalt(MNP))
@@ -1613,10 +1112,10 @@ C    kmd48.33bc - arrays for baroclinic
       ALLOCATE (q_heat1(MNP), q_heat2(MNP), HFLUX(MNP) )
       ALLOCATE (sponge(MNP) )
 
-C    Allocate arrays for ESL output
+C    Allocate array for ESL i/o - only needed if
+C    loadEleSlopeLim.eqv..true
       ALLOCATE (ESLONOFF(MNP))
-      ESLONOFF(:) = 0.d0  !tcm v51.20.01 added initalization
-
+      ESLONOFF = 0.d0
 
 #ifdef CMPI
       ALLOCATE ( IDUMY(1), DUMY1(1), DUMY2(1) )
@@ -1641,36 +1140,27 @@ C     the non-C3D case.
      &        BSX1(MNP),BSY1(MNP))
       ENDIF
 
+      ALLOCATE(EtaDisc(MNP))
       EtaDisc(:) = 0.0d0
-#ifndef NELMAX
-      ETAMAX(:) = -99999.d0 ! v46.50 sb 11/11/2006
-      ETAMAX_Time(:) = 0.d0 ! tcm v51.20.01
-#endif
-#ifndef NUVMAX
-      UMAX(:) = 0.d0 ! v46.50 sb 11/11/2006
-      UMAX_Time(:) = 0.d0 ! tcm v51.20.01
-#endif
 
-C... v49.48.02 tcm -- Variables related to kdtree searches
-C...    which are deallocated at the end of read_input.F
-      ALLOCATE( BCXY(2,MNE), RMAX(MNE) )
+      ALLOCATE ( ETAMAX(MNP)) ! v46.50 sb 11/11/2006
+      ALLOCATE ( ETAMAX_TIME(MNP)) ! tcm v51.20.01 
+      ALLOCATE ( UMAX(MNP)) ! v46.50 sb 11/11/2006
+      ALLOCATE ( UMAX_TIME(MNP)) ! tcm v51.20.01 
+      ETAMAX(:) = -99999.d0 ! v46.50 sb 11/11/2006
+      EtaMax_Time(:) = 0.d0
+      UMAX(:) = 0.d0 ! v46.50 sb 11/11/2006
+      UMax_Time(:) = 0.d0
+
+
+
+
 
       RETURN
       END SUBROUTINE ALLOC_MAIN1a
 
 
-C...
-C...Allocate space for Arrays needed to determine neighbor tables
-C...
-      SUBROUTINE ALLOC_MAIN1b()
-      IMPLICIT NONE
-C  Neighbor Table
 
-      ALLOCATE ( NEITAB(MNP,MNEI))
-      ALLOCATE ( NEITABELE(MNP,MNEI))
-C
-      RETURN
-      END SUBROUTINE ALLOC_MAIN1b
 
 
 C...
@@ -1680,9 +1170,7 @@ C...
       IMPLICIT NONE
 C
       ALLOCATE ( ESBIN1(MNETA),ESBIN2(MNETA))
-      ALLOCATE ( NBDV(MNOPE,MNETA))
-      ALLOCATE ( NVDLL(MNOPE),NBD(MNETA), IBTYPEE(MNOPE))
-      ALLOCATE ( EMO(MNBFR,MNETA),EFA(MNBFR,MNETA))
+
 C    kmd48.33bc - arrays for boundary conditions
       IF (CBAROCLINIC) THEN
          ALLOCATE ( LNM_BC1(MNETA), LNM_BC2(MNETA) )
@@ -1703,27 +1191,7 @@ C
       ALLOCATE ( QN0(MNVEL),QN1(MNVEL),QN2(MNVEL))
       ALLOCATE ( EN0(MNVEL),EN1(MNVEL),EN2(MNVEL))
       ALLOCATE ( ENIN1(MNVEL),ENIN2(MNVEL))
-      ALLOCATE ( NBV(MNVEL),LBCODEI(MNVEL))
-      ALLOCATE ( BNDLEN2O3(MNVEL))
-      ALLOCATE ( ME2GW(MNVEL))
-      ALLOCATE ( CSII(MNVEL),SIII(MNVEL))
-      ALLOCATE ( ZNGIF1(MNVEL),ZNGIF2(MNVEL),ZNGIF3(MNVEL))
-      ALLOCATE ( NEleZNG(MNVEL))
-      ALLOCATE ( BARLANHT(MNVEL),BARLANCFSP(MNVEL))
-      ALLOCATE ( BARLANHTR(MNVEL),BARLANCFSPR(MNVEL))
-      ALLOCATE ( BARINHT(MNVEL),BARINCFSB(MNVEL),BARINCFSP(MNVEL))
-      ALLOCATE ( PIPEHT(MNVEL),PIPECOEF(MNVEL),PIPEDIAM(MNVEL))
-      ALLOCATE ( IBCONN(MNVEL))
-      ALLOCATE ( BARINHTR(MNVEL),BARINCFSBR(MNVEL),BARINCFSPR(MNVEL))
-      ALLOCATE ( PIPEHTR(MNVEL),PIPECOEFR(MNVEL),PIPEDIAMR(MNVEL))
-      ALLOCATE ( IBCONNR(MNVEL),NTRAN1(MNVEL),NTRAN2(MNVEL))
-      ALLOCATE ( BTRAN3(MNVEL),BTRAN4(MNVEL),BTRAN5(MNVEL))
-      ALLOCATE ( BTRAN6(MNVEL),BTRAN7(MNVEL),BTRAN8(MNVEL))
-      ALLOCATE ( RBARWL1AVG(MNVEL),RBARWL2AVG(MNVEL))
-      ALLOCATE ( RPIPEWL1AVG(MNVEL),RPIPEWL2AVG(MNVEL))
       ALLOCATE ( QNIN1(MNVEL),QNIN2(MNVEL))
-      ALLOCATE ( NBVV(MNBOU,0:MNVEL))
-      ALLOCATE ( NVELL(MNBOU), IBTYPE(MNBOU))
 C
 C     jgf46.21 Added support for IBTYPE=52.
       ALLOCATE ( ElevDisc(MNVEL))
@@ -1732,12 +1200,10 @@ C     jgf49.58 Explicitly initialize variables that would otherwise be
 C     used without initialization.
       EN2(:) = 0.0D0
 
-! kmd - added for rivers in baroclinic simulation
-      ALLOCATE (BCRNBVV(MNBOU,0:MNVEL))
-      ALLOCATE (BCRNVELL(MNBOU))
-
-      RETURN
       END SUBROUTINE ALLOC_MAIN3
+
+
+ 
 
 
 C...
@@ -1778,6 +1244,7 @@ C...
 C
       ALLOCATE ( AMIG(MNBFR),PER(MNBFR))
       ALLOCATE ( FF(MNBFR),FACE(MNBFR))
+      ALLOCATE ( EMO(MNBFR,MNETA),EFA(MNBFR,MNETA))
       ALLOCATE ( BOUNTAG(MNBFR) )
 C
       RETURN
@@ -1901,27 +1368,31 @@ C
       ALLOCATE ( WSX2(MNP),WSY2(MNP),PR2(MNP) )
       ALLOCATE ( WVNX1(MNP),WVNY1(MNP),PRN1(MNP) )
       ALLOCATE ( WVNX2(MNP),WVNY2(MNP),PRN2(MNP) )
-      ALLOCATE ( RSNX1(MNP),RSNY1(MNP),RSNX2(MNP),RSNY2(MNP) )
-      if (NCICE.NE.0) then
-         ALLOCATE ( CICE1(MNP),CICE2(MNP),CICEOUT(MNP) ) !tcm v49.64.01 added
-                                                         ! for ice concentration
-      ENDIF
-      ALLOCATE ( WVNXOUT(MNP),WVNYOUT(MNP) )
       WSX1(:) = 0.0d0
       WSY1(:) = 0.0d0
       PR1(:) = 0.0d0
       WSX2(:) = 0.0d0
       WSY2(:) = 0.0d0
       PR2(:) = 0.0d0
+
+      ALLOCATE ( RSNX1(MNP),RSNY1(MNP),RSNX2(MNP),RSNY2(MNP) )
+      RSNX1(:) = 0.0d0 !jgf51.46: Added initialization of RSNX1, RSNY1
+      RSNY1(:) = 0.0d0
       RSNX2(:) = 0.d0
       RSNY2(:) = 0.d0
-      WVNXOUT(:) = 0.d0
-      WVNYOUT(:) = 0.d0
-      IF (NCICE.NE.0) then
+
+      if (NCICE.NE.0) then
+         ALLOCATE ( CICE1(MNP),CICE2(MNP),CICEOUT(MNP) ) !tcm v49.64.01 added
+                                                        ! for ice concentration
          CICE1(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
          CICE2(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
          CICEOUT(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
       ENDIF
+
+      ALLOCATE ( WVNXOUT(MNP),WVNYOUT(MNP) )
+      WVNXOUT(:) = 0.d0
+      WVNYOUT(:) = 0.d0
+
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
       IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4)) then
 !#ifdef CSWAN
@@ -1931,18 +1402,14 @@ Casey 090302: Added the next line for output of radiation stress gradients.
          RSNYOUT(:) = 0.d0
       ENDIF
 !#endif
-
-C... Allocate and initialize Max/Min Met. and Surface Radiation Stress Variables
       ALLOCATE ( PrMin(MNP)) ! v46.50 sb 11/11/2006
       PrMin(:) = 99999.d0
       ALLOCATE (PrMin_Time(MNP) ) !tcm v51.20.01
       PrMin_Time(:) = 0.d0
-
       ALLOCATE ( WVNOUTMax(MNP)) ! v46.50 sb 11/11/2006
       WVNOUTMAX(:) = 0.d0
       ALLOCATE (WVNOutMax_Time(MNP) ) !tcm v51.20.01
       WVNOutMax_Time(:) = 0.d0
-
       ALLOCATE ( RSNMax(MNP))               ! v46.50 sb 11/11/2006
       RSNMax(:) = 0.d0
       ALLOCATE (RSNMax_Time(MNP) ) !tcm v51.20.01
@@ -1956,7 +1423,7 @@ C
 C...
 C...Allocate space for TIME VARYING BATHYMETRY
 C...
-      SUBROUTINE ALLOC_MAIN13
+      SUBROUTINE ALLOC_MAIN13()
       IMPLICIT NONE
       
       ALLOCATE ( DP1(MNP), DP2(MNP) )
@@ -1964,6 +1431,41 @@ C...
       DP2(:) = 0.D0
 
       END SUBROUTINE ALLOC_MAIN13
+
+      !-----------------------------------------------------------------
+      !                      S U B R O U T I N E   
+      !                G E T    F O R M A T    I N T E G E R
+      !-----------------------------------------------------------------
+      ! Sets file format integer that corresponds to the file 
+      ! format string.
+      !-----------------------------------------------------------------
+      subroutine getFormatInteger(typeString, typeHolder)
+      implicit none
+      character(len=20), intent(in) :: typeString
+      integer, intent(out) :: typeHolder
+      !
+      select case(trim(typeString))
+      case('OFF')
+         typeHolder = 0 
+      case('ASCII')
+         typeHolder = 1
+      case('BINARY')
+         typeHolder = 2 
+      case('NETCDF3')
+         typeHolder = 3 
+      case('SPARSE_ASCII')
+         typeHolder = 4 
+      case('NETCDF4')
+         typeHolder = 5 
+      case('XDMF')
+         typeHolder = 7
+      case default
+         write(6,'("WARNING: Unrecognized format ",i0,".")') trim(typeString)
+      end select
+      !----------------------------------------------------------------------
+      end subroutine getFormatInteger
+      !----------------------------------------------------------------------
+
 
 C-------------------------------------------------------------------
 

@@ -10,6 +10,7 @@ C                     current for ADCIRC v46.34   09/20/2006
 C----------------------------------------------------------------------------
 
       MODULE PRE_GLOBAL
+      USE GLOBAL,ONLY: REarth,DEG2RAD,RAD2DEG
       USE GLOBAL_3DVS, ONLY: NFEN
       USE PRESIZES
       USE VERSION
@@ -35,6 +36,7 @@ C                                    ! I-th Node on Land Boundary Segment K
       INTEGER,ALLOCATABLE::IBCONNR(:,:)
       INTEGER,ALLOCATABLE::LBCODE(:) ! LBCODE(I) Boundary Type of Land Boundary
                                      ! Node I
+      INTEGER :: numLBCodeValues ! number of values in LBCODE array
       INTEGER,ALLOCATABLE::WEIR(:)
       INTEGER,ALLOCATABLE::WEIRD(:)
 
@@ -49,6 +51,7 @@ C     GRID14 section
 C
 C     BARRIER14 section
       REAL(SZ) ,ALLOCATABLE ::  BAR1(:,:),BAR2(:,:),BAR3(:,:)
+      REAL(SZ) ,ALLOCATABLE ::  BAR4(:,:),BAR5(:,:),BAR6(:,:)
 
 C     FLOWBC section
       INTEGER NFLBN    ! NFLBN Number of Global Flow Boundary Nodes
@@ -95,11 +98,11 @@ C     PARM15  section
       INTEGER  NHARFR,NHSINC
       INTEGER  NHSTAR
       INTEGER  IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN
-      INTEGER  NWLAT,NWLON,NFLUXF
+      INTEGER  NWLAT,NWLON,NFLUXF,NFLUXIB,NFLUXIBP,NFLUXB
       INTEGER,ALLOCATABLE ::   NNSEG(:),NNSVG(:),NNSCG(:),NNSMG(:)
 C
 C     jgf46.00 Nodal attributes section.
-      CHARACTER(len=80), ALLOCATABLE :: NodalAttributes(:) ! labels
+      CHARACTER(len=80), ALLOCATABLE :: useNodalAttrNames(:) ! labels
 C
 C     STRING15 section
 C
@@ -245,18 +248,27 @@ c.... tcm v50.66.02 added for time varying bathymetry
       ! tcm v50.79 added for metControl namelist
       LOGICAL :: FOUND_METCON_NML  !flag to determine if the metControl namelist was present
 
+      ! zc - added for tvw namelist
+      LOGICAL :: FOUND_TVW_NML
+
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       LOGICAL :: FOUND_WC_NML
 
+      logical :: foundWetDryControlNamelist = .false. ! for namelist 
+      logical :: outputNodeCode = .false.
+      logical :: outputNOFF = .false.
+      logical :: noffActive = .true.
+
+      ! jgf52.08.02: For inundation output control. Wanted to just
+      ! use the variables of the same name from the write_output module,
+      ! but this must wait until build dependencies are resolved. 
+      logical :: foundInundationOutputControlNamelist = .false.
+      logical :: inundationOutput = .false.
+      real(sz) :: inunThresh = 0.6d0
 C
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX
       REAL(SZ) CONVCR
-C
-C--Degress-to-Radians and Radians-to-Degrees
-C
-C     CONVERT section
-      REAL(8) DEG2RAD,RAD2DEG,R
 C
 C     jgf48.03 netCDF metadata
       CHARACTER(80) title
@@ -404,6 +416,8 @@ C
       nbytes = nbytes + 8*mnvel
       ALLOCATE ( BAR1(MNBOU,MNVEL),BAR2(MNBOU,MNVEL),BAR3(MNBOU,MNVEL) )
       nbytes = nbytes + 12*mnbou*mnvel
+      ALLOCATE ( BAR4(MNBOU,MNVEL),BAR5(MNBOU,MNVEL),BAR6(MNBOU,MNVEL) )
+      nbytes = nbytes + 12*mnbou*mnvel
       ALLOCATE ( FLBN(MNVEL),FLBNX(MNVEL),FLBNXP(MNVEL) )
       nbytes = nbytes + 12*mnvel
       ALLOCATE ( NVDLLMSG(MNOPE),NVELLMSG(MNBOU+1) )
@@ -512,7 +526,7 @@ C
       ALLOCATE ( IMAP_NOD_LG(MNPP,MNPROC),IMAP_EL_LG(MNEP,MNPROC) )
       ALLOCATE ( NNEP(3,MNEP,MNPROC) )
       nbytes = nbytes + 4*mnpp*mnproc + 4*mnep*mnproc + 12*mnep*mnproc
-      ALLOCATE(EL_SHARE(MNEP))
+      ALLOCATE(EL_SHARE(NELG))
       EL_SHARE(:)   = -1
       nbytes = nbytes + mnep
       call memory_alloc(nbytes)

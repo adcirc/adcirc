@@ -9,16 +9,58 @@
       use SIZES
       use VERSION
       use GLOBAL
-C      use GLOBAL, ONLY: NP, NODES_LG, IMAP_EL_LG,
-C     &    IMAP_STAE_LG, IMAP_STAV_LG, IMAP_STAM_LG, IMAP_STAC_LG,
-C     &    BUFSIZE_MAX, buf, resultBuf, float_type, OutputDataDescript_t,
-C     &    COMM, nodecode
+      use MESH, ONLY : NP, AGRID
 #ifdef CMPI
 #ifdef HAVE_MPI_MOD
       use mpi
 #endif
 #endif
       contains
+
+C--------------------------------------------------------------------
+C                    S U B R O U T I N E
+C     A L L O C A T E   F U L L   D O M A I N   I O   A R R A Y S
+C--------------------------------------------------------------------
+C     jgf49.44: Allocates memory for the full domain arrays for i/o
+C     purposes; these arrays are both read from and written to hotstart
+C     files. Arrays that are only written are allocated in the
+C     subroutine that does the writing.
+C 
+C     jgf51.46: Just to clarify, these arrays are needed during 
+C     hotstart initialization, to read in the previous state of the
+C     fulldomain simulation.a So, they need to be allocated prior
+C     to hotstart initialization. These arrays may also be needed
+C     to write fulldomain output, but care should be taken so they
+C     are not allocated more than once, i.e., in write_output.F 
+C     or global.F. 
+C 
+C--------------------------------------------------------------------
+      SUBROUTINE allocateFullDomainIOArrays()
+      IMPLICIT NONE
+C
+      call setMessageSource("allocateFullDomainIOArrays")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ALLOCATE(ETA1_g(NP_G))
+      ALLOCATE(ETA2_g(NP_G))
+      ALLOCATE(UU2_g(NP_G))
+      ALLOCATE(VV2_g(NP_G))
+      IF (IM.eq.10) THEN
+         ALLOCATE(CH1_g(NP_G))
+      ENDIF
+      ALLOCATE(EtaDisc_g(NP_G))
+      ALLOCATE(NodeCode_g(NP_G))
+      ALLOCATE(NOFF_g(NE_G))
+      ALLOCATE(NNodeCode_g(NP_G))
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE allocateFullDomainIOArrays
+C--------------------------------------------------------------------
 
       !--------------------------------------------------------------
       !                  S U B R O U T I N E
@@ -45,6 +87,7 @@ C     &    COMM, nodecode
       integer      :: iproc
       integer      :: bufsize
       integer      :: ibucket
+      integer      :: iremainder ! after dividing bufsize by array rank      
       integer      :: istart     ! vector tuple to start with
       integer      :: iend       ! vector tuple to end on
       integer      :: tag
@@ -62,7 +105,12 @@ C     num will be less than the number of full domain records if the
 C     buffer is too small to hold all the records in the full domain,
 C     in this case it is the number of records passed back to proc 0
 C     on each iteration of the while loop below
-      num     = bufsize / descript % num_items_per_record
+      !
+      ! jgf51.50: What if the bufsize is not evenly divisible by the
+      ! number of items per record? Need to check the remainder.
+      iremainder = modulo(bufsize, descript % num_items_per_record)
+      num = ( bufsize - iremainder ) / descript % num_items_per_record
+
       iend    = num
       istart  = 1
 
@@ -78,15 +126,24 @@ C     on each iteration of the while loop below
          !------------------------------------------------------------
          ! Initialize
          !------------------------------------------------------------
-         buf(:)  = descript % initial_value
+         if ( descript % isInteger .eqv. .true. ) then
+            integerBuffer(:)  = int(descript % initial_value)           
+         else
+            buf(:)  = descript % initial_value
+         endif
          ibucket = ibucket + 1
          tag     = tagbase + mod(ibucket, 8)
 
 C        now pack the buffer
          call pack_cmd(descript, istart, iend)
 C        now send data to processor 0
-         call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
-     &                   0, COMM, ierr)
+         if ( descript % isInteger .eqv. .true. ) then
+           call mpi_reduce(integerBuffer, integerResultBuffer, bufsize,
+     &                 MPI_INTEGER, MPI_SUM, 0, COMM, ierr)
+         else
+           call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
+     &                     0, COMM, ierr)
+         endif
          if (myproc == 0) then
             call unpack_cmd(descript, istart, iend)
          end if
@@ -113,98 +170,6 @@ C! CMPI
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
-      !                  S U B R O U T I N E
-      !     C O L L E C T  F U L L  D O M A I N  I N T  A R R A Y
-      !--------------------------------------------------------------
-      ! jgf48.17 Collects integer array data from each subdomain.
-      !--------------------------------------------------------------
-      subroutine collectFullDomainIntArray(descript,
-     &                                    pack_cmd, unpack_cmd,variable)
-      USE SIZES
-      USE GLOBAL
-      implicit none
-#ifdef CMPI
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
-#endif
-      type (OutputDataDescript_t) :: descript
-      external pack_cmd
-      external unpack_cmd
-      integer :: variable
-#ifdef CMPI
-      ! the subroutine used to write the file
-      integer      :: ierr, status(MPI_STATUS_SIZE), request
-      integer, save:: tagbase = 6000
-      integer      :: iproc
-      integer      :: bufsize
-      integer      :: ibucket
-      integer      :: istart     ! vector tuple to start with
-      integer      :: iend       ! vector tuple to end on
-      integer      :: tag
-      ! number of vector tuples in the buffer
-      integer      :: num
-      integer      :: i, j, k
-
-      bufsize = min(BUFSIZE_MAX,
-     &    descript % num_items_per_record * descript % num_fd_records)
-C     num will be less than the number of full domain records if the
-C     buffer is too small to hold all the records in the full domain,
-C     in this case it is the number of records passed back to proc 0
-C     on each iteration of the while loop below
-      num     = bufsize / descript % num_items_per_record
-      iend    = num
-      istart  = 1
-      if (tagbase == 5000) then
-         tagbase = 6000
-      else
-         tagbase = 5000
-      endif
-      ibucket = 0
-
-      do while (istart.le.iend)
-
-         !------------------------------------------------------------
-         ! Initialize
-         !------------------------------------------------------------
-         integerBuffer(:)  = descript % int_initial_value
-         ibucket = ibucket + 1
-         tag     = tagbase + mod(ibucket, 8)
-
-C        now pack the buffer
-         call pack_cmd(descript, istart, iend)
-C        now send data to processor 0
-ckmd48.33bc - changed this to eliminate problems with NOFF=2.
-         IF (variable.EQ.1) THEN
-           call mpi_reduce(integerBuffer, integerResultBuffer, bufsize,
-     &                 MPI_INTEGER, MPI_SUM, 0, COMM, ierr)
-         ELSE IF (variable.eq.2) THEN
-           call mpi_reduce(integerBuffer, integerResultBuffer, bufsize,
-     &                 MPI_INTEGER, MPI_MAX, 0, COMM, ierr)
-         END IF
-
-         if (myproc == 0) then
-            call unpack_cmd(descript, istart, iend)
-         end if
-C        set new starting position to just after the
-C        current ending position in full domain array
-         istart = iend + 1
-C        set new ending position to either the current start plus the
-C        number of records that will fit in the buffer (minus 1),
-C        or to the end of the full domain array, whichever is less
-         iend   = min(istart + num - 1, descript % num_fd_records)
-         num    = iend - istart + 1
-      end do
-#endif
-C! CMPI
-
- 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
- 1100 FORMAT(2x,1pE20.10E3,5X,I10)
-      !--------------------------------------------------------------
-      end subroutine collectFullDomainIntArray
-      !--------------------------------------------------------------
-
-      !--------------------------------------------------------------
       ! S U B R O U T I N E   P A C K  O N E
       !--------------------------------------------------------------
       !  jgf48.03 Subroutine to store a single array of real numbers
@@ -219,119 +184,56 @@ C! CMPI
       integer :: i, j, istart, iend, iglobal
       integer :: ioffset
 
+      call setMessageSource("packOne")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
+
+      ! jgf51.21.24: Updated and generalized to take into account wet/dry
+      ! if needed
 #ifdef CMPI
       ioffset = istart - 1
-      do i = 1, descript % num_records_this
-        iglobal = descript % imap(i)
-        if (istart <= iglobal .and. iglobal <= iend) then
-          buf(iglobal-ioffset) = descript % array(i)
-        end if
-      end do
+      if ( descript % isInteger .eqv. .true. ) then
+      
+         do i = 1, descript % num_records_this
+            iglobal = descript % imap(i)
+            if (istart <= iglobal .and. iglobal <= iend) then
+               integerBuffer(iglobal-ioffset) = descript % iarray(i)
+            end if
+         end do
+
+      else
+
+         do i = 1, descript % num_records_this
+            iglobal = descript % imap(i)
+            if (istart <= iglobal .and. iglobal <= iend) then
+               buf(iglobal - ioffset ) = descript % array(i) 
+               ! jgf51.21.24: Updated and generalized to take into account wet/dry
+               ! jgf52.25: Station data that should take wet dry state
+               ! into account have already done so in subroutine stationArrayInterp()
+               ! in module write_output.F. For stations, it doesn't make 
+               ! sense to check the nodecode.
+               if ( descript % considerWetDry.eqv..true. ) then
+                  if ( descript % isStation.eqv..false. ) then
+                     if ( nodecode(i).eq.0 ) then
+                        buf(iglobal-ioffset) = descript % alternate_value
+                     endif
+                  endif
+               endif
+            endif
+         end do
+
+      endif
 #endif
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
 
       return
       !--------------------------------------------------------------
       end subroutine packOne
-      !--------------------------------------------------------------
-
-      !--------------------------------------------------------------
-      ! S U B R O U T I N E   P A C K  O N E  I N T
-      !--------------------------------------------------------------
-      !  jgf48.17 Subroutine to store a single array of integers
-      !  to a buffer
-      !--------------------------------------------------------------
-      subroutine packOneInt(descript, istart, iend)
-      USE SIZES
-      USE GLOBAL
-      implicit none
-
-      type (OutputDataDescript_t) :: descript
-      integer :: i, j, istart, iend, iglobal
-      integer :: ioffset
-
-#ifdef CMPI
-      ioffset = istart - 1
-      do i = 1, descript % num_records_this
-        iglobal = descript % imap(i)
-        if (istart <= iglobal .and. iglobal <= iend) then
-          integerBuffer(iglobal-ioffset) = descript % iarray(i)
-        end if
-      end do
-#endif
-
-      return
-      !--------------------------------------------------------------
-      end subroutine packOneInt
-      !--------------------------------------------------------------
-
-      !--------------------------------------------------------------
-      !       S U B R O U T I N E   P A C K 6 3
-      !--------------------------------------------------------------
-      !  jgf48.03 Subroutine similar to packOne, except dry node
-      !  elevations are set to -99999.0 during the packing process.
-      !--------------------------------------------------------------
-      subroutine pack63(descript, istart, iend)
-      USE SIZES
-      USE GLOBAL
-      implicit none
-
-      type (OutputDataDescript_t) :: descript
-      integer :: i, istart, iend, iglobal
-      integer :: ioffset
-
-#ifdef CMPI
-      ioffset = istart - 1
-      do i = 1, np
-         iglobal = descript % imap(i)
-         if (istart <= iglobal .and. iglobal <= iend) then
-            if (nodecode(i) == 1) then
-               buf(iglobal - ioffset ) = descript % array(i) !eta2(i)
-            else
-               buf(iglobal - ioffset ) = -99999.0
-            endif
-         endif
-      end do
-#endif
-
-      return
- 1000 format(2x, i8, 2x, 1pE20.10E3)
-      !--------------------------------------------------------------
-      end subroutine pack63
-      !--------------------------------------------------------------
-
-      !--------------------------------------------------------------
-      !       S U B R O U T I N E   P A C K 8 3
-      !--------------------------------------------------------------
-      !  jgf48.03 Subroutine similar to packOne, except dry node
-      !  elevations are set to -99999.0 during the packing process.
-      !--------------------------------------------------------------
-      subroutine pack83(descript, istart, iend)
-      USE SIZES
-      USE GLOBAL
-      implicit none
-
-      type (OutputDataDescript_t) :: descript
-      integer :: i, istart, iend, iglobal
-      integer :: ioffset
-
-#ifdef CMPI
-      ioffset = istart - 1
-      do i = 1, np
-         iglobal = descript % imap(i)
-         if (istart <= iglobal .and. iglobal <= iend) then
-            if (nodecode(i) == 1) then
-               buf(iglobal - ioffset ) = descript % array(i) !eta2(i)
-            else
-               buf(iglobal - ioffset ) = -99999.0
-            endif
-         endif
-      end do
-#endif
-
-      return
- 1000 format(2x, i8, 2x, 1pE20.10E3)
-      !--------------------------------------------------------------
-      end subroutine pack83
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
@@ -348,40 +250,37 @@ C! CMPI
       type (OutputDataDescript_t) :: descript
       integer :: i, j, istart, iend, iglobal
       integer :: ioffset
+      
+      call setMessageSource("unpackOne")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
 
-       j = 1
-       do i = istart, iend
-          descript % array_g(i) = resultBuf(j)
-          j = j + 1
-      end do
-      return
+      j = 1
+
+      if ( descript % isInteger .eqv. .true. ) then
+
+         do i = istart, iend
+            descript % iarray_g(i) = integerResultBuffer(j)
+            j = j + 1
+         end do
+     
+      else
+
+         do i = istart, iend
+            descript % array_g(i) = resultBuf(j)
+            j = j + 1
+         end do
+
+      endif
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
       !--------------------------------------------------------------
       end subroutine unpackOne
-      !--------------------------------------------------------------
-
-      !--------------------------------------------------------------
-      ! S U B R O U T I N E   U N P A C K  O N E  I N T
-      !--------------------------------------------------------------
-      !  Subroutine to retrieve a single array of integers
-      !  from a buffer
-      !--------------------------------------------------------------
-      subroutine unpackOneInt(descript, istart, iend)
-      USE SIZES
-      USE GLOBAL
-      implicit none
-
-      type (OutputDataDescript_t) :: descript
-      integer :: i, j, istart, iend, iglobal
-      integer :: ioffset
-
-       j = 1
-       do i = istart, iend
-          descript % iarray_g(i) = integerResultBuffer(j)
-          j = j + 1
-      end do
-      return
-      !--------------------------------------------------------------
-      end subroutine unpackOneInt
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
@@ -398,6 +297,11 @@ C! CMPI
       type (OutputDataDescript_t) :: descript
       integer :: i, istart, iend, iglobal
       integer :: ioffset, j
+      
+      call setMessageSource("packTwo")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
 
       ioffset = istart - 1
       do i = 1, descript % num_records_this
@@ -408,6 +312,12 @@ C! CMPI
           buf(j + 1) = descript % array2(i)
         end if
       end do
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
       return
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3)
       !--------------------------------------------------------------
@@ -427,6 +337,11 @@ C! CMPI
 
       type (OutputDataDescript_t) :: descript
       integer :: i, j, istart, iend
+      
+      call setMessageSource("unpackTwo")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
 
       j = 1
       do i = istart, iend
@@ -434,6 +349,12 @@ C! CMPI
          descript % array2_g(i) = resultBuf(j+1)
          j = j + 2
       end do
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+      
       return
       !--------------------------------------------------------------
       end subroutine unpackTwo
@@ -609,14 +530,25 @@ C
       integer      :: lun, size_this, size_g, szz
       character(*) :: filename
 
+      call setMessageSource("open_gbl_file")
+#ifdef GLOBALIO_TRACE 
+      call allMessage(DEBUG,"Enter")
+#endif 
+
       szz = size_g
       if (mnproc == 1 .or. WRITE_LOCAL_FILES) szz = size_this
 
       if (myproc == 0 .or. WRITE_LOCAL_FILES) then
-        open(lun, file=filename, status='UNKNOWN')
+        open(lun, file=trim(filename), status='UNKNOWN')
         call write_header(lun,szz)
         close(lun)
       end if
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
       return
       !--------------------------------------------------------------
       end subroutine open_gbl_file
@@ -640,14 +572,25 @@ C
       integer      :: nrecs_this  !tcm v51.20.06
       character(*) :: filename
 
+      call setMessageSource("open_minmax_file")
+#ifdef GLOBALIO_TRACE 
+      call allMessage(DEBUG,"Enter")
+#endif
+
       szz = size_g
       if (mnproc == 1 .or. WRITE_LOCAL_FILES) szz = size_this
 
       if (myproc == 0 .or. WRITE_LOCAL_FILES) then
-        open(lun, file=filename, status='REPLACE')
+        open(lun, file=trim(filename), status='REPLACE')
         call write_header(lun,szz,nrecs_this)
         close(lun)
       end if
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
       return
       !--------------------------------------------------------------
       end subroutine open_minmax_file
@@ -655,426 +598,125 @@ C
 
 
       !--------------------------------------------------------------
-      !     S U B R O U T I N E   W R I T E _ G B L _ F I L E
+      !      S U B R O U T I N E  W R I T E   S P A R S E
       !--------------------------------------------------------------
-      ! Write Global File : It opens the file.
-      !   On uniproc machines it calls the "write_cmd"
-      !   routine to write the record out.
-      !
-      !   On parallel machine it performs a bucket
-      !   brigade by copying a block of data to proc 0
-      !   which it writes out.
+      ! jgf51.21.24: Writes sparse ascii format.
       !--------------------------------------------------------------
-
-      subroutine write_gbl_file(lun, filename, descript, TimeLoc, it,
-     &                          write_cmd)
+      subroutine writeSparse(descript, TimeLoc, it, write_cmd)
       USE SIZES
       USE GLOBAL
       implicit none
-#ifdef CMPI
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
-#endif
-      integer lun
-      character(*) :: filename
       type (OutputDataDescript_t) :: descript
-      real(8)  :: TimeLoc
-      integer  :: it
-      ! the subroutine used to write the file
-      external write_cmd
-#ifdef CMPI
-      integer      :: ierr, status(MPI_STATUS_SIZE), request
-#endif
-      integer, save:: tagbase = 6000
-      integer      :: iproc
-      integer      :: bufsize
-      integer      :: ibucket
-      integer      :: istart     ! vector tuple to start with
-      integer      :: iend       ! vector tuple to end on
-      integer      :: tag
-      ! number of vector tuples in the buffer
-      integer      :: num
-      integer      :: i, j, k
-
-C      write(16,*) 'About to open file.' !jgfdebug48.03
-      if (myproc == 0 .or. WRITE_LOCAL_FILES) then
-         open(lun, file=filename, access='SEQUENTIAL',
-     &        position='APPEND')
-         write(lun, 1100) TimeLoc, it
-      endif
-
-      if (WRITE_LOCAL_FILES) then
-         call write_cmd(lun, descript, 1, descript % num_records_this)
-         close(lun)
-         return
-      end if
-
-#ifdef CMPI
-      bufsize = min(BUFSIZE_MAX,
-     &    descript % num_items_per_record * descript % num_fd_records)
-C     num will be less than the number of full domain records if the
-C     buffer is too small to hold all the records in the full domain,
-C     in this case it is the number of records passed back to proc 0
-C     on each iteration of the while loop below
-      num     = bufsize / descript % num_items_per_record
-      iend    = num
-      istart  = 1
-
-      if (tagbase == 5000) then
-         tagbase = 6000
-      else
-         tagbase = 5000
-      endif
-      ibucket = 0
-
-      do while (istart < iend)
-
-         !------------------------------------------------------------
-         ! Initialize
-         !------------------------------------------------------------
-         buf(:)  = descript % initial_value
-         ibucket = ibucket + 1
-         tag     = tagbase + mod(ibucket, 8)
-
-C         write(16,*) 'About to call write_cmd.' !jgfdebug48.03
-         call write_cmd(lun, descript, istart, iend)
-C         write(16,*) 'About to call mpi_reduce.' !jgfdebug48.03
-         call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
-     &                   0, COMM, ierr)
-C         write(16,*) 'Completed call to mpi_reduce.' !jgfdebug48.03
-         j = 1
-         if (myproc == 0) then
-            do i = istart, iend
-!               write(16,*) i, j, k !jgfdebug48.03                      ! commented out by mcf : k has not been defined
-               write(lun, 1000) i, (resultBuf(k), k = j, j +
-     &                          descript % num_items_per_record - 1)
-               j = j + descript % num_items_per_record
-            end do
-         end if
-
-C        set new starting position to just after the
-C        current ending position in full domain array
-         istart = iend + 1
-C        set new ending position to either the current start plus the
-C        number of records that will fit in the buffer (minus 1),
-C        or to the end of the full domain array, whichever is less
-         iend   = min(istart + num - 1, descript % num_fd_records)
-         num    = iend - istart + 1
-      end do
-      if (myproc == 0) then
-         close(lun)
-      endif
-#endif
-C! CMPI
-
- 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
- 1100 FORMAT(2x,1pE20.10E3,5X,I10)
-      !--------------------------------------------------------------
-      end subroutine write_gbl_file
-      !--------------------------------------------------------------
-
-
-      !--------------------------------------------------------------
-      !      S U B R O U T I N E
-      !      W R I T E _ G B L _ 6 3 _ S K I P _ D R Y N O D E
-      !--------------------------------------------------------------
-      ! Write Global File Skip Default : sb 11/10/2006
-      !      File writing subroutine for fort.63
-      !      It opens the file.
-      !      On uniproc machines it calls the "write_cmd"
-      !      routine to write the record out.
-      !
-      !      On parallel machine it performs a bucket
-      !      brigade by copying a block of data to proc 0
-      !      which it writes out.
-      !
-      !      The specified default values will not be written
-      !      out.
-      !--------------------------------------------------------------
-
-      subroutine write_gbl_63_skip_drynode
-     &           (lun, filename, descript, TimeLoc, it, write_cmd)
-      USE SIZES
-      USE GLOBAL
-      implicit none
+      real(8), intent(in) :: TimeLoc
+      integer, intent(in) :: it
+      external write_cmd   
 #ifdef CMPI
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
-#endif
-
-      external write_cmd
-      integer      :: num, i, j, k
-#ifdef CMPI
       integer      :: ierr, status(MPI_STATUS_SIZE), request
-#endif
-      integer, save:: tagbase = 6000
-      integer      :: lun, iproc
-      integer      :: bufsize, ibucket
-      integer      :: istart, iend, it, tag
-#ifdef CMPI
       integer      :: nLWetNodes, nGWetNodes
       integer      :: iglobal
 #endif
-      real(8)      :: TimeLoc
-      character(*) :: filename
-      type (OutputDataDescript_t) :: descript
-
-
-      if(descript%num_records_this.ne.np) then
-        stop 'FATAL ERROR: descript%num_records_this.ne.np'
-      endif
-
-#ifndef CMPI
-C     !-----IF CMPI IS NOT DEFINED -----
-      open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
-      write(lun, 1100) TimeLoc, it
-
-      call write_cmd(lun, descript, 1, descript % num_records_this)
-      close(lun)
-      return
-
-#else
-C    !-----IF CMPI IS DEFINED -----
-
-      if (WRITE_LOCAL_FILES) then
-        open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
-        write(lun, 1100) TimeLoc, it
-        call write_cmd(lun, descript, 1, descript % num_records_this)
-        close(lun)
-
-        return !---THERE IS A RETURN STATEMENT HERE---
-
-      end if
-
-      ! Count the number of wet nodes
-      nLWetNodes = 0
-      do i=1,np
-        iglobal = descript%imap(i)
-        if(iglobal.le.0) cycle ! cycle if node i is ghost
-
-        if(nodecode(i) == 0) cycle ! cycle if node i is dry
-
-        nLWetNodes=nLWetNodes+1
-      enddo
-
-      call mpi_reduce(nLWetNodes, nGWetNodes, 1, MPI_INTEGER,
-     &     MPI_SUM, 0, comm, ierr)
-
-      if (myproc == 0) then
-        open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
-        write(lun, 1101) TimeLoc, it, nGWetNodes, -99999.d0
-      endif
-
-      bufsize = min(BUFSIZE_MAX,
-     &    descript % num_items_per_record * descript % num_fd_records)
-      num     = bufsize / descript % num_items_per_record
-      iend    = num
-      istart  = 1
-
-      if (tagbase == 5000) then
-        tagbase = 6000
-      else
-        tagbase = 5000
-      endif
-      ibucket = 0
-
-      do while (istart < iend)
-
-        !------------------------------------------------------------
-        ! Initialize
-        !------------------------------------------------------------
-        buf(:)  = descript % initial_value
-        ibucket = ibucket + 1
-        tag     = tagbase + mod(ibucket, 8)
-
-        call write_cmd(lun, descript, istart, iend)
-        call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM, 0,
-     &    COMM, ierr)
-        if (myproc == 0) then
-          do i = istart, iend
-            j = 1 + (i-istart)*descript % num_items_per_record
-
-            !If values are eqaul to the default value, skip this node
-            if(resultBuf(j) == -99999.0) cycle
-
-            write(lun, 1000) i, (resultBuf(k), k = j, j +
-     &        descript % num_items_per_record - 1)
-          end do
-        end if
-
-        istart = iend + 1
-        iend   = min(istart + num - 1, descript % num_fd_records)
-        num    = iend - istart + 1
-      end do
-      if (myproc == 0) then
-        close(lun)
-      endif
-#endif
-C! CMPI
-
- 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
- 1100 FORMAT(2x,1pE20.10E3,5X,I10)
- 1101 FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)
-      !--------------------------------------------------------------
-      end subroutine write_gbl_63_skip_drynode
-      !--------------------------------------------------------------
-
-
-      !--------------------------------------------------------------
-      !       S U B R O U T I N E
-      !       W R I T E _ G B L _ F I L E _ S K I P _ D E F A U L T
-      !--------------------------------------------------------------
-      ! Write Global File Skip Default : sb 11/10/2006
-      !       It opens the file.
-      !       On uniproc machines it calls the "write_cmd"
-      !       routine to write the record out.
-      !
-      !       On parallel machine it performs a bucket
-      !       brigade by copying a block of data to proc 0
-      !       which it writes out.
-      !
-      !       The specified default values will not be written
-      !       out.
-      !--------------------------------------------------------------
-
-      subroutine write_gbl_file_skip_default
-     &           (lun, filename, descript, TimeLoc, it, write_cmd, default_val)
-      USE SIZES
-      USE GLOBAL
-      implicit none
-#ifdef CMPI
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
-#endif
-
-      external write_cmd
       integer      :: num, i, j, k
-#ifdef CMPI
-      integer      :: ierr, status(MPI_STATUS_SIZE), request
-#endif
       integer, save:: tagbase = 6000
-      integer      :: lun, iproc
+      integer      :: iproc
       integer      :: bufsize, ibucket
-      integer      :: istart, iend, it, tag
-#ifdef CMPI
-      integer      :: nLNonDefValues, nGNonDefValues
-      integer      :: iglobal
+      integer      :: istart, iend, tag
+
+      call setMessageSource("writeSparse")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
 #endif
-      real(8)      :: default_val
-      real(8)      :: TimeLoc
-      character(*) :: filename
-      type (OutputDataDescript_t) :: descript
 
-      if(descript%num_records_this.ne.np) then
-        stop 'FATAL ERROR: descript%num_records_this.ne.np'
-      endif
-
-#ifndef CMPI
-C    !-----IF CMPI IS NOT DEFINED -----
-      open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
-      write(lun, 1100) TimeLoc, it
-
-      call write_cmd(lun, descript, 1, descript % num_records_this)
-      close(lun)
-      return
-
-#else
-C     !-----IF CMPI IS DEFINED -----
-
-      if (WRITE_LOCAL_FILES) then
-        open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
-        write(lun, 1100) TimeLoc, it
-        call write_cmd(lun, descript, 1, descript % num_records_this)
-        close(lun)
-
-        return !---THERE IS A RETURN STATEMENT HERE---
-
-      end if
-
-      ! Count the number of non-default values
-      nLNonDefValues = 0
-      do i=1,np
-        iglobal = descript%imap(i)
-        if(iglobal.le.0) cycle ! cycle if node i is ghost
-
-        if(descript%num_items_per_record.eq.1) then
-          if(descript%array (i).eq.default_val) cycle
-        else if(descript%num_items_per_record.eq.2) then
-          if(descript%array (i).eq.default_val.and.
-     &       descript%array2(i).eq.default_val) cycle
-        endif
-
-        nLNonDefValues=nLNonDefValues+1
-      enddo
-
-      call mpi_reduce(nLNonDefValues, nGNonDefValues, 1, MPI_INTEGER,
-     &     MPI_SUM, 0, comm, ierr)
-
-      if (myproc == 0) then
-        open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
-        write(lun, 1101) TimeLoc, it, nGNonDefValues, default_val
-      endif
-
-      bufsize = min(BUFSIZE_MAX,
-     &    descript % num_items_per_record * descript % num_fd_records)
-      num     = bufsize / descript % num_items_per_record
-      iend    = num
-      istart  = 1
-
-      if (tagbase == 5000) then
-        tagbase = 6000
+      ! serial or writing local files
+      if ((mnproc.eq.1).or.(WRITE_LOCAL_FILES)) then
+         open(descript%lun, file=trim(descript%file_name), 
+     &       access='SEQUENTIAL', position='APPEND')
+         write(descript%lun, 1100) TimeLoc, it
+         call write_cmd(descript % lun, descript, 1, descript % num_records_this)
+         close(descript % lun)
+#ifdef GLOBALIO_TRACE
+         call allMessage(DEBUG,"Return")
+#endif
+         call unsetMessageSource()
+         return
       else
-        tagbase = 5000
-      endif
-      ibucket = 0
-
-      do while (istart < iend)
-
-        !------------------------------------------------------------
-        ! Initialize
-        !------------------------------------------------------------
-        buf(:)  = descript % initial_value
-        ibucket = ibucket + 1
-        tag     = tagbase + mod(ibucket, 8)
-
-        call write_cmd(lun, descript, istart, iend)
-        call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM, 0,
-     &    COMM, ierr)
-        if (myproc == 0) then
-          do i = istart, iend
-            j = 1 + (i-istart)*descript % num_items_per_record
-
-            !If values are eqaul to the default value, skip this node
-            if(descript % num_items_per_record == 1) then
-              if(resultBuf(j) == default_val) cycle
-            else if(descript % num_items_per_record == 2) then
-              if((resultBuf(j)   == default_val).and.
-     &           (resultBuf(j+1) == default_val)) cycle
-            endif
-
-            write(lun, 1000) i, (resultBuf(k), k = j, j +
-     &        descript % num_items_per_record - 1)
-          end do
-        end if
-
-        istart = iend + 1
-        iend   = min(istart + num - 1, descript % num_fd_records)
-        num    = iend - istart + 1
-      end do
-      if (myproc == 0) then
-        close(lun)
-      endif
+#ifdef CMPI
+      ! Count the number of wet nodes
+         nLWetNodes = 0
+         do i=1,np
+            iglobal = descript%imap(i)
+            if(iglobal.le.0) cycle ! cycle if node i is ghost
+            if(nodecode(i) == 0) cycle ! cycle if node i is dry
+            nLWetNodes=nLWetNodes+1
+         enddo
+         call mpi_reduce(nLWetNodes, nGWetNodes, 1, MPI_INTEGER,
+     &        MPI_SUM, 0, comm, ierr)
+   
+         if (myproc == 0) then
+           open(descript%lun, file=trim(descript%file_name), 
+     &         access='SEQUENTIAL', position='APPEND')
+           write(descript%lun, 1101) TimeLoc, it, nGWetNodes, descript%alternate_value
+         endif
+   
+         bufsize = min(BUFSIZE_MAX,
+     &       descript % num_items_per_record * descript % num_fd_records)
+         num     = bufsize / descript % num_items_per_record
+         iend    = num
+         istart  = 1
+   
+         if (tagbase == 5000) then
+           tagbase = 6000
+         else
+           tagbase = 5000
+         endif
+         ibucket = 0
+   
+         do while (istart < iend)
+   
+           !------------------------------------------------------------
+           ! Initialize
+           !------------------------------------------------------------
+           buf(:)  = descript % initial_value
+           ibucket = ibucket + 1
+           tag     = tagbase + mod(ibucket, 8)
+   
+           call write_cmd(descript%lun, descript, istart, iend)
+           call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM, 0,
+     &       COMM, ierr)
+           if (myproc == 0) then
+             do i = istart, iend
+               j = 1 + (i-istart)*descript % num_items_per_record
+   
+               !If values are eqaul to the default value, skip this node
+               if(resultBuf(j).eq.descript % alternate_value) cycle
+   
+               write(descript % lun, 1000) i, (resultBuf(k), k = j, j +
+     &           descript % num_items_per_record - 1)
+             end do
+           end if
+   
+           istart = iend + 1
+           iend   = min(istart + num - 1, descript % num_fd_records)
+           num    = iend - istart + 1
+         end do
+         if (myproc == 0) then
+           close(descript%lun)
+         endif
 #endif
-C! CMPI
+      endif
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
 
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
  1100 FORMAT(2x,1pE20.10E3,5X,I10)
  1101 FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)
       !--------------------------------------------------------------
-      end subroutine write_gbl_file_skip_default
+      end subroutine writeSparse
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
@@ -1168,63 +810,6 @@ C! CMPI
       !--------------------------------------------------------------
       end subroutine storeTwo
       !--------------------------------------------------------------
-
-
-      !--------------------------------------------------------------
-      !       S U B R O U T I N E   S T O R E 6 3
-      !--------------------------------------------------------------
-      !
-      !--------------------------------------------------------------
-      subroutine store63(lun, descript, istart, iend)
-      USE SIZES
-      USE GLOBAL
-      implicit none
-
-      type (OutputDataDescript_t) :: descript
-      integer :: i, istart, iend, iglobal, lun
-      integer :: ioffset
-
-
-      if (WRITE_LOCAL_FILES) then
-        if (descript % ConsiderWetDry.eqv..true.) then
-           do i = 1, np
-             if (nodecode(i) == 1) write(lun, 1000) i, descript % array(i)  !eta2(i)
-             if (nodecode(i) == 0) write(lun, 1000) i, descript % alternate_value
-           end do
-        else
-           do i = 1,np
-              write(lun , 1000) i, descript % array(i)
-           end do
-        endif
-        return
-      end if
-
-#ifdef CMPI
-      ioffset = istart - 1
-      if (descript % ConsiderWetDry.eqv..true.) then
-         do i = 1, np
-            iglobal = descript % imap(i)
-            if (istart <= iglobal .and. iglobal <= iend) then
-               if (nodecode(i) == 1) buf(iglobal - ioffset ) = descript % array(i)  !eta2(i)
-               if (nodecode(i) == 0) buf(iglobal - ioffset ) = descript % alternate_value
-           end if
-         end do
-      else
-         do i = 1, np
-            iglobal = descript % imap(i)
-            if (istart <= iglobal .and. iglobal <= iend) then
-               buf(iglobal - ioffset ) = descript % array(i)
-           end if
-         end do
-      endif
-#endif
-
-      return
- 1000 format(2x, i8, 2x, 1pE20.10E3)
-      !--------------------------------------------------------------
-      end subroutine store63
-      !--------------------------------------------------------------
-
 
       !--------------------------------------------------------------
       !     S U B R O U T I N E   H E A D E R 6 1
@@ -1422,6 +1007,28 @@ C! CMPI
      &       'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header74
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      !  S U B R O U T I N E   H E A D E R 7 7
+      !--------------------------------------------------------------
+      ! Weir elevation change for all nodes: fort.77
+      !--------------------------------------------------------------
+      subroutine header77(lun, size_this)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      integer :: lun, size_this
+
+      write(lun, 1000) rundes, runid, agrid
+      write(lun, 1010) ndsets_tvw, size_this, dtdp*nspool_tvw,
+     &                 nspool_tvw, 1, FileFmtVersion
+
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
+     &      'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine header77
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
@@ -1640,6 +1247,14 @@ C     Open the file
       case("sponge")
           write(lun, 1010) 1, nodes, dtdp*nspoolge,
      &                 nspoolge, 1, FileFmtVersion
+      case("noff")
+          write(lun, 1010) 1, nodes, dtdp*nspoolge,
+     &                 nspoolge, 1, FileFmtVersion
+      case("nodecode")
+          write(lun, 1010) 1, nodes, dtdp*nspoolge,
+     &                 nspoolge, 1, FileFmtVersion
+      case("initDry")
+          write(lun, 1010) 1, nodes, 0.d0, 0, 1, FileFmtVersion
       case default
           write(ScreenUnit,*)
      &         'ERROR: Full domain header type unrecongnized.'
@@ -1663,121 +1278,169 @@ C----------------------------------------------------------------------
 C
 C     jgf48.4636 Subroutine to read in continuous min and max files,
 C     if they are present.  ASCII Min/Max file are NOT stored
-C     in compact format
+C     in compact format.
 C
 C----------------------------------------------------------------------
-      SUBROUTINE readMinMax(minMaxFN,array,array2)
-      USE SIZES , ONLY : SZ, MNPROC, GLOBALDIR
-      USE GLOBAL , ONLY : NSCREEN, ScreenUnit, MyProc, scratchMessage
+      subroutine readMinMax(descript, timeloc)
       IMPLICIT NONE
-      CHARACTER(*) :: minMaxFN ! name of min/max file to read
-      REAL(SZ), dimension(:), target :: array ! min/max array
-      real(sz), optional, dimension(:), target :: array2 !timestamp for min/max array
-      INTEGER node               ! node number of the min/max data
-      CHARACTER(len=80) skipline ! dummy variable for min/max header data
-      INTEGER rawNode            ! node number, as read from file
-      REAL(SZ) rawDatum          ! array member value at node, as read from file
-      INTEGER numLinesInMinMaxFile ! count the lines to report to log file
-      LOGICAL tooFewMinMaxLines  ! true if couldn't read enough lines from file
-      INTEGER ErrorIO      ! zero if file opened successfully
-      INTEGER I, lun_maxmin
+      type(OutputDataDescript_t), intent(inout) :: descript
+      real(8), intent(in) :: timeloc  ! adcirc time in seconds
+      integer :: node                 ! node number of the min/max data
+      character(len=80) :: skipline  ! dummy variable for min/max header data
+      integer :: rawNode              ! node number, as read from file
+      real(sz) :: rawDatum            ! array member value at node, as read from file
+      integer :: irawDatum            ! array member value at node, as read from file
+      integer :: numLinesInMinMaxFile ! count the lines to report to log file
+      logical :: tooFewMinMaxLines    ! true if couldn't read enough lines from file
+      integer :: ErrorIO              ! zero if file opened successfully
+      integer :: i
       integer :: ndsetmax,size_this,nspoolmax,irtype,ffv
       real(sz) :: time_this
       character(20) :: dmstr
+      integer, pointer :: idata(:)
+      real(sz), pointer :: rdata(:)
+      real(8) :: TimeMM ! timestamp of the min/max data in seconds since cold start
+      integer :: ITMM ! time step of the min/max data in seconds since cold start
 
-      lun_maxmin = 763  !tcm v51.20.01 changed unit number from 963 to 763 to avoid conflicts with STWAVE
-C
-      CALL openFileForRead(lun_maxmin,TRIM(GLOBALDIR)//'/'//trim(minMaxFN),
-     &                     errorIO)
-      IF ( errorIO.gt.0 ) THEN
-         if (present(array2)) array2 = -99999.d0  !tcm v51.20.06
-         write(scratchMessage,3333) trim(minMaxFN)
-         call allMessage(WARNING,scratchMessage)
-         RETURN  ! early return
-      ENDIF
-C
-C     The file exists and is open, so read the data.
-      numLinesInMinMaxFile = 0
+      call setMessageSource("readMinMax")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      !
       ! Process Header Lines
-      READ(lun_maxmin,*,END=3990,ERR=3990) skipline   ! 1st header line
-!      READ(lun_maxmin,*,END=3990,ERR=3990) skipline   ! 2nd header line
-      READ(lun_maxmin,*,END=3990,ERR=3990) ndsetmax,size_this,
-     &                       time_this,nspoolmax,irtype,dmstr,ffv   !tcm v51.20.01 added specific reading of this header
-      READ(lun_maxmin,*,END=3990,ERR=3990) skipline   ! TIME and IT line
-
-
-      DO I=1, size(array)
-         READ(lun_maxmin,*,END=3990,ERR=3990) rawNode, rawDatum
-         IF ((rawNode.ge.1).and.(rawNode.le.size(array))) THEN
+      read(descript%lun,*,end=3990,err=3990) skipline   ! 1st header line
+      !tcm v51.20.01 added specific reading of 2nd header line
+      read(descript%lun,*,end=3990,err=3990) ndsetmax,size_this,
+     &                       time_this,nspoolmax,irtype,dmstr,ffv   
+      !
+      ! jgf52.08.20: Read time and timestep and reject min/max data that correspond
+      ! to a future time. This can happen when an analyst hotstarts a run,
+      ! allows it to complete, then makes some adjustments to the input and 
+      ! then tries to re-run it while forgetting to remove or replace the 
+      ! min/max file from the previous attempt. 
+      !
+      ! It is hard to imagine a scenario where someone would want to keep 
+      ! the min/max record from the previous attempt under these circumstances.
+      ! As a result, I am logging it as an error but allowing the run to 
+      ! continue if non-fatal override is enabled, since it would be 
+      ! annoying to have ADCIRC bomb out every time the analyst mistakenly
+      ! leaves a min/max file in place. 
+      read(descript%lun,*,end=3990,err=3990) TimeMM, ITMM   ! TIME and IT line
+      if (TimeMM.gt.TimeLoc) then
+         call allMessage(ERROR,'Max/min file '//trim(descript % file_name)//
+     &     ' contains data written after the hotstart time. '// 
+     &    ' It may have been produced using different input parameters, '//
+     &     ' perhaps during a previously attempted hot start run. '//
+     &     ' Its values will not be read.')
+         if (nfover.eq.0) then
+            call allMessage(ERROR,
+     &       'Execution terminated due to invalid '//
+     &        trim(descript % file_name)//' file.')
+             call globalioTerminate()
+         else
+            call allMessage(INFO,'The record for '//
+     &        trim(descript%file_name)//
+     &        ' will be started anew and exection will continue.')       
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+             call allMessage(DEBUG,"Return.")
+#endif
+             call unsetMessageSource()
+             CLOSE(descript%lun)  !close the max/min file
+             return ! EARLY RETURN
+         endif
+      endif
+      !
+      ! The file exists, it is open, and it doesn't correspond to a future
+      ! time period, so read the data.
+      numLinesInMinMaxFile = 0
+      ! set the number of records we expect to read as well as the array to
+      ! read data into 
+      rdata => descript % array
+      idata => descript % iarray
+      if (mnproc.gt.1) then
+         rdata => descript % array_g
+         idata => descript % iarray_g
+      endif      
+      !
+      !
+      do I=1, descript % num_fd_records
+         if (descript % isInteger.eqv..true.) then
+            read(descript%lun,*,end=3990,err=3990) rawNode, irawDatum !integer
+         else
+            read(descript%lun,*,end=3990,err=3990) rawNode, rawDatum  !float
+         endif
+         if ((rawNode.ge.1).and.(rawNode.le.descript%num_fd_records)) then
             node = rawNode
-            array(node) = rawDatum
-         ELSE
-            EXIT ! jump out of loop if node number is out of bounds
-         ENDIF
+            if (descript % isInteger.eqv..true.) then
+               idata(node) = irawDatum       ! integer
+            else
+               rdata(node) = rawDatum         ! float
+            endif
+         else
+            exit ! jump out of loop if node number is out of bounds
+         endif
          numLinesInMinMaxFile = numLinesInMinMaxFile + 1
-      ENDDO
-
+      enddo
+      !
       ! If this max/min file has two time records then the second
       ! record contains the time stamp (sec) relative to cold start 
       ! at which the max/min was recorded
-
-      IF ((NDSETMAX.GT.1).AND.(PRESENT(ARRAY2))) THEN  !In file and asking for them
-
-         READ(lun_maxmin,*,END=3990,ERR=3990) skipline   ! TIME and IT line
-          WRITE(SCRATCHMESSAGE,*) 'Max/min timestamps found in file and being used.'
-          CALL logMessage(INFO,scratchMessage)
-
-         DO I=1, size(array2)
-            READ(lun_maxmin,*,END=3990,ERR=3990) rawNode, rawDatum
-            IF ((rawNode.ge.1).and.(rawNode.le.size(array2))) THEN
+      if ((ndsetmax.gt.1).and.
+     &    (descript % minmax_timestamp.eqv..true.)) then  
+         ! In file and asking for them, set the arrays to read data into
+         rdata => descript % array2
+         if (mnproc.gt.1) then
+            rdata => descript % array2_g
+         endif
+         read(descript%lun,*,end=3990,err=3990) skipline   ! TIME and IT line
+         call logMessage(INFO,
+     &       'Max/min timestamps were found in '//trim(descript%file_name)//
+     &       ' and will be loaded and used.')
+         do i=1, descript % num_fd_records
+            read(descript%lun,*,end=3990,err=3990) rawNode, rawDatum
+            if ((rawNode.ge.1).and.(rawNode.le.descript%num_fd_records)) then
                node = rawNode
-               array2(node) = rawDatum
-            ELSE
-               EXIT ! jump out of loop if node number is out of bounds
-            ENDIF
-            !numLinesInMinMaxFile = numLinesInMinMaxFile + 1
-         ENDDO
-
-      ELSEIF ((NDSETMAX.GT.1).AND.(.NOT.PRESENT(ARRAY2))) THEN  !In file but not asking for them
-
-          WRITE(SCRATCHMESSAGE,*) 'Max/min timestamps present in file, but NOT used.',
-     &              ' Setting time stamps to -99999.d0 to initalize.'
-          CALL logMessage(INFO,scratchMessage)
-
-      ELSEIF ((NDSETMAX.EQ.1).AND.(PRESENT(ARRAY2))) THEN  !Not in File but asking for them anyway
-
-          WRITE(SCRATCHMESSAGE,*) 'Max/min time stamps not present in file.',
-     &                            ' Setting time stamps to -99999.d0 to initalize'
-          CALL logMessage(INFO,scratchMessage)
-          array2(:) = -99999.d0
-
-      ELSEIF ((NDSETMAX.EQ.1).AND.(.NOT.PRESENT(ARRAY2))) THEN !Not in File and not asking for them
-
-          WRITE(SCRATCHMESSAGE,*) 'Max/min time stamps not present in file.',
-     &                            ' Setting time stamps to -99999.d0 to initalize.'
-          CALL logMessage(INFO,scratchMessage)
-
-      ELSE
-
-      ENDIF
+               rdata(node) = rawDatum
+            else
+               exit ! jump out of loop if node number is out of bounds
+            endif
+         enddo
+      endif
+      !
+      ! time stamps not found in file but asking for them anyway
+      if ( (ndsetmax.eq.1).and.
+     &   (descript % minmax_timestamp.eqv..true.) ) then
+         call logMessage(WARNING,'Max/min time stamps not present in '//
+     &      trim(descript % file_name)//
+     &     '. Max/min time stamps will be set to -99999.d0 to initalize.')
+      endif
+      ! time stamps are found in file but not asking for them
+      if ( (ndsetmax.gt.1).and.
+     &      (descript % minmax_timestamp.eqv..false.) ) then  
+            call logMessage(INFO,'Max/min timestamps present in "'//
+     &      trim(descript % file_name)//' but not needed. ')
+      endif
 
  3990 CONTINUE ! jump to here if end of file is reached
-      WRITE(scratchMessage,450) numLinesInMinMaxFile, trim(minMaxFN)
+      WRITE(scratchMessage,450) numLinesInMinMaxFile, 
+     &   trim(descript % file_name)
       CALL logMessage(INFO,scratchMessage)
-      IF (numLinesInMinMaxFile.lt.size(array)) THEN
-          call allMessage(ERROR,"Not enough data in "
-     &         //trim(minMaxFN)//".")
+      IF (numLinesInMinMaxFile.lt.(descript % num_fd_records)) THEN
+          call allMessage(ERROR,'Not enough data in "'
+     &         //trim(descript % file_name)//'".')
       ENDIF
 
-      CLOSE(lun_maxmin)  !close the max/min file
+      CLOSE(descript%lun)  !close the max/min file
 
- 450  FORMAT('Finished reading ',I8,' lines from the ',
-     &   A20,' file.')
- 3333 FORMAT('Values from ',(A20),
-     &       ' will not reflect the solution prior to this hotstart.')
+ 450  format('Finished reading ',i0,' lines from the "',a,'" file.')
+
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
 
 C-----------------------------------------------------------------------
-      END SUBROUTINE readMinMax
+      end subroutine readMinMax
 C-----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
@@ -1799,6 +1462,10 @@ C----------------------------------------------------------------------
       REAL(SZ) :: tmpval
       CHARACTER*80 cdum80
 C
+      call setMessageSource("nddt2get")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
 C...  go get new record for only some nodes, all
 C...  other nodes keep their current value
@@ -1809,6 +1476,11 @@ C...  other nodes keep their current value
       READ(lun,'(A80)',end=172) CDUM80
       IF(CDUM80(2:2).NE.'#') GOTO 171
  172  CONTINUE
+ 
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
       
       RETURN
 C----------------------------------------------------------------------
@@ -1822,123 +1494,112 @@ C                M A X  A N D  M I N
 C-----------------------------------------------------------------------
 C     TCM v51.20.01 Reads a fulldomain array in ascii format and maps
 C     to a subdomain array.  Modeled after readAndMapToSubdomain2D
-C     
+C     jgf52.08.03: Reduced subroutine arguments to OutputDataDescript_t
+C     and an indicator of whether the file was found; removed hardwired
+C     variables. 
 C-----------------------------------------------------------------------
-      subroutine readAndMapToSubdomainMaxMin(minMaxFN,sd_array,sd_array2)
-      USE SIZES, ONLY : SZ, MNPROC,READ_LOCAL_HOT_START_FILES
-
-      IMPLICIT NONE
+      subroutine readAndMapToSubdomainMaxMin(descript, timeloc, fileFound)     
+      implicit none
+      type(OutputDataDescript_t), intent(inout) :: descript
+      real(8), intent(in) :: timeloc ! adcirc time in seconds since cold start
+      logical, intent(out) :: fileFound ! .true. if file found and opened
+      integer :: fd_node_number
+      integer :: sd_node_number
+      integer :: ios  ! i/o status
 C
-      REAL(SZ), intent(out), dimension(:) :: sd_array ! subdomain array for values
-      REAL(SZ), optional, intent(out), dimension(:) :: sd_array2 !subdomain array for timestamps
-      INTEGER :: sd_node_number
-      INTEGER :: fd_node_number
-      CHARACTER(*) :: minMaxFN ! name of min/max file to read
-      LOGICAL :: include_times
-C
-      REAL(SZ), allocatable, dimension(:) :: fd_array ! full domain array values
-      REAL(SZ), allocatable, dimension(:) :: fd_array2  !full domain array timestamps
-
-!......TCM v51.20.06 These variables were part of the original "readAndMapToSubdomain2D"
-!......              routine used to create this routine.  However, the max/min files
-!......              were never a part of that original routine, therefore they
-!......              have been removed from the input variable list and hardwired.
-      INTEGER :: counter, method
-!      INTEGER, intent(inout) :: counter ! i/o position in the file
-!      INTEGER, intent(in) :: method  ! logical to determine binary or real
-
-C
-      COUNTER = 0 !hardwired counter to 0
-      METHOD = 2  !hardwired method to 2
-      include_times = .false.
-
-      if (present(sd_array2)) include_times = .true.
-
       call setMessageSource("readAndMapToSubdomainMaxMin")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-
-      ! serial or reading local hot start files
-      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-         IF (method.EQ.1) THEN  !tcm v51.20.02 -- not supported at this time
-            !CALL binaryRead2D(sd_array, NP, lun, counter)
-            !CALL readMinMax(minMaxFN,sd_array)
-         ELSE IF (method.EQ.2) THEN
-            !CALL realRead2D(sd_array, NP, lun)
-            if (include_times.eqv..true.) then
-               CALL readMinMax(minMaxFN,sd_array,sd_array2)
+      call openFileForRead(descript%lun,trim(descript%file_name), ios)
+      if ( ios.ne.0 ) then
+         fileFound = .false.
+         write(scratchMessage,3333) trim(descript % file_name)
+3333    format('Values from ',(a),
+     &       ' will not reflect the solution prior to this hotstart.')
+         call allMessage(INFO,scratchMessage)
+         if (descript % minmax_timestamp.eqv..true.) then 
+            descript % array2(:) = -99999.d0  !tcm v51.20.06
+         endif
+         close(descript%lun)
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         return  ! early return
+      else
+         fileFound = .true.
+      endif
+      !
+      ! serial 
+      call readMinMax(descript, timeloc)      
+      if (mnproc.gt.1) then
+         ! loop over subdomain nodes
+         do sd_node_number=1,np
+            ! get the corresponding fulldomain node number
+            fd_node_number = ABS(descript % imap(sd_node_number))
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+            if (descript % isInteger.eqv..true.) then
+               descript % iarray(sd_node_number) = 
+     &                descript % iarray_g(fd_node_number)
             else
-               CALL readMinMax(minMaxFN,sd_array)
+               descript % array(sd_node_number) = 
+     &                descript % array_g(fd_node_number)
+            endif                
+            if (descript % minmax_timestamp.eqv..true.) then
+               descript % array2(sd_node_number) = 
+     &             descript % array2_g(fd_node_number)          
             endif
-         ELSE
-            call allMessage(ERROR,
-     &          "Passing of binary or real information incorrect")
-            STOP
-         END IF
-      ! parallel
-      ELSE
-         IF (method.EQ.1) THEN  !tcm v51.20.02 -- not supported at this time
-            allocate(fd_array(NP_G))
-            if (include_times.eqv..true.) allocate(fd_array2(NP_G))
-            !CALL binaryRead2D(fd_array, NP_G, lun, counter)
-              if (include_times.eqv..true.) then
-                 !call readMinMax(minMaxFN,fd_array,fd_array2)  !place holder for binary file
-              else
-                 !call readMinMax(minMaxFN,fd_array)      !place holder for binary file
-              endif
-            ! loop over subdomain nodes
-            DO sd_node_number=1,np
-               ! get the corresponding fulldomain node number
-               fd_node_number = ABS(NODES_LG(sd_node_number))
-               ! fill in the subdomain arrays with the corresponding
-               ! fulldomain values
-               sd_array(sd_node_number) = fd_array(fd_node_number)
-               if (include_times.eqv..true.) then
-                  sd_array2(sd_node_number) = fd_array2(fd_node_number)
-               endif
-            END DO
-            deallocate(fd_array)
-            if (include_times.eqv..true.) deallocate(fd_array2)
-
-         ELSE IF (method.EQ.2) THEN  !ascii files
-            allocate(fd_array(NP_G))
-            if (include_times.eqv..true.) then
-               allocate(fd_array2(NP_G))
-               CALL readMinMax(minMaxFN,fd_array,fd_array2)
-            else
-               CALL readMinMax(minMaxFN,fd_array)
-            endif             
-            ! loop over subdomain nodes
-            DO sd_node_number=1,np
-               ! get the corresponding fulldomain node number
-               fd_node_number = ABS(NODES_LG(sd_node_number))
-               ! fill in the subdomain arrays with the corresponding
-               ! fulldomain values
-               sd_array(sd_node_number) = fd_array(fd_node_number)
-               if (include_times.eqv..true.) then
-                  sd_array2(sd_node_number) = fd_array2(fd_node_number)
-               endif
-            END DO
-            deallocate(fd_array)
-            if (include_times.eqv..true.) deallocate(fd_array2)
-
-         ELSE
-            WRITE(16,*) "Passing of binary or real
-     &         information incorrect"
-            STOP
-         END IF
-      ENDIF
+         end do
+      endif
 C
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-C-----------------------------------------------------------------------
-      END SUBROUTINE readAndMapToSubdomainMaxMin
-C-----------------------------------------------------------------------
+      !----------------------------------------------------------------
+      end subroutine readAndMapToSubdomainMaxMin
+      !----------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!     S U B R O U T I N E   G L O B A L I O   T E R M I N A T E
+!-----------------------------------------------------------------------
+      SUBROUTINE globalioTerminate(NO_MPI_FINALIZE)
+#ifdef CMPI
+      USE MESSENGER
+#endif
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
+     &   allMessage, DEBUG, ECHO, INFO, WARNING, ERROR  
+      IMPLICIT NONE 
+      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+C
+      call setMessageSource("globalioTerminate")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      call allMessage(INFO,"ADCIRC Terminating.")
+
+#ifdef CMPI
+      subdomainFatalError = .true.
+      IF (PRESENT(NO_MPI_FINALIZE)) THEN
+        CALL MSG_FINI(NO_MPI_FINALIZE)
+      ELSE
+        CALL MSG_FINI()
+      ENDIF
+#endif
+      STOP 
+C
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
+!-----------------------------------------------------------------------
+      END SUBROUTINE globalioTerminate
+!-----------------------------------------------------------------------
 
 
-      !--------------------------------------------------------------
+!-----------------------------------------------------------------------
       end module global_io
-      !--------------------------------------------------------------
+!-----------------------------------------------------------------------

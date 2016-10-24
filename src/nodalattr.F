@@ -78,6 +78,8 @@ C
 C-----------------------------------------------------------------------
       MODULE NodalAttributes
       USE SIZES
+      USE GLOBAL, ONLY : scratchMessage, allMessage, logMessage,
+     &                    DEBUG, ECHO, INFO, WARNING, ERROR
 
 Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
 C             I've placed these changes outside the #ifdef CSWAN flags
@@ -134,7 +136,7 @@ C     corresponding label in the unit 13 file.
       LOGICAL FoundTau0MinMax
       LOGICAL FoundZ0b_var
       LOGICAL FoundEleSlopeLim
-      LOGICAL FoundRiver_et_WSE ! tcm 20140502 v51.27
+      LOGICAL FoundRiver_et_WSE ! tcm 20140502 v51.27      
 C
 C     These variables hold the strings which describe the attribute's
 C     units. These data are loaded from the file, but not used as of
@@ -171,7 +173,7 @@ C     attribute.
       INTEGER Tau0MinMaxNoOfVals
       INTEGER Z0b_varNoOfVals
       INTEGER EleSlopeLimNoofVals
-      INTEGER River_et_WSENoOfVals  ! tcm 20140502 v51.27
+      INTEGER River_et_WSENoOfVals  ! tcm 20140502 v51.27      
 C
 C     These variables hold the default values for each attribute.
       REAL(SZ) Tau0DefVal
@@ -255,6 +257,23 @@ C
       INTEGER i        ! node loop counter
       INTEGER j        ! attribute values loop counter
       INTEGER k        ! attribute loop counter
+      !
+      !  X D M F
+      !
+      type nodalAttr_t
+         character(len=1024) :: attrName ! name of the nodal attr 
+         character(len=1024) :: units    ! physical units of the nodal attr
+         integer :: numVals  ! number of values at each node for this nodal attr
+         integer :: numNodesNotDefault ! number of nodes with values different from the default
+         real(8), allocatable :: defaultVals(:) ! default value(s) for real valued attributes 
+         real(8), allocatable :: nonDefaultVals(:,:) ! nondefault value(s) for real valued attributes 
+         integer, allocatable :: nonDefaultNodes(:) ! node numbers where nondefault vals occur
+         real(8), allocatable :: xdmfArray(:)
+         real(8), allocatable :: xdmfMatrix(:,:)
+      end type nodalAttr_t
+      ! variable capable of holding all nodal attributes in the file
+      type(nodalAttr_t), allocatable :: na(:)
+      character(len=1024) :: nodalAttributesComment ! comment line at the top
 C
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       CONTAINS !- - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -312,7 +331,7 @@ C
       FoundTau0MinMax     = .False.
       FoundZ0b_var        = .False.
       FoundEleSlopeLim    = .False.
-      FoundRiver_et_WSE     = .False.
+      FoundRiver_et_WSE     = .False.      
 C
 C
       Tau0NoOfVals          = 1
@@ -351,7 +370,7 @@ C
       END DO
       Z0b_varDefVal          = 0.001
       EleSlopeLimDefVal      = 0D0
-      River_et_WSEDefVal       = 0.d0
+      River_et_WSEDefVal       = 0.d0      
 C
       HighResTimeVaryingTau0     = .False.
       FullDomainTimeVaryingTau0  = .False.
@@ -376,6 +395,392 @@ C     ----------------------------------------------------------------
       END SUBROUTINE InitNAModule
 C     ----------------------------------------------------------------
 
+C     ----------------------------------------------------------------
+C     S U B R O U T I N E    R E A D   N O D A L   A T T R   X D M F 
+C     ----------------------------------------------------------------
+C     jgf51.21.24: Read the nodal attributes in XDMF format.
+C     ----------------------------------------------------------------
+      SUBROUTINE readNodalAttrXDMF()
+      USE MESH, ONLY : replaceNullsWithSpaces
+      IMPLICIT NONE
+#ifndef ADCXDMF
+      call allMessage(ERROR,
+     & 'An XDMF formatted nodal attributes (fort.13) file was specified.')
+      call allMessage(ERROR,
+     & 'This ADCIRC executable was not compiled with XDMF support.')
+      call na_terminate()
+#else
+      include 'adcirc_Xdmf.f'
+      integer*8 :: xdmfFortranObj ! object that receives the data
+      !
+      integer :: startIndex
+      integer :: arrayStride
+      integer :: valueStride
+      integer :: attributeIndex
+      integer :: attributeType
+      integer :: informationIndex
+      logical :: isNodalAttribute
+      integer :: gridIndex = 0
+      integer :: numAttributes
+      integer :: numInformation
+      integer :: numValues
+      integer :: openMaps ! 1 if Maps should be opened within another object
+      integer :: openAttributes ! 1 if Attributes should be opened within another object 
+      integer :: openInformations ! 1 if Informations should be opened within another object
+      integer :: openSets ! 1 if sets should be opened within another object
+      integer, parameter :: keyLength = 1024
+      integer, parameter :: valueLength = 1024
+      character(len=keyLength) :: itemKey
+      character(len=valueLength) :: itemValue
+      integer, parameter :: nameLength = 256
+      character(len=nameLength) :: itemName
+      character(len=1024) :: defaultValuesString
+      real(8), allocatable :: diff(:)
+      logical, allocatable :: areDefaultValues(:)
+      logical :: naFound 
+      integer :: i, j, nattrCount, nonDefaultCount
+      !
+      startIndex = 0
+      arrayStride = 1
+      valueStride = 1
+      openMaps = 1
+      openAttributes = 1
+      openInformations = 1
+      openSets = 1
+      !
+      NAFound = .False.
+C
+C     Determine if the Nodal Attributes File exists.
+      INQUIRE(FILE=TRIM(naFileName),EXIST=NAFound)
+C
+      IF (.not.NAFound) THEN
+         write(scratchMessage,'(a)') 'The XDMF nodal attributes file' //
+     &       trim(naFileName)//'was not found.'
+         call allMessage(ERROR, scratchMessage)
+         call na_terminate()
+      ENDIF
+
+      write(6,'(a)') 'INFO: Reading data from the "' 
+     &    // trim(adjustl(naFileName)) // '" XDMF file.'
+      call xdmfinit(xdmfFortranObj)
+      call xdmfRead(xdmfFortranObj, trim(adjustl(naFileName))//char(0))
+      call xdmfOpenDomainGrid(xdmfFortranObj, XDMF_GRID_TYPE_UNSTRUCTURED, 
+     &   gridIndex, openMaps, openAttributes, openInformations, openSets)
+      !
+      call xdmfRetrieveNumAttributes(xdmfFortranObj, numAttributes)
+      nAttr = numAttributes - 1 ! the depth is included so don't count it
+      
+      allocate(na(nAttr))
+      write(6,'("INFO: Grid ",i0," contains ",i0," nodal attributes.")') gridIndex, nAttr
+      !
+      ! populate the names of the nodal attributes
+      nattrCount = 1
+      do attributeIndex=0, numAttributes - 1
+         call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,   
+     &       itemName, nameLength)
+         call replaceNullsWithSpaces(itemName)
+         if (trim(itemName).eq.'depth') then
+            cycle
+         endif
+         write(6,'("INFO: Grid ",i0," Attribute ",i0," is named ",a)') gridIndex, attributeIndex, trim(itemName)
+         na(nattrCount)%attrName = trim(itemName)
+         SELECT CASE (trim(na(nattrCount)%AttrName))
+         case("depth")
+            cycle
+         CASE("primitive_weighting_in_continuity_equation")
+            FoundTau0 = .True.
+         CASE("surface_submergence_state")
+            FoundStartDry = .True.
+         CASE("quadratic_friction_coefficient_at_sea_floor")
+            FoundQuadraticFric = .True.
+         CASE("surface_directional_effective_roughness_length")
+            FoundDirEffRLen = .True.
+         CASE("surface_canopy_coefficient")
+            FoundCanopyCoef = .True.
+         CASE("bridge_pilings_friction_parameters")
+            FoundBridgePilings = .True.
+         CASE("mannings_n_at_sea_floor")
+            FoundManningsN = .True.
+         CASE("bottom_roughness_length")
+            FoundZ0b_var = .True.
+         CASE("chezy_friction_coefficient_at_sea_floor")
+            FoundChezy = .True.
+         CASE("sea_surface_height_above_geoid")
+            FoundGeoidOffset = .True.
+         CASE
+     &    ("average_horizontal_eddy_viscosity_in_sea_water_wrt_depth")
+            FoundEVM = .True.
+         CASE
+     &   ("average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth")
+            FoundEVC = .true.
+         CASE
+     &   ("min_and_max_primitive_weighting_in_continuity_equation")
+            FoundTau0MinMax = .True.
+Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
+         CASE("wave_refraction_in_swan")
+            FoundSwanWaveRefrac = .TRUE.
+Corbitt 120321: Allow advection to be turned on locally instead of globally
+         CASE("advection_state")
+            FoundAdvectionState = .TRUE.
+         CASE("elemental_slope_limiter")
+            FoundEleSlopeLim = .TRUE.
+         CASE("initial_river_elevation")            
+            FoundRiver_et_WSE     = .TRUE.
+         CASE DEFAULT
+            scratchMessage = "Unrecognized nodal attribute : " //
+     &         trim(na(nattrCount) % attrName)
+            call allMessage(WARNING, scratchMessage)
+         END SELECT
+         nattrCount = nattrCount + 1  
+      END DO
+C
+C     Determine if there are any attributes required by the fort.15 file
+C     that are not in the nodal attributes file.
+      call checkForMissingNodalAttributes()
+      !
+      ! use the names to populate the number of values for each attribute
+      call xdmfRetrieveNumInformation(xdmfFortranObj, numInformation)
+      write(6,'(a,i0)') 'numInformation=',numInformation
+      do informationIndex=0,numInformation-1
+         call xdmfRetrieveInformation(xdmfFortranObj, informationIndex, itemKey, keyLength, itemValue, valueLength)
+         call replaceNullsWithSpaces(itemKey)
+         call replaceNullsWithSpaces(itemValue)
+         select case(trim(itemKey))
+         case('nodalAttributesComment')
+            nodalAttributesComment = trim(itemValue)
+         case('numMeshNodes')
+            read(itemValue,*) numOfNodes
+         case default
+            do i=1,nAttr
+               if (trim(itemKey).eq. trim(na(i)%attrName) // ' number_of_values') then
+                  read(itemValue,*) na(i)%numVals
+                  allocate(na(i)%defaultVals(na(i)%numVals))
+                  exit
+               endif
+            end do
+         end select
+      end do
+C
+C     Allocate memory for nodal attributes now that we have the
+C     numOfNodes value
+      call allocateNodalAttributes()
+      !
+      ! populate the units and the default values
+      call xdmfRetrieveNumInformation(xdmfFortranObj, numInformation)
+      do informationIndex=0,numInformation-1
+         call xdmfRetrieveInformation(xdmfFortranObj, informationIndex, itemKey, keyLength, itemValue, valueLength)
+         call replaceNullsWithSpaces(itemKey)
+         call replaceNullsWithSpaces(itemValue)
+         do i=1,nAttr
+            if (trim(itemKey).eq. trim(na(i)%attrName)// ' units') then
+               na(i) % units = trim(itemValue)
+            endif  
+            if (trim(itemKey).eq. trim(na(i)%attrName) // ' default_values') then
+               write(6,*) 'default_values'//trim(itemValue)
+               read(itemValue,*) (na(i)%defaultVals(j),j=1,na(i)%numVals)
+            endif
+         end do
+      end do
+      !
+      ! populate the data
+      do attributeIndex=0, numAttributes - 1
+         call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,  
+     &      itemName, nameLength)
+         call replaceNullsWithSpaces(itemName)
+         if (trim(itemName).eq.'depth') then
+            cycle
+         endif
+         do i=1,nAttr
+            if (trim(itemName).eq.trim(na(i)%attrName)) then
+               write(6,'(a)') 'loading nodal attribute data for '//trim(itemName)
+               if (na(i)%numVals.eq.1) then
+                  allocate(na(i)%xdmfArray(numOfNodes))
+                  attributeType = XDMF_ATTRIBUTE_TYPE_SCALAR
+                  numValues = numOfNodes * na(i) % numVals
+                  call xdmfRetrieveAttributeValues(xdmfFortranObj, attributeIndex, 
+     &                na(i)%xdmfArray, XDMF_ARRAY_TYPE_FLOAT64, numValues, 
+     &                   startIndex, arrayStride, valueStride)
+               else
+                  attributeType = XDMF_ATTRIBUTE_TYPE_MATRIX
+                  numValues = numOfNodes * na(i) % numVals
+                  allocate(na(i)%xdmfMatrix(na(i)%numVals,numOfNodes))
+                  call xdmfRetrieveAttributeValues(xdmfFortranObj, attributeIndex, 
+     &                na(i)%xdmfMatrix, XDMF_ARRAY_TYPE_FLOAT64, numValues, 
+     &                   startIndex, arrayStride, valueStride)
+               endif
+               exit
+            endif
+         end do
+      end do
+      !
+      ! now place the data into the same data structures that are used
+      ! by the ascii nodal attribute reading subroutine
+      do i=1,nAttr
+         SELECT CASE (trim(na(i)%AttrName))
+         CASE("primitive_weighting_in_continuity_equation")
+            IF (LoadTau0) THEN
+               tau0var = na(i)%xdmfArray
+            ENDIF
+         CASE("surface_submergence_state")
+            IF (LoadStartDry) THEN
+               startdry  = na(i)%xdmfArray
+            ENDIF
+         CASE("quadratic_friction_coefficient_at_sea_floor")
+            IF (LoadQuadraticFric) THEN
+               fric = na(i)%xdmfArray
+            ENDIF
+         CASE("surface_directional_effective_roughness_length")
+            IF (LoadDirEffRLen) THEN
+               z0land  = na(i)%xdmfMatrix
+            ENDIF
+         CASE("surface_canopy_coefficient")
+            IF (LoadCanopyCoef) THEN
+               vcanopy = na(i)%xdmfArray
+            ENDIF
+         CASE("mannings_n_at_sea_floor")
+            IF (LoadManningsN) THEN
+               manningsn  = na(i)%xdmfArray
+            ENDIF
+         CASE("bottom_roughness_length")
+            IF (LoadZ0b_var) THEN
+               z0b_var = na(i)%xdmfArray
+            ENDIF
+         CASE("chezy_friction_coefficient_at_sea_floor")
+            IF (LoadChezy) THEN
+               chezy = na(i)%xdmfArray
+            ENDIF
+         CASE("sea_surface_height_above_geoid")
+            IF (LoadGeoidOffset) THEN
+               geoidOffset = na(i)%xdmfArray
+            ENDIF
+         CASE
+     &   ("average_horizontal_eddy_viscosity_in_sea_water_wrt_depth")
+            IF (LoadEVM) THEN
+               evm = na(i)%xdmfArray
+            ENDIF
+         CASE
+     &   ("average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth")
+            IF (LoadEVC) THEN
+               evc  = na(i)%xdmfArray
+            ENDIF
+         CASE
+     &   ("min_and_max_primitive_weighting_in_continuity_equation")
+            IF (LoadTau0MinMax) THEN
+               tau0minmax  = na(i)%xdmfMatrix
+            ENDIF
+Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
+         CASE("wave_refraction_in_swan")
+            IF (LoadSwanWaveRefrac) THEN
+               swanWaveRefrac = na(i)%xdmfArray
+            ENDIF
+Corbitt 120321: Allow Advection to be handled locally instead of globally.
+         CASE("advection_state")
+            IF (LoadAdvectionState) THEN
+               advectionState = na(i)%xdmfArray
+            ENDIF
+         CASE("elemental_slope_limiter")
+            IF( LoadEleSlopeLim ) THEN
+                elemental_slope_limiter_grad_max = na(i)%xdmfArray
+            ENDIF
+         CASE("initial_river_elevation")
+            IF( LoadRiver_et_WSE ) THEN
+               River_et_WSE = na(i)%xdmfArray
+            ENDIF
+         CASE DEFAULT
+            scratchMessage = "Unrecognized nodal attribute : " //
+     &         trim(na(i) % attrName)
+            call allMessage(WARNING, scratchMessage)
+         END SELECT
+      END DO
+#endif
+      !-----------------------------------------------------------------------
+      end subroutine readNodalAttrXDMF
+      !-----------------------------------------------------------------------
+
+C     ----------------------------------------------------------------
+C                       S U B R O U T I N E 
+C    C H E C K   F O R   M I S S I N G   N O D A L   A T T R I B U T E S
+C     ----------------------------------------------------------------
+C     jgf51.21.24: If a nodal attribute was specified in the control
+C     (fort.15) file, but is not present in the nodal attributes (fort.13)
+C     file, then we write out an error message and quit.
+C     ----------------------------------------------------------------
+      subroutine checkForMissingNodalAttributes()
+      implicit none
+C
+C     Determine if there are any attributes required by the fort.15 file
+C     that are not in the nodal attributes file.
+      IF(((LoadTau0).and.(.not.FoundTau0)).or.
+     &   ((LoadStartDry).and.(.not.FoundStartDry)).or.
+     &   ((LoadQuadraticFric).and.
+     &    (.not.FoundQuadraticFric)).or.
+     &   ((LoadDirEffRLen).and.
+     &    (.not.FoundDirEffRLen)).or.
+     &   ((LoadCanopyCoef).and.
+     &    (.not.FoundCanopyCoef)).or.
+     &   ((LoadBridgePilings).and.
+     &    (.not.FoundBridgePilings)).or.
+     &   ((LoadManningsN).and.
+     &    (.not.FoundManningsN)).or.
+     &   ((LoadZ0b_var).and.
+     &    (.not.FoundZ0b_var)).or.
+     &   ((LoadGeoidOffset).and.
+     &    (.not.FoundGeoidOffset)).or.
+     &   ((LoadChezy).and.(.not.FoundChezy)).or.
+     &   ((LoadEVM).and.(.not.FoundEVM)).or.
+     &   ((LoadEVC).and.(.not.FoundEVC)).or.
+Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
+     &   ((LoadSwanWaveRefrac).and.(.not.FoundSwanWaveRefrac)).or.
+Corbitt 120321: Allow advection to be turned on locally instead of globally
+     &   ((LoadAdvectionState).and.(.not.FoundAdvectionState)).or.
+     &   ((LoadEleSlopeLim).and.(.not.FoundEleSlopeLim)).or.
+     &   ((LoadRiver_et_WSE).and.(.not.FoundRiver_et_WSE)).or.     
+     &   ((LoadTau0MinMax).and.(.not.FoundTau0MinMax))) THEN
+         WRITE(scratchMessage,1111)
+ 1111   FORMAT('Nodal Attributes file (unit 13) does '
+     &        'not contain all the attributes listed in the '
+     &        'model parameter file (unit 15).')
+         call allMessage(ERROR, scratchMessage)
+         call na_terminate()
+      ENDIF
+C     ----------------------------------------------------------------
+      end subroutine checkForMissingNodalAttributes
+C     ----------------------------------------------------------------
+
+C     ----------------------------------------------------------------
+C                     S U B R O U T I N E  
+C          A L L O C A T E   N O D A L   A T T R I B U T E S
+C     ----------------------------------------------------------------
+C     Allocate memory to hold our data.
+      subroutine allocateNodalAttributes()
+      implicit none
+      ALLOCATE(TAU0VAR(NumOfNodes),TAU0BASE(NumOfNodes)) ! jjw&sb46.39sb01
+      ALLOCATE(STARTDRY(NumOfNodes))
+      ALLOCATE(FRIC(NumOfNodes))
+      ALLOCATE(z0land(NumOfNodes,DirEffRLenNoOfVals))
+      ALLOCATE(vcanopy(NumOfNodes))
+      ALLOCATE(BridgePilings(NumOfNodes,BridgePilingsNoOfVals))
+      ALLOCATE(GeoidOffset(NumOfNodes))
+      ALLOCATE(Chezy(NumOfNodes))
+      ALLOCATE(ManningsN(NumOfNodes))
+      ALLOCATE(Z0b_var(NumOfNodes))
+      ALLOCATE(EVM(NumOfNodes))
+      ALLOCATE(EVC(NumOfNodes))
+      ALLOCATE(Tau0MinMax(NumOfNodes,Tau0MinMaxNoOfVals))
+Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
+      ALLOCATE(SwanWaveRefrac(NumOfNodes))
+Corbitt 120321: Allow advection to be turned on locally instead of globally
+      ALLOCATE(AdvectionState(NumOfNodes))
+      ALLOCATE(River_et_WSE(NumOfNodes))  ! tcm 20140502 v51.27
+      ALLOCATE(elemental_slope_limiter_grad_max(NumOfNodes))
+      ALLOCATE(elemental_slope_limiter_active(NumOfNodes))
+      ALLOCATE(elemental_slope_limiter_max_exceeded(NumOfNodes))
+      elemental_slope_limiter_active(:) = .FALSE.  !...Alloate and initialize to keep
+                                                   !   track of elemental_slope_limiter nodes
+      elemental_slope_limiter_max_exceeded(:) = .FALSE.
+C     ----------------------------------------------------------------
+      end subroutine allocateNodalAttributes
+C     ----------------------------------------------------------------
 
 C     ----------------------------------------------------------------
 C     S U B R O U T I N E     R E A D  N O D A L  A T T R
@@ -385,6 +790,7 @@ C     jgf46.00 Subroutine to read the nodal attributes file (unit 13).
 C
 C     ----------------------------------------------------------------
       SUBROUTINE ReadNodalAttr(NScreen, ScreenUnit, MyProc, NAbOut)
+      USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER, intent(in) :: NScreen ! nonzero for debug info to screen
       INTEGER, intent(in) :: ScreenUnit ! i/o for screen
@@ -403,7 +809,6 @@ C
       ! temp array; used to load a real from the file,
       ! then convert to integer
       REAL(sz), ALLOCATABLE :: real_loader(:)
-
 C
       NAFound = .False.
       SkipDataSet = .False.
@@ -433,26 +838,6 @@ C     simply return.
      &        /,9X,'A Nodal Attributes File (unit 13)',
      &        /,9X,'will not be used.')
          RETURN
-      ENDIF
-C
-C     Otherwise, get on with it.
-      WRITE(16,232) NWP
- 232  FORMAT(/,5X,'NWP = ',I2,
-     &     /,9X,'Must read Nodal Attributes File (unit 13).')
-C
-C     Determine if the Nodal Attributes File exists.
-      INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.13',EXIST=NAFound)
-C
-      IF (.not.NAFound) THEN
-         WRITE(16,1001)         ! Nodal Attributes file
-         WRITE(16,1011)         ! was not found.
-         WRITE(16,9973)         ! execution terminated
-         IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-            WRITE(ScreenUnit,1001)
-            WRITE(ScreenUnit,1011)
-            WRITE(ScreenUnit,9973)      ! execution terminated
-         ENDIF
-         STOP
       ENDIF
 C
 C     Read the unit 15 control file to determine what data must be
@@ -512,6 +897,34 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
          END SELECT
       ENDDO
 C
+      WRITE(16,232) NWP
+ 232  FORMAT(/,5X,'NWP = ',I2,
+     &     /,9X,'Must read Nodal Attributes File (unit 13).')
+      !
+      !  R E A D   N O D A L   A T T R I B U T E S   X D M F  
+      !
+      if (naType.eq.XDMF) then
+         call readNodalAttrXDMF()
+         return
+      endif
+      !
+      !  R E A D   N O D A L   A T T R I B U T E S   A S C I I
+      !
+C     Determine if the Nodal Attributes File exists.
+      INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.13',EXIST=NAFound)
+C
+      IF (.not.NAFound) THEN
+         WRITE(16,1001)         ! Nodal Attributes file
+         WRITE(16,1011)         ! was not found.
+         WRITE(16,9973)         ! execution terminated
+         IF (NScreen.ne.0.and.MyProc.eq.0) THEN
+            WRITE(ScreenUnit,1001)
+            WRITE(ScreenUnit,1011)
+            WRITE(ScreenUnit,9973)      ! execution terminated
+         ENDIF
+         STOP
+      ENDIF
+C
 C     Now open the nodal attributes (unit 13) file.
       WRITE(16,240)
  240  FORMAT(/,9X,'Nodal Attributes File (unit 13) was found.',
@@ -535,7 +948,25 @@ C     Read each attribute name, units, number of values, and default value
       WRITE(16,250)
  250  FORMAT(/,9X,'User comment line from unit 13:')
       WRITE(16,'(14X,A80,/)') header
-      READ(13,*) NumOfNodes     ! number of nodes according to unit 13
+      READ(13,*) NumOfNodes     ! number of nodes according to unit 13     
+C      
+C     ERROR CHECK: If a nodal attributes file is being used, check to
+C     see that the number of nodes in the nodal attribute file is the
+C     same as the number of nodes in the grid file.
+C     jgf52.18: Make this check immediately so execution can 
+C     be stopped immediately if this is not the right nodal attributes
+C     file for this mesh.
+      if ( (nwp.ne.0).and.(numOfNodes.ne.np) ) then
+         write(scratchMessage,9901) np, numOfNodes
+         call allMessage(ERROR,scratchMessage)
+         call na_terminate()
+ 9901   format('The number of nodes in the mesh file (unit 14) is ',i0,
+     &  'while the number of nodes listed on the 2nd line of the '//
+     &  'nodal attributes file (unit 13) is ',i0,'.'//
+     &  'These numbers must match. '//
+     &  'Is this the right nodal attributes file for this mesh file?')
+      endif
+C      
       READ(13,*) NAttr          ! number of attributes in the unit 13 file
       DO k=1, NAttr
          READ(13,*) AttrName
@@ -624,16 +1055,16 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
             READ(13,'(A80)') AdvectionStateUnits
             READ(13,*) AdvectionStateNoOfVals
             READ(13,*) AdvectionStateDefVal
-          CASE("elemental_slope_limiter")
+         CASE("elemental_slope_limiter")
             FoundEleSlopeLim = .TRUE.
             READ(13,'(A80)') EleSlopeLimUnits
             READ(13,*) EleSlopeLimNoOfVals
             READ(13,*) EleSlopeLimDefVal
-          CASE("initial_river_elevation")  ! tcm 20140502 v51.27
+         CASE("initial_river_elevation")  ! tcm 20140502 v51.27
             FoundRiver_et_WSE = .TRUE.
             READ(13,'(A80)') River_et_WSEUnits
             READ(13,*) River_et_WSENoOfVals
-            READ(13,*) River_et_WSEDefVal
+            READ(13,*) River_et_WSEDefVal            
          CASE DEFAULT
             WRITE(16,1001)          ! Nodal Attributes file
             WRITE(16,1021) AttrName ! contains invalid name
@@ -643,74 +1074,16 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
             ENDIF
             READ(13,'(A80)') Skipped  ! skip the Units for the invalid name
             READ(13,'(A80)') Skipped  ! skip the NoOfVals for invalid name
+            READ(13,'(A80)') Skipped  !jgf51.40: skip the default value
          END SELECT
       END DO
 C
 C     Determine if there are any attributes required by the fort.15 file
 C     that are not in the nodal attributes file.
-      IF(((LoadTau0).and.(.not.FoundTau0)).or.
-     &   ((LoadStartDry).and.(.not.FoundStartDry)).or.
-     &   ((LoadQuadraticFric).and.
-     &    (.not.FoundQuadraticFric)).or.
-     &   ((LoadDirEffRLen).and.
-     &    (.not.FoundDirEffRLen)).or.
-     &   ((LoadCanopyCoef).and.
-     &    (.not.FoundCanopyCoef)).or.
-     &   ((LoadBridgePilings).and.
-     &    (.not.FoundBridgePilings)).or.
-     &   ((LoadManningsN).and.
-     &    (.not.FoundManningsN)).or.
-     &   ((LoadZ0b_var).and.
-     &    (.not.FoundZ0b_var)).or.
-     &   ((LoadGeoidOffset).and.
-     &    (.not.FoundGeoidOffset)).or.
-     &   ((LoadChezy).and.(.not.FoundChezy)).or.
-     &   ((LoadEVM).and.(.not.FoundEVM)).or.
-     &   ((LoadEVC).and.(.not.FoundEVC)).or.
-Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
-     &   ((LoadSwanWaveRefrac).and.(.not.FoundSwanWaveRefrac)).or.
-Corbitt 120321: Allow advection to be turned on locally instead of globally
-     &   ((LoadAdvectionState).and.(.not.FoundAdvectionState)).or.
-     &   ((LoadEleSlopeLim).and.(.not.FoundEleSlopeLim)).or.
-     &   ((LoadRiver_et_WSE).and.(.not.FoundRiver_et_WSE)).or.
-     &   ((LoadTau0MinMax).and.(.not.FoundTau0MinMax))) THEN
-         WRITE(16,1111)
- 1111    FORMAT('ERROR: Nodal Attributes file (unit 13) does '
-     &        'not contain all the attributes listed in the '
-     &        /,'model parameter file (unit 15).')
-         WRITE(16,9973)         ! execution terminated
-         IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-            WRITE(ScreenUnit,1111)
-            WRITE(ScreenUnit,9973)       ! execution terminated
-         ENDIF
-         STOP                   ! We're toast.
-      ENDIF
-
-C     Allocate memory to hold our data.
-      ALLOCATE(TAU0VAR(NumOfNodes),TAU0BASE(NumOfNodes)) ! jjw&sb46.39sb01
-      ALLOCATE(STARTDRY(NumOfNodes))
-      ALLOCATE(FRIC(NumOfNodes))
-      ALLOCATE(z0land(NumOfNodes,DirEffRLenNoOfVals))
-      ALLOCATE(vcanopy(NumOfNodes))
-      ALLOCATE(BridgePilings(NumOfNodes,BridgePilingsNoOfVals))
-      ALLOCATE(GeoidOffset(NumOfNodes))
-      ALLOCATE(Chezy(NumOfNodes))
-      ALLOCATE(ManningsN(NumOfNodes))
-      ALLOCATE(Z0b_var(NumOfNodes))
-      ALLOCATE(EVM(NumOfNodes))
-      ALLOCATE(EVC(NumOfNodes))
-      ALLOCATE(Tau0MinMax(NumOfNodes,Tau0MinMaxNoOfVals))
-Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
-      ALLOCATE(SwanWaveRefrac(NumOfNodes))
-Corbitt 120321: Allow advection to be turned on locally instead of globally
-      ALLOCATE(AdvectionState(NumOfNodes))
-      ALLOCATE(River_et_WSE(NumOfNodes))  ! tcm 20140502 v51.27
-      ALLOCATE(elemental_slope_limiter_grad_max(NumOfNodes))
-      ALLOCATE(elemental_slope_limiter_active(NumOfNodes))
-      ALLOCATE(elemental_slope_limiter_max_exceeded(NumOfNodes))
-      elemental_slope_limiter_active(:) = .FALSE.  !...Alloate and initialize to keep
-                                                   !   track of elemental_slope_limiter nodes
-      elemental_slope_limiter_max_exceeded(:) = .FALSE.
+      call checkForMissingNodalAttributes()
+C
+C     Allocate memory for nodal attributes
+      call allocateNodalAttributes()
 C
 C     Now read each of the attributes required by the model parameter
 C     (unit 15) file and skip past the others.
@@ -1009,6 +1382,7 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
       INTEGER Tau0Dig1  ! determines the tau0 scheme
       INTEGER Tau0Dig2  ! determines whether tau0 is being output
+      LOGICAL :: invalidCanopyCoefficient ! .true. if any value is neither 0 nor 1
 
       IF (Tau0.lt.0) THEN
          Tau0Dig1 = INT(Tau0)   ! jgf47.30 truncate the fractional part
@@ -1064,11 +1438,28 @@ C     from nodal attributes file.
          STOP                   ! We're toast.
       ENDIF
 C
+C     ERROR CHECK: The canopy coefficient value should be either 0 or 1;
+C     log a warning message if any other values were read.
+      if ( loadCanopyCoef.eqv..true. ) then
+         invalidCanopyCoefficient = .false.
+         do i=1,np
+            if ( (vcanopy(i).ne.0.d0).and.(vcanopy(i).ne.1.d0 ) ) then
+               invalidCanopyCoefficient = .true.
+               exit
+            endif
+         end do
+         if ( invalidCanopyCoefficient.eqv..true. ) then 
+            call allMessage(WARNING,'Some surface canopy coefficient '//
+     &        'nodal attribute data are neither 0 nor 1.')        
+         endif
+      endif
+C
 C     I N I T    S T A R T D R Y
-      IF (.not.LoadStartDry) THEN
-         IF (NWP.eq.0) THEN
-            ALLOCATE(STARTDRY(NP))
-         ENDIF
+ 
+      IF (NWP.eq.0) THEN
+         ALLOCATE(STARTDRY(NP))
+      ENDIF
+      IF (LoadStartDry.eqv..false.) THEN
          DO I=1, NP
             STARTDRY(I) = 0.0D0
          ENDDO
@@ -1213,24 +1604,24 @@ C     I N I T   B O T T O M   F R I C T I O N
 C
 C     Initialize bottom friction if it was not loaded from unit 13.
       IF(C2DDI) THEN
-        IF((.not.LoadQuadraticFric).and.(.not.LoadManningsN).and.
+         IF((.not.LoadQuadraticFric).and.(.not.LoadManningsN).and.
      &     (.not.LoadChezy)) THEN
-         IF (NoLiBF.eq.0) CF=Tau
+            IF (NoLiBF.eq.0) CF=Tau
 C     If a nodal attributes file was read, FRIC was allocated there.
-         IF (NWP.eq.0) THEN
-            ALLOCATE(FRIC(NP))
+            IF (NWP.eq.0) THEN
+               ALLOCATE(FRIC(NP))
+            ENDIF
+            DO I=1,NP
+               FRIC(I)=CF
+            END DO
          ENDIF
-         DO I=1,NP
-            FRIC(I)=CF
-         END DO
-        ENDIF
 C
-C     jgf47.04 If a depth-dependent friction parameterization is used,
-C     the value from the fort.15 file is used as a floor for the
-C     minimum equivalent quadratic friction value.
-        IF (LoadManningsN) THEN
-           BFCdLLimit = CF
-        ENDIF
+C        jgf47.04 If a depth-dependent friction parameterization is used,
+C        the value from the fort.15 file is used as a floor for the
+C        minimum equivalent quadratic friction value.
+         IF (LoadManningsN) THEN
+            BFCdLLimit = CF
+         ENDIF
       ENDIF
 C
       IF(C3D) THEN
@@ -1649,6 +2040,7 @@ C     ----------------------------------------------------------------
       END SUBROUTINE ApplyDirectionalWindReduction
 C     ----------------------------------------------------------------
 
+
 C     ----------------------------------------------------------------
 C     S U B R O U T I N E
 C     A P P L Y   C A N O P Y   C O E F F I C I E N T
@@ -1801,6 +2193,47 @@ C
 C     ----------------------------------------------------------------
       END SUBROUTINE ReadLegacyBottomFrictionFile
 C     ----------------------------------------------------------------
+
+
+C     ----------------------------------------------------------------
+C        S U B R O U T I N E   N A _ T E R M I N A T E
+C     ----------------------------------------------------------------
+C     Provide clean termination when an error occurs.
+C     ----------------------------------------------------------------
+      SUBROUTINE na_terminate(NO_MPI_FINALIZE)
+#ifdef CMPI
+      USE MESSENGER
+#endif
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, allMessage,
+     &   DEBUG, ECHO, INFO, WARNING, ERROR  
+      IMPLICIT NONE 
+      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+C
+      call setMessageSource("terminate")
+#if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      call allMessage(INFO,"ADCIRC Terminating.")
+
+#ifdef CMPI
+      subdomainFatalError = .true.
+      IF (PRESENT(NO_MPI_FINALIZE)) THEN
+        CALL MSG_FINI(NO_MPI_FINALIZE)
+      ELSE
+        CALL MSG_FINI()
+      ENDIF
+#endif
+      STOP 
+C
+#if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
+C     ----------------------------------------------------------------
+      END SUBROUTINE na_terminate
+C     ----------------------------------------------------------------
+
 
 C-----------------------------------------------------------------------
       END MODULE NodalAttributes

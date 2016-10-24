@@ -66,6 +66,11 @@ C
       LOGICAL FOUND
       CHARACTER DIRCMD*72,CMD*6,PENUM*6,PHASE*9,ISET*6,DIR1*80,DIR2*80,
      &     CONVDIR*6,HOTANS*1
+
+      integer :: argcount ! number of command line arguments
+      integer :: iargc    ! function to return command line arguments
+      character(len=2048) :: cmdlinearg ! content of cmd line arg
+      character(len=2048) :: filename   ! e.g. "fort.63" 
 C
 C--Initialize constants for case ICS = 2 inputs
 C
@@ -75,6 +80,28 @@ C
 C
       print *, "initializing post-processor"
       CALL POST_INIT()
+      !
+      ! parse command line option
+      argcount = iargc() ! count up command line options
+      if (argcount.gt.0) then
+         i=0
+         do while (i.lt.argcount)
+            i = i + 1
+            call getarg(i, cmdlinearg)
+            select case(trim(cmdlinearg))
+            case("--filename")
+               i = i + 1
+               call getarg(i,filename)
+               write(6,'(a)') 'INFO: Processing "'//trim(cmdlinearg)//
+     &           ' '//trim(filename)//'".'
+               call mergeSubdomainFiles(filename) 
+            case default
+               write(*,*) 'WARNING: The command line option "',
+     &         trim(cmdlinearg),'" is not valid and will be ignored.'
+            end select
+         end do
+         stop
+      endif
 C
 C--Say Hello Gracie
 C
