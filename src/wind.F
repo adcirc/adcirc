@@ -1135,7 +1135,7 @@ C  tcm v49.16 20100617C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
 C      
 C     jgf49.1001 Added NWS29 for embedding an asymmetric vortex from
 C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
-      IF(ABS(NWS).EQ.29) THEN
+      IF((ABS(NWS).EQ.29).or.(ABS(NWS).eq.30)) THEN
          ! bring in next set of OWI met data
          IF(TimeLoc.GT.WTIME2) THEN
             WTIME1=WTIME2
@@ -1154,7 +1154,15 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
          ENDIF
          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
          ! bring in next set of asymmetric vortex met data to separate arrays
-         CALL NWS19GET(vortexWVNX2, vortexWVNY2, vortexPRN2, timeloc)
+         select case(abs(nws)) 
+         case(29)
+            CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,timeloc)
+         case(30)
+            CALL NWS20GET(vortexWVNX2,vortexWVNY2,vortexPRN2,timeloc)
+         case default
+            ! should be unreachable
+            call logMessage(ERROR,'NWS must equal 29 or 30.') 
+         end select        
          DO I=1,NP
             ! compute wind stress due to background met at this node
             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
@@ -1410,29 +1418,45 @@ C     RJW Merged:
         CALL NWS20GET(WVNX2,WVNY2,PRN2,STATIM*86400.D0)
       ENDIF      
 
+C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/2006
       ! jgf49.1001 Added NWS=29, asymmetric vortex wind (NWS19) embedded in
       ! OWI (NWS12) basin scale wind field.
-      IF(NWS.EQ.29) THEN
-         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         if (trim(DragLawString) == "Powell" .or.
+      IF ((ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.29).OR.(ABS(NWS).EQ.30)) THEN
+        CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+        CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+        if (trim(DragLawString) == "Powell" .or.
      &       trim(DragLawString) == "POWELL" .or.
      &       trim(DragLawString) == "powell" ) then
             call findStormCenter(eyeLatR, eyeLonR, foundEye)
-         endif           
-         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-         if (trim(DragLawString) == "Powell" .or.
+        endif           
+        CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+        if (trim(DragLawString) == "Powell" .or.
      &       trim(DragLawString) == "POWELL" .or.
      &       trim(DragLawString) == "powell" ) then
             call findStormCenter(eyeLatR, eyeLonR, foundEye)
-         endif                    
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
+        endif                    
+        WTIME1 = STATIM*86400.D0
+        WTIME2 = WTIME1 + WTIMINC
+      ENDIF
+      !
+      ! jgf49.1001 Added NWS=29, asymmetric vortex wind (NWS19) embedded in
+      ! OWI (NWS12) basin scale wind field.
+      ! jgf: Added NWS=30 (GAHM+OWI)
+      IF ((abs(NWS).EQ.29).or.(abs(NWS).eq.30)) THEN
          ! now blend in the vortex met field
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
-     &        STATUS='OLD')
          ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
-         CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,STATIM*86400.D0)
+         if (nws.eq.29) then
+            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
+     &           STATUS='OLD')
+            CALL NWS19GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
+     &                 NP,vortexTime,ICS)
+         endif
+         if (nws.eq.30) then
+            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
+     &           STATUS='OLD')
+            CALL NWS20GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
+     &                 NP,vortexTime,ICS)
+         endif
       ENDIF
       !
       ! jgf51.52.21: Fixed NWS10 and cleaned up interface.
@@ -1464,31 +1488,11 @@ C     RJW Merged:
          wvny1 = wvny2                 
          CALL NWS11GET()        !NOW INTERPOLATE 1st WIND FIELD
       ENDIF
-
-C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/2006
-      IF(ABS(NWS).EQ.12) THEN
-         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         if (trim(DragLawString) == "Powell" .or.
-     &       trim(DragLawString) == "POWELL" .or.
-     &       trim(DragLawString) == "powell" ) then
-            call findStormCenter(eyeLatR, eyeLonR, foundEye)
-         endif           
-         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-         if (trim(DragLawString) == "Powell" .or.
-     &       trim(DragLawString) == "POWELL" .or.
-     &       trim(DragLawString) == "powell" ) then
-            call findStormCenter(eyeLatR, eyeLonR, foundEye)
-         endif           
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
-      ENDIF
       !
       ! jgf50.38.05: Added NWS=15,-15 for reading HWind data
       IF (ABS(NWS).EQ.15) THEN
          CALL NWS15INIT(STATIM*86400.0)
       ENDIF
-
 C     
 C....tcm v51.06.02: Added NWS=16,-16 for reading ASCII GFDL Met data
       IF (ABS(NWS).EQ.16) THEN
@@ -2085,10 +2089,31 @@ C  tcm v49.16 20100617
          ENDDO
       ENDIF            
 C
+
+
+      ! jgf: Added NWS30 (GAHM+OWI)
+      IF ((abs(NWS).EQ.29).or.(abs(NWS).eq.30)) THEN
+         ! Now blend in the vortex winds into the background OWI wind field.
+         ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
+         if (abs(nws).eq.29) then
+            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
+     &           STATUS='OLD')
+            CALL NWS19GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
+     &                NP,TimeLoc, ICS)
+         endif
+         if (abs(nws).eq.30) then
+            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
+     &           STATUS='OLD')
+            CALL NWS20GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
+     &                NP,TimeLoc, ICS)
+         endif         
+
+
+
 C     jgf49.1001 Added NWS29, asymmetric vortex winds (NWS19)
 C     embedded in an OWI basin scale gridded met field (NWS12)
 C     from NAM data
-      IF(NWS.EQ.29) THEN
+      IF((abs(NWS).EQ.29).or.(abs(NWS).eq.30)) THEN
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
 C        This just initializes some variables and might
@@ -2301,116 +2326,109 @@ C  tcm v49.16 20100617
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
          END DO
       ENDIF
-
+C
 C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
-      IF(NWS.EQ.12) THEN
-         WTIME1 = STATIM*86400.D0
+      ! jgf: Combined NWS=12 and NWS=-12 and added abs(NWS)=29 and abs(NWS)=30
+      IF((abs(NWS).eq.12).or.(abs(NWS).eq.29).or.(abs(NWS).eq.30)) THEN
+         WTIME1 = TimeLoc      ! nws=-12, wind data relative to hot start time
+         if (nws.gt.0) then
+            WTIME1 = STATIM*86400.D0 ! wind data relative to cold start time
+         endif
          WTIME2 = WTIME1 + WTIMINC
          CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  ! This just initializes some variables and might set WVNX1,etc... if skipping ahead.
          CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  !TCM v49.02 Added read for rec. 1
-         if (trim(DragLawString) == "Powell" .or.
-     &       trim(DragLawString) == "POWELL" .or.
-     &       trim(DragLawString) == "powell" ) then
-            call findStormCenter(eyeLatR, eyeLonR, foundEye)
-         endif
          CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-         if (trim(DragLawString) == "Powell" .or.
-     &       trim(DragLawString) == "POWELL" .or.
-     &       trim(DragLawString) == "powell" ) then
-            call findStormCenter(eyeLatR, eyeLonR, foundEye)
+          ! fast forward if wind data are relative to cold start time
+         if (nws.gt.0) then
+            DO IT=1,ITHS
+               TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+               IF(TIMEIT.GT.WTIME2) THEN
+                  WTIME1=WTIME2
+                  WTIME2=WTIME2+WTIMINC
+                  DO I=1,NP
+                     WVNX1(I)=WVNX2(I)
+                     WVNY1(I)=WVNY2(I)
+                     PRN1(I)=PRN2(I)
+                  END DO
+                  CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+               ENDIF
+            END DO
          endif
-          DO IT=1,ITHS
-             TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
-             IF(TIMEIT.GT.WTIME2) THEN
-                WTIME1=WTIME2
-                WTIME2=WTIME2+WTIMINC
-                DO I=1,NP
-                   WVNX1(I)=WVNX2(I)
-                   WVNY1(I)=WVNY2(I)
-                   PRN1(I)=PRN2(I)
-                 END DO
-                 CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-                 if (trim(DragLawString) == "Powell" .or.
-     &               trim(DragLawString) == "POWELL" .or.
-     &               trim(DragLawString) == "powell" ) then
-                    call findStormCenter(eyeLatR, eyeLonR, foundEye)
-                 endif
-              ENDIF
-          END DO
-          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-          DO I=1,NP
-             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-             WDragCo = WindDrag(WindMag, I)
-             IF (LoadDirEffRLen) THEN
-                CALL ApplyDirectionalWindReduction(I, WDragCo,
+         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-                WindMag = SQRT(WindX*WindX+WindY*WindY)
-                WDragCo = WindDrag(WindMag, I)
-             ENDIF
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
-               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC)
             ENDIF
-             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-C  tcm v49.16 20100617
-!            PR2(I) = RampMete2*PRN1(I)
-             PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                           -PRBCKGRND_MH2O)
-             PR2(I) = PRBCKGRND_MH2O + PRDIFF
-             WVNXOUT(I)=RampMete2*WINDX
-             WVNYOUT(I)=RampMete2*WINDY
-          END DO
-       ENDIF
-
-       IF(NWS.EQ.-12) THEN
-          WTIME1 = TimeLoc
-          WTIME2 = WTIME1 + WTIMINC
-          CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-          CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-          if (trim(DragLawString) == "Powell" .or.
-     &        trim(DragLawString) == "POWELL" .or.
-     &        trim(DragLawString) == "powell" ) then
-             call findStormCenter(eyeLatR, eyeLonR, foundEye)
-          endif
-
-          CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-          if (trim(DragLawString) == "Powell" .or.
-     &        trim(DragLawString) == "POWELL" .or.
-     &        trim(DragLawString) == "powell" ) then
-             call findStormCenter(eyeLatR, eyeLonR, foundEye)
-          endif
-          DO I=1,NP
-             WINDX = WVNX1(I)
-             WINDY = WVNY1(I)
-             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-             WDragCo = WindDrag(WindMag, I)
-             IF (LoadDirEffRLen) THEN
-                CALL ApplyDirectionalWindReduction(I, WDragCo,
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                          -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WINDX
+            WVNYOUT(I)=RampMete2*WINDY
+         END DO
+      ENDIF
+C
+C     jgf49.1001 Added NWS29, asymmetric vortex winds (NWS19)
+C     embedded in an OWI basin scale gridded met field (NWS12)
+C     from NAM data
+      ! jgf: Added NWS30 (GAHM+OWI)
+      IF ((abs(NWS).EQ.29).or.(abs(NWS).eq.30)) THEN
+         ! Now blend in the vortex winds into the background OWI wind field.
+         ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
+         if (abs(nws).eq.29) then
+            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
+     &           STATUS='OLD')
+            CALL NWS19GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
+     &                NP,TimeLoc, ICS)
+         endif
+         if (abs(nws).eq.30) then
+            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
+     &           STATUS='OLD')
+            CALL NWS20GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
+     &                NP,TimeLoc, ICS)
+         endif         
+         DO I=1,NP
+            WindX = vortexWVNX2(I)
+            WindY = vortexWVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-                WindMag = SQRT(WindX*WindX+WindY*WindY)
-                WDragCo = WindDrag(WindMag, I)
-             ENDIF
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               WDragCo = WindIceDrag(WDragCo,ciceout(i))
-            ENDIF
-             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*PRN1(I)
-             PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
-             PR2(I) = PRBCKGRND_MH2O + PRDIFF
-             WVNXOUT(I)=RampMete2*WINDX  ! tcm 20100618 v49.16 changed RampMete to RampMete2
-             WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
-          END DO
-       ENDIF
+            CALL getBlendFactor(I, SLAM, SFEA, bf)
+            WSX2(I) = bf*RampMete2*0.001293d0*WDragCo*WindX*WindMag
+     &               +(1.0d0-bf)*WSX2(I)
+            WSY2(I) = bf*RampMete2*0.001293d0*WDragCo*WindY*WindMag
+     &               +(1.0d0-bf)*WSY2(I)
+            PRDIFF = RampMete2*(vortexPRN2(I)-PRBCKGRND_MH2O)
+            vortexPRN2(I) = PRBCKGRND_MH2O + PRDIFF
+            ! blend vortex into background     
+            PR2(I) = bf*vortexPRN2(I)+(1.0d0-bf)*PRN2(I)
+            WVNXOUT(I)=bf*RampMete2*WindX+(1.0d0-bf)*WVNXOUT(I)
+            WVNYOUT(I)=bf*RampMete2*WindY+(1.0d0-bf)*WVNYOUT(I)
+         ENDDO
+      ENDIF
       !
       ! jgf50.38.05: Added NWS=15 for reading HWind data
        IF(ABS(NWS).EQ.15) THEN
@@ -5363,6 +5381,7 @@ C***********************************************************************
       REAL(sz),SAVE :: timeNew
       REAL(sz) :: uTransNow, vTransNow ! time-interpolated overland speed, kts
       REAL(sz) :: dirNow ! Jie
+      REAL(sz) :: numRmaxes ! number of Rmax values selected by user
       CHARACTER(1) ew,ns
       INTEGER, SAVE :: num_cycles ! num unique date/times in the fort.22
       
@@ -5771,10 +5790,18 @@ C     we are running off the end of the data.
          FoundEye = .true.
       ENDIF
 
-      ! arithmetic mean of the Rmax in the 4 storm quadrants
-      !do i=1,4
-      !   vortexRMW = vortexRMW + 0.25d0*crmaxw(i)
-      !end do
+      ! jgf: arithmetic mean of the Rmax in the selected storm quadrants from 
+      ! the selected isotachs 
+      numRmaxes = 0.d0 ! count how many Rmax values we have to work with
+      do i=1,4  ! loop quads
+         do j=1,3 ! loop isotachs 
+            if (quadflag(icyc,i,j)==1) then
+               vortexRMW = vortexRMW + rmaxw(icyc,i,j)
+               numRmaxes = numRmaxes + 1.d0
+            endif
+         end do
+      enddo
+      vortexRMW = vortexRMW / numRmaxes
 
       !-------------------------------
       ! Create a new asymmetric hurricane vortex.
