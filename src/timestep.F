@@ -649,6 +649,7 @@ Casey 090302: Added these lines for output to the rads.64 file.
 
       ENDIF  !(End test for updating wave radiation stress)
 
+
 C     jgf48.4627 Skip past GWCE and momentum calculations if only
 C     meteorological output was requested.
       IF (METONLY) THEN
