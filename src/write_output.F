@@ -21,9 +21,9 @@ C----------------------------------------------------------------------
       !    2 D   D A T A
       !
 #ifdef CSWAN
-      integer, parameter :: numOutputDescript2D = 45
+      integer, parameter :: numOutputDescript2D = 49
 #else
-      integer, parameter :: numOutputDescript2D = 31
+      integer, parameter :: numOutputDescript2D = 35
 #endif      
       type descript2D_ptr_t
          type(OutputDataDescript_t), pointer :: descript2D
@@ -62,6 +62,11 @@ C----------------------------------------------------------------------
       !jgf52.05: Added for regular output of wet/dry quantities.
       type(OutputDataDescript_t), target :: noffOutDescript
       type(OutputDataDescript_t), target :: nodeCodeOutDescript 
+      !jgf: Added output arrays for analysing wet/dry. 
+      type(OutputDataDescript_t), target :: UU1VV1Descript
+      type(OutputDataDescript_t), target :: Eta1Descript
+      type(OutputDataDescript_t), target :: Eta2Descript
+      type(OutputDataDescript_t), target :: TkDescript
 
 Cobell Added a descript for time varying weir tracking
       type(OutputDataDescript_t), target :: weirElevDescript
@@ -97,7 +102,10 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       !jgf52.05: Added for normal output of wet/dry quantities.
       integer, allocatable, target :: nodecode_out_g(:)
       integer, allocatable, target :: noff_out_g(:)
-
+      ! jgf: Added for wet/dry analysis.
+      real(sz), allocatable, target :: uu1_g(:)
+      real(sz), allocatable, target :: vv1_g(:)            
+      real(sz), allocatable, target :: tk_g(:)
       !
       !  H A R M O N I C   A N A L Y S I S   D A T A 
       !
@@ -295,6 +303,10 @@ C
       ! jgf52.05: Set via fort.15 namelist in read_input.F.
       logical :: outputNodeCode = .false.
       logical :: outputNOFF = .false.           
+      logical :: outputUU1VV1 = .false.
+      logical :: outputEta1 = .false.
+      logical :: outputEta2 = .false.
+      logical :: outputTk = .false.
 
 C     ---------
       CONTAINS
@@ -339,7 +351,10 @@ C----------------------------------------------------------------------
      &   nodeCodeOutSpoolCounter, noffOutSpoolCounter, noffOutFilePos,
      &   nodeCodeOutFilePos, NE_G, IMAP_EL_LG, nodecode, noff,
      &   fauxFilePosition, initiallyDrySpoolCounter, 
-     &   inundationOutput, ihot, logMessage
+     &   inundationOutput, ihot, logMessage, eta1, eta1_g, 
+     &   eta1FilePos, eta1SpoolCounter, Eta2FilePos, Eta2SpoolCounter,
+     &   TkFilePos, TkSpoolCounter, UU1, uu1vv1FilePos, uu1vv1SpoolCounter,
+     &   VV1, TK
       USE MESH, ONLY : NP, NE, DP, NM, ICS
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim,
      &  elemental_slope_limiter_grad_max,elemental_slope_limiter_active
@@ -404,23 +419,27 @@ C
       ptr(29)%descript2D => endRisingInunDescript
       ptr(30)%descript2D => initiallyDryDescript
       ptr(31)%descript2D => everDriedDescript
+      ptr(32)%descript2D => UU1VV1Descript 
+      ptr(33)%descript2D => Eta1Descript 
+      ptr(34)%descript2D => Eta2Descript 
+      ptr(35)%descript2D => TkDescript 
 
 !... For SWAN, there are additional output arrays
 #ifdef CSWAN
-      ptr(32)%descript2D => SwanHSDescript 
-      ptr(33)%descript2D => SwanHSMaxDescript
-      ptr(34)%descript2D => SwanDIRDescript
-      ptr(35)%descript2D => SwanDIRMaxDescript
-      ptr(36)%descript2D => SwanTM01Descript
-      ptr(37)%descript2D => SwanTM01MaxDescript
-      ptr(38)%descript2D => SwanTPSDescript
-      ptr(39)%descript2D => SwanTPSMaxDescript
-      ptr(40)%descript2D => SwanWindDescript
-      ptr(41)%descript2D => SwanWindMaxDescript
-      ptr(42)%descript2D => SwanTM02Descript
-      ptr(43)%descript2D => SwanTM02MaxDescript
-      ptr(44)%descript2D => SwanTMM10Descript
-      ptr(45)%descript2D => SwanTMM10MaxDescript
+      ptr(36)%descript2D => SwanHSDescript 
+      ptr(37)%descript2D => SwanHSMaxDescript
+      ptr(38)%descript2D => SwanDIRDescript
+      ptr(39)%descript2D => SwanDIRMaxDescript
+      ptr(40)%descript2D => SwanTM01Descript
+      ptr(41)%descript2D => SwanTM01MaxDescript
+      ptr(42)%descript2D => SwanTPSDescript
+      ptr(43)%descript2D => SwanTPSMaxDescript
+      ptr(44)%descript2D => SwanWindDescript
+      ptr(45)%descript2D => SwanWindMaxDescript
+      ptr(46)%descript2D => SwanTM02Descript
+      ptr(47)%descript2D => SwanTM02MaxDescript
+      ptr(48)%descript2D => SwanTMM10Descript
+      ptr(49)%descript2D => SwanTMM10MaxDescript
 #endif    
       ! 
       ! jgf51.21.24: Set some defaults
@@ -549,7 +568,89 @@ C
       ! jgf51.52.30: Fixing the writing of tau0 so it only occurs 
       ! when tau0=-x.1
       Tau0Descript % writeFlag            = OutputTau0
+      
+      ! jgf: Eta1 timeseries for wet/dry analysis: eta1.63
+      ! eta1_g is allocated in globalio.F
+      Eta1Descript % lun                  = 105
+      if ( NOUTGE.ne.0 ) then       
+         Eta1Descript % specifier            = ASCII
+      endif      
+      Eta1Descript % startTimeStep           = NTCYSGE 
+      Eta1Descript % endTimeStep             = NTCYFGE
+      Eta1Descript % outputTimeStepIncrement = NSPOOLGE
+      Eta1Descript % spoolCounter            => eta1SpoolCounter
+      Eta1Descript % filepos                 => eta1FilePos
+      Eta1Descript % array                => eta1
+      Eta1Descript % array_g              => eta1_g
+      Eta1Descript % field_name           = 'eta1'
+      Eta1Descript % file_basename        = 'eta1'
+      Eta1Descript % file_extension       = 63
+      Eta1Descript % writeFlag            = OutputEta1
 
+      ! jgf: Eta2 timeseries for wet/dry analysis: eta2.63
+      ! These are raw values in all areas, not -99999 in dry areas
+      ! eta2_g is allocated in globalio.F
+      Eta2Descript % lun                  = 106
+      if ( NOUTGE.ne.0 ) then       
+         Eta2Descript % specifier            = ASCII
+      endif
+      Eta2Descript % specifier            = NOUTGE      
+      Eta2Descript % startTimeStep           = NTCYSGE 
+      Eta2Descript % endTimeStep             = NTCYFGE
+      Eta2Descript % outputTimeStepIncrement = NSPOOLGE
+      Eta2Descript % spoolCounter            => Eta2SpoolCounter
+      Eta2Descript % filepos                 => Eta2FilePos
+      Eta2Descript % array                => Eta2
+      Eta2Descript % array_g              => Eta2_g
+      Eta2Descript % field_name           = 'eta2'
+      Eta2Descript % file_basename        = 'eta2'
+      Eta2Descript % file_extension       = 63
+      Eta2Descript % writeFlag            = OutputEta2
+
+      ! jgf: Tk timeseries for wet/dry analysis: tk.63
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(TK_g(NP_G))
+      ENDIF
+      TkDescript % lun                  = 107
+      if ( NOUTGE.ne.0 ) then       
+         Eta2Descript % specifier            = ASCII
+      endif
+      TkDescript % startTimeStep           = NTCYSGE 
+      TkDescript % endTimeStep             = NTCYFGE
+      TkDescript % outputTimeStepIncrement = NSPOOLGE
+      TkDescript % spoolCounter            => TkSpoolCounter
+      TkDescript % filepos                 => TkFilePos
+      TkDescript % array                => Tk
+      TkDescript % array_g              => Tk_g
+      TkDescript % field_name           = 'tk'
+      TkDescript % file_basename        = 'tk'
+      TkDescript % file_extension       = 63
+      TkDescript % writeFlag            = OutputTk
+
+      ! jgf: UU1 and VV1 timeseries for wet/dry analysis: uu1vv1.64
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(UU1_g(NP_G))
+         ALLOCATE(VV1_g(NP_G))
+      ENDIF
+      TkDescript % lun                  = 103
+      if ( NOUTGE.ne.0 ) then       
+         UU1VV1Descript % specifier            = ASCII
+      endif     
+      UU1VV1Descript % startTimeStep           = NTCYSGE 
+      UU1VV1Descript % endTimeStep             = NTCYFGE
+      UU1VV1Descript % outputTimeStepIncrement = NSPOOLGE
+      UU1VV1Descript % spoolCounter            => uu1vv1SpoolCounter
+      UU1VV1Descript % filepos                 => uu1vv1FilePos
+      UU1VV1Descript % num_items_per_record = 2
+      UU1VV1Descript % array                => UU1
+      UU1VV1Descript % array2               => VV1
+      UU1VV1Descript % array_g              => UU1_g
+      UU1VV1Descript % array2_g             => VV1_g
+      UU1VV1Descript % field_name           = 'uu1vv1'
+      UU1VV1Descript % file_basename        = 'uu1vv1'
+      UU1VV1Descript % file_extension       = 64
+      UU1VV1Descript % writeFlag            = outputUU1VV1
+      
       ! sponge layer fort.92
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
          ALLOCATE(sponge_g(NP_G))
@@ -625,6 +726,7 @@ C
       VelDescript % array2_g             => VV2_g
       VelDescript % field_name           = 'Vel'
       VelDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
+      
 
       ! fort.71
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN

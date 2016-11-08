@@ -271,7 +271,7 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE, TARGET ::  EtaDisc(:) ! vjp 9/2006 added for hotstart file
       REAL(SZ),ALLOCATABLE, TARGET ::   CH1(:)
       REAL(SZ),ALLOCATABLE ::   ETAS(:), ETA0(:),UU0(:),VV0(:),ETAS0(:)
-      REAL(SZ),ALLOCATABLE ::   UU1(:),VV1(:)
+      REAL(SZ), ALLOCATABLE, TARGET ::   UU1(:),VV1(:)
       REAL(SZ),ALLOCATABLE ::   QX1(:),QX2(:),QY1(:),QY2(:)
       REAL(SZ),ALLOCATABLE ::   QX0(:),QY0(:)
       REAL(SZ),ALLOCATABLE ::   TK0(:),TK2(:)
@@ -321,7 +321,7 @@ Cobell -  Added the following for output of ESL at end of run
                                                     !for ice concentration
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax(:) ! v46.50 sb 11/11/2006
 
-      REAL(SZ),ALLOCATABLE :: TK(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: TK(:)
       REAL(8),ALLOCATABLE :: EMO(:,:),EFA(:,:)
       REAL(8),ALLOCATABLE,TARGET :: XEL(:)  ! x-coords of elevation stations
       REAL(8),ALLOCATABLE,TARGET :: YEL(:)  ! y-coords of elevation stations
@@ -496,6 +496,12 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       integer, target :: ig_tvw ! file position in weir elevation file
       integer, target :: nodeCodeOutFilePos
       integer, target :: noffOutFilePos
+      ! jgf: Added for wet/dry analysis.
+      integer, target :: tkFilePos
+      integer, target :: eta1FilePos
+      integer, target :: eta2FilePos
+      integer, target :: uu1vv1FilePos
+      
       ! jgf52.08.03: Some files (e.g., initiallydry.63 and endrisinginun.63)
       ! are only written once, but are written using the same subroutines
       ! that write time varying output files; the output subroutine increments
@@ -531,8 +537,14 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER, TARGET :: NSCOU_TVW ! output spool counters
       INTEGER, TARGET :: NSCOUP ! output spool counter for fort.71 (bar. press. sta.)
       INTEGER, TARGET :: NSCOUI ! output spool counter for fort.91 (ice sta.)     
+      ! jgf: Added for wet/dry analysis
       integer, target :: nodeCodeOutSpoolCounter
       integer, target :: noffOutSpoolCounter
+      integer, target :: eta1SpoolCounter
+      integer, target :: eta2SpoolCounter
+      integer, target :: uu1vv1SpoolCounter
+      integer, target :: tkSpoolCounter            
+      ! jgf: added for inundation analysis
       integer, target :: initiallyDrySpoolCounter
       
       INTEGER :: NSPOOLC, NSPOOLGC, NSPOOLGE ! output increments

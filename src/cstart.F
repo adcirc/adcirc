@@ -27,7 +27,8 @@ C
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
-     &    initInundationOutput
+     &    initInundationOutput, outputUU1VV1, outputTK, outputEta1,
+     &    outputEta2
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
 
       IMPLICIT NONE
@@ -960,6 +961,43 @@ Casey 090302: Corrected the unit number from 10 to 90.
             else
                call writeDomainHeader(102,trim(globaldir)//'/'//
      &            'noff.100',NE_G, NE, 'noff       ')
+            endif
+         endif
+         ! jgf: Added output data types for analysing wet/dry algorithm.
+         if (outputUU1VV1.eqv..true.) then
+            if (write_local_files.eqv..true.) then
+               call writeDomainHeader(103,trim(localdir)//'/'//
+     &            'uu1vv1.64',NP_G, NP, 'uu1vv1      ')
+            else                     
+               call writeDomainHeader(103,trim(globaldir)//'/'//
+     &            'uu1vv1.64',NP_G, NP, 'uu1vv1         ')
+            endif
+         endif
+         if (outputETA1.eqv..true.) then
+            if (write_local_files.eqv..true.) then
+               call writeDomainHeader(105,trim(localdir)//'/'//
+     &            'eta1.63',NP_G, NP, 'eta1        ')
+            else                     
+               call writeDomainHeader(105,trim(globaldir)//'/'//
+     &            'eta1.63',NP_G, NP, 'eta1        ')
+            endif
+         endif
+         if (outputETA2.eqv..true.) then
+            if (write_local_files.eqv..true.) then
+               call writeDomainHeader(106,trim(localdir)//'/'//
+     &            'eta2.63',NP_G, NP, 'eta2        ')
+            else                     
+               call writeDomainHeader(106,trim(globaldir)//'/'//
+     &            'eta2.63',NP_G, NP, 'eta2        ')
+            endif
+         endif
+         if (outputTK.eqv..true.) then
+            if (write_local_files.eqv..true.) then
+               call writeDomainHeader(107,trim(localdir)//'/'//
+     &            'tk.63',NP_G, NP, 'tk          ')
+            else                     
+               call writeDomainHeader(107,trim(globaldir)//'/'//
+     &            'tk.63',NP_G, NP, 'tk          ')
             endif
          endif
       endif

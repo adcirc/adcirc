@@ -1230,9 +1230,12 @@ C     Open the file
       case("Dens3D")
           write(lun, 1020) ndset3dgd, nodes, dtdp*nspo3dgd,
      &                     nspo3dgd, nfen, 3, FileFmtVersion
-      case("Press","Wind")
+      case("Press")
           write(lun, 1010) ndsetsw, nodes, dtdp*nspoolgw,
      &                     nspoolgw, 1, FileFmtVersion
+      case("Wind")
+          write(lun, 1010) ndsetsw, nodes, dtdp*nspoolgw,
+     &                     nspoolgw, 2, FileFmtVersion
       case("Conc2D")
           write(ScreenUnit,*)
      &         'ERROR: 2D conc. output not implemented.'
@@ -1253,6 +1256,20 @@ C     Open the file
       case("nodecode")
           write(lun, 1010) 1, nodes, dtdp*nspoolge,
      &                 nspoolge, 1, FileFmtVersion
+      !jgf: Added arrays for analysing wet/dry.
+      case("uu1vv1")
+          write(lun, 1010) 1, nodes, dtdp*nspoolge,
+     &                 nspoolge, 2, FileFmtVersion
+      case("eta1")
+          write(lun, 1010) 1, nodes, dtdp*nspoolge,
+     &                 nspoolge, 1, FileFmtVersion
+      case("eta2")
+          write(lun, 1010) 1, nodes, dtdp*nspoolge,
+     &                 nspoolge, 1, FileFmtVersion
+      case("tk")
+          write(lun, 1010) 1, nodes, dtdp*nspoolge,
+     &                 nspoolge, 1, FileFmtVersion
+     
       case("initDry")
           write(lun, 1010) 1, nodes, 0.d0, 0, 1, FileFmtVersion
       case default

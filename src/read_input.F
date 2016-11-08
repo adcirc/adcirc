@@ -30,7 +30,8 @@ C-----------------------------------------------------------------------
      &    I3DSD,I3DSV,I3DST,I3DGD,I3DGV,I3DGT, NSTA3DD_G, NSTA3DV_G,
      &    NSTA3DT_G
       USE SUBDOMAIN, ONLY : subdomainOn
-      USE WRITE_OUTPUT, ONLY : outputNodeCode, outputNOFF
+      USE WRITE_OUTPUT, ONLY : outputNodeCode, outputNOFF, outputUU1VV1,
+     &                          outputEta1, outputEta2, outputTk
       USE HARM
       USE WEIR
       USE TIME_VARYING_WEIR_BOUNDARY
@@ -70,7 +71,8 @@ C
       NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir,
      &  invertedBarometerOnElevationBoundary
       NAMELIST /subdomainModeling/ subdomainOn
-      NAMELIST /wetDryControl/ outputNodeCode, outputNOFF, noffActive
+      NAMELIST /wetDryControl/ outputNodeCode, outputNOFF, noffActive,
+     &   outputUU1VV1, outputEta1, outputEta2, outputTk
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
