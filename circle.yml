@@ -7,7 +7,7 @@ dependencies:
         - sudo apt-get install -qq libopenmpi-dev libopenmpi-dbg bc cmake
         - git clone https://github.com/adcirc/adcirc-cg-testsuite.git /home/ubuntu/adcirc-cg-testsuite
         - mkdir depend
-        - wget http://www.hdfgroup.org/ftp/HDF5/current/src/hdf5-1.8.17.tar.gz ; tar -xvzf hdf5-1.8.17.tar.gz:
+        - wget https://support.hdfgroup.org/ftp/HDF5/current18/src/hdf5-1.8.18.tar.gz ; tar -xvzf hdf5-1.8.18.tar.gz:
             pwd: depend
         - wget ftp://ftp.unidata.ucar.edu/pub/netcdf/netcdf-4.4.1.tar.gz; tar -xvzf netcdf-4.4.1.tar.gz:
             pwd: depend
@@ -16,7 +16,7 @@ dependencies:
         - git clone https://gitlab.kitware.com/xdmf/xdmf.git:
             pwd: depend
         - ./configure --prefix=/usr ; make -j4 CFLAGS="-w"; sudo make install:
-            pwd: depend/hdf5-1.8.17
+            pwd: depend/hdf5-1.8.18
         - ./configure --prefix=/usr --with-hdf5=/usr LDFLAGS="-I/usr/include -L/usr/lib" ; make V=0 ; sudo make install:
             pwd: depend/netcdf-4.4.1
         - ./configure --prefix=/usr LDFLAGS="-I/usr/include -L/usr/lib"; make V=0 ; sudo make install:
