@@ -120,6 +120,7 @@ C     on each iteration of the while loop below
          tagbase = 5000
       endif
       ibucket = 0
+      
 
       do while (istart.le.iend)
 

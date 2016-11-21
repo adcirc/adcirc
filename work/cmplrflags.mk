@@ -11,7 +11,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #
 #compiler=gnu
 #compiler=g95
-#compiler=intel
+compiler=intel
 #compiler=intel-ND
 #compiler=intel-lonestar
 #compiler=intel-sgi
@@ -24,7 +24,6 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=kraken
 #compiler=utils
 #compiler=xtintel
-#compiler=circleci
 #
 #
 # Compiler Flags for gfortran and gcc
@@ -100,15 +99,16 @@ ifeq ($(compiler),intel)
   PPFC            :=  ifort
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+  FFLAGS1       :=  $(INCDIRS) -O2 -g -FI -assume byterecl -132 -qopenmp -qopt-report=5 -assume buffered_io -xMIC-AVX512  -inline-max-size=400
+#  FFLAGS1       :=  $(INCDIRS) -O2 -g -FI -assume byterecl -132 -assume buffered_io -xMIC-AVX512
   ifeq ($(DEBUG),full)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -check all -ftrapuv -fpe0 -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -check all -ftrapuv -fpe0  -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
   ifeq ($(DEBUG),trace)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
   ifeq ($(DEBUG),netcdf_trace)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -DNETCDF_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -i-dynamic -FI -assume byterecl -132 -DNETCDF_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
@@ -143,7 +143,7 @@ ifeq ($(compiler),intel)
         NETCDFHOME    :=/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0
      endif
      ifeq ($(MACHINENAME),stampede)
-        NETCDFHOME :=/opt/apps/intel15/netcdf/4.3.3.1/x86_64
+        NETCDFHOME :=/opt/apps/intel13/netcdf/4.3.2/x86_64
         FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
      endif
      # jgf20150817: Adding support for spirit.afrl.hpc.mil;
@@ -661,37 +661,6 @@ ifeq ($(compiler),kraken)
      MULTIPLE := TRUE
   endif
 endif
-#
-#
-# Compiler Flags for CircleCI Build Server
-ifeq ($(compiler),circleci)
-  PPFC		:=  gfortran
-  FC		:=  gfortran
-  PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O2 -g -mcmodel=medium -ffixed-line-length-none -m64 -mtune=native -march=native --coverage
-  FFLAGS2	:=  $(FFLAGS1)
-  FFLAGS3	:=  $(FFLAGS1)
-  DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
-  DPRE		:=  -DREAL8 -DLINUX -DADCSWAN
-  IMODS 	:=  -I
-  CC		:= gcc
-  CCBE		:= $(CC)
-  CFLAGS	:= $(INCDIRS) -O2 -g -mcmodel=medium -DLINUX -m64 -mtune=native -march=native --coverage
-  CLIBS	:=
-  LIBS		:=
-  MSGLIBS	:=
-  ifeq ($(NETCDF),enable)
-     FLIBS          := $(FLIBS) -lnetcdff
-  endif
-  $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
-  ifneq ($(FOUND),TRUE)
-     FOUND := TRUE
-  else
-     MULTIPLE := TRUE
-  endif
-endif
-#
 endif
 #$(MACHINE)
 ########################################################################

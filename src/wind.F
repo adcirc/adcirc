@@ -217,7 +217,7 @@ C
 C
       SELECT CASE(TRIM(DragLawString))
 C
-      CASE("Garratt","GARRATT","garratt","default")
+      CASE("default","Garratt","GARRATT","garratt")
          WindDrag = 0.001d0*(0.75d0+0.067d0*WindSpeed)
          IF(WindDrag.gt.WindDragLimit) WindDrag=WindDragLimit
 C

@@ -379,6 +379,7 @@ C
       ENDIF
 C
       call allMessage(INFO,"Begin timestepping.")
+
       DO 100 ITIME=ITIME_BGN,ITIME_END
         CALL TIMESTEP(ITIME)
 C

@@ -232,6 +232,7 @@ C   kmd48.33bc - added in the heat flux variables
       REAL(SZ), ALLOCATABLE :: TMP(:,:)
       REAL(SZ) :: CD, CDQ, QWIND
 
+      REAL(SZ) ATOMTMP ! temp added to make OMP ATOMICS work
 C   TCM V49.64.01 -- ADDED FOR ICE CONCENTRATION FIELDS
       REAL(SZ) PIC,CICE_TRatio  !ICE VARIABLES
 
@@ -239,6 +240,7 @@ C   TCM v50.66.02 -- Added for Time Varying Bathymetry
       INTEGER :: IJK
       REAL(SZ) ETA2TMP,DPTMP,DPTMP2,BTRATIO  !tcm v50.66.01 bathymetry changes
 
+      real(sz) myel, myke, myvel, mykv
 
       call setMessageSource("timestep")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -300,6 +302,12 @@ C...  COMPUTE A NEW BOTTOM FRICTION COEFFICIENT
 C...
 ckmd  Shift values in time for predictor-corrector algorithm
 
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NP,CPRECOR,UU0,UU1,UU2,VV0,VV1,VV2,IT)
+!$OMP& SHARED(QX0,QX1,QX2,QY0,QY1,QY2,GWCE_LV,MOM_LV_X,MOM_LV_Y,IM),
+!$OMP& SHARED(TRANS_LV_A,TRANS_LV_B,NWS,NRS,WSX1,WSX2,WSY1,WSY2,PR1,PR2,PRBCKGRND_MH2O),
+!$OMP& SHARED(CTIP,TIP1,TIP2),
+!$OMP& PRIVATE(I)
+!$OMP DO
       DO I=1,NP
 
          if(CPRECOR) THEN
@@ -312,6 +320,7 @@ ckmd  Shift values in time for predictor-corrector algorithm
          QY1(I)=QY2(I)
          UU1(I)=UU2(I)
          VV1(I)=VV2(I)
+
          GWCE_LV(I) =0.D0
          MOM_LV_X(I)=0.D0
          MOM_LV_Y(I)=0.D0
@@ -340,6 +349,8 @@ C     TIP..Tidal potential forcing
          endif
 
       END DO
+!$OMP END DO
+!$OMP END PARALLEL
 
 
 C...TCM V50.66.01 -- ADDING TIME DEPENDENT BATHYMETRY
@@ -504,6 +515,8 @@ C...  SHIFT THE SPECIFIED NORMAL FLOW BOUNDARY CONDITION TO PREVIOUS
 C...  TIME STEPS.  ZERO OUT THE NEW SPECIFIED NORMAL FLOW BOUNDARY
 C...  CONDITION
 C...
+!$OMP PARALLEL DEFAULT(NONE) SHARED(NVEL,QN0,QN1,QN2,EN0,EN1,EN2) PRIVATE(I)
+!$OMP DO
       DO I=1,NVEL
          QN0(I)=QN1(I)
          QN1(I)=QN2(I)
@@ -512,6 +525,9 @@ C...
          EN1(I)=EN2(I)
          EN2(I)=0.D0
       END DO
+!$OMP END DO
+!$OMP END PARALLEL
+
 C...
 C...  DEFINE Ramp FUNCTION FOR BOUNDARY ELEVATION FORCING, WIND AND PRESSURE
 C.... FORCING AND TIDAL POTENTIAL FORCING
@@ -1103,14 +1119,25 @@ C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
           IF(TimeLoc.GT.WTIME2) THEN
             WTIME1=WTIME2
             WTIME2=WTIME2+WTIMINC
+C!$OMP  PARALLEL DO DEFAULT(NONE) SHARED(NP,WVNX1,WVNX2,WVNY1,WVNY2,PRN1,PRN2) PRIVATE(I)
             DO I=1,NP
               WVNX1(I)=WVNX2(I)
               WVNY1(I)=WVNY2(I)
               PRN1(I)=PRN2(I)
             END DO
+C!$OMP  END PARALLEL DO
             CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
           ENDIF
           WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NP,WVNX1,WVNX2,WVNY1,WVNY2,WTRATIO),
+!$OMP& SHARED(LoadDirEffRLen,LoadCanopyCoef,DP,ETA2,H0,G,NCICE,TimeLoc,CICE_TIME1),
+!$OMP& SHARED(CICE_TIMINC,CICEOUT,CICE1,CICE2,WSX2,WSY2,RAMPMete,PRN1,PRN2),
+!$OMP& SHARED(PRBCKGRND_MH2O,PR2,WVNXOUT,WVNYOUT),
+#ifdef CSWAN
+!$OMP& SHARED(COUPWIND,SWAN_WX2,SWAN_WY2,WINDMULTIPLIER,WAVEWINDMULTIPLIER),
+#endif
+!$OMP& PRIVATE(I,WINDX,WINDY,WINDMAG,WDragCo,CICE_TRatio,PIC,PRDIFF)
+!$OMP DO
           DO I=1,NP
             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
@@ -1155,6 +1182,8 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
             ENDIF
 #endif
           END DO
+!$OMP END DO
+!$OMP END PARALLEL
         ENDIF
 
 C     RJW ffpl Merged:
@@ -1420,8 +1449,6 @@ C    kmd48.33bc - added in information for the sponge layer
 C
 C--------------------END MET FORCING---------------------------------------
 
-
-
 C...  UPDATE THE WAVE RADIATION STRESS AND READ IN NEW VALUES FROM
 C.... UNIT 23.  APPLY Ramp FUNCTION.  ADD RADIATION STRESS TO WIND
 C...  STRESS
@@ -1485,6 +1512,13 @@ C             in time using the same logic as above.
 #endif
             ENDIF
             RStRatio=(TimeLoc-RSTIME1)/RSTIMINC
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NP,RampWRad,RStRatio,RSNX1,RSNX2,RSNY1,RSNY2),
+!$OMP& SHARED(WSX2,WSY2,NRS,RSNXOUT,RSNYOUT),
+#ifdef CSWANFRIC
+!$OMP& SHARED(WAVE_A1,WAVE_H1,WAVE_T1,WAVE_A2,WAVE_H2,WAVE_T2,WAVE_A,WAVE_H,WAVE_T,RSTRATIO),
+#endif
+!$OMP& PRIVATE(I,RSX,RSY)
+!$OMP DO
             DO I=1,NP
                RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
                RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
@@ -1505,6 +1539,8 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 #endif
 !#endif
             ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
@@ -1623,11 +1659,16 @@ C...  Depth Averaged Baroclinic Forcing needed by GWCE and 2DDI Momentum
 C...  Compute this (divided by H, i.e., Bx/H, By/H) as a nodally averaged
 C...  quantity for smoothing
 C...
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NP,VIDBCPDXOH,VIDBCPDYOH),
+!$OMP& PRIVATE(J)
+!$OMP DO
       DO J=1,NP
          VIDBCPDXOH(J)=0.D0
          VIDBCPDYOH(J)=0.D0
 cjgf45.06 TotalArea(J)=0.D0 ! What if CBaroclinic=F and nolifa=0?
       ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
       IF(CBaroclinic) Then
 
@@ -1640,6 +1681,15 @@ cjgf45.06 TotalArea(J)=0.D0 ! What if CBaroclinic=F and nolifa=0?
 
 c     jgf45.12 this algorithm only works in 2D
          if (C2DDI) then
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NE,NM,NOFF,NodeCode,DP,IFNLFA,ETA2,SFAC,Areas,X,Y,DASigT),
+!$OMP& SHARED(Ramp,G,VIDBCPDXOH,VIDBCPDYOH,TotalArea),
+!$OMP& PRIVATE(NM1,NM2,NM3,NCEle,H2N1,H2N2,H2N3,EtaN1,EtaN2,EtaN3,SFacAvg,AreaIE2),
+!$OMP& PRIVATE(NC1,NC2,NC3,AreaEle,FDX1,FDX2,FDX3,FDY1,FDY2,FDY3),
+!$OMP& PRIVATE(FDX1O2A,FDX2O2A,FDX3O2A,FDY1O2A,FDY2O2A,FDY3O2A),
+!$OMP& PRIVATE(DARhoMRho0N1,DARhoMRho0N2,DARhoMRho0N3,DEta2DX,DEta2DY,DRhoDX,DRhoDY),
+!$OMP& PRIVATE(VIDBCPDXOHN1,VIDBCPDXOHN2,VIDBCPDXOHN3,VIDBCPDYOHN1,VIDBCPDYOHN2,VIDBCPDYOHN3),
+!$OMP& PRIVATE(VIDBCPDXOHAvgArea,VIDBCPDYOHAvgArea)
+!$OMP DO
             DO IE=1,NE
                NM1=NM(IE,1)
                NM2=NM(IE,2)
@@ -1696,16 +1746,27 @@ c     jgf45.12 this algorithm only works in 2D
      &              +VIDBCPDXOHN3)/3.D0
                VIDBCPDYOHAvgArea=AreaEle*(VIDBCPDYOHN1+VIDBCPDYOHN2
      &              +VIDBCPDYOHN3)/3.D0
+!$OMP ATOMIC
                VIDBCPDXOH(NM1)=VIDBCPDXOH(NM1)+VIDBCPDXOHAvgArea
+!$OMP ATOMIC
                VIDBCPDXOH(NM2)=VIDBCPDXOH(NM2)+VIDBCPDXOHAvgArea
+!$OMP ATOMIC
                VIDBCPDXOH(NM3)=VIDBCPDXOH(NM3)+VIDBCPDXOHAvgArea
+!$OMP ATOMIC
                VIDBCPDYOH(NM1)=VIDBCPDYOH(NM1)+VIDBCPDYOHAvgArea
+!$OMP ATOMIC
                VIDBCPDYOH(NM2)=VIDBCPDYOH(NM2)+VIDBCPDYOHAvgArea
+!$OMP ATOMIC
                VIDBCPDYOH(NM3)=VIDBCPDYOH(NM3)+VIDBCPDYOHAvgArea
+!$OMP ATOMIC
                TotalArea(NM1)=TotalArea(NM1)+AreaEle
+!$OMP ATOMIC
                TotalArea(NM2)=TotalArea(NM2)+AreaEle
+!$OMP ATOMIC
                TotalArea(NM3)=TotalArea(NM3)+AreaEle
             ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
             DO J=1,NP
                IF(TotalArea(J).NE.0.) THEN
@@ -2011,18 +2072,32 @@ CWET...
 CWET...WET/DRY - INITIALIZATIONS FOR WET/DRY LOOP
 CWET...
       IF(NOLIFA.EQ.2) THEN      !  This goes on until end of part 6
+!$OMP PARALLEL DEFAULT(NONE) SHARED(NP,NIBCNT,NE,NOFF,NOFFOLD),
+!$OMP& SHARED(NODECODE,DP,ETA2,HABSMIN,NNODECODE,H0,ErrorElev),
+!$OMP& SHARED(NM,X,Y,C2DDI),
+!$OMP& SHARED(HOFF,LoadManningsN,Fric,G,ManningsN,IFNLFA,BFCdLLimit,TKWET,IFLINBF),
+!$OMP& SHARED(IFHYBF,HBREAK,FTHETA,FGAMMA,H1,VELMIN,IFNLBF,C3D,LoadZ0B_var,Z0B1,Z0B),
+!$OMP& SHARED(Z0B_VAR,TK,ISLIP,Q,SIGMA,KP,BSX1,BSY1),
+!$OMP& SHARED(EVTOT,NIBNODECODE),
+!$OMP& PRIVATE(I,HTOT),
+!$OMP& PRIVATE(NM1,NM2,NM3,NCTOT,ETAN1,ETAN2,ETAN3,HTOTN1,HTOTN2,HTOTN3),
+!$OMP& PRIVATE(NM123,DELDIST,DELETA,VEL,DUDS,KSLIP,NBNCTOT,ATOMTMP) REDUCTION(+:NCCHANGE)
+!$OMP DO
          DO I=1,NP
             NIBCNT(I) = 0
          ENDDO
+!$OMP DO
          DO I=1,NE
             NOFFOLD(I)=NOFF(I)
             NOFF(I)=1
          ENDDO
+!$OMP END DO
 
 CWET...
 CWET...WET/DRY - PART 1 - NODAL DRYING CRITERIA D1
 CWET....Drying Criteria D1: this depends on NODECODE and updates NODECODE
 CWET...
+!$OMP DO
          DO I=1,NP
             IF(NODECODE(I).EQ.1) THEN
                HTOT=DP(I)+ETA2(I)
@@ -2035,6 +2110,7 @@ C                  ENDIF
                ENDIF
             ENDIF
          ENDDO
+!$OMP END DO
 CWET...
 CWET...END WET/DRY SECTION - PART 1
 CWET...
@@ -2047,6 +2123,7 @@ cjjw#endif
 CWET...
 CWET...WET/DRY SECTION PART 2 - NODAL WETTING LOOPS W1 AND W2
 CWET...
+!$OMP DO
          DO I=1,NE
             NM1=NM(I,1)
             NM2=NM(I,2)
@@ -2079,10 +2156,13 @@ c. RJW modified the following for 3D friction
 Csb46.28sb02
 C<<                     Convert Manning's N to Cd, if necessary.
                         IF (LoadManningsN) THEN
-                          FRIC(NM123)=g*ManningsN(NM123)**2.d0
+                           ATOMTMP =g*ManningsN(NM123)**2.d0
      &                      /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
+!$OMP ATOMIC WRITE
+                          FRIC(NM123)= ATOMTMP
                           IF(FRIC(NM123).LT.BFCdLLimit) THEN
+!$OMP ATOMIC WRITE
                             FRIC(NM123) = BFCdLLimit
                           ENDIF
                         ENDIF
@@ -2114,19 +2194,25 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
 
                      IF(VEL.GT.VELMIN) THEN
 C    ....         third node met criteria and is also wet
+!$OMP ATOMIC WRITE
                         NNODECODE(NM3)=1
 c. RJW merged 08/26/20008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
 c                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
-                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+                           ATOMTMP = FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+!$OMP ATOMIC WRITE
+                           TK(NM123)=ATOMTMP
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
+!$OMP ATOMIC WRITE
                            TKXX(NM123) = TK(NM123)
+!$OMP ATOMIC WRITE
                            TKYY(NM123) = TK(NM123)
+!$OMP ATOMIC WRITE
                            TKXY(NM123) = 0.D0
 #endif
 #endif
@@ -2134,10 +2220,16 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
      &                           /(SIGMA(2)-SIGMA(1))
-                              BSX1(NM123)=EVTOT(1)*REAL(DUDS)
-                              BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
-                              BSX1(NM3)=EVTOT(1)*REAL(DUDS)
-                              BSY1(NM3)=EVTOT(1)*AIMAG(DUDS)
+                              ATOMTMP = EVTOT(1)*REAL(DUDS)
+!$OMP ATOMIC WRITE
+                              BSX1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                              BSX1(NM3)=ATOMTMP
+                              ATOMTMP= EVTOT(1)*AIMAG(DUDS)
+!$OMP ATOMIC WRITE
+                              BSY1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                              BSY1(NM3)=ATOMTMP
                            ENDIF
                            IF(ISLIP.NE.0)THEN
                               IF(ISLIP.EQ.1)THEN
@@ -2156,10 +2248,16 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
         IF(KSLIP.LT.0.0025D0*ABS(Q(NM123,1)))
      &                                  KSLIP=0.0025D0*ABS(Q(NM123,1))
                               ENDIF
-                              BSX1(NM123)=KSLIP*REAL(Q(NM123,1))
-                              BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))
-                              BSX1(NM3)=KSLIP*REAL(Q(NM123,1))
-                              BSY1(NM3)=KSLIP*AIMAG(Q(NM123,1))
+                                 ATOMTMP =KSLIP*REAL(Q(NM123,1))
+!$OMP ATOMIC WRITE
+                                 BSX1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                                 BSX1(NM3)=ATOMTMP
+                                 ATOMTMP=KSLIP*AIMAG(Q(NM123,1))
+!$OMP ATOMIC WRITE
+                                 BSY1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                                 BSY1(NM3)=ATOMTMP
                            ENDIF
                         ENDIF
                      ENDIF
@@ -2181,10 +2279,14 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic for 3D friction
 Csb46.28sb02
 C<<                     Convert Manning's N to Cd, if necessary.
                         IF (LoadManningsN) THEN
-                          FRIC(NM123)=g*ManningsN(NM123)**2.d0
+                          ATOMTMP = g*ManningsN(NM123)**2.d0
      &                      /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
+!$OMP ATOMIC WRITE
+                           FRIC(NM123) = ATOMTMP
+                           
                           IF(FRIC(NM123).LT.BFCdLLimit) THEN
+!$OMP ATOMIC WRITE
                             FRIC(NM123) = BFCdLLimit
                           ENDIF
                         ENDIF
@@ -2214,18 +2316,25 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                      ENDIF
 
                      IF(VEL.GT.VELMIN) THEN
+!$OMP ATOMIC WRITE
                         NNODECODE(NM1)=1
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
-                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+                           ATOMTMP=FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+
+!$OMP ATOMIC WRITE
+                           TK(NM123)= ATOMTMP
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
+!$OMP ATOMIC WRITE
                            TKXX(NM123) = TK(NM123)
+!$OMP ATOMIC WRITE
                            TKYY(NM123) = TK(NM123)
+!$OMP ATOMIC WRITE
                            TKXY(NM123) = 0.D0
 #endif
 #endif
@@ -2233,10 +2342,16 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
      &                           /(SIGMA(2)-SIGMA(1))
-                              BSX1(NM123)=EVTOT(1)*REAL(DUDS)
-                              BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
-                              BSX1(NM1)=EVTOT(1)*REAL(DUDS)
-                              BSY1(NM1)=EVTOT(1)*AIMAG(DUDS)
+                              ATOMTMP=EVTOT(1)*REAL(DUDS)
+!$OMP ATOMIC WRITE
+                              BSX1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                              BSX1(NM1)=ATOMTMP
+                              ATOMTMP=EVTOT(1)*AIMAG(DUDS)
+!$OMP ATOMIC WRITE
+                              BSY1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                              BSY1(NM1)=ATOMTMP
                            ENDIF
                            IF(ISLIP.NE.0)THEN
                               IF(ISLIP.EQ.1)THEN
@@ -2255,10 +2370,16 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
         IF(KSLIP.LT.0.0025D0*ABS(Q(NM123,1)))
      &                                  KSLIP=0.0025D0*ABS(Q(NM123,1))
                               ENDIF
-                              BSX1(NM123)=KSLIP*REAL(Q(NM123,1))
-                              BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))
-                              BSX1(NM1)=KSLIP*REAL(Q(NM123,1))
-                              BSY1(NM1)=KSLIP*AIMAG(Q(NM123,1))
+                              ATOMTMP =KSLIP*REAL(Q(NM123,1))
+!$OMP ATOMIC WRITE 
+                              BSX1(NM123)= ATOMTMP
+!$OMP ATOMIC WRITE
+                              BSX1(NM1)= ATOMTMP
+                              ATOMTMP = KSLIP*AIMAG(Q(NM123,1))
+!$OMP ATOMIC WRITE
+                              BSY1(NM123)= ATOMTMP
+!$OMP ATOMIC WRITE
+                              BSY1(NM1)= ATOMTMP
                            ENDIF
                         ENDIF
 
@@ -2281,10 +2402,13 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic for 3D friction
 Csb46.28sb02
 C<<                     Convert Manning's N to Cd, if necessary.
                         IF (LoadManningsN) THEN
-                          FRIC(NM123)=g*ManningsN(NM123)**2.d0
+                           ATOMTMP = g*ManningsN(NM123)**2.d0
      &                      /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
+!$OMP ATOMIC WRITE
+                          FRIC(NM123) = ATOMTMP
                           IF(FRIC(NM123).LT.BFCdLLimit) THEN
+!$OMP ATOMIC WRITE
                             FRIC(NM123) = BFCdLLimit
                           ENDIF
                         ENDIF
@@ -2313,18 +2437,24 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                      ENDIF
 
                      IF(VEL.GT.VELMIN) THEN
+!$OMP ATOMIC WRITE
                         NNODECODE(NM2)=1
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
-                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+                           ATOMTMP = FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+!$OMP ATOMIC WRITE
+                           TK(NM123)= ATOMTMP
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
+!$OMP ATOMIC WRITE
                            TKXX(NM123) = TK(NM123)
+!$OMP ATOMIC WRITE
                            TKYY(NM123) = TK(NM123)
+!$OMP ATOMIC WRITE
                            TKXY(NM123) = 0.D0
 #endif
 #endif
@@ -2332,10 +2462,16 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
      &                           /(SIGMA(2)-SIGMA(1))
-                              BSX1(NM123)=EVTOT(1)*REAL(DUDS)
-                              BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
-                              BSX1(NM2)=EVTOT(1)*REAL(DUDS)
-                              BSY1(NM2)=EVTOT(1)*AIMAG(DUDS)
+                              ATOMTMP = EVTOT(1)*REAL(DUDS)
+!$OMP ATOMIC WRITE
+                              BSX1(NM123)= ATOMTMP
+!$OMP ATOMIC WRITE
+                              BSX1(NM2)= ATOMTMP
+                              ATOMTMP = EVTOT(1)*AIMAG(DUDS)
+!$OMP ATOMIC WRITE
+                              BSY1(NM123)= ATOMTMP
+!$OMP ATOMIC WRITE
+                              BSY1(NM2)= ATOMTMP
                            ENDIF
                            IF(ISLIP.NE.0)THEN
                               IF(ISLIP.EQ.1)THEN
@@ -2354,10 +2490,16 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
         IF(KSLIP.LT.0.0025D0*ABS(Q(NM123,1)))
      &                                  KSLIP=0.0025D0*ABS(Q(NM123,1))
                               ENDIF
-                              BSX1(NM123)=KSLIP*REAL(Q(NM123,1))
-                              BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))
-                              BSX1(NM2)=KSLIP*REAL(Q(NM123,1))
-                              BSY1(NM2)=KSLIP*AIMAG(Q(NM123,1))
+                              ATOMTMP = KSLIP*REAL(Q(NM123,1))
+!$OMP ATOMIC WRITE
+                              BSX1(NM123)= ATOMTMP
+!$OMP ATOMIC WRITE
+                              BSX1(NM2)= ATOMTMP
+                              ATOMTMP = KSLIP*AIMAG(Q(NM123,1))
+!$OMP ATOMIC WRITE
+                              BSY1(NM123)= ATOMTMP
+!$OMP ATOMIC WRITE
+                              BSY1(NM2)= ATOMTMP
                            ENDIF
                         ENDIF
 
@@ -2369,11 +2511,16 @@ CWET...
 CWET...Nodal Wetting Criteria W2a
 CWET...
             NBNCTOT=NIBNODECODE(NM1)+NIBNODECODE(NM2)+NIBNODECODE(NM3)
+!$OMP ATOMIC
             NIBCNT(NM1) = NIBCNT(NM1) + NBNCTOT
+!$OMP ATOMIC
             NIBCNT(NM2) = NIBCNT(NM2) + NBNCTOT
+!$OMP ATOMIC
             NIBCNT(NM3) = NIBCNT(NM3) + NBNCTOT
 
          ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
          if (subdomainOn.and.enforceBN.eq.1) call enforceWDcb() ! NCSU Subdomain
          if (subdomainOn.and.enforceBN.eq.2) call enforceWDob() ! NCSU Subdomain
@@ -2392,6 +2539,14 @@ C                  bathymetry is used and is only performed during the period of
 C                  bathymetry evolution.
 C
          IF ((NDDT.NE.0).AND.(IT.LE.BTIME_END+1) ) THEN
+
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NE,NM,NODECODE,NNODECODE,ETA2,DP,HOFF),
+!$OMP& SHARED(C2DDI,LoadManningsN,g,ManningsN,IFNLFA,FRIC,BFCdLLimit,VELMIN),
+!$OMP& SHARED(TK,IFLINBF,IFNLBF,IFHYBF,HBREAK,FTHETA,FGAMMA,C3D,ISLIP,Q),
+!$OMP& SHARED(EVTOT,BSY1,BSX1,SIGMA,KP,Z0B1),
+!$OMP& PRIVATE(I,NM1,NM2,NM3,NCTOT,ETAN1,ETAN2,ETAN3,HTOTN1,HTOTN2,HTOTN3),
+!$OMP& PRIVATE(NM123,VEL,H1,DUDS,KSLIP,ATOMTMP)
+!$OMP DO
             DO I=1,NE
                NM1=NM(I,1)
                NM2=NM(I,2)
@@ -2414,15 +2569,19 @@ C
                      !THE ELEMENT SHOULD BE WET, SO WET THE DRY NODES
                         !  Make Node 1 Wet and set parameters
                         IF(NNODECODE(NM1).NE.1) THEN  !node 1
+!$OMP ATOMIC WRITE
                            NNODECODE(NM1)=1
                            NM123 = NM1
                            IF(C2DDI)THEN
 C<<                           Convert Manning's N to Cd, if necessary.
                               IF (LoadManningsN) THEN
-                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
+                                 ATOMTMP=g*ManningsN(NM123)**2.d0
      &                              /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
+!$OMP ATOMIC WRITE
+                                 FRIC(NM123)=ATOMTMP
                                  IF(FRIC(NM123).LT.BFCdLLimit) THEN
+!$OMP ATOMIC WRITE
                                     FRIC(NM123) = BFCdLLimit
                                  ENDIF
                               ENDIF
@@ -2430,15 +2589,20 @@ C<<                           Convert Manning's N to Cd, if necessary.
                            VEL=VELMIN
                            H1 = HTOTN1
                            IF(C2DDI)THEN
-                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+                              ATOMTMP=FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                          (IFNLBF+IFHYBF*
      &                          (1.D0+(HBREAK/H1)**FTHETA)**
      &                          (FGAMMA/FTHETA)))
+!$OMP ATOMIC WRITE
+                              TK(NM123)=ATOMTMP
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
+!$OMP ATOMIC WRITE
                               TKXX(NM123) = TK(NM123)
+!$OMP ATOMIC WRITE
                               TKYY(NM123) = TK(NM123)
+!$OMP ATOMIC WRITE
                               TKXY(NM123) = 0.D0
 #endif
 #endif
@@ -2446,10 +2610,16 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
      &                              /(SIGMA(2)-SIGMA(1))
-                                 BSX1(NM123)=EVTOT(1)*REAL(DUDS)
-                                 BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
-                                 BSX1(NM3)=EVTOT(1)*REAL(DUDS)
-                                 BSY1(NM3)=EVTOT(1)*AIMAG(DUDS)
+                                 ATOMTMP = EVTOT(1)*REAL(DUDS)
+!$OMP ATOMIC WRITE
+                                 BSX1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                                 BSX1(NM3)=ATOMTMP
+                                 ATOMTMP=EVTOT(1)*AIMAG(DUDS)
+!$OMP ATOMIC WRITE
+                                 BSY1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                                 BSY1(NM3)=ATOMTMP
                               ENDIF
                               IF(ISLIP.NE.0)THEN
                                  IF(ISLIP.EQ.1)THEN
@@ -2468,25 +2638,35 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                                      IF(KSLIP.LT.0.0025D0*ABS(Q(NM123,1)))
      &                                  KSLIP=0.0025D0*ABS(Q(NM123,1))
                                  ENDIF
-                                 BSX1(NM123)=KSLIP*REAL(Q(NM123,1))
-                                 BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))
-                                 BSX1(NM3)=KSLIP*REAL(Q(NM123,1))
-                                 BSY1(NM3)=KSLIP*AIMAG(Q(NM123,1))
+                                 ATOMTMP =KSLIP*REAL(Q(NM123,1))
+!$OMP ATOMIC WRITE
+                                 BSX1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                                 BSX1(NM3)=ATOMTMP
+                                 ATOMTMP=KSLIP*AIMAG(Q(NM123,1))
+!$OMP ATOMIC WRITE
+                                 BSY1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                                 BSY1(NM3)=ATOMTMP
                               ENDIF
                            ENDIF
                         ENDIF  !end node 1
 
                         !  Make Node 2 Wet and set parameters
                         IF (NNODECODE(NM2).NE.1) THEN
+!$OMP ATOMIC WRITE
                            NNODECODE(NM2) = 1
                            NM123=NM2
                            IF(C2DDI)THEN
 C<<                        Convert Manning's N to Cd, if necessary.
                               IF (LoadManningsN) THEN
-                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
+                                 ATOMTMP =g*ManningsN(NM123)**2.d0
      &                            /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
+!$OMP ATOMIC WRITE
+                                 FRIC(NM123)=ATOMTMP
                                  IF(FRIC(NM123).LT.BFCdLLimit) THEN
+!$OMP ATOMIC WRITE
                                     FRIC(NM123) = BFCdLLimit
                                  ENDIF
                               ENDIF
@@ -2494,15 +2674,20 @@ C<<                        Convert Manning's N to Cd, if necessary.
                            VEL = VELMIN
                            H1 = HTOTN2
                            IF(C2DDI)THEN
-                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+                              ATOMTMP=FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                          (IFNLBF+IFHYBF*
      &                          (1.D0+(HBREAK/H1)**FTHETA)**
      &                          (FGAMMA/FTHETA)))
+!$OMP ATOMIC WRITE
+                              TK(NM123)=ATOMTMP
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
+!$OMP ATOMIC WRITE
                               TKXX(NM123) = TK(NM123)
+!$OMP ATOMIC WRITE
                               TKYY(NM123) = TK(NM123)
+!$OMP ATOMIC WRITE
                               TKXY(NM123) = 0.D0
 #endif
 #endif
@@ -2510,10 +2695,16 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
      &                              /(SIGMA(2)-SIGMA(1))
-                                 BSX1(NM123)=EVTOT(1)*REAL(DUDS)
-                                 BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
-                                 BSX1(NM1)=EVTOT(1)*REAL(DUDS)
-                                 BSY1(NM1)=EVTOT(1)*AIMAG(DUDS)
+                                 ATOMTMP = EVTOT(1)*REAL(DUDS)
+!$OMP ATOMIC WRITE
+                                 BSX1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                                 BSX1(NM1)=ATOMTMP
+                                 ATOMTMP=EVTOT(1)*AIMAG(DUDS)
+!$OMP ATOMIC WRITE
+                                 BSY1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                                 BSY1(NM1)=ATOMTMP
                               ENDIF
                               IF(ISLIP.NE.0)THEN
                                  IF(ISLIP.EQ.1)THEN
@@ -2532,25 +2723,35 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                                     IF(KSLIP.LT.0.0025D0*ABS(Q(NM123,1)))
      &                                  KSLIP=0.0025D0*ABS(Q(NM123,1))
                                  ENDIF
-                                 BSX1(NM123)=KSLIP*REAL(Q(NM123,1))
-                                 BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))
-                                 BSX1(NM1)=KSLIP*REAL(Q(NM123,1))
-                                 BSY1(NM1)=KSLIP*AIMAG(Q(NM123,1))
+                                 ATOMTMP =KSLIP*REAL(Q(NM123,1))
+!$OMP ATOMIC WRITE
+                                 BSX1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                                 BSX1(NM1)=ATOMTMP
+                                 ATOMTMP=KSLIP*AIMAG(Q(NM123,1))
+!$OMP ATOMIC WRITE
+                                 BSY1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                                 BSY1(NM1)=ATOMTMP
                               ENDIF
                            ENDIF
                         ENDIF  !node 2
 
                         !  Make Node 3 Wet and set parameters
                         IF(NNODECODE(NM3).NE.1) THEN
+!$OMP ATOMIC WRITE
                            NNODECODE(NM3)=1
                            NM123 = NM3
                            IF(C2DDI)THEN
 C<<                         Convert Manning's N to Cd, if necessary.
                               IF (LoadManningsN) THEN
-                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
+                                 ATOMTMP =g*ManningsN(NM123)**2.d0
      &                           /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
+!$OMP ATOMIC WRITE
+                                 FRIC(NM123)=ATOMTMP
                                  IF(FRIC(NM123).LT.BFCdLLimit) THEN
+!$OMP ATOMIC WRITE
                                     FRIC(NM123) = BFCdLLimit
                                  ENDIF
                               ENDIF
@@ -2558,15 +2759,20 @@ C<<                         Convert Manning's N to Cd, if necessary.
                            VEL=VELMIN
                            H1 = HTOTN3
                            IF(C2DDI)THEN
-                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+                              ATOMTMP=FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                           (IFNLBF+IFHYBF*
      &                           (1.D0+(HBREAK/H1)**FTHETA)**
      &                           (FGAMMA/FTHETA)))
+!$OMP ATOMIC WRITE
+                              TK(NM123)=ATOMTMP
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
+!$OMP ATOMIC WRITE
                               TKXX(NM123) = TK(NM123)
+!$OMP ATOMIC WRITE
                               TKYY(NM123) = TK(NM123)
+!$OMP ATOMIC WRITE
                               TKXY(NM123) = 0.D0
 #endif
 #endif
@@ -2574,10 +2780,16 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
      &                             /(SIGMA(2)-SIGMA(1))
-                                 BSX1(NM123)=EVTOT(1)*REAL(DUDS)
-                                 BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
-                                 BSX1(NM2)=EVTOT(1)*REAL(DUDS)
-                                 BSY1(NM2)=EVTOT(1)*AIMAG(DUDS)
+                                 ATOMTMP = EVTOT(1)*REAL(DUDS)
+!$OMP ATOMIC WRITE
+                                 BSX1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                                 BSX1(NM2)=ATOMTMP
+                                 ATOMTMP=EVTOT(1)*AIMAG(DUDS)
+!$OMP ATOMIC WRITE
+                                 BSY1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                                 BSY1(NM2)=ATOMTMP
                               ENDIF
                               IF(ISLIP.NE.0)THEN
                                  IF(ISLIP.EQ.1)THEN
@@ -2596,10 +2808,16 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                                      IF(KSLIP.LT.0.0025D0*ABS(Q(NM123,1)))
      &                                  KSLIP=0.0025D0*ABS(Q(NM123,1))
                                  ENDIF
-                                 BSX1(NM123)=KSLIP*REAL(Q(NM123,1))
-                                 BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))
-                                 BSX1(NM2)=KSLIP*REAL(Q(NM123,1))
-                                 BSY1(NM2)=KSLIP*AIMAG(Q(NM123,1))
+                                 ATOMTMP =KSLIP*REAL(Q(NM123,1))
+!$OMP ATOMIC WRITE
+                                 BSX1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                                 BSX1(NM2)=ATOMTMP
+                                 ATOMTMP=KSLIP*AIMAG(Q(NM123,1))
+!$OMP ATOMIC WRITE
+                                 BSY1(NM123)=ATOMTMP
+!$OMP ATOMIC WRITE
+                                 BSY1(NM2)=ATOMTMP
                               ENDIF
                            ENDIF
                         ENDIF !node3
@@ -2608,6 +2826,8 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                   ENDIF  !IF NNODECODE SUM LESS THAN 3
                ENDIF   ! IF NODECODE SUM LESS THAN 3
             ENDDO  !LOOP OVER ELEMENTS
+!$OMP END DO
+!$OMP END PARALLEL
 
             if (subdomainOn.and.enforceBN.eq.1) call enforceWDcb() ! NCSU Subdomain
             if (subdomainOn.and.enforceBN.eq.2) call enforceWDob() ! NCSU Subdomain
@@ -2629,11 +2849,15 @@ CWET...Nodal Wetting Criteria W2b
 CWET...Check for adjacent nodes and force nodes wet when attached
 CWET...to receiving barrier nodes
 CWET...
+!$OMP PARALLEL DEFAULT(NONE) SHARED(NP,NIBCNT,NNODECODE) PRIVATE(I)
+!$OMP DO
          DO I=1,NP
             IF((NIBCNT(I).GT.0).AND.(NNODECODE(I).EQ.0)) THEN
                NNODECODE(I)=1
             ENDIF
          ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
 cjjwC     Use Message-Passing to update nnodecode at ghost nodes
 cjjw#ifdef CMPI
@@ -2653,6 +2877,11 @@ CWET...All elements where downhill flow originates from a barely wet node
 CWET....into wet nodes are forced inactive; the only exception is receiving
 CWET....overtopped barrier nodes
 CWET...
+
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NE,NM,NIBCNT,ETA2,DP,noffActive,NOFF,HOFF),
+!$OMP& PRIVATE(I,NM1,NM2,NM3,NBNCTOT,ETAN1,ETAN2,ETAN3,HTOTN1,HTOTN2,HTOTN3),
+!$OMP& PRIVATE(DPMIN)
+!$OMP DO
          DO I=1,NE
             NM1=NM(I,1)
             NM2=NM(I,2)
@@ -2665,6 +2894,7 @@ CWET...
                HTOTN1=DP(NM1)+ETA2(NM1)
                HTOTN2=DP(NM2)+ETA2(NM2)
                HTOTN3=DP(NM3)+ETA2(NM3)
+
 #ifdef SB_WETDRY
 C...Find the heighest point on the bed in the element.  sb v46.28.sb05.06 11/01/2006
                IF(DP(NM1).LE.DP(NM2).AND.DP(NM1).LE.DP(NM3)) THEN
@@ -2771,6 +3001,8 @@ C...sb v46.52.03
 #endif
             ENDIF
          ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
 #ifdef SB_WETDRY
 CWET......added by sb on 11/02/2006
@@ -2786,6 +3018,10 @@ CWET...although this section changes NNODECODE,
 CWET...I put this section here, rather than the end of PART 2.
 CWET...I tried setting NOFF(I) = 0, but it didn't shut down the flow.
 CWET...
+
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NE),
+!$OMP& PRIVATE(I)
+!$OMP DO
          DO I=1,NE
             NM1=NM(I,1)
             NM2=NM(I,2)
@@ -2825,11 +3061,14 @@ CWET...
 
                   IF(NWETNEI.GT.0.AND.NWETADJ.EQ.0.AND.
      &               NIBCNT(NM1).EQ.0) THEN
+!$OMP ATOMIC WRITE
                      NNODECODE(NM1) = 0
                   ENDIF
                ENDDO
             ENDIF
          ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 #endif
 
 CWET...
@@ -2842,10 +3081,20 @@ CWET...Update number of active elements (MJU) and the total area (TotalArea) con
 CWET...to a node. If these are zero, the node is landlocked and should be dried.
 CWET...These depend on NNODECODE which varies during the time step
 CWET...
+
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NP,MJU,TotalArea),
+!$OMP& PRIVATE(I)
+!$OMP  DO
          DO I=1,NP
             MJU(I)=0
             TotalArea(I)=0.d0
          ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NE,NM,NNODECODE,NOFF,Areas,MJU,TotalArea),
+!$OMP& PRIVATE(IE,NM1,NM2,NM3,NC1,NC2,NC3,NCEle,AreaEle)
+!$OMP DO
          DO IE=1,NE
             NM1=NM(IE,1)
             NM2=NM(IE,2)
@@ -2856,23 +3105,36 @@ CWET...
 
             NCEle=NC1*NC2*NC3*NOFF(IE)
             AreaEle=NCEle*Areas(IE)/2.d0
+!$OMP ATOMIC
             MJU(NM1)=MJU(NM1)+NCEle
+!$OMP ATOMIC
             MJU(NM2)=MJU(NM2)+NCEle
+!$OMP ATOMIC
             MJU(NM3)=MJU(NM3)+NCEle
+!$OMP ATOMIC
             TotalArea(NM1)=TotalArea(NM1)+AreaEle
+!$OMP ATOMIC
             TotalArea(NM2)=TotalArea(NM2)+AreaEle
+!$OMP ATOMIC
             TotalArea(NM3)=TotalArea(NM3)+AreaEle
          ENDDO
 
+!$OMP END DO
+!$OMP END PARALLEL
+         
 cjjwnote - looks like this is used later in momentum equations
 cjjwnote - this has implications on making this into a subroutine
 
+!$OMP PARALLEL DEFAULT(NONE) SHARED(NP,NNODECODE,MJU) PRIVATE(I)
+!$OMP DO
          DO I=1,NP
             IF((NNODECODE(I).EQ.1).AND.(MJU(I).EQ.0)) THEN
                NNODECODE(I)=0
             ENDIF
             IF(MJU(I).EQ.0) MJU(I)=1 !Because MJU is also used to solve Mom Eq. !Eliminate this?
          ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
 C     WET...
 C     WET...END WET/DRY SECTION - PART 4
@@ -2893,12 +3155,15 @@ CWET...WET/DRY SECTION - PART 5 - RESET NODECODE USING NNODECODE
 CWET...Check to see if any wetting occurred & update NODECODE
 CWET...Note, NCCHANGE=0 set near the beginning of GWCE subroutine
 CWET...
+!$OMP PARALLEL DO DEFAULT(NONE) SHARED(NP,NNODECODE,NODECODE,IT) PRIVATE(I) REDUCTION(+:NCCHANGE)
          DO I=1,NP
             IF(NNODECODE(I).NE.NODECODE(I)) THEN
                NODECODE(I)=NNODECODE(I)
                NCCHANGE=NCCHANGE+1
             ENDIF
          ENDDO
+!$OMP END PARALLEL DO
+
 CWET...
 CWET...END WET/DRY SECTION - PART 5
 CWET...
@@ -2908,9 +3173,13 @@ CWET...WET/DRY SECTION - PART 6
 CWET...Check to see if any NOFF changed requiring the matrix to be reset
 CWET...Note, NCCHANGE=0 set near the beginning of GWCE subroutine
 CWET...
+!$OMP  PARALLEL DO DEFAULT(NONE) 
+!$OMP& SHARED(NE,NOFF,NOFFOLD) PRIVATE(I) REDUCTION(+:NCCHANGE)
          DO I=1,NE
             IF(NOFF(I).NE.NOFFOLD(I)) NCCHANGE=NCCHANGE+1
          ENDDO
+!$OMP END PARALLEL DO
+
 CWET...
 CWET... jgf45.06 If there has been any wetting or drying in any
 CWET... of the subdomains, the NCCHANGE flag will be activated on all
@@ -3074,7 +3343,6 @@ C...  SAVE THE CURRENT TIME LEVEL OF BARRIER INTO THE PREVIOUS TIME LEVEL
       IF(NFLUXB.EQ.1)THEN
         BARLANHT1(:)=BARLANHT2(:)
       ENDIF  
-
 C...
 c...  find and print to unit 6, the maximum elevation, the maximum
 c...  velocity and the node numbers at which they occur on myproc=0 if
@@ -3092,17 +3360,38 @@ C
          VELMAX=0.0d0
          KEMAX = 0
          KVMAX = 0
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NP,NodeCode,ETA2,UU2,VV2,ELMAX,KEMAX,VELMAX,KVMAX),
+!$OMP& PRIVATE(I,VELABS),
+!$OMP& PRIVATE(myel,myke,myvel,mykv)
+         myel=0.0d0
+         myke=0
+         myvel=0.0d0
+         mykv=0
+!$OMP DO
          DO I=1,NP
-            IF((NODECODE(I).EQ.1).AND.(ABS(ETA2(I)).GT.ELMAX))THEN
-               ELMAX=ABS(ETA2(I))
-               KEMAX=I
+            IF((NODECODE(I).EQ.1).AND.(ABS(ETA2(I)).GT.myel))THEN
+               myEL=ABS(ETA2(I))
+               myKE=I
             ENDIF
             VELABS=UU2(I)*UU2(I)+VV2(I)*VV2(I)
-            IF (VELABS.GT.VELMAX) THEN
-               VELMAX=VELABS
-               KVMAX=I
+            IF (VELABS.GT.myvel) THEN
+               myVEL=VELABS
+               myKV=I
             ENDIF
          END DO
+!$OMP END DO
+!$OMP CRITICAL
+         if (myel.gt.ELMAX) THEN
+            ELMAX=myel
+            KEMAX=myke
+         ENDIF
+         if (myvel.gt.VELMAX) THEN
+            VELMAX=myvel
+            KVMAX=mykv
+         ENDIF
+!$OMP END CRITICAL
+!$OMP END PARALLEL
+
          VELMAX=VELMAX**0.5d0
          ITEST=(IT/NSCREEN)*NSCREEN
 
@@ -3119,20 +3408,21 @@ C     the screen.
      &            IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX,MYPROC
             ELSE
                WRITE(ScreenUnit,1991)
-     &            IT,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX,MYPROC
+     &            IT,NUMITR,0.,KEMAX,VELMAX,KVMAX,MYPROC
             ENDIF
  1991       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,
      &           2X,'ON MYPROC = ',I4)
+
          ENDIF
          WarnElevExceeded = 0
          IF(ELMAX.GT.WarnElev) THEN
             WRITE(ScreenUnit,1993)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
      &           KVMAX,MYPROC
-            WRITE(16,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
+            WRITE(16,1993) IT,NUMITR,ETA2(KEMAX),KEMAX,VELMAX,
      &           KVMAX,MYPROC
  1993       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
@@ -3183,6 +3473,7 @@ C     the screen.
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8)
+            if(IT.eq.120) CALL WriteWarnElev(TimeLoc, IT)
          ENDIF
          IF(ELMAX.GT.WarnElev) THEN
             WRITE(ScreenUnit,1994)
@@ -3201,12 +3492,12 @@ C     the screen.
             Flag_ElevError = .true.
             WRITE(ScreenUnit,1996)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16,1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(16,1996) IT,NUMITR,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1996       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,/,
-     &           2X,'** ERROR: Elevation.gt.ErrorElev, '
+     &           2X,'** ERROR: Elevation.gt.ErrorElev, ',
      &           'ADCIRC stopping. **')
             CALL ADCIRC_Terminate()
          ENDIF
@@ -3261,7 +3552,8 @@ C
      &     LoadEleSlopeLim,elemental_slope_limiter_active,
      &     LoadAdvectionState,
      &     elemental_slope_limiter_grad_max,
-     &     elemental_slope_limiter_max_exceeded
+     &     elemental_slope_limiter_max_exceeded,
+     &     AdvectionState
 
 #ifdef CMPI
       USE MESSENGER
@@ -3338,6 +3630,8 @@ C
       REAL(SZ) DEta2DX,DEta2DY
       REAL(SZ) DRhoDX,DRhoDY
 
+      REAL(SZ) ATOMTMP
+
       call setMessageSource("gwce_new")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -3412,6 +3706,12 @@ Casey 091022: Adopt Ethan's/Joannes's modified friction.
 
          !jgf48.4619: Added Seizo's handling of Lumping vs non-Lumping
          IF ( ILump.eq.0 ) THEN ! default case: fully consistent LHS
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NE,NM,NodeCode,NOFF,SFac,X,Y,Areas,DP,Tau0Var,NeiTab,Coef,G,A00),
+!$OMP& SHARED(OnDiag,OffDiag,DT,NEIMAX,J12,J13,J21,J23,J31,J32,JN,NNeigh),
+!$OMP& PRIVATE(IE,NMI1,NMI2,NMI3,NMJ1,NMJ2,NMJ3,NC1,NC2,NC3,NCEle,SFacAvg),
+!$OMP& PRIVATE(FDX1,FDX2,FDX3,FDY1,FDY2,FDY3,AreaIE2,AreaIE,AreaIE4),
+!$OMP& PRIVATE(DPAvg,GA00DPAvgOAreaIE4,Tau0Avg,MsFacLOnDiag,MsFacLOffDiag)
+!$OMP DO
             DO IE=1,NE
                NMI1=NM(IE,1)
                NMI2=NM(IE,2)
@@ -3452,29 +3752,46 @@ Casey 091022: Adopt Ethan's/Joannes's modified friction.
                   IF(NeiTab(NMI3,JN).EQ.NMJ2) J32=JN
                END DO
 
+!$OMP ATOMIC
                Coef(NMI1,1)  =Coef(NMI1,1)   + (MsFacLOnDiag
      &                   +GA00DPAvgOAreaIE4*(FDX1*FDX1+FDY1*FDY1))*NCELE
+!$OMP ATOMIC
                Coef(NMI1,J12)=Coef(NMI1,J12) + (MsFacLOffDiag
      &                   +GA00DPAvgOAreaIE4*(FDX1*FDX2+FDY1*FDY2))*NCELE
+!$OMP ATOMIC
                Coef(NMI1,J13)=Coef(NMI1,J13) + (MsFacLOffDiag
      &                   +GA00DPAvgOAreaIE4*(FDX1*FDX3+FDY1*FDY3))*NCELE
+!$OMP ATOMIC
                Coef(NMI2,J21)=Coef(NMI2,J21) + (MsFacLOffDiag
      &                   +GA00DPAvgOAreaIE4*(FDX2*FDX1+FDY2*FDY1))*NCELE
+!$OMP ATOMIC
                Coef(NMI2,1)  =Coef(NMI2,1)   + (MsFacLOnDiag
      &                   +GA00DPAvgOAreaIE4*(FDX2*FDX2+FDY2*FDY2))*NCELE
+!$OMP ATOMIC
                Coef(NMI2,J23)=Coef(NMI2,J23) + (MsFacLOffDiag
      &                   +GA00DPAvgOAreaIE4*(FDX2*FDX3+FDY2*FDY3))*NCELE
+!$OMP ATOMIC
                Coef(NMI3,J31)=Coef(NMI3,J31) + (MsFacLOffDiag
      &                   +GA00DPAvgOAreaIE4*(FDX3*FDX1+FDY3*FDY1))*NCELE
+!$OMP ATOMIC
                Coef(NMI3,J32)=Coef(NMI3,J32) + (MsFacLOffDiag
      &                   +GA00DPAvgOAreaIE4*(FDX3*FDX2+FDY3*FDY2))*NCELE
+!$OMP ATOMIC
                Coef(NMI3,1)  =Coef(NMI3,1)   + (MsFacLOnDiag
      &                   +GA00DPAvgOAreaIE4*(FDX3*FDX3+FDY3*FDY3))*NCELE
 
             ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
          ELSE
             !jgf48.4619: Add Seizo's construction of Lumped LHS matrix
+
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NE,NM,NodeCode,NOFF,SFac,Coefd,Tau0Var,Areas,DT,OnDiag),
+!$OMP& PRIVATE(IE,NMI1,NMI2,NMI3,NMJ1,NMJ2,NMJ3,NC1,NC2,NC3,NCEle,SFacAvg,AreaIE2,AreaIE),
+!$OMP& PRIVATE(Tau0Avg,MsFacLOnDiag,ATOMTMP)
+!$OMP DO
             DO IE=1,NE ! Make LHS Lumped Matrix
+
                NMI1=NM(IE,1)
                NMI2=NM(IE,2)
                NMI3=NM(IE,3)
@@ -3493,11 +3810,18 @@ Casey 091022: Adopt Ethan's/Joannes's modified friction.
 
                Tau0Avg=(Tau0Var(NMI1)+Tau0Var(NMI2)+Tau0Var(NMI3))/3.d0
                MsFacLOnDiag =OnDiag *AreaIE*(1.d0/DT+Tau0Avg/2.d0)/DT/12.d0
+               
+               ATOMTMP = (MsFacLOnDiag)*NCELE
+!$OMP ATOMIC
+               Coefd(NMI1)  =Coefd(NMI1)   + ATOMTMP
+!$OMP ATOMIC
+               Coefd(NMI2)  =Coefd(NMI2)   + ATOMTMP
+!$OMP ATOMIC
+               Coefd(NMI3)  =Coefd(NMI3)   + ATOMTMP
+           ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
-               Coefd(NMI1)  =Coefd(NMI1)   + (MsFacLOnDiag)*NCELE
-               Coefd(NMI2)  =Coefd(NMI2)   + (MsFacLOnDiag)*NCELE
-               Coefd(NMI3)  =Coefd(NMI3)   + (MsFacLOnDiag)*NCELE
-            ENDDO
          ENDIF
 
 C...  Modify the matrix "COEF" by imposing the elevation specified
@@ -3539,7 +3863,7 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
             DIE = .FALSE.
             DO I=1,NP
                IF(COEF(I,1).EQ.0.d0) COEF(I,1)=EP
-               IF(COEF(I,1).LT.0.d0) THEN                  
+               IF(COEF(I,1).LT.0.d0) THEN 
                   IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
      &              WRITE(ScreenUnit,1019) I,COEF(I,1)
                   WRITE(16,1019) I,COEF(I,1)
@@ -3563,8 +3887,7 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
                close(899)
                ! end jgfdebug
                CALL ADCIRC_Terminate()
-            ENDIF
-
+            ENDIF 
          ELSE  ! jgf48.4619: include Seizo's changes for lumped LHS
 
             ! Seizo: Explicit scheme can solve localy. (the efect is small?)
@@ -3581,6 +3904,9 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
 
 C.....      Check that all the diagonal elements in "COEFD" are > 0.
             DIE = .FALSE.
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NP,COEFD,EP,NSCREEN,MYPROC,SCREENUNIT,DIE),
+!$OMP& PRIVATE(I)
+!$OMP  DO
             DO I=1,NP
                IF(COEFD(I).EQ.0.d0) COEFD(I)=EP
                IF(COEFD(I).LT.0.d0) THEN
@@ -3593,9 +3919,12 @@ C.....      Check that all the diagonal elements in "COEFD" are > 0.
                   DIE = .TRUE.
                ENDIF
             ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
             IF (DIE) CALL ADCIRC_Terminate()
          ENDIF
       ENDIF                     !End of GWCE matrix setup
+
 C...
 C...  Compute the GWCE load vector GWCE_LV
 C...  This is done primarily element by element by forming
@@ -3641,13 +3970,24 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
 
       IF ((CGWCE_LS_2PartV).OR.(CGWCE_LS_2PartSV)) THEN
 
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NP,LSXX,LSXY,LSYX,LSYY),
+!$OMP& PRIVATE(I)
+!$OMP  DO
          DO I=1,NP
             LSXX(I)=0.d0
             LSXY(I)=0.d0
             LSYX(I)=0.d0
             LSYY(I)=0.d0
          ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
+!$OMP  PARALLEL DEFAULT(NONE),
+!$OMP& SHARED(NE,NM,NODECODE,NOFF,SFAC,X,Y,UU1,VV1,CSMag_Eh,LSXX,LSYX,LSXY,LSYY,EVM),
+!$OMP& PRIVATE(I,NM1,NM2,NM3,NC1,NC2,NC3,SFacAvg,FDX1,FDX2,FDX3,FDY1,FDY2,FDY3,NCEle),
+!$OMP& PRIVATE(LSXXGradA,LSYXGradA,LSXYGradA,LSYYGradA,EVMEle,EVMSmag),
+!$OMP& PRIVATE(LSXXEle,LSYXEle,LSXYEle,LSYYEle)
+!$OMP  DO
          DO IE=1,NE
             NM1=NM(IE,1)
             NM2=NM(IE,2)
@@ -3675,23 +4015,41 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
                EVMEle=EVMSmag
             ENDIF
             LSXXEle = LSXXGradA*EVMEle
+!$OMP ATOMIC
             LSXX(NM1)=LSXX(NM1)+LSXXEle
+!$OMP ATOMIC
             LSXX(NM2)=LSXX(NM2)+LSXXEle
+!$OMP ATOMIC
             LSXX(NM3)=LSXX(NM3)+LSXXEle
             LSXYEle = LSXYGradA*EVMEle
+!$OMP ATOMIC
             LSXY(NM1)=LSXY(NM1)+LSXYEle
+!$OMP ATOMIC
             LSXY(NM2)=LSXY(NM2)+LSXYEle
+!$OMP ATOMIC
             LSXY(NM3)=LSXY(NM3)+LSXYEle
             LSYXEle = LSYXGradA*EVMEle
+!$OMP ATOMIC
             LSYX(NM1)=LSYX(NM1)+LSYXEle
+!$OMP ATOMIC
             LSYX(NM2)=LSYX(NM2)+LSYXEle
+!$OMP ATOMIC
             LSYX(NM3)=LSYX(NM3)+LSYXEle
             LSYYEle = LSYYGradA*EVMEle
+!$OMP ATOMIC
             LSYY(NM1)=LSYY(NM1)+LSYYEle
+!$OMP ATOMIC
             LSYY(NM2)=LSYY(NM2)+LSYYEle
+!$OMP ATOMIC
             LSYY(NM3)=LSYY(NM3)+LSYYEle
          ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NP,LSXX,LSXY,LSYX,LSYY,TotalArea,H2,IFNLFA,ETA2),
+!$OMP& SHARED(CGWCE_LS_2PartV,CGWCE_LS_2PartSV,DP)
+!$OMP& PRIVATE(I,H2OTotalArea)
+!$OMP  DO
          DO I=1,NP
             IF(TotalArea(I).NE.0.) THEN
                H2=DP(I)+IFNLFA*ETA2(I)
@@ -3715,6 +4073,8 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
                LSYY(I)=0.d0
             ENDIF
          ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
       ENDIF
 
@@ -3722,13 +4082,25 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
 
       IF ((CGWCE_LS_2PartQ).OR.(CGWCE_LS_2PartSQ)) THEN
 
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NP,LSXX,LSXY,LSYX,LSYY),
+!$OMP& PRIVATE(I)
+!$OMP  DO
          DO I=1,NP
             LSXX(I)=0.d0
             LSXY(I)=0.d0
             LSYX(I)=0.d0
             LSYY(I)=0.d0
          ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
+
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NE,NM,NODECODE,NOFF,SFAC,X,Y,EVM),
+!$OMP& SHARED(UU1,VV1,CSmag_Eh,LSXX,LSXY,LSYX,LSYY,QX1,QY1),
+!$OMP& PRIVATE(IE,NM1,NM2,NM3,NC1,NC2,NC3,NCEle,SFacAvg,FDX1,FDX2,FDX3),
+!$OMP& PRIVATE(FDY1,FDY2,FDY3,EVMEle,LSXXGradA,LSXYGradA,LSYXGradA,LSYYGradA)
+!$OMP& PRIVATE(EVMSmag,LSXXEle,LSXYEle,LSYXEle,LSYYEle)
+!$OMP  DO
          DO IE=1,NE
             NM1=NM(IE,1)
             NM2=NM(IE,2)
@@ -3759,24 +4131,43 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
             LSXYGradA=(QX1(NM1)*FDY1+QX1(NM2)*FDY2+QX1(NM3)*FDY3)/2.d0
             LSYXGradA=(QY1(NM1)*FDX1+QY1(NM2)*FDX2+QY1(NM3)*FDX3)/2.d0
             LSYYGradA=(QY1(NM1)*FDY1+QY1(NM2)*FDY2+QY1(NM3)*FDY3)/2.d0
+
             LSXXEle = LSXXGradA*EVMEle
+!$OMP ATOMIC
             LSXX(NM1)=LSXX(NM1)+LSXXEle
+!$OMP ATOMIC
             LSXX(NM2)=LSXX(NM2)+LSXXEle
+!$OMP ATOMIC
             LSXX(NM3)=LSXX(NM3)+LSXXEle
             LSXYEle = LSXYGradA*EVMEle
+!$OMP ATOMIC
             LSXY(NM1)=LSXY(NM1)+LSXYEle
+!$OMP ATOMIC
             LSXY(NM2)=LSXY(NM2)+LSXYEle
+!$OMP ATOMIC
             LSXY(NM3)=LSXY(NM3)+LSXYEle
             LSYXEle = LSYXGradA*EVMEle
+!$OMP ATOMIC
             LSYX(NM1)=LSYX(NM1)+LSYXEle
+!$OMP ATOMIC
             LSYX(NM2)=LSYX(NM2)+LSYXEle
+!$OMP ATOMIC
             LSYX(NM3)=LSYX(NM3)+LSYXEle
             LSYYEle = LSYYGradA*EVMEle
+!$OMP ATOMIC
             LSYY(NM1)=LSYY(NM1)+LSYYEle
+!$OMP ATOMIC
             LSYY(NM2)=LSYY(NM2)+LSYYEle
+!$OMP ATOMIC 
             LSYY(NM3)=LSYY(NM3)+LSYYEle
-         ENDDO
 
+         ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NP,TotalArea,CGWCE_LS_2PartQ,CGWCE_LS_2PartSQ,LSXX,LSXY,LSYX,LSYY),
+!$OMP& PRIVATE(I)
+!$OMP  DO
          DO I=1,NP
             IF(TotalArea(I).NE.0.) THEN
                IF (CGWCE_LS_2PartQ) THEN          !nonsymmetric
@@ -3798,21 +4189,43 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
                LSYY(I)=0.d0
             ENDIF
          ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
       ENDIF
-
+ 
 C...  Assemble the GWCE RHS except for the boundary integral terms
 
-      DO 1037 IE=1,NE
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NE,NWS,NRS,CTIP,C2DDI,C3D,ILump,CGWCE_LS_KGQ),
+!$OMP& SHARED(CGWCE_LS_2PartQ,CGWCE_LS_2PartV,CBaroclinic,CGWCE_Advec_NC,CGWCE_Advec_C1),
+!$OMP& SHARED(CGWCE_Advec_C2,NODECODE,NOFF,ETAS,UU1,VV1,QX1,QY1,DP,IFNLFA,EVM,Tau0Var),
+!$OMP& SHARED(GWCE_LV,NM,ETA1,ETA2,PR1,TiP1,TK,BSY1,BSX1,Areas,X,Y,SFAC,LoadAdvectionState)
+!$OMP& SHARED(LSXX,LSXY,LSYY,LSYX,DVV1,DUU1,DUV1,Corif,WSX1,WSY1,VIDBCPDXOH,VIDBCPDYOH)
+!$OMP& SHARED(Temp_LV_A,A00,B00,C00,OnDiag,OffDiag,G,DT,CGWCE_LS_2PARTSV,CGWCE_LS_2PARTSQ),
+!$OMP& SHARED(AdvectionState,IFNLCTE,IFNLCATE,IFNLCAT,IFNLCT),
+!$OMP& PRIVATE(NM1,NM2,NM3,NC1,NC2,NC3,NCELE,E0N1,E0N2,E0N3,E1N1,E1N2,E1N3,E1N1SQ,E1N2SQ,E1N3SQ),
+!$OMP& PRIVATE(ESN1,ESN2,ESN3,U1N1,U1N2,U1N3,V1N1,V1N2,V1N3,QX1N1,QX1N2,QX1N3,QY1N1,QY1N2,QY1N3),
+!$OMP& PRIVATE(H1N1,H1N2,H1N3,EVMN1,EVMN2,EVMN3,T0N1,T0N2,T0N3,PR1N1,PR1N2,PR1N3,TiPN1,TiPN2,TiPN3),
+!$OMP& PRIVATE(BSXN1,BSXN2,BSXN3,BSYN1,BSYN2,BSYN3,AreaIE,AreaIE2,AreaIE4,SFacAvg,FDX1,FDX2,FDX3),
+!$OMP& PRIVATE(FDY1,FDY2,FDY3,E0XGrad2A,E0YGrad2A,E1XGrad2A,E1YGrad2A,Tau0XGrad2A,Tau0YGrad2A),
+!$OMP& PRIVATE(EVMXGrad,EVMYGrad,EVMAvgODT,MX,MY,DispX,DispY,CorifAvg,Tau0Avg,Tau0QXAvg,Tau0QYAvg),
+!$OMP& PRIVATE(U1Avg,V1Avg,QX1AVG,QY1Avg,ESAvg,DPAvg,GDPAvgOAreaIE4,HAvg,GHAvg,GHAvgOAreaIE2),
+!$OMP& PRIVATE(BSXAvg,BSYAvg,MXAvg,MYAvg,DispXAvg,DispYAvg,BCXAvg,BCYAvg,MsFacR,GOAreaIE4,Tau0SpaVar),
+!$OMP& PRIVATE(A00pB00,JXAvg,JYAvg,Temp_LV_A1,Temp_LV_A2,Temp_LV_A3,WSXAVG,WSYAVG,ATOMTMP)
+!$OMP DO
+c      DO 1037 IE=1,NE
+      DO IE=1,NE
 
 C...     Set nodal values for each element
 
 Corbitt 120322: Localized Advection
          IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
 
+
          NM1=NM(IE,1)
          NM2=NM(IE,2)
          NM3=NM(IE,3)
+
          NC1=NODECODE(NM1)
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
@@ -3972,7 +4385,6 @@ C...     Compute elemental averages
             WSXAvg=(WSX1(NM1)+WSX1(NM2)+WSX1(NM3))/3.d0
             WSYAvg=(WSY1(NM1)+WSY1(NM2)+WSY1(NM3))/3.d0
          ENDIF
-
          IF (C3D) THEN                !3D velocity dispersion
             DispXAvg=IFNLCT*DispX
             DispYAvg=IFNLCT*DispY
@@ -4107,28 +4519,49 @@ C...     These will be put into nodal storage outside of the elemental loop
 
 C...     Put these partial products directly into nodal storage for a scalar (non-vector) computer
 #ifdef CSCA
-         GWCE_LV(NM1)=GWCE_LV(NM1)+Temp_LV_A1*NCEle
-         GWCE_LV(NM2)=GWCE_LV(NM2)+Temp_LV_A2*NCEle
-         GWCE_LV(NM3)=GWCE_LV(NM3)+Temp_LV_A3*NCEle
-#endif
+         ATOMTMP = Temp_LV_A1*NCEle
+!$OMP ATOMIC
+         GWCE_LV(NM1)=GWCE_LV(NM1)+ATOMTMP
 
- 1037 CONTINUE                  !End of elemental loop
+         ATOMTMP = Temp_LV_A2*NCEle
+!$OMP ATOMIC
+         GWCE_LV(NM2)=GWCE_LV(NM2)+ATOMTMP
+
+         ATOMTMP = Temp_LV_A3*NCEle
+!$OMP ATOMIC
+         GWCE_LV(NM3)=GWCE_LV(NM3)+ATOMTMP
+#endif
+         
+c 1037 CONTINUE                  !End of elemental loop
+      END DO
+
+!$OMP END DO
+!$OMP END PARALLEL
 
 C...  Put load vector elemental values into nodal storage for a vector computer
 #ifdef CVEC
+!$OMP PARALLEL DEFAULT(NONE) SHARED(NE,NM,GWCE_LV,Temp_LV_A) PRIVATE(IE,NM1,NM2,NM3)
+!$OMP DO
       DO IE=1,NE
          NM1=NM(IE,1)
          NM2=NM(IE,2)
          NM3=NM(IE,3)
+!$OMP ATOMIC
          GWCE_LV(NM1)=GWCE_LV(NM1)+Temp_LV_A(IE,1)
+!$OMP ATOMIC
          GWCE_LV(NM2)=GWCE_LV(NM2)+Temp_LV_A(IE,2)
+!$OMP ATOMIC
          GWCE_LV(NM3)=GWCE_LV(NM3)+Temp_LV_A(IE,3)
       END DO
+!$OMP END DO
+!$OMP END PARALLEL
 #endif
 
 C...  Save the elevation at the past time step into Eta1 and zero out Eta2
 ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
 
+!$OMP PARALLEL DEFAULT(NONE) SHARED(NP,ETAS,ETAS0,Eta0,Eta1,Eta2,CPRECOR) PRIVATE(I)
+!$OMP DO
       DO I=1,NP
          IF(CPRECOR) THEN
             ETAS0(I)=ETAS(I)
@@ -4137,6 +4570,8 @@ ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
          Eta1(I)=Eta2(I)
          Eta2(I)=0.0d0
       END DO
+!$OMP END DO
+!$OMP END PARALLEL
 
 C...  At elevation boundary condition nodes, determine the elevation at
 C...  the s+1 time step
@@ -4185,6 +4620,7 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
             END DO
          ENDIF
       endif                                   ! NCSU Subdomain
+
       ! 
       ! jgf46.02 Added the ability to include geoid offset on the boundary.
       !
@@ -4198,9 +4634,8 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
                ETA2(NBD(I))=ETA2(NBD(I))+GeoidOffset(NBD(I))
             END DO
          ENDIF
-      endif                                      ! NCSU Subdomain
-C
-C
+      endif                                      ! NCSU Subdomain      
+
 C     jgf48.04 Added an inverted barometer boundary condition so that
 C     low pressure systems can cross the boundary without creating an
 C     elevation anomaly.
@@ -4211,8 +4646,7 @@ C     on and off according to analyst preference.
             ETA2(NBD(I))=ETA2(NBD(I))
      &          + RampMete*(101300.d0/(RHOWAT0*G)) - PR2(NBD(I))
          END DO
-      endif
-
+      ENDIF
 C   kmd48.33bc add information for the levels of no motion boundary conditions
 C              these are considered the steric adjustments.
       IF ((ABS(RES_BC_FLAG).GE.1).AND.(CBaroclinic).AND.(NOPE.GT.0))THEN
@@ -4316,7 +4750,6 @@ C     jgf46.21 Added IBTYPE=52
      &                              + BndLenO6NC*(2.d0*QForceJ+QForceI)
           ENDDO
         ENDIF
-
 C...
 C...  IMPOSE ELEVATION BOUNDARY CONDITIONS TO LOAD VECTOR GWCE_LV(I) NOTE; EP
 C...  IS THE RMS OF ALL THE DIAGONAL MEMBERS IN THE GWCE.  IT IS USED TO
@@ -4346,7 +4779,6 @@ C...  SOLVE GWCE FOR ELEVATION AT NEW TIME LEVEL
 C...
 
 C...  UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
-
 #ifdef CMPI
 C...UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
       IF (ILump.eq.0) THEN ! default, fully consistent LHS
@@ -4725,7 +5157,6 @@ C           AND QUV ON A SCALAR COMPUTER USING THE TEMPORARY VECTORS
          MOM_LV_Y(NM2)=MOM_LV_Y(NM2)+TEMP_LV_B2
          MOM_LV_Y(NM3)=MOM_LV_Y(NM3)+TEMP_LV_B3
 #endif
-
          ENDDO                        !end of elemental assembly loop
 
 
@@ -4943,6 +5374,7 @@ C     velocities at the previous time step.
                AUV12(NBDI)=0.d0
                MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
                MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
+
                ENDIF
 #ifdef CSWAN
 #ifdef CSWANFRIC
@@ -4980,6 +5412,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
          VV2(I) = (MOM_LV_Y(I)*AUVXX(I)-MOM_LV_X(I)*AUVYX(I))/DDU
 #endif
 #endif
+
 cjjw
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
 c           UU2(I)=0.D0    !no slip and normal flux
@@ -5012,6 +5445,7 @@ C...
      &                                            +UU2(NM3)*ZNGIF3(I))
                VV2(NBDI)=NCEle*(VV2(NM1)*ZNGIF1(I)+VV2(NM2)*ZNGIF2(I)
      &                                            +VV2(NM3)*ZNGIF3(I))
+
                ENDIF
             ENDDO
          ENDIF
@@ -5135,9 +5569,25 @@ C...
 C...  UPDATE LOAD VECTOR MOM_LV_X(I) AND MOM_LV_Y(I)
 C...  NOTE: MOM_LV_X, MOM_LV_Y AND AUV ARE ZEROED OUT AT THE TOP OF
 C...        THE TIME STEPPING LOOP.
-
+      
 C.....FIRST TREAT THE NON-LUMPED PART OF THE EQUATIONS.
 
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(LoadAdvectionState,CSmag_Eh,NWS),
+!$OMP& SHARED(NE,CTIP,CME_LS_IBPQ,CME_LS_IBPSQ,CME_LS_IBPV),
+!$OMP& SHARED(CME_LS_IBPSV,CME_AreaInt_Orig,NM,IFNLFA,DT,GO2,IFNLCT),
+!$OMP& SHARED(NODECODE,NOFF,UU1,VV1,DP,ETA1,ETA2,QX1,QY1,SFAC,Areas,Y,X),
+!$OMP& SHARED(EVM,PR1,PR2,TiP1,TiP2,TEMP_LV_A,TEMP_LV_B,MOM_LV_X,MOM_LV_Y),
+!$OMP& PRIVATE(NM1,NM2,NM3,NC1,NC2,NC3,NCELE,U1N1,U1N2,U1N3,V1N1,V1N2,V1N3),
+!$OMP& PRIVATE(H1N1,H1N2,H1N3,H2N1,H2N2,H2N3,QX1N1,QX1N2,QX1N3,QY1N1,QY1N2,QY1N3),
+!$OMP& PRIVATE(SFacAvg,AreaIE2,AreaIE,FDX1,FDX2,FDX3,FDY1,FDY2,FDY3,U1Avg,V1Avg),
+!$OMP& PRIVATE(DU1DXA,DU1DYA,DV1DXA,DV1DYA,EVMEle,EVMSmag),
+!$OMP& PRIVATE(BTP1N1,BTP2N1,BTP1N2,BTP2N2,BTP1N3,BTP2N3,DBTPDXA,DBTPDYA),
+!$OMP& PRIVATE(U1AvgDU1DXA,V1AvgDU1DYA,U1AvgDV1DXA,V1AvgDV1DYA),
+!$OMP& PRIVATE(DQX1DX,DQX1DY,DQY1DX,DQY1DY,LSXXN1,LSXXN2,LSXXN3),
+!$OMP& PRIVATE(LSXYN1,LSXYN2,LSXYN3,LSYXN1,LSYXN2,LSYXN3,LSYYN1,LSYYN2,LSYYN3),
+!$OMP& PRIVATE(DU1DX,DU1DY,DV1DX,DV1DY,EVMH1N1,EVMH1N2,EVMH1N3),
+!$OMP& PRIVATE(TEMP_LV_A1,TEMP_LV_A2,TEMP_LV_A3,TEMP_LV_B1,TEMP_LV_B2,TEMP_LV_B3)
+!$OMP DO
       DO IE=1,NE
 
 C...  SET NODAL VALUES FOR EACH ELEMENT
@@ -5237,7 +5687,7 @@ C...  Compute the barotropic pressure gradient x area for the element
      &           +(BTP2N1*FDX1+BTP2N2*FDX2+BTP2N3*FDX3))/2.d0
          DBTPDYA=((BTP1N1*FDY1+BTP1N2*FDY2+BTP1N3*FDY3)
      &           +(BTP2N1*FDY1+BTP2N2*FDY2+BTP2N3*FDY3))/2.d0
-
+         
 C...  Compute the advective term gradients x area for the element
 
          U1AvgDU1DXA=U1Avg*DU1DXA
@@ -5389,6 +5839,9 @@ C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSYXN1*FDX1+LSYYN1*FDY1)/H1N1
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
+c         IF (NM1.eq.3251) THEN
+c            write(*,*) "TEMP_LV_B1 computes ",TEMP_LV_B1 
+c         ENDIF
 
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO
 C...  TEMP_LV_B VECTOR FOR NODE NM2
@@ -5441,21 +5894,29 @@ C     LINES TO RUN ON A SCALAR COMPUTER
 C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR MOM_LV_X, MOM_LV_Y
 C           AND QUV ON A SCALAR COMPUTER USING THE TEMPORARY VECTORS
 #ifdef CSCA
+!$OMP ATOMIC
          MOM_LV_X(NM1)=MOM_LV_X(NM1)+TEMP_LV_A1
+!$OMP ATOMIC
          MOM_LV_X(NM2)=MOM_LV_X(NM2)+TEMP_LV_A2
+!$OMP ATOMIC
          MOM_LV_X(NM3)=MOM_LV_X(NM3)+TEMP_LV_A3
+!$OMP ATOMIC
          MOM_LV_Y(NM1)=MOM_LV_Y(NM1)+TEMP_LV_B1
+!$OMP ATOMIC
          MOM_LV_Y(NM2)=MOM_LV_Y(NM2)+TEMP_LV_B2
+!$OMP ATOMIC
          MOM_LV_Y(NM3)=MOM_LV_Y(NM3)+TEMP_LV_B3
 #endif
 
          ENDDO
-
+!$OMP END DO
+!$OMP END PARALLEL
 
 C     LINES TO RUN ON A VECTOR COMPUTER
 C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR MOM_LV_X, MOM_LV_Y
 C           AND AUV
 #ifdef CVEC
+
       DO IE=1,NE
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -5470,6 +5931,7 @@ C           AND AUV
          MOM_LV_Y(NM1)=MOM_LV_Y(NM1)+TEMP_LV_B(IE,1)
          MOM_LV_Y(NM2)=MOM_LV_Y(NM2)+TEMP_LV_B(IE,2)
          MOM_LV_Y(NM3)=MOM_LV_Y(NM3)+TEMP_LV_B(IE,3)
+
          END DO
 #endif
 
@@ -5481,6 +5943,17 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
       WSY=0.D0
       VIDBCPDX=0.D0
       VIDBCPDY=0.D0
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NP,NODECODE,TotalArea,CME_AreaInt_Corr,CME_AreaInt_Orig),
+!$OMP& SHARED(MOM_LV_X,MOM_LV_Y,MJU,DP,IFNLFA,ETA1,ETA2,NWS,NRS,DTO2,IFWIND,WSX1,WSY1,WSX2,WSY2),
+!$OMP& SHARED(TK,CORIF,CBaroclinic,DT,AUV11,AUV12,VIDBCPDXOH,VIDBCPDYOH,UU1,VV1),
+#ifdef CSWAN
+#ifdef CSWANFRIC
+!$OMP& PRIVATE(VCOEFXX,VCOEFXX,VCOEFYX,VCOEFXY,VCOEFYY),
+!$OMP& SHARED(TKXX,TKYY,TKXY,UU1,VV1,AUVXX,AUVXY,AUVYX,AUVYY),
+#endif
+#endif
+!$OMP& PRIVATE(I,NCI,H1,H2,WSX,WSY,VCoef1,VCoef2,VIDBCPDX,VIDBCPDY)
+!$OMP DO
       DO I=1,NP
          NCI=NODECODE(I)
          IF(TotalArea(I).ne.0.d0) THEN
@@ -5493,6 +5966,7 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
                MOM_LV_Y(I)=MOM_LV_Y(I)/MJU(I)
             ENDIF
          ENDIF
+
          H1=DP(I)+IFNLFA*ETA1(I)
          H2=DP(I)+IFNLFA*ETA2(I)
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
@@ -5532,7 +6006,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
          MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*VV1(I)
      &                                     -VCoef2*UU1(I)-VIDBCPDY)
 #endif
-
+   
          AUV11(I)=1.D0+VCoef1*NCI
          AUV12(I)=-VCoef2*NCI
 
@@ -5547,6 +6021,8 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 #endif
 
          END DO
+!$OMP END DO
+!$OMP END PARALLEL
 
 C...  Modify the momentum equations to impose velocity boundary
 C...  conditions In each case the equations are manipulated to
@@ -5590,6 +6066,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
             AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
             AUV11(NBDI)=SIII(I)*AUV11(NBDI)
 #endif
+     
             ENDIF
 
 C     Specified essential normal flow and no tangential slip
@@ -5601,6 +6078,7 @@ C     Specified essential normal flow and no tangential slip
             MOM_LV_Y(NBDI)=VelNorm*NCI !Normal Eqn RHS
             AUV11(NBDI)=SIII(I)
             AUV12(NBDI)=-CSII(I)
+       
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
@@ -5672,6 +6150,7 @@ C     velocities at the previous time step.
                AUV12(NBDI)=0.d0
                MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
                MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
+
                ENDIF
 #ifdef CSWAN
 #ifdef CSWANFRIC
@@ -5692,12 +6171,21 @@ C.....determine if the node is an interface node.  If MJU < NODELE the
 C.....velocity can be zeroed out to obtain an essential zero velocity at
 C.....interface nodes.
 
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NP,AUV11,AUV12,MOM_LV_X,MOM_LV_Y,UU2,VV2),
+#ifdef CSWAN
+#ifdef CSWANFRIC
+!$OMP& SHARED(AUVXY,AUVXX,AUVYX,AUVYY),
+#endif
+#endif
+!$OMP& PRIVATE(I,AUV21,AUV22,DDU)
+!$OMP DO
       DO I=1,NP
          AUV22=AUV11(I)
          AUV21=-AUV12(I)
          DDU=AUV11(I)*AUV22-AUV12(I)*AUV21
          UU2(I)=(MOM_LV_X(I)*AUV22-MOM_LV_Y(I)*AUV12(I))/DDU
          VV2(I)=(MOM_LV_Y(I)*AUV11(I)-MOM_LV_X(I)*AUV21)/DDU
+
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
@@ -5706,6 +6194,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
          DDU = AUVXX(I)*AUVYY(I)-AUVXY(I)*AUVYX(I)
          UU2(I)=(MOM_LV_X(I)*AUVYY(I)-MOM_LV_Y(I)*AUVXY(I))/DDU
          VV2(I)=(MOM_LV_Y(I)*AUVXX(I)-MOM_LV_X(I)*AUVYX(I))/DDU
+
 #endif
 #endif
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
@@ -5713,6 +6202,8 @@ c           UBAR2(I)=0.D0    !no slip and normal flux
 c           VBAR2(I)=0.D0    !on wet/dry interface nodes
 c           ENDIF
       END DO
+!$OMP END DO
+!$OMP END PARALLEL
 
       if(subdomainOn.and.enforceBN.eq.1) call enforceUVcb() ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call enforceUVob() ! NCSU Subdomain
@@ -5741,17 +6232,20 @@ C...
      &                                            +UU2(NM3)*ZNGIF3(I))
                VV2(NBDI)=NCEle*(VV2(NM1)*ZNGIF1(I)+VV2(NM2)*ZNGIF2(I)
      &                                            +VV2(NM3)*ZNGIF3(I))
+
                ENDIF
             ENDDO
          ENDIF
 
 C...  Compute fluxes
 
+!$OMP PARALLEL DO DEFAULT(NONE) SHARED(NP,DP,ETA2,IFNLFA,UU2,VV2,QX2,QY2) PRIVATE(I,H2)
       DO I=1,NP
          H2=DP(I)+IFNLFA*ETA2(I)
          QX2(I)=UU2(I)*H2
          QY2(I)=VV2(I)*H2
       ENDDO
+!$OMP END PARALLEL DO
 
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -6208,9 +6702,7 @@ C           AND QUV ON A SCALAR COMPUTER USING THE TEMPORARY VECTORS
          MOM_LV_Y(NM3)=MOM_LV_Y(NM3)+TEMP_LV_B3
 #endif
 
-         ENDDO
-
-
+      ENDDO
 
 C     LINES TO RUN ON A VECTOR COMPUTER
 C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR MOM_LV_X, MOM_LV_Y
@@ -6253,6 +6745,7 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
                MOM_LV_X(I)=MOM_LV_X(I)/MJU(I)
                MOM_LV_Y(I)=MOM_LV_Y(I)/MJU(I)
             ENDIF
+
          ENDIF
          H1=DP(I)+IFNLFA*ETA1(I)
          H2=DP(I)+IFNLFA*ETA2(I)
@@ -6291,7 +6784,6 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
          MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*QY1(I)
      &        -VCoef2*QX1(I)-VIDBCPDY)
 #endif
-
          AUV11(I)=1.D0+VCoef1*NCI
          AUV12(I)=-VCoef2*NCI
 
@@ -6347,6 +6839,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
             AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
             AUV11(NBDI)=SIII(I)*AUV11(NBDI)
 #endif
+
             ENDIF
 
 C     Specified essential normal flow and no tangential slip
@@ -8045,7 +8538,6 @@ ckmd
      &                                     +VCoef2*VV1(I)-VIDBCPDX)
          MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*VV1(I)
      &                                     -VCoef2*UU1(I)-VIDBCPDY)
-
 ckmd    Change for the corrector formulation
          AUV11(I)=1.D0+VCoef12*NCI
          AUV12(I)=-VCoef2*NCI
@@ -8073,7 +8565,6 @@ C      Specified essential normal flow and free tangential slip
             AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
             AUV11(NBDI)=SIII(I)*AUV11(NBDI)
             ENDIF
-
 C     Specified essential normal flow and no tangential slip
 
          IF((LBCODEI(I).GE.10).AND.(LBCODEI(I).LE.19)) THEN
@@ -8860,9 +9351,7 @@ c     integrate over the vertical first and differentiate second.
             ENDDO
             VIDBCPDXOH(NH)=REAL(VIBCPG)/AMB
             VIDBCPDYOH(NH)=AIMAG(VIBCPG)/AMB
-
          ENDIF
-
 c     Finished computing baroclinic terms
 
       ENDDO
@@ -9075,6 +9564,13 @@ C*************************************************************************
 Cobell  CHECK IF THE LOCAL GRADIENT FOR ELEMENTS IS EXCEEDED AND TRIGGER THE
 C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
 
+!$OMP  PARALLEL DEFAULT(NONE) SHARED (NE,NM,NODECODE,NOFF,SFAC,Areas,X,Y,Eta2),
+!$OMP& SHARED(elemental_slope_limiter_active,elemental_slope_limiter_grad_max),
+!$OMP& SHARED(elemental_slope_limiter_max_exceeded,it,timeloc,nodes_lg,mnproc),
+!$OMP& SHARED(eslonoff,scratchmessage),
+!$OMP& PRIVATE(NM1,NM2,NM3,NC1,NC2,NC3,NCEle,SFacAvg,AreaIE2,FDX1,FDX2,FDX3),
+!$OMP& PRIVATE(FDY1,FDY2,FDY3,dEta2Dx,dEta2Dy,dEta2Mag,I,nodeNumber) 
+!$OMP  DO
       DO IE=1,NE
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -9129,6 +9625,7 @@ C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
                      call allMessage(INFO,scratchMessage)
                      eslonoff(nm(ie,i)) = 1 ! for output file
                   endif
+!$OMP ATOMIC WRITE
                   elemental_slope_limiter_active(NM(IE,I)) = .TRUE.
                else
                   ! Just print log message the first time the 
@@ -9145,7 +9642,10 @@ C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
                endif
             endif
          enddo ! loop around nodes of an element
+         
       enddo ! loop over the elements
+!$OMP END DO
+!$OMP END PARALLEL
 
 
 1983  format('Elemental slope limiter turned on at fulldomain node ',i0,
@@ -9193,7 +9693,8 @@ C
       REAL(8) :: AreaEle
       REAL(sz), ALLOCATABLE, SAVE :: elevSum(:) ! used if elemental slope limiter is active
       LOGICAL, SAVE :: firstCall = .true.
-
+      
+      REAL(SZ) ATOMTMP
 
       call setMessageSource("check_slopes")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -9217,6 +9718,9 @@ C        TIME STEP AND APPLY SMOOTHING IF DESIRED. -ZC
       IF (LoadEleSlopeLim.eqv..true.) THEN
 C
          elevSum(:) = 0.d0
+!$OMP  PARALLEL DEFAULT(NONE) SHARED(NE,NM,NODECODE,NOFF,IFNLFA,Eta2Lim,Areas,elevSum),
+!$OMP& PRIVATE(NM1,NM2,NM3,NC1,NC2,NC3,NCEle,EtaN1,EtaN2,EtaN3,AreaEle,EtaN123,ATOMTMP) 
+!$OMP  DO
          DO IE=1,NE
             NM1=NM(IE,1)
             NM2=NM(IE,2)
@@ -9230,10 +9734,16 @@ C
             EtaN3=IFNLFA*Eta2Lim(NM3)
             AreaEle=NCEle*Areas(IE)/2.d0
             EtaN123=(EtaN1+EtaN2+EtaN3)/3.d0
-            elevSum(NM1)=elevSum(NM1)+AreaEle*EtaN123
-            elevSum(NM2)=elevSum(NM2)+AreaEle*EtaN123
-            elevSum(NM3)=elevSum(NM3)+AreaEle*EtaN123
+            ATOMTMP = AreaEle*EtaN123
+!$OMP ATOMIC
+            elevSum(NM1)=elevSum(NM1)+ATOMTMP
+!$OMP ATOMIC
+            elevSum(NM2)=elevSum(NM2)+ATOMTMP
+!$OMP ATOMIC
+            elevSum(NM3)=elevSum(NM3)+ATOMTMP
          ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
 Cobell   CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
 C        TIME STEP AND APPLY SMOOTHING IF DESIRED. THIS ROUTINE PARALLELS THE
@@ -9261,4 +9771,3 @@ C... Will apply the updating outside the subroutine
       END SUBROUTINE APPLY_SLOPE_LIMITS
 
 C***********************************************************************
-
