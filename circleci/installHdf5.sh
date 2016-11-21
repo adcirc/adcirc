@@ -11,13 +11,13 @@ if [ ! -d $installDirectory/hdf5_build ] ; then
     cd $installDirectory
     
     #...Get the hdf5 source code
-    wget http://www.hdfgroup.org/ftp/HDF5/current/src/hdf5-1.8.17.tar.gz
+    wget https://support.hdfgroup.org/ftp/HDF5/current18/src/hdf5-1.8.18.tar.gz
 
     #...Unzip the package
-    tar -xzf hdf5-1.8.17.tar.gz
+    tar -xzf hdf5-1.8.18.tar.gz
 
     #...Configure the code
-    cd hdf5-1.8.17
+    cd hdf5-1.8.18
     ./configure --prefix=$installDirectory/hdf5_build CFLAGS="-w"
 
     #...Build the code using 4 processors
