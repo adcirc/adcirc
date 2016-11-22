@@ -56,7 +56,13 @@ Corbitt 120328: Apply Advection Locally
      &       DTDP,                         !DTDP = timestep declared as real(8)
      &       allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
      &       setMessageSource, unsetMessageSource
+
+      USE BOUNDARIES,ONLY:NETA,NVEL
+
+      IMPLICIT NONE
+
       SAVE
+
 
 C...DECLARE 3D GLOBAL ARRAYS
 
