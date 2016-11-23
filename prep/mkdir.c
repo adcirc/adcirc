@@ -4,6 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 void f_makedir(char* path, int len)
 {
   char *dirnm;
@@ -13,7 +17,12 @@ void f_makedir(char* path, int len)
 
   dirnm[len] = '\0';
 
+#ifdef _WIN32
+  _mkdir(dirnm, 0755);
+#else
   mkdir(dirnm, 0755);
+#endif
+
 
   free(dirnm);
 }
