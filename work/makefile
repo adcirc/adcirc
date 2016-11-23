@@ -581,7 +581,7 @@ endif
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
    aswip ::   $(ADCIRC_DEP) $(ASW_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(WIND_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
+	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(WIND_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(MESH_MOBJ) $(LIBS) $(LDFLAGS)
 
    adccmp :  $(O_DIR) $(CMP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
