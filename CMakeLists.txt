@@ -70,9 +70,9 @@ int main()
 }"
 )
 
-FILE(WRITE "${CMAKE_BINARY_DIR}/architecture_check.c" "${archdetect_c_code}")
+FILE(WRITE "${CMAKE_BINARY_DIR}/CMakeFiles/architecture_check.c" "${archdetect_c_code}")
 
-TRY_COMPILE(ARCH_TEST_COMPILE "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/architecture_check.c")
+TRY_COMPILE(ARCH_TEST_COMPILE "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/architecture_check.c")
 IF(ARCH_TEST_COMPILE)
     SET(ARCH 64)
 ELSE(ARCH_TEST_COMPILE)
@@ -280,31 +280,61 @@ IF(ENABLE_OUTPUT_NETCDF)
             INTEGER :: NCID
             INTEGER :: VARID
 
-            IERR = NF90_DEFLATE(NCID,VARID,1,1,2)
+            IERR = NF90_DEF_VAR_DEFLATE(NCID,VARID,1,1,2)
 
         END PROGRAM
 "
     )
 
-    FILE(WRITE "${CMAKE_BINARY_DIR}/netcdf3check.f90" "${netcdf3_f90_code}")
-    FILE(WRITE "${CMAKE_BINARY_DIR}/netcdf4check.f90" "${netcdf4_f90_code}")
-    TRY_COMPILE(NETCDF_TEST1 "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/netcdf3check.f90" CMAKE_FLAGS "-I${NETCDFHOME}/include -L${NETCDFHOME}/lib -lnetcdf -lnetcdff")
-    TRY_COMPILE(NETCDF_TEST2 "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/netcdf4check.f90" CMAKE_FLAGS "-I${NETCDFHOME}/include -L${NETCDFHOME}/lib -lnetcdf -lnetcdff")
-    MESSAGE(${NETCDF_TEST1})
-    MESSAGE(${NETCDF_TEST2})
+    IF(${NETCDFHOME} STREQUAL "NETCDF-NOTFOUND")
+        MESSAGE("WARNING: Specify the netCDF path on the following screen")
+    ELSE(${NETCDFHOME} STREQUAL "NETCDF-NOTFOUND")
+        
+        FILE(WRITE "${CMAKE_BINARY_DIR}/CMakeFiles/netcdf3check.f90" "${netcdf3_f90_code}")
+        FILE(WRITE "${CMAKE_BINARY_DIR}/CMakeFiles/netcdf4check.f90" "${netcdf4_f90_code}")
+        TRY_COMPILE(NETCDF_TEST1 "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/netcdf3check.f90" CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${NETCDFHOME}/include" "-DLINK_DIRECTORIES=${NETCDFHOME}/lib" LINK_LIBRARIES netcdf LINK_LIBRARIES netcdff OUTPUT_VARIABLE LOG1)
+        TRY_COMPILE(NETCDF_TEST2 "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/netcdf4check.f90" CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${NETCDFHOME}/include" "-DLINK_DIRECTORIES=${NETCDFHOME}/lib" LINK_LIBRARIES netcdf LINK_LIBRARIES netcdff OUTPUT_VARIABLE LOG2)
 
-    IF(NETCDF_TEST1 AND NETCDF_TEST2)
-        SET(NETCDF_FLAG "-DADCNETCDF -I${NETCDFHOME}/include")
-        SET(NETCDF_COMPRESSION_FLAG "-DHAVE_NETCDF4 -DNETCDF_CAN_DEFLATE")
-        SET(NETCDF_LINKER_FLAG "-L${NETCDFHOME}/lib")
-    ELSE(NETCDF_TEST1 AND NETCDF_TEST2)
-        MESSAGE("ERROR: The netCDF library specified is not compatible with the specified compilers")
-    ENDIF(NETCDF_TEST1 AND NETCDF_TEST2)
+        IF(NETCDF_TEST1)
+            SET(NETCDF_FLAG "-DADCNETCDF -I${NETCDFHOME}/include")
+            SET(NETCDF_LINKER_FLAG "-L${NETCDFHOME}/lib")
+            IF(NETCDF_TEST2)
+                SET(NETCDF_COMPRESSION_FLAG "-DHAVE_NETCDF4 -DNETCDF_CAN_DEFLATE")
+            ELSE(NETCDF_TEST2)
+                SET(NETCDF_COMPRESSION_FLAG "")
+            ENDIF(NETCDF_TEST2)
+        ELSE(NETCDF_TEST1)
+            MESSAGE("ERROR: The netCDF library specified is not compatible with the specified compilers. It will not be enabled.")
+        ENDIF(NETCDF_TEST1)
+
+    ENDIF(${NETCDFHOME} STREQUAL "NETCDF-NOTFOUND")
 ENDIF(ENABLE_OUTPUT_NETCDF)
 
 IF(ENABLE_OUTPUT_XDMF)
-    SET(XDMF_FLAG "-DADCXDMF -I${XDMFHOME}/include -I${CMAKE_SOURCE_DIR}/src")
-    SET(XDMF_LINKER_FLAG "-L${XDMFHOME}/lib")
+
+    SET(xdmf_f90_code
+"
+        PROGRAM XDMFCHECK
+            IMPLICIT NONE
+            INCLUDE 'Xdmf.f'
+            INTEGER :: xdmfunit
+            CALL xdmfInit(xdmfunit)
+        END PROGRAM
+"
+)
+    IF(${XDMFHOME} STREQUAL "XDMF-NOTFOUND")
+        MESSAGE("WARNING: Specify the XDMF path on the following screen")
+    ELSE(${XDMFHOME} STREQUAL "XDMF-NOTFOUND")
+        FILE(WRITE "${CMAKE_BINARY_DIR}/CMakeFiles/xdmfcheck.f90" "${xdmf_f90_code}")
+        TRY_COMPILE(XDMF_TEST "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/xdmfcheck.f90" CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${NETCDFHOME}/include" "-DINCLUDE_DIRECTORIES=${XDMFHOME}/include" "-DLINK_DIRECTORIES=${NETCDFHOME}/lib" "-DLINK_DIRECTORIES=${XDMFHOME}/lib" LINK_LIBRARIES netcdf LINK_LIBRARIES netcdff LINK_LIBRARIES XdmfCore LINK_LIBRARIES XdmfUtils LINK_LIBRARIES Xdmf OUTPUT_VARIABLE XDMFLOG)
+    
+        IF(XDMF_TEST)
+            SET(XDMF_FLAG "-DADCXDMF -I${XDMFHOME}/include -I${CMAKE_SOURCE_DIR}/src")
+            SET(XDMF_LINKER_FLAG "-L${XDMFHOME}/lib")
+        ELSE(XDMF_TEST)
+            MESSAGE("ERROR: The XDMF library specified is not compatible with the specified compilers. It will not be enabled.")
+        ENDIF(XDMF_TEST)
+    ENDIF(${XDMFHOME} STREQUAL "XDMF-NOTFOUND")
 ENDIF(ENABLE_OUTPUT_XDMF)
 ###########################################################################
 
