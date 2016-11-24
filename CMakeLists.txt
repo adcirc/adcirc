@@ -30,8 +30,6 @@ PROJECT(adcirc_model)
 ###########################################################################
 
 
-
-
 ###########################################################################
 #  COMPILERS/LANGUAGE
 ###########################################################################
@@ -54,20 +52,63 @@ ENDIF()
 ENABLE_LANGUAGE(Fortran)
 ENABLE_LANGUAGE(C)
 
+#...Architecture Specifications. Determine if 
+#   the system is 32 bit or 64 bit. If the 64 bit
+#   integer pointer is not detected, an error is 
+#   thrown during compile
+SET(archdetect_c_code 
+"#include <stdint.h>
+int main()
+{
+#if INTPTR_MAX == INT64_MAX
+        return 0;
+#elif INTPTR_MAX == INT32_MAX
+#error 32-bit max integer pointer
+#else
+#error Unknown pointer size or missing size macros
+#endif
+}"
+)
+
+FILE(WRITE "${CMAKE_BINARY_DIR}/architecture_check.c" "${archdetect_c_code}")
+
+TRY_COMPILE(ARCH_TEST_COMPILE "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/architecture_check.c")
+IF(ARCH_TEST_COMPILE)
+    SET(ARCH 64)
+ELSE(ARCH_TEST_COMPILE)
+    SET(ARCH 32)
+ENDIF(ARCH_TEST_COMPILE)
+
+
 #...Compiler specific options
 GET_FILENAME_COMPONENT(Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
 IF(Fortran_COMPILER_NAME MATCHES "gfortran.*")
   # gfortran
   SET(Fortran_LINELENGTH_FLAG "-ffixed-line-length-none" CACHE STRING "Compiler specific flag to enable extended Fortran line length")
-  SET(Fortran_COMPILER_SPECIFIC_FLAG "-mcmodel=medium" CACHE STRING "Compiler specific flags")
+
+  # 64 bit array sizing
+  IF(ARCH EQUAL 64)
+    SET(Fortran_COMPILER_SPECIFIC_FLAG "-mcmodel=medium" CACHE STRING "Compiler specific flags")  
+  ENDIF(ARCH EQUAL 64)
+
 ELSEIF(Fortran_COMPILER_NAME MATCHES "ifort.*")
   # ifort
   SET(Fortran_LINELENGTH_FLAG "-132" CACHE STRING "Compiler specific flag to enable extended Fortran line length")
-  SET(Fortran_COMPILER_SPECIFIC_FLAG "-mcmodel=medium -assume byterecl" CACHE STRING "Compiler specific flags")
+  
+  # 64 bit array sizing
+  IF(ARCH EQUAL 64)
+    SET(Fortran_COMPILER_SPECIFIC_FLAG "-mcmodel=medium" CACHE STRING "Compiler specific flags")  
+  ENDIF(ARCH EQUAL 64)
+
 ELSEIF(Fortran_COMPILER_NAME MATCHES "pgf90.*")
   # pgf90
   SET(Fortran_LINELENGTH_FLAG "-Mextend" CACHE STRING "Compiler specific flag to enable extended Fortran line length")
-  SET(Fortran_COMPILER_SPECIFIC_FLAG "-mcmodel=medium" CACHE STRING "Compiler specific flags")
+
+  # 64 bit array sizing
+  IF(ARCH EQUAL 64)
+    SET(Fortran_COMPILER_SPECIFIC_FLAG "-Mlarge_arrays" CACHE STRING "Compiler specific flags")  
+  ENDIF(ARCH EQUAL 64)
+
 ELSE(Fortran_COMPILER_NAME MATCHES "gfortran.*")
   MESSAGE("CMAKE_Fortran_COMPILER full path: " ${CMAKE_Fortran_COMPILER})
   MESSAGE("Fortran compiler: " ${Fortran_COMPILER_NAME})
@@ -214,9 +255,51 @@ SET(PREP_SWAN_FLAG "-DADCSWAN")
 SET(ADCIRC_MPI_FLAG "-DCMPI")
 
 IF(ENABLE_OUTPUT_NETCDF)
-    SET(NETCDF_FLAG "-DADCNETCDF -I${NETCDFHOME}/include")
-    SET(NETCDF_COMPRESSION_FLAG "-DHAVE_NETCDF4 -DNETCDF_CAN_DEFLATE")
-    SET(NETCDF_LINKER_FLAG "-L${NETCDFHOME}/lib")
+    
+    SET(netcdf3_f90_code 
+"
+        PROGRAM netCDF3Test
+            USE NETCDF
+            IMPLICIT NONE
+
+            INTEGER :: IERR
+            INTEGER :: NCID
+
+            IERR = NF90_OPEN('test.nc',NF90_NOWRITE,NCID)
+
+        END PROGRAM
+"
+    )
+    SET(netcdf4_f90_code
+"
+        PROGRAM netCDF4Test
+            USE NETCDF
+            IMPLICIT NONE
+
+            INTEGER :: IERR
+            INTEGER :: NCID
+            INTEGER :: VARID
+
+            IERR = NF90_DEFLATE(NCID,VARID,1,1,2)
+
+        END PROGRAM
+"
+    )
+
+    FILE(WRITE "${CMAKE_BINARY_DIR}/netcdf3check.f90" "${netcdf3_f90_code}")
+    FILE(WRITE "${CMAKE_BINARY_DIR}/netcdf4check.f90" "${netcdf4_f90_code}")
+    TRY_COMPILE(NETCDF_TEST1 "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/netcdf3check.f90" CMAKE_FLAGS "-I${NETCDFHOME}/include -L${NETCDFHOME}/lib -lnetcdf -lnetcdff")
+    TRY_COMPILE(NETCDF_TEST2 "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/netcdf4check.f90" CMAKE_FLAGS "-I${NETCDFHOME}/include -L${NETCDFHOME}/lib -lnetcdf -lnetcdff")
+    MESSAGE(${NETCDF_TEST1})
+    MESSAGE(${NETCDF_TEST2})
+
+    IF(NETCDF_TEST1 AND NETCDF_TEST2)
+        SET(NETCDF_FLAG "-DADCNETCDF -I${NETCDFHOME}/include")
+        SET(NETCDF_COMPRESSION_FLAG "-DHAVE_NETCDF4 -DNETCDF_CAN_DEFLATE")
+        SET(NETCDF_LINKER_FLAG "-L${NETCDFHOME}/lib")
+    ELSE(NETCDF_TEST1 AND NETCDF_TEST2)
+        MESSAGE("ERROR: The netCDF library specified is not compatible with the specified compilers")
+    ENDIF(NETCDF_TEST1 AND NETCDF_TEST2)
 ENDIF(ENABLE_OUTPUT_NETCDF)
 
 IF(ENABLE_OUTPUT_XDMF)
@@ -224,6 +307,8 @@ IF(ENABLE_OUTPUT_XDMF)
     SET(XDMF_LINKER_FLAG "-L${XDMFHOME}/lib")
 ENDIF(ENABLE_OUTPUT_XDMF)
 ###########################################################################
+
+
 
 
 ###########################################################################

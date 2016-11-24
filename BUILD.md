@@ -38,7 +38,7 @@ gcc
 mingw32-make
 ```
 
-If they are not, consult the documentation for the individual packages to insure you've installed them correctly.
+If they are not, consult the documentation for the individual packages to insure you've installed them correctly. Note that StrawberryPerl installs a number of compilers with it. You should remove them from your Windows Path variable before running CMake. This can cause errors in the build process.
 
 ### Building Using the Graphical Interface
 
