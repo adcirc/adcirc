@@ -38,7 +38,9 @@ gcc
 mingw32-make
 ```
 
-If they are not, consult the documentation for the individual packages to insure you've installed them correctly. Note that StrawberryPerl installs a number of compilers with it. You should remove them from your Windows Path variable before running CMake. This can cause errors in the build process.
+If they are not, consult the documentation for the individual packages to insure you've installed them correctly. 
+
+Note that StrawberryPerl installs a number of compilers with it. You should remove them from your Windows Path variable before running CMake. This can cause errors in the build process by having incorrect compilers selected.
 
 ### Building Using the Graphical Interface
 
@@ -68,6 +70,19 @@ Once you change any options, you will need to re-run the configure portion of th
 
 ```
 make
+```
+
+To clean the build directory, you have two options. You can delete only the files that have been compiled by running:
+
+```
+make clean
+```
+
+or you can delete all the compiled files including your configuration settings specified in CMake by removing the `build` directory completely.
+
+```
+cd ..
+rm -r build
 ```
 
 #### Windows
