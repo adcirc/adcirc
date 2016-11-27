@@ -68,6 +68,9 @@ If you plan to install the code on your system, be sure to set the `CMAKE_INSTAL
 
 Once you change any options, you will need to re-run the configure portion of the code by pressing the `c` key. When the code has been fully configured, the option to generate makefiles will be enabled. Pressing `g` will write the makefiles and exit CMake. Once the makefiles have been generated, you can build the code with the selected options by running make.
 
+To enter specific optimizations for your system, edit the `CMAKE_Fortran_FLAGS` variable. The specific optimizations required for your system should be available via your system administrator or system documentation.
+
+
 ```
 make
 ```
