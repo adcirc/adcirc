@@ -224,8 +224,8 @@ subroutine SwanConvStopc ( accur, hscurr, hsprev, hsdifc, tmcurr, tmprev, tmdifc
           !
           if (tstfl) then
              if (lhead) write(PRINTF,11)
-             write (PRINTF,12) ivert, hsabs, hsabs/hscurr(ivert), hscurv/hscurr(ivert), tmabs, &
-                               tmabs/tmcurr(ivert), tmcurv/tmcurr(ivert)
+             write (PRINTF,12) ivert, hsabs, hsabs/hscurr(ivert), hscurv/hscurr(ivert), &
+                               tmabs, tmabs/tmcurr(ivert), tmcurv/tmcurr(ivert)
              lhead = .false.
           endif
           !

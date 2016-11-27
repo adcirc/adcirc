@@ -1152,8 +1152,8 @@ subroutine SwanCompUnstruc ( ac2, ac1, compda, spcsig, spcdir, xytst, cross, it 
              !
           else
              !
-             call SwanConvStopc ( accur, hscurr, hsprev, hsdifc, tmcurr, tmprev, tmdifc, compda(1,JDHS), compda(1,JDTM), &
-                                  xytst, spcsig, ac2, ivlow, ivup )
+             call SwanConvStopc ( accur, hscurr, hsprev, hsdifc, tmcurr, tmprev, tmdifc, compda(1,JDHS), &
+                                  compda(1,JDTM), xytst, spcsig, ac2, ivlow, ivup )
              !
           endif
           !
