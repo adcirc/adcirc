@@ -18,7 +18,7 @@ void f_makedir(char* path, int len)
   dirnm[len] = '\0';
 
 #ifdef _WIN32
-  _mkdir(dirnm, 0755);
+  CreateDirectory(dirnm,NULL);
 #else
   mkdir(dirnm, 0755);
 #endif
