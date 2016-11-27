@@ -1,0 +1,3 @@
+
+ADD_LIBRARY(mkdir prep/mkdir.c)
+TARGET_INCLUDE_DIRECTORIES(mkdir PRIVATE ${CMAKE_SOURCE_DIR}/src)
