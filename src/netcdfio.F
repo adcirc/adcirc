@@ -498,7 +498,7 @@ C-----------------------------------------------------------------------
      &                   STATNAMEM, IDEN
       USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET
       USE MESH, ONLY : ICS
-#ifdef NCMPI
+#ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
       IMPLICIT NONE

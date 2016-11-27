@@ -34,9 +34,8 @@ PROJECT(adcirc_model)
 #  COMPILERS/LANGUAGE
 ###########################################################################
 
-#...MPI Compilers
-FIND_PACKAGE(MPI)
 
+###########################################################################
 #...Perl
 #   Perl is required to use SWAN since it generates the source files. 
 #   All SWAN options will be disabled if perl cannot be found. The user
@@ -47,11 +46,52 @@ IF( ${PERL} STREQUAL "PERL-NOTFOUND")
 ELSE()
     SET(PERL_FOUND TRUE)
 ENDIF()
+###########################################################################
 
+
+
+###########################################################################
 #...Language Specifications
 ENABLE_LANGUAGE(Fortran)
 ENABLE_LANGUAGE(C)
+###########################################################################
 
+
+###########################################################################
+#...Put the static libraries in the CMakeFiles folder so they don't
+#   contaminate the build directory
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/CMakeFiles)
+###########################################################################
+
+
+###########################################################################
+#...MPI Compilers
+FIND_PACKAGE(MPI)
+IF(MPI_FOUND)
+    #...Check if we have mpi.mod for Fortran or need
+    #   to use mpif.h, which is discouraged
+    SET(mpi_f90mod_check 
+    "       PROGRAM MPIMOD_CHECK
+            USE MPI
+            IMPLICIT NONE
+            INTEGER :: IERR
+            CALL MPI_INIT(IERR)
+            END PROGRAM
+    ")
+    FILE(WRITE "${CMAKE_BINARY_DIR}/CMakeFiles/mpif90_mod_check.f90" "${mpi_f90mod_check}")
+    TRY_COMPILE(MPIMOD_COMPILE "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mpif90_mod_check.f90" CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${MPI_Fortran_INCLUDE_PATH}" "-DLINK_LIBRARIES=${MPI_Fortran_LIBRARIES}" OUTPUT_VARIABLE LOG)
+    IF(MPIMOD_COMPILE)
+        SET(MPIMOD_FLAG "-DHAVE_MPI_MOD")
+    ELSE(MPIMOD_COMPILE)
+        SET(MPI_FOUND FALSE)
+        MESSAGE(WARNING "The MPI library specified does not function with the specified compilers. Parallel ADCIRC/SWAN compilation will not be enabled until this is corrected.")
+    ENDIF(MPIMOD_COMPILE)
+ENDIF(MPI_FOUND)
+###########################################################################
+
+
+
+###########################################################################
 #...Architecture Specifications. Determine if 
 #   the system is 32 bit or 64 bit. If the 64 bit
 #   integer pointer is not detected, an error is 
@@ -78,8 +118,11 @@ IF(ARCH_TEST_COMPILE)
 ELSE(ARCH_TEST_COMPILE)
     SET(ARCH 32)
 ENDIF(ARCH_TEST_COMPILE)
+###########################################################################
 
 
+
+###########################################################################
 #...Compiler specific options
 GET_FILENAME_COMPONENT(Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
 IF(Fortran_COMPILER_NAME MATCHES "gfortran.*")
@@ -112,24 +155,10 @@ ELSEIF(Fortran_COMPILER_NAME MATCHES "pgf90.*")
 ELSE(Fortran_COMPILER_NAME MATCHES "gfortran.*")
   MESSAGE("CMAKE_Fortran_COMPILER full path: " ${CMAKE_Fortran_COMPILER})
   MESSAGE("Fortran compiler: " ${Fortran_COMPILER_NAME})
-  MESSAGE("No known predefined Fortran extended line length flag known. Please set manually in Fortran_F77F90_FLAG")
+  MESSAGE("No known predefined Fortran extended line length flag known. Please manually set the Fortran_LINELENGTH_FLAG")
   SET(Fortran_LINELENGTH_FLAG "" CACHE STRING "Compiler specific flag to enable extended Fortran line length")
   SET(Fortran_COMPILER_SPECIFIC_FLAG "" CACHE STRING "Compiler specific flags")
 ENDIF(Fortran_COMPILER_NAME MATCHES "gfortran.*")
-
-#...Substitute in the MPI compiler 
-IF(MPI_FOUND)
-    FIND_PROGRAM(MPI_Fortran_COMPILER
-        NAMES mpif90
-        HINTS "${MPI_BASE_DIR}"
-        PATH_SUFFIXES bin
-        DOC "MPI Fortran compiler. Warning: Overrides standard Fortran compiler")
-    MARK_AS_ADVANCED(MPI_Fortran_COMPILER)
-    
-    IF(BUILD_PADCIRC OR BUILD_PADCSWAN OR BUILD_PUNSWAN)
-        SET( CMAKE_Fortran_COMPILER ${MPI_Fortran_COMPILER} )
-    ENDIF(BUILD_PADCIRC OR BUILD_PADCSWAN OR BUILD_PUNSWAN)
-ENDIF(MPI_FOUND)
 ###########################################################################
 
 
@@ -137,15 +166,22 @@ ENDIF(MPI_FOUND)
 ###########################################################################
 # OPTIONS
 ###########################################################################
-OPTION(PRECISION_8BYTE "Use 8-byte real numbers. This should be enabled." ON)
+
+#...Option for 8-byte real numbers (or 4-byte if turned off)
+OPTION(PRECISION_8BYTE "Use 8-byte real numbers instead of 4-byte." ON)
 MARK_AS_ADVANCED(PRECISION_8BYTE)
 
-#...Output options
+
+###########################################################################
+#...Output format options
 OPTION(ENABLE_OUTPUT_NETCDF "Turn on netCDF output options" OFF)
 IF(ENABLE_OUTPUT_NETCDF)
     OPTION(ENABLE_OUTPUT_XDMF "Turn on XDMF output options" OFF)
 ENDIF(ENABLE_OUTPUT_NETCDF)    
+###########################################################################
 
+
+###########################################################################
 #...Executables
 OPTION(BUILD_ADCIRC "Build the serial ADCIRC executable" OFF)
 
@@ -165,12 +201,18 @@ ENDIF(MPI_FOUND)
 
 OPTION(BUILD_ASWIP "Build ASWIP (ASymmetric Wind Input Preprocessor)")
 OPTION(BUILD_UTILITIES "Build the ADCIRC utility programs" OFF)
+###########################################################################
 
-#...Compilers
+
+###########################################################################
+#...No need to show CXX compilers on main screen
 MARK_AS_ADVANCED(CLEAR CMAKE_CXX_COMPILER CMAKE_C_COMPILER CMAKE_Fortran_COMPILER)
 MARK_AS_ADVANCED(CLEAR CMAKE_CXX_FLAGS_RELEASE CMAKE_C_FLAGS_RELEASE CMAKE_Fortran_FLAGS_RELEASE)
 MARK_AS_ADVANCED(CLEAR CMAKE_CXX_FLAGS_DEBUG CMAKE_C_FLAGS_DEBUG CMAKE_Fortran_FLAGS_DEBUG)
+###########################################################################
 
+
+###########################################################################
 #...Library paths
 IF(ENABLE_OUTPUT_NETCDF)
     SET(NETCDFHOME "NETCDF-NOTFOUND" CACHE STRING "netCDF home path containing lib and include")
@@ -183,8 +225,10 @@ IF(ENABLE_OUTPUT_XDMF)
 ELSE(ENABLE_OUTPUT_XDMF)
     UNSET(XDMFHOME CACHE)
 ENDIF(ENABLE_OUTPUT_XDMF)
+###########################################################################
 
 
+###########################################################################
 #...Additional flags
 SET(ADDITIONAL_FLAGS_ADCIRC "" CACHE STRING "Additional flags to compile ADCIRC with")
 IF(PERL_FOUND)
@@ -193,8 +237,11 @@ ENDIF(PERL_FOUND)
 SET(ADDITIONAL_FLAGS_ADCPREP "" CACHE STRING "Additional flags to compile ADCPREP with")
 SET(ADDITIONAL_FLAGS_ASWIP "" CACHE STRING "Additional flags to compile ASWIP with")
 SET(ADDITIONAL_FLAGS_UTLIITIES "" CACHE STRING "Additional flags for utility programs")
+###########################################################################
 
 
+
+###########################################################################
 #...Options enabled via compiler flags within the code
 OPTION(ENABLE_WARN_ELEV_DEBUG "Enable writing of the fort.69 debug file" OFF)
 
@@ -202,12 +249,49 @@ IF(BUILD_ADCSWAN OR BUILD_PADCSWAN)
     OPTION(ENABLE_SWAN_MODIFIED_FRICTION "Enable Ethan/Joannes' modified friction" OFF)
 ENDIF(BUILD_ADCSWAN OR BUILD_PADCSWAN)
 
+OPTION(IBM    "Format code for IBM based architectures"    OFF)
+OPTION(SGI    "Format code for SGI based architectures"    OFF)
+OPTION(SUN    "Format code for SUN based architectures"    OFF)
+OPTION(CRAY   "Format code for CRAY based architectures"   OFF)
+OPTION(CRAYX1 "Format code for CRAYX1 based architectures" OFF)
+MARK_AS_ADVANCED(IBM SGI SUN CRAY CRAYX1)
+
 OPTION(DEBUG_FULL_STACK "Write the detailed stack trace during debugging" OFF)
-OPTION(DEBUG_TRACE "Write tracing information to screen output during debugging" OFF)
+OPTION(DEBUG_FLUSH_MESSAGES "Do not allow caching of screen printed messages" OFF)
+OPTION(DEBUG_LOG_LEVEL "Force debug log level for screen messages" OFF)
+OPTION(DEBUG_ALL_TRACE "Write all tracing debug information to screen output during debugging" OFF)
+OPTION(DEBUG_GLOBALIO_TRACE "Write tracing debug information from the GLOBALIO module" OFF)
+OPTION(DEBUG_WRITER_TRACE "Write tracing debug information for writer processors" OFF)
+OPTION(DEBUG_WRITE_OUTPUT_TRACE "Write tracing debug information for the write output module" OFF)
+OPTION(DEBUG_WIND_TRACE "Write tracing debug information for the wind module" OFF)
+OPTION(DEBUG_WEIR_TRACE "Write tracing debug information for the weir module" OFF)
+OPTION(DEBUG_TVW_TRACE "Write tracing debug information for the time varying weir module" OFF)
+OPTION(DEBUG_VSMY_TRACE "Write tracing debug information for the 3D momentum equation module" OFF)
+OPTION(DEBUG_TIMESTEP_TRACE "Write the tracing debug information for the timestepping module" OFF)
+OPTION(DEBUG_SUBPREP_TRACE "Write the tracing debug information for the subdomain prep module" OFF)
+OPTION(DEBUG_SUBDOMAIN_TRACE "Write the tracing debug information for the subdomain module" OFF)
+OPTION(DEBUG_READ_INPUT_TRACE "Write the tracing debug information for the read_input module" OFF)
+OPTION(DEBUG_OWIWIND_TRACE "Write the tracing debug information for the OWI wind module" OFF)
+OPTION(DEBUG_NODALATTR_TRACE "Write the tracing debug information for the nodal attributes module" OFF)
+OPTION(DEBUG_NETCDF_TRACE "Write the tracing debug information for the netCDF modle" OFF)
+OPTION(DEBUG_MESSENGER_TRACE "Write the tracing debug information for the message passing (MPI) module" OFF)
+OPTION(DEBUG_MESH_TRACE "Write the tracing debug information for the mesh module" OFF)
+OPTION(DEBUG_HOTSTART_TRACE "Write the tracing debug information for the hotstart module" OFF)
+OPTION(DEBUG_GLOBAL_TRACE "Write the tracing debug information for the global module" OFF)
+OPTION(DEBUG_HARM_TRACE "Write the tracing debug information for the harmonics module" OFF)
+OPTION(DEBUG_COLDSTART_TRACE "Write the tracing debug information for the coldstart module" OFF)
+OPTION(DEBUG_COUPLE2SWAN_TRACE "Write the tracing debug information for the couple2swan module" OFF)
+OPTION(DEBUG_ADCIRC_TRACE "Write the tracing debug information for the main ADCIRC module" OFF)
+MARK_AS_ADVANCED(DEBUG_GLOBALIO_TRACE DEBUG_WRITER_TRACE DEBUG_WRITE_OUTPUT_TRACE DEBUG_WIND_TRACE 
+                 DEBUG_WEIR_TRACE DEBUG_TVW_TRACE DEBUG_VSMY_TRACE DEBUG_TIMESTEP_TRACE DEBUG_SUBPREP_TRACE 
+                 DEBUG_SUBDOMAIN_TRACE DEBUG_READ_INPUT_TRACE DEBUG_OWIWIND_TRACE DEBUG_NODALATTR_TRACE 
+                 DEBUG_NETCDF_TRACE DEBUG_MESSENGER_TRACE DEBUG_MESH_TRACE DEBUG_HOTSTART_TRACE DEBUG_GLOBAL_TRACE
+                 DEBUG_HARM_TRACE DEBUG_COLDSTART_TRACE DEBUG_COUPLE2SWAN_TRACE DEBUG_ADCIRC_TRACE IBM )
+
 OPTION(ENABLE_POWELL "Force Powell wind drag to be enabled. Warning: Overrides any other options specified at run time." OFF)
 MARK_AS_ADVANCED(ENABLE_POWELL)
 
-option(VECTOR_COMPUTER "Assume the system is a vector computer" OFF)
+OPTION(VECTOR_COMPUTER "Assume the system is a vector computer" OFF)
 MARK_AS_ADVANCED(VECTOR_COMPUTER)
 ###########################################################################
 
@@ -222,7 +306,15 @@ ELSE(PRECISION_8BYTE)
     SET(PRECISION_FLAG "-DREAL4")
 ENDIF(PRECISION_8BYTE)
 
-IF(UNIX)
+IF(SUN)
+    SET(MACHINE_FLAG "-DCMACHSUN")
+ELSEIF(SGI)
+    SET(MACHINE_FLAG "-DSGI")
+ELSEIF(CRAY)
+    SET(MACHINE_FLAG "-DCRAY")
+ELSEIF(CRAYX1)
+    SET(MACHINE_FLAG "-DCRAYX1")
+ELSEIF(UNIX)
     SET(MACHINE_FLAG "-DLINUX")
 ELSEIF(CYGWIN)
     SET(MACHINE_FLAG "-DLINUX")
@@ -230,7 +322,11 @@ ELSEIF(WIN32)
     SET(MACHINE_FLAG "-DWINDOWS")
 ELSEIF(APPLE)
     SET(MACHINE_FLAG "-DLINUX")
-ENDIF(UNIX)
+ENDIF(SUN)
+
+IF(SUN_MACHINE)
+    SET(MACHINE_FLAG "${MACHINE_FLAG} -CMACHSUN")
+ENDIF(SUN_MACHINE)
 
 IF(ENABLE_WARN_ELEV_DEBUG)
     SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DDEBUG_WARN_ELEV")
@@ -244,9 +340,109 @@ IF(DEBUG_FULL_STACK)
     SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DFULL_STACK")
 ENDIF(DEBUG_FULL_STACK)
 
-IF(DEBUG_TRACE)
-    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DALL_TRACE -DFLUSH_MESSAGES")
-ENDIF(DEBUG_TRACE)
+IF(DEBUG_ALL_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DALL_TRACE")
+ENDIF(DEBUG_ALL_TRACE)
+
+IF(DEBUG_FLUSH_MESSAGES)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DFLUSH_MESSAGES")
+ENDIF(DEBUG_FLUSH_MESSAGES)
+
+IF(DEBUG_LOG_LEVEL)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DDEBUG")
+ENDIF(DEBUG_LOG_LEVEL)
+
+IF(DEBUG_GLOBALIO_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DGLOBALIO_TRACE")
+ENDIF(DEBUG_GLOBALIO_TRACE)
+
+IF(DEBUG_WRITER_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DWRITER_TRACE")
+ENDIF(DEBUG_WRITER_TRACE)
+
+IF(DEBUG_WRITE_OUTPUT_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DWRITE_OUTPUT_TRACE")
+ENDIF(DEBUG_WRITE_OUTPUT_TRACE)
+
+IF(DEBUG_WIND_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DWIND_TRACE")
+ENDIF(DEBUG_WIND_TRACE)
+
+IF(DEBUG_WEIR_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DWEIR_TRACE")
+ENDIF(DEBUG_WEIR_TRACE)
+
+IF(DEBUG_TVW_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DTVW_TRACE")
+ENDIF(DEBUG_TVW_TRACE)
+
+IF(DEBUG_VSMY_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DVSMY_TRACE")
+ENDIF(DEBUG_VSMY_TRACE)
+
+IF(DEBUG_TIMESTEP_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DTIMESTEP_TRACE")
+ENDIF(DEBUG_TIMESTEP_TRACE)
+
+IF(DEBUG_SUBPREP_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DSUBPREP_TRACE")
+ENDIF(DEBUG_SUBPREP_TRACE)
+
+IF(DEBUG_SUBDOMAIN_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DSUBDOMAIN_TRACE")
+ENDIF(DEBUG_SUBDOMAIN_TRACE)
+
+IF(DEBUG_READ_INPUT_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DSUBDOMAIN_TRACE")
+ENDIF(DEBUG_READ_INPUT_TRACE)
+
+IF(DEBUG_OWIWIND_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DOWIWIND_TRACE")
+ENDIF(DEBUG_OWIWIND_TRACE)
+
+IF(DEBUG_NODALATTR_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DNODALATTR_TRACE")
+ENDIF(DEBUG_NODALATTR_TRACE)
+    
+IF(DEBUG_NETCDF_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DNETCDF_TRACE")
+ENDIF(DEBUG_NETCDF_TRACE)
+    
+IF(DEBUG_MESSENGER_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DMESSENGER_TRACE")
+ENDIF(DEBUG_MESSENGER_TRACE)
+    
+IF(DEBUG_MESH_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DMESH_TRACE")
+ENDIF(DEBUG_MESH_TRACE)
+
+IF(DEBUG_HOTSTART_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DHOTSTART_TRACE")
+ENDIF(DEBUG_HOTSTART_TRACE)
+
+IF(DEBUG_GLOBAL_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DGLOBAL_TRACE")
+ENDIF(DEBUG_GLOBAL_TRACE)
+
+IF(DEBUG_HARM_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DHARM_TRACE")
+ENDIF(DEBUG_HARM_TRACE)
+
+IF(DEBUG_COLDSTART_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DCOLDSTART_TRACE")
+ENDIF(DEBUG_COLDSTART_TRACE)
+
+IF(DEBUG_COUPLE2SWAN_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DCOUPLE2SWAN_TRACE")
+ENDIF(DEBUG_COUPLE2SWAN_TRACE)
+
+IF(DEBUG_ADCIRC_TRACE)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DADCIRC_TRACE")
+ENDIF(DEBUG_ADCIRC_TRACE)
+
+IF(IBM)
+    SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DIBM")
+ENDIF(IBM) 
 
 IF(VECTOR_COMPUTER)
     SET(ADCIRC_OPTION_FLAGS "${ADCIRC_OPTION_FLAGS} -DCVEC")
@@ -256,8 +452,11 @@ ENDIF(VECTOR_COMPUTER)
 
 SET(SWAN_FLAG "-DCSWAN")
 SET(PREP_SWAN_FLAG "-DADCSWAN")
-SET(ADCIRC_MPI_FLAG "-DCMPI")
+SET(ADCIRC_MPI_FLAG "-DCMPI ${MPIMOD_FLAG}")
 
+
+###########################################################################
+#...Check that the netCDF library specified works with the compilers
 IF(ENABLE_OUTPUT_NETCDF)
     
     SET(netcdf3_f90_code 
@@ -315,7 +514,11 @@ IF(ENABLE_OUTPUT_NETCDF)
 
     ENDIF(${NETCDFHOME} STREQUAL "NETCDF-NOTFOUND")
 ENDIF(ENABLE_OUTPUT_NETCDF)
+###########################################################################
 
+
+###########################################################################
+#...Check that the XDMF library works with the specified compilers
 IF(ENABLE_OUTPUT_XDMF)
 
     SET(xdmf_f90_code
@@ -348,7 +551,6 @@ ENDIF(ENABLE_OUTPUT_XDMF)
 
 
 
-
 ###########################################################################
 #                         ADCIRC VERSION
 ###########################################################################
@@ -358,7 +560,7 @@ ADD_LIBRARY(version version.F)
 #    COMMAND ./generateVersion.sh ${CMAKE_BINARY_DIR}/version_cmake.F
 #    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/cmake
 #    COMMENT "Generating ADCIRC version...")
-SET_TARGET_PROPERTIES(version PROPERTIES Fortran_MODULE_DIRECTORY version_mod)
+SET_TARGET_PROPERTIES(version PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/version_mod)
 ###########################################################################
 
 
@@ -403,29 +605,29 @@ IF(BUILD_ADCIRC)
     IF(NETCDF_WORKING AND NOT XDMF_WORKING)
         SET(ADCIRC_COMPILER_FLAGS "${ADCIRC_COMPILER_FLAGS} ${NETCDF_FLAG} ${NETCDF_COMPRESSION_FLAG}")
         SET_TARGET_PROPERTIES(adcirc PROPERTIES LINK_FLAGS ${NETCDF_LINKER_FLAG})
-        TARGET_LINK_LIBRARIES(adcirc ${CMAKE_BINARY_DIR}/libtemplib_adcirc1.a -lnetcdf -lnetcdff)
+        TARGET_LINK_LIBRARIES(adcirc templib_adcirc1 netcdf netcdff)
     ELSEIF(NETCDF_WORKING AND XDMF_WORKING)
         SET(ADCIRC_COMPILER_FLAGS "${ADCIRC_COMPILER_FLAGS} ${NETCDF_FLAG} ${NETCDF_COMPRESSION_FLAG} ${XDMF_FLAG}")
         SET(ADCIRC_LINKER_FLAGS "${NETCDF_LINKER_FLAG} ${XDMF_LINKER_FLAG}")
         SET_TARGET_PROPERTIES(adcirc PROPERTIES LINK_FLAGS ${ADCIRC_LINKER_FLAGS} )
-        TARGET_LINK_LIBRARIES(adcirc ${CMAKE_BINARY_DIR}/libtemplib_adcirc1.a -lnetcdf -lnetcdff -lXdmfCore -lXdmfUtils -lXdmf)
+        TARGET_LINK_LIBRARIES(adcirc templib_adcirc1 netcdf netcdff XdmfCore XdmfUtils Xdmf)
         TARGET_INCLUDE_DIRECTORIES(adcirc PRIVATE ${CMAKE_SOURCE_DIR}/src)
     ELSE(NETCDF_WORKING AND NOT XDMF_WORKING)
-        TARGET_LINK_LIBRARIES(adcirc ${CMAKE_BINARY_DIR}/libtemplib_adcirc1.a)
+        TARGET_LINK_LIBRARIES(adcirc templib_adcirc1)
     ENDIF(NETCDF_WORKING AND NOT XDMF_WORKING)
 
-    TARGET_INCLUDE_DIRECTORIES(adcirc  PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_adcirc1 PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(adcirc          PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(templib_adcirc1 PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
 
-    SET_TARGET_PROPERTIES(templib_adcirc1 PROPERTIES Fortran_MODULE_DIRECTORY adcirc_mod)
+    SET_TARGET_PROPERTIES(templib_adcirc1 PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/adcirc_mod)
     SET_TARGET_PROPERTIES(templib_adcirc1 PROPERTIES COMPILE_FLAGS ${ADCIRC_COMPILER_FLAGS})
-    SET_TARGET_PROPERTIES(adcirc PROPERTIES Fortran_MODULE_DIRECTORY adcirc_mod)
+    SET_TARGET_PROPERTIES(adcirc PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/adcirc_mod)
     SET_TARGET_PROPERTIES(adcirc PROPERTIES COMPILE_FLAGS ${ADCIRC_COMPILER_FLAGS})
     
     TARGET_LINK_LIBRARIES(adcirc  version)
     TARGET_LINK_LIBRARIES(templib_adcirc1 version)
     
-    ADD_DEPENDENCIES(adcirc templib_adcirc1)
+    ADD_DEPENDENCIES(adcirc          templib_adcirc1)
     ADD_DEPENDENCIES(templib_adcirc1 version)
     
     INSTALL(TARGETS adcirc RUNTIME DESTINATION bin)
@@ -466,7 +668,7 @@ IF(BUILD_ADCPREP)
     
     ADD_EXECUTABLE(adcprep ${ADCPREP_SOURCES})
     
-    SET_TARGET_PROPERTIES(adcprep PROPERTIES Fortran_MODULE_DIRECTORY adcprep_mod)
+    SET_TARGET_PROPERTIES(adcprep PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/adcprep_mod)
     
     SET(ADCPREP_COMPILER_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG} ${PRECISION_FLAG} ${MACHINE_FLAG} ${ADCIRC_OPTION_FLAGS} ${ADDITIONAL_FLAGS_ADCPREP}")
     
@@ -477,32 +679,30 @@ IF(BUILD_ADCPREP)
     IF(NETCDF_WORKING AND NOT XDMF_WORKING)
         SET(ADCPREP_COMPILER_FLAGS "${ADCPREP_COMPILER_FLAGS} ${NETCDF_FLAG} ${NETCDF_COMPRESSION_FLAG}")
         SET_TARGET_PROPERTIES(adcprep PROPERTIES LINK_FLAGS ${NETCDF_LINKER_FLAG})
-        TARGET_LINK_LIBRARIES(adcprep ${CMAKE_BINARY_DIR}/libmetis.a -lnetcdf -lnetcdff)
+        TARGET_LINK_LIBRARIES(adcprep netcdf netcdff)
     ELSEIF(NETCDF_WORKING AND XDMF_WORKING)
         SET(ADCPREP_COMPILER_FLAGS "${ADCPREP_COMPILER_FLAGS} ${NETCDF_FLAG} ${NETCDF_COMPRESSION_FLAG} ${XDMF_FLAG}")
         SET(ADCPREP_LINKER_FLAGS "${NETCDF_LINKER_FLAG} ${XDMF_LINKER_FLAG}")
         SET_TARGET_PROPERTIES(adcprep PROPERTIES LINK_FLAGS ${ADCPREP_LINKER_FLAGS} )
-        TARGET_LINK_LIBRARIES(adcprep ${CMAKE_BINARY_DIR}/libmetis.a -lnetcdf -lnetcdff -lXdmfCore -lXdmfUtils -lXdmf)
+        TARGET_LINK_LIBRARIES(adcprep netcdf netcdff XdmfCore XdmfUtils Xdmf)
         TARGET_INCLUDE_DIRECTORIES(adcprep PRIVATE ${CMAKE_SOURCE_DIR}/src)
-    ELSE(NETCDF_WORKING AND NOT XDMF_WORKING)
-        TARGET_LINK_LIBRARIES(adcprep ${CMAKE_BINARY_DIR}/libmetis.a)
     ENDIF(NETCDF_WORKING AND NOT XDMF_WORKING)
    
     SET_TARGET_PROPERTIES(adcprep PROPERTIES COMPILE_FLAGS ${ADCPREP_COMPILER_FLAGS})
     
     TARGET_INCLUDE_DIRECTORIES(adcprep PRIVATE prep)
-    TARGET_INCLUDE_DIRECTORIES(adcprep PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(adcprep PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
     
-    TARGET_LINK_LIBRARIES(adcprep version mkdir)
+    TARGET_LINK_LIBRARIES(adcprep metis version mkdir)
     
     ADD_DEPENDENCIES(adcprep metis)
+    ADD_DEPENDENCIES(adcprep mkdir)
+    ADD_DEPENDENCIES(adcprep version)
     
     INSTALL(TARGETS adcprep RUNTIME DESTINATION bin)
 
 ENDIF(BUILD_ADCPREP)
 ###########################################################################
-
-
 
 
 ###########################################################################
@@ -590,10 +790,8 @@ IF(BUILD_ADCSWAN AND PERL_FOUND)
     ADD_LIBRARY(templib_adcswan2 STATIC ${ADCSWAN2_SOURCES})
     ADD_LIBRARY(templib_adcswan3 STATIC ${ADCSWAN3_SOURCES})
    
-    #...Note - libraries appear twice since the objects in libraries need to
-    #          see the other libraries. Do not remove the doubles
-    TARGET_LINK_LIBRARIES(adcswan ${CMAKE_BINARY_DIR}/libtemplib_swan1serial.a)
-    TARGET_LINK_LIBRARIES(adcswan ${CMAKE_BINARY_DIR}/libtemplib_swan2serial.a)
+    TARGET_LINK_LIBRARIES(adcswan templib_swan1serial)
+    TARGET_LINK_LIBRARIES(adcswan templib_swan2serial)
     
     SET(ADCSWAN_COMPILER_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG} ${PRECISION_FLAG} ${SWAN_FLAG} ${ADCIRC_OPTION_FLAGS}")
     IF(NETCDF_WORKING AND NOT XDMF_WORKING)
@@ -606,59 +804,50 @@ IF(BUILD_ADCSWAN AND PERL_FOUND)
         TARGET_INCLUDE_DIRECTORIES(adcswan PRIVATE ${CMAKE_SOURCE_DIR}/src)
     ENDIF(NETCDF_WORKING AND NOT XDMF_WORKING)
 
-    SET_TARGET_PROPERTIES(templib_swan1serial PROPERTIES Fortran_MODULE_DIRECTORY adcswan_mod)
-    SET_TARGET_PROPERTIES(templib_swan2serial PROPERTIES Fortran_MODULE_DIRECTORY adcswan_mod)
-    SET_TARGET_PROPERTIES(templib_adcswan1 PROPERTIES Fortran_MODULE_DIRECTORY adcswan_mod)
-    SET_TARGET_PROPERTIES(templib_adcswan2 PROPERTIES Fortran_MODULE_DIRECTORY adcswan_mod)
-    SET_TARGET_PROPERTIES(templib_adcswan3 PROPERTIES Fortran_MODULE_DIRECTORY adcswan_mod)
-    SET_TARGET_PROPERTIES(adcswan PROPERTIES Fortran_MODULE_DIRECTORY adcswan_mod)
-    SET_TARGET_PROPERTIES(templib_adcswan1 PROPERTIES COMPILE_FLAGS ${ADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
-    SET_TARGET_PROPERTIES(templib_adcswan2 PROPERTIES COMPILE_FLAGS ${ADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
-    SET_TARGET_PROPERTIES(templib_adcswan3 PROPERTIES COMPILE_FLAGS ${ADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
-    SET_TARGET_PROPERTIES(adcswan PROPERTIES COMPILE_FLAGS ${ADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
+    SET_TARGET_PROPERTIES(templib_swan1serial PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/adcswan_mod)
+    SET_TARGET_PROPERTIES(templib_swan2serial PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/adcswan_mod)
+    SET_TARGET_PROPERTIES(templib_adcswan1    PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/adcswan_mod)
+    SET_TARGET_PROPERTIES(templib_adcswan2    PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/adcswan_mod)
+    SET_TARGET_PROPERTIES(templib_adcswan3    PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/adcswan_mod)
+    SET_TARGET_PROPERTIES(adcswan             PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/adcswan_mod)
+    SET_TARGET_PROPERTIES(templib_adcswan1    PROPERTIES COMPILE_FLAGS ${ADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
+    SET_TARGET_PROPERTIES(templib_adcswan2    PROPERTIES COMPILE_FLAGS ${ADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
+    SET_TARGET_PROPERTIES(templib_adcswan3    PROPERTIES COMPILE_FLAGS ${ADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
+    SET_TARGET_PROPERTIES(adcswan             PROPERTIES COMPILE_FLAGS ${ADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
     IF( NOT ${ADDITIONAL_FLAGS_SWAN} STREQUAL "" )
         SET_TARGET_PROPERTIES(templib_swan1serial PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_SWAN})
         SET_TARGET_PROPERTIES(templib_swan2serial PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_SWAN})
     ENDIF( NOT ${ADDITIONAL_FLAGS_SWAN} STREQUAL "" )
     
-    TARGET_INCLUDE_DIRECTORIES(adcswan  PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_adcswan1 PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_adcswan2 PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_adcswan3 PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_swan2serial PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(adcswan  PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(templib_adcswan1 PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(templib_adcswan2 PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(templib_adcswan3 PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(templib_swan2serial PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
 
     IF(NETCDF_WORKING AND NOT XDMF_WORKING)
-        TARGET_LINK_LIBRARIES(adcswan ${CMAKE_BINARY_DIR}/libtemplib_adcswan3.a 
-                                      ${CMAKE_BINARY_DIR}/libtemplib_adcswan2.a 
-                                      ${CMAKE_BINARY_DIR}/libtemplib_swan2serial.a 
-                                      ${CMAKE_BINARY_DIR}/libtemplib_adcswan1.a 
-                                      ${CMAKE_BINARY_DIR}/libtemplib_swan1serial.a 
-                                      ${CMAKE_BINARY_DIR}/libversion.a
+        TARGET_LINK_LIBRARIES(adcswan templib_adcswan3 templib_adcswan2
+                                      templib_swan2serial templib_adcswan1
+                                      templib_swan1serial version
                                       netcdf netcdff )
     ELSEIF(NETCDF_WORKING AND XDMF_WORKING)
-        TARGET_LINK_LIBRARIES(adcswan ${CMAKE_BINARY_DIR}/libtemplib_adcswan3.a 
-                                      ${CMAKE_BINARY_DIR}/libtemplib_adcswan2.a 
-                                      ${CMAKE_BINARY_DIR}/libtemplib_swan2serial.a 
-                                      ${CMAKE_BINARY_DIR}/libtemplib_adcswan1.a 
-                                      ${CMAKE_BINARY_DIR}/libtemplib_swan1serial.a  
-                                      ${CMAKE_BINARY_DIR}/libversion.a 
+        TARGET_LINK_LIBRARIES(adcswan templib_adcswan3 templib_adcswan2
+                                      templib_swan2serial templib_adcswan1
+                                      templib_swan1serial version
                                       netcdf netcdff XdmfCore XdmfUtils Xdmf )
     ELSE(NETCDF_WORKING AND NOT XDMF_WORKING)
-        TARGET_LINK_LIBRARIES(adcswan ${CMAKE_BINARY_DIR}/libtemplib_adcswan3.a 
-                                      ${CMAKE_BINARY_DIR}/libtemplib_adcswan2.a 
-                                      ${CMAKE_BINARY_DIR}/libtemplib_swan2serial.a 
-                                      ${CMAKE_BINARY_DIR}/libtemplib_adcswan1.a 
-                                      ${CMAKE_BINARY_DIR}/libversion.a
-                                      ${CMAKE_BINARY_DIR}/libtemplib_swan1serial.a )
+        TARGET_LINK_LIBRARIES(adcswan templib_adcswan3 templib_adcswan2
+                                      templib_swan2serial templib_adcswan1
+                                      templib_swan1serial version )
     ENDIF(NETCDF_WORKING AND NOT XDMF_WORKING)
 
-    ADD_DEPENDENCIES(adcswan templib_adcswan3)
-    ADD_DEPENDENCIES(templib_adcswan3 templib_swan2serial)
+    ADD_DEPENDENCIES(adcswan             templib_adcswan3)
+    ADD_DEPENDENCIES(templib_adcswan3    templib_swan2serial)
     ADD_DEPENDENCIES(templib_swan2serial templib_adcswan2)
-    ADD_DEPENDENCIES(templib_adcswan3 templib_adcswan2)
-    ADD_DEPENDENCIES(templib_adcswan2 templib_adcswan1)
-    ADD_DEPENDENCIES(templib_adcswan1 templib_swan1serial)
-    ADD_DEPENDENCIES(templib_adcswan1 version)
+    ADD_DEPENDENCIES(templib_adcswan3    templib_adcswan2)
+    ADD_DEPENDENCIES(templib_adcswan2    templib_adcswan1)
+    ADD_DEPENDENCIES(templib_adcswan1    templib_swan1serial)
+    ADD_DEPENDENCIES(templib_adcswan1    version)
     
     INSTALL(TARGETS adcswan RUNTIME DESTINATION bin)
 
@@ -732,9 +921,9 @@ IF(BUILD_SWAN AND PERL_FOUND)
     
     SET_TARGET_PROPERTIES(swan PROPERTIES COMPILE_FLAGS "${Fortran_COMPILER_SPECIFIC_FLAG} 
                                                          ${ADDITIONAL_FLAGS_SWAN}")
-    SET_TARGET_PROPERTIES(swan PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/swan_mod)
+    SET_TARGET_PROPERTIES(swan PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/CMakeFiles/swan_mod)
     
-    TARGET_INCLUDE_DIRECTORIES(swan PRIVATE ${CMAKE_BINARY_DIR}/swan_mod)
+    TARGET_INCLUDE_DIRECTORIES(swan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/swan_mod)
     
     INSTALL(TARGETS swan RUNTIME DESTINATION bin)
 
@@ -776,7 +965,7 @@ IF(BUILD_PADCIRC)
     ADD_EXECUTABLE(padcirc ${PADCIRC4_SOURCES})
 
     TARGET_INCLUDE_DIRECTORIES(templib_padcirc1 PRIVATE prep)
-    TARGET_INCLUDE_DIRECTORIES(padcirc  PRIVATE prep)
+    TARGET_INCLUDE_DIRECTORIES(padcirc          PRIVATE prep)
     
     SET(PADCIRC_COMPILER_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG} ${PRECISION_FLAG} ${ADCIRC_MPI_FLAG} ${ADCIRC_OPTION_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC}")
     
@@ -790,46 +979,40 @@ IF(BUILD_PADCIRC)
         TARGET_INCLUDE_DIRECTORIES(padcirc PRIVATE ${CMAKE_SOURCE_DIR}/src)
     ENDIF(NETCDF_WORKING AND NOT XDMF_WORKING)
     
-    SET_TARGET_PROPERTIES(templib_padcirc1 PROPERTIES Fortran_MODULE_DIRECTORY padcirc_mod)
+    SET_TARGET_PROPERTIES(templib_padcirc1 PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/padcirc_mod)
     SET_TARGET_PROPERTIES(templib_padcirc1 PROPERTIES COMPILE_FLAGS ${PADCIRC_COMPILER_FLAGS})
 
-    SET_TARGET_PROPERTIES(templib_padcirc2 PROPERTIES Fortran_MODULE_DIRECTORY padcirc_mod)
+    SET_TARGET_PROPERTIES(templib_padcirc2 PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/padcirc_mod)
     SET_TARGET_PROPERTIES(templib_padcirc2 PROPERTIES COMPILE_FLAGS ${PADCIRC_COMPILER_FLAGS})
     
-    SET_TARGET_PROPERTIES(templib_padcirc3 PROPERTIES Fortran_MODULE_DIRECTORY padcirc_mod)
+    SET_TARGET_PROPERTIES(templib_padcirc3 PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/padcirc_mod)
     SET_TARGET_PROPERTIES(templib_padcirc3 PROPERTIES COMPILE_FLAGS ${PADCIRC_COMPILER_FLAGS})
 
-    SET_TARGET_PROPERTIES(padcirc PROPERTIES Fortran_MODULE_DIRECTORY padcirc_mod)
+    SET_TARGET_PROPERTIES(padcirc PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/padcirc_mod)
     SET_TARGET_PROPERTIES(padcirc PROPERTIES COMPILE_FLAGS ${PADCIRC_COMPILER_FLAGS})
     
-    TARGET_INCLUDE_DIRECTORIES(templib_padcirc1  PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_padcirc2  PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_padcirc3  PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(padcirc  PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(templib_padcirc1  PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(templib_padcirc2  PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(templib_padcirc3  PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(padcirc           PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    
+    TARGET_INCLUDE_DIRECTORIES(templib_padcirc1  PRIVATE ${MPI_Fortran_INCLUDE_PATH})
+    TARGET_INCLUDE_DIRECTORIES(templib_padcirc2  PRIVATE ${MPI_Fortran_INCLUDE_PATH})
+    TARGET_INCLUDE_DIRECTORIES(templib_padcirc3  PRIVATE ${MPI_Fortran_INCLUDE_PATH})
+    TARGET_INCLUDE_DIRECTORIES(padcirc           PRIVATE ${MPI_Fortran_INCLUDE_PATH})
 
     IF(NETCDF_WORKING AND NOT XDMF_WORKING)
-        TARGET_LINK_LIBRARIES(padcirc ${CMAKE_BINARY_DIR}/libtemplib_padcirc3.a  
-                                      ${CMAKE_BINARY_DIR}/libtemplib_padcirc2.a 
-                                      ${CMAKE_BINARY_DIR}/libtemplib_padcirc1.a 
-                                      ${CMAKE_BINARY_DIR}/libversion.a 
-                                      ${CMAKE_BINARY_DIR}/libmkdir.a
-                                      netcdf netcdff )
+        TARGET_LINK_LIBRARIES(padcirc templib_padcirc3 templib_padcirc2 templib_padcirc1 
+                                      version mkdir netcdf netcdff ${MPI_Fortran_LIBRARIES})
     ELSEIF(NETCDF_WORKING AND XDMF_WORKING)
-        TARGET_LINK_LIBRARIES(padcirc ${CMAKE_BINARY_DIR}/libtemplib_padcirc3.a  
-                                      ${CMAKE_BINARY_DIR}/libtemplib_padcirc2.a 
-                                      ${CMAKE_BINARY_DIR}/libtemplib_padcirc1.a 
-                                      ${CMAKE_BINARY_DIR}/libversion.a 
-                                      ${CMAKE_BINARY_DIR}/libmkdir.a
-                                      netcdf netcdff XdmfCore XdmfUtils Xdmf )
+        TARGET_LINK_LIBRARIES(padcirc templib_padcirc3 templib_padcirc2 templib_padcirc1 
+                                      version mkdir netcdf netcdff XdmfCore XdmfUtils Xdmf
+                                      ${MPI_Fortran_LIBRARIES})
     ELSE(NETCDF_WORKING AND NOT XDMF_WORKING)
-        TARGET_LINK_LIBRARIES(padcirc ${CMAKE_BINARY_DIR}/libtemplib_padcirc3.a  
-                                      ${CMAKE_BINARY_DIR}/libtemplib_padcirc2.a 
-                                      ${CMAKE_BINARY_DIR}/libtemplib_padcirc1.a 
-                                      ${CMAKE_BINARY_DIR}/libversion.a
-                                      ${CMAKE_BINARY_DIR}/libmkdir.a )
+        TARGET_LINK_LIBRARIES(padcirc templib_padcirc3 templib_padcirc2 templib_padcirc1 
+                                      version mkdir ${MPI_Fortran_LIBRARIES})
     ENDIF(NETCDF_WORKING AND NOT XDMF_WORKING)
    
-
     ADD_DEPENDENCIES(padcirc          templib_padcirc3)
     ADD_DEPENDENCIES(templib_padcirc2 templib_padcirc1)
     ADD_DEPENDENCIES(templib_padcirc3 templib_padcirc2)
@@ -931,11 +1114,11 @@ IF(BUILD_PADCSWAN AND PERL_FOUND)
 
     ADD_LIBRARY(templib_swan1parallel STATIC ${SWAN1PARALLEL_SOURCES})
     ADD_LIBRARY(templib_swan2parallel STATIC ${SWAN2PARALLEL_SOURCES})
-    ADD_LIBRARY(templib_padcswan1 STATIC ${PADCSWAN1_SOURCES})
-    ADD_LIBRARY(templib_padcswan2 STATIC ${PADCSWAN2_SOURCES})
-    ADD_LIBRARY(templib_padcswan3 STATIC ${PADCSWAN3_SOURCES})
-    ADD_LIBRARY(templib_padcswan4 STATIC ${PADCSWAN4_SOURCES})
-    ADD_LIBRARY(templib_padcswan5 STATIC ${PADCSWAN5_SOURCES})
+    ADD_LIBRARY(templib_padcswan1     STATIC ${PADCSWAN1_SOURCES})
+    ADD_LIBRARY(templib_padcswan2     STATIC ${PADCSWAN2_SOURCES})
+    ADD_LIBRARY(templib_padcswan3     STATIC ${PADCSWAN3_SOURCES})
+    ADD_LIBRARY(templib_padcswan4     STATIC ${PADCSWAN4_SOURCES})
+    ADD_LIBRARY(templib_padcswan5     STATIC ${PADCSWAN5_SOURCES})
    
     SET(PADCSWAN_COMPILER_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG} ${PRECISION_FLAG} ${SWAN_FLAG} ${ADCIRC_MPI_FLAG} ${ADCIRC_OPTION_FLAGS}")
     
@@ -944,87 +1127,81 @@ IF(BUILD_PADCSWAN AND PERL_FOUND)
         SET(PADCSWAN_COMPILER_FLAGS "${PADCSWAN_COMPILER_FLAGS} ${NETCDF_FLAG} ${NETCDF_COMPRESSION_FLAG}")
         SET_TARGET_PROPERTIES(padcswan PROPERTIES LINK_FLAGS ${NETCDF_LINKER_FLAG})
         
-        TARGET_LINK_LIBRARIES(padcswan ${CMAKE_BINARY_DIR}/libtemplib_padcswan5.a 
-                                   ${CMAKE_BINARY_DIR}/libtemplib_padcswan4.a 
-                                   ${CMAKE_BINARY_DIR}/libtemplib_padcswan3.a
-                                   ${CMAKE_BINARY_DIR}/libtemplib_swan2parallel.a 
-                                   ${CMAKE_BINARY_DIR}/libtemplib_padcswan2.a 
-                                   ${CMAKE_BINARY_DIR}/libtemplib_padcswan1.a 
-                                   ${CMAKE_BINARY_DIR}/libversion.a 
-                                   ${CMAKE_BINARY_DIR}/libtemplib_swan1parallel.a 
-                                   ${CMAKE_BINARY_DIR}/libmkdir.a
-                                   netcdf netcdff )
+        TARGET_LINK_LIBRARIES(padcswan templib_padcswan5 templib_padcswan4
+                                       templib_padcswan3 templib_swan2parallel
+                                       templib_padcswan2 templib_padcswan1 
+                                       version templib_swan1parallel
+                                       mkdir netcdf netcdff ${MPI_Fortran_LIBRARIES}) 
 
     ELSEIF(NETCDF_WORKING AND XDMF_WORKING)
    
         SET(PADCSWAN_COMPILER_FLAGS "${PADCSWAN_COMPILER_FLAGS} ${NETCDF_FLAG} ${NETCDF_COMPRESSION_FLAG} ${XDMF_FLAG}")
         SET(PADCSWAN_LINKER_FLAGS "${NETCDF_LINKER_FLAG} ${XDMF_LINKER_FLAG}")
         SET_TARGET_PROPERTIES(padcswan PROPERTIES LINK_FLAGS ${PADCSWAN_LINKER_FLAGS} )
-        TARGET_INCLUDE_DIRECTORIES(padcswan PRIVATE ${CMAKE_SOURCE_DIR}/src)
         
-        TARGET_LINK_LIBRARIES(padcswan ${CMAKE_BINARY_DIR}/libtemplib_padcswan5.a 
-                                   ${CMAKE_BINARY_DIR}/libtemplib_padcswan4.a 
-                                   ${CMAKE_BINARY_DIR}/libtemplib_padcswan3.a
-                                   ${CMAKE_BINARY_DIR}/libtemplib_swan2parallel.a 
-                                   ${CMAKE_BINARY_DIR}/libtemplib_padcswan2.a 
-                                   ${CMAKE_BINARY_DIR}/libtemplib_padcswan1.a 
-                                   ${CMAKE_BINARY_DIR}/libversion.a 
-                                   ${CMAKE_BINARY_DIR}/libtemplib_swan1parallel.a 
-                                   ${CMAKE_BINARY_DIR}/libmkdir.a
-                                   netcdf netcdff XdmfCore XdmfUtils Xdmf )
-
+        TARGET_LINK_LIBRARIES(padcswan templib_padcswan5 templib_padcswan4
+                                       templib_padcswan3 templib_swan2parallel
+                                       templib_padcswan2 templib_padcswan1 
+                                       version templib_swan1parallel
+                                       mkdir netcdf netcdff XdmfCore XdmfUtils Xdmf
+                                       ${MPI_Fortran_LIBRARIES})
+        
     ELSE(NETCDF_WORKING AND NOT XDMF_WORKING)
-
-        TARGET_LINK_LIBRARIES(padcswan ${CMAKE_BINARY_DIR}/libtemplib_padcswan5.a 
-                                   ${CMAKE_BINARY_DIR}/libtemplib_padcswan4.a 
-                                   ${CMAKE_BINARY_DIR}/libtemplib_padcswan3.a
-                                   ${CMAKE_BINARY_DIR}/libtemplib_swan2parallel.a 
-                                   ${CMAKE_BINARY_DIR}/libtemplib_padcswan2.a 
-                                   ${CMAKE_BINARY_DIR}/libtemplib_padcswan1.a 
-                                   ${CMAKE_BINARY_DIR}/libversion.a 
-                                   ${CMAKE_BINARY_DIR}/libtemplib_swan1parallel.a
-                                   ${CMAKE_BINARY_DIR}/libmkdir.a )
+        
+        TARGET_LINK_LIBRARIES(padcswan templib_padcswan5 templib_padcswan4
+                                       templib_padcswan3 templib_swan2parallel
+                                       templib_padcswan2 templib_padcswan1 
+                                       version templib_swan1parallel mkdir
+                                       ${MPI_Fortran_LIBRARIES})
 
     ENDIF(NETCDF_WORKING AND NOT XDMF_WORKING)
-    
-    SET_TARGET_PROPERTIES(templib_swan1parallel PROPERTIES Fortran_MODULE_DIRECTORY padcswan_mod)
-    SET_TARGET_PROPERTIES(templib_swan2parallel PROPERTIES Fortran_MODULE_DIRECTORY padcswan_mod)
-    SET_TARGET_PROPERTIES(templib_padcswan1     PROPERTIES Fortran_MODULE_DIRECTORY padcswan_mod)
-    SET_TARGET_PROPERTIES(templib_padcswan2     PROPERTIES Fortran_MODULE_DIRECTORY padcswan_mod)
-    SET_TARGET_PROPERTIES(templib_padcswan3     PROPERTIES Fortran_MODULE_DIRECTORY padcswan_mod)
-    SET_TARGET_PROPERTIES(templib_padcswan4     PROPERTIES Fortran_MODULE_DIRECTORY padcswan_mod)
-    SET_TARGET_PROPERTIES(templib_padcswan5     PROPERTIES Fortran_MODULE_DIRECTORY padcswan_mod)
-    SET_TARGET_PROPERTIES(padcswan              PROPERTIES Fortran_MODULE_DIRECTORY padcswan_mod)
+        
+    SET_TARGET_PROPERTIES(templib_swan1parallel PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/padcswan_mod)
+    SET_TARGET_PROPERTIES(templib_swan2parallel PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/padcswan_mod)
+    SET_TARGET_PROPERTIES(templib_padcswan1     PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/padcswan_mod)
+    SET_TARGET_PROPERTIES(templib_padcswan2     PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/padcswan_mod)
+    SET_TARGET_PROPERTIES(templib_padcswan3     PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/padcswan_mod)
+    SET_TARGET_PROPERTIES(templib_padcswan4     PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/padcswan_mod)
+    SET_TARGET_PROPERTIES(templib_padcswan5     PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/padcswan_mod)
+    SET_TARGET_PROPERTIES(padcswan              PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/padcswan_mod)
     SET_TARGET_PROPERTIES(templib_padcswan1     PROPERTIES COMPILE_FLAGS ${PADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
     SET_TARGET_PROPERTIES(templib_padcswan2     PROPERTIES COMPILE_FLAGS ${PADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
     SET_TARGET_PROPERTIES(templib_padcswan3     PROPERTIES COMPILE_FLAGS ${PADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
     SET_TARGET_PROPERTIES(templib_padcswan4     PROPERTIES COMPILE_FLAGS ${PADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
     SET_TARGET_PROPERTIES(templib_padcswan5     PROPERTIES COMPILE_FLAGS ${PADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
-    SET_TARGET_PROPERTIES(padcswan              PROPERTIES COMPILE_FLAGS  ${PADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
+    SET_TARGET_PROPERTIES(padcswan              PROPERTIES COMPILE_FLAGS ${PADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
     
-    TARGET_INCLUDE_DIRECTORIES(padcswan              PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_padcswan1     PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_padcswan2     PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_padcswan3     PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_padcswan4     PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_padcswan5     PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_swan2parallel PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(padcswan              PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(templib_padcswan1     PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(templib_padcswan2     PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(templib_padcswan3     PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(templib_padcswan4     PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(templib_padcswan5     PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(templib_swan2parallel PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    
+    TARGET_INCLUDE_DIRECTORIES(padcswan              PRIVATE ${MPI_Fortran_INCLUDE_PATH})
+    TARGET_INCLUDE_DIRECTORIES(templib_padcswan1     PRIVATE ${MPI_Fortran_INCLUDE_PATH})
+    TARGET_INCLUDE_DIRECTORIES(templib_padcswan2     PRIVATE ${MPI_Fortran_INCLUDE_PATH})
+    TARGET_INCLUDE_DIRECTORIES(templib_padcswan3     PRIVATE ${MPI_Fortran_INCLUDE_PATH})
+    TARGET_INCLUDE_DIRECTORIES(templib_padcswan4     PRIVATE ${MPI_Fortran_INCLUDE_PATH})
+    TARGET_INCLUDE_DIRECTORIES(templib_padcswan5     PRIVATE ${MPI_Fortran_INCLUDE_PATH})
+    TARGET_INCLUDE_DIRECTORIES(templib_swan2parallel PRIVATE ${MPI_Fortran_INCLUDE_PATH})
     
     IF( NOT ${ADDITIONAL_FLAGS_SWAN} STREQUAL "" )
         SET_TARGET_PROPERTIES(swan1parallel PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_SWAN})
         SET_TARGET_PROPERTIES(swan2parallel PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_SWAN})
     ENDIF()
     
-    ADD_DEPENDENCIES(padcswan templib_swan2parallel)
-    ADD_DEPENDENCIES(padcswan templib_padcswan3)
+    ADD_DEPENDENCIES(padcswan              templib_swan2parallel)
+    ADD_DEPENDENCIES(padcswan              templib_padcswan3)
     ADD_DEPENDENCIES(templib_swan2parallel templib_padcswan5)
-    ADD_DEPENDENCIES(templib_padcswan5 templib_padcswan4)
-    ADD_DEPENDENCIES(templib_padcswan4 templib_padcswan2)
-    ADD_DEPENDENCIES(templib_padcswan4 templib_padcswan3)
-    ADD_DEPENDENCIES(templib_padcswan3 templib_padcswan2)
-    ADD_DEPENDENCIES(templib_padcswan2 templib_padcswan1)
-    ADD_DEPENDENCIES(templib_padcswan1 templib_swan1parallel)
-    ADD_DEPENDENCIES(templib_padcswan1 mkdir)
+    ADD_DEPENDENCIES(templib_padcswan5     templib_padcswan4)
+    ADD_DEPENDENCIES(templib_padcswan4     templib_padcswan2)
+    ADD_DEPENDENCIES(templib_padcswan4     templib_padcswan3)
+    ADD_DEPENDENCIES(templib_padcswan3     templib_padcswan2)
+    ADD_DEPENDENCIES(templib_padcswan2     templib_padcswan1)
+    ADD_DEPENDENCIES(templib_padcswan1     templib_swan1parallel)
+    ADD_DEPENDENCIES(templib_padcswan1     mkdir)
     
     INSTALL(TARGETS padcswan RUNTIME DESTINATION bin)
 
@@ -1108,23 +1285,26 @@ IF(BUILD_PUNSWAN AND PERL_FOUND)
         SET_TARGET_PROPERTIES(punswan        PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_SWAN})
     ENDIF()
     
-    SET_TARGET_PROPERTIES(templib_punswan1  PROPERTIES Fortran_MODULE_DIRECTORY punswan_mod)
-    SET_TARGET_PROPERTIES(templib_punmsglib PROPERTIES Fortran_MODULE_DIRECTORY punswan_mod)
-    SET_TARGET_PROPERTIES(punswan           PROPERTIES Fortran_MODULE_DIRECTORY punswan_mod)
+    SET_TARGET_PROPERTIES(templib_punswan1  PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/punswan_mod)
+    SET_TARGET_PROPERTIES(templib_punmsglib PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/punswan_mod)
+    SET_TARGET_PROPERTIES(punswan           PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/punswan_mod)
     
     SET(MSGLIB_COMPILER_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG} ${PRECISION_FLAG} ${SWAN_FLAG} ${ADCIRC_MPI_FLAG} ${ADCIRC_OPTION_FLAGS}")
     SET_TARGET_PROPERTIES(templib_punmsglib PROPERTIES COMPILE_FLAGS ${MSGLIB_COMPILER_FLAGS})
     
-    TARGET_INCLUDE_DIRECTORIES(punswan           PRIVATE ${CMAKE_BINARY_DIR}/punswan_mod)
-    TARGET_INCLUDE_DIRECTORIES(punswan           PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_punswan1  PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_punmsglib PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(punswan           PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/punswan_mod)
+    TARGET_INCLUDE_DIRECTORIES(punswan           PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(punswan           PRIVATE ${MPI_Fortran_INCLUDE_PATH})
+    TARGET_INCLUDE_DIRECTORIES(templib_punswan1  PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(templib_punswan1  PRIVATE ${MPI_Fortran_INCLUDE_PATH})
+    TARGET_INCLUDE_DIRECTORIES(templib_punmsglib PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(templib_punmsglib PRIVATE ${MPI_Fortran_INCLUDE_PATH})
 
-    TARGET_LINK_LIBRARIES(punswan templib_punmsglib templib_punswan1 mkdir)
+    TARGET_LINK_LIBRARIES(punswan templib_punmsglib templib_punswan1 mkdir ${MPI_Fortran_LIBRARIES})
 
     ADD_DEPENDENCIES(templib_punmsglib templib_punswan1)
-    ADD_DEPENDENCIES(punswan templib_punswan1)
-    ADD_DEPENDENCIES(punswan templib_punmsglib)
+    ADD_DEPENDENCIES(punswan           templib_punswan1)
+    ADD_DEPENDENCIES(punswan           templib_punmsglib)
     ADD_DEPENDENCIES(templib_punmsglib version)
     ADD_DEPENDENCIES(templib_punmsglib mkdir)
     
@@ -1135,7 +1315,7 @@ ENDIF(BUILD_PUNSWAN AND PERL_FOUND)
 
 
 ###########################################################################
-# ASWIP
+#                              ASWIP
 ###########################################################################
 IF(BUILD_ASWIP)
     
@@ -1169,12 +1349,12 @@ IF(BUILD_ASWIP)
 
     ENDIF(NETCDF_WORKING AND NOT XDMF_WORKING) 
 
-    TARGET_INCLUDE_DIRECTORIES(aswip PRIVATE ${CMAKE_BINARY_DIR}/version_mod)
+    TARGET_INCLUDE_DIRECTORIES(aswip PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
     TARGET_LINK_LIBRARIES(aswip version)
 
     SET_TARGET_PROPERTIES(aswip PROPERTIES COMPILE_FLAGS ${ASWIP_COMPILER_FLAGS})
 
-    SET_TARGET_PROPERTIES(aswip PROPERTIES Fortran_MODULE_DIRECTORY aswip_mod)
+    SET_TARGET_PROPERTIES(aswip PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/aswip_mod)
 
     INSTALL(TARGETS aswip RUNTIME DESTINATION bin)
 
@@ -1197,14 +1377,14 @@ IF(BUILD_UTILITIES)
     ADD_EXECUTABLE(inflate util/inflate.F)
     ADD_EXECUTABLE(hstime util/hstime.F)
     
-    SET_TARGET_PROPERTIES(adccmp PROPERTIES Fortran_MODULE_DIRECTORY util_mod)
-    SET_TARGET_PROPERTIES(p15 PROPERTIES Fortran_MODULE_DIRECTORY util_mod)
-    SET_TARGET_PROPERTIES(owi22 PROPERTIES Fortran_MODULE_DIRECTORY util_mod)
-    SET_TARGET_PROPERTIES(build13 PROPERTIES Fortran_MODULE_DIRECTORY util_mod)
-    SET_TARGET_PROPERTIES(buildstwave23 PROPERTIES Fortran_MODULE_DIRECTORY util_mod)
-    SET_TARGET_PROPERTIES(hot2asc PROPERTIES Fortran_MODULE_DIRECTORY util_mod)
-    SET_TARGET_PROPERTIES(inflate PROPERTIES Fortran_MODULE_DIRECTORY util_mod)
-    SET_TARGET_PROPERTIES(hstime PROPERTIES Fortran_MODULE_DIRECTORY util_mod)
+    SET_TARGET_PROPERTIES(adccmp PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/util_mod)
+    SET_TARGET_PROPERTIES(p15 PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/util_mod)
+    SET_TARGET_PROPERTIES(owi22 PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/util_mod)
+    SET_TARGET_PROPERTIES(build13 PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/util_mod)
+    SET_TARGET_PROPERTIES(buildstwave23 PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/util_mod)
+    SET_TARGET_PROPERTIES(hot2asc PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/util_mod)
+    SET_TARGET_PROPERTIES(inflate PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/util_mod)
+    SET_TARGET_PROPERTIES(hstime PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/util_mod)
 
     SET_TARGET_PROPERTIES(adccmp PROPERTIES COMPILE_FLAGS ${UTILITY_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_UTILITIES})
     SET_TARGET_PROPERTIES(p15 PROPERTIES COMPILE_FLAGS ${UTILITY_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_UTILITIES})
