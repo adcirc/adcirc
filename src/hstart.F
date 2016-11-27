@@ -4450,7 +4450,7 @@ C
       INTEGER i      ! array index
 C
       call setMessageSource("binaryRead2D")
-#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
        DO i=1, length
@@ -4458,7 +4458,7 @@ C
           counter = counter + 1
        END DO
 C
-#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
@@ -4486,14 +4486,14 @@ C
       INTEGER i      ! array index
 C
       call setMessageSource("realRead2D")
-#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
        DO i=1, length
           READ(lun,*) array(i)
        END DO
 C
-#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
@@ -4519,7 +4519,7 @@ C
       INTEGER i      ! array index
 C
       call setMessageSource("binaryIntRead2D")
-#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 C
@@ -4528,7 +4528,7 @@ C
           counter = counter + 1
        END DO
 C
-#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
@@ -4553,7 +4553,7 @@ C
       INTEGER i      ! array index
 C
       call setMessageSource("realIntRead2D")
-#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 C
@@ -4561,7 +4561,7 @@ C
           READ(lun,*) array(i)
        END DO
 C
-#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
@@ -4589,7 +4589,7 @@ C
       INTEGER i,j      ! array indices
 C
       call setMessageSource("realRead3D")
-#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
        DO j=1, jLength
@@ -4598,7 +4598,7 @@ C
           END DO
        END DO
 C
-#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
@@ -4711,7 +4711,7 @@ C
       INTEGER, allocatable, dimension(:) :: fd_array ! full domain array
 C
       call setMessageSource("readAndMapToSubdomainInt2D")
-#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
       ! serial
@@ -4758,7 +4758,7 @@ C
          END IF
       ENDIF
 C
-#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
@@ -4876,7 +4876,7 @@ C
       REAL(SZ), allocatable, dimension(:,:) :: fd_array ! full domain array
 C
       call setMessageSource("readAndMapToSubdomain3D")
-#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
       ! serial
@@ -4924,7 +4924,7 @@ C
       ENDIF
 C
 
-#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
