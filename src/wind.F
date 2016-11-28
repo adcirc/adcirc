@@ -5043,7 +5043,7 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
           MAXDIST = MAX_INTERP_DIST
        ENDIF
        
-       write(scratchMessage,'("Maximum GFDL Interpolation Distance = ",e24.16)'),maxdist
+       write(scratchMessage,'("Maximum GFDL Interpolation Distance = ",e24.16)') maxdist
        call logMessage(ECHO,scratchMessage)
 
        
