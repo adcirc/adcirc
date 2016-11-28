@@ -3408,7 +3408,7 @@ C     the screen.
      &            IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX,MYPROC
             ELSE
                WRITE(ScreenUnit,1991)
-     &            IT,NUMITR,0.,KEMAX,VELMAX,KVMAX,MYPROC
+     &            IT,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX,MYPROC
             ENDIF
  1991       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
@@ -3422,7 +3422,7 @@ C     the screen.
             WRITE(ScreenUnit,1993)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
      &           KVMAX,MYPROC
-            WRITE(16,1993) IT,NUMITR,ETA2(KEMAX),KEMAX,VELMAX,
+            WRITE(16,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
      &           KVMAX,MYPROC
  1993       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
@@ -3492,7 +3492,7 @@ C     the screen.
             Flag_ElevError = .true.
             WRITE(ScreenUnit,1996)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16,1996) IT,NUMITR,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(16,1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1996       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
