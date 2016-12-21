@@ -1976,7 +1976,9 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
          if (foundWetDryControlNameList) then
             WRITE(15,'(a,l,a,l,a,l,a,l)') 
      &         "&wetDryControl outputNodeCode=",outputNodeCode,
-     &         " outputNOFF=",outputNOFF," noffActive=",noffActive," /"
+     &         " outputNOFF=",outputNOFF," noffActive=",noffActive,
+     &         " outputUU1VV1=",outputUU1VV1," outputTk=",outputTk,
+     &         " outputEta1=",outputEta1," outputEta2=",outputEta2," /"
          endif
 
          ! jgf52.08.02: inundation output control

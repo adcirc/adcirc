@@ -613,7 +613,7 @@ C
       ENDIF
       TkDescript % lun                  = 107
       if ( NOUTGE.ne.0 ) then       
-         Eta2Descript % specifier            = ASCII
+         TkDescript % specifier            = ASCII
       endif
       TkDescript % startTimeStep           = NTCYSGE 
       TkDescript % endTimeStep             = NTCYFGE
@@ -632,7 +632,7 @@ C
          ALLOCATE(UU1_g(NP_G))
          ALLOCATE(VV1_g(NP_G))
       ENDIF
-      TkDescript % lun                  = 103
+      UU1VV1Descript % lun                  = 103
       if ( NOUTGE.ne.0 ) then       
          UU1VV1Descript % specifier            = ASCII
       endif     

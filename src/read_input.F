@@ -337,6 +337,16 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,l)') "noffActive=",noffActive
       call logMessage(ECHO,trim(scratchMessage))
+
+      write(scratchMessage,'(a,l)') "outputUU1VV1=",outputUU1VV1
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "outputTk=",outputTk
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "outputEta1=",outputEta1
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "outputEta2=",outputEta2
+      call logMessage(ECHO,trim(scratchMessage))
+
       rewind(15)
 
       ! jgf52.08.01: Add a namelist for the user to control

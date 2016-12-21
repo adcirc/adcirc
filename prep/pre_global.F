@@ -258,6 +258,10 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       logical :: outputNodeCode = .false.
       logical :: outputNOFF = .false.
       logical :: noffActive = .true.
+      logical :: outputEta1 = .false.
+      logical :: outputEta2 = .false.
+      logical :: outputUU1VV1 = .false.
+      logical :: outputTk = .false. 
 
       ! jgf52.08.02: For inundation output control. Wanted to just
       ! use the variables of the same name from the write_output module,

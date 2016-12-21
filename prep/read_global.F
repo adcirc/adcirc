@@ -458,7 +458,8 @@ C...tcm v51.20.03 Local variables for external station location files
       INTEGER :: NSTAE2,NSTAV2,NSTAC2,NSTAM2
       INTEGER :: IOS_STATIONS
       integer :: ios_wetDry
-      namelist /wetDryControl/ outputNodeCode, outputNOFF, noffActive
+      namelist /wetDryControl/ outputNodeCode, outputNOFF, noffActive,
+     &                 outputUU1VV1, outputTk, outputEta1, outputEta2
       ! jgf52.08.02 : For inundation output files. 
       namelist /inundationOutputControl/ inundationOutput, inunThresh
 
