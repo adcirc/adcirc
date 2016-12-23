@@ -1996,6 +1996,16 @@ c...     tcm v52.30.01 additions for Smag_Control Namelist
             write(15,Smag_Control)
             write(15,*) '! -- End Smagorinski Inputs --'
          ENDIF
+         ! jgf: offset control namelist
+         if (foundOffsetControlNamelist) then
+            write(15,'(a,a, a,i0, a,f15.8, a,f15.8, a,f15.8, a)')
+     &       '&offsetControl offsetFileName="',
+     &       trim(adjustl(offsetFileName)),
+     &       '"  offsetSkipSnaps=',offsetSkipSnaps,
+     &       ' offsetMultiplier=',offsetMultiplier,
+     &       ' offsetRampStart=',offsetRampStart,
+     &       ' offsetRampEnd=',offsetRampEnd,'  /'
+         endif
 
          CLOSE(15)
 C

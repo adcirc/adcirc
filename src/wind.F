@@ -197,7 +197,7 @@ C
       real(sz) :: offsetMultiplier = 1.d0 ! multiply each offset value by this
       real(sz), allocatable :: offsetsOld_m(:) ! from file in m
       real(sz), allocatable :: offsetsNew_m(:) ! from file in m
-      real(sz), allocatable :: offsetsNow_m(:) ! at current time in m
+      real(sz), allocatable, target :: offsetsNow_m(:) ! at current time in m
       real(sz), allocatable :: offsetFD(:) ! hold fulldomain data in parallel
       real(sz) :: offsetRampStart = 0.d0 ! seconds after run start
       real(sz) :: offsetRampEnd = 0.d0   ! seconds after run start
@@ -7260,13 +7260,12 @@ C----------------------------------------------------------------------
       !
       ! if the offset ramp values are negative, they are relative
       ! to the hotstart time
-      if (offsetRampStart.lt.0.d0) then
+      if (offsetRampStart.le.0.d0) then
          offsetRampStart = timesec + abs(offsetRampStart)
       endif
-      if (offsetRampEnd.lt.0.d0) then
+      if (offsetRampEnd.le.0.d0) then
          offsetRampEnd = timesec + abs(offsetRampEnd)
       endif
-      usingWaterLevelOffset = .true.
              
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

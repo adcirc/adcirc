@@ -535,8 +535,12 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
          end do
       endif
 C--------------------END ICE FIELDS----------------------------------------
-C
-C
+C---------------------WATER LEVEL OFFSET-----------------------------------
+C     jgf: update water level correction fields
+      if (usingWaterLevelOffset.eqv..true.) then
+         call getOffsets(timeloc)
+      endif
+
 C
 C---------------------BEGIN MET FORCING----------------------------------------
 
@@ -1270,6 +1274,7 @@ C     the screen.
             ELSE
                WRITE(ScreenUnit,1992)
      &              IT,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX
+
             ENDIF
  1992       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,

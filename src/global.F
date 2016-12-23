@@ -515,6 +515,8 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       ! the file position counter; so we have to have a fake file position 
       ! counter even for output files that are only written once.
       integer, target :: fauxFilePosition 
+      ! jgf: added support for water level offset
+      integer, target :: offsetFilePos
 
       INTEGER  IHOTSTP, IMHS
       INTEGER  ITIME, ITEMPSTP
@@ -541,6 +543,7 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       integer, target :: noffOutSpoolCounter
       integer, target :: initiallyDrySpoolCounter
       integer, target :: windDragSpoolCounter
+      integer, target :: offsetSpoolCounter
       
       INTEGER :: NSPOOLC, NSPOOLGC, NSPOOLGE ! output increments
       INTEGER :: NSPOOLGV, NSPOOLGW, NSPOOLM, NSPOOL_TVW ! output increments

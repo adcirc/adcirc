@@ -464,7 +464,10 @@ C...tcm v51.20.03 Local variables for external station location files
 C
 C.....tcm v52.30.01 added for Smag_Control
       INTEGER :: IOS_Smag = 0
-
+      ! jgf: Added support for water level offset
+      namelist /offsetControl/ offsetFileName, offsetSkipSnaps, 
+     &  offsetMultiplier, offsetRampStart, offsetRampEnd
+      
 c.....tcm v51.20.03 initialize external station location specifications
 C..... to false, meaning if locations are supplied they are in the fort.15 
 C..... file.
@@ -478,7 +481,7 @@ C
       found_tvw_nml = .false.
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       FOUND_WC_NML = .FALSE.
-
+      foundOffsetControlNamelist = .false.
 C
       call setMessageSource("read15")
 #ifdef READ_GLOBAL_TRACE
@@ -583,7 +586,18 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
          call logMessage(INFO,
      &         'The inundationOutput namelist was not found.')
       endif
-           
+      rewind(15)  !Return to the top of the fort.15 file
+      !
+      !jgf:   O F F S E T   C O N T R O L   N A M E L I S T
+      read(unit=15,nml=offsetControl,iostat=ios)
+      if ( ios.ge.0) then
+         foundOffsetControlNamelist = .true.
+         call logMessage(INFO,
+     &         'The offsetControl namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The offsetControl namelist was not found.')
+      endif
       rewind(15)  !Return to the top of the fort.15 file
 
 c...  tcm v52.30.01 Addtions for Smagorinski Limits

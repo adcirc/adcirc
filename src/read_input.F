@@ -421,6 +421,9 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,f15.7)') "offsetRampEnd=",offsetRampEnd
       call logMessage(ECHO,trim(scratchMessage))
+      if (trim(offsetFileName).ne.'null') then
+         usingWaterLevelOffset = .true.
+      endif
 
       rewind(15)
 C...

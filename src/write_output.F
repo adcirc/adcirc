@@ -21,10 +21,11 @@ C----------------------------------------------------------------------
       !    2 D   D A T A
       !
 #ifdef CSWAN
-      integer, parameter :: numOutputDescript2D = 46
+      integer, parameter :: numOutputDescript2D = 48
 #else
-      integer, parameter :: numOutputDescript2D = 32
+      integer, parameter :: numOutputDescript2D = 34
 #endif
+
       type descript2D_ptr_t
          type(OutputDataDescript_t), pointer :: descript2D
       end type descript2D_ptr_t
@@ -66,6 +67,8 @@ Cobell Added a descript for time varying weir tracking
       type(OutputDataDescript_t), target :: weirElevDescript
       ! @jasonfleming: adding output for wind drag
       type(OutputDataDescript_t), target :: windDragDescript
+      ! jgf: added support for water level offset 
+      type(OutputDataDescript_t), target :: offsetDescript      
 
 C     jgf48.03 Full domain arrays used when writing globalio output.
       real(sz), allocatable, target :: et00_g(:)
@@ -98,6 +101,8 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       integer, allocatable, target :: nodecode_out_g(:)
       integer, allocatable, target :: noff_out_g(:)
       real(sz), allocatable, target :: windDragOut_g(:)
+      ! jgf: Added support for water level offset
+      real(sz), allocatable, target :: offsetsNow_m_g(:)
       !
       !  H A R M O N I C   A N A L Y S I S   D A T A
       !
@@ -341,9 +346,11 @@ C----------------------------------------------------------------------
      &   fauxFilePosition, initiallyDrySpoolCounter,
      &   inundationOutput, ihot, logMessage, windDragFilePosition,
      &   windDragOut, windDragSpoolCounter, outputWindDrag
+     &   offsetFilePos, offsetSpoolCounter
       USE MESH, ONLY : NP, NE, DP, NM, ICS
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim,
      &  elemental_slope_limiter_grad_max,elemental_slope_limiter_active
+      USE WIND, ONLY : usingWaterLevelOffset, offsetsNow_m
       USE GLOBAL_IO, ONLY : readAndMapToSubdomainMaxMin
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY : initNetCDFOutputFile,
@@ -405,26 +412,28 @@ C
       ptr(29)%descript2D => endRisingInunDescript
       ptr(30)%descript2D => initiallyDryDescript
       ptr(31)%descript2D => everDriedDescript
-      ptr(32)%descript2D => windDragDescript
+      ptr(33)%descript2D => windDragDescript
+      ptr(34)%descript2D => offsetDescript
 
 !... For SWAN, there are additional output arrays
 #ifdef CSWAN
-      ptr(33)%descript2D => SwanHSDescript
-      ptr(34)%descript2D => SwanHSMaxDescript
-      ptr(35)%descript2D => SwanDIRDescript
-      ptr(36)%descript2D => SwanDIRMaxDescript
-      ptr(37)%descript2D => SwanTM01Descript
-      ptr(38)%descript2D => SwanTM01MaxDescript
-      ptr(39)%descript2D => SwanTPSDescript
-      ptr(40)%descript2D => SwanTPSMaxDescript
-      ptr(41)%descript2D => SwanWindDescript
-      ptr(42)%descript2D => SwanWindMaxDescript
-      ptr(43)%descript2D => SwanTM02Descript
-      ptr(44)%descript2D => SwanTM02MaxDescript
-      ptr(45)%descript2D => SwanTMM10Descript
-      ptr(46)%descript2D => SwanTMM10MaxDescript
+      ptr(35)%descript2D => SwanHSDescript 
+      ptr(36)%descript2D => SwanHSMaxDescript
+      ptr(37)%descript2D => SwanDIRDescript
+      ptr(38)%descript2D => SwanDIRMaxDescript
+      ptr(39)%descript2D => SwanTM01Descript
+      ptr(40)%descript2D => SwanTM01MaxDescript
+      ptr(41)%descript2D => SwanTPSDescript
+      ptr(42)%descript2D => SwanTPSMaxDescript
+      ptr(43)%descript2D => SwanWindDescript
+      ptr(44)%descript2D => SwanWindMaxDescript
+      ptr(45)%descript2D => SwanTM02Descript
+      ptr(46)%descript2D => SwanTM02MaxDescript
+      ptr(47)%descript2D => SwanTMM10Descript
+      ptr(48)%descript2D => SwanTMM10MaxDescript
+
 #endif
-      !
+
       ! jgf51.21.24: Set some defaults
       do i=1,numOutputDescript2D
          ptr(i) % descript2D % specifier = OFF
@@ -720,6 +729,26 @@ C
       if (nws.eq.0) then
          PrDescript % writeFlag         = .false.
       endif
+
+      ! jgf: water level offset timeseries offset.63
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(offsetsNow_m_g(NP_G))
+      ENDIF
+      offsetDescript % lun                  = 108
+      if ( NOUTGE.ne.0 ) then
+         offsetDescript % specifier            = ASCII
+      endif
+      offsetDescript % startTimeStep           = NTCYSGE
+      offsetDescript % endTimeStep             = NTCYFGE
+      offsetDescript % outputTimeStepIncrement = NSPOOLGE
+      offsetDescript % spoolCounter            => offsetSpoolCounter
+      offsetDescript % filepos                 => offsetFilePos
+      offsetDescript % array                => offsetsNow_m
+      offsetDescript % array_g              => offsetsNow_m_g
+      offsetDescript % field_name           = 'offset'
+      offsetDescript % file_basename        = 'offset'
+      offsetDescript % file_extension       = 63
+      offsetDescript % writeFlag            = usingWaterLevelOffset
 
       ! fort.74
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
