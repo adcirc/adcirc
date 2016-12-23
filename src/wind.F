@@ -181,6 +181,33 @@ C
       real(sz), allocatable ::  ug(:),vg(:),pg(:)
       integer :: nws10DatasetCounter ! indicates which dataset to read
 
+      ! jgf52.30.09: Needed for vortex models with storm centers described
+      ! in positive degrees east longitude when mesh nodes end up being
+      ! defined in negative degrees east longitude
+      logical :: entireMeshIsWestOfGMT ! true if all longitudes are negative
+      
+      ! jgf: variables needed for water level offset data
+      integer, parameter :: offun = 21 ! i/o unit number for water lvl offset
+      logical :: usingWaterLevelOffset = .false.
+      character(len=2048) :: offsetFileName='null' ! water level offset file 
+      integer :: offsetBlankSnaps=0 ! counter for initial blank snaps
+      integer :: offsetSkipSnaps=0 ! number of offset data sets to skip 
+      integer :: offsetDataSetCounter=0 ! counts real datasets read from file
+      logical :: offsetIsConstant=.false. ! true if only one dataset provided
+      real(sz) :: offsetMultiplier = 1.d0 ! multiply each offset value by this
+      real(sz), allocatable :: offsetsOld_m(:) ! from file in m
+      real(sz), allocatable :: offsetsNew_m(:) ! from file in m
+      real(sz), allocatable :: offsetsNow_m(:) ! at current time in m
+      real(sz), allocatable :: offsetFD(:) ! hold fulldomain data in parallel
+      real(sz) :: offsetRampStart = 0.d0 ! seconds after run start
+      real(sz) :: offsetRampEnd = 0.d0   ! seconds after run start
+      character(len=2048) :: offsetComment ! comment from offset file
+      real(sz) :: offsetTimeIncrement ! offset time increment (s)
+      real(sz) :: offsetTimeNew ! time of latest dataset (s)
+      real(sz) :: offsetTimeOld ! time of previous dataset (s)
+      real(sz) :: offsetDefaultValue = 0.d0 ! for otherwise unspecified nodes (m)
+      integer :: offsetCurrentLine ! used in error messages
+      logical :: offsetFileEnded = .false. ! true when all data have been read
 
 C------------------------end of data declarations-----------------------
       CONTAINS
@@ -1448,14 +1475,12 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          if (nws.eq.29) then
             OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
      &           STATUS='OLD')
-            CALL NWS19GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
-     &                 NP,vortexTime,ICS)
+            CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,STATIM*86400.D0)
          endif
          if (nws.eq.30) then
             OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
      &           STATUS='OLD')
-            CALL NWS20GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
-     &                 NP,vortexTime,ICS)
+            CALL NWS20GET(vortexWVNX2,vortexWVNY2,vortexPRN2,STATIM*86400.D0)
          endif
       ENDIF
       !
@@ -2098,15 +2123,14 @@ C
          if (abs(nws).eq.29) then
             OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
      &           STATUS='OLD')
-            CALL NWS19GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
-     &                NP,TimeLoc, ICS)
+            CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,TimeLoc)
          endif
          if (abs(nws).eq.30) then
             OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
      &           STATUS='OLD')
-            CALL NWS20GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
-     &                NP,TimeLoc, ICS)
-         endif         
+            CALL NWS20GET(vortexWVNX2,vortexWVNY2,vortexPRN2,TimeLoc)
+         endif 
+      ENDIF
 
 
 
@@ -2369,11 +2393,6 @@ C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
             PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
@@ -2394,14 +2413,12 @@ C     from NAM data
          if (abs(nws).eq.29) then
             OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
      &           STATUS='OLD')
-            CALL NWS19GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
-     &                NP,TimeLoc, ICS)
+            CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,TimeLoc)
          endif
          if (abs(nws).eq.30) then
             OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
      &           STATUS='OLD')
-            CALL NWS20GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
-     &                NP,TimeLoc, ICS)
+            CALL NWS20GET(vortexWVNX2,vortexWVNY2,vortexPRN2,TimeLoc)
          endif         
          DO I=1,NP
             WindX = vortexWVNX2(I)
@@ -2416,7 +2433,7 @@ C     from NAM data
             ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            CALL getBlendFactor(I, SLAM, SFEA, bf)
+            CALL getBlendFactor(I, bf)
             WSX2(I) = bf*RampMete2*0.001293d0*WDragCo*WindX*WindMag
      &               +(1.0d0-bf)*WSX2(I)
             WSY2(I) = bf*RampMete2*0.001293d0*WDragCo*WindY*WindMag
@@ -5304,7 +5321,7 @@ C***********************************************************************
       IMPLICIT NONE
 
       INTEGER  :: ient
-      INTEGER  :: i
+      INTEGER  :: i, j
       INTEGER  :: num_entry
       REAL(sz) :: TIMELOC, wtratio
       REAL( 8), SAVE, ALLOCATABLE :: xcoor(:),ycoor(:)
@@ -7251,6 +7268,369 @@ C----------------------------------------------------------------------
       end subroutine rsget
 C----------------------------------------------------------------------
 
+
+C----------------------------------------------------------------------
+C          S U B R O U T I N E     I N I T   O F F S E T      
+C----------------------------------------------------------------------
+C      jgf: Initialize i/o for water level offset file.     
+C
+C      file format:
+C      ! 1st line is a comment line
+C      14400.0       ! 2nd line: time increment between datasets (s)       
+C      0.0           ! 3rd line: default water level offset value (m)
+C      1     0.3048  ! subsequent lines consist of node number and offset value
+C      3     0.3048  ! only for non-default values 
+C      10    0.30
+C      115   0.3048
+C      307   0.305
+C      ##            ! "#" as 2nd character on the line:start of next dataset
+C      1     0.2048  ! subsequent lines consist of node number and offset value
+C      3     0.2048  ! in second data set ...
+C      10    0.20
+C      115   0.4048
+C      307   0.405
+C      ##
+C      ...
+C
+C      If the file consists of only one data set, the data are treated
+C      as a constant throughout the run. Time varying ramping of the 
+C      data are controlled by the offsetRampStart and offsetRampEnd 
+C      parameters in the fort.15 offsetControl namelist. 
+C 
+C----------------------------------------------------------------------
+      subroutine initOffset(timesec)
+      use sizes, only : globaldir
+      use global, only : nabout, np_g
+      use mesh, only : np
+      implicit none  
+      real(sz), intent(in) :: timesec ! adcirc model time (s)
+      integer :: errorio ! i/o error condition code
+
+      call setMessageSource("initOffset")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ! 
+      ! sanity check : if the ramp start or end values were specified,
+      ! make sure the end value is later than the start value
+      if ( (offsetRampStart.ne.0.d0).or.(offsetRampEnd.ne.0.d0)) then
+         if (offsetRampEnd.lt.offsetRampStart) then
+            call logMessage(ERROR,'The water level offset ramp '//
+     &        'start time is later than the end time.')
+            call windTerminate()
+         endif
+      endif
+      !
+      ! Check to make sure the offset file actually exists and if so, open it
+      errorio = 0
+      call openFileForRead(offun,
+     &                     trim(globaldir)//"/"//trim(offsetFileName),
+     &                     errorio)
+      if (errorio.gt.0) call windTerminate()
+      ! file exists, allocate space to hold the data
+#ifdef CMPI
+      allocate(offsetFD(np_g))
+#endif 
+      allocate(offsetsOld_m(np))
+      allocate(offsetsNew_m(np))      
+      allocate(offsetsNow_m(np))
+      !
+      ! read header
+      offsetCurrentLine = 1
+      ! first line is a comment line
+      read(offun,'(A)',end=256,err=258,iostat=errorio) offsetComment
+      call logMessage(ECHO,"offsetComment: "//trim(offsetComment))
+      offsetCurrentLine = offsetCurrentLine + 1
+      ! 2nd line is time increment between datasets 
+      read(offun,fmt=*,end=256,err=258,iostat=errorio) offsetTimeIncrement
+      write(scratchMessage,'(a,f15.7)') "offsetTimeIncrement: ",
+     &    offsetTimeIncrement 
+      call logMessage(ECHO,scratchMessage)
+      offsetCurrentLine = offsetCurrentLine + 1
+      ! 3nd line is default offset value 
+      read(offun,fmt=*,end=256,err=258,iostat=errorio) offsetDefaultValue
+      write(scratchMessage,'(a,f15.7)') "offsetDefaultValue: ",
+     &    offsetDefaultValue 
+      call logMessage(ECHO,scratchMessage)
+      offsetCurrentLine = offsetCurrentLine + 1            
+      ! initialize array values to zero -- can be used as blank snaps
+      offsetsOld_m(:) = 0.d0
+      offsetsNew_m(:) = 0.d0
+      !
+      ! the common case is that offsetSkipSnaps will be 0 and we need
+      ! to read the first two datasets
+      !
+      ! may also need to skip datasets (insert blank datasets if
+      ! offsetSkipSnaps is negative) 
+      !
+      ! if there is only one dataset, the offsetIsConstant flag is raised
+      offsetDataSetCounter = 0
+      offsetBlankSnaps = 2
+      do while (offsetDataSetCounter.lt.(offsetSkipSnaps+2))
+           if (offsetFileEnded.eqv..true.) then
+            exit         
+         endif
+         ! read the next snap from file
+         call getOffsetDataSet()
+         offsetBlankSnaps = offsetBlankSnaps - 1
+      end do
+      !
+      ! set the time corresponding to the two datasets we are 
+      ! interpolating between
+      offsetTimeOld = timesec
+      offsetTimeNew = timesec + offsetTimeIncrement
+      !
+      ! if the offset ramp values are negative, they are relative
+      ! to the hotstart time
+      if (offsetRampStart.lt.0.d0) then
+         offsetRampStart = timesec + abs(offsetRampStart)
+      endif
+      if (offsetRampEnd.lt.0.d0) then
+         offsetRampEnd = timesec + abs(offsetRampEnd)
+      endif
+      usingWaterLevelOffset = .true.
+             
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+      
+256   call allMessage(ERROR,'Unexpectedly reached end-of-file.') ! END jumps here
+258   call allMessage(ERROR,'I/O error during file access.') !  ERR jumps here
+      call allMessage(INFO,
+     &   'Check the fort.16 file for more information.')
+      if (nabout.gt.0) then
+         call allMessage(INFO,
+     &  'Reducing the value of NABOUT to 0'
+     &  //' will maximize the information written to the fort.16 file,'
+     &  //' which may aid in troubleshooting this issue.')
+      endif
+      write(scratchMessage,'("Could not read line ",i0," of ",a,".")')
+     &  offsetCurrentLine, trim(offsetFileName)
+      call allMessage(ERROR,scratchMessage)
+      write(scratchMessage,'(a,i0,a)')
+     &       'The value of the i/o error flag was ',errorio,'.'
+      call allMessage(ERROR,scratchMessage)
+      CALL windTerminate()
+
+      
+C----------------------------------------------------------------------
+      end subroutine initOffset
+C----------------------------------------------------------------------      
+
+C----------------------------------------------------------------------
+C      S U B R O U T I N E    G E T   O F F S E T S
+C----------------------------------------------------------------------
+C     jgf: Uses water level offset data that has already been
+C     read from file, along with control parameters including
+C     offsetMultiplier, offsetRampStart, and offsetRampEnd, 
+C     as well as the current adcirc time to set the offset values
+C     for the current time step. 
+C
+C     If all the data have been read from the file, the offset
+C     value remains constant according to the last dataset read
+C     from the file. 
+C----------------------------------------------------------------------
+      subroutine getOffsets(timesec)
+      implicit none
+      real(sz), intent(in) :: timesec ! current adcirc time
+      real(sz) :: offsetRamp ! linear time varying ramp value
+      
+      call setMessageSource("getOffsets")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif  
+      !
+      ! hold data constant after last snap 
+      if ( (timesec.gt.offsetTimeNew)
+     &     .and.(offsetFileEnded.eqv..true.) ) then
+         offsetIsConstant = .true. 
+      endif
+      ! 
+      ! immediately return if the ramp period is over and the
+      ! data are constant or there are no more data to read
+      if ( (timesec.gt.offsetRampEnd).and.
+     &      (offsetIsConstant.eqv..true.) ) then
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         return
+      endif
+      !
+      ! if the model time has passed the last available data in the
+      ! file but there are no more data to read, or if the data are
+      ! constant, but the ramp period has not ended, use the last
+      ! available data
+      if (offsetIsConstant.eqv..true.) then
+         offsetsNow_m(:) = offsetsNew_m(:)
+      else         
+         ! read new data if it is time
+         if ( timesec.gt.offsetTimeNew ) then
+            do while (timesec.gt.offsetTimeNew) 
+               ! insert blanks if needed
+               if (offsetSkipSnaps.lt.(-1*offsetBlankSnaps)) then
+                  ! both datasets still have all zero values
+                  offsetBlankSnaps = offsetBlankSnaps + 1 
+               else
+                  call getOffsetDataSet()
+               endif
+               offsetTimeOld = offsetTimeNew
+               offsetTimeNew = offsetTimeNew + offsetTimeIncrement
+               if ( offsetFileEnded.eqv..true.) then
+                  exit
+               endif
+            end do
+         endif
+         !
+         ! if we ran out of data just now before catching up to the
+         ! adcirc time (adcirc time step could theoretically be larger than
+         ! offsetTimeIncrement)
+         if (offsetFileEnded.eqv..true.) then
+            offsetsNow_m(:) = offsetsNew_m(:)
+         else
+            ! perform time interpolation
+            offsetsNow_m(:) = 
+     &       (timesec - offsetTimeOld) / (offsetTimeNew - offsetTimeOld ) 
+     &       * ( offsetsNew_m(:) - offsetsOld_m(:) ) + offsetsOld_m(:) 
+         endif
+      endif
+      !
+      ! apply ramp, if any 
+      if ( (timesec.ge.offsetRampStart).and.
+     &     (timesec.le.offsetRampEnd) )  then
+         ! compute linear ramp value
+         offsetRamp = ( timesec - offsetRampStart) 
+     &               / ( offsetRampEnd - offsetRampStart )
+         offsetsNow_m(:) = offsetsNow_m(:) * offsetRamp
+      endif
+      !
+      ! apply offset multiplier if any
+      if (offsetMultiplier.ne.1.d0) then
+         offsetsNow_m(:) = offsetMultiplier * offsetsNow_m(:)
+      endif
+        
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+
+C----------------------------------------------------------------------
+      end subroutine getOffsets
+C----------------------------------------------------------------------      
+
+
+C----------------------------------------------------------------------
+C      S U B R O U T I N E    G E T   O F F S E T   D A T A S E T
+C----------------------------------------------------------------------
+C     jgf: Reads a water level offset dataset from file. 
+C----------------------------------------------------------------------
+      subroutine getOffsetDataSet()
+      use global, only : nabout, np_g, nodes_lg
+      use mesh, only : np
+      implicit none
+      integer :: numOffsetValues
+      integer :: nhg ! fulldomain node number 
+      real(sz) :: offset_val ! water level offset value at that node
+      integer :: fd_node_number ! full domain node number
+      integer :: sd_node_number ! subdomain node number
+      logical :: nextOffsetDataSetFound ! true if a # is found in 2nd col
+      integer :: errorio ! error message code      
+      !
+      numOffsetValues = np
+#ifdef CMPI
+      numOffsetValues = np_g
+#endif
+      offsetsOld_m(:) = offsetsNew_m(:)
+      offsetsNew_m(:) = offsetDefaultValue      
+      nextOffsetDataSetFound = .false.
+      do ! loop until we run out of data or hit a "#" in column 2
+         read(offun,fmt='(a)',end=133,err=258,iostat=errorio) scratchMessage 
+         offsetCurrentLine = offsetCurrentLine + 1
+         ! check to see if the next dataset is about to start
+         if (scratchMessage(2:2).eq."#") then
+            nextOffsetDataSetFound = .true.
+            exit ! break out of do loop
+         endif
+         ! read the node number and value from the line 
+         read(scratchMessage,fmt=*,end=256,err=258,iostat=errorio) 
+     &        nhg, offset_val
+         ! check to make sure this is a valid node number
+         if ( (nhg.lt.1).or.(nhg.gt.numOffsetValues) ) then
+            write(scratchMessage,'(a,i0,a)')
+     &        'The node number on line ',offsetCurrentLine,
+     &        ' of the water '//
+     &        ' offset file is out of range.'
+            call allMessage(ERROR,scratchMessage)
+            call windTerminate()
+         endif     
+         ! set the offset value as specified
+#ifdef CMPI
+         offsetFD(nhg) = offset_val
+#else
+         offsetsNew_m(nhg) = offset_val
+#endif
+      end do
+ 133  continue ! jump to here if we've run out of lines in the offset file
+      offsetDataSetCounter = offsetDataSetCounter + 1
+      ! write log messages if that was the last dataset
+      if (nextOffsetDataSetFound.eqv..false.) then
+         offsetFileEnded = .true.
+         call logMessage(INFO,
+     &     'Finished reading the final water level offset dataset from "'
+     &      //trim(offsetFileName)//'".')
+         if ( offsetDataSetCounter.eq.1 ) then
+            offsetIsConstant = .true.
+            call logMessage(INFO,
+     &      'Only one water level offset dataset was found. '//
+     &      'The water level offset will therefore be constant in time.')
+         endif
+      endif
+
+#ifdef CMPI
+      ! map the full domain node number to the corresponding
+      ! subdomain node number
+      DO sd_node_number=1,np
+         ! get the corresponding fulldomain node number
+         fd_node_number = ABS(NODES_LG(sd_node_number))
+         ! fill in the subdomain arrays with the corresponding
+         ! fulldomain values
+         offsetsNew_m(sd_node_number) = offsetFD(fd_node_number)
+      END DO
+#endif         
+
+     
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+
+C
+C     We jump to this section if there was an error reading a file.
+256   call allMessage(ERROR,'Unexpectedly reached end-of-file.') ! END jumps here
+258   call allMessage(ERROR,'I/O error during file access.') !  ERR jumps here
+      call allMessage(INFO,
+     &   'Check the fort.16 file for more information.')
+      if (nabout.gt.0) then
+         call allMessage(INFO,
+     &  'Reducing the value of NABOUT to 0'
+     &  //' will maximize the information written to the fort.16 file,'
+     &  //' which may aid in troubleshooting this issue.')
+      endif
+      write(scratchMessage,'("Could not read line ",i0," of ",a,".")')
+     &  offsetCurrentLine, trim(offsetFileName)
+      call allMessage(ERROR,scratchMessage)
+      write(scratchMessage,'(a,i0,a)')
+     &       'The value of the i/o error flag was ',errorio,'.'
+      call allMessage(ERROR,scratchMessage)
+      CALL windTerminate()
+
+C----------------------------------------------------------------------
+      end subroutine getOffsetDataSet
+C----------------------------------------------------------------------      
 
 C----------------------------------------------------------------------
 C...  jgf50.38.05: Subroutine to terminate the run cleanly.
