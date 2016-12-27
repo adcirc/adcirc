@@ -413,7 +413,8 @@ C---------------------------------------------------------------------
       USE GLOBAL, ONLY : parse, a2f, hss, screenUnit, STATNAME,
      &                   STATNAMEV, STATNAMEM, STATNAMEC, ERROR, DEBUG,
      &                   allMessage, setMessageSource, deg2rad,
-     &                   unsetMessageSource, INFO, logMessage
+     &                   unsetMessageSource, INFO, logMessage,
+     &                   scratchMessage
       USE HARM, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
      &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,
      &                 IHARIND, ALLOC_MAIN14, CHARMV
@@ -590,14 +591,21 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       !
       !jgf:   O F F S E T   C O N T R O L   N A M E L I S T
       read(unit=15,nml=offsetControl,iostat=ios)
-      if ( ios.ge.0) then
+      select case(ios)
+      case(0) ! zero indicates success
          foundOffsetControlNamelist = .true.
          call logMessage(INFO,
      &         'The offsetControl namelist was found.')
-      else
+      case(1:)
+         write(scratchMessage,'(a,i0,a)')
+     &      'Could not read offsetControl'//
+     &     ' namelist. The Fortran i/o error code was ',ios,'.'
+         call allMessage(ERROR,scratchMessage)
+         stop
+      case default
          call logMessage(INFO,
-     &         'The offsetControl namelist was not found.')
-      endif
+     &      'End-of-file when searching for offsetControl namelist.')
+      end select    
       rewind(15)  !Return to the top of the fort.15 file
 
 c...  tcm v52.30.01 Addtions for Smagorinski Limits

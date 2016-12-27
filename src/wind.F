@@ -7129,7 +7129,7 @@ C
 C     We jump to this section if there was an error reading a file.
 500   call allMessage(ERROR,'Unexpectedly reached end-of-file.') ! END jumps here
 600   call allMessage(ERROR,'I/O error during file access.') !  ERR jumps here
-      write(scratchMessage,'(a,i0,a)') 'Failed to read line ',lineNum,'.' 
+      write(scratchMessage,'(a,i0,a)')'Failed to read line ',lineNum,'.' 
       call allMessage(ERROR,scratchMessage) 
       call allMessage(ERROR,
      &                  'Check the fort.16 file for more information.')
@@ -7188,16 +7188,6 @@ C----------------------------------------------------------------------
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      ! 
-      ! sanity check : if the ramp start or end values were specified,
-      ! make sure the end value is later than the start value
-      if ( (offsetRampStart.ne.0.d0).or.(offsetRampEnd.ne.0.d0)) then
-         if (offsetRampEnd.lt.offsetRampStart) then
-            call logMessage(ERROR,'The water level offset ramp '//
-     &        'start time is later than the end time.')
-            call windTerminate()
-         endif
-      endif
       !
       ! Check to make sure the offset file actually exists and if so, open it
       errorio = 0
@@ -7456,7 +7446,7 @@ C----------------------------------------------------------------------
       if (nextOffsetDataSetFound.eqv..false.) then
          offsetFileEnded = .true.
          call logMessage(INFO,
-     &     'Finished reading the final water level offset dataset from "'
+     &    'Finished reading the final water level offset dataset from "'
      &      //trim(offsetFileName)//'".')
          if ( offsetDataSetCounter.eq.1 ) then
             offsetIsConstant = .true.

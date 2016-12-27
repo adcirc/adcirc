@@ -229,7 +229,8 @@ C
      &   SMAG_LOWER_LIM, SMAG_UPPER_LIM, TK, NOFF, UU1, VV1, QX1, QY1,
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
-     &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM
+     &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM,
+     &   usingWaterLevelOffset
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif

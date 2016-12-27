@@ -749,7 +749,6 @@ C     elements to the structure
       !
       ! inundationOutput can be set to .true. in read_input()
       logical :: inundationOutput = .false. 
-
 C
 C     jgf49.44: Log levels, in order from largest amount of log messages
 C     written (DEBUG) to fewest log messages written (ERROR). Compared
@@ -771,6 +770,8 @@ C     v49.48.01 tcm 20110126 Variables related to kdtree searches
       INTEGER :: SRCHDP=100
       TYPE(KDTREE2), POINTER :: TREE
       TYPE(KDTREE2_RESULT), ALLOCATABLE :: KDRESULTS(:)
+
+      logical :: usingWaterLevelOffset = .false.
 
       CONTAINS
 
