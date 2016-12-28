@@ -192,6 +192,7 @@ C
       character(len=2048) :: offsetFileName='null' ! water level offset file 
       integer :: offsetBlankSnaps=0 ! counter for initial blank snaps
       integer :: offsetSkipSnaps=0 ! number of offset data sets to skip 
+      character(len=10) :: offsetRampReferenceTime='hotstart' ! coldstart or hotstart
       integer :: offsetDataSetCounter=0 ! counts real datasets read from file
       logical :: offsetIsConstant=.false. ! true if only one dataset provided
       real(sz) :: offsetMultiplier = 1.d0 ! multiply each offset value by this
@@ -7248,15 +7249,33 @@ C----------------------------------------------------------------------
       offsetTimeOld = timesec
       offsetTimeNew = timesec + offsetTimeIncrement
       !
-      ! if the offset ramp values are negative, they are relative
-      ! to the hotstart time
-      if (offsetRampStart.le.0.d0) then
-         offsetRampStart = timesec + abs(offsetRampStart)
-      endif
-      if (offsetRampEnd.le.0.d0) then
-         offsetRampEnd = timesec + abs(offsetRampEnd)
-      endif
-             
+      ! set ramp times relative to specified reference
+      select case(trim(offsetRampReferenceTime))
+      case('hotstart','Hotstart','HotStart','HOTSTART')
+         offsetRampStart = timesec + offsetRampStart
+         offsetRampEnd = timesec + offsetRampEnd
+      case('coldstart','Coldstart','ColdStart','COLDSTART')
+         if (offsetRampStart.lt.0.d0.or.offsetRampEnd.lt.0.d0) then
+            call allMessage(ERROR,'Water level offset ramp reference '//
+     &      'time was set to coldstart but negative ramp time(s) '//
+     &      'were found.')
+            call windTerminate()
+         endif
+      case default
+         call allMessage(ERROR,'Water level offset ramp '//
+     &   'reference time was set to "'//trim(offsetRampReferenceTime)//
+     &   '" which is not a valid value. The offsetRampReferenceTime '//
+     &   'parameter must be set to "coldstart" or "hotstart".')
+         call windTerminate()
+      end select
+      ! 
+      ! make sure start of ramp occurs before end of ramp
+      if (offsetRampStart.gt.offsetRampEnd) then
+         call allMessage(ERROR,
+     &   'offsetRampStart is after offsetRampEnd.')
+         call windTerminate()
+      endif 
+           
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif

@@ -281,6 +281,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       real(sz) :: offsetMultiplier = 1.d0 ! multiply each offset value by this
       real(sz) :: offsetRampStart = 0.d0 ! seconds after run start
       real(sz) :: offsetRampEnd = 0.d0   ! seconds after run start     
+      character(len=10) :: offsetRampReferenceTime = 'hotstart'
 C
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX

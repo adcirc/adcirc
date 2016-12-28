@@ -467,7 +467,8 @@ C.....tcm v52.30.01 added for Smag_Control
       INTEGER :: IOS_Smag = 0
       ! jgf: Added support for water level offset
       namelist /offsetControl/ offsetFileName, offsetSkipSnaps, 
-     &  offsetMultiplier, offsetRampStart, offsetRampEnd
+     &  offsetMultiplier, offsetRampStart, offsetRampEnd,
+     &  offsetRampReferenceTime
       
 c.....tcm v51.20.03 initialize external station location specifications
 C..... to false, meaning if locations are supplied they are in the fort.15 
