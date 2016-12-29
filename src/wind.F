@@ -190,8 +190,8 @@ C
       integer, parameter :: offun = 21 ! i/o unit number for water lvl offset
       logical :: usingWaterLevelOffset = .false.
       character(len=2048) :: offsetFileName='null' ! water level offset file 
-      integer :: offsetBlankSnaps=0 ! counter for initial blank snaps
-      integer :: offsetSkipSnaps=0 ! number of offset data sets to skip 
+      integer :: offsetBlankSnaps = 0 ! counter for initial blank snaps
+      integer :: offsetSkipSnaps = 0 ! number of offset data sets to skip 
       character(len=10) :: offsetRampReferenceTime='hotstart' ! coldstart or hotstart
       integer :: offsetDataSetCounter=0 ! counts real datasets read from file
       logical :: offsetIsConstant=.false. ! true if only one dataset provided
@@ -202,10 +202,10 @@ C
       real(sz), allocatable :: offsetFD(:) ! hold fulldomain data in parallel
       real(sz) :: offsetRampStart = 0.d0 ! seconds after run start
       real(sz) :: offsetRampEnd = 0.d0   ! seconds after run start
-      character(len=2048) :: offsetComment ! comment from offset file
-      real(sz) :: offsetTimeIncrement ! offset time increment (s)
-      real(sz) :: offsetTimeNew ! time of latest dataset (s)
-      real(sz) :: offsetTimeOld ! time of previous dataset (s)
+      character(len=2048) :: offsetComment = 'null' ! comment from offset file
+      real(sz) :: offsetTimeIncrement = 0.d0 ! offset time increment (s)
+      real(sz) :: offsetTimeNew = 0.d0 ! time of latest dataset (s)
+      real(sz) :: offsetTimeOld = 0.d0 ! time of previous dataset (s)
       real(sz) :: offsetDefaultValue = 0.d0 ! for otherwise unspecified nodes (m)
       integer :: offsetCurrentLine ! used in error messages
       logical :: offsetFileEnded = .false. ! true when all data have been read
@@ -7199,6 +7199,7 @@ C----------------------------------------------------------------------
       ! file exists, allocate space to hold the data
 #ifdef CMPI
       allocate(offsetFD(np_g))
+      offsetFD(:) = 0.d0
 #endif 
       allocate(offsetsOld_m(np))
       allocate(offsetsNew_m(np))      
@@ -7225,6 +7226,7 @@ C----------------------------------------------------------------------
       ! initialize array values to zero -- can be used as blank snaps
       offsetsOld_m(:) = 0.d0
       offsetsNew_m(:) = 0.d0
+      offsetsNow_m(:) = 0.d0
       !
       ! the common case is that offsetSkipSnaps will be 0 and we need
       ! to read the first two datasets
@@ -7329,9 +7331,11 @@ C----------------------------------------------------------------------
 #endif  
       !
       ! hold data constant after last snap 
-      if ( (timesec.gt.offsetTimeNew)
-     &     .and.(offsetFileEnded.eqv..true.) ) then
-         offsetIsConstant = .true. 
+      if ( offsetIsConstant.eqv..false.) then
+         if ( (timesec.gt.offsetTimeNew)
+     &        .and.(offsetFileEnded.eqv..true.) ) then
+            offsetIsConstant = .true. 
+         endif
       endif
       ! 
       ! immediately return if the ramp period is over and the

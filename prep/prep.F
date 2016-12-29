@@ -2001,11 +2001,11 @@ c...     tcm v52.30.01 additions for Smag_Control Namelist
             write(15,'(a,a, a,i0, a,f15.8, a,a, a,f20.8, a,f20.8, a)')
      &       '&offsetControl offsetFileName="',
      &       trim(adjustl(offsetFileName)),
-     &       '"  offsetSkipSnaps=',offsetSkipSnaps,
-     &       ' offsetMultiplier=',offsetMultiplier,
-     &       ' offsetRampReferenceTime="',trim(offsetRampReferenceTime),
-     &       '" offsetRampStart=',offsetRampStart,
-     &       ' offsetRampEnd=',offsetRampEnd,'  /'
+     &       '",  offsetSkipSnaps=',offsetSkipSnaps,
+     &       ', offsetMultiplier=',offsetMultiplier,
+     &       ', offsetRampReferenceTime="',trim(offsetRampReferenceTime),
+     &       '", offsetRampStart=',offsetRampStart,
+     &       ', offsetRampEnd=',offsetRampEnd,'  /'
          endif
 
          CLOSE(15)

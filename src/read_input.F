@@ -79,7 +79,8 @@ C
      &                      TOUTF_TVW,NSPOOL_TVW
      
       NAMELIST /offsetControl/ offsetFileName, offsetSkipSnaps, 
-     &  offsetMultiplier, offsetRampStart, offsetRampEnd
+     &  offsetMultiplier, offsetRampStart, offsetRampEnd,
+     &  offsetRampReferenceTime
       
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
@@ -421,10 +422,16 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,f15.7)') "offsetRampEnd=",offsetRampEnd
       call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,a)') "offsetRampReferenceTime=",
+     &  trim(offsetRampReferenceTime)
+      call logMessage(ECHO,trim(scratchMessage))
       if (trim(offsetFileName).ne.'null') then
          usingWaterLevelOffset = .true.
       endif
-
+      ! exit if there was an error reading the offsetControl namelist
+      if (ios.gt.0) then
+         call adcirc_terminate()    
+      endif
       rewind(15)
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN

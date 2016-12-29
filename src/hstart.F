@@ -2789,6 +2789,16 @@ c          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO B
       ! jgf52.08.03: Reading of min/max data moved to initOutput2D()
       ! subroutine in write_output module. 
       
+      ! jgf: Added init for water level offset output file 
+      if ( (abs(NOUTGE).ne.0).and.(usingWaterLevelOffset.eqv..true.) ) then
+         if (write_local_files.eqv..true.) then
+            call writeDomainHeader(108,trim(localdir)//'/'//
+     &           'offset.63',NP_G, NP, 'offset     ')
+         else
+              call writeDomainHeader(108,trim(globaldir)//'/'//
+     &           'offset.63',NP_G, NP, 'offset     ')
+         endif
+      endif
 
       ! tcmv51.27 20140502 Added to remove this nodal attribute
       ! as it is only used at Cold Start but read at hot start as well

@@ -1272,6 +1272,9 @@ C     Open the file
      &                 nspoolge, 1, FileFmtVersion
       case("initDry")
           write(lun, 1010) 1, nodes, 0.d0, 0, 1, FileFmtVersion
+      case("offset")
+          write(lun, 1010) 1, nodes, dtdp*nspoolge, nspoolge, 1, 
+     &    FileFmtVersion
       case default
           write(ScreenUnit,*)
      &         'ERROR: Full domain header type unrecongnized.'

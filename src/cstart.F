@@ -773,6 +773,19 @@ Casey 090302: Corrected the unit number from 10 to 90.
          endif
       endif
 
+      ! jgf: Added init for water level offset output file 
+      if ( (abs(NOUTGE).ne.0).and.(usingWaterLevelOffset.eqv..true.) ) then
+         if (write_local_files.eqv..true.) then
+            call writeDomainHeader(108,trim(localdir)//'/'//
+     &           'offset.63',NP_G, NP, 'offset     ')
+           else
+              call writeDomainHeader(108,trim(globaldir)//'/'//
+     &           'offset.63',NP_G, NP, 'offset     ')
+           endif
+      endif
+
+
+
       IF(ABS(NOUTGE).EQ.2) THEN
          OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
      &           ACCESS='DIRECT',RECL=NBYTE)
