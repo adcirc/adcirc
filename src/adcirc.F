@@ -280,14 +280,15 @@ C...  attached to each node
          RefTimHS=((ITIME_BGN-1)*DTDP)/86400.D0
          TimeLoc=ITIME_BGN*DTDP + (StaTimHS - RefTimHS)*86400.D0
       END IF
-C
-C     jgf51.21.24: Initialize output.
-      call initOutput2D(timeloc)
 
       !jgf: Initialize water level offset if needed
       if (usingWaterLevelOffset.eqv..true.) then
          call initOffset(timeloc)
       endif
+C
+C     jgf51.21.24: Initialize output.
+      call initOutput2D(timeloc)
+
 C...
 C...************* SET FLAGS AND COEFFICIENTS USED IN TIME STEPPING ***********
 C...
