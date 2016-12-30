@@ -7388,8 +7388,11 @@ C----------------------------------------------------------------------
       endif
       !
       ! apply ramp, if any 
-      if ( (timesec.ge.offsetRampStart).and.
-     &     (timesec.le.offsetRampEnd) )  then
+      if (timesec.lt.offsetRampStart) then
+         offsetRamp = 0.d0
+         offsetsNow_m(:) = offsetsNow_m(:) * offsetRamp
+      endif
+      if ((timesec.ge.offsetRampStart).and.(timesec.le.offsetRampEnd)) then
          ! compute linear ramp value
          offsetRamp = ( timesec - offsetRampStart) 
      &               / ( offsetRampEnd - offsetRampStart )
