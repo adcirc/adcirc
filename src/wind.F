@@ -7238,7 +7238,7 @@ C----------------------------------------------------------------------
       offsetDataSetCounter = 0
       offsetBlankSnaps = 2
       do while (offsetDataSetCounter.lt.(offsetSkipSnaps+2))
-           if (offsetFileEnded.eqv..true.) then
+         if (offsetFileEnded.eqv..true.) then
             exit         
          endif
          ! read the next snap from file

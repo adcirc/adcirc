@@ -1274,7 +1274,6 @@ C     the screen.
             ELSE
                WRITE(ScreenUnit,1992)
      &              IT,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX
-
             ENDIF
  1992       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,

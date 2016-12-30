@@ -1167,6 +1167,13 @@ C     on and off according to analyst preference.
          END DO
       endif
 
+      !jgf: Added water level offset to elevation specified boundary
+      if (usingWaterLevelOffset.eqv..true.) then
+         DO I=1,NETA
+            ETA2(NBD(I))=ETA2(NBD(I)) + offsetsNow_m(i) 
+         END DO
+      endif
+
 C   kmd48.33bc add information for the levels of no motion boundary conditions
 C              these are considered the steric adjustments.
       IF ((ABS(RES_BC_FLAG).GE.1).AND.(CBaroclinic).AND.(NOPE.GT.0))THEN
