@@ -1170,8 +1170,8 @@ C     on and off according to analyst preference.
       !jgf: Added water level offset to elevation specified boundary
       if (usingWaterLevelOffset.eqv..true.) then
          DO I=1,NETA
-            ETA2(NBD(I))=ETA2(NBD(I)) + offsetsNow_m(i) 
-         END DO
+            ETA2(NBD(I))=ETA2(NBD(I)) + offsetsNow_m(nbd(i)) 
+           END DO
       endif
 
 C   kmd48.33bc add information for the levels of no motion boundary conditions
