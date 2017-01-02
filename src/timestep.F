@@ -269,8 +269,13 @@ C     TIP..Tidal potential forcing
          endif
 
       END DO
-
-
+      !
+      ! jgf: shift water level offset values
+      if (usingWaterLevelOffset.eqv..true.) then
+         offset1(:) = offset2(:)
+         offset2(:) = 0.d0
+      endif
+      
 C...TCM V50.66.01 -- ADDING TIME DEPENDENT BATHYMETRY
 C... so that total water column height is unchanged
 C
@@ -538,7 +543,7 @@ C--------------------END ICE FIELDS----------------------------------------
 C---------------------WATER LEVEL OFFSET-----------------------------------
 C     jgf: update water level correction fields
       if (usingWaterLevelOffset.eqv..true.) then
-         call getOffsets(timeloc)
+         call getOffsets(offset2, timeloc)
       endif
 
 C

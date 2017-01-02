@@ -771,6 +771,9 @@ C     v49.48.01 tcm 20110126 Variables related to kdtree searches
       TYPE(KDTREE2), POINTER :: TREE
       TYPE(KDTREE2_RESULT), ALLOCATABLE :: KDRESULTS(:)
 
+      !jgf: water level offset at two time levels
+      real(sz), allocatable :: offset1(:)
+      real(sz), allocatable, target :: offset2(:)
       logical :: usingWaterLevelOffset = .false.
 
       CONTAINS

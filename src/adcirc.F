@@ -109,7 +109,9 @@ C******************************************************************************
      &                 initHarmonicParameters
       USE GLOBAL_IO, ONLY : allocateFullDomainIOArrays
       USE WRITE_OUTPUT, ONLY : initOutput2D
-      USE WIND, ONLY : initWindModule, usingWaterLevelOffset, initOffset
+      USE WIND, ONLY : initWindModule, usingWaterLevelOffset, initOffset,
+     &    getOffsets
+
       IMPLICIT NONE
 C
       INTEGER, OPTIONAL :: COMM
@@ -283,7 +285,9 @@ C...  attached to each node
 
       !jgf: Initialize water level offset if needed
       if (usingWaterLevelOffset.eqv..true.) then
-         call initOffset(timeloc)
+         allocate(offset1(np),offset2(np)) ! used in timestepping
+         call initOffset(timeloc) ! initializes the i/o 
+         call getOffsets(offset2, timeloc) ! populate offset2
       endif
 C
 C     jgf51.21.24: Initialize output.

@@ -818,9 +818,9 @@ Corbitt 120322: Localized Advection
          ! jgf: Adding support for water level offset as a pseudo barometric
          ! pressure
          if (usingWaterLevelOffset.eqv..true.) then
-            Off1N1 = offsetsNow_m(NM1)
-            Off1N2 = offsetsNow_m(NM2)
-            Off1N3 = offsetsNow_m(NM3)
+            Off1N1 = offset1(NM1)
+            Off1N2 = offset1(NM2)
+            Off1N3 = offset1(NM3)
          endif
          IF (CTIP) THEN                        !tidal potential
             TiPN1=TiP1(NM1)
@@ -1170,7 +1170,7 @@ C     on and off according to analyst preference.
       !jgf: Added water level offset to elevation specified boundary
       if (usingWaterLevelOffset.eqv..true.) then
          DO I=1,NETA
-            ETA2(NBD(I))=ETA2(NBD(I)) + offsetsNow_m(nbd(i)) 
+            ETA2(NBD(I))=ETA2(NBD(I)) + offset1(nbd(i)) 
            END DO
       endif
 

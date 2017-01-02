@@ -187,21 +187,21 @@ C
       logical :: entireMeshIsWestOfGMT ! true if all longitudes are negative
       
       ! jgf: variables needed for water level offset data
-      integer, parameter :: offun = 21 ! i/o unit number for water lvl offset
-      logical :: usingWaterLevelOffset = .false.
+      ! from control file
       character(len=2048) :: offsetFileName='null' ! water level offset file 
-      integer :: offsetBlankSnaps = 0 ! counter for initial blank snaps
-      integer :: offsetSkipSnaps = 0 ! number of offset data sets to skip 
-      character(len=10) :: offsetRampReferenceTime='hotstart' ! coldstart or hotstart
-      integer :: offsetDataSetCounter=0 ! counts real datasets read from file
-      logical :: offsetIsConstant=.false. ! true if only one dataset provided
-      real(sz) :: offsetMultiplier = 1.d0 ! multiply each offset value by this
-      real(sz), allocatable :: offsetsOld_m(:) ! from file in m
-      real(sz), allocatable :: offsetsNew_m(:) ! from file in m
-      real(sz), allocatable, target :: offsetsNow_m(:) ! at current time in m
-      real(sz), allocatable :: offsetFD(:) ! hold fulldomain data in parallel
       real(sz) :: offsetRampStart = 0.d0 ! seconds after run start
       real(sz) :: offsetRampEnd = 0.d0   ! seconds after run start
+      integer :: offsetSkipSnaps = 0 ! number of offset data sets to skip 
+      character(len=10) :: offsetRampReferenceTime='hotstart' ! coldstart or hotstart
+      real(sz) :: offsetMultiplier = 1.d0 ! multiply each offset value by this
+      ! limited to this module 
+      integer, parameter :: offun = 21 ! i/o unit number for water lvl offset
+      integer :: offsetBlankSnaps = 0 ! counter for initial blank snaps
+      integer :: offsetDataSetCounter=0 ! counts real datasets read from file
+      logical :: offsetIsConstant=.false. ! true if only one dataset provided
+      real(sz), allocatable :: offsetsOld_m(:) ! from file in m
+      real(sz), allocatable :: offsetsNew_m(:) ! from file in m
+      real(sz), allocatable :: offsetFD(:) ! hold fulldomain data in parallel
       character(len=2048) :: offsetComment = 'null' ! comment from offset file
       real(sz) :: offsetTimeIncrement = 0.d0 ! offset time increment (s)
       real(sz) :: offsetTimeNew = 0.d0 ! time of latest dataset (s)
@@ -7203,7 +7203,6 @@ C----------------------------------------------------------------------
 #endif 
       allocate(offsetsOld_m(np))
       allocate(offsetsNew_m(np))      
-      allocate(offsetsNow_m(np))
       !
       ! read header
       offsetCurrentLine = 1
@@ -7226,7 +7225,6 @@ C----------------------------------------------------------------------
       ! initialize array values to zero -- can be used as blank snaps
       offsetsOld_m(:) = 0.d0
       offsetsNew_m(:) = 0.d0
-      offsetsNow_m(:) = 0.d0
       !
       ! the common case is that offsetSkipSnaps will be 0 and we need
       ! to read the first two datasets
@@ -7242,7 +7240,7 @@ C----------------------------------------------------------------------
             exit         
          endif
          ! read the next snap from file
-         call getOffsetDataSet()
+         call readOffsetDataSet()
          offsetBlankSnaps = offsetBlankSnaps - 1
       end do
       !
@@ -7320,11 +7318,13 @@ C     If all the data have been read from the file, the offset
 C     value remains constant according to the last dataset read
 C     from the file. 
 C----------------------------------------------------------------------
-      subroutine getOffsets(timesec)
+      subroutine getOffsets(offsetsArray, timesec)
+      use mesh, only : np
       implicit none
       real(sz), intent(in) :: timesec ! current adcirc time
+      real(sz), intent(out) :: offsetsArray(np)
       real(sz) :: offsetRamp ! linear time varying ramp value
-      
+      integer :: i ! jgfdebug
       call setMessageSource("getOffsets")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -7337,25 +7337,10 @@ C----------------------------------------------------------------------
             offsetIsConstant = .true. 
          endif
       endif
-      ! 
-      ! immediately return if the ramp period is over and the
-      ! data are constant or there are no more data to read
-      if ( (timesec.gt.offsetRampEnd).and.
-     &      (offsetIsConstant.eqv..true.) ) then
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG,"Return.")
-#endif
-         call unsetMessageSource()
-         return
-      endif
       !
-      ! if the model time has passed the last available data in the
-      ! file but there are no more data to read, or if the data are
-      ! constant, but the ramp period has not ended, use the last
-      ! available data
-      if (offsetIsConstant.eqv..true.) then
-         offsetsNow_m(:) = offsetsNew_m(:)
-      else         
+      if ( offsetIsConstant.eqv..true. ) then
+         offsetsArray(:) = offsetsNew_m(:)
+      else        
          ! read new data if it is time
          if ( timesec.gt.offsetTimeNew ) then
             do while (timesec.gt.offsetTimeNew) 
@@ -7364,7 +7349,7 @@ C----------------------------------------------------------------------
                   ! both datasets still have all zero values
                   offsetBlankSnaps = offsetBlankSnaps + 1 
                else
-                  call getOffsetDataSet()
+                  call readOffsetDataSet()
                endif
                offsetTimeOld = offsetTimeNew
                offsetTimeNew = offsetTimeNew + offsetTimeIncrement
@@ -7373,37 +7358,28 @@ C----------------------------------------------------------------------
                endif
             end do
          endif
-         !
-         ! if we ran out of data just now before catching up to the
-         ! adcirc time (adcirc time step could theoretically be larger than
-         ! offsetTimeIncrement)
-         if (offsetFileEnded.eqv..true.) then
-            offsetsNow_m(:) = offsetsNew_m(:)
-         else
-            ! perform time interpolation
-            offsetsNow_m(:) = 
+         ! perform time interpolation
+         offsetsArray(:) = 
      &       (timesec - offsetTimeOld) / (offsetTimeNew - offsetTimeOld ) 
      &       * ( offsetsNew_m(:) - offsetsOld_m(:) ) + offsetsOld_m(:) 
-         endif
       endif
       !
-      ! apply ramp, if any 
+      ! set to zero everywhere prior to the start of the ramping period 
       if (timesec.lt.offsetRampStart) then
-         offsetRamp = 0.d0
-         offsetsNow_m(:) = offsetsNow_m(:) * offsetRamp
+         offsetsArray(:) = 0.d0
       endif
+      ! compute and apply linear ramp during ramping period
       if ((timesec.ge.offsetRampStart).and.(timesec.le.offsetRampEnd)) then
          ! compute linear ramp value
          offsetRamp = ( timesec - offsetRampStart) 
      &               / ( offsetRampEnd - offsetRampStart )
-         offsetsNow_m(:) = offsetsNow_m(:) * offsetRamp
+         offsetsArray(:) = offsetsArray(:) * offsetRamp
       endif
+      ! just leave the raw values alone after the end of ramp period
       !
       ! apply offset multiplier if any
-      if (offsetMultiplier.ne.1.d0) then
-         offsetsNow_m(:) = offsetMultiplier * offsetsNow_m(:)
-      endif
-        
+      offsetsArray(:) = offsetMultiplier * offsetsArray(:)
+
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -7416,11 +7392,11 @@ C----------------------------------------------------------------------
 
 
 C----------------------------------------------------------------------
-C      S U B R O U T I N E    G E T   O F F S E T   D A T A S E T
+C      S U B R O U T I N E    R E A D   O F F S E T   D A T A S E T
 C----------------------------------------------------------------------
 C     jgf: Reads a water level offset dataset from file. 
 C----------------------------------------------------------------------
-      subroutine getOffsetDataSet()
+      subroutine readOffsetDataSet()
       use global, only : nabout, np_g, nodes_lg
       use mesh, only : np
       implicit none
@@ -7431,6 +7407,11 @@ C----------------------------------------------------------------------
       integer :: sd_node_number ! subdomain node number
       logical :: nextOffsetDataSetFound ! true if a # is found in 2nd col
       integer :: errorio ! error message code      
+
+      call setMessageSource("readOffsetDataSet")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif  
       !
       numOffsetValues = np
 #ifdef CMPI
@@ -7522,7 +7503,7 @@ C     We jump to this section if there was an error reading a file.
       CALL windTerminate()
 
 C----------------------------------------------------------------------
-      end subroutine getOffsetDataSet
+      end subroutine readOffsetDataSet
 C----------------------------------------------------------------------      
 
 C----------------------------------------------------------------------

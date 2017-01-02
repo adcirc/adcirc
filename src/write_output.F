@@ -102,7 +102,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       integer, allocatable, target :: noff_out_g(:)
       real(sz), allocatable, target :: windDragOut_g(:)
       ! jgf: Added support for water level offset
-      real(sz), allocatable, target :: offsetsNow_m_g(:)
+      real(sz), allocatable, target :: offset2_g(:)
       !
       !  H A R M O N I C   A N A L Y S I S   D A T A
       !
@@ -346,11 +346,11 @@ C----------------------------------------------------------------------
      &   fauxFilePosition, initiallyDrySpoolCounter,
      &   inundationOutput, ihot, logMessage, windDragFilePosition,
      &   windDragOut, windDragSpoolCounter, outputWindDrag
-     &   offsetFilePos, offsetSpoolCounter
+     &   offsetFilePos, offsetSpoolCounter, offset2, usingWaterLevelOffset
+
       USE MESH, ONLY : NP, NE, DP, NM, ICS
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim,
      &  elemental_slope_limiter_grad_max,elemental_slope_limiter_active
-      USE WIND, ONLY : usingWaterLevelOffset, offsetsNow_m
       USE GLOBAL_IO, ONLY : readAndMapToSubdomainMaxMin
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY : initNetCDFOutputFile,
@@ -732,7 +732,7 @@ C
 
       ! jgf: water level offset timeseries offset.63
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(offsetsNow_m_g(NP_G))
+         ALLOCATE(offset2_g(NP_G))
       ENDIF
       offsetDescript % lun                  = 108
       if ( NOUTGE.ne.0 ) then
@@ -743,8 +743,8 @@ C
       offsetDescript % outputTimeStepIncrement = NSPOOLGE
       offsetDescript % spoolCounter            => offsetSpoolCounter
       offsetDescript % filepos                 => offsetFilePos
-      offsetDescript % array                => offsetsNow_m
-      offsetDescript % array_g              => offsetsNow_m_g
+      offsetDescript % array                => offset2
+      offsetDescript % array_g              => offset2_g
       offsetDescript % field_name           = 'offset'
       offsetDescript % file_basename        = 'offset'
       offsetDescript % file_extension       = 63
