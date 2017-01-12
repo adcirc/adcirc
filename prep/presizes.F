@@ -1284,6 +1284,7 @@ C     sb46.28sb01 added NWS=12: OWI format
       IF(ABS(NWS).EQ.16) WRITE(*,3026)
       IF(NCICE.GE.1) WRITE(*,3221)  !tcm v49.64.01
       IF(ABS(NWS).EQ.29) WRITE(*,3223)
+      IF(ABS(NWS).EQ.30) WRITE(*,3224)
       IF((NHARF.EQ.0).OR.(FMV.EQ.0.)) WRITE(*,3021)
       IF((NHARF.GE.1).AND.(FMV.NE.0.)) WRITE(*,3022)
       IF(ILUMP.EQ.0) WRITE(*,3031)
@@ -1333,6 +1334,7 @@ C
  3026 FORMAT(' *   Also, NWS=+-16 GFDL Met Data is used            *')
  3221 FORMAT(' *   Also, ABS(NWS)>=1000 ice concentration are used,*')
  3223 FORMAT(' *   Also, NWS=+-29 VortexOWI met forcing is used,   *')
+ 3224 FORMAT(' *   Also, NWS=+-30 GAHM+OWI met forcing is used,    *')
  3018 FORMAT(' *   Also, ABS(NWS)>=100 wave stress forcing is used,*')
  3019 FORMAT(' *   Also, AVN wind & pressure forcing will be used, *')
  3020 FORMAT(' *   Also, ETA wind & pressure forcing will be used, *')

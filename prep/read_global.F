@@ -817,7 +817,7 @@ C     jgf: Added NWS30.
      &       (ABS(NWS).NE.45).AND.(ABS(NWS).NE.6).AND.
      &       (ABS(NWS).NE.8).AND.(ABS(NWS).NE.15).AND. !jgf50.38.05 Added NWS=15
      &       (ABS(NWS).NE.12) .AND. (ABS(NWS).NE.19).AND.
-     &       (ABS(NWS).NE.20) .AND.(NWS.ne.30).and.(NWS.NE.10).and.
+     &       (ABS(NWS).NE.20) .AND.(abs(NWS).ne.30).and.(NWS.NE.10).and.
      &       (ABS(NWS).NE.29).and. (abs(NWS).ne.16))  THEN
            print *,"ERROR: Value for NWS not supported by parallel code"
            stop
@@ -975,7 +975,7 @@ C
 C     jgf49.0804 Added NWS29 VortexOWI -- don't think we need to
 C     parse out the WTIMINC or other parameters.
       ! jgf: Added NWS30.
-      IF (((ABS(NWS)).EQ.29).or.(NWS.eq.30)) THEN
+      IF (((ABS(NWS)).EQ.29).or.(abs(NWS).eq.30)) THEN
          READ(15,80) WSMSG1
       ENDIF
 C
