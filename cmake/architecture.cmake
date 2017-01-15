@@ -43,7 +43,7 @@ IF(Fortran_COMPILER_NAME MATCHES "gfortran.*")
 
 ELSEIF(Fortran_COMPILER_NAME MATCHES "ifort.*")
   # ifort
-  SET(Fortran_LINELENGTH_FLAG "-132" CACHE STRING "Compiler specific flag to enable extended Fortran line length")
+  SET(Fortran_LINELENGTH_FLAG "-132 -assume byterecl" CACHE STRING "Compiler specific flag to enable extended Fortran line length")
   
   # 64 bit array sizing
   IF(ARCH EQUAL 64)

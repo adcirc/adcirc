@@ -4,6 +4,47 @@ INCDIRS := -I . -I $(SRCDIR)/prep
 ########################################################################
 # Compiler flags for Linux operating system on 64bit x86 CPU
 #
+ifeq ($(MACHINE)-$(OS),i686-mingw32)
+#
+# ***NOTE*** User must select between various Linux setups
+#            by commenting/uncommenting the appropriate compiler
+#
+compiler=gnu
+ifeq ($(compiler),gnu)
+  PPFC		:=  gfortran
+  FC		:=  gfortran
+  PFC		:=  mpif90
+  FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-none -march=corei7-avx -m64 -static
+  FFLAGS2	:=  $(FFLAGS1)
+  FFLAGS3	:=  $(FFLAGS1)
+  DA		:=  -DREAL8 -DLINUX -DCSCA
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
+  DPRE		:=  -DREAL8 -DLINUX
+  IMODS 	:=  -I
+  CC		:= gcc
+  CCBE		:= $(CC)
+  CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX -march=corei7-avx -m64 -static-libgcc
+  CLIBS	:=
+  LIBS		:=
+  MSGLIBS	:=
+  ifeq ($(NETCDF),enable)
+        FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
+  endif
+  $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else
+     MULTIPLE := TRUE
+  endif
+endif
+endif
+#$(MACHINE)
+
+
+
+########################################################################
+# Compiler flags for Linux operating system on 64bit x86 CPU
+#
 ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #
 # ***NOTE*** User must select between various Linux setups
