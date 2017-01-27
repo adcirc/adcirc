@@ -23,6 +23,7 @@ CMake is available to use on Windows, Linux, Macintosh, and Cygwin. It provides 
 ### Windows Requirements
 If you are building on Windows, you will need to install the MinGW64 suite of tools to provide the compilers and make command, A form of Windows Perl, and the CMake interface itself. The following links can provide the packages you need:
 
+
 | Package                |   Link                          |
 |------------------------|---------------------------------|
 | CMake                  | https://cmake.org/download/     |
@@ -108,6 +109,8 @@ make
 ```
 
 This process is valid for both Windows and Linux based systems. CMake is also able to build both the serial SWAN and parallel unstructured SWAN using the same build process. There is no need to use SWAN's build system.
+
+Note that CMake will attempt to locate the environment variables "NETCDFHOME" and "XDMFHOME". If these are set in your environment, the netCDF and XDMF package paths will be automatically set, meaning there is no need to set -DXDMFHOME and -DNETCDFHOME.
 
 ## Building with GNU make
 
