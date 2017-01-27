@@ -47,13 +47,21 @@ MARK_AS_ADVANCED(CLEAR CMAKE_CXX_FLAGS_DEBUG CMAKE_C_FLAGS_DEBUG CMAKE_Fortran_F
 ###########################################################################
 #...Library paths
 IF(ENABLE_OUTPUT_NETCDF)
-    SET(NETCDFHOME "NETCDF-NOTFOUND" CACHE STRING "netCDF home path containing lib and include")
+    IF(NOT "$ENV{NETCDFHOME}" STREQUAL "") 
+        SET(NETCDFHOME "$ENV{NETCDFHOME}" CACHE STRING "netCDF home path containing lib and include")
+    ELSE(NOT "$ENV{NETCDFHOME}" STREQUAL "")
+        SET(NETCDFHOME "NETCDF-NOTFOUND" CACHE STRING "netCDF home path containing lib and include")
+    ENDIF(NOT "$ENV{NETCDFHOME}" STREQUAL "")
 ELSE(ENABLE_OUTPUT_NETCDF)
     UNSET(NETCDFHOME CACHE)
 ENDIF(ENABLE_OUTPUT_NETCDF)
 
 IF(ENABLE_OUTPUT_XDMF)
-    SET(XDMFHOME "XDMF-NOTFOUND" CACHE STRING "XDMF home path containing lib and include")
+    IF(NOT "$ENV{XDMFHOME}" STREQUAL "") 
+        SET(XDMFHOME "$ENV{XDMFHOME}" CACHE STRING "XDMF home path containing lib and include")
+    ELSE(NOT "$ENV{XDMFHOME}" STREQUAL "")
+        SET(XDMFHOME "XDMF-NOTFOUND" CACHE STRING "XDMF home path containing lib and include")
+    ENDIF(NOT "$ENV{XDMFHOME}" STREQUAL "")
 ELSE(ENABLE_OUTPUT_XDMF)
     UNSET(XDMFHOME CACHE)
 ENDIF(ENABLE_OUTPUT_XDMF)
