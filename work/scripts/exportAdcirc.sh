@@ -1,5 +1,13 @@
 #!/bin/bash
 
+#...Compression Format
+# 0 = No Compression (tar)
+# 1 = gzip (.tar.gz)
+# 2 = bzip (.tar.bz)
+# 3 = xz (.tar.xz)
+# 4 = 7zip LZMA (.7z)
+compression=1
+
 #...Get the adcirc root directory
 parentdir="$(dirname "$(pwd)")"
 parentdir="$(dirname "$parentdir")"
@@ -18,6 +26,23 @@ if [ $? != 0 ] ; then
     exit 1
 fi
 
+#...Generate the names of the output files
+outputDirectory=adcirc_$branch"_"$version
+if [ $compression == 0 ] ; then
+    outputFile=adcirc_$branch"_"$version.tar
+elif [ $compression == 1 ] ; then
+    outputFile=adcirc_$branch"_"$version.tar.gz
+elif [ $compression == 2 ] ; then
+    outputFile=adcirc_$branch"_"$version.tar.bz2
+elif [ $compression == 3 ] ; then
+    outputFile=adcirc_$branch"_"$version.tar.xz
+elif [ $compression == 4 ] ; then
+    outputFile=adcirc_$branch"_"$version.7z
+else
+    echo "ERROR: Invalid compression method."
+    exit 1
+fi
+
 #...Move to top level directory
 cd ../../
 
@@ -28,9 +53,6 @@ if [ $? != 0 ] ; then
     exit 1
 fi
 
-#...Generate the names of the output files
-outputDirectory=adcirc_$branch"_"$version
-outputFile=adcirc_$branch"_"$version.tar.gz
 
 #...Check if the folder/file already exists
 if [ -d work/scripts/$outputDirectory ] ; then
@@ -53,6 +75,9 @@ if [ $? != 0 ] ; then
     exit 1
 fi
 
+#...Remove default version
+rm work/scripts/$outputDirectory/version_default.F
+
 #...Grab the version.F file to include
 mv version.F work/scripts/$outputDirectory
 if [ $? != 0 ] ; then
@@ -69,9 +94,38 @@ fi
 
 #...Create the .tar.gz package
 cd work/scripts
-tar -czf $outputFile $outputDirectory 
-if [ $? != 0 ] ; then
-    echo "ERROR: Export Failed @ gzip stage."
-    exit 1
-fi
+
+if [ $compression == 0 ] ; then
+    tar -cf $outputFile $outputDirectory 
+    if [ $? != 0 ] ; then
+        echo "ERROR: Export Failed @ tar stage."
+        exit 1
+    fi
+elif [ $compression == 1 ] ; then
+    tar -czf $outputFile $outputDirectory 
+    if [ $? != 0 ] ; then
+        echo "ERROR: Export Failed @ tar/gzip stage."
+        exit 1
+    fi
+elif [ $compression == 2 ] ; then
+    tar -cjf $outputFile $outputDirectory 
+    if [ $? != 0 ] ; then
+        echo "ERROR: Export Failed @ tar/bzip2 stage."
+        exit 1
+    fi
+elif [ $compression == 3 ] ; then
+    tar -cJf $outputFile $outputDirectory 
+    if [ $? != 0 ] ; then
+        echo "ERROR: Export Failed @ tar/xz stage."
+        exit 1
+    fi
+elif [ $compression == 4 ] ; then
+    7za a -m0=lzma2 $outputFile $outputDirectory >/dev/null 
+    if [ $? != 0 ] ; then
+        echo "ERROR: Export Failed @ 7Zip stage."
+        exit 1
+    fi
+else
+    echo "ERROR: Invalid compression selection."
+fi    
 rm -r $outputDirectory

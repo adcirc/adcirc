@@ -1,4 +1,3 @@
-version_default.F export-ignore
 .commit-template export-ignore
 .gitignore export-ignore
 .gitattributes export-ignore
