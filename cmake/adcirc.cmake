@@ -12,7 +12,7 @@ IF(BUILD_ADCIRC)
                           src/wind.F src/owiwind.F src/rs2.F 
                           src/owi_ice.F src/itpackv.F src/nodalattr.F 
                           src/globalio.F src/netcdfio.F src/control.F
-                          src/xdmfio.F )
+                          src/xdmfio.F src/hashtable.F )
 
     SET( ADCIRC2_SOURCES  src/write_output.F 
                           src/couple2swan.F src/adcirc.F src/subdomain.F 
