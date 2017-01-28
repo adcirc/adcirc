@@ -6,8 +6,8 @@ dependencies:
         - work/depend/netcdf_fortran_build
         - work/depend/xdmf_build
     pre:
-        - sudo apt-get update  -qq
-        - sudo apt-get install -qq libopenmpi-dev libopenmpi-dbg bc cmake
+        - sudo apt-get update
+        - sudo apt-get install libopenmpi-dev libopenmpi-dbg bc cmake
         - sudo bash /home/ubuntu/adcirc-cg/circleci/installHdf5.sh
         - sudo bash /home/ubuntu/adcirc-cg/circleci/installnetCDF.sh
         - sudo bash /home/ubuntu/adcirc-cg/circleci/installnetCDF_fortran.sh
