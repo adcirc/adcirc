@@ -333,7 +333,7 @@ COUP_MSRC  =  couple2swan.F
 KDTREE_MSRC = kdtree2.F
 XDMF_MSRC = xdmfio.F
 
-HASH_MOBJ:= $(patsubst %.f90, $(O_DIR)%.o, $(HASH_MSRC) )
+HASH_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(HASH_MSRC) )
 SUBD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBD_MSRC) )
 SUBP_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBP_MSRC) )
 CONT_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(CONT_MSRC) )
@@ -583,7 +583,7 @@ endif
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
    aswip ::   $(ADCIRC_DEP) $(ASW_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(WIND_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
+	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(WIND_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
 
    adccmp :  $(O_DIR) $(CMP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
