@@ -15,7 +15,7 @@ IF(BUILD_ADCPREP)
                           metis/Lib/kvmetis.c metis/Lib/kwayvolrefine.c metis/Lib/kwayvolfm.c 
                           metis/Lib/subdomains.c )
     
-    SET( ADCPREP_SOURCES  src/sizes.F KDTREE2/kdtree2.F src/global.F src/boundaries.F 
+    SET( ADCPREP_SOURCES  src/sizes.F KDTREE2/kdtree2.F src/global.F src/boundaries.F src/hashtable.F
                           src/mesh.F src/global_3dvs.F wind/vortex.F src/owiwind.F src/rs2.F 
                           src/owi_ice.F src/wind.F prep/presizes.F prep/pre_global.F prep/metis.F 
                           prep/subprep.F prep/adcprep.F prep/decomp.F prep/prep_weir.F 

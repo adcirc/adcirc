@@ -49,7 +49,7 @@ IF(BUILD_PADCSWAN AND PERL_FOUND)
                             src/global.F src/boundaries.F src/global_3dvs.F
                             src/messenger.F )
 
-    SET( PADCSWAN2_SOURCES  src/mesh.F src/harm.F wind/vortex.F src/wind.F 
+    SET( PADCSWAN2_SOURCES  src/mesh.F src/harm.F wind/vortex.F src/wind.F src/hashtable.F
                             src/owiwind.F src/rs2.F src/owi_ice.F 
                             src/itpackv.F src/nodalattr.F src/globalio.F 
                             src/netcdfio.F src/control.F src/xdmfio.F )

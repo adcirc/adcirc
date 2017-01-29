@@ -45,7 +45,7 @@ IF(BUILD_ADCSWAN AND PERL_FOUND)
                              ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/ocpids.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/ocpcre.f 
                              ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/ocpmix.f )
     
-    SET( ADCSWAN1_SOURCES    src/sizes.F KDTREE2/kdtree2.F src/global.F src/boundaries.F src/mesh.F 
+    SET( ADCSWAN1_SOURCES    src/sizes.F KDTREE2/kdtree2.F src/global.F src/boundaries.F src/mesh.F src/hashtable.F
                              src/global_3dvs.F src/harm.F wind/vortex.F src/wind.F src/owiwind.F src/rs2.F
                              src/owi_ice.F src/itpackv.F src/nodalattr.F src/globalio.F src/netcdfio.F 
                              src/control.F src/xdmfio.F )
