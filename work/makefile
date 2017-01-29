@@ -510,10 +510,10 @@ else
    adccmp:  $(O_DIR)
 
 ifeq ($(NETCDF),enable)
-   adcprep ::  $(NC_MOBJ) $(METIS_OBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ)
+   adcprep ::  $(NC_MOBJ) $(METIS_OBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ) $(HASH_MOBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 else
-   adcprep ::  $(METIS_OBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ)
+   adcprep ::  $(METIS_OBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ) $(HASH_MOBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 endif
 ifeq ($(NETCDF),enable)
@@ -671,7 +671,7 @@ $(O_DIR)aswip.o      :  aswip_1.0.3.F $(VORT_MOBJ)
 $(O_DIR)version.o     :  version.F
 $(O_DIR)sizes.o       :  sizes.F
 $(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o $(O_DIR)kdtree2.o
-$(O_DIR)nodalattr.o   :  nodalattr.F  $(ADC_MOBJ) $(MESH_MOBJ)
+$(O_DIR)nodalattr.o   :  nodalattr.F  $(ADC_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ)
 $(O_DIR)messenger.o   :  messenger.F  $(ADC_MOBJ)
 #!st3 100711: Added globalio.o to writer.F for HSWRITER MODULE
 WRITER_DEP := writer.F  $(O_DIR)messenger.o $(O_DIR)globalio.o
@@ -684,7 +684,7 @@ endif
 $(O_DIR)writer.o      : $(WRITER_DEP)
 $(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ) $(O_DIR)mesh.o
 $(O_DIR)harm.o        :  harm.F $(O_DIR)mesh.o
-$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ)
+$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ)
 $(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ)
 $(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ)
 $(O_DIR)rs2.o         :  rs2.F  $(VORT_MOBJ)
