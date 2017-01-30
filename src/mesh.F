@@ -130,24 +130,10 @@ C     ------------------------------------------------------------------
       do k = 1, np
          read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
          lineNum = lineNum + 1
-!         if (i.ne.k) then
-!            write(scratchMessage,1000) k, i
-!1000       format('Attempted to read node number ',i0,
-!     &        ' but found node number ',i0,' instead.')
-!            call allMessage(ERROR, scratchMessage)
-!            call terminate()
-!         endif
       enddo
       do k = 1, ne
          read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
          lineNum = lineNum + 1
-!         if (i.ne.k) then
-!            write(scratchMessage,1010) k, i
-!1010        format('Attempted to read element number ',i0,
-!     &            ' but found element number ',i0,' instead.')
-!            call allMessage(ERROR, scratchMessage)
-!            call terminate()
-!         endif
       enddo
       read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nope  ! total number of elevation boundaries
       mnope = nope
@@ -350,7 +336,8 @@ C     ------------------------------------------------------------------
       !  E L E M E N T   T A B L E
       !
       do k = 1, ne
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) je, nhy, n1, n2, n3
+         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
+     &      je, nhy, n1, n2, n3
          nm(k, 1) = find(node_dict, n1)
          nm(k, 2) = find(node_dict, n2)
          nm(k, 3) = find(node_dict, n3)
