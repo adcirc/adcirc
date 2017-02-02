@@ -34,7 +34,7 @@ C     ------------------------------------------------------------------
       real(8),allocatable :: y(:)   ! y cartesian node locations y(np)
       real(8),allocatable :: slam(:) ! longitude node locations in CPP slam(np)
       real(8),allocatable :: sfea(:) ! latitude node locations in CPP sfea(np)
-      type(item), allocatable, target :: node_dict(:) ! map node labels to numbers
+      type(ipair), allocatable, target :: node_dict(:) ! map node labels to numbers
       integer, allocatable :: labels(:) ! map node numbers to labels
       integer :: n1, n2, n3 ! nodes 1, 2, 3 for each element
 
@@ -330,7 +330,7 @@ C     ------------------------------------------------------------------
          read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) labels(k), slam(k),
      &     sfea(k), dp(k)
          lineNum = lineNum + 1
-         call add_item(node_dict, labels(k), k)
+         call add_ipair(node_dict, labels(k), k)
       enddo
       !
       !  E L E M E N T   T A B L E

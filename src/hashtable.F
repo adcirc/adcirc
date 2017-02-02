@@ -17,38 +17,38 @@ C    ========================================================================
       implicit none
 
       private
-      public :: item
+      public :: ipair
       public :: dict
       public :: close_dict
-      public :: add_item
+      public :: add_ipair
       public :: find
 
-C     Define the new item type. Key/value pairs are stored as items, which
-C     are also used to implement the linked list.
-      type :: item
+C     Define the new ipair (integer pair) type. Key/value pairs are stored
+C     as ipairs, which are also used to implement the linked list.
+      type :: ipair
           integer :: key
           integer :: value
           logical :: empty
-          type(item), pointer :: next
-      end type item
+          type(ipair), pointer :: next
+      end type ipair
 
       contains
 
 C     This subroutine is used to allocate and initialize an empty dictionary.
-C       item_array: An unallocated array of items
-C       num_items: The number of items to be placed into the dictionary
-      subroutine dict ( item_array, num_items )
+C       ipair_array: An unallocated array of ipairs
+C       num_ipairs: The number of ipairs to be placed into the dictionary
+      subroutine dict ( ipair_array, num_ipairs )
           implicit none
-          type(item), allocatable, intent(inout) :: item_array(:)
-          integer, intent(in) :: num_items
+          type(ipair), allocatable, intent(inout) :: ipair_array(:)
+          integer, intent(in) :: num_ipairs
           integer :: i
 
-          allocate( item_array(num_items) )
-          do i = 1, num_items
-              item_array(i)%key = 0
-              item_array(i)%value = 0
-              item_array(i)%empty = .true.
-              nullify(item_array(i)%next)
+          allocate( ipair_array(num_ipairs) )
+          do i = 1, num_ipairs
+              ipair_array(i)%key = 0
+              ipair_array(i)%value = 0
+              ipair_array(i)%empty = .true.
+              nullify(ipair_array(i)%next)
           enddo
 
       end subroutine dict
@@ -57,13 +57,13 @@ C     Add a key/value pair to the dictionary
 C       d: The dictionary to add to
 C       key: The key
 C       value: The value
-      subroutine add_item ( d, key, value )
+      subroutine add_ipair ( d, key, value )
           implicit none
-          type(item), allocatable, target, intent(inout) :: d(:)
+          type(ipair), allocatable, target, intent(inout) :: d(:)
           integer, intent(in) :: key
           integer, intent(in) :: value
           integer :: index
-          type(item), pointer :: current_item
+          type(ipair), pointer :: current_ipair
 
           ! Calculate index
           index = 1 + modulo(key-1, size(d))
@@ -74,46 +74,46 @@ C       value: The value
               d(index)%value = value
               d(index)%empty = .false.
           else
-              current_item => d(index)
+              current_ipair => d(index)
               do
-                  if ( .not. associated( current_item%next )) then
-                      allocate( current_item%next )
-                      current_item => current_item%next
-                      current_item%key = key
-                      current_item%value = value
-                      current_item%empty = .false.
-                      nullify( current_item%next )
+                  if ( .not. associated( current_ipair%next )) then
+                      allocate( current_ipair%next )
+                      current_ipair => current_ipair%next
+                      current_ipair%key = key
+                      current_ipair%value = value
+                      current_ipair%empty = .false.
+                      nullify( current_ipair%next )
                       exit
                   else
-                      current_item => current_item%next
+                      current_ipair => current_ipair%next
                   endif
               enddo
           endif
 
-      end subroutine add_item
+      end subroutine add_ipair
 
 C     Find and return the value associated with a given key
 C       d: The dictionary on which to perform the search
 C       key: The key to search for
       integer function find ( d, key )
           implicit none
-          type(item), allocatable, target, intent(inout) :: d(:)
+          type(ipair), allocatable, target, intent(inout) :: d(:)
           integer, intent(in) :: key
-          type(item), pointer :: current_item
+          type(ipair), pointer :: current_ipair
           integer :: index
 
           ! Generate hash and calculate index
           index = 1 + modulo(key-1, size(d))
 
-          ! Find the item
-          current_item => d(index)
+          ! Find the ipair
+          current_ipair => d(index)
           do
-              if ( key == current_item%key ) then
-                  find = current_item%value
+              if ( key == current_ipair%key ) then
+                  find = current_ipair%value
                   exit
               else
-                  if ( associated( current_item%next ) ) then
-                      current_item => current_item%next
+                  if ( associated( current_ipair%next ) ) then
+                      current_ipair => current_ipair%next
                   else
                       find = 0
                       exit
@@ -128,20 +128,20 @@ C     ensures that all memory is propery deallocated
 C       d: The dictionary to deallocate
       subroutine close_dict ( d )
           implicit none
-          type(item), allocatable, target, intent(inout) :: d(:)
+          type(ipair), allocatable, target, intent(inout) :: d(:)
           integer :: i
           do i = 1, size(d)
-              if ( associated(d(i)%next) ) call remove_item( d(i)%next )
+              if ( associated(d(i)%next) ) call remove_ipair( d(i)%next )
           enddo
           deallocate( d )
       end subroutine close_dict
 
 C     Private subroutine used to recursively deallocate a linked list
-      recursive subroutine remove_item ( i )
+      recursive subroutine remove_ipair ( i )
           implicit none
-          type(item), pointer, intent(inout) :: i
-          if ( associated(i%next) ) call remove_item( i%next )
+          type(ipair), pointer, intent(inout) :: i
+          if ( associated(i%next) ) call remove_ipair( i%next )
           deallocate( i )
-      end subroutine remove_item
+      end subroutine remove_ipair
 
       end module hashtable
