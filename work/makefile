@@ -309,6 +309,7 @@ $(O_DIR):
 
 
 ################# Module Source, Object, & Mod Files ######################
+GWCE_MSRC  =  gwce.F
 SUBD_MSRC  =  subdomain.F
 SUBP_MSRC  =  subprep.F
 CONT_MSRC  =  control.F
@@ -332,6 +333,7 @@ COUP_MSRC  =  couple2swan.F
 KDTREE_MSRC = kdtree2.F
 XDMF_MSRC = xdmfio.F
 
+GWCE_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBD_MSRC) )
 SUBD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBD_MSRC) )
 SUBP_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBP_MSRC) )
 CONT_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(CONT_MSRC) )
@@ -360,7 +362,7 @@ KDTREE_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(KDTREE_MSRC) )
 
 METIS_SRC  =  metis.F
 PREP_SRC   =  adcprep.F decomp.F prep_weir.F read_global.F prep.F interp.F machdep.F
-ADC_SRC    =  adcirc.F weir_boundary.F read_input.F cstart.F hstart.F timestep.F vsmy.F transport.F
+ADC_SRC    =  adcirc.F weir_boundary.F read_input.F cstart.F hstart.F gwce.F timestep.F vsmy.F transport.F
 POST_SRC   =  adcpost.F post.F compare.F diffmerge.F machdep.F
 P15_SRC    =  p15.F
 OWI_SRC    =  owi22.F
@@ -671,6 +673,7 @@ $(O_DIR)sizes.o       :  sizes.F
 $(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o $(O_DIR)kdtree2.o
 $(O_DIR)nodalattr.o   :  nodalattr.F  $(ADC_MOBJ) $(MESH_MOBJ) 
 $(O_DIR)messenger.o   :  messenger.F  $(ADC_MOBJ)
+$(O_DIR)gwce.o        :  gwce.F 
 #!st3 100711: Added globalio.o to writer.F for HSWRITER MODULE
 WRITER_DEP := writer.F  $(O_DIR)messenger.o $(O_DIR)globalio.o
 ifeq ($(NETCDF),enable)
