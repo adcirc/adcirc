@@ -585,7 +585,7 @@ endif
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
    aswip ::   $(ADCIRC_DEP) $(ASW_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(WIND_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
+	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(WIND_MOBJ) $(NA_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
 
    adccmp :  $(O_DIR) $(CMP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
@@ -666,7 +666,7 @@ $(O_DIR)diffmerge.o   :  diffmerge.F
 #  asymmetric hurricane wind model
 
 $(O_DIR)vortex.o      :  vortex.F 
-$(O_DIR)aswip.o      :  aswip_1.0.3.F $(VORT_MOBJ) 
+$(O_DIR)aswip.o      :  aswip_1.0.3.F $(VORT_MOBJ) $(NA_MOBJ)
 
 #  adcirc & $(PARALLEL_ADCIRC) modules
 
@@ -688,7 +688,7 @@ endif
 $(O_DIR)writer.o      : $(WRITER_DEP)
 $(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ) $(O_DIR)mesh.o
 $(O_DIR)harm.o        :  harm.F $(O_DIR)mesh.o
-$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ)
+$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ) $(NA_MOBJ) $(WIND_MOBJ)
 $(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ) 
 $(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ) 
 $(O_DIR)rs2.o         :  rs2.F  $(VORT_MOBJ) 

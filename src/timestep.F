@@ -26,60 +26,8 @@ C                        (used in 3D subroutines only)                        *
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C     CBaroclinic      - Include baroclinic terms                             *
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
-C     CGWCE_New        - New ADCIRC GWCE formulation (old algorithm, new code)*
-C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
-C     CGWCE_Lump       - Lump the GWCE matrix                                 *
-C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
-C     GWCE_New() and GWCE_New_pc() only:                                      *
-C     CGWCE_LS_KGQ     - Kolar-Gray, flux-based, lateral stress formulation   *
-C                        in the GWCE (same as original formulation)           *
-C     CGWCE_LS_2PartQ  - 2 Part, flux-based, lateral stress formulation       *
-C                        in the GWCE                                          *
-C     CGWCE_LS_2PartV  - 2 Part, velocity-based, lateral stress formulation   *
-C                        in the GWCE                                          *
-C     CGWCE_LS_2PartSQ - 2 Part, flux-based, symmetric lateral stress         *
-C                        formulation in the GWCE                              *
-C     CGWCE_LS_2PartSV - 2 Part, velocity-based, symmetric lateral stress     *
-C                        formulation in the GWCE                              *
-C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
-C     GWCE_New() and GWCE_New_pc() only:                                      *
-C     CGWCE_Advec_NC   - Non-conservative advection formulation in the GWCE   *
-C                        (same as original formulation)                       *
-C     CGWCE_Advec_C1   - Use conservative advection formulation 1 in the GWCE *
-C     CGWCE_Advec_C2   - Use conservative advection formulation 2 in the GWCE *
-C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
-C     CME_Orig         - Original Momentum Eq. formulation                    *
-C     CME_New_NC       - Non-conservative advection formulation in the        *
-C                        Momentum Eqs. (same as original formulation)         *
-C     CME_New_C1       - Conservative advection formulation 1 in the          *
-C                        Momentum Eqs.                                        *
-C     CME_New_C2       - Conservative advection formulation 2 in the          *
-C                        Momentum Eqs.                                        *
-C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C     CPRECOR          - Use the predictor-corrector algorithm for GWCE       *
 C                        and momentum equations (package deal)                *
-C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
-C     The following are not available in Mom_Eqs_Original()                   *
-C     CME_LS_IBPQ      - Integration by parts, flux-based, lateral stress     *
-C                        formulation in the Momentum Eqs.                     *
-C     CME_LS_IBPV      - Integration by parts, velocity-based, lateral stress *
-C                        formulation in the Momentum Eqs.                     *
-C                        (same as original formulation)                       *
-C     CME_LS_IBPSQ     - Integration by parts, flux-based, symmetric lateral  *
-C                        stress formulation in the Momentum Eqs.              *
-C     CME_LS_IBPSV     - Integration by parts, velocity-based, symmetric      *
-C                        lateral stress formulation in the Momentum Eqs.      *
-C     CME_LS_2PartQ    - 2 Part, flux-based, lateral stress formulation in    *
-C                        the Momentum Eqs.  (NOT IMPLEMENTED)                 *
-C     CME_LS_2PartV    - 2 Part, velocity-based, lateral stress formulation in*
-C                        the Momentum Eqs.  (NOT IMPLEMENTED)                 *
-C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
-C     CME_AreaInt_Orig - Original area integration in the Momentum Eqs.       *
-C                        (incorrect, but same as original formulation)        *
-C     CME_AreaInt_Corr - Corrected area integration in the Momentum Eqs.      *
-C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
-C     CSmag_Eh         - Use Smagorinski, spatially varying, vertically       *
-C                        integrated lateral viscosity coefficient             *
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
@@ -103,10 +51,8 @@ C
      &    BARINCFSB, PIPEHT, PIPECOEF, PIPEDIAM
       USE GLOBAL_IO
       USE HARM, ONLY : updateHarmonicAnalysis
-      USE WIND
+      USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
-C.....sb46.28sb01 added 09/xx/2006
-      USE OWIWIND,ONLY : NWS12INIT,NWS12GET
 C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET
 C.....sb46.28sb03 added 09/xx/2006
@@ -115,10 +61,7 @@ C.....sb46.28sb03 added 09/xx/2006
      &     IFLINBF, IFNLBF, IFHYBF, ! for wet/dry
      &     Apply2DBottomFriction,
      &     Apply3DBottomFriction,
-     &     ApplyDirectionalWindReduction,
      &     LoadDirEffRLen,
-     &     ApplyCanopyCoefficient,
-     &     LoadCanopyCoef,
      &     LoadEleSlopeLim,
      &     ManningsN, LoadManningsN, !sb46.28sb02
      &     Z0b_var, LoadZ0B_var,!Rjw IOOS 2010
@@ -206,7 +149,6 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(SZ) SAltMul, S2SFEA
       REAL(SZ) SFacAvg
       REAL(SZ) TPMul
-      REAL(SZ) WTRatio, WindX, WindY, WindMag, WDragCo
       REAL(SZ) DARhoMRho0N1,DARhoMRho0N2,DARhoMRho0N3
 
       REAL(SZ) UN1
@@ -214,7 +156,6 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(SZ) VIDBCPDXOHN1,VIDBCPDXOHN2,VIDBCPDXOHN3,VIDBCPDXOHAvgArea
       REAL(SZ) VIDBCPDYOHN1,VIDBCPDYOHN2,VIDBCPDYOHN3,VIDBCPDYOHAvgArea
       REAL(SZ) DPMIN      ! sb v46.28.sb05.06 11/01/2006
-      REAL(SZ) PRDIFF,PRBCKGRND_MH2O     ! tcm v49.16 20100617 added
       REAL(SZ) DEta2DX,DEta2DY
       REAL(SZ) DRhoDX,DRhoDY
 
@@ -223,9 +164,6 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) FDX1O2A, FDX2O2A, FDX3O2A, FDY1O2A, FDY2O2A, FDY3O2A
       REAL(8) TimeLoc, TimeH
       INTEGER WarnElevExceeded, ErrorElevExceeded
-      REAL(SZ) HollandTime, AsymmetricTime, GeneralAsymTime !for parametric hurricane models
-      ! jgf49.1001 factor used to blend vortex and background winds for NWS29:
-      REAL(SZ) bf ! blending factor, 0.0 to 1.0
 C   kmd48.33bc - added in the heat flux variables
       CHARACTER(80) :: CDUM80
       INTEGER :: NumofBCNode
@@ -235,7 +173,7 @@ C   kmd48.33bc - added in the heat flux variables
       REAL(SZ) :: CD, CDQ, QWIND
 
 C   TCM V49.64.01 -- ADDED FOR ICE CONCENTRATION FIELDS
-      REAL(SZ) PIC,CICE_TRatio  !ICE VARIABLES
+      REAL(SZ) CICE_TRatio  !ICE VARIABLES
 
 C   TCM v50.66.02 -- Added for Time Varying Bathymetry
       INTEGER :: IJK
@@ -247,9 +185,6 @@ C   TCM v50.66.02 -- Added for Time Varying Bathymetry
       call allMessage(DEBUG,"Enter.")
 #endif
 
-C.... tcm v49.16 20100617 added
-C.... convert background pressure from millibars to meters of water
-      PRBCKGRND_MH2O = 100.0D0*PRBCKGRND/(RHOWAT0*G)
 
 C    kmd48.33bc - changed for timestep changes in the hot start files
 C     jgf46.21 Combined flux/radiation b.c. for rivers
@@ -386,7 +321,7 @@ C...     DEPTHS ARE > OR = TO H0.
 #else
             WRITE(ScreenUnit,'(A36,1X,E15.8,1X,A5)') 'BATHYMETRY RECORDS UPDATED AT TIME =',TIMELOC,'(SEC)'
             WRITE(16,'(A36,1X,E15.8,1X,A5)') 'BATHYMETRY RECORDS UPDATED AT TIME =',TIMELOC,'(SEC)'        
-#endif   
+#endif
          ENDIF  !test for updating bathymetry records
 C.......If time is during the bathymetry change interval, then update bathymetry
          IF(timeloc.LT.BTIME_END) THEN  !tcm 20150728 changed .LE. to .LT.
@@ -409,7 +344,7 @@ C.......If time is during the bathymetry change interval, then update bathymetry
 #else
             WRITE(ScreenUnit,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'
             WRITE(16,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'   
-#endif  
+#endif
             DO I=1,NP
                DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be to get to the final bathy value
                DP(I) = DP2(I)         !updating bathymetry to final value
@@ -465,16 +400,10 @@ C.......If time is during the bathymetry change interval, then update bathymetry
             ENDDO !I
          ENDIF
 C         
-         IF(timeloc.EQ.BTIME_END) THEN
-#ifdef CMPI
-            IF (MYPROC.EQ.0) then
-               WRITE(ScreenUnit,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'
-               WRITE(16,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'
-            ENDIF
-#else
-            WRITE(ScreenUnit,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'
-            WRITE(16,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'   
-#endif    
+         IF (timeloc.EQ.BTIME_END) THEN
+            write(scratchMessage,'(A42,1X,E15.8,1X,A5)')
+     &         'Bathymetry values are now fixed at time =',timeloc,'(sec).'
+            call allMessage(INFO,scratchMessage)
             DO I=1,NP
                DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be to get to the final bathy value
                DP(I) = DP2(I)         !updating bathymetry to final value 
@@ -484,8 +413,10 @@ C
          ENDIF
 
       ENDIF  !NDDT = 2
-
-
+C
+C
+C-------------------BOTTOM FRICTION-------------------------------------
+C
 C     2DDI.For the 2DDI version of the code
       if(C2DDI) then
 C     2DDI.Set up the 2D friction coefficient
@@ -500,7 +431,8 @@ C     3D.Set up the 3D friction coefficient
      &        NP, TK, NFEN)
 C
       endif
-
+C-------------------BOTTOM FRICTION-------------------------------------
+C
 C
 C...  SHIFT THE SPECIFIED NORMAL FLOW BOUNDARY CONDITION TO PREVIOUS
 C...  TIME STEPS.  ZERO OUT THE NEW SPECIFIED NORMAL FLOW BOUNDARY
@@ -514,6 +446,9 @@ C...
          EN1(I)=EN2(I)
          EN2(I)=0.D0
       END DO
+
+
+C-------------------TEMPORAL RAMP-------------------------------------
 C...
 C...  DEFINE Ramp FUNCTION FOR BOUNDARY ELEVATION FORCING, WIND AND PRESSURE
 C.... FORCING AND TIDAL POTENTIAL FORCING
@@ -584,9 +519,10 @@ Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
          !jgf49.44: Cover the case where the ramp length is zero.
          IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
       ENDIF
+C-------------------TEMPORAL RAMP-------------------------------------
 
 C
-C------------------------ICE FIELDS----------------------------------------
+C---------------------BEGIN ICE FIELDS----------------------------------------
 C...  UPDATE THE ICE CONCENTRATION FIELDS FROM UNIT 25,225,227
 c...  TCM V49.64.01 ADDED THE ICE FIELDS SECTION
 C
@@ -601,827 +537,23 @@ C
           ENDIF
       ENDIF
 
-
-C------------------------MET FORCING---------------------------------------
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+      if (ncice.ne.0) then
+         CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+         do i=1,np
+            CICEOUT(I) = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+         end do
+      endif
+C--------------------END ICE FIELDS----------------------------------------
 C
-C...  UPDATE THE WIND STRESS AND SURFACE PRESSURE AND READ IN NEW VALUES
-C...  FROM UNIT 22.  APPLY Ramp FUNCTION.
 C
-C  tcm v49.16 20100617 -- Changed pressure ramping so that we apply the ramp
-C     to the difference between the background pressure and the forced pressure,
-C     then add that ramped difference back to the background pressure
 C
-C     No wind, radiation stress or atmospheric pressure forcings are used.
-      IF(NWS.EQ.1) THEN
-         DO I=1,NP
-            READ(22,*) NHG,WSX2(I),WSY2(I),PR2(I) !read in
-            WSX2(I)=RampMete*WSX2(I) ! apply ramp function
-            WSY2(I)=RampMete*WSY2(I)
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete*PR2(I)
-            PRDIFF = RampMete*(PR2(I)-PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            wvnxout(i)=WSX2(i) ! for met recording station output
-            wvnyout(i)=WSY2(i)
-         END DO
-      ENDIF
+C---------------------BEGIN MET FORCING----------------------------------------
 
-C     Wind stress and atmospheric pressure are read in at all grid nodes
-C     at a time interval that does not equal the model time
-C     step. Interpolation in time is used to synchronize the wind and
-C     pressure information with the model time step.
-      IF(ABS(NWS).EQ.2) THEN
-         IF(TimeLoc.GT.WTIME2) THEN !determine if met file time incr. is exceeded
-            WTIME1=WTIME2
-            WTIME2=WTIME2+WTIMINC
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I) ! move current data to old
-               WVNY1(I)=WVNY2(I)
-               PRN1(I)=PRN2(I)
-               READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I) ! read in
-            END DO
-         ENDIF
-         WTRatio=(TimeLoc-WTIME1)/WTIMINC ! interpolate
-         DO I=1,NP
-            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
-            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
-            WSX2(I) = RampMete*WindX !apply ramp
-            WSY2(I) = RampMete*WindY
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                          -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            wvnxout(i)=WSX2(i) !for met recording sta. output
-            wvnyout(i)=WSY2(i)
-         END DO
-      ENDIF
-
-C     Wind velocity in US Navy Fleet Numeric format interpolated in
-C     space onto the ADCIRC grid and in time to synchronize the wind and
-C     pressure information with the model time step. Garratt's formula
-C     is used to compute wind stress from the wind velocity.
-      IF(NWS.EQ.3) THEN
-         IF(TimeLoc.GT.WTIME2) THEN
-            WTIME1=WTIME2
-            WTIME2=WTIME2+WTIMINC
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-            END DO
-            CALL NWS3GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,IWTIME,IWYR,WTIMED,
-     &           NP,NWLON,NWLAT,WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,
-     &           NSCREEN, ScreenUnit)
-         ENDIF
-         WTRatio=(TimeLoc-WTIME1)/WTIMINC
-         DO I=1,NP
-            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
-            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-C     jgf46.00 Add directional wind reduction.
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-               CICEOUT(I) = PIC
-            ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-            WVNXOUT(I)=RampMete*WindX
-            WVNYOUT(I)=RampMete*WindY
-#ifdef CSWAN
-Casey 090302: Added these lines for coupling winds to SWAN.
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-            IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
-               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
-            ENDIF
-#endif
-         END DO
-      ENDIF
-
-C     Wind velocity and atmospheric pressure are read in (PBL/JAG
-C     format) at selected ADCIRC grid nodes. Interpolation in time is
-C     used to synchronize the wind and pressure information with the
-C     model time step. Garratt's formula is used to compute wind stress
-C     from wind velocity.
-      IF(ABS(NWS).EQ.4) THEN
-         IF(TimeLoc.GT.WTIME2) THEN
-            WTIME1=WTIME2
-            WTIME2=WTIME2+WTIMINC
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-               PRN1(I)=PRN2(I)
-            END DO
-            CALL NWS4GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-         ENDIF
-         WTRatio=(TimeLoc-WTIME1)/WTIMINC
-         DO I=1,NP
-            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
-            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-C     jgf46.00 Add directional wind reduction.
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo =
-     &             WindIceDrag(WDragCo,PIC)
-               CICEOUT(I) = PIC
-            ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                           -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete*WindX
-            WVNYOUT(I)=RampMete*WindY
-#ifdef CSWAN
-Casey 090302: Added these lines for coupling winds to SWAN.
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-            IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
-               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
-            ENDIF
-#endif
-         END DO
-      ENDIF
-
-C     Wind velocity and atmospheric pressure are read in at all grid
-C     nodes. Interpolation in time is used to synchronize the wind and
-C     pressure information with the model time step. Garratt's formula
-C     is used to compute wind stress from wind velocity.
-      IF(ABS(NWS).EQ.5) THEN
-         IF(TimeLoc.GT.WTIME2) THEN
-            WTIME1=WTIME2
-            WTIME2=WTIME2+WTIMINC
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-               PRN1(I)=PRN2(I)
-               READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
-            END DO
-         ENDIF
-         WTRatio=(TimeLoc-WTIME1)/WTIMINC
-         DO I=1,NP
-            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
-            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-C     jgf46.00 Add directional wind reduction.
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo =
-     &            WindIceDrag(WDragCo,PIC)
-               CICEOUT(I) = PIC
-            ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                           -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete*WindX
-            WVNYOUT(I)=RampMete*WindY
-#ifdef CSWAN
-Casey 090302: Added these lines for coupling winds to SWAN.
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-            IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
-               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
-            ENDIF
-#endif
-         END DO
-      ENDIF
-
-C     Wind velocity and atmospheric pressure are read in for a
-C     rectangular grid (either in Longitude, Latitude or Cartesian
-C     coordinates, consistent with the grid coordinates) and
-C     interpolated in space onto the ADCIRC grid and in time to
-C     synchronize the wind and pressure information with the model time
-C     step. Garratt's formula is used to compute wind stress from the
-C     wind velocity.
-      IF(NWS.EQ.6) THEN
-         IF(TimeLoc.GT.WTIME2) THEN
-            WTIME1=WTIME2
-            WTIME2=WTIME2+WTIMINC
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-               PRN1(I)=PRN2(I)
-            END DO
-            NWSGGWI=NWSGGWI+1
-            CALL NWS6GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT,
-     &           WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
-         ENDIF
-         WTRatio=(TimeLoc-WTIME1)/WTIMINC
-         DO I=1,NP
-            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
-            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-C     jgf46.00 Add directional wind reduction.
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo =
-     &            WindIceDrag(WDragCo,PIC)
-               CICEOUT(I) = PIC
-            ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                           -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete*WindX
-            WVNYOUT(I)=RampMete*WindY
-#ifdef CSWAN
-Casey 090302: Added these lines for coupling winds to SWAN.
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-            IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
-               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
-            ENDIF
-#endif
-         END DO
-      ENDIF
-
-C     jgf46.01 New option to read in surface wind stress and atmospheric
-C     pressure for a rectangular grid (either in Longitude, Latitude or
-C     Cartesian coordinates, consistent with the grid coordinates) and
-C     interpolate in space onto the ADCIRC grid. Interpolation in time
-C     is used to synchronize the wind and pressure information with the
-C     model time step.
-      IF(ABS(NWS).EQ.7) THEN
-         IF(TimeLoc.GT.WTIME2) THEN
-            WTIME1=WTIME2
-            WTIME2=WTIME2+WTIMINC
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-               PRN1(I)=PRN2(I)
-            END DO
-            CALL NWS7GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT,
-     &           WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
-         ENDIF
-         WTRatio=(TimeLoc-WTIME1)/WTIMINC
-         DO I=1,NP
-            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
-            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
-            WSX2(I) = RampMete*WindX !apply ramp
-            WSY2(I) = RampMete*WindY
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                           -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            wvnxout(i)=WSX2(i) !for met recording sta. output
-            wvnyout(i)=WSY2(i)
-         END DO
-      ENDIF
-
-C     jgf46.02 New option to read in hurricane locations and generate
-C     generate hurricane winds from the Holland Wind Model.
-      IF(ABS(NWS).EQ.8) THEN
-         HollandTime = TimeLoc
-         CALL HollandGet(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,
-     &        ICS,RHOWAT0,G,HollandTime,NSCREEN,ScreenUnit)
-         DO I=1,NP
-            WindX = WVNX2(I)
-            WindY = WVNY2(I)
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo =
-     &            WindIceDrag(WDragCo,PIC)
-               CICEOUT(I) = PIC
-            ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete*PRN2(I)
-            PRDIFF = RampMete*(PRN2(I)-PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete*WindX
-            WVNYOUT(I)=RampMete*WindY
-#ifdef CSWAN
-Casey 090302: Added these lines for coupling winds to SWAN.
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-            IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
-               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
-            ENDIF
-#endif
-         ENDDO
-      ENDIF
+      call getMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
+     &   wvnxout, wvnyout, timeloc)
 C
-C     Wind velocity (10 m) and atmospheric pressure are read in from a
-C     sequence of National Weather Service (NWS) Aviation (AVN) model
-C     output files. Each AVN file is assumed to contain data on a
-C     Gaussian longitude, latitude grid at a single time. Consecutive
-C     files in the sequence are separated by N hours in time. Garratt's
-C     formula is used to compute wind stress from the wind velocity.
-      IF(NWS.EQ.10) THEN
-         IF(TimeLoc.GT.WTIME2) THEN
-            WTIME1=WTIME2
-            WTIME2=WTIME2+WTIMINC
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-               PRN1(I)=PRN2(I)
-            END DO
-            NWSGGWI=NWSGGWI+1
-            CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,RHOWAT0,
-     &           G,NWLON,NWLAT,WTIMINC)
-         ENDIF
-         WTRatio=(TimeLoc-WTIME1)/WTIMINC
-         DO I=1,NP
-            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
-            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-C     jgf46.00 Add directional wind reduction.
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo =
-     &            WindIceDrag(WDragCo,PIC)
-               CICEOUT(I) = PIC
-            ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                          -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete*WindX
-            WVNYOUT(I)=RampMete*WindY
-#ifdef CSWAN
-Casey 090302: Added these lines for coupling winds to SWAN.
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-            IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
-               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
-            ENDIF
-#endif
-         END DO
-      ENDIF
-C
-C     Wind velocity (10 m) and atmospheric pressure are read in from a
-C     sequence of stripped down National Weather Service (NWS) ETA 29km
-C     model output files. Each ETA file is assumed to contain data on an
-C     E grid for a single day (8 data sets, one every 3 hours, beginning
-C     @ 03:00 and continuing through 24:00 of the given day). The wind
-C     data is converted to an east-west, north-south coordinate system
-C     inside ADCIRC. Garratt's formula is used to compute wind stress
-C     from the wind velocity.
-      IF(NWS.EQ.11) THEN
-         IF(TimeLoc.GT.WTIME2) THEN
-            WTIME1=WTIME2
-            WTIME2=WTIME2+WTIMINC
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-               PRN1(I)=PRN2(I)
-            END DO
-            IDSETFLG=IDSETFLG+1
-            IF(IDSETFLG.GT.8) THEN
-               NWSEGWI=NWSEGWI+1
-               IDSETFLG=1
-            ENDIF
-            CALL NWS11GET(NWSEGWI,IDSETFLG,SLAM,SFEA,WVNX2,WVNY2,PRN2,
-     &           NP,RHOWAT0,G)
-         ENDIF
-         WTRatio=(TimeLoc-WTIME1)/WTIMINC
-         DO I=1,NP
-            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
-            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-C     jgf46.00 Add directional wind reduction.
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo =
-     &            WindIceDrag(WDragCo,PIC)
-               CICEOUT(I) = PIC
-            ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                          -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete*WindX
-            WVNYOUT(I)=RampMete*WindY
-#ifdef CSWAN
-Casey 090302: Added these lines for coupling winds to SWAN.
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-            IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
-               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
-            ENDIF
-#endif
-         END DO
-      ENDIF
-
-C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
-        IF(ABS(NWS).EQ.12) THEN
-          IF(TimeLoc.GT.WTIME2) THEN
-            WTIME1=WTIME2
-            WTIME2=WTIME2+WTIMINC
-            DO I=1,NP
-              WVNX1(I)=WVNX2(I)
-              WVNY1(I)=WVNY2(I)
-              PRN1(I)=PRN2(I)
-            END DO
-            CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-          ENDIF
-          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-          DO I=1,NP
-            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-            !Casey 110518: Enable Mark Powell's sector-based wind drag.
-            WDragCo = WindDrag(WindMag, I)
-            IF (LoadDirEffRLen) THEN
-              CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &             WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-              WindMag = SQRT(WindX*WindX+WindY*WindY)
-              !Casey 110518: Enable Mark Powell's sector-based wind drag.
-              WDragCo = WindDrag(WindMag,I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-               CICEOUT(I) = PIC
-            ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                          -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete*WINDX
-            WVNYOUT(I)=RampMete*WINDY
-CORBITT (TO OUTPUT WIND STRESS UNCOMMENT BELOW)
-C            WVNXOUT(I)=WSX2(I)
-C            WVNYOUT(I)=WSY2(I)
-
-#ifdef CSWAN
-Casey 090302: Added these lines for coupling winds to SWAN.
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-            IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX / WindMultiplier * WaveWindMultiplier
-               SWAN_WY2(I,2) = WindY / WindMultiplier * WaveWindMultiplier
-            ENDIF
-#endif
-          END DO
-        ENDIF
-
-C     RJW ffpl Merged:
-!     rjw added nws = 19: asymmetric hurricane winds
-      AsymmetricTime = TimeLoc
-      IF(NWS.EQ.19) THEN
-         CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
-         DO I=1,NP
-            WindX = WVNX2(I)
-            WindY = WVNY2(I)
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v49.16 20100617C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-               CICEOUT(I) = PIC
-            ENDIF
-!            PR2(I)=RampMete*PRN2(I)
-            PRDIFF = RampMete*(PRN2(I)-PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete*WindX
-            WVNYOUT(I)=RampMete*WindY
-#ifdef CSWAN
-Casey 090302: Added these lines for coupling winds to SWAN.
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-            IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
-               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
-            ENDIF
-#endif
-         END DO
-      ENDIF
-C
-C     jie added nws = 20: generalized asymmetric vortex model
-      GeneralAsymTime = TimeLoc
-      IF(NWS.EQ.20) THEN
-         CALL NWS20GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,GeneralAsymTime,ICS)
-         DO I=1,NP
-            WindX = WVNX2(I)
-            WindY = WVNY2(I)
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v49.16 20100617C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-               CICEOUT(I) = PIC
-            ENDIF
-!            PR2(I)=RampMete*PRN2(I)
-            PRDIFF = RampMete*(PRN2(I)-PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete*WindX
-            WVNYOUT(I)=RampMete*WindY
-#ifdef CSWAN
-Casey 090302: Added these lines for coupling winds to SWAN.
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-            IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
-               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
-            ENDIF
-#endif
-         END DO
-      ENDIF    
-C      
-C     jgf49.1001 Added NWS29 for embedding an asymmetric vortex from
-C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
-      IF(ABS(NWS).EQ.29) THEN
-         ! bring in next set of OWI met data
-         IF(TimeLoc.GT.WTIME2) THEN
-            WTIME1=WTIME2
-            WTIME2=WTIME2+WTIMINC
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-               PRN1(I)=PRN2(I)
-            END DO
-            CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-         ENDIF
-         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-         ! bring in next set of asymmetric vortex met data to separate arrays
-         CALL NWS19GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
-     &                 NP,AsymmetricTime, ICS)
-         DO I=1,NP
-            ! compute wind stress due to background met at this node
-            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-            WDragCo = WindDrag(WindMag, I)
-
-            !...zc51.06 - Make sure SWAN sees blended winds
-#ifdef CSWAN
-            IF(COUPWIND)THEN
-                SWAN_WX2(I,2) = WindX
-                SWAN_WY2(I,2) = WindY
-            ENDIF    
-#endif
-            ! jgf49.1001 NAM winds already contain wind reduction
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PR2(I) = RampMete*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
-            WVNXOUT(I)=RampMete*WINDX
-            WVNYOUT(I)=RampMete*WINDY
-            ! compute wind stress due to vortex met at this node
-            WindX = vortexWVNX2(I)
-            WindY = vortexWVNY2(I)
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            CALL getBlendFactor(I, SLAM, SFEA, bf)
-            ! blend the wind stresses and barometric pressures
-            WSX2(I) = bf*RampMete*0.001293d0*WDragCo*WindX*WindMag
-     &               +(1.0d0-bf)*WSX2(I)
-            WSY2(I) = bf*RampMete*0.001293d0*WDragCo*WindY*WindMag
-     &               +(1.0d0-bf)*WSY2(I)
-            PR2(I)= bf*RampMete*vortexPRN2(I)
-     &               +(1.0d0-bf)*PRN2(I)
-            WVNXOUT(I)=bf*RampMete*WindX+(1.0d0-bf)*WVNXOUT(I)
-            WVNYOUT(I)=bf*RampMete*WindY+(1.0d0-bf)*WVNYOUT(I)
-#ifdef CSWAN
-Casey 090302: Added these lines for coupling winds to SWAN.
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-            !zc...make sure swan sees blended winds
-            IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = ((WindX*bf)+(1d0-bf)*SWAN_WX2(I,2)) 
-     &              * WaveWindMultiplier
-               SWAN_WY2(I,2) = ((WindY*bf)+(1d0-bf)*SWAN_WY2(I,2)) 
-     &              * WaveWindMultiplier
-            ENDIF
-#endif
-         END DO
-      ENDIF
-
-      !
-      ! jgf50.38.05: Added NWS=15 for reading HWind data
-       IF(ABS(NWS).EQ.15) THEN
-          CALL NWS15GET(WVNX2,WVNY2,PRN2,timeloc)
-          DO I=1,NP
-             windx = wvnx2(i)
-             windy = wvny2(i)
-             windMag = sqrt(windx**2 + windy**2)
-             WDragCo = WindDrag(windMag, i)
-             IF (LoadDirEffRLen) THEN
-                CALL ApplyDirectionalWindReduction(i, WDragCo,
-     &              windMag, DP(I), ETA2(I), H0, G,
-     &              windx, windy)
-                WindMag = SQRT(windx**2+windy**2)
-                WDragCo = WindDrag(WindMag, i)
-             ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(i,windx,windy)
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-             WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
-             WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
-             PR2(I) = PRBCKGRND_MH2O + RampMete*(PRN2(I)-PRBCKGRND_MH2O)
-             WVNXOUT(I)=RampMete*WINDX
-             WVNYOUT(I)=RampMete*WINDY
-#ifdef CSWAN
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-            IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
-               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
-            ENDIF
-#endif
-          END DO
-       ENDIF
-C.... tcm v51.06.02 added for GFDL Met Data
-        IF(ABS(NWS).EQ.16) THEN
-          IF(TimeLoc.GT.WTIME2) THEN
-            WTIME1=WTIME2
-            WTIME2=WTIME2+WTIMINC
-            DO I=1,NP
-              WVNX1(I)=WVNX2(I)
-              WVNY1(I)=WVNY2(I)
-              PRN1(I)=PRN2(I)
-            END DO
-            CALL NWS16GET(timeloc,WVNX2,WVNY2,PRN2)
-          ENDIF
-          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-          DO I=1,NP
-            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-            !Casey 110518: Enable Mark Powell's sector-based wind drag.
-            WDragCo = WindDrag(WindMag, I)
-            IF (LoadDirEffRLen) THEN
-              CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &             WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-              WindMag = SQRT(WindX*WindX+WindY*WindY)
-              !Casey 110518: Enable Mark Powell's sector-based wind drag.
-              WDragCo = WindDrag(WindMag,I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-               CICEOUT(I) = PIC
-            ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                          -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete*WINDX
-            WVNYOUT(I)=RampMete*WINDY
-#ifdef CSWAN
-Casey 090302: Added these lines for coupling winds to SWAN.
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-            IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX / WindMultiplier * WaveWindMultiplier
-               SWAN_WY2(I,2) = WindY / WindMultiplier * WaveWindMultiplier
-            ENDIF
-#endif
-          END DO
-        ENDIF
-C
-C    kmd48.33bc - added in information for the sponge layer
-       IF ((C3D).AND.(RES_BC_FLAG.GT.0).AND.(NWS.NE.0)) THEN
-         DO I=1,NP
-            WSX2(I)=sponge(I)*WSX2(I)
-            WSY2(I)=sponge(I)*WSY2(I)
-         END DO
-       END IF
-
-C
-C--------------------END MET FORCING---------------------------------------
-
+C----------------------END MET FORCING----------------------------------------
 
 
 C...  UPDATE THE WAVE RADIATION STRESS AND READ IN NEW VALUES FROM
@@ -1431,7 +563,28 @@ C...
 C...  NRS=2 was added.  sb46.28sb03 09/xx/2006
 C...  TCM v49.48 Restructured the wave stress updates in order to
 c...             include NRS=4
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+      if (coupwind) then
+         select case(abs(nws))
+         case(12,16)
+            do i=1,np
+               swan_wx2(i,2) = wvnxout(i) * waveWindMultiplier 
+     &                         / ( rampMete * windMultiplier ) 
+               swan_wy2(i,2) = wvnyout(i) * waveWindMultiplier 
+     &                         / ( rampMete * windMultiplier ) 
+            end do
+         case default
+            do i=1,np
+               swan_wx2(i,2) = wvnxout(i) * waveWindMultiplier / rampMete
+               swan_wy2(i,2) = wvnyout(i) * waveWindMultiplier / rampMete
+            end do
+         end select
+      endif
+#endif
       IF(NRS.NE.0) THEN
+
          if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3)) then
             IF(TimeLoc.GT.RSTIME2) THEN
                RSTIME1=RSTIME2

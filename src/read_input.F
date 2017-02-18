@@ -166,9 +166,6 @@ C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
 C     Module.
       CALL initNAModule()
-C
-C     jgf50.32: Initialize default values in wind module.
-      CALL initWindModule()
 
 c     tcm v50.66.01 addition for time varying bathymetry
       NDDT = 0  !set the default value for time varying bathymetry e.g. no changes
@@ -190,6 +187,10 @@ C     ALLOCATE ARRAYS Dimensioned by MNP and MNE
       ! jgf51.21.13: Allocate boundary condition arrays dimensioned by
       ! mnvel 
       call alloc_main3()
+C
+C     jgf50.32: Initialize default values in wind module and allocate
+C     memory for internal use.
+      call initWindModule()
 C...
 C...  OPEN UNIT 15 INPUT FILE (control parameters and periodic boundary conditions)
 C...
@@ -1923,7 +1924,7 @@ C...
  1116    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
      &        I2,'/',I2,'/',I2,'  ',I2,':',I2,':',f7.4,/)
          CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN,REFSEC,
-     &        WREFTIM, MyProc, NScreen, ScreenUnit)
+     &        WREFTIM)
 C...     TCM V49.64.01 CHANGES FOR ICE CONCENTRATION
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) NWLAT,NWLON,WLATMAX,
      &        WLONMIN,WLATINC,WLONINC,WTIMINC
@@ -1986,7 +1987,7 @@ C...     WHERE NRS=2, NRS=4 WERE NOT BEING INCLUDED
  6111    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
      &           I2,'/',I2,'/',I2,'  ',I2,'H',/)
          CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
-     &        WindRefTime, MyProc, NScreen, ScreenUnit)
+     &        WindRefTime)
       ENDIF
 C     jgf46.16 Merged:
 C     cf & cm added nws = 9: asymmetric hurricane winds

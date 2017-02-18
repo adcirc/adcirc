@@ -317,7 +317,7 @@ C----------------------------------------------------------------------
      &   igep, nodes_lg, eta2_g, nscougt, itau0p, nscougs, igsp,
      &   sponge, nscougv, igvp, uu2_g, vv2_g, imap_stam_lg, rmp00,
      &   pr2, nscoum, ipstp, nnm, staim1, staim2, staim3,
-     &   xem, yem, slem, sfem, rmu00, rmv00, wvnxout, wvnyout, 
+     &   xem, yem, slem, sfem, rmu00, rmv00,  
      &   iwstp, nscougw, igpp, igwp, dp00, ibstp, igbp, igip, 
      &   ciceout, rmice00, iicestp, igrads, rsnxout, rsnyout, 
      &   imap_stac_lg, cc00, ch1, xec, yec, slec, sfec, ch1_g,
@@ -325,7 +325,7 @@ C----------------------------------------------------------------------
      &   etamax_time, umax_time_g, umax, umax_time, prmin_time_g,
      &   prmin, wvnoutmax_time_g, wvnoutmax_time, rsnmax_time_g,
      &   rsnmax_time, eslonoff, prmin_time, wvnoutmax, rsnmax, 
-     &   nstae_g, noute, nstae, 
+     &   nstae_g, noute, nstae, wvnxout, wvnyout, 
      &   ntcyse, ntcyfe, nspoole, nstav_g, noutv, nstav, ntcysv, 
      &   ntcyfv, nspoolv, noutge, ntcysge, ntcyfge, nspoolge, 
      &   np_g, outputsponge, noutgv, ntcysgv, nspoolgv, nstam_g,
@@ -6018,9 +6018,10 @@ C     jgf52.08.01: Collect data used for min/max output. Removed
 C     from subroutine timestep() and placed here.
 C-----------------------------------------------------------------------
       subroutine collectMinMaxData(timeloc)
-      use global, only : nodecode, eta2, uu2, vv2, pr2, wvnxout, wvnyout,
+      use global, only : nodecode, eta2, uu2, vv2, pr2, 
      &  rsnx2, rsny2, etamax, etamax_time, umax, umax_time, prmin,
-     &  prmin_time, wvnoutmax, wvnoutmax_time, rsnmax, rsnmax_time
+     &  prmin_time, wvnoutmax, wvnoutmax_time, rsnmax, rsnmax_time,
+     &  wvnxout, wvnyout
       use mesh, only : np
       implicit none
       real(8), intent(in) :: timeloc ! time in s since cold start

@@ -217,9 +217,13 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  ET00(:), UU00(:), VV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMICE00(:), CICEOUT(:) !v49.64.01 tcm -added for ice concentration
-      REAL(SZ),ALLOCATABLE, TARGET ::  Pr2(:), WVNXOut(:), WVNYOut(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  Pr2(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
+      
+      real(sz), allocatable, target :: wvnxout(:) ! output wind velocity in x-dir at each node 
+      real(sz), allocatable, target :: wvnyout(:) ! output wind velocity in y-dir at each node 
+
       
 #ifdef CSWAN      
       !...Local SWAN Arrays
@@ -314,8 +318,8 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE ::   SOURSIN(:)
       REAL(SZ),ALLOCATABLE ::   WSX1(:),WSY1(:),PR1(:)
       REAL(SZ),ALLOCATABLE ::   WSX2(:),WSY2(:)
-      REAL(SZ),ALLOCATABLE ::   WVNX1(:),WVNY1(:),PRN1(:)
-      REAL(SZ),ALLOCATABLE ::   WVNX2(:),WVNY2(:),PRN2(:)
+      REAL(SZ),ALLOCATABLE ::   PRN1(:)
+      REAL(SZ),ALLOCATABLE ::   PRN2(:)
       REAL(SZ),ALLOCATABLE ::   RSNX1(:),RSNY1(:),RSNX2(:),RSNY2(:)
       REAL(SZ),ALLOCATABLE ::   CICE1(:),CICE2(:)   !v49.64.01 tcm -- added
                                                     !for ice concentration
@@ -381,7 +385,7 @@ C...
 C...DECLARE REAL(8) AND CHAR VARIABLES, EQUIVALENCES
 C...
       REAL(8) STATIM,REFTIM,DTDP
-      REAL(8) WREFTIM,WTIMED,WTIME2,WTIME1,WTIMINC,QTIME1,QTIME2
+      REAL(8) QTIME1,QTIME2
       REAL(8) FTIMINC,ETIMINC,RSTIME1,RSTIME2,RSTIMINC
 
       REAL(8) DIST,DELDIST,DELETA
@@ -472,8 +476,8 @@ C     size has changed after a hotstart.
       INTEGER  NRAMP,NRS,NSTAE,NSTARTDRY,NSTAV,NT,NTCYFE
       INTEGER  NTCYFV,NTCYSE,NTCYSV,NTIF,NTIP,NTRSPE,NTRSPV
       INTEGER  NTCYS_TVW,NTCYF_TVW
-      INTEGER  NWLAT,NWLON,NWS
-      INTEGER  ICSTP, IDSETFLG, IER
+      INTEGER  NWS
+      INTEGER  ICSTP, IER
 
 Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  IFNLCAT, IFNLCT, IFNLFA, IFNLCTE, IFNLCATE
@@ -504,12 +508,10 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       integer, target :: fauxFilePosition 
 
       INTEGER  IHOTSTP, ILUMP, IMHS
-      INTEGER  IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN, ISLDIA
       INTEGER  ITIME, ITEMPSTP, ITEST
       INTEGER  ITHS, ITITER, ITMAX    
-      INTEGER IWTIME, IWTIMEP
       
-      INTEGER  IWYR, J12, J13, J21, J23, J31, J32
+      INTEGER  J12, J13, J21, J23, J31, J32
       INTEGER  JJ, KEMAX, KVMAX, LRC, LUMPT
       INTEGER  MBW, MDF, NBDJ, NBNCTOT, NBW
       INTEGER  NCBND, NCTOT, NDRY, NDSETSC
@@ -541,7 +543,7 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER  NTCYFGV, NTCYFGW
       INTEGER  NTCYFM, NTCYSC, NTCYSGC, NTCYSGE
       INTEGER  NTCYSGV, NTCYSGW, NTCYSM
-      INTEGER  NTRSPC, NTRSPM, NUMITR, NW, NWET, NWSEGWI, NWSGGWI
+      INTEGER  NTRSPC, NTRSPM, NUMITR, NW, NWET
       INTEGER  NP_GLOBAL
 C     kmd48.33bc - added variables for 3D boundary conditions
       INTEGER  RES_BC_FLAG  ! boundary condition flag for salinity and temperature
@@ -586,8 +588,7 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       REAL(SZ) DAY,DRAMP,DUM1,DUM2
       REAL(SZ) H0
       REAL(SZ) RNDAY
-      REAL(SZ) WLATMAX
-      REAL(SZ) WLONMIN,WLATINC,WLONINC, VELMIN
+      REAL(SZ) VELMIN
       REAL(8)  RNP_GLOBAL
       REAL(8)  REFSEC   ! required to run in either 32-bit or 64-bit
 
@@ -1366,14 +1367,17 @@ C...
 C
       ALLOCATE ( WSX1(MNP),WSY1(MNP),PR1(MNP) )
       ALLOCATE ( WSX2(MNP),WSY2(MNP),PR2(MNP) )
-      ALLOCATE ( WVNX1(MNP),WVNY1(MNP),PRN1(MNP) )
-      ALLOCATE ( WVNX2(MNP),WVNY2(MNP),PRN2(MNP) )
+
       WSX1(:) = 0.0d0
       WSY1(:) = 0.0d0
       PR1(:) = 0.0d0
       WSX2(:) = 0.0d0
       WSY2(:) = 0.0d0
       PR2(:) = 0.0d0
+
+      allocate ( wvnxout(mnp),wvnyout(mnp) )
+      wvnxout(:) = 0.d0
+      wvnyout(:) = 0.d0
 
       ALLOCATE ( RSNX1(MNP),RSNY1(MNP),RSNX2(MNP),RSNY2(MNP) )
       RSNX1(:) = 0.0d0 !jgf51.46: Added initialization of RSNX1, RSNY1
@@ -1389,9 +1393,6 @@ C
          CICEOUT(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
       ENDIF
 
-      ALLOCATE ( WVNXOUT(MNP),WVNYOUT(MNP) )
-      WVNXOUT(:) = 0.d0
-      WVNYOUT(:) = 0.d0
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
       IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4)) then
