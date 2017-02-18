@@ -314,12 +314,6 @@ C      SADVDTO3=IFNLCT*DT/3.D0
       GORho=G/RhoWat0
       GORhoOAMB=GORho/AMB
 
-C...
-C.....Compute necesary wet/dry coefficients
-C...
-      HABSMIN=0.8d0*H0
-      HOFF=1.2d0*H0
-
       WRITE(16,1112)
       WRITE(16,17931)
       IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)

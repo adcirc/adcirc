@@ -35,6 +35,7 @@ C-----------------------------------------------------------------------
       USE WEIR
       USE TIME_VARYING_WEIR_BOUNDARY
       USE WIND
+      USE WETDRY, ONLY : noffActive, velmin
       USE ITPACKV
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate    
       USE VERSION

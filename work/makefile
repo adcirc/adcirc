@@ -309,6 +309,7 @@ $(O_DIR):
 
 
 ################# Module Source, Object, & Mod Files ######################
+WD_MSRC    =  wetdry.F
 MOM_MSRC   =  momentum.F
 GWCE_MSRC  =  gwce.F
 SUBD_MSRC  =  subdomain.F
@@ -334,6 +335,7 @@ COUP_MSRC  =  couple2swan.F
 KDTREE_MSRC = kdtree2.F
 XDMF_MSRC = xdmfio.F
 
+WD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(WD_MSRC) )
 MOM_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(MOM_MSRC) )
 GWCE_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(GWCE_MSRC) )
 SUBD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBD_MSRC) )
@@ -364,7 +366,7 @@ KDTREE_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(KDTREE_MSRC) )
 
 METIS_SRC  =  metis.F
 PREP_SRC   =  adcprep.F decomp.F prep_weir.F read_global.F prep.F interp.F machdep.F
-ADC_SRC    =  adcirc.F weir_boundary.F read_input.F cstart.F hstart.F gwce.F momentum.F timestep.F vsmy.F transport.F
+ADC_SRC    =  adcirc.F weir_boundary.F wetdry.F read_input.F cstart.F hstart.F gwce.F momentum.F timestep.F vsmy.F transport.F
 POST_SRC   =  adcpost.F post.F compare.F diffmerge.F machdep.F
 P15_SRC    =  p15.F
 OWI_SRC    =  owi22.F
@@ -677,6 +679,7 @@ $(O_DIR)nodalattr.o   :  nodalattr.F  $(ADC_MOBJ) $(MESH_MOBJ)
 $(O_DIR)messenger.o   :  messenger.F  $(ADC_MOBJ)
 $(O_DIR)gwce.o        :  gwce.F 
 $(O_DIR)momentum.o    :  momentum.F 
+$(O_DIR)wetdry.o      :  wetdry.F $(O_DIR)subdomain.o 
 #!st3 100711: Added globalio.o to writer.F for HSWRITER MODULE
 WRITER_DEP := writer.F  $(O_DIR)messenger.o $(O_DIR)globalio.o
 ifeq ($(NETCDF),enable)

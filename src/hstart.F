@@ -55,6 +55,7 @@ C
       USE HARM, ONLY : IHARIND, IHABEG, ITHAS, NHAINC, ICHA, CHARMV,
      &                 NHAGE, NHAGV, NHASE, NHASV, readBinaryHAHotstart,
      &                 checkHAHotstart
+      USE WETDRY, ONLY : initializeWettingAndDrying
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE WIND, ONLY : hotstartMeteorologicalForcing, rsget
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
@@ -180,6 +181,8 @@ C     kmd -- Added variables for initial conditions
       !
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
+      !
+      call initializeWettingAndDrying()
       !
       ! In order to produce inundation output, we need to compute the
       ! areas that were initially dry at cold start. 

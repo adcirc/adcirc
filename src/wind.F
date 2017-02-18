@@ -565,7 +565,16 @@ C-----------------------------------------------------------------------
       END SUBROUTINE TIMECONV
 C-----------------------------------------------------------------------
 
-
+C----------------------------------------------------------------------
+C                    S U B R O U T I N E 
+C       G E T   M E T E O R O L O G I C A L   F O R C I N G
+C----------------------------------------------------------------------
+C     Called from timestep() to perform i/o, time interpolation, 
+C     wind reduction, canopy effects, drag modification due to ice,
+C     computation of stress from velocity, units conversion, and
+C     any other procedures necessary for producing met data at a 
+C     particular point in time. 
+C----------------------------------------------------------------------
       subroutine getMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
      &   wvnxout, wvnyout, timeloc)
       use owiwind,only : nws12get, findStormCenter    ! sb added 09/xx/2006     
@@ -1258,8 +1267,11 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
 
 
-
 C----------------------------------------------------------------------
+C                   S U B R O U T I N E 
+C    C O L D  S T A R T   M E T E O R O L O G I C A L   F O R C I N G
+C----------------------------------------------------------------------
+C     Sets up meterological i/o for a coldstart.
 C----------------------------------------------------------------------
       subroutine coldstartMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
      &   wvnxout, wvnyout)
@@ -1492,6 +1504,10 @@ C----------------------------------------------------------------------
 
 
 C----------------------------------------------------------------------
+C                   S U B R O U T I N E 
+C    H O T S T A R T   M E T E O R O L O G I C A L   F O R C I N G
+C----------------------------------------------------------------------
+C     Sets up meterological i/o for a hotstart.
 C----------------------------------------------------------------------
       subroutine hotstartMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
      &   wvnxout, wvnyout, timeloc, rampmete2)

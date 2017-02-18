@@ -349,13 +349,9 @@ C    kmd48.33bc - added variables for the levels of no motion and top temperatur
       REAL(SZ),ALLOCATABLE ::   q_heat1(:), q_heat2(:), HFLUX(:)  ! top temperature
       REAL(SZ),ALLOCATABLE, TARGET :: Sponge(:)  ! sponge information for boundary conditions
       INTEGER,ALLOCATABLE, TARGET ::    NOFF(:), NODECODE(:)
-      ! jgf52.08.08: Enable analyst to remove NOFF from wetting and
-      ! drying algorithm; .true. by default to conform with prior
-      ! ADCIRC versions. 
-      LOGICAL :: noffActive = .true.
+
       INTEGER,ALLOCATABLE ::    NNODECODE(:)
-      INTEGER,ALLOCATABLE ::    NOFFOLD(:)
-      INTEGER,ALLOCATABLE ::    NIBCNT(:)
+
       INTEGER,ALLOCATABLE ::    NIBNODECODE(:)
       !
       ! lists of elements containing each station 
@@ -388,7 +384,7 @@ C...
       REAL(8) QTIME1,QTIME2
       REAL(8) FTIMINC,ETIMINC,RSTIME1,RSTIME2,RSTIMINC
 
-      REAL(8) DIST,DELDIST,DELETA
+      REAL(8) DIST
       REAL(8),ALLOCATABLE :: AMIG(:),AMIGT(:),FAMIG(:)
       REAL(8),ALLOCATABLE :: PER(:),PERT(:),FPER(:)
       REAL(8),ALLOCATABLE :: FREQ(:),FF(:),FACE(:)
@@ -513,7 +509,7 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       
       INTEGER  J12, J13, J21, J23, J31, J32
       INTEGER  JJ, KEMAX, KVMAX, LRC, LUMPT
-      INTEGER  MBW, MDF, NBDJ, NBNCTOT, NBW
+      INTEGER  MBW, MDF, NBDJ, NBW
       INTEGER  NCBND, NCTOT, NDRY, NDSETSC
       INTEGER  NCChange !jgf45.06 flag indicating wetting / drying has occurred
       INTEGER  NDSETSE, NDSETSV, NDSETSW, NDSETS_TVW,NEle
@@ -588,7 +584,6 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       REAL(SZ) DAY,DRAMP,DUM1,DUM2
       REAL(SZ) H0
       REAL(SZ) RNDAY
-      REAL(SZ) VELMIN
       REAL(8)  RNP_GLOBAL
       REAL(8)  REFSEC   ! required to run in either 32-bit or 64-bit
 
@@ -1077,9 +1072,8 @@ C
       qy1(:) = 0.d0
       ALLOCATE ( NNODECODE(MNP))
       nnodecode(:) = 0
-      ALLOCATE ( NOFF(MNE),NOFFOLD(MNE))
+      ALLOCATE ( NOFF(MNE) )
       noff(:) = 0
-      noffold(:) = 0
       ALLOCATE ( NIBNODECODE(MNP))
       ALLOCATE ( CH1(MNP),TRANS_LV_B(MNP),TRANS_LV_A(MNP))
       ALLOCATE ( SOURSIN(MNP))
@@ -1099,7 +1093,7 @@ C
       ALLOCATE ( MOM_LV_X(MNP),MOM_LV_Y(MNP))
 
       ALLOCATE ( NODECODE(MNP))
-      ALLOCATE ( NIBCNT(MNP) )
+
       ALLOCATE ( DASigT(MNP),DATemp(MNP),DASalt(MNP))
       ALLOCATE ( VIDBCPDXOH(MNP), VIDBCPDYOH(MNP))
       ALLOCATE ( DAConc(MNP))

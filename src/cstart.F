@@ -18,6 +18,7 @@ C
       USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4
       USE BOUNDARIES, ONLY : NETA, NFLUXF, NOPE, NVEL, LBCODEI
       USE HARM
+      USE WETDRY, ONLY : initializeWettingAndDrying
       USE WIND, ONLY : coldStartMeteorologicalForcing, rsget
       USE GLOBAL_IO
       USE SUBDOMAIN, ONLY : subdomainOn, readFort015
@@ -56,9 +57,11 @@ C
 #endif
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
+      !
+      call initializeWettingAndDrying()
 
 C SET UP TIME VARYING WEIRS IF NECESSARY
-       CALL WEIR_SETUP()
+      CALL WEIR_SETUP()
 
       if (subdomainOn) then
          call readFort015() ! NCSU Subdomain Modeling
