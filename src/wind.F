@@ -45,8 +45,9 @@ C
       integer :: NWSEGWI
       integer :: NWSGGWI
 
-      integer :: NWLON,NWLAT,WLATMAX,WLONMIN,WLATINC,WLONINC
-      integer :: IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN,ISLDIA
+      integer  :: NWLON,NWLAT
+      real(sz) :: WLATMAX,WLONMIN,WLATINC,WLONINC
+      integer  :: IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN,ISLDIA
 
       REAL(8), PARAMETER :: TWOPI=PI*2.D0
       REAL(8), PARAMETER :: HFPI=PI/2.D0
@@ -1335,9 +1336,9 @@ C....                           to correspond with having only a global wind fil
             END DO
             GOTO 2222
          ENDIF
-         write(scratchMessage,'(a,f15.7)') 'FOUND WIND DATA AT TIME= ',IWTIMEP
+         write(scratchMessage,'(a,i15)') 'FOUND WIND DATA AT TIME= ',IWTIMEP
          call allMessage(INFO,scratchMessage)
-         write(scratchMessage,'(a,f15.7)') 'FOUND WIND DATA AT TIME= ',IWTIME
+         write(scratchMessage,'(a,i15)') 'FOUND WIND DATA AT TIME= ',IWTIME
          call allMessage(INFO,scratchMessage)
          WTIME2=WTIMED-WREFTIM  !CAST INTO MODEL TIME REFERENCE
          WTIME1=WTIME2-WTIMINC
