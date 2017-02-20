@@ -142,7 +142,7 @@ C     for writing fulldomain hotstart files.
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time(:) 
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time_G(:) 
      
-#ifdef CSWAN
+#if defined CSWAN || defined ADCSWAN
       !...Global SWAN Arrays
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSOut_g(:)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIROut_g(:)
@@ -225,7 +225,7 @@ c.
       real(sz), allocatable, target :: wvnyout(:) ! output wind velocity in y-dir at each node 
 
       
-#ifdef CSWAN      
+#if defined CSWAN || defined ADCSWAN     
       !...Local SWAN Arrays
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSOut(:)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIROut(:)

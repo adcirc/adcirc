@@ -1,3 +1,4 @@
+#ifdef ADCNETCDF
       !=================================================================
       !=================================================================
       !=================================================================
@@ -497,7 +498,7 @@ C-----------------------------------------------------------------------
      &                   STATNAMEM, IDEN
       USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET
       USE MESH, ONLY : ICS
-#ifdef NCMPI
+#ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
       IMPLICIT NONE
@@ -3543,7 +3544,7 @@ C
             CALL writeNodalData(tau0nc, lun, descript1, timesec)
          CASE(164)
             CALL writeNodalData(rads, lun, descript1, timesec)
-#ifdef CSWAN
+#if defined CSWAN || defined ADCSWAN
          CASE(301)
             CALL writeNodalData(sw_hs, lun, descript1, timesec)
          CASE(302)
@@ -3569,7 +3570,7 @@ C
             CALL writeNodalData(WVMax, lun, descript1, timesec)
          CASE(315)
             CALL writeNodalData(RSMax, lun, descript1, timesec)
-#ifdef CSWAN
+#if defined CSWAN || defined ADCSWAN
          CASE(316)
             CALL writeNodalData(sw_hs_max, lun, descript1, timesec)
          CASE(317)
@@ -8017,9 +8018,13 @@ C     STAELV - station elevation
      &          STAELV, start, kount)
             CALL check_err(iret)
          ELSE
-            call mapFullDomainToSubdomainMByNP(hs%ncid,
-     &         2*MNHARF, hs%staelv%num_stations,
-     &         hs%staelv%station_data_id, subdomain_reals=STAELV)
+         ! jgf52.30.12: Fix segfault by checking number of stations 
+         ! (provided by Damrongsak Wirasaet)
+            IF ( NSTAE > 0 ) THEN
+               call mapFullDomainToSubdomainMByNP(hs%ncid,
+     &            2*MNHARF, hs%staelv%num_stations,
+     &            hs%staelv%station_data_id, subdomain_reals=STAELV)
+            ENDIF
          ENDIF
       ENDIF
 C     STAULV/STAVLV - station u and v velocity
@@ -8042,12 +8047,16 @@ C     STAULV/STAVLV - station u and v velocity
      &          STAVLV, start, kount)
             CALL check_err(iret)
          ELSE
-            call mapFullDomainToSubdomainMByNP(hs%ncid,
-     &         2*MNHARF, hs%stavellv%num_stations,
-     &         hs%stavellv%u_station_data_id, subdomain_reals=STAULV)
-            call mapFullDomainToSubdomainMByNP(hs%ncid,
-     &         2*MNHARF, hs%stavellv%num_stations,
-     &         hs%stavellv%v_station_data_id, subdomain_reals=STAVLV)
+            ! jgf52.30.12: Fix segfault by checking number of stations 
+            ! (provided by Damrongsak Wirasaet)
+            IF ( NSTAV > 0 ) THEN
+               call mapFullDomainToSubdomainMByNP(hs%ncid,
+     &            2*MNHARF, hs%stavellv%num_stations,
+     &            hs%stavellv%u_station_data_id, subdomain_reals=STAULV)
+               call mapFullDomainToSubdomainMByNP(hs%ncid,
+     &            2*MNHARF, hs%stavellv%num_stations,
+     &            hs%stavellv%v_station_data_id, subdomain_reals=STAVLV)
+            ENDIF
          ENDIF
       ENDIF
 C
@@ -10008,3 +10017,4 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       END MODULE NETCDFIO
 C-----------------------------------------------------------------------
+#endif

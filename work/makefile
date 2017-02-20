@@ -73,12 +73,12 @@ ifeq ($(NETCDF4_COMPRESSION),enable)
 endif
 ifeq ($(XDMF),enable)
      $(warning (INFO) enabling xdmf lib ...)
-     PPFC    := $(PPFC) -DADCXDMF -I$(XDMFHOME)/include
-     PFC     := $(PFC) -DADCXDMF -I$(XDMFHOME)/include
-     FFLAGS1 := $(FFLAGS1) -DADCXDMF -I$(XDMFHOME)/include
-     FFLAGS2 := $(FFLAGS2) -DADCXDMF -I$(XDMFHOME)/include
-     FFLAGS3 := $(FFLAGS3) -DADCXDMF -I$(XDMFHOME)/include
-     FFLAGS4 := $(FFLAGS4) -DADCXDMF -I$(XDMFHOME)/include
+     PPFC    := $(PPFC) -DADCXDMF -I$(XDMFHOME)/include -I$(SRCDIR)/src
+     PFC     := $(PFC) -DADCXDMF -I$(XDMFHOME)/include -I$(SRCDIR)/src
+     FFLAGS1 := $(FFLAGS1) -DADCXDMF -I$(XDMFHOME)/include -I$(SRCDIR)/src
+     FFLAGS2 := $(FFLAGS2) -DADCXDMF -I$(XDMFHOME)/include -I$(SRCDIR)/src
+     FFLAGS3 := $(FFLAGS3) -DADCXDMF -I$(XDMFHOME)/include -I$(SRCDIR)/src
+     FFLAGS4 := $(FFLAGS4) -DADCXDMF -I$(XDMFHOME)/include -I$(SRCDIR)/src
      $(warning (INFO) XDMF library path is $(XDMFHOME).)
 endif
 
