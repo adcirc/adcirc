@@ -14,9 +14,9 @@ IF(BUILD_ADCIRC)
                           src/globalio.F src/netcdfio.F src/control.F
                           src/xdmfio.F )
 
-    SET( ADCIRC2_SOURCES  src/write_output.F 
-                          src/couple2swan.F src/adcirc.F src/subdomain.F 
-                          src/weir_boundary.F src/read_input.F src/cstart.F 
+    SET( ADCIRC2_SOURCES  src/write_output.F src/couple2swan.F src/adcirc.F 
+                          src/subdomain.F src/weir_boundary.F src/wetdry.F
+                          src/gwce.F src/momentum.F src/read_input.F src/cstart.F 
                           src/hstart.F src/timestep.F src/vsmy.F 
                           src/transport.F src/driver.F )
 

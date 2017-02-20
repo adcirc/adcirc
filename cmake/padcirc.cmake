@@ -18,9 +18,9 @@ IF(BUILD_PADCIRC)
     SET( PADCIRC3_SOURCES  src/writer.F )
 
     SET( PADCIRC4_SOURCES  src/write_output.F src/couple2swan.F src/adcirc.F src/subdomain.F 
-                           src/weir_boundary.F src/read_input.F src/cstart.F 
-                           src/hstart.F src/timestep.F src/vsmy.F 
-                           src/transport.F src/driver.F )
+                           src/weir_boundary.F src/wetdry.F src/gwce.F src/momentum.F 
+                           src/read_input.F src/cstart.F src/hstart.F 
+                           src/timestep.F src/vsmy.F src/transport.F src/driver.F )
 
     ADD_LIBRARY(templib_padcirc1 ${PADCIRC1_SOURCES})
     ADD_LIBRARY(templib_padcirc2 ${PADCIRC2_SOURCES})
