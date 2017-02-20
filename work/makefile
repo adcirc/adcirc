@@ -316,7 +316,8 @@ MESH_MSRC  =  mesh.F
 BND_MSRC   =  boundaries.F
 PREP_MSRC  =  presizes.F 
 PGLO_MSRC  =  pre_global.F
-ADC_MSRC   =  version.F sizes.F global.F global_3dvs.F 
+3D_MSRC    =  global_3dvs.F
+ADC_MSRC   =  version.F sizes.F global.F 
 POST_MSRC  =  post_global.F
 HARM_MSRC  =  harm.F  
 VORT_MSRC  =  vortex.F
@@ -332,6 +333,8 @@ COUP_MSRC  =  couple2swan.F
 KDTREE_MSRC = kdtree2.F
 XDMF_MSRC = xdmfio.F
 
+
+3D_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(3D_MSRC) )
 SUBD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBD_MSRC) )
 SUBP_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBP_MSRC) )
 CONT_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(CONT_MSRC) )
@@ -680,7 +683,7 @@ ifeq ($(XDMF),enable)
    WRITER_DEP := $(WRITER_DEP) $(O_DIR)xdmfio.o
 endif
 $(O_DIR)writer.o      : $(WRITER_DEP)
-$(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ) $(O_DIR)mesh.o
+$(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ) $(O_DIR)mesh.o $(O_DIR)global_3dvs.o
 $(O_DIR)harm.o        :  harm.F $(O_DIR)mesh.o
 $(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ)
 $(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ) 
@@ -712,6 +715,7 @@ $(O_DIR)write_output.o : $(WRITE_OUTPUT_DEP)
 $(O_DIR)xdmfio.o      : xdmfio.F $(O_DIR)mesh.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)control.o
 $(O_DIR)control.o     : control.F 
 $(O_DIR)subdomain.o   : subdomain.F 
+$(O_DIR)global_3dvs.o : global_3dvs.F $(O_DIR)global.o $(O_DIR)mesh.o 
 
 #  adcirc & $(PARALLEL_ADCIRC)
 
