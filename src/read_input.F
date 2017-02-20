@@ -67,8 +67,8 @@ C
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
-      NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir,
-     &  invertedBarometerOnElevationBoundary
+      NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,
+     &  rhoAir, invertedBarometerOnElevationBoundary
       NAMELIST /subdomainModeling/ subdomainOn
       NAMELIST /wetDryControl/ outputNodeCode, outputNOFF, noffActive
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
