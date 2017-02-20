@@ -29,5 +29,5 @@ fi
 #...Create links from the building directory back to
 #   the directory that is cached
 sudo ln -sf $installDirectory/xdmf_build/include/* /usr/include/.
-sudo ln -sf $installDirectory/xdmf_build/lib/lib/*.so /usr/lib/.
+sudo ln -sf $installDirectory/xdmf_build/lib/*.so /usr/lib/.
 sudo ln -sf $installDirectory/xdmf_build/lib/x86_64-linux-gnu/*.so /usr/lib/.
