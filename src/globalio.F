@@ -797,10 +797,16 @@ C
       integer :: i, istart, iend, iglobal, lun
       integer :: ioffset, j
 
-      if (WRITE_LOCAL_FILES) then
+      if (mnproc.eq.1.or.WRITE_LOCAL_FILES) then
         do i = 1, descript % num_records_this
-          write(lun , 1000) i, descript % array(i),
-     $      descript % array2(i)
+            if(abs(descript%specifier)==SPARSE_ASCII)then
+                if(nodecode(i)==0)cycle
+                write(lun , 1000) i, descript % array(i),
+     &              descript % array2(i)
+            else
+                write(lun , 1000) i, descript % array(i),
+     &              descript % array2(i)
+            endif
         end do
         return
       end if

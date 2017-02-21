@@ -3888,7 +3888,8 @@ C-----------------------------------------------------------------------
      &                         unpack_cmd)
       USE SIZES
       USE GLOBAL
-      USE GLOBAL_IO, ONLY : collectFullDomainArray, storeOne, writeSparse
+      USE GLOBAL_IO, ONLY : collectFullDomainArray, storeOne, storeTwo, 
+     &                      writeSparse
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY : writeOutArrayNetCDF
 #endif
@@ -4052,7 +4053,11 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
          descript % filepos = descript % filepos + descript % num_records_this
 
       CASE(SPARSE_ASCII)
-         CALL writeSparse(descript, timeLoc, it, storeOne) 
+         if(descript % num_items_per_record.eq.1)then
+             CALL writeSparse(descript, timeLoc, it, storeOne) 
+         elseif(descript % num_items_per_record.eq.2)then
+             CALL writeSparse(descript, timeLoc, it, storeTwo)
+         endif
 
       CASE(NETCDF3, NETCDF4) ! (portable)
 #ifdef ADCNETCDF
