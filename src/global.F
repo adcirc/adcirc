@@ -272,18 +272,23 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE, TARGET ::   CH1(:)
       REAL(SZ),ALLOCATABLE ::   ETAS(:), ETA0(:),UU0(:),VV0(:),ETAS0(:)
       REAL(SZ),ALLOCATABLE ::   UU1(:),VV1(:)
-      REAL(SZ),ALLOCATABLE ::   QX1(:),QX2(:),QY1(:),QY2(:)
+      REAL(SZ),ALLOCATABLE ::   QX1(:)
+      REAL(SZ),ALLOCATABLE,TARGET ::   QX2(:)
+      REAL(SZ),ALLOCATABLE ::   QY1(:)
+      REAL(SZ),ALLOCATABLE,TARGET ::   QY2(:)
       REAL(SZ),ALLOCATABLE ::   QX0(:),QY0(:)
       REAL(SZ),ALLOCATABLE ::   TK0(:),TK2(:)
       REAL(SZ),ALLOCATABLE ::  DP1(:),DP2(:) !TCM V50.66.01 FOR TIME VARYING BATHYMETRY
-      REAL(SZ),ALLOCATABLE ::   MOM_LV_X(:),MOM_LV_Y(:),GWCE_LV(:)
+      REAL(SZ),ALLOCATABLE,TARGET ::   MOM_LV_X(:)
+      REAL(SZ),ALLOCATABLE ::   MOM_LV_Y(:),GWCE_LV(:)
       REAL(SZ),ALLOCATABLE ::   CORIF(:)
       REAL(SZ),ALLOCATABLE ::   TPK(:),FFT(:)
       REAL(SZ),ALLOCATABLE ::   FACET(:),ETRF(:)
       REAL(SZ),ALLOCATABLE ::   FFF(:),FFACE(:)
       REAL(SZ),ALLOCATABLE ::   ESBIN1(:),ESBIN2(:)
       REAL(SZ),ALLOCATABLE ::   TEMP_LV_A(:,:),TEMP_LV_B(:,:)
-      REAL(SZ),ALLOCATABLE ::   QN0(:),QN1(:),QN2(:)
+      REAL(SZ),ALLOCATABLE ::   QN0(:),QN1(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: QN2(:)
       REAL(SZ),ALLOCATABLE ::   EN0(:),EN1(:),EN2(:)
       REAL(SZ),ALLOCATABLE ::   QNAM(:,:),QNPH(:,:)
       REAL(SZ),ALLOCATABLE ::   ENAM(:,:),ENPH(:,:)
@@ -380,7 +385,8 @@ C
 C...
 C...DECLARE REAL(8) AND CHAR VARIABLES, EQUIVALENCES
 C...
-      REAL(8) STATIM,REFTIM,DTDP
+      REAL(8) STATIM,REFTIM
+      REAL(8), TARGET :: DTDP
       REAL(8) WREFTIM,WTIMED,WTIME2,WTIME1,WTIMINC,QTIME1,QTIME2
       REAL(8) FTIMINC,ETIMINC,RSTIME1,RSTIME2,RSTIMINC
 
@@ -652,6 +658,11 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       REAL(8) :: BTIMINC ! TIME INCREMENT (SECONDS) FOR BATHYMETRY CHANGES USED FOR TIME VARYING BATHYMETRY
       REAL(8) :: BCHGTIMINC ! time increment (seconds) over which bathymetry changes during a btimeinc interval
       REAL(SZ),ALLOCATABLE, TARGET ::  DP00(:)
+
+! TCM v52.30.01 ADDITIONS FOR USING SMAGORINSKY eddy MODEL OPTIONS
+      REAL(SZ) :: SMAG_UPPER_LIM = 100.d0  ! m^2/s (default upper limit)
+      REAL(SZ) :: SMAG_LOWER_LIM = 1.0d-8  ! m^2/s (default lower limit)
+      LOGICAL :: SMAG_COMP_FLAG = .FALSE.   !BY DEFAULT DO NOT USE SMAG
       ! 
       ! all info needed for self describing dataset in XDMF
       type xdmfMetaData_t
@@ -1135,10 +1146,6 @@ C     the non-C3D case.
 
       ALLOCATE(AUV11(MNP),AUV12(MNP))
 
-      IF (C3D) THEN
-         ALLOCATE(DUU1(MNP),DUV1(MNP),DVV1(MNP),
-     &        BSX1(MNP),BSY1(MNP))
-      ENDIF
 
       ALLOCATE(EtaDisc(MNP))
       EtaDisc(:) = 0.0d0
