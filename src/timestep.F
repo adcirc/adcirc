@@ -497,7 +497,7 @@ C..RJW 3D for the 3D version of the code
       if(C3D) then
 C     3D.Set up the 3D friction coefficient
          CALL Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G, IFNLFA,
-     &        NP, TK, NFEN)
+     &        NP, TK, NFEN, Z0B)
 C
       endif
 
@@ -3152,6 +3152,7 @@ C     the screen.
 #endif
          ErrorElevExceeded = 0                ! Clint's Zombie Slyaer
          IF(ELMAX.GT.ErrorElev) THEN
+
             WRITE(ScreenUnit,1995)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
      &           KVMAX,MYPROC
@@ -3200,6 +3201,7 @@ C     the screen.
 #endif
          ENDIF
          IF(ELMAX.GT.ErrorElev) THEN
+            write(6,*) 'elmax, errorelev',elmax, errorelev !jgf
             Flag_ElevError = .true.
             WRITE(ScreenUnit,1996)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX

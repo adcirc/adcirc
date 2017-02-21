@@ -28,7 +28,7 @@ C-----------------------------------------------------------------------
       USE KDTREE2_MODULE     ! V49.48.02 tcm -- added for fast searching
       USE GLOBAL_3DVS, ONLY: C3D_PTrans, NSTA3DD, NSTA3DV, NSTA3DT,
      &    I3DSD,I3DSV,I3DST,I3DGD,I3DGV,I3DGT, NSTA3DD_G, NSTA3DV_G,
-     &    NSTA3DT_G
+     &    NSTA3DT_G, Z0B
       USE SUBDOMAIN, ONLY : subdomainOn
       USE WRITE_OUTPUT, ONLY : outputNodeCode, outputNOFF
       USE HARM
@@ -4156,7 +4156,7 @@ c     CALL READ_INPUT_3DDSS(STATIM,NT)
 C     RJWW jgf46.00 Initialize nodal attributes, now that grid has been read
 C     in from unit 14 file.
 C     RJW IOOS move until after ZOB definition
-      CALL InitNodalAttr(DP, NP, G, NScreen, ScreenUnit, MyProc, NAbOut)
+      CALL InitNodalAttr(DP, NP, G, NScreen, ScreenUnit, MyProc, NAbOut, Z0B)
 CS
 
 C...  INITIALIZE NIBNODECODE(I)
@@ -4431,6 +4431,8 @@ C
 #endif
 C
       ios = 0
+      DelT => DTDP                
+
 C
 C...  General invalid entry format statement used throughout
 C
