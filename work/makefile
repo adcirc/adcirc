@@ -537,9 +537,17 @@ endif
    $(PARALLEL_ADCIRC) :: $(MSG_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
 
-   $(LIBADC) :: $(O_DIR) $(MSG_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) 
-	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ)
+#   $(LIBADC) :: $(O_DIR) $(MSG_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) 
+#	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ)
+#	ar -ts $@
+
+#saeed test
+   $(LIBADC) :: $(O_DIR) $(MSG_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(MESH_MOBJ) $(BND_MOBJ) $(WIND_MOBJ) $(HARM_MOBJ)  $(WRIT_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ)
+	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(MESH_MOBJ) $(BND_MOBJ) $(WIND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ)
 	ar -ts $@
+
+
+
 
 #Casey 080106: Added the following lines.
    adcswan :: $(O_DIR)

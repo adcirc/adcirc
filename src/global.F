@@ -1381,6 +1381,9 @@ C
       RSNX2(:) = 0.d0
       RSNY2(:) = 0.d0
 
+      print *, "Saeed test  > size RSNY2 ", size(RSNY2)
+
+
       if (NCICE.NE.0) then
          ALLOCATE ( CICE1(MNP),CICE2(MNP),CICEOUT(MNP) ) !tcm v49.64.01 added
                                                         ! for ice concentration

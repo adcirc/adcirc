@@ -1,45 +1,18 @@
 # SRCDIR is set in makefile or on the compile line
 INCDIRS := -I . -I $(SRCDIR)/prep
 
-########################################################################
-# Compiler flags for Linux operating system on 64bit x86 CPU
-#
-ifeq ($(MACHINE)-$(OS),i686-mingw32)
-#
-# ***NOTE*** User must select between various Linux setups
-#            by commenting/uncommenting the appropriate compiler
-#
-compiler=gnu
-ifeq ($(compiler),gnu)
-  PPFC		:=  gfortran
-  FC		:=  gfortran
-  PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-none -march=corei7-avx -m64 -static
-  FFLAGS2	:=  $(FFLAGS1)
-  FFLAGS3	:=  $(FFLAGS1)
-  DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
-  DPRE		:=  -DREAL8 -DLINUX
-  IMODS 	:=  -I
-  CC		:= gcc
-  CCBE		:= $(CC)
-  CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX -march=corei7-avx -m64 -static-libgcc
-  CLIBS	:=
-  LIBS		:=
-  MSGLIBS	:=
-  ifeq ($(NETCDF),enable)
-        FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
-  endif
-  $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
-  ifneq ($(FOUND),TRUE)
-     FOUND := TRUE
-  else
-     MULTIPLE := TRUE
-  endif
-endif
-endif
-#$(MACHINE)
+INCDIRS += -I$(NETCDFHOME)/include/   
+LIBDIRS += -L$(NETCDFHOME)/lib/
 
+INCDIRS += -I$(HDF5HOME)/include/   
+LIBDIRS += -L$(HDF5HOME)/lib/
+
+LIBDIRS += -DALL_TRACE
+
+
+LIBSS   :=  -lnetcdf  -lnetcdff -lhdf5 -lhdf5_fortran
+
+FLIBS   := $(LIBDIRS)  $(LIBSS)
 
 
 ########################################################################
@@ -55,7 +28,6 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=intel
 #compiler=intel-ND
 #compiler=intel-lonestar
-#compiler=intel-sgi
 #compiler=cray_xt3
 #compiler=cray_xt4
 #compiler=cray_xt5
@@ -64,8 +36,6 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=diamond
 #compiler=kraken
 #compiler=utils
-#compiler=xtintel
-#compiler=circleci
 #
 #
 # Compiler Flags for gfortran and gcc
@@ -138,19 +108,11 @@ endif
 # feupdateenv until run time, thus avoiding the error message:
 # "feupdateenv is not implemented and will always fail"
 ifeq ($(compiler),intel)
-  PPFC            :=  ifort
+  PPFC          :=  ifort
   FC            :=  ifort
-  PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
-  ifeq ($(DEBUG),full)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -check all -ftrapuv -fpe0 -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
-  endif
-  ifeq ($(DEBUG),trace)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
-  endif
-  ifeq ($(DEBUG),netcdf_trace)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -DNETCDF_TRACE -DFULL_STACK -DFLUSH_MESSAGES
-  endif
+  PFC           :=  mpiifort
+#  PFC           :=  mpif90
+  FFLAGS1       :=  $(INCDIRS) -w -O3 -FI -assume byterecl -132 -i-dynamic -assume buffered_io
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA
@@ -161,54 +123,16 @@ ifeq ($(compiler),intel)
   endif
   IMODS         :=  -I
   CC            := icc
-  CCBE		:= $(CC)
-  CFLAGS        := $(INCDIRS) -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
-  ifeq ($(DEBUG),full)
-     CFLAGS        := $(INCDIRS) -g -O0 -march=k8 -m64 -mcmodel=medium -DLINUX
-  endif
+  CCBE          := $(CC)
+  CFLAGS        := $(INCDIRS) -O3 -m64 -mcmodel=medium -DLINUX
   CLIBS         :=
-  FLIBS          :=
+  FLIBS         :=
   MSGLIBS       :=
+  NETCDFHOME     :=/apps/netcdf/4.3.0-intel
+  HDF5HOME       :=/apps/hdf5/1.8.14-intel/lib/
   ifeq ($(NETCDF),enable)
-     ifeq ($(MACHINENAME),hatteras)
-        FLIBS       := $(FLIBS) -L/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3/lib -lnetcdff -lnetcdf
-        NETCDFHOME    :=/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3
-        FFLAGS1       :=$(FFLAGS1) -I/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3/include
-        FFLAGS2       :=$(FFLAGS1)
-        FFLAGS3       :=$(FFLAGS1)
-     endif
-     # jgf20150417 queenbee requires that the analyst load the netcdf and
-     # netcdf_fortran modules prior to compiling or executing ADCIRC
-     ifeq ($(MACHINENAME),queenbee)
-        FLIBS       := $(FLIBS) -L/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0/lib -lnetcdff -lnetcdf
-        NETCDFHOME    :=/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0
-     endif
-     ifeq ($(MACHINENAME),stampede)
-        NETCDFHOME :=/opt/apps/intel15/netcdf/4.3.3.1/x86_64
-        FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
-     endif
-     # jgf20150817: Adding support for spirit.afrl.hpc.mil;
-     # load the following modules: netcdf-fortran/intel/4.4.2
-     # and hdf5/intel/1.8.12 and hdf5-mpi/intel/sgimpt/1.8.12
-     ifeq ($(MACHINENAME),spirit) 
-        NETCDFHOME :=/app/wpostool/COST/netcdf-fortran-4.4.2/intel
-        FLIBS      := $(FLIBS) -L/app/wpostool/COST/netcdf-c-4.3.1.1/intel/lib -L$(NETCDFHOME)/lib -L/app/wpostool/COST/hdf5-mpi/1.8.12/intel/sgimpt/lib -lnetcdff -lnetcdf
-     endif
-     # jgf20150420 mike requires that the analyst add netcdf to the softenv
-     # with the following on the command line 
-     # soft add +netcdf-4.1.3-Intel-13.0.0
-     ifeq ($(MACHINENAME),mike)
-        FLIBS       := $(FLIBS) -L/usr/local/packages/netcdf/4.1.3/Intel-13.0.0/lib -lnetcdff -lnetcdf
-        NETCDFHOME    :=/usr/local/packages/netcdf/4.1.3/Intel-13.0.0
-     endif
-     ifeq ($(MACHINENAME),killdevil)
-        HDF5HOME       :=/nas02/apps/hdf5-1.8.5/lib
-        NETCDFHOME     :=/nas02/apps/netcdf-4.1.1
-        FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
-     endif
+        FLIBS          := $(FLIBS) -lnetcdff -L$(HDF5HOME) -lhdf5_fortran -lhdf5_hl -lhdf5
   endif
-  #jgf20110519: For netcdf on topsail at UNC, use
-  #NETCDFHOME=/ifs1/apps/netcdf/
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
      FOUND := TRUE
@@ -298,40 +222,6 @@ ifeq ($(compiler),intel-lonestar)
   TACC_HDF5_LIB=${HDF5HOME}lib
   ifeq ($(NETCDF),enable)
      FLIBS      := $(FLIBS) -I${TACC_NETCDF_INC} -L${TACC_NETCDF_LIB} -lnetcdf -lnetcdff -L${TACC_HDF5_LIB} -lhdf5 -lhdf5 -lz -lm
-  endif
-endif
-#
-# SGI ICE X (e.g. topaz@ERDC) using Intel compilers, added by TCM
-ifeq ($(compiler),intel-sgi)
-  PPFC          :=  ifort
-  FC            :=  ifort
-  PFC           :=  mpif90
-  CC            :=  icc -O2 -no-ipo
-  CCBE          :=  icc -O2 -no-ipo
-  FFLAGS1       :=  $(INCDIRS) -fixed -extend-source 132 -O2 -finline-limit=1000 -real-size 64 -no-ipo -assume buffered_io
-#  FFLAGS1      :=  $(INCDIRS) -Mextend -g -O0 -traceback
-  FFLAGS2       :=  $(FFLAGS1)
-  FFLAGS3       :=  $(FFLAGS1) -assume buffered_stdout
-  DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA
-  DPRE          :=  -DREAL8 -DLINUX
-  CFLAGS        :=  $(INCDIRS) -DLINUX
-  IMODS         :=  -module
-  FLIBS         :=
-  ifeq ($(NETCDF),enable)
-     ifeq ($(MACHINENAME),topaz)
-        NETCDFHOME  :=/apps/unsupported/netcdf/4.3.3.1-intel-15.0.3
-     endif
-     # for platforms other than topaz, specify NETCDFHOME on the command line
-     FLIBS       := $(FLIBS) -lnetcdff
-  endif
-  MSGLIBS       :=
-  BACKEND_EXEC  := metis_be adcprep_be
-  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
-  ifneq ($(FOUND),TRUE)
-     FOUND := TRUE
-  else
-     MULTIPLE := TRUE
   endif
 endif
 #
@@ -450,40 +340,7 @@ ifeq ($(compiler),cray_xt5)
   endif
 endif
 #
-# Cray-XC30/40 (e.g. armstrong@NAVO& lightning@afrl) using Intel compilers, added by TCM
-ifeq ($(compiler),xtintel)
-  PPFC          :=  ftn
-  FC            :=  ftn
-  PFC           :=  ftn
-  CC            :=  cc -O2 -no-ipo
-  CCBE          :=  cc -O2 -no-ipo
-  FFLAGS1       :=  $(INCDIRS) -fixed -extend-source 132 -O2 -default64 -finline-limit=1000 -real-size 64 -no-ipo -assume buffered_io
-#  FFLAGS1      :=  $(INCDIRS) -Mextend -g -O0 -traceback
-  FFLAGS2       :=  $(FFLAGS1)
-  FFLAGS3       :=  $(FFLAGS1) -assume buffered_stdout
-  DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA
-  DPRE          :=  -DREAL8 -DLINUX
-  CFLAGS        :=  $(INCDIRS) -DLINUX
-  IMODS         :=  -module
-  FLIBS         :=
-# When compiling with netCDF support, the HDF5 libraries must also
-# be linked in, so the user must specify HDF5HOME on the command line.
-# jgf20090518: on Jade, NETCDFHOME=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.0
-# jgf20090518: on Jade, HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.2/lib
-  ifeq ($(NETCDF),enable)
-     FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
-  endif
-  MSGLIBS       :=
-  BACKEND_EXEC  := metis_be adcprep_be
-  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
-  ifneq ($(FOUND),TRUE)
-     FOUND := TRUE
-  else
-     MULTIPLE := TRUE
-  endif
-endif
-#
+
 # Portland Group
 ifeq ($(compiler),pgi)
   PPFC		:=  pgf90
@@ -702,37 +559,6 @@ ifeq ($(compiler),kraken)
      MULTIPLE := TRUE
   endif
 endif
-#
-#
-# Compiler Flags for CircleCI Build Server
-ifeq ($(compiler),circleci)
-  PPFC		:=  gfortran
-  FC		:=  gfortran
-  PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O2 -g -mcmodel=medium -ffixed-line-length-none -m64 -mtune=native -march=native --coverage
-  FFLAGS2	:=  $(FFLAGS1)
-  FFLAGS3	:=  $(FFLAGS1)
-  DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
-  DPRE		:=  -DREAL8 -DLINUX -DADCSWAN
-  IMODS 	:=  -I
-  CC		:= gcc
-  CCBE		:= $(CC)
-  CFLAGS	:= $(INCDIRS) -O2 -g -mcmodel=medium -DLINUX -m64 -mtune=native -march=native --coverage
-  CLIBS	:=
-  LIBS		:=
-  MSGLIBS	:=
-  ifeq ($(NETCDF),enable)
-     FLIBS          := $(FLIBS) -lnetcdff
-  endif
-  $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
-  ifneq ($(FOUND),TRUE)
-     FOUND := TRUE
-  else
-     MULTIPLE := TRUE
-  endif
-endif
-#
 endif
 #$(MACHINE)
 ########################################################################
@@ -875,10 +701,7 @@ ifeq ($(compiler),gfortran)
     FFLAGS1	:=  $(INCDIRS) -pg -O0 -fprofile-arcs -ftest-coverage -ffixed-line-length-none 
   endif
   ifeq ($(DEBUG),full)
-    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND -DDEBUG_WARN_ELEV
-  endif
-  ifeq ($(DEBUG),full-not-warnelev)
-    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND 
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
   endif
   ifeq ($(DEBUG),full-not-fpe)
     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
