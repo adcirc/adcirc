@@ -52,7 +52,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #
 #compiler=gnu
 #compiler=g95
-#compiler=intel
+compiler=intel
 #compiler=intel-ND
 #compiler=intel-lonestar
 #compiler=intel-sgi
@@ -153,8 +153,8 @@ ifeq ($(compiler),intel)
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
-  DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DA            :=  -DREAL8 -DLINUX -DCSCA -DDEBUG_WARN_ELEV
+  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DDEBUG_WARN_ELEV
   DPRE          :=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
      DPRE          := $(DPRE) -DADCSWAN

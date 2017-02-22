@@ -1,3 +1,4 @@
+COMPILE.c := $(shell echo $(COMPILE.c) | sed 's/intel64//g')
 SHELL:=/bin/bash
 PWD=$(shell pwd)
 SRCDIR?=$(shell dirname $(PWD))

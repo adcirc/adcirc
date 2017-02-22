@@ -1,0 +1,756 @@
+----------------------------------
+Fri Jul 29 12:46:23 EDT 2016
+building adcprep
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I ../prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := -Lodir_metis -lmetis 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Fri Jul 29 12:49:31 EDT 2016
+building adcprep
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I ../prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := -Lodir_metis -lmetis 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Fri Jul 29 12:50:42 EDT 2016
+building padcirc
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I ../prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Fri Jul 29 12:53:43 EDT 2016
+building padcswan
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I ../prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Fri Jul 29 12:58:13 EDT 2016
+building adcprep
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI
+DPRE := -DREAL8 -DLINUX -DADCSWAN
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I ../prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := -Lodir_metis -lmetis 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 07:45:58 EDT 2016
+building adcprep
+PPFC := ifort -DADCNETCDF -I/include  -DHAVE_NETCDF4  -DNETCDF_CAN_DEFLATE 
+FC := ifort
+PFC := mpif90 -DADCNETCDF -I/include  -DHAVE_NETCDF4  -DNETCDF_CAN_DEFLATE 
+FFLAGS1 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io -DADCNETCDF -I/include  -DHAVE_NETCDF4  -DNETCDF_CAN_DEFLATE 
+FFLAGS2 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io -DADCNETCDF -I/include  -DHAVE_NETCDF4  -DNETCDF_CAN_DEFLATE 
+FFLAGS3 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io -DADCNETCDF -I/include  -DHAVE_NETCDF4  -DNETCDF_CAN_DEFLATE 
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI
+DPRE := -DREAL8 -DLINUX -DADCSWAN
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I ../prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := -Lodir_metis -lmetis -L/lib -lnetcdf 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := enable
+NETCDF4 := enable
+NETCDF4_COMPRESSION := enable
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 07:47:04 EDT 2016
+building adcprep
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI
+DPRE := -DREAL8 -DLINUX -DADCSWAN
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I ../prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := -Lodir_metis -lmetis 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 07:48:04 EDT 2016
+building padcirc
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I ../prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 07:50:49 EDT 2016
+building padcswan
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I ../prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 08:16:58 EDT 2016
+building adcprep
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI
+DPRE := -DREAL8 -DLINUX -DADCSWAN
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I ../prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := -Lodir_metis -lmetis 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 08:18:57 EDT 2016
+building padcirc
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I ../prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 08:21:17 EDT 2016
+building padcswan
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I ../prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 09:03:13 EDT 2016
+building aswip
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I ../prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 11:20:23 EDT 2016
+building adcswan
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I ../prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I ../prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 13:11:49 EDT 2016
+building adcprep
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := -Lodir_metis -lmetis 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 13:15:03 EDT 2016
+building adcprep
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := -Lodir_metis -lmetis 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 13:16:40 EDT 2016
+building adcprep
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI -DDEBUG_WARN_ELEV
+DPRE := -DREAL8 -DLINUX -DADCSWAN
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := -Lodir_metis -lmetis 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 13:17:24 EDT 2016
+building padcirc
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI -DDEBUG_WARN_ELEV
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 13:19:48 EDT 2016
+building padcswan
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI -DDEBUG_WARN_ELEV
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 13:24:22 EDT 2016
+building aswip
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI -DDEBUG_WARN_ELEV
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 13:30:52 EDT 2016
+building adcswan
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI -DDEBUG_WARN_ELEV
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 13:31:07 EDT 2016
+building adcswan
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI -DDEBUG_WARN_ELEV
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 13:40:44 EDT 2016
+building adcswan
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA -DDEBUG_WARN_ELEV
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI -DDEBUG_WARN_ELEV
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 21:06:34 EDT 2016
+building adcswan
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -g -O0 -traceback -debug all -check all -ftrapuv -fpe0 -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+FFLAGS2 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -g -O0 -traceback -debug all -check all -ftrapuv -fpe0 -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+FFLAGS3 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -g -O0 -traceback -debug all -check all -ftrapuv -fpe0 -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+DA := -DREAL8 -DLINUX -DCSCA -DDEBUG_WARN_ELEV
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI -DDEBUG_WARN_ELEV
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -g -O0 -march=k8 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 21:16:33 EDT 2016
+building adcswan
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -g -O0 -traceback -debug all -check all -ftrapuv -fpe0 -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+FFLAGS2 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -g -O0 -traceback -debug all -check all -ftrapuv -fpe0 -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+FFLAGS3 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -g -O0 -traceback -debug all -check all -ftrapuv -fpe0 -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+DA := -DREAL8 -DLINUX -DCSCA -DDEBUG_WARN_ELEV
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI -DDEBUG_WARN_ELEV
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -g -O0 -march=k8 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Mon Aug  1 21:24:24 EDT 2016
+building adcswan
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA -DDEBUG_WARN_ELEV
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI -DDEBUG_WARN_ELEV
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Thu Aug  4 09:22:07 EDT 2016
+building adcprep
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA -DDEBUG_WARN_ELEV
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI -DDEBUG_WARN_ELEV
+DPRE := -DREAL8 -DLINUX -DADCSWAN
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := -Lodir_metis -lmetis 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
+----------------------------------
+Thu Aug  4 09:22:57 EDT 2016
+building padcirc
+PPFC := ifort
+FC := ifort
+PFC := mpif90
+FFLAGS1 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS2 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+FFLAGS3 := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+DA := -DREAL8 -DLINUX -DCSCA -DDEBUG_WARN_ELEV
+DP := -DREAL8 -DLINUX -DCSCA -DCMPI -DDEBUG_WARN_ELEV
+DPRE := -DREAL8 -DLINUX
+IMODS := -I
+CC := icc
+CCBE := icc
+CFLAGS := -I . -I /home/jcdietri/Padcirc/160728/adcirc-cg/prep -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+CLIBS := 
+LIBS := 
+MSGLIBS := 
+compiler := intel
+MACHINENAME := 
+NETCDF := 
+NETCDF4 := 
+NETCDF4_COMPRESSION := 
+XDMF := 
+ifort (IFORT) 16.0.0 20150815
+----------------------------------
