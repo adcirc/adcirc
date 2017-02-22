@@ -1900,12 +1900,6 @@ C...
       if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)  ! NCSU Subdomain
 
-
-      if(subdomainOn.and.enforceBN.eq.1) call readFort019(it)  ! NCSU Subdomain
-      if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
-      if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)  ! NCSU Subdomain
-
-
 C...
 C...  Compute the water surface elevation from the GWCE form of the 2D
 C...  continuity eq.
