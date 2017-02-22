@@ -496,10 +496,17 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
             LSYXGradA=(VV1(NM1)*FDX1+VV1(NM2)*FDX2+VV1(NM3)*FDX3)/2.d0   !A*DVDX
             LSYYGradA=(VV1(NM1)*FDY1+VV1(NM2)*FDY2+VV1(NM3)*FDY3)/2.d0   !A*DVDY
             EVMEle=NCEle*(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
-            IF(CSmag_Eh) THEN  !If using Smagorinski vertically-integrated lateral stress coefficient
+            !
+            ! If using Smagorinski vertically-integrated lateral stress coefficient
+            IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN  
                EVMSmag=EVMEle*
      &             sqrt((LSXXGradA-LSYYGradA)*(LSXXGradA-LSYYGradA)
      &                 +(LSYXGradA+LSXYGradA)*(LSYXGradA+LSXYGradA))
+               !tcm v52.30.01 added test for limits
+               IF(Smag_Comp_Flag) then
+                  IF (EVMSmag .gt. SMAG_UPPER_LIM) EVMSmag = SMAG_UPPER_LIM
+                  IF (EVMSmag .lt. SMAG_LOWER_LIM) EVMSmag = SMAG_LOWER_LIM
+               ENDIF
                EVMEle=EVMSmag
             ENDIF
             LSXXEle = LSXXGradA*EVMEle
@@ -573,15 +580,20 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
             FDY2 = X(NM1)-X(NM3)                         !a2
             FDY3 = X(NM2)-X(NM1)                         !a3
             EVMEle=NCEle*(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
-            IF(CSmag_Eh) THEN  !If using Smagorinski vertically-integrated lateral stress coefficient
-              LSXXGradA=(UU1(NM1)*FDX1+UU1(NM2)*FDX2+UU1(NM3)*FDX3)/2.d0
-              LSXYGradA=(UU1(NM1)*FDY1+UU1(NM2)*FDY2+UU1(NM3)*FDY3)/2.d0
-              LSYXGradA=(VV1(NM1)*FDX1+VV1(NM2)*FDX2+VV1(NM3)*FDX3)/2.d0
-              LSYYGradA=(VV1(NM1)*FDY1+VV1(NM2)*FDY2+VV1(NM3)*FDY3)/2.d0
-              EVMSmag=EVMEle*
+            IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN  !If using Smagorinski vertically-integrated lateral stress coefficient
+               LSXXGradA=(UU1(NM1)*FDX1+UU1(NM2)*FDX2+UU1(NM3)*FDX3)/2.d0
+               LSXYGradA=(UU1(NM1)*FDY1+UU1(NM2)*FDY2+UU1(NM3)*FDY3)/2.d0
+               LSYXGradA=(VV1(NM1)*FDX1+VV1(NM2)*FDX2+VV1(NM3)*FDX3)/2.d0
+               LSYYGradA=(VV1(NM1)*FDY1+VV1(NM2)*FDY2+VV1(NM3)*FDY3)/2.d0
+               EVMSmag=EVMEle*
      &            sqrt((LSXXGradA-LSYYGradA)*(LSXXGradA-LSYYGradA)
      &                +(LSYXGradA+LSXYGradA)*(LSYXGradA+LSXYGradA))
-              EVMEle=EVMSmag
+               ! tcm v52.30.01 added test for limits
+               IF(Smag_Comp_Flag) then
+                  IF (EVMSmag .gt. SMAG_UPPER_LIM) EVMSmag = SMAG_UPPER_LIM
+                  IF (EVMSmag .lt. SMAG_LOWER_LIM) EVMSmag = SMAG_LOWER_LIM
+               ENDIF
+               EVMEle=EVMSmag
             ENDIF
             LSXXGradA=(QX1(NM1)*FDX1+QX1(NM2)*FDX2+QX1(NM3)*FDX3)/2.d0
             LSXYGradA=(QX1(NM1)*FDY1+QX1(NM2)*FDY2+QX1(NM3)*FDY3)/2.d0
@@ -1413,10 +1425,16 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
             LSYXGradA=(VV1(NM1)*FDX1+VV1(NM2)*FDX2+VV1(NM3)*FDX3)/2.d0   !A*DVDX
             LSYYGradA=(VV1(NM1)*FDY1+VV1(NM2)*FDY2+VV1(NM3)*FDY3)/2.d0   !A*DVDY
             EVMEle=NCEle*(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
-            IF(CSmag_Eh) THEN  !If using Smagorinski vertically-integrated lateral stress coefficient
+            ! If using Smagorinski vertically-integrated lateral stress coefficient
+            IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN  
                EVMSmag=EVMEle*
      &             sqrt((LSXXGradA-LSYYGradA)*(LSXXGradA-LSYYGradA)
      &                 +(LSYXGradA+LSXYGradA)*(LSYXGradA+LSXYGradA))
+               !tcm v52.30.01 added test for limits
+               IF(Smag_Comp_Flag) then
+                  IF (EVMSmag .gt. SMAG_UPPER_LIM) EVMSmag = SMAG_UPPER_LIM
+                  IF (EVMSmag .lt. SMAG_LOWER_LIM) EVMSmag = SMAG_LOWER_LIM
+               ENDIF
                EVMEle=EVMSmag
             ENDIF
             LSXXEle = LSXXGradA*EVMEle
@@ -1490,15 +1508,21 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
             FDY2 = X(NM1)-X(NM3)                         !a2
             FDY3 = X(NM2)-X(NM1)                         !a3
             EVMEle=NCEle*(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
-            IF(CSmag_Eh) THEN  !If using Smagorinski vertically-integrated lateral stress coefficient
-              LSXXGradA=(UU1(NM1)*FDX1+UU1(NM2)*FDX2+UU1(NM3)*FDX3)/2.d0
-              LSXYGradA=(UU1(NM1)*FDY1+UU1(NM2)*FDY2+UU1(NM3)*FDY3)/2.d0
-              LSYXGradA=(VV1(NM1)*FDX1+VV1(NM2)*FDX2+VV1(NM3)*FDX3)/2.d0
-              LSYYGradA=(VV1(NM1)*FDY1+VV1(NM2)*FDY2+VV1(NM3)*FDY3)/2.d0
-              EVMSmag=EVMEle*
+            ! If using Smagorinski vertically-integrated lateral stress coefficient
+            IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN
+               LSXXGradA=(UU1(NM1)*FDX1+UU1(NM2)*FDX2+UU1(NM3)*FDX3)/2.d0
+               LSXYGradA=(UU1(NM1)*FDY1+UU1(NM2)*FDY2+UU1(NM3)*FDY3)/2.d0
+               LSYXGradA=(VV1(NM1)*FDX1+VV1(NM2)*FDX2+VV1(NM3)*FDX3)/2.d0
+               LSYYGradA=(VV1(NM1)*FDY1+VV1(NM2)*FDY2+VV1(NM3)*FDY3)/2.d0
+               EVMSmag=EVMEle*
      &            sqrt((LSXXGradA-LSYYGradA)*(LSXXGradA-LSYYGradA)
      &                +(LSYXGradA+LSXYGradA)*(LSYXGradA+LSXYGradA))
-              EVMEle=EVMSmag
+               !tcm v52.30.01 added test for limits
+               IF(Smag_Comp_Flag) then
+                  IF (EVMSmag .gt. SMAG_UPPER_LIM) EVMSmag = SMAG_UPPER_LIM
+                  IF (EVMSmag .lt. SMAG_LOWER_LIM) EVMSmag = SMAG_LOWER_LIM
+               ENDIF
+               EVMEle=EVMSmag
             ENDIF
             LSXXGradA=(QX1(NM1)*FDX1+QX1(NM2)*FDX2+QX1(NM3)*FDX3)/2.d0
             LSXYGradA=(QX1(NM1)*FDY1+QX1(NM2)*FDY2+QX1(NM3)*FDY3)/2.d0

@@ -218,12 +218,18 @@ C...  Compute element averaged quantities
          DV1DYA=(VV1(NM1)*FDY1+VV1(NM2)*FDY2+VV1(NM3)*FDY3)/2.d0
 
          EVMEle=(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
-         IF(CSmag_Eh) THEN  !If using Smagorinski vertically-integrated lateral stress coefficient
+         !If using Smagorinski vertically-integrated lateral stress coefficient
+         IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN  
             EVMSmag=EVMEle*
      &             sqrt((DU1DXA-DV1DYA)*(DU1DXA-DV1DYA)
      &                 +(DU1DYA+DV1DXA)*(DU1DYA+DV1DXA))
+            !tcm v52.30.01 added test for limits
+            IF(Smag_Comp_Flag) then
+               IF (EVMSmag .gt. SMAG_UPPER_LIM) EVMSmag = SMAG_UPPER_LIM
+               IF (EVMSmag .lt. SMAG_LOWER_LIM) EVMSmag = SMAG_LOWER_LIM
+            ENDIF
             EVMEle=EVMSmag
-         ENDIF
+         ENDIF         
 
 C...  Compute terms associated with the barotropic pressure
 
@@ -948,12 +954,17 @@ C...  Compute element averaged quantities
          DV1DX2A=V1N1*FDX1+V1N2*FDX2+V1N3*FDX3
          DV1DY2A=V1N1*FDY1+V1N2*FDY2+V1N3*FDY3
 
-         EVMEle=(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
-         IF(CSmag_Eh) THEN  !If using Smagorinski vertically-integrated lateral stress coefficient
-
+         EVMEle=(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0 
+         !If using Smagorinski vertically-integrated lateral stress coefficient         
+         IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN  
             EVMSmag=0.5d0*EVMEle*
      &             sqrt((DU1DX2A-DV1DY2A)*(DU1DX2A-DV1DY2A)
      &                 +(DU1DY2A+DV1DX2A)*(DU1DY2A+DV1DX2A))
+            !tcm v52.30.01 added test for limits
+            IF(Smag_Comp_Flag) then
+               IF (EVMSmag .gt. SMAG_UPPER_LIM) EVMSmag = SMAG_UPPER_LIM
+               IF (EVMSmag .lt. SMAG_LOWER_LIM) EVMSmag = SMAG_LOWER_LIM
+            ENDIF
             EVMEle=EVMSmag
          ENDIF
 
@@ -1767,10 +1778,16 @@ C...  Compute element averaged quantities
          DV2DYA=(VV2(NM1)*FDY1+VV2(NM2)*FDY2+VV2(NM3)*FDY3)/2.d0
 
          EVMEle=(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
-         IF(CSmag_Eh) THEN  !If using Smagorinski vertically-integrated lateral stress coefficient
+         !If using Smagorinski vertically-integrated lateral stress coefficient
+         IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN  
             EVMSmag=EVMEle*
      &             sqrt((DU1DXA-DV1DYA)*(DU1DXA-DV1DYA)
      &                 +(DU1DYA+DV1DXA)*(DU1DYA+DV1DXA))
+            !tcm v52.30.01 added test for limits
+            IF(Smag_Comp_Flag) then
+               IF (EVMSmag .gt. SMAG_UPPER_LIM) EVMSmag = SMAG_UPPER_LIM
+               IF (EVMSmag .lt. SMAG_LOWER_LIM) EVMSmag = SMAG_LOWER_LIM
+            ENDIF
             EVMEle=EVMSmag
          ENDIF
 
