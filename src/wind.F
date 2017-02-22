@@ -53,6 +53,7 @@ C
       REAL(SZ) :: WindDragLimit          ! maximum wind drag value
       CHARACTER(len=10) :: DragLawString ! controls wind drag formulation
 
+
       ! used for vis/diagnostics on nws19 and nws20
       LOGICAL :: writeFullCircleRmaxes = .false.
       LOGICAL :: writeRadialVandP = .false.
@@ -196,7 +197,10 @@ C
 C     ----------------------------------------------------------------
       REAL(SZ) FUNCTION WindDrag(WindSpeed, NodeNumber)
       !Casey 110518: Added variables for Mark Powell's sector-based wind drag.
-      USE GLOBAL, ONLY: DEG2RAD
+      USE GLOBAL, ONLY: DEG2RAD, windDragOut
+#ifdef CSWAN
+     &                  ,SWAN_WDragCo
+#endif
       USE MESH, ONLY : SFEA, SLAM
       REAL(SZ) WindSpeed
       ! jgf50.32: Even if present, NodeNumber is ignored by Garratt formulation
@@ -220,6 +224,12 @@ C
       CASE("Garratt","GARRATT","garratt","default")
          WindDrag = 0.001d0*(0.75d0+0.067d0*WindSpeed)
          IF(WindDrag.gt.WindDragLimit) WindDrag=WindDragLimit
+C
+C Matt 131008: Added SWAN's swell-based wind drag.
+#ifdef CSWAN
+      CASE("Swell","SWELL","swell")
+         WindDrag = SWAN_WDragCo(NodeNumber)
+#endif
 C
 Casey 110518: Added Mark Powell's sector-based wind drag.
       CASE("Powell","POWELL","powell")
@@ -370,6 +380,9 @@ C.. Apply a weighted average.
 C
       END SELECT
 C
+      !@jasonfleming: record wind drag at all nodes for writing to output files
+      windDragOut(nodeNumber) = windDrag
+      
       RETURN
 C     ----------------------------------------------------------------
       END FUNCTION WindDrag
