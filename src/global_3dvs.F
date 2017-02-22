@@ -23,42 +23,55 @@ C...
      &     MYProc,
      &     INPUTDIR,
      &     LOCALDIR
-
+     
       USE GLOBAL,
      &     ONLY :
-     &       WSX1, WSY1,                   !WSX1(MNP),WSY1(MNP) = Wind stress components at time level s
-     &       WSX2, WSY2,                   !WSX2(MNP),WSY2(MNP) = Wind stress components at time level s+1
-     &       BSX => BSX1, BSY => BSY1,     !BSX(MNP),BSY(MNP) = bottom stress computed after velocity solution
-     &       UU => UU2, VV => VV2,         !UU(MNP),VV(MNP) = vertically averaged velocity components
-     &       DAFluxX => QX2, DAFluxY => QY2,
-     &       DUU => DUU1, DUV => DUV1, DVV => DVV1,   !DUU(MNP),DVV(MNP),DUV(MNP) = velocity dispersion terms
+     &       WSX1, WSY1,     !WSX1(MNP),WSY1(MNP) = Wind stress components at time level s
+     &       WSX2, WSY2,     !WSX2(MNP),WSY2(MNP) = Wind stress components at time level s+1
      &       DASigT,
-     &       ETA1, ETA2,                   !ETA1(MNP),ETA2(MNP) = water surf elev at time levels s, s+1
-     &       CORIF,                        !CORIF(MNP) = nodal values of Coriolis parameter
-     &       BTP => MOM_LV_X,              !BTP(MNP) = barotropic pressure (incl TP & wl) at time levels s+1/2
-     &       QNORMSP1 => QN2,              !QNORMSP1(MNVel) = specified normal flux boundary condition at time level s+1
+     &       ETA1, ETA2,     !ETA1(MNP),ETA2(MNP) = water surf elev at time levels s, s+1
+     &       CORIF,          !CORIF(MNP) = nodal values of Coriolis parameter
      &       IFNLCT,                       !nonlinear advection flag (1=yes, 0=no) (jgf45.11)
 Corbitt 120328: Apply Advection Locally
-     &       IFNLCTE,                      !Global nonlinear advection flag (1=yes, 0=no)
-     &       IFNLFA,                       !nonlinear finite amplitude flag (1=yes,0=no) (jgf45.11)
-     &       NScreen,                      !flag to suppress or allow screen output
-     &       ScreenUnit,                   !i/o for screen output
-     &       IHOT,                         !flag to specify if coldstart (=0) or hotstart file to read from (63 or 64)
-     &       IHOTSTP,                      !hotstart file record counter
+     &       IFNLCTE,        !Global nonlinear advection flag (1=yes, 0=no)
+     &       IFNLFA,         !nonlinear finite amplitude flag (1=yes,0=no) (jgf45.11)
+     &       NScreen,        !flag to suppress or allow screen output
+     &       ScreenUnit,     !i/o for screen output
+     &       IHOT,           !flag to specify if coldstart (=0) or hotstart file to read from (63 or 64)
+     &       IHOTSTP,        !hotstart file record counter
      &       NWS,
-     &       IDen,                         !flag telling whether salinity, temperature and/or sigmaT are being used
+     &       IDen,           !flag telling whether salinity, temperature and/or sigmaT are being used
      &       RhoWat0, SigT0, G,
      &       RUNDES, RDES4, RDES8,
      &       RUNID, RID4, RID8,
      &       CBaroclinic,
      &       C3DVS,
-     &       DelT => DTDP,                 !DelT = altername for timestep real(8)
-     &       DTDP,                         !DTDP = timestep declared as real(8)
+     &       DTDP,           !DTDP = timestep declared as real(8)
      &       allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
      &       setMessageSource, unsetMessageSource
       SAVE
 
 C...DECLARE 3D GLOBAL ARRAYS
+
+      ! jgf: Explicitly declare pointer variables instead of assigning
+      ! them in the USE GLOBAL, ONLY statement above.
+      ! BSX(MNP),BSY(MNP) = bottom stress computed after velocity solution
+      REAL(SZ), POINTER :: BSX(:)  ! => BSX1
+      REAL(SZ), POINTER :: BSY(:)  ! => BSY1
+      ! UU(MNP),VV(MNP) = vertically averaged velocity components
+      REAL(SZ), POINTER :: UU(:)   ! => UU2
+      REAL(SZ), POINTER :: VV(:)   ! => VV2
+      REAL(SZ), POINTER :: DAFluxX(:)   ! => QX2
+      REAL(SZ), POINTER :: DAFluxY(:)   ! => QY2
+      ! DUU(MNP),DVV(MNP),DUV(MNP) = velocity dispersion terms
+      REAL(SZ), POINTER :: DUU(:)       ! => DUU1
+      REAL(SZ), POINTER :: DUV(:)       ! => DUV1
+      REAL(SZ), POINTER :: DVV(:)       ! => DVV1
+      ! BTP(MNP) = barotropic pressure (incl TP & wl) at time levels s+1/2
+      REAL(SZ), POINTER :: BTP(:)       ! => MOM_LV_X
+      ! QNORMSP1(MNVel) = specified normal flux boundary condition at time level s+1
+      REAL(SZ), POINTER :: QNORMSP1(:)  ! => QN2
+      REAL(SZ), POINTER :: DelT    !DelT = altername for timestep real(8)                
 
 c.RJW merged 9/02/2008 Casey 071219: Added the following variable for cumulative mass balance.
       REAL(SZ) :: MASSCUM
@@ -310,6 +323,14 @@ C
 C     Allocate space for arrays used in 3D VS routines
 C
       SUBROUTINE ALLOC_3DVS()
+      USE GLOBAL, ONLY : DUU1, DUV1, DVV1, BSX1, BSY1, UU2, VV2,
+     &   QX2, QY2, QN2, MOM_LV_X
+      USE BOUNDARIES, ONLY : NETA, NVEL
+      IMPLICIT NONE
+      ! jgf: Moved the following line from alloc_main1a since it only 
+      ! applies to 3D.
+      ALLOCATE(DUU1(MNP),DUV1(MNP),DVV1(MNP),
+     &        BSX1(MNP),BSY1(MNP))
       ALLOCATE( SIGMA(NFEN), EVTOT(NFEN) )
       ALLOCATE( GAMMA(NFEN), INM(NFEN,3), LVN(NFEN) )
       ALLOCATE( Q(MNP,NFEN), WZ(MNP,NFEN) )
@@ -333,6 +354,22 @@ C   kmd - add arrays for river boundary condition in baroclinic simulation
       ALLOCATE( BCRivSal(NVEL,NFEN), BCRivSalN1(NVEL,NFEN) )
       ALLOCATE( BCRivSalN2(NVEL,NFEN), BCRivTemp(NVEL,NFEN) )
       ALLOCATE( BCRivTempN1(NVEL,NFEN), BCRivTempN2(NVEL,NFEN) )
+      !
+      ! jgf: Assign pointers explicitly here after memory allocation 
+      ! for targets in 2DDI code instead of assigning them in the 
+      ! USE GLOBAL, ONLY statement above.  
+      BSX => BSX1
+      BSY => BSY1
+      UU => UU2
+      VV => VV2
+      DAFluxX => QX2
+      DAFluxY => QY2
+      DUU => DUU1
+      DUV => DUV1
+      DVV => DVV1
+      BTP => MOM_LV_X  
+      QNORMSP1 => QN2   
+
       RETURN
       END SUBROUTINE ALLOC_3DVS
 
@@ -340,6 +377,7 @@ C
 C     Allocate space for arrays used in 3D Density station output
 C
       SUBROUTINE ALLOC_3DSD()
+      IMPLICIT NONE
       ALLOCATE( NE3DD(MNSta3DD) )
       ALLOCATE( StaI3DD1(MNSta3DD), StaI3DD2(MNSta3DD),
      &                              StaI3DD3(MNSta3DD) )
@@ -355,6 +393,7 @@ C
 C     Allocate space for arrays used in 3D Velocity station output
 C
       SUBROUTINE ALLOC_3DSV()
+      IMPLICIT NONE
       ALLOCATE( NE3DV(MNSta3DV) )
       ALLOCATE( StaI3DV1(MNSta3DV), StaI3DV2(MNSta3DV),
      &                              StaI3DV3(MNSta3DV) )
@@ -369,6 +408,7 @@ C
 C     Allocate space for arrays used in 3D Turbulence station output
 C
       SUBROUTINE ALLOC_3DST()
+      IMPLICIT NONE
       ALLOCATE( NE3DT(MNSta3DT) )
       ALLOCATE( StaI3DT1(MNSta3DT), StaI3DT2(MNSta3DT),
      &                              StaI3DT3(MNSta3DT) )

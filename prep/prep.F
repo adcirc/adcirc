@@ -1986,6 +1986,13 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
      &       inundationOutput,' inunThresh=',inunThresh," /"
          endif
 
+c...     tcm v52.30.01 additions for Smag_Control Namelist
+         IF (FOUND_SMAG_NML) then  !If there was a namelist in the original fort.15 put it in the decomp 15's
+            write(15,*) '! -- Begin Smagorinski Inputs --'
+            write(15,Smag_Control)
+            write(15,*) '! -- End Smagorinski Inputs --'
+         ENDIF
+
          CLOSE(15)
 C
  1000 CONTINUE
