@@ -553,6 +553,8 @@
       USE SWCOMM3                                                         40.41
       USE SWCOMM4                                                         40.41
 !ADC      USE WIND, ONLY: WindDrag                                            41.20
+!MVB
+!ADC      USE Couple2Swan, ONLY: ComputeSwanWindDrag
 !
       IMPLICIT NONE
 !
@@ -1058,6 +1060,9 @@
         FPM =  GRAV / ( 28.0 * UFRIC )
 
       END IF
+! MVB
+!ADC        CALL ComputeSwanWindDrag(CDRAG,NodeNumber)
+!
 !
 !     *** test output ***
 !

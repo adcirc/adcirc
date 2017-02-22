@@ -548,6 +548,22 @@ C-----------------------------------------------------------------------
       END SUBROUTINE ComputeWaveDrivenForces
 C-----------------------------------------------------------------------
 
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C       C O M P U T E  S W A N  W I N D  D R A G        
+C-----------------------------------------------------------------------
+C     @mattbilskie
+C-----------------------------------------------------------------------
+      SUBROUTINE ComputeSwanWindDrag(CDRAG,NodeNumber)
+      USE GLOBAL, ONLY: NP_G, SWAN_WDragCo
+      IMPLICIT NONE 
+      REAL :: CDRAG
+      INTEGER :: NodeNumber
+      IF(.NOT.ALLOCATED(SWAN_WDragCo))  ALLOCATE(SWAN_WDragCo(NP_G))
+      SWAN_WDragCo(NodeNumber) = CDRAG
+C-----------------------------------------------------------------------
+      END SUBROUTINE ComputeSwanWindDrag
+C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E

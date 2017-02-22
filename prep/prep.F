@@ -1939,7 +1939,8 @@ C
 
             write(15,*) "&metControl "
             write(15,*) "    WindDragLimit=",Winddraglimit,","
-            write(15,*) "    DragLawString='",Draglawstring,"',"
+            write(15,*) "    DragLawString='",trim(Draglawstring),"',"
+            write(15,*) "    outputWindDrag=",outputWindDrag,","            
             write(15,*) "    rhoAir=",rhoAir,","
             write(15,*) "    invertedBarometerOnElevationBoundary=",
      &                        invertedBarometerOnElevationBoundary
@@ -1985,6 +1986,13 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
      &       '&inundationOutputControl inundationOutput=',
      &       inundationOutput,' inunThresh=',inunThresh," /"
          endif
+
+c...     tcm v52.30.01 additions for Smag_Control Namelist
+         IF (FOUND_SMAG_NML) then  !If there was a namelist in the original fort.15 put it in the decomp 15's
+            write(15,*) '! -- Begin Smagorinski Inputs --'
+            write(15,Smag_Control)
+            write(15,*) '! -- End Smagorinski Inputs --'
+         ENDIF
 
          CLOSE(15)
 C
