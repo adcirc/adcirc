@@ -63,6 +63,9 @@ ENABLE_LANGUAGE(C)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/CMakeFiles)
 ###########################################################################
 
+#...Include Macros to build components
+INCLUDE(${CMAKE_SOURCE_DIR}/cmake/macros.cmake)
+
 #...Determine architecture specific parameters
 INCLUDE(${CMAKE_SOURCE_DIR}/cmake/architecture.cmake)
 
@@ -86,6 +89,9 @@ INCLUDE(${CMAKE_SOURCE_DIR}/cmake/mkdir.cmake)
 
 #...Build ADCIRC
 INCLUDE(${CMAKE_SOURCE_DIR}/cmake/adcirc.cmake)
+
+#...Build METIS
+INCLUDE(${CMAKE_SOURCE_DIR}/cmake/metis.cmake)
 
 #...Build ADCPREP
 INCLUDE(${CMAKE_SOURCE_DIR}/cmake/adcprep.cmake)
