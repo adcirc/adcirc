@@ -1941,7 +1941,8 @@ C
 
             write(15,*) "&metControl "
             write(15,*) "    WindDragLimit=",Winddraglimit,","
-            write(15,*) "    DragLawString='",Draglawstring,"',"
+            write(15,*) "    DragLawString='",trim(Draglawstring),"',"
+            write(15,*) "    outputWindDrag=",outputWindDrag,","            
             write(15,*) "    rhoAir=",rhoAir,","
             write(15,*) "    invertedBarometerOnElevationBoundary=",
      &                        invertedBarometerOnElevationBoundary
