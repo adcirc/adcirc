@@ -317,7 +317,8 @@ MESH_MSRC  =  mesh.F
 BND_MSRC   =  boundaries.F
 PREP_MSRC  =  presizes.F 
 PGLO_MSRC  =  pre_global.F
-ADC_MSRC   =  version.F sizes.F global.F global_3dvs.F 
+3D_MSRC    =  global_3dvs.F
+ADC_MSRC   =  version.F sizes.F global.F 
 POST_MSRC  =  post_global.F
 HARM_MSRC  =  harm.F  
 VORT_MSRC  =  vortex.F
@@ -333,6 +334,8 @@ COUP_MSRC  =  couple2swan.F
 KDTREE_MSRC = kdtree2.F
 XDMF_MSRC = xdmfio.F
 
+
+3D_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(3D_MSRC) )
 SUBD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBD_MSRC) )
 SUBP_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBP_MSRC) )
 CONT_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(CONT_MSRC) )
@@ -629,7 +632,7 @@ help:
 $(O_DIR)version.o     :  version.F
 $(O_DIR)presizes.o    :  presizes.F $(ADC_MOBJ) $(WIND_MOBJ)
 $(O_DIR)kdtree2.o     :  kdtree2.F $(O_DIR)sizes.o
-$(O_DIR)pre_global.o  :  pre_global.F  $(O_DIR)mesh.o $(KDTREE_MOBJ) $(PREP_MOBJ)
+$(O_DIR)pre_global.o  :  pre_global.F  $(O_DIR)mesh.o $(KDTREE_MOBJ) $(PREP_MOBJ) $(O_DIR)global_3dvs.o
 $(O_DIR)mesh.o        :  mesh.F $(O_DIR)version.o $(O_DIR)global.o $(O_DIR)boundaries.o 
 $(O_DIR)boundaries.o  :  boundaries.F $(O_DIR)sizes.o
 $(O_DIR)subprep.o     :  subprep.F $(O_DIR)subprep.o
@@ -671,7 +674,7 @@ $(O_DIR)version.o     :  version.F
 $(O_DIR)sizes.o       :  sizes.F
 $(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o $(O_DIR)kdtree2.o
 $(O_DIR)nodalattr.o   :  nodalattr.F  $(ADC_MOBJ) $(MESH_MOBJ) 
-$(O_DIR)messenger.o   :  messenger.F  $(ADC_MOBJ)
+$(O_DIR)messenger.o   :  messenger.F  $(ADC_MOBJ) $(O_DIR)global_3dvs.o
 #!st3 100711: Added globalio.o to writer.F for HSWRITER MODULE
 WRITER_DEP := writer.F  $(O_DIR)messenger.o $(O_DIR)globalio.o
 ifeq ($(NETCDF),enable)
@@ -681,14 +684,14 @@ ifeq ($(XDMF),enable)
    WRITER_DEP := $(WRITER_DEP) $(O_DIR)xdmfio.o
 endif
 $(O_DIR)writer.o      : $(WRITER_DEP)
-$(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ) $(O_DIR)mesh.o
+$(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ) $(O_DIR)mesh.o $(O_DIR)global_3dvs.o
 $(O_DIR)harm.o        :  harm.F $(O_DIR)mesh.o
 $(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ)
 $(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ) 
 $(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ) 
 $(O_DIR)rs2.o         :  rs2.F  $(VORT_MOBJ) 
 $(O_DIR)itpackv.o     :  itpackv.F    $(ADC_MOBJ)
-$(O_DIR)netcdfio.o    :  netcdfio.F  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)
+$(O_DIR)netcdfio.o    :  netcdfio.F  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(O_DIR)global_3dvs.o
 #Casey 090302: Added the next line.
 $(O_DIR)couple2swan.o :  couple2swan.F $(O_DIR)write_output.o
 # tcm v49.48.01 added for fast search algorithm
@@ -713,6 +716,7 @@ $(O_DIR)write_output.o : $(WRITE_OUTPUT_DEP)
 $(O_DIR)xdmfio.o      : xdmfio.F $(O_DIR)mesh.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)control.o
 $(O_DIR)control.o     : control.F 
 $(O_DIR)subdomain.o   : subdomain.F 
+$(O_DIR)global_3dvs.o : global_3dvs.F $(O_DIR)global.o $(O_DIR)boundaries.o 
 
 #  adcirc & $(PARALLEL_ADCIRC)
 

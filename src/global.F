@@ -218,6 +218,11 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMICE00(:), CICEOUT(:) !v49.64.01 tcm -added for ice concentration
       REAL(SZ),ALLOCATABLE, TARGET ::  Pr2(:), WVNXOut(:), WVNYOut(:)
+#ifdef CSWAN
+      REAL(SZ),ALLOCATABLE, TARGET ::  SWAN_WDragCo(:) !MVB
+#endif
+      REAL(SZ),ALLOCATABLE, TARGET ::  windDragOut(:) !MVB 
+
       REAL(SZ),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
       
@@ -245,6 +250,7 @@ c.
 Casey 090302: Added the following arrays for output of radiation stress gradients.
       REAL(SZ),ALLOCATABLE, TARGET :: RSNXOUT(:), RSNYOUT(:)
 !#endif
+      LOGICAL :: outputWindDrag = .false. ! true if wind drag data should be written to output file
 
 #if defined CSWAN || defined ADCSWAN      
 Cobell 20120510: Added logicals for turning on/off swan output files   
@@ -272,18 +278,23 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE, TARGET ::   CH1(:)
       REAL(SZ),ALLOCATABLE ::   ETAS(:), ETA0(:),UU0(:),VV0(:),ETAS0(:)
       REAL(SZ),ALLOCATABLE ::   UU1(:),VV1(:)
-      REAL(SZ),ALLOCATABLE ::   QX1(:),QX2(:),QY1(:),QY2(:)
+      REAL(SZ),ALLOCATABLE ::   QX1(:)
+      REAL(SZ),ALLOCATABLE,TARGET ::   QX2(:)
+      REAL(SZ),ALLOCATABLE ::   QY1(:)
+      REAL(SZ),ALLOCATABLE,TARGET ::   QY2(:)
       REAL(SZ),ALLOCATABLE ::   QX0(:),QY0(:)
       REAL(SZ),ALLOCATABLE ::   TK0(:),TK2(:)
       REAL(SZ),ALLOCATABLE ::  DP1(:),DP2(:) !TCM V50.66.01 FOR TIME VARYING BATHYMETRY
-      REAL(SZ),ALLOCATABLE ::   MOM_LV_X(:),MOM_LV_Y(:),GWCE_LV(:)
+      REAL(SZ),ALLOCATABLE,TARGET ::   MOM_LV_X(:)
+      REAL(SZ),ALLOCATABLE ::   MOM_LV_Y(:),GWCE_LV(:)
       REAL(SZ),ALLOCATABLE ::   CORIF(:)
       REAL(SZ),ALLOCATABLE ::   TPK(:),FFT(:)
       REAL(SZ),ALLOCATABLE ::   FACET(:),ETRF(:)
       REAL(SZ),ALLOCATABLE ::   FFF(:),FFACE(:)
       REAL(SZ),ALLOCATABLE ::   ESBIN1(:),ESBIN2(:)
       REAL(SZ),ALLOCATABLE ::   TEMP_LV_A(:,:),TEMP_LV_B(:,:)
-      REAL(SZ),ALLOCATABLE ::   QN0(:),QN1(:),QN2(:)
+      REAL(SZ),ALLOCATABLE ::   QN0(:),QN1(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: QN2(:)
       REAL(SZ),ALLOCATABLE ::   EN0(:),EN1(:),EN2(:)
       REAL(SZ),ALLOCATABLE ::   QNAM(:,:),QNPH(:,:)
       REAL(SZ),ALLOCATABLE ::   ENAM(:,:),ENPH(:,:)
@@ -380,7 +391,8 @@ C
 C...
 C...DECLARE REAL(8) AND CHAR VARIABLES, EQUIVALENCES
 C...
-      REAL(8) STATIM,REFTIM,DTDP
+      REAL(8) STATIM,REFTIM
+      REAL(8), TARGET :: DTDP
       REAL(8) WREFTIM,WTIMED,WTIME2,WTIME1,WTIMINC,QTIME1,QTIME2
       REAL(8) FTIMINC,ETIMINC,RSTIME1,RSTIME2,RSTIMINC
 
@@ -496,6 +508,7 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       integer, target :: ig_tvw ! file position in weir elevation file
       integer, target :: nodeCodeOutFilePos
       integer, target :: noffOutFilePos
+      integer, target :: windDragFilePosition
       ! jgf52.08.03: Some files (e.g., initiallydry.63 and endrisinginun.63)
       ! are only written once, but are written using the same subroutines
       ! that write time varying output files; the output subroutine increments
@@ -534,6 +547,7 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       integer, target :: nodeCodeOutSpoolCounter
       integer, target :: noffOutSpoolCounter
       integer, target :: initiallyDrySpoolCounter
+      integer, target :: windDragSpoolCounter
       
       INTEGER :: NSPOOLC, NSPOOLGC, NSPOOLGE ! output increments
       INTEGER :: NSPOOLGV, NSPOOLGW, NSPOOLM, NSPOOL_TVW ! output increments
@@ -652,6 +666,11 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       REAL(8) :: BTIMINC ! TIME INCREMENT (SECONDS) FOR BATHYMETRY CHANGES USED FOR TIME VARYING BATHYMETRY
       REAL(8) :: BCHGTIMINC ! time increment (seconds) over which bathymetry changes during a btimeinc interval
       REAL(SZ),ALLOCATABLE, TARGET ::  DP00(:)
+
+! TCM v52.30.01 ADDITIONS FOR USING SMAGORINSKY eddy MODEL OPTIONS
+      REAL(SZ) :: SMAG_UPPER_LIM = 100.d0  ! m^2/s (default upper limit)
+      REAL(SZ) :: SMAG_LOWER_LIM = 1.0d-8  ! m^2/s (default lower limit)
+      LOGICAL :: SMAG_COMP_FLAG = .FALSE.   !BY DEFAULT DO NOT USE SMAG
       ! 
       ! all info needed for self describing dataset in XDMF
       type xdmfMetaData_t
@@ -1135,10 +1154,6 @@ C     the non-C3D case.
 
       ALLOCATE(AUV11(MNP),AUV12(MNP))
 
-      IF (C3D) THEN
-         ALLOCATE(DUU1(MNP),DUV1(MNP),DVV1(MNP),
-     &        BSX1(MNP),BSY1(MNP))
-      ENDIF
 
       ALLOCATE(EtaDisc(MNP))
       EtaDisc(:) = 0.0d0
@@ -1392,6 +1407,13 @@ C
       ALLOCATE ( WVNXOUT(MNP),WVNYOUT(MNP) )
       WVNXOUT(:) = 0.d0
       WVNYOUT(:) = 0.d0
+      
+#ifdef CSWAN
+      ALLOCATE ( SWAN_WDragCo(MNP) ) !MVB
+      SWAN_WDragCo(:) = 0.0d0 !MVB
+#endif
+      allocate (windDragOut(mnp))
+      windDragOut(:) = 0.d0
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
       IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4)) then
