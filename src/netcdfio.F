@@ -197,6 +197,7 @@ C
 C
       type(nodalData), private, save :: elev       ! for fort.63
       type(nodalData), private, save :: pr         ! for fort.73
+      type(nodalData), private, save :: wDrag      ! for windDragOut
       type(nodalData), private, save :: currentVel ! for fort.64
       type(nodalData), private, save :: windVel    ! for fort.74
       type(nodalData), private, save :: weirElev   ! for fort.77
@@ -411,6 +412,8 @@ C
             CALL initNodalDataFile(pr, descript1, reterr)
          CASE(74)
             CALL initNodalDataFile(windVel, descript1, reterr)
+         CASE(173)
+            CALL initNodalDataFile(wDrag, descript1, reterr)
          CASE(90)
             CALL initNodalDataFile(tau0nc, descript1, reterr)
          CASE(77)
@@ -1820,7 +1823,35 @@ C
             iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
      &           'mesh',  'adcirc_mesh')
             CALL check_err(iret)
-
+C
+         CASE(173)
+C
+            dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
+            dat%varnames(1) = 'winddrag'
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &         NF90_DOUBLE, dat%nodal_data_dims, dat%nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'long_name', 'wind drag coefficient at sea level')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'standard_name', 'wind drag coefficient')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'coordinates', 'time y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)            
+            CALL putUnitsAttribute(dat%ncid, dat%nodal_data_id,
+     &           'unitless', 'unitless')
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             '_FillValue', doubleval)
+            CALL check_err(iret)
 C            
          CASE(73)
 C
@@ -3538,6 +3569,8 @@ C
             CALL writeNodalData(pr, lun, descript1, timesec)
          CASE(74)
             CALL writeNodalData(windVel, lun, descript1, timesec)
+         CASE(173)
+            CALL writeNodalData(wDrag, lun, descript1, timesec)
          CASE(77)
             CALL writeNodalData(weirElev, lun, descript1, timesec)
          CASE(90)
@@ -3993,6 +4026,9 @@ C
          CALL check_err(iret)
          iret=nf90_inq_varid(dat%ncid,"windy",dat%v_nodal_data_id)
          CALL check_err(iret)
+      CASE(173)
+         iret=nf90_inq_varid(dat%ncid, "winddrag", dat%nodal_data_id)
+         CALL check_err(iret)         
       CASE(77)
          iret=nf90_inq_varid(dat%ncid,"weir_dz",dat%nodal_data_id)
          CALL check_err(iret)
