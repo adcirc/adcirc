@@ -218,7 +218,7 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMICE00(:), CICEOUT(:) !v49.64.01 tcm -added for ice concentration
 
-      REAL(SZ),ALLOCATABLE, TARGET ::  Pr2(:), WVNXOut(:), WVNYOut(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  Pr2(:)
 #ifdef CSWAN
       REAL(SZ),ALLOCATABLE, TARGET ::  SWAN_WDragCo(:) !MVB
 #endif
@@ -1404,11 +1404,6 @@ C
          CICE2(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
          CICEOUT(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
       ENDIF
-
-
-      ALLOCATE ( WVNXOUT(MNP),WVNYOUT(MNP) )
-      WVNXOUT(:) = 0.d0
-      WVNYOUT(:) = 0.d0
       
 #ifdef CSWAN
       ALLOCATE ( SWAN_WDragCo(MNP) ) !MVB
