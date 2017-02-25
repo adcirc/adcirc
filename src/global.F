@@ -217,7 +217,13 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  ET00(:), UU00(:), VV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMICE00(:), CICEOUT(:) !v49.64.01 tcm -added for ice concentration
-      REAL(SZ),ALLOCATABLE, TARGET ::  Pr2(:)
+
+      REAL(SZ),ALLOCATABLE, TARGET ::  Pr2(:), WVNXOut(:), WVNYOut(:)
+#ifdef CSWAN
+      REAL(SZ),ALLOCATABLE, TARGET ::  SWAN_WDragCo(:) !MVB
+#endif
+      REAL(SZ),ALLOCATABLE, TARGET ::  windDragOut(:) !MVB 
+
       REAL(SZ),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
       
@@ -249,6 +255,7 @@ c.
 Casey 090302: Added the following arrays for output of radiation stress gradients.
       REAL(SZ),ALLOCATABLE, TARGET :: RSNXOUT(:), RSNYOUT(:)
 !#endif
+      LOGICAL :: outputWindDrag = .false. ! true if wind drag data should be written to output file
 
 #if defined CSWAN || defined ADCSWAN      
 Cobell 20120510: Added logicals for turning on/off swan output files   
@@ -504,6 +511,7 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       integer, target :: ig_tvw ! file position in weir elevation file
       integer, target :: nodeCodeOutFilePos
       integer, target :: noffOutFilePos
+      integer, target :: windDragFilePosition
       ! jgf52.08.03: Some files (e.g., initiallydry.63 and endrisinginun.63)
       ! are only written once, but are written using the same subroutines
       ! that write time varying output files; the output subroutine increments
@@ -540,6 +548,7 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       integer, target :: nodeCodeOutSpoolCounter
       integer, target :: noffOutSpoolCounter
       integer, target :: initiallyDrySpoolCounter
+      integer, target :: windDragSpoolCounter
       
       INTEGER :: NSPOOLC, NSPOOLGC, NSPOOLGE ! output increments
       INTEGER :: NSPOOLGV, NSPOOLGW, NSPOOLM, NSPOOL_TVW ! output increments
@@ -1396,6 +1405,17 @@ C
          CICEOUT(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
       ENDIF
 
+
+      ALLOCATE ( WVNXOUT(MNP),WVNYOUT(MNP) )
+      WVNXOUT(:) = 0.d0
+      WVNYOUT(:) = 0.d0
+      
+#ifdef CSWAN
+      ALLOCATE ( SWAN_WDragCo(MNP) ) !MVB
+      SWAN_WDragCo(:) = 0.0d0 !MVB
+#endif
+      allocate (windDragOut(mnp))
+      windDragOut(:) = 0.d0
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
       IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4)) then

@@ -92,17 +92,14 @@ C  46.44 vjp added code for prep13-only command
 C----------------------------------------------------------------------------
 
       MODULE PRESIZES
-#if defined CSWAN || defined ADCSWAN
-      USE GLOBAL, ONLY :
-     &                   SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
-     &                   SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
-     &                   SWAN_OutputTMM10,USE_TVW,TVW_FILE,NOUT_TVW,
-     &                   TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,WaveWindMultiplier
-#else
-      USE GLOBAL, ONLY : USE_TVW,TVW_FILE,NOUT_TVW,
-     &                   TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,WaveWindMultiplier 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      USE GLOBAL, ONLY : WaveWindMultiplier 
+      USE GLOBAL, ONLY :
+     &    USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,
+     &    WaveWindMultiplier,outputWindDrag
+#if defined CSWAN || defined ADCSWAN
+     &   ,SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
+     &    SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
+     &    SWAN_OutputTMM10
 #endif
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
      &                   invertedBarometerOnElevationBoundary,
@@ -217,7 +214,7 @@ C Logicals added for adcprep paths
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
-      NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir,
+      NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,rhoAir,
      &                       invertedBarometerOnElevationBoundary
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &    TOUTF_TVW,NSPOOL_TVW

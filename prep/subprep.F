@@ -148,7 +148,7 @@ C   NCSU Subdomain Modeling variables:
          logical success
 
          call openFort019prep()
-         call subOpenPrep(19,'subdomain boundary conditions ',
+         call subOpenPrep(1019,'subdomain boundary conditions ',
      &        1,nproc, SDU, Success)
 
 
@@ -256,7 +256,7 @@ C   NCSU Subdomain Modeling variables:
          logical success
 
          call openFort020prep()
-         call subOpenPrep(20,'subdomain boundary conditions ',
+         call subOpenPrep(1020,'subdomain boundary conditions ',
      &        1,nproc, SDU, Success)
 
 
@@ -372,7 +372,7 @@ C   NCSU Subdomain Modeling variables:
          logical success
 
          call openFort021prep()
-         call subOpenPrep(21,'subdomain boundary conditions ',
+         call subOpenPrep(1021,'subdomain boundary conditions ',
      &        1,nproc, SDU, Success)
 
 
@@ -462,18 +462,15 @@ C---------------------------------------------------------------------------
       ErrorIO = 1
 
       ! NCSU Subdomain: 
-      if (UnitNumber.eq.19) then     
+      if (UnitNumber.eq.1019) then     
           DefaultName= 'fort.019'    
           FileName = 'fort.019'      
-          UnitNumber = 1019
-      else if (UnitNumber.eq.20) then
+      else if (UnitNumber.eq.1020) then
           DefaultName= 'fort.020'    
           FileName = 'fort.020' 
-          UnitNumber = 1020
-      else if (UnitNumber.eq.21) then
+      else if (UnitNumber.eq.1021) then
           DefaultName= 'fort.021'
           FileName = 'fort.021'
-          UnitNumber = 1021
       endif
 
 C
