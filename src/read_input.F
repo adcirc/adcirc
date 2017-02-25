@@ -194,10 +194,7 @@ C     ALLOCATE ARRAYS Dimensioned by MNP and MNE
       ! jgf51.21.13: Allocate boundary condition arrays dimensioned by
       ! mnvel 
       call alloc_main3()
-C
-C     jgf50.32: Initialize default values in wind module and allocate
-C     memory for internal use.
-      call initWindModule()
+
 C...
 C...  OPEN UNIT 15 INPUT FILE (control parameters and periodic boundary conditions)
 C...

@@ -107,6 +107,7 @@ C******************************************************************************
      &                 initHarmonicParameters
       USE GLOBAL_IO, ONLY : allocateFullDomainIOArrays
       USE WRITE_OUTPUT, ONLY : initOutput2D
+      USE WIND, ONLY : initWindModule
       IMPLICIT NONE
 C
       INTEGER, OPTIONAL :: COMM
@@ -208,6 +209,10 @@ C
 
       !jgf49.44: Initialize harmonic analysis parameters.
       CALL initHarmonicParameters()
+C
+C     jgf: Initialize default values in wind module and allocate
+C     memory for internal use.
+      call initWindModule()
 
 #ifdef CMACHSUN
       CALL ABRUPT_UNDERFLOW() ! Abrupt underflow for Sun computers
