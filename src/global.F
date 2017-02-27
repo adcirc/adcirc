@@ -11,7 +11,6 @@ C******************************************************************************
 
 C
       MODULE GLOBAL
-      USE VERSION
       USE SIZES, ONLY : SZ, MNP, MNE, MNBFR, MNETA, MNSTAE, MNSTAV, 
      &   MNEI, MNTIF, MNVEL, MYPROC, MNFFR, MNSTAC, MNSTAM
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
@@ -86,6 +85,13 @@ C     Variables related to hotstarting.
       end type HOTSTART_t
 
       type(HOTSTART_t):: hss
+      !       
+      ! iLump=0 for consistent mass matrix
+      ! iLump=1 for lumped mass matrix 
+      integer :: ilump 
+
+      real(sz),allocatable,target ::   mom_lv_x(:)
+      real(sz),allocatable ::   mom_lv_y(:)
 
       !-----------------------------------------------------------------
       !        F U L L   D O M A I N   V A R I A B L E S   
@@ -230,6 +236,9 @@ c.
       real(sz), allocatable, target :: wvnxout(:) ! output wind velocity in x-dir at each node 
       real(sz), allocatable, target :: wvnyout(:) ! output wind velocity in y-dir at each node 
 
+      real(sz),allocatable :: gwce_lv(:)
+
+
       
 #if defined CSWAN || defined ADCSWAN     
       !...Local SWAN Arrays
@@ -281,7 +290,7 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE, TARGET ::  CC00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  EtaDisc(:) ! vjp 9/2006 added for hotstart file
       REAL(SZ),ALLOCATABLE, TARGET ::   CH1(:)
-      REAL(SZ),ALLOCATABLE ::   ETAS(:), ETA0(:),UU0(:),VV0(:),ETAS0(:)
+      REAL(SZ),ALLOCATABLE ::   ETAS(:), UU0(:),VV0(:)
       REAL(SZ),ALLOCATABLE ::   UU1(:),VV1(:)
       REAL(SZ),ALLOCATABLE ::   QX1(:)
       REAL(SZ),ALLOCATABLE,TARGET ::   QX2(:)
@@ -290,8 +299,7 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE ::   QX0(:),QY0(:)
       REAL(SZ),ALLOCATABLE ::   TK0(:),TK2(:)
       REAL(SZ),ALLOCATABLE ::  DP1(:),DP2(:) !TCM V50.66.01 FOR TIME VARYING BATHYMETRY
-      REAL(SZ),ALLOCATABLE,TARGET ::   MOM_LV_X(:)
-      REAL(SZ),ALLOCATABLE ::   MOM_LV_Y(:),GWCE_LV(:)
+
       REAL(SZ),ALLOCATABLE ::   CORIF(:)
       REAL(SZ),ALLOCATABLE ::   TPK(:),FFT(:)
       REAL(SZ),ALLOCATABLE ::   FACET(:),ETRF(:)
@@ -344,16 +352,16 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(8),ALLOCATABLE,TARGET :: SLEL(:) ! latitudes of elevation stations
       REAL(8),ALLOCATABLE,TARGET :: SFEL(:) ! longitudes of elevation stations
 
-      REAL(SZ),ALLOCATABLE ::   AUV11(:),AUV12(:),AUV13(:),AUV14(:)
+
       REAL(SZ),ALLOCATABLE, TARGET ::   DUU1(:),DUV1(:),DVV1(:)
       REAL(SZ),ALLOCATABLE, TARGET ::   BSX1(:),BSY1(:)
       REAL(SZ),ALLOCATABLE ::   TIP1(:),TIP2(:)
       REAL(SZ),ALLOCATABLE ::   SALTAMP(:,:),SALTPHA(:,:)
       REAL(SZ),ALLOCATABLE ::   OBCCOEF(:,:),COEF(:,:)
       REAL(SZ),ALLOCATABLE ::   COEFD(:) !jgf48.4619 from Seizo (Lumped GWCE)
-      REAL(SZ),ALLOCATABLE ::   WKSP(:),RPARM(:)
+
       REAL(SZ),ALLOCATABLE ::   ABD(:,:),ZX(:)
-      REAL(SZ),ALLOCATABLE ::   LSXX(:),LSXY(:),LSYX(:),LSYY(:)
+
       INTEGER  NBFR,NCOR,NE2,NP2
 
 C    kmd48.33bc - added variables for the levels of no motion and top temperature boundary condition
@@ -372,18 +380,14 @@ C    kmd48.33bc - added variables for the levels of no motion and top temperatur
       integer, allocatable, target :: nnv(:) ! velocity station elements
       integer, allocatable, target :: nnm(:) ! meteorological station elements
       !
-      INTEGER,ALLOCATABLE ::    IWKSP(:),IPARM(:),IPV(:)
+      INTEGER,ALLOCATABLE ::    IPV(:)
 C
 C.....for buoyancy forcing
       REAL(SZ),ALLOCATABLE ::   DASigT(:), DASalt(:), DATemp(:)
       REAL(SZ),ALLOCATABLE ::   VIDBCPDXOH(:), VIDBCPDYOH(:)
 C.....for scalar transport
       REAL(SZ),ALLOCATABLE ::   DAConc(:)
-C.....for wet/dry
-      REAL(SZ)                  HABSMIN,HOFF
-cjjw...added 2 lines
-C.....for matrix conditioning,global to allow for reading in from hotstart file
-      REAL(SZ)                  EP !jgf45.08 EP global for predictor-corrector
+
 
       REAL(SZ) DT
 C
@@ -397,7 +401,7 @@ C...
       REAL(8) QTIME1,QTIME2
       REAL(8), TARGET :: DTDP      
 
-      REAL(8) FTIMINC,ETIMINC,RSTIME1,RSTIME2,RSTIMINC
+      REAL(8) FTIMINC,RSTIME1,RSTIME2,RSTIMINC
 
       REAL(8) DIST
       REAL(8),ALLOCATABLE :: AMIG(:),AMIGT(:),FAMIG(:)
@@ -488,7 +492,7 @@ C     size has changed after a hotstart.
       INTEGER  NTCYFV,NTCYSE,NTCYSV,NTIF,NTIP,NTRSPE,NTRSPV
       INTEGER  NTCYS_TVW,NTCYF_TVW
       INTEGER  NWS
-      INTEGER  ICSTP, IER
+      INTEGER  ICSTP
 
 Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  IFNLCAT, IFNLCT, IFNLFA, IFNLCTE, IFNLCATE
@@ -519,16 +523,16 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       ! counter even for output files that are only written once.
       integer, target :: fauxFilePosition 
 
-      INTEGER  IHOTSTP, ILUMP, IMHS
+      INTEGER  IHOTSTP, IMHS
       INTEGER  ITIME, ITEMPSTP, ITEST
-      INTEGER  ITHS, ITITER, ITMAX    
+      INTEGER  ITHS, ITITER    
       
-      INTEGER  J12, J13, J21, J23, J31, J32
+
       INTEGER  JJ, KEMAX, KVMAX, LRC, LUMPT
-      INTEGER  MBW, MDF, NBDJ, NBW
+      INTEGER  MBW, MDF, NBW
       INTEGER  NCBND, NCTOT, NDRY, NDSETSC
       INTEGER  NCChange !jgf45.06 flag indicating wetting / drying has occurred
-      INTEGER  NDSETSE, NDSETSV, NDSETSW, NDSETS_TVW,NEle
+      INTEGER  NDSETSE, NDSETSV, NDSETSW, NDSETS_TVW
       INTEGER  NHSINC, NHSTAR
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef CSWAN 
@@ -556,7 +560,7 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER  NTCYFGV, NTCYFGW
       INTEGER  NTCYFM, NTCYSC, NTCYSGC, NTCYSGE
       INTEGER  NTCYSGV, NTCYSGW, NTCYSM
-      INTEGER  NTRSPC, NTRSPM, NUMITR, NW, NWET
+      INTEGER  NTRSPC, NTRSPM, NUMITR, NWET
       INTEGER  NP_GLOBAL
 C     kmd48.33bc - added variables for 3D boundary conditions
       INTEGER  RES_BC_FLAG  ! boundary condition flag for salinity and temperature
@@ -576,19 +580,18 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       REAL(SZ) RIVBCTIMINC, RIVBCTIME1, RIVBCTIME2  ! time information for river - baroclinic
       REAL(SZ) BCRivRATIO, RIVBCSTATIM
 
-      REAL(SZ) ADVECX, ADVECY, ARG
-      REAL(SZ) ARG1, ARG2, ARGJ, ARGJ1, ARGJ2
-      REAL(SZ) AUV21, AUV22
+      REAL(SZ) ADVECX, ADVECY
+      REAL(SZ) ARG1, ARG2, ARGJ1, ARGJ2
+
       REAL(SZ) BEDSTR, BNDLEN2O3NC
-      REAL(SZ) CELERITY, COND, CONVCR
-      REAL(SZ) DT2, DTO2, DTOHPP
-      REAL(SZ) ETIME1, ETIME2, ETRATIO
-      REAL(SZ) GO3, GO2, GA00, GB00A00, GC00, GDTO2, GFAO2
+      REAL(SZ) COND
+      REAL(SZ) DTOHPP
+      REAL(SZ) GO3, GO2, GFAO2
 
       REAL(SZ) P11, P22, P33
-      REAL(SZ) QFORCEI, QFORCEJ
+
       REAL(SZ) QUNORM, QUTemp, QVNORM, RAMP, RAMP1, RAMP2, RBARWL
-      REAL(SZ) RBARWL1,RBARWL1F, RBARWL2, RBARWL2F, RFF, RFF1, RFF2
+      REAL(SZ) RBARWL1,RBARWL1F, RBARWL2, RBARWL2F, RFF1, RFF2
       REAL(SZ) SADVDTO3
       REAL(SZ) TADVODT
       REAL(SZ) TIMEIT, TOUTFC
@@ -596,7 +599,7 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       REAL(SZ) VEL, VELABS
       REAL(SZ) VELMAX
 
-      REAL(SZ) A00,B00,C00
+
       REAL(SZ) CORI
       REAL(SZ) DAY,DRAMP,DUM1,DUM2
       REAL(SZ) H0
@@ -1085,7 +1088,9 @@ C...
 C  
       !jgfdebug TODO: rationalize initialization of these variables
       ALLOCATE ( ETAS(MNP))
-      ALLOCATE ( GWCE_LV(MNP))
+      allocate ( gwce_lv(mnp))
+      allocate ( mom_lv_x(mnp))
+      allocate ( mom_lv_y(mnp))
       ALLOCATE ( UU1(MNP),VV1(MNP))
       uu1(:) = 0.d0
       vv1(:) = 0.d0
@@ -1112,17 +1117,16 @@ C
       eta2(:) = 0.d0
 
       ALLOCATE ( CORIF(MNP))
-      ALLOCATE ( MOM_LV_X(MNP),MOM_LV_Y(MNP))
 
       ALLOCATE ( NODECODE(MNP))
 
       ALLOCATE ( DASigT(MNP),DATemp(MNP),DASalt(MNP))
       ALLOCATE ( VIDBCPDXOH(MNP), VIDBCPDYOH(MNP))
       ALLOCATE ( DAConc(MNP))
-      ALLOCATE ( LSXX(MNP),LSXY(MNP),LSYX(MNP),LSYY(MNP))
+
 ckmd   Added in parameters for the pc algorithm
-      ALLOCATE ( ETA0(MNP), UU0(MNP), VV0(MNP))
-      ALLOCATE ( QX0(MNP), QY0(MNP), ETAS0(MNP))
+      ALLOCATE ( UU0(MNP), VV0(MNP))
+      ALLOCATE ( QX0(MNP), QY0(MNP) )
       ALLOCATE ( TK0(MNP), TK2(MNP))
 
 C    kmd48.33bc - arrays for baroclinic
@@ -1142,15 +1146,6 @@ C    loadEleSlopeLim.eqv..true
       ALLOCATE ( TEMP_LV_A(MNE,3),TEMP_LV_B(MNE,3) )
 #endif
 
-c     IF (C3DDSS) THEN
-c        ALLOCATE(AUV13(MNP),AUV14(MNP))
-c     ENDIF
-
-C     jgf These were inside the C3D if-block below, but since they are
-C     used in the 2DDI section of timestep.F, they must be allocated in
-C     the non-C3D case.
-
-      ALLOCATE(AUV11(MNP),AUV12(MNP))
 
 
       ALLOCATE(EtaDisc(MNP))
@@ -1364,8 +1359,7 @@ C     jgf48.4619: Array used in lumped GWCE (from Seizo)
 C  Arrays used by JCG iterative solver
 
       ALLOCATE( OBCCOEF(MNETA,MNEI-1),COEF(MNP,MNEI))
-      ALLOCATE( IWKSP(3*MNP),WKSP(4*MNP+400) )
-      ALLOCATE( IPARM(12),RPARM(12) )
+
 C
       RETURN
       END SUBROUTINE ALLOC_MAIN11

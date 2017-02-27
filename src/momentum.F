@@ -56,8 +56,40 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
       module momentum
+      use sizes, only : sz
+      use global, only : DEBUG, INFO, WARNING, ERROR, setMessageSource,
+     &   allMessage, logMessage, unsetMessageSource
+      implicit none
+
+
+      real(sz),allocatable ::   auv11(:),auv12(:)
+      real(sz) :: auv21, auv22
+      real(sz) :: dto2  ! time step divided by 2.0
+      real(sz) :: go2   ! gravitational acceleration divided by 2.0
       
       contains
+
+
+!----------------------------------------------------------------------
+!                    S U B R O U T I N E
+!         I N I T    M O M E N T U M     E Q U A T I O N
+!----------------------------------------------------------------------
+!     Allocates arrays and initializes constants.
+!----------------------------------------------------------------------
+      subroutine initMomentum()
+      use sizes, only : mnp
+      use global, only : dt, g
+      implicit none
+
+
+      allocate(auv11(mnp),auv12(mnp))
+      dto2=dt/2.d0
+      go2=g/2.d0
+
+!----------------------------------------------------------------------
+      end subroutine initMomentum
+!----------------------------------------------------------------------
+
 
 C*******************************************************************************
 C                                                                              *
@@ -81,13 +113,18 @@ C*******************************************************************************
 
       SUBROUTINE Mom_Eqs_New_NC()
 C
-      USE GLOBAL
-      USE WIND
+      USE GLOBAL, ONLY : UU2, VV2, QX2, QY2, CBaroclinic, 
+     &  CME_AreaInt_Corr, CME_AreaInt_Orig, CME_LS_IBPQ, CME_LS_IBPSQ,
+     &  CME_LS_IBPSV, CSmag_Eh, Smag_Comp_Flag, CTIP, DT, CME_LS_IBPV,
+     &  IFNLCT, IFNLFA, IFWIND, NRS, NWS, SMAG_LOWER_LIM, SMAG_UPPER_LIM,
+     &  NODECODE, NOFF, UU1, VV1, ETA2, ETA1, QX1, QX2, QY1, PR1, PR2,
+     &  TiP1, TiP2, WSX2, WSY2, TK, CORIF, WSX1, WSY1, VIDBCPDXOH,
+     &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, Areas, TotalArea, 
      &                  NNeigh, NeiTab, NeiTabEle, MJU, SFAC
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
      &    CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3                 
-      USE NodalAttributes, ONLY: EVM,LoadAdvectionState
+      USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
@@ -138,7 +175,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 
       REAL(8) AreaIE, AreaIE2
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
-
+      INTEGER :: nele
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
@@ -820,8 +857,7 @@ C
      &                  NEITAB, NEITABELE, NNEIGH, SFAC 
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI, 
      &   CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
-      USE WIND
-      USE NodalAttributes, ONLY: EVM,LoadAdvectionState
+      USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
@@ -869,6 +905,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 
       REAL(8) AREAIE, AREAIE2
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
+      INTEGER :: nele
 
 #ifdef CSWAN
 #ifdef CSWANFRIC
@@ -1601,8 +1638,7 @@ C
      &                  NEITAB, NEITABELE, NNEIGH, SFAC
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
      &   CSII, SIII, ME2GW, NBV, LBCODEI, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
-      USE WIND
-      USE NodalAttributes, ONLY: EVM,LoadAdvectionState
+      USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
 
       IMPLICIT NONE
 
@@ -1662,6 +1698,7 @@ ckmd   Added in parameters for the pc algorithm
 
       REAL(8) AreaIE, AreaIE2
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
+      INTEGER :: nele
 C
       call setMessageSource("mom_eqs_non_conserv_pc")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)

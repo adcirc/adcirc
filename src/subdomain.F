@@ -19,7 +19,6 @@ C    ========================================================================
       use global, only : DEBUG, ECHO, INFO, WARNING, ERROR, logMessage,
      &                    allMessage, scratchMessage, setMessageSource,
      &                    unsetMessageSource 
-      use adcirc_mod, only : adcirc_terminate
 
       logical subdomainOn                                         
       integer :: NOUTGS, NSPOOLGS, enforceBN 
@@ -87,7 +86,7 @@ C    ========================================================================
             call allMessage(ERROR,
      &       'Subdomain modeling was activated but the fort.015 file '
      &       // ' was not found in "' // trim(globaldir) // '".')
-            call adcirc_terminate()
+            call subdomainTerminate()
          endif
 
          if (myproc.eq.0) print *, "Subdomain Active"
@@ -120,7 +119,7 @@ C    ========================================================================
             enddo
          case default        
             call allMessage(ERROR,'The NOUTGS value is invalid.')
-            call adcirc_terminate()
+            call subdomainTerminate()
          end select
 #ifdef CMPI
          ! localize global record-node arrays:
@@ -176,7 +175,7 @@ C    ========================================================================
             enddo
          case default
             call allMessage(ERROR,'The NOUTGS value is invalid.')
-            call adcirc_terminate()
+            call subdomainTerminate()
          end select
 #endif
 
@@ -406,7 +405,7 @@ C     | finds the proper place in the b.c. file.
          if (abs(ncbn-neta).gt.1) then
              print *, "WARNING: ncbn=!neta"
              print *,  ncbn,neta,myproc
-             CALL ADCIRC_Terminate()
+             CALL subdomainTerminate()
          endif
          allocate(ecbn1(ncbn),ucbn1(ncbn),vcbn1(ncbn),wdcbn1(ncbn))
          allocate(ecbn2(ncbn),ucbn2(ncbn),vcbn2(ncbn),wdcbn2(ncbn))
@@ -436,7 +435,6 @@ C     | This subroutine opens fort.019 for a cold-started model
 
          Use GLOBAL, only : myproc
          USE BOUNDARIES, ONLY : neta
-         USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 #ifdef CMPI
          Use MESSENGER
 #endif
@@ -459,7 +457,7 @@ C     | This subroutine opens fort.019 for a cold-started model
          if (abs(ncbn-neta).gt.1) then
             print *, "WARNING: ncbn=!neta"
             print *,  ncbn,neta,myproc
-            CALL ADCIRC_Terminate()
+            CALL subdomainTerminate()
          endif
          allocate(ecbn1(ncbn),ucbn1(ncbn),vcbn1(ncbn),wdcbn1(ncbn))
          allocate(ecbn2(ncbn),ucbn2(ncbn),vcbn2(ncbn),wdcbn2(ncbn))
@@ -491,7 +489,6 @@ C     | outer boundary nodes of the subdomain grid from fort.019 file during
 C     | a subdomain run. This subroutine is called within timestep.F.
 
          Use GLOBAL, only : ihot 
-         USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 #ifdef CMPI
          Use MESSENGER
 #endif
@@ -774,7 +771,7 @@ C     | that jcg solver leads to the enforced values of ETA for
 C     | the outer boundary nodes.
 
          use sizes, only : mnei
-         use global, only : coef, etas, gwce_lv 
+         use global, only : coef, etas, gwce_lv
          use mesh, only : neitab
          implicit none
          integer :: i,j,n,neighbor
@@ -825,5 +822,41 @@ C     | to recalculate COEF of outer-inner boundary nodes
 #endif
 
       END SUBROUTINE checkChange
+
+
+      !jgf: Added this subroutine to eliminate dependence on adcirc_mod
+      ! module, which should be built last to simplify the build system.
+      SUBROUTINE subdomainTerminate(NO_MPI_FINALIZE)
+#ifdef CMPI
+         Use MESSENGER         
+#endif
+      implicit none
+c
+      logical, optional :: no_mpi_finalize
+C
+      call setMessageSource("subdomainTerminate")
+#if defined(SUBDOMAIN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      call allMessage(INFO,"ADCIRC Terminating.")
+
+#ifdef CMPI
+      subdomainFatalError = .true.
+      IF (PRESENT(NO_MPI_FINALIZE)) THEN
+        CALL MSG_FINI(NO_MPI_FINALIZE)
+      ELSE
+        CALL MSG_FINI()
+      ENDIF
+#endif
+      STOP 
+C
+#if defined(SUBDOMAIN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
+      END SUBROUTINE subdomainTerminate
+
+
 
       end module subdomain

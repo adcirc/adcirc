@@ -47,7 +47,7 @@ C
 
       integer  :: NWLON,NWLAT
       real(sz) :: WLATMAX,WLONMIN,WLATINC,WLONINC
-      integer  :: IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN,ISLDIA
+      integer  :: IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN
 
       REAL(8), PARAMETER :: TWOPI=PI*2.D0
       REAL(8), PARAMETER :: HFPI=PI/2.D0
@@ -154,12 +154,7 @@ C
       real(sz) :: GFDL_max_extrap_dist     ! maximum distance for extrapolating values (meters)
       real(sz) :: GFDL_WindMultiplier      ! all GFDL wind u,v's multiplied by this
 
-      ! jgf52.30.04: Allow the inverted barometer condition to be 
-      ! activated on elevation-specified boundaries so that low pressure
-      ! systems crossing the boundary won't trigger numerical instabilities.
-      ! This is normally .false. but can be set to .true. in the fort.15
-      ! in the metControl namelist. 
-      logical :: invertedBarometerOnElevationBoundary
+
 
 C------------------------end of data declarations-----------------------
       CONTAINS
@@ -216,8 +211,6 @@ C.... convert background pressure from millibars to meters of water
       ! support.
       DragLawString = 'Powell'
 #endif
-
-      invertedBarometerOnElevationBoundary = .false.
 
       RETURN
 C     ----------------------------------------------------------------

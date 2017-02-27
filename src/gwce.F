@@ -57,9 +57,83 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C******************************************************************************
 
       module gwce
-      
+      use sizes, only : sz
+      use global, only : DEBUG, INFO, WARNING, ERROR, logMessage, 
+     &   setMessageSource, unsetMessageSource, allMessage
+      implicit none
+
+      real(sz),allocatable :: lsxx(:),lsxy(:),lsyx(:),lsyy(:)
+      real(sz),allocatable :: etas0(:)      
+      real(sz),allocatable :: eta0(:)
+      real(sz) :: convcr
+      integer :: isldia
+      integer :: itmax
+      real(sz) :: a00,b00,c00
+      real(sz) :: dt2
+      real(sz) :: ga00 
+
+C     Arrays used by JCG iterative solver
+      integer :: nw
+      integer, allocatable :: iwksp(:)
+      real(sz), allocatable :: wksp(:)
+      integer, allocatable :: iparm(:)
+      real(sz), allocatable :: rparm(:)
+
+cjjw...added 2 lines
+C.....for matrix conditioning,global to allow for reading in from hotstart file
+      REAL(SZ) :: EP !jgf45.08 EP global for predictor-corrector
+      !
+      ! for managing datasets for aperiodic elevation specified boundaries (fort.19)
+      real(sz) :: etime1, etime2, etiminc 
+
+      ! jgf52.30.04: Allow the inverted barometer condition to be 
+      ! activated on elevation-specified boundaries so that low pressure
+      ! systems crossing the boundary won't trigger numerical instabilities.
+      ! This is normally .false. but can be set to .true. in the fort.15
+      ! in the metControl namelist. 
+      logical :: invertedBarometerOnElevationBoundary = .false.
+
       contains
 
+!----------------------------------------------------------------------
+!           S U B R O U T I N E   I N I T  G  W  C  E
+!----------------------------------------------------------------------
+!     Allocates arrays and initializes constants.
+!----------------------------------------------------------------------
+      subroutine initGWCE()
+      use sizes, only : mnp
+      use global, only : dt, g, ilump, alloc_main11, alloc_main11_lumped
+      use mesh, only : np
+      use itpackv, only : dfault
+      implicit none
+
+      allocate(lsxx(mnp),lsxy(mnp),lsyx(mnp),lsyy(mnp))
+      allocate(etas0(mnp))
+      allocate(eta0(mnp))
+      allocate( iparm(12),rparm(12) )
+      allocate( iwksp(3*mnp),wksp(4*mnp+400) )
+      dt2=dt*2.d0
+      ga00=g*a00
+
+C     jgf48.4619: Accommodate Seizos changes for explicit solve
+      IF (ILump.eq.0) THEN ! default, fully consistent LHS
+C        allocate arrays needed by GWCE matrix and iterative solver
+         call alloc_main11()
+C        initialize parameter arrays needed by iterative solver
+         CALL DFAULT(IPARM,RPARM)
+         IPARM(1)=ITMAX
+         IPARM(2)=ISLDIA
+         !cms51.06: moved opening of fort.33 to openLogFile sub in global.F
+         IPARM(4)=33
+         RPARM(1)=CONVCR
+         NW = 4*NP + 4*ITMAX
+      ELSE ! lumped LHS
+         call alloc_main11_lumped()
+      ENDIF
+
+!----------------------------------------------------------------------
+      end subroutine initGWCE
+!----------------------------------------------------------------------
 
 C******************************************************************************
 C                                                                             *
@@ -73,23 +147,30 @@ C
 #ifdef IEEE_DEBUG
       USE, INTRINSIC :: IEEE_ARITHMETIC
 #endif
-      USE SIZES
-      USE GLOBAL
+      USE SIZES, ONLY : sz
+      USE GLOBAL, ONLY : GWCE_LV, COEF, COEFD, OBCCOEF, ETAS, ETA1, ETA2,
+     &   ESBIN1, ESBIN2, C2DDI, C3D, CBaroclinic, CGWCE_Advec_C1,
+     &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
+     &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, CGWCE_LS_KGQ, CPRECOR,
+     &   CSmag_Eh, Smag_Comp_Flag, CTIP, DT, FluxSettlingIT, G, IFNLCAT,
+     &   IFNLCT, IFNLFA, NBFR, NODECODE, NRS, NSCREEN, MYPROC, NCCHANGE,
+     &   NUMITR, NWS, RAMPELEV, RAMPMETE, RES_BC_FLAG, RHOWAT0, screenUnit,
+     &   SMAG_LOWER_LIM, SMAG_UPPER_LIM, TK, NOFF, UU1, VV1, QX1, QY1,
+     &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
+     &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
+     &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump
+#ifdef CMPI
+     &    , dumy1, dumy2, rnp_global
+#endif
       USE MESH, ONLY : NE, NP, NM, X, Y, DP, NNeigh, NeiTab, TotalArea,
      &                  Areas, NEIMAX, SFAC, nneighele, neitabele
       USE BOUNDARIES, ONLY : NETA, NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, 
-     &   NFLUXRBC, NOPE, NVEL, NBD, NBV, LBCODEI, BndLen2O3 
-      USE WIND
+     &   NFLUXRBC, NOPE, NVEL, NBD, NBV, LBCODEI, BndLen2O3
       USE ITPACKV
-      USE ADCIRC_MOD, only : adcirc_terminate
       USE NodalAttributes, ONLY :
      &     LoadGeoidOffset, GeoidOffset, EVM,
      &     TAU0VAR, HighResTimeVaryingTau0, FullDomainTimeVaryingTau0,
-     &     CalculateTimeVaryingTau0,
-     &     LoadEleSlopeLim,elemental_slope_limiter_active,
-     &     LoadAdvectionState,
-     &     elemental_slope_limiter_grad_max,
-     &     elemental_slope_limiter_max_exceeded
+     &     CalculateTimeVaryingTau0, LoadAdvectionState, advectlocal
 
 #ifdef CMPI
       USE MESSENGER
@@ -165,6 +246,14 @@ C
       REAL(SZ) dEta2Mag ! magnitude of the slope of the water surface elevation
       REAL(SZ) DEta2DX,DEta2DY
       REAL(SZ) DRhoDX,DRhoDY
+      INTEGER :: j12, j13, j21, j23, j31, j32
+      REAL(SZ) :: arg, argj
+      REAL(SZ) :: celerity
+      REAL(SZ) :: etratio
+      INTEGER :: ier
+      INTEGER :: nbdj
+      REAL(SZ) :: rff
+      REAL(SZ) :: qforcei, qforcej
 
       call setMessageSource("gwce_new")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -390,7 +479,7 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
                   enddo
                close(899)
                ! end jgfdebug
-               CALL ADCIRC_Terminate()
+               CALL gwceTerminate()
             ENDIF
 
          ELSE  ! jgf48.4619: include Seizo's changes for lumped LHS
@@ -421,7 +510,7 @@ C.....      Check that all the diagonal elements in "COEFD" are > 0.
                   DIE = .TRUE.
                ENDIF
             ENDDO
-            IF (DIE) CALL ADCIRC_Terminate()
+            IF (DIE) CALL gwceTerminate()
          ENDIF
       ENDIF                     !End of GWCE matrix setup
 C...
@@ -1260,10 +1349,9 @@ C
      &                  NNEIGH, SFAC
       USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXGBC, NFLUXRBC,
      &   NFLUXIB, NOPE, NVEL, NBD, NBV, LBCODEI, BndLen2O3
-      USE WIND
       USE ITPACKV
       USE NodalAttributes, ONLY : FRIC, Tau0Var, HBREAK, FTHETA, FGAMMA,
-     &     IFLINBF, IFNLBF, IFHYBF, EVM, LoadAdvectionState
+     &     IFLINBF, IFNLBF, IFHYBF, EVM, LoadAdvectionState, advectlocal
 #ifdef CMPI
       USE MESSENGER
 #endif
@@ -1335,6 +1423,13 @@ ckmd   Added in parameters for the pc algorithm
       REAL(SZ) U2N1,U2N2,U2N3, U2Avg
       REAL(SZ) V2N1,V2N2,V2N3, V2Avg
       REAL(SZ) timewtgwce0,timewtgwce1,timewtgwce2,timeagflag
+      REAL(SZ) :: arg, argj
+      REAL(SZ) :: celerity
+      REAL(SZ) :: etratio
+      INTEGER :: ier
+      INTEGER :: nbdj
+      REAL(SZ) :: rff
+      REAL(SZ) :: qforcei, qforcej
 
       call setMessageSource("gwce_new_pc")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -2212,6 +2307,46 @@ ckmd
 C**********************************************************************
       END SUBROUTINE GWCE_NEW_PC
 C**********************************************************************
+
+
+!-----------------------------------------------------------------------
+!      S U B R O U T I N E   G  W  C  E   T E R M I N A T E 
+!-----------------------------------------------------------------------
+!     jgf: Placed this subroutine here to eliminate dependency of this
+!     module on adcirc_mod module. Bombs out of mpi gracefully when
+!     there is an issue. 
+!-----------------------------------------------------------------------
+      subroutine gwceTerminate(NO_MPI_FINALIZE)
+#ifdef CMPI
+      use messenger
+#endif
+      implicit none
+      logical, optional :: no_mpi_finalize
+C
+      call setMessageSource("gwceTerminate")
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      call allMessage(INFO,"ADCIRC Terminating.")
+
+#ifdef CMPI
+      subdomainFatalError = .true.
+      if (present(no_mpi_finalize)) then
+        call msg_fini(no_mpi_finalize)
+      else
+        call msg_fini()
+      endif
+#endif
+      stop 
+C
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
+!-----------------------------------------------------------------------
+      end subroutine gwceTerminate
+!-----------------------------------------------------------------------
+
 
 
 C----------------------------------------------------------------------

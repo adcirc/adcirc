@@ -37,6 +37,8 @@ C-----------------------------------------------------------------------
       USE WIND
       USE WETDRY, ONLY : noffActive, velmin
       USE ITPACKV
+      USE GWCE, ONLY : a00, b00, c00, convcr, isldia, itmax,
+     &   invertedBarometerOnElevationBoundary
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate    
       USE VERSION
 !     jgf46.00
@@ -4127,23 +4129,6 @@ C     read in and check matrix solver parameters
             STOP
          ENDIF
       ENDIF
-
-C     jgf48.4619: Accommodate Seizos changes for explicit solve
-      IF (ILump.eq.0) THEN ! default, fully consistent LHS
-C        allocate arrays needed by GWCE matrix and iterative solver
-         call alloc_main11()
-C        initialize parameter arrays needed by iterative solver
-         CALL DFAULT(IPARM,RPARM)
-         IPARM(1)=ITMAX
-         IPARM(2)=ISLDIA
-         !cms51.06: moved opening of fort.33 to openLogFile sub in global.F
-         IPARM(4)=33
-         RPARM(1)=CONVCR
-         NW = 4*NP + 4*ITMAX
-      ELSE ! lumped LHS
-         call alloc_main11_lumped()
-      ENDIF
-
 C...
 C...  Read input for 3D run
 C...

@@ -117,7 +117,7 @@ CWET...
       use sizes, only : sz
       use global, only : noff, nodecode, nnodecode, eta2, tk, nolifa,
      &    bsx1, bsy1, btime_end, C2DDI, C3D, g, h0, ifnlfa, nddt,
-     &    mne, mnp, nibnodecode, ilump
+     &    mne, mnp, nibnodecode, ilump, ncchange
 #ifdef CMPI
      &    ,idumy
       use messenger
@@ -134,7 +134,6 @@ CWET...
       integer :: nc1, nc2, nc3
       integer :: nm1, nm2, nm3
       integer :: nm123
-      integer :: ncchange
       integer :: ncele
       integer :: nctot
       real(sz) :: kslip

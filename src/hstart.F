@@ -77,6 +77,7 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
       USE WRITE_OUTPUT, ONLY : initInundationOutput,
      &   inundationTime, inundationTime_onset, maxInunDepth, 
      &   maxInunDepth_time, outputNodeCode, outputNOFF
+      USE GWCE, ONLY : etime1, etime2, etiminc
       IMPLICIT NONE
 #ifdef CMPI       
 #ifndef HAVE_MPI_MOD
@@ -99,7 +100,7 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 
 C   kmd48.33bc - add variable for timestep change
       INTEGER NTHS
-
+      REAL(SZ) :: etratio
       REAL(SZ) HollandTime
       REAL(SZ) ArgT, ArgTP, ArgSAlt
       REAL(SZ) H2

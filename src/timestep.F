@@ -73,7 +73,6 @@ C.....sb46.28sb03 added 09/xx/2006
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
       USE GLOBAL_3DVS, ONLY:
      &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA, Z0B,NFEN
-
 #ifdef CMPI
       USE MESSENGER
       USE HSWRITER, ONLY: writeHotstart_through_HSwriter  !st3 100711 for hsfile
@@ -176,6 +175,7 @@ C   TCM v50.66.02 -- Added for Time Varying Bathymetry
       INTEGER :: IJK
       REAL(SZ) ETA2TMP,DPTMP,DPTMP2,BTRATIO  !tcm v50.66.01 bathymetry changes
 
+      REAL(SZ) :: ARG, ARGJ, RFF
 
       call setMessageSource("timestep")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -2163,40 +2163,7 @@ C**********************************************************************
 C**********************************************************************
 
 
-C*************************************************************************
-C     Subroutine to determine local advection state for each element
-C
-C                                   Corbitt 120322
-C*************************************************************************
 
-      SUBROUTINE ADVECTLOCAL(IE)
-
-      USE SIZES, ONLY : SZ
-      USE GLOBAL
-      USE MESH, ONLY : NM, DP
-      USE NodalAttributes, ONLY : AdvectionState
-
-      Implicit None
-
-      Integer  :: NM1, NM2, NM3,IE
-
-      NM1=NM(IE,1)
-      NM2=NM(IE,2)
-      NM3=NM(IE,3)
-
-      IF ((DP(NM1).GE.AdvectionState(NM1)).AND.
-     &    (DP(NM2).GE.AdvectionState(NM2)).AND.
-     &    (DP(NM3).GE.AdvectionState(NM3))) THEN
-             IFNLCT = IFNLCTE
-             IFNLCAT = IFNLCATE
-      ELSE
-         IFNLCT = 0
-         IFNLCAT = 0
-      ENDIF
-
-C***********************************************************************
-      END SUBROUTINE ADVECTLOCAL
-C***********************************************************************
 
 C*************************************************************************
 C   Subroutine to check if elemental slope limiting is needed

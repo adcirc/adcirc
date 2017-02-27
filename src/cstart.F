@@ -29,6 +29,7 @@ C
       USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
      &    initInundationOutput
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
+      USE GWCE, ONLY : etime1, etime2, etiminc
 
       IMPLICIT NONE
 

@@ -48,7 +48,9 @@ Corbitt 120328: Apply Advection Locally
      &       C3DVS,
      &       DTDP,           !DTDP = timestep declared as real(8)
      &       allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
-     &       setMessageSource, unsetMessageSource
+     &       setMessageSource, unsetMessageSource,
+     &       mom_lv_x
+     
       SAVE
 
 C...DECLARE 3D GLOBAL ARRAYS
@@ -324,7 +326,7 @@ C     Allocate space for arrays used in 3D VS routines
 C
       SUBROUTINE ALLOC_3DVS()
       USE GLOBAL, ONLY : DUU1, DUV1, DVV1, BSX1, BSY1, UU2, VV2,
-     &   QX2, QY2, QN2, MOM_LV_X
+     &   QX2, QY2, QN2
       USE BOUNDARIES, ONLY : NETA, NVEL
       IMPLICIT NONE
       ! jgf: Moved the following line from alloc_main1a since it only 

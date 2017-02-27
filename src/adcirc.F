@@ -103,6 +103,8 @@ C******************************************************************************
       USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc,
      &  read_local_hot_start_files, make_dirname, write_local_harm_files
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc
+      USE GWCE, ONLY : initGWCE
+      USE MOMENTUM, ONLY : initMomentum
       USE HARM, ONLY : allocateFullDomainHAIOArrays,
      &                 initHarmonicParameters
       USE GLOBAL_IO, ONLY : allocateFullDomainIOArrays
@@ -214,6 +216,10 @@ C     jgf: Initialize default values in wind module and allocate
 C     memory for internal use.
       call initWindModule()
 
+      ! jgf: allocate memory for continuity and momentum eqns
+      call initGWCE()
+      call initMomentum()
+
 #ifdef CMACHSUN
       CALL ABRUPT_UNDERFLOW() ! Abrupt underflow for Sun computers
 #endif
@@ -301,19 +307,11 @@ Corbitt 1203022: Local Advection Flags
       IFWIND=1
       IF(IM.EQ.1) IFWIND=0
 
-C...Compute several constant coefficients
-
-      GA00=G*A00
-      GC00=G*C00
 Corbitt 120322: Handled in Timestep.F elementally
 C      TADVODT=IFNLCAT/Dt
-      GB00A00=G*(B00+A00)
       GFAO2=G*IFNLFA/2.D0
       GO3=G/3.D0
-      GO2=G/2.D0
-      DTO2=DT/2.D0
-      DT2=DT*2.D0
-      GDTO2=G*DT/2.D0
+
 Corbitt 120322: Handled in Timestep.F elementally
 C      SADVDTO3=IFNLCT*DT/3.D0
       GORho=G/RhoWat0
