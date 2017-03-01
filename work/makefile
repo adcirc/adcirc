@@ -30,7 +30,7 @@ PARALLEL_ADCIRC   := padcirc
 LIBADC            := libadc.a
 $(warning (INFO) Name is $(NAME), Machine is $(MACHINE), Vendor is $(VENDOR), and OS is $(OS).)
 $(warning (INFO) The root directory for the build is $(SRCDIR))
-$(warning (INFO) The ADCIRC version is $(shell ./scripts/adcircVersion.sh $(SRCDIR)))
+$(warning (INFO) The ADCIRC version is $(shell ../scripts/adcircVersion.sh $(SRCDIR)))
 include cmplrflags.mk
 #Casey 090302: Include variables/flags from SWAN.
 include ../swan/macros.inc

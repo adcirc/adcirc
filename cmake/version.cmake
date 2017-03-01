@@ -14,7 +14,7 @@ ELSE(WIN32)
     ADD_CUSTOM_COMMAND( OUTPUT ${CMAKE_BINARY_DIR}/CMakeFiles/version_cmake.F
         COMMAND ./adcircVersion.sh ${CMAKE_SOURCE_DIR} >/dev/null
         COMMAND cp ${CMAKE_SOURCE_DIR}/version.F ${CMAKE_BINARY_DIR}/CMakeFiles/version_cmake.F
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/work/scripts
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
         COMMENT "Generating ADCIRC version...")
 ENDIF(WIN32)
 SET_TARGET_PROPERTIES(version PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/version_mod)

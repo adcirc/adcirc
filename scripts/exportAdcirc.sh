@@ -10,13 +10,18 @@ compression=1
 
 #...Get the adcirc root directory
 parentdir="$(dirname "$(pwd)")"
-parentdir="$(dirname "$parentdir")"
 
 #...Generate version_autogen.F
 version=$(./adcircVersion.sh $parentdir)
 if [ $? != 0 ] ; then
     echo "ERROR: Export Failed @ version stage."
     exit 1
+fi
+
+#...Check if version is modified
+mod=$(git diff-index --quiet HEAD)
+if [ "x$?" != "x0" ] ; then
+    echo "WARNING: The version of ADCIRC being exported has been modified from its repository state."
 fi
 
 #...Get the name of the current branch
@@ -44,10 +49,10 @@ else
 fi
 
 #...Move to top level directory
-cd ../../
+cd ../
 
 #...Generate the changelog
-./work/scripts/generateChangelog.sh -a 
+./scripts/generateChangelog.sh -a 
 if [ $? != 0 ] ; then
     echo "ERROR: Export Failed @ changelog stage."
     exit 1
@@ -55,45 +60,45 @@ fi
 
 
 #...Check if the folder/file already exists
-if [ -d work/scripts/$outputDirectory ] ; then
+if [ -d ./scripts/$outputDirectory ] ; then
     echo "ERROR: Output directory already exists."
     exit 1
 fi
 
-if [ -s work/scripts/$outputFile ] ; then
+if [ -s ./scripts/$outputFile ] ; then
     echo "ERROR: Output archive already exists."
     exit 1
 fi
 
 #...Make a directory to hold the output data
-mkdir work/scripts/$outputDirectory
+mkdir ./scripts/$outputDirectory
 
 #...Export the repository snapshot to folder
-git archive $branch | tar -x -C work/scripts/$outputDirectory
+git archive $branch | tar -x -C ./scripts/$outputDirectory
 if [ $? != 0 ] ; then
     echo "ERROR: Export Failed @ git archive stage."
     exit 1
 fi
 
 #...Remove default version
-rm work/scripts/$outputDirectory/version_default.F
+rm ./scripts/$outputDirectory/version_default.F
 
 #...Grab the version.F file to include
-mv version.F work/scripts/$outputDirectory
+mv version.F ./scripts/$outputDirectory
 if [ $? != 0 ] ; then
     echo "ERROR: Export Failed @ tar stage."
     exit 1
 fi
 
 #...Grab the changelog file to include
-mv changelog work/scripts/$outputDirectory/.
+mv changelog ./scripts/$outputDirectory/.
 if [ $? != 0 ] ; then
     echo "ERROR: Export Failed @ tar stage."
     exit 1
 fi
 
 #...Create the .tar.gz package
-cd work/scripts
+cd ./scripts
 
 if [ $compression == 0 ] ; then
     tar -cf $outputFile $outputDirectory 

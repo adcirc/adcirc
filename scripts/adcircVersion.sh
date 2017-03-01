@@ -29,7 +29,7 @@ fi
 #   within a repository (signaled by a git error)
 #   quit and only write what is already 
 #   contained in version.F
-version=$(git describe --always --tags 2>/dev/null)
+version=$(git describe --always --tags --dirty=-modified 2>/dev/null)
 if [ "x$?" != "x0" ] ; then
     if [ ! -s $dir/version.F ] ; then
         echo $defaultVersion
