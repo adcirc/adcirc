@@ -11,6 +11,7 @@
       !----------------------------------------------------------------
       module control
       use sizes, only : sz 
+      use wind,only: nwlon,nwlat,wlatmax,wlonmin,wlatinc,wloninc 
       implicit none
       character(len=80) :: rundes
       character(len=80) :: runid
@@ -52,12 +53,6 @@
       integer :: irefmin
       integer :: irefsec
       real(sz) :: refsec
-      integer :: nwlat
-      integer :: nwlon
-      real(sz) :: wlatmax
-      real(sz) :: wlonmin
-      real(sz) :: wlatinc
-      real(sz) :: wloninc
       real(sz) :: cice_timinc
       real(sz) :: pureVortex
       real(sz) :: pureBackground

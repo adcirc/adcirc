@@ -3,7 +3,7 @@ IF(BUILD_ASWIP)
     
     SET(ASWIP_COMPILER_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG} ${PRECISION_FLAG} ${ADCIRC_OPTION_FLAGS} ${ADDITIONAL_FLAGS_ASWIP}")
 
-    SET(ASWIP_SOURCES src/sizes.F src/global.F src/global_3dvs.F src/boundaries.F 
+    SET(ASWIP_SOURCES src/sizes.F src/global.F src/global_3dvs.F src/boundaries.F src/nodalattr.F 
                       src/mesh.F src/wind.F src/owiwind.F KDTREE2/kdtree2.F src/owi_ice.F 
                       wind/vortex.F wind/aswip_1.0.3.F )
 

@@ -5,8 +5,8 @@ C
 C-----------------------------------------------------------------------
       module asymmetricVortexProcessing
          use sizes, only : sz
-         use global, only : wvnx2, wvny2, prn2,
-     &                   nhy, g, rhowat0,
+         use global, only : 
+     &                   g, rhowat0,
      &                   deg2rad, rad2deg, ms2kt, ten2one,
      &                   nws, windReduction, sphericalDistance,
      &                   DEBUG, WARNING, ERROR, INFO, screenunit,
@@ -19,7 +19,7 @@ C-----------------------------------------------------------------------
      &                 vortexLat, writeRadialVandP,
      &                 writeSpatialVandP, nws19get, windDrag, nws20get,
      &                 writeSpatialuvp, writeNodaluvp,
-     &                 geostrophic_switch, geofactor
+     &                 geostrophic_switch, geofactor,wvnx2, wvny2, prn2
          integer :: num_entry, num_cycles
          integer ,dimension(:),allocatable :: advr
          integer,dimension(:),allocatable :: iFcstInc ! hours between forecasts
@@ -1064,21 +1064,21 @@ C-----------------------------------------------------------------------
       module diagnosticOutput
 
       use sizes, only : sz, globaldir, mnp
-      use global, only : wvnx2, wvny2, prn2, nws,
+      use global, only : nws,
      &   deg2rad, rad2deg, ten2one, g, rhowat0, openFileForRead,
-     &   mnp, ihot, wtime1, wtime2, wtiminc,
-     &   m2nm, sphericaldistance  ! Jie 09/2013
+     &   ihot,  m2nm, sphericaldistance  ! Jie 09/2013
       use mesh, only : slam, sfea, np, ics
       use wind, only : hWindData_t, hWindFiles, nws15init, nws19get,
      &   writeFullCircleRmaxes, writeRadialVandP, writeSpatialVandP,
      &   nws15get, eyeLatR, eyeLonR, nws20get,writeSpatialuvp,
-     &   writeNodaluvp, moving_grid, geostrophic_switch, geofactor
+     &   writeNodaluvp, geostrophic_switch, geofactor, wvnx2, wvny2, prn2,
+     &   wtime1, wtime2, wtiminc
       use vortex, only : xy2latlon, latlon2xy, fang
       use asymmetricVortexProcessing, only :
      &  cycleTime, rlat, rlon, quadrantAngles, cycle_num, h_dir,
      &  cycleSecs, cycleLats, cycleLons, cycleDirs, num_cycles,
      &  num_entry, icyc, ient
-      use owiwind, only : nws12init, nws12get ! Jie 09/2013 added OWI
+      use owiwind, only : nws12init, nws12get, moving_grid ! Jie 09/2013 added OWI
       CHARACTER(2048) :: meshFileName ! name of file containing node locations
       LOGICAL :: nodesFromMesh ! .true. if we are supposed to load a fort.14
       LOGICAL :: nodesFromFile ! .true. if we are supposed to load a list of nodes     
@@ -1148,7 +1148,8 @@ C     Variables for recording domain extents
       !    G E N E R A T E   D I A G N O S T I C   O U T P U T
       !-------------------------------------------------------------
       subroutine initializeDiagnosticOutput()
-      use wind, only : numFiles
+      use wind, only : numFiles, eyeLatR, eyeLonR, foundEye
+      use owiwind, only : findStormCenter
       implicit none
       integer :: i
       integer :: errorio
@@ -1257,6 +1258,7 @@ C
          cycleSecs(:) = cycleTime(:) ! in seconds obtained from fort.22*
          DO icyc = 1, num_cycles
              call nws12get(wvnx2, wvny2, prn2, np, rhowat0, g)
+             call findStormCenter(eyeLatR, eyeLonR, foundEye)
              cycleLats(icyc) = EyeLatR(3)
              cycleLons(icyc) = EyeLonR(3)
              cycleDirs(icyc) = 0 ! not activated yet
@@ -1343,7 +1345,8 @@ C
       !-------------------------------------------------------------
       subroutine fullCircleRmaxes()
       use sizes, only : gblinputdir
-      use wind, only : draglawstring
+      use wind, only : draglawstring, eyeLatR, eyeLonR, foundEye
+      use owiwind, only : findStormCenter
       implicit none
       integer :: i, j, npp
       real(sz) :: vmax
@@ -1462,9 +1465,11 @@ C
 
                if (iout.eq.1) then
                   call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
+                  call findStormCenter(eyeLatR, eyeLonR, foundEye)
                else  
                   do j=1, int(owi_output_factor)
                      call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
+                     call findStormCenter(eyeLatR, eyeLonR, foundEye)
                   end do
                endif
                ! if this run is for wind analysis
@@ -1511,12 +1516,10 @@ C
             end do
          case(19)
             ! nws19get actually writes the Rmax data to the file
-            call nws19get(slam,sfea,wvnx2,wvny2,prn2,np,
-     &             outputsecs(iout), ics)    
+            call nws19get(wvnx2,wvny2,prn2,outputsecs(iout))    
          case(20)
             ! nws20get actually writes the Rmax data to the file
-            call nws20get(slam,sfea,wvnx2,wvny2,prn2,np,
-     &             outputsecs(iout), ics)
+            call nws20get(wvnx2,wvny2,prn2,outputsecs(iout))
          case default
             write(*,*) "ERROR: aswip: -n ",nws,
      &           " is not an nws value supported by aswip."
@@ -1544,7 +1547,8 @@ C
       !-------------------------------------------------------------
       subroutine radialVandP()
       use sizes, only : gblinputdir
-      use wind, only : angleNow, draglawstring
+      use wind, only : angleNow, draglawstring, eyeLatR, eyeLonR, foundEye
+      use owiwind, only : findStormCenter
       implicit none
       integer :: i, j
       real(sz) :: dr
@@ -1673,20 +1677,20 @@ C
             ! output each frame only, no jumping, no time-interpolation
             if (iout.eq.1) then
               call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
+              call findStormCenter(eyeLatR, eyeLonR, foundEye)
             else  
               do j=1, int(owi_output_factor)
                  call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
+                 call findStormCenter(eyeLatR, eyeLonR, foundEye)                 
               end do
              endif  
          case(15)
             call nws15get(wvnx2, wvny2, prn2, outputSecs(iout))
          case(19)
-            call nws19get(slam,sfea,wvnx2,wvny2,prn2,np,
-     &             outputsecs(iout), ics)
+            call nws19get(wvnx2,wvny2,prn2,outputsecs(iout))
          case(20)
             ! nws20get actually writes the Rmax data to the file
-            call nws20get(slam,sfea,wvnx2,wvny2,prn2,np,
-     &             outputsecs(iout), ics)
+            call nws20get(wvnx2,wvny2,prn2,outputsecs(iout))
          case default
             write(*,*) "ERROR: aswip: -n ",nws,
      &           " is not an nws value supported by aswip."
@@ -1724,8 +1728,8 @@ C
       ! S U B R O U T I N E   S P A T I A L   V   A N D   P
       !-------------------------------------------------------------
       subroutine spatialVandP()
-      use global, only : nhy
       use mesh, only : nm, ne, slam0, sfea0
+      use owiwind, only : findStormCenter
       implicit none
       integer :: i,j
       integer :: errorio
@@ -1733,6 +1737,7 @@ C
       real(sz) :: dx
       real(sz) :: dy
       real(sz) :: rhowatg
+      integer :: nhy
 
       RhoWatG = RhoWat0 * g
       if (nodesFromMesh.eqv..false.) then
@@ -1981,8 +1986,7 @@ C
          case(15)
             call nws15get(wvnx2,wvny2,prn2,outputSecs(iout))
          case(19)
-             call nws19get(slam,sfea,wvnx2,wvny2,prn2,np,
-     &             outputsecs(iout), ics)
+             call nws19get(wvnx2,wvny2,prn2,outputsecs(iout))
          case default
             write(*,*) "ERROR: aswip: -n ",nws,
      &           " is not an nws value supported by aswip."
@@ -2021,9 +2025,9 @@ C
       !-------------------------------------------------------------
       subroutine spatialuvp()
       use sizes, only : gblinputdir
-      use global, only : nhy
       use mesh, only : nm, ne, slam0, sfea0
-      use wind, only : draglawstring
+      use wind, only : draglawstring, eyeLatR, eyeLonR, foundEye
+      use owiwind, only : findStormCenter
       implicit none
       integer :: i,j
       integer :: errorio
@@ -2031,6 +2035,7 @@ C
       real(sz) :: dx
       real(sz) :: dy
       real(sz) :: rhowatg
+      integer :: nhy
 
       RhoWatG = RhoWat0 * g
       moving_grid=.true.
@@ -2312,20 +2317,20 @@ C
             ! output each frame only, no jumping, no time-interpolation
             if (iout.eq.1) then
               call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
+              call findStormCenter(eyeLatR, eyeLonR, foundEye)
             else  
               do j=1, int(owi_output_factor)
                  call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
+                 call findStormCenter(eyeLatR, eyeLonR, foundEye)
               end do
             endif           
          case(15)
             call nws15get(wvnx2,wvny2,prn2,outputSecs(iout))
          case(19)
-            call nws19get(slam,sfea,wvnx2,wvny2,prn2,np,
-     &             outputsecs(iout), ics)
+            call nws19get(wvnx2,wvny2,prn2,outputsecs(iout))
          case(20)
             ! nws20get actually writes the Rmax data to the file
-            call nws20get(slam,sfea,wvnx2,wvny2,prn2,np,
-     &             outputsecs(iout), ics)
+            call nws20get(wvnx2,wvny2,prn2,outputsecs(iout))
          case default
             write(*,*) "ERROR: aswip: -n ",nws,
      &           " is not an nws value supported by aswip."
@@ -2388,9 +2393,9 @@ C
       !-------------------------------------------------------------
       subroutine nodaluvp()
       use sizes, only : gblinputdir
-      use global, only : nhy
       use mesh, only : nm, ne, slam0, sfea0
-      use wind, only : draglawstring
+      use wind, only : draglawstring, eyeLatR, eyeLonR, foundEye
+      use owiwind, only : findStormCenter
       implicit none
       integer :: i,j
       integer :: errorio
@@ -2530,21 +2535,21 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
             ! output each frame only, no jumping, no time-interpolation
             if (iout.eq.1) then
               call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
+              call findStormCenter(eyeLatR, eyeLonR, foundEye)
             else  
               do j=1, int(owi_output_factor)
                  call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
+                 call findStormCenter(eyeLatR, eyeLonR, foundEye)                 
               end do
              endif 
          case(15)
             call nws15get(wvnx2,wvny2,prn2,outputSecs(iout))
          case(19)
-            call nws19get(slam,sfea,wvnx2,wvny2,prn2,np,
-     &             outputsecs(iout), ics)
+            call nws19get(wvnx2,wvny2,prn2,outputsecs(iout))
          case(20)
             write(*,*) "outputsecs=", outputsecs(iout)
             ! nws20get actually writes the Rmax data to the file
-            call nws20get(slam,sfea,wvnx2,wvny2,prn2,np,
-     &             outputsecs(iout), ics) 
+            call nws20get(wvnx2,wvny2,prn2,outputsecs(iout)) 
 !            write(*,*) "Debug: process only 1000 nodes"
 !            call nws20get(slam(1:1000),sfea(1:1000),wvnx2(1:1000),
 !     &       wvny2(1:1000),prn2(1:1000),1000,

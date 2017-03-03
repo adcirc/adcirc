@@ -35,7 +35,10 @@ C-----------------------------------------------------------------------
       USE WEIR
       USE TIME_VARYING_WEIR_BOUNDARY
       USE WIND
+      USE WETDRY, ONLY : noffActive, velmin
       USE ITPACKV
+      USE GWCE, ONLY : a00, b00, c00, convcr, isldia, itmax,
+     &   invertedBarometerOnElevationBoundary
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate    
       USE VERSION
 !     jgf46.00
@@ -58,7 +61,7 @@ Casey 100205: Enable hot-start file generation by SWAN.
       REAL(SZ) RampVal
       CHARACTER(len=80) :: CDUM80
       LOGICAL fileFound
-      INTEGER :: I, J, JKI
+      INTEGER :: I, J, JKI, JJ, NP2
 C
 #if defined CSWAN || defined ADCSWAN
       ! jgf50.60.09: Namelist for turning SWAN output files on or off
@@ -172,9 +175,6 @@ C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
 C     Module.
       CALL initNAModule()
-C
-C     jgf50.32: Initialize default values in wind module.
-      CALL initWindModule()
 
 c     tcm v50.66.01 addition for time varying bathymetry
       NDDT = 0  !set the default value for time varying bathymetry e.g. no changes
@@ -196,6 +196,7 @@ C     ALLOCATE ARRAYS Dimensioned by MNP and MNE
       ! jgf51.21.13: Allocate boundary condition arrays dimensioned by
       ! mnvel 
       call alloc_main3()
+
 C...
 C...  OPEN UNIT 15 INPUT FILE (control parameters and periodic boundary conditions)
 C...
@@ -1978,7 +1979,7 @@ C...
  1116    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
      &        I2,'/',I2,'/',I2,'  ',I2,':',I2,':',f7.4,/)
          CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN,REFSEC,
-     &        WREFTIM, MyProc, NScreen, ScreenUnit)
+     &        WREFTIM)
 C...     TCM V49.64.01 CHANGES FOR ICE CONCENTRATION
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) NWLAT,NWLON,WLATMAX,
      &        WLONMIN,WLATINC,WLONINC,WTIMINC
@@ -2041,7 +2042,7 @@ C...     WHERE NRS=2, NRS=4 WERE NOT BEING INCLUDED
  6111    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
      &           I2,'/',I2,'/',I2,'  ',I2,'H',/)
          CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
-     &        WindRefTime, MyProc, NScreen, ScreenUnit)
+     &        WindRefTime)
       ENDIF
 C     jgf46.16 Merged:
 C     cf & cm added nws = 9: asymmetric hurricane winds
@@ -4128,23 +4129,6 @@ C     read in and check matrix solver parameters
             STOP
          ENDIF
       ENDIF
-
-C     jgf48.4619: Accommodate Seizos changes for explicit solve
-      IF (ILump.eq.0) THEN ! default, fully consistent LHS
-C        allocate arrays needed by GWCE matrix and iterative solver
-         call alloc_main11()
-C        initialize parameter arrays needed by iterative solver
-         CALL DFAULT(IPARM,RPARM)
-         IPARM(1)=ITMAX
-         IPARM(2)=ISLDIA
-         !cms51.06: moved opening of fort.33 to openLogFile sub in global.F
-         IPARM(4)=33
-         RPARM(1)=CONVCR
-         NW = 4*NP + 4*ITMAX
-      ELSE ! lumped LHS
-         call alloc_main11_lumped()
-      ENDIF
-
 C...
 C...  Read input for 3D run
 C...
