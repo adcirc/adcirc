@@ -538,7 +538,7 @@ C
             ENDDO
 Casey 140701: Need to set some variables for use later.
             KSlip = 0.D0
-            write(6,*) 'temncele.eq.0 skip to 999 nh=',nh !jgfdebug
+            !write(6,*) 'temncele.eq.0 skip to 999 nh=',nh !jgfdebug
             GOTO 999
          ENDIF
 c.....
@@ -561,7 +561,7 @@ c     to the solution
                   Fr(k)=VelTan+iy*VelNorm
 C                  EVTot(k)=0.D0 !f77diff??
                ENDDO
-               write(6,*) 'lbp.gt.0 skip to 999 nh=',nh !jgfdebug               
+               !write(6,*) 'lbp=',lbp,' lbcodei(lbp)=',lbcodei(lbp),' skip to 999 nh=',nh !jgfdebug               
                GOTO 999
             ENDIF
          ENDIF
@@ -1074,7 +1074,7 @@ C    kmd48.33bc added in spherical factors for 3D
 
                ! 3.9. save the viscosity parameter for using in the transport equation
                 Biharmonic_viscosity_modified_Leith ( NH, k ) = Biharmonic_viscosity
-                write(6,*) 'nh, k, biharmonic_viscosity_modified_leith ',nh, k, Biharmonic_viscosity_modified_Leith(nh,k) !jgfdebug
+                !write(6,*) 'nh, k, biharmonic_viscosity_modified_leith ',nh, k, Biharmonic_viscosity_modified_Leith(nh,k) !jgfdebug
                ! 4. congratulations! we have computed modified Leith viscosity!
                Biharmonic_LStress(k) = -3.d0 * Biharmonic_viscosity * (Biharmonic_DqDXDPhiDX2A+Biharmonic_DqDYDPhiDY2A)
      &              /TotalArea2
@@ -4369,13 +4369,13 @@ C*****************************************************************************
           ! 1.3. compute the average viscosity in the xy plane
           average_viscosity = 0.0d0
           Do K = 1, NFEN
-             write(6,*) 'i, k, biharmonic_viscosity_modified_leith ',i, k, Biharmonic_viscosity_modified_Leith(i,k) !jgfdebug
+             !write(6,*) 'i, k, biharmonic_viscosity_modified_leith ',i, k, Biharmonic_viscosity_modified_Leith(i,k) !jgfdebug
              average_viscosity = average_viscosity + Biharmonic_viscosity_modified_Leith ( I, K )
           End Do
           average_viscosity = average_viscosity / NFEN
 
           ! 1.3.1 compute the element Peclet number
-          write(6,*) 'i, average_viscosity ',i, average_viscosity !jgfdebug
+          !write(6,*) 'i, average_viscosity ',i, average_viscosity !jgfdebug
           element_peclet_number = length_max * velocity_magnitude_max_in_xy / average_viscosity !constant_diffusivity !average_viscosity
           !average_element_peclet_number = length_max * average_velocity / average_viscosity 
           average_element_peclet_number = length_max * velocity_magnitude_max_in_xy / average_viscosity 
