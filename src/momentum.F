@@ -61,7 +61,6 @@ C******************************************************************************
      &   allMessage, logMessage, unsetMessageSource
       implicit none
 
-
       real(sz),allocatable ::   auv11(:),auv12(:)
       real(sz) :: auv21, auv22
       real(sz) :: dto2  ! time step divided by 2.0
@@ -69,6 +68,24 @@ C******************************************************************************
       
       contains
 
+!----------------------------------------------------------------------
+!                    S U B R O U T I N E
+!         I N I T    M O M E N T U M     E Q U A T I O N
+!----------------------------------------------------------------------
+!     Allocates arrays and initializes constants.
+!----------------------------------------------------------------------
+      subroutine initMomentumEq()
+      use sizes, only : mnp
+      use global, only : dt, g
+      implicit none
+
+      allocate(auv11(mnp),auv12(mnp))
+      dto2=dt/2.d0
+      go2=g/2.d0
+
+!----------------------------------------------------------------------
+      end subroutine initMomentumEq
+!----------------------------------------------------------------------
 
 !----------------------------------------------------------------------
 !                    S U B R O U T I N E
@@ -76,18 +93,31 @@ C******************************************************************************
 !----------------------------------------------------------------------
 !     Allocates arrays and initializes constants.
 !----------------------------------------------------------------------
-      subroutine initMomentum()
-      use sizes, only : mnp
-      use global, only : dt, g
-      implicit none
-
-
-      allocate(auv11(mnp),auv12(mnp))
-      dto2=dt/2.d0
-      go2=g/2.d0
-
+      subroutine solveMomentumEq()
+      use global, only : C2DDI, CME_New_NC, CME_New_C1, CME_New_C2,
+     &   CPRECOR, UU2, VV2, QX2, QY2
+#ifdef CMPI
+     & , DUMY1
+      use messenger
+#endif
+      IF (C2DDI) THEN
+         IF (CME_New_NC) THEN
+            CALL Mom_Eqs_New_NC()
+         ENDIF
+         IF ((CME_New_C1).OR.(CME_New_C2)) THEN
+            CALL Mom_Eqs_New_Conserv()
+         ENDIF
+         IF (CPRECOR) THEN
+            CALL Mom_Eqs_Non_Conserv_pc()
+         ENDIF
+C...  If running in parallel, update velocities & fluxes on all processors
+#ifdef CMPI
+         CALL UPDATER(UU2,VV2,DUMY1,2)
+         CALL UPDATER(QX2,QY2,DUMY1,2)
+#endif
+      ENDIF
 !----------------------------------------------------------------------
-      end subroutine initMomentum
+      end subroutine solveMomentumEq
 !----------------------------------------------------------------------
 
 
@@ -112,7 +142,6 @@ C                            r.l.  06/22/2005                                  *
 C*******************************************************************************
 
       SUBROUTINE Mom_Eqs_New_NC()
-C
       USE GLOBAL, ONLY : UU2, VV2, QX2, QY2, CBaroclinic, 
      &  CME_AreaInt_Corr, CME_AreaInt_Orig, CME_LS_IBPQ, CME_LS_IBPSQ,
      &  CME_LS_IBPSV, CSmag_Eh, Smag_Comp_Flag, CTIP, DT, CME_LS_IBPV,
@@ -157,7 +186,6 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       REAL(SZ) LSXYN1, LSXYN2, LSXYN3
       REAL(SZ) LSYXN1, LSYXN2, LSYXN3
       REAL(SZ) LSYYN1, LSYYN2, LSYYN3
-      REAL(SZ) QTan
       REAL(SZ) QX1N1, QX1N2, QX1N3
       REAL(SZ) QY1N1, QY1N2, QY1N3
       REAL(SZ) SFacAvg
@@ -519,7 +547,6 @@ C           AND QUV ON A SCALAR COMPUTER USING THE TEMPORARY VECTORS
 
          ENDDO
 
-
 C     LINES TO RUN ON A VECTOR COMPUTER
 C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR MOM_LV_X, MOM_LV_Y
 C           AND AUV
@@ -880,7 +907,6 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       REAL(SZ) DU1DX, DU1DY, DV1DX, DV1DY
       REAL(SZ) DU1DX2A, DU1DY2A, DV1DX2A, DV1DY2A
       REAL(SZ) DQX1DX, DQX1DY, DQY1DX, DQY1DY
-      REAL(SZ) DQX1DXA, DQX1DYA, DQY1DXA, DQY1DYA
       REAL(SZ) DQX1DX2A, DQX1DY2A, DQY1DX2A, DQY1DY2A
       REAL(SZ) DU1QX1DXA, DV1QX1DYA, DU1QY1DXA, DV1QY1DYA
       REAL(SZ) EVMH1N1, EVMH1N2, EVMH1N3, EVMEle, EVMSmag
@@ -1661,7 +1687,6 @@ C
       REAL(SZ) LSXYN1, LSXYN2, LSXYN3
       REAL(SZ) LSYXN1, LSYXN2, LSYXN3
       REAL(SZ) LSYYN1, LSYYN2, LSYYN3
-      REAL(SZ) QTan
       REAL(SZ) QX1N1, QX1N2, QX1N3
       REAL(SZ) QY1N1, QY1N2, QY1N3
       REAL(SZ) SFacAvg

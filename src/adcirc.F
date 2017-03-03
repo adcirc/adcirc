@@ -100,11 +100,11 @@ C*    ADCIRC initialize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Init(COMM, ROOTD)
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
-      USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc,
+      USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
      &  read_local_hot_start_files, make_dirname, write_local_harm_files
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc
       USE GWCE, ONLY : initGWCE
-      USE MOMENTUM, ONLY : initMomentum
+      USE MOMENTUM, ONLY : initMomentumEq
       USE HARM, ONLY : allocateFullDomainHAIOArrays,
      &                 initHarmonicParameters
       USE GLOBAL_IO, ONLY : allocateFullDomainIOArrays
@@ -216,9 +216,9 @@ C     jgf: Initialize default values in wind module and allocate
 C     memory for internal use.
       call initWindModule()
 
-      ! jgf: allocate memory for continuity and momentum eqns
+      !jgf53.dev: allocate memory for continuity and momentum eqns
       call initGWCE()
-      call initMomentum()
+      call initMomentumEq()
 
 #ifdef CMACHSUN
       CALL ABRUPT_UNDERFLOW() ! Abrupt underflow for Sun computers
@@ -307,13 +307,6 @@ Corbitt 1203022: Local Advection Flags
       IFWIND=1
       IF(IM.EQ.1) IFWIND=0
 
-Corbitt 120322: Handled in Timestep.F elementally
-C      TADVODT=IFNLCAT/Dt
-      GFAO2=G*IFNLFA/2.D0
-      GO3=G/3.D0
-
-Corbitt 120322: Handled in Timestep.F elementally
-C      SADVDTO3=IFNLCT*DT/3.D0
       GORho=G/RhoWat0
       GORhoOAMB=GORho/AMB
 

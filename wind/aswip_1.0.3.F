@@ -6,7 +6,7 @@ C-----------------------------------------------------------------------
       module asymmetricVortexProcessing
          use sizes, only : sz
          use global, only : 
-     &                   nhy, g, rhowat0,
+     &                   g, rhowat0,
      &                   deg2rad, rad2deg, ms2kt, ten2one,
      &                   nws, windReduction, sphericalDistance,
      &                   DEBUG, WARNING, ERROR, INFO, screenunit,
@@ -1066,8 +1066,7 @@ C-----------------------------------------------------------------------
       use sizes, only : sz, globaldir, mnp
       use global, only : nws,
      &   deg2rad, rad2deg, ten2one, g, rhowat0, openFileForRead,
-     &   mnp, ihot,
-     &   m2nm, sphericaldistance  ! Jie 09/2013
+     &   ihot,  m2nm, sphericaldistance  ! Jie 09/2013
       use mesh, only : slam, sfea, np, ics
       use wind, only : hWindData_t, hWindFiles, nws15init, nws19get,
      &   writeFullCircleRmaxes, writeRadialVandP, writeSpatialVandP,
@@ -1729,7 +1728,6 @@ C
       ! S U B R O U T I N E   S P A T I A L   V   A N D   P
       !-------------------------------------------------------------
       subroutine spatialVandP()
-      use global, only : nhy
       use mesh, only : nm, ne, slam0, sfea0
       use owiwind, only : findStormCenter
       implicit none
@@ -1739,6 +1737,7 @@ C
       real(sz) :: dx
       real(sz) :: dy
       real(sz) :: rhowatg
+      integer :: nhy
 
       RhoWatG = RhoWat0 * g
       if (nodesFromMesh.eqv..false.) then
@@ -2026,7 +2025,6 @@ C
       !-------------------------------------------------------------
       subroutine spatialuvp()
       use sizes, only : gblinputdir
-      use global, only : nhy
       use mesh, only : nm, ne, slam0, sfea0
       use wind, only : draglawstring, eyeLatR, eyeLonR, foundEye
       use owiwind, only : findStormCenter
@@ -2037,6 +2035,7 @@ C
       real(sz) :: dx
       real(sz) :: dy
       real(sz) :: rhowatg
+      integer :: nhy
 
       RhoWatG = RhoWat0 * g
       moving_grid=.true.
@@ -2394,7 +2393,6 @@ C
       !-------------------------------------------------------------
       subroutine nodaluvp()
       use sizes, only : gblinputdir
-      use global, only : nhy
       use mesh, only : nm, ne, slam0, sfea0
       use wind, only : draglawstring, eyeLatR, eyeLonR, foundEye
       use owiwind, only : findStormCenter

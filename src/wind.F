@@ -75,11 +75,23 @@ C
       ! radial distance to point where vortex effects insignificant,
       ! normalized to current Rmax
       REAL(SZ) pureBackground
+      !
+      ! jgf50.32: The wind drag limit was originally set to 0.002d0
+      ! in v46 ... the higher value of 0.0035d0 was used in ~v48 and
+      ! is now the default.
+      REAL(SZ) :: WindDragLimit = 0.0035d0   ! maximum wind drag value
 
-      REAL(SZ) :: WindDragLimit          ! maximum wind drag value
-      CHARACTER(len=10) :: DragLawString ! controls wind drag formulation
-
-
+      ! jgf50.32: If DragLawString is not set in the fort.15 input file,
+      ! it will remain 'default'; this will cause 'Garratt' to be used
+      ! in FUNCTION WindDrag, and 'IceCube' to be used in
+      ! FUNCTION WindIceDrag.
+      CHARACTER(len=10) :: DragLawString = 'default' ! controls wind drag formulation
+#ifdef POWELL
+      ! jgf50.32 Provide backward compatibility with hardcoded POWELL
+      ! support.
+      DragLawString = 'Powell'
+#endif
+      !
       ! used for vis/diagnostics on nws19 and nws20
       LOGICAL :: writeFullCircleRmaxes = .false.
       LOGICAL :: writeRadialVandP = .false.
@@ -175,10 +187,12 @@ C-----------------------------------------------------------------------
 C     ----------------------------------------------------------------
 C       I N I T   W I N D   M O D U L E
 C     ----------------------------------------------------------------
-C
 C     jgf50.32 Subroutine to initialize meteorological parameters to their
 C     default values.
-C
+C     jgf53.dev: Now allocates memory, whereas default values are now set
+C     in the module variable declaration section above. 
+C     This subroutine must be called after read_input() so that it can
+C     use the values of np and g. 
 C     ----------------------------------------------------------------
       subroutine initWindModule()
       use mesh, only : np
@@ -187,32 +201,13 @@ C     ----------------------------------------------------------------
       allocate ( wvnx2(np),wvny2(np) )
       allocate ( prn1(np) )
       allocate ( prn2(np) )
-
   
 C.... tcm v49.16 20100617 added
 C.... convert background pressure from millibars to meters of water
       PRBCKGRND_MH2O = 100.0D0*PRBCKGRND/(RHOWAT0*G)
       prn1 = PRBCKGRND_MH2O
       prn2 = PRBCKGRND_MH2O
-  
-      ! jgf50.32: The wind drag limit was originally set to 0.002d0
-      ! in v46 ... the higher value of 0.0035d0 was used in ~v48 and
-      ! is now the default.
-      WindDragLimit = 0.0035d0
 
-      ! jgf50.32: If DragLawString is not set in the fort.15 input file,
-      ! it will remain 'default'; this will cause 'Garratt' to be used
-      ! in FUNCTION WindDrag, and 'IceCube' to be used in
-      ! FUNCTION WindIceDrag.
-      
-      DragLawString = 'default'
-#ifdef POWELL
-      ! jgf50.32 Provide backward compatibility with hardcoded POWELL
-      ! support.
-      DragLawString = 'Powell'
-#endif
-
-      RETURN
 C     ----------------------------------------------------------------
       END SUBROUTINE initWindModule
 C     ----------------------------------------------------------------
@@ -249,7 +244,7 @@ C
       REAL(SZ)  :: NodeLon
       REAL(SZ)  :: StormDirection
       REAL(SZ)  :: Weight(3)
-C
+C    
       SELECT CASE(TRIM(DragLawString))
 C
       CASE("Garratt","GARRATT","garratt","default")
@@ -411,7 +406,7 @@ C.. Apply a weighted average.
 C
       END SELECT
 C
-      !@jasonfleming: record wind drag at all nodes for writing to output files
+      !jgf53.dev: record wind drag at all nodes for writing to output files
       windDragOut(nodeNumber) = windDrag
       
       RETURN
@@ -1280,32 +1275,26 @@ C    C O L D  S T A R T   M E T E O R O L O G I C A L   F O R C I N G
 C----------------------------------------------------------------------
 C     Sets up meterological i/o for a coldstart.
 C----------------------------------------------------------------------
-      subroutine coldstartMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
-     &   wvnxout, wvnyout)
+      subroutine coldstartMeteorologicalForcing(nws)
       use sizes, only : gblinputdir, inputdir
       use global, only : ciceout, h0, g, eta2, ncice, rampmete, 
-     &   sponge, res_bc_flag, statim
+     &   sponge, res_bc_flag, statim, wsx1, wsy1, wsx2, wsy2, pr2
       use owiwind,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006          
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np
       implicit none
       integer, intent(in) :: nws
-      real(sz), intent(out) :: wsx2(*)
-      real(sz), intent(out) :: wsy2(*)
-      real(sz), intent(out) :: pr2(*)
-      real(sz), intent(out) :: wvnxout(*)
-      real(sz), intent(out) :: wvnyout(*)
       real(sz) :: windx ! wind vel (m/s) in x-dir
       real(sz) :: windy ! wind vel (m/s) in y-dir
-
-      real(sz) :: prdiff
-      real(sz) :: wDragCo
-      real(sz) :: windMag
       real(sz) :: wtratio ! used to time interpolated between met datasets
       integer :: nhg ! node number temp
       real(sz) :: bf ! blend factor for multiple sets of wind data 
       integer :: i ! node loop counter
+     
+      WSX2(:) = 0.d0
+      WSY2(:) = 0.D0
+      PR2(:) = PRBCKGRND_MH2O  
      
       IF(NWS.EQ.1) THEN
          OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
@@ -2765,7 +2754,7 @@ C***********************************************************************
       INTEGER :: I,J
       REAL(SZ) :: RHOWATG
       INTEGER  LATIND1,LATIND2,LONIND1,LONIND2
-      REAL(SZ) WLATMAX,WLONMIN,WLATINC,WLONINC,XWRATIO,YWRATIO
+      REAL(SZ) XWRATIO,YWRATIO
       REAL(SZ) WLATM,WLONM
       REAL(SZ) :: XCOOR,YCOOR
       REAL(SZ),SAVE,ALLOCATABLE :: WVXFN(:,:),WVYFN(:,:),PRN(:,:)
@@ -4836,7 +4825,7 @@ C     ----------------------------------------------------------------
       REAL( 8) :: wvnx(np),wvny(np), press(np)
       REAL(sz) :: RhoWatG
 
-      REAL,DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
+      REAL(SZ),DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ilat,ilon,atcfRMW
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ilat1,ilon1,atcfRMW1
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ispd,icpress
@@ -5332,15 +5321,17 @@ C***********************************************************************
       USE MESH, ONLY : slam, sfea, np, ics 
       IMPLICIT NONE
 
-      INTEGER  :: ient,itpc
-      INTEGER  :: i, nwi,j
+      INTEGER  :: ient
+      INTEGER  :: i
       INTEGER  :: num_entry
-      REAL(sz) :: TIMELOC, time1, wtratio
+      REAL(sz) :: TIMELOC, wtratio
       REAL( 8), SAVE, ALLOCATABLE :: xcoor(:),ycoor(:)
       REAL( 8) :: wvnx(np),wvny(np), press(np)
       REAL(sz) :: RhoWatG
       REAL(sz) :: corio                       ! Coriolis force (1/s)
 
+      !REAL(SZ),DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
+      ! jgf53.dev: FIXME this should be REAL(SZ) as above
       REAL,DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ilat,ilon,atcfRMW
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ilat1,ilon1,atcfRMW1
@@ -5348,8 +5339,6 @@ C***********************************************************************
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ispd1,icpress1
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: iyear,imth,iday,ihr
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE ::iyear1,imth1,iday1,ihr1
-      REAL(sz), SAVE ::  lat1, lon1,  spd1,  cpress1,  rmw1
-      REAL(sz), SAVE ::  dt, told, cLat1, cLon1
       CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE, SAVE:: type! hindcast/nowcast or forecast?
       CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE, SAVE:: type1 !hindcast/nowcast or forecast?
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::iFcstInc1, iFcstInc ! hours between forecasts
@@ -5359,14 +5348,13 @@ C***********************************************************************
       REAL(sz),DIMENSION(:,:),ALLOCATABLE,SAVE :: VmaxesBL1,HollBs1
       REAL(sz),DIMENSION(:,:,:),ALLOCATABLE,SAVE :: HollBs,VmaxesBL
       INTEGER ,DIMENSION(:),ALLOCATABLE,SAVE :: advr,advr1
-      REAL(sz), SAVE :: Vmax
       REAL(sz), SAVE :: Vr
       REAL(sz), SAVE, DIMENSION(4) :: r
       REAL(sz), SAVE :: Pn
       REAL(sz), SAVE :: Pc
       REAL(sz), SAVE :: cLat
       REAL(sz), SAVE :: cLon
-      REAL(sz), SAVE :: cHollB
+      REAL(SZ), SAVE :: told
       ! save parameters for each node 
       ! change them to allocatable, save Aug. 2013, Jie
       REAL(sz), ALLOCATABLE, SAVE :: cHollBs1(:), cHollBs2(:)
@@ -5408,7 +5396,7 @@ C***********************************************************************
       INTEGER , DIMENSION(:,:),ALLOCATABLE, SAVE :: ir1
       INTEGER , DIMENSION(:,:,:),ALLOCATABLE, SAVE :: ir
       CHARACTER(LEN = 10),DIMENSION(:),ALLOCATABLE,SAVE::name,name1
-      REAL(sz),SAVE :: timeOld,timeNew
+      REAL(sz),SAVE :: timeNew
       REAL(sz) :: uTransNow, vTransNow ! time-interpolated overland speed, kts
       REAL(sz) :: dirNow ! Jie
       CHARACTER(1) ew,ns
@@ -5497,7 +5485,7 @@ C***********************************************************************
          allocate(VmaxesBL1(i,4), VmaxesBL(i,4,4))
 
          ! jgf: initialize arrays to zero
-         ir = 0.0d0
+         ir = 0
          rmaxw = 0.0d0
          quadflag = 0 
          HollBs = 0.0d0
@@ -5869,7 +5857,6 @@ C     we are running off the end of the data.
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-999   RETURN
 C***********************************************************************
       END SUBROUTINE NWS20GET
 C***********************************************************************

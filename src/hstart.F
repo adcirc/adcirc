@@ -97,6 +97,8 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
       INTEGER I, J, NH, N              !local loop counters
       INTEGER NCyc, NA, InputFileFmtVn
       INTEGER sd_node_number,fd_node_number
+      INTEGER :: NNBB, NNBB1, NNBB2
+      REAL(SZ) :: RFF1, RFF2
 
 C   kmd48.33bc - add variable for timestep change
       INTEGER NTHS
@@ -111,7 +113,7 @@ C   kmd48.33bc - add variable for timestep change
       REAL(SZ) WTRatio, WindX, WindY, WindMag, WDragCo
       REAL(8) TimeLoc
       REAL(SZ) PRDIFF,PRBCKGRND_MH2O     ! tcm v49.16 20100617 added
-
+      REAL(SZ) ARG1, ARG2, ARGJ1, ARGJ2  ! tides
 C     jgf46.08 Fine grained ramp functions
       REAL(SZ) RampExtFlux1   ! Ramp for external flux b.c.s @ITHS-1
       REAL(SZ) RampExtFlux2   ! Ramp for external flux b.c.s @ITHS

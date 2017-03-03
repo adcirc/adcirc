@@ -8,11 +8,9 @@ C This module declares all global variables that are not exclusive to the 3D  *
 C routines.  The 3D exclusive variables are declared in global_3DVS           *
 C                                                                             *
 C******************************************************************************
-
 C
       MODULE GLOBAL
-      USE SIZES, ONLY : SZ, MNP, MNE, MNBFR, MNETA, MNSTAE, MNSTAV, 
-     &   MNEI, MNTIF, MNVEL, MYPROC, MNFFR, MNSTAC, MNSTAM
+      USE SIZES, ONLY : SZ 
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
       IMPLICIT NONE
       SAVE
@@ -359,19 +357,15 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE ::   SALTAMP(:,:),SALTPHA(:,:)
       REAL(SZ),ALLOCATABLE ::   OBCCOEF(:,:),COEF(:,:)
       REAL(SZ),ALLOCATABLE ::   COEFD(:) !jgf48.4619 from Seizo (Lumped GWCE)
-
-      REAL(SZ),ALLOCATABLE ::   ABD(:,:),ZX(:)
-
-      INTEGER  NBFR,NCOR,NE2,NP2
+      INTEGER  NBFR,NCOR
 
 C    kmd48.33bc - added variables for the levels of no motion and top temperature boundary condition
       REAL(SZ),ALLOCATABLE ::   LNM_BC1(:), LNM_BC2(:), LNM_BC(:) ! level of no motion
       REAL(SZ),ALLOCATABLE ::   q_heat1(:), q_heat2(:), HFLUX(:)  ! top temperature
       REAL(SZ),ALLOCATABLE, TARGET :: Sponge(:)  ! sponge information for boundary conditions
+
       INTEGER,ALLOCATABLE, TARGET ::    NOFF(:), NODECODE(:)
-
       INTEGER,ALLOCATABLE ::    NNODECODE(:)
-
       INTEGER,ALLOCATABLE ::    NIBNODECODE(:)
       !
       ! lists of elements containing each station 
@@ -387,7 +381,6 @@ C.....for buoyancy forcing
       REAL(SZ),ALLOCATABLE ::   VIDBCPDXOH(:), VIDBCPDYOH(:)
 C.....for scalar transport
       REAL(SZ),ALLOCATABLE ::   DAConc(:)
-
 
       REAL(SZ) DT
 C
@@ -486,9 +479,9 @@ C     size has changed after a hotstart.
       INTEGER  IM
       INTEGER :: NABOUT = 0
       INTEGER  NFFR
-      INTEGER  NFOVER,NHG,NHY,NOLICAT,NOUTC
+      INTEGER  NFOVER,NOLICAT,NOUTC
       INTEGER  NOUTE,NSPOOLE,NOUTV,NSPOOLV
-      INTEGER  NRAMP,NRS,NSTAE,NSTARTDRY,NSTAV,NT,NTCYFE
+      INTEGER  NRAMP,NRS,NSTAE,NSTAV,NT,NTCYFE
       INTEGER  NTCYFV,NTCYSE,NTCYSV,NTIF,NTIP,NTRSPE,NTRSPV
       INTEGER  NTCYS_TVW,NTCYF_TVW
       INTEGER  NWS
@@ -524,13 +517,11 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       integer, target :: fauxFilePosition 
 
       INTEGER  IHOTSTP, IMHS
-      INTEGER  ITIME, ITEMPSTP, ITEST
+      INTEGER  ITIME, ITEMPSTP
       INTEGER  ITHS, ITITER    
       
-
-      INTEGER  JJ, KEMAX, KVMAX, LRC, LUMPT
-      INTEGER  MBW, MDF, NBW
-      INTEGER  NCBND, NCTOT, NDRY, NDSETSC
+      INTEGER  LUMPT ! =1/0; LUMP/DO NOT LUMP THE TRANSPORT EQN
+      INTEGER  NDSETSC
       INTEGER  NCChange !jgf45.06 flag indicating wetting / drying has occurred
       INTEGER  NDSETSE, NDSETSV, NDSETSW, NDSETS_TVW
       INTEGER  NHSINC, NHSTAR
@@ -539,9 +530,6 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
 Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER, TARGET :: IGRadS
 !#endif
-      INTEGER  NNBB, NNBB1, NNBB2
-      INTEGER  NNBB1R, NNBB1L, NNBB2R, NNBB2L ! sb46.28.sb05.05 11/01/2006
-      INTEGER  NNBB1WN, NNBB2WN               ! sb46.28.sb05.05 WN stands for wet neighbors 11/01/2006
       INTEGER  NOUTGC, NOUTGE, NOUTGV, NOUTGW, NOUTM, NOUT_TVW
       INTEGER, TARGET :: NSCOUC, NSCOUE, NSCOUGC, NSCOUGE, NSCOUGV ! output spool counters
       INTEGER, TARGET :: NSCOUGW, NSCOURS, NSCOUGP, NSCOUM, NSCOUV ! output spool counters
@@ -560,7 +548,7 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER  NTCYFGV, NTCYFGW
       INTEGER  NTCYFM, NTCYSC, NTCYSGC, NTCYSGE
       INTEGER  NTCYSGV, NTCYSGW, NTCYSM
-      INTEGER  NTRSPC, NTRSPM, NUMITR, NWET
+      INTEGER  NTRSPC, NTRSPM
       INTEGER  NP_GLOBAL
 C     kmd48.33bc - added variables for 3D boundary conditions
       INTEGER  RES_BC_FLAG  ! boundary condition flag for salinity and temperature
@@ -576,32 +564,15 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       REAL(SZ) TTBCSTATIM, TTBCRATIO
       REAL(SZ) SPONGEDIST  ! distance information for the sponge layer
       LOGICAL :: OUTPUTSPONGE  =  .FALSE.
-
       REAL(SZ) RIVBCTIMINC, RIVBCTIME1, RIVBCTIME2  ! time information for river - baroclinic
       REAL(SZ) BCRivRATIO, RIVBCSTATIM
-
-      REAL(SZ) ADVECX, ADVECY
-      REAL(SZ) ARG1, ARG2, ARGJ1, ARGJ2
-
-      REAL(SZ) BEDSTR, BNDLEN2O3NC
+      REAL(SZ) BEDSTR
       REAL(SZ) COND
-      REAL(SZ) DTOHPP
-      REAL(SZ) GO3, GO2, GFAO2
-
-      REAL(SZ) P11, P22, P33
-
-      REAL(SZ) QUNORM, QUTemp, QVNORM, RAMP, RAMP1, RAMP2, RBARWL
-      REAL(SZ) RBARWL1,RBARWL1F, RBARWL2, RBARWL2F, RFF1, RFF2
-      REAL(SZ) SADVDTO3
-      REAL(SZ) TADVODT
+      REAL(SZ) RAMP, RBARWL
+      REAL(SZ) RBARWL1,RBARWL1F, RBARWL2, RBARWL2F
       REAL(SZ) TIMEIT, TOUTFC
-      REAL(SZ) TKWET
-      REAL(SZ) VEL, VELABS
-      REAL(SZ) VELMAX
-
-
       REAL(SZ) CORI
-      REAL(SZ) DAY,DRAMP,DUM1,DUM2
+      REAL(SZ) DAY,DRAMP
       REAL(SZ) H0
       REAL(SZ) RNDAY
       REAL(8)  RNP_GLOBAL
@@ -866,6 +837,7 @@ C     of the subroutine that calls this one, and unsetMessageSource
 C     must be called at the end.
 C--------------------------------------------------------------------
       SUBROUTINE screenMessage(level, message)
+      USE SIZES, ONLY : myProc
       IMPLICIT NONE
       INTEGER, intent(in) :: level
       CHARACTER(*), intent(in) :: message
@@ -1084,46 +1056,60 @@ C...
 C...Allocate space for Arrays dimensioned by MNE and MNP
 C...
       SUBROUTINE ALLOC_MAIN1a()
+      USE SIZES, ONLY : MNP, MNE
       IMPLICIT NONE
 C  
       !jgfdebug TODO: rationalize initialization of these variables
       ALLOCATE ( ETAS(MNP))
+      etas = -99999.d0
       allocate ( gwce_lv(mnp))
+      gwce_lv = -99999.d0
       allocate ( mom_lv_x(mnp))
+      mom_lv_x = -99999.d0
       allocate ( mom_lv_y(mnp))
+      mom_lv_y = -99999.d0
       ALLOCATE ( UU1(MNP),VV1(MNP))
-      uu1(:) = 0.d0
-      vv1(:) = 0.d0
+      uu1(:) = -99999.d0
+      vv1(:) = -99999.d0
       ALLOCATE ( QX1(MNP),QY1(MNP))
-      qx1(:) = 0.d0
-      qy1(:) = 0.d0
+      qx1(:) = -99999.d0
+      qy1(:) = -99999.d0
       ALLOCATE ( NNODECODE(MNP))
-      nnodecode(:) = 0
+      nnodecode(:) = -99999
       ALLOCATE ( NOFF(MNE) )
-      noff(:) = 0
+      noff(:) = -99999
       ALLOCATE ( NIBNODECODE(MNP))
+      nibnodecode = -99999
       ALLOCATE ( CH1(MNP),TRANS_LV_B(MNP),TRANS_LV_A(MNP))
+      ch1 = -99999.d0
+      trans_lv_a = -99999.d0
+      trans_lv_b = -99999.d0
       ALLOCATE ( SOURSIN(MNP))
+      soursin = -99999.d0
       ALLOCATE ( TK(MNP))
-
+      tk = -99999.d0
       ALLOCATE ( UU2(MNP),VV2(MNP))
-      uu2(:) = 0.d0
-      vv2(:) = 0.d0
+      uu2(:) = -99999.d0
+      vv2(:) = -99999.d0
       ALLOCATE ( QX2(MNP),QY2(MNP))
-      qx2(:) = 0.d0
-      qy2(:) = 0.d0
+      qx2(:) = -99999.d0
+      qy2(:) = -99999.d0
       ALLOCATE ( ETA1(MNP),ETA2(MNP))
-      eta1(:) = 0.d0
-      eta2(:) = 0.d0
-
+      eta1(:) = -99999.d0
+      eta2(:) = -99999.d0
       ALLOCATE ( CORIF(MNP))
-
+      corif(:) = -99999.d0      
       ALLOCATE ( NODECODE(MNP))
-
+      nodecode = -99999
       ALLOCATE ( DASigT(MNP),DATemp(MNP),DASalt(MNP))
+      DASigT = -99999.d0
+      DATemp = -99999.d0
+      DASalt = -99999.d0
       ALLOCATE ( VIDBCPDXOH(MNP), VIDBCPDYOH(MNP))
+      VIDBCPDXOH = -99999.d0
+      VIDBCPDYOH = -99999.d0
       ALLOCATE ( DAConc(MNP))
-
+      DAConc = -99999.d0
 ckmd   Added in parameters for the pc algorithm
       ALLOCATE ( UU0(MNP), VV0(MNP))
       ALLOCATE ( QX0(MNP), QY0(MNP) )
@@ -1145,12 +1131,8 @@ C    loadEleSlopeLim.eqv..true
 #ifdef CVEC
       ALLOCATE ( TEMP_LV_A(MNE,3),TEMP_LV_B(MNE,3) )
 #endif
-
-
-
       ALLOCATE(EtaDisc(MNP))
-      EtaDisc(:) = 0.0d0
-
+      EtaDisc(:) = -99999.d0
       ALLOCATE ( ETAMAX(MNP)) ! v46.50 sb 11/11/2006
       ALLOCATE ( ETAMAX_TIME(MNP)) ! tcm v51.20.01 
       ALLOCATE ( UMAX(MNP)) ! v46.50 sb 11/11/2006
@@ -1159,22 +1141,15 @@ C    loadEleSlopeLim.eqv..true
       EtaMax_Time(:) = 0.d0
       UMAX(:) = 0.d0 ! v46.50 sb 11/11/2006
       UMax_Time(:) = 0.d0
-
-
-
-
-
-      RETURN
+!-----------------------------------------------------------------------
       END SUBROUTINE ALLOC_MAIN1a
-
-
-
-
+!-----------------------------------------------------------------------
 
 C...
 C...Allocate space for Arrays dimensioned by MNOPE and MNETA
 C...
       SUBROUTINE ALLOC_MAIN2()
+      USE SIZES, ONLY : MNETA
       IMPLICIT NONE
 C
       ALLOCATE ( ESBIN1(MNETA),ESBIN2(MNETA))
@@ -1194,6 +1169,7 @@ C...Allocate space for nonperiodic zero and nonzero normal flow
 C...boundary arrays including barriers
 C...
       SUBROUTINE ALLOC_MAIN3()
+      USE SIZES, ONLY : MNVEL
       IMPLICIT NONE
 C
       ALLOCATE ( QN0(MNVEL),QN1(MNVEL),QN2(MNVEL))
@@ -1206,18 +1182,15 @@ C     jgf46.21 Added support for IBTYPE=52.
 C
 C     jgf49.58 Explicitly initialize variables that would otherwise be
 C     used without initialization.
-      EN2(:) = 0.0D0
+      EN2(:) = -99999.d0
 
       END SUBROUTINE ALLOC_MAIN3
-
-
- 
-
 
 C...
 C...Allocate space for tidal potential terms
 C...
       SUBROUTINE ALLOC_MAIN4a()
+      USE SIZES, ONLY : MNTIF, MNP
       IMPLICIT NONE
 C
       ALLOCATE ( TPK(MNTIF),AMIGT(MNTIF),FFT(MNTIF) )
@@ -1236,6 +1209,7 @@ C...
 C...Allocate space for Earth load/self-attraction tide
 C...
       SUBROUTINE ALLOC_MAIN4b()
+      USE SIZES, ONLY : MNTIF, MNP
       IMPLICIT NONE
 C
       ALLOCATE ( SALTAMP(MNTIF,MNP),SALTPHA(MNTIF,MNP) )
@@ -1248,6 +1222,7 @@ C...
 C...Allocate space for Arrays dimensioned by MNBFR
 C...
       SUBROUTINE ALLOC_MAIN5()
+      USE SIZES, ONLY : MNBFR, MNETA
       IMPLICIT NONE
 C
       ALLOCATE ( AMIG(MNBFR),PER(MNBFR))
@@ -1263,6 +1238,7 @@ C...
 C...Allocate space for periodic normal flow boundary conditions
 C...
       SUBROUTINE ALLOC_MAIN6()
+      USE SIZES, ONLY : MNFFR, MNVEL
       IMPLICIT NONE
 C
       ALLOCATE ( QNAM(MNFFR,MNVEL),QNPH(MNFFR,MNVEL))
@@ -1278,6 +1254,7 @@ C...
 C...Allocate space for arrays used for station elevation output
 C...
       SUBROUTINE ALLOC_MAIN7()
+      USE SIZES, ONLY : MNSTAE
       IMPLICIT NONE
 C
       ALLOCATE ( NNE(MNSTAE),ET00(MNSTAE))
@@ -1295,6 +1272,7 @@ C...
 C...Allocate space for arrays used for station velocity output
 C...
       SUBROUTINE ALLOC_MAIN8()
+      USE SIZES, ONLY : MNSTAV
       IMPLICIT NONE
 C
       ALLOCATE ( XEV(MNSTAV),YEV(MNSTAV),SLEV(MNSTAV),SFEV(MNSTAV))
@@ -1310,6 +1288,7 @@ C...
 C...Allocate space for arrays used for station concentration output
 C...
       SUBROUTINE ALLOC_MAIN9()
+      USE SIZES, ONLY : MNSTAC
       IMPLICIT NONE
 C
       ALLOCATE ( XEC(MNSTAC),YEC(MNSTAC),SLEC(MNSTAC),SFEC(MNSTAC))
@@ -1325,6 +1304,7 @@ C...
 C...Allocate space for arrays used for station meteorological output
 C...
       SUBROUTINE ALLOC_MAIN10()
+      USE SIZES, ONLY : MNSTAM
       IMPLICIT NONE
 C
       ALLOCATE ( XEM(MNSTAM),YEM(MNSTAM),SLEM(MNSTAM),SFEM(MNSTAM))
@@ -1344,9 +1324,11 @@ C...Allocate space for arrays needed by GWCE matrix and iterative solver
 C...
 
       SUBROUTINE ALLOC_MAIN11_LUMPED()
+      USE SIZES, ONLY : MNP
       IMPLICIT NONE
 C     jgf48.4619: Array used in lumped GWCE (from Seizo)
       ALLOCATE( COEFD(MNP) )
+      coefd = -99999.d0
       RETURN
       END SUBROUTINE ALLOC_MAIN11_LUMPED
 
@@ -1354,12 +1336,14 @@ C     jgf48.4619: Array used in lumped GWCE (from Seizo)
 
 
       SUBROUTINE ALLOC_MAIN11()
+      USE SIZES, ONLY : MNETA,MNEI,MNP
       IMPLICIT NONE
 
 C  Arrays used by JCG iterative solver
 
       ALLOCATE( OBCCOEF(MNETA,MNEI-1),COEF(MNP,MNEI))
-
+      obccoef = -99999.d0
+      coef = -99999.d0
 C
       RETURN
       END SUBROUTINE ALLOC_MAIN11
@@ -1369,25 +1353,26 @@ C...
 C...Allocate space for wind forcing
 C...
       SUBROUTINE ALLOC_MAIN12()
+      USE SIZES, ONLY : MNP
       IMPLICIT NONE
 C
       ALLOCATE ( WSX1(MNP),WSY1(MNP),PR1(MNP) )
       ALLOCATE ( WSX2(MNP),WSY2(MNP),PR2(MNP) )
 
-      WSX1(:) = 0.0d0
-      WSY1(:) = 0.0d0
-      PR1(:) = 0.0d0
-      WSX2(:) = 0.0d0
-      WSY2(:) = 0.0d0
-      PR2(:) = 0.0d0
+      WSX1(:) = -99999.0d0
+      WSY1(:) = -99999.0d0
+      PR1(:) = -99999.0d0
+      WSX2(:) = -99999.0d0
+      WSY2(:) = -99999.0d0
+      PR2(:) = -99999.0d0
 
       allocate ( wvnxout(mnp),wvnyout(mnp) )
-      wvnxout(:) = 0.d0
-      wvnyout(:) = 0.d0
+      wvnxout(:) = -99999.d0
+      wvnyout(:) = -99999.d0
 
       ALLOCATE ( RSNX1(MNP),RSNY1(MNP),RSNX2(MNP),RSNY2(MNP) )
-      RSNX1(:) = 0.0d0 !jgf51.46: Added initialization of RSNX1, RSNY1
-      RSNY1(:) = 0.0d0
+      RSNX1(:) = 0.d0 !jgf51.46: Added initialization of RSNX1, RSNY1
+      RSNY1(:) = 0.d0 ! must be initialized to zero for SWAN
       RSNX2(:) = 0.d0
       RSNY2(:) = 0.d0
 
@@ -1437,6 +1422,7 @@ C...
 C...Allocate space for TIME VARYING BATHYMETRY
 C...
       SUBROUTINE ALLOC_MAIN13()
+      USE SIZES, ONLY : MNP
       IMPLICIT NONE
       
       ALLOCATE ( DP1(MNP), DP2(MNP) )

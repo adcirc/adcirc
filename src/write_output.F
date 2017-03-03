@@ -5378,7 +5378,7 @@ C-----------------------------------------------------------------------
 #ifdef CSWAN
       SUBROUTINE initSwanOutput()
           USE SIZES, ONLY : MNPROC, OFF, ASCII, BINARY, NETCDF3, 
-     &                       NETCDF4, XDMF
+     &                       NETCDF4, XDMF, MYPROC
           USE GLOBAL
           USE MESH 
           IMPLICIT NONE

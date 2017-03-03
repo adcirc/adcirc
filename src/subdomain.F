@@ -65,9 +65,9 @@ C                  fort.066
 C    ========================================================================
 
 
-         Use GLOBAL, only : myproc
+         Use sizes, only : myproc
 #ifdef CMPI
-     &                     , nodes_lg
+         use global, only : nodes_lg
          use mesh, only : np
          Use MESSENGER 
 #endif
@@ -193,7 +193,8 @@ C     | This subroutine writes ETA2, x/y velocity and wet/dry states of
 C     | open ocean boundary nodes of subdomain grids to fort.065 file,
 C     | during a full run. This subroutine is called within timestep.F
 
-         Use GLOBAL, only : myproc, dt, rnday, eta2, uu2, vv2, nodecode
+         Use SIZES, only : myproc
+         Use GLOBAL, only : dt, rnday, eta2, uu2, vv2, nodecode
 #ifdef CMPI
      &                     , nodes_lg
          Use MESSENGER
@@ -258,7 +259,8 @@ C     | This subroutine writes ETAS, x/y velocity and wet/dry states of
 C     | outer boundary nodes of subdomain grids to fort.066 file,
 C     | during a full run. This subroutine is called within timestep.F
 
-         Use GLOBAL, only : myproc, dt, rnday, etas, uu2, vv2, nodecode
+         Use SIZES, only : myproc
+         Use GLOBAL, only : dt, rnday, etas, uu2, vv2, nodecode
 #ifdef CMPI
      &                      , nodes_lg
          Use MESSENGER 
@@ -323,7 +325,8 @@ C     | This subroutine writes ETAS of inner boundary nodes of subdomain
 C     | grids to fort.067 file during a full run. This subroutine is called
 C     | within timestep.F
 
-         Use GLOBAL, only : myproc, dt, rnday, etas
+         Use sizes, only : myproc
+         Use global, only : dt, rnday, etas
 #ifdef CMPI
      &                      , nodes_lg
          Use MESSENGER 
@@ -381,7 +384,8 @@ C     | within timestep.F
 C     | This subroutine opens fort.019 for a hot-started model and 
 C     | finds the proper place in the b.c. file.
 
-         Use GLOBAL, only : myproc, iths
+         Use SIZES, only : myproc
+         Use GLOBAL, only : iths
          USE BOUNDARIES, ONLY : neta
 #ifdef CMPI
          Use MESSENGER
@@ -433,7 +437,7 @@ C     | finds the proper place in the b.c. file.
       SUBROUTINE openFort019C()
 C     | This subroutine opens fort.019 for a cold-started model
 
-         Use GLOBAL, only : myproc
+         Use SIZES, only : myproc
          USE BOUNDARIES, ONLY : neta
 #ifdef CMPI
          Use MESSENGER
@@ -536,7 +540,7 @@ C     | This subroutine reads in ETAS, x/y velocities and wet/dry states of
 C     | outer boundary nodes of the subdomain grid from fort.020 file during
 C     | a subdomain run. This subroutine is called within timestep.F.
 
-         Use GLOBAL, only : myproc
+         Use SIZES, only : myproc
 #ifdef CMPI
          Use MESSENGER 
 #endif
@@ -588,7 +592,7 @@ C     | This subroutine reads in ETAS of inner boundary nodes of the
 C     | subdomain grid from fort.021 file during a subdomain run.
 C     | This subroutine is called within timestep.F.
 
-         Use GLOBAL, only : myproc
+         Use SIZES, only : myproc
 #ifdef CMPI
          Use MESSENGER 
 #endif

@@ -458,6 +458,7 @@ C     actually write the data for all the buffers it may be
 C     holding. 
 C-----------------------------------------------------------------------
       SUBROUTINE FLUSH_WRITERS()
+      use sizes, only : myproc
       use global
       implicit none
 #ifndef HAVE_MPI_MOD

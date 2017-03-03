@@ -122,17 +122,16 @@ C...  SET AT REST INITIAL CONDITION OVER WHOLE DOMAIN
 C...  IF BOTTOM IS ABOVE THE GEIOD -> DRY NODE
 C...  IF BOTTOM IS INITIALLY BELOW THE GEOID AND STARTDRY=1 -> DRY NODE
 C...
-      UU1(:) = 0.D0
-      VV1(:) = 0.D0
       UU2(:) = 0.D0
       VV2(:) = 0.D0
-      QX1(:) = 0.D0
-      QY1(:) = 0.D0
       QX2(:) = 0.D0
       QY2(:) = 0.D0
+      TK(:) = 0.D0     
+      ETA1(:) = 0.D0
       ETA2(:) = 0.D0
       ETAS(:) = 0.D0
       CH1(:) = 0.d0
+      EN2(:) = 0.d0
       !
       ! Set the initial wet/dry state and water surface elevation
       call setColdWetDryStateAndWaterSurfaceElevation()  
@@ -143,7 +142,6 @@ C...
       if (inundationOutput.eqv..true.) then
          call initInundationOutput()
       endif
-         
 C...
 C...  INITIALIZE THE ELEVATION SPECIFIED BOUNDARY CONDITION IF IT
 C...  REQUIRES THE USE OF THE UNIT 19 FILE.
@@ -247,8 +245,7 @@ C        momentum equations
          WRITE(16,1980)
  1980    FORMAT(/,1X,'WIND (AND PRESSURE) INFORMATION READ.',/)
 
-         call coldstartMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
-     &      wvnxout, wvnyout)
+         call coldstartMeteorologicalForcing(nws)
 
       ENDIF
 

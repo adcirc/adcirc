@@ -37,10 +37,34 @@ C
 #ifdef IEEE_DEBUG
       USE, INTRINSIC :: IEEE_ARITHMETIC
 #endif
-      USE SIZES, ONLY : SZ
-      USE GLOBAL
-      USE GWCE
-      USE MOMENTUM
+      USE SIZES, ONLY : SZ, MNP, MNWPROH
+      USE GLOBAL, ONLY : UU1, VV1, QX1, QY1, QX2, QY2, UU2, VV2, MOM_LV_X,
+     &    MOM_LV_Y, WSX2, WSY2, PR1, PR2, TiP1, TiP2, UU0, VV0, QY0, 
+     &    GWCE_LV, TRANS_LV_B, TRANS_LV_A, WSX1, WSY1, dp1, dp2, QN0, 
+     &    EN0, EN1, EN2, CICE1, CICE2, CICEOUT, RSNX1, RSNX2, RSNY1, RSNY2,
+     &    QX0, QN1, QN2, RSNXOUT, RSNYOUT, LNM_BC1, LNM_BC2, VIDBCPDXOH,
+     &    VIDBCPDYOH, QNIN1, QNIN2, ENIN1, ENIN2, EtaDisc, NIBNODECODE,
+     &    BCHGTIMINC, ETA2,ElevDisc, BTIME1, BTIME2, BTIME_END, C2D_PTrans,
+     &    C2DDI, C3D, C3DVS, CBAROCLINIC, CGWCE_New, CHOTHS, CICE_TIME1,
+     &    CICE_TIME2, CICE_TIMINC, BTIMINC, CME_New_C1, CME_New_C2, 
+     &    CME_New_NC, CPRECOR, CTiP, DRAMP, DRampElev, DRampExtFlux, 
+     &    DRampIntFlux, DRampMete, DRampTip, DRampWRad, DTDP, DTDPHS,
+     &    DUnRampMete, ENDWAVE, ErrorElev, Flag_ElevError, FluxSettlingIT,
+     &    FluxSettlingTime, FTIMINC, IFNLFA, H0, IHOT, IM, INFO, WARNING,
+     &    ERROR, logMessage, allMessage, setMessageSource, unsetMessageSource,
+     &    inundationOutput, ITHS, METONLY, NCICE, NDDT, NFFR, NHSINC,
+     &    NHSTAR, NOLIFA, NRamp, NRS, NSCREEN, NTIF, QTIME1, QTIME2, Ramp,
+     &    RampElev, RampExtFlux, RampMete, RampTip, RampWRad, RBCRATIO,
+     &    RBCTIME1, RBCTIME2, RBCTIMEINC, REFTIM, RES_BC_FLAG, RhoWat0,
+     &    RSTIME1, RSTIME2, NWS, RSTIMINC, SCREENUNIT, SIGT0, STATIM, TK,
+     &    WVNXOUT, WVNYOUT, WarnElev, PERT, FACET, FFT, AMIGT, SALTPHA,
+     &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF, 
+     &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC
+#ifdef CSWAN
+     &  , waveWindMultiplier
+#endif
+      USE GWCE, ONLY : solveGWCE, numitr
+      USE MOMENTUM, ONLY : solveMomentumEq
       USE WETDRY, ONLY : computeWettingAndDrying
       USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart, 
      &    writeWarnElev, collectInundationData, collectMinMaxData
@@ -50,7 +74,7 @@ C
      &    NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, NFLUXIBP, NFLUXRBC, CSII,
      &    BARLANHT, BARLANCFSP, NVELL, IBCONN, BARINHT, BARINCFSP,
      &    BARINCFSB, PIPEHT, PIPECOEF, PIPEDIAM
-      USE GLOBAL_IO
+      USE GLOBAL_IO, ONLY : nddt2get
       USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
@@ -58,18 +82,12 @@ C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET
 C.....sb46.28sb03 added 09/xx/2006
       USE RS2,ONLY : RS2INIT,RS2GET
-      USE NodalAttributes, ONLY : FRIC, HBREAK, FTHETA, FGAMMA, ! for wet/dry
-     &     IFLINBF, IFNLBF, IFHYBF, ! for wet/dry
+      USE NodalAttributes, ONLY : 
      &     Apply2DBottomFriction,
-     &     Apply3DBottomFriction,
-     &     LoadDirEffRLen,
-     &     LoadEleSlopeLim,
-     &     ManningsN, LoadManningsN, !sb46.28sb02
-     &     Z0b_var, LoadZ0B_var,!Rjw IOOS 2010
-     &     BFCdLLimit !sb46.28sb02/jgf47.04 lower limit of Cd for bot. friction
-      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS, enforceWDOB,
-     &    writeFort066, writeFort067, writeFort065, readFort020,
-     &    readFort021, readFort019, enforceWDCB
+     &     Apply3DBottomFriction
+      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS, 
+     &    writeFort066, writeFort067, writeFort065, 
+     &    readFort020, readFort021, readFort019 
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
       USE GLOBAL_3DVS, ONLY:
      &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA, Z0B,NFEN
@@ -122,22 +140,27 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 #endif
 
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
-      CHARACTER(6) :: TEMPDIRNAME
       INTEGER IE, I, J, K                  !local loop counters
-      INTEGER NM1, NM2, NM3, NM123
-      INTEGER NC1, NC2, NC3, NCEle, NCI
-      INTEGER NCyc, NA,NITEMS
-      INTEGER NMN1,NMN2,NMN3,NWETNEI,NWETADJ  ! sb v46.28.sb05.06 11/01/2006
-
+      INTEGER NM1, NM2, NM3
+      INTEGER NC1, NC2, NC3, NCEle
+      INTEGER NCyc, NA
+      INTEGER :: itest
+      INTEGER :: kemax
+      INTEGER :: kvmax
+      INTEGER :: nnbb
+      REAL(SZ) :: velabs
+      REAL(SZ) :: vel
+      REAL(SZ) :: velmax
+      LOGICAL :: warnElevDump
+      INTEGER :: errorElevExceeded
+      INTEGER :: warnElevExceeded
       logical, save ::  EtaDisc_Fill = .TRUE.
 
       REAL(SZ) ArgT, ArgTP, ArgSAlt
       REAL(SZ) CCSFEA
       REAL(SZ) ElMax
-      REAL(SZ) Fr, FricBP               !for bridge pilings
       REAL(SZ) PIPE_FLUX
-      REAL(SZ) Z0B1                     !for varying roughness
-      REAL(SZ) H2, H2N1, H2N2, H2N3
+      REAL(SZ) H2N1, H2N2, H2N3
       REAL(SZ) EtaN1,EtaN2,EtaN3
       REAL(SZ) QTRatio
       REAL(SZ) RStRatio, RSX, RSY
@@ -148,10 +171,8 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(SZ) DARhoMRho0N1,DARhoMRho0N2,DARhoMRho0N3
 
       REAL(SZ) UN1
-      REAL(SZ) UV0, UV1, UV2
       REAL(SZ) VIDBCPDXOHN1,VIDBCPDXOHN2,VIDBCPDXOHN3,VIDBCPDXOHAvgArea
       REAL(SZ) VIDBCPDYOHN1,VIDBCPDYOHN2,VIDBCPDYOHN3,VIDBCPDYOHAvgArea
-      REAL(SZ) DPMIN      ! sb v46.28.sb05.06 11/01/2006
       REAL(SZ) DEta2DX,DEta2DY
       REAL(SZ) DRhoDX,DRhoDY
 
@@ -159,14 +180,11 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       REAL(8) FDX1O2A, FDX2O2A, FDX3O2A, FDY1O2A, FDY2O2A, FDY3O2A
       REAL(8) TimeLoc, TimeH
-      INTEGER WarnElevExceeded, ErrorElevExceeded
 C   kmd48.33bc - added in the heat flux variables
       CHARACTER(80) :: CDUM80
       INTEGER :: NumofBCNode
       REAL(SZ), SAVE :: StaTimHS, RefTimHS
       INTEGER :: NOD
-      REAL(SZ), ALLOCATABLE :: TMP(:,:)
-      REAL(SZ) :: CD, CDQ, QWIND
 
 C   TCM V49.64.01 -- ADDED FOR ICE CONCENTRATION FIELDS
       REAL(SZ) CICE_TRatio  !ICE VARIABLES
@@ -235,7 +253,6 @@ C...
 ckmd  Shift values in time for predictor-corrector algorithm
 
       DO I=1,NP
-
          if(CPRECOR) THEN
             UU0(I)=UU1(I)
             VV0(I)=VV1(I)
@@ -263,7 +280,6 @@ C...  Wind (& wave radiation stress if used)
             WSY1(I)=WSY2(I)
             WSY2(I)=0.D0
             PR1(I)=PR2(I)
-!            PR2(I)=0.D0   !tcm v49.16 20100617
             PR2(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
          ENDIF
 
@@ -395,20 +411,18 @@ C
 C
 C-------------------BOTTOM FRICTION-------------------------------------
 C
-C     2DDI.For the 2DDI version of the code
-      if(C2DDI) then
 C     2DDI.Set up the 2D friction coefficient
-         CALL Apply2DBottomFriction(UU1, VV1, DP, ETA2, G, IFNLFA,
-     &        NP, TK)
-C
+      if(C2DDI) then
+         CALL Apply2DBottomFriction(UU1, VV1, DP, ETA2, G, IFNLFA, NP, TK)
       endif
-C..RJW 3D for the 3D version of the code
+C..RJW Set up the 3D friction coefficient
       if(C3D) then
-C     3D.Set up the 3D friction coefficient
-         CALL Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G, IFNLFA,
-     &        NP, TK, NFEN, Z0B)
-C
+         CALL Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G, IFNLFA, NP, TK, NFEN, Z0B)
       endif
+      
+      
+
+
 C-------------------BOTTOM FRICTION-------------------------------------
 C
 C
@@ -856,7 +870,7 @@ C...
          IF (NFFR.GT.0) THEN
           DO J=1,NFFR
             IF(FPER(J).EQ.0.D0) THEN
-               NCYC=0.
+               NCYC=0
             ELSE
 #ifdef IBM
                NCYC=INT(timeh/FPER(J),KIND(0.0d0))
@@ -1031,57 +1045,12 @@ C...
       if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)  ! NCSU Subdomain
 
+
+
+!----------------------SOLVE GWCE---------------------------------------
 C...
-C...  Compute the water surface elevation from the GWCE form of the 2D
-C...  continuity eq. Two mutually exclusive possibilities are (1)
-C     the conventional GWCE or (2) the predictor-corrector GWCE.
-C...
-C       -------------PREDICTOR-CORRECTOR-GWCE---------------------------
-ckmd    Changed to include the predictor-corrector algorithm
-      IF(CPRECOR) THEN
-         CALL GWCE_New(IT,TimeLoc,TimeH)
-c...tcm added call for slope limiting         
-         IF (LoadEleSlopeLim) THEN
-            call check_slopes(it,TimeLoc)
-            call apply_slope_limits(ETA2,MNP)
-#ifdef CMPI
-            CALL UPDATER(ETA2,DUMY1,DUMY2,1)
-#endif
-         ENDIF         
-         CALL Mom_Eqs_New_NC()
-C...  If running in parallel, update velocities & fluxes on all processors
-#ifdef CMPI
-         CALL UPDATER(UU2,VV2,DUMY1,2)
-         CALL UPDATER(QX2,QY2,DUMY1,2)
-#endif
-         CALL GWCE_New_pc(IT,TimeLoc,TimeH)
-c...tcm added call to slope limiter         
-         IF (LoadEleSlopeLim) THEN
-            call check_slopes(it,TimeLoc)
-            call apply_slope_limits(ETA2,MNP)
-#ifdef CMPI
-            CALL UPDATER(ETA2,DUMY1,DUMY2,1)
-#endif
-         ENDIF         
-      ENDIF
-C       -------------PREDICTOR-CORRECTOR-GWCE---------------------------
-
-C                         -OR-
-
-C      -------------------GWCE------------------------------------------
-      IF(CGWCE_New) THEN
-         CALL GWCE_New(IT,TimeLoc,TimeH)
-c.... tcm added call to slope limiter         
-         IF (LoadEleSlopeLim) THEN
-            call check_slopes(it,TimeLoc)
-            call apply_slope_limits(ETA2,MNP)
-#ifdef CMPI
-            CALL UPDATER(ETA2,DUMY1,DUMY2,1)
-#endif
-         ENDIF         
-      ENDIF
-C      -------------------GWCE------------------------------------------
-
+C...  Compute new water surface elevation 
+      call solveGWCE(it, timeloc, timeh)
 
 !---------------------END SOLVE GWCE------------------------------------
 
@@ -1092,26 +1061,10 @@ C      -------------------GWCE------------------------------------------
 
 !--------------------WETTING AND DRYING--------------------------------
 
-
 C...
 C---------------2DDI Momentum Equation Solution-------------------------
 C...
-      IF (C2DDI) THEN
-         IF (CME_New_NC) THEN
-            CALL Mom_Eqs_New_NC()
-         ENDIF
-         IF ((CME_New_C1).OR.(CME_New_C2)) THEN
-            CALL Mom_Eqs_New_Conserv()
-         ENDIF
-         IF (CPRECOR) THEN
-            CALL Mom_Eqs_Non_Conserv_pc()
-         ENDIF
-C...  If running in parallel, update velocities & fluxes on all processors
-#ifdef CMPI
-         CALL UPDATER(UU2,VV2,DUMY1,2)
-         CALL UPDATER(QX2,QY2,DUMY1,2)
-#endif
-      ENDIF
+      call solveMomentumEq()
 C...
 C-------------END OF 2DDI MOMENTUM EQUATION SOLUTION--------------------
 C...
@@ -1169,8 +1122,6 @@ C
 C...
 C...  WRITE OUTPUT
 C...
-      !CALL writeOutput2D(IT,TimeLoc) ! =>zc - moved to adcirc.F so that SWAN writes 
-                                      !        correctly
 C
       ! NCSU Subdomain Modeling   
       if (subdomainOn.and.NOUTGS.eq.1) call writeFort065(it) 
@@ -1215,8 +1166,6 @@ C             everything is up-to-date.
          WriteSwanHotStart = .TRUE.
 #endif
       ENDIF
-
-
 
 C...  SAVE THE CURRENT TIME LEVEL OF BARRIER INTO THE PREVIOUS TIME LEVEL
       IF(NFLUXIB.EQ.1)THEN
@@ -1299,7 +1248,7 @@ C     the screen.
             CALL WriteWarnElev(TimeLoc, IT)
          ENDIF
 #endif
-         ErrorElevExceeded = 0                ! Clint's Zombie Slyaer
+         ErrorElevExceeded = 0                ! Clint's Zombie Slayer
          IF(ELMAX.GT.ErrorElev) THEN
 
             WRITE(ScreenUnit,1995)
@@ -2165,234 +2114,4 @@ C**********************************************************************
 
 
 
-C*************************************************************************
-C   Subroutine to check if elemental slope limiting is needed
-C       Chris Massey, USACE-ERDC-CHL Dec. 8, 2014 -- Removed this
-C         section from timestep subroutine and put it in its own
-C         subroutine.
-C*************************************************************************
-      subroutine check_slopes(it,TimeLoc)
-      USE SIZES, ONLY : SZ, mnproc
-      use global, only : eta2,nodecode,NOFF,ESLONOFF,screenUnit,
-     &      MyProc,setMessageSource, unsetMessageSource, scratchMessage,
-     &      allMessage,logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
-     &      nodes_lg
-      use mesh, only : x, y, nm, ne, areas, sfac
-      use NodalAttributes, ONLY : LoadEleSlopeLim,
-     &     elemental_slope_limiter_active,
-     &     elemental_slope_limiter_grad_max,
-     &     elemental_slope_limiter_max_exceeded
-      implicit none
-      INTEGER, intent(in) :: IT
-      Real(8), intent(in) :: TimeLoc
-      INTEGER IE,I
-      INTEGER NM1, NM2, NM3, NM123
-      INTEGER NC1, NC2, NC3, NCEle, NCI
-      REAL(SZ) DEta2DX,DEta2DY,DEta2Mag,SFacAvg
-      REAL(SZ) FDX1,FDX2,FDX3,FDY1,FDY2,FDY3
-      REAL(8) :: AreaIE2
-      integer nodeNumber ! fulldomain node number where wse slope is exceeded
-      
-
-      call setMessageSource("check_slopes")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      ! jgf51.47: Per Rick's specification, start off by deactivating
-      ! any slope limitation triggered in the previous time step;
-      ! we have a fresh start each time step in determining whether
-      ! to activate slope limiting at each node. 
-      ! jgf51.50: Added this back to the subroutine version of the
-      ! slope limiter. 
-      elemental_slope_limiter_active(:) = .false.
-
-Cobell  CHECK IF THE LOCAL GRADIENT FOR ELEMENTS IS EXCEEDED AND TRIGGER THE
-C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
-
-      DO IE=1,NE
-         NM1=NM(IE,1)
-         NM2=NM(IE,2)
-         NM3=NM(IE,3)
-         NC1=NODECODE(NM1)
-         NC2=NODECODE(NM2)
-         NC3=NODECODE(NM3)
-         NCEle=NC1*NC2*NC3*NOFF(IE)
-         IF(NCEle.EQ.0)THEN
-            CYCLE  ! this element is dry, go to the next one
-         ENDIF
-         SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
-         AreaIE2=Areas(IE)
-         FDX1=(Y(NM2)-Y(NM3))*SFacAvg
-         FDX2=(Y(NM3)-Y(NM1))*SFacAvg
-         FDX3=(Y(NM1)-Y(NM2))*SFacAvg
-         FDY1=X(NM3)-X(NM2)
-         FDY2=X(NM1)-X(NM3)
-         FDY3=X(NM2)-X(NM1)
-         dEta2Dx  = (Eta2(NM1)*FDX1+Eta2(NM2)*FDX2+Eta2(NM3)*FDX3)
-     &                 /AreaIE2
-         dEta2Dy  = (Eta2(NM1)*FDY1+Eta2(NM2)*FDY2+Eta2(NM3)*FDY3)
-     &                 /AreaIE2
-         dEta2Mag = sqrt(dEta2Dx*dEta2Dx + dEta2Dy*dEta2Dy)
-         !
-         ! jgf51.51: Now that the slope limiter gets reset at 
-         ! every time step, I had to rewrite the logging so that
-         ! a log message is only written the first time the slope
-         ! limiter is activated at a node during a particular run.
-         DO I=1,3
-            ! If the limiter is on already, go to the next node. 
-            IF (elemental_slope_limiter_active(NM(IE,I))) CYCLE
-            ! Compare the elemental slope to the maximum elemental gradient.
-            IF (dEta2Mag.GE.
-     &           ABS(elemental_slope_limiter_grad_max(NM(IE,I)))) THEN
-               ! jgf51.51: Log the fulldomain node number.
-               nodeNumber = nm(ie,i)
-               if (mnproc.gt.1) then
-                  nodeNumber = nodes_lg(nm(ie,i))
-               endif
-               ! zc - If gradmax is positive or zero, activate slope
-               ! limiting. 
-               if (elemental_slope_limiter_grad_max(nm(ie,i))
-     &               .ge.0.0d0) then
-                  ! If it is the first time that the slope limiter
-                  ! has been activated at this node, write a log 
-                  ! message. 
-                  if (eslonoff(nm(ie,i)).eq.0) then
-                     write(scratchMessage,1983) nodeNumber,dEta2Mag, 
-     &                     elemental_slope_limiter_grad_max(NM(IE,I)),
-     &                     it, timeLoc
-                     call allMessage(INFO,scratchMessage)
-                     eslonoff(nm(ie,i)) = 1 ! for output file
-                  endif
-                  elemental_slope_limiter_active(NM(IE,I)) = .TRUE.
-               else
-                  ! Just print log message the first time the 
-                  ! gradient is exceeded. 
-                  IF (elemental_slope_limiter_max_exceeded(NM(IE,I))
-     &                  .eqv..false.) THEN
-                     write(scratchMessage,1984) nodeNumber,dEta2Mag, 
-     &                     elemental_slope_limiter_grad_max(NM(IE,I)),
-     &                     it, timeLoc
-                     call allMessage(INFO,scratchMessage)
-                     elemental_slope_limiter_max_exceeded(NM(IE,I)) =
-     &                      .true.
-                  endif
-               endif
-            endif
-         enddo ! loop around nodes of an element
-      enddo ! loop over the elements
-
-
-1983  format('Elemental slope limiter turned on at fulldomain node ',i0,
-     &  ' where the elemental slope is ',1pE12.4E3,
-     &  ' and the maximum elemental slope is ',1pE12.4E3,
-     &  ' on time step ',i0,' and time = ',e15.8,'.')
-
-1984  format('Maximum elemental slope exceeded at fulldomain node ',i0,
-     &  ' where the elemental slope is ',1pE12.4E3,
-     &  ' and the maximum elemental slope is ',1pE12.4E3,
-     &  ' on time step ',i0,' and time = ',e15.8,'.')
-     
-C...  END CHECKING ELEMENT GRADIENTS
-
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      !-----------------------------------------------------------------
-      END SUBROUTINE CHECK_SLOPES
-      !-----------------------------------------------------------------   
-C
-C***********************************************************************
-
-C***********************************************************************
-C  Apply Elemental Slope Limiter 
-C    Chris Massey, USACE-ERDC-CHL, Dec. 8, 2014 
-C       Made into a subroutine
-C
-C***********************************************************************
-C
-      SUBROUTINE APPLY_SLOPE_LIMITS(ETA2Lim,LocNP)
-      USE SIZES, ONLY : SZ
-      use global, only : nodecode,NOFF,IFNLFA,
-     &      setMessageSource, unsetMessageSource, allMessage,
-     &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
-      use mesh, only : ne, nm, areas, totalArea
-      use NodalAttributes, ONLY : LoadEleSlopeLim,
-     &     elemental_slope_limiter_active
-      implicit none
-      integer :: IE,NM1,NM2,NM3,NC1,NC2,NC3,NCEle
-      integer, intent(in) :: LocNP
-      REAL(SZ) :: EtaN1,EtaN2,EtaN3,EtaN123
-      real(sz), intent(inout) :: Eta2lim(LocNP)
-      REAL(8) :: AreaEle
-      REAL(sz), ALLOCATABLE, SAVE :: elevSum(:) ! used if elemental slope limiter is active
-      LOGICAL, SAVE :: firstCall = .true.
-
-
-      call setMessageSource("check_slopes")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      IF (LoadEleSlopeLim.eqv..true.) THEN
-         IF (firstCall.eqv..true.) THEN
-            allocate(elevSum(LocNP))
-            firstCall = .false.
-            elevSum(:) = 0.d0
-         ENDIF
-      ENDIF
-
-
-C       ELEMENTAL SLOPE LIMITER
-C
-C        CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
-C        TIME STEP AND APPLY SMOOTHING IF DESIRED. -ZC
-
-      IF (LoadEleSlopeLim.eqv..true.) THEN
-C
-         elevSum(:) = 0.d0
-         DO IE=1,NE
-            NM1=NM(IE,1)
-            NM2=NM(IE,2)
-            NM3=NM(IE,3)
-            NC1=NODECODE(NM1)
-            NC2=NODECODE(NM2)
-            NC3=NODECODE(NM3)
-            NCEle=NC1*NC2*NC3*NOFF(IE)
-            EtaN1=IFNLFA*Eta2Lim(NM1)
-            EtaN2=IFNLFA*Eta2Lim(NM2)
-            EtaN3=IFNLFA*Eta2Lim(NM3)
-            AreaEle=NCEle*Areas(IE)/2.d0
-            EtaN123=(EtaN1+EtaN2+EtaN3)/3.d0
-            elevSum(NM1)=elevSum(NM1)+AreaEle*EtaN123
-            elevSum(NM2)=elevSum(NM2)+AreaEle*EtaN123
-            elevSum(NM3)=elevSum(NM3)+AreaEle*EtaN123
-         ENDDO
-
-Cobell   CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
-C        TIME STEP AND APPLY SMOOTHING IF DESIRED. THIS ROUTINE PARALLELS THE
-C        ABOVE ROUTINE.
-         WHERE ((elemental_slope_limiter_active.eqv..true.).and.
-     &         (TotalArea.ne.0.d0))
-               Eta2Lim = elevSum / TotalArea
-         END WHERE
-      ENDIF
-
-C... Will apply the updating outside the subroutine
-!#ifdef CMPI
-!      CALL UPDATER(ETA2Lim,DUMY1,DUMY2,1)
-!#endif
-
-
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
-
-      RETURN
-
-      END SUBROUTINE APPLY_SLOPE_LIMITS
-
-C***********************************************************************
 

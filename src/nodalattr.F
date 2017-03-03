@@ -1840,7 +1840,6 @@ C     ... Convert Chezy to Cd, if necessary.
          END DO
       ENDIF
 C
-
 C     Step 1. Apply friction arising from turbulent viscous interaction
 C     with the sea floor.
       DO I=1, NP

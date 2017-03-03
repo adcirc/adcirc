@@ -70,10 +70,11 @@ CWET...If MJU < NODELE for any node, it must lie along the wet/dry interface.  S
 CWET...further comments at the end of the momentum equation solution section.
 CWET...
       module wetdry
+      use sizes, only : sz
       
-      real(8) :: habsmin
-      real(8) :: hoff
-      real(8) :: velmin
+      real(sz) :: habsmin
+      real(sz) :: hoff
+      real(sz) :: velmin
       
       integer,allocatable ::    nibcnt(:)
       integer,allocatable ::    noffold(:)
@@ -85,7 +86,6 @@ CWET...
 
       contains
 
-
 !----------------------------------------------------------------------
 !                  S U B R O U T I N E
 !     I N I T I A L I Z E   W E T T I N G   A N D   D R Y I N G
@@ -93,12 +93,15 @@ CWET...
 !     Allocates arrays and initializes constants.
 !----------------------------------------------------------------------
       subroutine initializeWettingAndDrying()
-      use global, only : h0, mne, mnp
+      use sizes, only : mne, mnp
+      use global, only : h0, nodecode, nnodecode
       implicit none
 
       allocate ( nibcnt(mnp) )
       allocate ( noffold(mne))
-      noffold(:) = 0
+      nnodecode = 1
+      nodecode = 1
+      noffold(:) = 1
       habsmin=0.8d0*h0
       hoff=1.2d0*h0
 
@@ -114,10 +117,10 @@ CWET...
 !     Determines which nodes should be wet and which should be dry.
 !----------------------------------------------------------------------
       subroutine computeWettingAndDrying(it)
-      use sizes, only : sz
+      use sizes, only : sz, mne, mnp
       use global, only : noff, nodecode, nnodecode, eta2, tk, nolifa,
      &    bsx1, bsy1, btime_end, C2DDI, C3D, g, h0, ifnlfa, nddt,
-     &    mne, mnp, nibnodecode, ilump, ncchange
+     &    nibnodecode, ilump, ncchange
 #ifdef CMPI
      &    ,idumy
       use messenger
@@ -149,10 +152,14 @@ CWET...
       integer :: nbnctot
       integer :: i
       integer :: ie
+
+      if (nolifa.ne.2) then
+         return ! wetting and drying is not active 
+      endif
+
 CWET...
 CWET...WET/DRY - INITIALIZATIONS FOR WET/DRY LOOP
 CWET...
-      IF(NOLIFA.EQ.2) THEN      !  This goes on until end of part 6
          DO I=1,NP
             NIBCNT(I) = 0
          ENDDO
@@ -169,9 +176,9 @@ CWET...
                HTOT=DP(I)+ETA2(I)
                IF(HTOT.LE.H0) THEN
                   IF(HTOT.LT.HABSMIN) ETA2(I)=HABSMIN-DP(I)
-                     NNODECODE(I)=0
-                     NODECODE(I)=0
-                     NCCHANGE=NCCHANGE+1 !NCCHANGE=0 set near beginning of GWCE
+                  NNODECODE(I)=0
+                  NODECODE(I)=0
+                  NCCHANGE=NCCHANGE+1 !NCCHANGE=0 set near beginning of GWCE
 C                  ENDIF
                ENDIF
             ENDIF
@@ -1073,7 +1080,7 @@ CWET...
 CWET...
 CWET...END WET/DRY SECTION - PART 6
 CWET...
-      ENDIF                     !  This is started in Part 1 of CWET
+
 c.....
 !-----------------------------------------------------------------------
       end subroutine computeWettingAndDrying
