@@ -18,17 +18,18 @@ C
       USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4
       USE BOUNDARIES, ONLY : NETA, NFLUXF, NOPE, NVEL, LBCODEI
       USE HARM
-      USE WIND
+      USE WETDRY, ONLY : initializeWettingAndDrying
+      USE WIND, ONLY : coldStartMeteorologicalForcing, rsget
       USE GLOBAL_IO
       USE SUBDOMAIN, ONLY : subdomainOn, readFort015
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
-      USE OWIWIND,ONLY : NWS12INIT,NWS12GET    ! sb added 09/xx/2006
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
      &    initInundationOutput
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
+      USE GWCE, ONLY : etime1, etime2, etiminc
 
       IMPLICIT NONE
 
@@ -38,7 +39,6 @@ C
 
       REAL(SZ) HTOT
       REAL(SZ) HollandTime, AsymmetricTime, GeneralAsymTime
-      REAL(SZ) :: PRBCKGRND_MH2O  !tcm v49.16 20100617
 !kmd - Evan's updates for rivers above MSL
 !      REAL(SZ),ALLOCATABLE :: et_WSE(:)
       LOGICAL FOUND
@@ -58,9 +58,11 @@ C
 #endif
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
+      !
+      call initializeWettingAndDrying()
 
 C SET UP TIME VARYING WEIRS IF NECESSARY
-       CALL WEIR_SETUP()
+      CALL WEIR_SETUP()
 
       if (subdomainOn) then
          call readFort015() ! NCSU Subdomain Modeling
@@ -116,26 +118,20 @@ C...     DEPTHS ARE > OR = TO H0.
 C
 C------------------------------------------------------------------------------
 C
-C.... tcm v49.16 20100617
-C.... convert background pressure from millibars to meters of water
-      PRBCKGRND_MH2O = 100.0D0*PRBCKGRND/(RHOWAT0*G)
-
-C
 C...  SET AT REST INITIAL CONDITION OVER WHOLE DOMAIN
 C...  IF BOTTOM IS ABOVE THE GEIOD -> DRY NODE
 C...  IF BOTTOM IS INITIALLY BELOW THE GEOID AND STARTDRY=1 -> DRY NODE
 C...
-      UU1(:) = 0.D0
-      VV1(:) = 0.D0
       UU2(:) = 0.D0
       VV2(:) = 0.D0
-      QX1(:) = 0.D0
-      QY1(:) = 0.D0
       QX2(:) = 0.D0
       QY2(:) = 0.D0
+      TK(:) = 0.D0     
+      ETA1(:) = 0.D0
       ETA2(:) = 0.D0
       ETAS(:) = 0.D0
       CH1(:) = 0.d0
+      EN2(:) = 0.d0
       !
       ! Set the initial wet/dry state and water surface elevation
       call setColdWetDryStateAndWaterSurfaceElevation()  
@@ -146,7 +142,6 @@ C...
       if (inundationOutput.eqv..true.) then
          call initInundationOutput()
       endif
-         
 C...
 C...  INITIALIZE THE ELEVATION SPECIFIED BOUNDARY CONDITION IF IT
 C...  REQUIRES THE USE OF THE UNIT 19 FILE.
@@ -214,17 +209,6 @@ C....NOTE: CAN'T DEAL WITH WIND THAT STARTS AFTER WREFTIM!!!!!!!!!!!!
 C....READ IN AND INTERPOLATE IN SPACE ONTO THE ADCIRC GRID THE
 C....TIME LEVEL 1 AND LEVEL 2 WIND FIELDS
 
-      DO I=1,NP
-         WSX1(I)=0.D0
-         WSY1(I)=0.D0
-!        PR1(I)=0.D0   !tcm v49.16 20100617
-         PR1(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
-         WSX2(I)=0.D0
-         WSY2(I)=0.D0
-!        PR2(I)=0.D0   !tcm v49.16 20100617
-         PR2(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
-      ENDDO
-
       IF(NWS.NE.0) THEN
 C        jgf48.4627 If user only requests meteorological output, then
 C        set a flag that turns off the calculation of the GWCE and
@@ -260,212 +244,16 @@ C        momentum equations
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1980)
          WRITE(16,1980)
  1980    FORMAT(/,1X,'WIND (AND PRESSURE) INFORMATION READ.',/)
-      ENDIF
 
-      IF(NWS.EQ.1) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-      ENDIF
+         call coldstartMeteorologicalForcing(nws)
 
-      IF(ABS(NWS).EQ.2) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
       ENDIF
-
-      IF(NWS.EQ.3) THEN
-C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
-C....                           to correspond with having only a global wind file.
-!         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
-
- 2222    CALL NWS3GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,IWTIME,IWYR,WTIMED,NP,
-     &        NWLON,NWLAT,WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,
-     &        NScreen, ScreenUnit)
-         IF(IWYR.NE.IREFYR) THEN
-            IWTIMEP=IWTIME
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-            END DO
-            GOTO 2222
-         ENDIF
-         IF(WTIMED.LE.WREFTIM) THEN
-            IWTIMEP=IWTIME
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-            END DO
-            GOTO 2222
-         ENDIF
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
-     &        WRITE(ScreenUnit,*)'FOUND WIND DATA AT TIME= ',IWTIMEP
-         WRITE(16,*) 'FOUND WIND DATA AT TIME= ',IWTIMEP
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
-     &        WRITE(ScreenUnit,*)'FOUND WIND DATA AT TIME= ',IWTIME
-         WRITE(16,*) 'FOUND WIND DATA AT TIME= ',IWTIME
-         WTIME2=WTIMED-WREFTIM  !CAST INTO MODEL TIME REFERENCE
-         WTIME1=WTIME2-WTIMINC
-      ENDIF
-
-      IF(ABS(NWS).EQ.4) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         WTIME1 = STATIM*86400.D0
-         WTIME2=WTIME1+WTIMINC
-         CALL NWS4GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         CALL NWS4GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-      ENDIF
-
-      IF(ABS(NWS).EQ.5) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
-      ENDIF
-
-      IF(NWS.EQ.6) THEN
-C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
-C....                           to correspond with having only a global wind file.
-!         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
-         CALL NWS6GET(X,Y,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,NWLON,NWLAT,
-     &        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
-         CALL NWS6GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT,
-     &        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
-      ENDIF
-
-C     jgf46.00 Added option to directly apply surface stress without any
-C     other correction factors.
-      IF(ABS(NWS).EQ.7) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
-      ENDIF
-
-C     jgf46.02 New option to read in hurricane locations and generate
-C     generate hurricane winds from the Holland Wind Model.
-      IF(ABS(NWS).EQ.8) THEN
-         HollandTime = STATIM*86400.D0
-         CALL HollandGet(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,
-     &     ICS,RHOWAT0,G,HollandTime,NSCREEN,ScreenUnit)
-      ENDIF
-
-C     RJW Merged:
-!    rjw added nws = 19: asymmetric hurricane winds v2.0
-      IF(NWS.EQ.19) THEN
-         AsymmetricTime = STATIM*86400.D0
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
-        CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
-      ENDIF
-      
-!    jie added nws = 20: generalized asymmetric vortex model
-      IF(NWS.EQ.20) THEN
-         GeneralAsymTime = STATIM*86400.D0
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
-        CALL NWS20GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,GeneralAsymTime,ICS)
-      ENDIF      
-
-      ! jgf49.1001 Added NWS=29, asymmetric vortex wind (NWS19) embedded in
-      ! OWI (NWS12) basin scale wind field.
-      IF(NWS.EQ.29) THEN
-         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
-         ! now blend in the vortex met field
-         AsymmetricTime = STATIM*86400.D0
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
-     &        STATUS='OLD')
-         ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
-         CALL NWS19GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
-     &                 NP,AsymmetricTime,ICS)
-      ENDIF
-
-      IF(NWS.EQ.10) THEN
-         WTIME1=STATIM*86400.D0
-         WTIME2=WTIME1+WTIMINC
-         NWSGGWI=-1
-         CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,RHOWAT0,G,
-     &        NWLON,NWLAT,WTIMINC) !JUST COMPUTE INTERPOLATING FACTORS
-         NWSGGWI=1
-         CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,RHOWAT0,G,
-     &        NWLON,NWLAT,WTIMINC) !NOW INTERPOLATE 1st WIND FIELD
-      ENDIF
-
-      IF(NWS.EQ.11) THEN
-         WTIME1=STATIM*86400.D0
-         WTIME2=WTIME1+WTIMINC
-         NWSEGWI=0
-         IDSETFLG=0
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1197)
-         WRITE(16,1197)
- 1197    FORMAT(/,1X,'THE E29 MET GRID INTERPOLATING FACTORS ARE ',
-     &        'BEING COMPUTED ')
-         CALL NWS11GET(NWSEGWI,IDSETFLG,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,
-     &        RHOWAT0,G)        !JUST COMPUTE INTERPOLATING FACTORS
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1198)
-         WRITE(16,1198)
- 1198    FORMAT(1X,'FINISHED COMPUTING E29 INTERPOLATING FACTORS',/)
-         NWSEGWI=1
-         IDSETFLG=1
-         CALL NWS11GET(NWSEGWI,IDSETFLG,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,
-     &        RHOWAT0,G)        !NOW INTERPOLATE 1st WIND FIELD
-      ENDIF
-
-C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/2006
-      IF(ABS(NWS).EQ.12) THEN
-        CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-        CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-        CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-        WTIME1 = STATIM*86400.D0
-        WTIME2 = WTIME1 + WTIMINC
-      ENDIF
-
-      !
-      ! jgf50.38.05: Added NWS=15,-15 for reading HWind data
-      IF (ABS(NWS).EQ.15) THEN
-         CALL NWS15INIT(STATIM*86400.0)
-      ENDIF
-
-C     
-C....tcm v51.06.02: Added NWS=16,-16 for reading ASCII GFDL Met data
-      IF (ABS(NWS).EQ.16) THEN
-         CALL INIT_GFDL(STATIM*86400.0)
-      ENDIF
-      !
-      ! jgf52.14: Implementing Casey's fix for uninitialized
-      ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
-      ! by the parametric vortex meteorological models but are used in
-      ! the padcswan_init() subroutine to initialize the SWAN wind 
-      ! velocities. Failure to initialize them causes NaNs in the 
-      ! solution. 
-      if ( (abs(nws).eq.8).or.(abs(nws).eq.19).or.(abs(nws).eq.20)) then
-         WVNX1 = WVNX2
-         WVNY1 = WVNY2
-      endif
 
 C...INPUT RADIATION STRESS INFORMATION FROM UNIT 23
 C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
 
       ! NRS=2 was added. 09/xx/2006 sb
       IF(NRS.GE.1) THEN ! sb46.28sb03
-         IF(NWS.EQ.0) THEN
-            DO I=1,NP
-               WSX1(I)=0.D0
-               WSY1(I)=0.D0
-               WSX2(I)=0.D0
-               WSY2(I)=0.D0
-               PRN1(I)=0.D0     !need to be initialized
-               PRN2(I)=0.D0     !even if not used
-            ENDDO
-         ENDIF
          RSTIME1 = STATIM*86400.D0
          RSTIME2 = RSTIME1+RSTIMINC
          IF(NRS.EQ.1) THEN

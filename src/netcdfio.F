@@ -7133,14 +7133,14 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Reads data from the hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstart(lun, timeLoc)
-      USE SIZES, ONLY : globaldir, mnproc
-      USE GLOBAL, ONLY : OutputDataDescript_t, FileFmtRev, FileFmtMinor,
-     &                   FileFmtMajor, imhs, iths, iestp, nscoue, ivstp,
+      USE VERSION, ONLY : FileFmtRev, FileFmtMinor, FileFmtMajor
+      USE SIZES, ONLY : globaldir, mnproc, myproc
+      USE GLOBAL, ONLY : OutputDataDescript_t, imhs, iths, iestp, nscoue, ivstp,
      &                   nscouv, icstp, nscouc, ipstp, iwstp, nscoum,
      &                   igep, nscouge, igvp, nscougv, igcp, nscougc,
      &                   igpp, igwp, nscougw, ETA1, ETA2, EtaDisc,
      &                   UU2, VV2, NNODECODE, NOFF, 
-     &                   MYPROC, IM, NP_G, NE_G, NODES_LG, IMAP_EL_LG
+     &                   IM, NP_G, NE_G, NODES_LG, IMAP_EL_LG
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
@@ -7887,9 +7887,9 @@ C-----------------------------------------------------------------------
 C     jgf49.44.11 Reads harmonic analysis data from the hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstartHarmonic(lun)
-      USE SIZES, ONLY : MNPROC, globaldir
+      USE SIZES, ONLY : MNPROC, globaldir, myproc
       USE GLOBAL, ONLY : OutputDataDescript_t, NODES_LG,
-     &                   IMAP_STAE_LG, NSTAE, IMAP_STAV_LG, NSTAV,MYPROC
+     &                   IMAP_STAE_LG, NSTAE, IMAP_STAV_LG, NSTAV
       USE HARM, ONLY : GLOELV, STAELV, GLOULV, GLOVLV, STAULV, STAVLV,
      &                 NHASE, NHASV, NHAGE, NHAGV, MNHARF, ICHA, INZ,
      &                 INZ, INF, IMM, INSTAE, INSTAV, INHASE, INHASV,
@@ -9217,12 +9217,13 @@ C-----------------------------------------------------------------------
      &                   convention, contact, dtdp, ihot,
      &                   nolifa, nolica, nolicat,
      &                   ncor, ntip, nws, nramp, statim,
-     &                   reftim, rnday, dramp, a00, b00, c00, h0,
+     &                   reftim, rnday, dramp, h0,
      &                   cori, ntif, nbfr, RAD2DEG, C3D, inunThresh,
      &                   inundationOutput, runid
       USE GLOBAL_3DVS, ONLY : iden, islip, kp, z0s, z0b, theta1, theta2,
      &   ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd, nvsd, nltd,
      &   nvtd, alp4
+      USE GWCE, ONLY : a00, b00, c00
       USE NodalAttributes, ONLY: nolibf, nwp, tau0, cf, eslm
       IMPLICIT NONE
       INTEGER :: ncid
@@ -9462,9 +9463,9 @@ C     in the specified file.
 C-----------------------------------------------------------------------
       subroutine updateMetaData(ncid,myFile)
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : ihot, nramp, rnday, dramp, a00, b00, c00, h0,
-     &                    rundes, runid
+      USE GLOBAL, ONLY : ihot, nramp, rnday, dramp, h0, rundes, runid
       USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
+      USE GWCE, ONLY : a00, b00, c00
       USE VERSION
       IMPLICIT NONE
       INTEGER :: ncid
@@ -9544,10 +9545,10 @@ C-----------------------------------------------------------------------
       SUBROUTINE ReadMetaData(ncid,myFile)
 C-----------------------------------------------------------------------
         USE SIZES,ONLY:SZ
-        USE GLOBAL,ONLY:ihot,nramp,rnday,dramp,a00,b00,c00,h0,np_g,ne_g,
-     &                   rundes,runid
+        USE GLOBAL,ONLY:ihot,nramp,rnday,dramp,h0,np_g,ne_g,rundes,runid
         USE NodalAttributes,ONLY:nwp,nolibf,tau0,cf,eslm
         USE VERSION
+        USE GWCE, ONLY : a00,b00,c00
         IMPLICIT NONE
         INTEGER :: NCID,dimid_node,dimid_nele
         TYPE(fileData),INTENT(INOUT) :: myFile
@@ -9629,8 +9630,8 @@ C     was an error, it writes the error message to the screen and to the
 C     fort.16 file.
 C-----------------------------------------------------------------------
       subroutine check_err(iret)
-      USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : myProc, screenUnit
+      USE SIZES, ONLY : SZ, myproc
+      USE GLOBAL, ONLY : screenUnit
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
@@ -9740,20 +9741,21 @@ C-----------------------------------------------------------------------
      &   nfen_p,iden_p, islip_p, kp_p, z0s_p, z0b_p, theta1_p, theta2_p,
      &   ievc_p, evmin_p, evcon_p, alp1_p, alp2_p, alp3_p, igc_p,nlsd_p,
      &   nvsd_p, nltd_p, nvtd_p, alp4_p, C3D_p, RUNID_p)
+      USE SIZES, ONLY : myproc
       USE MESH, ONLY : X, Y, SLAM, SFEA, NM, DP, ICS,
      &   SLAM0, SFEA0, AGRID
       USE BOUNDARIES, ONLY : NBOU, NVEL, NOPE, NBVV, NVDLL, NBDV, NVELL, 
      &   IBTYPE, IBTYPEE, NETA
+      USE VERSION, ONLY : FileFmtRev, FileFmtMinor, FileFmtMajor 
       USE GLOBAL, ONLY : base_date, SNAMLEN, RAD2DEG, NODECODE, G, 
-     &   FileFmtRev, NP_G, NE_G, 
-     &   FileFmtMinor, FileFmtMajor, im, iestp, nscoue, ivstp, nscouv,
+     &   NP_G, NE_G, im, iestp, nscoue, ivstp, nscouv,
      &   icstp, nscouc, ipstp, iwstp, nscoum, igep, nscouge, igvp,
      &   nscougv, igcp, nscougc, igpp, igwp, nscougw,
      &   RUNDES, title, institution, source, history,
      &   references, comments, host, convention, contact, dtdp, ihot,
      &   nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
-     &   reftim, rnday, dramp, a00, b00, c00, h0, cori, ntif, nbfr,
-     &   myProc, screenUnit, nabout, nscreen, C3D, runid
+     &   reftim, rnday, dramp, h0, cori, ntif, nbfr,
+     &   screenUnit, nabout, nscreen, C3D, runid
       USE GLOBAL_3DVS, ONLY :
      &   nfen, n3dsd, i3dsdrec, n3dsv, i3dsvrec,
      &   n3dst, i3dstrec, n3dgd, i3dgdrec, n3dgv, i3dgvrec,
@@ -9761,7 +9763,7 @@ C-----------------------------------------------------------------------
      &   iden, islip, kp, z0s, z0b, theta1, theta2,
      &   ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd, nvsd, nltd,
      &   nvtd, alp4
-
+      USE GWCE, ONLY : a00, b00, c00
       USE NodalAttributes, ONLY : nolibf, nwp, tau0, cf, eslm
       IMPLICIT NONE
 C
