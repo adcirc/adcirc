@@ -6837,7 +6837,7 @@ C
 C---------------------------------------------------------------------------
       SUBROUTINE prepNetCDF()
 #ifdef ADCNETCDF
-      use sizes, only : ASCII, XDMF
+      use sizes, only : ASCII, XDMF, myproc
       USE PRESIZES, ONLY: NM, MNTIF, MNE, MNP
       USE HARM, ONLY : IHARIND, CHARMV
       USE VERSION
@@ -6872,12 +6872,12 @@ C---------------------------------------------------------------------------
      &    initNetCDFHotstartHarmonicMeansVariances,
      &    freeNetCDFCoord
 #ifdef ADCSWAN
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, myProc,
+      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit,
      &                   SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &                   SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
      &                   SWAN_OutputTMM10,NOUT_TVW
 #else
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, myProc, 
+      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, 
      &                   NOUT_TVW                       
 #endif
 C

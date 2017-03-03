@@ -1242,15 +1242,15 @@ C-----------------------------------------------------------------------
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       USE GLOBAL,   ONLY: DT,
      &                    ETA2,
-     &                    WVNX1,
-     &                    WVNX2,
-     &                    WVNY1,
-     &                    WVNY2,
 Casey 120305: Merging ice changes from Taylor Asher.
 CTGA 110912:  Full SWAN ice implementation.  Use global variables
      &                    NCICE,
      &                    CICE1,
      &                    CICE2
+      USE WIND, ONLY :   WVNX1,
+     &                    WVNX2,
+     &                    WVNY1,
+     &                    WVNY2
       USE MESH, ONLY : NP, DP
 CTGA 111003:  Adding ability to read in ice info from fort.26 file
       USE SWCOMM3,  ONLY: SWAN_WBICETH => WBICETH,

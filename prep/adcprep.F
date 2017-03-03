@@ -92,11 +92,10 @@ C
 C----------------------------------------------------------------------------
 C
       PROGRAM ADCPREP
-      USE GLOBAL, ONLY : screenUnit, myProc, initLogging, Rearth, deg2rad,
-     &   rad2deg
+      USE GLOBAL, ONLY : screenUnit, initLogging, Rearth, deg2rad, rad2deg
       USE SIZES, ONLY : meshFileName, meshFileNameSpecified, meshType, 
      &  ASCII, XDMF, naFileNameSpecified, naFileName, naType, controlFileName,
-     &  controlType, controlFileNameSpecified, globaldir
+     &  controlType, controlFileNameSpecified, globaldir, myproc
       USE SUBPREP, ONLY : readFort015prep
       USE PRE_GLOBAL
       USE VERSION

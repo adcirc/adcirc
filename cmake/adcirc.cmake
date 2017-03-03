@@ -11,11 +11,11 @@ IF(BUILD_ADCIRC)
                           src/global_3dvs.F src/harm.F wind/vortex.F 
                           src/wind.F src/owiwind.F src/rs2.F 
                           src/owi_ice.F src/itpackv.F src/nodalattr.F 
-                          src/globalio.F src/netcdfio.F src/control.F
-                          src/xdmfio.F )
+                          src/globalio.F src/subdomain.F src/gwce.F
+                          src/wetdry.F src/momentum.F src/netcdfio.F 
+                          src/control.F src/xdmfio.F )
 
-    SET( ADCIRC2_SOURCES  src/write_output.F 
-                          src/couple2swan.F src/adcirc.F src/subdomain.F 
+    SET( ADCIRC2_SOURCES  src/write_output.F src/couple2swan.F src/adcirc.F 
                           src/weir_boundary.F src/read_input.F src/cstart.F 
                           src/hstart.F src/timestep.F src/vsmy.F 
                           src/transport.F src/driver.F )

@@ -63,20 +63,16 @@ C      logical :: fileFound ! true if the file is present
       character(len=100) :: errorVar ! name of variable that was being read
                                     ! when an error occurred
 
-      PUBLIC
+      logical :: moving_grid = .false. ! true will spatially interpolate each dataset
 
-C      INTEGER,SAVE,PRIVATE :: REALTYPE, DBLETYPE
-C      REAL(SZ), PRIVATE,ALLOCATABLE :: SENDBUF(:,:), RECVBUF(:,:)
-C
+      PUBLIC
 
 C---------------------end of data declarations--------------------------------C
 
-
       CONTAINS
 
-
 C***********************************************************************
-C   SOBROUTINE NWS12INIT
+C   SUBROUTINE NWS12INIT
 C***********************************************************************
 
       SUBROUTINE NWS12INIT(WVNX,WVNY,PRN,NP,RHOWAT0,G)
@@ -240,35 +236,114 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 
-
-
-C***********************************************************************
-C   SOBROUTINE NWS12GET
-C***********************************************************************
-
-      SUBROUTINE NWS12GET(WVNX,WVNY,PRN,NP,RHOWAT0,G)
-      USE SIZES,ONLY : MYPROC,MNPROC
-
-      !Casey 110518: Added for Mark Powell's sector-based wind drag.
-      USE WIND, ONLY: EyeLatR,
-     &                EyeLonR,
-     &                FoundEye,
-     &                DragLawString,
-     &                moving_grid
-
-      IMPLICIT NONE
-
-      INTEGER   NP,I,J,XI,YI
-      REAL(SZ), intent(out), dimension(:) ::  WVNX,WVNY,PRN
-      REAL(SZ)  RHOWAT0,RHOWATG,G
-      CHARACTER*80 PBLJAGF
-
+!-----------------------------------------------------------------------
+!      S U B R O U T I N E   F I N D   S T O R M   C E N T E R
+!-----------------------------------------------------------------------
+!     Called to find the lowest pressure in the met field below
+!     the threshold pressure.
+!-----------------------------------------------------------------------
+      subroutine findStormCenter(eyeLatR, eyeLonR, foundEye)
+      implicit none
+      real(sz), intent(out) :: eyeLatR(3)
+      real(sz), intent(out) :: eyeLonR(3)
+      logical, intent(out)  :: foundEye
       !Casey 110518: Added for Mark Powell's sector-based wind drag.
       INTEGER  :: EyeLatI
       INTEGER  :: EyeLonI
       REAL(SZ) :: EyeLatTemp
       REAL(SZ) :: EyeLonTemp
       REAL(SZ) :: EyePressure      
+      integer :: i, j
+
+      !Casey 110518: Find lon,lat location of eye.
+      EyeLatI = 0
+      EyeLonI = 0
+      EyePressure = 1013.D0
+      DO i=1,iLongB
+         DO j=1,iLatB
+            IF((pB(i,j).LT.EyePressure).AND.(pB(i,j).LT.1000.D0))THEN
+               EyeLatI = j
+               EyeLonI = i
+               EyePressure = pB(i,j)
+            ENDIF
+         ENDDO
+      ENDDO
+      IF((EyeLatI.EQ.0).AND.(EyeLonI.EQ.0))THEN
+         FoundEye = .FALSE.
+      ELSEIF((EyeLatI.EQ.1).OR.(EyeLatI.EQ.iLatB).OR.(EyeLonI.EQ.1).OR.(EyeLonI.EQ.iLongB))THEN
+         FoundEye = .FALSE.
+      ELSE
+         FoundEye = .TRUE.
+         EyeLatTemp = swlatB  + (EyeLatI-1)*dyB
+         EyeLonTemp = swlongB + (EyeLonI-1)*dxB
+         IF((EyeLatTemp.EQ.EyeLatR(3)).AND.(EyeLonTemp.EQ.EyeLonR(3)))THEN
+            CONTINUE
+         ELSE
+            EyeLatR(1) = EyeLatR(2)
+            EyeLonR(1) = EyeLonR(2)
+            EyeLatR(2) = EyeLatR(3)
+            EyeLonR(2) = EyeLonR(3)
+            EyeLatR(3) = EyeLatTemp
+            EyeLonR(3) = EyeLonTemp
+         ENDIF
+      ENDIF
+
+      !Casey 110518: Find lon,lat location of eye.
+      EyeLatI = 0
+      EyeLonI = 0
+      EyePressure = 1013.D0
+      DO i=1,iLongR
+         DO j=1,iLatR
+            IF((pR(i,j).LT.EyePressure).AND.(pR(i,j).LT.1000.D0))THEN
+               EyeLatI = j
+               EyeLonI = i
+               EyePressure = pR(i,j)
+            ENDIF
+         ENDDO
+      ENDDO
+      IF((EyeLatI.EQ.0).AND.(EyeLonI.EQ.0))THEN
+         IF(.NOT.FoundEye)THEN
+            FoundEye = .FALSE.
+         ELSE
+            FoundEye = .TRUE.
+         ENDIF
+      ELSEIF((EyeLatI.EQ.1).OR.(EyeLatI.EQ.iLatR).OR.(EyeLonI.EQ.1).OR.(EyeLonI.EQ.iLongR))THEN
+         IF(.NOT.FoundEye)THEN
+            FoundEye = .FALSE.
+         ELSE
+            FoundEye = .TRUE.
+         ENDIF
+      ELSE
+         FoundEye = .TRUE.
+         EyeLatTemp = swlatR  + (EyeLatI-1)*dyR
+         EyeLonTemp = swlongR + (EyeLonI-1)*dxR
+         IF((EyeLatTemp.EQ.EyeLatR(3)).AND.(EyeLonTemp.EQ.EyeLonR(3)))THEN
+            CONTINUE
+         ELSE
+            EyeLatR(1) = EyeLatR(2)
+            EyeLonR(1) = EyeLonR(2)
+            EyeLatR(2) = EyeLatR(3)
+            EyeLonR(2) = EyeLonR(3)
+            EyeLatR(3) = EyeLatTemp
+            EyeLonR(3) = EyeLonTemp
+         ENDIF
+      ENDIF
+!-----------------------------------------------------------------------
+      end subroutine findStormCenter
+!-----------------------------------------------------------------------
+
+
+C***********************************************************************
+C   SUBROUTINE NWS12GET
+C***********************************************************************
+
+      SUBROUTINE NWS12GET(WVNX,WVNY,PRN,NP,RHOWAT0,G)
+      USE SIZES,ONLY : MYPROC,MNPROC
+      IMPLICIT NONE
+      INTEGER   NP,I,J,XI,YI
+      REAL(SZ), intent(out), dimension(:) ::  WVNX,WVNY,PRN
+      REAL(SZ)  RHOWAT0,RHOWATG,G
+      CHARACTER*80 PBLJAGF
 
       !jgf51.52.05: Used to detect mesh nodes outside both met grids
       ! and set those nodes to zero wind velocity and to background pressure.
@@ -278,7 +353,6 @@ C
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      FoundEye = .FALSE.
       RHOWATG=RHOWAT0*G
 
 ! Read basin data  ---------------------------------------------------------
@@ -303,7 +377,6 @@ C
          call unsetMessageSource()
          RETURN
       endif
-
 
       ! Increment counter
       isnapB = isnapB+1
@@ -371,43 +444,6 @@ C
      &   ((vB(i,j),i=1,iLongB),j=1,iLatB)
       call check_err(errorIO)
 
-      ! jgf50.32: Made this if block dependent on the drag law formulation.
-      IF (trim(DragLawString) == "Powell" .or.
-     &    trim(DragLawString) == "POWELL" .or.
-     &    trim(DragLawString) == "powell" ) THEN
-         !Casey 110518: Find lon,lat location of eye.
-         EyeLatI = 0
-         EyeLonI = 0
-         EyePressure = 1013.D0
-         DO i=1,iLongB
-            DO j=1,iLatB
-               IF((pB(i,j).LT.EyePressure).AND.(pB(i,j).LT.1000.D0))THEN
-                  EyeLatI = j
-                  EyeLonI = i
-                  EyePressure = pB(i,j)
-               ENDIF
-            ENDDO
-         ENDDO
-         IF((EyeLatI.EQ.0).AND.(EyeLonI.EQ.0))THEN
-            FoundEye = .FALSE.
-         ELSEIF((EyeLatI.EQ.1).OR.(EyeLatI.EQ.iLatB).OR.(EyeLonI.EQ.1).OR.(EyeLonI.EQ.iLongB))THEN
-            FoundEye = .FALSE.
-         ELSE
-            FoundEye = .TRUE.
-            EyeLatTemp = swlatB  + (EyeLatI-1)*dyB
-            EyeLonTemp = swlongB + (EyeLonI-1)*dxB
-            IF((EyeLatTemp.EQ.EyeLatR(3)).AND.(EyeLonTemp.EQ.EyeLonR(3)))THEN
-               CONTINUE
-            ELSE
-               EyeLatR(1) = EyeLatR(2)
-               EyeLonR(1) = EyeLonR(2)
-               EyeLatR(2) = EyeLatR(3)
-               EyeLonR(2) = EyeLonR(3)
-               EyeLatR(3) = EyeLatTemp
-               EyeLonR(3) = EyeLonTemp
-            ENDIF
-         ENDIF
-      ENDIF
 
 ! Read region data  --------------------------------------------------------
 
@@ -496,51 +532,6 @@ C
      &   ((vR(i,j),i=1,iLongR),j=1,iLatR)
       call check_err(errorIO)
 
-      ! jgf50.32: Made this if block dependent on the drag law formulation.
-      IF (trim(DragLawString) == "Powell" .or.
-     &    trim(DragLawString) == "POWELL" .or.
-     &    trim(DragLawString) == "powell" ) THEN
-         !Casey 110518: Find lon,lat location of eye.
-         EyeLatI = 0
-         EyeLonI = 0
-         EyePressure = 1013.D0
-         DO i=1,iLongR
-            DO j=1,iLatR
-               IF((pR(i,j).LT.EyePressure).AND.(pR(i,j).LT.1000.D0))THEN
-                  EyeLatI = j
-                  EyeLonI = i
-                  EyePressure = pR(i,j)
-               ENDIF
-            ENDDO
-         ENDDO
-         IF((EyeLatI.EQ.0).AND.(EyeLonI.EQ.0))THEN
-            IF(.NOT.FoundEye)THEN
-               FoundEye = .FALSE.
-            ELSE
-               FoundEye = .TRUE.
-            ENDIF
-         ELSEIF((EyeLatI.EQ.1).OR.(EyeLatI.EQ.iLatR).OR.(EyeLonI.EQ.1).OR.(EyeLonI.EQ.iLongR))THEN
-            IF(.NOT.FoundEye)THEN
-               FoundEye = .FALSE.
-            ELSE
-               FoundEye = .TRUE.
-            ENDIF
-         ELSE
-            FoundEye = .TRUE.
-            EyeLatTemp = swlatR  + (EyeLatI-1)*dyR
-            EyeLonTemp = swlongR + (EyeLonI-1)*dxR
-            IF((EyeLatTemp.EQ.EyeLatR(3)).AND.(EyeLonTemp.EQ.EyeLonR(3)))THEN
-               CONTINUE
-            ELSE
-               EyeLatR(1) = EyeLatR(2)
-               EyeLonR(1) = EyeLonR(2)
-               EyeLatR(2) = EyeLatR(3)
-               EyeLonR(2) = EyeLonR(3)
-               EyeLatR(3) = EyeLatTemp
-               EyeLonR(3) = EyeLonTemp
-            ENDIF
-         ENDIF
-      ENDIF
 
  100  CONTINUE
 

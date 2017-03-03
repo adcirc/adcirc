@@ -19,7 +19,6 @@ C    ========================================================================
       use global, only : DEBUG, ECHO, INFO, WARNING, ERROR, logMessage,
      &                    allMessage, scratchMessage, setMessageSource,
      &                    unsetMessageSource 
-      use adcirc_mod, only : adcirc_terminate
 
       logical subdomainOn                                         
       integer :: NOUTGS, NSPOOLGS, enforceBN 
@@ -66,9 +65,9 @@ C                  fort.066
 C    ========================================================================
 
 
-         Use GLOBAL, only : myproc
+         Use sizes, only : myproc
 #ifdef CMPI
-     &                     , nodes_lg
+         use global, only : nodes_lg
          use mesh, only : np
          Use MESSENGER 
 #endif
@@ -87,7 +86,7 @@ C    ========================================================================
             call allMessage(ERROR,
      &       'Subdomain modeling was activated but the fort.015 file '
      &       // ' was not found in "' // trim(globaldir) // '".')
-            call adcirc_terminate()
+            call subdomainTerminate()
          endif
 
          if (myproc.eq.0) print *, "Subdomain Active"
@@ -120,7 +119,7 @@ C    ========================================================================
             enddo
          case default        
             call allMessage(ERROR,'The NOUTGS value is invalid.')
-            call adcirc_terminate()
+            call subdomainTerminate()
          end select
 #ifdef CMPI
          ! localize global record-node arrays:
@@ -176,7 +175,7 @@ C    ========================================================================
             enddo
          case default
             call allMessage(ERROR,'The NOUTGS value is invalid.')
-            call adcirc_terminate()
+            call subdomainTerminate()
          end select
 #endif
 
@@ -194,7 +193,8 @@ C     | This subroutine writes ETA2, x/y velocity and wet/dry states of
 C     | open ocean boundary nodes of subdomain grids to fort.065 file,
 C     | during a full run. This subroutine is called within timestep.F
 
-         Use GLOBAL, only : myproc, dt, rnday, eta2, uu2, vv2, nodecode
+         Use SIZES, only : myproc
+         Use GLOBAL, only : dt, rnday, eta2, uu2, vv2, nodecode
 #ifdef CMPI
      &                     , nodes_lg
          Use MESSENGER
@@ -259,7 +259,8 @@ C     | This subroutine writes ETAS, x/y velocity and wet/dry states of
 C     | outer boundary nodes of subdomain grids to fort.066 file,
 C     | during a full run. This subroutine is called within timestep.F
 
-         Use GLOBAL, only : myproc, dt, rnday, etas, uu2, vv2, nodecode
+         Use SIZES, only : myproc
+         Use GLOBAL, only : dt, rnday, etas, uu2, vv2, nodecode
 #ifdef CMPI
      &                      , nodes_lg
          Use MESSENGER 
@@ -324,7 +325,8 @@ C     | This subroutine writes ETAS of inner boundary nodes of subdomain
 C     | grids to fort.067 file during a full run. This subroutine is called
 C     | within timestep.F
 
-         Use GLOBAL, only : myproc, dt, rnday, etas
+         Use sizes, only : myproc
+         Use global, only : dt, rnday, etas
 #ifdef CMPI
      &                      , nodes_lg
          Use MESSENGER 
@@ -382,7 +384,8 @@ C     | within timestep.F
 C     | This subroutine opens fort.019 for a hot-started model and 
 C     | finds the proper place in the b.c. file.
 
-         Use GLOBAL, only : myproc, iths
+         Use SIZES, only : myproc
+         Use GLOBAL, only : iths
          USE BOUNDARIES, ONLY : neta
 #ifdef CMPI
          Use MESSENGER
@@ -406,7 +409,7 @@ C     | finds the proper place in the b.c. file.
          if (abs(ncbn-neta).gt.1) then
              print *, "WARNING: ncbn=!neta"
              print *,  ncbn,neta,myproc
-             CALL ADCIRC_Terminate()
+             CALL subdomainTerminate()
          endif
          allocate(ecbn1(ncbn),ucbn1(ncbn),vcbn1(ncbn),wdcbn1(ncbn))
          allocate(ecbn2(ncbn),ucbn2(ncbn),vcbn2(ncbn),wdcbn2(ncbn))
@@ -434,9 +437,8 @@ C     | finds the proper place in the b.c. file.
       SUBROUTINE openFort019C()
 C     | This subroutine opens fort.019 for a cold-started model
 
-         Use GLOBAL, only : myproc
+         Use SIZES, only : myproc
          USE BOUNDARIES, ONLY : neta
-         USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 #ifdef CMPI
          Use MESSENGER
 #endif
@@ -459,7 +461,7 @@ C     | This subroutine opens fort.019 for a cold-started model
          if (abs(ncbn-neta).gt.1) then
             print *, "WARNING: ncbn=!neta"
             print *,  ncbn,neta,myproc
-            CALL ADCIRC_Terminate()
+            CALL subdomainTerminate()
          endif
          allocate(ecbn1(ncbn),ucbn1(ncbn),vcbn1(ncbn),wdcbn1(ncbn))
          allocate(ecbn2(ncbn),ucbn2(ncbn),vcbn2(ncbn),wdcbn2(ncbn))
@@ -491,7 +493,6 @@ C     | outer boundary nodes of the subdomain grid from fort.019 file during
 C     | a subdomain run. This subroutine is called within timestep.F.
 
          Use GLOBAL, only : ihot 
-         USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 #ifdef CMPI
          Use MESSENGER
 #endif
@@ -539,7 +540,7 @@ C     | This subroutine reads in ETAS, x/y velocities and wet/dry states of
 C     | outer boundary nodes of the subdomain grid from fort.020 file during
 C     | a subdomain run. This subroutine is called within timestep.F.
 
-         Use GLOBAL, only : myproc
+         Use SIZES, only : myproc
 #ifdef CMPI
          Use MESSENGER 
 #endif
@@ -591,7 +592,7 @@ C     | This subroutine reads in ETAS of inner boundary nodes of the
 C     | subdomain grid from fort.021 file during a subdomain run.
 C     | This subroutine is called within timestep.F.
 
-         Use GLOBAL, only : myproc
+         Use SIZES, only : myproc
 #ifdef CMPI
          Use MESSENGER 
 #endif
@@ -774,7 +775,7 @@ C     | that jcg solver leads to the enforced values of ETA for
 C     | the outer boundary nodes.
 
          use sizes, only : mnei
-         use global, only : coef, etas, gwce_lv 
+         use global, only : coef, etas, gwce_lv
          use mesh, only : neitab
          implicit none
          integer :: i,j,n,neighbor
@@ -825,5 +826,41 @@ C     | to recalculate COEF of outer-inner boundary nodes
 #endif
 
       END SUBROUTINE checkChange
+
+
+      !jgf: Added this subroutine to eliminate dependence on adcirc_mod
+      ! module, which should be built last to simplify the build system.
+      SUBROUTINE subdomainTerminate(NO_MPI_FINALIZE)
+#ifdef CMPI
+         Use MESSENGER         
+#endif
+      implicit none
+c
+      logical, optional :: no_mpi_finalize
+C
+      call setMessageSource("subdomainTerminate")
+#if defined(SUBDOMAIN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      call allMessage(INFO,"ADCIRC Terminating.")
+
+#ifdef CMPI
+      subdomainFatalError = .true.
+      IF (PRESENT(NO_MPI_FINALIZE)) THEN
+        CALL MSG_FINI(NO_MPI_FINALIZE)
+      ELSE
+        CALL MSG_FINI()
+      ENDIF
+#endif
+      STOP 
+C
+#if defined(SUBDOMAIN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
+      END SUBROUTINE subdomainTerminate
+
+
 
       end module subdomain

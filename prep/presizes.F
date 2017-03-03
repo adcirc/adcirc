@@ -102,7 +102,6 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
      &    SWAN_OutputTMM10
 #endif
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
-     &                   invertedBarometerOnElevationBoundary,
      &                  initWindModule
 C
       IMPLICIT NONE
@@ -185,7 +184,7 @@ C     Solver Type:
       LOGICAL USE_VEL_STAT_FILE     !.true. if a velocity station file exists
       LOGICAL USE_CONC_STAT_FILE    !.true. if a concentration station file exists
       LOGICAL USE_MET_STAT_FILE     !.true. if a met station file exists
-
+      LOGICAL :: invertedBarometerOnElevationBoundary
 C
 C For Definition of Working Directory
 C

@@ -1840,7 +1840,6 @@ C     ... Convert Chezy to Cd, if necessary.
          END DO
       ENDIF
 C
-
 C     Step 1. Apply friction arising from turbulent viscous interaction
 C     with the sea floor.
       DO I=1, NP
@@ -2063,6 +2062,34 @@ C
 C     ----------------------------------------------------------------
       END SUBROUTINE ApplyCanopyCoefficient
 C     ----------------------------------------------------------------
+
+C*************************************************************************
+C     Subroutine to determine local advection state for each element
+C
+C                                   Corbitt 120322
+C*************************************************************************
+      SUBROUTINE ADVECTLOCAL(IE)
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : IFNLCAT, IFNLCATE, IFNLCT, IFNLCTE
+      USE MESH, ONLY : NM, DP
+      Implicit None
+      Integer  :: NM1, NM2, NM3,IE
+
+      NM1=NM(IE,1)
+      NM2=NM(IE,2)
+      NM3=NM(IE,3)
+      IF ((DP(NM1).GE.AdvectionState(NM1)).AND.
+     &    (DP(NM2).GE.AdvectionState(NM2)).AND.
+     &    (DP(NM3).GE.AdvectionState(NM3))) THEN
+             IFNLCT = IFNLCTE
+             IFNLCAT = IFNLCATE
+      ELSE
+         IFNLCT = 0
+         IFNLCAT = 0
+      ENDIF
+C***********************************************************************
+      END SUBROUTINE ADVECTLOCAL
+C***********************************************************************
 
 
 C     ----------------------------------------------------------------
