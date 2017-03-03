@@ -59,7 +59,8 @@ C
      &    RSTIME1, RSTIME2, NWS, RSTIMINC, SCREENUNIT, SIGT0, STATIM, TK,
      &    WVNXOUT, WVNYOUT, WarnElev, PERT, FACET, FFT, AMIGT, SALTPHA,
      &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF, 
-     &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC
+     &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
+     &    BCFLAG_LNM
 #ifdef CSWAN
      &  , waveWindMultiplier
 #endif

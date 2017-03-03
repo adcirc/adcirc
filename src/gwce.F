@@ -229,7 +229,7 @@ C
      &   SMAG_LOWER_LIM, SMAG_UPPER_LIM, TK, NOFF, UU1, VV1, QX1, QY1,
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
-     &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump
+     &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
@@ -1188,11 +1188,14 @@ C     on and off according to analyst preference.
 C   kmd48.33bc add information for the levels of no motion boundary conditions
 C              these are considered the steric adjustments.
       IF ((ABS(RES_BC_FLAG).GE.1).AND.(CBaroclinic).AND.(NOPE.GT.0))THEN
-         DO I=1,NETA
-           NBDI=NBD(I)
-           ETA2(NBDI) = ETA2(NBDI) + LNM_BC(I)
-         END DO
-      END IF
+Casey 140701: Added the following IF statement.
+         IF(BCFLAG_LNM.GT.0)THEN
+            DO I=1,NETA
+              NBDI=NBD(I)
+              ETA2(NBDI) = ETA2(NBDI) + LNM_BC(I)
+            END DO
+         END IF
+      ENDIF
 
 C...  IMPOSE NORMAL FLOW, RADIATION OR GRADIENT BOUNDARY CONDITIONS
 C...  ALONG FLOW BOUNDARY TO LOAD VECTOR GWCE_LV(I)
@@ -1263,10 +1266,6 @@ C
 
             IF((LBCODEI(J).EQ.40).OR.(LBCODEI(J).EQ.41)) QFORCEJ=
      &        -(QN1(J)-QN0(J))/DT - TAU0VAR(NBDJ)*(QN1(J)+QN0(J))/2.d0
-
-
-            IF(LBCODEI(J).LE.29) QFORCEJ=(QN2(J)-QN0(J))/DT2+
-     &           Tau0VAR(NBDJ)*QN1(J)
 C
 C     jgf46.21 Added IBTYPE=52
             IF(LBCODEI(J).EQ.52) THEN
