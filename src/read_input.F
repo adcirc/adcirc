@@ -2880,6 +2880,8 @@ C.....ESSENTIAL B.C.
       ! nfluxf accordingly. The nfluxf value is required for further
       ! parsing of the fort.15 control file; it determines whether
       ! the value of NFFR should be read below. 
+      !
+      ! jgf53.dev This subroutine also uses the value of C2DDI set above.
       call initializeBoundaries()
       !
       ! jgf51.21.12: Now write out log messages that include NBD (the

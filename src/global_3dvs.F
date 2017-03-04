@@ -48,9 +48,11 @@ Corbitt 120328: Apply Advection Locally
      &       C3DVS,
      &       DTDP,           !DTDP = timestep declared as real(8)
      &       allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
-     &       setMessageSource, unsetMessageSource,
-     &       mom_lv_x
-     
+     &       setMessageSource, unsetMessageSource, mom_lv_x
+
+      USE BOUNDARIES,ONLY:NETA,NVEL
+      IMPLICIT NONE
+
       SAVE
 
 C...DECLARE 3D GLOBAL ARRAYS
@@ -93,6 +95,15 @@ c.RJW merged 9/02/2008 Casey 071219: Added the following variable for cumulative
       REAL(SZ),ALLOCATABLE,TARGET :: L(:,:)         !  L(MNP,NFEN): turbulent length scale computed by Mellor-Yamada L2.5 closure, all nodes
       REAL(SZ),ALLOCATABLE,TARGET :: EV(:,:)        !  EV(MNP,NFEN): Vertical eddy viscosity, all nodes
 
+! arash 12/08/2015: variables for biharmonic viscosity operator
+      COMPLEX(SZ),ALLOCATABLE  :: Biharmonic_auxiliary_var(:,:)         ! since we need to compute the Laplacian twice, we need an auxiliary variable to store the first Laplacian for U and V.
+! arash 12/21/2015: variables for modified Leith viscosity
+      COMPLEX(SZ),ALLOCATABLE  :: d_dx_q_nodes (:,:), d_dy_q_nodes (:,:)
+! arash 01/04/2016: biharmonic for transport equation
+      Real(SZ),Allocatable  :: Biharmonic_viscosity_modified_Leith (:,:)
+      Real(SZ),ALLOCATABLE  :: Biharmonic_auxiliary_var_SalOrTemp (:,:)
+      Real(SZ),ALLOCATABLE  :: d_dx_SalOrTemp_nodes (:,:), d_dy_SalOrTemp_nodes (:,:)
+
 C     kmd45.12 Added in variables for transport
 
       REAL(SZ),ALLOCATABLE :: Gammatrans(:)  !  Gammatrans(NFEN): horizontal transport soln for a specific node
@@ -109,11 +120,16 @@ C     kmd45.12 Added in the variables for saving 3D velocities for two
 C     time levels
 
       COMPLEX(SZ),ALLOCATABLE  :: Qkp1(:,:) !  Qkp1(MNP,NFEN): horiz vel in the complex form u+iv for all nodes at the future time level
+!arash 2016 Mar 22
+      COMPLEX(SZ),ALLOCATABLE  :: Qkm1(:,:) !  Qkm1(MNP,NFEN): horiz vel in the complex form u+iv for all nodes at the previous time level
+      REAL(SZ),ALLOCATABLE :: WZkm1(:,:)    !  WZkm1(MNP,NFEN): "z" vertical velocity at all nodes for the previous time level
+
       REAL(SZ),ALLOCATABLE :: WZkp1(:,:)    !  WZkp1(MNP,NFEN): "z" vertical velocity at all nodes for the future time level
 
 !     kmd45.12 added in for baroclinic changes
 
       COMPLEX(SZ), ALLOCATABLE :: BPG(:,:)
+      COMPLEX(SZ), ALLOCATABLE :: BPG_nodes(:,:)
 
 C     kmd48.33bc - added these variables for the vertical diffusion terms in the transport equation
 C              Note: terms used when vertical eddy viscosity is defined from Mellor-Yamada
@@ -341,9 +357,21 @@ C
       ALLOCATE( Q20(MNP,NFEN), L(MNP,NFEN), EV(MNP,NFEN) )
       ALLOCATE( Gammatrans(NFEN) )
       ALLOCATE( Qkp1(MNP,NFEN), WZkp1(MNP,NFEN) )
+! arash 2016 Mar 22
+      ALLOCATE( Qkm1(MNP,NFEN), WZkm1(MNP,NFEN) )
+
       ALLOCATE( SALkp1(MNP,NFEN), TEMPkp1(MNP,NFEN) )
       ALLOCATE( qsurfkp1(MNP), qsurf(MNP) )
       ALLOCATE( BPG(MNP,NFEN) )
+! arash
+      ALLOCATE( Biharmonic_auxiliary_var(MNP,NFEN) )
+      ALLOCATE( d_dx_q_nodes(MNP,NFEN), d_dy_q_nodes(MNP,NFEN) )
+! arash 01/04/2016
+      Allocate( Biharmonic_viscosity_modified_Leith (MNP,NFEN) ) 
+      ALLOCATE( Biharmonic_auxiliary_var_SalOrTemp (MNP,NFEN) )
+!      ALLOCATE( d_dx_SalOrTemp_nodes (MNP,NFEN), d_dy_SalOrTemp_nodes (MNP,NFEN) )
+
+!      ALLOCATE( BPG_nodes(MNP,NFEN) )
 C   kmd48.33bc - allocate arrays
       ALLOCATE( NTVTot(NFEN), DV(MNP,NFEN) )
       ALLOCATE( RESSAL(NETA,NFEN), RESSAL1(NETA,NFEN) )
