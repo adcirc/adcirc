@@ -154,14 +154,6 @@ C*******************************************************************************
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
      &    CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3                 
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-      USE Couple2Swan, ONLY: TKXX,
-     &                       TKXY,
-     &                       TKYY
-#endif
-#endif
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceUVOB, 
      &                       enforceUVCB
 
@@ -204,19 +196,6 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       REAL(8) AreaIE, AreaIE2
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       INTEGER :: nele
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-      REAL(SZ) :: AUVXX(NP)
-      REAL(SZ) :: AUVXY(NP)
-      REAL(SZ) :: AUVYX(NP)
-      REAL(SZ) :: AUVYY(NP)
-      REAL(SZ) :: VCOEFXX
-      REAL(SZ) :: VCOEFXY
-      REAL(SZ) :: VCOEFYX
-      REAL(SZ) :: VCOEFYY
-#endif
-#endif
       call setMessageSource("mom_eqs_new_nc")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -596,31 +575,16 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
          ENDIF
          VCoef1=DTO2*TK(I)                     !TK = Kslip/H
          VCoef2=DTO2*CORIF(I)
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-         VCOEFXX = DTO2*TKXX(I)
-         VCOEFYY = DTO2*TKYY(I)
-         VCOEFXY = DTO2*(TKXY(I)-CORIF(I))
-         VCOEFYX = DTO2*(TKXY(I)+CORIF(I))
-#endif
-#endif
          IF(CBaroclinic) THEN
             VIDBCPDX=DT*VIDBCPDXOH(I)
             VIDBCPDY=DT*VIDBCPDYOH(I)
          ENDIF
 
 #ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-         MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCOEFXX)*UU1(I)-VCOEFXY*VV1(I)-VIDBCPDX)
-         MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCOEFYY)*VV1(I)-VCOEFYX*UU1(I)-VIDBCPDX)
-#else
          MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*UU1(I)
      &                                     +VCoef2*VV1(I)-VIDBCPDX)
          MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*VV1(I)
      &                                     -VCoef2*UU1(I)-VIDBCPDY)
-#endif
 #else
          MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*UU1(I)
      &                                     +VCoef2*VV1(I)-VIDBCPDX)
@@ -630,16 +594,6 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 
          AUV11(I)=1.D0+VCoef1*NCI
          AUV12(I)=-VCoef2*NCI
-
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-         AUVXX(I) = 1.D0 + VCOEFXX*NCI
-         AUVYY(I) = 1.D0 + VCOEFYY*NCI
-         AUVXY(I) = VCOEFXY*NCI
-         AUVYX(I) = VCOEFXY*NCI
-#endif
-#endif
 
          END DO
 
@@ -659,24 +613,12 @@ C      Specified essential normal flow and free tangential slip
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
             VelNorm=-QN2(I)/H2
 #ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
-     &                     -CSII(I)*MOM_LV_Y(NBDI)
-     &                     -VelNorm*AUVXY(NBDI))*NCI !Tangential Eqn RHS
-            MOM_LV_Y(NBDI)=VelNorm*AUVXX(NBDI)*NCI   !Normal Eqn RHS
-            AUVXX(NBDI) = AUVXX(NBDI)*SIII(I) - AUVXY(NBDI)*CSII(I)
-            AUVXY(NBDI) = AUVXY(NBDI)*SIII(I) - AUVYY(NBDI)*CSII(I)
-            AUVYX(NBDI) = CSII(I)
-            AUVYY(NBDI) = SIII(I)
-#else
             MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
      &                     -CSII(I)*MOM_LV_Y(NBDI)
      &                     -VelNorm*AUV12(NBDI))*NCI !Tangential Eqn RHS
             MOM_LV_Y(NBDI)=VelNorm*AUV11(NBDI)*NCI   !Normal Eqn RHS
             AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
             AUV11(NBDI)=SIII(I)*AUV11(NBDI)
-#endif
 #else
             MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
      &                     -CSII(I)*MOM_LV_Y(NBDI)
@@ -696,16 +638,7 @@ C     Specified essential normal flow and no tangential slip
             MOM_LV_Y(NBDI)=VelNorm*NCI !Normal Eqn RHS
             AUV11(NBDI)=SIII(I)
             AUV12(NBDI)=-CSII(I)
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-            AUVXX(NBDI) = SIII(I)
-            AUVXY(NBDI) = - CSII(I)
-            AUVYX(NBDI) = CSII(I)
-            AUVYY(NBDI) = SIII(I)
-#endif
-#endif
-            ENDIF
+         ENDIF
 
 C     Zero normal velocity gradient using a Galerkin approximation to
 C     the normal derivatives. Note: this is fully explicit and therefore
@@ -762,22 +695,15 @@ C     velocities at the previous time step.
                AUV12(NBDI)=0.d0
                MOM_LV_X(NBDI)=0.d0
                MOM_LV_Y(NBDI)=0.d0
-               ELSE
+            ELSE
                AUV11(NBDI)=1.d0
                AUV12(NBDI)=0.d0
                MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
                MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
-               ENDIF
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-            AUVXX(NBDI)=1.D0
-            AUVXY(NBDI)=0.D0
-#endif
-#endif
             ENDIF
+         ENDIF
 
-         ENDDO
+      ENDDO
 C...
 C...  SOLVE FOR VELOCITY AT NEW LEVEL  (s+1)
 C...
@@ -793,16 +719,6 @@ C.....interface nodes.
          DDU=AUV11(I)*AUV22-AUV12(I)*AUV21
          UU2(I)=(MOM_LV_X(I)*AUV22-MOM_LV_Y(I)*AUV12(I))/DDU
          VV2(I)=(MOM_LV_Y(I)*AUV11(I)-MOM_LV_X(I)*AUV21)/DDU
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-         AUVYY(I)= AUVXX(I)
-         AUVYX(I)= - AUVXY(I)
-         DDU = AUVXX(I)*AUVYY(I)-AUVXY(I)*AUVYX(I)
-         UU2(I)=(MOM_LV_X(I)*AUVYY(I)-MOM_LV_Y(I)*AUVXY(I))/DDU
-         VV2(I)=(MOM_LV_Y(I)*AUVXX(I)-MOM_LV_X(I)*AUVYX(I))/DDU
-#endif
-#endif
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
 c           UBAR2(I)=0.D0    !no slip and normal flux
 c           VBAR2(I)=0.D0    !on wet/dry interface nodes
@@ -885,14 +801,6 @@ C
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI, 
      &   CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-      USE Couple2Swan, ONLY: TKXX,
-     &                       TKXY,
-     &                       TKYY
-#endif
-#endif
       IMPLICIT NONE
 
       INTEGER IE, I, J, N                           !local loop counters
@@ -933,19 +841,6 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       INTEGER :: nele
 
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-      REAL(SZ) :: AUVXX(NP)
-      REAL(SZ) :: AUVXY(NP)
-      REAL(SZ) :: AUVYX(NP)
-      REAL(SZ) :: AUVYY(NP)
-      REAL(SZ) :: VCOEFXX
-      REAL(SZ) :: VCOEFXY
-      REAL(SZ) :: VCOEFYX
-      REAL(SZ) :: VCOEFYY
-#endif
-#endif
       call setMessageSource("mom_eqs_new_conserv")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -1361,29 +1256,14 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
          ENDIF
          VCoef1=DTO2*TK(I)
          VCoef2=DTO2*CORIF(I)
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-         VCOEFXX = DTO2*TKXX(I)
-         VCOEFYY = DTO2*TKYY(I)
-         VCOEFXY = DTO2*(TKXY(I)-CORIF(I))
-         VCOEFYX = DTO2*(TKXY(I)+CORIF(I))
-#endif
-#endif
          VIDBCPDX=DT*VIDBCPDXOH(I)*H2
          VIDBCPDY=DT*VIDBCPDYOH(I)*H2
 
 #ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-         MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCOEFXX)*QX1(I)-VCOEFXY*QY1(I)-VIDBCPDX)
-         MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCOEFYY)*QY1(I)-VCOEFYX*QX1(I)-VIDBCPDX)
-#else
          MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*QX1(I)
      &        +VCoef2*QY1(I)-VIDBCPDX)
          MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*QY1(I)
      &        -VCoef2*QX1(I)-VIDBCPDY)
-#endif
 #else
          MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*QX1(I)
      &        +VCoef2*QY1(I)-VIDBCPDX)
@@ -1393,17 +1273,6 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 
          AUV11(I)=1.D0+VCoef1*NCI
          AUV12(I)=-VCoef2*NCI
-
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-         AUVXX(I) = 1.D0 + VCOEFXX*NCI
-         AUVYY(I) = 1.D0 + VCOEFYY*NCI
-         AUVXY(I) = VCOEFXY*NCI
-         AUVYX(I) = VCOEFXY*NCI
-#endif
-#endif
-
       END DO
 
 C...  Modify the momentum equations to impose velocity boundary
@@ -1420,24 +1289,12 @@ C      Specified essential normal flow and free tangential slip
 
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
 #ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
-     &                     -CSII(I)*MOM_LV_Y(NBDI)
-     &                     +QN2(I)*AUVXY(NBDI))*NCI          !Tangential Eqn RHS
-            MOM_LV_Y(NBDI)=-QN2(I)*AUVXX(NBDI)*NCI           !Normal Eqn RHS
-            AUVXX(NBDI) = AUVXX(NBDI)*SIII(I) - AUVYX(NBDI)*CSII(I)
-            AUVXY(NBDI) = AUVXY(NBDI)*SIII(I) - AUVYY(NBDI)*CSII(I)
-            AUVYX(NBDI) = CSII(I)
-            AUVYY(NBDI) = SIII(I)
-#else
             MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
      &                     -CSII(I)*MOM_LV_Y(NBDI)
      &                     +QN2(I)*AUV12(NBDI))*NCI          !Tangential Eqn RHS
             MOM_LV_Y(NBDI)=-QN2(I)*AUV11(NBDI)*NCI           !Normal Eqn RHS
             AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
             AUV11(NBDI)=SIII(I)*AUV11(NBDI)
-#endif
 #else
             MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
      &                     -CSII(I)*MOM_LV_Y(NBDI)
@@ -1456,16 +1313,7 @@ C     Specified essential normal flow and no tangential slip
             MOM_LV_Y(NBDI)=-QN2(I)*NCI                       !Normal Eqn RHS
             AUV11(NBDI)=SIII(I)
             AUV12(NBDI)=-CSII(I)
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-            AUVXX(NBDI) = SIII(I)
-            AUVXY(NBDI) = - CSII(I)
-            AUVYX(NBDI) = CSII(I)
-            AUVYY(NBDI) = SIII(I)
-#endif
-#endif
-            ENDIF
+         ENDIF
 
 C     Zero normal flux gradient using a Galerkin approximation to
 C     the normal derivatives. Note: this is fully explicit and therefore
@@ -1528,13 +1376,6 @@ C     fluxes at the previous time step.
                MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
                MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
                ENDIF
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-            AUVXX(NBDI)=1.d0
-            AUVXY(NBDI)=0.d0
-#endif
-#endif
             ENDIF
 
          ENDDO
@@ -1554,16 +1395,6 @@ C.....interface nodes.
          DDU=AUV11(I)*AUV22-AUV12(I)*AUV21
          QX2(I)=(MOM_LV_X(I)*AUV22-MOM_LV_Y(I)*AUV12(I))/DDU
          QY2(I)=(MOM_LV_Y(I)*AUV11(I)-MOM_LV_X(I)*AUV21)/DDU
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-         AUVYY(I)= AUVXX(I)
-         AUVYX(I)= - AUVXY(I)
-         DDU=AUVXX(I)*AUVYY(I)-AUVXY(I)*AUVYX(I)
-         QX2(I)=(MOM_LV_X(I)*AUVYY(I)-MOM_LV_Y(I)*AUVXY(I))/DDU
-         QY2(I)=(MOM_LV_Y(I)*AUVXX(I)-MOM_LV_X(I)*AUVYX(I))/DDU
-#endif
-#endif
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
 c           QX2(I)=0.D0    !no slip and normal flux
 c           QY2(I)=0.D0    !on wet/dry interface nodes
