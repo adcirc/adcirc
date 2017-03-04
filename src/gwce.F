@@ -246,14 +246,6 @@ C
 #ifdef CMPI
       USE MESSENGER
 #endif
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-      USE Couple2Swan, ONLY: TKXX,
-     &                       TKXY,
-     &                       TKYY
-#endif
-#endif
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB, 
      &  checkChange, enforceEOB, enforceEIB, enforceGWCELVOB
 
@@ -346,28 +338,12 @@ C        jgf47.08 Moved time-varying tau0 subroutine to nodalattr.F
          IF(C2DDI.AND.
      &       ((FullDomainTimeVaryingTau0.or.HighResTimeVaryingTau0)))
      &   THEN
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091022: Adopt Ethan's/Joannes's modified friction.
-            DO I=1,NP
-               TK(I)=0.25D0*(TKXX(I)+2.D0*TKXY(I)+TKYY(I))
-            ENDDO
-#endif
-#endif
             CALL CalculateTimeVaryingTau0(TK, NNeigh, NeiTab, NP)
          ENDIF
 
          IF(C3D.AND.
      &       ((FullDomainTimeVaryingTau0.or.HighResTimeVaryingTau0)))
      &   THEN
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091022: Adopt Ethan's/Joannes's modified friction.
-            DO I=1,NP
-               TK(I)=0.25D0*(TKXX(I)+2.D0*TKXY(I)+TKYY(I))
-            ENDDO
-#endif
-#endif
             CALL CalculateTimeVaryingTau0(TK, NNeigh, NeiTab, NP)
          ENDIF
 
@@ -841,17 +817,6 @@ Corbitt 120322: Localized Advection
             BSYN2=TK(NM2)*QY1N2
             BSXN3=TK(NM3)*QX1N3
             BSYN3=TK(NM3)*QY1N3
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-            BSXN1 = TKXX(NM1)*QX1N1 + TKXY(NM1)*QY1N1
-            BSYN1 = TKXY(NM1)*QX1N1 + TKYY(NM1)*QY1N1
-            BSXN2 = TKXX(NM2)*QX1N2 + TKXY(NM2)*QY1N2
-            BSYN2 = TKXY(NM2)*QX1N2 + TKYY(NM2)*QY1N2
-            BSXN3 = TKXX(NM3)*QX1N3 + TKXY(NM3)*QY1N3
-            BSYN3 = TKXY(NM3)*QX1N3 + TKYY(NM3)*QY1N3
-#endif
-#endif
          ENDIF
          IF (C3D) THEN                         !3D bottom friction
             BSXN1=BSX1(NM1)
