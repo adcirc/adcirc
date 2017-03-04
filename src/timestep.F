@@ -107,38 +107,12 @@ Casey 090302: We need these values from other places.
      &                       SWAN_WY2
 Casey 100205: Add a variable for writing of SWAN hot-start files.
      &                      ,WriteSwanHotStart
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-     &                      ,ComputeModifiedWaveFriction,
-     &                       ComputeWaveFrictionProperties,
-     &                       TKXX,
-     &                       TKXY,
-     &                       TKYY,
-     &                       WAVE_A,
-     &                       WAVE_A1,
-     &                       WAVE_A2,
-     &                       WAVE_H,
-     &                       WAVE_H1,
-     &                       WAVE_H2,
-     &                       WAVE_T,
-     &                       WAVE_T1,
-     &                       WAVE_T2
-#endif
 #endif
       USE WEIR_FLUX
 
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
 C
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-      REAL(SZ) :: WAVA
-      REAL(SZ) :: WAVH
-      REAL(SZ) :: WAVT
-#endif
-#endif
-
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
       INTEGER IE, I, J, K                  !local loop counters
       INTEGER NM1, NM2, NM3
@@ -606,28 +580,6 @@ C             into RSNX1/RSNY1, and then load the future forces into RSNX2/RSNY2
                    RSNX2(I) = RSNX2(I) + (RSNX2(I)-RSX)
                    RSNY2(I) = RSNY2(I) + (RSNY2(I)-RSY)
                  ENDDO
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.  Compute the wave properties
-C             for height, period, angle and dissipation.  Then extrapolate forward
-C             in time using the same logic as above.
-                 DO I=1,NP
-                   WAVE_A1(I) = WAVE_A2(I)
-                   WAVE_H1(I) = WAVE_H2(I)
-                   WAVE_T1(I) = WAVE_T2(I)
-                 ENDDO
-                 CALL ComputeWaveFrictionProperties
-                 DO I=1,NP
-                   WAVA = WAVE_A1(I)
-                   WAVH = WAVE_H1(I)
-                   WAVT = WAVE_T1(I)
-                   WAVE_A1(I) = WAVE_A2(I)
-                   WAVE_H1(I) = WAVE_H2(I)
-                   WAVE_T1(I) = WAVE_T2(I)
-                   WAVE_A2(I) = WAVE_A2(I) + (WAVE_A2(I)-WAVA)
-                   WAVE_H2(I) = WAVE_H2(I) + (WAVE_H2(I)-WAVH)
-                   WAVE_T2(I) = WAVE_T2(I) + (WAVE_T2(I)-WAVT)
-                 ENDDO
-#endif
                ENDIF
 #endif
             ENDIF
@@ -644,20 +596,8 @@ Casey 090302: Added these lines for output to the rads.64 file.
                   RSNXOUT(I) = RSX
                   RSNYOUT(I) = RSY
                ENDIF
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-               WAVE_A(I) = WAVE_A1(I) + RSTRATIO*(WAVE_A2(I)-WAVE_A1(I))
-               WAVE_H(I) = WAVE_H1(I) + RSTRATIO*(WAVE_H2(I)-WAVE_H1(I))
-               WAVE_T(I) = WAVE_T1(I) + RSTRATIO*(WAVE_T2(I)-WAVE_T1(I))
-#endif
 !#endif
             ENDDO
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-            CALL ComputeModifiedWaveFriction(TK)
-#endif
-#endif
          ENDIF  !nrs = 1,2,or 3
 
          ! Tightly Coupled Code with STWAVE
