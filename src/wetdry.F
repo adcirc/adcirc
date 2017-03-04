@@ -270,14 +270,6 @@ c                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-                           TKXX(NM123) = TK(NM123)
-                           TKYY(NM123) = TK(NM123)
-                           TKXY(NM123) = 0.D0
-#endif
-#endif
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -369,14 +361,6 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-                           TKXX(NM123) = TK(NM123)
-                           TKYY(NM123) = TK(NM123)
-                           TKXY(NM123) = 0.D0
-#endif
-#endif
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -468,14 +452,6 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-                           TKXX(NM123) = TK(NM123)
-                           TKYY(NM123) = TK(NM123)
-                           TKXY(NM123) = 0.D0
-#endif
-#endif
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -582,14 +558,6 @@ C<<                           Convert Manning's N to Cd, if necessary.
      &                          (IFNLBF+IFHYBF*
      &                          (1.D0+(HBREAK/H1)**FTHETA)**
      &                          (FGAMMA/FTHETA)))
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-                              TKXX(NM123) = TK(NM123)
-                              TKYY(NM123) = TK(NM123)
-                              TKXY(NM123) = 0.D0
-#endif
-#endif
                            ELSEIF(C3D)THEN
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -646,14 +614,6 @@ C<<                        Convert Manning's N to Cd, if necessary.
      &                          (IFNLBF+IFHYBF*
      &                          (1.D0+(HBREAK/H1)**FTHETA)**
      &                          (FGAMMA/FTHETA)))
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-                              TKXX(NM123) = TK(NM123)
-                              TKYY(NM123) = TK(NM123)
-                              TKXY(NM123) = 0.D0
-#endif
-#endif
                            ELSEIF(C3D)THEN
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -710,14 +670,6 @@ C<<                         Convert Manning's N to Cd, if necessary.
      &                           (IFNLBF+IFHYBF*
      &                           (1.D0+(HBREAK/H1)**FTHETA)**
      &                           (FGAMMA/FTHETA)))
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-                              TKXX(NM123) = TK(NM123)
-                              TKYY(NM123) = TK(NM123)
-                              TKXY(NM123) = 0.D0
-#endif
-#endif
                            ELSEIF(C3D)THEN
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
