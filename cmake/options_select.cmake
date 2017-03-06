@@ -75,10 +75,6 @@ SET(ADDITIONAL_FLAGS_UTLIITIES "" CACHE STRING "Additional flags for utility pro
 #...Options enabled via compiler flags within the code
 OPTION(ENABLE_WARN_ELEV_DEBUG "Enable writing of the fort.69 debug file" OFF)
 
-IF(BUILD_ADCSWAN OR BUILD_PADCSWAN)
-    OPTION(ENABLE_SWAN_MODIFIED_FRICTION "Enable Ethan/Joannes' modified friction" OFF)
-ENDIF(BUILD_ADCSWAN OR BUILD_PADCSWAN)
-
 OPTION(IBM    "Format code for IBM based architectures"    OFF)
 OPTION(SGI    "Format code for SGI based architectures"    OFF)
 OPTION(SUN    "Format code for SUN based architectures"    OFF)
