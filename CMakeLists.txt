@@ -76,6 +76,7 @@ INCLUDE(${CMAKE_SOURCE_DIR}/cmake/options_select.cmake)
 INCLUDE(${CMAKE_SOURCE_DIR}/cmake/options_flags.cmake)
 
 #...Ensure that the netCDF libraries are working
+SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 INCLUDE(${CMAKE_SOURCE_DIR}/cmake/netcdf_check.cmake)
 
 #...Ensure that the XDMF libraries are working
