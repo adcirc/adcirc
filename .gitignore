@@ -15,6 +15,7 @@ libadc.a
 *.o
 *.mod
 odir*
-version_autogen.F
 actualflags.txt
 .swanlastcompile
+changelog
+version.F
