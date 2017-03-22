@@ -1408,6 +1408,52 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 #endif
           END DO
         ENDIF
+
+C... v50.xx sm -- nws=17 for NUOPC coupling hwrf data from coupler
+      IF(NWS.eq.17) THEN
+C         print *, 'WTIME2, WTIMINC > ', WTIME2, WTIMINC
+         IF(TimeLoc.GT.WTIME2) THEN
+            WTIME1=WTIME2
+            WTIME2=WTIME2+WTIMINC
+         ENDIF
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo =
+     &            WindIceDrag(WDragCo,PIC)
+               CICEOUT(I) = PIC
+            ENDIF
+            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete*WindX
+            WVNYOUT(I)=RampMete*WindY
+         END DO
+      ENDIF
+
+      !print *, 'maxval(WVNX1), maxval(WVNX2) > ', maxval(WVNX1), maxval(WVNX2)
+      !print *, 'maxval(WSX1), maxval(WSX2) > ', maxval(WSX1), maxval(WSX2)
+      !print *, RampMete,WDragCo,WindX,WindMag,WTIMINC
 C
 C    kmd48.33bc - added in information for the sponge layer
        IF ((C3D).AND.(RES_BC_FLAG.GT.0).AND.(NWS.NE.0)) THEN
@@ -1513,6 +1559,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 #endif
          ENDIF  !nrs = 1,2,or 3
 
+C         print *, '>>>>>>>>>>>>>>>>>>>>>>>>>>> NRS', nrs
          ! Tightly Coupled Code with STWAVE
          ! Apply the ramping function and add wave stress to WSX2,WSY2
          ! This cases uses a step function in time
@@ -1535,7 +1582,15 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
             END DO
          ENDIF !(NRS = 4)
 
+         IF(NRS == 5) THEN    ! sm
+               WSX2 = WSX2 + RSNX2
+               WSY2 = WSY2 + RSNY2
+         ENDIF !(NRS = 5)
+      
       ENDIF  !(End test for updating wave radiation stress)
+
+        !print *, 'in timestep maxval(RSNX2)', maxval(RSNX2)
+        !print *, 'in timestep maxval(RSNY2)', maxval(RSNY2)
 
 C     jgf48.4627 Skip past GWCE and momentum calculations if only
 C     meteorological output was requested.

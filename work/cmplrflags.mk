@@ -1,13 +1,18 @@
 # SRCDIR is set in makefile or on the compile line
 INCDIRS := -I . -I $(SRCDIR)/prep
 
-INCDIRS += -I$(NETCDFHOME)/include/   
+INCDIRS += -I$(NETCDFHOME)/include/  
 LIBDIRS += -L$(NETCDFHOME)/lib/
 
 INCDIRS += -I$(HDF5HOME)/include/   
 LIBDIRS += -L$(HDF5HOME)/lib/
 
 LIBDIRS += -DALL_TRACE
+
+LIBDIRS += -DNUOPC
+
+# debug for gfortran
+INCDIRS += -g -O0 -fbacktrace 
 
 
 LIBSS   :=  -lnetcdf  -lnetcdff -lhdf5 -lhdf5_fortran

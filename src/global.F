@@ -58,7 +58,10 @@ C... v49.48 tcm -- added for coupling with STWAVE (NRS=4)
       REAL(8)  :: ENDWAVE     ! End of Wave Service
       LOGICAL  :: CPL2STWAVE = .FALSE.  !Coupled to STWAVE (NRS=4)
       LOGICAL  :: Flag_ElevError = .FALSE.  
-C      real(sz) rampriver,drampriver,rampriver1,rampriver2
+C... v50.xx sm -- added for coupling with NOUPC Cap 
+      LOGICAL   ::  NUOPC4MET = .FALSE.  ! assign in CAP
+      LOGICAL   ::  NUOPC4WAV = .FALSE.  ! assign in CAP     
+C     real(sz) rampriver,drampriver,rampriver1,rampriver2
 C     jgf46.08 Fine grained ramp functions (jgf46.21 split flux b.c.s)
       REAL(SZ) RampExtFlux,DRampExtFlux ! Ramp for external flux b.c.s
       REAL(SZ) RampIntFlux,DRampIntFlux ! Ramp for internal flux b.c.s
@@ -1381,9 +1384,6 @@ C
       RSNX2(:) = 0.d0
       RSNY2(:) = 0.d0
 
-      print *, "Saeed test  > size RSNY2 ", size(RSNY2)
-
-
       if (NCICE.NE.0) then
          ALLOCATE ( CICE1(MNP),CICE2(MNP),CICEOUT(MNP) ) !tcm v49.64.01 added
                                                         ! for ice concentration
@@ -1397,7 +1397,9 @@ C
       WVNYOUT(:) = 0.d0
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-      IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4)) then
+C... v50.xx sm -- nrs=5
+
+      IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4).or.(ABS(NRS).EQ.5)) then
 !#ifdef CSWAN
 Casey 090302: Added the next line for output of radiation stress gradients.
          ALLOCATE ( RSNXOUT(MNP),RSNYOUT(MNP) )

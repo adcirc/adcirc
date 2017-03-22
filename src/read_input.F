@@ -1201,8 +1201,9 @@ C.... BREAK OUT THE ICE CONCENTRATION FLAG FROM NWS/NRS
                                                            !BY REMOVING THE 1000'S
                                                            !PLACE FOR ICE
       ENDIF
+C... v50.xx sm -- 5 for NUOPC coupling
       nwsOK = .false.
-      do i=0,4
+      do i=0,5
          if ( any(nws.eq.(allowable_nws + i*100)).or.
      &        any(nws.eq.(-1*(allowable_nws + i*100))) ) then
             nwsOK = .true.
@@ -1632,6 +1633,27 @@ C     NWS=4xx added for STWAVE tighly coupled run  (v49.46 tcm)
      &    /,9X,'STRESSES ARE COMPUTED ON THE FLY BY STWAVE COMPUTE    ',
      &    /,9X,'PROCS.')
       ENDIF
+
+C... v50.xx sm -- added for coupling with NOUPC NRS=5
+      IF(NRS.EQ.5) THEN
+         NUOPC4WAV = .TRUE.   !TODO: to do this here or inside the CAP
+         WRITE(16,2396) NRS
+ 2396   FORMAT(/,5X,'NRS = ',I2,
+     &    /,9X,'WAVE RADIATION STRESS IS USED TO FORCE THE COMPUTATION',
+     &    /,9X,'STRESSES ARE COMPUTED ON THE FLY BY NUOPC',
+     &    /,9X,'.')
+      ENDIF
+
+C... v50.xx sm -- added for coupling with NOUPC NWS=17
+      IF(NWS.EQ.17) THEN
+         NUOPC4MET = .TRUE.  !TODO: to do this here or inside the CAP
+         WRITE(16,2397) NWS
+ 2397   FORMAT(/,5X,'NWS = ',I2,
+     &    /,9X,'Meteo info IS USED TO FORCE THE COMPUTATION',
+     &    /,9X,'PASSED ON THE FLY BY NUOPC',
+     &    /,9X,'.')
+      ENDIF
+
 C
 C------------------ BEGIN ICE CONCENTRATION ---------------------------C
 C
@@ -1911,7 +1933,8 @@ C...
 C...
 C...  Read in and process additional timing information for wind.
 C...
-      IF((NWS.EQ.0).AND.(NRS.GE.1)) READ(15,*) RSTIMINC ! sb46.28sb03
+C... v50.xx sm -- avoid reading file and get it from WW3 on the fly
+      IF((NWS.EQ.0).AND.(NRS.GE.1).AND. .NOT. NUOPC4WAV) READ(15,*) RSTIMINC ! sb46.28sb03
       IF((NWS.EQ.1).AND.(NRS.GE.1)) READ(15,*) RSTIMINC ! sb46.28sb03
       IF(ABS(NWS).EQ.2) THEN
          IF(NRS.EQ.0) READ(15,*) WTIMINC
@@ -2117,6 +2140,15 @@ C     an OWI basin scale met field derived from NAM winds.
          IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC,
      &                                                 CICE_TIMINC
       ENDIF
+
+C... v50.xx sm -- added for NWS=17 to read ice flag
+      IF(ABS(NWS).EQ.17) THEN
+C...     
+         ! when coupled by nuopc the timestep of wind and wave will be passed by nuopc sm
+         ! therefore Comment out ! READ(15,*) WTIMINC,RSTIMINC,
+         IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) CICE_TIMINC
+      ENDIF
+
 
       IF(NWS.NE.0) WRITE(16,1117) WTIMINC
  1117 FORMAT(5X,'WIND TIME INCREMENT (SEC) = ',F10.2,/)
@@ -3374,7 +3406,8 @@ C...
       NOUTM=0
       NSTAM=0
 C
-      IF(NWS.NE.0) THEN
+C... v50.xx sm -- avoid reading file !TODO: I need to figure ou how to include this maybe
+      IF(NWS.NE.0 .and. NWS.ne.17) THEN
 
 C...  READ IN NOUTM,TOUTSM,TOUTFM,NSPOOLM : IF NOUTM<>0,INTERPOLATED
 C...  MET DATA ARE SPOOLED TO UNITS 71&72 EVERY NSPOOLM TIME STEPS
@@ -3799,7 +3832,8 @@ C...  WRITE NOUTGC,TOUTSGC,TOUTFGC,NTCYSGC,NTCYFGC,NSPOOLGC TO UNIT 16
 C...
 C...  IF NWS<>0   INPUT INFORMATION ABOUT GLOBAL WIND DATA OUTPUT
 C...
-      IF(NWS.NE.0) THEN
+C... v50.xx sm -- avoid reading file !TODO: I need to figure ou how to include this maybe
+      IF(NWS.NE.0 .and. NWS.ne.17) THEN
 
 C...  READ IN NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW : IF NOUTGW<>0, GLOBAL
 C...  WIND OUTPUT IS SPOOLED TO UNIT 74 EVERY NSPOOLGW TIME STEPS
