@@ -446,8 +446,8 @@ C  v52.09 - 07/20/2015 - tcm - Added compiler flags for Cray XC30/XC40 using
 C           Intel compilers with (ftn) as default instead of ifort.  These
 C           basic compiler options work on Armstrong@NAVO, Lightning@AFRL,
 C           Shephard@NAVO and Gordon@NAVO
->>>>>>> .merge-right.r1195
->>>>>>> .merge-right.r1202
+C>>>>>>> .merge-right.r1195
+C>>>>>>> .merge-right.r1202
 C  v52.08 - 06/24/2015 - jgf - Added compiler flags and swan macros.inc
 C           for stampede at TACC.
 C  v52.07 - 06/24/2015 - jgf - Fixed issue with serial execution by removing
