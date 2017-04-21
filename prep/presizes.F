@@ -987,6 +987,7 @@ C
 
       READ(15,*) MNSTAE                             !PROCESS MNSTAE
       ! tcm v51.20.03 -- added negative mnstae to signal use of external station file elev_stat.151 
+      write(6,*) 'mnstae=',mnstae ! jgfdebug
       if (MNSTAE < 0) then
          write(*,*) "External File Used for Elevation Station Locations"
          USE_ELEV_STAT_FILE = .TRUE.

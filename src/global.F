@@ -517,6 +517,7 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       integer, target :: fauxFilePosition 
       ! jgf: added support for water level offset
       integer, target :: offsetFilePos
+      integer, target :: offsetStaFilePos
 
       INTEGER  IHOTSTP, IMHS
       INTEGER  ITIME, ITEMPSTP
@@ -544,6 +545,7 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       integer, target :: initiallyDrySpoolCounter
       integer, target :: windDragSpoolCounter
       integer, target :: offsetSpoolCounter
+      integer, target :: offsetStaSpoolCounter
       
       INTEGER :: NSPOOLC, NSPOOLGC, NSPOOLGE ! output increments
       INTEGER :: NSPOOLGV, NSPOOLGW, NSPOOLM, NSPOOL_TVW ! output increments
@@ -775,6 +777,7 @@ C     v49.48.01 tcm 20110126 Variables related to kdtree searches
       real(sz), allocatable :: offset1(:)
       real(sz), allocatable, target :: offset2(:)
       logical :: usingWaterLevelOffset = .false.
+      real(sz), allocatable, target :: offsetSta(:)
 
       CONTAINS
 

@@ -69,6 +69,7 @@ Cobell Added a descript for time varying weir tracking
       type(OutputDataDescript_t), target :: windDragDescript
       ! jgf: added support for water level offset 
       type(OutputDataDescript_t), target :: offsetDescript      
+      type(OutputDataDescript_t), target :: offsetStaDescript      
 
 C     jgf48.03 Full domain arrays used when writing globalio output.
       real(sz), allocatable, target :: et00_g(:)
@@ -103,6 +104,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       real(sz), allocatable, target :: windDragOut_g(:)
       ! jgf: Added support for water level offset
       real(sz), allocatable, target :: offset2_g(:)
+      real(sz), allocatable, target :: offsetSta_g(:)
       !
       !  H A R M O N I C   A N A L Y S I S   D A T A
       !
@@ -345,8 +347,9 @@ C----------------------------------------------------------------------
      &   nodeCodeOutFilePos, NE_G, IMAP_EL_LG, nodecode, noff,
      &   fauxFilePosition, initiallyDrySpoolCounter,
      &   inundationOutput, ihot, logMessage, windDragFilePosition,
-     &   windDragOut, windDragSpoolCounter, outputWindDrag
-     &   offsetFilePos, offsetSpoolCounter, offset2, usingWaterLevelOffset
+     &   windDragOut, windDragSpoolCounter, outputWindDrag,
+     &   offsetFilePos, offsetSpoolCounter, offset2, usingWaterLevelOffset,
+     &   offsetStaSpoolCounter, offsetFilePos, offsetSta, offsetSta_g
 
       USE MESH, ONLY : NP, NE, DP, NM, ICS
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim,
@@ -412,8 +415,9 @@ C
       ptr(29)%descript2D => endRisingInunDescript
       ptr(30)%descript2D => initiallyDryDescript
       ptr(31)%descript2D => everDriedDescript
-      ptr(33)%descript2D => windDragDescript
-      ptr(34)%descript2D => offsetDescript
+      ptr(32)%descript2D => windDragDescript
+      ptr(33)%descript2D => offsetDescript
+      ptr(34)%descript2D => offsetStaDescript
 
 !... For SWAN, there are additional output arrays
 #ifdef CSWAN
@@ -431,7 +435,6 @@ C
       ptr(46)%descript2D => SwanTM02MaxDescript
       ptr(47)%descript2D => SwanTMM10Descript
       ptr(48)%descript2D => SwanTMM10MaxDescript
-
 #endif
 
       ! jgf51.21.24: Set some defaults
@@ -749,6 +752,41 @@ C
       offsetDescript % file_basename        = 'offset'
       offsetDescript % file_extension       = 63
       offsetDescript % writeFlag            = usingWaterLevelOffset
+      ! offset.61
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(offsetSta_g(NSTAE_G))
+      ENDIF
+      offsetStaDescript % lun                  = 109
+      ElevStaDescript % specifier            = NOUTE
+      if ( NOUTE.ne.0 ) then
+         offsetStaDescript % specifier            = ASCII
+      endif
+      offsetStaDescript % num_fd_records       = NSTAE_G
+      offsetStaDescript % num_records_this     = NSTAE
+      offsetStaDescript % imap                 => IMAP_STAE_LG
+      offsetStaDescript % array                => offsetSta
+      offsetStaDescript % array_g              => offsetSta_g
+      offsetStaDescript % interped_array       => offset2
+      offsetStaDescript % ConsiderWetDry       = .TRUE.
+      offsetStaDescript % field_name           = 'offsetSta'
+      offsetStaDescript % isStation            = .true.
+      offsetStaDescript % startTimeStep           = NTCYSE
+      offsetStaDescript % endTimeStep             = NTCYFE
+      offsetStaDescript % outputTimeStepIncrement = NSPOOLE
+      offsetStaDescript % spoolCounter            =>
+offsetStaSpoolCounter
+      offsetStaDescript % filepos                 => offsetStaFilePos
+      offsetStaDescript % elements                => NNE
+      offsetStaDescript % interp_fac1             => STAIE1 
+      offsetStaDescript % interp_fac2             => STAIE2
+      offsetStaDescript % interp_fac3             => STAIE3
+      IF (ICS.eq.1) THEN
+         offsetStaDescript % x_coord              => XEL ! use orig coord
+         offsetStaDescript % y_coord              => YEL
+      ELSE
+         offsetStaDescript % x_coord              => SLEL ! radians
+         offsetStaDescript % y_coord              => SFEL
+      ENDIF
 
       ! fort.74
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN

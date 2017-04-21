@@ -1212,6 +1212,7 @@ C...
 C
       READ(15,80) NSTAEMSG
       READ(NSTAEMSG,*) NSTAE
+      write(6,*) 'nstae=',nstae ! jgfdebug
       !tcm v51.20.03 -- addition for external elevation station file
       if (NSTAE < 0 ) then
          WRITE(*,*) "External File Used for Elevation Station Locations"
