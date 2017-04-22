@@ -1690,8 +1690,8 @@ C     jgf49.1001 Added option to embed NWS19 in a NAM background wind field
 
       ! jgf: Added option to embed NWS20 in a NAM background wind field
       IF(NWS.EQ.-30) THEN
-         WRITE(16,3403) NWS
- 3404    FORMAT(/,5X,'NWS = ',I2,
+         WRITE(16,3405) NWS
+ 3405    FORMAT(/,5X,'NWS = ',I2,
      &    /,9X,'HURRICANE PARAMETERS AND THE GENERALIZED ASYMMETRIC ',
      &    /,9X,'HOLLAND MODEL (GAHM) ARE USED TO FORCE THE COMPUTATION',
      &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',

@@ -349,7 +349,10 @@ C----------------------------------------------------------------------
      &   inundationOutput, ihot, logMessage, windDragFilePosition,
      &   windDragOut, windDragSpoolCounter, outputWindDrag,
      &   offsetFilePos, offsetSpoolCounter, offset2, usingWaterLevelOffset,
-     &   offsetStaSpoolCounter, offsetFilePos, offsetSta, offsetSta_g
+     &   offsetSta_g,
+     &   offsetSpoolCounter, offset2, usingWaterLevelOffset,
+     &   offsetStaSpoolCounter, offsetFilePos, offsetSta,
+     &   offsetStaFilePos
 
       USE MESH, ONLY : NP, NE, DP, NM, ICS
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim,
@@ -773,8 +776,7 @@ C
       offsetStaDescript % startTimeStep           = NTCYSE
       offsetStaDescript % endTimeStep             = NTCYFE
       offsetStaDescript % outputTimeStepIncrement = NSPOOLE
-      offsetStaDescript % spoolCounter            =>
-offsetStaSpoolCounter
+      offsetStaDescript % spoolCounter            => offsetStaSpoolCounter
       offsetStaDescript % filepos                 => offsetStaFilePos
       offsetStaDescript % elements                => NNE
       offsetStaDescript % interp_fac1             => STAIE1 
