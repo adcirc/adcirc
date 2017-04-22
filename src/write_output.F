@@ -741,9 +741,6 @@ C
          ALLOCATE(offset2_g(NP_G))
       ENDIF
       offsetDescript % lun                  = 108
-      if ( NOUTGE.ne.0 ) then
-         offsetDescript % specifier            = ASCII
-      endif
       offsetDescript % startTimeStep           = NTCYSGE
       offsetDescript % endTimeStep             = NTCYFGE
       offsetDescript % outputTimeStepIncrement = NSPOOLGE
@@ -760,10 +757,7 @@ C
          ALLOCATE(offsetSta_g(NSTAE_G))
       ENDIF
       offsetStaDescript % lun                  = 109
-      ElevStaDescript % specifier            = NOUTE
-      if ( NOUTE.ne.0 ) then
-         offsetStaDescript % specifier            = ASCII
-      endif
+      offsetStaDescript % specifier            = NOUTE
       offsetStaDescript % num_fd_records       = NSTAE_G
       offsetStaDescript % num_records_this     = NSTAE
       offsetStaDescript % imap                 => IMAP_STAE_LG

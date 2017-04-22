@@ -6876,7 +6876,8 @@ C---------------------------------------------------------------------------
      &    I3DGD, I3DGV, I3DGT, IDEN, islip, kp, z0s, z0b, theta1,
      &    theta2, ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd,
      &    nvsd, nltd, nvtd, alp4, C3D, X3DD, Y3DD, SL3DD, SF3DD,
-     &    X3DV, Y3DV, SL3DV, SF3DV, X3DT, Y3DT, SL3DT, SF3DT, C3D
+     &    X3DV, Y3DV, SL3DV, SF3DV, X3DT, Y3DT, SL3DT, SF3DT, C3D,
+     &    foundOffsetControlNamelist
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE NETCDFIO, ONLY : setADCIRCParameters, initNetCDFOutputFile,
      &    initNetCDFHotstart3D, initNetCDFHotstart,
@@ -6920,6 +6921,9 @@ C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: InitiallyDryDescript   ! initiallydry.63
       type(OutputDataDescript_t), SAVE :: EndRisingInunDescript  ! endrisinginun.63
       type(OutputDataDescript_t), SAVE :: EverDriedDescript      ! everdried.63
+
+      type(OutputDataDescript_t), SAVE :: offsetDescript    ! offset.63
+      type(OutputDataDescript_t), SAVE :: offsetStaDescript ! offset.61
 
 !      tcm v50.75 moved RSDescript outside of the ifdef adcswan for use with 
 !      nrs = 3 or nrs= 4
@@ -7370,6 +7374,43 @@ C........Radiation Stress
          weirElevDescript % alternate_value      = 0D0
          weirElevDescript % field_name           = "weir_dz"
          weirElevDescript % file_name            = "fort.77"
+C
+C     offset.61
+      offsetStaDescript % specifier            = NOUTE
+      offsetStaDescript % lun                  = 109
+      offsetStaDescript % initial_value        = 0.0
+      offsetStaDescript % num_items_per_record = 1
+      offsetStaDescript % num_fd_records       = abs(NSTAE)
+      offsetStaDescript % num_records_this     = abs(NSTAE)
+      offsetStaDescript % alternate_value      = -99999.0
+      offsetStaDescript % field_name           = 'offset'
+      IF (ICS.eq.2) THEN
+         offsetStaDescript % x_coord           => SLEL
+         offsetStaDescript % y_coord           => SFEL
+      ELSE
+         offsetStaDescript % x_coord           => XEL
+         offsetStaDescript % y_coord           => YEL
+      ENDIF
+      offsetStaDescript % file_extension       = 61
+      offsetStaDescript % file_basename        = 'offset'
+      offsetStaDescript % readMaxMin           = .false.
+      offsetStaDescript % considerWetDry       = .false.
+      call makeFileName(offsetStaDescript)
+C
+C     offset.63
+      offsetDescript % specifier            = NOUTGE
+      offsetDescript % lun                  = 108
+      offsetDescript % initial_value        = 0.0
+      offsetDescript % num_items_per_record = 1
+      offsetDescript % num_fd_records       = MNP
+      offsetDescript % num_records_this     = MNP
+      offsetDescript % alternate_value      = -99999.0
+      offsetDescript % field_name           = 'offset'
+      offsetDescript % file_extension       = 63 
+      offsetDescript % file_basename        = 'offset'
+      offsetDescript % readMaxMin           = .false.
+      offsetDescript % considerWetDry       = .false.
+      call makeFileName(offsetDescript)
 
 ! tcm v50.75 moved the ifdef adcswan down past the RSDescript
 #ifdef ADCSWAN
@@ -7961,6 +8002,14 @@ C     was specified.
          CALL initNetCDFOutputFile(InitiallyDryDescript,reterr)
          CALL initNetCDFOutputFile(EndRisingInunDescript,reterr)
          CALL initNetCDFOutputFile(EverDriedDescript,reterr)
+      endif
+      if ( foundOffsetControlNamelist.eqv..true. ) then
+         if ( NOUTE.ne.0 ) then
+            CALL initNetCDFOutputFile(offsetStaDescript,reterr)
+         endif
+         if ( NOUTGE.ne.0 ) then
+            CALL initNetCDFOutputFile(offsetDescript,reterr)
+         endif
       endif
       !
       ! tcm v50.75 moved ifdef adcswan below RSDescript only to allow

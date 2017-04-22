@@ -176,6 +176,9 @@ C
       type(stationData), private, save :: densityStations3D    ! for fort.41
       type(stationData), private, save :: velocityStations3D   ! for fort.42
       type(stationData), private, save :: turbulenceStations3D ! for fort.43
+
+      !jgf: Water level offset data
+      type(stationData), private, save :: offSta ! for offset.61     
 C
       TYPE, PRIVATE :: nodalData
          INTEGER ncid              ! the id of its netcdf file
@@ -235,6 +238,9 @@ C
       type(nodalData), private, save, target :: inTime   ! for inundationtime.63
       type(nodalData), private, save :: eRisInun ! for endrisinginun.63
       type(nodalData), private, save, target :: evrDry ! for everdried.63
+
+      !jgf: Water level offset data
+      type(nodalData), private, save :: offs ! for offset.63     
 C
       TYPE, PRIVATE :: hotstartData
          INTEGER lun               ! ADCIRC's logical unit number
@@ -472,6 +478,12 @@ C
             CALL initNodalDataFile(eRisInun, descript1, reterr)
          CASE(404)
             CALL initNodalDataFile(evrDry, descript1, reterr)
+
+         !jgf: offset.63 and offset.61
+         CASE(108)
+            CALL initNodalDataFile(offs, descript1, reterr)
+         CASE(109)
+            CALL initStationFile(offSta, descript1, reterr)
 
          CASE DEFAULT
             write(scratchMessage,
@@ -1105,6 +1117,30 @@ C
             CALL check_err(iret)
             sta%statnames => STATNAMEM
 
+
+
+         CASE(109) !       O F F S E T . 6 1
+
+            sta%station_data_dims(1) = sta%num_sta_dim_id
+            sta%station_data_dims(2) = sta%myTime%timenc_dim_id
+            iret = nf90_def_var(sta%ncid, 'offset', NF90_DOUBLE,
+     &             sta%station_data_dims, sta%station_data_id)
+            CALL check_err(iret)
+!           Define water surface elevation attributes
+            iret = nf90_put_att(sta%ncid, sta%station_data_id,
+     &             'long_name', 'water surface offset above datum')
+            CALL check_err(iret)
+            iret = nf90_put_att(sta%ncid, sta%station_data_id,
+     &             'standard_name', 'sea_surface_offset_above_datum')
+            CALL check_err(iret)
+            CALL putUnitsAttribute(sta%ncid, sta%station_data_id,
+     &           'm', 'ft')
+            iret = nf90_put_att(sta%ncid, sta%station_data_id,
+     &         '_FillValue',doubleval)
+            CALL check_err(iret)
+            sta%statnames => STATNAME
+
+
          CASE DEFAULT
             write(scratchMessage,
      &       '("No netCDF for station files with unit number ",i0,".")') descript1 % lun
@@ -1158,7 +1194,7 @@ C     netcdf4 file format.
             iret = nf_def_var_deflate(sta%ncid,
      &             sta%w_station_data_id, 1, 1, 2)
             CALL check_err(iret)
-         CASE(61,71)
+         CASE(61,71,109)
             iret = nf90_def_var_deflate(sta%ncid, sta%station_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
@@ -3123,6 +3159,36 @@ C
      &             '_FillValue', doubleval)            
             CALL check_err(iret)
 
+         !jgf: offset.63
+         CASE(108)
+C
+            dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
+            dat%varnames(1) = 'offset'
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &         NF90_DOUBLE, dat%nodal_data_dims, dat%nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'long_name', 'water surface offset above datum')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'standard_name', 'sea_surface_offset_above_datum')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'coordinates', 'time y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)            
+            CALL putUnitsAttribute(dat%ncid, dat%nodal_data_id,
+     &           'm', 'ft')
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             '_FillValue', doubleval)
+            CALL check_err(iret)
+      
          CASE DEFAULT
             write(scratchMessage,
      &       '("No netCDF for files with unit number ",i0,".")') descript1 % lun
@@ -3140,6 +3206,7 @@ C
      &      '_FillValue',  doubleval)
          CALL check_err(iret)
       ENDIF
+      
 
 C
 C     jgf50.44: Automatically turn on compression if we are using the
@@ -3171,7 +3238,7 @@ C     netcdf4 file format.
             iret = nf_def_var_deflate(dat%ncid, dat%w_nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
-         CASE(47,63,73,77,90,301:304,306,307,402,403)
+         CASE(47,63,73,77,90,301:304,306,307,402,403,108)
             iret = nf_def_var_deflate(dat%ncid, dat%nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
@@ -3630,6 +3697,11 @@ C
          CASE(404)
             CALL writeNodalData(evrDry, lun, descript1, timesec)
 
+         CASE(108)
+            CALL writeNodalData(offs, lun, descript1, timesec)
+         CASE(109)
+            CALL writeStationData(offSta, lun, descript1, timesec)
+
          CASE DEFAULT
             write(scratchMessage,
      &       '("No netCDF for files with unit number ",i0,".")') lun
@@ -3873,6 +3945,19 @@ C
             iret = nf90_put_var(sta%ncid, sta%v_station_data_id,
      &          descript1%array2_g, start, kount)
          ENDIF
+
+      CASE(109)
+         iret=nf90_inq_varid(sta%ncid, "offset", sta%station_data_id)
+         CALL check_err(iret)
+         IF (MNPROC.eq.1) THEN
+            iret = nf90_put_var(sta%ncid, sta%station_data_id,
+     &          descript1%array, start, kount)
+         ELSE
+            iret = nf90_put_var(sta%ncid, sta%station_data_id,
+     &          descript1%array_g, start, kount)
+         ENDIF
+         CALL check_err(iret)
+
 
       CASE DEFAULT
             write(scratchMessage,
@@ -4163,6 +4248,10 @@ C
      &          dat%time_max_nodal_data_id)
         CALL check_err(iret)
 
+      CASE(108)
+         iret=nf90_inq_varid(dat%ncid,"offset",dat%nodal_data_id)
+         CALL check_err(iret)
+
 
       CASE DEFAULT
          write(scratchMessage,
@@ -4285,7 +4374,7 @@ C     Write the array values
      &            descript1%array_g)
             CALL check_err(iret)
          ENDIF         
-      CASE(47,63,73,77,90,301,302,303,304,306,307)
+      CASE(47,63,73,77,90,301,302,303,304,306,307,108)
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
                allocate(tempArray(1:dat%myMesh%num_nodes))
