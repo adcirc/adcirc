@@ -741,6 +741,7 @@ C
          ALLOCATE(offset2_g(NP_G))
       ENDIF
       offsetDescript % lun                  = 108
+      offsetDescript % specifier            = NOUTGE
       offsetDescript % startTimeStep           = NTCYSGE
       offsetDescript % endTimeStep             = NTCYFGE
       offsetDescript % outputTimeStepIncrement = NSPOOLGE
@@ -764,8 +765,8 @@ C
       offsetStaDescript % array                => offsetSta
       offsetStaDescript % array_g              => offsetSta_g
       offsetStaDescript % interped_array       => offset2
-      offsetStaDescript % ConsiderWetDry       = .TRUE.
-      offsetStaDescript % field_name           = 'offsetSta'
+      offsetStaDescript % field_name           = 'offset'
+      offsetStaDescript % file_basename        = 'offset'
       offsetStaDescript % isStation            = .true.
       offsetStaDescript % startTimeStep           = NTCYSE
       offsetStaDescript % endTimeStep             = NTCYFE
@@ -783,7 +784,8 @@ C
          offsetStaDescript % x_coord              => SLEL ! radians
          offsetStaDescript % y_coord              => SFEL
       ENDIF
-
+      offsetStaDescript % file_extension       = 61
+      !
       ! fort.74
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
          ALLOCATE(WVNXOut_g(NP_G))

@@ -1128,10 +1128,12 @@ C
             CALL check_err(iret)
 !           Define water surface elevation attributes
             iret = nf90_put_att(sta%ncid, sta%station_data_id,
-     &             'long_name', 'water surface offset above datum')
+     &         'long_name', 
+     &         'water surface offset above dynamic water level')
             CALL check_err(iret)
             iret = nf90_put_att(sta%ncid, sta%station_data_id,
-     &             'standard_name', 'sea_surface_offset_above_datum')
+     &         'standard_name',
+     &         'sea_surface_offset_above_dynamic_water_level')
             CALL check_err(iret)
             CALL putUnitsAttribute(sta%ncid, sta%station_data_id,
      &           'm', 'ft')
@@ -3169,10 +3171,12 @@ C
      &         NF90_DOUBLE, dat%nodal_data_dims, dat%nodal_data_id)
             CALL check_err(iret)
             iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
-     &            'long_name', 'water surface offset above datum')
+     &         'long_name',
+     &         'water surface offset above dynamic water level')
             CALL check_err(iret)
             iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
-     &             'standard_name', 'sea_surface_offset_above_datum')
+     &         'standard_name', 
+     &         'sea_surface_offset_above_dynamic_water_level')
             CALL check_err(iret)
             iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
      &             'coordinates', 'time y x')
