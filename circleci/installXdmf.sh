@@ -30,4 +30,6 @@ fi
 #   the directory that is cached
 sudo ln -sf $installDirectory/xdmf_build/include/* /usr/include/.
 sudo ln -sf $installDirectory/xdmf_build/lib/*.so /usr/lib/.
+sudo ln -sf $installDirectory/xdmf_build/lib/*.so.* /usr/lib/.
 sudo ln -sf $installDirectory/xdmf_build/lib/x86_64-linux-gnu/*.so /usr/lib/.
+sudo ln -sf $installDirectory/xdmf_build/lib/x86_64-linux-gnu/*.so.* /usr/lib/.
