@@ -227,6 +227,24 @@ Warning: Your local branch must contain all changes from the upstream master to 
 
 After clicking the pull request button, you will be given a section to describe your changes. Please describe what has been done throughly. The repository administrators will be given the option to merge your pull request into the upstream repository.
 
+### Recipes 
+
+There are many specific development tasks that one may only need to perform occasionally, and this section is dedicated to providing step by step instructions for reference.
+
+#### Cherry Picking
+
+It is sometimes advantageous to make a branch of a branch, for 
+example when adding a new feature to a stable version of the code 
+(which is on its own branch) rather than starting with the 
+experimental master branch. 
+
+When committing the changes from the branch-of-a-branch back to the master branch, the following steps are required:
+
+1. Create a branch from the current master with git checkout master; git checkout -b newbranch
+2. Go to the branch-of-a-branch and look at the sha1 ID of each commit starting where the branch-of-a-branch diverged. Use the command git cherry-pick sha1hash for each commit, one by one, continuing along the branch. This will take the work done for each commit and perform it on the new branch. You may need to resolve conflicts here just as you would in a traditional merge. 
+3. Push the new branch to your fork on GitHub with git push -u origin newbranch
+4. On GitHub, create a pull request to master since the history is contiguous. Once the test cases pass, the request can be merged. 
+
 ### Continuous Integration (CI)
 
 Continuous Integration, or CI, involves testing each change made to the model against a known result. The ensures that as soon as a change (accidental or intentional) to the solution occurs, the developers are aware of it.
