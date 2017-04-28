@@ -264,8 +264,8 @@ latest upstream repository change to your local clone of your fork.
 1. Go to the subdirectory of your local clone and tell git what repository is considered upstream: ```git remote add upstream https://github.com/adcirc/adcirc-cg.git``` (this only needs to be done once for that local clone). 
 2. Fetch the branches and their respective commits from the upstream repository with ```git fetch upstream```. Commits to master will be stored in a local branch, upstream/master.
 3. Check out your local clone's master branch: ```git checkout master```.
-4. Merge the changes from upstream/master into your local master branch. This brings your local clone of your fork's master branch into sync with the upstream repository, without losing your local changes. If you had no local changes, git will just do a fast forward to the latest version available from the upstream repository. 
-5. Push the changes back to your fork on GitHub with ```git push origin master```.
+4. Merge the changes from upstream/master into your local master branch with ```git merge upstream/master```. This brings your local clone of your fork's master branch into sync with the upstream repository, without losing your local changes. If you had no local changes, git will just do a fast forward to the latest version available from the upstream repository. 
+5. Push the changes back to your own fork on GitHub with ```git push origin master```.
 
 ### Continuous Integration (CI)
 
