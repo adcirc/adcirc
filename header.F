@@ -303,6 +303,19 @@ C           functional by bringing it in line with the overall structure of the
 C           wind module; also fixed an issue with ramp value initialization
 C           when nramp=1 and dramp=0.0.
 C  v52.14 - 08/06/2015 - jgf - Fix to prevent NaNs in output files
+C
+C           @jasonfleming Cherry Picked bd095311ce992f7be6dc985bc7aab2ff2b8fbcc6
+C v51.52.21 - 08/14/2015 - jgf - Fixed NWS10 (NOAA GFS) meteorological input 
+C           subroutines so that they function properly in serial and parallel;
+C           previously, there was no accommodation for NWS10 in adcprep, whereas
+C           now adcprep recognizes this as a valid value; subroutines in 
+C           adcirc were nonfunctional due to outdated parameters and code
+C           strucutre; adcirc code for NWS10GET was fixed and made functional 
+C           by bringing it in line with the overall structure of the wind
+C           module; also fixed an issue with ramp value initialization when
+C           nramp=1 and dramp=0.0.
+C
+C v51.52.20 - 08/06/2015 - jgf - Fix to prevent NaNs in output files
 C           in runs that use SWAN coupling with a vortex meteorological
 C           model. This issue was a result of the parametric vortex
 C           models not initializing the WVNX1 and WVNY1 arrays because
@@ -446,8 +459,6 @@ C  v52.09 - 07/20/2015 - tcm - Added compiler flags for Cray XC30/XC40 using
 C           Intel compilers with (ftn) as default instead of ifort.  These
 C           basic compiler options work on Armstrong@NAVO, Lightning@AFRL,
 C           Shephard@NAVO and Gordon@NAVO
->>>>>>> .merge-right.r1195
->>>>>>> .merge-right.r1202
 C  v52.08 - 06/24/2015 - jgf - Added compiler flags and swan macros.inc
 C           for stampede at TACC.
 C  v52.07 - 06/24/2015 - jgf - Fixed issue with serial execution by removing

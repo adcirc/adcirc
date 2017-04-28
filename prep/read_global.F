@@ -794,6 +794,7 @@ C     jgf49.0804 Added NWS29 VortexOWI format.
      &       (ABS(NWS).NE.8).AND.(ABS(NWS).NE.15).AND. !jgf50.38.05 Added NWS=15
      &       (ABS(NWS).NE.12) .AND. (ABS(NWS).NE.19).AND.
      &       (ABS(NWS).NE.20) .AND.
+     &       (NWS.NE.10).AND. !yf added for nws=10 GFS Met
      &       (ABS(NWS).NE.29).and. (abs(NWS).ne.16))  THEN
            print *,"ERROR: Value for NWS not supported by parallel code"
            stop
@@ -920,6 +921,7 @@ C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
       IF((ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.5)
      &     .OR.(ABS(NWS).EQ.45).OR.(ABS(NWS).EQ.8).OR.
      &         (ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12)
+     &     .OR.(NWS.EQ.10) !yf: Added NWS=10 for GFS Met
      &     .OR.(ABS(NWS).EQ.15) !jgf50.38.05: Added NWS=15 for HWind.
      &     .OR.(ABS(NWS).EQ.20) !jie: Added NWS=20 for GAHM
      &     .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.16)) THEN
