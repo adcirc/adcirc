@@ -1,3 +1,7 @@
+# ADCIRC NUOPC/ESMF fork
+Experimental and under development use with cautious. Refer to main adcirc-cg github page for standard releases.
+
+
 # The ADCIRC Developers Guide
 
 [![CircleCI](https://circleci.com/gh/adcirc/adcirc-cg.svg?style=shield&circle-token=b93f1b49c76ccd6cbe1f016b0f4c9c0d86a44734)](https://circleci.com/gh/adcirc/adcirc-cg)
