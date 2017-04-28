@@ -938,8 +938,7 @@ C     formula is used to compute wind stress from the wind velocity.
                WVNY1(I)=WVNY2(I)
                PRN1(I)=PRN2(I)
             END DO
-            NWSGGWI=NWSGGWI+1
-            CALL NWS10GET()
+            call nws10get(wvnx2,wvny2,prn2) 
          ENDIF
          WTRatio=(TimeLoc-WTIME1)/WTIMINC
          DO I=1,NP
@@ -962,8 +961,6 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
             WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                          -PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
@@ -1291,7 +1288,7 @@ C     Sets up meterological i/o for a coldstart.
 C----------------------------------------------------------------------
       subroutine coldstartMeteorologicalForcing(nws)
       use sizes, only : gblinputdir, inputdir
-      use global, only : ciceout, h0, g, eta2, ncice, rampmete, 
+      use global, only : ciceout, h0, g, eta2, ncice, rampmete, mb2pa, 
      &   sponge, res_bc_flag, statim, wsx1, wsy1, wsx2, wsy2, pr2
       use owiwind,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006          
       use nodalAttributes, only : applyDirectionalWindReduction,
@@ -1442,13 +1439,13 @@ C     RJW Merged:
       IF(NWS.EQ.10) THEN
          wtime1=statim*86400.d0
          wtime2=wtime1+wtiminc
-         call nws10init(slam,sfea)
+         call nws10init()
          wvnx1(:) = 0.d0
          wvny1(:) = 0.d0
          prn1(:) = prbckgrnd * mb2pa / ( rhowat0 * g)
          ! read from first available file (not fort.200) and spatially
          ! interpolate onto adcirc mesh
-         call nws10get(slam,sfea,wvnx2,wvny2,prn2) 
+         call nws10get(wvnx2,wvny2,prn2) 
       ENDIF
 
       IF(NWS.EQ.11) THEN
@@ -2217,11 +2214,11 @@ C     formula is used to compute wind stress from the wind velocity.
          WTIME2=WTIME1+WTIMINC
          !
          ! jgf51.52.21: Fixed NWS10 and cleaned up interface.
-         call nws10init(slam,sfea)
+         call nws10init()
          ! read from fort.200 and spatially interpolate onto adcirc mesh
-         call nws10get(slam,sfea,wvnx1,wvny1,prn1)          
+         call nws10get(wvnx1,wvny1,prn1)          
          ! read from first file after fort.200 and spatially interpolate onto adcirc mesh
-         call nws10get(slam,sfea,wvnx2,wvny2,prn2)
+         call nws10get(wvnx2,wvny2,prn2)
          !
          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
          DO I=1,NP
@@ -2964,12 +2961,10 @@ C     ----------------------------------------------------------------
       ! rest of the subroutine to correct numerical issues associated
       ! with uninitialized variables.
       !----------------------------------------------------------------
-      subroutine nws10Init(flon,flat)
+      subroutine nws10Init()
       use global, only : ihot
-      use mesh, only : np
+      use mesh, only : np, slam, sfea
       implicit none
-      real(sz), intent(in) :: flon(:) ! adcirc mesh longitudes (rad)
-      real(sz), intent(in) :: flat(:) ! adcirc mesh latitudes (rad)
       real(sz) :: gdlon
       integer :: j, jj ! loop counters
       !
@@ -2994,7 +2989,7 @@ C     for the ADCIRC grid.
       do j=1,lonb
          gclon(j)=gdlon*(j-1)
       end do
-      call g2rini(flon,flat)
+      call g2rini()
       !
       ! Set the counter value. According to the ADCIRC documentation,
       ! fort.200 is read upon hotstart, but not at coldstart. 
@@ -3023,11 +3018,9 @@ C     and interpolating factors from subroutine arguments to module
 C     variables; brought log messages up to date with current code.
 C
 C***********************************************************************
-      subroutine g2rini(flon,flat)
-
-      use mesh, only : np
+      subroutine g2rini()
+      use mesh, only : np, slam, sfea
       implicit none
-      real(8), intent(in) :: flat(:),flon(:) ! adcirc mesh coordinates
       integer :: N,I,LON,LONP1,LAT,LATP1
       real(8) :: DLAT,DLON,FLONWORK,COLAT,DDLAT,XLAT,DFLAT,DFLAT1,
      &     DDLON,XLON,DFLON,DFLON1
@@ -3043,7 +3036,7 @@ C.....compute the interpolating factors.
       DO I=1,NP
 C.....   Compute initial guess of which lon value FLON(I) is in the Gaussian file
 C......  Check that this value is reasonable.
-         flonwork=flon(i)
+         flonwork=slam(i)
          if(flonwork.lt.0.) flonwork=flonwork+twopi
          lon=flonwork/dlon + 1
          lonp1=lon+1
@@ -3052,14 +3045,14 @@ C......  Check that this value is reasonable.
             call allMessage(ERROR,'Mesh node outside gaussian grid.')
             write(scratchMessage,
      &       '("i=",i0," lon=",f15.8," dlon=",f15.8," flon(i)=",f15.8)')
-     &       i, lon, dlon, flon(i)
+     &       i, lon, dlon, slam(i)
             call allMessage(ERROR, scratchMessage)
             call windTerminate()
          endif
 
 C.....   Compute initial guess of which lat value FLAT(I) is in the Gaussian file
 C....... Check that this value is reasonable.
-         colat=hfpi-flat(i)
+         colat=hfpi-sfea(i)
          lat=colat/dlat + 1
          if(lat.eq.latb) lat=lat-1
          latp1=lat+1
@@ -3067,7 +3060,7 @@ C....... Check that this value is reasonable.
             call allMessage(ERROR,'Mesh node outside gaussian grid.')
             write(scratchMessage,
      &       '("i=",i0," lat=",f15.8," dlat=",f15.8," flat(i)=",f15.8)')
-     &       i, lat, dlat, flat(i)
+     &       i, lat, dlat, sfea(i)
             call allMessage(ERROR, scratchMessage)
             call windTerminate()
          endif
@@ -3151,13 +3144,11 @@ C   R.L. 4/2/01  changed MNWLAT,MNWLON in ALLOCATE statement to        *
 C                LATB,LONB; eliminated MNWP as a dimension             *
 C***********************************************************************
 
-      subroutine nws10get(flon,flat,ull,vll,pll)
+      subroutine nws10get(ull,vll,pll)
+      use global, only : mb2pa
       use sizes, only : gblinputdir
-      use global, only : wtiminc
-      use mesh, only : np
+      use mesh, only : np, slam, sfea
       implicit none
-      REAL(sz), intent(in) :: flat(:) ! mesh latitudes (radians)
-      REAL(sz), intent(in) :: flon(:) ! mesh longitudes (radians)
       real(sz), intent(out) :: ull(:),vll(:),pll(:) ! mesh met values
       !
       real(sz) :: rhowatg ! density of water * gravitational acceleration
