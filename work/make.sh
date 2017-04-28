@@ -2,35 +2,38 @@
 
 ## moghimis@gmail.com
 
-
-
+### intel compiler >>>>>>
 #module load intel
 #module load impi
 #module load netcdf
 #module load hdf5
-#export compiler=intel
 
-
-#export NETCDFHOME=/home/Saeed.Moghimi/opt/gcc/netcdf-4.3.3.1
-#export HDF5HOME=/home/Saeed.Moghimi/opt/gcc/hdf5-1.8.16-zlib
-
-#make clean
-#make clobber
+#source /etc/profile
+#module use /scratch4/NCEPDEV/nems/save/Gerhard.Theurich/Modulefiles
+#module load intel impi netcdf esmf/7.0.0
+export compiler=intel
+###<<<<<<<<
 
 export NETCDF=enable
 export NETCDF4=enable
 export NETCDF4_COMPRESSION=enable
-export compiler=gnu
 
-export MACHINE=x86_64
-export OS=linux-gnu
+
+### GNU >>>>>
+#export MACHINE=x86_64
+#export compiler=gnu
+#export OS=linux-gnu
+### <<<<<<
+
+#make clean
+#make clobber
+
 
 rm -rf libadc.a padcirc adcprep
 make libadc.a 
-
 make adcprep
 #make adcirc
-make padcirc
+#make padcirc
 #make padcswan
 #make punswan
 #make hstime

@@ -1466,8 +1466,6 @@ C    kmd48.33bc - added in information for the sponge layer
 C
 C--------------------END MET FORCING---------------------------------------
 
-
-
 C...  UPDATE THE WAVE RADIATION STRESS AND READ IN NEW VALUES FROM
 C.... UNIT 23.  APPLY Ramp FUNCTION.  ADD RADIATION STRESS TO WIND
 C...  STRESS
