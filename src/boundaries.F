@@ -49,9 +49,7 @@ C.....for internal barrier boundaries with flowthrough pipes
       INTEGER  bcriversec  ! river boundary information
       LOGICAL :: BndBCRiver          = .FALSE.
 
-
       INTEGER  NBOU
-
       INTEGER  NETA
       INTEGER  NBVI,NBVJ
 
@@ -61,7 +59,8 @@ C.....for internal barrier boundaries with flowthrough pipes
       integer  nfluxb,nfluxf,nfluxib,nfluxrbc,nfluxgbc
       real(sz) :: costset
       real(sz) :: anginn
- 
+
+  
       REAL(SZ),ALLOCATABLE ::   BTRAN3(:),BTRAN4(:),BTRAN5(:)
       REAL(SZ),ALLOCATABLE ::   BTRAN6(:),BTRAN7(:),BTRAN8(:)
       INTEGER, ALLOCATABLE ::   NTRAN1(:),NTRAN2(:)

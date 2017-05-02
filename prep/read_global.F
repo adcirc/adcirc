@@ -461,6 +461,9 @@ C...tcm v51.20.03 Local variables for external station location files
       namelist /wetDryControl/ outputNodeCode, outputNOFF, noffActive
       ! jgf52.08.02 : For inundation output files. 
       namelist /inundationOutputControl/ inundationOutput, inunThresh
+C
+C.....tcm v52.30.01 added for Smag_Control
+      INTEGER :: IOS_Smag = 0
 
 c.....tcm v51.20.03 initialize external station location specifications
 C..... to false, meaning if locations are supplied they are in the fort.15 
@@ -582,6 +585,49 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       endif
            
       rewind(15)  !Return to the top of the fort.15 file
+
+c...  tcm v52.30.01 Addtions for Smagorinski Limits
+c...  read through the fort.15 file for the namelist (Smag_Control) for
+c...  the inputs for Smagorinski eddy viscosity limits.  This namelist must be 
+c...  at the bottom of the fort.15 file. If found, then set the appropriate
+c...  values (SMAG_COMP_FLAG,SMAG_UPPER_LIM,SMAG_LOWER_LIM) 
+c...  If the namelist is not there, then the Smagorinski Limits 
+c...  will not be used.
+C...
+C...  After this search and read, we will close the file and then reopen it
+c...  for further processing the traditional non-namelist components.
+C...
+      READ(UNIT = 15,NML = Smag_Control,IOSTAT = IOS_Smag)
+
+      IF (IOS_SMAG < 0) THEN
+c.....   it is possible for the namelist to be present in the file and occuring at the end
+c.....   of the file with no line breaks after the ending "\" which causes the iostat to
+c.....   return a negative value.  By checking to be sure a namelist variable was set to
+c....    a non-default value we can determine this was the case.
+         IF (SMAG_COMP_FLAG .eqv. .TRUE.) THEN
+!            WRITE(*,*) 'NAMELIST PRESENT, BUT AT THE END OF FILE WITH',
+!     &                 ' NO ADVANCING CHARACTER'
+            found_smag_nml = .true.
+         ELSE
+            call logMessage(INFO,
+     &         'The Smag_Control namelist was not found.')
+         ENDIF
+      ELSEIF (IOS_SMAG == 0) THEN
+!         WRITE(*,*) 'NAME LIST PRESENT AND CORRECT'
+         found_smag_nml = .true.
+      ELSE
+         found_smag_nml = .true.
+         WRITE(*,*)
+     & 'THERE WAS A PROBLEM PROCESSING THE Smag_Control NAMELIST'
+         WRITE(*,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCPREP NOW.'
+         STOP   !THERE IS a STOP HERE
+      ENDIF
+
+      REWIND(15)  !Return to the top of the fort.15 file (instead of closing then opening)
+c..
+
+
+
 
 
       READ(15,80) RUNDES
@@ -748,6 +794,7 @@ C     jgf49.0804 Added NWS29 VortexOWI format.
      &       (ABS(NWS).NE.8).AND.(ABS(NWS).NE.15).AND. !jgf50.38.05 Added NWS=15
      &       (ABS(NWS).NE.12) .AND. (ABS(NWS).NE.19).AND.
      &       (ABS(NWS).NE.20) .AND.
+     &       (NWS.NE.10).AND. !yf added for nws=10 GFS Met
      &       (ABS(NWS).NE.29).and. (abs(NWS).ne.16))  THEN
            print *,"ERROR: Value for NWS not supported by parallel code"
            stop
@@ -874,6 +921,7 @@ C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
       IF((ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.5)
      &     .OR.(ABS(NWS).EQ.45).OR.(ABS(NWS).EQ.8).OR.
      &         (ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12)
+     &     .OR.(NWS.EQ.10) !yf: Added NWS=10 for GFS Met
      &     .OR.(ABS(NWS).EQ.15) !jgf50.38.05: Added NWS=15 for HWind.
      &     .OR.(ABS(NWS).EQ.20) !jie: Added NWS=20 for GAHM
      &     .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.16)) THEN

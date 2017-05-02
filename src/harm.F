@@ -356,8 +356,7 @@ C--------------------------------------------------------------------
 C     jgf50.97: Writes LHS matrix to a file for use in debugging.
 C--------------------------------------------------------------------
       SUBROUTINE writeHA(timesec, it)
-      USE SIZES, ONLY : globaldir
-      USE GLOBAL, ONLY : myproc
+      USE SIZES, ONLY : globaldir, myproc
       IMPLICIT NONE     
       REAL(8) :: timesec ! time in seconds since cold start
       INTEGER :: it      ! current adcirc time step number
@@ -474,10 +473,10 @@ C     jgf49.44: Initializes harmonic analysis arrays and parameters.
 C     Based on HACOLDS, written by rl.
 C--------------------------------------------------------------------
       SUBROUTINE initHarmonicParameters()
-      USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES, MNPROC,
+      USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES, MNPROC, myProc,
      &                   WRITE_LOCAL_HARM_FILES, 
      &                   WRITE_LOCAL_HOT_START_FILES
-      USE GLOBAL, ONLY : ITHS, NSTAE, NSTAV, myProc, NHSTAR
+      USE GLOBAL, ONLY : ITHS, NSTAE, NSTAV, NHSTAR
       USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER :: i, j, n           ! loop counters
@@ -1919,8 +1918,8 @@ C     by comparing with parameters read from the fort.15.
 C     Based on HAHOTS, written by rl.
 C--------------------------------------------------------------------
       SUBROUTINE checkHAHotstart()
-      USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES
-      USE GLOBAL, ONLY : NSTAE_G, NSTAV_G, MYPROC, NSTAE, NSTAV,
+      USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES, MYPROC
+      USE GLOBAL, ONLY : NSTAE_G, NSTAV_G, NSTAE, NSTAV,
      &                   NSCREEN, SCREENUNIT, NP_G
       USE MESH, ONLY : NP
       IMPLICIT NONE

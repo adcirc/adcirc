@@ -1477,7 +1477,9 @@ C
          WRITE(15,80) HOTMSG
          WRITE(15,80) ICSMSG
          WRITE(15,80) IMMSG
-         IF (CBaroclinic) THEN  !jgf46.28
+Casey 140701: Debug.
+C        IF (CBaroclinic) THEN  !jgf46.28
+         IF (CBaroclinic.AND.IM.GE.10) THEN  !jgf46.28
             WRITE(15,80) IDENMSG
          ENDIF
          WRITE(15,80) IBFMSG
@@ -1526,8 +1528,9 @@ C     tcm v51.06.02 added NWS=16: GFDL Met Data
      &        (ABS(NWS).EQ.5).OR.(ABS(NWS).EQ.6).OR.(ABS(NWS).EQ.8)
      &        .OR.(ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.15)
      &        .OR.(ABS(NWS).EQ.16)
-     &         .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.29).OR.
-     &          (ABS(NWS).EQ.20))THEN
+     &         .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.29)
+     &        .OR.(NWS.EQ.10) !yf added to nws=10 GFS Met
+     &         .OR.(ABS(NWS).EQ.20))THEN
             WRITE(15,80) WSMSG1
          ENDIF
          IF (NWS.EQ.3) THEN
@@ -1939,7 +1942,8 @@ C
 
             write(15,*) "&metControl "
             write(15,*) "    WindDragLimit=",Winddraglimit,","
-            write(15,*) "    DragLawString='",Draglawstring,"',"
+            write(15,*) "    DragLawString='",trim(Draglawstring),"',"
+            write(15,*) "    outputWindDrag=",outputWindDrag,","            
             write(15,*) "    rhoAir=",rhoAir,","
             write(15,*) "    invertedBarometerOnElevationBoundary=",
      &                        invertedBarometerOnElevationBoundary
@@ -1985,6 +1989,13 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
      &       '&inundationOutputControl inundationOutput=',
      &       inundationOutput,' inunThresh=',inunThresh," /"
          endif
+
+c...     tcm v52.30.01 additions for Smag_Control Namelist
+         IF (FOUND_SMAG_NML) then  !If there was a namelist in the original fort.15 put it in the decomp 15's
+            write(15,*) '! -- Begin Smagorinski Inputs --'
+            write(15,Smag_Control)
+            write(15,*) '! -- End Smagorinski Inputs --'
+         ENDIF
 
          CLOSE(15)
 C
@@ -3473,7 +3484,7 @@ C--While ( NOT EOF ) Read NETA BCs from Global File
 C
       DO  ! loop until end of file
 
-       READ(38,*,END=9999)  (NOD(I),(TopTempBC(I,M),M=1,NFLUX),I=1,NNODG)
+       READ(38,*,END=9999) (NOD(I),(TopTempBC(I,M),M=1,NFLUX),I=1,NNODG)
 C
       DO IPROC= 1,NPROC
          DO I=1, NNODP(IPROC)
@@ -3512,6 +3523,9 @@ C  simulation (fort.39) for each subdomain using the domain                 C
 C  decomposition of the ADCIRC grid created by the routine DECOMP.          C
 C                                                                           C
 C                Added by Kendra Dresback (January 14, 2010)                C
+!
+! arash June 23 2016: RIVBCSTATIM was missing
+! arash July 7: FLUX_VAL(:,:) should support both salinity and temperature if IDEN == 4, which requires an array of size 2 * NFEN
 C---------------------------------------------------------------------------C
 C
       USE PRE_GLOBAL
@@ -3521,6 +3535,8 @@ C
       INTEGER IPROC
       INTEGER INDEX14, I
       REAL(SZ) :: FLUX_INC
+! arash June 23 2016 added RIVBCSTATIM
+      REAL(SZ) :: RIVBCSTATIM
       REAL(SZ),ALLOCATABLE ::  FLUX_VAL(:,:)
       INTEGER SDU(NPROC)  ! subdomain unit numbers
       LOGICAL Success     ! .true. if all files open without error
@@ -3538,15 +3554,38 @@ C     Open full domain and subdomain fort.20 files
          RETURN ! note early return
       ENDIF
 
+! arash debug
+!      write(*,*) '--------------------'
+!      write(*,*) 'arash: iden =', iden
+!      write(*,*) '--------------------'
+
       ALLOCATE ( NOD(MNVEL) )
       ALLOCATE ( RESBCBINP(NFEN) )
-      ALLOCATE ( FLUX_VAL(MNVEL,NFEN) )
+! arash:
+!      ALLOCATE ( FLUX_VAL(MNVEL,NFEN) )
+      ALLOCATE ( FLUX_VAL(MNP,NFEN) )
+
+! arash July 7 2016: account for both salinity and temperature
+      If ( IDEN == 4 ) Then
+         If ( Allocated(FLUX_VAL) ) Deallocate(FLUX_VAL)
+         If ( Allocated(RESBCBINP) ) Deallocate(RESBCBINP)
+! arash
+!         Allocate ( FLUX_VAL(MNVEL, 2*NFEN) )
+         Allocate ( FLUX_VAL(MNP, 2*NFEN) )
+         Allocate ( RESBCBINP(2*NFEN) )
+      End If
+      FLUX_VAL  ( : , : ) = 0.0d0
+      RESBCBINP ( : )     = 0.0d0
+
+      Write(*,*) 'MNVEL =', MNVEL
+      Write(*,*) 'MNP =', MNP
 c
 c     Write Increment into all flux files
 c
-      READ(39,*) FLUX_INC
+      READ(39,*) FLUX_INC, RIVBCSTATIM
       DO IPROC=1,NPROC
-         WRITE(SDU(IPROC),*) FLUX_INC
+! arash June 23 2016 added RIVBCSTATIM
+         WRITE(SDU(IPROC),*) FLUX_INC, RIVBCSTATIM
       ENDDO
 C
 C     jgf45.12 Write each full domain nodal flux value into each of the
@@ -3559,7 +3598,16 @@ C
 
       DO I=1, EXIST_BC_TS      ! loop through full domain flow nodes
          INDX=BCTS14_ARY(I)
-         READ(39,*,END=40)  (FLUX_VAL(INDX,M),M=1,NFEN)
+
+         !write(*,*) indx
+
+! arash July 7 2016:
+         If ( IDEN == 4 ) Then
+            READ(39,*,END=40)  (FLUX_VAL(INDX,M),M=1,2*NFEN)
+         Else
+            READ(39,*,END=40)  (FLUX_VAL(INDX,M),M=1,NFEN)
+         End If
+
       END DO
 
       DO I=1, EXIST_BC_TS
@@ -3568,10 +3616,21 @@ C
             IPROC2 = IMAP_NOD_GL2(2*(J-1)+1,INDX) ! find next subdomain
             DO IPROC=1, NPROC
                IF (IPROC.EQ.IPROC2) THEN ! full domain node maps to this s.d.
-                 DO M=1,NFEN
-                    RESBCBINP(M) = FLUX_VAL(INDX,M)
-                 END DO
-                 WRITE(SDU(IPROC),80) (RESBCBINP(M),M=1,NFEN)
+
+! arash July 7 2016: ----------------------------
+                  If ( IDEN == 4 ) Then
+                     DO M=1,2*NFEN
+                        RESBCBINP(M) = FLUX_VAL(INDX,M)
+                     END DO
+                     WRITE(SDU(IPROC),80) (RESBCBINP(M),M=1,2*NFEN)
+                  Else
+                     DO M=1,NFEN
+                        RESBCBINP(M) = FLUX_VAL(INDX,M)
+                     END DO
+                     WRITE(SDU(IPROC),80) (RESBCBINP(M),M=1,NFEN)
+                 End If
+! -----------------------------------------------
+
                ENDIF
             END DO
          END DO
@@ -4126,7 +4185,7 @@ C--   Read in info from global hot start files
       IHOTSTP=1
       READ(IHOT,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
 
-      if (.not. CMP_VERSION_NUMBERS(InputFileFmtVn, FileFmtVersion)) then
+      if (.not. CMP_VERSION_NUMBERS(InputFileFmtVn, FileFmtVersion))then
         write(*, 1001)
         write(*, 1012)
         write(*, 9973)
@@ -4232,8 +4291,11 @@ C kmd48.33 moved 3D hot start information to subroutine
 C          and took out other lines
 C jgf49.17 refined check of IMHSF so that it picks up only
 C     IM values that indicate 3D (and so we can use six integer IM values).
+Casey 140701: Added for 611112 and 711112.
       IF ((IMHSF.EQ.1).OR.(IMHSF.EQ.11).OR.
-     &    (IMHSF.EQ.21).OR.(IMHSF.EQ.31)) THEN
+C    &    (IMHSF.EQ.21).OR.(IMHSF.EQ.31)) THEN
+     &    (IMHSF.EQ.21).OR.(IMHSF.EQ.31).OR.
+     &    (IMHSF.EQ.611112).OR.(IMHSF.EQ.711112))THEN
          CALL ReadHotStart3D(IHOT,IHOTSTP)
       ENDIF
 
@@ -4381,14 +4443,22 @@ C--Write out info to local hot start files
 C
       DO IPROC = 1,NPROC
          IHOTSTP=1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) IMHSF          ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) TIMEHSF        ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) ITHSF          ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) NNODP(IPROC)   ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) NELP(IPROC)    ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) NNODP(IPROC)   ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) NELP(IPROC)    ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) InputFileFmtVn ; 
+                                                   IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) IMHSF          ; 
+                                                   IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) TIMEHSF        ; 
+                                                   IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) ITHSF          ; 
+                                                   IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) NNODP(IPROC)   ; 
+                                                   IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) NELP(IPROC)    ; 
+                                                   IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) NNODP(IPROC)   ; 
+                                                   IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) NELP(IPROC)    ;  
+                                                   IHOTSTP = IHOTSTP + 1
 
          DO I=1, NNODP(IPROC)
             INDX = ABS(IMAP_NOD_LG(I,IPROC))
@@ -4469,8 +4539,11 @@ C
 C  kmd48.33bc moved 3D hot start information to subroutine
 C jgf49.43 refined check of IMHSF so that it picks up only
 C     IM values that indicate 3D (and so we can use six integer IM values).
+Casey 140701: Added for 611112 and 711112.
       IF ((IMHSF.EQ.1).OR.(IMHSF.EQ.11).OR.
-     &    (IMHSF.EQ.21).OR.(IMHSF.EQ.31)) THEN
+C    &    (IMHSF.EQ.21).OR.(IMHSF.EQ.31)) THEN
+     &    (IMHSF.EQ.21).OR.(IMHSF.EQ.31).OR.
+     &    (IMHSF.EQ.611112).OR.(IMHSF.EQ.711112))THEN
             CALL WriteHotStart3D(LOC2(IPROC),IHOTSTP,IPROC)
       ENDIF
 
@@ -4710,14 +4783,22 @@ C--Read info from local hot start files
 C
       DO IPROC = 1,NPROC
          IHOTSTP=1
-         READ(LOC2(IPROC),REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) IMHSF          ; IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) TIMEHSF        ; IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) ITHSF          ; IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) IDUMY          ; IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) IDUMY          ; IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) IDUMY          ; IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) IDUMY          ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) InputFileFmtVn ; 
+                                                   IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IMHSF          ; 
+                                                   IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) TIMEHSF        ; 
+                                                   IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) ITHSF          ; 
+                                                   IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IDUMY          ; 
+                                                   IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IDUMY          ; 
+                                                   IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IDUMY          ; 
+                                                   IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IDUMY          ; 
+                                                   IHOTSTP = IHOTSTP + 1
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
@@ -6757,7 +6838,7 @@ C
 C---------------------------------------------------------------------------
       SUBROUTINE prepNetCDF()
 #ifdef ADCNETCDF
-      use sizes, only : ASCII, XDMF
+      use sizes, only : ASCII, XDMF, myproc
       USE PRESIZES, ONLY: NM, MNTIF, MNE, MNP
       USE HARM, ONLY : IHARIND, CHARMV
       USE VERSION
@@ -6792,12 +6873,12 @@ C---------------------------------------------------------------------------
      &    initNetCDFHotstartHarmonicMeansVariances,
      &    freeNetCDFCoord
 #ifdef ADCSWAN
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, myProc,
+      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit,
      &                   SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &                   SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
      &                   SWAN_OutputTMM10,NOUT_TVW
 #else
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, myProc, 
+      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, 
      &                   NOUT_TVW                       
 #endif
 C

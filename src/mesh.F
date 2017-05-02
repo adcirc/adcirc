@@ -1433,7 +1433,7 @@ C     fort.15 control file, including ANGINN.
 C     ------------------------------------------------------------------
       subroutine initializeBoundaries()
       use sizes, only : mnvel
-      use global, only : deg2rad, rad2deg, nbfr
+      use global, only : deg2rad, rad2deg, nbfr, c2ddi
       use boundaries
       implicit none
       integer  nprbi
@@ -1991,20 +1991,26 @@ C...           VALUE IF THE BOUNDARY IS CLOSED
                ENDIF
 
 C...           CHECK WHETHER ANGLE IS LESS THAN MINIMUM ANGLE, IF SO CHANGE THE
-C...           BOUNDARY CODE TO ZERO TANGENTIAL VELOCITIES
+C...           BOUNDARY CODE TO ZERO TANGENTIAL VELOCITIES 
 
-               LBCODEI(JGW)=IBTYPE(K)
-               IF((COSTHETA.GT.COSTSET).AND.(CROSS.GT.0.0)) THEN
-                  IF(IBTYPE(K).EQ.0) LBCODEI(JGW)=10
-                  IF(IBTYPE(K).EQ.1) LBCODEI(JGW)=11
-                  IF(IBTYPE(K).EQ.2) LBCODEI(JGW)=12
-                  IF(IBTYPE(K).EQ.3) LBCODEI(JGW)=13
-                  IF((IBTYPE(K).GE.0).AND.(IBTYPE(K).LE.3)) THEN
-                     WRITE(16,1856) NBVV(K,I),THETA
- 1856                FORMAT(2X,i0,4X,'THE INNER ANGLE = ',F8.2,1X,
+               ! jgf53.dev: jgfdebug: FIXME: The 3D code does not appear
+               ! to support boundary types with no tangential slip, so
+               ! as an interim measure, I am making this boundary type
+               ! modification a 2DDI-only feature.
+               if (C2DDI.eqv..true.) then
+                  LBCODEI(JGW)=IBTYPE(K)
+                  IF((COSTHETA.GT.COSTSET).AND.(CROSS.GT.0.0)) THEN
+                     IF(IBTYPE(K).EQ.0) LBCODEI(JGW)=10
+                     IF(IBTYPE(K).EQ.1) LBCODEI(JGW)=11
+                     IF(IBTYPE(K).EQ.2) LBCODEI(JGW)=12
+                     IF(IBTYPE(K).EQ.3) LBCODEI(JGW)=13
+                     IF((IBTYPE(K).GE.0).AND.(IBTYPE(K).LE.3)) THEN
+                        WRITE(16,1856) NBVV(K,I),THETA
+ 1856                   FORMAT(2X,i0,4X,'THE INNER ANGLE = ',F8.2,1X,
      &                    'TANGENTIAL SLIP WILL BE ZEROED')
+                     ENDIF
                   ENDIF
-               ENDIF
+               endif
 
 C...           COMPUTE COS AND SIN OF OUTWARD NORMAL REGARDLESS OF BOUNDARY TYPE
 
@@ -2377,12 +2383,28 @@ C.....TRANSFER FLOW BOUNDARY INFORMATION INTO NODAL ARRAYS
          CSI(I)=0.
          SII(I)=1.
       END DO
+
+      !do i=1,np !jgfdebug
+      !   write(6,*) 'i, lbarray_pointer(i)=',i,lbarray_pointer(i)
+      !end do
+      !write(6,*) 'i=1,nvelme  nvelme=',nvelme
       DO I=1,NVELME
          J=ME2GW(I)
+            !write(6,*) 'i, j=me2gw(i)',i,j !jgfdebug
          LBArray_Pointer(NBV(J))=J
+            !write(6,*) 'nbv(j)=',nbv(j) !jgfdebug
          CSI(NBV(J))=CSII(J)
          SII(NBV(J))=SIII(J)
       END DO
+      !do i=1,np !jgfdebug
+      !   write(6,*) 'i, lbarray_pointer(i)=',i,lbarray_pointer(i)
+      !end do
+      !do i=1,np !jgfdebug
+      !   if (lbarray_pointer(i).gt.0) then
+      !      write(6,*) 'i, lbcodei(lbarray_pointer(i))=',i,lbcodei(lbarray_pointer(i)) !jgfdebug
+      !   endif
+      !end do    
+      !stop !jgfdebug
 
 C...  IF ANY EXTERNAL BARRIER BOUNDARIES WERE SPECIFIED, (NFLUXB=1)
 C.....WRITE OUT EXTERNAL BARRIER BOUNDARY INFORMATION TO UNIT 16 FILE

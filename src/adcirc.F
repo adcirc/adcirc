@@ -100,13 +100,16 @@ C*    ADCIRC initialize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Init(COMM, ROOTD)
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
-      USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc,
+      USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
      &  read_local_hot_start_files, make_dirname, write_local_harm_files
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc
+      USE GWCE, ONLY : initGWCE
+      USE MOMENTUM, ONLY : initMomentumEq
       USE HARM, ONLY : allocateFullDomainHAIOArrays,
      &                 initHarmonicParameters
       USE GLOBAL_IO, ONLY : allocateFullDomainIOArrays
       USE WRITE_OUTPUT, ONLY : initOutput2D
+      USE WIND, ONLY : initWindModule
       IMPLICIT NONE
 C
       INTEGER, OPTIONAL :: COMM
@@ -144,7 +147,7 @@ C
       !
       call initLogging()
       nabout = 0 !jgf52.08.01: Initialize log level to ECHO.
-#ifdef DEBUG
+#ifdef EBUG
       nabout = -1 !jgf52.08.01: Initialize log level to DEBUG if so compiled
 #endif
       call setMessageSource("ADCIRC_Init")
@@ -208,6 +211,14 @@ C
 
       !jgf49.44: Initialize harmonic analysis parameters.
       CALL initHarmonicParameters()
+C
+C     jgf: Initialize default values in wind module and allocate
+C     memory for internal use.
+      call initWindModule()
+
+      !jgf53.dev: allocate memory for continuity and momentum eqns
+      call initGWCE()
+      call initMomentumEq()
 
 #ifdef CMACHSUN
       CALL ABRUPT_UNDERFLOW() ! Abrupt underflow for Sun computers
@@ -296,29 +307,8 @@ Corbitt 1203022: Local Advection Flags
       IFWIND=1
       IF(IM.EQ.1) IFWIND=0
 
-C...Compute several constant coefficients
-
-      GA00=G*A00
-      GC00=G*C00
-Corbitt 120322: Handled in Timestep.F elementally
-C      TADVODT=IFNLCAT/Dt
-      GB00A00=G*(B00+A00)
-      GFAO2=G*IFNLFA/2.D0
-      GO3=G/3.D0
-      GO2=G/2.D0
-      DTO2=DT/2.D0
-      DT2=DT*2.D0
-      GDTO2=G*DT/2.D0
-Corbitt 120322: Handled in Timestep.F elementally
-C      SADVDTO3=IFNLCT*DT/3.D0
       GORho=G/RhoWat0
       GORhoOAMB=GORho/AMB
-
-C...
-C.....Compute necesary wet/dry coefficients
-C...
-      HABSMIN=0.8d0*H0
-      HOFF=1.2d0*H0
 
       WRITE(16,1112)
       WRITE(16,17931)

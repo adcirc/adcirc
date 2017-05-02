@@ -32,6 +32,20 @@ C             netCDF in parallel resulting from reading the ADCIRC time from
 C             the netCDF  file into an unallocated array.
 C  v52.31 - 06/28/2016 - zc - Fixing adcirc2xdmf.f90 segfault under intel
 C           compiler by removing implicit array creation from function call
+C  v52.30.01 -- 05/19/2016 - tcm - Added a new namelist to the fort.15
+C               file called Smag_Control.  This namelist has three variables
+C               associated with it 1) SMAG_COMP_FLAG (T/F),
+C               2) SMAG_UPPER_LIM (real) and 3) SMAG_LOWER_LIM (real)
+C               If SMAG_COMP_FLAG = .true. then Smagorinski Eddy Viscosity
+C               is computed and it's value tested against the user supplied
+C               Upper and Lower Limits.  This new flag will override the
+C               existing Smagorinski flags that were triggered within the
+C               ADCIRC read_input.F but was not allowed for use in several
+C               of the Momentum EQ formulations for some reason.
+C               Namelist Default Values are as follows
+C               SMAG_UPPER_LIM = 100.d0 m^2/sec 
+C               SMAG_LOWER_LIM = 1.0d-8 m^2/sec
+C               SMAG_COMP_FLAG = .FALSE.
 C  v52.30 - 05/11/2016 - jgf - Resolved minor conflicts (mainly confined to 
 C           USE statements) when merging the txout branch r1120:1202 
 C           to trunk. Changes in the too-long txout branch are as
@@ -289,6 +303,19 @@ C           functional by bringing it in line with the overall structure of the
 C           wind module; also fixed an issue with ramp value initialization
 C           when nramp=1 and dramp=0.0.
 C  v52.14 - 08/06/2015 - jgf - Fix to prevent NaNs in output files
+C
+C           @jasonfleming Cherry Picked bd095311ce992f7be6dc985bc7aab2ff2b8fbcc6
+C v51.52.21 - 08/14/2015 - jgf - Fixed NWS10 (NOAA GFS) meteorological input 
+C           subroutines so that they function properly in serial and parallel;
+C           previously, there was no accommodation for NWS10 in adcprep, whereas
+C           now adcprep recognizes this as a valid value; subroutines in 
+C           adcirc were nonfunctional due to outdated parameters and code
+C           strucutre; adcirc code for NWS10GET was fixed and made functional 
+C           by bringing it in line with the overall structure of the wind
+C           module; also fixed an issue with ramp value initialization when
+C           nramp=1 and dramp=0.0.
+C
+C v51.52.20 - 08/06/2015 - jgf - Fix to prevent NaNs in output files
 C           in runs that use SWAN coupling with a vortex meteorological
 C           model. This issue was a result of the parametric vortex
 C           models not initializing the WVNX1 and WVNY1 arrays because
@@ -432,8 +459,6 @@ C  v52.09 - 07/20/2015 - tcm - Added compiler flags for Cray XC30/XC40 using
 C           Intel compilers with (ftn) as default instead of ifort.  These
 C           basic compiler options work on Armstrong@NAVO, Lightning@AFRL,
 C           Shephard@NAVO and Gordon@NAVO
->>>>>>> .merge-right.r1195
->>>>>>> .merge-right.r1202
 C  v52.08 - 06/24/2015 - jgf - Added compiler flags and swan macros.inc
 C           for stampede at TACC.
 C  v52.07 - 06/24/2015 - jgf - Fixed issue with serial execution by removing

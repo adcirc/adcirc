@@ -19,14 +19,40 @@ C
      &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,19,20,29/)
       logical nwsOK     ! true if NWS value in fort.15 is allowed
 
+      real(sz), allocatable :: wvnx1(:) ! wind velocity in x-dir at each node at prev ts
+      real(sz), allocatable :: wvny1(:) ! wind velocity in y-dir at each node at prev ts
+      real(sz), allocatable :: wvnx2(:) ! wind velocity in x-dir at each node at new ts
+      real(sz), allocatable :: wvny2(:) ! wind velocity in y-dir at each node at new ts
+      real(sz), allocatable :: prn1(:) ! barometric presssure at each node at prev ts
+      real(sz), allocatable :: prn2(:) ! barometric pressure at each node at new ts
+
+      real(sz) :: wtime1 ! time associated with previous met dataset
+      real(sz) :: wtime2 ! time associated with new met dataset
+      real(sz) :: wtiminc ! time increment between met datasets (seconds)
+      real(sz) :: wtimed ! time in seconds associated with a dataset
+      real(sz) :: wreftim ! met reference time
+
 Casey 110518: Added for Mark Powell's sectorial wind drag.
       REAL(SZ) :: EyeLatR(3) = 0.D0
       REAL(SZ) :: EyeLonR(3) = 0.D0
       LOGICAL  :: FoundEye
 C
+      ! related to NWS=11
+      integer :: IDSETFLG 
+      integer :: IWTIME
+      integer :: IWTIMEP
+      integer :: IWYR 
+      integer :: NWSEGWI
+      integer :: NWSGGWI
+
+      integer  :: NWLON,NWLAT
+      real(sz) :: WLATMAX,WLONMIN,WLATINC,WLONINC
+      integer  :: IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN
+
       REAL(8), PARAMETER :: TWOPI=PI*2.D0
       REAL(8), PARAMETER :: HFPI=PI/2.D0
       REAL(8), PARAMETER :: mperdeg  = Rearth * pi / 180.0d0
+      real(sz) :: prbckgrnd_mH2O
 
       INTEGER StormNumber !jgf46.28 For Holland Wind model wind multiplier
       REAL(8) WindRefTime !jgf46.29 seconds since beginning of year, this
@@ -49,17 +75,29 @@ C
       ! radial distance to point where vortex effects insignificant,
       ! normalized to current Rmax
       REAL(SZ) pureBackground
+      !
+      ! jgf50.32: The wind drag limit was originally set to 0.002d0
+      ! in v46 ... the higher value of 0.0035d0 was used in ~v48 and
+      ! is now the default.
+      REAL(SZ) :: WindDragLimit = 0.0035d0   ! maximum wind drag value
 
-      REAL(SZ) :: WindDragLimit          ! maximum wind drag value
-      CHARACTER(len=10) :: DragLawString ! controls wind drag formulation
-
+      ! jgf50.32: If DragLawString is not set in the fort.15 input file,
+      ! it will remain 'default'; this will cause 'Garratt' to be used
+      ! in FUNCTION WindDrag, and 'IceCube' to be used in
+      ! FUNCTION WindIceDrag.
+      CHARACTER(len=10) :: DragLawString = 'default' ! controls wind drag formulation
+#ifdef POWELL
+      ! jgf50.32 Provide backward compatibility with hardcoded POWELL
+      ! support.
+      DragLawString = 'Powell'
+#endif
+      !
       ! used for vis/diagnostics on nws19 and nws20
       LOGICAL :: writeFullCircleRmaxes = .false.
       LOGICAL :: writeRadialVandP = .false.
       LOGICAL :: writeSpatialVandP = .false.
       LOGICAL :: writeSpatialuvp = .false.
       LOGICAL :: writeNodaluvp = .false.
-      LOGICAL :: moving_grid = .false.
       
       !switch to turn on or off geostrophic balance in GAHM
       ! on (default): Coriolis term included, phifactors will be calculated before being used 
@@ -127,13 +165,22 @@ C
       type(gfdl_Data_t), allocatable, target :: gfdl_Files(:) ! array of info about GFDL Met files
       real(sz) :: GFDL_max_extrap_dist     ! maximum distance for extrapolating values (meters)
       real(sz) :: GFDL_WindMultiplier      ! all GFDL wind u,v's multiplied by this
+      !
+      ! jgf52.51.21: Fixes for NWS10. Changed from NWLAT and NWLON to 
+      ! latb and lonb and moved from read_input() to wind module and 
+      ! gave them parameter status. 
+      integer, parameter :: latb = 1536 !190 change to gfs t1534 grid
+      integer, parameter :: lonb = 3072 !384 change to gfs t1534 grid
+      ! numerical values at four corners of gaussian grid
+      integer, allocatable ::  n00(:),n10(:),n11(:),n01(:)
+      ! interpolation factors from mesh vertex to four corners of 
+      ! gaussian grid
+      real(sz), allocatable :: d00(:),d10(:),d11(:),d01(:)
+      real(sz), allocatable :: colrab(:),dummy(:),gclat(:),gclon(:)
+      ! met values on gaussian grid vertices
+      real(sz), allocatable ::  ug(:),vg(:),pg(:)
+      integer :: nws10DatasetCounter ! indicates which dataset to read
 
-      ! jgf52.30.04: Allow the inverted barometer condition to be 
-      ! activated on elevation-specified boundaries so that low pressure
-      ! systems crossing the boundary won't trigger numerical instabilities.
-      ! This is normally .false. but can be set to .true. in the fort.15
-      ! in the metControl namelist. 
-      logical :: invertedBarometerOnElevationBoundary
 
 C------------------------end of data declarations-----------------------
       CONTAINS
@@ -154,33 +201,27 @@ C-----------------------------------------------------------------------
 C     ----------------------------------------------------------------
 C       I N I T   W I N D   M O D U L E
 C     ----------------------------------------------------------------
-C
 C     jgf50.32 Subroutine to initialize meteorological parameters to their
 C     default values.
-C
+C     jgf53.dev: Now allocates memory, whereas default values are now set
+C     in the module variable declaration section above. 
+C     This subroutine must be called after read_input() so that it can
+C     use the values of np and g. 
 C     ----------------------------------------------------------------
-      SUBROUTINE initWindModule()
+      subroutine initWindModule()
+      use mesh, only : np
 
-      ! jgf50.32: The wind drag limit was originally set to 0.002d0
-      ! in v46 ... the higher value of 0.0035d0 was used in ~v48 and
-      ! is now the default.
-      WindDragLimit = 0.0035d0
+      allocate ( wvnx1(np),wvny1(np) )
+      allocate ( wvnx2(np),wvny2(np) )
+      allocate ( prn1(np) )
+      allocate ( prn2(np) )
+  
+C.... tcm v49.16 20100617 added
+C.... convert background pressure from millibars to meters of water
+      PRBCKGRND_MH2O = 100.0D0*PRBCKGRND/(RHOWAT0*G)
+      prn1 = PRBCKGRND_MH2O
+      prn2 = PRBCKGRND_MH2O
 
-      ! jgf50.32: If DragLawString is not set in the fort.15 input file,
-      ! it will remain 'default'; this will cause 'Garratt' to be used
-      ! in FUNCTION WindDrag, and 'IceCube' to be used in
-      ! FUNCTION WindIceDrag.
-      
-      DragLawString = 'default'
-#ifdef POWELL
-      ! jgf50.32 Provide backward compatibility with hardcoded POWELL
-      ! support.
-      DragLawString = 'Powell'
-#endif
-
-      invertedBarometerOnElevationBoundary = .false.
-
-      RETURN
 C     ----------------------------------------------------------------
       END SUBROUTINE initWindModule
 C     ----------------------------------------------------------------
@@ -196,7 +237,10 @@ C
 C     ----------------------------------------------------------------
       REAL(SZ) FUNCTION WindDrag(WindSpeed, NodeNumber)
       !Casey 110518: Added variables for Mark Powell's sector-based wind drag.
-      USE GLOBAL, ONLY: DEG2RAD
+      USE GLOBAL, ONLY: DEG2RAD, windDragOut
+#ifdef CSWAN
+     &                  ,SWAN_WDragCo
+#endif
       USE MESH, ONLY : SFEA, SLAM
       REAL(SZ) WindSpeed
       ! jgf50.32: Even if present, NodeNumber is ignored by Garratt formulation
@@ -214,12 +258,18 @@ C
       REAL(SZ)  :: NodeLon
       REAL(SZ)  :: StormDirection
       REAL(SZ)  :: Weight(3)
-C
+C    
       SELECT CASE(TRIM(DragLawString))
 C
       CASE("Garratt","GARRATT","garratt","default")
          WindDrag = 0.001d0*(0.75d0+0.067d0*WindSpeed)
          IF(WindDrag.gt.WindDragLimit) WindDrag=WindDragLimit
+C
+C Matt 131008: Added SWAN's swell-based wind drag.
+#ifdef CSWAN
+      CASE("Swell","SWELL","swell")
+         WindDrag = SWAN_WDragCo(NodeNumber)
+#endif
 C
 Casey 110518: Added Mark Powell's sector-based wind drag.
       CASE("Powell","POWELL","powell")
@@ -370,6 +420,9 @@ C.. Apply a weighted average.
 C
       END SELECT
 C
+      !jgf53.dev: record wind drag at all nodes for writing to output files
+      windDragOut(nodeNumber) = windDrag
+      
       RETURN
 C     ----------------------------------------------------------------
       END FUNCTION WindDrag
@@ -446,11 +499,10 @@ C     ----------------------------------------------------------------
 C     jgf49.1001 Subroutine to get the blending factor for combining
 C     NWS19 and NWS12 (from NAM) met data.
 C     ----------------------------------------------------------------
-      SUBROUTINE getBlendFactor(i, SLAM, SFEA, bf)
+      SUBROUTINE getBlendFactor(i, bf)
+      USE MESH, ONLY : SLAM, SFEA
       IMPLICIT NONE
       INTEGER, intent(in) :: i  ! node number
-      REAL(SZ), intent(in) :: SLAM(:)  ! nodal longitude, degrees
-      REAL(SZ), intent(in) :: SFEA(:)  ! nodal latitude, degrees
       REAL(SZ), intent(out):: bf       ! blend factor, 0 to 1
       REAL(SZ) XCOOR ! longitude of node in degrees
       REAL(SZ) YCOOR ! latitude of node in degrees
@@ -499,12 +551,9 @@ C   Convert time from year,month,day,hour,min,sec into seconds since   *
 C   the beginning of the year.                                         *
 C                                                                      *
 C***********************************************************************
-
-      SUBROUTINE TIMECONV(IYR,IMO,IDAY,IHR,IMIN,SEC,TIMESEC,
-     &     MyProc, NScreen, ScreenUnit)
+      SUBROUTINE TIMECONV(IYR,IMO,IDAY,IHR,IMIN,SEC,TIMESEC)
       IMPLICIT NONE
       INTEGER IYR,IMO,IDAY,IHR,IMIN,ILEAP
-      INTEGER MyProc, NScreen, ScreenUnit
       REAL*8 TIMESEC,SEC
 C
       TIMESEC = (IDAY-1)*86400 + IHR*3600 + IMIN*60 + SEC
@@ -522,18 +571,1966 @@ C
       IF(IMO.GE.11) TIMESEC = TIMESEC + 31*86400
       IF(IMO.EQ.12) TIMESEC = TIMESEC + 30*86400
       IF(IMO.GT.12) THEN
-         IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-            WRITE(ScreenUnit,*)
-     &           'FATAL ERROR IN SUBROUTINE TIMECONV - MONTH > 12 '
-         ENDIF
-         WRITE(16,*) 'FATAL ERROR IN SUBROUTINE TIMECONV - MONTH > 12 '
-#ifdef CMPI
-         call msg_fini()
-#endif
-         STOP
+         call allMessage(ERROR,
+     &     'Fatal error in subroutine timeconv: month > 12.')
+         call windTerminate()
+
       ENDIF
       RETURN
+C-----------------------------------------------------------------------
       END SUBROUTINE TIMECONV
+C-----------------------------------------------------------------------
+
+C----------------------------------------------------------------------
+C                    S U B R O U T I N E 
+C       G E T   M E T E O R O L O G I C A L   F O R C I N G
+C----------------------------------------------------------------------
+C     Called from timestep() to perform i/o, time interpolation, 
+C     wind reduction, canopy effects, drag modification due to ice,
+C     computation of stress from velocity, units conversion, and
+C     any other procedures necessary for producing met data at a 
+C     particular point in time. 
+C----------------------------------------------------------------------
+      subroutine getMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
+     &   wvnxout, wvnyout, timeloc)
+      use owiwind,only : nws12get, findStormCenter    ! sb added 09/xx/2006     
+      use global, only : ciceout, h0, g, eta2, ncice, rampmete, 
+     &   sponge, res_bc_flag
+      use nodalAttributes, only : applyDirectionalWindReduction,
+     &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
+      use mesh, only : dp, ics, np
+      implicit none
+      integer, intent(in) :: nws
+      real(sz), intent(out) :: wsx2(*)
+      real(sz), intent(out) :: wsy2(*)
+      real(sz), intent(out) :: pr2(*)
+      real(sz), intent(out) :: wvnxout(*)
+      real(sz), intent(out) :: wvnyout(*)
+      real(sz), intent(in) :: timeloc
+      real(sz) :: windx ! wind vel (m/s) in x-dir
+      real(sz) :: windy ! wind vel (m/s) in y-dir
+
+      real(sz) :: prdiff
+      real(sz) :: wDragCo
+      real(sz) :: windMag
+      real(sz) :: wtratio ! used to time interpolated between met datasets
+      integer :: nhg ! node number temp
+      real(sz) :: bf ! blend factor for multiple sets of wind data 
+      integer :: i ! node loop counter
+      
+
+      
+C------------------------MET FORCING---------------------------------------
+C
+C...  UPDATE THE WIND STRESS AND SURFACE PRESSURE AND READ IN NEW VALUES
+C...  FROM UNIT 22.  APPLY Ramp FUNCTION.
+C
+C  tcm v49.16 20100617 -- Changed pressure ramping so that we apply the ramp
+C     to the difference between the background pressure and the forced pressure,
+C     then add that ramped difference back to the background pressure
+C
+C     No wind, radiation stress or atmospheric pressure forcings are used.
+      IF(NWS.EQ.1) THEN
+         DO I=1,NP
+            READ(22,*) NHG,WSX2(I),WSY2(I),PR2(I) !read in
+            WSX2(I)=RampMete*WSX2(I) ! apply ramp function
+            WSY2(I)=RampMete*WSY2(I)
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete*PR2(I)
+            PRDIFF = RampMete*(PR2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            wvnxout(i)=WSX2(i) ! for met recording station output
+            wvnyout(i)=WSY2(i)
+         END DO
+      ENDIF
+
+C     Wind stress and atmospheric pressure are read in at all grid nodes
+C     at a time interval that does not equal the model time
+C     step. Interpolation in time is used to synchronize the wind and
+C     pressure information with the model time step.
+      IF(ABS(NWS).EQ.2) THEN
+         IF(TimeLoc.GT.WTIME2) THEN !determine if met file time incr. is exceeded
+            WTIME1=WTIME2
+            WTIME2=WTIME2+WTIMINC
+            DO I=1,NP
+               WVNX1(I)=WVNX2(I) ! move current data to old
+               WVNY1(I)=WVNY2(I)
+               PRN1(I)=PRN2(I)
+               READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I) ! read in
+            END DO
+         ENDIF
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC ! interpolate
+         DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WSX2(I) = RampMete*WindX !apply ramp
+            WSY2(I) = RampMete*WindY
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                          -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            wvnxout(i)=WSX2(i) !for met recording sta. output
+            wvnyout(i)=WSY2(i)
+         END DO
+      ENDIF
+
+C     Wind velocity in US Navy Fleet Numeric format interpolated in
+C     space onto the ADCIRC grid and in time to synchronize the wind and
+C     pressure information with the model time step. Garratt's formula
+C     is used to compute wind stress from the wind velocity.
+      IF(NWS.EQ.3) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
+            WTIME1=WTIME2
+            WTIME2=WTIME2+WTIMINC
+            DO I=1,NP
+               WVNX1(I)=WVNX2(I)
+               WVNY1(I)=WVNY2(I)
+            END DO
+            CALL NWS3GET()
+         ENDIF
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+            WVNXOUT(I)=RampMete*WindX
+            WVNYOUT(I)=RampMete*WindY
+         END DO
+      ENDIF
+
+C     Wind velocity and atmospheric pressure are read in (PBL/JAG
+C     format) at selected ADCIRC grid nodes. Interpolation in time is
+C     used to synchronize the wind and pressure information with the
+C     model time step. Garratt's formula is used to compute wind stress
+C     from wind velocity.
+      IF(ABS(NWS).EQ.4) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
+            WTIME1=WTIME2
+            WTIME2=WTIME2+WTIMINC
+            DO I=1,NP
+               WVNX1(I)=WVNX2(I)
+               WVNY1(I)=WVNY2(I)
+               PRN1(I)=PRN2(I)
+            END DO
+            CALL NWS4GET()
+         ENDIF
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete*WindX
+            WVNYOUT(I)=RampMete*WindY
+         END DO
+      ENDIF
+
+C     Wind velocity and atmospheric pressure are read in at all grid
+C     nodes. Interpolation in time is used to synchronize the wind and
+C     pressure information with the model time step. Garratt's formula
+C     is used to compute wind stress from wind velocity.
+      IF(ABS(NWS).EQ.5) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
+            WTIME1=WTIME2
+            WTIME2=WTIME2+WTIMINC
+            DO I=1,NP
+               WVNX1(I)=WVNX2(I)
+               WVNY1(I)=WVNY2(I)
+               PRN1(I)=PRN2(I)
+               READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
+            END DO
+         ENDIF
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete*WindX
+            WVNYOUT(I)=RampMete*WindY
+         END DO
+      ENDIF
+
+C     Wind velocity and atmospheric pressure are read in for a
+C     rectangular grid (either in Longitude, Latitude or Cartesian
+C     coordinates, consistent with the grid coordinates) and
+C     interpolated in space onto the ADCIRC grid and in time to
+C     synchronize the wind and pressure information with the model time
+C     step. Garratt's formula is used to compute wind stress from the
+C     wind velocity.
+      IF(NWS.EQ.6) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
+            WTIME1=WTIME2
+            WTIME2=WTIME2+WTIMINC
+            DO I=1,NP
+               WVNX1(I)=WVNX2(I)
+               WVNY1(I)=WVNY2(I)
+               PRN1(I)=PRN2(I)
+            END DO
+            NWSGGWI=NWSGGWI+1
+            CALL NWS6GET()
+         ENDIF
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete*WindX
+            WVNYOUT(I)=RampMete*WindY
+         END DO
+      ENDIF
+
+C     jgf46.01 New option to read in surface wind stress and atmospheric
+C     pressure for a rectangular grid (either in Longitude, Latitude or
+C     Cartesian coordinates, consistent with the grid coordinates) and
+C     interpolate in space onto the ADCIRC grid. Interpolation in time
+C     is used to synchronize the wind and pressure information with the
+C     model time step.
+      IF(ABS(NWS).EQ.7) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
+            WTIME1=WTIME2
+            WTIME2=WTIME2+WTIMINC
+            DO I=1,NP
+               WVNX1(I)=WVNX2(I)
+               WVNY1(I)=WVNY2(I)
+               PRN1(I)=PRN2(I)
+            END DO
+            CALL NWS7GET()
+         ENDIF
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WSX2(I) = RampMete*WindX !apply ramp
+            WSY2(I) = RampMete*WindY
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            wvnxout(i)=WSX2(i) !for met recording sta. output
+            wvnyout(i)=WSY2(i)
+         END DO
+      ENDIF
+
+C     jgf46.02 New option to read in hurricane locations and generate
+C     generate hurricane winds from the Holland Wind Model.
+      IF(ABS(NWS).EQ.8) THEN
+         call HollandGet(wvnx2,wvny2,prn2,timeloc)
+         DO I=1,NP
+            WindX = WVNX2(I)
+            WindY = WVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete*PRN2(I)
+            PRDIFF = RampMete*(PRN2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete*WindX
+            WVNYOUT(I)=RampMete*WindY
+         ENDDO
+      ENDIF
+C
+C     Wind velocity (10 m) and atmospheric pressure are read in from a
+C     sequence of National Weather Service (NWS) Aviation (AVN) model
+C     output files. Each AVN file is assumed to contain data on a
+C     Gaussian longitude, latitude grid at a single time. Consecutive
+C     files in the sequence are separated by N hours in time. Garratt's
+C     formula is used to compute wind stress from the wind velocity.
+      IF(NWS.EQ.10) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
+            WTIME1=WTIME2
+            WTIME2=WTIME2+WTIMINC
+            DO I=1,NP
+               WVNX1(I)=WVNX2(I)
+               WVNY1(I)=WVNY2(I)
+               PRN1(I)=PRN2(I)
+            END DO
+            call nws10get(wvnx2,wvny2,prn2) 
+         ENDIF
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                          -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete*WindX
+            WVNYOUT(I)=RampMete*WindY
+         END DO
+      ENDIF
+C
+C     Wind velocity (10 m) and atmospheric pressure are read in from a
+C     sequence of stripped down National Weather Service (NWS) ETA 29km
+C     model output files. Each ETA file is assumed to contain data on an
+C     E grid for a single day (8 data sets, one every 3 hours, beginning
+C     @ 03:00 and continuing through 24:00 of the given day). The wind
+C     data is converted to an east-west, north-south coordinate system
+C     inside ADCIRC. Garratt's formula is used to compute wind stress
+C     from the wind velocity.
+      IF(NWS.EQ.11) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
+            WTIME1=WTIME2
+            WTIME2=WTIME2+WTIMINC
+            DO I=1,NP
+               WVNX1(I)=WVNX2(I)
+               WVNY1(I)=WVNY2(I)
+               PRN1(I)=PRN2(I)
+            END DO
+            IDSETFLG=IDSETFLG+1
+            IF(IDSETFLG.GT.8) THEN
+               NWSEGWI=NWSEGWI+1
+               IDSETFLG=1
+            ENDIF
+            CALL NWS11GET()
+         ENDIF
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                          -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete*WindX
+            WVNYOUT(I)=RampMete*WindY
+         END DO
+      ENDIF
+
+C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
+        IF(ABS(NWS).EQ.12) THEN
+          IF(TimeLoc.GT.WTIME2) THEN
+            WTIME1=WTIME2
+            WTIME2=WTIME2+WTIMINC
+            DO I=1,NP
+              WVNX1(I)=WVNX2(I)
+              WVNY1(I)=WVNY2(I)
+              PRN1(I)=PRN2(I)
+            END DO
+            CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+            if (trim(DragLawString) == "Powell" .or.
+     &          trim(DragLawString) == "POWELL" .or.
+     &          trim(DragLawString) == "powell" ) then
+               call findStormCenter(eyeLatR, eyeLonR, foundEye)
+             endif
+          ENDIF
+          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+          DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            !Casey 110518: Enable Mark Powell's sector-based wind drag.
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+              CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &             WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+              WindMag = SQRT(WindX*WindX+WindY*WindY)
+              !Casey 110518: Enable Mark Powell's sector-based wind drag.
+              WDragCo = WindDrag(WindMag,I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                          -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete*WINDX
+            WVNYOUT(I)=RampMete*WINDY
+
+          END DO
+        ENDIF
+
+C     RJW ffpl Merged:
+!     rjw added nws = 19: asymmetric hurricane winds
+      IF(NWS.EQ.19) THEN
+         CALL NWS19GET(wvnx2, wvny2, prn2, timeloc)
+         DO I=1,NP
+            WindX = WVNX2(I)
+            WindY = WVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+C  tcm v49.16 20100617C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+!            PR2(I)=RampMete*PRN2(I)
+            PRDIFF = RampMete*(PRN2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete*WindX
+            WVNYOUT(I)=RampMete*WindY
+         END DO
+      ENDIF
+C
+C     jie added nws = 20: generalized asymmetric vortex model
+      IF(NWS.EQ.20) THEN
+         CALL NWS20GET(wvnx2, wvny2, prn2, timeloc)
+         DO I=1,NP
+            WindX = WVNX2(I)
+            WindY = WVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+C  tcm v49.16 20100617C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+!            PR2(I)=RampMete*PRN2(I)
+            PRDIFF = RampMete*(PRN2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete*WindX
+            WVNYOUT(I)=RampMete*WindY
+         END DO
+      ENDIF    
+C      
+C     jgf49.1001 Added NWS29 for embedding an asymmetric vortex from
+C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
+      IF(ABS(NWS).EQ.29) THEN
+         ! bring in next set of OWI met data
+         IF(TimeLoc.GT.WTIME2) THEN
+            WTIME1=WTIME2
+            WTIME2=WTIME2+WTIMINC
+            DO I=1,NP
+               WVNX1(I)=WVNX2(I)
+               WVNY1(I)=WVNY2(I)
+               PRN1(I)=PRN2(I)
+            END DO
+            CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+            if (trim(DragLawString) == "Powell" .or.
+     &          trim(DragLawString) == "POWELL" .or.
+     &          trim(DragLawString) == "powell" ) then
+               call findStormCenter(eyeLatR, eyeLonR, foundEye)
+            endif           
+         ENDIF
+         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+         ! bring in next set of asymmetric vortex met data to separate arrays
+         CALL NWS19GET(vortexWVNX2, vortexWVNY2, vortexPRN2, timeloc)
+         DO I=1,NP
+            ! compute wind stress due to background met at this node
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+            ! jgf49.1001 NAM winds already contain wind reduction
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PR2(I) = RampMete*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            WVNXOUT(I)=RampMete*WINDX
+            WVNYOUT(I)=RampMete*WINDY
+            ! compute wind stress due to vortex met at this node
+            WindX = vortexWVNX2(I)
+            WindY = vortexWVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            CALL getBlendFactor(I, bf)
+            ! blend the wind stresses and barometric pressures
+            WSX2(I) = bf*RampMete*0.001293d0*WDragCo*WindX*WindMag
+     &               +(1.0d0-bf)*WSX2(I)
+            WSY2(I) = bf*RampMete*0.001293d0*WDragCo*WindY*WindMag
+     &               +(1.0d0-bf)*WSY2(I)
+            PR2(I)= bf*RampMete*vortexPRN2(I)
+     &               +(1.0d0-bf)*PRN2(I)
+            WVNXOUT(I)=bf*RampMete*WindX+(1.0d0-bf)*WVNXOUT(I)
+            WVNYOUT(I)=bf*RampMete*WindY+(1.0d0-bf)*WVNYOUT(I)
+         END DO
+      ENDIF
+
+      !
+      ! jgf50.38.05: Added NWS=15 for reading HWind data
+       IF(ABS(NWS).EQ.15) THEN
+          CALL NWS15GET(WVNX2,WVNY2,PRN2,timeloc)
+          DO I=1,NP
+             windx = wvnx2(i)
+             windy = wvny2(i)
+             windMag = sqrt(windx**2 + windy**2)
+             WDragCo = WindDrag(windMag, i)
+             IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(i, WDragCo,
+     &              windMag, DP(I), ETA2(I), H0, G,
+     &              windx, windy)
+                WindMag = SQRT(windx**2+windy**2)
+                WDragCo = WindDrag(WindMag, i)
+             ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(i,windx,windy)
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+             WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
+             WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
+             PR2(I) = PRBCKGRND_MH2O + RampMete*(PRN2(I)-PRBCKGRND_MH2O)
+             WVNXOUT(I)=RampMete*WINDX
+             WVNYOUT(I)=RampMete*WINDY
+          END DO
+       ENDIF
+C.... tcm v51.06.02 added for GFDL Met Data
+        IF(ABS(NWS).EQ.16) THEN
+          IF(TimeLoc.GT.WTIME2) THEN
+            WTIME1=WTIME2
+            WTIME2=WTIME2+WTIMINC
+            DO I=1,NP
+              WVNX1(I)=WVNX2(I)
+              WVNY1(I)=WVNY2(I)
+              PRN1(I)=PRN2(I)
+            END DO
+            CALL NWS16GET(timeloc,WVNX2,WVNY2,PRN2)
+          ENDIF
+          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+          DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            !Casey 110518: Enable Mark Powell's sector-based wind drag.
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+              CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &             WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+              WindMag = SQRT(WindX*WindX+WindY*WindY)
+              !Casey 110518: Enable Mark Powell's sector-based wind drag.
+              WDragCo = WindDrag(WindMag,I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                          -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete*WINDX
+            WVNYOUT(I)=RampMete*WINDY
+          END DO
+        ENDIF
+C
+C    kmd48.33bc - added in information for the sponge layer
+       IF (RES_BC_FLAG.GT.0) THEN
+         DO I=1,NP
+            WSX2(I)=sponge(I)*WSX2(I)
+            WSY2(I)=sponge(I)*WSY2(I)
+         END DO
+       END IF
+C--------------------END MET FORCING---------------------------------------
+
+
+C----------------------------------------------------------------------
+      end subroutine getMeteorologicalForcing
+C----------------------------------------------------------------------
+
+
+C----------------------------------------------------------------------
+C                   S U B R O U T I N E 
+C    C O L D  S T A R T   M E T E O R O L O G I C A L   F O R C I N G
+C----------------------------------------------------------------------
+C     Sets up meterological i/o for a coldstart.
+C----------------------------------------------------------------------
+      subroutine coldstartMeteorologicalForcing(nws)
+      use sizes, only : gblinputdir, inputdir
+      use global, only : ciceout, h0, g, eta2, ncice, rampmete, mb2pa, 
+     &   sponge, res_bc_flag, statim, wsx1, wsy1, wsx2, wsy2, pr2
+      use owiwind,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006          
+      use nodalAttributes, only : applyDirectionalWindReduction,
+     &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
+      use mesh, only : dp, ics, np
+      implicit none
+      integer, intent(in) :: nws
+      real(sz) :: windx ! wind vel (m/s) in x-dir
+      real(sz) :: windy ! wind vel (m/s) in y-dir
+      real(sz) :: wtratio ! used to time interpolated between met datasets
+      integer :: nhg ! node number temp
+      real(sz) :: bf ! blend factor for multiple sets of wind data 
+      integer :: i ! node loop counter
+     
+      WSX2(:) = 0.d0
+      WSY2(:) = 0.D0
+      PR2(:) = PRBCKGRND_MH2O  
+     
+      IF(NWS.EQ.1) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+      ENDIF
+
+      IF(ABS(NWS).EQ.2) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+      ENDIF
+
+      IF(NWS.EQ.3) THEN
+C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
+C....                           to correspond with having only a global wind file.
+!         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+
+ 2222    CALL NWS3GET()
+         IF(IWYR.NE.IREFYR) THEN
+            IWTIMEP=IWTIME
+            DO I=1,NP
+               WVNX1(I)=WVNX2(I)
+               WVNY1(I)=WVNY2(I)
+            END DO
+            GOTO 2222
+         ENDIF
+         IF(WTIMED.LE.WREFTIM) THEN
+            IWTIMEP=IWTIME
+            DO I=1,NP
+               WVNX1(I)=WVNX2(I)
+               WVNY1(I)=WVNY2(I)
+            END DO
+            GOTO 2222
+         ENDIF
+         write(scratchMessage,'(a,i15)') 'FOUND WIND DATA AT TIME= ',IWTIMEP
+         call allMessage(INFO,scratchMessage)
+         write(scratchMessage,'(a,i15)') 'FOUND WIND DATA AT TIME= ',IWTIME
+         call allMessage(INFO,scratchMessage)
+         WTIME2=WTIMED-WREFTIM  !CAST INTO MODEL TIME REFERENCE
+         WTIME1=WTIME2-WTIMINC
+      ENDIF
+
+      IF(ABS(NWS).EQ.4) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         WTIME1 = STATIM*86400.D0
+         WTIME2=WTIME1+WTIMINC
+         CALL NWS4GET()
+         wvnx1 = wvnx2
+         wvny1 = wvny2
+         CALL NWS4GET()
+      ENDIF
+
+      IF(ABS(NWS).EQ.5) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+      ENDIF
+
+      IF(NWS.EQ.6) THEN
+C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
+C....                           to correspond with having only a global wind file.
+!         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         CALL NWS6GET()
+         wvnx1 = wvnx2
+         wvny1 = wvny2
+         CALL NWS6GET()
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+      ENDIF
+
+C     jgf46.00 Added option to directly apply surface stress without any
+C     other correction factors.
+      IF(ABS(NWS).EQ.7) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+      ENDIF
+
+C     jgf46.02 New option to read in hurricane locations and generate
+C     generate hurricane winds from the Holland Wind Model.
+      IF(ABS(NWS).EQ.8) THEN
+         CALL HollandGet(WVNX2,WVNY2,PRN2,statim*86400.d0)
+      ENDIF
+
+C     RJW Merged:
+!    rjw added nws = 19: asymmetric hurricane winds v2.0
+      IF(NWS.EQ.19) THEN
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+        CALL NWS19GET(WVNX2,WVNY2,PRN2,STATIM*86400.D0)
+      ENDIF
+      
+!    jie added nws = 20: generalized asymmetric vortex model
+      IF(NWS.EQ.20) THEN
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+        CALL NWS20GET(WVNX2,WVNY2,PRN2,STATIM*86400.D0)
+      ENDIF      
+
+      ! jgf49.1001 Added NWS=29, asymmetric vortex wind (NWS19) embedded in
+      ! OWI (NWS12) basin scale wind field.
+      IF(NWS.EQ.29) THEN
+         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+         if (trim(DragLawString) == "Powell" .or.
+     &       trim(DragLawString) == "POWELL" .or.
+     &       trim(DragLawString) == "powell" ) then
+            call findStormCenter(eyeLatR, eyeLonR, foundEye)
+         endif           
+         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+         if (trim(DragLawString) == "Powell" .or.
+     &       trim(DragLawString) == "POWELL" .or.
+     &       trim(DragLawString) == "powell" ) then
+            call findStormCenter(eyeLatR, eyeLonR, foundEye)
+         endif                    
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+         ! now blend in the vortex met field
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
+     &        STATUS='OLD')
+         ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
+         CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,STATIM*86400.D0)
+      ENDIF
+      !
+      ! jgf51.52.21: Fixed NWS10 and cleaned up interface.
+      IF(NWS.EQ.10) THEN
+         wtime1=statim*86400.d0
+         wtime2=wtime1+wtiminc
+         call nws10init()
+         wvnx1(:) = 0.d0
+         wvny1(:) = 0.d0
+         prn1(:) = prbckgrnd * mb2pa / ( rhowat0 * g)
+         ! read from first available file (not fort.200) and spatially
+         ! interpolate onto adcirc mesh
+         call nws10get(wvnx2,wvny2,prn2) 
+      ENDIF
+
+      IF(NWS.EQ.11) THEN
+         WTIME1=STATIM*86400.D0
+         WTIME2=WTIME1+WTIMINC
+         NWSEGWI=0
+         IDSETFLG=0
+         call allMessage(INFO,
+     &     'The e29 met grid interpolating factors are being computed.')
+         CALL NWS11GET()        !JUST COMPUTE INTERPOLATING FACTORS
+         call allMessage(INFO,
+     &      'Finished computing e29 interpolating factors.')
+         NWSEGWI=1
+         IDSETFLG=1
+         wvnx1 = wvnx2
+         wvny1 = wvny2                 
+         CALL NWS11GET()        !NOW INTERPOLATE 1st WIND FIELD
+      ENDIF
+
+C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/2006
+      IF(ABS(NWS).EQ.12) THEN
+         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+         if (trim(DragLawString) == "Powell" .or.
+     &       trim(DragLawString) == "POWELL" .or.
+     &       trim(DragLawString) == "powell" ) then
+            call findStormCenter(eyeLatR, eyeLonR, foundEye)
+         endif           
+         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+         if (trim(DragLawString) == "Powell" .or.
+     &       trim(DragLawString) == "POWELL" .or.
+     &       trim(DragLawString) == "powell" ) then
+            call findStormCenter(eyeLatR, eyeLonR, foundEye)
+         endif           
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+      ENDIF
+      !
+      ! jgf50.38.05: Added NWS=15,-15 for reading HWind data
+      IF (ABS(NWS).EQ.15) THEN
+         CALL NWS15INIT(STATIM*86400.0)
+      ENDIF
+
+C     
+C....tcm v51.06.02: Added NWS=16,-16 for reading ASCII GFDL Met data
+      IF (ABS(NWS).EQ.16) THEN
+         CALL INIT_GFDL(STATIM*86400.0)
+      ENDIF
+      !
+      ! jgf52.14: Implementing Casey's fix for uninitialized
+      ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
+      ! by the parametric vortex meteorological models but are used in
+      ! the padcswan_init() subroutine to initialize the SWAN wind 
+      ! velocities. Failure to initialize them causes NaNs in the 
+      ! solution. 
+      if ( (abs(nws).eq.8).or.(abs(nws).eq.19).or.(abs(nws).eq.20)) then
+         WVNX1 = WVNX2
+         WVNY1 = WVNY2
+      endif
+
+C----------------------------------------------------------------------
+      end subroutine coldstartMeteorologicalForcing
+C----------------------------------------------------------------------
+
+
+
+C----------------------------------------------------------------------
+C                   S U B R O U T I N E 
+C    H O T S T A R T   M E T E O R O L O G I C A L   F O R C I N G
+C----------------------------------------------------------------------
+C     Sets up meterological i/o for a hotstart.
+C----------------------------------------------------------------------
+      subroutine hotstartMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
+     &   wvnxout, wvnyout, timeloc, rampmete2)
+      use sizes, only : gblinputdir, inputdir
+      use global, only : ciceout, h0, g, eta2, ncice, rampmete,
+     &   sponge, res_bc_flag, statim, dtdp, dtdphs, iths
+      use owiwind,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006
+      use nodalAttributes, only : applyDirectionalWindReduction,
+     &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
+      use mesh, only : dp, ics, np
+      implicit none
+      integer, intent(in) :: nws
+      real(sz), intent(out) :: wsx2(*)
+      real(sz), intent(out) :: wsy2(*)
+      real(sz), intent(out) :: pr2(*)
+      real(sz), intent(out) :: wvnxout(*)
+      real(sz), intent(out) :: wvnyout(*)
+      real(sz), intent(in) :: timeloc
+      real(sz), intent(in) :: rampMete2   ! Ramp for wind and atmospheric pressure @ITHS     
+      real(sz) :: timeit       
+      real(sz) :: windx ! wind vel (m/s) in x-dir
+      real(sz) :: windy ! wind vel (m/s) in y-dir
+      real(sz) :: prdiff
+      real(sz) :: wDragCo
+      real(sz) :: windMag
+      real(sz) :: wtratio ! used to time interpolated between met datasets
+      integer :: nhg ! node number temp
+      real(sz) :: bf ! blend factor for multiple sets of wind data 
+      integer :: it
+      integer :: i ! node loop counter
+      integer :: j
+C
+C......RESTART WIND AND PRESSURE INFORMATION
+
+C     No wind, radiation stress or atmospheric pressure forcings are used.
+      IF(NWS.EQ.1) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         DO J=1,ITHS
+            DO I=1,NP
+               READ(22,*) NHG,WSX2(I),WSY2(I),PR2(I)
+            END DO
+         END DO
+         DO I=1,NP
+            WSX2(I)=RampMete2*WSX2(I)
+            WSY2(I)=RampMete2*WSY2(I)
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PR2(I)
+            PRDIFF = RampMete2*(PR2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+         END DO
+      ENDIF
+
+C     Wind stress and atmospheric pressure are read in at all grid nodes
+C     at a time interval that does not equal the model time
+C     step. Interpolation in time is used to synchronize the wind and
+C     pressure information with the model time step.
+      IF(NWS.EQ.2) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
+         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         DO IT=1,ITHS
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            IF(TIMEIT.GT.WTIME2) THEN
+               WTIME1=WTIME2
+               WTIME2=WTIME2+WTIMINC
+               DO I=1,NP
+                  WVNX1(I)=WVNX2(I)
+                  WVNY1(I)=WVNY2(I)
+                  PRN1(I)=PRN2(I)
+                  READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
+               END DO
+            ENDIF
+         END DO
+         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WSX2(I) = RampMete2*WINDX
+            WSY2(I) = RampMete2*WINDY
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                          -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+         END DO
+      ENDIF
+
+      IF(NWS.EQ.-2) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         WTIME1 = TimeLoc
+         WTIME2 = WTIME1 + WTIMINC
+         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         DO I=1,NP
+            WSX2(I) = RampMete2*WVNX1(I)
+            WSY2(I) = RampMete2*WVNY1(I)
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PRN1(I)
+            PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+         END DO
+      ENDIF
+
+C     Wind velocity in US Navy Fleet Numeric format interpolated in
+C     space onto the ADCIRC grid and in time to synchronize the wind and
+C     pressure information with the model time step. Garratt's formula
+C     is used to compute wind stress from the wind velocity.
+      IF(NWS.EQ.3) THEN
+C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
+C....                           to correspond with having only a global wind file.
+!         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+ 2223    CALL NWS3GET()
+         IF(IWYR.NE.IREFYR) THEN
+            IWTIMEP=IWTIME
+            DO I=1,NP
+               WVNX1(I)=WVNX2(I)
+               WVNY1(I)=WVNY2(I)
+            END DO
+            GOTO 2223
+         ENDIF
+         IF(WTIMED.LE.WREFTIM) THEN
+            IWTIMEP=IWTIME
+            DO I=1,NP
+               WVNX1(I)=WVNX2(I)
+               WVNY1(I)=WVNY2(I)
+            END DO
+            GOTO 2223
+         ENDIF
+         write(scratchMessage,'(a,f15.7)') 'FOUND WIND DATA AT TIME= ',IWTIMEP
+         call allMessage(INFO,scratchMessage)
+         write(scratchMessage,'(a,f15.7)') 'FOUND WIND DATA AT TIME= ',IWTIME
+         call allMessage(INFO,scratchMessage)
+         WTIME2=WTIMED-WREFTIM  !CAST INTO MODEL TIME REFERENCE
+         WTIME1=WTIME2-WTIMINC
+         DO IT=1,ITHS
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            IF(TIMEIT.GT.WTIME2) THEN
+               WTIME1=WTIME2
+               WTIME2=WTIME2+WTIMINC
+               DO I=1,NP
+                  WVNX1(I)=WVNX2(I)
+                  WVNY1(I)=WVNY2(I)
+               END DO
+               CALL NWS3GET()
+               write(scratchMessage,'(a,f15.7)')  
+     &            'Wind file advanced to time = ',iwtime
+               call allMessage(INFO,scratchMessage)
+            ENDIF
+         END DO
+         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP              !INTERPOLATE IN TIME
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG=SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.01 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I)=RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I)=RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+         END DO
+      ENDIF
+
+C     Wind velocity and atmospheric pressure are read in (PBL/JAG
+C     format) at selected ADCIRC grid nodes. Interpolation in time is
+C     used to synchronize the wind and pressure information with the
+C     model time step. Garratt's formula is used to compute wind stress
+C     from wind velocity.
+      IF(NWS.EQ.4) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+         CALL NWS4GET()  !TCM v49.02 Added read for rec. 1
+         wvnx1 = wvnx2
+         wvny1 = wvny2
+         CALL NWS4GET()
+         DO IT=1,ITHS
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            IF(TIMEIT.GT.WTIME2) THEN
+               WTIME1=WTIME2
+               WTIME2=WTIME2+WTIMINC
+               DO I=1,NP
+                  WVNX1(I)=WVNX2(I)
+                  WVNY1(I)=WVNY2(I)
+                  PRN1(I)=PRN2(I)
+               END DO
+               CALL NWS4GET()
+            ENDIF
+         END DO
+         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.01 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+         END DO
+      ENDIF
+
+      IF(NWS.EQ.-4) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         WTIME1 = TimeLoc
+         WTIME2 = WTIME1 + WTIMINC
+         CALL NWS4GET()
+         wvnx1 = wvnx2
+         wvny1 = wvny2
+         CALL NWS4GET()
+         DO I=1,NP
+            WINDX = WVNX1(I)
+            WINDY = WVNY1(I)
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.01 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PRN1(I)
+            PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+         END DO
+      ENDIF
+
+C     Wind velocity and atmospheric pressure are read in at all grid
+C     nodes. Interpolation in time is used to synchronize the wind and
+C     pressure information with the model time step. Garratt's formula
+C     is used to compute wind stress from wind velocity.
+      IF(NWS.EQ.5) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
+         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         DO IT=1,ITHS
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            IF(TIMEIT.GT.WTIME2) THEN
+               WTIME1=WTIME2
+               WTIME2=WTIME2+WTIMINC
+               DO I=1,NP
+                  WVNX1(I)=WVNX2(I)
+                  WVNY1(I)=WVNY2(I)
+                  PRN1(I)=PRN2(I)
+                  READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
+               END DO
+            ENDIF
+         END DO
+         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.01 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+C     jjw-42.06j wrote, jgf46.00 added following two lines:
+            WVNXOUT(I)=RampMete2*WINDX
+            WVNYOUT(I)=RampMete2*WINDY
+         END DO
+      ENDIF
+
+      IF(NWS.EQ.-5) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         WTIME1 = TimeLoc
+         WTIME2 = WTIME1 + WTIMINC
+         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         WTRATIO=(TimeLoc-WTIME1)/WTIMINC !jgf46.00 added
+         DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.01 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PRN1(I)
+            PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WINDX !jgf46.00 added  ! tcm 20100618 v49.16 changed RampMete to RampMete2
+            WVNYOUT(I)=RampMete2*WINDY !jgf46.00 added  ! tcm 20100618 v49.16 changed RampMete to RampMete2
+         END DO
+      ENDIF
+
+C     Wind velocity and atmospheric pressure are read in for a
+C     rectangular grid (either in Longitude, Latitude or Cartesian
+C     coordinates, consistent with the grid coordinates) and
+C     interpolated in space onto the ADCIRC grid and in time to
+C     synchronize the wind and pressure information with the model time
+C     step. Garratt's formula is used to compute wind stress from the
+C     wind velocity.
+      IF(NWS.EQ.6) THEN
+C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
+C....                           to correspond with having only a global wind file.
+!         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+C     The following 3 lines are a hardwire to allow a non standard met
+C     file to be read in at time zero in a hot start.  They should be
+C     eliminated or commented out for normal operation
+c     OPEN(199,FILE=TRIM(INPUTDIR)//'/'//'fort.199')
+c     READ(199,*) (NHG,PRN1(I),WVNX1(I),WVNY1(I),I=1,NP)
+c     CLOSE(199)
+C     The following CALL statement should be uncommented for normal operation
+         CALL NWS6GET()
+         wvnx1 = wvnx2
+         wvny1 = wvny2
+         CALL NWS6GET()
+         WTIME1=TimeLoc
+         WTIME2=WTIME1+WTIMINC
+         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+         END DO
+      ENDIF
+
+C     jgf46.01 New option to read in surface wind stress and atmospheric
+C     pressure for a rectangular grid (either in Longitude, Latitude or
+C     Cartesian coordinates, consistent with the grid coordinates) and
+C     interpolate in space onto the ADCIRC grid. Interpolation in time
+C     is used to synchronize the wind and pressure information with the
+C     model time step.
+C
+      IF(NWS.EQ.7) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         WTIME1 = STATIM*86400.D0
+         CALL NWS7GET()  !TCMv49.02 Changed (WVNX2,WVNY2,PRN2) to (WVNX1,WVNY1,PRN1)
+         wvnx1 = wvnx2
+         wvny1 = wvny2
+         CALL NWS7GET()
+         WTIME1=TimeLoc
+         WTIME2=WTIME1+WTIMINC
+         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WSX2(I) = RampMete2*WindX !apply ramp
+            WSY2(I) = RampMete2*WindY
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            wvnxout(i)=WSX2(i) !for met recording sta. output
+            wvnyout(i)=WSY2(i)
+         END DO
+      ENDIF
+
+      IF(NWS.EQ.-7) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         WTIME1 = STATIM*86400.D0
+         CALL NWS7GET()
+         wvnx1 = wvnx2
+         wvny1 = wvny2
+         CALL NWS7GET()
+         WTIME1=TimeLoc
+         WTIME2=WTIME1+WTIMINC
+         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+C     jgfdebug46.01 How do we convert these marine wind stresses into
+C     directional land surface stresses?
+         DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WSX2(I) = RampMete2*WindX !apply ramp
+            WSY2(I) = RampMete2*WindY
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            wvnxout(i)=WSX2(i) !for met recording sta. output
+            wvnyout(i)=WSY2(i)
+         END DO
+      ENDIF
+
+C     jgf46.02 New option to read in hurricane locations and generate
+C     generate hurricane winds from the Holland Wind Model.
+      IF(ABS(NWS).EQ.8) THEN
+         CALL HollandGet(WVNX2,WVNY2,PRN2,timeloc)
+         DO I=1,NP
+            WindX = WVNX2(I)
+            WindY = WVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PRN2(I)
+            PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WindX
+            WVNYOUT(I)=RampMete2*WindY
+         ENDDO
+      ENDIF
+
+!     rjw added nws = 19: asymmetric hurricane winds v2.0
+
+      IF(ABS(NWS).EQ.19) THEN
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+         CALL NWS19GET(WVNX2,WVNY2,PRN2,TimeLoc)
+         DO I=1,NP
+            WindX = WVNX2(I)
+            WindY = WVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PRN2(I)
+            PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WindX
+            WVNYOUT(I)=RampMete2*WindY
+         ENDDO
+      ENDIF
+      
+!     jie added nws = 20: generalized asymmetric vortex model
+
+      IF(ABS(NWS).EQ.20) THEN
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+         CALL NWS20GET(WVNX2,WVNY2,PRN2,TimeLoc)
+         DO I=1,NP
+            WindX = WVNX2(I)
+            WindY = WVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PRN2(I)
+            PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WindX
+            WVNYOUT(I)=RampMete2*WindY
+         ENDDO
+      ENDIF            
+C
+C     jgf49.1001 Added NWS29, asymmetric vortex winds (NWS19)
+C     embedded in an OWI basin scale gridded met field (NWS12)
+C     from NAM data
+      IF(NWS.EQ.29) THEN
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+C        This just initializes some variables and might
+C        set WVNX1, etc ... if skipping ahead.
+         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+C        !TCM v49.02 Added read for rec. 1
+         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+         if (trim(DragLawString) == "Powell" .or.
+     &       trim(DragLawString) == "POWELL" .or.
+     &       trim(DragLawString) == "powell" ) then
+            call findStormCenter(eyeLatR, eyeLonR, foundEye)
+         endif           
+         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+         if (trim(DragLawString) == "Powell" .or.
+     &       trim(DragLawString) == "POWELL" .or.
+     &       trim(DragLawString) == "powell" ) then
+            call findStormCenter(eyeLatR, eyeLonR, foundEye)
+         endif           
+         DO IT=1,ITHS
+            TIMEIT=IT*DTDP + STATIM*86400.D0
+            IF(TIMEIT.GT.WTIME2) THEN
+               WTIME1=WTIME2
+               WTIME2=WTIME2+WTIMINC
+               DO I=1,NP
+                  WVNX1(I)=WVNX2(I)
+                  WVNY1(I)=WVNY2(I)
+                  PRN1(I)=PRN2(I)
+               END DO
+               CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+               if (trim(DragLawString) == "Powell" .or.
+     &             trim(DragLawString) == "POWELL" .or.
+     &             trim(DragLawString) == "powell" ) then
+                  call findStormCenter(eyeLatR, eyeLonR, foundEye)
+               endif
+             ENDIF
+         END DO
+         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+            ! jgf49.1001 NAM winds already contain wind reduction
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PR2(I) = RampMete2*PRN1(I)
+            WVNXOUT(I)=RampMete2*WINDX
+            WVNYOUT(I)=RampMete2*WINDY
+         END DO
+      ENDIF
+      IF(NWS.EQ.-29) THEN
+         WTIME1 = TimeLoc
+         WTIME2 = WTIME1 + WTIMINC
+         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+         if (trim(DragLawString) == "Powell" .or.
+     &      trim(DragLawString) == "POWELL" .or.
+     &      trim(DragLawString) == "powell" ) then
+            call findStormCenter(eyeLatR, eyeLonR, foundEye)
+         endif
+         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+         if (trim(DragLawString) == "Powell" .or.
+     &       trim(DragLawString) == "POWELL" .or.
+     &       trim(DragLawString) == "powell" ) then
+            call findStormCenter(eyeLatR, eyeLonR, foundEye)
+         endif
+         DO I=1,NP
+            WINDX = WVNX1(I)
+            WINDY = WVNY1(I)
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+            ! jgf49.1001 NAM winds already contain wind reduction
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PR2(I) = RampMete2*PRN1(I)
+            WVNXOUT(I)=RampMete*WINDX
+            WVNYOUT(I)=RampMete*WINDY
+         END DO
+      ENDIF
+C     Now blend in the vortex winds into the background OWI wind field.
+      IF(ABS(NWS).EQ.29) THEN
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
+     &        STATUS='OLD')
+         ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
+         CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,TimeLoc)
+         DO I=1,NP
+            WindX = vortexWVNX2(I)
+            WindY = vortexWVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            CALL getBlendFactor(i, bf)
+            WSX2(I) = bf*RampMete2*0.001293d0*WDragCo*WindX*WindMag
+     &               +(1.0d0-bf)*WSX2(I)
+            WSY2(I) = bf*RampMete2*0.001293d0*WDragCo*WindY*WindMag
+     &               +(1.0d0-bf)*WSY2(I)
+            PR2(I) = bf*RampMete2*vortexPRN2(I)
+     &               +(1.0d0-bf)*PRN2(I)
+            WVNXOUT(I)=bf*RampMete2*WindX+(1.0d0-bf)*WVNXOUT(I)
+            WVNYOUT(I)=bf*RampMete2*WindY+(1.0d0-bf)*WVNYOUT(I)
+         ENDDO
+      ENDIF
+
+C     Wind velocity (10 m) and atmospheric pressure are read in from a
+C     sequence of National Weather Service (NWS) Aviation (AVN) model
+C     output files. Each AVN file is assumed to contain data on a
+C     Gaussian longitude, latitude grid at a single time. Consecutive
+C     files in the sequence are separated by N hours in time. Garratt's
+C     formula is used to compute wind stress from the wind velocity.
+      IF(NWS.EQ.10) THEN
+         WTIME1=TimeLoc
+         WTIME2=WTIME1+WTIMINC
+         !
+         ! jgf51.52.21: Fixed NWS10 and cleaned up interface.
+         call nws10init()
+         ! read from fort.200 and spatially interpolate onto adcirc mesh
+         call nws10get(wvnx1,wvny1,prn1)          
+         ! read from first file after fort.200 and spatially interpolate onto adcirc mesh
+         call nws10get(wvnx2,wvny2,prn2)
+         !
+         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+         END DO
+      ENDIF
+
+C     Wind velocity (10 m) and atmospheric pressure are read in from a
+C     sequence of stripped down National Weather Service (NWS) ETA 29km
+C     model output files. Each ETA file is assumed to contain data on an
+C     E grid for a single day (8 data sets, one every 3 hours, beginning
+C     @ 03:00 and continuing through 24:00 of the given day). The wind
+C     data is converted to an east-west, north-south coordinate system
+C     inside ADCIRC. Garratt's formula is used to compute wind stress
+C     from the wind velocity.
+      IF(NWS.EQ.11) THEN
+         WTIME1=TimeLoc
+         WTIME2=WTIME1+WTIMINC
+         NWSEGWI=0
+         IDSETFLG=0
+         call allMessage(INFO,
+     &      'The e29 met grid interpolating factors are being computed.')
+         CALL NWS11GET()        !JUST COMPUTE INTERPOLATING FACTORS
+         call allMessage(INFO,
+     &      'Finished computing e29 interpolating factors.')
+         NWSEGWI=0
+         IDSETFLG=8
+         CALL NWS11GET()        !NOW COMPUTE HOTSTART WIND FILED
+         NWSEGWI=1
+         IDSETFLG=1
+         wvnx1 = wvnx2
+         wvny1 = wvny2
+         CALL NWS11GET()        !NOW COMPUTE NEXT WIND FIELD
+         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+         END DO
+      ENDIF
+
+C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
+      IF(NWS.EQ.12) THEN
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  ! This just initializes some variables and might set WVNX1,etc... if skipping ahead.
+         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  !TCM v49.02 Added read for rec. 1
+         if (trim(DragLawString) == "Powell" .or.
+     &       trim(DragLawString) == "POWELL" .or.
+     &       trim(DragLawString) == "powell" ) then
+            call findStormCenter(eyeLatR, eyeLonR, foundEye)
+         endif
+         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+         if (trim(DragLawString) == "Powell" .or.
+     &       trim(DragLawString) == "POWELL" .or.
+     &       trim(DragLawString) == "powell" ) then
+            call findStormCenter(eyeLatR, eyeLonR, foundEye)
+         endif
+          DO IT=1,ITHS
+             TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+             IF(TIMEIT.GT.WTIME2) THEN
+                WTIME1=WTIME2
+                WTIME2=WTIME2+WTIMINC
+                DO I=1,NP
+                   WVNX1(I)=WVNX2(I)
+                   WVNY1(I)=WVNY2(I)
+                   PRN1(I)=PRN2(I)
+                 END DO
+                 CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+                 if (trim(DragLawString) == "Powell" .or.
+     &               trim(DragLawString) == "POWELL" .or.
+     &               trim(DragLawString) == "powell" ) then
+                    call findStormCenter(eyeLatR, eyeLonR, foundEye)
+                 endif
+              ENDIF
+          END DO
+          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+          DO I=1,NP
+             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+             WDragCo = WindDrag(WindMag, I)
+             IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+             ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+C  tcm v49.16 20100617
+!            PR2(I) = RampMete2*PRN1(I)
+             PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+             PR2(I) = PRBCKGRND_MH2O + PRDIFF
+             WVNXOUT(I)=RampMete2*WINDX
+             WVNYOUT(I)=RampMete2*WINDY
+          END DO
+       ENDIF
+
+       IF(NWS.EQ.-12) THEN
+          WTIME1 = TimeLoc
+          WTIME2 = WTIME1 + WTIMINC
+          CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+          CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+          if (trim(DragLawString) == "Powell" .or.
+     &        trim(DragLawString) == "POWELL" .or.
+     &        trim(DragLawString) == "powell" ) then
+             call findStormCenter(eyeLatR, eyeLonR, foundEye)
+          endif
+
+          CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+          if (trim(DragLawString) == "Powell" .or.
+     &        trim(DragLawString) == "POWELL" .or.
+     &        trim(DragLawString) == "powell" ) then
+             call findStormCenter(eyeLatR, eyeLonR, foundEye)
+          endif
+          DO I=1,NP
+             WINDX = WVNX1(I)
+             WINDY = WVNY1(I)
+             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+             WDragCo = WindDrag(WindMag, I)
+             IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+             ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PRN1(I)
+             PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
+             PR2(I) = PRBCKGRND_MH2O + PRDIFF
+             WVNXOUT(I)=RampMete2*WINDX  ! tcm 20100618 v49.16 changed RampMete to RampMete2
+             WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
+          END DO
+       ENDIF
+      !
+      ! jgf50.38.05: Added NWS=15 for reading HWind data
+       IF(ABS(NWS).EQ.15) THEN
+          CALL NWS15INIT(timeloc)
+          CALL NWS15GET(WVNX2,WVNY2,PRN2,timeloc)
+          DO I=1,NP
+             WDragCo = WindDrag(windSpeeds(i), i)
+             windx = wvnx2(i)
+             windy = wvny2(i)
+             IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(i, WDragCo,
+     &              windSpeeds(i), DP(I), ETA2(I), H0, G,
+     &              windx, windy)
+                WindMag = SQRT(windx**2+windy**2)
+                WDragCo = WindDrag(WindMag, i)
+             ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(i,windx,windy)
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+             PR2(I) = PRBCKGRND_MH2O + RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
+             WVNXOUT(I)=RampMete2*WINDX
+             WVNYOUT(I)=RampMete2*WINDY
+          END DO
+       ENDIF
+C
+C.....tcm v51.06.02 NWS=16,-16 were added to deal with GFDL Met files.
+      IF(NWS.EQ.16) THEN
+          WTIME1 = STATIM*86400.D0
+          WTIME2 = WTIME1 + WTIMINC
+          CALL INIT_GFDL(wtime1)  !this will read in the two time series
+          DO IT=1,ITHS
+             TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+             IF(TIMEIT.GT.WTIME2) THEN
+                WTIME1=WTIME2
+                WTIME2=WTIME2+WTIMINC
+                DO I=1,NP
+                   WVNX1(I)=WVNX2(I)
+                   WVNY1(I)=WVNY2(I)
+                   PRN1(I)=PRN2(I)
+                 END DO
+                 CALL NWS16GET(wtime2,WVNX2,WVNY2,PRN2)
+              ENDIF
+          END DO
+          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+          DO I=1,NP
+             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+             WDragCo = WindDrag(WindMag, I)
+             IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+             ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+             PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+             PR2(I) = PRBCKGRND_MH2O + PRDIFF
+             WVNXOUT(I)=RampMete2*WINDX
+             WVNYOUT(I)=RampMete2*WINDY
+          END DO
+       ENDIF
+C
+       IF(NWS.EQ.-16) THEN
+          WTIME1 = TimeLoc
+          WTIME2 = WTIME1 + WTIMINC
+          call INIT_GFDL(wtime1)  !this reads in the first two time series values
+          DO I=1,NP
+             WINDX = WVNX1(I)
+             WINDY = WVNY1(I)
+             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+             WDragCo = WindDrag(WindMag, I)
+             IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+             ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+             PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
+             PR2(I) = PRBCKGRND_MH2O + PRDIFF
+             WVNXOUT(I)=RampMete2*WINDX  ! tcm 20100618 v49.16 changed RampMete to RampMete2
+             WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
+          END DO
+       ENDIF
+      !
+      ! jgf52.14: Implementing Casey's fix for uninitialized
+      ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
+      ! by the parametric vortex meteorological models but are used in
+      ! the padcswan_init() subroutine to initialize the SWAN wind 
+      ! velocities. Failure to initialize them causes NaNs in the 
+      ! solution. 
+      if ( (abs(nws).eq.8).or.(abs(nws).eq.19).or.(abs(nws).eq.20)) then 
+         WVNX1 = WVNX2
+         WVNY1 = WVNY2
+      endif
+C--------------------END MET FORCING-----------------------------------
+      end subroutine hotstartMeteorologicalForcing
+C--------------------END MET FORCING-----------------------------------
+
+
 
 C***********************************************************************
 C                                                                      *
@@ -555,26 +2552,23 @@ C   R.L. 4/2/01  changed MNWLAT,MNWLON in ALLOCATE statement to        *
 C                NWLAT,NWLON                                           *
 C***********************************************************************
 
-      SUBROUTINE NWS3GET(X,Y,SLAM,SFEA,WVNX,WVNY,IWTIME,IWYR,WTIMED,NP,
-     &     NWLON,NWLAT,WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,
-     &     NScreen,ScreenUnit)
+      SUBROUTINE NWS3GET()
       USE SIZES
+      USE MESH, ONLY : X,Y,SLAM,SFEA,NP,ICS
       IMPLICIT NONE
       INTEGER, SAVE :: FIRSTCALL = 0
-      INTEGER IWTIME,IWYR,IWMO,IWDAY,IWHR,NP,NWLON,NWLAT,ICS,I,J
+      INTEGER I,J
       INTEGER NScreen,ScreenUnit
-      REAL*8 WTIMED
-      REAL*8 X(*),Y(*),SLAM(*),SFEA(*),XCOOR,YCOOR
+      REAL*8 XCOOR,YCOOR
       INTEGER  LATIND1,LATIND2,LONIND1,LONIND2
-      REAL(SZ) WLATMAX,WLONMIN,WLATINC,WLONINC,WSPEED,WDIR
+      REAL(SZ) WSPEED,WDIR
       REAL(SZ) WLATM,WLONM,XWRATIO,YWRATIO
-      REAL(SZ),ALLOCATABLE,SAVE :: WVXFN(:,:),WVYFN(:,:),PRN(:,:)
-      REAL(SZ) WVNX(*),WVNY(*)
+      REAL(SZ),ALLOCATABLE,SAVE :: WVXFN(:,:),WVYFN(:,:)
+      INTEGER :: IWYR, IWMO, IWDAY, IWHR
 C
       IF (FIRSTCALL.EQ.0) THEN
          FIRSTCALL = 1
-         ALLOCATE ( WVXFN(NWLAT,NWLON),WVYFN(NWLAT,NWLON),
-     &             PRN(NWLAT,NWLON) )
+         ALLOCATE ( WVXFN(NWLAT,NWLON),WVYFN(NWLAT,NWLON) )
       ENDIF
 C
       READ(22,*) IWTIME
@@ -582,9 +2576,8 @@ C
       IWMO = IWTIME/10000 - IWYR*100
       IWDAY = IWTIME/100 - IWYR*10000 - IWMO*100
       IWHR = IWTIME - IWYR*1000000 - IWMO*10000 - IWDAY*100
-      CALL TIMECONV(IWYR,IWMO,IWDAY,IWHR,0,0.0D0,WTIMED,
-     &     MyProc,NScreen,ScreenUnit)
-C
+      CALL TIMECONV(IWYR,IWMO,IWDAY,IWHR,0,0.0D0,WTIMED)
+      
       DO I=1,NWLAT
          READ(22,*) (WVXFN(I,J),J=1,NWLON)
       END DO
@@ -621,15 +2614,16 @@ C
          XWRATIO=(XCOOR-WLONM)/WLONINC
          YWRATIO=(YCOOR-WLATM)/WLATINC
 C
-         WVNX(I) = WVXFN(LATIND2,LONIND2)*XWRATIO*YWRATIO
+         WVNX2(I) = WVXFN(LATIND2,LONIND2)*XWRATIO*YWRATIO
      &        + WVXFN(LATIND2,LONIND1)*(1.d0-XWRATIO)*YWRATIO
      &        + WVXFN(LATIND1,LONIND2)*XWRATIO*(1.d0-YWRATIO)
      &        + WVXFN(LATIND1,LONIND1)*(1.d0-XWRATIO)*(1.d0-YWRATIO)
-         WVNY(I) = WVYFN(LATIND2,LONIND2)*XWRATIO*YWRATIO
+         WVNY2(I) = WVYFN(LATIND2,LONIND2)*XWRATIO*YWRATIO
      &        + WVYFN(LATIND2,LONIND1)*(1.d0-XWRATIO)*YWRATIO
      &        + WVYFN(LATIND1,LONIND2)*XWRATIO*(1.d0-YWRATIO)
      &        + WVYFN(LATIND1,LONIND1)*(1.d0-XWRATIO)*(1.d0-YWRATIO)
       END DO
+      PRN2 = PRBCKGRND_MH2O
 C
       RETURN
       END SUBROUTINE NWS3GET
@@ -651,24 +2645,25 @@ C   R.L. 4/2/01  changed MNP dimensions to *                           *
 C   R.L. 3/15/03 accounted for PRN=0                                   *   !RAL0315+ OK
 C***********************************************************************
 
-      SUBROUTINE NWS4GET(WVNX,WVNY,PRN,NP,RHOWAT0,G)
+      SUBROUTINE NWS4GET()
       USE SIZES
+      USE GLOBAL, ONLY : RHOWAT0, G
+      USE MESH, ONLY : NP
       IMPLICIT NONE
-      INTEGER   NP,I,NHG
-      REAL(SZ)  WVNX(*),WVNY(*),PRN(*)
-      REAL(SZ)  RHOWAT0,RHOWATG,G
+      INTEGER   I,NHG
+      REAL(SZ)  RHOWATG
       CHARACTER*80 PBLJAGF
 C
       RHOWATG=RHOWAT0*G
       DO I=1,NP
-        WVNX(I)=0.d0
-        WVNY(I)=0.d0
-        PRN(I)=101300.d0/RHOWATG
+        WVNX2(I)=0.d0
+        WVNY2(I)=0.d0
+        PRN2(I)=101300.d0/RHOWATG
       END DO
  170  READ(22,'(A80)') PBLJAGF
       IF(PBLJAGF(2:2).EQ.'#') GOTO 170
- 171  READ(PBLJAGF,'(I8,5E13.5)') NHG,WVNX(NHG),WVNY(NHG),
-     &                            PRN(NHG)
+ 171  READ(PBLJAGF,'(I8,5E13.5)') NHG,WVNX2(NHG),WVNY2(NHG),
+     &                            PRN2(NHG)
 C
 C     jgf46.02 From now on, wind files must contain data that are
 C     appropriate for the time increment listed within the
@@ -676,10 +2671,10 @@ C     file. Therefore, the following two lines were commented out.
 C     WVNX(NHG)=WVNX(NHG)*1.04d0*0.5144d0 !CONVERT 30-MIN WINDS IN
 C     WVNY(NHG)=WVNY(NHG)*1.04d0*0.5144d0 !KNOTS TO 10-MIN WIND IN M/S
 C     jgf46.02 Added the following two lines.
-      WVNX(NHG)=WVNX(NHG)*0.5144d0 !CONVERT KNOTS TO  M/S
-      WVNY(NHG)=WVNY(NHG)*0.5144d0
-      PRN(NHG)=100.d0*PRN(NHG)/RHOWATG !CONVERT MILLIBARS TO M OF WATER
-      IF(PRN(NHG).EQ.0.) PRN(NHG)=101300.d0/RHOWATG                       !RAL0315+ OK
+      WVNX2(NHG)=WVNX2(NHG)*0.5144d0 !CONVERT KNOTS TO  M/S
+      WVNY2(NHG)=WVNY2(NHG)*0.5144d0
+      PRN2(NHG)=100.d0*PRN2(NHG)/RHOWATG !CONVERT MILLIBARS TO M OF WATER
+      IF(PRN2(NHG).EQ.0.) PRN2(NHG)=101300.d0/RHOWATG                       !RAL0315+ OK
       READ(22,'(A80)') PBLJAGF
       IF(PBLJAGF(2:2).NE.'#') GOTO 171
       RETURN
@@ -761,20 +2756,18 @@ C                adjusting the longitude.  Also the input variable     *
 C                order has been changed to U,V,P to be consistent with *
 C                other NWS input formats.                              *
 C***********************************************************************
-
-      SUBROUTINE NWS6GET(X,Y,SLAM,SFEA,WVNX,WVNY,PRESS,NP,NWLON,NWLAT,
-     &     WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
+      SUBROUTINE NWS6GET()
       USE SIZES
-
+      USE GLOBAL, ONLY : RHOWAT0, G
+      USE MESH, ONLY : X,Y,SLAM,SFEA,NP,ICS
       IMPLICIT NONE
       INTEGER, SAVE :: FIRSTCALL = 0
-      INTEGER NP,NWLON,NWLAT,I,J,ICS
-      REAL(SZ) RHOWAT0,RHOWATG,G
+      INTEGER :: I,J
+      REAL(SZ) :: RHOWATG
       INTEGER  LATIND1,LATIND2,LONIND1,LONIND2
-      REAL(SZ) WLATMAX,WLONMIN,WLATINC,WLONINC,XWRATIO,YWRATIO
+      REAL(SZ) XWRATIO,YWRATIO
       REAL(SZ) WLATM,WLONM
-      REAL*8 X(*),Y(*),SLAM(*),SFEA(*),XCOOR,YCOOR
-      REAL(SZ) WVNX(*),WVNY(*),PRESS(*)
+      REAL(SZ) :: XCOOR,YCOOR
       REAL(SZ),SAVE,ALLOCATABLE :: WVXFN(:,:),WVYFN(:,:),PRN(:,:)
 C
       IF (FIRSTCALL.EQ.0) THEN
@@ -813,24 +2806,27 @@ C
          IF(LONIND1.EQ.0) LONIND1=NWLON
          IF(LONIND1.EQ.NWLON) LONIND2=1
 C
-         WVNX(I) = WVXFN(LATIND2,LONIND2)*XWRATIO*YWRATIO
+         WVNX2(I) = WVXFN(LATIND2,LONIND2)*XWRATIO*YWRATIO
      &        + WVXFN(LATIND2,LONIND1)*(1.d0-XWRATIO)*YWRATIO
      &        + WVXFN(LATIND1,LONIND2)*XWRATIO*(1.d0-YWRATIO)
      &        + WVXFN(LATIND1,LONIND1)*(1.d0-XWRATIO)*(1.d0-YWRATIO)
-         WVNY(I) = WVYFN(LATIND2,LONIND2)*XWRATIO*YWRATIO
+         WVNY2(I) = WVYFN(LATIND2,LONIND2)*XWRATIO*YWRATIO
      &        + WVYFN(LATIND2,LONIND1)*(1.d0-XWRATIO)*YWRATIO
      &        + WVYFN(LATIND1,LONIND2)*XWRATIO*(1.d0-YWRATIO)
      &        + WVYFN(LATIND1,LONIND1)*(1.d0-XWRATIO)*(1.d0-YWRATIO)
-         PRESS(I) = PRN(LATIND2,LONIND2)*XWRATIO*YWRATIO
+         PRN2(I) = PRN(LATIND2,LONIND2)*XWRATIO*YWRATIO
      &        + PRN(LATIND2,LONIND1)*(1.d0-XWRATIO)*YWRATIO
      &        + PRN(LATIND1,LONIND2)*XWRATIO*(1.d0-YWRATIO)
      &        + PRN(LATIND1,LONIND1)*(1.d0-XWRATIO)*(1.d0-YWRATIO)
-         PRESS(I) = PRESS(I)/RHOWATG
+         PRN2(I) = PRN2(I)/RHOWATG
 
       END DO
 C
       RETURN
+C     ----------------------------------------------------------------
       END SUBROUTINE NWS6GET
+C     ----------------------------------------------------------------
+      
 
 C     ----------------------------------------------------------------
 C      S U B R O U T I N E     N W S 7 G E T
@@ -887,26 +2883,10 @@ C   NOTE:  This should wrap if XCOORD > WLONMIN+NWLON*WLONINC  or
 C          XCOORD < WLONMIN
 C
 C     ----------------------------------------------------------------
-      SUBROUTINE NWS7GET(X,Y,SLAM,SFEA,WVNX,WVNY,PRESS,NP,NWLON,NWLAT,
-     &     WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
+      SUBROUTINE NWS7GET()
+      USE GLOBAL, ONLY : RHOWAT0, G
+      USE MESH, ONLY : X, Y, SLAM, SFEA, NP, ICS
       IMPLICIT NONE
-      INTEGER, intent(in) :: NP     ! number of nodes
-      REAL(8), intent(in), dimension(NP) :: X
-      REAL(8), intent(in), dimension(NP) :: Y
-      REAL(8), intent(in), dimension(NP) :: SLAM
-      REAL(8), intent(in), dimension(NP) :: SFEA
-      REAL(SZ), intent(out), dimension(NP) :: WVNX
-      REAL(SZ), intent(out), dimension(NP) :: WVNY
-      REAL(SZ), intent(out), dimension(NP) :: PRESS
-      INTEGER, intent(in) :: NWLON  ! max. # of longitudes in stress file
-      INTEGER, intent(in) :: NWLAT  ! max. # of latitutes in stress file
-      REAL(SZ), intent(in) :: WLATMAX
-      REAL(SZ), intent(in) :: WLONMIN
-      REAL(SZ), intent(in) :: WLATINC
-      REAL(SZ), intent(in) :: WLONINC
-      INTEGER, intent(in) :: ICS    ! coord.sys., 1=cartesian, 2=spherical
-      REAL(SZ), intent(in):: RHOWAT0! ref. dens. of water
-      REAL(SZ), intent(in):: G      ! gravitational constant
 
       INTEGER I                     ! node loop counter
       INTEGER K, J                  ! latitude, longitude loop counters
@@ -953,27 +2933,186 @@ C
          IF(LONIND1.EQ.0) LONIND1=NWLON
          IF(LONIND1.EQ.NWLON) LONIND2=1
 C
-         WVNX(I) = WVXFN(LATIND2,LONIND2)*XWRATIO*YWRATIO
+         WVNX2(I) = WVXFN(LATIND2,LONIND2)*XWRATIO*YWRATIO
      &        + WVXFN(LATIND2,LONIND1)*(1.d0-XWRATIO)*YWRATIO
      &        + WVXFN(LATIND1,LONIND2)*XWRATIO*(1.d0-YWRATIO)
      &        + WVXFN(LATIND1,LONIND1)*(1.d0-XWRATIO)*(1.d0-YWRATIO)
-         WVNY(I) = WVYFN(LATIND2,LONIND2)*XWRATIO*YWRATIO
+         WVNY2(I) = WVYFN(LATIND2,LONIND2)*XWRATIO*YWRATIO
      &        + WVYFN(LATIND2,LONIND1)*(1.d0-XWRATIO)*YWRATIO
      &        + WVYFN(LATIND1,LONIND2)*XWRATIO*(1.d0-YWRATIO)
      &        + WVYFN(LATIND1,LONIND1)*(1.d0-XWRATIO)*(1.d0-YWRATIO)
-         PRESS(I) = PRN(LATIND2,LONIND2)*XWRATIO*YWRATIO
+         PRN2(I) = PRN(LATIND2,LONIND2)*XWRATIO*YWRATIO
      &        + PRN(LATIND2,LONIND1)*(1.d0-XWRATIO)*YWRATIO
      &        + PRN(LATIND1,LONIND2)*XWRATIO*(1.d0-YWRATIO)
      &        + PRN(LATIND1,LONIND1)*(1.d0-XWRATIO)*(1.d0-YWRATIO)
-         PRESS(I) = PRESS(I)/RHOWATG
+         PRN2(I) = PRN2(I)/RHOWATG
       END DO
 C
       RETURN
 C     ----------------------------------------------------------------
       END SUBROUTINE NWS7GET
 C     ----------------------------------------------------------------
+   
 
+      !----------------------------------------------------------------
+      !         S U B R O U T I N E   N W S  1 0  I N I T
+      !----------------------------------------------------------------
+      ! jgf52.51.21: Decoupled the NWS10 initialization from the 
+      ! rest of the subroutine to correct numerical issues associated
+      ! with uninitialized variables.
+      !----------------------------------------------------------------
+      subroutine nws10Init()
+      use global, only : ihot
+      use mesh, only : np, slam, sfea
+      implicit none
+      real(sz) :: gdlon
+      integer :: j, jj ! loop counters
+      !
+      ! gaussian met values 
+      allocate ( ug(latb*lonb),vg(latb*lonb),pg(latb*lonb) )
+      ! four corner met values in grid cell associated with each adcirc mesh vertex 
+      allocate ( n00(np),n10(np),n11(np),n01(np) )
+      ! four interpolating factors associated with each adcirc mesh vertex
+      allocate ( d00(np),d10(np),d11(np),d01(np) )
+      ! 
+      allocate ( colrab(latb),dummy(latb),gclat(latb),gclon(lonb) )
+C
+C...  Set up the Gaussian grid and determine the interpolating factors 
+C     for the ADCIRC grid.
+      call glats(latb/2,colrab,dummy,dummy,dummy)
+      do j=1,latb/2 
+         gclat(j)=colrab(j)
+         jj=latb-j+1
+         gclat(jj)=pi-colrab(j)
+      enddo
+      gdlon=twopi/lonb
+      do j=1,lonb
+         gclon(j)=gdlon*(j-1)
+      end do
+      call g2rini()
+      !
+      ! Set the counter value. According to the ADCIRC documentation,
+      ! fort.200 is read upon hotstart, but not at coldstart. 
+      if (ihot.eq.0) then
+         nws10DatasetCounter = 1
+      else
+         nws10DatasetCounter = 0
+      endif
+         
+      !----------------------------------------------------------------
+      end subroutine nws10Init
+      !----------------------------------------------------------------
 
+C***********************************************************************
+C  Subroutine to compute the factors to interpolate from a global      *
+C  Gaussian Lat/Lon grid with T126 resolution (GRIB Grid type 126)     *
+C  onto another grid.                                                  *
+C                                                                      *
+C  The new grid is a series of longitude and latitude points contained *
+C  in the FLON and FLAT arrays with a total number of points NP        *
+C                                                                      *
+C       modified from the original G2RINI by R.L. 4/17/96              *
+C    
+C     jgf51.52.21: Removed duplicate variables; moved grid locations
+C     and interpolating factors from subroutine arguments to module
+C     variables; brought log messages up to date with current code.
+C
+C***********************************************************************
+      subroutine g2rini()
+      use mesh, only : np, slam, sfea
+      implicit none
+      integer :: N,I,LON,LONP1,LAT,LATP1
+      real(8) :: DLAT,DLON,FLONWORK,COLAT,DDLAT,XLAT,DFLAT,DFLAT1,
+     &     DDLON,XLON,DFLON,DFLON1
+C
+C...Compute estimated DLAT, true DLON for Gaussian grid
+      DLAT=PI/REAL(LATB-1,KIND=SZ)
+      DLON=TWOPI/REAL(LONB,KIND=SZ)
+      N=0
+
+C...Loop through all the nodes in the grid to be interpolated onto and
+C.....compute the interpolating factors.
+
+      DO I=1,NP
+C.....   Compute initial guess of which lon value FLON(I) is in the Gaussian file
+C......  Check that this value is reasonable.
+         flonwork=slam(i)
+         if(flonwork.lt.0.) flonwork=flonwork+twopi
+         lon=flonwork/dlon + 1
+         lonp1=lon+1
+         if(lon.eq.lonb) lonp1=1 !circle condition
+         if((lon.lt.1).or.(lon.gt.lonb)) then
+            call allMessage(ERROR,'Mesh node outside gaussian grid.')
+            write(scratchMessage,
+     &       '("i=",i0," lon=",f15.8," dlon=",f15.8," flon(i)=",f15.8)')
+     &       i, lon, dlon, slam(i)
+            call allMessage(ERROR, scratchMessage)
+            call windTerminate()
+         endif
+
+C.....   Compute initial guess of which lat value FLAT(I) is in the Gaussian file
+C....... Check that this value is reasonable.
+         colat=hfpi-sfea(i)
+         lat=colat/dlat + 1
+         if(lat.eq.latb) lat=lat-1
+         latp1=lat+1
+         if((lat.lt.1).or.(lat.gt.latb)) then
+            call allMessage(ERROR,'Mesh node outside gaussian grid.')
+            write(scratchMessage,
+     &       '("i=",i0," lat=",f15.8," dlat=",f15.8," flat(i)=",f15.8)')
+     &       i, lat, dlat, sfea(i)
+            call allMessage(ERROR, scratchMessage)
+            call windTerminate()
+         endif
+
+5        CONTINUE
+         IF((COLAT.GE.GCLAT(LAT)).AND.(COLAT.LE.GCLAT(LATP1))) GO TO 9
+         IF(COLAT.LT.GCLAT(LAT)) THEN
+            LATP1=LAT
+            LAT=LAT-1
+            IF(LAT.LE.0) THEN
+               LAT=1
+               LATP1=2
+               GOTO 9
+            ENDIF
+            GOTO 5
+         ENDIF
+         IF(COLAT.GT.GCLAT(LATP1)) THEN
+            LAT=LAT+1
+            LATP1=LAT+1
+            IF(LAT.GE.LATB ) THEN
+               LAT=LATB-1
+               LATP1=LATB
+               GOTO 9
+            ENDIF
+            GOTO 5
+         ENDIF
+
+ 9       CONTINUE
+         DDLAT=GCLAT(LATP1)-GCLAT(LAT)
+         XLAT=GCLAT(LAT)
+         DFLAT1=(COLAT-XLAT)/DDLAT
+         IF(LAT.EQ.1) DFLAT1=MAX(0.d0,DFLAT1) !MODIFY THIS FOR POLAR POINTS
+         IF(LATP1.EQ.LATB) DFLAT1=MIN(1.d0,DFLAT1) !MODIFY THIS FOR POLAR POINTS
+         DFLAT=1.d0-DFLAT1
+         DDLON=DLON
+         XLON=GCLON(LON)
+         DFLON1=(FLONWORK-XLON)/DDLON
+         DFLON=1.d0-DFLON1
+         N=N+1
+         D00(N)=DFLON*DFLAT
+         D10(N)=DFLON1*DFLAT
+         D11(N)=DFLON1*DFLAT1
+         D01(N)=DFLON*DFLAT1
+         N00(N)=LON+(LAT-1)*LONB
+         N10(N)=LONP1+(LAT-1)*LONB
+         N11(N)=LONP1+(LATP1-1)*LONB
+         N01(N)=LON+(LATP1-1)*LONB
+
+      END DO
+      !----------------------------------------------------------------
+      end subroutine g2rini
+      !----------------------------------------------------------------
 
 
 C***********************************************************************
@@ -1002,146 +3141,79 @@ C                                                                      *
 C                           R.L. 4/14/99                               *
 C                           R.L.09/04/00 added RHOWAT0 to call         *
 C   R.L. 4/2/01  changed MNWLAT,MNWLON in ALLOCATE statement to        *
-C                LATB,LONB; elminiated MNWP as a dimension             *
+C                LATB,LONB; eliminated MNWP as a dimension             *
 C***********************************************************************
 
-      SUBROUTINE NWS10GET(NWSGGWI,FLON,FLAT,ULL,VLL,PLL,NP,RHOWAT0,G,
-     &     LONB,LATB,WTIMINC)
-      USE SIZES
-      IMPLICIT NONE
-      INTEGER, SAVE :: FIRSTCALL = 0
-      INTEGER N,NP,NWSGGWI,LONB,LATB,I,J,JJ,IEXT,IDIG1,IDIG2,
-     &     IDIG3,KERR
-      REAL*8 WTIMINC
-      REAL*8 FLAT(*),FLON(*)
-      REAL(SZ)  ULL(*),VLL(*),PLL(*)
-      REAL(SZ) RHOWAT0,RHOWATG,G,GDLON,P1,P2,P3,P4,U1,U2,U3,U4,
-     &     V1,V2,V3,V4
-      INTEGER KGDS(200)
-      INTEGER,SAVE,ALLOCATABLE ::  N00(:),N10(:),N11(:),N01(:)
-      REAL(SZ),SAVE,ALLOCATABLE :: D00(:),D10(:),D11(:),D01(:)
-      REAL(SZ),SAVE,ALLOCATABLE :: COLRAB(:),DUMMY(:),
-     &     GCLAT(:),GCLON(:)
-      REAL(SZ),SAVE,ALLOCATABLE ::  UG(:),VG(:),PG(:)
-      CHARACTER*1 PDS(50),FNAME2(8)
-      CHARACTER*8 FNAME1
-      EQUIVALENCE (FNAME1,FNAME2)
-      LOGICAL FOUND
-C
-      IF (FIRSTCALL.EQ.0) THEN
-         FIRSTCALL = 1
-         ALLOCATE ( UG(LATB*LONB),VG(LATB*LONB),
-     &        PG(LATB*LONB) )
-         ALLOCATE ( N00(MNP),N10(MNP),N11(MNP),N01(MNP) )
-         ALLOCATE ( D00(MNP),D10(MNP),D11(MNP),D01(MNP) )
-         ALLOCATE ( COLRAB(LATB),DUMMY(LATB),GCLAT(LATB),
-     &        GCLON(LONB) )
-      ENDIF
-C
-      RHOWATG=RHOWAT0*G
-C
-C...  The first time the subroutine is called, setup the Gaussian grid and
-C...  determine the interpolating factors for the ADCIRC grid.
-C
-      IF (NWSGGWI.EQ.-1) THEN
-         CALL GLATS(LATB/2,COLRAB,DUMMY,DUMMY,DUMMY)
-         DO J=1,LATB/2
-            GCLAT(J)=COLRAB(J)
-            JJ=LATB-J+1
-            GCLAT(JJ)=PI-COLRAB(J)
-         ENDDO
-         GDLON=TWOPI/LONB
-         DO J=1,LONB
-            GCLON(J)=GDLON*(J-1)
-         END DO
-         CALL G2RINI(GCLON,GCLAT,FLON,FLAT,N00,N10,N11,N01,D00,D10,D11,
-     &        D01,NP,LONB,LATB)
-         RETURN
-      ENDIF
-
-C...  Figure out the data file name
-
-      FNAME1='fort.   '
-      IEXT=200 + NWSGGWI*(WTIMINC/3600)
-      IDIG1=IEXT/100
-      IDIG2=(IEXT-100*IDIG1)/10
-      IDIG3=(IEXT-100*IDIG1-10*IDIG2)
-      FNAME2(6)=CHAR(IDIG1+48)
-      FNAME2(7)=CHAR(IDIG2+48)
-      FNAME2(8)=CHAR(IDIG3+48)
-
-
-C...  Enter, locate and open the data file
-
- 1010 FORMAT(' File ',A8,' WAS NOT FOUND!  FATAL ERROR',/)
- 1011 FORMAT(' File ',A8,' WAS FOUND!  Opening & Processing file',/)
-
-      if (myproc == 0) WRITE(screenunit,*) '  '
-      INQUIRE(FILE=FNAME1,EXIST=FOUND)
-      IF(FOUND) GOTO 32
-      if (myproc == 0) WRITE(screenunit,1010) FNAME1
-      WRITE(16,1010) FNAME1
-#ifdef CMPI
-      call msg_fini()
-#endif
-      STOP
- 32   WRITE(screenunit,1011) FNAME1
-
-C...Open and read the GRIB BINARY data file
-c     OPEN(IEXT,FILE=FNAME1,status='old',access='sequential',
-c    &     form='unformatted',iostat=kerr)
-c     READ(IEXT,END=1100) LENPDS,LENKGDS,NWORDS
-c     IF(LENPDS.GT.0) READ(IEXT,END=1100) (pds(j),j=1,lenpds)
-c     IF(LENKGDS.GT.0) READ(IEXT,END=1100) (kgds(j),j=1,lenkgds)
-c     IF(NWORDS.GT.0) READ(IEXT,END=1100) (UG(J),J=1,NWORDS)
-c
-c     READ(IEXT,END=1100) LENPDS,LENKGDS,NWORDS
-c     IF(LENPDS.GT.0) READ(IEXT,END=1100) (pds(j),j=1,lenpds)
-c     IF(LENKGDS.GT.0) READ(IEXT,END=1100) (kgds(j),j=1,lenkgds)
-c     IF(NWORDS.GT.0) READ(IEXT,END=1100) (VG(J),J=1,NWORDS)
-c
-c     READ(IEXT,END=1100) LENPDS,LENKGDS,NWORDS
-c     IF(LENPDS.GT.0) READ(IEXT,END=1100) (pds(j),j=1,lenpds)
-c     IF(LENKGDS.GT.0) READ(IEXT,END=1100) (kgds(j),j=1,lenkgds)
-c     IF(NWORDS.GT.0) READ(IEXT,END=1100) (PG(J),J=1,NWORDS)
-
-C...Open and read the ASCII data file
+      subroutine nws10get(ull,vll,pll)
+      use global, only : mb2pa
+      use sizes, only : gblinputdir
+      use mesh, only : np, slam, sfea
+      implicit none
+      real(sz), intent(out) :: ull(:),vll(:),pll(:) ! mesh met values
       !
-      ! jgf52.30.05: Always use the same i/o unit number to avoid collisions
-      ! with SWAN i/o unit numbers. 
-      OPEN(200,FILE=FNAME1,status='old',iostat=kerr)
-      DO I=1,LONB*LATB
-         READ(200,*) PG(I),UG(I),VG(I)
-      ENDDO
-
- 1100 CLOSE(200)
-
-
+      real(sz) :: rhowatg ! density of water * gravitational acceleration
+      real(sz) :: p1,p2,p3,p4 ! pressure at 4 corners of gaussian grid cell 
+      real(sz) :: u1,u2,u3,u4 ! east velocity at 4 corners of gaussian grid cell
+      real(sz) :: v1,v2,v3,v4 ! north velocity at 4 corners of gaussian grid cell
+      character(len=8) :: fname1 ! name of GFS file to read
+      integer :: iext        ! numerical extension to file name
+      integer :: ios = 0     ! i/o status for opening the fort.xxx files
+      integer :: i, n        ! loop counters
+C
+      rhowatg=rhowat0*g
+      ! 
+      ! Check to be sure that wtiminc is evenly divisible.
+      if (modulo(int(wtiminc),3600).ne.0) then
+         call allMessage(ERROR,
+     &      'For NWS=10, WTIMINC must be evenly divisible by 3600.')
+         call windTerminate()
+      endif
+      ! 
+      ! Form the data file name.
+      iext = 200 + nws10DatasetCounter * int(wtiminc/3600.d0) 
+      write(fname1,'("fort.",i3)') iext    
+      !
+      ! jgf51.52.21: Fixed name of met file with full path for use in 
+      ! parallel operation.  
+      call openFileForRead(iext,trim(gblinputdir)//'/'//trim(fname1),ios)
+      if (ios.ne.0) then
+         call windTerminate()
+      endif
+C
+C...  Read the ASCII data file
+      do i=1,lonb*latb
+         read(iext,*) pg(i),ug(i),vg(i)
+      enddo
+      close(iext)
+C
 C.....Go from the Gaussian grid to the ADCIRC grid
 C.....Convert pressure from N/M^2 to M of H20
-
-      DO N=1,NP
-         P1=PG(N00(N))
-         P2=PG(N10(N))
-         P3=PG(N11(N))
-         P4=PG(N01(N))
-         U1=UG(N00(N))
-         U2=UG(N10(N))
-         U3=UG(N11(N))
-         U4=UG(N01(N))
-         V1=VG(N00(N))
-         V2=VG(N10(N))
-         V3=VG(N11(N))
-         V4=VG(N01(N))
-         PLL(N)=P1*D00(N)+P2*D10(N)+P3*D11(N)+P4*D01(N)
-         ULL(N)=U1*D00(N)+U2*D10(N)+U3*D11(N)+U4*D01(N)
-         VLL(N)=V1*D00(N)+V2*D10(N)+V3*D11(N)+V4*D01(N)
-         PLL(N)=PLL(N)/RHOWATG
-      END DO
+      do n=1,np
+         ! grab the numerical values at the 4 corners of the grid 
+         ! cell containing this mesh node
+         p1=pg(n00(n))
+         p2=pg(n10(n))
+         p3=pg(n11(n))
+         p4=pg(n01(n))
+         u1=ug(n00(n))
+         u2=ug(n10(n))
+         u3=ug(n11(n))
+         u4=ug(n01(n))
+         v1=vg(n00(n))
+         v2=vg(n10(n))
+         v3=vg(n11(n))
+         v4=vg(n01(n))
+         ! spatially interpolate from the 4 values to the mesh vertex
+         pll(n)=p1*d00(n)+p2*d10(n)+p3*d11(n)+p4*d01(n)
+         ull(n)=u1*d00(n)+u2*d10(n)+u3*d11(n)+u4*d01(n)
+         vll(n)=v1*d00(n)+v2*d10(n)+v3*d11(n)+v4*d01(n)
+         pll(n)=pll(n)/rhowatg
+      end do
 C
-      RETURN
-      END SUBROUTINE
-
+      nws10DatasetCounter = nws10DatasetCounter + 1
+      !----------------------------------------------------------------      
+      end subroutine nws10get
+      !----------------------------------------------------------------
 
 C***********************************************************************
 C  Subroutine to compute the latutudes in a Global Gaussian Lat/Lon    *
@@ -1152,7 +3224,6 @@ C      modified from T126 to T1534 by Y.F 9/1/2015
 C
 C      yf51.52.25: Wiki link: https://en.wikipedia.org/wiki/Gaussian_grid
 C***********************************************************************
-
       SUBROUTINE GLATS(LGGHAF,COLRAD,WGT,WGTCS,RCS2)
       USE SIZES
       IMPLICIT NONE
@@ -1215,7 +3286,7 @@ C     102  FORMAT(1H ,I2,2X,F6.2,2X,F10.7,2X,E13.7,2X,E13.7,2X,I4,2X,D13.7)
 c     PRINT 100,LGGHAF
 c     100  FORMAT(1H ,'SHALOM FROM 0.0 GLATS FOR ',I3)
       RETURN
-      END SUBROUTINE
+      END SUBROUTINE GLATS
 
 
 C***********************************************************************
@@ -1240,144 +3311,7 @@ C
  1    CONTINUE
       P=Y3
       RETURN
-      END SUBROUTINE
-
-C***********************************************************************
-C  Subroutine to compute the factors to interpolate from a global      *
-C  Gaussian Lat/Lon grid with T126 resolution (GRIB Grid type 126)     *
-C  onto another grid.                                                  *
-C                                                                      *
-C  The new grid is a series of longitude and latitude points contained *
-C  in the FLON and FLAT arrays with a total number of points NP        *
-C                                                                      *
-C       modified from the original G2RINI by R.L. 4/17/96              *
-C***********************************************************************
-
-      SUBROUTINE G2RINI(GCLON,GCLAT,FLON,FLAT,N00,N10,N11,N01,D00,D10,
-     &     D11,D01,NP,LONB,LATB)
-      USE SIZES
-      IMPLICIT NONE
-      INTEGER,SAVE :: ICALL = 0
-      INTEGER NP,N,I,LONB,LATB,NLAT,NLON,LON,LONP1,LAT,LATP1
-      REAL(8) DLAT,DLON,FLONWORK,COLAT,DDLAT,XLAT,DFLAT,DFLAT1,
-     &     DDLON,XLON,DFLON,DFLON1
-      REAL(8) FLAT(*),FLON(*)
-      REAL(SZ) GCLAT(*),GCLON(*)
-      INTEGER  N00(*),N10(*),N11(*),N01(*)
-      REAL(SZ) D00(*),D10(*),D11(*),D01(*)
-C
-      IF( ICALL .EQ. 0 ) THEN
-         ICALL = 1
-c       PRINT 1234
-c1234   FORMAT(' = IN ROUTINE G2RINI FOR HORIZONTAL INTERPOLATION = ')
-
-C...Compute estimated DLAT, true DLON for Gaussian grid
-
-         NLAT=LATB
-         NLON=LONB
-         DLAT=PI/REAL(NLAT-1,KIND=SZ)
-         DLON=TWOPI/REAL(NLON,KIND=SZ)
-         N=0
-
-C...Loop through all the nodes in the grid to be interpolated onto and
-C.....compute the interpolating factors.
-
-         DO I=1,NP
-
-C.....Compute initial guess of which lon value FLON(I) is in the Gaussian file
-C.......Check that this value is reasonable.
-
-            FLONWORK=FLON(I)
-            IF(FLONWORK.LT.0.) FLONWORK=FLONWORK+TWOPI
-            LON=FLONWORK/DLON + 1
-            LONP1=LON+1
-            IF(LON.EQ.NLON) LONP1=1 !Circle condition
-            IF((LON.LT.1).OR.(LON.GT.NLON)) THEN
-               PRINT *,' ***** ERROR IN LON ****'
-               PRINT *,' I ',I
-               PRINT *,' LON ',LON
-               PRINT *,' DLON ',DLON
-               PRINT *,' FLON ',FLON(I)
-#ifdef CMPI
-               call msg_fini()
-#endif
-               STOP
-            ENDIF
-
-C.....Compute initial guess of which lat value FLAT(I) is in the Gaussian file
-C.......Check that this value is reasonable.
-
-            COLAT=HFPI-FLAT(I)
-            LAT=COLAT/DLAT + 1
-            IF(LAT.EQ.NLAT) LAT=LAT-1
-            LATP1=LAT+1
-            IF((LAT.LT.1).OR.(LAT.GT.NLAT)) THEN
-               PRINT *,' ***** ERROR IN LAT ****'
-               PRINT *,' I ',I
-               PRINT *,' LAT ',LAT
-               PRINT *,' DLAT ',DLAT
-               PRINT *,' FLAT ',FLAT(I)
-#ifdef CMPI
-               call msg_fini()
-#endif
-               STOP
-            ENDIF
-
- 5          CONTINUE
-        IF((COLAT.GE.GCLAT(LAT)).AND.(COLAT.LE.GCLAT(LATP1))) GO TO 9
-            IF(COLAT.LT.GCLAT(LAT)) THEN
-               LATP1=LAT
-               LAT=LAT-1
-               IF(LAT.LE.0) THEN
-                  LAT=1
-                  LATP1=2
-                  GOTO 9
-               ENDIF
-               GOTO 5
-            ENDIF
-            IF(COLAT.GT.GCLAT(LATP1)) THEN
-               LAT=LAT+1
-               LATP1=LAT+1
-               IF(LAT.GE.NLAT ) THEN
-                  LAT=NLAT-1
-                  LATP1=NLAT
-                  GOTO 9
-               ENDIF
-               GOTO 5
-            ENDIF
-
- 9          CONTINUE
-            DDLAT=GCLAT(LATP1)-GCLAT(LAT)
-            XLAT=GCLAT(LAT)
-            DFLAT1=(COLAT-XLAT)/DDLAT
-            IF(LAT.EQ.1) DFLAT1=MAX(0.d0,DFLAT1) !MODIFY THIS FOR POLAR POINTS
-            IF(LATP1.EQ.NLAT) DFLAT1=MIN(1.d0,DFLAT1) !MODIFY THIS FOR POLAR POINTS
-            DFLAT=1.d0-DFLAT1
-            DDLON=DLON
-            XLON=GCLON(LON)
-            DFLON1=(FLONWORK-XLON)/DDLON
-            DFLON=1.d0-DFLON1
-            N=N+1
-            D00(N)=DFLON*DFLAT
-            D10(N)=DFLON1*DFLAT
-            D11(N)=DFLON1*DFLAT1
-            D01(N)=DFLON*DFLAT1
-            N00(N)=LON+(LAT-1)*NLON
-            N10(N)=LONP1+(LAT-1)*NLON
-            N11(N)=LONP1+(LATP1-1)*NLON
-            N01(N)=LON+(LATP1-1)*NLON
-
-         END DO
-c        if (myproc == 0)
-c    &     WRITE(screenunit,*) ' D00 TO D11 SHOULD BE ALL POSITIVE.'
-
-      ELSE
-c        if (myproc == 0)
-c          WRITE(screenunit,*) ' G2RINI ALREADY CALLED '
-      ENDIF
-
-      RETURN
-      END SUBROUTINE
+      END SUBROUTINE POLY
 
 
 C***********************************************************************
@@ -1409,18 +3343,16 @@ C   R.L. 9/14/01  changed MNWLAT,MNWLON in ALLOCATE statement to       *
 C                271,181                                               *
 C***********************************************************************
 
-      SUBROUTINE NWS11GET(NWSEGWI,IDSETFLG,FLON,FLAT,ULL,VLL,PLL,NP,
-     &     RHOWAT0,G)
+      SUBROUTINE NWS11GET()
       USE SIZES
+      USE GLOBAL, ONLY : RHOWAT0, G 
+      USE MESH, ONLY : NP, SLAM, SFEA
       IMPLICIT NONE
       INTEGER,SAVE  ::  ICALL = 0
-      INTEGER NWSEGWI,IDSETFLG,NP,I,IEXT,IDIG1,IDIG2,IDIG3,KERR,N
+      INTEGER I,IEXT,IDIG1,IDIG2,IDIG3,KERR,N
       INTEGER IYEAR,IMONTH,IDAY,IHOUR
       REAL*8 RHOWATG100,FLONDEG,FLATDEG
-      REAL(SZ) P1,P2,P3,U1,U2,U3,V1,V2,V3,UE29,VE29,CBETAU,SBETAU,G
-      REAL(SZ) RHOWAT0
-      REAL(SZ) ULL(*),VLL(*),PLL(*)
-      REAL*8 FLAT(*),FLON(*)
+      REAL(SZ) P1,P2,P3,U1,U2,U3,V1,V2,V3,UE29,VE29,CBETAU,SBETAU
 C
       INTEGER,SAVE,ALLOCATABLE ::  N1(:),N2(:),N3(:)
       REAL(SZ),SAVE,ALLOCATABLE :: D1(:),D2(:),D3(:),BETAU(:)
@@ -1429,7 +3361,8 @@ C
       CHARACTER*1 FNAME2(8)
       CHARACTER*8 FNAME1
       EQUIVALENCE (FNAME1,FNAME2)
-      LOGICAL FOUND
+      integer :: errorio
+      
 C
       IF (ICALL.EQ.0) THEN
          ICALL = 1
@@ -1444,12 +3377,10 @@ C...  The first time the subroutine is called, setup the interpolating factors
 C...  between the Eta-29 grid and the ADCIRC grid.
 
       IF((NWSEGWI.EQ.0).AND.(IDSETFLG.EQ.0)) THEN
-         if (myproc == 0) then
-          WRITE(screenunit,*) 'Computing ETA29 met field interp factors'
-         endif
+         call allMessage(INFO,'Computing ETA29 met field interp factors.')
          DO I=1,NP
-            flondeg=rad2deg*flon(i)
-            flatdeg=rad2deg*flat(i)
+            flondeg=rad2deg*slam(i)
+            flatdeg=rad2deg*sfea(i)
             CALL E29SEARCH(I,FLONDEG,FLATDEG,N1(I),N2(I),N3(I),
      &           D1(I),D2(I),D3(I),betau(i))
          END DO
@@ -1468,22 +3399,10 @@ C...  Figure out the met data file name
       FNAME2(8)=CHAR(IDIG3+48)
 
 C...  If appropriate, enter, locate and open the met data file
-
- 1010 FORMAT(' File ',A8,' WAS NOT FOUND!  FATAL ERROR',/)
- 1011 FORMAT(' File ',A8,' WAS FOUND!  Opening & Processing file',/)
-
-      if (myproc == 0) WRITE(screenunit,*) '  '
-      INQUIRE(FILE=FNAME1,EXIST=FOUND)
-      IF(FOUND) GOTO 32
-      if (myproc == 0) WRITE(screenunit,1010) FNAME1
-      WRITE(16,1010) FNAME1
-#ifdef CMPI
-      call msg_fini()
-#endif
-      STOP
- 32   if (myproc == 0) WRITE(screenunit,1011) FNAME1
-      IF((NWSEGWI.EQ.0).OR.(IDSETFLG.EQ.1)) OPEN(IEXT,FILE=FNAME1,
-     &status='old',access='sequential',form='unformatted',iostat=kerr)
+      call openFileForRead(IEXT,FNAME1,errorIO)
+      if (errorIO.ne.0) then
+         call windTerminate()
+      endif
 
 C...  Read the met data file
 
@@ -1517,14 +3436,16 @@ C.....Convert pressure from millibars to N/M^2 to M of H20
          VE29=V1*D1(N)+V2*D2(N)+V3*D3(N)
          CBETAU=COS(BETAU(N))
          SBETAU=SIN(BETAU(N))
-         ULL(N)=UE29*CBETAU - VE29*SBETAU
-         VLL(N)=UE29*SBETAU + VE29*CBETAU
-         PLL(N)=P1*D1(N)+P2*D2(N)+P3*D3(N)
-         PLL(N)=PLL(N)/RHOWATG100
+         WVNX2(N)=UE29*CBETAU - VE29*SBETAU
+         WVNY2(N)=UE29*SBETAU + VE29*CBETAU
+         PRN2(N)=P1*D1(N)+P2*D2(N)+P3*D3(N)
+         PRN2(N)=PRN2(N)/RHOWATG100
       END DO
 
       RETURN
-      END SUBROUTINE
+C-----------------------------------------------------------------------
+      END SUBROUTINE NWS11GET
+C-----------------------------------------------------------------------
 
 
 
@@ -2164,17 +4085,14 @@ C
 C     Based on bob's NWS67GET (See below).
 C
 C     ----------------------------------------------------------------
-      SUBROUTINE HollandGet(X,Y,SLAM,SFEA,WVNX,WVNY,PRESS,NP,
-     &     ICS,RHOWAT0,G,TIMELOC,NSCREEN,ScreenUnit)
+      SUBROUTINE HollandGet(WVNX,WVNY,PRESS,TIMELOC)
       USE SIZES, ONLY : MyProc, LOCALDIR
+      USE MESH, ONLY : X, Y, SLAM, SFEA, NP, ICS
+      USE GLOBAL, ONLY : RHOWAT0, G
       IMPLICIT NONE
-      INTEGER, intent(in) :: NP,ICS
-      REAL(SZ), intent(in) :: RHOWAT0,G,TIMELOC
-      REAL(8), intent(in), dimension(NP) :: X, Y, SLAM, SFEA
+      REAL(SZ), intent(in) :: TIMELOC
       REAL(SZ), intent(out), dimension(NP) :: WVNX,WVNY
       REAL(SZ), intent(out), dimension(NP) :: PRESS
-      INTEGER, intent(in) :: NSCREEN
-      INTEGER, intent(in) :: ScreenUnit
       INTEGER I, J
       REAL(SZ),SAVE,ALLOCATABLE :: RAD(:),DX(:),DY(:)
       REAL(SZ),SAVE,ALLOCATABLE :: XCOOR(:),YCOOR(:) !lat and lon of nodes
@@ -2208,8 +4126,7 @@ C     The subroutine only works for ICS=2 (spherical coordinates)
       ENDIF
 C
 C     Get data for this time step.
-      CALL GetHollandStormData(lat,lon,cpress,spd,rrp,rmw,tvx,tvy,TIMELOC,
-     &     nscreen,screenunit)
+      CALL GetHollandStormData(lat,lon,cpress,spd,rrp,rmw,tvx,tvy,TIMELOC)
 C
 C     jgf50.32: If we are using sector-based wind drag, record the location
 C     of the center of the storm.
@@ -2344,12 +4261,11 @@ C
 C     ----------------------------------------------------------------
 C
       SUBROUTINE GetHollandStormData(LatOut,LonOut,CPressOut,SpdOut,
-     &     RRPOut,RMWOut,TVXOut,TVYOut,TIMELOC,NScreen,ScreenUnit)
+     &     RRPOut,RMWOut,TVXOut,TVYOut,TIMELOC)
       USE SIZES, ONLY : MyProc, GBLINPUTDIR
       USE VORTEX, ONLY : uvtrans
       IMPLICIT NONE
       REAL(SZ),intent(in) :: TIMELOC
-      INTEGER,intent(in) :: nscreen, screenunit
       REAL(SZ),intent(out) :: LatOut, LonOut, CPressOut
       REAL(SZ),intent(out) :: SpdOut, RRPOut, RMWOut, TVXOut, TVYOut
 C
@@ -2451,7 +4367,7 @@ C
 C     Determine the time of this hindcast in seconds since the beginning
 C     of the year.
                CALL TimeConv(iYear(i),iMth(i),iDay(i),iHr(i),0,0.d0,
-     &              CastTime(i),MyProc,NScreen,ScreenUnit)
+     &              CastTime(i))
 C
 C     Determine the CastTime in seconds since the beginning of the simulation.
                CastTime(i)=CastTime(i)-WindRefTime
@@ -2479,7 +4395,7 @@ C     Determine the time of this forecast in seconds since the beginning
 C     of the year.
                IF ( iFcstInc(i).eq.0 ) THEN
                   CALL TimeConv(iYear(i),iMth(i),iDay(i),iHr(i),0,0.d0,
-     &                 CastTime(i),MyProc,NScreen,ScreenUnit)
+     &                 CastTime(i))
                   CastTime(i)=CastTime(i)-WindRefTime
                ELSE
                   FcstInc(i) = FcstInc(i) * 3600.d0 ! convert hours to seconds
@@ -2491,32 +4407,17 @@ C     jgf48.4637 If the forecast values of central pressure or RMW are
 C     zero (and they will be if unless the user has filled them in, because
 C     the NHC does not forecast these parameters), exit with a fatal error.
                IF ( (iCPress(i).eq.0).or.(iRMW(i).eq.0) ) THEN
-                  WRITE(16,1000)   ! unit 22 Holland Storm File
-                  WRITE(16,1121)   ! cpress and/or Rmax were zero
-                  WRITE(16,1131)   ! must both be non zero
-                  IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-                     WRITE(ScreenUnit,1000) ! unit 22 Holland Storm File
-                     WRITE(ScreenUnit,1021) CastType(i) ! cpress, Rmax were 0
-                     WRITE(ScreenUnit,1131) ! describe valid input
-                  ENDIF
-#ifdef CMPI
-                  CALL MSG_FINI()
-#endif
-                  STOP
-               ENDIF
+                  call allMessage(ERROR,
+     &            'The storm hindcast/forecast input file (unit 22) '//
+     &            'contains invalid data for central pressure or Rmax.')
+                  call windTerminate()
+               endif
 C
             CASE DEFAULT        ! unrecognized
-               WRITE(16,1000)   ! unit 22 Holland Storm File
-               WRITE(16,1021) CastType(i),MyProc ! contains invalid name
-               WRITE(16,1031)   ! describe valid input
-               WRITE(16,1041)   ! tell which column failed
-               IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-                  WRITE(ScreenUnit,1000) ! unit 22 Holland Storm File
-                  WRITE(ScreenUnit,1025) CastType(i) ! contains invalid name
-                  WRITE(ScreenUnit,1031) ! describe valid input
-                  WRITE(ScreenUnit,1041) ! tell which column failed
-               ENDIF
-               STOP
+               call allMessage(ERROR,
+     &          'Only "BEST" or "OFCL" are allowed '//
+     &          'in the 5th column of fort.22.')
+               call windTerminate()
             END SELECT
 C
 C     Convert integers to reals.
@@ -2542,15 +4443,13 @@ C     Convert units.
             Spd(i) = Spd(i) * 0.51444444d0 ! convert kts to m/s
 C
 #ifdef DEBUG_HOLLAND
-            WRITE(16,1244) CastTime(i),Lat(i),Lon(i),
+            WRITE(scratchMessage,1244) CastTime(i),Lat(i),Lon(i),
      &           Spd(i),CPress(i),RRP(i),RMW(i),WindRefTime
+            call logMessage(DEBUG,scratchMessage)
             if ( i.gt.1 ) then
-               write(16,2355) FcstInc(i-1)
+               write(scratchMessage,2355) FcstInc(i-1)
+               call logMessage(DEBUG, scratchMessage)
             endif
-            IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-               WRITE(ScreenUnit,1244) CastTime(i),Lat(i),Lon(i),
-     &              Spd(i),CPress(i),RRP(i),RMW(i),WindRefTime
-            ENDIF
  1244       FORMAT('CastTime ',e16.8,' Lat ',f6.2,' Lon ',f6.2,
      &           /,'Spd ',f8.2,' CPress ',f10.2,' RRP ',f12.2,
      &           ' RMW ',f8.2, ' WindRefTime ',e16.8)
@@ -2648,15 +4547,7 @@ C     ----------------------------------------------------------
  12   format(8x,i4,i2,i2,i2,6x,a4,2x,i3,2x,i3,4x,i3,3x,i3,2x,i4,52x,i3)
  14   format(8x,i4,i2,i2,i2,6x,a4,2x,i3,1x,i4,3x,i4,3x,i3,2x,i4,47x,i3,
      &     2x,i3)
- 1000 FORMAT('ERROR: The Storm Hindcast/Forecast Input File (unit 22)')
- 1021 FORMAT('contains invalid TECH identifier: ',A4,' on PROC=',I4)
- 1025 FORMAT('contains invalid TECH identifier: ',A4)
- 1031 FORMAT('Valid TECH input is BEST (hindcast) or OFCL (forecast).')
- 1041 FORMAT('Check the 5th column of the fort.22 file.')
 
- 1121 FORMAT('contains invalid data for central pressure or Rmax.')
- 1131 FORMAT('These values must both be nonzero.')
-C
       RETURN
 C     ----------------------------------------------------------------
       END SUBROUTINE GetHollandStormData
@@ -2884,22 +4775,21 @@ C     ----------------------------------------------------------------
       !
       !     http://www.unc.edu/~cmattock/ncfs/NCFSreport.pdf
       !=================================================================
-      SUBROUTINE NWS19GET(slam,sfea, wvnx,wvny, press, np, TIMELOC, ics)
+      SUBROUTINE NWS19GET(wvnx,wvny,press,timeloc)
+      USE GLOBAL, ONLY : rhowat0, g
+      USE MESH, ONLY : np, ics, slam, sfea
       USE VORTEX, ONLY : newVortex, setRmaxes, fitRmaxes, uvp,
      &                   getLatestRmax, getLatestAngle
       IMPLICIT NONE
-
-      INTEGER  :: np, ics
       INTEGER  :: ient,itpc
       INTEGER  :: i, nwi
       INTEGER  :: num_entry
       REAL(sz) :: TIMELOC, time1, wtratio
       REAL( 8), SAVE, ALLOCATABLE :: xcoor(:),ycoor(:)
-      REAL( 8) :: slam(np),sfea(np)
       REAL( 8) :: wvnx(np),wvny(np), press(np)
       REAL(sz) :: RhoWatG
 
-      REAL,DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
+      REAL(SZ),DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ilat,ilon,atcfRMW
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ilat1,ilon1,atcfRMW1
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ispd,icpress
@@ -3388,23 +5278,24 @@ C***********************************************************************
       !
       !     http://www.unc.edu/~cmattock/ncfs/NCFSreport.pdf
       !=================================================================
-      SUBROUTINE NWS20GET(slam,sfea, wvnx,wvny, press, np, TIMELOC, ics)
+      SUBROUTINE NWS20GET(wvnx, wvny, press, timeloc)
       USE VORTEX, ONLY : setVortex, fitRmaxes4,  uvpr, spInterp,
      &                   Rmaxes4, QuadFlag4, QuadIr4, Bs4, VmBL4  ! jgfdebug
       USE GLOBAL, ONLY : kt2ms, nm2m,deg2rad,omega, Rearth, m2nm
+      USE MESH, ONLY : slam, sfea, np, ics 
       IMPLICIT NONE
 
-      INTEGER  :: np, ics
-      INTEGER  :: ient,itpc
-      INTEGER  :: i, nwi,j
+      INTEGER  :: ient
+      INTEGER  :: i
       INTEGER  :: num_entry
-      REAL(sz) :: TIMELOC, time1, wtratio
+      REAL(sz) :: TIMELOC, wtratio
       REAL( 8), SAVE, ALLOCATABLE :: xcoor(:),ycoor(:)
-      REAL( 8) :: slam(np),sfea(np)
       REAL( 8) :: wvnx(np),wvny(np), press(np)
       REAL(sz) :: RhoWatG
       REAL(sz) :: corio                       ! Coriolis force (1/s)
 
+      !REAL(SZ),DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
+      ! jgf53.dev: FIXME this should be REAL(SZ) as above
       REAL,DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ilat,ilon,atcfRMW
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ilat1,ilon1,atcfRMW1
@@ -3412,8 +5303,6 @@ C***********************************************************************
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ispd1,icpress1
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: iyear,imth,iday,ihr
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE ::iyear1,imth1,iday1,ihr1
-      REAL(sz), SAVE ::  lat1, lon1,  spd1,  cpress1,  rmw1
-      REAL(sz), SAVE ::  dt, told, cLat1, cLon1
       CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE, SAVE:: type! hindcast/nowcast or forecast?
       CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE, SAVE:: type1 !hindcast/nowcast or forecast?
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::iFcstInc1, iFcstInc ! hours between forecasts
@@ -3423,14 +5312,13 @@ C***********************************************************************
       REAL(sz),DIMENSION(:,:),ALLOCATABLE,SAVE :: VmaxesBL1,HollBs1
       REAL(sz),DIMENSION(:,:,:),ALLOCATABLE,SAVE :: HollBs,VmaxesBL
       INTEGER ,DIMENSION(:),ALLOCATABLE,SAVE :: advr,advr1
-      REAL(sz), SAVE :: Vmax
       REAL(sz), SAVE :: Vr
       REAL(sz), SAVE, DIMENSION(4) :: r
       REAL(sz), SAVE :: Pn
       REAL(sz), SAVE :: Pc
       REAL(sz), SAVE :: cLat
       REAL(sz), SAVE :: cLon
-      REAL(sz), SAVE :: cHollB
+      REAL(SZ), SAVE :: told
       ! save parameters for each node 
       ! change them to allocatable, save Aug. 2013, Jie
       REAL(sz), ALLOCATABLE, SAVE :: cHollBs1(:), cHollBs2(:)
@@ -3472,7 +5360,7 @@ C***********************************************************************
       INTEGER , DIMENSION(:,:),ALLOCATABLE, SAVE :: ir1
       INTEGER , DIMENSION(:,:,:),ALLOCATABLE, SAVE :: ir
       CHARACTER(LEN = 10),DIMENSION(:),ALLOCATABLE,SAVE::name,name1
-      REAL(sz),SAVE :: timeOld,timeNew
+      REAL(sz),SAVE :: timeNew
       REAL(sz) :: uTransNow, vTransNow ! time-interpolated overland speed, kts
       REAL(sz) :: dirNow ! Jie
       CHARACTER(1) ew,ns
@@ -3561,7 +5449,7 @@ C***********************************************************************
          allocate(VmaxesBL1(i,4), VmaxesBL(i,4,4))
 
          ! jgf: initialize arrays to zero
-         ir = 0.0d0
+         ir = 0
          rmaxw = 0.0d0
          quadflag = 0 
          HollBs = 0.0d0
@@ -3933,7 +5821,6 @@ C     we are running off the end of the data.
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-999   RETURN
 C***********************************************************************
       END SUBROUTINE NWS20GET
 C***********************************************************************
@@ -4682,8 +6569,7 @@ C
        use global, only : ihot, nws, nabout, openFileForRead,
      &                setMessageSource,unsetMessageSource,allMessage,
      &                logMessage,scratchMessage,DEBUG,ECHO,INFO,
-     &                ERROR,WARNING,PRBCKGRND,RHOWAT0,G,
-     &                wvnx1,wvny1,prn1,wvnx2,wvny2,prn2
+     &                ERROR,WARNING,PRBCKGRND,RHOWAT0
       use mesh, only : np, x, y, slam0, sfea0
       implicit none
 

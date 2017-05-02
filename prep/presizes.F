@@ -92,20 +92,16 @@ C  46.44 vjp added code for prep13-only command
 C----------------------------------------------------------------------------
 
       MODULE PRESIZES
-#if defined CSWAN || defined ADCSWAN
-      USE GLOBAL, ONLY :
-     &                   SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
-     &                   SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
-     &                   SWAN_OutputTMM10,USE_TVW,TVW_FILE,NOUT_TVW,
-     &                   TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,WaveWindMultiplier
-#else
-      USE GLOBAL, ONLY : USE_TVW,TVW_FILE,NOUT_TVW,
-     &                   TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,WaveWindMultiplier 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      USE GLOBAL, ONLY : WaveWindMultiplier 
+      USE GLOBAL, ONLY :
+     &    USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,
+     &    WaveWindMultiplier,outputWindDrag
+#if defined CSWAN || defined ADCSWAN
+     &   ,SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
+     &    SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
+     &    SWAN_OutputTMM10
 #endif
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
-     &                   invertedBarometerOnElevationBoundary,
      &                  initWindModule
 C
       IMPLICIT NONE
@@ -188,7 +184,7 @@ C     Solver Type:
       LOGICAL USE_VEL_STAT_FILE     !.true. if a velocity station file exists
       LOGICAL USE_CONC_STAT_FILE    !.true. if a concentration station file exists
       LOGICAL USE_MET_STAT_FILE     !.true. if a met station file exists
-
+      LOGICAL :: invertedBarometerOnElevationBoundary
 C
 C For Definition of Working Directory
 C
@@ -217,7 +213,7 @@ C Logicals added for adcprep paths
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
-      NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir,
+      NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,rhoAir,
      &                       invertedBarometerOnElevationBoundary
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &    TOUTF_TVW,NSPOOL_TVW
@@ -491,6 +487,14 @@ C.... tcm v51.20.04 additions for station location file
       integer ::  ios_stations
       integer :: MNSTAE2,MNSTAV2,MNSTAC2,MNSTAM2
 
+C.... tcm v52.30.01 additions for Smagorinski Eddy Viscosity Namelist
+      integer :: ios_smag = 0
+      REAL(8) :: SMAG_UPPER_LIM = 100.d0  ! m^2/s (default upper limit)
+      REAL(8) :: SMAG_LOWER_LIM = 1.0d-8  ! m^2/s (default lower limit)
+      LOGICAL :: SMAG_COMP_FLAG = .FALSE. ! BY DEFAULT DO NOT USE SMAG
+      LOGICAL :: FOUND_Smag_NML = .false. ! flag to determine if the Smag_Control namelist was present
+      NAMELIST /Smag_Control/ SMAG_UPPER_LIM,SMAG_LOWER_LIM,SMAG_COMP_FLAG
+
 #ifdef ADCNETCDF
       NETCDF_AVAIL = .true.
 #else
@@ -615,6 +619,43 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       ELSE
          FOUND_WC_NML = .TRUE.
       ENDIF
+      REWIND(15)
+
+c...  tcm v52.30.01 Addtions for using the Smagorinski Control Namelist
+c...  read through the fort.15 file for the namelist (Smag_Control) for
+c...  using upper and lower limits on Smagorinski.  This namelist must be at the bottom
+c...  of the fort.15 file. If found, then set the appropriate values (Smag_Comp_Flag,
+c...  SMAG_UPPER_LIM, and Smag_Lower_Lim).  If the namelist is not there, then the 
+c...  Smagorinski limit adjustments will not be used.
+C...
+C...  After this search and read, we will close the file and then reopen it
+c...  for further processing the traditional non-namelist components.
+C...
+      READ(UNIT = 15,NML = Smag_Control,IOSTAT = IOS_SMAG)
+
+      IF (IOS_SMAG < 0) THEN
+c.....   it is possible for the namelist to be present in the file and occuring at the end
+c.....   of the file with no line breaks after the ending "\" which causes the iostat to
+c.....   return a negative value.  By checking to be sure a namelist variable was set to
+c....    a non-default value we can determine this was the case.
+         IF (SMAG_COMP_FLAG .eqv. .true. ) THEN
+!            WRITE(*,*) 'Smag_Control NAMELIST PRESENT, BUT AT THE',
+!     &                 ' END OF THE FILE WITH NO ADVANCING',
+!     &                 ' CHARACTER'
+            found_smag_nml = .true.
+         ELSE
+!            WRITE(*,*) 'Smag_Control NAMELIST NOT PRESENT'
+         ENDIF
+      ELSEIF (IOS_SMAG == 0) THEN
+!         WRITE(*,*) 'NAME LIST PRESENT AND CORRECT'
+         found_smag_nml = .true.
+      ELSE
+         found_smag_nml = .true.
+!         WRITE(*,*) 'THERE WAS A PROBLEM PROCESSING THE Smag_Control NAMELIST'
+!         WRITE(*,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCPREP NOW.'
+         stop
+      ENDIF
+C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       REWIND(15)
 
 C
@@ -806,6 +847,7 @@ C.... tcm v48.4641 additions for ice
      &     .OR.(ABS(NWS).EQ.15)  !jgf50.38.05: Added NWS=15 for HWind.
      &     .OR.(ABS(NWS).EQ.20)  !jie NWS=20
      &     .OR.(ABS(NWS).EQ.16)  !tcm v51.06.02 added for nws=16 GFDL Met
+     &     .OR.(NWS.EQ.10)       !yf added for nws=10 GFS Met
      &     .OR.(ABS(NWS).EQ.12).OR. (NWS.EQ.19)) THEN
         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
         IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4)))

@@ -40,33 +40,12 @@ IF(BUILD_SWAN AND PERL_FOUND)
     ADD_EXECUTABLE(swan ${SWANONLY_SERIAL_SOURCES})
 
     #...SWAN Configuration
-    IF(WIN32)
-        ADD_CUSTOM_COMMAND( OUTPUT ${SWANONLY_SERIAL_SOURCES}
-            COMMAND ${PERL} switch.pl -unix *.ftn *.ftn90
-            COMMAND if not exist \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source\" mkdir \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source\"
-            COMMAND move /y *.f \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source/.\"
-            COMMAND move /y *.f90 \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source/.\"
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
-            COMMENT "Generating Serial SWAN stand alone Sources..."
-        )  
-    ELSE(WIN32)
-        ADD_CUSTOM_COMMAND( OUTPUT ${SWANONLY_SERIAL_SOURCES} 
-            COMMAND ${PERL} switch.pl -unix *.ftn *.ftn90
-            COMMAND mkdir -p ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source
-            COMMAND mv *.f *.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source/.
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
-            COMMENT "Generating Serial SWAN stand alone Sources..."
-        )
-    ENDIF(WIN32)
+    swanConfigureSerial()
+
+    addCompilerFlagsSwan(swan ${ADDITIONAL_FLAGS_SWAN})
     
     SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source)
 
-    SET_TARGET_PROPERTIES(swan PROPERTIES COMPILE_FLAGS "${Fortran_COMPILER_SPECIFIC_FLAG} 
-                                                         ${ADDITIONAL_FLAGS_SWAN}")
-    SET_TARGET_PROPERTIES(swan PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/CMakeFiles/swan_mod)
-    
-    TARGET_INCLUDE_DIRECTORIES(swan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/swan_mod)
-    
     INSTALL(TARGETS swan RUNTIME DESTINATION bin)
 
 ENDIF(BUILD_SWAN AND PERL_FOUND)

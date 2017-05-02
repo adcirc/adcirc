@@ -1369,9 +1369,8 @@ C     attributes read in from the Nodal Attributes File (unit 13).
 C
 C     ----------------------------------------------------------------
       SUBROUTINE InitNodalAttr(DP, NP, G, NScreen, ScreenUnit,
-     &     MyProc, NAbOut)
+     &     MyProc, NAbOut, Z0B)
       USE GLOBAL, ONLY : C3D, C2DDI
-      USE GLOBAL_3DVS, ONLY : Z0B
       IMPLICIT NONE
       INTEGER, intent(in) :: NP ! number of nodes in the grid file
       REAL(SZ), intent(in), dimension(NP) :: DP ! array of bathymetric depths
@@ -1380,6 +1379,7 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: ScreenUnit ! i/o for debug info to screen
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
       INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
+      REAL(SZ), intent(in) :: Z0B ! 3D bottom friction
       INTEGER Tau0Dig1  ! determines the tau0 scheme
       INTEGER Tau0Dig2  ! determines whether tau0 is being output
       LOGICAL :: invalidCanopyCoefficient ! .true. if any value is neither 0 nor 1
@@ -1840,7 +1840,6 @@ C     ... Convert Chezy to Cd, if necessary.
          END DO
       ENDIF
 C
-
 C     Step 1. Apply friction arising from turbulent viscous interaction
 C     with the sea floor.
       DO I=1, NP
@@ -1883,9 +1882,8 @@ C     time stepping loop.
 C     ----------------------------------------------------------------
 C     ----------------------------------------------------------------
       SUBROUTINE Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G,
-     &     IFNLFA, NP, TK, NFEN)
+     &     IFNLFA, NP, TK, NFEN, Z0B)
       USE SIZES
-      USE GLOBAL_3DVS, ONLY : Z0B
       IMPLICIT NONE
       INTEGER, intent(in) :: NP, NFEN             ! number of nodes in grid Horizontal and Vertical
       COMPLEX(SZ), intent(in), dimension(NP,NFEN) :: Q  ! x-dir velocities
@@ -1895,6 +1893,7 @@ C     ----------------------------------------------------------------
       REAL(SZ), intent(in) :: G                   ! gravitational constant
       INTEGER, intent(in) :: IFNLFA               ! nonlin. finite amp. flag
       REAL(SZ), intent(inout), dimension(NP) :: TK! depth avg. fric.
+      REAL(SZ), intent(in) :: Z0B
 C
       INTEGER NH
       REAL(SZ) Z0B1  ! velocity magnitude (speed)
@@ -2063,6 +2062,34 @@ C
 C     ----------------------------------------------------------------
       END SUBROUTINE ApplyCanopyCoefficient
 C     ----------------------------------------------------------------
+
+C*************************************************************************
+C     Subroutine to determine local advection state for each element
+C
+C                                   Corbitt 120322
+C*************************************************************************
+      SUBROUTINE ADVECTLOCAL(IE)
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : IFNLCAT, IFNLCATE, IFNLCT, IFNLCTE
+      USE MESH, ONLY : NM, DP
+      Implicit None
+      Integer  :: NM1, NM2, NM3,IE
+
+      NM1=NM(IE,1)
+      NM2=NM(IE,2)
+      NM3=NM(IE,3)
+      IF ((DP(NM1).GE.AdvectionState(NM1)).AND.
+     &    (DP(NM2).GE.AdvectionState(NM2)).AND.
+     &    (DP(NM3).GE.AdvectionState(NM3))) THEN
+             IFNLCT = IFNLCTE
+             IFNLCAT = IFNLCATE
+      ELSE
+         IFNLCT = 0
+         IFNLCAT = 0
+      ENDIF
+C***********************************************************************
+      END SUBROUTINE ADVECTLOCAL
+C***********************************************************************
 
 
 C     ----------------------------------------------------------------

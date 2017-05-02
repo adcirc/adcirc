@@ -21,10 +21,10 @@ C----------------------------------------------------------------------
       !    2 D   D A T A
       !
 #ifdef CSWAN
-      integer, parameter :: numOutputDescript2D = 45
+      integer, parameter :: numOutputDescript2D = 46
 #else
-      integer, parameter :: numOutputDescript2D = 31
-#endif
+      integer, parameter :: numOutputDescript2D = 32
+#endif      
       type descript2D_ptr_t
          type(OutputDataDescript_t), pointer :: descript2D
       end type descript2D_ptr_t
@@ -62,9 +62,10 @@ C----------------------------------------------------------------------
       !jgf52.05: Added for regular output of wet/dry quantities.
       type(OutputDataDescript_t), target :: noffOutDescript
       type(OutputDataDescript_t), target :: nodeCodeOutDescript
-
 Cobell Added a descript for time varying weir tracking
       type(OutputDataDescript_t), target :: weirElevDescript
+      ! @jasonfleming: adding output for wind drag
+      type(OutputDataDescript_t), target :: windDragDescript
 
 C     jgf48.03 Full domain arrays used when writing globalio output.
       real(sz), allocatable, target :: et00_g(:)
@@ -93,11 +94,10 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       ! tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
       real(sz), allocatable, target :: rsnxout_g(:)
       real(sz), allocatable, target :: rsnyout_g(:)
-
-      !jgf52.05: Added for normal output of wet/dry quantities.
+      !jgf52.05: Added for normal output of wet/dry quantities (nodecode and noff)
       integer, allocatable, target :: nodecode_out_g(:)
       integer, allocatable, target :: noff_out_g(:)
-
+      real(sz), allocatable, target :: windDragOut_g(:)
       !
       !  H A R M O N I C   A N A L Y S I S   D A T A
       !
@@ -317,7 +317,7 @@ C----------------------------------------------------------------------
      &   igep, nodes_lg, eta2_g, nscougt, itau0p, nscougs, igsp,
      &   sponge, nscougv, igvp, uu2_g, vv2_g, imap_stam_lg, rmp00,
      &   pr2, nscoum, ipstp, nnm, staim1, staim2, staim3,
-     &   xem, yem, slem, sfem, rmu00, rmv00, wvnxout, wvnyout,
+     &   xem, yem, slem, sfem, rmu00, rmv00,
      &   iwstp, nscougw, igpp, igwp, dp00, ibstp, igbp, igip,
      &   ciceout, rmice00, iicestp, igrads, rsnxout, rsnyout,
      &   imap_stac_lg, cc00, ch1, xec, yec, slec, sfec, ch1_g,
@@ -325,7 +325,7 @@ C----------------------------------------------------------------------
      &   etamax_time, umax_time_g, umax, umax_time, prmin_time_g,
      &   prmin, wvnoutmax_time_g, wvnoutmax_time, rsnmax_time_g,
      &   rsnmax_time, eslonoff, prmin_time, wvnoutmax, rsnmax,
-     &   nstae_g, noute, nstae,
+     &   nstae_g, noute, nstae, wvnxout, wvnyout,
      &   ntcyse, ntcyfe, nspoole, nstav_g, noutv, nstav, ntcysv,
      &   ntcyfv, nspoolv, noutge, ntcysge, ntcyfge, nspoolge,
      &   np_g, outputsponge, noutgv, ntcysgv, nspoolgv, nstam_g,
@@ -339,7 +339,8 @@ C----------------------------------------------------------------------
      &   nodeCodeOutSpoolCounter, noffOutSpoolCounter, noffOutFilePos,
      &   nodeCodeOutFilePos, NE_G, IMAP_EL_LG, nodecode, noff,
      &   fauxFilePosition, initiallyDrySpoolCounter,
-     &   inundationOutput, ihot, logMessage
+     &   inundationOutput, ihot, logMessage, windDragFilePosition,
+     &   windDragOut, windDragSpoolCounter, outputWindDrag
       USE MESH, ONLY : NP, NE, DP, NM, ICS
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim,
      &  elemental_slope_limiter_grad_max,elemental_slope_limiter_active
@@ -404,23 +405,24 @@ C
       ptr(29)%descript2D => endRisingInunDescript
       ptr(30)%descript2D => initiallyDryDescript
       ptr(31)%descript2D => everDriedDescript
+      ptr(32)%descript2D => windDragDescript
 
 !... For SWAN, there are additional output arrays
 #ifdef CSWAN
-      ptr(32)%descript2D => SwanHSDescript
-      ptr(33)%descript2D => SwanHSMaxDescript
-      ptr(34)%descript2D => SwanDIRDescript
-      ptr(35)%descript2D => SwanDIRMaxDescript
-      ptr(36)%descript2D => SwanTM01Descript
-      ptr(37)%descript2D => SwanTM01MaxDescript
-      ptr(38)%descript2D => SwanTPSDescript
-      ptr(39)%descript2D => SwanTPSMaxDescript
-      ptr(40)%descript2D => SwanWindDescript
-      ptr(41)%descript2D => SwanWindMaxDescript
-      ptr(42)%descript2D => SwanTM02Descript
-      ptr(43)%descript2D => SwanTM02MaxDescript
-      ptr(44)%descript2D => SwanTMM10Descript
-      ptr(45)%descript2D => SwanTMM10MaxDescript
+      ptr(33)%descript2D => SwanHSDescript
+      ptr(34)%descript2D => SwanHSMaxDescript
+      ptr(35)%descript2D => SwanDIRDescript
+      ptr(36)%descript2D => SwanDIRMaxDescript
+      ptr(37)%descript2D => SwanTM01Descript
+      ptr(38)%descript2D => SwanTM01MaxDescript
+      ptr(39)%descript2D => SwanTPSDescript
+      ptr(40)%descript2D => SwanTPSMaxDescript
+      ptr(41)%descript2D => SwanWindDescript
+      ptr(42)%descript2D => SwanWindMaxDescript
+      ptr(43)%descript2D => SwanTM02Descript
+      ptr(44)%descript2D => SwanTM02MaxDescript
+      ptr(45)%descript2D => SwanTMM10Descript
+      ptr(46)%descript2D => SwanTMM10MaxDescript
 #endif
       !
       ! jgf51.21.24: Set some defaults
@@ -741,7 +743,24 @@ C
       if (nws.eq.0) then
          WindVelDescript % writeFlag         = .false.
       endif
-
+      !
+      ! wind Drag
+      if ( (mnproc.gt.1) .and. (myproc.eq.0) ) then
+         allocate(windDragOut_g(np_g))
+      endif
+      windDragDescript % lun                  = 173
+      windDragDescript % specifier            = NOUTGW
+      windDragDescript % startTimeStep           = NTCYSGW
+      windDragDescript % endTimeStep             = NTCYFGW
+      windDragDescript % outputTimeStepIncrement = NSPOOLGW
+      windDragDescript % spoolCounter            => windDragSpoolCounter
+      windDragDescript % filepos                 => windDragFilePosition
+      windDragDescript % array                => windDragOut
+      windDragDescript % array_g              => windDragOut_g
+      windDragDescript % field_name           = 'windDrag'
+      windDragDescript % file_basename        = 'windDrag'
+      windDragDescript % writeFlag            = outputWindDrag
+      !
       ! fort.75  !tcm v50.66.01 Added for Time Varying Bathymetry
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
          ALLOCATE(DP00_g(NSTAE_G))
@@ -3888,7 +3907,8 @@ C-----------------------------------------------------------------------
      &                         unpack_cmd)
       USE SIZES
       USE GLOBAL
-      USE GLOBAL_IO, ONLY : collectFullDomainArray, storeOne, writeSparse
+      USE GLOBAL_IO, ONLY : collectFullDomainArray, storeOne, storeTwo,
+     &                      writeSparse
       USE MESH, ONLY: labels
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY : writeOutArrayNetCDF
@@ -4053,7 +4073,11 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
          descript % filepos = descript % filepos + descript % num_records_this
 
       CASE(SPARSE_ASCII)
-         CALL writeSparse(descript, timeLoc, it, storeOne)
+         if(descript % num_items_per_record.eq.1)then
+             CALL writeSparse(descript, timeLoc, it, storeOne)
+         elseif(descript % num_items_per_record.eq.2)then
+             CALL writeSparse(descript, timeLoc, it, storeTwo)
+         endif
 
       CASE(NETCDF3, NETCDF4) ! (portable)
 #ifdef ADCNETCDF
@@ -5355,7 +5379,7 @@ C-----------------------------------------------------------------------
 #ifdef CSWAN
       SUBROUTINE initSwanOutput()
           USE SIZES, ONLY : MNPROC, OFF, ASCII, BINARY, NETCDF3,
-     &                       NETCDF4, XDMF
+     &                       NETCDF4, XDMF, MYPROC
           USE GLOBAL
           USE MESH
           IMPLICIT NONE
@@ -6019,9 +6043,10 @@ C     jgf52.08.01: Collect data used for min/max output. Removed
 C     from subroutine timestep() and placed here.
 C-----------------------------------------------------------------------
       subroutine collectMinMaxData(timeloc)
-      use global, only : nodecode, eta2, uu2, vv2, pr2, wvnxout, wvnyout,
+      use global, only : nodecode, eta2, uu2, vv2, pr2,
      &  rsnx2, rsny2, etamax, etamax_time, umax, umax_time, prmin,
-     &  prmin_time, wvnoutmax, wvnoutmax_time, rsnmax, rsnmax_time
+     &  prmin_time, wvnoutmax, wvnoutmax_time, rsnmax, rsnmax_time,
+     &  wvnxout, wvnyout
       use mesh, only : np
       implicit none
       real(8), intent(in) :: timeloc ! time in s since cold start

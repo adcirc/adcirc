@@ -7,12 +7,15 @@ hot2asc
 hstime
 aswip
 p15
+adcswan
+padcswan
 build13
 build12
 libadc.a
 *.o
 *.mod
 odir*
-version_autogen.F
 actualflags.txt
 .swanlastcompile
+changelog
+version.F

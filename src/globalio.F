@@ -615,9 +615,10 @@ C
       include 'mpif.h'
 #endif
       integer      :: ierr, status(MPI_STATUS_SIZE), request
-      integer      :: nLWetNodes, nGWetNodes
+      integer      :: nGWetNodes
       integer      :: iglobal
 #endif
+      integer      :: nLWetNodes
       integer      :: num, i, j, k
       integer, save:: tagbase = 6000
       integer      :: iproc
@@ -633,7 +634,12 @@ C
       if ((mnproc.eq.1).or.(WRITE_LOCAL_FILES)) then
          open(descript%lun, file=trim(descript%file_name), 
      &       access='SEQUENTIAL', position='APPEND')
-         write(descript%lun, 1100) TimeLoc, it
+         nLWetNodes=0
+         do i=1,np
+            if(nodecode(i) == 0)cycle
+            nLWetNodes=nLWetNodes+1
+         enddo
+         write(descript%lun, 1101) TimeLoc, it, nLWetNodes, descript%alternate_value
          call write_cmd(descript % lun, descript, 1, descript % num_records_this)
          close(descript % lun)
 #ifdef GLOBALIO_TRACE
@@ -745,9 +751,14 @@ C
       integer :: i, istart, iend, iglobal, lun
       integer :: ioffset
 
-      if (WRITE_LOCAL_FILES) then
+      if (mnproc.eq.1.or.WRITE_LOCAL_FILES) then
          do i = 1, descript % num_records_this
-            write(lun , 1000) i, descript % array(i)
+            if(ABS(descript % specifier)==SPARSE_ASCII)then
+                if(nodecode(i)==0)cycle
+                write(lun , 1000) i, descript % array(i)
+            else
+                write(lun , 1000) i, descript % array(i)
+            endif
          end do
          return
       end if
@@ -786,10 +797,16 @@ C
       integer :: i, istart, iend, iglobal, lun
       integer :: ioffset, j
 
-      if (WRITE_LOCAL_FILES) then
+      if (mnproc.eq.1.or.WRITE_LOCAL_FILES) then
         do i = 1, descript % num_records_this
-          write(lun , 1000) i, descript % array(i),
-     $      descript % array2(i)
+            if(abs(descript%specifier)==SPARSE_ASCII)then
+                if(nodecode(i)==0)cycle
+                write(lun , 1000) i, descript % array(i),
+     &              descript % array2(i)
+            else
+                write(lun , 1000) i, descript % array(i),
+     &              descript % array2(i)
+            endif
         end do
         return
       end if

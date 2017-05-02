@@ -92,11 +92,10 @@ C
 C----------------------------------------------------------------------------
 C
       PROGRAM ADCPREP
-      USE GLOBAL, ONLY : screenUnit, myProc, initLogging, Rearth, deg2rad,
-     &   rad2deg
+      USE GLOBAL, ONLY : screenUnit, initLogging, Rearth, deg2rad, rad2deg
       USE SIZES, ONLY : meshFileName, meshFileNameSpecified, meshType, 
      &  ASCII, XDMF, naFileNameSpecified, naFileName, naType, controlFileName,
-     &  controlType, controlFileNameSpecified, globaldir
+     &  controlType, controlFileNameSpecified, globaldir, myproc
       USE SUBPREP, ONLY : readFort015prep
       USE PRE_GLOBAL
       USE VERSION
@@ -673,6 +672,7 @@ C     tcm v51.06.02 added NWS=16 GFDL Met Data
 !         IF (NWS.NE.0.AND.ABS(NWS).NE.12)  THEN
          IF ((NWS.NE.0).AND.(ABS(NWS).NE.3).AND.
      &      (ABS(NWS).NE.6).AND.(ABS(NWS).NE.12)
+     &      .AND.(NWS.NE.10) !yf added for nws=10 GFS Met
      &      .AND.(ABS(NWS).NE.16)
      &      .AND.(ABS(NWS).NE.29))  THEN
             print *, "Ready to Write Local UNIT 22 File for each PE"
