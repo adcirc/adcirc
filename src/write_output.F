@@ -24,7 +24,7 @@ C----------------------------------------------------------------------
       integer, parameter :: numOutputDescript2D = 46
 #else
       integer, parameter :: numOutputDescript2D = 32
-#endif      
+#endif
       type descript2D_ptr_t
          type(OutputDataDescript_t), pointer :: descript2D
       end type descript2D_ptr_t
@@ -3984,9 +3984,9 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
                         endif
                      else
                         if ( descript % isInteger .eqv. .true. ) then
-                           write(descript % lun,2452) labels(I), descript % iarray(i)
+                           write(descript % lun,2452) I, descript % iarray(i)
                         else
-                           write(descript % lun,2453) labels(I), descript % array(i)
+                           write(descript % lun,2453) I, descript % array(i)
                         endif
                      endif
                   end do
@@ -4001,10 +4001,17 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
                ENDIF
             ENDIF
             IF (descript % num_items_per_record .eq. 2) THEN
-               DO I=1, descript % num_records_this
-                  WRITE(descript % lun,2454) labels(I), descript % array(I),
+               IF ( descript % isStation .eqv. .false. ) THEN
+                  DO I=1, descript % num_records_this
+                     WRITE(descript % lun,2454) labels(I), descript % array(I),
      &                               descript % array2(I)
-               END DO
+                  END DO
+               ELSE
+                  DO I=1, descript % num_records_this
+                     WRITE(descript % lun,2454) I, descript % array(I),
+     &                               descript % array2(I)
+                  END DO
+               ENDIF
             ENDIF
             CLOSE(descript % lun)
          ENDIF
