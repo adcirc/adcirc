@@ -2293,6 +2293,7 @@ C-----------------------------------------------------------------------
       USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, LOCALDIR, GLOBALDIR,
      & MYPROC, HARMDIR, WRITE_LOCAL_HARM_FILES
       USE HARM, ONLY : nf, nfreq, hafreq, haff, haface, namefr
+      USE MESH, ONLY : labels
       USE GLOBAL, ONLY : OutputDataDescript_t, screenMessage, ERROR,
      &                   DEBUG, setMessageSource, unsetMessageSource,
      &                   allMessage, scratchMessage
@@ -2327,7 +2328,7 @@ C     write data according to format specifier from fort.15 (e.g., NHASE)
             end do
             write(lun,*) mag1%num_fd_records
             DO N=1,mag1%num_fd_records
-               write(lun,*) N
+               write(lun,*) labels(N)
                do i=1,nfreq+nf
                   if (sets.eq.2) then
                      write(lun,6636) mag1%array2D_g(i,n),
@@ -2352,7 +2353,7 @@ C
             end do
             write(lun,*) mag1%num_records_this
             DO N=1,mag1%num_records_this
-               write(lun,*) N
+               write(lun,*) labels(N)
                do i=1,nfreq+nf
                   if (sets.eq.2) then
                      write(lun,6636) mag1%array2D(i,n),
