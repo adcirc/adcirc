@@ -847,6 +847,7 @@ C.... tcm v48.4641 additions for ice
      &     .OR.(ABS(NWS).EQ.15)  !jgf50.38.05: Added NWS=15 for HWind.
      &     .OR.(ABS(NWS).EQ.20)  !jie NWS=20
      &     .OR.(ABS(NWS).EQ.16)  !tcm v51.06.02 added for nws=16 GFDL Met
+     &     .OR.(NWS.EQ.10)       !yf added for nws=10 GFS Met
      &     .OR.(ABS(NWS).EQ.12).OR. (NWS.EQ.19)) THEN
         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
         IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4)))
