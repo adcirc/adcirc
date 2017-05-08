@@ -355,6 +355,10 @@ C
 #endif
       RHOWATG=RHOWAT0*G
 
+! Set a value for Penv
+
+      Penv=1013d0         !mb
+
 ! Read basin data  ---------------------------------------------------------
 
       ! Increment counter (cntSnaps initialized to zero in nws12init)
