@@ -110,6 +110,7 @@ C   kmd48.33bc - add variable for timestep change
       REAL(SZ) TPMul
       REAL(SZ) WTRatio, WindX, WindY, WindMag, WDragCo
       REAL(8) TimeLoc
+      REAL(SZ) ETRATIO
       REAL(SZ) PRDIFF,PRBCKGRND_MH2O     ! tcm v49.16 20100617 added
       REAL(SZ) ARG1, ARG2, ARGJ1, ARGJ2  ! tides
 C     jgf46.08 Fine grained ramp functions
