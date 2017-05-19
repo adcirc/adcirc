@@ -2788,15 +2788,25 @@ c          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO B
 
       ! jgf52.08.03: Reading of min/max data moved to initOutput2D()
       ! subroutine in write_output module. 
-      
+         
       ! jgf: Added init for water level offset output file 
-      if ( (abs(NOUTGE).ne.0).and.(usingWaterLevelOffset.eqv..true.) ) then
+      if ( (NOUTGE.eq.-1).and.(usingWaterLevelOffset.eqv..true.) ) then
          if (write_local_files.eqv..true.) then
             call writeDomainHeader(108,trim(localdir)//'/'//
      &           'offset.63',NP_G, NP, 'offset     ')
          else
               call writeDomainHeader(108,trim(globaldir)//'/'//
      &           'offset.63',NP_G, NP, 'offset     ')
+         endif
+      endif
+      ! jgf: Added init for water level offset output file 
+      if ( (NOUTE.eq.-1).and.(usingWaterLevelOffset.eqv..true.) ) then
+         if (write_local_files.eqv..true.) then
+            call writeStationHeader(109,trim(localdir)//'/'//
+     &           'offset.61',NSTAE_G, NSTAE, 'offset     ')
+         else
+              call writeStationHeader(109,trim(globaldir)//'/'//
+     &           'offset.61',NSTAE_G, NSTAE, 'offset     ')
          endif
       endif
 

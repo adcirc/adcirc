@@ -7192,10 +7192,18 @@ C----------------------------------------------------------------------
       !
       ! Check to make sure the offset file actually exists and if so, open it
       errorio = 0
+      ! jgf: First try looking in the full domain input file directory
       call openFileForRead(offun,
-     &                     trim(globaldir)//"/"//trim(offsetFileName),
-     &                     errorio)
-      if (errorio.gt.0) call windTerminate()
+     &   trim(globaldir)//"/"//trim(offsetFileName), errorio)
+      ! If the file was not found, in the directory with the other
+      ! full domain input files, perhaps it was provided with a full path?
+      if (errorio.gt.0) then
+         call openFileForRead(offun,trim(offsetFileName), errorio)      
+      endif   
+      ! give up if the file was still not found      
+      if (errorio.gt.0) then
+         call windTerminate()
+      endif
       ! file exists, allocate space to hold the data
 #ifdef CMPI
       allocate(offsetFD(np_g))
