@@ -16,7 +16,7 @@ export compiler=intel
 
 export NETCDF=enable
 export NETCDF4=enable
-export NETCDF4_COMPRESSION=enable
+#export NETCDF4_COMPRESSION=enable
 
 
 ### GNU >>>>>
@@ -33,7 +33,7 @@ rm -rf libadc.a padcirc adcprep
 make libadc.a 
 make adcprep
 #make adcirc
-#make padcirc
+make padcirc
 #make padcswan
 #make punswan
 #make hstime

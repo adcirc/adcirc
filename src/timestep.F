@@ -1411,6 +1411,12 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 
 C... v50.xx sm -- nws=17 for NUOPC coupling hwrf data from coupler
       IF(NWS.eq.17) THEN
+         !print *, "  > NWS=17"
+         !NOUTGE   = 3
+         !TOUTSGE  = 0
+         !TOUTFGE  = RNDAY
+         !NSPOOLGE = nint(WTIMINC/DTDP)
+
 C         print *, 'WTIME2, WTIMINC > ', WTIME2, WTIMINC
          IF(TimeLoc.GT.WTIME2) THEN
             WTIME1=WTIME2
