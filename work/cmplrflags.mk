@@ -223,6 +223,7 @@ ifeq ($(compiler),intel-ND)
 endif
 #
 # SGI ICE X (e.g. topaz@ERDC) using Intel compilers, added by TCM
+# jgf: Added flags for Thunder@AFRL.
 ifeq ($(compiler),intel-sgi)
   PPFC          :=  ifort
   FC            :=  ifort
@@ -242,6 +243,13 @@ ifeq ($(compiler),intel-sgi)
   ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),topaz)
         NETCDFHOME  :=/apps/unsupported/netcdf/4.3.3.1-intel-15.0.3
+     endif
+     ifeq ($(MACHINENAME),thunder)
+        # add the following lines to ~/.personal.bashrc:
+        # module load costinit
+        # module load git
+        # module load netcdf-fortran/intel/4.4.2
+        NETCDFHOME  :=/app/COST/netcdf-fortran/4.4.2/intel
      endif
      # for platforms other than topaz, specify NETCDFHOME on the command line
      FLIBS       := $(FLIBS) -lnetcdff
