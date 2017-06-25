@@ -430,7 +430,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE ComputeSwanWindDrag(CDRAG,NodeNumber)
       USE GLOBAL, ONLY: NP_G, SWAN_WDragCo
       IMPLICIT NONE 
-      REAL :: CDRAG
+      REAL(4) :: CDRAG
       INTEGER :: NodeNumber
       IF(.NOT.ALLOCATED(SWAN_WDragCo))  ALLOCATE(SWAN_WDragCo(NP_G))
       SWAN_WDragCo(NodeNumber) = CDRAG
