@@ -2115,21 +2115,6 @@ C  tcm v49.16 20100617
          ENDDO
       ENDIF            
 C
-      ! jgf: Added NWS30 (GAHM+OWI)
-      IF ((abs(NWS).EQ.29).or.(abs(NWS).eq.30)) THEN
-         ! Now blend in the vortex winds into the background OWI wind field.
-         ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
-         if (abs(nws).eq.29) then
-            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
-     &           STATUS='OLD')
-            CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,TimeLoc)
-         endif
-         if (abs(nws).eq.30) then
-            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
-     &           STATUS='OLD')
-            CALL NWS20GET(vortexWVNX2,vortexWVNY2,vortexPRN2,TimeLoc)
-         endif 
-      ENDIF
 
 C     Wind velocity (10 m) and atmospheric pressure are read in from a
 C     sequence of National Weather Service (NWS) Aviation (AVN) model
