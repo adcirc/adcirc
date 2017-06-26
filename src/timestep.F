@@ -60,7 +60,7 @@ C
      &    WVNXOUT, WVNYOUT, WarnElev, PERT, FACET, FFT, AMIGT, SALTPHA,
      &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF, 
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
-     &    BCFLAG_LNM
+     &    BCFLAG_LNM, usingWaterLevelOffset, offset1, offset2
 #ifdef CSWAN
      &  , waveWindMultiplier
 #endif
@@ -77,7 +77,8 @@ C
      &    BARINCFSB, PIPEHT, PIPECOEF, PIPEDIAM
       USE GLOBAL_IO, ONLY : nddt2get
       USE HARM, ONLY : updateHarmonicAnalysis
-      USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget
+      USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
+     &    getOffsets
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET

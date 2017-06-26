@@ -230,7 +230,7 @@ C
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM,
-     &   usingWaterLevelOffset
+     &   usingWaterLevelOffset, offset1
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif

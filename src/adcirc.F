@@ -102,6 +102,7 @@ C******************************************************************************
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
      &  read_local_hot_start_files, make_dirname, write_local_harm_files
+      USE GLOBAL, ONLY : usingWaterLevelOffset
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc
       USE GWCE, ONLY : initGWCE
       USE MOMENTUM, ONLY : initMomentumEq
@@ -109,8 +110,7 @@ C******************************************************************************
      &                 initHarmonicParameters
       USE GLOBAL_IO, ONLY : allocateFullDomainIOArrays
       USE WRITE_OUTPUT, ONLY : initOutput2D
-      USE WIND, ONLY : initWindModule, usingWaterLevelOffset, initOffset,
-     &    getOffsets
+      USE WIND, ONLY : initWindModule, initOffset, getOffsets
 
       IMPLICIT NONE
 C

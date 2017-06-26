@@ -148,7 +148,8 @@ C*******************************************************************************
      &  IFNLCT, IFNLFA, IFWIND, NRS, NWS, SMAG_LOWER_LIM, SMAG_UPPER_LIM,
      &  NODECODE, NOFF, UU1, VV1, ETA2, ETA1, QX1, QX2, QY1, PR1, PR2,
      &  TiP1, TiP2, WSX2, WSY2, TK, CORIF, WSX1, WSY1, VIDBCPDXOH,
-     &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y
+     &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y, usingWaterLevelOffset,
+     &  offset1, offset2
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, Areas, TotalArea, 
      &                  NNeigh, NeiTab, NeiTabEle, MJU, SFAC
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,

@@ -349,7 +349,6 @@ C----------------------------------------------------------------------
      &   inundationOutput, ihot, logMessage, windDragFilePosition,
      &   windDragOut, windDragSpoolCounter, outputWindDrag,
      &   offsetFilePos, offsetSpoolCounter, offset2, usingWaterLevelOffset,
-     &   offsetSta_g,
      &   offsetSpoolCounter, offset2, usingWaterLevelOffset,
      &   offsetStaSpoolCounter, offsetFilePos, offsetSta,
      &   offsetStaFilePos

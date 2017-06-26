@@ -1127,8 +1127,8 @@ C
       ! station files.
       !--------------------------------------------------------------
       subroutine writeStationHeader(lun, filename, numSta_g, numSta, typeStr)
-      USE SIZES, only : globaldir, localdir, write_local_files
-      USE GLOBAL, only : rundes, runid, myproc
+      USE SIZES, only : globaldir, localdir, write_local_files, myproc
+      USE GLOBAL, only : rundes, runid
       use mesh, only : agrid
       use global_3dvs, only:
      &     ndset3dsv, nspo3dsv, nfen,
