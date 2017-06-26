@@ -785,6 +785,7 @@ C
          offsetStaDescript % y_coord              => SFEL
       ENDIF
       offsetStaDescript % file_extension       = 61
+      offsetStaDescript % writeFlag            = usingWaterLevelOffset
       !
       ! fort.74
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
