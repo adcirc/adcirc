@@ -187,6 +187,12 @@ ifeq ($(compiler),intel)
         NETCDFHOME :=/opt/apps/intel15/netcdf/4.3.3.1/x86_64
         FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
      endif
+     # @jasonfleming: Added support for lonestar5 at tacc.utexas.edu;
+     # load the following module: netcdf/4.3.3.1
+     ifeq ($(MACHINENAME),lonestar5)
+        NETCDFHOME :=/opt/apps/intel16/netcdf/4.3.3.1/x86_64
+        FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
+     endif
      # jgf20150817: Adding support for spirit.afrl.hpc.mil;
      # load the following modules: netcdf-fortran/intel/4.4.2
      # and hdf5/intel/1.8.12 and hdf5-mpi/intel/sgimpt/1.8.12
@@ -256,49 +262,6 @@ ifeq ($(compiler),intel-ND)
   endif
   NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/netcdf/rhel6/4.1.3/intel-12.0/
   #NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/scilib/netcdf/4.1.2/intel-12.0/inst
-endif
-#
-# sb46.50.02 These flags work on the UT Austin Lonstar cluster.
-ifeq ($(compiler),intel-lonestar)
-  PPFC            :=  ifort
-  FC            :=  ifort
-  PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -O3 -xT -132 -i-dynamic
-  ifeq ($(DEBUG),full)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -ftrapuv -fpe0 -check all -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
-  endif
-  FFLAGS2       :=  $(FFLAGS1)
-  FFLAGS3       :=  $(FFLAGS1)
-  DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI
-  DPRE          :=  -DREAL8 -DLINUX
-  ifeq ($(SWAN),enable)
-     DPRE          := $(DPRE) -DADCSWAN
-  endif
-  IMODS         :=  -I
-  CC            := icc
-  CCBE		:= $(CC)
-  CFLAGS        := $(INCDIRS) -O3 -xT
-  ifeq ($(DEBUG),full)
-     CFLAGS        := $(INCDIRS) -g -O0 
-  endif
-  CLIBS         :=
-  FLIBS          :=
-  MSGLIBS       :=
-  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
-  ifneq ($(FOUND),TRUE)
-     FOUND := TRUE
-  else
-     MULTIPLE := TRUE
-  endif
-  NETCDFHOME=/opt/apps/intel11_1/netcdf/4.2.1.1/
-  HDF5HOME=/opt/apps/intel11_1/hdf5/1.8.8/
-  TACC_NETCDF_INC=${NETCDFHOME}include
-  TACC_NETCDF_LIB=${NETCDFHOME}lib
-  TACC_HDF5_LIB=${HDF5HOME}lib
-  ifeq ($(NETCDF),enable)
-     FLIBS      := $(FLIBS) -I${TACC_NETCDF_INC} -L${TACC_NETCDF_LIB} -lnetcdf -lnetcdff -L${TACC_HDF5_LIB} -lhdf5 -lhdf5 -lz -lm
-  endif
 endif
 #
 # SGI ICE X (e.g. topaz@ERDC) using Intel compilers, added by TCM
