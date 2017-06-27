@@ -886,6 +886,21 @@ C.... tcm v48.4641 additions for ice
          END SELECT
       ENDIF
 
+      !jgf: Read WTIMINC line if NWS is 30 (GAHM + OWI)
+      IF ((ABS(NWS)).EQ.30) THEN
+         SELECT CASE(NRS)
+         CASE(0) ! no wave radiation stress
+                      ! YYYY  MM   DD HH24  StNum BLAdj GEOFACTOR 
+                      ! WTIMINC pureVortex pureBackgrnd
+            READ(15,*) IDUM,IDUM,IDUM,IDUM, IDUM, RDUM,   IDUM,  
+     &                  WTIMINC,   RDUM,      RDUM
+         CASE DEFAULT ! some kind of wave radiation stress
+                      ! YYYY MM DD HH24 StNum BLAdj GEOFACTOR WTIMINC RSTIMINC pureVortex pureBack
+            READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,IDUM,
+     &                 WTIMINC,RSTIMINC,RDUM,RDUM
+         END SELECT
+      ENDIF
+
       IF(NWS.EQ.3) THEN
         READ(15,*) IREFYR                          !SKIP THE REST OF THIS LINE
         READ(15,*) MNWLAT,MNWLON                   !SKIP THE REST OF THIS LINE
@@ -972,6 +987,7 @@ C
 
       READ(15,*) MNSTAE                             !PROCESS MNSTAE
       ! tcm v51.20.03 -- added negative mnstae to signal use of external station file elev_stat.151 
+      write(6,*) 'mnstae=',mnstae ! jgfdebug
       if (MNSTAE < 0) then
          write(*,*) "External File Used for Elevation Station Locations"
          USE_ELEV_STAT_FILE = .TRUE.
@@ -1269,6 +1285,7 @@ C     sb46.28sb01 added NWS=12: OWI format
       IF(ABS(NWS).EQ.16) WRITE(*,3026)
       IF(NCICE.GE.1) WRITE(*,3221)  !tcm v49.64.01
       IF(ABS(NWS).EQ.29) WRITE(*,3223)
+      IF(ABS(NWS).EQ.30) WRITE(*,3224)
       IF((NHARF.EQ.0).OR.(FMV.EQ.0.)) WRITE(*,3021)
       IF((NHARF.GE.1).AND.(FMV.NE.0.)) WRITE(*,3022)
       IF(ILUMP.EQ.0) WRITE(*,3031)
@@ -1318,6 +1335,7 @@ C
  3026 FORMAT(' *   Also, NWS=+-16 GFDL Met Data is used            *')
  3221 FORMAT(' *   Also, ABS(NWS)>=1000 ice concentration are used,*')
  3223 FORMAT(' *   Also, NWS=+-29 VortexOWI met forcing is used,   *')
+ 3224 FORMAT(' *   Also, NWS=+-30 GAHM+OWI met forcing is used,    *')
  3018 FORMAT(' *   Also, ABS(NWS)>=100 wave stress forcing is used,*')
  3019 FORMAT(' *   Also, AVN wind & pressure forcing will be used, *')
  3020 FORMAT(' *   Also, ETA wind & pressure forcing will be used, *')

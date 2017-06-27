@@ -102,8 +102,6 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 
 C   kmd48.33bc - add variable for timestep change
       INTEGER NTHS
-      REAL(SZ) :: etratio
-      REAL(SZ) HollandTime
       REAL(SZ) ArgT, ArgTP, ArgSAlt
       REAL(SZ) H2
       REAL(SZ) CCSFEA
@@ -112,6 +110,7 @@ C   kmd48.33bc - add variable for timestep change
       REAL(SZ) TPMul
       REAL(SZ) WTRatio, WindX, WindY, WindMag, WDragCo
       REAL(8) TimeLoc
+      REAL(SZ) ETRATIO
       REAL(SZ) PRDIFF,PRBCKGRND_MH2O     ! tcm v49.16 20100617 added
       REAL(SZ) ARG1, ARG2, ARGJ1, ARGJ2  ! tides
 C     jgf46.08 Fine grained ramp functions
@@ -2789,7 +2788,27 @@ c          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO B
 
       ! jgf52.08.03: Reading of min/max data moved to initOutput2D()
       ! subroutine in write_output module. 
-      
+         
+      ! jgf: Added init for water level offset output file 
+      if ( (NOUTGE.eq.-1).and.(usingWaterLevelOffset.eqv..true.) ) then
+         if (write_local_files.eqv..true.) then
+            call writeDomainHeader(108,trim(localdir)//'/'//
+     &           'offset.63',NP_G, NP, 'offset     ')
+         else
+              call writeDomainHeader(108,trim(globaldir)//'/'//
+     &           'offset.63',NP_G, NP, 'offset     ')
+         endif
+      endif
+      ! jgf: Added init for water level offset output file 
+      if ( (NOUTE.eq.-1).and.(usingWaterLevelOffset.eqv..true.) ) then
+         if (write_local_files.eqv..true.) then
+            call writeStationHeader(109,trim(localdir)//'/'//
+     &           'offset.61',NSTAE_G, NSTAE, 'offset     ')
+         else
+              call writeStationHeader(109,trim(globaldir)//'/'//
+     &           'offset.61',NSTAE_G, NSTAE, 'offset     ')
+         endif
+      endif
 
       ! tcmv51.27 20140502 Added to remove this nodal attribute
       ! as it is only used at Cold Start but read at hot start as well

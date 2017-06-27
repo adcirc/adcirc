@@ -77,6 +77,10 @@ C
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
+     
+      NAMELIST /offsetControl/ offsetFileName, offsetSkipSnaps, 
+     &  offsetMultiplier, offsetRampStart, offsetRampEnd,
+     &  offsetRampReferenceTime
       
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
@@ -403,6 +407,32 @@ C
 
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
+      ! jgf: for water level offset
+
+      namelistSpecifier = 'offsetControl'
+      read(unit=15,nml=offsetControl,iostat=ios)
+      call logNamelistReadStatus(namelistSpecifier,ios)
+      write(scratchMessage,'(a,a)') "offsetFileName=",trim(offsetFileName)
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,i0)') "offsetSkipSnaps=",offsetSkipSnaps
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7)') "offsetMultiplier=",offsetMultiplier
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7)') "offsetRampStart=",offsetRampStart
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7)') "offsetRampEnd=",offsetRampEnd
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,a)') "offsetRampReferenceTime=",
+     &  trim(offsetRampReferenceTime)
+      call logMessage(ECHO,trim(scratchMessage))
+      if (trim(offsetFileName).ne.'null') then
+         usingWaterLevelOffset = .true.
+      endif
+      ! exit if there was an error reading the offsetControl namelist
+      if (ios.gt.0) then
+         call adcirc_terminate()    
+      endif
+      rewind(15)
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
 C...  IDENTIFICATION
@@ -1624,6 +1654,7 @@ C     jgf49.1001 Added option to embed NWS19 in a NAM background wind field
      &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
+
       IF(NWS.EQ.-29) THEN
          WRITE(16,2403) NWS
  2403    FORMAT(/,5X,'NWS = ',I2,
@@ -1639,6 +1670,41 @@ C     jgf49.1001 Added option to embed NWS19 in a NAM background wind field
      &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
+      
+      ! jgf: Added option to embed NWS20 in a NAM background wind field
+      IF(NWS.EQ.30) THEN
+         WRITE(16,3403) NWS
+ 3403    FORMAT(/,5X,'NWS = ',I2,
+     &    /,9X,'HURRICANE PARAMETERS AND THE GENERALIZED ASYMMETRIC ',
+     &    /,9X,'HOLLAND MODEL (GAHM) ARE USED TO FORCE THE COMPUTATION',
+     &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',
+     &    /,9X,
+     &    'WHICH IS CREATED FROM THE ATCF FILE USING THE ASWIP PROGRAM',
+     &    /,9X,'WIND VELOCITY AND PRESSURE VALUES ARE READ FROM RAW ',
+     &    /,9X,'OWI DATA FILES (UNIT 221-224).',
+     &    /,9X,'META DATA IS READ FROM UNIT 220.'
+     &    /,9X,'THE UNIT 22 FILE BEGINS AT TIME=STATIM.',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
+     &    /,9X,'WITH THE MODEL TIME STEP.')
+      ENDIF
+
+      ! jgf: Added option to embed NWS20 in a NAM background wind field
+      IF(NWS.EQ.-30) THEN
+         WRITE(16,3405) NWS
+ 3405    FORMAT(/,5X,'NWS = ',I2,
+     &    /,9X,'HURRICANE PARAMETERS AND THE GENERALIZED ASYMMETRIC ',
+     &    /,9X,'HOLLAND MODEL (GAHM) ARE USED TO FORCE THE COMPUTATION',
+     &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',
+     &    /,9X,
+     &    'WHICH IS CREATED FROM THE ATCF FILE USING THE ASWIP PROGRAM',
+     &    /,9X,'WIND VELOCITY AND PRESSURE VALUES ARE READ FROM RAW ',
+     &    /,9X,'OWI DATA FILES (UNIT 221-224).',
+     &    /,9X,'META DATA IS READ FROM UNIT 220.'
+     &    /,9X,'THE OWI FILES BEGIN AT THE HOTSTART TIME.',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
+     &    /,9X,'WITH THE MODEL TIME STEP.')
+      ENDIF
+
       IF(NRS.EQ.0) THEN
          WRITE(16,2390) NRS
  2390    FORMAT(/,5X,'NRS = ',I3,
@@ -2148,6 +2214,19 @@ C     an OWI basin scale met field derived from NAM winds.
          IF(NRS.GE.1) THEN
              READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
      &                  WTIMINC, RSTIMINC, pureVortex, pureBackground
+         ENDIF
+      ENDIF
+
+C     jgf: Added NWS30 format for embedding a GAHM (NWS=20) vortex inside
+C     an OWI basin scale met field derived from NAM winds.
+      IF(ABS(NWS).EQ.30) THEN
+         IF(NRS.EQ.0) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &          GEOFACTOR, WTIMINC, pureVortex, pureBackground
+         ENDIF
+         IF(NRS.GE.1) THEN
+             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &          GEOFACTOR, WTIMINC, RSTIMINC, pureVortex, pureBackground
          ENDIF
       ENDIF
 

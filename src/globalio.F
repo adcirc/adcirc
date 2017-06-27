@@ -1126,45 +1126,65 @@ C
       ! eventually replace the header subroutines "headerXX" for
       ! station files.
       !--------------------------------------------------------------
-      subroutine writeStationHeader(lun, numSta, typeStr)
-      USE SIZES
-      USE GLOBAL
+      subroutine writeStationHeader(lun, filename, numSta_g, numSta, typeStr)
+      USE SIZES, only : globaldir, localdir, write_local_files, myproc
+      USE GLOBAL, only : rundes, runid
+      use mesh, only : agrid
       use global_3dvs, only:
      &     ndset3dsv, nspo3dsv, nfen,
      &     ndset3dst, nspo3dst,
      &     ndset3dsd, nspo3dsd
       implicit none
-      integer lun               ! logical unit number to write to
-      integer numSta            ! number of stations to write
-      character(len=10) typeStr ! the type of header to write
+      integer, intent(in) :: lun               ! logical unit number to write to
+      character(*), intent(in) :: filename     ! name of file to create
+      integer, intent(in) :: numSta    ! number of stations in subdomain in parallel
+      integer, intent(in) :: numSta_g  ! number of fulldomain stations in parallel 
+      character(len=10), intent(in) :: typeStr ! the type of header to write
+      integer :: nstations
 
+C     Open the file
+      open(lun, file=filename, status='UNKNOWN')
       write(lun, 1000) rundes, runid, agrid
-
+      
+C     Unless we are processor 0 or we are supposed to write local
+C     files, there is nothing to do but *** RETURN EARLY ***
+      if ( (myproc.ne.0).and.(.not.WRITE_LOCAL_FILES) ) return
+C
+C     Set the appropriate number of nodes
+      if ( (myproc.eq.1).or.(WRITE_LOCAL_FILES) ) then
+         nstations = numSta
+      else
+         nstations = numSta_g
+      endif
+C    
       select case(trim(typeStr))
       case("Elev")
-          write(lun, 1010) ntrspe, numSta, dtdp*nspoole, nspoole, 1,
+          write(lun, 1010) ntrspe, nstations, dtdp*nspoole, nspoole, 1,
+     &         FileFmtVersion
+      case("offset")
+          write(lun, 1010) ntrspe, nstations, dtdp*nspoole, nspoole, 1,
      &         FileFmtVersion
       case("Vel2D")
-          write(lun, 1010) ntrspv, numSta, dtdp*nspoolv, nspoolv, 2,
+          write(lun, 1010) ntrspv, nstations, dtdp*nspoolv, nspoolv, 2,
      &         FileFmtVersion
       case("Vel3D")
-          write(lun, 1020) ndset3dsv, numSta, dtdp*nspo3dsv,
+          write(lun, 1020) ndset3dsv, nstations, dtdp*nspo3dsv,
      &         nspo3dsv, nfen, 3, FileFmtVersion
       case("Turb3D")
-          write(lun, 1020) ndset3dst, numSta, dtdp*nspo3dst,
+          write(lun, 1020) ndset3dst, nstations, dtdp*nspo3dst,
      &         nspo3dst, nfen, 3, FileFmtVersion
       case("Dens2D")
           write(ScreenUnit,*)
      &         'ERROR: 2D density station output not implemented.'
           stop
       case("Dens3D")
-          write(lun, 1020) ndset3dsd, numSta, dtdp*nspo3dsd,
+          write(lun, 1020) ndset3dsd, nstations, dtdp*nspo3dsd,
      &         nspo3dsd, nfen, 3, FileFmtVersion
       case("Press","Wind")
-          write(lun, 1010) ntrspm, numSta, dtdp*nspoolm, nspoolm, 1,
+          write(lun, 1010) ntrspm, nstations, dtdp*nspoolm, nspoolm, 1,
      &                 FileFmtVersion
       case("Conc2D")
-          write(lun, 1010) ntrspc, numSta, dtdp*nspoolc, nspoolc, 1,
+          write(lun, 1010) ntrspc, nstations, dtdp*nspoolc, nspoolc, 1,
      &                  FileFmtVersion
       case("Conc3D")
           write(ScreenUnit,*)
@@ -1272,6 +1292,9 @@ C     Open the file
      &                 nspoolge, 1, FileFmtVersion
       case("initDry")
           write(lun, 1010) 1, nodes, 0.d0, 0, 1, FileFmtVersion
+      case("offset")
+          write(lun, 1010) 1, nodes, dtdp*nspoolge, nspoolge, 1, 
+     &    FileFmtVersion
       case default
           write(ScreenUnit,*)
      &         'ERROR: Full domain header type unrecongnized.'

@@ -148,7 +148,8 @@ C*******************************************************************************
      &  IFNLCT, IFNLFA, IFWIND, NRS, NWS, SMAG_LOWER_LIM, SMAG_UPPER_LIM,
      &  NODECODE, NOFF, UU1, VV1, ETA2, ETA1, QX1, QX2, QY1, PR1, PR2,
      &  TiP1, TiP2, WSX2, WSY2, TK, CORIF, WSX1, WSY1, VIDBCPDXOH,
-     &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y
+     &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y, usingWaterLevelOffset,
+     &  offset1, offset2
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, Areas, TotalArea, 
      &                  NNeigh, NeiTab, NeiTabEle, MJU, SFAC
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
@@ -294,6 +295,17 @@ C.......If using atm pressure add it into the barotropic pressure
             BTP1N3=BTP1N3+PR1(NM3)
             BTP2N3=BTP2N3+PR2(NM3)
             ENDIF
+
+ 
+         !jgf: Subtract water level offset from barotropic pressure 
+         IF (usingWaterLevelOffset.eqv..true.) THEN
+            BTP1N1=BTP1N1-offset1(NM1)
+            BTP2N1=BTP2N1-offset2(NM1)
+            BTP1N2=BTP1N2-offset1(NM2)
+            BTP2N2=BTP2N2-offset2(NM2)
+            BTP1N3=BTP1N3-offset1(NM3)
+            BTP2N3=BTP2N3-offset2(NM3)
+         ENDIF
 
 C.......If using tidal potential terms, add these into the barotropic pressure
 

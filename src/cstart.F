@@ -38,7 +38,6 @@ C
       INTEGER NC1, NC2, NC3, NCELE
 
       REAL(SZ) HTOT
-      REAL(SZ) HollandTime, AsymmetricTime, GeneralAsymTime
 !kmd - Evan's updates for rivers above MSL
 !      REAL(SZ),ALLOCATABLE :: et_WSE(:)
       LOGICAL FOUND
@@ -773,6 +772,29 @@ Casey 090302: Corrected the unit number from 10 to 90.
             endif
          endif
       endif
+
+      ! jgf: Added init for full domain water level offset output file 
+      if ( (NOUTGE.eq.-1).and.(usingWaterLevelOffset.eqv..true.) ) then
+         if (write_local_files.eqv..true.) then
+            call writeDomainHeader(108,trim(localdir)//'/'//
+     &           'offset.63',NP_G, NP, 'offset     ')
+           else
+              call writeDomainHeader(108,trim(globaldir)//'/'//
+     &           'offset.63',NP_G, NP, 'offset     ')
+           endif
+      endif
+      ! jgf: Added init for station water level offset output file 
+      IF( (NOUTE.EQ.-1).and.(usingWaterLevelOffset.eqv..true.)) THEN
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(109, TRIM(GLOBALDIR)//'/'//'offset.61',
+     &       NSTAE_G, NSTAE, HEADER61)
+         else 
+            CALL OPEN_GBL_FILE(109, TRIM(LOCALDIR)//'/'//'offset.61',
+     &       NSTAE_G, NSTAE, HEADER61)
+         endif
+         IESTP=2
+      ENDIF
+
 
       IF(ABS(NOUTGE).EQ.2) THEN
          OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',

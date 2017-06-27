@@ -857,6 +857,9 @@ ifeq ($(compiler),gfortran)
   ifeq ($(DEBUG),full-not-fpe)
     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
   endif
+  ifeq ($(DEBUG),trace)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+  endif
   ifneq ($(MACHINENAME),jason-desktop)
      FFLAGS1 := $(FFLAGS1) -fno-underscoring
   endif

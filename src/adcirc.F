@@ -102,6 +102,7 @@ C******************************************************************************
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
      &  read_local_hot_start_files, make_dirname, write_local_harm_files
+      USE GLOBAL, ONLY : usingWaterLevelOffset
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc
       USE GWCE, ONLY : initGWCE
       USE MOMENTUM, ONLY : initMomentumEq
@@ -109,7 +110,8 @@ C******************************************************************************
      &                 initHarmonicParameters
       USE GLOBAL_IO, ONLY : allocateFullDomainIOArrays
       USE WRITE_OUTPUT, ONLY : initOutput2D
-      USE WIND, ONLY : initWindModule
+      USE WIND, ONLY : initWindModule, initOffset, getOffsets
+
       IMPLICIT NONE
 C
       INTEGER, OPTIONAL :: COMM
@@ -280,9 +282,18 @@ C...  attached to each node
          RefTimHS=((ITIME_BGN-1)*DTDP)/86400.D0
          TimeLoc=ITIME_BGN*DTDP + (StaTimHS - RefTimHS)*86400.D0
       END IF
+
+      !jgf: Initialize water level offset if needed
+      if (usingWaterLevelOffset.eqv..true.) then
+         allocate(offset1(np),offset2(np)) ! used in timestepping
+         allocate(offsetSta(nstae))
+         call initOffset(timeloc) ! initializes the i/o 
+         call getOffsets(offset2, timeloc) ! populate offset2
+      endif
 C
 C     jgf51.21.24: Initialize output.
       call initOutput2D(timeloc)
+
 C...
 C...************* SET FLAGS AND COEFFICIENTS USED IN TIME STEPPING ***********
 C...

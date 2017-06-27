@@ -413,7 +413,8 @@ C---------------------------------------------------------------------
       USE GLOBAL, ONLY : parse, a2f, hss, screenUnit, STATNAME,
      &                   STATNAMEV, STATNAMEM, STATNAMEC, ERROR, DEBUG,
      &                   allMessage, setMessageSource, deg2rad,
-     &                   unsetMessageSource, INFO, logMessage
+     &                   unsetMessageSource, INFO, logMessage,
+     &                   scratchMessage
       USE HARM, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
      &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,
      &                 IHARIND, ALLOC_MAIN14, CHARMV
@@ -464,7 +465,11 @@ C...tcm v51.20.03 Local variables for external station location files
 C
 C.....tcm v52.30.01 added for Smag_Control
       INTEGER :: IOS_Smag = 0
-
+      ! jgf: Added support for water level offset
+      namelist /offsetControl/ offsetFileName, offsetSkipSnaps, 
+     &  offsetMultiplier, offsetRampStart, offsetRampEnd,
+     &  offsetRampReferenceTime
+      
 c.....tcm v51.20.03 initialize external station location specifications
 C..... to false, meaning if locations are supplied they are in the fort.15 
 C..... file.
@@ -478,7 +483,7 @@ C
       found_tvw_nml = .false.
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       FOUND_WC_NML = .FALSE.
-
+      foundOffsetControlNamelist = .false.
 C
       call setMessageSource("read15")
 #ifdef READ_GLOBAL_TRACE
@@ -583,7 +588,25 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
          call logMessage(INFO,
      &         'The inundationOutput namelist was not found.')
       endif
-           
+      rewind(15)  !Return to the top of the fort.15 file
+      !
+      !jgf:   O F F S E T   C O N T R O L   N A M E L I S T
+      read(unit=15,nml=offsetControl,iostat=ios)
+      select case(ios)
+      case(0) ! zero indicates success
+         foundOffsetControlNamelist = .true.
+         call logMessage(INFO,
+     &         'The offsetControl namelist was found.')
+      case(1:)
+         write(scratchMessage,'(a,i0,a)')
+     &      'Could not read offsetControl'//
+     &     ' namelist. The Fortran i/o error code was ',ios,'.'
+         call allMessage(ERROR,scratchMessage)
+         stop
+      case default
+         call logMessage(INFO,
+     &      'End-of-file when searching for offsetControl namelist.')
+      end select    
       rewind(15)  !Return to the top of the fort.15 file
 
 c...  tcm v52.30.01 Addtions for Smagorinski Limits
@@ -788,13 +811,13 @@ C     cf & cm added NWS=9: asymmetric hurricane wind model
 C     jie added NWS=20: generalized asymmetric vortex model
 C     sb46.28sb01 added NWS=12: OWI format
 C     jgf49.0804 Added NWS29 VortexOWI format.
+C     jgf: Added NWS30.
         IF((NWS.NE.0).AND.    (NWS.NE.1 ) .AND.(ABS(NWS).NE.2).AND.
      &       (NWS.NE.3).AND.(ABS(NWS).NE.4) .AND.(ABS(NWS).NE.5).AND.
      &       (ABS(NWS).NE.45).AND.(ABS(NWS).NE.6).AND.
      &       (ABS(NWS).NE.8).AND.(ABS(NWS).NE.15).AND. !jgf50.38.05 Added NWS=15
      &       (ABS(NWS).NE.12) .AND. (ABS(NWS).NE.19).AND.
-     &       (ABS(NWS).NE.20) .AND.
-     &       (NWS.NE.10).AND. !yf added for nws=10 GFS Met
+     &       (ABS(NWS).NE.20) .AND.(abs(NWS).ne.30).and.(NWS.NE.10).and.
      &       (ABS(NWS).NE.29).and. (abs(NWS).ne.16))  THEN
            print *,"ERROR: Value for NWS not supported by parallel code"
            stop
@@ -951,7 +974,8 @@ C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
 C
 C     jgf49.0804 Added NWS29 VortexOWI -- don't think we need to
 C     parse out the WTIMINC or other parameters.
-      IF ((ABS(NWS)).EQ.29) THEN
+      ! jgf: Added NWS30.
+      IF (((ABS(NWS)).EQ.29).or.(abs(NWS).eq.30)) THEN
          READ(15,80) WSMSG1
       ENDIF
 C
@@ -1188,6 +1212,7 @@ C...
 C
       READ(15,80) NSTAEMSG
       READ(NSTAEMSG,*) NSTAE
+      write(6,*) 'nstae=',nstae ! jgfdebug
       !tcm v51.20.03 -- addition for external elevation station file
       if (NSTAE < 0 ) then
          WRITE(*,*) "External File Used for Elevation Station Locations"

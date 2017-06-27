@@ -60,7 +60,7 @@ C
      &    WVNXOUT, WVNYOUT, WarnElev, PERT, FACET, FFT, AMIGT, SALTPHA,
      &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF, 
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
-     &    BCFLAG_LNM
+     &    BCFLAG_LNM, usingWaterLevelOffset, offset1, offset2
 #ifdef CSWAN
      &  , waveWindMultiplier
 #endif
@@ -77,7 +77,8 @@ C
      &    BARINCFSB, PIPEHT, PIPECOEF, PIPEDIAM
       USE GLOBAL_IO, ONLY : nddt2get
       USE HARM, ONLY : updateHarmonicAnalysis
-      USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget
+      USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
+     &    getOffsets
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET
@@ -269,8 +270,13 @@ C     TIP..Tidal potential forcing
          endif
 
       END DO
-
-
+      !
+      ! jgf: shift water level offset values
+      if (usingWaterLevelOffset.eqv..true.) then
+         offset1(:) = offset2(:)
+         offset2(:) = 0.d0
+      endif
+      
 C...TCM V50.66.01 -- ADDING TIME DEPENDENT BATHYMETRY
 C... so that total water column height is unchanged
 C
@@ -535,8 +541,12 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
          end do
       endif
 C--------------------END ICE FIELDS----------------------------------------
-C
-C
+C---------------------WATER LEVEL OFFSET-----------------------------------
+C     jgf: update water level correction fields
+      if (usingWaterLevelOffset.eqv..true.) then
+         call getOffsets(offset2, timeloc)
+      endif
+
 C
 C---------------------BEGIN MET FORCING----------------------------------------
 
@@ -648,6 +658,7 @@ Casey 090302: Added these lines for output to the rads.64 file.
          ENDIF !(NRS = 4)
 
       ENDIF  !(End test for updating wave radiation stress)
+
 
 C     jgf48.4627 Skip past GWCE and momentum calculations if only
 C     meteorological output was requested.

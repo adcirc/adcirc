@@ -645,7 +645,7 @@ help:
 #  adcprep modules
 
 $(O_DIR)version.o     :  version.F
-$(O_DIR)presizes.o    :  presizes.F $(ADC_MOBJ) $(WIND_MOBJ)
+$(O_DIR)presizes.o    :  presizes.F $(ADC_MOBJ) $(WIND_MOBJ) $(O_DIR)global.o
 $(O_DIR)kdtree2.o     :  kdtree2.F $(O_DIR)sizes.o
 $(O_DIR)mesh.o        :  mesh.F $(O_DIR)version.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)hashtable.o
 $(O_DIR)pre_global.o  :  pre_global.F  $(O_DIR)mesh.o $(KDTREE_MOBJ) $(PREP_MOBJ) $(O_DIR)global_3dvs.o

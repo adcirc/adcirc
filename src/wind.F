@@ -15,8 +15,8 @@ C
 #ifdef CMPI
       use messenger, only : msg_fini
 #endif
-      integer, parameter :: allowable_nws(17)
-     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,19,20,29/)
+      integer, parameter :: allowable_nws(18)
+     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,19,20,29,30/)
       logical nwsOK     ! true if NWS value in fort.15 is allowed
 
       real(sz), allocatable :: wvnx1(:) ! wind velocity in x-dir at each node at prev ts
@@ -181,6 +181,34 @@ C
       real(sz), allocatable ::  ug(:),vg(:),pg(:)
       integer :: nws10DatasetCounter ! indicates which dataset to read
 
+      ! jgf52.30.09: Needed for vortex models with storm centers described
+      ! in positive degrees east longitude when mesh nodes end up being
+      ! defined in negative degrees east longitude
+      logical :: entireMeshIsWestOfGMT ! true if all longitudes are negative
+      
+      ! jgf: variables needed for water level offset data
+      ! from control file
+      character(len=2048) :: offsetFileName='null' ! water level offset file 
+      real(sz) :: offsetRampStart = 0.d0 ! seconds after run start
+      real(sz) :: offsetRampEnd = 0.d0   ! seconds after run start
+      integer :: offsetSkipSnaps = 0 ! number of offset data sets to skip 
+      character(len=10) :: offsetRampReferenceTime='hotstart' ! coldstart or hotstart
+      real(sz) :: offsetMultiplier = 1.d0 ! multiply each offset value by this
+      ! limited to this module 
+      integer, parameter :: offun = 21 ! i/o unit number for water lvl offset
+      integer :: offsetBlankSnaps = 0 ! counter for initial blank snaps
+      integer :: offsetDataSetCounter=0 ! counts real datasets read from file
+      logical :: offsetIsConstant=.false. ! true if only one dataset provided
+      real(sz), allocatable :: offsetsOld_m(:) ! from file in m
+      real(sz), allocatable :: offsetsNew_m(:) ! from file in m
+      real(sz), allocatable :: offsetFD(:) ! hold fulldomain data in parallel
+      character(len=2048) :: offsetComment = 'null' ! comment from offset file
+      real(sz) :: offsetTimeIncrement = 0.d0 ! offset time increment (s)
+      real(sz) :: offsetTimeNew = 0.d0 ! time of latest dataset (s)
+      real(sz) :: offsetTimeOld = 0.d0 ! time of previous dataset (s)
+      real(sz) :: offsetDefaultValue = 0.d0 ! for otherwise unspecified nodes (m)
+      integer :: offsetCurrentLine ! used in error messages
+      logical :: offsetFileEnded = .false. ! true when all data have been read
 
 C------------------------end of data declarations-----------------------
       CONTAINS
@@ -1135,7 +1163,7 @@ C  tcm v49.16 20100617C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
 C      
 C     jgf49.1001 Added NWS29 for embedding an asymmetric vortex from
 C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
-      IF(ABS(NWS).EQ.29) THEN
+      IF((ABS(NWS).EQ.29).or.(ABS(NWS).eq.30)) THEN
          ! bring in next set of OWI met data
          IF(TimeLoc.GT.WTIME2) THEN
             WTIME1=WTIME2
@@ -1154,7 +1182,15 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
          ENDIF
          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
          ! bring in next set of asymmetric vortex met data to separate arrays
-         CALL NWS19GET(vortexWVNX2, vortexWVNY2, vortexPRN2, timeloc)
+         select case(abs(nws)) 
+         case(29)
+            CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,timeloc)
+         case(30)
+            CALL NWS20GET(vortexWVNX2,vortexWVNY2,vortexPRN2,timeloc)
+         case default
+            ! should be unreachable
+            call logMessage(ERROR,'NWS must equal 29 or 30.') 
+         end select        
          DO I=1,NP
             ! compute wind stress due to background met at this node
             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
@@ -1410,29 +1446,43 @@ C     RJW Merged:
         CALL NWS20GET(WVNX2,WVNY2,PRN2,STATIM*86400.D0)
       ENDIF      
 
+C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/2006
       ! jgf49.1001 Added NWS=29, asymmetric vortex wind (NWS19) embedded in
       ! OWI (NWS12) basin scale wind field.
-      IF(NWS.EQ.29) THEN
-         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         if (trim(DragLawString) == "Powell" .or.
+      IF ((ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.29).OR.(ABS(NWS).EQ.30)) THEN
+        CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+        CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+        if (trim(DragLawString) == "Powell" .or.
      &       trim(DragLawString) == "POWELL" .or.
      &       trim(DragLawString) == "powell" ) then
             call findStormCenter(eyeLatR, eyeLonR, foundEye)
-         endif           
-         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-         if (trim(DragLawString) == "Powell" .or.
+        endif           
+        CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+        if (trim(DragLawString) == "Powell" .or.
      &       trim(DragLawString) == "POWELL" .or.
      &       trim(DragLawString) == "powell" ) then
             call findStormCenter(eyeLatR, eyeLonR, foundEye)
-         endif                    
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
+        endif                    
+        WTIME1 = STATIM*86400.D0
+        WTIME2 = WTIME1 + WTIMINC
+      ENDIF
+      !
+      ! jgf49.1001 Added NWS=29, asymmetric vortex wind (NWS19) embedded in
+      ! OWI (NWS12) basin scale wind field.
+      ! jgf: Added NWS=30 (GAHM+OWI)
+      IF ((abs(NWS).EQ.29).or.(abs(NWS).eq.30)) THEN
          ! now blend in the vortex met field
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
-     &        STATUS='OLD')
          ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
-         CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,STATIM*86400.D0)
+         if (nws.eq.29) then
+            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
+     &           STATUS='OLD')
+            CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,STATIM*86400.D0)
+         endif
+         if (nws.eq.30) then
+            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
+     &           STATUS='OLD')
+            CALL NWS20GET(vortexWVNX2,vortexWVNY2,vortexPRN2,STATIM*86400.D0)
+         endif
       ENDIF
       !
       ! jgf51.52.21: Fixed NWS10 and cleaned up interface.
@@ -1464,31 +1514,11 @@ C     RJW Merged:
          wvny1 = wvny2                 
          CALL NWS11GET()        !NOW INTERPOLATE 1st WIND FIELD
       ENDIF
-
-C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/2006
-      IF(ABS(NWS).EQ.12) THEN
-         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         if (trim(DragLawString) == "Powell" .or.
-     &       trim(DragLawString) == "POWELL" .or.
-     &       trim(DragLawString) == "powell" ) then
-            call findStormCenter(eyeLatR, eyeLonR, foundEye)
-         endif           
-         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-         if (trim(DragLawString) == "Powell" .or.
-     &       trim(DragLawString) == "POWELL" .or.
-     &       trim(DragLawString) == "powell" ) then
-            call findStormCenter(eyeLatR, eyeLonR, foundEye)
-         endif           
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
-      ENDIF
       !
       ! jgf50.38.05: Added NWS=15,-15 for reading HWind data
       IF (ABS(NWS).EQ.15) THEN
          CALL NWS15INIT(STATIM*86400.0)
       ENDIF
-
 C     
 C....tcm v51.06.02: Added NWS=16,-16 for reading ASCII GFDL Met data
       IF (ABS(NWS).EQ.16) THEN
@@ -2085,123 +2115,6 @@ C  tcm v49.16 20100617
          ENDDO
       ENDIF            
 C
-C     jgf49.1001 Added NWS29, asymmetric vortex winds (NWS19)
-C     embedded in an OWI basin scale gridded met field (NWS12)
-C     from NAM data
-      IF(NWS.EQ.29) THEN
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
-C        This just initializes some variables and might
-C        set WVNX1, etc ... if skipping ahead.
-         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-C        !TCM v49.02 Added read for rec. 1
-         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         if (trim(DragLawString) == "Powell" .or.
-     &       trim(DragLawString) == "POWELL" .or.
-     &       trim(DragLawString) == "powell" ) then
-            call findStormCenter(eyeLatR, eyeLonR, foundEye)
-         endif           
-         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-         if (trim(DragLawString) == "Powell" .or.
-     &       trim(DragLawString) == "POWELL" .or.
-     &       trim(DragLawString) == "powell" ) then
-            call findStormCenter(eyeLatR, eyeLonR, foundEye)
-         endif           
-         DO IT=1,ITHS
-            TIMEIT=IT*DTDP + STATIM*86400.D0
-            IF(TIMEIT.GT.WTIME2) THEN
-               WTIME1=WTIME2
-               WTIME2=WTIME2+WTIMINC
-               DO I=1,NP
-                  WVNX1(I)=WVNX2(I)
-                  WVNY1(I)=WVNY2(I)
-                  PRN1(I)=PRN2(I)
-               END DO
-               CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-               if (trim(DragLawString) == "Powell" .or.
-     &             trim(DragLawString) == "POWELL" .or.
-     &             trim(DragLawString) == "powell" ) then
-                  call findStormCenter(eyeLatR, eyeLonR, foundEye)
-               endif
-             ENDIF
-         END DO
-         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-         DO I=1,NP
-            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-            WDragCo = WindDrag(WindMag, I)
-            ! jgf49.1001 NAM winds already contain wind reduction
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PR2(I) = RampMete2*PRN1(I)
-            WVNXOUT(I)=RampMete2*WINDX
-            WVNYOUT(I)=RampMete2*WINDY
-         END DO
-      ENDIF
-      IF(NWS.EQ.-29) THEN
-         WTIME1 = TimeLoc
-         WTIME2 = WTIME1 + WTIMINC
-         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         if (trim(DragLawString) == "Powell" .or.
-     &      trim(DragLawString) == "POWELL" .or.
-     &      trim(DragLawString) == "powell" ) then
-            call findStormCenter(eyeLatR, eyeLonR, foundEye)
-         endif
-         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-         if (trim(DragLawString) == "Powell" .or.
-     &       trim(DragLawString) == "POWELL" .or.
-     &       trim(DragLawString) == "powell" ) then
-            call findStormCenter(eyeLatR, eyeLonR, foundEye)
-         endif
-         DO I=1,NP
-            WINDX = WVNX1(I)
-            WINDY = WVNY1(I)
-            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-            WDragCo = WindDrag(WindMag, I)
-            ! jgf49.1001 NAM winds already contain wind reduction
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PR2(I) = RampMete2*PRN1(I)
-            WVNXOUT(I)=RampMete*WINDX
-            WVNYOUT(I)=RampMete*WINDY
-         END DO
-      ENDIF
-C     Now blend in the vortex winds into the background OWI wind field.
-      IF(ABS(NWS).EQ.29) THEN
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
-     &        STATUS='OLD')
-         ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
-         CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,TimeLoc)
-         DO I=1,NP
-            WindX = vortexWVNX2(I)
-            WindY = vortexWVNY2(I)
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            CALL getBlendFactor(i, bf)
-            WSX2(I) = bf*RampMete2*0.001293d0*WDragCo*WindX*WindMag
-     &               +(1.0d0-bf)*WSX2(I)
-            WSY2(I) = bf*RampMete2*0.001293d0*WDragCo*WindY*WindMag
-     &               +(1.0d0-bf)*WSY2(I)
-            PR2(I) = bf*RampMete2*vortexPRN2(I)
-     &               +(1.0d0-bf)*PRN2(I)
-            WVNXOUT(I)=bf*RampMete2*WindX+(1.0d0-bf)*WVNXOUT(I)
-            WVNYOUT(I)=bf*RampMete2*WindY+(1.0d0-bf)*WVNYOUT(I)
-         ENDDO
-      ENDIF
 
 C     Wind velocity (10 m) and atmospheric pressure are read in from a
 C     sequence of National Weather Service (NWS) Aviation (AVN) model
@@ -2301,116 +2214,102 @@ C  tcm v49.16 20100617
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
          END DO
       ENDIF
-
+C
 C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
-      IF(NWS.EQ.12) THEN
-         WTIME1 = STATIM*86400.D0
+      ! jgf: Combined NWS=12 and NWS=-12 and added abs(NWS)=29 and abs(NWS)=30
+      IF((abs(NWS).eq.12).or.(abs(NWS).eq.29).or.(abs(NWS).eq.30)) THEN
+         WTIME1 = TimeLoc      ! nws=-12, wind data relative to hot start time
+         if (nws.gt.0) then
+            WTIME1 = STATIM*86400.D0 ! wind data relative to cold start time
+         endif
          WTIME2 = WTIME1 + WTIMINC
          CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  ! This just initializes some variables and might set WVNX1,etc... if skipping ahead.
          CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  !TCM v49.02 Added read for rec. 1
-         if (trim(DragLawString) == "Powell" .or.
-     &       trim(DragLawString) == "POWELL" .or.
-     &       trim(DragLawString) == "powell" ) then
-            call findStormCenter(eyeLatR, eyeLonR, foundEye)
-         endif
          CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-         if (trim(DragLawString) == "Powell" .or.
-     &       trim(DragLawString) == "POWELL" .or.
-     &       trim(DragLawString) == "powell" ) then
-            call findStormCenter(eyeLatR, eyeLonR, foundEye)
+          ! fast forward if wind data are relative to cold start time
+         if (nws.gt.0) then
+            DO IT=1,ITHS
+               TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+               IF(TIMEIT.GT.WTIME2) THEN
+                  WTIME1=WTIME2
+                  WTIME2=WTIME2+WTIMINC
+                  DO I=1,NP
+                     WVNX1(I)=WVNX2(I)
+                     WVNY1(I)=WVNY2(I)
+                     PRN1(I)=PRN2(I)
+                  END DO
+                  CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+               ENDIF
+            END DO
          endif
-          DO IT=1,ITHS
-             TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
-             IF(TIMEIT.GT.WTIME2) THEN
-                WTIME1=WTIME2
-                WTIME2=WTIME2+WTIMINC
-                DO I=1,NP
-                   WVNX1(I)=WVNX2(I)
-                   WVNY1(I)=WVNY2(I)
-                   PRN1(I)=PRN2(I)
-                 END DO
-                 CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-                 if (trim(DragLawString) == "Powell" .or.
-     &               trim(DragLawString) == "POWELL" .or.
-     &               trim(DragLawString) == "powell" ) then
-                    call findStormCenter(eyeLatR, eyeLonR, foundEye)
-                 endif
-              ENDIF
-          END DO
-          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-          DO I=1,NP
-             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-             WDragCo = WindDrag(WindMag, I)
-             IF (LoadDirEffRLen) THEN
-                CALL ApplyDirectionalWindReduction(I, WDragCo,
+         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-                WindMag = SQRT(WindX*WindX+WindY*WindY)
-                WDragCo = WindDrag(WindMag, I)
-             ENDIF
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               WDragCo = WindIceDrag(WDragCo,ciceout(i))
-            ENDIF
-             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-C  tcm v49.16 20100617
-!            PR2(I) = RampMete2*PRN1(I)
-             PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                           -PRBCKGRND_MH2O)
-             PR2(I) = PRBCKGRND_MH2O + PRDIFF
-             WVNXOUT(I)=RampMete2*WINDX
-             WVNYOUT(I)=RampMete2*WINDY
-          END DO
-       ENDIF
-
-       IF(NWS.EQ.-12) THEN
-          WTIME1 = TimeLoc
-          WTIME2 = WTIME1 + WTIMINC
-          CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-          CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-          if (trim(DragLawString) == "Powell" .or.
-     &        trim(DragLawString) == "POWELL" .or.
-     &        trim(DragLawString) == "powell" ) then
-             call findStormCenter(eyeLatR, eyeLonR, foundEye)
-          endif
-
-          CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-          if (trim(DragLawString) == "Powell" .or.
-     &        trim(DragLawString) == "POWELL" .or.
-     &        trim(DragLawString) == "powell" ) then
-             call findStormCenter(eyeLatR, eyeLonR, foundEye)
-          endif
-          DO I=1,NP
-             WINDX = WVNX1(I)
-             WINDY = WVNY1(I)
-             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-             WDragCo = WindDrag(WindMag, I)
-             IF (LoadDirEffRLen) THEN
-                CALL ApplyDirectionalWindReduction(I, WDragCo,
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                          -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WINDX
+            WVNYOUT(I)=RampMete2*WINDY
+         END DO
+      ENDIF
+C
+C     jgf49.1001 Added NWS29, asymmetric vortex winds (NWS19)
+C     embedded in an OWI basin scale gridded met field (NWS12)
+C     from NAM data
+      ! jgf: Added NWS30 (GAHM+OWI)
+      IF ((abs(NWS).EQ.29).or.(abs(NWS).eq.30)) THEN
+         ! Now blend in the vortex winds into the background OWI wind field.
+         ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
+         if (abs(nws).eq.29) then
+            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
+     &           STATUS='OLD')
+            CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,TimeLoc)
+         endif
+         if (abs(nws).eq.30) then
+            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
+     &           STATUS='OLD')
+            CALL NWS20GET(vortexWVNX2,vortexWVNY2,vortexPRN2,TimeLoc)
+         endif         
+         DO I=1,NP
+            WindX = vortexWVNX2(I)
+            WindY = vortexWVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-                WindMag = SQRT(WindX*WindX+WindY*WindY)
-                WDragCo = WindDrag(WindMag, I)
-             ENDIF
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               WDragCo = WindIceDrag(WDragCo,ciceout(i))
-            ENDIF
-             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*PRN1(I)
-             PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
-             PR2(I) = PRBCKGRND_MH2O + PRDIFF
-             WVNXOUT(I)=RampMete2*WINDX  ! tcm 20100618 v49.16 changed RampMete to RampMete2
-             WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
-          END DO
-       ENDIF
+            CALL getBlendFactor(I, bf)
+            WSX2(I) = bf*RampMete2*0.001293d0*WDragCo*WindX*WindMag
+     &               +(1.0d0-bf)*WSX2(I)
+            WSY2(I) = bf*RampMete2*0.001293d0*WDragCo*WindY*WindMag
+     &               +(1.0d0-bf)*WSY2(I)
+            PRDIFF = RampMete2*(vortexPRN2(I)-PRBCKGRND_MH2O)
+            vortexPRN2(I) = PRBCKGRND_MH2O + PRDIFF
+            ! blend vortex into background     
+            PR2(I) = bf*vortexPRN2(I)+(1.0d0-bf)*PRN2(I)
+            WVNXOUT(I)=bf*RampMete2*WindX+(1.0d0-bf)*WVNXOUT(I)
+            WVNYOUT(I)=bf*RampMete2*WindY+(1.0d0-bf)*WVNYOUT(I)
+         ENDDO
+      ENDIF
       !
       ! jgf50.38.05: Added NWS=15 for reading HWind data
        IF(ABS(NWS).EQ.15) THEN
@@ -5286,7 +5185,7 @@ C***********************************************************************
       IMPLICIT NONE
 
       INTEGER  :: ient
-      INTEGER  :: i
+      INTEGER  :: i, j
       INTEGER  :: num_entry
       REAL(sz) :: TIMELOC, wtratio
       REAL( 8), SAVE, ALLOCATABLE :: xcoor(:),ycoor(:)
@@ -5363,6 +5262,7 @@ C***********************************************************************
       REAL(sz),SAVE :: timeNew
       REAL(sz) :: uTransNow, vTransNow ! time-interpolated overland speed, kts
       REAL(sz) :: dirNow ! Jie
+      REAL(sz) :: numRmaxes ! number of Rmax values selected by user
       CHARACTER(1) ew,ns
       INTEGER, SAVE :: num_cycles ! num unique date/times in the fort.22
       
@@ -5771,10 +5671,18 @@ C     we are running off the end of the data.
          FoundEye = .true.
       ENDIF
 
-      ! arithmetic mean of the Rmax in the 4 storm quadrants
-      !do i=1,4
-      !   vortexRMW = vortexRMW + 0.25d0*crmaxw(i)
-      !end do
+      ! jgf: arithmetic mean of the Rmax in the selected storm quadrants from 
+      ! the selected isotachs 
+      numRmaxes = 0.d0 ! count how many Rmax values we have to work with
+      do i=1,4  ! loop quads
+         do j=1,3 ! loop isotachs 
+            if (quadflag(icyc,i,j)==1) then
+               vortexRMW = vortexRMW + rmaxw(icyc,i,j)
+               numRmaxes = numRmaxes + 1.d0
+            endif
+         end do
+      enddo
+      vortexRMW = vortexRMW / numRmaxes
 
       !-------------------------------
       ! Create a new asymmetric hurricane vortex.
@@ -7207,7 +7115,7 @@ C
 C     We jump to this section if there was an error reading a file.
 500   call allMessage(ERROR,'Unexpectedly reached end-of-file.') ! END jumps here
 600   call allMessage(ERROR,'I/O error during file access.') !  ERR jumps here
-      write(scratchMessage,'(a,i0,a)') 'Failed to read line ',lineNum,'.' 
+      write(scratchMessage,'(a,i0,a)')'Failed to read line ',lineNum,'.' 
       call allMessage(ERROR,scratchMessage) 
       call allMessage(ERROR,
      &                  'Check the fort.16 file for more information.')
@@ -7224,6 +7132,372 @@ C----------------------------------------------------------------------
       end subroutine rsget
 C----------------------------------------------------------------------
 
+
+C----------------------------------------------------------------------
+C          S U B R O U T I N E     I N I T   O F F S E T      
+C----------------------------------------------------------------------
+C      jgf: Initialize i/o for water level offset file.     
+C
+C      file format:
+C      ! 1st line is a comment line
+C      14400.0       ! 2nd line: time increment between datasets (s)       
+C      0.0           ! 3rd line: default water level offset value (m)
+C      1     0.3048  ! subsequent lines consist of node number and offset value
+C      3     0.3048  ! only for non-default values 
+C      10    0.30
+C      115   0.3048
+C      307   0.305
+C      ##            ! "#" as 2nd character on the line:start of next dataset
+C      1     0.2048  ! subsequent lines consist of node number and offset value
+C      3     0.2048  ! in second data set ...
+C      10    0.20
+C      115   0.4048
+C      307   0.405
+C      ##
+C      ...
+C
+C      If the file consists of only one data set, the data are treated
+C      as a constant throughout the run. Time varying ramping of the 
+C      data are controlled by the offsetRampStart and offsetRampEnd 
+C      parameters in the fort.15 offsetControl namelist. 
+C 
+C----------------------------------------------------------------------
+      subroutine initOffset(timesec)
+      use sizes, only : globaldir
+      use global, only : nabout, np_g
+      use mesh, only : np
+      implicit none  
+      real(sz), intent(in) :: timesec ! adcirc model time (s)
+      integer :: errorio ! i/o error condition code
+
+      call setMessageSource("initOffset")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      !
+      ! Check to make sure the offset file actually exists and if so, open it
+      errorio = 0
+      ! jgf: First try looking in the full domain input file directory
+      call openFileForRead(offun,
+     &   trim(globaldir)//"/"//trim(offsetFileName), errorio)
+      ! If the file was not found, in the directory with the other
+      ! full domain input files, perhaps it was provided with a full path?
+      if (errorio.gt.0) then
+         call openFileForRead(offun,trim(offsetFileName), errorio)      
+      endif   
+      ! give up if the file was still not found      
+      if (errorio.gt.0) then
+         call windTerminate()
+      endif
+      ! file exists, allocate space to hold the data
+#ifdef CMPI
+      allocate(offsetFD(np_g))
+      offsetFD(:) = 0.d0
+#endif 
+      allocate(offsetsOld_m(np))
+      allocate(offsetsNew_m(np))      
+      !
+      ! read header
+      offsetCurrentLine = 1
+      ! first line is a comment line
+      read(offun,'(A)',end=256,err=258,iostat=errorio) offsetComment
+      call logMessage(ECHO,"offsetComment: "//trim(offsetComment))
+      offsetCurrentLine = offsetCurrentLine + 1
+      ! 2nd line is time increment between datasets 
+      read(offun,fmt=*,end=256,err=258,iostat=errorio) offsetTimeIncrement
+      write(scratchMessage,'(a,f15.7)') "offsetTimeIncrement: ",
+     &    offsetTimeIncrement 
+      call logMessage(ECHO,scratchMessage)
+      offsetCurrentLine = offsetCurrentLine + 1
+      ! 3nd line is default offset value 
+      read(offun,fmt=*,end=256,err=258,iostat=errorio) offsetDefaultValue
+      write(scratchMessage,'(a,f15.7)') "offsetDefaultValue: ",
+     &    offsetDefaultValue 
+      call logMessage(ECHO,scratchMessage)
+      offsetCurrentLine = offsetCurrentLine + 1            
+      ! initialize array values to zero -- can be used as blank snaps
+      offsetsOld_m(:) = 0.d0
+      offsetsNew_m(:) = 0.d0
+      !
+      ! the common case is that offsetSkipSnaps will be 0 and we need
+      ! to read the first two datasets
+      !
+      ! may also need to skip datasets (insert blank datasets if
+      ! offsetSkipSnaps is negative) 
+      !
+      ! if there is only one dataset, the offsetIsConstant flag is raised
+      offsetDataSetCounter = 0
+      offsetBlankSnaps = 2
+      do while (offsetDataSetCounter.lt.(offsetSkipSnaps+2))
+         if (offsetFileEnded.eqv..true.) then
+            exit         
+         endif
+         ! read the next snap from file
+         call readOffsetDataSet()
+         offsetBlankSnaps = offsetBlankSnaps - 1
+      end do
+      !
+      ! set the time corresponding to the two datasets we are 
+      ! interpolating between
+      offsetTimeOld = timesec
+      offsetTimeNew = timesec + offsetTimeIncrement
+      !
+      ! set ramp times relative to specified reference
+      select case(trim(offsetRampReferenceTime))
+      case('hotstart','Hotstart','HotStart','HOTSTART')
+         offsetRampStart = timesec + offsetRampStart
+         offsetRampEnd = timesec + offsetRampEnd
+      case('coldstart','Coldstart','ColdStart','COLDSTART')
+         if (offsetRampStart.lt.0.d0.or.offsetRampEnd.lt.0.d0) then
+            call allMessage(ERROR,'Water level offset ramp reference '//
+     &      'time was set to coldstart but negative ramp time(s) '//
+     &      'were found.')
+            call windTerminate()
+         endif
+      case default
+         call allMessage(ERROR,'Water level offset ramp '//
+     &   'reference time was set to "'//trim(offsetRampReferenceTime)//
+     &   '" which is not a valid value. The offsetRampReferenceTime '//
+     &   'parameter must be set to "coldstart" or "hotstart".')
+         call windTerminate()
+      end select
+      ! 
+      ! make sure start of ramp occurs before end of ramp
+      if (offsetRampStart.gt.offsetRampEnd) then
+         call allMessage(ERROR,
+     &   'offsetRampStart is after offsetRampEnd.')
+         call windTerminate()
+      endif 
+           
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+      
+256   call allMessage(ERROR,'Unexpectedly reached end-of-file.') ! END jumps here
+258   call allMessage(ERROR,'I/O error during file access.') !  ERR jumps here
+      call allMessage(INFO,
+     &   'Check the fort.16 file for more information.')
+      if (nabout.gt.0) then
+         call allMessage(INFO,
+     &  'Reducing the value of NABOUT to 0'
+     &  //' will maximize the information written to the fort.16 file,'
+     &  //' which may aid in troubleshooting this issue.')
+      endif
+      write(scratchMessage,'("Could not read line ",i0," of ",a,".")')
+     &  offsetCurrentLine, trim(offsetFileName)
+      call allMessage(ERROR,scratchMessage)
+      write(scratchMessage,'(a,i0,a)')
+     &       'The value of the i/o error flag was ',errorio,'.'
+      call allMessage(ERROR,scratchMessage)
+      CALL windTerminate()
+
+      
+C----------------------------------------------------------------------
+      end subroutine initOffset
+C----------------------------------------------------------------------      
+
+C----------------------------------------------------------------------
+C      S U B R O U T I N E    G E T   O F F S E T S
+C----------------------------------------------------------------------
+C     jgf: Uses water level offset data that has already been
+C     read from file, along with control parameters including
+C     offsetMultiplier, offsetRampStart, and offsetRampEnd, 
+C     as well as the current adcirc time to set the offset values
+C     for the current time step. 
+C
+C     If all the data have been read from the file, the offset
+C     value remains constant according to the last dataset read
+C     from the file. 
+C----------------------------------------------------------------------
+      subroutine getOffsets(offsetsArray, timesec)
+      use mesh, only : np
+      implicit none
+      real(sz), intent(in) :: timesec ! current adcirc time
+      real(sz), intent(out) :: offsetsArray(np)
+      real(sz) :: offsetRamp ! linear time varying ramp value
+      integer :: i ! jgfdebug
+      call setMessageSource("getOffsets")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif  
+      !
+      ! hold data constant after last snap 
+      if ( offsetIsConstant.eqv..false.) then
+         if ( (timesec.gt.offsetTimeNew)
+     &        .and.(offsetFileEnded.eqv..true.) ) then
+            offsetIsConstant = .true. 
+         endif
+      endif
+      !
+      if ( offsetIsConstant.eqv..true. ) then
+         offsetsArray(:) = offsetsNew_m(:)
+      else        
+         ! read new data if it is time
+         if ( timesec.gt.offsetTimeNew ) then
+            do while (timesec.gt.offsetTimeNew) 
+               ! insert blanks if needed
+               if (offsetSkipSnaps.lt.(-1*offsetBlankSnaps)) then
+                  ! both datasets still have all zero values
+                  offsetBlankSnaps = offsetBlankSnaps + 1 
+               else
+                  call readOffsetDataSet()
+               endif
+               offsetTimeOld = offsetTimeNew
+               offsetTimeNew = offsetTimeNew + offsetTimeIncrement
+               if ( offsetFileEnded.eqv..true.) then
+                  exit
+               endif
+            end do
+         endif
+         ! perform time interpolation
+         offsetsArray(:) = 
+     &       (timesec - offsetTimeOld) / (offsetTimeNew - offsetTimeOld ) 
+     &       * ( offsetsNew_m(:) - offsetsOld_m(:) ) + offsetsOld_m(:) 
+      endif
+      !
+      ! set to zero everywhere prior to the start of the ramping period 
+      if (timesec.lt.offsetRampStart) then
+         offsetsArray(:) = 0.d0
+      endif
+      ! compute and apply linear ramp during ramping period
+      if ((timesec.ge.offsetRampStart).and.(timesec.le.offsetRampEnd)) then
+         ! compute linear ramp value
+         offsetRamp = ( timesec - offsetRampStart) 
+     &               / ( offsetRampEnd - offsetRampStart )
+         offsetsArray(:) = offsetsArray(:) * offsetRamp
+      endif
+      ! just leave the raw values alone after the end of ramp period
+      !
+      ! apply offset multiplier if any
+      offsetsArray(:) = offsetMultiplier * offsetsArray(:)
+
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+
+C----------------------------------------------------------------------
+      end subroutine getOffsets
+C----------------------------------------------------------------------      
+
+
+C----------------------------------------------------------------------
+C      S U B R O U T I N E    R E A D   O F F S E T   D A T A S E T
+C----------------------------------------------------------------------
+C     jgf: Reads a water level offset dataset from file. 
+C----------------------------------------------------------------------
+      subroutine readOffsetDataSet()
+      use global, only : nabout, np_g, nodes_lg
+      use mesh, only : np
+      implicit none
+      integer :: numOffsetValues
+      integer :: nhg ! fulldomain node number 
+      real(sz) :: offset_val ! water level offset value at that node
+      integer :: fd_node_number ! full domain node number
+      integer :: sd_node_number ! subdomain node number
+      logical :: nextOffsetDataSetFound ! true if a # is found in 2nd col
+      integer :: errorio ! error message code      
+
+      call setMessageSource("readOffsetDataSet")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif  
+      !
+      numOffsetValues = np
+#ifdef CMPI
+      numOffsetValues = np_g
+#endif
+      offsetsOld_m(:) = offsetsNew_m(:)
+      offsetsNew_m(:) = offsetDefaultValue      
+      nextOffsetDataSetFound = .false.
+      do ! loop until we run out of data or hit a "#" in column 2
+         read(offun,fmt='(a)',end=133,err=258,iostat=errorio) scratchMessage 
+         offsetCurrentLine = offsetCurrentLine + 1
+         ! check to see if the next dataset is about to start
+         if (scratchMessage(2:2).eq."#") then
+            nextOffsetDataSetFound = .true.
+            exit ! break out of do loop
+         endif
+         ! read the node number and value from the line 
+         read(scratchMessage,fmt=*,end=256,err=258,iostat=errorio) 
+     &        nhg, offset_val
+         ! check to make sure this is a valid node number
+         if ( (nhg.lt.1).or.(nhg.gt.numOffsetValues) ) then
+            write(scratchMessage,'(a,i0,a)')
+     &        'The node number on line ',offsetCurrentLine,
+     &        ' of the water '//
+     &        ' offset file is out of range.'
+            call allMessage(ERROR,scratchMessage)
+            call windTerminate()
+         endif     
+         ! set the offset value as specified
+#ifdef CMPI
+         offsetFD(nhg) = offset_val
+#else
+         offsetsNew_m(nhg) = offset_val
+#endif
+      end do
+ 133  continue ! jump to here if we've run out of lines in the offset file
+      offsetDataSetCounter = offsetDataSetCounter + 1
+      ! write log messages if that was the last dataset
+      if (nextOffsetDataSetFound.eqv..false.) then
+         offsetFileEnded = .true.
+         call logMessage(INFO,
+     &    'Finished reading the final water level offset dataset from "'
+     &      //trim(offsetFileName)//'".')
+         if ( offsetDataSetCounter.eq.1 ) then
+            offsetIsConstant = .true.
+            call logMessage(INFO,
+     &      'Only one water level offset dataset was found. '//
+     &      'The water level offset will therefore be constant in time.')
+         endif
+      endif
+
+#ifdef CMPI
+      ! map the full domain node number to the corresponding
+      ! subdomain node number
+      DO sd_node_number=1,np
+         ! get the corresponding fulldomain node number
+         fd_node_number = ABS(NODES_LG(sd_node_number))
+         ! fill in the subdomain arrays with the corresponding
+         ! fulldomain values
+         offsetsNew_m(sd_node_number) = offsetFD(fd_node_number)
+      END DO
+#endif         
+
+     
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+
+C
+C     We jump to this section if there was an error reading a file.
+256   call allMessage(ERROR,'Unexpectedly reached end-of-file.') ! END jumps here
+258   call allMessage(ERROR,'I/O error during file access.') !  ERR jumps here
+      call allMessage(INFO,
+     &   'Check the fort.16 file for more information.')
+      if (nabout.gt.0) then
+         call allMessage(INFO,
+     &  'Reducing the value of NABOUT to 0'
+     &  //' will maximize the information written to the fort.16 file,'
+     &  //' which may aid in troubleshooting this issue.')
+      endif
+      write(scratchMessage,'("Could not read line ",i0," of ",a,".")')
+     &  offsetCurrentLine, trim(offsetFileName)
+      call allMessage(ERROR,scratchMessage)
+      write(scratchMessage,'(a,i0,a)')
+     &       'The value of the i/o error flag was ',errorio,'.'
+      call allMessage(ERROR,scratchMessage)
+      CALL windTerminate()
+
+C----------------------------------------------------------------------
+      end subroutine readOffsetDataSet
+C----------------------------------------------------------------------      
 
 C----------------------------------------------------------------------
 C...  jgf50.38.05: Subroutine to terminate the run cleanly.

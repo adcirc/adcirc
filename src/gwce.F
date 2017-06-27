@@ -229,7 +229,8 @@ C
      &   SMAG_LOWER_LIM, SMAG_UPPER_LIM, TK, NOFF, UU1, VV1, QX1, QY1,
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
-     &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM
+     &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM,
+     &   usingWaterLevelOffset, offset1
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
@@ -283,6 +284,7 @@ C
       REAL(SZ) MX, MY, MXAvg, MYAvg
       REAL(SZ) JXAvg, JYAvg
       REAL(SZ) Pr1N1, Pr1N2, Pr1N3
+      REAL(SZ) Off1N1, Off1N2, Off1N3 ! water level offsets
       REAL(SZ) QX1N1, QX1N2, QX1N3, QY1N1, QY1N2, QY1N3, QX1Avg, QY1Avg
       REAL(SZ) SFacAvg
       REAL(SZ) T0N1,T0N2, T0N3
@@ -555,6 +557,14 @@ C...  Initialize variables to zero if these forcings are not used
         Pr1N3=0.d0
       ENDIF
 
+      ! jgf: Adding support for water level offset as a pseudo
+      ! barometric pressure
+      if (usingWaterLevelOffset.eqv..false.) then
+         Off1N1 = 0.d0
+         Off1N2 = 0.d0
+         Off1N3 = 0.d0
+      endif
+
       IF (CTIP) THEN
       ELSE
         TiPN1=0.d0
@@ -805,6 +815,13 @@ Corbitt 120322: Localized Advection
             Pr1N2=PR1(NM2)
             Pr1N3=PR1(NM3)
          ENDIF
+         ! jgf: Adding support for water level offset as a pseudo barometric
+         ! pressure
+         if (usingWaterLevelOffset.eqv..true.) then
+            Off1N1 = offset1(NM1)
+            Off1N2 = offset1(NM2)
+            Off1N3 = offset1(NM3)
+         endif
          IF (CTIP) THEN                        !tidal potential
             TiPN1=TiP1(NM1)
             TiPN2=TiP1(NM2)
@@ -933,15 +950,15 @@ C...     Compute the JX, JY terms less the advection terms
          JXAvg = CorifAvg*QY1Avg
      &          -IFNLFA*GOAreaIE4*(E1N1SQ*FDX1+E1N2SQ*FDX2
      &                                        +E1N3SQ*FDX3)
-     &          -GHAvgOAreaIE2*((PR1N1-TiPN1)*FDX1
-     &                     +(PR1N2-TiPN2)*FDX2+(PR1N3-TiPN3)*FDX3)
+     &          -GHAvgOAreaIE2*((PR1N1-TiPN1-Off1N1)*FDX1
+     &          +(PR1N2-TiPN2-Off1N2)*FDX2+(PR1N3-TiPN3-Off1N3)*FDX3)
      &          +WSXAvg-BSXAvg+MXAvg-DispXAvg-BCXAvg+Tau0QXAvg
 
          JYAvg =-CorifAvg*QX1Avg
      &          -IFNLFA*GOAreaIE4*(E1N1SQ*FDY1+E1N2SQ*FDY2
      &                                        +E1N3SQ*FDY3)
-     &          -GHAvgOAreaIE2*((PR1N1-TiPN1)*FDY1
-     &                    +(PR1N2-TiPN2)*FDY2+(PR1N3-TiPN3)*FDY3)
+     &          -GHAvgOAreaIE2*((PR1N1-TiPN1-Off1N1)*FDY1
+     &          +(PR1N2-TiPN2-Off1N2)*FDY2+(PR1N3-TiPN3-Off1N3)*FDY3)
      &          +WSYAvg-BSYAvg+MYAvg-DispYAvg-BCYAvg+Tau0QYAvg
 
 C...     Complete the JX, JY terms depending on the advection formulation
@@ -1148,6 +1165,13 @@ C     on and off according to analyst preference.
             ETA2(NBD(I))=ETA2(NBD(I))
      &          + RampMete*(101300.d0/(RHOWAT0*G)) - PR2(NBD(I))
          END DO
+      endif
+
+      !jgf: Added water level offset to elevation specified boundary
+      if (usingWaterLevelOffset.eqv..true.) then
+         DO I=1,NETA
+            ETA2(NBD(I))=ETA2(NBD(I)) + offset1(nbd(i)) 
+           END DO
       endif
 
 C   kmd48.33bc add information for the levels of no motion boundary conditions
