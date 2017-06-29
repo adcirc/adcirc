@@ -1558,6 +1558,17 @@ C
         ENDIF
       ENDIF
 C
+      
+      
+      
+      !Saeed hard coded here to force wind output
+      NOUTGW   = 3
+      TOUTSGW  = 0
+      TOUTFGW  = 100
+      NSPOOLGW = 100
+      
+     
+      !end of saeed hard coded
       IF (NWS.NE.0) THEN
         READ(15,80) OUTGWMSG
         READ(OUTGWMSG,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW

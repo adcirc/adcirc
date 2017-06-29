@@ -3833,14 +3833,27 @@ C...
 C...  IF NWS<>0   INPUT INFORMATION ABOUT GLOBAL WIND DATA OUTPUT
 C...
 C... v50.xx sm -- avoid reading file !TODO: I need to figure ou how to include this maybe
-      IF(NWS.NE.0 .and. NWS.ne.17) THEN
+      IF(NWS.NE.0 ) THEN
 
 C...  READ IN NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW : IF NOUTGW<>0, GLOBAL
 C...  WIND OUTPUT IS SPOOLED TO UNIT 74 EVERY NSPOOLGW TIME STEPS
 C...  BETWEEN TIMES TOUTSGW AND TOUTFGW; IF ABS(NOUTGW)=2, OUTPUT WILL
 C...  BE BINARY
 
-         READ(15,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
+
+C...      saeed hard coded
+         print *, " saeed hard coded  > NWS=17 for wind out put"
+         !NOUTGW, TOUTSGW, TOUTFGW, NSPOOLGW = output parameters which control
+         ! the time series output provided for wind stress or velocity 
+         !and atmospheric pressure at all nodes within the domain 
+         !(fort.73 and 74 output)
+         NOUTGW   = 3
+         TOUTSGW  = 0
+         TOUTFGW  = 1000
+         NSPOOLGW = 1800
+
+C        Saeed commented below line out
+C        READ(15,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW   !ORIGINAL
          WRITE(16,3451) NOUTGW
  3451    FORMAT(////,1X,'GLOBAL WIND STRESS INFORMATION OUTPUT : ',
      &           //,5X,'NOUTGW = ',I2)
