@@ -673,7 +673,7 @@ C     tcm v51.06.02 added NWS=16 GFDL Met Data
 !         IF (NWS.NE.0.AND.ABS(NWS).NE.12)  THEN
          IF ((NWS.NE.0).AND.(ABS(NWS).NE.3).AND.
      &      (ABS(NWS).NE.6).AND.(ABS(NWS).NE.12)
-     &      .AND.(ABS(NWS).NE.16)
+     &      .AND.(ABS(NWS).NE.16).AND.(ABS(NWS).NE.17)    !saeed added for 17 
      &      .AND.(ABS(NWS).NE.29))  THEN
             print *, "Ready to Write Local UNIT 22 File for each PE"
 C     jgf46.00 Added NWS=7
@@ -686,7 +686,7 @@ C     jie added NWS=20: generalized asymmetric vortex model
 c     tcm_v49.04 NWS=3 and NWS=6 no longer need fort.22 decomposition
             IF((NWS.EQ.1).OR.(ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.
      &           (ABS(NWS).EQ.5).OR.(NWS.EQ.7).OR.
-     &           (ABS(NWS).EQ.45)) THEN
+     &           (ABS(NWS).EQ.45).and.(NWS.ne.17)  ) THEN   !saeed added for 17 
                CALL PREP22()
 c           ELSEIF (NWS.EQ.10.OR.NWS.EQ.11) THEN
 c              CALL PREP200()

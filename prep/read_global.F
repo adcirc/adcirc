@@ -720,9 +720,10 @@ C
 C
       NRS=0
       NCICE = 0  !tcm v49.64.01 -- added for ice
-      READ(15,80) NWSMSG
+      READ(15,80) NWSMSG   !read the whole line ! saeed
       READ(NWSMSG,*) NWS
-
+      
+      print *, ' NWS' , NWS
 C....tcm v49.46 -- added logic to handle multiple NRS types (100's place)
 C.....tcm v49.64.01 Additions for ice
       IF(NWS.EQ.0) THEN
@@ -748,6 +749,7 @@ C     jgf49.0804 Added NWS29 VortexOWI format.
      &       (ABS(NWS).NE.8).AND.(ABS(NWS).NE.15).AND. !jgf50.38.05 Added NWS=15
      &       (ABS(NWS).NE.12) .AND. (ABS(NWS).NE.19).AND.
      &       (ABS(NWS).NE.20) .AND.
+     &       (ABS(NWS).NE.17) .AND.                    !added by saeed NWS=17 for NOUPC Cap
      &       (ABS(NWS).NE.29).and. (abs(NWS).ne.16))  THEN
            print *,"ERROR: Value for NWS not supported by parallel code"
            stop
@@ -769,6 +771,8 @@ C...  BE SURE NWS AND NCICE ARE COMPATABLE
 C     jgf46.08 Modified to accomodate fine grained ramp functions.
       READ(15,80) RAMPMSG
       READ(RAMPMSG,*) NRAMP
+      
+      print *, 'NRAMP ' , NRAMP
 Corbitt 120322: Includes Zach's Wind Ramping
       IF ((NRAMP.NE.0).AND.(NRAMP.GT.8)) THEN
          print *, "Value for NRAMP not allowed"
@@ -812,6 +816,9 @@ C     jgf47.11 Allow the limits of time varying tau0 to be read in from
 C     the fort.15 file
       READ(15,80) TAU0MSG
       READ(TAU0MSG,*) TAU0
+      
+      print *, 'TAU0MSG ' , TAU0MSG
+
       if ( abs((int(tau0)-tau0-0.1d0)).lt.1d-6 ) then
          outputTau0 = .true.
       else
@@ -825,12 +832,16 @@ C     the fort.15 file
 C
       READ(15,80) DTMSG
       READ(DTMSG,*) DT
+      print *, 'DT ' , DT
 C
       READ(15,80) STATMSG
       READ(STATMSG,*) STATIM
+      print *, 'STATIM ' , STATIM
 C
       READ(15,80) REFTMSG
       READ(REFTMSG,*) REFTIM
+      print *, 'REFTIM ' ,REFTIM       
+      
 C
 C--If wind stress and surface pressures are applied process this.
 C
@@ -903,9 +914,25 @@ C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
 C
 C     jgf49.0804 Added NWS29 VortexOWI -- don't think we need to
 C     parse out the WTIMINC or other parameters.
-      IF ((ABS(NWS)).EQ.29) THEN
+      IF (ABS(NWS).EQ.29 ) THEN
          READ(15,80) WSMSG1
       ENDIF
+
+C saeed added  TODO: I should remove this partialy: cap should provide the time of data exchanges
+      IF (ABS(NWS).EQ.17) THEN
+         READ(15,80) WSMSG1
+         print *, 'WSMSG1 ' , WSMSG1
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) THEN
+             READ(WSMSG1,*) WTIMINC
+         ELSEIF ((NCICE.EQ.0).AND.(NRS.GE.1)) THEN
+             READ(WSMSG1,*) WTIMINC , RSTIMINC
+         ELSEIF ((NCICE.GE.1).AND.(NRS.EQ.0)) THEN
+             READ(WSMSG1,*) WTIMINC , CICE_TIMINC
+         ELSEIF ((NCICE.GE.1).AND.(NRS.GE.1)) THEN
+             READ(WSMSG1,*) WTIMINC , RSTIMINC, CICE_TIMINC
+         END IF
+      ENDIF
+
 C
       IF(ABS(NWS).EQ.6) THEN
          READ(15,80) WSMSG1
@@ -925,11 +952,16 @@ C..... tcm v49.64.01 additions for ICE
          ENDIF
       ENDIF
 C
+
       READ(15,80) RNDAYMSG
       READ(RNDAYMSG,*) RNDAY
+      print *, ' RNDAY' , RNDAY
+
 C
       READ(15,80) DRAMPMSG
       READ(DRAMPMSG,*) DRAMP
+      print *, 'DRAMP ' , DRAMP
+
 C
       READ(15,80) COEFMSG
       READ(COEFMSG,*) A00,B00,C00
@@ -987,8 +1019,11 @@ C
       READ(15,80) CORIMSG
       READ(CORIMSG,*) CORI
 C
+      print *, ' CORI' , CORI
+
       READ(15,80) NTIFMSG
       READ(NTIFMSG,*) NTIF
+      print *, ' NTIF' ,NTIF 
       IF (NTIF.GT.MNTIF) THEN
          print *, "NTIF = ",NTIF, " exceeds parameter MNTIF = ",MNTIF
          stop
@@ -1133,6 +1168,8 @@ C--Read Elevation Recording Stations
 C...
       READ(15,80) STAEMSG
       READ(STAEMSG,*) NOUTE,TOUTSE,TOUTFE,NSPOOLE
+      print *, 'NOUTE ',NOUTE
+
       IF (ABS(NOUTE).GT.5) THEN
         print *, "The value of NOUTE is not allowed"
         stop
@@ -1241,6 +1278,8 @@ C--Read Velocity Recording Stations
 C
       READ(15,80) STAVMSG
       READ(STAVMSG,*) NOUTV,TOUTSV,TOUTFV,NSPOOLV
+      print *, ' NOUTV', NOUTV 
+          
       IF (ABS(NOUTV).GT.5) THEN
         print *, "Value for NOUTV is not allowable"
         stop
@@ -1248,6 +1287,8 @@ C
 C
       READ(15,80) NSTAVMSG
       READ(NSTAVMSG,*) NSTAV
+      
+      print *, ' NSTAV',NSTAV
       !tcm v51.20.03 -- addition for external velocity station location file vel_stat.151
       IF (NSTAV < 0 ) then
          WRITE(*,*) "External File Used for Velocity Station Locations"
@@ -1420,6 +1461,8 @@ C
 C
          READ(15,80) STAMMSG
          READ(STAMMSG,*) NOUTM,TOUTSM,TOUTFM,NSPOOLM
+         print *, ' NOUTM',NOUTM
+
          IF (ABS(NOUTM).GT.5) THEN
             print *, "Value of NOUTM is not allowable"
             stop
@@ -1427,6 +1470,8 @@ C
 C
          READ(15,80) NSTAMMSG
          READ(NSTAMMSG,*) NSTAM
+         print *, ' NSTAM',  NSTAM       
+   
          !tcm v51.20.03 -- addition for external met station file
          IF (NSTAM < 0 ) THEN
             WRITE(*,*) "External File Used for MET Station Locations"
@@ -1533,6 +1578,7 @@ C--Read Global Elevation Data Output
 C
       READ(15,80) OUTGEMSG
       READ(OUTGEMSG,*) NOUTGE,TOUTSGE,TOUTFGE,NSPOOLGE
+      print *, 'NOUTGE ',NOUTGE
       IF (ABS(NOUTGE).GT.7) THEN
          print *, "NOUTGE does not have an allowable value"
          stop
@@ -1562,16 +1608,17 @@ C
       
       
       !Saeed hard coded here to force wind output
-      NOUTGW   = 3
-      TOUTSGW  = 0
-      TOUTFGW  = 100
-      NSPOOLGW = 100
+      !NOUTGW   = 3
+      !TOUTSGW  = 0
+      !TOUTFGW  = 100
+      !NSPOOLGW = 100
       
      
       !end of saeed hard coded
       IF (NWS.NE.0) THEN
         READ(15,80) OUTGWMSG
         READ(OUTGWMSG,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
+        print *, ' NOUTGW',  NOUTGW      
 Casey 090302: Changed the following line for ABS(NOUTGW).EQ.4
         IF (ABS(NOUTGW).GT.7) THEN
           print *, "NOUTGW does not have an allowable value"
@@ -1583,6 +1630,7 @@ C--Read Harmonic Analysis Data
 C
       READ(15,80) HARFRMSG
       READ(HARFRMSG,*) NHARFR
+      print *, 'NHARFR ',NHARFR
       MNHARF = NHARFR
       IF (NHARFR.EQ.0) MNHARF = 1
       CALL ALLOC_HA()

@@ -12,8 +12,11 @@ LIBDIRS += -DALL_TRACE
 LIBDIRS += -DNUOPC
 
 # debug for gfortran
-# INCDIRS += -g -O0 -fbacktrace 
+# -- INCDIRS += -g -O0 -fbacktrace 
 
+
+# debug for intel
+INCDIRS += -g -traceback 
 
 LIBSS   :=  -lnetcdf  -lnetcdff -lhdf5 -lhdf5_fortran
 

@@ -649,6 +649,7 @@ C
       READ(15,*) IDUM  ! SKIP NABOUT
       READ(15,*) IDUM  ! SKIP NSCREEN
       READ(15,*) IHOT
+      print *, 'IHOT ',IHOT
       IF ((IHOT.EQ.367).OR.(IHOT.EQ.368).OR.
      &    (IHOT.EQ.567).OR.(IHOT.EQ.568)) THEN
          useNetCDF = .true.
@@ -742,6 +743,7 @@ C
       READ(15,*) NTIP                               !READ NTIP
       IF (NTIP.NE.0) CTIP = .TRUE.
       READ(15,*) NWS                                !READ NWS
+      print *, 'nws ', nws
       READ(15,*) NRAMP                              !SKIP OVER NRAMP
       READ(15,*) GRAVITY                            !SKIP OVER GRAVITY
       READ(15,*) TAU0                               !SKIP OVER TAU0
@@ -751,6 +753,7 @@ C
       READ(15,*) DT                                 !SKIP OVER DT
       READ(15,*) STATIM                             !SKIP OVER STATIM
       READ(15,*) REFTIM                             !SKIP OVER REFTIM
+      print *, ' REFTIM',REFTIM
       MNWLAT = 1
       MNWLON = 1
       MNWP=1
@@ -858,14 +861,28 @@ C.... tcm v49.64.01 additions for ice
         MNWP=MNP
       ENDIF
 
+C..... saeed added 
+      IF(ABS(NWS).EQ.17)  THEN
+        IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC            !SKIP OVER WTIMINC
+        IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC
+        IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,CICE_TIMINC            !SKIP OVER WTIMINC
+        IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC,CICE_TIMINC
+        print *, ' WTIMINC',WTIMINC 
+      ENDIF
+      
+       
       DO IL=1,2                                    !SKIP OVER RNDAY,DRAMP
          READ(15,*) RDUM
+         print *, 'NDAY,DRAMP ',RDUM
       ENDDO
       READ(15,*) A00,B00,C00                       !READ IN GWCE TIME WEIGHTING COEFFS
       DO IL=1,5                                    !SKIP OVER H0 - CORI
          READ(15,*) RDUM
       ENDDO
+      print *, ' CORI',RDUM
+
       READ(15,*) NTIF                              !PROCESS NTIF
+      print *, 'NTIF ',NTIF
       DO IL=1,NTIF                                 !SKIP OVER TIPOTAG & TPK, AMIGT,etc.
  26      READ(15,80) LINEI
          DO I=1,95
@@ -926,6 +943,7 @@ C
       MNSTAE=0
       MNSTAE2=0
       READ(15,*)  IDUM                              !SKIP OVER NOUTE, TOUTSE...
+       print *, 'NOUTE, TOUTSE. ',IDUM 
       call setFormatUsage(idum)
 
       READ(15,*) MNSTAE                             !PROCESS MNSTAE
@@ -959,6 +977,7 @@ C
       MNSTAV=0
       MNSTAV2=0
       READ(15,*) IDUM                               !SKIP OVER NOUTV, TOUTSV...
+      print *, ' NOUTV, TOUTSV.',IDUM
       call setFormatUsage(idum)
 
       READ(15,*) MNSTAV                             !PROCESS MNSTAV
@@ -993,6 +1012,7 @@ C
       MNSTAC2=0
       IF(IM.EQ.10) THEN
          READ(15,*) IDUM                            !SKIP OVER NOUTC, TOUTSC...
+         print *, ' NOUTC, TOUTSC.',IDUM
          call setFormatUsage(idum)
 
          READ(15,*) MNSTAC                          !PROCESS MNSTAC
@@ -1028,6 +1048,7 @@ C
       MNSTAM2=0
       IF(NWS.NE.0) THEN
         READ(15,*) IDUM                           !SKIP OVER NOUTM, TOUTSM...
+        print *, 'NOUTM, TOUTSM.. ',IDUM
         call setFormatUsage(idum)
 
         READ(15,*) MNSTAM                         !PROCESS MNSTAM
@@ -1059,6 +1080,7 @@ C
       IF(MNSTAM.EQ.0) MNSTAM=1
 C
       READ(15,*) IDUM                            !SKIP OVER NOUTGE, TOUTSGE...
+      print *, 'NOUTGE, TOUTSGE.. ',  IDUM    
       call setFormatUsage(idum)
 
       READ(15,*) IDUM                            !SKIP OVER NOUTGV, TOUTSGV...
@@ -1066,13 +1088,16 @@ C
       
       IF (IM.EQ.10) THEN 
          READ(15,*) IDUM               !SKIP OVER NOUTGC, TOUTSGC...
+         print *, 'NOUTGC, TOUTSGC.. ',IDUM
          call setFormatUsage(idum)
       ENDIF
       IF (NWS.NE.0) THEN
          READ(15,*) IDUM               !SKIP OVER NOUTGW, TOUTSGW...
+         print *, 'NOUTGW, TOUTSGW.. ', IDUM        
          call setFormatUsage(idum)
       ENDIF
       READ(15,*) NHARF                           !PROCESS MNHARF
+      print *, 'NHARF ',NHARF
       DO IL1=1,NHARF
  47      READ(15,80) LINEI                       !SKIP OVER HAFNAM
          DO I=1,95
@@ -1081,6 +1106,9 @@ C
          GOTO 47
  48      READ(15,*) RDUM,RDUM,RDUM             !SKIP OVER HAFREQ,HAFF,HAFACE
       ENDDO
+      print *, '  >>>>>>>> ',RDUM
+
+
 C
       READ(15,*) THAS,THAF,NHAINC,FMV               !READ THAS,...FMV
       READ(15,*) IDUM,IDUM,IDUM,IDUM                !SKIP OVER NHASE,NHASV,...

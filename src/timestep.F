@@ -239,7 +239,6 @@ C   TCM v50.66.02 -- Added for Time Varying Bathymetry
       INTEGER :: IJK
       REAL(SZ) ETA2TMP,DPTMP,DPTMP2,BTRATIO  !tcm v50.66.01 bathymetry changes
 
-
       call setMessageSource("timestep")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -264,6 +263,10 @@ C     jgf46.21 Combined flux/radiation b.c. for rivers
         FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDP)
       END IF
 #endif
+
+
+
+
 
 C...  COMPUTE MASTER TIME WHICH IS REFERENCED TO THE BEGINNING TIME OF
 C...  THE MODEL RUN
@@ -1279,7 +1282,7 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
             WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PR2(I) = RampMete*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PR2(I)  = RampMete*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
             WVNXOUT(I)=RampMete*WINDX
             WVNYOUT(I)=RampMete*WINDY
             ! compute wind stress due to vortex met at this node
@@ -1411,12 +1414,18 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 
 C... v50.xx sm -- nws=17 for NUOPC coupling hwrf data from coupler
       IF(NWS.eq.17) THEN
-C         print *, 'WTIME2, WTIMINC > ', WTIME2, WTIMINC
+         !print *, 'WTIME2, WTIMINC > ', WTIME2, WTIMINC
          IF(TimeLoc.GT.WTIME2) THEN
             WTIME1=WTIME2
             WTIME2=WTIME2+WTIMINC
          ENDIF
          WTRatio=(TimeLoc-WTIME1)/WTIMINC
+         
+         if (WTRatio .GE. 1.0) then
+             WTRatio = 1.0
+             print *, '[Warning:] WTRatio is GE 1.0 and Set to 1.0'
+         endif     
+
          DO I=1,NP
             WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
@@ -1442,12 +1451,54 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
             WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
 C  tcm v49.16 20100617
-!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+
+!           PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                           -PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+
+          !print *,  'WTRatio ', WTRatio
+          !print *,  'RampMete ' , RampMete
+          !print *, 'WTIME1 ' ,WTIME1 
+          !print *, 'TimeLoc ' , TimeLoc
+          !print *, 'WTIMINC ' , WTIMINC
+         END DO
+      ENDIF
+
+      !print *, 'maxval(WVNX1), maxval(WVNX2) > ', maxval(WVNX1), maxval(WVNX2)
+      !print *, 'maxval(WSX1), maxval(WSX2) > '  , maxval(WSX1), maxval(WSX2)
+      !print *, 'maxval(PR1),  maxval(PR2) > '   , maxval(PR1), maxval(PR2)
+      !print *, RampMete,WDragCo,WindX,WindMag,WTIMINC
+C
+C    kmd48.33bc - added in information for the sponge layer
+       IF ((C3D).AND.(RES_BC_FLAG.GT.0).AND.(NWS.NE.0)) THEN
+         DO I=1,NP
+            WSX2(I)=sponge(I)*WSX2(I)
+            WSY2(I)=sponge(I)*WSY2(I)
+         END DO
+       END IF
+
+
+C... v5X.xx saeed -- nws=17 for NUOPC coupling hwrf data from coupler
+      !print *, ' test in time step ...  line 1468'
+      IF(NWS.eq.34242317) THEN
+         !no ramping no interpolation  
+         DO I=1,NP
+            WindX = WVNX2(I)
+            WindY = WVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+           
+            WSX2(I) = 0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = 0.001293d0*WDragCo*WindY*WindMag
+
+            !PRDIFF = (PRN2(I)- 1013.0*100.D0/(RHOWAT0*G) )  ! PRN2 in mH2O
+            !PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            PR2(I) = PRN2(I)
+            WVNXOUT(I)= WindX
+            WVNYOUT(I)= WindY
          END DO
       ENDIF
 
@@ -1462,6 +1513,23 @@ C    kmd48.33bc - added in information for the sponge layer
             WSY2(I)=sponge(I)*WSY2(I)
          END DO
        END IF
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 C
 C--------------------END MET FORCING---------------------------------------

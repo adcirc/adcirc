@@ -474,6 +474,7 @@ C...
 C...  READ AND PROCESS IHOT - HOT START OPTION
 C...
       READ(15,*) IHOT
+      print *, ' IHOT ' , IHOT
       WRITE(scratchMessage,'("IHOT=",I3,".")') IHOT
       CALL logMessage(ECHO,scratchMessage)
 
@@ -518,6 +519,7 @@ C...
 C...  READ AND PROCESS ICS - CARTESIAN/SPHERICAL COORDINATE OPTION
 C...
       READ(15,*) ICS
+      print *, 'ICS  ' , ICS
       IF((ICS.NE.1).AND.(ICS.NE.2)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
@@ -548,6 +550,7 @@ C...
 C...  READ AND PROCESS IM - 2D/3D MODEL FORMULATION OPTION
 C...
       READ(15,*) IM
+      print *, ' IM ' , IM
       WRITE(16,*) ' '
       WRITE(16,*) '    IM = ',IM
       WRITE(16,*) ' '
@@ -850,6 +853,7 @@ C...
 C...  READ AND PROCESS NOLIBF - NONLINEAR BOTTOM FRICTION OPTION
 C...
       READ(15,*) NOLIBF
+      print *, ' NOLIBF ' , NOLIBF
       IF((NOLIBF.LT.0).OR.(NOLIBF.GT.2)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
@@ -880,6 +884,7 @@ C...
 C... READ AND PROCESS NOLIFA - NONLINEAR FINITE AMPLITUDE OPTION
 C...
       READ(15,*) NOLIFA
+      print *, ' NOLIFA ' , NOLIFA
       IF((NOLIFA.LT.0).OR.(NOLIFA.GT.2)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)       ! input error
@@ -933,6 +938,7 @@ C...
 C...  READ AND PROCESS NOLICA - ADVECTIVE TERM SPATIAL GRADIENT
 C...
       READ(15,*) NOLICA
+      print *, ' NOLICA ' , NOLICA
       IF((NOLICA.LT.0).OR.(NOLICA.GT.1)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
@@ -1070,6 +1076,7 @@ C     tau0, bottom friction, directional wind speed reduction factor,
 C     startdry, etc. The full initialization and error checking of these
 C     data must wait until the grid has been read in from unit 14.
       READ(15,*) NWP
+      print *, ' NWP ' , NWP
       CALL ReadNodalAttr(NScreen, ScreenUnit, MyProc, NAbOut)
 C...
 C...  READ AND PROCESS NCOR - SPATIALLY VARYING CORIOLIS PARAMETER
@@ -1124,6 +1131,7 @@ C...
 C...  READ AND PROCESS NTIP - TIDAL POTENTIAL FORCING
 C...
       READ(15,*) NTIP
+      print *, ' NTIP ' , NTIP
       IF((NTIP.LT.0).OR.(NTIP.GT.2)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
@@ -1191,6 +1199,7 @@ C     tcm v49.64.01 Added NWS = 1xxx's for ice concentration
       NCICE = 0  !set ice type to be 0
 C
       READ(15,FMT=*,END=99998,ERR=99999) NWS
+      print *, ' NWS ' , NWS
 C
 C.... BREAK OUT THE ICE CONCENTRATION FLAG FROM NWS/NRS
       IF (NWS.EQ.0) THEN
@@ -1806,6 +1815,7 @@ C...  READ AND PROCESS NRAMP - WHETHER A RAMP FUNCTION WILL BE USED
 C...
 C     jgf46.08 Change to the number of ramp functions that will be used.
       READ(15,*) NRAMP
+      print *, 'NRAMP  ' ,   NRAMP    
       IF((NRAMP.NE.0).AND.(NRAMP.gt.8)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
@@ -1838,6 +1848,7 @@ C...
 C...  PROCESS G - GRAVITY
 C...
       READ(15,*) G
+      print *, ' G ' , G
       IF((ICS.EQ.2).AND.(abs(G-9.81).gt.0.01)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
@@ -1872,6 +1883,7 @@ C     scheme. Since Tau0 is a nodal attribute, it is initialized later
 C     in this subroutine using a CALL to the InitNodalAttr subroutine in
 C     the NodalAttributes module.
       READ(15,*) Tau0
+      print *, 'Tau0  ' , Tau0
 C
 C     jgf47.11 Added a line to the fort.15 file to read in the min
 C     and max tau0 values, if the user has chosen to use the time
@@ -1893,6 +1905,7 @@ C...
 ckmd   Changed the time step to allow for negative values in
 ckmd   order to turn on the predictor-corrector algorithm.
       READ(15,*) DTDP
+      print *, 'DTDP  ' , DTDP
       IF(DTDP.LT.0.d0) THEN
          CPRECOR    = .TRUE.
          CGWCE_New  = .FALSE. !jgf Turn off the default.
@@ -1934,7 +1947,7 @@ C...
 C...  Read in and process additional timing information for wind.
 C...
 C... v50.xx sm -- avoid reading file and get it from WW3 on the fly
-      IF((NWS.EQ.0).AND.(NRS.GE.1).AND. .NOT. NUOPC4WAV) READ(15,*) RSTIMINC ! sb46.28sb03
+      IF((NWS.EQ.0).AND.(NRS.GE.1)) READ(15,*) RSTIMINC ! sb46.28sb03
       IF((NWS.EQ.1).AND.(NRS.GE.1)) READ(15,*) RSTIMINC ! sb46.28sb03
       IF(ABS(NWS).EQ.2) THEN
          IF(NRS.EQ.0) READ(15,*) WTIMINC
@@ -2140,15 +2153,28 @@ C     an OWI basin scale met field derived from NAM winds.
          IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC,
      &                                                 CICE_TIMINC
       ENDIF
-
-C... v50.xx sm -- added for NWS=17 to read ice flag
+      
+      print *, ' 00 >>>>>>>> ',NWS,WTIMINC,RSTIMINC,REFTIM,G,DT
+C... v50.xx sm -- added for NWS=17 to read ice flag 
+C...  We read both WTIMINC,RSTIMINC but dummy for now
+C...  TODO:Some thing fishy is going on here . I hope Jason can go through this and prep !!!!!!!! -Saeed
+C...  I like not to read WTIMINC,RSTIMINC,CICE_TIMINC at all. Coupler should provide these info internally
+C saeed added  TODO: I should remove this partialy: cap should provide the time of data exchanges
       IF(ABS(NWS).EQ.17) THEN
-C...     
-         ! when coupled by nuopc the timestep of wind and wave will be passed by nuopc sm
-         ! therefore Comment out ! READ(15,*) WTIMINC,RSTIMINC,
-         IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) CICE_TIMINC
+         !IF(NCICE.EQ.0) READ(15,*) WTIMINC,RSTIMINC   !read dummy for now
+         !IF(NCICE.GE.1) READ(15,*) WTIMINC,RSTIMINC ,CICE_TIMINC
+        IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC            !SKIP OVER WTIMINC
+        IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC
+        IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,CICE_TIMINC            !SKIP OVER WTIMINC
+        IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC,CICE_TIMINC
+        print *, ' WTIMINC',WTIMINC , ' NCICE ', NCICE, ' NRS' , NRS, 'NWS ' , NWS
+
+
+
+         print *, ' 11 >>>>>>>> ',NWS,WTIMINC,RSTIMINC
       ENDIF
 
+         print *, ' 22 >>>>>>>> ',NWS,WTIMINC,RSTIMINC
 
       IF(NWS.NE.0) WRITE(16,1117) WTIMINC
  1117 FORMAT(5X,'WIND TIME INCREMENT (SEC) = ',F10.2,/)
@@ -2210,6 +2236,7 @@ C...
 C...  READ AND PROCESS RNDAY - SIMULATION DURATION IN DAYS
 C...
       READ(15,*) RNDAY
+      print *, ' RNDAY ' , RNDAY      
       WRITE(16,10) RNDAY
  10   FORMAT(5X,'TOTAL LENGTH OF NUMERICAL SIMULATION =',F12.4,
      &       5X,'DAYS',/)
@@ -2231,6 +2258,9 @@ C...
 #endif
       WRITE(16,1920) NT
  1920 FORMAT(5X,'NUMBER OF TIME STEPS  =',I8,/)
+ 
+       print *, 'DTDP ',DTDP
+ 
 C...
 C...  READ AND PROCESS EFFECTIVE LENGTH OF THE HYPERBOLIC TANGENT RAMP(S)
 C...  IN DAYS
@@ -2315,6 +2345,8 @@ C     ------------
          WRITE(16,*) 'NRAMP =',NRAMP
          WRITE(16,9713)
          WRITE(16,9973)
+
+         print *, ' NRAMP ',NRAMP
 #ifdef CMPI
          call msg_fini()
 #endif
@@ -2345,6 +2377,8 @@ C
             IF(Day.LT.DRAMP*1.25) GOTO 999
          ENDIF
       ENDIF
+
+      print *, 'DRAMP ',DRAMP
 C...
 C...  READ GWCE TIME WEIGHTING FACTORS
 C...
@@ -2384,6 +2418,7 @@ C     projection is centered (in degrees) if ICS = 2. (The reading of
 C     the top of the grid file, including NE and NP, was moved nearer to
 C     the beginning of this subroutine.)
       READ(15,*) SLAM0,SFEA0
+      print *, ' SLAM0,SFEA0 ' , SLAM0,SFEA0
       WRITE(16,1112)
       WRITE(16,246)
  246  FORMAT(//,1X,'GRID INFORMATION',//)
@@ -2644,6 +2679,8 @@ C...
  2090 FORMAT(//,1X,'CORIOLIS INFORMATION ',//)
 
       READ(15,*) CORI
+      print *, '  CORI' , CORI
+      
       IF(NCOR.EQ.0) THEN
          DO I=1,NP
             CORIF(I)=CORI
@@ -2794,6 +2831,7 @@ C...  EQUILIBRIUM ARGUMENTS AND AN ELEVATION BOUNDARY CONDITION
 C...  ALPHANUMERIC DESCRIPTOR
 C...
 1893  READ(15,*) NBFR
+      print *, 'NBFR  ' , NBFR
       MNBFR = NBFR
       IF (NBFR.EQ.0) MNBFR = 1
 
@@ -2840,6 +2878,7 @@ C.....WILL BE ZEROED IN THE TANGENTIAL DIRECTIONS WHEN NORMAL FLOW IS AN
 C.....ESSENTIAL B.C.
 
       READ(15,*) ANGINN
+      print *, ' ANGINN ' , ANGINN
       WRITE(16,1112)
       WRITE(16,7654) ANGINN
 7654  FORMAT(//,5X,'ANGINN = ',F8.2,' DEGREES',
@@ -2983,6 +3022,7 @@ C....ELEVATIONS AT ELEVATION STATIONS ARE SPOOLED TO UNIT 61 EVERY NSPOOLE
 C....TIME STEPS BETWEEN TIMES TOUTSE AND TOUTFE
 
       READ(15,*) NOUTE,TOUTSE,TOUTFE,NSPOOLE
+      print *, ' NOUTE ' , NOUTE
       WRITE(16,3001) NOUTE
  3001 FORMAT(///,1X,'ELEVATION RECORDING STATION OUTPUT : ',
      &        //,5X,'NOUTE = ',I2)
@@ -3125,6 +3165,7 @@ C....VELOCITY STATIONS ARE SPOOLED TO UNIT 62 EVERY NSPOOLV TIME STEPS BETWEEN
 C....TIMES TOUTSV AND TOUTFV; IF ABS(NOUTV)=2, OUTPUT WILL BE BINARY
 
       READ(15,*) NOUTV,TOUTSV,TOUTFV,NSPOOLV
+      print *, ' NOUTV ' , NOUTV
       WRITE(16,3101) NOUTV
  3101 FORMAT(////,1X,'VELOCITY RECORDING STATION OUTPUT : ',
      &         //,5X,'NOUTV = ',I2)
@@ -3196,6 +3237,7 @@ C....REGARDLESS OF WHETHER NOUTV=0, READ IN THE NUMBER OF VELOCITY
 C....RECORDING STATIONS
 
       READ(15,*) NSTAV
+      print *, ' NSTAV ' ,   NSTAV    
       STAT_LUN = 15
       IF (NSTAV < 0) THEN
          USE_VEL_STAT_FILE = .TRUE.
@@ -3341,6 +3383,7 @@ C...  REGARDLESS OF WHETHER NOUTC=0, READ IN THE NUMBER OF CONCENTRATION
 C...  RECORDING STATIONS
 
          READ(15,*) NSTAC
+         print *, ' NSTAC ' ,  NSTAC        
          STAT_LUN = 15
          IF (NSTAC < 0) THEN
             USE_CONC_STAT_FILE = .TRUE.
@@ -3407,13 +3450,14 @@ C...
       NSTAM=0
 C
 C... v50.xx sm -- avoid reading file !TODO: I need to figure ou how to include this maybe
-      IF(NWS.NE.0 .and. NWS.ne.17) THEN
+      IF(NWS.NE.0) THEN
 
 C...  READ IN NOUTM,TOUTSM,TOUTFM,NSPOOLM : IF NOUTM<>0,INTERPOLATED
 C...  MET DATA ARE SPOOLED TO UNITS 71&72 EVERY NSPOOLM TIME STEPS
 C...  BETWEEN TIMES TOUTSM AND TOUTFM; IF ABS(NOUTM)=2, OUTPUT WILL BE BINARY
 
          READ(15,*) NOUTM,TOUTSM,TOUTFM,NSPOOLM
+         print *, ' NOUTM ' , NOUTM
          WRITE(16,3211) NOUTM
  3211    FORMAT(///,1X,'METEOROLOGICAL RECORDING STATION OUTPUT : ',
      &        //,5X,'NOUTM = ',I2)
@@ -3493,6 +3537,7 @@ C...  REGARDLESS OF WHETHER NOUTM=0, READ IN THE NUMBER OF METEOROLOGICAL
 C...  RECORDING STATIONS
 
          READ(15,*) NSTAM
+         print *, ' NSTAM ' , NSTAM
          STAT_LUN = 15
          IF (NSTAM < 0) THEN
             USE_MET_STAT_FILE = .TRUE.
@@ -3560,6 +3605,7 @@ C...  OUTPUT IS SPOOLED TO UNIT 63 EVERY NSPOOLGE TIME STEPS BETWEEN
 C...  TIMES TOUTSGE AND TOUTFGE; IF ABS(NOUTGE)=2, OUTPUT WILL BE BINARY
 
       READ(15,*) NOUTGE,TOUTSGE,TOUTFGE,NSPOOLGE
+      print *, ' NOUTGE ' ,  NOUTGE     
       WRITE(16,3301) NOUTGE
  3301 FORMAT(////,1X,'GLOBAL NODAL ELEVATION INFORMATION OUTPUT: ',
      &     //,5X,'NOUTGE = ',I2)
@@ -3646,6 +3692,7 @@ C...  OUTPUT IS SPOOLED TO UNIT 64 EVERY NSPOOLGV TIME STEPS BETWEEN
 C...  TIMES TOUTSGV AND TOUTFGV; IF ABS(NOUTGV)=2, OUTPUT WILL BE BINARY
 
       READ(15,*) NOUTGV,TOUTSGV,TOUTFGV,NSPOOLGV
+      print *, ' NOUTGV ' , NOUTGV
       WRITE(16,3351) NOUTGV
  3351 FORMAT(////,1X,'GLOBAL NODAL VELOCITY INFORMATION OUTPUT : ',
      &     //,5X,'NOUTGV = ',I2)
@@ -3842,18 +3889,19 @@ C...  BE BINARY
 
 
 C...      saeed hard coded
-         print *, " saeed hard coded  > NWS=17 for wind out put"
+         !print *, " saeed hard coded  > NWS=17 for wind out put"
          !NOUTGW, TOUTSGW, TOUTFGW, NSPOOLGW = output parameters which control
          ! the time series output provided for wind stress or velocity 
          !and atmospheric pressure at all nodes within the domain 
          !(fort.73 and 74 output)
-         NOUTGW   = 3
-         TOUTSGW  = 0
-         TOUTFGW  = 1000
-         NSPOOLGW = 1800
+         !NOUTGW   = 3
+         !TOUTSGW  = 0
+         !TOUTFGW  = 1000
+         !NSPOOLGW = 1800
 
 C        Saeed commented below line out
-C        READ(15,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW   !ORIGINAL
+         READ(15,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW   !ORIGINAL
+         print *, 'NOUTGW  ' , NOUTGW
          WRITE(16,3451) NOUTGW
  3451    FORMAT(////,1X,'GLOBAL WIND STRESS INFORMATION OUTPUT : ',
      &           //,5X,'NOUTGW = ',I2)
@@ -3938,6 +3986,7 @@ C...
 C...  READ AND CHECK INFORMATION ABOUT HARMONIC ANALYSIS OF MODEL RESULTS
 C...
       READ(15,*) NFREQ
+      print *, ' NFREQ ' , NFREQ
       WRITE(16,99392) NFREQ
 99392 FORMAT(////,1X,'HARMONIC ANALYSIS INFORMATION OUTPUT : ',
      &  //,5X,'HARMONIC ANALYSIS PERFORMED FOR ',I4,' CONSTITUENTS',/)
@@ -3980,6 +4029,7 @@ C     read in interval information for harmonic analysis
 C     compute thas and thaf in terms of the number of time steps
 
       READ(15,*) THAS,THAF,NHAINC,FMV
+      print *, ' THAS ' , THAS
 #ifdef IBM
       ITHAS=INT((THAS-STATIM)*(86400.D0/DTDP) + 0.5d0, KIND(0.0d0))
 #else
@@ -4020,6 +4070,7 @@ C     read in and write out information on where harmonic analysis will
 C     be done
 
       READ(15,*) NHASE,NHASV,NHAGE,NHAGV
+      print *, 'NHASE  ' , NHASE
       WRITE(scratchMessage,
      &   '("NHASE=",I1," NHASV=",I1," NHAGE=",I1," NHAGV=",I1,".")')
      &    NHASE, NHASV, NHAGE, NHAGV
@@ -4037,6 +4088,7 @@ C...
 C     jgf45.07 added undocumented option to STOP after writing hot start file.
 C     This option will be used in testing ADCIRC's hot start capabilities.
       READ(15,*) NHSTAR,NHSINC
+      print *, ' NHSTAR ' , NHSTAR
 
       CALL logMessage(INFO,'HOT START OUTPUT INFORMATION : ')
       WRITE(scratchMessage,'("NHSTAR=",I3," NHSINC=",I8,".")')

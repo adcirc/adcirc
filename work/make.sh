@@ -1,19 +1,9 @@
 #!/bin/bash
 
 ## moghimis@gmail.com
+## ADCIRC  for Theia
 
-### intel compiler >>>>>>
-#module load intel
-#module load impi
-#module load netcdf
-#module load hdf5
-
-#source /etc/profile
-#module use /scratch4/NCEPDEV/nems/save/Gerhard.Theurich/Modulefiles
-#module load intel impi netcdf esmf/7.0.0
 export compiler=intel
-###<<<<<<<<
-
 export NETCDF=enable
 export NETCDF4=enable
 #export NETCDF4_COMPRESSION=enable
@@ -32,7 +22,7 @@ export NETCDF4=enable
 rm -rf libadc.a padcirc adcprep
 make libadc.a 
 make adcprep
-#make adcirc
+make adcirc
 make padcirc
 #make padcswan
 #make punswan

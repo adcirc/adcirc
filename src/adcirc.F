@@ -379,7 +379,9 @@ C
       ENDIF
 C
       call allMessage(INFO,"Begin timestepping.")
+      ! print *, ' In adcirc.F  ...  line 383', 'ITIME_BGN,ITIME_END > ',ITIME_BGN,ITIME_END
       DO 100 ITIME=ITIME_BGN,ITIME_END
+      ! print *, ' In adcirc.F  ...  line 384', 'ITIME_BGN,ITIME_END > ',ITIME_BGN,ITIME_END
         CALL TIMESTEP(ITIME)
 C
 #ifdef CSWAN
