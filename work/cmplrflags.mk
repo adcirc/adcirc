@@ -16,7 +16,7 @@ LIBDIRS += -DNUOPC
 
 
 # debug for intel
-INCDIRS += -g -traceback 
+# -- INCDIRS += -g -traceback 
 
 LIBSS   :=  -lnetcdf  -lnetcdff -lhdf5 -lhdf5_fortran
 
