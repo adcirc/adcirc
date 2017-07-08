@@ -5438,6 +5438,13 @@ C***********************************************************************
      
             if ( cycle_num1(ient) == cycle_num1(ient-1)) then
                 isot=isot+1 ! same icyc, next isotach   
+                if (isot.gt.4) then
+            write(scratchMessage,'(a,a,i0,a)')
+     &      'The GAHM fort.22 input file has more than 4 isotachs ',
+     &      ' in cycle ',cycle_num1(ient),'.'
+                   call allMessage(ERROR,scratchMessage)
+                   call windTerminate()
+                endif
             else
                 isot=1 ! initialize isotach #
                IF ( iFcstInc1(ient) == 0 .AND. iFcstInc(icyc) == 0) then

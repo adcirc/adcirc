@@ -94,14 +94,15 @@ C******************************************************************************
      &   FileFmtRev
       USE SIZES, ONLY : sz, rootDir, mnproc, mnwproc, mnallproc, myproc,
      &   read_local_hot_start_files, make_dirname, write_local_harm_files,
-     &   get_numwriters
+     &   get_numwriters, mnstae
       USE GLOBAL, ONLY : usingWaterLevelOffset, offset1, offset2, 
      &   offsetSta, DEBUG, INFO, allMessage, itime, dtdp, statim,
      &   CHotHS, dtdpHS, g, FileFmtVersion, ifnlcat, nabout, ncchange,
      &   ifnlcate, ifnlct, ifnlcte, ifnlfa, ifwind, ihot, im, iths,
      &   nolica, nolicat, nolifa, nscreen, nstae, nt, rhowat0, screenunit,
      &   version_number, initLogging, setMessageSource, screenMessage,
-     &   openLogFile, unsetMessageSource, np_global, rnp_global
+     &   openLogFile, unsetMessageSource, np_global, rnp_global,
+     &   scratchMessage
       USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB 
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np
       USE GWCE, ONLY : initGWCE
@@ -290,8 +291,9 @@ C...  attached to each node
 
       !jgf: Initialize water level offset if needed
       if (usingWaterLevelOffset.eqv..true.) then
-         allocate(offset1(np),offset2(np)) ! used in timestepping
-         allocate(offsetSta(nstae))
+         allocate(offset1(np))
+         allocate(offset2(np)) ! used in timestepping
+         allocate(offsetSta(mnstae))
          call initOffset(timeloc) ! initializes the i/o 
          call getOffsets(offset2, timeloc) ! populate offset2
       endif
