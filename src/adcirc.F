@@ -75,17 +75,7 @@ C******************************************************************************
       MODULE ADCIRC_Mod
 C******************************************************************************
 C******************************************************************************
-C
-      USE GLOBAL
-      USE MESH, ONLY : NE, NP, NM
-      USE GLOBAL_3DVS, ONLY : GORho, GORhoOAMB, AMB
-      USE VERSION
-#ifdef CMPI
-      USE MESSENGER
-      USE WRITER, ONLY: WRITER_MAIN, WRITER_INIT, WRITER_PAUSE !tcm added pause
-      USE HSWRITER, ONLY: HSWRITER_MAIN, HSWRITER_INIT,!st3 for hstart
-     &                    HSWRITER_PAUSE !tcm v49.52.01 added pause
-#endif
+
       IMPLICIT NONE
       PUBLIC
 
@@ -100,10 +90,21 @@ C*    ADCIRC initialize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Init(COMM, ROOTD)
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
-      USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
-     &  read_local_hot_start_files, make_dirname, write_local_harm_files
-      USE GLOBAL, ONLY : usingWaterLevelOffset
-      USE MESH, ONLY : Areas, TotalArea, totalAreaCalc
+      USE VERSION, ONLY : adc_version, fileFmtMajor, fileFmtMinor, 
+     &   FileFmtRev
+      USE SIZES, ONLY : sz, rootDir, mnproc, mnwproc, mnallproc, myproc,
+     &   read_local_hot_start_files, make_dirname, write_local_harm_files,
+     &   get_numwriters, mnstae
+      USE GLOBAL, ONLY : usingWaterLevelOffset, offset1, offset2, 
+     &   offsetSta, DEBUG, INFO, allMessage, itime, dtdp, statim,
+     &   CHotHS, dtdpHS, g, FileFmtVersion, ifnlcat, nabout, ncchange,
+     &   ifnlcate, ifnlct, ifnlcte, ifnlfa, ifwind, ihot, im, iths,
+     &   nolica, nolicat, nolifa, nscreen, nstae, nt, rhowat0, screenunit,
+     &   version_number, initLogging, setMessageSource, screenMessage,
+     &   openLogFile, unsetMessageSource, np_global, rnp_global,
+     &   scratchMessage
+      USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB 
+      USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np
       USE GWCE, ONLY : initGWCE
       USE MOMENTUM, ONLY : initMomentumEq
       USE HARM, ONLY : allocateFullDomainHAIOArrays,
@@ -111,7 +112,12 @@ C******************************************************************************
       USE GLOBAL_IO, ONLY : allocateFullDomainIOArrays
       USE WRITE_OUTPUT, ONLY : initOutput2D
       USE WIND, ONLY : initWindModule, initOffset, getOffsets
-
+#ifdef CMPI
+      USE MESSENGER, ONLY : mnwproh, msg_init, msg_table, msg_start,
+     &   allnodes
+      USE WRITER, ONLY : writer_init
+      USE HSWRITER, ONLY : hswriter_init
+#endif
       IMPLICIT NONE
 C
       INTEGER, OPTIONAL :: COMM
@@ -285,8 +291,9 @@ C...  attached to each node
 
       !jgf: Initialize water level offset if needed
       if (usingWaterLevelOffset.eqv..true.) then
-         allocate(offset1(np),offset2(np)) ! used in timestepping
-         allocate(offsetSta(nstae))
+         allocate(offset1(np))
+         allocate(offset2(np)) ! used in timestepping
+         allocate(offsetSta(mnstae))
          call initOffset(timeloc) ! initializes the i/o 
          call getOffsets(offset2, timeloc) ! populate offset2
       endif
@@ -345,6 +352,13 @@ C******************************************************************************
 C*    ADCIRC run routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Run(NTIME_STP)
+      USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
+      USE GLOBAL, ONLY : iTime, DEBUG, INFO, setMessageSource, allMessage,
+     &   unsetMessageSource, statim, dtdp
+#ifdef CMPI
+      USE WRITER, ONLY : writer_main, writer_pause
+      USE HSWRITER, ONLY : hswriter_main, hswriter_pause
+#endif
 C
 #ifdef CSWAN
 Casey 090302: We need the following information to couple to unstructured SWAN.
@@ -422,8 +436,13 @@ C******************************************************************************
 C*    ADCIRC finalize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Final(NO_MPI_FINALIZE)
+      USE GLOBAL, ONLY : iTime, DEBUG, setMessageSource, allMessage,
+     &   unsetMessageSource
       USE HARM, ONLY : solveHarmonicAnalysis
       USE WRITE_OUTPUT, ONLY : writeHarmonicAnalysisOutput
+#ifdef CMPI
+      USE MESSENGER, ONLY : msg_fini
+#endif
       IMPLICIT NONE
 C
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
@@ -454,8 +473,9 @@ C
 #endif
       call unsetMessageSource()
       RETURN
+C-----------------------------------------------------------------------
       END SUBROUTINE ADCIRC_Final
-
+C-----------------------------------------------------------------------
 
 C******************************************************************************
 C*    ADCIRC terminate routine
@@ -463,6 +483,12 @@ C*    jgf50.44: Mostly just needed so that we can clean up mpi when
 C*    bombing out.
 C******************************************************************************
       SUBROUTINE ADCIRC_Terminate(NO_MPI_FINALIZE)
+      USE GLOBAL, ONLY : DEBUG, INFO, setMessageSource, allMessage, 
+     &   unsetMessageSource
+#ifdef CMPI
+      USE MESSENGER, ONLY : subdomainFatalError, msg_fini
+#endif
+
       IMPLICIT NONE
 C
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
@@ -488,7 +514,9 @@ C
       call allMessage(DEBUG,"Return.") ! should be unreachable
 #endif
       call unsetMessageSource()
+C-----------------------------------------------------------------------
       END SUBROUTINE ADCIRC_Terminate
+C-----------------------------------------------------------------------
 
 C*****************************************************************************
 C  ADCIRC Local Terminate Routine and corresponding collection routine
@@ -500,18 +528,25 @@ C          cases where not all compute processors pass through the same call
 C          to this routine.
 C*****************************************************************************
 #ifdef CMPI
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       SUBROUTINE ADCIRC_LocalTerminate()
-        USE GLOBAL,ONLY:TERMINATE_LOCALPROC
+        USE GLOBAL,ONLY: terminate_localproc, screenUnit
         IMPLICIT NONE
         !...Set the local terminator and then go wait for the rest of
         !   the compute processors to check in
         TERMINATE_LOCALPROC = 1
         CALL ADCIRC_CheckLocalTerminate()
-      END SUBROUTINE
+C-----------------------------------------------------------------------
+      END SUBROUTINE ADCIRC_LocalTerminate
+C-----------------------------------------------------------------------
 
+
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       SUBROUTINE ADCIRC_CheckLocalTerminate()
         USE MESSENGER
-        USE GLOBAL,ONLY:TERMINATE_LOCALPROC
+        USE GLOBAL,ONLY: terminate_localproc, screenUnit
 #ifdef HAVE_MPI_MOD
         USE MPI
 #endif        
@@ -534,7 +569,9 @@ C*****************************************************************************
             ENDIF
             CALL ADCIRC_TERMINATE()
         ENDIF
-      END SUBROUTINE   
+C-----------------------------------------------------------------------
+      END SUBROUTINE ADCIRC_CheckLocalTerminate
+C-----------------------------------------------------------------------
 #endif
 
 C******************************************************************************

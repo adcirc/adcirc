@@ -148,8 +148,15 @@ ifeq ($(compiler),intel)
   ifeq ($(DEBUG),trace)
      FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
+  ifeq ($(DEBUG),buserror)
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES -check bounds
+  endif
   ifeq ($(DEBUG),netcdf_trace)
      FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -DNETCDF_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+  endif
+  #@jasonfleming Added to fix bus error on hatteras@renci
+  ifeq ($(HEAP_ARRAYS),fix)
+     FFLAGS1 := $(FFLAGS1) -heap-arrays
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
