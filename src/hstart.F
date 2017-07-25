@@ -2436,7 +2436,7 @@ C......RESTART THE WAVE RADIATION STRESS
               CALL RS2INIT(RSNX1,RSNY1,NP)
               CALL RS2GET(RSNX1,RSNY1,NP)
               CALL RS2GET(RSNX2,RSNY2,NP)
-           CASE(3,4)
+           CASE(3,4,5)
               ! do nothing, initialization takes place in timestep.F
            CASE DEFAULT
               write(scratchMessage,'(a,i0,a)') 

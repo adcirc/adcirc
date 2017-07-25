@@ -132,12 +132,12 @@ module WAV
     if (ww3_from_file) then
       call init_ww3_nc()
       write(info,*) subname,' --- Read wave info from file --- '
-      print *,      info
+      !print *,      info
       call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=rc)
     endif
 
     write(info,*) subname,' --- adc SetServices completed --- '
-    print *,      subname,' --- adc SetServices completed --- '
+    !print *,      subname,' --- adc SetServices completed --- '
     call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=rc)
   end subroutine
   
@@ -171,9 +171,9 @@ module WAV
 !
 
       do num = 1,fldsToWav_num
-          print *,  "fldsToWav_num  ", fldsToWav_num
-          print *,  "fldsToWav(num)%shortname  ", fldsToWav(num)%shortname
-          print *,  "fldsToWav(num)%stdname  ", fldsToWav(num)%stdname
+          !print *,  "fldsToWav_num  ", fldsToWav_num
+          !print *,  "fldsToWav(num)%shortname  ", fldsToWav(num)%shortname
+          !print *,  "fldsToWav(num)%stdname  ", fldsToWav(num)%stdname
 
           write(info,*) subname,  "fldsToWav(num)%shortname  ", fldsToWav(num)%shortname
           call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
@@ -187,9 +187,9 @@ module WAV
 
 !----------------------------------------------------------------
     do num = 1,fldsFrWav_num
-        print *,  "fldsFrWav_num  ", fldsFrWav_num
-        print *,  "fldsFrWav(num)%shortname  ", fldsFrWav(num)%shortname
-        print *,  "fldsFrWav(num)%stdname  ", fldsFrWav(num)%stdname
+        !print *,  "fldsFrWav_num  ", fldsFrWav_num
+        !print *,  "fldsFrWav(num)%shortname  ", fldsFrWav(num)%shortname
+        !print *,  "fldsFrWav(num)%stdname  ", fldsFrWav(num)%stdname
         write(info,*) subname,"fldsFrWav(num)%stdname  ", fldsFrWav(num)%stdname
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
 
@@ -202,7 +202,7 @@ module WAV
       return  ! bail out
 
         write(info,*) subname,' --- initialization phase 1 completed --- '
-        print *,      subname,' --- initialization phase 1 completed --- '
+        !print *,      subname,' --- initialization phase 1 completed --- '
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
 !
   end subroutine
@@ -227,7 +227,11 @@ module WAV
         rc = ESMF_SUCCESS
 
         do i = 1, nfields
-          print *, 'Advertise: '//trim(field_defs(i)%stdname)//'---'//trim(field_defs(i)%shortname)
+          !print *, 'Advertise: '//trim(field_defs(i)%stdname)//'---'//trim(field_defs(i)%shortname)
+          write(info,*) subname,'Advertise: '//trim(field_defs(i)%stdname)//'---'//trim(field_defs(i)%shortname)
+          call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
+
+
           call ESMF_LogWrite('Advertise: '//trim(field_defs(i)%stdname), ESMF_LOGMSG_INFO, rc=rc)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
             line=__LINE__, &
@@ -243,8 +247,9 @@ module WAV
             file=__FILE__)) &
             return  ! bail out
         enddo
-        print *,      subname,' --- IN   --- '
-
+        !print *,      subname,' --- IN   --- '
+        write(info,*) subname,'---- Done WAV_AdvertiseFields '
+        call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
     end subroutine WAV_AdvertiseFields
 
 
@@ -296,7 +301,8 @@ module WAV
          call fld_list_add(num=fldsFrWav_num, fldlist=fldsFrWav, stdname="cross_radiation_stress",    shortname= "sxy")
 
         write(info,*) subname,' --- Passed--- '
-        print *,      subname,' --- Passed --- '
+        call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
+        !print *,      subname,' --- Passed --- '
     end subroutine WAV_FieldsSetup
 
 
@@ -346,7 +352,8 @@ module WAV
 
 
         write(info,*) subname,' --- Passed--- '
-        print *,      subname,' --- Passed --- '
+        call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
+        !print *,      subname,' --- Passed --- '
     end subroutine fld_list_add
 
 
@@ -407,6 +414,8 @@ module WAV
     if (.not. ww3_from_file) then
       ! create a Mesh object for Fields
       print *, ' not the porpuse of this cap. STOP! >>'
+      write(info,*) subname,' not the porpuse of this cap. STOP! >>'
+      call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
       stop
       !call extract_parallel_data_from_mesh_orig('.', mdataw, localPet)
     else
@@ -432,14 +441,12 @@ module WAV
     mdataInw  = mdataw
     mdataOutw = mdataw
 
-    print *,"..................................................... >> "
-    print *,"NumNd", mdataw%NumNd
-    print *,"NumOwnedNd", mdataw%NumOwnedNd
-    print *,"NumEl", mdataw%NumEl
-    print *,"NumND_per_El", mdataw%NumND_per_El
-    print *,"NumOwnedNd mdataOutw", mdataOutw%NumOwnedNd
-
-
+    !print *,"..................................................... >> "
+    !print *,"NumNd", mdataw%NumNd
+    !print *,"NumOwnedNd", mdataw%NumOwnedNd
+    !print *,"NumEl", mdataw%NumEl
+    !print *,"NumND_per_El", mdataw%NumND_per_El
+    !print *,"NumOwnedNd mdataOutw", mdataOutw%NumOwnedNd
 
         call WAV_RealizeFields(importState, meshIn , mdataw, fldsToWav_num, fldsToWav, "WAV import", rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -455,7 +462,7 @@ module WAV
 
 
         write(info,*) subname,' --- initialization phase 2 completed --- '
-        print *,      subname,' --- initialization phase 2 completed --- '
+        !print *,      subname,' --- initialization phase 2 completed --- '
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
 
 
@@ -513,8 +520,6 @@ module WAV
               file=__FILE__, &
               rc=dbrc)
 
-            print *,      subname,' --- Connected --- '
-
         else
             call ESMF_LogWrite(subname // tag // " Field "// field_defs(i)%stdname // " is not connected.", &
               ESMF_LOGMSG_INFO, &
@@ -529,13 +534,11 @@ module WAV
               line=__LINE__, &
               file=__FILE__)) &
               return  ! bail out
-            !print *,      subname,' --- Not-Connected --- '
-            print *,      subname," Field ", field_defs(i)%stdname ,' --- Not-Connected --- '
         endif
     enddo
 
-        write(info,*) subname,' --- OUT--- '
-        print *,      subname,' --- OUT --- '
+        write(info,*) subname,' --- passed--- '
+        !print *,      subname,' --- OUT --- '
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=rc)
   end subroutine WAV_RealizeFields
   !-----------------------------------------------------------------------------
@@ -733,7 +736,7 @@ module WAV
         file=__FILE__)) &
         return  ! bail out
 
-    print *      , "currTime = ", YY, "/", MM, "/", DD," ", H, ":", M, ":", S
+    !print *      , "currTime = ", YY, "/", MM, "/", DD," ", H, ":", M, ":", S
 
     call ESMF_TimeGet(currTime, timeStringISOFrac=timeStr , rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -810,7 +813,7 @@ module WAV
       file=__FILE__)) &
       return  ! bail out
 
-      print *, 'mdataOutw%NumOwnedNd > ',mdataOutw%NumOwnedNd, 'SXX > ', SXX(1:10,1)
+      !print *, 'mdataOutw%NumOwnedNd > ',mdataOutw%NumOwnedNd, 'SXX > ', SXX(1:10,1)
 
 
     !fill only owned nodes for tmp vector
@@ -852,11 +855,9 @@ module WAV
 
 
     !! TODO:  not a right thing to do. we need to fix the grid object mask <<<<<<
-    where(dataPtr_sxx.gt.3e4) dataPtr_sxx = 0.0
-    where(dataPtr_syy.gt.3e4) dataPtr_syy = 0.0
-    where(dataPtr_sxy.gt.3e4) dataPtr_sxy = 0.0
-
-
+    !where(dataPtr_sxx.gt.3e4) dataPtr_sxx = 0.0
+    !where(dataPtr_syy.gt.3e4) dataPtr_syy = 0.0
+    !where(dataPtr_sxy.gt.3e4) dataPtr_sxy = 0.0
 !
   end subroutine
 !

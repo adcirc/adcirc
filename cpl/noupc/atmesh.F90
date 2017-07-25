@@ -338,7 +338,7 @@ module ATMESH
   subroutine InitializeP2(model, importState, exportState, clock, rc)
     type(ESMF_GridComp)  :: model
     type(ESMF_State)     :: importState, exportState
-    type(ESMF_Clock)     :: clock
+    type(ESMF_Clock)     :: clock, driverClock
     integer, intent(out) :: rc
     
     ! local variables    
@@ -348,7 +348,7 @@ module ATMESH
     type(meshdata)               :: mdataw
     type(ESMF_Mesh)              :: ModelMesh,meshIn,meshOut
     type(ESMF_VM)                :: vm
-    type(ESMF_Time)              :: currTime
+    type(ESMF_Time)              :: startTime
     integer                      :: localPet, petCount
     character(len=*),parameter   :: subname='(ATMESH:RealizeFieldsProvidingGrid)'
 
@@ -401,25 +401,38 @@ module ATMESH
 
 
 
-        call ATMESH_RealizeFields(importState, meshIn , mdataw, fldsToWav_num, fldsToWav, "ATMESH import", rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, &
-            file=__FILE__)) &
-            return  ! bail out
+    call ATMESH_RealizeFields(importState, meshIn , mdataw, fldsToWav_num, fldsToWav, "ATMESH import", rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
 !
-        call ATMESH_RealizeFields(exportState, meshOut, mdataw, fldsFrATM_num, fldsFrATM, "ATMESH export", rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, &
-            file=__FILE__)) &
-            return  ! bail out
+    call ATMESH_RealizeFields(exportState, meshOut, mdataw, fldsFrATM_num, fldsFrATM, "ATMESH export", rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
 
-        write(info,*) subname,' --- initialization phase 2 completed --- '
-        !print *,      subname,' --- initialization phase 2 completed --- '
-        call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
+      !Init ATMesh
+!    ! query Component for the driverClock
+!    call NUOPC_ModelGet(model, driverClock=driverClock, rc=rc)
+!    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+!      line=__LINE__, &
+!      file=__FILE__)) &
+!      return  ! bail out
+    
+    ! get the start time and current time out of the clock
+!    call ESMF_ClockGet(driverClock, startTime=startTime, rc=rc)
+!    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+!      line=__LINE__, &
+!      file=__FILE__)) &
+!      return  ! bail out
 
+!    call read_atmesh_nc(startTime)
 
-
-
+    write(info,*) subname,' --- initialization phase 2 completed --- '
+    !print *,      subname,' --- initialization phase 2 completed --- '
+    call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
   end subroutine
 
 

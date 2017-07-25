@@ -1423,7 +1423,7 @@ C... v50.xx sm -- nws=17 for NUOPC coupling hwrf data from coupler
          
          if (WTRatio .GE. 1.0) then
              WTRatio = 1.0
-             print *, '[Warning:] WTRatio is GE 1.0 and Set to 1.0'
+             print *, '[Warning:] WTRatio is .GE. 1.0 and Set to 1.0'
          endif     
 
          DO I=1,NP
@@ -1456,8 +1456,8 @@ C  tcm v49.16 20100617
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                           -PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete*WindX
-            WVNYOUT(I)=RampMete*WindY
+            !WVNXOUT(I)=RampMete*WindX
+            !WVNYOUT(I)=RampMete*WindY
 
           !print *,  'WTRatio ', WTRatio
           !print *,  'RampMete ' , RampMete
@@ -1514,23 +1514,6 @@ C    kmd48.33bc - added in information for the sponge layer
          END DO
        END IF
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 C
 C--------------------END MET FORCING---------------------------------------
 
@@ -1542,7 +1525,7 @@ C...  NRS=2 was added.  sb46.28sb03 09/xx/2006
 C...  TCM v49.48 Restructured the wave stress updates in order to
 c...             include NRS=4
       IF(NRS.NE.0) THEN
-         if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3)) then
+         if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3) .or. (nrs.eq.5)) then  !saeed added 5
             IF(TimeLoc.GT.RSTIME2) THEN
                RSTIME1=RSTIME2
                RSTIME2=RSTIME2+RSTIMINC
@@ -1595,17 +1578,38 @@ C             in time using the same logic as above.
 #endif
                ENDIF
 #endif
+            
+            
+               IF(NRS == 5) THEN    ! saeed
+                 DO I=1,NP
+                   RSX = RSNX1(I)
+                   RSY = RSNY1(I)
+                   RSNX1(I) = RSNX2(I)
+                   RSNY1(I) = RSNY2(I)
+                   RSNX2(I) = RSNX2(I) + (RSNX2(I)-RSX)
+                   RSNY2(I) = RSNY2(I) + (RSNY2(I)-RSY)
+                 ENDDO
+               ENDIF !(NRS = 5)
+      
+            
             ENDIF
             RStRatio=(TimeLoc-RSTIME1)/RSTIMINC
             DO I=1,NP
                RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
                RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
-               WSX2(I) = WSX2(I) + RSX
+
+              WVNXOUT(I)= WSX2(I)  ! TODO: JUST a TEST >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 
+              WVNYOUT(I)= WSY2(I)
+
+               WSX2(I) = WSX2(I) + RSX  ! TODO: JUST a TEST >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
                WSY2(I) = WSY2(I) + RSY
+
+
+
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef CSWAN
 Casey 090302: Added these lines for output to the rads.64 file.
-               IF(ABS(NRS).EQ.3) then
+               IF(ABS(NRS).GT.3 ) then
                   RSNXOUT(I) = RSX
                   RSNYOUT(I) = RSY
                ENDIF
@@ -1648,15 +1652,39 @@ C         print *, '>>>>>>>>>>>>>>>>>>>>>>>>>>> NRS', nrs
             END DO
          ENDIF !(NRS = 4)
 
-         IF(NRS == 5) THEN    ! sm
-               WSX2 = WSX2 + RSNX2
-               WSY2 = WSY2 + RSNY2
+         IF(NRS == 5212121) THEN    ! saeed
+               !WSX2 = WSX2 + RSNX2
+               !WSY2 = WSY2 + RSNY2
+
+
+                 DO I=1,NP
+                   RSX = RSNX1(I)
+                   RSY = RSNY1(I)
+                   RSNX1(I) = RSNX2(I)
+                   RSNY1(I) = RSNY2(I)
+                   RSNX2(I) = RSNX2(I) + (RSNX2(I)-RSX)
+                   RSNY2(I) = RSNY2(I) + (RSNY2(I)-RSY)
+                 ENDDO
+
+            DO I=1,NP
+               RSX = RampWRad*RSNX2(I)
+               RSY = RampWRad*RSNY2(I)
+               !WSX2(I) = WSX2(I) + RSX
+               !WSY2(I) = WSY2(I) + RSY
+               
+               WSX2(I) =  RSX
+               WSY2(I) =  RSY
+               
+               !  tcm v50.75 added for use whenever nrs=3 or nrs=4
+               RSNXOUT(I) = RSX
+               RSNYOUT(I) = RSY
+            END DO
          ENDIF !(NRS = 5)
       
       ENDIF  !(End test for updating wave radiation stress)
 
-        !print *, 'in timestep maxval(RSNX2)', maxval(RSNX2)
-        !print *, 'in timestep maxval(RSNY2)', maxval(RSNY2)
+        !print *, 'in timestep maxval(RSNX2)',TimeLoc, maxval(RSNX2)
+        !print *, 'in timestep maxval(RSNY2)',TimeLoc, maxval(RSNY2)
 
 C     jgf48.4627 Skip past GWCE and momentum calculations if only
 C     meteorological output was requested.

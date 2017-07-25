@@ -22,7 +22,7 @@ module wav_mod
     ! reading data time management info WW3 <-----> ADC exchange
     integer                  :: ww3_cpl_int,ww3_cpl_num,ww3_cpl_den
     logical                  :: ww3_from_file
-    character (len = 280)    :: ww3_dir, ww3_nam !, ww3_grd
+    character (len = 280)    :: wav_dir, wav_nam !, ww3_grd
     character (len = 280)    :: FILE_NAME
     character (len =2048)    :: info
 
@@ -116,7 +116,8 @@ module wav_mod
       logical :: THERE
       integer :: lat, lon,i, iret, rc
 
-      FILE_NAME =  TRIM(ww3_dir)//'/'//TRIM(ww3_nam)
+      FILE_NAME =  TRIM(wav_dir)//'/'//TRIM(wav_nam)
+      print *, ' FILE_NAME  > ', FILE_NAME
       INQUIRE( FILE= FILE_NAME, EXIST=THERE )
       if ( .not. THERE)  stop 'WW3 netcdf file does not exist!'
 
@@ -139,7 +140,7 @@ module wav_mod
       ! What is the name of the unlimited dimension, how many records are there?
       call check(nf90_inquire_dimension(ncid, rec_dimid, len = ntime))
 
-      print *,  ' nelem  > ',nelem , ' noel  > ' ,noel,  ' ntime > ',ntime
+      !print *,  ' nelem  > ',nelem , ' noel  > ' ,noel,  ' ntime > ',ntime
 
       ! Get the varids of the pressure and temperature netCDF variables.
       call check( nf90_inq_varid(ncid, LAT_NAME,    LAT_varid) )
@@ -165,7 +166,7 @@ module wav_mod
       call check(nf90_get_var(ncid, TRI_varid, TRI, start = (/1,1/),count = (/noel,nelem/)  ))
 
       write(info,*) subname,' --- init ww3 netcdf file  --- '
-      print *, info
+      !print *, info
       call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=rc)
 
     END SUBROUTINE
@@ -187,7 +188,7 @@ module wav_mod
       logical    :: THERE
       real       :: delta_d_all (ntime) , delta_d_ref
       !integer   :: dimids(NDIMS)
-
+      character (len = *), parameter :: subname='(wav_mod:read_ww3_nc)'
       character  :: c1,c2,c3,c4,c5,c6,c7
       integer    :: yy,mm,dd,hh,min,ss
       integer    :: d_d, d_h, d_m, d_s
@@ -227,7 +228,18 @@ module wav_mod
       it = minloc(abs(delta_d_all),dim=1)
 
       !it = 1
-      print *, 'wave file it index > ',it
+      !print *, 'wave file it index > ',it
+      write(info,*) subname,'WAV file it index > ',it
+      !print *, info
+      call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=rc)
+
+      
+      call ESMF_TimePrint(refTime, preString="WAV refTime=  ", rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+
 
       !alocate vars
       if(.not. allocated(SXX))   allocate (SXX (1:nnode,1))
@@ -237,13 +249,17 @@ module wav_mod
       start = (/ 1   , it/)
       count = (/nnode, 1 /)  !for some reason the order here is otherway around?!
 
-      print *, start+count
-      print *,size(SXX(ntime,:))
+      !print *, start+count
+      !print *,size(SXX(ntime,:))
       call check( nf90_get_var(ncid,SXX_varid, SXX, start, count) )
       call check( nf90_get_var(ncid,SYY_varid, SYY, start, count) )
       call check( nf90_get_var(ncid,SXY_varid, SXY, start, count) )
 
       !print *,FILE_NAME , '   HARD CODED for NOWWWW>>>>>     Time index from wave file is > ', it, SXX(1:10,1)
+
+      write(info,*) subname,' --- read ww3 netcdf file  --- '
+      !print *, info
+      call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=rc)
 
     !
     END SUBROUTINE
@@ -320,8 +336,8 @@ module wav_mod
         CHARACTER(len=2)        :: mon,day
         CHARACTER(len=3)        :: hours
 
-        ! example:  ww3_nam: ww3.Constant.YYYYMMDD_sxy.nc
-        inps = trim(ww3_nam)
+        ! example:  wav_nam: ww3.Constant.YYYYMMDD_sxy.nc
+        inps = trim(wav_nam)
 
         write(year,"(I4.4)") YY
         inps =  Replace_Text (inps,'YYYY',year)
@@ -336,7 +352,7 @@ module wav_mod
         !write(hours,"(I3.3)") H
         !inps =  Replace_Text (inps,'HHH',hours)
 
-        FILE_NAME =  TRIM(ww3_dir)//'/'//TRIM(inps)
+        FILE_NAME =  TRIM(wav_dir)//'/'//TRIM(inps)
 
     END subroutine update_ww3_filename
 
@@ -424,8 +440,8 @@ module wav_mod
       file=__FILE__)) &
       return  ! bail out
 
-    call ESMF_ConfigGetAttribute(cf, ww3_dir, label="ww3_dir:",default='ww3_inp/'  , rc=rc)
-    call ESMF_ConfigGetAttribute(cf, ww3_nam, label="ww3_nam:", &
+    call ESMF_ConfigGetAttribute(cf, wav_dir, label="wav_dir:",default='ww3_inp/'  , rc=rc)
+    call ESMF_ConfigGetAttribute(cf, wav_nam, label="wav_nam:", &
          default='ww3.Constant.YYYYMMDD_sxy.nc'  , rc=rc)
     !call ESMF_ConfigGetAttribute(cf, ww3_grd, label="ww3_grd:",default='ww3_grid.nc/'  , rc=rc)
 

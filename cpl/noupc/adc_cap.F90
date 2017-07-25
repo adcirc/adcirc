@@ -189,8 +189,9 @@ module adc_cap
   USE GLOBAL,  ONLY: WVNX1, WVNY1, PRN1
   USE GLOBAL,  ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
   USE GLOBAL,  ONLY: RSTIMINC            ! wave time interval
-  use GLOBAL,  ONLY: RhoWat0, NUOPC4MET, NUOPC4WAV, NWS
+  use GLOBAL,  ONLY: RhoWat0, NUOPC4MET, NUOPC4WAV, NWS, g
   use GLOBAL,  only: ITHS, NT, DTDP, ITIME
+  use GLOBAL,  only: allMessage
 
   use SIZES  , only: ROOTDIR
   use couple2swan_modif, only: ADCIRC_SXX, ADCIRC_SXY, ADCIRC_SYY
@@ -234,6 +235,7 @@ module adc_cap
   !type(ESMF_TimeInterval) :: WaveCouplingInterval, WindCouplingInterval
 
   logical, save            :: first_exchange = .true.
+  integer, save            :: iunit_log = 10000
 
   !-----------------------------------------------------------------------------
   contains
@@ -909,7 +911,8 @@ module adc_cap
         file=__FILE__)) &
         return  ! bail out
 
-    !print *      , "ADC currTime = ", YY, "/", MM, "/", DD," ", H, ":", M, ":", S
+    write(info, *)  "ADC currTime = ", YY, "/", MM, "/", DD," ", H, ":", M, ":", S
+    call allMessage(1,info)
 
     call ESMF_TimeGet(currTime, timeStringISOFrac=timeStr , rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -942,6 +945,7 @@ module adc_cap
     !Get and fill imported fields
     ! <<<<< RECEIVE and UN-PACK SXX
    wave_forcing= .true.
+   
    do num = 1,fldsToAdc_num
       if (fldsToAdc(num)%shortname == 'sxx') wave_forcing = wave_forcing .and. fldsToAdc(num)%connected
       if (fldsToAdc(num)%shortname == 'syy') wave_forcing = wave_forcing .and. fldsToAdc(num)%connected
@@ -985,6 +989,11 @@ module adc_cap
         IF(.NOT.ALLOCATED(ADCIRC_SXY)) ALLOCATE(ADCIRC_SXY(1:NP,1:2))
         IF(.NOT.ALLOCATED(ADCIRC_SYY)) ALLOCATE(ADCIRC_SYY(1:NP,1:2))
 
+        ! updaye last rad str
+        ADCIRC_SXX(:,1) = ADCIRC_SXX(:,2)
+        ADCIRC_SYY(:,1) = ADCIRC_SYY(:,2)
+        ADCIRC_SXY(:,1) = ADCIRC_SXY(:,2)
+
         ! Fill owned nodes from imported data to model variable
         ! devide by water density to convert from N.m-2 to m2s-2
         do i1 = 1, mdataOut%NumOwnedNd, 1
@@ -1006,23 +1015,42 @@ module adc_cap
         call UPDATER( ADCIRC_SXX(:,1), ADCIRC_SYY(:,1), ADCIRC_SXY(:,1),3)
         call UPDATER( ADCIRC_SXX(:,2), ADCIRC_SYY(:,2), ADCIRC_SXY(:,2),3)
 
-
         !print *, 'Hard Coded >>>>>  SXX >>>>>> '
         !mask
-        where(abs(ADCIRC_SXX).gt. 1e6)  ADCIRC_SXX =  100.0
-        where(abs(ADCIRC_SYY).gt. 1e6)  ADCIRC_SYY =  100.0
-        where(abs(ADCIRC_SXY).gt. 1e6)  ADCIRC_SXY =  100.0
+        where(abs(ADCIRC_SXX).gt. 1e6)  ADCIRC_SXX =  0.0
+        where(abs(ADCIRC_SYY).gt. 1e6)  ADCIRC_SYY =  0.0
+        where(abs(ADCIRC_SXY).gt. 1e6)  ADCIRC_SXY =  0.0
         !max values
-        where((ADCIRC_SXX).gt. 1e3)  ADCIRC_SXX =  1e3
-        where((ADCIRC_SYY).gt. 1e3)  ADCIRC_SYY =  1e3
-        where((ADCIRC_SXY).gt. 1e3)  ADCIRC_SXY =  1e3
-        where((ADCIRC_SXX).lt.-1e3)  ADCIRC_SXX = -1e3
-        where((ADCIRC_SYY).lt.-1e3)  ADCIRC_SYY = -1e3
-        where((ADCIRC_SXY).lt.-1e3)  ADCIRC_SXY = -1e3
+        !where((ADCIRC_SXX).gt. 1e3)  ADCIRC_SXX =  1e3
+        !where((ADCIRC_SYY).gt. 1e3)  ADCIRC_SYY =  1e3
+        !where((ADCIRC_SXY).gt. 1e3)  ADCIRC_SXY =  1e3
+        !where((ADCIRC_SXX).lt.-1e3)  ADCIRC_SXX = -1e3
+        !where((ADCIRC_SYY).lt.-1e3)  ADCIRC_SYY = -1e3
+        !where((ADCIRC_SXY).lt.-1e3)  ADCIRC_SXY = -1e3
 
-        ADCIRC_SXX = ADCIRC_SXX / RhoWat0
-        ADCIRC_SYY = ADCIRC_SYY / RhoWat0
-        ADCIRC_SXY = ADCIRC_SXY / RhoWat0
+
+!    NOTE: ADCIRC accepts wave-driven stresses "in units of velocity squared
+!    (consistent with the units of gravity).  Stress in these units is obtained
+!    by dividing stress in units of force/area by the reference density of water."
+
+!    Rad.Str info from netcdf header
+!		 sxx:long_name = "Radiation stress component Sxx" ;
+!		 sxx:standard_name = "radiation_stress_component_sxx" ;
+!		 sxx:globwave_name = "significant_wave_height" ;
+!		 sxx:units = "N m-1" ;
+!		 sxx:_FillValue = 9.96921e+36f ;
+!		 sxx:scale_factor = 1.f ;
+!		 sxx:add_offset = 0.f ;
+!		 sxx:valid_min = -3000 ;
+!	 	 sxx:valid_max = 3000 ;
+ 
+!    Therefore we need to divide sxx/rho to change its unit to m3s-2
+!    in force calculation we do d(sxx)/dx therefore the final force 
+!    unit will be m2s-2 which is the correct one.   
+
+        ADCIRC_SXX = ADCIRC_SXX / RhoWat0 !/ g   !I added the g for now need to check <<<<<<<<<TODO:
+        ADCIRC_SYY = ADCIRC_SYY / RhoWat0 !/ g
+        ADCIRC_SXY = ADCIRC_SXY / RhoWat0 !/ g
         
         !print *, 'in cap maxval(ADCIRC_SXX)', maxval(ADCIRC_SXX)
 
@@ -1030,6 +1058,12 @@ module adc_cap
 
         ! Calculate wave forces
         call ComputeWaveDrivenForces
+
+        !iunit_log = iunit_log + 1
+        !open(unit = iunit_log, ACTION = "write", STATUS ="replace" )
+        !write(iunit_log, *) RSNX2, RSNY2
+        !close(iunit_log)
+
 
         write(info,*) subname,' --- wave data exchange OK / wave feilds are all connected --- / Model advances '
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
@@ -1042,9 +1076,18 @@ module adc_cap
         !RSNY2 = 0.0
 
         !-----------------------
-        !print *, 'Hard Coded >>>>>>>>>>> '
-        where(abs(RSNX2).gt.0.01) RSNX2 = 0.0
-        where(abs(RSNY2).gt.0.01) RSNY2 = 0.0
+        print *, 'Hard Coded >>>>>>>>>>> '
+        where(RSNX2.gt. 0.02) RSNX2 =  0.02
+        where(RSNY2.gt. 0.02) RSNY2 =  0.02
+        where(RSNX2.lt.-0.02) RSNX2 = -0.02
+        where(RSNY2.lt.-0.02) RSNY2 = -0.02
+
+
+        write(info,*) subname, 'in cap after maxval(RSNX2)', maxval(RSNX2)
+        call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
+        
+        write(info,*) subname, 'in cap after maxval(RSNY2)', maxval(RSNY2)
+        call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
 
         !print *, 'in cap after maxval(RSNX2)', maxval(RSNX2)
         !print *, 'in cap after maxval(RSNY2)', maxval(RSNY2)

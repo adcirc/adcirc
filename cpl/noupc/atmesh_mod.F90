@@ -279,6 +279,10 @@ module atmesh_mod
       call check( nf90_get_var(ncid,PRES_varid, PRES, start, count) )
 
       !print *,FILE_NAME , '   HARD CODED for NOWWWW>>>>>     Time index from atmesh file is > ', it, UWND(1:10,1)
+      write(info,*) subname,' --- read ATMesh netcdf file  --- '
+      !print *, info
+      call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=rc)
+
     END SUBROUTINE
     !-----------------------------------------------------------------------
     !- Sub !!!????
