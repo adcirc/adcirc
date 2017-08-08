@@ -221,6 +221,10 @@ C Logicals added for adcprep paths
       LOGICAL :: XDMF_AVAIL ! true if XDMF was compiled in
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       NAMELIST /waveCoupling/ WaveWindMultiplier
+      !
+      ! @jasonfleming: reduce memory usage if there are no weir boundaries
+      ! with cross barrier pipes
+      logical :: meshHasWeirWithPipes
 
 C---------------------end of data declarations--------------------------------C
 
@@ -267,6 +271,7 @@ C.... tcm v51.20.04 additions for station location file
 #else
       NETCDF_AVAIL = .false.
 #endif
+      meshHasWeirWithPipes = .false.
 C
 C...OPEN AND PROCESS THE UNIT 14 ADCIRC GRID FILE TO DETERMINE SIZES
 C
@@ -380,6 +385,9 @@ C     jgf46.21 Added support for IBTYPE=52.
            NFLUXI=1
            NIBP=NIBP+NBN
          ENDIF
+         if((ibtype.eq.5).or.(ibtype.eq.25)) then
+            meshHasWeirWithPipes = .false.
+         endif
          IF((IBTYPE.NE.2).AND.(IBTYPE.NE.12).AND.(IBTYPE.NE.22).AND.
      &        (IBTYPE.NE.52).AND.
      &        (IBTYPE.NE.3).AND.(IBTYPE.NE.13).AND.(IBTYPE.NE.23).AND.
