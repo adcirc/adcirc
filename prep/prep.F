@@ -1032,7 +1032,7 @@ C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
       INTEGER I,I1,J,K,M,ETYPE,ITEMP,ITEMP2,ILNODE,ILNODE2,ILNODE3
-      INTEGER JD,JG,JP,IPROC,IPROC2,IPROC3,DISC,BBN,IBP
+      INTEGER JD,JG,JP,IPROC,IPROC2,IPROC3,DISC,BBN,IBP,IBPPipe
       INTEGER INDX,INDEX2,ITOT,ITYPE,NUMS(10)
       CHARACTER LOCFN*14,PE*6
       CHARACTER*80 OUTMSG
@@ -1239,7 +1239,7 @@ C If a segment contains only one node, remove the segment from the list
 C (NOTE: rl 5/18/04 I don't see how this could possibly happen, including
 C  ghost nodes)
          !
-         ! @jasonfleming: it is possible for a single node of an 
+         ! @jasonfleming: it is possible for a single node of a
          ! land boundary to appear as a ghost node in a nearby
          ! subdomain. 
          DO K=1, NBOU
@@ -1268,7 +1268,8 @@ C
          DISC=0  ! LB Nodes with non-zero normal discharge (river)
          BBN=0   ! Mainland Barrier Boundary Nodes (external overflow)
          IBP=0   ! Internal Barrier Boundary Pairs (levee)
-         ITEMP = 0 ! mainland, island, and levee with cross barrier pipes?? !jgfdebug
+         IBPPipe=0 ! internal barrier boundary pairs (levee with cross barrier pipes)
+         ITEMP = 0 ! mainland and island
 C
 C     jgf46.21 Added support for IBTYPE=52.
          DO K=1,NBOU
@@ -1289,8 +1290,8 @@ C     jgf46.21 Added support for IBTYPE=52.
                BBN = BBN + NVELLP(K)
             case(4,24)
                IBP = IBP + NVELLP(K)
-            ! jgfdebug: This does not seem to handle weir boundaries
-            ! with cross barrier pipes
+            case(5,25)
+               IBPPipe = IBPPipe + NVELLP(K)
             case default
                ITEMP = ITEMP + NVELLP(K) 
             end select
@@ -1316,7 +1317,7 @@ C     jgf46.21 Added support for IBTYPE=52.
          END DO
 C
 c        print *, IPROC-1,ITEMP,DISC,BBN,2*IBP
-         ITEMP  = ITEMP + DISC + BBN + 2*IBP
+         ITEMP  = ITEMP + DISC + BBN + 2*IBP + 2*IBPPipe
          IF (ITEMP.NE.NVELP(IPROC)) THEN
 c          print *, "changed value from ",NVELP(IPROC)," to ",ITEMP
            NVELP(IPROC) = ITEMP
@@ -1436,36 +1437,32 @@ C             boundary segment.
 #endif
                WRITE(14,80) OUTMSG
 C
-               IF ((ITYPE.NE.3).AND.(ITYPE.NE.13).AND.
-     &             (ITYPE.NE.23).AND.(ITYPE.NE.4).AND.
-     &             (ITYPE.NE.24).AND.(ITYPE.NE.5).AND.
-     &             (ITYPE.NE.25)) THEN
+               select case(itype)
+               case default
                   DO I = 1,NVELLP(K)
                      WRITE(14,'(I8)') NBVVP(K,I)
                   ENDDO
-               ELSEIF ((ITYPE.EQ.3).OR.(ITYPE.EQ.13).OR.
-     &                  (ITYPE.EQ.23)) THEN
+               case(3,13,23)
                   IF(USE_TVW)NWEIRBNDRY(IPROC) = 1
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
                      WRITE(14,81) NBVVP(K,I),BAR1(K,INDX),BAR2(K,INDX)
                   ENDDO
-C
-               ELSEIF ((ITYPE.EQ.4).OR.(ITYPE.EQ.24)) THEN
+               case(4,24)
                   IF(USE_TVW)NWEIRBNDRY(IPROC) = 1
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
                      WRITE(14,82) NBVVP(K,I),IBCONNRP(K,I),
      &                        BAR1(K,INDX),BAR2(K,INDX),BAR3(K,INDX)
                   ENDDO
-               ELSEIF ((ITYPE.EQ.5).OR.(ITYPE.EQ.25)) THEN
+               case(5,25)
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
                      WRITE(14,83) NBVVP(K,I),IBCONNRP(K,I),
      &                      BAR1(K,INDX),BAR2(K,INDX),BAR3(K,INDX), 
      &                      BAR4(K,INDX),BAR5(K,INDX),BAR6(K,INDX)
                   ENDDO
-               ENDIF
+               end select
             ENDIF
          ENDDO
 C
