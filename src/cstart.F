@@ -1717,9 +1717,11 @@ C----------------------------------------------------------------------
       subroutine setColdWetDryStateAndWaterSurfaceElevation()
       use sizes, only : inputdir
       use mesh, only : dp, np, mju, ne, nm
+      use boundaries, only : nvel, lbcodei, nbv
       use global, only : eta2, nnodecode, noff, logMessage, allMessage,
      &   scratchMessage, INFO, h0, setMessageSource, unsetMessageSource,
-     &   DEBUG, WARNING, INFO, scratchMessage, eta1, nolifa, River_above_MSL
+     &   DEBUG, WARNING, INFO, scratchMessage, eta1, nolifa, River_above_MSL,
+     &   ElevDisc
       use nodalattributes, only : loadStartDry, STARTDRY, GeoidOffset, 
      &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE !jgf47.06
       implicit none
@@ -1775,6 +1777,12 @@ C----------------------------------------------------------------------
          ! as it is only used at Cold Start
          deallocate (River_et_WSE)
       endif
+      !...Set the radiation bc information 
+      DO I=1,NVEL
+         IF(LBCODEI(I).EQ.52) THEN
+            ElevDisc(I)=Eta2(NBV(I))
+         ENDIF
+      END DO
       !
       ! Set all nodes to wet by default.
       nnodecode(:)=1
