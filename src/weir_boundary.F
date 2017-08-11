@@ -739,30 +739,24 @@ C...............SET DEFAULT RETURN VALUE
 
 C...............CHECK IF THE ETA_MAX HAS BEEN EXCEEDED ALREADY
                 IF(BAR_FAILURE_START(MYIDX).EQ.-1D0)THEN
-C...................IF NOT HIGH ENOUGH YET, DUCK OUT OF HERE
-C                   CHECK BOTH SIDES OF WEIR FOR THE ELEVATION SO
-C                   THEY REMAIN IN SYNC
-                    IF(NNODECODE(NBV(MYIDX)).NE.1.AND.
-     &                  NNODECODE(IBCONN(MYIDX)).NE.1)THEN
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-                        CALL allMessage(DEBUG,"Return")
-#endif
-                        CALL unsetMessageSource()
-                        RETURN
-                    ENDIF    
-                    IF(ETA2(NBV(MYIDX)).LE.BAR_ETA_MAX(MYIDX).AND.
-     &                 ETA2(IBCONN(MYIDX)).LE.BAR_ETA_MAX(MYIDX))THEN
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-                        CALL allMessage(DEBUG,"Return")
-#endif                
-                        CALL unsetMessageSource()
-                        RETURN
-                    ELSE
+                    IF(ETA2(NBV(MYIDX)).GT.BAR_ETA_MAX(MYIDX).AND.NNODECODE(NBV(MYIDX)).EQ.1)THEN
 C.......................WE NEED TO INITIALIZE OUR START TIME FOR THE FAILURE
                         BAR_DEG_START(MYIDX) = TIME
                         BAR_DEG_END(MYIDX) = TIME +
      &                      BAR_FAILURE_DURATION(MYIDX)
                         BAR_FAILURE_START(MYIDX) = 1D0
+                    ELSEIF(ETA2(IBCONN(MYIDX)).GT.BAR_ETA_MAX(MYIDX).AND.NNODECODE(IBCONN(MYIDX)).EQ.1)THEN
+C.......................WE NEED TO INITIALIZE OUR START TIME FOR THE FAILURE
+                        BAR_DEG_START(MYIDX) = TIME
+                        BAR_DEG_END(MYIDX) = TIME +
+     &                      BAR_FAILURE_DURATION(MYIDX)
+                        BAR_FAILURE_START(MYIDX) = 1D0
+                    ELSE
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
+                        CALL allMessage(DEBUG,"Return")
+#endif                
+                        CALL unsetMessageSource()
+                        RETURN
                     ENDIF
                 ENDIF
 
