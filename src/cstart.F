@@ -1721,7 +1721,7 @@ C----------------------------------------------------------------------
       use global, only : eta2, nnodecode, noff, logMessage, allMessage,
      &   scratchMessage, INFO, h0, setMessageSource, unsetMessageSource,
      &   DEBUG, WARNING, INFO, scratchMessage, eta1, nolifa, River_above_MSL,
-     &   ElevDisc
+     &   EtaDisc
       use nodalattributes, only : loadStartDry, STARTDRY, GeoidOffset, 
      &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE !jgf47.06
       implicit none
@@ -1780,7 +1780,7 @@ C----------------------------------------------------------------------
       !...Set the radiation bc information 
       DO I=1,NVEL
          IF(LBCODEI(I).EQ.52) THEN
-            ElevDisc(I)=Eta2(NBV(I))
+            EtaDisc(NBV(I))=Eta2(NBV(I))
          ENDIF
       END DO
       !
