@@ -375,7 +375,7 @@ C
       logical(4) :: dir_result  !tcm v50.85
       INTEGER :: dir_error   !tcm v50.85 
 #endif
-      integer, parameter :: repartitionLimit = 10 ! give up after this
+      integer, parameter :: repartitionLimit = 100 ! give up after this
       integer :: numPartitionAttempts ! number of attempts to partition mesh
       logical :: partitionOK  ! true if partitioning has no issues
 
@@ -500,13 +500,16 @@ C
                call decomp()
                write(*,'(a)') 
      &            'INFO: Checking subdomain mesh mapping arrays.'
-               call checkMappings(partitionOK)
+               call checkMappings(partitionOK,numPartitionAttempts)
                if (partitionOK.eqv..true.) then
                   exit
                else
-                  numPartitionAttempts = numPartitionAttempts + 1            
-                  write(*,'(a)') 
-     &            'INFO: Partitioning contains mapping array issues.'
+                  numPartitionAttempts = numPartitionAttempts + 1
+                  write(*,'(a,i0,a)') 'INFO: Partitioning attempt ',
+     &            numPartitionAttempts,' contains mapping array issues.'
+                  write(*,'(a,i0,a)') 
+     &            'INFO: The limit on partitioning attempts is ',
+     &            repartitionLimit,'.' 
                   write(*,'(a)') 
      &            'INFO: Modifying partition weights and trying again.'
                   call dealloc_main2()

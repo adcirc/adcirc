@@ -499,12 +499,14 @@ C----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------
-      subroutine checkMappings(partitionOK)
+      subroutine checkMappings(partitionOK,numPartitionAttempts)
       use pre_global
       implicit none
       logical, intent(out) :: partitionOK 
+      integer, intent(in) :: numPartitionAttempts
       integer i, ilnode, ilnode2, ilnode3, index2, indx, iproc, iproc2
       integer iproc3, itemp, itemp2, j, jd, k
+      integer :: hbn ! hanging boundary node
       !
       ! NVELLP(K,PE) Number of Land Boundary Nodes of Segment K on PE
       ! IMAP_NOD_GL2(2(PE-1)+1,I)  = PE assigned to Global Node I
@@ -591,7 +593,9 @@ C----------------------------------------------------------------------
                   if ( nbvvp(k,1).eq.nbvvp(k,2) ) then
                      write(*,'(a)') 
      &           'ERROR: Two node boundary with identical node numbers.'
-                     boundaryWeights(indx) = boundaryWeights(indx) + 1
+                     hbn = imap_nod_lg(nbvvp(k,1),iproc)
+                     boundaryWeights(hbn) = boundaryWeights(hbn) 
+     &                  + 1
                      partitionOK = .false.
                   endif
                endif
@@ -608,8 +612,15 @@ C
                write(*,'(a,i0,a,i0,a)') 
      &           'ERROR: The land boundary number ',k,
      &           ' is only one node long in subdomain ',iproc,'.'
-               boundaryWeights(indx) = boundaryWeights(indx) + 1
-               partitionOK = .false. 
+               hbn = imap_nod_lg(nbvvp(k,1),iproc)
+               boundaryWeights(hbn) = boundaryWeights(hbn) 
+     &            + 1
+               select case (ibtype(k))
+               case(0,20,30) ! zero flux land boundaries
+                  partitionOK = .false. ! allow discrepancies here ?
+               case default
+                  partitionOK = .false.
+               end select 
             endif
          enddo
 

@@ -1197,8 +1197,13 @@ C
                if ( nvellp(k).eq.2 ) then
                   if ( nbvvp(k,1).eq.nbvvp(k,2) ) then
                      write(*,'(a)') 
-     &          'ERROR: two node boundary with identical node numbers.'
-                     stop
+     &          'ERROR: Two node boundary with identical node numbers.'
+                     if (strictBoundaries.eqv..false.) then
+                        NVELLP(K) = 0
+                        write(*,'(a)') 
+     &                     'INFO: Eliminating hanging boundary'
+     &                     //' node from this subdomain.'
+                     endif
                   endif
                endif
 C
@@ -1249,6 +1254,8 @@ C  ghost nodes)
      &           ' is only one node long in subdomain ',iproc,'.'
                if ( strictBoundaries.eqv..false. ) then
                   NVELLP(K) = 0
+                  write(*,'(a)') 'INFO: Eliminating hanging boundary'
+     &            //' node from this subdomain.'
                endif
             ENDIF
          ENDDO
