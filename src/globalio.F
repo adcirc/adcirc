@@ -754,7 +754,7 @@ C
       if (mnproc.eq.1.or.WRITE_LOCAL_FILES) then
          do i = 1, descript % num_records_this
             if(ABS(descript % specifier)==SPARSE_ASCII)then
-                if(nodecode(i)==0)cycle
+                if(descript%considerWetDry.AND.nodecode(i)==0)cycle
                 write(lun , 1000) i, descript % array(i)
             else
                 write(lun , 1000) i, descript % array(i)
@@ -768,7 +768,11 @@ C
       do i = 1, descript % num_records_this
          iglobal = descript % imap(i)
          if (istart <= iglobal .and. iglobal <= iend) then
-            buf(iglobal-ioffset) = descript % array(i)
+            if(descript%considerWetDry.AND.nodecode(i)==0)then
+                buf(iglobal-ioffset) = descript % alternate_value
+            else
+                buf(iglobal-ioffset) = descript % array(i)
+            endif
          end if
       end do
 #endif
@@ -800,7 +804,7 @@ C
       if (mnproc.eq.1.or.WRITE_LOCAL_FILES) then
         do i = 1, descript % num_records_this
             if(abs(descript%specifier)==SPARSE_ASCII)then
-                if(nodecode(i)==0)cycle
+                if(descript%considerWetDry.AND.nodecode(i)==0)cycle
                 write(lun , 1000) i, descript % array(i),
      &              descript % array2(i)
             else
@@ -817,8 +821,13 @@ C
         iglobal = descript % imap(i)
         if (istart <= iglobal .and. iglobal <= iend) then
           j = 2*(iglobal - ioffset) - 1
-          buf(j)     = descript % array(i)
-          buf(j + 1) = descript % array2(i)
+          if(descript%considerWetDry.AND.nodecode(i)==0)then
+              buf(j)     = descript % alternate_value
+              buf(j + 1) = descript % alternate_value
+          else
+              buf(j)     = descript % array(i)
+              buf(j + 1) = descript % array2(i)
+          endif
         end if
       end do
 #endif

@@ -640,6 +640,7 @@ C
       VelDescript % array_g              => UU2_g
       VelDescript % array2_g             => VV2_g
       VelDescript % field_name           = 'Vel'
+      VelDescript % ConsiderWetDry       = .TRUE.
       VelDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
 
       ! fort.71
@@ -4014,19 +4015,48 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
      &           ACCESS='SEQUENTIAL',POSITION='APPEND')
             WRITE(descript % lun,2120) TimeLoc,IT
             IF (descript % num_items_per_record .eq. 1) THEN
-               DO I=1, descript % num_fd_records
-                  if ( descript % isInteger .eqv. .true. ) then
-                     write(descript % lun,2452) labels(I), descript % iarray_g(I)
-                  else
-                     write(descript % lun,2453) I, descript % array_g(I)
-                  endif
-               ENDDO
-            ENDIF
-            IF (descript % num_items_per_record .eq. 2) THEN
-               DO I=1, descript % num_fd_records
-                  WRITE(descript % lun,2454) labels(I), descript % array_g(I),
+               IF(descript%considerWetDry)THEN
+                  DO I=1, descript % num_fd_records
+                     if ( descript % isInteger .eqv. .true. ) then
+                        IF(nodecode(I).EQ.0)THEN
+                            write(descript % lun,2452) labels(I), INT(descript % alternate_value)
+                        ELSE
+                            write(descript % lun,2452) labels(I), descript % iarray_g(I)
+                        ENDIF
+                     else
+                        IF(nodecode(I).EQ.0)THEN
+                            write(descript % lun,2452) labels(I), descript % alternate_value
+                        ELSE
+                            write(descript % lun,2453) I, descript % array_g(I)
+                        ENDIF
+                     endif
+                  ENDDO
+               ELSE
+                  DO I=1, descript % num_fd_records
+                     if ( descript % isInteger .eqv. .true. ) then
+                        write(descript % lun,2452) labels(I), descript % iarray_g(I)
+                     else
+                        write(descript % lun,2453) I, descript % array_g(I)
+                     endif
+                  ENDDO
+               ENDIF
+            ELSEIF (descript % num_items_per_record .eq. 2) THEN
+               IF(descript%ConsiderWetDry)THEN
+                    DO I=1, descript % num_fd_records
+                        IF(nnodecode(I)==0)THEN
+                            WRITE(descript % lun,2454) labels(I), descript % alternate_value,
+     &                               descript % alternate_value
+                        ELSE
+                            WRITE(descript % lun,2454) labels(I), descript % array_g(I),
      &                               descript % array2_g(I)
-               ENDDO
+                        ENDIF
+                    ENDDO
+               ELSE
+                 DO I=1, descript % num_fd_records
+                      WRITE(descript % lun,2454) labels(I), descript % array_g(I),
+     &                               descript % array2_g(I)
+                 ENDDO
+               ENDIF
             ENDIF
             CLOSE(descript % lun)
          ENDIF
@@ -4068,10 +4098,22 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
             ENDIF
             IF (descript % num_items_per_record .eq. 2) THEN
                IF ( descript % isStation .eqv. .false. ) THEN
-                  DO I=1, descript % num_records_this
-                     WRITE(descript % lun,2454) labels(I), descript % array(I),
-     &                               descript % array2(I)
-                  END DO
+                  IF(descript%considerWetDry)THEN
+                    DO I=1, descript % num_records_this
+                       IF(nodecode(I).EQ.0)THEN
+                          WRITE(descript % lun,2454) labels(I), descript % alternate_value, 
+     &                                 descript % alternate_value                   
+                       ELSE
+                          WRITE(descript % lun,2454) labels(I), descript % array(I),
+     &                                 descript % array2(I)
+                       ENDIF
+                    END DO
+                  ELSE
+                    DO I=1, descript % num_records_this
+                          WRITE(descript % lun,2454) labels(I), descript % array(I),
+     &                                 descript % array2(I)
+                    END DO
+                  ENDIF
                ELSE
                   DO I=1, descript % num_records_this
                      WRITE(descript % lun,2454) I, descript % array(I),
