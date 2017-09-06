@@ -4025,7 +4025,7 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
                         ENDIF
                      else
                         IF(nodecode(I).EQ.0)THEN
-                            write(descript % lun,2452) labels(I), descript % alternate_value
+                            write(descript % lun,2453) labels(I), descript % alternate_value
                         ELSE
                             write(descript % lun,2453) I, descript % array_g(I)
                         ENDIF
