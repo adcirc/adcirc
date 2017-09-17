@@ -191,7 +191,7 @@ ifeq ($(compiler),intel)
         NETCDFHOME    :=/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0
      endif
      ifeq ($(MACHINENAME),stampede)
-        NETCDFHOME :=/opt/apps/intel15/netcdf/4.3.3.1/x86_64
+        NETCDFHOME :=/opt/apps/intel17/netcdf/4.3.3.1/x86_64
         FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
      endif
      # @jasonfleming: Added support for lonestar5 at tacc.utexas.edu;
