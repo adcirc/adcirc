@@ -610,17 +610,21 @@ C
          do k=1, nbou
             if (nvellp(k).eq.1) then
                write(*,'(a,i0,a,i0,a)') 
-     &           'ERROR: The land boundary number ',k,
+     &           'WARNING: The land boundary number ',k,
      &           ' is only one node long in subdomain ',iproc,'.'
-               hbn = imap_nod_lg(nbvvp(k,1),iproc)
-               boundaryWeights(hbn) = boundaryWeights(hbn) 
-     &            + 1
-               select case (ibtype(k))
-               case(0,20,30) ! zero flux land boundaries
-                  partitionOK = .false. ! allow discrepancies here ?
-               case default
-                  partitionOK = .false.
-               end select 
+               !hbn = imap_nod_lg(nbvvp(k,1),iproc)
+               !boundaryWeights(hbn) = boundaryWeights(hbn) + 1
+               ! @jasonfleming: large meshes decomposed on many
+               ! subdomains may never be able to avoid this without
+               ! smarter adjustments of the partition weights, so
+               ! the rejection of the partitioning as a result of
+               ! this condition is disabled for now. 
+               !select case (ibtype(k))
+               !case(0,20,30) ! zero flux land boundaries
+               !   partitionOK = .false. ! allow discrepancies here ?
+               !case default
+               !   partitionOK = .false.
+               !end select 
             endif
          enddo
 
