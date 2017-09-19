@@ -570,7 +570,7 @@ C     can be open at any one time.
 C
 C     Perform decomposition over range of subdomains.
       startProc = 1
-      DO WHILE ( startProc .lt. nproc )
+      DO WHILE ( startProc .le. nproc )
          deltaProc = nproc - startProc
          IF ( deltaProc .gt. maxOpenFiles ) deltaProc = maxOpenFiles
          endProc = startProc + deltaProc
@@ -1052,7 +1052,6 @@ C
       NETA_MAX = 0   ! max number of open boundary nodes on any subdomain
 C
       DO IPROC = 1,NPROC
-         !write(*,'(a,i0)') 'iproc=',iproc !jgfdebug
 C
          LOCFN(1:14) = 'PE0000/fort.14'
          CALL IWRITE(LOCFN,3,6,IPROC-1)
@@ -1114,10 +1113,6 @@ C
          ENDDO
 C
          DO K = 1,NBOU
-            !jgfdebug
-            !if ( iproc.eq.66 .and. k.eq.60 ) then
-            !   write(*,'(a,i0)') 'fulldomain boundary number ',k  !jgfdebug
-            !endif
 C
 C--Weir Land Boundary Node-Pair Case
 Cmod vjp 3/8/99
@@ -1971,7 +1966,6 @@ c           CALL PREP15_3DDSS(IPROC)
 C
 C     jgf48.03 Write netCDF metadata, if necessary
          IF (useNetCDF.eqv..true.) THEN
-            !write(*,*) 'writing netcdf metadata to fort.15' ! jgfdebug
             WRITE(15,*) trim(adjustl(title))
             WRITE(15,*) trim(adjustl(institution))
             WRITE(15,*) trim(adjustl(source))
@@ -1982,8 +1976,6 @@ C     jgf48.03 Write netCDF metadata, if necessary
             WRITE(15,*) trim(adjustl(convention))
             WRITE(15,*) trim(adjustl(contact))
             WRITE(15,*) trim(adjustl(base_date))
-         ELSE
-            !write(*,*) 'not writing netcdf metadata' ! jgfdebug
          ENDIF
 
 c...     tcm v50.66.02 additions for time varying bathymetry
