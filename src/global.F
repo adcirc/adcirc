@@ -69,6 +69,8 @@ C     jgf46.08 Fine grained ramp functions (jgf46.21 split flux b.c.s)
       REAL(SZ) RampTip,DRampTip      ! Ramp for tidal potential
       REAL(SZ) RampMete,DRampMete    ! Ramp for wind and atmospheric pressure
       REAL(SZ) RampWRad,DRampWRad    ! Ramp for wave radiation stress
+      REAL(SZ) RampTest              ! Ramp for Saeed Test
+
 Corbitt 1203022: Added Zachs Fix for Assigning a Start Time to Mete Ramping
       REAL(SZ) DUnRampMete           ! Time to not have ramped Mete
 C

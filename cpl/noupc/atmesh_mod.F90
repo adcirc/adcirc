@@ -246,6 +246,12 @@ module atmesh_mod
 
       it = minloc(abs(delta_d_all),dim=1)
 
+      if (abs(delta_d_all (it)) .gt. 7200.) then
+         write(info,*) subname,' --- STOP ATMesh: Time dif is GT 2 hours ---  '
+         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=rc)
+         stop                  ' --- STOP ATMesh: Time dif is GT 2 hours ---  '
+      endif
+
       !it = 1
       !print *, 'atmesh file it index > ',it
 

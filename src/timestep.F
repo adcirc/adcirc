@@ -586,6 +586,12 @@ Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
          IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
       ENDIF
 
+
+      RampTest = TANH (IT * DTDP * DRampMete/86400.D0) !saeed added
+
+
+
+
 C
 C------------------------ICE FIELDS----------------------------------------
 C...  UPDATE THE ICE CONCENTRATION FIELDS FROM UNIT 25,225,227
@@ -1481,40 +1487,6 @@ C    kmd48.33bc - added in information for the sponge layer
        END IF
 
 
-C... v5X.xx saeed -- nws=17 for NUOPC coupling hwrf data from coupler
-      !print *, ' test in time step ...  line 1468'
-      IF(NWS.eq.34242317) THEN
-         !no ramping no interpolation  
-         DO I=1,NP
-            WindX = WVNX2(I)
-            WindY = WVNY2(I)
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-           
-            WSX2(I) = 0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = 0.001293d0*WDragCo*WindY*WindMag
-
-            !PRDIFF = (PRN2(I)- 1013.0*100.D0/(RHOWAT0*G) )  ! PRN2 in mH2O
-            !PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            PR2(I) = PRN2(I)
-            WVNXOUT(I)= WindX
-            WVNYOUT(I)= WindY
-         END DO
-      ENDIF
-
-      !print *, 'maxval(WVNX1), maxval(WVNX2) > ', maxval(WVNX1), maxval(WVNX2)
-      !print *, 'maxval(WSX1), maxval(WSX2) > ', maxval(WSX1), maxval(WSX2)
-      !print *, RampMete,WDragCo,WindX,WindMag,WTIMINC
-C
-C    kmd48.33bc - added in information for the sponge layer
-       IF ((C3D).AND.(RES_BC_FLAG.GT.0).AND.(NWS.NE.0)) THEN
-         DO I=1,NP
-            WSX2(I)=sponge(I)*WSX2(I)
-            WSY2(I)=sponge(I)*WSY2(I)
-         END DO
-       END IF
-
-C
 C--------------------END MET FORCING---------------------------------------
 
 C...  UPDATE THE WAVE RADIATION STRESS AND READ IN NEW VALUES FROM
@@ -1579,7 +1551,7 @@ C             in time using the same logic as above.
                ENDIF
 #endif
             
-            
+C... v50.xx sm -- nrs=5 for NUOPC coupling wave data from coupler
                IF(NRS == 5) THEN    ! saeed
                  DO I=1,NP
                    RSX = RSNX1(I)
@@ -1598,13 +1570,8 @@ C             in time using the same logic as above.
                RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
                RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
 
-              WVNXOUT(I)= WSX2(I)  ! TODO: JUST a TEST >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 
-              WVNYOUT(I)= WSY2(I)
-
-               WSX2(I) = WSX2(I) + RSX  ! TODO: JUST a TEST >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-               WSY2(I) = WSY2(I) + RSY
-
-
+               RSX = (RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
+               RSY = (RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef CSWAN
@@ -1613,6 +1580,13 @@ Casey 090302: Added these lines for output to the rads.64 file.
                   RSNXOUT(I) = RSX
                   RSNYOUT(I) = RSY
                ENDIF
+
+               RampTest = 1.0
+               WSX2(I) = RampTest * (1.0 * WSX2(I)  + 1.0 * RSX)  ! TODO: JUST a TEST >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+               WSY2(I) = RampTest * (1.0 * WSY2(I)  + 1.0 * RSY)
+
+
+
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
                WAVE_A(I) = WAVE_A1(I) + RSTRATIO*(WAVE_A2(I)-WAVE_A1(I))
@@ -1627,7 +1601,12 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
             CALL ComputeModifiedWaveFriction(TK)
 #endif
 #endif
-         ENDIF  !nrs = 1,2,or 3
+         ENDIF  !nrs = 1,2,or 3,5
+
+
+
+              WVNXOUT= WSX2  ! TODO: JUST a TEST >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+              WVNYOUT= WSY2
 
 C         print *, '>>>>>>>>>>>>>>>>>>>>>>>>>>> NRS', nrs
          ! Tightly Coupled Code with STWAVE
@@ -1652,36 +1631,8 @@ C         print *, '>>>>>>>>>>>>>>>>>>>>>>>>>>> NRS', nrs
             END DO
          ENDIF !(NRS = 4)
 
-         IF(NRS == 5212121) THEN    ! saeed
-               !WSX2 = WSX2 + RSNX2
-               !WSY2 = WSY2 + RSNY2
-
-
-                 DO I=1,NP
-                   RSX = RSNX1(I)
-                   RSY = RSNY1(I)
-                   RSNX1(I) = RSNX2(I)
-                   RSNY1(I) = RSNY2(I)
-                   RSNX2(I) = RSNX2(I) + (RSNX2(I)-RSX)
-                   RSNY2(I) = RSNY2(I) + (RSNY2(I)-RSY)
-                 ENDDO
-
-            DO I=1,NP
-               RSX = RampWRad*RSNX2(I)
-               RSY = RampWRad*RSNY2(I)
-               !WSX2(I) = WSX2(I) + RSX
-               !WSY2(I) = WSY2(I) + RSY
-               
-               WSX2(I) =  RSX
-               WSY2(I) =  RSY
-               
-               !  tcm v50.75 added for use whenever nrs=3 or nrs=4
-               RSNXOUT(I) = RSX
-               RSNYOUT(I) = RSY
-            END DO
-         ENDIF !(NRS = 5)
-      
       ENDIF  !(End test for updating wave radiation stress)
+
 
         !print *, 'in timestep maxval(RSNX2)',TimeLoc, maxval(RSNX2)
         !print *, 'in timestep maxval(RSNY2)',TimeLoc, maxval(RSNY2)

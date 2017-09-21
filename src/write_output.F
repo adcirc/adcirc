@@ -892,11 +892,11 @@ C... v49.64.01 tcm -- added for ice stations
       if (nrs.eq.0) then
          RSDescript % specifier            = OFF
       else
-         RSDescript % specifier            = NOUTGW
+         RSDescript % specifier            = NOUTGV
       endif
-      RSDescript % startTimeStep           = NTCYSGW 
-      RSDescript % endTimeStep             = NTCYFGW
-      RSDescript % outputTimeStepIncrement = NSPOOLGW
+      RSDescript % startTimeStep           = NTCYSGV
+      RSDescript % endTimeStep             = NTCYFGV
+      RSDescript % outputTimeStepIncrement = NSPOOLGV
       RSDescript % spoolCounter            => NSCOURS
       RSDescript % filepos                 => IGRadS
       RSDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)

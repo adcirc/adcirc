@@ -8,7 +8,6 @@ export NETCDF=enable
 export NETCDF4=enable
 #export NETCDF4_COMPRESSION=enable
 
-
 ### GNU >>>>>
 #export MACHINE=x86_64
 #export compiler=gnu
@@ -17,7 +16,6 @@ export NETCDF4=enable
 
 #make clean
 #make clobber
-
 
 rm -rf libadc.a #padcirc adcprep
 make libadc.a 
@@ -38,4 +36,3 @@ make adcprep
 #make buildstwave23
 #make hot2asc
 #make inflate
-

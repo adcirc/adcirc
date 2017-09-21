@@ -866,6 +866,7 @@ module adc_cap
     integer :: ss,ssN,ssD
     logical :: wave_forcing, meteo_forcing, surge_forcing
 
+    type(ESMF_Time) :: BeforeCaribbeanTime,AfterCaribbeanTime
 
     rc = ESMF_SUCCESS
     dbrc = ESMF_SUCCESS
@@ -1017,9 +1018,9 @@ module adc_cap
 
         !print *, 'Hard Coded >>>>>  SXX >>>>>> '
         !mask
-        where(abs(ADCIRC_SXX).gt. 1e6)  ADCIRC_SXX =  0.0
-        where(abs(ADCIRC_SYY).gt. 1e6)  ADCIRC_SYY =  0.0
-        where(abs(ADCIRC_SXY).gt. 1e6)  ADCIRC_SXY =  0.0
+        where(abs(ADCIRC_SXX).gt. 1e6)  ADCIRC_SXX =  1e-10
+        where(abs(ADCIRC_SYY).gt. 1e6)  ADCIRC_SYY =  1e-10
+        where(abs(ADCIRC_SXY).gt. 1e6)  ADCIRC_SXY =  1e-10
         !max values
         !where((ADCIRC_SXX).gt. 1e3)  ADCIRC_SXX =  1e3
         !where((ADCIRC_SYY).gt. 1e3)  ADCIRC_SYY =  1e3
@@ -1029,10 +1030,23 @@ module adc_cap
         !where((ADCIRC_SXY).lt.-1e3)  ADCIRC_SXY = -1e3
 
 
+
+
 !    NOTE: ADCIRC accepts wave-driven stresses "in units of velocity squared
 !    (consistent with the units of gravity).  Stress in these units is obtained
 !    by dividing stress in units of force/area by the reference density of water."
 
+
+!
+!
+!From WW3 source : w3iogomd.ftn  line: 1756
+!constants.ftn:34:!      DWAT      Real  Global   Density of water               (kg/m3)
+!constants.ftn:63:      REAL, PARAMETER         :: DWAT   = 1000.
+!
+!w3iogomd.ftn:1753:      SXX    = SXX * DWAT * GRAV
+!w3iogomd.ftn:1754:      SYY    = SYY * DWAT * GRAV
+!w3iogomd.ftn:1755:      SXY    = SXY * DWAT * GRAV
+!
 !    Rad.Str info from netcdf header
 !		 sxx:long_name = "Radiation stress component Sxx" ;
 !		 sxx:standard_name = "radiation_stress_component_sxx" ;
@@ -1048,9 +1062,9 @@ module adc_cap
 !    in force calculation we do d(sxx)/dx therefore the final force 
 !    unit will be m2s-2 which is the correct one.   
 
-        ADCIRC_SXX = ADCIRC_SXX / RhoWat0 !/ g   !I added the g for now need to check <<<<<<<<<TODO:
-        ADCIRC_SYY = ADCIRC_SYY / RhoWat0 !/ g
-        ADCIRC_SXY = ADCIRC_SXY / RhoWat0 !/ g
+        ADCIRC_SXX = ADCIRC_SXX / RhoWat0
+        ADCIRC_SYY = ADCIRC_SYY / RhoWat0
+        ADCIRC_SXY = ADCIRC_SXY / RhoWat0
         
         !print *, 'in cap maxval(ADCIRC_SXX)', maxval(ADCIRC_SXX)
 
@@ -1064,7 +1078,6 @@ module adc_cap
         !write(iunit_log, *) RSNX2, RSNY2
         !close(iunit_log)
 
-
         write(info,*) subname,' --- wave data exchange OK / wave feilds are all connected --- / Model advances '
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
         !print *, info
@@ -1075,23 +1088,22 @@ module adc_cap
         !RSNX2 = 0.0
         !RSNY2 = 0.0
 
+        ! initialize time reach to Caribean Islands
+        !call ESMF_TimeSet(BeforeCaribbeanTime, yy=2008, mm=9, dd=6 , h=12, m=0, s=0, rc=rc)
+        !call ESMF_TimeSet(AfterCaribbeanTime , yy=2008, mm=9, dd=12, h=12, m=0, s=0, rc=rc)
+
         !-----------------------
-        print *, 'Hard Coded >>>>>>>>>>> '
-        where(RSNX2.gt. 0.02) RSNX2 =  0.02
-        where(RSNY2.gt. 0.02) RSNY2 =  0.02
-        where(RSNX2.lt.-0.02) RSNX2 = -0.02
-        where(RSNY2.lt.-0.02) RSNY2 = -0.02
+   !     if ((currTime > BeforeCaribbeanTime) .and. (currTime < AfterCaribbeanTime)) then
+            write(info,*) subname, 'in cap after maxval(RSNX2)', maxval(RSNX2)
+            call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
 
+            write(info,*) subname, 'in cap after maxval(RSNY2)', maxval(RSNY2)
+            call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
 
-        write(info,*) subname, 'in cap after maxval(RSNX2)', maxval(RSNX2)
-        call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
-        
-        write(info,*) subname, 'in cap after maxval(RSNY2)', maxval(RSNY2)
-        call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
-
-        !print *, 'in cap after maxval(RSNX2)', maxval(RSNX2)
-        !print *, 'in cap after maxval(RSNY2)', maxval(RSNY2)
-
+            print *, 'Hard Coded >>>>>>>>>>>  where(abs(RSNX2).gt. 0.01) RSNX2 =  0.01'
+            where(abs(RSNX2).gt. 0.01) RSNX2 =  0.01
+            where(abs(RSNY2).gt. 0.01) RSNY2 =  0.01
+    !    endif
     else
         NUOPC4WAV = .false.
         write(info,*) subname,' --- no wave forcing exchange / waves are not all connected --- '

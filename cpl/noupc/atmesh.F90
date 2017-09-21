@@ -381,9 +381,6 @@ module ATMESH
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-      
-      
-
 
 
     meshIn  = ModelMesh ! for now out same as in

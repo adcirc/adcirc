@@ -7163,7 +7163,7 @@ C     maxwvel.63
 !#ifdef ADCSWAN
 Cobell 20120510: SWAN Output Data
 C........Radiation Stress
-      RSDescript % specifier            = NOUTGW
+      RSDescript % specifier            = NOUTGV
       RSDescript % lun                  = 164
       RSDescript % initial_value        = 0.0
       RSDescript % num_items_per_record = 2
@@ -7876,6 +7876,7 @@ C     was specified.
       ! for use whenever nrs=3 or nrs=4     
       ! Cobell 20120510: Added for SWAN NetCDF
       IF ((NRS.EQ.3).OR.(NRS.EQ.4).OR.(NRS.EQ.5)) THEN
+        print *, 'For Radiation Stress forcing:> initNetCDFOutputFile(RSDescript,reterr) '
         CALL initNetCDFOutputFile(RSDescript,reterr)
       ENDIF
       ! tcm v50.75 moved ifdef adcswan to here
