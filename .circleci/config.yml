@@ -118,6 +118,7 @@ jobs:
       - run: 
           name: Run test suite
           command: cd /root/adcirc-cg-testsuite ; ./RunTests.sh /root/project/build
+          no_output_timeout: 7200
 workflows:
   version: 2
   build_and_test:
@@ -129,6 +130,5 @@ workflows:
       - build_cmake_with_netcdf
       - build_cmake_with_netcdf_and_xdmf
       - acceptance_tests:
-         timeout: 7200
          requires:
            - build_cmake_with_netcdf_and_xdmf
