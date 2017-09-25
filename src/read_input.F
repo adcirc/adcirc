@@ -23,7 +23,8 @@ C-----------------------------------------------------------------------
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries, 
      &   freeMesh
       USE BOUNDARIES, ONLY : ANGINN, COSTSET, NETA, NVEL, NVELME, 
-     &   NFLUXF, NBD, ME2GW, LBCODEI, NBV
+     &   NFLUXF, NBD, ME2GW, LBCODEI, NBV, simpleFluxBoundaries, ibtype,
+     &   numSimpleFluxBoundaries
       USE GLOBAL_IO
       USE KDTREE2_MODULE     ! V49.48.02 tcm -- added for fast searching
       USE GLOBAL_3DVS, ONLY: C3D_PTrans, NSTA3DD, NSTA3DV, NSTA3DT,
@@ -1934,6 +1935,23 @@ C     jgf46.08 Change to the number of ramp functions that will be used.
      &    /,9X,'HYPERBOLIC TANGENT RAMP(S) WILL BE APPLIED TO THE ',
      &    'FORCING FUNCTIONS')
       ENDIF
+      !
+      ! @jasonfleming: If there is at least one radiation/flux boundary
+      ! (ibtype=52) in the mesh, then the FluxSettlingTime must 
+      ! be specified, meaning NRAMP must be .ge. 2
+      if ( nramp.lt.2 ) then
+         ! check for radiation/flux boundaries
+         do i=1,numSimpleFluxBoundaries
+            if (ibtype(simpleFluxBoundaries(i)%indexNum).eq.52) then
+               call allMessage(ERROR,'The mesh contains a flux/radiation'//
+     &         ' boundary (ibtype=52) but the fluxSettlingTime was not'//
+     &         ' specified in the control file (fort.15). Please '//
+     &         ' set NRAMP to at least 2 and also provide a value for '//
+     &          ' fluxSettlingTime on the DRAMP line.')
+               call adcirc_terminate()
+            endif
+         end do
+      endif
 C...
 C...  PROCESS G - GRAVITY
 C...
