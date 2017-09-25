@@ -221,6 +221,10 @@ C Logicals added for adcprep paths
       LOGICAL :: XDMF_AVAIL ! true if XDMF was compiled in
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       NAMELIST /waveCoupling/ WaveWindMultiplier
+      !
+      ! @jasonfleming: reduce memory usage if there are no weir boundaries
+      ! with cross barrier pipes
+      logical :: meshHasWeirWithPipes
 
 C---------------------end of data declarations--------------------------------C
 
@@ -247,7 +251,7 @@ C     the reading of the fort.15 file.
       integer :: nbytes = 0
       INTEGER, ALLOCATABLE :: NNEIGH(:)
       INTEGER  I,IL,IDUM,N,N1,N2,N3,NDIF1,NDIF2,NDIF3,NBN,NVEL,
-     &  IK,IBN,NBBN,NFLUXB,NFLUXI,NIBP,IBTYPE,IBN1,NETA
+     &  IK,IBN,NBBN,NFLUXB,NFLUXI,NFLUXIPipe,NIBP,NIBPPipe,IBTYPE,IBN1,NETA
       CHARACTER*95 LINEI
       CHARACTER*1 CHARI(95)
       EQUIVALENCE (LINEI,CHARI(1))
@@ -267,6 +271,7 @@ C.... tcm v51.20.04 additions for station location file
 #else
       NETCDF_AVAIL = .false.
 #endif
+      meshHasWeirWithPipes = .false.
 C
 C...OPEN AND PROCESS THE UNIT 14 ADCIRC GRID FILE TO DETERMINE SIZES
 C
@@ -351,7 +356,9 @@ C
       NBBN=0                            !NO. OF MAINLAND BARRIER BOUNDARY NODES
       NFLUXB=0                          !SPECIFIED MAINLAND BARRIER BC
       NIBP=0                            !NO. OF INTERNAL BARRIER BOUNDARY PAIRS
+      NIBPPipe=0                        !number of internal barrier bounary (with pipes) pairs
       NFLUXI=0                          !SPECIFIED INTERNAL BARRIER BC
+      NFLUXIPipe=0                      !internal barrier boundary bc with pipes
       fluxBoundary=.false.             !SPECIFIED FLUX BC
 C
       READ(14,*) MNBOU                  !Land Boundary Segments
@@ -367,25 +374,23 @@ C     jgf46.21 Added support for IBTYPE=52.
             IBTYPE=(ABS(IBTYPE)-100)*(IBTYPE/ABS(IBTYPE))
          END IF
 ! kmd - continue on with the normal dividing of the land boundaries
-         IF((IBTYPE.EQ.2).OR.(IBTYPE.EQ.12).OR.(IBTYPE.EQ.22).OR.
-     &        (IBTYPE.EQ.32).OR.(IBTYPE.EQ.52)) THEN
+         select case(ibtype)
+         case(2,12,22,32,52)
             fluxBoundary = .true.
             NDISC=NDISC+NBN
-         ENDIF
-         IF((IBTYPE.EQ.3).OR.(IBTYPE.EQ.13).OR.(IBTYPE.EQ.23)) THEN
-           NFLUXB=1
-           NBBN=NBBN+NBN
-         ENDIF
-         IF((IBTYPE.EQ.4).OR.(IBTYPE.EQ.24)) THEN
-           NFLUXI=1
-           NIBP=NIBP+NBN
-         ENDIF
-         IF((IBTYPE.NE.2).AND.(IBTYPE.NE.12).AND.(IBTYPE.NE.22).AND.
-     &        (IBTYPE.NE.52).AND.
-     &        (IBTYPE.NE.3).AND.(IBTYPE.NE.13).AND.(IBTYPE.NE.23).AND.
-     &        (IBTYPE.NE.4).AND.(IBTYPE.NE.24)) THEN
+         case(3,13,23)
+            NFLUXB=1
+            NBBN=NBBN+NBN
+         case(4,24)
+            NFLUXI=1
+            NIBP=NIBP+NBN
+         case(5,25)
+            meshHasWeirWithPipes = .false.
+            NFLUXIPipe=1
+            NIBPPipe=NIBPPipe+NBN
+         case default  ! mainland and island
             NVEL=NVEL+NBN
-         ENDIF
+         end select
          IBN1=0
          DO IK=1,NBN
             READ(14,*) IBN
@@ -395,13 +400,13 @@ C     jgf46.21 Added support for IBTYPE=52.
               NNEIGH(IBN) = 0
             ENDIF
             IF ((IBTYPE.EQ.1).OR.(IBTYPE.EQ.11).OR.(IBTYPE.EQ.21)) THEN
-              IF ((IK.EQ.NBN).AND.(IBN.NE.IBN1)) NVEL=NVEL+1
+               IF ((IK.EQ.NBN).AND.(IBN.NE.IBN1)) NVEL=NVEL+1
             ENDIF
             IF (IK.EQ.1) IBN1=IBN
          ENDDO
       ENDDO
 C
-      MNVEL=NVEL+NDISC+NBBN+2*NIBP
+      MNVEL=NVEL+NDISC+NBBN+2*NIBP+2*NIBPPipe
       IF(MNBOU.EQ.0) MNBOU=1
       MNVEL=MNVEL+1
 C
@@ -987,7 +992,6 @@ C
 
       READ(15,*) MNSTAE                             !PROCESS MNSTAE
       ! tcm v51.20.03 -- added negative mnstae to signal use of external station file elev_stat.151 
-      write(6,*) 'mnstae=',mnstae ! jgfdebug
       if (MNSTAE < 0) then
          write(*,*) "External File Used for Elevation Station Locations"
          USE_ELEV_STAT_FILE = .TRUE.

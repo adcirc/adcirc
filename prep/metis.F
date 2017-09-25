@@ -1,5 +1,6 @@
-        SUBROUTINE METIS()
-        USE PRE_GLOBAL 
+      SUBROUTINE METIS()
+      USE PRE_GLOBAL
+      IMPLICIT NONE
 C----------------------------------------------------------------------
 C  INTERFACE ROUTINE FOR PADCIRC TO USE THE METIS 4.0 LIBRARY 
 C  A GRAPH PARTITION TOOL, FOR DOMAIN DECOMPOSITION
@@ -20,13 +21,16 @@ C
         INTEGER,ALLOCATABLE :: VWGTS(:), EWGTS(:)
         INTEGER,ALLOCATABLE :: CO_NODES(:,:),NEDGES(:), NEDLOC(:)
         INTEGER,ALLOCATABLE :: NUMDUALS(:)
+        
+        integer :: contiguous ! number of nodes on a boundary within a particular subdomain
+        integer :: subdomainNumber ! subdomain that a boundary node falls within
+        
         EXTERNAL metis_partgraphkway,metis_estimatememory
 C
         ALLOCATE ( ITVECT(MNP),ITVECT2(MNP) )
         ALLOCATE ( NUMDUALS(MNP) )
         ALLOCATE ( XADJ(MNP+1), VWGTS(MNP), NEDGES(MNP) ) 
         ALLOCATE ( NEDLOC(MNP) )
-
 C
 C--COMPUTE INDEX OF WEIR DUALS WHICH IS ZERO IF NOT A WEIR NODE
 C
@@ -43,10 +47,14 @@ C
            IF (NUMDUALS(J) .ge. MAXDUALS) MAXDUALS = NUMDUALS(J)
         ENDDO
 
-        print *, "This model has ",NWEIR," weir node pairs"
-        print *, "maximum number duals for any weir node = ", maxduals
+        write(*,'(a,i0,a)') 
+     &   'INFO: This mesh has ',NWEIR,' weir node pairs.'
+        write(*,'(a,i0,a)') 
+     &  'INFO: Maximum number of duals for any weir node is ',maxduals,
+     &  '.'
 
         ALLOCATE ( IDUALS(MAXDUALS,MNP) )
+
 
         DO INODE=1, MNP   
         DO K=1, MAXDUALS
@@ -218,72 +226,119 @@ C
 C
 C  COMPUTE WEIGHTS OF THE GRAPH VERTICES
 C
-        DO INODE = 1,MNP   
-           VWGTS(INODE) = NEDGES(INODE)
-        ENDDO
+      DO INODE = 1,MNP   
+         VWGTS(INODE) = NEDGES(INODE)
+         if ( strictBoundaries.eqv..true. ) then
+            vwgts(inode) = vwgts(inode) + boundaryWeights(inode)
+         endif
+      ENDDO
 C
 C--COMPUTE ADJACENCY LIST OF GRAPH AND ITS EDGE WEIGHTS
 C
-        XADJ(1) = 1
-        ITOT = 0
-        DO INODE = 1,MNP
-        DO J = 1, NEDGES(INODE)
-           ITOT = ITOT + 1
-           JNODE = CO_NODES(J,INODE)
-           ADJNCY(ITOT) = JNODE
-           EWGTS(ITOT)  = (VWGTS(JNODE)+VWGTS(INODE))
-        ENDDO
-        XADJ(INODE+1) = ITOT+1
-        ENDDO
+      XADJ(1) = 1
+      ITOT = 0
+      DO INODE = 1,MNP
+         DO J = 1, NEDGES(INODE)
+            ITOT = ITOT + 1
+            JNODE = CO_NODES(J,INODE)
+            ADJNCY(ITOT) = JNODE
+            EWGTS(ITOT)  = (VWGTS(JNODE)+VWGTS(INODE))
+         ENDDO
+         XADJ(INODE+1) = ITOT+1
+      ENDDO
 C
 C Dump graph to a file for debugging
 C
       IDUMP = 1
       IF (IDUMP.EQ.1) THEN
-        OPEN(FILE='metis_graph.txt',UNIT=99)
-        WRITE(99,100) MNP, NEDGETOT, 11, 1
-        DO INODE=1, MNP
-           WRITE(99,200) VWGTS(INODE),
-     &   (CO_NODES(J,INODE), EWGTS(XADJ(INODE)+J-1),J=1,NEDGES(INODE))
-        ENDDO
-        CLOSE(99)
+         OPEN(FILE='metis_graph.txt',UNIT=99)
+         WRITE(99,100) MNP, NEDGETOT, 11, 1
+         DO INODE=1, MNP
+            WRITE(99,200) VWGTS(INODE),
+     &     (CO_NODES(J,INODE), EWGTS(XADJ(INODE)+J-1),J=1,NEDGES(INODE))
+         ENDDO
+         CLOSE(99)
       ENDIF
 
 C
 C--CALL K-WAY METIS FOR PARTITIONING
 C
-        NUMFLAG  = 1
-        NPARTS = MNPROC
-        OPTIONS(1) = 1
-        OPTIONS(2) = 3
-        OPTIONS(3) = 1
-        OPTIONS(4) = 3   !  minimize number of co-domains
-        OPTIONS(5) = 0
+      NUMFLAG  = 1
+      NPARTS = MNPROC
+      OPTIONS(1) = 1
+      OPTIONS(2) = 3
+      OPTIONS(3) = 1
+      OPTIONS(4) = 3   !  minimize number of co-domains
+      OPTIONS(5) = 0
 c
-        WEIGHTFLAG = 3   ! use weights for nodes and edges
+      WEIGHTFLAG = 3   ! use weights for nodes and edges
 C
-        OPTYPE = 2
-        CALL metis_estimatememory(MNP,XADJ,ADJNCY,NUMFLAG,
+      OPTYPE = 2
+      CALL metis_estimatememory(MNP,XADJ,ADJNCY,NUMFLAG,
      &        OPTYPE,NBYTES)
  
-        print *, ""
-        print *, "Grid Partition Data"
-        print *, "METIS 4.0 will require approximately ",nbytes," bytes"
+      print *, ""
+      print *, "Grid Partition Data"
+      print *, "METIS 4.0 will require approximately ",nbytes," bytes"
 C
-        CALL metis_partgraphkway( MNP,XADJ,ADJNCY,VWGTS,EWGTS,
+      CALL metis_partgraphkway( MNP,XADJ,ADJNCY,VWGTS,EWGTS,
      &      WEIGHTFLAG,NUMFLAG,NPARTS,OPTIONS,EDGECUT,PROC)
 C
-        print *, "Total Edges Cut = ",EDGECUT 
+      print *, "Total Edges Cut = ",EDGECUT 
+!      !
+!      ! @jasonfleming: Add code to detect boundaries that have less
+!      ! than three nodes in a subdomain. 
+!      do k=1, nbou
+!         contiguous = 1
+!         subdomainNumber = proc(nbvv(k,1))
+!         write(*,'(a,i0,a,i0,a,i0)') 'boundary ',k,' fulldomain node ',
+!     &      nbvv(k,1),' subdomain ',subdomainNumber
+!         do j=2,nvell(k)
+!            write(*,'(a,i0,a,i0,a,i0)') 'boundary ',k,' fulldomain node ',
+!     &         nbvv(k,j),' subdomain ',proc(nbvv(k,j))
+!            ! check to see if this boundary node is in the same subdomain
+!            ! as the previous one on this boundary
+!            if ( proc(nbvv(k,j)).eq.subdomainNumber ) then
+!               ! same subdomain, increment the number of nodes on this 
+!               ! boundary in this subdomain
+!               contiguous = contiguous + 1
+!            else
+!               ! this boundary node is on a different subdomain than 
+!              ! the previous one in this string
+!               !
+!               ! check to see if there were too few nodes 
+!               if ( contiguous.lt.3 ) then
+!                  print *, 'boundary with less than 3 nodes in a subdomain:'
+!                  write(*,'(a,a,i0)') trim(nvellmsg(k)),
+!     &              ' in subdomain ',subdomainNumber
+!                  do i=1,contiguous
+!                     write(*,'(a,i0,a,i0)') 'fulldomain node number ',nbvv(k,j-contiguous),
+!     &               ' in subdomain ',proc(nbvv(k,j-contiguous)) 
+!                  end do
+!               endif
+!               subdomainNumber = proc(nbvv(k,j))
+!               contiguous = 1
+!            endif
+!         end do
+!      end do
 
-        print *, "writing mesh partition to file: partmesh.txt"
-        OPEN(990,FILE='partmesh.txt')
-        DO I=1, MNP
-           WRITE(990,*) PROC(I)
-        ENDDO
-        CLOSE(990)
+      write(*,'(a)') 'INFO: Writing mesh partition to partmesh.txt.'
+      OPEN(990,FILE='partmesh.txt')
+      DO I=1, MNP
+         WRITE(990,*) PROC(I)
+      ENDDO
+      CLOSE(990)
 
- 100    FORMAT(4I10)
- 200    FORMAT(100I10)
+      deallocate(iduals)
+      deallocate(itvect,itvect2)
+      deallocate(numduals)
+      deallocate(xadj,vwgts,nedges) 
+      deallocate(nedloc)
+
+ 100  FORMAT(4I10)
+ 200  FORMAT(100I10)
 C
-        RETURN
-        END
+      RETURN
+c-----------------------------------------------------------------------
+      END SUBROUTINE METIS
+c-----------------------------------------------------------------------
