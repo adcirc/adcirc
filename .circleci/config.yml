@@ -114,7 +114,7 @@ jobs:
              - exe
       - run:
           name: Retrieve Test Suite
-          command: git clone --depth=1 https://github.com/adcirc/adcirc-cg-testsuite.git /root/adcirc-cg-testsuite
+          command: git clone --depth=1 -b adcircResultCompare https://github.com/adcirc/adcirc-cg-testsuite.git /root/adcirc-cg-testsuite
       - run: 
           name: Run test suite
           command: cd /root/adcirc-cg-testsuite ; ./RunTests.sh /root/project/build
