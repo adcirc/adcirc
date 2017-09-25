@@ -65,6 +65,11 @@ C                                   ! Ith Flow Boundary Node
       INTEGER EXIST_FLUX
       LOGICAL APERIODIC_FLOW_BC     ! .true. if EXIST_FLUX is .true. .AND.
                                     ! NFFR=0 in fort.15
+                                    
+      ! @jasonfleming: add boundary weights for perturbing the domain
+      ! decomposition in subroutine metis()
+      logical :: strictBoundaries ! true if subdomain boundaries must match fulldomain
+      integer, allocatable :: boundaryWeights(:) ! mnp
 
 ! kmd - updates for rivers in a baroclinic simulation
       INTEGER EXIST_BC_TS
@@ -321,7 +326,7 @@ C     LOCALI section
       INTEGER,ALLOCATABLE::NBDVP(:,:)
       INTEGER,ALLOCATABLE::NBOUP(:)    ! NBOUP(PE) Number of Land Boundary
 C                                      ! Segments on PE
-      INTEGER,ALLOCATABLE::NVELLP(:)   ! NVELLP(K) Number of Land Boundary
+      INTEGER,ALLOCATABLE::NVELLP(:)   ! NVELLP(K,PE) Number of Land Boundary
 C                                      ! Nodes of Segment K on PE
       INTEGER,ALLOCATABLE::NVELP(:)    ! NVELP(PE) Total Number of Land
 C                                      ! Boundary Nodes on PE
@@ -408,8 +413,9 @@ C-------------------end of data declarations------------------------C
       end function
 
 
-
+c----------------------------------------------------------------------
       SUBROUTINE ALLOC_MAIN1()
+c----------------------------------------------------------------------
       use memory_usage
       integer :: nbytes = 0
 C
@@ -433,8 +439,10 @@ C
       nbytes = nbytes + 8*mnvel
       ALLOCATE ( BAR1(MNBOU,MNVEL),BAR2(MNBOU,MNVEL),BAR3(MNBOU,MNVEL) )
       nbytes = nbytes + 12*mnbou*mnvel
-      ALLOCATE ( BAR4(MNBOU,MNVEL),BAR5(MNBOU,MNVEL),BAR6(MNBOU,MNVEL) )
-      nbytes = nbytes + 12*mnbou*mnvel
+      if (meshHasWeirWithPipes.eqv..true.) then
+         ALLOCATE ( BAR4(MNBOU,MNVEL),BAR5(MNBOU,MNVEL),BAR6(MNBOU,MNVEL) )
+         nbytes = nbytes + 12*mnbou*mnvel
+      endif
       ALLOCATE ( FLBN(MNVEL),FLBNX(MNVEL),FLBNXP(MNVEL) )
       nbytes = nbytes + 12*mnvel
       ALLOCATE ( NVDLLMSG(MNOPE),NVELLMSG(MNBOU+1) )
@@ -530,9 +538,13 @@ C....tcm 44.48.01 allocate memory for fast Search Tree
       call memory_status()
 C
       RETURN
-      END SUBROUTINE
-
-
+C---------------------------------------------------------------------
+      END SUBROUTINE ALLOC_MAIN1
+C---------------------------------------------------------------------
+C
+C
+C---------------------------------------------------------------------
+C---------------------------------------------------------------------
       SUBROUTINE ALLOC_MAIN2()
       use memory_usage
       integer nbytes
@@ -545,14 +557,42 @@ C
       nbytes = nbytes + 4*mnpp*mnproc + 4*mnep*mnproc + 12*mnep*mnproc
       ALLOCATE(EL_SHARE(NELG))
       EL_SHARE(:)   = -1
+      
       nbytes = nbytes + mnep
       call memory_alloc(nbytes)
       print *,"from alloc_main2: "
       call memory_status()
 C
       RETURN
-      END SUBROUTINE
-
+C---------------------------------------------------------------------
+      END SUBROUTINE ALLOC_MAIN2
+C---------------------------------------------------------------------
+C
+C
+C---------------------------------------------------------------------
+C---------------------------------------------------------------------
+      subroutine dealloc_main2()
+      use memory_usage
+      integer nbytes
+C
+C     Deallocate space for Arrays dimensioned by MNPP and MNEP
+C
+      nbytes = 0
+      deallocate(imap_nod_lg,imap_el_lg)
+      deallocate(nnep)
+      nbytes = nbytes + 4*mnpp*mnproc + 4*mnep*mnproc + 12*mnep*mnproc
+      deallocate(el_share)
+      
+      nbytes = nbytes + mnep
+      call memory_dealloc(nbytes)
+      print *,"from dealloc_main2: "
+      call memory_status()
+c
+      return
+c---------------------------------------------------------------------
+      end subroutine dealloc_main2
+C---------------------------------------------------------------------
+C
 C
 C
 C--------------------------------------------------------------------------C

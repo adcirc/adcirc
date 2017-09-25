@@ -570,7 +570,7 @@ C     can be open at any one time.
 C
 C     Perform decomposition over range of subdomains.
       startProc = 1
-      DO WHILE ( startProc .lt. nproc )
+      DO WHILE ( startProc .le. nproc )
          deltaProc = nproc - startProc
          IF ( deltaProc .gt. maxOpenFiles ) deltaProc = maxOpenFiles
          endProc = startProc + deltaProc
@@ -1032,10 +1032,16 @@ C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
       INTEGER I,I1,J,K,M,ETYPE,ITEMP,ITEMP2,ILNODE,ILNODE2,ILNODE3
-      INTEGER JD,JG,JP,IPROC,IPROC2,IPROC3,DISC,BBN,IBP
+      INTEGER JD,JG,JP,IPROC,IPROC2,IPROC3,DISC,BBN,IBP,IBPPipe
       INTEGER INDX,INDEX2,ITOT,ITYPE,NUMS(10)
       CHARACTER LOCFN*14,PE*6
       CHARACTER*80 OUTMSG
+      !
+      ! NVELLP(K,PE) Number of Land Boundary Nodes of Segment K on PE
+      ! IMAP_NOD_GL2(2(PE-1)+1,I)  = PE assigned to Global Node I
+      ! IMAP_NOD_GL2(2(PE-1)+2,I)  = Local Node Number of Global Node I on PE
+      ! vjp modified array to drop last dimension to save memory space
+      ! LBINDEX_LG(K,I,PE) = Global Index of I-th Node on Land Boundary Segment K on PE
 C
       ETYPE = 3   ! The only Element-Type supported by ADCIRC is 3.
 C
@@ -1044,8 +1050,8 @@ C--MAIN LOOP:   Write a Local Grid File ( fort.14 ) for each PE
 C--------------------------------------------------------------------------
 C
       NETA_MAX = 0   ! max number of open boundary nodes on any subdomain
-
-      DO 1000 IPROC = 1,NPROC
+C
+      DO IPROC = 1,NPROC
 C
          LOCFN(1:14) = 'PE0000/fort.14'
          CALL IWRITE(LOCFN,3,6,IPROC-1)
@@ -1112,8 +1118,10 @@ C--Weir Land Boundary Node-Pair Case
 Cmod vjp 3/8/99
 C  mod to allow that each of Weir-node pair might be ghosts nodes
 C
-            IF ((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24).OR.
-     &          (IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
+            select case(IBTYPE(K))
+            !
+            ! weir boundaries
+            case(4,24,5,25)
                DO I = 1,NVELL(K)
                   INDX = NBVV(K,I)
                   INDEX2 = IBCONNR(K,I)
@@ -1140,26 +1148,63 @@ C
 C
 C--All Other Land Boundary Node types
 C
-            ELSE
+            case default
 C
+               ! for each node in this non-weir flux boundary 
                DO I = 1,NVELL(K)
+                  ! find full domain node number
                   INDX = NBVV(K,I)
+                  ! iterate over the subdomains where this boundary
+                  ! node is found
                   DO J = 1,ITOTPROC(INDX)
                      ITEMP = (J-1)*2 + 1
+                     ! look up subdomain number 
                      IPROC2 =  IMAP_NOD_GL2(ITEMP,INDX)
+                     ! look up node number in this subdomain                    
                      ILNODE =  IMAP_NOD_GL2(ITEMP+1,INDX)
+                     ! if the current subdomain matches this one
                      IF (IPROC.EQ.IPROC2) THEN
+                        ! increment the total number of flux boundary nodes
+                        ! on this subdomain
                         NVELP(IPROC) = NVELP(IPROC) + 1
+                        ! increment number of nodes from this boundary
+                        ! that occur in this subdomain
                         NVELLP(K) = NVELLP(K) + 1
+                        ! add fulldomain node number for this boundary 
+                        ! and subdomain node array position on this boundary
+                        ! to mapping
                         LBINDEX_LG(K,NVELLP(K)) = I
+                        ! record subdomain node number for this boundary
+                        ! and subdomain boundary position  
                         NBVVP(K,NVELLP(K)) = ILNODE
                      ENDIF
                   ENDDO
                ENDDO
+               !
+               ! @jasonfleming: it is possible for a single node of an 
+               ! island boundary to appear as a ghost node in a nearby
+               ! subdomain, and if this single node is the first node
+               ! on the fulldomain island boundary, it will also be the 
+               ! last node on the fulldomain boundary (because adcirc
+               ! requires island boundaries to be closed). As a result,
+               ! it can be erroneously translated as a two node subdomain
+               ! boundary with the same node number listed twice. 
+               if ( nvellp(k).eq.2 ) then
+                  if ( nbvvp(k,1).eq.nbvvp(k,2) ) then
+                     write(*,'(a)') 
+     &          'ERROR: Two node boundary with identical node numbers.'
+                     if (strictBoundaries.eqv..false.) then
+                        NVELLP(K) = 0
+                        write(*,'(a)') 
+     &                     'INFO: Eliminating hanging boundary'
+     &                     //' node from this subdomain.'
+                     endif
+                  endif
+               endif
 C
-            ENDIF
+            end select
 C
-         ENDDO
+         ENDDO  ! end loop over flux specified boundaries
 C
 Cmod 05/18/2004 rl -- I don't think this next part is the correct
 c  way to handle islands.  Rather, if an island is split by a domain, it
@@ -1193,9 +1238,21 @@ c        ENDDO
 C If a segment contains only one node, remove the segment from the list
 C (NOTE: rl 5/18/04 I don't see how this could possibly happen, including
 C  ghost nodes)
-
+         !
+         ! @jasonfleming: it is possible for a single node of a
+         ! land boundary to appear as a ghost node in a nearby
+         ! subdomain. 
          DO K=1, NBOU
-           IF (NVELLP(K).EQ.1) NVELLP(K) = 0
+            IF (NVELLP(K).EQ.1) THEN
+               write(*,'(a,i0,a,i0,a)') 
+     &           'ERROR: The land boundary number ',k,
+     &           ' is only one node long in subdomain ',iproc,'.'
+               if ( strictBoundaries.eqv..false. ) then
+                  NVELLP(K) = 0
+                  write(*,'(a)') 'INFO: Eliminating hanging boundary'
+     &            //' node from this subdomain.'
+               endif
+            ENDIF
          ENDDO
 
 C
@@ -1210,14 +1267,17 @@ C
 C
 C--Count to check correctness of NVELP
 C
-         DISC=0  ! LB Nodes with non-zero normal discharge
-         BBN=0   ! Mainland Barrier Boundary Nodes
-         IBP=0   ! Internal Barrier Boundary Pairs
-         ITEMP = 0
+         DISC=0  ! LB Nodes with non-zero normal discharge (river)
+         BBN=0   ! Mainland Barrier Boundary Nodes (external overflow)
+         IBP=0   ! Internal Barrier Boundary Pairs (levee)
+         IBPPipe=0 ! internal barrier boundary pairs (levee with cross barrier pipes)
+         ITEMP = 0 ! mainland and island
 C
 C     jgf46.21 Added support for IBTYPE=52.
-         DO 400 K=1,NBOU
-            IF (NVELLP(K).EQ.0) GOTO 400
+         DO K=1,NBOU
+            IF (NVELLP(K).EQ.0) THEN
+               cycle
+            ENDIF
             ITYPE = IBTYPEP(K,IPROC)
 ! kmd - added for rivers in baroclinic simulation
             IF (ABS(ITYPE/100).EQ.1) THEN
@@ -1227,28 +1287,39 @@ C     jgf46.21 Added support for IBTYPE=52.
             ! if/then statements with a select statement.
             select case(ITYPE)
             case(2,12,22,32,52)
-              DISC = DISC + NVELLP(K)
+               DISC = DISC + NVELLP(K)
             case(3,13,23)
-              BBN = BBN + NVELLP(K)
+               BBN = BBN + NVELLP(K)
             case(4,24)
-              IBP = IBP + NVELLP(K)
+               IBP = IBP + NVELLP(K)
+            case(5,25)
+               IBPPipe = IBPPipe + NVELLP(K)
             case default
-               ITEMP = ITEMP + NVELLP(K)
+               ITEMP = ITEMP + NVELLP(K) 
             end select
             I1 = 0
+            ! loop over all boundary nodes on this subdomain
             DO I=1,NVELLP(K)
-               IF ((ITYPE.EQ.1).OR.(ITYPE.EQ.11).OR.
-     &             (ITYPE.EQ.21)) THEN
-                 IF ((I.EQ.NVELLP(K)).AND.(NBVVP(K,I).NE.I1)) THEN
-                   ITEMP = ITEMP + 1
-                 ENDIF
+               ! if the boundary is an island boundary
+               IF ((ITYPE.EQ.1).OR.(ITYPE.EQ.11).OR.(ITYPE.EQ.21)) THEN
+                  ! if this is the last boundary node on this subdomain
+                  ! and 
+                  ! if the subdomain node number is not equal to
+                  ! the first subdomain node number
+                  IF ((I.EQ.NVELLP(K)).AND.(NBVVP(K,I).NE.I1)) THEN
+                     ITEMP = ITEMP + 1 ! increment the number of nodes associated with this boundary on this subdomain
+                  ENDIF
                ENDIF
-               IF (I.EQ.1) I1 = NBVVP(K,I)
+               ! set i1 equal to the subdomain node number for the first
+               ! node on this boundary 
+               IF (I.EQ.1) THEN
+                  I1 = NBVVP(K,I)
+               ENDIF
             ENDDO
- 400     CONTINUE
+         END DO
 C
 c        print *, IPROC-1,ITEMP,DISC,BBN,2*IBP
-         ITEMP  = ITEMP + DISC + BBN + 2*IBP
+         ITEMP  = ITEMP + DISC + BBN + 2*IBP + 2*IBPPipe
          IF (ITEMP.NE.NVELP(IPROC)) THEN
 c          print *, "changed value from ",NVELP(IPROC)," to ",ITEMP
            NVELP(IPROC) = ITEMP
@@ -1275,15 +1346,15 @@ C
          NFLUXFP(IPROC) = 0
          DO K=1, NBOU
             IF (NVELLP(K).GT.0) THEN
-              ITYPE=IBTYPE(K)
-              IF (ABS(ITYPE/100).EQ.1) THEN
-                 ITYPE = (ABS(ITYPE)-100)*(ITYPE/ABS(ITYPE))
-              END IF
-              IF ((ITYPE.EQ.2).OR.(ITYPE.EQ.12)
-     &            .OR.(ITYPE.EQ.32)
-     &            .OR.(ITYPE.EQ.22).OR.(ITYPE.EQ.52)) THEN
-                NFLUXFP(IPROC) = 1
-              ENDIF
+               ITYPE=IBTYPE(K)
+               IF (ABS(ITYPE/100).EQ.1) THEN
+                  ITYPE = (ABS(ITYPE)-100)*(ITYPE/ABS(ITYPE))
+               END IF
+               IF ((ITYPE.EQ.2).OR.(ITYPE.EQ.12)
+     &             .OR.(ITYPE.EQ.32)
+     &             .OR.(ITYPE.EQ.22).OR.(ITYPE.EQ.52)) THEN
+                  NFLUXFP(IPROC) = 1
+               ENDIF
             ENDIF
          ENDDO
 C
@@ -1317,93 +1388,89 @@ c
 C
 C--Write Open Boundary Data
 C
-          CALL NEWINDEX(NOPEMSG,OUTMSG,NOPEP(IPROC))
-          WRITE(14,80) OUTMSG
+         CALL NEWINDEX(NOPEMSG,OUTMSG,NOPEP(IPROC))
+         WRITE(14,80) OUTMSG
 C
-          CALL NEWINDEX(NETAMSG,OUTMSG,NETAP(IPROC))
-          WRITE(14,80) OUTMSG
+         CALL NEWINDEX(NETAMSG,OUTMSG,NETAP(IPROC))
+         WRITE(14,80) OUTMSG
 C
-          ITOT = 0
-          DO K = 1,NOPE
-             IF (NVDLLP(K).GT.0)THEN
-                ITOT = ITOT + 1
+         ITOT = 0
+         DO K = 1,NOPE
+            IF (NVDLLP(K).GT.0)THEN
+               ITOT = ITOT + 1
 Casey 090304: Added the following section.  If we are coupling to SWAN,
 C             then we also want to give the global number of each
 C             boundary segment.
 #ifndef ADCSWAN
-                CALL NEWINDEX(NVDLLMSG(K),OUTMSG,NVDLLP(K))
+               CALL NEWINDEX(NVDLLMSG(K),OUTMSG,NVDLLP(K))
 #else
-                NUMS(1) = NVDLLP(K)
-                NUMS(2) = K
-                CALL INSERT(NVDLLMSG(K),OUTMSG,NUMS,2)
+               NUMS(1) = NVDLLP(K)
+               NUMS(2) = K
+               CALL INSERT(NVDLLMSG(K),OUTMSG,NUMS,2)
 #endif
-                WRITE(14,80) OUTMSG
-                DO I = 1,NVDLLP(K)
-                   WRITE(14,*) NBDVP(K,I)
-                ENDDO
-             ENDIF
-          ENDDO
+               WRITE(14,80) OUTMSG
+               DO I = 1,NVDLLP(K)
+                  WRITE(14,*) NBDVP(K,I)
+               ENDDO
+            ENDIF
+         ENDDO
 C
 C--Write Land Boundary Data
 C
-          CALL NEWINDEX(NBOUMSG,OUTMSG,NBOUP(IPROC))
-          WRITE(14,80) OUTMSG
+         CALL NEWINDEX(NBOUMSG,OUTMSG,NBOUP(IPROC))
+         WRITE(14,80) OUTMSG
 C
-          CALL NEWINDEX(NVELMSG,OUTMSG,NVELP(IPROC))
-          WRITE(14,80) OUTMSG
+         CALL NEWINDEX(NVELMSG,OUTMSG,NVELP(IPROC))
+         WRITE(14,80) OUTMSG
 C
-          DO K = 1,NBOU
-             IF(NVELLP(K).GT.0)THEN
-                ITYPE = IBTYPEP(K,IPROC)
-                NUMS(1) = NVELLP(K)
-                NUMS(2) = ITYPE
+         DO K = 1,NBOU
+            IF(NVELLP(K).GT.0)THEN
+               ITYPE = IBTYPEP(K,IPROC)
+               NUMS(1) = NVELLP(K)
+               NUMS(2) = ITYPE
 Casey 090304: Added the following section.  If we are coupling to SWAN,
 C             then we also want to give the global number of each
 C             boundary segment.
 #ifndef ADCSWAN
-                CALL INSERT(NVELLMSG(K),OUTMSG,NUMS,2)
+               CALL INSERT(NVELLMSG(K),OUTMSG,NUMS,2)
 #else
-                NUMS(3) = NOPE + K
-                CALL INSERT(NVELLMSG(K),OUTMSG,NUMS,3)
+               NUMS(3) = NOPE + K
+               CALL INSERT(NVELLMSG(K),OUTMSG,NUMS,3)
 #endif
-                WRITE(14,80) OUTMSG
+               WRITE(14,80) OUTMSG
 C
-                IF ((ITYPE.NE.3).AND.(ITYPE.NE.13).AND.
-     &             (ITYPE.NE.23).AND.(ITYPE.NE.4).AND.
-     &             (ITYPE.NE.24).AND.(ITYPE.NE.5).AND.
-     &             (ITYPE.NE.25)) THEN
+               select case(itype)
+               case default
                   DO I = 1,NVELLP(K)
                      WRITE(14,'(I8)') NBVVP(K,I)
                   ENDDO
-                ELSEIF ((ITYPE.EQ.3).OR.(ITYPE.EQ.13).OR.
-     &                  (ITYPE.EQ.23)) THEN
+               case(3,13,23)
                   IF(USE_TVW)NWEIRBNDRY(IPROC) = 1
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
                      WRITE(14,81) NBVVP(K,I),BAR1(K,INDX),BAR2(K,INDX)
                   ENDDO
-C
-                ELSEIF ((ITYPE.EQ.4).OR.(ITYPE.EQ.24)) THEN
+               case(4,24)
                   IF(USE_TVW)NWEIRBNDRY(IPROC) = 1
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
                      WRITE(14,82) NBVVP(K,I),IBCONNRP(K,I),
      &                        BAR1(K,INDX),BAR2(K,INDX),BAR3(K,INDX)
                   ENDDO
-                ELSEIF ((ITYPE.EQ.5).OR.(ITYPE.EQ.25)) THEN
-                    DO I = 1,NVELLP(K)
-                        INDX = LBINDEX_LG(K,I)
-                        WRITE(14,83) NBVVP(K,I),IBCONNRP(K,I),
+               case(5,25)
+                  DO I = 1,NVELLP(K)
+                     INDX = LBINDEX_LG(K,I)
+                     WRITE(14,83) NBVVP(K,I),IBCONNRP(K,I),
      &                      BAR1(K,INDX),BAR2(K,INDX),BAR3(K,INDX), 
      &                      BAR4(K,INDX),BAR5(K,INDX),BAR6(K,INDX)
-                    ENDDO
-                ENDIF
-             ENDIF
-          ENDDO
+                  ENDDO
+               end select
+            ENDIF
+         ENDDO
 C
-          CLOSE(14)
+         CLOSE(14)
 C
-1000  CONTINUE
+      END DO ! end loop over subdomains
 C
 C--Print Summary of Boundary Node Decomposition
 C
@@ -1425,7 +1492,7 @@ C
   90  FORMAT(1X,A6,5I8)
 C
       RETURN
-      END
+      END SUBROUTINE PREP14
 
 C---------------------------------------------------------------------------C
 C                     (  Serial Version  2/28/98  )                         C
@@ -1899,7 +1966,6 @@ c           CALL PREP15_3DDSS(IPROC)
 C
 C     jgf48.03 Write netCDF metadata, if necessary
          IF (useNetCDF.eqv..true.) THEN
-            !write(*,*) 'writing netcdf metadata to fort.15' ! jgfdebug
             WRITE(15,*) trim(adjustl(title))
             WRITE(15,*) trim(adjustl(institution))
             WRITE(15,*) trim(adjustl(source))
@@ -1910,8 +1976,6 @@ C     jgf48.03 Write netCDF metadata, if necessary
             WRITE(15,*) trim(adjustl(convention))
             WRITE(15,*) trim(adjustl(contact))
             WRITE(15,*) trim(adjustl(base_date))
-         ELSE
-            !write(*,*) 'not writing netcdf metadata' ! jgfdebug
          ENDIF
 
 c...     tcm v50.66.02 additions for time varying bathymetry
@@ -6120,7 +6184,7 @@ C     Determine if full domain file exists
 C
 C     If it does exist, open it
       IF ( FOUND ) THEN
-         WRITE(*,1011) FileName !found
+         WRITE(*,1011) trim(FileName) !found
          OPEN(UNIT=UnitNumber, FILE=FileName, IOSTAT=ErrorIO)
          Success = .true.
          IF ( ErrorIO .GT. 0 ) THEN
@@ -6133,7 +6197,7 @@ C     If it does exist, open it
       ELSE
 C     Give the user a chance to opt out of prepping this file.
          IF (FileName .eq. skipstring) RETURN ! note the early RETURN
-         WRITE(*,1010) FileName !not found
+         WRITE(*,1010) trim(FileName) !not found
          GOTO 31
       ENDIF
 
@@ -6142,8 +6206,8 @@ C     Give the user a chance to opt out of prepping this file.
  850  FORMAT(/,'Type ''skip'' to bypass preprocessing or')
  900  FORMAT('Enter the name of the ',A30)
  910  FORMAT('file (unit ',I3,'): ')
- 1010 FORMAT('File ',A7,/,' WAS NOT FOUND! Try again or type "skip"',/)
- 1011 FORMAT('File ',A7,/,' WAS FOUND!  Opening & Processing file.',/)
+ 1010 FORMAT('WARNING: File ',A,' WAS NOT FOUND! Try again or type "skip"',/)
+ 1011 FORMAT('INFO: File ',A,' WAS FOUND!  Opening & Processing file.',/)
       RETURN
 C---------------------------------------------------------------------------
       END SUBROUTINE OpenFullDomainFile

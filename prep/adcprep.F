@@ -135,6 +135,7 @@ C
       HOT_LOCAL   = .FALSE.
       HOT_GLOBAL  = .FALSE.
       PREP_20 = .FALSE.
+      strictBoundaries = .false. 
       !PREP_88 = .FALSE.
       MNPROC = 0
 C
@@ -177,6 +178,8 @@ C     having to do a prep all and without having to add menu items).
                PREP_20 = .TRUE.
 !            CASE("--prep88")
 !               PREP_88 = .TRUE.
+            CASE("--strict-boundaries")
+               strictBoundaries = .true.
             CASE("--np")
                I = I + 1
                CALL GETARG(I,CMDLINEARG)
@@ -372,6 +375,9 @@ C
       logical(4) :: dir_result  !tcm v50.85
       INTEGER :: dir_error   !tcm v50.85 
 #endif
+      integer, parameter :: repartitionLimit = 100 ! give up after this
+      integer :: numPartitionAttempts ! number of attempts to partition mesh
+      logical :: partitionOK  ! true if partitioning has no issues
 
 C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
       if (PREP_13) then
@@ -472,11 +478,53 @@ C   -- initially read in within the READ14() subroutine.
 C
 C-- Partition Nodes with METIS 4.0 Graph Partition Library
 C
-      IF (PARTITION) THEN
-        CALL METIS()
-        print *, " "
-        print *, 'INFO: METIS has partitioned nodes'
-        GO TO 9999
+      if (partition) then
+         numPartitionAttempts = 0
+         allocate(boundaryWeights(mnp))
+         boundaryWeights(:) = 0
+         call metis()
+         if (strictBoundaries.eqv..true.) then
+            ! check for issues with subdomain boundaries 
+            partitionOK = .false. 
+            ! loop ends when the partitioning is successful or
+            ! the limit on the number of attempts has been reached 
+            do  
+               write(*,'(a,a)') 'INFO: Determining max number of nodes ',
+     &             'and elements on any subdomain.'
+               call domsize()
+               write(*,'(a)') 
+     &            'INFO: Allocating subdomain mesh mapping arrays.'
+               call alloc_main2()
+               write(*,'(a)') 
+     &            'INFO: Constructing subdomain mesh mapping arrays.'
+               call decomp()
+               write(*,'(a)') 
+     &            'INFO: Checking subdomain mesh mapping arrays.'
+               call checkMappings(partitionOK,numPartitionAttempts)
+               if (partitionOK.eqv..true.) then
+                  exit
+               else
+                  numPartitionAttempts = numPartitionAttempts + 1
+                  write(*,'(a,i0,a)') 'INFO: Partitioning attempt ',
+     &            numPartitionAttempts,' contains mapping array issues.'
+                  write(*,'(a,i0,a)') 
+     &            'INFO: The limit on partitioning attempts is ',
+     &            repartitionLimit,'.' 
+                  write(*,'(a)') 
+     &            'INFO: Modifying partition weights and trying again.'
+                  call dealloc_main2()
+               endif
+               if ( numPartitionAttempts.gt.repartitionLimit ) then
+                  write(*,'(a,i0,a)') 
+     &              'ERROR: Mesh partitioning has failed after ',
+     &               repartitionLimit,' attempts.'
+                  stop
+               endif 
+               call metis()
+            end do
+         endif
+         print *, 'INFO: METIS has partitioned nodes successfully.'
+         return
       ELSE
         print *, 'INFO: Opening file partmesh.txt'
         OPEN(990,FILE='partmesh.txt')
