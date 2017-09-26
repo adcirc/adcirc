@@ -356,7 +356,7 @@ C******************************************************************************
       USE GLOBAL, ONLY : iTime, DEBUG, INFO, setMessageSource, allMessage,
      &   unsetMessageSource, statim, dtdp
 #ifdef CMPI
-      USE WRITER, ONLY : writer_main, writer_pause
+      USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_main, hswriter_pause
 #endif
 C
@@ -378,6 +378,7 @@ C
 #ifdef CMPI
       if (((mnwproh > 0).or.(mnwproc > 0)) .and. myproc >= mnproc) then
          if( myproc < mnproc+mnwproc ) then   !st3
+            call sendLabelInfoToWriters()
             call writer_main()
             call unsetMessageSource()  !tcm 20150924 -- added
             return
@@ -386,6 +387,8 @@ C
             call unsetMessageSource()  !tcm 20150924 -- added
             return
          endif
+      elseif(mnwproc.gt.0.and.myproc.eq.0)then
+         call sendLabelInfoToWriters()
       endif
 #endif
 

@@ -42,6 +42,7 @@ C
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
+      ALLOCATE(labels_g(NP_G))
       ALLOCATE(ETA1_g(NP_G))
       ALLOCATE(ETA2_g(NP_G))
       ALLOCATE(UU2_g(NP_G))

@@ -70,6 +70,7 @@ Cobell Added a descript for time varying weir tracking
       ! jgf: added support for water level offset 
       type(OutputDataDescript_t), target :: offsetDescript      
       type(OutputDataDescript_t), target :: offsetStaDescript      
+      type(OutputDataDescript_t), target :: labelsDescript
 
 C     jgf48.03 Full domain arrays used when writing globalio output.
       real(sz), allocatable, target :: et00_g(:)
@@ -321,7 +322,7 @@ C----------------------------------------------------------------------
      &   nscoue, iestp, nne, staie1, staie2, staie3, xel, yel,
      &   slel, sfel, uu00, vv00, uu2, vv2, nscouv, ivstp, nnv,
      &   staiv1, staiv2, staiv3, xev, yev, slev, sfev, nscouge,
-     &   igep, nodes_lg, eta2_g, nscougt, itau0p, nscougs, igsp,
+     &   igep, nodes_lg, labels_g, eta2_g, nscougt, itau0p, nscougs, igsp,
      &   sponge, nscougv, igvp, uu2_g, vv2_g, imap_stam_lg, rmp00,
      &   pr2, nscoum, ipstp, nnm, staim1, staim2, staim3,
      &   xem, yem, slem, sfem, rmu00, rmv00,
@@ -353,10 +354,11 @@ C----------------------------------------------------------------------
      &   offsetStaSpoolCounter, offsetFilePos, offsetSta,
      &   offsetStaFilePos
 
-      USE MESH, ONLY : NP, NE, DP, NM, ICS
+      USE MESH, ONLY : NP, NE, DP, NM, ICS, labels
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim,
      &  elemental_slope_limiter_grad_max,elemental_slope_limiter_active
-      USE GLOBAL_IO, ONLY : readAndMapToSubdomainMaxMin
+      USE GLOBAL_IO, ONLY : readAndMapToSubdomainMaxMin,packOne,
+     &                      collectFullDomainArray,unpackOne
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY : initNetCDFOutputFile,
      &                      readAndMapToSubdomainMaxMinNetCDF
@@ -532,6 +534,22 @@ C
       ELSE
          VelStaDescript % x_coord              => SLEV ! radians
          VelStaDescript % y_coord              => SFEV
+      ENDIF
+
+      ! full domain labels
+      labelsDescript % iarray               => labels
+      labelsDescript % iarray_g             => labels_g
+      labelsDescript % field_name           = 'labels'
+      labelsDescript % specifier            = OFF
+      labelsDescript % num_items_per_record = 1
+      labelsDescript % num_fd_records       = np_g
+      labelsDescript % num_records_this     = np
+      labelsDescript % imap                 => nodes_lg
+      labelsDescript % considerWetDry       = .false.
+      labelsDescript % initialized          = .false.
+      labelsDescript % isInteger            = .true.
+      IF(MYPROC.lt.MNPROC)THEN
+          CALL collectFullDomainArray(labelsDescript,packOne,unpackOne)
       ENDIF
 
       ! fort.63
@@ -4016,15 +4034,15 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
             IF (descript % num_items_per_record .eq. 1) THEN
                DO I=1, descript % num_fd_records
                   if ( descript % isInteger .eqv. .true. ) then
-                     write(descript % lun,2452) labels(I), descript % iarray_g(I)
+                     write(descript % lun,2452) labels_g(I), descript % iarray_g(I)
                   else
-                     write(descript % lun,2453) I, descript % array_g(I)
+                     write(descript % lun,2453) labels_g(I), descript % array_g(I)
                   endif
                ENDDO
             ENDIF
             IF (descript % num_items_per_record .eq. 2) THEN
                DO I=1, descript % num_fd_records
-                  WRITE(descript % lun,2454) labels(I), descript % array_g(I),
+                  WRITE(descript % lun,2454) labels_g(I), descript % array_g(I),
      &                               descript % array2_g(I)
                ENDDO
             ENDIF
@@ -4050,9 +4068,9 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
                         endif
                      else
                         if ( descript % isInteger .eqv. .true. ) then
-                           write(descript % lun,2452) I, descript % iarray(i)
+                           write(descript % lun,2452) labels(I), descript % iarray(i)
                         else
-                           write(descript % lun,2453) I, descript % array(i)
+                           write(descript % lun,2453) labels(I), descript % array(i)
                         endif
                      endif
                   end do
@@ -4074,7 +4092,7 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
                   END DO
                ELSE
                   DO I=1, descript % num_records_this
-                     WRITE(descript % lun,2454) I, descript % array(I),
+                     WRITE(descript % lun,2454) labels(I), descript % array(I),
      &                               descript % array2(I)
                   END DO
                ENDIF
@@ -4249,9 +4267,9 @@ C     write data in ascii text only (other output formats are not supported)
             WRITE(lun,2120) TimeLoc,IT
             DO I=1, descript % num_fd_records
                if ( descript % isInteger .eqv. .true. ) then
-                  write(descript % lun,2452) labels(I), descript % iarray_g(I)
+                  write(descript % lun,2452) labels_g(I), descript % iarray_g(I)
                else
-                  write(lun,2453) labels(I), descript % array_g(I)
+                  write(lun,2453) labels_g(I), descript % array_g(I)
                endif
             ENDDO
 
@@ -4259,7 +4277,7 @@ C     write data in ascii text only (other output formats are not supported)
             if (descript%minmax_timestamp) then
                WRITE(lun,2120) TimeLoc,IT
                DO I=1, descript % num_fd_records
-                  WRITE(lun,2453) labels(I), descript % array2_g(I)
+                  WRITE(lun,2453) labels_g(I), descript % array2_g(I)
                ENDDO
             endif
 

@@ -108,6 +108,43 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       END SUBROUTINE WRITER_INIT
 C-----------------------------------------------------------------------
+      
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   S E N D L A B E L I N F O T O W R I T E R S
+C-----------------------------------------------------------------------
+C     This subroutine sends the label information from the hashtable
+C     to the writer processors so they can write the output data
+C     correctly
+C-----------------------------------------------------------------------
+      SUBROUTINE sendLabelInfoToWriters()
+C-----------------------------------------------------------------------
+          use mpi
+          use sizes,only: myproc,mnwproc,mnproc
+          use messenger,only: mpi_comm_adcirc
+          use global,only: labels_g,np_g
+          implicit none
+          INTEGER :: ierr
+          INTEGER :: I,N
+          INTEGER :: mpistat(mpi_status_size)
+
+          IF(myproc.EQ.0)THEN
+              DO I = 0,MNWPROC-1
+                 CALL mpi_send(np_g,1,mpi_integer,mnproc+i,0,mpi_comm_adcirc,ierr)
+                 CALL mpi_send(labels_g,np_g,mpi_integer,mnproc+i,0,mpi_comm_adcirc,ierr)
+              ENDDO
+          ELSEIF(myproc.GT.mnproc-1.and.myproc.LT.mnproc+mnwproc)THEN
+              CALL mpi_recv(n,1,mpi_integer,0,0,mpi_comm_adcirc,mpistat,ierr)
+              allocate(labels_g(1:n))
+              CALL mpi_recv(labels_g,n,mpi_integer,0,0,mpi_comm_adcirc,mpistat,ierr)
+          ENDIF
+
+          RETURN
+
+C-----------------------------------------------------------------------
+      END SUBROUTINE sendLabelInfoToWriters
+C-----------------------------------------------------------------------
+
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   W R I T E R  _  M A I N
@@ -589,11 +626,11 @@ C-----------------------------------------------------------------------
             select case(writer_descripts(ibuf)%num_items_per_record)
             case(1)
                do i=1, writer_descripts(ibuf) % num_fd_records
-                  write(fid,1000) i, writer_descripts(ibuf) % array_g(i)
+                  write(fid,1000) labels_g(i), writer_descripts(ibuf) % array_g(i)
                end do
             case(2)
                do i=1, writer_descripts(ibuf) % num_fd_records
-                  write(fid,2000) i, writer_descripts(ibuf) % array_g(i),
+                  write(fid,2000) labels_g(i), writer_descripts(ibuf) % array_g(i),
      &               writer_descripts(ibuf) % array2_g(i)
                end do
             case default
@@ -630,7 +667,7 @@ C-----------------------------------------------------------------------
                ! write sparse scalar dataset
                do i=1, writer_descripts(ibuf) % num_fd_records
                   if (areDefault1(i).eqv..false.) then
-                     write(fid,1000) i, 
+                     write(fid,1000) labels_g(i), 
      &                     writer_descripts(ibuf) % array_g(i)
                   endif
                end do
@@ -659,7 +696,7 @@ C-----------------------------------------------------------------------
                do i=1, writer_descripts(ibuf) % num_fd_records
                   if ((areDefault1(i).eqv..false.).or.
      &                   (areDefault2(i).eqv..false.)) then
-                     write(fid,2000) i, 
+                     write(fid,2000) labels_g(i), 
      &                     writer_descripts(ibuf) % array_g(i),
      &                     writer_descripts(ibuf) % array2_g(i)
                   endif
@@ -1632,5 +1669,6 @@ C! CMPI
 !     !--------------------------------------------------------------
       end subroutine collectFullDomainIntArrayw
 !     !--------------------------------------------------------------
+!
 !
       END MODULE HSWRITER
