@@ -2448,6 +2448,12 @@ C......RESTART THE WAVE RADIATION STRESS
            ! RSNY1 were initialized to 0.0 for NRS.eq.3 and NRS.eq.4.
            WSX2(:) = WSX2(:) + RampWRad2 * RSNX1(:)
            WSY2(:) = WSY2(:) + RampWRad2 * RSNY1(:)
+
+           !print *, 'in_hstart max(WSX2)', maxval(abs(WSX2))
+           !print *, 'in_hstart max(WSY2)', maxval(abs(WSY2))
+           !print *, 'in_hstart min(RSNX1)', minval(abs(RSNX1))
+           !print *, 'in_hstart min(RSNY1)', minval(abs(RSNY1))
+
         ENDIF
 
 !           IF(NRS.EQ.1) THEN
@@ -3563,7 +3569,7 @@ Casey 090310: Added the possibility for NOUTGW = -4.
       ENDIF
 
 ! tcm v50.75 removed ifdef cswan and added test for nrs=3 or 4
-        IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
+        IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4).OR.(ABS(NRS).EQ.5)) THEN
 !#ifdef CSWAN
 Casey 090310: Added the output of radiation stress gradients.
            IF(NOUTGW.LT.0)THEN

@@ -586,12 +586,6 @@ Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
          IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
       ENDIF
 
-
-      RampTest = TANH (IT * DTDP * DRampMete/86400.D0) !saeed added
-
-
-
-
 C
 C------------------------ICE FIELDS----------------------------------------
 C...  UPDATE THE ICE CONCENTRATION FIELDS FROM UNIT 25,225,227
@@ -1437,6 +1431,7 @@ C... v50.xx sm -- nws=17 for NUOPC coupling hwrf data from coupler
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WindMag = SQRT(WindX*WindX+WindY*WindY)
             WDragCo = WindDrag(WindMag, I)
+
 C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
@@ -1464,6 +1459,19 @@ C  tcm v49.16 20100617
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
             !WVNXOUT(I)=RampMete*WindX
             !WVNYOUT(I)=RampMete*WindY
+            WVNXOUT(I)=WSX2(I)
+            WVNYOUT(I)=WSY2(I)
+
+          !if (abs(WSX2(I)) .gt. 1e2) then
+          !    print *, 'in1in1in1in1in1in1in1in1in1in1in1in1in1in1in1in1'
+          !    print *, 'IT,I,WSX1,WSX2  > ' ,IT,I,WSX1(I),WSY2(I)
+          !    print *, 'IT,I,WSY1,WSY2  > ' ,IT,I,WSY1(I),WSY2(I)
+          !    print *, 'in1in1in1in1in1in1in1in1in1in1in1in1in1in1in1in1'
+              !WSX2(I) = 1e-10
+              !WSY2(I) = 1e-10
+              !WSX1(I) = 1e-10
+              !WSY1(I) = 1e-10
+          !endif
 
           !print *,  'WTRatio ', WTRatio
           !print *,  'RampMete ' , RampMete
@@ -1473,10 +1481,16 @@ C  tcm v49.16 20100617
          END DO
       ENDIF
 
-      !print *, 'maxval(WVNX1), maxval(WVNX2) > ', maxval(WVNX1), maxval(WVNX2)
-      !print *, 'maxval(WSX1), maxval(WSX2) > '  , maxval(WSX1), maxval(WSX2)
-      !print *, 'maxval(PR1),  maxval(PR2) > '   , maxval(PR1), maxval(PR2)
-      !print *, RampMete,WDragCo,WindX,WindMag,WTIMINC
+
+!      if (maxval(WSX1) .gt. 10) then
+!          print *, '1111111111111111111111111111111111111111111111111111111111111111'
+!          print *, 'IT,TimeLoc,maxval(WSX1),  maxval(WSX1)  > ' ,IT,TimeLoc, maxval(WSX1), maxval(WSX2)
+!          print *, 'IT,TimeLoc,maxval(WSY1),  maxval(WSY2)  > ' ,IT,TimeLoc, maxval(WSY1), maxval(WSY2)
+!          print *, 'IT,TimeLoc,maxval(PR1),   maxval(PR2)   > ' ,IT,TimeLoc, maxval(PR1), maxval(PR2)
+!          print *, 'RampMete,WDragCo,WindX,WindMag,WTIMINC  > ',RampMete,WDragCo,WindX,WindMag,WTIMINC
+!          print *, '1111111111111111111111111111111111111111111111111111111111111111'
+!      endif
+
 C
 C    kmd48.33bc - added in information for the sponge layer
        IF ((C3D).AND.(RES_BC_FLAG.GT.0).AND.(NWS.NE.0)) THEN
@@ -1581,11 +1595,8 @@ Casey 090302: Added these lines for output to the rads.64 file.
                   RSNYOUT(I) = RSY
                ENDIF
 
-               RampTest = 1.0
-               WSX2(I) = RampTest * (1.0 * WSX2(I)  + 1.0 * RSX)  ! TODO: JUST a TEST >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-               WSY2(I) = RampTest * (1.0 * WSY2(I)  + 1.0 * RSY)
-
-
+               WSX2(I) =  WSX2(I) +  RSX  ! TODO: JUST a TEST >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+               WSY2(I) =  WSY2(I) +  RSY
 
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
@@ -1603,10 +1614,6 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 #endif
          ENDIF  !nrs = 1,2,or 3,5
 
-
-
-              WVNXOUT= WSX2  ! TODO: JUST a TEST >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-              WVNYOUT= WSY2
 
 C         print *, '>>>>>>>>>>>>>>>>>>>>>>>>>>> NRS', nrs
          ! Tightly Coupled Code with STWAVE
@@ -1633,9 +1640,16 @@ C         print *, '>>>>>>>>>>>>>>>>>>>>>>>>>>> NRS', nrs
 
       ENDIF  !(End test for updating wave radiation stress)
 
+!      if (maxval(WSX1) .gt. 10.0) then
+!        print *, '222222222222222222222222222222222222222222222222222222222222222222'
+!        print *, 'in timestep maxval(RSNX2)',IT,TimeLoc, maxval(RSNX2)
+!        print *, 'in timestep maxval(RSNY2)',IT,TimeLoc, maxval(RSNY2)
+!        print *, 'IT,TimeLoc,maxval(WVNX1), maxval(WVNX2) > ',IT,TimeLoc, maxval(WVNX1), maxval(WVNX2)
+!        print *, 'IT,TimeLoc,maxval(WSX1), maxval(WSX2) > '  ,IT,TimeLoc, maxval(WSX1), maxval(WSX2)
+!        print *, 'IT,TimeLoc,maxval(PR1),  maxval(PR2) > '   ,IT,TimeLoc, maxval(PR1), maxval(PR2)
+!        print *, '2222222222222222222222222222222222222222222222222222222222222222222'
+!      endif
 
-        !print *, 'in timestep maxval(RSNX2)',TimeLoc, maxval(RSNX2)
-        !print *, 'in timestep maxval(RSNY2)',TimeLoc, maxval(RSNY2)
 
 C     jgf48.4627 Skip past GWCE and momentum calculations if only
 C     meteorological output was requested.

@@ -36,3 +36,15 @@ make adcprep
 #make buildstwave23
 #make hot2asc
 #make inflate
+
+#build tide_fac exe
+mkdir -p util
+cd ../util/estofs_tide_fac/
+make
+cp -f  estofs_tide_fac ../../work/util/.
+
+
+
+
+
+

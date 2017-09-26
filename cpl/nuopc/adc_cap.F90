@@ -184,6 +184,7 @@ module adc_cap
 
   !TODO::  Need to carefully check units in particular pressure
   use GLOBAL , only: ETA2, UU2, VV2      ! Export water level and velocity fileds to wave model
+  USE GLOBAL,  ONLY: RSNX1, RSNY1        ! Import wave 2D forces from wave model
   USE GLOBAL,  ONLY: RSNX2, RSNY2        ! Import wave 2D forces from wave model
   USE GLOBAL,  ONLY: WVNX2, WVNY2, PRN2  ! Import wind and pressure variables
   USE GLOBAL,  ONLY: WVNX1, WVNY1, PRN1
@@ -990,6 +991,13 @@ module adc_cap
         IF(.NOT.ALLOCATED(ADCIRC_SXY)) ALLOCATE(ADCIRC_SXY(1:NP,1:2))
         IF(.NOT.ALLOCATED(ADCIRC_SYY)) ALLOCATE(ADCIRC_SYY(1:NP,1:2))
 
+        ! Allocate arrays for radiation stresses.
+        IF(.NOT.ALLOCATED(RSNX1)) ALLOCATE(RSNX1(1:NP))
+        IF(.NOT.ALLOCATED(RSNY1)) ALLOCATE(RSNY1(1:NP))
+
+        IF(.NOT.ALLOCATED(RSNX2)) ALLOCATE(RSNX2(1:NP))
+        IF(.NOT.ALLOCATED(RSNY2)) ALLOCATE(RSNY2(1:NP))
+
         ! updaye last rad str
         ADCIRC_SXX(:,1) = ADCIRC_SXX(:,2)
         ADCIRC_SYY(:,1) = ADCIRC_SYY(:,2)
@@ -1069,6 +1077,9 @@ module adc_cap
         !print *, 'in cap maxval(ADCIRC_SXX)', maxval(ADCIRC_SXX)
 
         InterpoWeight = 0.0  !avoid time interpolation
+
+        RSNX1 = RSNX2
+        RSNY1 = RSNY2
 
         ! Calculate wave forces
         call ComputeWaveDrivenForces
@@ -1159,9 +1170,9 @@ module adc_cap
         !print *, info
 
         ! Allocate arrays for radiation stresses.
-        IF(.NOT.ALLOCATED(WVNX1)) ALLOCATE(WVNX2(1:NP))
-        IF(.NOT.ALLOCATED(WVNY1)) ALLOCATE(WVNY2(1:NP))
-        IF(.NOT.ALLOCATED(PRN1) ) ALLOCATE(PRN2 (1:NP))
+        IF(.NOT.ALLOCATED(WVNX1)) ALLOCATE(WVNX1(1:NP))
+        IF(.NOT.ALLOCATED(WVNY1)) ALLOCATE(WVNY1(1:NP))
+        IF(.NOT.ALLOCATED(PRN1) ) ALLOCATE(PRN1 (1:NP))
 
         IF(.NOT.ALLOCATED(WVNX2)) ALLOCATE(WVNX2(1:NP))
         IF(.NOT.ALLOCATED(WVNY2)) ALLOCATE(WVNY2(1:NP))
@@ -1198,6 +1209,11 @@ module adc_cap
         call UPDATER( WVNX2(:), WVNY2(:), PRN2(:),3)
 
         if (first_exchange .and. sum(PRN1) .le. 1.0) then
+          WVNX2 = 1e-10
+          WVNY2 = 1e-10
+          WVNX1 = 1e-10
+          WVNY1 = 1e-10
+
           PRN2 = 10.0  !hard coded to handel the 1st exchange zeros problem :TODO! Need to resolve this!
           PRN1 = PRN2
           first_exchange = .false.
