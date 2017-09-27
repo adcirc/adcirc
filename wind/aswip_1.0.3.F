@@ -235,6 +235,21 @@ C
                icpress(ient) = icpress(ient-1)
             endif
          endif
+         !
+         ! @jasonfleming: in rare cases where the central pressure is 
+         ! higher than 1012mb (e.g., charley 2004), set the background
+         ! pressure so that it is 1mb higher than the central pressure
+         ! to avoid producing negative Holland B values. 
+         if (icpress(ient).gt.1012) then 
+               write(scratchMessage,'(a,i0,a)')
+     &         'The central pressure '
+     &       //'is higher than the ADCIRC default background barometric '
+     &       //'pressure on line ',ient,
+     &       '. For this line, the background barometric '
+     &       //'pressure will be set 1mb higher than central pressure.'
+             call allMessage(INFO, scratchMessage)
+             ipn(ient) = icpress(ient) + 1
+         endif
 
          if ( CycleTime(ient).eq.CycleTime(1) ) then
             ! we will come back to the first cycle at the end

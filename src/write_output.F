@@ -1638,11 +1638,15 @@ C     tcmv51.20.01 Changed from pack/unpack one to pack/unpack two
 C       as max/min are now initialized from file during hotstart
 C       for all processors, not just myproc=0.
       if (it.eq.nt) then
-         CALL writeOutArrayMinMax(311, TimeLoc, IT, 2, EtaMaxDescript,
+         if (noutge.ne.0) then
+            CALL writeOutArrayMinMax(311, TimeLoc, IT, 2, EtaMaxDescript,
      &        packTwo, unpackTwo)
-         CALL writeOutArrayMinMax(312, TimeLoc, IT, 2, UMaxDescript,
+         endif
+         if (noutgv.ne.0) then
+            CALL writeOutArrayMinMax(312, TimeLoc, IT, 2, UMaxDescript,
      &        packTwo, unpackTwo)
-         IF (NWS.NE.0) THEN
+         endif  
+         if ((nws.ne.0).and.(noutgw.ne.0)) then
             CALL writeOutArrayMinMax(313, TimeLoc, IT, 2, PrMinDescript,
      &           packTwo, unpackTwo)
             CALL writeOutArrayMinMax(314, TimeLoc, IT, 2, WVMaxDescript,
@@ -1651,7 +1655,7 @@ C       for all processors, not just myproc=0.
                CALL writeOutArrayMinMax(315, TimeLoc, IT, 2, RSMaxDescript,
      &              packTwo, unpackTwo)
             ENDIF
-         ENDIF
+         endif
          !
          ! OUTPUT THE NODES WHERE THE ELEMENTAL SLOPE LIMITER HAS BEEN
          ! TURNED ON DURING THE RUN
@@ -6021,10 +6025,11 @@ C-----------------------------------------------------------------------
       subroutine collectInundationData(timeloc, it)
       use sizes, only : mnp
       use global, only : nodecode, dtdp, eta1, eta2, nt, inunThresh
-      use mesh, only : dp
+      use mesh, only : dp, np
       implicit none
       real(8), intent(in) :: timeloc ! time in s since cold start
       integer, intent(in) :: it     ! timesteps since cold start
+      integer :: i  ! vertex loop counter
 
       call setMessageSource("collectInundationData")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -6040,35 +6045,34 @@ C-----------------------------------------------------------------------
       ! threshold (e.g., inunThresh=0.6), but I don't think that
       ! makes sense. So I changed this code so it compares the inundation
       ! threshold to the total water depth.
-      where ( (initiallyDry.eq.1).and.(nodecode.eq.1).and.
-     &            ((eta2+dp).ge.inunThresh) )
-         inundationTime = inundationTime + dtdp
-      end where
+      do i=1,np
+         if (initiallyDry(i).eq.1) then
+            if (nodecode(i).eq.1) then
+               if ((eta2(i)+dp(i)).ge.inunThresh) then
+                  inundationTime(i) = inundationTime(i) + dtdp
+                  if (inundationTime_onset(i).lt.0.d0) then
+                     inundationTime_onset(i) = timeloc
+                  endif
+               endif
+               ! Record the maximum depth of inundation in initially dry areas
+               ! that are currently wet with a total water depth greater than the
+               ! threshold value.
+               if ((eta2(i)+dp(i)).gt.maxInunDepth(i)) then
+                  maxInunDepth(i) = eta2(i) + dp(i)
+                  ! record time of occurrence for the maximum inundation
+                  maxInunDepth_time(i) = timeloc                       
+               endif
+            endif
+         else
+            !
+            ! jgf52.08.01: I don't understand why we are accumulating
+            ! inundation time in normally wet areas but I am keeping this
+            ! here for backward compatibility.
+            inundationTime(i) = inundationTime(i) + dtdp
+            inundationTime_onset(i) = 0.d0
+         endif
+      end do                   
       !
-      ! record the time of onset of inundation beyond the threshold
-      where ( (initiallyDry.eq.1).and.(nodecode.eq.1).and.
-     &         ((eta2+dp).ge.inunThresh).and.
-     &         (inundationTime_onset.lt.0.d0) )
-            inundationTime_onset = timeloc
-      end where
-      !
-      ! jgf52.08.01: I don't understand why we are accumulating
-      ! inundation time in normally wet areas but I am keeping this
-      ! here for backward compatibility.
-      where ( initiallyDry.eq.0 )
-         inundationTime = inundationTime + dtdp
-         inundationTime_onset = 0.d0
-      end where
-      !
-      ! Record the maximum depth of inundation in initially dry areas
-      ! that are currently wet with a total water depth greater than the
-      ! threshold value.
-      where ( (initiallyDry.eq.1).and.(nodecode.eq.1).and.
-     &             ((eta2+dp).gt.maxInunDepth) )
-         maxInunDepth = eta2 + dp
-         ! record time of occurrence for the maximum inundation
-         maxInunDepth_time = timeloc
-      end where
       !
       ! On the next to last time step, record the wet/dry state
       if (it.eq.nt-1) then
@@ -6091,12 +6095,14 @@ C-----------------------------------------------------------------------
       ! jgf52.08.15: Adding everDried data set for use with keeping
       ! track of which nodes have dried because this affects the
       ! computation of harmonic analysis results
-      where ( nodecode.eq.0 )
-         everDried = -99999.d0
-         ! record the total amount of time this node was dry during the
-         ! simulation
-         everDried_time = everDried_time + dtdp
-      end where
+      do i=1,np
+         if (nodecode(i).eq.0) then
+            everDried(i) = -99999.d0
+            ! record the total amount of time this node was dry during the
+            ! simulation
+            everDried_time(i) = everDried_time(i) + dtdp
+         endif
+      end do
 
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable
@@ -6119,50 +6125,58 @@ C-----------------------------------------------------------------------
       use global, only : nodecode, eta2, uu2, vv2, pr2,
      &  rsnx2, rsny2, etamax, etamax_time, umax, umax_time, prmin,
      &  prmin_time, wvnoutmax, wvnoutmax_time, rsnmax, rsnmax_time,
-     &  wvnxout, wvnyout
+     &  wvnxout, wvnyout, nrs, nws, noutge, noutgv, noutgw
       use mesh, only : np
       implicit none
       real(8), intent(in) :: timeloc ! time in s since cold start
-      real(sz), allocatable, save :: minMaxTemp(:) ! temp value for min/max comparisons
       integer :: i
 
       call setMessageSource("collectMinMaxData")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      ! jgf52.08.20: Allocate space for temp calculations.
-      if (allocated(minMaxTemp).eqv..false.) then
-         allocate(minMaxTemp(np))
-      endif
 
 C...  jgf50.44: Collect time that min/max occurs as well.
-      where ( (nodecode.eq.1).and.(eta2.gt.etamax) )
-         etamax = eta2
-         etamax_time = timeLoc !tcm v51.20.01
-      end where
-
-      minMaxTemp = uu2**2+vv2**2
-      where ( minMaxTemp.gt.umax**2 )
-         umax = sqrt(uu2**2+vv2**2)
-         umax_time = timeLoc   !tcm v51.20.01
-      end where
-
-      where (pr2.lt.prmin)
-         prmin = pr2
-         prmin_time = timeLoc !tcm v51.20.01
-      end where
-
-      minMaxTemp = wvnxout**2+wvnyout**2
-      where (minMaxTemp.gt.wvnoutmax**2)
-         wvnoutmax = sqrt(wvnxout**2+wvnyout**2)
-         wvnoutmax_time = timeLoc
-      end where
-
-      minMaxTemp = rsnx2**2+rsny2**2
-      where (minMaxTemp.gt.rsnmax**2)
-         rsnmax = sqrt(rsnx2**2+rsny2**2)
-         rsnmax_time = timeLoc
-      end where
+      if (noutge.ne.0) then
+         do i=1,np
+            if (nodecode(i).eq.1) then
+               if (eta2(i).gt.etamax(i)) then
+                  etamax(i) = eta2(i)
+                  etamax_time(i) = timeLoc !tcm v51.20.01
+               endif
+            endif
+         end do
+      endif
+      if (noutgv.ne.0) then
+         do i=1,np
+            if ( (uu2(i)**2+vv2(i)**2).gt.umax(i)**2 ) then 
+               umax(i) = sqrt(uu2(i)**2+vv2(i)**2)
+               umax_time(i) = timeLoc   !tcm v51.20.01
+            endif
+         end do 
+      endif
+      if ((nws.ne.0).and.(noutgw.ne.0)) then
+         do i=1,np
+            if (pr2(i).lt.prmin(i)) then
+               prmin(i) = pr2(i)
+               prmin_time(i) = timeLoc
+            endif
+         end do
+         do i=1,np
+            if ((wvnxout(i)**2+wvnyout(i)**2).gt.wvnoutmax(i)**2) then 
+               wvnoutmax(i) = sqrt(wvnxout(i)**2+wvnyout(i)**2)
+               wvnoutmax_time(i) = timeLoc
+            endif
+         end do
+      endif
+      if ((nrs.ne.0).and.(noutgw.ne.0)) then
+         do i=1,np
+            if ((rsnx2(i)**2+rsny2(i)**2).gt.rsnmax(i)**2) then
+               rsnmax(i) = sqrt(rsnx2(i)**2+rsny2(i)**2)
+               rsnmax_time(i) = timeLoc
+            endif
+         end do
+      endif
 
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable
