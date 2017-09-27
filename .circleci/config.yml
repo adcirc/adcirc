@@ -33,9 +33,6 @@ jobs:
         - image: zcobell/adcirc_20170924 
       steps:
         - checkout
-        - restore_cache:
-            keys:
-              - setup
         - run: 
             name: Configure SWAN for legacy makefile
             command: cd work ; cp ../swan/macros.inc.gfortran ../swan/macros.inc
@@ -47,9 +44,6 @@ jobs:
         - image: zcobell/adcirc_20170924 
       steps:
         - checkout
-        - restore_cache:
-            keys:
-              - setup
         - run: 
             name: Configure SWAN for legacy makefile
             command: cd work ; cp ../swan/macros.inc.gfortran ../swan/macros.inc
@@ -61,9 +55,6 @@ jobs:
         - image: zcobell/adcirc_20170924 
       steps:
         - checkout
-        - restore_cache:
-            keys:
-              - setup
         - run: 
             name: Configure SWAN for legacy makefile
             command: cd work ; cp ../swan/macros.inc.gfortran ../swan/macros.inc
