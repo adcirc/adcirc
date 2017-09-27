@@ -308,8 +308,13 @@ C! CMPI
         iglobal = descript % imap(i)
         if (istart <= iglobal .and. iglobal <= iend) then
           j = 2*(iglobal - ioffset) - 1
-          buf(j)     = descript % array(i)
-          buf(j + 1) = descript % array2(i)
+          if(descript%considerWetDry.and.nodecode(i).eq.0)then
+            buf(j)     = descript % alternate_value
+            buf(j + 1) = descript % alternate_value
+          else
+            buf(j)     = descript % array(i)
+            buf(j + 1) = descript % array2(i)
+          endif
         end if
       end do
 
@@ -615,12 +620,13 @@ C
       include 'mpif.h'
 #endif
       integer      :: ierr, status(MPI_STATUS_SIZE), request
-      integer      :: nLWetNodes, nGWetNodes
+      integer      :: nLWetNodes
       integer      :: iglobal
 #endif
       integer      :: num, i, j, k
       integer, save:: tagbase = 6000
       integer      :: iproc
+      integer      :: nGWetNodes
       integer      :: bufsize, ibucket
       integer      :: istart, iend, tag
 
@@ -631,9 +637,33 @@ C
 
       ! serial or writing local files
       if ((mnproc.eq.1).or.(WRITE_LOCAL_FILES)) then
+         
+         ! count number of wet nodes
+         nGWetNodes = 0
+         do i=1,np
+             if(descript%considerWetDry)then
+                 if(nodecode(i)==0)cycle
+                 nGWetNodes = nGWetNodes + 1
+             else
+                 if(descript%isInteger)then
+                    if(descript%iarray(i)==int(descript%alternate_value))cycle
+                    nGWetNodes = nGWetNodes + 1
+                 else
+                    if(descript%num_items_per_record==1)then
+                        if(descript%array(i)==descript%alternate_value)cycle
+                        nGWetNodes = nGWetNodes + 1
+                    elseif(descript%num_items_per_record==2)then
+                        if(descript%array(i)==descript%alternate_value .AND.
+     &                     descript%array2(i)==descript%alternate_value)cycle
+                        nGWetNodes = nGWetNodes + 1
+                    endif
+                 endif
+             endif
+         enddo
+
          open(descript%lun, file=trim(descript%file_name), 
      &       access='SEQUENTIAL', position='APPEND')
-         write(descript%lun, 1100) TimeLoc, it
+         write(descript%lun, 1101) TimeLoc, it, nGWetNodes, descript%alternate_value
          call write_cmd(descript % lun, descript, 1, descript % num_records_this)
          close(descript % lun)
 #ifdef GLOBALIO_TRACE
@@ -648,8 +678,19 @@ C
          do i=1,np
             iglobal = descript%imap(i)
             if(iglobal.le.0) cycle ! cycle if node i is ghost
-            if(nodecode(i) == 0) cycle ! cycle if node i is dry
-            nLWetNodes=nLWetNodes+1
+            if(descript%considerWetDry)then
+                if(nodecode(i) == 0) cycle ! cycle if node i is dry
+                nLWetNodes=nLWetNodes+1
+            else
+                if(descript%num_items_per_record==1)then
+                    if(descript%array(i)==descript%alternate_value)cycle
+                    nLWetNodes = nLWetNodes + 1
+                elseif(descript%num_items_per_record==2)then
+                    if(descript%array(i)==descript%alternate_value .AND.
+     &                 descript%array2(i)==descript%alternate_value )cycle
+                    nLWetNodes = nLWetNodes + 1
+                endif
+            endif
          enddo
          call mpi_reduce(nLWetNodes, nGWetNodes, 1, MPI_INTEGER,
      &        MPI_SUM, 0, comm, ierr)
@@ -745,9 +786,24 @@ C
       integer :: i, istart, iend, iglobal, lun
       integer :: ioffset
 
-      if (WRITE_LOCAL_FILES) then
+      if (MNPROC.EQ.1 .OR. WRITE_LOCAL_FILES) then
          do i = 1, descript % num_records_this
-            write(lun , 1000) i, descript % array(i)
+            if(descript%considerWetDry)then
+                if(nodecode(i)==0)cycle
+                if(descript%isInteger)then
+                    write(lun , 1000) i, descript % iarray(i)
+                else
+                    write(lun , 1000) i, descript % array(i)
+                endif
+            else
+                if(descript%isInteger)then
+                    if(descript%iarray(i)==int(descript%alternate_value))cycle
+                    write(lun , 1000) i, descript % iarray(i)
+                else
+                    if(descript%array(i)==descript%alternate_value)cycle
+                    write(lun , 1000) i, descript % array(i)
+                endif
+            endif
          end do
          return
       end if
@@ -757,7 +813,11 @@ C
       do i = 1, descript % num_records_this
          iglobal = descript % imap(i)
          if (istart <= iglobal .and. iglobal <= iend) then
-            buf(iglobal-ioffset) = descript % array(i)
+            if(descript%considerWetDry.AND.nodecode(i)==0)then
+                buf(iglobal-ioffset) = descript % alternate_value
+            else
+                buf(iglobal-ioffset) = descript % array(i)
+            endif
          end if
       end do
 #endif
@@ -786,10 +846,17 @@ C
       integer :: i, istart, iend, iglobal, lun
       integer :: ioffset, j
 
-      if (WRITE_LOCAL_FILES) then
+      if (MNPROC.EQ.1.OR.WRITE_LOCAL_FILES) then
         do i = 1, descript % num_records_this
-          write(lun , 1000) i, descript % array(i),
-     $      descript % array2(i)
+          if(descript%considerWetDry)then
+            if(nodecode(i)==0)cycle
+            write(lun , 1000) i, descript % array(i),
+     &      descript % array2(i)
+          else
+            if(descript%array(i)==descript%alternate_value)cycle
+            write(lun , 1000) i, descript % array(i),
+     &      descript % array2(i)
+          endif
         end do
         return
       end if
@@ -800,8 +867,13 @@ C
         iglobal = descript % imap(i)
         if (istart <= iglobal .and. iglobal <= iend) then
           j = 2*(iglobal - ioffset) - 1
-          buf(j)     = descript % array(i)
-          buf(j + 1) = descript % array2(i)
+          if(descript%considerWetDry.AND.nodecode(i)==0)then
+              buf(j)     = descript % alternate_value
+              buf(j + 1) = descript % alternate_value
+          else
+              buf(j)     = descript % array(i)
+              buf(j + 1) = descript % array2(i)
+          endif
         end if
       end do
 #endif
