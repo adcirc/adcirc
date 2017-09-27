@@ -1638,11 +1638,15 @@ C     tcmv51.20.01 Changed from pack/unpack one to pack/unpack two
 C       as max/min are now initialized from file during hotstart
 C       for all processors, not just myproc=0.
       if (it.eq.nt) then
-         CALL writeOutArrayMinMax(311, TimeLoc, IT, 2, EtaMaxDescript,
+         if (noutge.ne.0) then
+            CALL writeOutArrayMinMax(311, TimeLoc, IT, 2, EtaMaxDescript,
      &        packTwo, unpackTwo)
-         CALL writeOutArrayMinMax(312, TimeLoc, IT, 2, UMaxDescript,
+         endif
+         if (noutgv.ne.0) then
+            CALL writeOutArrayMinMax(312, TimeLoc, IT, 2, UMaxDescript,
      &        packTwo, unpackTwo)
-         IF (NWS.NE.0) THEN
+         endif  
+         if ((nws.ne.0).and.(noutgw.ne.0)) then
             CALL writeOutArrayMinMax(313, TimeLoc, IT, 2, PrMinDescript,
      &           packTwo, unpackTwo)
             CALL writeOutArrayMinMax(314, TimeLoc, IT, 2, WVMaxDescript,
@@ -1651,7 +1655,7 @@ C       for all processors, not just myproc=0.
                CALL writeOutArrayMinMax(315, TimeLoc, IT, 2, RSMaxDescript,
      &              packTwo, unpackTwo)
             ENDIF
-         ENDIF
+         endif
          !
          ! OUTPUT THE NODES WHERE THE ELEMENTAL SLOPE LIMITER HAS BEEN
          ! TURNED ON DURING THE RUN
