@@ -352,7 +352,7 @@ C----------------------------------------------------------------------
      &   offsetFilePos, offsetSpoolCounter, offset2, usingWaterLevelOffset,
      &   offsetSpoolCounter, offset2, usingWaterLevelOffset,
      &   offsetStaSpoolCounter, offsetFilePos, offsetSta,
-     &   offsetStaFilePos
+     &   offsetStaFilePos, PRBCKGRND
 
       USE MESH, ONLY : NP, NE, DP, NM, ICS, labels
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim,
@@ -548,7 +548,7 @@ C
       labelsDescript % considerWetDry       = .false.
       labelsDescript % initialized          = .false.
       labelsDescript % isInteger            = .true.
-      IF(MNPROC.GT.0)THEN
+      IF(MNPROC.GT.1)THEN
           CALL collectFullDomainArray(labelsDescript,packOne,unpackOne)
       ENDIF
 
@@ -750,6 +750,7 @@ C
       PrDescript % array                => Pr2
       PrDescript % array_g              => Pr2_g
       PrDescript % field_name           = 'Pr'
+      PrDescript % alternate_value      = PRBCKGRND
       if (nws.eq.0) then
          PrDescript % writeFlag         = .false.
       endif
@@ -824,6 +825,7 @@ C
       WindVelDescript % array2               => WVNYOut
       WindVelDescript % array2_g             => WVNYOut_g
       WindVelDescript % field_name           = 'WindVel'
+      WindVelDescript % alternate_value      = 0.0D0
       if (nws.eq.0) then
          WindVelDescript % writeFlag         = .false.
       endif
@@ -843,6 +845,7 @@ C
       windDragDescript % array_g              => windDragOut_g
       windDragDescript % field_name           = 'windDrag'
       windDragDescript % file_basename        = 'windDrag'
+      windDragDescript % alternate_value      = 0D0
       windDragDescript % writeFlag            = outputWindDrag
       !
       ! fort.75  !tcm v50.66.01 Added for Time Varying Bathymetry
