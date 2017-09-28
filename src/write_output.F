@@ -4000,7 +4000,7 @@ C-----------------------------------------------------------------------
       USE SIZES
       USE GLOBAL
       USE GLOBAL_IO, ONLY : collectFullDomainArray, storeOne, storeTwo,
-     &                      writeSparse
+     &                      writeSparse,writeFullFormat,writeBinaryFormat
       USE MESH, ONLY: labels
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY : writeOutArrayNetCDF
@@ -4031,216 +4031,48 @@ C     collect up the data from subdomains if running in parallel
 C     write data according to format specifier from fort.15 (e.g., NOUTE)
       SELECT CASE (ABS(descript % specifier))
 
-      CASE(ASCII)
+        CASE(ASCII)
+          IF(descript%num_items_per_record.EQ.1)then
+              CALL writeFullFormat(descript,timeLoc,it,storeOne)
+          ELSEIF(descript%num_items_per_record.EQ.2)then
+              CALL writeFullFormat(descript,timeLoc,it,storeTwo)
+          ENDIF
+        CASE(BINARY) ! nonportable
+          CALL writeBinaryFormat(descript,timeLoc,it)
+        CASE(SPARSE_ASCII)
+           if(descript % num_items_per_record.eq.1)then
+               CALL writeSparse(descript, timeLoc, it, storeOne)
+           elseif(descript % num_items_per_record.eq.2)then
+               CALL writeSparse(descript, timeLoc, it, storeTwo)
+           endif
 
-         IF ( (MNPROC.gt.1).and.(MyProc.eq.0)
-     &        .and.(.not.WRITE_LOCAL_FILES)) THEN
-
-            OPEN(descript % lun, file=trim(descript % file_name),
-     &           ACCESS='SEQUENTIAL',POSITION='APPEND')
-            WRITE(descript % lun,2120) TimeLoc,IT
-            IF (descript % num_items_per_record .eq. 1) THEN
-               IF(descript%considerWetDry)THEN
-                  DO I=1, descript % num_fd_records
-                     if ( descript % isInteger .eqv. .true. ) then
-                        IF(nodecode_g(I).EQ.0)THEN
-                            write(descript % lun,2452) labels_g(I), INT(descript % alternate_value)
-                        ELSE
-                            write(descript % lun,2452) labels_g(I), descript % iarray_g(I)
-                        ENDIF
-                     else
-                        IF(nodecode_g(I).EQ.0)THEN
-                            write(descript % lun,2453) labels_g(I), descript % alternate_value
-                        ELSE
-                            write(descript % lun,2453) labels_g(I), descript % array_g(I)
-                        ENDIF
-                     endif
-                  ENDDO
-               ELSE
-                  DO I=1, descript % num_fd_records
-                     if ( descript % isInteger .eqv. .true. ) then
-                        write(descript % lun,2452) labels_g(I), descript % iarray_g(I)
-                     else
-                        write(descript % lun,2453) labels_g(I), descript % array_g(I)
-                     endif
-                  ENDDO
-               ENDIF
-            ELSEIF (descript % num_items_per_record .eq. 2) THEN
-               IF(descript%ConsiderWetDry)THEN
-                    DO I=1, descript % num_fd_records
-                        IF(nodecode_g(I).EQ.0)THEN
-                            WRITE(descript % lun,2454) labels_g(I), descript % alternate_value,
-     &                               descript % alternate_value
-                        ELSE
-                            WRITE(descript % lun,2454) labels_g(I), descript % array_g(I),
-     &                               descript % array2_g(I)
-                        ENDIF
-                    ENDDO
-               ELSE
-                 DO I=1, descript % num_fd_records
-                      WRITE(descript % lun,2454) labels_g(I), descript % array_g(I),
-     &                               descript % array2_g(I)
-                 ENDDO
-               ENDIF
-            ENDIF
-            CLOSE(descript % lun)
-         ENDIF
-
-         IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES)) THEN
-            OPEN(descript % lun, file=trim(descript % file_name),
-     &           ACCESS='SEQUENTIAL',POSITION='APPEND')
-            WRITE(descript % lun,2120) TimeLoc,IT
-            IF (descript % num_items_per_record .eq. 1) THEN
-!......TCM - v48.4618 -- Fixed dry node output for serial run case
-               IF (descript % ConsiderWetDry .EQV. .TRUE.) THEN
-                  DO I=1, descript % num_records_this
-                     ! jgf52.25: Station data that should take wet dry state
-                     ! into account have already done so in subroutine stationArrayInterp()
-                     ! above. For stations, it doesn't make sense to check the nodecode.
-                     if ( (descript%isStation.eqv..false.).and.(NODECODE(I).EQ.0)) then
-                        if ( descript % isInteger .eqv. .true. ) then
-                           write(descript % lun,2452) labels(I), int(descript % alternate_value)
-                        else
-                           write(descript % lun,2453) labels(I), descript % alternate_value
-                        endif
-                     else
-                        if ( descript % isInteger .eqv. .true. ) then
-                           write(descript % lun,2452) labels(I), descript % iarray(i)
-                        else
-                           write(descript % lun,2453) labels(I), descript % array(i)
-                        endif
-                     endif
-                  end do
-               else
-                  DO I=1, descript % num_records_this
-                     if ( descript % isInteger .eqv. .true. ) then
-                        write(descript % lun,2452) labels(I), descript % iarray(I)
-                     else
-                        write(descript % lun,2453) labels(I), descript % array(I)
-                     endif
-                  END DO
-               ENDIF
-            ENDIF
-            IF (descript % num_items_per_record .eq. 2) THEN
-               IF ( descript % isStation .eqv. .false. ) THEN
-                  IF(descript%considerWetDry)THEN
-                    DO I=1, descript % num_records_this
-                       IF(nodecode(I).EQ.0)THEN
-                          WRITE(descript % lun,2454) labels(I), descript % alternate_value, 
-     &                                 descript % alternate_value                   
-                       ELSE
-                          WRITE(descript % lun,2454) labels(I), descript % array(I),
-     &                                 descript % array2(I)
-                       ENDIF
-                    END DO
-                  ELSE
-                    DO I=1, descript % num_records_this
-                          WRITE(descript % lun,2454) labels(I), descript % array(I),
-     &                                 descript % array2(I)
-                    END DO
-                  ENDIF
-               ELSE
-                  DO I=1, descript % num_records_this
-                     WRITE(descript % lun,2454) labels(I), descript % array(I),
-     &                               descript % array2(I)
-                  END DO
-               ENDIF
-            ENDIF
-            CLOSE(descript % lun)
-         ENDIF
-         descript % filepos = descript % filepos + 1
-     &                        + descript % num_records_this
-
-      CASE(BINARY) ! nonportable
-
-         IF ( (MNPROC.gt.1).and.(MyProc.eq.0)
-     &         .and.(.not.WRITE_LOCAL_FILES)) THEN
-            OPEN(descript%lun,FILE=trim(descript%file_name),
-     &           ACCESS='DIRECT',RECL=NBYTE)
-            WRITE(descript % lun,REC=descript % filepos+1) TimeLoc
-            WRITE(descript % lun,REC=descript % filepos+2) IT
-            descript%filepos = descript%filepos + 2
-            IF ( descript % num_items_per_record .eq. 1 ) THEN
-               DO I=1, descript % num_fd_records
-                  WRITE(descript % lun,REC=descript % filepos+I)
-     &               descript % array_g(I)
-               END DO
-            ENDIF
-            IF ( descript % num_items_per_record .eq. 2 ) THEN
-               DO I=1, descript % num_fd_records
-                  WRITE(descript % lun,REC=descript % filepos+2*I-1)
-     &                descript % array_g(I)
-                  WRITE(descript % lun,REC=descript % filepos+2*I)
-     &                descript % array2_g(I)
-               END DO
-            ENDIF
-            CLOSE(descript%lun)
-         ENDIF
-
-         IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES)) THEN
-            OPEN(descript % lun,FILE=TRIM(descript % file_name),
-     &           ACCESS='DIRECT',RECL=NBYTE)
-            WRITE(descript % lun,REC=descript % filepos+1) TimeLoc
-            WRITE(descript % lun,REC=descript % filepos+2) IT
-            descript % filepos = descript % filepos + 2
-            IF ( descript % num_items_per_record .eq. 1 ) THEN
-               IF ((trim(descript % field_name) .eq. 'Elev').and.
-     &             (descript % ConsiderWetDry .EQV. .TRUE.)) THEN
-                  DO I=1, descript % num_records_this
-                     if(NODECODE(I).EQ.1) THEN
-                        WRITE(descript % lun,REC=descript % filepos+I) descript % array(I)
-                     ELSE
-                        WRITE(descript % lun,REC=descript % filepos+I)
-     &                    descript % alternate_value !-99999.0 for dry nodes
-                     ENDIF
-                  END DO
-               ELSE
-                  DO I=1, descript % num_records_this
-                     WRITE(descript % lun,REC=descript % filepos+I) descript % array(I)
-                  END DO
-               ENDIF
-            ENDIF
-            IF ( descript % num_items_per_record .eq. 2 ) THEN
-               DO I=1, descript % num_records_this
-                  !tcmv48.4618 -- changed from array_g to array
-                  WRITE(descript % lun,REC=descript % filepos+2*I-1) descript % array(I)
-                  !tcmv48.4618 -- changed from array2_g to array2
-                  WRITE(descript % lun,REC=descript % filepos+2*I)   descript % array2(I)
-               END DO
-            ENDIF
-            CLOSE(descript % lun)
-         ENDIF
-         descript % filepos = descript % filepos + descript % num_records_this
-
-      CASE(SPARSE_ASCII)
-         if(descript % num_items_per_record.eq.1)then
-             CALL writeSparse(descript, timeLoc, it, storeOne)
-         elseif(descript % num_items_per_record.eq.2)then
-             CALL writeSparse(descript, timeLoc, it, storeTwo)
-         endif
-
-      CASE(NETCDF3, NETCDF4) ! (portable)
+        CASE(NETCDF3, NETCDF4) ! (portable)
 #ifdef ADCNETCDF
-         IF (MYPROC.EQ.0) THEN
-            CALL writeOutArrayNetCDF(descript % lun, TimeLoc, it, descript)
-         ENDIF
+            IF (MYPROC.EQ.0) THEN
+               CALL writeOutArrayNetCDF(descript % lun, TimeLoc, it, descript)
+            ENDIF
 #else
-         call allMessage(ERROR, 'NetCDF was specified.')
-         call allMessage(ERROR,
-     &   'This executable was not compiled with NetCDF support.')
-         call terminate()
+            call allMessage(ERROR, 'NetCDF was specified.')
+            call allMessage(ERROR,
+     &      'This executable was not compiled with NetCDF support.')
+            call terminate()
 #endif
 
-      CASE(XDMF)
+        CASE(XDMF)
 #ifdef ADCXDMF
-         IF (MYPROC.EQ.0) THEN
-            CALL writeOutArrayXDMF(TimeLoc, it, descript)
-         ENDIF
+            IF (MYPROC.EQ.0) THEN
+               CALL writeOutArrayXDMF(TimeLoc, it, descript)
+            ENDIF
+#else            
+            call allMessage(ERROR, 'XDMF was specified.')
+            call allMessage(ERROR,
+     &      'This executable was not compiled with XDMF support.')
+            call terminate()
 #endif
-      CASE DEFAULT
-         write(scratchMessage,'(a,i0)') 'Invalid output specifier: ',
-     &       abs(descript % specifier)
-         call allMessage(ERROR, scratchMessage)
+        CASE DEFAULT
+            write(scratchMessage,'(a,i0)') 'Invalid output specifier: ',
+     &           abs(descript % specifier)
+            call allMessage(ERROR, scratchMessage)
       END SELECT
 
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
