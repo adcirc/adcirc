@@ -548,7 +548,7 @@ C
       labelsDescript % considerWetDry       = .false.
       labelsDescript % initialized          = .false.
       labelsDescript % isInteger            = .true.
-      IF(MYPROC.lt.MNPROC)THEN
+      IF(MNPROC.GT.0)THEN
           CALL collectFullDomainArray(labelsDescript,packOne,unpackOne)
       ENDIF
 
@@ -4040,13 +4040,13 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
                IF(descript%considerWetDry)THEN
                   DO I=1, descript % num_fd_records
                      if ( descript % isInteger .eqv. .true. ) then
-                        IF(nodecode(I).EQ.0)THEN
+                        IF(nodecode_g(I).EQ.0)THEN
                             write(descript % lun,2452) labels_g(I), INT(descript % alternate_value)
                         ELSE
                             write(descript % lun,2452) labels_g(I), descript % iarray_g(I)
                         ENDIF
                      else
-                        IF(nodecode(I).EQ.0)THEN
+                        IF(nodecode_g(I).EQ.0)THEN
                             write(descript % lun,2453) labels_g(I), descript % alternate_value
                         ELSE
                             write(descript % lun,2453) labels_g(I), descript % array_g(I)
@@ -4065,7 +4065,7 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
             ELSEIF (descript % num_items_per_record .eq. 2) THEN
                IF(descript%ConsiderWetDry)THEN
                     DO I=1, descript % num_fd_records
-                        IF(nnodecode(I)==0)THEN
+                        IF(nodecode_g(I).EQ.0)THEN
                             WRITE(descript % lun,2454) labels_g(I), descript % alternate_value,
      &                               descript % alternate_value
                         ELSE

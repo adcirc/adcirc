@@ -660,7 +660,20 @@ C
          do i=1,np
             iglobal = descript%imap(i)
             if(iglobal.le.0) cycle ! cycle if node i is ghost
-            if(nodecode(i) == 0) cycle ! cycle if node i is dry
+            if(descript%considerWetDry)then
+                if(nodecode(i) == 0) cycle ! cycle if node i is dry
+            else
+                if(descript%num_items_per_record==1)then
+                    if(descript%isInteger)then
+                        if(descript%iarray(i)==int(descript%alternate_value))cycle
+                    else
+                        if(descript%array(i)==descript%alternate_value)cycle
+                    endif
+                elseif(descript%num_items_per_record==2)then
+                    if(descript%array(i)==descript%alternate_value .AND.
+     &                 descript%array2(i)==descript%alternate_value)cycle
+                endif
+            endif
             nLWetNodes=nLWetNodes+1
          enddo
          call mpi_reduce(nLWetNodes, nGWetNodes, 1, MPI_INTEGER,
@@ -704,7 +717,7 @@ C
                !If values are eqaul to the default value, skip this node
                if(resultBuf(j).eq.descript % alternate_value) cycle
    
-               write(descript % lun, 1000) i, (resultBuf(k), k = j, j +
+               write(descript % lun, 1000) labels_g(i), (resultBuf(k), k = j, j +
      &           descript % num_items_per_record - 1)
              end do
            end if
@@ -751,6 +764,7 @@ C
       subroutine storeOne(lun, descript, istart, iend)
       USE SIZES
       USE GLOBAL
+      USE MESH,ONLY:labels
       implicit none
 
       type (OutputDataDescript_t) :: descript
@@ -760,10 +774,28 @@ C
       if (mnproc.eq.1.or.WRITE_LOCAL_FILES) then
          do i = 1, descript % num_records_this
             if(ABS(descript % specifier)==SPARSE_ASCII)then
-                if(descript%considerWetDry.AND.nodecode(i)==0)cycle
-                write(lun , 1000) i, descript % array(i)
+                if(descript%considerWetDry)then
+                    if(nodecode(i)==0)cycle
+                    if(descript%isInteger)then
+                        write(lun , 1000) labels(i), descript % iarray(i)
+                    else
+                        write(lun , 1000) labels(i), descript % array(i)
+                    endif
+                else
+                    if(descript%isInteger)then
+                        if(descript%iarray(i)==int(descript%alternate_value))cycle
+                        write(lun , 1000) labels(i), descript % iarray(i)
+                    else
+                        if(descript%array(i)==descript%alternate_value)cycle
+                        write(lun , 1000) labels(i), descript % array(i)
+                    endif
+                endif
             else
-                write(lun , 1000) i, descript % array(i)
+                if(descript%isInteger)then
+                    write(lun , 1000) labels(i), descript % iarray(i)
+                else
+                    write(lun , 1000) labels(i), descript % array(i)
+                endif
             endif
          end do
          return
@@ -801,6 +833,7 @@ C
       subroutine storeTwo(lun, descript, istart, iend)
       USE SIZES
       USE GLOBAL
+      USE MESH,ONLY:labels
       implicit none
 
       type (OutputDataDescript_t) :: descript
@@ -811,10 +844,10 @@ C
         do i = 1, descript % num_records_this
             if(abs(descript%specifier)==SPARSE_ASCII)then
                 if(descript%considerWetDry.AND.nodecode(i)==0)cycle
-                write(lun , 1000) i, descript % array(i),
+                write(lun , 1000) labels(i), descript % array(i),
      &              descript % array2(i)
             else
-                write(lun , 1000) i, descript % array(i),
+                write(lun , 1000) labels(i), descript % array(i),
      &              descript % array2(i)
             endif
         end do
