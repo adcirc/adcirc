@@ -1530,7 +1530,11 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
       END SUBROUTINE writeHotstart_through_HSwriter
 !
       SUBROUTINE GET_NEXT_HSWRITER_COMM(NEXT_WCOMM)
+#ifdef CMPI      
+#ifndef HAVE_MPI_MOD      
       include 'mpif.h'
+#endif      
+#endif
       INTEGER,intent(inout) :: NEXT_WCOMM
       INTEGER :: NEXT_WCOMMID
 
