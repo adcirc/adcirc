@@ -841,8 +841,22 @@ C
      &       access='SEQUENTIAL', position='APPEND')
          nLWetNodes=0
          do i=1,np
-            if(nodecode(i) == 0)cycle
-            nLWetNodes=nLWetNodes+1
+            if(descript%considerWetDry)then
+                if(nodecode(i) == 0)cycle
+                nLWetNodes=nLWetNodes+1
+            else
+                if(descript%num_items_per_record==1)then
+                    if(descript%isInteger)then
+                        if(descript%iarray(i)==int(descript%alternate_value))cycle
+                    else
+                        if(descript%array(i)==descript%alternate_value)cycle
+                    endif
+                elseif(descript%num_items_per_record==2)then
+                    if(descript%array(i)==descript%alternate_value .and.
+     &                 descript%array2(i)==descript%alternate_value)cycle
+                endif
+                nLWetNodes=nLWetNodes+1
+            endif
          enddo
          write(descript%lun, 1101) TimeLoc, it, nLWetNodes, descript%alternate_value
          call write_cmd(descript % lun, descript, 1, descript % num_records_this)
