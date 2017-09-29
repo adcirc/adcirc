@@ -824,7 +824,7 @@ Corbitt 120328: Allow local advection as a nodal attribute.
                IF (Mode.eq.0) SDNumND(iproc,k) = SDNumND(iproc,k)+1
                IF (Mode.eq.1) THEN
                   SDNode = IMAP_NOD_GL(2,NodeNum)
-                  WRITE(sdu(iproc),1100) SDNode,(AttrData(j),j=1,NumCol)
+                  WRITE(sdu(iproc),1100) labels(NodeNum),(AttrData(j),j=1,NumCol)
                ENDIF
             ELSE
                DO m=1, ITOTPROC(NodeNum)
@@ -836,7 +836,7 @@ Corbitt 120328: Allow local advection as a nodal attribute.
                         ENDIF
                         IF (Mode.eq.1) THEN
                            SDNode = IMAP_NOD_GL2(2*(m-1)+2,NodeNum)
-                           WRITE(sdu(iproc),1100) SDNode,
+                           WRITE(sdu(iproc),1100) labels(NodeNum),
      &                          (AttrData(j),j=1,NumCol)
                         ENDIF
                      ENDIF
@@ -1375,12 +1375,15 @@ cjgf45.06    WRITE(14,80) OUTMSG
 C
           DO J = 1,NNODP(IPROC)
              INDX = IMAP_NOD_LG(J,IPROC)
-             WRITE(14,44) J,X(INDX),Y(INDX),DP(INDX)
+             WRITE(14,44) LABELS(INDX),X(INDX),Y(INDX),DP(INDX)
           ENDDO
 c
           DO J = 1,NELP(IPROC)
-             WRITE(14,45) J,ETYPE,NNEP(1,J,IPROC),NNEP(2,J,IPROC),
-     &                           NNEP(3,J,IPROC)
+!             WRITE(14,45) J,ETYPE,NNEP(1,J,IPROC),NNEP(2,J,IPROC),
+!     &                           NNEP(3,J,IPROC)
+              WRITE(14,45) J,ETYPE,LABELS(IMAP_NOD_LG(NNEP(1,J,IPROC),IPROC)),
+     &                     LABELS(IMAP_NOD_LG(NNEP(2,J,IPROC),IPROC)),
+     &                     LABELS(IMAP_NOD_LG(NNEP(3,J,IPROC),IPROC))
           ENDDO
  43       FORMAT(2I8)
  44       FORMAT(I8,3(E24.12))
@@ -1410,7 +1413,7 @@ C             boundary segment.
 #endif
                WRITE(14,80) OUTMSG
                DO I = 1,NVDLLP(K)
-                  WRITE(14,*) NBDVP(K,I)
+                  WRITE(14,*) LABELS(IMAP_NOD_LG(NBDVP(K,I),IPROC))
                ENDDO
             ENDIF
          ENDDO
@@ -1442,25 +1445,28 @@ C
                select case(itype)
                case default
                   DO I = 1,NVELLP(K)
-                     WRITE(14,'(I8)') NBVVP(K,I)
+                     WRITE(14,'(I8)') LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC))
                   ENDDO
                case(3,13,23)
                   IF(USE_TVW)NWEIRBNDRY(IPROC) = 1
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
-                     WRITE(14,81) NBVVP(K,I),BAR1(K,INDX),BAR2(K,INDX)
+                     WRITE(14,81) LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC)),
+     &                            BAR1(K,INDX),BAR2(K,INDX)
                   ENDDO
                case(4,24)
                   IF(USE_TVW)NWEIRBNDRY(IPROC) = 1
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
-                     WRITE(14,82) NBVVP(K,I),IBCONNRP(K,I),
+                     WRITE(14,82) LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC)),
+     &                        LABELS(IMAP_NOD_LG(IBCONNRP(K,I),IPROC)),
      &                        BAR1(K,INDX),BAR2(K,INDX),BAR3(K,INDX)
                   ENDDO
                case(5,25)
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
-                     WRITE(14,83) NBVVP(K,I),IBCONNRP(K,I),
+                     WRITE(14,83) LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC)),
+     &                      LABELS(IMAP_NOD_LG(IBCONNRP(K,I),IPROC)),
      &                      BAR1(K,INDX),BAR2(K,INDX),BAR3(K,INDX), 
      &                      BAR4(K,INDX),BAR5(K,INDX),BAR6(K,INDX)
                   ENDDO

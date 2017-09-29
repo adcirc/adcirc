@@ -35,7 +35,7 @@ C     ------------------------------------------------------------------
       real(8),allocatable :: slam(:) ! longitude node locations in CPP slam(np)
       real(8),allocatable :: sfea(:) ! latitude node locations in CPP sfea(np)
       type(ipair), allocatable, target :: node_dict(:) ! map node labels to numbers
-      integer, allocatable :: labels(:) ! map node numbers to labels
+      integer, allocatable, target :: labels(:) ! map node numbers to labels
       integer :: n1, n2, n3 ! nodes 1, 2, 3 for each element
 
 
@@ -415,12 +415,14 @@ C     ------------------------------------------------------------------
             do j = 1, nvell(k)
                read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
      &                      n1,
-     &                      internalFluxBoundaries(ifCount)%ibconn(j),
+     &                      n2,
      &                      internalFluxBoundaries(ifCount)%barinht(j),
      &                      internalFluxBoundaries(ifCount)%barincfsb(j),
      &                      internalFluxBoundaries(ifCount)%barincfsp(j)
                internalFluxBoundaries(ifCount)%nodes(j) =
      &             find(node_dict, n1)
+               internalFluxBoundaries(ifCount)%ibconn(j) = 
+     &             find(node_dict, n2)
                internalFluxBoundaries(ifCount)%xdmf_nodes(j) =
      &             internalFluxBoundaries(ifCount)%nodes(j) - 1
                internalFluxBoundaries(ifCount)%xdmf_ibconn(j) =
@@ -440,7 +442,7 @@ C     ------------------------------------------------------------------
             do j = 1, nvell(k)
                read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
      &                        n1,
-     &                        internalFluxBoundariesWithPipes(ifwpCount)%ibconn(j),
+     &                        n2,
      &                        internalFluxBoundariesWithPipes(ifwpCount)%barinht(j),
      &                        internalFluxBoundariesWithPipes(ifwpCount)%barincfsb(j),
      &                        internalFluxBoundariesWithPipes(ifwpCount)%barincfsp(j),
@@ -449,6 +451,8 @@ C     ------------------------------------------------------------------
      &                        internalFluxBoundariesWithPipes(ifwpCount)%pipediam(j)
                internalFluxBoundariesWithPipes(ifwpCount)%nodes(j) =
      &                        find(node_dict, n1)
+               internalFluxBoundariesWithPipes(ifwpCount)%ibconn(j) = 
+     &                        find(node_dict, n2)          
                internalFluxBoundariesWithPipes(ifwpCount)%xdmf_nodes(j) =
      &                        internalFluxBoundariesWithPipes(ifwpCount)%nodes(j) - 1
                internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn(j) =

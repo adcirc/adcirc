@@ -4401,7 +4401,7 @@ C     Write the array values
                allocate(tempArray(1:dat%myMesh%num_nodes))
                tempArray = merge(descript1%array,
      &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
-               iret = nf90_put_var(dat%ncid, dat%nodal_data_id,tempArray,start,kount)
+               iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,tempArray,start,kount)
                CALL check_err(iret)
                tempArray = merge(descript1%array2,
      &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)

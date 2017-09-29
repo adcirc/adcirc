@@ -1275,6 +1275,7 @@ C
 C     ----------------------------------------------------------------
       SUBROUTINE LoadAttrVec(AttributeData, Default, NumNodesNotDef,
      &     NScreen, MyProc, NAbOut)
+      USE MESH,ONLY:node_dict,find
       IMPLICIT NONE
       REAL(SZ), intent(out), dimension(NumOfNodes) :: AttributeData
       REAL(SZ), intent(in):: Default ! default value for all nodes
@@ -1282,8 +1283,9 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: NScreen ! 1 for debug info to screen (unit 6)
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
       INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
-C
-      INTEGER NodeNum            ! node number listed in the file
+      REAL(SZ)            :: TempData 
+      INTEGER             :: NodeNum ! node label listed in the file
+      INTEGER             :: DictNode ! node position in array
 C
 C     Set all values to user-specified default values.
       IF (NABOUT.EQ.0) WRITE(16,1001) Default
@@ -1293,9 +1295,11 @@ C     Set all values to user-specified default values.
 C
       IF (NABOUT.EQ.0) WRITE(16,1005)
       DO i=1, NumNodesNotDef
-         READ(13,*) NodeNum, AttributeData(NodeNum)
+         READ(13,*) NodeNum, TempData
+         DictNode = find(node_dict,NodeNum)
+         AttributeData(DictNode) = TempData
          IF (NABOUT.EQ.0)
-     &       WRITE(16,1010) NodeNum, AttributeData(NodeNum)
+     &       WRITE(16,1010) NodeNum, TempData
       END DO
 C
  1001 FORMAT(/,10X,'Set all nodes to the default value of ',E16.8,/)
@@ -1320,6 +1324,7 @@ C
 C     ----------------------------------------------------------------
       SUBROUTINE LoadAttrMat(AttributeData, NumCol, Default,
      &     NumNodesNotDef, NScreen, MyProc, NAbOut)
+      USE MESH,ONLY:node_dict,find
       IMPLICIT NONE
       INTEGER, intent(in) :: NumCol  ! number of columns in the matrix
       REAL(SZ), intent(out),
@@ -1329,8 +1334,9 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: NScreen ! 1 for debug info to screen (unit 6)
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
       INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
-C
-      INTEGER NodeNum            ! node number listed in the file
+      REAL(SZ)            :: TempAttData(NumCol) 
+      INTEGER             :: NodeNum ! node label listed in the file
+      INTEGER             :: DictNode ! node position in array
 C
 C     Set all nodes to user-specified default values.
       IF (NABOUT.EQ.0) WRITE(16,1001)
@@ -1342,9 +1348,11 @@ C     Set all nodes to user-specified default values.
 C
       IF (NABOUT.EQ.0) WRITE(16,1005)
       DO i=1, NumNodesNotDef
-         READ(13,*) NodeNum, (AttributeData(NodeNum,j),j=1,NumCol)
+         READ(13,*) NodeNum, (TempAttData(j),j=1,NumCol)
+         DictNode = find(node_dict,NodeNum)
+         AttributeData(DictNode,:) = TempAttData(:)
          IF (NABOUT.EQ.0) WRITE(16,1010) NodeNum,
-     &        (AttributeData(NodeNum,j),j=1,NumCol)
+     &        (AttributeData(DictNode,j),j=1,NumCol)
       END DO
 C
  1001 FORMAT(/,10X,'Set all nodes to the default values of ',/,

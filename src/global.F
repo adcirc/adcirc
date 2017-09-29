@@ -125,6 +125,7 @@ C     for writing fulldomain hotstart files.
       REAL(SZ), ALLOCATABLE, TARGET :: UU2_g(:)
       REAL(SZ), ALLOCATABLE, TARGET :: VV2_g(:)
       REAL(SZ), ALLOCATABLE, TARGET :: CH1_g(:)
+      INTEGER, ALLOCATABLE, TARGET :: labels_g(:)
       INTEGER, ALLOCATABLE, TARGET :: NodeCode_g(:)
       INTEGER, ALLOCATABLE :: NNodeCode_g(:)
       INTEGER, ALLOCATABLE, TARGET :: NOFF_g(:)
