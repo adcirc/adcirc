@@ -85,11 +85,12 @@ C
       ! it will remain 'default'; this will cause 'Garratt' to be used
       ! in FUNCTION WindDrag, and 'IceCube' to be used in
       ! FUNCTION WindIceDrag.
+#ifndef POWELL
       CHARACTER(len=10) :: DragLawString = 'default' ! controls wind drag formulation
-#ifdef POWELL
+#else
       ! jgf50.32 Provide backward compatibility with hardcoded POWELL
       ! support.
-      DragLawString = 'Powell'
+      CHARACTER(len=10) :: DragLawString = 'Powell'
 #endif
       !
       ! used for vis/diagnostics on nws19 and nws20
