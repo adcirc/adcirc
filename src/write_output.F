@@ -4472,7 +4472,7 @@ C
             IF (MNPROC.eq.1) THEN  ! serial
 C              jgf49.35 TODO: Allocate arrays to write 3D data
                CALL initNetCDFHotstart(hss%lun, Elev1Descript,
-     &         Elev2Descript, VelDescript, CH1Descript,
+     &         Elev2Descript, HotstartVelDescript, CH1Descript,
      &         EtaDiscDescript, NodeCodeDescript, NOFFDescript, ncerror)
                IF ( ncerror.eqv..true. ) CALL terminate()
                IF (IHARIND.eq.1) THEN
@@ -4500,7 +4500,7 @@ C              jgf49.35 TODO: Allocate arrays to write 3D data
                      nextLun = 67
                   ENDIF
                   CALL initNetCDFHotstart(nextLun, Elev1Descript,
-     &            Elev2Descript, VelDescript, CH1Descript,
+     &            Elev2Descript, HotstartVelDescript, CH1Descript,
      &            EtaDiscDescript, NodeCodeDescript, NOFFDescript,
      &            ncerror)
                   IF ( ncerror.eqv..true. ) CALL terminate()
@@ -4531,7 +4531,7 @@ C     collect up the data from subdomains if running in parallel
       IF (WRITE_LOCAL_HOT_START_FILES.eqv..FALSE.) THEN
          CALL collectFullDomainArray(Elev1Descript, packOne, unpackOne)
          CALL collectFullDomainArray(Elev2Descript, packOne, unpackOne)
-         CALL collectFullDomainArray(VelDescript, packTwo, unpackTwo)
+         CALL collectFullDomainArray(HotstartVelDescript, packTwo, unpackTwo)
          IF (IM.eq.10) THEN
             CALL collectFullDomainArray(CH1Descript, packOne, unpackOne)
          ENDIF
@@ -4645,12 +4645,12 @@ C        program to exit immediately after writing the hotstart file.
                WRITE(hss % lun,REC=IHOTSTP) EtaDiscDescript % array_g(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
-            DO I=1, VelDescript % num_fd_records
-               WRITE(hss % lun,REC=IHOTSTP) VelDescript % array_g(I)
+            DO I=1, HotstartVelDescript % num_fd_records
+               WRITE(hss % lun,REC=IHOTSTP) HotstartVelDescript % array_g(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
-            DO I=1, VelDescript % num_fd_records
-               WRITE(hss % lun,REC=IHOTSTP) VelDescript % array2_g(I)
+            DO I=1, HotstartVelDescript % num_fd_records
+               WRITE(hss % lun,REC=IHOTSTP) HotstartVelDescript % array2_g(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
             IF (IM.eq.10) THEN
@@ -4682,12 +4682,12 @@ C        program to exit immediately after writing the hotstart file.
                WRITE(hss % lun,REC=IHOTSTP) EtaDiscDescript % array(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
-            DO I=1, VelDescript % num_records_this
-               WRITE(hss % lun,REC=IHOTSTP) VelDescript % array(I)
+            DO I=1, HotstartVelDescript % num_records_this
+               WRITE(hss % lun,REC=IHOTSTP) HotstartVelDescript % array(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
-           DO I=1, VelDescript % num_records_this
-               WRITE(hss % lun,REC=IHOTSTP) VelDescript % array2(I)
+           DO I=1, HotstartVelDescript % num_records_this
+               WRITE(hss % lun,REC=IHOTSTP) HotstartVelDescript % array2(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
             IF (IM.eq.10) THEN
@@ -4990,12 +4990,12 @@ C        formats) anyway.
             WRITE(hss%lun,*) i," ",EtaDiscDescript % array(I)
          ENDDO
          WRITE(hss%lun,*) "VelU:"
-         DO I=1, VelDescript % num_records_this
-            WRITE(hss%lun,*) i," ",VelDescript % array(I)
+         DO I=1, HotstartVelDescript % num_records_this
+            WRITE(hss%lun,*) i," ",HotstartVelDescript % array(I)
          ENDDO
          WRITE(hss%lun,*) "VelV:"
-         DO I=1, VelDescript % num_records_this
-            WRITE(hss%lun,*) i," ",VelDescript % array2(I)
+         DO I=1, HotstartVelDescript % num_records_this
+            WRITE(hss%lun,*) i," ",HotstartVelDescript % array2(I)
          ENDDO
          IF (IM.eq.10) THEN
             WRITE(hss%lun,*) "CH1:"
@@ -5054,12 +5054,12 @@ C
                WRITE(hss%lun,*) i," ",EtaDiscDescript % array_g(I)
             ENDDO
             WRITE(hss%lun,*) "VelU:"
-            DO I=1, VelDescript % num_fd_records
-               WRITE(hss%lun,*) i," ",VelDescript % array_g(I)
+            DO I=1, HotstartVelDescript % num_fd_records
+               WRITE(hss%lun,*) i," ",HotstartVelDescript % array_g(I)
             ENDDO
             WRITE(hss%lun,*) "VelV:"
-            DO I=1, VelDescript % num_fd_records
-               WRITE(hss%lun,*) i," ",VelDescript % array2_g(I)
+            DO I=1, HotstartVelDescript % num_fd_records
+               WRITE(hss%lun,*) i," ",HotstartVelDescript % array2_g(I)
             ENDDO
             IF (IM.eq.10) THEN
                WRITE(hss%lun,*) "CH1:"
@@ -5104,7 +5104,7 @@ C
 #ifdef ADCNETCDF
          IF (myProc.eq.0) THEN
             CALL writeNetCDFHotstart(hss%lun, Elev1Descript,
-     &         Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
+     &         Elev2Descript, HotstartVelDescript, CH1Descript, EtaDiscDescript,
      &         NodeCodeDescript, NOFFDescript, TimeLoc, it)
             IF ((IHARIND.eq.1).and.(IT.gt.ITHAS)) THEN
                CALL writeNetCDFHotstartHarmonic(hss%lun,
