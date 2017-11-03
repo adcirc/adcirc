@@ -2,11 +2,12 @@
 #                 CMake Build File for ADCIRC(+SWAN)
 #
 #    Written By: Zach Cobell
+#    HPX stuff: Zach Byerly
 #
 ###########################################################################
 #
 # The CMake build system enable ADCIRC (and SWAN) to be deployed and built
-# in a cross platform environment. 
+# in a cross platform environment.
 #
 ###########################################################################
 
@@ -37,7 +38,7 @@ PROJECT(adcirc_model)
 
 ###########################################################################
 #...Perl
-#   Perl is required to use SWAN since it generates the source files. 
+#   Perl is required to use SWAN since it generates the source files.
 #   All SWAN options will be disabled if perl cannot be found. The user
 #   is given a chance to specify its location
 FIND_PROGRAM(PERL perl)
@@ -75,6 +76,9 @@ INCLUDE(${CMAKE_SOURCE_DIR}/cmake/options_select.cmake)
 #...Translate the selected options list into compiler flags
 INCLUDE(${CMAKE_SOURCE_DIR}/cmake/options_flags.cmake)
 
+#...See if we are using HPX
+INCLUDE(${CMAKE_SOURCE_DIR}/cmake/hpx.cmake)
+
 #...Ensure that the netCDF libraries are working
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 INCLUDE(${CMAKE_SOURCE_DIR}/cmake/netcdf_check.cmake)
@@ -90,6 +94,9 @@ INCLUDE(${CMAKE_SOURCE_DIR}/cmake/mkdir.cmake)
 
 #...Build ADCIRC
 INCLUDE(${CMAKE_SOURCE_DIR}/cmake/adcirc.cmake)
+
+#...Build HPXADCIRC
+INCLUDE(${CMAKE_SOURCE_DIR}/cmake/hpxadcirc.cmake)
 
 #...Build METIS
 INCLUDE(${CMAKE_SOURCE_DIR}/cmake/metis.cmake)
