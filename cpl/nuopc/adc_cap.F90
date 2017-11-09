@@ -238,6 +238,10 @@ module adc_cap
   logical, save            :: first_exchange = .true.
   integer, save            :: iunit_log = 10000
 
+
+  real,parameter :: wave_force_limmit = 0.05
+
+
   !-----------------------------------------------------------------------------
   contains
   !-----------------------------------------------------------------------------
@@ -1103,6 +1107,7 @@ module adc_cap
         !call ESMF_TimeSet(BeforeCaribbeanTime, yy=2008, mm=9, dd=6 , h=12, m=0, s=0, rc=rc)
         !call ESMF_TimeSet(AfterCaribbeanTime , yy=2008, mm=9, dd=12, h=12, m=0, s=0, rc=rc)
 
+!!!!#ifdef NO_COMPILE00000
         !-----------------------
    !     if ((currTime > BeforeCaribbeanTime) .and. (currTime < AfterCaribbeanTime)) then
             write(info,*) subname, 'in cap after maxval(RSNX2)', maxval(RSNX2)
@@ -1111,10 +1116,20 @@ module adc_cap
             write(info,*) subname, 'in cap after maxval(RSNY2)', maxval(RSNY2)
             call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
 
-            print *, 'Hard Coded >>>>>>>>>>>  where(abs(RSNX2).gt. 0.01) RSNX2 =  0.01'
-            where(abs(RSNX2).gt. 0.01) RSNX2 =  0.01
-            where(abs(RSNY2).gt. 0.01) RSNY2 =  0.01
-    !    endif
+            !print *, 'Hard Coded >>>>>>>>>>>  where(abs(RSNX2).gt. wave_force_limmit) RSNX2 =  wave_force_limmit'
+            !write(info,*) subname,'Hard Coded >>>>>>>>>>>  where(abs(RSNX2).gt. wave_force_limmit) RSNX2 =  wave_force_limmit'
+            !call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
+
+            !where(RSNX2.gt. wave_force_limmit) RSNX2 =  wave_force_limmit
+            !where(RSNY2.gt. wave_force_limmit) RSNY2 =  wave_force_limmit
+
+            !where(RSNX2.le. (-1.0 * wave_force_limmit)) RSNX2 =  -1.0 * wave_force_limmit
+            !where(RSNY2.le. (-1.0 * wave_force_limmit)) RSNY2 =  -1.0 * wave_force_limmit
+
+!!!!#endif
+
+    !        endif
+
     else
         NUOPC4WAV = .false.
         write(info,*) subname,' --- no wave forcing exchange / waves are not all connected --- '

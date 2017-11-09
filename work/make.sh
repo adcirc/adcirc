@@ -26,7 +26,7 @@ make adcprep
 #make punswan
 #make hstime
 #make adccmp
-#make aswip
+make aswip
 #make adcpost
 #make adcprep_be
 #make adcswan
@@ -41,7 +41,7 @@ make adcprep
 mkdir -p util
 cd ../util/estofs_tide_fac/
 make
-cp -f  estofs_tide_fac ../../work/util/.
+cp -f  estofs_tide_fac ../../work/util/tidefac
 
 
 

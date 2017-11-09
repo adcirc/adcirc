@@ -1,88 +1,32 @@
-CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-C                                                                             C
-C Program Name: estofs_tide_fac.f                                             C
-C                                                                             C
-C Technical Contact(s): Name: Yuji Funakoshi       Org: NOS/OCS/CSDL/MMAP     C
-C                       Phone: 301-7132809 ext.113                            C
-C                       E-Mail: yuji.funakoshi@noaa.gov                       C
-C                                                                             C
-C Abstract:                                                                   C
-C This program is used to calculating Nodal factors and equilibrium arguments C
-C                                                                             C
-C Usage: ./estofs_tide_fac < tide_fac.ctl                                     C
-C                                                                             C
-C Language: (ex. Fortran 90)                                                  C
-C                                                                             C
-C Compiling/Linking Syntax: gmake -f makefile                                 C
-C                                                                             C
-C Target Computer: CIRRUS/STRATUS at NCEP                                     C
-C                                                                             C
-C Estimated Execution Time: < 10 seconds                                      C
-C                                                                             C
-C Suboutines/Functions Called:                                                C
-C Unit No.   Name       Directory Location         Description                C
-C                                                                             C
-C Input Files:                                                                C
-C Unit No.   Name       Directory Location         Description                C
-C fort.5     tide_fac   /work                      tide_face control file     C
-C            .ctl                                                             C
-C                                                                             C
-C Output Files:                                                               C
-C Unit No.   Name       Directory Location         Description                C
-C fort.51    estofs_modID /work                    nodal factors and          C
-C            nod_equi                              equilibrium arguments      C
-C                                                                             C
-C Input Parameters in tide_fac.ctl:                                           C
-C output_file  : Output file                                                  C        
-C run_day      : Simulation period (assuming 365 days)                        C
-C cycle        : Hour of tidal spin-up run start                              C
-C dd           : Day of tidal spin-up run start                               C
-C mm           : Month of tidal spin-up run start                             C
-C yyyy         : Year of tidal spin-up run start                              C
-C                                                                             C
-C Libraries Used: see the makefile                                            C
-C                                                                             C
-C Author Name: Yuji Funakoshi                      Creation Date: Dec, 2011   C
-C                                                                             C
-C Revisions:                                                                  C
-C Date               Author                        Description                C
-C                                                                             C
-C Remarks:                                                                    C
-C Original code came from ADCIRC tide_fac.f                                   C
-C                                                                             C
-CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 C PROGRAM TO COMPUTE NODAL FACTORS AND EQUILIBRIUM ARGUEMENTS
-C FOR THE OPERATIONAL ESTOFS 8 BODY AND 11 BOUNDARY
 C
 C
       PARAMETER(NCNST=37)
 
       CHARACTER CNAME(NCNST)*8
-      CHARACTER*25 OUTFILE
       COMMON /CNSNAM/ CNAME
-      REAL RNDAY, DAYINCREMENT
       REAL NODFAC,MONTH
       DIMENSION NCON(NCNST)
       COMMON /CNST/ NODFAC(NCNST),GRTERM(NCNST),SPEED(NCNST),P(NCNST)
 
-C      WRITE(*,*) 'ENTER LENGTH OF RUN TIME (DAYS)', XDAYS
-C      WRITE(*,*)' ENTER START TIME - BHR,IDAY,IMO,IYR (IYR e.g. 1992)'
-      READ(*,*) OUTFILE
-      OPEN(51,FILE=trim(OUTFILE))
+      OPEN(UNIT=11,FILE='tide_fac.out',STATUS='UNKNOWN')
+
+      WRITE(*,*) 'ENTER LENGTH OF RUN TIME (DAYS)'
       READ(*,*) XDAYS
-      READ(*,*) BHR, IDAY, IMO, IYR 
       RHRS=XDAYS*24.
+
+      WRITE(*,*)' ENTER START TIME - BHR,IDAY,IMO,IYR (IYR e.g. 1992)'
+      READ(*,*) BHR,IDAY,IMO,IYR
       YR=IYR
       MONTH=IMO
       DAY=IDAY
       HRM=BHR+RHRS/2.
-      WRITE(51,2000) BHR,IDAY,IMO,IYR
-2000  FORMAT(F5.2,I3,I3,I5)
+      WRITE(11,10) BHR,IDAY,IMO,IYR
       WRITE(*,10) BHR,IDAY,IMO,IYR
-  10  FORMAT(' TIDAL FACTORS STARTING: ', 
+  10  FORMAT(' TIDAL FACTORS STARTING: ',
      &       ' HR-',F5.2,',  DAY-',I3,',  MONTH-',I3,'  YEAR-',I5,/)
       WRITE(*,11) XDAYS
-C      WRITE(51,11) XDAYS
+      WRITE(11,11) XDAYS
   11  FORMAT(' FOR A RUN LASTING ',F8.2,' DAYS',//)
 
 C-- DETERMINE THE JULIAN TIME AT BEGINNING AND MIDDLE OF RECORD
@@ -94,35 +38,38 @@ C-- DETERMINE NODE FACTORS AT MIDDLE OF RECORD
 C-- DETERMINE GREENWICH EQUIL. TERMS AT BEGINNING OF RECORD
       CALL GTERMS(YR,DAYJ,BHR,DAYJ,HRM)
 
-      NUMCON=10
+      NUMCON=13
       NCON(1)=4
       NCON(2)=6
       NCON(3)=30
       NCON(4)=26
-      NCON(5)=1
-      NCON(6)=2
-      NCON(7)=3
+      NCON(5)=3
+      NCON(6)=1
+      NCON(7)=2
       NCON(8)=35
       NCON(9)=24
       NCON(10)=20
+      NCON(11)=5
+      NCON(12)=37
+      NCON(13)=10
 
-C      WRITE(51,*) 'CONST   NODE     EQ ARG (ref GM)'
-C      WRITE(51,1300)
-C 1300 FORMAT(' NAME   FACTOR    (DEG) ',//)
+      WRITE(11,*) 'CONST   NODE     EQ ARG (ref GM)'
+      WRITE(11,1300)
+ 1300 FORMAT(' NAME   FACTOR    (DEG) ',//)
 
       DO 20 NC=1,NUMCON
         IC=NCON(NC)
 
 C EQUILIBRIUM ARGUEMENT IS REFERENCED TO THE GRENWICH MERIDIAN
 
-        WRITE(51,2001) CNAME(IC),NODFAC(IC),GRTERM(IC)
- 2001   FORMAT(1X,A4,2X,F7.5,4X,F7.2,2X,F7.4)
+        WRITE(11,2001) CNAME(IC),NODFAC(IC),GRTERM(IC)
+ 2001   FORMAT(1X,A4,2x,F7.5,4x,F7.2,2x,F7.4)
    20   CONTINUE
 
       STOP
       END
 
- 
+
 
       SUBROUTINE NFACS(YR,DAYJ,HR)
 
@@ -418,4 +365,5 @@ C
     1 DAYS(I)=DAYT(I)+DINC
       DAYJUL=DAYS(IFIX(XMONTH))+DAY
       END
+
 
