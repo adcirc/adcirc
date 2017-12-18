@@ -657,6 +657,7 @@ C----------------------------------------------------------------------
       real(sz) :: windy ! wind vel (m/s) in y-dir
 
       real(sz) :: prdiff
+      real(sz) :: vortexPRDIFF
       real(sz) :: wDragCo
       real(sz) :: windMag
       real(sz) :: wtratio ! used to time interpolated between met datasets
@@ -1224,7 +1225,9 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
             WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PR2(I) = RampMete*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                          -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
             WVNXOUT(I)=RampMete*WINDX
             WVNYOUT(I)=RampMete*WINDY
             ! compute wind stress due to vortex met at this node
@@ -1246,8 +1249,9 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
      &               +(1.0d0-bf)*WSX2(I)
             WSY2(I) = bf*RampMete*0.001293d0*WDragCo*WindY*WindMag
      &               +(1.0d0-bf)*WSY2(I)
-            PR2(I)= bf*RampMete*vortexPRN2(I)
-     &               +(1.0d0-bf)*PRN2(I)
+            vortexPRDIFF = RampMete*(vortexPRN2(I)-PRBCKGRND_MH2O)
+            vortexPRN2(I) = PRBCKGRND_MH2O + vortexPRDIFF
+            PR2(I)= bf*vortexPRN2(I)+(1.0d0-bf)*PR2(I)
             WVNXOUT(I)=bf*RampMete*WindX+(1.0d0-bf)*WVNXOUT(I)
             WVNYOUT(I)=bf*RampMete*WindY+(1.0d0-bf)*WVNYOUT(I)
          END DO
