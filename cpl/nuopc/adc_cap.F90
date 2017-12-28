@@ -21,8 +21,8 @@
 !!
 !! The code and documentation is based on work by Fei Liu (fei.liu@gmail.com)
 !! and Rocky Dunlap (rocky.dunlap@noaa.gov) [Link1]
-!! (https://esgf.esrl.noaa.gov/projects/couplednems/cice_cap) and
-!! [Link2](http://earthsystemmodeling.org/nuopc/caps/cice/) .
+!! (https://esgf.esrl.noaa.gov/projects/couplednems/ADCIRC_cap) and
+!! [Link2](http://earthsystemmodeling.org/nuopc/caps/ADCIRC/) .
 
 !! @subsection CapSubroutines Cap Subroutines
 !!
@@ -31,14 +31,14 @@
 !! initialization, run, or finalize part of the coupled system run.
 !!
 !!
-!! Phase    | CICE Cap Subroutine                                                |  Description
+!! Phase    | ADCIRC Cap Subroutine                                                |  Description
 !! ---------|--------------------------------------------------------------------|-------------------------------------------------------------
-!! Init     | [InitializeP0] (@ref cice_cap_mod::initializep0)                   | Sets the Initialize Phase Definition (IPD) version to use
-!! Init     | [InitializeAdvertise] (@ref cice_cap_mod::initializeadvertise)     | Advertises standard names of import and export fields
-!! Init     | [InitializeRealize] (@ref cice_cap_mod::initializerealize)         | Creates an ESMF_Grid for the CICE grid as well as ESMF_Fields for import and export fields
-!! Init     | [SetClock] (@ref cice_cap_mod::setclock)                           | Before the run, sets up the timestep interval
-!! Run      | [ModelAdvance_Slow] (@ref cice_cap_mod::modeladvance_slow)         | Advances the model by a timestep by calling CICE_Run
-!! Final    | [CICE_Model_Finalize] (@ref cice_cap_mod::cice_model_finalize)     | Cleans up by calling CICE_Finalize
+!! Init     | [InitializeP0] (@ref ADCIRC_cap_mod::initializep0)                   | Sets the Initialize Phase Definition (IPD) version to use
+!! Init     | [InitializeAdvertise] (@ref ADCIRC_cap_mod::initializeadvertise)     | Advertises standard names of import and export fields
+!! Init     | [InitializeRealize] (@ref ADCIRC_cap_mod::initializerealize)         | Creates an ESMF_Grid for the ADCIRC grid as well as ESMF_Fields for import and export fields
+!! Init     | [SetClock] (@ref ADCIRC_cap_mod::setclock)                           | Before the run, sets up the timestep interval
+!! Run      | [ModelAdvance_Slow] (@ref ADCIRC_cap_mod::modeladvance_slow)         | Advances the model by a timestep by calling ADCIRC_Run
+!! Final    | [ADCIRC_Model_Finalize] (@ref ADCIRC_cap_mod::ADCIRC_model_finalize)     | Cleans up by calling ADCIRC_Finalize
 !!
 !! @subsection DomainCreation Domain Creation
 !!
@@ -85,7 +85,7 @@
 !! ADCIRC timestepping loop has been >>>>>>> disabled or not <<<<<< when using
 !! the NUOPC cap since the
 !! main driver loop is provided by the NUOPC infrastructure at a level above
-!! the ADCIRC model.  Therefore, a call into `CICE_Run()` will only advance the
+!! the ADCIRC model.  Therefore, a call into `ADCIRC_Run()` will only advance the
 !! ADCIRC model by a single time step or number of time steps for one couling period.
 !!
 !! @subsection Finalization Finalization
@@ -769,7 +769,7 @@ module adc_cap
 
 !  end subroutine
   !-----------------------------------------------------------------------------
-  ! From CICE model uses same clock as parent gridComp
+  ! From ADCIRC model uses same clock as parent gridComp
 !  subroutine SetClock_not_active(model, rc)
 !    type(ESMF_GridComp)  :: model
 !    integer, intent(out) :: rc
@@ -789,7 +789,7 @@ module adc_cap
 !      return  ! bail out
 
     !call ESMF_TimeIntervalSet(ADCTimeStep, s=     adc_cpl_int, sN=adc_cpl_num, sD=adc_cpl_den, rc=rc) ! 5 minute steps
-    ! tcraig: dt is the cice thermodynamic timestep in seconds
+    ! tcraig: dt is the ADCIRC thermodynamic timestep in seconds
 !   call ESMF_TimeIntervalSet(timestep, s=adc_cpl_int, rc=rc)
 !    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
 !      line=__LINE__, &
