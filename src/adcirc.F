@@ -301,6 +301,22 @@ C
 C     jgf51.21.24: Initialize output.
       call initOutput2D(timeloc)
 
+C...************* Make the L_N Tidal potential multiple function *************
+C... WJP: Feb 21 2018
+C...
+      IF (CTIP) THEN
+
+         DO I = 1,NP
+C           LONG-TERM SPECIES
+            L_N(0,I) = 3d0*SIN(SFEA(I))*SIN(SFEA(I)) - 1d0 
+C           DIURNAL SPECIES
+            L_N(1,I) = SIN(2d0*SFEA(I))
+C           SEMIDIURNAL SPECIES
+            L_N(2,I) = COS(SFEA(I))*COS(SFEA(I))
+         END DO
+
+      ENDIF
+
 C...
 C...************* SET FLAGS AND COEFFICIENTS USED IN TIME STEPPING ***********
 C...

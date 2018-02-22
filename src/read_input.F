@@ -2817,7 +2817,11 @@ C...  LINES TO USE EARTH LOAD/SELF-ATTRACTION PART OF TIDAL POTENTIAL FORCING
 
       CALL ALLOC_MAIN4b()
       IF(NTIP.EQ.2) THEN
-         OPEN(24,FILE='fort.24')
+         !WJP 02.21.2018 Making fort.24 for SAL usable in parallel
+         CALL openFileForRead(24,TRIM(INPUTDIR)//'/'//'fort.24',ios)
+         IF (ios.gt.0) THEN
+            CALL ADCIRC_Terminate()
+         ENDIF
          DO I=1,NTIF
             READ(24,9930)
  9930       FORMAT(///)

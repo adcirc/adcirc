@@ -355,6 +355,7 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE, TARGET ::   DUU1(:),DUV1(:),DVV1(:)
       REAL(SZ),ALLOCATABLE, TARGET ::   BSX1(:),BSY1(:)
       REAL(SZ),ALLOCATABLE ::   TIP1(:),TIP2(:)
+      REAL(SZ),ALLOCATABLE ::   L_N(:,:)    ! WJP The array for TIP multiplier
       REAL(SZ),ALLOCATABLE ::   SALTAMP(:,:),SALTPHA(:,:)
       REAL(SZ),ALLOCATABLE ::   OBCCOEF(:,:),COEF(:,:)
       REAL(SZ),ALLOCATABLE ::   COEFD(:) !jgf48.4619 from Seizo (Lumped GWCE)
@@ -1211,7 +1212,7 @@ C
       ALLOCATE ( TIPOTAG(MNTIF) )
 
       IF ( CTIP ) THEN
-         ALLOCATE( TIP1(MNP),TIP2(MNP))
+         ALLOCATE( TIP1(MNP),TIP2(MNP),L_N(0:2,MNP))
       ENDIF
 C
       RETURN

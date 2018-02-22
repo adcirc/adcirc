@@ -4273,12 +4273,14 @@ C compute coriolis
 
         PRESS(I)=(cpress+(centralPressureDeficit)*
      &        EXP(-(RMW*1000.d0/RAD(I))**B)) / (RHOWAT0*G)
+C
+C       WJP: added absolute around CORIOLIS for Southern Hempisphere
          V_r(I) = sqrt(
      &        (RMW*1000.d0/RAD(I))**B *
      &        EXP(1.d0-(RMW*1000.d0/RAD(I))**B)*spd**2.d0
      &        + (RAD(I)**2.d0)*(CORIOLIS**2.d0)/4.d0
-     &        )
-     &        - RAD(I)*CORIOLIS/2.d0
+     &        ) 
+     &        - RAD(I)*ABS(CORIOLIS)/2.d0
 C
 C     jgf46.31 Determine translation speed that should be added to final
 C     storm wind speed. This is tapered to zero as the storm wind tapers

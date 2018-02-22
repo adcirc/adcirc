@@ -3974,7 +3974,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDDO
 
-            IF(NHASE.EQ.1) THEN
+            IF(NHASE.ne.0) THEN
                DO J=1,INSTAE
                   DO I=1,IMM
                      IHOTSTP=IHOTSTP+1
@@ -3983,7 +3983,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHASV.EQ.1) THEN
+            IF(NHASV.ne.0) THEN
                DO J=1,INSTAV
                   DO I=1,IMM
                      READ(IHOT,REC=IHOTSTP+1) STAULV(I,J)
@@ -3993,7 +3993,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHAGE.EQ.1) THEN
+            IF(NHAGE.ne.0) THEN
                DO J=1,INP
                   DO I=1,IMM
                      IHOTSTP=IHOTSTP+1
@@ -4002,7 +4002,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHAGV.EQ.1) THEN
+            IF(NHAGV.ne.0) THEN
                DO J=1,INP
                   DO I=1,IMM
                      READ(IHOT,REC=IHOTSTP+1) GLOULV(I,J)
@@ -4438,7 +4438,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDDO
 
-            IF(NHASE.EQ.1) THEN
+            IF(NHASE.ne.0) THEN
                DO J=1,INSTAE
                   DO I=1,IMM
                      READ(IHOT,REC=IHOTSTP) STAELV(I,J)
@@ -4447,7 +4447,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHASV.EQ.1) THEN
+            IF(NHASV.ne.0) THEN
                DO J=1,INSTAV
                   DO I=1,IMM
                      READ(IHOT,REC=IHOTSTP) STAULV(I,J)
@@ -4458,7 +4458,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHAGE.EQ.1) THEN
+            IF(NHAGE.ne.0) THEN
                DO J=1,INP
                   DO I=1,IMM
                      READ(IHOT,REC=IHOTSTP) GLOELV(I,J)
@@ -4467,7 +4467,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHAGV.EQ.1) THEN
+            IF(NHAGV.ne.0) THEN
                DO J=1,INP
                   DO I=1,IMM
                      READ(IHOT,REC=IHOTSTP) GLOULV(I,J)
@@ -5157,7 +5157,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDDO
 
-            IF(NHASE.EQ.1) THEN
+            IF(NHASE.ne.0) THEN
                DO J=1,INSTAE
                   DO I=1,IMM
                      WRITE(IHOT,REC=IHOTSTP) STAELV(I,J)
@@ -5166,7 +5166,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHASV.EQ.1) THEN
+            IF(NHASV.ne.0) THEN
                DO J=1,INSTAV
                   DO I=1,IMM
                      WRITE(IHOT,REC=IHOTSTP) STAULV(I,J)
@@ -5177,7 +5177,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHAGE.EQ.1) THEN
+            IF(NHAGE.ne.0) THEN
                DO J=1,INP
                   DO I=1,IMM
                      WRITE(IHOT,REC=IHOTSTP) GLOELV(I,J)
@@ -5186,7 +5186,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHAGV.EQ.1) THEN
+            IF(NHAGV.ne.0) THEN
                DO J=1,INP
                   DO I=1,IMM
                      WRITE(IHOT,REC=IHOTSTP) GLOULV(I,J)
@@ -6921,7 +6921,7 @@ C---------------------------------------------------------------------------
 #ifdef ADCNETCDF
       use sizes, only : ASCII, XDMF, myproc
       USE PRESIZES, ONLY: NM, MNTIF, MNE, MNP
-      USE HARM, ONLY : IHARIND, CHARMV
+      USE HARM, ONLY : IHARIND, CHARMV, NHASE, NHASV, NHAGE, NHAGV
       USE VERSION
       USE PRE_GLOBAL, ONLY: NSTAE, NOUTE, RUNDES, RUNID, AGRID,
      &    DTDP, TAU0, STATIM, REFTIM, RNDAY, DRAMP, A00, B00, C00,
@@ -6929,7 +6929,7 @@ C---------------------------------------------------------------------------
      &    SLEL, SFEL, ICS, NT, NTRSPE, IHOT, NOLIBF, NOLIFA, IM,
      &    XEV,YEV,XEM,YEM,XEL,YEL,X,Y,NELG,DT, NTIF, NODECODE,
      &    NOLICA, NOLICAT, NWP, NCOR, NTIP, NWS, NRS, NRAMP, NBFR,
-     &    NHY, NOPE, NETA, NBOU, NVEL, G, SL1, SF1,
+     &    NHARFR, NHY, NOPE, NETA, NBOU, NVEL, G, SL1, SF1,
      &    NVDLL, NVELL, IBTYPE, IBTYPEE,
      &    NSTAV, NOUTV, SLEV, SFEV, NTRSPV,
      &    NSTAM, NOUTM, SLEM, SFEM, NTRSPM,
@@ -6971,6 +6971,11 @@ C     The initialization of the output data descriptors for each ADCIRC
 C     output file had to be cut and pasted from write_output.F. At some
 C     point in the future, adcprep will be part of adcirc, making this
 C     unfortunate cut-and-paste duplication unnecessary.
+      !WJP 02.20.2018 Adding capability for fort.51-54
+      type(OutputDataDescript_t), SAVE :: HaElevStaDescript  ! fort.51
+      type(OutputDataDescript_t), SAVE :: HaVelStaDescript   ! fort.52
+      type(OutputDataDescript_t), SAVE :: HaElevDescript     ! fort.53
+      type(OutputDataDescript_t), SAVE :: HaVelDescript      ! fort.54
       type(OutputDataDescript_t), SAVE :: ElevStaDescript    ! fort.61
       type(OutputDataDescript_t), SAVE :: VelStaDescript     ! fort.62
       type(OutputDataDescript_t), SAVE :: ElevDescript       ! fort.63
@@ -7069,6 +7074,81 @@ C     for hotstart harmoinc analysis means and variance calculations
 C
       INTEGER numHotstartWrites ! number writes to hot start files
       INTEGER nextLun           ! next LUN to write to, after initial write
+C     
+      !WJP 02.20.2018 Adding capability for fort.51-54
+C     fort.51
+      HaElevStaDescript % specifier            = NHASE
+      HaElevStaDescript % lun                  = 51
+      HaElevStaDescript % initial_value        = 0.0
+      HaElevStaDescript % num_items_per_record = NHARFR
+      HaElevStaDescript % num_fd_records       = NSTAE
+      HaElevStaDescript % num_records_this     = NSTAE
+      HaElevStaDescript % ConsiderWetDry       = .TRUE.
+      HaElevStaDescript % alternate_value      = -99999.0
+      HaElevStaDescript % field_name           = 'HaElevSta'
+      IF (ICS.eq.2) THEN
+         HaElevStaDescript % x_coord           => SLEL
+         HaElevStaDescript % y_coord           => SFEL
+      ELSE
+         HaElevStaDescript % x_coord           => XEL
+         HaElevStaDescript % y_coord           => YEL
+      ENDIF
+      HaElevStaDescript % file_extension       = 51
+      HaElevStaDescript % file_basename        = 'fort'
+      HaElevStaDescript % readMaxMin           = .false.
+      call makeFileName(HaElevStaDescript)
+C
+C     fort.52
+      HaVelStaDescript % specifier            = NHASV
+      HaVelStaDescript % lun                  = 52
+      HaVelStaDescript % initial_value        = 0.0
+      HaVelStaDescript % num_items_per_record = NHARFR
+      HaVelStaDescript % num_fd_records       = NSTAV
+      HaVelStaDescript % num_records_this     = NSTAV
+      HaVelStaDescript % ConsiderWetDry       = .FALSE.
+      HaVelStaDescript % alternate_value      = 0.0
+      HaVelStaDescript % field_name           = 'HaVelSta'
+      IF (ICS.eq.2) THEN
+         HaVelStaDescript % x_coord           => SLEV
+         HaVelStaDescript % y_coord           => SFEV
+      ELSE
+         HaVelStaDescript % x_coord           => XEV
+         HaVelStaDescript % y_coord           => YEV
+      ENDIF
+      HaVelStaDescript % file_extension       = 52
+      HaVelStaDescript % file_basename        = 'fort'
+      HaVelStaDescript % readMaxMin           = .false.
+      call makeFileName(HaVelStaDescript)
+C
+C     fort.53
+      HaElevDescript % specifier            = NHAGE
+      HaElevDescript % lun                  = 53
+      HaElevDescript % initial_value        = 0.0
+      HaElevDescript % num_items_per_record = NHARFR
+      HaElevDescript % num_fd_records       = MNP
+      HaElevDescript % num_records_this     = MNP
+      HaElevDescript % ConsiderWetDry       = .TRUE.
+      HaElevDescript % alternate_value      = -99999.0
+      HaElevDescript % field_name           = 'HaElev'
+      HaElevDescript % file_extension       = 53 
+      HaElevDescript % file_basename        = 'fort'
+      HaElevDescript % readMaxMin           = .false.
+      call makeFileName(HaElevDescript)
+C
+C     fort.54
+      HaVelDescript % specifier            = NHAGV
+      HaVelDescript % lun                  = 54
+      HaVelDescript % initial_value        = 0.0
+      HaVelDescript % num_items_per_record = NHARFR
+      HaVelDescript % num_fd_records       = MNP
+      HaVelDescript % num_records_this     = MNP
+      HaVelDescript % ConsiderWetDry       = .FALSE.
+      HaVelDescript % alternate_value      = 0.0
+      HaVelDescript % field_name           = 'HaVel'
+      HaVelDescript % file_extension       = 54 
+      HaVelDescript % file_basename        = 'fort'
+      HaVelDescript % readMaxMin           = .false.
+      call makeFileName(HaVelDescript)
 C
 C     fort.61
       ElevStaDescript % specifier            = NOUTE
@@ -8049,6 +8129,11 @@ C
 C     Create NetCDF output files for those output files where NetCDF
 C     was specified.
       reterr = .false.
+      !WJP 02.20.2018 Adding capability for fort.51-54
+      CALL initNetCDFOutputFile(HaElevStaDescript, reterr)
+      CALL initNetCDFOutputFile(HaVelStaDescript, reterr)
+      CALL initNetCDFOutputFile(HaElevDescript, reterr)
+      CALL initNetCDFOutputFile(HaVelDescript, reterr)
       CALL initNetCDFOutputFile(ElevStaDescript, reterr)
       CALL initNetCDFOutputFile(VelStaDescript, reterr)
       CALL initNetCDFOutputFile(ElevDescript, reterr)

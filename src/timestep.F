@@ -60,7 +60,7 @@ C
      &    WVNXOUT, WVNYOUT, WarnElev, PERT, FACET, FFT, AMIGT, SALTPHA,
      &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF, 
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
-     &    BCFLAG_LNM, usingWaterLevelOffset, offset1, offset2
+     &    BCFLAG_LNM, usingWaterLevelOffset, offset1, offset2, L_N
 #ifdef CSWAN
      &  , waveWindMultiplier
 #endif
@@ -699,8 +699,10 @@ C...  Tidal Potential Forcing
 C...  Note, the Earth tide potential reduction factor, ETRF(J) has been
 C...        incorporated into this calculation.
 C...
+C...  WJP 02.21.2018 Rewriting for general formula for all species,
+C     cleaner code, and correct identification of 0,1,2 or higher species
       IF(CTIP) THEN
-         DO J=1,NTIF
+         TIPLOOP: DO J=1,NTIF
             IF(PERT(J).EQ.0.) THEN
                NCYC=0
             ELSE
@@ -710,39 +712,26 @@ C...
                NCYC=INT(timeh/PERT(J))
 #endif
             ENDIF
+
             ARGT=AMIGT(J)*(timeh-NCYC*PERT(J))+FACET(J)
             TPMUL=RampTip*ETRF(J)*TPK(J)*FFT(J)
             SALTMUL=RampTip*FFT(J)
-
+C           WJP: We actually want to compare against diurnal and get 0,1,2
+C           or higher species (was opposite beforehand)
 #ifdef IBM
-            NA=NINT(0.00014/AMIGT(J),KIND(0.0d0))
+            NA = MIN(NINT(AMIGT(J)/7d-5,KIND(0.0d0)),2)
 #else
-            NA=NINT(0.00014/AMIGT(J))
+            NA = MIN(NINT(AMIGT(J)/7d-5),2)
 #endif
-            IF(NA.EQ.1) THEN    !SEMI-DIURNAL SPECIES
-               DO I=1,NP
-                  ARGTP=ARGT+2.d0*SLAM(I)
-                  ARGSALT=ARGT-SALTPHA(J,I)
-                  CCSFEA=COS(SFEA(I))
-                  CCSFEA=CCSFEA*CCSFEA
-                  TIP2(I)=TIP2(I)+TPMUL*CCSFEA*COS(ARGTP)
-     &                 +SALTMUL*SALTAMP(J,I)*COS(ARGSALT)
-               END DO
-            ENDIF
-            IF(NA.EQ.2) THEN    !DIURNAL SPECIES
-               DO I=1,NP
-                  ARGTP=ARGT+SLAM(I)
-                  ARGSALT=ARGT-SALTPHA(J,I)
-#ifdef REAL4
-                  S2SFEA=SIN(2.e0*SFEA(I))
-#else
-                  S2SFEA=SIN(2.d0*SFEA(I))
-#endif
-                  TIP2(I)=TIP2(I)+TPMUL*S2SFEA*COS(ARGTP)
-     &                 +SALTMUL*SALTAMP(J,I)*COS(ARGSALT)
-               END DO
-            ENDIF
-         END DO
+C           WJP: Rewritten so that we have a general formula for all
+C           species
+            DO I = 1,NP
+                ARGTP   = ARGT + NA*SLAM(I)
+                ARGSALT = ARGT - SALTPHA(J,I)
+                TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
+     &                  + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
+            ENDDO
+         ENDDO TIPLOOP
       ENDIF
 
 C...
