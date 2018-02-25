@@ -488,14 +488,14 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
             ENDDO
             IF (DIE) THEN
                ! jgfdebug
-               open(899,file='debug.txt',status='replace',action='write')
                   do i=1,np
                      if (coef(i,1).lt.0.d0) then
                         do j=2,nneighele(i)
                            if (neitabele(i,j).ne.0) then
-                              write(6,
+                              write(scratchMessage,
      & '("Node ",i0," element ",i0," area=",f15.7)') i, j, 
      &  areas(neitabele(i,j))
+                              call allMessage(ERROR,scratchMessage)
                            endif
                         enddo
                      endif

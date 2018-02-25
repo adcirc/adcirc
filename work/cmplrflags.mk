@@ -244,9 +244,9 @@ ifeq ($(compiler),intel)
   MSGLIBS       :=
   ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),hatteras)
-        FLIBS       := $(FLIBS) -L/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3/lib -lnetcdff -lnetcdf
-        NETCDFHOME    :=/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3
-        FFLAGS1       :=$(FFLAGS1) -I/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3/include
+        NETCDFHOME  :=/usr/share/Modules/software/CentOS-7/netcdf-Fortran/4.4.0_intel-18.0.0
+        FLIBS       := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
+        FFLAGS1     :=$(FFLAGS1) -I$(NETCDFHOME)/include
         FFLAGS2       :=$(FFLAGS1)
         FFLAGS3       :=$(FFLAGS1)
      endif

@@ -1724,6 +1724,7 @@ C----------------------------------------------------------------------
      &   EtaDisc
       use nodalattributes, only : loadStartDry, STARTDRY, GeoidOffset, 
      &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE !jgf47.06
+      use wetDry, only : habsmin
       implicit none
       integer :: nm1, nm2, nm3  ! node numbers around the element
       integer :: nc1, nc2, nc3  ! nodecodes around the element
@@ -1870,8 +1871,10 @@ C----------------------------------------------------------------------
          deallocate(dryReasonInitialized)
          !
          ! Finish initializing water surface elevation (eta2 and eta1)
+         ! @jasonfleming: give dry nodes an initial water depth of
+         ! habsmin (0.8*h0)
          where (nnodecode.eq.0) 
-            eta2=h0-dp
+            eta2=habsmin-dp
          end where
       endif
       eta1(:) = eta2(:) 

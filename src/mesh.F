@@ -2870,7 +2870,9 @@ C     CLOSE (333)
 C     Deallocate local work arrays
       DEALLOCATE ( ANGLE )
       DEALLOCATE ( NEITEM )
-      DEALLOCATE ( NNEIGHELE )
+      ! @jasonfleming this is needed later in gwce.F for debugging 
+      ! purposes so I commented out the deallocation.
+      !DEALLOCATE ( NNEIGHELE )
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

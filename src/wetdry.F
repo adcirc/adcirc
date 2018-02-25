@@ -122,7 +122,7 @@ CWET...
      &    bsx1, bsy1, btime_end, C2DDI, C3D, g, h0, ifnlfa, nddt,
      &    nibnodecode, ilump, ncchange
 #ifdef CMPI
-     &    ,idumy
+     &    ,idumy,dumy1
       use messenger
 #endif
       use mesh, only : ne, np, dp, mju, totalArea, nm, x, y, areas
@@ -175,7 +175,7 @@ CWET...
             IF(NODECODE(I).EQ.1) THEN
                HTOT=DP(I)+ETA2(I)
                IF(HTOT.LE.H0) THEN
-                  IF(HTOT.LT.HABSMIN) ETA2(I)=HABSMIN-DP(I)
+                  !@jasonflemingdebug IF(HTOT.LT.HABSMIN) ETA2(I)=HABSMIN-DP(I)
                   NNODECODE(I)=0
                   NODECODE(I)=0
                   NCCHANGE=NCCHANGE+1 !NCCHANGE=0 set near beginning of GWCE
@@ -214,7 +214,8 @@ CWET...
                IF((NODECODE(NM1).EQ.1).AND.(NODECODE(NM2).EQ.1)) THEN
                   IF((HTOTN1.GE.HOFF).AND.(HTOTN2.GE.HOFF)) THEN
                      NM123=NM1
-                     IF(ETA2(NM2).GT.ETA2(NM1)) NM123=NM2
+                     ! @jasonflemingdebug IF(ETA2(NM2).GT.ETA2(NM1)) NM123=NM2
+                     IF(ETA2(NM2).GT.ETA2(NM1)) NM123=NM1
                      DELDIST=SQRT((y(NM3)-y(NM123))**2.D0
      &                    +(X(NM3)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM3)
@@ -263,6 +264,7 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                      IF(VEL.GT.VELMIN) THEN
 C    ....         third node met criteria and is also wet
                         NNODECODE(NM3)=1
+                        
 c. RJW merged 08/26/20008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
 c                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
@@ -270,6 +272,7 @@ c                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+                           
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -309,7 +312,8 @@ C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      &          THEN
                   IF((HTOTN2.GE.HOFF).AND.(HTOTN3.GE.HOFF)) THEN
                      NM123=NM2
-                     IF(ETA2(NM3).GT.ETA2(NM2)) NM123=NM3
+                     !@jasonflemingdebug IF(ETA2(NM3).GT.ETA2(NM2)) NM123=NM3
+                     IF(ETA2(NM3).GT.ETA2(NM2)) NM123=NM2
                      DELDIST=SQRT((Y(NM1)-Y(NM123))**2.D0
      &                    +(X(NM1)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM1)
@@ -361,6 +365,7 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -401,7 +406,8 @@ C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      &          THEN
                   IF((HTOTN3.GE.HOFF).AND.(HTOTN1.GE.HOFF)) THEN
                      NM123=NM3
-                     IF(ETA2(NM1).GT.ETA2(NM3)) NM123=NM1
+                     !@jasonflemingdebug IF(ETA2(NM1).GT.ETA2(NM3)) NM123=NM1
+                     IF(ETA2(NM1).GT.ETA2(NM3)) NM123=NM3
                      DELDIST=SQRT((Y(NM2)-Y(NM123))**2.D0
      &                     +(X(NM2)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM2)
@@ -452,6 +458,8 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+
+
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -489,6 +497,7 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
                   ENDIF
                ENDIF
             ENDIF
+            
 CWET...
 CWET...Nodal Wetting Criteria W2a
 CWET...
@@ -1032,6 +1041,11 @@ CWET...
 CWET...
 CWET...END WET/DRY SECTION - PART 6
 CWET...
+
+         !@jasonflemingdebug IF(HTOT.LT.HABSMIN) ETA2(I)=HABSMIN-DP(I)
+         do i=1,np
+            eta2(i)=max(eta2(i),(habsmin-dp(i)))
+         end do
 
 c.....
 !-----------------------------------------------------------------------
