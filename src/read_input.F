@@ -21,7 +21,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL
       USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP,
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries, 
-     &   freeMesh
+     &   freeMesh, node_dict, find
       USE BOUNDARIES, ONLY : ANGINN, COSTSET, NETA, NVEL, NVELME, 
      &   NFLUXF, NBD, ME2GW, LBCODEI, NBV, simpleFluxBoundaries, ibtype,
      &   numSimpleFluxBoundaries
@@ -2817,19 +2817,23 @@ C...  LINES TO USE EARTH LOAD/SELF-ATTRACTION PART OF TIDAL POTENTIAL FORCING
 
       CALL ALLOC_MAIN4b()
       IF(NTIP.EQ.2) THEN
-         !WJP 02.21.2018 Making fort.24 for SAL usable in parallel
+         ! WJP 02.24.2018 reading prepped fort.24 for padcirc
+         ! OPEN(24,FILE='fort.24')
          CALL openFileForRead(24,TRIM(INPUTDIR)//'/'//'fort.24',ios)
          IF (ios.gt.0) THEN
-            CALL ADCIRC_Terminate()
+             CALL ADCIRC_Terminate()
          ENDIF
          DO I=1,NTIF
             READ(24,9930)
  9930       FORMAT(///)
             DO J=1,NP
-               READ(24,*) JJ,SALTAMP(I,JJ),SALTPHA(I,JJ)
-               SALTPHA(I,JJ)=SALTPHA(I,JJ)*DEG2RAD
+               ! WJP: mapping to local node numbers
+               READ(24,*) JJ,SALTAMP(I,find(node_dict,JJ)),
+     &                    SALTPHA(I,find(node_dict,JJ))
             END DO
          END DO
+         CLOSE(24)
+         SALTPHA = SALTPHA*DEG2RAD
       ELSE
          DO I=1,NTIF
             DO J=1,NP
@@ -2837,7 +2841,6 @@ C...  LINES TO USE EARTH LOAD/SELF-ATTRACTION PART OF TIDAL POTENTIAL FORCING
                SALTPHA(I,J)=0.d0
             END DO
          END DO
-         CLOSE(24)
       ENDIF
 C...
 C...  OUTPUT TO UNIT 16 INFORMATION ABOUT TIDAL POTENTIAL FORCING
