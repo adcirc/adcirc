@@ -60,7 +60,8 @@ C
      &    WVNXOUT, WVNYOUT, WarnElev, PERT, FACET, FFT, AMIGT, SALTPHA,
      &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF, 
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
-     &    BCFLAG_LNM, usingWaterLevelOffset, offset1, offset2, L_N
+     &    BCFLAG_LNM, usingWaterLevelOffset, offset1, offset2, L_N, TKM, 
+     &    WarnElevDump
 #ifdef CSWAN
      &  , waveWindMultiplier
 #endif
@@ -86,6 +87,7 @@ C.....sb46.28sb03 added 09/xx/2006
       USE RS2,ONLY : RS2INIT,RS2GET
       USE NodalAttributes, ONLY : 
      &     Apply2DBottomFriction,
+     &     Apply2DInternalWaveDrag,
      &     Apply3DBottomFriction
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS, 
      &    writeFort066, writeFort067, writeFort065, 
@@ -131,7 +133,6 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(SZ) :: velabs
       REAL(SZ) :: vel
       REAL(SZ) :: velmax
-      LOGICAL :: warnElevDump
       INTEGER :: errorElevExceeded
       INTEGER :: warnElevExceeded
       logical, save ::  EtaDisc_Fill = .TRUE.
@@ -261,7 +262,11 @@ C...  Wind (& wave radiation stress if used)
             WSY2(I)=0.D0
             PR1(I)=PR2(I)
             PR2(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
-         ENDIF
+         ELSE
+C WJP 02.26.2018 inserted from Dam's code    
+!c dw ------------- otherwise, tide run could fail      
+            PR2(I) = PRBCKGRND_MH2O 
+         END IF
 
 C     TIP..Tidal potential forcing
          if(CTIP) then
@@ -399,6 +404,9 @@ C
 C     2DDI.Set up the 2D friction coefficient
       if(C2DDI) then
          CALL Apply2DBottomFriction(UU1, VV1, DP, ETA2, G, IFNLFA, NP, TK)
+         ! WJP 02.24.2018 Get the wave drag coefficients
+         ! that are put into TKM (which include TK from bottom friction)
+         CALL Apply2DInternalWaveDrag(NP, TK, UU1, VV1, DP, TKM)
       endif
 C..RJW Set up the 3D friction coefficient
       if(C3D) then
