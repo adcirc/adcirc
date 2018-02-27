@@ -610,6 +610,7 @@ C
 C        Transcribe attribute names from full domain file to subdomains.
          ALLOCATE(NoOfVals(NAttr))
          ALLOCATE(AttrName(NAttr))!tgaf13mod
+         
          DO k=1, NAttr
             READ(13,'(A80)') AttrName(k)!tgaf13mod
             READ(13,'(A80)') Units
