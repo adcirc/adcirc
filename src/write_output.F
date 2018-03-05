@@ -2506,8 +2506,8 @@ C
              ENDIF
          ENDIF
 #else
-         WRITE(ScreenUnit,*) 'ERROR: NetCDF is not available.'
-         WRITE(16,*) 'ERROR: NetCDF is not available.'
+         call allMessage(ERROR,
+     &        'ERROR: You didn''t compile with NetCDF.')         
 #endif
       CASE DEFAULT
          write(scratchMessage,'(a,i0,a)')
