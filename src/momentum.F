@@ -675,7 +675,7 @@ C            AUV11(NBDI)=SIII(I)*AUV11(NBDI)
             AUV(4,NBDI) = CSII(I)
             AUV(2,NBDI) = SIII(I)
 C#endif
-            ENDIF
+         ENDIF
 
 C     Specified essential normal flow and no tangential slip
 
