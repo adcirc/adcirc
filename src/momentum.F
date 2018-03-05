@@ -649,6 +649,9 @@ C      Specified essential normal flow and free tangential slip
 
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
             VelNorm=-QN2(I)/H2
+            ! WJP: Using old formula if scalar friction
+            IF (abs(norm2(TKM(:,NBDI)) - sqrt(2d0)*TK(NBDI)).lt.
+     &          epsilon(H2)) THEN 
             ! WJP CSWAN and Non-CWSAN look identical..
 C#ifdef CSWAN
 C            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
@@ -658,22 +661,28 @@ C            MOM_LV_Y(NBDI)=VelNorm*AUV11(NBDI)*NCI   !Normal Eqn RHS
 C            AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
 C            AUV11(NBDI)=SIII(I)*AUV11(NBDI)
 C#else
-C            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
-C     &                     -CSII(I)*MOM_LV_Y(NBDI)
-C     &                     -VelNorm*AUV12(NBDI))*NCI !Tangential Eqn RHS
-C            MOM_LV_Y(NBDI)=VelNorm*AUV11(NBDI)*NCI   !Normal Eqn RHS
+               MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI)
+     &                        - CSII(I)*MOM_LV_Y(NBDI)
+     &                        - VelNorm*AUV(3,NBDI))*NCI !Tangential Eqn RHS
+               MOM_LV_Y(NBDI) = VelNorm*AUV(1,NBDI)*NCI  !Normal Eqn RHS
+               AUV(1,NBDI) = SIII(I)*AUV(1,NBDI)
+               AUV(2,NBDI) = AUV(1,NBDI)
+               AUV(3,NBDI) = -CSII(I)*AUV(1,NBDI)
+               AUV(4,NBDI) = -AUV(3,NBDI)
 C            AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
 C            AUV11(NBDI)=SIII(I)*AUV11(NBDI)
              
-            ! WJP 02.24.2018 considering the symmetric matrix
-            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
+            ! WJP 02.24.2018 considering the non-symmetrical matrix
+            ELSE
+               MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
      &                     -CSII(I)*MOM_LV_Y(NBDI)
      &                     )*NCI                      !Tangetial Eqn RHS
-            MOM_LV_Y(NBDI)=VelNorm*NCI                !Normal Eqn RHS
-            AUV(1,NBDI) = AUV(1,NBDI)*SIII(I) - AUV(4,NBDI)*CSII(I)
-            AUV(3,NBDI) = AUV(3,NBDI)*SIII(I) - AUV(2,NBDI)*CSII(I)
-            AUV(4,NBDI) = CSII(I)
-            AUV(2,NBDI) = SIII(I)
+               MOM_LV_Y(NBDI)=VelNorm*NCI                !Normal Eqn RHS
+               AUV(1,NBDI) = AUV(1,NBDI)*SIII(I) - AUV(4,NBDI)*CSII(I)
+               AUV(3,NBDI) = AUV(3,NBDI)*SIII(I) - AUV(2,NBDI)*CSII(I)
+               AUV(4,NBDI) = CSII(I)
+               AUV(2,NBDI) = SIII(I)
+            ENDIF
 C#endif
          ENDIF
 
