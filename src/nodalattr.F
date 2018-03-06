@@ -700,7 +700,7 @@ Corbitt 120321: Allow Advection to be handled locally instead of globally.
 C 02.24.2018 WJP: Add spatially varying linear internal tide friction coefficient
          CASE("internal_tide_friction")
             IF( LoadIT_Fric ) THEN
-               IT_Fric = na(i)%xdmfArray
+               IT_Fric = na(i)%xdmfMatrix
             ENDIF
          CASE DEFAULT
             scratchMessage = "Unrecognized nodal attribute : " //
