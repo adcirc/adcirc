@@ -664,17 +664,31 @@ C     &                     -VelNorm*AUV12(NBDI))*NCI !Tangential Eqn RHS
 C            MOM_LV_Y(NBDI)=VelNorm*AUV11(NBDI)*NCI   !Normal Eqn RHS
 C            AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
 C            AUV11(NBDI)=SIII(I)*AUV11(NBDI)
-             
-            ! WJP 02.24.2018 considering the symmetric matrix
-            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
-     &                     -CSII(I)*MOM_LV_Y(NBDI)
-     &                     )*NCI                      !Tangetial Eqn RHS
-            MOM_LV_Y(NBDI)=VelNorm*NCI                !Normal Eqn RHS
-            AUV(1,NBDI) = AUV(1,NBDI)*SIII(I) - AUV(4,NBDI)*CSII(I)
-            AUV(3,NBDI) = AUV(3,NBDI)*SIII(I) - AUV(2,NBDI)*CSII(I)
-            AUV(4,NBDI) = CSII(I)
-            AUV(2,NBDI) = SIII(I)
-C#endif
+C             
+            IF (abs(norm2(TKM(:,I))-sqrt(2d0)*TK(I)).lt.epsilon(H2)) THEN
+            ! WJP 03.6.2018 In the case of the symmetric matrix..
+            ! Should be equivalent to the non-symmetric formula below
+            ! but for consistency when testing using this formula helps
+            ! to keep the same solution
+                MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI)
+     &                     - CSII(I)*MOM_LV_Y(NBDI)
+     &                     - VelNorm*AUV(3,NBDI))*NCI !Tangential Eqn RHS
+                MOM_LV_Y(NBDI) = VelNorm*AUV(1,NBDI)*NCI   !Normal Eqn RHS
+                AUV(3,NBDI) = -CSII(I)*AUV(1,NBDI)
+                AUV(4,NBDI) = -AUV(3,NBDI)
+                AUV(1,NBDI) = SIII(I)*AUV(1,NBDI)
+                AUV(2,NBDI) = AUV(1,NBDI)
+            ELSE
+            ! WJP 02.24.2018 in the case of the non-symmetric matrix
+                MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI)
+     &                         - CSII(I)*MOM_LV_Y(NBDI)
+     &                         )*NCI                      !Tangetial Eqn RHS
+                MOM_LV_Y(NBDI) = VelNorm*NCI              !Normal Eqn RHS
+                AUV(1,NBDI) = AUV(1,NBDI)*SIII(I) - AUV(4,NBDI)*CSII(I)
+                AUV(3,NBDI) = AUV(3,NBDI)*SIII(I) - AUV(2,NBDI)*CSII(I)
+                AUV(4,NBDI) = CSII(I)
+                AUV(2,NBDI) = SIII(I)
+            ENDIF
          ENDIF
 
 C     Specified essential normal flow and no tangential slip
