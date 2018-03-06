@@ -665,10 +665,10 @@ C#else
      &                        - CSII(I)*MOM_LV_Y(NBDI)
      &                        - VelNorm*AUV(3,NBDI))*NCI !Tangential Eqn RHS
                MOM_LV_Y(NBDI) = VelNorm*AUV(1,NBDI)*NCI  !Normal Eqn RHS
-               AUV(3,NBDI) = -CSII(I)*AUV(1,NBDI)
-               AUV(4,NBDI) = -AUV(3,NBDI)
                AUV(1,NBDI) = SIII(I)*AUV(1,NBDI)
                AUV(2,NBDI) = AUV(1,NBDI)
+               AUV(3,NBDI) = -CSII(I)*AUV(1,NBDI)
+               AUV(4,NBDI) = -AUV(3,NBDI)
 C            AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
 C            AUV11(NBDI)=SIII(I)*AUV11(NBDI)
              
