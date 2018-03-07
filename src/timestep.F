@@ -61,7 +61,7 @@ C
      &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF, 
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
      &    BCFLAG_LNM, usingWaterLevelOffset, offset1, offset2, L_N, TKM, 
-     &    WarnElevDump
+     &    WarnElevDump, nodes_lg
 #ifdef CSWAN
      &  , waveWindMultiplier
 #endif
@@ -1209,14 +1209,17 @@ C     a fort.69 (global elevation debug) file.
 
 C     jgf46.12 Removed the dependence on KEMAX for producing output to
 C     the screen.
+
 #ifdef CMPI
          IF(MYPROC.EQ.0.AND.ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
                WRITE(ScreenUnit,1991)
-     &            IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX,MYPROC
+     &            IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,
+     &            VELMAX,KVMAX,MYPROC
             ELSE
                WRITE(ScreenUnit,1991)
-     &            IT,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX,MYPROC
+     &            IT,NUMITR,TimeLoc,0.,KEMAX,VELMAX,
+     &            KVMAX,MYPROC
 
             ENDIF
  1991       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
@@ -1227,11 +1230,13 @@ C     the screen.
          ENDIF
          WarnElevExceeded = 0
          IF(ELMAX.GT.WarnElev) THEN
+C     WJP 03.27.2018 with the addition of the hash table we now need to
+C     output the global node number to debug the local PE fort.14s
             WRITE(ScreenUnit,1993)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
-     &           KVMAX,MYPROC
-            WRITE(16,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
-     &           KVMAX,MYPROC
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
+     &           VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(16,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
  1993       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
@@ -1250,10 +1255,10 @@ C     the screen.
          IF(ELMAX.GT.ErrorElev) THEN
 
             WRITE(ScreenUnit,1995)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
-     &           KVMAX,MYPROC
-            WRITE(16,1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
-     &           KVMAX,MYPROC
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
+     &           VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(16,1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
  1995       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
