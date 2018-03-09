@@ -2008,36 +2008,23 @@ C     ----------------------------------------------------------------
       INTEGER :: I 
 C     Compute TKM by adding wave drag contribution to 
 C     current value of the bottom friction, TK
-      IF (LoadIT_Fric.and.IT_FricNoOfVals == 3) THEN
+      IF (LoadIT_Fric) THEN
+         IF (IT_FricNoOfVals == 3) THEN
 C        Use the Nycander (2005) or Lyard et al. (2004) type tensor wave drag
 C        Using three columns of data for the different segments of the matrix
-         DO I=1,NP 
-CCCCC  WJP: The commented lines are for checking the dissipation in order
-CCCCC  to limit dissipation and/or keep positive
-C            D_wave  = (IT_Fric(I,1)*U(I)*U(I) + IT_Fric(I,2)*V(I)*V(I)
-C     &              + 2d0*IT_Fric(I,3)*U(I)*V(I)) * DP(I)
-C            IF (D_wave < 0d0) THEN
-C               Generation not dissipation, set equal to zero
-C                C_fac   = 0d0
-C            ELSEIF (-3 - exponent(D_wave) >= maxexponent(D_wave) 
-C     &              .or. D_wave == 0d0) THEN
-C               Safe division
-C                C_fac   = 1d0
-C            ELSE
-C               Ensure dissipation does not exceed 1 Wm-2
-C                C_fac   = min(1d0,1d-3/D_wave) 
-C            ENDIF
-            TKM(1,I) = TK(I) + IT_Fric(I,1)
-            TKM(2,I) = TK(I) + IT_Fric(I,2)
-            TKM(3,I) = IT_Fric(I,3) 
-         END DO
-      ELSEIF (LoadIT_Fric.and.IT_FricNoOfVals == 1) THEN
-C        For the scalar version (like Zaron & Egbert (2006) type)
-         DO I=1,NP 
-            TKM(1,I) = TK(I) + IT_Fric(I,1) 
-            TKM(2,I) = TKM(1,I)
-            TKM(3,I) = 0.0d0
-         END DO
+            DO I=1,NP 
+               TKM(1,I) = TK(I) + IT_Fric(I,1)
+               TKM(2,I) = TK(I) + IT_Fric(I,2)
+               TKM(3,I) = IT_Fric(I,3) 
+            END DO
+         ELSEIF (IT_FricNoOfVals == 1) THEN
+C           For the scalar version (like Zaron & Egbert (2006) type)
+            DO I=1,NP 
+               TKM(1,I) = TK(I) + IT_Fric(I,1) 
+               TKM(2,I) = TKM(1,I)
+               TKM(3,I) = 0.0d0
+            END DO
+         ENDIF
       ELSE 
 C       In case we did not load ITFric
         TKM(1,:) = TK

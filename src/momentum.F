@@ -301,7 +301,7 @@ C.......If using atm pressure add it into the barotropic pressure
             BTP2N2=BTP2N2+PR2(NM2)
             BTP1N3=BTP1N3+PR1(NM3)
             BTP2N3=BTP2N3+PR2(NM3)
-            ENDIF
+         ENDIF
 
  
          !jgf: Subtract water level offset from barotropic pressure 
@@ -323,7 +323,7 @@ C.......If using tidal potential terms, add these into the barotropic pressure
             BTP2N2=BTP2N2-TiP2(NM2)
             BTP1N3=BTP1N3-TiP1(NM3)
             BTP2N3=BTP2N3-TiP2(NM3)
-            ENDIF
+         ENDIF
 
 C...  Compute the barotropic pressure gradient x area for the element
 
@@ -543,7 +543,7 @@ C           AND QUV ON A SCALAR COMPUTER USING THE TEMPORARY VECTORS
          MOM_LV_Y(NM3)=MOM_LV_Y(NM3)+TEMP_LV_B3
 #endif
 
-         ENDDO
+      ENDDO
 
 C     LINES TO RUN ON A VECTOR COMPUTER
 C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR MOM_LV_X, MOM_LV_Y
@@ -563,7 +563,7 @@ C           AND AUV
          MOM_LV_Y(NM1)=MOM_LV_Y(NM1)+TEMP_LV_B(IE,1)
          MOM_LV_Y(NM2)=MOM_LV_Y(NM2)+TEMP_LV_B(IE,2)
          MOM_LV_Y(NM3)=MOM_LV_Y(NM3)+TEMP_LV_B(IE,3)
-         END DO
+      END DO
 #endif
 
 C...  Update the momentum equation LHS coefficients and load vectors at each
@@ -592,8 +592,6 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
             WSX=DTO2*IFWIND*(WSX1(I)/H1+WSX2(I)/H2)
             WSY=DTO2*IFWIND*(WSY1(I)/H1+WSY2(I)/H2)
          ENDIF
-!         VCoef1=DTO2*TK(I)                     !TK = Kslip/H
-!         VCoef2=DTO2*CORIF(I)
 C        WJP 02.24.2018: Get the cofficients of the matrix
          VCOEFXX = DTO2*(TKM(1,I)) !+ SPNGCOEF_X) 
          VCOEFYY = DTO2*(TKM(2,I)) !+ SPNGCOEF_Y)
@@ -604,28 +602,11 @@ C        WJP 02.24.2018: Get the cofficients of the matrix
             VIDBCPDX=DT*VIDBCPDXOH(I)
             VIDBCPDY=DT*VIDBCPDYOH(I)
          ENDIF
-
-         ! WJP CSWAN and Non-CWSAN look identical..
-C#ifdef CSWAN
-C         MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*UU1(I)
-C     &                                     +VCoef2*VV1(I)-VIDBCPDX)
-C         MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*VV1(I)
-C     &                                     -VCoef2*UU1(I)-VIDBCPDY)
-C#else
-C         MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*UU1(I)
-C     &                                     +VCoef2*VV1(I)-VIDBCPDX)
-C         MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*VV1(I)
-C     &                                     -VCoef2*UU1(I)-VIDBCPDY)
 C        WJP 02.24.2018 Get the righthand side momentum 
          MOM_LV_X(I) = NCI*(MOM_LV_X(I)+WSX+(1.D0-VCOEFXX)*UU1(I) 
      &               - VCOEFXY*VV1(I)-VIDBCPDX)
          MOM_LV_Y(I) = NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCOEFYY)*VV1(I)
      &               - VCOEFYX*UU1(I)-VIDBCPDY)
-C#endif
-
-C         AUV11(I)=1.D0+VCoef1*NCI
-C         AUV12(I)=-VCoef2*NCI
-
 C        WJP 02.24.2018 Get the lefthand side momentum 
          AUV(1,I) = 1d0 + VCOEFXX*NCI
          AUV(2,I) = 1d0 + VCOEFYY*NCI
@@ -649,22 +630,6 @@ C      Specified essential normal flow and free tangential slip
 
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
             VelNorm=-QN2(I)/H2
-            ! WJP CSWAN and Non-CWSAN look identical..
-C#ifdef CSWAN
-C            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
-C     &                     -CSII(I)*MOM_LV_Y(NBDI)
-C     &                     -VelNorm*AUV12(NBDI))*NCI !Tangential Eqn RHS
-C            MOM_LV_Y(NBDI)=VelNorm*AUV11(NBDI)*NCI   !Normal Eqn RHS
-C            AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
-C            AUV11(NBDI)=SIII(I)*AUV11(NBDI)
-C#else
-C            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
-C     &                     -CSII(I)*MOM_LV_Y(NBDI)
-C     &                     -VelNorm*AUV12(NBDI))*NCI !Tangential Eqn RHS
-C            MOM_LV_Y(NBDI)=VelNorm*AUV11(NBDI)*NCI   !Normal Eqn RHS
-C            AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
-C            AUV11(NBDI)=SIII(I)*AUV11(NBDI)
-C             
             IF (abs(norm2(TKM(:,I))-sqrt(2d0)*TK(I)).lt.epsilon(H2)) THEN
             ! WJP 03.6.2018 In the case of the symmetric matrix..
             ! Should be equivalent to the non-symmetric formula below
@@ -698,8 +663,6 @@ C     Specified essential normal flow and no tangential slip
             VelTan=0.D0
             MOM_LV_X(NBDI)=VelTan*NCI !Tangential Eqn RHS
             MOM_LV_Y(NBDI)=VelNorm*NCI !Normal Eqn RHS
-C            AUV11(NBDI)=SIII(I)
-C            AUV12(NBDI)=-CSII(I)
             !WJP 02.24.2018 considering the symmetric matrix
             AUV(1,NBDI) = SIII(I)
             AUV(3,NBDI) = - CSII(I) 
@@ -785,12 +748,6 @@ C.....velocity can be zeroed out to obtain an essential zero velocity at
 C.....interface nodes.
 
       DO I=1,NP
-C         AUV22=AUV11(I)
-C         AUV21=-AUV12(I)
-C         DDU=AUV11(I)*AUV22-AUV12(I)*AUV21
-C         UU2(I)=(MOM_LV_X(I)*AUV22-MOM_LV_Y(I)*AUV12(I))/DDU
-C         VV2(I)=(MOM_LV_Y(I)*AUV11(I)-MOM_LV_X(I)*AUV21)/DDU
-
          ! WJP 02.24.2018 Performing the final solve
          DDU    = AUV(1,I)*AUV(2,I)-AUV(3,I)*AUV(4,I)
          UU2(I) = (MOM_LV_X(I)*AUV(2,I)-MOM_LV_Y(I)*AUV(3,I))/DDU
