@@ -120,7 +120,7 @@ CWET...
       use sizes, only : sz, mne, mnp
       use global, only : noff, nodecode, nnodecode, eta2, tk, nolifa,
      &    bsx1, bsy1, btime_end, C2DDI, C3D, g, h0, ifnlfa, nddt,
-     &    nibnodecode, ilump, ncchange
+     &    nibnodecode, ilump, ncchange, tkm
 #ifdef CMPI
      &    ,idumy
       use messenger
@@ -270,6 +270,8 @@ c                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+                           !WJP needed for internal_tide stuff
+                           TKM(1:2,NM123) = TK(NM123) 
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -361,6 +363,8 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+                           !WJP needed for internal_tide stuff
+                           TKM(1:2,NM123) = TK(NM123) 
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -452,6 +456,8 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+                           !WJP needed for internal_tide stuff
+                           TKM(1:2,NM123) = TK(NM123) 
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -558,6 +564,8 @@ C<<                           Convert Manning's N to Cd, if necessary.
      &                          (IFNLBF+IFHYBF*
      &                          (1.D0+(HBREAK/H1)**FTHETA)**
      &                          (FGAMMA/FTHETA)))
+                              !WJP needed for internal_tide stuff
+                              TKM(1:2,NM123) = TK(NM123) 
                            ELSEIF(C3D)THEN
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -614,6 +622,8 @@ C<<                        Convert Manning's N to Cd, if necessary.
      &                          (IFNLBF+IFHYBF*
      &                          (1.D0+(HBREAK/H1)**FTHETA)**
      &                          (FGAMMA/FTHETA)))
+                              !WJP needed for internal_tide stuff
+                              TKM(1:2,NM123) = TK(NM123) 
                            ELSEIF(C3D)THEN
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -670,6 +680,8 @@ C<<                         Convert Manning's N to Cd, if necessary.
      &                           (IFNLBF+IFHYBF*
      &                           (1.D0+(HBREAK/H1)**FTHETA)**
      &                           (FGAMMA/FTHETA)))
+                              !WJP needed for internal_tide stuff
+                              TKM(1:2,NM123) = TK(NM123) 
                            ELSEIF(C3D)THEN
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))

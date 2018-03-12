@@ -230,7 +230,7 @@ C
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM,
-     &   usingWaterLevelOffset, offset1
+     &   usingWaterLevelOffset, offset1, TKM
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
@@ -340,6 +340,11 @@ C        jgf47.08 Moved time-varying tau0 subroutine to nodalattr.F
          IF(C2DDI.AND.
      &       ((FullDomainTimeVaryingTau0.or.HighResTimeVaryingTau0)))
      &   THEN
+            DO I=1,NP
+C              WJP 02.24.2018 Get the infinity norm of the matrix
+               TK(I) = max(abs(TKM(1,I))+abs(TKM(3,I)),
+     &                     abs(TKM(2,I))+abs(TKM(3,I)))
+            ENDDO
             CALL CalculateTimeVaryingTau0(TK, NNeigh, NeiTab, NP)
          ENDIF
 
@@ -828,12 +833,19 @@ Corbitt 120322: Localized Advection
             TiPN3=TiP1(NM3)
          ENDIF
          IF (C2DDI) THEN                       !2D bottom friction
-            BSXN1=TK(NM1)*QX1N1
-            BSYN1=TK(NM1)*QY1N1
-            BSXN2=TK(NM2)*QX1N2
-            BSYN2=TK(NM2)*QY1N2
-            BSXN3=TK(NM3)*QX1N3
-            BSYN3=TK(NM3)*QY1N3
+            !WJP taking into account the symmetrical friction matrix
+            BSXN1 = TKM(1,NM1)*QX1N1 + TKM(3,NM1)*QY1N1
+            BSYN1 = TKM(3,NM1)*QX1N1 + TKM(2,NM1)*QY1N1
+            BSXN2 = TKM(1,NM2)*QX1N2 + TKM(3,NM2)*QY1N2
+            BSYN2 = TKM(3,NM2)*QX1N2 + TKM(2,NM2)*QY1N2
+            BSXN3 = TKM(1,NM3)*QX1N3 + TKM(3,NM3)*QY1N3
+            BSYN3 = TKM(3,NM3)*QX1N3 + TKM(2,NM3)*QY1N3
+C            BSXN1=TK(NM1)*QX1N1
+C            BSYN1=TK(NM1)*QY1N1
+C            BSXN2=TK(NM2)*QX1N2
+C            BSYN2=TK(NM2)*QY1N2
+C            BSXN3=TK(NM3)*QX1N3
+C            BSYN3=TK(NM3)*QY1N3
          ENDIF
          IF (C3D) THEN                         !3D bottom friction
             BSXN1=BSX1(NM1)

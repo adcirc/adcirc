@@ -1870,7 +1870,10 @@ C removed from global  myProc, MNPROC,
      &    xvelva, usq, uvadif, yvelav, vav, vavdif, yvelva, vsq, vvadif
 
 #ifdef CMPI
-      USE MESSENGER, ONLY : msg_fini, msg_lbcast
+      USE MESSENGER, ONLY : msg_fini
+#endif
+#ifdef ADCNETCDF
+      USE NETCDFIO, ONLY : initNetCDFOutputFile
 #endif
 
       IMPLICIT NONE
@@ -1879,6 +1882,7 @@ C removed from global  myProc, MNPROC,
 
 C
       LOGICAL, SAVE :: FirstCall = .true.
+      LOGICAL,DIMENSION(4) :: netcdf_error
 C
       call setMessageSource("writeHarmonicAnalysisOutput")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -1907,6 +1911,7 @@ C     scenario.
          IF (NHASE.ne.0) THEN
             ! fort.51 magnitude
             HAElevStaMagDescript % specifier            = NHASE
+            HAElevStaMagDescript % lun                  = 51
             HAElevStaMagDescript % initial_value        = 0.0
             HAElevStaMagDescript % num_items_per_record = MNHARF
             HAElevStaMagDescript % num_fd_records       = NSTAE_G
@@ -1960,6 +1965,7 @@ C
          IF (NHASV.ne.0) THEN
             ! fort.52 u velocity magnitude
             HAVelStaUMagDescript % specifier            = NHASV
+            HAVelStaUMagDescript % lun                  = 52
             HAVelStaUMagDescript % initial_value        = 0.0
             HAVelStaUMagDescript % num_items_per_record = MNHARF
             HAVelStaUMagDescript % num_fd_records       = NSTAV_G
@@ -2066,6 +2072,7 @@ C
          IF (NHAGE.ne.0) THEN
             ! fort.53 Full Domain Elevation Magnitude
             HAElevMagDescript % specifier            = NHAGE
+            HAElevMagDescript % lun                  = 53
             HAElevMagDescript % initial_value        = 0.0
             HAElevMagDescript % num_items_per_record = MNHARF
             HAElevMagDescript % num_fd_records       = NP_G
@@ -2108,6 +2115,7 @@ C
          IF (NHAGV.ne.0) THEN
             ! fort.54 Full Domain U Velocity Magnitude
             HAVelUMagDescript % specifier            = NHAGV
+            HAVelUMagDescript % lun                  = 54
             HAVelUMagDescript % initial_value        = 0.0
             HAVelUMagDescript % num_items_per_record = MNHARF
             HAVelUMagDescript % num_fd_records       = NP_G
@@ -2210,6 +2218,28 @@ C        ! as the full domain elevation harmonic analysis file (fort.53)
                MVDescript % array_g              => ELAV_g
             ENDIF
          ENDIF
+#ifdef ADCNETCDF
+         netcdf_error = .false.
+         ! jgf49.43.11: if netcdf is not required for a particular output file,
+         ! the associated subroutine call will do nothing and just return
+         ! WJP: I think this is only required for non-parallel adcirc,
+         ! the routine will just return without doing anything for
+         ! padcirc since the file was created by adcprep.
+         IF (myProc.eq.0) THEN
+            CALL initNetCDFOutputFile(HAElevStaMagDescript, netcdf_error(1))
+            CALL initNetCDFOutputFile(HAVelStaUMagDescript, netcdf_error(2))
+            CALL initNetCDFOutputFile(HAElevMagDescript, netcdf_error(3))
+            CALL initNetCDFOutputFile(HAVelUMagDescript, netcdf_error(4))
+         ENDIF
+         DO I=1,4
+            IF (netcdf_error(I).eqv..true.) THEN
+#ifdef CMPI
+               CALL MSG_FINI()
+#endif
+               STOP
+            ENDIF
+         ENDDO
+#endif
       ENDIF  ! firstcall
 C
 C     Collect fulldomain data if running in parallel, and we are not
@@ -2378,7 +2408,8 @@ C     S U B R O U T I N E
 C            W R I T E   O U T   H A R M O N I C  A R R A Y S
 C-----------------------------------------------------------------------
 C     jgf49.44 Writes the harmonic arrays in output files of the desired
-C     format. Only ascii is supported at this point.
+C     format. 
+C     WJP 02.20.2018 Updated to support netcdf
 C-----------------------------------------------------------------------
       SUBROUTINE writeOutHarmonicArrays(lun, sets, mag1, ph1, mag2, ph2)
       USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, LOCALDIR, GLOBALDIR,
@@ -2388,6 +2419,9 @@ C-----------------------------------------------------------------------
       USE GLOBAL, ONLY : OutputDataDescript_t, screenMessage, ERROR,
      &                   DEBUG, setMessageSource, unsetMessageSource,
      &                   allMessage, scratchMessage
+#ifdef ADCNETCDF
+      USE NETCDFIO, ONLY: writeOutArrayNetCDF
+#endif
       IMPLICIT NONE
       INTEGER, intent(in) :: lun  ! adcirc logical unit number for i/o
       INTEGER, intent(in) :: sets ! how many sets of mags/phases to write
@@ -2459,9 +2493,22 @@ C
             ENDDO
             CLOSE(lun)
          ENDIF
-      CASE(3,5)
+      CASE(3,5) ! netcdf 
+#ifdef ADCNETCDF
+         IF (MyProc.eq.0) THEN
+             IF (sets == 1) THEN
+                write(*,*) 'writing NETCDF:',lun
+                CALL writeOutArrayNetCDF(lun, 0d0, 1, mag1, ph1)
+             ELSE
+                write(*,*) 'writing NETCDF:',lun
+                CALL writeOutArrayNetCDF(lun, 0d0, 1, mag1, ph1,
+     &                                   mag2, ph2)
+             ENDIF
+         ENDIF
+#else
          call allMessage(ERROR,
-     & 'ERROR: Harmonic analysis output is not yet available in NetCDF.')
+     &        'ERROR: You didn''t compile with NetCDF.')         
+#endif
       CASE DEFAULT
          write(scratchMessage,'(a,i0,a)')
      &  'Invalid harmonic analysis format specifier: ',mag1%specifier,'.'

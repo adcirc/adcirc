@@ -60,7 +60,8 @@ C
      &    WVNXOUT, WVNYOUT, WarnElev, PERT, FACET, FFT, AMIGT, SALTPHA,
      &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF, 
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
-     &    BCFLAG_LNM, usingWaterLevelOffset, offset1, offset2
+     &    BCFLAG_LNM, usingWaterLevelOffset, offset1, offset2, L_N, TKM, 
+     &    WarnElevDump, nodes_lg
 #ifdef CSWAN
      &  , waveWindMultiplier
 #endif
@@ -86,6 +87,7 @@ C.....sb46.28sb03 added 09/xx/2006
       USE RS2,ONLY : RS2INIT,RS2GET
       USE NodalAttributes, ONLY : 
      &     Apply2DBottomFriction,
+     &     Apply2DInternalWaveDrag,
      &     Apply3DBottomFriction
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS, 
      &    writeFort066, writeFort067, writeFort065, 
@@ -131,7 +133,6 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(SZ) :: velabs
       REAL(SZ) :: vel
       REAL(SZ) :: velmax
-      LOGICAL :: warnElevDump
       INTEGER :: errorElevExceeded
       INTEGER :: warnElevExceeded
       logical, save ::  EtaDisc_Fill = .TRUE.
@@ -261,7 +262,11 @@ C...  Wind (& wave radiation stress if used)
             WSY2(I)=0.D0
             PR1(I)=PR2(I)
             PR2(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
-         ENDIF
+         ELSE
+C WJP 02.26.2018 inserted from Dam's code    
+!c dw ------------- otherwise, tide run could fail      
+            PR2(I) = PRBCKGRND_MH2O 
+         END IF
 
 C     TIP..Tidal potential forcing
          if(CTIP) then
@@ -399,6 +404,9 @@ C
 C     2DDI.Set up the 2D friction coefficient
       if(C2DDI) then
          CALL Apply2DBottomFriction(UU1, VV1, DP, ETA2, G, IFNLFA, NP, TK)
+         ! WJP 02.24.2018 Get the wave drag coefficients
+         ! that are put into TKM (which include TK from bottom friction)
+         CALL Apply2DInternalWaveDrag(NP, TK, UU1, VV1, DP, TKM)
       endif
 C..RJW Set up the 3D friction coefficient
       if(C3D) then
@@ -699,8 +707,10 @@ C...  Tidal Potential Forcing
 C...  Note, the Earth tide potential reduction factor, ETRF(J) has been
 C...        incorporated into this calculation.
 C...
+C...  WJP 02.21.2018 Rewriting for general formula for all species,
+C     cleaner code, and correct identification of 0,1,2 or higher species
       IF(CTIP) THEN
-         DO J=1,NTIF
+         TIPLOOP: DO J=1,NTIF
             IF(PERT(J).EQ.0.) THEN
                NCYC=0
             ELSE
@@ -710,39 +720,26 @@ C...
                NCYC=INT(timeh/PERT(J))
 #endif
             ENDIF
+
             ARGT=AMIGT(J)*(timeh-NCYC*PERT(J))+FACET(J)
             TPMUL=RampTip*ETRF(J)*TPK(J)*FFT(J)
             SALTMUL=RampTip*FFT(J)
-
+C           WJP: We actually want to compare against diurnal and get 0,1,2
+C           or higher species (was opposite beforehand)
 #ifdef IBM
-            NA=NINT(0.00014/AMIGT(J),KIND(0.0d0))
+            NA = MIN(NINT(AMIGT(J)/7d-5,KIND(0.0d0)),2)
 #else
-            NA=NINT(0.00014/AMIGT(J))
+            NA = MIN(NINT(AMIGT(J)/7d-5),2)
 #endif
-            IF(NA.EQ.1) THEN    !SEMI-DIURNAL SPECIES
-               DO I=1,NP
-                  ARGTP=ARGT+2.d0*SLAM(I)
-                  ARGSALT=ARGT-SALTPHA(J,I)
-                  CCSFEA=COS(SFEA(I))
-                  CCSFEA=CCSFEA*CCSFEA
-                  TIP2(I)=TIP2(I)+TPMUL*CCSFEA*COS(ARGTP)
-     &                 +SALTMUL*SALTAMP(J,I)*COS(ARGSALT)
-               END DO
-            ENDIF
-            IF(NA.EQ.2) THEN    !DIURNAL SPECIES
-               DO I=1,NP
-                  ARGTP=ARGT+SLAM(I)
-                  ARGSALT=ARGT-SALTPHA(J,I)
-#ifdef REAL4
-                  S2SFEA=SIN(2.e0*SFEA(I))
-#else
-                  S2SFEA=SIN(2.d0*SFEA(I))
-#endif
-                  TIP2(I)=TIP2(I)+TPMUL*S2SFEA*COS(ARGTP)
-     &                 +SALTMUL*SALTAMP(J,I)*COS(ARGSALT)
-               END DO
-            ENDIF
-         END DO
+C           WJP: Rewritten so that we have a general formula for all
+C           species
+            DO I = 1,NP
+                ARGTP   = ARGT + NA*SLAM(I)
+                ARGSALT = ARGT - SALTPHA(J,I)
+                TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
+     &                  + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
+            ENDDO
+         ENDDO TIPLOOP
       ENDIF
 
 C...
@@ -1212,14 +1209,17 @@ C     a fort.69 (global elevation debug) file.
 
 C     jgf46.12 Removed the dependence on KEMAX for producing output to
 C     the screen.
+
 #ifdef CMPI
          IF(MYPROC.EQ.0.AND.ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
                WRITE(ScreenUnit,1991)
-     &            IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX,MYPROC
+     &            IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,
+     &            VELMAX,KVMAX,MYPROC
             ELSE
                WRITE(ScreenUnit,1991)
-     &            IT,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX,MYPROC
+     &            IT,NUMITR,TimeLoc,0.,KEMAX,VELMAX,
+     &            KVMAX,MYPROC
 
             ENDIF
  1991       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
@@ -1230,11 +1230,13 @@ C     the screen.
          ENDIF
          WarnElevExceeded = 0
          IF(ELMAX.GT.WarnElev) THEN
+C     WJP 03.27.2018 with the addition of the hash table we now need to
+C     output the global node number to debug the local PE fort.14s
             WRITE(ScreenUnit,1993)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
-     &           KVMAX,MYPROC
-            WRITE(16,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
-     &           KVMAX,MYPROC
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
+     &           VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(16,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
  1993       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
@@ -1253,10 +1255,10 @@ C     the screen.
          IF(ELMAX.GT.ErrorElev) THEN
 
             WRITE(ScreenUnit,1995)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
-     &           KVMAX,MYPROC
-            WRITE(16,1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
-     &           KVMAX,MYPROC
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
+     &           VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(16,1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
  1995       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,

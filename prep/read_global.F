@@ -1679,7 +1679,7 @@ C
       READ(HARPARMSG,*) THAS,THAF,NHAINC,FMV
       READ(15,80) OUTHARMSG
       READ(OUTHARMSG,*) NHASE,NHASV,NHAGE,NHAGV
-      IF ((NHASE.LT.0).OR.(NHASE.GT.1)) THEN
+      IF ((NHASE.LT.0).OR.(NHASE.GT.5)) THEN
         print *, "NHASE does not have an allowable value"
         IF (NFOVER.EQ.1) THEN
           print *, "Program will override an reset NHASE=0 "
@@ -1689,7 +1689,7 @@ C
         ENDIF
       ENDIF
 C
-      IF ((NHASV.LT.0).OR.(NHASV.GT.1)) THEN
+      IF ((NHASV.LT.0).OR.(NHASV.GT.5)) THEN
          print *, "NHASV does not have an allowable value"
          IF (NFOVER.EQ.1) THEN
            print *, "Program will override an reset NHASV=0 "
@@ -1699,7 +1699,7 @@ C
          ENDIF
       ENDIF
 C
-      IF ((NHAGE.LT.0).OR.(NHAGE.GT.1)) THEN
+      IF ((NHAGE.LT.0).OR.(NHAGE.GT.5)) THEN
         print *, "NHAGE does not have an allowable value"
         IF (NFOVER.EQ.1) THEN
           print *, "Program will override an reset NHAGE=0 "
@@ -1709,7 +1709,7 @@ C
         ENDIF
       ENDIF
 C
-      IF ((NHAGV.LT.0).OR.(NHAGV.GT.1)) THEN
+      IF ((NHAGV.LT.0).OR.(NHAGV.GT.5)) THEN
         print *, "NHAGV does not have an allowable value"
         IF (NFOVER.EQ.1) THEN
           print *, "Program will override an reset NHAGV=0 "

@@ -61,7 +61,8 @@ C******************************************************************************
      &   allMessage, logMessage, unsetMessageSource
       implicit none
 
-      real(sz),allocatable ::   auv11(:),auv12(:)
+      real(sz),allocatable :: auv11(:),auv12(:)
+      real(SZ),allocatable :: auv(:,:) ! WJP allowing for the case auv11 ~= auv22
       real(sz) :: auv21, auv22
       real(sz) :: dto2  ! time step divided by 2.0
       real(sz) :: go2   ! gravitational acceleration divided by 2.0
@@ -76,10 +77,15 @@ C******************************************************************************
 !----------------------------------------------------------------------
       subroutine initMomentumEq()
       use sizes, only : mnp
-      use global, only : dt, g
+      use global, only : dt, CME_New_NC, g
       implicit none
 
-      allocate(auv11(mnp),auv12(mnp))
+      IF (CME_New_NC) THEN
+         !WJP 02.24.2018 I only put this in Mom_Eqs_New_NC so far..
+         allocate(auv(4,mnp))
+      ELSE
+         allocate(auv11(mnp),auv12(mnp))
+      ENDIF
       dto2=dt/2.d0
       go2=g/2.d0
 
@@ -149,7 +155,7 @@ C*******************************************************************************
      &  NODECODE, NOFF, UU1, VV1, ETA2, ETA1, QX1, QX2, QY1, PR1, PR2,
      &  TiP1, TiP2, WSX2, WSY2, TK, CORIF, WSX1, WSY1, VIDBCPDXOH,
      &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y, usingWaterLevelOffset,
-     &  offset1, offset2
+     &  offset1, offset2, TKM
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, Areas, TotalArea, 
      &                  NNeigh, NeiTab, NeiTabEle, MJU, SFAC
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
@@ -197,6 +203,7 @@ C*******************************************************************************
       REAL(8) AreaIE, AreaIE2
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       INTEGER :: nele
+      REAL(SZ) :: VCOEFXX, VCOEFYY, VCOEFXY, VCOEFYX
       call setMessageSource("mom_eqs_new_nc")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -294,7 +301,7 @@ C.......If using atm pressure add it into the barotropic pressure
             BTP2N2=BTP2N2+PR2(NM2)
             BTP1N3=BTP1N3+PR1(NM3)
             BTP2N3=BTP2N3+PR2(NM3)
-            ENDIF
+         ENDIF
 
  
          !jgf: Subtract water level offset from barotropic pressure 
@@ -316,7 +323,7 @@ C.......If using tidal potential terms, add these into the barotropic pressure
             BTP2N2=BTP2N2-TiP2(NM2)
             BTP1N3=BTP1N3-TiP1(NM3)
             BTP2N3=BTP2N3-TiP2(NM3)
-            ENDIF
+         ENDIF
 
 C...  Compute the barotropic pressure gradient x area for the element
 
@@ -536,7 +543,7 @@ C           AND QUV ON A SCALAR COMPUTER USING THE TEMPORARY VECTORS
          MOM_LV_Y(NM3)=MOM_LV_Y(NM3)+TEMP_LV_B3
 #endif
 
-         ENDDO
+      ENDDO
 
 C     LINES TO RUN ON A VECTOR COMPUTER
 C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR MOM_LV_X, MOM_LV_Y
@@ -556,7 +563,7 @@ C           AND AUV
          MOM_LV_Y(NM1)=MOM_LV_Y(NM1)+TEMP_LV_B(IE,1)
          MOM_LV_Y(NM2)=MOM_LV_Y(NM2)+TEMP_LV_B(IE,2)
          MOM_LV_Y(NM3)=MOM_LV_Y(NM3)+TEMP_LV_B(IE,3)
-         END DO
+      END DO
 #endif
 
 C...  Update the momentum equation LHS coefficients and load vectors at each
@@ -585,29 +592,28 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
             WSX=DTO2*IFWIND*(WSX1(I)/H1+WSX2(I)/H2)
             WSY=DTO2*IFWIND*(WSY1(I)/H1+WSY2(I)/H2)
          ENDIF
-         VCoef1=DTO2*TK(I)                     !TK = Kslip/H
-         VCoef2=DTO2*CORIF(I)
+C        WJP 02.24.2018: Get the cofficients of the matrix
+         VCOEFXX = DTO2*(TKM(1,I)) !+ SPNGCOEF_X) 
+         VCOEFYY = DTO2*(TKM(2,I)) !+ SPNGCOEF_Y)
+         VCOEFXY = DTO2*(TKM(3,I) - CORIF(I))
+         VCOEFYX = DTO2*(TKM(3,I) + CORIF(I))
+      
          IF(CBaroclinic) THEN
             VIDBCPDX=DT*VIDBCPDXOH(I)
             VIDBCPDY=DT*VIDBCPDYOH(I)
          ENDIF
-
-#ifdef CSWAN
-         MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*UU1(I)
-     &                                     +VCoef2*VV1(I)-VIDBCPDX)
-         MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*VV1(I)
-     &                                     -VCoef2*UU1(I)-VIDBCPDY)
-#else
-         MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*UU1(I)
-     &                                     +VCoef2*VV1(I)-VIDBCPDX)
-         MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*VV1(I)
-     &                                     -VCoef2*UU1(I)-VIDBCPDY)
-#endif
-
-         AUV11(I)=1.D0+VCoef1*NCI
-         AUV12(I)=-VCoef2*NCI
-
-         END DO
+C        WJP 02.24.2018 Get the righthand side momentum 
+         MOM_LV_X(I) = NCI*(MOM_LV_X(I)+WSX+(1.D0-VCOEFXX)*UU1(I) 
+     &               - VCOEFXY*VV1(I)-VIDBCPDX)
+         MOM_LV_Y(I) = NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCOEFYY)*VV1(I)
+     &               - VCOEFYX*UU1(I)-VIDBCPDY)
+C        WJP 02.24.2018 Get the lefthand side momentum 
+         AUV(1,I) = 1d0 + VCOEFXX*NCI
+         AUV(2,I) = 1d0 + VCOEFYY*NCI
+         AUV(3,I) = VCOEFXY*NCI
+         AUV(4,I) = VCOEFYX*NCI
+      
+      END DO
 
 C...  Modify the momentum equations to impose velocity boundary
 C...  conditions In each case the equations are manipulated to
@@ -624,22 +630,31 @@ C      Specified essential normal flow and free tangential slip
 
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
             VelNorm=-QN2(I)/H2
-#ifdef CSWAN
-            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
-     &                     -CSII(I)*MOM_LV_Y(NBDI)
-     &                     -VelNorm*AUV12(NBDI))*NCI !Tangential Eqn RHS
-            MOM_LV_Y(NBDI)=VelNorm*AUV11(NBDI)*NCI   !Normal Eqn RHS
-            AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
-            AUV11(NBDI)=SIII(I)*AUV11(NBDI)
-#else
-            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
-     &                     -CSII(I)*MOM_LV_Y(NBDI)
-     &                     -VelNorm*AUV12(NBDI))*NCI !Tangential Eqn RHS
-            MOM_LV_Y(NBDI)=VelNorm*AUV11(NBDI)*NCI   !Normal Eqn RHS
-            AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
-            AUV11(NBDI)=SIII(I)*AUV11(NBDI)
-#endif
+            IF (abs(norm2(TKM(:,I))-sqrt(2d0)*TK(I)).lt.epsilon(H2)) THEN
+            ! WJP 03.6.2018 In the case of the symmetric matrix..
+            ! Should be equivalent to the non-symmetric formula below
+            ! but for consistency when testing using this formula helps
+            ! to keep the same solution
+                MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI)
+     &                     - CSII(I)*MOM_LV_Y(NBDI)
+     &                     - VelNorm*AUV(3,NBDI))*NCI !Tangential Eqn RHS
+                MOM_LV_Y(NBDI) = VelNorm*AUV(1,NBDI)*NCI   !Normal Eqn RHS
+                AUV(3,NBDI) = -CSII(I)*AUV(1,NBDI)
+                AUV(4,NBDI) = -AUV(3,NBDI)
+                AUV(1,NBDI) = SIII(I)*AUV(1,NBDI)
+                AUV(2,NBDI) = AUV(1,NBDI)
+            ELSE
+            ! WJP 02.24.2018 in the case of the non-symmetric matrix
+                MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI)
+     &                         - CSII(I)*MOM_LV_Y(NBDI)
+     &                         )*NCI                      !Tangetial Eqn RHS
+                MOM_LV_Y(NBDI) = VelNorm*NCI              !Normal Eqn RHS
+                AUV(1,NBDI) = AUV(1,NBDI)*SIII(I) - AUV(4,NBDI)*CSII(I)
+                AUV(3,NBDI) = AUV(3,NBDI)*SIII(I) - AUV(2,NBDI)*CSII(I)
+                AUV(4,NBDI) = CSII(I)
+                AUV(2,NBDI) = SIII(I)
             ENDIF
+         ENDIF
 
 C     Specified essential normal flow and no tangential slip
 
@@ -648,8 +663,11 @@ C     Specified essential normal flow and no tangential slip
             VelTan=0.D0
             MOM_LV_X(NBDI)=VelTan*NCI !Tangential Eqn RHS
             MOM_LV_Y(NBDI)=VelNorm*NCI !Normal Eqn RHS
-            AUV11(NBDI)=SIII(I)
-            AUV12(NBDI)=-CSII(I)
+            !WJP 02.24.2018 considering the symmetric matrix
+            AUV(1,NBDI) = SIII(I)
+            AUV(3,NBDI) = - CSII(I) 
+            AUV(4,NBDI) = CSII(I)
+            AUV(2,NBDI) = SIII(I)
          ENDIF
 
 C     Zero normal velocity gradient using a Galerkin approximation to
@@ -703,16 +721,20 @@ C     velocities at the previous time step.
                ZNGLHS =ZNGLHS + CSII(I)*FDX1+SIII(I)*FDY1
                ENDIF
             IF(NCI.EQ.0) THEN
-               AUV11(NBDI)=1.d0
-               AUV12(NBDI)=0.d0
+C               AUV11(NBDI)=1.d0
+C               AUV12(NBDI)=0.d0
                MOM_LV_X(NBDI)=0.d0
                MOM_LV_Y(NBDI)=0.d0
             ELSE
-               AUV11(NBDI)=1.d0
-               AUV12(NBDI)=0.d0
+C               AUV11(NBDI)=1.d0
+C               AUV12(NBDI)=0.d0
                MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
                MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
             ENDIF
+            AUV(1,NBDI) = 1.d0
+            AUV(2,NBDI) = 1.d0
+            AUV(3,NBDI) = 0.d0
+            AUV(4,NBDI) = 0.d0
          ENDIF
 
       ENDDO
@@ -726,11 +748,11 @@ C.....velocity can be zeroed out to obtain an essential zero velocity at
 C.....interface nodes.
 
       DO I=1,NP
-         AUV22=AUV11(I)
-         AUV21=-AUV12(I)
-         DDU=AUV11(I)*AUV22-AUV12(I)*AUV21
-         UU2(I)=(MOM_LV_X(I)*AUV22-MOM_LV_Y(I)*AUV12(I))/DDU
-         VV2(I)=(MOM_LV_Y(I)*AUV11(I)-MOM_LV_X(I)*AUV21)/DDU
+         ! WJP 02.24.2018 Performing the final solve
+         DDU    = AUV(1,I)*AUV(2,I)-AUV(3,I)*AUV(4,I)
+         UU2(I) = (MOM_LV_X(I)*AUV(2,I)-MOM_LV_Y(I)*AUV(3,I))/DDU
+         VV2(I) = (MOM_LV_Y(I)*AUV(1,I)-MOM_LV_X(I)*AUV(4,I))/DDU
+
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
 c           UBAR2(I)=0.D0    !no slip and normal flux
 c           VBAR2(I)=0.D0    !on wet/dry interface nodes
