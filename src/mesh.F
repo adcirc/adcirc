@@ -1994,6 +1994,9 @@ C...           VALUE IF THE BOUNDARY IS CLOSED
                   COSTHETA1=COSTHETA
                ENDIF
 
+               ! @jasonfleming set the boundary array to the ibtype value
+               LBCODEI(JGW)=IBTYPE(K)
+
 C...           CHECK WHETHER ANGLE IS LESS THAN MINIMUM ANGLE, IF SO CHANGE THE
 C...           BOUNDARY CODE TO ZERO TANGENTIAL VELOCITIES 
 
@@ -2002,7 +2005,6 @@ C...           BOUNDARY CODE TO ZERO TANGENTIAL VELOCITIES
                ! as an interim measure, I am making this boundary type
                ! modification a 2DDI-only feature.
                if (C2DDI.eqv..true.) then
-                  LBCODEI(JGW)=IBTYPE(K)
                   IF((COSTHETA.GT.COSTSET).AND.(CROSS.GT.0.0)) THEN
                      IF(IBTYPE(K).EQ.0) LBCODEI(JGW)=10
                      IF(IBTYPE(K).EQ.1) LBCODEI(JGW)=11
@@ -2197,7 +2199,7 @@ C...........   WRITE OUT BOUNDARY CONDITION ARRAY INFORMATION
 
                WRITE(16,1857) JGW,JME,ME2GW(JME),NBV(JGW),LBCODEI(JGW),
      &              THETA,CSII(JGW),SIII(JGW),BNDLEN2O3(JGW)
- 1857          FORMAT(1X,I6,1X,I6,1X,I6,3X,I8,3X,I4,8X,E12.4,2X,E16.8,
+ 1857          FORMAT(1X,I6,1X,I6,1X,I6,3X,I8,3X,I6,6X,E12.4,2X,E16.8,
      &              1X,E16.8,2X,E16.8)
 
 C...........   CHECK EXTERNAL BARRIER HEIGHTS AGAINST DEPTHS
