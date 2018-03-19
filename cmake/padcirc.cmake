@@ -13,6 +13,7 @@ IF(BUILD_PADCIRC)
                           ${CMAKE_SOURCE_DIR}/src/wind.F 
                           ${CMAKE_SOURCE_DIR}/src/hashtable.F 
                           ${CMAKE_SOURCE_DIR}/src/owiwind.F 
+                          ${CMAKE_SOURCE_DIR}/src/owiwind_netcdf.F 
                           ${CMAKE_SOURCE_DIR}/src/rs2.F 
                           ${CMAKE_SOURCE_DIR}/src/owi_ice.F 
                           ${CMAKE_SOURCE_DIR}/src/itpackv.F 
@@ -49,7 +50,7 @@ IF(BUILD_PADCIRC)
     addLibVersion(padcirc)
 
     ADD_DEPENDENCIES(padcirc version mkdir)
-    
+
     INSTALL(TARGETS padcirc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 ENDIF(BUILD_PADCIRC)

@@ -7,7 +7,7 @@ C
        MODULE WIND
        USE SIZES, ONLY : SZ, LOCALDIR
        USE GLOBAL, ONLY : ScreenUnit, setMessageSource, allMessage,
-     &    screenMessage, logMessage, unsetMessageSource, 
+     &    screenMessage, logMessage, unsetMessageSource,
      &    DEBUG, ECHO, INFO, WARNING, ERROR, scratchMessage,
      &    Rearth, pi, deg2rad, rad2deg, e, PRBCKGRND, g, rhoWat0,
      &    sphericalDistance, rhoAir, one2ten, windReduction,
@@ -22,9 +22,11 @@ C
       use datetime_module, only: datetime, timedelta
 #endif
 #if defined(DATETIME) && (defined(GRIB2API) || defined(ADCNETCDF))
-C     WJP added NWS=14 for GRB2 or NETCDF reading
+      integer, parameter :: allowable_nws(20)
+     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,19,20,29,30/)
+#elif defined(ADCNETCDF)
       integer, parameter :: allowable_nws(19)
-     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,14,15,16,19,20,29,30/)
+     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,13,15,16,19,20,29,30/)
 #else
       integer, parameter :: allowable_nws(18)
      &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,19,20,29,30/)
@@ -37,9 +39,12 @@ C     WJP added NWS=14 for GRB2 or NETCDF reading
       real(sz), allocatable :: wvny2(:) ! wind velocity in y-dir at each node at new ts
       real(sz), allocatable :: prn1(:) ! barometric presssure at each node at prev ts
       real(sz), allocatable :: prn2(:) ! barometric pressure at each node at new ts
+      real(sz), allocatable :: w(:,:)  ! static weights for main nws13 grid
 
       real(sz) :: wtime1 ! time associated with previous met dataset
       real(sz) :: wtime2 ! time associated with new met dataset
+      real(sz) :: wtime1i ! intermediate NWS13 interpolation timestep
+      real(sz) :: wtime2i ! intermediate NWS13 interpolation timestep
       real(sz) :: wtiminc ! time increment between met datasets (seconds)
       real(sz) :: wtimed ! time in seconds associated with a dataset
       real(sz) :: wreftim ! met reference time
@@ -52,10 +57,10 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
       Logical,allocatable :: foundSector(:)
 C
       ! related to NWS=11
-      integer :: IDSETFLG 
+      integer :: IDSETFLG
       integer :: IWTIME
       integer :: IWTIMEP
-      integer :: IWYR 
+      integer :: IWYR
       integer :: NWSEGWI
       integer :: NWSGGWI
 
@@ -120,13 +125,13 @@ C
       LOGICAL :: writeSpatialVandP = .false.
       LOGICAL :: writeSpatialuvp = .false.
       LOGICAL :: writeNodaluvp = .false.
-      
+
       !switch to turn on or off geostrophic balance in GAHM
-      ! on (default): Coriolis term included, phifactors will be calculated before being used 
+      ! on (default): Coriolis term included, phifactors will be calculated before being used
       ! off:parameter is set to 'true', phifactors will be set to constant 1
       LOGICAL :: geostrophic_switch = .true.
       INTEGER :: geofactor = 1  !turn on or off gostrophic balance
-      
+
       ! jgf50.38.05: used to keep track of HWind files and data
       type hWindData_t
          ! input data from fort.22
@@ -188,14 +193,14 @@ C
       real(sz) :: GFDL_max_extrap_dist     ! maximum distance for extrapolating values (meters)
       real(sz) :: GFDL_WindMultiplier      ! all GFDL wind u,v's multiplied by this
       !
-      ! jgf52.51.21: Fixes for NWS10. Changed from NWLAT and NWLON to 
-      ! latb and lonb and moved from read_input() to wind module and 
-      ! gave them parameter status. 
+      ! jgf52.51.21: Fixes for NWS10. Changed from NWLAT and NWLON to
+      ! latb and lonb and moved from read_input() to wind module and
+      ! gave them parameter status.
       integer, parameter :: latb = 1536 !190 change to gfs t1534 grid
       integer, parameter :: lonb = 3072 !384 change to gfs t1534 grid
       ! numerical values at four corners of gaussian grid
       integer, allocatable ::  n00(:),n10(:),n11(:),n01(:)
-      ! interpolation factors from mesh vertex to four corners of 
+      ! interpolation factors from mesh vertex to four corners of
       ! gaussian grid
       real(sz), allocatable :: d00(:),d10(:),d11(:),d01(:)
       real(sz), allocatable :: colrab(:),dummy(:),gclat(:),gclon(:)
@@ -207,16 +212,16 @@ C
       ! in positive degrees east longitude when mesh nodes end up being
       ! defined in negative degrees east longitude
       logical :: entireMeshIsWestOfGMT ! true if all longitudes are negative
-      
+
       ! jgf: variables needed for water level correction data
       ! from control file
-      character(len=2048) :: dynamicWaterLevelCorrectionFileName='null' ! water level correction file 
+      character(len=2048) :: dynamicWaterLevelCorrectionFileName='null' ! water level correction file
       real(sz) :: dynamicWaterLevelCorrectionRampStart = 0.d0 ! seconds after run start
       real(sz) :: dynamicWaterLevelCorrectionRampEnd = 0.d0   ! seconds after run start
-      integer :: dynamicWaterLevelCorrectionSkipSnaps = 0 ! number of correction data sets to skip 
+      integer :: dynamicWaterLevelCorrectionSkipSnaps = 0 ! number of correction data sets to skip
       character(len=10) :: dynamicWaterLevelCorrectionRampReferenceTime='hotstart' ! coldstart or hotstart
       real(sz) :: dynamicWaterLevelCorrectionMultiplier = 1.d0 ! multiply each correction value by this
-      ! limited to this module 
+      ! limited to this module
       integer, parameter :: dynamicWaterLevelCorrectionUn = 21 ! i/o unit number for water lvl correction
       integer :: dynamicWaterLevelCorrectionBlankSnaps = 0 ! counter for initial blank snaps
       integer :: dynamicWaterLevelCorrectionDataSetCounter=0 ! counts real datasets read from file
@@ -250,7 +255,7 @@ C
       logical,allocatable :: hasdata(:) ! if OWI data exists at this vertex       
       !...Function interface for wind drag
       !   Used so that the selection of wind drag
-      !   is only performed once. Each wind drag 
+      !   is only performed once. Each wind drag
       !   function has the same function signiture
       ABSTRACT INTERFACE
         FUNCTION p_computeWindDrag(WindSpeed,NodeNumber) RESULT(Drag)
@@ -283,9 +288,9 @@ C     ----------------------------------------------------------------
 C     jgf50.32 Subroutine to initialize meteorological parameters to their
 C     default values.
 C     jgf53.dev: Now allocates memory, whereas default values are now set
-C     in the module variable declaration section above. 
+C     in the module variable declaration section above.
 C     This subroutine must be called after read_input() so that it can
-C     use the values of np and g. 
+C     use the values of np and g.
 C     ----------------------------------------------------------------
       subroutine initWindModule()
       use mesh, only : np
@@ -300,17 +305,19 @@ C     ----------------------------------------------------------------
       allocate ( wvnx2(np),wvny2(np) )
       allocate ( prn1(np) )
       allocate ( prn2(np) )
+
       if (NWS.eq.-14) allocate ( HasData(np) )
 C     WJP: this is the value used in the surface stress computation  
 C     (can contol through the rhoAir parameter in namelist)
       airwaterdensityrat = rhoAir / rhoWat0
+
 C.... tcm v49.16 20100617 added
 C.... convert background pressure from millibars to meters of water
       rhoWat0g = rhoWat0 * g
       PRBCKGRND_MH2O = 100.0D0 * PRBCKGRND / rhoWat0g
       prn1 = PRBCKGRND_MH2O
       prn2 = PRBCKGRND_MH2O
-      
+
       CALL checkWindDragType()
       CALL mapWindDragFunctionPointer()
 
@@ -383,7 +390,7 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
 
 !     ----------------------------------------------------------------
-!>    @brief Maps the function pointer used in the calculation of 
+!>    @brief Maps the function pointer used in the calculation of
 !>    wind drag. This is used so that the logical statements required
 !>    to select the wind drag are only executed once at startup
 !     ----------------------------------------------------------------
@@ -391,7 +398,7 @@ C----------------------------------------------------------------------
 !     ----------------------------------------------------------------
           IMPLICIT NONE
 #ifdef POWELL
-          f_computeWindDrag => PowellWindDrag          
+          f_computeWindDrag => PowellWindDrag
 #else
           SELECT CASE(DragLawType)
           CASE(DRAGLAW_GARRATT)
@@ -402,9 +409,9 @@ C----------------------------------------------------------------------
 #ifndef CSWAN
               call allMessage(WARNING,"SWAN Model not enabled. Drag formulation will be Garratt.")
               f_computeWindDrag => CappedGarrattWindDrag
-#else              
+#else
               f_computeWindDrag => SwanWindDrag
-#endif              
+#endif
           CASE DEFAULT
               call allMessage(ERROR,"Wind drag law not recognized"//TRIM(DragLawString))
 #ifdef CMPI
@@ -412,7 +419,7 @@ C----------------------------------------------------------------------
 #endif
               STOP
           END SELECT
-#endif              
+#endif
 !     ----------------------------------------------------------------
       END SUBROUTINE mapWindDragFunctionPointer
 !     ----------------------------------------------------------------
@@ -426,7 +433,7 @@ C----------------------------------------------------------------------
 !     ----------------------------------------------------------------
       REAL(SZ) FUNCTION WindDrag(WindSpeed, NodeNumber)
         USE GLOBAL,ONLY: windDragOut
-        IMPLICIT NONE 
+        IMPLICIT NONE
         REAL(SZ) :: WindSpeed
         INTEGER  :: NodeNumber
         WindDrag = f_computeWindDrag(windSpeed,NodeNumber)
@@ -456,15 +463,15 @@ C----------------------------------------------------------------------
        END FUNCTION SwanWindDrag
 !     ----------------------------------------------------------------
 #endif
-            
+
 !     ----------------------------------------------------------------
 !>    @brief Function applying the Garratt wind drag formulation.
-!> 
-!>    Wind drag is calculated using Garratt, 1977 by: 
-!>    \f[ 
-!>       d = \frac{\left( 0.75 + 0.067 \left| \vec{w} \right| \right)}{1000} 
+!>
+!>    Wind drag is calculated using Garratt, 1977 by:
+!>    \f[
+!>       d = \frac{\left( 0.75 + 0.067 \left| \vec{w} \right| \right)}{1000}
 !>    \f]
-!> 
+!>
 !>    @param[in] WindSpeed wind magnitude
 !>    @param[in] NodeNumber adcirc mesh node index
 !>    @result wind drag coefficient
@@ -849,16 +856,16 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
-C                    S U B R O U T I N E 
+C                    S U B R O U T I N E
 C       G E T   M E T E O R O L O G I C A L   F O R C I N G
 C----------------------------------------------------------------------
-C     Called from timestep() to perform i/o, time interpolation, 
+C     Called from timestep() to perform i/o, time interpolation,
 C     wind reduction, canopy effects, drag modification due to ice,
 C     computation of stress from velocity, units conversion, and
-C     any other procedures necessary for producing met data at a 
-C     particular point in time. 
+C     any other procedures necessary for producing met data at a
+C     particular point in time.
 C----------------------------------------------------------------------
-      subroutine getMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
+      subroutine getMeteorologicalForcing(nws, wsx2, wsy2, pr2,
      &   wvnxout, wvnyout, timeloc)
       use owiwind,only : nws12get, findStormCenter    ! sb added 09/xx/2006     
       use global, only : ciceout, h0, g, eta2, ncice, rampmete,
@@ -866,6 +873,9 @@ C----------------------------------------------------------------------
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np, uvectmp, vvectmp, DRVMAP2DSPVEC
+#ifdef ADCNETCDF
+      USE OWIWIND_NETCDF, ONLY: NWS13GET
+#endif
       implicit none
       integer, intent(in) :: nws
       real(sz), intent(out) :: wsx2(:)
@@ -884,16 +894,16 @@ C----------------------------------------------------------------------
       real(sz) :: wtratio ! used to time interpolated between met datasets
       real(sz) :: cicenow, icedragco, ctratio, icemag, icex, icey 
       integer :: nhg ! node number temp
-      real(sz) :: bf ! blend factor for multiple sets of wind data 
+      real(sz) :: bf ! blend factor for multiple sets of wind data
       integer :: i ! node loop counter
       real(sz) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
 
       call setMessageSource("getMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif      
+#endif
 
-      
+
 C------------------------MET FORCING---------------------------------------
 C
 C...  UPDATE THE WIND STRESS AND SURFACE PRESSURE AND READ IN NEW VALUES
@@ -1420,6 +1430,50 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
           END DO
       ENDIF
 
+#ifdef ADCNETCDF
+Casey 180318: Added for NWS=13, ARC modified 190108
+        IF(ABS(NWS).EQ.13) THEN
+          IF(TimeLoc.GT.WTIME2I) THEN
+            WTIME1I=WTIME2I
+            WTIME2I=WTIME2I+WTIMINC
+            DO I=1,NP
+              WVNX1(I)=WVNX2(I)
+              WVNY1(I)=WVNY2(I)
+              PRN1(I)=PRN2(I)
+            END DO
+            CALL NWS13GET(WTIME2I,WVNX2,WVNY2,PRN2,
+     &          WTIME2,EyeLon,EyeLat,FoundEye,W)
+!            write(6,*) "timeloc", timeloc, "wtiminc", wtiminc, "inside",
+!     &        wtime1i, wtime2i, wtime1, wtime2
+          ENDIF
+          WTRATIO=(TimeLoc-WTIME1I)/WTIMINC
+          DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+              CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &             WindMag, DP(I), ETA2(I), WindX, WindY)
+              WindMag = SQRT(WindX*WindX+WindY*WindY)
+              WDragCo = WindDrag(WindMag,I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                          -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete*WINDX
+            WVNYOUT(I)=RampMete*WINDY
+          ENDDO
+        ENDIF
+#endif
+
 C     RJW ffpl Merged:
 !     rjw added nws = 19: asymmetric hurricane winds
       IF(NWS.EQ.19) THEN
@@ -1479,8 +1533,8 @@ C  tcm v49.16 20100617C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
          END DO
-      ENDIF    
-C      
+      ENDIF
+C
 C     jgf49.1001 Added NWS29 for embedding an asymmetric vortex from
 C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
       IF((ABS(NWS).EQ.29).or.(ABS(NWS).eq.30)) THEN
@@ -1496,19 +1550,19 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
             CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND)
             if(draglawtype.EQ.draglaw_powell)then
                call findStormCenter(eyeLat, eyeLon, foundEye)
-            endif           
+            endif
          ENDIF
          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
          ! bring in next set of asymmetric vortex met data to separate arrays
-         select case(abs(nws)) 
+         select case(abs(nws))
          case(29)
             CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,timeloc)
          case(30)
             CALL NWS20GET(vortexWVNX2,vortexWVNY2,vortexPRN2,timeloc)
          case default
             ! should be unreachable
-            call logMessage(ERROR,'NWS must equal 29 or 30.') 
-         end select        
+            call logMessage(ERROR,'NWS must equal 29 or 30.')
+         end select
          DO I=1,NP
             ! compute wind stress due to background met at this node
             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
@@ -1563,7 +1617,7 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
              WDragCo = WindDrag(windMag, i)
              IF (LoadDirEffRLen) THEN
                 CALL ApplyDirectionalWindReduction(i, WDragCo,
-     &              windMag, DP(I), ETA2(I), 
+     &              windMag, DP(I), ETA2(I),
      &              windx, windy)
                 WindMag = SQRT(windx**2+windy**2)
                 WDragCo = WindDrag(WindMag, i)
@@ -1651,7 +1705,7 @@ C----------------------------------------------------------------------
 
 
 C----------------------------------------------------------------------
-C                   S U B R O U T I N E 
+C                   S U B R O U T I N E
 C    C O L D  S T A R T   M E T E O R O L O G I C A L   F O R C I N G
 C----------------------------------------------------------------------
 C     Sets up meteorological i/o for a coldstart.
@@ -1665,25 +1719,29 @@ C----------------------------------------------------------------------
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np
+#ifdef ADCNETCDF
+Casey 180318: Added for NWS=13
+      USE OWIWIND_NETCDF, ONLY: NWS13INIT,NWS13GET
+#endif
       implicit none
       integer, intent(in) :: nws
       real(sz) :: windx ! wind vel (m/s) in x-dir
       real(sz) :: windy ! wind vel (m/s) in y-dir
       real(sz) :: wtratio ! used to time interpolated between met datasets
       integer :: nhg ! node number temp
-      real(sz) :: bf ! blend factor for multiple sets of wind data 
+      real(sz) :: bf ! blend factor for multiple sets of wind data
       integer :: i ! node loop counter
 
       call setMessageSource("coldStartMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif      
+#endif
+
 
       WSX2(:) = 0.d0
       WSY2(:) = 0.D0
-      PR2(:) = PRBCKGRND_MH2O  
+      PR2(:) = PRBCKGRND_MH2O
 
-     
       IF(NWS.EQ.1) THEN
          OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
       ENDIF
@@ -1780,12 +1838,12 @@ C     RJW Merged:
          OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
         CALL NWS19GET(WVNX2,WVNY2,PRN2,STATIM*86400.D0)
       ENDIF
-      
+
 !    jie added nws = 20: generalized asymmetric vortex model
       IF(NWS.EQ.20) THEN
          OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
         CALL NWS20GET(WVNX2,WVNY2,PRN2,STATIM*86400.D0)
-      ENDIF      
+      ENDIF
 
 C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/2006
       ! jgf49.1001 Added NWS=29, asymmetric vortex wind (NWS19) embedded in
@@ -1795,11 +1853,11 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
         if(draglawtype.EQ.draglaw_powell)then
             call findStormCenter(eyeLat, eyeLon, foundEye)
-        endif           
+        endif
         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND)
         if(draglawtype.EQ.draglaw_powell)then
             call findStormCenter(eyeLat, eyeLon, foundEye)
-        endif                    
+        endif
         WTIME1 = STATIM*86400.D0
         WTIME2 = WTIME1 + WTIMINC
       ENDIF
@@ -1853,7 +1911,7 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          NWSEGWI=1
          IDSETFLG=1
          wvnx1 = wvnx2
-         wvny1 = wvny2                 
+         wvny1 = wvny2
          CALL NWS11GET()        !NOW INTERPOLATE 1st WIND FIELD
       ENDIF
       !
@@ -1894,12 +1952,28 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
       ENDIF
 #endif
 #endif
+
+#ifdef ADCNETCDF
+Casey 180318: Added for NWS=13, ARC modified 190108
+      IF(ABS(NWS).EQ.13)THEN
+         WTIME1=STATIM*86400.D0
+         WTIME2=WTIME1+WTIMINC
+         WTIME2I=WTIME2
+         WTIME1I=WTIME1
+        CALL NWS13INIT(0.D0,W)
+        CALL NWS13GET(WTIME1,WVNX1,WVNY1,PRN1,
+     &      WTIME2,EyeLon,EyeLat,FoundEye,W)
+        CALL NWS13GET(WTIME2,WVNX2,WVNY2,PRN2,
+     &      WTIME2,EyeLon,EyeLat,FoundEye,W)
+      ENDIF
+#endif
+
       !
       ! jgf50.38.05: Added NWS=15,-15 for reading HWind data
       IF (ABS(NWS).EQ.15) THEN
          CALL NWS15INIT(STATIM*86400.0)
       ENDIF
-C     
+C
 C....tcm v51.06.02: Added NWS=16,-16 for reading ASCII GFDL Met data
       IF (ABS(NWS).EQ.16) THEN
          CALL INIT_GFDL(STATIM*86400.0)
@@ -1908,9 +1982,9 @@ C....tcm v51.06.02: Added NWS=16,-16 for reading ASCII GFDL Met data
       ! jgf52.14: Implementing Casey's fix for uninitialized
       ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
       ! by the parametric vortex meteorological models but are used in
-      ! the padcswan_init() subroutine to initialize the SWAN wind 
-      ! velocities. Failure to initialize them causes NaNs in the 
-      ! solution. 
+      ! the padcswan_init() subroutine to initialize the SWAN wind
+      ! velocities. Failure to initialize them causes NaNs in the
+      ! solution.
       if ( (abs(nws).eq.8).or.(abs(nws).eq.19).or.(abs(nws).eq.20)) then
          WVNX1 = WVNX2
          WVNY1 = WVNY2
@@ -1927,12 +2001,12 @@ C----------------------------------------------------------------------
 
 
 C----------------------------------------------------------------------
-C                   S U B R O U T I N E 
+C                   S U B R O U T I N E
 C    H O T S T A R T   M E T E O R O L O G I C A L   F O R C I N G
 C----------------------------------------------------------------------
 C     Sets up meteorological i/o for a hotstart.
 C----------------------------------------------------------------------
-      subroutine hotstartMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
+      subroutine hotstartMeteorologicalForcing(nws, wsx2, wsy2, pr2,
      &   wvnxout, wvnyout, timeloc, rampmete2)
       use sizes, only : gblinputdir, inputdir
       use global, only : ciceout, h0, g, eta2, ncice, rampmete,
@@ -1942,6 +2016,9 @@ C----------------------------------------------------------------------
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np, uvectmp, vvectmp, DRVMAP2DSPVEC
+#ifdef ADCNETCDF
+      USE OWIWIND_NETCDF, ONLY: NWS13INIT,NWS13GET
+#endif
       implicit none
       integer, intent(in) :: nws
       real(sz), intent(out) :: wsx2(:)
@@ -1950,8 +2027,8 @@ C----------------------------------------------------------------------
       real(sz), intent(out) :: wvnxout(:)
       real(sz), intent(out) :: wvnyout(:)
       real(sz), intent(in) :: timeloc
-      real(sz), intent(in) :: rampMete2   ! Ramp for wind and atmospheric pressure @ITHS     
-      real(sz) :: timeit       
+      real(sz), intent(in) :: rampMete2   ! Ramp for wind and atmospheric pressure @ITHS
+      real(sz) :: timeit
       real(sz) :: windx ! wind vel (m/s) in x-dir
       real(sz) :: windy ! wind vel (m/s) in y-dir
       real(sz) :: prdiff
@@ -1960,7 +2037,7 @@ C----------------------------------------------------------------------
       real(sz) :: wtratio ! used to time interpolated between met datasets
       real(sz) :: cicenow, ctratio 
       integer :: nhg ! node number temp
-      real(sz) :: bf ! blend factor for multiple sets of wind data 
+      real(sz) :: bf ! blend factor for multiple sets of wind data
       real(sz) :: vortexPRDIFF
       integer :: it
       integer :: i ! node loop counter
@@ -1970,7 +2047,7 @@ C----------------------------------------------------------------------
       call setMessageSource("hotStartMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif      
+#endif
 
 C
 C......RESTART WIND AND PRESSURE INFORMATION
@@ -2088,7 +2165,7 @@ C....                           to correspond with having only a global wind fil
                   WVNY1(I)=WVNY2(I)
                END DO
                CALL NWS3GET()
-               write(scratchMessage,'(a,f15.7)')  
+               write(scratchMessage,'(a,f15.7)')
      &            'Wind file advanced to time = ',iwtime
                call allMessage(INFO,scratchMessage)
             ENDIF
@@ -2475,7 +2552,7 @@ C  tcm v49.16 20100617
             WVNYOUT(I)=RampMete2*WindY
          ENDDO
       ENDIF
-      
+
 !     jie added nws = 20: generalized asymmetric vortex model
 
       IF(ABS(NWS).EQ.20) THEN
@@ -2507,7 +2584,7 @@ C  tcm v49.16 20100617
             WVNXOUT(I)=RampMete2*WindX
             WVNYOUT(I)=RampMete2*WindY
          ENDDO
-      ENDIF            
+      ENDIF
 C
 
 C     Wind velocity (10 m) and atmospheric pressure are read in from a
@@ -2672,6 +2749,46 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             WVNYOUT(I)=RampMete2*WINDY
          END DO
       ENDIF
+
+#ifdef ADCNETCDF
+Casey 180318: Added for NWS=13, ARC modified 190108
+      IF(ABS(NWS).EQ.13)THEN
+         WTIME1 = TimeLoc
+         WTIME2 = WTIME1 + WTIMINC
+         WTIME2I = WTIME2
+         WTIME1I = WTIME1
+        CALL NWS13INIT(TIMELOC,W)
+        CALL NWS13GET(WTIME1,WVNX1,WVNY1,PRN1,
+     &      WTIME2,EyeLon,EyeLat,FoundEye,W)
+        CALL NWS13GET(WTIME2,WVNX2,WVNY2,PRN2,
+     &      WTIME2,EyeLon,EyeLat,FoundEye,W)
+        WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+        DO I=1,NP
+          WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+          WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+          WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+          WDragCo = WindDrag(WindMag, I)
+          IF(LoadDirEffRLen)THEN
+             CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &         WindMag, DP(I), ETA2(I), WindX, WindY)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+          ENDIF
+          IF(LoadCanopyCoef)THEN
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+          ENDIF
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+          WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+          WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+          PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &        -PRBCKGRND_MH2O)
+          PR2(I) = PRBCKGRND_MH2O + PRDIFF
+          WVNXOUT(I)=RampMete2*WINDX
+          WVNYOUT(I)=RampMete2*WINDY
+         ENDDO
+      ENDIF
+#endif
+
 C
 C     jgf49.1001 Added NWS29, asymmetric vortex winds (NWS19)
 C     embedded in an OWI basin scale gridded met field (NWS12)
@@ -2689,7 +2806,7 @@ C     from NAM data
             OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
      &           STATUS='OLD')
             CALL NWS20GET(vortexWVNX2,vortexWVNY2,vortexPRN2,TimeLoc)
-         endif         
+         endif
          DO I=1,NP
             WindX = vortexWVNX2(I)
             WindY = vortexWVNY2(I)
@@ -2710,7 +2827,7 @@ C     from NAM data
      &               +(1.0d0-bf)*WSY2(I)
             vortexPRDIFF = RampMete2*(vortexPRN2(I)-PRBCKGRND_MH2O)
             vortexPRN2(I) = PRBCKGRND_MH2O + vortexPRDIFF
-            ! blend vortex into background     
+            ! blend vortex into background
             PR2(I) = bf*vortexPRN2(I)+(1.0d0-bf)*PR2(I)
             WVNXOUT(I)=bf*RampMete2*WindX+(1.0d0-bf)*WVNXOUT(I)
             WVNYOUT(I)=bf*RampMete2*WindY+(1.0d0-bf)*WVNYOUT(I)
@@ -2812,6 +2929,45 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
       ENDIF
 #endif
 #endif
+#ifdef ADCNETCDF
+Casey 180318: Added for NWS=13
+      IF(ABS(NWS).EQ.13)THEN
+        WTIME1 = TIMELOC
+        WTIME2 = TIMELOC
+        CALL NWS13INIT(TIMELOC,W)
+        CALL NWS13GET(TIMELOC,WVNX2,WVNY2,PRN2,
+     &         WTIME2,EyeLon,EyeLat,FoundEye,W)
+!       IF(TRIM(DragLawString).EQ."Powell".OR.
+!    &      TRIM(DragLawString).EQ."POWELL".OR.
+!    &      TRIM(DragLawString).EQ."powell")THEN
+!         CALL findStormCenter(eyeLatR,eyeLonR,foundEye)
+!       ENDIF
+        WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+        DO I=1,NP
+          WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+          WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+          WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+          WDragCo = WindDrag(WindMag, I)
+          IF(LoadDirEffRLen)THEN
+            CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &          WindMag, DP(I), ETA2(I), WindX, WindY)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+          ENDIF
+          IF(LoadCanopyCoef)THEN
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+          ENDIF
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+          WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+          WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+          PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &        -PRBCKGRND_MH2O)
+          PR2(I) = PRBCKGRND_MH2O + PRDIFF
+          WVNXOUT(I)=RampMete2*WINDX
+          WVNYOUT(I)=RampMete2*WINDY
+         ENDDO
+      ENDIF
+#endif
       !
       ! jgf50.38.05: Added NWS=15 for reading HWind data
        IF(ABS(NWS).EQ.15) THEN
@@ -2823,7 +2979,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
              windy = wvny2(i)
              IF (LoadDirEffRLen) THEN
                 CALL ApplyDirectionalWindReduction(i, WDragCo,
-     &              windSpeeds(i), DP(I), ETA2(I), 
+     &              windSpeeds(i), DP(I), ETA2(I),
      &              windx, windy)
                 WindMag = SQRT(windx**2+windy**2)
                 WDragCo = WindDrag(WindMag, i)
@@ -2984,7 +3140,7 @@ C***********************************************************************
       call setMessageSource("nws3get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif      
+#endif
 
 
 C
@@ -2999,7 +3155,7 @@ C
       IWDAY = IWTIME/100 - IWYR*10000 - IWMO*100
       IWHR = IWTIME - IWYR*1000000 - IWMO*10000 - IWDAY*100
       CALL TIMECONV(IWYR,IWMO,IWDAY,IWHR,0,0.0D0,WTIMED)
-      
+
       DO I=1,NWLAT
          READ(22,*) (WVXFN(I,J),J=1,NWLON)
       END DO
@@ -3084,7 +3240,7 @@ C***********************************************************************
       call setMessageSource("nws4get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif      
+#endif
 
 C
       RHOWATG=RHOWAT0*G
@@ -3211,7 +3367,7 @@ C***********************************************************************
       call setMessageSource("nws6get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif      
+#endif
 
 C
       IF (FIRSTCALL.EQ.0) THEN
@@ -3274,7 +3430,7 @@ C
 C     ----------------------------------------------------------------
       END SUBROUTINE NWS6GET
 C     ----------------------------------------------------------------
-      
+
 
 C     ----------------------------------------------------------------
 C      S U B R O U T I N E     N W S 7 G E T
@@ -3348,7 +3504,7 @@ C     ----------------------------------------------------------------
       call setMessageSource("nws7get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif      
+#endif
 
 C
       IF (.not.MemoryAllocated) THEN
@@ -3410,12 +3566,12 @@ C
 C     ----------------------------------------------------------------
       END SUBROUTINE NWS7GET
 C     ----------------------------------------------------------------
-   
+
 
       !----------------------------------------------------------------
       !         S U B R O U T I N E   N W S  1 0  I N I T
       !----------------------------------------------------------------
-      ! jgf52.51.21: Decoupled the NWS10 initialization from the 
+      ! jgf52.51.21: Decoupled the NWS10 initialization from the
       ! rest of the subroutine to correct numerical issues associated
       ! with uninitialized variables.
       !----------------------------------------------------------------
@@ -3429,22 +3585,22 @@ C     ----------------------------------------------------------------
       call setMessageSource("nws10init")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif      
+#endif
       !
-      ! gaussian met values 
+      ! gaussian met values
       allocate ( ug(latb*lonb),vg(latb*lonb),pg(latb*lonb) )
       if (ncice.eq.10) allocate ( ig(latb*lonb) )
       ! four corner met values in grid cell associated with each adcirc mesh vertex 
       allocate ( n00(np),n10(np),n11(np),n01(np) )
       ! four interpolating factors associated with each adcirc mesh vertex
       allocate ( d00(np),d10(np),d11(np),d01(np) )
-      ! 
+      !
       allocate ( colrab(latb),dummy(latb),gclat(latb),gclon(lonb) )
 C
-C...  Set up the Gaussian grid and determine the interpolating factors 
+C...  Set up the Gaussian grid and determine the interpolating factors
 C     for the ADCIRC grid.
       call glats(latb/2,colrab,dummy,dummy,dummy)
-      do j=1,latb/2 
+      do j=1,latb/2
          gclat(j)=colrab(j)
          jj=latb-j+1
          gclat(jj)=pi-colrab(j)
@@ -3456,18 +3612,18 @@ C     for the ADCIRC grid.
       call g2rini()
       !
       ! Set the counter value. According to the ADCIRC documentation,
-      ! fort.200 is read upon hotstart, but not at coldstart. 
+      ! fort.200 is read upon hotstart, but not at coldstart.
       if (ihot.eq.0) then
          nws10DatasetCounter = 1
       else
          nws10DatasetCounter = 0
       endif
-      
+
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-         
+
       !----------------------------------------------------------------
       end subroutine nws10Init
       !----------------------------------------------------------------
@@ -3481,7 +3637,7 @@ C  The new grid is a series of longitude and latitude points contained *
 C  in the FLON and FLAT arrays with a total number of points NP        *
 C                                                                      *
 C       modified from the original G2RINI by R.L. 4/17/96              *
-C    
+C
 C     jgf51.52.21: Removed duplicate variables; moved grid locations
 C     and interpolating factors from subroutine arguments to module
 C     variables; brought log messages up to date with current code.
@@ -3497,7 +3653,7 @@ C***********************************************************************
       call setMessageSource("g2rini")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif      
+#endif
 
 C
 C...Compute estimated DLAT, true DLON for Gaussian grid
@@ -3585,7 +3741,7 @@ C....... Check that this value is reasonable.
          N01(N)=LON+(LATP1-1)*LONB
 
       END DO
-      
+
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -3634,7 +3790,7 @@ C***********************************************************************
       real(sz), intent(out), optional :: ill(:) ! mesh ice values
       !
       real(sz) :: rhowatg ! density of water * gravitational acceleration
-      real(sz) :: p1,p2,p3,p4 ! pressure at 4 corners of gaussian grid cell 
+      real(sz) :: p1,p2,p3,p4 ! pressure at 4 corners of gaussian grid cell
       real(sz) :: u1,u2,u3,u4 ! east velocity at 4 corners of gaussian grid cell
       real(sz) :: v1,v2,v3,v4 ! north velocity at 4 corners of gaussian grid cell
       real(sz) :: i1,i2,i3,i4 ! ice concentration at 4 corners of gaussian grid cell
@@ -3646,24 +3802,24 @@ C***********************************************************************
       call setMessageSource("nws10get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif      
+#endif
 
 C
       rhowatg=rhowat0*g
-      ! 
+      !
       ! Check to be sure that wtiminc is evenly divisible.
       if (modulo(int(wtiminc),3600).ne.0) then
          call allMessage(ERROR,
      &      'For NWS=10, WTIMINC must be evenly divisible by 3600.')
          call windTerminate()
       endif
-      ! 
-      ! Form the data file name.
-      iext = 200 + nws10DatasetCounter * int(wtiminc/3600.d0) 
-      write(fname1,'("fort.",i3)') iext    
       !
-      ! jgf51.52.21: Fixed name of met file with full path for use in 
-      ! parallel operation.  
+      ! Form the data file name.
+      iext = 200 + nws10DatasetCounter * int(wtiminc/3600.d0)
+      write(fname1,'("fort.",i3)') iext
+      !
+      ! jgf51.52.21: Fixed name of met file with full path for use in
+      ! parallel operation.
       call openFileForRead(iext,trim(gblinputdir)//'/'//trim(fname1),ios)
       if (ios.ne.0) then
          call windTerminate()
@@ -3686,7 +3842,7 @@ C
 C.....Go from the Gaussian grid to the ADCIRC grid
 C.....Convert pressure from N/M^2 to M of H20
       do n=1,np
-         ! grab the numerical values at the 4 corners of the grid 
+         ! grab the numerical values at the 4 corners of the grid
          ! cell containing this mesh node
          p1=pg(n00(n))
          p2=pg(n10(n))
@@ -3727,7 +3883,7 @@ C
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-!----------------------------------------------------------------      
+!----------------------------------------------------------------
       end subroutine nws10get
 !----------------------------------------------------------------
 
@@ -3736,7 +3892,7 @@ C  Subroutine to compute the latutudes in a Global Gaussian Lat/Lon    *
 C  grid with T126 resolution (GRIB Grid type 126).                     *
 C                                                                      *
 C      modified from the original GLATS by R.L. 4/24/96                *
-C      modified from T126 to T1534 by Y.F 9/1/2015       
+C      modified from T126 to T1534 by Y.F 9/1/2015
 C
 C      yf51.52.25: Wiki link: https://en.wikipedia.org/wiki/Gaussian_grid
 C***********************************************************************
@@ -3747,12 +3903,12 @@ C***********************************************************************
       INTEGER LGGHAF,L2,K,K1,ITER
       REAL(SZ) SI,SCALEVAL,RL2,DRAD,RAD,P1,P2,EPS,PHI,X,W,SN,RC
       real(sz) :: dradz ! initial guess that represents a distance between gridpoints (radian)
-      integer :: multiple ! yf51.52.25: reduce initial guess for DRAD for T1534 grid  
+      integer :: multiple ! yf51.52.25: reduce initial guess for DRAD for T1534 grid
 
       call setMessageSource("glats")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif      
+#endif
 
 C
       EPS=1.d-6
@@ -3767,10 +3923,10 @@ C
       SCALEVAL = 2.0d0/(RL2*RL2)
       K1=L2-1
       !yf51.52.25 DRADZ = PI / 360.d0
-      !yf51.52.25: In equation L2/(190+2), L2 (1536) is a number of 
-      ! latitude from T1534 grid and 190 is ones from the original 
+      !yf51.52.25: In equation L2/(190+2), L2 (1536) is a number of
+      ! latitude from T1534 grid and 190 is ones from the original
       ! T126 grid. +2 is polar points which didn't include in T126 grid.
-      ! The reason why I used the equation and the integer "multiple" 
+      ! The reason why I used the equation and the integer "multiple"
       ! are I want to use the original T126 latitudinal number (as the
       ! base number) for the future update of GFS.
       multiple = L2/(190+2)
@@ -3816,7 +3972,7 @@ c     100  FORMAT(1H ,'SHALOM FROM 0.0 GLATS FOR ',I3)
 
 
 C***********************************************************************
-C  Subroutine used by GLATS.                 
+C  Subroutine used by GLATS.
 C     yf51.52.25: The subroutine POLY calculates the polynomial used in
 C     Gaussian quadrature.
 C***********************************************************************
@@ -3871,7 +4027,7 @@ C***********************************************************************
 
       SUBROUTINE NWS11GET()
       USE SIZES
-      USE GLOBAL, ONLY : RHOWAT0, G 
+      USE GLOBAL, ONLY : RHOWAT0, G
       USE MESH, ONLY : NP, SLAM, SFEA
       IMPLICIT NONE
       INTEGER,SAVE  ::  ICALL = 0
@@ -3892,8 +4048,8 @@ C
       call setMessageSource("nws11get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif      
-      
+#endif
+
 C
       IF (ICALL.EQ.0) THEN
          ICALL = 1
@@ -4651,7 +4807,7 @@ C
       call setMessageSource("hollandget")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif      
+#endif
 
 C
       mperdeg  = Rearth * pi / 180.0d0
@@ -4769,7 +4925,7 @@ C       WJP: added absolute around CORIOLIS for Southern Hempisphere
      &        (RMW*1000.d0/RAD(I))**B *
      &        EXP(1.d0-(RMW*1000.d0/RAD(I))**B)*spd**2.d0
      &        + (RAD(I)**2.d0)*(CORIOLIS**2.d0)/4.d0
-     &        ) 
+     &        )
      &        - RAD(I)*ABS(CORIOLIS)/2.d0
 C
 C     jgf46.31 Determine translation speed that should be added to final
@@ -4812,7 +4968,7 @@ C
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()      
+      call unsetMessageSource()
 C     ----------------------------------------------------------------
       END SUBROUTINE HollandGet
 C     ----------------------------------------------------------------
@@ -4862,8 +5018,8 @@ C
       call setMessageSource("getHollandStormData")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif      
-      
+#endif
+
 C     ------------------------------------------------------
 C     BEGIN Code executed upon first call to this subroutine
 C     ------------------------------------------------------
@@ -4990,10 +5146,10 @@ C     the NHC does not forecast these parameters), exit with a fatal error.
                endif
 C
       ! @jasonfleming: Adding a new type to allow the analyst to add lines
-      ! that do nothing but produce zero winds and background barometric 
-      ! pressure. These lines can have a date/time like a BEST line or 
-      ! a date/time and forecast period like an OFCL line. 
-            CASE("CALM")        
+      ! that do nothing but produce zero winds and background barometric
+      ! pressure. These lines can have a date/time like a BEST line or
+      ! a date/time and forecast period like an OFCL line.
+            CASE("CALM")
                call allMessage(ECHO,
      &            'The fort.22 file contains at least one "CALM" line.')
                IF (i.gt.1 ) THEN
@@ -5083,7 +5239,7 @@ C     Calculate storm translation velocities based on change in position,
      &                    lat(i),lon(i),
      &                    CastTime(i-1),CastTime(i),
      &                    tvx(i),tvy(i))
-     
+
          ENDDO
          ! extrapolate later storm translation speeds back to the
          ! first storm position
@@ -5112,7 +5268,7 @@ C     the fort.22 file.
          ENDDO
          FIRSTCALL = .False.
       ENDIF
-      ! 
+      !
       ! @jasonfleming: Check to see if there is enough data to cover
       ! the whole run and bomb out immediately if there isn't.
       if (castTime(pl).lt.RNDAY*86400.d0) then
@@ -5133,7 +5289,7 @@ C     If time exceeds the next hindcast/nowcast/forecast time, increment the
 C     array counter.
       IF (TIMELOC.gt.CastTime(i)) THEN
          i=i+1
-C         jgf51.14: Check to see that we haven't gone off the end of 
+C         jgf51.14: Check to see that we haven't gone off the end of
 C         meteorological data.
           IF (i.gt.pl) THEN
              call allMessage(ERROR,'The simulation time has extended '//
@@ -5386,8 +5542,8 @@ C     ----------------------------------------------------------------
       !    7/21/09     Robert Weaver               Modify to let user choose which isotach to use
       !                                            when submitting Rmax
       !                                            NWS=19
-      !    2/19/19     Taylor A.                   Changed ilon to 4 columns to facilitate 
-      !                                            distant storms.  
+      !    2/19/19     Taylor A.                   Changed ilon to 4 columns to facilitate
+      !                                            distant storms.
       !
       ! Reference:
       !
@@ -5514,8 +5670,8 @@ C
       ! for NWS29).
       !---------------
       IF (firstCall .EQ. 0) THEN  ! first time the routine is called
-         ! @jasonfleming: compute run end time in seconds to make sure 
-         ! there are enough data in the file to cover the whole run. 
+         ! @jasonfleming: compute run end time in seconds to make sure
+         ! there are enough data in the file to cover the whole run.
          rndaySeconds = RNDAY * 86400.d0
          i=0
          DO      ! determine the number of entries in the file
@@ -5685,9 +5841,9 @@ C
          num_cycles = icyc
          icyc=2
 
-         ! 
+         !
          ! @jasonfleming: If there isn't enough data in the fort.22 to
-         ! cover the whole run, bomb out immediately.  
+         ! cover the whole run, bomb out immediately.
          if (cycleTime(num_cycles).lt.rndaySeconds) then
             call allMessage(ERROR,"There aren't enough data in the "//
      &      'fort.22 file to cover the entire run time.')
@@ -5718,7 +5874,7 @@ C     we are running off the end of the data.
             icyc=icyc+1
          ENDIF
       ENDIF
-      ! 
+      !
       ! @jasonfleming: Add handling of "CALM"
       if ((trim(type(icyc)).eq.'CALM').or.trim(type(icyc-1)).eq.'CALM') then
          wvnx(:)=0.d0
@@ -5746,7 +5902,7 @@ C     we are running off the end of the data.
          call unsetMessageSource()
          return
       endif
-      !        
+      !
       ! Interpolate NHC forecast interval in
       ! time to obtain values at model time.
       wtratio=(TIMELOC-CycleTime(icyc-1))/
@@ -5924,15 +6080,15 @@ C***********************************************************************
       !    7/21/09     Robert Weaver               Modify to let user choose which isotach to use
       !                                            when submitting Rmax
       !                                            NWS=19
-      !    5/20/13     Jie Gao, UNC-IMS            Added nws=20 option to use quadrant-varying Holland B, 
-      !                                            and PhiFactor, and occasionally 
-      !                                            Vpseudo=Vr if violations occur when taking out 
-      !                                            translational speed; 
+      !    5/20/13     Jie Gao, UNC-IMS            Added nws=20 option to use quadrant-varying Holland B,
+      !                                            and PhiFactor, and occasionally
+      !                                            Vpseudo=Vr if violations occur when taking out
+      !                                            translational speed;
       !                                            use full gradient wind equation
       !                                            introduce a linear-weighted combination method to use
-      !                                            multiple isotachs 
-      !    2/19/19     Taylor A.                   Changed ilon to 4 columns to facilitate 
-      !                                            distant storms.  
+      !                                            multiple isotachs
+      !    2/19/19     Taylor A.                   Changed ilon to 4 columns to facilitate
+      !                                            distant storms.
       !
       ! Reference:
       !
@@ -5953,7 +6109,7 @@ C***********************************************************************
       USE VORTEX, ONLY : setVortex, fitRmaxes4,  uvpr, spInterp,
      &                   Rmaxes4, QuadFlag4, QuadIr4, Bs4, VmBL4  ! jgfdebug
       USE GLOBAL, ONLY : kt2ms, nm2m,deg2rad,omega, Rearth, m2nm, mb2pa, rnday
-      USE MESH, ONLY : slam, sfea, np, ics 
+      USE MESH, ONLY : slam, sfea, np, ics
       IMPLICIT NONE
 
       INTEGER  :: ient
@@ -5990,7 +6146,7 @@ C***********************************************************************
       REAL(sz), SAVE :: cLat
       REAL(sz), SAVE :: cLon
       REAL(SZ), SAVE :: told
-      ! save parameters for each node 
+      ! save parameters for each node
       ! change them to allocatable, save Aug. 2013, Jie
       REAL(sz), ALLOCATABLE, SAVE :: cHollBs1(:), cHollBs2(:)
       REAL(sz), ALLOCATABLE, SAVE :: cPhiFactor1(:), cPhiFactor2(:)
@@ -6041,7 +6197,7 @@ C***********************************************************************
       REAL(sz) :: rndaySeconds ! end time of the run in seconds
       real(sz) :: newVortexRMW ! average Rmax at icyc   (next fort.22 time value)
       real(sz) :: oldVortexRMW ! average Rmax at icyc-1 (previous fort.22 time value)
-      
+
       call setMessageSource("nws20get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -6121,18 +6277,18 @@ C***********************************************************************
          allocate(quadflag(i,4,4),name(i))
          allocate(uTrans1(i), vTrans1(i),HollB1(i),atcfRMW1(i) )
          allocate(uTrans(i) , vTrans(i) ,HollB(i) ,atcfRMW(i) )
-         allocate(HollBs1(i,4)) 
-         allocate(HollBs(i,4,4)) 
+         allocate(HollBs1(i,4))
+         allocate(HollBs(i,4,4))
          allocate(h_speed(i))
          allocate(VmaxesBL1(i,4), VmaxesBL(i,4,4))
 
          ! jgf: initialize arrays to zero
          ir = 0
          rmaxw = 0.0d0
-         quadflag = 0 
+         quadflag = 0
          HollBs = 0.0d0
          VmaxesBL = 0.0d0
-         
+
          ! Read parsed NHC advisory in modified best-track format
 
 27       FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 2x, i4,a1, 2x,
@@ -6201,7 +6357,7 @@ C***********************************************************************
               VmaxesBL(icyc,i,isot) = VmaxesBL1(ient,i)
            endif
          enddo
-         
+
 ! ---------------------------------------------------------------------------
          DO ient=2,num_entry  ! LOOP through entris (lines) in input file
 
@@ -6213,9 +6369,9 @@ C***********************************************************************
      &    cycle_num1(ient),isotachs_per_cycle1(ient),
      &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient),
      &    (HollBs1(ient,i),i=1,4),(VmaxesBL1(ient,i),i=1,4)
-     
+
             if ( cycle_num1(ient) == cycle_num1(ient-1)) then
-                isot=isot+1 ! same icyc, next isotach   
+                isot=isot+1 ! same icyc, next isotach
                 if (isot.gt.4) then
             write(scratchMessage,'(a,a,i0,a)')
      &      'The GAHM fort.22 input file has more than 4 isotachs ',
@@ -6250,7 +6406,7 @@ C***********************************************************************
                h_speed(icyc) =  speed1(ient)
                name(icyc)  =  name1(ient)
                cycle_num(icyc) = cycle_num1(ient)
-               HollB(icyc) = HollB1(ient)           
+               HollB(icyc) = HollB1(ient)
 
               ! switch sin and cos b/c these are compass directions
               uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
@@ -6288,9 +6444,9 @@ C***********************************************************************
          CALL logMessage(INFO,scratchMessage)
          num_cycles = icyc
          icyc=2
-         ! 
+         !
          ! @jasonfleming: If there isn't enough data in the fort.22 to
-         ! cover the whole run, bomb out immediately.  
+         ! cover the whole run, bomb out immediately.
          if (cycleTime(num_cycles).lt.rndaySeconds) then
             call allMessage(ERROR,"There aren't enough data in the "//
      &      'fort.22 file to cover the entire run time.')
@@ -6311,7 +6467,7 @@ C     jgf50.30 Changed .ge. to .gt. so that we wouldn't start looking at the
 C     next cycle until we are in it ... this should prevent problems when
 C     the ADCIRC run ends right at the end of the fort.22 ... otherwise,
 C     we are running off the end of the data.
-      
+
       IF (TIMELOC.gt.CycleTime(icyc)) THEN
          IF (icyc.gt.num_cycles) THEN
             CALL allMessage(WARNING,
@@ -6322,7 +6478,7 @@ C     we are running off the end of the data.
          icyc=icyc+1
          ENDIF
       ENDIF
-      ! 
+      !
       ! @jasonfleming: Add handling of "CALM"
       if ((trim(type(icyc)).eq.'CALM').or.trim(type(icyc-1)).eq.'CALM') then
          wvnx(:)=0.d0
@@ -6360,48 +6516,48 @@ C     we are running off the end of the data.
      &                         wtratio * (lat(icyc)-lat(icyc-1))
       cLon  =  lon(icyc-1)  +
      &                         wtratio * (lon(icyc)-lon(icyc-1))
-      ! locate each node based on the latest hurricane center location   
+      ! locate each node based on the latest hurricane center location
       do i=1,np
          dx = deg2rad * Rearth * (xcoor(i) - cLon)*COS(deg2rad*cLat)
          dy = deg2rad * Rearth * (ycoor(i) - cLat)
          dist(i) = SQRT(dx*dx + dy*dy)* m2nm
          aziangle(i) = 360.0d0 + rad2deg * ATAN2(dx,dy)
          IF (aziangle(i) > 360.d0) aziangle(i) = aziangle(i) - 360.d0
-      enddo 
-         
+      enddo
+
  ! set parameters at icyc-1
  !        call setQuadFlag4(reshape(quadflag(icyc-1,:,:),(/4,4/)))
  !        call setQuadIr4(reshape(ir(icyc-1,:,:),(/4,4/)))
  !        call setRmaxes4(reshape(rmaxw(icyc-1,:,:),(/4,4/)))
  !        call setShapeParameters4(reshape(HollBs(icyc-1,:,:),(/4,4/)))
  !        call setVmaxesBL4(reshape(VmaxesBL(icyc-1,:,:),(/4,4/)))
- 
+
       QuadFlag4(2:5,1:4) = quadflag(icyc-1,1:4,1:4)
       QuadIr4(2:5,1:4) = real(ir(icyc-1,1:4,1:4))
       Rmaxes4(2:5,1:4) = rmaxw(icyc-1,1:4,1:4)
       Bs4(2:5,1:4) = HollBs(icyc-1,1:4,1:4)
       VmBL4(2:5,1:4) = VmaxesBL(icyc-1,1:4,1:4)
-         
+
       call fitRmaxes4()
-!699      FORMAT(5(f8.4,2x)) 
+!699      FORMAT(5(f8.4,2x))
 !700      FORMAT(a25, 2x, 3(f12.2,2x))
- !Jie debug GAHM         
+ !Jie debug GAHM
  !        WRITE(16,*) 'Previous: Spatially-interpolated storm parameters',
- !    &                   ' at icyc-1= ', icyc-1, 
- !    &                   ' CycleTime=', CycleTime(icyc-1) 
+ !    &                   ' at icyc-1= ', icyc-1,
+ !    &                   ' CycleTime=', CycleTime(icyc-1)
       do i=1,np
          crmaxw1(i) = spInterp(aziangle(i),dist(i),1)
-         crmaxwTrue1(i) = spInterp(aziangle(i),1.d0,1) 
+         crmaxwTrue1(i) = spInterp(aziangle(i),1.d0,1)
          !an artificial number 1.0 is chosen to ensure only
          !rmax from the highest isotach is picked
          cHollBs1(i)= spInterp(aziangle(i),dist(i),2)
          cVmwBL1(i) = spInterp(aziangle(i),dist(i),3)
- !Jie debug GAHM       
+ !Jie debug GAHM
  !            WRITE(16,699) crmaxw1(i),  crmaxwTrue1(i),
  !    &                   cHollBs1(i) ,cVmwBL1(i)
       end do
-         
-         
+
+
          ! set parameters at icyc
 !         call setVortex(ipn(icyc),icpress(icyc),cLat,cLon
 !     $                  ,isotachs_per_cycle(icyc))
@@ -6409,26 +6565,26 @@ C     we are running off the end of the data.
 !         call setQuadIr4(reshape(ir(icyc,:,:),(/4,4/)))
 !         call setRmaxes4(reshape(rmaxw(icyc,:,:),(/4,4/)))
 !         call setShapeParameters4(reshape(HollBs(icyc,:,:),(/4,4/)))
-!         call setVmaxesBL4(reshape(VmaxesBL(icyc,:,:),(/4,4/)))  
-      
+!         call setVmaxesBL4(reshape(VmaxesBL(icyc,:,:),(/4,4/)))
+
       QuadFlag4(2:5,1:4) = quadflag(icyc,1:4,1:4)
       QuadIr4(2:5,1:4) = real(ir(icyc,1:4,1:4))
       Rmaxes4(2:5,1:4) = rmaxw(icyc,1:4,1:4)
       Bs4(2:5,1:4) = HollBs(icyc,1:4,1:4)
       VmBL4(2:5,1:4) = VmaxesBL(icyc,1:4,1:4)
       call fitRmaxes4()
- !Jie debug GAHM         
+ !Jie debug GAHM
  !        WRITE(16,*) 'After: Spatially-interpolated storm parameters',
- !    &                   ' at icyc= ', icyc, 
- !    &                   ' CycleTime=', CycleTime(icyc)          
+ !    &                   ' at icyc= ', icyc,
+ !    &                   ' CycleTime=', CycleTime(icyc)
       do i=1,np
          crmaxw2(i) = spInterp(aziangle(i),dist(i),1)
-         crmaxwTrue2(i) = spInterp(aziangle(i),1.d0,1) 
+         crmaxwTrue2(i) = spInterp(aziangle(i),1.d0,1)
          !an artificial number 1.0 is chosen to ensure only
-         !rmax from the highest isotach is picked             
+         !rmax from the highest isotach is picked
          cHollBs2(i)= spInterp(aziangle(i),dist(i),2)
          cVmwBL2(i) = spInterp(aziangle(i),dist(i),3)
-              !Jie debug GAHM       
+              !Jie debug GAHM
   !           WRITE(16,699) crmaxw2(i),  crmaxwTrue2(i),
   !   &                   cHollBs2(i) ,cVmwBL2(i)
       end do
@@ -6448,31 +6604,31 @@ C     we are running off the end of the data.
       cVmwBL   =  cVmwBL1(:) +
      &                         wtratio*(cVmwBL2(:)-cVmwBL1(:))
       corio = 2.0d0 * omega * SIN(deg2rad*cLat)
-      
-!Jie debug GAHM         
+
+!Jie debug GAHM
 !         WRITE(16,700) 'Temporal interpolation:',
-!     &           CycleTime(icyc-1), TIMELOC, CycleTime(icyc) 
-     
+!     &           CycleTime(icyc-1), TIMELOC, CycleTime(icyc)
+
       do i=1,np
-         cPhiFactor(i) =  1 + 
+         cPhiFactor(i) =  1 +
      &                       cVmwBL(i)*kt2ms*crmaxw(i)*nm2m*corio/
      &                       (cHollBs(i)*((cVmwBL(i)*kt2ms)**2+
      &                       cVmwBL(i)*kt2ms*crmaxw(i)*nm2m*corio))
-!Jie debug GAHM       
+!Jie debug GAHM
 !             WRITE(16,699) crmaxw(i),  crmaxwTrue(i),
 !     &                   cHollBs(i) ,cVmwBL(i), cPhiFactor(i)
       enddo
-     
+
       uTransNow = uTrans(icyc-1) + wtratio
      &                  * (uTrans(icyc)-utrans(icyc-1))
       vTransNow = vTrans(icyc-1) + wtratio
      &                  * (vTrans(icyc)-vTrans(icyc-1))
-     
+
       if (writeFullCircleRmaxes.eqv..true.) then
          do i=1,np
             write(444,*)  crmaxw(i), aziangle(i),dist(i)
          end do
-      endif     
+      endif
       ! jgf49.0803 Make the current Rmax and center location
       ! available at the module level for use in NWS29
       vortexLat = cLat
@@ -6490,11 +6646,11 @@ C     we are running off the end of the data.
          FoundEye = .true.
       ENDIF
 
-      ! jgf: arithmetic mean of the Rmax in the selected storm quadrants from 
-      ! the selected isotachs 
+      ! jgf: arithmetic mean of the Rmax in the selected storm quadrants from
+      ! the selected isotachs
       numRmaxes = 0.d0 ! count how many Rmax values we have to work with
       do i=1,4  ! loop quads
-         do j=1,3 ! loop isotachs 
+         do j=1,3 ! loop isotachs
             if (quadflag(icyc-1,i,j)==1) then
                oldVortexRMW = oldVortexRMW + rmaxw(icyc-1,i,j)
                numRmaxes = numRmaxes + 1.d0
@@ -6504,7 +6660,7 @@ C     we are running off the end of the data.
       oldVortexRMW = oldVortexRMW / numRmaxes
       numRmaxes = 0.d0 ! count how many Rmax values we have to work with
       do i=1,4  ! loop quads
-         do j=1,3 ! loop isotachs 
+         do j=1,3 ! loop isotachs
             if (quadflag(icyc,i,j)==1) then
                newVortexRMW = newVortexRMW + rmaxw(icyc,i,j)
                numRmaxes = numRmaxes + 1.d0
@@ -7287,7 +7443,7 @@ C     ----------------------------------------------------------------
 
 C
 C ---------------------------------------------------------------------
-C  subroutine to initalize GFDL inputs    
+C  subroutine to initalize GFDL inputs
 C       Written By:  Chris Massey, USACE-ERDC-CHL, Vicksburg, MS
 C       Date:  2/7/2013
 C ---------------------------------------------------------------------
@@ -7332,7 +7488,7 @@ C
          read(22,'(A)',end=246,err=248,iostat=errorio) scratchMessage
          currentLine = currentLine + 1
       end do
-      numFiles = 0      
+      numFiles = 0
       do   ! loop until we run out of data, just counting the files this time
          read(22,'(A)',end=123,err=248,iostat=errorio) scratchMessage
          currentLine = currentLine + 1
@@ -7368,13 +7524,13 @@ C
          GFDL_Files(i)%numFiles = numFiles
          write(scratchMessage,
      &   '("time=",E15.8," ramp=",E15.8," file_name=",A)')
-     &       GFDL_Files(i)%cycleTime, 
+     &       GFDL_Files(i)%cycleTime,
      &       GFDL_Files(i)%rampVal, trim(GFDL_Files(i)%file_name)
          call logMessage(ECHO,scratchMessage)
          currentLine = currentLine + 1
       end do
       close(22)
- 
+
       ! log the number of GFDL Met files that were specified
       write(scratchMessage,
      &    '("There were ",i0," GFDL Met files specified.")') numFiles
@@ -7491,7 +7647,7 @@ C
 #endif
       !cleans up the setMessageSource set at the beginning of the subroutine
       call unsetMessageSource()
-       
+
       return
 
 C
@@ -7514,7 +7670,7 @@ C     We jump to this section if there was an error reading a file.
       call allMessage(ERROR,scratchMessage)
       CALL windTerminate()
       call unsetMessageSource()
-C ---------------------------------------------------------------------      
+C ---------------------------------------------------------------------
       end subroutine init_gfdl
 C ---------------------------------------------------------------------
 C
@@ -7553,7 +7709,7 @@ C
      &        setMessageSource,unsetMessageSource,allMessage,
      &        logMessage,scratchMessage,DEBUG,ECHO,INFO,ERROR
        USE KDTREE2_MODULE     ! USED FOR FAST SEARCHING
-       
+
        IMPLICIT NONE
        REAL(SZ), ALLOCATABLE :: XY_GFDL(:,:),XLOC(:)
        REAL(SZ), ALLOCATABLE :: PRESS_GFDL(:)
@@ -7611,7 +7767,7 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
 
 
        ! READ THE FIRST LINE OF THE GFDL OUTPUT WHICH IS THE NUMBER OF POINTS IN THIS RECORD
-!       READ(LUN,'(F10.4)') RPTS_GFDL  
+!       READ(LUN,'(F10.4)') RPTS_GFDL
 !       NPTS_GFDL = INT(RPTS_GFDL)
         read(LUN,'(I10)') NPTS_GFDL
         rpts_gfdl = real(npts_gfdl,sz)
@@ -7641,7 +7797,7 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
           CALL CYLINDERMAP( XY_GFDL(1,I),XY_GFDL(2,I),
      &           lonr, latr, SLAM0, SFEA0, ICS) ; 
        ENDDO !I
-         
+
        CLOSE(LUN)  !CLOSE THIS GFDL DATA FILE
 
        write(scratchMessage,'("Read ",i0," GFDL Met Points.")')
@@ -7660,17 +7816,17 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
           INCELL = MAX(SUM(II2)-1,1)
           MAXDIST = (MAXVAL(XY_GFDL(2,:))-MINVAL(XY_GFDL(2,:)))/REAL(INCELL)  !ESTIMATED CELL SPACING
           MAXDIST = 6.0D0*MAXDIST  !MAXIMUM DISTANCE TO LOOK AWAY
-                   
+
           DEALLOCATE(XLOC)
           DEALLOCATE(II2)
        ELSE
           MAXDIST = MAX_INTERP_DIST
        ENDIF
-       
+
        write(scratchMessage,'("Maximum GFDL Interpolation Distance = ",e24.16)') maxdist
        call logMessage(ECHO,scratchMessage)
 
-       
+
 C... ALLOCATE SPACE FOR KDTREE SEARCH
 C...  BE SURE THE MAXIMUM SEARCH DEPTH IS NOT LARGER THAN
 C...  THE NUMBER OF ELEMENTS BEING KEPT
@@ -7693,7 +7849,7 @@ C...  THIS SPACE WILL BE DEALLOCATED LATER IN THE SUBROUTINE
       ADC_V_WIND(:) = 0.D0
 
 !     LOOP OVER EACH ADCIRC NODE
-      DO I=1,NADCPTS      
+      DO I=1,NADCPTS
          XSTA = ADC_X(I)  !ADCIRC NODE X-COORDINATE
          YSTA = ADC_Y(I)  !ADCIRC NODE Y-COORDIANTE
 
@@ -7719,14 +7875,14 @@ C...  THIS SPACE WILL BE DEALLOCATED LATER IN THE SUBROUTINE
                   WTS(ITC) = 1.D0/(DIST**IP)
                ELSE  !POINT IS TOO FAR AWAY TO BE USED
                   WTS(ITC) = -99999.D0
-               ENDIF   
+               ENDIF
             ELSE  !POINT IS CLOSE ENOUGH TO USE AS DIRECT VALUE
                WTS(ITC) = -1.0D0
             ENDIF
             LOCS(ITC) = IEK
          ENDDO  !ITC
 
-         !COMPUTED THE INVERSE DISTANCE WEIGHTED AVERAGE         
+         !COMPUTED THE INVERSE DISTANCE WEIGHTED AVERAGE
          UTMP = 0.D0
          VTMP = 0.D0
          PTMP = 0.D0
@@ -7741,7 +7897,7 @@ C...  THIS SPACE WILL BE DEALLOCATED LATER IN THE SUBROUTINE
                TTMP = 1.0D0
                ITC = SRCHDP + 20
             ELSEIF (WTS(ITC) == -99999.D0 ) THEN  !THIS LOCATION IS TOO FAR AWAY TO USE
-               ITC = ITC + 1  
+               ITC = ITC + 1
             ELSE  !COMPUTE INVERSE WEIGHTED AVERAGING
                UTMP = UTMP + U_WIND_GFDL(LOCS(ITC))*WTS(ITC)
                VTMP = VTMP + V_WIND_GFDL(LOCS(ITC))*WTS(ITC)
@@ -7761,7 +7917,7 @@ C...  THIS SPACE WILL BE DEALLOCATED LATER IN THE SUBROUTINE
             ADC_V_WIND(I) = 0.D0
             ADC_PRESS(I) = PRBCKGRND*100.D0/(RHOWAT0*G)
          ENDIF
-         
+
       ENDDO !I LOOP OVER ADCIRC NODES
 
 ! CLEAN UP MEMORY
@@ -7779,7 +7935,7 @@ C...  THIS SPACE WILL BE DEALLOCATED LATER IN THE SUBROUTINE
        !cleans up the setMessageSource set at the beginning of the subroutine
        call unsetMessageSource()
 
-       RETURN            
+       RETURN
 C ---------------------------------------------------------------------
        END SUBROUTINE GET_GFDL
 C ---------------------------------------------------------------------
@@ -7871,7 +8027,7 @@ C
 #endif
         !cleans up the setMessageSource set at the beginning of the subroutine
         call unsetMessageSource()
-      
+
         return
         end subroutine nws16get
 C
@@ -7891,8 +8047,8 @@ C***********************************************************************
 C   Read onto the ADCIRC grid radiation stress fields in the PBL-JAG   *
 C   (hurricane) model format.                                          *
 C                           R.L.05/12/99                               *
-C     jgf52.19: Added error checking and reporting as well as 
-C     execution tracing. 
+C     jgf52.19: Added error checking and reporting as well as
+C     execution tracing.
 C***********************************************************************
       subroutine rsget(rsnx,rsny)
       use global, only : nabout
@@ -7912,7 +8068,7 @@ C
 #endif
       rsnx(1:np) = 0.d0
       rsny(1:np) = 0.d0
-C      
+C
       lineNum = lineNum + 1
  170  read(23,'(a80)',end=500,err=600,iostat=errorio) pbljagf
       if (pbljagf(1:1).eq.'#') then
@@ -7922,17 +8078,17 @@ C
       if(pbljagf(2:2).eq.'#') goto 170
 
       lineNum = lineNum + 1
- 171  read(pbljagf,'(i8,5e13.5)',end=500,err=600,iostat=errorio) 
+ 171  read(pbljagf,'(i8,5e13.5)',end=500,err=600,iostat=errorio)
      &      nhg, rsnxRaw, rsnyRaw
       rsnx(nhg) = rsnxRaw
       rsny(nhg) = rsnyRaw
-      lineNum = lineNum + 1      
+      lineNum = lineNum + 1
       read(23,'(a80)') pbljagf
       if (pbljagf(1:1).eq.'#') then
          call allMessage(ERROR,'Found "#" in column 1 of fort.23; '//
      &      ' this character should only appear in column 2.')
          call windTerminate()
-      endif      
+      endif
       if(pbljagf(2:2).ne.'#') goto 171
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -7945,8 +8101,8 @@ C
 C     We jump to this section if there was an error reading a file.
 500   call allMessage(ERROR,'Unexpectedly reached end-of-file.') ! END jumps here
 600   call allMessage(ERROR,'I/O error during file access.') !  ERR jumps here
-      write(scratchMessage,'(a,i0,a)')'Failed to read line ',lineNum,'.' 
-      call allMessage(ERROR,scratchMessage) 
+      write(scratchMessage,'(a,i0,a)')'Failed to read line ',lineNum,'.'
+      call allMessage(ERROR,scratchMessage)
       call allMessage(ERROR,
      &                  'Check the fort.16 file for more information.')
       if (nabout.gt.0) then
@@ -7964,17 +8120,17 @@ C----------------------------------------------------------------------
 
 
 C----------------------------------------------------------------------
-C          S U B R O U T I N E     
+C          S U B R O U T I N E
 C  I N I T   D Y N A M I C  W A T E R L E V E L  C O R R E C T I O N
 C----------------------------------------------------------------------
-C      jgf: Initialize i/o for water level correction file.     
+C      jgf: Initialize i/o for water level correction file.
 C
 C      file format:
 C      ! 1st line is a comment line
-C      14400.0       ! 2nd line: time increment between datasets (s)       
+C      14400.0       ! 2nd line: time increment between datasets (s)
 C      0.0           ! 3rd line: default water level correction value (m)
 C      1     0.3048  ! subsequent lines consist of node number and correction value
-C      3     0.3048  ! only for non-default values 
+C      3     0.3048  ! only for non-default values
 C      10    0.30
 C      115   0.3048
 C      307   0.305
@@ -7988,17 +8144,17 @@ C      ##
 C      ...
 C
 C      If the file consists of only one data set, the data are treated
-C      as a constant throughout the run. Time varying ramping of the 
-C      data are controlled by the dynamicWaterLevelCorrectionRampStart and 
-C      dynamicWaterLevelCorrectionRampEnd parameters in the fort.15 
-C      dynamicWaterLevelCorrectionControl namelist. 
-C 
+C      as a constant throughout the run. Time varying ramping of the
+C      data are controlled by the dynamicWaterLevelCorrectionRampStart and
+C      dynamicWaterLevelCorrectionRampEnd parameters in the fort.15
+C      dynamicWaterLevelCorrectionControl namelist.
+C
 C----------------------------------------------------------------------
       subroutine initDynamicWaterLevelCorrection(timesec)
       use sizes, only : globaldir
       use global, only : nabout, np_g
       use mesh, only : np
-      implicit none  
+      implicit none
       real(sz), intent(in) :: timesec ! adcirc model time (s)
       integer :: errorio ! i/o error condition code
 
@@ -8016,9 +8172,9 @@ C----------------------------------------------------------------------
       ! full domain input files, perhaps it was provided with a full path?
       if (errorio.gt.0) then
          call openFileForRead(dynamicWaterLevelCorrectionUn,
-     &          trim(dynamicWaterLevelCorrectionFileName), errorio)      
-      endif   
-      ! give up if the file was still not found      
+     &          trim(dynamicWaterLevelCorrectionFileName), errorio)
+      endif
+      ! give up if the file was still not found
       if (errorio.gt.0) then
          call windTerminate()
       endif
@@ -8026,9 +8182,9 @@ C----------------------------------------------------------------------
 #ifdef CMPI
       allocate(dynamicWaterLevelCorrectionFD(np_g))
       dynamicWaterLevelCorrectionFD(:) = 0.d0
-#endif 
+#endif
       allocate(dynamicWaterLevelCorrectionsOld_m(np))
-      allocate(dynamicWaterLevelCorrectionsNew_m(np))      
+      allocate(dynamicWaterLevelCorrectionsNew_m(np))
       !
       ! read header
       dynamicWaterLevelCorrectionCurrentLine = 1
@@ -8036,25 +8192,25 @@ C----------------------------------------------------------------------
       read(dynamicWaterLevelCorrectionUn,'(A)',end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionComment
       call logMessage(ECHO,"dynamicWaterLevelCorrectionComment: "//trim(dynamicWaterLevelCorrectionComment))
       dynamicWaterLevelCorrectionCurrentLine = dynamicWaterLevelCorrectionCurrentLine + 1
-      ! 2nd line is time increment between datasets 
+      ! 2nd line is time increment between datasets
       read(dynamicWaterLevelCorrectionUn,fmt=*,end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionTimeIncrement
       write(scratchMessage,'(a,f15.7)') "dynamicWaterLevelCorrectionTimeIncrement: ",
-     &    dynamicWaterLevelCorrectionTimeIncrement 
+     &    dynamicWaterLevelCorrectionTimeIncrement
       call logMessage(ECHO,scratchMessage)
       dynamicWaterLevelCorrectionCurrentLine = dynamicWaterLevelCorrectionCurrentLine + 1
-      ! tga20190628: this "if" is needed because it could lead to NaNs 
+      ! tga20190628: this "if" is needed because it could lead to NaNs
       ! if dynamicWaterLevelCorrectionTimeIncrement is zero, plus no reason for negative.
       if (dynamicWaterLevelCorrectionTimeIncrement.le.0.d0) then
          call allMessage(ERROR,'Water level correction time increment ' //
      &       'dynamicWaterLevelCorrectionTimeIncrement must be greater than zero')
          call windTerminate()
       endif
-      ! 3nd line is default correction value 
+      ! 3nd line is default correction value
       read(dynamicWaterLevelCorrectionUn,fmt=*,end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionDefaultValue
       write(scratchMessage,'(a,f15.7)') "dynamicWaterLevelCorrectionDefaultValue: ",
-     &    dynamicWaterLevelCorrectionDefaultValue 
+     &    dynamicWaterLevelCorrectionDefaultValue
       call logMessage(ECHO,scratchMessage)
-      dynamicWaterLevelCorrectionCurrentLine = dynamicWaterLevelCorrectionCurrentLine + 1            
+      dynamicWaterLevelCorrectionCurrentLine = dynamicWaterLevelCorrectionCurrentLine + 1
       ! initialize array values to zero -- can be used as blank snaps
       dynamicWaterLevelCorrectionsOld_m(:) = 0.d0
       dynamicWaterLevelCorrectionsNew_m(:) = 0.d0
@@ -8063,21 +8219,21 @@ C----------------------------------------------------------------------
       ! to read the first two datasets
       !
       ! may also need to skip datasets (insert blank datasets if
-      ! dynamicWaterLevelCorrectionSkipSnaps is negative) 
+      ! dynamicWaterLevelCorrectionSkipSnaps is negative)
       !
       ! if there is only one dataset, the correctionIsConstant flag is raised
       dynamicWaterLevelCorrectionDataSetCounter = 0
       dynamicWaterLevelCorrectionBlankSnaps = 2
       do while (dynamicWaterLevelCorrectionDataSetCounter.lt.(dynamicWaterLevelCorrectionSkipSnaps+2))
          if (dynamicWaterLevelCorrectionFileEnded.eqv..true.) then
-            exit         
+            exit
          endif
          ! read the next snap from file
          call readDynamicWaterLevelCorrectionDataSet()
          dynamicWaterLevelCorrectionBlankSnaps = dynamicWaterLevelCorrectionBlankSnaps - 1
       end do
       !
-      ! set the time corresponding to the two datasets we are 
+      ! set the time corresponding to the two datasets we are
       ! interpolating between
       dynamicWaterLevelCorrectionTimeOld = timesec
       dynamicWaterLevelCorrectionTimeNew = timesec + dynamicWaterLevelCorrectionTimeIncrement
@@ -8101,20 +8257,20 @@ C----------------------------------------------------------------------
      &   'parameter must be set to "coldstart" or "hotstart".')
          call windTerminate()
       end select
-      ! 
+      !
       ! make sure start of ramp occurs before end of ramp
       if (dynamicWaterLevelCorrectionRampStart.gt.dynamicWaterLevelCorrectionRampEnd) then
          call allMessage(ERROR,
      &   'dynamicWaterLevelCorrectionRampStart is after dynamicWaterLevelCorrectionRampEnd.')
          call windTerminate()
-      endif 
-           
+      endif
+
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       return
-      
+
 256   call allMessage(ERROR,'Unexpectedly reached end-of-file.') ! END jumps here
 258   call allMessage(ERROR,'I/O error during file access.') !  ERR jumps here
       call allMessage(INFO,
@@ -8133,26 +8289,26 @@ C----------------------------------------------------------------------
       call allMessage(ERROR,scratchMessage)
       CALL windTerminate()
 
-      
-C----------------------------------------------------------------------
-      end subroutine initdynamicWaterLevelCorrection
-C----------------------------------------------------------------------      
 
 C----------------------------------------------------------------------
-C      S U B R O U T I N E    
+      end subroutine initdynamicWaterLevelCorrection
+C----------------------------------------------------------------------
+
+C----------------------------------------------------------------------
+C      S U B R O U T I N E
 C   G E T   D Y N A M I C  W A T E R L E V E L  C O R R E C T I O N S
 C----------------------------------------------------------------------
 C     jgf: Uses water level correction data that has already been
 C     read from file, along with control parameters including
-C     dynamicWaterLevelCorrectionMultiplier, 
-C     dynamicWaterLevelCorrectionRampStart, and 
-C     dynamicWaterLevelCorrectionRampEnd, 
+C     dynamicWaterLevelCorrectionMultiplier,
+C     dynamicWaterLevelCorrectionRampStart, and
+C     dynamicWaterLevelCorrectionRampEnd,
 C     as well as the current adcirc time to set the correction values
-C     for the current time step. 
+C     for the current time step.
 C
 C     If all the data have been read from the file, the correction
 C     value remains constant according to the last dataset read
-C     from the file. 
+C     from the file.
 C----------------------------------------------------------------------
       subroutine getDynamicWaterLevelCorrections(dynamicWaterLevelCorrectionsArray, timesec)
       use mesh, only : np
@@ -8164,31 +8320,31 @@ C----------------------------------------------------------------------
       call setMessageSource("getDynamicWaterLevelCorrections")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif  
+#endif
       !
-      ! hold data constant after last snap 
+      ! hold data constant after last snap
       if ( dynamicWaterLevelCorrectionIsConstant.eqv..false.) then
          if ( (timesec.gt.dynamicWaterLevelCorrectionTimeNew)
      &        .and.(dynamicWaterLevelCorrectionFileEnded.eqv..true.) ) then
-            dynamicWaterLevelCorrectionIsConstant = .true. 
+            dynamicWaterLevelCorrectionIsConstant = .true.
          endif
       endif
       !
       if ( dynamicWaterLevelCorrectionIsConstant.eqv..true. ) then
          dynamicWaterLevelCorrectionsArray(:) = dynamicWaterLevelCorrectionsNew_m(:)
-      else        
+      else
          ! read new data if it is time
          if ( timesec.gt.dynamicWaterLevelCorrectionTimeNew ) then
-            do while (timesec.gt.dynamicWaterLevelCorrectionTimeNew) 
+            do while (timesec.gt.dynamicWaterLevelCorrectionTimeNew)
                ! insert blanks if needed
                if (dynamicWaterLevelCorrectionSkipSnaps.lt.(-1*dynamicWaterLevelCorrectionBlankSnaps)) then
                   ! both datasets still have all zero values
-                  dynamicWaterLevelCorrectionBlankSnaps = dynamicWaterLevelCorrectionBlankSnaps + 1 
+                  dynamicWaterLevelCorrectionBlankSnaps = dynamicWaterLevelCorrectionBlankSnaps + 1
                else
                   call readDynamicWaterLevelCorrectionDataSet()
                endif
                dynamicWaterLevelCorrectionTimeOld = dynamicWaterLevelCorrectionTimeNew
-               dynamicWaterLevelCorrectionTimeNew = dynamicWaterLevelCorrectionTimeNew + 
+               dynamicWaterLevelCorrectionTimeNew = dynamicWaterLevelCorrectionTimeNew +
      &                  dynamicWaterLevelCorrectionTimeIncrement
                if ( dynamicWaterLevelCorrectionFileEnded.eqv..true.) then
                   exit
@@ -8196,14 +8352,14 @@ C----------------------------------------------------------------------
             end do
          endif
          ! perform time interpolation
-         dynamicWaterLevelCorrectionsArray(:) = 
-     &       (timesec - dynamicWaterLevelCorrectionTimeOld) / 
-     &              (dynamicWaterLevelCorrectionTimeNew - dynamicWaterLevelCorrectionTimeOld ) 
-     &       * ( dynamicWaterLevelCorrectionsNew_m(:) - dynamicWaterLevelCorrectionsOld_m(:) ) 
-     &          + dynamicWaterLevelCorrectionsOld_m(:) 
+         dynamicWaterLevelCorrectionsArray(:) =
+     &       (timesec - dynamicWaterLevelCorrectionTimeOld) /
+     &              (dynamicWaterLevelCorrectionTimeNew - dynamicWaterLevelCorrectionTimeOld )
+     &       * ( dynamicWaterLevelCorrectionsNew_m(:) - dynamicWaterLevelCorrectionsOld_m(:) )
+     &          + dynamicWaterLevelCorrectionsOld_m(:)
       endif
       !
-      ! set to zero everywhere prior to the start of the ramping period 
+      ! set to zero everywhere prior to the start of the ramping period
       if (timesec.lt.dynamicWaterLevelCorrectionRampStart) then
          dynamicWaterLevelCorrectionsArray(:) = 0.d0
       endif
@@ -8211,15 +8367,15 @@ C----------------------------------------------------------------------
       if ((timesec.ge.dynamicWaterLevelCorrectionRampStart).and.
      &    (timesec.le.dynamicWaterLevelCorrectionRampEnd)) then
          ! compute linear ramp value
-         dynamicWaterLevelCorrectionRamp = ( timesec - dynamicWaterLevelCorrectionRampStart) 
+         dynamicWaterLevelCorrectionRamp = ( timesec - dynamicWaterLevelCorrectionRampStart)
      &               / ( dynamicWaterLevelCorrectionRampEnd - dynamicWaterLevelCorrectionRampStart )
-         dynamicWaterLevelCorrectionsArray(:) = dynamicWaterLevelCorrectionsArray(:) * 
+         dynamicWaterLevelCorrectionsArray(:) = dynamicWaterLevelCorrectionsArray(:) *
      &      dynamicWaterLevelCorrectionRamp
       endif
       ! just leave the raw values alone after the end of ramp period
       !
       ! apply correction multiplier if any
-      dynamicWaterLevelCorrectionsArray(:) = dynamicWaterLevelCorrectionMultiplier * 
+      dynamicWaterLevelCorrectionsArray(:) = dynamicWaterLevelCorrectionMultiplier *
      &  dynamicWaterLevelCorrectionsArray(:)
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -8230,51 +8386,51 @@ C----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
       end subroutine getdynamicWaterLevelCorrections
-C----------------------------------------------------------------------      
+C----------------------------------------------------------------------
 
 
 C----------------------------------------------------------------------
-C      S U B R O U T I N E    
-C R E A D   D Y N A M I C  W A T E R L E V E L  C O R R E C T I O N  
+C      S U B R O U T I N E
+C R E A D   D Y N A M I C  W A T E R L E V E L  C O R R E C T I O N
 C                                                       D A T A S E T
 C----------------------------------------------------------------------
-C     jgf: Reads a water level correction dataset from file. 
+C     jgf: Reads a water level correction dataset from file.
 C----------------------------------------------------------------------
       subroutine readDynamicWaterLevelCorrectionDataSet()
       use global, only : nabout, np_g, nodes_lg
       use mesh, only : np
       implicit none
       integer :: numCorrectionValues
-      integer :: nhg ! fulldomain node number 
+      integer :: nhg ! fulldomain node number
       real(sz) :: correction_val ! water level correction value at that node
       integer :: fd_node_number ! full domain node number
       integer :: sd_node_number ! subdomain node number
       logical :: nextCorrectionDataSetFound ! true if a # is found in 2nd col
-      integer :: errorio ! error message code      
+      integer :: errorio ! error message code
 
       call setMessageSource("readDynamicWaterLevelCorrectionDataSet")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif  
+#endif
       !
       numCorrectionValues = np
 #ifdef CMPI
       numCorrectionValues = np_g
 #endif
       dynamicWaterLevelCorrectionsOld_m(:) = dynamicWaterLevelCorrectionsNew_m(:)
-      dynamicWaterLevelCorrectionsNew_m(:) = dynamicWaterLevelCorrectionDefaultValue      
+      dynamicWaterLevelCorrectionsNew_m(:) = dynamicWaterLevelCorrectionDefaultValue
       nextCorrectionDataSetFound = .false.
       do ! loop until we run out of data or hit a "#" in column 2
-         read(dynamicWaterLevelCorrectionUn,fmt='(a)',end=133,err=258,iostat=errorio) 
-     &      scratchMessage 
+         read(dynamicWaterLevelCorrectionUn,fmt='(a)',end=133,err=258,iostat=errorio)
+     &      scratchMessage
          dynamicWaterLevelCorrectionCurrentLine = dynamicWaterLevelCorrectionCurrentLine + 1
          ! check to see if the next dataset is about to start
          if (scratchMessage(2:2).eq."#") then
             nextCorrectionDataSetFound = .true.
             exit ! break out of do loop
          endif
-         ! read the node number and value from the line 
-         read(scratchMessage,fmt=*,end=256,err=258,iostat=errorio) 
+         ! read the node number and value from the line
+         read(scratchMessage,fmt=*,end=256,err=258,iostat=errorio)
      &        nhg, correction_val
          ! check to make sure this is a valid node number
          if ( (nhg.lt.1).or.(nhg.gt.numCorrectionValues) ) then
@@ -8284,7 +8440,7 @@ C----------------------------------------------------------------------
      &        ' correction file is out of range.'
             call allMessage(ERROR,scratchMessage)
             call windTerminate()
-         endif     
+         endif
          ! set the correction value as specified
 #ifdef CMPI
          dynamicWaterLevelCorrectionFD(nhg) = correction_val
@@ -8318,9 +8474,9 @@ C----------------------------------------------------------------------
          ! fulldomain values
          dynamicWaterLevelCorrectionsNew_m(sd_node_number) = dynamicWaterLevelCorrectionFD(fd_node_number)
       END DO
-#endif         
+#endif
 
-     
+
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -8349,7 +8505,7 @@ C     We jump to this section if there was an error reading a file.
 
 C----------------------------------------------------------------------
       end subroutine readDynamicWaterLevelCorrectionDataSet
-C----------------------------------------------------------------------      
+C----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
 C...  jgf50.38.05: Subroutine to terminate the run cleanly.
