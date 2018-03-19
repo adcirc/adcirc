@@ -132,9 +132,6 @@ Casey 100205: Enable hot-start file generation by SWAN.
 #ifdef DATETIME
       use datetime_module, only: strptime
 #endif
-#ifdef DATETIME
-      use datetime_module, only: strptime
-#endif
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
       USE OWIWIND_NETCDF, ONLY: NWS13ColdStartString,

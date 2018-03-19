@@ -8008,7 +8008,7 @@ C     fort.74
       WindVelDescript % readMaxMin           = .false.
       call makeFileName(WindVelDescript)
 
-C     windDrag.173
+C     windDrag.63
       windDragDescript % specifier            = NOUTGW
       windDragDescript % lun                  = 173
       windDragDescript % initial_value        = 0.0
