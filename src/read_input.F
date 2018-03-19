@@ -17,7 +17,7 @@ C     READS INPUT FILES
 C
 C-----------------------------------------------------------------------
       SUBROUTINE READ_INPUT()
-      USE SIZES               !since GLOBAL uses SIZES, is this necessary?
+      USE SIZES          
       USE GLOBAL, only: toutsge, toutfge, nspoolge, im, ff, bountag, 
      &   noutge, use_tvw, nscreen, nabout, nfover, warnelev, ihot, hss,
      &   smag_lower_lim, iwarnelevdump, warnelevdump, errorelev, c2ddi,
@@ -104,7 +104,7 @@ C-----------------------------------------------------------------------
       USE ITPACKV
       USE GWCE, ONLY : a00, b00, c00, convcr, isldia, itmax,
      &   invertedBarometerOnElevationBoundary
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate    
+      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE VERSION
 !     jgf46.00
       USE NodalAttributes, ONLY :
@@ -129,6 +129,13 @@ Casey 100205: Enable hot-start file generation by SWAN.
 #endif
 #ifdef DATETIME
       use datetime_module, only: strptime
+#endif
+#ifdef ADCNETCDF
+Casey 180318: Added NWS=13
+      USE OWIWIND_NETCDF, ONLY: NWS13ColdStartString,
+     &                          NWS13File,
+     &                          NWS13GroupForPowell,
+     &                          NWS13WindMultiplier
 #endif
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
@@ -170,7 +177,10 @@ C
       NAMELIST /AliDispersionControl/ CAliDisp, Cs, Ad, Bd
       NAMELIST /densityControl/ densityRunType, densityFileName, 
      &  densityTimeIterator, densityForcingType
-
+#ifdef ADCNETCDF
+      NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,
+     &    NWS13WindMultiplier,NWS13GroupForPowell
+#endif
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       CHARACTER(len=2000) :: origLineTVW
@@ -180,7 +190,7 @@ C
       !tcm v51.20.04 Additions for External Station Location File
       INTEGER :: IOS_STATIONS = 0
       INTEGER :: STAT_LUN = 15  !station unit number fort.15 file be default
-      INTEGER :: NSTAE2,NSTAV2,NSTAC2,NSTAM2      
+      INTEGER :: NSTAE2,NSTAV2,NSTAC2,NSTAM2
       LOGICAL :: USE_ELEV_STAT_FILE = .false.    !.true. only if an elevation station file exists
       LOGICAL :: USE_VEL_STAT_FILE = .false.     !.true. only if a velocity station file exists
       LOGICAL :: USE_CONC_STAT_FILE = .false.    !.true. only if a concentration station file exists
@@ -258,7 +268,7 @@ C...
 #ifdef CSCA
       WRITE(16,*) '      - CODE OPTIMIZED FOR A SCALAR COMPUTER'
 #endif
-      write(16,1112) 
+      write(16,1112)
 C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
 C     Module.
@@ -282,7 +292,7 @@ C     ALLOCATE ARRAYS Dimensioned by MNP and MNE
       ! mnope and mneta
       call alloc_main2()
       ! jgf51.21.13: Allocate boundary condition arrays dimensioned by
-      ! mnvel 
+      ! mnvel
       call alloc_main3()
 
 C...
@@ -306,7 +316,7 @@ c...  read through the fort.15 file for the namelist (TimeBathyControl) for
 c...  the time varying bathymetry.  This namelist must be at the bottom of the
 c...  fort.15 file. If found, then set the appropriate values (btiminc,bchgtiminc,
 c...  and nddt).  If the namelist is not there, then the time varying bathymetry
-c...  will not be used. 
+c...  will not be used.
 C...
 C...  After this search and read, we will close the file and then reopen it
 c...  for further processing the traditional non-namelist components.
@@ -320,7 +330,7 @@ C     ending "\" which causes the iostat to return a negative value.
 C     By checking to be sure a namelist variable was set to
 c     a non-default value we can determine this was the case.
       select case(ios_nddt)
-      case(:-1) 
+      case(:-1)
          if (nddt.ne.0) then
             call allMessage(WARNING,
      &        'TimeBathyControl NAMELIST PRESENT, BUT AT THE '
@@ -335,8 +345,8 @@ c     a non-default value we can determine this was the case.
      &   'THERE WAS A PROBLEM PROCESSING THE TimeBathyControl NAMELIST '
      &    //'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.')
          call adcirc_terminate()
-      end select     
-      write(scratchMessage,'(a,l,a,i0,a,e15.8,a,e15.8)') 
+      end select
+      write(scratchMessage,'(a,l,a,i0,a,e15.8,a,e15.8)')
      &  'found_tbc_nml=',found_tbc_nml,
      &  ' nddt=',nddt,' btiminc=',btiminc,' bchgtiminc=',bchgtiminc
       call logMessage(ECHO,trim(scratchMessage))
@@ -357,17 +367,17 @@ c     a non-default value we can determine this was the case.
      &    "The values of SWANOutputControl are as follows:")
       write(scratchMessage,*) "SWAN_OutputHS=",SWAN_OutputHS,
      &    " SWAN_OutputDIR=",SWAN_OutputDIR,
-     &    " SWAN_OutputTM01=",SWAN_OutputTM01, 
-     &    " SWAN_OutputTPS=",SWAN_OutputTPS, 
+     &    " SWAN_OutputTM01=",SWAN_OutputTM01,
+     &    " SWAN_OutputTPS=",SWAN_OutputTPS,
      &    " SWAN_OutputWIND=",SWAN_OutputWIND,
-     &    " SWAN_OutputTM02=",SWAN_OutputTM02, 
+     &    " SWAN_OutputTM02=",SWAN_OutputTM02,
      &    " SWAN_OutputTMM10=",SWAN_OutputTMM10
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 #endif
       !
       ! jgf51.42: Add a namelist for the user to control subdomain
-      ! modeling. 
+      ! modeling.
       namelistSpecifier = 'subdomainModeling'
       read(unit=15,nml=subdomainModeling,iostat=ios)
       call logNamelistReadStatus(namelistSpecifier, ios)
@@ -382,12 +392,25 @@ c     a non-default value we can determine this was the case.
       call logNamelistReadStatus(namelistSpecifier, ios)
       write(scratchMessage,*) "WindDragLimit=",WindDragLimit,
      & " DragLawString=",DragLawString, " rhoAir=",rhoAir,
-     & ' invertedBarometerOnElevationBoundary=', 
+     & ' invertedBarometerOnElevationBoundary=',
      &   invertedBarometerOnElevationBoundary,
      & ' outputWindDrag=',outputWindDrag,
      & ' nPowellSearchDomains=',nPowellSearchDomains
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
+
+#ifdef ADCNETCDF
+Casey 180318: Added NWS=13
+      namelistSpecifier = 'owiWindNetcdf'
+      read(unit=15,nml=owiWindNetcdf,iostat=ios)
+      call logNamelistReadStatus(namelistSpecifier, ios)
+      write(scratchMessage,*) "NWS13File=",trim(adjustl(NWS13File)),
+     & " NWS13ColdStartString=",trim(adjustl(NWS13ColdStartString)),
+     & " NWS13WindMultiplier=",trim(adjustl(NWS13WindMultiplier)),
+     & " NWS13GroupForPowell=",trim(adjustl(NWS13GroupForPowell))
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+#endif
 
       !...Read in time varying weir control from fort.15
       NOUT_TVW = -99999
@@ -411,10 +434,10 @@ c     a non-default value we can determine this was the case.
                 IF(TOUTS_TVW.EQ.-99999D0)TOUTS_TVW=TOUTSGE
                 IF(TOUTF_TVW.EQ.-99999D0)TOUTF_TVW=TOUTFGE
                 IF(NSPOOL_TVW.EQ.-99999D0)NSPOOL_TVW=NSPOOLGE
-            ENDIF    
+            ENDIF
         ELSE
             NOUT_TVW = 0
-        ENDIF   
+        ENDIF
       ENDIF
       REWIND(15)
 
@@ -447,7 +470,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       rewind(15)
 
       ! jgf52.08.01: Add a namelist for the user to control
-      ! output of detailed inundation data. 
+      ! output of detailed inundation data.
       namelistSpecifier = 'inundationOutputControl'
       READ(UNIT=15,NML=inundationOutputControl,IOSTAT=IOS)
       call logNamelistReadStatus(namelistSpecifier,ios)
@@ -459,7 +482,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 
 c...  tcm v52.30.01 Addtions for Using Smagorinsky Namelist Options
 c...  read through the fort.15 file for the namelist (Smag_Control) for
-c...  the namelist options for using Smagorinsky.  This namelist must be at the 
+c...  the namelist options for using Smagorinsky.  This namelist must be at the
 C...  bottom of the fort.15 file. If found, then set the appropriate values
 C...  (SMAG_COMP_FLAG,SMAG_UPPER_LIM,SMAG_LOWER_LIM).  If the namelist is not
 C...  found, then the Smagorinsky eddy viscosity options will not be used.
@@ -533,7 +556,7 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       endif
       ! exit if there was an error reading the dynamicWaterLevelCorrectionControl namelist
       if (ios.gt.0) then
-         call adcirc_terminate()    
+         call adcirc_terminate()
       endif
       rewind(15)
 
@@ -1081,9 +1104,9 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
          ! WJP: Only read IDEN line if 3D mode (ADCIRC v55+)
          if (C3D) READ(15,*) IDEN
          ! jgf51.52.35: Removed 0 as a valid choice for IDEN because the
-         ! choice between baroclinic and barotropic is specified by IM; 
-         ! also removed "2DDI" from the log messages because the choice 
-         ! between 2DDI and 3D is specified by IM.  
+         ! choice between baroclinic and barotropic is specified by IM;
+         ! also removed "2DDI" from the log messages because the choice
+         ! between 2DDI and 3D is specified by IM.
          write(scratchMessage,'("IDEN is set to ",i0,".")') IDEN
          call logMessage(ECHO,scratchMessage)
          !
@@ -1129,7 +1152,7 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
 !           WJP comment: this logical isn't actually used anywhere.
 !           may consider deprecating
             C2D_BTrans = .true.
-         endif 
+         endif
       endif
 
 
@@ -1306,7 +1329,7 @@ C...
       ENDIF
       !
       ! jgf52.05: Removed this error message because it is alarming
-      ! and because it contradicts common practice. 
+      ! and because it contradicts common practice.
 C      IF((NOLIFA.GE.1).AND.(NOLICAT.EQ.0)) THEN
 C         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
 C            WRITE(ScreenUnit,9972)
@@ -1549,6 +1572,17 @@ C.... BREAK OUT THE ICE CONCENTRATION FLAG FROM NWS/NRS
          call allMessage(ERROR,scratchMessage)
          call ADCIRC_Terminate()
       endif
+#ifdef ADCNETCDF
+Casey 180318: Added NWS=13
+      IF(NWS.EQ.13)THEN
+      IF(INDEX(NWS13ColdStartString,"99999999.999999").GT.0)THEN
+         CALL allMessage(ERROR,
+     &   'NWS13ColdStartString must be set in the owiWindNetcdf '
+     &   //'namelist in the fort.15 file.  Shutting down ADCIRC now.')
+         CALL adcirc_terminate()
+      ENDIF
+      ENDIF
+#endif
 
 C.... SET WAVE RADIATION STRESS FLAG AND ADJUST NWS ACCORDINGLY
 
@@ -1945,7 +1979,7 @@ C     jgf49.1001 Added option to embed NWS19 in a NAM background wind field
      &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
-      
+
       ! jgf: Added option to embed NWS20 in a NAM background wind field
       IF(NWS.EQ.30) THEN
          WRITE(16,3403) NWS
@@ -2022,7 +2056,7 @@ Casey 090302: Added the following lines.
 
 C     NWS=4xx added for STWAVE tighly coupled run  (v49.46 tcm)
       IF(NRS.EQ.4) THEN
-         CPL2STWAVE = .TRUE.  !flag indicating coupling with STWAVE 
+         CPL2STWAVE = .TRUE.  !flag indicating coupling with STWAVE
          WRITE(16,2394) NRS
  2394    FORMAT(/,5X,'NRS = ',I2,
      &    /,9X,'WAVE RADIATION STRESS IS USED TO FORCE THE COMPUTATION',
@@ -2219,7 +2253,7 @@ C     jgf46.08 Change to the number of ramp functions that will be used.
       ENDIF
       !
       ! @jasonfleming: If there is at least one radiation/flux boundary
-      ! (ibtype=52) in the mesh, then the FluxSettlingTime must 
+      ! (ibtype=52) in the mesh, then the FluxSettlingTime must
       ! be specified, meaning NRAMP must be .ge. 2
       if ( nramp.lt.2 ) then
          ! check for radiation/flux boundaries
@@ -2314,7 +2348,7 @@ ckmd   order to turn on the predictor-corrector algorithm.
       END IF
       WRITE(16,9) DTDP
     9 FORMAT(5X,'TIME STEP =',F12.6,5X,'SECONDS',/)
-      DTDPHS = DTDP ! jgf51.14: Initialize; may be changed in hstart()     
+      DTDPHS = DTDP ! jgf51.14: Initialize; may be changed in hstart()
 
 C...
 C...  READ AND PROCESS STATIM - SIMULATION STARTING TIME
@@ -2443,8 +2477,7 @@ C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
          !READ(15,*) NWLAT,NWLON,WTIMINC
       ENDIF
 C     sb46.28sb01 Added NWS=12 (OWI format)
-C     WJP Oct 20 2018, Used this also for NWS = 14 (grb2)
-      IF(ABS(NWS).EQ.12.or.ABS(NWS).eq.14) THEN
+      IF(ABS(NWS).EQ.12.OR.(ABS(NWS).EQ.13).or.ABS(NWS).eq.14) THEN
 C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
          IF (NWS.eq.-14) THEN
             IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,
@@ -2496,7 +2529,7 @@ C     of the Coriolis term in the geostrophic balance
 C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
-     &          GEOFACTOR       
+     &          GEOFACTOR
          ELSEIF ((NCICE.EQ.0).AND.(NRS.GE.1)) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
      &           GEOFACTOR,RSTIMINC
@@ -2584,7 +2617,7 @@ C   set in the TimeBathyControl Namelist if present
 c...     !READ(15,*) BTIMINC,BCHGTIMINC  !read from namelist
          if (btiminc.lt.abs(dtdp)) then
             write(16,*) 'BATHYMETRY FIELD RECORD TIME LENGTH ',
-     &      btiminc,'MUST BE GREATER THAN TIME STEP SIZE ',abs(dtdp) 
+     &      btiminc,'MUST BE GREATER THAN TIME STEP SIZE ',abs(dtdp)
             CALL ADCIRC_Terminate()
          endif
          if (BCHGTIMINC.gt.btiminc) then
@@ -2822,12 +2855,10 @@ C     jgf51.12.13: Adjust node table based on ics, nolifa, h0,
 C     slam0, sfea0. Check for sufficient precision. Compute neighbor table.
       call initializeMesh()
             
-C................ DW ......... 
 C   For Sponge layer
       IF ( LoadAbsLayerSigma .AND. FoundAbsLayerSigma ) THEN
          CALL FLAGSPONGEELEM()
       END IF
-C............... END DW ......
 
 C...  v49.48.02 tcm -- Allocate space for kdtree search
 C...       Be sure the maximum search depth is not larger than
@@ -3328,14 +3359,14 @@ C.....ESSENTIAL B.C.
      &  /,9X,'INNER ANGLES LESS THAN ANGINN WILL HAVE BOTH NORMAL ',
      &  /,9X,'AND TANGENTIAL VELOCITY COMPONENTS ZEROED',/)
       COSTSET=COS(ANGINN*DEG2RAD)
-      ! 
-      ! jgf51.21.12: Now that the value of anginn has been read, 
+      !
+      ! jgf51.21.12: Now that the value of anginn has been read,
       ! the boundaries can be checked and the boundary arrays can
       ! be constructed. This initialization also determines if there
-      ! are flux boundaries in the mesh, and sets the value of 
+      ! are flux boundaries in the mesh, and sets the value of
       ! nfluxf accordingly. The nfluxf value is required for further
       ! parsing of the fort.15 control file; it determines whether
-      ! the value of NFFR should be read below. 
+      ! the value of NFFR should be read below.
       !
       ! jgf53.dev This subroutine also uses the value of C2DDI set above.
       call initializeBoundaries()
@@ -3357,7 +3388,7 @@ C.....ESSENTIAL B.C.
          END DO
       END DO
 
-   
+
 C...IF ANY NON ZERO NORMAL FLOW BOUNDARIES WERE SPECIFIED, (NFLUXF=1)
 C.....READ FORCING INFORMATION FROM UNIT 15 FILE
 
@@ -3536,7 +3567,7 @@ C......WRITE TOUTSE,TOUTFE,NTCYSE,NTCYFE,NSPOOLE TO UNIT 16
 C....REGARDLESS OF WHETHER NOUTE=0, READ IN THE NUMBER OF ELEVATION
 C....RECORDING STATIONS
 
-C.... tcm v51.20.04 - additions for external specification of 
+C.... tcm v51.20.04 - additions for external specification of
 C       elevation station locations
       READ(15,*) NSTAE
       STAT_LUN = 15
@@ -4072,7 +4103,7 @@ C...  CHECK INPUT PARAMETER NOUTGE
      &         //' / NETCDF4 (HDF5) FORMAT.')
          CASE(7)
             useXDMF = .true.
-            call logMessage(INFO,'UNIT 63 FORMAT WILL BE XDMF.')              
+            call logMessage(INFO,'UNIT 63 FORMAT WILL BE XDMF.')
          CASE(6,8:)
             call allMessage(ERROR,"This NOUTGE value is invalid.")
             call ADCIRC_Terminate()
@@ -4211,29 +4242,29 @@ C...  COMPUTE PARAMETERS FOR TIME VARIABLE WEIR OUTPUT
       IF(USE_TVW.AND.NOUT_TVW.NE.0)THEN
         ALLOCATE(TVW(1:MNP))
         TVW(:) = 0D0
-#ifdef IBM      
+#ifdef IBM
         NTCYS_TVW=INT((TOUTS_TVW-STATIM)*(86400.D0/DTDP) + 0.5d0,
      &      KIND(0.0d0))
         NTCYF_TVW=INT((TOUTF_TVW-STATIM)*(86400.D0/DTDP) + 0.5d0,
-     &      KIND(0.0d0))   
+     &      KIND(0.0d0))
 #else
         NTCYS_TVW=INT((TOUTS_TVW-STATIM)*(86400.D0/DTDP) + 0.5d0)
         NTCYF_TVW=INT((TOUTF_TVW-STATIM)*(86400.D0/DTDP) + 0.5d0)
-#endif        
+#endif
         IF(NTCYF_TVW.GT.NT)NTCYF_TVW=NT
         IF(NSPOOL_TVW.EQ.0)THEN
             NDSETS_TVW = 0
         ELSE
-#ifdef IBM       
+#ifdef IBM
              NDSETS_TVW=INT((NTCYF_TVW-NTCYS_TVW)/NSPOOL_TVW,KIND(0D0))
 #else
              NDSETS_TVW=INT((NTCYF_TVW-NTCYS_TVW)/NSPOOL_TVW)
-#endif             
+#endif
         ENDIF
       ENDIF
 
 
-             
+
 
 C...
 C...  IF TRANSPORT IS INCLUDED IN THE RUN, INPUT INFORMATION ABOUT GLOBAL
@@ -4663,7 +4694,8 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
       IF(NWS.EQ.9) WRITE(16,4019)      !cf & cm added nws = 9 (jgf46.16 merged)
       IF(NWS.EQ.10) WRITE(16,4016)
       IF(NWS.EQ.11) WRITE(16,4017)
-      IF(ABS(NWS).EQ.12) WRITE(16,4032) ! sb46.28sb01 Added NWS=12 (OWI format)
+      IF(ABS(NWS).EQ.12) WRITE(16,4033) ! sb46.28sb01 Added NWS=12 (OWI format), arc fixed to use 4033
+      IF(ABS(NWS).EQ.13) WRITE(16,4034) ! arc added for nws13 190110
       IF(ABS(NWS).EQ.16) WRITE(16,4026) ! tcm v51.06.02  !gfdl met data
       IF(NWS.EQ.19) WRITE(16,4018)      !rjw added nws = 19
       IF(NWS.EQ.19) WRITE(16,4019)      !rjw added nws = 19
@@ -4678,10 +4710,10 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
       IF(IM.EQ.2) WRITE(16,4103)
       WRITE(16,4105)
       IF(USE_ELEV_STAT_FILE) WRITE(16,3180)  !tcm v51.20.05
-      IF(USE_VEL_STAT_FILE) WRITE(16,3181)   !tcm v51.20.05 
+      IF(USE_VEL_STAT_FILE) WRITE(16,3181)   !tcm v51.20.05
       IF(USE_MET_STAT_FILE) WRITE(16,3182)   !tcm v51.20.05
       IF(USE_CONC_STAT_FILE) WRITE(16,3183)  !tcm v51.20.05
-      IF(StatPartWetFix.EQV..TRUE.) WRITE(16,3184) !tcm v53.01.02 
+      IF(StatPartWetFix.EQV..TRUE.) WRITE(16,3184) !tcm v53.01.02
       WRITE(16,4108)
 C
 C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
@@ -4713,6 +4745,7 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
  4016 FORMAT(' *   Also, AVN wind & pressure forcing will be used, *')
  4017 FORMAT(' *   Also, ETA wind & pressure forcing will be used, *')
  4033 FORMAT(' *   Also, OWI format wind vel and pres will be used,*')
+ 4034 FORMAT(' *   Also, OWI Netcdf (NWS13) format wind/pres used, *')
  4018 FORMAT(' *   Asymmetric hurricane wind and pressure forcing  *')
  4019 FORMAT(' *              will be used,                        *')
  4020 FORMAT(' *   Generalized Asymmetric Vortex Model forcing     *')
@@ -4741,7 +4774,7 @@ C
      &     //" libraries in order to enable NetCDF input or output.")
          CALL ADCIRC_Terminate()
       ENDIF
-      
+
       if ((useNetCDFOutput.eqv..true.).and.
      &    (WRITE_LOCAL_FILES.eqv..true.)) then
          call allMessage(ERROR,'Some of the output file format '
@@ -4750,15 +4783,15 @@ C
      &      //'specify local (subdomain) output files. The problem is '
      &      //'that ADCIRC cannot produce subdomain output files in '
      &      //'NetCDF format. '
-     &      //'Please change output file formats to ASCII in the ' 
+     &      //'Please change output file formats to ASCII in the '
      &      //'fort.15 so the output files can be written '
-     &      //'as subdomain output files. ' 
+     &      //'as subdomain output files. '
      &      //'Alternatively, remove the -L command line '
      &      //'option so that fulldomain output files are produced '
      &      //'in NetCDF format.')
          call adcirc_terminate()
       endif
-         
+
 
       IF (useNetCDF.eqv..true.) THEN
          CALL logMessage(INFO,"Now reading metadata from fort.15 file"
@@ -4812,7 +4845,7 @@ C...                 used for searching and finding points in elements
 
 C... zc50.80 - All compute processors pass through here and check if anyone
 C              encountered an error while reading the input files.
-C#ifdef CMPI      
+C#ifdef CMPI
 C      CALL ADCIRC_CHECKLOCALTERMINATE()
 C#endif
 
@@ -4842,9 +4875,9 @@ C     reading a file.
       endif
 C#ifdef CMPI
 C      CALL ADCIRC_LOCALTERMINATE()
-C#else      
+C#else
       CALL ADCIRC_Terminate()
-C#endif      
+C#endif
 C
 c******************************************************************************
       END SUBROUTINE READ_INPUT
@@ -4908,7 +4941,7 @@ C
 #endif
 C
       ios = 0
-      DelT => DTDP                
+      DelT => DTDP
 
 C
 C...  General invalid entry format statement used throughout
@@ -4926,7 +4959,7 @@ C...  SPECIFY WHETHER A BAROTROPIC OR BAROCLINIC RUN
       !
       ! jgf51.52.35: Made this consistent with the previous read of IDEN.
       ! Not sure why we read IDEN twice, but need to keep this for backward
-      ! compatibility. 
+      ! compatibility.
       READ(15,*) IDen3D
       if (IDen3D.ne.IDEN) then
          call allMessage(ERROR,'Both IDEN values must be the same.')
@@ -5102,7 +5135,7 @@ C...  SPECIFY TYPE OF EDDY VISCOSITY PROFILE
       IF((IEVC.EQ.50).or.(IEVC.EQ.51)) THEN
          READ(15,*,err=99999,end=99998,iostat=ios) Theta1,Theta2
          WRITE(scratchMessage,'("theta1=",E15.8," theta2=",E15.8,".")')
-     &      theta1, theta2   !tcm v50.85 20120829 changed E15.9 to E15.8 
+     &      theta1, theta2   !tcm v50.85 20120829 changed E15.9 to E15.8
       CALL logMessage(ECHO,scratchMessage)
       ENDIF
 
@@ -5357,8 +5390,8 @@ C                 salinity and temperature forcings.
             call allMessage(ERROR,
      & 'The value of RES_BC_FLAG must be the same as the value of IDEN.')
             call adcirc_terminate()
-         endif         
-         ! 
+         endif
+         !
          IF ((RES_BC_FLAG.LT.0)) THEN  ! Diagnostic
             IF (ABS(RES_BC_FLAG).GE.1) THEN ! only have one set of values to read
                IF (NOPE.GT.0) THEN
@@ -5864,10 +5897,10 @@ C-----------------------------------------------------------------------
       SUBROUTINE kdtsearch(InputXCoordinate, InputYCoordinate,
      &     OutputElement, StationNumber, Description)
       use sizes, only : sz, MyProc
-      use global, only : NFOver, NScreen, ScreenUnit, srchdp, tree, 
-     &   kdresults, DEBUG, screenMessage, allMessage, setMessageSource, 
+      use global, only : NFOver, NScreen, ScreenUnit, srchdp, tree,
+     &   kdresults, DEBUG, screenMessage, allMessage, setMessageSource,
      &   unsetMessageSource
-      use mesh, only : ne, nm, x, y, areas, rmax, bcxy 
+      use mesh, only : ne, nm, x, y, areas, rmax, bcxy
       use adcirc_mod, only : adcirc_terminate
       use kdtree2_module
 #ifdef CMPI
@@ -6154,11 +6187,11 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
-C                    S U B R O U T I N E   
+C                    S U B R O U T I N E
 C          L O G   N A M E L I S T   R E A D   S T A T U S
 C-----------------------------------------------------------------------
 C     jgf52.08.02: Record the i/o status associated with reading the
-C     namelist using the negative, zero, or positive value of ios. 
+C     namelist using the negative, zero, or positive value of ios.
 C-----------------------------------------------------------------------
       subroutine logNamelistReadStatus(nmlname, ios)
       use global, only : logMessage, scratchMessage, DEBUG, ECHO, INFO,
@@ -6172,12 +6205,12 @@ C-----------------------------------------------------------------------
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      
+
       select case(ios)
       ! negative value indicates that we reached the end of the file
       ! before reading the namelist (not an error, since namelists
       ! are generally used for optional input)
-      case(:-1) 
+      case(:-1)
          call logMessage(INFO,
      &      'End-of-file when searching for '//trim(nmlName)//'.')
       ! zero indicates success
@@ -6191,8 +6224,8 @@ C-----------------------------------------------------------------------
      &      'Could not read '//trim(nmlName)//
      &     ' namelist. The Fortran i/o error code was ',ios,'.'
          call allMessage(ERROR,scratchMessage)
-      end select    
-      
+      end select
+
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -6200,4 +6233,3 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       end subroutine logNamelistReadStatus
 C-----------------------------------------------------------------------
-

@@ -9,6 +9,7 @@ IF(BUILD_ADCPREP)
                           ${CMAKE_SOURCE_DIR}/src/global_3dvs.F 
                           ${CMAKE_SOURCE_DIR}/wind/vortex.F 
                           ${CMAKE_SOURCE_DIR}/src/owiwind.F 
+                          ${CMAKE_SOURCE_DIR}/src/owiwind_netcdf.F 
                           ${CMAKE_SOURCE_DIR}/src/rs2.F
                           ${CMAKE_SOURCE_DIR}/src/owi_ice.F 
                           ${CMAKE_SOURCE_DIR}/src/wind.F 

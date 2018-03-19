@@ -89,7 +89,7 @@ ifeq ($(compiler),gnu)
   MSGLIBS	:=
   ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),blueridge)
-        # FLIBS       := $(FLIBS) -L$(HDF5HOME) -lhdf5  
+        # FLIBS       := $(FLIBS) -L$(HDF5HOME) -lhdf5
         NETCDFHOME    :=/usr
         FFLAGS1       :=$(FFLAGS1) -I/usr/lib64/gfortran/modules
         FFLAGS2       :=$(FFLAGS1)
@@ -117,9 +117,9 @@ ifeq ($(compiler),gfortran)
   PPFC		:=  gfortran
   FC		:=  gfortran
   PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none 
+  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none
   ifeq ($(PROFILE),enable)
-    FFLAGS1	:=  $(INCDIRS) -pg -O0 -fprofile-arcs -ftest-coverage -ffixed-line-length-none 
+    FFLAGS1	:=  $(INCDIRS) -pg -O0 -fprofile-arcs -ftest-coverage -ffixed-line-length-none
   endif
   ifeq ($(DEBUG),full)
     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND -DDEBUG_WARN_ELEV
@@ -128,7 +128,7 @@ ifeq ($(compiler),gfortran)
     FFLAGS1	:=  $(INCDIRS) -g -O0 -Wall -Wextra -ffixed-line-length-none -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
   endif
   ifeq ($(DEBUG),full-not-warnelev)
-    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND 
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
   endif
   ifeq ($(DEBUG),full-not-fpe)
     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
@@ -147,16 +147,16 @@ ifeq ($(compiler),gfortran)
   ifeq ($(SWAN),enable)
      DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
   endif
-  FLIBS         := 
+  FLIBS         :=
   ifeq ($(NETCDF),enable)
-     ifeq ($(MACHINENAME),penguin)    
+     ifeq ($(MACHINENAME),penguin)
         # module purge
-        # module load gcc/6.2.0 openmpi/2.1.2/gcc.6.2.0 
+        # module load gcc/6.2.0 openmpi/2.1.2/gcc.6.2.0
         # curl -O ftp://ftp.unidata.ucar.edu/pub/netcdf/old/netcdf-4.2.1.1.tar.gz
         # curl -O ftp://ftp.unidata.ucar.edu/pub/netcdf/old/netcdf-fortran-4.2.tar.gz
         # curl -O https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.12/src/hdf5-1.8.12.tar.gz
         # CPPFLAGS=-I/home/jgflemin/local/include LDFLAGS=-L/home/jgflemin/local/lib ./configure --prefix=/home/jgflemin/local
-        # 
+        #
         # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/local/lib
         # export PATH=${PATH}:${HOME}/local/bin
         NETCDFHOME := ${HOME}/local
@@ -164,20 +164,20 @@ ifeq ($(compiler),gfortran)
         FFLAGS2 := $(FFLAGS2) -I${HOME}/local/include
         FFLAGS3 := $(FFLAGS3) -I${HOME}/local/include
         FLIBS := $(FLIBS) -L${HOME}/local/lib -lnetcdff -lnetcdf
-     endif 
+     endif
      ifeq ($(MACHINENAME),jason-desktop)
         NETCDFHOME := /usr
         FFLAGS1 := $(FFLAGS1) -L/usr/lib/x86_64-linux-gnu
         FFLAGS2 := $(FFLAGS2) -L/usr/lib/x86_64-linux-gnu
         FFLAGS3 := $(FFLAGS3) -L/usr/lib/x86_64-linux-gnu
      endif
-     ifeq ($(MACHINENAME),rostam)    
+     ifeq ($(MACHINENAME),rostam)
         NETCDFHOME := /usr
         FFLAGS1 := $(FFLAGS1) -I/usr/lib64/gfortran/modules
         FFLAGS2 := $(FFLAGS2) -I/usr/lib64/gfortran/modules
         FFLAGS3 := $(FFLAGS3) -I/usr/lib64/gfortran/modules
      endif
-     FLIBS      := $(FLIBS) -lnetcdff 
+     FLIBS      := $(FLIBS) -lnetcdff
   endif
   IMODS 	:=  -I
   CC		:= gcc
@@ -222,7 +222,7 @@ ifeq ($(compiler),g95)
 endif
 #
 # jgf45.12 These flags work on the UNC Topsail Cluster.
-# jgf: The -i-dynamic flag defers the inclusion of the library with 
+# jgf: The -i-dynamic flag defers the inclusion of the library with
 # feupdateenv until run time, thus avoiding the error message:
 # "feupdateenv is not implemented and will always fail"
 ifeq ($(compiler),intel)
@@ -251,14 +251,14 @@ ifeq ($(compiler),intel)
      FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -DNETCDF_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
   #
-  ifeq ($(MACHINENAME),stampede2) 
+  ifeq ($(MACHINENAME),stampede2)
      FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 -assume buffered_io
-     CFLAGS  := $(INCDIRS) -O3 -DLINUX -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 
-     FLIBS   := $(INCDIRS) -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 
+     CFLAGS  := $(INCDIRS) -O3 -DLINUX -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512
+     FLIBS   := $(INCDIRS) -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512
      ifeq ($(DEBUG),trace)
         FFLAGS1 := $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 -assume buffered_io
-        CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 
-        FLIBS   := $(INCDIRS) -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 
+        CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512
+        FLIBS   := $(INCDIRS) -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512
      endif
   endif
   ifeq ($(MACHINENAME),frontera) 
@@ -271,14 +271,14 @@ ifeq ($(compiler),intel)
         FLIBS   := $(INCDIRS) -xCORE-AVX512 
      endif
   endif
-  ifeq ($(MACHINENAME),queenbee) 
+  ifeq ($(MACHINENAME),queenbee)
      FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
-     CFLAGS  := $(INCDIRS) -O3 -DLINUX -xSSE4.2 
-     FLIBS   := $(INCDIRS) -xSSE4.2 
+     CFLAGS  := $(INCDIRS) -O3 -DLINUX -xSSE4.2
+     FLIBS   := $(INCDIRS) -xSSE4.2
      ifeq ($(DEBUG),trace)
         FFLAGS1 := $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
-        CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX -xSSE4.2 
-        FLIBS   := $(INCDIRS) -xSSE4.2 
+        CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX -xSSE4.2
+        FLIBS   := $(INCDIRS) -xSSE4.2
      endif
   ifeq ($(MACHINENAME),supermic) 
      FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xAVX -assume buffered_io
@@ -355,12 +355,12 @@ ifeq ($(compiler),intel)
      # jgf20150817: Adding support for spirit.afrl.hpc.mil;
      # load the following modules: netcdf-fortran/intel/4.4.2
      # and hdf5/intel/1.8.12 and hdf5-mpi/intel/sgimpt/1.8.12
-     ifeq ($(MACHINENAME),spirit) 
+     ifeq ($(MACHINENAME),spirit)
         NETCDFHOME :=/app/wpostool/COST/netcdf-fortran-4.4.2/intel
         FLIBS      := $(FLIBS) -L/app/wpostool/COST/netcdf-c-4.3.1.1/intel/lib -L$(NETCDFHOME)/lib -L/app/wpostool/COST/hdf5-mpi/1.8.12/intel/sgimpt/lib -lnetcdff -lnetcdf
      endif
      # jgf20150420 mike requires that the analyst add netcdf to the softenv
-     # with the following on the command line 
+     # with the following on the command line
      # soft add +netcdf-4.1.3-Intel-13.0.0
      ifeq ($(MACHINENAME),mike)
         FLIBS       := $(FLIBS) -L/usr/local/packages/netcdf/4.1.3/Intel-13.0.0/lib -lnetcdff -lnetcdf
@@ -514,7 +514,7 @@ ifeq ($(compiler),cray_xt4)
   PFC	        :=  ftn
   CC		:=  pgcc
   CCBE		:=  cc
-  FFLAGS1	:=  $(INCDIRS) -Mextend -Minform,inform -O2 -fastsse 
+  FFLAGS1	:=  $(INCDIRS) -Mextend -Minform,inform -O2 -fastsse
   ifeq ($(DEBUG),full)
      FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
   endif
@@ -794,7 +794,7 @@ ifeq ($(compiler),garnet)
      CFLAGS	:=  $(INCDIRS) -DLINUX -g -O0
   endif
   IMODS		:=  -module
-  FLIBS         := 
+  FLIBS         :=
 # jgf20110728: on Garnet, NETCDFHOME=/opt/cray/netcdf/4.1.1.0/netcdf-pgi
 # jgf20110815: on Garnet, HDF5HOME=/opt/cray/hdf5/default/hdf5-pgi
 # jgf20130815: on Garnet, load module cray-netcdf, with the path to the
@@ -855,7 +855,7 @@ ifeq ($(compiler),circleci)
   IMODS 	:=  -I
   CC		:= gcc
   CCBE		:= $(CC)
-  CFLAGS	:= $(INCDIRS) -O0 -g -mcmodel=medium -DLINUX -m64 
+  CFLAGS	:= $(INCDIRS) -O0 -g -mcmodel=medium -DLINUX -m64
   CLIBS	:=
   LIBS		:=
   MSGLIBS	:=
@@ -960,7 +960,7 @@ ifeq ($(compiler),gnu)
      FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DNETCDF_TRACE -DFLUSH_MESSAGES -DFULL_STACK
   endif
   ifeq ($(DEBUG),valgrind)
-     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 
+     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132
   endif
   ifeq ($(SWAN),enable)
      FFLAGS1    :=  $(FFLAGS1) -freal-loops
@@ -1007,9 +1007,9 @@ ifeq ($(compiler),gfortran)
   PPFC		:=  gfortran
   FC		:=  gfortran
   PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none 
+  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none
   ifeq ($(PROFILE),enable)
-    FFLAGS1	:=  $(INCDIRS) -pg -O0 -fprofile-arcs -ftest-coverage -ffixed-line-length-none 
+    FFLAGS1	:=  $(INCDIRS) -pg -O0 -fprofile-arcs -ftest-coverage -ffixed-line-length-none
   endif
   ifeq ($(DEBUG),full)
     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND -DDEBUG_WARN_ELEV
@@ -1018,7 +1018,7 @@ ifeq ($(compiler),gfortran)
     FFLAGS1	:=  $(INCDIRS) -g -O0 -Wall -Wextra -ffixed-line-length-none -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
   endif
   ifeq ($(DEBUG),full-not-warnelev)
-    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND 
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
   endif
   ifeq ($(DEBUG),full-not-fpe)
     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
@@ -1037,12 +1037,12 @@ ifeq ($(compiler),gfortran)
   ifeq ($(SWAN),enable)
      DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
   endif
-  FLIBS         := 
+  FLIBS         :=
   ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),jason-desktop)
         NETCDFHOME := /usr
      endif
-     FLIBS      := $(FLIBS) -lnetcdff 
+     FLIBS      := $(FLIBS) -lnetcdff
   endif
   IMODS 	:=  -I
   CC		:= gcc

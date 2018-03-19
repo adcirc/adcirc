@@ -4,14 +4,14 @@
       !  M O D U L E   C O N T R O L
       !----------------------------------------------------------------
       !----------------------------------------------------------------
-      ! Provide routines for reading, storing, and writing adcirc 
-      ! fort.15 data. In ADCIRC v51 this is only used by XDMF to write 
-      ! metadata, but could be expanded slightly to provide fort.15 
+      ! Provide routines for reading, storing, and writing adcirc
+      ! fort.15 data. In ADCIRC v51 this is only used by XDMF to write
+      ! metadata, but could be expanded slightly to provide fort.15
       ! reading/writing for adcirc as well as adcprep in future versions.
       !----------------------------------------------------------------
       module control
-      use sizes, only : sz 
-      use wind,only: nwlon,nwlat,wlatmax,wlonmin,wlatinc,wloninc 
+      use sizes, only : sz
+      use wind,only: nwlon,nwlat,wlatmax,wlonmin,wlatinc,wloninc
       implicit none
       character(len=80) :: rundes
       character(len=80) :: runid
@@ -172,7 +172,7 @@
       integer :: isldia
       real(sz) :: convcr
       integer :: itmax
-      character(len=80) :: title 
+      character(len=80) :: title
       character(len=80) :: institution
       character(len=80) :: source
       character(len=80) :: history
@@ -184,7 +184,7 @@
       character(len=80) :: base_date
       !
       logical :: readMetaData
-      integer, parameter :: metadataRequired(9)          
+      integer, parameter :: metadataRequired(9)
      &     = (/3, 5, 7, 367, 368, 567, 568, 667, 668/)
       integer :: outputSpecifiers(9)
       !
@@ -277,7 +277,7 @@
       read(15,*,err=10,end=20,iostat=ios) reftim
       linenum = linenum + 1
       !
-      ! parse the digits of nws 
+      ! parse the digits of nws
       ncice = 0
       nrs = 0
       if (abs(nws).ge.1000) then
@@ -297,23 +297,24 @@
       endif
       numFields = 0
       select case(abs(nws))
-      case(0,1) 
+      case(0,1)
          ! do nothing
-      case(2,4,5,7,12,15,16)   
+c     arc add nws13 190110
+      case(2,4,5,7,12,13,15,16)
          read(wtimincLine,*,err=10,end=20,iostat=ios) wtiminc
          numFields = 1
       case(3)
-         read(wtimincLine,*,err=10,end=20,iostat=ios) 
+         read(wtimincLine,*,err=10,end=20,iostat=ios)
      &       irefyr,irefmo,irefday,irefhr,irefmin,refsec
-         read(wtimincLine,*,err=10,end=20,iostat=ios) 
+         read(wtimincLine,*,err=10,end=20,iostat=ios)
      &       nwlat,nwlon,wlatmax,wlonmin,wlatinc,wloninc,wtiminc
          numfields = 7
       case(6)
-         read(wtimincLine,*,err=10,end=20,iostat=ios) 
+         read(wtimincLine,*,err=10,end=20,iostat=ios)
      &       nwlat,nwlon,wlatmax,wlonmin,wlatinc,wloninc,wtiminc
          numFields = 7
       case(8,19)
-         read(wtimincLine,*,err=10,end=20,iostat=ios) 
+         read(wtimincLine,*,err=10,end=20,iostat=ios)
      &       irefyr,irefmo,irefday,irefhr,stormnumber,bladj
          numFields = 6
       case(10)
@@ -326,7 +327,7 @@
          nwlon=181
          wtiminc=10800.
       case(29)
-         read(wtimincLine,*,err=10,end=20,iostat=ios) 
+         read(wtimincLine,*,err=10,end=20,iostat=ios)
      &       irefyr,irefmo,irefday,irefhr,stormnumber,bladj,purevortex,purebackground,wtiminc
          numFields = 9
       case default
@@ -342,26 +343,26 @@
       select case(nramp)
       case(0,1)
          read(15,*,err=10,end=20,iostat=ios) dramp
-      case(2) 
+      case(2)
          read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
      &       fluxsettlingtime
-      case(3) 
+      case(3)
          read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
      &       fluxsettlingtime,drampintflux
-      case(4) 
+      case(4)
          read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
      &       fluxsettlingtime,drampintflux, drampelev
-      case(5) 
+      case(5)
          read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
      &       fluxsettlingtime,drampintflux,drampelev,dramptip
-      case(6) 
+      case(6)
          read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
      &    fluxsettlingtime,drampintflux,drampelev,dramptip,drampmete
-      case(7) 
+      case(7)
          read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
      &    fluxsettlingtime,drampintflux,drampelev,dramptip,
      &    drampmete,drampwrad
-      case(8) 
+      case(8)
          read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
      &    fluxsettlingtime,drampintflux,drampelev,dramptip,drampmete,
      &    drampwrad,dunrampmete
@@ -415,7 +416,7 @@
          do i=1,ntif
             read(15,'(a5)',err=10,end=20,iostat=ios)  tipotag(i)
             linenum = linenum + 1
-            read(15,*,err=10,end=20,iostat=ios)  
+            read(15,*,err=10,end=20,iostat=ios)
      &          tpk(i),amigt(i),etrf(i),fft(i),facet(i)
             linenum = linenum + 1
          end do
@@ -425,7 +426,7 @@
       if (nbfr.ne.0) then
          allocate(bountag(nbfr))
          allocate(amig(nbfr))
-         allocate(ff(nbfr)) 
+         allocate(ff(nbfr))
          allocate(face(nbfr))
          do i=1, nbfr
             read(15,'(a5)',err=10,end=20,iostat=ios) bountag(i)
@@ -464,7 +465,7 @@
             linenum = linenum + 1
             read(15,*,err=10,end=20,iostat=ios) famig(i),fff(i),fface(i)
             linenum = linenum + 1
-         end do 
+         end do
          do i=1,nffr
             read(15,'(a10)',err=10,end=20,iostat=ios) nffr_alpha(i)
             linenum = linenum + 1
@@ -538,7 +539,7 @@
       read(15,*,err=10,end=20,iostat=ios) ititer,isldia,convcr,itmax
       linenum = linenum + 1
       !
-      ! read metadata if netcdf or xdmf format was specified in the output 
+      ! read metadata if netcdf or xdmf format was specified in the output
       ! identifiers
       outputSpecifiers(1) = noute
       outputSpecifiers(2) = noutv
@@ -551,21 +552,21 @@
       outputSpecifiers(9) = nhstar
       ! check to see if we need to read in metadata
       readMetaData = .false.
-      outputSpec: do i=1,9 
-         metadataReq: do j=1,9 
+      outputSpec: do i=1,9
+         metadataReq: do j=1,9
             if (outputSpecifiers(i).eq.metadataRequired(j)) then
                readMetaData = .true.
-               exit outputSpec 
+               exit outputSpec
             endif
          end do metadataReq
       end do outputSpec
       ! now read metadata if any output format indicated it
-      if (readMetaData.eqv..true.) then 
+      if (readMetaData.eqv..true.) then
          read(15,'(a80)',err=10,end=20,iostat=ios) title
          linenum = linenum + 1
          read(15,'(a80)',err=10,end=20,iostat=ios) institution
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) source 
+         read(15,'(a80)',err=10,end=20,iostat=ios) source
          linenum = linenum + 1
          read(15,'(a80)',err=10,end=20,iostat=ios) history
          linenum = linenum + 1
@@ -580,7 +581,7 @@
          read(15,'(a80)',err=10,end=20,iostat=ios) contact
          linenum = linenum + 1
          read(15,'(a80)',err=10,end=20,iostat=ios) base_date
-      endif 
+      endif
       !
       if (verbose.eqv..true.) then
          call echoControlFile(6)
@@ -621,31 +622,31 @@
       endif
       return
  10   write(6,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
-     &   ' gave the following error code: ',ios,'.' 
+     &   ' gave the following error code: ',ios,'.'
       call echoControlFile(6)
       stop
- 20   write(6,'(a,i0,a)') 
+ 20   write(6,'(a,i0,a)')
      &   'ERROR: Reached premature end of file on line ',lineNum,'.'
       call echoControlFile(6)
       stop
       !---------------------------------------------------------------------
       end subroutine readStations
       !---------------------------------------------------------------------
-      
+
       !---------------------------------------------------------------------
-      !                      S U B R O U T I N E   
+      !                      S U B R O U T I N E
       !   P A R S E  W A V E  A N D  I C E  T I M E  I N C R E M E N T S
       !---------------------------------------------------------------------
-      ! jgf: This subroutine is needed because of the tricky nature of the 
+      ! jgf: This subroutine is needed because of the tricky nature of the
       ! WTIMINC line in the fort.15 file. The number of data fields on this
-      ! line is dependent on the value of NWS, but the exact formatting of 
+      ! line is dependent on the value of NWS, but the exact formatting of
       ! these data fields (width of fields, number of decimal places, etc)
       ! is unknown. These uncertainties make this line hard to parse.
       !---------------------------------------------------------------------
       subroutine parseWaveAndIceTimeIncrements(wtimincLine,numFields)
       implicit none
       character(len=80), intent(in) :: wtimincLine ! line of data from fort.15
-      integer, intent(inout) :: numFields ! number of fields that have already been read 
+      integer, intent(inout) :: numFields ! number of fields that have already been read
       !
       character(len=80) :: rstimincField    ! character representation of rstiminc val
       character(len=80) :: cicetimeincField ! character representation of cicetimeinc val
@@ -660,7 +661,7 @@
       integer :: iend
       !
       rstimincField(:) = ' '
-      cicetimeincField(:) = ' ' 
+      cicetimeincField(:) = ' '
       foundField = .false.
       j=1
       k=1
@@ -670,7 +671,7 @@
             if (wtimincLine(i:i).ne.' ') then
                ! found the start of a new field
                fieldStarts(j) = i
-               j = j + 1 
+               j = j + 1
                foundField = .true.
             endif
          else
@@ -688,14 +689,14 @@
          iend = fieldEnds(numFields + 1)
          rstimincField = wtimincLine(istart:iend)
          read(rstimincField,*,err=10,end=20,iostat=ios) rstiminc
-         numFields = numFields + 1 
+         numFields = numFields + 1
       endif
       if (ncice.gt.0) then
          istart = fieldStarts(numFields + 1)
          iend = fieldEnds(numFields + 1)
          cicetimeincField = wtimincLine(istart:iend)
          read(cicetimeincField,*,err=10,end=20,iostat=ios) cice_timinc
-         numFields = numFields + 1 
+         numFields = numFields + 1
       endif
       return
   10  write(6,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
@@ -711,7 +712,7 @@
       !---------------------------------------------------------------------
       !
       !---------------------------------------------------------------------
-      ! S U B R O U T I N E    E C H O    C O N T R O L   F I L E 
+      ! S U B R O U T I N E    E C H O    C O N T R O L   F I L E
       !---------------------------------------------------------------------
       subroutine echoControlFile(echoUnit)
       use boundaries, only : neta, nfluxf, nvel, lbcodei
@@ -723,7 +724,7 @@
       character(len=80) :: cicetimincLine
       character(len=80) :: wtimincComment
       integer :: controlnws ! nws as encoded with ncice and nrs parameters
-      integer :: i 
+      integer :: i
       integer :: j
       !
       ! initialization
@@ -732,7 +733,7 @@
       write(6,*) 'INFO: Echoing control file after reading ',
      &  lineNum,' lines.'
       write(echoUnit,fmt='(A,10x,"! rundes")') trim(rundes)
-      echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return 
+      echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       write(echoUnit,fmt='(A,10x,"! runid")') trim(runid)
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       write(echoUnit,fmt='(i0,10x,"! nfover")') nfover
@@ -798,31 +799,32 @@
       wtimincLine = ''
       wtimincComment = ''
       select case(abs(nws))
-      case(0,1) 
+      case(0,1)
          ! do nothing
-      case(2,4,5,7,10,11,12,15,16)   
-         write(wtimincLine,*) wtiminc 
+c     arc add nws13 190110
+      case(2,4,5,7,10,11,12,13,15,16)
+         write(wtimincLine,*) wtiminc
          wtimincComment = ' ! wtiminc'
-      case(3)   
-         write(wtimincLine,*) irefyr,irefmo,irefday,irefhr,irefmin,refsec 
-         wtimincLine = trim(wtimincLine) // 
+      case(3)
+         write(wtimincLine,*) irefyr,irefmo,irefday,irefhr,irefmin,refsec
+         wtimincLine = trim(wtimincLine) //
      &    ' ! irefyr,irefmo,irefday,irefhr,irefmin,refsec'
          write(echoUnit,'(a)') trim(wtimincLine)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          write(wtimincLine,*) nwlat,nwlon,wlatmax,wlonmin,wlatinc,wloninc,wtiminc
-         wtimincComment = 
+         wtimincComment =
      &    ' ! nwlat,nwlon,wlatmax,wlonmin,wlatinc,wloninc,wtiminc'
       case(6)
          write(wtimincLine,*) nwlat,nwlon,wlatmax,wlonmin,wlatinc,wloninc,wtiminc
-         wtimincComment = 
+         wtimincComment =
      &    ' ! nwlat,nwlon,wlatmax,wlonmin,wlatinc,wloninc,wtiminc'
       case(8,19)
          write(wtimincLine,*) irefyr,irefmo,irefday,irefhr,stormnumber,bladj
-         wtimincComment = 
+         wtimincComment =
      &    ' ! irefyr,irefmo,irefday,irefhr,stormnumber,bladj'
       case(29)
          write(wtimincLine,*) irefyr,irefmo,irefday,irefhr,stormnumber,bladj,wtiminc, purevortex, purebackground
-         wtimincComment = 
+         wtimincComment =
      &    ' ! irefyr,irefmo,irefday,irefhr,stormnumber,bladj,wtiminc,'
      &   // ' purevortex, purebackground'
       case default
@@ -850,40 +852,40 @@
       select case(nramp)
       case(0,1)
          write(echoUnit,fmt='(9f6.3,10x,"! dramp")') dramp
-      case(2) 
+      case(2)
          write(echoUnit,
-     &    fmt='(9f6.3,10x,"! dramp,drampextflux,fluxsettlingtime")') 
+     &    fmt='(9f6.3,10x,"! dramp,drampextflux,fluxsettlingtime")')
      &       dramp,drampextflux,fluxsettlingtime
-      case(3) 
+      case(3)
          write(echoUnit,
      &    fmt='(9f6.3,10x,' //
-     &    '"! dramp,drampextflux,fluxsettlingtime,drampintflux")')  
+     &    '"! dramp,drampextflux,fluxsettlingtime,drampintflux")')
      &       dramp,drampextflux,fluxsettlingtime,drampintflux
-      case(4) 
-         write(echoUnit,fmt='(9f6.3,10x,'// 
-     & '"! dramp,drampextflux,fluxsettlingtime,drampintflux, drampelev")') 
+      case(4)
+         write(echoUnit,fmt='(9f6.3,10x,'//
+     & '"! dramp,drampextflux,fluxsettlingtime,drampintflux, drampelev")')
      &       dramp,drampextflux,fluxsettlingtime,drampintflux, drampelev
-      case(5) 
+      case(5)
          write(echoUnit,fmt='(9f6.3,10x,'//
      & '"! dramp,drampextflux,fluxsettlingtime,drampintflux,'//
-     & 'drampelev,dramptip")') 
+     & 'drampelev,dramptip")')
      & dramp,drampextflux,fluxsettlingtime,drampintflux,drampelev,dramptip
-      case(6) 
+      case(6)
          write(echoUnit,fmt='(9f6.3,10x,'//
      &    '"! dramp,drampextflux,fluxsettlingtime,drampintflux,'//
-     &    'drampelev,dramptip,drampmete")') 
+     &    'drampelev,dramptip,drampmete")')
      &    dramp,drampextflux,fluxsettlingtime,drampintflux,drampelev,dramptip,drampmete
-      case(7) 
+      case(7)
          write(echoUnit,fmt='(9f6.3,10x,'//
      &    '"! dramp,drampextflux,fluxsettlingtime,drampintflux,'//
-     &    'drampelev,dramptip,drampmete,drampwrad")') 
+     &    'drampelev,dramptip,drampmete,drampwrad")')
      &   dramp,drampextflux,fluxsettlingtime,drampintflux,
      &              drampelev,dramptip,drampmete,drampwrad
-      case(8) 
+      case(8)
          write(echoUnit,fmt='(9f6.3,10x,'//
      &    '"! dramp,drampextflux,fluxsettlingtime,drampintflux,'//
-     &    'drampelev,dramptip,drampmete,drampwrad,drampunmete")') 
-     &     dramp,drampextflux,fluxsettlingtime,drampintflux, 
+     &    'drampelev,dramptip,drampmete,drampwrad,drampunmete")')
+     &     dramp,drampextflux,fluxsettlingtime,drampintflux,
      &     drampelev,dramptip,drampmete,drampwrad,dunrampmete
       case default
          write(echoUnit,'(a,i0,a)') 'ERROR: The value of nramp is ',nramp,
@@ -895,7 +897,7 @@
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if (nolifa.eq.2) then
          write(echoUnit,
-     &    fmt='(f15.7, i2, i2, f6.3, 10x, "! h0, int, int, velmin")') 
+     &    fmt='(f15.7, i2, i2, f6.3, 10x, "! h0, int, int, velmin")')
      &       h0,nodedrymin,nodewetmin,velmin
       else
          write(echoUnit,fmt='(f15.7,10x,"! h0")') h0
@@ -909,7 +911,7 @@
       case(1)
          write(echoUnit,fmt='(f15.7,10x,"! cf")') cf
       case(2)
-         write(echoUnit,fmt='(4f15.7,10x,"! cf, hbreak, ftheta, fgamma")')  
+         write(echoUnit,fmt='(4f15.7,10x,"! cf, hbreak, ftheta, fgamma")')
      &       cf,hbreak,ftheta,fgamma
       case default
          write(echoUnit,'(a,i0,a)') 'ERROR: the value of nolibf is ',nolibf,
@@ -932,7 +934,7 @@
          write(echoUnit,'(a5,10x,"! tipotag")')  trim(tipotag(i))
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          write(echoUnit,
-     &    fmt='(5f15.7,10x,"! tpk(i),amigt(i),etrf(i),fft(i),facet(i)")') 
+     &    fmt='(5f15.7,10x,"! tpk(i),amigt(i),etrf(i),fft(i),facet(i)")')
      &    tpk(i),amigt(i),etrf(i),fft(i),facet(i)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       end do
@@ -962,10 +964,10 @@
                write(echoUnit,'(a5,10x,"! fbountag(i)")') fbountag(i)
                echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
                write(echoUnit,
-     &             fmt='(3f6.3,10x,"! famig(i),fff(i),fface(i)")') 
+     &             fmt='(3f6.3,10x,"! famig(i),fff(i),fface(i)")')
      &              famig(i),fff(i),fface(i)
                echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-            end do 
+            end do
             do i=1,nffr
                write(echoUnit,'(a10,10x,"! nffr_alpha(i)")') nffr_alpha(i)
                echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
@@ -983,7 +985,7 @@
          endif
       endif
       write(echoUnit,
-     &  fmt='(i0,1x,2f6.3,1x,i0,10x,"! noute,toutse,toutfe,nspoole")') 
+     &  fmt='(i0,1x,2f6.3,1x,i0,10x,"! noute,toutse,toutfe,nspoole")')
      &  noute,toutse,toutfe,nspoole
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       write(echoUnit,fmt='(i0,10x,"! nstae")') nstae
@@ -1056,7 +1058,7 @@
      &  ititer,isldia,convcr,itmax
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       !
-      ! read metadata if netcdf or xdmf format was specified in the output 
+      ! read metadata if netcdf or xdmf format was specified in the output
       ! identifiers
       outputSpecifiers(1) = noute
       outputSpecifiers(2) = noutv
@@ -1068,7 +1070,7 @@
       outputSpecifiers(8) = noutgw
       outputSpecifiers(9) = nhstar
       ! now write metadata if any output format indicated it
-      if (readMetaData.eqv..true.) then 
+      if (readMetaData.eqv..true.) then
          write(echoUnit,fmt='(a)') trim(title)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          write(echoUnit,fmt='(a)') trim(institution)
@@ -1088,7 +1090,7 @@
          write(echoUnit,fmt='(a)') trim(contact)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          write(echoUnit,fmt='(a)') trim(base_date)
-      endif 
+      endif
       !---------------------------------------------------------------------
       end subroutine echoControlFile
       !---------------------------------------------------------------------
@@ -1112,9 +1114,8 @@
       !---------------------------------------------------------------------
       end subroutine echoStations
       !---------------------------------------------------------------------
-      
+
 
       !---------------------------------------------------------------------
       end module control
       !---------------------------------------------------------------------
-      

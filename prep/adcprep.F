@@ -93,7 +93,7 @@ C----------------------------------------------------------------------------
 C
       PROGRAM ADCPREP
       USE GLOBAL, ONLY : screenUnit, initLogging, Rearth, deg2rad, rad2deg
-      USE SIZES, ONLY : meshFileName, meshFileNameSpecified, meshType, 
+      USE SIZES, ONLY : meshFileName, meshFileNameSpecified, meshType,
      &  ASCII, XDMF, naFileNameSpecified, naFileName, naType, controlFileName,
      &  controlType, controlFileNameSpecified, globaldir, myproc
       USE SUBPREP, ONLY : readFort015prep
@@ -110,7 +110,7 @@ C
 C
       ! set the names of the log levels for use in log messages
       call initLogging()
-      ! set the present working directory as the directory containing 
+      ! set the present working directory as the directory containing
       ! the fulldomain input files as the
       globaldir = '.'
 
@@ -135,20 +135,20 @@ C
       HOT_LOCAL   = .FALSE.
       HOT_GLOBAL  = .FALSE.
       PREP_20 = .FALSE.
-      strictBoundaries = .false. 
+      strictBoundaries = .false.
       !PREP_88 = .FALSE.
       MNPROC = 0
 C
       ! jgf51.21.27: Add defaults for file types now that we support the
       ! loading of different file types.
       naType = ASCII
-      naFileNameSpecified = .false. 
+      naFileNameSpecified = .false.
       naFileName = 'fort.13'
       meshType = ASCII
       meshFileNameSpecified = .false.
       meshFileName = 'fort.14'
       controlType = ASCII
-      controlFileNameSpecified = .false. 
+      controlFileNameSpecified = .false.
       controlFileName = 'fort.15'
 C
 C--Init Memory Usage
@@ -184,8 +184,8 @@ C     having to do a prep all and without having to add menu items).
                I = I + 1
                CALL GETARG(I,CMDLINEARG)
                READ(CMDLINEARG,*) MNPROC
-            ! jgf51.21.27: Added options related to the mesh file 
-            case("-MFT","-mft","--MFT","--mft") ! mesh file type 
+            ! jgf51.21.27: Added options related to the mesh file
+            case("-MFT","-mft","--MFT","--mft") ! mesh file type
                   i = i + 1
                   call getarg(i, CMDLINEARG)
                   select case(trim(cmdlinearg))
@@ -201,9 +201,9 @@ C     having to do a prep all and without having to add menu items).
             case("-MFN","-mfn","--MFN","--mfn") ! mesh file name
                meshFileNameSpecified = .true.
                i = i + 1
-               call getarg(i,meshFileName)                                 
+               call getarg(i,meshFileName)
             ! jgf51.21.27: Added options related to the nodal attributes file
-            case("-NFT","-nft","--NFT","--nft") ! nodal attributes file type 
+            case("-NFT","-nft","--NFT","--nft") ! nodal attributes file type
                   i = i + 1
                   call getarg(i, CMDLINEARG)
                   select case(trim(cmdlinearg))
@@ -212,7 +212,7 @@ C     having to do a prep all and without having to add menu items).
                   case("XDMF","Xdmf","xdmf")
                      naType = XDMF
                   case default
-                     write(*,*) 
+                     write(*,*)
      &                   "WARNING: The nodal attributes file type '",
      &                   trim(cmdlinearg),
      &               "' is not valid. Valid types are ascii and xdmf."
@@ -220,7 +220,7 @@ C     having to do a prep all and without having to add menu items).
             case("--NFN","--nfn") ! nodal attributes file name
                   naFileNameSpecified = .true.
                   i = i + 1
-                  call getarg(i,naFileName)                                 
+                  call getarg(i,naFileName)
             case default
                   write(*,*) "WARNING: The command line option '",
      &                  trim(cmdlinearg),"' is not valid and will be ignored."
@@ -335,7 +335,7 @@ C
       CALL PREPINPUT()
       print *, " "
       call memory_status()
-     
+
       print *, "ADCPREP COMPLETED"
 
       STOP
@@ -366,7 +366,7 @@ C
 !tcm v50.85
 #ifdef WINDOWS
       USE IFPORT
-#endif            
+#endif
       IMPLICIT NONE
 
       INTEGER I           ! loop counter for nodes, elements
@@ -374,9 +374,9 @@ C
       CHARACTER CMD*6     ! string to hold shell command
       CHARACTER PENUM*6   ! string to hold directory name
       CHARACTER DIRCMD*72 ! string to hold complete shell command line
-#ifdef WINDOWS      
+#ifdef WINDOWS
       logical(4) :: dir_result  !tcm v50.85
-      INTEGER :: dir_error   !tcm v50.85 
+      INTEGER :: dir_error   !tcm v50.85
 #endif
       integer, parameter :: repartitionLimit = 100 ! give up after this
       integer :: numPartitionAttempts ! number of attempts to partition mesh
@@ -430,8 +430,8 @@ C
       select case(meshType)
       case(ASCII)
          call sizeup14()
-         if ( (partition.eqv..false.) .and. 
-     &        (hot_local.eqv..false.) .and. 
+         if ( (partition.eqv..false.) .and.
+     &        (hot_local.eqv..false.) .and.
      &        (hot_global.eqv..false.) ) then
             call sizeup15()
          endif
@@ -467,7 +467,7 @@ C
          write(30,'(a)') trim(formatString(controlType))
          write(30,'(a)') 'controlFileName'
          write(30,'(a)') trim(controlFileName)
-         close(30)      
+         close(30)
       endif
 
 C--   If ONLY localizing Run Info File ( fort.15 )
@@ -510,21 +510,21 @@ C
          boundaryWeights(:) = 0
          call metis()
          if (strictBoundaries.eqv..true.) then
-            ! check for issues with subdomain boundaries 
-            partitionOK = .false. 
+            ! check for issues with subdomain boundaries
+            partitionOK = .false.
             ! loop ends when the partitioning is successful or
-            ! the limit on the number of attempts has been reached 
-            do  
+            ! the limit on the number of attempts has been reached
+            do
                write(*,'(a,a)') 'INFO: Determining max number of nodes ',
      &             'and elements on any subdomain.'
                call domsize()
-               write(*,'(a)') 
+               write(*,'(a)')
      &            'INFO: Allocating subdomain mesh mapping arrays.'
                call alloc_main2()
-               write(*,'(a)') 
+               write(*,'(a)')
      &            'INFO: Constructing subdomain mesh mapping arrays.'
                call decomp()
-               write(*,'(a)') 
+               write(*,'(a)')
      &            'INFO: Checking subdomain mesh mapping arrays.'
                call checkMappings(partitionOK,numPartitionAttempts)
                if (partitionOK.eqv..true.) then
@@ -533,19 +533,19 @@ C
                   numPartitionAttempts = numPartitionAttempts + 1
                   write(*,'(a,i0,a)') 'INFO: Partitioning attempt ',
      &            numPartitionAttempts,' contains mapping array issues.'
-                  write(*,'(a,i0,a)') 
+                  write(*,'(a,i0,a)')
      &            'INFO: The limit on partitioning attempts is ',
-     &            repartitionLimit,'.' 
-                  write(*,'(a)') 
+     &            repartitionLimit,'.'
+                  write(*,'(a)')
      &            'INFO: Modifying partition weights and trying again.'
                   call dealloc_main2()
                endif
                if ( numPartitionAttempts.gt.repartitionLimit ) then
-                  write(*,'(a,i0,a)') 
+                  write(*,'(a,i0,a)')
      &              'ERROR: Mesh partitioning has failed after ',
      &               repartitionLimit,' attempts.'
                   stop
-               endif 
+               endif
                call metis()
             end do
          endif
@@ -642,7 +642,7 @@ C
             CASE(13)
                print *, "Error Creating ",PENUM,".  Access Denied."
                stop
-            CASE(17) 
+            CASE(17)
                print *, PENUM," already exists."
             CASE DEFAULT
             END SELECT
@@ -791,8 +791,9 @@ C     tcm_v49.04 NWS=3 and NWS=6 no longer need fort.22 decomposition
 C     jgf49.0804 NWS=29 does not need fort.22 decomposition.
 C     jgf: Added NWS=30 and changed to select/case.
 C     tcm v51.06.02 added NWS=16 GFDL Met Data
+c     arc added nws13 190110
          select case(ABS(NWS))
-         case(3,6,12,16,29,30)
+         case(3,6,12,13,16,29,30)
             call logMessage(INFO,
      & 'The meteorological data does not require domain decomposition.')
          case(1,2,4,5,45,7)
@@ -879,7 +880,7 @@ C  kmd48.33bc add information for 3D baroclinic simulations
       END IF
 
 C     WP 02.23.2018 Added to process the fort.24 SAL term file
-      IF (PREP_ALL) THEN 
+      IF (PREP_ALL) THEN
          IF (NTIP.eq.2) CALL PREP24()
       END IF
 C
