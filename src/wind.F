@@ -305,7 +305,6 @@ C     ----------------------------------------------------------------
       allocate ( wvnx2(np),wvny2(np) )
       allocate ( prn1(np) )
       allocate ( prn2(np) )
-      if (NWS.eq.-14) allocate ( HasData(np) )
 
       if (NWS.eq.-14) allocate ( HasData(np) )
 C     WJP: this is the value used in the surface stress computation
@@ -2810,8 +2809,8 @@ Casey 180318: Added for NWS=13, ARC modified 190108
             CALL ApplyCanopyCoefficient(I,WindX,WindY)
           ENDIF
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-          WSX2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
-          WSY2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
+          WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+          WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
           PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &        -PRBCKGRND_MH2O)
           PR2(I) = PRBCKGRND_MH2O + PRDIFF
