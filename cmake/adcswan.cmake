@@ -1,11 +1,11 @@
 
 IF(BUILD_ADCSWAN AND PERL_FOUND)
 
-    SET( SWAN1SERIAL_SOURCES ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/swmod1.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/swmod2.f 
-                             ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanSpectPart.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/m_constants.f90 
-                             ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/m_fileio.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/serv_xnl4v5.f90 
-                             ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/mod_xnl4v5.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanGriddata.f90 
-                             ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanGridobjects.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanCompdata.f90 
+    SET( SWAN1SERIAL_SOURCES ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/swmod1.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/swmod2.f
+                             ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanSpectPart.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/m_constants.f90
+                             ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/m_fileio.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/serv_xnl4v5.f90
+                             ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/mod_xnl4v5.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanGriddata.f90
+                             ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanGridobjects.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanCompdata.f90
                              ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/couple2adcirc.f90 )
     
     SET( SWAN2SERIAL_SOURCES ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/swanmain.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/swanpre1.f 
@@ -50,6 +50,7 @@ IF(BUILD_ADCSWAN AND PERL_FOUND)
                              ${CMAKE_SOURCE_DIR}/wind/vortex.F 
                              ${CMAKE_SOURCE_DIR}/src/wind.F 
                              ${CMAKE_SOURCE_DIR}/src/owiwind.F 
+                             ${CMAKE_SOURCE_DIR}/src/owiwind_netcdf.F 
                              ${CMAKE_SOURCE_DIR}/src/rs2.F
                              ${CMAKE_SOURCE_DIR}/src/owi_ice.F 
                              ${CMAKE_SOURCE_DIR}/src/itpackv.F 
@@ -99,16 +100,16 @@ IF(BUILD_ADCSWAN AND PERL_FOUND)
     TARGET_INCLUDE_DIRECTORIES(templib_adcswan1    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
     TARGET_INCLUDE_DIRECTORIES(templib_swan2serial PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
     TARGET_INCLUDE_DIRECTORIES(templib_swan2serial PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan1)
-    TARGET_INCLUDE_DIRECTORIES(adcswan             PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan1)   
+    TARGET_INCLUDE_DIRECTORIES(adcswan             PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan1)
     TARGET_INCLUDE_DIRECTORIES(adcswan             PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
     TARGET_INCLUDE_DIRECTORIES(adcswan             PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan2serial)
 
     TARGET_LINK_LIBRARIES(adcswan templib_adcswan1 templib_swan2serial templib_swan1serial )
-    
+
     ADD_DEPENDENCIES(adcswan             templib_adcswan1 templib_swan2serial templib_swan1serial )
     ADD_DEPENDENCIES(templib_swan2serial templib_adcswan1 templib_swan1serial )
     ADD_DEPENDENCIES(templib_adcswan1    templib_swan1serial)
-    
+
     INSTALL(TARGETS adcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 ENDIF(BUILD_ADCSWAN AND PERL_FOUND)

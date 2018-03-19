@@ -10,6 +10,7 @@ SET( LIBADC_SOURCES   ${CMAKE_SOURCE_DIR}/src/sizes.F
                       ${CMAKE_SOURCE_DIR}/src/wind.F 
                       ${CMAKE_SOURCE_DIR}/src/hashtable.F 
                       ${CMAKE_SOURCE_DIR}/src/owiwind.F 
+                      ${CMAKE_SOURCE_DIR}/src/owiwind_netcdf.F 
                       ${CMAKE_SOURCE_DIR}/src/rs2.F 
                       ${CMAKE_SOURCE_DIR}/src/owi_ice.F 
                       ${CMAKE_SOURCE_DIR}/src/itpackv.F 
@@ -47,7 +48,7 @@ IF(BUILD_LIBADCIRC_STATIC)
     addCompilerFlags(libadcirc_static)
     addMPI(libadcirc_static)
     SET_TARGET_PROPERTIES( libadcirc_static PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
-    
+
     INSTALL(TARGETS libadcirc_static RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 	                             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 				     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -68,7 +69,7 @@ IF(BUILD_LIBADCIRC_SHARED)
     TARGET_LINK_LIBRARIES( libadcirc_shared mkdir2 )
 
     SET_TARGET_PROPERTIES( libadcirc_shared PROPERTIES OUTPUT_NAME "adcirc" )
-    
+
     SET_PROPERTY(TARGET libadcirc_shared PROPERTY POSITION_INDEPENDENT_CODE ON)
     SET_PROPERTY(TARGET mkdir2 PROPERTY POSITION_INDEPENDENT_CODE ON)
 
@@ -78,8 +79,8 @@ IF(BUILD_LIBADCIRC_SHARED)
     INSTALL(TARGETS libadcirc_shared RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 	                             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 				     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-    
-    INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/libadcircConfigVersion.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake )			     
+
+    INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/libadcircConfigVersion.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake )
 
     IF(${CMAKE_INSTALL_PREFIX} STREQUAL "/usr/local")
         INSTALL ( CODE

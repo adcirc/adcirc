@@ -104,6 +104,13 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
      &                  initWindModule
       USE OWIWIND, ONLY: nPowellSearchDomains
+#ifdef ADCNETCDF
+Casey 180318: Added NWS=13
+      USE OWIWIND_NETCDF, ONLY: NWS13ColdStartString,
+     &                          NWS13File,
+     &                          NWS13GroupForPowell,
+     &                          NWS13WindMultiplier
+#endif
 C
       IMPLICIT NONE
 C
@@ -222,6 +229,11 @@ C Logicals added for adcprep paths
       LOGICAL :: XDMF_AVAIL ! true if XDMF was compiled in
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       NAMELIST /waveCoupling/ WaveWindMultiplier
+#ifdef ADCNETCDF
+Casey 180318: Added NWS=13
+      NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,
+     &    NWS13WindMultiplier,NWS13GroupForPowell
+#endif
       !
       ! @jasonfleming: reduce memory usage if there are no weir boundaries
       ! with cross barrier pipes
@@ -267,10 +279,10 @@ C rl  10/10/01                                                                C
 C
 C-----------------------------------------------------------------------------C
 C
-C     jgf51.21.27: Broke the sizeup routine into two pieces, one for 
+C     jgf51.21.27: Broke the sizeup routine into two pieces, one for
 C     reading the fort.14 and one for reading the fort.15. This enables
 C     the reading of mesh files in different formats without affecting
-C     the reading of the fort.15 file. 
+C     the reading of the fort.15 file.
       SUBROUTINE SIZEUP14()
       use memory_usage
       IMPLICIT NONE
@@ -450,13 +462,13 @@ C if ONLY partitioning mesh using metis or a prephot
       ENDIF
       !
       ! jgf51.21.27: This subroutine rewinds unit 14 but leaves the
-      ! file open as it will be read again in read_global.F 
+      ! file open as it will be read again in read_global.F
       ! (subroutine read14)
       return
 1011  FORMAT(' File ',A60,/,' WAS FOUND!  Opening & Processing file',/)
-C-----------------------------------------------------------------------------C      
+C-----------------------------------------------------------------------------C
       end subroutine sizeup14
-C-----------------------------------------------------------------------------C      
+C-----------------------------------------------------------------------------C
 
 
 
@@ -474,9 +486,9 @@ C-----------------------------------------------------------------------------C
 C
       ! jgf51.21.27: This subroutine was created out of the second half
       ! of the original sizeup() subroutine to separate the reading of
-      ! the control file from the reading of the mesh file. This 
+      ! the control file from the reading of the mesh file. This
       ! enables different subroutines to be called for reading the mesh
-      ! file, depending on the format. 
+      ! file, depending on the format.
       SUBROUTINE SIZEUP15()
       use memory_usage
 
@@ -514,6 +526,10 @@ c... tcm v50.79 addition for metControl namelist
       logical :: found_metCon_nml  !flag to determine if the metControl namelist was present
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       LOGICAL :: FOUND_WC_NML
+#ifdef ADCNETCDF
+Casey 180318: Added NWS=13
+      LOGICAL :: FOUND_OWINC_NML
+#endif
       LOGICAL :: found_tvw_nml
       LOGICAL :: found_WarnElev_nml = .false.
       LOGICAL :: found_AliDisp_nml = .false.
@@ -548,6 +564,10 @@ C     tcm v50.66.02 -- additions for time varying bathymetry
 C
 C     tcm v50.79 -- addition for metControl namelist
       FOUND_metCon_NML = .FALSE.
+#ifdef ADCNETCDF
+Casey 180318: Added NWS=13
+      FOUND_OWINC_NML = .FALSE.
+#endif
 C
 C...OPEN AND PROCESS THE UNIT 15 ADCIRC EXTERNAL MODE (2DDI)
 C...HORIZONTAL RUN INFORMATION FILE
@@ -582,16 +602,16 @@ c...  read through the fort.15 file for the namelist (TimeBathyControl) for
 c...  the time varying bathymetry.  This namelist must be at the bottom of the
 c...  fort.15 file. If found, then set the appropriate values (btiminc,bchgtiminc,
 c...  and nddt).  If the namelist is not there, then the time varying bathymetry
-c...  will not be used. 
+c...  will not be used.
 C...
 C...  After this search and read, we will close the file and then reopen it
 c...  for further processing the traditional non-namelist components.
 C...
-      READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT) 
+      READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT)
 
       IF (IOS_NDDT < 0) THEN
-c.....   it is possible for the namelist to be present in the file and occuring at the end 
-c.....   of the file with no line breaks after the ending "\" which causes the iostat to 
+c.....   it is possible for the namelist to be present in the file and occuring at the end
+c.....   of the file with no line breaks after the ending "\" which causes the iostat to
 c.....   return a negative value.  By checking to be sure a namelist variable was set to
 c....    a non-default value we can determine this was the case.
          IF (NDDT.NE.0) THEN
@@ -636,7 +656,7 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          found_metCon_nml = .true.  !tcm v50.79 added
       ENDIF
       REWIND(15)
-      
+
       ! zc: Add namelist for user to control time varying weirs
       IOS = 0
       READ(UNIT=15,NML=TVWControl,IOSTAT=IOS)
@@ -666,11 +686,23 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       ENDIF
       REWIND(15)
 
+#ifdef ADCNETCDF
+Casey 180318: Added NWS=13
+      READ(UNIT=15,NML=owiWindNetcdf,IOSTAT=IOS)
+      IF(IOS.GT.0)THEN
+         WRITE(*,*) "INFO: The owiWindNetcdf namelist was not found."
+         FOUND_OWINC_NML = .FALSE.
+      ELSE
+         FOUND_OWINC_NML = .TRUE.
+      ENDIF
+      REWIND(15)
+#endif
+
 c...  tcm v52.30.01 Addtions for using the Smagorinski Control Namelist
 c...  read through the fort.15 file for the namelist (Smag_Control) for
 c...  using upper and lower limits on Smagorinski.  This namelist must be at the bottom
 c...  of the fort.15 file. If found, then set the appropriate values (Smag_Comp_Flag,
-c...  SMAG_UPPER_LIM, and Smag_Lower_Lim).  If the namelist is not there, then the 
+c...  SMAG_UPPER_LIM, and Smag_Lower_Lim).  If the namelist is not there, then the
 c...  Smagorinski limit adjustments will not be used.
 C...
 C...  After this search and read, we will close the file and then reopen it
@@ -929,7 +961,8 @@ C.... tcm v48.4641 additions for ice
      &     .OR.(ABS(NWS).EQ.20)  !jie NWS=20
      &     .OR.(ABS(NWS).EQ.16)  !tcm v51.06.02 added for nws=16 GFDL Met
      &     .OR.(NWS.EQ.10)       !yf added for nws=10 GFS Met
-     &     .OR.(ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.14).OR.(NWS.EQ.19)) THEN
+     &     .OR.(ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.13).OR.(ABS(NWS).EQ.14)
+     &     .OR.(NWS.EQ.19))THEN
         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
         IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4)))
      &         READ(15,*) WTIMINC,RSTIMINC
@@ -971,9 +1004,9 @@ C.... tcm v48.4641 additions for ice
       IF ((ABS(NWS)).EQ.30) THEN
          SELECT CASE(NRS)
          CASE(0) ! no wave radiation stress
-                      ! YYYY  MM   DD HH24  StNum BLAdj GEOFACTOR 
+                      ! YYYY  MM   DD HH24  StNum BLAdj GEOFACTOR
                       ! WTIMINC pureVortex pureBackgrnd
-            READ(15,*) IDUM,IDUM,IDUM,IDUM, IDUM, RDUM,   IDUM,  
+            READ(15,*) IDUM,IDUM,IDUM,IDUM, IDUM, RDUM,   IDUM,
      &                  WTIMINC,   RDUM,      RDUM
          CASE DEFAULT ! some kind of wave radiation stress
                       ! YYYY MM DD HH24 StNum BLAdj GEOFACTOR WTIMINC RSTIMINC pureVortex pureBack
@@ -1067,7 +1100,7 @@ C
       call setFormatUsage(idum)
 
       READ(15,*) MNSTAE                             !PROCESS MNSTAE
-      ! tcm v51.20.03 -- added negative mnstae to signal use of external station file elev_stat.151 
+      ! tcm v51.20.03 -- added negative mnstae to signal use of external station file elev_stat.151
       if (MNSTAE < 0) then
          write(*,*) "External File Used for Elevation Station Locations"
          USE_ELEV_STAT_FILE = .TRUE.
@@ -1081,8 +1114,8 @@ C
 7690     if (ios_stations .ne. 0) then
             write(*,*) "Error in Reading Elevation Station File: elev_stat.151"
             stop  ! there is a stop here
-         endif 
-         close(151)                 
+         endif
+         close(151)
       ELSE
          write(*,*) "Elevation Station Locations contained in fort.15"
          USE_ELEV_STAT_FILE = .FALSE.
@@ -1115,8 +1148,8 @@ C
             write(*,*) "Error in Reading Velocity Station File: vel_stat.151"
             stop  ! there is a stop here
          endif
-         close(151)                  
-      else 
+         close(151)
+      else
          write(*,*) "Velocity Station Locations Contained in fort.15"
          USE_VEL_STAT_FILE = .false.
          DO IL=1,MNSTAV
@@ -1149,8 +1182,8 @@ C
                write(*,*) "Error in Reading Concentration Station File: conc_stat.151"
                stop  ! there is a stop here
             endif
-            close(151)                  
-         else 
+            close(151)
+         else
             write(*,*) "Concentration Station Locations Contained in fort.15"
             USE_CONC_STAT_FILE = .false.
             DO IL=1,MNSTAC
@@ -1186,7 +1219,7 @@ C
               stop  ! there is a stop here
            endif
            close(151)
-        else 
+        else
            write(*,*) "MET Station Locations Contained in fort.15"
            USE_MET_STAT_FILE = .false.
            DO IL=1,MNSTAM
@@ -1201,8 +1234,8 @@ C
 
       READ(15,*) IDUM                            !SKIP OVER NOUTGV, TOUTSGV...
       call setFormatUsage(idum)
-      
-      IF (IM.EQ.10) THEN 
+
+      IF (IM.EQ.10) THEN
          READ(15,*) IDUM               !SKIP OVER NOUTGC, TOUTSGC...
          call setFormatUsage(idum)
       ENDIF
@@ -1381,10 +1414,10 @@ C     sb46.28sb01 added NWS=12: OWI format
       IF(ITITER.EQ.0) WRITE(*,3104)
       IF(ITITER.GT.0) WRITE(*,3105)
       IF(ITITER.LT.0) WRITE(*,3106)
-      IF(USE_ELEV_STAT_FILE) WRITE(*,3180)  !tcm v51.20.03 
-      IF(USE_VEL_STAT_FILE) WRITE(*,3181)   !tcm v51.20.03 
-      IF(USE_MET_STAT_FILE) WRITE(*,3182)   !tcm v51.20.03 
-      IF(USE_CONC_STAT_FILE) WRITE(*,3183)  !tcm v51.20.03 
+      IF(USE_ELEV_STAT_FILE) WRITE(*,3180)  !tcm v51.20.03
+      IF(USE_VEL_STAT_FILE) WRITE(*,3181)   !tcm v51.20.03
+      IF(USE_MET_STAT_FILE) WRITE(*,3182)   !tcm v51.20.03
+      IF(USE_CONC_STAT_FILE) WRITE(*,3183)  !tcm v51.20.03
       WRITE(*,3108)
 C
  3000 FORMAT(' *****************************************************',/,
@@ -1415,7 +1448,7 @@ C
  3217 FORMAT(' *   Also, NWS=+-8 Holland wind forcing is used,     *')
  3219 FORMAT(' *   Also, NWS=+-19 Asymmetric Holland wind v2.0     *',/,
      &       ' *                 forcing is used,                  *')
- 3220 FORMAT(' *   Also, NWS=+-20 Generalized Asym. Model is used  *') 
+ 3220 FORMAT(' *   Also, NWS=+-20 Generalized Asym. Model is used  *')
  3026 FORMAT(' *   Also, NWS=+-16 GFDL Met Data is used            *')
  3221 FORMAT(' *   Also, ABS(NWS)>=1000 ice concentration are used,*')
  3223 FORMAT(' *   Also, NWS=+-29 VortexOWI met forcing is used,   *')
@@ -1458,13 +1491,13 @@ C
       !  S U B R O U T I N E   S E T   F O R M A T   U S A G E
       !-----------------------------------------------------------------
       ! If netCDF or XDMF file formats are used, the reading of extra
-      ! metadata from the fort.15 file is triggered. 
+      ! metadata from the fort.15 file is triggered.
       !-----------------------------------------------------------------
       subroutine setFormatUsage(idum)
       use sizes, only : NETCDF3, NETCDF4, XDMF
       implicit none
       integer, intent(in) :: idum
-      
+
          select case(abs(idum))
          case(NETCDF3,NETCDF4)
             useNetCDF = .true.

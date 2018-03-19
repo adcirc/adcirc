@@ -1,11 +1,11 @@
 
 IF(BUILD_PADCSWAN AND PERL_FOUND)
 
-    SET( SWAN1PARALLEL_SOURCES ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/swmod1.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/swmod2.f 
-                               ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanSpectPart.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/m_constants.f90 
-                               ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/m_fileio.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/serv_xnl4v5.f90 
-                               ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/mod_xnl4v5.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGriddata.f90 
-                               ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGridobjects.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanCompdata.f90 
+    SET( SWAN1PARALLEL_SOURCES ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/swmod1.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/swmod2.f
+                               ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanSpectPart.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/m_constants.f90
+                               ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/m_fileio.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/serv_xnl4v5.f90
+                               ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/mod_xnl4v5.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGriddata.f90
+                               ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGridobjects.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanCompdata.f90
                                ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/couple2adcirc.f90 )
     
     SET( SWAN2PARALLEL_SOURCES ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanmain.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanpre1.f 
@@ -51,6 +51,7 @@ IF(BUILD_PADCSWAN AND PERL_FOUND)
                             ${CMAKE_SOURCE_DIR}/src/wind.F 
                             ${CMAKE_SOURCE_DIR}/src/hashtable.F 
                             ${CMAKE_SOURCE_DIR}/src/owiwind.F 
+                            ${CMAKE_SOURCE_DIR}/src/owiwind_netcdf.F 
                             ${CMAKE_SOURCE_DIR}/src/rs2.F 
                             ${CMAKE_SOURCE_DIR}/src/owi_ice.F 
                             ${CMAKE_SOURCE_DIR}/src/itpackv.F 
@@ -100,7 +101,7 @@ IF(BUILD_PADCSWAN AND PERL_FOUND)
     addLibMkdir(padcswan)
 
     addLibVersion(padcswan)
-    
+
     addMPI(templib_padcswan1)
     addMPI(padcswan)
     addMPI(templib_swan1parallel)
@@ -116,12 +117,12 @@ IF(BUILD_PADCSWAN AND PERL_FOUND)
     TARGET_INCLUDE_DIRECTORIES(padcswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
     TARGET_INCLUDE_DIRECTORIES(padcswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan2parallel)
 
-    TARGET_LINK_LIBRARIES(padcswan templib_swan2parallel templib_padcswan1 templib_swan1parallel) 
-   
+    TARGET_LINK_LIBRARIES(padcswan templib_swan2parallel templib_padcswan1 templib_swan1parallel)
+
     ADD_DEPENDENCIES(padcswan              templib_swan2parallel templib_padcswan1)
     ADD_DEPENDENCIES(templib_swan2parallel templib_padcswan1 templib_swan1parallel)
     ADD_DEPENDENCIES(templib_padcswan1     mkdir version templib_swan1parallel )
-    
+
     INSTALL(TARGETS padcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 ENDIF(BUILD_PADCSWAN AND PERL_FOUND)

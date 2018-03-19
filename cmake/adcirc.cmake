@@ -11,6 +11,7 @@ IF(BUILD_ADCIRC)
                          ${CMAKE_SOURCE_DIR}/wind/vortex.F
                          ${CMAKE_SOURCE_DIR}/src/wind.F 
                          ${CMAKE_SOURCE_DIR}/src/owiwind.F 
+                         ${CMAKE_SOURCE_DIR}/src/owiwind_netcdf.F 
                          ${CMAKE_SOURCE_DIR}/src/rs2.F
                          ${CMAKE_SOURCE_DIR}/src/owi_ice.F 
                          ${CMAKE_SOURCE_DIR}/src/itpackv.F 
