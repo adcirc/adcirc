@@ -24,7 +24,7 @@ C     ------------------------------------------------------------------
       implicit none
       character(len=80) :: agrid
       character(4)              :: aid4(20)
-      character(8)              :: aid8(10)
+      character(8)              :: aid8(10)     
       integer :: np   ! number of nodes in the mesh
       integer :: ne   ! number of elements in the mesh
       integer :: ics  ! mesh coordinate system (1=cartesian, 2=geographic)
