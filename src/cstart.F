@@ -1872,10 +1872,17 @@ C----------------------------------------------------------------------
          !
          ! Finish initializing water surface elevation (eta2 and eta1)
          ! @jasonfleming: give dry nodes an initial water depth of
-         ! habsmin (0.8*h0)
+         ! habsmin (0.8*h0) or eta2, whichever is greater
          where (nnodecode.eq.0) 
-            eta2=habsmin-dp
+            eta2=max(eta2,(habsmin-dp))
          end where
+         ! @jasonfleming: keep dry water surface elevation near 
+         ! bathytopo in polders
+         if (loadStartDry.eqv..true.) then
+            where (startDry.eq.1) 
+               eta2=habsmin-dp
+            end where
+         endif 
       endif
       eta1(:) = eta2(:) 
 

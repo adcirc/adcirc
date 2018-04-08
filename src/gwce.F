@@ -59,7 +59,7 @@ C******************************************************************************
       module gwce
       use sizes, only : sz
       use global, only : DEBUG, INFO, WARNING, ERROR, logMessage, 
-     &   setMessageSource, unsetMessageSource, allMessage
+     &   setMessageSource, unsetMessageSource, allMessage,scratchMessage
       implicit none
 
       real(sz),allocatable :: lsxx(:),lsxy(:),lsyx(:),lsyy(:)

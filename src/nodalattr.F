@@ -1730,12 +1730,14 @@ C     subdomain. Based on Casey050711.
 C
 C     ----------------------------------------------------------------
       SUBROUTINE CalculateTimeVaryingTau0(TK, NNeigh, NeiTab, NP)
+      USE GLOBAL, ONLY : nodecode
       IMPLICIT NONE
       REAL(SZ), intent(in) :: TK(:)       ! bottom friction
       INTEGER, intent(in) :: NNeigh(:)   ! number of neighbor nodes
       INTEGER, intent(in) :: NeiTab(:,:) ! table of neighbor nodes
       INTEGER, intent(in) :: NP           ! number of nodes in the domain
       REAL(SZ) CaseySum  ! sum of tau0temp values around a particular node
+      INTEGER :: numWetNeighbors ! number of wet neighbors around a node
 
 Casey 050711 : Made changes for averaged variable Tau0.
 cjjw46.39.sb01 :  "high/low LIMITED" variable G.
@@ -1757,18 +1759,23 @@ cjjw46.39.sb01 :  "high/low LIMITED" variable G.
                Tau0Temp(I)=Tau0Base(i) ! not time varying
             ELSE
                Tau0Temp(i)=Tau0Base(i)+1.5*TK(i) ! time varying
+               ! @jasonflemingdebug try lowering the ceiling
                IF (Tau0Temp(i).gt.0.2) Tau0Temp(i)=0.2 ! ceiling
+               !IF (Tau0Temp(i).gt.0.1) Tau0Temp(i)=0.1 ! ceiling
             ENDIF
          ENDDO
       ENDIF
       ! smoothing
-      DO I=1, NP
-         CaseySum = 0.0
-         DO J=1,NNeigh(I)
-            CaseySum = CaseySum + Tau0Temp(NeiTab(I,J))
-         ENDDO
-         TAU0VAR(I) = CaseySum / NNeigh(I)
-      ENDDO
+      ! @jasonflemingdebug
+      !DO I=1, NP
+      !   CaseySum = 0.0
+      !   DO J=1,NNeigh(I)
+      !      CaseySum = CaseySum + Tau0Temp(NeiTab(I,J))
+      !   ENDDO
+      !   TAU0VAR(I) = CaseySum / NNeigh(I)
+      !ENDDO
+      ! @jasonflemingdebug
+      tau0var=tau0temp
 C
 C     jgf47.33 Perform time averaging of tau0 if requested.
       IF (TimeAveragedTau0) THEN

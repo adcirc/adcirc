@@ -183,6 +183,12 @@ C                  ENDIF
                ENDIF
             ENDIF
          ENDDO
+         ! @jasonflemingdebug: tau0 depends on tk, which depends on 
+         ! water depth and velocity, which are constantly varying; however
+         ! tau0 is only recomputed when LHS is recomputed; try forcing
+         ! recomputation of the LHS on every time step
+         ncchange = ncchange + 1
+         
 CWET...
 CWET...END WET/DRY SECTION - PART 1
 CWET...
@@ -215,7 +221,7 @@ CWET...
                   IF((HTOTN1.GE.HOFF).AND.(HTOTN2.GE.HOFF)) THEN
                      NM123=NM1
                      ! @jasonflemingdebug IF(ETA2(NM2).GT.ETA2(NM1)) NM123=NM2
-                     IF(ETA2(NM2).GT.ETA2(NM1)) NM123=NM1
+                     IF(ETA2(NM2).LT.ETA2(NM1)) NM123=NM2
                      DELDIST=SQRT((y(NM3)-y(NM123))**2.D0
      &                    +(X(NM3)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM3)
@@ -227,6 +233,9 @@ c. RJW modified the following for 3D friction
                      IF(C2DDI)THEN
 Csb46.28sb02
 C<<                     Convert Manning's N to Cd, if necessary.
+                        !@jasonflemingdebug this recomputes fric()
+                        ! at a wet/dry interface node, whether or not an
+                        ! adjacent dry node becomes wet
                         IF (LoadManningsN) THEN
                           FRIC(NM123)=g*ManningsN(NM123)**2.d0
      &                      /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
@@ -235,11 +244,11 @@ C<<                     Convert Manning's N to Cd, if necessary.
                             FRIC(NM123) = BFCdLLimit
                           ENDIF
                         ENDIF
-C>>
+C>>                     
                         TKWET=FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
      &                    (IFNLBF+IFHYBF*
      &                    (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
-
+                        
                         IF(TKWET.LT.0.0001d0) TKWET=0.0001d0
                         VEL=G*(DELETA/DELDIST)/TKWET
 
@@ -268,10 +277,7 @@ C    ....         third node met criteria and is also wet
 c. RJW merged 08/26/20008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
 c                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
-                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
-     &                        (IFNLBF+IFHYBF*
-     &                        (1.D0+(HBREAK/H1)**FTHETA)**
-     &                        (FGAMMA/FTHETA)))
+                           !@jasonflemingdebug don't change the friction
                            
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
@@ -313,7 +319,7 @@ C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                   IF((HTOTN2.GE.HOFF).AND.(HTOTN3.GE.HOFF)) THEN
                      NM123=NM2
                      !@jasonflemingdebug IF(ETA2(NM3).GT.ETA2(NM2)) NM123=NM3
-                     IF(ETA2(NM3).GT.ETA2(NM2)) NM123=NM2
+                     IF(ETA2(NM3).LT.ETA2(NM2)) NM123=NM3
                      DELDIST=SQRT((Y(NM1)-Y(NM123))**2.D0
      &                    +(X(NM1)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM1)
@@ -361,10 +367,12 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                         NNODECODE(NM1)=1
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
-                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
-     &                        (IFNLBF+IFHYBF*
-     &                        (1.D0+(HBREAK/H1)**FTHETA)**
-     &                        (FGAMMA/FTHETA)))
+                           !@jasonflemingdebug don't change the friction
+                                               
+!                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+!     &                        (IFNLBF+IFHYBF*
+!     &                        (1.D0+(HBREAK/H1)**FTHETA)**
+!     &                        (FGAMMA/FTHETA)))
 
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
@@ -407,7 +415,7 @@ C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                   IF((HTOTN3.GE.HOFF).AND.(HTOTN1.GE.HOFF)) THEN
                      NM123=NM3
                      !@jasonflemingdebug IF(ETA2(NM1).GT.ETA2(NM3)) NM123=NM1
-                     IF(ETA2(NM1).GT.ETA2(NM3)) NM123=NM3
+                     IF(ETA2(NM1).LT.ETA2(NM3)) NM123=NM1
                      DELDIST=SQRT((Y(NM2)-Y(NM123))**2.D0
      &                     +(X(NM2)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM2)
@@ -454,11 +462,12 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                         NNODECODE(NM2)=1
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
-                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
-     &                        (IFNLBF+IFHYBF*
-     &                        (1.D0+(HBREAK/H1)**FTHETA)**
-     &                        (FGAMMA/FTHETA)))
+                           !@jasonflemingdebug don't change the friction
 
+!                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+!     &                        (IFNLBF+IFHYBF*
+!     &                        (1.D0+(HBREAK/H1)**FTHETA)**
+!     &                        (FGAMMA/FTHETA)))
 
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
