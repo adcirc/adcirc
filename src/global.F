@@ -408,7 +408,7 @@ C...
       REAL(8) DTDPHS  !kmd48.33 - added time step for hot start
       CHARACTER(80)             :: RUNDES, RUNID, AFRIC
       CHARACTER(4)              :: RDES4(20),RID4(20)
-      CHARACTER(8)              :: RDES8(10),RID8(10),AID8(10)
+      CHARACTER(8)              :: RDES8(10),RID8(10)
       CHARACTER(10)             :: ALPHA ! periodic constituent name
       CHARACTER(10),ALLOCATABLE :: ELEVALPHA(:) ! periodic constituent name
       CHARACTER(5),ALLOCATABLE  :: TIPOTAG(:),BOUNTAG(:),FBOUNTAG(:)
