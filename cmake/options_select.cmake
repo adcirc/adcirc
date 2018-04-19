@@ -47,11 +47,13 @@ MARK_AS_ADVANCED(CLEAR CMAKE_CXX_FLAGS_DEBUG CMAKE_C_FLAGS_DEBUG CMAKE_Fortran_F
 ###########################################################################
 #...Library paths
 IF(ENABLE_OUTPUT_XDMF)
-    IF(NOT "$ENV{XDMFHOME}" STREQUAL "") 
-        SET(XDMFHOME "$ENV{XDMFHOME}" CACHE STRING "XDMF home path containing lib and include")
-    ELSE(NOT "$ENV{XDMFHOME}" STREQUAL "")
+    IF(NOT ${XDMFHOME} STREQUAL "")
+        SET(XDMFHOME ${XDMFHOME} CACHE STRING "XDMF home path containing lib and include")
+    ELSEIF(NOT $ENV{XDMFHOME} STREQUAL "") 
+        SET(XDMFHOME $ENV{XDMFHOME} CACHE STRING "XDMF home path containing lib and include")
+    ELSE(NOT ${XDMFHOME} STREQUAL "")
         SET(XDMFHOME "XDMF-NOTFOUND" CACHE STRING "XDMF home path containing lib and include")
-    ENDIF(NOT "$ENV{XDMFHOME}" STREQUAL "")
+    ENDIF(NOT ${XDMFHOME} STREQUAL "")
 ELSE(ENABLE_OUTPUT_XDMF)
     UNSET(XDMFHOME CACHE)
 ENDIF(ENABLE_OUTPUT_XDMF)

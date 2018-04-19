@@ -556,7 +556,7 @@ C
       CHARACTER(len=80) Units    ! label for physical units
       CHARACTER(len=80) Skipped  ! data we want to skip over
       REAL(SZ) DefaultVal(12) ! default value of attribute
-      INTEGER NoOfVals       ! at each node for an attribute
+      INTEGER, ALLOCATABLE :: NoOfVals(:) ! at each node for each attribute
       INTEGER Mode           !=0 to count, =1 to write
       LOGICAL success        ! .true. if all files opened successfully
       INTEGER, ALLOCATABLE :: SDNumND(:,:)  ! subdomain # of nodes not default
@@ -608,17 +608,18 @@ C        Transcribe header information into subdomain unit 13 files
          ENDDO
 C
 C        Transcribe attribute names from full domain file to subdomains.
+         ALLOCATE(NoOfVals(NAttr))
          DO k=1, NAttr
             READ(13,'(A80)') AttrName
             READ(13,'(A80)') Units
-            READ(13,*) NoOfVals
-            READ(13,*) (DefaultVal(m),m=1,NoOfVals)
+            READ(13,*) NoOfVals(k)
+            READ(13,*) (DefaultVal(m),m=1,NoOfVals(k))
             DO iproc=startProc, endProc
                WRITE(sdu(IPROC),'(A80)') AttrName
                WRITE(sdu(IPROC),'(A80)') Units
-               WRITE(sdu(IPROC),*) NoOfVals
+               WRITE(sdu(IPROC),*) NoOfVals(k)
                WRITE(sdu(IPROC),'(12(1x,e16.9))')
-     &          (DefaultVal(m),m=1,NoOfVals)
+     &          (DefaultVal(m),m=1,NoOfVals(k))
             END DO
          END DO
 C
@@ -634,7 +635,11 @@ C        nodes in each SubDomain for each nodal attribute
          END DO
 C        We need to figure out how many nodes go into each subdomain
 C        for each attribute.
-         CALL processNodalAttr(NAttr, 0, sdu, SDNumND,
+C         CALL processNodalAttr(NAttr, 0, sdu, SDNumND,
+C     &      startProc, endProc, naType)
+         ! WJP: 02.24.2018 Better to pass the NoOfVals here instead
+         ! assuming it in processNodalAttr
+         CALL processNodalAttr(NAttr, NoOfVals, 0, sdu, SDNumND,
      &      startProc, endProc, naType)
 C
 C     Now rewind and advance to the beginning of the data again
@@ -650,9 +655,13 @@ C     Now rewind and advance to the beginning of the data again
 C
 C        Now read each of the nodal attributes and transcribe them to the
 C        appropriate subdomain.
-         CALL processNodalAttr(NAttr, 1, sdu, SDNumND,
+C         CALL processNodalAttr(NAttr, 1, sdu, SDNumND,
+C     &      startProc, endProc, naType)
+         ! WJP: 02.24.2018 Better to pass the NoOfVals here instead
+         ! assuming it in processNodalAttr
+         CALL processNodalAttr(NAttr, NoOfVals, 1, sdu, SDNumND,
      &      startProc, endProc, naType)
-         DEALLOCATE(SDNumND)
+         DEALLOCATE(SDNumND,NoOfVals)
          nbytes = 8*nproc*nattr
          call memory_dealloc(nbytes)
 C
@@ -691,7 +700,7 @@ C     this information cannot be known until we have processed the
 C     entire fulldomain file.
 C
 C     ----------------------------------------------------------------
-      subroutine processNodalAttr(NAttr, mode, sdu, SDNumND,
+      subroutine processNodalAttr(NAttr, NumCol, mode, sdu, SDNumND,
      &   startProc, endProc, naType)
       use pre_global
       use sizes, only : ASCII, XDMF
@@ -699,6 +708,7 @@ C     ----------------------------------------------------------------
       implicit none
 C
       INTEGER,intent(in) :: NAttr  ! number of attributes in the file
+      INTEGER,intent(in),dimension(NAttr) :: NumCol !NumCol for attribute 
       INTEGER,intent(in) :: Mode   !=0 to count and return, =1 to write
       INTEGER,intent(in),dimension(nproc) :: sdu !i/o unit number array
       INTEGER,intent(inout),dimension(nproc,NAttr) :: SDNumND
@@ -706,7 +716,7 @@ C
       INTEGER,intent(in) :: endProc
       INTEGER,intent(in) :: naType ! ascii and xdmf are supported
       INTEGER NumNotDefault      ! number of nodes specified in the file
-      INTEGER NumCol             ! number of values per node for an attr
+!      INTEGER NumCol             ! number of values per node for an attr
       INTEGER NodeNum            ! full domain node number
       INTEGER SDNode             ! subdomain node number
       INTEGER i                  ! node loop counter
@@ -738,49 +748,52 @@ C
          ENDIF
          SELECT CASE (AttrName)
          CASE("primitive_weighting_in_continuity_equation")
-            NumCol=1
+            !NumCol=1
          CASE("surface_submergence_state")
-            NumCol=1
+            !NumCol=1
          CASE("quadratic_friction_coefficient_at_sea_floor")
-            NumCol=1
+            !NumCol=1
          CASE("mannings_n_at_sea_floor")
-            NumCol=1
+            !NumCol=1
          CASE("bottom_roughness_length")
-            NumCol=1
+            !NumCol=1
          CASE("chezy_friction_coefficient_at_sea_floor")
-            NumCol=1
+            !NumCol=1
          CASE("sea_surface_height_above_geoid")
-            NumCol=1
+            !NumCol=1
          CASE("surface_directional_effective_roughness_length")
-            NumCol=12
+            !NumCol=12
          CASE("surface_canopy_coefficient")
-            NumCol=1
+            !NumCol=1
          CASE("bridge_pilings_friction_parameters")
-            NumCol=4
+            !NumCol=4
          CASE("initial_river_elevation")
-            NumCol=1
+            !NumCol=1
          CASE
      &   ("average_horizontal_eddy_viscosity_in_sea_water_wrt_depth")
-            NumCol=1
+            !NumCol=1
          CASE
      &   ("average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth")
-            NumCol=1
+            !NumCol=1
          CASE
      &   ("min_and_max_primitive_weighting_in_continuity_equation")
-            NumCol=2
+            !NumCol=2
          CASE
      &   ("subtract_from_depth_to_equal_mean_sea_level")
-            NumCol=1
+            !NumCol=1
 Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
          CASE("wave_refraction_in_swan")
-            NumCol=1
+            !NumCol=1
          CASE("elemental_slope_limiter")
-            NumCol=1
+            !NumCol=1
 Corbitt 120328: Allow local advection as a nodal attribute.
          CASE("advection_state")
-            NumCol=1
+            !NumCol=1
+C 09232016 WJP : Spatially varying internal tide friction 
+         CASE("internal_tide_friction") 
+            !NumCol=1 or 3
          CASE DEFAULT
-            NumCol=1
+            !NumCol=1
             IF (Mode.eq.0) THEN
                WRITE(6,1001)    ! Nodal Attributes file
                WRITE(6,1021) AttrName ! contains invalid name
@@ -788,7 +801,7 @@ Corbitt 120328: Allow local advection as a nodal attribute.
                WRITE(6,1031) AttrName ! Process 1st column only
             ENDIF
          END SELECT
-         ALLOCATE(attrData(numCol))
+         ALLOCATE(attrData(numCol(k)))
          select case(naType) 
          case(ASCII)
             read(13,*) numNotDefault
@@ -807,7 +820,7 @@ Corbitt 120328: Allow local advection as a nodal attribute.
          DO i=1, NumNotDefault
             select case(naType)
             case(ASCII)
-               READ(13,*) nodeNum, (AttrData(j),j=1,NumCol)
+               READ(13,*) nodeNum, (AttrData(j),j=1,NumCol(k))
             case(XDMF)
                nodeNum = na(k) % nonDefaultNodes(i)
                attrData(:) = na(k) % nonDefaultVals(:,nodeNum)
@@ -824,7 +837,7 @@ Corbitt 120328: Allow local advection as a nodal attribute.
                IF (Mode.eq.0) SDNumND(iproc,k) = SDNumND(iproc,k)+1
                IF (Mode.eq.1) THEN
                   SDNode = IMAP_NOD_GL(2,NodeNum)
-                  WRITE(sdu(iproc),1100) SDNode,(AttrData(j),j=1,NumCol)
+                  WRITE(sdu(iproc),1100) labels(NodeNum),(AttrData(j),j=1,NumCol(k))
                ENDIF
             ELSE
                DO m=1, ITOTPROC(NodeNum)
@@ -836,8 +849,8 @@ Corbitt 120328: Allow local advection as a nodal attribute.
                         ENDIF
                         IF (Mode.eq.1) THEN
                            SDNode = IMAP_NOD_GL2(2*(m-1)+2,NodeNum)
-                           WRITE(sdu(iproc),1100) SDNode,
-     &                          (AttrData(j),j=1,NumCol)
+                           WRITE(sdu(iproc),1100) labels(NodeNum),
+     &                          (AttrData(j),j=1,NumCol(k))
                         ENDIF
                      ENDIF
                   END DO
@@ -984,12 +997,20 @@ C        nodes in each SubDomain for each nodal attribute
          SDNumND(:,:)=0
 C        We need to figure out how many nodes go into each subdomain
 C        for each attribute.
-         CALL processNodalAttr(NAttr, 0, sdu, SDNumND,
+C         CALL processNodalAttr(NAttr, 0, sdu, SDNumND,
+C     &      startProc, endProc, naType)
+         ! WJP: 02.24.2018 Better to pass the numVals here instead
+         ! assuming it in processNodalAttr
+         CALL processNodalAttr(NAttr, na%numVals, 0, sdu, SDNumND,
      &      startProc, endProc, naType)
 C
 C        Now read each of the nodal attributes and transcribe them to the
 C        appropriate subdomain.
-         CALL processNodalAttr(NAttr, 1, sdu, SDNumND,
+C         CALL processNodalAttr(NAttr, 1, sdu, SDNumND,
+C     &      startProc, endProc, naType)
+         ! WJP: 02.24.2018 Better to pass the numVals here instead
+         ! assuming it in processNodalAttr
+         CALL processNodalAttr(NAttr, na%numVals, 1, sdu, SDNumND,
      &      startProc, endProc, naType)
          DEALLOCATE(SDNumND)
          nbytes = 8*nproc*nattr
@@ -1375,12 +1396,15 @@ cjgf45.06    WRITE(14,80) OUTMSG
 C
           DO J = 1,NNODP(IPROC)
              INDX = IMAP_NOD_LG(J,IPROC)
-             WRITE(14,44) J,X(INDX),Y(INDX),DP(INDX)
+             WRITE(14,44) LABELS(INDX),X(INDX),Y(INDX),DP(INDX)
           ENDDO
 c
           DO J = 1,NELP(IPROC)
-             WRITE(14,45) J,ETYPE,NNEP(1,J,IPROC),NNEP(2,J,IPROC),
-     &                           NNEP(3,J,IPROC)
+!             WRITE(14,45) J,ETYPE,NNEP(1,J,IPROC),NNEP(2,J,IPROC),
+!     &                           NNEP(3,J,IPROC)
+              WRITE(14,45) J,ETYPE,LABELS(IMAP_NOD_LG(NNEP(1,J,IPROC),IPROC)),
+     &                     LABELS(IMAP_NOD_LG(NNEP(2,J,IPROC),IPROC)),
+     &                     LABELS(IMAP_NOD_LG(NNEP(3,J,IPROC),IPROC))
           ENDDO
  43       FORMAT(2I8)
  44       FORMAT(I8,3(E24.12))
@@ -1410,7 +1434,7 @@ C             boundary segment.
 #endif
                WRITE(14,80) OUTMSG
                DO I = 1,NVDLLP(K)
-                  WRITE(14,*) NBDVP(K,I)
+                  WRITE(14,*) LABELS(IMAP_NOD_LG(NBDVP(K,I),IPROC))
                ENDDO
             ENDIF
          ENDDO
@@ -1442,25 +1466,28 @@ C
                select case(itype)
                case default
                   DO I = 1,NVELLP(K)
-                     WRITE(14,'(I8)') NBVVP(K,I)
+                     WRITE(14,'(I8)') LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC))
                   ENDDO
                case(3,13,23)
                   IF(USE_TVW)NWEIRBNDRY(IPROC) = 1
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
-                     WRITE(14,81) NBVVP(K,I),BAR1(K,INDX),BAR2(K,INDX)
+                     WRITE(14,81) LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC)),
+     &                            BAR1(K,INDX),BAR2(K,INDX)
                   ENDDO
                case(4,24)
                   IF(USE_TVW)NWEIRBNDRY(IPROC) = 1
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
-                     WRITE(14,82) NBVVP(K,I),IBCONNRP(K,I),
+                     WRITE(14,82) LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC)),
+     &                        LABELS(IMAP_NOD_LG(IBCONNRP(K,I),IPROC)),
      &                        BAR1(K,INDX),BAR2(K,INDX),BAR3(K,INDX)
                   ENDDO
                case(5,25)
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
-                     WRITE(14,83) NBVVP(K,I),IBCONNRP(K,I),
+                     WRITE(14,83) LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC)),
+     &                      LABELS(IMAP_NOD_LG(IBCONNRP(K,I),IPROC)),
      &                      BAR1(K,INDX),BAR2(K,INDX),BAR3(K,INDX), 
      &                      BAR4(K,INDX),BAR5(K,INDX),BAR6(K,INDX)
                   ENDDO
@@ -3067,6 +3094,121 @@ C
  99   RETURN
       END
 
+C---------------------------------------------------------------------------
+C                S U B R O U T I N E   P R E P 2 4
+C---------------------------------------------------------------------------
+C
+C     WJP 10/20/2016 This subroutine will break up the full domain
+C     SAL term file into subdomains. Added into v53.dev 02.23.18
+C
+C     Follows the same formula as other prep subroutines
+C
+C---------------------------------------------------------------------------
+      SUBROUTINE PREP24()
+C---------------------------------------------------------------------------
+      USE PRE_GLOBAL
+      use memory_usage
+      IMPLICIT NONE
+C
+      integer :: nbytes = 0
+      INTEGER i              ! node loop counter
+      INTEGER k              ! constituent loop counter
+      INTEGER ll             ! line loop counter
+      INTEGER iproc          ! subdomain loop counter
+      INTEGER sdu(nproc)     ! subdomain unit number for unit 24 files
+      INTEGER NoOfVals       ! NoOfVals for each constituent (always 1)
+      CHARACTER(len=80) header   ! header comments in unit 24 files
+      CHARACTER(len=80) ConstName ! label for constituent
+      LOGICAL success        ! .true. if all files opened successfully
+      REAL(SZ), ALLOCATABLE :: SALTAMP(:), SALTPHS(:)
+C     jgf48.47 Do the decomposition for a max of 256 subdomains at a
+C     time ... some platforms/compilers limit the number of files that
+C     can be open at any one time.
+      INTEGER, PARAMETER :: maxOpenFiles = 256
+      INTEGER startProc
+      INTEGER endProc
+      INTEGER deltaProc
+      REAL(SZ) Frequency    ! Frequency of constituent
+C
+C     Perform decomposition over range of subdomains.
+      startProc = 1
+      DO WHILE ( startProc .lt. nproc )
+         deltaProc = nproc - startProc
+         IF ( deltaProc .gt. maxOpenFiles ) deltaProc = maxOpenFiles
+         endProc = startProc + deltaProc
+C
+C        Open full domain and subdomain fort.24 files.
+         CALL OpenPrepFiles(24, 'self-attraction and loading   ',
+     &       startProc, endProc, sdu, success)
+C
+         IF (.not.success) THEN
+            WRITE(*,*) 'WARNING: Unit 24 files not preprocessed.'
+            RETURN ! note early return
+         ENDIF
+C
+C        Allocate the global SAL amp and phases
+         ALLOCATE(SALTAMP(NNODG),SALTPHS(NNODG))
+         nbytes = 16*NNODG
+         call memory_alloc(nbytes)
+
+C        Read info from fort.24 and write to subdomains
+C        Loop over the number of constituents
+         DO k=1, NTIF
+
+C           Read header information from full domain unit 24 file
+            READ(24,'(A80)') header
+            READ(24,*) Frequency
+            READ(24,*) NoOfVals
+            READ(24,'(A80)') ConstName
+            IF (ConstName(1:2) .ne. TIPOTAG(k)(1:2)) THEN
+                WRITE(6,*) 'CONST 24 =',ConstName,'CONST 15=',TIPOTAG(K)
+                WRITE(6,9924)
+ 9924           FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
+     &          //,1X,'CONSTITUENT NAME AS ABOVE NOT RECOGNISED      '
+     &          //,1X,'OR IN THE CORRECT ORDER.                      ',
+     &          //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
+                STOP                   ! We're toast
+            ENDIF
+C
+C           Write header info to the local unit 24
+            DO iproc=startProc, endProc
+               WRITE(sdu(IPROC),'(A80)') header
+               WRITE(sdu(IPROC),*) Frequency
+               WRITE(sdu(IPROC),*) NoOfVals
+               WRITE(sdu(IPROC),'(A80)') ConstName
+            END DO
+
+C           Read the amp and phase of the unit 24 file
+            DO i = 1,NNODG
+               READ(24,*) ll,SALTAMP(ll),SALTPHS(ll)
+            ENDDO
+C
+C           Write out the info to the local unit 24
+            DO iproc=startProc, endProc
+               DO i = 1,NNODP(IPROC)
+                  ll = IMAP_NOD_LG(i,IPROC)
+                  WRITE(sdu(IPROC),*) LABELS(ll),SALTAMP(ll),SALTPHS(ll)
+               ENDDO
+            END DO
+
+         END DO
+C
+C        Deallocate the arrays
+         DEALLOCATE(SALTAMP,SALTPHS)
+         call memory_dealloc(nbytes)
+C
+C        Close full domain and subdomain files
+         CLOSE (24)
+         DO iproc=startProc, endProc
+            CLOSE(sdu(iproc))
+         ENDDO
+         startProc = endProc + 1
+      END DO
+C
+      call memory_status()
+      RETURN
+C---------------------------------------------------------------------------
+      END SUBROUTINE PREP24	
 
 C---------------------------------------------------------------------------
 C                S U B R O U T I N E   P R E P 141
@@ -3968,7 +4110,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDDO
 
-            IF(NHASE.EQ.1) THEN
+            IF(NHASE.ne.0) THEN
                DO J=1,INSTAE
                   DO I=1,IMM
                      IHOTSTP=IHOTSTP+1
@@ -3977,7 +4119,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHASV.EQ.1) THEN
+            IF(NHASV.ne.0) THEN
                DO J=1,INSTAV
                   DO I=1,IMM
                      READ(IHOT,REC=IHOTSTP+1) STAULV(I,J)
@@ -3987,7 +4129,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHAGE.EQ.1) THEN
+            IF(NHAGE.ne.0) THEN
                DO J=1,INP
                   DO I=1,IMM
                      IHOTSTP=IHOTSTP+1
@@ -3996,7 +4138,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHAGV.EQ.1) THEN
+            IF(NHAGV.ne.0) THEN
                DO J=1,INP
                   DO I=1,IMM
                      READ(IHOT,REC=IHOTSTP+1) GLOULV(I,J)
@@ -4432,7 +4574,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDDO
 
-            IF(NHASE.EQ.1) THEN
+            IF(NHASE.ne.0) THEN
                DO J=1,INSTAE
                   DO I=1,IMM
                      READ(IHOT,REC=IHOTSTP) STAELV(I,J)
@@ -4441,7 +4583,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHASV.EQ.1) THEN
+            IF(NHASV.ne.0) THEN
                DO J=1,INSTAV
                   DO I=1,IMM
                      READ(IHOT,REC=IHOTSTP) STAULV(I,J)
@@ -4452,7 +4594,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHAGE.EQ.1) THEN
+            IF(NHAGE.ne.0) THEN
                DO J=1,INP
                   DO I=1,IMM
                      READ(IHOT,REC=IHOTSTP) GLOELV(I,J)
@@ -4461,7 +4603,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHAGV.EQ.1) THEN
+            IF(NHAGV.ne.0) THEN
                DO J=1,INP
                   DO I=1,IMM
                      READ(IHOT,REC=IHOTSTP) GLOULV(I,J)
@@ -5151,7 +5293,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDDO
 
-            IF(NHASE.EQ.1) THEN
+            IF(NHASE.ne.0) THEN
                DO J=1,INSTAE
                   DO I=1,IMM
                      WRITE(IHOT,REC=IHOTSTP) STAELV(I,J)
@@ -5160,7 +5302,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHASV.EQ.1) THEN
+            IF(NHASV.ne.0) THEN
                DO J=1,INSTAV
                   DO I=1,IMM
                      WRITE(IHOT,REC=IHOTSTP) STAULV(I,J)
@@ -5171,7 +5313,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHAGE.EQ.1) THEN
+            IF(NHAGE.ne.0) THEN
                DO J=1,INP
                   DO I=1,IMM
                      WRITE(IHOT,REC=IHOTSTP) GLOELV(I,J)
@@ -5180,7 +5322,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                ENDDO
             ENDIF
 
-            IF(NHAGV.EQ.1) THEN
+            IF(NHAGV.ne.0) THEN
                DO J=1,INP
                   DO I=1,IMM
                      WRITE(IHOT,REC=IHOTSTP) GLOULV(I,J)
@@ -6915,7 +7057,7 @@ C---------------------------------------------------------------------------
 #ifdef ADCNETCDF
       use sizes, only : ASCII, XDMF, myproc
       USE PRESIZES, ONLY: NM, MNTIF, MNE, MNP
-      USE HARM, ONLY : IHARIND, CHARMV
+      USE HARM, ONLY : IHARIND, CHARMV, NHASE, NHASV, NHAGE, NHAGV
       USE VERSION
       USE PRE_GLOBAL, ONLY: NSTAE, NOUTE, RUNDES, RUNID, AGRID,
      &    DTDP, TAU0, STATIM, REFTIM, RNDAY, DRAMP, A00, B00, C00,
@@ -6923,7 +7065,7 @@ C---------------------------------------------------------------------------
      &    SLEL, SFEL, ICS, NT, NTRSPE, IHOT, NOLIBF, NOLIFA, IM,
      &    XEV,YEV,XEM,YEM,XEL,YEL,X,Y,NELG,DT, NTIF, NODECODE,
      &    NOLICA, NOLICAT, NWP, NCOR, NTIP, NWS, NRS, NRAMP, NBFR,
-     &    NHY, NOPE, NETA, NBOU, NVEL, G, SL1, SF1,
+     &    NHARFR, NHY, NOPE, NETA, NBOU, NVEL, G, SL1, SF1,
      &    NVDLL, NVELL, IBTYPE, IBTYPEE,
      &    NSTAV, NOUTV, SLEV, SFEV, NTRSPV,
      &    NSTAM, NOUTM, SLEM, SFEM, NTRSPM,
@@ -6965,6 +7107,11 @@ C     The initialization of the output data descriptors for each ADCIRC
 C     output file had to be cut and pasted from write_output.F. At some
 C     point in the future, adcprep will be part of adcirc, making this
 C     unfortunate cut-and-paste duplication unnecessary.
+      !WJP 02.20.2018 Adding capability for fort.51-54
+      type(OutputDataDescript_t), SAVE :: HaElevStaDescript  ! fort.51
+      type(OutputDataDescript_t), SAVE :: HaVelStaDescript   ! fort.52
+      type(OutputDataDescript_t), SAVE :: HaElevDescript     ! fort.53
+      type(OutputDataDescript_t), SAVE :: HaVelDescript      ! fort.54
       type(OutputDataDescript_t), SAVE :: ElevStaDescript    ! fort.61
       type(OutputDataDescript_t), SAVE :: VelStaDescript     ! fort.62
       type(OutputDataDescript_t), SAVE :: ElevDescript       ! fort.63
@@ -7063,6 +7210,81 @@ C     for hotstart harmoinc analysis means and variance calculations
 C
       INTEGER numHotstartWrites ! number writes to hot start files
       INTEGER nextLun           ! next LUN to write to, after initial write
+C     
+      !WJP 02.20.2018 Adding capability for fort.51-54
+C     fort.51
+      HaElevStaDescript % specifier            = NHASE
+      HaElevStaDescript % lun                  = 51
+      HaElevStaDescript % initial_value        = 0.0
+      HaElevStaDescript % num_items_per_record = NHARFR
+      HaElevStaDescript % num_fd_records       = NSTAE
+      HaElevStaDescript % num_records_this     = NSTAE
+      HaElevStaDescript % ConsiderWetDry       = .TRUE.
+      HaElevStaDescript % alternate_value      = -99999.0
+      HaElevStaDescript % field_name           = 'HaElevSta'
+      IF (ICS.eq.2) THEN
+         HaElevStaDescript % x_coord           => SLEL
+         HaElevStaDescript % y_coord           => SFEL
+      ELSE
+         HaElevStaDescript % x_coord           => XEL
+         HaElevStaDescript % y_coord           => YEL
+      ENDIF
+      HaElevStaDescript % file_extension       = 51
+      HaElevStaDescript % file_basename        = 'fort'
+      HaElevStaDescript % readMaxMin           = .false.
+      call makeFileName(HaElevStaDescript)
+C
+C     fort.52
+      HaVelStaDescript % specifier            = NHASV
+      HaVelStaDescript % lun                  = 52
+      HaVelStaDescript % initial_value        = 0.0
+      HaVelStaDescript % num_items_per_record = NHARFR
+      HaVelStaDescript % num_fd_records       = NSTAV
+      HaVelStaDescript % num_records_this     = NSTAV
+      HaVelStaDescript % ConsiderWetDry       = .FALSE.
+      HaVelStaDescript % alternate_value      = 0.0
+      HaVelStaDescript % field_name           = 'HaVelSta'
+      IF (ICS.eq.2) THEN
+         HaVelStaDescript % x_coord           => SLEV
+         HaVelStaDescript % y_coord           => SFEV
+      ELSE
+         HaVelStaDescript % x_coord           => XEV
+         HaVelStaDescript % y_coord           => YEV
+      ENDIF
+      HaVelStaDescript % file_extension       = 52
+      HaVelStaDescript % file_basename        = 'fort'
+      HaVelStaDescript % readMaxMin           = .false.
+      call makeFileName(HaVelStaDescript)
+C
+C     fort.53
+      HaElevDescript % specifier            = NHAGE
+      HaElevDescript % lun                  = 53
+      HaElevDescript % initial_value        = 0.0
+      HaElevDescript % num_items_per_record = NHARFR
+      HaElevDescript % num_fd_records       = MNP
+      HaElevDescript % num_records_this     = MNP
+      HaElevDescript % ConsiderWetDry       = .TRUE.
+      HaElevDescript % alternate_value      = -99999.0
+      HaElevDescript % field_name           = 'HaElev'
+      HaElevDescript % file_extension       = 53 
+      HaElevDescript % file_basename        = 'fort'
+      HaElevDescript % readMaxMin           = .false.
+      call makeFileName(HaElevDescript)
+C
+C     fort.54
+      HaVelDescript % specifier            = NHAGV
+      HaVelDescript % lun                  = 54
+      HaVelDescript % initial_value        = 0.0
+      HaVelDescript % num_items_per_record = NHARFR
+      HaVelDescript % num_fd_records       = MNP
+      HaVelDescript % num_records_this     = MNP
+      HaVelDescript % ConsiderWetDry       = .FALSE.
+      HaVelDescript % alternate_value      = 0.0
+      HaVelDescript % field_name           = 'HaVel'
+      HaVelDescript % file_extension       = 54 
+      HaVelDescript % file_basename        = 'fort'
+      HaVelDescript % readMaxMin           = .false.
+      call makeFileName(HaVelDescript)
 C
 C     fort.61
       ElevStaDescript % specifier            = NOUTE
@@ -8043,6 +8265,11 @@ C
 C     Create NetCDF output files for those output files where NetCDF
 C     was specified.
       reterr = .false.
+      !WJP 02.20.2018 Adding capability for fort.51-54
+      CALL initNetCDFOutputFile(HaElevStaDescript, reterr)
+      CALL initNetCDFOutputFile(HaVelStaDescript, reterr)
+      CALL initNetCDFOutputFile(HaElevDescript, reterr)
+      CALL initNetCDFOutputFile(HaVelDescript, reterr)
       CALL initNetCDFOutputFile(ElevStaDescript, reterr)
       CALL initNetCDFOutputFile(VelStaDescript, reterr)
       CALL initNetCDFOutputFile(ElevDescript, reterr)

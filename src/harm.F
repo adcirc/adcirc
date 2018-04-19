@@ -145,10 +145,10 @@ C     Arrays for time series reconstruction.
 C
 C     jgf49.44: Parameters that control the spatial locations where
 C     harmonic analysis is performed:
-      INTEGER :: NHASE ! =1 to perform HA at elevation recording stations
-      INTEGER :: NHASV ! =1 to perform HA at velocity recording stations
-      INTEGER :: NHAGE ! =1 to do elevation HA at all nodes in the mesh
-      INTEGER :: NHAGV ! =1 to do velocity HA at all nodes in the mesh
+      INTEGER :: NHASE ! /= 0 to perform HA at elevation recording stations
+      INTEGER :: NHASV ! /= 0 to perform HA at velocity recording stations
+      INTEGER :: NHAGE ! /= 0 to do elevation HA at all nodes in the mesh
+      INTEGER :: NHAGV ! /= 0 to do velocity HA at all nodes in the mesh
 C
 C     jgf49.44: Parameters that control the calculation of harmonic
 C     constituents:
@@ -395,6 +395,7 @@ C--------------------------------------------------------------------
 C     S U B R O U T I N E  C H E C K   H A R M O N I C   P A R A M E T E R S
 C--------------------------------------------------------------------
 C     jgf50.41: Checks harmonic analysis settings.
+C     WJP 02.20.2018: Allowing for > 1 options for netcdf output
 C--------------------------------------------------------------------
       SUBROUTINE checkHarmonicParameters()
       USE GLOBAL, ONLY :  NFOVER
@@ -405,7 +406,7 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
 
-      IF((NHASE.LT.0).OR.(NHASE.GT.1)) THEN
+      IF((NHASE.LT.0).OR.(NHASE.GT.5)) THEN
          CALL allMessage(WARNING,"Input value of NHASE is not valid.")
          IF (NFOVER.EQ.1) THEN
             CALL allMessage(WARNING,"NHASE will be set to zero.")
@@ -416,9 +417,13 @@ C
          CALL logMessage(INFO,
      &        'STATION ELEVATION HARMONIC ANALYSIS'
      &        //' WILL BE WRITTEN TO UNIT 51 IN ASCII FORMAT.')
+      ELSEIF (NHASE > 1) THEN
+         CALL logMessage(INFO,
+     &        'STATION ELEVATION HARMONIC ANALYSIS'
+     &        //' WILL BE WRITTEN TO UNIT 51 IN NETCDF FORMAT.')
       ENDIF
 
-      IF((NHASV.LT.0).OR.(NHASV.GT.1)) THEN
+      IF((NHASV.LT.0).OR.(NHASV.GT.5)) THEN
          CALL allMessage(WARNING,"Input value of NHASV is not valid.")
          IF (NFOVER.EQ.1) THEN
             CALL allMessage(WARNING,"NHASV will be set to zero.")
@@ -429,9 +434,13 @@ C
          CALL logMessage(INFO,
      &        'STATION VELOCITY HARMONIC ANALYSIS'
      &        //' WILL BE WRITTEN TO UNIT 52 IN ASCII FORMAT.')
+      ELSE IF (NHASV > 1) THEN
+         CALL logMessage(INFO,
+     &        'STATION VELOCITY HARMONIC ANALYSIS'
+     &        //' WILL BE WRITTEN TO UNIT 52 IN NETCDF FORMAT.')
       ENDIF
 
-      IF((NHAGE.LT.0).OR.(NHAGE.GT.1)) THEN
+      IF((NHAGE.LT.0).OR.(NHAGE.GT.5)) THEN
          CALL allMessage(WARNING,"Input value of NHAGE is not valid.")
          IF (NFOVER.EQ.1) THEN
             CALL allMessage(WARNING,"NHAGE will be set to zero.")
@@ -442,9 +451,13 @@ C
          CALL logMessage(INFO,
      &        'FULL DOMAIN ELEVATION HARMONIC ANALYSIS'
      &        //' WILL BE WRITTEN TO UNIT 53 IN ASCII FORMAT.')
+      ELSE IF (NHAGE > 1) THEN
+         CALL logMessage(INFO,
+     &        'FULL DOMAIN ELEVATION HARMONIC ANALYSIS'
+     &        //' WILL BE WRITTEN TO UNIT 53 IN NETCDF FORMAT.')
       ENDIF
 
-      IF((NHAGV.LT.0).OR.(NHAGV.GT.1)) THEN
+      IF((NHAGV.LT.0).OR.(NHAGV.GT.5)) THEN
          CALL allMessage(WARNING,"Input value of NHAGV is not valid.")
          IF (NFOVER.EQ.1) THEN
             CALL allMessage(WARNING,"NHAGV will be set to zero.")
@@ -455,6 +468,10 @@ C
          CALL logMessage(INFO,
      &        'FULL DOMAIN VELOCITY HARMONIC ANALYSIS'
      &        //' WILL BE WRITTEN TO UNIT 54 ASCII FORMAT.')
+      ELSE IF (NHAGV > 1) THEN
+         CALL logMessage(INFO,
+     &        'FULL DOMAIN VELOCITY HARMONIC ANALYSIS'
+     &        //' WILL BE WRITTEN TO UNIT 54 NETCDF FORMAT.')
       ENDIF
 
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
@@ -471,6 +488,7 @@ C     S U B R O U T I N E  I N I T   H A R M O N I C   P A R A M E T E R S
 C--------------------------------------------------------------------
 C     jgf49.44: Initializes harmonic analysis arrays and parameters.
 C     Based on HACOLDS, written by rl.
+C     WJP 02.20.2018: Allowing for > 1 options for netcdf output
 C--------------------------------------------------------------------
       SUBROUTINE initHarmonicParameters()
       USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES, MNPROC, myProc,
@@ -539,17 +557,17 @@ c
 C
       ha(:,:)=0.0d0
 C
-      IF (NHASE.EQ.1) THEN
+      IF (NHASE.ne.0) THEN
          STAELV(:,:)=0.d0
       ENDIF
-      IF (NHASV.EQ.1) THEN
+      IF (NHASV.ne.0) THEN
          STAULV(:,:)=0.d0
          STAVLV(:,:)=0.d0
       ENDIF
-      IF (NHAGE.EQ.1) THEN
+      IF (NHAGE.ne.0) THEN
          GLOELV(:,:)=0.d0
       ENDIF
-      IF (NHAGV.EQ.1) THEN
+      IF (NHAGV.ne.0) THEN
          GLOULV(:,:)=0.d0
          GLOVLV(:,:)=0.d0
       ENDIF
@@ -596,6 +614,7 @@ C--------------------------------------------------------------------
 C     S U B R O U T I N E  U P D A T E   H A R M O N I C  A N A L Y S I S
 C--------------------------------------------------------------------
 C     jgf49.44: Removed from timestep.F and placed here.
+C     WJP 02.20.2018: Allowing for > 1 options for netcdf output
 C...
 C...  IF IHARIND=1 AND THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
 C...  AND ON THE SPECIFIED INCREMENT, USE MODEL RESULTS TO UPDATE
@@ -638,7 +657,7 @@ C...
 C...  IF DESIRED COMPUTE ELEVATION STATION INFORMATION AND UPDATE LOAD
 C.....VECTOR
 C...
-               IF(NHASE.EQ.1) THEN
+               IF(NHASE.ne.0) THEN
                   DO I=1,NSTAE
                      EE1=ETA2(NM(NNE(I),1))
                      EE2=ETA2(NM(NNE(I),2))
@@ -650,7 +669,7 @@ C...
 C...  IF DESIRED COMPUTE VELOCITY STATION INFORMATION AND UPDATE LOAD
 C.....VECTOR
 C...
-               IF(NHASV.EQ.1) THEN
+               IF(NHASV.ne.0) THEN
                   DO I=1,NSTAV
                      U11=UU2(NM(NNV(I),1))
                      U22=UU2(NM(NNV(I),2))
@@ -666,11 +685,11 @@ C...
 C...
 C.....IF DESIRED UPDATE GLOBAL ELEVATION LOAD VECTOR
 C...
-               IF(NHAGE.EQ.1) CALL LSQUPDEG(ETA2,NP)
+               IF(NHAGE.ne.0) CALL LSQUPDEG(ETA2,NP)
 C...
 C.....IF DESIRED UPDATE GLOBAL VELOCITY LOAD VECTOR
 C...
-               IF(NHAGV.EQ.1) CALL LSQUPDVG(UU2,VV2,NP)
+               IF(NHAGV.ne.0) CALL LSQUPDVG(UU2,VV2,NP)
 
             ENDIF
          ENDIF
@@ -1010,6 +1029,7 @@ C--------------------------------------------------------------------
 C     jgf49.44: Solves for amplitudes and phases at the nodes and/or
 C     stations as specified. Also finishes time series reconstruction
 C     if necessary.
+C     WJP 02.20.2018: Allowing for > 1 options for netcdf output
 C--------------------------------------------------------------------
       SUBROUTINE solveHarmonicAnalysis(ITIME)
       USE SIZES, ONLY : LOCALDIR
@@ -1053,10 +1073,10 @@ C......Fill out and decompose the LHS harmonic analaysis matrix
 
 C......Solve the harmonic analysis problems
 
-      IF(NHAGE.EQ.1) CALL LSQSOLEG()
-      IF(NHAGV.EQ.1) CALL LSQSOLVG()
-      IF(NHASE.EQ.1) CALL LSQSOLES()
-      IF(NHASV.EQ.1) CALL LSQSOLVS()
+      IF(NHAGE.ne.0) CALL LSQSOLEG()
+      IF(NHAGV.ne.0) CALL LSQSOLVG()
+      IF(NHASE.ne.0) CALL LSQSOLES()
+      IF(NHASV.ne.0) CALL LSQSOLVS()
 
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -1674,6 +1694,7 @@ C     S U B R O U T I N E  R E A D  B I N A R Y  H A  H O T S T A R T
 C--------------------------------------------------------------------
 C     jgf49.44: Reads harmonic analysis data from a binary hotstart
 C     file. Based on HAHOTS, written by rl.
+C     WJP 02.20.2018: Allowing for > 1 options for netcdf output
 C--------------------------------------------------------------------
       SUBROUTINE readBinaryHAHotstart(lun, counter)
       USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
@@ -1784,11 +1805,11 @@ c     Read in LHS Matrix
 C
 C
 c     Read in Station Elevation LHS load vector
-      IF (NHASE.EQ.1) THEN
+      IF (NHASE.ne.0) THEN
          CALL binaryRead3D(STAELV_pt, mm, num_elev_sta, lun, counter)
       ENDIF
 c     Read in Station Velocity LHS load vector
-      IF (NHASV.EQ.1) THEN
+      IF (NHASV.ne.0) THEN
          do n=1,num_vel_sta
             do i=1,mm
                READ(lun,REC=counter) STAULV_pt(I,N)
@@ -1798,11 +1819,11 @@ c     Read in Station Velocity LHS load vector
          enddo
       ENDIF
 c     Read in Global Elevation LHS load vector
-      IF (NHAGE.EQ.1) THEN
+      IF (NHAGE.ne.0) THEN
          CALL binaryRead3D(GLOELV_pt, mm, num_nodes, lun, counter)
       ENDIF
 c     Read in Global Velocity LHS load vector
-      IF (NHAGV.EQ.1) THEN
+      IF (NHAGV.ne.0) THEN
          do n=1,num_nodes
             do i=1,mm
                READ(lun,REC=counter) GLOULV_pt(I,N)
@@ -1815,7 +1836,7 @@ C..   Read in Means and Squares
       IF (CHARMV.eqv..true.) THEN
          IF ((FMV.NE.0.).AND.(ITHS.GT.ITMV)) THEN
             READ(lun,REC=counter) NTSTEPS ; counter = counter + 1
-            IF(NHAGE.EQ.1) THEN
+            IF(NHAGE.ne.0) THEN
                DO I=1,num_nodes
                   READ(lun,REC=counter) ELAV_pt(I)
                   counter = counter + 1
@@ -1823,7 +1844,7 @@ C..   Read in Means and Squares
                   counter = counter + 1
                ENDDO
             ENDIF
-            IF (NHAGV.EQ.1) THEN
+            IF (NHAGV.ne.0) THEN
                DO I=1,num_nodes
                   READ(lun,REC=counter) XVELAV_pt(I)
                   counter = counter + 1
@@ -1841,7 +1862,7 @@ C
 C     Map data from fulldomain to subdomain in parallel
       IF ((MNPROC.gt.1)
      &   .and.(READ_LOCAL_HOT_START_FILES.eqv..false.)) THEN
-         IF (NHASE.EQ.1) THEN
+         IF (NHASE.ne.0) THEN
             DO subdomainStation=1,NSTAE
                fulldomainStation = ABS(IMAP_STAE_LG(subdomainStation))
                DO i=1,mm
@@ -1850,7 +1871,7 @@ C     Map data from fulldomain to subdomain in parallel
                END DO
             END DO
          ENDIF
-         IF (NHASV.EQ.1) THEN
+         IF (NHASV.ne.0) THEN
             DO subdomainStation=1,NSTAV
                fulldomainStation = ABS(IMAP_STAV_LG(subdomainStation))
                DO i=1,mm
@@ -1861,7 +1882,7 @@ C     Map data from fulldomain to subdomain in parallel
                END DO
             END DO
          ENDIF
-         IF (NHAGE.EQ.1) THEN
+         IF (NHAGE.ne.0) THEN
             DO subdomainNode=1,NP
                fulldomainNode = ABS(NODES_LG(subdomainNode))
                DO i=1,mm
@@ -1869,7 +1890,7 @@ C     Map data from fulldomain to subdomain in parallel
                ENDDO
             ENDDO
          ENDIF
-         IF (NHAGV.EQ.1) THEN
+         IF (NHAGV.ne.0) THEN
             DO subdomainNode=1,NP
                fulldomainNode = ABS(NODES_LG(subdomainNode))
                DO i=1,mm
@@ -1882,14 +1903,14 @@ C     Map data from fulldomain to subdomain in parallel
 C..      Map Means and Squares
          IF (CHARMV.eqv..true.) THEN
             IF ((FMV.NE.0.).AND.(ITHS.GT.ITMV)) THEN
-               IF(NHAGE.EQ.1) THEN
+               IF(NHAGE.ne.0) THEN
                   DO subdomainNode=1,NP
                      fulldomainNode = ABS(NODES_LG(subdomainNode))
                      ELAV(subdomainNode) = ELAV_g(fulldomainNode)
                      ELVA(subdomainNode) = ELVA_g(fulldomainNode)
                   ENDDO
                ENDIF
-               IF (NHAGV.EQ.1) THEN
+               IF (NHAGV.ne.0) THEN
                   DO subdomainNode=1,NP
                      fulldomainNode = ABS(NODES_LG(subdomainNode))
                      XVELAV(subdomainNode) = XVELAV_g(fulldomainNode)

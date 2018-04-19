@@ -14,6 +14,7 @@ C----------------------------------------------------------------------------
       USE GLOBAL_3DVS, ONLY: NFEN
       USE PRESIZES
       USE VERSION
+      USE HASHTABLE
       IMPLICIT NONE
 
 C     Land Boundary Nodes and Segment Definitions:
@@ -39,6 +40,9 @@ C                                    ! I-th Node on Land Boundary Segment K
       INTEGER :: numLBCodeValues ! number of values in LBCODE array
       INTEGER,ALLOCATABLE::WEIR(:)
       INTEGER,ALLOCATABLE::WEIRD(:)
+
+      TYPE(ipair),ALLOCATABLE, TARGET :: node_dict(:)
+      INTEGER,ALLOCATABLE             :: labels(:)
 
 C     METIS interface section
       INTEGER,ALLOCATABLE ::  PROC(:)

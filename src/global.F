@@ -125,6 +125,7 @@ C     for writing fulldomain hotstart files.
       REAL(SZ), ALLOCATABLE, TARGET :: UU2_g(:)
       REAL(SZ), ALLOCATABLE, TARGET :: VV2_g(:)
       REAL(SZ), ALLOCATABLE, TARGET :: CH1_g(:)
+      INTEGER, ALLOCATABLE, TARGET :: labels_g(:)
       INTEGER, ALLOCATABLE, TARGET :: NodeCode_g(:)
       INTEGER, ALLOCATABLE :: NNodeCode_g(:)
       INTEGER, ALLOCATABLE, TARGET :: NOFF_g(:)
@@ -343,7 +344,8 @@ Cobell -  Added the following for output of ESL at end of run
                                                     !for ice concentration
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax(:) ! v46.50 sb 11/11/2006
 
-      REAL(SZ),ALLOCATABLE :: TK(:)
+      REAL(SZ),ALLOCATABLE :: TK(:)     ! WJP bottom frictiom
+      REAL(SZ),ALLOCATABLE :: TKM(:,:)  ! symmetrical friction matrix
       REAL(8),ALLOCATABLE :: EMO(:,:),EFA(:,:)
       REAL(8),ALLOCATABLE,TARGET :: XEL(:)  ! x-coords of elevation stations
       REAL(8),ALLOCATABLE,TARGET :: YEL(:)  ! y-coords of elevation stations
@@ -354,6 +356,7 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE, TARGET ::   DUU1(:),DUV1(:),DVV1(:)
       REAL(SZ),ALLOCATABLE, TARGET ::   BSX1(:),BSY1(:)
       REAL(SZ),ALLOCATABLE ::   TIP1(:),TIP2(:)
+      REAL(SZ),ALLOCATABLE ::   L_N(:,:)    ! WJP The array for TIP multiplier
       REAL(SZ),ALLOCATABLE ::   SALTAMP(:,:),SALTPHA(:,:)
       REAL(SZ),ALLOCATABLE ::   OBCCOEF(:,:),COEF(:,:)
       REAL(SZ),ALLOCATABLE ::   COEFD(:) !jgf48.4619 from Seizo (Lumped GWCE)
@@ -405,7 +408,7 @@ C...
       REAL(8) DTDPHS  !kmd48.33 - added time step for hot start
       CHARACTER(80)             :: RUNDES, RUNID, AFRIC
       CHARACTER(4)              :: RDES4(20),RID4(20)
-      CHARACTER(8)              :: RDES8(10),RID8(10),AID8(10)
+      CHARACTER(8)              :: RDES8(10),RID8(10)
       CHARACTER(10)             :: ALPHA ! periodic constituent name
       CHARACTER(10),ALLOCATABLE :: ELEVALPHA(:) ! periodic constituent name
       CHARACTER(5),ALLOCATABLE  :: TIPOTAG(:),BOUNTAG(:),FBOUNTAG(:)
@@ -1098,8 +1101,9 @@ C
       trans_lv_b = -99999.d0
       ALLOCATE ( SOURSIN(MNP))
       soursin = -99999.d0
-      ALLOCATE ( TK(MNP))
-      tk = -99999.d0
+      ALLOCATE ( TK(MNP), TKM(3,MNP))
+      tk  = -99999.d0
+      tkm = -99999.d0
       ALLOCATE ( UU2(MNP),VV2(MNP))
       uu2(:) = -99999.d0
       vv2(:) = -99999.d0
@@ -1210,7 +1214,7 @@ C
       ALLOCATE ( TIPOTAG(MNTIF) )
 
       IF ( CTIP ) THEN
-         ALLOCATE( TIP1(MNP),TIP2(MNP))
+         ALLOCATE( TIP1(MNP),TIP2(MNP),L_N(0:2,MNP))
       ENDIF
 C
       RETURN

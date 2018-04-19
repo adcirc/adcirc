@@ -85,11 +85,12 @@ C
       ! it will remain 'default'; this will cause 'Garratt' to be used
       ! in FUNCTION WindDrag, and 'IceCube' to be used in
       ! FUNCTION WindIceDrag.
+#ifndef POWELL
       CHARACTER(len=10) :: DragLawString = 'default' ! controls wind drag formulation
-#ifdef POWELL
+#else
       ! jgf50.32 Provide backward compatibility with hardcoded POWELL
       ! support.
-      DragLawString = 'Powell'
+      CHARACTER(len=10) :: DragLawString = 'Powell'
 #endif
       !
       ! used for vis/diagnostics on nws19 and nws20
@@ -238,7 +239,10 @@ C     use the values of np and g.
 C     ----------------------------------------------------------------
       subroutine initWindModule()
       use mesh, only : np
-
+      call setMessageSource("initWindModule")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
       allocate ( wvnx1(np),wvny1(np) )
       allocate ( wvnx2(np),wvny2(np) )
       allocate ( prn1(np) )
@@ -249,6 +253,11 @@ C.... convert background pressure from millibars to meters of water
       PRBCKGRND_MH2O = 100.0D0*PRBCKGRND/(RHOWAT0*G)
       prn1 = PRBCKGRND_MH2O
       prn2 = PRBCKGRND_MH2O
+
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 
 C     ----------------------------------------------------------------
       END SUBROUTINE initWindModule
@@ -584,6 +593,10 @@ C***********************************************************************
       INTEGER IYR,IMO,IDAY,IHR,IMIN,ILEAP
       REAL*8 TIMESEC,SEC
 C
+      call setMessageSource("timeConv")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
       TIMESEC = (IDAY-1)*86400 + IHR*3600 + IMIN*60 + SEC
       IF(IMO.GE.2)  TIMESEC = TIMESEC + 31*86400
       ILEAP = (IYR/4)*4
@@ -604,6 +617,11 @@ C
          call windTerminate()
 
       ENDIF
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE TIMECONV
@@ -639,13 +657,18 @@ C----------------------------------------------------------------------
       real(sz) :: windy ! wind vel (m/s) in y-dir
 
       real(sz) :: prdiff
+      real(sz) :: vortexPRDIFF
       real(sz) :: wDragCo
       real(sz) :: windMag
       real(sz) :: wtratio ! used to time interpolated between met datasets
       integer :: nhg ! node number temp
       real(sz) :: bf ! blend factor for multiple sets of wind data 
       integer :: i ! node loop counter
-      
+
+      call setMessageSource("getMeteorologicalForcing")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
 
       
 C------------------------MET FORCING---------------------------------------
@@ -1202,7 +1225,9 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
             WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PR2(I) = RampMete*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                          -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
             WVNXOUT(I)=RampMete*WINDX
             WVNYOUT(I)=RampMete*WINDY
             ! compute wind stress due to vortex met at this node
@@ -1224,8 +1249,9 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
      &               +(1.0d0-bf)*WSX2(I)
             WSY2(I) = bf*RampMete*0.001293d0*WDragCo*WindY*WindMag
      &               +(1.0d0-bf)*WSY2(I)
-            PR2(I)= bf*RampMete*vortexPRN2(I)
-     &               +(1.0d0-bf)*PRN2(I)
+            vortexPRDIFF = RampMete*(vortexPRN2(I)-PRBCKGRND_MH2O)
+            vortexPRN2(I) = PRBCKGRND_MH2O + vortexPRDIFF
+            PR2(I)= bf*vortexPRN2(I)+(1.0d0-bf)*PR2(I)
             WVNXOUT(I)=bf*RampMete*WindX+(1.0d0-bf)*WVNXOUT(I)
             WVNYOUT(I)=bf*RampMete*WindY+(1.0d0-bf)*WVNYOUT(I)
          END DO
@@ -1310,6 +1336,10 @@ C    kmd48.33bc - added in information for the sponge layer
        END IF
 C--------------------END MET FORCING---------------------------------------
 
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 
 C----------------------------------------------------------------------
       end subroutine getMeteorologicalForcing
@@ -1338,6 +1368,12 @@ C----------------------------------------------------------------------
       integer :: nhg ! node number temp
       real(sz) :: bf ! blend factor for multiple sets of wind data 
       integer :: i ! node loop counter
+
+      call setMessageSource("coldStartMeteorologicalForcing")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
+
      
       WSX2(:) = 0.d0
       WSY2(:) = 0.D0
@@ -1536,6 +1572,10 @@ C....tcm v51.06.02: Added NWS=16,-16 for reading ASCII GFDL Met data
          WVNY1 = WVNY2
       endif
 
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 C----------------------------------------------------------------------
       end subroutine coldstartMeteorologicalForcing
 C----------------------------------------------------------------------
@@ -1578,6 +1618,12 @@ C----------------------------------------------------------------------
       integer :: it
       integer :: i ! node loop counter
       integer :: j
+
+      call setMessageSource("hotStartMeteorologicalForcing")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
+
 C
 C......RESTART WIND AND PRESSURE INFORMATION
 
@@ -2425,6 +2471,12 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
          WVNX1 = WVNX2
          WVNY1 = WVNY2
       endif
+      
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      
 C--------------------END MET FORCING-----------------------------------
       end subroutine hotstartMeteorologicalForcing
 C--------------------END MET FORCING-----------------------------------
@@ -2464,6 +2516,13 @@ C***********************************************************************
       REAL(SZ) WLATM,WLONM,XWRATIO,YWRATIO
       REAL(SZ),ALLOCATABLE,SAVE :: WVXFN(:,:),WVYFN(:,:)
       INTEGER :: IWYR, IWMO, IWDAY, IWHR
+
+      call setMessageSource("nws3get")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
+
+
 C
       IF (FIRSTCALL.EQ.0) THEN
          FIRSTCALL = 1
@@ -2523,6 +2582,11 @@ C
      &        + WVYFN(LATIND1,LONIND1)*(1.d0-XWRATIO)*(1.d0-YWRATIO)
       END DO
       PRN2 = PRBCKGRND_MH2O
+
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 C
       RETURN
       END SUBROUTINE NWS3GET
@@ -2552,6 +2616,12 @@ C***********************************************************************
       INTEGER   I,NHG
       REAL(SZ)  RHOWATG
       CHARACTER*80 PBLJAGF
+
+      call setMessageSource("nws4get")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
+
 C
       RHOWATG=RHOWAT0*G
       DO I=1,NP
@@ -2577,6 +2647,11 @@ C     jgf46.02 Added the following two lines.
       READ(22,'(A80)') PBLJAGF
       IF(PBLJAGF(2:2).NE.'#') GOTO 171
       RETURN
+
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       END SUBROUTINE
 
 
@@ -2668,6 +2743,12 @@ C***********************************************************************
       REAL(SZ) WLATM,WLONM
       REAL(SZ) :: XCOOR,YCOOR
       REAL(SZ),SAVE,ALLOCATABLE :: WVXFN(:,:),WVYFN(:,:),PRN(:,:)
+
+      call setMessageSource("nws6get")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
+
 C
       IF (FIRSTCALL.EQ.0) THEN
          FIRSTCALL = 1
@@ -2721,6 +2802,10 @@ C
 
       END DO
 C
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
 C     ----------------------------------------------------------------
       END SUBROUTINE NWS6GET
@@ -2795,6 +2880,12 @@ C     ----------------------------------------------------------------
       REAL(8) XCOOR,YCOOR
       REAL(SZ), SAVE, ALLOCATABLE :: WVXFN(:,:),WVYFN(:,:),PRN(:,:)
       LOGICAL, SAVE :: MemoryAllocated = .False.
+
+      call setMessageSource("nws7get")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
+
 C
       IF (.not.MemoryAllocated) THEN
          ALLOCATE ( WVXFN(NWLAT,NWLON),WVYFN(NWLAT,NWLON),
@@ -2847,6 +2938,10 @@ C
          PRN2(I) = PRN2(I)/RHOWATG
       END DO
 C
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
 C     ----------------------------------------------------------------
       END SUBROUTINE NWS7GET
@@ -2866,6 +2961,11 @@ C     ----------------------------------------------------------------
       implicit none
       real(sz) :: gdlon
       integer :: j, jj ! loop counters
+
+      call setMessageSource("nws10init")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
       !
       ! gaussian met values 
       allocate ( ug(latb*lonb),vg(latb*lonb),pg(latb*lonb) )
@@ -2897,6 +2997,11 @@ C     for the ADCIRC grid.
       else
          nws10DatasetCounter = 0
       endif
+      
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
          
       !----------------------------------------------------------------
       end subroutine nws10Init
@@ -2923,6 +3028,12 @@ C***********************************************************************
       integer :: N,I,LON,LONP1,LAT,LATP1
       real(8) :: DLAT,DLON,FLONWORK,COLAT,DDLAT,XLAT,DFLAT,DFLAT1,
      &     DDLON,XLON,DFLON,DFLON1
+
+      call setMessageSource("g2rini")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
+
 C
 C...Compute estimated DLAT, true DLON for Gaussian grid
       DLAT=PI/REAL(LATB-1,KIND=SZ)
@@ -3009,6 +3120,11 @@ C....... Check that this value is reasonable.
          N01(N)=LON+(LATP1-1)*LONB
 
       END DO
+      
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       !----------------------------------------------------------------
       end subroutine g2rini
       !----------------------------------------------------------------
@@ -3058,6 +3174,12 @@ C***********************************************************************
       integer :: iext        ! numerical extension to file name
       integer :: ios = 0     ! i/o status for opening the fort.xxx files
       integer :: i, n        ! loop counters
+
+      call setMessageSource("nws10get")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
+
 C
       rhowatg=rhowat0*g
       ! 
@@ -3110,9 +3232,14 @@ C.....Convert pressure from N/M^2 to M of H20
       end do
 C
       nws10DatasetCounter = nws10DatasetCounter + 1
-      !----------------------------------------------------------------      
+
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+!----------------------------------------------------------------      
       end subroutine nws10get
-      !----------------------------------------------------------------
+!----------------------------------------------------------------
 
 C***********************************************************************
 C  Subroutine to compute the latutudes in a Global Gaussian Lat/Lon    *
@@ -3131,6 +3258,12 @@ C***********************************************************************
       REAL(SZ) SI,SCALEVAL,RL2,DRAD,RAD,P1,P2,EPS,PHI,X,W,SN,RC
       real(sz) :: dradz ! initial guess that represents a distance between gridpoints (radian)
       integer :: multiple ! yf51.52.25: reduce initial guess for DRAD for T1534 grid  
+
+      call setMessageSource("glats")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
+
 C
       EPS=1.d-6
 C     EPS=1.d-12
@@ -3184,6 +3317,10 @@ C     102  FORMAT(1H ,I2,2X,F6.2,2X,F10.7,2X,E13.7,2X,E13.7,2X,I4,2X,D13.7)
  1000 CONTINUE
 c     PRINT 100,LGGHAF
 c     100  FORMAT(1H ,'SHALOM FROM 0.0 GLATS FOR ',I3)
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
       END SUBROUTINE GLATS
 
@@ -3261,6 +3398,11 @@ C
       CHARACTER*8 FNAME1
       EQUIVALENCE (FNAME1,FNAME2)
       integer :: errorio
+
+      call setMessageSource("nws11get")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
       
 C
       IF (ICALL.EQ.0) THEN
@@ -3283,6 +3425,10 @@ C...  between the Eta-29 grid and the ADCIRC grid.
             CALL E29SEARCH(I,FLONDEG,FLATDEG,N1(I),N2(I),N3(I),
      &           D1(I),D2(I),D3(I),betau(i))
          END DO
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
          RETURN
       ENDIF
 
@@ -3340,7 +3486,10 @@ C.....Convert pressure from millibars to N/M^2 to M of H20
          PRN2(N)=P1*D1(N)+P2*D2(N)+P3*D3(N)
          PRN2(N)=PRN2(N)/RHOWATG100
       END DO
-
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE NWS11GET
@@ -3987,7 +4136,7 @@ C     ----------------------------------------------------------------
       SUBROUTINE HollandGet(WVNX,WVNY,PRESS,TIMELOC)
       USE SIZES, ONLY : MyProc, LOCALDIR
       USE MESH, ONLY : X, Y, SLAM, SFEA, NP, ICS
-      USE GLOBAL, ONLY : RHOWAT0, G
+      USE GLOBAL, ONLY : RHOWAT0, G, mb2pa
       IMPLICIT NONE
       REAL(SZ), intent(in) :: TIMELOC
       REAL(SZ), intent(out), dimension(NP) :: WVNX,WVNY
@@ -4008,6 +4157,12 @@ C
       REAL(8) :: mperdeg
 
       LOGICAL, SAVE :: FIRSTCALL = .True.
+
+      call setMessageSource("hollandget")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
+
 C
       mperdeg  = Rearth * pi / 180.0d0
       omega = 2.0d0*pi / 86164.2d0
@@ -4026,6 +4181,26 @@ C     The subroutine only works for ICS=2 (spherical coordinates)
 C
 C     Get data for this time step.
       CALL GetHollandStormData(lat,lon,cpress,spd,rrp,rmw,tvx,tvy,TIMELOC)
+      !
+      ! @jasonfleming: If this is a "CALM" period, set winds to zero
+      ! velocity and pressure equal to the background pressure and return.
+      if ( cpress.lt.0.d0 ) then
+         press(:) = PRBCKGRND * mb2pa / (rhoWat0 * g) ! convert mb to mH2O
+         wvnx(:)=0.d0
+         wvny(:)=0.d0
+         EyeLatR(1) = EyeLatR(2)
+         EyeLonR(1) = EyeLonR(2)
+         EyeLatR(2) = EyeLatR(3)
+         EyeLonR(2) = EyeLonR(3)
+         EyeLatR(3) = lat
+         EyeLonR(3) = lon
+         FoundEye = .true.
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         return
+      endif
 C
 C     jgf50.32: If we are using sector-based wind drag, record the location
 C     of the center of the storm.
@@ -4098,12 +4273,14 @@ C compute coriolis
 
         PRESS(I)=(cpress+(centralPressureDeficit)*
      &        EXP(-(RMW*1000.d0/RAD(I))**B)) / (RHOWAT0*G)
+C
+C       WJP: added absolute around CORIOLIS for Southern Hempisphere
          V_r(I) = sqrt(
      &        (RMW*1000.d0/RAD(I))**B *
      &        EXP(1.d0-(RMW*1000.d0/RAD(I))**B)*spd**2.d0
      &        + (RAD(I)**2.d0)*(CORIOLIS**2.d0)/4.d0
-     &        )
-     &        - RAD(I)*CORIOLIS/2.d0
+     &        ) 
+     &        - RAD(I)*ABS(CORIOLIS)/2.d0
 C
 C     jgf46.31 Determine translation speed that should be added to final
 C     storm wind speed. This is tapered to zero as the storm wind tapers
@@ -4142,6 +4319,10 @@ C            WVNY(I)=0.0d0
 C         ENDIF
 C
       END DO
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
 C     ----------------------------------------------------------------
       END SUBROUTINE HollandGet
 C     ----------------------------------------------------------------
@@ -4162,6 +4343,7 @@ C
       SUBROUTINE GetHollandStormData(LatOut,LonOut,CPressOut,SpdOut,
      &     RRPOut,RMWOut,TVXOut,TVYOut,TIMELOC)
       USE SIZES, ONLY : MyProc, GBLINPUTDIR
+      USE GLOBAL, ONLY : RNDAY
       USE VORTEX, ONLY : uvtrans
       IMPLICIT NONE
       REAL(SZ),intent(in) :: TIMELOC
@@ -4187,6 +4369,11 @@ C
       INTEGER,SAVE :: pl ! populated length of Holland Data array
       INTEGER :: j ! loop counter
       INTEGER :: ios ! return code for an i/o operation
+      call setMessageSource("getHollandStormData")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
+      
 C     ------------------------------------------------------
 C     BEGIN Code executed upon first call to this subroutine
 C     ------------------------------------------------------
@@ -4312,9 +4499,38 @@ C     the NHC does not forecast these parameters), exit with a fatal error.
                   call windTerminate()
                endif
 C
+      ! @jasonfleming: Adding a new type to allow the analyst to add lines
+      ! that do nothing but produce zero winds and background barometric 
+      ! pressure. These lines can have a date/time like a BEST line or 
+      ! a date/time and forecast period like an OFCL line. 
+            CASE("CALM")        
+               call allMessage(ECHO,
+     &            'The fort.22 file contains at least one "CALM" line.')
+               IF (i.gt.1 ) THEN
+               IF ((iFcstInc(i).eq.0.and.
+     &              (iYear(i).eq.iYear(i-1).and.iMth(i).eq.iMth(i-1)
+     &              .and.iDay(i).eq.iDay(i-1).and.iHr(i).eq.iHr(i-1)))
+     &              .or.
+     &             (iFcstInc(i).ne.0.and.iFcstInc(i).eq.iFcstInc(i-1)))
+     &              THEN
+                  CYCLE
+               ENDIF
+               ENDIF
+               FcstInc(i) = iFcstInc(i)
+
+               IF ( iFcstInc(i).eq.0 ) THEN
+                  CALL TimeConv(iYear(i),iMth(i),iDay(i),iHr(i),0,0.d0,
+     &                 CastTime(i))
+                  CastTime(i)=CastTime(i)-WindRefTime
+               ELSE
+                  FcstInc(i) = FcstInc(i) * 3600.d0 ! convert hours to seconds
+                  CastTime(i) = CastTime(i-1) +
+     &                 ( FcstInc(i) - FcstInc(i-1) )
+               ENDIF
+
             CASE DEFAULT        ! unrecognized
                call allMessage(ERROR,
-     &          'Only "BEST" or "OFCL" are allowed '//
+     &          'Only "BEST", "OFCL", or "CALM" are allowed '//
      &          'in the 5th column of fort.22.')
                call windTerminate()
             END SELECT
@@ -4406,6 +4622,14 @@ C     the fort.22 file.
          ENDDO
          FIRSTCALL = .False.
       ENDIF
+      ! 
+      ! @jasonfleming: Check to see if there is enough data to cover
+      ! the whole run and bomb out immediately if there isn't.
+      if (castTime(pl).lt.RNDAY*86400.d0) then
+         call allMessage(ERROR,'The fort.22 file ends before RNDAY.')
+         call windTerminate()
+      endif
+
 C     ----------------------------------------------------------
 C     END Code executed only upon first call to this subroutine
 C     ----------------------------------------------------------
@@ -4429,15 +4653,26 @@ C         meteorological data.
       ENDIF
 C
 C     Interpolate w.r.t. time
-      WTRATIO=(TIMELOC-CastTime(i-1))/(CastTime(i)-CastTime(i-1))
-      CPressOut = CPress(i-1) + WTRATIO*(CPress(i)-CPress(i-1))
+      ! @jasonfleming: Add CALM handling.
       LonOut = Lon(i-1) + WTRATIO*(Lon(i)-lon(i-1))
       LatOut = Lat(i-1) + WTRATIO*(Lat(i)-lat(i-1))
-      SpdOut = Spd(i-1) + WTRATIO*(Spd(i)-Spd(i-1))
-      RRPOut = RRP(i-1) + WTRATIO*(RRP(i)-RRP(i-1))
-      RMWOut = RMW(i-1) + WTRATIO*(RMW(i)-RMW(i-1))
-      TVXOut = TVX(i-1) + WTRATIO*(TVX(i)-TVX(i-1))
-      TVYOut = TVY(i-1) + WTRATIO*(TVY(i)-TVY(i-1))
+      if ( (trim(castType(i)).ne.'CALM').and.
+     &      trim(castType(i-1)).ne.'CALM' ) then
+         WTRATIO=(TIMELOC-CastTime(i-1))/(CastTime(i)-CastTime(i-1))
+         CPressOut = CPress(i-1) + WTRATIO*(CPress(i)-CPress(i-1))
+         SpdOut = Spd(i-1) + WTRATIO*(Spd(i)-Spd(i-1))
+         RRPOut = RRP(i-1) + WTRATIO*(RRP(i)-RRP(i-1))
+         RMWOut = RMW(i-1) + WTRATIO*(RMW(i)-RMW(i-1))
+         TVXOut = TVX(i-1) + WTRATIO*(TVX(i)-TVX(i-1))
+         TVYOut = TVY(i-1) + WTRATIO*(TVY(i)-TVY(i-1))
+      else
+         CPressOut = -99999.d0
+         SpdOut = -99999.d0
+         RRPOut = -99999.d0
+         RMWOut = -99999.d0
+         TVXOut = -99999.d0
+         TVYOut = -99999.d0
+      endif
 C
 C     ----------------------------------------------------------
 C     END Code executed on every call to this subroutine
@@ -4446,6 +4681,11 @@ C     ----------------------------------------------------------
  12   format(8x,i4,i2,i2,i2,6x,a4,2x,i3,2x,i3,4x,i3,3x,i3,2x,i4,52x,i3)
  14   format(8x,i4,i2,i2,i2,6x,a4,2x,i3,1x,i4,3x,i4,3x,i3,2x,i4,47x,i3,
      &     2x,i3)
+
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 
       RETURN
 C     ----------------------------------------------------------------
@@ -4675,7 +4915,7 @@ C     ----------------------------------------------------------------
       !     http://www.unc.edu/~cmattock/ncfs/NCFSreport.pdf
       !=================================================================
       SUBROUTINE NWS19GET(wvnx,wvny,press,timeloc)
-      USE GLOBAL, ONLY : rhowat0, g
+      USE GLOBAL, ONLY : rhowat0, g, mb2pa, rnday
       USE MESH, ONLY : np, ics, slam, sfea
       USE VORTEX, ONLY : newVortex, setRmaxes, fitRmaxes, uvp,
      &                   getLatestRmax, getLatestAngle
@@ -4741,6 +4981,8 @@ C     ----------------------------------------------------------------
       REAL(sz) :: uTransNow, vTransNow ! time-interpolated overland speed, kts
       CHARACTER(1) ew,ns
       INTEGER, SAVE :: num_cycles ! num unique date/times in the fort.22
+      REAL(sz) :: rndaySeconds ! end time of the run in seconds
+
 C
       call setMessageSource("nws19get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -4782,6 +5024,9 @@ C
       ! for NWS29).
       !---------------
       IF (firstCall .EQ. 0) THEN  ! first time the routine is called
+         ! @jasonfleming: compute run end time in seconds to make sure 
+         ! there are enough data in the file to cover the whole run. 
+         rndaySeconds = RNDAY * 86400.d0
          i=0
          DO      ! determine the number of entries in the file
             READ(22,*,END=991)
@@ -4950,6 +5195,15 @@ C
          num_cycles = icyc
          icyc=2
 
+         ! 
+         ! @jasonfleming: If there isn't enough data in the fort.22 to
+         ! cover the whole run, bomb out immediately.  
+         if (cycleTime(num_cycles).lt.rndaySeconds) then
+            call allMessage(ERROR,"There aren't enough data in the "//
+     &      'fort.22 file to cover the entire run time.')
+            call windTerminate()
+         endif
+
       END IF   ! (firstCall .EQ. 0)
 
       !--------------------------------------
@@ -4974,7 +5228,35 @@ C     we are running off the end of the data.
             icyc=icyc+1
          ENDIF
       ENDIF
-
+      ! 
+      ! @jasonfleming: Add handling of "CALM"
+      if ((trim(type(icyc)).eq.'CALM').or.trim(type(icyc-1)).eq.'CALM') then
+         wvnx(:)=0.d0
+         wvny(:)=0.d0
+         press(:)=PRBCKGRND*mb2pa/(rhowat0*g)
+         wtratio=(TIMELOC-CycleTime(icyc-1))/
+     &                  (CycleTime(icyc)-CycleTime(icyc-1))
+         cLat   = lat(icyc-1)  +
+     &                         wtratio * (lat(icyc)-lat(icyc-1))
+         cLon  =  lon(icyc-1)  +
+     &                         wtratio * (lon(icyc)-lon(icyc-1))
+         vortexLat = cLat
+         vortexLon = cLon
+         vortexRMW = 0.0d0
+         EyeLatR(1) = EyeLatR(2)
+         EyeLonR(1) = EyeLonR(2)
+         EyeLatR(2) = EyeLatR(3)
+         EyeLonR(2) = EyeLonR(3)
+         EyeLatR(3) = cLat
+         EyeLonR(3) = cLon
+         FoundEye = .true.
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         return
+      endif
+      !        
       ! Interpolate NHC forecast interval in
       ! time to obtain values at model time.
       wtratio=(TIMELOC-CycleTime(icyc-1))/
@@ -4982,16 +5264,16 @@ C     we are running off the end of the data.
       !
       ! Perform time interpolation, transform variables from integers
       ! to real numbers for hurricane vortex calcualtions.
+      cLat   =  lat(icyc-1)  +
+     &                         wtratio * (lat(icyc)-lat(icyc-1))
+      cLon  =  lon(icyc-1)  +
+     &                         wtratio * (lon(icyc)-lon(icyc-1))
       Vmax  =  1.d0*(ispd(icyc-1) +
      &                         wtratio * (ispd(icyc)-ispd(icyc-1)))
       Pn    =  1.d0*(ipn(icyc-1)  +
      &                         wtratio * (ipn(icyc)-ipn(icyc-1)))
       Pc    =  1.d0*(icpress(icyc-1) +
      &                         wtratio*(icpress(icyc)-icpress(icyc-1)))
-      cLat   =  lat(icyc-1)  +
-     &                         wtratio * (lat(icyc)-lat(icyc-1))
-      cLon  =  lon(icyc-1)  +
-     &                         wtratio * (lon(icyc)-lon(icyc-1))
       cHollB   =  HollB(icyc-1) +
      &                         wtratio * (HollB(icyc)-HollB(icyc-1))
       do i=1,4
@@ -5019,7 +5301,7 @@ C     we are running off the end of the data.
          EyeLonR(3) = cLon
          FoundEye = .true.
       ENDIF
-
+      !
       ! arithmetic mean of the Rmax in the 4 storm quadrants
       do i=1,4
          vortexRMW = vortexRMW + 0.25d0*crmaxw(i)
@@ -5180,7 +5462,7 @@ C***********************************************************************
       SUBROUTINE NWS20GET(wvnx, wvny, press, timeloc)
       USE VORTEX, ONLY : setVortex, fitRmaxes4,  uvpr, spInterp,
      &                   Rmaxes4, QuadFlag4, QuadIr4, Bs4, VmBL4  ! jgfdebug
-      USE GLOBAL, ONLY : kt2ms, nm2m,deg2rad,omega, Rearth, m2nm
+      USE GLOBAL, ONLY : kt2ms, nm2m,deg2rad,omega, Rearth, m2nm, mb2pa, rnday
       USE MESH, ONLY : slam, sfea, np, ics 
       IMPLICIT NONE
 
@@ -5265,6 +5547,8 @@ C***********************************************************************
       REAL(sz) :: numRmaxes ! number of Rmax values selected by user
       CHARACTER(1) ew,ns
       INTEGER, SAVE :: num_cycles ! num unique date/times in the fort.22
+
+      REAL(sz) :: rndaySeconds ! end time of the run in seconds
       
       call setMessageSource("nws20get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -5296,6 +5580,8 @@ C***********************************************************************
             ycoor(i) = sfea(i) * rad2deg
          END DO
          timeOffset=TIMELOC
+         rndaySeconds = RNDAY * 86400.d0
+
       END IF   ! end of first Time data allocations and such
       !
       ! the mesh changes at each time step if we are writing out
@@ -5510,6 +5796,15 @@ C***********************************************************************
          CALL logMessage(INFO,scratchMessage)
          num_cycles = icyc
          icyc=2
+         ! 
+         ! @jasonfleming: If there isn't enough data in the fort.22 to
+         ! cover the whole run, bomb out immediately.  
+         if (cycleTime(num_cycles).lt.rndaySeconds) then
+            call allMessage(ERROR,"There aren't enough data in the "//
+     &      'fort.22 file to cover the entire run time.')
+            call windTerminate()
+         endif
+
       END IF   ! (firstCall .EQ. 0)
 
       !--------------------------------------
@@ -5535,6 +5830,34 @@ C     we are running off the end of the data.
          icyc=icyc+1
          ENDIF
       ENDIF
+      ! 
+      ! @jasonfleming: Add handling of "CALM"
+      if ((trim(type(icyc)).eq.'CALM').or.trim(type(icyc-1)).eq.'CALM') then
+         wvnx(:)=0.d0
+         wvny(:)=0.d0
+         press(:)=PRBCKGRND*mb2pa/(rhowat0*g)
+         wtratio=(TIMELOC-CycleTime(icyc-1))/
+     &                  (CycleTime(icyc)-CycleTime(icyc-1))
+         cLat   = lat(icyc-1)  +
+     &                         wtratio * (lat(icyc)-lat(icyc-1))
+         cLon  =  lon(icyc-1)  +
+     &                         wtratio * (lon(icyc)-lon(icyc-1))
+         vortexLat = cLat
+         vortexLon = cLon
+         vortexRMW = 0.0d0
+         EyeLatR(1) = EyeLatR(2)
+         EyeLonR(1) = EyeLonR(2)
+         EyeLatR(2) = EyeLatR(3)
+         EyeLonR(2) = EyeLonR(3)
+         EyeLatR(3) = cLat
+         EyeLonR(3) = cLon
+         FoundEye = .true.
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         return
+      endif
 
       ! Interpolate NHC forecast interval in
       ! time to obtain values at model time.
@@ -5647,9 +5970,6 @@ C     we are running off the end of the data.
 !             WRITE(16,699) crmaxw(i),  crmaxwTrue(i),
 !     &                   cHollBs(i) ,cVmwBL(i), cPhiFactor(i)
       enddo
-      
-
-     
      
       uTransNow = uTrans(icyc-1) + wtratio
      &                  * (uTrans(icyc)-utrans(icyc-1))
@@ -5819,7 +6139,7 @@ C
       !
       ! log the number of HWind files that were specified
       write(scratchMessage,
-     &    '("There were ",I3," HWind files specified.")') numFiles
+     &    '("There were ",i0," HWind files specified.")') numFiles
       call logMessage(INFO,scratchMessage)
       !
       ! need at least 2 files so we have something to interpolate between
@@ -5836,7 +6156,7 @@ C
       do i=1,numFiles-1
          if (hWindFiles(i)%cycleTime.ge.hWindFiles(i+1)%cycleTime) then
             write(scratchMessage,
-     &    '("Cycle time ",I3," must be less cycle time ",I3,".")')i,i+1
+     &    '("Cycle time ",i0," must be less cycle time ",i0,".")')i,i+1
             call allMessage(ERROR,scratchMessage)
             call windTerminate()
          endif
@@ -6354,16 +6674,16 @@ C     We jump to this section if there was an error reading a file.
       endif
       if ( dataset.eq.0 ) then
          write(scratchMessage,
-     &    '("Could not read line ",I2," from the file ",A,".")')
+     &    '("Could not read line ",i0," from the file ",A,".")')
      &    currentLine, trim(hWindFiles(cn)%file_name)
          call allMessage(ERROR,scratchMessage)
       else
          write(scratchMessage,
-     &     '("Could not read dataset ",I2," from the file ",A,".")')
+     &     '("Could not read dataset ",i0," from the file ",A,".")')
      &    dataset, trim(hWindFiles(cn)%file_name)
          call allMessage(ERROR,scratchMessage)
       endif
-      write(scratchMessage,'(A,I5,A)')
+      write(scratchMessage,'(A,i0,A)')
      &       'The value of the i/o error flag was ',errorio,'.'
       call allMessage(ERROR,scratchMessage)
       CALL windTerminate()
@@ -7539,6 +7859,8 @@ C----------------------------------------------------------------------
 
 
 
-
+C----------------------------------------------------------------------
+C----------------------------------------------------------------------
       END MODULE
-
+C----------------------------------------------------------------------
+C----------------------------------------------------------------------

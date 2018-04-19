@@ -24,7 +24,7 @@ C     ------------------------------------------------------------------
       implicit none
       character(len=80) :: agrid
       character(4)              :: aid4(20)
-      character(8)              :: aid8(10)
+      character(8)              :: aid8(10)     
       integer :: np   ! number of nodes in the mesh
       integer :: ne   ! number of elements in the mesh
       integer :: ics  ! mesh coordinate system (1=cartesian, 2=geographic)
@@ -35,7 +35,7 @@ C     ------------------------------------------------------------------
       real(8),allocatable :: slam(:) ! longitude node locations in CPP slam(np)
       real(8),allocatable :: sfea(:) ! latitude node locations in CPP sfea(np)
       type(ipair), allocatable, target :: node_dict(:) ! map node labels to numbers
-      integer, allocatable :: labels(:) ! map node numbers to labels
+      integer, allocatable, target :: labels(:) ! map node numbers to labels
       integer :: n1, n2, n3 ! nodes 1, 2, 3 for each element
 
 
@@ -415,12 +415,14 @@ C     ------------------------------------------------------------------
             do j = 1, nvell(k)
                read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
      &                      n1,
-     &                      internalFluxBoundaries(ifCount)%ibconn(j),
+     &                      n2,
      &                      internalFluxBoundaries(ifCount)%barinht(j),
      &                      internalFluxBoundaries(ifCount)%barincfsb(j),
      &                      internalFluxBoundaries(ifCount)%barincfsp(j)
                internalFluxBoundaries(ifCount)%nodes(j) =
      &             find(node_dict, n1)
+               internalFluxBoundaries(ifCount)%ibconn(j) = 
+     &             find(node_dict, n2)
                internalFluxBoundaries(ifCount)%xdmf_nodes(j) =
      &             internalFluxBoundaries(ifCount)%nodes(j) - 1
                internalFluxBoundaries(ifCount)%xdmf_ibconn(j) =
@@ -440,7 +442,7 @@ C     ------------------------------------------------------------------
             do j = 1, nvell(k)
                read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
      &                        n1,
-     &                        internalFluxBoundariesWithPipes(ifwpCount)%ibconn(j),
+     &                        n2,
      &                        internalFluxBoundariesWithPipes(ifwpCount)%barinht(j),
      &                        internalFluxBoundariesWithPipes(ifwpCount)%barincfsb(j),
      &                        internalFluxBoundariesWithPipes(ifwpCount)%barincfsp(j),
@@ -449,6 +451,8 @@ C     ------------------------------------------------------------------
      &                        internalFluxBoundariesWithPipes(ifwpCount)%pipediam(j)
                internalFluxBoundariesWithPipes(ifwpCount)%nodes(j) =
      &                        find(node_dict, n1)
+               internalFluxBoundariesWithPipes(ifwpCount)%ibconn(j) = 
+     &                        find(node_dict, n2)          
                internalFluxBoundariesWithPipes(ifwpCount)%xdmf_nodes(j) =
      &                        internalFluxBoundariesWithPipes(ifwpCount)%nodes(j) - 1
                internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn(j) =
@@ -1990,6 +1994,9 @@ C...           VALUE IF THE BOUNDARY IS CLOSED
                   COSTHETA1=COSTHETA
                ENDIF
 
+               ! @jasonfleming set the boundary array to the ibtype value
+               LBCODEI(JGW)=IBTYPE(K)
+
 C...           CHECK WHETHER ANGLE IS LESS THAN MINIMUM ANGLE, IF SO CHANGE THE
 C...           BOUNDARY CODE TO ZERO TANGENTIAL VELOCITIES 
 
@@ -1998,7 +2005,6 @@ C...           BOUNDARY CODE TO ZERO TANGENTIAL VELOCITIES
                ! as an interim measure, I am making this boundary type
                ! modification a 2DDI-only feature.
                if (C2DDI.eqv..true.) then
-                  LBCODEI(JGW)=IBTYPE(K)
                   IF((COSTHETA.GT.COSTSET).AND.(CROSS.GT.0.0)) THEN
                      IF(IBTYPE(K).EQ.0) LBCODEI(JGW)=10
                      IF(IBTYPE(K).EQ.1) LBCODEI(JGW)=11
@@ -2193,7 +2199,7 @@ C...........   WRITE OUT BOUNDARY CONDITION ARRAY INFORMATION
 
                WRITE(16,1857) JGW,JME,ME2GW(JME),NBV(JGW),LBCODEI(JGW),
      &              THETA,CSII(JGW),SIII(JGW),BNDLEN2O3(JGW)
- 1857          FORMAT(1X,I6,1X,I6,1X,I6,3X,I8,3X,I4,8X,E12.4,2X,E16.8,
+ 1857          FORMAT(1X,I6,1X,I6,1X,I6,3X,I8,3X,I6,6X,E12.4,2X,E16.8,
      &              1X,E16.8,2X,E16.8)
 
 C...........   CHECK EXTERNAL BARRIER HEIGHTS AGAINST DEPTHS

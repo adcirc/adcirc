@@ -102,9 +102,9 @@ C******************************************************************************
      &   nolica, nolicat, nolifa, nscreen, nstae, nt, rhowat0, screenunit,
      &   version_number, initLogging, setMessageSource, screenMessage,
      &   openLogFile, unsetMessageSource, np_global, rnp_global,
-     &   scratchMessage
+     &   scratchMessage, CTIP, L_N
       USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB 
-      USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np
+      USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np, SFEA
       USE GWCE, ONLY : initGWCE
       USE MOMENTUM, ONLY : initMomentumEq
       USE HARM, ONLY : allocateFullDomainHAIOArrays,
@@ -301,6 +301,22 @@ C
 C     jgf51.21.24: Initialize output.
       call initOutput2D(timeloc)
 
+C...************* Make the L_N Tidal potential multiple function *************
+C... WJP: Feb 21 2018
+C...
+      IF (CTIP) THEN
+
+         DO I = 1,NP
+C           LONG-TERM SPECIES
+            L_N(0,I) = 3d0*SIN(SFEA(I))*SIN(SFEA(I)) - 1d0 
+C           DIURNAL SPECIES
+            L_N(1,I) = SIN(2d0*SFEA(I))
+C           SEMIDIURNAL SPECIES
+            L_N(2,I) = COS(SFEA(I))*COS(SFEA(I))
+         END DO
+
+      ENDIF
+
 C...
 C...************* SET FLAGS AND COEFFICIENTS USED IN TIME STEPPING ***********
 C...
@@ -356,7 +372,7 @@ C******************************************************************************
       USE GLOBAL, ONLY : iTime, DEBUG, INFO, setMessageSource, allMessage,
      &   unsetMessageSource, statim, dtdp
 #ifdef CMPI
-      USE WRITER, ONLY : writer_main, writer_pause
+      USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_main, hswriter_pause
 #endif
 C
@@ -378,6 +394,7 @@ C
 #ifdef CMPI
       if (((mnwproh > 0).or.(mnwproc > 0)) .and. myproc >= mnproc) then
          if( myproc < mnproc+mnwproc ) then   !st3
+            call sendLabelInfoToWriters()
             call writer_main()
             call unsetMessageSource()  !tcm 20150924 -- added
             return
@@ -386,6 +403,8 @@ C
             call unsetMessageSource()  !tcm 20150924 -- added
             return
          endif
+      elseif(mnwproc.gt.0.and.myproc.eq.0)then
+         call sendLabelInfoToWriters()
       endif
 #endif
 

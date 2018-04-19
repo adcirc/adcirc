@@ -52,6 +52,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #
 #compiler=gnu
 #compiler=g95
+#compiler=gfortran
 #compiler=intel
 #compiler=intel-ND
 #compiler=intel-lonestar
@@ -101,6 +102,71 @@ ifeq ($(compiler),gnu)
      endif
   endif
   $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else
+     MULTIPLE := TRUE
+  endif
+endif
+#
+ifeq ($(compiler),gfortran)
+  ifeq ($(MACHINENAME),jason-desktop)
+     XDMFPATH    := /home/jason/projects/XDMF/Code/latestCode
+     XDMFLIBPATH := /home/jason/projects/XDMF/Code/testLatest
+  endif
+  PPFC		:=  gfortran
+  FC		:=  gfortran
+  PFC		:=  mpif90
+  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none 
+  ifeq ($(PROFILE),enable)
+    FFLAGS1	:=  $(INCDIRS) -pg -O0 -fprofile-arcs -ftest-coverage -ffixed-line-length-none 
+  endif
+  ifeq ($(DEBUG),full)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND -DDEBUG_WARN_ELEV
+  endif
+  ifeq ($(DEBUG),compiler-warnings)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -Wall -Wextra -ffixed-line-length-none -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+  endif
+  ifeq ($(DEBUG),full-not-warnelev)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND 
+  endif
+  ifeq ($(DEBUG),full-not-fpe)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
+  endif
+  ifeq ($(DEBUG),trace)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+  endif
+#  ifneq ($(MACHINENAME),jason-desktop)
+#     FFLAGS1 := $(FFLAGS1) -fno-underscoring
+#  endif
+  FFLAGS2	:=  $(FFLAGS1)
+  FFLAGS3	:=  $(FFLAGS1)
+  DA		:=  -DREAL8 -DLINUX -DCSCA
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DPRE		:=  -DREAL8 -DLINUX
+  ifeq ($(SWAN),enable)
+     DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
+  endif
+  FLIBS         := 
+  ifeq ($(NETCDF),enable)
+     ifeq ($(MACHINENAME),jason-desktop)
+        NETCDFHOME := /usr
+        FFLAGS1 := $(FFLAGS1) -L/usr/lib/x86_64-linux-gnu
+        FFLAGS2 := $(FFLAGS2) -L/usr/lib/x86_64-linux-gnu
+        FFLAGS3 := $(FFLAGS3) -L/usr/lib/x86_64-linux-gnu
+     endif
+     FLIBS      := $(FLIBS) -lnetcdff 
+  endif
+  IMODS 	:=  -I
+  CC		:= gcc
+  CCBE		:= $(CC)
+  CFLAGS	:= $(INCDIRS) -O2 -DLINUX
+  ifeq ($(DEBUG),full)
+     CFLAGS     := $(INCDIRS) -g -O0 -DLINUX
+  endif
+  CLIBS	:=
+  MSGLIBS	:=
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
      FOUND := TRUE
   else

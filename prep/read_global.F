@@ -34,8 +34,8 @@ C---------------------------------------------------------------------
      &   bcts14_ary, agrid, aperiodic_bc_ts, bndbcriver, exist_bc_ts, 
      &   exist_flux, iden, mnbou, mnvel, nbou, nboumsg, nelg, neta, 
      &   netamsg, nfover, nnodg, nope, nopemsg, nvel, nvelmsg, nweir, 
-     &   river_above_msl, numLBCodeValues, nfluxf
-
+     &   river_above_msl, numLBCodeValues, nfluxf, node_dict, labels
+      use hashtable
       use memory_usage
       implicit none
 
@@ -44,6 +44,7 @@ C---------------------------------------------------------------------
       INTEGER DISC,BBN,IBP,I1
       INTEGER MAXNEIGH
       INTEGER NUMLINES
+      INTEGER :: n1,n2,n3
 c
 c Dummy variables
 c
@@ -74,27 +75,35 @@ C
 c     READ(14,80) NSIZES
 c     READ(NSIZES,*) NELG,NNODG
 c     CALL GETMSG(NSIZES,SIZEMSG)
+     
+C--Initialize hashtable
+      ALLOCATE ( labels(1:NNODG) ) 
+      CALL dict(node_dict,NNODG)
 C
 C--Read Nodal Coordinates and Bathymetry
 C  If ICS=2 Will Convert later in read15
 C
       NUMLINES=2
       DO I = 1,NNODG
-         READ(14,*) J,X(I),Y(I),DP(I)
-         IF (J.NE.I) THEN
+         READ(14,*) labels(I),X(I),Y(I),DP(I)
+         IF (labels(I).NE.I) THEN
             print *, I,J
             STOP 'Node Numbering not in Sequential Order'
          ENDIF
+         call add_ipair(node_dict,labels(I),I)
       ENDDO
 C
 C--Read Element Connectivity Table
 C
        DO I = 1,NELG
-          READ(14,*) J,ITEMP,NNEG(1,I),NNEG(2,I),NNEG(3,I)
+          READ(14,*) J,ITEMP,n1,n2,n3
           IF (J.NE.I) THEN
             print *, I,J
             STOP 'Element Numbering not Sequential'
-          ENDIF
+          ENDIF 
+          NNEG(1,I) = find(node_dict,n1)
+          NNEG(2,I) = find(node_dict,n2)
+          NNEG(3,I) = find(node_dict,n3)
        ENDDO
       NUMLINES=NUMLINES+NNODG+NELG
 C...
@@ -120,7 +129,8 @@ C...
          NUMLINES=NUMLINES+1
          READ(NVDLLMSG(K),*) NVDLL(K)
          DO I=1,NVDLL(K)
-            READ(14,*) NBDV(K,I)
+            READ(14,*) n1 
+            NBDV(K,I) = find(node_dict,n1)
             NUMLINES=NUMLINES+1
          ENDDO
          J=J+NVDLL(K)
@@ -183,18 +193,21 @@ C
          select case(ITYPE)
          case(0,10,20,30,40,1,11,21,41)
             DO I=1,NVELL(K)
-               READ(14,*) NBVV(K,I)
+               READ(14,*) n1 
+               NBVV(K,I) = find(node_dict,n1)
               IBCONNR(K,I) = 0
             ENDDO
          case(3,13,23)
             DO I=1,NVELL(K)
-               READ(14,*) NBVV(K,I),BAR1(K,I),BAR2(K,I)
+               READ(14,*) n1,BAR1(K,I),BAR2(K,I)
+               NBVV(K,I) = find(node_dict,n1)
               IBCONNR(K,I) = 0
             ENDDO
          case(4,24)
             DO I=1,NVELL(K)
-               READ(14,*) NBVV(K,I),IBCONNR(K,I),
+               READ(14,*) n1,IBCONNR(K,I),
      &                    BAR1(K,I),BAR2(K,I),BAR3(K,I)
+               NBVV(K,I) = find(node_dict,n1)
                !--Construct List of WEIR nodes and their duals
                NWEIR = NWEIR+1
                WEIR(NWEIR) = NBVV(K,I)
@@ -202,9 +215,11 @@ C
             ENDDO
          case(5,25)
             DO I =1,NVELL(K)
-               READ(14,*) NBVV(K,I),IBCONNR(K,I),
+               READ(14,*) n1,n2, 
      &                   BAR1(K,I),BAR2(K,I),BAR3(K,I),
      &                   BAR4(K,I),BAR5(K,I),BAR6(K,I)
+               NBVV(K,I) = find(node_dict,n1)
+               IBCONNR(K,I) = find(node_dict,n2)
                !--Construct List of WEIR nodes and their duals
                NWEIR = NWEIR+1
                WEIR(NWEIR) = NBVV(K,I)
@@ -214,7 +229,8 @@ C
            NFLUXF=1 !jgf51.52.23
            DO I=1,NVELL(K)
               EXIST_FLUX = EXIST_FLUX + 1
-              READ(14,*) NBVV(K,I)
+              READ(14,*) n1
+              NBVV(K,I) = find(node_dict,n1)
               IBCONNR(K,I) = 0
 !kmd - added river boundary conditions for baroclinic
               IF (BndBCRiver) THEN
@@ -278,7 +294,8 @@ c
             case(2,12,22,32,52)
                DO I=1, DNVELL(K)
                   EXIST_FLUX = EXIST_FLUX + 1
-                  READ(14,*) DNBVV(K,I)
+                  READ(14,*) n1
+                  DNBVV(K,I) = find(node_dict,n1)
                   FLUX14_ARY(EXIST_FLUX) = DNBVV(K,I)
 ! kmd - added in boundary conditions for rivers in a baroclinic simulation
                   IF (BC_Rivers) THEN
@@ -291,7 +308,8 @@ c
                ENDDO
             case default
                DO I=1, DNVELL(K)
-                  READ(14,*) DNBVV(K,I)
+                  READ(14,*) n1
+                  DNBVV(K,I) = find(node_dict,n1)
                ENDDO
             end select
             BC_Rivers = .FALSE.  ! kmd - reset logic for next river boundary segment
@@ -1661,7 +1679,7 @@ C
       READ(HARPARMSG,*) THAS,THAF,NHAINC,FMV
       READ(15,80) OUTHARMSG
       READ(OUTHARMSG,*) NHASE,NHASV,NHAGE,NHAGV
-      IF ((NHASE.LT.0).OR.(NHASE.GT.1)) THEN
+      IF ((NHASE.LT.0).OR.(NHASE.GT.5)) THEN
         print *, "NHASE does not have an allowable value"
         IF (NFOVER.EQ.1) THEN
           print *, "Program will override an reset NHASE=0 "
@@ -1671,7 +1689,7 @@ C
         ENDIF
       ENDIF
 C
-      IF ((NHASV.LT.0).OR.(NHASV.GT.1)) THEN
+      IF ((NHASV.LT.0).OR.(NHASV.GT.5)) THEN
          print *, "NHASV does not have an allowable value"
          IF (NFOVER.EQ.1) THEN
            print *, "Program will override an reset NHASV=0 "
@@ -1681,7 +1699,7 @@ C
          ENDIF
       ENDIF
 C
-      IF ((NHAGE.LT.0).OR.(NHAGE.GT.1)) THEN
+      IF ((NHAGE.LT.0).OR.(NHAGE.GT.5)) THEN
         print *, "NHAGE does not have an allowable value"
         IF (NFOVER.EQ.1) THEN
           print *, "Program will override an reset NHAGE=0 "
@@ -1691,7 +1709,7 @@ C
         ENDIF
       ENDIF
 C
-      IF ((NHAGV.LT.0).OR.(NHAGV.GT.1)) THEN
+      IF ((NHAGV.LT.0).OR.(NHAGV.GT.5)) THEN
         print *, "NHAGV does not have an allowable value"
         IF (NFOVER.EQ.1) THEN
           print *, "Program will override an reset NHAGV=0 "

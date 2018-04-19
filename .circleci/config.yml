@@ -33,9 +33,6 @@ jobs:
         - image: zcobell/adcirc_20170924 
       steps:
         - checkout
-        - restore_cache:
-            keys:
-              - setup
         - run: 
             name: Configure SWAN for legacy makefile
             command: cd work ; cp ../swan/macros.inc.gfortran ../swan/macros.inc
@@ -47,9 +44,6 @@ jobs:
         - image: zcobell/adcirc_20170924 
       steps:
         - checkout
-        - restore_cache:
-            keys:
-              - setup
         - run: 
             name: Configure SWAN for legacy makefile
             command: cd work ; cp ../swan/macros.inc.gfortran ../swan/macros.inc
@@ -61,9 +55,6 @@ jobs:
         - image: zcobell/adcirc_20170924 
       steps:
         - checkout
-        - restore_cache:
-            keys:
-              - setup
         - run: 
             name: Configure SWAN for legacy makefile
             command: cd work ; cp ../swan/macros.inc.gfortran ../swan/macros.inc
@@ -93,25 +84,15 @@ jobs:
         - checkout
         - run: 
             name: Build ADCIRC with netCDF and XDMF using CMake
-            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DNETCDFHOME=/usr -DXDMFHOME=/usr -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS="-mtune=native -march=native" ; make
-        - save_cache:
-            key: exe
-            paths:
-              - /root/project/build/adcirc
-              - /root/project/build/padcirc
-              - /root/project/build/adcprep
-              - /root/project/build/adcswan
-              - /root/project/build/padcswan
-              - /root/project/build/adccmp
-              - /root/project/build/aswip
+            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DNETCDFHOME=/usr -DXDMFHOME=/usr -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS="-O0" ; make
   acceptance_tests:
     docker: 
       - image: zcobell/adcirc_20170924
     steps:
       - checkout
-      - restore_cache:
-          keys:
-             - exe
+      - run: 
+            name: Build ADCIRC with netCDF and XDMF using CMake
+            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DNETCDFHOME=/usr -DXDMFHOME=/usr -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS="-mtune=native -march=native" ; make
       - run:
           name: Retrieve Test Suite
           command: git clone --depth=1 -b adcircResultCompare https://github.com/adcirc/adcirc-cg-testsuite.git /root/adcirc-cg-testsuite
@@ -129,6 +110,4 @@ workflows:
       - build_cmake_without_netcdf
       - build_cmake_with_netcdf
       - build_cmake_with_netcdf_and_xdmf
-      - acceptance_tests:
-         requires:
-           - build_cmake_with_netcdf_and_xdmf
+      - acceptance_tests

@@ -21,9 +21,10 @@ C-----------------------------------------------------------------------
       USE GLOBAL
       USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP,
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries, 
-     &   freeMesh
+     &   freeMesh, node_dict, find
       USE BOUNDARIES, ONLY : ANGINN, COSTSET, NETA, NVEL, NVELME, 
-     &   NFLUXF, NBD, ME2GW, LBCODEI, NBV
+     &   NFLUXF, NBD, ME2GW, LBCODEI, NBV, simpleFluxBoundaries, ibtype,
+     &   numSimpleFluxBoundaries
       USE GLOBAL_IO
       USE KDTREE2_MODULE     ! V49.48.02 tcm -- added for fast searching
       USE GLOBAL_3DVS, ONLY: C3D_PTrans, NSTA3DD, NSTA3DV, NSTA3DT,
@@ -1934,6 +1935,23 @@ C     jgf46.08 Change to the number of ramp functions that will be used.
      &    /,9X,'HYPERBOLIC TANGENT RAMP(S) WILL BE APPLIED TO THE ',
      &    'FORCING FUNCTIONS')
       ENDIF
+      !
+      ! @jasonfleming: If there is at least one radiation/flux boundary
+      ! (ibtype=52) in the mesh, then the FluxSettlingTime must 
+      ! be specified, meaning NRAMP must be .ge. 2
+      if ( nramp.lt.2 ) then
+         ! check for radiation/flux boundaries
+         do i=1,numSimpleFluxBoundaries
+            if (ibtype(simpleFluxBoundaries(i)%indexNum).eq.52) then
+               call allMessage(ERROR,'The mesh contains a flux/radiation'//
+     &         ' boundary (ibtype=52) but the fluxSettlingTime was not'//
+     &         ' specified in the control file (fort.15). Please '//
+     &         ' set NRAMP to at least 2 and also provide a value for '//
+     &          ' fluxSettlingTime on the DRAMP line.')
+               call adcirc_terminate()
+            endif
+         end do
+      endif
 C...
 C...  PROCESS G - GRAVITY
 C...
@@ -2677,7 +2695,7 @@ C
 C...
 C...OUTPUT TO UNIT 16 THE GLOBAL CONNECTIVITY TABLE (NODE NUMBERS FOR ELEMENTS)
 C...
-      IF(NABOUT.NE.1) THEN
+      IF(NABOUT.LT.1) THEN
          WRITE(16,26)
  26      FORMAT(//,5X,'GLOBAL NODE NUMBERS FOR EACH ELEMENT :')
          WRITE(16,27)
@@ -2799,15 +2817,23 @@ C...  LINES TO USE EARTH LOAD/SELF-ATTRACTION PART OF TIDAL POTENTIAL FORCING
 
       CALL ALLOC_MAIN4b()
       IF(NTIP.EQ.2) THEN
-         OPEN(24,FILE='fort.24')
+         ! WJP 02.24.2018 reading prepped fort.24 for padcirc
+         ! OPEN(24,FILE='fort.24')
+         CALL openFileForRead(24,TRIM(INPUTDIR)//'/'//'fort.24',ios)
+         IF (ios.gt.0) THEN
+             CALL ADCIRC_Terminate()
+         ENDIF
          DO I=1,NTIF
             READ(24,9930)
  9930       FORMAT(///)
             DO J=1,NP
-               READ(24,*) JJ,SALTAMP(I,JJ),SALTPHA(I,JJ)
-               SALTPHA(I,JJ)=SALTPHA(I,JJ)*DEG2RAD
+               ! WJP: mapping to local node numbers
+               READ(24,*) JJ,SALTAMP(I,find(node_dict,JJ)),
+     &                    SALTPHA(I,find(node_dict,JJ))
             END DO
          END DO
+         CLOSE(24)
+         SALTPHA = SALTPHA*DEG2RAD
       ELSE
          DO I=1,NTIF
             DO J=1,NP
@@ -2815,7 +2841,6 @@ C...  LINES TO USE EARTH LOAD/SELF-ATTRACTION PART OF TIDAL POTENTIAL FORCING
                SALTPHA(I,J)=0.d0
             END DO
          END DO
-         CLOSE(24)
       ENDIF
 C...
 C...  OUTPUT TO UNIT 16 INFORMATION ABOUT TIDAL POTENTIAL FORCING

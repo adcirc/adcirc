@@ -164,8 +164,8 @@ C     ---------------------
 C
 C     Error checking for basin scale data
       if ((date1p.ne.date1w).or.(date2p.ne.date2w)) then
-         call allMessage(ERROR,
-     &      "Start and end dates of basin met. data do not match.")
+         call allMessage(ERROR,"Start and end dates of basin " //
+     &  " (fort.221 and fort.222) meteorological data do not match.")
          errorVar = ""
          call check_err(1)
       endif
@@ -196,8 +196,8 @@ C     Error checking for basin scale data
 C
 C     Error checking for region scale data
          if(date1p.ne.date1w.or.date2p.ne.date2w) then
-            call allMessage(ERROR,
-     &         "Start and end dates of region met. data do not match.")
+            call allMessage(ERROR,"Start and end dates of region " //
+     &       "(fort.223 and fort.224) meteorological data do not match.")
             errorVar = ""
             call check_err(1)
          endif
@@ -338,7 +338,7 @@ C   SUBROUTINE NWS12GET
 C***********************************************************************
 
       SUBROUTINE NWS12GET(WVNX,WVNY,PRN,NP,RHOWAT0,G)
-      USE SIZES,ONLY : MYPROC,MNPROC
+      USE SIZES,ONLY : MYPROC,MNPROC,GBLINPUTDIR
       IMPLICIT NONE
       INTEGER   NP,I,J,XI,YI
       REAL(SZ), intent(out), dimension(:) ::  WVNX,WVNY,PRN
@@ -387,11 +387,15 @@ C
 
       ! Read grid specifications/date in basin pressure file
       errorVar = "grid specifications/date in basin pressure file"
-      read (221,11,end=10000,err=9999,iostat=errorIO)
+      lun=221
+      FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.221'
+      read (lun,11,end=10000,err=9999,iostat=errorIO)
      &      iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
       call check_err(errorIO)
 
       ! Read grid specifications/date in basin wind file
+      lun=222
+      FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.222'      
       errorVar = "grid specifications/date in basin wind file"
       read (222,11,end=10000,err=9999,iostat=errorIO)
      &      iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
@@ -434,17 +438,21 @@ C
 
       ! Read basin scale atmospheric pressure snapshot
       errorVar = "basin scale atmospheric pressure snapshot"
-      read(221,22,end=10000,err=9999,iostat=errorIO)
+      lun=221
+      FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.221'
+      read(lun,22,end=10000,err=9999,iostat=errorIO)
      &   ((pB(i,j),i=1,iLongB),j=1,iLatB)
       call check_err(errorIO)
 
       ! Read basin scale snapshot of u/v components of the wind
       errorVar = "basin scale wind u-velocity snapshot"
-      read(222,22,end=10000,err=9999,iostat=errorIO)
+      lun=222
+      FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.222'      
+      read(lun,22,end=10000,err=9999,iostat=errorIO)
      &   ((uB(i,j),i=1,iLongB),j=1,iLatB)
       call check_err(errorIO)
       errorVar = "basin scale wind v-velocity snapshot"
-      read(222,22,end=10000,err=9999,iostat=errorIO)
+      read(lun,22,end=10000,err=9999,iostat=errorIO)
      &   ((vB(i,j),i=1,iLongB),j=1,iLatB)
       call check_err(errorIO)
 
@@ -465,12 +473,16 @@ C
 
       ! Read grid specifications/date in region pressure file
       errorVar = "grid specifications/date in region pressure file"
+      lun=223
+      FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.223'
       read (223,11,end=10000,err=9999,iostat=errorIO)
      &     iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
       call check_err(errorIO)
 
       ! Read grid specifications/date in region wind file
       errorVar = "grid specifications/date in region wind file"
+      lun=224
+      FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.224'      
       read (224,11,end=10000,err=9999,iostat=errorIO)
      &        iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
       call check_err(errorIO)
@@ -522,12 +534,16 @@ C
 
       ! Read pressure
       errorVar = "region scale atmospheric pressure snapshot"
+      lun=223
+      FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.223'      
       read(223,22,end=10000,err=9999,iostat=errorIO)
      &   ((pR(i,j),i=1,iLongR),j=1,iLatR)
       call check_err(errorIO)
 
       ! Read u/v components of the wind
       errorVar = "region scale wind u-velocity snapshot"
+      lun=224
+      FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.224'      
       read(224,22,end=10000,err=9999,iostat=errorIO)
      &   ((uR(i,j),i=1,iLongR),j=1,iLatR)
       call check_err(errorIO)

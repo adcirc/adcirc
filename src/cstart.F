@@ -15,7 +15,8 @@ C
       USE SIZES
       USE GLOBAL
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
-      USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4
+      USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, 
+     &    AID4, AID8
       USE BOUNDARIES, ONLY : NETA, NFLUXF, NOPE, NVEL, LBCODEI
       USE HARM
       USE WETDRY, ONLY : initializeWettingAndDrying
@@ -27,7 +28,7 @@ C
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
-     &    initInundationOutput
+     &    initInundationOutput, writeBinaryOutputFileHeader
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
       USE GWCE, ONLY : etime1, etime2, etiminc
 
@@ -349,40 +350,9 @@ C...
       IF(ABS(NOUTE).EQ.2) THEN
          OPEN(61,FILE=TRIM(LOCALDIR)//'/'//'fort.61',
      &           ACCESS='DIRECT',RECL=NBYTE)
-         IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-               WRITE(61,REC=IESTP+I) RDES4(I)
-            ENDDO
-            IESTP=IESTP+8
-            DO I=1,6
-               WRITE(61,REC=IESTP+I) RID4(I)
-            ENDDO
-            IESTP=IESTP+6
-            DO I=1,6
-               WRITE(61,REC=IESTP+I) AID4(I)
-            ENDDO
-            IESTP=IESTP+6
-            ENDIF
-         IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-               WRITE(61,REC=IESTP+I) RDES8(I)
-            ENDDO
-            IESTP=IESTP+4
-            DO I=1,3
-               WRITE(61,REC=IESTP+I) RID8(I)
-            ENDDO
-            IESTP=IESTP+3
-            DO I=1,3
-               WRITE(61,REC=IESTP+I) AID8(I)
-            ENDDO
-            IESTP=IESTP+3
-            ENDIF
-         WRITE(61,REC=IESTP+1) NTRSPE
-         WRITE(61,REC=IESTP+2) NSTAE
-         WRITE(61,REC=IESTP+3) DT*NSPOOLE
-         WRITE(61,REC=IESTP+4) NSPOOLE
-         WRITE(61,REC=IESTP+5) 1
-         IESTP=IESTP+5
+         call writeBinaryOutputFileHeader(61, 1, IESTP,
+     &      NTRSPE, NSTAE, NSPOOLE)
+
          CLOSE(61)
          ENDIF
 
@@ -409,42 +379,10 @@ C...
       IF(ABS(NOUTV).EQ.2) THEN
          OPEN(62,FILE=TRIM(LOCALDIR)//'/'//'fort.62',
      &           ACCESS='DIRECT',RECL=NBYTE)
-         IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-               WRITE(62,REC=IVSTP+I) RDES4(I)
-            ENDDO
-            IVSTP=IVSTP+8
-            DO I=1,6
-               WRITE(62,REC=IVSTP+I) RID4(I)
-            ENDDO
-            IVSTP=IVSTP+6
-            DO I=1,6
-               WRITE(62,REC=IVSTP+I) AID4(I)
-            ENDDO
-            IVSTP=IVSTP+6
-            ENDIF
-         IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-               WRITE(62,REC=IVSTP+I) RDES8(I)
-            ENDDO
-            IVSTP=IVSTP+4
-            DO I=1,3
-               WRITE(62,REC=IVSTP+I) RID8(I)
-            ENDDO
-            IVSTP=IVSTP+3
-            DO I=1,3
-               WRITE(62,REC=IVSTP+I) AID8(I)
-            ENDDO
-            IVSTP=IVSTP+3
-            ENDIF
-         WRITE(62,REC=IVSTP+1) NTRSPV
-         WRITE(62,REC=IVSTP+2) NSTAV
-         WRITE(62,REC=IVSTP+3) DT*NSPOOLV
-         WRITE(62,REC=IVSTP+4) NSPOOLV
-         WRITE(62,REC=IVSTP+5) 2
-         IVSTP=IVSTP+5
+         call writeBinaryOutputFileHeader(62, 2, IVSTP,
+     &      NTRSPV, NSTAV, NSPOOLV)
          CLOSE(62)
-         ENDIF
+      ENDIF
 
 C...
 C....INITIALIZE CONCENTRATION STATION SPOOL COUNTER
@@ -469,42 +407,10 @@ C...
       IF(ABS(NOUTC).EQ.2) THEN
          OPEN(81,FILE=TRIM(LOCALDIR)//'/'//'fort.81',
      &           ACCESS='DIRECT',RECL=NBYTE)
-         IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-               WRITE(81,REC=ICSTP+I) RDES4(I)
-            ENDDO
-            ICSTP=ICSTP+8
-            DO I=1,6
-               WRITE(81,REC=ICSTP+I) RID4(I)
-            ENDDO
-            ICSTP=ICSTP+6
-            DO I=1,6
-               WRITE(81,REC=ICSTP+I) AID4(I)
-            ENDDO
-            ICSTP=ICSTP+6
-            ENDIF
-         IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-               WRITE(81,REC=ICSTP+I) RDES8(I)
-            ENDDO
-            ICSTP=ICSTP+4
-            DO I=1,3
-               WRITE(81,REC=ICSTP+I) RID8(I)
-            ENDDO
-            ICSTP=ICSTP+3
-            DO I=1,3
-               WRITE(81,REC=ICSTP+I) AID8(I)
-            ENDDO
-            ICSTP=ICSTP+3
-            ENDIF
-         WRITE(81,REC=ICSTP+1) NTRSPC
-         WRITE(81,REC=ICSTP+2) NSTAC
-         WRITE(81,REC=ICSTP+3) DT*NSPOOLC
-         WRITE(81,REC=ICSTP+4) NSPOOLC
-         WRITE(81,REC=ICSTP+5) 1
-         ICSTP=ICSTP+5
+         call writeBinaryOutputFileHeader(81, 1, ICSTP,
+     &      NTRSPC, NSTAC, NSPOOLC)
          CLOSE(81)
-         ENDIF
+      ENDIF
 
 C...
 C....INITIALIZE METEOROLOGICAL STATION SPOOL COUNTERS
@@ -661,40 +567,8 @@ C...
       IF ((NDDT.NE.0).AND.(ABS(NOUTE).EQ.2)) THEN
          OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
      &           ACCESS='DIRECT',RECL=NBYTE)
-         IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-               WRITE(75,REC=IBSTP+I) RDES4(I)
-            ENDDO
-            IBSTP=IBSTP+8
-            DO I=1,6
-               WRITE(75,REC=IBSTP+I) RID4(I)
-            ENDDO
-            IBSTP=IBSTP+6
-            DO I=1,6
-               WRITE(75,REC=IBSTP+I) AID4(I)
-            ENDDO
-            IBSTP=IBSTP+6
-         ENDIF
-         IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-               WRITE(75,REC=IBSTP+I) RDES8(I)
-            ENDDO
-            IBSTP=IBSTP+4
-            DO I=1,3
-               WRITE(75,REC=IBSTP+I) RID8(I)
-            ENDDO
-            IBSTP=IBSTP+3
-            DO I=1,3
-               WRITE(75,REC=IBSTP+I) AID8(I)
-            ENDDO
-            IBSTP=IBSTP+3
-         ENDIF
-         WRITE(75,REC=IBSTP+1) NTRSPE
-         WRITE(75,REC=IBSTP+2) NSTAE
-         WRITE(75,REC=IBSTP+3) DT*NSPOOLE
-         WRITE(75,REC=IBSTP+4) NSPOOLE
-         WRITE(75,REC=IBSTP+5) 1
-         IBSTP=IBSTP+5
+         call writeBinaryOutputFileHeader(75, 1, IBSTP,
+     &      NTRSPE, NSTAE, NSPOOLE)
          CLOSE(75)
       ENDIF
 
@@ -799,42 +673,10 @@ Casey 090302: Corrected the unit number from 10 to 90.
       IF(ABS(NOUTGE).EQ.2) THEN
          OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
      &           ACCESS='DIRECT',RECL=NBYTE)
-         IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-               WRITE(63,REC=IGEP+I) RDES4(I)
-               ENDDO
-            IGEP=IGEP+8
-            DO I=1,6
-               WRITE(63,REC=IGEP+I) RID4(I)
-               ENDDO
-            IGEP=IGEP+6
-            DO I=1,6
-               WRITE(63,REC=IGEP+I) AID4(I)
-               ENDDO
-            IGEP=IGEP+6
-            ENDIF
-         IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-               WRITE(63,REC=IGEP+I) RDES8(I)
-               ENDDO
-            IGEP=IGEP+4
-            DO I=1,3
-               WRITE(63,REC=IGEP+I) RID8(I)
-               ENDDO
-            IGEP=IGEP+3
-            DO I=1,3
-               WRITE(63,REC=IGEP+I) AID8(I)
-               ENDDO
-            IGEP=IGEP+3
-            ENDIF
-         WRITE(63,REC=IGEP+1) NDSETSE
-         WRITE(63,REC=IGEP+2) NP
-         WRITE(63,REC=IGEP+3) DT*NSPOOLGE
-         WRITE(63,REC=IGEP+4) NSPOOLGE
-         WRITE(63,REC=IGEP+5) 1
-         IGEP=IGEP+5
+         call writeBinaryOutputFileHeader(63, 1, IGEP,
+     &      NDSETSE, NP, NSPOOLGE)
          CLOSE(63)
-         ENDIF
+      ENDIF
 C...
 C....INITIALIZE GLOBAL VELOCITY SPOOL COUNTER
 C....OPEN GLOBAL VELOCITY OUTPUT FILE
@@ -861,43 +703,10 @@ C...
       IF(ABS(NOUTGV).EQ.2) THEN
          OPEN(64,FILE=TRIM(LOCALDIR)//'/'//'fort.64',
      &        ACCESS='DIRECT',RECL=NBYTE)
-         IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-               WRITE(64,REC=IGVP+I) RDES4(I)
-               ENDDO
-            IGVP=IGVP+8
-            DO I=1,6
-               WRITE(64,REC=IGVP+I) RID4(I)
-               ENDDO
-            IGVP=IGVP+6
-            DO I=1,6
-               WRITE(64,REC=IGVP+I) AID4(I)
-               ENDDO
-            IGVP=IGVP+6
-            ENDIF
-         IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-               WRITE(64,REC=IGVP+I) RDES8(I)
-               ENDDO
-            IGVP=IGVP+4
-            DO I=1,3
-               WRITE(64,REC=IGVP+I) RID8(I)
-               ENDDO
-            IGVP=IGVP+3
-            DO I=1,3
-               WRITE(64,REC=IGVP+I) AID8(I)
-               ENDDO
-            IGVP=IGVP+3
-            ENDIF
-         WRITE(64,REC=IGVP+1) NDSETSV
-         WRITE(64,REC=IGVP+2) NP
-         WRITE(64,REC=IGVP+3) DT*NSPOOLGV
-         WRITE(64,REC=IGVP+4) NSPOOLGV
-         WRITE(64,REC=IGVP+5) 2
-         IGVP=IGVP+5
+         call writeBinaryOutputFileHeader(64, 2, IGVP,
+     &      NDSETSV, NP, NSPOOLGV)
          CLOSE(64)
-         ENDIF
-
+       ENDIF
 
 Cobell - Open the fort.77 (weir elevation change) file
          IF(USE_TVW)THEN
@@ -909,43 +718,11 @@ Cobell - Open the fort.77 (weir elevation change) file
                 IG_TVW = 2
             ENDIF   
             IF(ABS(NOUT_TVW).EQ.2)THEN
-                OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
+               OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
      &              ACCESS='DIRECT',RECL=NBYTE)
-                IF(NBYTE.EQ.4) THEN
-                    DO I=1,8
-                        WRITE(77,REC=IG_TVW+I) RDES4(I)
-                    ENDDO
-                    IG_TVW=IG_TVW+8
-                    DO I=1,6
-                        WRITE(77,REC=IG_TVW+I) RID4(I)
-                    ENDDO
-                    IG_TVW=IG_TVW+6
-                    DO I=1,6
-                        WRITE(77,REC=IG_TVW+I) AID4(I)
-                    ENDDO
-                    IG_TVW=IG_TVW+6
-                ENDIF
-                IF(NBYTE.EQ.8) THEN
-                    DO I=1,4
-                        WRITE(77,REC=IG_TVW+I) RDES8(I)
-                    ENDDO
-                    IG_TVW=IG_TVW+4
-                    DO I=1,3
-                        WRITE(77,REC=IG_TVW+I) RID8(I)
-                    ENDDO
-                    IG_TVW=IG_TVW+3
-                    DO I=1,3
-                        WRITE(77,REC=IG_TVW+I) AID8(I)
-                    ENDDO
-                    IG_TVW=IG_TVW+3
-                ENDIF
-                WRITE(77,REC=IG_TVW+1) NDSETS_TVW
-                WRITE(77,REC=IG_TVW+2) NP
-                WRITE(77,REC=IG_TVW+3) DT*NSPOOL_TVW
-                WRITE(77,REC=IG_TVW+4) NSPOOL_TVW
-                WRITE(77,REC=IG_TVW+5) 2
-                IG_TVW=IG_TVW+5
-                CLOSE(77)
+               call writeBinaryOutputFileHeader(77, 2, IG_TVW,
+     &            NDSETS_TVW, NP, NSPOOL_TVW)
+               CLOSE(77)
             ENDIF    
          ENDIF    
             
@@ -1100,40 +877,8 @@ Casey 090302: Added the output of radiation stress gradients.
          IF(ABS(NOUTGW).EQ.2) THEN
             OPEN(164,FILE=TRIM(LOCALDIR)//'/'//'rads.64',
      &              ACCESS='DIRECT',RECL=NByte)
-            IF(NBYTE.EQ.4) THEN
-               DO I=1,8
-                  WRITE(164,REC=IGRadS+I) RDES4(I)
-                  ENDDO
-               IGRadS=IGRadS+8
-               DO I=1,6
-                  WRITE(164,REC=IGRadS+I) RID4(I)
-                  ENDDO
-               IGRadS=IGRadS+6
-               DO I=1,6
-                  WRITE(164,REC=IGRadS+I) AID4(I)
-               ENDDO
-               IGRadS=IGRadS+6
-            ENDIF
-            IF(NBYTE.EQ.8) THEN
-               DO I=1,4
-                  WRITE(164,REC=IGRadS+I) RDES8(I)
-               ENDDO
-               IGRadS=IGRadS+4
-               DO I=1,3
-                  WRITE(164,REC=IGRadS+I) RID8(I)
-               ENDDO
-               IGRadS=IGRadS+3
-               DO I=1,3
-                  WRITE(164,REC=IGRadS+I) AID8(I)
-               ENDDO
-               IGRadS=IGRadS+3
-            ENDIF
-            WRITE(164,REC=IGRadS+1) NDSETSW
-            WRITE(164,REC=IGRadS+2) NP
-            WRITE(164,REC=IGRadS+3) DT*NSPOOLGW
-            WRITE(164,REC=IGRadS+4) NSPOOLGW
-            WRITE(164,REC=IGRadS+5) 2
-            IGRadS=IGRadS+5
+            call writeBinaryOutputFileHeader(164, 2, IGRadS,
+     &            NDSETSW, NP, NSPOOLGW)
             CLOSE(164)
          ENDIF
       endif
@@ -1160,40 +905,8 @@ C...
       IF(ABS(NOUTGC).EQ.2) THEN
          OPEN(83,FILE=TRIM(INPUTDIR)//'/'//'fort.83',
      &           ACCESS='DIRECT',RECL=NBYTE)
-         IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-               WRITE(83,REC=IGCP+I) RDES4(I)
-               ENDDO
-            IGCP=IGCP+8
-            DO I=1,6
-               WRITE(83,REC=IGCP+I) RID4(I)
-               ENDDO
-            IGCP=IGCP+6
-            DO I=1,6
-               WRITE(83,REC=IGCP+I) AID4(I)
-               ENDDO
-            IGCP=IGCP+6
-            ENDIF
-         IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-               WRITE(83,REC=IGCP+I) RDES8(I)
-               ENDDO
-            IGCP=IGCP+4
-            DO I=1,3
-               WRITE(83,REC=IGCP+I) RID8(I)
-               ENDDO
-            IGCP=IGCP+3
-            DO I=1,3
-               WRITE(83,REC=IGCP+I) AID8(I)
-               ENDDO
-            IGCP=IGCP+3
-            ENDIF
-         WRITE(83,REC=IGCP+1) NDSETSC
-         WRITE(83,REC=IGCP+2) NP
-         WRITE(83,REC=IGCP+3) DT*NSPOOLGC
-         WRITE(83,REC=IGCP+4) NSPOOLGC
-         WRITE(83,REC=IGCP+5) 1
-         IGCP=IGCP+5
+         call writeBinaryOutputFileHeader(83, 1, IGCP,
+     &            NDSETSC, NP, NSPOOLGC)
          CLOSE(83)
       ENDIF
 C
@@ -1228,43 +941,10 @@ C...
       IF ((NDDT.NE.0).AND.(ABS(NOUTGE).EQ.2)) THEN
          OPEN(76,FILE=TRIM(LOCALDIR)//'/'//'fort.76',
      &           ACCESS='DIRECT',RECL=NBYTE)
-         IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-               WRITE(76,REC=IGBP+I) RDES4(I)
-               ENDDO
-            IGBP=IGBP+8
-            DO I=1,6
-               WRITE(76,REC=IGBP+I) RID4(I)
-               ENDDO
-            IGBP=IGBP+6
-            DO I=1,6
-               WRITE(76,REC=IGBP+I) AID4(I)
-               ENDDO
-            IGBP=IGBP+6
-         ENDIF
-         IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-               WRITE(76,REC=IGBP+I) RDES8(I)
-               ENDDO
-            IGBP=IGBP+4
-            DO I=1,3
-               WRITE(76,REC=IGBP+I) RID8(I)
-               ENDDO
-            IGBP=IGBP+3
-            DO I=1,3
-               WRITE(76,REC=IGBP+I) AID8(I)
-               ENDDO
-            IGBP=IGBP+3
-         ENDIF
-         WRITE(76,REC=IGBP+1) NDSETSE
-         WRITE(76,REC=IGBP+2) NP
-         WRITE(76,REC=IGBP+3) DT*NSPOOLGE
-         WRITE(76,REC=IGBP+4) NSPOOLGE
-         WRITE(76,REC=IGBP+5) 1
-         IGBP=IGBP+5
+         call writeBinaryOutputFileHeader(76, 1, IGBP,
+     &            NDSETSE, NP, NSPOOLGE)
          CLOSE(76)
       ENDIF
-
 
 C...
 C......INITIALIZE 3D SOLUTION
@@ -1717,9 +1397,11 @@ C----------------------------------------------------------------------
       subroutine setColdWetDryStateAndWaterSurfaceElevation()
       use sizes, only : inputdir
       use mesh, only : dp, np, mju, ne, nm
+      use boundaries, only : nvel, lbcodei, nbv
       use global, only : eta2, nnodecode, noff, logMessage, allMessage,
      &   scratchMessage, INFO, h0, setMessageSource, unsetMessageSource,
-     &   DEBUG, WARNING, INFO, scratchMessage, eta1, nolifa, River_above_MSL
+     &   DEBUG, WARNING, INFO, scratchMessage, eta1, nolifa, River_above_MSL,
+     &   EtaDisc
       use nodalattributes, only : loadStartDry, STARTDRY, GeoidOffset, 
      &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE !jgf47.06
       implicit none
@@ -1775,6 +1457,12 @@ C----------------------------------------------------------------------
          ! as it is only used at Cold Start
          deallocate (River_et_WSE)
       endif
+      !...Set the radiation bc information 
+      DO I=1,NVEL
+         IF(LBCODEI(I).EQ.52) THEN
+            EtaDisc(NBV(I))=Eta2(NBV(I))
+         ENDIF
+      END DO
       !
       ! Set all nodes to wet by default.
       nnodecode(:)=1

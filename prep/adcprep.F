@@ -806,9 +806,12 @@ C  kmd48.33bc add information for 3D baroclinic simulations
          END IF
       END IF
 
+C     WP 02.23.2018 Added to process the fort.24 SAL term file
+      IF (PREP_ALL) THEN 
+         IF (NTIP.eq.2) CALL PREP24()
+      END IF
 C
 C-- Save domain-decomposition information for post-processor
-C
 CC -- Start Addition by CF  8/2007
       IF (PREP_ALL) THEN
          print *, "Writing domain-decomposition file for post-processor"
