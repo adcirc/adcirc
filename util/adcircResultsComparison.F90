@@ -559,10 +559,16 @@
                 INTEGER                 :: ncid
                 INTEGER                 :: dimid_time
                 INTEGER                 :: dimid_node
+                INTEGER                 :: ierr
                 LOGICAL                 :: vector
+
                 CALL CHECK(NF90_OPEN(TRIM(filename),NF90_NOWRITE,ncid))
                 CALL CHECK(NF90_INQ_DIMID(ncid,"time",dimid_time))
-                CALL CHECK(NF90_INQ_DIMID(ncid,"node",dimid_node))
+
+                ierr = NF90_INQ_DIMID(ncid,"node",dimid_node)
+                IF(ierr.NE.NF90_NOERR)THEN
+                    ierr = NF90_INQ_DIMID(ncid,"station",dimid_node)
+                ENDIF
                 CALL CHECK(NF90_INQUIRE_DIMENSION(ncid,dimid_time,LEN=numsnaps))
                 CALL CHECK(NF90_INQUIRE_DIMENSION(ncid,dimid_node,LEN=numnodes))
                 CALL FindMyNetCDFVariable(ncid,vector)
