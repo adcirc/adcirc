@@ -929,7 +929,12 @@ C
                j = 1 + (i-istart)*descript % num_items_per_record
    
                !If values are eqaul to the default value, skip this node
-               if(resultBuf(j).eq.descript % alternate_value) cycle
+               if(descript%num_items_per_record.eq.2)then
+                   if(resultBuf(j  ).eq.descript % alternate_value .and.
+     &                resultBuf(j+1).eq.descript % alternate_value) cycle
+               else
+                   if(resultBuf(j).eq.descript % alternate_value) cycle
+               endif
    
                write(descript % lun, 1000) labels_g(i), (resultBuf(k), k = j, j +
      &           descript % num_items_per_record - 1)
