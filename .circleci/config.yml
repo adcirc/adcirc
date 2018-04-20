@@ -95,7 +95,7 @@ jobs:
             command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DNETCDFHOME=/usr -DXDMFHOME=/usr -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS="-mtune=native -march=native" ; make
       - run:
           name: Retrieve Test Suite
-          command: git clone --depth=1 https://github.com/adcirc/adcirc-cg-testsuite.git /root/adcirc-cg-testsuite
+          command: git clone --depth=1 -b master https://github.com/adcirc/adcirc-cg-testsuite.git /root/adcirc-cg-testsuite
       - run: 
           name: Run test suite
           command: cd /root/adcirc-cg-testsuite ; ./RunTests.sh /root/project/build
