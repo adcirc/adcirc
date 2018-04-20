@@ -866,9 +866,11 @@
                 ENDIF
 
                 !...Perform comparison
-                CALL compareData(nnodefile1,nodalData1(:,1),nodalData2(:,1),tolerance,wetdry,ndiff(I,1),avgdiff(I,1),maxdiff(I,1),nerror(I,1))
+                CALL compareData(nnodefile1,nodalData1(:,1),nodalData2(:,1),tolerance,wetdry,&
+                                 ndiff(I,1),avgdiff(I,1),maxdiff(I,1),nerror(I,1))
                 IF(nvalues1.EQ.2)THEN
-                    CALL compareData(nnodefile1,nodalData1(:,2),nodalData2(:,2),tolerance,wetdry,ndiff(I,2),avgdiff(I,2),maxdiff(I,2),nerror(I,2))
+                    CALL compareData(nnodefile1,nodalData1(:,2),nodalData2(:,2),tolerance,wetdry,&
+                                ndiff(I,2),avgdiff(I,2),maxdiff(I,2),nerror(I,2))
                 ENDIF
 
                 !...Check to stop code on any error
