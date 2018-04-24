@@ -1488,6 +1488,7 @@ C
       ALLOCATE(dat%myTime%timenc(dat%myTime%timenc_len))
       ALLOCATE(defaultValue(dat%myMesh%num_nodes))
       defaultValue(:) = descript1%initial_value
+      dat%myTime%initialized = .true.
 C
 C     Initialize netCDF output file, creating a new one if necessary.
       CALL createNetCDFOutputFile(dat%ncid, dat%myFile, dat%myTime,
@@ -8155,6 +8156,10 @@ C     nodes and elements
          CALL check_err(iret)
          return ! EARLY RETURN
       endif
+      IF (dat%myTime%initialized.eqv..false.) THEN
+         ALLOCATE(dat%myTime%timenc(dat%myTime%timenc_len))
+         dat%myTime%initialized = .true.
+      ENDIF
       !
       ! jgf52.08.20: Read time and reject min/max data that correspond
       ! to a future time. This can happen when an analyst hotstarts a run,
