@@ -375,6 +375,7 @@ C
       real(8), intent(in) :: timeloc
       character(len=20) :: extString ! string version of integer file extension
       logical :: fileFound = .false. ! .true. if the file exists
+      logical :: fileFoundNC = .false.
       logical :: nerr
       integer :: i
 C
@@ -1455,15 +1456,22 @@ C     maxrs.63
       ! current adcirc time.
       if (ihot.ne.0) then
          do i=1, numOutputDescript2D
-            fileFound = .false.
+            fileFoundnc = .false.
+            fileFound   = .false.
             if ( ptr(i) % descript2D % readMaxMin.eqv..true.) then
                call logMessage(INFO,'Attempting to read ' //
      &            trim(ptr(i) % descript2D % file_name) //
      &            ' to continue the min/max record.')
-               call readAndMapToSubdomainMaxMin(ptr(i) % descript2D,
-     &            timeloc, fileFound)
+               
+               !...Check for the netcdf file up front to prevent warning
+               !   about a missing ascii file
+               inquire(file=trim(ptr(i)%descript2D%file_name)//".nc",exist=fileFoundnc)
+               if(fileFoundnc.eqv..false.)then
+                   call readAndMapToSubdomainMaxMin(ptr(i) % descript2D,
+     &                  timeloc, fileFound)
+               endif
 #ifdef ADCNETCDF
-               if ((fileFound.eqv..false.).and.
+               if ((fileFoundnc.eqv..true.).and.
      &              (netcdf_avail.eqv..true.) ) then
                   ! check to see if the file exists before trying to
                   ! initialize it

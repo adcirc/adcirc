@@ -8143,7 +8143,7 @@ C     nodes and elements
       ! jgf52.08.21: If the netcdf min/max file contains no time records,
       ! it was just created by adcprep, and there are no data to load.
       if ( dat%myFile%record_counter.eq.0 ) then 
-         call logMessage(INFO,'The file '//trim(dat%myFile%filename)//
+         call allMessage(INFO,'The file '//trim(dat%myFile%filename)//
      &      'contains no data, '//
      &      'so the min/max record will be started anew.')
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -8155,6 +8155,11 @@ C     nodes and elements
          iret = nf90_close(dat%ncid)
          CALL check_err(iret)
          return ! EARLY RETURN
+      else
+         write(scratchMessage,3333) trim(descript % file_name)
+3333    format('Values from ',(a),
+     &       ' will be reflected from the solution prior to this hotstart.')
+         call allMessage(INFO,scratchMessage)
       endif
       IF (dat%myTime%initialized.eqv..false.) THEN
          ALLOCATE(dat%myTime%timenc(dat%myTime%timenc_len))
