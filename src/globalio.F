@@ -1862,6 +1862,10 @@ C
          return  ! early return
       else
          fileFound = .true.
+         write(scratchMessage,3334) trim(descript % file_name)
+3334    format('Values from ',(a),
+     &       ' will be reflected from the solution prior to this hotstart.')
+         call allMessage(INFO,scratchMessage)
       endif
       !
       ! serial 

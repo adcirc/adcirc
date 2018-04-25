@@ -229,10 +229,9 @@
             END SUBROUTINE initializeNetcdf
 
 
-            SUBROUTINE findMyNetCDFVariable(NCID,Vector)
+            SUBROUTINE findMyNetCDFVariable(NCID)
                 IMPLICIT NONE
-                INTEGER,INTENT(IN) :: NCID
-                LOGICAL,INTENT(IN),OPTIONAL :: Vector
+                INTEGER,INTENT(IN)  :: NCID
                 INTEGER :: I
                 INTEGER :: J
                 INTEGER :: NVAR
@@ -247,16 +246,7 @@
                     DO J = 1,SIZE(NETCDF_TYPES)
                         IF(TRIM(ADJUSTL(NC_NAME)).EQ.&
                                 TRIM(ADJUSTL(NETCDF_TYPES(J))))THEN
-                            IF(.NOT.PRESENT(VECTOR))RETURN
-                            IF(.NOT.Vector)RETURN
-                            IF(Vector)THEN
-                                SELECT CASE(J)
-                                    CASE(13,14,18,19,21,22,33,34)
-                                        RETURN
-                                    CASE DEFAULT
-                                        CONTINUE
-                                END SELECT
-                            ENDIF
+                            RETURN
                         ENDIF
                     ENDDO
                     IF(I.EQ.NVAR)THEN
@@ -516,16 +506,18 @@
                 RETURN
             END FUNCTION checkFormat_sparseFormatAscii
 
-            SUBROUTINE getMetadata(filename,noutfile,numsnaps,numnodes,numvalues)
+            SUBROUTINE getMetadata(filename,noutfile,numsnaps,numnodes,ncol)
                 IMPLICIT NONE
                 INTEGER,INTENT(IN)      :: noutfile
                 CHARACTER(*),INTENT(IN) :: filename
-                INTEGER,INTENT(OUT)     :: numsnaps,numnodes,numvalues
+                INTEGER,INTENT(OUT)     :: numsnaps,numnodes,ncol
+
+                ncol = 0
 
                 IF(noutfile.EQ.1.OR.noutfile.EQ.4)THEN
-                    CALL getMetadataAscii(filename,numsnaps,numnodes,numvalues)
+                    CALL getMetadataAscii(filename,numsnaps,numnodes,ncol)
                 ELSEIF(noutfile.EQ.3)THEN
-                    CALL getMetadataNetCDF(filename,numsnaps,numnodes,numvalues)
+                    CALL getMetadataNetCDF(filename,numsnaps,numnodes)
                 ELSE
                     numsnaps = -9999
                     numnodes = -9999
@@ -552,15 +544,14 @@
                 RETURN
             END SUBROUTINE getMetadataAscii
 
-            SUBROUTINE getMetadataNetCDF(filename,numsnaps,numnodes,numvalues)
+            SUBROUTINE getMetadataNetCDF(filename,numsnaps,numnodes)
                 IMPLICIT NONE
                 CHARACTER(*),INTENT(IN) :: filename
-                INTEGER,INTENT(OUT)     :: numsnaps,numnodes,numvalues
+                INTEGER,INTENT(OUT)     :: numsnaps,numnodes
                 INTEGER                 :: ncid
                 INTEGER                 :: dimid_time
                 INTEGER                 :: dimid_node
                 INTEGER                 :: ierr
-                LOGICAL                 :: vector
 
                 CALL CHECK(NF90_OPEN(TRIM(filename),NF90_NOWRITE,ncid))
                 CALL CHECK(NF90_INQ_DIMID(ncid,"time",dimid_time))
@@ -571,12 +562,7 @@
                 ENDIF
                 CALL CHECK(NF90_INQUIRE_DIMENSION(ncid,dimid_time,LEN=numsnaps))
                 CALL CHECK(NF90_INQUIRE_DIMENSION(ncid,dimid_node,LEN=numnodes))
-                CALL FindMyNetCDFVariable(ncid,vector)
-                IF(vector)THEN
-                    numvalues = 2
-                ELSE
-                    numvalues = 1 
-                ENDIF
+                CALL FindMyNetCDFVariable(ncid)
                 CALL CHECK(NF90_CLOSE(ncid))
 
                 RETURN
@@ -611,7 +597,7 @@
                 IF(filetype.EQ.1.OR.filetype.EQ.4)THEN
                     CLOSE(fileunit)
                 ELSEIF(filetype.EQ.3)THEN
-                    CALL CHECK(NF90_CLOSE(fileunit))
+                    !CALL CHECK(NF90_CLOSE(fileunit))
                 ELSE
                     STOP 1
                 ENDIF
@@ -775,7 +761,8 @@
             INTEGER             :: noutfile1,noutfile2
             INTEGER             :: nsnapfile1,nsnapfile2
             INTEGER             :: nnodefile1,nnodefile2
-            INTEGER             :: nvalues1,nvalues2,ncol
+            INTEGER             :: nvalues1,nvalues2
+            INTEGER             :: ncol1,ncol2
             INTEGER             :: io_unit1,io_unit2
             INTEGER             :: varid11,varid12,varid21,varid22
             INTEGER             :: I,J
@@ -794,8 +781,8 @@
             noutfile2 = determineFileType(file2)
 
             !...Pull the number of time snaps and nodes from each file
-            CALL getMetadata(file1,noutfile1,nsnapfile1,nnodefile1,nvalues1)
-            CALL getMetadata(file2,noutfile2,nsnapfile2,nnodefile2,nvalues2)
+            CALL getMetadata(file1,noutfile1,nsnapfile1,nnodefile1,ncol1)
+            CALL getMetadata(file2,noutfile2,nsnapfile2,nnodefile2,ncol2)
 
             !...Check for the number of snaps in each file
             IF(nsnapfile1.NE.nsnapfile2)THEN
@@ -808,33 +795,32 @@
                 WRITE(*,'(A)') "ERROR: There are different numbers of nodes in the files."
                 STOP 1
             ENDIF
+            
+            io_unit1 = 0
+            io_unit2 = 0
+            CALL openFile(file1,noutfile1,io_unit1)
+            CALL openFile(file2,noutfile2,io_unit2)
+            
+            !...For netCDF files, locate the netCDF variable ID's for later use
+            IF(noutfile1.EQ.3)THEN
+                CALL getNetCDFVarId(io_unit1,varid11,varid12,ncol1)
+            ENDIF
+            IF(noutfile2.EQ.3)THEN
+                CALL getNetCDFVarId(io_unit2,varid21,varid22,ncol2)
+            ENDIF
 
             !...Check if comparing like files
-            IF(nvalues1.NE.nvalues2)THEN
+            IF(ncol1.NE.ncol2)THEN
                 WRITE(*,'(A)') "ERROR: The number of values in the files is different."
                 STOP 1
             ENDIF
 
-            io_unit1 = 0
-            io_unit2 = 0
-
-            CALL openFile(file1,noutfile1,io_unit1)
-            CALL openFile(file2,noutfile2,io_unit2)
-
-            ALLOCATE(nodaldata1(1:nnodefile1,1:nvalues1))
-            ALLOCATE(nodaldata2(1:nnodefile2,1:nvalues2))
-            ALLOCATE(ndiff(1:nsnapfile1,1:nvalues1))
-            ALLOCATE(nerror(1:nsnapfile1,1:nvalues1))
-            ALLOCATE(avgdiff(1:nsnapfile1,1:nvalues1))
-            ALLOCATE(maxdiff(1:nsnapfile1,1:nvalues1))
-
-            !...For netCDF files, locate the netCDF variable ID's for later use
-            IF(noutfile1.EQ.3)THEN
-                CALL getNetCDFVarId(io_unit1,varid11,varid12,ncol)
-            ENDIF
-            IF(noutfile2.EQ.3)THEN
-                CALL getNetCDFVarId(io_unit2,varid21,varid22,ncol)
-            ENDIF
+            ALLOCATE(nodaldata1(1:nnodefile1,1:ncol1))
+            ALLOCATE(nodaldata2(1:nnodefile2,1:ncol2))
+            ALLOCATE(ndiff(1:nsnapfile1,1:ncol1))
+            ALLOCATE(nerror(1:nsnapfile1,1:ncol1))
+            ALLOCATE(avgdiff(1:nsnapfile1,1:ncol1))
+            ALLOCATE(maxdiff(1:nsnapfile1,1:ncol1))
 
             !...Time comparison loop
             DO I = 1,nsnapfile1
@@ -845,22 +831,22 @@
 
                 !...Read data from file 1
                 IF(noutfile1.EQ.1)THEN
-                    CALL readNextSnapFullAscii(io_unit1,nnodefile1,nvalues1,nodaldata1,time1)
+                    CALL readNextSnapFullAscii(io_unit1,nnodefile1,ncol1,nodaldata1,time1)
                 ELSEIF(noutfile1.EQ.4)THEN
-                    CALL readNextSnapSparseAscii(io_unit1,nnodefile1,nvalues1,nodaldata1,time1)
+                    CALL readNextSnapSparseAscii(io_unit1,nnodefile1,ncol1,nodaldata1,time1)
                 ELSEIF(noutfile1.EQ.3)THEN
-                    CALL readNextSnapNetCDF(io_unit1,I,nnodefile1,nvalues1,varid11,varid12,nodaldata1)
+                    CALL readNextSnapNetCDF(io_unit1,I,nnodefile1,ncol1,varid11,varid12,nodaldata1)
                 ELSE
                     STOP 1
                 ENDIF
                 
                 !...Read data from file 2
                 IF(noutfile2.EQ.1)THEN
-                    CALL readNextSnapFullAscii(io_unit2,nnodefile2,nvalues2,nodaldata2,time2)
+                    CALL readNextSnapFullAscii(io_unit2,nnodefile2,ncol2,nodaldata2,time2)
                 ELSEIF(noutfile2.EQ.4)THEN
-                    CALL readNextSnapSparseAscii(io_unit2,nnodefile2,nvalues2,nodaldata2,time2)
+                    CALL readNextSnapSparseAscii(io_unit2,nnodefile2,ncol2,nodaldata2,time2)
                 ELSEIF(noutfile1.EQ.3)THEN
-                    CALL readNextSnapNetCDF(io_unit2,I,nnodefile2,nvalues2,varid21,varid22,nodaldata2)
+                    CALL readNextSnapNetCDF(io_unit2,I,nnodefile2,ncol2,varid21,varid22,nodaldata2)
                 ELSE
                     STOP 1
                 ENDIF
@@ -868,17 +854,17 @@
                 !...Perform comparison
                 CALL compareData(nnodefile1,nodalData1(:,1),nodalData2(:,1),tolerance,wetdry,&
                                  ndiff(I,1),avgdiff(I,1),maxdiff(I,1),nerror(I,1))
-                IF(nvalues1.EQ.2)THEN
+                IF(ncol1.EQ.2)THEN
                     CALL compareData(nnodefile1,nodalData1(:,2),nodalData2(:,2),tolerance,wetdry,&
                                 ndiff(I,2),avgdiff(I,2),maxdiff(I,2),nerror(I,2))
                 ENDIF
 
                 !...Check to stop code on any error
                 IF(.NOT.cont)THEN
-                    IF(nvalues1.EQ.2)THEN
+                    IF(ncol1.EQ.2)THEN
                         IF(nerror(I,1).GT.0.OR.nerror(I,2).GT.0)THEN
                             WRITE(*,'(A,I0,A)') "Code stopped at snap ",I,"."
-                            CALL displaySummary(I,nvalues1,tolerance,wetdry,ndiff,avgdiff,maxdiff,nerror)
+                            CALL displaySummary(I,ncol1,tolerance,wetdry,ndiff,avgdiff,maxdiff,nerror)
                             CALL closeFile(io_unit1,noutfile1)
                             CALL closeFile(io_unit2,noutfile2)
                             WRITE(*,'(A)') "Results do not match within specified tolerance."
@@ -887,7 +873,7 @@
                     ELSE
                         IF(nerror(I,1).GT.0)THEN
                             WRITE(*,'(A,I0,A)') "Code stopped at snap ",I,"."
-                            CALL displaySummary(I,nvalues1,tolerance,wetdry,ndiff,avgdiff,maxdiff,nerror)
+                            CALL displaySummary(I,ncol1,tolerance,wetdry,ndiff,avgdiff,maxdiff,nerror)
                             CALL closeFile(io_unit1,noutfile1)
                             CALL closeFile(io_unit2,noutfile2)
                             WRITE(*,'(A)') "Results do not match within specified tolerance."
@@ -901,13 +887,13 @@
             CALL closeFile(io_unit1,noutfile1)
             CALL closeFile(io_unit2,noutfile2)
 
-            CALL displaySummary(nsnapfile1,nvalues1,tolerance,wetdry,ndiff,avgdiff,maxdiff,nerror)
+            CALL displaySummary(nsnapfile1,ncol1,tolerance,wetdry,ndiff,avgdiff,maxdiff,nerror)
             DO I = 1,nsnapfile1
                 IF(nerror(I,1).GT.0)THEN
                     WRITE(*,'(A)') "Results do not match within specified tolerance."
                     STOP 1
                 ENDIF
-                IF(nvalues1.EQ.2)THEN
+                IF(ncol1.EQ.2)THEN
                     IF(nerror(I,2).GT.0)THEN
                         WRITE(*,'(A)') "Results do not match within specified tolerance."
                         STOP 1
