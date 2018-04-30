@@ -1134,7 +1134,7 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
           if(enforceBN.eq.1) call enforceEcb()  ! NCSU Subdomain
       else                                      ! NCSU Subdomain
 
-          IF ((NBFR.EQ.0).AND.(NOPE.GT.0)) THEN
+         IF ((NBFR.EQ.0).AND.(NOPE.GT.0)) THEN
 ! 03.27.2018 WJP allowing for periodic plus non-periodic Elevation BCS
 !         IF (NPEBC) THEN
             IF(TimeLoc.GT.ETIME2) THEN
