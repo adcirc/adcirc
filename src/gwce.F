@@ -237,7 +237,7 @@ C
       USE MESH, ONLY : NE, NP, NM, X, Y, DP, NNeigh, NeiTab, TotalArea,
      &                  Areas, NEIMAX, SFAC, nneighele, neitabele
       USE BOUNDARIES, ONLY : NETA, NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, 
-     &   NFLUXRBC, NOPE, NVEL, NBD, NBV, LBCODEI, BndLen2O3
+     &   NFLUXRBC, NOPE, NVEL, NBD, NBV, LBCODEI, BndLen2O3, NPEBC
       USE ITPACKV
       USE NodalAttributes, ONLY :
      &     LoadGeoidOffset, GeoidOffset, EVM,
@@ -1134,7 +1134,9 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
           if(enforceBN.eq.1) call enforceEcb()  ! NCSU Subdomain
       else                                      ! NCSU Subdomain
 
-         IF((NBFR.EQ.0).AND.(NOPE.GT.0)) THEN
+          IF ((NBFR.EQ.0).AND.(NOPE.GT.0)) THEN
+! 03.27.2018 WJP allowing for periodic plus non-periodic Elevation BCS
+!         IF (NPEBC) THEN
             IF(TimeLoc.GT.ETIME2) THEN
                ETIME1=ETIME2
                ETIME2=ETIME1+ETIMINC
@@ -1146,7 +1148,7 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
             ETRATIO=(TimeLoc-ETIME1)/ETIMINC
             DO I=1,NETA
                NBDI=NBD(I)
-               Eta2(NBDI)=RampElev
+               Eta2(NBDI)=Eta2(NBDI) + RampElev
      &           *(ESBIN1(I)+ETRATIO*(ESBIN2(I)-ESBIN1(I)))
             END DO
          ENDIF
@@ -1175,7 +1177,7 @@ C     on and off according to analyst preference.
       if (invertedBarometerOnElevationBoundary.eqv..true.) then
          DO I=1,NETA
             ETA2(NBD(I))=ETA2(NBD(I))
-     &          + RampMete*(101300.d0/(RHOWAT0*G)) - PR2(NBD(I))
+     &          + RampMete*(101300.d0/(RHOWAT0*G) - PR2(NBD(I)))
          END DO
       endif
 
@@ -2207,7 +2209,7 @@ C...  For periodic elevation boundary conditions
 
 C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
 
-      IF((NBFR.EQ.0).AND.(NOPE.GT.0)) THEN
+	   IF((NBFR.EQ.0).AND.(NOPE.GT.0)) THEN
          IF(TimeLoc.GT.ETIME2) THEN
             ETIME1=ETIME2
             ETIME2=ETIME1+ETIMINC
