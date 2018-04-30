@@ -753,6 +753,10 @@ c        C3DDSS = .TRUE.
       CASE DEFAULT
          IF ((IM.GE.111111).AND.(IM.LE.534322)) THEN
             C2DDI = .TRUE.
+            IF (IM-int(IM*0.1)*10 > 2) THEN
+                ! WJP allowing for e.g. 511113 
+                CBaroclinic = .TRUE.
+            ENDIF
          ELSEIF ((IM.GE.611111).AND.(IM.LE.634322)) THEN
            C3D  = .TRUE.
            C3DVS  = .TRUE.
@@ -785,6 +789,14 @@ C               and Temperature forcing
       CASE(-4)! 2DDI Diagnostic Baroclinic ADCIRC run with Salinity
 C               and Temperature forcing'
          ! do nothing
+      CASE(-5)! 2DDI Diagnostic Baroclinic ADCIRC run reading from fort.11
+C               with pre-computed BPG
+      CASE(5) ! 2DDI prognostic Baroclinic ADCIRC run reading from fort.11.nc
+C               with pre-computed BPG on structured grid
+      CASE(-6)! 2DDI Diagnostic Baroclinic ADCIRC run reading from fort.11
+C               with pre-computed momnetum dispersion and BPG
+      CASE(6) ! 2DDI prognostic Baroclinic ADCIRC run reading from fort.11.nc
+C             ! with pre-computed momentum dispersion and BPG on structured grid
       CASE DEFAULT
          print *, "IDEN=",IDEN," not supported"
          stop
@@ -866,7 +878,7 @@ C.... tcm v48.4641 additions for ice
      &     .OR.(ABS(NWS).EQ.20)  !jie NWS=20
      &     .OR.(ABS(NWS).EQ.16)  !tcm v51.06.02 added for nws=16 GFDL Met
      &     .OR.(NWS.EQ.10)       !yf added for nws=10 GFS Met
-     &     .OR.(ABS(NWS).EQ.12).OR. (NWS.EQ.19)) THEN
+     &     .OR.(ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.14).OR.(NWS.EQ.19)) THEN
         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
         IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4)))
      &         READ(15,*) WTIMINC,RSTIMINC

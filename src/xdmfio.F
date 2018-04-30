@@ -87,8 +87,10 @@ C-----------------------------------------------------------------------
       ! Writes an array to an existing XDMF file. 
       !----------------------------------------------------------------
       subroutine writeOutArrayXDMF(timeLoc, it, descript)
-      use global
-      use mesh
+      use global, only: OutputDataDescript_t, scratchmessage, error, nt,
+     &            allMessage
+      use mesh, only: NM, NE, agrid, dp, ics, np, projection, x, y,
+     &            terminate
       use sizes,only: mnproc
       implicit none
 #ifdef ADCXDMF
@@ -483,7 +485,7 @@ C-----------------------------------------------------------------------
       do i=1, nbou 
          write(fluxBoundaryType,'(i0)') ibtype_orig(i) 
          select case(ibtype_orig(i))
-         case(0,1,2,10,11,12,20,21,22,30,52)
+         case(0,1,2,10,11,12,20,21,22,30,32,52)
             simpleFluxBoundaries(sfCount)%informationID = 
      &         XdmfAddInformation(descript % xdmfMD % xdmfFortranObj, 
      &         'IBTYPE'//CHAR(0), 

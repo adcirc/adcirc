@@ -34,7 +34,8 @@ C---------------------------------------------------------------------
      &   bcts14_ary, agrid, aperiodic_bc_ts, bndbcriver, exist_bc_ts, 
      &   exist_flux, iden, mnbou, mnvel, nbou, nboumsg, nelg, neta, 
      &   netamsg, nfover, nnodg, nope, nopemsg, nvel, nvelmsg, nweir, 
-     &   river_above_msl, numLBCodeValues, nfluxf, node_dict, labels
+     &   river_above_msl, numLBCodeValues, nfluxf, node_dict, labels,
+     &   NPERBC, IPERCONN, IPERPTR 
       use hashtable
       use memory_usage
       implicit none
@@ -162,6 +163,9 @@ C  and construct LBCODE array for read15 routine
 C
       J=0
       NWEIR = 0
+C.... DW
+      NPERBC = 0 ;      
+C.... DW
       ! jgf51.52.23: The LBCODE array is dimensioned by MNVEL which is 
       ! larger than the number of values in the LBCODE array. So we
       ! need to initialize to a value that will hopefully cause obvious 
@@ -238,6 +242,27 @@ C
               END IF
            ENDDO
            BndBCRiver=.FALSE.
+         case(94)
+C..... DW, periodic bc
+           DO I=1,NVELL(K)
+              IF ( .NOT. ALLOCATED(IPERCONN) ) THEN
+                 ALLOCATE( IPERCONN(MNVEL,2) ) ;
+                 IPERCONN = 0 ;
+
+                 ALLOCATE( IPERPTR(NBOU+1) ) ;
+                 IPERPTR = 1 ; 
+              END IF
+              NPERBC = NPERBC+1 ;
+C
+C--   Construct List of periodic nodes: primary and their slaves
+C
+              READ(14,*) IPERCONN(NPERBC,1), IPERCONN(NPERBC,2) ;
+              NBVV(K,I) = IPERCONN(NPERBC,1) ;
+C
+              IPERPTR(K+1:NBOU+1) = (IPERPTR(K)) + NVELL(K) ;      
+           ENDDO
+C..... DW
+
          case default
             print *, "IBTYPE not set correctly for segment ",K
             stop
@@ -709,12 +734,12 @@ C
         PRINT *, "DSS Model type not presently supported"
         STOP
       ENDIF
-C     jgf46.28 Read IDEN if necessary
-      IF (CBaroclinic) READ(15,*) IDEN
+C     jgf46.28 Read IDENMSG if necessary
+      IF (CBaroclinic) READ(15,80) IDENMSG
 C
       READ(15,80) IBFMSG
       READ(IBFMSG,*) NOLIBF
-      IF((NOLIBF.LT.0).OR.(NOLIBF.GT.2)) THEN
+      IF((NOLIBF.LT.0).OR.(NOLIBF.GT.3)) THEN
          print *, "Value for NOLIBF not allowed"
          stop
       ENDIF
@@ -836,7 +861,8 @@ C     jgf: Added NWS30.
      &       (NWS.NE.3).AND.(ABS(NWS).NE.4) .AND.(ABS(NWS).NE.5).AND.
      &       (ABS(NWS).NE.45).AND.(ABS(NWS).NE.6).AND.
      &       (ABS(NWS).NE.8).AND.(ABS(NWS).NE.15).AND. !jgf50.38.05 Added NWS=15
-     &       (ABS(NWS).NE.12) .AND. (ABS(NWS).NE.19).AND.
+     &       (ABS(NWS).NE.12).AND.
+     &       (ABS(NWS).NE.19).AND.(ABS(NWS).NE.14).AND.
      &       (ABS(NWS).NE.20) .AND.(abs(NWS).ne.30).and.(NWS.NE.10).and.
      &       (ABS(NWS).NE.29).and. (abs(NWS).ne.16))  THEN
            print *,"ERROR: Value for NWS not supported by parallel code"
@@ -963,7 +989,7 @@ C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
      
       IF((ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.5)
      &     .OR.(ABS(NWS).EQ.45).OR.(ABS(NWS).EQ.8).OR.
-     &         (ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12)
+     &   (ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.14)
      &     .OR.(NWS.EQ.10) !yf: Added NWS=10 for GFS Met
      &     .OR.(ABS(NWS).EQ.15) !jgf50.38.05: Added NWS=15 for HWind.
      &     .OR.(ABS(NWS).EQ.20) !jie: Added NWS=20 for GAHM
@@ -1735,9 +1761,9 @@ C     hot start file. This is used to test hot starting capabilities.
       READ(HSTARMSG,*) NHSTAR,NHSINC
 C     jgf49.41: Added new options for hotstart file format indicator: 2, 3,
 C     367, 368. Not sure we need to check the validity of NHSTAR values in
-C     adcprep though.
-      SELECT CASE(NHSTAR)  !tcm v51.26 mods for binary time-stamped hotstart file generation NHSTAR=-1
-      CASE(0,-1,1,2,3,5,67,68,367,368,567,568)
+C     adcprep though.      !wjp allows for single output hotstart (negative value that is not -1) 
+      SELECT CASE(abs(NHSTAR))  !tcm v51.26 mods for binary time-stamped hotstart file generation NHSTAR=-1
+      CASE(0,1,2,3,5,67,68,367,368,567,568)
          ! do nothing, these are allowable values
       CASE DEFAULT
         print *, "WARNING: NHSTAR=",NHSTAR," is not valid."

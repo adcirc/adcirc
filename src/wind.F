@@ -11,12 +11,27 @@ C
      &    DEBUG, ECHO, INFO, WARNING, ERROR, scratchMessage,
      &    Rearth, pi, deg2rad, rad2deg, e, PRBCKGRND, g, rhoWat0,
      &    sphericalDistance, rhoAir, one2ten, windReduction,
-     &    openFileForRead
+     &    openFileForRead, RNDAY
+#ifdef DATETIME
+     &   ,basedatetime
+#endif
 #ifdef CMPI
       use messenger, only : msg_fini
 #endif
+      use datetime_module, only: datetime
+      integer, parameter :: allowable_nws(19)
+     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,14,15,16,19,20,29,30/)
+#ifdef DATETIME
+      use datetime_module, only: datetime, timedelta
+#endif
+#ifdef GRIB2API
+C     WJP added NWS=14 if GRIB2 library available
+      integer, parameter :: allowable_nws(19)
+     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,14,15,16,19,20,29,30/)
+#else
       integer, parameter :: allowable_nws(18)
      &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,19,20,29,30/)
+#endif
       logical nwsOK     ! true if NWS value in fort.15 is allowed
 
       real(sz), allocatable :: wvnx1(:) ! wind velocity in x-dir at each node at prev ts
@@ -36,6 +51,8 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
       REAL(8)  :: EyeLat(3) = 0.D0
       REAL(8)  :: EyeLon(3) = 0.D0
       LOGICAL  :: FoundEye
+      REAL(SZ),allocatable :: PWeight(:,:)
+      Logical,allocatable :: foundSector(:)
 C
       ! related to NWS=11
       integer :: IDSETFLG 
@@ -53,6 +70,7 @@ C
       REAL(8), PARAMETER :: HFPI=PI/2.D0
       REAL(8), PARAMETER :: mperdeg  = Rearth * pi / 180.0d0
       real(sz) :: prbckgrnd_mH2O
+      real(sz) :: airwaterdensityrat
 
       INTEGER StormNumber !jgf46.28 For Holland Wind model wind multiplier
       REAL(8) WindRefTime !jgf46.29 seconds since beginning of year, this
@@ -97,6 +115,7 @@ C
       CHARACTER(len=10) :: DragLawString = 'Powell'
       INTEGER :: dragLawType = DRAGLAW_POWELL
 #endif
+      logical :: garatt, swell, powell
       !
       ! used for vis/diagnostics on nws19 and nws20
       LOGICAL :: writeFullCircleRmaxes = .false.
@@ -229,6 +248,16 @@ C
       END INTERFACE
       PROCEDURE(p_computeWindDrag),POINTER :: f_computeWindDrag => null()
 
+#ifdef GRIB2API
+#ifdef DATETIME
+      integer :: ub, ubc ! size of weightsp and indp interpolant weights
+      real(sz),allocatable :: weightsp(:,:,:) 
+      integer,allocatable  :: indp(:,:,:) 
+      character(len=200) :: Pfile, Wfile, Pinv, Winv, Cinv, Cfile
+      character(len=200) :: Pfile1, Wfile1, Pinv1, Winv1
+      type(datetime) :: CurDT
+#endif
+#endif
 C------------------------end of data declarations-----------------------
       CONTAINS
 C
@@ -257,6 +286,9 @@ C     use the values of np and g.
 C     ----------------------------------------------------------------
       subroutine initWindModule()
       use mesh, only : np
+      use global, only: NWS
+      implicit none
+      
       call setMessageSource("initWindModule")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -266,6 +298,7 @@ C     ----------------------------------------------------------------
       allocate ( prn1(np) )
       allocate ( prn2(np) )
   
+      airwaterdensityrat = rhoAir/RhoWat0
 C.... tcm v49.16 20100617 added
 C.... convert background pressure from millibars to meters of water
       PRBCKGRND_MH2O = 100.0D0*PRBCKGRND/(RHOWAT0*G)
@@ -275,6 +308,41 @@ C.... convert background pressure from millibars to meters of water
       CALL checkWindDragType()
       CALL mapWindDragFunctionPointer()
 
+      if (NWS.eq.0) return
+
+      ! Make logicals here if NWS is not 0 
+      garatt = .false.; swell = .false.; powell = .false.
+      SELECT CASE(TRIM(DragLawString))
+         CASE("Garratt","GARRATT","garratt","default")
+             garatt = .true.
+             write(16,*) 'Garratt drag law used' 
+#ifdef CSWAN
+         CASE("Swell","SWELL","swell")
+             swell   = .true.
+             write(16,*) 'Swell drag law used' 
+#endif
+         CASE("Powell","POWELL","powell")
+             if (NWS.eq.12.or.NWS.eq.29.or.NWS.eq.30) then
+                powell  = .true.
+                allocate(Pweight(3,np)); Pweight = 0d0
+                allocate(foundSector(np)); foundSector = .false.
+                write(16,*) 'Powell drag law used'
+             else
+                garatt = .true.
+                write(16,*) 'Garratt drag law used because NWS ', 
+     &                      'incompatible with Powell'
+             endif
+         CASE DEFAULT
+            WRITE(16,*) 'ERROR: Wind drag law not recognized:'
+            WRITE(16,'(A10)') DragLawString
+            WRITE(16,*) 'Execution will now be terminated.'
+#ifdef CMPI
+         call msg_fini()
+#endif
+         STOP
+C
+      END SELECT
+
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -283,6 +351,30 @@ C.... convert background pressure from millibars to meters of water
 !     ----------------------------------------------------------------
       END SUBROUTINE initWindModule
 !     ----------------------------------------------------------------
+
+C----------------------------------------------------------------------
+C     Sets an integer for the drag law to be used later in checks
+C     This is simpler than checking a string
+C----------------------------------------------------------------------
+      SUBROUTINE checkWindDragType()
+C----------------------------------------------------------------------
+          USE GLOBAL,ONLY: toLowercase
+          IMPLICIT NONE
+          CHARACTER(LEN(dragLawString)) :: dragLawLowercase
+          draglawlowercase = toLowercase(dragLawString)
+          SELECT CASE(TRIM(draglawlowercase))
+          CASE("default","garratt")
+            draglawtype = DRAGLAW_GARRATT
+          CASE("powell")
+            draglawtype = DRAGLAW_POWELL
+          CASE("swell")
+            draglawtype = DRAGLAW_SWELL
+          CASE DEFAULT
+            draglawtype = DRAGLAW_GARRATT
+          END SELECT
+C----------------------------------------------------------------------
+      END SUBROUTINE checkWindDragType
+C----------------------------------------------------------------------
 
 !     ----------------------------------------------------------------
 !>    @brief Maps the function pointer used in the calculation of 
@@ -586,8 +678,10 @@ C          coefficient values.
 C
 C     ----------------------------------------------------------------
       REAL(SZ) FUNCTION WindIceDrag(WindDrag,PercentIce)
-      REAL(SZ) PercentIce
-      REAL(SZ) pic,WindDrag,IceDrag
+      implicit none
+      REAL(SZ) :: PercentIce
+      REAL(SZ) :: pic, WindDrag, IceDrag, Cform
+      REAL(SZ) :: Cskin = 1.5d-3, Cform_max = 3.67d-3, beta = 0.6d0
 C
       SELECT CASE(TRIM(DragLawString))
 C
@@ -602,7 +696,7 @@ C........just use the non-ice drag values
             WindIceDrag = max(IceDrag,WindDrag)
          endif
 
-      CASE("IceCube","default")
+      CASE("IceCube")
 C........This formula is a cubic function such that
 C....... When pic = 0 the drag coefficient is equal to
 C....... the minimum value for Garratt (.000075), when pic = 50
@@ -618,6 +712,20 @@ C....... and Ray's Ice for low ice values and low winds
             IceDrag = (0.075d0 + 0.75d0*pic - 0.9d0*pic*pic
      &              + 0.2d0*pic*pic*pic)*0.01d0
             WindIceDrag = max(IceDrag,WindDrag)
+         ENDIF
+      
+      CASE("Lupkes","default","Powell")
+C........This formula is a function that explicitly
+C....... combines air-sea drag (Garratt) with sea-ice skin drag and
+C....... sea-ice form drag components with area fraction weights 
+C....... see: Lüpkes, et al. (2012), JGR: doi:10.1029/2012JD017630. &
+C....... Joyce et al. (2019), Ocean Modelling, minor rev.
+         IF (PercentIce.lt.0.d0) then
+            WindIceDrag = WindDrag
+         ELSE
+            pic = PercentIce*0.01d0
+            Cform = Cform_max*(1d0-pic)**beta
+            WindIceDrag = WindDrag*(1d0 - pic) + (Cskin + Cform)*pic 
          ENDIF
 
       CASE DEFAULT
@@ -747,8 +855,9 @@ C----------------------------------------------------------------------
       subroutine getMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
      &   wvnxout, wvnyout, timeloc)
       use owiwind,only : nws12get, findStormCenter    ! sb added 09/xx/2006     
-      use global, only : ciceout, h0, g, eta2, ncice, rampmete, 
-     &   sponge, res_bc_flag
+      use global, only : ciceout, h0, g, eta2, ncice, rampmete,
+     &   sponge, res_bc_flag, IDEN, SigTS, cice1, cice2, cice_time1,
+     &   cice_time2, cice_timinc
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np
@@ -768,6 +877,7 @@ C----------------------------------------------------------------------
       real(sz) :: wDragCo
       real(sz) :: windMag
       real(sz) :: wtratio ! used to time interpolated between met datasets
+      real(sz) :: cicenow, icedragco, cice_ratio, icemag, icex, icey 
       integer :: nhg ! node number temp
       real(sz) :: bf ! blend factor for multiple sets of wind data 
       integer :: i ! node loop counter
@@ -1182,23 +1292,53 @@ C  tcm v49.16 20100617
          END DO
       ENDIF
 
-C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
-        IF(ABS(NWS).EQ.12) THEN
-          IF(TimeLoc.GT.WTIME2) THEN
-            WTIME1=WTIME2
-            WTIME2=WTIME2+WTIMINC
+C...  sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
+C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
+      IF (ABS(NWS).EQ.12.or.ABS(NWS).eq.14) THEN
+         IF (TimeLoc.GT.WTIME2) THEN
+            WTIME1 = WTIME2
+            WTIME2 = WTIME2 + WTIMINC
             DO I=1,NP
-              WVNX1(I)=WVNX2(I)
-              WVNY1(I)=WVNY2(I)
-              PRN1(I)=PRN2(I)
+              WVNX1(I) = WVNX2(I)
+              WVNY1(I) = WVNY2(I)
+              PRN1(I)  = PRN2(I)
             END DO
-            CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND)
-            if(draglawtype.EQ.draglaw_powell)then
-              call findStormCenter(eyeLat, eyeLon, foundEye)
+            IF (ABS(NWS).eq.12) then
+               CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND)
+#ifdef DATETIME
+#ifdef GRIB2API
+            ELSE
+               IF (NCICE.eq.14) then
+                  CICE1 = CICE2
+                  CALL NWS14GET(WVNX2,WVNY2,PRN2,CICE2)
+               ELSE
+                  CALL NWS14GET(WVNX2,WVNY2,PRN2) 
+               ENDIF
+               IF (NWS.eq.-14) then
+                  ! Now get OWI file data (will overwrite where data
+                  ! exists)
+                  CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+               ENDIF
+#endif
+#endif
+            ENDIF
+            if (draglawtype.EQ.draglaw_powell) then
+               call findStormCenter(eyeLat, eyeLon, foundEye)
             endif
-          ENDIF
-          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-          DO I=1,NP
+         ENDIF
+         WTRATIO = (TimeLoc-WTIME1)/WTIMINC
+         ! For GOFS ice drift coupling 
+         if (NCICE.eq.13) then
+            if (TimeLoc.gt.CIce_Time2) then  
+               CIce_TIME1 = CIce_TIME2
+               CIce_TIME2 = CIce_TIME2 + CIce_TIMINC
+               !CICE1 = CICE2; ICET1 = ICET2;
+               !ICEX1 = ICEX2; ICEY1 = ICEY2; 
+               !call GetIceInfo(CICE2,ICEX2,ICEY2,ICET2) 
+            endif
+            Cice_Ratio = (TimeLoc-Cice_TIME1)/CIce_TIMINC
+         endif
+         DO I = 1,NP
             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
@@ -1211,22 +1351,91 @@ C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
               !Casey 110518: Enable Mark Powell's sector-based wind drag.
               WDragCo = WindDrag(WindMag,I)
             ENDIF
+            IF (LoadCanopyCoef) then
+               CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            ENDIF
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF (NCICE.eq.14) then
+               Cicenow = 100d0*(CICE1(I) + 
+     &                          WTRATIO*(CICE2(I)-CICE1(I)))
+               WDragCo = WindIceDrag(WDragCo,Cicenow)
+            elseif(NCICE.NE.0.and.NCICE.ne.13) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            endif
+            ! WJP: added varying sea surface density
+            if (abs(IDEN).ge.5) then
+               if (SigTS(I) < -1d2) then
+                  airwaterdensityrat = rhoAir/RhoWat0
+               else
+                  airwaterdensityrat = rhoAir/(SigTS(I) + RhoWat0)
+               endif
+            endif
+            ! If total drag includes ice drift (NCICE.eq.13)
+            if (NCICE.eq.13) then
+               ! Get ice area fraction
+               Cicenow = CICE1(I) + Cice_Ratio*(CICE2(I)-CICE1(I))
+               ! Adjust Wdragcoefficient by non-ice area fraction
+               WdragCo = WdragCo*(1d0 - Cicenow)
+               ! Get ice drag coefficient and multiply by ice area fraction
+               IceDragCo = 0.0025d0*Cicenow
+               ! This is ice drift (differential from ocean surface vel)
+               !IceX = IceX1(I) + CIce_Ratio*(IceX2(I)-IceX1(I))
+               !IceY = IceY1(I) + CIce_Ratio*(IceX2(I)-IceY1(I))
+               IceMag = sqrt(IceX*IceX + IceY*IceY) 
+               WSX2(I) = RampMete*(airwaterdensityrat*WDRAGCO*WINDX*WINDMAG +
+     &                             IceDragCo*IceX*IceMag)
+               WSY2(I) = RampMete*(airwaterdensityrat*WDRAGCO*WINDY*WINDMAG +
+     &                             IceDragCo*IceY*IceMag)
+            else
+               WSX2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+               WSY2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
+            endif
+            PRDIFF  = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                          -PRBCKGRND_MH2O)
+#ifdef NOIVB
+            PR2(I)  = PRBCKGRND_MH2O
+#else
+            PR2(I)  = PRBCKGRND_MH2O + PRDIFF
+#endif
+            WVNXOUT(I) = RampMete*WINDX
+            WVNYOUT(I) = RampMete*WINDY
+
+          END DO
+        ENDIF
+C    WJP: Added for NSW = 14 (GRIB2 e.g. CFS)
+        IF (ABS(NWS).EQ.14) THEN
+           IF (TimeLoc + 1d-4 < 86400d0*RNDAY) then
+              CALL NWS14GET(TimeLoc,WTRATIO,WVNX1,WVNY1,PRN1,
+     &                      WVNX2,WVNY2,PRN2)
+           ELSE
+              WTRATIO = 1.0d0
+           ENDIF
+           DO I=1,NP
+              WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+              WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+              WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+              WDragCo = WindDrag(WindMag, I)
+              IF (LoadDirEffRLen) THEN
+                 CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &             WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+              WindMag = SQRT(WindX*WindX+WindY*WindY)
+              WDragCo = WindDrag(WindMag,I)
+            ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            WSX2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                          -PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
             WVNXOUT(I)=RampMete*WINDX
             WVNYOUT(I)=RampMete*WINDY
-
-          END DO
+          ENDDO
         ENDIF
+      ENDIF
 
 C     RJW ffpl Merged:
 !     rjw added nws = 19: asymmetric hurricane winds
@@ -1458,11 +1667,13 @@ C----------------------------------------------------------------------
       subroutine coldstartMeteorologicalForcing(nws)
       use sizes, only : gblinputdir, inputdir
       use global, only : ciceout, h0, g, eta2, ncice, rampmete, mb2pa, 
-     &   sponge, res_bc_flag, statim, wsx1, wsy1, wsx2, wsy2, pr2
+     &   sponge, res_bc_flag, statim, wsx1, wsy1, wsx2, wsy2, pr2,
+     &   cice1, cice2
       use owiwind,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006          
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np
+      use datetime_module, only: datetime
       implicit none
       integer, intent(in) :: nws
       real(sz) :: windx ! wind vel (m/s) in x-dir
@@ -1650,6 +1861,40 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          CALL NWS11GET()        !NOW INTERPOLATE 1st WIND FIELD
       ENDIF
       !
+      ! 
+#ifdef GRIB2API
+#ifdef DATETIME
+      IF (ABS(NWS).eq.14) THEN
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+         ! Set datetime and make/check the grib header
+         CALL NWS14INIT()
+         ! Initialising winds (pressure is already initialized)
+         ! Get the first wind snap
+         if (NCICE.eq.14) then
+            CALL NWS14GET(WVNX1,WVNY1,PRN1,CICE1)
+         else
+            CALL NWS14GET(WVNX1,WVNY1,PRN1)
+         endif
+         ! Get owi winds (should only overwrite where they exist) 
+         if (NWS.eq.-14) then
+           CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+           CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+         endif
+         ! Get the second wind snap
+         if (NCICE.eq.14) then
+            CALL NWS14GET(WVNX2,WVNY2,PRN2,CICE2)
+         else
+            CALL NWS14GET(WVNX2,WVNY2,PRN2)
+         endif
+         ! Get owi winds (should only overwrite where they exist) 
+         if (NWS.eq.-14) then
+           CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+         endif
+      ENDIF
+#endif
+#endif
+      !
       ! jgf50.38.05: Added NWS=15,-15 for reading HWind data
       IF (ABS(NWS).EQ.15) THEN
          CALL NWS15INIT(STATIM*86400.0)
@@ -1691,7 +1936,8 @@ C----------------------------------------------------------------------
      &   wvnxout, wvnyout, timeloc, rampmete2)
       use sizes, only : gblinputdir, inputdir
       use global, only : ciceout, h0, g, eta2, ncice, rampmete,
-     &   sponge, res_bc_flag, statim, dtdp, dtdphs, iths
+     &   sponge, res_bc_flag, statim, dtdp, dtdphs, iths,
+     &   IDEN, SigTS, cice1, cice2
       use owiwind,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
@@ -1712,6 +1958,7 @@ C----------------------------------------------------------------------
       real(sz) :: wDragCo
       real(sz) :: windMag
       real(sz) :: wtratio ! used to time interpolated between met datasets
+      real(sz) :: cicenow 
       integer :: nhg ! node number temp
       real(sz) :: bf ! blend factor for multiple sets of wind data 
       real(sz) :: vortexPRDIFF
@@ -2456,6 +2703,89 @@ C     from NAM data
             WVNYOUT(I)=bf*RampMete2*WindY+(1.0d0-bf)*WVNYOUT(I)
          ENDDO
       ENDIF
+      !
+#ifdef GRIB2API
+#ifdef DATETIME
+!     WJP Feb27-2019: Added for NWS=14 for grib2
+      IF (ABS(NWS).eq.14) THEN
+         ! TimeLoc should be rounded down to nearest WTIMINC
+         WTIME1 = WTIMINC*floor(TimeLoc/WTIMINC)
+         WTIME2 = TimeLoc + WTIMINC
+         ! Set datetime and make/check the grib header
+         CALL NWS14INIT()
+         ! Initialising winds (pressure is already initialized)
+         ! Get the first wind snap
+         if (NCICE.eq.14) then
+            CALL NWS14GET(WVNX1,WVNY1,PRN1,CICE1)
+         else
+            CALL NWS14GET(WVNX1,WVNY1,PRN1)
+         endif
+         ! Get owi winds (should only overwrite where they exist) 
+         if (NWS.eq.-14) then
+           CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+           CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+         endif
+         ! Get the second wind snap
+         if (NCICE.eq.14) then
+            CALL NWS14GET(WVNX2,WVNY2,PRN2,CICE2)
+         else
+            CALL NWS14GET(WVNX2,WVNY2,PRN2)
+         endif
+         ! Get owi winds (should only overwrite where they exist) 
+         if (NWS.eq.-14) then
+           CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+         endif
+         WTRATIO = (TimeLoc-WTIME1)/WTIMINC
+         DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            !Casey 110518: Enable Mark Powell's sector-based wind drag.
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               !Casey 110518: Enable Mark Powell's sector-based wind drag.
+               WDragCo = WindDrag(WindMag,I)
+            ENDIF
+            IF (LoadCanopyCoef) then
+               CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            ENDIF
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               if (NCICE.eq.14) then
+                  Cicenow = 100d0*(CICE1(I) + 
+     &                             WTRATIO*(CICE2(I)-CICE1(I)))
+                  WDragCo = WindIceDrag(WDragCo,Cicenow)
+               else
+                  WDragCo = WindIceDrag(WDragCo,ciceout(i))
+               endif
+            ENDIF
+            ! WJP: added varying sea surface density
+            if (abs(IDEN).ge.5) then
+               if (SigTS(I) < -1d2) then
+                  airwaterdensityrat = rhoAir/RhoWat0
+               else
+                  airwaterdensityrat = rhoAir/(SigTS(I) + RhoWat0)
+               endif
+            endif
+            WSX2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
+            PRDIFF  = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                          -PRBCKGRND_MH2O)
+#ifdef NOIVB
+            PR2(I)  = PRBCKGRND_MH2O
+#else
+            PR2(I)  = PRBCKGRND_MH2O + PRDIFF
+#endif
+            WVNXOUT(I) = RampMete*WINDX
+            WVNYOUT(I) = RampMete*WINDY
+
+          END DO
+      ENDIF
+#endif
+#endif
       !
       ! jgf50.38.05: Added NWS=15 for reading HWind data
        IF(ABS(NWS).EQ.15) THEN
@@ -7987,32 +8317,290 @@ C
 C----------------------------------------------------------------------
       END SUBROUTINE windTerminate
 C----------------------------------------------------------------------
+#ifdef DATETIME
+#ifdef GRIB2API
+C----------------------------------------------------------------------
+C.... WJP Adding in subroutines for GRB2 reading below (NWS = 14)
+      SUBROUTINE NWS14INIT()
+      use wgrib2api
+      use global, only: ncice
+      use sizes, only: myProc
+#ifdef CMPI
+      use messenger, only: msg_barrier
+#endif
+      implicit none
+      
+      integer :: iret
+      logical :: Fexists
+      
+      ! Initialise the datetime
+      CurDT = basedatetime + timedelta(minutes=floor(WTIME1/60d0))
 
-C----------------------------------------------------------------------
-C     Sets an integer for the drag law to be used later in checks
-C     This is simpler than checking a string
-C----------------------------------------------------------------------
-      SUBROUTINE checkWindDragType()
-C----------------------------------------------------------------------
-          USE GLOBAL,ONLY: toLowercase
-          IMPLICIT NONE
-          CHARACTER(LEN(dragLawString)) :: dragLawLowercase
-          draglawlowercase = toLowercase(dragLawString)
-          SELECT CASE(TRIM(draglawlowercase))
-          CASE("default","garratt")
-            draglawtype = DRAGLAW_GARRATT
-          CASE("powell")
-            draglawtype = DRAGLAW_POWELL
-          CASE("swell")
-            draglawtype = DRAGLAW_SWELL
-          CASE DEFAULT
-            draglawtype = DRAGLAW_GARRATT
-          END SELECT
-C----------------------------------------------------------------------
-      END SUBROUTINE checkWindDragType
-C----------------------------------------------------------------------
+      ! Set the file names
+      Pfile = 'fort.221.grb2'
+      Pinv  = 'fort.221.inv'
+      Wfile = 'fort.222.grb2'
+      Winv  = 'fort.222.inv'
+      Cfile = 'fort.225.grb2'
+      Cinv  = 'fort.225.inv'
 
+      Pfile1 = 'fort.223.grb2'
+      Pinv1  = 'fort.223.inv'
+      Wfile1 = 'fort.224.grb2'
+      Winv1  = 'fort.224.inv'
+
+#ifdef CMPI
+      ! only get header with one processor
+      if (myProc.eq.0) then
+#endif
+!     make header files
+      inquire(file=Pinv,exist=Fexists)
+      if (.not.Fexists) then
+         iret = grb2_mk_inv(Pfile, Pinv)
+         if (iret.ne.0) then
+            call allMessage(ERROR,
+     &                     'Fatal error in reading fort.221.grb2.')
+            call windTerminate()
+         endif
+         call allMessage(ECHO,'successfully read fort.221.grb2 '
+     &                      //'and wrote out fort.221.inv file')
+      endif
+      inquire(file=Winv,exist=Fexists)
+      if (.not.Fexists) then
+         iret = grb2_mk_inv(Wfile, Winv)
+         if (iret.ne.0) then
+            call allMessage(ERROR,
+     &                      'Fatal error in reading fort.222.grb2.')
+            call windTerminate()
+         endif
+         call allMessage(ECHO,'successfully read fort.222.grb2 '
+     &                      //'and wrote out fort.222.inv file')
+      endif
+      if (NCICE.eq.14) then
+         inquire(file=Cinv,exist=Fexists)
+         if (.not.Fexists) then
+            iret = grb2_mk_inv(Cfile, Cinv)
+            if (iret.ne.0) then
+               call allMessage(ERROR,
+     &                      'Fatal error in reading fort.225.grb2.')
+               call windTerminate()
+            endif
+            call allMessage(ECHO,'successfully read fort.225.grb2 '
+     &                      //'and wrote out fort.225.inv file')
+         endif
+      endif
+      inquire(file=Pfile1,exist=Fexists)
+      if (Fexists) then
+         inquire(file=Pinv1,exist=Fexists)
+         if (.not.Fexists) then
+         iret = grb2_mk_inv(Pfile1, Pinv1)
+         if (iret.ne.0) then
+            call allMessage(ERROR,
+     &                     'Fatal error in reading fort.223.grb2.')
+            call windTerminate()
+         endif
+         call allMessage(ECHO,'successfully read fort.223.grb2 '
+     &                      //'and wrote out fort.223.inv file')
+         endif
+         inquire(file=Winv1,exist=Fexists)
+         if (.not.Fexists) then
+         iret = grb2_mk_inv(Wfile1, Winv1)
+         if (iret.ne.0) then
+            call allMessage(ERROR,
+     &                      'Fatal error in reading fort.224.grb2.')
+            call windTerminate()
+         endif
+         call allMessage(ECHO,'successfully read fort.224.grb2 '
+     &                      //'and wrote out fort.224.inv file')
+         endif
+      endif
+#ifdef CMPI
+      endif
+      ! Wait til procesor one has written header
+      call MSG_BARRIER()
+#endif
+      call allMessage(ECHO,'Finished init of NWS14')
 C----------------------------------------------------------------------
+      END SUBROUTINE NWS14INIT
+C----------------------------------------------------------------------
+      SUBROUTINE NWS14GET(WVNX2,WVNY2,PRN2,CICE2)
+      use mesh, only: NP, SLAM, SFEA, bl_interp
+      implicit none
+
+      real(sz),intent(out) :: PRN2(NP), WVNX2(NP), WVNY2(NP)
+      real(sz),intent(out),optional :: CICE2(NP)
+      integer :: i, ii, nxp, nyp, indt(4)
+      real,allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice, lat, lon
+      real(sz),allocatable,dimension(:) :: latP, lonP
+      real(sz) :: xx, yy, wt(4) 
+      character(len=200) :: var, str_date
+
+      ! Getting the date in str_date format
+      str_date = ':start_FT='//CurDT%strftime("%Y%m%d%H")//'0000:'
+      call logMessage(ECHO,'CurDT strng: '//trim(str_date))
+     
+      ! Get the Pressure
+      var = 'S'  ! searching for PRMSL or MSLET or PRES:SURFACE
+      !':PRMSL:mean sea level:'
+      call READNWS14(Pfile,Pinv,var,str_date,Pmsl)
+
+      ! Get the U-winds 
+      var = ':UGRD:10 m above ground:' 
+      call READNWS14(Wfile,Winv,var,str_date,U10)
+      
+      ! Get the V-winds 
+      var = ':VGRD:10 m above ground:' 
+      call READNWS14(Wfile,Winv,var,str_date,V10)
+
+      ! Get the ice concentration if required 
+      if (present(CICE2)) then
+         var = ':ICEC:surface:' 
+         call READNWS14(Cfile,Cinv,var,str_date,Cice)
+      endif      
+
+      ! Compute the interpolating factors and indices on the first step
+      if (.not.allocated(indp)) then
+         if (size(Pmsl) == size(U10)) then
+            ub = 1;
+         else
+            ub = 2;
+         endif
+         if (present(CICE2)) then
+            if (size(Cice) == size(Pmsl)) then
+               ubc = 1;
+            elseif (size(Cice) == size(U10)) then
+               ubc = 2;
+            else
+               call allMessage(ERROR,'CIce has different size to either'
+     &                        //' Psml or U10')
+               call windTerminate()
+            endif
+         endif
+         allocate(indp(ub,4,np),weightsp(ub,4,np))
+         ! Make the interpolant weights
+         do ii = 1,ub
+            if (ii.eq.1) then
+               var = 'S' !PRMSL:mean sea level:'
+               call READNWS14(Pfile,Pinv,var,str_date,lon,lat)
+            else
+               var = ':UGRD:10 m above ground:' 
+               call READNWS14(Wfile,Winv,var,str_date,lon,lat)
+            endif
+            nxp = ubound(lon,1); nyp = ubound(lat,2)
+            allocate(lonP(nxp),latP(nyp))
+            lonP = lon(:,1); latP = lat(1,:)
+            deallocate(lat,lon)
+            do i = 1,np
+               xx = rad2deg*slam(i)
+               ! Convert our numbers if grids are 0 to 360
+               if (maxval(lonP).gt.180d0.and.xx < 0d0) xx = xx + 360d0
+               yy = rad2deg*sfea(i)
+               call bl_interp(nxp,lonP,nyp,latP,xx,yy,indt,wt)
+               indp(ii,:,i) = indt
+               weightsp(ii,:,i) = wt 
+            enddo
+            deallocate(lonP,latP) 
+         enddo
+      endif
+
+      ! Doing the interpolation from their grid to ours
+      do i = 1,np
+         PRN2(i) = Pmsl(indp(1,1,i),indp(1,2,i))*weightsp(1,1,i) + 
+     &             Pmsl(indp(1,3,i),indp(1,2,i))*weightsp(1,2,i) +
+     &             Pmsl(indp(1,1,i),indp(1,4,i))*weightsp(1,3,i) +
+     &             Pmsl(indp(1,3,i),indp(1,4,i))*weightsp(1,4,i)
+         WVNX2(i) = U10(indp(ub,1,i),indp(ub,2,i))*weightsp(ub,1,i) + 
+     &              U10(indp(ub,3,i),indp(ub,2,i))*weightsp(ub,2,i) +
+     &              U10(indp(ub,1,i),indp(ub,4,i))*weightsp(ub,3,i) +
+     &              U10(indp(ub,3,i),indp(ub,4,i))*weightsp(ub,4,i)
+         WVNY2(i) = V10(indp(ub,1,i),indp(ub,2,i))*weightsp(ub,1,i) + 
+     &              V10(indp(ub,3,i),indp(ub,2,i))*weightsp(ub,2,i) +
+     &              V10(indp(ub,1,i),indp(ub,4,i))*weightsp(ub,3,i) +
+     &              V10(indp(ub,3,i),indp(ub,4,i))*weightsp(ub,4,i)
+      enddo 
+      PRN2 = PRN2/ (rhowat0 *g)
+      deallocate(Pmsl,U10,V10)
+      
+      ! If ice concentration is present
+      if (present(CICE2)) then
+         do i = 1,np
+            CICE2(i) = Cice(indp(ubc,1,i),indp(ubc,2,i))*weightsp(ubc,1,i) + 
+     &                 Cice(indp(ubc,3,i),indp(ubc,2,i))*weightsp(ubc,2,i) +
+     &                 Cice(indp(ubc,1,i),indp(ubc,4,i))*weightsp(ubc,3,i) +
+     &                 Cice(indp(ubc,3,i),indp(ubc,4,i))*weightsp(ubc,4,i)
+         enddo
+         deallocate(Cice)
+      endif
+
+      ! Add WTIMINC on CurDT for next WTIME  
+      CurDT = CurDT + timedelta(minutes=nint(WTIMINC/60d0))
+      !
+C----------------------------------------------------------------------
+      END SUBROUTINE NWS14GET
+C----------------------------------------------------------------------
+      SUBROUTINE READNWS14(fileN,invN,var,str_date,data2,data22)
+      use wgrib2api
+      implicit none
+      integer :: iret, iter
+      character(len=200),intent(in) :: var, fileN, invN, str_date
+      real,allocatable,intent(out) :: data2(:,:) 
+      real,allocatable,intent(out),optional :: data22(:,:) 
+
+      if (present(data22)) then
+         iret = grb2_inq(fileN,invN,var,str_date,lat=data22,lon=data2)
+         if (iret.gt.0) then
+            call logMessage(ECHO,'Successfully read LatLon '//var)
+         else
+            call ArnoldSchwarzenegger(iret,var,fileN)
+         endif
+         return
+      endif
+
+      iret = -1; iter = 0
+      do while (iret.le.0.and.iter < 10) 
+         if (iter > 0) then
+            call logMessage(WARNING,'Trying to read again '//var)
+            call sleep(5)
+         endif
+         iret = grb2_inq(fileN,invN,var,str_date,data2=data2)
+         if (iret.gt.1.and.iter.eq.0) then
+            ! May have two entries bcause of forecast/DA overlap
+            call logMessage(DEBUG,'> 1 messages, trying to read '//var)
+            iret = grb2_inq(fileN,invN,var,':anl:',str_date,data2=data2)
+         endif
+         iter = iter + 1
+      enddo
+      if (iret.eq.1.or.iret.eq.2) then
+         call logMessage(DEBUG,'Successfully read '//var)
+      else
+         call ArnoldSchwarzenegger(iret,var,fileN)
+      endif
+C----------------------------------------------------------------------
+      END SUBROUTINE READNWS14
+C----------------------------------------------------------------------
+      SUBROUTINE ArnoldSchwarzenegger(iret,var,fileN)
+      IMPLICIT NONE
+      integer,intent(in) :: iret
+      character(len=200),intent(in) :: var, fileN
+C
+      if (iret.eq.0) then
+         call allMessage(ERROR,'Cound not find message when reading '
+     &                         //trim(var)//' in '//trim(fileN)//'.')
+      elseif (iret.lt.0) then 
+         call allMessage(ERROR,'Fatal error when reading '
+     &                         //trim(var)//' in '//trim(fileN)//'.')
+      elseif (iret.gt.1) then
+         call allMessage(ERROR,'Found multiple messages when reading '
+     &                         //trim(var)//' in '//trim(fileN)//'.')
+      endif
+      write(16,*) 'iret =',iret
+      call windTerminate()
+C----------------------------------------------------------------------
+      END SUBROUTINE ArnoldSchwarzenegger
+C-----------------------------------------------------------------------
+C.....END WJP (NWS = 14) ..............................................
+#endif
+#endif
 C----------------------------------------------------------------------
       END MODULE
 C----------------------------------------------------------------------

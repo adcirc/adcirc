@@ -47,7 +47,8 @@ C.....for internal barrier boundaries with flowthrough pipes
       INTEGER,ALLOCATABLE ::    BCRNVELL(:)
       INTEGER  totalbcrivernodes  ! nodes for the river boundary conditions for baroclinic
       INTEGER  bcriversec  ! river boundary information
-      LOGICAL :: BndBCRiver          = .FALSE.
+      LOGICAL :: BndBCRiver     = .FALSE.
+      LOGICAL :: NPEBC          = .FALSE. !WJP 03.272018 Non-periodic elevation boundary condition flag
 
       INTEGER  NBOU
       INTEGER  NETA
@@ -320,7 +321,7 @@ C     ---------
             !write(6,'("i=",i0)') i !jgfdebug
          endif
          select case(ibtype_orig(i))
-         case(0,1,2,10,11,12,20,21,22,30,52)
+         case(0,1,2,10,11,12,20,21,22,30,32,52,94)
             allocate(simpleFluxBoundaries(sfCount)%nodes(nvell(i)))
             allocate(simpleFluxBoundaries(sfCount)%xdmf_nodes(nvell(i)))
             sfCount = sfCount + 1

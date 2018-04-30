@@ -21,6 +21,10 @@ C
         INTEGER,ALLOCATABLE :: VWGTS(:), EWGTS(:)
         INTEGER,ALLOCATABLE :: CO_NODES(:,:),NEDGES(:), NEDLOC(:)
         INTEGER,ALLOCATABLE :: NUMDUALS(:)
+C...... DW
+        INTEGER:: ID1, ID2       
+        INTEGER, ALLOCATABLE:: NNEG_TMP(:,:), PERBC_IDN_MAP(:)
+C...... DW
         
         integer :: contiguous ! number of nodes on a boundary within a particular subdomain
         integer :: subdomainNumber ! subdomain that a boundary node falls within
@@ -79,6 +83,26 @@ C
            ENDIF
         ENDDO
         ENDDO
+C...... 
+C...... DW, periodic boundary conditions
+C...... - a workaround approach based on a temporary connectivity table 
+C......   that uses the periodic node indices
+        IF ( NPERBC > 0 ) THEN
+           ALLOCATE( NNEG_TMP(3,MNE) ) ; 
+           NNEG_TMP = NNEG ; ! dummy arr holding the original element table
+
+           ALLOCATE( PERBC_IDN_MAP(MNP) ) ; ! create mapping between the original node indice and perbc node indices
+           DO J = 1,MNP
+              PERBC_IDN_MAP(J) = J;  
+           ENDDO
+           PERBC_IDN_MAP(IPERCONN(1:NPERBC,2)) = IPERCONN(1:NPERBC,1) ; 
+ 
+           DO I = 1, MNE
+               NNEG(:,I) = PERBC_IDN_MAP( NNEG(:,I) ) ;  ! swicth to the element with the node-per bc indices ! 
+           END DO
+        END IF
+C...... DW
+C......
 
 C-------------------------------------------------------------
 C  COMPUTES THE TOTAL NUMBER OF EDGES        -->    MNED
@@ -188,8 +212,19 @@ C
                 ENDIF
              ENDDO
            ELSE
-             print *, "node = ",INODE," is isolated"
-             stop 'vic'
+              IF ( NPERBC < 0 ) THEN            
+                 print *, "node = ",INODE," is isolated"
+                 stop 'vic'
+              ELSE
+C.....DW, periodic bcs allow isolated nodes if they are a periodic slave node
+                 CO_NODES(1,INODE) = INODE ;
+                 NCOUNT = 1 ; 
+                 IF ( COUNT((IPERCONN(:,2) - INODE) == 0) == 0) THEN  
+                    print *, "node = ",INODE," is isolated"
+                    stop 'vic'
+                 END IF
+C.....DW
+              END IF
            ENDIF
            NEDGES(INODE) = NCOUNT
            NEDGETOT = NEDGETOT + NCOUNT
@@ -242,7 +277,12 @@ C
             ITOT = ITOT + 1
             JNODE = CO_NODES(J,INODE)
             ADJNCY(ITOT) = JNODE
+C...... DW
+C    Original implementation 
             EWGTS(ITOT)  = (VWGTS(JNODE)+VWGTS(INODE))
+
+C            EWGTS(ITOT) = 1 ;
+C...... DW
          ENDDO
          XADJ(INODE+1) = ITOT+1
       ENDDO
@@ -324,10 +364,23 @@ C
 
       write(*,'(a)') 'INFO: Writing mesh partition to partmesh.txt.'
       OPEN(990,FILE='partmesh.txt')
+C...... BEG DW, periodic bcs 
+      IF ( NPERBC > 0 ) THEN
+         PROC( IPERCONN(1:NPERBC,2) ) = PROC(IPERCONN(1:NPERBC,1) ) ;  
+      END IF
+C...... END DW
       DO I=1, MNP
          WRITE(990,*) PROC(I)
       ENDDO
       CLOSE(990)
+
+C...... DW, periodic bcs
+      IF ( NPERBC > 0 ) THEN           
+         NNEG = NNEG_TMP ; ! restore the orignial element table 
+         DEALLOCATE( NNEG_TMP ) ; ! free memory
+         DEALLOCATE( PERBC_IDN_MAP ) ;
+      END IF                
+C...... DW
 
       deallocate(iduals)
       deallocate(itvect,itvect2)
