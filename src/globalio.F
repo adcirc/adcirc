@@ -1853,7 +1853,7 @@ C
       if ( ios.ne.0 ) then
          fileFound = .false.
          write(scratchMessage,3333) trim(descript % file_name)
-3333    format('Values from ',(a),
+3333     format('Values from ',(a),
      &       ' will not reflect the solution prior to this hotstart.')
          call allMessage(INFO,scratchMessage)
          if (descript % minmax_timestamp.eqv..true.) then 
@@ -1868,7 +1868,7 @@ C
       else
          fileFound = .true.
          write(scratchMessage,3334) trim(descript % file_name)
-3334    format('Values from ',(a),
+3334     format('Values from ',(a),
      &       ' will be reflected from the solution prior to this hotstart.')
          call allMessage(INFO,scratchMessage)
       endif

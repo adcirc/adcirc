@@ -12,6 +12,9 @@ C
       MODULE GLOBAL
       USE SIZES, ONLY : SZ 
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
+#ifdef DATETIME
+      use datetime_module, only: datetime
+#endif
       IMPLICIT NONE
       SAVE
 C...
@@ -24,7 +27,10 @@ C.....Sigma T value of reference density
       REAL(SZ), PARAMETER ::  SigT0=RHOWAT0-1000.D0
 C.....Background Atmospheric Pressure in mb
       REAL(SZ), PARAMETER :: PRBCKGRND = 1013.0d0   !tcm 20100617 v49.16 Added
-      REAL(8) :: rhoAir = 1.15d0         ! kg/m^3
+      REAL(SZ), PARAMETER :: TBCKGRND = 288.15d0    !wjp degrees kelvin 
+      REAL(SZ), PARAMETER :: RAir = 287.058d0        !wjp specific gas
+constant 
+      REAL(sz) :: rhoAir = PRBCKGRND*100d0/(RAir*TBCKGRND)  !wjp Ideal Gas Law kg/m^3
       REAL(8) :: windReduction = 0.9d0
       REAL(8) :: one2ten = 0.8928d0
       REAL(8) :: ten2one = 1.d0/0.8928d0
@@ -195,9 +201,12 @@ C     jgf48.03 Variables shared between messenger and writer modules
       integer :: writer_id
       ! following signals are used in messenger.f and writer.f
       integer, parameter :: sig_val   = 1
+      integer, parameter :: sig_ini   = 0
       integer, parameter :: sig_write = 100
-      integer, parameter :: sig_mesh = 14   ! signal to read mesh for xdmf output
+      integer, parameter :: sig_mesh  = 14   ! signal to read mesh for xdmf output
       integer, parameter :: sig_term  = 999  ! signal to terminate adc_writer
+      integer, parameter :: sig_dl    = 333  ! signal to download new BC3D data
+      integer, parameter :: sig_bcini = 330  ! signal to initialize 3DBC
 !  tcm v49.48.01
       integer, parameter :: sig_pause = 99 ! signal to pause adc_writer
       !----------------------------------------------------------------
@@ -353,15 +362,14 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(8),ALLOCATABLE,TARGET :: SFEL(:) ! longitudes of elevation stations
 
 
-      REAL(SZ),ALLOCATABLE, TARGET ::   DUU1(:),DUV1(:),DVV1(:)
-      REAL(SZ),ALLOCATABLE, TARGET ::   BSX1(:),BSY1(:)
+      REAL(SZ),ALLOCATABLE,TARGET ::   DUU1(:),DUV1(:),DVV1(:)
+      REAL(SZ),ALLOCATABLE,TARGET ::   BSX1(:),BSY1(:)
       REAL(SZ),ALLOCATABLE ::   TIP1(:),TIP2(:)
       REAL(SZ),ALLOCATABLE ::   L_N(:,:)    ! WJP The array for TIP multiplier
       REAL(SZ),ALLOCATABLE ::   SALTAMP(:,:),SALTPHA(:,:)
       REAL(SZ),ALLOCATABLE ::   OBCCOEF(:,:),COEF(:,:)
       REAL(SZ),ALLOCATABLE ::   COEFD(:) !jgf48.4619 from Seizo (Lumped GWCE)
-      INTEGER  NBFR,NCOR
-
+      INTEGER :: NBFR,NCOR
 C    kmd48.33bc - added variables for the levels of no motion and top temperature boundary condition
       REAL(SZ),ALLOCATABLE ::   LNM_BC1(:), LNM_BC2(:), LNM_BC(:) ! level of no motion
       REAL(SZ),ALLOCATABLE ::   q_heat1(:), q_heat2(:), HFLUX(:)  ! top temperature
@@ -382,12 +390,16 @@ C
 C.....for buoyancy forcing
       REAL(SZ),ALLOCATABLE ::   DASigT(:), DASalt(:), DATemp(:)
       REAL(SZ),ALLOCATABLE ::   VIDBCPDXOH(:), VIDBCPDYOH(:)
+      REAL(SZ),ALLOCATABLE ::   SigTS(:), NM(:), NB(:), MLD(:)
 C.....for scalar transport
       REAL(SZ),ALLOCATABLE ::   DAConc(:)
+      
+!     The vertically-integrated momentum dispersion terms     
+      REAL(SZ),ALLOCATABLE ::   VIDISPDXOH(:), VIDISPDYOH(:)
 
       REAL(SZ) DT
-C
-      INTEGER NOLICA,NOLIFA,IHOT,IDen
+C                                
+      INTEGER NOLICA,NOLIFA,IHOT,IDEN
       INTEGER :: NSCREEN = 1
 C...
 C...DECLARE REAL(8) AND CHAR VARIABLES, EQUIVALENCES
@@ -408,7 +420,7 @@ C...
       REAL(8) DTDPHS  !kmd48.33 - added time step for hot start
       CHARACTER(80)             :: RUNDES, RUNID, AFRIC
       CHARACTER(4)              :: RDES4(20),RID4(20)
-      CHARACTER(8)              :: RDES8(10),RID8(10)
+      CHARACTER(8)              :: RDES8(10),RID8(10),AID8(10)
       CHARACTER(10)             :: ALPHA ! periodic constituent name
       CHARACTER(10),ALLOCATABLE :: ELEVALPHA(:) ! periodic constituent name
       CHARACTER(5),ALLOCATABLE  :: TIPOTAG(:),BOUNTAG(:),FBOUNTAG(:)
@@ -493,6 +505,7 @@ C     size has changed after a hotstart.
 Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  IFNLCAT, IFNLCT, IFNLFA, IFNLCTE, IFNLCATE
       INTEGER  IFWIND
+      integer :: TSINT = 0, TSINV = 1
       ! 
       ! fulldomain (a.k.a. global) file position counters
       integer, target :: igcp ! concentration
@@ -531,6 +544,7 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  NCChange !jgf45.06 flag indicating wetting / drying has occurred
       INTEGER  NDSETSE, NDSETSV, NDSETSW, NDSETS_TVW
       INTEGER  NHSINC, NHSTAR
+      LOGICAL :: NHOUTONCE = .false.
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef CSWAN 
 Casey 090302: Added a variable for output of radiation stress gradients.
@@ -600,6 +614,9 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       CHARACTER(80) :: source      ! method of production of the original data
       CHARACTER(80) :: history     ! provides an audit trail for modifications to the original data
       CHARACTER(80) :: base_date
+#ifdef DATETIME
+      type(datetime) :: basedatetime
+#endif
       CHARACTER(80) :: comments    ! miscellaneous information about the data
       CHARACTER(80) :: host
       CHARACTER(80) :: convention
@@ -789,6 +806,11 @@ C     v49.48.01 tcm 20110126 Variables related to kdtree searches
       real(sz), allocatable, target :: dynamicWaterLevelCorrection2(:)
       logical :: usingDynamicWaterLevelCorrection = .false.
       real(sz), allocatable, target :: dynamicWaterLevelCorrectionSta(:)
+
+C----- DW --- periodic bc 
+      INTEGER:: NPERSEG, NNPERBC
+      INTEGER, ALLOCATABLE:: IPERCONN(:,:), PERBC_IDN_MAP(:)
+C-------------------end of data declarations----------------------------------C
 
       CONTAINS
 
@@ -1132,6 +1154,14 @@ C
       ALLOCATE ( VIDBCPDXOH(MNP), VIDBCPDYOH(MNP))
       VIDBCPDXOH = -99999.d0
       VIDBCPDYOH = -99999.d0
+      ALLOCATE ( NB(MNP), NM(MNP), SigTS(MNP), MLD(MNP) )
+      NB    = -99999.d0
+      NM    = -99999.d0
+      SigTS = -99999.d0
+      MLD   = -99999.d0
+      ALLOCATE ( VIDISPDXOH(MNP), VIDISPDYOH(MNP))
+      VIDISPDXOH = -99999.d0
+      VIDISPDYOH = -99999.d0
       ALLOCATE ( DAConc(MNP))
       DAConc = -99999.d0
 ckmd   Added in parameters for the pc algorithm

@@ -1168,6 +1168,8 @@ C     Variables for recording domain extents
       implicit none
       integer :: i
       integer :: errorio
+      real(sz) :: PWeight(3,np)
+      logical  :: foundSector(np)
 
 !      nodesFromMesh=.false.
 !      meshFileReadComplete=.false.
@@ -1367,7 +1369,8 @@ C
       real(sz) :: vmax
       real(sz) :: dr
       real(sz) :: rhowatg
-      
+      real(sz) :: PWeight(3,np)
+      logical  :: foundSector(np)
       
       RhoWatG = RhoWat0 * g
       moving_grid=.true.
@@ -1564,10 +1567,13 @@ C
       use sizes, only : gblinputdir
       use wind, only : angleNow, draglawstring, eyeLat, eyeLon, foundEye
       use owiwind, only : findStormCenter
+      use mesh, only: np
       implicit none
       integer :: i, j
       real(sz) :: dr
       real(sz) :: rhowatg
+      real(sz) :: PWeight(3,np)
+      logical  :: foundSector(np)
       !
       RhoWatG = RhoWat0 * g
       moving_grid=.true.
@@ -1698,7 +1704,7 @@ C
                  call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
                  call findStormCenter(eyeLat, eyeLon, foundEye)                 
               end do
-             endif  
+            endif  
          case(15)
             call nws15get(wvnx2, wvny2, prn2, outputSecs(iout))
          case(19)
@@ -2042,7 +2048,7 @@ C
       end subroutine spatialVandP
       !-------------------------------------------------------------
 
-   !-------------------------------------------------------------
+      !-------------------------------------------------------------
       ! S U B R O U T I N E   S P A T I A L   V   A N D   P
       ! 
       ! A simple version of spatialVandP to output 
@@ -2062,6 +2068,8 @@ C
       real(sz) :: dy
       real(sz) :: rhowatg
       integer :: nhy
+      real(sz) :: PWeight(3,np)
+      logical  :: foundSector(np)
 
       RhoWatG = RhoWat0 * g
       moving_grid=.true.
@@ -2429,6 +2437,8 @@ C
       real(sz) :: dx
       real(sz) :: dy
       real(sz) :: rhowatg
+      real(sz) :: PWeight(3,np)
+      logical  :: foundSector(np)
 
       RhoWatG = RhoWat0 * g
       if (nodesFromFile.eqv..true.) then
@@ -2567,7 +2577,7 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
                  call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
                  call findStormCenter(eyeLat, eyeLon, foundEye)                 
               end do
-             endif 
+            endif 
          case(15)
             call nws15get(wvnx2,wvny2,prn2,outputSecs(iout))
          case(19)

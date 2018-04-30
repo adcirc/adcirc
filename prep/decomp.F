@@ -672,7 +672,7 @@ C
       MNEP = 0
 C
       DO 1000 IPROC=1, NPROC
-C
+
 C   STEP 1:
 C-- Use Partition of nodes to compute the number of Resident Nodes
 C   to be assigned to each processor.
