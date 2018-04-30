@@ -2209,7 +2209,7 @@ C...  For periodic elevation boundary conditions
 
 C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
 
-	   IF((NBFR.EQ.0).AND.(NOPE.GT.0)) THEN
+      IF((NBFR.EQ.0).AND.(NOPE.GT.0)) THEN
          IF(TimeLoc.GT.ETIME2) THEN
             ETIME1=ETIME2
             ETIME2=ETIME1+ETIMINC
