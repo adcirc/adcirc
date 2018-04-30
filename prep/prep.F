@@ -2957,7 +2957,7 @@ C
 !            READ(20,*,END=40) FLUX_VAL ! get a flo val for this f.d. flow node
             READ(proc_no,'(A80)',END=40) FLUX_MSG ! get a flo val for this f.d. flow node
             if (sponge) then
-               INDX = nodeNumSP(I) 
+               INDX = nodeNumSP(I)
             else
                INDX = FLUX14_ARY(I)      ! get full domain flow node number
             endif

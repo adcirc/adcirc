@@ -22,10 +22,10 @@ C
         INTEGER,ALLOCATABLE :: CO_NODES(:,:),NEDGES(:), NEDLOC(:)
         INTEGER,ALLOCATABLE :: NUMDUALS(:)
 C...... DW
-        INTEGER:: ID1, ID2       
+        INTEGER:: ID1, ID2
         INTEGER, ALLOCATABLE:: NNEG_TMP(:,:), PERBC_IDN_MAP(:)
 C...... DW
-        
+
         integer :: contiguous ! number of nodes on a boundary within a particular subdomain
         integer :: subdomainNumber ! subdomain that a boundary node falls within
         
@@ -83,22 +83,22 @@ C
            ENDIF
         ENDDO
         ENDDO
-C...... 
+C......
 C...... DW, periodic boundary conditions
-C...... - a workaround approach based on a temporary connectivity table 
+C...... - a workaround approach based on a temporary connectivity table
 C......   that uses the periodic node indices
         IF ( NPERBC > 0 ) THEN
-           ALLOCATE( NNEG_TMP(3,MNE) ) ; 
+           ALLOCATE( NNEG_TMP(3,MNE) ) ;
            NNEG_TMP = NNEG ; ! dummy arr holding the original element table
 
            ALLOCATE( PERBC_IDN_MAP(MNP) ) ; ! create mapping between the original node indice and perbc node indices
            DO J = 1,MNP
-              PERBC_IDN_MAP(J) = J;  
+              PERBC_IDN_MAP(J) = J;
            ENDDO
-           PERBC_IDN_MAP(IPERCONN(1:NPERBC,2)) = IPERCONN(1:NPERBC,1) ; 
- 
+           PERBC_IDN_MAP(IPERCONN(1:NPERBC,2)) = IPERCONN(1:NPERBC,1) ;
+
            DO I = 1, MNE
-               NNEG(:,I) = PERBC_IDN_MAP( NNEG(:,I) ) ;  ! swicth to the element with the node-per bc indices ! 
+               NNEG(:,I) = PERBC_IDN_MAP( NNEG(:,I) ) ;  ! swicth to the element with the node-per bc indices !
            END DO
         END IF
 C...... DW
@@ -212,16 +212,16 @@ C
                 ENDIF
              ENDDO
            ELSE
-              IF ( NPERBC < 0 ) THEN            
+              IF ( NPERBC < 0 ) THEN
                  print *, "node = ",INODE," is isolated"
-                 CALL EXIT(1) 
+                 CALL EXIT(1)
               ELSE
 C.....DW, periodic bcs allow isolated nodes if they are a periodic slave node
                  CO_NODES(1,INODE) = INODE ;
-                 NCOUNT = 1 ; 
-                 IF ( COUNT((IPERCONN(:,2) - INODE) == 0) == 0) THEN  
+                 NCOUNT = 1 ;
+                 IF ( COUNT((IPERCONN(:,2) - INODE) == 0) == 0) THEN
                     print *, "node = ",INODE," is isolated"
-                    CALL EXIT(1) 
+                    CALL EXIT(1)
                  END IF
 C.....DW
               END IF
@@ -230,7 +230,7 @@ C.....DW
            NEDGETOT = NEDGETOT + NCOUNT
            if (nedges(inode) == 0) then
              print *, "inode = ", inode, " belongs to no edges"
-             CALL EXIT(1) 
+             CALL EXIT(1)
            endif
         ENDDO
         NEDGETOT = NEDGETOT/2
@@ -257,7 +257,7 @@ C
       ENDDO
       IF (.not. SYMMETRIC) THEN
          WRITE(*,'(A)') 'bad adjacency matrix: not symmetric!'
-         CALL EXIT(1) 
+         CALL EXIT(1)
       ENDIF
 C
 C  COMPUTE WEIGHTS OF THE GRAPH VERTICES
@@ -279,7 +279,7 @@ C
             JNODE = CO_NODES(J,INODE)
             ADJNCY(ITOT) = JNODE
 C...... DW
-C    Original implementation 
+C    Original implementation
             EWGTS(ITOT)  = (VWGTS(JNODE)+VWGTS(INODE))
 
 C            EWGTS(ITOT) = 1 ;
@@ -365,9 +365,9 @@ C
 
       write(*,'(a)') 'INFO: Writing mesh partition to partmesh.txt.'
       OPEN(990,FILE='partmesh.txt')
-C...... BEG DW, periodic bcs 
+C...... BEG DW, periodic bcs
       IF ( NPERBC > 0 ) THEN
-         PROC( IPERCONN(1:NPERBC,2) ) = PROC(IPERCONN(1:NPERBC,1) ) ;  
+         PROC( IPERCONN(1:NPERBC,2) ) = PROC(IPERCONN(1:NPERBC,1) ) ;
       END IF
 C...... END DW
       DO I=1, MNP
@@ -376,11 +376,11 @@ C...... END DW
       CLOSE(990)
 
 C...... DW, periodic bcs
-      IF ( NPERBC > 0 ) THEN           
-         NNEG = NNEG_TMP ; ! restore the orignial element table 
+      IF ( NPERBC > 0 ) THEN
+         NNEG = NNEG_TMP ; ! restore the orignial element table
          DEALLOCATE( NNEG_TMP ) ; ! free memory
          DEALLOCATE( PERBC_IDN_MAP ) ;
-      END IF                
+      END IF
 C...... DW
 
       deallocate(iduals)

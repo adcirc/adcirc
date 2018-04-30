@@ -27,9 +27,9 @@ C.....Sigma T value of reference density
       REAL(SZ), PARAMETER ::  SigT0=RHOWAT0-1000.D0
 C.....Background Atmospheric Pressure in mb
       REAL(SZ), PARAMETER :: PRBCKGRND = 1013.0d0   !tcm 20100617 v49.16 Added
-      REAL(SZ), PARAMETER :: TBCKGRND = 288.15d0    !wjp degrees kelvin 
+      REAL(SZ), PARAMETER :: TBCKGRND = 288.15d0    !wjp degrees kelvin
       REAL(SZ), PARAMETER :: RAir = 287.058d0        !wjp specific gas
-constant 
+constant
       REAL(sz) :: rhoAir = 1.293d0 !PRBCKGRND*100d0/(RAir*TBCKGRND)  !wjp Ideal Gas Law kg/m^3
       REAL(8) :: windReduction = 0.9d0
       REAL(8) :: one2ten = 0.8928d0
@@ -67,10 +67,10 @@ C... v49.48 tcm -- added for coupling with STWAVE (NRS=4)
       LOGICAL  :: CPL2STWAVE = .FALSE.  !Coupled to STWAVE (NRS=4)
       LOGICAL  :: Flag_ElevError = .FALSE.
 
-C  
-C... v50.xx sm -- added for coupling with NOUPC Cap 
+C
+C... v50.xx sm -- added for coupling with NOUPC Cap
       LOGICAL   ::  NUOPC4MET = .FALSE.  ! assign in CAP
-      LOGICAL   ::  NUOPC4WAV = .FALSE.  ! assign in CAP     
+      LOGICAL   ::  NUOPC4WAV = .FALSE.  ! assign in CAP
 C
 C
 
@@ -406,12 +406,12 @@ C.....for buoyancy forcing
       REAL(SZ),ALLOCATABLE ::   SigTS(:), NM(:), NB(:), MLD(:)
 C.....for scalar transport
       REAL(SZ),ALLOCATABLE ::   DAConc(:)
-      
-!     The vertically-integrated momentum dispersion terms     
+
+!     The vertically-integrated momentum dispersion terms
       REAL(SZ),ALLOCATABLE ::   VIDISPDXOH(:), VIDISPDYOH(:)
 
       REAL(SZ) DT
-C                                
+C
       INTEGER NOLICA,NOLIFA,IHOT,IDEN
       INTEGER :: NSCREEN = 1
 C...
@@ -523,7 +523,7 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  IFWIND
       integer :: IFSFM = 0 ! corrected spherical coordinates (1) or not (0)
       integer :: IFSPROTS = 0 ! rotated spherical coordinates (1) or not (0)
-      ! 
+      !
       ! fulldomain (a.k.a. global) file position counters
       integer, target :: igcp ! concentration
       integer, target :: igep ! elevation
@@ -824,7 +824,7 @@ C     v49.48.01 tcm 20110126 Variables related to kdtree searches
       logical :: usingDynamicWaterLevelCorrection = .false.
       real(sz), allocatable, target :: dynamicWaterLevelCorrectionSta(:)
 
-C----- DW --- periodic bc 
+C----- DW --- periodic bc
       INTEGER:: NPERSEG, NNPERBC
       INTEGER, ALLOCATABLE:: IPERCONN(:,:), PERBC_IDN_MAP(:)
 C-------------------end of data declarations----------------------------------C

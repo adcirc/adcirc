@@ -268,6 +268,16 @@ C
       END INTERFACE
       PROCEDURE(p_computeWindDrag),POINTER :: f_computeWindDrag => null()
 
+#ifdef GRIB2API
+#ifdef DATETIME
+      integer :: ub, ubc ! size of weightsp and indp interpolant weights
+      real(sz),allocatable :: weightsp(:,:,:)
+      integer,allocatable  :: indp(:,:,:)
+      character(len=200) :: Pfile, Wfile, Pinv, Winv, Cinv, Cfile
+      character(len=200) :: Pfile1, Wfile1, Pinv1, Winv1
+      type(datetime) :: CurDT
+#endif
+#endif
 C------------------------end of data declarations-----------------------
       CONTAINS
 C
@@ -746,6 +756,20 @@ C....... Joyce et al. (2019), OM: doi:10.1016/j.ocemod.2019.101421
             WindIceDrag = WindDrag
          ELSE
             pic = min(PercentIce*0.01d0,1d0)
+            Cform = Cform_max*(1d0-pic)**beta
+            WindIceDrag = WindDrag*(1d0 - pic) + (Cskin + Cform)*pic
+         ENDIF
+
+      CASE("Lupkes","default","Powell")
+C........This formula is a function that explicitly
+C....... combines air-sea drag (Garratt) with sea-ice skin drag and
+C....... sea-ice form drag components with area fraction weights
+C....... see: Lüpkes, et al. (2012), JGR: doi:10.1029/2012JD017630. &
+C....... Joyce et al. (2019), Ocean Modelling, minor rev.
+         IF (PercentIce.lt.0.d0) then
+            WindIceDrag = WindDrag
+         ELSE
+            pic = PercentIce*0.01d0
             Cform = Cform_max*(1d0-pic)**beta
             WindIceDrag = WindDrag*(1d0 - pic) + (Cskin + Cform)*pic
          ENDIF
@@ -1907,7 +1931,7 @@ C....                           to correspond with having only a global wind fil
 C     jgf46.00 Added option to directly apply surface stress without any
 C     other correction factors.
 C     xyc52.30 corrected NWS=7 (wind stress input provided on a
-C     rectangular grid, same as NWS=6) 
+C     rectangular grid, same as NWS=6)
       IF(ABS(NWS).EQ.7) THEN
 C         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
 C         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
@@ -6405,7 +6429,7 @@ C***********************************************************************
             xcoor(i) = slam(i) * rad2deg
             ycoor(i) = sfea(i) * rad2deg
          END DO
-         
+
          timeOffset = nint(TIMELOC/60d0)*60d0 ! round initial time to nearest minute
          rndaySeconds = RNDAY * 86400.d0
 
@@ -8985,7 +9009,7 @@ C----------------------------------------------------------------------
                indp(ii,:,i) = indt
                weightsp(ii,:,i) = wt
 #ifdef DEBUG_NWS14
-               if (i.gt.1) cycle 
+               if (i.gt.1) cycle
                write(16,*) 'NWS=14 Interpolating check: xx',xx,'yy',yy
                write(16,*) 'Lon',lon(indt(1),indt(2)),
      &                           lon(indt(3),indt(2)),
@@ -9048,12 +9072,12 @@ C----------------------------------------------------------------------
      &              V10(indp(ub,3,i),indp(ub,4,i))*weightsp(ub,4,i)
          endif
 #ifdef DEBUG_NWS14
-         if (i.gt.1) cycle 
+         if (i.gt.1) cycle
          write(16,*) 'NWS=14 Values check for i = 1'
          write(16,*) 'Pressure: ',PRN2(i)
          write(16,*) 'Winds, U10: ',WVNX2(i),'V10: ',WVNY2(i)
 #endif
-      enddo 
+      enddo
       deallocate(Pmsl,U10,V10)
       
       ! Add WTIMINC on CurDT for next WTIME  
