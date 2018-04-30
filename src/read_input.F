@@ -18,14 +18,65 @@ C
 C-----------------------------------------------------------------------
       SUBROUTINE READ_INPUT()
       USE SIZES               !since GLOBAL uses SIZES, is this necessary?
-      USE GLOBAL
-      USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP,
-     &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries, 
-     &   freeMesh, node_dict, find
-      USE BOUNDARIES, ONLY : ANGINN, COSTSET, NETA, NVEL, NVELME, 
+      USE GLOBAL, only: toutsge, toutfge, nspoolge, im, ff, bountag, 
+     &   noutge, use_tvw, nscreen, nabout, nfover, warnelev, ihot, hss,
+     &   smag_lower_lim, iwarnelevdump, warnelevdump, errorelev, c2ddi,
+     &   usenetcdf, cgwce_new, cme_new_nc, cme_ls_ibpv, cgwce_ls_kgq, g,
+     &   cgwce_advec_nc, cme_areaInt_corr, ilump, c2d_ptrans, c3ddss,
+     &   cbaroclinic, c3dvs, cgwce_ls_2partv, cgwce_ls_2partq, iden, dt,
+     &   cme_new_c2, cme_ls_ibpq, cgwce_lump, cme_ls_ibpsv, cme_orig,h0,
+     &   cgwce_ls_2partsv, cgwce_ls_2partsq, cgwce_advec_c1, ctip, ntip,
+     &   cgwce_advec_c2, cme_ls_2partv, cme_ls_2partq, cme_new_c1, ncor,
+     &   cme_areaint_orig, c2d_btrans, cme_ls_ibpsq, nws, ncice, nolica,
+     &   nolifa, nolicat, dtdp, nramp, nrs, cprecor, dtdphs, statim, nt,
+     &   cice_timinc, reftim, refsec, rstiminc, rnday, dramp, drampelev,
+     &   fluxsettlingtime, drampextflux, drampintflux, dunrampmete, day,
+     &   dramptip, drampmete, drampwrad, rhoair, nddt, nodedrymin, tree,
+     &   nodewetmin, srchdp, kdresults, vidbcpdxoh, vidbcpdyoh, tpk,
+     &   dasigt, dasalt, datemp, daconc, corif, ntif, amigt, vidispdxoh,
+     &   tipotag, cori, etrf, fft, facet, pert, saltamp, nbfr, deg2rad,
+     &   saltamp, saltpha, amig, face, per, csmag_eh, rad2deg, fbountag,
+     &   elevalpha, emo, efa, qnam, qnph, nffr, fff, famig, fface, fper,
+     &   alpha, enam, enph, usenetcdfoutput, inundationoutput, ntcyfe,
+     &   warnelevdumpcounter, smag_upper_lim, outputwinddrag, ntrspe,
+     &   inunthresh, ntcyse, noute, statname, nne, xel, yel, slel, sfel,
+     &   noutv, toutsv, toutfv, nnv, statnamev, nstav, ntcysv, ntcyfv,
+     &   nspoolv, staie1, staie2, staie3, xev, yev, ntrspv, slev, sfev,
+     &   noutc, toutsc, nspoolc, nnc, statnamec, nstae, tvw_file, sfec,
+     &   slec, staic1, staic2, staic3, nstac, ntcysc, ntcyfc, mld,
+     &   ntrspc, noutm, nspoolm, toutsm, nstam, xec, yec, slem, sfem,
+     &   staim1, staim2, staim3, nnm, statnamem, ntcysge, ntcyfge, yem,
+     &   xem, toutfm, ntcysm, ntcyfm, ntrspm, usexdmf, ndsetse, noutgv,
+     &   toutsgv, toutfgv, nspoolgv, ndsetse, ntcysgv, ntcyfgv, ndsetsv,
+     &   tvw, ntcys_tvw, ntcyf_tvw, noutgc, toutsgc, toutfgc, nspoolgc,
+     &   warnelevdumplimit, toutse, toutfe, nspoole, staiv1, staiv2,
+     &   staiv3, toutfc, noutgw, nspoolgw, toutfgw, toutsgw, noutgw,
+     &   ndsetsc, ntcyfgc, ntcysgc, ndsets_tvw, usingwaterleveloffset,
+     &   smag_comp_flag, wavewindmultiplier, np_g, nibnodecode, ititer,
+     &   ne_g, nstae_g, nstav_g, nstam_g, nstac_g, netcdf_avail, title,
+     &   nstac_g, nstam_g, institution, references, history, source,
+     &   nout_tvw, touts_tvw, toutf_tvw, nspool_tvw, btiminc,vidispdyoh,
+     &   bchgtiminc, base_date, contact, convention, host, comments,
+     &   nhstar, nhsinc, ndsetsw, ntcysgw, ntcyfgw, cpl2stwave, c3d,
+     &   alloc_main1a, alloc_main2, alloc_main3, alloc_main4a, 
+     &   alloc_main4b, alloc_main5, alloc_main7, alloc_main8, 
+     &   alloc_main10, alloc_main12, alloc_main13, alloc_main9,
+     &   alloc_main6, openfileforread, nhoutonce, omega, TSINT, TSINV
+#if defined CSWAN || defined ADCSWAN
+     &   , SWAN_OutputHS, SWAN_OutputDIR,
+     &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
+     &    SWAN_OutputTM02, SWAN_OutputTMM10
+#endif
+#ifdef DATETIME
+     &   ,basedatetime
+#endif
+      USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP, NP,
+     &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries,
+     &   freeMesh, node_dict, find, agrid
+      USE BOUNDARIES, ONLY : ANGINN, COSTSET, NETA, NVEL, NVELME, NPEBC,
      &   NFLUXF, NBD, ME2GW, LBCODEI, NBV, simpleFluxBoundaries, ibtype,
      &   numSimpleFluxBoundaries
-      USE GLOBAL_IO
+      USE GLOBAL_IO, only: RUNDES, RUNID, RDES4, RID4, RDES8, RID8
       USE KDTREE2_MODULE     ! V49.48.02 tcm -- added for fast searching
       USE GLOBAL_3DVS, ONLY: C3D_PTrans, NSTA3DD, NSTA3DV, NSTA3DT,
      &    I3DSD,I3DSV,I3DST,I3DGD,I3DGV,I3DGT, NSTA3DD_G, NSTA3DV_G,
@@ -35,8 +86,13 @@ C-----------------------------------------------------------------------
       USE HARM
       USE WEIR
       USE TIME_VARYING_WEIR_BOUNDARY
-      USE WIND
       USE OWIWIND,ONLY: nPowellSearchDomains
+      USE WIND, only: WTIMINC, NWLAT, NWLON, IREFYR, IREFMO, IREFDAY,
+     &    IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN, WindDragLimit, 
+     &    BLADJ, STORMNUMBER, WLATINC, WLONINC, GEOFACTOR, PUREVORTEX,
+     &    NWSok, WINDREFTIME, Allowable_NWS, PUREBACKGROUND, TimeConv, 
+     &    DragLawString, OffsetFilename, OffsetSkipSnaps, OffsetRampEnd,
+     &    OffsetMultiplier, OffsetRampStart, OffsetRampReferenceTime
       USE WETDRY, ONLY : noffActive, velmin
       USE ITPACKV
       USE GWCE, ONLY : a00, b00, c00, convcr, isldia, itmax,
@@ -47,13 +103,26 @@ C-----------------------------------------------------------------------
       USE NodalAttributes, ONLY :
      &     NoLiBF, NWP, Tau0, HBreak, FTheta, FGamma, Tau, CF,
      &     InitNAModule, ReadNodalAttr, InitNodalAttr, ESLM, ESLC,
-     &     Tau0FullDomainMin, Tau0FullDomainMax, Z0b_var
+     &     Tau0FullDomainMin, Tau0FullDomainMax, Z0b_var,
+C ....DW
+     &     LoadAbsLayerSigma, FoundAbsLayerSigma 
+      USE SPONGELAYER, ONLY: SpongeLayerRelatedPrep, FLAGSPONGEELEM
+C ... END DW
+      USE Couple2BC3D, ONLY: BC3D_DT, DTIME1, DTIME2, SigTS_F, STEP, 
+     &     NM_F, VIDBCPDXOH_F, VIDBCPDYOH_F, VIDISPDXOH_F, VIDISPDYOH_F,
+     &     NB_F, ALLOC_BC3D_to_2D, NP11, Put_BC3D_on_ADCIRC_Grid 
+#ifdef ADCNETCDF
+     &     ,Read_BC3D_Netcdf
+#endif
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
 #ifdef CSWAN
 Casey 100205: Enable hot-start file generation by SWAN.
       USE Couple2Swan, ONLY: SwanHotStartUnit
+#endif
+#ifdef DATETIME
+      use datetime_module, only: strptime
 #endif
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
@@ -63,7 +132,8 @@ Casey 100205: Enable hot-start file generation by SWAN.
       REAL(SZ) RampVal
       CHARACTER(len=80) :: CDUM80
       LOGICAL fileFound
-      INTEGER :: I, J, JKI, JJ, NP2
+      INTEGER :: I, J, JKI, JJ, NP2, TT
+      integer :: yyyy,mon,dd,hh,minu
 C
 #if defined CSWAN || defined ADCSWAN
       ! jgf50.60.09: Namelist for turning SWAN output files on or off
@@ -627,7 +697,7 @@ C...
 C...  READ AND PROCESS ICS - CARTESIAN/SPHERICAL COORDINATE OPTION
 C...
       READ(15,*) ICS
-      IF((ICS.NE.1).AND.(ICS.NE.2)) THEN
+      IF (ICS < 1.or.ICS.gt.2) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
             WRITE(ScreenUnit,*) 'ICS =',ICS
@@ -646,7 +716,7 @@ C...
          WRITE(16,9736) ICS
  9736    FORMAT(/,5X,'ICS = ',I2,
      &        /,9X,'Governing equations are in Cartesian coordinates')
-      ELSE
+      ELSEIF (ICS.eq.2) THEN
          WRITE(16,9737) ICS
  9737    FORMAT(/,5X,'ICS = ',I2,
      &        /,9X,'Governing equations are in Spherical coordinates',
@@ -850,13 +920,18 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
      &           'Momentum Eqs.'
          ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
-         IF(IMDig6.EQ.2) THEN
+         IF(mod(IMDig6,2).EQ.1) THEN
+            ILump=0
+            WRITE(16,*) '        Consistent GWCE mass matrix'
+         ELSE
             ILump=1
             CGWCE_Lump = .TRUE.
             WRITE(16,*) '        Lumped GWCE mass matrix'
-         ELSE
-            ILump=0
-            WRITE(16,*) '        Consistent GWCE mass matrix'
+         ENDIF
+         ! WJP modifications for adding baroclinic mode
+         IF (IMDig6 > 2) THEN
+            CBaroclinic = .TRUE.
+            WRITE(16,*) '        and baroclinic mode'
          ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
       ELSE
@@ -877,7 +952,12 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
 
       IDEN=0
       if (CBaroclinic.eqv..true.) then
-         READ(15,*) IDEN
+         READ(15,'(I2)',advance='no') IDEN
+         if (IDEN.ge.5) then 
+            READ(15,*) STEP
+         else
+            READ(15,*)
+         endif
          ! jgf51.52.35: Removed 0 as a valid choice for IDEN because the
          ! choice between baroclinic and barotropic is specified by IM; 
          ! also removed "2DDI" from the log messages because the choice 
@@ -885,8 +965,11 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
          write(scratchMessage,'("IDEN is set to ",i0,".")') IDEN
          call logMessage(ECHO,scratchMessage)
          !
-         densityRunType = ' diagnostic '
+         ! WJP: 3/8/2018 I think these were round the wrong way 
+         ! (was opposite to the adcirc.org page) 
          if (iden.lt.0) then
+            densityRunType = ' diagnostic '
+         else
             densityRunType = ' prognostic '
          endif
          !        
@@ -904,9 +987,17 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
             densityForcingType = ' temperature '
          case(4)
             densityForcingType = ' salinity and temperature '         
+         case(5)
+            densityForcingType = ' 3rd-party salinity and temperature'
+         case(6)
+            densityForcingType = ' 3rd-party salinity and temperature'
+     &                         //' with momentum dispersion'
+         case(7)
+            densityForcingType = ' only use 3rd-party salinity and '
+     &                       //'temperature to get buoyancy frequencies'
          case default
             call allMessage(ERROR,
-     &       'The absolute value of IDEN must be 1, 2, 3, or 4.')
+     &       'The absolute value of IDEN must be <= 7.')
             call adcirc_terminate()
          end select
         call logMessage(INFO,'This run will be'//trim(densityDimensions)
@@ -959,7 +1050,7 @@ C...
 C...  READ AND PROCESS NOLIBF - NONLINEAR BOTTOM FRICTION OPTION
 C...
       READ(15,*) NOLIBF
-      IF((NOLIBF.LT.0).OR.(NOLIBF.GT.2)) THEN
+      IF((NOLIBF.LT.0).OR.(NOLIBF.GT.3)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
             WRITE(ScreenUnit,*) 'NOLIBF =',NOLIBF
@@ -985,6 +1076,10 @@ C...
      &     'IN DEEP WATER ',
      &     /,9X,'AND A FRICTION FACTOR THAT INCREASES AS THE DEPTH ',
      &     'DECREASES IN SHALLOW WATER')
+      IF (NOLIBF.EQ.3) WRITE(16,2060)
+ 2060 FORMAT(9X,'THE MODEL WILL USE STANDARD QUADRATIC BOTTOM FRICTION',
+     &     ' WITH A FRICTION FACTOR AS A FUCTION OF MIXED-LAYER DEPTH ',
+     &     'TO TOTAL DEPTH RATIO')
 C...
 C... READ AND PROCESS NOLIFA - NONLINEAR FINITE AMPLITUDE OPTION
 C...
@@ -1180,6 +1275,12 @@ C     startdry, etc. The full initialization and error checking of these
 C     data must wait until the grid has been read in from unit 14.
       READ(15,*) NWP
       CALL ReadNodalAttr(NScreen, ScreenUnit, MyProc, NAbOut)
+C................ DW ......... 
+C     For sponge layer
+      IF ( LoadAbsLayerSigma .AND. FoundAbsLayerSigma ) THEN
+        CALL SpongeLayerRelatedPrep( ) 
+      END IF
+C................END DW.......
 C...
 C...  READ AND PROCESS NCOR - SPATIALLY VARYING CORIOLIS PARAMETER
 C...
@@ -1563,6 +1664,21 @@ C.....sb46_28sb01 added for NWS=-12,12 09/xx/2006
      &    /,9X,'WIND SPEEDS ARE CONVERTED TO STRESS USING THE GARRET ',
      &         'DRAG LAW.')
       ENDIF
+C.....WJP Oct 20 218 - added for NWS=14
+      IF(NWS.EQ.14) THEN
+         WRITE(16,14384) NWS
+14384    FORMAT(/,5X,'NWS = ',I3,
+     &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
+     &    /,9X,' THE COMPUTATION.',
+     &    /,9X,'WIND VELOCITY AND PRESSURE VALUES ARE READ FROM RAW ',
+     &    /,9X,'GRB2 DATA FILES (fort.221.grb2 and fort.222.grb2).',
+     &    /,9X,'IF NO FILES ARE PROVIDED AUTOMATIC DOWNLOAD MODE IS ',
+     &    /,9X,'ENABLED. SETUP TO DOWNLOAD CFSv2 DATA.',
+     &    /,9X,'TIMING IS SYNCED WITH THE DATETIME AT THE BOTTOM OF ',
+     &    /,9X,'THE FORT.15 IN THE NETCDF MESSAGE SPACE.',
+     &    /,9X,'WIND SPEEDS ARE CONVERTED TO STRESS USING THE GARRET ',
+     &         'DRAG LAW.')
+      ENDIF
       IF (ABS(NWS).EQ.15) THEN
          WRITE(16,10389) NWS
 10389    FORMAT(/,5X,'NWS = ',I3,
@@ -1783,7 +1899,7 @@ C
 C     TCM V49.64.01 ADDITION FOR ICE CONCENTRATION FIELDS
 
 !     TEST TO BE SURE NCICE HAS AN ALLOWABLE VALUE
-      IF((NCICE.NE.0).AND.(NCICE.NE.12)) THEN
+      IF((NCICE.NE.0).AND.(NCICE.NE.12).AND.(NCICE.ne.14)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
             WRITE(ScreenUnit,*) 'NCICE =',NCICE
@@ -1827,7 +1943,7 @@ C...  BE SURE NWS AND NCICE ARE COMPATABLE
      &        /,9X,'ICE CONCENTRATION FIELDS ARE NOT USED TO ',
      &        'ADJUST WIND STRESS COMPUTATIONS')
       ENDIF
-      IF(NCICE.EQ.12) THEN
+      IF(NCICE.EQ.12.or.NCICE.eq.14) THEN
          WRITE(16,3295) NCICE
  3295    FORMAT(/,5X,'NCICE = ',I2,
      &    /,9X,'ICE CONCENTRATION FIELDS ARE USED TO ',
@@ -2183,7 +2299,8 @@ C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
          !READ(15,*) NWLAT,NWLON,WTIMINC
       ENDIF
 C     sb46.28sb01 Added NWS=12 (OWI format)
-      IF(ABS(NWS).EQ.12) THEN
+C     WJP Oct 20 2018, Used this also for NWS = 14 (grb2)
+      IF(ABS(NWS).EQ.12.or.ABS(NWS).eq.14) THEN
 C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
          IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
@@ -2541,6 +2658,13 @@ C     jgf51.12.13: Adjust node table based on ics, nolifa, h0,
 C     slam0, sfea0. Check for sufficient precision. Compute neighbor table.
       call initializeMesh()
             
+C................ DW ......... 
+C   For Sponge layer
+      IF ( LoadAbsLayerSigma .AND. FoundAbsLayerSigma ) THEN
+         CALL FLAGSPONGEELEM()
+      END IF
+C............... END DW ......
+
 C...  v49.48.02 tcm -- Allocate space for kdtree search
 C...       Be sure the maximum search depth is not larger than
 C...       the number of elements being kept
@@ -2553,48 +2677,99 @@ C...  allocate space for the search results from the tree
 C...  this space will be deallocated later in the subroutine
       ALLOCATE(KDRESULTS(SRCHDP))
 
+      ! Making baroclinic terms zero initially
+      DO I=1,NP
+         VIDBCPDXOH(I)=0.D0
+         VIDBCPDYOH(I)=0.D0
+         VIDISPDXOH(I)=0.D0
+         VIDISPDYOH(I)=0.D0
+         MLD(I)=1.D0 !1d4
+      ENDDO
 C...
 C...IF A 2DDI BAROCLINIC RUN, READ IN INITIAL CONDITION DENSITY FIELDS
 C...
-      IF((C2DDI).AND.(CBaroclinic)) THEN
-         OPEN(11,FILE=TRIM(INPUTDIR)//'/'//'fort.11')
-         READ(11,*)
-         READ(11,*)
-         READ(11,*) NP2
-         IF(NP2.NE.NP) THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9943)
-            WRITE(16,9943)
- 9943       FORMAT(////,' !!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
+      BC2D: IF ((C2DDI).AND.(CBaroclinic)) THEN
+
+         ! Allocate arrays for the baroclinic coupling from 3D model to 2D model
+         if (abs(IDEN).ge.5) call ALLOC_BC3D_to_2D()
+               
+         IF (IDEN.lt.5) THEN
+            OPEN(11,FILE=TRIM(INPUTDIR)//'/'//'fort.11')
+            READ(11,*) 
+            READ(11,*) BC3D_DT
+            READ(11,*) NP11
+            IF (NP11.NE.NP) THEN
+             IF (NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9943)
+             WRITE(16,9943)
+ 9943        FORMAT(////,' !!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
      &               //,' THE NUMBER OF NODES IN THE BAROCLINIC',
      &                  ' INITIAL CONDITION FILE (UNIT 11) ',
      &                /,' MUST EQUAL THE NUMBER OF NODES (NP) IN ',
      &                  'THE ADCIRC GRID FILE (UNIT 14)'
      &               //,' !!!!! EXECUTION WILL NOW BE TERMINATED !!!!!')
-            CALL ADCIRC_Terminate()
+               CALL ADCIRC_Terminate()
+            ENDIF
+            !WJP Get the start time and the next data time
+            DTIME1 = STATIM*86400.D0
+            DTIME2 = DTIME1 + BC3D_DT
+            IF (ABS(IDEN).EQ.1) THEN
+               DO I=1,NP11
+                  READ(11,*) JKI,DASigT(JKI)
+               END DO
+            ELSEIF(ABS(IDEN).EQ.2) THEN
+               DO I=1,NP11
+                  READ(11,*) JKI,DASalt(JKI)
+               END DO
+c           CALL CALC_SIGMAT_2D()      !need to activate
+            ELSEIF(ABS(IDEN).EQ.3) THEN
+               DO I=1,NP11
+                 READ(11,*) JKI,DATemp(JKI)
+c           CALL  CALC_SIGMAT_2D()      !need to activate
+               END DO
+            ELSEIF(ABS(IDEN).EQ.4) THEN
+               DO I=1,NP11
+                  READ(11,*) JKI,DATemp(JKI),DASalt(JKI)
+               END DO
+c           CALL CALC_SIGMAT_2D()      !need to activate
+            ELSEIF(IDEN.EQ.-5) THEN
+               ! WJP reading pre-computed 3D baroclinic gradients from
+               ! zero depth (diagnostic - does not change), plus also
+               ! read free surface density to get that effect
+               DO I=1,NP11
+                  READ(11,*) JKI,VIDBCPDXOH_F(1,JKI),
+     &                       VIDBCPDYOH_F(1,JKI),SigTS_F(1,JKI)
+!     &                       ,DUU_F(1,JKI),DVV_F(1,JKI),DUV_F(1,JKI)
+               END DO
+               IF (BC3D_DT > 0.0d0) THEN
+                  DO I=1,NP11
+                     READ(11,*) JKI,VIDBCPDXOH_F(2,JKI),
+     &                          VIDBCPDYOH_F(2,JKI),SigTS_F(2,JKI)
+!     &                          ,DUU_F(2,JKI),DVV_F(2,JKI),DUV_F(2,JKI)
+                  END DO
+               ENDIF
+            ELSEIF(IDEN.EQ.-6) THEN
+               ! WJP reading pre-computed 3D baroclinic gradients from
+               ! zero depth (diagnostic - does not change), plus also
+               ! read free surface density and momentum dispersion
+               DO I=1,NP11
+                  READ(11,*) JKI,VIDBCPDXOH_F(1,JKI),
+     &                       VIDBCPDYOH_F(1,JKI),SigTS_F(1,JKI),
+     &                       VIDISPDXOH_F(1,JKI),VIDISPDYOH_F(1,JKI)
+               END DO
+               IF (BC3D_DT > 0.0d0) THEN
+                  DO I=1,NP11
+                     READ(11,*) JKI,VIDBCPDXOH_F(2,JKI),
+     &                          VIDBCPDYOH_F(2,JKI),SigTS_F(2,JKI),
+     &                          VIDISPDXOH_F(2,JKI),VIDISPDYOH_F(2,JKI)
+                  END DO
+               ENDIF
+            ENDIF
+            IF (BC3D_DT.le.0.0d0) THEN
+                ! We wanna leave it open for reading
+                CLOSE(11)
+            ENDIF
          ENDIF
-
-         IF    (ABS(IDEN).EQ.1) THEN
-            DO I=1,NP
-               READ(11,*) JKI,DASigT(JKI)
-            END DO
-         ELSEIF(ABS(IDEN).EQ.2) THEN
-            DO I=1,NP
-               READ(11,*) JKI,DASalt(JKI)
-            END DO
-c           CALL CALC_SIGMAT_2D()      !need to activate
-         ELSEIF(ABS(IDEN).EQ.3) THEN
-            DO I=1,NP
-               READ(11,*) JKI,DATemp(JKI)
-c           CALL CALC_SIGMAT_2D()      !need to activate
-            END DO
-         ELSEIF(ABS(IDEN).EQ.4) THEN
-            DO I=1,NP
-               READ(11,*) JKI,DATemp(JKI),DASalt(JKI)
-            END DO
-c           CALL CALC_SIGMAT_2D()      !need to activate
-         ENDIF
-         CLOSE(11)
-      ENDIF
+      ENDIF BC2D
 
 C...
 C...READ IN 2DDI PASSIVE SCALAR TRANSPORT INITIAL CONDITIONS
@@ -2637,6 +2812,7 @@ C     module).
       IF(NOLIBF.EQ.0) READ(15,*) TAU
       IF(NOLIBF.EQ.1) READ(15,*) CF
       IF(NOLIBF.EQ.2) READ(15,*) CF,HBREAK,FTHETA,FGAMMA
+      IF(NOLIBF.EQ.3) READ(15,*) CF,HBREAK,FTHETA
 C
       WRITE(16,2045)
  2045 FORMAT(//,' BOTTOM FRICTION INFORMATION',//)
@@ -2658,9 +2834,14 @@ C
       ENDIF
       IF(NOLIBF.EQ.2) THEN
          WRITE(16,101) CF,HBREAK,FTHETA,FGAMMA
- 101     FORMAT(5X,'HYBRID FRICTION RELATIONSHIP PARAMTERS, CFMIN =',
+ 101     FORMAT(5X,'HYBRID FRICTION RELATIONSHIP PARAMETERS, CFMIN =',
      &        F12.8,'  HBREAK = ',F8.2,
      &        /,5X,'FTHETA = ',F8.2,'  FGAMMA = ',F10.4,//)
+      ENDIF
+      IF(NOLIBF.EQ.3) THEN
+         WRITE(16,102) CF,HBREAK,FTHETA
+ 102     FORMAT(5X,'a(x^b-1) FUNCTION FRICTION PARAMETERS, CFMIN =',F12.8,
+     &          'a = ',F8.2,' b = ',F8.2//)
       ENDIF
 C
 C     jgf46.00 Bottom friction coefficients are initialized along with other
@@ -2800,7 +2981,7 @@ C...
       ENDIF
       IF(NCOR.EQ.1) THEN
          DO I=1,NP
-            CORIF(I)=2.0d0*7.29212d-5*SIN(SFEA(I))
+            CORIF(I)=2.0d0*omega*SIN(SFEA(I))
          END DO
       ENDIF
 
@@ -2812,6 +2993,11 @@ C...
          WRITE(16,3604)
  3604    FORMAT(/,5X,'LATITUDES ARE USED TO COMPUTE VARIABLE CORIOLIS',
      &        /,7X,'AND ARE BASED ON INPUT NODAL COORDINATES',/)
+         if (CORI.lt.0) then
+            TSINT = 1; TSINV = 0
+            write(16,*) 'INFO: TRUE SPHERE OPTION DETECTED...', 
+     &                  'IMPLEMENTING CORRECTED SPHERICAL COORDINATES'
+         endif
          IF(NABOUT.NE.1) THEN
             WRITE(16,2092)
  2092       FORMAT(/,10X,' NODE ',5X,'NODAL CORIOLIS CORIF',/)
@@ -2952,6 +3138,10 @@ C...
 1893  READ(15,*) NBFR
       MNBFR = NBFR
       IF (NBFR.EQ.0) MNBFR = 1
+      IF (MNOPE.GT.0) THEN
+C        WJP, Check for fort.19...
+         INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.19',exist=NPEBC)
+      ENDIF
 
 C     Allocate arrays dimensioned by MNBFR
       call alloc_main5()
@@ -2978,6 +3168,8 @@ C     Allocate arrays dimensioned by MNBFR
             PER(I)=2.D0*PI/AMIG(I)
          ENDIF
       END DO
+      IF (NPEBC) WRITE(16,*) ' NON-PERIODIC ELEVATION BOUNDARY ',
+     &                       'CONDITION WILL BE READ FROM FORT.19' 
 
 C...  INPUT FORCING CONDITIONS ON PERIODIC ELEVATION SPECIFIED
 C...  BOUNDARIES FOR EACH OF THE ELEVATION FORCING FREQUENCIES FROM UNIT
@@ -4186,6 +4378,12 @@ C     This option will be used in testing ADCIRC's hot start capabilities.
      &      NHSTAR, NHSINC
       CALL logMessage(ECHO,scratchMessage)
 C
+C     ! Only output hotstart once at first NHSINC 
+      IF (NHSTAR.lt.-1) then
+         NHOUTONCE = .true.
+         NHSTAR = -NHSTAR
+      endif
+
       SELECT CASE(NHSTAR)
       CASE(0)
          CALL logMessage(INFO,'HOT START OUTPUT WILL NOT BE GENERATED.')
@@ -4455,7 +4653,20 @@ C
          CALL logMessage(ECHO,"metadata, contact: "//trim(contact))
          READ(15,'(A80)',err=99999,end=99998,iostat=ios) base_date
          CALL logMessage(ECHO,"metadata, base_date: "//trim(base_date))
+#ifdef DATETIME
+         ! Convert base_date to datetime WJP
+         basedatetime = strptime(adjustl(trim(base_date)),
+     &                           "%Y-%m-%d %H:%M")
+         ! Check this a valid time
+         if (.not.basedatetime%isvalid()) then
+            call allMessage(ERROR,'Invalid base datetime: '
+     &           //basedatetime%isoformat(' ')
+     &           //'. Must be formatted as yyyy-MM-dd HH:mm')
+            call adcirc_terminate()
+         endif
+#endif
       ENDIF
+
 C...
 C...  CLOSE FORT.15
 C...

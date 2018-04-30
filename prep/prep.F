@@ -157,35 +157,51 @@ C     the value of IDEN in the fort.15 file.
 C
 C     jgf45.12 This subroutine is designed to work for baroclinic 3D
 C     runs only, not 2D runs.
+C     
+C     WJP 03.11.2018 made to work for 2D runs too
 C
 C---------------------------------------------------------------------------
       SUBROUTINE PREP11()
 C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       use memory_usage
+      use presizes, only: IDEN
       IMPLICIT NONE
       integer :: nbytes = 0
-      INTEGER I,J
+      INTEGER I,J,eof,K
       INTEGER iproc          ! subdomain index
       CHARACTER*80 header1, header2  ! header comments in unit 11 files
-      CHARACTER*80 nvn_nvp           ! string representing nfen, np
-      REAL(SZ) nvn           ! number of vertical nodes from unit 11 file
-      REAL(SZ) nvp           ! number of horizontal nodes from unit 11 file
+      CHARACTER*80 nvn_nvp
+      CHARACTER*120 Dummy    ! string representing nfen, np
+      integer nvn           ! number of vertical nodes from unit 11 file
+      integer nvp           ! number of horizontal nodes from unit 11 file
       INTEGER nhnn           ! horizontal nodes counter
       INTEGER nvnn           ! vertical nodes counter
       INTEGER sdu(nproc)     ! subdomain unit numbers for unit 11 files
-      REAL(SZ), ALLOCATABLE :: fdData1(:,:) !(MNP,NFEN) full domain data
-      REAL(SZ), ALLOCATABLE :: fdData2(:,:) !(MNP,NFEN) full domain data
-      REAL(SZ), ALLOCATABLE :: sdData1(:,:) !(MNP,NFEN) subdomain data
-      REAL(SZ), ALLOCATABLE :: sdData2(:,:) !(MNP,NFEN) subdomain data
+      INTEGER looper         ! timesnap looper
+      INTEGER nodepnw
+      CHARACTER*120, ALLOCATABLE :: FD2D_MSG(:), FD_MSG(:,:)
+!      REAL(SZ), ALLOCATABLE :: fdData1(:,:) !(MNP,NFEN) full domain data
+!      REAL(SZ), ALLOCATABLE :: fdData2(:,:) !(MNP,NFEN) full domain data
+!      REAL(SZ), ALLOCATABLE :: sdData1(:,:) !(MNP,NFEN) subdomain data
+!      REAL(SZ), ALLOCATABLE :: sdData2(:,:) !(MNP,NFEN) subdomain data
+!      REAL(SZ), ALLOCATABLE :: fdData2D(:)  !(MNP)    2D full domain data
+!      REAL(SZ), ALLOCATABLE :: sdData2D(:)  !(MNP)    2D subdomain data
+!      REAL(SZ), ALLOCATABLE :: fdData2D2(:) !(MNP)    2D full domain data
+!      REAL(SZ), ALLOCATABLE :: sdData2D2(:) !(MNP)    2D subdomain data
       LOGICAL success        ! .true. if all files opened successfully
 
-      CALL OpenPrepFiles(11, 'initial density forcing       ',
-     &     1, nproc, sdu, success)
+      if (IDEN.lt.5) then
+         CALL OpenPrepFiles(11, 'initial density forcing       ',
+     &                      1, nproc, sdu, success)
+      else
+         WRITE(*,*) 'NOTE: Unit 11 file will be from netCDF.'
+         RETURN ! note early return
+      endif
 
       IF (.not.success) THEN
-         WRITE(*,*) 'WARNING: Unit 11 files not preprocessed.'
-         RETURN ! note early return
+        WRITE(*,*) 'WARNING: Unit 11 files not preprocessed.'
+        RETURN ! note early return
       ENDIF
 C
 C     Read header information from full domain unit 11 file
@@ -200,9 +216,14 @@ C     Transcribe header information.
 C
 C     Check node number data for consistency (paranoia).
       READ(11,80) nvn_nvp
-      READ(nvn_nvp,*) nvn, nvp
+      IF (C2DDI) THEN
+         READ(nvn_nvp,*) nvp
+         nvn = nfen
+      ELSE
+         READ(nvn_nvp,*) nvn, nvp
+      ENDIF
       IF ( nvn .ne. nfen .or. nvp .ne. nnodg ) then
-         WRITE(*,*) 'ERROR: NVN or NVP not consistent with input data.'
+         WRITE(*,*) 'WARNING: NVN or NVP not consistent with input data'
          WRITE(*,*) 'NVN=',nvn,' although NFEN=',nfen
          WRITE(*,*) 'NVP=',nvp,' although NNODG=',nnodg
       ENDIF
@@ -210,83 +231,234 @@ C
 C     Decompose density forcing data; format based on value of IDEN.
 C     jgf45.12 This is designed to work for baroclinic 3D runs only, not
 C     2D runs.
+C     WJP 03.11.2018 made to work for 2D runs too
+
+      IF (C2DDI) THEN
+         ALLOCATE ( FD2D_MSG(MNP) )
+         nbytes = 120*mnp
+         call memory_alloc(nbytes)
+         FD2D_MSG = '';
+      ELSE
+         ALLOCATE ( FD_MSG(MNP,NFEN) )
+         nbytes = 120*mnp*nfen
+         call memory_alloc(nbytes)
+      ENDIF
+
+      DO looper = 1,100000 ! until end
+         IF (C2DDI) THEN
+            DO i=1, nvp
+               READ(11,'(A120)',END=411) Dummy ! get a flo val for this f.d. flow node
+               do k = 1,len_trim(Dummy)
+                  if (Dummy(k:k).eq.' '.or.Dummy(k:k).eq.',') exit
+               enddo
+               READ(Dummy(1:k-1),*) nhnn 
+               FD2D_MSG(nhnn) = Dummy(k+1:120)
+               !write(6,*) nhnn, FD2D_MSG(nhnn)
+            ENDDO
+         ELSE
+            DO i=1, nvp
+               DO j=1, nfen
+                  READ(11,*,END=411) nhnn, nvnn, FD_MSG(nhnn,nvnn) ! get a flo val for this f.d. flow node
+                  READ(FD_MSG,*) nvn, nvp
+               ENDDO
+            ENDDO
+         ENDIF
+
+         IF (C2DDI) THEN
+            DO iproc = 1, nproc
+               IF (looper.eq.1) THEN
+                  nodepnw = 0
+                  ! Find number of nodes with non-zero values for this processor
+                  DO i=1, nnodp(iproc)
+                     IF (len_trim(FD2D_MSG(IMAP_NOD_LG(i,iproc))).gt.0) THEN
+                        nodepnw = nodepnw + 1
+                     ENDIF
+                  ENDDO
+                  WRITE(sdu(iproc),*) nodepnw
+               ENDIF
+               DO i=1, nnodp(iproc)
+                  IF (len_trim(FD2D_MSG(IMAP_NOD_LG(i,iproc))).gt.0) THEN
+                     WRITE(sdu(iproc),81) i, FD2D_MSG(IMAP_NOD_LG(i,iproc))
+                  ENDIF
+               ENDDO
+            ENDDO
+         ELSE
+            DO iproc = 1, nproc
+              IF (looper.eq.1) WRITE(sdu(iproc),*) nfen, nnodp(iproc)
+               DO i=1, nnodp(iproc)
+                  DO j=1, nfen
+                    IF (FD_MSG(IMAP_NOD_LG(i,iproc),j)(1:1).ne.' ') THEN
+                       WRITE(sdu(iproc),82) i, j, FD_MSG(IMAP_NOD_LG(i,iproc),j)
+                    ENDIF
+                  ENDDO
+               ENDDO
+            ENDDO
+         ENDIF
+      END DO
+ 411  CLOSE (11)
+      DO IPROC=1, NPROC
+         CLOSE (SDU(IPROC))
+      ENDDO
+
+
+
+
+!      SELECT CASE (ABS(IDEN))
+
 
 c     read in the full domain data
-      SELECT CASE (ABS(IDEN))
-
-      CASE(1,2,3)
-         ALLOCATE ( fdData1(MNP,NFEN) )
-         nbytes = 8*mnp*nfen
-         call memory_alloc(nbytes)
-         DO i=1, NNODG
-            DO j=1, nfen
-               READ(11,*) nhnn, nvnn, fdData1(nhnn,nvnn)
-            ENDDO
-         ENDDO
-
-      CASE(4)
-         ALLOCATE ( fdData1(MNP,NFEN) )
-         ALLOCATE ( fdData2(MNP,NFEN) )
-         nbytes = 16*mnp*nfen
-         call memory_alloc(nbytes)
-         DO i=1, NNODG
-            DO j=1, nfen
-               READ(11,*) nhnn, nvnn,
-     &              fdData1(nhnn,nvnn),fdData2(nhnn,nvnn)
-            ENDDO
-         ENDDO
-
-      END SELECT
+!         IF (C2DDI) THEN
+!            ALLOCATE ( fdData2D(MNP) )
+!            nbytes = 8*mnp
+!            call memory_alloc(nbytes)
+!            DO i=1, NNODG
+!               READ(11,*) nhnn, fdData2D(nhnn)
+!            ENDDO
+!         ELSE
+!            ALLOCATE ( fdData1(MNP,NFEN) )
+!            nbytes = 8*mnp*nfen
+!            call memory_alloc(nbytes)
+!            DO i=1, NNODG
+!               DO j=1, nfen
+!                 READ(11,*) nhnn, nvnn, fdData1(nhnn,nvnn)
+!               ENDDO
+!           ENDDO
+!         ENDIF
 
 c     write out subdomain data
-      SELECT CASE (ABS(IDEN))
-
-      CASE(1,2,3)
-         ALLOCATE ( sdData1(MNP,NFEN) )
-         nbytes = 8*mnp*nfen
-         call memory_alloc(nbytes)
-         DO iproc = 1, nproc
-            WRITE(sdu(iproc),*) nfen, nnodp(iproc)
-            DO i=1, nnodp(iproc)
-               DO j=1, nfen
-                  sdData1(i,j) = fdData1(IMAP_NOD_LG(i,iproc),j)
-                  WRITE(sdu(iproc),*) i, j, sdData1(i,j)
-               ENDDO
-            ENDDO
-         ENDDO
-         DEALLOCATE ( fdData1, sdData1 )
-         nbytes = 16*mnp*nfen
-         call memory_dealloc(nbytes)
-
-      CASE(4)
-         ALLOCATE ( sdData1(MNP,NFEN) )
-         ALLOCATE ( sdData2(MNP,NFEN) )
-         nbytes = 16*mnp*nfen
-         call memory_alloc(nbytes)
-          DO iproc = 1, nproc
-            WRITE(sdu(iproc),*) nfen, nnodp(iproc)
-            DO i=1, nnodp(iproc)
-               DO j=1, nfen
-                  sdData1(i,j) = fdData1(IMAP_NOD_LG(i,iproc),j)
-                  sdData2(i,j) = fdData2(IMAP_NOD_LG(i,iproc),j)
-                  WRITE(sdu(iproc),*) i, j, sdData1(i,j), sdData2(i,j)
-               ENDDO
-            ENDDO
-         ENDDO
-         DEALLOCATE ( fdData1, fdData2 )
-         DEALLOCATE ( sdData1, sdData2 )
-         nbytes = 32*mnp*nfen
-         call memory_dealloc(nbytes)
-
-      END SELECT
-C
-C     Close full domain file and all subdomain files
-      CLOSE(11)
-      DO iproc=1, nproc
-         CLOSE(sdu(iproc))
-      ENDDO
+!         IF (C2DDI) THEN
+!            ALLOCATE ( sdData2D(MNP) )
+!            nbytes = 8*mnp
+!            call memory_alloc(nbytes)
+!            DO iproc = 1, nproc
+!               WRITE(sdu(iproc),*) nnodp(iproc)
+!               DO i=1, nnodp(iproc)
+!                  sdData2D(i) = fdData2D(IMAP_NOD_LG(i,iproc))
+!                  WRITE(sdu(iproc),*) i, sdData2D(i)
+!               ENDDO
+!            ENDDO
+!            DEALLOCATE ( fdData2D, sdData2D )
+!            nbytes = 16*mnp
+!            call memory_dealloc(nbytes)
+!         ELSE
+!            ALLOCATE ( sdData1(MNP,NFEN) )
+!            nbytes = 8*mnp*nfen
+!            call memory_alloc(nbytes)
+!            DO iproc = 1, nproc
+!               WRITE(sdu(iproc),*) nfen, nnodp(iproc)
+!                DO i=1, nnodp(iproc)
+c                  DO j=1, nfen
+!                     sdData1(i,j) = fdData1(IMAP_NOD_LG(i,iproc),j)
+!                     WRITE(sdu(iproc),*) i, j, sdData1(i,j)
+!                  ENDDO
+c               ENDDO
+!           ENDDO
+!            DEALLOCATE ( fdData1, sdData1 )
+!            nbytes = 16*mnp*nfen
+!            call memory_dealloc(nbytes)
+!         ENDIF
+!
+!
+!      CASE(4,5)
+!
+!C start by allocating
+!         IF (C2DDI) THEN
+!            ALLOCATE ( fdData2D(MNP), fdData2D2(MNP) )
+!            fdData2D = 0.0d0; fdData2D2 = 0.0d0
+!            nbytes = 16*mnp
+!            call memory_alloc(nbytes)
+!            ALLOCATE ( sdData2D(MNP), sdData2D2(MNP) )
+!            nbytes = 16*mnp
+!             call memory_alloc(nbytes)
+c         ELSE
+!            ALLOCATE ( fdData1(MNP,NFEN) )
+!            ALLOCATE ( fdData2(MNP,NFEN) )
+!            nbytes = 16*mnp*nfen
+!            call memory_alloc(nbytes)
+!            ALLOCATE ( sdData1(MNP,NFEN) )
+!            ALLOCATE ( sdData2(MNP,NFEN) )
+!            nbytes = 16*mnp*nfen
+!            call memory_alloc(nbytes)
+!         ENDIF
+!C
+!C--While ( NOT EOF ) Read densities from Global File
+!C
+!      looper = 0
+!      DO WHILE(.true.)
+!       
+!         looper = looper + 1
+!
+!c     read in the full domain data
+!         IF (C2DDI) THEN
+!            DO i=1, nvp
+!               READ(11,*,iostat=eof) nhnn,fdData2D(nhnn),fdData2D2(nhnn)
+c               IF (eof.ne.0) EXIT
+!            ENDDO
+!         ELSE
+!            DO i=1, nvp
+!              DO j=1, nfen
+!                  READ(11,*,iostat=eof) nhnn, nvnn,
+!     &                fdData1(nhnn,nvnn),fdData2(nhnn,nvnn)
+!                  IF (eof.ne.0) EXIT
+!               ENDDO
+!               IF (eof.ne.0) EXIT
+!            ENDDO
+c         ENDIF
+!
+!C        EOF reached, lets exit
+!         IF (eof < 0) EXIT
+c
+!c     write out subdomain data
+!         IF (C2DDI) THEN
+!            DO iproc = 1, nproc
+!               IF (looper.eq.1) WRITE(sdu(iproc),*) nnodp(iproc)
+!               DO i=1, nnodp(iproc)
+!                  sdData2D(i) = fdData2D(IMAP_NOD_LG(i,iproc))
+!                  sdData2D2(i) = fdData2D2(IMAP_NOD_LG(i,iproc))
+!                  WRITE(sdu(iproc),*) i, sdData2D(i), sdData2D2(i)
+!               ENDDO
+!            ENDDO
+!         ELSE
+!            DO iproc = 1, nproc
+!              IF (looper.eq.1) WRITE(sdu(iproc),*) nfen, nnodp(iproc)
+!               DO i=1, nnodp(iproc)
+!                  DO j=1, nfen
+!                    sdData1(i,j) = fdData1(IMAP_NOD_LG(i,iproc),j)
+!                    sdData2(i,j) = fdData2(IMAP_NOD_LG(i,iproc),j)
+!                    WRITE(sdu(iproc),*) i, j, sdData1(i,j), sdData2(i,j)
+c                  ENDDO
+!               ENDDO
+!            ENDDO
+!         ENDIF
+!      
+!      ENDDO
+!        
+!C       deallocating 
+!         IF (C2DDI) THEN
+!            DEALLOCATE ( fdData2D, sdData2D )
+!            DEALLOCATE ( fdData2D2, sdData2D2 )
+!            nbytes = 32*mnp
+!            call memory_dealloc(nbytes)
+!         ELSE
+!            DEALLOCATE ( fdData1, fdData2 )
+!            DEALLOCATE ( sdData1, sdData2 )
+!            nbytes = 32*mnp*nfen
+!            call memory_dealloc(nbytes)
+!         ENDIF
+!
+!      END SELECT
+!
+cC
+!C     Close full domain file and all subdomain files
+!      CLOSE(11)
+!      DO iproc=1, nproc
+!          CLOSE(sdu(iproc))
+!      ENDDO
 C
   80  FORMAT(A80)
+  81  FORMAT(I10,1x,A120)
+  82  FORMAT(2(I10),1x,A120)
+ 1100 FORMAT(I10,32000(2X,E16.8))
 C
       call memory_status()
       RETURN
@@ -540,7 +712,8 @@ C
 C---------------------------------------------------------------------------
       subroutine prep13()
 C---------------------------------------------------------------------------
-      use pre_global, only : useNodalAttrNames, nnodg, nnodp, nproc
+      use pre_global, only : useNodalAttrNames, nnodg, nnodp, nproc,
+     &                       prep5354flag, prep2001flag
       use memory_usage
       use nodalattributes
       IMPLICIT NONE
@@ -548,6 +721,7 @@ C
       integer :: nbytes = 0
       INTEGER ll             ! line loop counter
       INTEGER m              ! attribute default value counter
+      INTEGER :: k
       INTEGER iproc          ! subdomain loop counter
       INTEGER sdu(nproc)     ! subdomain unit number for unit 13 files
       INTEGER NumNotDefault  ! number of nodes specified in the file
@@ -667,12 +841,14 @@ C        Close full domain and subdomain files
          ENDDO
          startProc = endProc + 1
       END DO
-C
-      if (allocated(useNodalAttrNames)) then
-         DEALLOCATE(useNodalAttrNames)
-         nbytes = 4*nwp
-         call memory_dealloc(nbytes)
-      endif
+C     DW
+      IF ( .NOT. prep5354flag .and. .NOT. prep2001flag) THEN
+         if (allocated(useNodalAttrNames)) then
+            DEALLOCATE(useNodalAttrNames)
+            nbytes = 4*nwp
+            call memory_dealloc(nbytes)
+         endif
+      ENDIF
 C
       call memory_status()
       RETURN
@@ -776,6 +952,19 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
             select case(naType)
             case(ASCII)
                READ(13,*) nodeNum, (AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
+               IF (curAttrName.eq."sponge_generator_layer") THEN
+                  IF (AttrData(NumCol(curAttrInd)) > 0) THEN
+                     prep5354flag = .true.
+                  ENDIF
+                  IF (AttrData(NumCol(curAttrInd)).eq.-1.or.
+     &                AttrData(NumCol(curAttrInd)).eq.2) THEN
+                     prep2001flag = .true.
+                     IF (.not.allocated(nodeNumSP)) THEN
+                         allocate(nodeNumSP(NumNotDefault)); nodeNumSP=0
+                     ENDIF
+                     nodeNumSP(i) = nodeNum
+                  ENDIF
+               ENDIF
             case(XDMF)
                nodeNum = na(k) % nonDefaultNodes(i)
                attrData(:) = na(k) % nonDefaultVals(:,nodeNum)
@@ -858,6 +1047,7 @@ C     can be open at any one time.
       real(sz), allocatable :: diff(:) ! difference between nodal value and default value
       logical, allocatable :: areDefaultValues(:)
       integer :: nonDefaultCount
+      integer :: i,j,k
 C
       call readNodalAttrXDMF()
       !
@@ -1004,6 +1194,9 @@ C
       INTEGER INDX,INDEX2,ITOT,ITYPE,NUMS(10)
       CHARACTER LOCFN*14,PE*6
       CHARACTER*80 OUTMSG
+C..... DW
+      INTEGER:: IPER, II
+C..... DW
       !
       ! NVELLP(K,PE) Number of Land Boundary Nodes of Segment K on PE
       ! IMAP_NOD_GL2(2(PE-1)+1,I)  = PE assigned to Global Node I
@@ -1113,6 +1306,45 @@ C
                      ENDIF
                   ENDDO
                ENDDO
+
+            case(94)  
+C.... BEG DW, periodic boundary condition
+C.... 2018: use similar trick used in weir-node pair
+               II = 0 ;
+               DO I = IPERPTR(K), IPERPTR(K+1) - 1
+                   INDX = IPERCONN(I,1) ; ! global index: primary node
+                   INDEX2 = IPERCONN(I,2) ; ! global idnex: its slave node
+                  
+                   II = II + 1 ;
+                   DO J = 1, ITOTPROC(INDX)                       
+                       ITEMP = (J-1)*2 + 1 ; 
+                       IPROC2 = IMAP_NOD_GL2(ITEMP,INDX) ; ! processor (may not be resident)
+                       ILNODE2 = IMAP_NOD_GL2(ITEMP+1,INDX) ; ! local index
+                       !
+                       IF ( IPROC .EQ. IPROC2 ) THEN
+                          DO JD = 1, ITOTPROC(INDEX2)
+                            ITEMP2 = (JD - 1)*2 + 1 ;
+                            IPROC3 = IMAP_NOD_GL2(ITEMP2,INDEX2) ;
+                            ILNODE3 = IMAP_NOD_GL2(ITEMP2+1,INDEX2) ;
+
+                            IF ( IPROC .EQ. IPROC3 ) THEN
+                               NVELP(IPROC) = NVELP(IPROC) + 1 ;
+                               NVELLP(K) = NVELLP(K) + 1 ; 
+
+                               LBINDEX_LG(K,NVELLP(K)) = II ;
+                               NBVVP(K,NVELLP(K)) = ILNODE2 ;           
+C.... For now, use an exisitng interal boundary array  
+C     to hold the index of the slave node. In the future,
+C     if need be, change to a CRS format to save memory.
+                               IBCONNRP(K,NVELLP(K)) = ILNODE3 ;        
+                            END IF 
+                            
+                          END DO                                       
+                       END IF
+                       !
+                   END DO
+               END DO 
+C.......... END DW, periodic bcs
 C
 C--All Other Land Boundary Node types
 C
@@ -1240,6 +1472,7 @@ C
          IBP=0   ! Internal Barrier Boundary Pairs (levee)
          IBPPipe=0 ! internal barrier boundary pairs (levee with cross barrier pipes)
          ITEMP = 0 ! mainland and island
+         IPER = 0
 C
 C     jgf46.21 Added support for IBTYPE=52.
          DO K=1,NBOU
@@ -1262,6 +1495,9 @@ C     jgf46.21 Added support for IBTYPE=52.
                IBP = IBP + NVELLP(K)
             case(5,25)
                IBPPipe = IBPPipe + NVELLP(K)
+            case(94)
+!           DW/WP periodic boundary
+               IPER = IPER + NVELLP(K)
             case default
                ITEMP = ITEMP + NVELLP(K) 
             end select
@@ -1287,7 +1523,7 @@ C     jgf46.21 Added support for IBTYPE=52.
          END DO
 C
 c        print *, IPROC-1,ITEMP,DISC,BBN,2*IBP
-         ITEMP  = ITEMP + DISC + BBN + 2*IBP + 2*IBPPipe
+         ITEMP  = ITEMP + DISC + BBN + 2*IBP + 2*IBPPipe + IPER;
          IF (ITEMP.NE.NVELP(IPROC)) THEN
 c          print *, "changed value from ",NVELP(IPROC)," to ",ITEMP
            NVELP(IPROC) = ITEMP
@@ -1354,8 +1590,8 @@ c
      &                     LABELS(IMAP_NOD_LG(NNEP(3,J,IPROC),IPROC))
           ENDDO
  43       FORMAT(2I8)
- 44       FORMAT(I8,3(E24.12))
- 45       FORMAT(5I8)
+ 44       FORMAT(I8,3(E20.12))
+ 45       FORMAT(I8,I2,3(I9))
 C
 C--Write Open Boundary Data
 C
@@ -1438,6 +1674,13 @@ C
      &                      BAR1(K,INDX),BAR2(K,INDX),BAR3(K,INDX), 
      &                      BAR4(K,INDX),BAR5(K,INDX),BAR6(K,INDX)
                   ENDDO
+               case(94)
+C..... DW add support for ITYPE = 94
+                  DO I = 1,NVELLP(K)
+                     INDX = LBINDEX_LG(K,I)
+                     WRITE(14,84) LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC)),
+     &                          LABELS(IMAP_NOD_LG(IBCONNRP(K,I),IPROC))
+                  ENDDO
                end select
             ENDIF
          ENDDO
@@ -1463,6 +1706,7 @@ C
   81  FORMAT(I8,2X,E13.6,2X,E13.6)
   82  FORMAT(I8,2X,I8,2X,E13.6,2X,E13.6,2X,E13.6)
   83  FORMAT(I8,2X,I8,6(2X,E13.6))
+  84  FORMAT(I8,2X,I8)
   90  FORMAT(1X,A6,5I8)
 C
       RETURN
@@ -1568,10 +1812,11 @@ C     tcm v51.06.02 added NWS=16: GFDL Met Data
       ! jgf: Added NWS=30 (GAHM+OWI)
          IF ((ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.45).OR.
      &        (ABS(NWS).EQ.5).OR.(ABS(NWS).EQ.6).OR.(ABS(NWS).EQ.8)
-     &        .OR.(ABS(NWS).EQ.10).OR.(ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.15)
-     &        .OR.(ABS(NWS).EQ.16).OR.(ABS(NWS).eq.30)
-     &         .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.29).OR.
-     &          (ABS(NWS).EQ.20))THEN
+     &       .OR.(ABS(NWS).EQ.10).OR.(ABS(NWS).EQ.12)
+     &       .OR.(ABS(NWS).EQ.15).OR.(ABS(NWS).EQ.14)
+     &       .OR.(ABS(NWS).EQ.16).OR.(ABS(NWS).EQ.30)
+     &       .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.29)
+     &       .OR.(ABS(NWS).EQ.20))THEN
             WRITE(15,80) WSMSG1
          ENDIF
          IF (NWS.EQ.3) THEN
@@ -2542,7 +2787,7 @@ C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
       integer :: nbytes = 0
-      INTEGER I,J,IPROC
+      INTEGER I,J,IPROC,EOF
       INTEGER SDU(NPROC) ! subdomain unit numbers
       LOGICAL Success    ! .true. if files opened without errors
       CHARACTER*40  ETIMINC,ESBINP
@@ -2573,23 +2818,26 @@ C
 C
 C--While ( NOT EOF ) Read NETA BCs from Global File
 C
-1000  CONTINUE
-      DO I=1, NETA
-         READ(19,40,END=9999)  ESBIN(I)
-      ENDDO
-C
-      DO IPROC= 1,NPROC
-         DO I=1, NETAP(IPROC)
-            ESBINP = ESBIN(OBNODE_LG(I,IPROC))
-            WRITE(SDU(IPROC),40) ESBINP
+      DO WHILE(.true.)
+         DO I=1, NETA
+            READ(19,40,iostat=eof)  ESBIN(I)
+            IF (eof.ne.0) EXIT
          ENDDO
-      ENDDO
+C        EOF reached, lets exit
+         IF (eof < 0) EXIT
+         
+         DO IPROC= 1,NPROC
+            DO I=1, NETAP(IPROC)
+               ESBINP = ESBIN(OBNODE_LG(I,IPROC))
+               WRITE(SDU(IPROC),40) ESBINP
+            ENDDO
+         ENDDO
 C
-      GO TO 1000
+      ENDDO
 C
 C--Close Global file and all the Local Files
 C
- 9999 CLOSE (19)
+      CLOSE (19)
       DO IPROC=1, NPROC
          CLOSE (SDU(IPROC))
       ENDDO
@@ -2600,8 +2848,7 @@ C
       call memory_status()
       RETURN
   40  FORMAT(A40)
-      END
-
+      END SUBROUTINE PREP19 
 
 C---------------------------------------------------------------------------
 C                S U B R O U T I N E   P R E P 2 0
@@ -2618,23 +2865,36 @@ C     formatting as well as the erroneous use of the GL mapping instead
 C     of GL2. Also added subroutine call to open files.
 C
 C---------------------------------------------------------------------------
-      SUBROUTINE PREP20()
+      SUBROUTINE PREP20(sponge)
 C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
       INTEGER IPROC
-      INTEGER INDEX14, I
+      INTEGER INDEX14, I, FLUX_NUM
       REAL(SZ)  FLUX_INC, FLUX_VAL
+      CHARACTER(80) :: FLUX_MSG
       INTEGER SDU(NPROC)  ! subdomain unit numbers
       LOGICAL Success     ! .true. if all files open without error
+      LOGICAL,optional :: sponge !.true. if want to prep fort.2001
       INTEGER INDX ! full domain node number for a flow boundary node
       INTEGER J     ! counter for subdomains that corrsp. to a single f.d. node
       INTEGER IPROC2! PE of a subdomain that matches a single full domain node
+      INTEGER PROC_NO ! proc number is 20 unless specified 
 
+      proc_no = 20;
+      FLUX_NUM = EXIST_FLUX
 C     Open full domain and subdomain fort.20 files
-      CALL OpenPrepFiles(20, 'aperiodic flux boundary       ',
+      if (present(sponge)) THEN
+         if (sponge) then
+            proc_no = 2001
+            FLUX_NUM = ubound(nodeNumSP,1)
+            write(*,*) 'FLUX_NUM = ',FLUX_NUM 
+         endif
+      endif  
+
+      CALL OpenPrepFiles(proc_no, 'aperiodic flux boundary       ',
      &     1, nproc, SDU, Success)
       IF (.not.Success) THEN
          WRITE(*,*) 'WARNING: Unit 20 files not preprocessed.'
@@ -2643,7 +2903,7 @@ C     Open full domain and subdomain fort.20 files
 c
 c     Write Increment into all flux files
 c
-      READ(20,*) FLUX_INC
+      READ(proc_no,*) FLUX_INC
       DO IPROC=1,NPROC
          WRITE(SDU(IPROC),*) FLUX_INC
       ENDDO
@@ -2653,20 +2913,30 @@ C     subdomains that that full domain node maps to. The full domain
 C     node may map to more than one subdomain node if it falls on a
 C     boundary between subdomains (ghost nodes).
 C
- 33   DO I=1, EXIST_FLUX            ! loop through full domain flow nodes
-         READ(20,*,END=40) FLUX_VAL ! get a flo val for this f.d. flow node
-         INDX = FLUX14_ARY(I)      ! get full domain flow node number
+ 33   DO I = 1, FLUX_NUM             ! loop through full domain flow nodes
+!         READ(20,*,END=40) FLUX_VAL ! get a flo val for this f.d. flow node
+         READ(proc_no,'(A80)',END=40) FLUX_MSG ! get a flo val for this f.d. flow node
+         if (present(sponge)) THEN
+            if (sponge) then
+                INDX = nodeNumSP(I) 
+            else
+                INDX = FLUX14_ARY(I)      ! get full domain flow node number
+            endif
+         else
+            INDX = FLUX14_ARY(I)      ! get full domain flow node number
+         endif  
          DO J=1, ITOTPROC(INDX)    ! loop over subdomains for 1 f.d. node
             IPROC2 = IMAP_NOD_GL2(2*(J-1)+1,INDX) ! find next subdomain
             DO IPROC=1, NPROC
                IF (IPROC.EQ.IPROC2) THEN ! full domain node maps to this s.d.
-                  WRITE(SDU(IPROC),50) FLUX_VAL
+                  !WRITE(SDU(IPROC),50) FLUX_VAL
+                  WRITE(SDU(IPROC),*) TRIM(FLUX_MSG)
                ENDIF
             END DO
          END DO
       END DO
       GOTO 33
- 40   CLOSE (20)
+ 40   CLOSE (proc_no)
       DO IPROC=1, NPROC
          CLOSE (SDU(IPROC))
       ENDDO
@@ -3159,8 +3429,278 @@ C
       call memory_status()
       RETURN
 C---------------------------------------------------------------------------
-      END SUBROUTINE PREP24	
+      END SUBROUTINE PREP24
 
+C----------------------------------------------------------------------------
+!     DW, for preping fort.530001 abd fort.54001 used in the harmonic forcing 
+!     in the sponge layers 
+!     
+C---------------------------------------------------------------------------
+C     S U B R O U T I N E   P R E P 5 3 5 4
+C---------------------------------------------------------------------------
+C     
+C     BY DEFAULT, ONLY 256 SUBDOMAINS WILL BE PREPPED AT A TIME TO AVOID
+C     OPENING TOO MANY FILES ON CERTAIN PLATFORMS. THIS NUMBER CAN BE
+C     CONTROLLED BY THE PARAMETER MAXOPENFILES.
+C     
+C---------------------------------------------------------------------------
+      SUBROUTINE PREP5354( FUNIT )
+C---------------------------------------------------------------------------
+      USE PRE_GLOBAL
+      use memory_usage
+      IMPLICIT NONE
+C     
+      INTEGER:: FUNIT
+      INTEGER:: NCOMP
+
+      integer :: nbytes = 0
+      INTEGER i                 ! node loop counter
+      INTEGER k                 ! attribute loop counter
+      INTEGER ll                ! line loop counter
+      INTEGER m                 ! attribute default value counter
+      INTEGER iproc             ! subdomain loop counter
+      INTEGER sdu(nproc)        ! subdomain unit number for unit 13 files
+      INTEGER NumOfNodes        ! must match the no. of nodes in grid (unit 14)
+      INTEGER NAttr             ! number of nodal attributes in the file
+      INTEGER NumNotDefault     ! number of nodes specified in the file
+
+C      CHARACTER(len=80) header  ! header comments in unit 13 files
+C      CHARACTER(len=80) AttrName ! label for attribute
+C      CHARACTER(len=80) Units   ! label for physical units
+
+      CHARACTER(len=80) Skipped ! data we want to skip over
+      REAL(SZ) DefaultVal(12)   ! default value of attribute
+      INTEGER NoOfVals          ! at each node for an attribute
+      INTEGER Mode              !=0 to count, =1 to write
+      LOGICAL success           ! .true. if all files opened successfully
+      INTEGER, ALLOCATABLE :: SDNumND(:,:) ! subdomain # of nodes not default
+
+C     jgf48.47 Do the decomposition for a max of 256 subdomains at a
+C     time ... some platforms/compilers limit the number of files that
+C     can be open at any one time.
+      INTEGER, PARAMETER :: maxOpenFiles = 256
+      INTEGER startProc
+      INTEGER endProc
+      INTEGER deltaProc
+      
+      INTEGER:: NBF
+      REAL(SZ), dimension(32):: AMIGv, FFv, FACEv ! Maximum 32 Consituent
+      CHARACTER (LEN=300):: IGNOREMSG 
+      
+      INTEGER:: KK
+
+      TYPE CARR
+         CHARACTER (LEN=32):: NAME
+      END TYPE CARR
+      TYPE (CARR):: CONSTINAME(maxOpenFiles) 
+
+
+      SELECT CASE( FUNIT )
+      CASE (53001)
+         NCOMP = 2 ; 
+      CASE (54001)
+         NCOMP = 4 ;
+      CASE DEFAULT
+         PRINT*, "Error in PREP5354(): ", FUNIT, " is not allowed." ;
+         STOP ; 
+      END SELECT
+C     
+C     
+C     Perform decomposition over range of subdomains.
+      startProc = 1
+      DO WHILE ( startProc .lt. nproc )
+         deltaProc = nproc - startProc
+         IF ( deltaProc .gt. maxOpenFiles ) deltaProc = maxOpenFiles
+         endProc = startProc + deltaProc
+
+C     
+C     Open full domain and subdomain fort.13 files.
+        CALL OpenPrepFiles( FUNIT, 'harmonic forcing in sponge layer',
+     &        startProc, endProc, sdu, success)
+C     
+         IF (.not.success) THEN
+            WRITE(*,'(A,I5,A)') 'WARNING: Unit ', FUNIT,
+     &                                    'files not preprocessed.' ;
+            RETURN              ! note early return
+         ENDIF
+C     
+C     Read header information from full domain unit 13 file
+C
+         READ(FUNIT,*) NBF
+         IF ( NBF > 32 ) THEN
+            PRINT*, "Error in PREP5354(): ", NBF, " is greater 32" ;
+         END IF   
+
+         DO KK = 1, NBF
+            READ(FUNIT,*) AMIGv(KK), FFv(KK), 
+     &           FACEv(KK), CONSTINAME(KK)%NAME 
+         END DO
+
+C     Transcribe header information into subdomain unit 13 files
+
+         DO iproc = startProc, endProc
+            WRITE(sdu(iproc),*) NBF
+            DO KK = 1, NBF
+                WRITE(sdu(iproc),'(3E15.8,A)') AMIGv(KK), FFv(KK), 
+     &                     FACEv(KK), ' '//TRIM(CONSTINAME(KK)%NAME) ;
+            END DO
+         ENDDO
+
+         NAttr = 1 ; 
+         ALLOCATE(SDNumND(nproc,NAttr))
+         nbytes = 8*nproc*NAttr ; 
+         call memory_alloc(nbytes)
+         DO iproc=startProc,endProc
+            DO k=1, NAttr
+               SDNumND(iproc,k)=0
+            END DO
+         END DO
+
+C     We need to figure out how many nodes go into each subdomain
+C     for each attribute.
+
+         CALL process5354( FUNIT, NBF, NCOMP, 0, sdu, 
+     &        SDNumND, startProc, endProc )
+C     
+C     Now rewind and advance to the beginning of the data again
+
+         REWIND(FUNIT)
+         DO ll=1, NBF + 1
+            READ(FUNIT,*) skipped ! skip NBF + 1 lines (NBF, AMIG, ...)
+         END DO
+C
+C     Now read each of the nodal attributes and transcribe them to the
+C     appropriate subdomain.
+         CALL process5354( FUNIT, NBF, NCOMP, 1, sdu, 
+     &        SDNumND, startProc, endProc)
+
+         DEALLOCATE(SDNumND)
+         nbytes = 8*nproc*nattr ;
+         call memory_dealloc(nbytes)
+C     
+C     Close full domain and subdomain files
+         CLOSE (FUNIT)
+         DO iproc=startProc, endProc
+            CLOSE(sdu(iproc))
+         ENDDO
+         startProc = endProc + 1 ;
+      END DO
+
+      call memory_status()
+      RETURN ;
+
+      END SUBROUTINE PREP5354
+!
+!
+      SUBROUTINE Process5354( FUNIT, NBF, ncmp, mode, sdu, SDNumND,
+     &     startProc, endProc)
+
+      USE PRE_GLOBAL
+      IMPLICIT NONE
+C     
+      INTEGER,intent(in) :: FUNIT, NBF, ncmp ! number of attributes in the file
+  
+
+      INTEGER,intent(in) :: Mode !=0 to count and return, =1 to write
+      INTEGER,intent(in),dimension(nproc) :: sdu !i/o unit number array
+      INTEGER,intent(inout),dimension(nproc,1) :: SDNumND
+      INTEGER,intent(in) :: startProc
+      INTEGER,intent(in) :: endProc
+      INTEGER NumNotDefault     ! number of nodes specified in the file
+      INTEGER NumCol            ! number of values per node for an attr
+      INTEGER NodeNum           ! full domain node number
+      INTEGER SDNode            ! subdomain node number
+      INTEGER i                 ! node loop counter
+      INTEGER j                 ! column loop counter
+      INTEGER k                 ! attribute loop counter
+      INTEGER m                 ! mapping loop counter
+      INTEGER iproc             ! subdomain loop counter
+      INTEGER iproc2              ! mapped subdomain
+      REAL(SZ):: AttrData(NBF, 4) ! attribute data
+      CHARACTER(len=80) Skipped   ! data we want to skip over
+C     
+      CHARACTER (len=80):: FMT
+      INTEGER:: ifreq, NAttr
+  
+      NAttr = 1 ;
+      DO k=1, NAttr
+         
+         READ(FUNIT,*) NumNotDefault
+         
+         IF (Mode.eq.1) THEN
+            DO iproc=startProc,endProc
+               WRITE(sdu(iproc),*) SDNumND(iproc,k)
+            END DO
+         ENDIF
+
+         DO i=1, NumNotDefault
+            !
+            READ(FUNIT,'(I10)') NodeNum
+            DO ifreq = 1, NBF
+               READ(FUNIT,*) AttrData(ifreq,1:ncmp) ;
+            END DO
+            !
+
+            IF (ITOTPROC(NodeNum).eq.1) THEN
+               !
+               iproc = IMAP_NOD_GL(1,NodeNum)
+               IF ( (iproc.lt.startProc) .or. (iproc.gt.endProc) ) THEN
+
+                  CYCLE         ! skip it if it does not map to our range of procs
+               ENDIF
+
+               IF (Mode.eq.0) THEN
+                   SDNumND(iproc,k) = SDNumND(iproc,k)+1 ;
+                   !
+               END IF
+
+               IF (Mode.eq.1) THEN
+                  SDNode = IMAP_NOD_GL(2,NodeNum)
+                  !
+                  WRITE(sdu(iproc),*) SDNode ; 
+                  DO ifreq = 1, NBF
+                     WRITE(sdu(iproc),1101) (AttrData(ifreq,j),j=1,ncmp)
+                  END DO                     
+               ENDIF
+               !
+            ELSE
+               !
+               DO m=1, ITOTPROC(NodeNum)
+                  iproc2 = IMAP_NOD_GL2(2*(m-1)+1,NodeNum)
+
+                  DO iproc=startProc, endProc
+                     IF (iproc.EQ.iproc2) THEN !f.d. node maps to this s.d.
+                        IF (Mode.eq.0) THEN
+                           SDNumND(iproc,k)=SDNumND(iproc,k)+1 ;
+                        ENDIF
+                        IF (Mode.eq.1) THEN
+                           SDNode = IMAP_NOD_GL2(2*(m-1)+2,NodeNum) ;
+
+                           WRITE(sdu(iproc),*) SDNode ; 
+                           DO ifreq = 1, NBF
+                             WRITE(sdu(iproc),1101) (AttrData(ifreq,j),j=1,ncmp)
+                           END DO
+                        ENDIF
+                     ENDIF
+                  END DO
+               END DO
+               !
+            END IF
+         END DO
+
+         IF (Mode.eq.1) THEN
+            WRITE(6,*) 'for processor range ',startProc,' to ',endProc
+         ENDIF
+      END DO
+C     
+ 1101 FORMAT(32000(E16.8))
+C     
+      RETURN
+C---------------------------------------------------------------------------
+      END SUBROUTINE Process5354
+C---------------------------------------------------------------------------
+C   END DW
+C
 C---------------------------------------------------------------------------
 C                S U B R O U T I N E   P R E P 141
 C---------------------------------------------------------------------------
@@ -6383,12 +6923,14 @@ C---------------------------------------------------------------------------
       LOGICAL, intent(out):: Success     ! .true. if files opened w/o errors
       LOGICAL Found               !.true. if the full domain file exists
       CHARACTER(len=80) FileName   ! name of full domain file
-      CHARACTER(len=8) DefaultName! default name of full domain file  !increased from 7 to 8 tcm v50.66.03
+      CHARACTER(len=20) DefaultName! default name of full domain file  !increased from 7 to 8 tcm v50.66.03
       INTEGER :: dnlen  !length of defaultname (7 or 8)
       INTEGER ErrorIO             ! zero if file opened successfully
       INTEGER iproc               ! subdomain index
-      CHARACTER(len=15) sdFileName     ! subdomain file name   !increased from 14 to 15 tcm v50.66.03
+      CHARACTER(len=20) sdFileName     ! subdomain file name   !increased from 14 to 15 tcm v50.66.03
       CHARACTER(len=4) skipstring ! indicates user wants to skip this file
+      INTEGER:: unitwidth
+      CHARACTER (len=20):: fmt
 
       Found = .false.
       Success = .false.
@@ -6398,14 +6940,12 @@ C---------------------------------------------------------------------------
   
       DefaultName(1:5) = 'fort.'
 
-c.....tcm v50.66.03 increased unit number to 100's places
-      if (UnitNumber < 100) then
-         WRITE(DefaultName(6:7),2) UnitNumber
-         dnlen = 7
-      else
-         WRITE(DefaultName(6:8),3) UnitNumber
-         dnlen = 8
-      endif
+      unitwidth = ceiling(log(dble(UnitNumber))/log(10.0)) ;        
+      dnlen = 5 + unitwidth ;   
+      WRITE(FMT,'(I3)') unitwidth ;
+
+      FMT = '(I'//TRIM(ADJUSTL(FMT))//')' ;          
+      WRITE(DefaultName(6:dnlen),TRIM(FMT)) UnitNumber ;
 
 C
 C     Determine the name of the file; if found, open it
@@ -6457,11 +6997,7 @@ C     Open each of the subdomain files
          sdu(iproc) = 505 + (iproc-1)  !tcm v51.31 changed 105 to 505 to avoid conflicts with fort.141 file
          sdFileName(1:7) = 'PE0000/'
 c........tcm v50.66.03 increased unit number to 100's places
-         if (UnitNumber < 100 ) then
-            sdFileName(8:14) = DefaultName(1:7)
-         else
-            sdFileName(8:15) = DefaultName
-         endif
+         sdFileName = trim(DefaultName) ;    
 #ifdef ADCSWAN
          sdFileName = 'PE0000/'//FileName
 #endif
@@ -7083,7 +7619,6 @@ C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: InitiallyDryDescript   ! initiallydry.63
       type(OutputDataDescript_t), SAVE :: EndRisingInunDescript  ! endrisinginun.63
       type(OutputDataDescript_t), SAVE :: EverDriedDescript      ! everdried.63
-      type(OutputDataDescript_t), SAVE :: windDragDescript       ! windDrag.173
 
       type(OutputDataDescript_t), SAVE :: dynamicWaterlevelCorrectionDescript    ! dynamicWaterlevelCorrection.63
       type(OutputDataDescript_t), SAVE :: dynamicWaterlevelCorrectionStaDescript ! dynamicWaterlevelCorrection.61

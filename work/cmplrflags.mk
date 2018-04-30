@@ -384,31 +384,37 @@ endif
 #
 # Corbitt 120322:  These flags work on the Notre Dame Athos & Zas
 ifeq ($(compiler),intel-ND)
-  PPFC            :=  ifort
+  PPFC          :=  ifort
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -w -O3 -assume byterecl -132 -i-dynamic -assume buffered_io
+  FFLAGS1       :=  $(INCDIRS) -w -O3 -assume byterecl -132 -assume buffered_io #-i-dynamic
   ifeq ($(DEBUG),full)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug -check all -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+     FFLAGS1    :=  $(INCDIRS) -g -O0 -traceback -debug -check all -FI -assume byterecl -132 -DEBUG -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DPOWELL
+  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DPOWELL #-DNOFSBPG #-DNOIVB
   DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
   ifeq ($(SWAN),enable)
-     DPRE          := $(DPRE) -DADCSWAN
+     DPRE       := $(DPRE) -DADCSWAN
   endif
   IMODS         :=  -I
   CC            := icc
   CCBE          := $(CC)
   CFLAGS        := $(INCDIRS) -O3 -m64 -mcmodel=medium -DLINUX
-  FLIBS          :=
+  FLIBS         := 
+  ifeq ($(GLOBAL),enable)
+     WGRIB2HOME    := $(SRCDIR)/lib/grib2/lib/
+     DATETIMEHOME  := $(SRCDIR)/lib/datetime-fortran-master/build/
+     FLIBS         := -lwgrib2_api -lwgrib2 -ljasper -L$(WGRIB2HOME) -ldatetime -L$(DATETIMEHOME)lib/
+  endif
   ifeq ($(DEBUG),full)
-     CFLAGS        := $(INCDIRS) -g -O0 -march=k8 -m64 -mcmodel=medium -DLINUX
+     CFLAGS     := $(INCDIRS) -g -O0 -m64 -march=k8 -mcmodel=medium -DLINUX
   endif
   ifeq ($(NETCDF),enable)
      HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
+     #HDF5HOME=/opt/crc/h/hdf5/intel/18.0/build/lib/      
      FLIBS      := $(FLIBS) -lnetcdff -L$(HDF5HOME) 
   endif   
   CLIBS         :=
@@ -419,10 +425,8 @@ ifeq ($(compiler),intel-ND)
   else
      MULTIPLE := TRUE
   endif
-  NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/netcdf/rhel6/4.1.3/intel-12.0/
-  #NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/scilib/netcdf/4.1.2/intel-12.0/inst
+  NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/n/netcdf/4.7.0/intel/18.0/
 endif
-#
 # SGI ICE X (e.g. topaz@ERDC) using Intel compilers, added by TCM
 # jgf: Added flags for Thunder@AFRL.
 ifeq ($(compiler),intel-sgi)

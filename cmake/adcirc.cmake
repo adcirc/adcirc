@@ -12,7 +12,8 @@ IF(BUILD_ADCIRC)
                           src/write_output.F src/couple2swan.F src/adcirc.F
                           src/weir_boundary.F src/read_input.F src/cstart.F
                           src/hstart.F src/timestep.F src/vsmy.F
-                          src/transport.F src/driver.F )
+                          src/transport.F src/driver.F
+                          src/sponge_layer.F src/quadtrature.F src/couple2baroclinic3D.F)
 
     ADD_EXECUTABLE(adcirc ${ADCIRC_SOURCES})
     SET(ADCIRC_COMPILER_FLAGS "${ADDITIONAL_FLAGS_ADCIRC} ${ADCIRC_OPTION_FLAGS}")

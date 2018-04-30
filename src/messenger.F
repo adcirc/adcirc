@@ -826,6 +826,59 @@ C---------------------------------------------------------------------
       END SUBROUTINE UPDATER
 C---------------------------------------------------------------------
 
+C..... DW:, for periodic bcs (this subroutine looks a bit ugly and probably does belongs here)
+C        - experiment periodic boundary conditions 
+C        - use in updating the pseudo residual of slave nodes when they are ghost nodes
+C          0. Assign  the residual of slave nodes to a temporay vector
+C          1. Owner PE assigns the residual of the periodic-primary nodes to theirs slave nodes
+C          2. Update ghost nodes through CALL UPDATER()
+C          3. Restore the residual of slave nodes
+      SUBROUTINE UPDATER_W_PERBC( VEC1, VEC2, VEC3, NMSG )
+      USE global, only: NPERSEG, NNPERBC, IPERCONN  
+
+      IMPLICIT NONE
+
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+
+      INTEGER,  INTENT(IN) ::  NMSG
+      REAL(SZ), INTENT(INOUT) ::  VEC1(*),VEC2(*),VEC3(*)
+
+      REAL(SZ):: VECTMP(NNPERBC,NMSG) ;
+
+      IF ( NPERSEG > 0 ) THEN
+         VECTMP(:,1) = VEC1(IPERCONN(1:NNPERBC,2)) ;
+         VEC1(IPERCONN(1:NNPERBC,2)) = VEC1(IPERCONN(1:NNPERBC,1)) ;
+         
+         IF ( NMSG == 2 ) THEN
+            VECTMP(:,2) = VEC2(IPERCONN(1:NNPERBC,2)) ;
+            VEC2(IPERCONN(1:NNPERBC,2)) = VEC2(IPERCONN(1:NNPERBC,1)) ;
+         ELSEIF ( NMSG == 3 ) THEN
+            VECTMP(:,2) = VEC2(IPERCONN(1:NNPERBC,2)) ;
+            VEC2(IPERCONN(1:NNPERBC,2)) = VEC2(IPERCONN(1:NNPERBC,1)) ;
+            
+            VECTMP(:,3) = VEC3(IPERCONN(1:NNPERBC,2)) ;
+            VEC3(IPERCONN(1:NNPERBC,2)) = VEC3(IPERCONN(1:NNPERBC,1)) ;
+         ENDIF
+      END IF
+
+      CALL UPDATER( VEC1, VEC2, VEC3, NMSG ) ; 
+
+      IF ( NPERSEG > 0 ) THEN
+         VEC1(IPERCONN(1:NNPERBC,2)) = VECTMP(:,1)
+         IF ( NMSG == 2 ) THEN
+            VEC2(IPERCONN(1:NNPERBC,2)) = VECTMP(:,2)  ;
+         ELSEIF ( NMSG == 3 ) THEN
+            VEC2(IPERCONN(1:NNPERBC,2)) = VECTMP(:,2)  ;
+            VEC3(IPERCONN(1:NNPERBC,2)) = VECTMP(:,3)  ;
+         END IF
+      END IF
+
+      RETURN ;
+      END SUBROUTINE UPDATER_W_PERBC
+C..... DW
+C
 C---------------------------------------------------------------------
 C     S U B R O U T I N E   U P D A T E R 3 D 
 C---------------------------------------------------------------------

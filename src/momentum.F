@@ -148,21 +148,31 @@ C                            r.l.  06/22/2005                                  *
 C*******************************************************************************
 
       SUBROUTINE Mom_Eqs_New_NC()
-      USE GLOBAL, ONLY : UU2, VV2, QX2, QY2, CBaroclinic, 
+      USE GLOBAL, ONLY : UU2, VV2, QX2, QY2, CBaroclinic, C3D, IDEN,
      &  CME_AreaInt_Corr, CME_AreaInt_Orig, CME_LS_IBPQ, CME_LS_IBPSQ,
      &  CME_LS_IBPSV, CSmag_Eh, Smag_Comp_Flag, CTIP, DT, CME_LS_IBPV,
      &  IFNLCT, IFNLFA, IFWIND, NRS, NWS, SMAG_LOWER_LIM, SMAG_UPPER_LIM,
      &  NODECODE, NOFF, UU1, VV1, ETA2, ETA1, QX1, QX2, QY1, PR1, PR2,
      &  TiP1, TiP2, WSX2, WSY2, TK, CORIF, WSX1, WSY1, VIDBCPDXOH,
      &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y, usingDynamicWaterLevelCorrection,
-     &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, TKM, adcirc_norm2
-      USE MESH, ONLY : NE, NP, NM, DP, X, Y, Areas, TotalArea, 
-     &                  NNeigh, NeiTab, NeiTabEle, MJU, SFAC
+     &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, TKM, 
+     &  adcirc_norm2, QN2, MOM_LV_X, MOM_LV_Y, BXX, BXY, BYY, VIDispDXOH, 
+     &  VIDispDYOH, NPERSEG, NNPERBC, IPERCONN, TSINT
+      USE MESH, ONLY : NE, NP, NM, DP, Areas, TotalArea, sfar,
+     &                 NNeigh, NeiTab, NeiTabEle, MJU, SFAC, FDXE, FDYE,
+     &                 SWITCH_ELTAB_PERBC
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
      &    CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3                 
-      USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
+      USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal,
+     &     NOLIBF,
+C----- DW: begin !c absorbing layer
+     &     LoadAbsLayerSigma, absorblayer_sigma_eta,
+     &     absorblayer_sigma_mnx, absorblayer_sigma_mny
+C----- END DW
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceUVOB, 
      &                       enforceUVCB
+      USE SPONGELAYER
+      USE WIND, ONLY: PRBCKGRND_MH2O 
 
       IMPLICIT NONE
 
@@ -199,11 +209,18 @@ C*******************************************************************************
       REAL(SZ) VIDBCPDX, VIDBCPDY
       REAL(SZ) WSX, WSY
       REAL(SZ) ZNGLHS,ZNGRHS1,ZNGRHS2
+      REAL(SZ) DispX, DispY, CorifA
 
       REAL(8) AreaIE, AreaIE2
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       INTEGER :: nele
       REAL(SZ) :: VCOEFXX, VCOEFYY, VCOEFXY, VCOEFYX
+C..... DW
+      LOGICAL :: MOM_SPONGE = .false.
+      REAL(8) :: SPNGCOEF_X, SPNGCOEF_Y
+      REAL(SZ):: pr1_NM1, pr1_NM2, pr1_NM3
+      REAL(SZ):: pr2_NM1, pr2_NM2, pr2_NM3
+C......DW
       call setMessageSource("mom_eqs_new_nc")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -214,6 +231,15 @@ C...  NOTE: MOM_LV_X, MOM_LV_Y AND AUV ARE ZEROED OUT AT THE TOP OF
 C...        THE TIME STEPPING LOOP.
 
 C.....FIRST TREAT THE NON-LUMPED PART OF THE EQUATIONS.
+      
+      !C DW
+      IF ( LoadAbsLayerSigma .AND. SUM(NumNodesAbsLayer(2:3)) > 0 ) THEN
+         MOM_SPONGE = .true.
+      ENDIF
+C..... DW, periodic boundary condition      
+C     Switch to the periodic node numbering 
+      CALL SWITCH_ELTAB_PERBC( IDIREC = 1 ) ;
+C..... DW
 
       DO IE=1,NE
 
@@ -252,22 +278,24 @@ Corbitt 120322: Localized Advection
 
          AreaIE2=Areas(IE)
          AreaIE =AreaIE2/2.d0
-         FDX1=(Y(NM2)-Y(NM3))*SFacAvg  !b1
-         FDX2=(Y(NM3)-Y(NM1))*SFacAvg  !b2
-         FDX3=(Y(NM1)-Y(NM2))*SFacAvg  !b3
-         FDY1=X(NM3)-X(NM2)            !a1
-         FDY2=X(NM1)-X(NM3)            !a2
-         FDY3=X(NM2)-X(NM1)            !a3
+C..... DW
+         FDX1 = FDXE(1,IE)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
+         FDX2 = FDXE(2,IE)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
+         FDX3 = FDXE(3,IE)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
+         FDY1 = FDYE(1,IE) ;    !c  FDY1=X(NM3)-X(NM2) !a1
+         FDY2 = FDYE(2,IE) ;    !c  FDY2=X(NM1)-X(NM3) !a2
+         FDY3 = FDYE(3,IE) ;    !c  FDY3=X(NM2)-X(NM1) !a3
+C..... DW
 
 C...  Compute element averaged quantities
 
          U1Avg =(U1N1+U1N2+U1N3)/3.d0
          V1Avg =(V1N1+V1N2+V1N3)/3.d0
 
-         DU1DXA=(UU1(NM1)*FDX1+UU1(NM2)*FDX2+UU1(NM3)*FDX3)/2.d0
-         DU1DYA=(UU1(NM1)*FDY1+UU1(NM2)*FDY2+UU1(NM3)*FDY3)/2.d0
-         DV1DXA=(VV1(NM1)*FDX1+VV1(NM2)*FDX2+VV1(NM3)*FDX3)/2.d0
-         DV1DYA=(VV1(NM1)*FDY1+VV1(NM2)*FDY2+VV1(NM3)*FDY3)/2.d0
+         DU1DXA=(U1N1*FDX1+U1N2*FDX2+U1N3*FDX3)/2.d0
+         DU1DYA=(U1N1*FDY1+U1N2*FDY2+U1N3*FDY3)/2.d0
+         DV1DXA=(V1N1*FDX1+V1N2*FDX2+V1N3*FDX3)/2.d0
+         DV1DYA=(V1N1*FDY1+V1N2*FDY2+V1N3*FDY3)/2.d0
 
          EVMEle=(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
          !If using Smagorinski vertically-integrated lateral stress coefficient
@@ -284,7 +312,7 @@ C...  Compute element averaged quantities
          ENDIF         
 
 C...  Compute terms associated with the barotropic pressure
-
+         
          BTP1N1=ETA1(NM1)
          BTP2N1=ETA2(NM1)
          BTP1N2=ETA1(NM2)
@@ -292,17 +320,42 @@ C...  Compute terms associated with the barotropic pressure
          BTP1N3=ETA1(NM3)
          BTP2N3=ETA2(NM3)
 
-C.......If using atm pressure add it into the barotropic pressure
+C.....If using atm pressure add it into the barotropic pressure
+C....... DW
+         IF (NWS.NE.0) THEN
+            pr1_NM1 = PR1(NM1) 
+            pr1_NM2 = PR1(NM2)  
+            pr1_NM3 = PR1(NM3) 
 
-         IF(NWS.NE.0) THEN
-            BTP1N1=BTP1N1+PR1(NM1)
-            BTP2N1=BTP2N1+PR2(NM1)
-            BTP1N2=BTP1N2+PR1(NM2)
-            BTP2N2=BTP2N2+PR2(NM2)
-            BTP1N3=BTP1N3+PR1(NM3)
-            BTP2N3=BTP2N3+PR2(NM3)
+            pr2_NM1 = PR2(NM1) 
+            pr2_NM2 = PR2(NM2)  
+            pr2_NM3 = PR2(NM3) 
+
+            IF ( NO_MET_IN_SPONGE ) THEN
+               ! 
+               IF ( absorblayer_sigma_eta(NM1,1) > 1e-9 ) THEN
+                  pr1_NM1  =  PRBCKGRND_MH2O
+                  pr2_NM1  =  PRBCKGRND_MH2O
+               END IF
+               IF ( absorblayer_sigma_eta(NM2,1) > 1e-9 ) THEN
+                  pr1_NM2  =  PRBCKGRND_MH2O
+                  pr2_NM2  =  PRBCKGRND_MH2O
+               END IF
+               IF ( absorblayer_sigma_eta(NM3,1) > 1e-9 ) THEN
+                  pr1_NM3  =  PRBCKGRND_MH2O
+                  pr2_NM3  =  PRBCKGRND_MH2O
+               END IF
+               !
+            END IF
+             
+            BTP1N1=BTP1N1+PR1_NM1
+            BTP2N1=BTP2N1+PR2_NM1
+            BTP1N2=BTP1N2+PR1_NM2
+            BTP2N2=BTP2N2+PR2_NM2
+            BTP1N3=BTP1N3+PR1_NM3
+            BTP2N3=BTP2N3+PR2_NM3
          ENDIF
-
+C....    DW
  
          !jgf: Subtract dynamic water level offset from barotropic pressure 
          IF (usingDynamicWaterLevelCorrection.eqv..true.) THEN
@@ -333,11 +386,11 @@ C...  Compute the barotropic pressure gradient x area for the element
      &           +(BTP2N1*FDY1+BTP2N2*FDY2+BTP2N3*FDY3))/2.d0
 
 C...  Compute the advective term gradients x area for the element
-
-         U1AvgDU1DXA=U1Avg*DU1DXA
-         V1AvgDU1DYA=V1Avg*DU1DYA
-         U1AvgDV1DXA=U1Avg*DV1DXA
-         V1AvgDV1DYA=V1Avg*DV1DYA
+         
+         U1AvgDU1DXA=U1Avg*0.5d0*(U1N1*FDX1+U1N2*FDX2+U1N3*FDX3)
+         V1AvgDU1DYA=V1Avg*0.5d0*(U1N1*FDY1+U1N2*FDY2+U1N3*FDY3)
+         U1AvgDV1DXA=U1Avg*0.5d0*(V1N1*FDX1+V1N2*FDX2+V1N3*FDX3)
+         V1AvgDV1DYA=V1Avg*0.5d0*(V1N1*FDY1+V1N2*FDY2+V1N3*FDY3)
 
 C...  Compute the lateral viscous terms for the element (flux formulation)
 
@@ -574,9 +627,13 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
       WSY=0.D0
       VIDBCPDX=0.D0
       VIDBCPDY=0.D0
+      DispX=0.D0
+      DispY=0.D0
+      SPNGCOEF_X = 0.D0
+      SPNGCOEF_Y = 0.D0
       DO I=1,NP
          NCI=NODECODE(I)
-         IF(TotalArea(I).ne.0.d0) THEN
+         IF (TotalArea(I).ne.0.d0) THEN
             IF (CME_AreaInt_Corr) THEN       !Correct area integration
                MOM_LV_X(I)=MOM_LV_X(I)/TotalArea(I)
                MOM_LV_Y(I)=MOM_LV_Y(I)/TotalArea(I)
@@ -592,21 +649,54 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
             WSX=DTO2*IFWIND*(WSX1(I)/H1+WSX2(I)/H2)
             WSY=DTO2*IFWIND*(WSY1(I)/H1+WSY2(I)/H2)
          ENDIF
-C        WJP 02.24.2018: Get the cofficients of the matrix
-         VCOEFXX = DTO2*(TKM(1,I)) !+ SPNGCOEF_X) 
-         VCOEFYY = DTO2*(TKM(2,I)) !+ SPNGCOEF_Y)
-         VCOEFXY = DTO2*(TKM(3,I) - CORIF(I))
-         VCOEFYX = DTO2*(TKM(3,I) + CORIF(I))
-      
-         IF(CBaroclinic) THEN
-            VIDBCPDX=DT*VIDBCPDXOH(I)
-            VIDBCPDY=DT*VIDBCPDYOH(I)
+
+C......  DW : BEGIN !c absorbing layer
+         IF (NO_MET_IN_SPONGE) THEN
+           IF ( absorblayer_sigma_mnx(I,1) > 1e-9 ) WSX = 0.D0 
+           IF ( absorblayer_sigma_mny(I,1) > 1e-9 ) WSY = 0.D0 
          ENDIF
+
+         IF (MOM_SPONGE) THEN
+            SPNGCOEF_X = absorblayer_sigma_mnx(I,1)*sponge_dis_mthd
+            SPNGCOEF_Y = absorblayer_sigma_mny(I,1)*sponge_dis_mthd
+         END IF
+C......  END DW
+
+C        WJP 02.24.2018: Get the cofficients of the matrix
+         VCOEFXX = DTO2*(TKM(1,I) + SPNGCOEF_X) 
+         VCOEFYY = DTO2*(TKM(2,I) + SPNGCOEF_Y)
+C        WJP 05.28.2019: Add the Spherical coordinate correction term 
+C        (refer; Kolar et al., 1994, doi:10.1080/00221689409498786)
+C        Equation (41) [refer also Eq. (37)]
+         CorifA  = CORIF(I) + IFNLCT*TSINT*UU1(I)*sfar(I)
+         VCOEFXY = DTO2*(TKM(3,I) - CorifA)
+         VCOEFYX = DTO2*(TKM(3,I) + CorifA)
+      
+C...     WJP: Use the spatial gradients of the baroclinic pressure
+C        gradient and momentum dispersion terms from a 3D ocean model
+         IF (CBaroclinic) THEN
+            VIDBCPDX = DT*VIDBCPDXOH(I)
+            VIDBCPDY = DT*VIDBCPDYOH(I)
+            DispX    = DT*VIDispDXOH(I)
+            DispY    = DT*VIDispDYOH(I)
+         ENDIF
+
 C        WJP 02.24.2018 Get the righthand side momentum 
          MOM_LV_X(I) = NCI*(MOM_LV_X(I)+WSX+(1.D0-VCOEFXX)*UU1(I) 
-     &               - VCOEFXY*VV1(I)-VIDBCPDX)
+     &               - VCOEFXY*VV1(I)-VIDBCPDX-DispX)
          MOM_LV_Y(I) = NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCOEFYY)*VV1(I)
-     &               - VCOEFYX*UU1(I)-VIDBCPDY)
+     &               - VCOEFYX*UU1(I)-VIDBCPDY-DispY)
+
+C...     DW, absorbing layers
+         IF (MOM_SPONGE) THEN
+           MOM_LV_X(I) = NCI*(MOM_LV_X(I) + 
+     &          SPNGCOEF_X*(uu2_AbsLayer(I) + uu1_AbsLayer(I)))
+
+           MOM_LV_Y(I) = NCI*(MOM_LV_Y(I) +  
+     &          SPNGCOEF_Y*(vv2_AbsLayer(I) + vv1_AbsLayer(I)))
+         END IF
+C...     DW
+
 C        WJP 02.24.2018 Get the lefthand side momentum 
          AUV(1,I) = 1d0 + VCOEFXX*NCI
          AUV(2,I) = 1d0 + VCOEFYY*NCI
@@ -665,7 +755,7 @@ C     Specified essential normal flow and no tangential slip
             MOM_LV_Y(NBDI)=VelNorm*NCI !Normal Eqn RHS
             !WJP 02.24.2018 considering the symmetric matrix
             AUV(1,NBDI) = SIII(I)
-            AUV(3,NBDI) = - CSII(I) 
+            AUV(3,NBDI) = -CSII(I) 
             AUV(4,NBDI) = CSII(I)
             AUV(2,NBDI) = SIII(I)
          ENDIF
@@ -689,12 +779,14 @@ C     velocities at the previous time step.
                NEle=NeiTabEle(NBDI,N-2) !element # defined by nodes NM1,NM2,NM3
                NCEle=NCI*NodeCode(NM2)*NodeCode(NM3)*NOFF(NEle)
                IF((NEle.NE.0).AND.(NCEle.NE.0)) THEN !if element is active, compute contribution
-                  FDX1 = (Y(NM2)-Y(NM3))*SFacAvg !b1
-                  FDX2 = (Y(NM3)-Y(NM1))*SFacAvg !b2
-                  FDX3 = (Y(NM1)-Y(NM2))*SFacAvg !b3
-                  FDY1 = X(NM3)-X(NM2) !a1
-                  FDY2 = X(NM1)-X(NM3) !a2
-                  FDY3 = X(NM2)-X(NM1) !a3
+C.....DW
+                  FDX1 = FDXE(1,NEle)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
+                  FDX2 = FDXE(2,NEle)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
+                  FDX3 = FDXE(3,NEle)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
+                  FDY1 = FDYE(1,NEle) ; !c  FDY1=X(NM3)-X(NM2) !a1
+                  FDY2 = FDYE(2,NEle) ; !c  FDY2=X(NM1)-X(NM3) !a2
+                  FDY3 = FDYE(3,NEle) ; !c  FDY3=X(NM2)-X(NM1) !a3
+C.....DW
                   ZNGRHS1=ZNGRHS1-(CSII(I)*FDX2+SIII(I)*FDY2)*UU1(NM2)
      &                           -(CSII(I)*FDX3+SIII(I)*FDY3)*UU1(NM3)
                   ZNGRHS2=ZNGRHS2-(CSII(I)*FDX2+SIII(I)*FDY2)*VV1(NM2)
@@ -708,12 +800,14 @@ C     velocities at the previous time step.
             NEle=NeiTabEle(NBDI,NNeigh(NBDI)-1)
             NCEle=NCI*NodeCode(NM2)*NodeCode(NM3)*NOFF(NELE)
             IF((NEle.NE.0).AND.(NCEle.NE.0)) THEN
-               FDX1 = (Y(NM2)-Y(NM3))*SFacAvg !b1
-               FDX2 = (Y(NM3)-Y(NM1))*SFacAvg !b2
-               FDX3 = (Y(NM1)-Y(NM2))*SFacAvg !b3
-               FDY1 = X(NM3)-X(NM2) !a1
-               FDY2 = X(NM1)-X(NM3) !a2
-               FDY3 = X(NM2)-X(NM1) !a3
+C.....DW
+               FDX1 = FDXE(1,NEle)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
+               FDX2 = FDXE(2,NEle)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
+               FDX3 = FDXE(3,NEle)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
+               FDY1 = FDYE(1,NEle) ; !c  FDY1=X(NM3)-X(NM2) !a1
+               FDY2 = FDYE(2,NEle) ; !c  FDY2=X(NM1)-X(NM3) !a2
+               FDY3 = FDYE(3,NEle) ; !c  FDY3=X(NM2)-X(NM1) !a3
+C.....DW
                ZNGRHS1=ZNGRHS1-(CSII(I)*FDX2+SIII(I)*FDY2)*UU1(NM2)
      &                        -(CSII(I)*FDX3+SIII(I)*FDY3)*UU1(NM3)
                ZNGRHS2=ZNGRHS2-(CSII(I)*FDX2+SIII(I)*FDY2)*VV1(NM2)
@@ -721,13 +815,9 @@ C     velocities at the previous time step.
                ZNGLHS =ZNGLHS + CSII(I)*FDX1+SIII(I)*FDY1
                ENDIF
             IF(NCI.EQ.0) THEN
-C               AUV11(NBDI)=1.d0
-C               AUV12(NBDI)=0.d0
                MOM_LV_X(NBDI)=0.d0
                MOM_LV_Y(NBDI)=0.d0
             ELSE
-C               AUV11(NBDI)=1.d0
-C               AUV12(NBDI)=0.d0
                MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
                MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
             ENDIF
@@ -761,6 +851,12 @@ c           ENDIF
 
       if(subdomainOn.and.enforceBN.eq.1) call enforceUVcb() ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call enforceUVob() ! NCSU Subdomain
+
+C....... DW
+      CALL SWITCH_ELTAB_PERBC( IDIREC = 2 ) ; 
+      CALL UPDATE_U_PERSLNODES() ; 
+C....... DW
+
 C...
 C...  Impose a zero normal velocity gradient based on interpolating the
 C...  velocity at a fictitious point in the interior of the domain,
@@ -805,6 +901,28 @@ C...  Compute fluxes
 
       RETURN
 C*******************************************************************************
+      CONTAINS
+C     DW 
+          SUBROUTINE UPDATE_U_PERSLNODES()
+          IMPLICIT NONE
+          
+          INTEGER:: I, I1, I2
+
+          IF ( NPERSEG > 0 ) THEN
+C     Update values of slave node ! 
+             DO I = 1, NNPERBC
+                I1 = IPERCONN(I,1) ; 
+                I2 = IPERCONN(I,2) ;
+                
+                UU2(I2)=UU2(I1) ; 
+                VV2(I2)=VV2(I1) ;
+             END DO
+          END IF 
+          
+          RETURN ;
+          END SUBROUTINE UPDATE_U_PERSLNODES
+C     END DW
+C*******************************************************************************
       END SUBROUTINE MOM_EQS_NEW_NC
 C*******************************************************************************
 
@@ -829,7 +947,13 @@ C*******************************************************************************
 
       SUBROUTINE Mom_Eqs_New_Conserv()
 C
-      USE GLOBAL
+      USE GLOBAL, only: NWS, CTIP, PR2, PR1, TIP1, TIP2, CME_NEW_C1, DT,
+     & CME_NEW_C2, CME_LS_IBPSQ, CME_LS_IBPV, CME_LS_IBPSV, CME_LS_IBPQ,
+     & IFNLCT, MOM_LV_X, MOM_LV_Y, TK, CORIF, VIDBCPDXOH, VIDBCPDYOH,
+     & NRS, IFWIND, WSX1, WSY1, WSX2, WSY2, QX2, QY2, QN2, UU2, VV2,
+     & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
+     & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
+     & SMAG_LOWER_LIM, NODECODE
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &                  NEITAB, NEITABELE, NNEIGH, SFAC 
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI, 
@@ -1524,7 +1648,13 @@ C*******************************************************************************
 
       SUBROUTINE Mom_Eqs_Non_Conserv_pc()
 C
-      USE GLOBAL
+      USE GLOBAL, only: NWS, CTIP, PR2, PR1, TIP1, TIP2, CME_NEW_C1, DT,
+     & CME_NEW_C2, CME_LS_IBPSQ, CME_LS_IBPV, CME_LS_IBPSV, CME_LS_IBPQ,
+     & IFNLCT, MOM_LV_X, MOM_LV_Y, TK, CORIF, VIDBCPDXOH, VIDBCPDYOH,
+     & NRS, IFWIND, WSX1, WSY1, WSX2, WSY2, QX2, QY2, QN2, UU2, VV2,
+     & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
+     & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
+     & SMAG_LOWER_LIM, NODECODE, UU0, VV0, QX0, QY0, TK2, CBaroclinic
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &                  NEITAB, NEITABELE, NNEIGH, SFAC
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,

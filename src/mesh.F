@@ -24,7 +24,7 @@ C     ------------------------------------------------------------------
       implicit none
       character(len=80) :: agrid
       character(4)              :: aid4(20)
-      character(8)              :: aid8(10)     
+      character(8)              :: aid8(10)
       integer :: np   ! number of nodes in the mesh
       integer :: ne   ! number of elements in the mesh
       integer :: ics  ! mesh coordinate system (1=cartesian, 2=geographic)
@@ -37,7 +37,7 @@ C     ------------------------------------------------------------------
       type(ipair), allocatable, target :: node_dict(:) ! map node labels to numbers
       integer, allocatable, target :: labels(:) ! map node numbers to labels
       integer :: n1, n2, n3 ! nodes 1, 2, 3 for each element
-
+      integer :: indmax = 5e4
 
       integer, allocatable :: lbarray_pointer(:)
       integer, allocatable :: nneigh(:) !(MNP) number of neighboring nodes for each node
@@ -48,13 +48,22 @@ C     ------------------------------------------------------------------
       integer, allocatable :: neitabele(:,:) !(MNP,MNei)table of neighboring elements for each node
       real(8), allocatable :: areas(:) !(MNE) = 2*Element Area
       real(8), allocatable :: totalarea(:)
-      real(sz), allocatable :: sfac(:)
+      real(sz), allocatable :: sfac(:), sfacele(:),csfea(:) ! spherical coordinate correction factor
+      real(sz), allocatable :: sfar(:) ! spherical coordinate tan(lat)/R ratio
       real(sz), allocatable :: bcxy(:,:)  ! element barycenters for kdtree
       real(sz), allocatable :: rmax(:)    ! element radii for kdtree
       real(sz), allocatable :: csi(:),sii(:)
       character(len=80) :: projection
       real(8) slam0,sfea0 !center point of CPP spherical projection
       integer  neimin,neimax
+
+C----- DW --- precomputed 
+      !c  FDXE(1:3,1:NE) -- b1, b2, b3
+      !c  FDYE(1:3,1:NE) -- a1, a2, a3
+      REAL (SZ), ALLOCATABLE:: FDXE(:,:), FDYE(:,:) 
+      INTEGER:: NELNDTAB
+      INTEGER, ALLOCATABLE:: PERBC_ELNDTAB(:,:) 
+C..... DW
 C
 C     ----------
       contains
@@ -184,7 +193,7 @@ C     ------------------------------------------------------------------
          ! count the total number of each type of boundary for later
          ! use in memory allocation
          select case(ibtype_orig(k))
-         case(0,1,2,10,11,12,20,21,22,30,52,102,112,122,152)
+         case(0,1,2,10,11,12,20,21,22,30,32,52,94,102,112,122,152)
              numSimpleFluxBoundaries = numSimpleFluxBoundaries + 1
          case(3,13,23)
              numExternalFluxBoundaries = numExternalFluxBoundaries + 1
@@ -257,7 +266,8 @@ C     ------------------------------------------------------------------
       subroutine read14 ()
       use boundaries
       use sizes, only : meshFileName
-      use global, only : openFileForRead, nabout
+      use global, only : openFileForRead, nabout, nperseg, nnperbc,
+     &                   iperconn
 
       implicit none
       integer :: i, j, k, jn, je, nhy
@@ -370,6 +380,10 @@ C     ------------------------------------------------------------------
       efCount = 1
       ifCount = 1
       ifwpCount = 1
+C...  DW, periodic bc
+      NPERSEG = 0  ;
+      NNPERBC = 0  ;
+C..
       do k = 1, nbou
          read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nvell(k), ibtype_orig(k)
          lineNum = lineNum + 1
@@ -377,7 +391,7 @@ C     ------------------------------------------------------------------
          ! flux boundaries (mainland, island, river)
          ! For NON BARRIER type boundaries, read the node numbers for the Kth
          ! boundary segment
-         case(0,1,2,10,11,12,20,21,22,30,52,102,112,122,152)
+         case(0,1,2,10,11,12,20,21,22,30,32,52,102,112,122,152)
             simpleFluxBoundaries(sfCount)%indexNum = k
             do j = 1, nvell(k)
                read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) n1
@@ -460,6 +474,30 @@ C     ------------------------------------------------------------------
                lineNum = lineNum + 1
             end do
             ifwpCount = ifwpCount + 1
+         case(94)
+C....       DW, updated here by WP 
+C...        Periodic boundary, read in a pair of nodes 
+            !c Allocate memory, if there is a periodic bc segment c!
+            IF ( .NOT. ALLOCATED(IPERCONN) ) THEN
+               ALLOCATE( IPERCONN(nvell(k),2) ) ;
+               IPERCONN = 0 ;
+            END IF
+            !
+            NPERSEG = NPERSEG + 1 ;
+            simpleFluxBoundaries(sfCount)%indexNum = k
+            do j = 1, nvell(k)
+               NNPERBC =  NNPERBC + 1 ;
+               read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) n1, n2
+               IPERCONN(NNPERBC,1) = find(node_dict, n1) 
+               IPERCONN(NNPERBC,2) = find(node_dict, n2) 
+               simpleFluxBoundaries(sfCount)%nodes(j) = 
+     &                  IPERCONN(NNPERBC,1)
+               simpleFluxBoundaries(sfCount)%xdmf_nodes(j) =
+     &                  simpleFluxBoundaries(sfCount)%nodes(j) - 1
+               lineNum = lineNum + 1
+            end do
+            sfCount = sfCount + 1
+!...        end DW
          case default
             scratchFormat = '("IBTYPE ",i0," is not allowed.")'
             write(scratchMessage, scratchFormat) ibtype_orig(k)
@@ -809,7 +847,7 @@ C     ------------------------------------------------------------------
                nbou = nbou + 1
                nvel = nvel + setSize(setIndex)
                select case(boundaryTypes(setIndex))
-               case(0,1,2,10,11,12,20,21,22,30,52)
+               case(0,1,2,10,11,12,20,21,22,30,32,52)
                   numSimpleFluxBoundaries = numSimpleFluxBoundaries + 1
                case(3,13,23)
                   numExternalFluxBoundaries = numExternalFluxBoundaries + 1
@@ -927,7 +965,7 @@ C     ------------------------------------------------------------------
             !
             ! flux boundary type
             select case(ibtype_orig(fluxCount))
-            case(0,1,2,10,11,12,20,21,22,30,52,102,112,122,152)
+            case(0,1,2,10,11,12,20,21,22,30,32,52,102,112,122,152)
                simpleFluxBoundaries(sfCount)%indexNum = fluxCount
                ! get node numbers on the boundary
                call xdmfRetrieveSetValues(xdmfFortranObj, setIndex,
@@ -1121,8 +1159,8 @@ C     ------------------------------------------------------------------
       ifwpCount = 1
       ! populate adcirc-native arrays
       do fluxCount=1,nbou
-         select case(ibtype_orig(fluxCount))
-         case(0,1,2,10,11,12,20,21,22,30,52,102,112,122,152)
+         select case(ibtype_orig(fluxCount))  
+         case(0,1,2,10,11,12,20,21,22,30,32,52,94,102,112,122,152)
             nbvv(fluxCount,1:nvell(fluxCount)) = simpleFluxBoundaries(sfCount)%nodes
             sfCount = sfCount + 1
          case(3,13,23)
@@ -1238,7 +1276,8 @@ C     are used to locate the elements that contain the stations.
 C     ------------------------------------------------------------------
       subroutine initializeMesh()
       use sizes, only : nprec, mnei
-      use global, only : deg2rad, rad2deg, h0, nolifa, nbfr, ncor, ntip
+      use global, only : deg2rad, pi, rad2deg, h0, nolifa, nbfr, ncor, 
+     &                   ntip, Rearth
       use boundaries
       implicit none
       real(8) x1,x2,x3,x4,y1,y2,y3,y4
@@ -1246,8 +1285,10 @@ C     ------------------------------------------------------------------
 !     v49.48.02 tcm added these local variable for computing
 !     multiple values like element radius and areas, etc...
       real(sz) x2mx1,x3mx2,x1mx3,y2my1,y3my2,y1my3
+      real(sz) Lon21,Lon32,Lon13
       real(sz) lened1,lened2,lened3
       integer :: i, j
+      real(sz) :: latma = 1.3963d0
 
       call setMessageSource("initializeMesh")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -1273,9 +1314,12 @@ C...
 C...  IF ICS=1 INPUT NODAL COORDINATES AND BATHYMETRY FROM UNIT 14
 C.... IF EITHER NTIP=1 OR NCOR=1, COMPUTE THE INVERSE CPP PROJECTION
 
+      SFAR = 0.0d0 ! set the sfar vector equal to zero by default
+      SFAC = 1.0d0 ! set the sfac vector equal to unity
+      SFACELE = 1.0d0 ! set the sfac vector equal to unity
+      CSFEA = 1.0d0 ! set the cosine of lat to unity
       ! if the original nodal coordinates were cartesian
       IF (ICS.EQ.1) THEN
-         SFAC(:)=1.0d0 ! set the sfac vector equal to unity
          ! we already read the original coordinates into slam(:) and sfea(:)
          ! so copy these data to x() and y()
          x = slam
@@ -1291,12 +1335,21 @@ C.... IF EITHER NTIP=1 OR NCOR=1, COMPUTE THE INVERSE CPP PROJECTION
       !
       ! if mesh coordinates were in lon lat degrees then compute the cpp projection
       if (ics.eq.2) then
-         slam(:) = deg2rad * slam(:)
-         sfea(:) = deg2rad * sfea(:)
+         slam = deg2rad * slam
+         sfea = deg2rad * sfea
          do i=1,np
             call cpp(x(i),y(i),slam(i),sfea(i),slam0,sfea0)
-            sfac(i)=cos(sfea0)/cos(sfea(i)) ! compute sfac vector to adjust eqns to cpp
-         end do
+            sfac(i) = cos(sfea0)/cos(sfea(i)) ! compute sfac vector to adjust eqns to cpp
+            sfar(i) = tan(sfea(i))/Rearth !wjp: compute tan(lat)/R correction factor
+            !sfar(i) = tan(max(-latma,min(latma,sfea(i))))/Rearth
+         enddo
+C...     WJP, compute the element averaged quantities
+         do i = 1,ne
+            sfacele(i) = (sfac(nm(i,1)) + sfac(nm(i,2))
+     &                  + sfac(nm(i,3)))/3d0 
+            csfea(i)   = (cos(sfea(nm(i,1)))+cos(sfea(nm(i,2)))
+     &                  + cos(sfea(nm(i,3))))/cos(sfea0)/3d0
+         enddo
       endif
 c...
 c...  if wetting and drying will not be used, make sure all bathymetric
@@ -1346,19 +1399,50 @@ C     nodes whose coordinates only differ in the last couple decimal
 C     places ... these differences may be lost due to round off error
 C     if there is not enough machine precision
       DO I=1,NE
-         X1=X(NM(I,1))
-         X2=X(NM(I,2))
-         X3=X(NM(I,3))
-         Y1=Y(NM(I,1))
-         Y2=Y(NM(I,2))
-         Y3=Y(NM(I,3))
+         X1 = X(NM(I,1))
+         X2 = X(NM(I,2))
+         X3 = X(NM(I,3))
+         Y1 = Y(NM(I,1))
+         Y2 = Y(NM(I,2))
+         Y3 = Y(NM(I,3))
+         
+         ! WJP: Check wrap and correct X and Y values in the elements
+         if (ics.eq.2) then
+            Lon21 = SLAM(NM(I,2)) - SLAM(NM(I,1))
+            Lon32 = SLAM(NM(I,3)) - SLAM(NM(I,2))
+            Lon13 = SLAM(NM(I,1)) - SLAM(NM(I,3))
+            if (abs(Lon21) > pi .and. abs(Lon13) > pi) then
+               ! Change X1
+               call cpp(X1,Y1,SLAM(NM(I,1))+sign(2d0*pi,Lon21),
+     &                  SFEA(NM(I,1)),slam0,sfea0)
+            elseif (abs(Lon21) > pi .and. abs(Lon32) > pi) then
+               ! Change X2
+               call cpp(X2,Y2,SLAM(NM(I,2))+sign(2d0*pi,Lon32),
+     &                  SFEA(NM(I,2)),slam0,sfea0)
+            elseif (abs(Lon32) > pi .and. abs(Lon13) > pi) then
+               ! Change X3
+               call cpp(X3,Y3,SLAM(NM(I,3))+sign(2d0*pi,Lon13),
+     &                  SFEA(NM(I,3)),slam0,sfea0)
+            endif
+         endif
+
 C...v49.48.02 tcm added these to reuse the computed values
-         X2mX1 = x2-x1
-         X3mX2 = x3-x2
-         X1mX3 = x1-x3
-         Y2mY1 = y2-y1
-         Y3mY2 = y3-y2
-         Y1mY3 = y1-y3
+         X2mX1 = (X2 - X1);
+         X3mX2 = (X3 - X2);
+         X1mX3 = (X1 - X3);
+         Y2mY1 = (Y2 - Y1);
+         Y3mY2 = (Y3 - Y2);
+         Y1mY3 = (Y1 - Y3);
+
+c..... BEG DW: for later use for FDX1, FDY1 in gwce, momentum 
+         FDXE(1,I) = -Y3mY2 ; !c (Y(NM2)-Y(NM3))*SFacAvg !b1
+         FDXE(2,I) = -Y1mY3 ; !c (Y(NM3)-Y(NM1))*SFacAvg !b2
+         FDXE(3,I) = -Y2mY1 ; !c (Y(NM1)-Y(NM2))*SFacAvg !b3
+         FDYE(1,I) =  X3mX2 ; !c  X(NM3)-X(NM2) !a1
+         FDYE(2,I) =  X1mX3 ; !c  X(NM1)-X(NM3) !a2
+         FDYE(3,I) =  X2mX1 ; !c  X(NM2)-X(NM1) !a3
+C      END DW
+
          AVGXY=(ABS(X1)+ABS(X2)+ABS(X3)+ABS(Y1)+ABS(Y2)+ABS(Y3))/6.d0
 C v49.48.02 tcm -- These are the lengths of each element edge
          LENED1=((X2mX1)**2+(Y2mY1)**2)**0.5d0
@@ -1437,15 +1521,16 @@ C     fort.15 control file, including ANGINN.
 C     ------------------------------------------------------------------
       subroutine initializeBoundaries()
       use sizes, only : mnvel
-      use global, only : deg2rad, rad2deg, nbfr, c2ddi
+      use global, only : deg2rad, rad2deg, nbfr, c2ddi, pi
       use boundaries
       implicit none
-      integer  nprbi
+      integer  nprbi, nbvk
       integer i, j, k, n, ick, iprbi !local loop counters
       character(len=80) :: exeTerm9973 ! execution terminated
-      real(8) xl0,xl1,xl2,yl0,yl1,yl2
+      real(8) xli,xlj,xlk,yli,ylk,ylj
+      real(8) xgi,xgj,xgk,ygi,ygk,ygj
       real(8) x1,x2,x3,x4,y1,y2,y3,y4
-      real(sz) xl
+      real(sz) xl, lonJI, lonKJ, lonIK 
       real(sz) costheta,costheta1,cross,cross1
       real(sz) theta,theta1
       real(sz) dotvec
@@ -1457,7 +1542,7 @@ C     ------------------------------------------------------------------
       logical :: calctheta    ! .true. if theta is to be calculated at a flux boundary node
       real(sz) :: ZNGFicNodeDist,ZNGFicNodeDistTemp
       logical :: ibtype52 = .false.
-      real(8) delx,dely
+      real(8) :: delx,dely
 
       call setMessageSource("initializeBoundaries")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -1540,7 +1625,7 @@ C.....INPUT THE TOTAL NUMBER OF FLOW BOUNDARY NODES
       !
       ! loop over the flux boundary segments, logging information about
       ! each segment and setting up boundary arrays
-      DO K=1,NBOU
+      NBOULOOP: DO K=1,NBOU
 C        write out flow boundary information to unit 16
          IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
             WRITE(16,28) K,NVELL(K),K,2*NVELL(K)
@@ -1903,7 +1988,7 @@ C...        BOUNDARIES MEET, THE SPECIFIED NORMAL FLOW BOUNDARY CONDITION
 C...        TAKES PRECEDENT.  ALSO THE BEGINNING AND ENDING NODES OF CLOSED
 C...        EXTERNAL AND ISLAND BOUNDARIES ARE NOT REPEATED.
 
-            DO I=1,NVELL(K)
+            NVELL_LOOP: DO I=1,NVELL(K)
 C...           SET UP THE GWCE BOUNDARY ARRAYS WHICH CONSIST OF
 C...           BOUNDARY NODE NUMBERS
 C...           BOUNDARY CODES
@@ -1915,12 +2000,40 @@ C              jgf46.21 Added IBTYPE=52.
                case(0,10,20,2,12,22,52,3,13,23,30,32,40,41)
                   NVELEXT=NVELEXT+1
                end select
-               NBV(JGW)=NBVV(K,I)
-               NBVI=NBVV(K,I)
-               NBVJ=NBVV(K,I+1)
-               DELX=X(NBVJ)-X(NBVI)
-               DELY=Y(NBVJ)-Y(NBVI)
-               BNDLEN2O3(JGW)=2.D0*(SQRT(DELX*DELX+DELY*DELY))/3.D0
+               NBVI = NBVV(K,I)
+               NBVJ = NBVV(K,I+1)
+               NBVK = NBVV(K,I-1)
+               NBV(JGW) = NBVI
+               IF (NBVJ.gt.ubound(X,1)) THEN
+                  write(16,*) 'NBVJ', NBVJ, '> bounds of X',I
+               ENDIF
+               IF (NBVI.gt.ubound(X,1)) THEN
+                  write(16,*) 'NBVI', NBVI, '> bounds of X',I
+               ENDIF
+               XGJ = X(NBVJ)
+               XGI = X(NBVI)
+               XGK = X(NBVK)
+               YGJ = Y(NBVJ)
+               YGI = Y(NBVI)
+               YGK = Y(NBVK)
+               IF (ICS.EQ.2) THEN
+                  LonJI = SLAM(NBVJ) - SLAM(NBVI)
+                  LonIK = SLAM(NBVI) - SLAM(NBVK)
+                  LonKJ = SLAM(NBVK) - SLAM(NBVJ)
+                  if (abs(LonJI) > pi .and. abs(LonIK) > pi) then
+                     CALL CPP(XGI,YGI,SLAM(NBVI)+sign(2d0*pi,LonJI),
+     &                        SFEA(NBVI),SLAM0,SFEA0)
+                  elseif (abs(LonJI) > pi .and. abs(LonKJ) > pi) then
+                     CALL CPP(XGJ,YGJ,SLAM(NBVJ)+sign(2d0*pi,LonKJ),
+     &                        SFEA(NBVJ),SLAM0,SFEA0)
+                  elseif (abs(LonKJ) > pi .and. abs(LonIK) > pi) then
+                     CALL CPP(XGK,YGK,SLAM(NBVK)+sign(2d0*pi,LonIK),
+     &                        SFEA(NBVK),SLAM0,SFEA0)
+                  endif
+               ENDIF
+               DELX = XGJ - XGI
+               DELY = YGJ - YGI
+               BNDLEN2O3(JGW) = 2.D0*(SQRT(DELX*DELX+DELY*DELY))/3.D0
 
 C...           COMPUTE THE INCLUDED ANGLE AND TEST TO DETERMINE WHETHER TO ZERO
 C...           TANGENTIAL VELOCITIES
@@ -1930,19 +2043,29 @@ C...           IN A LOCALIZED SYSTEM (I.E. THE TRANSFORMATION IS CENTERED AT
 C...           X0,Y0)
 
                IF(ICS.EQ.1) THEN
-                  XL0=X(NBVV(K,I))
-                  XL1=X(NBVV(K,I-1))
-                  XL2=X(NBVV(K,I+1))
-                  YL0=Y(NBVV(K,I))
-                  YL1=Y(NBVV(K,I-1))
-                  YL2=Y(NBVV(K,I+1))
+                  XLI = XGI
+                  XLJ = XGJ
+                  XLK = XGK
+                  YLI = YGI
+                  YLJ = YGJ
+                  YLK = YGK
                ELSE
-                  CALL CPP(XL0,YL0,SLAM(NBVV(K,I)),SFEA(NBVV(K,I)),
-     &                 SLAM(NBVV(K,I)),SFEA(NBVV(K,I)))
-                  CALL CPP(XL1,YL1,SLAM(NBVV(K,I-1)),SFEA(NBVV(K,I-1)),
-     &                 SLAM(NBVV(K,I)),SFEA(NBVV(K,I)))
-                  CALL CPP(XL2,YL2,SLAM(NBVV(K,I+1)),SFEA(NBVV(K,I+1)),
-     &                 SLAM(NBVV(K,I)),SFEA(NBVV(K,I)))
+                  CALL CPP(XLI,YLI,SLAM(NBVI),SFEA(NBVI),
+     &                     SLAM(NBVI),SFEA(NBVI))
+                  CALL CPP(XLK,YLK,SLAM(NBVK),SFEA(NBVK),
+     &                     SLAM(NBVI),SFEA(NBVI))
+                  CALL CPP(XLJ,YLJ,SLAM(NBVJ),SFEA(NBVJ),
+     &                     SLAM(NBVI),SFEA(NBVI))
+                  if (abs(LonJI) > pi .and. abs(LonIK) > pi) then
+                     CALL CPP(XLI,YLI,SLAM(NBVI)+sign(2d0*pi,LonJI),
+     &              SFEA(NBVI),SLAM(NBVI)+sign(2d0*pi,LonJI),SFEA(NBVI))
+                  elseif (abs(LonJI) > pi .and. abs(LonKJ) > pi) then
+                     CALL CPP(XLJ,YLJ,SLAM(NBVJ)+sign(2d0*pi,LonKJ),
+     &                        SFEA(NBVJ),SLAM(NBVI),SFEA(NBVI))
+                  elseif (abs(LonKJ) > pi .and. abs(LonIK) > pi) then
+                     CALL CPP(XLK,YLK,SLAM(NBVK)+sign(2d0*pi,LonIK),
+     &                        SFEA(NBVK),SLAM(NBVI),SFEA(NBVI))
+                  endif
                ENDIF
 
 C...           NOTE: INTERIOR ANGLE AT ENDS OF BOUNDARIES MUST BE EQUAL, EITHER:
@@ -1972,19 +2095,19 @@ C...           VALUE IF THE BOUNDARY IS CLOSED
                IF (calcTheta.eqv..true.) THEN
                   ! jgf51.15: calculate the properties of the interior
                   ! angle of the boundary
-                  VL1X=XL1-XL0
-                  VL1Y=YL1-YL0
-                  VL2X=XL2-XL0
-                  VL2Y=YL2-YL0
-                  DOTVEC=VL1X*VL2X+VL1Y*VL2Y
-                  VECNORM=(SQRT(VL1X**2 + VL1Y**2))*
-     &                    (SQRT(VL2X**2 + VL2Y**2))
+                  VL1X = XLK-XLI
+                  VL1Y = YLK-YLI
+                  VL2X = XLJ-XLI
+                  VL2Y = YLJ-YLI
+                  DOTVEC = VL1X*VL2X+VL1Y*VL2Y
+                  VECNORM = (SQRT(VL1X**2 + VL1Y**2))*
+     &                      (SQRT(VL2X**2 + VL2Y**2))
                   COSTHETA=DOTVEC/VECNORM
                   IF(COSTHETA.GT.1.0d0) COSTHETA=1.0d0
                   IF(COSTHETA.LT.-1.0d0) COSTHETA=-1.0d0
-                  THETA=RAD2DEG*ACOS(COSTHETA)
-                  CROSS=-VL1X*VL2Y+VL2X*VL1Y
-                  IF(CROSS.LT.0) THETA=360.d0-THETA
+                  THETA = RAD2DEG*ACOS(COSTHETA)
+                  CROSS = -VL1X*VL2Y+VL2X*VL1Y
+                  IF(CROSS.LT.0) THETA = 360.d0 - THETA
                ENDIF
                IF (I.eq.1) THEN
                   ! jgf51.15: record the properties at the
@@ -1994,9 +2117,6 @@ C...           VALUE IF THE BOUNDARY IS CLOSED
                   COSTHETA1=COSTHETA
                ENDIF
 
-               ! @jasonfleming set the boundary array to the ibtype value
-               LBCODEI(JGW)=IBTYPE(K)
-
 C...           CHECK WHETHER ANGLE IS LESS THAN MINIMUM ANGLE, IF SO CHANGE THE
 C...           BOUNDARY CODE TO ZERO TANGENTIAL VELOCITIES 
 
@@ -2005,13 +2125,14 @@ C...           BOUNDARY CODE TO ZERO TANGENTIAL VELOCITIES
                ! as an interim measure, I am making this boundary type
                ! modification a 2DDI-only feature.
                if (C2DDI.eqv..true.) then
+                  LBCODEI(JGW)=IBTYPE(K)
                   IF((COSTHETA.GT.COSTSET).AND.(CROSS.GT.0.0)) THEN
                      IF(IBTYPE(K).EQ.0) LBCODEI(JGW)=10
                      IF(IBTYPE(K).EQ.1) LBCODEI(JGW)=11
                      IF(IBTYPE(K).EQ.2) LBCODEI(JGW)=12
                      IF(IBTYPE(K).EQ.3) LBCODEI(JGW)=13
                      IF((IBTYPE(K).GE.0).AND.(IBTYPE(K).LE.3)) THEN
-                        WRITE(16,1856) NBVV(K,I),THETA
+                        WRITE(16,1856) NBVI,THETA
  1856                   FORMAT(2X,i0,4X,'THE INNER ANGLE = ',F8.2,1X,
      &                    'TANGENTIAL SLIP WILL BE ZEROED')
                      ENDIF
@@ -2019,20 +2140,15 @@ C...           BOUNDARY CODE TO ZERO TANGENTIAL VELOCITIES
                endif
 
 C...           COMPUTE COS AND SIN OF OUTWARD NORMAL REGARDLESS OF BOUNDARY TYPE
-
-               X1=X(NBVV(K,I-1))
-               X2=X(NBVV(K,I+1))
-               Y1=Y(NBVV(K,I-1))
-               Y2=Y(NBVV(K,I+1))
                ! TCM V51.15 20130906 ADDED TEST TO HANDLE SPECIAL CASE WHEN THE ORIGINAL
                ! INTERIOR BOUNDARY HAD LENGTH 2 AND IBTYPE=1,11, OR 21 AND WAS FORCED CLOSED
                IF (FLG_IBLEN2 .EQV. .TRUE.) THEN
-                  X2=X(NBVV(K,I))
-                  Y2=Y(NBVV(K,I))
+                  XGJ = XGI
+                  YGJ = YGI
                ENDIF
-               XL=SQRT((X1-X2)**2+(Y1-Y2)**2)
-               CSII(JGW)=SFAC(NBVV(K,I))*(Y2-Y1)/XL
-               SIII(JGW)=(X1-X2)/XL
+               XL = SQRT((XGK-XGJ)**2+(YGK-YGJ)**2)
+               CSII(JGW) = SFAC(NBVI)*(YGJ-YGK)/XL
+               SIII(JGW) = (XGK-XGJ)/XL
 
 C...           Compute the location of and the element containing the fictitious
 C...           node used for a zero normal velocity gradient boundary condition
@@ -2199,7 +2315,7 @@ C...........   WRITE OUT BOUNDARY CONDITION ARRAY INFORMATION
 
                WRITE(16,1857) JGW,JME,ME2GW(JME),NBV(JGW),LBCODEI(JGW),
      &              THETA,CSII(JGW),SIII(JGW),BNDLEN2O3(JGW)
- 1857          FORMAT(1X,I6,1X,I6,1X,I6,3X,I8,3X,I6,6X,E12.4,2X,E16.8,
+ 1857          FORMAT(1X,I6,1X,I6,1X,I6,3X,I8,3X,I4,8X,E12.4,2X,E16.8,
      &              1X,E16.8,2X,E16.8)
 
 C...........   CHECK EXTERNAL BARRIER HEIGHTS AGAINST DEPTHS
@@ -2362,9 +2478,9 @@ C...  CODE ON THE EXTERNAL BOUNDARY
 
                ENDIF
 
-            END DO  ! I = 1,NVELL(K)
+            END DO NVELL_LOOP ! I = 1,NVELL(K)
          END DO  !IPRBI=1,NPRBI
-      END DO   ! K=1,NBOU
+      END DO NBOULOOP  ! K=1,NBOU
 
 C...  ONCE ALL FLOW BOUNDARY NODES HAVE BEEN PROCESSED, CHECK TO MAKE
 C...  SURE THAT JGW LE MNVEL.  NOTE, JME MUST BE < JGW.
@@ -2411,6 +2527,11 @@ C.....TRANSFER FLOW BOUNDARY INFORMATION INTO NODAL ARRAYS
       !   endif
       !end do    
       !stop !jgfdebug
+
+C.... DW, perioidc boundary
+C      PRINT*, UBOUND(NM,1), UBOUND(NM,2) ; 
+      CALL PERBCSETUP( NM(:,:) ) ;
+C....
 
 C...  IF ANY EXTERNAL BARRIER BOUNDARIES WERE SPECIFIED, (NFLUXB=1)
 C.....WRITE OUT EXTERNAL BARRIER BOUNDARY INFORMATION TO UNIT 16 FILE
@@ -2541,12 +2662,16 @@ C     ------------------------------------------------------------------
       allocate ( areas(mne), totalarea(mnp))
       allocate ( nneigh(mnp),mju(mnp),nodele(mnp))
       allocate ( lbarray_pointer(mnp))
-      allocate ( sfac(mnp))
+      allocate ( sfac(mnp), sfar(mnp), sfacele(mne), csfea(mne))
 
       allocate ( csi(mnp),sii(mnp))
 C...  v49.48.02 tcm -- Variables related to kdtree searches
 C...  which are deallocated at the end of read_input.F
       allocate( bcxy(2,mne), rmax(mne) )
+C...... DW
+      ALLOCATE ( FDXE(3,MNE), FDYE(3,MNE) ) ;
+      FDXE = 0.0_SZ ; 
+      FDYE = 0.0_SZ ;
       !
       ! initialize to something troublesome to make it easy to spot issues
       slam = -99999.d0
@@ -2562,6 +2687,9 @@ C...  which are deallocated at the end of read_input.F
       nodele = -99999
       lbarray_pointer = -99999
       sfac = -99999.d0
+      sfacele = -99999.d0
+      csfea = -99999.d0
+      sfar = -99999.d0
       csi = -99999.d0
       sii = -99999.d0
       bcxy = -99999.d0
@@ -2817,12 +2945,13 @@ C
             NEITEM(K)=NeiTabEle(I,K)
             NeiTabEle(I,K)=0
          END DO
+         NN = 0; ! DW
          DO J=2,NNeigh(I)
             NN1=NeiTab(I,1)
             NN3=NeiTab(I,J)
             IF(J.NE.NNeigh(I)) NN2=NeiTab(I,J+1)
             IF(J.EQ.NNeigh(I)) NN2=NeiTab(I,2)
-            DO K=1,NNeighEle(I)
+            KLP1: DO K=1,NNeighEle(I)
                IF(NEITEM(K).NE.0) THEN
                   IF(NM(NEITEM(K),1).EQ.NN1) THEN
                      NE1=NM(NEITEM(K),1)
@@ -2840,11 +2969,13 @@ C
                      NE3=NM(NEITEM(K),2)
                   ENDIF
                   IF((NE2.EQ.NN2).AND.(NE3.EQ.NN3)) THEN
-                     NeiTabEle(I,J-1)=NEITEM(K)
+                     NN = NN + 1;
+                     NeiTabEle(I,NN)=NEITEM(K)
                      NEITEM(K)=0
+                     CYCLE KLP1;
                   ENDIF
                ENDIF
-            END DO
+            END DO KLP1
          END DO
       END DO
 
@@ -2872,8 +3003,9 @@ C     CLOSE (333)
 C     Deallocate local work arrays
       DEALLOCATE ( ANGLE )
       DEALLOCATE ( NEITEM )
-      DEALLOCATE ( NNEIGHELE )
-
+C     DW
+C      DEALLOCATE ( NNEIGHELE )
+C     DW
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -3386,11 +3518,449 @@ C     ------------------------------------------------------------------
       end subroutine createTopologyTypeString
       !----------------------------------------------------------------------
 
+C... DW, periodic boundary 
+C...  Setting
+C        (1) ID_PERBC_MAP(i) =  i, for i = interior nodes or primary nodes of a node pairs  
+C                            =  p, i = slave nodes of a node pair
+C        (2) PERBC_ELNDTAB(:,1:4) - table for switching vertex labels of elements 
+C                                   containing slave nodes
+C
+C        - Switch from the original node numbering to primary nodes of the node pairs
+C            ETAB( PERBC_ELNATAB(:,2), PERBC_ELNTAB(:,1) ) =   PERBC_ELNATAB(:,3) ;                      
+C
+C        - Switch (back) to original node numbering 
+C            ETAB( PERBC_ELNATAB(:,2), PERBC_ELNTAB(:,1) ) =   PERBC_ELNATAB(:,4) ;                      
+C        (3)   
+C            
+      SUBROUTINE PERBCSETUP( ETAB )
+
+      use sizes, only: MNP, MNEI
+      use global, only: nperseg, perbc_idn_map, iperconn, nnperbc
+      IMPLICIT NONE
+      
+C      dummy variables
+      INTEGER:: ETAB(:,:)
+      
+C      local variables c!
+      INTEGER:: I, J, K, ILOC, IE
+      INTEGER:: IC, IA1, IA2, N1, N2, N3
+
+      
+      INTEGER:: ID1, ID2, ID3
+      INTEGER, ALLOCATABLE:: ptab(:), stab(:), mneitab(:), mneitabele(:)
+            
+      IF ( NPERSEG > 0 ) THEN
+         IF ( .NOT. ALLOCATED(PERBC_IDN_MAP)  ) THEN
+            ALLOCATE( PERBC_IDN_MAP(MNP) ) ;
+            DO I = 1,MNP
+               PERBC_IDN_MAP(I) = I;
+            ENDDO
+         END IF
+!     CALL NEIGHB(NE,NP,NM,NNeigh,NeiTab,NeiTabEle,NeiMin,NeiMax,
+!     &     X,Y,NScreen,ScreenUnit)
+!        - For maping original indices to primary periodic indices 
+         PERBC_IDN_MAP(IPERCONN(1:NNPERBC,2)) = IPERCONN(1:NNPERBC,1) ; 
+
+C        Create a table for mapping a original element table to periodic bc 
+         NELNDTAB = SUM( NNeighEle(IPERCONN(1:NNPERBC,2)) )  ;        
+         IF ( .NOT. ALLOCATED(PERBC_ELNDTAB) ) THEN
+            ALLOCATE( PERBC_ELNDTAB(NELNDTAB,4) ) ;
+         END IF  
+         
+         
+         IC = 0 ; 
+         DO I = 1, NNPERBC
+            ID1 = IPERCONN(I,2) ;
+            DO J = 1, NNeighEle(ID1)
+               IE = NeiTabEle(ID1,J) ; 
+               
+               IC = IC + 1 ;
+               PERBC_ELNDTAB(IC,1) = IE ; ! IE, VLOC, I_P, I_S 
+               PERBC_ELNDTAB(IC,3:4) = IPERCONN(I,1:2) ; 
+               
+               KLOOP: DO K  = 1, 3
+                 IF ( ETAB(IE,K) == ID1 ) THEN
+                    ILOC = K ; 
+                    EXIT KLOOP ; 
+                 END IF
+               ENDDO KLOOP
+
+               PERBC_ELNDTAB(IC,2) = ILOC ;               
+            END DO
+         END DO         
+
+!!$         PRINT*, "Ic = ", IC ;
+!!$         DO I = 1, IC
+!!$             PRINT*, PERBC_ELNDTAB(I,1:4) ; 
+!!$         END DO
+         
+
+!        Modify NeiTab, NeiTabEle 
+         ALLOCATE( ptab(Mnei), stab(Mnei), 
+     &             mneitab(Mnei*2), mneitabele(2*Mnei) ) ; 
+         DO I = 1, NNPERBC
+            ptab = 0 ; 
+            stab = 0 ; 
+            mneitab = 0 ;
+            
+            ID1 = IPERCONN(I,1) ; ! primary node !
+            ID2 = IPERCONN(I,2) ; ! slave node   !
+            
+C     Modify the table of nodes sharing the primary nodes
+            N1 = NNeigh(ID1) ; 
+            N2 = NNeigh(ID2) ;
+            
+            ptab(1:N1) = NeiTab(ID1,1:N1) ;
+            stab(1:N2) = NeiTab(ID2,1:N2) ;
+             
+C           1. Loop through entries in the neighboring-node table associated 
+C              with nodes having the slave node as their neigbor. Replace 
+C              the slave node number by the primary node number.   
+            DO J = 2, N2
+               ID3 = NeiTab(ID2,J) ;               
+               IF ( COUNT( (IPERCONN(1:NNPERBC,2) 
+     &              - ID3) == 0) == 0) THEN ! interior nodes
+                  N3 = NNeigh(ID3) ; 
+                  KLP2: DO K = 2, N3
+                    IF ( NeiTab(ID3,K) == ID2 ) THEN
+                       NeiTab(ID3,K) = ID1 ; 
+                       EXIT KLP2 ; 
+                    END IF
+                  END DO KLP2  
+               END IF               
+            END DO            
+
+C           2. Augment the neighbor tables of the primary nodes   
+C           Switch to a primary node number 
+            stab(1:N2) = PERBC_IDN_MAP(stab(1:N2)) ;
+            
+            ia1 = N1 ;
+            mneitab(1:mnei) = ptab;
+            DO J = 1, N2
+               IF ( COUNT(mneitab(1:ia1) - stab(J) == 0) == 0 ) THEN
+                  ia1 = ia1 + 1 ;
+                  IF (ia1 > ubound(mneitab,1)) then
+                      write(16,*) 'ia1 large ',ia1,mnei,
+     &                ubound(mneitab,1),ubound(ptab,1) 
+                  endif
+                  mneitab(ia1) = stab(J) ;
+               END IF  
+            END DO
+            
+            IF ( ia1 <= Mnei .AND. ia1 >= N1 ) THEN
+               NNeigh(ID1) = ia1 ; 
+               NeiTab(ID1,1:ia1) = mneitab(1:ia1) ;                
+               IF ( ia1 > NeiMax ) THEN                 
+                  WRITE(16,*) "Warning in PREBCSETUP(): No. neighbors =",
+     &                 IA1, " > ", " NeiMax = ", NeiMax ;    
+                  NeiMax = ia1 ; 
+               END IF
+
+               IF ( ia1 == N1 ) THEN
+                  WRITE(16,*) "Fatal error in PREBCSETUP(): the primary 
+     &            and slave node label are identical for the node ", ID1
+                  STOP 'dw' ;
+               END IF
+            ELSE                              
+               WRITE(16,*) "Error in PREBCSETUP(): No. neighbors = ", 
+     &              IA1, " > ", " Mnei = ", Mnei ;                   
+               WRITE(16,*) " -- Fix: expand the size of NeiTab(:,:), 
+     &                                 and NeiTabEle(:,:) tables"   ;  
+               
+               CALL EXPAND_NeiTAB( ia1 ) ;
+
+               NeiMax = ia1 ; 
+               NNeigh(ID1) = ia1 ; 
+               NeiTab(ID1,1:ia1) = mneitab(1:ia1) ;                    
+            END IF
+            !
+            
+C     Modify the table of elements sharing the primary nodes            
+            N1 = NNeighEle(ID1) ;
+            N2 = NNeighEle(ID2) ; 
+            
+            mneitabele(1:N1) = NeiTabEle(ID1,1:N1)
+            mneitabele(N1+1:N1+N2) = NeiTabEle(ID2,1:N2)    
+            
+            NNeighEle(ID1) = N1 + N2 ; 
+            NeiTabEle(ID1,1:N1+N2) = mneitabele(1:N1+N2) ;
+         END DO
+         !
+         DEALLOCATE( ptab, stab, mneitab, mneitabele ) ; 
+      END IF
+            
+
+      RETURN ;
+      CONTAINS
+      
+        SUBROUTINE EXPAND_NeiTAB( ia1 ) 
+        IMPLICIT NONE
+        
+        INTEGER:: ia1 !c dummy c!
+        INTEGER, ALLOCATABLE:: NeiTab_TMP(:,:), NeiTabEle_TMP(:,:) ! local variables 
+
+        !
+        allocate(NeiTab_TMP(MNP,ia1+4), NeiTabEle_TMP(MNP,ia1+4)) ;     
+                       
+        NeiTab_TMP(:,1:Mnei) = NeiTab(:,1:Mnei) ; 
+        NeiTabEle_TMP(:,1:Mnei) = NeiTabEle(:,1:Mnei) ; 
+        
+        deallocate( NeiTab, NeiTabEle ) ; 
+
+        Mnei = ia1 + 4 ;
+        allocate(NeiTab(MNP,Mnei), NeiTabEle(MNP,Mnei)) ;        
+
+        NeiTab = NeiTab_TMP ; 
+        NeiTabEle = NeiTabEle_TMP ; 
+        
+
+        deallocate( NeiTab_TMP, NeiTabEle_TMP) ; 
+        
+        RETURN ;
+        END SUBROUTINE EXPAND_NeiTAB
+
+      END SUBROUTINE PERBCSETUP
+C....      
+
+C     ...... DW
+      SUBROUTINE SWITCH_ELTAB_PERBC( IDIREC )
+       use global, only: NPERSEG
+       IMPLICIT NONE
+       
+       INTEGER:: IDIREC
+       INTEGER:: I, I1, I2
+
+       IF ( NPERSEG > 0 ) THEN
+          SELECT CASE(IDIREC)
+          CASE (1)
+C     Switch to the element table to the primary node
+             DO I = 1, NELNDTAB
+                I1 = PERBC_ELNDTAB(I,1) ;
+                I2 = PERBC_ELNDTAB(I,2) ; 
+
+                NM(I1,I2) = PERBC_ELNDTAB(I,3) ;
+             END DO 
+
+          CASE (2)
+C     Switch back to the original element table 
+             DO I = 1, NELNDTAB
+                I1 = PERBC_ELNDTAB(I,1) ;
+                I2 = PERBC_ELNDTAB(I,2) ; 
+                NM(I1,I2) = PERBC_ELNDTAB(I,4) ;
+             END DO 
+          END SELECT
+       END IF
 
 
+       RETURN 
+      END SUBROUTINE SWITCH_ELTAB_PERBC
+C     ...... DW
+C-----------------------------------------------------------------------
+C     ...... WJP
+      FUNCTION haversine(deglon1,deglon2,deglat1,deglat2) result (dist)
+          use global, only: deg2rad, Rearth 
+          ! great circle distance -- adapted from Matlab 
+          real(sz),intent(in) :: deglat1,deglon1,deglat2,deglon2
+          real(sz) :: a,c,dist,dlat,dlon,lat1,lat2
+ 
+          dlat = deg2rad*(deglat2-deglat1)
+          dlon = deg2rad*(deglon2-deglon1)
+          lat1 = deg2rad*(deglat1)
+          lat2 = deg2rad*(deglat2)
+          a = ( sin(0.5d0*dlat) )**2 + 
+     &        cos(lat1) * cos(lat2) * ( sin(0.5d0*dlon) )**2
+          c = 2d0*asin( sqrt(a) )
+          dist = Rearth*c
+      END FUNCTION haversine
+C-----------------------------------------------------------------------
+      FUNCTION binarysearch(length, array, value, delta) 
+          ! Given an array and a value, returns the index of the element that
+          ! is closest to, but less than, the given value.
+          ! Uses a binary search algorithm.
+          ! "delta" is the tolerance used to determine if two values are equal
+          ! if ( abs(x1 - x2) <= delta) then
+          !    assume x1 = x2
+          ! endif
+          implicit none
+          integer, intent(in) :: length
+          real(sz), dimension(length), intent(in) :: array
+          !f2py depend(length) array
+          real(sz), intent(in) :: value
+          real(sz), intent(in), optional :: delta
 
+          integer :: binarysearch
 
+          integer :: left, middle, right
+          real(sz) :: d
 
+          if (present(delta) .eqv. .true.) then
+             d = delta
+          else
+             d = 1d-9
+          endif
+        
+          left = 1
+          right = length
+          do
+             if (left > right) then
+                exit
+             endif
+             middle = nint((left+right) / 2.0d0)
+             if ( abs(array(middle) - value) <= d) then
+                binarySearch = middle
+                return
+             elseif (array(middle) > value) then
+                right = middle - 1
+             else
+                left = middle + 1
+             end if
+          end do
+          binarysearch = right
+
+      END FUNCTION binarysearch
+C-----------------------------------------------------------------------
+      SUBROUTINE bl_interp(xp, x_array, yp, y_array, x, y, ii, w)
+          ! This function uses bilinear interpolation to get the
+          ! interpolation weights, w and the indices for interpolation
+          ! Assumed to be sampled on a regular grid, with the grid x values
+          ! specified by x_array and the grid y values specified by y_array
+          implicit none
+          integer, intent(in) :: xp, yp           
+          real(sz), dimension(xp), intent(in) :: x_array
+          real(sz), dimension(yp), intent(in) :: y_array
+          real(sz), intent(in) :: x,y
+          real(sz), intent(out) :: w(4)
+          integer, intent(out) :: ii(4)
+      
+          real(sz) :: denom, x1, x2, y1, y2
+          real(sz) :: x2x1, y2y1, x2x, y2y, xx1, yy1
+          integer  :: i, j, ir, jr
+
+          i = binarysearch(xp, x_array, x)
+          j = binarysearch(yp, y_array, y)
+          ! Make sure we start from one
+          if (i.eq.0) then
+             i = 1; ir = 1
+          else
+             ir = i + 1
+             if (ir > xp) then
+                if (3d0*x_array(1) - 2d0*x_array(2) + 360d0 < xp) then
+                   ! Wrap the longitude around
+                   ir = 1
+                else
+                   ir = xp
+                endif
+             endif
+          endif
+          x1 = x_array(i)
+          x2 = x_array(ir)
+          
+          if (j.eq.0) then
+             j = 1; jr = 1
+          else
+             jr = j + 1
+             if (jr > yp) jr = yp
+          endif
+          y1 = y_array(j)
+          y2 = y_array(jr)
+
+          ! Lon, lat to meters 
+          if (ir.eq.i) then
+             x2x1 = 1.0d0
+             x2x  = 0.0d0
+             xx1  = 1.0d0
+          else
+             x2x1 = haversine(x1,x2,y,y)
+             x2x  = haversine(x,x2,y,y)
+             xx1  = haversine(x1,x,y,y)
+          endif
+          if (jr.eq.j) then
+             y2y1 = 1.0d0
+             y2y  = 0.0d0
+             yy1  = 1.0d0
+          else
+             y2y1 = haversine(x,x,y1,y2)
+             y2y  = haversine(x,x,y,y2)
+             yy1  = haversine(x,x,y1,y)
+          endif 
+          denom = x2x1*y2y1
+         
+          if (denom < 1e-12) then
+             write(16,*) 'Denominator is small',denom
+             write(16,*) x,y,x1,y1,x2,y2,i,j,ir,jr
+          endif
+            
+          ! Output the indices
+          ii   = [i, j, ir, jr]
+
+          ! Output the weights
+          w(1) = x2x*y2y/denom
+          w(2) = xx1*y2y/denom
+          w(3) = x2x*yy1/denom
+          w(4) = xx1*yy1/denom
+
+      END SUBROUTINE bl_interp
+C-----------------------------------------------------------------------
+      SUBROUTINE conserve_interp(xp, x_array, yp, y_array, 
+     &           x1, y1, x2, y2, x3, y3, ii, ww)
+          ! This function works out the indices of x_array and y_array 
+          ! inside the triangle specified by x1, y1, x2, y2, x3, y3
+          implicit none
+          integer, intent(in) :: xp, yp           
+          real(sz), dimension(xp), intent(in) :: x_array
+          real(sz), dimension(yp), intent(in) :: y_array
+          real(sz), intent(in) :: x1 ,y1, x2, y2, x3, y3
+          integer, intent(out) :: ii(4)
+          real(sz), intent(out) :: ww(4)
+      
+          integer  :: is, ie, js, je
+          real(sz) :: x1xm, x2xm, y1ym, y2ym
+
+          ! Get starting and ending indices for loop
+          is = binarysearch(xp, x_array, x2)
+          js = binarysearch(yp, y_array, y2)
+          ie = binarysearch(xp, x_array, x3) 
+          je = binarysearch(yp, y_array, y3)
+          is = is + 1
+          js = js + 1
+          if (is > ie) then
+             ! Find nearest
+             is   = binarysearch(xp, x_array, x1)
+             x1xm = haversine(x_array(is),x1,y1,y1)
+             x2xm = haversine(x_array(min(xp,is+1)),x1,y1,y1)
+             if (x1xm > x2xm) then
+                is = is+1
+             endif
+             ie = is
+          endif
+          if (js > je) then
+             ! Find nearest
+             js   = binarysearch(yp, y_array, y1)
+             x1xm = haversine(x1,x1,y_array(js),y1)
+             x2xm = haversine(x1,x1,y_array(min(yp,js+1)),y1)
+             if (x1xm > x2xm) then
+                js = js+1
+             endif
+             je = js
+          endif
+          !if ((ie-is)+(je-js).le.4) then
+          !   ! Revert to linear interp search size similar to grid size
+          !call bl_interp(xp, x_array, yp, y_array, x1, y1, ii, ww)
+          !else
+          !   ! Output the indices
+          ii   = [is, js, ie, je]
+          ww   = 1d4
+          !endif
+      END SUBROUTINE conserve_interp
+C-----------------------------------------------------------------------
+      function calcarea(x1,y1,x2,y2,x3,y3)
+        real(sz), intent(in) :: x1 ,y1, x2, y2, x3, y3
+        real(sz) :: calcarea
+
+        calcarea = 0.5d0*abs(x1*(y2-y3) + x2*(y3-y1) + x3*(y1-y2)) 
+
+      end function calcarea
+C-----------------------------------------------------------------------
       SUBROUTINE terminate(NO_MPI_FINALIZE)
 #ifdef CMPI
       USE MESSENGER
@@ -3421,9 +3991,6 @@ C
 #endif
       call unsetMessageSource()
       END SUBROUTINE terminate
-
-
-
 
 C     ------------------------------------------------------------------
       end module mesh

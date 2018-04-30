@@ -381,12 +381,20 @@ C
       integer, parameter :: repartitionLimit = 100 ! give up after this
       integer :: numPartitionAttempts ! number of attempts to partition mesh
       logical :: partitionOK  ! true if partitioning has no issues
-
+      logical :: NPEBC  ! true if fort.19 exists and NOPE > 0
+C     DW
+      INTEGER:: JJ
+      LOGICAL:: F5354R
+C
       call setMessageSource("prepinput")
 #if defined (PREPINPUT_TRACE) || defined (ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 
+      CALL setMessageSource("prepinput")
+#if defined(ALL_TRACE)
+      CALL allMessage(DEBUG,"Enter")
+#endif      
 
 C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
       if (PREP_13) then
@@ -395,6 +403,15 @@ C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
         write(*,*) 'file for each PE.'
         CALL RELOCALIZE()
         CALL PREP13()
+C================= DW, for sponge layer
+        IF ( prep5354flag ) THEN
+           CALL PREP5354( 53001 ) 
+           CALL PREP5354( 54001 ) 
+        END IF
+        IF ( prep2001flag ) THEN
+           CALL PREP20( .true. ) 
+        END IF
+C=================
         GO TO 9999
       endif
 
@@ -543,6 +560,12 @@ C           print *," PROC for ",I," = ", PROC(I)
         ENDDO
         CLOSE(990)
         print *, 'INFO: Closed partmesh.txt file.'
+        IF (minval(PROC).eq.0) then
+           write(6,*) 'Adding 1 to the PEs'
+           DO I = 1, MNP
+              PROC(I) = PROC(I) + 1
+           ENDDO
+        ENDIF
       ENDIF
 C
 C-- Read the Global Input File ( Unit 15 )
@@ -692,6 +715,42 @@ C
         write(*,*) 'Writing subdomain Nodal Attributes (unit 13)'
         write(*,*) 'file for each PE.'
         CALL PREP13()
+C================= DW, for sponge layer
+        IF ( prep5354flag ) THEN
+           F5354R = .FALSE.
+           DO JJ = 1, NWP
+              IF ( (TRIM(useNodalAttrNames(JJ)) .eq. 
+     &             "sponge_generator_layer" ) ) THEN
+                 F5354R = .TRUE.
+                 PRINT*, "Prepping 5354" 
+                 EXIT 
+              END IF
+           END DO       
+           IF ( F5354R ) THEN
+              CALL PREP5354( 53001 ) 
+              CALL PREP5354( 54001 ) 
+           END IF
+        END IF
+        IF ( prep2001flag ) THEN
+           F5354R = .FALSE.
+           DO JJ = 1, NWP
+              IF ( (TRIM(useNodalAttrNames(JJ)) .eq. 
+     &             "sponge_generator_layer" ) ) THEN
+                 F5354R = .TRUE.
+                 PRINT*, "Prepping 2001" 
+                 EXIT 
+              END IF
+           END DO       
+           IF ( F5354R ) THEN
+              CALL PREP20( .true. ) 
+           END IF
+        END IF
+        IF ( prep5354flag .or. prep2001flag ) THEN
+           if (allocated(useNodalAttrNames)) then
+              DEALLOCATE(useNodalAttrNames)
+           endif
+        ENDIF 
+C=================
       endif
 C
 C-- If required write a Local fort.19 file for each PE
@@ -703,9 +762,13 @@ C
           if (enforceBN.eq.2) call subprep021() ! NCSU Subdomain
       else                                       ! NCSU Subdomain
          IF (PREP_ALL) THEN
-            IF ((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN
-               print *, "Ready to Write Local UNIT 19 File for each PE"
-               CALL PREP19()
+            IF (NOPE.GT.0) THEN
+               ! WJP 03.27.2018 checking if fort.19 exists or not
+               INQUIRE(FILE='fort.19',exist=NPEBC)
+               IF (NPEBC) THEN
+                 print *, "Write Local UNIT 19 File for each PE"
+                 CALL PREP19()
+               ENDIF
             ENDIF
          ENDIF
       endif ! NCSU Subdomain

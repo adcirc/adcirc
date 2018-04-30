@@ -377,7 +377,6 @@ C
       real(8), intent(in) :: timeloc
       character(len=20) :: extString ! string version of integer file extension
       logical :: fileFound = .false. ! .true. if the file exists
-      logical :: fileFoundNC = .false.
       logical :: nerr
       integer :: i
 C
@@ -950,7 +949,7 @@ C         write(16,*) 'Allocating IceDescript' !tcm v49.64.01 added for ice
       IceDescript % array                => CICEOUT
       IceDescript % array_g              => CICEOUT_g
       IceDescript % field_name           = 'Ice'
-      if (ncice.eq.0) then
+      if (ncice.eq.0.or.ncice.eq.14) then
          IceDescript % writeFlag         = .false.
       endif
 
@@ -1459,22 +1458,15 @@ C     maxrs.63
       ! current adcirc time.
       if (ihot.ne.0) then
          do i=1, numOutputDescript2D
-            fileFoundnc = .false.
-            fileFound   = .false.
+            fileFound = .false.
             if ( ptr(i) % descript2D % readMaxMin.eqv..true.) then
                call logMessage(INFO,'Attempting to read ' //
      &            trim(ptr(i) % descript2D % file_name) //
      &            ' to continue the min/max record.')
-               
-               !...Check for the netcdf file up front to prevent warning
-               !   about a missing ascii file
-               inquire(file=trim(ptr(i)%descript2D%file_name)//".nc",exist=fileFoundnc)
-               if(fileFoundnc.eqv..false.)then
-                   call readAndMapToSubdomainMaxMin(ptr(i) % descript2D,
-     &                  timeloc, fileFound)
-               endif
+               call readAndMapToSubdomainMaxMin(ptr(i) % descript2D,
+     &            timeloc, fileFound)
 #ifdef ADCNETCDF
-               if ((fileFoundnc.eqv..true.).and.
+               if ((fileFound.eqv..false.).and.
      &              (netcdf_avail.eqv..true.) ) then
                   ! check to see if the file exists before trying to
                   ! initialize it
@@ -1558,7 +1550,12 @@ C----------------------------------------------------------------------
       SUBROUTINE writeOutput2D(IT,TimeLoc)
       USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
      &                  GLOBALDIR, OFF
-      USE GLOBAL
+      USE GLOBAL, only: nt, noutge, noutgv, noutgw, nws, nrs,
+     &   inundationOutput
+#ifdef CSWAN
+     &   ,SWAN_OutputHS, SWAN_OutputDIR, SWAN_OutputTM01,
+     &   SWAN_OutputTPS, SWAN_OutputTM02, SWAN_OutputTMM10, SWAN_OutputWind
+#endif
       USE MESH, ONLY : NP, NE, DP, NM, ICS
       USE GLOBAL_IO, ONLY: storeOne, storeTwo,
      &    packOne, unpackOne, packTwo, unpackTwo
@@ -6207,125 +6204,6 @@ C...  jgf50.44: Collect time that min/max occurs as well.
       call unsetMessageSource()
 C-----------------------------------------------------------------------
       end subroutine collectMinMaxData
-C-----------------------------------------------------------------------
-
-
-C-----------------------------------------------------------------------
-C                      S U B R O U T I N E
-C      W R I T E   B I N A R Y   O U T P U T   F I L E   H E A D E R
-C-----------------------------------------------------------------------
-C     @jasonfleming v53.dev : Clean up repeated code for binary file
-C     headers in cstart.F and hstart.F as part of hotstart appending
-C     to files.
-C-----------------------------------------------------------------------
-      subroutine writeBinaryOutputFileHeader(lun, numComponents, 
-     &   filePos, numDataSets, numRecordsPerSet, numSpool)
-      use sizes, only : nbyte
-      use global, only : dt, rdes4, rid4, rdes8, rid8
-      use mesh, only : aid4, aid8
-      implicit none
-      integer, intent(in) :: lun
-      integer, intent(in) :: numComponents ! 1=scalar, 2=2Dvector etc
-      integer, intent(inout) :: filePos ! binary record number
-      integer, intent(in) :: numDataSets ! number of datasets that have been written
-      integer, intent(in) :: numRecordsPerSet ! np or num stations
-      integer, intent(in) :: numSpool ! number of time steps between writes
-      integer :: i
-      !
-      if(nbyte.eq.4) then
-         do i=1,8
-            write(lun,rec=filePos+i) rdes4(i)
-         enddo
-         filePos=filePos+8
-         do i=1,6
-            write(lun,rec=filePos+i) rid4(i)
-         enddo
-         filePos=filePos+6
-         do i=1,6
-            write(lun,rec=filePos+i) aid4(i)
-         enddo
-         filePos=filePos+6
-      endif
-      if(nbyte.eq.8) then
-         do i=1,4
-            write(lun,rec=filePos+i) rdes8(i)
-         enddo
-         filePos=filePos+4
-         do i=1,3
-            write(lun,rec=filePos+i) rid8(i)
-         enddo
-         filePos=filePos+3
-         do i=1,3
-            write(lun,rec=filePos+i) aid8(i)
-         enddo
-         filePos=filePos+3
-      endif
-      WRITE(lun,REC=filePos+1) numDataSets
-      WRITE(lun,REC=filePos+2) numRecordsPerSet
-      WRITE(lun,REC=filePos+3) DT*numSpool
-      WRITE(lun,REC=filePos+4) numSpool
-      WRITE(lun,REC=filePos+5) numComponents
-      filePos=filePos+5
-        
-C-----------------------------------------------------------------------
-      end subroutine writeBinaryOutputFileHeader
-C-----------------------------------------------------------------------
-
-C-----------------------------------------------------------------------
-C                      S U B R O U T I N E
-C     S K I P   D O W N   T O   A P P E N D   O U T P U T   F I L E 
-C-----------------------------------------------------------------------
-C     @jasonfleming v53.dev : Skip down through existing ascii output
-C     file to reach the right location where output should be appended.
-C-----------------------------------------------------------------------
-      subroutine skipDownToAppendOutputFile(lun, timeloc, 
-     &   numRecordsPerSnap, outputSpecifier)
-      use sizes, only : myproc, write_local_files
-      use global, only : logMessage, INFO
-      implicit none
-      integer, intent(in) :: lun
-      real(sz), intent(in) :: timeloc ! time in seconds, read from hotstart file
-      integer, intent(inout) :: numRecordsPerSnap ! num nodes or num stations
-      integer, intent(in) :: outputSpecifier
-      character(2048) :: skipline
-      character(2048) :: skipdata
-      !
-      real(sz) :: existingTime ! time from the file
-      integer :: existingIT    ! time step from the file
-      integer :: i
-      !
-      read(lun,'(a)') skipline ! header line 1
-      read(lun,'(a)') skipline ! header line 2
-      !
-      if (myproc == 0 .or. WRITE_LOCAL_FILES) then
-         do  ! loop until reaching the place to append or the end of file
-            read(unit=lun,fmt='(a)',end=999,err=999) skipline
-            select case(outputSpecifier)
-            case(1)
-               read(skipline,fmt=*,end=999,err=999) existingTime, existingIT
-            case(4)
-               read(skipline,fmt=*,end=999,err=999) existingTime, 
-     &            existingIT, numRecordsPerSnap
-            case default
-               call logMessage(ERROR,"Output specifier not recognized.")
-            end select
-            if ( existingTime.gt.timeloc ) then
-               backspace(lun)
-               backspace(lun)
-               write(unit=lun,fmt='(a)') trim(skipdata) ! this will truncate the file
-               return
-            else
-               do i=1, numRecordsPerSnap
-                  read(unit=lun,fmt='(a)',end=999,err=999) skipdata
-               end do
-            endif
-         end do
-      endif
-
-999   return
-
-C-----------------------------------------------------------------------
-      end subroutine skipDownToAppendOutputFile
 C-----------------------------------------------------------------------
 
 
