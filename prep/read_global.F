@@ -35,7 +35,7 @@ C---------------------------------------------------------------------
      &   exist_flux, iden, mnbou, mnvel, nbou, nboumsg, nelg, neta, 
      &   netamsg, nfover, nnodg, nope, nopemsg, nvel, nvelmsg, nweir, 
      &   river_above_msl, numLBCodeValues, nfluxf, node_dict, labels,
-     &   NPERBC, IPERCONN, IPERPTR 
+     &   NPERBC, IPERCONN, IPERPTR
       use hashtable
       use memory_usage
       implicit none
@@ -90,7 +90,7 @@ C
          IF (labels(I).NE.I) THEN
             print *, I,J
             WRITE(*,'(A)') 'Error: Node Numbering not in Sequential Order'
-            CALL EXIT(1) 
+            CALL EXIT(1)
          ENDIF
          call add_ipair(node_dict,labels(I),I)
       ENDDO
@@ -102,7 +102,7 @@ C
           IF (J.NE.I) THEN
             print *, I,J
             WRITE(*,'(A)') 'Error: Element Numbering not in Sequential Order'
-            CALL EXIT(1) 
+            CALL EXIT(1)
           ENDIF
           NNEG(1,I) = find(node_dict,n1)
           NNEG(2,I) = find(node_dict,n2)
@@ -166,9 +166,9 @@ C
       J=0
       NWEIR = 0
 C.... DW
-      NPERBC = 0 ;      
+      NPERBC = 0 ;
 C.... DW
-      ! jgf51.52.23: The LBCODE array is dimensioned by MNVEL which is 
+      ! jgf51.52.23: The LBCODE array is dimensioned by MNVEL which is
       ! larger than the number of values in the LBCODE array. So we
       ! need to initialize to a value that will hopefully cause obvious
       ! isses if an initialized value is accidentally used.
@@ -252,7 +252,7 @@ C..... DW, periodic bc
                  IPERCONN = 0 ;
 
                  ALLOCATE( IPERPTR(NBOU+1) ) ;
-                 IPERPTR = 1 ; 
+                 IPERPTR = 1 ;
               END IF
               NPERBC = NPERBC+1 ;
 C
@@ -261,7 +261,7 @@ C
               READ(14,*) IPERCONN(NPERBC,1), IPERCONN(NPERBC,2) ;
               NBVV(K,I) = IPERCONN(NPERBC,1) ;
 C
-              IPERPTR(K+1:NBOU+1) = (IPERPTR(K)) + NVELL(K) ;      
+              IPERPTR(K+1:NBOU+1) = (IPERPTR(K)) + NVELL(K) ;
            ENDDO
 C..... DW
 
@@ -724,7 +724,7 @@ c..
      &         'The WarnElev namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
-      
+
       read(unit=15,nml=AliDispersionControl,iostat=ios)
       if ( ios.ge.0) then
          FOUND_ALIDISP_NML = .true.
@@ -735,7 +735,7 @@ c..
      &         'The AliDispersion namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
-      
+
       read(unit=15,nml=densityControl,iostat=ios)
       if ( ios.ge.0) then
          FOUND_DENSITY_NML = .true.
@@ -926,7 +926,7 @@ Casey 180318: Added NWS=13
 C
 C... TCM v49.64.02 -- added
 C...  BE SURE NWS AND NCICE ARE COMPATABLE
-C...  xyc v52.30: note:Not sure if NWS.EQ.7 here should be removed 
+C...  xyc v52.30: note:Not sure if NWS.EQ.7 here should be removed
       IF((NCICE.GT.0).AND.
      &       ((NWS.EQ.1).OR.(NWS.EQ.2).OR.(NWS.EQ.7))) THEN
          PRINT*,'NCICE = ',NCICE
@@ -1819,7 +1819,7 @@ C     hot start file. This is used to test hot starting capabilities.
       READ(HSTARMSG,*) NHSTAR,NHSINC
 C     jgf49.41: Added new options for hotstart file format indicator: 2, 3,
 C     367, 368. Not sure we need to check the validity of NHSTAR values in
-C     adcprep though.      !wjp allows for single output hotstart (negative value that is not -1) 
+C     adcprep though.      !wjp allows for single output hotstart (negative value that is not -1)
       SELECT CASE(abs(NHSTAR))  !tcm v51.26 mods for binary time-stamped hotstart file generation NHSTAR=-1
       CASE(0,1,2,3,5,67,68,367,368,567,568)
          ! do nothing, these are allowable values

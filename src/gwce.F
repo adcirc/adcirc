@@ -231,7 +231,7 @@ C
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
      &   TKM, NPERSEG, NTIP, NNPERBC, IPERCONN, VIDispDXOH, Bd, Ad, Cs2,
-     &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, 
+     &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp,
      &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
@@ -258,7 +258,7 @@ C... DW
 #endif
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB, 
      &  checkChange, enforceEOB, enforceEIB, enforceGWCELVOB
-      USE WIND, ONLY: PRBCKGRND_MH2O 
+      USE WIND, ONLY: PRBCKGRND_MH2O
 
       IMPLICIT NONE
 
@@ -297,7 +297,7 @@ C... DW
       REAL(SZ) Pr1N1, Pr1N2, Pr1N3
       REAL(SZ) Off1N1, Off1N2, Off1N3 ! water level offsets
       REAL(SZ) QX1N1, QX1N2, QX1N3, QY1N1, QY1N2, QY1N3, QX1Avg, QY1Avg
-      REAL(SZ) SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
+      REAL(SZ) SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac
       REAL(SZ) SFCXAvg, SFCYAvg, YCFACAvg, SFCXADJ, SFCYADJ, TANPHIAvg
       REAL(SZ) T0N1,T0N2, T0N3
       REAL(SZ) Tau0Avg, Tau0QXAvg, Tau0QYAvg
@@ -332,16 +332,16 @@ C...... DW
       REAL(SZ):: E0AN1, E0AN2, E0AN3
       REAL(SZ):: E1AN1, E1AN2, E1AN3
       REAL(SZ):: E2AN1, E2AN2, E2AN3
-      REAL(SZ):: ESAN1, ESAN2, ESAN3 
+      REAL(SZ):: ESAN1, ESAN2, ESAN3
       REAL(SZ):: U1AN1, U1AN2, U1AN3
       REAL(SZ):: V1AN1, V1AN2, V1AN3
       REAL(SZ):: ABC00_EAN1, ABC00_EAN2, ABC00_EAN3
       REAL(SZ):: fwsx1, fwsx2, fwsx3
       REAL(SZ):: fwsy1, fwsy2, fwsy3
-      REAL(SZ) :: SPM1, SPM2, SPM3 
+      REAL(SZ) :: SPM1, SPM2, SPM3
       LOGICAL :: ETA_SPONGE = .false., GWCE_SPONGE = .false.
       REAL(SZ) :: Ma2, Cfac = 1.0_SZ, CfacS0 = 1.0_SZ
-      
+
       IF ( LoadAbsLayerSigma ) THEN
          IF (NumNodesAbsLayer(1) > 0 ) ETA_SPONGE = .true.
          IF (SUM(NumNodesAbsLayer) > 0 ) GWCE_SPONGE = .true.
@@ -418,13 +418,13 @@ C              WJP 02.24.2018 Get the infinity norm of the matrix
 C.... Beg DW/WJP:
                SFmxAvg = SFMXEle(IE) ;
                SFmyAvg = SFMYEle(IE) ;
-               sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ; 
-               sfdyfac = (1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ; 
+               sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
+               sfdyfac = (1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ;
                SFCXAvg = SFCXEle(IE) ;
                SFCYAvg = SFCYEle(IE) ;
                YCFACAvg = YCSFACEle(IE) ;
-               SFCXADJ = SFCXAvg/sfdxfac ; 
-               SFCYADJ = YCFACAvg*SFCYAvg/sfdyfac ; 
+               SFCXADJ = SFCXAvg/sfdxfac ;
+               SFCYADJ = YCFACAvg*SFCYAvg/sfdyfac ;
                FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
                FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
                FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
@@ -439,26 +439,26 @@ C.... End WJP/DW
 C.... DW, Nov 2019 if IFNL_HDP = 1 use DP + ETA = H in the GWCE
                DPAvg = (DP(NMI1)+DP(NMI2)+DP(NMI3))/3.d0 +   ! BAVG if GWCE_NL_HDP = .FALSE.
      &              IFNLFA*IFNL_HDP*(ETA2(NMI1) + ! HAVG otherwise
-     &              ETA2(NMI2)+ETA2(NMI3))/3.d0 ; 
-                  
+     &              ETA2(NMI2)+ETA2(NMI3))/3.d0 ;
+
 C.....         WJP adjust the dispersion equation through
 C              Ali et al. formula
                if (CAliDisp) then
                   Ma2   = G*DPavg/Cs2
                   Cfac = (1.0_SZ - 0.25_SZ*Ma2 - Ad*DPavg**Bd)**2
                endif
-               
+
                GA00DPAvgOAreaIE4 = A00*G*DPAvg*Cfac/AreaIE4
                Tau0Avg = (Tau0Var(NMI1)+Tau0Var(NMI2)+Tau0Var(NMI3))/3.d0
 
 C........... DW, Absorbing layer
-C    
+C
                SigmaAvg = 0.D0 ; Tau0SigmaAvg = 0.D0
                Tau0Avg_S = Tau0Avg
                IF ( ETA_SPONGE ) THEN
-                  ! \overline( \sigma ) 
-                  SigmaAvg = (absorblayer_sigma_eta(NMI1,1) 
-     &                     +  absorblayer_sigma_eta(NMI2,1) 
+                  ! \overline( \sigma )
+                  SigmaAvg = (absorblayer_sigma_eta(NMI1,1)
+     &                     +  absorblayer_sigma_eta(NMI2,1)
      &                     +  absorblayer_sigma_eta(NMI3,1))/3.D0
 
                   ! \overline(\tau_{0} \sigma)
@@ -466,9 +466,9 @@ C
      &              +  absorblayer_sigma_eta(NMI2,1)*Tau0Var(NMI2)
      &              +  absorblayer_sigma_eta(NMI3,1)*Tau0Var(NMI3))/3.D0
 
-                  Tau0Avg_S = Tau0Avg + 
+                  Tau0Avg_S = Tau0Avg +
      &             (A00*2.D0*Tau0SigmaAvg*DT + SigmaAvg)*sponge_dis_mthd
-               END IF              
+               END IF
 !
                MsFacLOnDiag =OnDiag*AreaIE*(1.d0/DT+Tau0Avg_S/2.d0)/DT/12.d0
                MsFacLOffDiag=OffDiag*AreaIE*(1.d0/DT+Tau0Avg_S/2.d0)/DT/12.d0
@@ -482,10 +482,10 @@ C.......... DW
                   IF(NeiTab(NMI3,JN).EQ.NMJ1) J31=JN
                   IF(NeiTab(NMI3,JN).EQ.NMJ2) J32=JN
                END DO
-C.........     WJP multiplying by cosine(lat) if doing the 
-C              spherical correction 
+C.........     WJP multiplying by cosine(lat) if doing the
+C              spherical correction
 C              Node-by-Node
-               SPM1 = SFCT(NMI1) 
+               SPM1 = SFCT(NMI1)
                SPM2 = SFCT(NMI2)
                SPM3 = SFCT(NMI3)
 C              Assemble the LHS matrix
@@ -493,30 +493,30 @@ C              Assemble the LHS matrix
      &                  + GA00DPAvgOAreaIE4*( SFCXADJ*FDX1*FDX1 +
      &                                        SFCYADJ*FDY1*FDY1) )*NCELE
                Coef(NMI1,J12)= Coef(NMI1,J12) + (MsFacLOffDiag*SPM2
-     &                  + GA00DPAvgOAreaIE4*( SFCXADJ*FDX1*FDX2 + 
+     &                  + GA00DPAvgOAreaIE4*( SFCXADJ*FDX1*FDX2 +
      &                                        SFCYADJ*FDY1*FDY2) )*NCELE
                Coef(NMI1,J13)= Coef(NMI1,J13) + (MsFacLOffDiag*SPM3
      &                  + GA00DPAvgOAreaIE4*( SFCXADJ*FDX1*FDX3 +
      &                                        SFCYADJ*FDY1*FDY3) )*NCELE
 
                Coef(NMI2,J21)= Coef(NMI2,J21) + (MsFacLOffDiag*SPM1
-     &                  + GA00DPAvgOAreaIE4*( SFCXADJ*FDX2*FDX1 + 
+     &                  + GA00DPAvgOAreaIE4*( SFCXADJ*FDX2*FDX1 +
      &                                        SFCYADJ*FDY2*FDY1) )*NCELE
                Coef(NMI2,1)  = Coef(NMI2,1)   + (MsFacLOnDiag*SPM2
-     &                  + GA00DPAvgOAreaIE4*( SFCXADJ*FDX2*FDX2 + 
+     &                  + GA00DPAvgOAreaIE4*( SFCXADJ*FDX2*FDX2 +
      &                                        SFCYADJ*FDY2*FDY2) )*NCELE
                Coef(NMI2,J23)= Coef(NMI2,J23) + (MsFacLOffDiag*SPM3
      &                  + GA00DPAvgOAreaIE4*( SFCXADJ*FDX2*FDX3 +
      &                                        SFCYADJ*FDY2*FDY3) )*NCELE
 
                Coef(NMI3,J31)= Coef(NMI3,J31) + (MsFacLOffDiag*SPM1
-     &                  + GA00DPAvgOAreaIE4*( SFCXADJ*FDX3*FDX1 + 
+     &                  + GA00DPAvgOAreaIE4*( SFCXADJ*FDX3*FDX1 +
      &                                        SFCYADJ*FDY3*FDY1) )*NCELE
                Coef(NMI3,J32)= Coef(NMI3,J32) + (MsFacLOffDiag*SPM2
      &                   + GA00DPAvgOAreaIE4*( SFCXADJ*FDX3*FDX2 +
      &                                        SFCYADJ*FDY3*FDY2) )*NCELE
                Coef(NMI3,1)  = Coef(NMI3,1)   + (MsFacLOnDiag*SPM3
-     &                  + GA00DPAvgOAreaIE4*( SFCXADJ*FDX3*FDX3 + 
+     &                  + GA00DPAvgOAreaIE4*( SFCXADJ*FDX3*FDX3 +
      &                                        SFCYADJ*FDY3*FDY3) )*NCELE
             ENDDO FULLMASS
          ELSE
@@ -537,23 +537,23 @@ C
 C.... DW, absorbing layer
                SigmaAvg = 0.D0 ; Tau0sigmaAvg = 0.D0
                Tau0Avg_S = Tau0Avg
-               IF ( ETA_SPONGE ) THEN 
-                 SigmaAvg = (absorblayer_sigma_eta(NMI1,1) 
-     &             +  absorblayer_sigma_eta(NMI2,1) 
+               IF ( ETA_SPONGE ) THEN
+                 SigmaAvg = (absorblayer_sigma_eta(NMI1,1)
+     &             +  absorblayer_sigma_eta(NMI2,1)
      &             +  absorblayer_sigma_eta(NMI3,1))/3.D0
                  Tau0SigmaAvg = (absorblayer_sigma_eta(NMI1,1)*Tau0Var(NMI1)
      &             +  absorblayer_sigma_eta(NMI2,1)*Tau0Var(NMI2)
      &             +  absorblayer_sigma_eta(NMI3,1)*Tau0Var(NMI3))/3.D0
 
-                 Tau0Avg_S = Tau0Avg + 
+                 Tau0Avg_S = Tau0Avg +
      &             (A00*2.D0*Tau0SigmaAvg*DT + SigmaAvg)*sponge_dis_mthd
                END IF
                MsFacLOnDiag =OnDiag*AreaIE*(1.d0/DT+Tau0Avg_S/2.d0)/DT/12.d0
 C.............DW
-C.........     WJP multiplying by cosine(lat) if doing the 
-C              spherical correction 
+C.........     WJP multiplying by cosine(lat) if doing the
+C              spherical correction
 C              Node-by-Node
-               SPM1 = SFCT(NMI1) 
+               SPM1 = SFCT(NMI1)
                SPM2 = SFCT(NMI2)
                SPM3 = SFCT(NMI3)
 
@@ -561,7 +561,7 @@ C              Node-by-Node
                Coefd(NMI2) = Coefd(NMI2) + MsFacLOnDiag*SPM2*NCELE
                Coefd(NMI3) = Coefd(NMI3) + MsFacLOnDiag*SPM3*NCELE
             ENDDO LUMPEDMASS
-         ENDIF COEFASSYM 
+         ENDIF COEFASSYM
 
 C...  Modify the matrix "COEF" by imposing the elevation specified
 C...  boundary conditions while maintaining the symmetry of the system
@@ -735,15 +735,15 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
             SFacAvg = SFacEle(IE)
             SFmxAvg=SFMXEle(IE) ;
             SFmyAvg=SFMYEle(IE) ;
-            sfdxfac=(1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ; 
-            sfdyfac=(1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ;            
+            sfdxfac=(1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
+            sfdyfac=(1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ;
 C........ BEG DW:
-            FDX1 = FDXE(1,IE)*sfdxfac ; 
-            FDX2 = FDXE(2,IE)*sfdxfac ; 
-            FDX3 = FDXE(3,IE)*sfdxfac ; 
-            FDY1 = FDYE(1,IE)*sfdyfac ; 
-            FDY2 = FDYE(2,IE)*sfdyfac ; 
-            FDY3 = FDYE(3,IE)*sfdyfac ; 
+            FDX1 = FDXE(1,IE)*sfdxfac ;
+            FDX2 = FDXE(2,IE)*sfdxfac ;
+            FDX3 = FDXE(3,IE)*sfdxfac ;
+            FDY1 = FDYE(1,IE)*sfdyfac ;
+            FDY2 = FDYE(2,IE)*sfdyfac ;
+            FDY3 = FDYE(3,IE)*sfdyfac ;
 C........ END DW:
             LSXXGradA=(UU1(NM1)*FDX1+UU1(NM2)*FDX2+UU1(NM3)*FDX3)/2.d0   !A*DUDX
             LSXYGradA=(UU1(NM1)*FDY1+UU1(NM2)*FDY2+UU1(NM3)*FDY3)/2.d0   !A*DUDY
@@ -830,15 +830,15 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
 C..... Beg DW:
             SFmxAvg=SFMXEle(IE) ;
             SFmyAvg=SFMYEle(IE) ;
-            sfdxfac=(1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ; 
-            sfdyfac=(1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ;            
+            sfdxfac=(1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
+            sfdyfac=(1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ;
 
-            FDX1 = FDXE(1,IE)*sfdxfac ; 
-            FDX2 = FDXE(2,IE)*sfdxfac ; 
-            FDX3 = FDXE(3,IE)*sfdxfac ; 
-            FDY1 = FDYE(1,IE)*sfdyfac ; 
-            FDY2 = FDYE(2,IE)*sfdyfac ; 
-            FDY3 = FDYE(3,IE)*sfdyfac ; 
+            FDX1 = FDXE(1,IE)*sfdxfac ;
+            FDX2 = FDXE(2,IE)*sfdxfac ;
+            FDX3 = FDXE(3,IE)*sfdxfac ;
+            FDY1 = FDYE(1,IE)*sfdyfac ;
+            FDY2 = FDYE(2,IE)*sfdyfac ;
+            FDY3 = FDYE(3,IE)*sfdyfac ;
 C..... End DW
             EVMEle = NCEle*(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
             IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN  !If using Smagorinski vertically-integrated lateral stress coefficient
@@ -953,13 +953,13 @@ Corbitt 120322: Localized Advection
          T0N3=Tau0Var(NM3)
 C
 C.... DW: begin ! absorbing layer
-C 
+C
          E0AN1 = 0.D0 ; E0AN2 = 0.D0 ; E0AN3 = 0.D0 ;
          E1AN1 = 0.D0 ; E1AN2 = 0.D0 ; E1AN3 = 0.D0 ;
          E2AN1 = 0.D0 ; E2AN2 = 0.D0 ; E2AN3 = 0.D0 ;
          ESAN1 = 0.D0 ; ESAN2 = 0.D0 ; ESAN3 = 0.D0 ;
- 
-         ABC00_EAN1 = 0.D0 ; 
+
+         ABC00_EAN1 = 0.D0 ;
          ABC00_EAN2 = 0.D0 ;
          ABC00_EAN3 = 0.D0 ;
 
@@ -969,47 +969,47 @@ C
          SgN1_eta = 0.D0 ; SgN2_eta = 0.D0 ; SgN3_eta = 0.D0 ;
          SgN1_mnx = 0.D0 ; SgN2_mnx = 0.D0 ; SgN3_mnx = 0.D0 ;
          SgN1_mny = 0.D0 ; SgN2_mny = 0.D0 ; SgN3_mny = 0.D0 ;
-  
-         IF ( GWCE_SPONGE ) THEN 
-            SgN1_eta = absorblayer_sigma_eta(NM1,1) ; 
-            SgN2_eta = absorblayer_sigma_eta(NM2,1) ; 
+
+         IF ( GWCE_SPONGE ) THEN
+            SgN1_eta = absorblayer_sigma_eta(NM1,1) ;
+            SgN2_eta = absorblayer_sigma_eta(NM2,1) ;
             SgN3_eta = absorblayer_sigma_eta(NM3,1) ;
 
-            SgN1_mnx = absorblayer_sigma_mnx(NM1,1) ; 
-            SgN2_mnx = absorblayer_sigma_mnx(NM2,1) ; 
+            SgN1_mnx = absorblayer_sigma_mnx(NM1,1) ;
+            SgN2_mnx = absorblayer_sigma_mnx(NM2,1) ;
             SgN3_mnx = absorblayer_sigma_mnx(NM3,1) ;
 
-            SgN1_mny = absorblayer_sigma_mny(NM1,1) ; 
-            SgN2_mny = absorblayer_sigma_mny(NM2,1) ; 
+            SgN1_mny = absorblayer_sigma_mny(NM1,1) ;
+            SgN2_mny = absorblayer_sigma_mny(NM2,1) ;
             SgN3_mny = absorblayer_sigma_mny(NM3,1) ;
 
             E0AN1 = eta0_abslayer(NM1) ;
-            E0AN2 = eta0_abslayer(NM2) ; 
-            E0AN3 = eta0_abslayer(NM3) ; 
+            E0AN2 = eta0_abslayer(NM2) ;
+            E0AN3 = eta0_abslayer(NM3) ;
 
-            E1AN1 = eta1_abslayer(NM1) ; 
-            E1AN2 = eta1_abslayer(NM2) ; 
-            E1AN3 = eta1_abslayer(NM3) ; 
+            E1AN1 = eta1_abslayer(NM1) ;
+            E1AN2 = eta1_abslayer(NM2) ;
+            E1AN3 = eta1_abslayer(NM3) ;
 
             E2AN1 = eta2_abslayer(NM1) ;
-            E2AN2 = eta2_abslayer(NM2) ; 
+            E2AN2 = eta2_abslayer(NM2) ;
             E2AN3 = eta2_abslayer(NM3) ;
 
             ESAN1 = E2AN1 - E0AN1 ;
             ESAN2 = E2AN2 - E0AN2 ;
             ESAN3 = E2AN3 - E0AN3 ;
 
-            ABC00_EAN1 = A00*E2AN1 + B00*E1AN1 + C00*E0AN1 ; 
-            ABC00_EAN2 = A00*E2AN2 + B00*E1AN2 + C00*E0AN2 ; 
-            ABC00_EAN3 = A00*E2AN3 + B00*E1AN3 + C00*E0AN3 ; 
+            ABC00_EAN1 = A00*E2AN1 + B00*E1AN1 + C00*E0AN1 ;
+            ABC00_EAN2 = A00*E2AN2 + B00*E1AN2 + C00*E0AN2 ;
+            ABC00_EAN3 = A00*E2AN3 + B00*E1AN3 + C00*E0AN3 ;
 
-            U1AN1 = uu1_abslayer(NM1) ; 
-            U1AN2 = uu1_abslayer(NM2) ; 
-            U1AN3 = uu1_abslayer(NM3) ; 
- 
+            U1AN1 = uu1_abslayer(NM1) ;
+            U1AN2 = uu1_abslayer(NM2) ;
+            U1AN3 = uu1_abslayer(NM3) ;
+
             V1AN1 = vv1_abslayer(NM1) ;
             V1AN2 = vv1_abslayer(NM2) ;
-            V1AN3 = vv1_abslayer(NM3) ;          
+            V1AN3 = vv1_abslayer(NM3) ;
          END IF
 C
          IF ((NWS.NE.0).OR.(NRS.NE.0)) THEN     !wind or radiation stress
@@ -1070,15 +1070,15 @@ C..... DW
          ! derivative: accomodate corrected spherical coordinate
          SFmxAvg=SFMXEle(IE)  ;
          SFmyAvg=SFMYEle(IE) ;
-         sfdxfac=(1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ; 
-         sfdyfac=(1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ; 
+         sfdxfac=(1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
+         sfdyfac=(1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ;
          ! continuity
          SFCXAvg=SFCXEle(IE) ;
          SFCYAvg=SFCYEle(IE) ;
          YCFACAvg=YCSFACEle(IE) ;
-         TANPHIAvg=TANPHIEle(IE) ; 
-         SFCXADJ = SFCXAvg/sfdxfac ; 
-         SFCYADJ = YCFACAvg*SFCYAvg/sfdyfac ; 
+         TANPHIAvg=TANPHIEle(IE) ;
+         SFCXADJ = SFCXAvg/sfdxfac ;
+         SFCYADJ = YCFACAvg*SFCYAvg/sfdyfac ;
 
          FDX1 = FDXE(1,IE)*sfdxfac ; !c dx/dlambda*b1*2A
          FDX2 = FDXE(2,IE)*sfdxfac ; !c dx/dlambda*b2*2A
@@ -1108,8 +1108,8 @@ C...... END DW
 
 C...     Compute the Kolar & Gray lateral stress term extended for spatially varying EVM
 C...     ********     Need to think about this more: DW ********
-C...     ********     Kolar & Gray does not seem to be suitable for  
-C...     ********     the spherical coordinates        
+C...     ********     Kolar & Gray does not seem to be suitable for
+C...     ********     the spherical coordinates
          IF(CGWCE_LS_KGQ) THEN
             EVMXGrad=(EVMN1*FDX1+EVMN2*FDX2+EVMN3*FDX3)/AreaIE2
             EVMYGrad=(EVMN1*FDY1+EVMN2*FDY2+EVMN3*FDY3)/AreaIE2
@@ -1132,7 +1132,7 @@ C           X-direction
             MX=(LSXX(NM1)*FDX1+LSXX(NM2)*FDX2+LSXX(NM3)*FDX3
      &         +LSXY(NM1)*FDY1+LSXY(NM2)*FDY2+LSXY(NM3)*FDY3)/AreaIE2
      &         -TANPHIAvg*(LSXYEle + LSYXEle)
-C           Y-direction 
+C           Y-direction
             LSXXEle = (LSXX(NM1)+LSXX(NM2)+LSXX(NM3))/3.d0
             LSYYEle = (LSYY(NM1)+LSYY(NM2)+LSYY(NM3))/3.d0
             MY=(LSYX(NM1)*FDX1+LSYX(NM2)*FDX2+LSYX(NM3)*FDX3
@@ -1169,11 +1169,11 @@ C...     Compute elemental averages
          QY1Avg=(QY1N1+QY1N2+QY1N3)/3.d0
          ESAvg=(ESN1+ESN2+ESN3)/3.d0
 
-C.....   DW, Nov 2019 
-         DPAvg = (DP(NM1)+DP(NM2)+DP(NM3))/3.d0 + ! BAVG if GWCE_HDP = .FALSE. 
+C.....   DW, Nov 2019
+         DPAvg = (DP(NM1)+DP(NM2)+DP(NM3))/3.d0 + ! BAVG if GWCE_HDP = .FALSE.
      &        IFNLFA*IFNL_HDP*(E1N1 + E1N2 + E1N3)/3.d0 ; ! H^{s}_{avg} otherwise
-         
-         DPAvgS0 = (DP(NM1)+DP(NM2)+DP(NM3))/3.d0 + ! BAVG if GWCE_HDP = .FALSE. 
+
+         DPAvgS0 = (DP(NM1)+DP(NM2)+DP(NM3))/3.d0 + ! BAVG if GWCE_HDP = .FALSE.
      &        IFNLFA*IFNL_HDP*(E0N1 + E0N2 + E0N3)/3.d0 ; ! H^{s-1}_{avg} otherwise
 
 C.....   WJP adjust the dispersion equation through
@@ -1203,7 +1203,7 @@ C
 C...... DW absorbing layer
 C
          SigmaAvg = (SgN1_eta + SgN2_eta + SgN3_eta)/3.D0
-         Tau0SigmaAvg = (SgN1_eta*T0N1 + SgN2_eta*T0N2 + 
+         Tau0SigmaAvg = (SgN1_eta*T0N1 + SgN2_eta*T0N2 +
      &                   SgN3_eta*T0N3)/3.d0
 
          ! Use in the momentum equation parts
@@ -1213,10 +1213,10 @@ C
      &         SgN2_mny*QY1N2 + SgN3_mny*QY1N3)/3.d0 ;
 
          AvgSigmaHAbsU = (SgN1_mnx*H1N1*U1AN1 +
-     &        SgN2_mnx*H1N2*U1AN2 + SgN3_mnx*H1N3*U1AN3)/3.D0 ; 
+     &        SgN2_mnx*H1N2*U1AN2 + SgN3_mnx*H1N3*U1AN3)/3.D0 ;
 
          AvgSigmaHAbsV = (SgN1_mny*H1N1*V1AN1 +
-     &        SgN2_mny*H1N2*V1AN2 + SgN3_mny*H1N3*V1AN3)/3.D0 ; 
+     &        SgN2_mny*H1N2*V1AN2 + SgN3_mny*H1N3*V1AN3)/3.D0 ;
 
          IF ((NWS.NE.0).OR.(NRS.NE.0)) THEN     !wind or radiation stress
             fwsx1 = 1.D0 ; fwsx2 = 1.D0 ; fwsx3 = 1.D0 ;
@@ -1225,17 +1225,17 @@ C
                IF ( absorblayer_sigma_mnx(NM1,1) > 1e-9 ) fwsx1 = 0.D0
                IF ( absorblayer_sigma_mnx(NM2,1) > 1e-9 ) fwsx2 = 0.D0
                IF ( absorblayer_sigma_mnx(NM3,1) > 1e-9 ) fwsx3 = 0.D0
-           
+
                IF ( absorblayer_sigma_mny(NM1,1) > 1e-9 ) fwsy1 = 0.D0
                IF ( absorblayer_sigma_mny(NM2,1) > 1e-9 ) fwsy2 = 0.D0
                IF ( absorblayer_sigma_mny(NM3,1) > 1e-9 ) fwsy3 = 0.D0
             END IF
-         
+
             WSXAvg=(fwsx1*WSX1(NM1)+fwsx2*WSX1(NM2)+fwsx3*WSX1(NM3))/3.d0
             WSYAvg=(fwsy1*WSY1(NM1)+fwsy2*WSY1(NM2)+fwsy3*WSY1(NM3))/3.d0
          ENDIF
 C------- END DW
-C 
+C
          IF (CBaroclinic) THEN
 #ifndef NOFSBPG
             BCXAvg = (H1N1*VIDBCPDXOH(NM1)+H1N2*VIDBCPDXOH(NM2)
@@ -1252,12 +1252,12 @@ C
 
 C...     Compute additional partial factors
 C........DW: begin add absorbing layer term
-         Tau0Avg_S = Tau0Avg + 
+         Tau0Avg_S = Tau0Avg +
      &     ((A00 + B00)*2.D0*Tau0SigmaAvg*DT + SigmaAvg)*sponge_dis_mthd
-   
+
          MsFacR=AreaIE*(1.d0/DT-Tau0Avg_S/2.d0)/DT/12.d0
          MsFacR_S = (-(A00 + B00 + C00)*AreaIE*
-     &          Tau0SigmaAvg/12.D0)*sponge_dis_mthd 
+     &          Tau0SigmaAvg/12.D0)*sponge_dis_mthd
 
          MsFacRS_ABC00 = (Tau0SigmaAvg*AreaIE/12.D0)*sponge_dis_mthd
          MsFacRS_T = ((SigmaAvg/(2.D0*DT))*AreaIE/12.D0)*sponge_dis_mthd
@@ -1273,10 +1273,10 @@ C...     Compute the JX, JY terms less the advection terms
      &               E1N1SQ*FDX1 +E1N2SQ*FDX2 + E1N3SQ*FDX3)
      &          -GHAvgOAreaIE2*((PR1N1-TiPN1-Off1N1)*FDX1
      &          +(PR1N2-TiPN2-Off1N2)*FDX2+(PR1N3-TiPN3-Off1N3)*FDX3)
-     &          +WSXAvg-BSXAvg+MXAvg-DispXAvg-BCXAvg+Tau0QXAvg 
+     &          +WSXAvg-BSXAvg+MXAvg-DispXAvg-BCXAvg+Tau0QXAvg
 C--- begin: DW, absorbing layer
      &          - SigmaQxAvg*sponge_dis_mthd
-     &          + AvgSigmaHAbsU*sponge_dis_mthd 
+     &          + AvgSigmaHAbsU*sponge_dis_mthd
 C--- end DW
 
 
@@ -1287,7 +1287,7 @@ C--- end DW
      &          +(PR1N2-TiPN2-Off1N2)*FDY2+(PR1N3-TiPN3-Off1N3)*FDY3)
      &          +WSYAvg-BSYAvg+MYAvg-DispYAvg-BCYAvg+Tau0QYAvg
 C--- begin: DW, absorbing layer
-     &          -SigmaQYAvg*sponge_dis_mthd 
+     &          -SigmaQYAvg*sponge_dis_mthd
      &          +AvgSigmaHAbsV*sponge_dis_mthd
 C--- end DW
 
@@ -1325,13 +1325,13 @@ C...     Complete the JX, JY terms depending on the advection formulation
      &             +V1Avg*(QY1N1*FDY1+QY1N2*FDY2+QY1N3*FDY3))/AreaIE2
          ENDIF
 
-C...... BEG: DW, DEC 2019         
-C...     Needs multiplying by cos(lat) in case of the correction 
+C...... BEG: DW, DEC 2019
+C...     Needs multiplying by cos(lat) in case of the correction
 C        Node by node
-         SPM1 = SFCT(NM1) ; 
-         SPM2 = SFCT(NM2) ; 
+         SPM1 = SFCT(NM1) ;
+         SPM2 = SFCT(NM2) ;
          SPM3 = SFCT(NM3) ;
-C...... END DW         
+C...... END DW
 
 C...     Assemble forcing for node NM1 (local index j=1)
 
@@ -1341,8 +1341,8 @@ C...     Transient and Tau0 terms from LHS
      &         (OnDiag*ESN1*SPM1 + OffDiag*(ESN2*SPM2+ESN3*SPM3))*MsFacR
 
 C...     Free surface terms from LHS (time levels s-1 & s)
-     &        - GDPAvgOAreaIE4_S0*( C00*( SFCXADJ*FDX1*E0XGrad2A+ 
-     &                                    SFCYADJ*FDY1*E0YGrad2A ) ) 
+     &        - GDPAvgOAreaIE4_S0*( C00*( SFCXADJ*FDX1*E0XGrad2A+
+     &                                    SFCYADJ*FDY1*E0YGrad2A ) )
      &        - GDPAvgOAreaIE4*(A00pB00*( SFCXADJ*FDX1*E1XGrad2A+
      &                                    SFCYADJ*FDY1*E1YGrad2A ) )
 
@@ -1355,7 +1355,7 @@ C
 C..... DW: begin
      &        +(OnDiag*E0N1 + OffDiag*(E0N2+E0N3))*MsFacR_S
      &        +(onDiag*ESAN1 + OffDiag*(ESAN2+ESAN3))*MsFacRS_T
-     &        +(onDiag*ABC00_EAN1 + 
+     &        +(onDiag*ABC00_EAN1 +
      &                OffDiag*(ABC00_EAN2 + ABC00_EAN3))*MsFacRS_ABC00
 C..... END DW
 C
@@ -1368,7 +1368,7 @@ C...     Transient and Tau0 terms from LHS
 
 C...     Free surface terms from LHS (time levels s-1 & s)
      &        - GDPAvgOAreaIE4_S0*( C00*( SFCXADJ*FDX2*E0XGrad2A +
-     &                                    SFCYADJ*FDY2*E0YGrad2A ) ) 
+     &                                    SFCYADJ*FDY2*E0YGrad2A ) )
      &        - GDPAvgOAreaIE4*(A00pB00*( SFCXADJ*FDX2*E1XGrad2A +
      &                                    SFCYADJ*FDY2*E1YGrad2A ) )
 
@@ -1376,12 +1376,12 @@ C...     Terms from momentum eqs.
      &        +(SFCXADJ*JXAvg*FDX2 + SFCYADJ*JYAvg*FDY2)*0.5d0
 
 C...     Spatially varying Tau0 terms
-     &        +Tau0SpaVar 
+     &        +Tau0SpaVar
 C
 C..... DW: begin
      &        +(OnDiag*E0N2 + OffDiag*(E0N1+E0N3))*MsFacR_S
      &        +(onDiag*ESAN2 + OffDiag*(ESAN1+ESAN3))*MsFacRS_T
-     &        +(onDiag*ABC00_EAN2 + 
+     &        +(onDiag*ABC00_EAN2 +
      &                 OffDiag*(ABC00_EAN1 + ABC00_EAN3))*MsFacRS_ABC00
 C..... END DW
 C
@@ -1409,7 +1409,7 @@ C
 C..... DW: begin, absorbing layer
      &        +(OnDiag*E0N3 + OffDiag*(E0N1+E0N2))*MsFacR_S
      &        +(OnDiag*ESAN3 + OffDiag*(ESAN1+ESAN2))*MsFacRS_T
-     &        +(OnDiag*ABC00_EAN3 + 
+     &        +(OnDiag*ABC00_EAN3 +
      &               OffDiag*(ABC00_EAN1 + ABC00_EAN2))*MsFacRS_ABC00
 C..... END DW
 C
@@ -1578,7 +1578,7 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
          IF (LBCODEI(1).EQ.32) THEN
             H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
             CELERITY=SQRT(G*H1)
-!C DW, Below is an original scheme and is correct 
+!C DW, Below is an original scheme and is correct
 !C            QFORCEJ=(QN1(1)-QN0(1))/DT
 !C     &           -CELERITY*(ETAS(NBDJ)-(EN1(1)-EN0(1)))/DT
 !C     &           +TAU0VAR(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1)))
@@ -1586,7 +1586,7 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
 !C     and second order in time derivative is used
             QFORCEJ=(QN2(1)-QN0(1))/DT2
      &           - CELERITY*(2.0*ETAS(NBDJ) - (EN2(1)-EN0(1)))/DT2
-     &           + TAU0VAR(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1))) 
+     &           + TAU0VAR(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1)))
          ENDIF
 
          IF((LBCODEI(1).EQ.40).OR.(LBCODEI(1).EQ.41)) QFORCEJ=
@@ -1668,6 +1668,8 @@ C...
          DO I=1,NETA
             NBDI = NBD(I)
             ETAS(NBDI) = ETA2(NBDI)-ETA1(NBDI)
+C...        WJP multiply by cos(lat) in case of correction
+            ETAS(NBDI) = ETAS(NBDI)*(TSINV + TSINT*cos(sfea(NBDI)))
             GWCE_LV(NBDI) = ETAS(NBDI)*NODECODE(NBDI)*EP
             DO J=2,NNEIGH(NBDI)
                GWCE_LV(NEITAB(NBDI,J))=GWCE_LV(NEITAB(NBDI,J))
@@ -1678,6 +1680,8 @@ C...
          DO I=1,NETA
             NBDI=NBD(I)
             ETAS(NBDI)=ETA2(NBDI)-ETA1(NBDI)
+C...        WJP multiply by cos(lat) in case of correction
+            ETAS(NBDI) = ETAS(NBDI)*(TSINV + TSINT*cos(sfea(NBDI)))
             GWCE_LV(NBDI) = ETAS(NBDI)*NODECODE(NBDI)*COEFD(NBDI)
          END DO
       ENDIF
@@ -1731,7 +1735,7 @@ C...  JCG ITERATIVE MATRIX SOLVER
 
 C...... DW, periodic bcs
       CALL UPDATE_PERSLNODES() ;
-C     Switch back to the original element table 
+C     Switch back to the original element table
       CALL SWITCH_ELTAB_PERBC( IDIREC = 2 ) ;
 C......
 
@@ -1750,12 +1754,12 @@ C**********************************************************************
       CONTAINS
 
 C.... DW, perioidic boundary condition
-        SUBROUTINE UPDATE_COEF_PERBCSL_CONSISTENT() 
+        SUBROUTINE UPDATE_COEF_PERBCSL_CONSISTENT()
         IMPLICIT NONE
 
         INTEGER I, I2
 
-C...  Modify equations associated with the slave nodes. 
+C...  Modify equations associated with the slave nodes.
 C...  For each slave node, zero all off diagonal
 c......terms on the row and set diagnoal term to EP
         IF ( NPERSEG > 0 ) THEN
@@ -1769,54 +1773,54 @@ c......terms on the row and set diagnoal term to EP
         END IF
 
         RETURN ;
-        END SUBROUTINE UPDATE_COEF_PERBCSL_CONSISTENT      
+        END SUBROUTINE UPDATE_COEF_PERBCSL_CONSISTENT
 
-        SUBROUTINE UPDATE_COEF_PERBCSL_LUMPED() 
-        IMPLICIT NONE 
-      
-        INTEGER:: I, I2 
-        
+        SUBROUTINE UPDATE_COEF_PERBCSL_LUMPED()
+        IMPLICIT NONE
+
+        INTEGER:: I, I2
+
         IF ( NPERSEG > 0 ) THEN
            DO I = 1, NNPERBC
               I2 = IPERCONN(I,2) ;
-              Coefd(I2)=EP ;  
+              Coefd(I2)=EP ;
            END DO
         END IF
 
         RETURN ;
         END SUBROUTINE  UPDATE_COEF_PERBCSL_LUMPED
-      
-        SUBROUTINE UPDATE_RHS_SLPERBC() 
+
+        SUBROUTINE UPDATE_RHS_SLPERBC()
         IMPLICIT NONE
-        
+
         INTEGER:: I, I2
-        
+
         IF ( NPERSEG > 0 ) THEN
            DO I = 1, NNPERBC
               I2 = IPERCONN(I,2) ;
-              ETAS(I2) = 0.0D0   ; !  ETA1 ==> ETA2  
+              ETAS(I2) = 0.0D0   ; !  ETA1 ==> ETA2
               GWCE_LV(I2)=ETAS(I2)*NODECODE(I2)*EP
            END DO
         END IF
-        
+
         RETURN ;
-        END SUBROUTINE UPDATE_RHS_SLPERBC 
-      
+        END SUBROUTINE UPDATE_RHS_SLPERBC
+
         SUBROUTINE UPDATE_PERSLNODES()
         IMPLICIT NONE
-       
+
         INTEGER:: I, I1, I2
         IF ( NPERSEG > 0 ) THEN
-C     Update values of slave node ! 
+C     Update values of slave node !
            DO I = 1, NNPERBC
-              I1 = IPERCONN(I,1) ; 
+              I1 = IPERCONN(I,1) ;
               I2 = IPERCONN(I,2) ;
-              
-              ETAS(I2)=ETAS(I1) ; 
+
+              ETAS(I2)=ETAS(I1) ;
               ETA2(I2)=ETA2(I1) ;
            END DO
-        END IF 
-        
+        END IF
+
         RETURN ;
         END SUBROUTINE UPDATE_PERSLNODES
 C..... DW
@@ -1850,7 +1854,7 @@ C
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
-     &   TKM, NPERSEG, NNPERBC, IPERCONN, UU0, VV0, QX0, QY0, TK0, TK2, 
+     &   TKM, NPERSEG, NNPERBC, IPERCONN, UU0, VV0, QX0, QY0, TK0, TK2,
      &   QX2, QY2, UU2, VV2
 #ifdef CMPI
      &   , dumy1, dumy2
@@ -2829,7 +2833,7 @@ C*************************************************************************
      &      setMessageSource, unsetMessageSource, scratchMessage,
      &      allMessage,logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
      &      nodes_lg, IFSFM
-      use mesh, only : nm, ne, areas, FDXE, FDYE, 
+      use mesh, only : nm, ne, areas, FDXE, FDYE,
      &      SFacEle, SFMYEle, SFMXEle
       use NodalAttributes, ONLY : LoadEleSlopeLim,
      &     elemental_slope_limiter_active,
@@ -2842,7 +2846,7 @@ C*************************************************************************
       INTEGER NM1, NM2, NM3, NM123
       INTEGER NC1, NC2, NC3, NCEle, NCI
       REAL(SZ) DEta2DX, DEta2DY, DEta2Mag
-      REAL(SZ) SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
+      REAL(SZ) SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac
       REAL(SZ) FDX1,FDX2,FDX3,FDY1,FDY2,FDY3
       REAL(8) :: AreaIE2
       integer nodeNumber ! fulldomain node number where wse slope is exceeded
@@ -2878,8 +2882,8 @@ C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
 C.... Beg WP:
          SFacAvg = SFacEle(IE)
 C..... BEG DW/WJP
-         SFmxAvg = SFMXEle(IE) ; 
-         SFmyAvg = SFMYEle(IE) ; 
+         SFmxAvg = SFMXEle(IE) ;
+         SFmyAvg = SFMYEle(IE) ;
          sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
          sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
 C..... END DW/WJP
@@ -2888,7 +2892,7 @@ C..... END DW/WJP
          FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
          FDY1 = FDYE(1,IE)*sfdyfac ; !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
          FDY2 = FDYE(2,IE)*sfdyfac ; !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
-         FDY3 = FDYE(3,IE)*sfdyfac ; !c FDY3=(X(NM2)-X(NM1))*MY !a3*my         
+         FDY3 = FDYE(3,IE)*sfdyfac ; !c FDY3=(X(NM2)-X(NM1))*MY !a3*my
 C.... end WP
          dEta2Dx  = (Eta2(NM1)*FDX1+Eta2(NM2)*FDX2+Eta2(NM3)*FDX3)
      &                 /AreaIE2

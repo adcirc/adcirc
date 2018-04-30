@@ -28,13 +28,13 @@ C
      &    nspoolge,
      &    nscougv, igvp, ndsetsv, nspoolgv, use_tvw, nscou_tvw, ig_tvw,
      &    nout_tvw, ndsets_tvw, nspool_tvw, nscougw, igwp, igpp, igip,
-     &    igep, ndsetsw, nspoolgw, igrads, nscougc, igcp, c2ddi, iden, 
-     &    rundes, runid, dtdp, ntrspm, nspoolm, nscoub, ibstp, nscouge, 
+     &    igep, ndsetsw, nspoolgw, igrads, nscougc, igcp, c2ddi, iden,
+     &    rundes, runid, dtdp, ntrspm, nspoolm, nscoub, ibstp, nscouge,
      &    ndsetsc, nspoolgc, nscougb, igbp, c3d, ipstp, nstav_g, nstav,
      &    ntrspv, iicestp, nstam_g, nstam, openfileforread, cbaroclinic
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4,
-     &    agrid 
+     &    agrid
       USE BOUNDARIES, ONLY : NETA, NFLUXF, NOPE, NVEL, LBCODEI, NPEBC
       USE HARM
       USE WETDRY, ONLY : initializeWettingAndDrying
@@ -319,12 +319,12 @@ C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
          ENDIF
       ENDIF
 
-#ifdef ADCNETCDF     
-      ! For the Coupling to 3D Baroclinic mode 
+#ifdef ADCNETCDF
+      ! For the Coupling to 3D Baroclinic mode
       IF (C2DDI.and.CBaroclinic.and.abs(IDEN).ge.5) THEN
          call Initial_BC3D_NetCDF(STATIM*86400.d0)
       endif
-#endif       
+#endif
 
 C...
 C...LINES TO USE TIDAL POTENTIAL FORCING
@@ -1362,7 +1362,7 @@ C...  IF A BAROCLINIC RUN, READ IN INITIAL DENSITY FIELD
             WRITE(16,*) "CBaroclinic is ",CBaroclinic
             WRITE(16,*) "CB3DVS is ",C3DVS
             WRITE(16,*)
-     &           "ERROR: 2DDI baroclinic runs not ", 
+     &           "ERROR: 2DDI baroclinic runs not ",
      &           "currently supported."
          ENDIF
          CALL ADCIRC_Terminate()

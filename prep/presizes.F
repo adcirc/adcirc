@@ -261,7 +261,7 @@ c.... !wjp added for warnElev namelist
       character(len=100) :: densityForcingType = 'SigmaT' ! sigmaT, salinity, etc
       character(len=100) :: densityFileName = 'fort.11.nc' ! filename
       integer :: densityTimeIterator = 1 ! BC3D time step iteration skipper
-      NAMELIST /densityControl/ densityRunType, densityFileName, 
+      NAMELIST /densityControl/ densityRunType, densityFileName,
      &  densityTimeIterator, densityForcingType
 
 C---------------------end of data declarations--------------------------------C
@@ -323,7 +323,7 @@ C
          ENDIF
       ELSE
          DO WHILE(.NOT.FOUND)
-            WRITE(*,*) 
+            WRITE(*,*)
      &        'Enter the name of the ADCIRC UNIT 14 (Grid) file:'
             READ(*,'(a60)') GRID
             INQUIRE(FILE=trim(GRID),EXIST=FOUND)
@@ -581,7 +581,7 @@ C
          ENDIF
       ELSE
          DO WHILE(.NOT.FOUND)
-            WRITE(*,*) 
+            WRITE(*,*)
      &        'Enter the name of ADCIRC UNIT 15 (Run Info) file:'
             READ(*,'(A)') RUNINFO
             INQUIRE(FILE=trim(RUNINFO),EXIST=FOUND)

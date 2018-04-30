@@ -1447,7 +1447,7 @@
              EXV(3,I) = X(NM(I,3))
              EYV(1,I) = Y(NM(I,1))
              EYV(2,I) = Y(NM(I,2))
-             EYV(3,I) = Y(NM(I,3)) 
+             EYV(3,I) = Y(NM(I,3))
 
           CASE (2,20:24)
 !     c Spherical coordinates c!
@@ -1460,43 +1460,43 @@
 !     lat (in rad)
               LATVE(1) = SFEA( NM(I,1) ) ;
               LATVE(2) = SFEA( NM(I,2) ) ;
-              LATVE(3) = SFEA( NM(I,3) ) ;           
-           
-              EXV => EXVO ; 
-              EYV => EYVO ;           
-              CALL CAL_ELXV_SPCOOR( EXV(:,I), 
+              LATVE(3) = SFEA( NM(I,3) ) ;
+
+              EXV => EXVO ;
+              EYV => EYVO ;
+              CALL CAL_ELXV_SPCOOR( EXV(:,I),
      &             EYV(:,I), LONVE, LATVE, ICS, SFLAG ) ;
-              
+
               IF ( IFSPROTS .EQ. 1 ) THEN
 !     lon in rotated coordinates (in rad)
                  LONVE(1) = SLAMR( NM(I,1) ) ;
                  LONVE(2) = SLAMR( NM(I,2) ) ;
                  LONVE(3) = SLAMR( NM(I,3) ) ;
-                 
+
 !     lat in rotated coordinates (in rad)
                  LATVE(1) = SFEAR( NM(I,1) ) ;
                  LATVE(2) = SFEAR( NM(I,2) ) ;
                  LATVE(3) = SFEAR( NM(I,3) ) ;
-                 
-                 EXV => EXVR ; 
-                 EYV => EYVR ;              
-                 CALL CAL_ELXV_SPCOOR( EXV(:,I), 
-     &                EYV(:,I), LONVE, LATVE, ICS, SFLAG ) ;             
-              END IF 
+
+                 EXV => EXVR ;
+                 EYV => EYVR ;
+                 CALL CAL_ELXV_SPCOOR( EXV(:,I),
+     &                EYV(:,I), LONVE, LATVE, ICS, SFLAG ) ;
+              END IF
 
            END SELECT
-        
-           IF ( IFSPROTS .EQ. 1 ) THEN        
-              EXV => EXVR ; 
-              EYV => EYVR ;              
+
+           IF ( IFSPROTS .EQ. 1 ) THEN
+              EXV => EXVR ;
+              EYV => EYVR ;
            END IF
-        
-           X1 = EXV(1,I) ; 
+
+           X1 = EXV(1,I) ;
            X2 = EXV(2,I) ;
            X3 = EXV(3,I) ;
            Y1 = EYV(1,I) ;
            Y2 = EYV(2,I) ;
-           Y3 = EYV(3,I) ;        
+           Y3 = EYV(3,I) ;
 
 !...v49.48.02 tcm added these to reuse the computed values
            X2mX1 = (X2 - X1);
@@ -1506,7 +1506,7 @@
            Y3mY2 = (Y3 - Y2);
            Y1mY3 = (Y1 - Y3);
 
-!.....     For later use for FDX1, FDY1 in gwce, momentum 
+!.....     For later use for FDX1, FDY1 in gwce, momentum
            FDXE(1,I) = -Y3mY2 ; !c (Y(NM2)-Y(NM3))*SFacAvg !b1
            FDXE(2,I) = -Y1mY3 ; !c (Y(NM3)-Y(NM1))*SFacAvg !b2
            FDXE(3,I) = -Y2mY1 ; !c (Y(NM1)-Y(NM2))*SFacAvg !b3
@@ -1542,16 +1542,16 @@
 !          compute and store 2 x element areas
 !          v49.48.02 tcm rewrote 2 x area to reuse values already being used
            AREAS(I)=(X1mX3)*(-Y3mY2)+(X3mX2)*(Y1mY3)
-  
+
            IF ( IFSPROTS.EQ.1 .and. AREAS(I).lt.0d0 ) THEN
 !             reorder and start loop again
               NMM = NM(I,:)
               NM(I,2) = NMM(3); NM(I,3) = NMM(2);
-           ELSE 
+           ELSE
               EXIT INNER
            ENDIF
          ENDDO INNER
-    
+
 !...     v49.48.02 tcm -- compute element barycenters and element radius
          x1 = X( NM(I,1) )  ; 
          x2 = X( NM(I,2) )  ;
@@ -3120,7 +3120,7 @@
      &        '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
         call terminate()
       end subroutine neighb_terminateDimensioning
- 
+
       subroutine neighb_terminateDuplicateNode(i,j)
         implicit none
         integer,intent(in) :: i, j
@@ -4013,7 +4013,7 @@
           ! interpolation weights, w and the indices for interpolation
           ! Assumed to be sampled on a structured unregular grid x values
           ! specified by x_mat and the grid y values specified by y_mat
-          use kdtree2_module, only: kdtree2, kdtree2_result, 
+          use kdtree2_module, only: kdtree2, kdtree2_result,
      &                              kdtree2_n_nearest
           implicit none
           integer, intent(in) :: xp, yp           
@@ -4037,15 +4037,15 @@
           ind = kdresult(1)%idx  ! location of closest point
           xi  = ind/yp           ! ind2sub
           yi  = mod(ind,yp)      ! ind2sub
-          if (yi == 0) then 
+          if (yi == 0) then
              yi = yp
           else
-             xi = xi + 1 
+             xi = xi + 1
           endif
  
           ii   = [-1, 0, 0, 0]; ! Default indices
           ia = 0
-          ! loop over points close to the nearest one  
+          ! loop over points close to the nearest one
           do i = max(1,xi-1),min(xi+1,xp) !1,xp
              ir = i + 1
              if (ir > xp) then

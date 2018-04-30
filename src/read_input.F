@@ -130,6 +130,9 @@ Casey 100205: Enable hot-start file generation by SWAN.
 #ifdef DATETIME
       use datetime_module, only: strptime
 #endif
+#ifdef DATETIME
+      use datetime_module, only: strptime
+#endif
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
       USE OWIWIND_NETCDF, ONLY: NWS13ColdStartString,
@@ -2935,6 +2938,38 @@ c           CALL  CALC_SIGMAT_2D()      !need to activate
                   READ(11,*) JKI,DATemp(JKI),DASalt(JKI)
                END DO
 c           CALL CALC_SIGMAT_2D()      !need to activate
+            ELSEIF(IDEN.EQ.-5) THEN
+               ! WJP reading pre-computed 3D baroclinic gradients from
+               ! zero depth (diagnostic - does not change), plus also
+               ! read free surface density to get that effect
+               DO I=1,NP11
+                  READ(11,*) JKI,VIDBCPDXOH_F(1,JKI),
+     &                       VIDBCPDYOH_F(1,JKI),SigTS_F(1,JKI)
+!     &                       ,DUU_F(1,JKI),DVV_F(1,JKI),DUV_F(1,JKI)
+               END DO
+               IF (BC3D_DT > 0.0d0) THEN
+                  DO I=1,NP11
+                     READ(11,*) JKI,VIDBCPDXOH_F(2,JKI),
+     &                          VIDBCPDYOH_F(2,JKI),SigTS_F(2,JKI)
+!     &                          ,DUU_F(2,JKI),DVV_F(2,JKI),DUV_F(2,JKI)
+                  END DO
+               ENDIF
+            ELSEIF(IDEN.EQ.-6) THEN
+               ! WJP reading pre-computed 3D baroclinic gradients from
+               ! zero depth (diagnostic - does not change), plus also
+               ! read free surface density and momentum dispersion
+               DO I=1,NP11
+                  READ(11,*) JKI,VIDBCPDXOH_F(1,JKI),
+     &                       VIDBCPDYOH_F(1,JKI),SigTS_F(1,JKI),
+     &                       VIDISPDXOH_F(1,JKI),VIDISPDYOH_F(1,JKI)
+               END DO
+               IF (BC3D_DT > 0.0d0) THEN
+                  DO I=1,NP11
+                     READ(11,*) JKI,VIDBCPDXOH_F(2,JKI),
+     &                          VIDBCPDYOH_F(2,JKI),SigTS_F(2,JKI),
+     &                          VIDISPDXOH_F(2,JKI),VIDISPDYOH_F(2,JKI)
+                  END DO
+               ENDIF
             ENDIF
             IF (BC3D_DT.le.0.0d0) THEN
                 ! Close reading for diagnostic
@@ -3170,6 +3205,11 @@ C......DW
          WRITE(16,3604)
  3604    FORMAT(/,5X,'LATITUDES ARE USED TO COMPUTE VARIABLE CORIOLIS',
      &        /,7X,'AND ARE BASED ON INPUT NODAL COORDINATES',/)
+         if (CORI.lt.0) then
+            TSINT = 1; TSINV = 0
+            write(16,*) 'INFO: TRUE SPHERE OPTION DETECTED...',
+     &                  'IMPLEMENTING CORRECTED SPHERICAL COORDINATES'
+         endif
          IF(NABOUT.NE.1) THEN
             WRITE(16,2092)
  2092       FORMAT(/,10X,' NODE ',5X,'NODAL CORIOLIS CORIF',/)
