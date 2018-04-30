@@ -157,7 +157,7 @@ C     the value of IDEN in the fort.15 file.
 C
 C     jgf45.12 This subroutine is designed to work for baroclinic 3D
 C     runs only, not 2D runs.
-C     
+C
 C     WJP 03.11.2018 made to work for 2D runs too
 C
 C---------------------------------------------------------------------------
@@ -251,7 +251,7 @@ C     WJP 03.11.2018 made to work for 2D runs too
                do k = 1,len_trim(Dummy)
                   if (Dummy(k:k).eq.' '.or.Dummy(k:k).eq.',') exit
                enddo
-               READ(Dummy(1:k-1),*) nhnn 
+               READ(Dummy(1:k-1),*) nhnn
                FD2D_MSG(nhnn) = Dummy(k+1:120)
                !write(6,*) nhnn, FD2D_MSG(nhnn)
             ENDDO
@@ -385,7 +385,7 @@ c         ELSE
 !C
 !      looper = 0
 !      DO WHILE(.true.)
-!       
+!
 !         looper = looper + 1
 !
 !c     read in the full domain data
@@ -430,10 +430,10 @@ c                  ENDDO
 !               ENDDO
 !            ENDDO
 !         ENDIF
-!      
+!
 !      ENDDO
-!        
-!C       deallocating 
+!
+!C       deallocating
 !         IF (C2DDI) THEN
 !            DEALLOCATE ( fdData2D, sdData2D )
 !            DEALLOCATE ( fdData2D2, sdData2D2 )
@@ -1307,17 +1307,17 @@ C
                   ENDDO
                ENDDO
 
-            case(94)  
+            case(94)
 C.... BEG DW, periodic boundary condition
 C.... 2018: use similar trick used in weir-node pair
                II = 0 ;
                DO I = IPERPTR(K), IPERPTR(K+1) - 1
                    INDX = IPERCONN(I,1) ; ! global index: primary node
                    INDEX2 = IPERCONN(I,2) ; ! global idnex: its slave node
-                  
+
                    II = II + 1 ;
-                   DO J = 1, ITOTPROC(INDX)                       
-                       ITEMP = (J-1)*2 + 1 ; 
+                   DO J = 1, ITOTPROC(INDX)
+                       ITEMP = (J-1)*2 + 1 ;
                        IPROC2 = IMAP_NOD_GL2(ITEMP,INDX) ; ! processor (may not be resident)
                        ILNODE2 = IMAP_NOD_GL2(ITEMP+1,INDX) ; ! local index
                        !
@@ -1329,21 +1329,21 @@ C.... 2018: use similar trick used in weir-node pair
 
                             IF ( IPROC .EQ. IPROC3 ) THEN
                                NVELP(IPROC) = NVELP(IPROC) + 1 ;
-                               NVELLP(K) = NVELLP(K) + 1 ; 
+                               NVELLP(K) = NVELLP(K) + 1 ;
 
                                LBINDEX_LG(K,NVELLP(K)) = II ;
-                               NBVVP(K,NVELLP(K)) = ILNODE2 ;           
-C.... For now, use an exisitng interal boundary array  
+                               NBVVP(K,NVELLP(K)) = ILNODE2 ;
+C.... For now, use an exisitng interal boundary array
 C     to hold the index of the slave node. In the future,
 C     if need be, change to a CRS format to save memory.
-                               IBCONNRP(K,NVELLP(K)) = ILNODE3 ;        
-                            END IF 
-                            
-                          END DO                                       
+                               IBCONNRP(K,NVELLP(K)) = ILNODE3 ;
+                            END IF
+
+                          END DO
                        END IF
                        !
                    END DO
-               END DO 
+               END DO
 C.......... END DW, periodic bcs
 C
 C--All Other Land Boundary Node types
@@ -1818,7 +1818,7 @@ C     jgf: Added NWS=30 (GAHM+OWI)
      &       .OR.(ABS(NWS).EQ.15).OR.(ABS(NWS).EQ.14)
      &       .OR.(ABS(NWS).EQ.16).OR.(ABS(NWS).EQ.30)
      &       .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.29)
-     &       .OR.(ABS(NWS).EQ.20).OR.(ABS(NWS).EQ.13) 
+     &       .OR.(ABS(NWS).EQ.20).OR.(ABS(NWS).EQ.13)
      &       .OR.(ABS(NWS).EQ.17)) THEN ! for NUOPC: added by PV, SM
             WRITE(15,80) WSMSG1
          ENDIF
@@ -2330,7 +2330,7 @@ c...     wjp additions for density Control Namelist
             write(15,*) '! -- Begin density Control NameList --'
             write(15,'(3A)') '&densityControl densityRunType="',
      &                        TRIM(densityRunType),'",'
-            write(15,'(3A)') '  densityFilename="',TRIM(densityFilename),'"' 
+            write(15,'(3A)') '  densityFilename="',TRIM(densityFilename),'"'
             write(15,'(A,I0,A)') '  densityTimeIterator=',densityTimeIterator,","
             write(15,'(3A)') '  densityForcingType="',TRIM(densityForcingType),'"   /'
             write(15,*) '! -- End density Control NameList --'
@@ -2866,7 +2866,7 @@ C
          ENDDO
 C        EOF reached, lets exit
          IF (eof < 0) EXIT
-         
+
          DO IPROC= 1,NPROC
             DO I=1, NETAP(IPROC)
                ESBINP = ESBIN(OBNODE_LG(I,IPROC))
@@ -2889,7 +2889,7 @@ C
       call memory_status()
       RETURN
   40  FORMAT(A40)
-      END SUBROUTINE PREP19 
+      END SUBROUTINE PREP19
 
 C---------------------------------------------------------------------------
 C                S U B R O U T I N E   P R E P 2 0
@@ -2922,7 +2922,7 @@ C---------------------------------------------------------------------------
       INTEGER INDX ! full domain node number for a flow boundary node
       INTEGER J     ! counter for subdomains that corrsp. to a single f.d. node
       INTEGER IPROC2! PE of a subdomain that matches a single full domain node
-      INTEGER PROC_NO ! proc number is 20 unless specified 
+      INTEGER PROC_NO ! proc number is 20 unless specified
 
       proc_no = 20;
       FLUX_NUM = EXIST_FLUX
@@ -2930,8 +2930,8 @@ C     Open full domain and subdomain fort.20 files
       if (sponge) then
          proc_no = 2001
          FLUX_NUM = ubound(nodeNumSP,1)
-         write(*,*) 'FLUX_NUM = ',FLUX_NUM 
-      endif  
+         write(*,*) 'FLUX_NUM = ',FLUX_NUM
+      endif
 
       CALL OpenPrepFiles(proc_no, 'aperiodic flux boundary       ',
      &     1, nproc, SDU, Success)
@@ -2956,7 +2956,7 @@ C
 !         READ(20,*,END=40) FLUX_VAL ! get a flo val for this f.d. flow node
          READ(proc_no,'(A80)',END=40) FLUX_MSG ! get a flo val for this f.d. flow node
          if (sponge) then
-             INDX = nodeNumSP(I) 
+             INDX = nodeNumSP(I)
          else
              INDX = FLUX14_ARY(I)      ! get full domain flow node number
          endif
@@ -3467,24 +3467,24 @@ C---------------------------------------------------------------------------
       END SUBROUTINE PREP24
 
 C----------------------------------------------------------------------------
-!     DW, for preping fort.530001 abd fort.54001 used in the harmonic forcing 
-!     in the sponge layers 
-!     
+!     DW, for preping fort.530001 abd fort.54001 used in the harmonic forcing
+!     in the sponge layers
+!
 C---------------------------------------------------------------------------
 C     S U B R O U T I N E   P R E P 5 3 5 4
 C---------------------------------------------------------------------------
-C     
+C
 C     BY DEFAULT, ONLY 256 SUBDOMAINS WILL BE PREPPED AT A TIME TO AVOID
 C     OPENING TOO MANY FILES ON CERTAIN PLATFORMS. THIS NUMBER CAN BE
 C     CONTROLLED BY THE PARAMETER MAXOPENFILES.
-C     
+C
 C---------------------------------------------------------------------------
       SUBROUTINE PREP5354( FUNIT )
 C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
-C     
+C
       INTEGER:: FUNIT
       INTEGER:: NCOMP
 
@@ -3517,30 +3517,30 @@ C     can be open at any one time.
       INTEGER startProc
       INTEGER endProc
       INTEGER deltaProc
-      
+
       INTEGER:: NBF
       REAL(SZ), dimension(32):: AMIGv, FFv, FACEv ! Maximum 32 Consituent
-      CHARACTER (LEN=300):: IGNOREMSG 
-      
+      CHARACTER (LEN=300):: IGNOREMSG
+
       INTEGER:: KK
 
       TYPE CARR
          CHARACTER (LEN=32):: NAME
       END TYPE CARR
-      TYPE (CARR):: CONSTINAME(maxOpenFiles) 
+      TYPE (CARR):: CONSTINAME(maxOpenFiles)
 
 
       SELECT CASE( FUNIT )
       CASE (53001)
-         NCOMP = 2 ; 
+         NCOMP = 2 ;
       CASE (54001)
          NCOMP = 4 ;
       CASE DEFAULT
          PRINT*, "Error in PREP5354(): ", FUNIT, " is not allowed." ;
-         CALL EXIT(1) ; 
+         CALL EXIT(1) ;
       END SELECT
-C     
-C     
+C
+C
 C     Perform decomposition over range of subdomains.
       startProc = 1
       DO WHILE ( startProc .lt. nproc )
@@ -3548,27 +3548,27 @@ C     Perform decomposition over range of subdomains.
          IF ( deltaProc .gt. maxOpenFiles ) deltaProc = maxOpenFiles
          endProc = startProc + deltaProc
 
-C     
+C
 C     Open full domain and subdomain fort.13 files.
         CALL OpenPrepFiles( FUNIT, 'harmonic forcing in sponge layer',
      &        startProc, endProc, sdu, success)
-C     
+C
          IF (.not.success) THEN
             WRITE(*,'(A,I5,A)') 'WARNING: Unit ', FUNIT,
      &                                    'files not preprocessed.' ;
             RETURN              ! note early return
          ENDIF
-C     
+C
 C     Read header information from full domain unit 13 file
 C
          READ(FUNIT,*) NBF
          IF ( NBF > 32 ) THEN
             PRINT*, "Error in PREP5354(): ", NBF, " is greater 32" ;
-         END IF   
+         END IF
 
          DO KK = 1, NBF
-            READ(FUNIT,*) AMIGv(KK), FFv(KK), 
-     &           FACEv(KK), CONSTINAME(KK)%NAME 
+            READ(FUNIT,*) AMIGv(KK), FFv(KK),
+     &           FACEv(KK), CONSTINAME(KK)%NAME
          END DO
 
 C     Transcribe header information into subdomain unit 13 files
@@ -3576,14 +3576,14 @@ C     Transcribe header information into subdomain unit 13 files
          DO iproc = startProc, endProc
             WRITE(sdu(iproc),*) NBF
             DO KK = 1, NBF
-                WRITE(sdu(iproc),'(3E15.8,A)') AMIGv(KK), FFv(KK), 
+                WRITE(sdu(iproc),'(3E15.8,A)') AMIGv(KK), FFv(KK),
      &                     FACEv(KK), ' '//TRIM(CONSTINAME(KK)%NAME) ;
             END DO
          ENDDO
 
-         NAttr = 1 ; 
+         NAttr = 1 ;
          ALLOCATE(SDNumND(nproc,NAttr))
-         nbytes = 8*nproc*NAttr ; 
+         nbytes = 8*nproc*NAttr ;
          call memory_alloc(nbytes)
          DO iproc=startProc,endProc
             DO k=1, NAttr
@@ -3594,9 +3594,9 @@ C     Transcribe header information into subdomain unit 13 files
 C     We need to figure out how many nodes go into each subdomain
 C     for each attribute.
 
-         CALL process5354( FUNIT, NBF, NCOMP, 0, sdu, 
+         CALL process5354( FUNIT, NBF, NCOMP, 0, sdu,
      &        SDNumND, startProc, endProc )
-C     
+C
 C     Now rewind and advance to the beginning of the data again
 
          REWIND(FUNIT)
@@ -3606,13 +3606,13 @@ C     Now rewind and advance to the beginning of the data again
 C
 C     Now read each of the nodal attributes and transcribe them to the
 C     appropriate subdomain.
-         CALL process5354( FUNIT, NBF, NCOMP, 1, sdu, 
+         CALL process5354( FUNIT, NBF, NCOMP, 1, sdu,
      &        SDNumND, startProc, endProc)
 
          DEALLOCATE(SDNumND)
          nbytes = 8*nproc*nattr ;
          call memory_dealloc(nbytes)
-C     
+C
 C     Close full domain and subdomain files
          CLOSE (FUNIT)
          DO iproc=startProc, endProc
@@ -3632,9 +3632,9 @@ C     Close full domain and subdomain files
 
       USE PRE_GLOBAL
       IMPLICIT NONE
-C     
+C
       INTEGER,intent(in) :: FUNIT, NBF, ncmp ! number of attributes in the file
-  
+
 
       INTEGER,intent(in) :: Mode !=0 to count and return, =1 to write
       INTEGER,intent(in),dimension(nproc) :: sdu !i/o unit number array
@@ -3653,15 +3653,15 @@ C
       INTEGER iproc2              ! mapped subdomain
       REAL(SZ):: AttrData(NBF, 4) ! attribute data
       CHARACTER(len=80) Skipped   ! data we want to skip over
-C     
+C
       CHARACTER (len=80):: FMT
       INTEGER:: ifreq, NAttr
-  
+
       NAttr = 1 ;
       DO k=1, NAttr
-         
+
          READ(FUNIT,*) NumNotDefault
-         
+
          IF (Mode.eq.1) THEN
             DO iproc=startProc,endProc
                WRITE(sdu(iproc),*) SDNumND(iproc,k)
@@ -3692,10 +3692,10 @@ C
                IF (Mode.eq.1) THEN
                   SDNode = IMAP_NOD_GL(2,NodeNum)
                   !
-                  WRITE(sdu(iproc),*) SDNode ; 
+                  WRITE(sdu(iproc),*) SDNode ;
                   DO ifreq = 1, NBF
                      WRITE(sdu(iproc),1101) (AttrData(ifreq,j),j=1,ncmp)
-                  END DO                     
+                  END DO
                ENDIF
                !
             ELSE
@@ -3711,7 +3711,7 @@ C
                         IF (Mode.eq.1) THEN
                            SDNode = IMAP_NOD_GL2(2*(m-1)+2,NodeNum) ;
 
-                           WRITE(sdu(iproc),*) SDNode ; 
+                           WRITE(sdu(iproc),*) SDNode ;
                            DO ifreq = 1, NBF
                              WRITE(sdu(iproc),1101) (AttrData(ifreq,j),j=1,ncmp)
                            END DO
@@ -3727,9 +3727,9 @@ C
             WRITE(6,*) 'for processor range ',startProc,' to ',endProc
          ENDIF
       END DO
-C     
+C
  1101 FORMAT(32000(E16.8))
-C     
+C
       RETURN
 C---------------------------------------------------------------------------
       END SUBROUTINE Process5354
@@ -6975,8 +6975,8 @@ C---------------------------------------------------------------------------
 
       DefaultName(1:5) = 'fort.'
 
-      unitwidth = ceiling(log(dble(UnitNumber))/log(10.0)) ;        
-      dnlen = 5 + unitwidth ;   
+      unitwidth = ceiling(log(dble(UnitNumber))/log(10.0)) ;
+      dnlen = 5 + unitwidth ;
       WRITE(unitnumberstr,'(I0)') UnitNumber ;
       DefaultName = TRIM(ADJUSTL(DefaultName))//TRIM(ADJUSTL(unitNumberStr))
 
@@ -7030,7 +7030,7 @@ C     Open each of the subdomain files
          sdu(iproc) = 505 + (iproc-1)  !tcm v51.31 changed 105 to 505 to avoid conflicts with fort.141 file
          sdFileName(1:7) = 'PE0000/'
 c........tcm v50.66.03 increased unit number to 100's places
-         sdFileName(8:) = trim(DefaultName)     
+         sdFileName(8:) = trim(DefaultName)
 #ifdef ADCSWAN
          sdFileName = 'PE0000/'//FileName
 #endif

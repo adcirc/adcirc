@@ -244,9 +244,9 @@ Casey 180318: Added NWS=13
 c.... !wjp added for warnElev namelist
       REAL(SZ) :: WarnElev = 20.0  !
       REAL(SZ) :: ErrorElev = 1000.0  !
-      LOGICAL :: WarnElevDump = .FALSE.  
+      LOGICAL :: WarnElevDump = .FALSE.
       INTEGER :: WarnElevDumpLimit = 50  !
-      LOGICAL :: WARN_ELEV_FLAG = .FALSE.   
+      LOGICAL :: WARN_ELEV_FLAG = .FALSE.
       LOGICAL :: FOUND_WARNELEV_NML = .false.  !
       ! Ali Dispersion control namelist
       NAMELIST /AliDispersionControl/ CAliDisp, Cs, Ad, Bd
@@ -256,7 +256,7 @@ c.... !wjp added for warnElev namelist
       LOGICAL :: CAliDisp= .false.  !
       LOGICAL :: FOUND_ALIDISP_NML = .false.  !
       ! density control namelist
-      NAMELIST /densityControl/ densityRunType, densityFileName, 
+      NAMELIST /densityControl/ densityRunType, densityFileName,
      &  densityTimeIterator, densityForcingType
       LOGICAL :: FOUND_DENSITY_NML = .false.  !
       character(len=100) :: densityRunType = 'none' ! diagnostic or prognostic
@@ -740,23 +740,23 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The WarnElevControl namelist was not found."
       ELSE
-         found_WarnElev_nml = .true.  
+         found_WarnElev_nml = .true.
       ENDIF
       REWIND(15)
-      
+
       READ(UNIT=15,NML=AliDispersionControl,IOSTAT=IOS)
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The AliDisp Control namelist was not found."
       ELSE
-         found_AliDisp_nml = .true.  
+         found_AliDisp_nml = .true.
       ENDIF
       REWIND(15)
-      
+
       READ(UNIT=15,NML=densityControl,IOSTAT=IOS)
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The density Control namelist was not found."
       ELSE
-         found_density_nml = .true.  
+         found_density_nml = .true.
       ENDIF
       REWIND(15)
 C
@@ -837,7 +837,7 @@ c        C3DDSS = .TRUE.
          IF ((IM.GE.111111).AND.(IM.LE.534328)) THEN
             C2DDI = .TRUE.
             IF (IM-int(IM*0.1)*10 > 4) THEN
-                ! Setting Baroclinic true 
+                ! Setting Baroclinic true
                 CBaroclinic = .TRUE.
             ENDIF
          ELSEIF ((IM.GE.611111).AND.(IM.LE.634322)) THEN
@@ -1405,7 +1405,7 @@ C
       IF(NRS.GE.1) WRITE(*,3018) ! sb46.28sb03
       IF(NWS.EQ.10) WRITE(*,3019)
       IF(NWS.EQ.11) WRITE(*,3020)
-C     sb46.28sb01 added NWS=12: OWI format 
+C     sb46.28sb01 added NWS=12: OWI format
       IF(ABS(NWS).EQ.12) WRITE(*,3023)
       IF(ABS(NWS).EQ.19) WRITE(*,3219)
       IF(ABS(NWS).EQ.20) WRITE(*,3220)

@@ -65,9 +65,9 @@ C
       allocate ( VIDBCPDXOH_F(2,MNP),VIDBCPDYOH_F(2,MNP))
       VIDBCPDXOH_F = 0.0d0 ; VIDBCPDYOH_F = 0.0d0
       allocate (SigTS_F(2,MNP))
-      SigTS_F = SigT0 
+      SigTS_F = SigT0
       allocate ( MLD_F(2,MNP), CD_F(2,MNP))
-      MLD_F = DFV 
+      MLD_F = DFV
       CD_F = 0.0d0
       allocate ( VIDISPDXOH_F(2,MNE),VIDISPDYOH_F(2,MNE))
       VIDISPDXOH_F = 0.0d0 ; VIDISPDYOH_F = 0.0d0
@@ -106,7 +106,7 @@ C-----------------------------------------------------------------------
       ! On > first call: check the datetimes and update BC3D_DT
       call Get_LonLatDepthTime(nc_id)
 
-      if (abs(iden).ne.7) then     
+      if (abs(iden).ne.7) then
          ! Read all the necessary temporal varying data 
          ! Depth-averaged east-west baroclinic pressure graidient
          BC3D_BX = read_nc_var(NC_ID,'BPGX',BC3D_IT,XIc,NXc,YI,NY)
@@ -201,10 +201,10 @@ C-----------------------------------------------------------------------
          call Check_err(NF90_INQ_DIMID(NC_ID,'NYY',Temp_ID))
          call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NYY))
       endif
-      if (abs(IDEN).eq.6) then 
+      if (abs(IDEN).eq.6) then
          call Check_err(NF90_INQ_DIMID(NC_ID,'NYYY',Temp_ID))
          call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NYYY))
-      endif   
+      endif
       ! Allocate the lat and lon  arrays first 
       allocate(BC3D_Lat(NY),BC3D_Lon(NX),
      &         BC3D_Latc(NYY),BC3D_Lonc(NX),BC3D_Lats(NYYY))
@@ -220,11 +220,11 @@ C-----------------------------------------------------------------------
          call Check_err(NF90_INQ_VARID(NC_ID,'lonc',Temp_ID))
          call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,BC3D_Lonc))
       endif
-      if (abs(IDEN).eq.6) then 
+      if (abs(IDEN).eq.6) then
          call Check_err(NF90_INQ_VARID(NC_ID,'lats',Temp_ID))
          call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,BC3D_Lats))
-      endif     
- 
+      endif
+
       ! Get the timestep and starting time
       call Check_err(NF90_INQ_VARID(NC_ID,'time',Temp_ID))
       BC3D_DT = 0d0
@@ -238,7 +238,7 @@ C-----------------------------------------------------------------------
          DT   = CurDT - TNDT
          if (DT%total_seconds() <= 0) exit
       enddo
-      call check_err(nf90_get_var(nc_id, Temp_ID, TSS,           
+      call check_err(nf90_get_var(nc_id, Temp_ID, TSS,
      &     start=[1, BC3D_IT+densityTimeIterator],count=[SL, 1]))
       TNDT1 = strptime(trim(TSS),"%Y-%m-%d %H:%M")
       DT = TNDT1 - TNDT 
@@ -248,7 +248,8 @@ C-----------------------------------------------------------------------
       BC3D_DT = 3600d0*3d0
 #endif
       endif
- 
+
+
       ! Get bounds of the mesh
       Lat_s = max(-79.99d0,rad2deg*minval(sfea))
       Lat_e = rad2deg*maxval(sfea)
@@ -295,7 +296,7 @@ C-----------------------------------------------------------------------
           XI  = max(1,binarysearch(NXo, BC3D_Lon, Lon_s) - 1)
           i   = min(NXo,binarysearch(NXo, BC3D_Lon, Lon_e) + 2) 
           NX  = i - XI + 1; if (NX <  0) NX = NX + NXo;
-          
+
           ! For latitude (with buffer)
           YI  = max(1,binarysearch(NY, BC3D_Lat, Lat_s) - 1)
           j   = min(NY,binarysearch(NY, BC3D_Lat, Lat_e) + 2)
@@ -313,10 +314,10 @@ C-----------------------------------------------------------------------
           else
              Lon  = [BC3D_Lon(XI:NXo)  , BC3D_Lon(1:i)   + 360d0 ]
           endif
-          
+
           if (abs(IDEN).ne.7) then
              XIc = max(1,binarysearch(NXo, BC3D_Lonc, Lon_s) - 1)
-             ic  = min(NXo,binarysearch(NXo, BC3D_Lonc, Lon_e) + 2) 
+             ic  = min(NXo,binarysearch(NXo, BC3D_Lonc, Lon_e) + 2)
              NXc = ic - XIc + 1; if (NXc <  0) NXc = NXc + NXo;
 
              YIc = max(1,binarysearch(NYY, BC3D_Latc, Lat_s) - 1)
@@ -329,13 +330,13 @@ C-----------------------------------------------------------------------
              allocate(Lonc(NXc),Latc(NYc))
              allocate(BC3D_BX(NXc,NY),BC3D_BY(NX,NYc),BC3D_SigTS(NX,NY))
              Latc = BC3D_Latc(YIc:jc)
-             if (ic > XIc) then 
+             if (ic > XIc) then
                 Lonc = BC3D_Lonc(XIc:ic)
              else
                 Lonc = [BC3D_Lonc(XIc:NXo), BC3D_Lonc(1:ic) + 360d0 ]
              endif
           endif
-          if (abs(IDEN).eq.6) then 
+          if (abs(IDEN).eq.6) then
              YIs = max(1,binarysearch(NYYY, BC3D_Lats, Lat_s) - 1)
              js  = min(NYYY,binarysearch(NYYY, BC3D_Lats, Lat_e) + 2)
              NYs = js - YIs + 1
@@ -343,7 +344,7 @@ C-----------------------------------------------------------------------
              allocate(BC3D_DX(NX,NYs),BC3D_DY(NX,NYs))
              Lats = BC3D_Lats(YIs:js)
           endif
-  
+
           if (LoadIT_Fric) allocate(BC3D_NB(NX,NY),BC3D_NM(NX,NY))
           if (NOLIBF.eq.3) then
              if (HBREAK.gt.0d0) then
@@ -352,7 +353,7 @@ C-----------------------------------------------------------------------
                 allocate(BC3D_CD(NX,NYs)) 
              endif
           endif
-          
+
           ! Compute the interpolants
           do i = 1,NP  
              xx = rad2deg*slam(i)
@@ -385,23 +386,23 @@ C-----------------------------------------------------------------------
                    xl = min(x1,xl); xu = max(x1,xu)
                    yl = min(y1,yl); yu = max(y1,yu)
                    endif
-                enddo  
+                enddo
                 ! For x-gradient variable (BC3D_BX)
-				! CPB 12/08/2021 switch from conserve_interp to bl_interp for proper 
+				! CPB 12/08/2021 switch from conserve_interp to bl_interp for proper
 				! wrapping around the prime meridian
 				call bl_interp(NXc,Lonc,NY,Lat,xx,yy,indt,wt)
                 indx(:,i) = indt
                 weightsx(:,i) = wt
                 ! For y-gradient variable (BC3D_BY)
-				! CPB 12/08/2021 switch from conserve_interp to bl_interp for proper 
+				! CPB 12/08/2021 switch from conserve_interp to bl_interp for proper
 				! wrapping around the prime meridian
-                call bl_interp(NX,Lon,NYc,Latc,xx,yy,indt,wt) 
+                call bl_interp(NX,Lon,NYc,Latc,xx,yy,indt,wt)
                 indy(:,i) = indt
                 weightsy(:,i) = wt
                 if (abs(iden).eq.6) then
                    ! For other momentum dispersion variables (BC3D_DX, BC3D_DY)
                    call conserve_interp(NX,Lon,NYs,Lats,
-     &                                  xx,yy,xl,yl,xu,yu,indt,wt) 
+     &                                  xx,yy,xl,yl,xu,yu,indt,wt)
                    inds(:,i) = indt
                    weightss(:,i) = wt
                 endif
@@ -488,7 +489,7 @@ C
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      ! Read first value in time 
+      ! Read first value in time
       BC3D_IT = 1
       ! Times are rounded down to nearest minute
       DTIME1  = floor(TimeLoc/60d0)*60d0
@@ -523,8 +524,8 @@ C
          endif
       endif
       if (abs(IDEN).eq.6) then
-         VIDISPDXOH_F(1,:) = VIDISPDXOH_F(2,:) 
-         VIDISPDYOH_F(1,:) = VIDISPDYOH_F(2,:) 
+         VIDISPDXOH_F(1,:) = VIDISPDXOH_F(2,:)
+         VIDISPDYOH_F(1,:) = VIDISPDYOH_F(2,:)
       endif
       ! Return if diagnostic
       if (IDEN.lt.0) return
@@ -640,14 +641,14 @@ C
            SigTS(J) = SigTS_F(1,J) + DTRATIO*(SigTS_F(2,J)-SigTS_F(1,J))
            ! This is interpolated onto element and put back onto node in
            ! another subroutine (FBPG_Disp_from_BC3D)
-           BXE(J) = VIDBCPDXOH_F(1,J) + DTRATIO * 
+           BXE(J) = VIDBCPDXOH_F(1,J) + DTRATIO *
      &              (VIDBCPDXOH_F(2,J) - VIDBCPDXOH_F(1,J))
-           BYE(J) = VIDBCPDYOH_F(1,J) + DTRATIO * 
+           BYE(J) = VIDBCPDYOH_F(1,J) + DTRATIO *
      &              (VIDBCPDYOH_F(2,J) - VIDBCPDYOH_F(1,J))
          ENDDO
 C        DW/WJP: rotate BCP if coordinate transform
          IF ( IFSPROTS .eq. 1 ) THEN
-            UVECTMP(1:NP) = BXE(1:NP); 
+            UVECTMP(1:NP) = BXE(1:NP);
             VVECTMP(1:NP) = BYE(1:NP);
             CALL DRVMAP2DSPVEC( BXE, BYE,
      &             UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
@@ -684,7 +685,7 @@ C        DW/WJP: rotate BCP if coordinate transform
          ENDDO
 C        DW/WJP: rotate dispersion gradients if coordinate transform
          IF ( IFSPROTS .eq. 1 ) THEN
-            UVECTMP(1:NP) = DXE(1:NP); 
+            UVECTMP(1:NP) = DXE(1:NP);
             VVECTMP(1:NP) = DYE(1:NP);
             CALL DRVMAP2DSPVEC( DXE, DYE,
      &            UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
@@ -1010,7 +1011,7 @@ C-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
       SUBROUTINE BC3DTerminate(NO_MPI_FINALIZE)
       USE SIZES, ONLY : myproc
-#ifdef CMPI 
+#ifdef CMPI
       USE MESSENGER
 #endif
       IMPLICIT NONE 
