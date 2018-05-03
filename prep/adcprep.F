@@ -356,8 +356,7 @@ C
       USE PRE_GLOBAL
       use sizes, only : naType, meshType, controlType, ASCII, XDMF,
      &   naFileName, meshFileName, controlFileName, formatString
-      use global, only : logMessage, allMessage, setMessageSource, 
-     &                   unsetMessageSource, INFO, DEBUG
+      use global, only : logMessage, INFO
       use mesh, only : readMeshXDMF
       use subprep, only : subdomainOn, enforceBN, subPrep020, subPrep021,
      &   subPrep019
@@ -379,11 +378,6 @@ C
       integer, parameter :: repartitionLimit = 100 ! give up after this
       integer :: numPartitionAttempts ! number of attempts to partition mesh
       logical :: partitionOK  ! true if partitioning has no issues
-
-      CALL setMessageSource("prepinput")
-#if defined(ALL_TRACE)
-      CALL allMessage(DEBUG,"Enter")
-#endif      
 
 C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
       if (PREP_13) then
@@ -828,12 +822,6 @@ CC -- Finish Addition by CF
 9999  CONTINUE
       print *, ""
       print *, "INFO: Finished pre-processing input files."
-
-#if defined(ALL_TRACE)
-      CALL allMessage(DEBUG,"Return")
-#endif      
-      CALL unsetMessageSource()
-
       RETURN
       END SUBROUTINE
 C---------------------------------------------------------------------------

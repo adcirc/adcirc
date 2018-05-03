@@ -692,7 +692,7 @@ C
                j = 1 + (i-istart)*descript % num_items_per_record
    
                if(descript%isInteger)then
-                 write(descript % lun, 1001) labels_g(i), (integerResultBuffer(k), k = j, j +
+                 write(descript % lun, 1100) labels_g(i), (integerResultBuffer(k), k = j, j +
      &              descript % num_items_per_record - 1)
                else
                  write(descript % lun, 1000) labels_g(i), (resultBuf(k), k = j, j +
@@ -716,8 +716,7 @@ C
 #endif
       call unsetMessageSource()
 
- 1000 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
- 1001 FORMAT(2x, i8, 2x, i8, 2X, i8, 2X, i8, 2X, i8) 
+ 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
  1100 FORMAT(2x,1pE20.10E3,5X,I10)
  1101 FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)
       !--------------------------------------------------------------
@@ -929,12 +928,7 @@ C
                j = 1 + (i-istart)*descript % num_items_per_record
    
                !If values are eqaul to the default value, skip this node
-               if(descript%num_items_per_record.eq.2)then
-                   if(resultBuf(j  ).eq.descript % alternate_value .and.
-     &                resultBuf(j+1).eq.descript % alternate_value) cycle
-               else
-                   if(resultBuf(j).eq.descript % alternate_value) cycle
-               endif
+               if(resultBuf(j).eq.descript % alternate_value) cycle
    
                write(descript % lun, 1000) labels_g(i), (resultBuf(k), k = j, j +
      &           descript % num_items_per_record - 1)
@@ -1862,10 +1856,6 @@ C
          return  ! early return
       else
          fileFound = .true.
-         write(scratchMessage,3334) trim(descript % file_name)
-3334    format('Values from ',(a),
-     &       ' will be reflected from the solution prior to this hotstart.')
-         call allMessage(INFO,scratchMessage)
       endif
       !
       ! serial 

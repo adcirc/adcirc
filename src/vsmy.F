@@ -1068,9 +1068,13 @@ C    kmd48.33bc added in spherical factors for 3D
 !               If ( element_peclet_number > 2.0 ) Then
 !                  Biharmonic_viscosity = velocity_magnitude * length / 2.0d0
 !               End If
+
+
+
+
                ! 3.9. save the viscosity parameter for using in the transport equation
                 Biharmonic_viscosity_modified_Leith ( NH, k ) = Biharmonic_viscosity
-               !write(6,'("nh, k, nele, ncele, biharmonic_viscosity_modified_leith",i0,1x,i0,1x,i0,1x,i0,f8.2)'),nh, k, nele, ncele, Biharmonic_viscosity_modified_Leith(nh,k) !jgfdebug
+                !write(6,*) 'nh, k, biharmonic_viscosity_modified_leith ',nh, k, Biharmonic_viscosity_modified_Leith(nh,k) !jgfdebug
                ! 4. congratulations! we have computed modified Leith viscosity!
                Biharmonic_LStress(k) = -3.d0 * Biharmonic_viscosity * (Biharmonic_DqDXDPhiDX2A+Biharmonic_DqDYDPhiDY2A)
      &              /TotalArea2
@@ -4299,7 +4303,7 @@ C*****************************************************************************
 
        Subroutine Gaussian_filter_complex ( X, Y, NeiTab, NNeigh, quantity, NP, NFEN, MNEI )
 
-       Use Global,      Only : IFNLFA, ETA2, nodecode
+       Use Global,      Only : IFNLFA, ETA2
        Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B, Biharmonic_viscosity_modified_Leith
 
@@ -4345,10 +4349,6 @@ C*****************************************************************************
 
        ! loop on all nodes, and apply the Gaussian filter
        Do I = 1, NP
-          ! @jasonfleming : this loop does not take into account that a 
-          ! node may be dry so I've added a statement to skip dry nodes
-          if (nodecode(i).eq.0) cycle
-          !
           ! 1. compute maximum distance between the node of interest, and the neighbor nodes
           !    this will be used to compute sigma2
           length_max = 0.0d0
@@ -4375,10 +4375,7 @@ C*****************************************************************************
           average_viscosity = average_viscosity / NFEN
 
           ! 1.3.1 compute the element Peclet number
-          !write(6,'("i=",i0," nodecode=",i0," average_viscosity=",f8.2)') i, nodecode(i), average_viscosity !jgfdebug
-          ! @jasonfleming : the average viscosity will be zero if the node
-          ! is dry, producing a division by zero error here. So I've added
-          ! a statement to skip dry nodes at the top of this loop.
+          !write(6,*) 'i, average_viscosity ',i, average_viscosity !jgfdebug
           element_peclet_number = length_max * velocity_magnitude_max_in_xy / average_viscosity !constant_diffusivity !average_viscosity
           !average_element_peclet_number = length_max * average_velocity / average_viscosity 
           average_element_peclet_number = length_max * velocity_magnitude_max_in_xy / average_viscosity 

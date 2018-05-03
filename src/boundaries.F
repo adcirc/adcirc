@@ -47,8 +47,7 @@ C.....for internal barrier boundaries with flowthrough pipes
       INTEGER,ALLOCATABLE ::    BCRNVELL(:)
       INTEGER  totalbcrivernodes  ! nodes for the river boundary conditions for baroclinic
       INTEGER  bcriversec  ! river boundary information
-      LOGICAL :: BndBCRiver          = .FALSE.
-
+      LOGICAL :: BndBCRiver     = .FALSE.
       INTEGER  NBOU
       INTEGER  NETA
       INTEGER  NBVI,NBVJ
