@@ -48,7 +48,6 @@ C.....for internal barrier boundaries with flowthrough pipes
       INTEGER  totalbcrivernodes  ! nodes for the river boundary conditions for baroclinic
       INTEGER  bcriversec  ! river boundary information
       LOGICAL :: BndBCRiver     = .FALSE.
-      LOGICAL :: NPEBC          = .FALSE. !WJP 03.272018 Non-periodic elevation boundary condition flag
 
       INTEGER  NBOU
       INTEGER  NETA
