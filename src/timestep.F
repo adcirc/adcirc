@@ -4343,7 +4343,7 @@ C...  Note 2, Boundary conditions using specified fluxes (LBCODEI < 29)
 C...  assume that QN is positive into the domain.  QFORCEJ has a -1
 C...  built in and the terms are not explicitly negated. Boundary
 C...  conditions using computed fluxes (LBCODEI 30, 40) compute a normal
-C...  flux that  is positive out of the domain.  Therefore, to match
+C...  flux that is positive out of the domain.  Therefore, to match
 C...  the formulation these terms must be explicitly multiplied by -1.
 
 C...Note 3, Eta1 is the latest computed elevation (it was updated above).
