@@ -1175,7 +1175,7 @@ C     on and off according to analyst preference.
       if (invertedBarometerOnElevationBoundary.eqv..true.) then
          DO I=1,NETA
             ETA2(NBD(I))=ETA2(NBD(I))
-     &          + RampMete*(101300.d0/(RHOWAT0*G)) - PR2(NBD(I))
+     &          + RampMete*(101300.d0/(RHOWAT0*G) - PR2(NBD(I)))
          END DO
       endif
 
