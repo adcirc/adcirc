@@ -1615,6 +1615,7 @@ C----------------------------------------------------------------------
       real(sz) :: wtratio ! used to time interpolated between met datasets
       integer :: nhg ! node number temp
       real(sz) :: bf ! blend factor for multiple sets of wind data 
+      real(sz) :: vortexPRDIFF
       integer :: it
       integer :: i ! node loop counter
       integer :: j
@@ -2348,10 +2349,10 @@ C     from NAM data
      &               +(1.0d0-bf)*WSX2(I)
             WSY2(I) = bf*RampMete2*0.001293d0*WDragCo*WindY*WindMag
      &               +(1.0d0-bf)*WSY2(I)
-            PRDIFF = RampMete2*(vortexPRN2(I)-PRBCKGRND_MH2O)
-            vortexPRN2(I) = PRBCKGRND_MH2O + PRDIFF
+            vortexPRDIFF = RampMete2*(vortexPRN2(I)-PRBCKGRND_MH2O)
+            vortexPRN2(I) = PRBCKGRND_MH2O + vortexPRDIFF
             ! blend vortex into background     
-            PR2(I) = bf*vortexPRN2(I)+(1.0d0-bf)*PRN2(I)
+            PR2(I) = bf*vortexPRN2(I)+(1.0d0-bf)*PR2(I)
             WVNXOUT(I)=bf*RampMete2*WindX+(1.0d0-bf)*WVNXOUT(I)
             WVNYOUT(I)=bf*RampMete2*WindY+(1.0d0-bf)*WVNYOUT(I)
          ENDDO
