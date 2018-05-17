@@ -222,7 +222,7 @@ ifeq ($(compiler),intel)
   endif
   #@jasonfleming Added to fix bus error on hatteras@renci
   ifeq ($(HEAP_ARRAYS),fix)
-     FFLAGS1 := $(FFLAGS1) -heap-arrays
+     FFLAGS1 := $(FFLAGS1) -heap-arrays unlimited
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
@@ -244,11 +244,11 @@ ifeq ($(compiler),intel)
   MSGLIBS       :=
   ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),hatteras)
-        FLIBS       := $(FLIBS) -L/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3/lib -lnetcdff -lnetcdf
-        NETCDFHOME    :=/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3
-        FFLAGS1       :=$(FFLAGS1) -I/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3/include
-        FFLAGS2       :=$(FFLAGS1)
-        FFLAGS3       :=$(FFLAGS1)
+        NETCDFHOME  :=/usr/share/Modules/software/CentOS-7/netcdf-Fortran/4.4.0_intel-18.0.0
+        FLIBS       :=$(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
+        FFLAGS1     :=$(FFLAGS1) -I$(NETCDFHOME)/include
+        FFLAGS2     :=$(FFLAGS1)
+        FFLAGS3     :=$(FFLAGS1)
      endif
      # jgf20150417 queenbee requires that the analyst load the netcdf and
      # netcdf_fortran modules prior to compiling or executing ADCIRC
