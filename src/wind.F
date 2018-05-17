@@ -570,7 +570,7 @@ C     determine which interpolation region this mesh node falls in
       IF ( rad.ge.backgroundOnly ) bf = 0.0d0
 C     interpolate linearly based on radial distance in the blended region
       IF ( (rad.gt.vortexOnly).and.(rad.lt.backgroundOnly) ) THEN
-         bf = (rad-vortexOnly)/(backgroundOnly-vortexOnly)
+         bf = (backgroundOnly-rad)/(backgroundOnly-vortexOnly)
 Cjgfdebug         WRITE(16,*) "bf is ", bf
          IF ( (bf.gt.1.0d0).or.(bf.lt.0.0d0) ) THEN
             bf = 0.0d0
@@ -5549,6 +5549,8 @@ C***********************************************************************
       INTEGER, SAVE :: num_cycles ! num unique date/times in the fort.22
 
       REAL(sz) :: rndaySeconds ! end time of the run in seconds
+      real(sz) :: newVortexRMW ! average Rmax at icyc   (next fort.22 time value)
+      real(sz) :: oldVortexRMW ! average Rmax at icyc-1 (previous fort.22 time value)
       
       call setMessageSource("nws20get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -5869,13 +5871,13 @@ C     we are running off the end of the data.
       cLon  =  lon(icyc-1)  +
      &                         wtratio * (lon(icyc)-lon(icyc-1))
       ! locate each node based on the latest hurricane center location   
-         do i=1,np
-              dx = deg2rad * Rearth * (xcoor(i) - cLon)*COS(deg2rad*cLat)
-              dy = deg2rad * Rearth * (ycoor(i) - cLat)
-              dist(i) = SQRT(dx*dx + dy*dy)* m2nm
-              aziangle(i) = 360.0d0 + rad2deg * ATAN2(dx,dy)
-            IF (aziangle(i) > 360.d0) aziangle(i) = aziangle(i) - 360.d0
-         enddo 
+      do i=1,np
+         dx = deg2rad * Rearth * (xcoor(i) - cLon)*COS(deg2rad*cLat)
+         dy = deg2rad * Rearth * (ycoor(i) - cLat)
+         dist(i) = SQRT(dx*dx + dy*dy)* m2nm
+         aziangle(i) = 360.0d0 + rad2deg * ATAN2(dx,dy)
+         IF (aziangle(i) > 360.d0) aziangle(i) = aziangle(i) - 360.d0
+      enddo 
          
  ! set parameters at icyc-1
  !        call setQuadFlag4(reshape(quadflag(icyc-1,:,:),(/4,4/)))
@@ -5884,30 +5886,30 @@ C     we are running off the end of the data.
  !        call setShapeParameters4(reshape(HollBs(icyc-1,:,:),(/4,4/)))
  !        call setVmaxesBL4(reshape(VmaxesBL(icyc-1,:,:),(/4,4/)))
  
-         QuadFlag4(2:5,1:4) = quadflag(icyc-1,1:4,1:4)
-         QuadIr4(2:5,1:4) = real(ir(icyc-1,1:4,1:4))
-         Rmaxes4(2:5,1:4) = rmaxw(icyc-1,1:4,1:4)
-         Bs4(2:5,1:4) = HollBs(icyc-1,1:4,1:4)
-         VmBL4(2:5,1:4) = VmaxesBL(icyc-1,1:4,1:4)
+      QuadFlag4(2:5,1:4) = quadflag(icyc-1,1:4,1:4)
+      QuadIr4(2:5,1:4) = real(ir(icyc-1,1:4,1:4))
+      Rmaxes4(2:5,1:4) = rmaxw(icyc-1,1:4,1:4)
+      Bs4(2:5,1:4) = HollBs(icyc-1,1:4,1:4)
+      VmBL4(2:5,1:4) = VmaxesBL(icyc-1,1:4,1:4)
          
-         call fitRmaxes4()
+      call fitRmaxes4()
 !699      FORMAT(5(f8.4,2x)) 
 !700      FORMAT(a25, 2x, 3(f12.2,2x))
  !Jie debug GAHM         
  !        WRITE(16,*) 'Previous: Spatially-interpolated storm parameters',
  !    &                   ' at icyc-1= ', icyc-1, 
  !    &                   ' CycleTime=', CycleTime(icyc-1) 
-         do i=1,np
-             crmaxw1(i) = spInterp(aziangle(i),dist(i),1)
-             crmaxwTrue1(i) = spInterp(aziangle(i),1.d0,1) 
-             !an artificial number 1.0 is chosen to ensure only
-             !rmax from the highest isotach is picked
-             cHollBs1(i)= spInterp(aziangle(i),dist(i),2)
-             cVmwBL1(i) = spInterp(aziangle(i),dist(i),3)
+      do i=1,np
+         crmaxw1(i) = spInterp(aziangle(i),dist(i),1)
+         crmaxwTrue1(i) = spInterp(aziangle(i),1.d0,1) 
+         !an artificial number 1.0 is chosen to ensure only
+         !rmax from the highest isotach is picked
+         cHollBs1(i)= spInterp(aziangle(i),dist(i),2)
+         cVmwBL1(i) = spInterp(aziangle(i),dist(i),3)
  !Jie debug GAHM       
  !            WRITE(16,699) crmaxw1(i),  crmaxwTrue1(i),
  !    &                   cHollBs1(i) ,cVmwBL1(i)
-         end do
+      end do
          
          
          ! set parameters at icyc
@@ -5919,27 +5921,27 @@ C     we are running off the end of the data.
 !         call setShapeParameters4(reshape(HollBs(icyc,:,:),(/4,4/)))
 !         call setVmaxesBL4(reshape(VmaxesBL(icyc,:,:),(/4,4/)))  
       
-         QuadFlag4(2:5,1:4) = quadflag(icyc,1:4,1:4)
-         QuadIr4(2:5,1:4) = real(ir(icyc,1:4,1:4))
-         Rmaxes4(2:5,1:4) = rmaxw(icyc,1:4,1:4)
-         Bs4(2:5,1:4) = HollBs(icyc,1:4,1:4)
-         VmBL4(2:5,1:4) = VmaxesBL(icyc,1:4,1:4)
-         call fitRmaxes4()
+      QuadFlag4(2:5,1:4) = quadflag(icyc,1:4,1:4)
+      QuadIr4(2:5,1:4) = real(ir(icyc,1:4,1:4))
+      Rmaxes4(2:5,1:4) = rmaxw(icyc,1:4,1:4)
+      Bs4(2:5,1:4) = HollBs(icyc,1:4,1:4)
+      VmBL4(2:5,1:4) = VmaxesBL(icyc,1:4,1:4)
+      call fitRmaxes4()
  !Jie debug GAHM         
  !        WRITE(16,*) 'After: Spatially-interpolated storm parameters',
  !    &                   ' at icyc= ', icyc, 
  !    &                   ' CycleTime=', CycleTime(icyc)          
-         do i=1,np
-             crmaxw2(i) = spInterp(aziangle(i),dist(i),1)
-             crmaxwTrue2(i) = spInterp(aziangle(i),1.d0,1) 
-             !an artificial number 1.0 is chosen to ensure only
-             !rmax from the highest isotach is picked             
-             cHollBs2(i)= spInterp(aziangle(i),dist(i),2)
-             cVmwBL2(i) = spInterp(aziangle(i),dist(i),3)
+      do i=1,np
+         crmaxw2(i) = spInterp(aziangle(i),dist(i),1)
+         crmaxwTrue2(i) = spInterp(aziangle(i),1.d0,1) 
+         !an artificial number 1.0 is chosen to ensure only
+         !rmax from the highest isotach is picked             
+         cHollBs2(i)= spInterp(aziangle(i),dist(i),2)
+         cVmwBL2(i) = spInterp(aziangle(i),dist(i),3)
               !Jie debug GAHM       
   !           WRITE(16,699) crmaxw2(i),  crmaxwTrue2(i),
   !   &                   cHollBs2(i) ,cVmwBL2(i)
-         end do
+      end do
       ! Perform time interpolation, transform variables from integers
       ! to real numbers for hurricane vortex calcualtions.
 
@@ -5962,7 +5964,7 @@ C     we are running off the end of the data.
 !     &           CycleTime(icyc-1), TIMELOC, CycleTime(icyc) 
      
       do i=1,np
-      cPhiFactor(i) =  1 + 
+         cPhiFactor(i) =  1 + 
      &                       cVmwBL(i)*kt2ms*crmaxw(i)*nm2m*corio/
      &                       (cHollBs(i)*((cVmwBL(i)*kt2ms)**2+
      &                       cVmwBL(i)*kt2ms*crmaxw(i)*nm2m*corio))
@@ -5977,9 +5979,9 @@ C     we are running off the end of the data.
      &                  * (vTrans(icyc)-vTrans(icyc-1))
      
       if (writeFullCircleRmaxes.eqv..true.) then
-            do i=1,np
-              write(444,*)  crmaxw(i), aziangle(i),dist(i)
-            end do
+         do i=1,np
+            write(444,*)  crmaxw(i), aziangle(i),dist(i)
+         end do
       endif     
       ! jgf49.0803 Make the current Rmax and center location
       ! available at the module level for use in NWS29
@@ -6003,13 +6005,24 @@ C     we are running off the end of the data.
       numRmaxes = 0.d0 ! count how many Rmax values we have to work with
       do i=1,4  ! loop quads
          do j=1,3 ! loop isotachs 
-            if (quadflag(icyc,i,j)==1) then
-               vortexRMW = vortexRMW + rmaxw(icyc,i,j)
+            if (quadflag(icyc-1,i,j)==1) then
+               oldVortexRMW = oldVortexRMW + rmaxw(icyc-1,i,j)
                numRmaxes = numRmaxes + 1.d0
             endif
          end do
       enddo
-      vortexRMW = vortexRMW / numRmaxes
+      oldVortexRMW = oldVortexRMW / numRmaxes
+      numRmaxes = 0.d0 ! count how many Rmax values we have to work with
+      do i=1,4  ! loop quads
+         do j=1,3 ! loop isotachs 
+            if (quadflag(icyc,i,j)==1) then
+               newVortexRMW = newVortexRMW + rmaxw(icyc,i,j)
+               numRmaxes = numRmaxes + 1.d0
+            endif
+         end do
+      enddo
+      newVortexRMW = newVortexRMW / numRmaxes
+      vortexRMW = oldVortexRMW + wtratio * ( newVortexRMW - oldVortexRMW )
 
       !-------------------------------
       ! Create a new asymmetric hurricane vortex.
