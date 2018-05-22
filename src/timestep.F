@@ -863,7 +863,7 @@ C...
             DO I=1,NVEL
                ARG=ARGJ-QNPH(J,I)
                QN2(I)=QN2(I)+QNAM(J,I)*RFF*COS(ARG)
-               IF(LBCODEI(J).EQ.32) THEN
+               IF(LBCODEI(I).EQ.32) THEN
                   ARG=ARGJ-ENPH(J,I)
                   EN2(I)=EN2(I)+ENAM(J,I)*RFF*COS(ARG)
                ENDIF
