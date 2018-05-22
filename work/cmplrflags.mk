@@ -244,11 +244,11 @@ ifeq ($(compiler),intel)
   MSGLIBS       :=
   ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),hatteras)
-        NETCDFHOME  :=/usr/share/Modules/software/CentOS-7/netcdf-Fortran/4.4.0_intel-18.0.0
         FLIBS       :=$(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
+        NETCDFHOME  :=/usr/share/Modules/software/CentOS-7/netcdf-Fortran/4.4.0_intel-18.0.0
         FFLAGS1     :=$(FFLAGS1) -I$(NETCDFHOME)/include
-        FFLAGS2     :=$(FFLAGS1)
-        FFLAGS3     :=$(FFLAGS1)
+#        FFLAGS2     :=$(FFLAGS2) -I$(NETCDFHOME)/include
+#        FFLAGS3     :=$(FFLAGS3) -I$(NETCDFHOME)/include
      endif
      # jgf20150417 queenbee requires that the analyst load the netcdf and
      # netcdf_fortran modules prior to compiling or executing ADCIRC

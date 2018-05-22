@@ -61,7 +61,7 @@ C
      &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF, 
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
      &    BCFLAG_LNM, usingWaterLevelOffset, offset1, offset2, L_N, TKM, 
-     &    WarnElevDump, nodes_lg
+     &    WarnElevDump, nodes_lg,NT
 #ifdef CSWAN
      &  , waveWindMultiplier
 #endif
@@ -161,6 +161,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       REAL(8) FDX1O2A, FDX2O2A, FDX3O2A, FDY1O2A, FDY2O2A, FDY3O2A
       REAL(8) TimeLoc, TimeH
+      REAL(8) runperccomplete
 C   kmd48.33bc - added in the heat flux variables
       CHARACTER(80) :: CDUM80
       INTEGER :: NumofBCNode
@@ -1211,18 +1212,20 @@ C     jgf46.12 Removed the dependence on KEMAX for producing output to
 C     the screen.
 
 #ifdef CMPI
+         runperccomplete=REAL(IT-ITHS)/REAL(NT-ITHS)*100d0    !percentage of time steps completed
          IF(MYPROC.EQ.0.AND.ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
                WRITE(ScreenUnit,1991)
-     &            IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,
+     &            IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,
      &            VELMAX,KVMAX,MYPROC
             ELSE
                WRITE(ScreenUnit,1991)
-     &            IT,NUMITR,TimeLoc,0.,KEMAX,VELMAX,
+     &            IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,
      &            KVMAX,MYPROC
 
             ENDIF
- 1991       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+ 1991       FORMAT(1X,'TIME STEP =',I8,1x,F6.2,'% COMPLETE',
+     &           5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,
@@ -1237,7 +1240,7 @@ C     output the global node number to debug the local PE fort.14s
      &           VELMAX,NODES_LG(KVMAX),MYPROC
             WRITE(16,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),
      &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
- 1993       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
+ 1993       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,
@@ -1259,7 +1262,7 @@ C     output the global node number to debug the local PE fort.14s
      &           VELMAX,NODES_LG(KVMAX),MYPROC
             WRITE(16,1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
      &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
- 1995       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
+ 1995       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,
@@ -1278,12 +1281,13 @@ C     output the global node number to debug the local PE fort.14s
          IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
                WRITE(ScreenUnit,1992)
-     &              IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+     &              IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
             ELSE
                WRITE(ScreenUnit,1992)
-     &              IT,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX
+     &              IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX
             ENDIF
- 1992       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+ 1992       FORMAT(1X,'TIME STEP =',I8,1x,F6.2,'% COMPLETE',
+     &           5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8)
@@ -1292,7 +1296,7 @@ C     output the global node number to debug the local PE fort.14s
             WRITE(ScreenUnit,1994)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
             WRITE(16,1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
- 1994       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
+ 1994       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,
@@ -1307,7 +1311,7 @@ C     output the global node number to debug the local PE fort.14s
             WRITE(ScreenUnit,1996)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
             WRITE(16,1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
- 1996       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
+ 1996       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,/,
