@@ -281,6 +281,14 @@ C
       ! variable capable of holding all nodal attributes in the file
       type(nodalAttr_t), allocatable :: na(:)
       character(len=1024) :: nodalAttributesComment ! comment line at the top
+
+
+      !nld54.dev - variables to control updated and legacy directional wind reduction
+      ! Note, default behavior is to use the corrected 
+      LOGICAL  :: ApplyLegacyWindReduction = .false.  ! set to .true. for legacy behavior
+      REAL(SZ) :: CutOffDepth = 0.d0     ! set to 20.d0 for legacy behavior
+      REAL(SZ) :: CutOffDepthFactor = 0.d0  ! set to 1.d0/30.d0 for legacy behavior
+C     
 C
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       CONTAINS !- - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2049,9 +2057,17 @@ C     in hstart.F and timestep.F.
 C
 C     jgf49.1001 Extracted the application of the canopy coefficient and
 C     placed in the ApplyCanopyCoefficient subroutine.
+C
+C     nld54.dev Corrected application of the logarithmic boundary layer
+C     law in determining the wind reduction factor noticed by mbilskie.
+C     Modified hard-coded "cutOffDepth" behavior.  Now the user may 
+C     specify a CutOffDepth. if the depth at a node is between 2*H0
+C     and CutOffDepth the wind reduction is reduced to account a reduction
+C     in the land based roughness length due to overland flooding
+C     legacy behavior used a hard-coded value of 20m 
 C     ----------------------------------------------------------------
       SUBROUTINE ApplyDirectionalWindReduction(NodeNumber, WindDragCo,
-     &     WindMag, BathymetricDepth, Elevation, CutOffDepth, G,
+     &     WindMag, BathymetricDepth, Elevation, DryDepth, G, 
      &     WindX, WindY)
       USE SIZES
       IMPLICIT NONE
@@ -2060,9 +2076,8 @@ C     ----------------------------------------------------------------
       REAL(SZ), intent(in) :: WindMag    ! wind magnitude
       REAL(SZ), intent(in) :: BathymetricDepth ! a.k.a. dp(i),depth below geoid
       REAL(SZ), intent(in) :: Elevation  ! a.k.a. eta2(i)
-      REAL(SZ), intent(in) :: CutOffDepth! a.k.a. h0, user-spec. min. depth
-      REAL(SZ), intent(in) :: G          ! gravitational constant
-
+      REAL(SZ), intent(in) :: DryDepth! a.k.a. h0, user-spec. min. depth
+      REAL(SZ), intent(in) :: G          ! gravitationalincorrect legacy reduction
       REAL(SZ), intent(inout) :: WindX   ! x-dir component of wind velocity
       REAL(SZ), intent(inout) :: WindY   ! x-dir component of wind velocity
 
@@ -2101,26 +2116,38 @@ C
 C     define land roughness from usace values
       z0l=z0land(NodeNumber,idir)
 C
-C     reset z0l depending on situation
-      if(z0l.le.0.006) then
-c     coe set their value to a marine value -> reset to correct marine value
-         z0l=z0m
-      else
-c     coe set their value to a land value -> proceed with checking this value
-         TotalDepth = BathymetricDepth + Elevation
-         if( (TotalDepth.gt.2*CutOffDepth).and.
-     &        (BathymetricDepth.lt.20)) then
-c     compute adjusted z0l to account for overland flooding - do this only
-c     in the case where the water column is greater than twice h0 and
-c     you are not in a river (I assume that rivers are deeper than 20m
-c     and have z0l>0.006)
-            z0l=z0l-TotalDepth/30. ! correction for overland flooding
+      TotalDepth = BathymetricDepth + Elevation
+      if (ApplyLegacyWindReduction) then
+C        reset z0l depending on situation
+         if(z0l.le.0.006) then
+c        coe set their value to a marine value -> reset to correct marine value
+            z0l=z0m
+         else
+c        coe set their value to a land value -> proceed with checking this value
+           
+            if( (TotalDepth.gt.2*DryDepth).and.
+     &           (BathymetricDepth.lt.CutOffDepth)) then
+c        compute adjusted z0l to account for overland flooding - do this only
+c        in the case where the water column is greater than twice h0 and
+c        you are not in a river (I assume that rivers are deeper than 20m
+c        and have z0l>0.006)
+               z0l=z0l-TotalDepth*CutOffDepthFactor ! correction for overland flooding
+            endif
          endif
-      endif
+      else   ! apply user adjustable overland flooding correction
+         if( (TotalDepth.gt.2*DryDepth).and.
+     &           (TotalDepth.lt.CutOffDepth)) then
+            z0l=z0l-TotalDepth*CutOffDepthFactor ! correction for overland flooding
+         endif
+      endif     
 C
 c     compute land wind reduction factor
       if(z0l.gt.0.0001) then
-         fr=(z0m/z0l)**0.0706d0
+         if (ApplyLegacyWindReduction) then  ! compute incorrect legacy reduction factor
+            fr=(z0m/z0l)**0.0706d0
+         else  ! compute corrected reduction factor
+            fr=(z0l/z0m)**0.0706d0 * log(10.d0/z0l) / log(10.d0/z0m)
+         endif
       else
          fr=1.000d0
       endif

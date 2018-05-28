@@ -46,7 +46,8 @@ C-----------------------------------------------------------------------
       USE NodalAttributes, ONLY :
      &     NoLiBF, NWP, Tau0, HBreak, FTheta, FGamma, Tau, CF,
      &     InitNAModule, ReadNodalAttr, InitNodalAttr, ESLM, ESLC,
-     &     Tau0FullDomainMin, Tau0FullDomainMax, Z0b_var
+     &     Tau0FullDomainMin, Tau0FullDomainMax, Z0b_var,
+     &     CutOffDepth,CutOffDepthFactor,ApplyLegacyWindReduction !nld54.dev sderlfix
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
@@ -72,7 +73,8 @@ C
 #endif
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
       NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,
-     &  rhoAir, invertedBarometerOnElevationBoundary
+     &  rhoAir, invertedBarometerOnElevationBoundary,
+     &  CutOffDepth,CutOffDepthFactor,ApplyLegacyWindReduction ! nld54.dev added for SDERL fix
       NAMELIST /subdomainModeling/ subdomainOn
       NAMELIST /wetDryControl/ outputNodeCode, outputNOFF, noffActive
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
@@ -295,7 +297,10 @@ c     a non-default value we can determine this was the case.
       write(scratchMessage,*) "WindDragLimit=",WindDragLimit,
      & " DragLawString=",DragLawString, " rhoAir=",rhoAir,
      & ' invertedBarometerOnElevationBoundary=', 
-     &   invertedBarometerOnElevationBoundary 
+     &   invertedBarometerOnElevationBoundary, 
+     & ' ApplyLegacyWindReduction=',ApplyLegacyWindReduction, !nld54.dev SDERL fix
+     & ' CutOffDepth=',CutOffDepth,' CutOffDepthFactor=',     !nld54.dev SDERL fix
+     &   CutOffDepthFactor                                    !nld54.dev SDERL fix
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
