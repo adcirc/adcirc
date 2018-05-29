@@ -1158,6 +1158,7 @@ C
                ! numLBCodeValues
                DO J=1,numLBCodeValues
                   IF ((LBCODE(J).EQ.2).OR.(LBCODE(J).EQ.12)
+     &                 .OR.(LBCODE(J).EQ.32)
      &                 .OR.(LBCODE(J).EQ.22).OR.(LBCODE(J).EQ.52)) THEN
                      READ(15,80) QNMSG(I,J)
                      READ(QNMSG(I,J),*) QNAM(I,J),QNPH(I,J)
@@ -1186,6 +1187,7 @@ C
             ! numLBCodeValues.
             DO J=1,numLBCodeValues
                IF ((LBCODE(J).EQ.2).OR.(LBCODE(J).EQ.12)
+     &              .OR.(LBCODE(J).EQ.32)
      &              .OR.(LBCODE(J).EQ.22).OR.(LBCODE(J).EQ.52)) THEN
                   NFLBN = NFLBN+1
                   FLBN(NFLBN) = NBV(J)
