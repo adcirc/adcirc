@@ -2034,10 +2034,14 @@ C
             write(15,*) "&metControl "
             write(15,*) "    WindDragLimit=",Winddraglimit,","
             write(15,*) "    DragLawString='",trim(Draglawstring),"',"
-            write(15,*) "    outputWindDrag=",outputWindDrag,","            
+            write(15,*) "    outputWindDrag=",outputWindDrag,","       
             write(15,*) "    rhoAir=",rhoAir,","
             write(15,*) "    invertedBarometerOnElevationBoundary=",
      &                        invertedBarometerOnElevationBoundary
+            write(15,*) "    cutOffDepth=",CutOffDepth","              !nld 54.dev sderlfix
+            write(15,*) "    cutOffDepthFactor=",CutOffDepthFactor,"," !nld 54.dev sderlfix
+            write(15,*) "    ApplyLegacyWindReduction=",               !nld 54.dev sderlfix
+     &                            ApplyLegacyWindReduction,","         !nld 54.dev sderlfix
             write(15,*) "/"
             write(15,*) '! -- End Met Control Namelist --'
          endif

@@ -103,6 +103,9 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 #endif
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
      &                  initWindModule
+
+      USE NodalAttributes, ONLY : ApplyLegacyWindReduction,     !nld 54.dev sderlfix
+     &                           CutoffDepth, CutoffDepthFactor
 C
       IMPLICIT NONE
 C
@@ -185,6 +188,7 @@ C     Solver Type:
       LOGICAL USE_CONC_STAT_FILE    !.true. if a concentration station file exists
       LOGICAL USE_MET_STAT_FILE     !.true. if a met station file exists
       LOGICAL :: invertedBarometerOnElevationBoundary
+
 C
 C For Definition of Working Directory
 C
