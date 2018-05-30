@@ -105,7 +105,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
      &                  initWindModule
 
       USE NodalAttributes, ONLY : ApplyLegacyWindReduction,     !nld 54.dev sderlfix
-     &                           CutoffDepth, CutoffDepthFactor
+     &                           CutOffDepth, CutOffDepthFactor
 C
       IMPLICIT NONE
 C
@@ -218,7 +218,8 @@ C Logicals added for adcprep paths
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
       NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,rhoAir,
-     &                       invertedBarometerOnElevationBoundary
+     &                       invertedBarometerOnElevationBoundary,
+     &        ApplyLegacyWindReduction,CutOffDepth,CutOffDepthFactor  !nld 54.dev sderlfix
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &    TOUTF_TVW,NSPOOL_TVW
       LOGICAL :: NETCDF_AVAIL ! true if netCDF was compiled in

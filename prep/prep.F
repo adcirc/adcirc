@@ -2038,7 +2038,7 @@ C
             write(15,*) "    rhoAir=",rhoAir,","
             write(15,*) "    invertedBarometerOnElevationBoundary=",
      &                        invertedBarometerOnElevationBoundary
-            write(15,*) "    cutOffDepth=",CutOffDepth","              !nld 54.dev sderlfix
+            write(15,*) "    cutOffDepth=",CutOffDepth,","             !nld 54.dev sderlfix
             write(15,*) "    cutOffDepthFactor=",CutOffDepthFactor,"," !nld 54.dev sderlfix
             write(15,*) "    ApplyLegacyWindReduction=",               !nld 54.dev sderlfix
      &                            ApplyLegacyWindReduction,","         !nld 54.dev sderlfix
