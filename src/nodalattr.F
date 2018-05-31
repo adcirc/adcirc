@@ -283,11 +283,38 @@ C
       character(len=1024) :: nodalAttributesComment ! comment line at the top
 
 
-      !nld54.dev - variables to control updated and legacy directional wind reduction
-      ! Note, default behavior is to use the corrected 
-      LOGICAL  :: ApplyLegacyWindReduction = .false.  ! set to .true. for legacy behavior
-      REAL(SZ) :: CutOffDepth = 0.d0     ! set to 20.d0 for legacy behavior
-      REAL(SZ) :: CutOffDepthFactor = 0.d0  ! set to 1.d0/30.d0 for legacy behavior
+      !nld54.dev - variables to control updated and legacy surface 
+      ! directional wind reduction and associated correction for 
+      ! overland flooding. Note, default behavior uses the corrected 
+      ! wind reduction calculation without any overland
+      ! flooding correction.  The original (legacy) code 
+      ! calculates a reduction that is appropriate for the friction 
+      ! velocity but inappropriately applies it to the actual 
+      ! velocity at 10m. The new code now calculates a reduction that
+      ! is appropriate for the wind velocity at 10m following the 
+      ! logarithmic law wind profile. The legacy overland flooding 
+      ! correction, which reduces the wind reduction,
+      ! was originally hard-coded to only apply between 2*H0 and a 
+      ! depth of 20 meters.  This legacy behavior is only reasonable in
+      ! very specific circumstances (e.g. level uniform terrain with 
+      ! uniform flood depths). The default behavior is to no longer
+      ! apply this overland flooding correction.  However, the
+      ! user may still apply the overland correction by specifing a 
+      ! CutOffDepth and CutOffDepthFactor that is appropriate for
+      ! their model. The more flexible overland flooding correction
+      ! can be applied to either the original or corrected
+      ! wind reduction formula. To get legacy behavior that is fully
+      ! equivalent previous hard-coded versions of the code, the user
+      ! should set the following variables in the metControl namelist
+      ! in the fort.15:
+      ! ApplyLegacyWindReduction = .true.,
+      ! CutOffDepth = 20.d0,
+      ! CutOffDepthFactor = 0.033333333333333333d0
+      ! the overland flooding correction is effectively disabled by
+      ! setting CutOffDepth = 0.d0
+      LOGICAL  :: ApplyLegacyWindReduction = .false.  
+      REAL(SZ) :: CutOffDepth = 0.d0     
+      REAL(SZ) :: CutOffDepthFactor = 0.d0  
 C     
 C
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

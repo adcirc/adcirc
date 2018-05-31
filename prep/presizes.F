@@ -103,8 +103,8 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 #endif
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
      &                  initWindModule
-
-      USE NodalAttributes, ONLY : ApplyLegacyWindReduction,     !nld 54.dev sderlfix
+cnld54.dev added variables for SDERL fix
+      USE NodalAttributes, ONLY : ApplyLegacyWindReduction,     
      &                           CutOffDepth, CutOffDepthFactor
 C
       IMPLICIT NONE
