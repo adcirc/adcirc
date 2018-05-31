@@ -2228,6 +2228,18 @@ C**********************************************************************
       END SUBROUTINE MOM_EQS_NON_CONSERV_PC
 C**********************************************************************
 
+C if your compiler fully supports the Fortran 2008 standard
+C you can pre-process with -DF2008 to get the implicit norm2 function
+C otherwise it'll use this function
+#ifndef F2008
+      function norm2(x)
+        implicit none
+        intrinsic :: dot_product, sqrt
+        double precision, intent(in) :: x(:)
+        double precision :: norm2
+        norm2 = sqrt(dot_product(x,x))
+      end function
+#endif
 
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------
