@@ -311,9 +311,9 @@ C
       ! CutOffDepth = 20.d0,
       ! CutOffDepthFactor = 0.033333333333333333d0
       ! the overland flooding correction is effectively disabled by
-      ! setting CutOffDepth = 0.d0
+      ! setting CutOffDepth to less than the minimum DP in the grid
       LOGICAL  :: ApplyLegacyWindReduction = .false.  
-      REAL(SZ) :: CutOffDepth = 0.d0     
+      REAL(SZ) :: CutOffDepth = -99999.d0     
       REAL(SZ) :: CutOffDepthFactor = 0.d0  
 C     
 C
@@ -2088,10 +2088,14 @@ C
 C     nld54.dev Corrected application of the logarithmic boundary layer
 C     law in determining the wind reduction factor noticed by mbilskie.
 C     Modified hard-coded "cutOffDepth" behavior.  Now the user may 
-C     specify a CutOffDepth. if the depth at a node is between 2*H0
-C     and CutOffDepth the wind reduction is reduced to account a reduction
-C     in the land based roughness length due to overland flooding
-C     legacy behavior used a hard-coded value of 20m 
+C     specify a CutOffDepth. if the depth at a node is greater than 
+C     2*H0 and the node's DP is less than CutOffDepth the wind reduction
+C     is reduced to account for a reduction in the land based roughness
+C     length due to overland flooding
+C     legacy behavior used a hard-coded value of 20m
+C     setting CutOffDepth to a value less than the lowest DP value
+C     in the model grid will effectively eliminate the overland 
+C     flooding correction.  Default CutOffDepth is -99999.d0  
 C     ----------------------------------------------------------------
       SUBROUTINE ApplyDirectionalWindReduction(NodeNumber, WindDragCo,
      &     WindMag, BathymetricDepth, Elevation, DryDepth, G, 
@@ -2113,7 +2117,7 @@ C     ----------------------------------------------------------------
       INTEGER idir   ! code for wind direction
       REAL(SZ) z0l   ! drag for a particular node, for particular direction
       REAL(SZ) TotalDepth  ! bathymetric depth + sea surface elevation
-      REAL(SZ) fr    ! land wind reduction factor
+      REAL(SZ) fr,frx,fry    ! land wind reduction factor
 C
 C     compute marine roughness coefficient based on Garratt's formula
       z0m=(0.018d0/G)*WindDragCo*WindMag**2.d0
@@ -2163,7 +2167,7 @@ c        and have z0l>0.006)
          endif
       else   ! apply user adjustable overland flooding correction
          if( (TotalDepth.gt.2*DryDepth).and.
-     &           (TotalDepth.lt.CutOffDepth)) then
+     &           (BathymetricDepth.lt.CutOffDepth)) then
             z0l=z0l-TotalDepth*CutOffDepthFactor ! correction for overland flooding
          endif
       endif     
