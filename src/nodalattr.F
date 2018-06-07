@@ -2121,6 +2121,13 @@ C     ----------------------------------------------------------------
 C
 C     compute marine roughness coefficient based on Garratt's formula
       z0m=(0.018d0/G)*WindDragCo*WindMag**2.d0
+C     
+C     for the corrected formulation it is necessary to limit
+C     z0m to a be greater than zero.
+      if ((.not.ApplyLegacyWindReduction).and.
+     &    (z0m.lt.0.001d0)) then
+         z0m=0.001d0
+      endif
 C
 C     compute direction  that the wind is coming from
       if((WindX.eq.0).and.(WindY.eq.0))then
