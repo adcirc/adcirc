@@ -552,7 +552,7 @@ C
       INTEGER sdu(nproc)     ! subdomain unit number for unit 13 files
       INTEGER NumNotDefault  ! number of nodes specified in the file
       CHARACTER(len=80) header   ! header comments in unit 13 files
-      CHARACTER(len=80) AttrName ! label for attribute
+      CHARACTER(len=80),ALLOCATABLE ::  AttrName(:) ! label for attribute!tgaf13mod
       CHARACTER(len=80) Units    ! label for physical units
       CHARACTER(len=80) Skipped  ! data we want to skip over
       REAL(SZ) DefaultVal(12) ! default value of attribute
@@ -609,13 +609,14 @@ C        Transcribe header information into subdomain unit 13 files
 C
 C        Transcribe attribute names from full domain file to subdomains.
          ALLOCATE(NoOfVals(NAttr))
+         ALLOCATE(AttrName(NAttr))!tgaf13mod
          DO k=1, NAttr
-            READ(13,'(A80)') AttrName
+            READ(13,'(A80)') AttrName(k)!tgaf13mod
             READ(13,'(A80)') Units
             READ(13,*) NoOfVals(k)
             READ(13,*) (DefaultVal(m),m=1,NoOfVals(k))
             DO iproc=startProc, endProc
-               WRITE(sdu(IPROC),'(A80)') AttrName
+               WRITE(sdu(IPROC),'(A80)') AttrName(k)!tgaf13mod
                WRITE(sdu(IPROC),'(A80)') Units
                WRITE(sdu(IPROC),*) NoOfVals(k)
                WRITE(sdu(IPROC),'(12(1x,e16.9))')
@@ -635,12 +636,8 @@ C        nodes in each SubDomain for each nodal attribute
          END DO
 C        We need to figure out how many nodes go into each subdomain
 C        for each attribute.
-C         CALL processNodalAttr(NAttr, 0, sdu, SDNumND,
-C     &      startProc, endProc, naType)
-         ! WJP: 02.24.2018 Better to pass the NoOfVals here instead
-         ! assuming it in processNodalAttr
          CALL processNodalAttr(NAttr, NoOfVals, 0, sdu, SDNumND,
-     &      startProc, endProc, naType)
+     &      startProc, endProc, naType,AttrName)!tgaf13mod
 C
 C     Now rewind and advance to the beginning of the data again
          REWIND(13)
@@ -655,13 +652,10 @@ C     Now rewind and advance to the beginning of the data again
 C
 C        Now read each of the nodal attributes and transcribe them to the
 C        appropriate subdomain.
-C         CALL processNodalAttr(NAttr, 1, sdu, SDNumND,
-C     &      startProc, endProc, naType)
-         ! WJP: 02.24.2018 Better to pass the NoOfVals here instead
-         ! assuming it in processNodalAttr
          CALL processNodalAttr(NAttr, NoOfVals, 1, sdu, SDNumND,
-     &      startProc, endProc, naType)
+     &      startProc, endProc, naType,AttrName)!tgaf13mod
          DEALLOCATE(SDNumND,NoOfVals)
+         DEALLOCATE(AttrName)!tgaf13mod
          nbytes = 8*nproc*nattr
          call memory_dealloc(nbytes)
 C
@@ -701,7 +695,7 @@ C     entire fulldomain file.
 C
 C     ----------------------------------------------------------------
       subroutine processNodalAttr(NAttr, NumCol, mode, sdu, SDNumND,
-     &   startProc, endProc, naType)
+     &   startProc, endProc, naType,AttrName)!tgaf13mod
       use pre_global
       use sizes, only : ASCII, XDMF
       use nodalattributes, only : na
@@ -715,8 +709,8 @@ C
       INTEGER,intent(in) :: startProc
       INTEGER,intent(in) :: endProc
       INTEGER,intent(in) :: naType ! ascii and xdmf are supported
+      CHARACTER(len=80),intent(in),dimension(NAttr) ::  AttrName ! label for attribute!tgaf13mod
       INTEGER NumNotDefault      ! number of nodes specified in the file
-!      INTEGER NumCol             ! number of values per node for an attr
       INTEGER NodeNum            ! full domain node number
       INTEGER SDNode             ! subdomain node number
       INTEGER i                  ! node loop counter
@@ -725,17 +719,18 @@ C
       INTEGER m                  ! mapping loop counter
       INTEGER iproc              ! subdomain loop counter
       INTEGER iproc2             ! mapped subdomain
-      CHARACTER(len=80) AttrName ! label for attribute
+      CHARACTER(len=80) curAttrName ! label for current attribute!tgaf13mod
       REAL(SZ), ALLOCATABLE :: AttrData(:)  ! attribute data
+      INTEGER :: curAttrInd      ! index corresponding to currently named attribute
 
       CHARACTER(len=80) Skipped  ! data we want to skip over
 C
       DO k=1, NAttr
          select case(naType)
          case(ASCII)
-            read(13,*) AttrName
+            read(13,*) curAttrName!tgaf13mod
          case(XDMF)
-            attrName = trim(adjustl(na(k)%attrName))
+            curattrName = trim(adjustl(na(k)%attrName))!tgaf13mod
          case default
             write(6,'(a,i0,a)') 'ERROR: Nodal attribute file format ',naType,
      &         ' is not supported by adcprep.'
@@ -743,65 +738,82 @@ C
          end select
          IF (Mode.eq.1) THEN
             DO iproc=startProc,endProc
-               WRITE(sdu(iproc),'(A80)') AttrName
+               WRITE(sdu(iproc),'(A80)') curAttrName!tgaf13mod
             END DO
          ENDIF
-         SELECT CASE (AttrName)
-         CASE("primitive_weighting_in_continuity_equation")
-            !NumCol=1
-         CASE("surface_submergence_state")
-            !NumCol=1
-         CASE("quadratic_friction_coefficient_at_sea_floor")
-            !NumCol=1
-         CASE("mannings_n_at_sea_floor")
-            !NumCol=1
-         CASE("bottom_roughness_length")
-            !NumCol=1
-         CASE("chezy_friction_coefficient_at_sea_floor")
-            !NumCol=1
-         CASE("sea_surface_height_above_geoid")
-            !NumCol=1
-         CASE("surface_directional_effective_roughness_length")
-            !NumCol=12
-         CASE("surface_canopy_coefficient")
-            !NumCol=1
-         CASE("bridge_pilings_friction_parameters")
-            !NumCol=4
-         CASE("initial_river_elevation")
-            !NumCol=1
-         CASE
-     &   ("average_horizontal_eddy_viscosity_in_sea_water_wrt_depth")
-            !NumCol=1
-         CASE
-     &   ("average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth")
-            !NumCol=1
-         CASE
-     &   ("min_and_max_primitive_weighting_in_continuity_equation")
-            !NumCol=2
-         CASE
-     &   ("subtract_from_depth_to_equal_mean_sea_level")
-            !NumCol=1
-Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
-         CASE("wave_refraction_in_swan")
-            !NumCol=1
-         CASE("elemental_slope_limiter")
-            !NumCol=1
-Corbitt 120328: Allow local advection as a nodal attribute.
-         CASE("advection_state")
-            !NumCol=1
-C 09232016 WJP : Spatially varying internal tide friction 
-         CASE("internal_tide_friction") 
-            !NumCol=1 or 3
-         CASE DEFAULT
-            !NumCol=1
-            IF (Mode.eq.0) THEN
-               WRITE(6,1001)    ! Nodal Attributes file
-               WRITE(6,1021) AttrName ! contains invalid name
-            ELSE
-               WRITE(6,1031) AttrName ! Process 1st column only
+CTGA 20180524: Adjusted code to better handle out-of-order attributes in the body
+         curAttrInd=-1
+         DO i=1,NAttr
+            IF (TRIM(ADJUSTL(curAttrName)).eq.TRIM(ADJUSTL(AttrName(i)))) THEN
+               curAttrInd=i
+               EXIT
             ENDIF
-         END SELECT
-         ALLOCATE(attrData(numCol(k)))
+         ENDDO
+         !If a matching attribute wasn't found, write error and stop
+         IF (curAttrInd.EQ.-1) THEN
+            WRITE(6,'(A)')'ERROR: Nodal attribute in body could not be '
+     &                    //'found in header: '//curAttrName
+            STOP
+         ENDIF
+!         SELECT CASE (AttrName)
+!         CASE("primitive_weighting_in_continuity_equation")
+!            NumCol(k)=1
+!         CASE("surface_submergence_state")
+!            NumCol(k)=1
+!         CASE("quadratic_friction_coefficient_at_sea_floor")
+!            NumCol(k)=1
+!         CASE("mannings_n_at_sea_floor")
+!            NumCol(k)=1
+!         CASE("bottom_roughness_length")
+!            NumCol(k)=1
+!         CASE("chezy_friction_coefficient_at_sea_floor")
+!            NumCol(k)=1
+!         CASE("sea_surface_height_above_geoid")
+!            NumCol(k)=1
+!         CASE("surface_directional_effective_roughness_length")
+!            NumCol(k)=12
+!         CASE("surface_canopy_coefficient")
+!            NumCol(k)=1
+!         CASE("bridge_pilings_friction_parameters")
+!            NumCol(k)=4
+!         CASE("initial_river_elevation")
+!            NumCol(k)=1
+!         CASE
+!     &   ("average_horizontal_eddy_viscosity_in_sea_water_wrt_depth")
+!            NumCol(k)=1
+!         CASE
+!     &   ("average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth")
+!            NumCol(k)=1
+!         CASE
+!     &   ("min_and_max_primitive_weighting_in_continuity_equation")
+!            NumCol(k)=2
+!         CASE
+!     &   ("subtract_from_depth_to_equal_mean_sea_level")
+!            NumCol(k)=1
+!Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
+!         CASE("wave_refraction_in_swan")
+!            NumCol(k)=1
+!         CASE("elemental_slope_limiter")
+!            NumCol(k)=1
+!Corbitt 120328: Allow local advection as a nodal attribute.
+!         CASE("advection_state")
+!            NumCol(k)=1
+!CTGA 20180521: Set initial water elevation for rivers
+!         CASE("initial_river_elevation") 
+!            NumCol(k)=1
+!C 09232016 WJP : Spatially varying internal tide friction 
+!         CASE("internal_tide_friction") 
+!            NumCol(k)=1 or 3
+!         CASE DEFAULT
+!            NumCol=1
+!            IF (Mode.eq.0) THEN
+!               WRITE(6,1001)    ! Nodal Attributes file
+!               WRITE(6,1021) AttrName ! contains invalid name
+!            ELSE
+!               WRITE(6,1031) AttrName ! Process 1st column only
+!            ENDIF
+!         END SELECT
+         ALLOCATE(attrData(numCol(curAttrInd)))!tgaf13mod
          select case(naType) 
          case(ASCII)
             read(13,*) numNotDefault
@@ -820,7 +832,7 @@ C 09232016 WJP : Spatially varying internal tide friction
          DO i=1, NumNotDefault
             select case(naType)
             case(ASCII)
-               READ(13,*) nodeNum, (AttrData(j),j=1,NumCol(k))
+               READ(13,*) nodeNum, (AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
             case(XDMF)
                nodeNum = na(k) % nonDefaultNodes(i)
                attrData(:) = na(k) % nonDefaultVals(:,nodeNum)
@@ -837,7 +849,7 @@ C 09232016 WJP : Spatially varying internal tide friction
                IF (Mode.eq.0) SDNumND(iproc,k) = SDNumND(iproc,k)+1
                IF (Mode.eq.1) THEN
                   SDNode = IMAP_NOD_GL(2,NodeNum)
-                  WRITE(sdu(iproc),1100) labels(NodeNum),(AttrData(j),j=1,NumCol(k))
+                  WRITE(sdu(iproc),1100) labels(NodeNum),(AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
                ENDIF
             ELSE
                DO m=1, ITOTPROC(NodeNum)
@@ -850,7 +862,7 @@ C 09232016 WJP : Spatially varying internal tide friction
                         IF (Mode.eq.1) THEN
                            SDNode = IMAP_NOD_GL2(2*(m-1)+2,NodeNum)
                            WRITE(sdu(iproc),1100) labels(NodeNum),
-     &                          (AttrData(j),j=1,NumCol(k))
+     &                          (AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
                         ENDIF
                      ENDIF
                   END DO
@@ -859,7 +871,7 @@ C 09232016 WJP : Spatially varying internal tide friction
          END DO
          DEALLOCATE(AttrData)
          IF (Mode.eq.1) THEN
-            WRITE(6,'(A25,A80)') '     Finished processing ', AttrName
+            WRITE(6,'(A25,A80)') '     Finished processing ', curAttrName!tgaf13mod
             WRITE(6,*) 'for processor range ',startProc,' to ',endProc
          ENDIF
       END DO
@@ -997,21 +1009,13 @@ C        nodes in each SubDomain for each nodal attribute
          SDNumND(:,:)=0
 C        We need to figure out how many nodes go into each subdomain
 C        for each attribute.
-C         CALL processNodalAttr(NAttr, 0, sdu, SDNumND,
-C     &      startProc, endProc, naType)
-         ! WJP: 02.24.2018 Better to pass the numVals here instead
-         ! assuming it in processNodalAttr
          CALL processNodalAttr(NAttr, na%numVals, 0, sdu, SDNumND,
-     &      startProc, endProc, naType)
+     &      startProc, endProc, naType,na%attrName)!tgaf13mod
 C
 C        Now read each of the nodal attributes and transcribe them to the
 C        appropriate subdomain.
-C         CALL processNodalAttr(NAttr, 1, sdu, SDNumND,
-C     &      startProc, endProc, naType)
-         ! WJP: 02.24.2018 Better to pass the numVals here instead
-         ! assuming it in processNodalAttr
          CALL processNodalAttr(NAttr, na%numVals, 1, sdu, SDNumND,
-     &      startProc, endProc, naType)
+     &      startProc, endProc, naType,na%attrName)!tgaf13mod
          DEALLOCATE(SDNumND)
          nbytes = 8*nproc*nattr
          call memory_dealloc(nbytes)
