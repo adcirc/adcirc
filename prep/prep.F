@@ -755,64 +755,6 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
      &                    //'found in header: '//curAttrName
             STOP
          ENDIF
-!         SELECT CASE (AttrName)
-!         CASE("primitive_weighting_in_continuity_equation")
-!            NumCol(k)=1
-!         CASE("surface_submergence_state")
-!            NumCol(k)=1
-!         CASE("quadratic_friction_coefficient_at_sea_floor")
-!            NumCol(k)=1
-!         CASE("mannings_n_at_sea_floor")
-!            NumCol(k)=1
-!         CASE("bottom_roughness_length")
-!            NumCol(k)=1
-!         CASE("chezy_friction_coefficient_at_sea_floor")
-!            NumCol(k)=1
-!         CASE("sea_surface_height_above_geoid")
-!            NumCol(k)=1
-!         CASE("surface_directional_effective_roughness_length")
-!            NumCol(k)=12
-!         CASE("surface_canopy_coefficient")
-!            NumCol(k)=1
-!         CASE("bridge_pilings_friction_parameters")
-!            NumCol(k)=4
-!         CASE("initial_river_elevation")
-!            NumCol(k)=1
-!         CASE
-!     &   ("average_horizontal_eddy_viscosity_in_sea_water_wrt_depth")
-!            NumCol(k)=1
-!         CASE
-!     &   ("average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth")
-!            NumCol(k)=1
-!         CASE
-!     &   ("min_and_max_primitive_weighting_in_continuity_equation")
-!            NumCol(k)=2
-!         CASE
-!     &   ("subtract_from_depth_to_equal_mean_sea_level")
-!            NumCol(k)=1
-!Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
-!         CASE("wave_refraction_in_swan")
-!            NumCol(k)=1
-!         CASE("elemental_slope_limiter")
-!            NumCol(k)=1
-!Corbitt 120328: Allow local advection as a nodal attribute.
-!         CASE("advection_state")
-!            NumCol(k)=1
-!CTGA 20180521: Set initial water elevation for rivers
-!         CASE("initial_river_elevation") 
-!            NumCol(k)=1
-!C 09232016 WJP : Spatially varying internal tide friction 
-!         CASE("internal_tide_friction") 
-!            NumCol(k)=1 or 3
-!         CASE DEFAULT
-!            NumCol=1
-!            IF (Mode.eq.0) THEN
-!               WRITE(6,1001)    ! Nodal Attributes file
-!               WRITE(6,1021) AttrName ! contains invalid name
-!            ELSE
-!               WRITE(6,1031) AttrName ! Process 1st column only
-!            ENDIF
-!         END SELECT
          ALLOCATE(attrData(numCol(curAttrInd)))!tgaf13mod
          select case(naType) 
          case(ASCII)
