@@ -211,6 +211,9 @@ ifeq ($(compiler),intel)
   ifeq ($(DEBUG),full)
      FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -check all -ftrapuv -fpe0 -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
+  ifeq ($(DEBUG),full-not-fpe)
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -check all -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+  endif
   ifeq ($(DEBUG),trace)
      FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
