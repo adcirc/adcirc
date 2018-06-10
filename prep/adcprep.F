@@ -356,7 +356,8 @@ C
       USE PRE_GLOBAL
       use sizes, only : naType, meshType, controlType, ASCII, XDMF,
      &   naFileName, meshFileName, controlFileName, formatString
-      use global, only : logMessage, INFO
+      use global, only : logMessage, INFO, setMessageSource,
+     &   unsetMessageSource
       use mesh, only : readMeshXDMF
       use subprep, only : subdomainOn, enforceBN, subPrep020, subPrep021,
      &   subPrep019
@@ -728,7 +729,7 @@ C     tcm v51.06.02 added NWS=16 GFDL Met Data
          select case(ABS(NWS))
          case(3,6,12,16,29,30)
             call logMessage(INFO,
-     &   'The meteorological data does not require domain decomposition')
+     & 'The meteorological data does not require domain decomposition.')
          case(1,2,4,5,45,7)
             call logMessage(INFO,
      &   'Ready to write subdomain fort.22 files.')
