@@ -380,10 +380,10 @@ C
       integer :: numPartitionAttempts ! number of attempts to partition mesh
       logical :: partitionOK  ! true if partitioning has no issues
 
-      CALL setMessageSource("prepinput")
-#if defined(ALL_TRACE)
-      CALL allMessage(DEBUG,"Enter")
-#endif      
+      call setMessageSource("prepinput")
+#if defined (PREPINPUT_TRACE) || defined (ALL_TRACE)
+      call screen(DEBUG,"Enter.")
+#endif
 
 C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
       if (PREP_13) then
@@ -828,12 +828,10 @@ CC -- Finish Addition by CF
 9999  CONTINUE
       print *, ""
       print *, "INFO: Finished pre-processing input files."
-
-#if defined(ALL_TRACE)
-      CALL allMessage(DEBUG,"Return")
-#endif      
-      CALL unsetMessageSource()
-
+#if defined(PREPINPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
       END SUBROUTINE
 C---------------------------------------------------------------------------
