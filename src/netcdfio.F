@@ -3748,7 +3748,7 @@ C-----------------------------------------------------------------------
      &          NF90_DOUBLE,nodalDat%myMesh%num_v_nodes_dim_id,dmy))
          CALL check_err(nf90_put_att(nodalDat%ncid,dmy,'long_name',
      &          'nodal factor of harmonic constituents'))
-         CALL check_err(nf90_def_var(nodalDat%ncid,'equlibrium_argument',
+         CALL check_err(nf90_def_var(nodalDat%ncid,'equilibrium_argument',
      &          NF90_DOUBLE,nodalDat%myMesh%num_v_nodes_dim_id,dmy))
          CALL check_err(nf90_put_att(nodalDat%ncid,dmy,'long_name',
      &          'equilibrium argument of harmonic constituents'))
@@ -3776,7 +3776,7 @@ C-----------------------------------------------------------------------
      &          NF90_DOUBLE,stationDat%num_v_nodes_dim_id,dmy))
          CALL check_err(nf90_put_att(stationDat%ncid,dmy,'long_name',
      &          'nodal factor of harmonic constituents'))
-         CALL check_err(nf90_def_var(stationDat%ncid,'equlibrium_argument',
+         CALL check_err(nf90_def_var(stationDat%ncid,'equilibrium_argument',
      &          NF90_DOUBLE,stationDat%num_v_nodes_dim_id,dmy))
          CALL check_err(nf90_put_att(stationDat%ncid,dmy,'long_name',
      &          'equilibrium argument of harmonic constituents'))
@@ -3809,7 +3809,7 @@ C-----------------------------------------------------------------------
          CALL check_err(nf90_put_var(ncid,dmy,HAFREQ))
          CALL check_err(nf90_inq_varid(ncid,"nodal_factor",dmy))
          CALL check_err(nf90_put_var(ncid,dmy,HAFF))
-         CALL check_err(nf90_inq_varid(ncid,"equlibrium_argument",dmy))
+         CALL check_err(nf90_inq_varid(ncid,"equilibrium_argument",dmy))
          CALL check_err(nf90_put_var(ncid,dmy,HAFACE))
 
          RETURN
