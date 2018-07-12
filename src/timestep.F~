@@ -1442,8 +1442,7 @@ C.....the Ariathurai et at. (1977) adaption of Partheniades' (1962) findings
 
 C.....Determine the total source sink term
 
-c        SOURSIN(I)=HSD+HSE
-        SOURSIN(I)=0.0d0
+        SOURSIN(I)=HSD+HSE
       END DO
 
 C.... UPDATE THE TRANSPORT EQUATION ELEMENT BY ELEMENT BY FORMING
@@ -1638,15 +1637,9 @@ C.... SOLVE FOR C*H NODE BY NODE
 
       DO I=1,NP
          NCI=NODECODE(I)
-         IF(NCI.NE.0) then
-            CH1(I)=TRANS_LV_B(I)/TRANS_LV_A(I)
-            H1=DP(I)+IFNLFA*ETA1(I)
-            DAConc(I)=CH1(I)/H1
-         endif
-      END DO
-
+         IF(NCI.NE.0) CH1(I)=TRANS_LV_B(I)/TRANS_LV_A(I)
 C     IF(LBArray_Pointer(I).NE.0) CH1(I)=0.d0  !ESSENTIAL C=0 BOUNDARY CONDITION
- 
+      END DO
 
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

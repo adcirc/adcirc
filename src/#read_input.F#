@@ -3514,20 +3514,20 @@ C...  RECORDING STATIONS
             MNSTAC = NSTAC
          ENDIF
          IF (NSTAC.EQ.0) MNSTAC = 1
+
 C  Allocate arrays dimensioned by MNSTAC
          call alloc_main9()
 
 
 C...  INPUT COORDINATES OF CONCENTRATION RECORDING STATIONS
 C...  THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
-         ALLOCATE(STATNAMEC(MNSTAC))
+         ALLOCATE(STATNAMEC(NSTAC))
          CALL readStations(STATNAMEC, NSTAC, NNC, XEC, YEC, SLEC, SFEC,
      &                  STAIC1, STAIC2, STAIC3,STAT_LUN,
      &                  'CONCENTRATION REC. STATION    ')
          !tcm v51.20.04 addition for external station file
          IF ((USE_CONC_STAT_FILE).AND.(STAT_LUN ==151)) CLOSE(STAT_LUN)
       ENDIF
-
 
 C...  IF METEOROLOICAL FORCING IS INCLUDED IN THE RUN, INPUT
 C...  INFORMATION FOR MET RECORDING STATIONS - OUTPUT
@@ -3890,7 +3890,7 @@ C...
       IF(IM.EQ.10) THEN
 
 C...  READ IN NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC : IF NOUTGC<>0, GLOBAL
-C...  CONCENTRATION OUTPUT IS SPOOLED TO UNIT 83 EVERY NSPOOLGC TIME
+C...  CONCENTRATION OUTPUT IS SPOOLED TO UNIT 73 EVERY NSPOOLGC TIME
 C...  STEPS BETWEEN TIMES TOUTSGC AND TOUTFGC; IF ABS(NOUTGC)=2, OUTPUT
 C...  WILL BE BINARY
 
@@ -3909,26 +3909,8 @@ C...  CHECK INPUT PARAMETER NOUTGC
                CALL logMessage(INFO,'UNIT 83 FORMAT WILL BE ASCII.')
             CASE(2)
                CALL logMessage(INFO,'UNIT 83 FORMAT WILL BE BINARY.')
-            CASE(3)
-               useNetCDF = .true.
-               useNetCDFOutput = .true.
-               CALL logMessage(INFO,
-     &             'UNIT 83 FORMAT WILL BE NETCDF CLASSIC MODEL'
-     &              //' / NETCDF3 FORMAT.')
-            CASE(4)
-               CALL logMessage(INFO,
-     &          'UNIT 83 FORMAT WILL BE COMPACT ASCII.')
-            CASE(5)
-               useNetCDF = .true.
-               useNetCDFOutput = .true.
-               CALL logMessage(INFO,
-     &            'UNIT 83 FORMAT WILL BE NETCDF CLASSIC MODEL'
-     &            //' / NETCDF4 (HDF5) FORMAT.')
-            CASE(7)
-               useXDMF = .true.
-               call logMessage(INFO,'UNIT 83 FORMAT WILL BE XDMF.')              
-            CASE(6,8:)
-               call allMessage(ERROR,"This NOUTGC value is invalid.")
+            CASE(3:)
+               call allMessage(ERROR,"This NOUTGV value is invalid.")
                call ADCIRC_Terminate()
             CASE DEFAULT
                ! do nothing, the other cases handled below
@@ -3950,7 +3932,7 @@ C...  COMPUTE NTCYSGC, NTCYFGC, WHICH = TOUTSGC AND TOUTFGC IN TIMESTEPS
 #endif
             IF(NTCYFGC.GT.NT) NTCYFGC=NT
 
-C...  CALCULATE NDSETSC = THE # OF DATA SETS TO BE SPOOLED TO UNIT 83
+C...  CALCULATE NDSETSC = THE # OF DATA SETS TO BE SPOOLED TO UNIT 73
 
             IF(NSPOOLGC.EQ.0) NDSETSC=0
 #ifdef IBM
@@ -3969,7 +3951,7 @@ C...  WRITE NOUTGC,TOUTSGC,TOUTFGC,NTCYSGC,NTCYFGC,NSPOOLGC TO UNIT 16
      &          //,5X,'DATA RECORDS WILL STOP AFTER TOUTFGC =',F8.3,
      &                ' DAY(S) RELATIVE',/,9X,'TO THE STARTING TIME OR',
      &             I9,' TIME STEPS INTO THE SIMULATION',
-     &          //,5X,'INFORMATION WILL BE SPOOLED TO UNIT 83 EVERY ',
+     &          //,5X,'INFORMATION WILL BE SPOOLED TO UNIT 73 EVERY ',
      &                'NSPOOLGC =',I8,' TIME STEPS')
          ENDIF
 

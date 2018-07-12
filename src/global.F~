@@ -383,7 +383,7 @@ C.....for buoyancy forcing
       REAL(SZ),ALLOCATABLE ::   DASigT(:), DASalt(:), DATemp(:)
       REAL(SZ),ALLOCATABLE ::   VIDBCPDXOH(:), VIDBCPDYOH(:)
 C.....for scalar transport
-      REAL(SZ),ALLOCATABLE, target ::   DAConc(:)
+      REAL(SZ),ALLOCATABLE ::   DAConc(:)
 
       REAL(SZ) DT
 C

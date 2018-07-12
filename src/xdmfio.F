@@ -238,6 +238,12 @@ C-----------------------------------------------------------------------
          descript % xdmfMD % coordinates = 'time x y'
          descript % xdmfMD % units = 'm s-1'
          descript % xdmfMD % positive = 'north/east'
+      case(83)
+         descript % xdmfMD % variable_name = 'c'
+         descript % xdmfMD % long_name = 'water depth-averaged concentration'
+         descript % xdmfMD % standard_name = 'water_depth_averaged_concentration'
+         descript % xdmfMD % coordinates = 'time y x'
+         descript % xdmfMD % units = 'psu'
       case(93)
          descript % xdmfMD % variable_name = 'ice'
          descript % xdmfMD % long_name = 'ice coverage at at sea surface'
