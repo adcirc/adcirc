@@ -552,7 +552,7 @@ C
       INTEGER sdu(nproc)     ! subdomain unit number for unit 13 files
       INTEGER NumNotDefault  ! number of nodes specified in the file
       CHARACTER(len=80) header   ! header comments in unit 13 files
-      CHARACTER(len=80),ALLOCATABLE ::  AttrName(:) ! label for attribute!tgaf13mod
+      CHARACTER(len=80) AttrName ! label for attribute
       CHARACTER(len=80) Units    ! label for physical units
       CHARACTER(len=80) Skipped  ! data we want to skip over
       REAL(SZ) DefaultVal(12) ! default value of attribute
@@ -609,14 +609,13 @@ C        Transcribe header information into subdomain unit 13 files
 C
 C        Transcribe attribute names from full domain file to subdomains.
          ALLOCATE(NoOfVals(NAttr))
-         ALLOCATE(AttrName(NAttr))!tgaf13mod
          DO k=1, NAttr
-            READ(13,'(A80)') AttrName(k)!tgaf13mod
+            READ(13,'(A80)') AttrName
             READ(13,'(A80)') Units
             READ(13,*) NoOfVals(k)
             READ(13,*) (DefaultVal(m),m=1,NoOfVals(k))
             DO iproc=startProc, endProc
-               WRITE(sdu(IPROC),'(A80)') AttrName(k)!tgaf13mod
+               WRITE(sdu(IPROC),'(A80)') AttrName
                WRITE(sdu(IPROC),'(A80)') Units
                WRITE(sdu(IPROC),*) NoOfVals(k)
                WRITE(sdu(IPROC),'(12(1x,e16.9))')
@@ -636,8 +635,12 @@ C        nodes in each SubDomain for each nodal attribute
          END DO
 C        We need to figure out how many nodes go into each subdomain
 C        for each attribute.
+C         CALL processNodalAttr(NAttr, 0, sdu, SDNumND,
+C     &      startProc, endProc, naType)
+         ! WJP: 02.24.2018 Better to pass the NoOfVals here instead
+         ! assuming it in processNodalAttr
          CALL processNodalAttr(NAttr, NoOfVals, 0, sdu, SDNumND,
-     &      startProc, endProc, naType,AttrName)!tgaf13mod
+     &      startProc, endProc, naType)
 C
 C     Now rewind and advance to the beginning of the data again
          REWIND(13)
@@ -652,10 +655,13 @@ C     Now rewind and advance to the beginning of the data again
 C
 C        Now read each of the nodal attributes and transcribe them to the
 C        appropriate subdomain.
+C         CALL processNodalAttr(NAttr, 1, sdu, SDNumND,
+C     &      startProc, endProc, naType)
+         ! WJP: 02.24.2018 Better to pass the NoOfVals here instead
+         ! assuming it in processNodalAttr
          CALL processNodalAttr(NAttr, NoOfVals, 1, sdu, SDNumND,
-     &      startProc, endProc, naType,AttrName)!tgaf13mod
+     &      startProc, endProc, naType)
          DEALLOCATE(SDNumND,NoOfVals)
-         DEALLOCATE(AttrName)!tgaf13mod
          nbytes = 8*nproc*nattr
          call memory_dealloc(nbytes)
 C
@@ -695,7 +701,7 @@ C     entire fulldomain file.
 C
 C     ----------------------------------------------------------------
       subroutine processNodalAttr(NAttr, NumCol, mode, sdu, SDNumND,
-     &   startProc, endProc, naType,AttrName)!tgaf13mod
+     &   startProc, endProc, naType)
       use pre_global
       use sizes, only : ASCII, XDMF
       use nodalattributes, only : na
@@ -709,8 +715,8 @@ C
       INTEGER,intent(in) :: startProc
       INTEGER,intent(in) :: endProc
       INTEGER,intent(in) :: naType ! ascii and xdmf are supported
-      CHARACTER(len=80),intent(in),dimension(NAttr) ::  AttrName ! label for attribute!tgaf13mod
       INTEGER NumNotDefault      ! number of nodes specified in the file
+!      INTEGER NumCol             ! number of values per node for an attr
       INTEGER NodeNum            ! full domain node number
       INTEGER SDNode             ! subdomain node number
       INTEGER i                  ! node loop counter
@@ -719,18 +725,17 @@ C
       INTEGER m                  ! mapping loop counter
       INTEGER iproc              ! subdomain loop counter
       INTEGER iproc2             ! mapped subdomain
-      CHARACTER(len=80) curAttrName ! label for current attribute!tgaf13mod
+      CHARACTER(len=80) AttrName ! label for attribute
       REAL(SZ), ALLOCATABLE :: AttrData(:)  ! attribute data
-      INTEGER :: curAttrInd      ! index corresponding to currently named attribute
 
       CHARACTER(len=80) Skipped  ! data we want to skip over
 C
       DO k=1, NAttr
          select case(naType)
          case(ASCII)
-            read(13,*) curAttrName!tgaf13mod
+            read(13,*) AttrName
          case(XDMF)
-            curattrName = trim(adjustl(na(k)%attrName))!tgaf13mod
+            attrName = trim(adjustl(na(k)%attrName))
          case default
             write(6,'(a,i0,a)') 'ERROR: Nodal attribute file format ',naType,
      &         ' is not supported by adcprep.'
@@ -738,24 +743,65 @@ C
          end select
          IF (Mode.eq.1) THEN
             DO iproc=startProc,endProc
-               WRITE(sdu(iproc),'(A80)') curAttrName!tgaf13mod
+               WRITE(sdu(iproc),'(A80)') AttrName
             END DO
          ENDIF
-CTGA 20180524: Adjusted code to better handle out-of-order attributes in the body
-         curAttrInd=-1
-         DO i=1,NAttr
-            IF (TRIM(ADJUSTL(curAttrName)).eq.TRIM(ADJUSTL(AttrName(i)))) THEN
-               curAttrInd=i
-               EXIT
+         SELECT CASE (AttrName)
+         CASE("primitive_weighting_in_continuity_equation")
+            !NumCol=1
+         CASE("surface_submergence_state")
+            !NumCol=1
+         CASE("quadratic_friction_coefficient_at_sea_floor")
+            !NumCol=1
+         CASE("mannings_n_at_sea_floor")
+            !NumCol=1
+         CASE("bottom_roughness_length")
+            !NumCol=1
+         CASE("chezy_friction_coefficient_at_sea_floor")
+            !NumCol=1
+         CASE("sea_surface_height_above_geoid")
+            !NumCol=1
+         CASE("surface_directional_effective_roughness_length")
+            !NumCol=12
+         CASE("surface_canopy_coefficient")
+            !NumCol=1
+         CASE("bridge_pilings_friction_parameters")
+            !NumCol=4
+         CASE("initial_river_elevation")
+            !NumCol=1
+         CASE
+     &   ("average_horizontal_eddy_viscosity_in_sea_water_wrt_depth")
+            !NumCol=1
+         CASE
+     &   ("average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth")
+            !NumCol=1
+         CASE
+     &   ("min_and_max_primitive_weighting_in_continuity_equation")
+            !NumCol=2
+         CASE
+     &   ("subtract_from_depth_to_equal_mean_sea_level")
+            !NumCol=1
+Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
+         CASE("wave_refraction_in_swan")
+            !NumCol=1
+         CASE("elemental_slope_limiter")
+            !NumCol=1
+Corbitt 120328: Allow local advection as a nodal attribute.
+         CASE("advection_state")
+            !NumCol=1
+C 09232016 WJP : Spatially varying internal tide friction 
+         CASE("internal_tide_friction") 
+            !NumCol=1 or 3
+         CASE DEFAULT
+            !NumCol=1
+            IF (Mode.eq.0) THEN
+               WRITE(6,1001)    ! Nodal Attributes file
+               WRITE(6,1021) AttrName ! contains invalid name
+            ELSE
+               WRITE(6,1031) AttrName ! Process 1st column only
             ENDIF
-         ENDDO
-         !If a matching attribute wasn't found, write error and stop
-         IF (curAttrInd.EQ.-1) THEN
-            WRITE(6,'(A)')'ERROR: Nodal attribute in body could not be '
-     &                    //'found in header: '//curAttrName
-            STOP
-         ENDIF
-         ALLOCATE(attrData(numCol(curAttrInd)))!tgaf13mod
+         END SELECT
+         ALLOCATE(attrData(numCol(k)))
          select case(naType) 
          case(ASCII)
             read(13,*) numNotDefault
@@ -774,7 +820,7 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
          DO i=1, NumNotDefault
             select case(naType)
             case(ASCII)
-               READ(13,*) nodeNum, (AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
+               READ(13,*) nodeNum, (AttrData(j),j=1,NumCol(k))
             case(XDMF)
                nodeNum = na(k) % nonDefaultNodes(i)
                attrData(:) = na(k) % nonDefaultVals(:,nodeNum)
@@ -791,7 +837,7 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
                IF (Mode.eq.0) SDNumND(iproc,k) = SDNumND(iproc,k)+1
                IF (Mode.eq.1) THEN
                   SDNode = IMAP_NOD_GL(2,NodeNum)
-                  WRITE(sdu(iproc),1100) labels(NodeNum),(AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
+                  WRITE(sdu(iproc),1100) labels(NodeNum),(AttrData(j),j=1,NumCol(k))
                ENDIF
             ELSE
                DO m=1, ITOTPROC(NodeNum)
@@ -804,7 +850,7 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
                         IF (Mode.eq.1) THEN
                            SDNode = IMAP_NOD_GL2(2*(m-1)+2,NodeNum)
                            WRITE(sdu(iproc),1100) labels(NodeNum),
-     &                          (AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
+     &                          (AttrData(j),j=1,NumCol(k))
                         ENDIF
                      ENDIF
                   END DO
@@ -813,7 +859,7 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
          END DO
          DEALLOCATE(AttrData)
          IF (Mode.eq.1) THEN
-            WRITE(6,'(A25,A80)') '     Finished processing ', curAttrName!tgaf13mod
+            WRITE(6,'(A25,A80)') '     Finished processing ', AttrName
             WRITE(6,*) 'for processor range ',startProc,' to ',endProc
          ENDIF
       END DO
@@ -951,13 +997,21 @@ C        nodes in each SubDomain for each nodal attribute
          SDNumND(:,:)=0
 C        We need to figure out how many nodes go into each subdomain
 C        for each attribute.
+C         CALL processNodalAttr(NAttr, 0, sdu, SDNumND,
+C     &      startProc, endProc, naType)
+         ! WJP: 02.24.2018 Better to pass the numVals here instead
+         ! assuming it in processNodalAttr
          CALL processNodalAttr(NAttr, na%numVals, 0, sdu, SDNumND,
-     &      startProc, endProc, naType,na%attrName)!tgaf13mod
+     &      startProc, endProc, naType)
 C
 C        Now read each of the nodal attributes and transcribe them to the
 C        appropriate subdomain.
+C         CALL processNodalAttr(NAttr, 1, sdu, SDNumND,
+C     &      startProc, endProc, naType)
+         ! WJP: 02.24.2018 Better to pass the numVals here instead
+         ! assuming it in processNodalAttr
          CALL processNodalAttr(NAttr, na%numVals, 1, sdu, SDNumND,
-     &      startProc, endProc, naType,na%attrName)!tgaf13mod
+     &      startProc, endProc, naType)
          DEALLOCATE(SDNumND)
          nbytes = 8*nproc*nattr
          call memory_dealloc(nbytes)
@@ -6997,7 +7051,8 @@ C     jgf49.31 This subroutine will initialize the fulldomain netcdf
 C     output files for the parallel run. These files are initialized
 C     in the adcprep phase because they contain fulldomain data which
 C     are not available to the subdomains during a parallel run.
-C
+C     mc67565 added the concentration parameters to output fort.81 and fort.83
+C     on June 22 2018
 C---------------------------------------------------------------------------
       SUBROUTINE prepNetCDF()
 #ifdef ADCNETCDF
@@ -7007,16 +7062,19 @@ C---------------------------------------------------------------------------
       USE VERSION
       USE PRE_GLOBAL, ONLY: NSTAE, NOUTE, RUNDES, RUNID, AGRID,
      &    DTDP, TAU0, STATIM, REFTIM, RNDAY, DRAMP, A00, B00, C00,
-     &    H0, SL0, SF0, CF, ESLM, CORI, DP, NBDV, NBVV,
+     &    H0, SL0, SF0, CF, ESLM, ESLC, CORI, DP, NBDV, NBVV,
      &    SLEL, SFEL, ICS, NT, NTRSPE, IHOT, NOLIBF, NOLIFA, IM,
      &    XEV,YEV,XEM,YEM,XEL,YEL,X,Y,NELG,DT, NTIF, NODECODE,
+     &    XEC,YEC,
      &    NOLICA, NOLICAT, NWP, NCOR, NTIP, NWS, NRS, NRAMP, NBFR,
      &    NHARFR, NHY, NOPE, NETA, NBOU, NVEL, G, SL1, SF1,
      &    NVDLL, NVELL, IBTYPE, IBTYPEE,
      &    NSTAV, NOUTV, SLEV, SFEV, NTRSPV,
+     &    NSTAC, NOUTC, SLEC, SFEC, NTRSPC, 
      &    NSTAM, NOUTM, SLEM, SFEM, NTRSPM,
      &    NOUTGE, SLAM, SFEA, NDSETSE,
      &    NOUTGV, NDSETSV,
+     &    NOUTGC, NDSETSC,
      &    NOUTGW, NDSETSW,
      &    IESTP,NSCOUE,IVSTP,NSCOUV,ICSTP,NSCOUC,IPSTP,IWSTP,NSCOUM,
      &    IGEP,NSCOUGE,IGVP,NSCOUGV,IGCP,NSCOUGC,IGPP,IGWP,NSCOUGW,
@@ -7054,6 +7112,7 @@ C     output file had to be cut and pasted from write_output.F. At some
 C     point in the future, adcprep will be part of adcirc, making this
 C     unfortunate cut-and-paste duplication unnecessary.
       !WJP 02.20.2018 Adding capability for fort.51-54
+C     mc67565 adding capability for fort.81 and 83   
       type(OutputDataDescript_t), SAVE :: HaElevStaDescript  ! fort.51
       type(OutputDataDescript_t), SAVE :: HaVelStaDescript   ! fort.52
       type(OutputDataDescript_t), SAVE :: HaElevDescript     ! fort.53
@@ -7068,6 +7127,8 @@ C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: PrDescript         ! fort.73
       type(OutputDataDescript_t), SAVE :: WindVelDescript    ! fort.74
       type(OutputDataDescript_t), SAVE :: weirElevDescript   ! fort.77
+      type(OutputDataDescript_t), SAVE :: ConcStaDescript    ! fort.81
+      type(OutputDataDescript_t), SAVE :: ConcDescript       ! fort.83
       type(OutputDataDescript_t), SAVE :: EtaMaxDescript     ! maxele.63
       type(OutputDataDescript_t), SAVE :: UMaxDescript       ! maxvel.63
       type(OutputDataDescript_t), SAVE :: PrMinDescript      ! minpr.63
@@ -7319,7 +7380,45 @@ C     fort.64
       VelDescript % file_basename        = 'fort'
       VelDescript % readMaxMin           = .false.
       call makeFileName(VelDescript)
+C     
+C     mc67565 adding capability for fort.81 and 83
+C     fort.81
+      ConcStaDescript % specifier            = NOUTC
+      ConcStaDescript % lun                  = 81
+      ConcStaDescript % initial_value        = 0.0
+      ConcStaDescript % num_items_per_record = 1
+      ConcStaDescript % num_fd_records       = abs(NSTAC)
+      ConcStaDescript % num_records_this     = abs(NSTAC)
+      ConcStaDescript % ConsiderWetDry       = .TRUE.
+      ConcStaDescript % alternate_value      = 0.0
+      ConcStaDescript % field_name           = 'ConcSta'
+      IF (ICS.eq.2) THEN
+         ConcStaDescript % x_coord           => SLEC
+         ConcStaDescript % y_coord           => SFEC
+      ELSE
+         ConcStaDescript % x_coord           => XEC
+         ConcStaDescript % y_coord           => YEC
+      ENDIF
+      ConcStaDescript % file_extension       = 81
+      ConcStaDescript % file_basename        = 'fort'
+      ConcStaDescript % readMaxMin           = .false.
+      call makeFileName(ConcStaDescript)
 C
+C     fort.83
+      ConcDescript % specifier            = NOUTGC
+      ConcDescript % lun                  = 83
+      ConcDescript % initial_value        = 0.0
+      ConcDescript % num_items_per_record = 1
+      ConcDescript % num_fd_records       = MNP
+      ConcDescript % num_records_this     = MNP
+      ConcDescript % ConsiderWetDry       = .TRUE.
+      ConcDescript % alternate_value      = 0.0
+      ConcDescript % field_name           = 'Conc'
+      ConcDescript % file_extension       = 83
+      ConcDescript % file_basename        = 'fort'
+      ConcDescript % readMaxMin           = .false.
+      call makeFileName(ConcDescript)
+C      
 C     maxele.63
 C     jgf52.08.11: Take absolute value of specifier to avoid overwriting 
 C     (reinitializing) existing min/max file, if any. 
@@ -8219,6 +8318,9 @@ C     was specified.
       CALL initNetCDFOutputFile(ElevStaDescript, reterr)
       CALL initNetCDFOutputFile(VelStaDescript, reterr)
       CALL initNetCDFOutputFile(ElevDescript, reterr)
+C     mc67565 adding capability for fort.81 and 83
+      CALL initNetCDFOutputFile(ConcStaDescript, reterr)
+      CALL initNetCDFOutputFile(ConcDescript, reterr)
       if (outputTau0.eqv..true.) then
          CALL initNetCDFOutputFile(Tau0Descript, reterr)
       endif

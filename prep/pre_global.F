@@ -311,6 +311,8 @@ C     jgf48.03 netCDF metadata
       INTEGER NTRSPE, NTRSPV, NTRSPM, NDSETSE, NDSETSV, NDSETSM
       INTEGER NDSETSW
       INTEGER NHY
+C     mc67565 added concentration variables on June 22 2018
+      INTEGER NTRSPC, NDSETSC
 C
 C
 C--------------------------------------------------------------------------C

@@ -5252,6 +5252,521 @@ C---------------------------------------------------------------------------
 C     End of subroutine post47
 C---------------------------------------------------------------------------
 
+      SUBROUTINE POST81()
+C
+C----------------------------------------------------------------------------C
+C                     (  Serial Version  3/28/98  )                          C 
+C  Globalize the concentratiom data at the concentration stations from the   C
+C  local fort.81 files.                                                      C
+C  This version is compatible with ADCIRC version 34.03                      C
+C  Added by mc67565 on June 19 2018, for definition of variables, similar to C
+C  POST71                                                                    C
+C----------------------------------------------------------------------------C
+C
+      USE POST_GLOBAL
+      IMPLICIT NONE
+      INTEGER I,J,K,L,IPROC,IDUM  
+      INTEGER NTRSPC,NSTEMP,ITSC,ITEMPC,NUMSTNS
+      INTEGER OREC
+      REAL(SZ) DTC
+      REAL(8) TIMEOUTSC
+      CHARACTER*80  OUTMSG
+      CHARACTER*85  INLINE
+      CHARACTER*4 RDES4(8),RID4(6),AID4(6)
+      CHARACTER*8 RDES8(8),RID8(6),AID8(6)
+      LOGICAL FOUND
+
+      INTEGER,ALLOCATABLE :: LOC2(:),IREC(:)
+      REAL(SZ),ALLOCATABLE ::   ConcBIN(:),ConcBINP(:)
+      CHARACTER*80,ALLOCATABLE ::  ConcASC(:),ConcASCP(:)
+      CHARACTER*14,ALLOCATABLE ::  LOCNAME(:)
+
+      ALLOCATE ( LOC2(MNPROC),IREC(MNPROC) )
+      ALLOCATE ( ConcBIN(MNSTAC),ConcBINP(MNSTAC))
+      ALLOCATE ( ConcASC(MNSTAC),ConcASCP(MNSTAC))
+      ALLOCATE ( LOCNAME(MNPROC))
+
+C
+C--Determine whether Unit 81 is Sequential Formatted or Direct Access Binary
+C
+      IF (ABS(NOUTC).EQ.1) THEN
+        GO TO 1000
+      ELSE
+        GO TO 2000
+      ENDIF
+C
+1000  CONTINUE
+C
+C--Open All Local Sequential Formatted fort.81 file
+C
+      DO IPROC = 1,NPROC
+         LOCNAME(IPROC) = 'PE0000/fort.81'
+         WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
+         INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
+         IF (FOUND) THEN
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
+         ELSE
+           print *, "No Local fort.81 files found"
+           RETURN
+         ENDIF
+         READ(LOC2(IPROC),'(A85)')  INLINE
+         READ(LOC2(IPROC),3645) NTRSPC,NUMSTNS,DTC,NSTEMP,ITEMPC
+         IF (NUMSTNS.NE.NSTACP(IPROC)) THEN
+            STOP 'Inconsistency in Number of concentration Stations'
+         ENDIF
+      ENDDO
+C
+C--Open Global Sequential Formatted fort.81 file
+C
+      OPEN(UNIT=81,FILE='fort.81')
+C
+      WRITE(81,'(A85)') INLINE
+      WRITE(81,3645) NTRSPC,NSTAC,DTC,NSPOOLC,ITEMPC
+C
+C     jgf46.00 Made the loop over data sets an infinite loop because the
+C     number of data sets at the top of the file will be wrong if the
+C     run was hot started.
+C
+      DO ! loop infinitely over data sets
+C
+         DO IPROC=1,NPROC
+            READ(LOC2(IPROC),2120,END=9999) TIMEOUTSC,ITSC
+            IF (NSTACP(IPROC).GT.0) THEN
+              READ(LOC2(IPROC),80,END=9999) (ConcASCP(K),K=1,NSTACP(IPROC))
+              DO K=1,NSTACP(IPROC)
+                 ConcASC(IMAP_STAC_LG(K,IPROC)) = ConcASCP(K)
+              ENDDO
+            ENDIF
+         ENDDO
+C
+         WRITE(81,2120) TIMEOUTSC,ITSC
+         DO I=1, NSTAC
+            CALL NEWINDEX(ConcASC(I),OUTMSG,I)
+            WRITE(81,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size 
+         ENDDO
+C
+      ENDDO
+      GO TO 9999
+C 
+2000  CONTINUE
+C
+C--Open All Local and the Global Direct Access Binary fort.81 file
+C
+      DO IPROC = 1,NPROC
+         LOCNAME(IPROC) = 'PE0000/fort.81'
+         WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
+         INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
+         IF (FOUND) THEN
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
+     &       RECL=NBYTE)
+         ELSE
+           print *, "No Local fort.81 files found"
+          RETURN
+         ENDIF
+      ENDDO
+      OPEN(81,FILE='fort.81',ACCESS='DIRECT',RECL=NBYTE)
+C
+C
+C--Read RUNDES RUNID and AGRID from each Local file
+C
+      DO IPROC = 1,NPROC
+         IREC(IPROC) = 0
+         IF (NBYTE.EQ.4) THEN
+           DO I=1,8
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES4(I)
+           ENDDO
+           IREC(IPROC)=IREC(IPROC)+8
+           DO I=1,6
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID4(I)
+           ENDDO
+           IREC(IPROC)=IREC(IPROC)+6
+           DO I=1,6
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID4(I)
+           ENDDO
+           IREC(IPROC)=IREC(IPROC)+6
+         ENDIF
+         IF (NBYTE.EQ.8) THEN
+           DO I=1,4
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES8(I)
+           ENDDO
+           IREC(IPROC)=IREC(IPROC)+4
+           DO I=1,3
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID8(I)
+           ENDDO
+           IREC(IPROC)=IREC(IPROC)+3
+           DO I=1,3
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID8(I)
+           ENDDO
+           IREC(IPROC)=IREC(IPROC)+3
+         ENDIF
+      ENDDO
+C
+C--Write RUNDES RUNID and AGRID to Global File
+C
+      OREC = 0
+      IF (NBYTE.EQ.4) THEN
+        DO I=1,8
+           WRITE(81,REC=OREC+I) RDES4(I)
+        ENDDO
+        OREC=OREC+8
+        DO I=1,6
+           WRITE(81,REC=OREC+I) RID4(I)
+        ENDDO
+        OREC=OREC+6
+        DO I=1,6
+           WRITE(81,REC=OREC+I) AID4(I)
+        ENDDO
+        OREC=OREC+6
+      ENDIF
+      IF (NBYTE.EQ.8) THEN
+        DO I=1,4
+           WRITE(81,REC=OREC+I) RDES8(I)
+        ENDDO
+        OREC=OREC+4
+        DO I=1,3
+           WRITE(81,REC=OREC+I) RID8(I)
+        ENDDO
+        OREC=OREC+3
+        DO I=1,3
+           WRITE(81,REC=OREC+I) AID8(I)
+        ENDDO
+        OREC=OREC+3
+      ENDIF
+C
+C--Read NTRSPC, NSTAC, DT*NSPOOLC from each Local file
+C  and then close files to flush file buffers
+C
+      DO IPROC = 1,NPROC
+         READ(LOC2(IPROC),REC=IREC(IPROC)+1) NTRSPC
+         READ(LOC2(IPROC),REC=IREC(IPROC)+2) NUMSTNS
+         READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTC
+         READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSTEMP
+         READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPC
+         IREC(IPROC) = IREC(IPROC)+5
+         CLOSE(LOC2(IPROC))    ! Flush the Write Buffer
+         IF (NUMSTNS.NE.NSTACP(IPROC)) THEN
+            STOP 'Inconsistency in Number of concentration Stations'
+         ENDIF
+         OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
+      ENDDO
+C
+C--Write same info to Global file and close it to flush buffer also
+C
+      WRITE(81,REC=OREC+1) NTRSPC
+      WRITE(81,REC=OREC+2) NSTAC
+      WRITE(81,REC=OREC+3) DTC
+      WRITE(81,REC=OREC+4) NSPOOLC
+      WRITE(81,REC=OREC+5) ITEMPC
+      OREC = OREC+5
+      CLOSE(81)         ! Flush the Write Buffer
+      OPEN(81,FILE='fort.81',ACCESS='DIRECT',RECL=NBYTE)
+C
+      DO J=1,NTRSPC
+C
+         DO IPROC=1,NPROC
+            READ(LOC2(IPROC),REC=IREC(IPROC)+1) TIMEOUTSC
+            READ(LOC2(IPROC),REC=IREC(IPROC)+2) ITSC
+            IREC(IPROC) = IREC(IPROC) + 2
+            IF (NSTACP(IPROC).GT.0) THEN
+              DO K=1, NSTACP(IPROC)
+                 READ(LOC2(IPROC),REC=IREC(IPROC)+K) ConcBINP(K)
+              ENDDO
+              DO K=1,NSTACP(IPROC)
+                 ConcBIN(IMAP_STAC_LG(K,IPROC)) = ConcBINP(K)
+              ENDDO
+              IREC(IPROC) = IREC(IPROC) + NSTACP(IPROC)
+            ENDIF
+         ENDDO
+C
+         WRITE(81,REC=OREC+1) TIMEOUTSC
+         WRITE(81,REC=OREC+2) ITSC
+         OREC = OREC + 2
+         DO K=1, NSTAC
+            WRITE(81,REC=OREC+K) ConcBIN(K)
+         ENDDO
+         OREC = OREC + NSTAC
+C
+      ENDDO
+C
+C--Close the Global and Local fort.81 Files
+C
+9999  CONTINUE
+      CLOSE(81)
+      DO IPROC = 1,NPROC
+         CLOSE(LOC2(IPROC))
+      ENDDO
+C
+   80 FORMAT(A40)
+ 2120 FORMAT(2X,E20.10,5X,I10)
+ 3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
+C
+      RETURN
+      END
+
+C------------------------------------------------------------------------
+C          END POST81
+C------------------------------------------------------------------------
+
+      SUBROUTINE POST83()
+C
+C---------------------------------------------------------------------------C
+C                     (  Serial Version  3/28/98  )                         C 
+C  Globalize the concentration data at all nodes from the local fort.83     C
+C  files.                                                                   C
+C  This version is compatible with ADCIRC version 34.03                     C
+C  Added by mc67565 on June 19 2018, for definition of variables, similar   C
+C  to POST73                                                                C
+C---------------------------------------------------------------------------C
+C
+      USE POST_GLOBAL
+      IMPLICIT NONE
+      INTEGER I,J,K,L,IPROC,IDUM
+      INTEGER NDSETGC,NSTEMP,NP,ITGC,ITEMPC,INDX
+      INTEGER OREC
+      REAL(SZ) DTGC
+      REAL(SZ) ETA
+      REAL(8) TIMEOUTSC
+      CHARACTER*80 OUTMSG
+      CHARACTER*85 INLINE
+      CHARACTER*4 RDES4(8),RID4(6),AID4(6)
+      CHARACTER*8 RDES8(8),RID8(6),AID8(6)
+      LOGICAL FOUND
+
+      INTEGER, ALLOCATABLE  ::  LOC2(:),IREC(:)
+      REAL(SZ), ALLOCATABLE  ::  ConcBIN(:),ConcBINP(:)
+      CHARACTER*80, ALLOCATABLE  ::  ConcSC(:),ConcSCP(:)
+      CHARACTER*14, ALLOCATABLE  ::  LOCNAME(:)
+
+      ALLOCATE (LOC2(MNPROC),IREC(MNPROC))
+      ALLOCATE (ConcBIN(MNP),ConcBINP(MNPP))
+      ALLOCATE (ConcSC(MNP),ConcSCP(MNPP))
+      ALLOCATE (LOCNAME(MNPROC))
+
+C
+C--Determine whether Unit 83 is Sequential Formatted or Direct Access Binary
+C
+      IF (ABS(NOUTGC).EQ.1) THEN
+        GO TO 1000
+      ELSE
+        GO TO 2000
+      ENDIF
+C
+1000  CONTINUE
+C
+C--Open Global Sequential Formatted fort.83 file
+C
+      DO IPROC = 1,NPROC
+         LOCNAME(IPROC) = 'PE0000/fort.83'
+         WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
+         INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
+         IF (FOUND) THEN
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
+         ELSE
+           print *, "No Local fort.83 files found"
+           RETURN
+         ENDIF
+         READ(LOC2(IPROC),'(A85)')  INLINE
+         READ(LOC2(IPROC),3645)  NDSETGC,NP,DTGC,NSTEMP,ITEMPC
+         IF (NP.NE.NNODP(IPROC)) THEN
+           print *, "NP = ",NP," NNODP = ",NNODP(IPROC)
+           STOP 'Inconsistency in number of local nodes'
+         ENDIF
+      ENDDO
+      OPEN(UNIT=83,FILE='fort.83')
+C
+      WRITE(83,'(A85)') INLINE
+      WRITE(83,3645) NDSETGC,NNODG,DTGC,NSPOOLGC,ITEMPC
+C
+C     jgf46.00 Made the loop over data sets an infinite loop because the
+C     number of data sets at the top of the file will be wrong if the
+C     run was hot started.
+C
+      DO ! loop infinitely over data sets
+C
+         DO IPROC=1,NPROC
+            READ(LOC2(IPROC),FMT=2120,END=9999) TIMEOUTSC,ITGC
+            IF (IPROC.EQ.1) WRITE(83,2120) TIMEOUTSC,ITGC
+            DO K = 1,NNODP(IPROC)
+               READ(LOC2(IPROC),80,END=9999) ConcSCP(K)
+               INDX = IMAP_NOD_LG(K,IPROC)
+               IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
+                 ConcSC(INDX) = ConcSCP(K)
+                ENDIF
+            ENDDO
+         ENDDO
+c        DO I = 1,NNODG
+c           READ(ConcSC(I),*) IDUM, ETA
+c           WRITE(83,2453) I, ETA
+c        ENDDO
+         DO I = 1,NNODG
+            CALL NEWINDEX(ConcSC(I),OUTMSG,I)
+            WRITE(83,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size 
+         ENDDO
+C              
+      ENDDO
+      GO TO 9999
+C
+2000  CONTINUE
+C
+C--Open All Local and the Global Direct Access Binary fort.83 file
+C
+      DO IPROC = 1,NPROC
+         LOCNAME(IPROC) = 'PE0000/fort.83'
+         WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
+         INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
+         IF (FOUND) THEN
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
+     &       RECL=NBYTE)
+         ELSE
+           print *, "No Local fort.83 files found"
+           RETURN
+         ENDIF
+      ENDDO
+      OPEN(83,FILE='fort.83',ACCESS='DIRECT',RECL=NBYTE)
+C
+C--Read RUNDES RUNID and AGRID from each Local file
+C
+      DO IPROC = 1,NPROC
+         IREC(IPROC) = 0
+         IF (NBYTE.EQ.4) THEN
+           DO I=1,8
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES4(I)
+           ENDDO
+           IREC(IPROC)=IREC(IPROC)+8
+           DO I=1,6
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID4(I)
+           ENDDO
+           IREC(IPROC)=IREC(IPROC)+6
+           DO I=1,6
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID4(I)
+           ENDDO
+           IREC(IPROC)=IREC(IPROC)+6
+         ENDIF
+         IF (NBYTE.EQ.8) THEN
+           DO I=1,4
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES8(I)
+           ENDDO
+           IREC(IPROC)=IREC(IPROC)+4
+           DO I=1,3
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID8(I)
+           ENDDO
+           IREC(IPROC)=IREC(IPROC)+3
+           DO I=1,3
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID8(I)
+           ENDDO
+           IREC(IPROC)=IREC(IPROC)+3
+         ENDIF
+      ENDDO
+C
+C--Write RUNDES RUNID and AGRID to Global File
+C
+      OREC = 0
+      IF (NBYTE.EQ.4) THEN
+        DO I=1,8
+           WRITE(83,REC=OREC+I) RDES4(I)
+        ENDDO
+        OREC=OREC+8
+        DO I=1,6
+           WRITE(83,REC=OREC+I) RID4(I)
+        ENDDO
+        OREC=OREC+6
+        DO I=1,6
+           WRITE(83,REC=OREC+I) AID4(I)
+        ENDDO
+        OREC=OREC+6
+      ENDIF
+      IF (NBYTE.EQ.8) THEN
+        DO I=1,4
+           WRITE(83,REC=OREC+I) RDES8(I)
+        ENDDO
+        OREC=OREC+4
+        DO I=1,3
+           WRITE(83,REC=OREC+I) RID8(I)
+        ENDDO
+        OREC=OREC+3
+        DO I=1,3
+           WRITE(83,REC=OREC+I) AID8(I)
+        ENDDO
+        OREC=OREC+3
+      ENDIF
+C
+C--Read NDSETGC, NNODP, DTGC, NSPOOLGC, ITEMPC from each Local file
+C  and then close files to flush file buffers
+C
+      DO IPROC = 1,NPROC
+         READ(LOC2(IPROC),REC=IREC(IPROC)+1) NDSETGC
+         READ(LOC2(IPROC),REC=IREC(IPROC)+2) IDUM
+         READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTGC
+         READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSTEMP
+         READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPC
+         IREC(IPROC) = IREC(IPROC)+5
+         CLOSE(LOC2(IPROC))    ! Flush the Write Buffer
+         OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
+      ENDDO
+C
+C--Write same info to Global file and close it to flush buffer also
+C
+      WRITE(83,REC=OREC+1) NDSETGC
+      WRITE(83,REC=OREC+2) NNODG
+      WRITE(83,REC=OREC+3) DTGC
+      WRITE(83,REC=OREC+4) NSPOOLGC
+      WRITE(83,REC=OREC+5) ITEMPC
+      OREC = OREC+5
+      CLOSE(83)         ! Flush the Write Buffer
+      OPEN(83,FILE='fort.83',ACCESS='DIRECT',RECL=NBYTE)
+C
+      DO J=1,NDSETGC
+C
+         DO IPROC=1,NPROC
+            READ(LOC2(IPROC),REC=IREC(IPROC)+1) TIMEOUTSC
+            READ(LOC2(IPROC),REC=IREC(IPROC)+2) ITGC
+            IREC(IPROC) = IREC(IPROC) + 2
+            DO K=1, NNODP(IPROC)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+K) ConcBINP(K)
+            ENDDO
+            DO K=1,NNODP(IPROC)
+               INDX = IMAP_NOD_LG(K,IPROC)
+               IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
+                 ConcBIN(INDX) = ConcBINP(K)
+               ENDIF
+            ENDDO
+            IREC(IPROC) = IREC(IPROC) + NNODP(IPROC)
+         ENDDO
+C
+         WRITE(83,REC=OREC+1) TIMEOUTSC
+         WRITE(83,REC=OREC+2) ITGC
+         OREC = OREC + 2
+         DO K=1, NNODG
+            WRITE(83,REC=OREC+K) ConcBIN(K)
+         ENDDO
+         OREC = OREC + NNODG
+C
+      ENDDO
+C 
+ 9999 CONTINUE
+C
+C--Close the Global and Local fort.83 Files
+C
+      CLOSE(83)
+      DO IPROC = 1,NPROC
+         CLOSE(LOC2(IPROC))
+      ENDDO
+C
+   80 FORMAT(A80)
+ 2120 FORMAT(2X,E20.10,5X,I10)
+ 2453 FORMAT(2X,I8,2X,E15.8)
+ 3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
+C
+      RETURN
+      END
+C------------------------------------------------------------------------
+C       END POST83
+C------------------------------------------------------------------------
+
       !------------------------------------------------------------------
       !  S U B R O U T I N E   M E R G E   S U B D O M A I N   F I L E S
       !------------------------------------------------------------------

@@ -228,6 +228,20 @@ C
                CALL POST64()
             ENDIF
          endif
+C     marc cts (mc67565) wrote code to handle fort.81, fort.83
+         if ((UNIT == 100) .or. (UNIT == 81)) then
+            IF (NOUTC.NE.0) THEN
+               print *, "Post-Processing Unit 81"
+               CALL POST81()
+            ENDIF
+         endif
+C
+         if ((UNIT == 100) .or. (UNIT == 83)) then
+            IF (NOUTGC.NE.0) THEN
+               print *, "Post-Processing Unit 83"
+               CALL POST83()
+            ENDIF
+         endif
 C     jgf45.07 wrote code to handle fort.71, fort.72, fort.73
          if ((UNIT == 100) .or. (UNIT == 71)) then
             IF (NOUTM.NE.0) THEN
@@ -394,7 +408,17 @@ C
            print *, "Comparing Unit 74 files"
            CALL COMPARE74(DIR1,DIR2,TOL)
         ENDIF
+C   added by mc67565 to take into account concentration 
+        IF (NOUTC.NE.0) THEN
+           print *, "Comparing Unit 81 files"
+           CALL COMPARE81(DIR1,DIR2,TOL)
+        ENDIF
 C     
+        IF (NOUTGC.NE.0) THEN
+           print *, "Comparing Unit 83 files"
+           CALL COMPARE83(DIR1,DIR2,TOL)
+        ENDIF
+C 
         GO TO 99
 C
 C
@@ -420,7 +444,12 @@ C
             print *, "DiffMerge of Unit 64 files"
             CALL DIFFMERGE64(DIR1,DIR2,SCALEVAL)
          ENDIF
-C     
+C   added by mc67565      
+         IF (NOUTGC.NE.0) THEN
+            print *, "DiffMerge of Unit 83 files"
+            CALL DIFFMERGE83(DIR1,DIR2,SCALEVAL)
+         ENDIF
+C
          GO TO 99
 C     
       ELSEIF (PHASE(1:4).EQ.'quit') THEN

@@ -2060,3 +2060,600 @@ C
 C
       RETURN
       END
+
+      SUBROUTINE COMPARE81(DIR1,DIR2,TOL)
+C
+C----------------------------------------------------------------------------C
+C                     (  Serial Version  3/28/98  )                          C 
+C  Compare data at the concentration stations from two different directories.C
+C  This version is compatible with ADCIRC version 33.04                      C
+C                                                                            C
+C  Input Parameters:                                                         C
+C                                                                            C
+C    DIR1  =  pathname of first directory                                    C
+C    DIR2  =  pathname of second directory                                   C
+C    TOL   =  user supplied relative error tolerance                         C 
+C  Added by mc67565 on June 19 2018, for definition of variables, similar    C
+C  to POST71                                                                 C
+C----------------------------------------------------------------------------C
+C
+      USE POST_GLOBAL
+      INTEGER I,J,K,L,IPROC,IDUM
+      INTEGER NTRSPC1,NTRSPC2
+      INTEGER NSTEMP1,NSTEMP2
+      INTEGER ITSC1,ITSC2
+      INTEGER ITEMPC1,ITEMPC2
+      INTEGER NSTAC1,NSTAC2
+      INTEGER NUMSTNS1, NUMSTNS2
+      INTEGER NSPOOLC1,NSPOOLC2
+      INTEGER IREC1,IREC2
+      INTEGER LEN1,LEN2
+      REAL(SZ) DTC1,DTC2
+      REAL(8) TIMEOUTSC1,TIMEOUTSC2
+      REAL(SZ) TOL,ERR !jgf45.07 ERR is a fortran keyword...
+      CHARACTER*80  DIR1,DIR2,FNAME1,FNAME2,FNAME3
+      CHARACTER*85  INLINE
+      CHARACTER*4 RDES4(8),RID4(6),AID4(6)
+      CHARACTER*8 RDES8(8),RID8(6),AID8(6)
+      LOGICAL FOUND1,FOUND2
+
+      REAL(8),ALLOCATABLE ::  CH1(:),CH2(:)
+      ALLOCATE ( CH1(MNSTAC),CH2(MNSTAC))
+C
+C--Construct File Names
+C
+      DO I=1, LEN(DIR1)
+         IF (DIR1(I:I).EQ.' ') THEN
+           LEN1 = I-1
+           GO TO 100
+         ENDIF
+      ENDDO
+100   CONTINUE
+      DO I=1, LEN(DIR2)
+         IF (DIR2(I:I).EQ.' ') THEN
+           LEN2 = I-1
+           GO TO 200
+         ENDIF
+      ENDDO
+200   CONTINUE
+C
+      FNAME1 = DIR1(1:LEN1)//'/fort.81'
+      FNAME2 = DIR2(1:LEN2)//'/fort.81'
+      FNAME3 = 'diffs.81'
+C
+C--Determine whether Unit 81 is Sequential Formatted or Direct Access Binary
+C
+      IF (ABS(NOUTC).EQ.1) THEN
+        GO TO 1000
+      ELSE
+        GO TO 2000
+      ENDIF
+C
+1000  CONTINUE
+C
+C--Open Both Global Sequential Formatted fort.81 files
+C
+      INQUIRE(FILE=FNAME1,EXIST=FOUND1)
+      INQUIRE(FILE=FNAME2,EXIST=FOUND2)
+      IF (FOUND1.AND.FOUND2) THEN
+        OPEN(UNIT=51,FILE=FNAME1)
+        OPEN(UNIT=81,FILE=FNAME2)
+        OPEN(UNIT=71,FILE=FNAME3)
+      ELSE
+        print *, "No fort.81 files found"
+        RETURN
+      ENDIF
+C
+      READ (51,'(A85)') INLINE
+c     WRITE(71,'(A85)')  INLINE
+      READ (81,'(A85)') INLINE
+c     WRITE(71,'(A85)')  INLINE
+C
+      READ (51,3645) NTRSPC1,NSTAC1,DTC1,NSPOOLC1,ITEMPC1
+      READ (81,3645) NTRSPC2,NSTAC2,DTC2,NSPOOLC2,ITEMPC2
+C
+      IF (NTRSPC1.NE.NTRSPC2) THEN
+         WRITE(71,*) "NTRSPC1 not equal to NSTRSPE2"
+         RETURN
+      ENDIF
+C
+      IF (NSTAC1.NE.NSTAC2) THEN
+        WRITE(71,*) "NSTAC1 not equal to NSTAC2"
+        RETURN
+      ENDIF
+C
+      IF (ABS(DTC1-DTC2).GT.1.0E-5) THEN
+        WRITE(71,*) "DTC1 not equal to DTC2"
+        RETURN
+      ENDIF
+C
+      IF (NSPOOLC1.NE.NSPOOLC2) THEN
+        WRITE(71,*) "NSPOOLC1 not equal to NSPOOLC2"
+        RETURN
+      ENDIF
+      IF (ITEMPC1.NE.ITEMPC2) THEN
+        WRITE(71,*) "ITEMPC1 not equal to ITEMPC2"
+        RETURN
+      ENDIF
+C
+c     WRITE(71,*) NTRSPC1,NSTAC1,DTC1,NSPOOLC1,ITEMPC1
+C
+      DO J=1,NTRSPC1
+C
+         READ(51,2120) TIMEOUTSC1,ITSC1
+         READ(81,2120) TIMEOUTSC2,ITSC2
+C
+         IF (ABS(TIMEOUTSC1-TIMEOUTSC2).GT.1.0E-5) THEN
+           WRITE(71,*) "TIMEOUTSC1 not equal to TIMEOUTSC2"
+           RETURN
+         ENDIF
+C
+        IF (ITSC1.NE.ITSC2) THEN
+          WRITE(71,*) "ITSC1 not equal to ITSC2"
+          RETURN
+        ENDIF
+C
+C       WRITE(71,*) TIMEOUTSC1,ITSC1
+C
+         DO I=1, NSTAC1
+            READ(51,*) IDUM,CH1(I)
+            READ(81,*) IDUM,CH2(I)
+            ERR = ABS(CH1(I)-CH2(I))
+            IF (ERR.GT.TOL) WRITE(71,*) TIMEOUTSC1,I,CH1(I),CH2(I)
+         ENDDO
+C
+      ENDDO
+      GO TO 9999
+C 
+2000  CONTINUE
+C
+C--Open Both Global Direct Access Binary fort.81 files
+C
+      INQUIRE(FILE=FNAME1,EXIST=FOUND1)
+      INQUIRE(FILE=FNAME2,EXIST=FOUND2)
+      IF (FOUND1.AND.FOUND2) THEN
+        OPEN(51,FILE=FNAME1,ACCESS='DIRECT',RECL=NBYTE)
+        OPEN(81,FILE=FNAME2,ACCESS='DIRECT',RECL=NBYTE)
+        OPEN(UNIT=71,FILE=FNAME3)
+      ELSE
+        print *, "No fort.81 files found"
+        RETURN
+      ENDIF
+C
+C--Read RUNDES RUNID and AGRID from 1st Global File
+C
+      IREC1 = 0
+      IF (NBYTE.EQ.4) THEN
+        DO I=1,8
+           READ(51,REC=IREC1+I) RDES4(I)
+        ENDDO
+        IREC1=IREC1+8
+        DO I=1,6
+           READ(51,REC=IREC1+I) RID4(I)
+        ENDDO
+        IREC1=IREC1+6
+        DO I=1,6
+           READ(51,REC=IREC1+I) AID4(I)
+        ENDDO
+        IREC1=IREC1+6
+      ENDIF
+      IF (NBYTE.EQ.8) THEN
+        DO I=1,4
+           READ(51,REC=IREC1+I) RDES8(I)
+        ENDDO
+        IREC1=IREC1+4
+        DO I=1,3
+           READ(51,REC=IREC1+I) RID8(I)
+        ENDDO
+        IREC1=IREC1+3
+        DO I=1,3
+           READ(51,REC=IREC1+I) AID8(I)
+        ENDDO
+        IREC1=IREC1+3
+      ENDIF
+C
+C--Read RUNDES RUNID and AGRID from 2nd Global File
+C
+      IREC2 = 0
+      IF (NBYTE.EQ.4) THEN
+        DO I=1,8
+           READ(81,REC=IREC2+I) RDES4(I)
+        ENDDO
+        IREC2=IREC2+8
+        DO I=1,6
+           READ(81,REC=IREC2+I) RID4(I)
+        ENDDO
+        IREC2=IREC2+6
+        DO I=1,6
+           READ(81,REC=IREC2+I) AID4(I)
+        ENDDO
+        IREC2=IREC2+6
+      ENDIF
+      IF (NBYTE.EQ.8) THEN
+        DO I=1,4
+           READ(81,REC=IREC2+I) RDES8(I)
+        ENDDO
+        IREC2=IREC2+4
+        DO I=1,3
+           READ(81,REC=IREC2+I) RID8(I)
+        ENDDO
+        IREC2=IREC2+3
+        DO I=1,3
+           READ(81,REC=IREC2+I) AID8(I)
+        ENDDO
+        IREC2=IREC2+3
+      ENDIF
+C
+c     IF (NBYTE.EQ.4) THEN
+c       WRITE(71,*) RDES4
+c       WRITE(71,*) RID4
+c       WRITE(71,*) AID4
+c     ELSE
+c       WRITE(71,*) RDES8
+c       WRITE(71,*) RID8
+c       WRITE(71,*) AID8
+c     ENDIF
+C
+C--Read NTRSPC, NSTAC, DT*NSPOOLC from both files
+C  and then close both files to flush file buffers
+C
+      READ(51,REC=IREC1+1) NTRSPC1
+      READ(51,REC=IREC1+2) NSTAC1
+      READ(51,REC=IREC1+3) DTC1
+      READ(51,REC=IREC1+4) NSPOOLC1
+      READ(51,REC=IREC1+5) ITEMPC1
+      IREC1 = IREC1+5
+C
+      READ(81,REC=IREC2+1) NTRSPC2
+      READ(81,REC=IREC2+2) NSTAC2
+      READ(81,REC=IREC2+3) DTC2
+      READ(81,REC=IREC2+4) NSPOOLC2
+      READ(81,REC=IREC2+5) ITEMPC2
+      IREC2 = IREC2+5
+C
+      CLOSE(51)         ! Flush File Buffer for file 1
+      CLOSE(81)         ! Flush File buffer for file 2
+      OPEN(51,FILE=FNAME1,ACCESS='DIRECT',RECL=NBYTE)
+      OPEN(81,FILE=FNAME2,ACCESS='DIRECT',RECL=NBYTE)
+C
+      DO J=1,NTRSPC1
+C
+         READ(51,REC=IREC1+1) TIMEOUTSC1
+         READ(51,REC=IREC1+2) ITSC1
+         IREC1 = IREC1+2
+C
+         READ(81,REC=IREC2+1) TIMEOUTSC2
+         READ(81,REC=IREC2+2) ITSC2
+         IREC2 = IREC2+2
+C
+         DO I=1, NSTAC1
+            READ(51,REC=IREC1+I) CH1(I)
+            READ(81,REC=IREC2+I) CH2(I)
+            ERR = ABS(CH1(I)-CH2(I))
+            IF (ERR.GT.TOL) WRITE(71,*) TIMEOUTSC1,I,CH1(I),CH2(I)
+         ENDDO
+         IREC1 = IREC1 + NSTAC1
+         IREC2 = IREC2 + NSTAC2
+C
+      ENDDO
+C
+C--Close both Global fort.81 Files
+C
+9999  CONTINUE
+      CLOSE(51)
+      CLOSE(81)
+      CLOSE(71)
+C
+   80 FORMAT(A40)
+ 2120 FORMAT(2X,E20.10,5X,I10)
+ 3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
+C
+      RETURN
+      END
+
+      SUBROUTINE COMPARE83(DIR1,DIR2,TOL)
+C
+C---------------------------------------------------------------------------C
+C                     (  Serial Version  3/28/98  )                         C 
+C  Compare concentration data at all nodes from two different directories.  C
+C  This version is compatible with ADCIRC version 33.04                     C
+C                                                                           C
+C  Input Parameters:                                                        C
+C                                                                           C
+C    DIR1  =  pathname of first directory                                   C
+C    DIR2  =  pathname of second directory                                  C
+C    TOL   =  user supplied relative error tolerance                        C
+C  Added by mc67565 on June 19 2018, for definition of variables, similar   C
+C  to POST73                                                                C
+C                                                                           C
+C---------------------------------------------------------------------------C
+C
+      USE POST_GLOBAL
+      INTEGER I,J,K,L,IPROC,IDUM
+      INTEGER NDSETGC1,NDSETGC2
+      INTEGER NP1,NP2
+      INTEGER NSTEMP1,NSTEMP2
+      INTEGER ITEMPC1,ITEMPC2
+      INTEGER ITC1,ITC2
+      INTEGER IREC1,IREC2
+      INTEGER LEN1,LEN2
+      REAL(SZ) DTC1,DTC2
+      REAL(SZ) TOL,ERR
+      REAL(8)  TIMEOUTSC1,TIMEOUTSC2
+      CHARACTER*80  DIR1,DIR2,FNAME1,FNAME2,FNAME3
+      CHARACTER*85  INLINE
+      CHARACTER*4 RDES4(8),RID4(6),AID4(6)
+      CHARACTER*8 RDES8(8),RID8(6),AID8(6)
+      LOGICAL FOUND1,FOUND2
+
+      REAL(8),ALLOCATABLE  ::   CH1(:),CH2(:)
+      ALLOCATE ( CH1(MNP),CH2(MNP))
+C
+C--Construct File Names
+C
+      DO I=1, LEN(DIR1)
+         IF (DIR1(I:I).EQ.' ') THEN
+           LEN1 = I-1
+           GO TO 100
+         ENDIF
+      ENDDO
+100   CONTINUE
+      DO I=1, LEN(DIR2)
+         IF (DIR2(I:I).EQ.' ') THEN
+           LEN2 = I-1
+           GO TO 200
+         ENDIF
+      ENDDO
+200   CONTINUE
+C
+      FNAME1 = DIR1(1:LEN1)//'/fort.83'
+      FNAME2 = DIR2(1:LEN2)//'/fort.83'
+      FNAME3 = 'diffs.83'
+C
+C--Determine whether Unit 83 is Sequential Formatted or Direct Access Binary
+C
+      IF (ABS(NOUTGC).EQ.1) THEN
+        GO TO 1000
+      ELSE
+        GO TO 2000
+      ENDIF
+C
+1000  CONTINUE
+C
+C--Open Both Global Sequential Formatted fort.83 files
+C
+      INQUIRE(FILE=FNAME1,EXIST=FOUND1)
+      INQUIRE(FILE=FNAME2,EXIST=FOUND2)
+      IF (FOUND1.AND.FOUND2) THEN
+        OPEN(UNIT=53,FILE=FNAME1)
+        OPEN(UNIT=83,FILE=FNAME2)
+        OPEN(UNIT=73,FILE=FNAME3)
+      ELSE
+        print *, "No fort.83 files found"
+        RETURN
+      ENDIF
+C
+      READ (53,'(A85)') INLINE
+c     WRITE(73,'(A85)')  INLINE
+      READ (83,'(A85)') INLINE
+c     WRITE(73,'(A85)')  INLINE
+C
+      READ (53,3645) NDSETGC1,NP1,DTC1,NSTEMP1,ITEMPC1
+      READ (83,3645) NDSETGC2,NP2,DTC2,NSTEMP2,ITEMPC2
+C
+      IF (NDSETGC1.NE.NDSETGC2) THEN
+         WRITE(73,*) "NDSETGC1 not equal to NDSETGC2"
+         RETURN
+      ENDIF
+C
+      IF (NP1.NE.NP2) THEN
+        WRITE(73,*) "NP1 not equal to NP2"
+        RETURN
+      ENDIF
+C
+      IF (ABS(DTC1-DTC2).GT.1.0E-5) THEN
+        WRITE(73,*) "DTC1 not equal to DTC2"
+        RETURN
+      ENDIF
+C
+      IF (NSTEMP1.NE.NSTEMP2) THEN
+        WRITE(73,*) "NSTEMP1 not equal to NSTEMP2"
+        RETURN
+      ENDIF
+      IF (ITEMPC1.NE.ITEMPC2) THEN
+        WRITE(73,*) "ITEMPC1 not equal to ITEMPC2"
+        RETURN
+      ENDIF
+C
+c     WRITE(73,*) NDSETGC1,NP1,DTC1,NSTEMP1,ITEMPC1
+C
+      DO J=1,NDSETGC1
+C
+         READ(53,2120) TIMEOUTSC1,ITC1
+         READ(83,2120) TIMEOUTSC2,ITC2
+C
+         IF (ABS(TIMEOUTSC1-TIMEOUTSC2).GT.1.0E-5) THEN
+           WRITE(73,*) "TIMEOUTSC1 not equal to TIMEOUTSC2"
+           RETURN
+         ENDIF
+C
+        IF (ITC1.NE.ITC2) THEN
+          WRITE(73,*) "ITC1 not equal to ITC2"
+          RETURN
+        ENDIF
+C
+C       WRITE(73,*) TIMEOUTSC1,ITC1
+C
+      DO J=1,NDSETGC1
+C
+         READ(53,2120) TIMEOUTSC1,ITC1
+         READ(83,2120) TIMEOUTSC2,ITC2
+C
+         IF (ABS(TIMEOUTSC1-TIMEOUTSC2).GT.1.0E-5) THEN
+           WRITE(73,*) "TIMEOUTSC1 not equal to TIMEOUTSC2"
+           RETURN
+         ENDIF
+C
+        IF (ITC1.NE.ITC2) THEN
+          WRITE(73,*) "ITC1 not equal to ITC2"
+          RETURN
+        ENDIF
+C
+C       WRITE(73,*) TIMEOUTSC1,ITC1
+C
+         DO I=1, NNODG
+            READ(53,*) IDUM,CH1(I)
+            READ(83,*) IDUM,CH2(I)
+            ERR = ABS(CH1(I)-CH2(I))
+            IF (ERR.GT.TOL) WRITE(73,*) TIMEOUTSC1,I,CH1(I),CH2(I)
+         ENDDO
+C
+      ENDDO
+      GO TO 9999
+C 
+2000  CONTINUE
+C
+C--Open Both Global Direct Access Binary fort.83 files
+C
+      INQUIRE(FILE=FNAME1,EXIST=FOUND1)
+      INQUIRE(FILE=FNAME2,EXIST=FOUND2)
+      IF (FOUND1.AND.FOUND2) THEN
+        OPEN(53,FILE=FNAME1,ACCESS='DIRECT',RECL=NBYTE)
+        OPEN(83,FILE=FNAME2,ACCESS='DIRECT',RECL=NBYTE)
+        OPEN(UNIT=73,FILE=FNAME3)
+      ELSE
+        print *, "No fort.83 files found"
+        RETURN
+      ENDIF
+C
+C--Read RUNDES RUNID and AGRID from 1st Global File
+C
+      IREC1 = 0
+      IF (NBYTE.EQ.4) THEN
+        DO I=1,8
+           READ(53,REC=IREC1+I) RDES4(I)
+        ENDDO
+        IREC1=IREC1+8
+        DO I=1,6
+           READ(53,REC=IREC1+I) RID4(I)
+        ENDDO
+        IREC1=IREC1+6
+        DO I=1,6
+           READ(53,REC=IREC1+I) AID4(I)
+        ENDDO
+        IREC1=IREC1+6
+      ENDIF
+      IF (NBYTE.EQ.8) THEN
+        DO I=1,4
+           READ(53,REC=IREC1+I) RDES8(I)
+        ENDDO
+        IREC1=IREC1+4
+        DO I=1,3
+           READ(53,REC=IREC1+I) RID8(I)
+        ENDDO
+        IREC1=IREC1+3
+        DO I=1,3
+           READ(53,REC=IREC1+I) AID8(I)
+        ENDDO
+        IREC1=IREC1+3
+      ENDIF
+C
+C--Read RUNDES RUNID and AGRID from 2nd Global File
+C
+      IREC2 = 0
+      IF (NBYTE.EQ.4) THEN
+        DO I=1,8
+           READ(83,REC=IREC2+I) RDES4(I)
+        ENDDO
+        IREC2=IREC2+8
+        DO I=1,6
+           READ(83,REC=IREC2+I) RID4(I)
+        ENDDO
+        IREC2=IREC2+6
+       DO I=1,6
+           READ(83,REC=IREC2+I) AID4(I)
+        ENDDO
+        IREC2=IREC2+6
+      ENDIF
+      IF (NBYTE.EQ.8) THEN
+        DO I=1,4
+           READ(83,REC=IREC2+I) RDES8(I)
+        ENDDO
+        IREC2=IREC2+4
+        DO I=1,3
+           READ(83,REC=IREC2+I) RID8(I)
+        ENDDO
+        IREC2=IREC2+3
+        DO I=1,3
+           READ(83,REC=IREC2+I) AID8(I)
+        ENDDO
+        IREC2=IREC2+3
+C
+      ENDIF
+C
+c     IF (NBYTE.EQ.4) THEN
+c       WRITE(73,*) RDES4
+c       WRITE(73,*) RID4
+c       WRITE(73,*) AID4
+c     ELSE
+c       WRITE(73,*) RDES8
+c       WRITE(73,*) RID8
+c       WRITE(73,*) AID8
+c     ENDIF
+C
+C--Read NTRSPE, NSTAE, DT*NSPOOLE from both files
+C  and then close both files to flush file buffers
+C
+      READ(53,REC=IREC1+1) NDSETGC1
+      READ(53,REC=IREC1+2) NP1
+      READ(53,REC=IREC1+3) DTC1
+      READ(53,REC=IREC1+4) NSTEMP1
+      READ(53,REC=IREC1+5) ITEMPC1
+      IREC1 = IREC1+5
+C
+      READ(83,REC=IREC2+1) NDSETGC2
+      READ(83,REC=IREC2+2) NP2
+      READ(83,REC=IREC2+3) DTC2
+      READ(83,REC=IREC2+4) NSTEMP2
+      READ(83,REC=IREC2+5) ITEMPC2
+      IREC2 = IREC2+5
+C
+      CLOSE(53)         ! Flush File Buffer for file 1
+      CLOSE(83)         ! Flush File buffer for file 2
+      OPEN(53,FILE=FNAME1,ACCESS='DIRECT',RECL=NBYTE)
+      OPEN(83,FILE=FNAME2,ACCESS='DIRECT',RECL=NBYTE)
+C
+      DO J=1,NDSETGC1
+C
+         READ(53,REC=IREC1+1) TIMEOUTSC1
+         READ(53,REC=IREC1+2) ITC1
+         IREC1 = IREC1+2
+C
+         READ(83,REC=IREC2+1) TIMEOUTSC2
+         READ(83,REC=IREC2+2) ITC2
+         IREC2 = IREC2+2
+C
+         DO I=1, NNODG
+            READ(53,REC=IREC1+I) CH1(I)
+            READ(83,REC=IREC2+I) CH2(I)
+            ERR = ABS(CH1(I)-CH2(I))
+            IF (ERR.GT.TOL) WRITE(73,*) TIMEOUTSC1,I,CH1(I),CH2(I)
+         ENDDO
+         IREC1 = IREC1 + NNODG
+         IREC2 = IREC2 + NNODG
+C
+      ENDDO
+C
+C--Close both Global fort.83 Files
+C
+9999  CONTINUE
+      CLOSE(53)
+      CLOSE(83)
+      CLOSE(73)
+C
+   80 FORMAT(A40)
+ 2120 FORMAT(2X,E20.10,5X,I10)
+ 3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
+C
+      RETURN
+      END

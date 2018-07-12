@@ -356,8 +356,8 @@ C
       USE PRE_GLOBAL
       use sizes, only : naType, meshType, controlType, ASCII, XDMF,
      &   naFileName, meshFileName, controlFileName, formatString
-      use global, only : logMessage, INFO, setMessageSource,
-     &   unsetMessageSource
+      use global, only : logMessage, allMessage, setMessageSource, 
+     &                   unsetMessageSource, INFO, DEBUG
       use mesh, only : readMeshXDMF
       use subprep, only : subdomainOn, enforceBN, subPrep020, subPrep021,
      &   subPrep019
@@ -380,11 +380,10 @@ C
       integer :: numPartitionAttempts ! number of attempts to partition mesh
       logical :: partitionOK  ! true if partitioning has no issues
 
-      call setMessageSource("prepinput")
-#if defined (PREPINPUT_TRACE) || defined (ALL_TRACE)
-      call screen(DEBUG,"Enter.")
-#endif
-
+      CALL setMessageSource("prepinput")
+#if defined(ALL_TRACE)
+      CALL allMessage(DEBUG,"Enter")
+#endif      
 
 C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
       if (PREP_13) then
@@ -559,11 +558,11 @@ C
          print *, '             anew rather than appended.'
          IF (NOUTE .GT.0.AND.ABS(NOUTE) .NE.3) NOUTE =-NOUTE
          IF (NOUTV .GT.0.AND.ABS(NOUTV) .NE.3) NOUTV =-NOUTV
-         IF (NOUTC .GT.0.) NOUTC=-NOUTC
+         IF (NOUTC .GT.0.AND.ABS(NOUTC) .NE.3) NOUTC=-NOUTC
          IF (NOUTM .GT.0.AND.ABS(NOUTM) .NE.3) NOUTM =-NOUTM
          IF (NOUTGE.GT.0.AND.ABS(NOUTGE).NE.3) NOUTGE=-NOUTGE
          IF (NOUTGV.GT.0.AND.ABS(NOUTGV).NE.3) NOUTGV=-NOUTGV
-         IF (NOUTGC.GT.0.                    ) NOUTGC=-NOUTGC
+         IF (NOUTGC.GT.0.AND.ABS(NOUTGC).NE.3) NOUTGC=-NOUTGC
          IF (NOUTGW.GT.0.AND.ABS(NOUTGW).NE.3) NOUTGW=-NOUTGW
 !         WRITE(6,*)'==NOUT==',NOUTE,NOUTV,NOUTM,NOUTGE,NOUTGV
 C   kmd48.33bc add information for 3D
@@ -729,7 +728,7 @@ C     tcm v51.06.02 added NWS=16 GFDL Met Data
          select case(ABS(NWS))
          case(3,6,12,16,29,30)
             call logMessage(INFO,
-     & 'The meteorological data does not require domain decomposition.')
+     &   'The meteorological data does not require domain decomposition')
          case(1,2,4,5,45,7)
             call logMessage(INFO,
      &   'Ready to write subdomain fort.22 files.')
@@ -829,10 +828,12 @@ CC -- Finish Addition by CF
 9999  CONTINUE
       print *, ""
       print *, "INFO: Finished pre-processing input files."
-#if defined(PREPINPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
+
+#if defined(ALL_TRACE)
+      CALL allMessage(DEBUG,"Return")
+#endif      
+      CALL unsetMessageSource()
+
       RETURN
       END SUBROUTINE
 C---------------------------------------------------------------------------

@@ -1240,13 +1240,15 @@ C
          IOS_STATIONS = 0
          NSTAE = abs(NSTAE)  !reset to positive
          NSTAE2 = 0
-         OPEN(unit=151,file='elev_stat.151',status='old',err=7690,iostat=ios_stations)
+         OPEN(unit=151,file='elev_stat.151',status='old',err=7690,
+     &   iostat=ios_stations)
          READ(151,*) NSTAE2
          IF (ABS(NSTAE2).NE. ABS(NSTAE)) THEN
             NSTAE = ABS(NSTAE2)  !RESET THE VALUE TO WHAT'S IN THE FILE
          ENDIF
 7690     IF (IOS_STATIONS .NE. 0) THEN
-            WRITE(*,*) "Error in Reading Elevation Station File: elev_stat.151"
+            WRITE(*,*) "Error in Reading Elevation Station File:",
+     &      "elev_stat.151"
             stop  ! there is a stop here
          ENDIF                  
       ELSE 
@@ -1348,13 +1350,15 @@ C
          IOS_STATIONS = 0
          NSTAV = ABS(NSTAV) ! reset to positive value
          NSTAV2 = 0
-         OPEN(unit=151,file='vel_stat.151',status='old',err=7691,iostat=ios_stations)
+         OPEN(unit=151,file='vel_stat.151',status='old',err=7691,
+     &   iostat=ios_stations)
          READ(151,*) NSTAV2
          IF (ABS(NSTAV2).NE. ABS(NSTAV)) THEN
             NSTAV = ABS(NSTAV2)  !RESET THE VALUE TO WHAT'S IN THE FILE
          ENDIF
 7691     IF (IOS_STATIONS .NE. 0) THEN
-            WRITE(*,*) "Error in Reading Velocity Station File: vel_stat.151"
+            WRITE(*,*) "Error in Reading Velocity Station File:",
+     &      "vel_stat.151"
             stop  ! there is a stop here
          ENDIF                  
       ELSE 
@@ -1445,7 +1449,7 @@ C
 C
         READ(15,80) STACMSG
         READ(STACMSG,*) NOUTC,TOUTSC,TOUTFC,NSPOOLC
-        IF (ABS(NOUTC).GT.2) THEN
+        IF (ABS(NOUTC).GT.5) THEN
           print *, "Value of NOUTC is not allowable"
           stop
         ENDIF
@@ -1454,7 +1458,8 @@ C
         READ(NSTACMSG,*) NSTAC
        !tcm v51.20.03 -- addition for external Concentration station file
         if (NSTAC < 0 ) then
-           WRITE(*,*) "External File Used for Concentration Station Locations"
+           WRITE(*,*) "External File Used for Concentration Station",
+     &     "Locations"
            USE_CONC_STAT_FILE = .TRUE.
            IOS_STATIONS = 0
            NSTAC = ABS(NSTAC) !RESET TO POSITIVE
@@ -1465,19 +1470,31 @@ C
               NSTAC = ABS(NSTAC2)  !RESET THE VALUE TO WHAT'S IN THE FILE
            ENDIF
 7692       IF (IOS_STATIONS .NE. 0) THEN
-              WRITE(*,*) "Error in Reading Concentration Station File: conc_stat.151"
+              WRITE(*,*) "Error in Reading Concentration Station File:",
+     &        "conc_stat.151"
               STOP  ! THERE IS A STOP HERE
-           ENDIF                  
-        ELSE 
-           WRITE(*,*) "Concentration Station Locations Contained in fort.15"
+           ENDIF
+        ELSE
+           WRITE(*,*) "Concentration Station Locations Contained",
+     &     "in fort.15"
         ENDIF
-        
+
         IF (ABS(NSTAC).GT.MNSTAC) THEN
-          print *, "NSTAC = ",abs(NSTAC), " exceeds parameter MNSTAC = ",
+          print *, "NSTAC = ",abs(NSTAC), " exceeds parameter MNSTAC =",
      &              MNSTAC
           stop
         ENDIF
+#ifdef ADCNETCDF
 C
+C     ==================================================================
+C     START ADDITION BY MCF FOR NETCDF OPTION
+C
+!      IF(.NOT. ALLOCATED(STATNUMBC))ALLOCATE(STATNUMBC(abs(NSTAC),SNUMLEN))
+      IF(.NOT. ALLOCATED(STATNAMEC))ALLOCATE(STATNAMEC(abs(NSTAC)))
+C
+C     END ADDITION BY MCF FOR NETCDF OPTION
+C     ==================================================================
+#endif
         DO I=1,ABS(NSTAC)
            IF (USE_CONC_STAT_FILE) THEN !READ FROM EXTERNAL FILE
               READ(151,'(A132)') STACLOC(I)
@@ -1485,9 +1502,35 @@ C
               READ(15,'(A132)') STACLOC(I)
            ENDIF
            IF (ICS.EQ.1) THEN
-             READ(STACLOC(I),*) XEC(I),YEC(I)
-           ELSE
-             READ(STACLOC(I),*) SLEC(I),SFEC(I)
+               IF((abs(NOUTC).NE.3).AND.(abs(NOUTC).NE.5))THEN
+                  READ(STACLOC(I),*) XEC(I),YEC(I)
+               ELSE
+#ifdef ADCNETCDF
+!                READ(15,'(A132)') STATLINE
+!                call parse(STATLINE, LVAR)
+                 call parse(STACLOC(I), LVAR)
+                 XEC(I)=a2f(LVAR(1))
+                 YEC(I)=a2f(LVAR(2))
+                 STATNAMEC(I)=LVAR(3)
+C                WRITE(6,9911) XEC(I), YEC(I), STATNAMEC(I)
+#endif
+               ENDIF
+            ELSE
+               IF((abs(NOUTC).NE.3).AND.(abs(NOUTC).NE.5))THEN
+                  READ(STACLOC(I),*) SLEC(I),SFEC(I)
+               ELSE
+#ifdef ADCNETCDF
+!                 READ(15,'(A132)') STATLINE
+!                 call parse(STATLINE, LVAR)
+                  call parse(STACLOC(I), LVAR)
+                  SLEC(I)=a2f(LVAR(1))
+                  SFEC(I)=a2f(LVAR(2))
+                  STATNAMEC(I)=LVAR(3)
+!                 WRITE(6,*)"parsed stations"
+!                 WRITE(6,9911) SLEC(I),SFEC(I), STATNAMEC(I,SNAMLEN)
+#endif
+               ENDIF
+
              SLEC(I)=DEG2RAD*SLEC(I)
              SFEC(I)=DEG2RAD*SFEC(I)
              CALL CPP(XEC(I),YEC(I),SLEC(i),SFEC(i),SL0,SF0)
@@ -1501,8 +1544,10 @@ C
 c...tcm v49.48.01 replace with new call to kdtsearch
 !         CALL CoordToEle(XEC,YEC,NNSCG,NSTAC,
 !     &        'Concentration station         ')
+         call setup_kdt_search()
          call kdtsearch(XEC,YEC,NNSCG,abs(NSTAC),
      &        'Concentration station         ')
+C
 C
       ENDIF
 C
@@ -1645,7 +1690,7 @@ C
       IF (C2D_PTrans.or.C3D_PTrans) THEN
         READ(15,80) OUTGCMSG
         READ(OUTGCMSG,*) NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC
-        IF (ABS(NOUTGC).GT.2) THEN
+        IF (ABS(NOUTGC).GT.7) THEN
           print *, "NOUTGC does not have an allowable value"
           stop
         ENDIF
@@ -1779,12 +1824,6 @@ C
 !     --------------------------------------------------------------------
 
       IF(useNetCDF.eqv..true.) THEN
-         IF (NOUTGC.eq.3.or.                               ! fort.93
-     &       NOUTC.eq.3) then                                 ! fort.91
-            CALL allMessage(ERROR,
-     &         "NetCDF output not available for concentration output.")
-            STOP
-         ENDIF
 C
          READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) title
          READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) institution
