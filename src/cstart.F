@@ -914,29 +914,33 @@ C....WRITE OUT HEADER INFORMATION INCLUDING NDSETSC
 C....(NO. OF GLOBAL CONCENTRATION DATA SETS TO BE SPOOLED),
 C....NP, DT*NSPOOLGC, NSPOOLGC, IRTYPE
 C...
+
       NSCOUGC=0
       IGCP=0
 
-
       IF(ABS(NOUTGC).EQ.1) THEN
-         OPEN(83,FILE=TRIM(INPUTDIR)//'/'//'fort.83')
-         WRITE(83,3220) RUNDES,RUNID,AGRID
-         WRITE(83,3645) NDSETSC,NP,DTDP*NSPOOLGC,NSPOOLGC,1
-         CLOSE(83)
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(83, TRIM(GLOBALDIR)//'/'//'fort.83',
+     &       NP_G, NP, HEADER83)
+
+         else
+
+            CALL OPEN_GBL_FILE(83, TRIM(LOCALDIR)//'/'//'fort.83',
+     &       NP_G, NP, HEADER83)
+         endif
          IGCP=2
-         ENDIF
+      ENDIF
 
       IF(ABS(NOUTGC).EQ.2) THEN
          OPEN(83,FILE=TRIM(INPUTDIR)//'/'//'fort.83',
      &           ACCESS='DIRECT',RECL=NBYTE)
          call writeBinaryOutputFileHeader(83, 1, IGCP,
-     &            NDSETSC, NP, NSPOOLGC)
+     &      NDSETSC, NP, NSPOOLGC)
          CLOSE(83)
       ENDIF
 C
+
  1112 FORMAT(/,1X,79('_'))
-
-
 
 C... TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
 C... THESE FILES ARE CONTROLED BY THE GLOBAL ELEVATION
