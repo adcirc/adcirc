@@ -1352,6 +1352,7 @@ C
 
       USE GLOBAL
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, SFAC
+      USE BOUNDARIES, ONLY:  NVEL,LBCODEI,NBV,NFLUXF
       USE NodalAttributes, ONLY: EVC
 #ifdef CMPI
       USE MESSENGER
@@ -1359,10 +1360,10 @@ C
 
       IMPLICIT NONE
 
-      INTEGER IE, I                         !local loop counters
+      INTEGER IE, I, J                         !local loop counters
       INTEGER IT
       INTEGER NM1, NM2, NM3
-      INTEGER NC1, NC2, NC3, NCEle, NCI
+      INTEGER NC1, NC2, NC3, NCEle, NCI,NOD
 
       REAL(SZ) C1, C2, C3, CBEDSTRD, CBEDSTRE, CCRITD
       REAL(SZ) CH1N1, CH1N2, CH1N3, CHSUM
@@ -1384,7 +1385,7 @@ C
       REAL(SZ) V1N1, V1N2, V1N3
       REAL(SZ) UV1
       REAL(SZ) UEA, VEA, UPEA, VPEA
-      REAL(SZ) WS, WSMOD
+      REAL(SZ) WS, WSMOD, BCDAConc
 
       REAL(8) AreaIE2
       REAL(8) FDDD, FDDOD
@@ -1442,7 +1443,9 @@ C.....the Ariathurai et at. (1977) adaption of Partheniades' (1962) findings
 
 C.....Determine the total source sink term
 
+cnd  if you're doing sediment transport
 c        SOURSIN(I)=HSD+HSE
+cnd  if not doing sediment transport
         SOURSIN(I)=0.0d0
       END DO
 
@@ -1644,9 +1647,29 @@ C.... SOLVE FOR C*H NODE BY NODE
             DAConc(I)=CH1(I)/H1
          endif
       END DO
+c
+c  add river bc input
+c
+      IF (NFLUXF.EQ.1) THEN
+         IF (TIMELOC.GT.RIVBCTIME2) THEN
+            RIVBCTIME1=RIVBCTIME2
+            RIVBCTIME2=RIVBCTIME2+RIVBCTIMINC
+            DO J=1,NVEL
+               IF (LBCODEI(J).EQ.22) THEN
+                  READ(39,*) BCDAConc
+               ENDIF
+               DAConc(NBV(J))=BCDAConc
+               H1=DP(NBV(J))+IFNLFA*ETA1(NBV(J))
+               CH1(NBV(J))=BCDAConc*H1
+            ENDDO
+         ENDIF
+      ENDIF
 
 C     IF(LBArray_Pointer(I).NE.0) CH1(I)=0.d0  !ESSENTIAL C=0 BOUNDARY CONDITION
- 
+         
+#ifdef CMPI
+      CALL UPDATER(DAConc,CH1,DUMY1,2)
+#endif
 
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

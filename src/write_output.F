@@ -352,8 +352,9 @@ C----------------------------------------------------------------------
      &   offsetFilePos, offsetSpoolCounter, offset2, usingWaterLevelOffset,
      &   offsetSpoolCounter, offset2, usingWaterLevelOffset,
      &   offsetStaSpoolCounter, offsetFilePos, offsetSta,
-     &   offsetStaFilePos, PRBCKGRND,DAConc
-
+     &   offsetStaFilePos, PRBCKGRND, DAConc, DAConc_g,
+     &   nscouc, ntcysc, ntcyfc, icstp, nnc, staic1, staic2, staic3, 
+     &   nspoolc
 
       USE MESH, ONLY : NP, NE, DP, NM, ICS, labels
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim,
@@ -1028,7 +1029,6 @@ C... v49.64.01 tcm -- added for ice stations
          RSDescript % writeFlag         = .false.
       endif
 #endif
-
       ! fort.81
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
          ALLOCATE(CC00_g(NP_G))
@@ -1042,9 +1042,19 @@ C... v49.64.01 tcm -- added for ice stations
       ConcStaDescript % array_g              => CC00_g
       ConcStaDescript % field_name           = 'ConcSta'
       ConcStaDescript % isStation            = .true.
-      ConcStaDescript % divideByDepth        = .true.
+C      ConcStaDescript % divideByDepth        = .true.
 C      ConcStaDescript % interped_array       => CH1
       ConcStaDescript % interped_array       => DAConc
+      ConcStaDescript % startTimeStep           = NTCYSC
+      ConcStaDescript % endTimeStep             = NTCYFC
+      ConcStaDescript % outputTimeStepIncrement = NSPOOLC
+      ConcStaDescript % spoolCounter            => NSCOUC
+      ConcStaDescript % filepos                 => ICSTP
+      ConcStaDescript % elements                => NNC
+      ConcStaDescript % interp_fac1             => STAIC1
+      ConcStaDescript % interp_fac2             => STAIC2
+      ConcStaDescript % interp_fac3             => STAIC3
+      ConcStaDescript % ConsiderWetDry       = .TRUE.
       IF (ICS.eq.1) THEN
          ConcStaDescript % x_coord           => XEC ! use orig coord
          ConcStaDescript % y_coord           => YEC
@@ -1055,10 +1065,10 @@ C      ConcStaDescript % interped_array       => CH1
       if (im.ne.10) then
          ConcStaDescript % writeFlag         = .false.
       endif
-
       ! fort.83
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(CH1_g(NP_G))
+C         ALLOCATE(CH1_g(NP_G))
+         ALLOCATE(DAConc_g(NP_G))
       ENDIF
       ConcDescript % lun                  = 83
       ConcDescript % specifier            = NOUTGC
@@ -1069,13 +1079,15 @@ C      ConcStaDescript % interped_array       => CH1
       ConcDescript % filepos                 => IGCP
 C      ConcDescript % array                => CH1
       ConcDescript % array                => DAConc
-      ConcDescript % array_g              => CH1_g
+C      ConcDescript % array_g              => CH1_g
+      ConcDescript % array_g              => DAConc_g
       ConcDescript % field_name           = 'Conc'
-      ConcDescript % divideByDepth        = .true.
+C      ConcDescript % divideByDepth        = .true.
+      ConcDescript % ConsiderWetDry       = .TRUE.
+      ConcDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
       if (im.ne.10) then
          ConcDescript % writeFlag         = .false.
       endif
-
 C     maxele.63
       IF ( mnproc.gt.1 ) THEN
          ALLOCATE(ETAMAX_g(NP_G))

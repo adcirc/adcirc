@@ -47,9 +47,10 @@ C
       ALLOCATE(ETA2_g(NP_G))
       ALLOCATE(UU2_g(NP_G))
       ALLOCATE(VV2_g(NP_G))
-      IF (IM.eq.10) THEN
-         ALLOCATE(CH1_g(NP_G))
-      ENDIF
+C      IF (IM.eq.10) THEN
+C         ALLOCATE(CH1_g(NP_G))
+C         ALLOCATE(DAConc_g(NP_G))
+C      ENDIF
       ALLOCATE(EtaDisc_g(NP_G))
       ALLOCATE(NodeCode_g(NP_G))
       ALLOCATE(NOFF_g(NE_G))

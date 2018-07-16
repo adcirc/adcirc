@@ -17,7 +17,7 @@ C
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, 
      &    AID4, AID8
-      USE BOUNDARIES, ONLY : NETA, NFLUXF, NOPE, NVEL, LBCODEI
+      USE BOUNDARIES, ONLY : NETA, NFLUXF, NOPE, NVEL, LBCODEI, NBV
       USE HARM
       USE WETDRY, ONLY : initializeWettingAndDrying
       USE WIND, ONLY : coldStartMeteorologicalForcing, rsget
@@ -143,6 +143,21 @@ c
             endif
          enddo
       endif
+C cnd  added for 2D transport option
+      IF (IM.EQ.10.and.NFLUXF.EQ.1) THEN
+        OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39')
+        READ(39,*) RIVBCTIMINC, RIVBCSTATIM
+        RIVBCTIME1=RIVBCSTATIM*86400.d0
+        RIVBCTIME2=RIVBCTIME1+RIVBCTIMINC
+        DO J=1,NVEL
+           IF (LBCODEI(J).EQ.22) THEN
+              READ(39,*) DAConc(NBV(J))
+           ENDIF
+           CH1(NBV(J))=DAConc(NBV(J))*(DP(NBV(J))+IFNLFA*ETA1(NBV(J)))
+        ENDDO
+        write(*,*) 'in cstart ',rivbctime1,rivbctime2
+      ENDIF
+
       !
       ! jgf52.08.01: Initialize inundation arrays if necessary. This
       ! can only be called after nnodecode has been set via 
@@ -902,33 +917,23 @@ C...
       NSCOUGC=0
       IGCP=0
 
+
       IF(ABS(NOUTGC).EQ.1) THEN
-         if (write_local_files.eqv..false.) then
-            CALL OPEN_GBL_FILE(83, TRIM(GLOBALDIR)//'/'//'fort.83',
-     &       NP_G, NP, HEADER83)
-
-         else
-
-            CALL OPEN_GBL_FILE(83, TRIM(LOCALDIR)//'/'//'fort.83',
-     &       NP_G, NP, HEADER83)
-         endif
+         OPEN(83,FILE=TRIM(INPUTDIR)//'/'//'fort.83')
+         WRITE(83,3220) RUNDES,RUNID,AGRID
+         WRITE(83,3645) NDSETSC,NP,DTDP*NSPOOLGC,NSPOOLGC,1
+         CLOSE(83)
          IGCP=2
-      ENDIF
-
- 
-
-
-
+         ENDIF
 
       IF(ABS(NOUTGC).EQ.2) THEN
          OPEN(83,FILE=TRIM(INPUTDIR)//'/'//'fort.83',
      &           ACCESS='DIRECT',RECL=NBYTE)
          call writeBinaryOutputFileHeader(83, 1, IGCP,
-     &      NDSETSC, NP, NSPOOLGC)
+     &            NDSETSC, NP, NSPOOLGC)
          CLOSE(83)
       ENDIF
 C
-
  1112 FORMAT(/,1X,79('_'))
 
 

@@ -321,13 +321,13 @@ Cobell -  Added the following for output of ESL at end of run
       real(8), allocatable, target :: sfev(:)! latitudes of current vel sta
 
       ! spatial interpolating factors for velocity stations
-      real(sz),allocatable, target ::   staiv1(:),staiv2(:),staiv3(:)
-      real(8), allocatable, target ::   xec(:),yec(:),slec(:),sfec(:)
+      real(sz),allocatable, target :: staiv1(:),staiv2(:),staiv3(:)
+      real(8), allocatable, target :: xec(:),yec(:),slec(:),sfec(:)
       ! spatial interpolating factors for concentration stations
-      real(sz),allocatable ::   staic1(:),staic2(:),staic3(:)
+      real(sz),allocatable, target :: staic1(:),staic2(:),staic3(:)
 
       ! spatial interpolating factors for meteorological stations
-      real(sz),allocatable, target ::   staim1(:),staim2(:),staim3(:)
+      real(sz),allocatable, target :: staim1(:),staim2(:),staim3(:)
       real(8), allocatable, target :: xem(:) ! x coords of met stations
       real(8), allocatable, target :: yem(:) ! y coords of met stations
       real(8), allocatable, target :: slem(:) ! longitudes of met stations
@@ -384,6 +384,7 @@ C.....for buoyancy forcing
       REAL(SZ),ALLOCATABLE ::   VIDBCPDXOH(:), VIDBCPDYOH(:)
 C.....for scalar transport
       REAL(SZ),ALLOCATABLE, target ::   DAConc(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: DAConc_g(:)
 
       REAL(SZ) DT
 C
@@ -488,7 +489,6 @@ C     size has changed after a hotstart.
       INTEGER  NTCYFV,NTCYSE,NTCYSV,NTIF,NTIP,NTRSPE,NTRSPV
       INTEGER  NTCYS_TVW,NTCYF_TVW
       INTEGER  NWS
-      INTEGER  ICSTP
 
 Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  IFNLCAT, IFNLCT, IFNLFA, IFNLCTE, IFNLCATE
@@ -507,7 +507,8 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       integer, target :: ivstp ! file position in velocity station file
       integer, target :: iwstp ! file position in wind velocity station file
       integer, target :: ipstp ! position in barometric pressure station file
-      integer, target :: iestp ! file position in station elevation file 
+      integer, target :: iestp ! file position in station elevation file
+      integer, target :: icstp ! file position in station concentration file 
       integer, target :: ig_tvw ! file position in weir elevation file
       integer, target :: nodeCodeOutFilePos
       integer, target :: noffOutFilePos
