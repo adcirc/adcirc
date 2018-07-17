@@ -70,12 +70,14 @@ C     Transcribe header information.
 C
 C     Check node number data for consistency (paranoia).
       READ(10,80) nvn_nvp
-      READ(nvn_nvp,*) nvn, nvp
-      IF ( nvn .ne. nfen .or. nvp .ne. nnodg ) then
-         WRITE(*,*) 'ERROR: NVN or NVP not consistent with input data.'
-         WRITE(*,*) 'NVN=',nvn,' although NFEN=',nfen
-         WRITE(*,*) 'NVP=',nvp,' although NNODG=',nnodg
-      ENDIF
+c      write(*,*) 'nvn_nvp ',nvn_nvp
+c      READ(nvn_nvp,*) nvn, nvp
+c      IF ( nvn .ne. nfen .or. nvp .ne. nnodg ) then
+c         WRITE(*,*) 'ERROR: NVN or NVP not consistent with input data.'
+c         WRITE(*,*) 'NVN=',nvn,' although NFEN=',nfen
+c         WRITE(*,*) 'NVP=',nvp,' although NNODG=',nnodg
+c      ENDIF
+c      write(*,*) 'decomposing data'
 C
 C     Decompose concentration data
 C
