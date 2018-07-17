@@ -3779,10 +3779,10 @@ C     Open full domain and subdomain fort.20 files
 !      write(*,*) '--------------------'
 
       ALLOCATE ( NOD(MNVEL) )
-      ALLOCATE ( RESBCBINP(NFEN) )
+      ALLOCATE ( RESBCBINP(max(NFEN,1)) )
 ! arash:
 !      ALLOCATE ( FLUX_VAL(MNVEL,NFEN) )
-      ALLOCATE ( FLUX_VAL(MNP,NFEN) )
+      ALLOCATE ( FLUX_VAL(MNP,max(NFEN,1)) )
 
 ! arash July 7 2016: account for both salinity and temperature
       If ( IDEN == 4 ) Then
@@ -3818,15 +3818,20 @@ C
       DO I=1, EXIST_BC_TS      ! loop through full domain flow nodes
          INDX=BCTS14_ARY(I)
 
-         !write(*,*) indx
+         write(*,*) indx
 
 ! arash July 7 2016:
+         IF (IDEN.GT.0) THEN
          If ( IDEN == 4 ) Then
             READ(39,*,END=40)  (FLUX_VAL(INDX,M),M=1,2*NFEN)
          Else
             READ(39,*,END=40)  (FLUX_VAL(INDX,M),M=1,NFEN)
          End If
-
+         ENDIF
+!  cnd  for 2D transport
+         if (IM.eq.10) then
+            READ(39,*,END=40)  (FLUX_VAL(INDX,M),M=1,1)
+         endif
       END DO
 
       DO I=1, EXIST_BC_TS
@@ -3849,7 +3854,13 @@ C
                      WRITE(SDU(IPROC),80) (RESBCBINP(M),M=1,NFEN)
                  End If
 ! -----------------------------------------------
-
+!  cnd  for 2D transport
+                 if (im.eq.10) then
+                    m=1
+                    RESBCBINP(M) = FLUX_VAL(INDX,M)
+                    WRITE(SDU(IPROC),80) RESBCBINP(M)
+                 endif
+!   
                ENDIF
             END DO
          END DO

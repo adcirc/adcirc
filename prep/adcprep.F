@@ -806,6 +806,7 @@ C  kmd48.33bc add information for 3D baroclinic simulations
 
 ! kmd - added for rivers in a baroclinic simulation
       IF (PREP_ALL) THEN
+         write(*,*) 'exist_bc_ts ',exist_bc_ts
          IF ((EXIST_BC_TS.NE.0).AND.(APERIODIC_BC_TS)) THEN
            print *, "Ready to Write Local UNIT 39 File for each PE"
            CALL PREP39()

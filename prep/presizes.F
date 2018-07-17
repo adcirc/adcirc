@@ -156,6 +156,7 @@ C     variables which describe the full domain
       INTEGER MNEP   ! number of max elements of any subdomain
 C     Model Type:
       INTEGER IDEN        ! determines whether prognostic or diagnostic
+      INTEGER IM          ! determines whether prognostic or diagnostic
       LOGICAL C2DDI       ! .TRUE. if 2D depth integrated
       LOGICAL C2D_BTrans  ! .True. if 2D with baroclinic transport
       LOGICAL C2D_PTrans  ! .True. if 2D with passive transport
@@ -457,7 +458,7 @@ C
       IMPLICIT NONE
       integer :: nbytes = 0
       INTEGER  I,IL,IDUM,N,N1,N2,N3,NDIF1,NDIF2,NDIF3,
-     &  IM,NWP,NCOR,NTIP,NWS,NRAMP,IREFYR,NTIF,IL1,Il2,NHARF,NHAINC,IDUM2,
+     &  NWP,NCOR,NTIP,NWS,NRAMP,IREFYR,NTIF,IL1,Il2,NHARF,NHAINC,IDUM2,
      &  ITITER,ILUMP,IHOT
      &  , NHSTAR                                                        !for netCDF
       INTEGER IGC  ! 3DVS vertical grid code
@@ -702,6 +703,7 @@ C
       READ(15,*) IDUM  ! SKIP ICS
 C
       READ(15,*) IM                                 !READ IM (model type)
+      write(*,*) 'im = ',im
 C
       SELECT CASE (IM) ! jgf46.28 added transport/baroclinic support
       CASE(0)

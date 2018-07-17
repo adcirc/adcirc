@@ -34,7 +34,7 @@ C---------------------------------------------------------------------
      &   bcts14_ary, agrid, aperiodic_bc_ts, bndbcriver, exist_bc_ts, 
      &   exist_flux, iden, mnbou, mnvel, nbou, nboumsg, nelg, neta, 
      &   netamsg, nfover, nnodg, nope, nopemsg, nvel, nvelmsg, nweir, 
-     &   river_above_msl, numLBCodeValues, nfluxf, node_dict, labels
+     &   river_above_msl, numLBCodeValues, nfluxf, node_dict, labels, im
       use hashtable
       use memory_usage
       implicit none
@@ -172,6 +172,8 @@ C
          READ(14,80) NVELLMSG(K)
          READ(NVELLMSG(K),*) NVELL(K),IBTYPE(K)
          ITYPE = IBTYPE(K)
+cnd added for 2D transport
+         IF ((ITYPE.EQ.22).and.(IM.EQ.10)) aperiodic_bc_ts=.true.
 ! kmd - added for rivers in a baroclinic simulation
          IF (ABS(ITYPE/100).EQ.1) THEN
             IF (IDEN.LE.0) THEN
@@ -226,6 +228,7 @@ C
                WEIRD(NWEIR) = IBCONNR(K,I)
             ENDDO    
          case(2,12,22,32,52)
+            write(*,*) 'case 22',im,nvell(k)
            NFLUXF=1 !jgf51.52.23
            DO I=1,NVELL(K)
               EXIST_FLUX = EXIST_FLUX + 1
@@ -233,10 +236,11 @@ C
               NBVV(K,I) = find(node_dict,n1)
               IBCONNR(K,I) = 0
 !kmd - added river boundary conditions for baroclinic
-              IF (BndBCRiver) THEN
+              IF (BndBCRiver.or.(IM.EQ.10)) THEN
                  EXIST_BC_TS=EXIST_BC_TS+1
               END IF
            ENDDO
+           write(*,*) 'exist_bc_ts ',exist_bc_ts
            BndBCRiver=.FALSE.
          case default
             print *, "IBTYPE not set correctly for segment ",K
@@ -298,7 +302,7 @@ c
                   DNBVV(K,I) = find(node_dict,n1)
                   FLUX14_ARY(EXIST_FLUX) = DNBVV(K,I)
 ! kmd - added in boundary conditions for rivers in a baroclinic simulation
-                  IF (BC_Rivers) THEN
+                  IF (BC_Rivers.or.(IM.EQ.10)) THEN
                      EXIST_BC_TS=EXIST_BC_TS+1
                      BCTS14_ARY(EXIST_BC_TS)=DNBVV(K,I)
                   END IF
@@ -703,6 +707,7 @@ C
 C
       READ(15,80) IMMSG
       READ(IMMSG,*) IM
+      write(*,*) 'im = ',im
       IF(IM.EQ.2) THEN
         PRINT *, "DSS Model type not presently supported"
         STOP
