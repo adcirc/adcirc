@@ -1,0 +1,1941 @@
+      !--------------------------------------------------------------
+      ! Global IO module.
+      !
+      !  This module exists to write out global output files on
+      !  parallel machines and one file on uniproc machines.
+      !--------------------------------------------------------------
+
+      module global_io
+      use SIZES
+      use VERSION
+      use GLOBAL
+      use MESH, ONLY : NP, AGRID
+#ifdef CMPI
+#ifdef HAVE_MPI_MOD
+      use mpi
+#endif
+#endif
+      contains
+
+C--------------------------------------------------------------------
+C                    S U B R O U T I N E
+C     A L L O C A T E   F U L L   D O M A I N   I O   A R R A Y S
+C--------------------------------------------------------------------
+C     jgf49.44: Allocates memory for the full domain arrays for i/o
+C     purposes; these arrays are both read from and written to hotstart
+C     files. Arrays that are only written are allocated in the
+C     subroutine that does the writing.
+C 
+C     jgf51.46: Just to clarify, these arrays are needed during 
+C     hotstart initialization, to read in the previous state of the
+C     fulldomain simulation.a So, they need to be allocated prior
+C     to hotstart initialization. These arrays may also be needed
+C     to write fulldomain output, but care should be taken so they
+C     are not allocated more than once, i.e., in write_output.F 
+C     or global.F. 
+C 
+C--------------------------------------------------------------------
+      SUBROUTINE allocateFullDomainIOArrays()
+      IMPLICIT NONE
+C
+      call setMessageSource("allocateFullDomainIOArrays")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ALLOCATE(labels_g(NP_G))
+      ALLOCATE(ETA1_g(NP_G))
+      ALLOCATE(ETA2_g(NP_G))
+      ALLOCATE(UU2_g(NP_G))
+      ALLOCATE(VV2_g(NP_G))
+      IF (IM.eq.10) THEN
+         ALLOCATE(CH1_g(NP_G))
+      ENDIF
+      ALLOCATE(EtaDisc_g(NP_G))
+      ALLOCATE(NodeCode_g(NP_G))
+      ALLOCATE(NOFF_g(NE_G))
+      ALLOCATE(NNodeCode_g(NP_G))
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE allocateFullDomainIOArrays
+C--------------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      !                  S U B R O U T I N E
+      !     C O L L E C T  F U L L  D O M A I N  A R R A Y
+      !--------------------------------------------------------------
+      ! jgf48.03 Collects array data from each subdomain.
+      !--------------------------------------------------------------
+      subroutine collectFullDomainArray(descript, pack_cmd, unpack_cmd)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+#ifdef CMPI
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+#endif
+      type (OutputDataDescript_t) :: descript
+      external pack_cmd
+      external unpack_cmd
+#ifdef CMPI
+      ! the subroutine used to write the file
+      integer      :: ierr, status(MPI_STATUS_SIZE), request
+      integer, save:: tagbase = 6000
+      integer      :: iproc
+      integer      :: bufsize
+      integer      :: ibucket
+      integer      :: iremainder ! after dividing bufsize by array rank      
+      integer      :: istart     ! vector tuple to start with
+      integer      :: iend       ! vector tuple to end on
+      integer      :: tag
+      ! number of vector tuples in the buffer
+      integer      :: num
+      integer      :: i, j, k
+C
+      call setMessageSource("collectFullDomainArray")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      bufsize = min(BUFSIZE_MAX,
+     &    descript % num_items_per_record * descript % num_fd_records)
+C     num will be less than the number of full domain records if the
+C     buffer is too small to hold all the records in the full domain,
+C     in this case it is the number of records passed back to proc 0
+C     on each iteration of the while loop below
+      !
+      ! jgf51.50: What if the bufsize is not evenly divisible by the
+      ! number of items per record? Need to check the remainder.
+      iremainder = modulo(bufsize, descript % num_items_per_record)
+      num = ( bufsize - iremainder ) / descript % num_items_per_record
+
+      iend    = num
+      istart  = 1
+
+      if (tagbase == 5000) then
+         tagbase = 6000
+      else
+         tagbase = 5000
+      endif
+      ibucket = 0
+
+      do while (istart.le.iend)
+
+         !------------------------------------------------------------
+         ! Initialize
+         !------------------------------------------------------------
+         if ( descript % isInteger .eqv. .true. ) then
+            integerBuffer(:)  = int(descript % initial_value)           
+         else
+            buf(:)  = descript % initial_value
+         endif
+         ibucket = ibucket + 1
+         tag     = tagbase + mod(ibucket, 8)
+
+C        now pack the buffer
+         call pack_cmd(descript, istart, iend)
+C        now send data to processor 0
+         if ( descript % isInteger .eqv. .true. ) then
+           call mpi_reduce(integerBuffer, integerResultBuffer, bufsize,
+     &                 MPI_INTEGER, MPI_SUM, 0, COMM, ierr)
+         else
+           call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
+     &                     0, COMM, ierr)
+         endif
+         if (myproc == 0) then
+            call unpack_cmd(descript, istart, iend)
+         end if
+C        set new starting position to just after the
+C        current ending position in full domain array
+         istart = iend + 1
+C        set new ending position to either the current start plus the
+C        number of records that will fit in the buffer (minus 1),
+C        or to the end of the full domain array, whichever is less
+         iend   = min(istart + num - 1, descript % num_fd_records)
+         num    = iend - istart + 1
+      end do
+#endif
+C! CMPI
+
+ 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
+ 1100 FORMAT(2x,1pE20.10E3,5X,I10)
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      !--------------------------------------------------------------
+      end subroutine collectFullDomainArray
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   P A C K  O N E
+      !--------------------------------------------------------------
+      !  jgf48.03 Subroutine to store a single array of real numbers
+      !  to a buffer
+      !--------------------------------------------------------------
+      subroutine packOne(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+
+      type (OutputDataDescript_t) :: descript
+      integer :: i, j, istart, iend, iglobal
+      integer :: ioffset
+
+      call setMessageSource("packOne")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
+
+      ! jgf51.21.24: Updated and generalized to take into account wet/dry
+      ! if needed
+#ifdef CMPI
+      ioffset = istart - 1
+      if ( descript % isInteger .eqv. .true. ) then
+      
+         do i = 1, descript % num_records_this
+            iglobal = descript % imap(i)
+            if (istart <= iglobal .and. iglobal <= iend) then
+               integerBuffer(iglobal-ioffset) = descript % iarray(i)
+            end if
+         end do
+
+      else
+
+         do i = 1, descript % num_records_this
+            iglobal = descript % imap(i)
+            if (istart <= iglobal .and. iglobal <= iend) then
+               buf(iglobal - ioffset ) = descript % array(i) 
+               ! jgf51.21.24: Updated and generalized to take into account wet/dry
+               ! jgf52.25: Station data that should take wet dry state
+               ! into account have already done so in subroutine stationArrayInterp()
+               ! in module write_output.F. For stations, it doesn't make 
+               ! sense to check the nodecode.
+               if ( descript % considerWetDry.eqv..true. ) then
+                  if ( descript % isStation.eqv..false. ) then
+                     if ( nodecode(i).eq.0 ) then
+                        buf(iglobal-ioffset) = descript % alternate_value
+                     endif
+                  endif
+               endif
+            endif
+         end do
+
+      endif
+#endif
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
+      return
+      !--------------------------------------------------------------
+      end subroutine packOne
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   U N P A C K  O N E
+      !--------------------------------------------------------------
+      !  Subroutine to retrieve a single array of real numbers
+      !  from a buffer
+      !--------------------------------------------------------------
+      subroutine unpackOne(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+
+      type (OutputDataDescript_t) :: descript
+      integer :: i, j, istart, iend, iglobal
+      integer :: ioffset
+      
+      call setMessageSource("unpackOne")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
+
+      j = 1
+
+      if ( descript % isInteger .eqv. .true. ) then
+
+         do i = istart, iend
+            descript % iarray_g(i) = integerResultBuffer(j)
+            j = j + 1
+         end do
+     
+      else
+
+         do i = istart, iend
+            descript % array_g(i) = resultBuf(j)
+            j = j + 1
+         end do
+
+      endif
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
+      !--------------------------------------------------------------
+      end subroutine unpackOne
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   P A C K  T W O
+      !--------------------------------------------------------------
+      ! Subroutine to pack two interleaved arrays of real
+      ! numbers into a buffer
+      !--------------------------------------------------------------
+      subroutine packTwo(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+
+      type (OutputDataDescript_t) :: descript
+      integer :: i, istart, iend, iglobal
+      integer :: ioffset, j
+      
+      call setMessageSource("packTwo")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
+
+      ioffset = istart - 1
+      do i = 1, descript % num_records_this
+        iglobal = descript % imap(i)
+        if (istart <= iglobal .and. iglobal <= iend) then
+          j = 2*(iglobal - ioffset) - 1
+          if(descript%considerWetDry.and.nodecode(i).eq.0)then
+            buf(j)     = descript % alternate_value
+            buf(j + 1) = descript % alternate_value
+          else
+            buf(j)     = descript % array(i)
+            buf(j + 1) = descript % array2(i)
+          endif
+        end if
+      end do
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
+      return
+ 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3)
+      !--------------------------------------------------------------
+      end subroutine packTwo
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E  U N P A C K  T W O
+      !--------------------------------------------------------------
+      ! Subroutine to unpack two interleaved arrays of real
+      ! numbers into a buffer
+      !--------------------------------------------------------------
+      subroutine unpackTwo(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+
+      type (OutputDataDescript_t) :: descript
+      integer :: i, j, istart, iend
+      
+      call setMessageSource("unpackTwo")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
+
+      j = 1
+      do i = istart, iend
+         descript % array_g(i) = resultBuf(j)
+         descript % array2_g(i) = resultBuf(j+1)
+         j = j + 2
+      end do
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+      
+      return
+      !--------------------------------------------------------------
+      end subroutine unpackTwo
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   P A C K  M  B Y  N P
+      !--------------------------------------------------------------
+      ! Subroutine to pack an m x np array of real
+      ! numbers into a buffer
+      !--------------------------------------------------------------
+      subroutine packMbyNP(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+
+      type (OutputDataDescript_t) :: descript
+      integer :: i, istart, iend, iglobal
+      integer :: ioffset, j
+      integer :: k ! frequency counter
+C
+      call setMessageSource("packMbyNP")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ioffset = istart - 1
+      do i = 1, descript % num_records_this
+         iglobal = descript % imap(i)
+         if (istart <= iglobal .and. iglobal <= iend) then
+            j = descript%num_items_per_record * (iglobal-ioffset)
+     &          - (descript%num_items_per_record - 1 )
+            do k = 0, ( descript % num_items_per_record - 1 )
+               buf(j+k) = descript % array2D(k+1,i)
+            end do
+         end if
+      end do
+C
+ 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3)
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+      !--------------------------------------------------------------
+      end subroutine packMbyNP
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E  U N P A C K  M  B Y  N P
+      !--------------------------------------------------------------
+      ! Subroutine to unpack an m x np array of real
+      ! numbers out of a buffer
+      !--------------------------------------------------------------
+      subroutine unpackMbyNP(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+
+      type (OutputDataDescript_t) :: descript
+      integer :: i, j, istart, iend
+      integer k ! frequency counter
+
+      call setMessageSource("unpackMbyNP")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      j = 1
+      do i = istart, iend
+         do k = 1, descript % num_items_per_record
+            descript % array2D_g(k,i) = resultBuf(j)
+            j = j + 1
+         end do
+      end do
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+      !--------------------------------------------------------------
+      end subroutine unpackMbyNP
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   P A C K  N P  B Y  M
+      !--------------------------------------------------------------
+      ! Subroutine to pack an np x m array of real
+      ! numbers into a buffer
+      !--------------------------------------------------------------
+      subroutine packNPbyM(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+
+      type (OutputDataDescript_t) :: descript
+      integer :: i, istart, iend, iglobal
+      integer :: ioffset, j
+      integer :: k ! frequency counter
+C
+      call setMessageSource("packNPbyM")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ioffset = istart - 1
+      do i = 1, descript % num_records_this
+         iglobal = descript % imap(i)
+         if (istart <= iglobal .and. iglobal <= iend) then
+            j = descript%num_items_per_record * (iglobal-ioffset)
+     &          - (descript%num_items_per_record - 1 )
+            do k = 0, ( descript % num_items_per_record - 1 )
+               buf(j+k) = descript % array2D(i,k+1)
+            end do
+         end if
+      end do
+C
+ 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3)
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+      !--------------------------------------------------------------
+      end subroutine packNPbyM
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E  U N P A C K   N P  B Y  M
+      !--------------------------------------------------------------
+      ! Subroutine to unpack an np x m array of real
+      ! numbers out of a buffer
+      !--------------------------------------------------------------
+      subroutine unpackNPbyM(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+
+      type (OutputDataDescript_t) :: descript
+      integer :: i, j, istart, iend
+      integer k ! frequency counter
+
+      call setMessageSource("unpackNPbyM")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      j = 1
+      do i = istart, iend
+         do k = 1, descript % num_items_per_record
+            descript % array2D_g(i,k) = resultBuf(j)
+            j = j + 1
+         end do
+      end do
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+      !--------------------------------------------------------------
+      end subroutine unpackNPbyM
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      !    S U B R O U T I N E   O P E N _ G B L _ F I L E
+      !--------------------------------------------------------------
+      ! Open Global File: opens the file, opens the write_header
+      !                   routine and closes the file
+      !--------------------------------------------------------------
+      subroutine open_gbl_file(lun, filename, size_g, size_this,
+     &                          write_header)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+
+      external write_header ! subroutine used to actually write the header
+      integer      :: lun, size_this, size_g, szz
+      character(*) :: filename
+
+      call setMessageSource("open_gbl_file")
+#ifdef GLOBALIO_TRACE 
+      call allMessage(DEBUG,"Enter")
+#endif 
+
+      szz = size_g
+      if (mnproc == 1 .or. WRITE_LOCAL_FILES) szz = size_this
+
+      if (myproc == 0 .or. WRITE_LOCAL_FILES) then
+        open(lun, file=trim(filename), status='UNKNOWN')
+        call write_header(lun,szz)
+        close(lun)
+      end if
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
+      return
+      !--------------------------------------------------------------
+      end subroutine open_gbl_file
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      !    S U B R O U T I N E   O P E N _ M I N M A X _ F I L E
+      !--------------------------------------------------------------
+      ! Open Global File: opens the file, replacing the existing file,
+      !                   executes the write_header routine and closes
+      !                   the file.
+      !--------------------------------------------------------------
+      subroutine open_minmax_file(lun, filename, size_g, size_this,
+     &                          nrecs_this,write_header)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+
+      external write_header ! subroutine used to actually write the header
+      integer      :: lun, size_this, size_g, szz
+      integer      :: nrecs_this  !tcm v51.20.06
+      character(*) :: filename
+
+      call setMessageSource("open_minmax_file")
+#ifdef GLOBALIO_TRACE 
+      call allMessage(DEBUG,"Enter")
+#endif
+
+      szz = size_g
+      if (mnproc == 1 .or. WRITE_LOCAL_FILES) szz = size_this
+
+      if (myproc == 0 .or. WRITE_LOCAL_FILES) then
+        open(lun, file=trim(filename), status='REPLACE')
+        call write_header(lun,szz,nrecs_this)
+        close(lun)
+      end if
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
+      return
+      !--------------------------------------------------------------
+      end subroutine open_minmax_file
+      !--------------------------------------------------------------
+      
+      
+      !--------------------------------------------------------------
+      !      S U B R O U T I N E  W R I T E   F U L L  F O R M A T
+      !--------------------------------------------------------------
+      ! Subroutine to write full format ASCII output files
+      !--------------------------------------------------------------
+      subroutine writeFullFormat(descript, TimeLoc, it, write_cmd)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      type (OutputDataDescript_t) :: descript
+      real(8), intent(in) :: TimeLoc
+      integer, intent(in) :: it
+      external write_cmd   
+#ifdef CMPI
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+      integer      :: ierr, status(MPI_STATUS_SIZE), request
+      integer      :: nGWetNodes
+      integer      :: iglobal
+#endif
+      integer      :: nLWetNodes
+      integer      :: num, i, j, k
+      integer, save:: tagbase = 6000
+      integer      :: iproc
+      integer      :: bufsize, ibucket
+      integer      :: istart, iend, tag
+
+      call setMessageSource("writeFullFormat")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
+
+      ! serial or writing local files
+      if ((mnproc.eq.1).or.(WRITE_LOCAL_FILES)) then
+         open(descript%lun, file=trim(descript%file_name), 
+     &       access='SEQUENTIAL', position='APPEND')
+         write(descript%lun, 1101) TimeLoc, it
+         call write_cmd(descript % lun, descript, 1, descript % num_records_this)
+         close(descript % lun)
+#ifdef GLOBALIO_TRACE
+         call allMessage(DEBUG,"Return")
+#endif
+         call unsetMessageSource()
+         return
+      else
+#ifdef CMPI
+   
+         if (myproc == 0) then
+           open(descript%lun, file=trim(descript%file_name), 
+     &         access='SEQUENTIAL', position='APPEND')
+           write(descript%lun, 1101) TimeLoc, it
+         endif
+   
+         bufsize = min(BUFSIZE_MAX,
+     &       descript % num_items_per_record * descript % num_fd_records)
+         num     = bufsize / descript % num_items_per_record
+         iend    = num
+         istart  = 1
+   
+         if (tagbase == 5000) then
+           tagbase = 6000
+         else
+           tagbase = 5000
+         endif
+         ibucket = 0
+   
+         do while (istart < iend)
+   
+           !------------------------------------------------------------
+           ! Initialize
+           !------------------------------------------------------------
+           buf(:)  = descript % initial_value
+           ibucket = ibucket + 1
+           tag     = tagbase + mod(ibucket, 8)
+   
+           call write_cmd(descript%lun, descript, istart, iend)
+           if(descript%isInteger)then
+               call mpi_reduce(integerbuffer, integerresultBuffer, bufsize, mpi_int, MPI_SUM, 0,
+     &       COMM, ierr)
+           else
+               call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM, 0,
+     &       COMM, ierr)
+           endif
+           if (myproc == 0) then
+             do i = istart, iend
+               j = 1 + (i-istart)*descript % num_items_per_record
+   
+               if(descript%isInteger)then
+                 write(descript % lun, 1001) labels_g(i), (integerResultBuffer(k), k = j, j +
+     &              descript % num_items_per_record - 1)
+               else
+                 write(descript % lun, 1000) labels_g(i), (resultBuf(k), k = j, j +
+     &              descript % num_items_per_record - 1)
+               endif
+             end do
+           end if
+   
+           istart = iend + 1
+           iend   = min(istart + num - 1, descript % num_fd_records)
+           num    = iend - istart + 1
+         end do
+         if (myproc == 0) then
+           close(descript%lun)
+         endif
+#endif
+      endif
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
+ 1000 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
+ 1001 FORMAT(2x, i8, 2x, i8, 2X, i8, 2X, i8, 2X, i8) 
+ 1100 FORMAT(2x,1pE20.10E3,5X,I10)
+ 1101 FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)
+      !--------------------------------------------------------------
+      end subroutine writeFullFormat
+      !--------------------------------------------------------------
+
+
+      !--------------------------------------------------------------
+      !      S U B R O U T I N E  W R I T E   B I N A R Y F O R M A T 
+      !--------------------------------------------------------------
+      ! Subroutine to write binary format output files
+      !--------------------------------------------------------------
+      subroutine writeBinaryFormat(descript,timeloc,it)
+         use global
+         use sizes
+         implicit none
+         type(outputdatadescript_t),intent(in) :: descript
+         integer,intent(in)                    :: it
+         real(sz)                              :: timeloc
+         integer                               :: i
+
+         IF ( (MNPROC.gt.1).and.(MyProc.eq.0)
+     &         .and.(.not.WRITE_LOCAL_FILES)) THEN
+            OPEN(descript%lun,FILE=trim(descript%file_name),
+     &           ACCESS='DIRECT',RECL=NBYTE)
+            WRITE(descript % lun,REC=descript % filepos+1) TimeLoc
+            WRITE(descript % lun,REC=descript % filepos+2) IT
+            descript%filepos = descript%filepos + 2
+            IF ( descript % num_items_per_record .eq. 1 ) THEN
+               DO I=1, descript % num_fd_records
+                  WRITE(descript % lun,REC=descript % filepos+I)
+     &               descript % array_g(I)
+               END DO
+            ENDIF
+            IF ( descript % num_items_per_record .eq. 2 ) THEN
+               DO I=1, descript % num_fd_records
+                  WRITE(descript % lun,REC=descript % filepos+2*I-1)
+     &                descript % array_g(I)
+                  WRITE(descript % lun,REC=descript % filepos+2*I)
+     &                descript % array2_g(I)
+               END DO
+            ENDIF
+            CLOSE(descript%lun)
+         ENDIF
+
+         IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES)) THEN
+            OPEN(descript % lun,FILE=TRIM(descript % file_name),
+     &           ACCESS='DIRECT',RECL=NBYTE)
+            WRITE(descript % lun,REC=descript % filepos+1) TimeLoc
+            WRITE(descript % lun,REC=descript % filepos+2) IT
+            descript % filepos = descript % filepos + 2
+            IF ( descript % num_items_per_record .eq. 1 ) THEN
+               IF ((trim(descript % field_name) .eq. 'Elev').and.
+     &             (descript % ConsiderWetDry .EQV. .TRUE.)) THEN
+                  DO I=1, descript % num_records_this
+                     if(NODECODE(I).EQ.1) THEN
+                        WRITE(descript % lun,REC=descript % filepos+I) descript % array(I)
+                     ELSE
+                        WRITE(descript % lun,REC=descript % filepos+I)
+     &                    descript % alternate_value !-99999.0 for dry nodes
+                     ENDIF
+                  END DO
+               ELSE
+                  DO I=1, descript % num_records_this
+                     WRITE(descript % lun,REC=descript % filepos+I) descript % array(I)
+                  END DO
+               ENDIF
+            ENDIF
+            IF ( descript % num_items_per_record .eq. 2 ) THEN
+               DO I=1, descript % num_records_this
+                  !tcmv48.4618 -- changed from array_g to array
+                  WRITE(descript % lun,REC=descript % filepos+2*I-1) descript % array(I)
+                  !tcmv48.4618 -- changed from array2_g to array2
+                  WRITE(descript % lun,REC=descript % filepos+2*I)   descript % array2(I)
+               END DO
+            ENDIF
+            CLOSE(descript % lun)
+         ENDIF
+         descript % filepos = descript % filepos + descript % num_records_this
+         return
+      !--------------------------------------------------------------
+      end subroutine writeBinaryFormat 
+      !--------------------------------------------------------------
+
+
+      !--------------------------------------------------------------
+      !      S U B R O U T I N E  W R I T E   S P A R S E
+      !--------------------------------------------------------------
+      ! jgf51.21.24: Writes sparse ascii format.
+      !--------------------------------------------------------------
+      subroutine writeSparse(descript, TimeLoc, it, write_cmd)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      type (OutputDataDescript_t) :: descript
+      real(8), intent(in) :: TimeLoc
+      integer, intent(in) :: it
+      external write_cmd   
+#ifdef CMPI
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+      integer      :: ierr, status(MPI_STATUS_SIZE), request
+      integer      :: nGWetNodes
+      integer      :: iglobal
+#endif
+      integer      :: nLWetNodes
+      integer      :: num, i, j, k
+      integer, save:: tagbase = 6000
+      integer      :: iproc
+      integer      :: bufsize, ibucket
+      integer      :: istart, iend, tag
+
+      call setMessageSource("writeSparse")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
+
+      ! serial or writing local files
+      if ((mnproc.eq.1).or.(WRITE_LOCAL_FILES)) then
+         open(descript%lun, file=trim(descript%file_name), 
+     &       access='SEQUENTIAL', position='APPEND')
+         nLWetNodes=0
+         do i=1,np
+            if(descript%considerWetDry)then
+                if(nodecode(i) == 0)cycle
+                nLWetNodes=nLWetNodes+1
+            else
+                if(descript%num_items_per_record==1)then
+                    if(descript%isInteger)then
+                        if(descript%iarray(i)==int(descript%alternate_value))cycle
+                    else
+                        if(descript%array(i)==descript%alternate_value)cycle
+                    endif
+                elseif(descript%num_items_per_record==2)then
+                    if(descript%array(i)==descript%alternate_value .and.
+     &                 descript%array2(i)==descript%alternate_value)cycle
+                endif
+                nLWetNodes=nLWetNodes+1
+            endif
+         enddo
+         write(descript%lun, 1101) TimeLoc, it, nLWetNodes, descript%alternate_value
+         call write_cmd(descript % lun, descript, 1, descript % num_records_this)
+         close(descript % lun)
+#ifdef GLOBALIO_TRACE
+         call allMessage(DEBUG,"Return")
+#endif
+         call unsetMessageSource()
+         return
+      else
+#ifdef CMPI
+      ! Count the number of wet nodes
+         nLWetNodes = 0
+         do i=1,np
+            iglobal = descript%imap(i)
+            if(iglobal.le.0) cycle ! cycle if node i is ghost
+            if(descript%considerWetDry)then
+                if(nodecode(i) == 0) cycle ! cycle if node i is dry
+            else
+                if(descript%num_items_per_record==1)then
+                    if(descript%isInteger)then
+                        if(descript%iarray(i)==int(descript%alternate_value))cycle
+                    else
+                        if(descript%array(i)==descript%alternate_value)cycle
+                    endif
+                elseif(descript%num_items_per_record==2)then
+                    if(descript%array(i)==descript%alternate_value .AND.
+     &                 descript%array2(i)==descript%alternate_value)cycle
+                endif
+            endif
+            nLWetNodes=nLWetNodes+1
+         enddo
+         call mpi_reduce(nLWetNodes, nGWetNodes, 1, MPI_INTEGER,
+     &        MPI_SUM, 0, comm, ierr)
+   
+         if (myproc == 0) then
+           open(descript%lun, file=trim(descript%file_name), 
+     &         access='SEQUENTIAL', position='APPEND')
+           write(descript%lun, 1101) TimeLoc, it, nGWetNodes, descript%alternate_value
+         endif
+   
+         bufsize = min(BUFSIZE_MAX,
+     &       descript % num_items_per_record * descript % num_fd_records)
+         num     = bufsize / descript % num_items_per_record
+         iend    = num
+         istart  = 1
+   
+         if (tagbase == 5000) then
+           tagbase = 6000
+         else
+           tagbase = 5000
+         endif
+         ibucket = 0
+   
+         do while (istart < iend)
+   
+           !------------------------------------------------------------
+           ! Initialize
+           !------------------------------------------------------------
+           buf(:)  = descript % initial_value
+           ibucket = ibucket + 1
+           tag     = tagbase + mod(ibucket, 8)
+   
+           call write_cmd(descript%lun, descript, istart, iend)
+           call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM, 0,
+     &       COMM, ierr)
+           if (myproc == 0) then
+             do i = istart, iend
+               j = 1 + (i-istart)*descript % num_items_per_record
+   
+               !If values are eqaul to the default value, skip this node
+               if(descript%num_items_per_record.eq.2)then
+                   if(resultBuf(j  ).eq.descript % alternate_value .and.
+     &                resultBuf(j+1).eq.descript % alternate_value) cycle
+               else
+                   if(resultBuf(j).eq.descript % alternate_value) cycle
+               endif
+   
+               write(descript % lun, 1000) labels_g(i), (resultBuf(k), k = j, j +
+     &           descript % num_items_per_record - 1)
+             end do
+           end if
+   
+           istart = iend + 1
+           iend   = min(istart + num - 1, descript % num_fd_records)
+           num    = iend - istart + 1
+         end do
+         if (myproc == 0) then
+           close(descript%lun)
+         endif
+#endif
+      endif
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
+ 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
+ 1100 FORMAT(2x,1pE20.10E3,5X,I10)
+ 1101 FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)
+      !--------------------------------------------------------------
+      end subroutine writeSparse
+      !--------------------------------------------------------------
+
+
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   S T O R E  O N E
+      !--------------------------------------------------------------
+      ! jgf47.05: Subroutine to store a single array of real numbers
+      !   +to disk in text format if WRITE_LOCAL_FILES is .true.
+      !   +to a buffer if we are running in parallel
+      !--------------------------------------------------------------
+      subroutine storeOne(lun, descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
+      USE MESH,ONLY:labels
+      implicit none
+
+      type (OutputDataDescript_t) :: descript
+      integer :: i, istart, iend, iglobal, lun
+      integer :: ioffset
+
+      if (mnproc.eq.1.or.WRITE_LOCAL_FILES) then
+         do i = 1, descript % num_records_this
+            if(ABS(descript % specifier)==SPARSE_ASCII)then
+                if(descript%considerWetDry)then
+                    if(nodecode(i)==0)cycle
+                    if(descript%isInteger)then
+                        write(lun , 1001) labels(i), descript % iarray(i)
+                    else
+                        write(lun , 1000) labels(i), descript % array(i)
+                    endif
+                else
+                    if(descript%isInteger)then
+                        if(descript%iarray(i)==int(descript%alternate_value))cycle
+                        write(lun , 1001) labels(i), descript % iarray(i)
+                    else
+                        if(descript%array(i)==descript%alternate_value)cycle
+                        write(lun , 1000) labels(i), descript % array(i)
+                    endif
+                endif
+            else
+                if(descript%considerWetDry)then
+                    if(nodecode(i)==0)then
+                        if(descript%isInteger)then
+                            write(lun, 1001) labels(i), int(descript % alternate_value)
+                        else
+                            write(lun, 1000) labels(i), descript % alternate_value
+                        endif
+                    else
+                        if(descript%isInteger)then
+                            write(lun, 1001) labels(i), descript % iarray(i)
+                        else
+                            write(lun, 1000) labels(i), descript % array(i)
+                        endif
+                    endif
+                else
+                    if(descript%isInteger)then
+                        write(lun , 1001) labels(i), descript % iarray(i)
+                    else
+                        write(lun , 1000) labels(i), descript % array(i)
+                    endif
+                endif
+            endif
+         end do
+         return
+      end if
+
+#ifdef CMPI
+      ioffset = istart - 1
+      do i = 1, descript % num_records_this
+         iglobal = descript % imap(i)
+         if (istart <= iglobal .and. iglobal <= iend) then
+            if(descript%isInteger)then
+                if(descript%considerWetDry.AND.nodecode(i)==0)then
+                    integerbuffer(iglobal-ioffset) = int(descript % alternate_value)
+                else
+                    integerbuffer(iglobal-ioffset) = descript % iarray(i)
+                endif
+            else
+                if(descript%considerWetDry.AND.nodecode(i)==0)then
+                    buf(iglobal-ioffset) = descript % alternate_value
+                else
+                    buf(iglobal-ioffset) = descript % array(i)
+                endif
+            endif
+         end if
+      end do
+#endif
+
+      return
+ 1000 format(2x, i8, 2x, 1pE20.10E3)
+ 1001 format(2x, i8, 2x, i10)
+      !--------------------------------------------------------------
+      end subroutine storeOne
+      !--------------------------------------------------------------
+
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   S T O R E  T W O
+      !--------------------------------------------------------------
+      ! jgf47.05: Subroutine to store two interleaved arrays of real
+      ! numbers
+      !  +to disk in text format if WRITE_LOCAL_FILES is .true.
+      !  +to a buffer if we are running in parallel
+      !--------------------------------------------------------------
+      subroutine storeTwo(lun, descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
+      USE MESH,ONLY:labels
+      implicit none
+
+      type (OutputDataDescript_t) :: descript
+      integer :: i, istart, iend, iglobal, lun
+      integer :: ioffset, j
+
+      if (mnproc.eq.1.or.WRITE_LOCAL_FILES) then
+        do i = 1, descript % num_records_this
+            if(abs(descript%specifier)==SPARSE_ASCII)then
+                if(descript%considerWetDry.AND.nodecode(i)==0)cycle
+                write(lun , 1000) labels(i), descript % array(i),
+     &              descript % array2(i)
+            else
+                write(lun , 1000) labels(i), descript % array(i),
+     &              descript % array2(i)
+            endif
+        end do
+        return
+      end if
+
+#ifdef CMPI
+      ioffset = istart - 1
+      do i = 1, descript % num_records_this
+        iglobal = descript % imap(i)
+        if (istart <= iglobal .and. iglobal <= iend) then
+          j = 2*(iglobal - ioffset) - 1
+          if(descript%considerWetDry.AND.nodecode(i)==0)then
+              buf(j)     = descript % alternate_value
+              buf(j + 1) = descript % alternate_value
+          else
+              buf(j)     = descript % array(i)
+              buf(j + 1) = descript % array2(i)
+          endif
+        end if
+      end do
+#endif
+      return
+ 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3)
+      !--------------------------------------------------------------
+      end subroutine storeTwo
+      !--------------------------------------------------------------
+      
+      !--------------------------------------------------------------
+      ! These are the store, header routines. For each file (fort.61, ...)
+      ! that is being globalize, there is a pair of routines : header61 and
+      ! store61 etc.  The header routine writes out the header once
+      ! and the store routine copies the data (heights, velocities, etc)
+      ! to the buffer in parallel mode or in serial mode it just write out
+      ! the data to file.
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      !     S U B R O U T I N E   H E A D E R 6 1
+      !--------------------------------------------------------------
+      ! Elevation for Elevation Recording station: fort.61
+      !--------------------------------------------------------------
+      subroutine header61(lun, size_this)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      integer :: lun, size_this
+
+      write(lun, 1000) rundes, runid, agrid
+      write(lun, 1010) ntrspe, size_this, dtdp*nspoole, nspoole, 1,
+     &                 FileFmtVersion
+
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
+     &       'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine header61
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      !    S U B R O U T I N E   H E A D E R 6 2
+      !--------------------------------------------------------------
+      ! Velocity for Velocity Recording station: fort.62
+      !--------------------------------------------------------------
+      subroutine header62(lun, size_this)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      integer :: lun, size_this
+
+      write(lun, 1000) rundes, runid, agrid
+      write(lun, 1010) ntrspv, size_this, dtdp*nspoolv, nspoolv, 2,
+     &     FileFmtVersion
+
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
+     &      'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine header62
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      !    S U B R O U T I N E   H E A D E R 6 3
+      !--------------------------------------------------------------
+      ! Elevation for all nodes: fort.63
+      !--------------------------------------------------------------
+      subroutine header63(lun, size_this)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      integer :: lun, size_this
+
+      write(lun, 1000) rundes, runid, agrid
+      write(lun, 1010) ndsetse, size_this, dtdp*nspoolge, nspoolge, 1,
+     &                 FileFmtVersion
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
+     &       'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine header63
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   H E A D E R _ M A X
+      !--------------------------------------------------------------
+      ! Maximum elevation for all nodes: fort.63
+      !--------------------------------------------------------------
+      subroutine header_max(lun, size_this,nrecs_this)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      integer :: lun, size_this
+      integer :: nrecs_this  !tcm v51.20.06
+
+      write(lun, 1000) rundes, runid, agrid
+      !tcm v51.20.06 Changed number of records from 1 to nrecs_this (1 or 2)
+      write(lun, 1010) nrecs_this, size_this, 1.d0, 1, 1, FileFmtVersion
+
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
+     &      'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine header_max
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      !  S U B R O U T I N E   H E A D E R 6 4
+      !--------------------------------------------------------------
+      ! Velocity for all nodes: fort.64
+      !--------------------------------------------------------------
+      subroutine header64(lun, size_this)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      integer :: lun, size_this
+
+      write(lun, 1000) rundes, runid, agrid
+      write(lun, 1010) ndsetsv, size_this, dtdp*nspoolgv, nspoolgv, 2,
+     &                 FileFmtVersion
+
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
+     &      'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine header64
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   H E A D E R 7 1
+      !--------------------------------------------------------------
+      ! Pressure for Meteorological Recording station: fort.71
+      !--------------------------------------------------------------
+      subroutine header71(lun, size_this)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      integer :: lun, size_this
+
+      write(lun, 1000) rundes, runid, agrid
+      write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1,
+     &                 FileFmtVersion
+
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
+     &       'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine header71
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   H E A D E R 7 2
+      !--------------------------------------------------------------
+      ! Wind Velocity for Meteorological Recording stations : fort.72
+      !--------------------------------------------------------------
+      subroutine header72(lun, size_this)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      integer :: lun, size_this
+
+      write(lun, 1000) rundes, runid, agrid
+      write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 2,
+     &                  FileFmtVersion
+
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
+     &       'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine header72
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   H E A D E R 7 3
+      !--------------------------------------------------------------
+      ! Atmospheric Pressure for all nodes: fort.73
+      !--------------------------------------------------------------
+      subroutine header73(lun, size_this)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      integer :: lun, size_this
+
+      write(lun, 1000) rundes, runid, agrid
+      write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 1,
+     &                 FileFmtVersion
+
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
+     &       'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine header73
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   H E A D E R 7 4
+      !--------------------------------------------------------------
+      ! Wind Stress for all nodes: fort.74
+      !--------------------------------------------------------------
+      subroutine header74(lun, size_this)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      integer :: lun, size_this
+
+      write(lun, 1000) rundes, runid, agrid
+      write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 2,
+     &                 FileFmtVersion
+
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
+     &       'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine header74
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      !  S U B R O U T I N E   H E A D E R 7 7
+      !--------------------------------------------------------------
+      ! Weir elevation change for all nodes: fort.77
+      !--------------------------------------------------------------
+      subroutine header77(lun, size_this)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      integer :: lun, size_this
+
+      write(lun, 1000) rundes, runid, agrid
+      write(lun, 1010) ndsets_tvw, size_this, dtdp*nspool_tvw,
+     &                 nspool_tvw, 1, FileFmtVersion
+
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
+     &      'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine header77
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   H E A D E R 9 1
+      !--------------------------------------------------------------
+      ! Ice Concentration for Meteorological Recording station: fort.91
+      ! tcm v49.64.01 -- added
+      !--------------------------------------------------------------
+      subroutine header91(lun, size_this)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      integer :: lun, size_this
+
+      write(lun, 1000) rundes, runid, agrid
+      write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1,
+     &                 FileFmtVersion
+
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
+     &       'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine header91
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   H E A D E R 9 3
+      !--------------------------------------------------------------
+      ! Ice Concentration Field for all nodes: fort.93
+      ! tcm v49.64.01 -- added
+      !--------------------------------------------------------------
+      subroutine header93(lun, size_this)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      integer :: lun, size_this
+
+      write(lun, 1000) rundes, runid, agrid
+      write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 1,
+     &                 FileFmtVersion
+
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
+     &       'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine header93
+      !--------------------------------------------------------------
+
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   H E A D E R 8 1
+      !--------------------------------------------------------------
+      ! Concentration Recording station: fort.81
+      !--------------------------------------------------------------
+      subroutine header81(lun, size_this)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      integer :: lun, size_this
+
+      write(lun, 1000) rundes, runid, agrid
+      write(lun, 1010) ntrspc, size_this, dtdp*nspoolc, nspoolc, 1,
+     &                  FileFmtVersion
+
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
+     &      'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine header81
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E
+      !    W R I T E  S T A T I O N  H E A D E R
+      !--------------------------------------------------------------
+      ! jgf47.05: This subroutine will write the header for station
+      ! files (scalars or vectors, 2D or 3D). This is intended to
+      ! eventually replace the header subroutines "headerXX" for
+      ! station files.
+      !--------------------------------------------------------------
+      subroutine writeStationHeader(lun, filename, numSta_g, numSta, typeStr)
+      USE SIZES, only : globaldir, localdir, write_local_files, myproc
+      USE GLOBAL, only : rundes, runid
+      use mesh, only : agrid
+      use global_3dvs, only:
+     &     ndset3dsv, nspo3dsv, nfen,
+     &     ndset3dst, nspo3dst,
+     &     ndset3dsd, nspo3dsd
+      implicit none
+      integer, intent(in) :: lun               ! logical unit number to write to
+      character(*), intent(in) :: filename     ! name of file to create
+      integer, intent(in) :: numSta    ! number of stations in subdomain in parallel
+      integer, intent(in) :: numSta_g  ! number of fulldomain stations in parallel 
+      character(len=10), intent(in) :: typeStr ! the type of header to write
+      integer :: nstations
+
+C     Open the file
+      open(lun, file=filename, status='UNKNOWN')
+      write(lun, 1000) rundes, runid, agrid
+      
+C     Unless we are processor 0 or we are supposed to write local
+C     files, there is nothing to do but *** RETURN EARLY ***
+      if ( (myproc.ne.0).and.(.not.WRITE_LOCAL_FILES) ) return
+C
+C     Set the appropriate number of nodes
+      if ( (myproc.eq.1).or.(WRITE_LOCAL_FILES) ) then
+         nstations = numSta
+      else
+         nstations = numSta_g
+      endif
+C    
+      select case(trim(typeStr))
+      case("Elev")
+          write(lun, 1010) ntrspe, nstations, dtdp*nspoole, nspoole, 1,
+     &         FileFmtVersion
+      case("offset")
+          write(lun, 1010) ntrspe, nstations, dtdp*nspoole, nspoole, 1,
+     &         FileFmtVersion
+      case("Vel2D")
+          write(lun, 1010) ntrspv, nstations, dtdp*nspoolv, nspoolv, 2,
+     &         FileFmtVersion
+      case("Vel3D")
+          write(lun, 1020) ndset3dsv, nstations, dtdp*nspo3dsv,
+     &         nspo3dsv, nfen, 3, FileFmtVersion
+      case("Turb3D")
+          write(lun, 1020) ndset3dst, nstations, dtdp*nspo3dst,
+     &         nspo3dst, nfen, 3, FileFmtVersion
+      case("Dens2D")
+          write(ScreenUnit,*)
+     &         'ERROR: 2D density station output not implemented.'
+          stop
+      case("Dens3D")
+          write(lun, 1020) ndset3dsd, nstations, dtdp*nspo3dsd,
+     &         nspo3dsd, nfen, 3, FileFmtVersion
+      case("Press","Wind")
+          write(lun, 1010) ntrspm, nstations, dtdp*nspoolm, nspoolm, 1,
+     &                 FileFmtVersion
+      case("Conc2D")
+          write(lun, 1010) ntrspc, nstations, dtdp*nspoolc, nspoolc, 1,
+     &                  FileFmtVersion
+      case("Conc3D")
+          write(ScreenUnit,*)
+     &         'ERROR: 3D conc. station output not implemented.'
+          stop
+      case default
+          write(ScreenUnit,*)
+     &         'ERROR: Station header type unrecongnized.'
+          stop
+      end select
+
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
+     &      'FileFmtVersion: ',I10)
+ 1020 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,I5,1X,
+     &      'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine writeStationHeader
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E
+      !    W R I T E  D O M A I N  H E A D E R
+      !--------------------------------------------------------------
+      ! jgf47.05: This subroutine will write the header for domain
+      ! output files, i.e., not station files. It handles scalars or
+      ! vectors, 2D or 3D). This is intended to eventually replace
+      ! the header subroutines "headerXX" for domain files.
+      !--------------------------------------------------------------
+      subroutine writeDomainHeader(lun, filename, numNodes_g,
+     &            numNodes, typeStr)
+      USE SIZES
+      USE GLOBAL
+      use global_3dvs, only:
+     &   ndset3dgv, nspo3dgv, nfen,
+     &   ndset3dgt, nspo3dgt,
+     &   ndset3dgd, nspo3dgd
+      implicit none
+      integer lun               ! logical unit number to write to
+      character(*) filename     ! name of file to create
+      integer numNodes          ! number of nodes in this domain
+      integer numNodes_g        ! number of nodes in the full domain
+      character(len=10) typeStr ! the type of header to write
+      integer nodes             ! number of nodes to write into header
+C
+C     Unless we are processor 0 or we are supposed to write local
+C     files, there is nothing to do but *** RETURN EARLY ***
+      if ( (myproc.ne.0).and.(.not.WRITE_LOCAL_FILES) ) return
+C
+C     Set the appropriate number of nodes
+      if ( (myproc.eq.1).or.(WRITE_LOCAL_FILES) ) then
+         nodes = numNodes
+      else
+         nodes = numNodes_g
+      endif
+C
+C     Open the file
+      open(lun, file=filename, status='UNKNOWN')
+      write(lun, 1000) rundes, runid, agrid
+
+      select case(trim(typeStr))
+      case("Elev")
+          write(lun, 1010) ndsetse, nodes, dtdp*nspoolge,
+     &                 nspoolge, 1, FileFmtVersion
+      case("ElevMax")
+          write(lun, 1010) 1, numNodes, 1.d0, 1, 1, FileFmtVersion
+      case("Vel2D")
+          write(lun, 1010) ndsetsv, nodes, dtdp*nspoolgv,
+     &                     nspoolgv, 2, FileFmtVersion
+      case("Vel3D")
+          write(lun, 1020) ndset3dgv, nodes, dtdp*nspo3dgv,
+     &                     nspo3dgv, nfen, 3, FileFmtVersion
+      case("Turb3D")
+          write(lun, 1020) ndset3dgt, nodes, dtdp*nspo3dgt,
+     &                     nspo3dgt, nfen, 3, FileFmtVersion
+      case("Dens2D")
+          write(ScreenUnit,*)
+     &         'ERROR: 2D density output not implemented.'
+          stop
+      case("Dens3D")
+          write(lun, 1020) ndset3dgd, nodes, dtdp*nspo3dgd,
+     &                     nspo3dgd, nfen, 3, FileFmtVersion
+      case("Press","Wind")
+          write(lun, 1010) ndsetsw, nodes, dtdp*nspoolgw,
+     &                     nspoolgw, 1, FileFmtVersion
+      case("Conc2D")
+          write(ScreenUnit,*)
+     &         'ERROR: 2D conc. output not implemented.'
+          stop
+      case("Conc3D")
+          write(ScreenUnit,*)
+     &         'ERROR: 3D conc. output not implemented.'
+          stop
+      case("Tau0")
+          write(lun, 1010) ndsetse, nodes, dtdp*nspoolge,
+     &                 nspoolge, 1, FileFmtVersion
+      case("sponge")
+          write(lun, 1010) 1, nodes, dtdp*nspoolge,
+     &                 nspoolge, 1, FileFmtVersion
+      case("noff")
+          write(lun, 1010) 1, nodes, dtdp*nspoolge,
+     &                 nspoolge, 1, FileFmtVersion
+      case("nodecode")
+          write(lun, 1010) 1, nodes, dtdp*nspoolge,
+     &                 nspoolge, 1, FileFmtVersion
+      case("initDry")
+          write(lun, 1010) 1, nodes, 0.d0, 0, 1, FileFmtVersion
+      case("offset")
+          write(lun, 1010) 1, nodes, dtdp*nspoolge, nspoolge, 1, 
+     &    FileFmtVersion
+      case default
+          write(ScreenUnit,*)
+     &         'ERROR: Full domain header type unrecongnized.'
+      end select
+C
+C     close the file
+      close(lun)
+
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
+     &      'FileFmtVersion: ',I10)
+ 1020 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,I5,1X,
+     &      'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine writeDomainHeader
+      !--------------------------------------------------------------
+
+C----------------------------------------------------------------------
+C       S U B R O U T I N E   R E A D  M I N  M A X
+C----------------------------------------------------------------------
+C
+C     jgf48.4636 Subroutine to read in continuous min and max files,
+C     if they are present.  ASCII Min/Max file are NOT stored
+C     in compact format.
+C
+C----------------------------------------------------------------------
+      subroutine readMinMax(descript, timeloc)
+      IMPLICIT NONE
+      type(OutputDataDescript_t), intent(inout) :: descript
+      real(8), intent(in) :: timeloc  ! adcirc time in seconds
+      integer :: node                 ! node number of the min/max data
+      character(len=80) :: skipline  ! dummy variable for min/max header data
+      integer :: rawNode              ! node number, as read from file
+      real(sz) :: rawDatum            ! array member value at node, as read from file
+      integer :: irawDatum            ! array member value at node, as read from file
+      integer :: numLinesInMinMaxFile ! count the lines to report to log file
+      logical :: tooFewMinMaxLines    ! true if couldn't read enough lines from file
+      integer :: ErrorIO              ! zero if file opened successfully
+      integer :: i
+      integer :: ndsetmax,size_this,nspoolmax,irtype,ffv
+      real(sz) :: time_this
+      character(20) :: dmstr
+      integer, pointer :: idata(:)
+      real(sz), pointer :: rdata(:)
+      real(8) :: TimeMM ! timestamp of the min/max data in seconds since cold start
+      integer :: ITMM ! time step of the min/max data in seconds since cold start
+
+      call setMessageSource("readMinMax")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      !
+      ! Process Header Lines
+      read(descript%lun,*,end=3990,err=3990) skipline   ! 1st header line
+      !tcm v51.20.01 added specific reading of 2nd header line
+      read(descript%lun,*,end=3990,err=3990) ndsetmax,size_this,
+     &                       time_this,nspoolmax,irtype,dmstr,ffv   
+      !
+      ! jgf52.08.20: Read time and timestep and reject min/max data that correspond
+      ! to a future time. This can happen when an analyst hotstarts a run,
+      ! allows it to complete, then makes some adjustments to the input and 
+      ! then tries to re-run it while forgetting to remove or replace the 
+      ! min/max file from the previous attempt. 
+      !
+      ! It is hard to imagine a scenario where someone would want to keep 
+      ! the min/max record from the previous attempt under these circumstances.
+      ! As a result, I am logging it as an error but allowing the run to 
+      ! continue if non-fatal override is enabled, since it would be 
+      ! annoying to have ADCIRC bomb out every time the analyst mistakenly
+      ! leaves a min/max file in place. 
+      read(descript%lun,*,end=3990,err=3990) TimeMM, ITMM   ! TIME and IT line
+      if (TimeMM.gt.TimeLoc) then
+         call allMessage(ERROR,'Max/min file '//trim(descript % file_name)//
+     &     ' contains data written after the hotstart time. '// 
+     &    ' It may have been produced using different input parameters, '//
+     &     ' perhaps during a previously attempted hot start run. '//
+     &     ' Its values will not be read.')
+         if (nfover.eq.0) then
+            call allMessage(ERROR,
+     &       'Execution terminated due to invalid '//
+     &        trim(descript % file_name)//' file.')
+             call globalioTerminate()
+         else
+            call allMessage(INFO,'The record for '//
+     &        trim(descript%file_name)//
+     &        ' will be started anew and exection will continue.')       
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+             call allMessage(DEBUG,"Return.")
+#endif
+             call unsetMessageSource()
+             CLOSE(descript%lun)  !close the max/min file
+             return ! EARLY RETURN
+         endif
+      endif
+      !
+      ! The file exists, it is open, and it doesn't correspond to a future
+      ! time period, so read the data.
+      numLinesInMinMaxFile = 0
+      ! set the number of records we expect to read as well as the array to
+      ! read data into 
+      rdata => descript % array
+      idata => descript % iarray
+      if (mnproc.gt.1) then
+         rdata => descript % array_g
+         idata => descript % iarray_g
+      endif      
+      !
+      !
+      do I=1, descript % num_fd_records
+         if (descript % isInteger.eqv..true.) then
+            read(descript%lun,*,end=3990,err=3990) rawNode, irawDatum !integer
+         else
+            read(descript%lun,*,end=3990,err=3990) rawNode, rawDatum  !float
+         endif
+         if ((rawNode.ge.1).and.(rawNode.le.descript%num_fd_records)) then
+            node = rawNode
+            if (descript % isInteger.eqv..true.) then
+               idata(node) = irawDatum       ! integer
+            else
+               rdata(node) = rawDatum         ! float
+            endif
+         else
+            exit ! jump out of loop if node number is out of bounds
+         endif
+         numLinesInMinMaxFile = numLinesInMinMaxFile + 1
+      enddo
+      !
+      ! If this max/min file has two time records then the second
+      ! record contains the time stamp (sec) relative to cold start 
+      ! at which the max/min was recorded
+      if ((ndsetmax.gt.1).and.
+     &    (descript % minmax_timestamp.eqv..true.)) then  
+         ! In file and asking for them, set the arrays to read data into
+         rdata => descript % array2
+         if (mnproc.gt.1) then
+            rdata => descript % array2_g
+         endif
+         read(descript%lun,*,end=3990,err=3990) skipline   ! TIME and IT line
+         call logMessage(INFO,
+     &       'Max/min timestamps were found in '//trim(descript%file_name)//
+     &       ' and will be loaded and used.')
+         do i=1, descript % num_fd_records
+            read(descript%lun,*,end=3990,err=3990) rawNode, rawDatum
+            if ((rawNode.ge.1).and.(rawNode.le.descript%num_fd_records)) then
+               node = rawNode
+               rdata(node) = rawDatum
+            else
+               exit ! jump out of loop if node number is out of bounds
+            endif
+         enddo
+      endif
+      !
+      ! time stamps not found in file but asking for them anyway
+      if ( (ndsetmax.eq.1).and.
+     &   (descript % minmax_timestamp.eqv..true.) ) then
+         call logMessage(WARNING,'Max/min time stamps not present in '//
+     &      trim(descript % file_name)//
+     &     '. Max/min time stamps will be set to -99999.d0 to initalize.')
+      endif
+      ! time stamps are found in file but not asking for them
+      if ( (ndsetmax.gt.1).and.
+     &      (descript % minmax_timestamp.eqv..false.) ) then  
+            call logMessage(INFO,'Max/min timestamps present in "'//
+     &      trim(descript % file_name)//' but not needed. ')
+      endif
+
+ 3990 CONTINUE ! jump to here if end of file is reached
+      WRITE(scratchMessage,450) numLinesInMinMaxFile, 
+     &   trim(descript % file_name)
+      CALL logMessage(INFO,scratchMessage)
+      IF (numLinesInMinMaxFile.lt.(descript % num_fd_records)) THEN
+          call allMessage(ERROR,'Not enough data in "'
+     &         //trim(descript % file_name)//'".')
+      ENDIF
+
+      CLOSE(descript%lun)  !close the max/min file
+
+ 450  format('Finished reading ',i0,' lines from the "',a,'" file.')
+
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
+
+C-----------------------------------------------------------------------
+      end subroutine readMinMax
+C-----------------------------------------------------------------------
+
+C----------------------------------------------------------------------
+C       S U B R O U T I N E   N D D T 2 R E A D
+C----------------------------------------------------------------------
+C
+C     tcm v50.66.02 Subroutine to read in new bathymetry values.
+C        Time records are separated by a # symbol located in 
+C        column 2.  This format is similar to those for NWS = 4
+C       
+C----------------------------------------------------------------------
+      SUBROUTINE NDDT2GET(lun,RVAL,defval)
+      USE SIZES
+      IMPLICIT NONE
+      INTEGER IJK
+      INTEGER, intent(in) :: lun
+      REAL(SZ), intent(in) :: defval
+      REAL(SZ),intent(inout) ::  rval(*)
+      REAL(SZ) :: tmpval
+      CHARACTER*80 cdum80
+C
+      call setMessageSource("nddt2get")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+C...  go get new record for only some nodes, all
+C...  other nodes keep their current value
+ 170  READ(lun,'(A80)') CDUM80
+      IF(CDUM80(2:2).EQ.'#') GOTO 170
+ 171  READ(CDUM80,'(I8,E13.5)') IJK,tmpval    
+      if (tmpval.ne.defval) RVAL(IJK) = tmpval  !this allows us to exclude values included for record separation purposes in the parallel version
+      READ(lun,'(A80)',end=172) CDUM80
+      IF(CDUM80(2:2).NE.'#') GOTO 171
+ 172  CONTINUE
+ 
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
+      
+      RETURN
+C----------------------------------------------------------------------
+      END SUBROUTINE NDDT2GET
+C----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C            R E A D  A N D  M A P  T O  S U B D O M A I N  2 D
+C                M A X  A N D  M I N 
+C-----------------------------------------------------------------------
+C     TCM v51.20.01 Reads a fulldomain array in ascii format and maps
+C     to a subdomain array.  Modeled after readAndMapToSubdomain2D
+C     jgf52.08.03: Reduced subroutine arguments to OutputDataDescript_t
+C     and an indicator of whether the file was found; removed hardwired
+C     variables. 
+C-----------------------------------------------------------------------
+      subroutine readAndMapToSubdomainMaxMin(descript, timeloc, fileFound)     
+      implicit none
+      type(OutputDataDescript_t), intent(inout) :: descript
+      real(8), intent(in) :: timeloc ! adcirc time in seconds since cold start
+      logical, intent(out) :: fileFound ! .true. if file found and opened
+      integer :: fd_node_number
+      integer :: sd_node_number
+      integer :: ios  ! i/o status
+C
+      call setMessageSource("readAndMapToSubdomainMaxMin")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      call openFileForRead(descript%lun,trim(descript%file_name), ios)
+      if ( ios.ne.0 ) then
+         fileFound = .false.
+         write(scratchMessage,3333) trim(descript % file_name)
+3333    format('Values from ',(a),
+     &       ' will not reflect the solution prior to this hotstart.')
+         call allMessage(INFO,scratchMessage)
+         if (descript % minmax_timestamp.eqv..true.) then 
+            descript % array2(:) = -99999.d0  !tcm v51.20.06
+         endif
+         close(descript%lun)
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         return  ! early return
+      else
+         fileFound = .true.
+         write(scratchMessage,3334) trim(descript % file_name)
+3334    format('Values from ',(a),
+     &       ' will be reflected from the solution prior to this hotstart.')
+         call allMessage(INFO,scratchMessage)
+      endif
+      !
+      ! serial 
+      call readMinMax(descript, timeloc)      
+      if (mnproc.gt.1) then
+         ! loop over subdomain nodes
+         do sd_node_number=1,np
+            ! get the corresponding fulldomain node number
+            fd_node_number = ABS(descript % imap(sd_node_number))
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+            if (descript % isInteger.eqv..true.) then
+               descript % iarray(sd_node_number) = 
+     &                descript % iarray_g(fd_node_number)
+            else
+               descript % array(sd_node_number) = 
+     &                descript % array_g(fd_node_number)
+            endif                
+            if (descript % minmax_timestamp.eqv..true.) then
+               descript % array2(sd_node_number) = 
+     &             descript % array2_g(fd_node_number)          
+            endif
+         end do
+      endif
+C
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      !----------------------------------------------------------------
+      end subroutine readAndMapToSubdomainMaxMin
+      !----------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!     S U B R O U T I N E   G L O B A L I O   T E R M I N A T E
+!-----------------------------------------------------------------------
+      SUBROUTINE globalioTerminate(NO_MPI_FINALIZE)
+#ifdef CMPI
+      USE MESSENGER
+#endif
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
+     &   allMessage, DEBUG, ECHO, INFO, WARNING, ERROR  
+      IMPLICIT NONE 
+      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+C
+      call setMessageSource("globalioTerminate")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      call allMessage(INFO,"ADCIRC Terminating.")
+
+#ifdef CMPI
+      subdomainFatalError = .true.
+      IF (PRESENT(NO_MPI_FINALIZE)) THEN
+        CALL MSG_FINI(NO_MPI_FINALIZE)
+      ELSE
+        CALL MSG_FINI()
+      ENDIF
+#endif
+      STOP 
+C
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
+!-----------------------------------------------------------------------
+      END SUBROUTINE globalioTerminate
+!-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+      end module global_io
+!-----------------------------------------------------------------------

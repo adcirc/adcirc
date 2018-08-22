@@ -1,0 +1,990 @@
+38c38
+<       USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4
+---
+>       USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4, AID8
+58c58
+<       USE WETDRY, ONLY : initializeWettingAndDrying,computeWettingAndDrying
+---
+>       USE WETDRY, ONLY : initializeWettingAndDrying
+79c79,80
+<      &   maxInunDepth_time, outputNodeCode, outputNOFF
+---
+>      &   maxInunDepth_time, outputNodeCode, outputNOFF,
+>      &   writeBinaryOutputFileHeader, skipDownToAppendOutputFile
+178a180,182
+>       character(2048) :: fname ! reusable output file name
+>       integer :: numRecordsPerSnap
+> 
+557,575d560
+< cnd   changes for when using interpolation
+<          do i=1,np
+<             if (nnodecode(i).eq.0.and.(dp(i)+ifnlfa*eta2(i).lt.H0)) then
+< c               write(1001,*)'we have a problem ',myproc,i,eta2(i),dp(i),
+< c     $              nnodecode(i)
+<                eta2(i)=H0-dp(i)
+<                eta1(i)=eta2(i)
+<             endif
+< c  this is a temporary fix only due to interpolation problems!!!
+< c            if (slam(i)/deg2rad.gt.-78.) then
+< c               eta2(i)=0.0
+< c               uu2(i)=0.0
+< c               vv2(i)=0.0
+< c               if (dp(i).gt.0.) nnodecode(i)=1
+< c            endif
+<          enddo
+<          call computeWettingAndDrying(ITHS)
+< cnd
+< 
+1615,1657c1600,1621
+<       IF(NOUTE.EQ.-2) THEN
+<         OPEN(61,FILE=TRIM(LOCALDIR)//'/'//'fort.61',
+<      &                      ACCESS='DIRECT',RECL=NBYTE)
+<         IF(NBYTE.EQ.4) THEN
+<           DO I=1,8
+<             WRITE(61,REC=IESTP+I) RDES4(I)
+<           ENDDO
+<           IESTP=IESTP+8
+<           DO I=1,6
+<             WRITE(61,REC=IESTP+I) RID4(I)
+<           ENDDO
+<           IESTP=IESTP+6
+<           DO I=1,6
+<             WRITE(61,REC=IESTP+I) AID4(I)
+<           ENDDO
+<           IESTP=IESTP+6
+<         ENDIF
+<         IF(NBYTE.EQ.8) THEN
+<           DO I=1,4
+<             WRITE(61,REC=IESTP+I) RDES8(I)
+<           ENDDO
+<           IESTP=IESTP+4
+<           DO I=1,3
+<             WRITE(61,REC=IESTP+I) RID8(I)
+<           ENDDO
+<           IESTP=IESTP+3
+<           DO I=1,3
+<             WRITE(61,REC=IESTP+I) AID8(I)
+<           ENDDO
+<           IESTP=IESTP+3
+<         ENDIF
+<         WRITE(61,REC=IESTP+1) NTRSPE
+<         WRITE(61,REC=IESTP+2) NSTAE
+<         WRITE(61,REC=IESTP+3) DT*NSPOOLE
+<         WRITE(61,REC=IESTP+4) NSPOOLE
+<         WRITE(61,REC=IESTP+5) 1
+<         IESTP=IESTP+5
+<         CLOSE(61)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+<       ENDIF
+<       IF(NOUTE.EQ.-1) THEN
+<          if (write_local_files.eqv..false.) then
+<             CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61',
+<      $        NSTAE_G, NSTAE, HEADER61)
+---
+>       if (write_local_files.eqv..false.) then
+>          fname = TRIM(GLOBALDIR)//'/'//'fort.61'
+>          numRecordsPerSnap = NSTAE_G
+>       else
+>          fname = TRIM(LOCALDIR)//'/'//'fort.61'
+>          numRecordsPerSnap = NSTAE
+>       endif
+>       select case(noute)
+>       case(-2)
+>          OPEN(61,FILE=TRIM(fname),ACCESS='DIRECT',RECL=NBYTE)
+>          call writeBinaryOutputFileHeader(61, 1, IESTP,
+>      &      NTRSPE, NSTAE, NSPOOLE)
+>          CLOSE(61)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+>       case(-1)
+>          CALL OPEN_GBL_FILE(61, TRIM(fname),NSTAE_G, NSTAE, HEADER61)
+>          IESTP=2
+>       case(1)
+>          inquire(file=trim(fname),exist=fileFound)
+>          ! start anew if the file was not found
+>          if (fileFound.eqv..false.) then
+>             CALL OPEN_GBL_FILE(61, TRIM(fname),NSTAE_G, NSTAE, HEADER61)
+>             IESTP=2
+1659,1660c1623,1626
+<             CALL OPEN_GBL_FILE(61, TRIM(LOCALDIR)//'/'//'fort.61',
+<      $        NSTAE_G, NSTAE, HEADER61)
+---
+>             open(61,file=trim(fname),status='old',action='readwrite',
+>      &            position='rewind', access='sequential')
+>             call skipDownToAppendOutputFile(61, timeloc, numRecordsPerSnap,noute) 
+>             close(61)
+1662,1666c1628,1629
+<         IESTP=2
+<       ENDIF
+< 
+<       IF(NOUTE.EQ.2) THEN
+<         OPEN(61,FILE=TRIM(LOCALDIR)//'/'//'fort.61',
+---
+>       case(2)
+>          OPEN(61,FILE=TRIM(LOCALDIR)//'/'//'fort.61',
+1669,1670c1632,1634
+<         CLOSE(61)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+<       ENDIF
+---
+>          CLOSE(61)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+>       case default
+>       end select
+1692,1735c1656,1677
+< 
+<       IF(NOUTV.EQ.-2) THEN
+<         OPEN(62,FILE=TRIM(LOCALDIR)//'/'//'fort.62',
+<      &                      ACCESS='DIRECT',RECL=NBYTE)
+<         IF(NBYTE.EQ.4) THEN
+<           DO I=1,8
+<             WRITE(62,REC=IVSTP+I) RDES4(I)
+<           ENDDO
+<           IVSTP=IVSTP+8
+<           DO I=1,6
+<             WRITE(62,REC=IVSTP+I) RID4(I)
+<           ENDDO
+<           IVSTP=IVSTP+6
+<           DO I=1,6
+<             WRITE(62,REC=IVSTP+I) AID4(I)
+<           ENDDO
+<           IVSTP=IVSTP+6
+<           ENDIF
+<         IF(NBYTE.EQ.8) THEN
+<           DO I=1,4
+<             WRITE(62,REC=IVSTP+I) RDES8(I)
+<           ENDDO
+<           IVSTP=IVSTP+4
+<           DO I=1,3
+<             WRITE(62,REC=IVSTP+I) RID8(I)
+<           ENDDO
+<           IVSTP=IVSTP+3
+<           DO I=1,3
+<             WRITE(62,REC=IVSTP+I) AID8(I)
+<           ENDDO
+<           IVSTP=IVSTP+3
+<         ENDIF
+<         WRITE(62,REC=IVSTP+1) NTRSPV
+<         WRITE(62,REC=IVSTP+2) NSTAV
+<         WRITE(62,REC=IVSTP+3) DT*NSPOOLV
+<         WRITE(62,REC=IVSTP+4) NSPOOLV
+<         WRITE(62,REC=IVSTP+5) 2
+<         IVSTP=IVSTP+5
+<         CLOSE(62)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+<       ENDIF
+<       IF(NOUTV.EQ.-1) THEN
+<          if (write_local_files.eqv..false.) then
+<             CALL OPEN_GBL_FILE(62, TRIM(GLOBALDIR)//'/'//'fort.62',
+<      $         NSTAV_G, NSTAV, HEADER62)
+---
+>       if (write_local_files.eqv..false.) then
+>          fname = TRIM(GLOBALDIR)//'/'//'fort.62'
+>          numRecordsPerSnap = NSTAV_G
+>       else
+>          fname = TRIM(LOCALDIR)//'/'//'fort.62'
+>          numRecordsPerSnap = NSTAV
+>       endif
+>       select case(noutv)
+>       case(-2)
+>          OPEN(62,FILE=TRIM(fname),ACCESS='DIRECT',RECL=NBYTE)
+>          call writeBinaryOutputFileHeader(62, 2, IVSTP,
+>      &       NTRSPV, NSTAV, NSPOOLV)
+>          CLOSE(62)                    ! DO THIS TO FLUSH THE WRITE BUFFER 
+>       case(-1)
+>          CALL OPEN_GBL_FILE(62, TRIM(fname),NSTAV_G, NSTAV, HEADER62)
+>          IVSTP=2
+>       case(1)
+>          inquire(file=trim(fname),exist=fileFound)
+>          ! start anew if the file was not found
+>          if (fileFound.eqv..false.) then
+>             CALL OPEN_GBL_FILE(62, TRIM(fname),NSTAV_G, NSTAV, HEADER62)
+>             IVSTP=2
+1737,1738c1679,1682
+<             CALL OPEN_GBL_FILE(62, TRIM(LOCALDIR)//'/'//'fort.62',
+<      $         NSTAV_G, NSTAV, HEADER62)
+---
+>             open(62,file=trim(fname),status='old',action='readwrite',
+>      &            position='rewind', access='sequential')
+>             call skipDownToAppendOutputFile(62, timeloc, numRecordsPerSnap,noutv) 
+>             close(62)
+1740,1742c1684
+<         IVSTP=2
+<       ENDIF
+<       IF(NOUTV.EQ.2) THEN
+---
+>       case(2)
+1747c1689,1690
+<       ENDIF
+---
+>       case default
+>       end select
+1768,1819c1711,1740
+< 
+<       IF(NOUTC.EQ.-2) THEN
+<         OPEN(81,FILE=TRIM(LOCALDIR)//'/'//'fort.81',
+<      &                      ACCESS='DIRECT',RECL=NBYTE)
+<         IF(NBYTE.EQ.4) THEN
+<           DO I=1,8
+<             WRITE(81,REC=ICSTP+I) RDES4(I)
+<           ENDDO
+<           ICSTP=ICSTP+8
+<           DO I=1,6
+<             WRITE(81,REC=ICSTP+I) RID4(I)
+<           ENDDO
+<           ICSTP=ICSTP+6
+<           DO I=1,6
+<             WRITE(81,REC=ICSTP+I) AID4(I)
+<           ENDDO
+<           ICSTP=ICSTP+6
+<         ENDIF
+<         IF(NBYTE.EQ.8) THEN
+<           DO I=1,4
+<             WRITE(81,REC=ICSTP+I) RDES8(I)
+<           ENDDO
+<           ICSTP=ICSTP+4
+<           DO I=1,3
+<             WRITE(81,REC=ICSTP+I) RID8(I)
+<           ENDDO
+<           ICSTP=ICSTP+3
+<           DO I=1,3
+<             WRITE(81,REC=ICSTP+I) AID8(I)
+<           ENDDO
+<           ICSTP=ICSTP+3
+<         ENDIF
+<         WRITE(81,REC=ICSTP+1) NTRSPC
+<         WRITE(81,REC=ICSTP+2) NSTAC
+<         WRITE(81,REC=ICSTP+3) DT*NSPOOLC
+<         WRITE(81,REC=ICSTP+4) NSPOOLC
+<         WRITE(81,REC=ICSTP+5) 1
+<         ICSTP=ICSTP+5
+<         CLOSE(81)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+<       ENDIF
+<       IF(NOUTC.EQ.-1) THEN
+<          if (write_local_files.eqv..false.) then
+<             CALL OPEN_GBL_FILE(81, TRIM(GLOBALDIR)//'/'//'fort.81',
+<      $       NSTAC_G, NSTAC, HEADER81)
+<          else 
+<             CALL OPEN_GBL_FILE(81, TRIM(LOCALDIR)//'/'//'fort.81',
+<      $       NSTAC_G, NSTAC, HEADER81)
+<          endif
+<         ICSTP=2
+<         CLOSE(81)
+<       ENDIF
+<       IF(NOUTC.EQ.2) THEN
+---
+>       if (write_local_files.eqv..false.) then
+>          fname = TRIM(GLOBALDIR)//'/'//'fort.81'
+>          numRecordsPerSnap = NSTAC_G
+>       else
+>          fname = TRIM(LOCALDIR)//'/'//'fort.81'
+>          numRecordsPerSnap = NSTAC
+>       endif
+>       select case(noutc)
+>       case(-2)
+>          OPEN(81,FILE=TRIM(fname),ACCESS='DIRECT',RECL=NBYTE)
+>          call writeBinaryOutputFileHeader(81, 1, ICSTP,
+>      &       NTRSPC, NSTAC, NSPOOLC)
+>          CLOSE(81)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+>       case(-1)
+>          CALL OPEN_GBL_FILE(81, TRIM(fname),NSTAC_G, NSTAC, HEADER81)
+>          ICSTP=2
+>          CLOSE(81)
+>       case(1)
+>          inquire(file=trim(fname),exist=fileFound)
+>          ! start anew if the file was not found
+>          if (fileFound.eqv..false.) then
+>             CALL OPEN_GBL_FILE(81, TRIM(fname),NSTAC_G, NSTAC, HEADER81)
+>             ICSTP=2
+>          else
+>             open(81,file=trim(fname),status='old',action='readwrite',
+>      &            position='rewind', access='sequential')
+>             call skipDownToAppendOutputFile(81,timeloc,numRecordsPerSnap,noutc) 
+>             close(81)
+>          endif         
+>       case(2)
+1824,1825c1745,1746
+<       ENDIF
+< 
+---
+>       case default
+>       end select
+1863a1785
+>    
+1983a1906,1968
+> 
+>       if (noutm.eq.1) then
+>          ! pressure station file
+>          if (write_local_files.eqv..false.) then
+>             fname = TRIM(GLOBALDIR)//'/'//'fort.71'
+>             numRecordsPerSnap = NSTAM_G
+>          else
+>             fname = TRIM(LOCALDIR)//'/'//'fort.71'
+>             numRecordsPerSnap = NSTAM
+>          endif
+>          inquire(file=trim(fname),exist=fileFound)
+>          ! start anew if the file was not found
+>          if (fileFound.eqv..false.) then
+>             CALL OPEN_GBL_FILE(71, TRIM(fname),NSTAM_G, NSTAM, HEADER71)
+>             IPSTP=2
+>          else
+>             open(71,file=trim(fname),status='old',action='readwrite',
+>      &            position='rewind', access='sequential')
+>             call skipDownToAppendOutputFile(71, timeloc, numRecordsPerSnap,noutm) 
+>             close(71)
+>          endif
+>          ! wind station file
+>          if (write_local_files.eqv..false.) then
+>             fname = TRIM(GLOBALDIR)//'/'//'fort.72'
+>             numRecordsPerSnap = NSTAM_G
+>          else
+>             fname = TRIM(LOCALDIR)//'/'//'fort.72'
+>             numRecordsPerSnap = NSTAM
+>          endif
+>          inquire(file=trim(fname),exist=fileFound)
+>          ! start anew if the file was not found
+>          if (fileFound.eqv..false.) then
+>             CALL OPEN_GBL_FILE(72, TRIM(fname),NSTAM_G, NSTAM, HEADER72)
+>             IPSTP=2
+>          else
+>             open(72,file=trim(fname),status='old',action='readwrite',
+>      &            position='rewind', access='sequential')
+>             call skipDownToAppendOutputFile(72, timeloc, numRecordsPerSnap,noutm) 
+>             close(72)
+>          endif
+>          ! ice station file
+>          if (ncice.ne.0) then
+>             if (write_local_files.eqv..false.) then
+>                fname = TRIM(GLOBALDIR)//'/'//'fort.91'
+>                numRecordsPerSnap = NSTAM_G
+>             else
+>                fname = TRIM(LOCALDIR)//'/'//'fort.91'
+>                numRecordsPerSnap = NSTAM
+>             endif
+>             inquire(file=trim(fname),exist=fileFound)
+>             ! start anew if the file was not found
+>             if (fileFound.eqv..false.) then
+>                CALL OPEN_GBL_FILE(91, TRIM(fname),NSTAM_G, NSTAM, HEADER91)
+>                IICESTP=2
+>             else
+>                open(91,file=trim(fname),status='old',action='readwrite',
+>      &            position='rewind', access='sequential')
+>                call skipDownToAppendOutputFile(91, timeloc, numRecordsPerSnap,noutm) 
+>                close(91)
+>             endif
+>          endif
+>       endif
+> 
+2001d1985
+< 
+2009c1993,1994
+<       IF (NDDT.NE.0) WRITE(16,1035) IBSTP,NSCOUB
+---
+>       IF (NDDT.NE.0) then
+>          WRITE(16,1035) IBSTP,NSCOUB
+2014,2018c1999,2003
+<       IF ((NDDT.NE.0).AND.(NOUTE.LT.0)) THEN
+<         IBSTP=0
+<         NSCOUB=0
+<         IF((NTCYSB.LT.ITHS).AND.(NSPOOLE.GT.0)) THEN
+<           NTCYSB=NTCYSB+((REAL(ITHS)-REAL(NTCYSB))/
+---
+>          IF (NOUTE.LT.0) THEN
+>             IBSTP=0
+>             NSCOUB=0
+>             IF((NTCYSB.LT.ITHS).AND.(NSPOOLE.GT.0)) THEN
+>                NTCYSB=NTCYSB+((REAL(ITHS)-REAL(NTCYSB))/
+2020,2065c2005,2010
+<           IF(NTCYSB.LT.ITHS) NTCYSB=NTCYSB+NSPOOLE
+<           IF(NSPOOLE.NE.0) NTRSPB=(NTCYFB-NTCYSB)/NSPOOLE
+<         ENDIF
+<         WRITE(16,1036)
+<  1036   FORMAT(//,' A NEW BATHYMETRY STATION FILE WILL BE STARTED')
+<       ENDIF
+<       IF ((NDDT.NE.0).AND.(NOUTE.EQ.-2)) THEN
+<         OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
+<      &                      ACCESS='DIRECT',RECL=NBYTE)
+<         IF(NBYTE.EQ.4) THEN
+<           DO I=1,8
+<             WRITE(75,REC=IBSTP+I) RDES4(I)
+<           ENDDO
+<           IBSTP=IBSTP+8
+<           DO I=1,6
+<             WRITE(75,REC=IBSTP+I) RID4(I)
+<           ENDDO
+<           IBSTP=IBSTP+6
+<           DO I=1,6
+<             WRITE(75,REC=IBSTP+I) AID4(I)
+<           ENDDO
+<           IBSTP=IBSTP+6
+<         ENDIF
+<         IF(NBYTE.EQ.8) THEN
+<           DO I=1,4
+<             WRITE(75,REC=IBSTP+I) RDES8(I)
+<           ENDDO
+<           IBSTP=IBSTP+4
+<           DO I=1,3
+<             WRITE(75,REC=IBSTP+I) RID8(I)
+<           ENDDO
+<           IBSTP=IBSTP+3
+<           DO I=1,3
+<             WRITE(75,REC=IBSTP+I) AID8(I)
+<           ENDDO
+<           IBSTP=IBSTP+3
+<         ENDIF
+<         WRITE(75,REC=IBSTP+1) NTRSPB
+<         WRITE(75,REC=IBSTP+2) NSTAE
+<         WRITE(75,REC=IBSTP+3) DT*NSPOOLE
+<         WRITE(75,REC=IBSTP+4) NSPOOLE
+<         WRITE(75,REC=IBSTP+5) 1
+<         IBSTP=IBSTP+5
+<         CLOSE(75)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+<       ENDIF
+<       IF ((NDDT.NE.0).AND.(NOUTE.EQ.-1)) THEN
+---
+>                IF(NTCYSB.LT.ITHS) NTCYSB=NTCYSB+NSPOOLE
+>                IF(NSPOOLE.NE.0) NTRSPB=(NTCYFB-NTCYSB)/NSPOOLE
+>             ENDIF
+>          WRITE(16,1036)
+>  1036    FORMAT(//,' A NEW BATHYMETRY STATION FILE WILL BE STARTED')
+>          ENDIF
+2067,2068c2012,2013
+<             CALL OPEN_GBL_FILE(75, TRIM(GLOBALDIR)//'/'//'fort.75',
+<      $         NSTAE_G, NSTAE, HEADER61)
+---
+>             fname = TRIM(GLOBALDIR)//'/'//'fort.75'
+>             numRecordsPerSnap = NSTAE_G
+2070,2077c2015,2040
+<             CALL OPEN_GBL_FILE(75, TRIM(LOCALDIR)//'/'//'fort.75',
+<      $         NSTAE_G, NSTAE, HEADER61)         
+<          endif 
+<         IESTP=2
+<       ENDIF
+< 
+<       IF ((NDDT.NE.0).AND.(NOUTE.EQ.2)) THEN
+<         OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
+---
+>             fname = TRIM(LOCALDIR)//'/'//'fort.75'
+>             numRecordsPerSnap = NSTAE
+>          endif
+>          select case(noute)
+>          case(-2)
+>             OPEN(75,FILE=TRIM(fname),ACCESS='DIRECT',RECL=NBYTE)
+>             call writeBinaryOutputFileHeader(75, 1, IBSTP,
+>      &         NTRSPB, NSTAE, NSPOOLE)
+>             CLOSE(75)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+>          case(-1)
+>             CALL OPEN_GBL_FILE(75, TRIM(fname),NSTAE_G, NSTAE, HEADER61)
+>             IESTP=2
+>          case(1)
+>             inquire(file=trim(fname),exist=fileFound)
+>             ! start anew if the file was not found
+>             if (fileFound.eqv..false.) then
+>                CALL OPEN_GBL_FILE(75, TRIM(fname),NSTAE_G, NSTAE, HEADER61)
+>                IESTP=2
+>             else
+>                open(75,file=trim(fname),status='old',action='readwrite',
+>      &            position='rewind', access='sequential')
+>                call skipDownToAppendOutputFile(75,timeloc, numRecordsPerSnap,noute) 
+>                close(75)
+>             endif
+>          case(2)
+>             OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
+2079,2080c2042,2045
+< c       WRITE(75,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+<         CLOSE(75)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+---
+> c           WRITE(75,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+>             CLOSE(75)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+>          case default
+>          end select
+2086,2087c2051,2052
+<         WRITE(16,1046) IGEP,NSCOUGE
+<  1046   FORMAT(//,1X,I8,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
+---
+>       WRITE(16,1046) IGEP,NSCOUGE
+>  1046 FORMAT(//,1X,I8,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
+2091,2101c2056,2066
+< C....   TCM V50.66.01 ADDITIONS FOR TIME VARYING BATYMETRY
+< C....   SET THESE VARIABLES FOR USE LATER 
+<         IGBP = IGEP
+<         NTCYSGB = NTCYSGE
+<         NTCYFGB = NTCYFGE
+<         NSCOUGB = NSCOUGE
+< 
+<         IF(NOUTGE.LT.0) THEN
+<           IGEP=0
+<           NSCOUGE=0
+<           IF((NTCYSGE.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
+---
+> C.... TCM V50.66.01 ADDITIONS FOR TIME VARYING BATYMETRY
+> C.... SET THESE VARIABLES FOR USE LATER 
+>       IGBP = IGEP
+>       NTCYSGB = NTCYSGE
+>       NTCYFGB = NTCYFGE
+>       NSCOUGB = NSCOUGE
+> 
+>       IF(NOUTGE.LT.0) THEN
+>          IGEP=0
+>          NSCOUGE=0
+>          IF((NTCYSGE.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
+2105c2070
+< C     kmd48.33bc - changed NDSETSE for use of new DTDPHS
+---
+> C           kmd48.33bc - changed NDSETSE for use of new DTDPHS
+2107c2072
+<               NDSETSE=((NTCYFGE*DTDP)-(NTCYSGE*DTDPHS))/
+---
+>                NDSETSE=((NTCYFGE*DTDP)-(NTCYSGE*DTDPHS))/
+2110c2075
+<               NDSETSE=(NTCYFGE-NTCYSGE)/NSPOOLGE
+---
+>                NDSETSE=(NTCYFGE-NTCYSGE)/NSPOOLGE
+2112,2115c2077,2080
+<             ENDIF
+<           WRITE(16,1047)
+<  1047     FORMAT(//,' A NEW GLOBAL ELEVATION FILE WILL BE STARTED')
+<           ENDIF
+---
+>          ENDIF
+>          WRITE(16,1047)
+>  1047    FORMAT(//,' A NEW GLOBAL ELEVATION FILE WILL BE STARTED')
+>       ENDIF
+2117,2118c2082,2083
+<         IF(NOUTGE.EQ.-2) THEN
+<           OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
+---
+>       IF(NOUTGE.EQ.-2) THEN
+>          OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
+2120,2153c2085,2086
+<           IF(NBYTE.EQ.4) THEN
+<             DO I=1,8
+<               WRITE(63,REC=IGEP+I) RDES4(I)
+<               ENDDO
+<             IGEP=IGEP+8
+<             DO I=1,6
+<               WRITE(63,REC=IGEP+I) RID4(I)
+<               ENDDO
+<             IGEP=IGEP+6
+<             DO I=1,6
+<               WRITE(63,REC=IGEP+I) AID4(I)
+<               ENDDO
+<             IGEP=IGEP+6
+<             ENDIF
+<           IF(NBYTE.EQ.8) THEN
+<             DO I=1,4
+<               WRITE(63,REC=IGEP+I) RDES8(I)
+<               ENDDO
+<             IGEP=IGEP+4
+<             DO I=1,3
+<               WRITE(63,REC=IGEP+I) RID8(I)
+<               ENDDO
+<             IGEP=IGEP+3
+<             DO I=1,3
+<               WRITE(63,REC=IGEP+I) AID8(I)
+<               ENDDO
+<             IGEP=IGEP+3
+<             ENDIF
+<           WRITE(63,REC=IGEP+1) NDSETSE
+<           WRITE(63,REC=IGEP+2) NP
+<           WRITE(63,REC=IGEP+3) DT*NSPOOLGE
+<           WRITE(63,REC=IGEP+4) NSPOOLGE
+<           WRITE(63,REC=IGEP+5) 1
+<           IGEP=IGEP+5
+---
+>          call writeBinaryOutputFileHeader(63, 1, IGEP,
+>      &       NDSETSE, NP, NSPOOLGE)
+2155c2088
+<         ENDIF
+---
+>       ENDIF
+2200a2134,2202
+>       ! find proper place to append
+>       if ((noutge.eq.1).or.(noutge.eq.4)) then
+>          ! fort.63
+>          if (write_local_files.eqv..false.) then
+>             fname = TRIM(GLOBALDIR)//'/'//'fort.63'
+>             numRecordsPerSnap = NP_G
+>          else
+>             fname = TRIM(LOCALDIR)//'/'//'fort.63'
+>             numRecordsPerSnap = NP
+>          endif
+>          inquire(file=trim(fname),exist=fileFound)
+>          ! start anew if the file was not found
+>          if (fileFound.eqv..false.) then
+>             CALL OPEN_GBL_FILE(63, TRIM(fname),NP_G, NP, HEADER63)
+>             IGEP=2
+>          else
+>             open(63,file=trim(fname),status='old',action='readwrite',
+>      &            position='rewind', access='sequential')
+>             call skipDownToAppendOutputFile(63,timeloc, numRecordsPerSnap,noutge) 
+>             close(63)
+>          endif
+>          ! fort.90 (tau0)
+>          if (outputtau0) then
+>             if (write_local_files.eqv..false.) then
+>                fname = TRIM(GLOBALDIR)//'/'//'fort.90'
+>                numRecordsPerSnap = NP_G
+>             else
+>                fname = TRIM(LOCALDIR)//'/'//'fort.90'
+>                numRecordsPerSnap = NP
+>             endif
+>             inquire(file=trim(fname),exist=fileFound)
+>             ! start anew if the file was not found
+>             if (fileFound.eqv..false.) then
+>                CALL writeDomainHeader(90,
+>      &                 TRIM(LOCALDIR)//'/'//'fort.90',
+>      $                  NP_G, NP, 'Tau0      ')
+>                IGEP=2
+>             else
+>                open(90,file=trim(fname),status='old',action='readwrite',
+>      &            position='rewind', access='sequential')
+>                call skipDownToAppendOutputFile(90,timeloc, numRecordsPerSnap,noutge) 
+>                close(90)
+>             endif
+>          endif
+>          ! fort.92 sponge layer
+>          if (outputsponge) then
+>             if (write_local_files.eqv..false.) then
+>                fname = TRIM(GLOBALDIR)//'/'//'fort.92'
+>                numRecordsPerSnap = NP_G
+>             else
+>                fname = TRIM(LOCALDIR)//'/'//'fort.92'
+>                numRecordsPerSnap = NP
+>             endif
+>             inquire(file=trim(fname),exist=fileFound)
+>             ! start anew if the file was not found
+>             if (fileFound.eqv..false.) then
+>                CALL writeDomainHeader(92,
+>      &                TRIM(LOCALDIR)//'/'//'fort.92',
+>      $                NP_G, NP, 'sponge      ')
+>                IGEP=2
+>             else
+>                open(92,file=trim(fname),status='old',action='readwrite',
+>      &            position='rewind', access='sequential')
+>                call skipDownToAppendOutputFile(92,timeloc, numRecordsPerSnap,noutge) 
+>                close(92)
+>             endif
+>          endif
+>       endif
+>       
+2237,2270c2239,2240
+<           IF(NBYTE.EQ.4) THEN
+<             DO I=1,8
+<               WRITE(64,REC=IGVP+I) RDES4(I)
+<               ENDDO
+<             IGVP=IGVP+8
+<             DO I=1,6
+<               WRITE(64,REC=IGVP+I) RID4(I)
+<               ENDDO
+<             IGVP=IGVP+6
+<             DO I=1,6
+<               WRITE(64,REC=IGVP+I) AID4(I)
+<               ENDDO
+<             IGVP=IGVP+6
+<             ENDIF
+<           IF(NBYTE.EQ.8) THEN
+<             DO I=1,4
+<               WRITE(64,REC=IGVP+I) RDES8(I)
+<               ENDDO
+<             IGVP=IGVP+4
+<             DO I=1,3
+<               WRITE(64,REC=IGVP+I) RID8(I)
+<               ENDDO
+<             IGVP=IGVP+3
+<             DO I=1,3
+<               WRITE(64,REC=IGVP+I) AID8(I)
+<               ENDDO
+<             IGVP=IGVP+3
+<             ENDIF
+<           WRITE(64,REC=IGVP+1) NDSETSV
+<           WRITE(64,REC=IGVP+2) NP
+<           WRITE(64,REC=IGVP+3) DT*NSPOOLGV
+<           WRITE(64,REC=IGVP+4) NSPOOLGV
+<           WRITE(64,REC=IGVP+5) 2
+<           IGVP=IGVP+5
+---
+>           call writeBinaryOutputFileHeader(64, 2, IGVP,
+>      &        NDSETSV, NP, NSPOOLGV)
+2272c2242
+<         ENDIF
+---
+>        ENDIF
+2289a2260,2280
+>       IF((NOUTGV.EQ.1).or.(NOUTGV.eq.4)) THEN
+>          ! append fort.64 
+>          if (write_local_files.eqv..false.) then
+>             fname = TRIM(GLOBALDIR)//'/'//'fort.64'
+>             numRecordsPerSnap = NP_G
+>          else
+>             fname = TRIM(LOCALDIR)//'/'//'fort.64'
+>             numRecordsPerSnap = NP
+>          endif
+>          inquire(file=trim(fname),exist=fileFound)
+>          ! start anew if the file was not found
+>          if (fileFound.eqv..false.) then
+>             CALL OPEN_GBL_FILE(64, TRIM(fname),NP_G, NP, HEADER64)
+>             IGVP=2
+>          else
+>             open(64,file=trim(fname),status='old',action='readwrite',
+>      &            position='rewind', access='sequential')
+>             call skipDownToAppendOutputFile(64,timeloc, numRecordsPerSnap,noutgv) 
+>             close(64)
+>          endif
+>       endif
+2314,2347c2305,2306
+<           IF(NBYTE.EQ.4) THEN
+<             DO I=1,8
+<               WRITE(77,REC=IG_TVW+I) RDES4(I)
+<               ENDDO
+<             IG_TVW=IG_TVW+8
+<             DO I=1,6
+<               WRITE(77,REC=IG_TVW+I) RID4(I)
+<               ENDDO
+<             IG_TVW=IG_TVW+6
+<             DO I=1,6
+<               WRITE(77,REC=IG_TVW+I) AID4(I)
+<             ENDDO
+<             IG_TVW=IG_TVW+6
+<           ENDIF
+<           IF(NBYTE.EQ.8) THEN
+<             DO I=1,4
+<               WRITE(77,REC=IG_TVW+I) RDES8(I)
+<             ENDDO
+<             IG_TVW=IG_TVW+4
+<             DO I=1,3
+<               WRITE(77,REC=IG_TVW+I) RID8(I)
+<             ENDDO
+<             IG_TVW=IG_TVW+3
+<             DO I=1,3
+<               WRITE(77,REC=IG_TVW+I) AID8(I)
+<             ENDDO
+<             IG_TVW=IG_TVW+3
+<           ENDIF
+<           WRITE(77,REC=IG_TVW+1) NDSETS_TVW
+<           WRITE(77,REC=IG_TVW+2) NP
+<           WRITE(77,REC=IG_TVW+3) DT*NSPOOL_TVW
+<           WRITE(77,REC=IG_TVW+4) NSPOOL_TVW
+<           WRITE(77,REC=IG_TVW+5) 1
+<           IG_TVW=IG_TVW+5
+---
+>           call writeBinaryOutputFileHeader(77, 1, IG_TVW,
+>      &        NDSETS_TVW, NP, NSPOOL_TVW)
+2392,2425c2351,2352
+<           IF(NBYTE.EQ.4) THEN
+<             DO I=1,8
+<               WRITE(83,REC=IGCP+I) RDES4(I)
+<               ENDDO
+<             IGCP=IGCP+8
+<             DO I=1,6
+<               WRITE(83,REC=IGCP+I) RID4(I)
+<               ENDDO
+<             IGCP=IGCP+6
+<             DO I=1,6
+<               WRITE(83,REC=IGCP+I) AID4(I)
+<               ENDDO
+<             IGCP=IGCP+6
+<             ENDIF
+<           IF(NBYTE.EQ.8) THEN
+<             DO I=1,4
+<               WRITE(83,REC=IGCP+I) RDES8(I)
+<               ENDDO
+<             IGCP=IGCP+4
+<             DO I=1,3
+<               WRITE(83,REC=IGCP+I) RID8(I)
+<               ENDDO
+<             IGCP=IGCP+3
+<             DO I=1,3
+<               WRITE(83,REC=IGCP+I) AID8(I)
+<               ENDDO
+<             IGCP=IGCP+3
+<             ENDIF
+<           WRITE(83,REC=IGCP+1) NDSETSC
+<           WRITE(83,REC=IGCP+2) NP
+<           WRITE(83,REC=IGCP+3) DT*NSPOOLGC
+<           WRITE(83,REC=IGCP+4) NSPOOLGC
+<           WRITE(83,REC=IGCP+5) 1
+<           IGCP=IGCP+5
+---
+>           call writeBinaryOutputFileHeader(83, 1, IGCP,
+>      &        NDSETSC, NP, NSPOOLGC)    
+2632,2665c2559,2560
+<               IF(NBYTE.EQ.4) THEN
+<                  DO I=1,8
+<                     WRITE(164,REC=IGRadS+I) RDES4(I)
+<                  ENDDO
+<                  IGRadS=IGRadS+8
+<                  DO I=1,6
+<                     WRITE(164,REC=IGRadS+I) RID4(I)
+<                  ENDDO
+<                  IGRadS=IGRadS+6
+<                  DO I=1,6
+<                     WRITE(164,REC=IGRadS+I) AID4(I)
+<                  ENDDO
+<                  IGRadS=IGRadS+6
+<               ENDIF
+<               IF(NBYTE.EQ.8) THEN
+<                  DO I=1,4
+<                     WRITE(164,REC=IGRadS+I) RDES8(I)
+<                  ENDDO
+<                  IGRadS=IGRadS+4
+<                  DO I=1,3
+<                     WRITE(164,REC=IGRadS+I) RID8(I)
+<                  ENDDO
+<                  IGRadS=IGRadS+3
+<                  DO I=1,3
+<                     WRITE(164,REC=IGRadS+I) AID8(I)
+<                  ENDDO
+<                  IGRadS=IGRadS+3
+<               ENDIF
+<               WRITE(164,REC=IGRadS+1) NDSETSW
+<               WRITE(164,REC=IGRadS+2) NP
+<               WRITE(164,REC=IGRadS+3) DT*NSPOOLGW
+<               WRITE(164,REC=IGRadS+4) NSPOOLGW
+<               WRITE(164,REC=IGRadS+5) 2
+<               IGRadS=IGRadS+5
+---
+>               call writeBinaryOutputFileHeader(164, 2, IGRadS,
+>      &            NDSETSW, NP, NSPOOLGW)
+2680a2576,2658
+>       IF ((NOUTGW.EQ.1).or.(NOUTGW.eq.4)) THEN
+>          ! append fort.73 
+>          if (write_local_files.eqv..false.) then
+>             fname = TRIM(GLOBALDIR)//'/'//'fort.73'
+>             numRecordsPerSnap = NP_G
+>          else
+>             fname = TRIM(LOCALDIR)//'/'//'fort.73'
+>             numRecordsPerSnap = NP
+>          endif
+>          inquire(file=trim(fname),exist=fileFound)
+>          ! start anew if the file was not found
+>          if (fileFound.eqv..false.) then
+>             CALL OPEN_GBL_FILE(73, TRIM(fname),NP_G, NP, HEADER73)
+>             IGPP=2
+>          else
+>             open(73,file=trim(fname),status='old',action='readwrite',
+>      &            position='rewind', access='sequential')
+>             call skipDownToAppendOutputFile(73,timeloc, numRecordsPerSnap,noutgw) 
+>             close(73)
+>          endif
+>          ! append fort.74 
+>          if (write_local_files.eqv..false.) then
+>             fname = TRIM(GLOBALDIR)//'/'//'fort.74'
+>             numRecordsPerSnap = NP_G
+>          else
+>             fname = TRIM(LOCALDIR)//'/'//'fort.74'
+>             numRecordsPerSnap = NP
+>          endif
+>          inquire(file=trim(fname),exist=fileFound)
+>          ! start anew if the file was not found
+>          if (fileFound.eqv..false.) then
+>             CALL OPEN_GBL_FILE(74, TRIM(fname),NP_G, NP, HEADER74)
+>             IGWP=2
+>          else
+>             open(74,file=trim(fname),status='old',action='readwrite',
+>      &            position='rewind', access='sequential')
+>             call skipDownToAppendOutputFile(74,timeloc, numRecordsPerSnap,noutgw) 
+>             close(74)
+>          endif
+>          ! append wave radiation stresses
+>          IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
+>             if (write_local_files.eqv..false.) then
+>                fname = TRIM(GLOBALDIR)//'/'//'rads.64'
+>                numRecordsPerSnap = NP_G
+>             else
+>                fname = TRIM(LOCALDIR)//'/'//'rads.64'
+>                numRecordsPerSnap = NP
+>             endif
+>             inquire(file=trim(fname),exist=fileFound)
+>             ! start anew if the file was not found
+>             if (fileFound.eqv..false.) then
+>                CALL OPEN_GBL_FILE(164, TRIM(fname),NP_G, NP, HEADER74)
+>                IGWP=2
+>             else
+>                open(164,file=trim(fname),status='old',action='readwrite',
+>      &            position='rewind', access='sequential')
+>                call skipDownToAppendOutputFile(164,timeloc, numRecordsPerSnap,noutgw) 
+>                close(164)
+>             endif
+>          endif
+>          ! append ice
+>          IF (NCICE.NE.0) THEN
+>             if (write_local_files.eqv..false.) then
+>                fname = TRIM(GLOBALDIR)//'/'//'fort.93'
+>                numRecordsPerSnap = NP_G
+>             else
+>                fname = TRIM(LOCALDIR)//'/'//'fort.93'
+>                numRecordsPerSnap = NP
+>             endif
+>             inquire(file=trim(fname),exist=fileFound)
+>             ! start anew if the file was not found
+>             if (fileFound.eqv..false.) then
+>                CALL OPEN_GBL_FILE(93, TRIM(fname),NP_G, NP, HEADER93)
+>                IGIP=2
+>             else
+>                open(164,file=trim(fname),status='old',action='readwrite',
+>      &            position='rewind', access='sequential')
+>                call skipDownToAppendOutputFile(93,timeloc, numRecordsPerSnap,noutgw) 
+>                close(93)
+>             endif
+>          endif
+>       endif
+> 
+2729,2762c2707,2708
+<            IF(NBYTE.EQ.4) THEN
+<               DO I=1,8
+<                 WRITE(76,REC=IGBP+I) RDES4(I)
+<               ENDDO
+<               IGBP=IGBP+8
+<               DO I=1,6
+<                  WRITE(76,REC=IGBP+I) RID4(I)
+<               ENDDO
+<               IGBP=IGBP+6
+<               DO I=1,6
+<                  WRITE(76,REC=IGBP+I) AID4(I)
+<               ENDDO
+<               IGBP=IGBP+6
+<            ENDIF
+<            IF(NBYTE.EQ.8) THEN
+<               DO I=1,4
+<                  WRITE(76,REC=IGBP+I) RDES8(I)
+<               ENDDO
+<               IGBP=IGBP+4
+<               DO I=1,3
+<                  WRITE(76,REC=IGBP+I) RID8(I)
+<               ENDDO
+<               IGBP=IGBP+3
+<               DO I=1,3
+<                  WRITE(76,REC=IGBP+I) AID8(I)
+<               ENDDO
+<               IGBP=IGBP+3
+<            ENDIF
+<            WRITE(76,REC=IGBP+1) NDSETSE
+<            WRITE(76,REC=IGBP+2) NP
+<            WRITE(76,REC=IGBP+3) DT*NSPOOLGE
+<            WRITE(76,REC=IGBP+4) NSPOOLGE
+<            WRITE(76,REC=IGBP+5) 1
+<            IGBP=IGBP+5
+---
+>            call writeBinaryOutputFileHeader(76, 2, IGBP,
+>      &            NDSETSE, NP, NSPOOLGE)
+2776a2723,2747
+>         
+>       ! append time varying bathy
+>       IF ((nddt.NE.0).and.((noutge.eq.1).or.(noutge.eq.4))) THEN
+>          if (write_local_files.eqv..false.) then
+>             fname = TRIM(GLOBALDIR)//'/'//'fort.76'
+>             numRecordsPerSnap = NP_G
+>          else
+>             fname = TRIM(LOCALDIR)//'/'//'fort.76'
+>             numRecordsPerSnap = NP
+>          endif
+>          inquire(file=trim(fname),exist=fileFound)
+>          ! start anew if the file was not found
+>          if (fileFound.eqv..false.) then
+>             CALL OPEN_GBL_FILE(76, TRIM(fname),NP_G, NP, HEADER63)
+>             IGBP=2
+>          else
+>             open(76,file=trim(fname),status='old',action='readwrite',
+>      &            position='rewind', access='sequential')
+>             call skipDownToAppendOutputFile(76,timeloc, numRecordsPerSnap,noutge) 
+>             close(76)
+>          endif
+>       endif
+>         
+>         
+>         

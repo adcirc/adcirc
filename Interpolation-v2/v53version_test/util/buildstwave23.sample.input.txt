@@ -1,0 +1,35 @@
+2                         ! 1:fort.23 will take in info in .rad file, 2:fort.23 will not take in info in .rad files
+tf01x2v12.grd
+4
+ # grid 1                 ! the section of the first STWAVE grid starts here
+SE_95.sim
+SE_95.rad
+tf01x2v12_LA_offshore.grd
+0                         ! 0:half plane, 1: full plane
+145                       ! number of blank snaps to be inserted at the beginning of a run
+1308990.0 499717.0 141.0  ! x0 y0 azimuth
+683 744 200.0             ! ni nj dxinc dyinc
+ # grid 2                 ! the section of the second STWAVE grid starts here
+S_95.sim
+S_95.rad
+tf01x2v12_LA_offshore.grd
+0
+145
+1218324.0 385540.0 108.0
+664 839 200.0
+ # grid 3
+MS-AL_95.sim
+MS-AL_95.rad
+tf01x2v12_LA_offshore.grd
+0
+145
+1360620.0 504124.0 90.0
+563 605 200.0
+ # grid 4
+Pont_95.sim
+Pont_95.rad
+tf01x2v12_LA_south.grd
+1
+145
+1086240.0 210460.0 270.0
+208 337 200.0 200.0     

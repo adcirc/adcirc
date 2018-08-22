@@ -1,0 +1,166 @@
+SHELL=/bin/sh
+#
+#  PC Makefile to build a single processor version of ADCIRC
+#  Known to work with Visual Fortran 6.6
+#
+#  To use this file, rename it to: makefile
+#
+#  Options:
+#
+#  To create an adcirc executable, type:       nmake adcirc
+#  To create preprocessed module files, type:  nmake preprocessed_mods
+#  To create preprocessed source files, type:  nmake preprocessed_srcs
+#  To eliminate all partial files, type:       nmake clean
+#
+#  Written by R.A. Luettich & J.G. Fleming
+#  University of North Carolina at Chapel Hill
+#  Institute of Marine Sciences
+#          3/17/03
+#  Modified by Chris Massey and Mary Cialone
+#  USACE-ERDC-CHL  08/14/2009
+
+
+##################### Preprocessor and Compiler Flags #####################
+ 
+#DA   =  -P  -DREAL4  -DCSCA -e        #Preprocessor flags for a single precision, scalar code
+DA   =  -P  -DREAL8  -DCSCA -e       #Preprocessor flags for a double precision, scalar code
+#DA   =  -P  -DREAL4  -DCVEC -e       #Preprocessor flags for a single precision, vector code
+#DA   =  -P  -DREAL8  -DCVEC -e       #Preprocessor flags for a double precision, vector code
+
+FC         = f90
+
+FFLAGS     = -extend_source:132      #Compiler flags
+#FFLAGS    = -g -C -f -dalign        #These are left over Sun compiler flags
+
+####################### Source File Dependencies ############################
+#
+# this assigns a preprocessed .f file in the current (work) directory with the
+# corresponding target name
+#
+
+adcirc.f: ../src/adcirc.F
+	fpp $(DA) ../src/adcirc.F  ../work/adcirc.f
+
+version.f: ../version.F
+	fpp $(DA) ../version.F  ../work/version.f
+
+nodalattr.f: ../src/nodalattr.F
+	fpp $(DA) ../src/nodalattr.F  ../work/nodalattr.f
+
+rs2.f: ../src/rs2.F
+	fpp $(DA) ../src/rs2.F  ../work/rs2.f
+
+owiwind.f: ../src/owiwind.F
+	fpp $(DA) ../src/owiwind.F  ../work/owiwind.f
+
+transport.f: ../src/transport.F
+	fpp $(DA) ../src/transport.F  ../work/transport.f
+
+precision.f: ../wind/precision.F
+	fpp $(DA) ../wind/precision.F  ../work/precision.f
+
+constants.f: ../wind/constants.F
+	fpp $(DA) ../wind/constants.F  ../work/constants.f
+
+lsq.f: ../wind/lsq.F
+	fpp $(DA) ../wind/lsq.F  ../work/lsq.f
+
+fitpack.f: ../wind/fitpack.F
+	fpp $(DA) ../wind/fitpack.F  ../work/fitpack.f
+
+vortex.f: ../wind/vortex.F
+	fpp $(DA) ../wind/vortex.F  ../work/vortex.f
+
+cstart.f: ../src/cstart.F
+	fpp $(DA)  ../src/cstart.F   ../work/cstart.f
+
+global.f: ../src/global.F    
+	fpp $(DA)  ../src/global.F ../work/global.f
+
+global_3dvs.f: ../src/global_3dvs.F
+      fpp $(DA)  ../src/global_3dvs.F  ../work/global_3dvs.f
+
+harm.f: ../src/harm.F
+	fpp $(DA)  ../src/harm.F  ../work/harm.f
+
+hstart.f: ../src/hstart.F
+	fpp $(DA)  ../src/hstart.F   ../work/hstart.f
+
+itpackv.f: ../src/itpackv.F      
+	fpp $(DA)  ../src/itpackv.F  ../work/itpackv.f
+
+read_input.f: ../src/read_input.F
+	fpp $(DA) ../src/read_input.F   ../work/read_input.f
+
+sizes.f: ../src/sizes.F   
+	fpp $(DA)  ../src/sizes.F ../work/sizes.f
+
+timestep.f: ../src/timestep.F
+	fpp $(DA) ../src/timestep.F   ../work/timestep.f
+
+globalio.f: ../src/globalio.F
+	fpp $(DA) ../src/globalio.F   ../work/globalio.f
+
+vsmy.f: ../src/vsmy.F
+	fpp $(DA)  ../src/vsmy.F   ../work/vsmy.f
+
+wind.f: ../src/wind.F
+	fpp $(DA)  ../src/wind.F   ../work/wind.f
+
+massbal.f: ../src/massbal.F
+	fpp $(DA)  ../src/massbal.F   ../work/massbal.f
+
+write_output.f: ../src/write_output.F
+	fpp $(DA)  ../src/write_output.F   ../work/write_output.f
+
+#netcdfio.f: ../src/netcdfio.F
+#	fpp $(DA)  ../src/netcdfio.F   ../work/netcdfio.f
+
+driver.f: ../src/driver.F
+	fpp $(DA)  ../src/driver.F   ../work/driver.f
+
+####################### Processed File Dependencies ##########################
+#
+#  this splits the proprocessed code into "modules" and "mains" and assigns
+#  a general variable name to both
+#
+
+ADCIRC_MODS   =  version.f sizes.f global.f nodalattr.f harm.f itpackv.f global_3dvs.f globalio.f precision.f constants.f lsq.f fitpack.f vortex.f wind.f rs2.f owiwind.f adcirc.f
+ADCIRC_MANS   =  driver.f read_input.f cstart.f hstart.f timestep.f vsmy.f transport.f massbal.f write_output.f
+
+
+########################## Executable Targets ###############################
+#
+#  this associates a target with each variable name
+#
+
+preprocessed_mods:  $(ADCIRC_MODS)
+preprocessed_mans:  $(ADCIRC_MANS)
+
+
+####################### Object File Dependencies ############################
+#
+#  this assigns a general variable name to the modules and mains object files
+#
+
+ADCIRC_MODS_OBJS   =  version.obj sizes.obj global.obj harm.obj itpackv.obj precision.obj constants.obj lsq.obj fitpack.obj vortex.obj wind.obj nodalattr.obj global_3dvs.obj globalio.obj rs2.obj owiwind.obj adcirc.obj  
+ADCIRC_MANS_OBJS   =  driver.obj read_input.obj cstart.obj hstart.obj timestep.obj vsmy.obj transport.obj massbal.obj write_output.obj 
+
+
+######################## compilation rules #################################
+
+$(ADCIRC_MODS_OBJS):  preprocessed_mods
+	$(FC) -c $(FFLAGS)  $*.f
+
+$(ADCIRC_MANS_OBJS):  preprocessed_mans
+	$(FC) -c  $(FFLAGS) $*.f
+
+########################## Executable Targets ###############################
+
+adcirc: $(ADCIRC_MODS_OBJS) $(ADCIRC_MANS_OBJS)
+	$(FC) /exe:adcirc  $(ADCIRC_MODS_OBJS) $(ADCIRC_MANS_OBJS)
+
+########################## Misc Commands ####################################
+
+clean:
+	del *.f  *.mod  *.obj
