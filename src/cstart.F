@@ -15,20 +15,22 @@ C
       USE SIZES
       USE GLOBAL
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
-      USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4
+      USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, 
+     &    AID4, AID8
       USE BOUNDARIES, ONLY : NETA, NFLUXF, NOPE, NVEL, LBCODEI
       USE HARM
-      USE WIND
+      USE WETDRY, ONLY : initializeWettingAndDrying
+      USE WIND, ONLY : coldStartMeteorologicalForcing, rsget
       USE GLOBAL_IO
       USE SUBDOMAIN, ONLY : subdomainOn, readFort015
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
-      USE OWIWIND,ONLY : NWS12INIT,NWS12GET    ! sb added 09/xx/2006
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
-     &    initInundationOutput
+     &    initInundationOutput, writeBinaryOutputFileHeader
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
+      USE GWCE, ONLY : etime1, etime2, etiminc
 
       IMPLICIT NONE
 
@@ -37,8 +39,6 @@ C
       INTEGER NC1, NC2, NC3, NCELE
 
       REAL(SZ) HTOT
-      REAL(SZ) HollandTime, AsymmetricTime, GeneralAsymTime
-      REAL(SZ) :: PRBCKGRND_MH2O  !tcm v49.16 20100617
 !kmd - Evan's updates for rivers above MSL
 !      REAL(SZ),ALLOCATABLE :: et_WSE(:)
       LOGICAL FOUND
@@ -58,9 +58,11 @@ C
 #endif
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
+      !
+      call initializeWettingAndDrying()
 
 C SET UP TIME VARYING WEIRS IF NECESSARY
-       CALL WEIR_SETUP()
+      CALL WEIR_SETUP()
 
       if (subdomainOn) then
          call readFort015() ! NCSU Subdomain Modeling
@@ -116,26 +118,20 @@ C...     DEPTHS ARE > OR = TO H0.
 C
 C------------------------------------------------------------------------------
 C
-C.... tcm v49.16 20100617
-C.... convert background pressure from millibars to meters of water
-      PRBCKGRND_MH2O = 100.0D0*PRBCKGRND/(RHOWAT0*G)
-
-C
 C...  SET AT REST INITIAL CONDITION OVER WHOLE DOMAIN
 C...  IF BOTTOM IS ABOVE THE GEIOD -> DRY NODE
 C...  IF BOTTOM IS INITIALLY BELOW THE GEOID AND STARTDRY=1 -> DRY NODE
 C...
-      UU1(:) = 0.D0
-      VV1(:) = 0.D0
       UU2(:) = 0.D0
       VV2(:) = 0.D0
-      QX1(:) = 0.D0
-      QY1(:) = 0.D0
       QX2(:) = 0.D0
       QY2(:) = 0.D0
+      TK(:) = 0.D0     
+      ETA1(:) = 0.D0
       ETA2(:) = 0.D0
       ETAS(:) = 0.D0
       CH1(:) = 0.d0
+      EN2(:) = 0.d0
       !
       ! Set the initial wet/dry state and water surface elevation
       call setColdWetDryStateAndWaterSurfaceElevation()  
@@ -146,7 +142,6 @@ C...
       if (inundationOutput.eqv..true.) then
          call initInundationOutput()
       endif
-         
 C...
 C...  INITIALIZE THE ELEVATION SPECIFIED BOUNDARY CONDITION IF IT
 C...  REQUIRES THE USE OF THE UNIT 19 FILE.
@@ -190,11 +185,28 @@ C
  1979    FORMAT(/,1X,'NORMAL FLOW INFORMATION READ FROM UNIT 20',/)
          OPEN(20,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
          READ(20,*) FTIMINC
+
+         write(*,*)' file fort.20 opened.'
+
          DO J=1,NVEL
+
+!            write(*,*) 'inside the do loop: DO J=1,NVEL'
+!            write(*,*) 'NVEL =', NVEL
+
             QNIN1(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &          .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
+
+               write(*,*) 'qnin reading ...' 
+
+! arash: QNIN1 only has nonzero values if there is a flow boundary condition. 
+! arash: the rest of there values are read in timestep
                READ(20,*) QNIN1(J)
+
+                QNIN1(J) = 0.0 ! arash
+
+!               write(*,*) ' J, QNIN1 = ', J, QNIN1(J)
+              
             ENDIF
          END DO
          DO J=1,NVEL
@@ -202,6 +214,11 @@ C
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
                READ(20,*) QNIN2(J)
+
+                QNIN2(J) = 0.0 ! arash
+
+!               write(*,*) ' J, QNIN2 = ', J, QNIN2(J)
+
             ENDIF
          END DO
          QTIME1 = STATIM*86400.D0
@@ -213,17 +230,6 @@ C....IF FLEET NUMERIC WIND DATA IS USED, FIND BEGINNING TIME IN FILE,
 C....NOTE: CAN'T DEAL WITH WIND THAT STARTS AFTER WREFTIM!!!!!!!!!!!!
 C....READ IN AND INTERPOLATE IN SPACE ONTO THE ADCIRC GRID THE
 C....TIME LEVEL 1 AND LEVEL 2 WIND FIELDS
-
-      DO I=1,NP
-         WSX1(I)=0.D0
-         WSY1(I)=0.D0
-!        PR1(I)=0.D0   !tcm v49.16 20100617
-         PR1(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
-         WSX2(I)=0.D0
-         WSY2(I)=0.D0
-!        PR2(I)=0.D0   !tcm v49.16 20100617
-         PR2(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
-      ENDDO
 
       IF(NWS.NE.0) THEN
 C        jgf48.4627 If user only requests meteorological output, then
@@ -260,212 +266,16 @@ C        momentum equations
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1980)
          WRITE(16,1980)
  1980    FORMAT(/,1X,'WIND (AND PRESSURE) INFORMATION READ.',/)
-      ENDIF
 
-      IF(NWS.EQ.1) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-      ENDIF
+         call coldstartMeteorologicalForcing(nws)
 
-      IF(ABS(NWS).EQ.2) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
       ENDIF
-
-      IF(NWS.EQ.3) THEN
-C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
-C....                           to correspond with having only a global wind file.
-!         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
-
- 2222    CALL NWS3GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,IWTIME,IWYR,WTIMED,NP,
-     &        NWLON,NWLAT,WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,
-     &        NScreen, ScreenUnit)
-         IF(IWYR.NE.IREFYR) THEN
-            IWTIMEP=IWTIME
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-            END DO
-            GOTO 2222
-         ENDIF
-         IF(WTIMED.LE.WREFTIM) THEN
-            IWTIMEP=IWTIME
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-            END DO
-            GOTO 2222
-         ENDIF
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
-     &        WRITE(ScreenUnit,*)'FOUND WIND DATA AT TIME= ',IWTIMEP
-         WRITE(16,*) 'FOUND WIND DATA AT TIME= ',IWTIMEP
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
-     &        WRITE(ScreenUnit,*)'FOUND WIND DATA AT TIME= ',IWTIME
-         WRITE(16,*) 'FOUND WIND DATA AT TIME= ',IWTIME
-         WTIME2=WTIMED-WREFTIM  !CAST INTO MODEL TIME REFERENCE
-         WTIME1=WTIME2-WTIMINC
-      ENDIF
-
-      IF(ABS(NWS).EQ.4) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         WTIME1 = STATIM*86400.D0
-         WTIME2=WTIME1+WTIMINC
-         CALL NWS4GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         CALL NWS4GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-      ENDIF
-
-      IF(ABS(NWS).EQ.5) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
-      ENDIF
-
-      IF(NWS.EQ.6) THEN
-C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
-C....                           to correspond with having only a global wind file.
-!         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
-         CALL NWS6GET(X,Y,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,NWLON,NWLAT,
-     &        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
-         CALL NWS6GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT,
-     &        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
-      ENDIF
-
-C     jgf46.00 Added option to directly apply surface stress without any
-C     other correction factors.
-      IF(ABS(NWS).EQ.7) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
-      ENDIF
-
-C     jgf46.02 New option to read in hurricane locations and generate
-C     generate hurricane winds from the Holland Wind Model.
-      IF(ABS(NWS).EQ.8) THEN
-         HollandTime = STATIM*86400.D0
-         CALL HollandGet(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,
-     &     ICS,RHOWAT0,G,HollandTime,NSCREEN,ScreenUnit)
-      ENDIF
-
-C     RJW Merged:
-!    rjw added nws = 19: asymmetric hurricane winds v2.0
-      IF(NWS.EQ.19) THEN
-         AsymmetricTime = STATIM*86400.D0
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
-        CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
-      ENDIF
-      
-!    jie added nws = 20: generalized asymmetric vortex model
-      IF(NWS.EQ.20) THEN
-         GeneralAsymTime = STATIM*86400.D0
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
-        CALL NWS20GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,GeneralAsymTime,ICS)
-      ENDIF      
-
-      ! jgf49.1001 Added NWS=29, asymmetric vortex wind (NWS19) embedded in
-      ! OWI (NWS12) basin scale wind field.
-      IF(NWS.EQ.29) THEN
-         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
-         ! now blend in the vortex met field
-         AsymmetricTime = STATIM*86400.D0
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
-     &        STATUS='OLD')
-         ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
-         CALL NWS19GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
-     &                 NP,AsymmetricTime,ICS)
-      ENDIF
-
-      IF(NWS.EQ.10) THEN
-         WTIME1=STATIM*86400.D0
-         WTIME2=WTIME1+WTIMINC
-         NWSGGWI=-1
-         CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,RHOWAT0,G,
-     &        NWLON,NWLAT,WTIMINC) !JUST COMPUTE INTERPOLATING FACTORS
-         NWSGGWI=1
-         CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,RHOWAT0,G,
-     &        NWLON,NWLAT,WTIMINC) !NOW INTERPOLATE 1st WIND FIELD
-      ENDIF
-
-      IF(NWS.EQ.11) THEN
-         WTIME1=STATIM*86400.D0
-         WTIME2=WTIME1+WTIMINC
-         NWSEGWI=0
-         IDSETFLG=0
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1197)
-         WRITE(16,1197)
- 1197    FORMAT(/,1X,'THE E29 MET GRID INTERPOLATING FACTORS ARE ',
-     &        'BEING COMPUTED ')
-         CALL NWS11GET(NWSEGWI,IDSETFLG,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,
-     &        RHOWAT0,G)        !JUST COMPUTE INTERPOLATING FACTORS
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1198)
-         WRITE(16,1198)
- 1198    FORMAT(1X,'FINISHED COMPUTING E29 INTERPOLATING FACTORS',/)
-         NWSEGWI=1
-         IDSETFLG=1
-         CALL NWS11GET(NWSEGWI,IDSETFLG,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,
-     &        RHOWAT0,G)        !NOW INTERPOLATE 1st WIND FIELD
-      ENDIF
-
-C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/2006
-      IF(ABS(NWS).EQ.12) THEN
-        CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-        CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-        CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-        WTIME1 = STATIM*86400.D0
-        WTIME2 = WTIME1 + WTIMINC
-      ENDIF
-
-      !
-      ! jgf50.38.05: Added NWS=15,-15 for reading HWind data
-      IF (ABS(NWS).EQ.15) THEN
-         CALL NWS15INIT(STATIM*86400.0)
-      ENDIF
-
-C     
-C....tcm v51.06.02: Added NWS=16,-16 for reading ASCII GFDL Met data
-      IF (ABS(NWS).EQ.16) THEN
-         CALL INIT_GFDL(STATIM*86400.0)
-      ENDIF
-      !
-      ! jgf52.14: Implementing Casey's fix for uninitialized
-      ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
-      ! by the parametric vortex meteorological models but are used in
-      ! the padcswan_init() subroutine to initialize the SWAN wind 
-      ! velocities. Failure to initialize them causes NaNs in the 
-      ! solution. 
-      if ( (abs(nws).eq.8).or.(abs(nws).eq.19).or.(abs(nws).eq.20)) then
-         WVNX1 = WVNX2
-         WVNY1 = WVNY2
-      endif
 
 C...INPUT RADIATION STRESS INFORMATION FROM UNIT 23
 C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
 
       ! NRS=2 was added. 09/xx/2006 sb
       IF(NRS.GE.1) THEN ! sb46.28sb03
-         IF(NWS.EQ.0) THEN
-            DO I=1,NP
-               WSX1(I)=0.D0
-               WSY1(I)=0.D0
-               WSX2(I)=0.D0
-               WSY2(I)=0.D0
-               PRN1(I)=0.D0     !need to be initialized
-               PRN2(I)=0.D0     !even if not used
-            ENDDO
-         ENDIF
          RSTIME1 = STATIM*86400.D0
          RSTIME2 = RSTIME1+RSTIMINC
          IF(NRS.EQ.1) THEN
@@ -540,40 +350,9 @@ C...
       IF(ABS(NOUTE).EQ.2) THEN
          OPEN(61,FILE=TRIM(LOCALDIR)//'/'//'fort.61',
      &           ACCESS='DIRECT',RECL=NBYTE)
-         IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-               WRITE(61,REC=IESTP+I) RDES4(I)
-            ENDDO
-            IESTP=IESTP+8
-            DO I=1,6
-               WRITE(61,REC=IESTP+I) RID4(I)
-            ENDDO
-            IESTP=IESTP+6
-            DO I=1,6
-               WRITE(61,REC=IESTP+I) AID4(I)
-            ENDDO
-            IESTP=IESTP+6
-            ENDIF
-         IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-               WRITE(61,REC=IESTP+I) RDES8(I)
-            ENDDO
-            IESTP=IESTP+4
-            DO I=1,3
-               WRITE(61,REC=IESTP+I) RID8(I)
-            ENDDO
-            IESTP=IESTP+3
-            DO I=1,3
-               WRITE(61,REC=IESTP+I) AID8(I)
-            ENDDO
-            IESTP=IESTP+3
-            ENDIF
-         WRITE(61,REC=IESTP+1) NTRSPE
-         WRITE(61,REC=IESTP+2) NSTAE
-         WRITE(61,REC=IESTP+3) DT*NSPOOLE
-         WRITE(61,REC=IESTP+4) NSPOOLE
-         WRITE(61,REC=IESTP+5) 1
-         IESTP=IESTP+5
+         call writeBinaryOutputFileHeader(61, 1, IESTP,
+     &      NTRSPE, NSTAE, NSPOOLE)
+
          CLOSE(61)
          ENDIF
 
@@ -600,42 +379,10 @@ C...
       IF(ABS(NOUTV).EQ.2) THEN
          OPEN(62,FILE=TRIM(LOCALDIR)//'/'//'fort.62',
      &           ACCESS='DIRECT',RECL=NBYTE)
-         IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-               WRITE(62,REC=IVSTP+I) RDES4(I)
-            ENDDO
-            IVSTP=IVSTP+8
-            DO I=1,6
-               WRITE(62,REC=IVSTP+I) RID4(I)
-            ENDDO
-            IVSTP=IVSTP+6
-            DO I=1,6
-               WRITE(62,REC=IVSTP+I) AID4(I)
-            ENDDO
-            IVSTP=IVSTP+6
-            ENDIF
-         IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-               WRITE(62,REC=IVSTP+I) RDES8(I)
-            ENDDO
-            IVSTP=IVSTP+4
-            DO I=1,3
-               WRITE(62,REC=IVSTP+I) RID8(I)
-            ENDDO
-            IVSTP=IVSTP+3
-            DO I=1,3
-               WRITE(62,REC=IVSTP+I) AID8(I)
-            ENDDO
-            IVSTP=IVSTP+3
-            ENDIF
-         WRITE(62,REC=IVSTP+1) NTRSPV
-         WRITE(62,REC=IVSTP+2) NSTAV
-         WRITE(62,REC=IVSTP+3) DT*NSPOOLV
-         WRITE(62,REC=IVSTP+4) NSPOOLV
-         WRITE(62,REC=IVSTP+5) 2
-         IVSTP=IVSTP+5
+         call writeBinaryOutputFileHeader(62, 2, IVSTP,
+     &      NTRSPV, NSTAV, NSPOOLV)
          CLOSE(62)
-         ENDIF
+      ENDIF
 
 C...
 C....INITIALIZE CONCENTRATION STATION SPOOL COUNTER
@@ -660,42 +407,10 @@ C...
       IF(ABS(NOUTC).EQ.2) THEN
          OPEN(81,FILE=TRIM(LOCALDIR)//'/'//'fort.81',
      &           ACCESS='DIRECT',RECL=NBYTE)
-         IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-               WRITE(81,REC=ICSTP+I) RDES4(I)
-            ENDDO
-            ICSTP=ICSTP+8
-            DO I=1,6
-               WRITE(81,REC=ICSTP+I) RID4(I)
-            ENDDO
-            ICSTP=ICSTP+6
-            DO I=1,6
-               WRITE(81,REC=ICSTP+I) AID4(I)
-            ENDDO
-            ICSTP=ICSTP+6
-            ENDIF
-         IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-               WRITE(81,REC=ICSTP+I) RDES8(I)
-            ENDDO
-            ICSTP=ICSTP+4
-            DO I=1,3
-               WRITE(81,REC=ICSTP+I) RID8(I)
-            ENDDO
-            ICSTP=ICSTP+3
-            DO I=1,3
-               WRITE(81,REC=ICSTP+I) AID8(I)
-            ENDDO
-            ICSTP=ICSTP+3
-            ENDIF
-         WRITE(81,REC=ICSTP+1) NTRSPC
-         WRITE(81,REC=ICSTP+2) NSTAC
-         WRITE(81,REC=ICSTP+3) DT*NSPOOLC
-         WRITE(81,REC=ICSTP+4) NSPOOLC
-         WRITE(81,REC=ICSTP+5) 1
-         ICSTP=ICSTP+5
+         call writeBinaryOutputFileHeader(81, 1, ICSTP,
+     &      NTRSPC, NSTAC, NSPOOLC)
          CLOSE(81)
-         ENDIF
+      ENDIF
 
 C...
 C....INITIALIZE METEOROLOGICAL STATION SPOOL COUNTERS
@@ -852,40 +567,8 @@ C...
       IF ((NDDT.NE.0).AND.(ABS(NOUTE).EQ.2)) THEN
          OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
      &           ACCESS='DIRECT',RECL=NBYTE)
-         IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-               WRITE(75,REC=IBSTP+I) RDES4(I)
-            ENDDO
-            IBSTP=IBSTP+8
-            DO I=1,6
-               WRITE(75,REC=IBSTP+I) RID4(I)
-            ENDDO
-            IBSTP=IBSTP+6
-            DO I=1,6
-               WRITE(75,REC=IBSTP+I) AID4(I)
-            ENDDO
-            IBSTP=IBSTP+6
-         ENDIF
-         IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-               WRITE(75,REC=IBSTP+I) RDES8(I)
-            ENDDO
-            IBSTP=IBSTP+4
-            DO I=1,3
-               WRITE(75,REC=IBSTP+I) RID8(I)
-            ENDDO
-            IBSTP=IBSTP+3
-            DO I=1,3
-               WRITE(75,REC=IBSTP+I) AID8(I)
-            ENDDO
-            IBSTP=IBSTP+3
-         ENDIF
-         WRITE(75,REC=IBSTP+1) NTRSPE
-         WRITE(75,REC=IBSTP+2) NSTAE
-         WRITE(75,REC=IBSTP+3) DT*NSPOOLE
-         WRITE(75,REC=IBSTP+4) NSPOOLE
-         WRITE(75,REC=IBSTP+5) 1
-         IBSTP=IBSTP+5
+         call writeBinaryOutputFileHeader(75, 1, IBSTP,
+     &      NTRSPE, NSTAE, NSPOOLE)
          CLOSE(75)
       ENDIF
 
@@ -964,45 +647,36 @@ Casey 090302: Corrected the unit number from 10 to 90.
          endif
       endif
 
+      ! jgf: Added init for full domain water level offset output file 
+      if ( (NOUTGE.eq.-1).and.(usingWaterLevelOffset.eqv..true.) ) then
+         if (write_local_files.eqv..true.) then
+            call writeDomainHeader(108,trim(localdir)//'/'//
+     &           'offset.63',NP_G, NP, 'offset     ')
+           else
+              call writeDomainHeader(108,trim(globaldir)//'/'//
+     &           'offset.63',NP_G, NP, 'offset     ')
+           endif
+      endif
+      ! jgf: Added init for station water level offset output file 
+      IF( (NOUTE.EQ.-1).and.(usingWaterLevelOffset.eqv..true.)) THEN
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(109, TRIM(GLOBALDIR)//'/'//'offset.61',
+     &       NSTAE_G, NSTAE, HEADER61)
+         else 
+            CALL OPEN_GBL_FILE(109, TRIM(LOCALDIR)//'/'//'offset.61',
+     &       NSTAE_G, NSTAE, HEADER61)
+         endif
+         IESTP=2
+      ENDIF
+
+
       IF(ABS(NOUTGE).EQ.2) THEN
          OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
      &           ACCESS='DIRECT',RECL=NBYTE)
-         IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-               WRITE(63,REC=IGEP+I) RDES4(I)
-               ENDDO
-            IGEP=IGEP+8
-            DO I=1,6
-               WRITE(63,REC=IGEP+I) RID4(I)
-               ENDDO
-            IGEP=IGEP+6
-            DO I=1,6
-               WRITE(63,REC=IGEP+I) AID4(I)
-               ENDDO
-            IGEP=IGEP+6
-            ENDIF
-         IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-               WRITE(63,REC=IGEP+I) RDES8(I)
-               ENDDO
-            IGEP=IGEP+4
-            DO I=1,3
-               WRITE(63,REC=IGEP+I) RID8(I)
-               ENDDO
-            IGEP=IGEP+3
-            DO I=1,3
-               WRITE(63,REC=IGEP+I) AID8(I)
-               ENDDO
-            IGEP=IGEP+3
-            ENDIF
-         WRITE(63,REC=IGEP+1) NDSETSE
-         WRITE(63,REC=IGEP+2) NP
-         WRITE(63,REC=IGEP+3) DT*NSPOOLGE
-         WRITE(63,REC=IGEP+4) NSPOOLGE
-         WRITE(63,REC=IGEP+5) 1
-         IGEP=IGEP+5
+         call writeBinaryOutputFileHeader(63, 1, IGEP,
+     &      NDSETSE, NP, NSPOOLGE)
          CLOSE(63)
-         ENDIF
+      ENDIF
 C...
 C....INITIALIZE GLOBAL VELOCITY SPOOL COUNTER
 C....OPEN GLOBAL VELOCITY OUTPUT FILE
@@ -1029,43 +703,10 @@ C...
       IF(ABS(NOUTGV).EQ.2) THEN
          OPEN(64,FILE=TRIM(LOCALDIR)//'/'//'fort.64',
      &        ACCESS='DIRECT',RECL=NBYTE)
-         IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-               WRITE(64,REC=IGVP+I) RDES4(I)
-               ENDDO
-            IGVP=IGVP+8
-            DO I=1,6
-               WRITE(64,REC=IGVP+I) RID4(I)
-               ENDDO
-            IGVP=IGVP+6
-            DO I=1,6
-               WRITE(64,REC=IGVP+I) AID4(I)
-               ENDDO
-            IGVP=IGVP+6
-            ENDIF
-         IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-               WRITE(64,REC=IGVP+I) RDES8(I)
-               ENDDO
-            IGVP=IGVP+4
-            DO I=1,3
-               WRITE(64,REC=IGVP+I) RID8(I)
-               ENDDO
-            IGVP=IGVP+3
-            DO I=1,3
-               WRITE(64,REC=IGVP+I) AID8(I)
-               ENDDO
-            IGVP=IGVP+3
-            ENDIF
-         WRITE(64,REC=IGVP+1) NDSETSV
-         WRITE(64,REC=IGVP+2) NP
-         WRITE(64,REC=IGVP+3) DT*NSPOOLGV
-         WRITE(64,REC=IGVP+4) NSPOOLGV
-         WRITE(64,REC=IGVP+5) 2
-         IGVP=IGVP+5
+         call writeBinaryOutputFileHeader(64, 2, IGVP,
+     &      NDSETSV, NP, NSPOOLGV)
          CLOSE(64)
-         ENDIF
-
+       ENDIF
 
 Cobell - Open the fort.77 (weir elevation change) file
          IF(USE_TVW)THEN
@@ -1077,43 +718,11 @@ Cobell - Open the fort.77 (weir elevation change) file
                 IG_TVW = 2
             ENDIF   
             IF(ABS(NOUT_TVW).EQ.2)THEN
-                OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
+               OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
      &              ACCESS='DIRECT',RECL=NBYTE)
-                IF(NBYTE.EQ.4) THEN
-                    DO I=1,8
-                        WRITE(77,REC=IG_TVW+I) RDES4(I)
-                    ENDDO
-                    IG_TVW=IG_TVW+8
-                    DO I=1,6
-                        WRITE(77,REC=IG_TVW+I) RID4(I)
-                    ENDDO
-                    IG_TVW=IG_TVW+6
-                    DO I=1,6
-                        WRITE(77,REC=IG_TVW+I) AID4(I)
-                    ENDDO
-                    IG_TVW=IG_TVW+6
-                ENDIF
-                IF(NBYTE.EQ.8) THEN
-                    DO I=1,4
-                        WRITE(77,REC=IG_TVW+I) RDES8(I)
-                    ENDDO
-                    IG_TVW=IG_TVW+4
-                    DO I=1,3
-                        WRITE(77,REC=IG_TVW+I) RID8(I)
-                    ENDDO
-                    IG_TVW=IG_TVW+3
-                    DO I=1,3
-                        WRITE(77,REC=IG_TVW+I) AID8(I)
-                    ENDDO
-                    IG_TVW=IG_TVW+3
-                ENDIF
-                WRITE(77,REC=IG_TVW+1) NDSETS_TVW
-                WRITE(77,REC=IG_TVW+2) NP
-                WRITE(77,REC=IG_TVW+3) DT*NSPOOL_TVW
-                WRITE(77,REC=IG_TVW+4) NSPOOL_TVW
-                WRITE(77,REC=IG_TVW+5) 2
-                IG_TVW=IG_TVW+5
-                CLOSE(77)
+               call writeBinaryOutputFileHeader(77, 2, IG_TVW,
+     &            NDSETS_TVW, NP, NSPOOL_TVW)
+               CLOSE(77)
             ENDIF    
          ENDIF    
             
@@ -1268,40 +877,8 @@ Casey 090302: Added the output of radiation stress gradients.
          IF(ABS(NOUTGW).EQ.2) THEN
             OPEN(164,FILE=TRIM(LOCALDIR)//'/'//'rads.64',
      &              ACCESS='DIRECT',RECL=NByte)
-            IF(NBYTE.EQ.4) THEN
-               DO I=1,8
-                  WRITE(164,REC=IGRadS+I) RDES4(I)
-                  ENDDO
-               IGRadS=IGRadS+8
-               DO I=1,6
-                  WRITE(164,REC=IGRadS+I) RID4(I)
-                  ENDDO
-               IGRadS=IGRadS+6
-               DO I=1,6
-                  WRITE(164,REC=IGRadS+I) AID4(I)
-               ENDDO
-               IGRadS=IGRadS+6
-            ENDIF
-            IF(NBYTE.EQ.8) THEN
-               DO I=1,4
-                  WRITE(164,REC=IGRadS+I) RDES8(I)
-               ENDDO
-               IGRadS=IGRadS+4
-               DO I=1,3
-                  WRITE(164,REC=IGRadS+I) RID8(I)
-               ENDDO
-               IGRadS=IGRadS+3
-               DO I=1,3
-                  WRITE(164,REC=IGRadS+I) AID8(I)
-               ENDDO
-               IGRadS=IGRadS+3
-            ENDIF
-            WRITE(164,REC=IGRadS+1) NDSETSW
-            WRITE(164,REC=IGRadS+2) NP
-            WRITE(164,REC=IGRadS+3) DT*NSPOOLGW
-            WRITE(164,REC=IGRadS+4) NSPOOLGW
-            WRITE(164,REC=IGRadS+5) 2
-            IGRadS=IGRadS+5
+            call writeBinaryOutputFileHeader(164, 2, IGRadS,
+     &            NDSETSW, NP, NSPOOLGW)
             CLOSE(164)
          ENDIF
       endif
@@ -1328,40 +905,8 @@ C...
       IF(ABS(NOUTGC).EQ.2) THEN
          OPEN(83,FILE=TRIM(INPUTDIR)//'/'//'fort.83',
      &           ACCESS='DIRECT',RECL=NBYTE)
-         IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-               WRITE(83,REC=IGCP+I) RDES4(I)
-               ENDDO
-            IGCP=IGCP+8
-            DO I=1,6
-               WRITE(83,REC=IGCP+I) RID4(I)
-               ENDDO
-            IGCP=IGCP+6
-            DO I=1,6
-               WRITE(83,REC=IGCP+I) AID4(I)
-               ENDDO
-            IGCP=IGCP+6
-            ENDIF
-         IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-               WRITE(83,REC=IGCP+I) RDES8(I)
-               ENDDO
-            IGCP=IGCP+4
-            DO I=1,3
-               WRITE(83,REC=IGCP+I) RID8(I)
-               ENDDO
-            IGCP=IGCP+3
-            DO I=1,3
-               WRITE(83,REC=IGCP+I) AID8(I)
-               ENDDO
-            IGCP=IGCP+3
-            ENDIF
-         WRITE(83,REC=IGCP+1) NDSETSC
-         WRITE(83,REC=IGCP+2) NP
-         WRITE(83,REC=IGCP+3) DT*NSPOOLGC
-         WRITE(83,REC=IGCP+4) NSPOOLGC
-         WRITE(83,REC=IGCP+5) 1
-         IGCP=IGCP+5
+         call writeBinaryOutputFileHeader(83, 1, IGCP,
+     &            NDSETSC, NP, NSPOOLGC)
          CLOSE(83)
       ENDIF
 C
@@ -1396,43 +941,10 @@ C...
       IF ((NDDT.NE.0).AND.(ABS(NOUTGE).EQ.2)) THEN
          OPEN(76,FILE=TRIM(LOCALDIR)//'/'//'fort.76',
      &           ACCESS='DIRECT',RECL=NBYTE)
-         IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-               WRITE(76,REC=IGBP+I) RDES4(I)
-               ENDDO
-            IGBP=IGBP+8
-            DO I=1,6
-               WRITE(76,REC=IGBP+I) RID4(I)
-               ENDDO
-            IGBP=IGBP+6
-            DO I=1,6
-               WRITE(76,REC=IGBP+I) AID4(I)
-               ENDDO
-            IGBP=IGBP+6
-         ENDIF
-         IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-               WRITE(76,REC=IGBP+I) RDES8(I)
-               ENDDO
-            IGBP=IGBP+4
-            DO I=1,3
-               WRITE(76,REC=IGBP+I) RID8(I)
-               ENDDO
-            IGBP=IGBP+3
-            DO I=1,3
-               WRITE(76,REC=IGBP+I) AID8(I)
-               ENDDO
-            IGBP=IGBP+3
-         ENDIF
-         WRITE(76,REC=IGBP+1) NDSETSE
-         WRITE(76,REC=IGBP+2) NP
-         WRITE(76,REC=IGBP+3) DT*NSPOOLGE
-         WRITE(76,REC=IGBP+4) NSPOOLGE
-         WRITE(76,REC=IGBP+5) 1
-         IGBP=IGBP+5
+         call writeBinaryOutputFileHeader(76, 1, IGBP,
+     &            NDSETSE, NP, NSPOOLGE)
          CLOSE(76)
       ENDIF
-
 
 C...
 C......INITIALIZE 3D SOLUTION
@@ -1712,16 +1224,31 @@ C...  and baroclinic.
 C kmd - River information for boundary conditions in baroclinic simulation
       IF (BndBCRiver) THEN
         OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39')
+
+!        write(*,*) 'file fort.39 opened.'
+
         READ(39,*) RIVBCTIMINC, RIVBCSTATIM
         RIVBCTIME1=RIVBCSTATIM*86400.d0
         RIVBCTIME2=RIVBCTIME1+RIVBCTIMINC
         DO J=1,totalbcrivernodes
+
+!         write(*,*) 'inside the DO J=1,totalbcrivernodes loop.'
+
          IF (IDEN.EQ.2) THEN
            READ(39,*) (BCRivSalN1(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.3) THEN
            READ(39,*) (BCRivTempN1(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.4) THEN
            READ(39,*) (BCRivSalN1(J,K), BCRivTempN1(J,K),K=1,NFEN)
+
+
+
+           ! arash debug
+           BCRivSalN1(:,:) = 0.0
+           BCRivTempN1(:,:) = 0.0
+
+
+
          END IF
         END DO
         DO J=1,totalbcrivernodes
@@ -1731,6 +1258,13 @@ C kmd - River information for boundary conditions in baroclinic simulation
            READ(39,*) (BCRivTempN2(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.4) THEN
            READ(39,*) (BCRivSalN2(J,K), BCRivTempN2(J,K),K=1,NFEN)
+
+
+           ! arash debug
+           BCRivSalN2(:,:) = 0.0
+           BCRivTempN2(:,:) = 0.0
+
+
          END IF
         END DO
       END IF
@@ -1794,8 +1328,12 @@ C.... Initialize the global 3D density output file (Unit 44)
 C     jgf46.27 Replaced IRType with IDen in header.
 !kmd48.33bc - add in infomration for file containing the
 !            top temperature boundary condition information
+!      CALL initOutput3D(44, I3DGD, NDSET3DGD, NP, NP_G,
+!     &                  NSPO3DGD, IRType, I3DGDRec)
+! arash
       CALL initOutput3D(44, I3DGD, NDSET3DGD, NP, NP_G,
-     &                  NSPO3DGD, IRType, I3DGDRec)
+     &                  NSPO3DGD, IDen, I3DGDRec)
+
       IF (ABS(I3DGD).EQ.1) THEN
          IF ((MNPROC.EQ.1.).OR.(WRITE_LOCAL_FILES.eqv..true.)) THEN
             IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
@@ -1859,9 +1397,11 @@ C----------------------------------------------------------------------
       subroutine setColdWetDryStateAndWaterSurfaceElevation()
       use sizes, only : inputdir
       use mesh, only : dp, np, mju, ne, nm
+      use boundaries, only : nvel, lbcodei, nbv
       use global, only : eta2, nnodecode, noff, logMessage, allMessage,
      &   scratchMessage, INFO, h0, setMessageSource, unsetMessageSource,
-     &   DEBUG, WARNING, INFO, scratchMessage, eta1, nolifa, River_above_MSL
+     &   DEBUG, WARNING, INFO, scratchMessage, eta1, nolifa, River_above_MSL,
+     &   EtaDisc
       use nodalattributes, only : loadStartDry, STARTDRY, GeoidOffset, 
      &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE !jgf47.06
       implicit none
@@ -1917,6 +1457,12 @@ C----------------------------------------------------------------------
          ! as it is only used at Cold Start
          deallocate (River_et_WSE)
       endif
+      !...Set the radiation bc information 
+      DO I=1,NVEL
+         IF(LBCODEI(I).EQ.52) THEN
+            EtaDisc(NBV(I))=Eta2(NBV(I))
+         ENDIF
+      END DO
       !
       ! Set all nodes to wet by default.
       nnodecode(:)=1

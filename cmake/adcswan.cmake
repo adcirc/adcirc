@@ -45,35 +45,19 @@ IF(BUILD_ADCSWAN AND PERL_FOUND)
                              ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/ocpids.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/ocpcre.f 
                              ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/ocpmix.f )
     
-    SET( ADCSWAN1_SOURCES    src/sizes.F KDTREE2/kdtree2.F src/global.F src/boundaries.F src/mesh.F 
+    SET( ADCSWAN1_SOURCES    src/sizes.F KDTREE2/kdtree2.F src/global.F src/boundaries.F src/mesh.F src/hashtable.F
                              src/global_3dvs.F src/harm.F wind/vortex.F src/wind.F src/owiwind.F src/rs2.F
                              src/owi_ice.F src/itpackv.F src/nodalattr.F src/globalio.F src/netcdfio.F 
-                             src/control.F src/xdmfio.F )
+                             src/subdomain.F src/gwce.F src/wetdry.F src/momentum.F src/control.F src/xdmfio.F )
 
     SET( ADCSWAN2_SOURCES    src/write_output.F src/couple2swan.F )
 
-    SET( ADCSWAN3_SOURCES    src/adcirc.F src/subdomain.F src/weir_boundary.F src/read_input.F src/cstart.F 
-                             src/hstart.F src/timestep.F src/vsmy.F src/transport.F )
+    SET( ADCSWAN3_SOURCES    src/adcirc.F src/weir_boundary.F src/read_input.F 
+                             src/cstart.F src/hstart.F src/timestep.F src/vsmy.F 
+                             src/transport.F )
     
     #...SWAN Configuration
-    IF(WIN32)
-        ADD_CUSTOM_COMMAND( OUTPUT ${SWAN1SERIAL_SOURCES} ${SWAN2SERIAL_SOURCES}
-            COMMAND ${PERL} switch.pl -adcirc -unix *.ftn *.ftn90
-            COMMAND if not exist \"${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source\" mkdir \"${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source\"
-            COMMAND move /y *.f \"${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/.\"
-            COMMAND move /y *.f90 \"${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/.\"
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
-            COMMENT "Generating Serial SWAN Sources..."
-        )
-    ELSE(WIN32)
-        ADD_CUSTOM_COMMAND( OUTPUT ${SWAN1SERIAL_SOURCES} ${SWAN2SERIAL_SOURCES}
-            COMMAND ${PERL} switch.pl -adcirc -unix *.ftn *.ftn90
-            COMMAND mkdir -p ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source
-            COMMAND mv *.f *.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/.
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
-            COMMENT "Generating Serial SWAN Sources..."
-        )
-    ENDIF(WIN32)
+    swanConfigureAdcswan()
 
     SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source)
 
@@ -82,65 +66,42 @@ IF(BUILD_ADCSWAN AND PERL_FOUND)
     ADD_LIBRARY(templib_adcswan1 STATIC ${ADCSWAN1_SOURCES})
     ADD_LIBRARY(templib_adcswan2 STATIC ${ADCSWAN2_SOURCES})
     ADD_LIBRARY(templib_adcswan3 STATIC ${ADCSWAN3_SOURCES})
-   
-    TARGET_LINK_LIBRARIES(adcswan templib_swan1serial)
-    TARGET_LINK_LIBRARIES(adcswan templib_swan2serial)
+
+    addCompilerFlagsSwan(templib_swan1serial ${ADDITIONAL_FLAGS_SWAN})
+    addCompilerFlagsSwan(templib_swan2serial ${ADDITIONAL_FLAGS_SWAN})
+    addCompilerFlags(templib_adcswan1 ${ADDITIONAL_FLAGS_ADCIRC})
+    addCompilerFlags(templib_adcswan2 ${ADDITIONAL_FLAGS_ADCIRC})
+    addCompilerFlags(templib_adcswan3 ${ADDITIONAL_FLAGS_ADCIRC})
+    addCompilerFlags(adcswan ${ADDITIONAL_FLAGS_ADCIRC})
+
+    TARGET_COMPILE_DEFINITIONS(templib_adcswan1 PRIVATE CSWAN)
+    TARGET_COMPILE_DEFINITIONS(templib_adcswan2 PRIVATE CSWAN)
+    TARGET_COMPILE_DEFINITIONS(templib_adcswan3 PRIVATE CSWAN)
+    TARGET_COMPILE_DEFINITIONS(adcswan          PRIVATE CSWAN)
+
+    TARGET_INCLUDE_DIRECTORIES(templib_adcswan2    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan1)
+    TARGET_INCLUDE_DIRECTORIES(templib_adcswan2    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
+    TARGET_INCLUDE_DIRECTORIES(templib_adcswan3    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan1)
+    TARGET_INCLUDE_DIRECTORIES(templib_adcswan3    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan2)
+    TARGET_INCLUDE_DIRECTORIES(templib_adcswan3    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
+    TARGET_INCLUDE_DIRECTORIES(templib_adcswan3    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan2serial)
+    TARGET_INCLUDE_DIRECTORIES(templib_swan2serial PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
+    TARGET_INCLUDE_DIRECTORIES(templib_swan2serial PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan1)
+    TARGET_INCLUDE_DIRECTORIES(templib_swan2serial PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan2)
+    TARGET_INCLUDE_DIRECTORIES(adcswan             PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan1)   
+    TARGET_INCLUDE_DIRECTORIES(adcswan             PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan2)   
+    TARGET_INCLUDE_DIRECTORIES(adcswan             PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan3)   
+    TARGET_INCLUDE_DIRECTORIES(adcswan             PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
+    TARGET_INCLUDE_DIRECTORIES(adcswan             PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan2serial)
+
+    TARGET_LINK_LIBRARIES(adcswan templib_adcswan3 templib_adcswan2 templib_swan2serial templib_adcswan1 templib_swan1serial )
     
-    SET(ADCSWAN_COMPILER_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG} ${PRECISION_FLAG} ${SWAN_FLAG} ${ADCIRC_OPTION_FLAGS}")
-    IF(NETCDF_WORKING AND NOT XDMF_WORKING)
-        SET(ADCSWAN_COMPILER_FLAGS "${ADCSWAN_COMPILER_FLAGS} ${NETCDF_FLAG} ${NETCDF_COMPRESSION_FLAG}")
-        SET_TARGET_PROPERTIES(adcswan PROPERTIES LINK_FLAGS ${NETCDF_LINKER_FLAG})
-    ELSEIF(NETCDF_WORKING AND XDMF_WORKING)
-        SET(ADCSWAN_COMPILER_FLAGS "${ADCSWAN_COMPILER_FLAGS} ${NETCDF_FLAG} ${NETCDF_COMPRESSION_FLAG} ${XDMF_FLAG}")
-        SET(ADCSWAN_LINKER_FLAGS "${NETCDF_LINKER_FLAG} ${XDMF_LINKER_FLAG}")
-        SET_TARGET_PROPERTIES(adcswan PROPERTIES LINK_FLAGS ${ADCSWAN_LINKER_FLAGS} )
-        TARGET_INCLUDE_DIRECTORIES(adcswan PRIVATE ${CMAKE_SOURCE_DIR}/src)
-    ENDIF(NETCDF_WORKING AND NOT XDMF_WORKING)
-
-    SET_TARGET_PROPERTIES(templib_swan1serial PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/adcswan_mod)
-    SET_TARGET_PROPERTIES(templib_swan2serial PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/adcswan_mod)
-    SET_TARGET_PROPERTIES(templib_adcswan1    PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/adcswan_mod)
-    SET_TARGET_PROPERTIES(templib_adcswan2    PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/adcswan_mod)
-    SET_TARGET_PROPERTIES(templib_adcswan3    PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/adcswan_mod)
-    SET_TARGET_PROPERTIES(adcswan             PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/adcswan_mod)
-    SET_TARGET_PROPERTIES(templib_adcswan1    PROPERTIES COMPILE_FLAGS ${ADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
-    SET_TARGET_PROPERTIES(templib_adcswan2    PROPERTIES COMPILE_FLAGS ${ADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
-    SET_TARGET_PROPERTIES(templib_adcswan3    PROPERTIES COMPILE_FLAGS ${ADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
-    SET_TARGET_PROPERTIES(adcswan             PROPERTIES COMPILE_FLAGS ${ADCSWAN_COMPILER_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC})
-    IF( NOT ${ADDITIONAL_FLAGS_SWAN} STREQUAL "" )
-        SET_TARGET_PROPERTIES(templib_swan1serial PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_SWAN})
-        SET_TARGET_PROPERTIES(templib_swan2serial PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_SWAN})
-    ENDIF( NOT ${ADDITIONAL_FLAGS_SWAN} STREQUAL "" )
-    
-    TARGET_INCLUDE_DIRECTORIES(adcswan  PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_adcswan1 PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_adcswan2 PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_adcswan3 PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_swan2serial PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
-
-    IF(NETCDF_WORKING AND NOT XDMF_WORKING)
-        TARGET_LINK_LIBRARIES(adcswan templib_adcswan3 templib_adcswan2
-                                      templib_swan2serial templib_adcswan1
-                                      templib_swan1serial version
-                                      netcdf netcdff )
-    ELSEIF(NETCDF_WORKING AND XDMF_WORKING)
-        TARGET_LINK_LIBRARIES(adcswan templib_adcswan3 templib_adcswan2
-                                      templib_swan2serial templib_adcswan1
-                                      templib_swan1serial version
-                                      netcdf netcdff XdmfCore XdmfUtils Xdmf )
-    ELSE(NETCDF_WORKING AND NOT XDMF_WORKING)
-        TARGET_LINK_LIBRARIES(adcswan templib_adcswan3 templib_adcswan2
-                                      templib_swan2serial templib_adcswan1
-                                      templib_swan1serial version )
-    ENDIF(NETCDF_WORKING AND NOT XDMF_WORKING)
-
     ADD_DEPENDENCIES(adcswan             templib_adcswan3)
     ADD_DEPENDENCIES(templib_adcswan3    templib_swan2serial)
     ADD_DEPENDENCIES(templib_swan2serial templib_adcswan2)
     ADD_DEPENDENCIES(templib_adcswan3    templib_adcswan2)
     ADD_DEPENDENCIES(templib_adcswan2    templib_adcswan1)
     ADD_DEPENDENCIES(templib_adcswan1    templib_swan1serial)
-    ADD_DEPENDENCIES(templib_adcswan1    version)
     
     INSTALL(TARGETS adcswan RUNTIME DESTINATION bin)
 

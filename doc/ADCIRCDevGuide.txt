@@ -213,7 +213,20 @@ command line as follows:
  NETCDF4_COMPRESSION=enable
  
 These changes in the make command line must be made for the build of 
-each of the ADCIRC executables so that they are all consistent. 
+each of the ADCIRC executables so that they are all consistent. In order
+to encapsulate the paths and other settings that are specific to 
+certain machines, the cmplrflags.mk file uses the MACHINENAME variable
+that can be set on the make command line. This variable can be used if
+the settings for that machine have already been committed to the 
+cmplrflags.mk:
+
+ make adcirc compiler=intel NETCDF=enable NETCDF4=enable 
+ NETCDF4_COMPRESSION=enable MACHINENAME=hatteras
+
+For example, on many up-to-date netcdf4 installations, the -lnetcdff library
+is required for successful compilation. This flag can be added to the 
+MACHINENAME section of the cmplrflags.mk, thus automatically including
+it when compiling with netcdf. 
 
 In general, building ADCIRC with NetCDF support is tedious and 
 usually requires several rounds of emails to local sysadmins to 
@@ -322,132 +335,6 @@ And lastly, a small test suite should be included with each
 distribution and a more comprehensive should be created that runs 
 during development and before a release. A step in this direction 
 has been made using ant in the autotest directory. 
-
-Subversion
-----------
-
-Subversion is a version control system. That is, it provides a means 
-for many software developers to collaborate on a single software 
-project.
-
-A subversion repository is a storehouse of code for a particular 
-project. Subversion repositories consist of a trunk, which is the 
-mainline code that everyone shares, and any number of branches that 
-are created by and for individual users. 
-
-A branch may be created by a developer that has a lot of changes to 
-make over a longer period of time. This lone developer can work on a 
-branch without affecting the mainline code. Once the changes in the 
-branch are satisfactory, the branch can be merged back to the trunk, 
-making the changes available to all.
-
-A further advantage of Subversion is that it automates the process 
-of merging new features into ADCIRC. For example, in the past, 
-without Subversion, developers modified their local copies of ADCIRC 
-and wanted to merge the modifications into the mainline code. This 
-required hours or days of painstakingly examining each change they 
-had made and cutting and pasting the changes one by one into the 
-up-to-date version of ADCIRC. With Subversion, the software examines 
-the changes that were made locally and makes corresponding changes 
-to the mainline version in an automated way.   
-
-Policies
-~~~~~~~~
-
-Working with subversion requires greater coordination among ADCIRC 
-developers. For example, if two developers change the same line of 
-code in two different branches in two different ways, this will 
-create a conflict that will have to be resolved manually. 
-
-Furthermore, if one developer makes changes to trunk that prevent 
-the code from compiling, it will be difficult for other developers 
-to continue working if they update to the latest code. As a result, 
-ADCIRC development with Subversion will adhere to the following 
-policies:
-
-* Communicate. Jason Fleming is responsible for making sure ADCIRC 
-development is smooth, pain-free and productive---when in doubt, 
-email him (jason.fleming@seahorsecoastal.com).
-* Also use the adcirc-dev mailing list to keep everyone informed of 
-what you are doing.
-* If you are not on the adcirc-dev mailing list and would like to be, 
-email Jason Fleming.
-* Make a branch to develop new features, rather than making changes 
-to trunk.
-* Don't commit changes to trunk that prevent the code from 
-compiling, at least on your platform. You should also confirm that 
-your code compiles with and without NetCDF.
-
-Instructions
-~~~~~~~~~~~~
-
-Comprehensive documentation for Subversion is available: 
-http://svnbook.red-bean.com/.
-
-The ADCIRC code is hosted at the following Subversion repository 
-location:
-
-  https://adcirc.renci.org/svn/adcirc
-
-To check out code from the trunk, please type
-
-  svn checkout https://adcirc.renci.org/svn/adcirc/trunk
-
-Here are a few examples of things that we commonly do with svn.
-
-Compare Revisions
-^^^^^^^^^^^^^^^^^
-
-In order to see the changes between revisions of the repository, 
-type (for example)
-
-  svn diff  -r 15:16 owiwind.F
-
-Package Up Code From Repository
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-In order to create a tar file that contains just the ADCIRC code and 
-excludes the .svn directories, the first step is to export the code 
-to a new subdirectory. For example:
-
-  svn export ./trunk ./adc99_99
-
-Would copy the local files under version control from the trunk 
-subdir to the adc99_99 subdir, excluding the .svn files. Particular 
-revisions of the svn repository can also be extracted, see the svn 
-documentation for details on how to do this.
-
-Pull Old Version from Repository
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-One advantage of using svn is that it is easy to go back to an older 
-version of the code, if necessary. The first thing to do in this 
-case is usually to look at the svn log to see what changes were 
-made, so that you can select the right version of the repository to 
-extract. Go to the subdirectory of the code tree that you want an 
-older version of and issue the command
-
-  svn log
-
-Look at the log entries, and note the revision that you'd like to 
-extract. Let's say you want to retrieve adcirc48/trunk at revision 
-65 of the repository (for example). Issue the following command:
-
-  svn checkout -r 65 https://adcirc.renci.org/svn/adcirc/trunk
-
-Make a Branch
-^^^^^^^^^^^^^
-
-To make a branch off trunk to add a new feature and call it the 
-myfeature branch:
-
-  svn copy https://adcirc.renci.org/svn/adcirc/trunk
-   https://adcirc.renci.org/svn/adcirc/branches/myfeature 
-   --message "Creating branch to add myfeature"
-
-Then to start using the newly created branch:
-
-  svn checkout https://adcirc.renci.org/svn/adcirc/branches/myfeature
 
 Appendix A: This Document
 -------------------------

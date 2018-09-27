@@ -13,9 +13,15 @@ endif
 include $(ESMFMKFILE)
 
 
-ifneq ($(origin ADCDIR), environment)
-$(error Environment variable ADCDIR was not set.)
-endif
+
+
+#ifneq ($(origin ADCDIR), environment)
+#$(error Environment variable ADCDIR was not set.)
+#endif
+
+current_dir := $(shell pwd)
+ADCDIR  := $(current_dir)/../..
+
 INCDIRS := -I . -I$(ADCDIR)/work/odircp -I $(ADCDIR)/prep
 LIBDIRS := -L . -L$(ADCDIR)/work 
 LIBSS   := -ladc  -lnetcdf  -lnetcdff 
@@ -88,12 +94,13 @@ esmApp.o:   esm.o
 esm.o:      adc_cap.o
 esm.o:      wav.o
 esm.o:      hwrf_cap.o
+esm.o:      atmesh.o
 wav.o:      adc_cap.o
 adc_cap.o:  couple2swan_modif.o
 adc_cap.o:  adc_mod.o
 wav.o:      wav_mod.o
-hwrf_cap.o: hwrf_mod.o
 atmesh.o:   atmesh_mod.o 
+hwrf_cap.o: hwrf_mod.o
 
 
 # -----------------------------------------------------------------------------

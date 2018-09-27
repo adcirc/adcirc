@@ -92,20 +92,16 @@ C  46.44 vjp added code for prep13-only command
 C----------------------------------------------------------------------------
 
       MODULE PRESIZES
-#if defined CSWAN || defined ADCSWAN
-      USE GLOBAL, ONLY :
-     &                   SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
-     &                   SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
-     &                   SWAN_OutputTMM10,USE_TVW,TVW_FILE,NOUT_TVW,
-     &                   TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,WaveWindMultiplier
-#else
-      USE GLOBAL, ONLY : USE_TVW,TVW_FILE,NOUT_TVW,
-     &                   TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,WaveWindMultiplier 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      USE GLOBAL, ONLY : WaveWindMultiplier 
+      USE GLOBAL, ONLY :
+     &    USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,
+     &    WaveWindMultiplier,outputWindDrag
+#if defined CSWAN || defined ADCSWAN
+     &   ,SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
+     &    SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
+     &    SWAN_OutputTMM10
 #endif
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
-     &                   invertedBarometerOnElevationBoundary,
      &                  initWindModule
 C
       IMPLICIT NONE
@@ -188,7 +184,7 @@ C     Solver Type:
       LOGICAL USE_VEL_STAT_FILE     !.true. if a velocity station file exists
       LOGICAL USE_CONC_STAT_FILE    !.true. if a concentration station file exists
       LOGICAL USE_MET_STAT_FILE     !.true. if a met station file exists
-
+      LOGICAL :: invertedBarometerOnElevationBoundary
 C
 C For Definition of Working Directory
 C
@@ -217,7 +213,7 @@ C Logicals added for adcprep paths
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
-      NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir,
+      NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,rhoAir,
      &                       invertedBarometerOnElevationBoundary
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &    TOUTF_TVW,NSPOOL_TVW
@@ -225,6 +221,10 @@ C Logicals added for adcprep paths
       LOGICAL :: XDMF_AVAIL ! true if XDMF was compiled in
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       NAMELIST /waveCoupling/ WaveWindMultiplier
+      !
+      ! @jasonfleming: reduce memory usage if there are no weir boundaries
+      ! with cross barrier pipes
+      logical :: meshHasWeirWithPipes
 
 C---------------------end of data declarations--------------------------------C
 
@@ -251,7 +251,7 @@ C     the reading of the fort.15 file.
       integer :: nbytes = 0
       INTEGER, ALLOCATABLE :: NNEIGH(:)
       INTEGER  I,IL,IDUM,N,N1,N2,N3,NDIF1,NDIF2,NDIF3,NBN,NVEL,
-     &  IK,IBN,NBBN,NFLUXB,NFLUXI,NIBP,IBTYPE,IBN1,NETA
+     &  IK,IBN,NBBN,NFLUXB,NFLUXI,NFLUXIPipe,NIBP,NIBPPipe,IBTYPE,IBN1,NETA
       CHARACTER*95 LINEI
       CHARACTER*1 CHARI(95)
       EQUIVALENCE (LINEI,CHARI(1))
@@ -271,6 +271,7 @@ C.... tcm v51.20.04 additions for station location file
 #else
       NETCDF_AVAIL = .false.
 #endif
+      meshHasWeirWithPipes = .false.
 C
 C...OPEN AND PROCESS THE UNIT 14 ADCIRC GRID FILE TO DETERMINE SIZES
 C
@@ -355,7 +356,9 @@ C
       NBBN=0                            !NO. OF MAINLAND BARRIER BOUNDARY NODES
       NFLUXB=0                          !SPECIFIED MAINLAND BARRIER BC
       NIBP=0                            !NO. OF INTERNAL BARRIER BOUNDARY PAIRS
+      NIBPPipe=0                        !number of internal barrier bounary (with pipes) pairs
       NFLUXI=0                          !SPECIFIED INTERNAL BARRIER BC
+      NFLUXIPipe=0                      !internal barrier boundary bc with pipes
       fluxBoundary=.false.             !SPECIFIED FLUX BC
 C
       READ(14,*) MNBOU                  !Land Boundary Segments
@@ -371,25 +374,23 @@ C     jgf46.21 Added support for IBTYPE=52.
             IBTYPE=(ABS(IBTYPE)-100)*(IBTYPE/ABS(IBTYPE))
          END IF
 ! kmd - continue on with the normal dividing of the land boundaries
-         IF((IBTYPE.EQ.2).OR.(IBTYPE.EQ.12).OR.(IBTYPE.EQ.22).OR.
-     &        (IBTYPE.EQ.32).OR.(IBTYPE.EQ.52)) THEN
+         select case(ibtype)
+         case(2,12,22,32,52)
             fluxBoundary = .true.
             NDISC=NDISC+NBN
-         ENDIF
-         IF((IBTYPE.EQ.3).OR.(IBTYPE.EQ.13).OR.(IBTYPE.EQ.23)) THEN
-           NFLUXB=1
-           NBBN=NBBN+NBN
-         ENDIF
-         IF((IBTYPE.EQ.4).OR.(IBTYPE.EQ.24)) THEN
-           NFLUXI=1
-           NIBP=NIBP+NBN
-         ENDIF
-         IF((IBTYPE.NE.2).AND.(IBTYPE.NE.12).AND.(IBTYPE.NE.22).AND.
-     &        (IBTYPE.NE.52).AND.
-     &        (IBTYPE.NE.3).AND.(IBTYPE.NE.13).AND.(IBTYPE.NE.23).AND.
-     &        (IBTYPE.NE.4).AND.(IBTYPE.NE.24)) THEN
+         case(3,13,23)
+            NFLUXB=1
+            NBBN=NBBN+NBN
+         case(4,24)
+            NFLUXI=1
+            NIBP=NIBP+NBN
+         case(5,25)
+            meshHasWeirWithPipes = .false.
+            NFLUXIPipe=1
+            NIBPPipe=NIBPPipe+NBN
+         case default  ! mainland and island
             NVEL=NVEL+NBN
-         ENDIF
+         end select
          IBN1=0
          DO IK=1,NBN
             READ(14,*) IBN
@@ -399,13 +400,13 @@ C     jgf46.21 Added support for IBTYPE=52.
               NNEIGH(IBN) = 0
             ENDIF
             IF ((IBTYPE.EQ.1).OR.(IBTYPE.EQ.11).OR.(IBTYPE.EQ.21)) THEN
-              IF ((IK.EQ.NBN).AND.(IBN.NE.IBN1)) NVEL=NVEL+1
+               IF ((IK.EQ.NBN).AND.(IBN.NE.IBN1)) NVEL=NVEL+1
             ENDIF
             IF (IK.EQ.1) IBN1=IBN
          ENDDO
       ENDDO
 C
-      MNVEL=NVEL+NDISC+NBBN+2*NIBP
+      MNVEL=NVEL+NDISC+NBBN+2*NIBP+2*NIBPPipe
       IF(MNBOU.EQ.0) MNBOU=1
       MNVEL=MNVEL+1
 C
@@ -490,6 +491,14 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 C.... tcm v51.20.04 additions for station location file
       integer ::  ios_stations
       integer :: MNSTAE2,MNSTAV2,MNSTAC2,MNSTAM2
+
+C.... tcm v52.30.01 additions for Smagorinski Eddy Viscosity Namelist
+      integer :: ios_smag = 0
+      REAL(8) :: SMAG_UPPER_LIM = 100.d0  ! m^2/s (default upper limit)
+      REAL(8) :: SMAG_LOWER_LIM = 1.0d-8  ! m^2/s (default lower limit)
+      LOGICAL :: SMAG_COMP_FLAG = .FALSE. ! BY DEFAULT DO NOT USE SMAG
+      LOGICAL :: FOUND_Smag_NML = .false. ! flag to determine if the Smag_Control namelist was present
+      NAMELIST /Smag_Control/ SMAG_UPPER_LIM,SMAG_LOWER_LIM,SMAG_COMP_FLAG
 
 #ifdef ADCNETCDF
       NETCDF_AVAIL = .true.
@@ -617,6 +626,43 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       ENDIF
       REWIND(15)
 
+c...  tcm v52.30.01 Addtions for using the Smagorinski Control Namelist
+c...  read through the fort.15 file for the namelist (Smag_Control) for
+c...  using upper and lower limits on Smagorinski.  This namelist must be at the bottom
+c...  of the fort.15 file. If found, then set the appropriate values (Smag_Comp_Flag,
+c...  SMAG_UPPER_LIM, and Smag_Lower_Lim).  If the namelist is not there, then the 
+c...  Smagorinski limit adjustments will not be used.
+C...
+C...  After this search and read, we will close the file and then reopen it
+c...  for further processing the traditional non-namelist components.
+C...
+      READ(UNIT = 15,NML = Smag_Control,IOSTAT = IOS_SMAG)
+
+      IF (IOS_SMAG < 0) THEN
+c.....   it is possible for the namelist to be present in the file and occuring at the end
+c.....   of the file with no line breaks after the ending "\" which causes the iostat to
+c.....   return a negative value.  By checking to be sure a namelist variable was set to
+c....    a non-default value we can determine this was the case.
+         IF (SMAG_COMP_FLAG .eqv. .true. ) THEN
+!            WRITE(*,*) 'Smag_Control NAMELIST PRESENT, BUT AT THE',
+!     &                 ' END OF THE FILE WITH NO ADVANCING',
+!     &                 ' CHARACTER'
+            found_smag_nml = .true.
+         ELSE
+!            WRITE(*,*) 'Smag_Control NAMELIST NOT PRESENT'
+         ENDIF
+      ELSEIF (IOS_SMAG == 0) THEN
+!         WRITE(*,*) 'NAME LIST PRESENT AND CORRECT'
+         found_smag_nml = .true.
+      ELSE
+         found_smag_nml = .true.
+!         WRITE(*,*) 'THERE WAS A PROBLEM PROCESSING THE Smag_Control NAMELIST'
+!         WRITE(*,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCPREP NOW.'
+         stop
+      ENDIF
+C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
+      REWIND(15)
+
 C
 C
 C  Initialize all runtime option logicals to false
@@ -649,7 +695,6 @@ C
       READ(15,*) IDUM  ! SKIP NABOUT
       READ(15,*) IDUM  ! SKIP NSCREEN
       READ(15,*) IHOT
-      print *, 'IHOT ',IHOT
       IF ((IHOT.EQ.367).OR.(IHOT.EQ.368).OR.
      &    (IHOT.EQ.567).OR.(IHOT.EQ.568)) THEN
          useNetCDF = .true.
@@ -809,6 +854,7 @@ C.... tcm v48.4641 additions for ice
      &     .OR.(ABS(NWS).EQ.15)  !jgf50.38.05: Added NWS=15 for HWind.
      &     .OR.(ABS(NWS).EQ.20)  !jie NWS=20
      &     .OR.(ABS(NWS).EQ.16)  !tcm v51.06.02 added for nws=16 GFDL Met
+     &     .OR.(NWS.EQ.10)       !yf added for nws=10 GFS Met
      &     .OR.(ABS(NWS).EQ.12).OR. (NWS.EQ.19)) THEN
         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
         IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4)
@@ -843,6 +889,21 @@ C.... tcm v48.4641 additions for ice
          CASE DEFAULT ! some kind of wave radiation stress
             ! YYYY MM DD HH24 StNum BLAdj WTIMINC RSTIMINC pureVortex pureBack
             READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,
+     &                 WTIMINC,RSTIMINC,RDUM,RDUM
+         END SELECT
+      ENDIF
+
+      !jgf: Read WTIMINC line if NWS is 30 (GAHM + OWI)
+      IF ((ABS(NWS)).EQ.30) THEN
+         SELECT CASE(NRS)
+         CASE(0) ! no wave radiation stress
+                      ! YYYY  MM   DD HH24  StNum BLAdj GEOFACTOR 
+                      ! WTIMINC pureVortex pureBackgrnd
+            READ(15,*) IDUM,IDUM,IDUM,IDUM, IDUM, RDUM,   IDUM,  
+     &                  WTIMINC,   RDUM,      RDUM
+         CASE DEFAULT ! some kind of wave radiation stress
+                      ! YYYY MM DD HH24 StNum BLAdj GEOFACTOR WTIMINC RSTIMINC pureVortex pureBack
+            READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,IDUM,
      &                 WTIMINC,RSTIMINC,RDUM,RDUM
          END SELECT
       ENDIF
@@ -1255,6 +1316,7 @@ C     sb46.28sb01 added NWS=12: OWI format
       IF(ABS(NWS).EQ.16) WRITE(*,3026)
       IF(NCICE.GE.1) WRITE(*,3221)  !tcm v49.64.01
       IF(ABS(NWS).EQ.29) WRITE(*,3223)
+      IF(ABS(NWS).EQ.30) WRITE(*,3224)
       IF((NHARF.EQ.0).OR.(FMV.EQ.0.)) WRITE(*,3021)
       IF((NHARF.GE.1).AND.(FMV.NE.0.)) WRITE(*,3022)
       IF(ILUMP.EQ.0) WRITE(*,3031)
@@ -1304,6 +1366,7 @@ C
  3026 FORMAT(' *   Also, NWS=+-16 GFDL Met Data is used            *')
  3221 FORMAT(' *   Also, ABS(NWS)>=1000 ice concentration are used,*')
  3223 FORMAT(' *   Also, NWS=+-29 VortexOWI met forcing is used,   *')
+ 3224 FORMAT(' *   Also, NWS=+-30 GAHM+OWI met forcing is used,    *')
  3018 FORMAT(' *   Also, ABS(NWS)>=100 wave stress forcing is used,*')
  3019 FORMAT(' *   Also, AVN wind & pressure forcing will be used, *')
  3020 FORMAT(' *   Also, ETA wind & pressure forcing will be used, *')

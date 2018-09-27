@@ -69,22 +69,6 @@ Casey 090303: Add variable for maximum SWAN output.
       REAL(SZ),ALLOCATABLE,TARGET :: SWAN_MAXTEMP(:)
       REAL(SZ),ALLOCATABLE,TARGET :: SWAN_MAXTEMP_G(:) !...Cobell added
 
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-      REAL(SZ),ALLOCATABLE :: TKXX(:)
-      REAL(SZ),ALLOCATABLE :: TKXY(:)
-      REAL(SZ),ALLOCATABLE :: TKYY(:)
-      REAL(SZ),ALLOCATABLE :: WAVE_A(:)
-      REAL(SZ),ALLOCATABLE :: WAVE_A1(:)
-      REAL(SZ),ALLOCATABLE :: WAVE_A2(:)
-      REAL(SZ),ALLOCATABLE :: WAVE_H(:)
-      REAL(SZ),ALLOCATABLE :: WAVE_H1(:)
-      REAL(SZ),ALLOCATABLE :: WAVE_H2(:)
-      REAL(SZ),ALLOCATABLE :: WAVE_T(:)
-      REAL(SZ),ALLOCATABLE :: WAVE_T1(:)
-      REAL(SZ),ALLOCATABLE :: WAVE_T2(:)
-#endif
-
 Casey 100205: Add variables for writing of SWAN hot-start files.
       INTEGER              :: SwanHotStartUnit
       LOGICAL              :: WriteSwanHotStart = .FALSE.
@@ -98,117 +82,6 @@ C             0 wherever ice reaches/exceeds a threshold value
 C-----------------------------------------------------------------------
       CONTAINS
 C-----------------------------------------------------------------------
-
-
-C-----------------------------------------------------------------------
-C     S U B R O U T I N E
-C       C O M P U T E  M O D I F I E D  W A V E  F R I C T I O N
-C-----------------------------------------------------------------------
-C-----------------------------------------------------------------------
-#ifdef CSWANFRIC
-!Casey 091020: Adopt Ethan's/Joannes's modified friction.
-      SUBROUTINE ComputeModifiedWaveFriction(TK)
-
-      USE GLOBAL, ONLY         : ETA2,
-     &                           G,
-     &                           H0,
-     &                           IFNLFA,
-     &                           PI,
-     &                           UU1,
-     &                           VV1
-      USE MESH, ONLY : NP, DP
-      USE NodalAttributes, ONLY: FGAMMA,
-     &                           FRIC,
-     &                           FTHETA,
-     &                           HBREAK,
-     &                           IFHYBF,
-     &                           IFLINBF,
-     &                           IFNLBF
-      USE SIZES, ONLY          : SZ
-
-      IMPLICIT NONE
-
-      INTRINSIC              :: ABS
-      INTRINSIC              :: COS
-      INTRINSIC              :: SIN
-      INTRINSIC              :: SINH
-      INTRINSIC              :: SQRT
-
-      REAL(SZ),INTENT(IN)    :: TK(:)
-
-      INTEGER                :: IP
-
-      REAL(SZ)               :: COSA1
-      REAL(SZ)               :: CHYBR
-      REAL(SZ)               :: F_WAVE
-      REAL(SZ)               :: H1
-      REAL(SZ)               :: L_WAVE
-      REAL(SZ)               :: SINA1
-      REAL(SZ)               :: UVW1
-      REAL(SZ)               :: UVW2
-      REAL(SZ)               :: WB
-      REAL(SZ)               :: WD
-      REAL(SZ)               :: WD1
-      REAL(SZ)               :: WDXX
-      REAL(SZ)               :: WDXY
-      REAL(SZ)               :: WDYY
-      REAL(SZ)               :: Y_WAVE
-
-      call setMessageSource("ComputeModifiedWaveFriction")
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-
-      DO IP=1,NP
-         H1 = DP(IP) + IFNLFA*ETA2(IP)
-         TKXX(IP) = TK(IP)
-         TKYY(IP) = TK(IP)
-         TKXY(IP) = 0.D0
-C... Added friction due to waves.
-         IF((WAVE_H(IP).GT.0.D0).AND.(WAVE_T(IP).GT.0.D0).AND.(H1.GT.H0))THEN
-C... Compute the wave length using a Pade approximation.
-            Y_WAVE = (2.D0*PI/WAVE_T(IP))**2.D0*H1/G
-            F_WAVE = Y_WAVE + 1.D0/(1.D0 + Y_WAVE*(0.66667D0 +
-     &               Y_WAVE*(0.35550D0   + Y_WAVE*(0.16084D0 +
-     &               Y_WAVE*(0.06320D0   + Y_WAVE*(0.02174D0 +
-     &               Y_WAVE*(0.00654D0   + Y_WAVE*(0.00171D0 +
-     &               Y_WAVE*(0.00039D0   + Y_WAVE*0.000111D0)))))))))
-            L_WAVE = 2.D0*PI/SQRT(ABS(Y_WAVE*F_WAVE/(H1**2.D0)))
-C... Compute the orbital wave velocity.
-            WB  = 2.D0*PI/WAVE_T(IP)*WAVE_H(IP)/(PI*SINH(2.D0*PI/
-     &            L_WAVE*H1))
-C... Compute the modified friction factors due to waves.
-            COSA1 = COS(WAVE_A(IP))
-            SINA1 = SIN(WAVE_A(IP))
-            UVW1  = UU1(IP)*UU1(IP) + VV1(IP)*VV1(IP) + WB*WB
-            UVW2  = 2.D0*(UU1(IP)*COSA1 + VV1(IP)*SINA1)*WB
-            WD1   = 0.5D0*((ABS(UVW1 + UVW2))**0.5D0
-     &            + (ABS(UVW1 - UVW2))**0.5D0)
-            WD    = 0.D0
-            IF(ABS(WD1).GE.0.001D0)THEN
-               WD = WB*WB/WD1
-            ENDIF
-            WDXX = WD*COSA1*COSA1
-            WDYY = WD*SINA1*SINA1
-            WDXY = WD*SINA1*COSA1
-            CHYBR = IFNLBF + IFHYBF*
-     &              (1+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)
-            TKXX(IP) = FRIC(IP)*(IFLINBF + ((WD1 + WDXX)/H1)*CHYBR)
-            TKYY(IP) = FRIC(IP)*(IFLINBF + ((WD1 + WDYY)/H1)*CHYBR)
-            TKXY(IP) = FRIC(IP)*(IFLINBF + WDXY/H1*CHYBR)
-         ENDIF
-      ENDDO
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      RETURN
-C-----------------------------------------------------------------------
-      END SUBROUTINE ComputeModifiedWaveFriction
-C-----------------------------------------------------------------------
-#endif
-
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E
@@ -548,193 +421,22 @@ C-----------------------------------------------------------------------
       END SUBROUTINE ComputeWaveDrivenForces
 C-----------------------------------------------------------------------
 
-
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E
-C       C O M P U T E  W A V E  F R I C T I O N  P R O P E R T I E S
+C       C O M P U T E  S W A N  W I N D  D R A G        
 C-----------------------------------------------------------------------
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-Casey 091021: Copy the format of this routine from the SwanOutput
-C             routine earlier in this file.  We want to interact
-C             with the SWAN output routines so that they will
-C             compute the wave heights, periods and directions.
-C             we need for the modified friction.
+C     @mattbilskie
 C-----------------------------------------------------------------------
-#ifdef CSWANFRIC
-      SUBROUTINE ComputeWaveFrictionProperties
-
-      USE Couple2Adcirc,ONLY: COMPDA
-      USE GLOBAL,       ONLY: ETA2,
-     &                        PI,
-     &                        UU2,
-     &                        VV2
-      USE MESH, ONLY : NP, DP
-      USE M_GENARR,     ONLY: AC2,
-     &                        KGRPNT,
-     &                        SPCDIR,
-     &                        SPCSIG
-      USE SwanGriddata, ONLY: xcugrd,
-     &                        ycugrd
-      USE SWCOMM1,      ONLY: COSCQ,
-     &                        OVEXCV,
-     &                        SINCQ
-      USE SWCOMM2,      ONLY: XOFFS,
-     &                        YOFFS
-      USE SWCOMM3,      ONLY: MCGRD,
-     &                        MDC,
-     &                        MSC,
-     &                        MTC,
-     &                        MXC,
-     &                        MYC
-
-      IMPLICIT NONE
-
-      INTRINSIC                     :: ALLOCATED
-      INTRINSIC                     :: INDEX
-      INTRINSIC                     :: TRIM
-
-      CHARACTER(LEN=30)             :: TempC
-
-      INTEGER                       :: I
-      INTEGER                       :: IO
-      INTEGER                       :: IONOD(NP)
-      INTEGER                       :: IP
-      INTEGER                       :: IS
-      INTEGER                       :: IVTYPE
-      INTEGER                       :: SWAN_BKC
-      INTEGER,SAVE                  :: SWAN_MTC
-
-      LOGICAL                       :: CROSS(4,NP)
-
-      REAL(4)                       :: ACLOC(MDC,MSC)
-      REAL(4)                       :: DEPXY(NP)
-      REAL(4)                       :: FORCE(NP,2)
-      REAL(4)                       :: SWAN_CG(MSC)
-      REAL(4)                       :: SWAN_NE(MSC)
-      REAL(4)                       :: SWAN_NED(MSC)
-      REAL(4),ALLOCATABLE           :: SWAN_VOQ(:,:)
-      REAL(4)                       :: SWAN_WK(MSC)
-      REAL(4)                       :: XC(NP)
-      REAL(4)                       :: YC(NP)
-
-      call setMessageSource("ComputeWaveFrictionProperties")
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-!... Initialize the Swan output variables.
-      DO IO=1,NMOVAR
-         SWAN_OQPROC(IO) = .FALSE.
-      ENDDO
-      NumSwanOutput = 0
-!... For significant wave heights (HS).
-      NumSwanOutput = NumSwanOutput + 1
-      OVEXCV(10) = 0.
-      SWAN_OQPROC(10) = .TRUE.
-      SWAN_VOQR(10) = 7 + NumSwanOutput
-!... For mean wave directions (DIR).
-      NumSwanOutput = NumSwanOutput + 1
-      OVEXCV(13) = 0.
-      SWAN_OQPROC(13) = .TRUE.
-      SWAN_VOQR(13) = 7 + NumSwanOutput
-!... For mean wave periods (TM01).
-      NumSwanOutput = NumSwanOutput + 1
-      OVEXCV(11) = 0.
-      SWAN_OQPROC(11) = .TRUE.
-      SWAN_VOQR(11) = 7 + NumSwanOutput
-      COSCQ = COS(0.)
-      SINCQ = SIN(0.)
-      IF(.NOT.ALLOCATED(IGSW))  ALLOCATE(IGSW(1:NumSwanOutput))
-
-!... I don't know what BKC does.  Everything seems to work okay
-!... when it is set to two, though.
-      SWAN_BKC = 2
-!... If Swan needs these values for wave numbers, etc.,
-!... then maybe it solves for them inside SWOEXA.
-      DO IS=1,MSC
-         SWAN_CG(IS) = 0.
-         SWAN_NE(IS) = 0.
-         SWAN_NED(IS) = 0.
-         SWAN_WK(IS) = 0.
-      ENDDO
-!... Allocate VOQ and set up the first seven entries inside it.
-      IF(.NOT.ALLOCATED(SWAN_VOQ)) ALLOCATE(SWAN_VOQ(1:NP,1:(7+NumSwanOutput+1)))
-      DO IP=1,NP
-!... X,Y in problem coordinate system.
-         SWAN_OQPROC(1) = .TRUE.
-         SWAN_OQPROC(2) = .TRUE.
-         SWAN_VOQR(1) = 1
-         SWAN_VOQR(2) = 2
-         SWAN_VOQ(IP,SWAN_VOQR(1)) = xcugrd(IP)
-         SWAN_VOQ(IP,SWAN_VOQR(2)) = ycugrd(IP)
-!... X,Y in adjusted coordinate system.
-         SWAN_OQPROC(24) = .TRUE.
-         SWAN_OQPROC(25) = .TRUE.
-         SWAN_VOQR(24) = 3
-         SWAN_VOQR(25) = 4
-         SWAN_VOQ(IP,SWAN_VOQR(24)) = 0.
-         SWAN_VOQ(IP,SWAN_VOQR(25)) = 0.
-!... Depth of water.
-         SWAN_OQPROC(4) = .TRUE.
-         SWAN_VOQR(4) = 5
-         SWAN_VOQ(IP,SWAN_VOQR(4)) = REAL(DP(IP)) + REAL(ETA2(IP))
-!... Water current velocities.
-         SWAN_OQPROC(5) = .TRUE.
-         SWAN_VOQR(5) = 6
-         SWAN_VOQ(IP,SWAN_VOQR(5))   = REAL(UU2(IP))
-         SWAN_VOQ(IP,SWAN_VOQR(5)+1) = REAL(VV2(IP))
-!... Assemble other arrays?
-         DEPXY(IP) = REAL(DP(IP)) + REAL(ETA2(IP))
-         XC(IP) = xcugrd(IP)
-         YC(IP) = ycugrd(IP)
-         FORCE(IP,1) = 0.
-         FORCE(IP,2) = 0.
-         IONOD(IP) = 0
-      ENDDO
-
-!... Call the Swan subroutine to interpolate internal Swan quantities.
-      CALL SWOEXD(SWAN_OQPROC, NP, XC, YC, SWAN_VOQR,
-     &            SWAN_VOQ, COMPDA, KGRPNT, FORCE, CROSS, IONOD, -999)
-
-!... Call the Swan subroutine to compute the output quantities.
-      CALL SWOEXA(SWAN_OQPROC, SWAN_BKC, NP, XC, YC,
-     &            SWAN_VOQR, SWAN_VOQ, AC2, ACLOC, SPCSIG,
-     &            SWAN_WK, SWAN_CG, SPCDIR, SWAN_NE, SWAN_NED,
-     &            KGRPNT, DEPXY, CROSS)
-
-!... Significant wave heights (HS).
-      IVTYPE = 10
-      DO IP=1,NP
-         WAVE_H2(IP) = DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)))
-         WRITE(UNIT=TempC,FMT=*) WAVE_H2(IP)
-      ENDDO
-!... Mean wave directions (DIR).
-      IVTYPE = 13
-      DO IP=1,NP
-         WAVE_A2(IP) = DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)))
-         WRITE(UNIT=TempC,FMT=*) WAVE_A2(IP)
-         WAVE_A2(IP) = WAVE_A2(IP) * PI/180.D0
-      ENDDO
-!... Mean wave periods (TM01).
-      IVTYPE = 11
-      DO IP=1,NP
-         WAVE_T2(IP) = DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)))
-         WRITE(UNIT=TempC,FMT=*) WAVE_T2(IP)
-      ENDDO
-
-      IF(ALLOCATED(IGSW))     DEALLOCATE(IGSW)
-      IF(ALLOCATED(SWAN_VOQ)) DEALLOCATE(SWAN_VOQ)
-
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      RETURN
+      SUBROUTINE ComputeSwanWindDrag(CDRAG,NodeNumber)
+      USE GLOBAL, ONLY: NP_G, SWAN_WDragCo
+      IMPLICIT NONE 
+      REAL(4) :: CDRAG
+      INTEGER :: NodeNumber
+      IF(.NOT.ALLOCATED(SWAN_WDragCo))  ALLOCATE(SWAN_WDragCo(NP_G))
+      SWAN_WDragCo(NodeNumber) = CDRAG
 C-----------------------------------------------------------------------
-      END SUBROUTINE ComputeWaveFrictionProperties
+      END SUBROUTINE ComputeSwanWindDrag
 C-----------------------------------------------------------------------
-#endif
-
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E  M A N N I N G  2  M A D S E N
@@ -1226,15 +928,15 @@ C-----------------------------------------------------------------------
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       USE GLOBAL,   ONLY: DT,
      &                    ETA2,
-     &                    WVNX1,
-     &                    WVNX2,
-     &                    WVNY1,
-     &                    WVNY2,
 Casey 120305: Merging ice changes from Taylor Asher.
 CTGA 110912:  Full SWAN ice implementation.  Use global variables
      &                    NCICE,
      &                    CICE1,
      &                    CICE2
+      USE WIND, ONLY :   WVNX1,
+     &                    WVNX2,
+     &                    WVNY1,
+     &                    WVNY2
       USE MESH, ONLY : NP, DP
 CTGA 111003:  Adding ability to read in ice info from fort.26 file
       USE SWCOMM3,  ONLY: SWAN_WBICETH => WBICETH,
@@ -1261,34 +963,6 @@ C             passed to SWAN.
       IF(.NOT.ALLOCATED(SWAN_WY2))  ALLOCATE(SWAN_WY2(1:NP,1:2))
 Casey 091216: Added allocation for friction coupling.
       IF(.NOT.ALLOCATED(SWAN_Z0))   ALLOCATE(SWAN_Z0(1:NP,1:2))
-
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-      IF(.NOT.ALLOCATED(TKXX))     ALLOCATE(TKXX(1:NP))
-      IF(.NOT.ALLOCATED(TKXY))     ALLOCATE(TKXY(1:NP))
-      IF(.NOT.ALLOCATED(TKYY))     ALLOCATE(TKYY(1:NP))
-      IF(.NOT.ALLOCATED(WAVE_A))   ALLOCATE(WAVE_A(1:NP))
-      IF(.NOT.ALLOCATED(WAVE_A1))  ALLOCATE(WAVE_A1(1:NP))
-      IF(.NOT.ALLOCATED(WAVE_A2))  ALLOCATE(WAVE_A2(1:NP))
-      IF(.NOT.ALLOCATED(WAVE_H))   ALLOCATE(WAVE_H(1:NP))
-      IF(.NOT.ALLOCATED(WAVE_H1))  ALLOCATE(WAVE_H1(1:NP))
-      IF(.NOT.ALLOCATED(WAVE_H2))  ALLOCATE(WAVE_H2(1:NP))
-      IF(.NOT.ALLOCATED(WAVE_T))   ALLOCATE(WAVE_T(1:NP))
-      IF(.NOT.ALLOCATED(WAVE_T1))  ALLOCATE(WAVE_T1(1:NP))
-      IF(.NOT.ALLOCATED(WAVE_T2))  ALLOCATE(WAVE_T2(1:NP))
-      TKXX    = 0.D0
-      TKXY    = 0.D0
-      TKYY    = 0.D0
-      WAVE_A  = 0.D0
-      WAVE_A1 = 0.D0
-      WAVE_A2 = 0.D0
-      WAVE_H  = 0.D0
-      WAVE_H1 = 0.D0
-      WAVE_H2 = 0.D0
-      WAVE_T  = 0.D0
-      WAVE_T1 = 0.D0
-      WAVE_T2 = 0.D0
-#endif
 
 Casey 120302: Merging ice changes from Taylor Asher.
 CTGA 110912:  Full SWAN ice implementation.  Allocating ice arrays.
@@ -1543,22 +1217,6 @@ Casey 120302: Merging ice changes from Taylor Asher.
 CTGA 110912:
       IF(ALLOCATED(ICY)) DEALLOCATE(ICY)
       IF(ALLOCATED(SWAN_CICE2)) DEALLOCATE(SWAN_CICE2)
-
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-      IF(ALLOCATED(TKXX))    DEALLOCATE(TKXX)
-      IF(ALLOCATED(TKXY))    DEALLOCATE(TKXY)
-      IF(ALLOCATED(TKYY))    DEALLOCATE(TKYY)
-      IF(ALLOCATED(WAVE_A))  DEALLOCATE(WAVE_A)
-      IF(ALLOCATED(WAVE_A1)) DEALLOCATE(WAVE_A1)
-      IF(ALLOCATED(WAVE_A2)) DEALLOCATE(WAVE_A2)
-      IF(ALLOCATED(WAVE_H))  DEALLOCATE(WAVE_H)
-      IF(ALLOCATED(WAVE_H1)) DEALLOCATE(WAVE_H1)
-      IF(ALLOCATED(WAVE_H2)) DEALLOCATE(WAVE_H2)
-      IF(ALLOCATED(WAVE_T))  DEALLOCATE(WAVE_T)
-      IF(ALLOCATED(WAVE_T1)) DEALLOCATE(WAVE_T1)
-      IF(ALLOCATED(WAVE_T2)) DEALLOCATE(WAVE_T2)
-#endif
 
 #if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

@@ -14,6 +14,7 @@ C----------------------------------------------------------------------------
       USE GLOBAL_3DVS, ONLY: NFEN
       USE PRESIZES
       USE VERSION
+      USE HASHTABLE
       IMPLICIT NONE
 
 C     Land Boundary Nodes and Segment Definitions:
@@ -40,6 +41,9 @@ C                                    ! I-th Node on Land Boundary Segment K
       INTEGER,ALLOCATABLE::WEIR(:)
       INTEGER,ALLOCATABLE::WEIRD(:)
 
+      TYPE(ipair),ALLOCATABLE, TARGET :: node_dict(:)
+      INTEGER,ALLOCATABLE             :: labels(:)
+
 C     METIS interface section
       INTEGER,ALLOCATABLE ::  PROC(:)
 C
@@ -65,6 +69,11 @@ C                                   ! Ith Flow Boundary Node
       INTEGER EXIST_FLUX
       LOGICAL APERIODIC_FLOW_BC     ! .true. if EXIST_FLUX is .true. .AND.
                                     ! NFFR=0 in fort.15
+                                    
+      ! @jasonfleming: add boundary weights for perturbing the domain
+      ! decomposition in subroutine metis()
+      logical :: strictBoundaries ! true if subdomain boundaries must match fulldomain
+      integer, allocatable :: boundaryWeights(:) ! mnp
 
 ! kmd - updates for rivers in a baroclinic simulation
       INTEGER EXIST_BC_TS
@@ -245,6 +254,14 @@ c.... tcm v50.66.02 added for time varying bathymetry
       LOGICAL :: FOUND_TBC_NML   !flag to determine if the timebathycontrol namelist was present
       NAMELIST /TimeBathyControl/ NDDT,BTIMINC,BCHGTIMINC
 
+c.... !tcm v52.30.01 added for forced use of Smagorinski Eddy Viscosity
+      REAL(8) :: SMAG_UPPER_LIM = 100.d0  ! m^2/s (default upper limit)
+      REAL(8) :: SMAG_LOWER_LIM = 1.0d-8  ! m^2/s (default lower limit)
+      LOGICAL :: SMAG_COMP_FLAG = .FALSE.   !BY DEFAULT DO NOT USE SMAG
+      LOGICAL :: FOUND_Smag_NML  ! flag to determine if the Smag_Control namelist was present
+      NAMELIST /Smag_Control/ SMAG_UPPER_LIM,SMAG_LOWER_LIM,SMAG_COMP_FLAG
+
+
       ! tcm v50.79 added for metControl namelist
       LOGICAL :: FOUND_METCON_NML  !flag to determine if the metControl namelist was present
 
@@ -265,6 +282,15 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       logical :: foundInundationOutputControlNamelist = .false.
       logical :: inundationOutput = .false.
       real(sz) :: inunThresh = 0.6d0
+
+      ! jgf: added support for water level offset
+      logical :: foundOffsetControlNamelist = .false. 
+      character(len=2048) :: offsetFileName='null' ! water level offset file 
+      integer :: offsetSkipSnaps=0 ! number of offset data sets to skip 
+      real(sz) :: offsetMultiplier = 1.d0 ! multiply each offset value by this
+      real(sz) :: offsetRampStart = 0.d0 ! seconds after run start
+      real(sz) :: offsetRampEnd = 0.d0   ! seconds after run start     
+      character(len=10) :: offsetRampReferenceTime = 'hotstart'
 C
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX
@@ -304,7 +330,7 @@ C     LOCALI section
       INTEGER,ALLOCATABLE::NBDVP(:,:)
       INTEGER,ALLOCATABLE::NBOUP(:)    ! NBOUP(PE) Number of Land Boundary
 C                                      ! Segments on PE
-      INTEGER,ALLOCATABLE::NVELLP(:)   ! NVELLP(K) Number of Land Boundary
+      INTEGER,ALLOCATABLE::NVELLP(:)   ! NVELLP(K,PE) Number of Land Boundary
 C                                      ! Nodes of Segment K on PE
       INTEGER,ALLOCATABLE::NVELP(:)    ! NVELP(PE) Total Number of Land
 C                                      ! Boundary Nodes on PE
@@ -391,8 +417,9 @@ C-------------------end of data declarations------------------------C
       end function
 
 
-
+c----------------------------------------------------------------------
       SUBROUTINE ALLOC_MAIN1()
+c----------------------------------------------------------------------
       use memory_usage
       integer :: nbytes = 0
 C
@@ -416,8 +443,10 @@ C
       nbytes = nbytes + 8*mnvel
       ALLOCATE ( BAR1(MNBOU,MNVEL),BAR2(MNBOU,MNVEL),BAR3(MNBOU,MNVEL) )
       nbytes = nbytes + 12*mnbou*mnvel
-      ALLOCATE ( BAR4(MNBOU,MNVEL),BAR5(MNBOU,MNVEL),BAR6(MNBOU,MNVEL) )
-      nbytes = nbytes + 12*mnbou*mnvel
+      if (meshHasWeirWithPipes.eqv..true.) then
+         ALLOCATE ( BAR4(MNBOU,MNVEL),BAR5(MNBOU,MNVEL),BAR6(MNBOU,MNVEL) )
+         nbytes = nbytes + 12*mnbou*mnvel
+      endif
       ALLOCATE ( FLBN(MNVEL),FLBNX(MNVEL),FLBNXP(MNVEL) )
       nbytes = nbytes + 12*mnvel
       ALLOCATE ( NVDLLMSG(MNOPE),NVELLMSG(MNBOU+1) )
@@ -513,9 +542,13 @@ C....tcm 44.48.01 allocate memory for fast Search Tree
       call memory_status()
 C
       RETURN
-      END SUBROUTINE
-
-
+C---------------------------------------------------------------------
+      END SUBROUTINE ALLOC_MAIN1
+C---------------------------------------------------------------------
+C
+C
+C---------------------------------------------------------------------
+C---------------------------------------------------------------------
       SUBROUTINE ALLOC_MAIN2()
       use memory_usage
       integer nbytes
@@ -528,14 +561,42 @@ C
       nbytes = nbytes + 4*mnpp*mnproc + 4*mnep*mnproc + 12*mnep*mnproc
       ALLOCATE(EL_SHARE(NELG))
       EL_SHARE(:)   = -1
+      
       nbytes = nbytes + mnep
       call memory_alloc(nbytes)
       print *,"from alloc_main2: "
       call memory_status()
 C
       RETURN
-      END SUBROUTINE
-
+C---------------------------------------------------------------------
+      END SUBROUTINE ALLOC_MAIN2
+C---------------------------------------------------------------------
+C
+C
+C---------------------------------------------------------------------
+C---------------------------------------------------------------------
+      subroutine dealloc_main2()
+      use memory_usage
+      integer nbytes
+C
+C     Deallocate space for Arrays dimensioned by MNPP and MNEP
+C
+      nbytes = 0
+      deallocate(imap_nod_lg,imap_el_lg)
+      deallocate(nnep)
+      nbytes = nbytes + 4*mnpp*mnproc + 4*mnep*mnproc + 12*mnep*mnproc
+      deallocate(el_share)
+      
+      nbytes = nbytes + mnep
+      call memory_dealloc(nbytes)
+      print *,"from dealloc_main2: "
+      call memory_status()
+c
+      return
+c---------------------------------------------------------------------
+      end subroutine dealloc_main2
+C---------------------------------------------------------------------
+C
 C
 C
 C--------------------------------------------------------------------------C

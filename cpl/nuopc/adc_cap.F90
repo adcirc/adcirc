@@ -179,20 +179,21 @@ module adc_cap
   USE ADCIRC_Mod, ONLY : ADCIRC_Init
   USE ADCIRC_Mod, ONLY : ADCIRC_Run
   USE ADCIRC_Mod, ONLY : ADCIRC_Final
-  use MESH   , only: np,ne,nm,slam,sfea
-  use GLOBAL , only: IMAP_EL_LG,NODES_LG
+  use MESH      , ONLY : NP,ne,nm,slam,sfea
+  use GLOBAL    , ONLY : IMAP_EL_LG,NODES_LG
 
   !TODO::  Need to carefully check units in particular pressure
   use GLOBAL , only: ETA2, UU2, VV2      ! Export water level and velocity fileds to wave model
   USE GLOBAL,  ONLY: RSNX1, RSNY1        ! Import wave 2D forces from wave model
   USE GLOBAL,  ONLY: RSNX2, RSNY2        ! Import wave 2D forces from wave model
-  USE GLOBAL,  ONLY: WVNX2, WVNY2, PRN2  ! Import wind and pressure variables
-  USE GLOBAL,  ONLY: WVNX1, WVNY1, PRN1
-  USE GLOBAL,  ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
   USE GLOBAL,  ONLY: RSTIMINC            ! wave time interval
   use GLOBAL,  ONLY: RhoWat0, NUOPC4MET, NUOPC4WAV, NWS, g
   use GLOBAL,  only: ITHS, NT, DTDP, ITIME
   use GLOBAL,  only: allMessage
+
+  USE WIND,    ONLY: WVNX2, WVNY2, PRN2  ! Import wind and pressure variables
+  USE WIND,    ONLY: WVNX1, WVNY1, PRN1
+  USE WIND,    ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
 
   use SIZES  , only: ROOTDIR
   use couple2swan_modif, only: ADCIRC_SXX, ADCIRC_SXY, ADCIRC_SYY
@@ -831,6 +832,12 @@ module adc_cap
   !! @param rc return code
   !-----------------------------------------------------------------------------
   subroutine ModelAdvance(model, rc)
+    !USE WIND,    ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
+
+    
+    implicit none
+
+
     type(ESMF_GridComp)  :: model
     integer, intent(out) :: rc
 

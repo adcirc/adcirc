@@ -14,14 +14,17 @@ export NETCDF4=enable
 #export OS=linux-gnu
 ### <<<<<<
 
+
+#rm -rf odir*
 #make clean
 #make clobber
+rm -rf libadc.a padcirc adcprep
 
-rm -rf libadc.a #padcirc adcprep
+#make padcirc
 make libadc.a 
 make adcprep
 #make adcirc
-#make padcirc
+
 #make padcswan
 #make punswan
 #make hstime

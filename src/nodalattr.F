@@ -74,6 +74,7 @@ C      EVM        "average_horizontal_eddy_viscosity_in_sea_water_wrt_depth"
 C      EVC        "average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth"
 C      Tao0MinMax "min_and_max_primitive_weighting_in_continuity_equation"
 C      River_et_WSE "initial_river_elevation"
+C      IT_Fric               "internal_tide_friction"
 C
 C-----------------------------------------------------------------------
       MODULE NodalAttributes
@@ -119,6 +120,7 @@ C     required for the run, according to the unit 15 control file
       LOGICAL LoadZ0b_var
       LOGICAL LoadEleSlopeLim ! zc: elemental slope limiter
       LOGICAL LoadRiver_et_WSE  ! tcm 20140502 v51.27
+      LOGICAL LoadIT_Fric       ! wjp: Internal tides
 C
 C     The following flags are .true. if there are data with the
 C     corresponding label in the unit 13 file.
@@ -137,6 +139,7 @@ C     corresponding label in the unit 13 file.
       LOGICAL FoundZ0b_var
       LOGICAL FoundEleSlopeLim
       LOGICAL FoundRiver_et_WSE ! tcm 20140502 v51.27      
+      LOGICAL FoundIT_Fric  ! wjp internal tides
 C
 C     These variables hold the strings which describe the attribute's
 C     units. These data are loaded from the file, but not used as of
@@ -156,6 +159,7 @@ C     v46.00.
       CHARACTER(len=80) Z0b_varUnits
       CHARACTER(len=80) EleSlopeLimUnits
       CHARACTER(len=80) River_et_WSEUnits ! tcm 20140502 v51.27
+      CHARACTER(len=80) IT_FricUnits  ! wjp internal tides
 C
 C     These variables hold the number of values per node for each
 C     attribute.
@@ -174,6 +178,7 @@ C     attribute.
       INTEGER Z0b_varNoOfVals
       INTEGER EleSlopeLimNoofVals
       INTEGER River_et_WSENoOfVals  ! tcm 20140502 v51.27      
+      INTEGER IT_FricNoOfVals ! wjp internal tides
 C
 C     These variables hold the default values for each attribute.
       REAL(SZ) Tau0DefVal
@@ -191,6 +196,7 @@ C     These variables hold the default values for each attribute.
       REAL(SZ) Z0b_varDefVal
       REAL(SZ) EleSlopeLimDefVal
       REAL(SZ) River_et_WSEDefVal ! tcm 20140502 v51.27
+      REAL(SZ) IT_FricDefVal(3)  ! wjp internal tides
 C
       INTEGER NumOfNodes    ! number of nodes listed in unit 13 file, cf. NP
       INTEGER NAttr         ! number of nodal attributes in the unit 13 file
@@ -253,6 +259,7 @@ C     The following attribute contains BK(I),BALPHA(I),BDELX(I), and POAN(I)
       REAL(SZ), ALLOCATABLE :: Z0b_var(:)  ! patially varying 3D bottom roughness length
       REAL(SZ), ALLOCATABLE :: elemental_slope_limiter_grad_max(:)
       REAL(SZ), ALLOCATABLE :: River_et_WSE(:)  ! tcm 20140502 v51.27
+      REAL(SZ), ALLOCATABLE :: IT_Fric(:,:)  ! WJP: Linear friction coefficient for internal tides
 C
       INTEGER i        ! node loop counter
       INTEGER j        ! attribute values loop counter
@@ -315,7 +322,8 @@ C
       LoadTau0MinMax     = .False.
       LoadZ0b_var        = .False.
       LoadEleSlopeLim    = .False.
-      LoadRiver_et_WSE     = .False.
+      LoadRiver_et_WSE   = .False.
+      LoadIT_Fric        = .False.  ! WJP
 C
       FoundTau0           = .False.
       FoundStartDry       = .False.
@@ -331,7 +339,8 @@ C
       FoundTau0MinMax     = .False.
       FoundZ0b_var        = .False.
       FoundEleSlopeLim    = .False.
-      FoundRiver_et_WSE     = .False.      
+      FoundRiver_et_WSE   = .False.      
+      FoundIT_Fric        = .False. ! WJP
 C
 C
       Tau0NoOfVals          = 1
@@ -348,7 +357,8 @@ C
       Tau0MinMaxNoOfVals    = 2
       Z0b_varNoOfVals       = 1
       EleSlopeLimNoOfVals   = 1
-      River_et_WSENoOfVals    = 1
+      River_et_WSENoOfVals  = 1
+      IT_FricNoOfVals       = 1  ! WJP, could be 3 also, so may change
 C
       Tau0DefVal             = 0.0
       StartDryDefVal         = 0.0
@@ -370,7 +380,8 @@ C
       END DO
       Z0b_varDefVal          = 0.001
       EleSlopeLimDefVal      = 0D0
-      River_et_WSEDefVal       = 0.d0      
+      River_et_WSEDefVal     = 0.d0      
+      IT_FricDefVal          = 0.0 ! WP
 C
       HighResTimeVaryingTau0     = .False.
       FullDomainTimeVaryingTau0  = .False.
@@ -686,6 +697,11 @@ Corbitt 120321: Allow Advection to be handled locally instead of globally.
             IF( LoadRiver_et_WSE ) THEN
                River_et_WSE = na(i)%xdmfArray
             ENDIF
+C 02.24.2018 WJP: Add spatially varying linear internal tide friction coefficient
+         CASE("internal_tide_friction")
+            IF( LoadIT_Fric ) THEN
+               IT_Fric = na(i)%xdmfMatrix
+            ENDIF
          CASE DEFAULT
             scratchMessage = "Unrecognized nodal attribute : " //
      &         trim(na(i) % attrName)
@@ -735,6 +751,7 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
      &   ((LoadAdvectionState).and.(.not.FoundAdvectionState)).or.
      &   ((LoadEleSlopeLim).and.(.not.FoundEleSlopeLim)).or.
      &   ((LoadRiver_et_WSE).and.(.not.FoundRiver_et_WSE)).or.     
+     &   ((LoadIT_Fric).and.(.not.FoundIT_Fric)).or. 
      &   ((LoadTau0MinMax).and.(.not.FoundTau0MinMax))) THEN
          WRITE(scratchMessage,1111)
  1111   FORMAT('Nodal Attributes file (unit 13) does '
@@ -778,6 +795,9 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
       elemental_slope_limiter_active(:) = .FALSE.  !...Alloate and initialize to keep
                                                    !   track of elemental_slope_limiter nodes
       elemental_slope_limiter_max_exceeded(:) = .FALSE.
+      IF ( LoadIT_Fric ) THEN
+         ALLOCATE(IT_Fric(NumOfNodes,IT_FricNoOfVals))
+      END IF   
 C     ----------------------------------------------------------------
       end subroutine allocateNodalAttributes
 C     ----------------------------------------------------------------
@@ -887,6 +907,9 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
             LoadEleSlopeLim = .TRUE.
          CASE("initial_river_elevation")  ! tcm 20140502 v51.27
             LoadRiver_et_WSE = .TRUE.
+C 09232016 WP: Add spatially varying linear internal tide friction coefficient
+         CASE("internal_tide_friction")
+            LoadIT_Fric = .True.
          CASE DEFAULT
             WRITE(16,1000)          ! unit 15 Model Parameter file
             WRITE(16,1021) AttrName ! contains invalid name
@@ -1065,6 +1088,12 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
             READ(13,'(A80)') River_et_WSEUnits
             READ(13,*) River_et_WSENoOfVals
             READ(13,*) River_et_WSEDefVal            
+C 09232016 WP: Add spatially varying linear internal tide friction
+         CASE("internal_tide_friction")
+            FoundIT_Fric = .True.              
+            READ(13,'(A80)') IT_FricUnits
+            READ(13,*) IT_FricNoOfVals
+            READ(13,*) (IT_FricDefVal(j),j=1,IT_FricNoOfVals)
          CASE DEFAULT
             WRITE(16,1001)          ! Nodal Attributes file
             WRITE(16,1021) AttrName ! contains invalid name
@@ -1225,6 +1254,16 @@ Corbitt 120321: Allow Advection to be handled locally instead of globally.
             ELSE
                 SkipDataSet = .TRUE.
             ENDIF
+C 09232016 WP : Spatially varying linear internal tide friction
+         CASE("internal_tide_friction")
+            IF (LoadIT_Fric) THEN
+               CALL LoadAttrMat(IT_Fric, IT_FricNoOfVals,
+     &              IT_FricDefVal, NumNodesNotDefault,
+     &              NScreen, MyProc, NAbOut)
+            ELSE
+               SkipDataSet = .True.
+            ENDIF
+C          WP
          CASE DEFAULT
             SkipDataSet = .True.
             WRITE(16,1001)      ! Nodal Attributes file
@@ -1275,6 +1314,7 @@ C
 C     ----------------------------------------------------------------
       SUBROUTINE LoadAttrVec(AttributeData, Default, NumNodesNotDef,
      &     NScreen, MyProc, NAbOut)
+      USE MESH,ONLY:node_dict,find
       IMPLICIT NONE
       REAL(SZ), intent(out), dimension(NumOfNodes) :: AttributeData
       REAL(SZ), intent(in):: Default ! default value for all nodes
@@ -1282,8 +1322,9 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: NScreen ! 1 for debug info to screen (unit 6)
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
       INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
-C
-      INTEGER NodeNum            ! node number listed in the file
+      REAL(SZ)            :: TempData 
+      INTEGER             :: NodeNum ! node label listed in the file
+      INTEGER             :: DictNode ! node position in array
 C
 C     Set all values to user-specified default values.
       IF (NABOUT.EQ.0) WRITE(16,1001) Default
@@ -1293,9 +1334,11 @@ C     Set all values to user-specified default values.
 C
       IF (NABOUT.EQ.0) WRITE(16,1005)
       DO i=1, NumNodesNotDef
-         READ(13,*) NodeNum, AttributeData(NodeNum)
+         READ(13,*) NodeNum, TempData
+         DictNode = find(node_dict,NodeNum)
+         AttributeData(DictNode) = TempData
          IF (NABOUT.EQ.0)
-     &       WRITE(16,1010) NodeNum, AttributeData(NodeNum)
+     &       WRITE(16,1010) NodeNum, TempData
       END DO
 C
  1001 FORMAT(/,10X,'Set all nodes to the default value of ',E16.8,/)
@@ -1320,6 +1363,7 @@ C
 C     ----------------------------------------------------------------
       SUBROUTINE LoadAttrMat(AttributeData, NumCol, Default,
      &     NumNodesNotDef, NScreen, MyProc, NAbOut)
+      USE MESH,ONLY:node_dict,find
       IMPLICIT NONE
       INTEGER, intent(in) :: NumCol  ! number of columns in the matrix
       REAL(SZ), intent(out),
@@ -1329,8 +1373,9 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: NScreen ! 1 for debug info to screen (unit 6)
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
       INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
-C
-      INTEGER NodeNum            ! node number listed in the file
+      REAL(SZ)            :: TempAttData(NumCol) 
+      INTEGER             :: NodeNum ! node label listed in the file
+      INTEGER             :: DictNode ! node position in array
 C
 C     Set all nodes to user-specified default values.
       IF (NABOUT.EQ.0) WRITE(16,1001)
@@ -1342,9 +1387,11 @@ C     Set all nodes to user-specified default values.
 C
       IF (NABOUT.EQ.0) WRITE(16,1005)
       DO i=1, NumNodesNotDef
-         READ(13,*) NodeNum, (AttributeData(NodeNum,j),j=1,NumCol)
+         READ(13,*) NodeNum, (TempAttData(j),j=1,NumCol)
+         DictNode = find(node_dict,NodeNum)
+         AttributeData(DictNode,:) = TempAttData(:)
          IF (NABOUT.EQ.0) WRITE(16,1010) NodeNum,
-     &        (AttributeData(NodeNum,j),j=1,NumCol)
+     &        (AttributeData(DictNode,j),j=1,NumCol)
       END DO
 C
  1001 FORMAT(/,10X,'Set all nodes to the default values of ',/,
@@ -1369,9 +1416,8 @@ C     attributes read in from the Nodal Attributes File (unit 13).
 C
 C     ----------------------------------------------------------------
       SUBROUTINE InitNodalAttr(DP, NP, G, NScreen, ScreenUnit,
-     &     MyProc, NAbOut)
+     &     MyProc, NAbOut, Z0B)
       USE GLOBAL, ONLY : C3D, C2DDI
-      USE GLOBAL_3DVS, ONLY : Z0B
       IMPLICIT NONE
       INTEGER, intent(in) :: NP ! number of nodes in the grid file
       REAL(SZ), intent(in), dimension(NP) :: DP ! array of bathymetric depths
@@ -1380,6 +1426,7 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: ScreenUnit ! i/o for debug info to screen
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
       INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
+      REAL(SZ), intent(in) :: Z0B ! 3D bottom friction
       INTEGER Tau0Dig1  ! determines the tau0 scheme
       INTEGER Tau0Dig2  ! determines whether tau0 is being output
       LOGICAL :: invalidCanopyCoefficient ! .true. if any value is neither 0 nor 1
@@ -1840,7 +1887,6 @@ C     ... Convert Chezy to Cd, if necessary.
          END DO
       ENDIF
 C
-
 C     Step 1. Apply friction arising from turbulent viscous interaction
 C     with the sea floor.
       DO I=1, NP
@@ -1883,9 +1929,8 @@ C     time stepping loop.
 C     ----------------------------------------------------------------
 C     ----------------------------------------------------------------
       SUBROUTINE Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G,
-     &     IFNLFA, NP, TK, NFEN)
+     &     IFNLFA, NP, TK, NFEN, Z0B)
       USE SIZES
-      USE GLOBAL_3DVS, ONLY : Z0B
       IMPLICIT NONE
       INTEGER, intent(in) :: NP, NFEN             ! number of nodes in grid Horizontal and Vertical
       COMPLEX(SZ), intent(in), dimension(NP,NFEN) :: Q  ! x-dir velocities
@@ -1895,6 +1940,7 @@ C     ----------------------------------------------------------------
       REAL(SZ), intent(in) :: G                   ! gravitational constant
       INTEGER, intent(in) :: IFNLFA               ! nonlin. finite amp. flag
       REAL(SZ), intent(inout), dimension(NP) :: TK! depth avg. fric.
+      REAL(SZ), intent(in) :: Z0B
 C
       INTEGER NH
       REAL(SZ) Z0B1  ! velocity magnitude (speed)
@@ -1942,6 +1988,54 @@ C     ----------------------------------------------------------------
       END SUBROUTINE Apply3DBottomFriction
 C     ----------------------------------------------------------------
 
+C     ----------------------------------------------------------------
+C     S U B R O U T I N E
+C     A P P L Y  2 D  I N T E R N A L  W A V E  D R A G
+C     ----------------------------------------------------------------
+C
+C     WJP March 30 2016: Adjusted for TKM input matrix and inserting
+C     the scalar version in here too
+C     WJP 02.24.2018 put into v53.dev
+C     ----------------------------------------------------------------
+      SUBROUTINE Apply2DInternalWaveDrag(NP, TK, U, V, DP, TKM)
+      IMPLICIT NONE
+      INTEGER, intent(in) :: NP                   ! number of nodes in grid
+      REAL(SZ), intent(in), dimension(NP) :: U    ! x-dir velocities
+      REAL(SZ), intent(in), dimension(NP) :: V    ! y-dir velocities
+      REAL(SZ), intent(in), dimension(NP) :: DP   ! depth
+      REAL(SZ), intent(in), dimension(NP) :: TK   ! scalar friction
+      REAL(SZ), intent(inout), dimension(3,NP) :: TKM
+      INTEGER :: I 
+C     Compute TKM by adding wave drag contribution to 
+C     current value of the bottom friction, TK
+      IF (LoadIT_Fric) THEN
+         IF (IT_FricNoOfVals == 3) THEN
+C        Use the Nycander (2005) or Lyard et al. (2004) type tensor wave drag
+C        Using three columns of data for the different segments of the matrix
+            DO I=1,NP 
+               TKM(1,I) = TK(I) + IT_Fric(I,1)
+               TKM(2,I) = TK(I) + IT_Fric(I,2)
+               TKM(3,I) = IT_Fric(I,3) 
+            END DO
+         ELSEIF (IT_FricNoOfVals == 1) THEN
+C           For the scalar version (like Zaron & Egbert (2006) type)
+            DO I=1,NP 
+               TKM(1,I) = TK(I) + IT_Fric(I,1) 
+               TKM(2,I) = TKM(1,I)
+               TKM(3,I) = 0.0d0
+            END DO
+         ENDIF
+      ELSE 
+C       In case we did not load ITFric
+        TKM(1,:) = TK
+        TKM(2,:) = TK
+        TKM(3,:) = 0.0d0
+      ENDIF
+
+      RETURN
+C     ----------------------------------------------------------------
+      END SUBROUTINE Apply2DInternalWaveDrag
+C     ----------------------------------------------------------------
 
 C     ----------------------------------------------------------------
 C     S U B R O U T I N E
@@ -2063,6 +2157,34 @@ C
 C     ----------------------------------------------------------------
       END SUBROUTINE ApplyCanopyCoefficient
 C     ----------------------------------------------------------------
+
+C*************************************************************************
+C     Subroutine to determine local advection state for each element
+C
+C                                   Corbitt 120322
+C*************************************************************************
+      SUBROUTINE ADVECTLOCAL(IE)
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : IFNLCAT, IFNLCATE, IFNLCT, IFNLCTE
+      USE MESH, ONLY : NM, DP
+      Implicit None
+      Integer  :: NM1, NM2, NM3,IE
+
+      NM1=NM(IE,1)
+      NM2=NM(IE,2)
+      NM3=NM(IE,3)
+      IF ((DP(NM1).GE.AdvectionState(NM1)).AND.
+     &    (DP(NM2).GE.AdvectionState(NM2)).AND.
+     &    (DP(NM3).GE.AdvectionState(NM3))) THEN
+             IFNLCT = IFNLCTE
+             IFNLCAT = IFNLCATE
+      ELSE
+         IFNLCT = 0
+         IFNLCAT = 0
+      ENDIF
+C***********************************************************************
+      END SUBROUTINE ADVECTLOCAL
+C***********************************************************************
 
 
 C     ----------------------------------------------------------------

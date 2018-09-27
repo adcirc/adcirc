@@ -2,7 +2,7 @@ SHELL:=/bin/bash
 PWD=$(shell pwd)
 SRCDIR?=$(shell dirname $(PWD))
 #
-#  Makefile to Build PADCIRC and its pre-processor 
+#  Makefile to Build PADCIRC and its pre-processor
 #  University of Texas's parallel version of the Hydrodynamics
 #  Modeling program ADCIRC by J.J. Westerink and R.A. Luettich
 #  vjp 3/29/2001
@@ -30,6 +30,7 @@ PARALLEL_ADCIRC   := padcirc
 LIBADC            := libadc.a
 $(warning (INFO) Name is $(NAME), Machine is $(MACHINE), Vendor is $(VENDOR), and OS is $(OS).)
 $(warning (INFO) The root directory for the build is $(SRCDIR))
+$(warning (INFO) The ADCIRC version is $(shell ../scripts/adcircVersion.sh $(SRCDIR)))
 include cmplrflags.mk
 #Casey 090302: Include variables/flags from SWAN.
 include ../swan/macros.inc
@@ -42,34 +43,40 @@ $(warning (INFO) The Fortran compiler for adcprep is set to $(PPFC).)
 $(warning (INFO) The serial Fortran compiler is set to $(FC).)
 $(warning (INFO) The parallel Fortran compiler is set to $(PFC).)
 $(warning (INFO) The C compiler is set to $(CC).)
+#ZC - Adding this as a warning to users to compile with the implicit array heap allocation options enabled
+ifeq ($(FC),ifort)
+    $(warning (WARNING) Intel compiler has been specified. The flag "--heap-arrays $(shell ulimit -s)" should be set)
+    $(warning (WARNING) in both ADCIRC cmplrflags.mk FFLAGS1 and when compiling the netcdf-fortran library)
+    $(warning (WARNING) using FCFLAGS to avoid potential issues with stack allocation of large implicit arrays.)
+endif
 
 # Specify NETCDF=enable to gmake on the command line to activate netcdf i/o
 ifeq ($(NETCDF),enable)
 # jgf49.61: Don't add the -DADCNETCDF for the IBM compilers (see cmplrflags.mk)
 ifeq ($(IBM),)
-     PPFC    := $(PPFC) -DADCNETCDF -I$(NETCDFHOME)/include 
-     PFC     := $(PFC) -DADCNETCDF -I$(NETCDFHOME)/include 
-     FFLAGS1 := $(FFLAGS1) -DADCNETCDF -I$(NETCDFHOME)/include 
-     FFLAGS2 := $(FFLAGS2) -DADCNETCDF -I$(NETCDFHOME)/include 
-     FFLAGS3 := $(FFLAGS3) -DADCNETCDF -I$(NETCDFHOME)/include 
-     FFLAGS4 := $(FFLAGS4) -DADCNETCDF -I$(NETCDFHOME)/include 
+     PPFC    := $(PPFC) -DADCNETCDF -I$(NETCDFHOME)/include
+     PFC     := $(PFC) -DADCNETCDF -I$(NETCDFHOME)/include
+     FFLAGS1 := $(FFLAGS1) -DADCNETCDF -I$(NETCDFHOME)/include
+     FFLAGS2 := $(FFLAGS2) -DADCNETCDF -I$(NETCDFHOME)/include
+     FFLAGS3 := $(FFLAGS3) -DADCNETCDF -I$(NETCDFHOME)/include
+     FFLAGS4 := $(FFLAGS4) -DADCNETCDF -I$(NETCDFHOME)/include
 endif
 endif
 ifeq ($(NETCDF4),enable)
-     PPFC    := $(PPFC) -DHAVE_NETCDF4 
-     PFC     := $(PFC) -DHAVE_NETCDF4 
-     FFLAGS1 := $(FFLAGS1) -DHAVE_NETCDF4 
-     FFLAGS2 := $(FFLAGS2) -DHAVE_NETCDF4 
-     FFLAGS3 := $(FFLAGS3) -DHAVE_NETCDF4 
-     FFLAGS4 := $(FFLAGS4) -DHAVE_NETCDF4 
+     PPFC    := $(PPFC) -DHAVE_NETCDF4
+     PFC     := $(PFC) -DHAVE_NETCDF4
+     FFLAGS1 := $(FFLAGS1) -DHAVE_NETCDF4
+     FFLAGS2 := $(FFLAGS2) -DHAVE_NETCDF4
+     FFLAGS3 := $(FFLAGS3) -DHAVE_NETCDF4
+     FFLAGS4 := $(FFLAGS4) -DHAVE_NETCDF4
 endif
 ifeq ($(NETCDF4_COMPRESSION),enable)
-     PPFC    := $(PPFC) -DNETCDF_CAN_DEFLATE 
-     PFC     := $(PFC) -DNETCDF_CAN_DEFLATE 
-     FFLAGS1 := $(FFLAGS1) -DNETCDF_CAN_DEFLATE 
-     FFLAGS2 := $(FFLAGS2) -DNETCDF_CAN_DEFLATE 
-     FFLAGS3 := $(FFLAGS3) -DNETCDF_CAN_DEFLATE 
-     FFLAGS4 := $(FFLAGS4) -DNETCDF_CAN_DEFLATE 
+     PPFC    := $(PPFC) -DNETCDF_CAN_DEFLATE
+     PFC     := $(PFC) -DNETCDF_CAN_DEFLATE
+     FFLAGS1 := $(FFLAGS1) -DNETCDF_CAN_DEFLATE
+     FFLAGS2 := $(FFLAGS2) -DNETCDF_CAN_DEFLATE
+     FFLAGS3 := $(FFLAGS3) -DNETCDF_CAN_DEFLATE
+     FFLAGS4 := $(FFLAGS4) -DNETCDF_CAN_DEFLATE
 endif
 ifeq ($(XDMF),enable)
      $(warning (INFO) enabling xdmf lib ...)
@@ -84,12 +91,12 @@ endif
 
 ####################### Target Specific Rules ###################################
 
-#                                      adcprep   
+#                                      adcprep
 ifeq ($(BUILDTYPE),adcprep)
   CF:= $(PPFC)
   O_DIR:=$(SRCDIR)/work/odir1/
-  FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
-  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/KDTREE2:$(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/wind 
+  FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR)
+  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/KDTREE2:$(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/wind
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -104,19 +111,19 @@ endif
 ifeq ($(BUILDTYPE),adcprep_be)
   CF:= $(FC)
   O_DIR:=$(SRCDIR)/work/odir2/
-  FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
-  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/KDTREE2:$(SRCDIR)/src:$(SRCDIR):$(SRCDIR)/wind 
+  FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR)
+  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/KDTREE2:$(SRCDIR)/src:$(SRCDIR):$(SRCDIR)/wind
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
   ifeq ($(NETCDF),enable)
-    LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS) 
+    LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
   else
     LIBS  := -Lodir_metis_be -lmetis_be $(FLIBS)
   endif
   PMSG_OBJ:=
 endif
-#                                      adcirc   
+#                                      adcirc
 ifeq ($(BUILDTYPE),adcirc)
   CF:= $(FC)
   O_DIR:=$(SRCDIR)/work/odir3/
@@ -128,7 +135,8 @@ ifeq ($(BUILDTYPE),adcirc)
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
   endif
-  MSG_MOBJ:= $(O_DIR)globalio.o
+  #MSG_MOBJ:= $(O_DIR)globalio.o
+  MSG_MOBJ:=
 endif
 #Casey 090302: Add rules for the serial SWAN+ADCIRC.
 #                                      adcswan
@@ -154,19 +162,20 @@ ifeq ($(BUILDTYPE),adcswan)
   $(shell echo "SWANLASTCOMPILE := serial" > $(SRCDIR)/work/.swanlastcompile)
   $(shell perl ../swan/switch.pl $(swch) -adcirc ../swan/*.ftn ../swan/*.ftn90)
 endif
-#                                      $(PARALLEL_ADCIRC)   
+#                                      $(PARALLEL_ADCIRC)
 ifeq ($(BUILDTYPE),$(PARALLEL_ADCIRC))
   CF:= $(PFC)
   O_DIR:=$(SRCDIR)/work/odir4/
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
-  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep 
+  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
   endif
-  MSG_MOBJ:= $(O_DIR)messenger.o $(O_DIR)writer.o
+  #MSG_MOBJ:= $(O_DIR)messenger.o $(O_DIR)writer.o
+  MSG_MOBJ:=
 endif
 #Casey 090302: Add rules for the parallel SWAN+ADCIRC.
 #                                      padcswan
@@ -177,7 +186,7 @@ ifeq ($(BUILDTYPE),padcswan)
   VPATH :=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/swan
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
-  endif  
+  endif
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
   endif
@@ -193,7 +202,7 @@ ifeq ($(BUILDTYPE),padcswan)
   $(shell perl ../swan/switch.pl $(swch) -pun -adcirc ../swan/*.ftn ../swan/*.ftn90)
 endif
 #                                    libadc.a
-ifeq ($(BUILDTYPE),$(LIBADC)) 
+ifeq ($(BUILDTYPE),$(LIBADC))
   CF:= $(PFC)
   O_DIR:=$(SRCDIR)/work/odircp/
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
@@ -246,7 +255,7 @@ ifeq ($(BUILDTYPE),buildstwave23)
   VPATH :=  $(SRCDIR)/util
   MSG_MOBJ:=
 endif
-#                                      hot2asc      
+#                                      hot2asc
 ifeq ($(BUILDTYPE),hot2asc)
   CF:= $(PPFC)
   O_DIR:=$(SRCDIR)/work/odir10/
@@ -277,8 +286,8 @@ endif
 ifeq ($(BUILDTYPE),adcpost)
   CF:= $(PPFC)
   O_DIR:=$(SRCDIR)/work/odir13/
-  FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
-  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)  
+  FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR)
+  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)
 endif
 #                                      aswip
 ifeq ($(BUILDTYPE),aswip)
@@ -309,16 +318,21 @@ $(O_DIR):
 
 
 ################# Module Source, Object, & Mod Files ######################
+HASH_MSRC  =  hashtable.F
+WD_MSRC    =  wetdry.F
+MOM_MSRC   =  momentum.F
+GWCE_MSRC  =  gwce.F
 SUBD_MSRC  =  subdomain.F
 SUBP_MSRC  =  subprep.F
 CONT_MSRC  =  control.F
 MESH_MSRC  =  mesh.F
 BND_MSRC   =  boundaries.F
-PREP_MSRC  =  presizes.F 
+PREP_MSRC  =  presizes.F
 PGLO_MSRC  =  pre_global.F
-ADC_MSRC   =  version.F sizes.F global.F global_3dvs.F 
+3D_MSRC    =  global_3dvs.F
+ADC_MSRC   =  version.F sizes.F global.F
 POST_MSRC  =  post_global.F
-HARM_MSRC  =  harm.F  
+HARM_MSRC  =  harm.F
 VORT_MSRC  =  vortex.F
 WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F
 SOLV_MSRC  =  itpackv.F
@@ -332,6 +346,11 @@ COUP_MSRC  =  couple2swan.F
 KDTREE_MSRC = kdtree2.F
 XDMF_MSRC = xdmfio.F
 
+HASH_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(HASH_MSRC) )
+WD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(WD_MSRC) )
+MOM_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(MOM_MSRC) )
+GWCE_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(GWCE_MSRC) )
+3D_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(3D_MSRC) )
 SUBD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBD_MSRC) )
 SUBP_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBP_MSRC) )
 CONT_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(CONT_MSRC) )
@@ -349,7 +368,7 @@ VORT_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(VORT_MSRC)  )
 WIND_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(WIND_MSRC)  )
 NA_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NA_MSRC)  )
 NC_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NC_MSRC)  )
-GIO_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(GIO_MSRC)  ) 
+GIO_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(GIO_MSRC)  )
 #Casey 090302: Add rules for coupling to unstructured SWAN.
 COUP_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(COUP_MSRC)  )
 # tcm v49.48.01 Adding rule for kdtree2 fast search algorithm
@@ -360,7 +379,7 @@ KDTREE_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(KDTREE_MSRC) )
 
 METIS_SRC  =  metis.F
 PREP_SRC   =  adcprep.F decomp.F prep_weir.F read_global.F prep.F interp.F machdep.F
-ADC_SRC    =  adcirc.F weir_boundary.F read_input.F cstart.F hstart.F timestep.F vsmy.F transport.F
+ADC_SRC    =  adcirc.F weir_boundary.F wetdry.F read_input.F cstart.F hstart.F gwce.F momentum.F timestep.F vsmy.F transport.F
 POST_SRC   =  adcpost.F post.F compare.F diffmerge.F machdep.F
 P15_SRC    =  p15.F
 OWI_SRC    =  owi22.F
@@ -375,7 +394,7 @@ CMP_SRC    =  adccmp.F
 
 METIS_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(METIS_SRC) )
 PREP_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(PREP_SRC) ) $(O_DIR)mkdir.o
-POST_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(POST_SRC) ) 
+POST_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(POST_SRC) )
 ADC_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(ADC_SRC) ) $(O_DIR)mkdir.o
 P15_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(P15_SRC) )
 OWI_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(OWI_SRC) )
@@ -450,39 +469,39 @@ ifeq ($(MAKELEVEL),0)
    metis_be: odir_metis_be
 	$(MAKE) -C $(SRCDIR)/metis/Lib/ CC="$(CCBE)" CFLAGS="$(CFLAGS)" O_DIR="$(CURDIR)/odir_metis_be/" LIBMETIS="$(CURDIR)/odir_metis_be/libmetis_be.a" ARFLAGS="$(ARFLAGS)"
    adcprep: metis
-	$(MAKE) BUILDTYPE=adcprep  $@            
+	$(MAKE) BUILDTYPE=adcprep  $@
    adcprep_be: metis_be
-	$(MAKE) BUILDTYPE=adcprep_be CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@ 
-   adcpost: 
+	$(MAKE) BUILDTYPE=adcprep_be CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
+   adcpost:
 	$(MAKE) BUILDTYPE=adcpost $@
    adcirc:
 	$(MAKE) BUILDTYPE=adcirc CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
    $(PARALLEL_ADCIRC):
-	$(MAKE) BUILDTYPE=$(PARALLEL_ADCIRC) CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@ 
+	$(MAKE) BUILDTYPE=$(PARALLEL_ADCIRC) CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
 #Casey 090302: Added the following lines for coupling to unstructured SWAN.
    adcswan:
 	$(MAKE) BUILDTYPE=adcswan CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
    padcswan:
 	@perl ../swan/switch.pl $(swch) -pun -adcirc ../swan/*.ftn ../swan/*.ftn90
 	$(MAKE) BUILDTYPE=padcswan CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
-   libadc: $(LIBADC) 
-   $(LIBADC): 
+   libadc: $(LIBADC)
+   $(LIBADC):
 	@echo $(MAKE) LIBADC=$@ BUILDTYPE=$(LIBADC) CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
 	$(MAKE) LIBADC=$@ BUILDTYPE=$(LIBADC) CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
    p15:
-	$(MAKE) BUILDTYPE=p15 $@ 
+	$(MAKE) BUILDTYPE=p15 $@
    owi22:
-	$(MAKE) BUILDTYPE=owi22 $@ 
+	$(MAKE) BUILDTYPE=owi22 $@
    build13:
-	$(MAKE) BUILDTYPE=build13 $@ 
+	$(MAKE) BUILDTYPE=build13 $@
    build12:
-	$(MAKE) BUILDTYPE=build12 $@ 
+	$(MAKE) BUILDTYPE=build12 $@
    buildstwave23:
-	$(MAKE) BUILDTYPE=buildstwave23 $@ 
+	$(MAKE) BUILDTYPE=buildstwave23 $@
    hot2asc:
-	$(MAKE) BUILDTYPE=hot2asc $@ 
+	$(MAKE) BUILDTYPE=hot2asc $@
    inflate:
-	$(MAKE) BUILDTYPE=inflate $@ 
+	$(MAKE) BUILDTYPE=inflate $@
    hstime:
 	$(MAKE) BUILDTYPE=hstime $@
    aswip:
@@ -508,17 +527,17 @@ else
    adccmp:  $(O_DIR)
 
 ifeq ($(NETCDF),enable)
-   adcprep ::  $(NC_MOBJ) $(METIS_OBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ)
+   adcprep ::  $(NC_MOBJ) $(METIS_OBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ) $(HASH_MOBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 else
-   adcprep ::  $(METIS_OBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ)
+   adcprep ::  $(METIS_OBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ) $(HASH_MOBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 endif
 ifeq ($(NETCDF),enable)
-   adcprep_be :: $(NC_MOBJ) $(METIS_OBJ) $(KDTREE_MOBJ) $(PREP_OBJ) 
+   adcprep_be :: $(NC_MOBJ) $(METIS_OBJ) $(KDTREE_MOBJ) $(PREP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 else
-   adcprep_be ::  $(METIS_OBJ) $(KDTREE_MOBJ) $(PREP_OBJ) 
+   adcprep_be ::  $(METIS_OBJ) $(KDTREE_MOBJ) $(PREP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 endif
    adcpost ::  $(POST_OBJ) $(HARM_MOBJ)
@@ -533,21 +552,28 @@ ifeq ($(XDMF),enable)
 endif
    adcirc ::  $(ADCIRC_DEP)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
-   
+
    $(PARALLEL_ADCIRC) :: $(MSG_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
+
 
 #   $(LIBADC) :: $(O_DIR) $(MSG_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) 
 #	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ)
 #	ar -ts $@
 
+
+#$(HASH_MOBJ) $(WD_MOBJ) $(MOM_MOBJ) $(GWCE_MOBJ) $(3D_MOBJ) $(SUBP_MOBJ) $(CONT_MOBJ) $(XDMF_MOBJ) $(POST_MOBJ) $(PGLO_MOBJ) 
+
+
+
+# recently added by saeed 
+#  $(PGLO_MOBJ)  $(POST_MOBJ)   $(CONT_MOBJ) $(SUBP_MOBJ) $(MOM_MOBJ) $(WD_MOBJ) $(HASH_MOBJ)
+
+
 #saeed test
-   $(LIBADC) :: $(O_DIR) $(MSG_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(MESH_MOBJ) $(BND_MOBJ) $(WIND_MOBJ) $(HARM_MOBJ)  $(WRIT_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ)
-	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(MESH_MOBJ) $(BND_MOBJ) $(WIND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ)
+   $(LIBADC) :: $(O_DIR) $(O_DIR)driver.o $(MSG_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(MESH_MOBJ) $(BND_MOBJ) $(WIND_MOBJ) $(HARM_MOBJ)  $(WRIT_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(PGLO_MOBJ)  $(POST_MOBJ)   $(CONT_MOBJ) $(SUBP_MOBJ) $(MOM_MOBJ) $(WD_MOBJ) $(HASH_MOBJ) $(3D_MOBJ)
+	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(MESH_MOBJ) $(BND_MOBJ) $(WIND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(PGLO_MOBJ)  $(POST_MOBJ)   $(CONT_MOBJ) $(SUBP_MOBJ) $(MOM_MOBJ) $(WD_MOBJ) $(HASH_MOBJ) $(3D_MOBJ)
 	ar -ts $@
-
-
-
 
 #Casey 080106: Added the following lines.
    adcswan :: $(O_DIR)
@@ -561,35 +587,41 @@ else
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 endif
    padcswan :: $(O_DIR)
+ifeq ($(NETCDF),enable)
+   padcswan ::  $(NC_MOBJ) $(NA_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS) $(LDFLAGS)
+	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
+else
    padcswan ::  $(NA_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
-	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS) 
-
-   p15     ::  $(P15_OBJ) 
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS) $(LDFLAGS)
+	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
+endif
+   p15     ::  $(P15_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
-   owi22   ::  $(OWI_OBJ) 
+   owi22   ::  $(OWI_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
-   build13 ::  $(B13_OBJ) 
+   build13 ::  $(B13_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
-   build12 ::  $(B12_OBJ) 
+   build12 ::  $(B12_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
-   buildstwave23 ::  $(B23_OBJ) 
+   buildstwave23 ::  $(B23_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
-   hot2asc ::  $(H2A_OBJ) 
+   hot2asc ::  $(H2A_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
-   inflate ::  $(INF_OBJ) 
+   inflate ::  $(INF_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
    hstime ::  $(HST_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
    aswip ::   $(ADCIRC_DEP) $(ASW_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(WIND_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
+	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(WIND_MOBJ) $(NA_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
 
    adccmp :  $(O_DIR) $(CMP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
@@ -603,7 +635,7 @@ clean:
 	rm -f odir*/*.o  odir*/*.mod sizes.o
 	rm -f  ../swan/*.f ../swan/*.for ../swan/*.f90
 clobber:
-	rm -r -f odir* 
+	rm -r -f odir*
 	rm -f adcprep adcprep_be adcirc $(PARALLEL_ADCIRC) adcswan padcswan p15 owi22 build13 aswip \
            build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost adccmp libadc.a
 	rm -f  ../swan/*.f ../swan/*.for ../swan/*.f90 .swanlastcompile
@@ -634,10 +666,10 @@ help:
 #  adcprep modules
 
 $(O_DIR)version.o     :  version.F
-$(O_DIR)presizes.o    :  presizes.F $(ADC_MOBJ) $(WIND_MOBJ)
+$(O_DIR)presizes.o    :  presizes.F $(ADC_MOBJ) $(WIND_MOBJ) $(O_DIR)global.o
 $(O_DIR)kdtree2.o     :  kdtree2.F $(O_DIR)sizes.o
-$(O_DIR)pre_global.o  :  pre_global.F  $(O_DIR)mesh.o $(KDTREE_MOBJ) $(PREP_MOBJ)
-$(O_DIR)mesh.o        :  mesh.F $(O_DIR)version.o $(O_DIR)global.o $(O_DIR)boundaries.o 
+$(O_DIR)mesh.o        :  mesh.F $(O_DIR)version.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)hashtable.o
+$(O_DIR)pre_global.o  :  pre_global.F  $(O_DIR)mesh.o $(KDTREE_MOBJ) $(PREP_MOBJ) $(O_DIR)global_3dvs.o
 $(O_DIR)boundaries.o  :  boundaries.F $(O_DIR)sizes.o
 $(O_DIR)subprep.o     :  subprep.F $(O_DIR)subprep.o
 
@@ -651,7 +683,7 @@ $(O_DIR)prep.o        :  prep.F   $(PGLO_MOBJ) $(NC_MOBJ) $(HARM_MOBJ) $(NA_MOBJ
 else
 $(O_DIR)prep.o        :  prep.F   $(PGLO_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(NA_MOBJ)
 endif
-$(O_DIR)interp.o      :  interp.F  
+$(O_DIR)interp.o      :  interp.F
 $(O_DIR)machdep.o     :  machdep.F
 $(O_DIR)metis.o       :  metis.F $(PGLO_MOBJ)
 $(O_DIR)mkdir.o       :  mkdir.c cfi.h
@@ -662,53 +694,69 @@ $(O_DIR)post_global.o :  post_global.F $(POST_MOBJ)
 
 #  adcpost
 
-$(O_DIR)adcpost.o     :  adcpost.F $(POST_MOBJ) 
+$(O_DIR)adcpost.o     :  adcpost.F $(POST_MOBJ)
 $(O_DIR)post.o        :  post.F  $(POST_MOBJ) $(HARM_MOBJ)
 $(O_DIR)compare.o     :  compare.F
 $(O_DIR)diffmerge.o   :  diffmerge.F
 
 #  asymmetric hurricane wind model
 
-$(O_DIR)vortex.o      :  vortex.F 
-$(O_DIR)aswip.o      :  aswip_1.0.3.F $(VORT_MOBJ) 
+$(O_DIR)vortex.o      :  vortex.F
+$(O_DIR)aswip.o      :  aswip_1.0.3.F $(VORT_MOBJ) $(NA_MOBJ)
 
 #  adcirc & $(PARALLEL_ADCIRC) modules
 
 $(O_DIR)version.o     :  version.F
 $(O_DIR)sizes.o       :  sizes.F
 $(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o $(O_DIR)kdtree2.o
-$(O_DIR)nodalattr.o   :  nodalattr.F  $(ADC_MOBJ) $(MESH_MOBJ) 
-$(O_DIR)messenger.o   :  messenger.F  $(ADC_MOBJ)
+
+ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(PARALLEL_ADCIRC) padcswan))
+$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)messenger.o
+else
+$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)mesh.o $(O_DIR)hashtable.o
+endif
+
+$(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)subdomain.o $(O_DIR)momentum.o
+$(O_DIR)momentum.o    :  momentum.F $(O_DIR)subdomain.o
+$(O_DIR)wetdry.o      :  wetdry.F $(O_DIR)subdomain.o
+$(O_DIR)messenger.o   :  messenger.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)global_3dvs.o
 #!st3 100711: Added globalio.o to writer.F for HSWRITER MODULE
 WRITER_DEP := writer.F  $(O_DIR)messenger.o $(O_DIR)globalio.o
 ifeq ($(NETCDF),enable)
    WRITER_DEP := $(WRITER_DEP) $(O_DIR)netcdfio.o
 endif
-ifeq ($(XDMF),enable) 
+ifeq ($(XDMF),enable)
    WRITER_DEP := $(WRITER_DEP) $(O_DIR)xdmfio.o
 endif
 $(O_DIR)writer.o      : $(WRITER_DEP)
-$(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ) $(O_DIR)mesh.o
+$(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ) $(O_DIR)mesh.o $(O_DIR)global_3dvs.o
 $(O_DIR)harm.o        :  harm.F $(O_DIR)mesh.o
-$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ)
-$(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ) 
-$(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ) 
-$(O_DIR)rs2.o         :  rs2.F  $(VORT_MOBJ) 
-$(O_DIR)itpackv.o     :  itpackv.F    $(ADC_MOBJ)
-$(O_DIR)netcdfio.o    :  netcdfio.F  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)
+$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(NA_MOBJ) $(WIND_MOBJ)
+$(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ)
+$(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ)
+$(O_DIR)rs2.o         :  rs2.F  $(VORT_MOBJ)
+ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(PARALLEL_ADCIRC) padcswan))
+$(O_DIR)itpackv.o     :  itpackv.F $(O_DIR)sizes.o $(O_DIR)messenger.o
+else
+$(O_DIR)itpackv.o     :  itpackv.F $(O_DIR)sizes.o
+endif
+$(O_DIR)netcdfio.o    :  netcdfio.F  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(GWCE_MOBJ) $(O_DIR)global_3dvs.o
 #Casey 090302: Added the next line.
 $(O_DIR)couple2swan.o :  couple2swan.F $(O_DIR)write_output.o
-# tcm v49.48.01 added for fast search algorithm
-$(O_DIR)kdtree2.o : kdtree2.F
 # jgf51.21.22: modularized mesh and boundaries
 ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(PARALLEL_ADCIRC) padcswan))
-$(O_DIR)mesh.o        :   mesh.F $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)messenger.o 
+$(O_DIR)mesh.o        :  mesh.F $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)messenger.o $(O_DIR)hashtable.o
 else
-$(O_DIR)mesh.o        :  mesh.F $(O_DIR)global.o $(O_DIR)boundaries.o
+$(O_DIR)mesh.o        :  mesh.F $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)hashtable.o
 endif
 $(O_DIR)boundaries.o  :  boundaries.F $(O_DIR)sizes.o
 # jgf51.21.24: promoted write_output to a module
+
+ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(PARALLEL_ADCIRC) padcswan))
+WRITE_OUTPUT_DEP := write_output.F $(O_DIR)mesh.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)writer.o
+else
 WRITE_OUTPUT_DEP := write_output.F $(O_DIR)mesh.o $(O_DIR)global.o $(O_DIR)boundaries.o
+endif
 ifeq ($(NETCDF),enable)
    WRITE_OUTPUT_DEP := $(WRITE_OUTPUT_DEP) $(O_DIR)netcdfio.o
 endif
@@ -718,20 +766,26 @@ endif
 $(O_DIR)write_output.o : $(WRITE_OUTPUT_DEP)
 # jgf51.21.28: made xdmf support routines into a module
 $(O_DIR)xdmfio.o      : xdmfio.F $(O_DIR)mesh.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)control.o
-$(O_DIR)control.o     : control.F 
-$(O_DIR)subdomain.o   : subdomain.F 
+$(O_DIR)hashtable.o   : hashtable.F
+$(O_DIR)control.o     : control.F
+ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(PARALLEL_ADCIRC) padcswan))
+$(O_DIR)subdomain.o   : subdomain.F $(O_DIR)mesh.o $(O_DIR)messenger.o
+else
+$(O_DIR)subdomain.o   : subdomain.F $(O_DIR)mesh.o
+endif
+$(O_DIR)global_3dvs.o : global_3dvs.F $(O_DIR)global.o $(O_DIR)boundaries.o
 
 #  adcirc & $(PARALLEL_ADCIRC)
 
 $(O_DIR)read_input.o  : read_input.F $(SUBD_MOBJ)
-$(O_DIR)transport.o   : transport.F  
-$(O_DIR)cstart.o      : cstart.F    
-$(O_DIR)hstart.o      : hstart.F  
+$(O_DIR)transport.o   : transport.F
+$(O_DIR)cstart.o      : cstart.F
+$(O_DIR)hstart.o      : hstart.F
 $(O_DIR)timestep.o    : timestep.F
 ifeq ($(NETCDF),enable)
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(WIND_MOBJ)  $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
+$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ)  $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
 else
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
+$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
 endif
 $(O_DIR)driver.o      : driver.F $(O_DIR)adcirc.o
 
@@ -843,7 +897,7 @@ $(O_DIR)ocpmix.o                : ocpmix.f
 # used so we can go back and verify later.
 ifneq ($(BUILDTYPE),)
    FLAGSFILE := actualflags.txt
-   $(shell echo ---------------------------------- >> $(FLAGSFILE)) 
+   $(shell echo ---------------------------------- >> $(FLAGSFILE))
    $(shell date >> $(FLAGSFILE))
    $(shell echo 'building $(BUILDTYPE)' >> $(FLAGSFILE))
    $(shell echo 'PPFC := $(PPFC)' >> $(FLAGSFILE))
@@ -871,5 +925,5 @@ ifneq ($(BUILDTYPE),)
    $(shell echo 'XDMF := $(XDMFHOME)' >> $(FLAGSFILE))
    # get the compiler version while we're at it
    $(shell $(FC) --version | head -n 1 >> $(FLAGSFILE))
-   $(shell echo ---------------------------------- >> $(FLAGSFILE)) 
+   $(shell echo ---------------------------------- >> $(FLAGSFILE))
 endif

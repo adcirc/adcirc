@@ -21,21 +21,25 @@ C-----------------------------------------------------------------------
       USE GLOBAL
       USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP,
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries, 
-     &   freeMesh
+     &   freeMesh, node_dict, find
       USE BOUNDARIES, ONLY : ANGINN, COSTSET, NETA, NVEL, NVELME, 
-     &   NFLUXF, NBD, ME2GW, LBCODEI, NBV
+     &   NFLUXF, NBD, ME2GW, LBCODEI, NBV, simpleFluxBoundaries, ibtype,
+     &   numSimpleFluxBoundaries
       USE GLOBAL_IO
       USE KDTREE2_MODULE     ! V49.48.02 tcm -- added for fast searching
       USE GLOBAL_3DVS, ONLY: C3D_PTrans, NSTA3DD, NSTA3DV, NSTA3DT,
      &    I3DSD,I3DSV,I3DST,I3DGD,I3DGV,I3DGT, NSTA3DD_G, NSTA3DV_G,
-     &    NSTA3DT_G
+     &    NSTA3DT_G, Z0B
       USE SUBDOMAIN, ONLY : subdomainOn
       USE WRITE_OUTPUT, ONLY : outputNodeCode, outputNOFF
       USE HARM
       USE WEIR
       USE TIME_VARYING_WEIR_BOUNDARY
       USE WIND
+      USE WETDRY, ONLY : noffActive, velmin
       USE ITPACKV
+      USE GWCE, ONLY : a00, b00, c00, convcr, isldia, itmax,
+     &   invertedBarometerOnElevationBoundary
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate    
       USE VERSION
 !     jgf46.00
@@ -58,7 +62,7 @@ Casey 100205: Enable hot-start file generation by SWAN.
       REAL(SZ) RampVal
       CHARACTER(len=80) :: CDUM80
       LOGICAL fileFound
-      INTEGER :: I, J, JKI
+      INTEGER :: I, J, JKI, JJ, NP2
 C
 #if defined CSWAN || defined ADCSWAN
       ! jgf50.60.09: Namelist for turning SWAN output files on or off
@@ -67,13 +71,17 @@ C
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
-      NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir,
-     &  invertedBarometerOnElevationBoundary
+      NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,
+     &  rhoAir, invertedBarometerOnElevationBoundary
       NAMELIST /subdomainModeling/ subdomainOn
       NAMELIST /wetDryControl/ outputNodeCode, outputNOFF, noffActive
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
+     
+      NAMELIST /offsetControl/ offsetFileName, offsetSkipSnaps, 
+     &  offsetMultiplier, offsetRampStart, offsetRampEnd,
+     &  offsetRampReferenceTime
       
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
@@ -99,6 +107,12 @@ C
       INTEGER :: ios_nddt
       logical :: found_tbc_nml = .false.   !flag to determine if the timebathycontrol namelist was present
       NAMELIST /timebathycontrol/ NDDT,BTIMINC,BCHGTIMINC
+
+!   tcm v52.30.01 -- added Smag_Control Namelist related variables  (Smagorinsky)
+      INTEGER :: ios_smag
+      logical :: found_smag_nml = .false.  !flag to determine if the Smag_Control namelist was present in fort.15
+      !These variables are set in global.F  by default we will not be using Smagorinsky subgrid scale eddy viscosity
+      NAMELIST /Smag_Control/ SMAG_COMP_FLAG,SMAG_UPPER_LIM, SMAG_LOWER_LIM
 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       NAMELIST /waveCoupling/ WaveWindMultiplier
@@ -166,9 +180,6 @@ C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
 C     Module.
       CALL initNAModule()
-C
-C     jgf50.32: Initialize default values in wind module.
-      CALL initWindModule()
 
 c     tcm v50.66.01 addition for time varying bathymetry
       NDDT = 0  !set the default value for time varying bathymetry e.g. no changes
@@ -190,6 +201,7 @@ C     ALLOCATE ARRAYS Dimensioned by MNP and MNE
       ! jgf51.21.13: Allocate boundary condition arrays dimensioned by
       ! mnvel 
       call alloc_main3()
+
 C...
 C...  OPEN UNIT 15 INPUT FILE (control parameters and periodic boundary conditions)
 C...
@@ -346,6 +358,81 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,e15.8)') "inunThresh=",inunThresh
       call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+
+c...  tcm v52.30.01 Addtions for Using Smagorinsky Namelist Options
+c...  read through the fort.15 file for the namelist (Smag_Control) for
+c...  the namelist options for using Smagorinsky.  This namelist must be at the 
+C...  bottom of the fort.15 file. If found, then set the appropriate values
+C...  (SMAG_COMP_FLAG,SMAG_UPPER_LIM,SMAG_LOWER_LIM).  If the namelist is not
+C...  found, then the Smagorinsky eddy viscosity options will not be used.
+C...
+C...  After this search and read, we will close the file and then reopen it
+c...  for further processing the traditional non-namelist components.
+C...
+      namelistSpecifier = 'Smag_Control'
+      IOS_Smag = 0
+      READ(UNIT = 15,NML = Smag_Control,IOSTAT = IOS_Smag)
+      call logNamelistReadStatus(namelistSpecifier, ios_Smag)
+c
+c     it is possible for the namelist to be present in the file and
+C     occuring at the end of the file with no line breaks after the
+C     ending "\" which causes the iostat to return a negative value.
+C     By checking to be sure a namelist variable was set to
+c     a non-default value we can determine this was the case.
+C
+      select case(ios_Smag)
+      case(:-1)
+         if (SMAG_COMP_FLAG .eqv. .TRUE.) then
+            call allMessage(WARNING,
+     &        'Smag_Control NAMELIST PRESENT, BUT AT THE '
+     &     // 'END OF FILE WITH NO ADVANCING CHARACTER.')
+            found_smag_nml = .true.
+         endif
+      case(0)
+         found_smag_nml = .true.
+      case(1:)
+         found_smag_nml = .true.
+         call allMessage(ERROR,
+     &   'THERE WAS A PROBLEM PROCESSING THE Smag_Control NAMELIST '
+     &    //'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.')
+         call adcirc_terminate()
+      end select
+      write(scratchMessage,'(a,l,a,l,a,e15.8,a,e15.8)')
+     &  ' FOUND_SMAG_NML=',found_smag_nml,
+     &  ' SMAG_COMP_FLAG=',SMAG_COMP_FLAG,
+     &  ' SMAG_UPPER_LIM=',SMAG_UPPER_LIM,
+     &  ' SMAG_LOWER_LIM=',SMAG_LOWER_LIM
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+
+      ! jgf: for water level offset
+
+      namelistSpecifier = 'offsetControl'
+      read(unit=15,nml=offsetControl,iostat=ios)
+      call logNamelistReadStatus(namelistSpecifier,ios)
+      write(scratchMessage,'(a,a)') "offsetFileName=",trim(offsetFileName)
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,i0)') "offsetSkipSnaps=",offsetSkipSnaps
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7)') "offsetMultiplier=",offsetMultiplier
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7)') "offsetRampStart=",offsetRampStart
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7)') "offsetRampEnd=",offsetRampEnd
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,a)') "offsetRampReferenceTime=",
+     &  trim(offsetRampReferenceTime)
+      call logMessage(ECHO,trim(scratchMessage))
+      if (trim(offsetFileName).ne.'null') then
+         usingWaterLevelOffset = .true.
+      endif
+      ! exit if there was an error reading the offsetControl namelist
+      if (ios.gt.0) then
+         call adcirc_terminate()    
+      endif
       rewind(15)
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
@@ -1578,6 +1665,7 @@ C     jgf49.1001 Added option to embed NWS19 in a NAM background wind field
      &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
+
       IF(NWS.EQ.-29) THEN
          WRITE(16,2403) NWS
  2403    FORMAT(/,5X,'NWS = ',I2,
@@ -1593,6 +1681,41 @@ C     jgf49.1001 Added option to embed NWS19 in a NAM background wind field
      &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
+      
+      ! jgf: Added option to embed NWS20 in a NAM background wind field
+      IF(NWS.EQ.30) THEN
+         WRITE(16,3403) NWS
+ 3403    FORMAT(/,5X,'NWS = ',I2,
+     &    /,9X,'HURRICANE PARAMETERS AND THE GENERALIZED ASYMMETRIC ',
+     &    /,9X,'HOLLAND MODEL (GAHM) ARE USED TO FORCE THE COMPUTATION',
+     &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',
+     &    /,9X,
+     &    'WHICH IS CREATED FROM THE ATCF FILE USING THE ASWIP PROGRAM',
+     &    /,9X,'WIND VELOCITY AND PRESSURE VALUES ARE READ FROM RAW ',
+     &    /,9X,'OWI DATA FILES (UNIT 221-224).',
+     &    /,9X,'META DATA IS READ FROM UNIT 220.'
+     &    /,9X,'THE UNIT 22 FILE BEGINS AT TIME=STATIM.',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
+     &    /,9X,'WITH THE MODEL TIME STEP.')
+      ENDIF
+
+      ! jgf: Added option to embed NWS20 in a NAM background wind field
+      IF(NWS.EQ.-30) THEN
+         WRITE(16,3405) NWS
+ 3405    FORMAT(/,5X,'NWS = ',I2,
+     &    /,9X,'HURRICANE PARAMETERS AND THE GENERALIZED ASYMMETRIC ',
+     &    /,9X,'HOLLAND MODEL (GAHM) ARE USED TO FORCE THE COMPUTATION',
+     &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',
+     &    /,9X,
+     &    'WHICH IS CREATED FROM THE ATCF FILE USING THE ASWIP PROGRAM',
+     &    /,9X,'WIND VELOCITY AND PRESSURE VALUES ARE READ FROM RAW ',
+     &    /,9X,'OWI DATA FILES (UNIT 221-224).',
+     &    /,9X,'META DATA IS READ FROM UNIT 220.'
+     &    /,9X,'THE OWI FILES BEGIN AT THE HOTSTART TIME.',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
+     &    /,9X,'WITH THE MODEL TIME STEP.')
+      ENDIF
+
       IF(NRS.EQ.0) THEN
          WRITE(16,2390) NRS
  2390    FORMAT(/,5X,'NRS = ',I3,
@@ -1844,6 +1967,23 @@ C     jgf46.08 Change to the number of ramp functions that will be used.
      &    /,9X,'HYPERBOLIC TANGENT RAMP(S) WILL BE APPLIED TO THE ',
      &    'FORCING FUNCTIONS')
       ENDIF
+      !
+      ! @jasonfleming: If there is at least one radiation/flux boundary
+      ! (ibtype=52) in the mesh, then the FluxSettlingTime must 
+      ! be specified, meaning NRAMP must be .ge. 2
+      if ( nramp.lt.2 ) then
+         ! check for radiation/flux boundaries
+         do i=1,numSimpleFluxBoundaries
+            if (ibtype(simpleFluxBoundaries(i)%indexNum).eq.52) then
+               call allMessage(ERROR,'The mesh contains a flux/radiation'//
+     &         ' boundary (ibtype=52) but the fluxSettlingTime was not'//
+     &         ' specified in the control file (fort.15). Please '//
+     &         ' set NRAMP to at least 2 and also provide a value for '//
+     &          ' fluxSettlingTime on the DRAMP line.')
+               call adcirc_terminate()
+            endif
+         end do
+      endif
 C...
 C...  PROCESS G - GRAVITY
 C...
@@ -1959,7 +2099,7 @@ C... v50.xx sm -- avoid reading file and get it from WW3 on the fly
  1116    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
      &        I2,'/',I2,'/',I2,'  ',I2,':',I2,':',f7.4,/)
          CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN,REFSEC,
-     &        WREFTIM, MyProc, NScreen, ScreenUnit)
+     &        WREFTIM)
 C...     TCM V49.64.01 CHANGES FOR ICE CONCENTRATION
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) NWLAT,NWLON,WLATMAX,
      &        WLONMIN,WLATINC,WLONINC,WTIMINC
@@ -2022,7 +2162,7 @@ C...     WHERE NRS=2, NRS=4 WERE NOT BEING INCLUDED
  6111    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
      &           I2,'/',I2,'/',I2,'  ',I2,'H',/)
          CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
-     &        WindRefTime, MyProc, NScreen, ScreenUnit)
+     &        WindRefTime)
       ENDIF
 C     jgf46.16 Merged:
 C     cf & cm added nws = 9: asymmetric hurricane winds
@@ -2037,8 +2177,6 @@ C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
          WRITE(16,1117) WTIMINC
       ENDIF
       IF(NWS.EQ.10) THEN
-         NWLAT=190
-         NWLON=384
 C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
          IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
@@ -2130,6 +2268,19 @@ C     an OWI basin scale met field derived from NAM winds.
          IF(NRS.GE.1) THEN
              READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
      &                  WTIMINC, RSTIMINC, pureVortex, pureBackground
+         ENDIF
+      ENDIF
+
+C     jgf: Added NWS30 format for embedding a GAHM (NWS=20) vortex inside
+C     an OWI basin scale met field derived from NAM winds.
+      IF(ABS(NWS).EQ.30) THEN
+         IF(NRS.EQ.0) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &          GEOFACTOR, WTIMINC, pureVortex, pureBackground
+         ENDIF
+         IF(NRS.GE.1) THEN
+             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &          GEOFACTOR, WTIMINC, RSTIMINC, pureVortex, pureBackground
          ENDIF
       ENDIF
 
@@ -2611,7 +2762,7 @@ C
 C...
 C...OUTPUT TO UNIT 16 THE GLOBAL CONNECTIVITY TABLE (NODE NUMBERS FOR ELEMENTS)
 C...
-      IF(NABOUT.NE.1) THEN
+      IF(NABOUT.LT.1) THEN
          WRITE(16,26)
  26      FORMAT(//,5X,'GLOBAL NODE NUMBERS FOR EACH ELEMENT :')
          WRITE(16,27)
@@ -2735,15 +2886,23 @@ C...  LINES TO USE EARTH LOAD/SELF-ATTRACTION PART OF TIDAL POTENTIAL FORCING
 
       CALL ALLOC_MAIN4b()
       IF(NTIP.EQ.2) THEN
-         OPEN(24,FILE='fort.24')
+         ! WJP 02.24.2018 reading prepped fort.24 for padcirc
+         ! OPEN(24,FILE='fort.24')
+         CALL openFileForRead(24,TRIM(INPUTDIR)//'/'//'fort.24',ios)
+         IF (ios.gt.0) THEN
+             CALL ADCIRC_Terminate()
+         ENDIF
          DO I=1,NTIF
             READ(24,9930)
  9930       FORMAT(///)
             DO J=1,NP
-               READ(24,*) JJ,SALTAMP(I,JJ),SALTPHA(I,JJ)
-               SALTPHA(I,JJ)=SALTPHA(I,JJ)*DEG2RAD
+               ! WJP: mapping to local node numbers
+               READ(24,*) JJ,SALTAMP(I,find(node_dict,JJ)),
+     &                    SALTPHA(I,find(node_dict,JJ))
             END DO
          END DO
+         CLOSE(24)
+         SALTPHA = SALTPHA*DEG2RAD
       ELSE
          DO I=1,NTIF
             DO J=1,NP
@@ -2751,7 +2910,6 @@ C...  LINES TO USE EARTH LOAD/SELF-ATTRACTION PART OF TIDAL POTENTIAL FORCING
                SALTPHA(I,J)=0.d0
             END DO
          END DO
-         CLOSE(24)
       ENDIF
 C...
 C...  OUTPUT TO UNIT 16 INFORMATION ABOUT TIDAL POTENTIAL FORCING
@@ -2895,6 +3053,8 @@ C.....ESSENTIAL B.C.
       ! nfluxf accordingly. The nfluxf value is required for further
       ! parsing of the fort.15 control file; it determines whether
       ! the value of NFFR should be read below. 
+      !
+      ! jgf53.dev This subroutine also uses the value of C2DDI set above.
       call initializeBoundaries()
       !
       ! jgf51.21.12: Now write out log messages that include NBD (the
@@ -3879,7 +4039,7 @@ C...  WRITE NOUTGC,TOUTSGC,TOUTFGC,NTCYSGC,NTCYFGC,NSPOOLGC TO UNIT 16
 C...
 C...  IF NWS<>0   INPUT INFORMATION ABOUT GLOBAL WIND DATA OUTPUT
 C...
-C... v50.xx sm -- avoid reading file !TODO: I need to figure ou how to include this maybe
+
       IF(NWS.NE.0 ) THEN
 
 C...  READ IN NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW : IF NOUTGW<>0, GLOBAL
@@ -3887,19 +4047,6 @@ C...  WIND OUTPUT IS SPOOLED TO UNIT 74 EVERY NSPOOLGW TIME STEPS
 C...  BETWEEN TIMES TOUTSGW AND TOUTFGW; IF ABS(NOUTGW)=2, OUTPUT WILL
 C...  BE BINARY
 
-
-C...      saeed hard coded
-         !print *, " saeed hard coded  > NWS=17 for wind out put"
-         !NOUTGW, TOUTSGW, TOUTFGW, NSPOOLGW = output parameters which control
-         ! the time series output provided for wind stress or velocity 
-         !and atmospheric pressure at all nodes within the domain 
-         !(fort.73 and 74 output)
-         !NOUTGW   = 3
-         !TOUTSGW  = 0
-         !TOUTFGW  = 1000
-         !NSPOOLGW = 1800
-
-C        Saeed commented below line out
          READ(15,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW   !ORIGINAL
          print *, 'NOUTGW  ' , NOUTGW
          WRITE(16,3451) NOUTGW
@@ -4172,23 +4319,6 @@ C     read in and check matrix solver parameters
             STOP
          ENDIF
       ENDIF
-
-C     jgf48.4619: Accommodate Seizos changes for explicit solve
-      IF (ILump.eq.0) THEN ! default, fully consistent LHS
-C        allocate arrays needed by GWCE matrix and iterative solver
-         call alloc_main11()
-C        initialize parameter arrays needed by iterative solver
-         CALL DFAULT(IPARM,RPARM)
-         IPARM(1)=ITMAX
-         IPARM(2)=ISLDIA
-         !cms51.06: moved opening of fort.33 to openLogFile sub in global.F
-         IPARM(4)=33
-         RPARM(1)=CONVCR
-         NW = 4*NP + 4*ITMAX
-      ELSE ! lumped LHS
-         call alloc_main11_lumped()
-      ENDIF
-
 C...
 C...  Read input for 3D run
 C...
@@ -4200,7 +4330,7 @@ c     CALL READ_INPUT_3DDSS(STATIM,NT)
 C     RJWW jgf46.00 Initialize nodal attributes, now that grid has been read
 C     in from unit 14 file.
 C     RJW IOOS move until after ZOB definition
-      CALL InitNodalAttr(DP, NP, G, NScreen, ScreenUnit, MyProc, NAbOut)
+      CALL InitNodalAttr(DP, NP, G, NScreen, ScreenUnit, MyProc, NAbOut, Z0B)
 CS
 
 C...  INITIALIZE NIBNODECODE(I)
@@ -4475,6 +4605,8 @@ C
 #endif
 C
       ios = 0
+      DelT => DTDP                
+
 C
 C...  General invalid entry format statement used throughout
 C

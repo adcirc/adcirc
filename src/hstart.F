@@ -35,7 +35,7 @@ C
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       USE SIZES, ONLY : inputDir, globalDir, mnproc
       USE GLOBAL
-      USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4
+      USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4, AID8
       USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXIB, NFLUXIBP,
      &    NOPE, NVEL, BndBCRiver, LBCODEI, NBV, BARLANHT, BARLANCFSP,
      &    IBCONN, BARINHT, BARINCFSP, BARINCFSB, PIPEHT, PIPECOEF,
@@ -50,14 +50,14 @@ C
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, readFort015, 
      &                       openFort019h
 #ifdef CMPI
-      USE MESSENGER,ONLY: COMM, IERR, UPDATER
+      USE MESSENGER,ONLY: COMM, IERR, UPDATER, MSG_FINI
 #endif      
       USE HARM, ONLY : IHARIND, IHABEG, ITHAS, NHAINC, ICHA, CHARMV,
      &                 NHAGE, NHAGV, NHASE, NHASV, readBinaryHAHotstart,
      &                 checkHAHotstart
+      USE WETDRY, ONLY : initializeWettingAndDrying
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
-      USE WIND
-      USE OWIWIND,ONLY : NWS12INIT,NWS12GET   ! sb46.28sb01 added 09/xx/2006
+      USE WIND, ONLY : hotstartMeteorologicalForcing, rsget
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
       USE RS2,ONLY : RS2INIT,RS2GET           ! sb46.28sb01 added 09/xx/2006
 C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
@@ -76,7 +76,9 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
       USE WRITE_OUTPUT, ONLY : initInundationOutput,
      &   inundationTime, inundationTime_onset, maxInunDepth, 
-     &   maxInunDepth_time, outputNodeCode, outputNOFF
+     &   maxInunDepth_time, outputNodeCode, outputNOFF,
+     &   writeBinaryOutputFileHeader, skipDownToAppendOutputFile
+      USE GWCE, ONLY : etime1, etime2, etiminc
       IMPLICIT NONE
 #ifdef CMPI       
 #ifndef HAVE_MPI_MOD
@@ -96,11 +98,11 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
       INTEGER I, J, NH, N              !local loop counters
       INTEGER NCyc, NA, InputFileFmtVn
       INTEGER sd_node_number,fd_node_number
+      INTEGER :: NNBB, NNBB1, NNBB2
+      REAL(SZ) :: RFF1, RFF2
 
 C   kmd48.33bc - add variable for timestep change
       INTEGER NTHS
-
-      REAL(SZ) HollandTime
       REAL(SZ) ArgT, ArgTP, ArgSAlt
       REAL(SZ) H2
       REAL(SZ) CCSFEA
@@ -109,15 +111,16 @@ C   kmd48.33bc - add variable for timestep change
       REAL(SZ) TPMul
       REAL(SZ) WTRatio, WindX, WindY, WindMag, WDragCo
       REAL(8) TimeLoc
+      REAL(SZ) ETRATIO
       REAL(SZ) PRDIFF,PRBCKGRND_MH2O     ! tcm v49.16 20100617 added
-
+      REAL(SZ) ARG1, ARG2, ARGJ1, ARGJ2  ! tides
 C     jgf46.08 Fine grained ramp functions
       REAL(SZ) RampExtFlux1   ! Ramp for external flux b.c.s @ITHS-1
       REAL(SZ) RampExtFlux2   ! Ramp for external flux b.c.s @ITHS
       REAL(SZ) RampIntFlux1   ! Ramp for internal flux b.c.s @ITHS-1
       REAL(SZ) RampIntFlux2   ! Ramp for internal flux b.c.s @ITHS
       REAL(SZ) RampTip2    ! Ramp for tidal potential @ITHS
-      REAL(SZ) RampMete2   ! Ramp for wind and atmospheric pressure @ITHS
+      real(sz) rampMete2   ! Ramp for wind and atmospheric pressure @ITHS     
       REAL(SZ) RampWRad2   ! Ramp for wave radiation stress @ITHS
 C     jgf46.14 Check for file existence before attempting to open.
       LOGICAL fileFound    ! .True. if the the file exists
@@ -174,6 +177,9 @@ C     kmd -- Added variables for initial conditions
       INTEGER :: moderbin ! determines whether in binary or real
       INTEGER :: ncHundreds ! hundreds place of IHOT, used for netcdf hs file
 
+      character(2048) :: fname ! reusable output file name
+      integer :: numRecordsPerSnap
+
       call setMessageSource("hotstart")
 #if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -181,6 +187,8 @@ C     kmd -- Added variables for initial conditions
       !
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
+      !
+      call initializeWettingAndDrying()
       !
       ! In order to produce inundation output, we need to compute the
       ! areas that were initially dry at cold start. 
@@ -1404,7 +1412,7 @@ C.......If time is during the bathymetry change interval, then update bathymetry
       ENDIF
 
 
-C------------------------ICE FIELDS----------------------------------------
+C-----------------------ICE FIELDS-------------------------------------
 C...  UPDATE THE ICE CONCENTRATION FIELDS FROM UNIT 25, 225, 227
 c...  TCM V49.64.01 ADDED THE ICE FIELDS SECTION
 C
@@ -1427,992 +1435,26 @@ C
                 CALL NCICE1_GET(CICE2,NP)
              ENDIF
           END DO
-      ENDIF
-C
-C
-
-C------------------------MET FORCING---------------------------------------
-C
-C......RESTART WIND AND PRESSURE INFORMATION
-C
-C.... tcm v49.16 20100617
-C.... convert background pressure from millibars to meters of water
-      PRBCKGRND_MH2O = 100.0D0*PRBCKGRND/(RHOWAT0*G)
-
-C     No wind, radiation stress or atmospheric pressure forcings are used.
-      IF(NWS.EQ.1) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         DO J=1,ITHS
-            DO I=1,NP
-               READ(22,*) NHG,WSX2(I),WSY2(I),PR2(I)
-            END DO
-         END DO
-         DO I=1,NP
-            WSX2(I)=RampMete2*WSX2(I)
-            WSY2(I)=RampMete2*WSY2(I)
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*PR2(I)
-            PRDIFF = RampMete2*(PR2(I)-PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-         END DO
-      ENDIF
-
-C     Wind stress and atmospheric pressure are read in at all grid nodes
-C     at a time interval that does not equal the model time
-C     step. Interpolation in time is used to synchronize the wind and
-C     pressure information with the model time step.
-      IF(NWS.EQ.2) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
-         DO IT=1,ITHS
-            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
-            IF(TIMEIT.GT.WTIME2) THEN
-               WTIME1=WTIME2
-               WTIME2=WTIME2+WTIMINC
-               DO I=1,NP
-                  WVNX1(I)=WVNX2(I)
-                  WVNY1(I)=WVNY2(I)
-                  PRN1(I)=PRN2(I)
-                  READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
-               END DO
-            ENDIF
-         END DO
-         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-         DO I=1,NP
-            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-            WSX2(I) = RampMete2*WINDX
-            WSY2(I) = RampMete2*WINDY
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                          -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-         END DO
-      ENDIF
-
-      IF(NWS.EQ.-2) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         WTIME1 = TimeLoc
-         WTIME2 = WTIME1 + WTIMINC
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
-         DO I=1,NP
-            WSX2(I) = RampMete2*WVNX1(I)
-            WSY2(I) = RampMete2*WVNY1(I)
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*PRN1(I)
-            PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-         END DO
-      ENDIF
-
-C     Wind velocity in US Navy Fleet Numeric format interpolated in
-C     space onto the ADCIRC grid and in time to synchronize the wind and
-C     pressure information with the model time step. Garratt's formula
-C     is used to compute wind stress from the wind velocity.
-      IF(NWS.EQ.3) THEN
-C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
-C....                           to correspond with having only a global wind file.
-!         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
- 2223    CALL NWS3GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,IWTIME,IWYR,WTIMED,NP,
-     &        NWLON,NWLAT,WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,
-     &        NScreen,ScreenUnit)
-         IF(IWYR.NE.IREFYR) THEN
-            IWTIMEP=IWTIME
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-            END DO
-            GOTO 2223
-         ENDIF
-         IF(WTIMED.LE.WREFTIM) THEN
-            IWTIMEP=IWTIME
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-            END DO
-            GOTO 2223
-         ENDIF
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
-     &        WRITE(ScreenUnit,*)'FOUND WIND DATA AT TIME= ',IWTIMEP
-         WRITE(16,*) 'FOUND WIND DATA AT TIME =',IWTIMEP
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
-     &        WRITE(ScreenUnit,*)'FOUND WIND DATA AT TIME= ',IWTIME
-         WRITE(16,*) 'FOUND WIND DATA AT TIME =',IWTIME
-         WTIME2=WTIMED-WREFTIM  !CAST INTO MODEL TIME REFERENCE
-         WTIME1=WTIME2-WTIMINC
-         DO IT=1,ITHS
-            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
-            IF(TIMEIT.GT.WTIME2) THEN
-               WTIME1=WTIME2
-               WTIME2=WTIME2+WTIMINC
-               DO I=1,NP
-                  WVNX1(I)=WVNX2(I)
-                  WVNY1(I)=WVNY2(I)
-               END DO
-               CALL NWS3GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,IWTIME,
-     &              IWYR,WTIMED,NP,NWLON,NWLAT,WLATMAX,WLONMIN,
-     &              WLATINC,WLONINC,ICS,NScreen,ScreenUnit)
-               IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
-     &              WRITE(ScreenUnit,*)
-     &              'WIND FILE ADVANCED TO TIME',' = ', IWTIME
-               WRITE(16,*) 'WIND FILE ADVANCED TO TIME = ',IWTIME
-            ENDIF
-         END DO
-         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-         DO I=1,NP              !INTERPOLATE IN TIME
-            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-            WINDMAG=SQRT(WINDX*WINDX+WINDY*WINDY)
-            WDragCo = WindDrag(WindMag, I)
-C     jgf46.01 Add directional wind reduction.
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-            WSX2(I)=RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I)=RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-         END DO
-      ENDIF
-
-C     Wind velocity and atmospheric pressure are read in (PBL/JAG
-C     format) at selected ADCIRC grid nodes. Interpolation in time is
-C     used to synchronize the wind and pressure information with the
-C     model time step. Garratt's formula is used to compute wind stress
-C     from wind velocity.
-      IF(NWS.EQ.4) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
-         CALL NWS4GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  !TCM v49.02 Added read for rec. 1
-         CALL NWS4GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-         DO IT=1,ITHS
-            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
-            IF(TIMEIT.GT.WTIME2) THEN
-               WTIME1=WTIME2
-               WTIME2=WTIME2+WTIMINC
-               DO I=1,NP
-                  WVNX1(I)=WVNX2(I)
-                  WVNY1(I)=WVNY2(I)
-                  PRN1(I)=PRN2(I)
-               END DO
-               CALL NWS4GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-            ENDIF
-         END DO
-         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-         DO I=1,NP
-            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-            WDragCo = WindDrag(WindMag, I)
-C     jgf46.01 Add directional wind reduction.
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
-            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                           -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-         END DO
-      ENDIF
-
-      IF(NWS.EQ.-4) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         WTIME1 = TimeLoc
-         WTIME2 = WTIME1 + WTIMINC
-         CALL NWS4GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         CALL NWS4GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-         DO I=1,NP
-            WINDX = WVNX1(I)
-            WINDY = WVNY1(I)
-            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-            WDragCo = WindDrag(WindMag, I)
-C     jgf46.01 Add directional wind reduction.
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*PRN1(I)
-            PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-         END DO
-      ENDIF
-
-C     Wind velocity and atmospheric pressure are read in at all grid
-C     nodes. Interpolation in time is used to synchronize the wind and
-C     pressure information with the model time step. Garratt's formula
-C     is used to compute wind stress from wind velocity.
-      IF(NWS.EQ.5) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
-         DO IT=1,ITHS
-            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
-            IF(TIMEIT.GT.WTIME2) THEN
-               WTIME1=WTIME2
-               WTIME2=WTIME2+WTIMINC
-               DO I=1,NP
-                  WVNX1(I)=WVNX2(I)
-                  WVNY1(I)=WVNY2(I)
-                  PRN1(I)=PRN2(I)
-                  READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
-               END DO
-            ENDIF
-         END DO
-         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-         DO I=1,NP
-            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-            WDragCo = WindDrag(WindMag, I)
-C     jgf46.01 Add directional wind reduction.
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
-            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                           -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-C     jjw-42.06j wrote, jgf46.00 added following two lines:
-            WVNXOUT(I)=RampMete2*WINDX
-            WVNYOUT(I)=RampMete2*WINDY
-         END DO
-      ENDIF
-
-      IF(NWS.EQ.-5) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         WTIME1 = TimeLoc
-         WTIME2 = WTIME1 + WTIMINC
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
-         WTRATIO=(TimeLoc-WTIME1)/WTIMINC !jgf46.00 added
-         DO I=1,NP
-            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-            WDragCo = WindDrag(WindMag, I)
-C     jgf46.01 Add directional wind reduction.
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*PRN1(I)
-            PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete2*WINDX !jgf46.00 added  ! tcm 20100618 v49.16 changed RampMete to RampMete2
-            WVNYOUT(I)=RampMete2*WINDY !jgf46.00 added  ! tcm 20100618 v49.16 changed RampMete to RampMete2
-         END DO
-      ENDIF
-
-C     Wind velocity and atmospheric pressure are read in for a
-C     rectangular grid (either in Longitude, Latitude or Cartesian
-C     coordinates, consistent with the grid coordinates) and
-C     interpolated in space onto the ADCIRC grid and in time to
-C     synchronize the wind and pressure information with the model time
-C     step. Garratt's formula is used to compute wind stress from the
-C     wind velocity.
-      IF(NWS.EQ.6) THEN
-C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
-C....                           to correspond with having only a global wind file.
-!         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
-C     The following 3 lines are a hardwire to allow a non standard met
-C     file to be read in at time zero in a hot start.  They should be
-C     eliminated or commented out for normal operation
-c     OPEN(199,FILE=TRIM(INPUTDIR)//'/'//'fort.199')
-c     READ(199,*) (NHG,PRN1(I),WVNX1(I),WVNY1(I),I=1,NP)
-c     CLOSE(199)
-C     The following CALL statement should be uncommented for normal operation
-         CALL NWS6GET(X,Y,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,NWLON,NWLAT,
-     &        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
-         CALL NWS6GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT,
-     &        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
-         WTIME1=TimeLoc
-         WTIME2=WTIME1+WTIMINC
-         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-         DO I=1,NP
-            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-            WDragCo = WindDrag(WindMag, I)
-C     jgf46.00 Add directional wind reduction.
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
-            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                           -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-         END DO
-      ENDIF
-
-C     jgf46.01 New option to read in surface wind stress and atmospheric
-C     pressure for a rectangular grid (either in Longitude, Latitude or
-C     Cartesian coordinates, consistent with the grid coordinates) and
-C     interpolate in space onto the ADCIRC grid. Interpolation in time
-C     is used to synchronize the wind and pressure information with the
-C     model time step.
-C
-      IF(NWS.EQ.7) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         WTIME1 = STATIM*86400.D0
-         CALL NWS7GET(X,Y,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,NWLON,NWLAT,
-     &        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)  !TCMv49.02 Changed (WVNX2,WVNY2,PRN2) to (WVNX1,WVNY1,PRN1)
-         CALL NWS7GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT,
-     &        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
-         WTIME1=TimeLoc
-         WTIME2=WTIME1+WTIMINC
-         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-         DO I=1,NP
-            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
-            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
-            WSX2(I) = RampMete2*WindX !apply ramp
-            WSY2(I) = RampMete2*WindY
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
-            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                           -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            wvnxout(i)=WSX2(i) !for met recording sta. output
-            wvnyout(i)=WSY2(i)
-         END DO
-      ENDIF
-
-      IF(NWS.EQ.-7) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         WTIME1 = STATIM*86400.D0
-         CALL NWS7GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT,
-     &        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
-         CALL NWS7GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT,
-     &        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
-         WTIME1=TimeLoc
-         WTIME2=WTIME1+WTIMINC
-         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-C     jgfdebug46.01 How do we convert these marine wind stresses into
-C     directional land surface stresses?
-         DO I=1,NP
-            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
-            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
-            WSX2(I) = RampMete2*WindX !apply ramp
-            WSY2(I) = RampMete2*WindY
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
-            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                           -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            wvnxout(i)=WSX2(i) !for met recording sta. output
-            wvnyout(i)=WSY2(i)
-         END DO
-      ENDIF
-
-C     jgf46.02 New option to read in hurricane locations and generate
-C     generate hurricane winds from the Holland Wind Model.
-      IF(ABS(NWS).EQ.8) THEN
-         !OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         HollandTime = TimeLoc
-         CALL HollandGet(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,
-     &        ICS,RHOWAT0,G,HollandTime,NSCREEN,ScreenUnit)
-         DO I=1,NP
-            WindX = WVNX2(I)
-            WindY = WVNY2(I)
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*PRN2(I)
-            PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete2*WindX
-            WVNYOUT(I)=RampMete2*WindY
-         ENDDO
-      ENDIF
-
-!     rjw added nws = 19: asymmetric hurricane winds v2.0
-
-      IF(ABS(NWS).EQ.19) THEN
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
-             CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TimeLoc, ICS)
-         DO I=1,NP
-            WindX = WVNX2(I)
-            WindY = WVNY2(I)
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*PRN2(I)
-            PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete2*WindX
-            WVNYOUT(I)=RampMete2*WindY
-         ENDDO
-      ENDIF
-      
-!     jie added nws = 20: generalized asymmetric vortex model
-
-      IF(ABS(NWS).EQ.20) THEN
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
-             CALL NWS20GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TimeLoc, ICS)
-         DO I=1,NP
-            WindX = WVNX2(I)
-            WindY = WVNY2(I)
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*PRN2(I)
-            PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete2*WindX
-            WVNYOUT(I)=RampMete2*WindY
-         ENDDO
-      ENDIF            
-C
-C     jgf49.1001 Added NWS29, asymmetric vortex winds (NWS19)
-C     embedded in an OWI basin scale gridded met field (NWS12)
-C     from NAM data
-      IF(NWS.EQ.29) THEN
-         WTIME1 = STATIM*86400.D0
-         WTIME2 = WTIME1 + WTIMINC
-C        This just initializes some variables and might
-C        set WVNX1, etc ... if skipping ahead.
-         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-C        !TCM v49.02 Added read for rec. 1
-         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-         DO IT=1,ITHS
-            TIMEIT=IT*DTDP + STATIM*86400.D0
-            IF(TIMEIT.GT.WTIME2) THEN
-               WTIME1=WTIME2
-               WTIME2=WTIME2+WTIMINC
-               DO I=1,NP
-                  WVNX1(I)=WVNX2(I)
-                  WVNY1(I)=WVNY2(I)
-                  PRN1(I)=PRN2(I)
-                END DO
-                CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-             ENDIF
-         END DO
-         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-         DO I=1,NP
-            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-            WDragCo = WindDrag(WindMag, I)
-            ! jgf49.1001 NAM winds already contain wind reduction
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PR2(I) = RampMete2*PRN1(I)
-            WVNXOUT(I)=RampMete2*WINDX
-            WVNYOUT(I)=RampMete2*WINDY
-         END DO
-      ENDIF
-      IF(NWS.EQ.-29) THEN
-         WTIME1 = TimeLoc
-         WTIME2 = WTIME1 + WTIMINC
-         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-         DO I=1,NP
-            WINDX = WVNX1(I)
-            WINDY = WVNY1(I)
-            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-            WDragCo = WindDrag(WindMag, I)
-            ! jgf49.1001 NAM winds already contain wind reduction
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PR2(I) = RampMete2*PRN1(I)
-            WVNXOUT(I)=RampMete*WINDX
-            WVNYOUT(I)=RampMete*WINDY
-         END DO
-      ENDIF
-C     Now blend in the vortex winds into the background OWI wind field.
-      IF(ABS(NWS).EQ.29) THEN
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
-     &        STATUS='OLD')
-         ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
-         CALL NWS19GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
-     &                NP,TimeLoc, ICS)
-         DO I=1,NP
-            WindX = vortexWVNX2(I)
-            WindY = vortexWVNY2(I)
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            CALL getBlendFactor(I, SLAM, SFEA, bf)
-            WSX2(I) = bf*RampMete2*0.001293d0*WDragCo*WindX*WindMag
-     &               +(1.0d0-bf)*WSX2(I)
-            WSY2(I) = bf*RampMete2*0.001293d0*WDragCo*WindY*WindMag
-     &               +(1.0d0-bf)*WSY2(I)
-            PR2(I) = bf*RampMete2*vortexPRN2(I)
-     &               +(1.0d0-bf)*PRN2(I)
-            WVNXOUT(I)=bf*RampMete2*WindX+(1.0d0-bf)*WVNXOUT(I)
-            WVNYOUT(I)=bf*RampMete2*WindY+(1.0d0-bf)*WVNYOUT(I)
-         ENDDO
-      ENDIF
-C
-C     Wind velocity (10 m) and atmospheric pressure are read in from a
-C     sequence of National Weather Service (NWS) Aviation (AVN) model
-C     output files. Each AVN file is assumed to contain data on a
-C     Gaussian longitude, latitude grid at a single time. Consecutive
-C     files in the sequence are separated by N hours in time. Garratt's
-C     formula is used to compute wind stress from the wind velocity.
-      IF(NWS.EQ.10) THEN
-         WTIME1=TimeLoc
-         WTIME2=WTIME1+WTIMINC
-         NWSGGWI=-1
-         CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,RHOWAT0,G,
-     &        NWLON,NWLAT,WTIMINC)
-         NWSGGWI=0
-         CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,RHOWAT0,G,
-     &        NWLON,NWLAT,WTIMINC)
-         NWSGGWI=1
-         CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,RHOWAT0,G,
-     &        NWLON,NWLAT,WTIMINC)
-         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-         DO I=1,NP
-            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-            WDragCo = WindDrag(WindMag, I)
-C     jgf46.00 Add directional wind reduction.
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
-            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                           -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-         END DO
-      ENDIF
-
-C     Wind velocity (10 m) and atmospheric pressure are read in from a
-C     sequence of stripped down National Weather Service (NWS) ETA 29km
-C     model output files. Each ETA file is assumed to contain data on an
-C     E grid for a single day (8 data sets, one every 3 hours, beginning
-C     @ 03:00 and continuing through 24:00 of the given day). The wind
-C     data is converted to an east-west, north-south coordinate system
-C     inside ADCIRC. Garratt's formula is used to compute wind stress
-C     from the wind velocity.
-      IF(NWS.EQ.11) THEN
-         WTIME1=TimeLoc
-         WTIME2=WTIME1+WTIMINC
-         NWSEGWI=0
-         IDSETFLG=0
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1197)
-         WRITE(16,1197)
-         CALL NWS11GET(NWSEGWI,IDSETFLG,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,
-     &        RHOWAT0,G)        !JUST COMPUTE INTERPOLATING FACTORS
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1198)
-         WRITE(16,1198)
-         NWSEGWI=0
-         IDSETFLG=8
-         CALL NWS11GET(NWSEGWI,IDSETFLG,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,
-     &        RHOWAT0,G)        !NOW COMPUTE HOTSTART WIND FILED
-         NWSEGWI=1
-         IDSETFLG=1
-         CALL NWS11GET(NWSEGWI,IDSETFLG,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,
-     &        RHOWAT0,G)        !NOW COMPUTE NEXT WIND FIELD
-         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-         DO I=1,NP
-            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-            WDragCo = WindDrag(WindMag, I)
-C     jgf46.00 Add directional wind reduction.
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
-            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                           -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-         END DO
-      ENDIF
-
-C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
-      IF(NWS.EQ.12) THEN
-          WTIME1 = STATIM*86400.D0
-          WTIME2 = WTIME1 + WTIMINC
-          CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  ! This just initializes some variables and might set WVNX1,etc... if skipping ahead.
-          CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  !TCM v49.02 Added read for rec. 1
-          CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-          DO IT=1,ITHS
-             TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
-             IF(TIMEIT.GT.WTIME2) THEN
-                WTIME1=WTIME2
-                WTIME2=WTIME2+WTIMINC
-                DO I=1,NP
-                   WVNX1(I)=WVNX2(I)
-                   WVNY1(I)=WVNY2(I)
-                   PRN1(I)=PRN2(I)
-                 END DO
-                 CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-              ENDIF
-          END DO
-          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-          DO I=1,NP
-             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-             WDragCo = WindDrag(WindMag, I)
-             IF (LoadDirEffRLen) THEN
-                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-                WindMag = SQRT(WindX*WindX+WindY*WindY)
-                WDragCo = WindDrag(WindMag, I)
-             ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-C  tcm v49.16 20100617
-!            PR2(I) = RampMete2*PRN1(I)
-             PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                           -PRBCKGRND_MH2O)
-             PR2(I) = PRBCKGRND_MH2O + PRDIFF
-             WVNXOUT(I)=RampMete2*WINDX
-             WVNYOUT(I)=RampMete2*WINDY
-          END DO
-       ENDIF
-
-       IF(NWS.EQ.-12) THEN
-          WTIME1 = TimeLoc
-          WTIME2 = WTIME1 + WTIMINC
-          CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-          CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-          CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
-          DO I=1,NP
-             WINDX = WVNX1(I)
-             WINDY = WVNY1(I)
-             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-             WDragCo = WindDrag(WindMag, I)
-             IF (LoadDirEffRLen) THEN
-                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-                WindMag = SQRT(WindX*WindX+WindY*WindY)
-                WDragCo = WindDrag(WindMag, I)
-             ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*PRN1(I)
-             PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
-             PR2(I) = PRBCKGRND_MH2O + PRDIFF
-             WVNXOUT(I)=RampMete2*WINDX  ! tcm 20100618 v49.16 changed RampMete to RampMete2
-             WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
-          END DO
-       ENDIF
-
-      !
-      ! jgf50.38.05: Added NWS=15 for reading HWind data
-       IF(ABS(NWS).EQ.15) THEN
-          CALL NWS15INIT(timeloc)
-          CALL NWS15GET(WVNX2,WVNY2,PRN2,timeloc)
-          DO I=1,NP
-             WDragCo = WindDrag(windSpeeds(i), i)
-             windx = wvnx2(i)
-             windy = wvny2(i)
-             IF (LoadDirEffRLen) THEN
-                CALL ApplyDirectionalWindReduction(i, WDragCo,
-     &              windSpeeds(i), DP(I), ETA2(I), H0, G,
-     &              windx, windy)
-                WindMag = SQRT(windx**2+windy**2)
-                WDragCo = WindDrag(WindMag, i)
-             ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(i,windx,windy)
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-             PR2(I) = PRBCKGRND_MH2O + RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
-             WVNXOUT(I)=RampMete2*WINDX
-             WVNYOUT(I)=RampMete2*WINDY
-          END DO
-       ENDIF
-C
-C.....tcm v51.06.02 NWS=16,-16 were added to deal with GFDL Met files.
-      IF(NWS.EQ.16) THEN
-          WTIME1 = STATIM*86400.D0
-          WTIME2 = WTIME1 + WTIMINC
-          CALL INIT_GFDL(wtime1)  !this will read in the two time series
-          DO IT=1,ITHS
-             TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
-             IF(TIMEIT.GT.WTIME2) THEN
-                WTIME1=WTIME2
-                WTIME2=WTIME2+WTIMINC
-                DO I=1,NP
-                   WVNX1(I)=WVNX2(I)
-                   WVNY1(I)=WVNY2(I)
-                   PRN1(I)=PRN2(I)
-                 END DO
-                 CALL NWS16GET(wtime2,WVNX2,WVNY2,PRN2)
-              ENDIF
-          END DO
-          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
-          DO I=1,NP
-             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-             WDragCo = WindDrag(WindMag, I)
-             IF (LoadDirEffRLen) THEN
-                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-                WindMag = SQRT(WindX*WindX+WindY*WindY)
-                WDragCo = WindDrag(WindMag, I)
-             ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-             PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                           -PRBCKGRND_MH2O)
-             PR2(I) = PRBCKGRND_MH2O + PRDIFF
-             WVNXOUT(I)=RampMete2*WINDX
-             WVNYOUT(I)=RampMete2*WINDY
-          END DO
-       ENDIF
-C
-       IF(NWS.EQ.-16) THEN
-          WTIME1 = TimeLoc
-          WTIME2 = WTIME1 + WTIMINC
-          call INIT_GFDL(wtime1)  !this reads in the first two time series values
-          DO I=1,NP
-             WINDX = WVNX1(I)
-             WINDY = WVNY1(I)
-             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-             WDragCo = WindDrag(WindMag, I)
-             IF (LoadDirEffRLen) THEN
-                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-                WindMag = SQRT(WindX*WindX+WindY*WindY)
-                WDragCo = WindDrag(WindMag, I)
-             ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-             PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
-             PR2(I) = PRBCKGRND_MH2O + PRDIFF
-             WVNXOUT(I)=RampMete2*WINDX  ! tcm 20100618 v49.16 changed RampMete to RampMete2
-             WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
-          END DO
-       ENDIF
-      !
-      ! jgf52.14: Implementing Casey's fix for uninitialized
-      ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
-      ! by the parametric vortex meteorological models but are used in
-      ! the padcswan_init() subroutine to initialize the SWAN wind 
-      ! velocities. Failure to initialize them causes NaNs in the 
-      ! solution. 
-      if ( (abs(nws).eq.8).or.(abs(nws).eq.19).or.(abs(nws).eq.20)) then 
-         WVNX1 = WVNX2
-         WVNY1 = WVNY2
+      ENDIF     
+      if (ncice.ne.0) then
+         CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+         do i=1,np
+            CICEOUT(I) = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+         end do
       endif
-
-
+      
+C----------------------ICE FIELDS-------------------------------------
 C
 C
-C--------------------END MET FORCING---------------------------------------
+C
+C----------------------MET FORCING------------------------------------
 
+      call hotstartMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
+     &   wvnxout, wvnyout, timeloc, rampmete2)
+
+C----------------------MET FORCING------------------------------------
+C
+C
 C......RESTART THE WAVE RADIATION STRESS
         
         ! jgf51.46: Fixed initialization issue due to mishandling the 
@@ -2561,62 +1603,41 @@ C...
         WRITE(16,1041)
  1041   FORMAT(//,' A NEW ELEVATION STATION FILE WILL BE STARTED')
       ENDIF
-      IF(NOUTE.EQ.-2) THEN
-        OPEN(61,FILE=TRIM(LOCALDIR)//'/'//'fort.61',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-        IF(NBYTE.EQ.4) THEN
-          DO I=1,8
-            WRITE(61,REC=IESTP+I) RDES4(I)
-          ENDDO
-          IESTP=IESTP+8
-          DO I=1,6
-            WRITE(61,REC=IESTP+I) RID4(I)
-          ENDDO
-          IESTP=IESTP+6
-          DO I=1,6
-            WRITE(61,REC=IESTP+I) AID4(I)
-          ENDDO
-          IESTP=IESTP+6
-        ENDIF
-        IF(NBYTE.EQ.8) THEN
-          DO I=1,4
-            WRITE(61,REC=IESTP+I) RDES8(I)
-          ENDDO
-          IESTP=IESTP+4
-          DO I=1,3
-            WRITE(61,REC=IESTP+I) RID8(I)
-          ENDDO
-          IESTP=IESTP+3
-          DO I=1,3
-            WRITE(61,REC=IESTP+I) AID8(I)
-          ENDDO
-          IESTP=IESTP+3
-        ENDIF
-        WRITE(61,REC=IESTP+1) NTRSPE
-        WRITE(61,REC=IESTP+2) NSTAE
-        WRITE(61,REC=IESTP+3) DT*NSPOOLE
-        WRITE(61,REC=IESTP+4) NSPOOLE
-        WRITE(61,REC=IESTP+5) 1
-        IESTP=IESTP+5
-        CLOSE(61)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-      ENDIF
-      IF(NOUTE.EQ.-1) THEN
-         if (write_local_files.eqv..false.) then
-            CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61',
-     $        NSTAE_G, NSTAE, HEADER61)
+      if (write_local_files.eqv..false.) then
+         fname = TRIM(GLOBALDIR)//'/'//'fort.61'
+         numRecordsPerSnap = NSTAE_G
+      else
+         fname = TRIM(LOCALDIR)//'/'//'fort.61'
+         numRecordsPerSnap = NSTAE
+      endif
+      select case(noute)
+      case(-2)
+         OPEN(61,FILE=TRIM(fname),ACCESS='DIRECT',RECL=NBYTE)
+         call writeBinaryOutputFileHeader(61, 1, IESTP,
+     &      NTRSPE, NSTAE, NSPOOLE)
+         CLOSE(61)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+      case(-1)
+         CALL OPEN_GBL_FILE(61, TRIM(fname),NSTAE_G, NSTAE, HEADER61)
+         IESTP=2
+      case(1)
+         inquire(file=trim(fname),exist=fileFound)
+         ! start anew if the file was not found
+         if (fileFound.eqv..false.) then
+            CALL OPEN_GBL_FILE(61, TRIM(fname),NSTAE_G, NSTAE, HEADER61)
+            IESTP=2
          else
-            CALL OPEN_GBL_FILE(61, TRIM(LOCALDIR)//'/'//'fort.61',
-     $        NSTAE_G, NSTAE, HEADER61)
+            open(61,file=trim(fname),status='old',action='readwrite',
+     &            position='rewind', access='sequential')
+            call skipDownToAppendOutputFile(61, timeloc, numRecordsPerSnap,noute) 
+            close(61)
          endif
-        IESTP=2
-      ENDIF
-
-      IF(NOUTE.EQ.2) THEN
-        OPEN(61,FILE=TRIM(LOCALDIR)//'/'//'fort.61',
+      case(2)
+         OPEN(61,FILE=TRIM(LOCALDIR)//'/'//'fort.61',
      &                      ACCESS='DIRECT',RECL=NBYTE)
 c       WRITE(61,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-        CLOSE(61)                         ! DO THIS TO FLUSH THE WRITE BUFFER
-      ENDIF
+         CLOSE(61)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+      case default
+      end select
 
 C...
 C....GO TO THE PROPER PLACE IN THE VELOCITY STATION OUTPUT FILE
@@ -2638,62 +1659,41 @@ C...
         WRITE(16,1043)
  1043   FORMAT(//,' A NEW VELOCITY STATION FILE WILL BE STARTED')
       ENDIF
-
-      IF(NOUTV.EQ.-2) THEN
-        OPEN(62,FILE=TRIM(LOCALDIR)//'/'//'fort.62',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-        IF(NBYTE.EQ.4) THEN
-          DO I=1,8
-            WRITE(62,REC=IVSTP+I) RDES4(I)
-          ENDDO
-          IVSTP=IVSTP+8
-          DO I=1,6
-            WRITE(62,REC=IVSTP+I) RID4(I)
-          ENDDO
-          IVSTP=IVSTP+6
-          DO I=1,6
-            WRITE(62,REC=IVSTP+I) AID4(I)
-          ENDDO
-          IVSTP=IVSTP+6
-          ENDIF
-        IF(NBYTE.EQ.8) THEN
-          DO I=1,4
-            WRITE(62,REC=IVSTP+I) RDES8(I)
-          ENDDO
-          IVSTP=IVSTP+4
-          DO I=1,3
-            WRITE(62,REC=IVSTP+I) RID8(I)
-          ENDDO
-          IVSTP=IVSTP+3
-          DO I=1,3
-            WRITE(62,REC=IVSTP+I) AID8(I)
-          ENDDO
-          IVSTP=IVSTP+3
-        ENDIF
-        WRITE(62,REC=IVSTP+1) NTRSPV
-        WRITE(62,REC=IVSTP+2) NSTAV
-        WRITE(62,REC=IVSTP+3) DT*NSPOOLV
-        WRITE(62,REC=IVSTP+4) NSPOOLV
-        WRITE(62,REC=IVSTP+5) 2
-        IVSTP=IVSTP+5
-        CLOSE(62)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-      ENDIF
-      IF(NOUTV.EQ.-1) THEN
-         if (write_local_files.eqv..false.) then
-            CALL OPEN_GBL_FILE(62, TRIM(GLOBALDIR)//'/'//'fort.62',
-     $         NSTAV_G, NSTAV, HEADER62)
+      if (write_local_files.eqv..false.) then
+         fname = TRIM(GLOBALDIR)//'/'//'fort.62'
+         numRecordsPerSnap = NSTAV_G
+      else
+         fname = TRIM(LOCALDIR)//'/'//'fort.62'
+         numRecordsPerSnap = NSTAV
+      endif
+      select case(noutv)
+      case(-2)
+         OPEN(62,FILE=TRIM(fname),ACCESS='DIRECT',RECL=NBYTE)
+         call writeBinaryOutputFileHeader(62, 2, IVSTP,
+     &       NTRSPV, NSTAV, NSPOOLV)
+         CLOSE(62)                    ! DO THIS TO FLUSH THE WRITE BUFFER 
+      case(-1)
+         CALL OPEN_GBL_FILE(62, TRIM(fname),NSTAV_G, NSTAV, HEADER62)
+         IVSTP=2
+      case(1)
+         inquire(file=trim(fname),exist=fileFound)
+         ! start anew if the file was not found
+         if (fileFound.eqv..false.) then
+            CALL OPEN_GBL_FILE(62, TRIM(fname),NSTAV_G, NSTAV, HEADER62)
+            IVSTP=2
          else
-            CALL OPEN_GBL_FILE(62, TRIM(LOCALDIR)//'/'//'fort.62',
-     $         NSTAV_G, NSTAV, HEADER62)
+            open(62,file=trim(fname),status='old',action='readwrite',
+     &            position='rewind', access='sequential')
+            call skipDownToAppendOutputFile(62, timeloc, numRecordsPerSnap,noutv) 
+            close(62)
          endif
-        IVSTP=2
-      ENDIF
-      IF(NOUTV.EQ.2) THEN
+      case(2)
         OPEN(62,FILE=TRIM(LOCALDIR)//'/'//'fort.62',
      &                      ACCESS='DIRECT',RECL=NBYTE)
 c       WRITE(62,REC=ITEMPSTP+1) NTRSPV   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
         CLOSE(62)                         ! DO THIS TO FLUSH THE WRITE BUFFER
-      ENDIF
+      case default
+      end select
 
 C...
 C....GO TO THE PROPER PLACE IN THE CONCENTRATION STATION OUTPUT FILE
@@ -2714,64 +1714,42 @@ C...
         WRITE(16,1045)
  1045   FORMAT(//,' A NEW CONCENTRATION STATION FILE WILL BE STARTED')
       ENDIF
-
-      IF(NOUTC.EQ.-2) THEN
-        OPEN(81,FILE=TRIM(LOCALDIR)//'/'//'fort.81',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-        IF(NBYTE.EQ.4) THEN
-          DO I=1,8
-            WRITE(81,REC=ICSTP+I) RDES4(I)
-          ENDDO
-          ICSTP=ICSTP+8
-          DO I=1,6
-            WRITE(81,REC=ICSTP+I) RID4(I)
-          ENDDO
-          ICSTP=ICSTP+6
-          DO I=1,6
-            WRITE(81,REC=ICSTP+I) AID4(I)
-          ENDDO
-          ICSTP=ICSTP+6
-        ENDIF
-        IF(NBYTE.EQ.8) THEN
-          DO I=1,4
-            WRITE(81,REC=ICSTP+I) RDES8(I)
-          ENDDO
-          ICSTP=ICSTP+4
-          DO I=1,3
-            WRITE(81,REC=ICSTP+I) RID8(I)
-          ENDDO
-          ICSTP=ICSTP+3
-          DO I=1,3
-            WRITE(81,REC=ICSTP+I) AID8(I)
-          ENDDO
-          ICSTP=ICSTP+3
-        ENDIF
-        WRITE(81,REC=ICSTP+1) NTRSPC
-        WRITE(81,REC=ICSTP+2) NSTAC
-        WRITE(81,REC=ICSTP+3) DT*NSPOOLC
-        WRITE(81,REC=ICSTP+4) NSPOOLC
-        WRITE(81,REC=ICSTP+5) 1
-        ICSTP=ICSTP+5
-        CLOSE(81)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-      ENDIF
-      IF(NOUTC.EQ.-1) THEN
-         if (write_local_files.eqv..false.) then
-            CALL OPEN_GBL_FILE(81, TRIM(GLOBALDIR)//'/'//'fort.81',
-     $       NSTAC_G, NSTAC, HEADER81)
-         else 
-            CALL OPEN_GBL_FILE(81, TRIM(LOCALDIR)//'/'//'fort.81',
-     $       NSTAC_G, NSTAC, HEADER81)
-         endif
-        ICSTP=2
-        CLOSE(81)
-      ENDIF
-      IF(NOUTC.EQ.2) THEN
+      if (write_local_files.eqv..false.) then
+         fname = TRIM(GLOBALDIR)//'/'//'fort.81'
+         numRecordsPerSnap = NSTAC_G
+      else
+         fname = TRIM(LOCALDIR)//'/'//'fort.81'
+         numRecordsPerSnap = NSTAC
+      endif
+      select case(noutc)
+      case(-2)
+         OPEN(81,FILE=TRIM(fname),ACCESS='DIRECT',RECL=NBYTE)
+         call writeBinaryOutputFileHeader(81, 1, ICSTP,
+     &       NTRSPC, NSTAC, NSPOOLC)
+         CLOSE(81)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+      case(-1)
+         CALL OPEN_GBL_FILE(81, TRIM(fname),NSTAC_G, NSTAC, HEADER81)
+         ICSTP=2
+         CLOSE(81)
+      case(1)
+         inquire(file=trim(fname),exist=fileFound)
+         ! start anew if the file was not found
+         if (fileFound.eqv..false.) then
+            CALL OPEN_GBL_FILE(81, TRIM(fname),NSTAC_G, NSTAC, HEADER81)
+            ICSTP=2
+         else
+            open(81,file=trim(fname),status='old',action='readwrite',
+     &            position='rewind', access='sequential')
+            call skipDownToAppendOutputFile(81,timeloc,numRecordsPerSnap,noutc) 
+            close(81)
+         endif         
+      case(2)
         OPEN(81,FILE=TRIM(LOCALDIR)//'/'//'fort.81',
      &                      ACCESS='DIRECT',RECL=NBYTE)
 c       WRITE(81,REC=ITEMPSTP+1) NTRSPC   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
         CLOSE(81)                         ! DO THIS TO FLUSH THE WRITE BUFFER
-      ENDIF
-
+      case default
+      end select
 C...
 C....GO TO THE PROPER PLACE IN THE METEOROLOGICAL STATION OUTPUT FILE
 C...
@@ -2810,6 +1788,7 @@ C
         WRITE(16,1039)
  1039   FORMAT(//,' A NEW METEOROLOGICAL STATION FILE WILL BE STARTED')
       ENDIF
+   
 
       IF(NOUTM.EQ.-2) THEN
         OPEN(71,FILE=TRIM(LOCALDIR)//'/'//'fort.71',
@@ -2930,6 +1909,69 @@ C
          
          endif
       ENDIF
+
+      if (noutm.eq.1) then
+         ! pressure station file
+         if (write_local_files.eqv..false.) then
+            fname = TRIM(GLOBALDIR)//'/'//'fort.71'
+            numRecordsPerSnap = NSTAM_G
+         else
+            fname = TRIM(LOCALDIR)//'/'//'fort.71'
+            numRecordsPerSnap = NSTAM
+         endif
+         inquire(file=trim(fname),exist=fileFound)
+         ! start anew if the file was not found
+         if (fileFound.eqv..false.) then
+            CALL OPEN_GBL_FILE(71, TRIM(fname),NSTAM_G, NSTAM, HEADER71)
+            IPSTP=2
+         else
+            open(71,file=trim(fname),status='old',action='readwrite',
+     &            position='rewind', access='sequential')
+            call skipDownToAppendOutputFile(71, timeloc, numRecordsPerSnap,noutm) 
+            close(71)
+         endif
+         ! wind station file
+         if (write_local_files.eqv..false.) then
+            fname = TRIM(GLOBALDIR)//'/'//'fort.72'
+            numRecordsPerSnap = NSTAM_G
+         else
+            fname = TRIM(LOCALDIR)//'/'//'fort.72'
+            numRecordsPerSnap = NSTAM
+         endif
+         inquire(file=trim(fname),exist=fileFound)
+         ! start anew if the file was not found
+         if (fileFound.eqv..false.) then
+            CALL OPEN_GBL_FILE(72, TRIM(fname),NSTAM_G, NSTAM, HEADER72)
+            IPSTP=2
+         else
+            open(72,file=trim(fname),status='old',action='readwrite',
+     &            position='rewind', access='sequential')
+            call skipDownToAppendOutputFile(72, timeloc, numRecordsPerSnap,noutm) 
+            close(72)
+         endif
+         ! ice station file
+         if (ncice.ne.0) then
+            if (write_local_files.eqv..false.) then
+               fname = TRIM(GLOBALDIR)//'/'//'fort.91'
+               numRecordsPerSnap = NSTAM_G
+            else
+               fname = TRIM(LOCALDIR)//'/'//'fort.91'
+               numRecordsPerSnap = NSTAM
+            endif
+            inquire(file=trim(fname),exist=fileFound)
+            ! start anew if the file was not found
+            if (fileFound.eqv..false.) then
+               CALL OPEN_GBL_FILE(91, TRIM(fname),NSTAM_G, NSTAM, HEADER91)
+               IICESTP=2
+            else
+               open(91,file=trim(fname),status='old',action='readwrite',
+     &            position='rewind', access='sequential')
+               call skipDownToAppendOutputFile(91, timeloc, numRecordsPerSnap,noutm) 
+               close(91)
+            endif
+         endif
+      endif
+
       IF(NOUTM.EQ.2) THEN
         OPEN(71,FILE=TRIM(LOCALDIR)//'/'//'fort.71',
      &                      ACCESS='DIRECT',RECL=NBYTE)
@@ -2947,7 +1989,6 @@ c         WRITE(72,REC=ITMEPSTP+1) NTRSPM
         ENDIF
       ENDIF
 
-
 C... TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
 C... THIS FILE IS CONTROLLED BY THE ELEVATION STATION DATA
 C...
@@ -2955,153 +1996,102 @@ C....IF RESTARTING THE BATHYMETRY STATION OUTPUT FILE, GO TO THE PROPER PLACE
 C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
 C...
 
-      IF (NDDT.NE.0) WRITE(16,1035) IBSTP,NSCOUB
+      IF (NDDT.NE.0) then
+         WRITE(16,1035) IBSTP,NSCOUB
  1035 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN BATHYMETRY ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER = ',I6)
 
-      IF ((NDDT.NE.0).AND.(NOUTE.LT.0)) THEN
-        IBSTP=0
-        NSCOUB=0
-        IF((NTCYSB.LT.ITHS).AND.(NSPOOLE.GT.0)) THEN
-          NTCYSB=NTCYSB+((REAL(ITHS)-REAL(NTCYSB))/
+         IF (NOUTE.LT.0) THEN
+            IBSTP=0
+            NSCOUB=0
+            IF((NTCYSB.LT.ITHS).AND.(NSPOOLE.GT.0)) THEN
+               NTCYSB=NTCYSB+((REAL(ITHS)-REAL(NTCYSB))/
      &           REAL(NSPOOLE))*REAL(NSPOOLE)
-          IF(NTCYSB.LT.ITHS) NTCYSB=NTCYSB+NSPOOLE
-          IF(NSPOOLE.NE.0) NTRSPB=(NTCYFB-NTCYSB)/NSPOOLE
-        ENDIF
-        WRITE(16,1036)
- 1036   FORMAT(//,' A NEW BATHYMETRY STATION FILE WILL BE STARTED')
-      ENDIF
-      IF ((NDDT.NE.0).AND.(NOUTE.EQ.-2)) THEN
-        OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-        IF(NBYTE.EQ.4) THEN
-          DO I=1,8
-            WRITE(75,REC=IBSTP+I) RDES4(I)
-          ENDDO
-          IBSTP=IBSTP+8
-          DO I=1,6
-            WRITE(75,REC=IBSTP+I) RID4(I)
-          ENDDO
-          IBSTP=IBSTP+6
-          DO I=1,6
-            WRITE(75,REC=IBSTP+I) AID4(I)
-          ENDDO
-          IBSTP=IBSTP+6
-        ENDIF
-        IF(NBYTE.EQ.8) THEN
-          DO I=1,4
-            WRITE(75,REC=IBSTP+I) RDES8(I)
-          ENDDO
-          IBSTP=IBSTP+4
-          DO I=1,3
-            WRITE(75,REC=IBSTP+I) RID8(I)
-          ENDDO
-          IBSTP=IBSTP+3
-          DO I=1,3
-            WRITE(75,REC=IBSTP+I) AID8(I)
-          ENDDO
-          IBSTP=IBSTP+3
-        ENDIF
-        WRITE(75,REC=IBSTP+1) NTRSPB
-        WRITE(75,REC=IBSTP+2) NSTAE
-        WRITE(75,REC=IBSTP+3) DT*NSPOOLE
-        WRITE(75,REC=IBSTP+4) NSPOOLE
-        WRITE(75,REC=IBSTP+5) 1
-        IBSTP=IBSTP+5
-        CLOSE(75)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-      ENDIF
-      IF ((NDDT.NE.0).AND.(NOUTE.EQ.-1)) THEN
+               IF(NTCYSB.LT.ITHS) NTCYSB=NTCYSB+NSPOOLE
+               IF(NSPOOLE.NE.0) NTRSPB=(NTCYFB-NTCYSB)/NSPOOLE
+            ENDIF
+         WRITE(16,1036)
+ 1036    FORMAT(//,' A NEW BATHYMETRY STATION FILE WILL BE STARTED')
+         ENDIF
          if (write_local_files.eqv..false.) then
-            CALL OPEN_GBL_FILE(75, TRIM(GLOBALDIR)//'/'//'fort.75',
-     $         NSTAE_G, NSTAE, HEADER61)
+            fname = TRIM(GLOBALDIR)//'/'//'fort.75'
+            numRecordsPerSnap = NSTAE_G
          else
-            CALL OPEN_GBL_FILE(75, TRIM(LOCALDIR)//'/'//'fort.75',
-     $         NSTAE_G, NSTAE, HEADER61)         
-         endif 
-        IESTP=2
-      ENDIF
-
-      IF ((NDDT.NE.0).AND.(NOUTE.EQ.2)) THEN
-        OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
+            fname = TRIM(LOCALDIR)//'/'//'fort.75'
+            numRecordsPerSnap = NSTAE
+         endif
+         select case(noute)
+         case(-2)
+            OPEN(75,FILE=TRIM(fname),ACCESS='DIRECT',RECL=NBYTE)
+            call writeBinaryOutputFileHeader(75, 1, IBSTP,
+     &         NTRSPB, NSTAE, NSPOOLE)
+            CLOSE(75)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+         case(-1)
+            CALL OPEN_GBL_FILE(75, TRIM(fname),NSTAE_G, NSTAE, HEADER61)
+            IESTP=2
+         case(1)
+            inquire(file=trim(fname),exist=fileFound)
+            ! start anew if the file was not found
+            if (fileFound.eqv..false.) then
+               CALL OPEN_GBL_FILE(75, TRIM(fname),NSTAE_G, NSTAE, HEADER61)
+               IESTP=2
+            else
+               open(75,file=trim(fname),status='old',action='readwrite',
+     &            position='rewind', access='sequential')
+               call skipDownToAppendOutputFile(75,timeloc, numRecordsPerSnap,noute) 
+               close(75)
+            endif
+         case(2)
+            OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
      &                      ACCESS='DIRECT',RECL=NBYTE)
-c       WRITE(75,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-        CLOSE(75)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+c           WRITE(75,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+            CLOSE(75)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+         case default
+         end select
       ENDIF
 
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL ELEVATION OUTPUT FILE
 C...
-        WRITE(16,1046) IGEP,NSCOUGE
- 1046   FORMAT(//,1X,I8,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
+      WRITE(16,1046) IGEP,NSCOUGE
+ 1046 FORMAT(//,1X,I8,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'ELEVATION FILE BY THE TIME OF THE HOT START',
      &          /,8X,'SPOOL COUNTER =',I8)
 
-C....   TCM V50.66.01 ADDITIONS FOR TIME VARYING BATYMETRY
-C....   SET THESE VARIABLES FOR USE LATER 
-        IGBP = IGEP
-        NTCYSGB = NTCYSGE
-        NTCYFGB = NTCYFGE
-        NSCOUGB = NSCOUGE
+C.... TCM V50.66.01 ADDITIONS FOR TIME VARYING BATYMETRY
+C.... SET THESE VARIABLES FOR USE LATER 
+      IGBP = IGEP
+      NTCYSGB = NTCYSGE
+      NTCYFGB = NTCYFGE
+      NSCOUGB = NSCOUGE
 
-        IF(NOUTGE.LT.0) THEN
-          IGEP=0
-          NSCOUGE=0
-          IF((NTCYSGE.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
+      IF(NOUTGE.LT.0) THEN
+         IGEP=0
+         NSCOUGE=0
+         IF((NTCYSGE.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
             NTCYSGE=NTCYSGE+((REAL(ITHS)-REAL(NTCYSGE))/
      &              REAL(NSPOOLGE))*REAL(NSPOOLGE)
             IF(NTCYSGE.LT.ITHS) NTCYSGE=NTCYSGE+NSPOOLGE
-C     kmd48.33bc - changed NDSETSE for use of new DTDPHS
+C           kmd48.33bc - changed NDSETSE for use of new DTDPHS
             IF(DTDP.NE.DTDPHS) THEN
-              NDSETSE=((NTCYFGE*DTDP)-(NTCYSGE*DTDPHS))/
+               NDSETSE=((NTCYFGE*DTDP)-(NTCYSGE*DTDPHS))/
      &                (NSPOOLGE*DTDP)
             ELSE
-              NDSETSE=(NTCYFGE-NTCYSGE)/NSPOOLGE
+               NDSETSE=(NTCYFGE-NTCYSGE)/NSPOOLGE
             END IF
-            ENDIF
-          WRITE(16,1047)
- 1047     FORMAT(//,' A NEW GLOBAL ELEVATION FILE WILL BE STARTED')
-          ENDIF
+         ENDIF
+         WRITE(16,1047)
+ 1047    FORMAT(//,' A NEW GLOBAL ELEVATION FILE WILL BE STARTED')
+      ENDIF
 
-        IF(NOUTGE.EQ.-2) THEN
-          OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
+      IF(NOUTGE.EQ.-2) THEN
+         OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
      &          ACCESS='DIRECT',RECL=NBYTE)
-          IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-              WRITE(63,REC=IGEP+I) RDES4(I)
-              ENDDO
-            IGEP=IGEP+8
-            DO I=1,6
-              WRITE(63,REC=IGEP+I) RID4(I)
-              ENDDO
-            IGEP=IGEP+6
-            DO I=1,6
-              WRITE(63,REC=IGEP+I) AID4(I)
-              ENDDO
-            IGEP=IGEP+6
-            ENDIF
-          IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-              WRITE(63,REC=IGEP+I) RDES8(I)
-              ENDDO
-            IGEP=IGEP+4
-            DO I=1,3
-              WRITE(63,REC=IGEP+I) RID8(I)
-              ENDDO
-            IGEP=IGEP+3
-            DO I=1,3
-              WRITE(63,REC=IGEP+I) AID8(I)
-              ENDDO
-            IGEP=IGEP+3
-            ENDIF
-          WRITE(63,REC=IGEP+1) NDSETSE
-          WRITE(63,REC=IGEP+2) NP
-          WRITE(63,REC=IGEP+3) DT*NSPOOLGE
-          WRITE(63,REC=IGEP+4) NSPOOLGE
-          WRITE(63,REC=IGEP+5) 1
-          IGEP=IGEP+5
+         call writeBinaryOutputFileHeader(63, 1, IGEP,
+     &       NDSETSE, NP, NSPOOLGE)
           CLOSE(63)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-        ENDIF
+      ENDIF
 
 Casey 090310: Added the possibility for NOUTGE = -4.
       IF((NOUTGE.EQ.-1).OR.(NOUTGE.EQ.-4)) THEN
@@ -3147,6 +2137,75 @@ C kmd48.33bc - information for writing out the sponge layer
          endif
          IGEP=2
       ENDIF
+      ! find proper place to append
+      if ((noutge.eq.1).or.(noutge.eq.4)) then
+         ! fort.63
+         if (write_local_files.eqv..false.) then
+            fname = TRIM(GLOBALDIR)//'/'//'fort.63'
+            numRecordsPerSnap = NP_G
+         else
+            fname = TRIM(LOCALDIR)//'/'//'fort.63'
+            numRecordsPerSnap = NP
+         endif
+         inquire(file=trim(fname),exist=fileFound)
+         ! start anew if the file was not found
+         if (fileFound.eqv..false.) then
+            CALL OPEN_GBL_FILE(63, TRIM(fname),NP_G, NP, HEADER63)
+            IGEP=2
+         else
+            open(63,file=trim(fname),status='old',action='readwrite',
+     &            position='rewind', access='sequential')
+            call skipDownToAppendOutputFile(63,timeloc, numRecordsPerSnap,noutge) 
+            close(63)
+         endif
+         ! fort.90 (tau0)
+         if (outputtau0) then
+            if (write_local_files.eqv..false.) then
+               fname = TRIM(GLOBALDIR)//'/'//'fort.90'
+               numRecordsPerSnap = NP_G
+            else
+               fname = TRIM(LOCALDIR)//'/'//'fort.90'
+               numRecordsPerSnap = NP
+            endif
+            inquire(file=trim(fname),exist=fileFound)
+            ! start anew if the file was not found
+            if (fileFound.eqv..false.) then
+               CALL writeDomainHeader(90,
+     &                 TRIM(LOCALDIR)//'/'//'fort.90',
+     $                  NP_G, NP, 'Tau0      ')
+               IGEP=2
+            else
+               open(90,file=trim(fname),status='old',action='readwrite',
+     &            position='rewind', access='sequential')
+               call skipDownToAppendOutputFile(90,timeloc, numRecordsPerSnap,noutge) 
+               close(90)
+            endif
+         endif
+         ! fort.92 sponge layer
+         if (outputsponge) then
+            if (write_local_files.eqv..false.) then
+               fname = TRIM(GLOBALDIR)//'/'//'fort.92'
+               numRecordsPerSnap = NP_G
+            else
+               fname = TRIM(LOCALDIR)//'/'//'fort.92'
+               numRecordsPerSnap = NP
+            endif
+            inquire(file=trim(fname),exist=fileFound)
+            ! start anew if the file was not found
+            if (fileFound.eqv..false.) then
+               CALL writeDomainHeader(92,
+     &                TRIM(LOCALDIR)//'/'//'fort.92',
+     $                NP_G, NP, 'sponge      ')
+               IGEP=2
+            else
+               open(92,file=trim(fname),status='old',action='readwrite',
+     &            position='rewind', access='sequential')
+               call skipDownToAppendOutputFile(92,timeloc, numRecordsPerSnap,noutge) 
+               close(92)
+            endif
+         endif
+      endif
+      
       IF(NOUTGE.EQ.2) THEN
           OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
      &          ACCESS='DIRECT',RECL=NBYTE)
@@ -3183,42 +2242,10 @@ C  kmd48.33bc - change the NDSETSV for the change in the DTDP
         IF(NOUTGV.EQ.-2) THEN
           OPEN(64,FILE=TRIM(LOCALDIR)//'/'//'fort.64',
      &          ACCESS='DIRECT',RECL=NBYTE)
-          IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-              WRITE(64,REC=IGVP+I) RDES4(I)
-              ENDDO
-            IGVP=IGVP+8
-            DO I=1,6
-              WRITE(64,REC=IGVP+I) RID4(I)
-              ENDDO
-            IGVP=IGVP+6
-            DO I=1,6
-              WRITE(64,REC=IGVP+I) AID4(I)
-              ENDDO
-            IGVP=IGVP+6
-            ENDIF
-          IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-              WRITE(64,REC=IGVP+I) RDES8(I)
-              ENDDO
-            IGVP=IGVP+4
-            DO I=1,3
-              WRITE(64,REC=IGVP+I) RID8(I)
-              ENDDO
-            IGVP=IGVP+3
-            DO I=1,3
-              WRITE(64,REC=IGVP+I) AID8(I)
-              ENDDO
-            IGVP=IGVP+3
-            ENDIF
-          WRITE(64,REC=IGVP+1) NDSETSV
-          WRITE(64,REC=IGVP+2) NP
-          WRITE(64,REC=IGVP+3) DT*NSPOOLGV
-          WRITE(64,REC=IGVP+4) NSPOOLGV
-          WRITE(64,REC=IGVP+5) 2
-          IGVP=IGVP+5
+          call writeBinaryOutputFileHeader(64, 2, IGVP,
+     &        NDSETSV, NP, NSPOOLGV)
           CLOSE(64)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-        ENDIF
+       ENDIF
       IF((NOUTGV.EQ.-1).OR.(NOUTGV.EQ.-4)) THEN
          if (write_local_files.eqv..false.) then 
             CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
@@ -3236,6 +2263,27 @@ c         WRITE(64,REC=ITEMPSTP+1) NDSETSV  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
           CLOSE(64)                         ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
 
+      IF((NOUTGV.EQ.1).or.(NOUTGV.eq.4)) THEN
+         ! append fort.64 
+         if (write_local_files.eqv..false.) then
+            fname = TRIM(GLOBALDIR)//'/'//'fort.64'
+            numRecordsPerSnap = NP_G
+         else
+            fname = TRIM(LOCALDIR)//'/'//'fort.64'
+            numRecordsPerSnap = NP
+         endif
+         inquire(file=trim(fname),exist=fileFound)
+         ! start anew if the file was not found
+         if (fileFound.eqv..false.) then
+            CALL OPEN_GBL_FILE(64, TRIM(fname),NP_G, NP, HEADER64)
+            IGVP=2
+         else
+            open(64,file=trim(fname),status='old',action='readwrite',
+     &            position='rewind', access='sequential')
+            call skipDownToAppendOutputFile(64,timeloc, numRecordsPerSnap,noutgv) 
+            close(64)
+         endif
+      endif
 
 
 Cobell - Open the fort.77 (weir elevation change) if necessary
@@ -3260,40 +2308,8 @@ Cobell - Open the fort.77 (weir elevation change) if necessary
         IF(NOUT_TVW.EQ.-2) THEN
           OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
      &          ACCESS='DIRECT',RECL=NBYTE)
-          IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-              WRITE(77,REC=IG_TVW+I) RDES4(I)
-              ENDDO
-            IG_TVW=IG_TVW+8
-            DO I=1,6
-              WRITE(77,REC=IG_TVW+I) RID4(I)
-              ENDDO
-            IG_TVW=IG_TVW+6
-            DO I=1,6
-              WRITE(77,REC=IG_TVW+I) AID4(I)
-            ENDDO
-            IG_TVW=IG_TVW+6
-          ENDIF
-          IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-              WRITE(77,REC=IG_TVW+I) RDES8(I)
-            ENDDO
-            IG_TVW=IG_TVW+4
-            DO I=1,3
-              WRITE(77,REC=IG_TVW+I) RID8(I)
-            ENDDO
-            IG_TVW=IG_TVW+3
-            DO I=1,3
-              WRITE(77,REC=IG_TVW+I) AID8(I)
-            ENDDO
-            IG_TVW=IG_TVW+3
-          ENDIF
-          WRITE(77,REC=IG_TVW+1) NDSETS_TVW
-          WRITE(77,REC=IG_TVW+2) NP
-          WRITE(77,REC=IG_TVW+3) DT*NSPOOL_TVW
-          WRITE(77,REC=IG_TVW+4) NSPOOL_TVW
-          WRITE(77,REC=IG_TVW+5) 1
-          IG_TVW=IG_TVW+5
+          call writeBinaryOutputFileHeader(77, 1, IG_TVW,
+     &        NDSETS_TVW, NP, NSPOOL_TVW)
           CLOSE(77)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
         IF((NOUT_TVW.EQ.-1).OR.(NOUT_TVW.EQ.-4)) THEN
@@ -3338,40 +2354,8 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
         IF(NOUTGC.EQ.-2) THEN
           OPEN(83,FILE=TRIM(LOCALDIR)//'/'//'fort.83',
      &           ACCESS='DIRECT',RECL=NBYTE)
-          IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-              WRITE(83,REC=IGCP+I) RDES4(I)
-              ENDDO
-            IGCP=IGCP+8
-            DO I=1,6
-              WRITE(83,REC=IGCP+I) RID4(I)
-              ENDDO
-            IGCP=IGCP+6
-            DO I=1,6
-              WRITE(83,REC=IGCP+I) AID4(I)
-              ENDDO
-            IGCP=IGCP+6
-            ENDIF
-          IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-              WRITE(83,REC=IGCP+I) RDES8(I)
-              ENDDO
-            IGCP=IGCP+4
-            DO I=1,3
-              WRITE(83,REC=IGCP+I) RID8(I)
-              ENDDO
-            IGCP=IGCP+3
-            DO I=1,3
-              WRITE(83,REC=IGCP+I) AID8(I)
-              ENDDO
-            IGCP=IGCP+3
-            ENDIF
-          WRITE(83,REC=IGCP+1) NDSETSC
-          WRITE(83,REC=IGCP+2) NP
-          WRITE(83,REC=IGCP+3) DT*NSPOOLGC
-          WRITE(83,REC=IGCP+4) NSPOOLGC
-          WRITE(83,REC=IGCP+5) 1
-          IGCP=IGCP+5
+          call writeBinaryOutputFileHeader(83, 1, IGCP,
+     &        NDSETSC, NP, NSPOOLGC)    
           CLOSE(83)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
         IF(NOUTGC.EQ.-1) THEN
@@ -3578,40 +2562,8 @@ Casey 090310: Added the output of radiation stress gradients.
            IF(NOUTGW.EQ.-2)THEN
               OPEN(164,FILE=TRIM(LOCALDIR)//'/'//'rads.64',
      &            ACCESS='DIRECT',RECL=NBYTE)
-              IF(NBYTE.EQ.4) THEN
-                 DO I=1,8
-                    WRITE(164,REC=IGRadS+I) RDES4(I)
-                 ENDDO
-                 IGRadS=IGRadS+8
-                 DO I=1,6
-                    WRITE(164,REC=IGRadS+I) RID4(I)
-                 ENDDO
-                 IGRadS=IGRadS+6
-                 DO I=1,6
-                    WRITE(164,REC=IGRadS+I) AID4(I)
-                 ENDDO
-                 IGRadS=IGRadS+6
-              ENDIF
-              IF(NBYTE.EQ.8) THEN
-                 DO I=1,4
-                    WRITE(164,REC=IGRadS+I) RDES8(I)
-                 ENDDO
-                 IGRadS=IGRadS+4
-                 DO I=1,3
-                    WRITE(164,REC=IGRadS+I) RID8(I)
-                 ENDDO
-                 IGRadS=IGRadS+3
-                 DO I=1,3
-                    WRITE(164,REC=IGRadS+I) AID8(I)
-                 ENDDO
-                 IGRadS=IGRadS+3
-              ENDIF
-              WRITE(164,REC=IGRadS+1) NDSETSW
-              WRITE(164,REC=IGRadS+2) NP
-              WRITE(164,REC=IGRadS+3) DT*NSPOOLGW
-              WRITE(164,REC=IGRadS+4) NSPOOLGW
-              WRITE(164,REC=IGRadS+5) 2
-              IGRadS=IGRadS+5
+              call writeBinaryOutputFileHeader(164, 2, IGRadS,
+     &            NDSETSW, NP, NSPOOLGW)
               CLOSE(164)                    ! DO THIS TO FLUSH THE WRITE BUFFER
            ENDIF
            IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
@@ -3626,6 +2578,89 @@ Casey 090310: Added the output of radiation stress gradients.
            ENDIF
         ENDIF
 !#endif
+
+      IF ((NOUTGW.EQ.1).or.(NOUTGW.eq.4)) THEN
+         ! append fort.73 
+         if (write_local_files.eqv..false.) then
+            fname = TRIM(GLOBALDIR)//'/'//'fort.73'
+            numRecordsPerSnap = NP_G
+         else
+            fname = TRIM(LOCALDIR)//'/'//'fort.73'
+            numRecordsPerSnap = NP
+         endif
+         inquire(file=trim(fname),exist=fileFound)
+         ! start anew if the file was not found
+         if (fileFound.eqv..false.) then
+            CALL OPEN_GBL_FILE(73, TRIM(fname),NP_G, NP, HEADER73)
+            IGPP=2
+         else
+            open(73,file=trim(fname),status='old',action='readwrite',
+     &            position='rewind', access='sequential')
+            call skipDownToAppendOutputFile(73,timeloc, numRecordsPerSnap,noutgw) 
+            close(73)
+         endif
+         ! append fort.74 
+         if (write_local_files.eqv..false.) then
+            fname = TRIM(GLOBALDIR)//'/'//'fort.74'
+            numRecordsPerSnap = NP_G
+         else
+            fname = TRIM(LOCALDIR)//'/'//'fort.74'
+            numRecordsPerSnap = NP
+         endif
+         inquire(file=trim(fname),exist=fileFound)
+         ! start anew if the file was not found
+         if (fileFound.eqv..false.) then
+            CALL OPEN_GBL_FILE(74, TRIM(fname),NP_G, NP, HEADER74)
+            IGWP=2
+         else
+            open(74,file=trim(fname),status='old',action='readwrite',
+     &            position='rewind', access='sequential')
+            call skipDownToAppendOutputFile(74,timeloc, numRecordsPerSnap,noutgw) 
+            close(74)
+         endif
+         ! append wave radiation stresses
+         IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
+            if (write_local_files.eqv..false.) then
+               fname = TRIM(GLOBALDIR)//'/'//'rads.64'
+               numRecordsPerSnap = NP_G
+            else
+               fname = TRIM(LOCALDIR)//'/'//'rads.64'
+               numRecordsPerSnap = NP
+            endif
+            inquire(file=trim(fname),exist=fileFound)
+            ! start anew if the file was not found
+            if (fileFound.eqv..false.) then
+               CALL OPEN_GBL_FILE(164, TRIM(fname),NP_G, NP, HEADER74)
+               IGWP=2
+            else
+               open(164,file=trim(fname),status='old',action='readwrite',
+     &            position='rewind', access='sequential')
+               call skipDownToAppendOutputFile(164,timeloc, numRecordsPerSnap,noutgw) 
+               close(164)
+            endif
+         endif
+         ! append ice
+         IF (NCICE.NE.0) THEN
+            if (write_local_files.eqv..false.) then
+               fname = TRIM(GLOBALDIR)//'/'//'fort.93'
+               numRecordsPerSnap = NP_G
+            else
+               fname = TRIM(LOCALDIR)//'/'//'fort.93'
+               numRecordsPerSnap = NP
+            endif
+            inquire(file=trim(fname),exist=fileFound)
+            ! start anew if the file was not found
+            if (fileFound.eqv..false.) then
+               CALL OPEN_GBL_FILE(93, TRIM(fname),NP_G, NP, HEADER93)
+               IGIP=2
+            else
+               open(164,file=trim(fname),status='old',action='readwrite',
+     &            position='rewind', access='sequential')
+               call skipDownToAppendOutputFile(93,timeloc, numRecordsPerSnap,noutgw) 
+               close(93)
+            endif
+         endif
+      endif
 
         IF(NOUTGW.EQ.2) THEN
           open(73,file=TRIM(LOCALDIR)//'/'//'fort.73',
@@ -3675,40 +2710,8 @@ C...
         IF ((NDDT.NE.0).AND.(NOUTGE.EQ.-2)) THEN
            OPEN(76,FILE=TRIM(LOCALDIR)//'/'//'fort.76',
      &          ACCESS='DIRECT',RECL=NBYTE)
-           IF(NBYTE.EQ.4) THEN
-              DO I=1,8
-                WRITE(76,REC=IGBP+I) RDES4(I)
-              ENDDO
-              IGBP=IGBP+8
-              DO I=1,6
-                 WRITE(76,REC=IGBP+I) RID4(I)
-              ENDDO
-              IGBP=IGBP+6
-              DO I=1,6
-                 WRITE(76,REC=IGBP+I) AID4(I)
-              ENDDO
-              IGBP=IGBP+6
-           ENDIF
-           IF(NBYTE.EQ.8) THEN
-              DO I=1,4
-                 WRITE(76,REC=IGBP+I) RDES8(I)
-              ENDDO
-              IGBP=IGBP+4
-              DO I=1,3
-                 WRITE(76,REC=IGBP+I) RID8(I)
-              ENDDO
-              IGBP=IGBP+3
-              DO I=1,3
-                 WRITE(76,REC=IGBP+I) AID8(I)
-              ENDDO
-              IGBP=IGBP+3
-           ENDIF
-           WRITE(76,REC=IGBP+1) NDSETSE
-           WRITE(76,REC=IGBP+2) NP
-           WRITE(76,REC=IGBP+3) DT*NSPOOLGE
-           WRITE(76,REC=IGBP+4) NSPOOLGE
-           WRITE(76,REC=IGBP+5) 1
-           IGBP=IGBP+5
+           call writeBinaryOutputFileHeader(76, 2, IGBP,
+     &            NDSETSE, NP, NSPOOLGE)
            CLOSE(76)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
 
@@ -3723,6 +2726,31 @@ C...
            endif
            IGBP=2
         ENDIF
+        
+      ! append time varying bathy
+      IF ((nddt.NE.0).and.((noutge.eq.1).or.(noutge.eq.4))) THEN
+         if (write_local_files.eqv..false.) then
+            fname = TRIM(GLOBALDIR)//'/'//'fort.76'
+            numRecordsPerSnap = NP_G
+         else
+            fname = TRIM(LOCALDIR)//'/'//'fort.76'
+            numRecordsPerSnap = NP
+         endif
+         inquire(file=trim(fname),exist=fileFound)
+         ! start anew if the file was not found
+         if (fileFound.eqv..false.) then
+            CALL OPEN_GBL_FILE(76, TRIM(fname),NP_G, NP, HEADER63)
+            IGBP=2
+         else
+            open(76,file=trim(fname),status='old',action='readwrite',
+     &            position='rewind', access='sequential')
+            call skipDownToAppendOutputFile(76,timeloc, numRecordsPerSnap,noutge) 
+            close(76)
+         endif
+      endif
+        
+        
+        
         IF ((NDDT.NE.0).AND.(NOUTGE.EQ.2)) THEN
            OPEN(76,FILE=TRIM(LOCALDIR)//'/'//'fort.76',
      &          ACCESS='DIRECT',RECL=NBYTE)
@@ -3756,7 +2784,27 @@ c          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO B
 
       ! jgf52.08.03: Reading of min/max data moved to initOutput2D()
       ! subroutine in write_output module. 
-      
+         
+      ! jgf: Added init for water level offset output file 
+      if ( (NOUTGE.eq.-1).and.(usingWaterLevelOffset.eqv..true.) ) then
+         if (write_local_files.eqv..true.) then
+            call writeDomainHeader(108,trim(localdir)//'/'//
+     &           'offset.63',NP_G, NP, 'offset     ')
+         else
+              call writeDomainHeader(108,trim(globaldir)//'/'//
+     &           'offset.63',NP_G, NP, 'offset     ')
+         endif
+      endif
+      ! jgf: Added init for water level offset output file 
+      if ( (NOUTE.eq.-1).and.(usingWaterLevelOffset.eqv..true.) ) then
+         if (write_local_files.eqv..true.) then
+            call writeStationHeader(109,trim(localdir)//'/'//
+     &           'offset.61',NSTAE_G, NSTAE, 'offset     ')
+         else
+              call writeStationHeader(109,trim(globaldir)//'/'//
+     &           'offset.61',NSTAE_G, NSTAE, 'offset     ')
+         endif
+      endif
 
       ! tcmv51.27 20140502 Added to remove this nodal attribute
       ! as it is only used at Cold Start but read at hot start as well
@@ -3767,9 +2815,6 @@ c          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO B
       ENDIF
 
  1112 FORMAT(/,1X,79('_'))
- 1197 FORMAT(/,1X,'THE E29 MET GRID INTERPOLATING FACTORS ARE ',
-     &                'BEING COMPUTED ')
- 1198     FORMAT(1X,'FINISHED COMPUTING E29 INTERPOLATING FACTORS',/)
  3220 FORMAT(1X,A32,2X,A24,2X,A24)
  3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
 C

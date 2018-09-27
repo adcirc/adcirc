@@ -34,8 +34,8 @@ C---------------------------------------------------------------------
      &   bcts14_ary, agrid, aperiodic_bc_ts, bndbcriver, exist_bc_ts, 
      &   exist_flux, iden, mnbou, mnvel, nbou, nboumsg, nelg, neta, 
      &   netamsg, nfover, nnodg, nope, nopemsg, nvel, nvelmsg, nweir, 
-     &   river_above_msl, numLBCodeValues, nfluxf
-
+     &   river_above_msl, numLBCodeValues, nfluxf, node_dict, labels
+      use hashtable
       use memory_usage
       implicit none
 
@@ -44,6 +44,7 @@ C---------------------------------------------------------------------
       INTEGER DISC,BBN,IBP,I1
       INTEGER MAXNEIGH
       INTEGER NUMLINES
+      INTEGER :: n1,n2,n3
 c
 c Dummy variables
 c
@@ -74,27 +75,35 @@ C
 c     READ(14,80) NSIZES
 c     READ(NSIZES,*) NELG,NNODG
 c     CALL GETMSG(NSIZES,SIZEMSG)
+     
+C--Initialize hashtable
+      ALLOCATE ( labels(1:NNODG) ) 
+      CALL dict(node_dict,NNODG)
 C
 C--Read Nodal Coordinates and Bathymetry
 C  If ICS=2 Will Convert later in read15
 C
       NUMLINES=2
       DO I = 1,NNODG
-         READ(14,*) J,X(I),Y(I),DP(I)
-         IF (J.NE.I) THEN
+         READ(14,*) labels(I),X(I),Y(I),DP(I)
+         IF (labels(I).NE.I) THEN
             print *, I,J
             STOP 'Node Numbering not in Sequential Order'
          ENDIF
+         call add_ipair(node_dict,labels(I),I)
       ENDDO
 C
 C--Read Element Connectivity Table
 C
        DO I = 1,NELG
-          READ(14,*) J,ITEMP,NNEG(1,I),NNEG(2,I),NNEG(3,I)
+          READ(14,*) J,ITEMP,n1,n2,n3
           IF (J.NE.I) THEN
             print *, I,J
             STOP 'Element Numbering not Sequential'
-          ENDIF
+          ENDIF 
+          NNEG(1,I) = find(node_dict,n1)
+          NNEG(2,I) = find(node_dict,n2)
+          NNEG(3,I) = find(node_dict,n3)
        ENDDO
       NUMLINES=NUMLINES+NNODG+NELG
 C...
@@ -120,7 +129,8 @@ C...
          NUMLINES=NUMLINES+1
          READ(NVDLLMSG(K),*) NVDLL(K)
          DO I=1,NVDLL(K)
-            READ(14,*) NBDV(K,I)
+            READ(14,*) n1 
+            NBDV(K,I) = find(node_dict,n1)
             NUMLINES=NUMLINES+1
          ENDDO
          J=J+NVDLL(K)
@@ -183,18 +193,21 @@ C
          select case(ITYPE)
          case(0,10,20,30,40,1,11,21,41)
             DO I=1,NVELL(K)
-               READ(14,*) NBVV(K,I)
+               READ(14,*) n1 
+               NBVV(K,I) = find(node_dict,n1)
               IBCONNR(K,I) = 0
             ENDDO
          case(3,13,23)
             DO I=1,NVELL(K)
-               READ(14,*) NBVV(K,I),BAR1(K,I),BAR2(K,I)
+               READ(14,*) n1,BAR1(K,I),BAR2(K,I)
+               NBVV(K,I) = find(node_dict,n1)
               IBCONNR(K,I) = 0
             ENDDO
          case(4,24)
             DO I=1,NVELL(K)
-               READ(14,*) NBVV(K,I),IBCONNR(K,I),
+               READ(14,*) n1,IBCONNR(K,I),
      &                    BAR1(K,I),BAR2(K,I),BAR3(K,I)
+               NBVV(K,I) = find(node_dict,n1)
                !--Construct List of WEIR nodes and their duals
                NWEIR = NWEIR+1
                WEIR(NWEIR) = NBVV(K,I)
@@ -202,9 +215,11 @@ C
             ENDDO
          case(5,25)
             DO I =1,NVELL(K)
-               READ(14,*) NBVV(K,I),IBCONNR(K,I),
+               READ(14,*) n1,n2, 
      &                   BAR1(K,I),BAR2(K,I),BAR3(K,I),
      &                   BAR4(K,I),BAR5(K,I),BAR6(K,I)
+               NBVV(K,I) = find(node_dict,n1)
+               IBCONNR(K,I) = find(node_dict,n2)
                !--Construct List of WEIR nodes and their duals
                NWEIR = NWEIR+1
                WEIR(NWEIR) = NBVV(K,I)
@@ -214,7 +229,8 @@ C
            NFLUXF=1 !jgf51.52.23
            DO I=1,NVELL(K)
               EXIST_FLUX = EXIST_FLUX + 1
-              READ(14,*) NBVV(K,I)
+              READ(14,*) n1
+              NBVV(K,I) = find(node_dict,n1)
               IBCONNR(K,I) = 0
 !kmd - added river boundary conditions for baroclinic
               IF (BndBCRiver) THEN
@@ -278,7 +294,8 @@ c
             case(2,12,22,32,52)
                DO I=1, DNVELL(K)
                   EXIST_FLUX = EXIST_FLUX + 1
-                  READ(14,*) DNBVV(K,I)
+                  READ(14,*) n1
+                  DNBVV(K,I) = find(node_dict,n1)
                   FLUX14_ARY(EXIST_FLUX) = DNBVV(K,I)
 ! kmd - added in boundary conditions for rivers in a baroclinic simulation
                   IF (BC_Rivers) THEN
@@ -291,7 +308,8 @@ c
                ENDDO
             case default
                DO I=1, DNVELL(K)
-                  READ(14,*) DNBVV(K,I)
+                  READ(14,*) n1
+                  DNBVV(K,I) = find(node_dict,n1)
                ENDDO
             end select
             BC_Rivers = .FALSE.  ! kmd - reset logic for next river boundary segment
@@ -413,7 +431,8 @@ C---------------------------------------------------------------------
       USE GLOBAL, ONLY : parse, a2f, hss, screenUnit, STATNAME,
      &                   STATNAMEV, STATNAMEM, STATNAMEC, ERROR, DEBUG,
      &                   allMessage, setMessageSource, deg2rad,
-     &                   unsetMessageSource, INFO, logMessage
+     &                   unsetMessageSource, INFO, logMessage,
+     &                   scratchMessage
       USE HARM, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
      &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,
      &                 IHARIND, ALLOC_MAIN14, CHARMV
@@ -461,7 +480,14 @@ C...tcm v51.20.03 Local variables for external station location files
       namelist /wetDryControl/ outputNodeCode, outputNOFF, noffActive
       ! jgf52.08.02 : For inundation output files. 
       namelist /inundationOutputControl/ inundationOutput, inunThresh
-
+C
+C.....tcm v52.30.01 added for Smag_Control
+      INTEGER :: IOS_Smag = 0
+      ! jgf: Added support for water level offset
+      namelist /offsetControl/ offsetFileName, offsetSkipSnaps, 
+     &  offsetMultiplier, offsetRampStart, offsetRampEnd,
+     &  offsetRampReferenceTime
+      
 c.....tcm v51.20.03 initialize external station location specifications
 C..... to false, meaning if locations are supplied they are in the fort.15 
 C..... file.
@@ -475,7 +501,7 @@ C
       found_tvw_nml = .false.
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       FOUND_WC_NML = .FALSE.
-
+      foundOffsetControlNamelist = .false.
 C
       call setMessageSource("read15")
 #ifdef READ_GLOBAL_TRACE
@@ -580,8 +606,69 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
          call logMessage(INFO,
      &         'The inundationOutput namelist was not found.')
       endif
-           
       rewind(15)  !Return to the top of the fort.15 file
+      !
+      !jgf:   O F F S E T   C O N T R O L   N A M E L I S T
+      read(unit=15,nml=offsetControl,iostat=ios)
+      select case(ios)
+      case(0) ! zero indicates success
+         foundOffsetControlNamelist = .true.
+         call logMessage(INFO,
+     &         'The offsetControl namelist was found.')
+      case(1:)
+         write(scratchMessage,'(a,i0,a)')
+     &      'Could not read offsetControl'//
+     &     ' namelist. The Fortran i/o error code was ',ios,'.'
+         call allMessage(ERROR,scratchMessage)
+         stop
+      case default
+         call logMessage(INFO,
+     &      'End-of-file when searching for offsetControl namelist.')
+      end select    
+      rewind(15)  !Return to the top of the fort.15 file
+
+c...  tcm v52.30.01 Addtions for Smagorinski Limits
+c...  read through the fort.15 file for the namelist (Smag_Control) for
+c...  the inputs for Smagorinski eddy viscosity limits.  This namelist must be 
+c...  at the bottom of the fort.15 file. If found, then set the appropriate
+c...  values (SMAG_COMP_FLAG,SMAG_UPPER_LIM,SMAG_LOWER_LIM) 
+c...  If the namelist is not there, then the Smagorinski Limits 
+c...  will not be used.
+C...
+C...  After this search and read, we will close the file and then reopen it
+c...  for further processing the traditional non-namelist components.
+C...
+      READ(UNIT = 15,NML = Smag_Control,IOSTAT = IOS_Smag)
+
+      IF (IOS_SMAG < 0) THEN
+c.....   it is possible for the namelist to be present in the file and occuring at the end
+c.....   of the file with no line breaks after the ending "\" which causes the iostat to
+c.....   return a negative value.  By checking to be sure a namelist variable was set to
+c....    a non-default value we can determine this was the case.
+         IF (SMAG_COMP_FLAG .eqv. .TRUE.) THEN
+!            WRITE(*,*) 'NAMELIST PRESENT, BUT AT THE END OF FILE WITH',
+!     &                 ' NO ADVANCING CHARACTER'
+            found_smag_nml = .true.
+         ELSE
+            call logMessage(INFO,
+     &         'The Smag_Control namelist was not found.')
+         ENDIF
+      ELSEIF (IOS_SMAG == 0) THEN
+!         WRITE(*,*) 'NAME LIST PRESENT AND CORRECT'
+         found_smag_nml = .true.
+      ELSE
+         found_smag_nml = .true.
+         WRITE(*,*)
+     & 'THERE WAS A PROBLEM PROCESSING THE Smag_Control NAMELIST'
+         WRITE(*,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCPREP NOW.'
+         STOP   !THERE IS a STOP HERE
+      ENDIF
+
+      REWIND(15)  !Return to the top of the fort.15 file (instead of closing then opening)
+c..
+
+
+
 
 
       READ(15,80) RUNDES
@@ -743,13 +830,14 @@ C     cf & cm added NWS=9: asymmetric hurricane wind model
 C     jie added NWS=20: generalized asymmetric vortex model
 C     sb46.28sb01 added NWS=12: OWI format
 C     jgf49.0804 Added NWS29 VortexOWI format.
+C     jgf: Added NWS30.
         IF((NWS.NE.0).AND.    (NWS.NE.1 ) .AND.(ABS(NWS).NE.2).AND.
      &       (NWS.NE.3).AND.(ABS(NWS).NE.4) .AND.(ABS(NWS).NE.5).AND.
      &       (ABS(NWS).NE.45).AND.(ABS(NWS).NE.6).AND.
      &       (ABS(NWS).NE.8).AND.(ABS(NWS).NE.15).AND. !jgf50.38.05 Added NWS=15
      &       (ABS(NWS).NE.12) .AND. (ABS(NWS).NE.19).AND.
-     &       (ABS(NWS).NE.20) .AND.
      &       (ABS(NWS).NE.17) .AND.                    !added by saeed NWS=17 for NOUPC Cap
+     &       (ABS(NWS).NE.20) .AND.(abs(NWS).ne.30).and.(NWS.NE.10).and.
      &       (ABS(NWS).NE.29).and. (abs(NWS).ne.16))  THEN
            print *,"ERROR: Value for NWS not supported by parallel code"
            stop
@@ -885,6 +973,7 @@ C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
       IF((ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.5)
      &     .OR.(ABS(NWS).EQ.45).OR.(ABS(NWS).EQ.8).OR.
      &         (ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12)
+     &     .OR.(NWS.EQ.10) !yf: Added NWS=10 for GFS Met
      &     .OR.(ABS(NWS).EQ.15) !jgf50.38.05: Added NWS=15 for HWind.
      &     .OR.(ABS(NWS).EQ.20) !jie: Added NWS=20 for GAHM
      &     .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.16)) THEN
@@ -914,7 +1003,8 @@ C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
 C
 C     jgf49.0804 Added NWS29 VortexOWI -- don't think we need to
 C     parse out the WTIMINC or other parameters.
-      IF (ABS(NWS).EQ.29 ) THEN
+      ! jgf: Added NWS30.
+      IF (((ABS(NWS)).EQ.29).or.(abs(NWS).eq.30)) THEN
          READ(15,80) WSMSG1
       ENDIF
 
@@ -1177,6 +1267,7 @@ C...
 C
       READ(15,80) NSTAEMSG
       READ(NSTAEMSG,*) NSTAE
+      write(6,*) 'nstae=',nstae ! jgfdebug
       !tcm v51.20.03 -- addition for external elevation station file
       if (NSTAE < 0 ) then
          WRITE(*,*) "External File Used for Elevation Station Locations"
@@ -1647,7 +1738,7 @@ C
       READ(HARPARMSG,*) THAS,THAF,NHAINC,FMV
       READ(15,80) OUTHARMSG
       READ(OUTHARMSG,*) NHASE,NHASV,NHAGE,NHAGV
-      IF ((NHASE.LT.0).OR.(NHASE.GT.1)) THEN
+      IF ((NHASE.LT.0).OR.(NHASE.GT.5)) THEN
         print *, "NHASE does not have an allowable value"
         IF (NFOVER.EQ.1) THEN
           print *, "Program will override an reset NHASE=0 "
@@ -1657,7 +1748,7 @@ C
         ENDIF
       ENDIF
 C
-      IF ((NHASV.LT.0).OR.(NHASV.GT.1)) THEN
+      IF ((NHASV.LT.0).OR.(NHASV.GT.5)) THEN
          print *, "NHASV does not have an allowable value"
          IF (NFOVER.EQ.1) THEN
            print *, "Program will override an reset NHASV=0 "
@@ -1667,7 +1758,7 @@ C
          ENDIF
       ENDIF
 C
-      IF ((NHAGE.LT.0).OR.(NHAGE.GT.1)) THEN
+      IF ((NHAGE.LT.0).OR.(NHAGE.GT.5)) THEN
         print *, "NHAGE does not have an allowable value"
         IF (NFOVER.EQ.1) THEN
           print *, "Program will override an reset NHAGE=0 "
@@ -1677,7 +1768,7 @@ C
         ENDIF
       ENDIF
 C
-      IF ((NHAGV.LT.0).OR.(NHAGV.GT.1)) THEN
+      IF ((NHAGV.LT.0).OR.(NHAGV.GT.5)) THEN
         print *, "NHAGV does not have an allowable value"
         IF (NFOVER.EQ.1) THEN
           print *, "Program will override an reset NHAGV=0 "

@@ -92,11 +92,10 @@ C
 C----------------------------------------------------------------------------
 C
       PROGRAM ADCPREP
-      USE GLOBAL, ONLY : screenUnit, myProc, initLogging, Rearth, deg2rad,
-     &   rad2deg
+      USE GLOBAL, ONLY : screenUnit, initLogging, Rearth, deg2rad, rad2deg
       USE SIZES, ONLY : meshFileName, meshFileNameSpecified, meshType, 
      &  ASCII, XDMF, naFileNameSpecified, naFileName, naType, controlFileName,
-     &  controlType, controlFileNameSpecified, globaldir
+     &  controlType, controlFileNameSpecified, globaldir, myproc
       USE SUBPREP, ONLY : readFort015prep
       USE PRE_GLOBAL
       USE VERSION
@@ -136,6 +135,7 @@ C
       HOT_LOCAL   = .FALSE.
       HOT_GLOBAL  = .FALSE.
       PREP_20 = .FALSE.
+      strictBoundaries = .false. 
       !PREP_88 = .FALSE.
       MNPROC = 0
 C
@@ -178,6 +178,8 @@ C     having to do a prep all and without having to add menu items).
                PREP_20 = .TRUE.
 !            CASE("--prep88")
 !               PREP_88 = .TRUE.
+            CASE("--strict-boundaries")
+               strictBoundaries = .true.
             CASE("--np")
                I = I + 1
                CALL GETARG(I,CMDLINEARG)
@@ -354,6 +356,8 @@ C
       USE PRE_GLOBAL
       use sizes, only : naType, meshType, controlType, ASCII, XDMF,
      &   naFileName, meshFileName, controlFileName, formatString
+      use global, only : logMessage, allMessage, setMessageSource, 
+     &                   unsetMessageSource, INFO, DEBUG
       use mesh, only : readMeshXDMF
       use subprep, only : subdomainOn, enforceBN, subPrep020, subPrep021,
      &   subPrep019
@@ -372,6 +376,14 @@ C
       logical(4) :: dir_result  !tcm v50.85
       INTEGER :: dir_error   !tcm v50.85 
 #endif
+      integer, parameter :: repartitionLimit = 100 ! give up after this
+      integer :: numPartitionAttempts ! number of attempts to partition mesh
+      logical :: partitionOK  ! true if partitioning has no issues
+
+      CALL setMessageSource("prepinput")
+#if defined(ALL_TRACE)
+      CALL allMessage(DEBUG,"Enter")
+#endif      
 
 C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
       if (PREP_13) then
@@ -472,11 +484,53 @@ C   -- initially read in within the READ14() subroutine.
 C
 C-- Partition Nodes with METIS 4.0 Graph Partition Library
 C
-      IF (PARTITION) THEN
-        CALL METIS()
-        print *, " "
-        print *, 'INFO: METIS has partitioned nodes'
-        GO TO 9999
+      if (partition) then
+         numPartitionAttempts = 0
+         allocate(boundaryWeights(mnp))
+         boundaryWeights(:) = 0
+         call metis()
+         if (strictBoundaries.eqv..true.) then
+            ! check for issues with subdomain boundaries 
+            partitionOK = .false. 
+            ! loop ends when the partitioning is successful or
+            ! the limit on the number of attempts has been reached 
+            do  
+               write(*,'(a,a)') 'INFO: Determining max number of nodes ',
+     &             'and elements on any subdomain.'
+               call domsize()
+               write(*,'(a)') 
+     &            'INFO: Allocating subdomain mesh mapping arrays.'
+               call alloc_main2()
+               write(*,'(a)') 
+     &            'INFO: Constructing subdomain mesh mapping arrays.'
+               call decomp()
+               write(*,'(a)') 
+     &            'INFO: Checking subdomain mesh mapping arrays.'
+               call checkMappings(partitionOK,numPartitionAttempts)
+               if (partitionOK.eqv..true.) then
+                  exit
+               else
+                  numPartitionAttempts = numPartitionAttempts + 1
+                  write(*,'(a,i0,a)') 'INFO: Partitioning attempt ',
+     &            numPartitionAttempts,' contains mapping array issues.'
+                  write(*,'(a,i0,a)') 
+     &            'INFO: The limit on partitioning attempts is ',
+     &            repartitionLimit,'.' 
+                  write(*,'(a)') 
+     &            'INFO: Modifying partition weights and trying again.'
+                  call dealloc_main2()
+               endif
+               if ( numPartitionAttempts.gt.repartitionLimit ) then
+                  write(*,'(a,i0,a)') 
+     &              'ERROR: Mesh partitioning has failed after ',
+     &               repartitionLimit,' attempts.'
+                  stop
+               endif 
+               call metis()
+            end do
+         endif
+         print *, 'INFO: METIS has partitioned nodes successfully.'
+         return
       ELSE
         print *, 'INFO: Opening file partmesh.txt'
         OPEN(990,FILE='partmesh.txt')
@@ -669,13 +723,15 @@ C
 C     sb46.28sb01 NWS=12 doesn't need fort.22 decomposition
 C     tcm_v49.04 NWS=3 and NWS=6 no longer need fort.22 decomposition
 C     jgf49.0804 NWS=29 does not need fort.22 decomposition.
+C     jgf: Added NWS=30 and changed to select/case.
 C     tcm v51.06.02 added NWS=16 GFDL Met Data
-!         IF (NWS.NE.0.AND.ABS(NWS).NE.12)  THEN
-         IF ((NWS.NE.0).AND.(ABS(NWS).NE.3).AND.
-     &      (ABS(NWS).NE.6).AND.(ABS(NWS).NE.12)
-     &      .AND.(ABS(NWS).NE.16).AND.(ABS(NWS).NE.17)    !saeed added for 17 
-     &      .AND.(ABS(NWS).NE.29))  THEN
-            print *, "Ready to Write Local UNIT 22 File for each PE"
+         select case(ABS(NWS))
+         case(3,6,12,16,29,30)
+            call logMessage(INFO,
+     &   'The meteorological data does not require domain decomposition')
+         case(1,2,4,5,45,7)
+            call logMessage(INFO,
+     &   'Ready to write subdomain fort.22 files.')
 C     jgf46.00 Added NWS=7
 C     jgfdebug46.02 Added NWS=45
 C     jgf46.02 Added NWS=8
@@ -684,14 +740,11 @@ C     cf & cm added NWS=9: asymmetric hurricane wind model
 C     rjw added NWS=19: asymmetric hurricane wind model v2.0
 C     jie added NWS=20: generalized asymmetric vortex model
 c     tcm_v49.04 NWS=3 and NWS=6 no longer need fort.22 decomposition
-            IF((NWS.EQ.1).OR.(ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.
-     &           (ABS(NWS).EQ.5).OR.(NWS.EQ.7).OR.
-     &           (ABS(NWS).EQ.45).and.(NWS.ne.17)  ) THEN   !saeed added for 17 
-               CALL PREP22()
-c           ELSEIF (NWS.EQ.10.OR.NWS.EQ.11) THEN
-c              CALL PREP200()
-            ENDIF
-         ENDIF
+            CALL PREP22()
+         case default
+            call logMessage(INFO,
+     &         'Subdomain fort.22 files will not be created.')
+         end select
       ENDIF
 C
 C-- If required write a Local Wave Stress file for each PE
@@ -759,9 +812,12 @@ C  kmd48.33bc add information for 3D baroclinic simulations
          END IF
       END IF
 
+C     WP 02.23.2018 Added to process the fort.24 SAL term file
+      IF (PREP_ALL) THEN 
+         IF (NTIP.eq.2) CALL PREP24()
+      END IF
 C
 C-- Save domain-decomposition information for post-processor
-C
 CC -- Start Addition by CF  8/2007
       IF (PREP_ALL) THEN
          print *, "Writing domain-decomposition file for post-processor"
@@ -772,6 +828,12 @@ CC -- Finish Addition by CF
 9999  CONTINUE
       print *, ""
       print *, "INFO: Finished pre-processing input files."
+
+#if defined(ALL_TRACE)
+      CALL allMessage(DEBUG,"Return")
+#endif      
+      CALL unsetMessageSource()
+
       RETURN
       END SUBROUTINE
 C---------------------------------------------------------------------------

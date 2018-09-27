@@ -46,22 +46,14 @@ MARK_AS_ADVANCED(CLEAR CMAKE_CXX_FLAGS_DEBUG CMAKE_C_FLAGS_DEBUG CMAKE_Fortran_F
 
 ###########################################################################
 #...Library paths
-IF(ENABLE_OUTPUT_NETCDF)
-    IF(NOT "$ENV{NETCDFHOME}" STREQUAL "") 
-        SET(NETCDFHOME "$ENV{NETCDFHOME}" CACHE STRING "netCDF home path containing lib and include")
-    ELSE(NOT "$ENV{NETCDFHOME}" STREQUAL "")
-        SET(NETCDFHOME "NETCDF-NOTFOUND" CACHE STRING "netCDF home path containing lib and include")
-    ENDIF(NOT "$ENV{NETCDFHOME}" STREQUAL "")
-ELSE(ENABLE_OUTPUT_NETCDF)
-    UNSET(NETCDFHOME CACHE)
-ENDIF(ENABLE_OUTPUT_NETCDF)
-
 IF(ENABLE_OUTPUT_XDMF)
-    IF(NOT "$ENV{XDMFHOME}" STREQUAL "") 
-        SET(XDMFHOME "$ENV{XDMFHOME}" CACHE STRING "XDMF home path containing lib and include")
-    ELSE(NOT "$ENV{XDMFHOME}" STREQUAL "")
+    IF(NOT ${XDMFHOME} STREQUAL "")
+        SET(XDMFHOME ${XDMFHOME} CACHE STRING "XDMF home path containing lib and include")
+    ELSEIF(NOT $ENV{XDMFHOME} STREQUAL "") 
+        SET(XDMFHOME $ENV{XDMFHOME} CACHE STRING "XDMF home path containing lib and include")
+    ELSE(NOT ${XDMFHOME} STREQUAL "")
         SET(XDMFHOME "XDMF-NOTFOUND" CACHE STRING "XDMF home path containing lib and include")
-    ENDIF(NOT "$ENV{XDMFHOME}" STREQUAL "")
+    ENDIF(NOT ${XDMFHOME} STREQUAL "")
 ELSE(ENABLE_OUTPUT_XDMF)
     UNSET(XDMFHOME CACHE)
 ENDIF(ENABLE_OUTPUT_XDMF)
@@ -84,10 +76,6 @@ SET(ADDITIONAL_FLAGS_UTLIITIES "" CACHE STRING "Additional flags for utility pro
 ###########################################################################
 #...Options enabled via compiler flags within the code
 OPTION(ENABLE_WARN_ELEV_DEBUG "Enable writing of the fort.69 debug file" OFF)
-
-IF(BUILD_ADCSWAN OR BUILD_PADCSWAN)
-    OPTION(ENABLE_SWAN_MODIFIED_FRICTION "Enable Ethan/Joannes' modified friction" OFF)
-ENDIF(BUILD_ADCSWAN OR BUILD_PADCSWAN)
 
 OPTION(IBM    "Format code for IBM based architectures"    OFF)
 OPTION(SGI    "Format code for SGI based architectures"    OFF)
