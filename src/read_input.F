@@ -1346,7 +1346,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
          WRITE(16,237) NWS
  237     FORMAT(/,5X,'NWS = ',I3,/,9X,
      &        'WIND STRESS OR SURFACE PRESSURE ARE NOT USED TO FORCE',
-     &        'THE COMPUTATION')
+     &        ' THE COMPUTATION')
       ENDIF
       IF(NWS.EQ.1) THEN
          WRITE(16,238) NWS

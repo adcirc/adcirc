@@ -2511,10 +2511,8 @@ C
 #ifdef ADCNETCDF
          IF (MyProc.eq.0) THEN
              IF (sets == 1) THEN
-                write(*,*) 'writing NETCDF:',lun
                 CALL writeOutArrayNetCDF(lun, 0d0, 1, mag1, ph1)
              ELSE
-                write(*,*) 'writing NETCDF:',lun
                 CALL writeOutArrayNetCDF(lun, 0d0, 1, mag1, ph1,
      &                                   mag2, ph2)
              ENDIF

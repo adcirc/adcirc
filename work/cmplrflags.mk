@@ -190,6 +190,9 @@ ifeq ($(compiler),intel)
   ifeq ($(DEBUG),full)
      FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -check all -ftrapuv -fpe0 -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
+  ifeq ($(DEBUG),full-not-fpe)
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -check all -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+  endif
   ifeq ($(DEBUG),trace)
      FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
@@ -226,11 +229,11 @@ ifeq ($(compiler),intel)
   ifeq ($(NETCDF),enable)
         FLIBS          := $(FLIBS) -lnetcdff -L$(HDF5HOME) -lhdf5_fortran -lhdf5_hl -lhdf5
      ifeq ($(MACHINENAME),hatteras)
-        FLIBS       := $(FLIBS) -L/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3/lib -lnetcdff -lnetcdf
-        NETCDFHOME    :=/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3
-        FFLAGS1       :=$(FFLAGS1) -I/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3/include
-        FFLAGS2       :=$(FFLAGS1)
-        FFLAGS3       :=$(FFLAGS1)
+        FLIBS       :=$(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
+        NETCDFHOME  :=/usr/share/Modules/software/CentOS-7/netcdf-Fortran/4.4.0_intel-18.0.0
+        FFLAGS1     :=$(FFLAGS1) -I$(NETCDFHOME)/include
+#        FFLAGS2     :=$(FFLAGS2) -I$(NETCDFHOME)/include
+#        FFLAGS3     :=$(FFLAGS3) -I$(NETCDFHOME)/include
      endif
      # jgf20150417 queenbee requires that the analyst load the netcdf and
      # netcdf_fortran modules prior to compiling or executing ADCIRC

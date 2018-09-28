@@ -1224,6 +1224,7 @@ C     a fort.69 (global elevation debug) file.
 C     jgf46.12 Removed the dependence on KEMAX for producing output to
 C     the screen.
 
+         runperccomplete=REAL(IT-ITHS)/REAL(NT-ITHS)*100d0    !percentage of time steps completed
 #ifdef CMPI
          runperccomplete=REAL(IT-ITHS)/REAL(NT-ITHS)*100d0    !percentage of time steps completed
          IF(MYPROC.EQ.0.AND.ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
