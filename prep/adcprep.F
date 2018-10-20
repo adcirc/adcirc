@@ -356,7 +356,8 @@ C
       USE PRE_GLOBAL
       use sizes, only : naType, meshType, controlType, ASCII, XDMF,
      &   naFileName, meshFileName, controlFileName, formatString
-      use global, only : logMessage, INFO
+      use global, only : logMessage, INFO, setMessageSource,
+     &   unsetMessageSource
       use mesh, only : readMeshXDMF
       use subprep, only : subdomainOn, enforceBN, subPrep020, subPrep021,
      &   subPrep019
@@ -378,6 +379,12 @@ C
       integer, parameter :: repartitionLimit = 100 ! give up after this
       integer :: numPartitionAttempts ! number of attempts to partition mesh
       logical :: partitionOK  ! true if partitioning has no issues
+
+      call setMessageSource("prepinput")
+#if defined (PREPINPUT_TRACE) || defined (ALL_TRACE)
+      call screen(DEBUG,"Enter.")
+#endif
+
 
 C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
       if (PREP_13) then
@@ -722,7 +729,7 @@ C     tcm v51.06.02 added NWS=16 GFDL Met Data
          select case(ABS(NWS))
          case(3,6,12,16,29,30)
             call logMessage(INFO,
-     &   'The meteorological data does not require domain decomposition')
+     & 'The meteorological data does not require domain decomposition.')
          case(1,2,4,5,45,7)
             call logMessage(INFO,
      &   'Ready to write subdomain fort.22 files.')
@@ -822,6 +829,10 @@ CC -- Finish Addition by CF
 9999  CONTINUE
       print *, ""
       print *, "INFO: Finished pre-processing input files."
+#if defined(PREPINPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
       END SUBROUTINE
 C---------------------------------------------------------------------------
