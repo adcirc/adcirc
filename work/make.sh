@@ -15,21 +15,20 @@ export NETCDF4=enable
 ### <<<<<<
 
 
-#rm -rf odir*
-#make clean
-#make clobber
+rm -rf odir*
+make clean
+make clobber
 rm -rf libadc.a padcirc adcprep
 
 #make padcirc
 make libadc.a 
-make adcprep
+#make adcprep
 #make adcirc
-
 #make padcswan
 #make punswan
 #make hstime
 #make adccmp
-make aswip
+#make aswip
 #make adcpost
 #make adcprep_be
 #make adcswan
