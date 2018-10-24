@@ -54,7 +54,7 @@ mkdir build
 
 Then, move into the build directory and run the CMake GUI.
 
-```
+```t
 cd build
 ccmake ..
 ```
