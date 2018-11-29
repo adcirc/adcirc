@@ -12,6 +12,9 @@
 ! @jasonfleming 20181129: Sample command line for compiling this program:
 ! 
 ! gfortran -o adcircResultsComparison -I/usr/include -L/usr/lib adcircResultsComparison.F90 -lnetcdf -lnetcdff
+!
+! RENCI hatteras:
+! ifort -o adcircResultsComparison -I/usr/share/Modules/software/CentOS-7/netcdf-Fortran/4.4.0_intel-18.0.0/include -L/usr/share/Modules/software/CentOS-7/netcdf-Fortran/4.4.0_intel-18.0.0/lib adcircResultsComparison.F90 -lnetcdf -lnetcdff
 !-----------------------------------------------------------------------
 
         MODULE adcircCompare_module
