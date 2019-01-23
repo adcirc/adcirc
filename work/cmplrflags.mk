@@ -263,7 +263,9 @@ ifeq ($(compiler),intel)
      # @jasonfleming: Added support for lonestar5 at tacc.utexas.edu;
      # load the following module: netcdf/4.3.3.1
      ifeq ($(MACHINENAME),lonestar5)
-        NETCDFHOME :=/opt/apps/intel16/netcdf/4.3.3.1/x86_64
+        #NETCDFHOME :=/opt/apps/intel18/netcdf/4.3.3.1/x86_64
+        # @jasonfleming: Updated support for lonestar5
+        NETCDFHOME :=/opt/apps/intel18/netcdf/4.6.2/x86_64
         FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
      endif
      # jgf20150817: Adding support for spirit.afrl.hpc.mil;
