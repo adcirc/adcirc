@@ -1718,6 +1718,16 @@ C
          ! convert from m/s velocity to speed in kt and convert
          ! from 10minute averaged winds (needed by ADCIRC) back
          ! to 1minute averaged winds (which match the data from NHC)
+         !
+         ! Columns are: 
+         ! r, wNE, wSE, wSW, wNW, wfwd, pNE, pSE, pSW, pNW, pwfd
+         ! where r is the radial coordinate, w is wind speed, p is 
+         ! pressure, NE, SE, SW, and NW are the 4 cardinal quadrants, 
+         ! The "fwd" value, I think, is the radial profile in the 
+         ! direction of maximum winds, which should be normal to storm 
+         ! translation direction.  The ordering of the 4 cardinal 
+         ! directions technically depends on the input file supplied.  
+         ! Units are nautical miles, knots, and millibars.  
          do i=1,np
             radial_speed(i)
      &               = ten2one * sqrt(wvnx2(i)**2 + wvny2(i)**2)
@@ -1727,8 +1737,9 @@ C
          enddo
          dr = 0.0d0
          do i=1,np-5,5
-            write(555,*) dr,(radial_speed(i+j),j=0,4),
-     &                         (pressure(i+j),j=0,4)
+!TGA            write(555,*) dr,(radial_speed(i+j),j=0,4),
+            write(555,'(F19.13,5(x,F19.13),5(x,F19.12))') dr,
+     &                   (radial_speed(i+j),j=0,4),(pressure(i+j),j=0,4)
             dr = dr + 1.0d0/real(quadrant_radial_resolution)
          end do
          CLOSE(555)
