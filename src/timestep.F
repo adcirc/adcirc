@@ -863,7 +863,7 @@ C...
             DO I=1,NVEL
                ARG=ARGJ-QNPH(J,I)
                QN2(I)=QN2(I)+QNAM(J,I)*RFF*COS(ARG)
-               IF(LBCODEI(J).EQ.32) THEN
+               IF(LBCODEI(I).EQ.32) THEN
                   ARG=ARGJ-ENPH(J,I)
                   EN2(I)=EN2(I)+ENAM(J,I)*RFF*COS(ARG)
                ENDIF
@@ -1211,8 +1211,8 @@ C     a fort.69 (global elevation debug) file.
 C     jgf46.12 Removed the dependence on KEMAX for producing output to
 C     the screen.
 
-#ifdef CMPI
          runperccomplete=REAL(IT-ITHS)/REAL(NT-ITHS)*100d0    !percentage of time steps completed
+#ifdef CMPI
          IF(MYPROC.EQ.0.AND.ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
                WRITE(ScreenUnit,1991)
