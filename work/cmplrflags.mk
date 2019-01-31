@@ -155,6 +155,12 @@ ifeq ($(compiler),gfortran)
         FFLAGS2 := $(FFLAGS2) -L/usr/lib/x86_64-linux-gnu
         FFLAGS3 := $(FFLAGS3) -L/usr/lib/x86_64-linux-gnu
      endif
+     ifeq ($(MACHINENAME),rostam)    
+        NETCDFHOME := /usr
+        FFLAGS1 := $(FFLAGS1) -I/usr/lib64/gfortran/modules
+        FFLAGS2 := $(FFLAGS2) -I/usr/lib64/gfortran/modules
+        FFLAGS3 := $(FFLAGS3) -I/usr/lib64/gfortran/modules
+     endif
      FLIBS      := $(FLIBS) -lnetcdff 
   endif
   IMODS 	:=  -I
