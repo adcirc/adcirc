@@ -4897,8 +4897,8 @@ C     ----------------------------------------------------------------
       !    7/21/09     Robert Weaver               Modify to let user choose which isotach to use
       !                                            when submitting Rmax
       !                                            NWS=19
-      !
-      !
+      !    2/19/19     Taylor A.                   Changed ilon to 4 columns to facilitate 
+      !                                            distant storms.  
       !
       ! Reference:
       !
@@ -5057,7 +5057,7 @@ C
 
          ! Read parsed NHC advisory in modified best-track format
 
-26       FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 3x, i3,a1, 2x,
+26       FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 2x, i4,a1, 2x,
      &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
      &          27x, 2(i3,2x), a10, 2x, i4, 2x, i4,
      &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4) !,2(2x,f10.4))
@@ -5442,8 +5442,8 @@ C***********************************************************************
       !                                            use full gradient wind equation
       !                                            introduce a linear-weighted combination method to use
       !                                            multiple isotachs 
-      !                                             
-      !
+      !    2/19/19     Taylor A.                   Changed ilon to 4 columns to facilitate 
+      !                                            distant storms.  
       !
       ! Reference:
       !
@@ -5646,7 +5646,7 @@ C***********************************************************************
          
          ! Read parsed NHC advisory in modified best-track format
 
-27       FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 3x, i3,a1, 2x,
+27       FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 2x, i4,a1, 2x,
      &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
      &          27x, 2(i3,2x), a10, 2x, i4, 2x, i4,
      &         2x, 4(i1,2x),2x, 4(f6.1,2x),1x, 8(f8.4,2x), f8.4)
