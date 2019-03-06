@@ -444,31 +444,34 @@ C     NCSU SUBDOMAIN: modified to handle "fort.019"
 C---------------------------------------------------------------------------
       USE PRE_GLOBAL, only : nproc
       IMPLICIT NONE
-      INTEGER :: UnitNumber     ! i/o unit number to open 
+      INTEGER, intent(in) :: UnitNumber     ! i/o unit number to open
       CHARACTER(len=30), intent(in) :: Description ! description of file
       INTEGER, intent(in) :: startProc        ! subdomains to start with
       INTEGER, intent(in) :: endProc          ! subdomain to end on
       INTEGER, intent(out), dimension(nproc) :: SDU ! Subdomain unit numbers
       LOGICAL, intent(out):: Success     ! .true. if files opened w/o errors
+
       LOGICAL Found               !.true. if the full domain file exists
-      CHARACTER(len=80) FileName   ! name of full domain file
+      CHARACTER(len=80) FileName  ! name of full domain file
       CHARACTER(len=8) DefaultName! default name of full domain file  !NCSU SUBDOMAIN
       INTEGER ErrorIO             ! zero if file opened successfully
       INTEGER iproc               ! subdomain index
+      INTEGER UnitNumberIn
       CHARACTER(len=15) sdFileName     ! subdomain file name  !NCSU SUBDOMAIN
 
       Found = .false.
       Success = .false.
       ErrorIO = 1
+      UnitNumberIn = UnitNumber
 
       ! NCSU Subdomain: 
-      if (UnitNumber.eq.1019) then     
+      if (UnitNumberIn.eq.1019) then
           DefaultName= 'fort.019'    
           FileName = 'fort.019'      
-      else if (UnitNumber.eq.1020) then
+      else if (UnitNumberIn.eq.1020) then
           DefaultName= 'fort.020'    
           FileName = 'fort.020' 
-      else if (UnitNumber.eq.1021) then
+      else if (UnitNumberIn.eq.1021) then
           DefaultName= 'fort.021'
           FileName = 'fort.021'
       endif
@@ -480,7 +483,7 @@ C
 C     If it does exist, open it
       IF ( FOUND ) THEN
          WRITE(*,1011) FileName !found
-         OPEN(UNIT=UnitNumber, FILE=FileName, IOSTAT=ErrorIO)
+         OPEN(UNIT=UnitNumberIn, FILE=FileName, IOSTAT=ErrorIO)
          Success = .true.
          IF ( ErrorIO .GT. 0 ) THEN
             WRITE(*,*) "ERROR: Full domain file exists but"
