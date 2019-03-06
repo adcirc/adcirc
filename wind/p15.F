@@ -171,9 +171,9 @@ c*******************************************************************************
       CHARACTER*30 TITLE,INPUTFILE,GRIDFILE
       CHARACTER*9  TSTAMP(200)
       REAL A(500,4)
-      INTEGER ISPD(200),IPRES(200)
-      REAL TIME(200),XLAT(200),XLON(200)
-      REAL XPRES(200),XVEL(200)
+      INTEGER ISPD(500),IPRES(500)
+      REAL TIME(500),XLAT(500),XLON(500)
+      REAL XPRES(500),XVEL(500)
       REAL RZERO(600)
       REAL SPEEDUP
       REAL,ALLOCATABLE :: ANGLE(:),SPED(:)
