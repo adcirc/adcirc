@@ -318,12 +318,13 @@
             END SUBROUTINE showHelp
 
 
-            SUBROUTINE processCommandLineArgs(file1,file2,tolerance,wetdry,verbose,cont)
+            SUBROUTINE processCommandLineArgs(file1,file2,tolerance,wetdry,minmax,verbose,cont)
                 IMPLICIT NONE
                 
                 CHARACTER(*),INTENT(OUT)   :: file1,file2
                 REAL(8),INTENT(OUT)        :: tolerance
                 LOGICAL,INTENT(OUT)        :: wetdry
+                LOGICAL,INTENT(OUT)        :: minmax !.true. if this is a min or max file (like maxvel.63)                
                 LOGICAL,INTENT(OUT)        :: verbose
                 LOGICAL,INTENT(OUT)        :: cont
                 INTEGER                    :: iargc
@@ -333,6 +334,7 @@
 
                 tolerance = 0.00001D0
                 wetDry = .FALSE.
+                minmax = .FALSE.
                 verbose = .FALSE.
                 cont = .FALSE.
                 foundFile1 = .FALSE.
@@ -365,6 +367,8 @@
                             READ(CMD,*) tolerance
                         CASE("-w","--wetdry")
                             wetdry = .TRUE.
+                        CASE("-m","--minmax")
+                            minmax = .TRUE.                            
                         CASE("-h","--help")
                             CALL showHelp()
                             STOP 0
@@ -540,6 +544,12 @@
                 READ(io,'(A)') header
                 READ(io,'(A)') header
                 CLOSE(io)
+                ! FIXME: the numsnaps in the ascii output file header
+                ! will be wrong if the file has been appended after 
+                ! hotstart (numsnaps is computed and written at cold
+                ! start before any output data are added to the file;
+                ! it is not updated/corrected if the run ends unexpectedly
+                ! or if the run is hotstarted and more data are appended 
                 READ(header,*) numsnaps,numnodes,junkR,junkI,numvalues
                 RETURN
             END SUBROUTINE getMetadataAscii
@@ -772,9 +782,10 @@
             REAL(8)             :: time1,time2
             REAL(8),ALLOCATABLE :: nodaldata1(:,:),nodaldata2(:,:)
             LOGICAL             :: wetdry,verbose,cont
+            LOGICAL :: minmax ! .true. if this is a min or max file (e.g., maxvel.63)
 
             !...Process the command line arguments from the user
-            CALL processCommandLineArgs(file1,file2,tolerance,wetdry,verbose,cont)
+            CALL processCommandLineArgs(file1,file2,tolerance,wetdry,minmax,verbose,cont)
 
             !...Determine the file type of each file
             noutfile1 = determineFileType(file1)
@@ -795,6 +806,19 @@
                 WRITE(*,'(A)') "ERROR: There are different numbers of nodes in the files."
                 STOP 1
             ENDIF
+            
+            !...If this is an ascii minmax file, the 2nd dataset is the
+            ! time of occurrence, which can have much larger differences
+            ! than are allowed by the error tolerance, and since we don't
+            ! have a good way to set the error tolerance fortime-of-peak
+            ! in a way that will avoid false positives (i.e., tests
+            ! failing unnecessarily) let's avoid the comparison of 
+            ! time-of-peak values for now. 
+            if ( minmax.eqv..true.) then  
+               nsnapfile1 = 1
+               nsnapfile2 = 1
+               WRITE(*,'(A)') "INFO: The time-of-peak-occurrence values will not be compared, only the peak values themselves."
+            endif
             
             io_unit1 = 0
             io_unit2 = 0
