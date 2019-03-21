@@ -791,7 +791,7 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
                IF (Mode.eq.0) SDNumND(iproc,k) = SDNumND(iproc,k)+1
                IF (Mode.eq.1) THEN
                   SDNode = IMAP_NOD_GL(2,NodeNum)
-                  WRITE(sdu(iproc),1100) labels(NodeNum),(AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
+                  WRITE(sdu(iproc),1100) NodeNum,(AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
                ENDIF
             ELSE
                DO m=1, ITOTPROC(NodeNum)
@@ -803,7 +803,7 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
                         ENDIF
                         IF (Mode.eq.1) THEN
                            SDNode = IMAP_NOD_GL2(2*(m-1)+2,NodeNum)
-                           WRITE(sdu(iproc),1100) labels(NodeNum),
+                           WRITE(sdu(iproc),1100) NodeNum,
      &                          (AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
                         ENDIF
                      ENDIF
