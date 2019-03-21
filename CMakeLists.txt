@@ -106,6 +106,9 @@ INCLUDE(${CMAKE_SOURCE_DIR}/cmake/swan.cmake)
 #...Build PADCIRC (Parallel ADCIRC)
 INCLUDE(${CMAKE_SOURCE_DIR}/cmake/padcirc.cmake)
 
+#...Build LIBADC
+INCLUDE(${CMAKE_SOURCE_DIR}/cmake/libadc.cmake)
+
 #...Build PADCSWAN (Parallel ADCIRC+SWAN)
 INCLUDE(${CMAKE_SOURCE_DIR}/cmake/padcswan.cmake)
 
