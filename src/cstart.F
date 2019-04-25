@@ -203,7 +203,7 @@ C
 ! arash: the rest of there values are read in timestep
                READ(20,*) QNIN1(J)
 
-                QNIN1(J) = 0.0 ! arash
+!                QNIN1(J) = 0.0 ! arash
 
 !               write(*,*) ' J, QNIN1 = ', J, QNIN1(J)
               
@@ -215,7 +215,7 @@ C
      &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
                READ(20,*) QNIN2(J)
 
-                QNIN2(J) = 0.0 ! arash
+!                QNIN2(J) = 0.0 ! arash
 
 !               write(*,*) ' J, QNIN2 = ', J, QNIN2(J)
 
