@@ -214,6 +214,11 @@ ifeq ($(compiler),intel)
   FC            :=  ifort
   PFC           :=  mpif90
   FFLAGS1       :=  $(INCDIRS) -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+  CFLAGS        := $(INCDIRS) -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+  FLIBS         :=
+  ifeq ($(DEBUG),full)
+     CFLAGS        := $(INCDIRS) -g -O0 -march=k8 -m64 -mcmodel=medium -DLINUX
+  endif
   ifeq ($(DEBUG),full)
      FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -check all -ftrapuv -fpe0 -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
@@ -226,6 +231,13 @@ ifeq ($(compiler),intel)
   ifeq ($(DEBUG),netcdf_trace)
      FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -DNETCDF_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
+  #
+  ifeq ($(MACHINENAME),stampede2) 
+     FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 -assume buffered_io
+     CFLAGS  := $(INCDIRS) -O3 -DLINUX -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 
+     FLIBS   := $(INCDIRS) -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 
+  endif
+  #
   #@jasonfleming Added to fix bus error on hatteras@renci
   ifeq ($(HEAP_ARRAYS),fix)
      FFLAGS1 := $(FFLAGS1) -heap-arrays unlimited
@@ -241,12 +253,7 @@ ifeq ($(compiler),intel)
   IMODS         :=  -I
   CC            := icc
   CCBE		:= $(CC)
-  CFLAGS        := $(INCDIRS) -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
-  ifeq ($(DEBUG),full)
-     CFLAGS        := $(INCDIRS) -g -O0 -march=k8 -m64 -mcmodel=medium -DLINUX
-  endif
   CLIBS         :=
-  FLIBS          :=
   MSGLIBS       :=
   ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),hatteras)
@@ -265,6 +272,14 @@ ifeq ($(compiler),intel)
      ifeq ($(MACHINENAME),stampede)
         NETCDFHOME :=/opt/apps/intel17/netcdf/4.3.3.1/x86_64
         FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
+     endif
+     ifeq ($(MACHINENAME),stampede2)
+        NETCDFHOME :=/opt/apps/intel17/netcdf/4.3.3.1/x86_64
+        FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
+        ifeq ($(USER),jgflemin)
+           NETCDFHOME :=/work/00976/jgflemin/stampede2/local
+           FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
+        endif
      endif
      # @jasonfleming: Added support for lonestar5 at tacc.utexas.edu;
      # load the following module: netcdf/4.3.3.1
