@@ -252,6 +252,11 @@ ifeq ($(compiler),intel)
      FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 -assume buffered_io
      CFLAGS  := $(INCDIRS) -O3 -DLINUX -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 
      FLIBS   := $(INCDIRS) -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 
+     ifeq ($(DEBUG),trace)
+        FFLAGS1 := $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 -assume buffered_io
+        CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 
+        FLIBS   := $(INCDIRS) -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 
+     endif
   endif
   #
   #@jasonfleming Added to fix bus error on hatteras@renci
