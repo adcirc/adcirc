@@ -389,7 +389,7 @@ B23_SRC    =  buildstwave23.F
 H2A_SRC    =  hot2asc.F
 INF_SRC    =  inflate.F
 HST_SRC    =  hstime.F
-ASW_SRC    =  aswip_1.0.3.F
+ASW_SRC    =  aswip.F
 CMP_SRC    =  adccmp.F
 
 METIS_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(METIS_SRC) )
@@ -687,7 +687,7 @@ $(O_DIR)diffmerge.o   :  diffmerge.F
 #  asymmetric hurricane wind model
 
 $(O_DIR)vortex.o      :  vortex.F
-$(O_DIR)aswip.o      :  aswip_1.0.3.F $(VORT_MOBJ) $(NA_MOBJ)
+$(O_DIR)aswip.o      :  aswip.F $(VORT_MOBJ) $(NA_MOBJ)
 
 #  adcirc & $(PARALLEL_ADCIRC) modules
 
