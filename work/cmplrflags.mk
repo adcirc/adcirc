@@ -258,6 +258,16 @@ ifeq ($(compiler),intel)
         FLIBS   := $(INCDIRS) -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 
      endif
   endif
+  ifeq ($(MACHINENAME),queenbee) 
+     FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+     CFLAGS  := $(INCDIRS) -O3 -DLINUX -xSSE4.2 
+     FLIBS   := $(INCDIRS) -xSSE4.2 
+     ifeq ($(DEBUG),trace)
+        FFLAGS1 := $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+        CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX -xSSE4.2 
+        FLIBS   := $(INCDIRS) -xSSE4.2 
+     endif
+  endif
   #
   #@jasonfleming Added to fix bus error on hatteras@renci
   ifeq ($(HEAP_ARRAYS),fix)
