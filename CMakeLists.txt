@@ -117,3 +117,6 @@ INCLUDE(${CMAKE_SOURCE_DIR}/cmake/aswip.cmake)
 
 #...Build ADCIRC Utility Codes
 INCLUDE(${CMAKE_SOURCE_DIR}/cmake/utilities.cmake)
+
+#...Build LIBADC 
+INCLUDE(${CMAKE_SOURCE_DIR}/cmake/libadcirc.cmake)
