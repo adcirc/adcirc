@@ -3610,7 +3610,7 @@ C     netcdf4 file format.
             iret = nf_def_var_deflate(dat%ncid, dat%w_nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
-         CASE(47,63,73,77,90,301:304,306,307,402,403,108)
+         CASE(47,63,73,77,90,173,301:304,306,307,402,403,108)
             iret = nf_def_var_deflate(dat%ncid, dat%nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
@@ -5017,7 +5017,7 @@ C     Write the array values
      &            descript1%array_g)
             CALL check_err(iret)
          ENDIF         
-      CASE(47,63,73,77,90,301,302,303,304,306,307,108)
+      CASE(47,63,73,77,90,173,301,302,303,304,306,307,108)
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
                allocate(tempArray(1:dat%myMesh%num_nodes))
