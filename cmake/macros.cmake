@@ -1,6 +1,10 @@
 MACRO(addCompilerFlags TARGET)
 
-    SET(LOCAL_COMPILER_FLAGS "${ARGN} ${ADCIRC_OPTION_FLAGS} ${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG} ${PRECISION_FLAG} ${MACHINE_FLAG}")
+    SET(LOCAL_COMPILER_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG}")
+    SET(LOCAL_COMPILER_DEFINITIONS "${ADCIRC_OPTION_FLAGS} ${PRECISION_FLAG} ${MACHINE_FLAG}")
+
+    STRING(STRIP ${LOCAL_COMPILER_FLAGS} LOCAL_COMPILER_FLAGS)
+    SEPARATE_ARGUMENTS(LOCAL_COMPILER_DEFINITIONS)
 
     addLibVersion(${TARGET})
     addNetCDF(${TARGET})
@@ -8,15 +12,17 @@ MACRO(addCompilerFlags TARGET)
 
     SET_TARGET_PROPERTIES(${TARGET} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/CMakeFiles/mod/${TARGET})
     SET_TARGET_PROPERTIES(${TARGET} PROPERTIES COMPILE_FLAGS ${LOCAL_COMPILER_FLAGS})
+    TARGET_COMPILE_DEFINITIONS(${TARGET} PRIVATE ${LOCAL_COMPILER_DEFINITIONS} )
 
     SET(LOCAL_COMPILER_FLAGS "")
+    SET(LOCAL_COMPILER_DEFINITIONS "")
     
 ENDMACRO(addCompilerFlags)
 
 
 MACRO(addCompilerFlagsSwan TARGET)
 
-    SET(LOCAL_COMPILER_FLAGS "${ARGN} ${Fortran_COMPILER_SPECIFIC_FLAG}")
+    SET(LOCAL_COMPILER_FLAGS "${Fortran_COMPILER_SPECIFIC_FLAG}")
 
     SET_TARGET_PROPERTIES(${TARGET} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/CMakeFiles/mod/${TARGET})
     IF(NOT "${LOCAL_COMPILER_FLAGS}" STREQUAL "")
@@ -87,7 +93,7 @@ MACRO(swanConfigureAdcswan)
             COMMAND move /y *.f \"${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/.\"
             COMMAND move /y *.f90 \"${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/.\"
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
-            COMMENT "Generating Serial SWAN Sources..."
+            COMMENT "Generating Serial unSWAN Sources..."
         )
     ELSE(WIN32)
         ADD_CUSTOM_COMMAND( OUTPUT ${SWAN1SERIAL_SOURCES} ${SWAN2SERIAL_SOURCES}
@@ -95,7 +101,7 @@ MACRO(swanConfigureAdcswan)
             COMMAND mkdir -p ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source
             COMMAND mv *.f *.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/.
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
-            COMMENT "Generating Serial SWAN Sources..."
+            COMMENT "Generating Serial unSWAN Sources..."
         )
     ENDIF(WIN32)
 ENDMACRO(swanConfigureAdcswan)
@@ -109,7 +115,7 @@ MACRO(swanConfigurePadcswan)
             COMMAND move /y *.f \"${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/.\"
             COMMAND move /y *.f90 \"${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/.\"
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
-            COMMENT "Generating Serial SWAN Sources..."
+            COMMENT "Generating Serial unSWAN Sources..."
         )  
     ELSE(WIN32)
         ADD_CUSTOM_COMMAND( OUTPUT ${SWAN1PARALLEL_SOURCES} ${SWAN2PARALLEL_SOURCES}
@@ -117,7 +123,7 @@ MACRO(swanConfigurePadcswan)
             COMMAND mkdir -p ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source
             COMMAND mv *.f *.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/.
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
-            COMMENT "Generating Parallel SWAN Sources..."
+            COMMENT "Generating Parallel unSWAN Sources..."
         )
     ENDIF(WIN32)
 ENDMACRO(swanConfigurePadcswan)
@@ -153,7 +159,7 @@ MACRO(swanConfigureParallel)
             COMMAND move /y *.f \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/.\"
             COMMAND move /y *.f90 \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/.\"
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
-            COMMENT "Generating Serial SWAN Sources..."
+            COMMENT "Generating Parallel SWAN Sources..."
         )  
     ELSE(WIN32)
         ADD_CUSTOM_COMMAND( OUTPUT ${SWANONLY1_PARALLEL_SOURCES} ${SWANONLY2_PARALLEL_SOURCES}
