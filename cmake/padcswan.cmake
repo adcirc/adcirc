@@ -79,8 +79,6 @@ IF(BUILD_PADCSWAN AND PERL_FOUND)
     TARGET_INCLUDE_DIRECTORIES(templib_padcswan1     PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
     TARGET_INCLUDE_DIRECTORIES(templib_swan2parallel PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_padcswan1)
     TARGET_INCLUDE_DIRECTORIES(templib_swan2parallel PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
-    TARGET_INCLUDE_DIRECTORIES(templib_swan2parallel PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_padcswan4)
-    TARGET_INCLUDE_DIRECTORIES(templib_swan2parallel PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_padcswan2)
     TARGET_INCLUDE_DIRECTORIES(padcswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_padcswan1)
     TARGET_INCLUDE_DIRECTORIES(padcswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
     TARGET_INCLUDE_DIRECTORIES(padcswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan2parallel)
@@ -89,7 +87,7 @@ IF(BUILD_PADCSWAN AND PERL_FOUND)
    
     ADD_DEPENDENCIES(padcswan              templib_swan2parallel templib_padcswan1)
     ADD_DEPENDENCIES(templib_swan2parallel templib_padcswan1 templib_swan1parallel)
-    ADD_DEPENDENCIES(templib_padcswan1     mkdir version)
+    ADD_DEPENDENCIES(templib_padcswan1     mkdir version templib_swan1parallel )
     
     INSTALL(TARGETS padcswan RUNTIME DESTINATION bin)
 
