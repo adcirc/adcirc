@@ -244,7 +244,9 @@ ifeq ($(compiler),intel)
   MSGLIBS       :=
   ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),hatteras)
-        NETCDFHOME  :=/usr/share/Modules/software/CentOS-7/netcdf-Fortran/4.4.0_intel-18.0.0
+        ifndef NETCDFHOME
+          NETCDFHOME  :=/usr/share/Modules/software/CentOS-7/netcdf-Fortran/4.4.0_intel-18.0.0
+        endif
         FLIBS       :=$(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
         FFLAGS1     :=$(FFLAGS1) -I$(NETCDFHOME)/include
         FFLAGS2     :=$(FFLAGS1)
@@ -253,36 +255,54 @@ ifeq ($(compiler),intel)
      # jgf20150417 queenbee requires that the analyst load the netcdf and
      # netcdf_fortran modules prior to compiling or executing ADCIRC
      ifeq ($(MACHINENAME),queenbee)
+        ifndef NETCDFHOME
+          NETCDFHOME    :=/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0
+        endif
         FLIBS       := $(FLIBS) -L/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0/lib -lnetcdff -lnetcdf
-        NETCDFHOME    :=/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0
      endif
      ifeq ($(MACHINENAME),stampede)
-        NETCDFHOME :=/opt/apps/intel17/netcdf/4.3.3.1/x86_64
+        ifndef NETCDFHOME
+          NETCDFHOME :=/opt/apps/intel17/netcdf/4.3.3.1/x86_64
+        endif
+        FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
+     endif
+     ifeq ($(MACHINENAME),stampede2)
+        ifndef NETCDFHOME
+          NETCDFHOME :=/opt/apps/intel17/netcdf/4.3.3.1/x86_64
+        endif
         FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
      endif
      # @jasonfleming: Added support for lonestar5 at tacc.utexas.edu;
      # load the following module: netcdf/4.3.3.1
      ifeq ($(MACHINENAME),lonestar5)
-        NETCDFHOME :=/opt/apps/intel16/netcdf/4.3.3.1/x86_64
+        ifndef NETCDFHOME
+          NETCDFHOME :=/opt/apps/intel16/netcdf/4.3.3.1/x86_64
+        endif
         FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
      endif
      # jgf20150817: Adding support for spirit.afrl.hpc.mil;
      # load the following modules: netcdf-fortran/intel/4.4.2
      # and hdf5/intel/1.8.12 and hdf5-mpi/intel/sgimpt/1.8.12
      ifeq ($(MACHINENAME),spirit) 
-        NETCDFHOME :=/app/wpostool/COST/netcdf-fortran-4.4.2/intel
+        ifndef NETCDFHOME
+          NETCDFHOME :=/app/wpostool/COST/netcdf-fortran-4.4.2/intel
+        endif
         FLIBS      := $(FLIBS) -L/app/wpostool/COST/netcdf-c-4.3.1.1/intel/lib -L$(NETCDFHOME)/lib -L/app/wpostool/COST/hdf5-mpi/1.8.12/intel/sgimpt/lib -lnetcdff -lnetcdf
      endif
      # jgf20150420 mike requires that the analyst add netcdf to the softenv
      # with the following on the command line 
      # soft add +netcdf-4.1.3-Intel-13.0.0
      ifeq ($(MACHINENAME),mike)
+        ifndef NETCDFHOME
+          NETCDFHOME    :=/usr/local/packages/netcdf/4.1.3/Intel-13.0.0
+        endif
         FLIBS       := $(FLIBS) -L/usr/local/packages/netcdf/4.1.3/Intel-13.0.0/lib -lnetcdff -lnetcdf
-        NETCDFHOME    :=/usr/local/packages/netcdf/4.1.3/Intel-13.0.0
      endif
      ifeq ($(MACHINENAME),killdevil)
+        ifndef NETCDFHOME
+          NETCDFHOME     :=/nas02/apps/netcdf-4.1.1
+        endif
         HDF5HOME       :=/nas02/apps/hdf5-1.8.5/lib
-        NETCDFHOME     :=/nas02/apps/netcdf-4.1.1
         FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
      endif
   endif
