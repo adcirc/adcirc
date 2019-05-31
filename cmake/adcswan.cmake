@@ -1,13 +1,6 @@
 
 IF(BUILD_ADCSWAN AND PERL_FOUND)
 
-    #...Note that we need to build ADCSWAN in steps to correctly generate
-    #   the objects in the correct order of dependencies. CMAKE tries to
-    #   generate this order automatically, however, seems to get confused
-    #   by heavy use of compiler flags
-    
-    ADD_EXECUTABLE(adcswan src/driver.F)
-   
     SET( SWAN1SERIAL_SOURCES ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/swmod1.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/swmod2.f 
                              ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanSpectPart.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/m_constants.f90 
                              ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/m_fileio.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/serv_xnl4v5.f90 
@@ -48,13 +41,9 @@ IF(BUILD_ADCSWAN AND PERL_FOUND)
     SET( ADCSWAN1_SOURCES    src/sizes.F KDTREE2/kdtree2.F src/global.F src/boundaries.F src/mesh.F src/hashtable.F
                              src/global_3dvs.F src/harm.F wind/vortex.F src/wind.F src/owiwind.F src/rs2.F
                              src/owi_ice.F src/itpackv.F src/nodalattr.F src/globalio.F src/netcdfio.F 
-                             src/subdomain.F src/gwce.F src/wetdry.F src/momentum.F src/control.F src/xdmfio.F )
+                             src/subdomain.F src/gwce.F src/wetdry.F src/momentum.F src/control.F src/xdmfio.F src/write_output.F src/couple2swan.F )
 
-    SET( ADCSWAN2_SOURCES    src/write_output.F src/couple2swan.F )
-
-    SET( ADCSWAN3_SOURCES    src/adcirc.F src/weir_boundary.F src/read_input.F 
-                             src/cstart.F src/hstart.F src/timestep.F src/vsmy.F 
-                             src/transport.F )
+    SET( ADCSWAN_SOURCES     src/adcirc.F src/weir_boundary.F src/read_input.F src/cstart.F src/hstart.F src/timestep.F src/vsmy.F src/transport.F src/driver.F )
     
     #...SWAN Configuration
     swanConfigureAdcswan()
@@ -64,43 +53,27 @@ IF(BUILD_ADCSWAN AND PERL_FOUND)
     ADD_LIBRARY(templib_swan1serial STATIC ${SWAN1SERIAL_SOURCES})
     ADD_LIBRARY(templib_swan2serial STATIC ${SWAN2SERIAL_SOURCES})
     ADD_LIBRARY(templib_adcswan1 STATIC ${ADCSWAN1_SOURCES})
-    ADD_LIBRARY(templib_adcswan2 STATIC ${ADCSWAN2_SOURCES})
-    ADD_LIBRARY(templib_adcswan3 STATIC ${ADCSWAN3_SOURCES})
+    ADD_EXECUTABLE(adcswan ${ADCSWAN_SOURCES})
 
     addCompilerFlagsSwan(templib_swan1serial ${ADDITIONAL_FLAGS_SWAN})
     addCompilerFlagsSwan(templib_swan2serial ${ADDITIONAL_FLAGS_SWAN})
     addCompilerFlags(templib_adcswan1 ${ADDITIONAL_FLAGS_ADCIRC})
-    addCompilerFlags(templib_adcswan2 ${ADDITIONAL_FLAGS_ADCIRC})
-    addCompilerFlags(templib_adcswan3 ${ADDITIONAL_FLAGS_ADCIRC})
     addCompilerFlags(adcswan ${ADDITIONAL_FLAGS_ADCIRC})
 
     TARGET_COMPILE_DEFINITIONS(templib_adcswan1 PRIVATE CSWAN)
-    TARGET_COMPILE_DEFINITIONS(templib_adcswan2 PRIVATE CSWAN)
-    TARGET_COMPILE_DEFINITIONS(templib_adcswan3 PRIVATE CSWAN)
     TARGET_COMPILE_DEFINITIONS(adcswan          PRIVATE CSWAN)
 
-    TARGET_INCLUDE_DIRECTORIES(templib_adcswan2    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan1)
-    TARGET_INCLUDE_DIRECTORIES(templib_adcswan2    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
-    TARGET_INCLUDE_DIRECTORIES(templib_adcswan3    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan1)
-    TARGET_INCLUDE_DIRECTORIES(templib_adcswan3    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan2)
-    TARGET_INCLUDE_DIRECTORIES(templib_adcswan3    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
-    TARGET_INCLUDE_DIRECTORIES(templib_adcswan3    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan2serial)
+    TARGET_INCLUDE_DIRECTORIES(templib_adcswan1    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
     TARGET_INCLUDE_DIRECTORIES(templib_swan2serial PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
     TARGET_INCLUDE_DIRECTORIES(templib_swan2serial PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan1)
-    TARGET_INCLUDE_DIRECTORIES(templib_swan2serial PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan2)
     TARGET_INCLUDE_DIRECTORIES(adcswan             PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan1)   
-    TARGET_INCLUDE_DIRECTORIES(adcswan             PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan2)   
-    TARGET_INCLUDE_DIRECTORIES(adcswan             PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan3)   
     TARGET_INCLUDE_DIRECTORIES(adcswan             PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
     TARGET_INCLUDE_DIRECTORIES(adcswan             PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan2serial)
 
-    TARGET_LINK_LIBRARIES(adcswan templib_adcswan3 templib_adcswan2 templib_swan2serial templib_adcswan1 templib_swan1serial )
+    TARGET_LINK_LIBRARIES(adcswan templib_adcswan1 templib_swan2serial templib_swan1serial )
     
-    ADD_DEPENDENCIES(adcswan             templib_adcswan3)
-    ADD_DEPENDENCIES(templib_adcswan3    templib_swan2serial)
-    ADD_DEPENDENCIES(templib_swan2serial templib_adcswan2)
-    ADD_DEPENDENCIES(templib_adcswan3    templib_adcswan2)
-    ADD_DEPENDENCIES(templib_adcswan2    templib_adcswan1)
+    ADD_DEPENDENCIES(adcswan             templib_adcswan1 templib_swan2serial templib_swan1serial )
+    ADD_DEPENDENCIES(templib_swan2serial templib_adcswan1 templib_swan1serial )
     ADD_DEPENDENCIES(templib_adcswan1    templib_swan1serial)
     
     INSTALL(TARGETS adcswan RUNTIME DESTINATION bin)
