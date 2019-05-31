@@ -186,27 +186,11 @@ C
          OPEN(20,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
          READ(20,*) FTIMINC
 
-         write(*,*)' file fort.20 opened.'
-
          DO J=1,NVEL
-
-!            write(*,*) 'inside the do loop: DO J=1,NVEL'
-!            write(*,*) 'NVEL =', NVEL
-
             QNIN1(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &          .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
-
-               write(*,*) 'qnin reading ...' 
-
-! arash: QNIN1 only has nonzero values if there is a flow boundary condition. 
-! arash: the rest of there values are read in timestep
                READ(20,*) QNIN1(J)
-
-!                QNIN1(J) = 0.0 ! arash
-
-!               write(*,*) ' J, QNIN1 = ', J, QNIN1(J)
-              
             ENDIF
          END DO
          DO J=1,NVEL
@@ -214,11 +198,6 @@ C
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
                READ(20,*) QNIN2(J)
-
-!                QNIN2(J) = 0.0 ! arash
-
-!               write(*,*) ' J, QNIN2 = ', J, QNIN2(J)
-
             ENDIF
          END DO
          QTIME1 = STATIM*86400.D0
