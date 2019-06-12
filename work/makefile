@@ -443,7 +443,7 @@ CMP_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(CMP_SRC) )
 
 SWAN_MSRC  = swmod1.f swmod2.f SwanSpectPart.f m_constants.f90 m_fileio.f90 \
 serv_xnl4v5.f90 mod_xnl4v5.f90 \
-SwanGriddata.f90 SwanGridobjects.f90 SwanCompdata.f90 \
+SwanGriddata.f90 SwanGridobjects.f90 SwanCompdata.f90 SdsBabanin.f90 \
 couple2adcirc.f90
 
 SWAN_MOBJ := $(patsubst %.f,   $(O_DIR)%.o, $(SWAN_MSRC)  )
@@ -457,7 +457,7 @@ SwanGridCell.f90 SwanGridFace.f90 SwanPrintGridInfo.f90 SwanFindPoint.f90 \
 SwanPointinMesh.f90 SwanBpntlist.f90 SwanPrepComp.f90 SwanVertlist.f90 SwanCompUnstruc.f90 \
 SwanDispParm.f90 SwanPropvelX.f90 SwanSweepSel.f90 SwanPropvelS.f90 \
 SwanTranspAc.f90 SwanTranspX.f90 SwanDiffPar.f90 SwanGSECorr.f90 SwanGradDepthorK.f90 \
-SwanInterpolatePoint.f90 \
+SwanGradVel.f90 SwanInterpolatePoint.f90 \
 SwanInterpolateAc.f90 SwanInterpolateOutput.f90 SwanConvAccur.f90 SwanConvStopc.f90 \
 SwanFindObstacles.f90 SwanCrossObstacle.f90 \
 SwanComputeForce.f90 SwanIntgratSpc.f90 SwanBndStruc.f90 SwanReadfort18.f90 \
@@ -857,6 +857,7 @@ $(O_DIR)couple2adcirc.o         : couple2adcirc.f90
 $(O_DIR)SwanGriddata.o          : SwanGriddata.f90
 $(O_DIR)SwanGridobjects.o       : SwanGridobjects.f90
 $(O_DIR)SwanCompdata.o          : SwanCompdata.f90
+$(O_DIR)SdsBabanin.o            : SdsBabanin.f90
 $(O_DIR)swanmain.o              : swanmain.f
 $(O_DIR)swanpre1.o              : swanpre1.f
 $(O_DIR)swanpre2.o              : swanpre2.f
@@ -896,6 +897,7 @@ $(O_DIR)SwanTranspX.o           : SwanTranspX.f90
 $(O_DIR)SwanDiffPar.o           : SwanDiffPar.f90
 $(O_DIR)SwanGSECorr.o           : SwanGSECorr.f90
 $(O_DIR)SwanGradDepthorK.o      : SwanGradDepthorK.f90
+$(O_DIR)SwanGradVel.o           : SwanGradVel.f90
 $(O_DIR)SwanInterpolatePoint.o  : SwanInterpolatePoint.f90
 $(O_DIR)SwanInterpolateAc.o     : SwanInterpolateAc.f90
 $(O_DIR)SwanInterpolateOutput.o : SwanInterpolateOutput.f90
