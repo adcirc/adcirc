@@ -7550,6 +7550,13 @@ C----------------------------------------------------------------------
      &    offsetTimeIncrement 
       call logMessage(ECHO,scratchMessage)
       offsetCurrentLine = offsetCurrentLine + 1
+      ! tga20190628: this "if" is needed because it could lead to NaNs 
+      ! if offsetTimeIncrement is zero, plus no reason for negative.
+      if (offsetTimeIncrement.le.0.d0) then
+         call allMessage(ERROR,'Water level offset time increment ' //
+     &       'offsetTimeIncrement must be greater than zero')
+         call windTerminate()
+      endif
       ! 3nd line is default offset value 
       read(offun,fmt=*,end=256,err=258,iostat=errorio) offsetDefaultValue
       write(scratchMessage,'(a,f15.7)') "offsetDefaultValue: ",
