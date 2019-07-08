@@ -1106,7 +1106,7 @@ C      ENDIF
          ENDIF
          WRITE(16,9972)
          WRITE(16,*) 'NOLICAT =',NOLICAT
-         WRITE(16,9727)
+         WRITE(16,9726)
          WRITE(16,9974)
          IF(NFOVER.EQ.1) THEN
             if (myproc == 0) WRITE(ScreenUnit,9974)
@@ -1120,7 +1120,7 @@ C      ENDIF
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
             WRITE(ScreenUnit,*) 'NOLICAT =',NOLICAT
-            WRITE(ScreenUnit,9726)
+            WRITE(ScreenUnit,9727)
             IF(NFOVER.EQ.1) THEN
                WRITE(ScreenUnit,9974)
             ELSE
