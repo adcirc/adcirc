@@ -1705,7 +1705,7 @@ C        OUTPUT THE SWAN MAXIMUM FILES
 #endif
          ! Write the inundationtime.63, maxinundepth.63, everDried.63, and
          ! endrisinginun.63 files at the end of the simulation.
-         if (inundationOutput.eqv..true.) then
+         if ((inundationOutput.eqv..true.).and.(noutge.ne.0)) then
             call writeOutArrayMinMax(400, TimeLoc, IT, 2,
      &         InundationTimeDescript, packTwo, unpackTwo)
             call writeOutArrayMinMax(401, TimeLoc, IT, 2,
@@ -4075,7 +4075,11 @@ C     collect up the data from subdomains if running in parallel
 
 C     write data according to format specifier from fort.15 (e.g., NOUTE)
       SELECT CASE (ABS(descript % specifier))
-
+        CASE(OFF)
+          write(scratchMessage,'(a,a,a)') 
+     &      'writeOutArray() called for ',trim(descript%file_name),
+     &      ' but output for this file is turned off.'
+          call allMessage(INFO, scratchMessage)
         CASE(ASCII)
           IF(descript%num_items_per_record.EQ.1)then
               CALL writeFullFormat(descript,timeLoc,it,storeOne)
@@ -4179,7 +4183,13 @@ C     collect up the data from subdomains if running in parallel
 C     write data in ascii text only (other output formats are not supported)
       SELECT CASE (ABS(descript % specifier))
 
-      CASE(OFF,ASCII,BINARY,SPARSE_ASCII) ! just write ascii text
+      CASE(OFF)
+         write(scratchMessage,'(a,a,a)') 
+     &   'writeOutArrayMinMax() called for ',trim(descript%file_name),
+     &   ' but output for this file is turned off.'
+         call allMessage(INFO, scratchMessage)
+
+      CASE(ASCII,BINARY,SPARSE_ASCII) ! just write ascii text
 
          call logMessage(INFO,'Opening min/max file "'//
      &          trim(descript%file_name)//'" for writing.')

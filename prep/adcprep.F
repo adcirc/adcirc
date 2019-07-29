@@ -357,7 +357,7 @@ C
       use sizes, only : naType, meshType, controlType, ASCII, XDMF,
      &   naFileName, meshFileName, controlFileName, formatString
       use global, only : logMessage, INFO, setMessageSource,
-     &   unsetMessageSource
+     &   unsetMessageSource, DEBUG, allMessage
       use mesh, only : readMeshXDMF
       use subprep, only : subdomainOn, enforceBN, subPrep020, subPrep021,
      &   subPrep019
@@ -382,7 +382,7 @@ C
 
       call setMessageSource("prepinput")
 #if defined (PREPINPUT_TRACE) || defined (ALL_TRACE)
-      call screen(DEBUG,"Enter.")
+      call allMessage(DEBUG,"Enter.")
 #endif
 
 
