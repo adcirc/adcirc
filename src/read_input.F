@@ -2502,8 +2502,11 @@ C     jgf46.00 Read longitude and latitude on which the CPP coordinate
 C     projection is centered (in degrees) if ICS = 2. (The reading of
 C     the top of the grid file, including NE and NP, was moved nearer to
 C     the beginning of this subroutine.)
-      READ(15,*) SLAM0,SFEA0
-      WRITE(16,1112)
+      IF(ICS.EQ.2) THEN
+         READ(15,*) SLAM0,SFEA0
+         WRITE(16,1112)
+      ENDIF
+
       WRITE(16,246)
  246  FORMAT(//,1X,'GRID INFORMATION',//)
 
