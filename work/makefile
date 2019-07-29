@@ -45,9 +45,11 @@ $(warning (INFO) The parallel Fortran compiler is set to $(PFC).)
 $(warning (INFO) The C compiler is set to $(CC).)
 #ZC - Adding this as a warning to users to compile with the implicit array heap allocation options enabled
 ifeq ($(FC),ifort)
+ifneq ($(shell ulimit -s),unlimited)
     $(warning (WARNING) Intel compiler has been specified. The flag "--heap-arrays $(shell ulimit -s)" should be set)
     $(warning (WARNING) in both ADCIRC cmplrflags.mk FFLAGS1 and when compiling the netcdf-fortran library)
     $(warning (WARNING) using FCFLAGS to avoid potential issues with stack allocation of large implicit arrays.)
+endif
 endif
 
 # Specify NETCDF=enable to gmake on the command line to activate netcdf i/o

@@ -791,7 +791,7 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
                IF (Mode.eq.0) SDNumND(iproc,k) = SDNumND(iproc,k)+1
                IF (Mode.eq.1) THEN
                   SDNode = IMAP_NOD_GL(2,NodeNum)
-                  WRITE(sdu(iproc),1100) labels(NodeNum),(AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
+                  WRITE(sdu(iproc),1100) NodeNum,(AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
                ENDIF
             ELSE
                DO m=1, ITOTPROC(NodeNum)
@@ -803,7 +803,7 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
                         ENDIF
                         IF (Mode.eq.1) THEN
                            SDNode = IMAP_NOD_GL2(2*(m-1)+2,NodeNum)
-                           WRITE(sdu(iproc),1100) labels(NodeNum),
+                           WRITE(sdu(iproc),1100) NodeNum,
      &                          (AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
                         ENDIF
                      ENDIF
@@ -7040,10 +7040,10 @@ C---------------------------------------------------------------------------
       USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit,
      &                   SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &                   SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
-     &                   SWAN_OutputTMM10,NOUT_TVW
+     &                   SWAN_OutputTMM10,NOUT_TVW,outputWindDrag
 #else
       USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, 
-     &                   NOUT_TVW                       
+     &                   NOUT_TVW,outputWindDrag                       
 #endif
 C
       IMPLICIT NONE
@@ -7078,6 +7078,7 @@ C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: InitiallyDryDescript   ! initiallydry.63
       type(OutputDataDescript_t), SAVE :: EndRisingInunDescript  ! endrisinginun.63
       type(OutputDataDescript_t), SAVE :: EverDriedDescript      ! everdried.63
+      type(OutputDataDescript_t), SAVE :: windDragDescript       ! windDrag.173
 
       type(OutputDataDescript_t), SAVE :: offsetDescript    ! offset.63
       type(OutputDataDescript_t), SAVE :: offsetStaDescript ! offset.61
@@ -7425,6 +7426,21 @@ C     fort.74
       WindVelDescript % file_basename        = 'fort'
       WindVelDescript % readMaxMin           = .false.
       call makeFileName(WindVelDescript)
+
+C     windDrag.63
+      windDragDescript % specifier            = NOUTGW
+      windDragDescript % lun                  = 173
+      windDragDescript % initial_value        = 0.0
+      windDragDescript % num_items_per_record = 1
+      windDragDescript % num_fd_records       = MNP
+      windDragDescript % num_records_this     = MNP
+      windDragDescript % ConsiderWetDry       = .FALSE.
+      windDragDescript % alternate_value      = -99999.0
+      windDragDescript % field_name           = 'windDrag'
+      windDragDescript % file_extension       = 173
+      windDragDescript % file_basename        = 'windDrag'
+      windDragDescript % readMaxMin           = .false.
+      call makeFileName(windDragDescript)
 
 C     fort.77
       WeirElevDescript % specifier            = NOUT_TVW
@@ -8239,6 +8255,9 @@ C     was specified.
          CALL initNetCDFOutputFile(InitiallyDryDescript,reterr)
          CALL initNetCDFOutputFile(EndRisingInunDescript,reterr)
          CALL initNetCDFOutputFile(EverDriedDescript,reterr)
+      endif
+      if (outputWindDrag.eqv..true.)then
+         CALL initNetCDFOutputFile(windDragDescript,reterr)
       endif
       if ( foundOffsetControlNamelist.eqv..true. ) then
          if ( NOUTE.ne.0 ) then
