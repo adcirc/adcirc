@@ -1429,9 +1429,44 @@ endif
 
 
 ########################################################################
-# i386-apple-darwin using intel
+# i386-apple-darwin (MAC OS X)
 
 ifneq (,$(findstring i386-darwin,$(MACHINE)-$(OS)))
+ifeq ($(compiler),gfortran)
+  PPFC		:=  gfortran
+  FC		:=  gfortran
+  PFC		:=  mpif90
+  FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-none # -march=corei7-avx -m64 -static
+  FFLAGS2	:=  $(FFLAGS1)
+  FFLAGS3	:=  $(FFLAGS1)
+  DA		:=  -DREAL8 -DLINUX -DCSCA
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
+  DPRE		:=  -DREAL8 -DLINUX
+  IMODS 	:=  -I
+  CC		:= gcc
+  CCBE		:= $(CC)
+  CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX -march=corei7-avx -m64 -static-libgcc
+  CLIBS	:=
+  LIBS		:=
+  MSGLIBS	:=
+  ifeq ($(NETCDF),enable)
+     NETCDFHOME  := $(shell nf-config --prefix)
+     FLIBS       :=$(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
+     FFLAGS1     :=$(FFLAGS1) -I$(NETCDFHOME)/include
+     FFLAGS2     :=$(FFLAGS1)
+     FFLAGS3     :=$(FFLAGS1)
+  endif
+#  ifeq ($(NETCDF),enable)
+#        FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
+#  endif
+  $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else
+     MULTIPLE := TRUE
+  endif
+endif
+ifeq ($(compiler),intel)
   PPFC	        := ifort
   FC	        := ifort
   PFC	        := mpif77
@@ -1455,6 +1490,7 @@ ifneq (,$(findstring i386-darwin,$(MACHINE)-$(OS)))
   else
      MULTIPLE := TRUE
   endif
+endif
 endif
 ########################################################################
 ifneq ($(FOUND), TRUE)
