@@ -229,7 +229,7 @@ ifeq ($(compiler),intel)
   PPFC            :=  ifort
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+  FFLAGS1       :=  $(INCDIRS) -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io -traceback
   CFLAGS        := $(INCDIRS) -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
   FLIBS         :=
   ifeq ($(DEBUG),full)
@@ -288,7 +288,7 @@ ifeq ($(compiler),intel)
   MSGLIBS       :=
   ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),hatteras)
-        NETCDFHOME  :=/usr/share/Modules/software/CentOS-7/netcdf-Fortran/4.4.0_intel-18.0.0
+        NETCDFHOME  :=$(shell nf-config --prefix)
         FLIBS       :=$(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
         FFLAGS1     :=$(FFLAGS1) -I$(NETCDFHOME)/include
         FFLAGS2     :=$(FFLAGS1)

@@ -458,7 +458,7 @@ C
       integer :: nbytes = 0
       INTEGER  I,IL,IDUM,N,N1,N2,N3,NDIF1,NDIF2,NDIF3,
      &  IM,NWP,NCOR,NTIP,NWS,NRAMP,IREFYR,NTIF,IL1,Il2,NHARF,NHAINC,IDUM2,
-     &  ITITER,ILUMP,IHOT
+     &  ITITER,ILUMP,IHOT,ICS
      &  , NHSTAR                                                        !for netCDF
       INTEGER IGC  ! 3DVS vertical grid code
       INTEGER NFEN ! 3DVS number of nodes in the vertical grid
@@ -700,7 +700,7 @@ C
      &    (IHOT.EQ.567).OR.(IHOT.EQ.568)) THEN
          useNetCDF = .true.
       ENDIF
-      READ(15,*) IDUM  ! SKIP ICS
+      READ(15,*) ICS  
 C
       READ(15,*) IM                                 !READ IM (model type)
 C
@@ -771,7 +771,7 @@ C
 C               and Temperature forcing
          C2D_BTrans = .TRUE.
       CASE(-4)! 2DDI Diagnostic Baroclinic ADCIRC run with Salinity
-C               and Temperature forcing'
+C               and Temperature forcing
          ! do nothing
       CASE DEFAULT
          print *, "IDEN=",IDEN," not supported"
@@ -925,9 +925,15 @@ C.... tcm v49.64.01 additions for ice
          READ(15,*) RDUM
       ENDDO
       READ(15,*) A00,B00,C00                       !READ IN GWCE TIME WEIGHTING COEFFS
-      DO IL=1,5                                    !SKIP OVER H0 - CORI
-         READ(15,*) RDUM
-      ENDDO
+
+      READ(15,*) RDUM                              !SKIP H0
+      IF(ICS.EQ.2)THEN
+         READ(15,*) RDUM                           !SKIP SLAM0,SFEA0
+      ENDIF
+      READ(15,*) RDUM                              !SKIP FFACTOR
+      READ(15,*) RDUM                              !SKIP ESLM
+      READ(15,*) RDUM                              !SKIP CORI
+
       READ(15,*) NTIF                              !PROCESS NTIF
       DO IL=1,NTIF                                 !SKIP OVER TIPOTAG & TPK, AMIGT,etc.
  26      READ(15,80) LINEI
@@ -939,6 +945,7 @@ C.... tcm v49.64.01 additions for ice
       ENDDO
       MNTIF=NTIF
       IF(NTIF.EQ.0) MNTIF=1
+
       READ(15,*) MNBFR                             !PROCESS MNBFR
       DO IL=1,MNBFR                                !SKIP OVER BOUNTAG, & AMIG, FF,etc.
  28      READ(15,80) LINEI
@@ -947,8 +954,8 @@ C.... tcm v49.64.01 additions for ice
          ENDDO
          GOTO 28
  29      READ(15,*) RDUM
-
       ENDDO
+
       DO IL1=1,MNBFR
  40      READ(15,80) LINEI                          !SKIP OVER ALPHA
          DO I=1,95
@@ -959,6 +966,7 @@ C.... tcm v49.64.01 additions for ice
             READ(15,*) RDUM                          !SKIP OVER BOUNDARY FORCINGS
          ENDDO
       ENDDO
+
       IF(MNBFR.EQ.0) MNBFR=1
       READ(15,*)  RDUM                             !SKIP OVER ANGIN
       MNFFR=0
