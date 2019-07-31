@@ -990,7 +990,7 @@ C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
          ENDIF
       ENDIF
 C
-C     jgf49.0804 Added NWS29 VortexOWI -- don't think we need to
+C     jgf49.0804 Added NWS29 VortexOWI -- dont think we need to
 C     parse out the WTIMINC or other parameters.
       ! jgf: Added NWS30.
       IF (((ABS(NWS)).EQ.29).or.(abs(NWS).eq.30)) THEN
@@ -1030,7 +1030,7 @@ C
       ELSE
          READ(H0MSG,*) H0,NODEDRYMIN,NODEWETRMP,VELMIN
       ENDIF
-C
+Cbob added if to skip SLAM when not cart
       IF (ICS.EQ.2) THEN
          READ(15,80) SLMSG
          READ(SLMSG,*) SLAM0,SFEA0

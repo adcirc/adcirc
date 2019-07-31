@@ -1582,7 +1582,11 @@ C     tcm v51.06.02 added NWS=16: GFDL Met Data
          WRITE(15,80) DRAMPMSG
          WRITE(15,80) COEFMSG
          WRITE(15,80) H0MSG
-         WRITE(15,80) SLMSG
+
+         IF (ICS.EQ.2) THEN
+            WRITE(15,80) SLMSG
+         ENDIF
+
          WRITE(15,80) TAUMSG
          WRITE(15,80) ESLMSG
          WRITE(15,80) CORIMSG
