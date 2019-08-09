@@ -654,6 +654,11 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       REAL(SZ) :: SMAG_UPPER_LIM = 100.d0  ! m^2/s (default upper limit)
       REAL(SZ) :: SMAG_LOWER_LIM = 1.0d-8  ! m^2/s (default lower limit)
       LOGICAL :: SMAG_COMP_FLAG = .FALSE.   !BY DEFAULT DO NOT USE SMAG
+! TCM v53.01.02 Addition for special nearest neighbor station interpolation when
+!           station location occurs in a partially wet / partially dry element
+      LOGICAL :: StatPartWetFix = .FALSE.   !.true. if one wants to handle partially wet/dry elements in a special way
+      INTEGER :: How2FixStatPartWet = 0     ! other numbers could be used later for different ways to interpolate,
+                                            ! instead of nearest neighbor
       ! 
       ! all info needed for self describing dataset in XDMF
       type xdmfMetaData_t

@@ -1782,7 +1782,8 @@ C-----------------------------------------------------------------------
       subroutine stationArrayInterp(descript, fromArray, toArray)
       use sizes, only : sz
       use global, only : nodecode, OutputDataDescript_t, IFNLFA, ETA2, NOFF,
-     &                   allMessage, DEBUG, setMessageSource, unsetMessageSource
+     &                   allMessage, DEBUG, setMessageSource, unsetMessageSource,
+     &                   StatPartWetFix,How2FixStatPartWet
       use mesh, only : dp, nm
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
@@ -1791,7 +1792,9 @@ C-----------------------------------------------------------------------
       integer :: e
       real(sz) :: d1, d2, d3
       real(sz) :: H2N1, H2N2, H2N3
-      integer :: ncele
+      real(sz) :: tmpwts(3)
+      integer :: ilocmaxwt(1)
+      integer :: ncele,ncsum
       integer :: i, j
 
       call setMessageSource("stationArrayInterp")
@@ -1827,8 +1830,41 @@ C-----------------------------------------------------------------------
          if (descript % considerWetDry .eqv..true. ) then
             ncele = nodecode(nm(e,1)) * nodecode(nm(e,2)) *
      &             nodecode(nm(e,3))
-            if (ncele.eq.0) then
+            if ((ncele.eq.0).and.(StatPartWetFix.eqv..false.)) then
+               !every node is not wet, and no special interpolatio
+               ! is to be done, therefore write out the alternate value
                toArray(j) = descript % alternate_value
+            elseif ( (ncele.eq.0) .and.
+     &               (StatPartWetFix .eqv. .true.) ) then
+               !every node is not wet, and special interpolation
+               ! has been specified
+
+               !check to see if the nearest neighbor
+               !node is wet, if so then use it
+
+               ncsum = nodecode(nm(e,1)) + nodecode(nm(e,2)) +
+     &                 nodecode(nm(e,3))
+               !if at least one node is wet then proceed
+               if ( ncsum .gt. 0 ) then
+                   tmpwts(1) = descript % interp_fac1(j)
+                   tmpwts(2) = descript % interp_fac2(j)
+                   tmpwts(3) = descript % interp_fac3(j)
+                   if ( How2FixStatPartWet .eq. 0 ) then !Use nearest neighbor value
+                      ilocmaxwt = maxloc(tmpwts) !nearest neighbor location (maximum weight)
+                      !if the nearest neighbor is wet, then use that value
+                      if (nodecode(nm(e,ilocmaxwt(1))).gt.0) then
+                         toArray(j)=fromArray(nm(e,ilocmaxwt(1)))
+                      else !nearest neighbor is dry
+                         toArray(j) = descript % alternate_value
+                      endif
+                  else !left space for other options later
+                     toArray(j) = descript % alternate_value
+                  endif
+               else  !every node is dry
+                  toArray(j) = descript % alternate_value
+               endif
+
+            else !ncele.ne.0 means the element is all wet (all nodes wet)
             endif
          endif
 

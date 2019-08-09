@@ -605,15 +605,20 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       REWIND(15)
       
       ! zc: Add namelist for user to control time varying weirs
+      IOS = 0
       READ(UNIT=15,NML=TVWControl,IOSTAT=IOS)
       IF(IOS.GT.0)THEN
          WRITE(*,'(2A)') "INFO: The time varying weir control namelist",
      &      " was not found."
          found_tvw_nml = .FALSE.
-      ELSE
+      ELSEIF(IOS.eq.0) then
          WRITE(*,'(2A)') "INFO: The time varying weir control namelist",
      &      " was found."
          found_tvw_nml = .TRUE.
+      ELSE
+         WRITE(*,'(2A)') "INFO: The time varying weir control namelist",
+     &      " produced an error"
+         found_tvw_nml = .FALSE.
       ENDIF
       REWIND(15)
 
