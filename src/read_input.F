@@ -74,7 +74,8 @@ C
       NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,
      &  rhoAir, invertedBarometerOnElevationBoundary
       NAMELIST /subdomainModeling/ subdomainOn
-      NAMELIST /wetDryControl/ outputNodeCode, outputNOFF, noffActive
+      NAMELIST /wetDryControl/ outputNodeCode, outputNOFF,
+     &  noffActive, StatPartWetFix, How2FixStatPartWet
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
@@ -338,6 +339,8 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       !
       ! jgf52.05: Add a namelist for the user to control
       ! output of NODECODE and NOFF.
+      ! tcm v52. added StatPartWetFix and How2FixStatPartWet for handling
+      !  station output in partially wet/dry elements for elevation stations
       namelistSpecifier = 'wetDryControl'
       read(unit=15,nml=wetDryControl,iostat=IOS)
       call logNameListReadStatus(namelistSpecifier,ios)
@@ -346,6 +349,11 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       write(scratchMessage,'(a,l)') "outputNOFF=",outputNOFF
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,l)') "noffActive=",noffActive
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "StatPartWetFix=",StatPartWetFix
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "How2FixStatPartWet=",
+     &   How2FixStatPartWet
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
@@ -4233,6 +4241,20 @@ C     read in and check matrix solver parameters
             STOP
          ENDIF
       ENDIF
+
+!     tcm v53.01.02 added this special information writing to the ScreenUnit and fort.16
+!     when using special interpolation of elevation stations in partially wet/dry
+!     elements
+      IF ((StatPartWetFix.eqv..true.).and.(NSCREEN.NE.0.AND.MYPROC.EQ.0)) THEN
+         WRITE(ScreenUnit,1810)
+         write(16,1810)
+ 1810 FORMAT(//,'INFO:  ELEVATION STATIONS LOCATED IN A PARTIALLY WET',
+     &          ' ELEMENT WILL USE',
+     &        /,'       NEAREST NEIGHBOR INTERPOLATION INSTEAD OF',
+     &          ' DEFAULTING TO -99999.0',//)
+      ENDIF
+
+
 C...
 C...  Read input for 3D run
 C...
@@ -4305,8 +4327,9 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
       WRITE(16,4105)
       IF(USE_ELEV_STAT_FILE) WRITE(16,3180)  !tcm v51.20.05
       IF(USE_VEL_STAT_FILE) WRITE(16,3181)   !tcm v51.20.05 
-      IF(USE_MET_STAT_FILE) WRITE(16,3182)   !tcm v51.20.05 
-      IF(USE_CONC_STAT_FILE) WRITE(16,3183)  !tcm v51.20.05 
+      IF(USE_MET_STAT_FILE) WRITE(16,3182)   !tcm v51.20.05
+      IF(USE_CONC_STAT_FILE) WRITE(16,3183)  !tcm v51.20.05
+      IF(StatPartWetFix.EQV..TRUE.) WRITE(16,3184) !tcm v53.01.02 
       WRITE(16,4108)
 C
 C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
@@ -4354,6 +4377,7 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
  3181 FORMAT(' *   An external velocity station file is used       *')  !tcm v51.20.05
  3182 FORMAT(' *   An external met. station file is used           *')  !tcm v51.20.05
  3183 FORMAT(' *   An external concentration station file is used  *')  !tcm v51.20.05
+ 3184 FORMAT(' *   Special Wet/Dry consideration used at stations  *')  !tcm v53.01.02
  4108 FORMAT(' *****************************************************',/)
 C
 

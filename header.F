@@ -2,7 +2,24 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
-C  v53.00 - 07/20/2016 - jgf - Committing changes made to v52release branch
+C    v53.01.02 - 08/08/2019 - tcm - Made changes to add a third level of wind
+C              and pressure files for owi formatted NWS=12 files, added
+C              a namelist to the fort.22 file for NWS=12 so that file
+C              names can be specified instead of defaulting to fort.221,
+C              fort.222, etc.  Added a special interpolation option for
+C              elevation station outputs so that if a station location
+C              is found in an element that is partially wet/dry then
+C              the elevation value at that station is set to the value
+C              at its nearest neighbor node within that element.  Fully
+C              wet elements are treated as they always have been using
+C              linear interpolation.  This special interpolation method
+C              is activated using the wetDryControl namelist in the
+C              fort.15 file and specifying StatPartWetFix = .true.
+C              The default method is left unchanged without this special
+C              flag. (added by ast)
+C    v53.01.01 - 08/08/2019 - tcm - Changed reserved word "time" to "timeloc"
+C              (added by ast)
+C    v53.00 - 07/20/2016 - jgf - Committing changes made to v52release branch
 C           revisions 1208:1223 (v52.30.01 to v52.30.07) to trunk:
 C    v52.30.07 - 07/20/2016 - jgf - Applied tcm fix that originally went into
 C             v51.52.38 r1210 of v51release branch and includes makefile

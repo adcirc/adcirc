@@ -1980,7 +1980,7 @@ C
             write(15,*) "&metControl "
             write(15,*) "    WindDragLimit=",Winddraglimit,","
             write(15,*) "    DragLawString='",trim(Draglawstring),"',"
-            write(15,*) "    outputWindDrag=",outputWindDrag,","            
+            write(15,*) "    outputWindDrag=",outputWindDrag,","        
             write(15,*) "    rhoAir=",rhoAir,","
             write(15,*) "    invertedBarometerOnElevationBoundary=",
      &                        invertedBarometerOnElevationBoundary
@@ -2015,9 +2015,11 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 
          ! wet dry control
          if (foundWetDryControlNameList) then
-            WRITE(15,'(a,l,a,l,a,l,a,l)') 
+            WRITE(15,'(a,l,a,l,a,l,a,l,a,l,a,l)') 
      &         "&wetDryControl outputNodeCode=",outputNodeCode,
-     &         " outputNOFF=",outputNOFF," noffActive=",noffActive," /"
+     &         " outputNOFF=",outputNOFF," noffActive=",noffActive,
+     &         " StatPartWetFix=",StatPartWetFix,
+     &         " How2FixStatPartWet=",How2FixStatPartWet, " /"
          endif
 
          ! jgf52.08.02: inundation output control

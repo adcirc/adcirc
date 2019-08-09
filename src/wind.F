@@ -1085,7 +1085,7 @@ C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
               WVNY1(I)=WVNY2(I)
               PRN1(I)=PRN2(I)
             END DO
-            CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+            CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G,PRBCKGRND)
             if (trim(DragLawString) == "Powell" .or.
      &          trim(DragLawString) == "POWELL" .or.
      &          trim(DragLawString) == "powell" ) then
@@ -1196,7 +1196,7 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
                WVNY1(I)=WVNY2(I)
                PRN1(I)=PRN2(I)
             END DO
-            CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+            CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G,PRBCKGRND)
             if (trim(DragLawString) == "Powell" .or.
      &          trim(DragLawString) == "POWELL" .or.
      &          trim(DragLawString) == "powell" ) then
@@ -1486,14 +1486,14 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
       ! jgf49.1001 Added NWS=29, asymmetric vortex wind (NWS19) embedded in
       ! OWI (NWS12) basin scale wind field.
       IF ((ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.29).OR.(ABS(NWS).EQ.30)) THEN
-        CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-        CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+        CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G,PRBCKGRND)
+        CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G,PRBCKGRND)
         if (trim(DragLawString) == "Powell" .or.
      &       trim(DragLawString) == "POWELL" .or.
      &       trim(DragLawString) == "powell" ) then
             call findStormCenter(eyeLatR, eyeLonR, foundEye)
         endif           
-        CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+        CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G,PRBCKGRND)
         if (trim(DragLawString) == "Powell" .or.
      &       trim(DragLawString) == "POWELL" .or.
      &       trim(DragLawString) == "powell" ) then
@@ -2270,9 +2270,9 @@ C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
             WTIME1 = STATIM*86400.D0 ! wind data relative to cold start time
          endif
          WTIME2 = WTIME1 + WTIMINC
-         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  ! This just initializes some variables and might set WVNX1,etc... if skipping ahead.
-         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  !TCM v49.02 Added read for rec. 1
-         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G,PRBCKGRND)  ! This just initializes some variables and might set WVNX1,etc... if skipping ahead.
+         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G,PRBCKGRND)  !TCM v49.02 Added read for rec. 1
+         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G,PRBCKGRND)
           ! fast forward if wind data are relative to cold start time
          if (nws.gt.0) then
             DO IT=1,ITHS
@@ -2285,7 +2285,7 @@ C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
                      WVNY1(I)=WVNY2(I)
                      PRN1(I)=PRN2(I)
                   END DO
-                  CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+                  CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G,PRBCKGRND)
                ENDIF
             END DO
          endif
