@@ -2866,7 +2866,7 @@ C     the beginning of this subroutine.)
 C     jgf51.12.13: Adjust node table based on ics, nolifa, h0,
 C     slam0, sfea0. Check for sufficient precision. Compute neighbor table.
       call initializeMesh()
-            
+
 C   For Sponge layer
       IF ( LoadAbsLayerSigma .AND. FoundAbsLayerSigma ) THEN
          CALL FLAGSPONGEELEM()
@@ -3205,11 +3205,6 @@ C......DW
          WRITE(16,3604)
  3604    FORMAT(/,5X,'LATITUDES ARE USED TO COMPUTE VARIABLE CORIOLIS',
      &        /,7X,'AND ARE BASED ON INPUT NODAL COORDINATES',/)
-         if (CORI.lt.0) then
-            TSINT = 1; TSINV = 0
-            write(16,*) 'INFO: TRUE SPHERE OPTION DETECTED...',
-     &                  'IMPLEMENTING CORRECTED SPHERICAL COORDINATES'
-         endif
          IF(NABOUT.NE.1) THEN
             WRITE(16,2092)
  2092       FORMAT(/,10X,' NODE ',5X,'NODAL CORIOLIS CORIF',/)

@@ -1670,7 +1670,7 @@ C...
             ETAS(NBDI) = ETA2(NBDI)-ETA1(NBDI)
 C...        WJP multiply by cos(lat) in case of correction
             ETAS(NBDI) = ETAS(NBDI)*(TSINV + TSINT*cos(sfea(NBDI)))
-            GWCE_LV(NBDI) = ETAS(NBDI)*NODECODE(NBDI)*EP
+            GWCE_LV(NBDI)=ETAS(NBDI)*NODECODE(NBDI)*EP
             DO J=2,NNEIGH(NBDI)
                GWCE_LV(NEITAB(NBDI,J))=GWCE_LV(NEITAB(NBDI,J))
      &              -ETAS(NBDI)*OBCCOEF(I,J-1)
@@ -1680,8 +1680,6 @@ C...        WJP multiply by cos(lat) in case of correction
          DO I=1,NETA
             NBDI=NBD(I)
             ETAS(NBDI)=ETA2(NBDI)-ETA1(NBDI)
-C...        WJP multiply by cos(lat) in case of correction
-            ETAS(NBDI) = ETAS(NBDI)*(TSINV + TSINT*cos(sfea(NBDI)))
             GWCE_LV(NBDI) = ETAS(NBDI)*NODECODE(NBDI)*COEFD(NBDI)
          END DO
       ENDIF
