@@ -405,7 +405,7 @@ C-----------------------------------------------------------------------
                     IF ( IFSPROTS.eq. 1) THEN
                        CALL DRVSPCOORSROTS( lonr, latr, LON_TEMP, LAT_TEMP )
                     ELSE
-                       latr = LAT_TEMP ;  lonr = LON_TEMP 
+                       latr = LAT_TEMP ;  lonr = LON_TEMP
                     END IF
                     CALL CYLINDERMAP( X, Y, lonr, latr, SLAM0, SFEA0, ICS)
                 ENDIF
