@@ -89,8 +89,7 @@ C-----------------------------------------------------------------------
       subroutine writeOutArrayXDMF(timeLoc, it, descript)
       use global, only: OutputDataDescript_t, scratchmessage, error, nt,
      &            allMessage
-      use mesh, only: NM, NE, agrid, dp, ics, np, projection, x, y,
-     &            terminate
+      use mesh, only: NM, NE, agrid, dp, ics, np, x, y, terminate
       use sizes,only: mnproc
       implicit none
 #ifdef ADCXDMF
@@ -199,16 +198,6 @@ C-----------------------------------------------------------------------
          call xdmfAddPreviousAttribute(descript % xdmfMD % xdmfFortranObj,
      &                                  descript % xdmfMD % depthID)
       endif
-      !
-      ! modify projection string if indicated by the fort.15
-      select case(ics)
-      case(1)
-         projection = 'cartesian' ! most likely CPP
-      case(2)
-         projection = 'geographic'
-      case default
-         projection = 'unknown'
-      end select
       !
       ! set up metadata for each data type
       descript % xdmfMD % createdIDs = .false.

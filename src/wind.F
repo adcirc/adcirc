@@ -69,7 +69,7 @@ C
       REAL(8), PARAMETER :: TWOPI=PI*2.D0
       REAL(8), PARAMETER :: HFPI=PI/2.D0
       REAL(8), PARAMETER :: mperdeg  = Rearth * pi / 180.0d0
-      real(sz) :: prbckgrnd_mH2O
+      real(sz) :: prbckgrnd_mH2O, RhoWat0g
       real(sz) :: airwaterdensityrat
 
       INTEGER StormNumber !jgf46.28 For Holland Wind model wind multiplier
@@ -255,8 +255,11 @@ C
       integer,allocatable  :: indp(:,:,:) 
       character(len=200) :: Pfile, Wfile, Pinv, Winv, Cinv, Cfile
       character(len=200) :: Pfile1, Wfile1, Pinv1, Winv1
+      character(len=200) :: Pvar, Uvar, Vvar, Cvar, Tvar, Lonvar, Latvar
+      character(len=200) :: Tdim, Londim, Latdim, Tformat
       type(datetime) :: CurDT
-#endif
+      logical :: grb2flag
+      integer :: NT
 #endif
 C------------------------end of data declarations-----------------------
       CONTAINS
@@ -298,10 +301,11 @@ C     ----------------------------------------------------------------
       allocate ( prn1(np) )
       allocate ( prn2(np) )
   
-      airwaterdensityrat = rhoAir/RhoWat0
+      airwaterdensityrat = rhoAir / rhoWat0
 C.... tcm v49.16 20100617 added
 C.... convert background pressure from millibars to meters of water
-      PRBCKGRND_MH2O = 100.0D0*PRBCKGRND/(RHOWAT0*G)
+      rhoWat0g = rhoWat0 * g
+      PRBCKGRND_MH2O = 100.0D0 * PRBCKGRND / rhoWat0g
       prn1 = PRBCKGRND_MH2O
       prn2 = PRBCKGRND_MH2O
       
@@ -4615,7 +4619,7 @@ C     Get data for this time step.
       ! @jasonfleming: If this is a "CALM" period, set winds to zero
       ! velocity and pressure equal to the background pressure and return.
       if ( cpress.lt.0.d0 ) then
-         press(:) = PRBCKGRND * mb2pa / (rhoWat0 * g) ! convert mb to mH2O
+         press(:) = PRBCKGRND * mb2pa / rhoWat0g ! convert mb to mH2O
          wvnx(:)=0.d0
          wvny(:)=0.d0
          EyeLat(1) = EyeLat(2)
@@ -7488,7 +7492,7 @@ C
      &                     ADC_X,ADC_Y,FNAME,SLAM0,SFEA0,
      &                     MAX_INTERP_DIST)
        USE SIZES
-       USE MESH, ONLY : CPP
+       USE MESH, ONLY : Project
        USE GLOBAL, ONLY : DEG2RAD,PRBCKGRND,G,RHOWAT0,
      &        setMessageSource,unsetMessageSource,allMessage,
      &        logMessage,scratchMessage,DEBUG,ECHO,INFO,ERROR
@@ -7573,7 +7577,7 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
           U_WIND_GFDL(I) = UTMP
           V_WIND_GFDL(I) = VTMP
           PRESS_GFDL(I) = PTMP
-          CALL CPP(XY_GFDL(1,I),XY_GFDL(2,I),LON_GFDL,LAT_GFDL,
+          CALL Project(XY_GFDL(1,I),XY_GFDL(2,I),LON_GFDL,LAT_GFDL,
      &             SLAM0,SFEA0)
 
        ENDDO !I
@@ -8318,11 +8322,13 @@ C----------------------------------------------------------------------
       END SUBROUTINE windTerminate
 C----------------------------------------------------------------------
 #ifdef DATETIME
-#ifdef GRIB2API
 C----------------------------------------------------------------------
 C.... WJP Adding in subroutines for GRB2 reading below (NWS = 14)
+C.... or netcdf (depending on what is present)
       SUBROUTINE NWS14INIT()
+#ifdef GRIB2API
       use wgrib2api
+#endif
       use global, only: ncice
       use sizes, only: myProc
 #ifdef CMPI
@@ -8335,8 +8341,11 @@ C.... WJP Adding in subroutines for GRB2 reading below (NWS = 14)
       
       ! Initialise the datetime
       CurDT = basedatetime + timedelta(minutes=floor(WTIME1/60d0))
+      NT = 0
 
       ! Set the file names
+      ! Trying to read from grib2
+      grb2flag = .true.
       Pfile = 'fort.221.grb2'
       Pinv  = 'fort.221.inv'
       Wfile = 'fort.222.grb2'
@@ -8349,6 +8358,49 @@ C.... WJP Adding in subroutines for GRB2 reading below (NWS = 14)
       Wfile1 = 'fort.224.grb2'
       Winv1  = 'fort.224.inv'
 
+      Pvar = 'S'  ! searching for PRMSL or MSLET or PRES:SURFACE
+                  ! prev: :PRMSL:mean sea level:'
+      Uvar = ':UGRD:10 m above ground:' 
+      Vvar = ':VGRD:10 m above ground:' 
+      Cvar = ':ICEC:surface:' 
+      inquire(file=Pfile,exist=Fexists)
+      if (.not.Fexists) then
+         ! No grib2 file, check for netcdf file
+         grb2flag = .false.
+         Pfile = 'fort.221.nc'
+         Wfile = 'fort.222.nc'
+         Cfile = 'fort.225.nc'
+         Pfile1 = 'fort.223.nc'
+         Wfile1 = 'fort.224.nc'
+         inquire(file=Pfile,exist=Fexists)
+         if (.not.Fexists) then
+            call allMessage(ERROR,
+     &                     'neither .grb2 nor .nc wind files exist.')
+            call windTerminate()
+         endif
+         inquire(file='fort.22',exist=Fexists)
+         if (.not.Fexists) then
+            call allMessage(ERROR,'fort.22 header file required to '//
+     &                            'specify netcdf var names.')
+            call windTerminate()
+         else
+            ! Read netcdf dim/var names and datestr format from fort.22
+            open(22,file='fort.22')
+               read(22,*) Tdim    ! Time dimension name
+               read(22,*) Tvar    ! Time variable name
+               read(22,*) Tformat ! Format of time datestr
+               read(22,*) Londim  ! Lon dimension name
+               read(22,*) Lonvar  ! Lon var name
+               read(22,*) Latdim  ! Lat dimension name
+               read(22,*) Latvar  ! Lat var name
+               read(22,*) Pvar    ! Pressure var name
+               read(22,*) Uvar    ! U10 var name
+               read(22,*) Vvar    ! V10 Var name
+            close(22) 
+         endif    
+      endif
+#ifdef GRIB2API
+      if (grb2flag) then
 #ifdef CMPI
       ! only get header with one processor
       if (myProc.eq.0) then
@@ -8419,106 +8471,111 @@ C.... WJP Adding in subroutines for GRB2 reading below (NWS = 14)
       ! Wait til procesor one has written header
       call MSG_BARRIER()
 #endif
+      endif
+#endif
       call allMessage(ECHO,'Finished init of NWS14')
 C----------------------------------------------------------------------
       END SUBROUTINE NWS14INIT
 C----------------------------------------------------------------------
       SUBROUTINE NWS14GET(WVNX2,WVNY2,PRN2,CICE2)
-      use mesh, only: NP, SLAM, SFEA, bl_interp
+      use mesh, only: NP, SLAM, SFEA, bl_interp2
       implicit none
 
       real(sz),intent(out) :: PRN2(NP), WVNX2(NP), WVNY2(NP)
       real(sz),intent(out),optional :: CICE2(NP)
       integer :: i, ii, nxp, nyp, indt(4)
       real,allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice, lat, lon
-      real(sz),allocatable,dimension(:) :: latP, lonP
       real(sz) :: xx, yy, wt(4) 
-      character(len=200) :: var, str_date
 
-      ! Getting the date in str_date format
-      str_date = ':start_FT='//CurDT%strftime("%Y%m%d%H")//'0000:'
-      call logMessage(ECHO,'CurDT strng: '//trim(str_date))
-     
-      ! Get the Pressure
-      var = 'S'  ! searching for PRMSL or MSLET or PRES:SURFACE
-      !':PRMSL:mean sea level:'
-      call READNWS14(Pfile,Pinv,var,str_date,Pmsl)
-
-      ! Get the U-winds 
-      var = ':UGRD:10 m above ground:' 
-      call READNWS14(Wfile,Winv,var,str_date,U10)
-      
-      ! Get the V-winds 
-      var = ':VGRD:10 m above ground:' 
-      call READNWS14(Wfile,Winv,var,str_date,V10)
-
-      ! Get the ice concentration if required 
-      if (present(CICE2)) then
-         var = ':ICEC:surface:' 
-         call READNWS14(Cfile,Cinv,var,str_date,Cice)
-      endif      
+      ! Show the date in str_date format
+      call logMessage(ECHO,'CurDT strng: '//
+     &                CurDT%strftime("%Y-%m-%d %H:%M"))
 
       ! Compute the interpolating factors and indices on the first step
       if (.not.allocated(indp)) then
-         if (size(Pmsl) == size(U10)) then
-            ub = 1;
-         else
-            ub = 2;
-         endif
-         if (present(CICE2)) then
-            if (size(Cice) == size(Pmsl)) then
-               ubc = 1;
-            elseif (size(Cice) == size(U10)) then
-               ubc = 2;
+         ub = 2; ubc = 1;
+         if (present(CICE2)) ub = 3
+         ! Check dimensions
+         do ii = 1,ub
+            if (ii.eq.1) then
+               call READNWS14(Pfile,Pinv,Pvar,lon,lat)
+               nxp = ubound(lon,1); nyp = ubound(lat,2)
+            elseif (ii.eq.2) then
+               call READNWS14(Wfile,Winv,Uvar,lon,lat)
+               if (nxp.eq.ubound(lon,1).and.nyp.eq.ubound(lat,2)) then
+                  ub = 1; exit
+               endif
+               nxp = ubound(lon,1); nyp = ubound(lat,2)
             else
-               call allMessage(ERROR,'CIce has different size to either'
-     &                        //' Psml or U10')
-               call windTerminate()
+               call READNWS14(Cfile,Cinv,Cvar,lon,lat)
+               if (nxp.eq.ubound(lon,1).and.nyp.eq.ubound(lat,2)) then
+                  ubc = 2;
+               endif
             endif
-         endif
+         enddo
          allocate(indp(ub,4,np),weightsp(ub,4,np))
          ! Make the interpolant weights
          do ii = 1,ub
             if (ii.eq.1) then
-               var = 'S' !PRMSL:mean sea level:'
-               call READNWS14(Pfile,Pinv,var,str_date,lon,lat)
+               call READNWS14(Pfile,Pinv,Pvar,lon,lat)
             else
-               var = ':UGRD:10 m above ground:' 
-               call READNWS14(Wfile,Winv,var,str_date,lon,lat)
+               call READNWS14(Wfile,Winv,Uvar,lon,lat)
             endif
             nxp = ubound(lon,1); nyp = ubound(lat,2)
-            allocate(lonP(nxp),latP(nyp))
-            lonP = lon(:,1); latP = lat(1,:)
-            deallocate(lat,lon)
             do i = 1,np
                xx = rad2deg*slam(i)
                ! Convert our numbers if grids are 0 to 360
-               if (maxval(lonP).gt.180d0.and.xx < 0d0) xx = xx + 360d0
+               if (maxval(lon).gt.180d0.and.xx < 0d0) xx = xx + 360d0
                yy = rad2deg*sfea(i)
-               call bl_interp(nxp,lonP,nyp,latP,xx,yy,indt,wt)
+               call bl_interp2(nxp,nyp,lon,lat,xx,yy,indt,wt)
                indp(ii,:,i) = indt
                weightsp(ii,:,i) = wt 
             enddo
-            deallocate(lonP,latP) 
+            deallocate(lon,lat)
+!            srtI(ii,:) = [minval(indp(ii,1,:)),minval(indp(ii,2,:))]
+!            endI(ii,:) = [maxval(indp(ii,3,:)),maxval(indp(ii,4,:))]
          enddo
       endif
+      
+      ! Get the Pressure
+      !':PRMSL:mean sea level:'
+      call READNWS14(Pfile,Pinv,Pvar,Pmsl)
+
+      ! Get the U-winds 
+      call READNWS14(Wfile,Winv,Uvar,U10)
+      
+      ! Get the V-winds 
+      call READNWS14(Wfile,Winv,Vvar,V10)
+
+      ! Get the ice concentration if required 
+      if (present(CICE2)) then
+         call READNWS14(Cfile,Cinv,Cvar,Cice)
+      endif      
 
       ! Doing the interpolation from their grid to ours
       do i = 1,np
-         PRN2(i) = Pmsl(indp(1,1,i),indp(1,2,i))*weightsp(1,1,i) + 
-     &             Pmsl(indp(1,3,i),indp(1,2,i))*weightsp(1,2,i) +
-     &             Pmsl(indp(1,1,i),indp(1,4,i))*weightsp(1,3,i) +
-     &             Pmsl(indp(1,3,i),indp(1,4,i))*weightsp(1,4,i)
-         WVNX2(i) = U10(indp(ub,1,i),indp(ub,2,i))*weightsp(ub,1,i) + 
-     &              U10(indp(ub,3,i),indp(ub,2,i))*weightsp(ub,2,i) +
-     &              U10(indp(ub,1,i),indp(ub,4,i))*weightsp(ub,3,i) +
+         if (indp(1,1,i) < 0) then
+            PRN2(i) = PRBCKGRND_MH2O
+         else           
+            PRN2(i) = ( Pmsl(indp(1,1,i),indp(1,2,i))*weightsp(1,1,i) + 
+     &             Pmsl(indp(1,3,i),indp(1,2,i))*weightsp(1,2,i)      +
+     &             Pmsl(indp(1,1,i),indp(1,4,i))*weightsp(1,3,i)      +
+     &             Pmsl(indp(1,3,i),indp(1,4,i))*weightsp(1,4,i) )  
+     &              / rhoWat0g
+         endif
+         if (indp(ub,1,i) < 0) then
+            WVNX2(i) = 0d0; WVNY2(i) = 0d0
+         else
+            WVNX2(i) = U10(indp(ub,1,i),indp(ub,2,i))*weightsp(ub,1,i) +
+     &              U10(indp(ub,3,i),indp(ub,2,i))*weightsp(ub,2,i)    +
+     &              U10(indp(ub,1,i),indp(ub,4,i))*weightsp(ub,3,i)    +
      &              U10(indp(ub,3,i),indp(ub,4,i))*weightsp(ub,4,i)
-         WVNY2(i) = V10(indp(ub,1,i),indp(ub,2,i))*weightsp(ub,1,i) + 
-     &              V10(indp(ub,3,i),indp(ub,2,i))*weightsp(ub,2,i) +
-     &              V10(indp(ub,1,i),indp(ub,4,i))*weightsp(ub,3,i) +
+            WVNY2(i) = V10(indp(ub,1,i),indp(ub,2,i))*weightsp(ub,1,i) +
+     &              V10(indp(ub,3,i),indp(ub,2,i))*weightsp(ub,2,i)    +
+     &              V10(indp(ub,1,i),indp(ub,4,i))*weightsp(ub,3,i)    +
      &              V10(indp(ub,3,i),indp(ub,4,i))*weightsp(ub,4,i)
+         endif
       enddo 
-      PRN2 = PRN2/ (rhowat0 *g)
       deallocate(Pmsl,U10,V10)
       
       ! If ice concentration is present
@@ -8534,46 +8591,119 @@ C----------------------------------------------------------------------
 
       ! Add WTIMINC on CurDT for next WTIME  
       CurDT = CurDT + timedelta(minutes=nint(WTIMINC/60d0))
+      ! Next time index for the netcdf reading
+      NT = NT + 1
       !
 C----------------------------------------------------------------------
       END SUBROUTINE NWS14GET
 C----------------------------------------------------------------------
-      SUBROUTINE READNWS14(fileN,invN,var,str_date,data2,data22)
+      SUBROUTINE READNWS14(fileN,invN,var,data2,data22)
+#ifdef GRIB2API
       use wgrib2api
+#endif
+#ifdef ADCNETCDF
+      use netcdf
+      use Couple2BC3D, only: check_err
+#endif
       implicit none
       integer :: iret, iter
-      character(len=200),intent(in) :: var, fileN, invN, str_date
+      !integer,intent(in) :: startI(4), endI(4)
+      character(len=200),intent(in) :: var, fileN, invN
       real,allocatable,intent(out) :: data2(:,:) 
       real,allocatable,intent(out),optional :: data22(:,:) 
+      character(len=19),allocatable :: TimeStr(:) 
+      character(len=200) :: str_date
+      integer :: NC_ID, Temp_ID, NX, NY, TL 
+
+      ! Getting the date in str_date format
+      if (grb2flag) then
+         str_date = ':start_FT='//CurDT%strftime("%Y%m%d%H")//'0000:'
+      endif      
 
       if (present(data22)) then
-         iret = grb2_inq(fileN,invN,var,str_date,lat=data22,lon=data2)
-         if (iret.gt.0) then
-            call logMessage(ECHO,'Successfully read LatLon '//var)
-         else
-            call ArnoldSchwarzenegger(iret,var,fileN)
+         if (grb2flag) then 
+#ifdef GRIB2API
+            iret =grb2_inq(fileN,invN,var,str_date,lat=data22,lon=data2)
+#endif
+            if (iret.gt.0) then
+               call logMessage(ECHO,'Successfully read LatLon '//var)
+            else
+               call ArnoldSchwarzenegger(iret,var,fileN)
+            endif
+         else 
+            ! Read lon and lat
+#ifdef ADCNETCDF
+            call Check_err(NF90_OPEN(fileN,nf90_nowrite,NC_ID))
+            call Check_err(NF90_INQ_DIMID(NC_ID,Latdim,Temp_ID))
+            call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NY))
+            call Check_err(NF90_INQ_DIMID(NC_ID,Londim,Temp_ID))
+            call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NX))
+            call Check_err(NF90_INQ_DIMID(NC_ID,Tdim,Temp_ID))
+            call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=TL))
+            allocate(data2(NX,NY),data22(NX,NY),TimeStr(TL))
+            if (NT.eq.0) then
+               call Check_err(NF90_INQ_VARID(NC_ID,Tvar,Temp_ID))
+               call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
+               ! Determine the first timestep index
+               str_date = CurDT%strftime(trim(Tformat)) 
+               write(16,*) 'Str_date: ',trim(str_date)
+               do NT = 1,TL
+                  if (trim(str_date).eq.TimeStr(NT)) exit
+               enddo
+               call logMessage(ECHO,'Starting from '//TimeStr(NT))
+               write(16,*) ' Starting time indice = ',NT 
+            endif
+            call Check_err(NF90_INQ_VARID(NC_ID,Latvar,Temp_ID))
+            call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,data22,
+     &                     start=[1, 1, NT],count=[NX, NY, 1]))
+            call Check_err(NF90_INQ_VARID(NC_ID,Lonvar,Temp_ID))
+            call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,data2,
+     &                     start=[1, 1, NT],count=[NX, NY, 1]))
+            call Check_err(NF90_CLOSE(NC_ID))
+#endif
          endif
          return
       endif
 
-      iret = -1; iter = 0
-      do while (iret.le.0.and.iter < 10) 
-         if (iter > 0) then
-            call logMessage(WARNING,'Trying to read again '//var)
-            call sleep(5)
+      if (grb2flag) then
+         ! GRIB2
+         iret = -1; iter = 0
+         do while (iret.le.0.and.iter < 10) 
+            if (iter > 0) then
+               call logMessage(WARNING,'Trying to read again '//var)
+               call sleep(5)
+            endif
+#ifdef GRIB2API
+            iret = grb2_inq(fileN,invN,var,str_date,data2=data2)
+            if (iret.gt.1.and.iter.eq.0) then
+               ! May have two entries bcause of forecast/DA overlap
+               call logMessage(DEBUG,'> 1 msg, trying to read '//var)
+               iret = grb2_inq(fileN,invN,var,':anl:',
+     &                         str_date,data2=data2)
+            endif
+#endif
+            iter = iter + 1
+         enddo
+         if (iret.eq.1.or.iret.eq.2) then
+            call logMessage(DEBUG,'Successfully read '//var)
+         else
+            call ArnoldSchwarzenegger(iret,var,fileN)
          endif
-         iret = grb2_inq(fileN,invN,var,str_date,data2=data2)
-         if (iret.gt.1.and.iter.eq.0) then
-            ! May have two entries bcause of forecast/DA overlap
-            call logMessage(DEBUG,'> 1 messages, trying to read '//var)
-            iret = grb2_inq(fileN,invN,var,':anl:',str_date,data2=data2)
-         endif
-         iter = iter + 1
-      enddo
-      if (iret.eq.1.or.iret.eq.2) then
-         call logMessage(DEBUG,'Successfully read '//var)
+C..... 
       else
-         call ArnoldSchwarzenegger(iret,var,fileN)
+         ! NETCDF
+#ifdef ADCNETCDF
+         call Check_err(NF90_OPEN(fileN,nf90_nowrite,NC_ID))
+         call Check_err(NF90_INQ_DIMID(NC_ID,Latdim,Temp_ID))
+         call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NY))
+         call Check_err(NF90_INQ_DIMID(NC_ID,Londim,Temp_ID))
+         call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NX))
+         allocate(data2(NX,NY))
+         call Check_err(NF90_INQ_VARID(NC_ID,var,Temp_ID))
+         call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,data2,
+     &                  start=[1, 1, NT],count=[NX, NY, 1]))
+         call Check_err(NF90_CLOSE(NC_ID))
+#endif
       endif
 C----------------------------------------------------------------------
       END SUBROUTINE READNWS14
@@ -8599,7 +8729,6 @@ C----------------------------------------------------------------------
       END SUBROUTINE ArnoldSchwarzenegger
 C-----------------------------------------------------------------------
 C.....END WJP (NWS = 14) ..............................................
-#endif
 #endif
 C----------------------------------------------------------------------
       END MODULE

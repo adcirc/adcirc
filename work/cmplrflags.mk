@@ -394,7 +394,7 @@ ifeq ($(compiler),intel-ND)
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DPOWELL #-DNOFSBPG #-DNOIVB
+  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI #-DNOFSBPG #-DNOIVB -DPOWELL
   DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
   ifeq ($(SWAN),enable)
      DPRE       := $(DPRE) -DADCSWAN
