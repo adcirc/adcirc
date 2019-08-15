@@ -28,16 +28,16 @@ C     ------------------------------------------------------------------
       integer :: np   ! number of nodes in the mesh
       integer :: ne   ! number of elements in the mesh
       integer :: ics  ! mesh coordinate system (1=cartesian, 2=geographic)
+      integer :: Projtype = 1 !(=0 Equal-area, 1= CPP, 2=Mercator)
       real(sz),allocatable, target ::  dp(:)  ! bathymetric depth
       integer,allocatable :: nm(:,:)          ! element table size(ne,3)
-      real(8),allocatable :: x(:)   ! x cartesian node locations x(np)
-      real(8),allocatable :: y(:)   ! y cartesian node locations y(np)
-      real(8),allocatable :: slam(:) ! longitude node locations in CPP slam(np)
-      real(8),allocatable :: sfea(:) ! latitude node locations in CPP sfea(np)
+      real(sz),allocatable :: x(:)   ! x cartesian node locations x(np)
+      real(sz),allocatable :: y(:)   ! y cartesian node locations y(np)
+      real(sz),allocatable :: slam(:) ! longitude node locations in CPP slam(np)
+      real(sz),allocatable :: sfea(:) ! latitude node locations in CPP sfea(np)
       type(ipair), allocatable, target :: node_dict(:) ! map node labels to numbers
       integer, allocatable, target :: labels(:) ! map node numbers to labels
       integer :: n1, n2, n3 ! nodes 1, 2, 3 for each element
-      integer :: indmax = 5e4
 
       integer, allocatable :: lbarray_pointer(:)
       integer, allocatable :: nneigh(:) !(MNP) number of neighboring nodes for each node
@@ -46,17 +46,16 @@ C     ------------------------------------------------------------------
       integer, allocatable :: nodele(:)
       integer, allocatable :: neitab(:,:) !(MNP,MNEI) table of neighbor nodes for each node
       integer, allocatable :: neitabele(:,:) !(MNP,MNei)table of neighboring elements for each node
-      real(8), allocatable :: areas(:) !(MNE) = 2*Element Area
-      real(8), allocatable :: totalarea(:)
-      real(sz), allocatable :: sfac(:), sfacele(:),csfea(:) ! spherical coordinate correction factor
-      real(sz), allocatable :: sfar(:) ! spherical coordinate tan(lat)/R ratio
+      real(sz), allocatable :: areas(:) !(MNE) = 2*Element Area
+      real(sz), allocatable :: totalarea(:)
+      real(sz), allocatable :: sfac(:), slac(:), sfacele(:), slacele(:) ! spherical coordinate correction factor
+      real(sz), allocatable :: sfeaele(:), sfar(:) ! spherical coordinate tan(lat)/R ratio
       real(sz), allocatable :: bcxy(:,:)  ! element barycenters for kdtree
       real(sz), allocatable :: rmax(:)    ! element radii for kdtree
       real(sz), allocatable :: csi(:),sii(:)
-      character(len=80) :: projection
-      real(8) slam0,sfea0 !center point of CPP spherical projection
-      integer  neimin,neimax
-
+      real(sz) :: slam0,sfea0 !center point of CPP spherical projection
+      integer  :: neimin,neimax
+ 
 C----- DW --- precomputed 
       !c  FDXE(1:3,1:NE) -- b1, b2, b3
       !c  FDYE(1:3,1:NE) -- a1, a2, a3
@@ -1288,7 +1287,6 @@ C     ------------------------------------------------------------------
       real(sz) Lon21,Lon32,Lon13
       real(sz) lened1,lened2,lened3
       integer :: i, j
-      real(sz) :: latma = 1.3963d0
 
       call setMessageSource("initializeMesh")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -1317,7 +1315,9 @@ C.... IF EITHER NTIP=1 OR NCOR=1, COMPUTE THE INVERSE CPP PROJECTION
       SFAR = 0.0d0 ! set the sfar vector equal to zero by default
       SFAC = 1.0d0 ! set the sfac vector equal to unity
       SFACELE = 1.0d0 ! set the sfac vector equal to unity
-      CSFEA = 1.0d0 ! set the cosine of lat to unity
+      SLAC = 1.0d0 ! set the slac vector equal to unity
+      SLACELE = 1.0d0 ! set the slac vector equal to unity
+      SFEAELE = 1.0d0 ! set the cosine of lat to unity
       ! if the original nodal coordinates were cartesian
       IF (ICS.EQ.1) THEN
          ! we already read the original coordinates into slam(:) and sfea(:)
@@ -1333,22 +1333,23 @@ C.... IF EITHER NTIP=1 OR NCOR=1, COMPUTE THE INVERSE CPP PROJECTION
          END DO
       ENDIF
       !
-      ! if mesh coordinates were in lon lat degrees then compute the cpp projection
+      ! if mesh coordinates were in lon lat degrees then compute the projection
+      ! and the correction factors
       if (ics.eq.2) then
          slam = deg2rad * slam
          sfea = deg2rad * sfea
-         do i=1,np
-            call cpp(x(i),y(i),slam(i),sfea(i),slam0,sfea0)
-            sfac(i) = cos(sfea0)/cos(sfea(i)) ! compute sfac vector to adjust eqns to cpp
-            sfar(i) = tan(sfea(i))/Rearth !wjp: compute tan(lat)/R correction factor
-            !sfar(i) = tan(max(-latma,min(latma,sfea(i))))/Rearth
+         do i = 1,np
+            call Project(x(i),y(i),slam(i),sfea(i),slam0,sfea0,
+     &                   sfac(i),slac(i))
          enddo
 C...     WJP, compute the element averaged quantities
          do i = 1,ne
             sfacele(i) = (sfac(nm(i,1)) + sfac(nm(i,2))
      &                  + sfac(nm(i,3)))/3d0 
-            csfea(i)   = (cos(sfea(nm(i,1)))+cos(sfea(nm(i,2)))
-     &                  + cos(sfea(nm(i,3))))/cos(sfea0)/3d0
+            slacele(i) = (slac(nm(i,1)) + slac(nm(i,2))
+     &                  + slac(nm(i,3)))/3d0 
+            sfeaele(i) = (cos(sfea(nm(i,1))) + cos(sfea(nm(i,2)))
+     &                  + cos(sfea(nm(i,3))))/3d0
          enddo
       endif
 c...
@@ -1413,15 +1414,15 @@ C     if there is not enough machine precision
             Lon13 = SLAM(NM(I,1)) - SLAM(NM(I,3))
             if (abs(Lon21) > pi .and. abs(Lon13) > pi) then
                ! Change X1
-               call cpp(X1,Y1,SLAM(NM(I,1))+sign(2d0*pi,Lon21),
+               call Project(X1,Y1,SLAM(NM(I,1))+sign(2d0*pi,Lon21),
      &                  SFEA(NM(I,1)),slam0,sfea0)
             elseif (abs(Lon21) > pi .and. abs(Lon32) > pi) then
                ! Change X2
-               call cpp(X2,Y2,SLAM(NM(I,2))+sign(2d0*pi,Lon32),
+               call Project(X2,Y2,SLAM(NM(I,2))+sign(2d0*pi,Lon32),
      &                  SFEA(NM(I,2)),slam0,sfea0)
             elseif (abs(Lon32) > pi .and. abs(Lon13) > pi) then
                ! Change X3
-               call cpp(X3,Y3,SLAM(NM(I,3))+sign(2d0*pi,Lon13),
+               call Project(X3,Y3,SLAM(NM(I,3))+sign(2d0*pi,Lon13),
      &                  SFEA(NM(I,3)),slam0,sfea0)
             endif
          endif
@@ -1448,12 +1449,6 @@ C v49.48.02 tcm -- These are the lengths of each element edge
          LENED1=((X2mX1)**2+(Y2mY1)**2)**0.5d0
          LENED2=((X3mX2)**2+(Y3mY2)**2)**0.5d0
          LENED3=((X1mX3)**2+(Y1mY3)**2)**0.5d0
-!         DIF1R=AVGXY/(((X2-X1)**2+(Y2-Y1)**2)**0.5d0)
-!         DIF2R=AVGXY/(((X3-X2)**2+(Y3-Y2)**2)**0.5d0)
-!         DIF3R=AVGXY/(((X3-X1)**2+(Y3-Y1)**2)**0.5d0)
-!         DIF1R=LOG10(DIF1R)
-!         DIF2R=LOG10(DIF2R)
-!         DIF3R=LOG10(DIF3R)
 ! v49.48.02 rewrote to use the edge lengths which get used below also
          DIF1R=AVGXY/LENED1
          DIF2R=AVGXY/LENED2
@@ -1476,7 +1471,6 @@ C v49.48.02 tcm -- These are the lengths of each element edge
 
 C        compute and store 2 x element areas
 c        v49.48.02 tcm rewrote 2 x area to reuse values already being used
-!        AREAS(JKI)=(X1-X3)*(Y2-Y3)+(X3-X2)*(Y1-Y3)
          AREAS(I)=(X1mX3)*(-Y3mY2)+(X3mX2)*(Y1mY3)
 C...
 C...     v49.48.02 tcm -- compute element barycenters and element radius
@@ -2021,13 +2015,13 @@ C              jgf46.21 Added IBTYPE=52.
                   LonIK = SLAM(NBVI) - SLAM(NBVK)
                   LonKJ = SLAM(NBVK) - SLAM(NBVJ)
                   if (abs(LonJI) > pi .and. abs(LonIK) > pi) then
-                     CALL CPP(XGI,YGI,SLAM(NBVI)+sign(2d0*pi,LonJI),
+                     CALL Project(XGI,YGI,SLAM(NBVI)+sign(2d0*pi,LonJI),
      &                        SFEA(NBVI),SLAM0,SFEA0)
                   elseif (abs(LonJI) > pi .and. abs(LonKJ) > pi) then
-                     CALL CPP(XGJ,YGJ,SLAM(NBVJ)+sign(2d0*pi,LonKJ),
+                     CALL Project(XGJ,YGJ,SLAM(NBVJ)+sign(2d0*pi,LonKJ),
      &                        SFEA(NBVJ),SLAM0,SFEA0)
                   elseif (abs(LonKJ) > pi .and. abs(LonIK) > pi) then
-                     CALL CPP(XGK,YGK,SLAM(NBVK)+sign(2d0*pi,LonIK),
+                     CALL Project(XGK,YGK,SLAM(NBVK)+sign(2d0*pi,LonIK),
      &                        SFEA(NBVK),SLAM0,SFEA0)
                   endif
                ENDIF
@@ -2050,21 +2044,22 @@ C...           X0,Y0)
                   YLJ = YGJ
                   YLK = YGK
                ELSE
-                  CALL CPP(XLI,YLI,SLAM(NBVI),SFEA(NBVI),
+                  CALL Project(XLI,YLI,SLAM(NBVI),SFEA(NBVI),
      &                     SLAM(NBVI),SFEA(NBVI))
-                  CALL CPP(XLK,YLK,SLAM(NBVK),SFEA(NBVK),
+                  CALL Project(XLK,YLK,SLAM(NBVK),SFEA(NBVK),
      &                     SLAM(NBVI),SFEA(NBVI))
-                  CALL CPP(XLJ,YLJ,SLAM(NBVJ),SFEA(NBVJ),
+                  CALL Project(XLJ,YLJ,SLAM(NBVJ),SFEA(NBVJ),
      &                     SLAM(NBVI),SFEA(NBVI))
                   if (abs(LonJI) > pi .and. abs(LonIK) > pi) then
-                     CALL CPP(XLI,YLI,SLAM(NBVI)+sign(2d0*pi,LonJI),
-     &              SFEA(NBVI),SLAM(NBVI)+sign(2d0*pi,LonJI),SFEA(NBVI))
+                     CALL Project(XLI,YLI,SLAM(NBVI)+sign(2d0*pi,LonJI),
+     &                    SFEA(NBVI),SLAM(NBVI)+sign(2d0*pi,LonJI),
+     &                    SFEA(NBVI))
                   elseif (abs(LonJI) > pi .and. abs(LonKJ) > pi) then
-                     CALL CPP(XLJ,YLJ,SLAM(NBVJ)+sign(2d0*pi,LonKJ),
-     &                        SFEA(NBVJ),SLAM(NBVI),SFEA(NBVI))
+                     CALL Project(XLJ,YLJ,SLAM(NBVJ)+sign(2d0*pi,LonKJ),
+     &                    SFEA(NBVJ),SLAM(NBVI),SFEA(NBVI))
                   elseif (abs(LonKJ) > pi .and. abs(LonIK) > pi) then
-                     CALL CPP(XLK,YLK,SLAM(NBVK)+sign(2d0*pi,LonIK),
-     &                        SFEA(NBVK),SLAM(NBVI),SFEA(NBVI))
+                     CALL Project(XLK,YLK,SLAM(NBVK)+sign(2d0*pi,LonIK),
+     &                    SFEA(NBVK),SLAM(NBVI),SFEA(NBVI))
                   endif
                ENDIF
 
@@ -2662,7 +2657,8 @@ C     ------------------------------------------------------------------
       allocate ( areas(mne), totalarea(mnp))
       allocate ( nneigh(mnp),mju(mnp),nodele(mnp))
       allocate ( lbarray_pointer(mnp))
-      allocate ( sfac(mnp), sfar(mnp), sfacele(mne), csfea(mne))
+      allocate ( sfac(mnp), slac(mnp), sfar(mnp) )
+      allocate ( slacele(mne), sfacele(mne), sfeaele(mne))
 
       allocate ( csi(mnp),sii(mnp))
 C...  v49.48.02 tcm -- Variables related to kdtree searches
@@ -2688,7 +2684,9 @@ C...... DW
       lbarray_pointer = -99999
       sfac = -99999.d0
       sfacele = -99999.d0
-      csfea = -99999.d0
+      slac = -99999.d0
+      slacele = -99999.d0
+      sfeaele = -99999.d0
       sfar = -99999.d0
       csi = -99999.d0
       sii = -99999.d0
@@ -2756,35 +2754,54 @@ C     ------------------------------------------------------------------
 
 
 C     ------------------------------------------------------------------
-C               S U B R O U T I N E    C P P
+C               S U B R O U T I N E    P R O J E C T
 C     ------------------------------------------------------------------
-C     Transform from lon,lat (lamda,phi) coordinates into CPP coordinates.
-C     Lon,Lat must be in radians.
+C     Transform from lon,lat (lamda,phi) coordinates into a cylindrical
+C     projection of user choice. Lon, Lat must be in radians
 C     ------------------------------------------------------------------
-      SUBROUTINE CPP(X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0)
+      SUBROUTINE Project(X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0,SFac,SLac)
       USE GLOBAL, ONLY : Rearth
       IMPLICIT NONE
-      REAL*8, intent(in) :: RLAMBDA   ! longitude in radians
-      REAL*8, intent(in) :: PHI       ! latitude in radians
-      REAL*8, intent(in) :: RLAMBDA0  ! longitude at center of projection (radians)
-      REAL*8, intent(in) :: PHI0      ! latitude at center of projection (radians)
-      REAL*8, intent(out) :: X        ! projected longitude (m)
-      REAL*8, intent(out) :: Y        ! projected latitude (m)
+      real(sz), intent(in) :: RLAMBDA   ! longitude in radians
+      real(sz), intent(in) :: PHI       ! latitude in radians
+      real(sz), intent(in) :: RLAMBDA0  ! longitude at center of projection (radians)
+      real(sz), intent(in) :: PHI0      ! latitude at center of projection (radians)
+      real(sz), intent(out) :: X        ! projected longitude (m)
+      real(sz), intent(out) :: Y        ! projected latitude (m)
+      real(sz), intent(out),optional :: SFac ! The correction factor on d/dx
+      real(sz), intent(out),optional :: SLac ! The correction factor on d/dy
 
       call setMessageSource("cpp")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-
-      X=Rearth*(RLAMBDA-RLAMBDA0)*COS(PHI0)
-      Y=PHI*Rearth
-
+      ! Standard cylindrical transformation for x
+      X = Rearth*(RLAMBDA-RLAMBDA0)*COS(PHI0)
+      ! Cylindrical transformations for y dependent on projection choice
+      select case(Projtype)
+      case(0)
+         ! Cylindrical Equal-Area
+         Y = Rearth*SIN(PHI)/COS(PHI0)
+      case(1)
+         ! CPP
+         Y = PHI*Rearth
+      case(2)
+         ! Mercator
+         Y = Rearth*LOG(TAN(PHI) + 1d0/COS(PHI))*COS(PHI0)
+      end select
+      ! If present - calculate the SFac/SLac correction factors
+      if (present(SFac)) then
+         SFac = COS(PHI0)/COS(PHI)
+         if (present(SLac)) then
+            SLac = SFac**(Projtype-1)
+         endif
+      endif
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 C     ------------------------------------------------------------------
-      END SUBROUTINE CPP
+      END SUBROUTINE Project
 C     ------------------------------------------------------------------
 
 
@@ -3802,9 +3819,7 @@ C-----------------------------------------------------------------------
           left = 1
           right = length
           do
-             if (left > right) then
-                exit
-             endif
+             if (left > right) exit
              middle = nint((left+right) / 2.0d0)
              if ( abs(array(middle) - value) <= d) then
                 binarySearch = middle
@@ -3844,7 +3859,7 @@ C-----------------------------------------------------------------------
           else
              ir = i + 1
              if (ir > xp) then
-                if (3d0*x_array(1) - 2d0*x_array(2) + 360d0 < xp) then
+                if (3d0*x_array(1) - 2d0*x_array(2) + 360d0 < x_array(xp)) then
                    ! Wrap the longitude around
                    ir = 1
                 else
@@ -3901,6 +3916,79 @@ C-----------------------------------------------------------------------
 
       END SUBROUTINE bl_interp
 C-----------------------------------------------------------------------
+      SUBROUTINE bl_interp2(xp, yp, x_mat, y_mat, x, y, ii, w)
+          ! This function uses bilinear interpolation to get the
+          ! interpolation weights, w and the indices for interpolation
+          ! Assumed to be sampled on a structured unregular grid x values
+          ! specified by x_mat and the grid y values specified by y_mat
+          implicit none
+          integer, intent(in) :: xp, yp           
+          real, dimension(xp,yp), intent(in) :: x_mat, y_mat
+          real(sz), intent(in) :: x,y
+          real(sz), intent(out) :: w(4)
+          integer, intent(out) :: ii(4)
+          real(sz) :: x11, x21, x12, x22, x_vec(yp)
+          real(sz) :: y11, y21, y12, y22, y_vec(yp)
+          real(sz) :: d11, d12, d21, d22, denom
+          real(sz) :: p(2), a(2), b(2), c(2), d(2)
+          integer  :: i, j, jj, ir, jr, ia
+
+          ii   = [-1, 0, 0, 0]; ! Default indices
+          
+          ia = 0
+          do i = 1,xp
+             ir = i + 1
+             if (ir > xp) then
+                ! If wrapping around
+                if (3d0*x_mat(1,1) - 2d0*x_mat(2,1) +
+     &              360d0 < x_mat(xp,1)) then
+                   ir = 1; ia = 1
+                else
+                   exit
+                endif
+             endif
+             do j = 1,yp-1
+                jr = j + 1
+                x11 = x_mat(i,j);  x21 = x_mat(ir,j) + ia*360d0
+                x12 = x_mat(i,jr); x22 = x_mat(ir,jr) + ia*360d0
+                y11 = y_mat(i,j);  y21 = y_mat(ir,j)
+                y12 = y_mat(i,jr); y22 = y_mat(ir,jr)
+
+                ! Cycle if outside bbox
+                if (x.lt.min(x11,x12).or.x.gt.max(x21,x22).or.
+     &              y.lt.min(y11,y21).or.y.gt.max(y12,y22)) cycle
+
+                ! Confirm if in the quadrilateral or not
+                p = [x,y];
+                a = [x11, y11]; b = [x21, y21];
+                c = [x22, y22]; d = [x12, y12];
+                if (PtInTri(p,a,b,c).or.PtInTri(p,c,d,a)) then
+                   ! Lon, lat to meters 
+                   d11 = 1d0/haversine(x11,x,y11,y)
+                   d12 = 1d0/haversine(x12,x,y12,y)
+                   d21 = 1d0/haversine(x21,x,y21,y)
+                   d22 = 1d0/haversine(x22,x,y22,y)
+                   denom  = d11 + d12 + d21 + d22 
+
+                   ! Output the indices
+                   ii   = [i, j, ir, jr]
+
+                   ! Output the weights
+                   w(1) = d11/denom
+                   w(2) = d21/denom
+                   w(3) = d12/denom
+                   w(4) = d22/denom
+
+                   return; 
+                endif  
+             enddo
+          enddo
+
+          return;
+
+      END SUBROUTINE bl_interp2
+
+C-----------------------------------------------------------------------
       SUBROUTINE conserve_interp(xp, x_array, yp, y_array, 
      &           x1, y1, x2, y2, x3, y3, ii, ww)
           ! This function works out the indices of x_array and y_array 
@@ -3952,6 +4040,36 @@ C-----------------------------------------------------------------------
           ww   = 1d4
           !endif
       END SUBROUTINE conserve_interp
+C-----------------------------------------------------------------------
+      function PtinTri(p, a, b, c)
+        real(sz), intent(in)  :: p(2), a(2), b(2), c(2)
+        logical :: PtinTri
+
+        if (SameSide(p, a, b, c).and.Sameside(p, b, a, c).and.
+     &      SameSide(p, c, a, b)) then
+            PtinTri = .true.
+        else
+            PtinTri = .false.
+        endif
+
+      end function PtinTri
+C-----------------------------------------------------------------------
+      function SameSide(p1, p2, a, b)
+        real(sz), intent(in)  :: p1(2), p2(2), a(2), b(2)
+        real(sz) :: cp1, cp2
+        logical :: SameSide
+  
+        ! cross (b-a) with (p1-a) 
+        cp1 = (b(1)-a(1))*(p1(2)-a(2)) - (b(2)-a(2))*(p1(1)-a(1))
+        ! cross (b-a) with (p2-a) 
+        cp2 = (b(1)-a(1))*(p2(2)-a(2)) - (b(2)-a(2))*(p2(1)-a(1))
+        if (cp1*cp2 >= 0d0) then
+            SameSide = .true.
+        else
+            SameSide = .false.
+        endif
+
+      end function SameSide
 C-----------------------------------------------------------------------
       function calcarea(x1,y1,x2,y2,x3,y3)
         real(sz), intent(in) :: x1 ,y1, x2, y2, x3, y3

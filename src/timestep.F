@@ -149,7 +149,6 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(SZ) QTRatio
       REAL(SZ) RStRatio, RSX, RSY
       REAL(SZ) SAltMul, S2SFEA
-      REAL(SZ) SFacAvg
       REAL(SZ) H1
       REAL(SZ) TPMul
       REAL(SZ) UN1
@@ -1683,7 +1682,7 @@ c******************************************************************************
       USE GLOBAL, ONLY: G, IFNLFA, IFNLCT, IDEN, RAMP, NODECODE, NOFF, 
      &    VIDBCPDXOH, VIDBCPDYOH, ETA2, SigT0, DTDP, DASigT, RhoWat0
       USE MESH, ONLY : NE, NM, X, Y, NP, DP, AREAS, NODELE, 
-     &      NEITABELE, NEITAB, NNEIGH, SFAC, TOTALAREA
+     &      NEITABELE, NEITAB, NNEIGH, SFACELE, TOTALAREA
       USE Couple2BC3D, ONLY : Update_BC3D_Info, FBPG_Disp_from_BC3D,
      &                        Put_BC3D_on_ADCIRC_Grid
       IMPLICIT NONE
@@ -1743,7 +1742,7 @@ c******************************************************************************
          EtaN1=IFNLFA*Eta2(NM1)
          EtaN2=IFNLFA*Eta2(NM2)
          EtaN3=IFNLFA*Eta2(NM3)
-         SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
+         SFacAvg= SFacEle(IE)
 
          AreaIE2=Areas(IE)
          AreaEle=NCEle*AreaIE2/2.D0
