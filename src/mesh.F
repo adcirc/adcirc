@@ -1476,6 +1476,8 @@
       real(sz) x2mx1,x3mx2,x1mx3,y2my1,y3my2,y1my3
       real(sz) Lon21,Lon32,Lon13
       real(sz) lened1,lened2,lened3
+      real(sz) :: slamr, sfear
+      real(8) :: slamr1, sfear1, slamr2, sfear2, slamr3, sfear3
       integer :: i, j
       integer :: SFLAG, NMM(3)
       REAL (SZ), dimension(3):: LONVE, LATVE
@@ -2887,6 +2889,7 @@
 #endif
 
       allocate ( slam(mnp),sfea(mnp),x(mnp),y(mnp),labels(mnp))
+      allocate ( csfea(mnp) )
       call dict(node_dict, mnp)
       allocate ( dp(mnp) )
       allocate ( dp_orig(mnp) )
@@ -2941,6 +2944,7 @@
       ! initialize to something troublesome to make it easy to spot issues
       slam = -99999.d0
       sfea = -99999.d0
+      csfea = -99999.d0
       x = -99999.d0
       y = -99999.d0
       dp = -99999.d0

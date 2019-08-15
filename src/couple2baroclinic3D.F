@@ -350,7 +350,7 @@ C-----------------------------------------------------------------------
              if (HBREAK.gt.0d0) then
                 allocate(BC3D_MLD(NX,NY))
              else
-                allocate(BC3D_CD(NX,NYs)) 
+                allocate(BC3D_CD(NX,NYs))
              endif
           endif
 

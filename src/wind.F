@@ -275,8 +275,11 @@ C
       integer,allocatable  :: indp(:,:,:)
       character(len=200) :: Pfile, Wfile, Pinv, Winv, Cinv, Cfile
       character(len=200) :: Pfile1, Wfile1, Pinv1, Winv1
+      character(len=200) :: Pvar, Uvar, Vvar, Cvar, Tvar, Lonvar, Latvar
+      character(len=200) :: Tdim, Londim, Latdim, Tformat
       type(datetime) :: CurDT
-#endif
+      logical :: grb2flag
+      integer :: NT
 #endif
 C------------------------end of data declarations-----------------------
       CONTAINS
@@ -9047,6 +9050,21 @@ C----------------------------------------------------------------------
          call READNWS14(Cfile,Cinv,Cvar,Cice)
          NT = NTkeep;
       endif      
+
+      ! Get the Pressure
+      !':PRMSL:mean sea level:'
+      call READNWS14(Pfile,Pinv,Pvar,Pmsl)
+
+      ! Get the U-winds
+      call READNWS14(Wfile,Winv,Uvar,U10)
+
+      ! Get the V-winds
+      call READNWS14(Wfile,Winv,Vvar,V10)
+
+      ! Get the ice concentration if required
+      if (present(CICE2)) then
+         call READNWS14(Cfile,Cinv,Cvar,Cice)
+      endif
 
       ! Doing the interpolation from their grid to ours
       do i = 1,np
