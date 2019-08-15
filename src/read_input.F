@@ -72,7 +72,7 @@ C-----------------------------------------------------------------------
 #endif
       USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP, NP,
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries,
-     &   freeMesh, node_dict, find, agrid
+     &   freeMesh, node_dict, find, agrid, Projtype
       USE BOUNDARIES, ONLY : ANGINN, COSTSET, NETA, NVEL, NVELME, NPEBC,
      &   NFLUXF, NBD, ME2GW, LBCODEI, NBV, simpleFluxBoundaries, ibtype,
      &   numSimpleFluxBoundaries
@@ -697,6 +697,12 @@ C...
 C...  READ AND PROCESS ICS - CARTESIAN/SPHERICAL COORDINATE OPTION
 C...
       READ(15,*) ICS
+      ! Change ICS here for the true sphere option with 
+      ! arbitrary projection
+      IF (ICS.ge.20) then
+         Projtype = ICS - 20; ICS = 2;
+         TSINT = 1; TSINV = 0
+      ENDIF
       IF (ICS < 1.or.ICS.gt.2) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
@@ -717,12 +723,17 @@ C...
  9736    FORMAT(/,5X,'ICS = ',I2,
      &        /,9X,'Governing equations are in Cartesian coordinates')
       ELSEIF (ICS.eq.2) THEN
-         WRITE(16,9737) ICS
+         WRITE(16,9737) ICS, projtype
  9737    FORMAT(/,5X,'ICS = ',I2,
      &        /,9X,'Governing equations are in Spherical coordinates',
-     &        /,9X,'mapped using a CPP projection')
+     &        /,9X,'mapped using a cylindrical projection of type = '
+     &        /,9X, I2,'    => 0: Equal-area, 1: CPP, 2: Mercator')
       ENDIF
-
+      IF (TSINT.eq.1) THEN
+         WRITE(16,*) ' NOTE: Curvature of Earth IS accounted for'
+      ELSE
+         WRITE(16,*) ' NOTE: Curvature of Earth IS NOT accounted for' 
+      ENDIF
 C...
 C...  READ AND PROCESS IM - 2D/3D MODEL FORMULATION OPTION
 C...
@@ -2993,11 +3004,6 @@ C...
          WRITE(16,3604)
  3604    FORMAT(/,5X,'LATITUDES ARE USED TO COMPUTE VARIABLE CORIOLIS',
      &        /,7X,'AND ARE BASED ON INPUT NODAL COORDINATES',/)
-         if (CORI.lt.0) then
-            TSINT = 1; TSINV = 0
-            write(16,*) 'INFO: TRUE SPHERE OPTION DETECTED...', 
-     &                  'IMPLEMENTING CORRECTED SPHERICAL COORDINATES'
-         endif
          IF(NABOUT.NE.1) THEN
             WRITE(16,2092)
  2092       FORMAT(/,10X,' NODE ',5X,'NODAL CORIOLIS CORIF',/)
@@ -4740,7 +4746,7 @@ C    kmd48.33bc - added the variables from Global
      &                  scratchMessage, INFO, DEBUG, ERROR, allMessage,
      &                  setMessageSource, logMessage, unsetMessageSource,
      &                  OUTPUTSPONGE, screenMessage, ECHO, sec2day
-      USE MESH, ONLY : NP, DP, X, Y, CPP
+      USE MESH, ONLY : NP, DP, X, Y
       USE BOUNDARIES, ONLY : NETA, NOPE, NBD
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE GLOBAL_3DVS
@@ -5646,7 +5652,7 @@ C-----------------------------------------------------------------------
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, parse,
      &   a2f, DEBUG, allMessage, setMessageSource, unsetMessageSource
-      USE MESH, ONLY : ICS, CPP, SLAM0, SFEA0
+      USE MESH, ONLY : ICS, Project, SLAM0, SFEA0
       IMPLICIT NONE
       CHARACTER(50) :: names(num_stations)
       INTEGER num_stations, stat_lun
@@ -5679,7 +5685,7 @@ C
          ELSE
             lat(I)=a2f(LVAR(1))*DEG2RAD
             lon(I)=a2f(LVAR(2))*DEG2RAD
-            CALL CPP(xcoord(I),ycoord(I),lat(I),lon(I),SLAM0,SFEA0)
+            CALL Project(xcoord(I),ycoord(I),lat(I),lon(I),SLAM0,SFEA0)
          ENDIF
 C
 C... v49.48.02 -- tcm replaced with call to kdtsearch

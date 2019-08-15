@@ -369,7 +369,7 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE ::   SALTAMP(:,:),SALTPHA(:,:)
       REAL(SZ),ALLOCATABLE ::   OBCCOEF(:,:),COEF(:,:)
       REAL(SZ),ALLOCATABLE ::   COEFD(:) !jgf48.4619 from Seizo (Lumped GWCE)
-      INTEGER :: NBFR,NCOR
+      INTEGER :: NBFR, NCOR
 C    kmd48.33bc - added variables for the levels of no motion and top temperature boundary condition
       REAL(SZ),ALLOCATABLE ::   LNM_BC1(:), LNM_BC2(:), LNM_BC(:) ! level of no motion
       REAL(SZ),ALLOCATABLE ::   q_heat1(:), q_heat2(:), HFLUX(:)  ! top temperature

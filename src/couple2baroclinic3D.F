@@ -832,14 +832,14 @@ C-----------------------------------------------------------------------
       USE SPONGELAYER, ONLY: NO_BPG_IN_SPONGE 
       USE NodalAttributes, ONLY: absorblayer_sigma_mnx, 
      &                           absorblayer_sigma_mny
-      USE MESH, ONLY : NE, NM, NP, DP, AREAS, NODELE, 
+      USE MESH, ONLY : NE, NM, NP, DP, AREAS, NODELE, SFacEle, 
      &      NEITABELE, NEITAB, NNEIGH, SFAC, TOTALAREA
+      USE BOUNDARIES, ONLY : NVELME, ME2GW, NBV
  
       IMPLICIT NONE
       
       INTEGER :: IE             !element loop counter
-      INTEGER :: J              !node loop counter
-      INTEGER :: K              !vertical node loop counter (1-top, BCK-last z contour)
+      INTEGER :: J, K, NBDI     !node loop counter
       INTEGER :: NCELE          !element code
       INTEGER :: NEle           !local value of NetTabEle
       INTEGER :: NM1,NM2,NM3    !local node numbers used to compute gradients
@@ -882,7 +882,7 @@ C
          EtaN1 = IFNLFA*Eta2(NM1)
          EtaN2 = IFNLFA*Eta2(NM2)
          EtaN3 = IFNLFA*Eta2(NM3)
-         SFacAvg = (SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
+         SFacAvg = SFacEle(IE)
 
          AreaIE2 = Areas(IE)
          AreaEle = 0.5d0*NCEle*AreaIE2
@@ -932,7 +932,6 @@ C
          VIDBCPDYOH(NM1) = VIDBCPDYOH(NM1) + VIDBCPDYOHAvgArea
          VIDBCPDYOH(NM2) = VIDBCPDYOH(NM2) + VIDBCPDYOHAvgArea
          VIDBCPDYOH(NM3) = VIDBCPDYOH(NM3) + VIDBCPDYOHAvgArea
-
       ENDDO
 #endif
       ! Loop over each node, divide by the total area and scale by
@@ -946,7 +945,7 @@ C
             VIDISPDXOH(J) = Ramp*DXE(J)
             VIDISPDYOH(J) = Ramp*DYE(J)
          ENDIF
-         ! If need to minus from sponge..
+         ! If need to omit from sponge..
          IF ( NO_BPG_IN_SPONGE ) THEN
             IF ( absorblayer_sigma_mnx(J,1) > 1.0e-9 ) THEN
                VIDBCPDXOH(J) = 0.0d0; VIDISPDXOH(J) = 0.0d0; 
@@ -954,8 +953,16 @@ C
             IF ( absorblayer_sigma_mny(J,1) > 1.0e-9 ) THEN
                VIDBCPDYOH(J) = 0.0d0; VIDISPDYOH(J) = 0.0d0; 
             ENDIF
-         ENDIF   
+         ENDIF
       ENDDO
+      ! Zeroing out on boundary nodes
+      !DO J = 1,NVELME
+      !   K = ME2GW(J)
+      !   !IF (LBCODEI(K).GT.) cycle
+      !   NBDI = NBV(K)
+      !   VIDBCPDXOH(NBDI) = 0; VIDBCPDYOH(NBDI) = 0;
+      !   VIDISPDXOH(NBDI) = 0; VIDISPDYOH(NBDI) = 0;
+      !ENDDO
 C
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -969,10 +976,9 @@ C-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
       SUBROUTINE BC3DTerminate(NO_MPI_FINALIZE)
       USE SIZES, ONLY : myproc
-#ifdef CMPI
+#ifdef CMPI 
       USE MESSENGER
 #endif
-
       IMPLICIT NONE 
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
 #ifdef ALL_TRACE

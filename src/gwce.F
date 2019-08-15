@@ -200,7 +200,7 @@ c.... tcm added call to slope limiter
 #endif
          ENDIF         
       ENDIF
-C      -------------------GWCE------------------------------------------
+C     -------------------GWCE------------------------------------------
 !----------------------------------------------------------------------
       end subroutine solveGWCE
 !----------------------------------------------------------------------
@@ -238,8 +238,8 @@ C
 #endif
       USE MESH, ONLY : NE, NP, NM, DP, NNeigh, NeiTab, TotalArea, FDXE,
      &                 Areas, NEIMAX, SFAC, nneighele, neitabele, FDYE,
-     &                 SWITCH_ELTAB_PERBC, Sfar, SFacEle, CSfea, sfea,
-     &                 sfea0
+     &                 SWITCH_ELTAB_PERBC, Sfar, SFacEle, SfeaEle, sfea,
+     &                 sfea0, SLacEle, projtype
       USE BOUNDARIES, ONLY : NETA, NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, 
      &   NFLUXRBC, NOPE, NVEL, NBD, NBV, LBCODEI, BndLen2O3, NPEBC
       USE ITPACKV
@@ -296,7 +296,7 @@ C... DW
       REAL(SZ) Pr1N1, Pr1N2, Pr1N3
       REAL(SZ) Off1N1, Off1N2, Off1N3 ! water level offsets
       REAL(SZ) QX1N1, QX1N2, QX1N3, QY1N1, QY1N2, QY1N3, QX1Avg, QY1Avg
-      REAL(SZ) SFacAvg,SLamAvg
+      REAL(SZ) SFacAvg, SLacAvg, SFarAvg
       REAL(SZ) T0N1,T0N2, T0N3
       REAL(SZ) Tau0Avg, Tau0QXAvg, Tau0QYAvg
       REAL(SZ) Tau0XGrad2A, Tau0YGrad2A, Tau0SpaVar
@@ -410,23 +410,25 @@ C              WJP 02.24.2018 Get the infinity norm of the matrix
                NCEle=NC1*NC2*NC3*NOFF(IE)
 
                SFacAvg = SFacEle(IE)
+               SLacAvg = SLacEle(IE)
 C.... Beg DW:
                FDX1 = FDXE(1,IE)*SFacAvg ;  !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
                FDX2 = FDXE(2,IE)*SFacAvg ;  !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
                FDX3 = FDXE(3,IE)*SFacAvg ;  !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-               FDY1 = FDYE(1,IE) ;   !c  FDY1=X(NM3)-X(NM2) !a1
-               FDY2 = FDYE(2,IE) ;   !c  FDY2=X(NM1)-X(NM3) !a2
-               FDY3 = FDYE(3,IE) ;   !c  FDY3=X(NM2)-X(NM1) !a3
+               FDY1 = FDYE(1,IE)*SLacAvg ;   !c  FDY1=X(NM3)-X(NM2) !a1
+               FDY2 = FDYE(2,IE)*SLacAvg ;   !c  FDY2=X(NM1)-X(NM3) !a2
+               FDY3 = FDYE(3,IE)*SLacAvg ;   !c  FDY3=X(NM2)-X(NM1) !a3
 C.... End DW:
 C.... WJP: adding the spherical correction in continuity through new FDXX/FDYY terms
-               SFacAvg = TSINV*SFacEle(IE) + TSINT*cos(sfea0)   
-               SLamAvg = TSINV + TSINT*CSfea(IE)
+               SFacAvg = SFacEle(IE)*(TSINV + TSINT*SfeaEle(IE)**projtype)
+               SLacAvg = SLacEle(IE)*TSINV + 
+     &                   TSINT*SfeaEle(IE)*cos(sfea0)**(projtype-1)
                FDXX1 = FDXE(1,IE)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
                FDXX2 = FDXE(2,IE)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
                FDXX3 = FDXE(3,IE)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-               FDYY1 = FDYE(1,IE)*SLamAvg ;    !c  FDY1=X(NM3)-X(NM2) !a1
-               FDYY2 = FDYE(2,IE)*SLamAvg ;    !c  FDY2=X(NM1)-X(NM3) !a2
-               FDYY3 = FDYE(3,IE)*SLamAvg ;    !c  FDY3=X(NM2)-X(NM1) !a3
+               FDYY1 = FDYE(1,IE)*SLacAvg ;    !c  FDY1=X(NM3)-X(NM2) !a1
+               FDYY2 = FDYE(2,IE)*SLacAvg ;    !c  FDY2=X(NM1)-X(NM3) !a2
+               FDYY3 = FDYE(3,IE)*SLacAvg ;    !c  FDY3=X(NM2)-X(NM1) !a3
 C.... End WJP
                AreaIE2=Areas(IE)
                AreaIE =AreaIE2/2.0d0
@@ -469,9 +471,9 @@ C.......... DW
                END DO
 C.........     WJP multiplying by cosine(lat) if doing the 
 C              spherical correction 
-               SPM1 = TSINV + TSINT*cos(sfea(NMI1))
-               SPM2 = TSINV + TSINT*cos(sfea(NMI2))
-               SPM3 = TSINV + TSINT*cos(sfea(NMI3))
+               SPM1 = TSINV + TSINT*cos(sfea(NMI1))**projtype
+               SPM2 = TSINV + TSINT*cos(sfea(NMI2))**projtype
+               SPM3 = TSINV + TSINT*cos(sfea(NMI3))**projtype
 
                Coef(NMI1,1)  = Coef(NMI1,1)   + (MsFacLOnDiag*SPM1
      &                 +GA00DPAvgOAreaIE4*(FDXX1*FDX1+FDYY1*FDY1))*NCELE
@@ -526,9 +528,9 @@ C.... DW, absorbing layer
 C.............DW
 C.........     WJP multiplying by cosine(lat) if doing the 
 C              spherical correction 
-               SPM1 = TSINV + TSINT*cos(sfea(NMI1))
-               SPM2 = TSINV + TSINT*cos(sfea(NMI2))
-               SPM3 = TSINV + TSINT*cos(sfea(NMI3))
+               SPM1 = TSINV + TSINT*cos(sfea(NMI1))**projtype
+               SPM2 = TSINV + TSINT*cos(sfea(NMI2))**projtype
+               SPM3 = TSINV + TSINT*cos(sfea(NMI3))**projtype
                Coefd(NMI1) = Coefd(NMI1) + MsFacLOnDiag*SPM1*NCELE
                Coefd(NMI2) = Coefd(NMI2) + MsFacLOnDiag*SPM2*NCELE
                Coefd(NMI3) = Coefd(NMI3) + MsFacLOnDiag*SPM3*NCELE
@@ -705,13 +707,14 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
             NC3=NODECODE(NM3)
             NCEle=NC1*NC2*NC3*NOFF(IE)
             SFacAvg = SFacEle(IE)
+            SLacAvg = SLacEle(IE)
 C........ BEG DW:
             FDX1 = FDXE(1,IE)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
             FDX2 = FDXE(2,IE)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
             FDX3 = FDXE(3,IE)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-            FDY1 = FDYE(1,IE) ; !c  FDY1=X(NM3)-X(NM2) !a1
-            FDY2 = FDYE(2,IE) ; !c  FDY2=X(NM1)-X(NM3) !a2
-            FDY3 = FDYE(3,IE) ; !c  FDY3=X(NM2)-X(NM1) !a3
+            FDY1 = FDYE(1,IE)*SLacAvg ; !c  FDY1=X(NM3)-X(NM2) !a1
+            FDY2 = FDYE(2,IE)*SLacAvg ; !c  FDY2=X(NM1)-X(NM3) !a2
+            FDY3 = FDYE(3,IE)*SLacAvg ; !c  FDY3=X(NM2)-X(NM1) !a3
 C........ END DW:
             LSXXGradA=(UU1(NM1)*FDX1+UU1(NM2)*FDX2+UU1(NM3)*FDX3)/2.d0   !A*DUDX
             LSXYGradA=(UU1(NM1)*FDY1+UU1(NM2)*FDY2+UU1(NM3)*FDY3)/2.d0   !A*DUDY
@@ -795,13 +798,14 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
             NC3=NODECODE(NM3)
             NCEle=NC1*NC2*NC3*NOFF(IE)
             SFacAvg = SFacEle(IE)
+            SLacAvg = SLacEle(IE)
 C..... Beg DW:
             FDX1 = FDXE(1,IE)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
             FDX2 = FDXE(2,IE)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
             FDX3 = FDXE(3,IE)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-            FDY1 = FDYE(1,IE) ; !c  FDY1=X(NM3)-X(NM2) !a1
-            FDY2 = FDYE(2,IE) ; !c  FDY2=X(NM1)-X(NM3) !a2
-            FDY3 = FDYE(3,IE) ; !c  FDY3=X(NM2)-X(NM1) !a3
+            FDY1 = FDYE(1,IE)*SLacAvg ; !c  FDY1=X(NM3)-X(NM2) !a1
+            FDY2 = FDYE(2,IE)*SLacAvg ; !c  FDY2=X(NM1)-X(NM3) !a2
+            FDY3 = FDYE(3,IE)*SLacAvg ; !c  FDY3=X(NM2)-X(NM1) !a3
 C..... End DW
             EVMEle=NCEle*(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
             IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN  !If using Smagorinski vertically-integrated lateral stress coefficient
@@ -1029,13 +1033,15 @@ C
          AreaIE=AreaIE2/2.d0             ! A
          AreaIE4=2.d0*AreaIE2            !4A
          SFacAvg= SFacEle(IE)
+         SLacAvg= SLacEle(IE)
+         SfarAvg = (Sfar(NM1)+Sfar(NM2)+Sfar(NM3))/3.d0
 C..... DW
          FDX1 = FDXE(1,IE)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
          FDX2 = FDXE(2,IE)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
          FDX3 = FDXE(3,IE)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-         FDY1 = FDYE(1,IE) ;    !c  FDY1=X(NM3)-X(NM2) !a1
-         FDY2 = FDYE(2,IE) ;    !c  FDY2=X(NM1)-X(NM3) !a2
-         FDY3 = FDYE(3,IE) ;    !c  FDY3=X(NM2)-X(NM1) !a3
+         FDY1 = FDYE(1,IE)*SLacAvg ;    !c  FDY1=X(NM3)-X(NM2) !a1
+         FDY2 = FDYE(2,IE)*SLacAvg ;    !c  FDY2=X(NM1)-X(NM3) !a2
+         FDY3 = FDYE(3,IE)*SLacAvg ;    !c  FDY3=X(NM2)-X(NM1) !a3
 C..... DW
 
 C...     Compute part of several spatial gradients for use below
@@ -1069,10 +1075,18 @@ C...     Compute the remainder of the 2 Part lateral stress terms
 
          IF((CGWCE_LS_2PartQ).OR.(CGWCE_LS_2PartV) .OR.
      &        (CGWCE_LS_2PartSQ).OR.(CGWCE_LS_2PartSV)) THEN
+C           X-direction
+            LSXYEle = (LSXY(NM1)+LSXY(NM2)+LSXY(NM3))/3.d0
+            LSYXEle = (LSYX(NM1)+LSYX(NM2)+LSYX(NM3))/3.d0
             MX=(LSXX(NM1)*FDX1+LSXX(NM2)*FDX2+LSXX(NM3)*FDX3
      &         +LSXY(NM1)*FDY1+LSXY(NM2)*FDY2+LSXY(NM3)*FDY3)/AreaIE2
+     &         -TSINT*SfarAvg*(LSXYEle + LSYXEle)
+C           Y-direction 
+            LSXXEle = (LSXX(NM1)+LSXX(NM2)+LSXX(NM3))/3.d0
+            LSYYEle = (LSYY(NM1)+LSYY(NM2)+LSYY(NM3))/3.d0
             MY=(LSYX(NM1)*FDX1+LSYX(NM2)*FDX2+LSYX(NM3)*FDX3
      &         +LSYY(NM1)*FDY1+LSYY(NM2)*FDY2+LSYY(NM3)*FDY3)/AreaIE2
+     &         +TSINT*SfarAvg*(LSXXEle - LSYYEle)
          ENDIF
 
 C...     Compute the spatial gradients of the velocity dispersion terms if 3D
@@ -1114,8 +1128,7 @@ C...     Compute elemental averages
 C        WJP: Add on the contribution from spherical correction term
 C        from the momentum equation
          CorifAvg = (Corif(NM1)+Corif(NM2)+Corif(NM3))/3.d0
-     &            + IFNLCT*TSINT*U1Avg*
-     &              (sfar(NM1)+sfar(NM2)+sfar(NM3))/3.d0
+     &            + IFNLCT*TSINT*U1Avg*SfarAvg
 C
 C...... DW absorbing layer
 C
@@ -1244,18 +1257,19 @@ C...     WJP: spherical coordinate correction factor for high latitudes
 c        (refer; kolar et al., 1994, doi:10.1080/00221689409498786)
 c        equation (40) [refer also eq. (36)]
 C        implement by recalculating FDX/FDY here
-         SFacAvg = TSINV*SFacEle(IE) + TSINT*cos(sfea0)   
-         SLamAvg = TSINV + TSINT*CSfea(IE)
+         SFacAvg = SFacEle(IE)*(TSINV + TSINT*SfeaEle(IE)**projtype)   
+         SLacAvg = SLacEle(IE)*TSINV + 
+     &             TSINT*SfeaEle(IE)*cos(sfea0)**(projtype-1)
          FDX1 = FDXE(1,IE)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
          FDX2 = FDXE(2,IE)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
          FDX3 = FDXE(3,IE)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-         FDY1 = FDYE(1,IE)*SLamAvg ;    !c  FDY1=X(NM3)-X(NM2) !a1
-         FDY2 = FDYE(2,IE)*SLamAvg ;    !c  FDY2=X(NM1)-X(NM3) !a2
-         FDY3 = FDYE(3,IE)*SLamAvg ;    !c  FDY3=X(NM2)-X(NM1) !a3
+         FDY1 = FDYE(1,IE)*SLacAvg ;    !c  FDY1=X(NM3)-X(NM2) !a1
+         FDY2 = FDYE(2,IE)*SLacAvg ;    !c  FDY2=X(NM1)-X(NM3) !a2
+         FDY3 = FDYE(3,IE)*SLacAvg ;    !c  FDY3=X(NM2)-X(NM1) !a3
 C...     Needs multiplying by cos(lat) in case of the correction 
-         ESN1 = ESN1*(TSINV + TSINT*cos(sfea(NM1)))
-         ESN2 = ESN2*(TSINV + TSINT*cos(sfea(NM2)))
-         ESN3 = ESN3*(TSINV + TSINT*cos(sfea(NM3)))
+         ESN1 = ESN1*(TSINV + TSINT*cos(sfea(NM1))**projtype)
+         ESN2 = ESN2*(TSINV + TSINT*cos(sfea(NM2))**projtype)
+         ESN3 = ESN3*(TSINV + TSINT*cos(sfea(NM3))**projtype)
 
 C...     Assemble forcing for node NM1 (local index j=1)
 
@@ -1586,11 +1600,11 @@ C...  EQUATIONS
 C...
       IF ( ILump.eq.0 ) THEN ! default, fully consistent GWCE LHS
          DO I=1,NETA
-            NBDI=NBD(I)
-            ETAS(NBDI)=ETA2(NBDI)-ETA1(NBDI)
+            NBDI = NBD(I)
+            ETAS(NBDI) = ETA2(NBDI)-ETA1(NBDI)
 C...        WJP multiply by cos(lat) in case of correction    
-            ETAS(NBDI) = ETAS(NBDI)*(TSINV + TSINT*cos(sfea(NBDI)))
-            GWCE_LV(NBDI)=ETAS(NBDI)*NODECODE(NBDI)*EP
+            GWCE_LV(NBDI) = ETAS(NBDI)*NODECODE(NBDI)*EP*
+     &                      (TSINV + TSINT*cos(sfea(NBDI))**projtype)
             DO J=2,NNEIGH(NBDI)
                GWCE_LV(NEITAB(NBDI,J))=GWCE_LV(NEITAB(NBDI,J))
      &              -ETAS(NBDI)*OBCCOEF(I,J-1)
@@ -1600,9 +1614,7 @@ C...        WJP multiply by cos(lat) in case of correction
          DO I=1,NETA
             NBDI=NBD(I)
             ETAS(NBDI)=ETA2(NBDI)-ETA1(NBDI)
-C...        WJP multiply by cos(lat) in case of correction    
-            ETAS(NBDI) = ETAS(NBDI)*(TSINV + TSINT*cos(sfea(NBDI)))
-            GWCE_LV(NBDI)=ETAS(NBDI)*NODECODE(NBDI)*COEFD(NBDI)
+            GWCE_LV(NBDI) = ETAS(NBDI)*NODECODE(NBDI)*COEFD(NBDI)
          END DO
       ENDIF
 C...

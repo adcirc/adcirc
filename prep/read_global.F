@@ -452,7 +452,7 @@ C---------------------------------------------------------------------
       SUBROUTINE READ15()
       USE PRE_GLOBAL
       USE SIZES, ONLY : MNHARF
-      USE MESH, ONLY : CPP
+      USE MESH, ONLY : Project
       USE GLOBAL, ONLY : parse, a2f, hss, screenUnit, STATNAME,
      &                   STATNAMEV, STATNAMEM, STATNAMEC, ERROR, DEBUG,
      &                   allMessage, setMessageSource, deg2rad,
@@ -723,10 +723,11 @@ C
 C
       READ(15,80) ICSMSG
       READ(ICSMSG,*) ICS
+      IF (ICS.ge.20) ICS = 2
       IF ((ICS.NE.1).AND.(ICS.NE.2)) THEN
         print *, "ICS set incorrectly"
         STOP
-        ENDIF
+      ENDIF
 C
       READ(15,80) IMMSG
       READ(IMMSG,*) IM
@@ -1078,7 +1079,7 @@ C
          DO I = 1,NNODG
             SL1(I) = DEG2RAD*SLAM(I)
             SF1(I) = DEG2RAD*SFEA(I)
-            call cpp(slam(i),sfea(i),sl1(i),sf1(i),sl0,sf0)
+            call Project(slam(i),sfea(i),sl1(i),sf1(i),sl0,sf0)
          ENDDO
       ELSE
          ! jgf: Need these to be populated for ICS=1 for NetCDF file
@@ -1342,7 +1343,7 @@ C                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I)
 
             SLEL(I)=DEG2RAD*SLEL(I)
             SFEL(I)=DEG2RAD*SFEL(I)
-            CALL CPP(XEL(I),YEL(I),SLEL(i),SFEL(i),SL0,SF0)
+            CALL Project(XEL(I),YEL(I),SLEL(i),SFEL(i),SL0,SF0)
          ENDIF
          ENDDO !loop over elevation stations
          if (USE_ELEV_STAT_FILE) CLOSE(151) !close external file if one was used
@@ -1453,7 +1454,7 @@ C     ==================================================================
 
            SLEV(I)=DEG2RAD*SLEV(I)
            SFEV(I)=DEG2RAD*SFEV(I)
-           CALL CPP(XEV(I),YEV(I),SLEV(i),SFEV(i),SL0,SF0)
+           CALL Project(XEV(I),YEV(I),SLEV(i),SFEV(i),SL0,SF0)
          ENDIF  !test for ICS
       ENDDO !loop over velocity stations
       IF (USE_VEL_STAT_FILE) CLOSE(151) !close external file if one was used
@@ -1519,7 +1520,7 @@ C
              READ(STACLOC(I),*) SLEC(I),SFEC(I)
              SLEC(I)=DEG2RAD*SLEC(I)
              SFEC(I)=DEG2RAD*SFEC(I)
-             CALL CPP(XEC(I),YEC(I),SLEC(i),SFEC(i),SL0,SF0)
+             CALL Project(XEC(I),YEC(I),SLEC(i),SFEC(i),SL0,SF0)
            ENDIF !test for ICS
         ENDDO  !loop over stations
         IF (USE_CONC_STAT_FILE) CLOSE(151) !CLOSE EXTERNAL FILE IF ONE WAS USED
@@ -1633,7 +1634,7 @@ C     ==================================================================
 
                SLEM(I)=DEG2RAD*SLEM(I)
                SFEM(I)=DEG2RAD*SFEM(I)
-               CALL CPP(XEM(I),YEM(I),SLEM(i),SFEM(i),SL0,SF0)
+               CALL Project(XEM(I),YEM(I),SLEM(i),SFEM(i),SL0,SF0)
             ENDIF  !test for ICS
          ENDDO  !loop over stations
          IF (USE_MET_STAT_FILE) CLOSE(151) !CLOSE EXTERNAL FILE IF ONE WAS USED        
@@ -1861,7 +1862,7 @@ C---------------------------------------------------------------------
       USE GLOBAL, ONLY : parse, a2f, SNAMLEN, deg2rad, day2sec
       USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET, SIGMA,
      &    FEGRIDS
-      USE MESH, only : cpp
+      USE MESH, only : Project
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
@@ -2041,7 +2042,7 @@ C  kmd48.33bc changed to -2 and I3DSD not equal to 0
                SF3DD(I)=a2f(LVAR(2))              
                SL3DD(I)=DEG2RAD*SL3DD(I)
                SF3DD(I)=DEG2RAD*SF3DD(I)
-               call cpp(x3dd(i),y3dd(i),sl3dd(i),sf3dd(i),sl0,sf0)
+               call Project(x3dd(i),y3dd(i),sl3dd(i),sf3dd(i),sl0,sf0)
             ENDIF
          ENDDO
 C
@@ -2102,7 +2103,7 @@ C  kmd48.33 changed to -2
                SF3DV(I)=a2f(LVAR(2))
                SL3DV(I)=DEG2RAD*SL3DV(I)
                SF3DV(I)=DEG2RAD*SF3DV(I)
-               call cpp(x3dv(i),y3dv(i),sl3dv(i),sf3dv(i),sl0,sf0)
+               call Project(x3dv(i),y3dv(i),sl3dv(i),sf3dv(i),sl0,sf0)
             ENDIF
          ENDDO
 C     jgf45.11 For each 3D velocity station, find the full-domain index of
@@ -2156,7 +2157,7 @@ C  kmd48.33 changed to -2
                SF3DT(I)=a2f(LVAR(2))
                SL3DT(I)=DEG2RAD*SL3DT(I)
                SF3DT(I)=DEG2RAD*SF3DT(I)
-               call cpp(x3dt(i),y3dt(i),sl3dt(i),sf3dt(i),sl0,sf0)
+               call Project(x3dt(i),y3dt(i),sl3dt(i),sf3dt(i),sl0,sf0)
             ENDIF
          ENDDO
 
