@@ -432,8 +432,8 @@ C...  Compute the lateral viscous terms for the element (symmetric velocity form
 C
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO
 C...  TEMP_LV_A VECTOR FOR NODE NM1
-
-         TEMP_LV_A1=NCEle*DT*(
+         IF (H1N1 .gt. 0.d0) THEN
+             TEMP_LV_A1=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(U1AvgDU1DXA+V1AvgDU1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -442,12 +442,20 @@ C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSXXN1*FDX1+LSXYN1*FDY1)/H1N1
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
+         ELSE
+             TEMP_LV_A1=NCEle*DT*(
+C...  ADVECTIVE TERMS
+     &             -IFNLCT*(U1AvgDU1DXA+V1AvgDU1DYA)
+C...  BAROTROPIC PRESSURE GRADIENT
+     &             -GO2*DBTPDXA)
+         ENDIF
 
 C...
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO
 C...  TEMP_LV_A VECTOR FOR NODE NM2
 C...
-         TEMP_LV_A2=NCEle*DT*(
+         IF (H1N2 .gt. 0.d0) THEN
+             TEMP_LV_A2=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(U1AvgDU1DXA+V1AvgDU1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -456,12 +464,20 @@ C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSXXN2*FDX2+LSXYN2*FDY2)/H1N2
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
+         ELSE
+             TEMP_LV_A2=NCEle*DT*(
+C...  ADVECTIVE TERMS
+     &             -IFNLCT*(U1AvgDU1DXA+V1AvgDU1DYA)
+C...  BAROTROPIC PRESSURE GRADIENT
+     &             -GO2*DBTPDXA)
+         ENDIF
 
 C...
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO
 C...  TEMP_LV_A VECTOR FOR NODE NM3
 C...
-         TEMP_LV_A3=NCEle*DT*(
+         IF (H1N3 .gt. 0.d0) THEN
+             TEMP_LV_A3=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(U1AvgDU1DXA+V1AvgDU1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -470,11 +486,19 @@ C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSXXN3*FDX3+LSXYN3*FDY3)/H1N3
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
+         ELSE
+             TEMP_LV_A3=NCEle*DT*(
+C...  ADVECTIVE TERMS
+     &             -IFNLCT*(U1AvgDU1DXA+V1AvgDU1DYA)
+C...  BAROTROPIC PRESSURE GRADIENT
+     &             -GO2*DBTPDXA)
+         ENDIF
 
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO
 C...  TEMP_LV_B VECTOR FOR NODE NM1
 
-         TEMP_LV_B1=NCEle*DT*(
+         IF (H1N1 .gt. 0.d0) THEN
+             TEMP_LV_B1=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(U1AvgDV1DXA+V1AvgDV1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -483,11 +507,19 @@ C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSYXN1*FDX1+LSYYN1*FDY1)/H1N1
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
+         ELSE
+             TEMP_LV_B1=NCEle*DT*(
+C...  ADVECTIVE TERMS
+     &             -IFNLCT*(U1AvgDV1DXA+V1AvgDV1DYA)
+C...  BAROTROPIC PRESSURE GRADIENT
+     &             -GO2*DBTPDYA)
+         ENDIF
 
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO
 C...  TEMP_LV_B VECTOR FOR NODE NM2
 
-         TEMP_LV_B2=NCEle*DT*(
+         IF (H1N2 .gt. 0.d0) THEN
+             TEMP_LV_B2=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(U1AvgDV1DXA+V1AvgDV1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -496,11 +528,18 @@ C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSYXN2*FDX2+LSYYN2*FDY2)/H1N2
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
+         ELSE
+             TEMP_LV_B2=NCEle*DT*(
+C...  ADVECTIVE TERMS
+     &             -IFNLCT*(U1AvgDV1DXA+V1AvgDV1DYA)
+C...  BAROTROPIC PRESSURE GRADIENT
+     &             -GO2*DBTPDYA)
+         ENDIF
 
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO
 C...  TEMP_LV_B VECTOR FOR NODE NM3
-
-         TEMP_LV_B3=NCEle*DT*(
+         IF (H1N3 .gt. 0.d0) THEN
+             TEMP_LV_B3=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(U1AvgDV1DXA+V1AvgDV1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -509,6 +548,13 @@ C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSYXN3*FDX3+LSYYN3*FDY3)/H1N3
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
+          ELSE
+             TEMP_LV_B3=NCEle*DT*(
+C...  ADVECTIVE TERMS
+     &             -IFNLCT*(U1AvgDV1DXA+V1AvgDV1DYA)
+C...  BAROTROPIC PRESSURE GRADIENT
+     &             -GO2*DBTPDYA)
+          ENDIF
 
 C     Original (incorrect) area integration - for historical comparison
 
@@ -589,8 +635,17 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
          H1=DP(I)+IFNLFA*ETA1(I)
          H2=DP(I)+IFNLFA*ETA2(I)
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
-            WSX=DTO2*IFWIND*(WSX1(I)/H1+WSX2(I)/H2)
-            WSY=DTO2*IFWIND*(WSY1(I)/H1+WSY2(I)/H2)
+            IF (H1 .gt. 0.d0) THEN
+                WSX=DTO2*IFWIND*WSX1(I)/H1
+                WSY=DTO2*IFWIND*WSY1(I)/H1
+            ELSE
+                WSX=0.d0
+                WSY=0.d0
+            ENDIF
+            IF (H2 .gt. 0.d0) THEN
+                WSX=WSX+DTO2*IFWIND*WSX2(I)/H2
+                WSY=WSY+DTO2*IFWIND*WSY2(I)/H2
+            ENDIF
          ENDIF
 C        WJP 02.24.2018: Get the cofficients of the matrix
          VCOEFXX = DTO2*(TKM(1,I)) !+ SPNGCOEF_X) 
@@ -629,7 +684,11 @@ C...  AUV12=-AUV21)
 C      Specified essential normal flow and free tangential slip
 
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
-            VelNorm=-QN2(I)/H2
+            IF (H2 .gt. 0.d0) THEN
+                VelNorm=-QN2(I)/H2
+            ELSE
+                VelNorm=0.d0
+            ENDIF
             IF (abs(norm2(TKM(:,I))-sqrt(2d0)*TK(I)).lt.epsilon(H2)) THEN
             ! WJP 03.6.2018 In the case of the symmetric matrix..
             ! Should be equivalent to the non-symmetric formula below
@@ -659,7 +718,11 @@ C      Specified essential normal flow and free tangential slip
 C     Specified essential normal flow and no tangential slip
 
          IF((LBCODEI(I).GE.10).AND.(LBCODEI(I).LE.19)) THEN
-            VelNorm=-QN2(I)/H2
+            IF (H2 .gt. 0.d0) THEN
+                VelNorm=-QN2(I)/H2
+            ELSE
+                VelNorm=0.d0
+            ENDIF
             VelTan=0.D0
             MOM_LV_X(NBDI)=VelTan*NCI !Tangential Eqn RHS
             MOM_LV_Y(NBDI)=VelNorm*NCI !Normal Eqn RHS
@@ -728,8 +791,14 @@ C               AUV12(NBDI)=0.d0
             ELSE
 C               AUV11(NBDI)=1.d0
 C               AUV12(NBDI)=0.d0
-               MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
-               MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
+               IF (ZNGLHS .ne. 0.d0) THEN
+                   MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
+                   MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
+               ELSE
+                   MOM_LV_X(NBDI)=0.d0
+                   MOM_LV_Y(NBDI)=0.d0
+               ENDIF
+                   
             ENDIF
             AUV(1,NBDI) = 1.d0
             AUV(2,NBDI) = 1.d0
@@ -1398,19 +1467,24 @@ C     fluxes at the previous time step.
                ZNGRHS2=ZNGRHS2-(CSII(I)*FDX2+SIII(I)*FDY2)*QY1(NM2)
      &                        -(CSII(I)*FDX3+SIII(I)*FDY3)*QY1(NM3)
                ZNGLHS =ZNGLHS + CSII(I)*FDX1+SIII(I)*FDY1
-               ENDIF
+            ENDIF
             IF(NCI.EQ.0) THEN
                AUV11(NBDI)=1.d0
                AUV12(NBDI)=0.d0
                MOM_LV_X(NBDI)=0.d0
                MOM_LV_Y(NBDI)=0.d0
-               ELSE
+            ELSE
                AUV11(NBDI)=1.d0
                AUV12(NBDI)=0.d0
-               MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
-               MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
-               ENDIF
-            ENDIF
+                 IF (ZNGLHS .ne. 0.d0) THEN 
+                   MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
+                   MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
+                 ELSE
+                   MOM_LV_X(NBDI)=0.d0
+                   MOM_LV_Y(NBDI)=0.d0
+                 ENDIF
+             ENDIF
+          ENDIF
 
          ENDDO
 

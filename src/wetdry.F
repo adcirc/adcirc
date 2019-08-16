@@ -239,7 +239,7 @@ C>>
      &                    (IFNLBF+IFHYBF*
      &                    (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
 
-                        IF(TKWET.LT.0.0001d0) TKWET=0.0001d0
+                        IF((TKWET.LT.0.0001d0).or.(H1.LE.0.d0)) TKWET=0.0001d0
                         VEL=G*(DELETA/DELDIST)/TKWET
 
                      ELSEIF(C3D)THEN
@@ -256,8 +256,12 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                         ELSE
                            Z0B1 = Z0B
                        ENDIF
+                       IF (H1 .GT. 0.d0) THEN
                         VEL=sqrt(g*H1*(DELETA/DELDIST))
      &                 * ((H1+Z0B1)*LOG((H1+Z0B1)/Z0B1)-H1)/(H1*0.41D0)
+                       ELSE
+                        VEL=0.d0
+                       ENDIF
                     ENDIF
 
                      IF(VEL.GT.VELMIN) THEN
@@ -266,10 +270,15 @@ C    ....         third node met criteria and is also wet
 c. RJW merged 08/26/20008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
 c                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
-                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+                           IF (H1 .GT. 0.d0) THEN
+                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+                           ELSE
+                              TK(NM123)=FRIC(NM123)*IFLINBF
+                           ENDIF
+
                            !WJP needed for internal_tide stuff
                            TKM(1:2,NM123) = TK(NM123) 
                        ELSEIF(C3D)THEN
@@ -334,7 +343,7 @@ C>>
                         TKWET=FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
      &                    (IFNLBF+IFHYBF*
      &                    (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
-                        IF(TKWET.LT.0.0001d0) TKWET=0.0001d0
+                        IF((TKWET.LT.0.0001d0).OR.(H1.LE.0.d0)) TKWET=0.0001d0
                         VEL=G*(DELETA/DELDIST)/TKWET
 
                      ELSEIF(C3D)THEN
@@ -351,18 +360,26 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                         ELSE
                            Z0B1=Z0B
                         ENDIF
-                        VEL=sqrt(g*H1*(DELETA/DELDIST))
+                        IF (H1 .gt. 0.d0) THEN
+                         VEL=sqrt(g*H1*(DELETA/DELDIST))
      &                 * ((H1+Z0B1)*LOG((H1+Z0B1)/Z0B1)-H1)/(H1*0.41D0)
+                        ELSE
+                         VEL=0.d0
+                        ENDIF
                      ENDIF
 
                      IF(VEL.GT.VELMIN) THEN
                         NNODECODE(NM1)=1
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
-                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+                           IF (H1 .gt. 0.d0) THEN
+                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+                           ELSE
+                              TK(NM123)=FRIC(NM123)*IFLINBF
+                           ENDIF          
                            !WJP needed for internal_tide stuff
                            TKM(1:2,NM123) = TK(NM123) 
                        ELSEIF(C3D)THEN
@@ -428,7 +445,7 @@ C>>
                         TKWET=FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
      &                    (IFNLBF+IFHYBF*
      &                    (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
-                       IF(TKWET.LT.0.0001d0) TKWET=0.0001d0
+                       IF((TKWET.LT.0.0001d0).or.(H1.LE.0.d0)) TKWET=0.0001d0
                        VEL=G*(DELETA/DELDIST)/TKWET
                      ELSEIF(C3D)THEN
 C solve for the depth averaged velocity,U, from the relation :
@@ -444,18 +461,27 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                         ELSE
                            Z0B1 = Z0B
                         ENDIF
-                      VEL=sqrt(g*H1*(DELETA/DELDIST))
+                      IF (H1 .gt. 0.d0) THEN
+                        VEL=sqrt(g*H1*(DELETA/DELDIST))
      &                 * ((H1+Z0B1)*LOG((H1+Z0B1)/Z0B1)-H1)/(H1*0.41D0)
+                      ELSE
+                        VEL=0.d0
+                      ENDIF
                      ENDIF
 
                      IF(VEL.GT.VELMIN) THEN
                         NNODECODE(NM2)=1
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
-                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+                           IF (H1 .gt. 0.d0) THEN
+                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+                           ELSE
+                              TK(NM123)=FRIC(NM123)*IFLINBF
+                           ENDIF
+
                            !WJP needed for internal_tide stuff
                            TKM(1:2,NM123) = TK(NM123) 
                        ELSEIF(C3D)THEN
@@ -560,10 +586,14 @@ C<<                           Convert Manning's N to Cd, if necessary.
                            VEL=VELMIN
                            H1 = HTOTN1
                            IF(C2DDI)THEN
-                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+                              IF (H1 .gt. 0.d0) THEN
+                                TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                          (IFNLBF+IFHYBF*
      &                          (1.D0+(HBREAK/H1)**FTHETA)**
      &                          (FGAMMA/FTHETA)))
+                              ELSE
+                                TK(NM123)=FRIC(NM123)*IFLINBF
+                              ENDIF                             
                               !WJP needed for internal_tide stuff
                               TKM(1:2,NM123) = TK(NM123) 
                            ELSEIF(C3D)THEN
@@ -618,10 +648,14 @@ C<<                        Convert Manning's N to Cd, if necessary.
                            VEL = VELMIN
                            H1 = HTOTN2
                            IF(C2DDI)THEN
-                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+                              IF (H1 .gt. 0.d0) THEN
+                                TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                          (IFNLBF+IFHYBF*
      &                          (1.D0+(HBREAK/H1)**FTHETA)**
      &                          (FGAMMA/FTHETA)))
+                              ELSE
+                                TK(NM123)=FRIC(NM123)*IFLINBF
+                              ENDIF
                               !WJP needed for internal_tide stuff
                               TKM(1:2,NM123) = TK(NM123) 
                            ELSEIF(C3D)THEN
@@ -676,10 +710,14 @@ C<<                         Convert Manning's N to Cd, if necessary.
                            VEL=VELMIN
                            H1 = HTOTN3
                            IF(C2DDI)THEN
-                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+                              IF (H1 .gt. 0.d0) THEN
+                                 TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                           (IFNLBF+IFHYBF*
      &                           (1.D0+(HBREAK/H1)**FTHETA)**
      &                           (FGAMMA/FTHETA)))
+                              ELSE
+                                 TK(NM123)=FRIC(NM123)*IFLINBF
+                              ENDIF
                               !WJP needed for internal_tide stuff
                               TKM(1:2,NM123) = TK(NM123) 
                            ELSEIF(C3D)THEN

@@ -1891,10 +1891,14 @@ C     with the sea floor.
       DO I=1, NP
          UV1=SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
          H1=DP(I)+IFNLFA*ETA2(I)
-         TK(I)= FRIC(I)*
+         IF (H1 .gt. 0.d0) THEN
+             TK(I)= FRIC(I)*
      &        ( IFLINBF +       ! linear
      &        (UV1/H1) * (IFNLBF ! nonlinear
      &        + IFHYBF*(1+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))) ! hybrid
+         ELSE
+             TK(I)= FRIC(I)*IFLINBF
+         ENDIF
       END DO
 C
 C     Step 2. Apply friction arising from flow interaction with bridge
@@ -1903,13 +1907,17 @@ C     pilings, if required.
          DO I=1, NP
             UV1=SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
             H1=DP(I)+IFNLFA*ETA2(I)
-            Fr=UV1*UV1/(G*H1)
+            IF (H1 .gt. 0.d0) THEN
+                Fr=UV1*UV1/(G*H1)
+            ENDIF
             BK = BridgePilings(I,1)
             BALPHA = BridgePilings(I,2)
             BDELX = BridgePilings(I,3)
             FricBP=(H1/BDELX)*BK*(BK+5.d0*Fr*Fr-0.6d0)
      &           *(BALPHA+15.d0*BALPHA**4)
-            TK(I)=TK(I)+FricBP*UV1/H1
+            IF (H1 .gt. 0.d0) THEN
+                TK(I)=TK(I)+FricBP*UV1/H1
+            ENDIF
          END DO
       ENDIF
 C
@@ -1972,13 +1980,17 @@ C or as read in from nodal attributes
          TK(NH)= FRIC(NH) * ABS(Q(NH,1))
 
          IF (LoadBridgePilings) THEN
-            Fr=ABS(Q(NH,1))*ABS(Q(NH,1))/(G*H1)
+            IF (H1 .gt. 0.d0) THEN
+                Fr=ABS(Q(NH,1))*ABS(Q(NH,1))/(G*H1)
+            ENDIF
             BK = BridgePilings(I,1)
             BALPHA = BridgePilings(I,2)
             BDELX = BridgePilings(I,3)
             FricBP=(H1/BDELX)*BK*(BK+5.d0*Fr*Fr-0.6d0)
      &           *(BALPHA+15.d0*BALPHA**4)
-            TK(I)=TK(I)+FricBP*ABS(Q(NH,1))/H1
+            IF (H1 .gt. 0.d0) THEN
+                TK(I)=TK(I)+FricBP*ABS(Q(NH,1))/H1
+            ENDIF
          ENDIF
       ENDDO
 C
