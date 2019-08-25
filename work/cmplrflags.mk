@@ -404,10 +404,13 @@ ifeq ($(compiler),intel-ND)
   CCBE          := $(CC)
   CFLAGS        := $(INCDIRS) -O3 -m64 -mcmodel=medium -DLINUX
   FLIBS         := 
-  ifeq ($(GLOBAL),enable)
-     WGRIB2HOME    := $(SRCDIR)/lib/grib2/lib/
+  ifeq ($(DATETIME),enable)
      DATETIMEHOME  := $(SRCDIR)/lib/datetime-fortran-master/build/
-     FLIBS         := -lwgrib2_api -lwgrib2 -ljasper -L$(WGRIB2HOME) -ldatetime -L$(DATETIMEHOME)lib/
+     FLIBS         := -ldatetime -L$(DATETIMEHOME)lib/
+  endif
+  ifeq ($(GRIB2),enable)
+     WGRIB2HOME    := $(SRCDIR)/lib/grib2/lib/
+     FLIBS         := $(FLIBS) -lwgrib2_api -lwgrib2 -ljasper -L$(WGRIB2HOME)
   endif
   ifeq ($(DEBUG),full)
      CFLAGS     := $(INCDIRS) -g -O0 -m64 -march=k8 -mcmodel=medium -DLINUX

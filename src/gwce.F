@@ -237,9 +237,9 @@ C
      &    , dumy1, dumy2, rnp_global
 #endif
       USE MESH, ONLY : NE, NP, NM, DP, NNeigh, NeiTab, TotalArea, FDXE,
-     &                 Areas, NEIMAX, SFAC, nneighele, neitabele, FDYE,
-     &                 SWITCH_ELTAB_PERBC, Sfar, SFacEle, SfeaEle, sfea,
-     &                 sfea0, SLacEle, projtype
+     &   Areas, NEIMAX, SFAC, nneighele, neitabele, FDYE,
+     &   SWITCH_ELTAB_PERBC, Sfar, SFacEle, CSfeaEle, sfea,
+     &   sfea0, SLacEle, projtype, csfea
       USE BOUNDARIES, ONLY : NETA, NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, 
      &   NFLUXRBC, NOPE, NVEL, NBD, NBV, LBCODEI, BndLen2O3, NPEBC
       USE ITPACKV
@@ -420,9 +420,10 @@ C.... Beg DW:
                FDY3 = FDYE(3,IE)*SLacAvg ;   !c  FDY3=X(NM2)-X(NM1) !a3
 C.... End DW:
 C.... WJP: adding the spherical correction in continuity through new FDXX/FDYY terms
-               SFacAvg = SFacEle(IE)*(TSINV + TSINT*SfeaEle(IE)**projtype)
+               SFacAvg = SFacEle(IE)*TSINV + 
+     &                   TSINT*cos(sfea0)*CSfeaEle(IE)**(projtype-1)   
                SLacAvg = SLacEle(IE)*TSINV + 
-     &                   TSINT*SfeaEle(IE)*cos(sfea0)**(projtype-1)
+     &                   TSINT*CSfeaEle(IE)*cos(sfea0)**(projtype-1)
                FDXX1 = FDXE(1,IE)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
                FDXX2 = FDXE(2,IE)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
                FDXX3 = FDXE(3,IE)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
@@ -471,9 +472,9 @@ C.......... DW
                END DO
 C.........     WJP multiplying by cosine(lat) if doing the 
 C              spherical correction 
-               SPM1 = TSINV + TSINT*cos(sfea(NMI1))**projtype
-               SPM2 = TSINV + TSINT*cos(sfea(NMI2))**projtype
-               SPM3 = TSINV + TSINT*cos(sfea(NMI3))**projtype
+               SPM1 = TSINV + TSINT*csfea(NMI1)**projtype
+               SPM2 = TSINV + TSINT*csfea(NMI2)**projtype
+               SPM3 = TSINV + TSINT*csfea(NMI3)**projtype
 
                Coef(NMI1,1)  = Coef(NMI1,1)   + (MsFacLOnDiag*SPM1
      &                 +GA00DPAvgOAreaIE4*(FDXX1*FDX1+FDYY1*FDY1))*NCELE
@@ -528,9 +529,9 @@ C.... DW, absorbing layer
 C.............DW
 C.........     WJP multiplying by cosine(lat) if doing the 
 C              spherical correction 
-               SPM1 = TSINV + TSINT*cos(sfea(NMI1))**projtype
-               SPM2 = TSINV + TSINT*cos(sfea(NMI2))**projtype
-               SPM3 = TSINV + TSINT*cos(sfea(NMI3))**projtype
+               SPM1 = TSINV + TSINT*csfea(NMI1)**projtype
+               SPM2 = TSINV + TSINT*csfea(NMI2)**projtype
+               SPM3 = TSINV + TSINT*csfea(NMI3)**projtype
                Coefd(NMI1) = Coefd(NMI1) + MsFacLOnDiag*SPM1*NCELE
                Coefd(NMI2) = Coefd(NMI2) + MsFacLOnDiag*SPM2*NCELE
                Coefd(NMI3) = Coefd(NMI3) + MsFacLOnDiag*SPM3*NCELE
@@ -1257,9 +1258,10 @@ C...     WJP: spherical coordinate correction factor for high latitudes
 c        (refer; kolar et al., 1994, doi:10.1080/00221689409498786)
 c        equation (40) [refer also eq. (36)]
 C        implement by recalculating FDX/FDY here
-         SFacAvg = SFacEle(IE)*(TSINV + TSINT*SfeaEle(IE)**projtype)   
+         SFacAvg = SFacEle(IE)*TSINV + 
+     &             TSINT*cos(sfea0)*CSfeaEle(IE)**(projtype-1)   
          SLacAvg = SLacEle(IE)*TSINV + 
-     &             TSINT*SfeaEle(IE)*cos(sfea0)**(projtype-1)
+     &             TSINT*CSfeaEle(IE)*cos(sfea0)**(projtype-1)
          FDX1 = FDXE(1,IE)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
          FDX2 = FDXE(2,IE)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
          FDX3 = FDXE(3,IE)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
@@ -1267,15 +1269,16 @@ C        implement by recalculating FDX/FDY here
          FDY2 = FDYE(2,IE)*SLacAvg ;    !c  FDY2=X(NM1)-X(NM3) !a2
          FDY3 = FDYE(3,IE)*SLacAvg ;    !c  FDY3=X(NM2)-X(NM1) !a3
 C...     Needs multiplying by cos(lat) in case of the correction 
-         ESN1 = ESN1*(TSINV + TSINT*cos(sfea(NM1))**projtype)
-         ESN2 = ESN2*(TSINV + TSINT*cos(sfea(NM2))**projtype)
-         ESN3 = ESN3*(TSINV + TSINT*cos(sfea(NM3))**projtype)
+         ESN1 = ESN1*(TSINV + TSINT*csfea(NM1)**projtype)
+         ESN2 = ESN2*(TSINV + TSINT*csfea(NM2)**projtype)
+         ESN3 = ESN3*(TSINV + TSINT*csfea(NM3)**projtype)
 
 C...     Assemble forcing for node NM1 (local index j=1)
 
          Temp_LV_A1=
 
 C...     Transient and Tau0 terms from LHS
+C...    (consistent mass matrix: ILump=0, lumped mass matrix: ILump=1)
      &         (OnDiag*ESN1 + OffDiag*(ESN2+ESN3))*MsFacR
 
 C...     Free surface terms from LHS (time levels s-1 & s)
@@ -1297,10 +1300,10 @@ C..... END DW
 C
 
 C...     Assemble forcing for node NM2 (local index j=2)
-
          Temp_LV_A2=
 
 C...     Transient and Tau0 terms from LHS
+C...    (consistent mass matrix: ILump=0, lumped mass matrix: ILump=1)
      &         (OnDiag*ESN2 + OffDiag*(ESN1+ESN3))*MsFacR
 
 C...     Free surface terms from LHS (time levels s-1 & s)
@@ -1602,9 +1605,7 @@ C...
          DO I=1,NETA
             NBDI = NBD(I)
             ETAS(NBDI) = ETA2(NBDI)-ETA1(NBDI)
-C...        WJP multiply by cos(lat) in case of correction    
-            GWCE_LV(NBDI) = ETAS(NBDI)*NODECODE(NBDI)*EP*
-     &                      (TSINV + TSINT*cos(sfea(NBDI))**projtype)
+            GWCE_LV(NBDI) = ETAS(NBDI)*NODECODE(NBDI)*EP
             DO J=2,NNEIGH(NBDI)
                GWCE_LV(NEITAB(NBDI,J))=GWCE_LV(NEITAB(NBDI,J))
      &              -ETAS(NBDI)*OBCCOEF(I,J-1)
@@ -2762,7 +2763,7 @@ C*************************************************************************
      &      setMessageSource, unsetMessageSource, scratchMessage,
      &      allMessage,logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
      &      nodes_lg
-      use mesh, only : x, y, nm, ne, areas, sfac
+      use mesh, only : nm, ne, areas, sfacele, slacele, FDXE, FDYE
       use NodalAttributes, ONLY : LoadEleSlopeLim,
      &     elemental_slope_limiter_active,
      &     elemental_slope_limiter_grad_max,
@@ -2773,7 +2774,7 @@ C*************************************************************************
       INTEGER IE,I
       INTEGER NM1, NM2, NM3, NM123
       INTEGER NC1, NC2, NC3, NCEle, NCI
-      REAL(SZ) DEta2DX,DEta2DY,DEta2Mag,SFacAvg
+      REAL(SZ) DEta2DX,DEta2DY,DEta2Mag,SFacAvg,SLacAvg
       REAL(SZ) FDX1,FDX2,FDX3,FDY1,FDY2,FDY3
       REAL(8) :: AreaIE2
       integer nodeNumber ! fulldomain node number where wse slope is exceeded
@@ -2805,14 +2806,17 @@ C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
          IF(NCEle.EQ.0)THEN
             CYCLE  ! this element is dry, go to the next one
          ENDIF
-         SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
          AreaIE2=Areas(IE)
-         FDX1=(Y(NM2)-Y(NM3))*SFacAvg
-         FDX2=(Y(NM3)-Y(NM1))*SFacAvg
-         FDX3=(Y(NM1)-Y(NM2))*SFacAvg
-         FDY1=X(NM3)-X(NM2)
-         FDY2=X(NM1)-X(NM3)
-         FDY3=X(NM2)-X(NM1)
+C.... Beg WP:
+         SFacAvg = SFacEle(IE)
+         SLacAvg = SLacEle(IE)
+         FDX1 = FDXE(1,IE)*SFacAvg ;  !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
+         FDX2 = FDXE(2,IE)*SFacAvg ;  !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
+         FDX3 = FDXE(3,IE)*SFacAvg ;  !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
+         FDY1 = FDYE(1,IE)*SLacAvg ;   !c  FDY1=X(NM3)-X(NM2) !a1
+         FDY2 = FDYE(2,IE)*SLacAvg ;   !c  FDY2=X(NM1)-X(NM3) !a2
+         FDY3 = FDYE(3,IE)*SLacAvg ;   !c  FDY3=X(NM2)-X(NM1) !a3
+C.... end WP
          dEta2Dx  = (Eta2(NM1)*FDX1+Eta2(NM2)*FDX2+Eta2(NM3)*FDX3)
      &                 /AreaIE2
          dEta2Dy  = (Eta2(NM1)*FDY1+Eta2(NM2)*FDY2+Eta2(NM3)*FDY3)
@@ -2827,7 +2831,7 @@ C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
             ! If the limiter is on already, go to the next node. 
             IF (elemental_slope_limiter_active(NM(IE,I))) CYCLE
             ! Compare the elemental slope to the maximum elemental gradient.
-            IF (dEta2Mag.GE.
+            grad_check: IF (dEta2Mag.GE.
      &           ABS(elemental_slope_limiter_grad_max(NM(IE,I)))) THEN
                ! jgf51.51: Log the fulldomain node number.
                nodeNumber = nm(ie,i)
@@ -2836,7 +2840,7 @@ C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
                endif
                ! zc - If gradmax is positive or zero, activate slope
                ! limiting. 
-               if (elemental_slope_limiter_grad_max(nm(ie,i))
+               grad_case: if (elemental_slope_limiter_grad_max(nm(ie,i))
      &               .ge.0.0d0) then
                   ! If it is the first time that the slope limiter
                   ! has been activated at this node, write a log 
@@ -2848,7 +2852,7 @@ C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
                      call allMessage(INFO,scratchMessage)
                      eslonoff(nm(ie,i)) = 1 ! for output file
                   endif
-                  elemental_slope_limiter_active(NM(IE,I)) = .TRUE.
+                  elemental_slope_limiter_active(NM(IE,I)) = .true.
                else
                   ! Just print log message the first time the 
                   ! gradient is exceeded. 
@@ -2861,8 +2865,8 @@ C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
                      elemental_slope_limiter_max_exceeded(NM(IE,I)) =
      &                      .true.
                   endif
-               endif
-            endif
+               endif grad_case
+            endif grad_check
          enddo ! loop around nodes of an element
       enddo ! loop over the elements
 

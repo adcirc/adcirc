@@ -370,8 +370,8 @@ C  IS USED SO THAT MESH NUMBERING AND BOUNDARY CONDITION ORDERING IN THE FORT.14
 C  CANNOT INVALIDATE THE TIME VARYING WEIR INPUT FILE. CHECKS ARE IN PLACE TO ENSURE
 C  THE SAME BOUNDARY NODE IS NOT LOCATED TWICE.
 C-----------------------------------------------------------------------
-            SUBROUTINE FIND_BOUNDARY_NODES(LAT,LON,IDX)
-                USE MESH, ONLY: Project,ICS,SLAM0,SFEA0
+            SUBROUTINE FIND_BOUNDARY_NODES(LON,LAT,IDX)
+                USE MESH, ONLY: Project, Rotate, ICS, SLAM0, SFEA0
                 USE BOUNDARIES, ONLY: NBV
                 USE GLOBAL, ONLY: DEG2RAD
 #ifdef CMPI                
@@ -381,6 +381,7 @@ C-----------------------------------------------------------------------
                 REAL(SZ),INTENT(IN)  :: LAT
                 REAL(SZ),INTENT(IN)  :: LON
                 REAL(SZ)             :: LAT_TEMP,LON_TEMP
+                REAL(SZ)             :: LATR,LONR
                 REAL(SZ)             :: EPS
                 REAL(SZ)             :: X,Y
                 INTEGER,INTENT(OUT)  :: IDX
@@ -395,12 +396,13 @@ C-----------------------------------------------------------------------
                 EPS = EPSILON(1.0D0)
 
                 IF(ICS.EQ.1)THEN
-                    X = LAT
-                    Y = LON
+                    X = LON
+                    Y = LAT
                 ELSEIF(ICS.EQ.2)THEN
                     LAT_TEMP = LAT*DEG2RAD
                     LON_TEMP = LON*DEG2RAD
-                    CALL Project(X,Y,LAT_TEMP,LON_TEMP,SLAM0,SFEA0)
+                    CALL Rotate(LonR,LatR,Lon_Temp,Lat_Temp)
+                    CALL Project(X,Y,LonR,LatR,SLAM0,SFEA0)
                 ENDIF
 
                 CALL KDTREE2_N_NEAREST(TP=BARRIER_SEARCHTREE,
