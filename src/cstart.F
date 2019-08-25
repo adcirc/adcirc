@@ -1429,9 +1429,7 @@ C----------------------------------------------------------------------
       ! jgf52.08.01: Simplified to just adding the initial river elevation to 
       ! eta2 wherever the initial river elevation is greater than zero.
       if (LoadRiver_et_WSE.eqv..true.) then
-         where (River_et_WSE.GT.0.d0) 
-            eta2 = eta2 + River_et_WSE 
-         end where
+         eta2 = eta2 + River_et_WSE 
          ! tcmv51.27 20140502 Added to remove this nodal attribute
          ! as it is only used at Cold Start
          deallocate (River_et_WSE)
