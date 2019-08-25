@@ -25,3 +25,6 @@ swan/*.f
 swan/*.f90
 adcircResultsComparison
 lib/
+swan/*.f90
+swan/*.f
+build/
