@@ -1310,7 +1310,7 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
             IF (ABS(NWS).eq.12) then
                CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND)
 #ifdef DATETIME
-#ifdef GRIB2API
+#if defined(GRIB2API) || defined(ADCNETCDF)
             ELSE
                IF (NCICE.eq.14) then
                   CICE1 = CICE2
@@ -1866,8 +1866,8 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
       ENDIF
       !
       ! 
-#ifdef GRIB2API
 #ifdef DATETIME
+#if defined(GRIB2API) || defined(ADCNETCDF)
       IF (ABS(NWS).eq.14) THEN
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
@@ -2708,8 +2708,8 @@ C     from NAM data
          ENDDO
       ENDIF
       !
-#ifdef GRIB2API
 #ifdef DATETIME
+#if defined(GRIB2API) || defined(ADCNETCDF)
 !     WJP Feb27-2019: Added for NWS=14 for grib2
       IF (ABS(NWS).eq.14) THEN
          ! TimeLoc should be rounded down to nearest WTIMINC
@@ -7492,7 +7492,7 @@ C
      &                     ADC_X,ADC_Y,FNAME,SLAM0,SFEA0,
      &                     MAX_INTERP_DIST)
        USE SIZES
-       USE MESH, ONLY : Project
+       USE MESH, ONLY : Project, Rotate
        USE GLOBAL, ONLY : DEG2RAD,PRBCKGRND,G,RHOWAT0,
      &        setMessageSource,unsetMessageSource,allMessage,
      &        logMessage,scratchMessage,DEBUG,ECHO,INFO,ERROR
@@ -7505,7 +7505,7 @@ C
        REAL(SZ), ALLOCATABLE :: WTS(:)
        INTEGER, ALLOCATABLE :: LOCS(:),II2(:)
 
-       REAL(SZ) :: LON_GFDL,LAT_GFDL,TOL,DIST
+       REAL(SZ) :: LON_GFDL,LAT_GFDL,TOL,DIST, LonR, LatR
        REAL(SZ) :: RPTS_GFDL,UTMP,VTMP,TTMP,MTMP,SPTMP,PTMP
        REAL(SZ) :: LONGTMP,LATTMP,HTMP,NTMP,XSTA,YSTA,MAXDIST
        REAL(SZ), INTENT(IN) :: SLAM0,SFEA0
@@ -7577,9 +7577,8 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
           U_WIND_GFDL(I) = UTMP
           V_WIND_GFDL(I) = VTMP
           PRESS_GFDL(I) = PTMP
-          CALL Project(XY_GFDL(1,I),XY_GFDL(2,I),LON_GFDL,LAT_GFDL,
-     &             SLAM0,SFEA0)
-
+          CALL Rotate(LonR,LatR,LON_GFDL,LAT_GFDL)
+          CALL Project(XY_GFDL(1,I),XY_GFDL(2,I),LONR,LATR,SLAM0,SFEA0)
        ENDDO !I
          
        CLOSE(LUN)  !CLOSE THIS GFDL DATA FILE
@@ -8603,7 +8602,6 @@ C----------------------------------------------------------------------
 #endif
 #ifdef ADCNETCDF
       use netcdf
-      use Couple2BC3D, only: check_err
 #endif
       implicit none
       integer :: iret, iter
@@ -8728,6 +8726,37 @@ C
 C----------------------------------------------------------------------
       END SUBROUTINE ArnoldSchwarzenegger
 C-----------------------------------------------------------------------
+#ifdef ADCNETCDF
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   C H E C K  _  E R R
+C-----------------------------------------------------------------------
+      subroutine check_err(iret)
+      USE SIZES, ONLY : myproc
+      USE GLOBAL, ONLY : screenUnit
+#ifdef CMPI
+      USE MESSENGER, ONLY : MSG_FINI
+#endif
+      USE NETCDF
+      IMPLICIT NONE
+
+      INTEGER, intent(in) :: iret
+
+      call setMessageSource("check_err")
+#ifdef ALL_TRACE
+      call allMessage(DEBUG,"Enter.")
+#endif
+      if (iret .ne. NF90_NOERR) then
+         call allMessage(ERROR,nf90_strerror(iret))
+         call windTerminate()
+      endif
+#ifdef ALL_TRACE
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      end subroutine check_err
+C-----------------------------------------------------------------------
+#endif
 C.....END WJP (NWS = 14) ..............................................
 #endif
 C----------------------------------------------------------------------

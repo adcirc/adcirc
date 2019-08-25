@@ -301,7 +301,7 @@ C...
 C...  After this search and read, we will close the file and then reopen it
 c...  for further processing the traditional non-namelist components.
 C...
-      namelistSpecifier = 'TimeBatyhControl'
+      namelistSpecifier = 'TimeBathyControl'
       READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT) 
       call logNamelistReadStatus(namelistSpecifier, ios_nddt)     
 c     it is possible for the namelist to be present in the file and 
@@ -5652,7 +5652,7 @@ C-----------------------------------------------------------------------
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, parse,
      &   a2f, DEBUG, allMessage, setMessageSource, unsetMessageSource
-      USE MESH, ONLY : ICS, Project, SLAM0, SFEA0
+      USE MESH, ONLY : ICS, Project, Rotate, SLAM0, SFEA0
       IMPLICIT NONE
       CHARACTER(50) :: names(num_stations)
       INTEGER num_stations, stat_lun
@@ -5668,6 +5668,7 @@ C-----------------------------------------------------------------------
       CHARACTER(132) STATLINE
       CHARACTER(50) LVAR(3)
       CHARACTER(30), INTENT(IN) :: Description
+      real(sz) :: lonR, latR
 C
       call setMessageSource("readStations")
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
@@ -5683,9 +5684,10 @@ C
             xcoord(I)=a2f(LVAR(1))
             ycoord(I)=a2f(LVAR(2))
          ELSE
-            lat(I)=a2f(LVAR(1))*DEG2RAD
-            lon(I)=a2f(LVAR(2))*DEG2RAD
-            CALL Project(xcoord(I),ycoord(I),lat(I),lon(I),SLAM0,SFEA0)
+            lon(I)=a2f(LVAR(1))*DEG2RAD
+            lat(I)=a2f(LVAR(2))*DEG2RAD
+            CALL Rotate(lonR,latR,lon(I),lat(I))
+            CALL Project(xcoord(I),ycoord(I),lonR,latR,SLAM0,SFEA0)
          ENDIF
 C
 C... v49.48.02 -- tcm replaced with call to kdtsearch

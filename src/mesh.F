@@ -31,10 +31,10 @@ C     ------------------------------------------------------------------
       integer :: Projtype = 1 !(=0 Equal-area, 1= CPP, 2=Mercator)
       real(sz),allocatable, target ::  dp(:)  ! bathymetric depth
       integer,allocatable :: nm(:,:)          ! element table size(ne,3)
-      real(sz),allocatable :: x(:)   ! x cartesian node locations x(np)
-      real(sz),allocatable :: y(:)   ! y cartesian node locations y(np)
-      real(sz),allocatable :: slam(:) ! longitude node locations in CPP slam(np)
-      real(sz),allocatable :: sfea(:) ! latitude node locations in CPP sfea(np)
+      real(8),allocatable :: x(:)   ! x cartesian node locations x(np)
+      real(8),allocatable :: y(:)   ! y cartesian node locations y(np)
+      real(8),allocatable :: slam(:) ! longitude node locations slam(np)
+      real(8),allocatable :: sfea(:) ! latitude node locations sfea(np)
       type(ipair), allocatable, target :: node_dict(:) ! map node labels to numbers
       integer, allocatable, target :: labels(:) ! map node numbers to labels
       integer :: n1, n2, n3 ! nodes 1, 2, 3 for each element
@@ -46,16 +46,18 @@ C     ------------------------------------------------------------------
       integer, allocatable :: nodele(:)
       integer, allocatable :: neitab(:,:) !(MNP,MNEI) table of neighbor nodes for each node
       integer, allocatable :: neitabele(:,:) !(MNP,MNei)table of neighboring elements for each node
-      real(sz), allocatable :: areas(:) !(MNE) = 2*Element Area
-      real(sz), allocatable :: totalarea(:)
+      real(8), allocatable :: areas(:) !(MNE) = 2*Element Area
+      real(8), allocatable :: totalarea(:)
       real(sz), allocatable :: sfac(:), slac(:), sfacele(:), slacele(:) ! spherical coordinate correction factor
-      real(sz), allocatable :: sfeaele(:), sfar(:) ! spherical coordinate tan(lat)/R ratio
+      real(sz), allocatable :: csfea(:), csfeaele(:), sfar(:) ! spherical coordinate tan(lat)/R ratio
       real(sz), allocatable :: bcxy(:,:)  ! element barycenters for kdtree
       real(sz), allocatable :: rmax(:)    ! element radii for kdtree
       real(sz), allocatable :: csi(:),sii(:)
-      real(sz) :: slam0,sfea0 !center point of CPP spherical projection
+      real(8) :: slam0,sfea0 !center point of CPP spherical projection
       integer  :: neimin,neimax
  
+      real(sz) :: theta ! rotation around y-axis
+      real(sz) :: beta  ! rotation around z-axis
 C----- DW --- precomputed 
       !c  FDXE(1:3,1:NE) -- b1, b2, b3
       !c  FDYE(1:3,1:NE) -- a1, a2, a3
@@ -1286,6 +1288,8 @@ C     ------------------------------------------------------------------
       real(sz) x2mx1,x3mx2,x1mx3,y2my1,y3my2,y1my3
       real(sz) Lon21,Lon32,Lon13
       real(sz) lened1,lened2,lened3
+      real(sz) :: slamr, sfear
+      real(8) :: slamr1, sfear1, slamr2, sfear2, slamr3, sfear3
       integer :: i, j
 
       call setMessageSource("initializeMesh")
@@ -1317,7 +1321,10 @@ C.... IF EITHER NTIP=1 OR NCOR=1, COMPUTE THE INVERSE CPP PROJECTION
       SFACELE = 1.0d0 ! set the sfac vector equal to unity
       SLAC = 1.0d0 ! set the slac vector equal to unity
       SLACELE = 1.0d0 ! set the slac vector equal to unity
-      SFEAELE = 1.0d0 ! set the cosine of lat to unity
+      CSFEAELE = 1.0d0 ! set the cosine of lat to unity
+      CSFEA = 1.0d0 ! set the cosine of lat to unity
+      theta = 0d0 ! set rotation to zero 
+      beta  = 0d0 ! set rotation to zero
       ! if the original nodal coordinates were cartesian
       IF (ICS.EQ.1) THEN
          ! we already read the original coordinates into slam(:) and sfea(:)
@@ -1336,26 +1343,36 @@ C.... IF EITHER NTIP=1 OR NCOR=1, COMPUTE THE INVERSE CPP PROJECTION
       ! if mesh coordinates were in lon lat degrees then compute the projection
       ! and the correction factors
       if (ics.eq.2) then
+         ! Apply rotation of grid if max val of lat > 85
+         !if (maxval(slam) > 85d0) then
+         !   ! This puts north pole on Greenland and 
+         !   ! south pole on edge of Antarctica
+         !   theta = 14d0  * deg2rad 
+         !   beta  = 140d0 * deg2rad
+         !endif 
          slam = deg2rad * slam
          sfea = deg2rad * sfea
          do i = 1,np
-            call Project(x(i),y(i),slam(i),sfea(i),slam0,sfea0,
+            call Rotate(slamr,sfear,slam(i),sfea(i))
+            call Project(x(i),y(i),slamr,sfear,slam0,sfea0,
      &                   sfac(i),slac(i))
+            sfar(i)  = tan( sfear ) / Rearth
+            csfea(i) = cos( sfear )
          enddo
 C...     WJP, compute the element averaged quantities
          do i = 1,ne
-            sfacele(i) = (sfac(nm(i,1)) + sfac(nm(i,2))
-     &                  + sfac(nm(i,3)))/3d0 
-            slacele(i) = (slac(nm(i,1)) + slac(nm(i,2))
-     &                  + slac(nm(i,3)))/3d0 
-            sfeaele(i) = (cos(sfea(nm(i,1))) + cos(sfea(nm(i,2)))
-     &                  + cos(sfea(nm(i,3))))/3d0
+            sfacele(i) = ( sfac(nm(i,1)) + sfac(nm(i,2))
+     &                   + sfac(nm(i,3)) ) / 3d0 
+            slacele(i) = ( slac(nm(i,1)) + slac(nm(i,2))
+     &                   + slac(nm(i,3)) ) / 3d0 
+            csfeaele(i) = ( csfea(nm(i,1)) + csfea(nm(i,2))
+     &                     + csfea(nm(i,3)) ) / 3d0
          enddo
       endif
 c...
 c...  if wetting and drying will not be used, make sure all bathymetric
 c...  depths are > or = to h0.
-      if((nolifa.eq.0).or.(nolifa.eq.1)) then
+      if ( (nolifa.eq.0).or.(nolifa.eq.1) ) then
          do i=1,np
             if(dp(i).lt.h0) dp(i)=h0
          end do
@@ -1409,21 +1426,24 @@ C     if there is not enough machine precision
          
          ! WJP: Check wrap and correct X and Y values in the elements
          if (ics.eq.2) then
-            Lon21 = SLAM(NM(I,2)) - SLAM(NM(I,1))
-            Lon32 = SLAM(NM(I,3)) - SLAM(NM(I,2))
-            Lon13 = SLAM(NM(I,1)) - SLAM(NM(I,3))
+            call Rotate(slamr1,sfear1,slam(nm(i,1)),sfea(nm(i,1)))
+            call Rotate(slamr2,sfear2,slam(nm(i,2)),sfea(nm(i,2)))
+            call Rotate(slamr3,sfear3,slam(nm(i,3)),sfea(nm(i,3)))
+            Lon21 = slamr2 - slamr1
+            Lon32 = slamr3 - slamr2
+            Lon13 = slamr1 - slamr3
             if (abs(Lon21) > pi .and. abs(Lon13) > pi) then
                ! Change X1
-               call Project(X1,Y1,SLAM(NM(I,1))+sign(2d0*pi,Lon21),
-     &                  SFEA(NM(I,1)),slam0,sfea0)
+               call Project(X1,Y1,slamr1+sign(2d0*pi,Lon21),
+     &                      sfear1,slam0,sfea0)
             elseif (abs(Lon21) > pi .and. abs(Lon32) > pi) then
                ! Change X2
-               call Project(X2,Y2,SLAM(NM(I,2))+sign(2d0*pi,Lon32),
-     &                  SFEA(NM(I,2)),slam0,sfea0)
+               call Project(X2,Y2,slamr2+sign(2d0*pi,Lon32),
+     &                      sfear2,slam0,sfea0)
             elseif (abs(Lon32) > pi .and. abs(Lon13) > pi) then
                ! Change X3
-               call Project(X3,Y3,SLAM(NM(I,3))+sign(2d0*pi,Lon13),
-     &                  SFEA(NM(I,3)),slam0,sfea0)
+               call Project(X3,Y3,slamr3+sign(2d0*pi,Lon13),
+     &                      sfear3,slam0,sfea0)
             endif
          endif
 
@@ -1486,7 +1506,7 @@ C
 C     check to ensure that the nodal ordering in the connectivity table is
 C     counter clockwise around the elements
       do i=1,ne
-         if(areas(i).lt.0.0) then
+         if (areas(i).lt.0.0d0) then
             write(scratchMessage,9899) I
             call allMessage(ERROR,scratchMessage)
  9899      format('!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
@@ -1537,6 +1557,7 @@ C     ------------------------------------------------------------------
       real(sz) :: ZNGFicNodeDist,ZNGFicNodeDistTemp
       logical :: ibtype52 = .false.
       real(8) :: delx,dely
+      real(8) :: slamrI, slamrK, slamrJ, sfearI, sfearJ, sfearK
 
       call setMessageSource("initializeBoundaries")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -2011,18 +2032,21 @@ C              jgf46.21 Added IBTYPE=52.
                YGI = Y(NBVI)
                YGK = Y(NBVK)
                IF (ICS.EQ.2) THEN
-                  LonJI = SLAM(NBVJ) - SLAM(NBVI)
-                  LonIK = SLAM(NBVI) - SLAM(NBVK)
-                  LonKJ = SLAM(NBVK) - SLAM(NBVJ)
+                  call Rotate(slamrJ,sfearJ,slam(NBVJ),sfea(NBVJ))
+                  call Rotate(slamrI,sfearI,slam(NBVI),sfea(NBVI))
+                  call Rotate(slamrK,sfearK,slam(NBVK),sfea(NBVK))
+                  LonJI = SLAMrJ - SLAMrI
+                  LonIK = SLAMrI - SLAMrK
+                  LonKJ = SLAMrK - SLAMrJ
                   if (abs(LonJI) > pi .and. abs(LonIK) > pi) then
-                     CALL Project(XGI,YGI,SLAM(NBVI)+sign(2d0*pi,LonJI),
-     &                        SFEA(NBVI),SLAM0,SFEA0)
+                     CALL Project(XGI,YGI,SLAMrI+sign(2d0*pi,LonJI),
+     &                            SFEArI,SLAM0,SFEA0)
                   elseif (abs(LonJI) > pi .and. abs(LonKJ) > pi) then
-                     CALL Project(XGJ,YGJ,SLAM(NBVJ)+sign(2d0*pi,LonKJ),
-     &                        SFEA(NBVJ),SLAM0,SFEA0)
+                     CALL Project(XGJ,YGJ,SLAMrJ+sign(2d0*pi,LonKJ),
+     &                            SFEArJ,SLAM0,SFEA0)
                   elseif (abs(LonKJ) > pi .and. abs(LonIK) > pi) then
-                     CALL Project(XGK,YGK,SLAM(NBVK)+sign(2d0*pi,LonIK),
-     &                        SFEA(NBVK),SLAM0,SFEA0)
+                     CALL Project(XGK,YGK,SLAMrK+sign(2d0*pi,LonIK),
+     &                            SFEArK,SLAM0,SFEA0)
                   endif
                ENDIF
                DELX = XGJ - XGI
@@ -2044,22 +2068,18 @@ C...           X0,Y0)
                   YLJ = YGJ
                   YLK = YGK
                ELSE
-                  CALL Project(XLI,YLI,SLAM(NBVI),SFEA(NBVI),
-     &                     SLAM(NBVI),SFEA(NBVI))
-                  CALL Project(XLK,YLK,SLAM(NBVK),SFEA(NBVK),
-     &                     SLAM(NBVI),SFEA(NBVI))
-                  CALL Project(XLJ,YLJ,SLAM(NBVJ),SFEA(NBVJ),
-     &                     SLAM(NBVI),SFEA(NBVI))
+                  CALL Project(XLI,YLI,SLAMrI,SFEArI,SLAMrI,SFEArI)
+                  CALL Project(XLK,YLK,SLAMrK,SFEArK,SLAMrI,SFEArI)
+                  CALL Project(XLJ,YLJ,SLAMrJ,SFEArJ,SLAMrI,SFEArI)
                   if (abs(LonJI) > pi .and. abs(LonIK) > pi) then
-                     CALL Project(XLI,YLI,SLAM(NBVI)+sign(2d0*pi,LonJI),
-     &                    SFEA(NBVI),SLAM(NBVI)+sign(2d0*pi,LonJI),
-     &                    SFEA(NBVI))
+                     CALL Project(XLI,YLI,SLAMrI+sign(2d0*pi,LonJI),
+     &                    SFEArI,SLAMrI+sign(2d0*pi,LonJI),SFEArI)
                   elseif (abs(LonJI) > pi .and. abs(LonKJ) > pi) then
-                     CALL Project(XLJ,YLJ,SLAM(NBVJ)+sign(2d0*pi,LonKJ),
-     &                    SFEA(NBVJ),SLAM(NBVI),SFEA(NBVI))
+                     CALL Project(XLJ,YLJ,SLAMrJ+sign(2d0*pi,LonKJ),
+     &                    SFEArJ,SLAMrI,SFEArI)
                   elseif (abs(LonKJ) > pi .and. abs(LonIK) > pi) then
-                     CALL Project(XLK,YLK,SLAM(NBVK)+sign(2d0*pi,LonIK),
-     &                    SFEA(NBVK),SLAM(NBVI),SFEA(NBVI))
+                     CALL Project(XLK,YLK,SLAMrK+sign(2d0*pi,LonIK),
+     &                    SFEArK,SLAMrI,SFEArI)
                   endif
                ENDIF
 
@@ -2651,6 +2671,7 @@ C     ------------------------------------------------------------------
 #endif
 
       allocate ( slam(mnp),sfea(mnp),x(mnp),y(mnp),labels(mnp))
+      allocate ( csfea(mnp) )
       call dict(node_dict, mnp)
       allocate ( dp(mnp) )
       allocate ( nm(mne,3))
@@ -2658,7 +2679,7 @@ C     ------------------------------------------------------------------
       allocate ( nneigh(mnp),mju(mnp),nodele(mnp))
       allocate ( lbarray_pointer(mnp))
       allocate ( sfac(mnp), slac(mnp), sfar(mnp) )
-      allocate ( slacele(mne), sfacele(mne), sfeaele(mne))
+      allocate ( slacele(mne), sfacele(mne), csfeaele(mne))
 
       allocate ( csi(mnp),sii(mnp))
 C...  v49.48.02 tcm -- Variables related to kdtree searches
@@ -2672,6 +2693,7 @@ C...... DW
       ! initialize to something troublesome to make it easy to spot issues
       slam = -99999.d0
       sfea = -99999.d0
+      csfea = -99999.d0
       x = -99999.d0
       y = -99999.d0
       dp = -99999.d0
@@ -2686,7 +2708,7 @@ C...... DW
       sfacele = -99999.d0
       slac = -99999.d0
       slacele = -99999.d0
-      sfeaele = -99999.d0
+      csfeaele = -99999.d0
       sfar = -99999.d0
       csi = -99999.d0
       sii = -99999.d0
@@ -2762,16 +2784,16 @@ C     ------------------------------------------------------------------
       SUBROUTINE Project(X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0,SFac,SLac)
       USE GLOBAL, ONLY : Rearth
       IMPLICIT NONE
-      real(sz), intent(in) :: RLAMBDA   ! longitude in radians
-      real(sz), intent(in) :: PHI       ! latitude in radians
-      real(sz), intent(in) :: RLAMBDA0  ! longitude at center of projection (radians)
-      real(sz), intent(in) :: PHI0      ! latitude at center of projection (radians)
-      real(sz), intent(out) :: X        ! projected longitude (m)
-      real(sz), intent(out) :: Y        ! projected latitude (m)
+      real(8), intent(in) :: RLAMBDA   ! longitude in radians
+      real(8), intent(in) :: PHI       ! latitude in radians
+      real(8), intent(in) :: RLAMBDA0  ! longitude at center of projection (radians)
+      real(8), intent(in) :: PHI0      ! latitude at center of projection (radians)
+      real(8), intent(out) :: X        ! projected longitude (m)
+      real(8), intent(out) :: Y        ! projected latitude (m)
       real(sz), intent(out),optional :: SFac ! The correction factor on d/dx
       real(sz), intent(out),optional :: SLac ! The correction factor on d/dy
 
-      call setMessageSource("cpp")
+      call setMessageSource("Project")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
@@ -2804,6 +2826,57 @@ C     ------------------------------------------------------------------
       END SUBROUTINE Project
 C     ------------------------------------------------------------------
 
+C     ------------------------------------------------------------------
+C               S U B R O U T I N E    R O T A T E
+C     ------------------------------------------------------------------
+C     Rotate lon,lat (lamda,phi) coordinates to avoid pole problem
+C     ------------------------------------------------------------------
+      SUBROUTINE Rotate(LAMBDAR,PHIR,LAMBDA,PHI)
+      implicit none
+      real(8), intent(out) :: LAMBDAR ! rotated longitude in radians
+      real(8), intent(out) :: PHIR    ! rotated latitude in radians
+      real(8), intent(in)  :: LAMBDA  ! original longitude in radians
+      real(8), intent(in)  :: PHI     ! original latitude in radians
+
+      real(sz) :: x, y, z    ! cartesian coordinates
+      real(sz) :: xr, yr, zr ! rotated cartesian coordinates
+      
+      call setMessageSource("Rotate")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+       
+      ! Do this just to avoid floating point precision errors...
+      if (abs(theta) < 1e-3 .and. abs(beta) < 1e-3) then
+         lambdar = lambda
+         phir = phi
+         call unsetMessageSource()
+         return
+      endif   
+ 
+      ! Convert from spherical to cartesian
+      x = cos(lambda)*cos(phi) 
+      y = sin(lambda)*cos(phi) 
+      z = sin(phi) 
+ 
+      ! Get rotated coordinates 
+      xr = cos(theta)*cos(beta)*x + cos(theta)*sin(beta)*y
+     &   + sin(theta)*z 
+      yr = -sin(beta)*x + cos(beta)*y
+      zr = -sin(theta)*cos(beta)*x - sin(theta)*sin(beta)*y
+     &   + cos(theta)*z 
+ 
+      ! Convert back to spherical from cartesian
+      lambdar = atan2(yr,xr) 
+      phir = asin(zr) 
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C     ------------------------------------------------------------------
+      END SUBROUTINE Rotate
+C     ------------------------------------------------------------------
 
 C     ------------------------------------------------------------------
 C               S U B R O U T I N E    N E I G H B
