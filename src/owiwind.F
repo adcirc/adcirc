@@ -108,14 +108,16 @@ C---------------------end of data declarations--------------------------------C
         SUBROUTINE owi_generateCoordinates(this,lat,lon)
             IMPLICIT NONE
             TYPE(OCEANWEATHER),INTENT(IN)      :: this
-            REAL(SZ),INTENT(INOUT)             :: lat(*)
-            REAL(SZ),INTENT(INOUT)             :: lon(*)
+            REAL(SZ),ALLOCATABLE,INTENT(OUT)   :: lat(:)
+            REAL(SZ),ALLOCATABLE,INTENT(OUT)   :: lon(:)
             INTEGER                            :: I
       
             call setMessageSource("owi_generateCoordinates")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
             call allMessage(DEBUG,"Enter.")
 #endif
+            ALLOCATE(lat(1:this%ilat))
+            ALLOCATE(lon(1:this%ilon))
 
             DO I = 1,this%ilat
                 lat(I) = this%swlat+(I-1)*this%dLat
@@ -435,7 +437,7 @@ C***********************************************************************
             if(owi(1)%date.eq.owi(s)%endDate.and.owi(s)%minute.ne.0) cycle
             if(owi(1)%date.gt.owi(s)%endDate) cycle
         endif
-        
+
         ! Increment counter
         owi(s)%isnap = owi(s)%isnap + 1
 
@@ -528,7 +530,7 @@ C***********************************************************************
          ! Replaced floating point comparison with a logical variable.
          uvpHasBeenSet = .false.
 
-         do j = 1,numSets
+         do j = numSets,1,-1
             if (owi(j)%interppoints(i,1).gt.0) then
                xi = owi(j)%interpPoints(i,1)
                yi = owi(j)%interpPoints(i,2)
@@ -546,6 +548,7 @@ C***********************************************************************
      &            owi(j)%p(xi+1,yi+1)+w4*owi(j)%p(xi,yi+1)
 
                uvpHasBeenSet = .true.
+               exit
             endif
          enddo
 
@@ -634,10 +637,6 @@ C
       WRITE(16,'(A)') ''
 
       CALL owi_allocate(owi(idx))
-
-      ALLOCATE(lat(1:owi(idx)%ilat))
-      ALLOCATE(lon(1:owi(idx)%ilon))
-
       CALL owi_generateCoordinates(owi(idx),lat,lon)
 
       ! Generate interpolation coefficients (south west point and weights)
