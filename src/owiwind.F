@@ -73,33 +73,49 @@ C---------------------end of data declarations--------------------------------C
         SUBROUTINE owi_allocate(this)
             IMPLICIT NONE
             TYPE(OCEANWEATHER),INTENT(INOUT) :: this
+            call setMessageSource("owi_allocate")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Enter.")
+#endif
             IF((SIZE(this%p,1).NE.this%iLon).OR.(SIZE(this%p,2).NE.this%iLat))THEN
                 CALL owi_deallocate(this)
                 ALLOCATE(this%p(this%ilon,this%ilat))
                 ALLOCATE(this%u(this%ilon,this%ilat))
                 ALLOCATE(this%v(this%ilon,this%ilat))
             ENDIF
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Return.")
+#endif
+            call unsetMessageSource()
         END SUBROUTINE owi_allocate
 
         SUBROUTINE owi_deallocate(this)
             IMPLICIT NONE
             TYPE(OCEANWEATHER),INTENT(INOUT) :: this
+            call setMessageSource("owi_deallocate")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Enter.")
+#endif
             IF(ALLOCATED(this%p))DEALLOCATE(this%p)
             IF(ALLOCATED(this%u))DEALLOCATE(this%u)
             IF(ALLOCATED(this%v))DEALLOCATE(this%v)
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Return.")
+#endif
+            call unsetMessageSource()
         END SUBROUTINE owi_deallocate
 
         SUBROUTINE owi_generateCoordinates(this,lat,lon)
             IMPLICIT NONE
-            TYPE(OCEANWEATHER),INTENT(IN)    :: this
-            REAL(SZ),ALLOCATABLE,INTENT(OUT) :: lat(:)
-            REAL(SZ),ALLOCATABLE,INTENT(OUT) :: lon(:)
-            INTEGER                          :: I
-
-            IF(ALLOCATED(lat))DEALLOCATE(lat)
-            IF(ALLOCATED(lon))DEALLOCATE(lon)
-            ALLOCATE(lat(this%ilat))
-            ALLOCATE(lon(this%ilon))
+            TYPE(OCEANWEATHER),INTENT(IN)      :: this
+            REAL(SZ),INTENT(INOUT)             :: lat(*)
+            REAL(SZ),INTENT(INOUT)             :: lon(*)
+            INTEGER                            :: I
+      
+            call setMessageSource("owi_generateCoordinates")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Enter.")
+#endif
 
             DO I = 1,this%ilat
                 lat(I) = this%swlat+(I-1)*this%dLat
@@ -107,6 +123,11 @@ C---------------------end of data declarations--------------------------------C
             DO I = 1,this%ilon
                 lon(i) = this%swlon+(I-1)*this%dLon
             ENDDO
+
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Return.")
+#endif
+            call unsetMessageSource()
 
             RETURN
         END SUBROUTINE owi_generateCoordinates
@@ -369,8 +390,9 @@ C***********************************************************************
       INTEGER                :: EyeLatTemp,EyeLonTemp
       CHARACTER(1024)        :: filename,errorVar = ""
       INTEGER                :: iounit
-      REAL(SZ)               :: iLatw,iLongw,dxw,dyw,swlatw,swlongw
-      REAL(SZ)               :: iLatp,iLongp,dxp,dyp,swlatp,swlongp
+      INTEGER                :: iLatw,iLongw,iLatp,iLongp
+      REAL(SZ)               :: dxw,dyw,swlatw,swlongw
+      REAL(SZ)               :: dxp,dyp,swlatp,swlongp
       REAL(SZ)               :: uu,vv,pp
       REAL(SZ)               :: w1,w2,w3,w4
       INTEGER(8)             :: iCYMDHw,iCYMDHp
@@ -407,10 +429,12 @@ C***********************************************************************
       endif
 
       DO S = 1,numSets
-      
-        if(owi(1)%date.lt.owi(s)%startDate) goto 100
-        if(owi(1)%date.eq.owi(s)%endDate.and.owi(s)%minute.ne.0) goto 100
-        if(owi(1)%date.gt.owi(s)%endDate) goto 100
+
+        if(s.gt.1)then
+            if(owi(1)%date.lt.owi(s)%startDate) cycle
+            if(owi(1)%date.eq.owi(s)%endDate.and.owi(s)%minute.ne.0) cycle
+            if(owi(1)%date.gt.owi(s)%endDate) cycle
+        endif
         
         ! Increment counter
         owi(s)%isnap = owi(s)%isnap + 1
@@ -418,17 +442,17 @@ C***********************************************************************
         ! Read grid specifications/date in pressure file
         filename = owi(s)%pressure_file
         iounit = owi(s)%iounit_pressure
+        WRITE(errorVar,'(A,I0)') "read grid specifications/date in Oceanweather pressure file, domain ",s
         read (owi(s)%iounit_pressure,11,end=10000,err=9999,iostat=errorIO)
      &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
-        WRITE(errorVar,'(A,I0)') "reading grid specifications/date in Oceanweather pressure file, domain ",s
         call check_owi_err(errorIO,errorVar,filename,iounit)
 
         ! Read grid specifications/date in wind file
         filename = owi(s)%wind_file
         iounit = owi(s)%iounit_wind
+        WRITE(errorVar,'(A,I0)') "read grid specifications/date in Oceanweather wind file, domain ",s
         read (owi(s)%iounit_wind,11,end=10000,err=9999,iostat=errorIO)
      &        iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
-        WRITE(errorVar,'(A,I0)') "reading grid specifications/date in Oceanweather wind file, domain ",s
         call check_owi_err(errorIO,errorVar,filename,iounit)
 
         ! Check consistency
@@ -457,11 +481,18 @@ C***********************************************************************
               endif
             endif
         endif
+
         owi(s)%date = iCYMDHp
         owi(s)%minute = iMinp
 
         ! Update coordinate mapping coefficients if necessary
         if(owi(s)%iupdate.eq.1) then
+           owi(s)%ilon = ilongp
+           owi(s)%ilat = ilatp
+           owi(s)%dlon = dxp
+           owi(s)%dlat = dyp
+           owi(s)%swlat = swlatp
+           owi(s)%swlon = swlongp
            WRITE(errorVar,'(A,I0)') "Updating grid coordinate mapping coefficients, domain ",s
            call logMessage(INFO,errorVar)
            call nws12interp(s,np)
@@ -490,8 +521,6 @@ C***********************************************************************
         call check_owi_err(errorIO,errorVar,filename,iounit)
       ENDDO
 
- 100  CONTINUE
-
       do i=1,NP
 
          ! jgf51.52.05: Fixed an issue with floating point .eq. that
@@ -503,7 +532,7 @@ C***********************************************************************
             if (owi(j)%interppoints(i,1).gt.0) then
                xi = owi(j)%interpPoints(i,1)
                yi = owi(j)%interpPoints(i,2)
-
+               
                w1=owi(j)%weight(i,1)
                w2=owi(j)%weight(i,2)
                w3=owi(j)%weight(i,3)
@@ -605,6 +634,10 @@ C
       WRITE(16,'(A)') ''
 
       CALL owi_allocate(owi(idx))
+
+      ALLOCATE(lat(1:owi(idx)%ilat))
+      ALLOCATE(lon(1:owi(idx)%ilon))
+
       CALL owi_generateCoordinates(owi(idx),lat,lon)
 
       ! Generate interpolation coefficients (south west point and weights)
@@ -612,7 +645,7 @@ C
         adcLat  = RAD2DEG*SFEA(i)
         adcLong = RAD2DEG*SLAM(i)
 
-        if (adcLong>=lon(1).and.adcLong<long(owi(idx)%iLon) .and.
+        if (adcLong>=lon(1).and.adcLong<lon(owi(idx)%iLon) .and.
      &       adcLat>=lat(1).and.adcLat<lat(owi(idx)%iLat)) then
           do j=1,owi(idx)%iLon-1
             if (adcLong>=lon(j) .and.
@@ -635,11 +668,11 @@ C
           owi(idx)%interpPoints(i,1) = xi
           owi(idx)%interpPoints(i,2) = yi
 
-          w=(long(xi+1)-long(xi))*(lat(yi+1)-lat(yi))
-          w1=(long(xi+1)-adcLong)*(lat(yi+1)-adcLat)
-          w2=(adcLong-long(xi))*(lat(yi+1)-adcLat)
-          w3=(adcLong-long(xi))*(adcLat-lat(yi))
-          w4=(long(xi+1)-adcLong)*(adcLat-lat(yi))
+          w=(lon(xi+1)-lon(xi))*(lat(yi+1)-lat(yi))
+          w1=(lon(xi+1)-adcLong)*(lat(yi+1)-adcLat)
+          w2=(adcLong-lon(xi))*(lat(yi+1)-adcLat)
+          w3=(adcLong-lon(xi))*(adcLat-lat(yi))
+          w4=(lon(xi+1)-adcLong)*(adcLat-lat(yi))
 
           owi(idx)%weight(i,1)=w1/w
           owi(idx)%weight(i,2)=w2/w
