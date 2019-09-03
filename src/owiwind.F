@@ -167,11 +167,6 @@ C     ---------------------
           call check_owi_err(1,"number of wind sets must not be zero",fname,iounit)
       endif
 
-      IF(nPowellSearchDomains.GT.numSets)THEN
-          nPowellSearchDomains = numSets
-      ELSEIF(nPowellSearchDomains.LE.0)THEN
-          nPowellSearchDomains = numSets
-      ENDIF
 
       ! Read the number of blank snaps to be inserted before OWI winds start
       errorVar = "reading number of blank snaps" ! used in error messages
@@ -227,6 +222,12 @@ C     ---------------------
       endif
             
       close(iounit)
+      
+      IF(nPowellSearchDomains.GT.numSets)THEN
+          nPowellSearchDomains = numSets
+      ELSEIF(nPowellSearchDomains.LE.0)THEN
+          nPowellSearchDomains = numSets
+      ENDIF
 
       DO I = 1,numSets
         CALL readHeader(owi(i)%pressure_file,owi(i)%iounit_pressure,
@@ -280,61 +281,70 @@ C-----------------------------------------------------------------------
 !     Called to find the lowest pressure in the met field below
 !     the threshold pressure.
 !-----------------------------------------------------------------------
-      subroutine findStormCenter(eyeLatR, eyeLonR, foundEye)
-      USE GLOBAL,ONLY:PRBCKGRND
-      implicit none
-      real(sz), intent(out) :: eyeLatR(3)
-      real(sz), intent(out) :: eyeLonR(3)
-      logical, intent(out)  :: foundEye
-      !Casey 110518: Added for Mark Powell's sector-based wind drag.
-      INTEGER  :: EyeLatI
-      INTEGER  :: EyeLonI
-      REAL(SZ) :: EyeLatTemp
-      REAL(SZ) :: EyeLonTemp
-      REAL(SZ) :: EyePressure = PRBCKGRND
-      integer :: i, j, s
+      subroutine findStormCenter(eyeLat, eyeLon, foundEye)
+        use GLOBAL,only:PRBCKGRND
+        implicit none
+        real(sz), intent(inout) :: eyeLat(3)
+        real(sz), intent(inout) :: eyeLon(3)
+        logical, intent(out)    :: foundEye
+        integer                 :: EyeLatI
+        integer                 :: EyeLonI
+        integer                 :: EyeDomainI
+        real(SZ)                :: EyeLatTemp
+        real(SZ)                :: EyeLonTemp
+        real(SZ)                :: EyePressure
+        integer                 :: i, j, s
 
-      DO S = 1,nPowellSearchDomains
-          DO i=1,owi(i)%iLon
-             DO j=1,owi(i)%iLat
-                IF((owi(i)%p(i,j).LT.EyePressure).AND.
-     &             (owi(i)%p(i,j).LT.1000.D0))THEN
-                   EyeLatI = j
-                   EyeLonI = i
-                   EyePressure = owi(i)%p(i,j)
-                ENDIF
-             ENDDO
-          ENDDO
-          IF((EyeLatI.EQ.0).AND.(EyeLonI.EQ.0))THEN
-             FoundEye = .FALSE.
-          ELSEIF((EyeLatI.EQ.1).OR.(EyeLatI.EQ.owi(i)%iLat).OR.
-     &           (EyeLonI.EQ.1).OR.(EyeLonI.EQ.owi(i)%iLon))THEN
-             FoundEye = .FALSE.
-          ELSE
-             FoundEye = .TRUE.
-             EyeLatTemp = owi(i)%swlat  + (EyeLatI-1)*owi(i)%dLat
-             EyeLonTemp = owi(i)%swlon + (EyeLonI-1)*owi(i)%dLon
-             IF((EyeLatTemp.EQ.EyeLatR(3)).AND.(EyeLonTemp.EQ.EyeLonR(3)))THEN
-                CONTINUE
-             ELSE
-                EyeLatR(1) = EyeLatR(2)
-                EyeLonR(1) = EyeLonR(2)
-                EyeLatR(2) = EyeLatR(3)
-                EyeLonR(2) = EyeLonR(3)
-                EyeLatR(3) = EyeLatTemp
-                EyeLonR(3) = EyeLonTemp
-             ENDIF
-          ENDIF
-      ENDDO
+        EyeLatI = 0
+        EyeLonI = 0
+        EyeDomainI = 0
+        EyeLatTemp = 0D0
+        EyeLonTemp = 0D0
+        EyePressure = PRBCKGRND
+
+        DO S = 1,nPowellSearchDomains
+            DO i=1,owi(s)%iLon
+               DO j=1,owi(s)%iLat
+                  IF((owi(s)%p(i,j).LT.EyePressure).AND.
+     &               (owi(s)%p(i,j).LT.1000.D0))THEN
+                     EyeLatI = j
+                     EyeLonI = i
+                     EyeDomainI = s
+                     EyePressure = owi(s)%p(i,j)
+                  ENDIF
+               ENDDO
+            ENDDO
+        ENDDO
+
+        IF((EyeLatI.EQ.0).OR.(EyeLonI.EQ.0).OR.(EyeDomainI.EQ.0))THEN
+           FoundEye = .FALSE.
+        ELSEIF((EyeLatI.EQ.1).OR.(EyeLatI.EQ.owi(EyeDomainI)%iLat).OR.
+     &         (EyeLonI.EQ.1).OR.(EyeLonI.EQ.owi(EyeDomainI)%iLon))THEN
+           FoundEye = .FALSE.
+        ELSE
+           FoundEye = .TRUE.
+           EyeLatTemp = owi(EyeDomainI)%swlat+(EyeLatI-1)*owi(EyeDomainI)%dLat
+           EyeLonTemp = owi(EyeDomainI)%swlon+(EyeLonI-1)*owi(EyeDomainI)%dLon
+           IF((EyeLatTemp.EQ.EyeLat(3)).AND.(EyeLonTemp.EQ.EyeLon(3)))THEN
+              CONTINUE
+           ELSE
+              EyeLat(1) = EyeLat(2)
+              EyeLon(1) = EyeLon(2)
+              EyeLat(2) = EyeLat(3)
+              EyeLon(2) = EyeLon(3)
+              EyeLat(3) = EyeLatTemp
+              EyeLon(3) = EyeLonTemp
+           ENDIF
+        ENDIF
 
 !-----------------------------------------------------------------------
       end subroutine findStormCenter
 !-----------------------------------------------------------------------
 
 
-C***********************************************************************
-C   SUBROUTINE NWS12GET
-C***********************************************************************
+!***********************************************************************
+!   SUBROUTINE NWS12GET
+!***********************************************************************
 
       SUBROUTINE NWS12GET(WVNX,WVNY,PRN,NP,RHOWAT0,G,PRdeflt)
       USE SIZES,ONLY : MYPROC,MNPROC,GBLINPUTDIR
@@ -357,10 +367,11 @@ C***********************************************************************
       INTEGER(8)             :: iCYMDHw,iCYMDHp
       INTEGER                :: iMinw,iMinp
       INTEGER                :: errorIO
+      LOGICAL                :: foundEye
 
       !jgf51.52.05: Used to detect mesh nodes outside both met grids
       ! and set those nodes to zero wind velocity and to background pressure.
-      LOGICAL :: uvpHasBeenSet,FoundEye
+      LOGICAL :: uvpHasBeenSet
 
       call setMessageSource("nws12get")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -405,6 +416,17 @@ C***********************************************************************
         read (owi(s)%iounit_pressure,11,end=10000,err=9999,iostat=errorIO)
      &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
         call check_owi_err(errorIO,errorVar,filename,iounit)
+
+        if(s.eq.1)then
+            if(numSets.GT.1)then
+                write(scratchMessage,'("Processing Oceanweather wind data for domain ",I0," through "'//
+     &                               ',I0," for time stamp ",I12," ",I2)') s,numSets,iCYMDHp,iMinp
+            else
+                write(scratchMessage,'("Processing Oceanweather wind data for time stamp ",I12," ",I2)') 
+     &              iCYMDHp,iMinp
+            endif
+            call allmessage(INFO,scratchMessage)
+        endif
 
         ! Read grid specifications/date in wind file
         filename = owi(s)%wind_file

@@ -33,8 +33,8 @@ C
       real(sz) :: wreftim ! met reference time
 
 Casey 110518: Added for Mark Powell's sectorial wind drag.
-      REAL(SZ) :: EyeLatR(3) = 0.D0
-      REAL(SZ) :: EyeLonR(3) = 0.D0
+      REAL(8)  :: EyeLat(3) = 0.D0
+      REAL(8)  :: EyeLon(3) = 0.D0
       LOGICAL  :: FoundEye
 C
       ! related to NWS=11
@@ -86,7 +86,11 @@ C
       ! in FUNCTION WindDrag, and 'IceCube' to be used in
       ! FUNCTION WindIceDrag.
 #ifndef POWELL
+      INTEGER,PARAMETER :: DRAGLAW_GARRATT = 99990
+      INTEGER,PARAMETER :: DRAGLAW_POWELL  = 99991
+      INTEGER,PARAMETER :: DRAGLAW_SWELL   = 99992
       CHARACTER(len=10) :: DragLawString = 'default' ! controls wind drag formulation
+      INTEGER :: dragLawType = DRAGLAW_GARRATT
 #else
       ! jgf50.32 Provide backward compatibility with hardcoded POWELL
       ! support.
@@ -211,6 +215,19 @@ C
       integer :: offsetCurrentLine ! used in error messages
       logical :: offsetFileEnded = .false. ! true when all data have been read
 
+      !...Function interface for wind drag
+      !   Used so that the selection of wind drag
+      !   is only performed once. Each wind drag 
+      !   function has the same function signiture
+      ABSTRACT INTERFACE
+        FUNCTION p_computeWindDrag(WindSpeed,NodeNumber) RESULT(Drag)
+            REAL(8),INTENT(IN)  :: WindSpeed
+            INTEGER,INTENT(IN)  :: NodeNumber
+            REAL(8)             :: Drag
+        END FUNCTION p_computeWindDrag
+      END INTERFACE
+      PROCEDURE(p_computeWindDrag),POINTER :: f_computeWindDrag => null()
+
 C------------------------end of data declarations-----------------------
       CONTAINS
 C
@@ -253,103 +270,178 @@ C.... convert background pressure from millibars to meters of water
       PRBCKGRND_MH2O = 100.0D0*PRBCKGRND/(RHOWAT0*G)
       prn1 = PRBCKGRND_MH2O
       prn2 = PRBCKGRND_MH2O
+      
+      CALL checkWindDragType()
+      CALL mapWindDragFunctionPointer()
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 
-C     ----------------------------------------------------------------
+!     ----------------------------------------------------------------
       END SUBROUTINE initWindModule
-C     ----------------------------------------------------------------
+!     ----------------------------------------------------------------
 
+!     ----------------------------------------------------------------
+!     Maps the function that will be called to compute wind drag
+!     Functions must have the signiture as below:
+!     result = function(windSpeed,nodeNumber)
+!     ----------------------------------------------------------------
+      SUBROUTINE mapWindDragFunctionPointer()
+!     ----------------------------------------------------------------
+          IMPLICIT NONE
+          SELECT CASE(DragLawType)
+          CASE(DRAGLAW_GARRATT)
+              f_computeWindDrag => CappedGarrattWindDrag
+          CASE(DRAGLAW_POWELL)
+              f_computeWindDrag => PowellWindDrag
+          CASE(DRAGLAW_SWELL)
+#ifndef CSWAN
+              call allMessage(WARNING,"SWAN Model not enabled. Drag formulation will be Garratt.")
+#endif              
+              f_computeWindDrag => SwanWindDrag
+          CASE DEFAULT
+              call allMessage(ERROR,"Wind drag law not recognized"//TRIM(DragLawString))
+#ifdef CMPI
+              call msg_fini()
+#endif
+              STOP
+          END SELECT
+!     ----------------------------------------------------------------
+      END SUBROUTINE mapWindDragFunctionPointer
+!     ----------------------------------------------------------------
 
-C     ----------------------------------------------------------------
-C      F U N C T I O N   W I N D   D R A G
-C     ----------------------------------------------------------------
-C
-C     jgf46.00 Function to calculate wind drag coefficient from the
-C     windspeed.
-C
-C     ----------------------------------------------------------------
+!     ----------------------------------------------------------------
+!      F U N C T I O N   W I N D   D R A G
+!     ----------------------------------------------------------------
+!     Computes wind drag using a function with the signiture:
+!     result = function(windSpeed,nodeNumber)
+!     ----------------------------------------------------------------
       REAL(SZ) FUNCTION WindDrag(WindSpeed, NodeNumber)
-      !Casey 110518: Added variables for Mark Powell's sector-based wind drag.
-      USE GLOBAL, ONLY: DEG2RAD, windDragOut
+        USE GLOBAL,ONLY: windDragOut
+        IMPLICIT NONE 
+        REAL(SZ) :: WindSpeed
+        INTEGER  :: NodeNumber
+        WindDrag = f_computeWindDrag(windSpeed,NodeNumber)
+        windDragOut(nodeNumber) = windDrag
+        RETURN
+!     ----------------------------------------------------------------
+      END FUNCTION WindDrag
+!     ----------------------------------------------------------------
+
+!     ----------------------------------------------------------------
+!     Use the wind drag coefficients calculated inside SWAN
+!     ----------------------------------------------------------------
+       FUNCTION SwanWindDrag(WindSpeed,NodeNumber) RESULT(Drag)
+!     ----------------------------------------------------------------
 #ifdef CSWAN
-     &                  ,SWAN_WDragCo
+           USE GLOBAL,ONLY: Swan_WDragCo
+#endif           
+           IMPLICIT NONE
+           REAL(8),INTENT(IN)  :: WindSpeed
+           INTEGER,INTENT(IN)  :: NodeNumber
+           REAL(8)             :: Drag
+#ifdef CSWAN           
+           Drag = SWAN_WDragCo(NodeNumber)
+#else 
+           Drag = CappedGarrattWindDrag(WindSpeed,NodeNumber)
 #endif
-      USE MESH, ONLY : SFEA, SLAM
-      REAL(SZ) WindSpeed
-      ! jgf50.32: Even if present, NodeNumber is ignored by Garratt formulation
-      INTEGER,OPTIONAL :: NodeNumber
-C
-      INTRINSIC :: ATAN2
-      INTRINSIC :: MOD
-      INTEGER   :: IS
-      LOGICAL   :: FoundSector
-      REAL(SZ)  :: Dir1
-      REAL(SZ)  :: Dir2
-      REAL(SZ)  :: Drag(3)
-      REAL(SZ)  :: NodeDirection
-      REAL(SZ)  :: NodeLat
-      REAL(SZ)  :: NodeLon
-      REAL(SZ)  :: StormDirection
-      REAL(SZ)  :: Weight(3)
-C    
-      SELECT CASE(TRIM(DragLawString))
-C
-      CASE("Garratt","GARRATT","garratt","default")
-         WindDrag = 0.001d0*(0.75d0+0.067d0*WindSpeed)
-         IF(WindDrag.gt.WindDragLimit) WindDrag=WindDragLimit
-C
-C Matt 131008: Added SWAN's swell-based wind drag.
-#ifdef CSWAN
-      CASE("Swell","SWELL","swell")
-         WindDrag = SWAN_WDragCo(NodeNumber)
-#endif
-C
-Casey 110518: Added Mark Powell's sector-based wind drag.
-      CASE("Powell","POWELL","powell")
-C.. Check whether we have previously found the eye.
-         IF((EyeLatR(1).EQ.0.D0).OR.(EyeLonR(1).EQ.0.D0).OR.
-     &      (EyeLatR(2).EQ.0.D0).OR.(EyeLonR(2).EQ.0.D0).OR.
-     &      (EyeLatR(3).EQ.0.D0).OR.(EyeLonR(3).EQ.0.D0))THEN
+!     ----------------------------------------------------------------
+       END FUNCTION SwanWindDrag
+!     ----------------------------------------------------------------
+            
+!     ----------------------------------------------------------------
+!     Function applying the Garratt wind drag formulation
+!     ----------------------------------------------------------------
+       FUNCTION GarrattWindDrag(WindSpeed,NodeNumber) RESULT(Drag)
+!     ----------------------------------------------------------------
+           IMPLICIT NONE
+           REAL(8),INTENT(IN)  :: WindSpeed
+           INTEGER,INTENT(IN)  :: NodeNumber
+           REAL(8)             :: Drag
+           Drag = 0.001d0*(0.75d0+0.067d0*WindSpeed)
+       END FUNCTION GarrattWindDrag
+
+!     ----------------------------------------------------------------
+!     Applies the Garratt Wind Drag capped at WindDragLimit
+!     ----------------------------------------------------------------
+       FUNCTION CappedGarrattWindDrag(WindSpeed,NodeNumber) RESULT(WindDrag)
+!     ----------------------------------------------------------------
+           IMPLICIT NONE
+           REAL(8),INTENT(IN)  :: WindSpeed
+           INTEGER,INTENT(IN)  :: NodeNumber
+           REAL(8)             :: WindDrag
+           WindDrag = MIN(GarrattWindDrag(WindSpeed,NodeNumber),WindDragLimit)
+!     ----------------------------------------------------------------
+       END FUNCTION CappedGarrattWindDrag
+!     ----------------------------------------------------------------
+
+!     ----------------------------------------------------------------
+!     Mark Powell's sector-based wind drag.
+!     ----------------------------------------------------------------
+      FUNCTION PowellWindDrag(WindSpeed,NodeNumber) RESULT(PowellDrag)
+!     ----------------------------------------------------------------
+          USE GLOBAL, ONLY: DEG2RAD
+          USE MESH, ONLY : SFEA, SLAM
+          IMPLICIT NONE
+          INTRINSIC           :: ATAN2
+          INTRINSIC           :: MOD
+          REAL(8),INTENT(IN)  :: WindSpeed
+          INTEGER,INTENT(IN)  :: NodeNumber
+          INTEGER             :: IS
+          INTEGER             :: IW1,IW2,IW3
+          LOGICAL             :: FoundSector
+          REAL(8)             :: Dir1
+          REAL(8)             :: Dir2
+          REAL(8)             :: Drag(3)
+          REAL(8)             :: NodeDirection
+          REAL(8)             :: NodeLat
+          REAL(8)             :: NodeLon
+          REAL(8)             :: StormDirection
+          REAL(8)             :: Weight(3)
+          REAL(8)             :: PowellDrag
+          REAL(8)             :: rawGarrattWindDrag
+
+!.. Check whether we have previously found the eye.
+         IF((EyeLat(1).EQ.0.D0).OR.(EyeLon(1).EQ.0.D0).OR.
+     &      (EyeLat(2).EQ.0.D0).OR.(EyeLon(2).EQ.0.D0).OR.
+     &      (EyeLat(3).EQ.0.D0).OR.(EyeLon(3).EQ.0.D0))THEN
             FoundEye = .FALSE.
          ENDIF
-C.. If the eye has not been found then apply Garratt.
-         WindDrag = 0.001D0*(0.75D0+0.067D0*WindSpeed)
+!.. If the eye has not been found then apply Garratt.
          IF(.NOT.FoundEye)THEN
+            PowellDrag = CappedGarrattWindDrag(WindSpeed,NodeNumber)
             FoundSector = .FALSE.
             Weight = 0.D0
-            IF(WindDrag.GT.WindDragLimit) WindDrag = WindDragLimit
          ELSE
-C.. We have found the eye!
-C.. Compute the storm's direction.  We use the convention of northward
-C.. being zero degrees, and then cycling clockwise.
-            Dir1 = ATAN2(EyeLatR(2)-EyeLatR(1),EyeLonR(2)-EyeLonR(1))
-            Dir2 = ATAN2(EyeLatR(3)-EyeLatR(2),EyeLonR(3)-EyeLonR(2))
+!.. We have found the eye!
+!.. Compute the storm's direction.  We use the convention of northward
+!.. being zero degrees, and then cycling clockwise.
+            Dir1 = ATAN2(EyeLat(2)-EyeLat(1),EyeLon(2)-EyeLon(1))
+            Dir2 = ATAN2(EyeLat(3)-EyeLat(2),EyeLon(3)-EyeLon(2))
             StormDirection = ATAN2(SIN(Dir1)+SIN(Dir2),COS(Dir1)+COS(Dir2))
             StormDirection = StormDirection/DEG2RAD
             StormDirection = 90.D0 - StormDirection
             IF(StormDirection.LT.0.D0)THEN
                StormDirection = StormDirection + 360.D0
             ENDIF
-C.. Compute the direction of node relative to the eye.
+!.. Compute the direction of node relative to the eye.
             NodeLon = SLAM(NodeNumber)/DEG2RAD
             NodeLat = SFEA(NodeNumber)/DEG2RAD
-            NodeDirection = ATAN2(NodeLat-EyeLatR(3),NodeLon-EyeLonR(3))
+            NodeDirection = ATAN2(NodeLat-EyeLat(3),NodeLon-EyeLon(3))
             NodeDirection = NodeDirection/DEG2RAD
             NodeDirection = 90.D0 - NodeDirection
             IF(NodeDirection.LT.0.D0)THEN
                NodeDirection = NodeDirection + 360.D0
             ENDIF
-C.. Compute the weights for the sector in which the node is located.
-C..     0- 40 : Transition from left (3) to right (1).
-C..    40-130 : Right (1).
-C..   130-170 : Transition from right (1) to rear (2).
-C..   170-220 : Rear (2).
-C..   220-260 : Transition from rear (2) to left (3).
-C..   260-  0 : Left (3).
+!.. Compute the weights for the sector in which the node is located.
+!..     0- 40 : Transition from left (3) to right (1).
+!..    40-130 : Right (1).
+!..   130-170 : Transition from right (1) to rear (2).
+!..   170-220 : Rear (2).
+!..   220-260 : Transition from rear (2) to left (3).
+!..   260-  0 : Left (3).
             FoundSector = .FALSE.
             DO IS=1,6
                IF(IS.EQ.1)THEN
@@ -401,70 +493,57 @@ C..   260-  0 : Left (3).
                   ENDIF
                ENDIF
             ENDDO
-C.. Apply the wind drag limit in case of emergency.
+
+
+!.. Apply garratt wind drag in case of emergency
             IF(.NOT.FoundSector)THEN
+               PowellDrag = CappedGarrattWindDrag(WindSpeed,NodeNumber)
                Weight = 0.D0
-               IF(WindDrag.GT.WindDragLimit) WindDrag = WindDragLimit
+               RETURN
             ELSE
-C.. Determine the wind drag for sector 1 (right).
-               Drag(1) = WindDrag
-               IF(WindSpeed.LE.35.0)THEN
-                  IF(Drag(1).GT.0.0020)THEN
-                     Drag(1) = 0.0020
+               rawGarrattWindDrag = GarrattWindDrag(WindSpeed,NodeNumber)
+!.. Determine the wind drag for sector 1 (right).
+               Drag(1) = rawGarrattWindDrag
+               IF(WindSpeed.LE.35.0D0)THEN
+                  IF(Drag(1).GT.0.0020D0)THEN
+                     Drag(1) = 0.0020D0
                   ENDIF
-               ELSEIF(WindSpeed.LE.45.0)THEN
-                  Drag(1) = 0.0020 + (0.0030-0.0020)/(45.0-35.0)*(WindSpeed-35.0)
+               ELSEIF(WindSpeed.LE.45.0D0)THEN
+                  Drag(1) = 0.0020D0 + (0.0030D0-0.0020D0)/(45.0D0-35.0D0)*(WindSpeed-35.0D0)
                ELSE
-                  Drag(1) = 0.0030
+                  Drag(1) = 0.0030D0
                ENDIF
-C.. Determine the wind drag for sector 2 (rear).
-               Drag(2) = WindDrag
-               IF(WindSpeed.LE.35.0)THEN
-                  IF(Drag(2).GT.0.0020)THEN
-                     Drag(2) = 0.0020
+!.. Determine the wind drag for sector 2 (rear).
+               Drag(2) = rawGarrattWindDrag
+               IF(WindSpeed.LE.35.0D0)THEN
+                  IF(Drag(2).GT.0.0020D0)THEN
+                     Drag(2) = 0.0020D0
                   ENDIF
-               ELSEIF(WindSpeed.LE.45.0)THEN
-                  Drag(2) = 0.0020 + (0.0010-0.0020)/(45.0-35.0)*(WindSpeed-35.0)
+               ELSEIF(WindSpeed.LE.45.0D0)THEN
+                  Drag(2) = 0.0020D0 + (0.0010D0-0.0020D0)/(45.0D0-35.0D0)*(WindSpeed-35.0D0)
                ELSE
-                  Drag(2) = 0.0010
+                  Drag(2) = 0.0010D0
                ENDIF
-C.. Determine the wind drag for sector 3 (left).
-               Drag(3) = WindDrag
-               IF(Drag(3).GT.0.0018)THEN
-                  IF(WindSpeed.LE.25.0)THEN
-                     Drag(3) = 0.0018
-                  ELSEIF(WindSpeed.LE.30.0)THEN
-                     Drag(3) = 0.0018 + (0.0045-0.0018)/(30.0-25.0)*(WindSpeed-25.0)
-                  ELSEIF(WindSpeed.LE.45.0)THEN
-                     Drag(3) = 0.0045 + (0.0010-0.0045)/(45.0-30.0)*(WindSpeed-30.0)
+!.. Determine the wind drag for sector 3 (left).
+               Drag(3) = rawGarrattWindDrag
+               IF(Drag(3).GT.0.0018D0)THEN
+                  IF(WindSpeed.LE.25.0D0)THEN
+                     Drag(3) = 0.0018D0
+                  ELSEIF(WindSpeed.LE.30.0D0)THEN
+                     Drag(3) = 0.0018D0 + (0.0045D0-0.0018D0)/(30.0D0-25.0D0)*(WindSpeed-25.0D0)
+                  ELSEIF(WindSpeed.LE.45.0D0)THEN
+                     Drag(3) = 0.0045D0 + (0.0010D0-0.0045D0)/(45.0D0-30.0D0)*(WindSpeed-30.0D0)
                   ELSE
-                     Drag(3) = 0.0010
+                     Drag(3) = 0.0010D0
                   ENDIF
                ENDIF
-C.. Apply a weighted average.
-               WindDrag = Weight(1)*Drag(1) + Weight(2)*Drag(2) + Weight(3)*Drag(3)
+!.. Apply a weighted average.
+               PowellDrag = Weight(1)*Drag(1) + Weight(2)*Drag(2) + Weight(3)*Drag(3)
             ENDIF
          ENDIF
-
-      CASE DEFAULT
-         WRITE(16,*) 'ERROR: Wind drag law not recognized:'
-         WRITE(16,'(A10)') DragLawString
-         WRITE(16,*) 'Execution will now be terminated.'
-#ifdef CMPI
-         call msg_fini()
-#endif
-         STOP
-C
-      END SELECT
-C
-      !jgf53.dev: record wind drag at all nodes for writing to output files
-      windDragOut(nodeNumber) = windDrag
-      
-      RETURN
-C     ----------------------------------------------------------------
-      END FUNCTION WindDrag
-C     ----------------------------------------------------------------
-
+!     ----------------------------------------------------------------
+      END FUNCTION PowellWindDrag
+!     ----------------------------------------------------------------
 
 C     ----------------------------------------------------------------
 C      F U N C T I O N   W I N D  I C E  D R A G
@@ -1086,11 +1165,9 @@ C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
               PRN1(I)=PRN2(I)
             END DO
             CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G,PRBCKGRND)
-            if (trim(DragLawString) == "Powell" .or.
-     &          trim(DragLawString) == "POWELL" .or.
-     &          trim(DragLawString) == "powell" ) then
-               call findStormCenter(eyeLatR, eyeLonR, foundEye)
-             endif
+            if(draglawtype.EQ.draglaw_powell)then
+              call findStormCenter(eyeLat, eyeLon, foundEye)
+            endif
           ENDIF
           WTRATIO=(TimeLoc-WTIME1)/WTIMINC
           DO I=1,NP
@@ -1197,10 +1274,8 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
                PRN1(I)=PRN2(I)
             END DO
             CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G,PRBCKGRND)
-            if (trim(DragLawString) == "Powell" .or.
-     &          trim(DragLawString) == "POWELL" .or.
-     &          trim(DragLawString) == "powell" ) then
-               call findStormCenter(eyeLatR, eyeLonR, foundEye)
+            if(draglawtype.EQ.draglaw_powell)then
+               call findStormCenter(eyeLat, eyeLon, foundEye)
             endif           
          ENDIF
          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
@@ -1374,10 +1449,10 @@ C----------------------------------------------------------------------
       call allMessage(DEBUG,"Enter.")
 #endif      
 
-     
       WSX2(:) = 0.d0
       WSY2(:) = 0.D0
       PR2(:) = PRBCKGRND_MH2O  
+
      
       IF(NWS.EQ.1) THEN
          OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
@@ -1488,16 +1563,12 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
       IF ((ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.29).OR.(ABS(NWS).EQ.30)) THEN
         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G,PRBCKGRND)
         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G,PRBCKGRND)
-        if (trim(DragLawString) == "Powell" .or.
-     &       trim(DragLawString) == "POWELL" .or.
-     &       trim(DragLawString) == "powell" ) then
-            call findStormCenter(eyeLatR, eyeLonR, foundEye)
+        if(draglawtype.EQ.draglaw_powell)then
+            call findStormCenter(eyeLat, eyeLon, foundEye)
         endif           
         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G,PRBCKGRND)
-        if (trim(DragLawString) == "Powell" .or.
-     &       trim(DragLawString) == "POWELL" .or.
-     &       trim(DragLawString) == "powell" ) then
-            call findStormCenter(eyeLatR, eyeLonR, foundEye)
+        if(draglawtype.EQ.draglaw_powell)then
+            call findStormCenter(eyeLat, eyeLon, foundEye)
         endif                    
         WTIME1 = STATIM*86400.D0
         WTIME2 = WTIME1 + WTIMINC
@@ -4189,12 +4260,12 @@ C     Get data for this time step.
          press(:) = PRBCKGRND * mb2pa / (rhoWat0 * g) ! convert mb to mH2O
          wvnx(:)=0.d0
          wvny(:)=0.d0
-         EyeLatR(1) = EyeLatR(2)
-         EyeLonR(1) = EyeLonR(2)
-         EyeLatR(2) = EyeLatR(3)
-         EyeLonR(2) = EyeLonR(3)
-         EyeLatR(3) = lat
-         EyeLonR(3) = lon
+         EyeLat(1) = EyeLat(2)
+         EyeLon(1) = EyeLon(2)
+         EyeLat(2) = EyeLat(3)
+         EyeLon(2) = EyeLon(3)
+         EyeLat(3) = lat
+         EyeLon(3) = lon
          FoundEye = .true.
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Return.")
@@ -4205,13 +4276,13 @@ C     Get data for this time step.
 C
 C     jgf50.32: If we are using sector-based wind drag, record the location
 C     of the center of the storm.
-      IF ((lat.ne.EyeLatR(3)).or.(lon.ne.EyeLonR(3))) THEN
-         EyeLatR(1) = EyeLatR(2)
-         EyeLonR(1) = EyeLonR(2)
-         EyeLatR(2) = EyeLatR(3)
-         EyeLonR(2) = EyeLonR(3)
-         EyeLatR(3) = lat
-         EyeLonR(3) = lon
+      IF ((lat.ne.EyeLat(3)).or.(lon.ne.EyeLon(3))) THEN
+         EyeLat(1) = EyeLat(2)
+         EyeLon(1) = EyeLon(2)
+         EyeLat(2) = EyeLat(3)
+         EyeLon(2) = EyeLon(3)
+         EyeLat(3) = lat
+         EyeLon(3) = lon
          FoundEye = .true.
       ENDIF
 C
@@ -5244,12 +5315,12 @@ C     we are running off the end of the data.
          vortexLat = cLat
          vortexLon = cLon
          vortexRMW = 0.0d0
-         EyeLatR(1) = EyeLatR(2)
-         EyeLonR(1) = EyeLonR(2)
-         EyeLatR(2) = EyeLatR(3)
-         EyeLonR(2) = EyeLonR(3)
-         EyeLatR(3) = cLat
-         EyeLonR(3) = cLon
+         EyeLat(1) = EyeLat(2)
+         EyeLon(1) = EyeLon(2)
+         EyeLat(2) = EyeLat(3)
+         EyeLon(2) = EyeLon(3)
+         EyeLat(3) = cLat
+         EyeLon(3) = cLon
          FoundEye = .true.
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Return.")
@@ -5293,13 +5364,13 @@ C     we are running off the end of the data.
       vortexRMW = 0.0d0
       !jgf50.32: For sector-based wind drag, record the center
       !of the storm.
-      IF ((cLat.ne.EyeLatR(3)).or.(cLon.ne.EyeLonR(3))) THEN
-         EyeLatR(1) = EyeLatR(2)
-         EyeLonR(1) = EyeLonR(2)
-         EyeLatR(2) = EyeLatR(3)
-         EyeLonR(2) = EyeLonR(3)
-         EyeLatR(3) = cLat
-         EyeLonR(3) = cLon
+      IF ((cLat.ne.EyeLat(3)).or.(cLon.ne.EyeLon(3))) THEN
+         EyeLat(1) = EyeLat(2)
+         EyeLon(1) = EyeLon(2)
+         EyeLat(2) = EyeLat(3)
+         EyeLon(2) = EyeLon(3)
+         EyeLat(3) = cLat
+         EyeLon(3) = cLon
          FoundEye = .true.
       ENDIF
       !
@@ -5848,12 +5919,12 @@ C     we are running off the end of the data.
          vortexLat = cLat
          vortexLon = cLon
          vortexRMW = 0.0d0
-         EyeLatR(1) = EyeLatR(2)
-         EyeLonR(1) = EyeLonR(2)
-         EyeLatR(2) = EyeLatR(3)
-         EyeLonR(2) = EyeLonR(3)
-         EyeLatR(3) = cLat
-         EyeLonR(3) = cLon
+         EyeLat(1) = EyeLat(2)
+         EyeLon(1) = EyeLon(2)
+         EyeLat(2) = EyeLat(3)
+         EyeLon(2) = EyeLon(3)
+         EyeLat(3) = cLat
+         EyeLon(3) = cLon
          FoundEye = .true.
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Return.")
@@ -5991,13 +6062,13 @@ C     we are running off the end of the data.
       vortexRMW = 0.0d0
       !jgf50.32: For sector-based wind drag, record the center
       !of the storm.
-      IF ((cLat.ne.EyeLatR(3)).or.(cLon.ne.EyeLonR(3))) THEN
-         EyeLatR(1) = EyeLatR(2)
-         EyeLonR(1) = EyeLonR(2)
-         EyeLatR(2) = EyeLatR(3)
-         EyeLonR(2) = EyeLonR(3)
-         EyeLatR(3) = cLat
-         EyeLonR(3) = cLon
+      IF ((cLat.ne.EyeLat(3)).or.(cLon.ne.EyeLon(3))) THEN
+         EyeLat(1) = EyeLat(2)
+         EyeLon(1) = EyeLon(2)
+         EyeLat(2) = EyeLat(3)
+         EyeLon(2) = EyeLon(3)
+         EyeLat(3) = cLat
+         EyeLon(3) = cLon
          FoundEye = .true.
       ENDIF
 
@@ -6255,8 +6326,8 @@ C
       call loadHWindFile(currentCycle+1)
       !
       ! initialize eye locations for sector based wind drag (Powell)
-      EyeLatR = 0.d0
-      EyeLonR = 0.d0
+      EyeLat = 0.d0
+      EyeLon = 0.d0
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -6387,19 +6458,15 @@ C
      &                 hWindFiles(currentCycle)%cLat )
       !
       ! set eye location for sector based wind drag
-      if ( (cLatNow.ne.EyeLatR(3)).or.(cLonNow.ne.EyeLonR(3))) then
-         EyeLatR(1) = EyeLatR(2)
-         EyeLonR(1) = EyeLonR(2)
-         EyeLatR(2) = EyeLatR(3)
-         EyeLonR(2) = EyeLonR(3)
-         EyeLatR(3) = cLatNow
-         EyeLonR(3) = cLonNow
+      if ( (cLatNow.ne.EyeLat(3)).or.(cLonNow.ne.EyeLon(3))) then
+         EyeLat(1) = EyeLat(2)
+         EyeLon(1) = EyeLon(2)
+         EyeLat(2) = EyeLat(3)
+         EyeLon(2) = EyeLon(3)
+         EyeLat(3) = cLatNow
+         EyeLon(3) = cLonNow
          FoundEye = .TRUE.
       endif
-      !write(scratchMessage,*) "EyeLatR: ",(EyeLatR(i),i=1,3) !jgfdebug
-      !call logMessage(DEBUG,scratchMessage) !jgfdebug
-      !write(scratchMessage,*) "EyeLonR: ",(EyeLatR(i),i=1,3) !jgfdebug
-      !call logMessage(DEBUG,scratchMessage) !jgfdebug
       !
       ! time-interpolate the vmax, rmax, and angle to rmax
       ! vmaxNow represents the current vmax on the whole domain
@@ -7878,7 +7945,29 @@ C----------------------------------------------------------------------
       END SUBROUTINE windTerminate
 C----------------------------------------------------------------------
 
-
+C----------------------------------------------------------------------
+C     Sets an integer for the drag law to be used later in checks
+C     This is simpler than checking a string
+C----------------------------------------------------------------------
+      SUBROUTINE checkWindDragType()
+C----------------------------------------------------------------------
+          USE GLOBAL,ONLY: toLowercase
+          IMPLICIT NONE
+          CHARACTER(LEN(dragLawString)) :: dragLawLowercase
+          draglawlowercase = toLowercase(dragLawString)
+          SELECT CASE(TRIM(draglawlowercase))
+          CASE("default","garratt")
+            draglawtype = DRAGLAW_GARRATT
+          CASE("powell")
+            draglawtype = DRAGLAW_POWELL
+          CASE("swell")
+            draglawtype = DRAGLAW_SWELL
+          CASE DEFAULT
+            draglawtype = DRAGLAW_GARRATT
+          END SELECT
+C----------------------------------------------------------------------
+      END SUBROUTINE checkWindDragType
+C----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------

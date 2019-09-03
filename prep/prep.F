@@ -1983,7 +1983,8 @@ C
             write(15,*) "    outputWindDrag=",outputWindDrag,","        
             write(15,*) "    rhoAir=",rhoAir,","
             write(15,*) "    invertedBarometerOnElevationBoundary=",
-     &                        invertedBarometerOnElevationBoundary
+     &                        invertedBarometerOnElevationBoundary,","
+            write(15,*) "    nPowellSearchDomains=",nPowellSearchDomains
             write(15,*) "/"
             write(15,*) '! -- End Met Control Namelist --'
          endif

@@ -36,6 +36,7 @@ C-----------------------------------------------------------------------
       USE WEIR
       USE TIME_VARYING_WEIR_BOUNDARY
       USE WIND
+      USE OWIWIND,ONLY: nPowellSearchDomains
       USE WETDRY, ONLY : noffActive, velmin
       USE ITPACKV
       USE GWCE, ONLY : a00, b00, c00, convcr, isldia, itmax,
@@ -72,7 +73,7 @@ C
 #endif
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
       NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,
-     &  rhoAir, invertedBarometerOnElevationBoundary
+     &  rhoAir, invertedBarometerOnElevationBoundary, nPowellSearchDomains
       NAMELIST /subdomainModeling/ subdomainOn
       NAMELIST /wetDryControl/ outputNodeCode, outputNOFF,
      &  noffActive, StatPartWetFix, How2FixStatPartWet
@@ -296,7 +297,8 @@ c     a non-default value we can determine this was the case.
       write(scratchMessage,*) "WindDragLimit=",WindDragLimit,
      & " DragLawString=",DragLawString, " rhoAir=",rhoAir,
      & ' invertedBarometerOnElevationBoundary=', 
-     &   invertedBarometerOnElevationBoundary
+     &   invertedBarometerOnElevationBoundary,
+     & ' nPowellSearchDomains=',nPowellSearchDomains
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 

@@ -1958,8 +1958,42 @@ C     available to different parts of ADCIRC.
 !-----------------------------------------------------------------------
       end function adcirc_norm2
 !-----------------------------------------------------------------------
+
 !     ------------------------------------------------------------------
 !     ------------------------------------------------------------------
+      FUNCTION toLowercase(string) RESULT(lowercase)
+          IMPLICIT NONE
+          CHARACTER(*),INTENT(IN)  :: string
+          CHARACTER(LEN(string))   :: lowercase
+          CHARACTER(26), PARAMETER :: cap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+          CHARACTER(26), PARAMETER :: low = 'abcdefghijklmnopqrstuvwxyz'
+          INTEGER                  :: I
+          INTEGER                  :: IDX
+          lowercase = string
+          DO I = 1,LEN_TRIM(lowercase)
+            idx = INDEX(cap,lowercase(I:I))
+            IF(idx.GT.0)lowercase(I:I)=low(IDX:IDX)
+          ENDDO
+      END FUNCTION toLowercase
+      
+      FUNCTION toUppercase(string) RESULT(uppercase)
+          IMPLICIT NONE
+          CHARACTER(*),INTENT(IN)  :: string
+          CHARACTER(LEN(string))   :: uppercase
+          CHARACTER(26), PARAMETER :: cap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+          CHARACTER(26), PARAMETER :: low = 'abcdefghijklmnopqrstuvwxyz'
+          INTEGER                  :: I
+          INTEGER                  :: IDX
+          uppercase = string
+          DO I = 1,LEN_TRIM(uppercase)
+            idx = INDEX(low,uppercase(I:I))
+            IF(idx.GT.0)uppercase(I:I)=cap(IDX:IDX)
+          ENDDO
+      END FUNCTION toUppercase
+
+
+C     ------------------------------------------------------------------
+C     ------------------------------------------------------------------
       END MODULE GLOBAL
 !     ------------------------------------------------------------------
 !     ------------------------------------------------------------------
