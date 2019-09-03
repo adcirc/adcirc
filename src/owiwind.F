@@ -7,10 +7,6 @@ C                      File Units (221,222)   (223,224)   (217,218)
 C                      Added PRdeflt to nws12init and nws12get calls
 C                      in order to use background pressure value instead of
 C                      hard wired 1013.0 mb.
-C                      Added the OWI_FNAMES namelist to the fort.22 file
-C                      in order to specify non-default file names for the
-C                      fort.221,fort.222,fort.223,fort.224,fort.217, fort.218
-C                      BASIN_PRE_FNAME, (added by ast)
 C******************************************************************************
 C
       MODULE OWIWIND
@@ -28,12 +24,6 @@ C
       integer  :: nPowellSearchDomains = -1
       integer  :: numSets,numBlankSnaps,cntSnaps,numSkipSnaps
       real(SZ) :: windMultiplier
-
-!C     FileName Specification (Optional)
-!      CHARACTER(len=1024) :: BASIN_PRE_FNAME,BASIN_WND_FNAME
-!      CHARACTER(len=1024) :: REGION_PRE_FNAME,REGION_WND_FNAME
-!      CHARACTER(len=1024) :: LANDFALL_PRE_FNAME,LANDFALL_WND_FNAME
-
       logical :: moving_grid = .false. ! true will spatially interpolate each dataset
       
       TYPE OCEANWEATHER
@@ -58,7 +48,6 @@ C
           REAL(SZ),ALLOCATABLE :: v(:,:)
           REAL(SZ),ALLOCATABLE :: weight(:,:)
           INTEGER,ALLOCATABLE  :: interpPoints(:,:)
-
       END TYPE OCEANWEATHER
 
       TYPE(OCEANWEATHER),ALLOCATABLE :: owi(:) 
@@ -149,17 +138,11 @@ C***********************************************************************
       INTEGER(8)            :: date1wind,date2wind
       REAL(SZ), intent(out) :: WVNX(:),WVNY(:),PRN(:)
       REAL(SZ)              :: RHOWAT0,RHOWATG,G,PRdeflt
-      LOGICAL               :: found_owifname_nml = .false.   !flag to determine if the OWI_FNAME namelist was present
       character(len=1024)   :: tmpstr
       character(len=1024)   :: errorVar = ""
-      character(len=1024)   :: fname
+      character(len=1024)   :: fname,f1,f2
       integer               :: iounit
       integer               :: errorIO = 0
-      CHARACTER(1024),ALLOCATABLE :: pressure_filenames(:)
-      CHARACTER(1024),ALLOCATABLE :: wind_filenames(:)
-
-C     TCM 20170129 ADDED Optional Namelist for File Names
-      NAMELIST /OWI_FNAMES/ pressure_filenames, wind_filenames
 
       call setMessageSource("nws12init")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -179,6 +162,10 @@ C     ---------------------
       errorVar = "reading number of wind sets" ! used in error msgs
       read(iounit,*,err=99999,end=99998,iostat=errorIO) numSets
       call check_owi_err(errorIO,errorVar,fname,iounit)
+
+      if(numSets.EQ.0)then
+          call check_owi_err(1,"number of wind sets must not be zero",fname,iounit)
+      endif
 
       IF(nPowellSearchDomains.GT.numSets)THEN
           nPowellSearchDomains = numSets
@@ -204,54 +191,22 @@ C     ---------------------
       read(iounit,*,err=99999, end=99998, iostat=errorIO) windMultiplier
       call check_owi_err(errorIO,errorVar,fname,iounit)
 
-      ! Check for Optional Namelist for FileNames
-      ALLOCATE(pressure_filenames(1:numsets))
-      ALLOCATE(wind_filenames(1:numsets))
-      pressure_filenames(:) = "none"
-      wind_filenames(:) = "none"
-
       errorIO=0
-      errorVar = "OWI_FNAMES" !used in error messages
-      read(unit=iounit,NML=OWI_FNAMES,iostat=errorIO)
 
-      if (errorIO.gt.0) then  !error condition
-         backspace(iounit)
-         read(iounit,fmt='(A)') ErrorVar
-         tmpstr="Invalid line in namelist = OWI_FNAMES (fort.22) ::" // trim(ErrorVar)
-         call allMessage(ERROR,trim(tmpstr) )
-         call check_owi_err(1,"reading namelist",fname,iounit)
-         found_owifname_nml = .true.
-      elseif(errorIO.eq.0) then
-         found_owifname_nml = .true.
-         call logMessage(INFO,"Found namelist = OWI_FNAMES in the fort.22 file")
-      else
-         call logMessage(INFO,"Namelist = OWI_FNAMES not found in the fort.22 file")
-         found_owifname_nml = .false.
-      endif
-      
-      close(iounit)
-
-      ! allocate the oceanweather objects
-      ! note in the future, the unit numbers should
-      ! be dynamically allocated, but to prevent collisions
-      ! with other hard wired units, they currently are not
-      allocate(owi(1:numSets))
-      IF(found_owifname_nml)THEN
-          DO I = 1,numSets
-            IF(TRIM(pressure_filenames(i)).EQ."none")THEN
-                CALL check_owi_err(1,"Namelist does not fully define pressure filenames",fname,iounit)
-            ENDIF
-            IF(TRIM(wind_filenames(i)).EQ."none")THEN
-                CALL check_owi_err(1,"Namelist does not fully define wind filenames",fname,iounit)
-            ENDIF
-            owi(i)%pressure_file = TRIM(GBLINPUTDIR)//"/"//pressure_filenames(i)
+      allocate(owi(1:abs(numSets)))
+      if(numSets.LT.0)then
+          numSets = abs(numSets)
+          do i = 1,numSets
+            read(iounit,*) f1, f2
+            owi(i)%pressure_file = TRIM(GBLINPUTDIR)//"/"//TRIM(f1)
+            owi(i)%wind_file = TRIM(GBLINPUTDIR)//"/"//TRIM(f2)
             owi(i)%iounit_pressure = 500+i
-            owi(i)%wind_file = TRIM(GBLINPUTDIR)//"/"//pressure_filenames(i)
             owi(i)%iounit_wind = 600+i
-          ENDDO
-      ELSE
+          enddo
+      else
         IF(numSets.GT.3)THEN
-            CALL check_owi_err(1,"owi file namelist must be used for nSets>3",fname,iounit)
+            CALL check_owi_err(1,"owi file list must be used for numSets>3. "//
+     &                           "Use negative numSets to read a file list.",fname,iounit)
         ENDIF
         owi(1)%pressure_file = TRIM(GBLINPUTDIR)//"/fort.221"
         owi(1)%wind_file = TRIM(GBLINPUTDIR)//"/fort.222"
@@ -269,7 +224,9 @@ C     ---------------------
           owi(3)%iounit_pressure = 217
           owi(3)%iounit_wind = 218
         ENDIF
-      ENDIF
+      endif
+            
+      close(iounit)
 
       DO I = 1,numSets
         CALL readHeader(owi(i)%pressure_file,owi(i)%iounit_pressure,
