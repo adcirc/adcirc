@@ -1,65 +1,113 @@
-C******************************************************************************
-C  MODULE OWIWIND
-C    Written by s.b. 08/17/2006
-C    Modified by TCM 08/08/2019 -- Added LandFall Scale win/pre (finest level)
-C                                   Basin ->   Region ->  LandFall
-C                      File Units (221,222)   (223,224)   (217,218)
-C                      Added PRdeflt to nws12init and nws12get calls
-C                      in order to use background pressure value instead of
-C                      hard wired 1013.0 mb.
-C******************************************************************************
-C
+!******************************************************************************
+!  MODULE OWIWIND
+!******************************************************************************
+! This module handles the I/O and interpolation to the mesh for Oceanweather
+! format wind and pressure fields. The module is initialized by calling nws12init
+! and subsequently calling nws12get. The code will place data into the WVNX,
+! WVNY, and PRN arrays
+! 
+! The fort.22 file is used to control behavior. fort.22 must contain at least
+! three lines as follows:
+!     numSets        <-- Number of sets of wind fields
+!     numBlankSnaps  <-- Number of snaps to add/skip at beginning of field
+!     windMultiplier <-- Wind velocity multiplier to apply
+!
+! If numSets is negative, the code will attempt to read the filenames of 
+! the wind files from the fort.22. numSets may be positive 1, 2, or 3 which
+! indicates use of the standard names:
+!    Set 1: fort.221, fort.222 [ pressure field, wind field ]
+!    Set 2: fort.223, fort.224 [ pressure field, wind field ]
+!    Set 3: fort.217, fort.218 [ pressure field, wind field ]
+! When negative, there is no enforced limit on the number of wind fields that 
+! may be used. The wind fields should be listed in comma separated format
+! in the fort.22, 1:abs(numSets), one set of wind files per line as follows:
+!
+! pressureFile_001.pre, windFile_001.wnd
+! pressureFile_002.pre, windFile_002.wnd
+! ...
+! ...
+!
+! Wind fields should always be listed from coarse to fine. The priority with
+! which the wind fields are interpolated to the mesh is determined by the 
+! reverse order for which they are listed, meaning that the wind field that
+! is listed last is considered highest priority.
+!
+! Wind fields are interpolated onto each node using a bilinear interpolation
+! scheme. If a wind field lies outside of all wind fields, it is set to 
+! PRDEFLT (usually 1013mb) and 0.0 m/s velocity.
+!
+! When using Powell wind drag with Oceanweather wind fields, the findStormCenter
+! subroutine is used to search for the lowest central pressure under 1000mb. In
+! some cases, the storm center may vary randomly enough within an area when using a 
+! simple search like this on grids with high spatial and temporal resolution. If 
+! this happens, it is possible that the storm direction will not be correctly 
+! interpreted. In this case, it usually is best to search only the more coarse
+! wind fields to find the storm center which will prevent these sorts of oscillations
+! Using the &metControl namelist, you can specify the number of Powell drag
+! search domains via:
+!   &metControl nPowellSearchDomains=[X] /
+! where [X] is the number of domains to search through. If set to 1, only the 
+! most coarse domain will participiate in the search.
+!
+!******************************************************************************
+!******************************************************************************
+
       MODULE OWIWIND
-C
-      USE SIZES,ONLY : SZ,MYPROC
-      USE GLOBAL,ONLY : NSCREEN, ScreenUnit, DEBUG, ECHO, INFO,
-     &   WARNING, ERROR, screenMessage, logMessage, allMessage,
-     &   setMessageSource, unsetMessageSource, scratchMessage,
-     &   openFileForRead, Flag_ElevError
+
+        USE SIZES,ONLY : SZ,MYPROC
+        USE GLOBAL,ONLY : NSCREEN, ScreenUnit, DEBUG, ECHO, INFO,
+     &     WARNING, ERROR, screenMessage, logMessage, allMessage,
+     &     setMessageSource, unsetMessageSource, scratchMessage,
+     &     openFileForRead, Flag_ElevError
 #ifdef CMPI
-      USE MESSENGER,ONLY : MSG_FINI
-#endif
-      IMPLICIT NONE
+        USE MESSENGER,ONLY : MSG_FINI
+#endif  
+        IMPLICIT NONE
 
-      integer  :: nPowellSearchDomains = -1
-      integer  :: numSets,numBlankSnaps,cntSnaps,numSkipSnaps
-      real(SZ) :: windMultiplier
-      logical :: moving_grid = .false. ! true will spatially interpolate each dataset
-      
-      TYPE OCEANWEATHER
-          CHARACTER(1024)      :: pressure_file
-          CHARACTER(1024)      :: wind_file
-          INTEGER(8)           :: startDate
-          INTEGER(8)           :: endDate
-          INTEGER(8)           :: date
-          INTEGER              :: minute
-          INTEGER              :: iLat
-          INTEGER              :: iLon
-          INTEGER              :: iounit_pressure
-          INTEGER              :: iounit_wind
-          INTEGER              :: iSnap
-          INTEGER              :: iUpdate
-          REAL(SZ)             :: dLat
-          REAL(SZ)             :: dLon
-          REAL(SZ)             :: swLon
-          REAL(SZ)             :: swLat
-          REAL(SZ),ALLOCATABLE :: p(:,:)
-          REAL(SZ),ALLOCATABLE :: u(:,:)
-          REAL(SZ),ALLOCATABLE :: v(:,:)
-          REAL(SZ),ALLOCATABLE :: weight(:,:)
-          INTEGER,ALLOCATABLE  :: interpPoints(:,:)
-      END TYPE OCEANWEATHER
+        integer  :: nPowellSearchDomains = -1
+        integer  :: numSets,numBlankSnaps,cntSnaps,numSkipSnaps
+        real(SZ) :: windMultiplier
+        
+        TYPE OCEANWEATHER
+            CHARACTER(1024)      :: pressure_file
+            CHARACTER(1024)      :: wind_file
+            INTEGER(8)           :: startDate
+            INTEGER(8)           :: endDate
+            INTEGER(8)           :: date
+            INTEGER              :: minute
+            INTEGER              :: iLat
+            INTEGER              :: iLon
+            INTEGER              :: iounit_pressure
+            INTEGER              :: iounit_wind
+            INTEGER              :: iSnap
+            INTEGER              :: iUpdate
+            REAL(SZ)             :: dLat
+            REAL(SZ)             :: dLon
+            REAL(SZ)             :: swLon
+            REAL(SZ)             :: swLat
+            REAL(SZ),ALLOCATABLE :: p(:,:)
+            REAL(SZ),ALLOCATABLE :: u(:,:)
+            REAL(SZ),ALLOCATABLE :: v(:,:)
+            REAL(SZ),ALLOCATABLE :: weight(:,:)
+            INTEGER,ALLOCATABLE  :: interpPoints(:,:)
+        END TYPE OCEANWEATHER
 
-      TYPE(OCEANWEATHER),ALLOCATABLE :: owi(:) 
+        TYPE(OCEANWEATHER),ALLOCATABLE :: owi(:) 
 
-      PRIVATE OCEANWEATHER,owi,owi_allocate,owi_deallocate
-      PRIVATE owi_generateCoordinates
+        PRIVATE OCEANWEATHER,owi,owi_allocate,owi_deallocate
+        PRIVATE owi_generateCoordinates,check_owi_err
+        PRIVATE readHeader,nws12interp 
 
-C---------------------end of data declarations--------------------------------C
+!---------------------end of data declarations--------------------------------C
 
-      CONTAINS
+        CONTAINS
           
+!***********************************************************************
+!       Allocates the u,v,p fields in an oceanweather object and
+!       deallocates if necessary
+!***********************************************************************
         SUBROUTINE owi_allocate(this)
+!***********************************************************************
             IMPLICIT NONE
             TYPE(OCEANWEATHER),INTENT(INOUT) :: this
             call setMessageSource("owi_allocate")
@@ -76,9 +124,15 @@ C---------------------end of data declarations--------------------------------C
             call allMessage(DEBUG,"Return.")
 #endif
             call unsetMessageSource()
+!***********************************************************************
         END SUBROUTINE owi_allocate
+!***********************************************************************
 
+!***********************************************************************
+!       Deallocates the u,v,p fields in an oceanweather object
+!***********************************************************************
         SUBROUTINE owi_deallocate(this)
+!***********************************************************************
             IMPLICIT NONE
             TYPE(OCEANWEATHER),INTENT(INOUT) :: this
             call setMessageSource("owi_deallocate")
@@ -92,9 +146,16 @@ C---------------------end of data declarations--------------------------------C
             call allMessage(DEBUG,"Return.")
 #endif
             call unsetMessageSource()
+            RETURN
+!***********************************************************************
         END SUBROUTINE owi_deallocate
+!***********************************************************************
 
+!***********************************************************************
+!       Generates coordinates for a specified oceanweather domain
+!***********************************************************************
         SUBROUTINE owi_generateCoordinates(this,lat,lon)
+!***********************************************************************
             IMPLICIT NONE
             TYPE(OCEANWEATHER),INTENT(IN)      :: this
             REAL(SZ),ALLOCATABLE,INTENT(OUT)   :: lat(:)
@@ -121,159 +182,157 @@ C---------------------end of data declarations--------------------------------C
             call unsetMessageSource()
 
             RETURN
+!***********************************************************************
         END SUBROUTINE owi_generateCoordinates
+!***********************************************************************
      
-C***********************************************************************
-C   SUBROUTINE NWS12INIT
-C***********************************************************************
-
+!***********************************************************************
+!   SUBROUTINE NWS12INIT
+!***********************************************************************
       SUBROUTINE NWS12INIT(WVNX,WVNY,PRN,NP,RHOWAT0,G,PRdeflt)
+        USE SIZES, ONLY : SZ,MYPROC, GBLINPUTDIR
+        USE GLOBAL,ONLY: PRBCKGRND
+        IMPLICIT NONE
+        REAL(SZ), intent(out) :: WVNX(:),WVNY(:),PRN(:)
+        INTEGER               :: NP,I
+        INTEGER(8)            :: date1pressure,date2pressure
+        INTEGER(8)            :: date1wind,date2wind
+        REAL(SZ)              :: RHOWAT0,RHOWATG,G,PRdeflt
+        character(len=1024)   :: tmpstr
+        character(len=1024)   :: errorVar = ""
+        character(len=1024)   :: fname,f1,f2
+        integer               :: iounit
+        integer               :: errorIO = 0
 
-      USE SIZES, ONLY : SZ,MYPROC, GBLINPUTDIR
-      USE GLOBAL,ONLY: PRBCKGRND
-
-      IMPLICIT NONE
-      INTEGER               :: NP,I
-      INTEGER(8)            :: date1pressure,date2pressure
-      INTEGER(8)            :: date1wind,date2wind
-      REAL(SZ), intent(out) :: WVNX(:),WVNY(:),PRN(:)
-      REAL(SZ)              :: RHOWAT0,RHOWATG,G,PRdeflt
-      character(len=1024)   :: tmpstr
-      character(len=1024)   :: errorVar = ""
-      character(len=1024)   :: fname,f1,f2
-      integer               :: iounit
-      integer               :: errorIO = 0
-
-      call setMessageSource("nws12init")
+        call setMessageSource("nws12init")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+        call allMessage(DEBUG,"Enter.")
+#endif  
 
 ! Read meta info -------------------------------------------------
-C
-C     R E A D   F O R T 2 2
-C     ---------------------
-      fname = "fort.22"
-      iounit = 22
-      errorVar = "open"
-      call openFileForRead(iounit, TRIM(GBLINPUTDIR)//"/fort.22", errorIO)
-      call check_owi_err(errorIO,errorVar,fname,iounit)
-      
-      errorVar = "reading number of wind sets" ! used in error msgs
-      read(iounit,*,err=99999,end=99998,iostat=errorIO) numSets
-      call check_owi_err(errorIO,errorVar,fname,iounit)
+!       R E A D   F O R T 2 2
+!       ---------------------
+        fname = "fort.22"
+        iounit = 22
+        errorVar = "open"
+        call openFileForRead(iounit, TRIM(GBLINPUTDIR)//"/fort.22", errorIO)
+        call check_owi_err(errorIO,errorVar,fname,iounit)
+        
+        errorVar = "reading number of wind sets" ! used in error msgs
+        read(iounit,*,err=99999,end=99998,iostat=errorIO) numSets
+        call check_owi_err(errorIO,errorVar,fname,iounit)
 
-      if(numSets.EQ.0)then
-          call check_owi_err(1,"number of wind sets must not be zero",fname,iounit)
-      endif
+        if(numSets.EQ.0)then
+            call check_owi_err(1,"number of wind sets must not be zero",fname,iounit)
+        endif
 
 
-      ! Read the number of blank snaps to be inserted before OWI winds start
-      errorVar = "reading number of blank snaps" ! used in error messages
-      read(iounit,*,err=99999,end=99998,iostat=errorIO) numBlankSnaps
-      call check_owi_err(errorIO, "read number of blank snaps",fname,iounit)
-      ! If numBlankSnaps < 0, ABS(numBlankSnaps) snaps
-      ! in OWI wind files (UNIT 221,222,223, 224 and 217 & 218) will be skipped.
-      if(numBlankSnaps.LT.0) then
-         numSkipSnaps = ABS(numBlankSnaps)
-         numBlankSnaps = 0
-      else
-         numSkipSnaps = 0 
-      endif
+        ! Read the number of blank snaps to be inserted before OWI winds start
+        errorVar = "reading number of blank snaps" ! used in error messages
+        read(iounit,*,err=99999,end=99998,iostat=errorIO) numBlankSnaps
+        call check_owi_err(errorIO, "read number of blank snaps",fname,iounit)
+        ! If numBlankSnaps < 0, ABS(numBlankSnaps) snaps
+        ! in OWI wind files (UNIT 221,222,223, 224 and 217 & 218) will be skipped.
+        if(numBlankSnaps.LT.0) then
+           numSkipSnaps = ABS(numBlankSnaps)
+           numBlankSnaps = 0
+        else
+           numSkipSnaps = 0 
+        endif
 
-      ! Read a wind velocity multiplier
-      errorVar = "reading wind multiplier" ! used in error messages
-      read(iounit,*,err=99999, end=99998, iostat=errorIO) windMultiplier
-      call check_owi_err(errorIO,errorVar,fname,iounit)
+        ! Read a wind velocity multiplier
+        errorVar = "reading wind multiplier" ! used in error messages
+        read(iounit,*,err=99999, end=99998, iostat=errorIO) windMultiplier
+        call check_owi_err(errorIO,errorVar,fname,iounit)
 
-      errorIO=0
+        errorIO=0
 
-      allocate(owi(1:abs(numSets)))
-      if(numSets.LT.0)then
-          numSets = abs(numSets)
-          do i = 1,numSets
-            read(iounit,*) f1, f2
-            owi(i)%pressure_file = TRIM(GBLINPUTDIR)//"/"//TRIM(f1)
-            owi(i)%wind_file = TRIM(GBLINPUTDIR)//"/"//TRIM(f2)
-            owi(i)%iounit_pressure = 500+i
-            owi(i)%iounit_wind = 600+i
-          enddo
-      else
-        IF(numSets.GT.3)THEN
-            CALL check_owi_err(1,"owi file list must be used for numSets>3. "//
-     &                           "Use negative numSets to read a file list.",fname,iounit)
+        allocate(owi(1:abs(numSets)))
+        if(numSets.LT.0)then
+            numSets = abs(numSets)
+            do i = 1,numSets
+              read(iounit,*) f1, f2
+              owi(i)%pressure_file = TRIM(GBLINPUTDIR)//"/"//TRIM(f1)
+              owi(i)%wind_file = TRIM(GBLINPUTDIR)//"/"//TRIM(f2)
+              owi(i)%iounit_pressure = 500+i
+              owi(i)%iounit_wind = 600+i
+            enddo
+        else
+          IF(numSets.GT.3)THEN
+              CALL check_owi_err(1,"owi file list must be used for numSets>3. "//
+     &                             "Use negative numSets to read a file list.",fname,iounit)
+          ENDIF
+          owi(1)%pressure_file = TRIM(GBLINPUTDIR)//"/fort.221"
+          owi(1)%wind_file = TRIM(GBLINPUTDIR)//"/fort.222"
+          owi(1)%iounit_pressure = 221
+          owi(1)%iounit_wind = 222
+          IF(numSets.GT.1)THEN
+            owi(2)%pressure_file = TRIM(GBLINPUTDIR)//"/fort.223"
+            owi(2)%wind_file = TRIM(GBLINPUTDIR)//"/fort.224"
+            owi(2)%iounit_pressure = 223
+            owi(2)%iounit_wind = 224
+          ENDIF
+          IF(numSets.GT.2)THEN
+            owi(3)%pressure_file = TRIM(GBLINPUTDIR)//"/fort.217"
+            owi(3)%wind_file =  TRIM(GBLINPUTDIR)//"/fort.218"
+            owi(3)%iounit_pressure = 217
+            owi(3)%iounit_wind = 218
+          ENDIF
+        endif
+              
+        close(iounit)
+        
+        IF(nPowellSearchDomains.GT.numSets)THEN
+            nPowellSearchDomains = numSets
+        ELSEIF(nPowellSearchDomains.LE.0)THEN
+            nPowellSearchDomains = numSets
         ENDIF
-        owi(1)%pressure_file = TRIM(GBLINPUTDIR)//"/fort.221"
-        owi(1)%wind_file = TRIM(GBLINPUTDIR)//"/fort.222"
-        owi(1)%iounit_pressure = 221
-        owi(1)%iounit_wind = 222
-        IF(numSets.GT.1)THEN
-          owi(2)%pressure_file = TRIM(GBLINPUTDIR)//"/fort.223"
-          owi(2)%wind_file = TRIM(GBLINPUTDIR)//"/fort.224"
-          owi(2)%iounit_pressure = 223
-          owi(2)%iounit_wind = 224
-        ENDIF
-        IF(numSets.GT.2)THEN
-          owi(3)%pressure_file = TRIM(GBLINPUTDIR)//"/fort.217"
-          owi(3)%wind_file =  TRIM(GBLINPUTDIR)//"/fort.218"
-          owi(3)%iounit_pressure = 217
-          owi(3)%iounit_wind = 218
-        ENDIF
-      endif
-            
-      close(iounit)
-      
-      IF(nPowellSearchDomains.GT.numSets)THEN
-          nPowellSearchDomains = numSets
-      ELSEIF(nPowellSearchDomains.LE.0)THEN
-          nPowellSearchDomains = numSets
-      ENDIF
 
-      DO I = 1,numSets
-        CALL readHeader(owi(i)%pressure_file,owi(i)%iounit_pressure,
-     &                  date1pressure,date2pressure)
-        CALL readHeader(owi(i)%wind_file,owi(i)%iounit_wind,
-     &                  date1wind,date2wind)
-        IF(date1pressure.NE.date1wind.OR.date2pressure.NE.date2wind)THEN
-            CALL allMessage(ERROR,"Wind and pressure dates do not match.")
-            errorVar = ""
-            CALL check_owi_err(1,errorVar,owi(i)%wind_file,owi(i)%iounit_wind)
-        ENDIF
-        owi(i)%startDate = date1wind
-        owi(i)%endDate   = date2wind
-        IF(owi(i)%startDate.NE.owi(1)%startdate)THEN
-            CALL allMessage(ERROR,"Wind domains have different time frames")
-            errorVar = ""
-            CALL check_owi_err(1,errorVar,owi(i)%wind_file,owi(i)%iounit_wind)
-        ENDIF
-        ALLOCATE(owi(i)%interpPoints(np,2))
-        ALLOCATE(owi(i)%weight(np,4))
-        owi(i)%isnap = 0
-        owi(i)%iupdate = 1
-      ENDDO
+        DO I = 1,numSets
+          CALL readHeader(owi(i)%pressure_file,owi(i)%iounit_pressure,
+     &                    date1pressure,date2pressure)
+          CALL readHeader(owi(i)%wind_file,owi(i)%iounit_wind,
+     &                    date1wind,date2wind)
+          IF(date1pressure.NE.date1wind.OR.date2pressure.NE.date2wind)THEN
+              CALL allMessage(ERROR,"Wind and pressure dates do not match.")
+              errorVar = ""
+              CALL check_owi_err(1,errorVar,owi(i)%wind_file,owi(i)%iounit_wind)
+          ENDIF
+          owi(i)%startDate = date1wind
+          owi(i)%endDate   = date2wind
+          IF(owi(i)%startDate.NE.owi(1)%startdate)THEN
+              CALL allMessage(ERROR,"Wind domains have different time frames")
+              errorVar = ""
+              CALL check_owi_err(1,errorVar,owi(i)%wind_file,owi(i)%iounit_wind)
+          ENDIF
+          ALLOCATE(owi(i)%interpPoints(np,2))
+          ALLOCATE(owi(i)%weight(np,4))
+          owi(i)%isnap = 0
+          owi(i)%iupdate = 1
+        ENDDO
 
-      cntSnaps = 0
+        cntSnaps = 0
 
-! Skip snaps if necessary ---------------------------------------------------
-      do i = 1,numSkipSnaps
-         write(scratchMessage,41) i
-  41     format("Skipping snap '",I6,"' in OWI wind data.")
-         call logMessage(DEBUG,trim(scratchMessage))
-         CALL NWS12GET(WVNX,WVNY,PRN,NP,RHOWAT0,G,PRBCKGRND)
-      enddo
+! Skip   snaps if necessary ---------------------------------------------------
+        do i = 1,numSkipSnaps
+           write(scratchMessage,41) i
+  41       format("Skipping snap '",I6,"' in OWI wind data.")
+           call logMessage(DEBUG,trim(scratchMessage))
+           CALL NWS12GET(WVNX,WVNY,PRN,NP,RHOWAT0,G,PRBCKGRND)
+        enddo
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      RETURN
+        call allMessage(DEBUG,"Return.")
+#endif  
+        call unsetMessageSource()
+        RETURN
 
-99998 call allMessage(ERROR,"Unexpectedly reached end-of-file.") ! END jumps here
+99998   call allMessage(ERROR,"Unexpectedly reached end-of-file.") ! END jumps here
 
-99999 call check_owi_err(errorIO,errorVar,fname,iounit) !  ERR jumps here
-C-----------------------------------------------------------------------
+99999   call check_owi_err(errorIO,errorVar,fname,iounit) !  ERR jumps here
+!-----------------------------------------------------------------------
       END SUBROUTINE NWS12INIT
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
 !      S U B R O U T I N E   F I N D   S T O R M   C E N T E R
@@ -345,253 +404,246 @@ C-----------------------------------------------------------------------
 !***********************************************************************
 !   SUBROUTINE NWS12GET
 !***********************************************************************
-
       SUBROUTINE NWS12GET(WVNX,WVNY,PRN,NP,RHOWAT0,G,PRdeflt)
-      USE SIZES,ONLY : MYPROC,MNPROC,GBLINPUTDIR
-      IMPLICIT NONE
-      real(SZ), dimension(:) :: eyeLatR(3)
-      real(SZ), dimension(:) :: eyeLonR(3)
-      INTEGER                ::NP,I,J,S,XI,YI
-      REAL(SZ), intent(out), dimension(:) ::  WVNX,WVNY,PRN
-      REAL(SZ), intent(in)   :: G, PRdeflt
-      REAL(SZ)               :: RHOWAT0,RHOWATG,EyePressure
-      INTEGER                :: EyeLatI,EyeLonI
-      INTEGER                :: EyeLatTemp,EyeLonTemp
-      CHARACTER(1024)        :: filename,errorVar = ""
-      INTEGER                :: iounit
-      INTEGER                :: iLatw,iLongw,iLatp,iLongp
-      REAL(SZ)               :: dxw,dyw,swlatw,swlongw
-      REAL(SZ)               :: dxp,dyp,swlatp,swlongp
-      REAL(SZ)               :: uu,vv,pp
-      REAL(SZ)               :: w1,w2,w3,w4
-      INTEGER(8)             :: iCYMDHw,iCYMDHp
-      INTEGER                :: iMinw,iMinp
-      INTEGER                :: errorIO
-      LOGICAL                :: foundEye
+        USE SIZES,ONLY : MYPROC,MNPROC,GBLINPUTDIR
+        IMPLICIT NONE
+        real(SZ), dimension(:) :: eyeLatR(3)
+        real(SZ), dimension(:) :: eyeLonR(3)
+        INTEGER                ::NP,I,J,S,XI,YI
+        REAL(SZ), intent(out), dimension(:) ::  WVNX,WVNY,PRN
+        REAL(SZ), intent(in)   :: G, PRdeflt
+        REAL(SZ)               :: RHOWAT0,RHOWATG,EyePressure
+        INTEGER                :: EyeLatI,EyeLonI
+        INTEGER                :: EyeLatTemp,EyeLonTemp
+        CHARACTER(1024)        :: filename,errorVar = ""
+        INTEGER                :: iounit
+        INTEGER                :: iLatw,iLongw,iLatp,iLongp
+        REAL(SZ)               :: dxw,dyw,swlatw,swlongw
+        REAL(SZ)               :: dxp,dyp,swlatp,swlongp
+        REAL(SZ)               :: uu,vv,pp
+        REAL(SZ)               :: w1,w2,w3,w4
+        INTEGER(8)             :: iCYMDHw,iCYMDHp
+        INTEGER                :: iMinw,iMinp
+        INTEGER                :: errorIO
+        LOGICAL                :: foundEye
 
-      !jgf51.52.05: Used to detect mesh nodes outside both met grids
-      ! and set those nodes to zero wind velocity and to background pressure.
-      LOGICAL :: uvpHasBeenSet
+        !jgf51.52.05: Used to detect mesh nodes outside both met grids
+        ! and set those nodes to zero wind velocity and to background pressure.
+        LOGICAL :: uvpHasBeenSet
 
-      call setMessageSource("nws12get")
+        call setMessageSource("nws12get")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      RHOWATG=RHOWAT0*G
+        call allMessage(DEBUG,"Enter.")
+#endif  
+        RHOWATG=RHOWAT0*G
 
-      ! Increment counter (cntSnaps initialized to zero in nws12init)
-      cntSnaps = cntSnaps+1
+        ! Increment counter (cntSnaps initialized to zero in nws12init)
+        cntSnaps = cntSnaps+1
 
-      ! Put a blank snap for the first 'numBlankSnaps' snaps and then return
-      if (cntSnaps.LE.numBlankSnaps) then
-         WVNX(:) = 0D0
-         WVNY(:) = 0D0
-         PRN(:) = Prdeflt*100D0/RHOWATG
+        ! Put a blank snap for the first 'numBlankSnaps' snaps and then return
+        if (cntSnaps.LE.numBlankSnaps) then
+           WVNX(:) = 0D0
+           WVNY(:) = 0D0
+           PRN(:) = Prdeflt*100D0/RHOWATG
 
-         write(scratchMessage,16) cntSnaps
- 16      format('INSERTING A BLANK WIND SNAP, COUNT=',i4)
-         call allMessage(INFO,trim(scratchMessage))
+           write(scratchMessage,16) cntSnaps
+ 16        format('INSERTING A BLANK WIND SNAP, COUNT=',i4)
+           call allMessage(INFO,trim(scratchMessage))
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG,"Return.")
-#endif
-         call unsetMessageSource()
-         RETURN
-      endif
-
-      DO S = 1,numSets
-
-        if(s.gt.1)then
-            if(owi(1)%date.lt.owi(s)%startDate) cycle
-            if(owi(1)%date.eq.owi(s)%endDate.and.owi(s)%minute.ne.0) cycle
-            if(owi(1)%date.gt.owi(s)%endDate) cycle
+           call allMessage(DEBUG,"Return.")
+#endif  
+           call unsetMessageSource()
+           RETURN
         endif
 
-        ! Increment counter
-        owi(s)%isnap = owi(s)%isnap + 1
+        DO S = 1,numSets
 
-        ! Read grid specifications/date in pressure file
-        filename = owi(s)%pressure_file
-        iounit = owi(s)%iounit_pressure
-        WRITE(errorVar,'(A,I0)') "read grid specifications/date in Oceanweather pressure file, domain ",s
-        read (owi(s)%iounit_pressure,11,end=10000,err=9999,iostat=errorIO)
-     &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
-        call check_owi_err(errorIO,errorVar,filename,iounit)
+          if(s.gt.1)then
+              if(owi(1)%date.lt.owi(s)%startDate) cycle
+              if(owi(1)%date.eq.owi(s)%endDate.and.owi(s)%minute.ne.0) cycle
+              if(owi(1)%date.gt.owi(s)%endDate) cycle
+          endif
 
-        if(s.eq.1)then
-            if(numSets.GT.1)then
-                write(scratchMessage,'("Processing Oceanweather wind data for domain ",I0," through "'//
-     &                               ',I0," for time stamp ",I12," ",I2)') s,numSets,iCYMDHp,iMinp
-            else
-                write(scratchMessage,'("Processing Oceanweather wind data for time stamp ",I12," ",I2)') 
-     &              iCYMDHp,iMinp
-            endif
-            call allmessage(INFO,scratchMessage)
-        endif
+          ! Increment counter
+          owi(s)%isnap = owi(s)%isnap + 1
 
-        ! Read grid specifications/date in wind file
-        filename = owi(s)%wind_file
-        iounit = owi(s)%iounit_wind
-        WRITE(errorVar,'(A,I0)') "read grid specifications/date in Oceanweather wind file, domain ",s
-        read (owi(s)%iounit_wind,11,end=10000,err=9999,iostat=errorIO)
-     &        iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
-        call check_owi_err(errorIO,errorVar,filename,iounit)
+          ! Read grid specifications/date in pressure file
+          filename = owi(s)%pressure_file
+          iounit = owi(s)%iounit_pressure
+          WRITE(errorVar,'(A,I0)') "read grid specifications/date in Oceanweather pressure file, domain ",s
+          read (owi(s)%iounit_pressure,11,end=10000,err=9999,iostat=errorIO)
+     &          iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
+          call check_owi_err(errorIO,errorVar,filename,iounit)
 
-        ! Check consistency
-        if(iLatp.ne.iLatw.or.iLongp.ne.iLongw.or.dxp.ne.dxw.or.
-     &       dyp.ne.dyw.or.swlatp.ne.swlatw.or.swlongp.ne.swlongw.or.
-     &       iCYMDHp.ne.iCYMDHw.or.iMinp.ne.iMinw) then
-           call allMessage(ERROR,
-     &    "Grid specifications/date in OWI win and pre files must match.")
-           errorVar = ""
-           call check_owi_err(errorIO,errorVar,filename,iounit)
-        endif
-
-        ! Check if header info has changed from the previous snapshot
-        if(moving_grid)then
-            ! for a moving grid,update it every time  Jie 09/2013
-            owi(s)%iupdate = 1
-        else
-            if(owi(s)%isnap.gt.1) then
-              if(iLatp.ne.owi(s)%iLat.or.iLongp.ne.owi(s)%iLon.or.
-     &             dxp.ne.owi(s)%dlon.or.dyp.ne.owi(s)%dlat.or.
-     &             swlatp.ne.owi(s)%swlat.or.swlongp.ne.owi(s)%swlon) then
-                call logMessage(INFO,"Basin scale grid has changed.")
-                owi(s)%iupdate = 1
+          if(s.eq.1)then
+              if(numSets.GT.1)then
+                  write(scratchMessage,'("Processing Oceanweather wind data for domain ",I0," through "'//
+     &                                 ',I0," for time stamp ",I12," ",I2)') s,numSets,iCYMDHp,iMinp
               else
-                owi(s)%iupdate = 0
+                  write(scratchMessage,'("Processing Oceanweather wind data for time stamp ",I12," ",I2)') 
+     &                iCYMDHp,iMinp
               endif
+              call allmessage(INFO,scratchMessage)
+          endif
+
+          ! Read grid specifications/date in wind file
+          filename = owi(s)%wind_file
+          iounit = owi(s)%iounit_wind
+          WRITE(errorVar,'(A,I0)') "read grid specifications/date in Oceanweather wind file, domain ",s
+          read (owi(s)%iounit_wind,11,end=10000,err=9999,iostat=errorIO)
+     &          iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
+          call check_owi_err(errorIO,errorVar,filename,iounit)
+
+          ! Check consistency
+          if(iLatp.ne.iLatw.or.iLongp.ne.iLongw.or.dxp.ne.dxw.or.
+     &         dyp.ne.dyw.or.swlatp.ne.swlatw.or.swlongp.ne.swlongw.or.
+     &         iCYMDHp.ne.iCYMDHw.or.iMinp.ne.iMinw) then
+             call allMessage(ERROR,
+     &      "Grid specifications/date in OWI win and pre files must match.")
+             errorVar = ""
+             call check_owi_err(errorIO,errorVar,filename,iounit)
+          endif
+
+          if(owi(s)%isnap.gt.1) then
+            if(iLatp.ne.owi(s)%iLat.or.iLongp.ne.owi(s)%iLon.or.
+     &           dxp.ne.owi(s)%dlon.or.dyp.ne.owi(s)%dlat.or.
+     &           swlatp.ne.owi(s)%swlat.or.swlongp.ne.owi(s)%swlon) then
+              write(scratchMessage,'(A,I0,A)') "Oceanweather domain ",s," has changed."
+              call logMessage(INFO,TRIM(scratchMessage))
+              owi(s)%iupdate = 1
+            else
+              owi(s)%iupdate = 0
             endif
-        endif
+          endif
 
-        owi(s)%date = iCYMDHp
-        owi(s)%minute = iMinp
+          owi(s)%date = iCYMDHp
+          owi(s)%minute = iMinp
 
-        ! Update coordinate mapping coefficients if necessary
-        if(owi(s)%iupdate.eq.1) then
-           owi(s)%ilon = ilongp
-           owi(s)%ilat = ilatp
-           owi(s)%dlon = dxp
-           owi(s)%dlat = dyp
-           owi(s)%swlat = swlatp
-           owi(s)%swlon = swlongp
-           WRITE(errorVar,'(A,I0)') "Updating grid coordinate mapping coefficients, domain ",s
-           call logMessage(INFO,errorVar)
-           call nws12interp(s,np)
-        endif
+          ! Update coordinate mapping coefficients if necessary
+          if(owi(s)%iupdate.eq.1) then
+             owi(s)%ilon = ilongp
+             owi(s)%ilat = ilatp
+             owi(s)%dlon = dxp
+             owi(s)%dlat = dyp
+             owi(s)%swlat = swlatp
+             owi(s)%swlon = swlongp
+             WRITE(errorVar,'(A,I0)') "Updating grid coordinate mapping coefficients, domain ",s
+             call logMessage(INFO,errorVar)
+             call nws12interp(s,np)
+          endif
 
-        ! Read basin scale atmospheric pressure snapshot
-        filename = owi(s)%pressure_file
-        iounit =  owi(s)%iounit_pressure
-        WRITE(errorVar,'(A,I0)') "reading atmospheric pressure snapshot, domain ",s
-        read(owi(s)%iounit_pressure,22,end=10000,err=9999,iostat=errorIO)
-     &     ((owi(s)%p(i,j),i=1,owi(s)%iLon),j=1,owi(s)%iLat)
-        call check_owi_err(errorIO,errorVar,filename,iounit)
+          ! Read basin scale atmospheric pressure snapshot
+          filename = owi(s)%pressure_file
+          iounit =  owi(s)%iounit_pressure
+          WRITE(errorVar,'(A,I0)') "reading atmospheric pressure snapshot, domain ",s
+          read(owi(s)%iounit_pressure,22,end=10000,err=9999,iostat=errorIO)
+     &       ((owi(s)%p(i,j),i=1,owi(s)%iLon),j=1,owi(s)%iLat)
+          call check_owi_err(errorIO,errorVar,filename,iounit)
 
-        ! Read basin scale snapshot of u/v components of the wind
-        filename = owi(s)%wind_file
-        iounit = owi(s)%iounit_wind
-        WRITE(errorVar,'(A,I0)') "reading wind u-velocity snapshot, domain ",s
-        read(owi(s)%iounit_wind,22,end=10000,err=9999,iostat=errorIO)
-     &     ((owi(s)%u(i,j),i=1,owi(s)%iLon),j=1,owi(s)%iLat)
-        call check_owi_err(errorIO,errorVar,filename,iounit)
-        filename = owi(s)%wind_file
-        iounit = owi(s)%iounit_wind
-        WRITE(errorVar,'(A,I0)') "reading wind v-velocity snapshot, domain ",s
-        read(owi(s)%iounit_wind,22,end=10000,err=9999,iostat=errorIO)
-     &     ((owi(s)%v(i,j),i=1,owi(s)%iLon),j=1,owi(s)%iLat)
-        call check_owi_err(errorIO,errorVar,filename,iounit)
-      ENDDO
+          ! Read basin scale snapshot of u/v components of the wind
+          filename = owi(s)%wind_file
+          iounit = owi(s)%iounit_wind
+          WRITE(errorVar,'(A,I0)') "reading wind u-velocity snapshot, domain ",s
+          read(owi(s)%iounit_wind,22,end=10000,err=9999,iostat=errorIO)
+     &       ((owi(s)%u(i,j),i=1,owi(s)%iLon),j=1,owi(s)%iLat)
+          call check_owi_err(errorIO,errorVar,filename,iounit)
+          filename = owi(s)%wind_file
+          iounit = owi(s)%iounit_wind
+          WRITE(errorVar,'(A,I0)') "reading wind v-velocity snapshot, domain ",s
+          read(owi(s)%iounit_wind,22,end=10000,err=9999,iostat=errorIO)
+     &       ((owi(s)%v(i,j),i=1,owi(s)%iLon),j=1,owi(s)%iLat)
+          call check_owi_err(errorIO,errorVar,filename,iounit)
+        ENDDO
 
-      do i=1,NP
+        do i=1,NP
 
-         ! jgf51.52.05: Fixed an issue with floating point .eq. that
-         ! was used to determine whether the value of uu had been set. 
-         ! Replaced floating point comparison with a logical variable.
-         uvpHasBeenSet = .false.
+           ! jgf51.52.05: Fixed an issue with floating point .eq. that
+           ! was used to determine whether the value of uu had been set. 
+           ! Replaced floating point comparison with a logical variable.
+           uvpHasBeenSet = .false.
 
-         do j = numSets,1,-1
-            if (owi(j)%interppoints(i,1).gt.0) then
-               xi = owi(j)%interpPoints(i,1)
-               yi = owi(j)%interpPoints(i,2)
-               
-               w1=owi(j)%weight(i,1)
-               w2=owi(j)%weight(i,2)
-               w3=owi(j)%weight(i,3)
-               w4=owi(j)%weight(i,4)
+           do j = numSets,1,-1
+              if (owi(j)%interppoints(i,1).gt.0) then
+                 xi = owi(j)%interpPoints(i,1)
+                 yi = owi(j)%interpPoints(i,2)
+                 
+                 w1=owi(j)%weight(i,1)
+                 w2=owi(j)%weight(i,2)
+                 w3=owi(j)%weight(i,3)
+                 w4=owi(j)%weight(i,4)
 
-               uu=w1*owi(j)%u(xi,yi)+w2*owi(j)%u(xi+1,yi)+w3*
-     &            owi(j)%u(xi+1,yi+1)+w4*owi(j)%u(xi,yi+1)
-               vv=w1*owi(j)%v(xi,yi)+w2*owi(j)%v(xi+1,yi)+w3*
-     &            owi(j)%v(xi+1,yi+1)+w4*owi(j)%v(xi,yi+1)
-               pp=w1*owi(j)%p(xi,yi)+w2*owi(j)%p(xi+1,yi)+w3*
-     &            owi(j)%p(xi+1,yi+1)+w4*owi(j)%p(xi,yi+1)
+                 uu=w1*owi(j)%u(xi,yi)+w2*owi(j)%u(xi+1,yi)+w3*
+     &              owi(j)%u(xi+1,yi+1)+w4*owi(j)%u(xi,yi+1)
+                 vv=w1*owi(j)%v(xi,yi)+w2*owi(j)%v(xi+1,yi)+w3*
+     &              owi(j)%v(xi+1,yi+1)+w4*owi(j)%v(xi,yi+1)
+                 pp=w1*owi(j)%p(xi,yi)+w2*owi(j)%p(xi+1,yi)+w3*
+     &              owi(j)%p(xi+1,yi+1)+w4*owi(j)%p(xi,yi+1)
 
-               uvpHasBeenSet = .true.
-               exit
-            endif
-         enddo
+                 uvpHasBeenSet = .true.
+                 exit
+              endif
+           enddo
 
-         if (.not.uvpHasBeenSet) then
-            WVNX(I)=0.d0
-            WVNY(I)=0.d0
-            PRN(I)=PRdeflt*100.d0/RHOWATG
-         else
-            !Convert millibars to m of water
-            PRN(i)  = 100.d0*PP/RHOWATG
+           if (.not.uvpHasBeenSet) then
+              WVNX(I)=0.d0
+              WVNY(I)=0.d0
+              PRN(I)=PRdeflt*100.d0/RHOWATG
+           else
+              !Convert millibars to m of water
+              PRN(i)  = 100.d0*PP/RHOWATG
 
-            ! Apply wind velocity multiplier
-            ! and save to arrays
-            WVNX(i) = uu * windMultiplier
-            WVNY(i) = vv * windMultiplier
+              ! Apply wind velocity multiplier
+              ! and save to arrays
+              WVNX(i) = uu * windMultiplier
+              WVNY(i) = vv * windMultiplier
 
-         endif
+           endif
 
-      enddo
+        enddo
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      RETURN
+        call allMessage(DEBUG,"Return.")
+#endif  
+        call unsetMessageSource()
+        RETURN
 
 
-9999  call check_owi_err(errorIO,errorVar,filename,iounit) ! ERR during read jumps to here
+9999    call check_owi_err(errorIO,errorVar,filename,iounit) ! ERR during read jumps to here
 
-      ! END during read of required data jumps to here
-9997  call allMessage(ERROR,"Unexpected end-of-file reached.")
-      call check_owi_err(errorIO,errorVar,filename,iounit)
+        ! END during read of required data jumps to here
+9997    call allMessage(ERROR,"Unexpected end-of-file reached.")
+        call check_owi_err(errorIO,errorVar,filename,iounit)
 
-10000 continue  ! END during read of u, v, p data jumps to here
-      write(scratchMessage,61) trim(errorVar)
-  61  format("Unexpected end-of-file while reading '",A,
-     &    "'. Wind speeds set to zero and pressure to 1013mb.")
-      call allMessage(WARNING,trim(scratchMessage))
+10000   continue  ! END during read of u, v, p data jumps to here
+        write(scratchMessage,61) trim(errorVar)
+  61    format("Unexpected end-of-file while reading '",A,
+     &      "'. Wind speeds set to zero and pressure to 1013mb.")
+        call allMessage(WARNING,trim(scratchMessage))
 
-      WVNX(:)=0.d0
-      WVNY(:)=0.d0
-      PRN(:)=101300.d0/RHOWATG
+        WVNX(:)=0.d0
+        WVNY(:)=0.d0
+        PRN(:)=101300.d0/RHOWATG
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      RETURN
+        call allMessage(DEBUG,"Return.")
+#endif  
+        call unsetMessageSource()
+        RETURN
 
+ 11     format(t6,i4,t16,i4,t23,f6.0,t32,f6.0,
+     &       t44,f8.0,t58,f8.0,t69,i10,i2)
 
- 11   format(t6,i4,t16,i4,t23,f6.0,t32,f6.0,
-     &     t44,f8.0,t58,f8.0,t69,i10,i2)
-
- 22   format(8f10.0)
+ 22     format(8f10.0)
 
       END SUBROUTINE NWS12GET
 
-C***********************************************************************
-C   SOBROUTINE NWS12INTERP
-C
-C   This generates and saves interpolation coefficients for mapping
-C   from a OWI grid to an ADCIRC mesh.
-C
-C***********************************************************************
+!***********************************************************************
+!   SUBROUTINE NWS12INTERP
+!
+!   This generates and saves interpolation coefficients for mapping
+!   from a OWI grid to an ADCIRC mesh.
+!
+!***********************************************************************
 
       SUBROUTINE NWS12INTERP(idx, NP)
       USE GLOBAL, ONLY : RAD2DEG
@@ -605,12 +657,12 @@ C***********************************************************************
       REAL(SZ)             :: adcLat,adcLong
       REAL(SZ)             :: w,w1,w2,w3,w4
       REAL(SZ),ALLOCATABLE :: lat(:), lon(:)
-C
+
       call setMessageSource("nws12interp")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-C
+
       WRITE(16,'(A)') ''
       WRITE(16,'(A,I0)') 'WIND MAPPING UPDATED FOR REGION ',IDX
       WRITE(16,'(A)') ''
@@ -670,12 +722,12 @@ C
       RETURN
       END SUBROUTINE NWS12INTERP
 
-C-----------------------------------------------------------------------
-C     S U B R O U T I N E   R E A D   H E A D E R
-C-----------------------------------------------------------------------
-C     jgf50.16 Read the header from the OWI file and sets the value
-C     of the date1p, date2p, date1w, or date2w variables as appropriate.
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!     S U B R O U T I N E   R E A D   H E A D E R
+!-----------------------------------------------------------------------
+!     jgf50.16 Read the header from the OWI file and sets the value
+!     of the date1p, date2p, date1w, or date2w variables as appropriate.
+!-----------------------------------------------------------------------
       SUBROUTINE readHeader(filename, lun, date1, date2)
       IMPLICIT NONE
       INTEGER,INTENT(IN)       :: lun
@@ -685,7 +737,7 @@ C-----------------------------------------------------------------------
       CHARACTER(80)            :: owiheader
       CHARACTER(1024)          :: errorVar
       INTEGER                  :: errorIO
-C
+
       call setMessageSource("readHeader")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -693,14 +745,14 @@ C
       call openFileForRead(lun, filename, errorIO)
       errorVar = "opening Oceanweather file"
       call check_owi_err(errorIO,errorVar,filename,lun)
-C
+
       ! Read begining/ending dates of pre file
       owiheader(:) = ' '  !set owiheader to blanks before read
       errorVar = "reading Oceanweather header line"
       read(lun, fmt='(a80)',
      &   end=99998,err=99999,iostat=errorIO) owiheader
       call check_owi_err(errorIO,errorVar,filename,lun)
-C
+
       errorVar = "reading Oceanweather start date"
       read(owiheader(56:65),'(I10)',
      &   end=99998,err=99999,iostat=errorIO) date1
@@ -708,14 +760,14 @@ C
       write(scratchMessage,31) TRIM(errorVar), trim(filename), date1
   31  format("'",A,"' in  '",A,"' is '",I10,"'.")
       call allMessage(INFO,scratchMessage)
-C
+
       errorVar = "reading Oceanweather end date"
       read(owiheader(71:80),'(I10)',
      &    end=99998,err=99999,iostat=errorIO) date2
       call check_owi_err(errorIO,errorVar,filename,lun)
       write(scratchMessage,31) TRIM(errorVar), trim(filename), date2
       call allMessage(INFO,scratchMessage)
-C
+
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -724,17 +776,17 @@ C
 
 99998 call allMessage(ERROR,"Unexpectedly reached end-of-file.")    ! END jumps here
 99999 call check_owi_err(errorIO,"Error reading Oceanweather file",filename,lun) !  ERR jumps here
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       end subroutine readHeader
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
 
-C-----------------------------------------------------------------------
-C     S U B R O U T I N E   C H E C K  _  E R R
-C-----------------------------------------------------------------------
-C     jgf50.16 Checks the return value from subroutine calls; if there
-C     was an error, it writes a termination message to the screen and to the
-C     fort.16 file and terminates ADCIRC.
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!     S U B R O U T I N E   C H E C K  _  E R R
+!-----------------------------------------------------------------------
+!     jgf50.16 Checks the return value from subroutine calls; if there
+!     was an error, it writes a termination message to the screen and to the
+!     fort.16 file and terminates ADCIRC.
+!-----------------------------------------------------------------------
       subroutine check_owi_err(iret, errorVar, filename, unitnumber)
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
@@ -770,11 +822,11 @@ C-----------------------------------------------------------------------
 #endif
       call unsetMessageSource()
       RETURN
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       end subroutine check_owi_err
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
 
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       END MODULE OWIWIND
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
 
