@@ -1,6 +1,6 @@
-!******************************************************************************
+!-----------------------------------------------------------------------
 !  MODULE OWIWIND
-!******************************************************************************
+!-----------------------------------------------------------------------
 ! This module handles the I/O and interpolation to the mesh for Oceanweather
 ! format wind and pressure fields. The module is initialized by calling nws12init
 ! and subsequently calling nws12get. The code will place data into the WVNX,
@@ -49,10 +49,9 @@
 ! where [X] is the number of domains to search through. If set to 1, only the 
 ! most coarse domain will participiate in the search.
 !
-!******************************************************************************
-!******************************************************************************
-
+!-----------------------------------------------------------------------
       MODULE OWIWIND
+!-----------------------------------------------------------------------
 
         USE SIZES,ONLY : SZ,MYPROC
         USE GLOBAL,ONLY : NSCREEN, ScreenUnit, DEBUG, ECHO, INFO,
@@ -102,12 +101,12 @@
 
         CONTAINS
           
-!***********************************************************************
+!-----------------------------------------------------------------------
 !       Allocates the u,v,p fields in an oceanweather object and
 !       deallocates if necessary
-!***********************************************************************
+!-----------------------------------------------------------------------
         SUBROUTINE owi_allocate(this)
-!***********************************************************************
+!-----------------------------------------------------------------------
             IMPLICIT NONE
             TYPE(OCEANWEATHER),INTENT(INOUT) :: this
             call setMessageSource("owi_allocate")
@@ -124,15 +123,15 @@
             call allMessage(DEBUG,"Return.")
 #endif
             call unsetMessageSource()
-!***********************************************************************
+!-----------------------------------------------------------------------
         END SUBROUTINE owi_allocate
-!***********************************************************************
+!-----------------------------------------------------------------------
 
-!***********************************************************************
+!-----------------------------------------------------------------------
 !       Deallocates the u,v,p fields in an oceanweather object
-!***********************************************************************
+!-----------------------------------------------------------------------
         SUBROUTINE owi_deallocate(this)
-!***********************************************************************
+!-----------------------------------------------------------------------
             IMPLICIT NONE
             TYPE(OCEANWEATHER),INTENT(INOUT) :: this
             call setMessageSource("owi_deallocate")
@@ -147,15 +146,15 @@
 #endif
             call unsetMessageSource()
             RETURN
-!***********************************************************************
+!-----------------------------------------------------------------------
         END SUBROUTINE owi_deallocate
-!***********************************************************************
+!-----------------------------------------------------------------------
 
-!***********************************************************************
+!-----------------------------------------------------------------------
 !       Generates coordinates for a specified oceanweather domain
-!***********************************************************************
+!-----------------------------------------------------------------------
         SUBROUTINE owi_generateCoordinates(this,lat,lon)
-!***********************************************************************
+!-----------------------------------------------------------------------
             IMPLICIT NONE
             TYPE(OCEANWEATHER),INTENT(IN)      :: this
             REAL(SZ),ALLOCATABLE,INTENT(OUT)   :: lat(:)
@@ -182,13 +181,13 @@
             call unsetMessageSource()
 
             RETURN
-!***********************************************************************
+!-----------------------------------------------------------------------
         END SUBROUTINE owi_generateCoordinates
-!***********************************************************************
+!-----------------------------------------------------------------------
      
-!***********************************************************************
+!-----------------------------------------------------------------------
 !   SUBROUTINE NWS12INIT
-!***********************************************************************
+!-----------------------------------------------------------------------
       SUBROUTINE NWS12INIT(WVNX,WVNY,PRN,NP,RHOWAT0,G,PRdeflt)
         USE SIZES, ONLY : SZ,MYPROC, GBLINPUTDIR
         USE GLOBAL,ONLY: PRBCKGRND
@@ -338,10 +337,12 @@
 !      S U B R O U T I N E   F I N D   S T O R M   C E N T E R
 !-----------------------------------------------------------------------
 !     Called to find the lowest pressure in the met field below
-!     the threshold pressure.
+!     the threshold pressure. Loops over all domains and finds 
+!     the lowest pressure across all domains
 !-----------------------------------------------------------------------
       subroutine findStormCenter(eyeLat, eyeLon, foundEye)
         use GLOBAL,only:PRBCKGRND
+        use messenger,only:myproc
         implicit none
         real(sz), intent(inout) :: eyeLat(3)
         real(sz), intent(inout) :: eyeLon(3)
@@ -352,7 +353,9 @@
         real(SZ)                :: EyeLatTemp
         real(SZ)                :: EyeLonTemp
         real(SZ)                :: EyePressure
-        integer                 :: i, j, s
+        real(SZ)                :: minp
+        integer                 :: s
+        integer                 :: minidx(2)
 
         EyeLatI = 0
         EyeLonI = 0
@@ -361,23 +364,19 @@
         EyeLonTemp = 0D0
         EyePressure = PRBCKGRND
 
-        DO S = 1,nPowellSearchDomains
-            DO i=1,owi(s)%iLon
-               DO j=1,owi(s)%iLat
-                  IF((owi(s)%p(i,j).LT.EyePressure).AND.
-     &               (owi(s)%p(i,j).LT.1000.D0))THEN
-                     EyeLatI = j
-                     EyeLonI = i
-                     EyeDomainI = s
-                     EyePressure = owi(s)%p(i,j)
-                  ENDIF
-               ENDDO
-            ENDDO
-        ENDDO
+        do S = 1,nPowellSearchDomains
+            minidx = minloc(owi(s)%p)
+            minp = owi(s)%p(minidx(1),minidx(2))
+            if(minp.lt.1000D0.and.minp.lt.eyePressure)then
+                EyeLonI = minidx(1)
+                EyeLatI = minidx(2)
+                EyeDomainI = s
+                EyePressure = owi(s)%p(minidx(1),minidx(2))
+            endif
+        enddo
 
-        IF((EyeLatI.EQ.0).OR.(EyeLonI.EQ.0).OR.(EyeDomainI.EQ.0))THEN
-           FoundEye = .FALSE.
-        ELSEIF((EyeLatI.EQ.1).OR.(EyeLatI.EQ.owi(EyeDomainI)%iLat).OR.
+        IF((EyeLatI.EQ.0).OR.(EyeLonI.EQ.0).OR.(EyeDomainI.EQ.0).OR.
+     &     (EyeLatI.EQ.1).OR.(EyeLatI.EQ.owi(EyeDomainI)%iLat).OR.
      &         (EyeLonI.EQ.1).OR.(EyeLonI.EQ.owi(EyeDomainI)%iLon))THEN
            FoundEye = .FALSE.
         ELSE
@@ -401,9 +400,9 @@
 !-----------------------------------------------------------------------
 
 
-!***********************************************************************
+!-----------------------------------------------------------------------
 !   SUBROUTINE NWS12GET
-!***********************************************************************
+!-----------------------------------------------------------------------
       SUBROUTINE NWS12GET(WVNX,WVNY,PRN,NP,RHOWAT0,G,PRdeflt)
         USE SIZES,ONLY : MYPROC,MNPROC,GBLINPUTDIR
         IMPLICIT NONE
@@ -637,13 +636,13 @@
 
       END SUBROUTINE NWS12GET
 
-!***********************************************************************
+!-----------------------------------------------------------------------
 !   SUBROUTINE NWS12INTERP
 !
 !   This generates and saves interpolation coefficients for mapping
 !   from a OWI grid to an ADCIRC mesh.
 !
-!***********************************************************************
+!-----------------------------------------------------------------------
 
       SUBROUTINE NWS12INTERP(idx, NP)
       USE GLOBAL, ONLY : RAD2DEG
