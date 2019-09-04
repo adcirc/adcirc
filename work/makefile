@@ -90,16 +90,25 @@ ifeq ($(XDMF),enable)
      FFLAGS4 := $(FFLAGS4) -DADCXDMF -I$(XDMFHOME)/include -I$(SRCDIR)/src
      $(warning (INFO) XDMF library path is $(XDMFHOME).)
 endif
-ifeq ($(GLOBAL),enable)
-     PPFC    := $(PPFC) -DDATETIME -DGRIB2API
-     PFC     := $(PFC) -DDATETIME -DGRIB2API
-     FFLAGS1 := $(FFLAGS1) -DDATETIME -DGRIB2API
-     FFLAGS2 := $(FFLAGS2) -DDATETIME -DGRIB2API
-     FFLAGS3 := $(FFLAGS3) -DDATETIME -DGRIB2API
-     FFLAGS4 := $(FFLAGS4) -DDATETIME -DGRIB2API
-     FFLAGSGSW := -I$(WGRIB2HOME) -I$(DATETIMEHOME)include
-else
-     FFLAGSGSW :=  
+
+FFLAGSGSW :=  
+ifeq ($(GRIB2),enable)
+     PPFC    := $(PPFC) -DGRIB2API
+     PFC     := $(PFC) -DGRIB2API
+     FFLAGS1 := $(FFLAGS1) -DGRIB2API
+     FFLAGS2 := $(FFLAGS2) -DGRIB2API
+     FFLAGS3 := $(FFLAGS3) -DGRIB2API
+     FFLAGS4 := $(FFLAGS4) -DGRIB2API
+     FFLAGSGSW := $(FFLAGSGSW) -I$(WGRIB2HOME)
+endif
+ifeq ($(DATETIME),enable) 
+     PPFC    := $(PPFC) -DDATETIME
+     PFC     := $(PFC) -DDATETIME
+     FFLAGS1 := $(FFLAGS1) -DDATETIME
+     FFLAGS2 := $(FFLAGS2) -DDATETIME
+     FFLAGS3 := $(FFLAGS3) -DDATETIME
+     FFLAGS4 := $(FFLAGS4) -DDATETIME
+     FFLAGSGSW := $(FFLAGSGSW) -I$(DATETIMEHOME)include
 endif
 ####################### Target Specific Rules ###################################
 
@@ -194,7 +203,7 @@ endif
 ifeq ($(BUILDTYPE),padcswan)
   CF:= $(PFC)
   O_DIR:=$(SRCDIR)/work/odir44/
-  FFLAGS:= $(FFLAGS3) -DCSWAN $(DP) $(IMODS) $(O_DIR)
+  FFLAGS:= $(FFLAGS3) -DCSWAN $(DP) $(IMODS) $(O_DIR) $(FFLAGSGSW)
   VPATH :=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/swan
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)

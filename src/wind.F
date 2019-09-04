@@ -24,8 +24,8 @@ C
 #ifdef DATETIME
       use datetime_module, only: datetime, timedelta
 #endif
-#ifdef GRIB2API
-C     WJP added NWS=14 if GRIB2 library available
+#if defined(GRIB2API) || defined(ADCNETCDF)
+C     WJP added NWS=14 for GRB2 or NETCDF reading
       integer, parameter :: allowable_nws(19)
      &      = (/0,1,2,3,4,5,6,7,8,10,11,12,14,15,16,19,20,29,30/)
 #else
