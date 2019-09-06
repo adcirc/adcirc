@@ -1,53 +1,67 @@
 !-----------------------------------------------------------------------
 !  MODULE OWIWIND
 !-----------------------------------------------------------------------
-! This module handles the I/O and interpolation to the mesh for Oceanweather
-! format wind and pressure fields. The module is initialized by calling nws12init
-! and subsequently calling nws12get. The code will place data into the WVNX,
-! WVNY, and PRN arrays
-! 
-! The fort.22 file is used to control behavior. fort.22 must contain at least
-! three lines as follows:
-!     numSets        <-- Number of sets of wind fields
-!     numBlankSnaps  <-- Number of snaps to add/skip at beginning of field
-!     windMultiplier <-- Wind velocity multiplier to apply
-!
-! If numSets is negative, the code will attempt to read the filenames of 
-! the wind files from the fort.22. numSets may be positive 1, 2, or 3 which
-! indicates use of the standard names:
-!    Set 1: fort.221, fort.222 [ pressure field, wind field ]
-!    Set 2: fort.223, fort.224 [ pressure field, wind field ]
-!    Set 3: fort.217, fort.218 [ pressure field, wind field ]
-! When negative, there is no enforced limit on the number of wind fields that 
-! may be used. The wind fields should be listed in comma separated format
-! in the fort.22, 1:abs(numSets), one set of wind files per line as follows:
-!
-! pressureFile_001.pre, windFile_001.wnd
-! pressureFile_002.pre, windFile_002.wnd
-! ...
-! ...
-!
-! Wind fields should always be listed from coarse to fine. The priority with
-! which the wind fields are interpolated to the mesh is determined by the 
-! reverse order for which they are listed, meaning that the wind field that
-! is listed last is considered highest priority.
-!
-! Wind fields are interpolated onto each node using a bilinear interpolation
-! scheme. If a wind field lies outside of all wind fields, it is set to 
-! PRDEFLT (usually 1013mb) and 0.0 m/s velocity.
-!
-! When using Powell wind drag with Oceanweather wind fields, the findStormCenter
-! subroutine is used to search for the lowest central pressure under 1000mb. In
-! some cases, the storm center may vary randomly enough within an area when using a 
-! simple search like this on grids with high spatial and temporal resolution. If 
-! this happens, it is possible that the storm direction will not be correctly 
-! interpreted. In this case, it usually is best to search only the more coarse
-! wind fields to find the storm center which will prevent these sorts of oscillations
-! Using the &metControl namelist, you can specify the number of Powell drag
-! search domains via:
-!   &metControl nPowellSearchDomains=[X] /
-! where [X] is the number of domains to search through. If set to 1, only the 
-! most coarse domain will participiate in the search.
+!> @author Zachary Cobell, The Water Institute, zcobell@thewaterinstitute.org
+!> @author Shintaro Bunya
+!> 
+!> @copyright Dr. R.A. Luettich and Dr. J.J. Westerink
+!>
+!> @brief This module handles the I/O and interpolation to the mesh for Oceanweather
+!> format wind and pressure fields. 
+!> 
+!> The module is initialized by calling nws12init and subsequently calling 
+!> nws12get. The code will place data into the WVNX, WVNY, and PRN arrays
+!> 
+!> The fort.22 file is used to control behavior. fort.22 must contain at least
+!> three lines as follows:
+!>     numSets        <-- Number of sets of wind fields
+!>     numBlankSnaps  <-- Number of snaps to add/skip at beginning of field
+!>     windMultiplier <-- Wind velocity multiplier to apply
+!>
+!> If numSets is negative, the code will attempt to read the filenames of 
+!> the wind files from the fort.22. numSets may be positive 1, 2, or 3 which
+!> indicates use of the standard names:
+!>
+!> @verbatim
+!>    Set 1: fort.221, fort.222 [ pressure field, wind field ]
+!>    Set 2: fort.223, fort.224 [ pressure field, wind field ]
+!>    Set 3: fort.217, fort.218 [ pressure field, wind field ]
+!> @endverbatim
+!>
+!> When negative, there is no enforced limit on the number of wind fields that 
+!> may be used. The wind fields should be listed in comma separated format
+!> in the fort.22, 1:abs(numSets), one set of wind files per line as follows:
+!>
+!> @verbatim
+!> pressureFile_001.pre, windFile_001.wnd
+!> pressureFile_002.pre, windFile_002.wnd
+!> ...
+!> ...
+!> @endverbatim
+!>
+!> Wind fields should always be listed from coarse to fine. The priority with
+!> which the wind fields are interpolated to the mesh is determined by the 
+!> reverse order for which they are listed, meaning that the wind field that
+!> is listed last is considered highest priority.
+!>
+!> Wind fields are interpolated onto each node using a bilinear interpolation
+!> scheme. If a wind field lies outside of all wind fields, it is set to 
+!> PRDEFLT (usually 1013mb) and 0.0 m/s velocity.
+!>
+!> When using Powell wind drag with Oceanweather wind fields, the findStormCenter
+!> subroutine is used to search for the lowest central pressure under 1000mb. In
+!> some cases, the storm center may vary randomly enough within an area when using a 
+!> simple search like this on grids with high spatial and temporal resolution. If 
+!> this happens, it is possible that the storm direction will not be correctly 
+!> interpreted. In this case, it usually is best to search only the more coarse
+!> wind fields to find the storm center which will prevent these sorts of oscillations
+!> Using the &metControl namelist, you can specify the number of Powell drag
+!> search domains via:
+!> @verbatim
+!> &metControl nPowellSearchDomains=[X] /
+!> @endverbatim
+!> where [X] is the number of domains to search through. If set to 1, only the 
+!> most coarse domain will participiate in the search.
 !
 !-----------------------------------------------------------------------
       MODULE OWIWIND
@@ -63,139 +77,77 @@
 #endif  
         IMPLICIT NONE
 
-        integer  :: nPowellSearchDomains = -1
-        integer  :: numSets,numBlankSnaps,cntSnaps,numSkipSnaps
-        real(SZ) :: windMultiplier
+        integer  :: nPowellSearchDomains = -1 !< Number of search domains for Powell wind drag
+        integer  :: numSets !< Number of sets of wind and pressure fields
+        integer  :: numBlankSnaps !< Number of blank snaps to prepend to Oceanweather files
+        integer  :: numSkipSnaps !< Number of snaps to skip in Oceanweather files
+        integer  :: cntSnaps !< Counter for number of snaps that have been processed so far
+        real(SZ) :: windMultiplier !< Wind multiplier applied to Oceanweather wind velicities
         
-        TYPE OCEANWEATHER
-            CHARACTER(1024)      :: pressure_file
-            CHARACTER(1024)      :: wind_file
-            INTEGER(8)           :: startDate
-            INTEGER(8)           :: endDate
-            INTEGER(8)           :: date
-            INTEGER              :: minute
-            INTEGER              :: iLat
-            INTEGER              :: iLon
-            INTEGER              :: iounit_pressure
-            INTEGER              :: iounit_wind
-            INTEGER              :: iSnap
-            INTEGER              :: iUpdate
-            REAL(SZ)             :: dLat
-            REAL(SZ)             :: dLon
-            REAL(SZ)             :: swLon
-            REAL(SZ)             :: swLat
-            REAL(SZ),ALLOCATABLE :: p(:,:)
-            REAL(SZ),ALLOCATABLE :: u(:,:)
-            REAL(SZ),ALLOCATABLE :: v(:,:)
-            REAL(SZ),ALLOCATABLE :: weight(:,:)
-            INTEGER,ALLOCATABLE  :: interpPoints(:,:)
+        TYPE OCEANWEATHER !< Container for Oceanweather domains. Represents a wind and pressure field
+            CHARACTER(1024)      :: pressure_file !< filename used for the pressure field
+            CHARACTER(1024)      :: wind_file !< filename used for the wind velocity field
+            INTEGER(8)           :: startDate !< start date in the domain
+            INTEGER(8)           :: endDate !< end date in the domain
+            INTEGER(8)           :: date !< current date in domain for data read
+            INTEGER              :: minute !< current minute in domain for data read
+            INTEGER              :: iLat !< number of points in latitude direction
+            INTEGER              :: iLon !< number of points in longitude direction
+            INTEGER              :: iounit_pressure !< fortran unit number for pressure file
+            INTEGER              :: iounit_wind !< fortran unit number for wind file
+            INTEGER              :: iSnap !< current snap number 
+            INTEGER              :: iUpdate !< flag to update interpolation weights and indicies if wind field moves
+            REAL(SZ)             :: dLat !< spacing in latitude direction
+            REAL(SZ)             :: dLon !< spacing in longitude direction
+            REAL(SZ)             :: swLon !< southwest longitude
+            REAL(SZ)             :: swLat !< southwest latitude
+            REAL(SZ),ALLOCATABLE :: p(:,:) !< pressure field
+            REAL(SZ),ALLOCATABLE :: u(:,:) !< u-velocity field
+            REAL(SZ),ALLOCATABLE :: v(:,:) !< v-velocity field
+            REAL(SZ),ALLOCATABLE :: weight(:,:) !< bilinear interpolation weights
+            INTEGER,ALLOCATABLE  :: interpPoints(:,:) !< indicies for interpolation
         END TYPE OCEANWEATHER
 
-        TYPE(OCEANWEATHER),ALLOCATABLE :: owi(:) 
+        TYPE(OCEANWEATHER),ALLOCATABLE :: owi(:) !< Array containing each of the wind and pressure field used
 
-        PRIVATE OCEANWEATHER,owi,owi_allocate,owi_deallocate
-        PRIVATE owi_generateCoordinates,check_owi_err
-        PRIVATE readHeader,nws12interp 
+        PUBLIC nws12get,nws12init,findStormCenter,windMultiplier
+        PUBLIC nPowellSearchDomains
 
-!---------------------end of data declarations--------------------------------C
+        PRIVATE nws12interp,cntSnaps,numBlankSnaps,numSkipSnaps
+        PRIVATE owi_allocate,owi_deallocate,owi_generateCoordinates
+        PRIVATE owi_setFilenames,owi_setDefaultFilenames,owi_setDynamicFilenames
+        PRIVATE owi_initializeFileHeaders,owi_allocateInterpolationArrays
+        PRIVATE check_owi_err,readHeader,owi_skipSnaps,owi,numSets
+
+!---------------------end of data declarations--------------------------------
 
         CONTAINS
-          
+
 !-----------------------------------------------------------------------
-!       Allocates the u,v,p fields in an oceanweather object and
-!       deallocates if necessary
 !-----------------------------------------------------------------------
-        SUBROUTINE owi_allocate(this)
 !-----------------------------------------------------------------------
-            IMPLICIT NONE
-            TYPE(OCEANWEATHER),INTENT(INOUT) :: this
-            call setMessageSource("owi_allocate")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Enter.")
-#endif
-            IF((SIZE(this%p,1).NE.this%iLon).OR.(SIZE(this%p,2).NE.this%iLat))THEN
-                CALL owi_deallocate(this)
-                ALLOCATE(this%p(this%ilon,this%ilat))
-                ALLOCATE(this%u(this%ilon,this%ilat))
-                ALLOCATE(this%v(this%ilon,this%ilat))
-            ENDIF
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Return.")
-#endif
-            call unsetMessageSource()
+! P U B L I C  F U N C T I O N S
 !-----------------------------------------------------------------------
-        END SUBROUTINE owi_allocate
+!-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
-!       Deallocates the u,v,p fields in an oceanweather object
-!-----------------------------------------------------------------------
-        SUBROUTINE owi_deallocate(this)
-!-----------------------------------------------------------------------
-            IMPLICIT NONE
-            TYPE(OCEANWEATHER),INTENT(INOUT) :: this
-            call setMessageSource("owi_deallocate")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Enter.")
-#endif
-            IF(ALLOCATED(this%p))DEALLOCATE(this%p)
-            IF(ALLOCATED(this%u))DEALLOCATE(this%u)
-            IF(ALLOCATED(this%v))DEALLOCATE(this%v)
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Return.")
-#endif
-            call unsetMessageSource()
-            RETURN
-!-----------------------------------------------------------------------
-        END SUBROUTINE owi_deallocate
-!-----------------------------------------------------------------------
-
-!-----------------------------------------------------------------------
-!       Generates coordinates for a specified oceanweather domain
-!-----------------------------------------------------------------------
-        SUBROUTINE owi_generateCoordinates(this,lat,lon)
-!-----------------------------------------------------------------------
-            IMPLICIT NONE
-            TYPE(OCEANWEATHER),INTENT(IN)      :: this
-            REAL(SZ),ALLOCATABLE,INTENT(OUT)   :: lat(:)
-            REAL(SZ),ALLOCATABLE,INTENT(OUT)   :: lon(:)
-            INTEGER                            :: I
-      
-            call setMessageSource("owi_generateCoordinates")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Enter.")
-#endif
-            ALLOCATE(lat(1:this%ilat))
-            ALLOCATE(lon(1:this%ilon))
-
-            DO I = 1,this%ilat
-                lat(I) = this%swlat+(I-1)*this%dLat
-            ENDDO
-            DO I = 1,this%ilon
-                lon(i) = this%swlon+(I-1)*this%dLon
-            ENDDO
-
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Return.")
-#endif
-            call unsetMessageSource()
-
-            RETURN
-!-----------------------------------------------------------------------
-        END SUBROUTINE owi_generateCoordinates
-!-----------------------------------------------------------------------
-     
-!-----------------------------------------------------------------------
-!   SUBROUTINE NWS12INIT
+!> Initializes reading data from the oceanweather wind fields
+!> @param[inout] wvnx    wind speed, x-direction
+!> @param[inout] wvny    wind speed, y-direction
+!> @param[inout] prn     atmospheric pressure
+!> @param[in]    np      number of nodes in the adcirc mesh for this processor
+!> @param[in]    rhowat0 density of water
+!> @param[in]    g       gravitational acceleration
+!> @param[in]    prdeflt background atmospheric pressure
 !-----------------------------------------------------------------------
       SUBROUTINE NWS12INIT(WVNX,WVNY,PRN,NP,RHOWAT0,G,PRdeflt)
+!-----------------------------------------------------------------------
         USE SIZES, ONLY : SZ,MYPROC, GBLINPUTDIR
         USE GLOBAL,ONLY: PRBCKGRND
         IMPLICIT NONE
         REAL(SZ), intent(out) :: WVNX(:),WVNY(:),PRN(:)
         INTEGER               :: NP,I
-        INTEGER(8)            :: date1pressure,date2pressure
-        INTEGER(8)            :: date1wind,date2wind
         REAL(SZ)              :: RHOWAT0,RHOWATG,G,PRdeflt
         character(len=1024)   :: tmpstr
         character(len=1024)   :: errorVar = ""
@@ -208,9 +160,7 @@
         call allMessage(DEBUG,"Enter.")
 #endif  
 
-! Read meta info -------------------------------------------------
-!       R E A D   F O R T 2 2
-!       ---------------------
+        !...Begin reading fort.22
         fname = "fort.22"
         iounit = 22
         errorVar = "open"
@@ -224,7 +174,6 @@
         if(numSets.EQ.0)then
             call check_owi_err(1,"number of wind sets must not be zero",fname,iounit)
         endif
-
 
         ! Read the number of blank snaps to be inserted before OWI winds start
         errorVar = "reading number of blank snaps" ! used in error messages
@@ -247,78 +196,26 @@
         errorIO=0
 
         allocate(owi(1:abs(numSets)))
-        if(numSets.LT.0)then
-            numSets = abs(numSets)
-            do i = 1,numSets
-              read(iounit,*) f1, f2
-              owi(i)%pressure_file = TRIM(GBLINPUTDIR)//"/"//TRIM(f1)
-              owi(i)%wind_file = TRIM(GBLINPUTDIR)//"/"//TRIM(f2)
-              owi(i)%iounit_pressure = 500+i
-              owi(i)%iounit_wind = 600+i
-            enddo
-        else
-          IF(numSets.GT.3)THEN
-              CALL check_owi_err(1,"owi file list must be used for numSets>3. "//
-     &                             "Use negative numSets to read a file list.",fname,iounit)
-          ENDIF
-          owi(1)%pressure_file = TRIM(GBLINPUTDIR)//"/fort.221"
-          owi(1)%wind_file = TRIM(GBLINPUTDIR)//"/fort.222"
-          owi(1)%iounit_pressure = 221
-          owi(1)%iounit_wind = 222
-          IF(numSets.GT.1)THEN
-            owi(2)%pressure_file = TRIM(GBLINPUTDIR)//"/fort.223"
-            owi(2)%wind_file = TRIM(GBLINPUTDIR)//"/fort.224"
-            owi(2)%iounit_pressure = 223
-            owi(2)%iounit_wind = 224
-          ENDIF
-          IF(numSets.GT.2)THEN
-            owi(3)%pressure_file = TRIM(GBLINPUTDIR)//"/fort.217"
-            owi(3)%wind_file =  TRIM(GBLINPUTDIR)//"/fort.218"
-            owi(3)%iounit_pressure = 217
-            owi(3)%iounit_wind = 218
-          ENDIF
-        endif
-              
+        call owi_setFilenames(owi,iounit,numSets)
         close(iounit)
-        
+
         IF(nPowellSearchDomains.GT.numSets)THEN
             nPowellSearchDomains = numSets
         ELSEIF(nPowellSearchDomains.LE.0)THEN
             nPowellSearchDomains = numSets
         ENDIF
 
-        DO I = 1,numSets
-          CALL readHeader(owi(i)%pressure_file,owi(i)%iounit_pressure,
-     &                    date1pressure,date2pressure)
-          CALL readHeader(owi(i)%wind_file,owi(i)%iounit_wind,
-     &                    date1wind,date2wind)
-          IF(date1pressure.NE.date1wind.OR.date2pressure.NE.date2wind)THEN
-              CALL allMessage(ERROR,"Wind and pressure dates do not match.")
-              errorVar = ""
-              CALL check_owi_err(1,errorVar,owi(i)%wind_file,owi(i)%iounit_wind)
-          ENDIF
-          owi(i)%startDate = date1wind
-          owi(i)%endDate   = date2wind
-          IF(owi(i)%startDate.NE.owi(1)%startdate)THEN
-              CALL allMessage(ERROR,"Wind domains have different time frames")
-              errorVar = ""
-              CALL check_owi_err(1,errorVar,owi(i)%wind_file,owi(i)%iounit_wind)
-          ENDIF
-          ALLOCATE(owi(i)%interpPoints(np,2))
-          ALLOCATE(owi(i)%weight(np,4))
-          owi(i)%isnap = 0
-          owi(i)%iupdate = 1
-        ENDDO
+        !...Initialize the wind objects based on file headers
+        call owi_initializeFileHeaders(owi)
+
+        !...Allocate interpolation arrays
+        call owi_allocateInterpolationArrays(owi,np)
 
         cntSnaps = 0
+       
+        !...Skip specified snaps 
+        call owi_skipSnaps(numSkipSnaps,np,WVNX,WVNY,PRN,RHOWAT0,PRBCKGRND)
 
-! Skip   snaps if necessary ---------------------------------------------------
-        do i = 1,numSkipSnaps
-           write(scratchMessage,41) i
-  41       format("Skipping snap '",I6,"' in OWI wind data.")
-           call logMessage(DEBUG,trim(scratchMessage))
-           CALL NWS12GET(WVNX,WVNY,PRN,NP,RHOWAT0,G,PRBCKGRND)
-        enddo
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
@@ -333,88 +230,29 @@
       END SUBROUTINE NWS12INIT
 !-----------------------------------------------------------------------
 
-!-----------------------------------------------------------------------
-!      S U B R O U T I N E   F I N D   S T O R M   C E N T E R
-!-----------------------------------------------------------------------
-!     Called to find the lowest pressure in the met field below
-!     the threshold pressure. Loops over all domains and finds 
-!     the lowest pressure across all domains
-!-----------------------------------------------------------------------
-      subroutine findStormCenter(eyeLat, eyeLon, foundEye)
-        use GLOBAL,only:PRBCKGRND
-        use messenger,only:myproc
-        implicit none
-        real(sz), intent(inout) :: eyeLat(3)
-        real(sz), intent(inout) :: eyeLon(3)
-        logical, intent(out)    :: foundEye
-        integer                 :: EyeLatI
-        integer                 :: EyeLonI
-        integer                 :: EyeDomainI
-        real(SZ)                :: EyeLatTemp
-        real(SZ)                :: EyeLonTemp
-        real(SZ)                :: EyePressure
-        real(SZ)                :: minp
-        integer                 :: s
-        integer                 :: minidx(2)
-
-        EyeLatI = 0
-        EyeLonI = 0
-        EyeDomainI = 0
-        EyeLatTemp = 0D0
-        EyeLonTemp = 0D0
-        EyePressure = PRBCKGRND
-
-        do S = 1,nPowellSearchDomains
-            minidx = minloc(owi(s)%p)
-            minp = owi(s)%p(minidx(1),minidx(2))
-            if(minp.lt.1000D0.and.minp.lt.eyePressure)then
-                EyeLonI = minidx(1)
-                EyeLatI = minidx(2)
-                EyeDomainI = s
-                EyePressure = owi(s)%p(minidx(1),minidx(2))
-            endif
-        enddo
-
-        IF((EyeLatI.EQ.0).OR.(EyeLonI.EQ.0).OR.(EyeDomainI.EQ.0).OR.
-     &     (EyeLatI.EQ.1).OR.(EyeLatI.EQ.owi(EyeDomainI)%iLat).OR.
-     &         (EyeLonI.EQ.1).OR.(EyeLonI.EQ.owi(EyeDomainI)%iLon))THEN
-           FoundEye = .FALSE.
-        ELSE
-           FoundEye = .TRUE.
-           EyeLatTemp = owi(EyeDomainI)%swlat+(EyeLatI-1)*owi(EyeDomainI)%dLat
-           EyeLonTemp = owi(EyeDomainI)%swlon+(EyeLonI-1)*owi(EyeDomainI)%dLon
-           IF((EyeLatTemp.EQ.EyeLat(3)).AND.(EyeLonTemp.EQ.EyeLon(3)))THEN
-              CONTINUE
-           ELSE
-              EyeLat(1) = EyeLat(2)
-              EyeLon(1) = EyeLon(2)
-              EyeLat(2) = EyeLat(3)
-              EyeLon(2) = EyeLon(3)
-              EyeLat(3) = EyeLatTemp
-              EyeLon(3) = EyeLonTemp
-           ENDIF
-        ENDIF
 
 !-----------------------------------------------------------------------
-      end subroutine findStormCenter
-!-----------------------------------------------------------------------
-
-
-!-----------------------------------------------------------------------
-!   SUBROUTINE NWS12GET
+!> @brief Reads a wind and pressure snap from the oceanweather file and 
+!>        interpolates it to the adcirc mesh
+!> @param[inout] wvnx    wind speed, x-direction
+!> @param[inout] wvny    wind speed, y-direction
+!> @param[inout] prn     atmospheric pressure
+!> @param[in]    np      number of nodes in the adcirc mesh for this processor
+!> @param[in]    rhowat0 density of water
+!> @param[in]    g       gravitational acceleration
+!> @param[in]    prdeflt background atmospheric pressure
 !-----------------------------------------------------------------------
       SUBROUTINE NWS12GET(WVNX,WVNY,PRN,NP,RHOWAT0,G,PRdeflt)
+!-----------------------------------------------------------------------
         USE SIZES,ONLY : MYPROC,MNPROC,GBLINPUTDIR
         IMPLICIT NONE
-        real(SZ), dimension(:) :: eyeLatR(3)
-        real(SZ), dimension(:) :: eyeLonR(3)
-        INTEGER                ::NP,I,J,S,XI,YI
-        REAL(SZ), intent(out), dimension(:) ::  WVNX,WVNY,PRN
-        REAL(SZ), intent(in)   :: G, PRdeflt
-        REAL(SZ)               :: RHOWAT0,RHOWATG,EyePressure
+        INTEGER                :: NP,I,J,S,XI,YI
+        REAL(SZ), intent(out)  ::  WVNX(:),WVNY(:),PRN(:)
+        REAL(SZ), intent(in)   :: G, PRdeflt, RhoWat0
+        REAL(SZ)               :: RHOWATG,EyePressure
         INTEGER                :: EyeLatI,EyeLonI
         INTEGER                :: EyeLatTemp,EyeLonTemp
-        CHARACTER(1024)        :: filename,errorVar = ""
+        CHARACTER(1024)        :: filename,errorVar
         INTEGER                :: iounit
         INTEGER                :: iLatw,iLongw,iLatp,iLongp
         REAL(SZ)               :: dxw,dyw,swlatw,swlongw
@@ -425,15 +263,13 @@
         INTEGER                :: iMinw,iMinp
         INTEGER                :: errorIO
         LOGICAL                :: foundEye
-
-        !jgf51.52.05: Used to detect mesh nodes outside both met grids
-        ! and set those nodes to zero wind velocity and to background pressure.
-        LOGICAL :: uvpHasBeenSet
+        LOGICAL                :: uvpHasBeenSet
 
         call setMessageSource("nws12get")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Enter.")
 #endif  
+        errorVar = ""
         RHOWATG=RHOWAT0*G
 
         ! Increment counter (cntSnaps initialized to zero in nws12init)
@@ -634,17 +470,433 @@
 
  22     format(8f10.0)
 
+!-----------------------------------------------------------------------
       END SUBROUTINE NWS12GET
-
-!-----------------------------------------------------------------------
-!   SUBROUTINE NWS12INTERP
-!
-!   This generates and saves interpolation coefficients for mapping
-!   from a OWI grid to an ADCIRC mesh.
-!
 !-----------------------------------------------------------------------
 
+
+!-----------------------------------------------------------------------
+!> @brief Called to find the lowest pressure in the met field below
+!>        the threshold pressure. Loops over all domains and finds 
+!>        the lowest pressure across all domains
+!> @param[inout] eyeLat prior 3 locations (y) where the eye was found
+!> @param[inout] eyeLon prior 3 locations (x) where the eye was found
+!> @param[out]   foundEye set to true if the eye has been found
+!-----------------------------------------------------------------------
+      subroutine findStormCenter(eyeLat, eyeLon, foundEye)
+!-----------------------------------------------------------------------
+        use GLOBAL,only:PRBCKGRND
+        implicit none
+        real(sz), intent(inout) :: eyeLat(3)
+        real(sz), intent(inout) :: eyeLon(3)
+        logical, intent(out)    :: foundEye
+        integer                 :: EyeLatI
+        integer                 :: EyeLonI
+        integer                 :: EyeDomainI
+        real(SZ)                :: EyeLatTemp
+        real(SZ)                :: EyeLonTemp
+        real(SZ)                :: EyePressure
+        real(SZ)                :: minp
+        integer                 :: s
+        integer                 :: minidx(2)
+
+        call setMessageSource("findStormCenter")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
+
+        EyeLatI = 0
+        EyeLonI = 0
+        EyeDomainI = 0
+        EyeLatTemp = 0D0
+        EyeLonTemp = 0D0
+        EyePressure = PRBCKGRND
+
+        do S = 1,nPowellSearchDomains
+            minidx = minloc(owi(s)%p)
+            minp = owi(s)%p(minidx(1),minidx(2))
+            if(minp.lt.1000D0.and.minp.lt.eyePressure)then
+                EyeLonI = minidx(1)
+                EyeLatI = minidx(2)
+                EyeDomainI = s
+                EyePressure = owi(s)%p(minidx(1),minidx(2))
+            endif
+        enddo
+
+        IF(EyeDomainI.NE.0)THEN
+            IF((EyeLatI.EQ.0).OR.(EyeLonI.EQ.0).OR.(EyeDomainI.EQ.0).OR.
+     &         (EyeLatI.EQ.1).OR.(EyeLatI.EQ.owi(EyeDomainI)%iLat).OR.
+     &             (EyeLonI.EQ.1).OR.(EyeLonI.EQ.owi(EyeDomainI)%iLon))THEN
+               FoundEye = .FALSE.
+            ELSE
+               FoundEye = .TRUE.
+               EyeLatTemp = owi(EyeDomainI)%swlat+(EyeLatI-1)*owi(EyeDomainI)%dLat
+               EyeLonTemp = owi(EyeDomainI)%swlon+(EyeLonI-1)*owi(EyeDomainI)%dLon
+               IF((EyeLatTemp.EQ.EyeLat(3)).AND.(EyeLonTemp.EQ.EyeLon(3)))THEN
+                  CONTINUE
+               ELSE
+                  EyeLat(1) = EyeLat(2)
+                  EyeLon(1) = EyeLon(2)
+                  EyeLat(2) = EyeLat(3)
+                  EyeLon(2) = EyeLon(3)
+                  EyeLat(3) = EyeLatTemp
+                  EyeLon(3) = EyeLonTemp
+               ENDIF
+            ENDIF
+        ELSE
+             FoundEye = .FALSE.
+        ENDIF
+
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.")
+#endif  
+        call unsetMessageSource()
+
+!-----------------------------------------------------------------------
+      end subroutine findStormCenter
+!-----------------------------------------------------------------------
+
+
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+! P R I V A T E  F U N C T I O N S
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+          
+!-----------------------------------------------------------------------
+!> @brief  Allocates the u,v,p fields in an oceanweather object and
+!>         deallocates if necessary
+!> @param[inout] this array of oceanweather objects
+!-----------------------------------------------------------------------
+      subroutine owi_allocate(this)
+!-----------------------------------------------------------------------
+            IMPLICIT NONE
+            TYPE(OCEANWEATHER),INTENT(INOUT) :: this
+            call setMessageSource("owi_allocate")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Enter.")
+#endif
+            IF((SIZE(this%p,1).NE.this%iLon).OR.(SIZE(this%p,2).NE.this%iLat))THEN
+                CALL owi_deallocate(this)
+                ALLOCATE(this%p(this%ilon,this%ilat))
+                ALLOCATE(this%u(this%ilon,this%ilat))
+                ALLOCATE(this%v(this%ilon,this%ilat))
+            ENDIF
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Return.")
+#endif
+            call unsetMessageSource()
+!-----------------------------------------------------------------------
+      end subroutine owi_allocate
+!-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!> @brief Deallocates the u,v,p fields in an oceanweather object
+!> @param[inout] this array of oceanweather objects
+!-----------------------------------------------------------------------
+      subroutine owi_deallocate(this)
+!-----------------------------------------------------------------------
+            IMPLICIT NONE
+            TYPE(OCEANWEATHER),INTENT(INOUT) :: this
+            call setMessageSource("owi_deallocate")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Enter.")
+#endif
+            IF(ALLOCATED(this%p))DEALLOCATE(this%p)
+            IF(ALLOCATED(this%u))DEALLOCATE(this%u)
+            IF(ALLOCATED(this%v))DEALLOCATE(this%v)
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Return.")
+#endif
+            call unsetMessageSource()
+            RETURN
+!-----------------------------------------------------------------------
+      end subroutine owi_deallocate
+!-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!> @brief Generates coordinates for a specified oceanweather domain
+!> @param[in] this array of oceanweather objects
+!> @param[out] lat latitude coordinates of oceanweather grid
+!> @param[out] lon longiude coordinates of oceanweather grid
+!-----------------------------------------------------------------------
+      subroutine owi_generateCoordinates(this,lat,lon)
+!-----------------------------------------------------------------------
+            IMPLICIT NONE
+            TYPE(OCEANWEATHER),INTENT(IN)      :: this
+            REAL(SZ),ALLOCATABLE,INTENT(OUT)   :: lat(:)
+            REAL(SZ),ALLOCATABLE,INTENT(OUT)   :: lon(:)
+            INTEGER                            :: I
+      
+            call setMessageSource("owi_generateCoordinates")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Enter.")
+#endif
+            ALLOCATE(lat(1:this%ilat))
+            ALLOCATE(lon(1:this%ilon))
+
+            DO I = 1,this%ilat
+                lat(I) = this%swlat+(I-1)*this%dLat
+            ENDDO
+            DO I = 1,this%ilon
+                lon(i) = this%swlon+(I-1)*this%dLon
+            ENDDO
+
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Return.")
+#endif
+            call unsetMessageSource()
+
+            RETURN
+!-----------------------------------------------------------------------
+      end subroutine owi_generateCoordinates
+!-----------------------------------------------------------------------
+        
+
+!-----------------------------------------------------------------------
+!> @brief Sets the filenames that will be used for the oceanweather wind 
+!>        fields
+!> @param[inout] this array of oceanweather objects
+!> @param[in] iounit fortran unit number for fort.22
+!> @param[inout] nWindFields number of wind fields specified in fort.22
+!-----------------------------------------------------------------------
+      subroutine owi_setFilenames(this,iounit,nWindFields)
+!-----------------------------------------------------------------------
+            implicit none
+            integer,intent(inout)            :: nWindFields
+            integer,intent(in)               :: iounit
+            type(oceanweather),intent(inout) :: this(*)
+
+            call setMessageSource("owi_setFilenames")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Enter.")
+#endif
+
+            if(nWindFields.LT.0)then
+                nWindFields = abs(nWindFields)
+                call owi_setDynamicFilenames(this,iounit,nWindFields)
+            else
+                if(nWindFields.GT.3)then
+                  CALL check_owi_err(1,"owi file list must be used for numSets>3. "//
+     &                                 "Use negative numSets to read a file list.","fort.22",22)
+                 endif
+                 call owi_setDefaultFilenames(this)
+            endif
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Return.")
+#endif
+            call unsetMessageSource()
+!-----------------------------------------------------------------------
+      end subroutine owi_setFilenames
+!-----------------------------------------------------------------------
+
+
+!-----------------------------------------------------------------------
+!> @brief Sets the dynamic filenames read from the fort.22 file
+!> @param[inout] this array of oceanweather objects
+!> @param[in] iounit fortran unit number for fort.22
+!> @param[in] nWindFields number of wind fields specified in fort.22
+!-----------------------------------------------------------------------
+      subroutine owi_setDynamicFilenames(this,iounit,nWindFields)
+!-----------------------------------------------------------------------
+            use sizes,only:gblinputdir
+            implicit none
+            integer,intent(in)               :: iounit
+            integer,intent(in)               :: nWindFields
+            type(oceanweather),intent(inout) :: this(*)
+            character(1024)                  :: f1,f2
+            integer                          :: i
+
+            call setMessageSource("owi_setDynamicFilenames")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Enter.")
+#endif
+            do i = 1,nWindFields
+              read(iounit,*) f1, f2
+              owi(i)%pressure_file = TRIM(GBLINPUTDIR)//"/"//TRIM(f1)
+              owi(i)%wind_file = TRIM(GBLINPUTDIR)//"/"//TRIM(f2)
+              owi(i)%iounit_pressure = 500+i
+              owi(i)%iounit_wind = 600+i
+            enddo
+
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Return.")
+#endif
+            call unsetMessageSource()
+!-----------------------------------------------------------------------
+      end subroutine owi_setDynamicFilenames
+!-----------------------------------------------------------------------
+
+
+!-----------------------------------------------------------------------
+!> @brief Skips the specified number of snaps in the oceanweather wind files
+!> @param[in] numSnaps number of snaps to skip
+!> @param[in] np number of nodes in adcirc mesh
+!> @param[inout] wx wind velocity (x)
+!> @param[inout] wy wind velocity (y)
+!> @param[inout] pr atmospheric pressure
+!> @param[in] rho density of water
+!> @param[in] prbk background atmospheric pressure
+!-----------------------------------------------------------------------
+      subroutine owi_skipSnaps(numSnaps,np,wx,wy,pr,rho,prbk)
+!-----------------------------------------------------------------------
+             use global,only:g
+             implicit none
+             integer,intent(in)     :: numSnaps,np
+             real(sz),intent(inout) :: wx(:),wy(:),pr(:)
+             real(sz),intent(in)    :: rho,prbk
+             integer                :: i
+            call setMessageSource("owi_skipSnaps")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Enter.")
+#endif
+             do i = 1,numSkipSnaps
+                write(scratchMessage,41) i
+  41            format("Skipping snap '",I6,"' in OWI wind data.")
+                call logMessage(DEBUG,trim(scratchMessage))
+                CALL NWS12GET(wx,wy,pr,np,rho,G,prbk)
+             enddo
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Return.")
+#endif
+            call unsetMessageSource()
+!-----------------------------------------------------------------------
+      end subroutine owi_skipSnaps
+!-----------------------------------------------------------------------
+
+
+!-----------------------------------------------------------------------
+!> @brief Sets the default names for the oceanweather files if numSets is
+!>        positive. fort.221, fort.222, fort.223, fort.224, fort.217, 
+!>        fort.218
+!> @param[inout] this array of oceanweather objects
+!-----------------------------------------------------------------------
+      subroutine owi_setDefaultFilenames(this)
+!-----------------------------------------------------------------------
+            use sizes,only:gblinputdir
+            implicit none
+            type(oceanweather),intent(inout) :: this(*)
+            call setMessageSource("owi_setDefaultFilenames")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Enter.")
+#endif
+            this(1)%pressure_file = TRIM(GBLINPUTDIR)//"/fort.221"
+            this(1)%wind_file = TRIM(GBLINPUTDIR)//"/fort.222"
+            this(1)%iounit_pressure = 221
+            this(1)%iounit_wind = 222
+            IF(numSets.GT.1)THEN
+              this(2)%pressure_file = TRIM(GBLINPUTDIR)//"/fort.223"
+              this(2)%wind_file = TRIM(GBLINPUTDIR)//"/fort.224"
+              this(2)%iounit_pressure = 223
+              this(2)%iounit_wind = 224
+            ENDIF
+            IF(numSets.GT.2)THEN
+              this(3)%pressure_file = TRIM(GBLINPUTDIR)//"/fort.217"
+              this(3)%wind_file =  TRIM(GBLINPUTDIR)//"/fort.218"
+              this(3)%iounit_pressure = 217
+              this(3)%iounit_wind = 218
+            ENDIF
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Return.")
+#endif
+            call unsetMessageSource()
+!-----------------------------------------------------------------------
+      end subroutine owi_setDefaultFilenames
+!-----------------------------------------------------------------------
+        
+
+!-----------------------------------------------------------------------
+!> @brief Initializes the data in the oceanweather data objects based on
+!>        the file headers
+!> @param[inout] this array of oceanweather objects
+!-----------------------------------------------------------------------
+      subroutine owi_initializeFileHeaders(this)
+!-----------------------------------------------------------------------
+            implicit none
+            type(oceanweather),intent(inout) :: this(*)
+            integer                          :: i
+            integer(8)                       :: date1pressure,date2pressure
+            integer(8)                       :: date1wind,date2wind
+            character(1024)                  :: errorVar
+
+            call setMessageSource("owi_initializeFileHeaders")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Enter.")
+#endif
+            DO I = 1,numSets
+              CALL readHeader(this(i)%pressure_file,this(i)%iounit_pressure,
+     &                        date1pressure,date2pressure)
+              CALL readHeader(this(i)%wind_file,this(i)%iounit_wind,
+     &                        date1wind,date2wind)
+
+              IF(date1pressure.NE.date1wind.OR.date2pressure.NE.date2wind)THEN
+                  CALL allMessage(ERROR,"Wind and pressure dates do not match.")
+                  errorVar = ""
+                  CALL check_owi_err(1,errorVar,this(i)%wind_file,this(i)%iounit_wind)
+              ENDIF
+
+              this(i)%startDate = date1wind
+              this(i)%endDate   = date2wind
+
+              IF(this(i)%startDate.NE.this(1)%startdate)THEN
+                  CALL allMessage(ERROR,"Wind domains have different time frames")
+                  errorVar = ""
+                  CALL check_owi_err(1,errorVar,this(i)%wind_file,this(i)%iounit_wind)
+              ENDIF
+
+              this(i)%isnap = 0
+              this(i)%iupdate = 1
+            ENDDO
+
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Return.")
+#endif
+            call unsetMessageSource()
+!-----------------------------------------------------------------------
+      end subroutine owi_initializefileHeaders
+!-----------------------------------------------------------------------
+     
+!-----------------------------------------------------------------------
+!> @brief Allocates the arrays used to interpolate oceanweather grids to
+!>        the mesh
+!> @param[inout] this array of oceanweather objects
+!> @param[in] numNodes number of nodes in the adcirc mesh
+!-----------------------------------------------------------------------
+      subroutine owi_allocateInterpolationArrays(this,numNodes)
+!-----------------------------------------------------------------------
+           implicit none
+           type(oceanweather),intent(inout) :: this(*)
+           integer,intent(in)               :: numNodes
+           integer                          :: i
+           
+           call setMessageSource("owi_initializeFileHeaders")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+           call allMessage(DEBUG,"Enter.")
+#endif
+           do i=1,numSets
+              ALLOCATE(this(i)%interpPoints(numNodes,2))
+              ALLOCATE(this(i)%weight(numNodes,4))
+           enddo
+
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+            call allMessage(DEBUG,"Return.")
+#endif
+            call unsetMessageSource()
+!-----------------------------------------------------------------------
+      end subroutine owi_allocateInterpolationArrays
+!-----------------------------------------------------------------------
+
+
+!-----------------------------------------------------------------------
+!> @brief This generates and saves interpolation coefficients for mapping
+!>        from a OWI grid to an ADCIRC mesh.
+!> @param[in] idx index in the owi object array
+!> @param[in] np number of points in the adcirc mesh
+!-----------------------------------------------------------------------
       SUBROUTINE NWS12INTERP(idx, NP)
+!-----------------------------------------------------------------------
       USE GLOBAL, ONLY : RAD2DEG
       USE MESH, ONLY : SLAM, SFEA
 
@@ -719,15 +971,20 @@
 #endif
       call unsetMessageSource()
       RETURN
+!-----------------------------------------------------------------------
       END SUBROUTINE NWS12INTERP
+!-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
-!     S U B R O U T I N E   R E A D   H E A D E R
-!-----------------------------------------------------------------------
-!     jgf50.16 Read the header from the OWI file and sets the value
-!     of the date1p, date2p, date1w, or date2w variables as appropriate.
+!> @brief Read the header from the OWI file and returns the values of
+!>        start and end dates
+!> @param[in] filename name of the file to open and read
+!> @param[in] lun unit number to open the file as
+!> @param[out] date1 start date in the header
+!> @param[out] date2 end date in the header
 !-----------------------------------------------------------------------
       SUBROUTINE readHeader(filename, lun, date1, date2)
+!-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER,INTENT(IN)       :: lun
       CHARACTER(*),INTENT(IN)  :: filename
@@ -779,14 +1036,18 @@
       end subroutine readHeader
 !-----------------------------------------------------------------------
 
+
 !-----------------------------------------------------------------------
-!     S U B R O U T I N E   C H E C K  _  E R R
-!-----------------------------------------------------------------------
-!     jgf50.16 Checks the return value from subroutine calls; if there
-!     was an error, it writes a termination message to the screen and to the
-!     fort.16 file and terminates ADCIRC.
+! @brief Checks the return value from subroutine calls; if there
+!        was an error, it writes a termination message to the screen 
+!        and to the fort.16 file and terminates ADCIRC.
+! @param[in] iret return value to check. nonzero indicates error
+! @param[in] errorVar process being executed when the error occured
+! @param[in] filename file being processed when error occured
+! @param[in] unitnumber unit number of the file being processed during error
 !-----------------------------------------------------------------------
       subroutine check_owi_err(iret, errorVar, filename, unitnumber)
+!-----------------------------------------------------------------------
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
