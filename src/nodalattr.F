@@ -2118,8 +2118,9 @@ c     and have z0l>0.006)
       endif
 C
 c     compute land wind reduction factor
+c     Simiu, E. and R. Scanlan, 1986: Wind Effects on Structures. Wiley Interscience, 604 pp.
       if(z0l.gt.0.0001) then
-         fr=(z0m/z0l)**0.0706d0
+         fr=(z0l/z0m)**0.0706d0 * log(10.d0/z0l) / log(10.d0/z0m)
       else
          fr=1.000d0
       endif
