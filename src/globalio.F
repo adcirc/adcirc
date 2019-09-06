@@ -1078,13 +1078,18 @@ C
 
       if (mnproc.eq.1.or.WRITE_LOCAL_FILES) then
         do i = 1, descript % num_records_this
-            if(abs(descript%specifier)==SPARSE_ASCII)then
-                if(descript%considerWetDry.AND.nodecode(i)==0)cycle
-                write(lun , 1000) labels(i), descript % array(i),
+            if(abs(descript%specifier)==SPARSE_ASCII) then
+               if(descript%considerWetDry.AND.nodecode(i)==0) cycle
+               write(lun , 1000) labels(i), descript % array(i),
      &              descript % array2(i)
             else
-                write(lun , 1000) labels(i), descript % array(i),
+               if(descript%considerWetDry.AND.nodecode(i)==0) then
+                 write(lun, 1000) labels(i), descript % alternate_value,
+     &              descript % alternate_value
+               else
+                 write(lun, 1000) labels(i), descript % array(i),
      &              descript % array2(i)
+               endif
             endif
         end do
         return

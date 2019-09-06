@@ -469,6 +469,7 @@ C
       INTEGER NFEN ! 3DVS number of nodes in the vertical grid
       INTEGER NRS
       INTEGER NCICE !tcm v49.64.01 -- added for ice
+      INTEGER :: NHASE,NHASV,NHAGE,NHAGV
       REAL(8) RSTIMINC,DT,STATIM,REFTIM,WTIMINC
       REAL(8) CICE_TIMINC !tcm v49.64.01 -- added for ice
       REAL(SZ) GRAVITY,TAU0,RDUM,A00,B00,C00,THAS,THAF,FMV
@@ -1150,7 +1151,11 @@ C
       ENDDO
 C
       READ(15,*) THAS,THAF,NHAINC,FMV               !READ THAS,...FMV
-      READ(15,*) IDUM,IDUM,IDUM,IDUM                !SKIP OVER NHASE,NHASV,...
+      READ(15,*) NHASE,NHASV,NHAGE,NHAGV            !READ NHASE,NHASV,...
+      CALL setFormatUsage(NHASE)
+      CALL setFormatUsage(NHASV)
+      CALL setFormatUsage(NHAGE)
+      CALL setFormatUsage(NHAGV)
       READ(15,*) NHSTAR,IDUM                          !SKIP OVER NHSTAR,NHSINC
       PRINT *, "NHSTAR = ", NHSTAR
       IF ((ABS(NHSTAR).EQ.3).OR.(ABS(NHSTAR).EQ.367)

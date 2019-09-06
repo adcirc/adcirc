@@ -1111,7 +1111,7 @@ C      ENDIF
          ENDIF
          WRITE(16,9972)
          WRITE(16,*) 'NOLICAT =',NOLICAT
-         WRITE(16,9727)
+         WRITE(16,9726)
          WRITE(16,9974)
          IF(NFOVER.EQ.1) THEN
             if (myproc == 0) WRITE(ScreenUnit,9974)
@@ -1125,7 +1125,7 @@ C      ENDIF
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
             WRITE(ScreenUnit,*) 'NOLICAT =',NOLICAT
-            WRITE(ScreenUnit,9726)
+            WRITE(ScreenUnit,9727)
             IF(NFOVER.EQ.1) THEN
                WRITE(ScreenUnit,9974)
             ELSE
@@ -1341,7 +1341,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
          WRITE(16,237) NWS
  237     FORMAT(/,5X,'NWS = ',I3,/,9X,
      &        'WIND STRESS OR SURFACE PRESSURE ARE NOT USED TO FORCE',
-     &        'THE COMPUTATION')
+     &        ' THE COMPUTATION')
       ENDIF
       IF(NWS.EQ.1) THEN
          WRITE(16,238) NWS

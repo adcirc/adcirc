@@ -646,19 +646,7 @@ C     Create station dimension and station name dimension
          sta%station_data_dims_3D(3) = sta%myTime%timenc_dim_id
       !WJP 02.20.2018 Writing in constituent information for harmonic file
       ELSEIF (any(stationLunsHA.eq.descript1 % lun)) THEN  
-         CALL check_err(nf90_def_dim(sta%ncid, 'constlen', 10,
-     &        sta%constl_dim_id))
-         CALL check_err(nf90_def_dim(sta%ncid, 'num_const',
-     &        sta%num_v_nodes, sta%num_v_nodes_dim_id))
-!        Put the constituent names in
-         sta%station_dims(1) = sta%constl_dim_id
-         sta%station_dims(2) = sta%num_v_nodes_dim_id
-         iret = nf90_def_var(sta%ncid, 'const', NF90_CHAR,
-     &          sta%station_dims, sta%const_id)
-         CALL check_err(iret)
-         CALL check_err(nf90_put_att(sta%ncid, sta%const_id,
-     &        'long_name',
-     &        'names of the tidal harmonic constituents'))
+          call defineHarmonicAnalysisParametersInNetcdfFile(descript1,stationdat=sta)        
       ENDIF
       CALL check_err(iret)
 !
@@ -1382,6 +1370,20 @@ C     netcdf4 file format.
             iret = nf_def_var_deflate(sta%ncid,
      &             sta%w_station_data_id, 1, 1, 2)
             CALL check_err(iret)
+         CASE(51)
+            CALL check_err(nf90_def_var_deflate(sta%ncid, sta%station_ha_data_id,
+     &             1, 1, 2))
+            CALL check_err(nf90_def_var_deflate(sta%ncid, sta%station_hg_data_id,
+     &             1, 1, 2))
+         CASE(52)
+            CALL check_err(nf90_def_var_deflate(sta%ncid, sta%ha_u_station_data_id,
+     &             1, 1, 2))
+            CALL check_err(nf90_def_var_deflate(sta%ncid, sta%hg_u_station_data_id,
+     &             1, 1, 2))
+            CALL check_err(nf90_def_var_deflate(sta%ncid, sta%ha_v_station_data_id,
+     &             1, 1, 2))
+            CALL check_err(nf90_def_var_deflate(sta%ncid, sta%hg_v_station_data_id,
+     &             1, 1, 2))
          CASE(61,71,109)
             iret = nf90_def_var_deflate(sta%ncid, sta%station_data_id,
      &             1, 1, 2)
@@ -1428,8 +1430,7 @@ C     Store station locations
   
       !WJP 02.20.2018 Store const name(s)
       IF (any(stationLunsHA.eq.descript1 % lun)) THEN
-         iret = nf90_put_var(sta%ncid, sta%const_id, NAMEFR(:) )
-         CALL check_err(iret)
+        CALL addHarmonicAnalysisParametersToNetcdfFile(sta%ncid) 
       ENDIF
 
 C
@@ -1535,20 +1536,7 @@ C
   
       !WJP 02.20.2018 Writing in constituent information for harmonic file
       IF (any(nodalLunsHA.eq.descript1 % lun)) THEN
-         dat%myMesh%num_v_nodes = descript1 % num_items_per_record
-         CALL check_err(nf90_def_dim(dat%ncid, 'constlen', 10,
-     &        dat%myMesh%constl_dim_id))
-         CALL check_err(nf90_def_dim(dat%ncid, 'num_const',
-     &        dat%myMesh%num_v_nodes, dat%myMesh%num_v_nodes_dim_id))
-!        Put the constituent names in
-         dat%nodal_data_dims(1) = dat%myMesh%constl_dim_id
-         dat%nodal_data_dims(2) = dat%myMesh%num_v_nodes_dim_id
-         iret = nf90_def_var(dat%ncid, 'const', NF90_CHAR,
-     &          dat%nodal_data_dims, dat%myMesh%const_id)
-         CALL check_err(iret)
-         CALL check_err(nf90_put_att(dat%ncid, dat%myMesh%const_id,
-     &        'long_name',
-     &        'names of the tidal harmonic constituents'))
+         CALL defineHarmonicAnalysisParametersinNetcdfFile(descript1,nodaldat=dat)
       ENDIF
 c
       SELECT CASE(descript1 % lun)
@@ -3622,7 +3610,7 @@ C     netcdf4 file format.
             iret = nf_def_var_deflate(dat%ncid, dat%w_nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
-         CASE(47,63,73,77,90,301:304,306,307,402,403,108)
+         CASE(47,63,73,77,90,173,301:304,306,307,402,403,108)
             iret = nf_def_var_deflate(dat%ncid, dat%nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
@@ -3701,10 +3689,8 @@ C     write mesh to netcdf file
           CALL check_err(iret)
       ENDIF
 C
-!     WJP 02.20.2018 Store const name(s)
       IF (any(nodalLunsHA.eq.descript1 % lun)) THEN
-         iret = nf90_put_var(dat%ncid, dat%myMesh%const_id, NAMEFR(:) )
-         CALL check_err(iret)
+        CALL addHarmonicAnalysisParametersToNetcdfFile(dat%ncid)
       ENDIF
 C     now close the initialized netcdf file
       iret = nf90_close(dat%ncid)
@@ -3719,6 +3705,117 @@ C     now close the initialized netcdf file
       call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE initNodalDataFile
+C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C     SUBROUTINE defineHarmonicAnalysisParametersInNetcdfFile
+C-----------------------------------------------------------------------
+C     Defines the variables that carry frequency, nodal factor, and
+C     equilibrium arg in the netcdf output file
+C-----------------------------------------------------------------------
+      SUBROUTINE defineHarmonicAnalysisParametersInNetcdfFile(descript1,
+     &                                                        nodaldat,
+     &                                                        stationdat)
+        USE GLOBAL, ONLY : OutputDataDescript_t
+        IMPLICIT NONE
+        type(nodalData), intent(inout),optional :: nodaldat
+        type(stationData), intent(inout),optional :: stationdat
+        type(OutputDataDescript_t), intent(inout) :: descript1
+        INTEGER :: iret,dmy
+
+        IF(PRESENT(nodalDat))THEN
+         nodalDat%myMesh%num_v_nodes = descript1 % num_items_per_record
+         CALL check_err(nf90_def_dim(nodalDat%ncid, 'constlen', 10,
+     &        nodalDat%myMesh%constl_dim_id))
+         CALL check_err(nf90_def_dim(nodalDat%ncid, 'num_const',
+     &        nodalDat%myMesh%num_v_nodes, nodalDat%myMesh%num_v_nodes_dim_id))
+!        Put the constituent names in
+         nodalDat%nodal_data_dims(1) = nodalDat%myMesh%constl_dim_id
+         nodalDat%nodal_data_dims(2) = nodalDat%myMesh%num_v_nodes_dim_id
+         iret = nf90_def_var(nodalDat%ncid, 'const', NF90_CHAR,
+     &          nodalDat%nodal_data_dims, nodalDat%myMesh%const_id)
+         CALL check_err(iret)
+         CALL check_err(nf90_put_att(nodalDat%ncid, nodalDat%myMesh%const_id,
+     &        'long_name',
+     &        'names of the tidal harmonic constituents'))
+         CALL check_err(nf90_def_var(nodalDat%ncid,'frequency',
+     &          NF90_DOUBLE,nodalDat%myMesh%num_v_nodes_dim_id,dmy))
+         CALL check_err(nf90_put_att(nodalDat%ncid,dmy,
+     &          'long_name','frequency of harmonic constituents'))
+         CALL check_err(nf90_put_att(nodalDat%ncid,dmy,'units','rad/s'))
+         CALL check_err(nf90_def_var(nodalDat%ncid,'nodal_factor',
+     &          NF90_DOUBLE,nodalDat%myMesh%num_v_nodes_dim_id,dmy))
+         CALL check_err(nf90_put_att(nodalDat%ncid,dmy,'long_name',
+     &          'nodal factor of harmonic constituents'))
+         CALL check_err(nf90_def_var(nodalDat%ncid,'equilibrium_argument',
+     &          NF90_DOUBLE,nodalDat%myMesh%num_v_nodes_dim_id,dmy))
+         CALL check_err(nf90_put_att(nodalDat%ncid,dmy,'long_name',
+     &          'equilibrium argument of harmonic constituents'))
+         CALL check_err(nf90_put_att(nodalDat%ncid,dmy,'units','deg'))
+        ELSEIF(PRESENT(stationDat))THEN
+         CALL check_err(nf90_def_dim(stationDat%ncid, 'constlen', 10,
+     &        stationDat%constl_dim_id))
+         CALL check_err(nf90_def_dim(stationDat%ncid, 'num_const',
+     &        stationDat%num_v_nodes, stationDat%num_v_nodes_dim_id))
+!        Put the constituent names in
+         stationDat%station_dims(1) = stationDat%constl_dim_id
+         stationDat%station_dims(2) = stationDat%num_v_nodes_dim_id
+         iret = nf90_def_var(stationDat%ncid, 'const', NF90_CHAR,
+     &          stationDat%station_dims, stationDat%const_id)
+         CALL check_err(iret)
+         CALL check_err(nf90_put_att(stationDat%ncid, stationDat%const_id,
+     &        'long_name',
+     &        'names of the tidal harmonic constituents'))
+         CALL check_err(nf90_def_var(stationDat%ncid,'frequency',
+     &          NF90_DOUBLE,stationDat%num_v_nodes_dim_id,dmy))
+         CALL check_err(nf90_put_att(stationDat%ncid,dmy,
+     &          'long_name','frequency of harmonic constituents'))
+         CALL check_err(nf90_put_att(stationDat%ncid,dmy,'units','rad/s'))
+         CALL check_err(nf90_def_var(stationDat%ncid,'nodal_factor',
+     &          NF90_DOUBLE,stationDat%num_v_nodes_dim_id,dmy))
+         CALL check_err(nf90_put_att(stationDat%ncid,dmy,'long_name',
+     &          'nodal factor of harmonic constituents'))
+         CALL check_err(nf90_def_var(stationDat%ncid,'equilibrium_argument',
+     &          NF90_DOUBLE,stationDat%num_v_nodes_dim_id,dmy))
+         CALL check_err(nf90_put_att(stationDat%ncid,dmy,'long_name',
+     &          'equilibrium argument of harmonic constituents'))
+         CALL check_err(nf90_put_att(stationDat%ncid,dmy,'units','deg'))
+        ENDIF
+
+        RETURN
+
+C-----------------------------------------------------------------------
+      END SUBROUTINE defineHarmonicAnalysisParametersInNetcdfFile
+C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C     SUBROUTINE addHarmonicAnalysisParametersToNetcdfFile
+C-----------------------------------------------------------------------
+C     Adds the variable data for frequency, nodal factor, and
+C     equilibrium arg in the netcdf output file
+C-----------------------------------------------------------------------
+      SUBROUTINE addHarmonicAnalysisParametersToNetcdfFile(ncid) 
+         USE GLOBAL, ONLY : OutputDataDescript_t
+         USE HARM, ONLY: NAMEFR,HAFREQ,HAFF,HAFACE
+         IMPLICIT NONE 
+         INTEGER,INTENT(IN) :: ncid
+         INTEGER :: iret,dmy
+
+         CALL check_err(nf90_inq_varid(ncid,"const",dmy))
+         CALL check_err(nf90_put_var(ncid, dmy, NAMEFR(:) ))
+         CALL check_err(nf90_inq_varid(ncid,"frequency",dmy))
+         CALL check_err(nf90_put_var(ncid,dmy,HAFREQ))
+         CALL check_err(nf90_inq_varid(ncid,"nodal_factor",dmy))
+         CALL check_err(nf90_put_var(ncid,dmy,HAFF))
+         CALL check_err(nf90_inq_varid(ncid,"equilibrium_argument",dmy))
+         CALL check_err(nf90_put_var(ncid,dmy,HAFACE))
+
+         RETURN
+
+C-----------------------------------------------------------------------
+      END SUBROUTINE addHarmonicAnalysisParametersToNetcdfFile
 C-----------------------------------------------------------------------
 
 
@@ -4816,20 +4913,16 @@ C     Write the array values
          ELSE
             iret = nf90_put_var(dat%ncid, dat%ha_nodal_data_id,
      &          descript1%array2D_g)
-            write(6,*) 'checking amp'
             CALL check_err(iret)
             iret = nf90_put_var(dat%ncid, dat%hg_nodal_data_id,
      &          descript2%array2D_g)
-            write(6,*) 'checking phs'
             CALL check_err(iret)
             IF (lun.eq.54) THEN
                iret = nf90_put_var(dat%ncid, dat%v_ha_nodal_data_id,
      &         descript3%array2D_g)
-               write(6,*) 'checking v_amp'
                CALL check_err(iret)
                iret = nf90_put_var(dat%ncid, dat%v_hg_nodal_data_id,
      &         descript4%array2D_g)
-               write(6,*) 'checking v_phs'
                CALL check_err(iret)
             ENDIF
          ENDIF
@@ -4924,7 +5017,7 @@ C     Write the array values
      &            descript1%array_g)
             CALL check_err(iret)
          ENDIF         
-      CASE(47,63,73,77,90,301,302,303,304,306,307,108)
+      CASE(47,63,73,77,90,173,301,302,303,304,306,307,108)
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
                allocate(tempArray(1:dat%myMesh%num_nodes))

@@ -432,7 +432,7 @@ C---------------------------------------------------------------------
      &                   STATNAMEV, STATNAMEM, STATNAMEC, ERROR, DEBUG,
      &                   allMessage, setMessageSource, deg2rad,
      &                   unsetMessageSource, INFO, logMessage,
-     &                   scratchMessage
+     &                   scratchMessage, screenMessage
       USE HARM, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
      &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,
      &                 IHARIND, ALLOC_MAIN14, CHARMV
@@ -505,7 +505,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 C
       call setMessageSource("read15")
 #ifdef READ_GLOBAL_TRACE
-      call screen(DEBUG,"Enter.")
+      call screenMessage(DEBUG,"Enter.")
 #endif
 C
 C--The Run Info file was opened in SIZEUP, performed a rewind, and is ready here
@@ -1812,7 +1812,7 @@ C
       call memory_status()
 C
 #ifdef READ_GLOBAL_TRACE
-      call screen(DEBUG,"Return.")
+      call screenMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 C

@@ -45,9 +45,11 @@ $(warning (INFO) The parallel Fortran compiler is set to $(PFC).)
 $(warning (INFO) The C compiler is set to $(CC).)
 #ZC - Adding this as a warning to users to compile with the implicit array heap allocation options enabled
 ifeq ($(FC),ifort)
+ifneq ($(shell ulimit -s),unlimited)
     $(warning (WARNING) Intel compiler has been specified. The flag "--heap-arrays $(shell ulimit -s)" should be set)
     $(warning (WARNING) in both ADCIRC cmplrflags.mk FFLAGS1 and when compiling the netcdf-fortran library)
     $(warning (WARNING) using FCFLAGS to avoid potential issues with stack allocation of large implicit arrays.)
+endif
 endif
 
 # Specify NETCDF=enable to gmake on the command line to activate netcdf i/o
@@ -389,7 +391,7 @@ B23_SRC    =  buildstwave23.F
 H2A_SRC    =  hot2asc.F
 INF_SRC    =  inflate.F
 HST_SRC    =  hstime.F
-ASW_SRC    =  aswip_1.0.3.F
+ASW_SRC    =  aswip.F
 CMP_SRC    =  adccmp.F
 
 METIS_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(METIS_SRC) )
@@ -687,7 +689,7 @@ $(O_DIR)diffmerge.o   :  diffmerge.F
 #  asymmetric hurricane wind model
 
 $(O_DIR)vortex.o      :  vortex.F
-$(O_DIR)aswip.o      :  aswip_1.0.3.F $(VORT_MOBJ) $(NA_MOBJ)
+$(O_DIR)aswip.o      :  aswip.F $(VORT_MOBJ) $(NA_MOBJ)
 
 #  adcirc & $(PARALLEL_ADCIRC) modules
 
