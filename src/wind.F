@@ -1350,7 +1350,7 @@ C----------------------------------------------------------------------
 C                   S U B R O U T I N E 
 C    C O L D  S T A R T   M E T E O R O L O G I C A L   F O R C I N G
 C----------------------------------------------------------------------
-C     Sets up meterological i/o for a coldstart.
+C     Sets up meteorological i/o for a coldstart.
 C----------------------------------------------------------------------
       subroutine coldstartMeteorologicalForcing(nws)
       use sizes, only : gblinputdir, inputdir
@@ -1586,7 +1586,7 @@ C----------------------------------------------------------------------
 C                   S U B R O U T I N E 
 C    H O T S T A R T   M E T E O R O L O G I C A L   F O R C I N G
 C----------------------------------------------------------------------
-C     Sets up meterological i/o for a hotstart.
+C     Sets up meteorological i/o for a hotstart.
 C----------------------------------------------------------------------
       subroutine hotstartMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
      &   wvnxout, wvnyout, timeloc, rampmete2)

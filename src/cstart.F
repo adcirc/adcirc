@@ -229,12 +229,12 @@ C        momentum equations
          IF ( metOutputOn .AND. nonMetOutputOff ) THEN
             IF ((NSCREEN.NE.0).AND.MYPROC.EQ.0) THEN
                WRITE(ScreenUnit,*)
-     &      'INFO: Only meterological output was requested. ADCIRC'
+     &      'INFO: Only meteorological output was requested. ADCIRC'
                WRITE(ScreenUnit,*)
      &      'will not solve the GWCE or momentum equations.'
              ENDIF
              WRITE(16,*)
-     &      'INFO: Only meterological output was requested. ADCIRC'
+     &      'INFO: Only meteorological output was requested. ADCIRC'
              WRITE(16,*)
      &      'will not solve the GWCE or momentum equations.'
             METONLY = .TRUE. ! set flag
