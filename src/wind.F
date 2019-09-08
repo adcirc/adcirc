@@ -749,7 +749,7 @@ C     is used to compute wind stress from the wind velocity.
 C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -791,7 +791,7 @@ C     from wind velocity.
 C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -837,7 +837,7 @@ C     is used to compute wind stress from wind velocity.
 C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -887,7 +887,7 @@ C     wind velocity.
 C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -953,7 +953,7 @@ C     generate hurricane winds from the Holland Wind Model.
             WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -1000,7 +1000,7 @@ C     formula is used to compute wind stress from the wind velocity.
 C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -1053,7 +1053,7 @@ C     from the wind velocity.
 C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -1101,7 +1101,7 @@ C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
             WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &             WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &             WindMag, DP(I), ETA2(I), WindX, WindY)
               WindMag = SQRT(WindX*WindX+WindY*WindY)
               !Casey 110518: Enable Mark Powell's sector-based wind drag.
               WDragCo = WindDrag(WindMag,I)
@@ -1134,7 +1134,7 @@ C     RJW ffpl Merged:
             WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -1164,7 +1164,7 @@ C     jie added nws = 20: generalized asymmetric vortex model
             WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -1237,7 +1237,7 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
             WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -1268,7 +1268,7 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
              WDragCo = WindDrag(windMag, i)
              IF (LoadDirEffRLen) THEN
                 CALL ApplyDirectionalWindReduction(i, WDragCo,
-     &              windMag, DP(I), ETA2(I), H0, G,
+     &              windMag, DP(I), ETA2(I), 
      &              windx, windy)
                 WindMag = SQRT(windx**2+windy**2)
                 WDragCo = WindDrag(WindMag, i)
@@ -1306,7 +1306,7 @@ C.... tcm v51.06.02 added for GFDL Met Data
             WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &             WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &             WindMag, DP(I), ETA2(I), WindX, WindY)
               WindMag = SQRT(WindX*WindX+WindY*WindY)
               !Casey 110518: Enable Mark Powell's sector-based wind drag.
               WDragCo = WindDrag(WindMag,I)
@@ -1755,7 +1755,7 @@ C....                           to correspond with having only a global wind fil
 C     jgf46.01 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -1805,7 +1805,7 @@ C     from wind velocity.
 C     jgf46.01 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -1841,7 +1841,7 @@ C  tcm v49.16 20100617
 C     jgf46.01 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -1892,7 +1892,7 @@ C     is used to compute wind stress from wind velocity.
 C     jgf46.01 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -1930,7 +1930,7 @@ C     jjw-42.06j wrote, jgf46.00 added following two lines:
 C     jgf46.01 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -1985,7 +1985,7 @@ C     The following CALL statement should be uncommented for normal operation
 C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -2075,7 +2075,7 @@ C     generate hurricane winds from the Holland Wind Model.
             WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -2108,7 +2108,7 @@ C  tcm v49.16 20100617
             WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -2141,7 +2141,7 @@ C  tcm v49.16 20100617
             WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -2189,7 +2189,7 @@ C     formula is used to compute wind stress from the wind velocity.
 C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -2242,7 +2242,7 @@ C     from the wind velocity.
 C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -2297,7 +2297,7 @@ C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
             WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -2338,7 +2338,7 @@ C     from NAM data
             WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
@@ -2368,7 +2368,7 @@ C     from NAM data
              windy = wvny2(i)
              IF (LoadDirEffRLen) THEN
                 CALL ApplyDirectionalWindReduction(i, WDragCo,
-     &              windSpeeds(i), DP(I), ETA2(I), H0, G,
+     &              windSpeeds(i), DP(I), ETA2(I), 
      &              windx, windy)
                 WindMag = SQRT(windx**2+windy**2)
                 WDragCo = WindDrag(WindMag, i)
@@ -2412,7 +2412,7 @@ C.....tcm v51.06.02 NWS=16,-16 were added to deal with GFDL Met files.
              WDragCo = WindDrag(WindMag, I)
              IF (LoadDirEffRLen) THEN
                 CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                 WindMag = SQRT(WindX*WindX+WindY*WindY)
                 WDragCo = WindDrag(WindMag, I)
              ENDIF
@@ -2443,7 +2443,7 @@ C
              WDragCo = WindDrag(WindMag, I)
              IF (LoadDirEffRLen) THEN
                 CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                 WindMag = SQRT(WindX*WindX+WindY*WindY)
                 WDragCo = WindDrag(WindMag, I)
              ENDIF

@@ -2036,103 +2036,112 @@ C     ----------------------------------------------------------------
       END SUBROUTINE Apply2DInternalWaveDrag
 C     ----------------------------------------------------------------
 
-C     ----------------------------------------------------------------
-C     S U B R O U T I N E
-C     A P P L Y  D I R E C T I O N A L  W I N D  R E D U C T I O N
-C     ----------------------------------------------------------------
-C
-C     jgf46.00 Subroutine to calculate the land wind reduction factor
-C     based on a table of directional wind drag values. Originally
-C     written into the hstart.F file by jjw in jjw-42.06j. This is used
-C     in hstart.F and timestep.F.
-C
-C     jgf49.1001 Extracted the application of the canopy coefficient and
-C     placed in the ApplyCanopyCoefficient subroutine.
-C     ----------------------------------------------------------------
+!     ----------------------------------------------------------------
+!>    @brief Subroutine to calculate the land wind reduction factor
+!>    based on a table of directional wind drag values. Originally
+!>    written into the hstart.F file by jjw in jjw-42.06j. This is used
+!>    in hstart.F and timestep.F.
+!>
+!>    The methology comes from: 
+!>    Simiu, E. and R. Scanlan, 1986: Wind Effects on Structures. Wiley Interscience, 604 pp.
+!>
+!>    Additionally, the z0 coefficient supplied by the user is modified
+!>    by subtracting a factor of depth/30 to account for inundation
+!>
+!>    @param[in] NodeNumber index of node under consideration
+!>    @param[in] WindDragCo current wind drag coefficient being applied
+!>    @param[in] WindMag    current wind speed magnitude at the specified node
+!>    @param[in] BathymetricDepth bathymetric depth used to calculate total depth
+!>    @param[in] Elevation water surface elevation above datum (eta2)
+!>    @param[in] WindX wind velocity, x-component
+!>    @param[in] WindY wind velocity, y-component
+!     ----------------------------------------------------------------
       SUBROUTINE ApplyDirectionalWindReduction(NodeNumber, WindDragCo,
-     &     WindMag, BathymetricDepth, Elevation, CutOffDepth, G,
-     &     WindX, WindY)
-      USE SIZES
-      IMPLICIT NONE
-      INTEGER,  intent(in) :: NodeNumber ! index of node under consideration
-      REAL(SZ), intent(in) :: WindDragCo ! wind drag coefficient
-      REAL(SZ), intent(in) :: WindMag    ! wind magnitude
-      REAL(SZ), intent(in) :: BathymetricDepth ! a.k.a. dp(i),depth below geoid
-      REAL(SZ), intent(in) :: Elevation  ! a.k.a. eta2(i)
-      REAL(SZ), intent(in) :: CutOffDepth! a.k.a. h0, user-spec. min. depth
-      REAL(SZ), intent(in) :: G          ! gravitational constant
+     &     WindMag, BathymetricDepth, Elevation, WindX, WindY)
+        USE GLOBAL,ONLY:RAD2DEG,G,h0
+        implicit none
+        intrinsic               :: atan2
+        integer,  intent(in)    :: NodeNumber 
+        real(SZ), intent(in)    :: WindDragCo 
+        real(SZ), intent(in)    :: WindMag    
+        real(SZ), intent(in)    :: BathymetricDepth 
+        real(SZ), intent(in)    :: Elevation  
+        real(SZ), intent(inout) :: WindX   
+        real(SZ), intent(inout) :: WindY  
+        
+        real(SZ),parameter      :: CutoffDepth = 99999.d0          !< Depth above which reduction is not applied
+        real(SZ),parameter      :: ReductionDepthFactor = 1D0/30D0 !< Factor in reduction as depth increases
+        
+        integer                 :: idir        !< code for wind direction
+        real(SZ)                :: z0m         !< marine roughness coefficient based on Garratt's formula
+        real(SZ)                :: angle       !< direction wind is coming from
+        real(SZ)                :: z0l         !< drag for a particular node, for particular direction
+        real(SZ)                :: TotalDepth  !< bathymetric depth + sea surface elevation
+        real(SZ)                :: fr          !< land wind reduction factor
 
-      REAL(SZ), intent(inout) :: WindX   ! x-dir component of wind velocity
-      REAL(SZ), intent(inout) :: WindY   ! x-dir component of wind velocity
+!       if windspeed is zero, exit now
+        if((WindX.eq.0d0).and.(WindY.eq.0d0))return
 
-      REAL(SZ) z0m   ! marine roughness coefficient based on Garratt's formula
-      REAL(SZ) angle ! direction wind is coming from
-      INTEGER idir   ! code for wind direction
-      REAL(SZ) z0l   ! drag for a particular node, for particular direction
-      REAL(SZ) TotalDepth  ! bathymetric depth + sea surface elevation
-      REAL(SZ) fr    ! land wind reduction factor
-C
-C     compute marine roughness coefficient based on Garratt's formula
-      z0m=(0.018d0/G)*WindDragCo*WindMag**2.d0
-C
-C     compute direction  that the wind is coming from
-      if((WindX.eq.0).and.(WindY.eq.0))then
-         angle=0.d0
-      else
-         angle=atan2(WindY,WindX)
-      endif
-      angle=360.*angle/(2*3.141592654d0)
-      idir=0
-      if((angle.gt.-15.).and.(angle.le.15))  idir=1
-      if((angle.gt.15.).and.(angle.le.45))   idir=2
-      if((angle.gt.45.).and.(angle.le.75))   idir=3
-      if((angle.gt.75.).and.(angle.le.105))  idir=4
-      if((angle.gt.105.).and.(angle.le.135)) idir=5
-      if((angle.gt.135.).and.(angle.le.165)) idir=6
-      if((angle.gt.165.).and.(angle.le.180)) idir=7
-      if((angle.gt.-45.).and.(angle.le.-15)) idir=12
-      if((angle.gt.-75.).and.(angle.le.-45)) idir=11
-      if((angle.gt.-105.).and.(angle.le.-75)) idir=10
-      if((angle.gt.-135.).and.(angle.le.-105)) idir=9
-      if((angle.gt.-165.).and.(angle.le.-135)) idir=8
-      if((angle.ge.-180.).and.(angle.le.-165)) idir=7
-C
-C     define land roughness from usace values
-      z0l=z0land(NodeNumber,idir)
-C
-C     reset z0l depending on situation
-      if(z0l.le.0.006) then
-c     coe set their value to a marine value -> reset to correct marine value
-         z0l=z0m
-      else
-c     coe set their value to a land value -> proceed with checking this value
-         TotalDepth = BathymetricDepth + Elevation
-         if( (TotalDepth.gt.2*CutOffDepth).and.
-     &        (BathymetricDepth.lt.20)) then
-c     compute adjusted z0l to account for overland flooding - do this only
-c     in the case where the water column is greater than twice h0 and
-c     you are not in a river (I assume that rivers are deeper than 20m
-c     and have z0l>0.006)
-            z0l=z0l-TotalDepth/30. ! correction for overland flooding
-         endif
-      endif
-C
-c     compute land wind reduction factor
-c     Simiu, E. and R. Scanlan, 1986: Wind Effects on Structures. Wiley Interscience, 604 pp.
-      if(z0l.gt.0.0001) then
-         fr=(z0l/z0m)**0.0706d0 * log(10.d0/z0l) / log(10.d0/z0m)
-      else
-         fr=1.000d0
-      endif
-      if(fr.gt.1.0000d0) fr=1.0000d0
-c     adjust time interpolated wind field
-      WindX = fr*WindX
-      WindY = fr*WindY
-C
-      RETURN
-C     ----------------------------------------------------------------
+!       compute direction  that the wind is coming from
+        angle=atan2(WindY,WindX)*RAD2DEG
+        idir=0
+        if((angle.gt.-15d0).and.(angle.le.15d0))then
+            idir=1
+        elseif((angle.gt.15d0).and.(angle.le.45d0))then
+            idir=2
+        elseif((angle.gt.45d0).and.(angle.le.75d0))then 
+            idir=3
+        elseif((angle.gt.75d0).and.(angle.le.105d0))then 
+            idir=4
+        elseif((angle.gt.105d0).and.(angle.le.135d0))then 
+            idir=5
+        elseif((angle.gt.135d0).and.(angle.le.165d0))then 
+            idir=6
+        elseif((angle.gt.165d0).and.(angle.le.180d0))then 
+            idir=7
+        elseif((angle.gt.-45d0).and.(angle.le.-15d0))then 
+            idir=12
+        elseif((angle.gt.-75d0).and.(angle.le.-45d0))then 
+            idir=11
+        elseif((angle.gt.-105d0).and.(angle.le.-75d0))then 
+            idir=10
+        elseif((angle.gt.-135d0).and.(angle.le.-105d0))then 
+            idir=9
+        elseif((angle.gt.-165d0).and.(angle.le.-135d0))then 
+            idir=8
+        elseif((angle.ge.-180d0).and.(angle.le.-165d0))then 
+            idir=7
+        endif
+
+!       compute marine roughness coefficient based on Garratt's formula
+        z0m=(0.018d0/G)*WindDragCo*WindMag**2.d0
+
+!       define land roughness from mesh values
+        z0l=z0land(NodeNumber,idir)
+
+!       apply overland flooding correction
+        TotalDepth = BathymetricDepth + Elevation
+        if( (TotalDepth.gt.2D0*h0).and.
+     &      (BathymetricDepth.lt.CutOffDepth)) then
+           z0l=z0l-TotalDepth*ReductionDepthFactor ! correction for overland flooding
+        endif
+
+!       compute land wind reduction factor
+!       Simiu, E. and R. Scanlan, 1986: Wind Effects on Structures. Wiley Interscience, 604 pp.
+        if(z0l.gt.0.0001D0) then
+           fr=min(1.0D0,(z0l/z0m)**0.0706d0 * log(10.d0/z0l) / log(10.d0/z0m))
+        else
+           fr=1.000d0
+        endif
+
+!       adjust time interpolated wind field
+        WindX = fr*WindX
+        WindY = fr*WindY
+        
+        RETURN
+!     ----------------------------------------------------------------
       END SUBROUTINE ApplyDirectionalWindReduction
-C     ----------------------------------------------------------------
+!     ----------------------------------------------------------------
 
 
 C     ----------------------------------------------------------------
