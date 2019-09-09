@@ -155,7 +155,7 @@ C*******************************************************************************
      &  NODECODE, NOFF, UU1, VV1, ETA2, ETA1, QX1, QX2, QY1, PR1, PR2,
      &  TiP1, TiP2, WSX2, WSY2, TK, CORIF, WSX1, WSY1, VIDBCPDXOH,
      &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y, usingWaterLevelOffset,
-     &  offset1, offset2, TKM
+     &  offset1, offset2, TKM, adcirc_norm2
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, Areas, TotalArea, 
      &                  NNeigh, NeiTab, NeiTabEle, MJU, SFAC
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
@@ -630,7 +630,7 @@ C      Specified essential normal flow and free tangential slip
 
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
             VelNorm=-QN2(I)/H2
-            IF (abs(norm2(TKM(:,I))-sqrt(2d0)*TK(I)).lt.epsilon(H2)) THEN
+            IF (abs(adcirc_norm2(TKM(:,I))-sqrt(2d0)*TK(I)).lt.epsilon(H2)) THEN
             ! WJP 03.6.2018 In the case of the symmetric matrix..
             ! Should be equivalent to the non-symmetric formula below
             ! but for consistency when testing using this formula helps
