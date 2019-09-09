@@ -817,7 +817,7 @@ C     momentum equations
          ENDIF
          IF ( (metOutputOn.eqv..true.) .AND. 
      &        (nonMetOutputOff.eqv..true.) ) THEN
-            call allMessage(INFO,'Only meterological output was '//
+            call allMessage(INFO,'Only meteorological output was '//
      &       'requested. ADCIRC will not solve the GWCE or '//
      &       'momentum equations.')
              METONLY = .TRUE. ! set flag
