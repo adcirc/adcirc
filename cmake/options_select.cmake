@@ -86,6 +86,7 @@ OPTION(CRAY   "Format code for CRAY based architectures"   OFF)
 OPTION(CRAYX1 "Format code for CRAYX1 based architectures" OFF)
 MARK_AS_ADVANCED(IBM SGI SUN CRAY CRAYX1)
 
+
 OPTION(DEBUG_FULL_STACK "Write the detailed stack trace during debugging" OFF)
 OPTION(DEBUG_FLUSH_MESSAGES "Do not allow caching of screen printed messages" OFF)
 OPTION(DEBUG_LOG_LEVEL "Force debug log level for screen messages" OFF)
@@ -123,3 +124,6 @@ MARK_AS_ADVANCED(ENABLE_POWELL)
 
 OPTION(VECTOR_COMPUTER "Assume the system is a vector computer" OFF)
 MARK_AS_ADVANCED(VECTOR_COMPUTER)
+
+OPTION(ADCIRC_NOF2008 "The fortran compiler being used does not have F2008 intrinsics" OFF )
+MARK_AS_ADVANCED(ADCIRC_NOF2008)
