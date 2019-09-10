@@ -295,7 +295,7 @@ c     a non-default value we can determine this was the case.
       write(scratchMessage,*) "WindDragLimit=",WindDragLimit,
      & " DragLawString=",DragLawString, " rhoAir=",rhoAir,
      & ' invertedBarometerOnElevationBoundary=', 
-     &   invertedBarometerOnElevationBoundary 
+     &   invertedBarometerOnElevationBoundary
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
