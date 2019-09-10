@@ -70,11 +70,12 @@ C      ManningsN             "mannings_n_at_sea_floor"
 C      Chezy                 "chezy_friction_coefficient_at_sea_floor"
 C      Z0b_var               "bottom_roughness_length"
 C      GeoidOffset           "sea_surface_height_above_geoid"
-C      EVM        "average_horizontal_eddy_viscosity_in_sea_water_wrt_depth"
-C      EVC        "average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth"
-C      Tao0MinMax "min_and_max_primitive_weighting_in_continuity_equation"
-C      River_et_WSE "initial_river_elevation"
+C      EVM                   "average_horizontal_eddy_viscosity_in_sea_water_wrt_depth"
+C      EVC                   "average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth"
+C      Tao0MinMax            "min_and_max_primitive_weighting_in_continuity_equation"
+C      River_et_WSE          "initial_river_elevation"
 C      IT_Fric               "internal_tide_friction"
+C      OverlandReductionFactor  "overland_reduction_factor"
 C
 C-----------------------------------------------------------------------
       MODULE NodalAttributes
@@ -121,6 +122,7 @@ C     required for the run, according to the unit 15 control file
       LOGICAL LoadEleSlopeLim ! zc: elemental slope limiter
       LOGICAL LoadRiver_et_WSE  ! tcm 20140502 v51.27
       LOGICAL LoadIT_Fric       ! wjp: Internal tides
+      LOGICAL LoadOverlandReductionFactor
 C
 C     The following flags are .true. if there are data with the
 C     corresponding label in the unit 13 file.
@@ -140,6 +142,7 @@ C     corresponding label in the unit 13 file.
       LOGICAL FoundEleSlopeLim
       LOGICAL FoundRiver_et_WSE ! tcm 20140502 v51.27      
       LOGICAL FoundIT_Fric  ! wjp internal tides
+      LOGICAL FoundOverlandReductionFactor
 C
 C     These variables hold the strings which describe the attribute's
 C     units. These data are loaded from the file, but not used as of
@@ -160,6 +163,7 @@ C     v46.00.
       CHARACTER(len=80) EleSlopeLimUnits
       CHARACTER(len=80) River_et_WSEUnits ! tcm 20140502 v51.27
       CHARACTER(len=80) IT_FricUnits  ! wjp internal tides
+      CHARACTER(len=80) OverlandReductionFactorUnits
 C
 C     These variables hold the number of values per node for each
 C     attribute.
@@ -179,6 +183,7 @@ C     attribute.
       INTEGER EleSlopeLimNoofVals
       INTEGER River_et_WSENoOfVals  ! tcm 20140502 v51.27      
       INTEGER IT_FricNoOfVals ! wjp internal tides
+      INTEGER OverlandReductionFactorNoOfVals
 C
 C     These variables hold the default values for each attribute.
       REAL(SZ) Tau0DefVal
@@ -197,6 +202,7 @@ C     These variables hold the default values for each attribute.
       REAL(SZ) EleSlopeLimDefVal
       REAL(SZ) River_et_WSEDefVal ! tcm 20140502 v51.27
       REAL(SZ) IT_FricDefVal(3)  ! wjp internal tides
+      REAL(SZ) OverlandReductionFactorDefaultValue
 C
       INTEGER NumOfNodes    ! number of nodes listed in unit 13 file, cf. NP
       INTEGER NAttr         ! number of nodal attributes in the unit 13 file
@@ -260,6 +266,7 @@ C     The following attribute contains BK(I),BALPHA(I),BDELX(I), and POAN(I)
       REAL(SZ), ALLOCATABLE :: elemental_slope_limiter_grad_max(:)
       REAL(SZ), ALLOCATABLE :: River_et_WSE(:)  ! tcm 20140502 v51.27
       REAL(SZ), ALLOCATABLE :: IT_Fric(:,:)  ! WJP: Linear friction coefficient for internal tides
+      REAL(SZ), ALLOCATABLE :: OverlandReductionFactor(:)
 C
       INTEGER i        ! node loop counter
       INTEGER j        ! attribute values loop counter
@@ -324,6 +331,7 @@ C
       LoadEleSlopeLim    = .False.
       LoadRiver_et_WSE   = .False.
       LoadIT_Fric        = .False.  ! WJP
+      LoadOverlandReductionFactor = .False.
 C
       FoundTau0           = .False.
       FoundStartDry       = .False.
@@ -341,6 +349,7 @@ C
       FoundEleSlopeLim    = .False.
       FoundRiver_et_WSE   = .False.      
       FoundIT_Fric        = .False. ! WJP
+      FoundOverlandReductionFactor = .False.
 C
 C
       Tau0NoOfVals          = 1
@@ -359,6 +368,7 @@ C
       EleSlopeLimNoOfVals   = 1
       River_et_WSENoOfVals  = 1
       IT_FricNoOfVals       = 1  ! WJP, could be 3 also, so may change
+      OverlandReductionFactorNoOfVals = 1
 C
       Tau0DefVal             = 0.0
       StartDryDefVal         = 0.0
@@ -537,6 +547,8 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
             FoundEleSlopeLim = .TRUE.
          CASE("initial_river_elevation")            
             FoundRiver_et_WSE     = .TRUE.
+         CASE("overland_reduction_factor")
+            FoundOverlandReductionFactor = .TRUE.
          CASE DEFAULT
             scratchMessage = "Unrecognized nodal attribute : " //
      &         trim(na(nattrCount) % attrName)
@@ -702,6 +714,10 @@ C 02.24.2018 WJP: Add spatially varying linear internal tide friction coefficien
             IF( LoadIT_Fric ) THEN
                IT_Fric = na(i)%xdmfMatrix
             ENDIF
+         CASE("overland_reduction_factor")
+            IF(LoadOverlandReductionFactor)THEN
+                OverlandReductionFactor = na(i)%xdmfArray
+            ENDIF
          CASE DEFAULT
             scratchMessage = "Unrecognized nodal attribute : " //
      &         trim(na(i) % attrName)
@@ -752,7 +768,9 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
      &   ((LoadEleSlopeLim).and.(.not.FoundEleSlopeLim)).or.
      &   ((LoadRiver_et_WSE).and.(.not.FoundRiver_et_WSE)).or.     
      &   ((LoadIT_Fric).and.(.not.FoundIT_Fric)).or. 
-     &   ((LoadTau0MinMax).and.(.not.FoundTau0MinMax))) THEN
+     &   ((LoadTau0MinMax).and.(.not.FoundTau0MinMax)).or.
+     &   ((LoadOverlandReductionFactor).and.
+     &    (.not.FoundOverlandReductionFactor))) THEN
          WRITE(scratchMessage,1111)
  1111   FORMAT('Nodal Attributes file (unit 13) does '
      &        'not contain all the attributes listed in the '
@@ -789,6 +807,7 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
 Corbitt 120321: Allow advection to be turned on locally instead of globally
       ALLOCATE(AdvectionState(NumOfNodes))
       ALLOCATE(River_et_WSE(NumOfNodes))  ! tcm 20140502 v51.27
+      ALLOCATE(OverlandReductionFactor(NumOfNodes))
       ALLOCATE(elemental_slope_limiter_grad_max(NumOfNodes))
       ALLOCATE(elemental_slope_limiter_active(NumOfNodes))
       ALLOCATE(elemental_slope_limiter_max_exceeded(NumOfNodes))
@@ -798,6 +817,7 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
       IF ( LoadIT_Fric ) THEN
          ALLOCATE(IT_Fric(NumOfNodes,IT_FricNoOfVals))
       END IF   
+      OverlandReductionFactor(:) = 1D0/30D0
 C     ----------------------------------------------------------------
       end subroutine allocateNodalAttributes
 C     ----------------------------------------------------------------
@@ -910,6 +930,8 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
 C 09232016 WP: Add spatially varying linear internal tide friction coefficient
          CASE("internal_tide_friction")
             LoadIT_Fric = .True.
+         CASE("overland_reduction_factor")
+            LoadOverlandReductionFactor = .True.
          CASE DEFAULT
             WRITE(16,1000)          ! unit 15 Model Parameter file
             WRITE(16,1021) AttrName ! contains invalid name
@@ -1094,6 +1116,11 @@ C 09232016 WP: Add spatially varying linear internal tide friction
             READ(13,'(A80)') IT_FricUnits
             READ(13,*) IT_FricNoOfVals
             READ(13,*) (IT_FricDefVal(j),j=1,IT_FricNoOfVals)
+         CASE("overland_reduction_factor")
+            FoundOverlandReductionFactor = .TRUE.
+            READ(13,'(A80)') OverlandReductionFactorUnits
+            READ(13,*) OverlandReductionFactorNoOfVals
+            READ(13,*) OverlandReductionFactorDefaultValue
          CASE DEFAULT
             WRITE(16,1001)          ! Nodal Attributes file
             WRITE(16,1021) AttrName ! contains invalid name
@@ -1263,7 +1290,13 @@ C 09232016 WP : Spatially varying linear internal tide friction
             ELSE
                SkipDataSet = .True.
             ENDIF
-C          WP
+         CASE("overland_reduction_factor")
+            IF(LoadOverlandReductionFactor)THEN
+                CALL LoadAttrVec(OverlandReductionFactor,
+     &              OverlandReductionFactorDefaultValue,
+     &              NumNodesNotDefault,nScreen,MyProc,
+     &              NAbOut)
+            ENDIF
          CASE DEFAULT
             SkipDataSet = .True.
             WRITE(16,1001)      ! Nodal Attributes file
@@ -2069,8 +2102,7 @@ C     ----------------------------------------------------------------
         real(SZ), intent(inout) :: WindX   
         real(SZ), intent(inout) :: WindY  
         
-        real(SZ),parameter      :: CutoffDepth = 99999.d0          !< Depth above which reduction is not applied
-        real(SZ),parameter      :: ReductionDepthFactor = 1D0/30D0 !< Factor in reduction as depth increases
+        real(SZ),parameter      :: CutoffDepth = 999999.d0          !< Depth above which reduction is not applied
         
         integer                 :: idir        !< code for wind direction
         real(SZ)                :: z0m         !< marine roughness coefficient based on Garratt's formula
@@ -2123,11 +2155,10 @@ C     ----------------------------------------------------------------
         TotalDepth = BathymetricDepth + Elevation
         if( (TotalDepth.gt.2D0*h0).and.
      &      (BathymetricDepth.lt.CutOffDepth)) then
-           z0l=z0l-TotalDepth*ReductionDepthFactor ! correction for overland flooding
+           z0l=z0l-TotalDepth*OverlandReductionFactor(NodeNumber)
         endif
 
 !       compute land wind reduction factor
-!       Simiu, E. and R. Scanlan, 1986: Wind Effects on Structures. Wiley Interscience, 604 pp.
         if(z0l.gt.0.0001D0) then
            fr=min(1.0D0,(z0l/z0m)**0.0706d0 * log(10.d0/z0l) / log(10.d0/z0m))
         else
