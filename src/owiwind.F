@@ -83,6 +83,7 @@
         integer  :: numSkipSnaps !< Number of snaps to skip in Oceanweather files
         integer  :: cntSnaps !< Counter for number of snaps that have been processed so far
         real(SZ) :: windMultiplier !< Wind multiplier applied to Oceanweather wind velicities
+        logical  :: moving_grid = .false. !< indicates the owi domains use a moving grid (for aswip.F)
         
         TYPE OCEANWEATHER !< Container for Oceanweather domains. Represents a wind and pressure field
             CHARACTER(1024)      :: pressure_file !< filename used for the pressure field
@@ -114,13 +115,14 @@
         TYPE(OCEANWEATHER),ALLOCATABLE :: owi(:) !< Array containing each of the wind and pressure field used
 
         PUBLIC nws12get,nws12init,findStormCenter,windMultiplier
-        PUBLIC nPowellSearchDomains
+        PUBLIC nPowellSearchDomains,moving_grid
 
         PRIVATE nws12interp,cntSnaps,numBlankSnaps,numSkipSnaps
         PRIVATE owi_allocate,owi_deallocate,owi_generateCoordinates
         PRIVATE owi_setFilenames,owi_setDefaultFilenames,owi_setDynamicFilenames
         PRIVATE owi_initializeFileHeaders,owi_allocateInterpolationArrays
         PRIVATE check_owi_err,readHeader,owi_skipSnaps,owi,numSets
+        PRIVATE owi_readNextSnap,owi_interpolateToMesh
 
 !---------------------end of data declarations--------------------------------
 
@@ -512,7 +514,7 @@
         owi(idx)%minute = iMinp
 
         ! Update coordinate mapping coefficients if necessary
-        if(owi(idx)%iupdate.eq.1) then
+        if(owi(idx)%iupdate.eq.1.or.moving_grid) then
            owi(idx)%ilon = ilongp
            owi(idx)%ilat = ilatp
            owi(idx)%dlon = dxp
