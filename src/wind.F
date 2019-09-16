@@ -284,9 +284,9 @@ C.... convert background pressure from millibars to meters of water
 !     ----------------------------------------------------------------
 
 !     ----------------------------------------------------------------
-!     Maps the function that will be called to compute wind drag
-!     Functions must have the signiture as below:
-!     result = function(windSpeed,nodeNumber)
+!>    @brief Maps the function pointer used in the calculation of 
+!>    wind drag. This is used so that the logical statements required
+!>    to select the wind drag are only executed once at startup
 !     ----------------------------------------------------------------
       SUBROUTINE mapWindDragFunctionPointer()
 !     ----------------------------------------------------------------
@@ -299,8 +299,10 @@ C.... convert background pressure from millibars to meters of water
           CASE(DRAGLAW_SWELL)
 #ifndef CSWAN
               call allMessage(WARNING,"SWAN Model not enabled. Drag formulation will be Garratt.")
-#endif              
+              f_computeWindDrag => CappedGarrattWindDrag
+#else              
               f_computeWindDrag => SwanWindDrag
+#endif              
           CASE DEFAULT
               call allMessage(ERROR,"Wind drag law not recognized"//TRIM(DragLawString))
 #ifdef CMPI
@@ -312,11 +314,12 @@ C.... convert background pressure from millibars to meters of water
       END SUBROUTINE mapWindDragFunctionPointer
 !     ----------------------------------------------------------------
 
-!     ----------------------------------------------------------------
-!      F U N C T I O N   W I N D   D R A G
-!     ----------------------------------------------------------------
-!     Computes wind drag using a function with the signiture:
-!     result = function(windSpeed,nodeNumber)
+!     ---------------------------------------------------------------
+!>    @brief Computes wind drag using a function with the signiture:
+!>    result = function(windSpeed,nodeNumber)
+!>    @param[in] WindSpeed wind magnitude
+!>    @param[in] NodeNumber adcirc mesh node index
+!>    @result wind drag coefficient
 !     ----------------------------------------------------------------
       REAL(SZ) FUNCTION WindDrag(WindSpeed, NodeNumber)
         USE GLOBAL,ONLY: windDragOut
@@ -330,29 +333,38 @@ C.... convert background pressure from millibars to meters of water
       END FUNCTION WindDrag
 !     ----------------------------------------------------------------
 
+#ifdef CSWAN
 !     ----------------------------------------------------------------
-!     Use the wind drag coefficients calculated inside SWAN
+!>    @brief Use the wind drag coefficients calculated inside SWAN
+!>    for wind drag inside of adcirc
+!>    @param[in] WindSpeed wind magnitude
+!>    @param[in] NodeNumber adcirc mesh node index
+!>    @result wind drag coefficient
 !     ----------------------------------------------------------------
        FUNCTION SwanWindDrag(WindSpeed,NodeNumber) RESULT(Drag)
 !     ----------------------------------------------------------------
-#ifdef CSWAN
            USE GLOBAL,ONLY: Swan_WDragCo
-#endif           
            IMPLICIT NONE
            REAL(8),INTENT(IN)  :: WindSpeed
            INTEGER,INTENT(IN)  :: NodeNumber
            REAL(8)             :: Drag
-#ifdef CSWAN           
            Drag = SWAN_WDragCo(NodeNumber)
-#else 
-           Drag = CappedGarrattWindDrag(WindSpeed,NodeNumber)
-#endif
 !     ----------------------------------------------------------------
        END FUNCTION SwanWindDrag
 !     ----------------------------------------------------------------
+#endif
             
 !     ----------------------------------------------------------------
-!     Function applying the Garratt wind drag formulation
+!>    @brief Function applying the Garratt wind drag formulation.
+!> 
+!>    Wind drag is calculated using Garratt, 1977 by: 
+!>    \f[ 
+!>       d = \frac{\left( 0.75 + 0.067 \left| \vec{w} \right| \right)}{1000} 
+!>    \f]
+!> 
+!>    @param[in] WindSpeed wind magnitude
+!>    @param[in] NodeNumber adcirc mesh node index
+!>    @result wind drag coefficient
 !     ----------------------------------------------------------------
        FUNCTION GarrattWindDrag(WindSpeed,NodeNumber) RESULT(Drag)
 !     ----------------------------------------------------------------
@@ -364,7 +376,12 @@ C.... convert background pressure from millibars to meters of water
        END FUNCTION GarrattWindDrag
 
 !     ----------------------------------------------------------------
-!     Applies the Garratt Wind Drag capped at WindDragLimit
+!>    @brief Applies the Garratt Wind Drag capped at WindDragLimit.
+!>    By default the cap applied is 0.0035, however this can be adjusted
+!>    using the metControl namelist parameter WindDragLimit
+!>    @param[in] WindSpeed wind magnitude
+!>    @param[in] NodeNumber adcirc mesh node index
+!>    @result wind drag coefficient
 !     ----------------------------------------------------------------
        FUNCTION CappedGarrattWindDrag(WindSpeed,NodeNumber) RESULT(WindDrag)
 !     ----------------------------------------------------------------
@@ -378,7 +395,13 @@ C.... convert background pressure from millibars to meters of water
 !     ----------------------------------------------------------------
 
 !     ----------------------------------------------------------------
-!     Mark Powell's sector-based wind drag.
+!>    @brief Applies Mark Powell's sector-based wind drag. This
+!>    applies different wind drag values based upon the sector of the
+!>    storm a node lies within. The is done to account for the direction
+!>    of wave travel and the coincident direction of the wind vector
+!>    @param[in] WindSpeed wind magnitude
+!>    @param[in] NodeNumber adcirc mesh node index
+!>    @result wind drag coefficient
 !     ----------------------------------------------------------------
       FUNCTION PowellWindDrag(WindSpeed,NodeNumber) RESULT(PowellDrag)
 !     ----------------------------------------------------------------
