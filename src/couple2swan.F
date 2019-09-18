@@ -219,7 +219,7 @@ C-----------------------------------------------------------------------
       INTEGER :: NUMFOUND
 
 !...  To zero out forces on boundary/dry nodes
-#ifdef MARCELSWAN 
+#ifdef MARCELSWAN
       LOGICAL :: Marcel = .true.
 #else
       LOGICAL :: Marcel = .false.
@@ -238,12 +238,12 @@ C-----------------------------------------------------------------------
       REAL(SZ) :: TOTALAREA
       REAL(SZ) :: FDX1, FDX2, FDX3
       REAL(SZ) :: FDY1, FDY2, FDY3
-      REAL(SZ) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
+      REAL(SZ) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac
 
 !     Upper limit on Radiation stresses
-!     Default - don't limit (set to high value) but may want to use: UL = 0.1_SZ     
+!     Default - don't limit (set to high value) but may want to use: UL = 0.1_SZ
 !     (0.1 m^2/s^2 is equivalent to 175 m/s wind speeds!)
-      REAL(SZ),parameter :: UL = 999_SZ 
+      REAL(SZ),parameter :: UL = 999_SZ
 
       call setMessageSource("ComputeWaveDrivenForces")
 #if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
@@ -305,8 +305,8 @@ C-----------------------------------------------------------------------
 C     WJP: tke into account correction factors
            SFacAvg = SFacEle(IE)
 C..... BEG DW/WJP
-           SFmxAvg= SFMXEle(IE) ; 
-           SFmyAvg= SFMYEle(IE) ; 
+           SFmxAvg= SFMXEle(IE) ;
+           SFmyAvg= SFMYEle(IE) ;
            sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
            sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
 
@@ -315,7 +315,7 @@ C..... BEG DW/WJP
            FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
            FDY1 = FDYE(1,IE)*sfdyfac ; !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
            FDY2 = FDYE(2,IE)*sfdyfac ; !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
-           FDY3 = FDYE(3,IE)*sfdyfac ; !c FDY3=(X(NM2)-X(NM1))*MY !a3*my         
+           FDY3 = FDYE(3,IE)*sfdyfac ; !c FDY3=(X(NM2)-X(NM1))*MY !a3*my
 C..... END DW/WJP
 
            DSXXDX(IE) = (1.D0/AREAS(IE)) *
