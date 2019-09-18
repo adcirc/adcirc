@@ -1314,13 +1314,15 @@ C...............................THIS IS NOT THE CONNECTIVITY WE EXPECTED, GOOD N
                                 WRITE(ScratchMessage,'(A)') 
      &                              "CONNECTIVITY ACROSS INTERNAL"//
      &                              " TIME VARYING BOUNDARY IS INVALID."
+                                CALL allMessage(ERROR,ScratchMessage)
                                 WRITE(ScratchMessage,
-     &                               '(A,/,A,F0.9,A,F0.6,A,I0)')
-     &                              TRIM(ScratchMessage),"  X1= ",X1,
+     &                               '(A,F0.9,A,F0.6,A,I0)')
+     &                              "  X1= ",X1,
      &                              " Y1=",Y1," LOCAL NODE=",NBV(IDX)
+                                CALL allMessage(ERROR,ScratchMessage)
                                 WRITE(ScratchMessage,
-     &                              '(A,/,A,F0.9,A,F0.6,A,I0)')
-     &                              TRIM(ScratchMessage),"  X2= ",X2,
+     &                              '(A,F0.9,A,F0.6,A,I0)')
+     &                              " X2= ",X2,
      &                              " Y2=",Y2," LOCAL NODE=",NBV(IDX2)
                                 CALL allMessage(ERROR,ScratchMessage)
                                 CALL ADCIRC_TERMINATE()
