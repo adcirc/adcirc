@@ -518,6 +518,7 @@ C
       VelStaDescript % array2_g             => VV00_g
       VelStaDescript % interped_array       => UU2
       VelStaDescript % interped_array2      => VV2
+      VelStaDescript % ConsiderWetDry       = .TRUE.
       VelStaDescript % field_name           = 'VelSta'
       VelStaDescript % isStation            = .true.
       VelStaDescript % startTimeStep           = NTCYSV
