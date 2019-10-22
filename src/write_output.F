@@ -1783,7 +1783,7 @@ C-----------------------------------------------------------------------
       use sizes, only : sz
       use global, only : nodecode, OutputDataDescript_t, IFNLFA, ETA2, NOFF,
      &                   allMessage, DEBUG, setMessageSource, unsetMessageSource,
-     &                   StatPartWetFix,How2FixStatPartWet
+     &                   StatPartWetFix,How2FixStatPartWet, h0
       use mesh, only : dp, nm
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
@@ -1793,6 +1793,7 @@ C-----------------------------------------------------------------------
       real(sz) :: d1, d2, d3
       real(sz) :: H2N1, H2N2, H2N3
       real(sz) :: tmpwts(3)
+      real(sz) :: wlstn,wdstn,dpstn
       integer :: ilocmaxwt(1)
       integer :: ncele,ncsum
       integer :: i, j
@@ -1851,8 +1852,12 @@ C-----------------------------------------------------------------------
                    tmpwts(3) = descript % interp_fac3(j)
                    if ( How2FixStatPartWet .eq. 0 ) then !Use nearest neighbor value
                       ilocmaxwt = maxloc(tmpwts) !nearest neighbor location (maximum weight)
+                      wlstn = eta2(nm(e,ilocmaxwt(1)))
+                      dpstn = dp(nm(e,ilocmaxwt(1)))
+                      wdstn = wlstn + dpstn
                       !if the nearest neighbor is wet, then use that value
-                      if (nodecode(nm(e,ilocmaxwt(1))).gt.0) then
+                      if (nodecode(nm(e,ilocmaxwt(1))).gt.0 .and. 
+     &                    wdstn.gt.0.8D0*h0) then
                          toArray(j)=fromArray(nm(e,ilocmaxwt(1)))
                       else !nearest neighbor is dry
                          toArray(j) = descript % alternate_value
