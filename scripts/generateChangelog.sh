@@ -73,15 +73,15 @@ echo "" >> $outputFile
 
 #...Brief change log
 echo "Brief Changelog (detailed log below):" >>  $outputFile
-echo "--------------------------------------------------------------------------------|" >> $outputFile
-echo "|   Commit  |         Date         |     Author      |        Description       |" >> $outputFile
-echo "--------------------------------------------------------------------------------|" >> $outputFile
+echo "------------------------------------------------------------------------------------|" >> $outputFile
+echo "|   Commit  |         Date         |       Author        |        Description       |" >> $outputFile
+echo "------------------------------------------------------------------------------------|" >> $outputFile
 if [ "x$doFullLog" == "x1" ] ; then
     git log \
-        --date=format:'%Y-%m-%d %H:%M:%S' --pretty=format:"|  %h  | %cd  | %<(15)%an | %<(70,trunc)%s" >> $outputFile
+        --date=format:'%Y-%m-%d %H:%M:%S' --pretty=format:"|  %h  | %cd  | %<(19)%an | %<(70,trunc)%s" >> $outputFile
 else
     git log $(git describe --abbrev=0)..HEAD \
-        --date=format:'%Y-%m-%d %H:%M:%S' --pretty=format:"|  %h  | %cd  | %<(15)%an | %<(70,trunc)%s" >> $outputFile
+        --date=format:'%Y-%m-%d %H:%M:%S' --pretty=format:"|  %h  | %cd  | %<(19)%an | %<(70,trunc)%s" >> $outputFile
 fi
 echo "" >> $outputFile
 echo "--------------------------------------------------------------------------------|" >> $outputFile
@@ -103,5 +103,6 @@ fi
 perl -w -pi -e "s/zcobell    /Zach Cobell/g" $outputFile
 perl -w -pi -e "s/zcobell /Zach Cobell /g" $outputFile
 perl -w -pi -e "s/caseydietrich /Casey Dietrich/g" $outputFile
+perl -w -pi -e "s/atritinger      /Amanda Tritinger/g" $outputFile
 
 exit 0
