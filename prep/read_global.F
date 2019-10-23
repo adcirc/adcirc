@@ -476,8 +476,9 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 C...tcm v51.20.03 Local variables for external station location files
       INTEGER :: NSTAE2,NSTAV2,NSTAC2,NSTAM2
       INTEGER :: IOS_STATIONS
-      integer :: ios_wetDry
-      namelist /wetDryControl/ outputNodeCode, outputNOFF, noffActive
+      INTEGER :: ios_wetDry
+      namelist /wetDryControl/ outputNodeCode, outputNOFF,
+     &          noffActive, StatPartWetFix, How2FixStatPartWet
       ! jgf52.08.02 : For inundation output files. 
       namelist /inundationOutputControl/ inundationOutput, inunThresh
 C

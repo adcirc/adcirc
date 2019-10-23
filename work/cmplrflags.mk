@@ -4,12 +4,12 @@ INCDIRS := -I . -I $(SRCDIR)/prep
 ########################################################################
 # Compiler flags for Linux operating system on 64bit x86 CPU
 #
-ifeq ($(MACHINE)-$(OS),i686-mingw32)
+ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #
 # ***NOTE*** User must select between various Linux setups
 #            by commenting/uncommenting the appropriate compiler
 #
-compiler=gnu
+#compiler=gnu
 ifeq ($(compiler),gnu)
   PPFC		:=  gfortran
   FC		:=  gfortran

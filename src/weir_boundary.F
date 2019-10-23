@@ -473,15 +473,16 @@ C  VALUE FOR THE BOUNDARY IF NO ACTION IS REQUIRED. BOUNDARY IS NOT ALLOWED TO
 C  DECREASE BELOW THE ELEVATION OF THE SURROUNDING TOPOGRAPHY. THIS ESSENTIALLY
 C  FUNCTIONS AS A WRAPPER FOR ALL THE BOUNDARY VARIATION ROUTINES.
 C-----------------------------------------------------------------------
-            SUBROUTINE COMPUTE_BARRIER_HEIGHT(MYIDX,TIME,BAR_HEIGHT_CURRENT,
-     &           BAR_HEIGHT)
+            SUBROUTINE COMPUTE_BARRIER_HEIGHT(MYIDX,TIMELOC,
+     &           BAR_HEIGHT_CURRENT,BAR_HEIGHT)
+
                 USE BOUNDARIES,ONLY: NBV
                 
                 IMPLICIT NONE
 
                 INTEGER,INTENT(IN)   :: MYIDX
                 CHARACTER(20)        :: VC
-                REAL(SZ),INTENT(IN)  :: TIME
+                REAL(SZ),INTENT(IN)  :: TIMELOC
                 REAL(SZ),INTENT(IN)  :: BAR_HEIGHT_CURRENT
                 REAL(SZ),INTENT(OUT) :: BAR_HEIGHT
 
@@ -501,13 +502,13 @@ C               ALTERS THE HEIGHT OF THE BARRIER BASED UPON THAT.
                 SELECT CASE(BAR_VARYTYPE(MYIDX))
                     CASE(1)
                         CALL COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX,
-     &                      TIME,BAR_HEIGHT_CURRENT,BAR_HEIGHT)
+     &                      TIMELOC,BAR_HEIGHT_CURRENT,BAR_HEIGHT)
                     CASE(2)
                         CALL COMPUTE_BARRIER_HEIGHT_ETAMAX(MYIDX,
-     &                      TIME,BAR_HEIGHT_CURRENT,BAR_HEIGHT)
+     &                      TIMELOC,BAR_HEIGHT_CURRENT,BAR_HEIGHT)
                     CASE(3)
                         CALL COMPUTE_BARRIER_HEIGHT_SCHEDULE(MYIDX,
-     &                      TIME,BAR_HEIGHT_CURRENT,BAR_HEIGHT)
+     &                      TIMELOC,BAR_HEIGHT_CURRENT,BAR_HEIGHT)
                     CASE DEFAULT
                         CALL allMessage(ERROR,"Invalid Barrier "
      &                       //"Variation")
@@ -517,7 +518,7 @@ C               ALTERS THE HEIGHT OF THE BARRIER BASED UPON THAT.
 C...............WRITE SCREEN/UNIT 16 INFORMATION AT START/END
                 SELECT CASE(BAR_VARYTYPE(MYIDX))
                 CASE(1,2)
-                    IF(BAR_DEG_START(MYIDX).EQ.TIME)THEN
+                    IF(BAR_DEG_START(MYIDX).EQ.TIMELOC)THEN
                         IF(BAR_VARYTYPE(MYIDX).EQ.1)THEN
                             VC='LINEAR'
                         ELSEIF(BAR_VARYTYPE(MYIDX).EQ.2)THEN
@@ -525,15 +526,15 @@ C...............WRITE SCREEN/UNIT 16 INFORMATION AT START/END
                         ENDIF
 #ifdef CMPI
                         WRITE(ScratchMessage,1900) TRIM(VC),'BEGAN',
-     &                      TIME,NBV(MYIDX),MYPROC
+     &                      TIMELOC,NBV(MYIDX),MYPROC
 #else
                         WRITE(ScratchMessage,1901) TRIM(VC),'BEGAN',
-     &                      TIME,NBV(MYIDX)
+     &                      TIMELOC,NBV(MYIDX)
 #endif
                         WRITE(ScreenUnit,'(A)') TRIM(ScratchMessage)
                         WRITE(16,'(A)') TRIM(ScratchMessage)
                     ENDIF
-                    IF(BAR_DEG_END(MYIDX).EQ.TIME)THEN
+                    IF(BAR_DEG_END(MYIDX).EQ.TIMELOC)THEN
                         IF(BAR_VARYTYPE(MYIDX).EQ.1)THEN
                             VC='LINEAR'
                         ELSEIF(BAR_VARYTYPE(MYIDX).EQ.2)THEN
@@ -541,10 +542,10 @@ C...............WRITE SCREEN/UNIT 16 INFORMATION AT START/END
                         ENDIF
 #ifdef CMPI
                         WRITE(ScratchMessage,1900) TRIM(VC),'CONCLUDED',
-     &                      TIME,NBV(MYIDX),MYPROC
+     &                      TIMELOC,NBV(MYIDX),MYPROC
 #else
                         WRITE(ScratchMessage,1901) TRIM(VC),'CONCLUDED',
-     &                      TIME,NBV(MYIDX)
+     &                      TIMELOC,NBV(MYIDX)
 #endif
                         WRITE(ScreenUnit,'(A)') TRIM(ScratchMessage)
                         WRITE(16,'(A)') TRIM(ScratchMessage)
@@ -577,8 +578,8 @@ C  ELEVATION (FORT.14) AND FINAL ELEVATION IS LINEAR
 C  OVER THE SPECIFIED TIME AND DOES NOT STOP ONCE
 C  IT HAS BEGUN.
 C-----------------------------------------------------------------------
-            SUBROUTINE COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX,TIME,
-     &              BAR_HEIGHT_CURRENT,BAR_HEIGHT,BARHT_START)
+            SUBROUTINE COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX,
+     &          TIMELOC,BAR_HEIGHT_CURRENT,BAR_HEIGHT,BARHT_START)
 
                 USE GLOBAL,ONLY: DT,SCREENUNIT
                 USE MESH,ONLY: DP
@@ -588,7 +589,7 @@ C-----------------------------------------------------------------------
                 IMPLICIT NONE
 
                 INTEGER,INTENT(IN)     :: MYIDX
-                REAL(SZ),INTENT(IN)    :: TIME
+                REAL(SZ),INTENT(IN)    :: TIMELOC
                 REAL(SZ),INTENT(IN)    :: BAR_HEIGHT_CURRENT
                 REAL(SZ),INTENT(OUT)   :: BAR_HEIGHT
                 REAL(SZ),INTENT(IN),OPTIONAL :: BARHT_START
@@ -609,8 +610,8 @@ C...............SET DEFAULT RETURN VALUE
 
 C...............GET OUT OF HERE AT THE FIRST OPPORTUNITY
                 IF(BAR_VARYTYPE(MYIDX).EQ.1)THEN
-                    IF( (BAR_DEG_START(MYIDX).GT. TIME).OR.
-     &                  (BAR_DEG_END(MYIDX)  .LT. TIME)    )THEN
+                    IF( (BAR_DEG_START(MYIDX).GT. TIMELOC).OR.
+     &                  (BAR_DEG_END(MYIDX)  .LT. TIMELOC)    )THEN
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                          CALL allMessage(DEBUG,"Return")
 #endif
@@ -646,13 +647,15 @@ C...............COMPUTE THE NEW BOUNDARY HEIGHT
                     END SELECT
                 ENDIF    
                 
-                IF(BAR_DEG_END(MYIDX).EQ.TIME)THEN
+                IF(BAR_DEG_END(MYIDX).EQ.TIMELOC)THEN
+
                     BAR_HEIGHT = BARHT_FINAL(MYIDX)
                 ELSE
                     BAR_DT = BAR_DEG_END(MYIDX) - BAR_DEG_START(MYIDX)
                     BAR_HEIGHT = BAR_START -
      &                  ( BAR_DZ * ( 1D0 - ( BAR_DEG_END(MYIDX) -
-     &                  TIME ) / BAR_DT ))
+C
+     &                  TIMELOC ) / BAR_DT ))
                 ENDIF
 
 C...............CHECK AGAINST BATHYMETRY, DO NOT LET WEIR ELEVATION DECREASE BELOW
@@ -668,12 +671,12 @@ C               PREVAILING GROUND. CHECK NODE ACROSS BOUNDARY AS WELL AS LOCAL N
                             BAR_HEIGHT = BARHT_FINAL(MYIDX)
                         ELSE    
 #ifdef CMPI
-                            WRITE(ScreenUnit,1904) TIME,NBV(MYIDX),
+                            WRITE(ScreenUnit,1904) TIMELOC,NBV(MYIDX),
      &                          MYPROC
-                            WRITE(16,1904) TIME,NBV(MYIDX),MYPROC
+                            WRITE(16,1904) TIMELOC,NBV(MYIDX),MYPROC
 #else
-                            WRITE(ScreenUnit,1905) TIME,NBV(MYIDX)
-                            WRITE(16,1905) TIME,NBV(MYIDX)
+                            WRITE(ScreenUnit,1905) TIMELOC,NBV(MYIDX)
+                            WRITE(16,1905) TIMELOC,NBV(MYIDX)
 #endif
                             BAR_HEIGHT = DEPTH
                         ENDIF   
@@ -712,7 +715,7 @@ C  HEIGHT CHANGE ROUTINE IS CALLED WITH THE VARIABLES CREATED
 C  WHEN THIS ROUTINE FIRST DECIDED THAT THE ETAMAX CONDITION
 C  WAS MET
 C-----------------------------------------------------------------------
-            SUBROUTINE COMPUTE_BARRIER_HEIGHT_ETAMAX(MYIDX,TIME,
+            SUBROUTINE COMPUTE_BARRIER_HEIGHT_ETAMAX(MYIDX,TIMELOC,
      &              BAR_HEIGHT_CURRENT,BAR_HEIGHT)
 
                 USE GLOBAL,ONLY: DT,SCREENUNIT,ETA2,NNODECODE
@@ -722,7 +725,7 @@ C-----------------------------------------------------------------------
                 IMPLICIT NONE
 
                 INTEGER,INTENT(IN)     :: MYIDX
-                REAL(SZ),INTENT(IN)    :: TIME
+                REAL(SZ),INTENT(IN)    :: TIMELOC
                 REAL(SZ),INTENT(IN)    :: BAR_HEIGHT_CURRENT
                 REAL(SZ),INTENT(OUT)   :: BAR_HEIGHT
                 REAL(SZ)               :: BAR_DZ,BAR_DT
@@ -741,14 +744,14 @@ C...............CHECK IF THE ETA_MAX HAS BEEN EXCEEDED ALREADY
                 IF(BAR_FAILURE_START(MYIDX).EQ.-1D0)THEN
                     IF(ETA2(NBV(MYIDX)).GT.BAR_ETA_MAX(MYIDX).AND.NNODECODE(NBV(MYIDX)).EQ.1)THEN
 C.......................WE NEED TO INITIALIZE OUR START TIME FOR THE FAILURE
-                        BAR_DEG_START(MYIDX) = TIME
-                        BAR_DEG_END(MYIDX) = TIME +
+                        BAR_DEG_START(MYIDX) = TIMELOC
+                        BAR_DEG_END(MYIDX) = TIMELOC +
      &                      BAR_FAILURE_DURATION(MYIDX)
                         BAR_FAILURE_START(MYIDX) = 1D0
                     ELSEIF(ETA2(IBCONN(MYIDX)).GT.BAR_ETA_MAX(MYIDX).AND.NNODECODE(IBCONN(MYIDX)).EQ.1)THEN
 C.......................WE NEED TO INITIALIZE OUR START TIME FOR THE FAILURE
-                        BAR_DEG_START(MYIDX) = TIME
-                        BAR_DEG_END(MYIDX) = TIME +
+                        BAR_DEG_START(MYIDX) = TIMELOC
+                        BAR_DEG_END(MYIDX) = TIMELOC +
      &                      BAR_FAILURE_DURATION(MYIDX)
                         BAR_FAILURE_START(MYIDX) = 1D0
                     ELSE
@@ -762,8 +765,8 @@ C.......................WE NEED TO INITIALIZE OUR START TIME FOR THE FAILURE
 
 C...............IF WE ARE HERE, ETA_MAX WAS PREVIOUSLY EXCEEDED AND THE BARRIER
 C               IS DEGRADING AS PRESCRIBED
-                CALL COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX,TIME,
-     &              BAR_HEIGHT_CURRENT,BAR_HEIGHT)
+                CALL COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX,
+     &              TIMELOC,BAR_HEIGHT_CURRENT,BAR_HEIGHT)
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
 #endif                
@@ -783,13 +786,13 @@ C  INPUT FILE THAT CONTAINS A SCHEDULE. THIS SCHEDULE CAN BE USED TO
 C  HELP REPRESENT THINGS LIKE GATE OPERATIONS AND OTHER DYNAMIC 
 C  PROCESSES IN THE MODEL THAT BEHAVE IN A KNOWN REPETITIVE WAY
 C-----------------------------------------------------------------------
-            SUBROUTINE COMPUTE_BARRIER_HEIGHT_SCHEDULE(MYIDX,TIME,
+            SUBROUTINE COMPUTE_BARRIER_HEIGHT_SCHEDULE(MYIDX,TIMELOC,
      &              BAR_HEIGHT_CURRENT,BAR_HEIGHT)
                 USE MESH,ONLY:DP
                 USE BOUNDARIES,ONLY:IBCONN,NBV,LBCODEI,BARLANHT,BARINHT
                 IMPLICIT NONE
                 INTEGER,INTENT(IN)   :: MYIDX
-                REAL(SZ),INTENT(IN)  :: TIME
+                REAL(SZ),INTENT(IN)  :: TIMELOC
                 REAL(SZ),INTENT(IN)  :: BAR_HEIGHT_CURRENT
                 REAL(SZ),INTENT(OUT) :: BAR_HEIGHT
 
@@ -809,7 +812,7 @@ C...............SET DEFAULT RETURN VALUE
 
 C...............Check if we have reached the offset time yet
 C               (Time added to beginning of a schedule)
-                IF(TIME.LT.BAR_SCHEDULE(MYIDX)%OFFSET)THEN
+                IF(TIMELOC.LT.BAR_SCHEDULE(MYIDX)%OFFSET)THEN
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                     CALL allMessage(DEBUG,"Return")
 #endif
@@ -825,7 +828,7 @@ C...............SIMPLIFY THESE VARIABLES
 C...............IF THIS IS THE FIRST TIMESTEP IN THIS SECTINO OF THE
 C               SCHEDULE, THEN SET UP THE VARIABLES NEEDED
                 IF(BAR_SCHEDULE(MYIDX)%SECTION(MYSEC)%BAR_DEG_START.EQ.
-     &              TIME-PREVEND-OFFSET)THEN
+     &              TIMELOC-PREVEND-OFFSET)THEN
                     
 C...................THIS IS THE BARRIER HEIGHT AT THE START OF THIS
 C                   PORTION OF THE SCHEDULE. SAVE IT FOR LINEAR
@@ -838,9 +841,9 @@ C...................GET THE NODE NUMBER
 
 C...................INFORM SCREEN AND UNIT 16 WE ARE HERE
 #ifdef CMPI     
-                    WRITE(ScratchMessage,101)MYSEC,NNBB1,TIME,MYPROC
+                    WRITE(ScratchMessage,101)MYSEC,NNBB1,TIMELOC,MYPROC
 #else
-                    WRITE(ScratchMessage,102)MYSEC,NNBB1,TIME
+                    WRITE(ScratchMessage,102)MYSEC,NNBB1,TIMELOC
 #endif
                     WRITE(16,'(A)') TRIM(ScratchMessage)
                     WRITE(ScreenUnit,'(A)') TRIM(ScratchMessage)
@@ -915,7 +918,7 @@ C                   VALUES BASED UPON MESH GEOMETRY.
 
 C...................USE THE NORMAL LINEAR INTERPOLATION ROUTINE TO
 C                   GET THE NEW BARRIER ELEVATION
-                    CALL COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX,TIME,
+                    CALL COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX,TIMELOC,
      &                  BAR_HEIGHT_CURRENT,BAR_HEIGHT,BARHT_START)
 
 
@@ -923,21 +926,21 @@ C...................THIS IS THE END OF A SCHEDULE SECTION, WE NEED TO
 C                   INCREMENT COUNTERS AND PREPARE FOR THE NEXT SECTION
 C                   OF THE SCHEDULE
                 ELSEIF(BAR_SCHEDULE(MYIDX)%SECTION(MYSEC)%
-     &              BAR_DEG_END.EQ.TIME-PREVEND-OFFSET)THEN       
+     &              BAR_DEG_END.EQ.TIMELOC-PREVEND-OFFSET)THEN       
 
 C...................GET NODE NUMBER AND INFORM SCREEN AND UNIT 16
                     NNBB1 = NBV(MYIDX)
 #ifdef CMPI     
-                    WRITE(ScratchMessage,103)MYSEC,NNBB1,TIME,MYPROC
+                    WRITE(ScratchMessage,103)MYSEC,NNBB1,TIMELOC,MYPROC
 #else
-                    WRITE(ScratchMessage,104)MYSEC,NNBB1,TIME
+                    WRITE(ScratchMessage,104)MYSEC,NNBB1,TIMELOC
 #endif
                     WRITE(16,'(A)') TRIM(ScratchMessage)
                     WRITE(ScreenUnit,'(A)') TRIM(ScratchMessage)
 
 C...................CALL THE LAST LINEAR INTERPOLATION                 
                     BARHT_START = BAR_SCHEDULE(MYIDX)%BARHT_START
-                    CALL COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX,TIME,
+                    CALL COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX,TIMELOC,
      &                  BAR_HEIGHT_CURRENT,BAR_HEIGHT,BARHT_START)
 
 C...................INCREMENT SCHEDULE SECTION
@@ -958,14 +961,14 @@ C                   HAVE DONE THE CORRECT NUMBER OF SCHEDULE LOOPS
                                     BAR_SCHEDULE(MYIDX)%LOOPSCOMPLETE = 
      &                                  BAR_SCHEDULE(MYIDX)%
      &                                  LOOPSCOMPLETE + 1
-                                    BAR_SCHEDULE(MYIDX)%PREVEND = TIME 
+                                    BAR_SCHEDULE(MYIDX)%PREVEND = TIMELOC 
      &                                  - OFFSET
                                 ELSE
                                     BAR_DEG(MYIDX) = .FALSE.
                                 ENDIF
                             ELSEIF(BAR_SCHEDULE(MYIDX)%LOOP.EQ.-1)THEN
                                 BAR_SCHEDULE(MYIDX)%MYSEC = 1
-                                BAR_SCHEDULE(MYIDX)%PREVEND = TIME 
+                                BAR_SCHEDULE(MYIDX)%PREVEND = TIMELOC 
      &                              - OFFSET
                             ELSE
 C...............................THIS NODE SHOULD NO LONGER CHANGE, SO
@@ -977,11 +980,11 @@ C                               SET THE APPROPRIATE FLAG
 C...............THE CASE FOR THE MIDDLE OF THE SCHEDULE. CONTINUE WITH
 C               THE INTERPOLATION
                 ELSEIF((BAR_SCHEDULE(MYIDX)%SECTION(MYSEC)%BAR_DEG_START
-     &                  .LT.TIME-PREVEND-OFFSET).AND.
+     &                  .LT.TIMELOC-PREVEND-OFFSET).AND.
      &                 (BAR_SCHEDULE(MYIDX)%SECTION(MYSEC)%BAR_DEG_END
-     &                  .GT.TIME-PREVEND-OFFSET))THEN
+     &                  .GT.TIMELOC-PREVEND-OFFSET))THEN
                     BARHT_START = BAR_SCHEDULE(MYIDX)%BARHT_START
-                    CALL COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX,TIME,
+                    CALL COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX,TIMELOC,
      &                  BAR_HEIGHT_CURRENT,BAR_HEIGHT,BARHT_START)
                 ENDIF 
                 
@@ -1311,13 +1314,15 @@ C...............................THIS IS NOT THE CONNECTIVITY WE EXPECTED, GOOD N
                                 WRITE(ScratchMessage,'(A)') 
      &                              "CONNECTIVITY ACROSS INTERNAL"//
      &                              " TIME VARYING BOUNDARY IS INVALID."
+                                CALL allMessage(ERROR,ScratchMessage)
                                 WRITE(ScratchMessage,
-     &                               '(A,/,A,F0.9,A,F0.6,A,I0)')
-     &                              TRIM(ScratchMessage),"  X1= ",X1,
+     &                               '(A,F0.9,A,F0.6,A,I0)')
+     &                              "  X1= ",X1,
      &                              " Y1=",Y1," LOCAL NODE=",NBV(IDX)
+                                CALL allMessage(ERROR,ScratchMessage)
                                 WRITE(ScratchMessage,
-     &                              '(A,/,A,F0.9,A,F0.6,A,I0)')
-     &                              TRIM(ScratchMessage),"  X2= ",X2,
+     &                              '(A,F0.9,A,F0.6,A,I0)')
+     &                              " X2= ",X2,
      &                              " Y2=",Y2," LOCAL NODE=",NBV(IDX2)
                                 CALL allMessage(ERROR,ScratchMessage)
                                 CALL ADCIRC_TERMINATE()
@@ -1850,6 +1855,7 @@ C-----------------------------------------------------------------------
             USE TIME_VARYING_WEIR_BOUNDARY,ONLY:COMPUTE_BARRIER_HEIGHT,
      &              BAR_DEG
             USE WEIR
+
 
 C-----------------------------------------------------------------------
             CONTAINS
@@ -2403,3 +2409,4 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
         END MODULE
 C-----------------------------------------------------------------------
+

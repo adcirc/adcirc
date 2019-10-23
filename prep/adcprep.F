@@ -335,6 +335,8 @@ C
       CALL PREPINPUT()
       print *, " "
       call memory_status()
+     
+      print *, "ADCPREP COMPLETED"
 
       STOP
 C---------------------------------------------------------------------------

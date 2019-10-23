@@ -654,6 +654,11 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       REAL(SZ) :: SMAG_UPPER_LIM = 100.d0  ! m^2/s (default upper limit)
       REAL(SZ) :: SMAG_LOWER_LIM = 1.0d-8  ! m^2/s (default lower limit)
       LOGICAL :: SMAG_COMP_FLAG = .FALSE.   !BY DEFAULT DO NOT USE SMAG
+! TCM v53.01.02 Addition for special nearest neighbor station interpolation when
+!           station location occurs in a partially wet / partially dry element
+      LOGICAL :: StatPartWetFix = .FALSE.   !.true. if one wants to handle partially wet/dry elements in a special way
+      INTEGER :: How2FixStatPartWet = 0     ! other numbers could be used later for different ways to interpolate,
+                                            ! instead of nearest neighbor
       ! 
       ! all info needed for self describing dataset in XDMF
       type xdmfMetaData_t
@@ -1953,8 +1958,42 @@ C     available to different parts of ADCIRC.
 !-----------------------------------------------------------------------
       end function adcirc_norm2
 !-----------------------------------------------------------------------
+
 !     ------------------------------------------------------------------
 !     ------------------------------------------------------------------
+      FUNCTION toLowercase(string) RESULT(lowercase)
+          IMPLICIT NONE
+          CHARACTER(*),INTENT(IN)  :: string
+          CHARACTER(LEN(string))   :: lowercase
+          CHARACTER(26), PARAMETER :: cap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+          CHARACTER(26), PARAMETER :: low = 'abcdefghijklmnopqrstuvwxyz'
+          INTEGER                  :: I
+          INTEGER                  :: IDX
+          lowercase = string
+          DO I = 1,LEN_TRIM(lowercase)
+            idx = INDEX(cap,lowercase(I:I))
+            IF(idx.GT.0)lowercase(I:I)=low(IDX:IDX)
+          ENDDO
+      END FUNCTION toLowercase
+      
+      FUNCTION toUppercase(string) RESULT(uppercase)
+          IMPLICIT NONE
+          CHARACTER(*),INTENT(IN)  :: string
+          CHARACTER(LEN(string))   :: uppercase
+          CHARACTER(26), PARAMETER :: cap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+          CHARACTER(26), PARAMETER :: low = 'abcdefghijklmnopqrstuvwxyz'
+          INTEGER                  :: I
+          INTEGER                  :: IDX
+          uppercase = string
+          DO I = 1,LEN_TRIM(uppercase)
+            idx = INDEX(low,uppercase(I:I))
+            IF(idx.GT.0)uppercase(I:I)=cap(IDX:IDX)
+          ENDDO
+      END FUNCTION toUppercase
+
+
+C     ------------------------------------------------------------------
+C     ------------------------------------------------------------------
       END MODULE GLOBAL
 !     ------------------------------------------------------------------
 !     ------------------------------------------------------------------

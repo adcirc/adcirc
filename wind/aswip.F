@@ -6,7 +6,7 @@ C-----------------------------------------------------------------------
       module asymmetricVortexProcessing
          use sizes, only : sz
          use global, only : 
-     &                   g, rhowat0,
+     &                   g, rhowat0, prbckgrnd,
      &                   deg2rad, rad2deg, ms2kt, ten2one,
      &                   nws, windReduction, sphericalDistance,
      &                   DEBUG, WARNING, ERROR, INFO, screenunit,
@@ -1079,13 +1079,13 @@ C-----------------------------------------------------------------------
       module diagnosticOutput
 
       use sizes, only : sz, globaldir, mnp
-      use global, only : nws,
+      use global, only : nws, prbckgrnd,
      &   deg2rad, rad2deg, ten2one, g, rhowat0, openFileForRead,
      &   ihot,  m2nm, sphericaldistance  ! Jie 09/2013
       use mesh, only : slam, sfea, np, ics
       use wind, only : hWindData_t, hWindFiles, nws15init, nws19get,
      &   writeFullCircleRmaxes, writeRadialVandP, writeSpatialVandP,
-     &   nws15get, eyeLatR, eyeLonR, nws20get,writeSpatialuvp,
+     &   nws15get, eyeLat, eyeLon, nws20get,writeSpatialuvp,
      &   writeNodaluvp, geostrophic_switch, geofactor, wvnx2, wvny2, prn2,
      &   wtime1, wtime2, wtiminc
       use vortex, only : xy2latlon, latlon2xy, fang
@@ -1163,7 +1163,7 @@ C     Variables for recording domain extents
       !    G E N E R A T E   D I A G N O S T I C   O U T P U T
       !-------------------------------------------------------------
       subroutine initializeDiagnosticOutput()
-      use wind, only : numFiles, eyeLatR, eyeLonR, foundEye
+      use wind, only : numFiles, eyeLat, eyeLon, foundEye
       use owiwind, only : findStormCenter
       implicit none
       integer :: i
@@ -1272,10 +1272,10 @@ C
       if (abs(nws).eq.12) then
          cycleSecs(:) = cycleTime(:) ! in seconds obtained from fort.22*
          DO icyc = 1, num_cycles
-             call nws12get(wvnx2, wvny2, prn2, np, rhowat0, g)
-             call findStormCenter(eyeLatR, eyeLonR, foundEye)
-             cycleLats(icyc) = EyeLatR(3)
-             cycleLons(icyc) = EyeLonR(3)
+             call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd)
+             call findStormCenter(eyeLat, eyeLon, foundEye)
+             cycleLats(icyc) = EyeLat(3)
+             cycleLons(icyc) = EyeLon(3)
              cycleDirs(icyc) = 0 ! not activated yet
          ENDDO
          ! write storm center locations to a file
@@ -1360,7 +1360,7 @@ C
       !-------------------------------------------------------------
       subroutine fullCircleRmaxes()
       use sizes, only : gblinputdir
-      use wind, only : draglawstring, eyeLatR, eyeLonR, foundEye
+      use wind, only : draglawstring, eyeLat, eyeLon, foundEye
       use owiwind, only : findStormCenter
       implicit none
       integer :: i, j, npp
@@ -1386,7 +1386,7 @@ C
          sfea(:) = 34.0d0*deg2rad
          ! initialize arrays
 !         wvnx2 = 0.d0, wvny2 = 0.d0, prn2 = 0.d0
-         call nws12init(wvnx2, wvny2, prn2, np, RhoWat0, g) !call this to skip unwanted snaps        
+         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps        
       endif
       if (abs(nws).eq.15) then
          mnp = np
@@ -1407,7 +1407,7 @@ C
          sfea(:) = 34.0d0*deg2rad
          ! initialize arrays
          ! wvnx2 = 0.d0, wvny2 = 0.d0, prn2 = 0.d0
-         call nws12init(wvnx2, wvny2, prn2, np, RhoWat0, g) !call this to skip unwanted snaps        
+         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps        
       endif
       write(*,*) ' Begin to process diagnostic outputs for NWS = ', nws
       ! write storm center locations to a file
@@ -1428,8 +1428,8 @@ C
             slam(:) = -79.0d0*deg2rad ! initialize to avoid spurious error messages
             sfea(:) = 34.0d0*deg2rad
             call nws15get(wvnx2, wvny2, prn2, outputSecs(iout))
-            outputLats(iout) = EyeLatR(3)
-            outputLons(iout) = EyeLonR(3)
+            outputLats(iout) = EyeLat(3)
+            outputLons(iout) = EyeLon(3)
             write(401,402) OutputSecs(iout), outputLats(iout), 
      &         outputLons(iout)
          endif
@@ -1479,12 +1479,12 @@ C
                sfea(:) = sfea(:) * deg2rad + outputLats(iout) * deg2rad
 
                if (iout.eq.1) then
-                  call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
-                  call findStormCenter(eyeLatR, eyeLonR, foundEye)
+                  call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
+                  call findStormCenter(eyeLat, eyeLon, foundEye)
                else  
                   do j=1, int(owi_output_factor)
-                     call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
-                     call findStormCenter(eyeLatR, eyeLonR, foundEye)
+                     call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
+                     call findStormCenter(eyeLat, eyeLon, foundEye)
                   end do
                endif
                ! if this run is for wind analysis
@@ -1562,7 +1562,7 @@ C
       !-------------------------------------------------------------
       subroutine radialVandP()
       use sizes, only : gblinputdir
-      use wind, only : angleNow, draglawstring, eyeLatR, eyeLonR, foundEye
+      use wind, only : angleNow, draglawstring, eyeLat, eyeLon, foundEye
       use owiwind, only : findStormCenter
       implicit none
       integer :: i, j
@@ -1581,7 +1581,7 @@ C
          sfea(:) = 34.0d0*deg2rad
          ! initialize arrays
 !         wvnx2 = 0.d0, wvny2 = 0.d0, prn2 = 0.d0
-         call nws12init(wvnx2, wvny2, prn2, np, RhoWat0, g) !call this to skip unwanted snaps        
+         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps        
       endif
       if (abs(nws).eq.15) then
          mnp = np
@@ -1601,7 +1601,7 @@ C
          sfea(:) = 34.0d0*deg2rad
          ! initialize arrays
          ! wvnx2 = 0.d0, wvny2 = 0.d0, prn2 = 0.d0
-         call nws12init(wvnx2, wvny2, prn2, np, RhoWat0, g) !call this to skip unwanted snaps        
+         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps        
       endif
       
       write(*,*) ' Begin to process diagnostic outputs for NWS = ', nws
@@ -1622,8 +1622,8 @@ C
             slam(:) = -79.0d0*deg2rad ! initialize to avoid spurious error messages
             sfea(:) = 34.0d0*deg2rad
             call nws15get(wvnx2, wvny2, prn2, outputSecs(iout))
-            outputLats(iout) = EyeLatR(3)
-            outputLons(iout) = EyeLonR(3)
+            outputLats(iout) = EyeLat(3)
+            outputLons(iout) = EyeLon(3)
          endif
             write(401,402) OutputSecs(iout), outputLats(iout), 
      &         outputLons(iout)
@@ -1691,12 +1691,12 @@ C
          case(12)
             ! output each frame only, no jumping, no time-interpolation
             if (iout.eq.1) then
-              call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
-              call findStormCenter(eyeLatR, eyeLonR, foundEye)
+              call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
+              call findStormCenter(eyeLat, eyeLon, foundEye)
             else  
               do j=1, int(owi_output_factor)
-                 call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
-                 call findStormCenter(eyeLatR, eyeLonR, foundEye)                 
+                 call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
+                 call findStormCenter(eyeLat, eyeLon, foundEye)                 
               end do
              endif  
          case(15)
@@ -1796,8 +1796,8 @@ C
             slam(:) = -79.0d0*deg2rad ! initialize to avoid spurious error messages
             sfea(:) = 34.0d0*deg2rad
             call nws15get(wvnx2, wvny2, prn2, outputSecs(iout))
-            outputLats(iout) = EyeLatR(3)
-            outputLons(iout) = EyeLonR(3)
+            outputLats(iout) = EyeLat(3)
+            outputLons(iout) = EyeLon(3)
          endif
          if (nodesFromMesh.eqv..false.) then
             ! create a set of nodes in circles around the center of the
@@ -2052,7 +2052,7 @@ C
       subroutine spatialuvp()
       use sizes, only : gblinputdir
       use mesh, only : nm, ne, slam0, sfea0
-      use wind, only : draglawstring, eyeLatR, eyeLonR, foundEye
+      use wind, only : draglawstring, eyeLat, eyeLon, foundEye
       use owiwind, only : findStormCenter
       implicit none
       integer :: i,j
@@ -2083,7 +2083,7 @@ C
          sfea(:) = 34.0d0*deg2rad
          ! initialize arrays
 !         wvnx2 = 0.d0, wvny2 = 0.d0, prn2 = 0.d0
-         call nws12init(wvnx2, wvny2, prn2, np, RhoWat0, g) !call this to skip unwanted snaps        
+         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps        
       endif
       if (abs(nws).eq.15) then
          mnp = np
@@ -2103,7 +2103,7 @@ C
          sfea(:) = 34.0d0*deg2rad
          ! initialize arrays
          ! wvnx2 = 0.d0, wvny2 = 0.d0, prn2 = 0.d0
-         call nws12init(wvnx2, wvny2, prn2, np, RhoWat0, g) !call this to skip unwanted snaps        
+         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps        
       endif
       
       write(*,*) ' Begin to process diagnostic outputs for NWS = ', nws
@@ -2124,8 +2124,8 @@ C
             slam(:) = -79.0d0*deg2rad ! initialize to avoid spurious error messages
             sfea(:) = 34.0d0*deg2rad
             call nws15get(wvnx2, wvny2, prn2, outputSecs(iout))
-            outputLats(iout) = EyeLatR(3)
-            outputLons(iout) = EyeLonR(3)
+            outputLats(iout) = EyeLat(3)
+            outputLons(iout) = EyeLon(3)
          endif
          write(401,402) OutputSecs(iout), outputLats(iout), 
      &         outputLons(iout)
@@ -2342,12 +2342,12 @@ C
          case(12)
             ! output each frame only, no jumping, no time-interpolation
             if (iout.eq.1) then
-              call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
-              call findStormCenter(eyeLatR, eyeLonR, foundEye)
+              call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
+              call findStormCenter(eyeLat, eyeLon, foundEye)
             else  
               do j=1, int(owi_output_factor)
-                 call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
-                 call findStormCenter(eyeLatR, eyeLonR, foundEye)
+                 call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
+                 call findStormCenter(eyeLat, eyeLon, foundEye)
               end do
             endif           
          case(15)
@@ -2420,7 +2420,7 @@ C
       subroutine nodaluvp()
       use sizes, only : gblinputdir
       use mesh, only : nm, ne, slam0, sfea0
-      use wind, only : draglawstring, eyeLatR, eyeLonR, foundEye
+      use wind, only : draglawstring, eyeLat, eyeLon, foundEye
       use owiwind, only : findStormCenter
       implicit none
       integer :: i,j
@@ -2478,7 +2478,7 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
          sfea(:) = 34.0d0*deg2rad
          ! initialize arrays
 !         wvnx2 = 0.d0, wvny2 = 0.d0, prn2 = 0.d0
-         call nws12init(wvnx2, wvny2, prn2, np, RhoWat0, g) !call this to skip unwanted snaps        
+         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps        
       endif
       if (abs(nws).eq.15) then
          mnp = np
@@ -2499,7 +2499,7 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
          sfea(:) = 34.0d0*deg2rad
          ! initialize arrays
          ! wvnx2 = 0.d0, wvny2 = 0.d0, prn2 = 0.d0
-         call nws12init(wvnx2, wvny2, prn2, np, RhoWat0, g) !call this to skip unwanted snaps        
+         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps        
       endif
       
       write(*,*) ' Begin to process diagnostic outputs for NWS = ', nws
@@ -2519,8 +2519,8 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
             slam(:) = -79.0d0*deg2rad ! initialize to avoid spurious error messages
             sfea(:) = 34.0d0*deg2rad
             call nws15get(wvnx2, wvny2, prn2, outputSecs(iout))
-            outputLats(iout) = EyeLatR(3)
-            outputLons(iout) = EyeLonR(3)
+            outputLats(iout) = EyeLat(3)
+            outputLons(iout) = EyeLon(3)
          endif
          
             ! we are reading the station locations from a text file
@@ -2560,12 +2560,12 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
           case(12)
             ! output each frame only, no jumping, no time-interpolation
             if (iout.eq.1) then
-              call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
-              call findStormCenter(eyeLatR, eyeLonR, foundEye)
+              call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
+              call findStormCenter(eyeLat, eyeLon, foundEye)
             else  
               do j=1, int(owi_output_factor)
-                 call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
-                 call findStormCenter(eyeLatR, eyeLonR, foundEye)                 
+                 call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
+                 call findStormCenter(eyeLat, eyeLon, foundEye)                 
               end do
              endif 
          case(15)

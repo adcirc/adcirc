@@ -103,6 +103,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 #endif
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
      &                  initWindModule
+      USE OWIWIND, ONLY: nPowellSearchDomains
 C
       IMPLICIT NONE
 C
@@ -214,7 +215,7 @@ C Logicals added for adcprep paths
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
       NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,rhoAir,
-     &                       invertedBarometerOnElevationBoundary
+     &                       invertedBarometerOnElevationBoundary,nPowellSearchDomains
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &    TOUTF_TVW,NSPOOL_TVW
       LOGICAL :: NETCDF_AVAIL ! true if netCDF was compiled in
@@ -587,6 +588,7 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
 #if defined CSWAN || defined ADCSWAN
       ! jgf50.60.08: Add a namelist for the user to turn SWAN output
       ! on and off. Similar to tcm's timevaryingbathy namelist.
+      IOS = 0
       READ(UNIT=15,NML=SWANOutputControl,IOSTAT=IOS)
       IF (IOS.gt.0) THEN
          write(*,*)"INFO: The SWANOutputControl namelist was not found."
@@ -605,12 +607,17 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       REWIND(15)
       
       ! zc: Add namelist for user to control time varying weirs
+      IOS = 0
       READ(UNIT=15,NML=TVWControl,IOSTAT=IOS)
       IF(IOS.GT.0)THEN
-         WRITE(*,'(2A)') "INFO: The time varying weir control namelist",
-     &      " was not found."
-         found_tvw_nml = .FALSE.
-      ELSE
+         IF(NOUT_TVW.NE.0)THEN
+             WRITE(*,'(2A)') "INFO: The time varying weir control namelist",
+     &          " was found."
+             found_tvw_nml = .TRUE.
+         ELSE
+             found_tvw_nml = .FALSE.
+         ENDIF
+      ELSEIF(IOS.EQ.0) then
          WRITE(*,'(2A)') "INFO: The time varying weir control namelist",
      &      " was found."
          found_tvw_nml = .TRUE.
@@ -618,6 +625,7 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       REWIND(15)
 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+      IOS = 0
       READ(UNIT=15,NML=waveCoupling,IOSTAT=IOS)
       IF(IOS.GT.0)THEN
          WRITE(*,*) "INFO: The waveCoupling namelist was not found."
@@ -637,6 +645,7 @@ C...
 C...  After this search and read, we will close the file and then reopen it
 c...  for further processing the traditional non-namelist components.
 C...
+      IOS_SMAG = 0
       READ(UNIT = 15,NML = Smag_Control,IOSTAT = IOS_SMAG)
 
       IF (IOS_SMAG < 0) THEN
