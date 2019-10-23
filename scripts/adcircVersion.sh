@@ -29,7 +29,7 @@ fi
 #   within a repository (signaled by a git error)
 #   quit and only write what is already 
 #   contained in version.F
-version=$(git describe --always --tags --dirty=-modified 2>/dev/null)
+version=$(git describe --always --tags 2>/dev/null)
 if [ "x$?" != "x0" ] ; then
     if [ ! -s $dir/version.F ] ; then
         echo $defaultVersion
@@ -45,9 +45,8 @@ if [ "x$?" != "x0" ] ; then
     exit 0
 fi
 
-#...Get the branch and the full hash for the current state of the
+#...Get the full hash for the current state of the
 #   repository
-adcirc_branch=$(git branch | grep \* | cut -d\* -f2 | cut -c2-)
 adcirc_hash=$(git rev-parse HEAD)
 
 #...If version_autogen.F exists, check to make sure
@@ -65,7 +64,6 @@ fi
 #   the version for the makefile
 echo "      module version" > $dir/version.F
 echo "      character(80), parameter :: ADC_VERSION = \""$version\" >> $dir/version.F
-echo "      character(80), parameter :: ADC_BRANCH  = \""$adcirc_branch\" >> $dir/version.F
 echo "      character(80), parameter :: ADC_HASH    = \""$adcirc_hash\" >> $dir/version.F
 echo "      integer, save       :: FileFmtMajor = 1" >> $dir/version.F
 echo "      integer, save       :: FileFmtMinor = 2" >> $dir/version.F

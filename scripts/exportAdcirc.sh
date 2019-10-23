@@ -21,28 +21,22 @@ fi
 #...Check if version is modified
 mod=$(git diff-index --quiet HEAD)
 if [ "x$?" != "x0" ] ; then
-    echo "WARNING: The version of ADCIRC being exported has been modified from its repository state."
-fi
-
-#...Get the name of the current branch
-branch=$(git branch | grep \* | cut -d\* -f2 | cut -c2-)
-if [ $? != 0 ] ; then
-    echo "ERROR: Export Failed @ branch stage."
-    exit 1
+    echo "WARNING: The version of ADCIRC present in repository has been modified "
+    echo "         from repository state. Repository state will be exported"
 fi
 
 #...Generate the names of the output files
-outputDirectory=adcirc_$branch"_"$version
+outputDirectory="adcirc_"$version
 if [ $compression == 0 ] ; then
-    outputFile=adcirc_$branch"_"$version.tar
+    outputFile="adcirc_"$version.tar
 elif [ $compression == 1 ] ; then
-    outputFile=adcirc_$branch"_"$version.tar.gz
+    outputFile="adcirc_"$version.tar.gz
 elif [ $compression == 2 ] ; then
-    outputFile=adcirc_$branch"_"$version.tar.bz2
+    outputFile="adcirc_"$version.tar.bz2
 elif [ $compression == 3 ] ; then
-    outputFile=adcirc_$branch"_"$version.tar.xz
+    outputFile="adcirc_"$version.tar.xz
 elif [ $compression == 4 ] ; then
-    outputFile=adcirc_$branch"_"$version.7z
+    outputFile="adcirc_"$version.7z
 else
     echo "ERROR: Invalid compression method."
     exit 1
@@ -74,7 +68,7 @@ fi
 mkdir ./scripts/$outputDirectory
 
 #...Export the repository snapshot to folder
-git archive $branch | tar -x -C ./scripts/$outputDirectory
+git archive $version | tar -x -C ./scripts/$outputDirectory
 if [ $? != 0 ] ; then
     echo "ERROR: Export Failed @ git archive stage."
     exit 1
@@ -82,6 +76,7 @@ fi
 
 #...Remove default version
 rm ./scripts/$outputDirectory/version_default.F
+rm ./scripts/$outputDirectory/.circleci -rf
 
 #...Grab the version.F file to include
 mv version.F ./scripts/$outputDirectory
