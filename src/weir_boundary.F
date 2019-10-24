@@ -1,9 +1,9 @@
 C-----------------------------------------------------------------------
 C WEIR_BOUNDARY.F
 C   Written by Zachary Cobell, 2013/01/04
-C              ARCADIS, INC.
-C              Zachary.Cobell@Arcadis.com
-C              (303)544-0043 x27
+C              The Water Institute
+C              zcobell@thewaterinstitute.org
+C              (225)421-2761
 C
 C   CONTAINS THE NEW ROUTINES FOR THE SPECIFICATION OF TIME VARYING WEIRS AND
 C   LAND BOUNDARY CONDITIONS. ALL TYPE 3,13,23,4,24,5,25 BOUNDARY CONDITIONS

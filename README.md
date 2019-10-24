@@ -4,7 +4,7 @@
 
 #### Authors
   * Jason Fleming, <jason.fleming@seahorsecoastal.com>
-  * Zach Cobell, <zachary.cobell@arcadis.com>
+  * Zach Cobell, <zcobell@thewaterinstitute.org>
 
 ## Development Strategy
 
