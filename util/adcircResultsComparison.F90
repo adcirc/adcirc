@@ -1,8 +1,8 @@
 !-----------------------------------------------------------------------
 ! adcircResultCompare.F90
 !   Written by Zachary Cobell
-!              ARCADIS, INC.
-!              Zachary.Cobell@Arcadis.com
+!              The Water Institute
+!              zcobell@thewaterinstitute.org
 !
 ! This code will comapre two sets of ADCIRC files to see if the
 ! solution is different between them. The solution can be compared
@@ -20,7 +20,7 @@
         MODULE adcircCompare_module
             USE NETCDF
 
-            INTEGER,PARAMETER   :: nNetCDFVariables = 38
+            INTEGER,PARAMETER   :: nNetCDFVariables = 39
             CHARACTER(200),SAVE :: netcdf_types(nNetCDFVariables)
             CHARACTER(200),SAVE :: nc_longname(nNetCDFVariables)
             CHARACTER(200),SAVE :: nc_stdname(nNetCDFVariables)
@@ -149,6 +149,7 @@
                 NETCDF_TYPES(36) = "swan_TM02_max"
                 NETCDF_TYPES(37) = "swan_TMM10"
                 NETCDF_TYPES(38) = "swan_TMM10_max"
+                NETCDF_TYPES(39) = "winddrag"
 
                 NC_LONGNAME(:)  = ""
                 NC_LONGNAME(1)  = "water column vertically varying density"
