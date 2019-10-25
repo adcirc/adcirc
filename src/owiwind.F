@@ -104,7 +104,8 @@
             REAL(SZ)             :: swLat !< southwest latitude
             REAL(SZ)             :: adcircStartTime !< start time of adcirc simulation
             REAL(SZ)             :: windTimeElapsed !< time that has elapsed in the wind fields
-            LOGICAL              :: hasData !< set to false when fields are at their end
+            LOGICAL              :: hasData !< set to false when fields are no longer have data
+            LOGICAL              :: atEnd !< set to false when the fields are at the end of file
             REAL(SZ),ALLOCATABLE :: p(:,:) !< pressure field
             REAL(SZ),ALLOCATABLE :: u(:,:) !< u-velocity field
             REAL(SZ),ALLOCATABLE :: v(:,:) !< v-velocity field
@@ -203,12 +204,19 @@
         call owi_setFilenames(owi,iounit,numSets)
         close(iounit)
 
+        ! set the files to contain data
+        do i = 1,abs(numSets)
+            owi(i)%atEnd = .false.
+            owi(i)%hasData = .false.
+        enddo
+
         ! Check the number of powell search domains
-        IF(nPowellSearchDomains.GT.numSets)THEN
-            nPowellSearchDomains = numSets
+        IF(nPowellSearchDomains.GT.abs(numSets))THEN
+            nPowellSearchDomains = abs(numSets)
         ELSEIF(nPowellSearchDomains.LE.0)THEN
-            nPowellSearchDomains = numSets
+            nPowellSearchDomains = abs(numSets)
         ENDIF
+
 
         !...Initialize the wind objects based on file headers
         call owi_initializeFileHeaders(owi)
@@ -221,7 +229,6 @@
        
         !...Skip specified snaps 
         call owi_skipSnaps(numSkipSnaps,np,WVNX,WVNY,PRN,PRdeflt)
-
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
@@ -300,6 +307,11 @@
               endif
           endif
 
+          if(owi(s)%atEnd)then
+            owi(s)%hasData = .false.
+            cycle
+          endif
+
           !  Read the next snap from the wind and pressure files
           call owi_readNextSnap(s,np,prdeflt)
 
@@ -353,6 +365,7 @@
 !-----------------------------------------------------------------------
         use GLOBAL,only:PRBCKGRND
         implicit none
+        intrinsic               :: minloc
         real(sz), intent(inout) :: eyeLat(3)
         real(sz), intent(inout) :: eyeLon(3)
         logical, intent(out)    :: foundEye
@@ -377,15 +390,17 @@
         EyeLatTemp = 0D0
         EyeLonTemp = 0D0
         EyePressure = PRBCKGRND
-
+        
         do S = 1,nPowellSearchDomains
-            minidx = minloc(owi(s)%p)
-            minp = owi(s)%p(minidx(1),minidx(2))
-            if(minp.lt.1000D0.and.minp.lt.eyePressure)then
-                EyeLonI = minidx(1)
-                EyeLatI = minidx(2)
-                EyeDomainI = s
-                EyePressure = owi(s)%p(minidx(1),minidx(2))
+            if(owi(s)%hasData)then
+                minidx = minloc(owi(s)%p)
+                minp = owi(s)%p(minidx(1),minidx(2))
+                if(minp.lt.1000D0.and.minp.lt.eyePressure)then
+                    EyeLonI = minidx(1)
+                    EyeLatI = minidx(2)
+                    EyeDomainI = s
+                    EyePressure = owi(s)%p(minidx(1),minidx(2))
+                endif
             endif
         enddo
 
@@ -595,6 +610,7 @@
         owi(idx)%u(:,:) = 0D0
         owi(idx)%v(:,:) = 0D0
         owi(idx)%p(:,:) = prbk
+        owi(idx)%atEnd  = .true.
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
@@ -1019,8 +1035,8 @@
       WRITE(16,'(A,I0)') 'WIND MAPPING UPDATED FOR REGION ',IDX
       WRITE(16,'(A)') ''
 
-      CALL owi_allocate(owi(idx))
       CALL owi_generateCoordinates(owi(idx),lat,lon)
+      CALL owi_allocate(owi(idx))
 
       ! Generate interpolation coefficients (south west point and weights)
       do i=1,NP
