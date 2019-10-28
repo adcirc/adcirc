@@ -2280,10 +2280,12 @@ C           1st column is coefficient, 2nd column is the hypotenuse slope
                      if (abs(IDEN).ne.7) then
                         ! Calculate the moving mean
                         adju = 1d0; adjv = 1d0;
-                        uavnow = sum(UAV(1:L,I)) / L
-                        vavnow = sum(VAV(1:L,I)) / L
-                        IF (abs(U(I)) > 1d-3) adju = 1d0 - uavnow/U(I)
-                        IF (abs(V(I)) > 1d-3) adjv = 1d0 - vavnow/V(I)
+                        if (L.ge.1) then
+                           uavnow = sum(UAV(1:L,I)) / L
+                           vavnow = sum(VAV(1:L,I)) / L
+                           if (abs(U(I)) > 1d-3) adju = 1d0-uavnow/U(I)
+                           if (abs(V(I)) > 1d-3) adjv = 1d0-vavnow/V(I)
+                        endif
                         adjuv = 0.5d0*(adju + adjv)
                      endif
                      ! Implement the friction with possible adjustment
