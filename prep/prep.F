@@ -8866,8 +8866,8 @@ C
       ENDIF
 C
 C     Create NetCDF hotstart files if NetCDF was specified.
-      IF ((NHSTAR.EQ.3).OR.(NHSTAR.EQ.367).OR.(NHSTAR.EQ.368).OR.
-     & (NHSTAR.EQ.5).OR.(NHSTAR.EQ.567).OR.(NHSTAR.EQ.568)) THEN
+      IF ((abs(NHSTAR).EQ.3).OR.(NHSTAR.EQ.367).OR.(NHSTAR.EQ.368).OR.
+     & (abs(NHSTAR).EQ.5).OR.(NHSTAR.EQ.567).OR.(NHSTAR.EQ.568)) THEN
          ! must init both hotstart files ... there is not enough information
          ! available to determine if they will both be needed
          IF ((IHOT.ne.367).and.(IHOT.ne.567)) THEN

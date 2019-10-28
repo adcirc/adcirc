@@ -3932,7 +3932,8 @@ C-----------------------------------------------------------------------
           else
              ir = i + 1
              if (ir > xp) then
-                if (3d0*x_array(1) - 2d0*x_array(2) + 360d0 < x_array(xp)) then
+                if (3d0*x_array(1) - 2d0*x_array(2) + 
+     &              360d0 < x_array(xp)) then
                    ! Wrap the longitude around
                    ir = 1
                 else
@@ -4000,14 +4001,29 @@ C-----------------------------------------------------------------------
           real(sz), intent(in) :: x,y
           real(sz), intent(out) :: w(4)
           integer, intent(out) :: ii(4)
+          real(sz), dimension(xp) :: x_array
+          real(sz), dimension(yp) :: y_array
           real(sz) :: x11, x21, x12, x22, x_vec(yp)
           real(sz) :: y11, y21, y12, y22, y_vec(yp)
           real(sz) :: d11, d12, d21, d22, denom
           real(sz) :: p(2), a(2), b(2), c(2), d(2)
           integer  :: i, j, jj, ir, jr, ia
 
+          ! Check if structured regular..
+          if (abs(x_mat(1,1) - x_mat(1,yp)) < 1d-6) then
+             x_array = x_mat(:,1)
+             y_array = y_mat(1,:)
+             ! This is much faster..
+             call bl_interp(xp, x_array, yp, y_array, x, y, ii, w)
+             !write(16,*) 'blout',x, y
+             !write(16,*) x_array(ii(1)), y_array(ii(2))
+             !write(16,*) x_array(ii(3)), y_array(ii(4))
+             !write(16,*) ii
+             !write(16,*) w
+             return;
+          endif       
+ 
           ii   = [-1, 0, 0, 0]; ! Default indices
-          
           ia = 0
           do i = 1,xp
              ir = i + 1
