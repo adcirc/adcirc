@@ -2210,7 +2210,7 @@ C     ----------------------------------------------------------------
       REAL(SZ) :: Fit, alpha2, gamma2, slope2, uavnow, vavnow
       REAL(SZ) :: Nmdiff, Nbdiff, Fdiff, adju, adjv, adjuv
       logical, save ::  first_entry = .TRUE.
-C     Compute TKM by adding wave drag contribution to 
+C     Compute TKM by adding wave drag contribution to
 C     current value of the bottom friction, TK
       LoadITFric: IF (LoadIT_Fric) THEN
          IF ( FIRST_ENTRY ) THEN
