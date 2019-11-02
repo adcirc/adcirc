@@ -123,7 +123,7 @@
         PRIVATE owi_setFilenames,owi_setDefaultFilenames,owi_setDynamicFilenames
         PRIVATE owi_initializeFileHeaders,owi_allocateInterpolationArrays
         PRIVATE check_owi_err,readHeader,owi_skipSnaps,owi,numSets
-        PRIVATE owi_readNextSnap,owi_interpolateToMesh
+        PRIVATE owi_readNextSnap,owi_interpolateToMesh,owi_setEndOfFileBlankSnap
 
 !---------------------end of data declarations--------------------------------
 
@@ -217,7 +217,6 @@
             nPowellSearchDomains = abs(numSets)
         ENDIF
 
-
         !...Initialize the wind objects based on file headers
         call owi_initializeFileHeaders(owi)
 
@@ -308,15 +307,17 @@
           endif
 
           if(owi(s)%atEnd)then
-            owi(s)%hasData = .false.
-            cycle
+                !  Set the blank snap and report to screen if past end
+                !  of wind data
+                call owi_setEndOfFileBlankSnap(owi(s)%pressure_file,
+     &                                         prdeflt,owi(s))
+          else
+                !  Read the next snap from the wind and pressure files
+                call owi_readNextSnap(s,np,prdeflt)
+
+                ! Increment counter
+                owi(s)%isnap = owi(s)%isnap + 1
           endif
-
-          !  Read the next snap from the wind and pressure files
-          call owi_readNextSnap(s,np,prdeflt)
-
-          ! Increment counter
-          owi(s)%isnap = owi(s)%isnap + 1
 
         ENDDO
 
@@ -600,17 +601,7 @@
 
 ! END during read of grid, u, v, p data jumps to here
 10000   continue  
-        write(scratchMessage,61) trim(filename)
-  61    format("Unexpected end-of-file while reading '",A,
-     &      "'. Wind speeds set to zero and the pressure field",
-     &      " to its background value.")
-        call allMessage(WARNING,trim(scratchMessage))
-
-        ! Set no wind forcing for this domain
-        owi(idx)%u(:,:) = 0D0
-        owi(idx)%v(:,:) = 0D0
-        owi(idx)%p(:,:) = prbk
-        owi(idx)%atEnd  = .true.
+        call owi_setEndOfFileBlankSnap(filename,prbk,owi(idx))
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
@@ -620,6 +611,49 @@
 
 !-----------------------------------------------------------------------
       end subroutine owi_readNextSnap
+!-----------------------------------------------------------------------
+      
+
+!-----------------------------------------------------------------------
+!> @brief Sets the blank snaps at the end of the file when data has run
+!>        out
+!> @param[in] filename name of file that is being read
+!> @param[in] prbk background pressure 
+!> @param[inout] owi oceanweather object array
+!-----------------------------------------------------------------------
+      subroutine owi_setEndOfFileBlankSnap(filename,prbk,obj)
+!-----------------------------------------------------------------------
+        implicit none
+        CHARACTER(*),INTENT(IN)          :: filename
+        REAL(SZ),INTENT(IN)              :: prbk
+        TYPE(OCEANWEATHER),INTENT(INOUT) :: obj
+
+        call setMessageSource("owi_setEndOfFileBlankSnap")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif        
+
+        write(scratchMessage,61) trim(filename)
+  61    format("End-of-file reached while reading '",A,
+     &      "'. Wind speeds set to zero and the pressure field",
+     &      " to its background value.")
+        call allMessage(WARNING,trim(scratchMessage))
+
+        ! Set no wind forcing for this domain
+        obj%u(:,:)  = 0D0
+        obj%v(:,:)  = 0D0
+        obj%p(:,:)  = prbk
+        obj%hasData = .false.
+        obj%atEnd   = .true.
+
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.")
+#endif  
+        call unsetMessageSource()
+
+        return
+!-----------------------------------------------------------------------
+      end subroutine owi_setEndOfFileBlankSnap
 !-----------------------------------------------------------------------
 
 
@@ -1035,8 +1069,8 @@
       WRITE(16,'(A,I0)') 'WIND MAPPING UPDATED FOR REGION ',IDX
       WRITE(16,'(A)') ''
 
-      CALL owi_generateCoordinates(owi(idx),lat,lon)
       CALL owi_allocate(owi(idx))
+      CALL owi_generateCoordinates(owi(idx),lat,lon)
 
       ! Generate interpolation coefficients (south west point and weights)
       do i=1,NP
