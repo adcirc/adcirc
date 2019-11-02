@@ -298,6 +298,7 @@ c     a non-default value we can determine this was the case.
      & " DragLawString=",DragLawString, " rhoAir=",rhoAir,
      & ' invertedBarometerOnElevationBoundary=', 
      &   invertedBarometerOnElevationBoundary,
+     & ' outputWindDrag=',outputWindDrag,
      & ' nPowellSearchDomains=',nPowellSearchDomains
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
