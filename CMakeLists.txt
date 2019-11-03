@@ -9,6 +9,8 @@
 # in a cross platform environment. 
 #
 ###########################################################################
+INCLUDE (GNUInstallDirs)
+INCLUDE (CMakePackageConfigHelpers)
 
 #...Set the default build type
 IF(DEFINED CMAKE_BUILD_TYPE)
@@ -25,7 +27,7 @@ ENDIF()
 #  GENERAL OPTIONS
 ###########################################################################
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
-PROJECT(adcirc_model)
+PROJECT(adcirc)
 
 ###########################################################################
 
@@ -62,6 +64,12 @@ ENABLE_LANGUAGE(C)
 #   contaminate the build directory
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/CMakeFiles)
 ###########################################################################
+
+#...Set the version string (used for libraries)
+SET(ADCIRC_VERSION_MAJOR 54)
+SET(ADCIRC_VERSION_MINOR  0)
+SET(ADCIRC_VERSION_PATCH  0)
+SET(ADCIRC_VERSION_STRING ${ADCIRC_VERSION_MAJOR}.${ADCIRC_VERSION_MINOR}.${ADCIRC_VERSION_PATCH})
 
 #...Include Macros to build components
 INCLUDE(${CMAKE_SOURCE_DIR}/cmake/macros.cmake)

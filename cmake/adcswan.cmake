@@ -76,6 +76,6 @@ IF(BUILD_ADCSWAN AND PERL_FOUND)
     ADD_DEPENDENCIES(templib_swan2serial templib_adcswan1 templib_swan1serial )
     ADD_DEPENDENCIES(templib_adcswan1    templib_swan1serial)
     
-    INSTALL(TARGETS adcswan RUNTIME DESTINATION bin)
+    INSTALL(TARGETS adcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 ENDIF(BUILD_ADCSWAN AND PERL_FOUND)
