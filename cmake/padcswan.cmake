@@ -89,6 +89,6 @@ IF(BUILD_PADCSWAN AND PERL_FOUND)
     ADD_DEPENDENCIES(templib_swan2parallel templib_padcswan1 templib_swan1parallel)
     ADD_DEPENDENCIES(templib_padcswan1     mkdir version templib_swan1parallel )
     
-    INSTALL(TARGETS padcswan RUNTIME DESTINATION bin)
+    INSTALL(TARGETS padcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 ENDIF(BUILD_PADCSWAN AND PERL_FOUND)

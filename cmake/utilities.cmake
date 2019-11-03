@@ -26,6 +26,6 @@ IF(BUILD_UTILITIES)
     addCompilerFlags(hstime)
     
     INSTALL(TARGETS adccmp p15 owi22 build13 buildstwave23 hot2asc inflate hstime 
-            RUNTIME DESTINATION bin)
+	    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 ENDIF(BUILD_UTILITIES)
