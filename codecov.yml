@@ -27,5 +27,6 @@ comment:
 
 ignore:
   - metis/*
+  - metis/Lib/*
   - KDTREE2/*
   - swan/*  
