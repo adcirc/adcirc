@@ -1,6 +1,6 @@
 # The ADCIRC Developers Guide
 
-[![CircleCI](https://circleci.com/gh/adcirc/adcirc-cg.svg?style=shield&circle-token=b93f1b49c76ccd6cbe1f016b0f4c9c0d86a44734)](https://circleci.com/gh/adcirc/adcirc-cg)
+[![CircleCI](https://circleci.com/gh/adcirc/adcirc-cg.svg?style=shield&circle-token=b93f1b49c76ccd6cbe1f016b0f4c9c0d86a44734)](https://circleci.com/gh/adcirc/adcirc-cg) [![codecov](https://codecov.io/gh/adcirc/adcirc-cg/branch/master/graph/badge.svg?token=6Zd90sQh3o)](https://codecov.io/gh/adcirc/adcirc-cg)
 
 #### Authors
   * Jason Fleming, <jason.fleming@seahorsecoastal.com>
