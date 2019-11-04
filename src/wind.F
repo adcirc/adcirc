@@ -85,16 +85,17 @@ C
       ! it will remain 'default'; this will cause 'Garratt' to be used
       ! in FUNCTION WindDrag, and 'IceCube' to be used in
       ! FUNCTION WindIceDrag.
-#ifndef POWELL
       INTEGER,PARAMETER :: DRAGLAW_GARRATT = 99990
       INTEGER,PARAMETER :: DRAGLAW_POWELL  = 99991
       INTEGER,PARAMETER :: DRAGLAW_SWELL   = 99992
+#ifndef POWELL
       CHARACTER(len=10) :: DragLawString = 'default' ! controls wind drag formulation
       INTEGER :: dragLawType = DRAGLAW_GARRATT
 #else
       ! jgf50.32 Provide backward compatibility with hardcoded POWELL
       ! support.
       CHARACTER(len=10) :: DragLawString = 'Powell'
+      INTEGER :: dragLawType = DRAGLAW_POWELL
 #endif
       !
       ! used for vis/diagnostics on nws19 and nws20
@@ -291,6 +292,9 @@ C.... convert background pressure from millibars to meters of water
       SUBROUTINE mapWindDragFunctionPointer()
 !     ----------------------------------------------------------------
           IMPLICIT NONE
+#ifdef POWELL
+          f_computeWindDrag => PowellWindDrag          
+#else
           SELECT CASE(DragLawType)
           CASE(DRAGLAW_GARRATT)
               f_computeWindDrag => CappedGarrattWindDrag
@@ -310,6 +314,7 @@ C.... convert background pressure from millibars to meters of water
 #endif
               STOP
           END SELECT
+#endif              
 !     ----------------------------------------------------------------
       END SUBROUTINE mapWindDragFunctionPointer
 !     ----------------------------------------------------------------
