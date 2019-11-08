@@ -258,6 +258,16 @@ ifeq ($(compiler),intel)
         FLIBS   := $(INCDIRS) -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 
      endif
   endif
+  ifeq ($(MACHINENAME),frontera) 
+     FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 -assume buffered_io
+     CFLAGS  := $(INCDIRS) -O3 -DLINUX -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 
+     FLIBS   := $(INCDIRS) -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 
+     ifeq ($(DEBUG),trace)
+        FFLAGS1 := $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 -assume buffered_io
+        CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 
+        FLIBS   := $(INCDIRS) -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 
+     endif
+  endif
   ifeq ($(MACHINENAME),queenbee) 
      FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
      CFLAGS  := $(INCDIRS) -O3 -DLINUX -xSSE4.2 
@@ -311,6 +321,10 @@ ifeq ($(compiler),intel)
            NETCDFHOME :=/work/00976/jgflemin/stampede2/local
            FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
         endif
+     endif
+     ifeq ($(MACHINENAME),frontera)
+        NETCDFHOME :=/opt/apps/intel17/netcdf/4.3.3.1/x86_64
+        FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
      endif
      # @jasonfleming: Added support for lonestar5 at tacc.utexas.edu;
      # load the following module: netcdf/4.3.3.1
