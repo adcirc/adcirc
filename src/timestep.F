@@ -71,7 +71,7 @@ C
       USE WETDRY, ONLY : computeWettingAndDrying
       USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart, 
      &    writeWarnElev, collectInundationData, collectMinMaxData
-      USE MESH, ONLY : NE, NP, DP, X, Y, SLAM, SFEA, ICS, TotalArea,
+      USE MESH, ONLY : NE, NP, DP, SLAM, SFEA, ICS, TotalArea,
      &                  MJU, Areas, SFAC
       USE BOUNDARIES, ONLY : NOPE, NETA, NBOU, NVEL, LBCODEI, NBV, SIII,
      &    NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, NFLUXIBP, NFLUXRBC, CSII,
