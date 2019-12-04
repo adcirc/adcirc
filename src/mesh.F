@@ -1352,6 +1352,7 @@ C.... IF EITHER NTIP=1 OR NCOR=1, COMPUTE THE INVERSE CPP PROJECTION
          !endif 
          slam = deg2rad * slam
          sfea = deg2rad * sfea
+         !write(16,*) 'Minbefore',minval(cos(sfea))
          do i = 1,np
             call Rotate(slamr,sfear,slam(i),sfea(i))
             call Project(x(i),y(i),slamr,sfear,slam0,sfea0,
@@ -1359,6 +1360,8 @@ C.... IF EITHER NTIP=1 OR NCOR=1, COMPUTE THE INVERSE CPP PROJECTION
             sfar(i)  = tan( sfear ) / Rearth
             csfea(i) = cos( sfear )
          enddo
+         !write(16,*) 'Minafter',minval(csfea)
+          
 C...     WJP, compute the element averaged quantities
          do i = 1,ne
             sfacele(i) = ( sfac(nm(i,1)) + sfac(nm(i,2))
@@ -2859,17 +2862,27 @@ C     ------------------------------------------------------------------
       y = sin(lambda)*cos(phi) 
       z = sin(phi) 
  
-      ! Get rotated coordinates 
+      ! Get rotated coordinates
+      !            cx'x                      cx'y      
       xr = cos(theta)*cos(beta)*x + cos(theta)*sin(beta)*y
-     &   + sin(theta)*z 
+      !      cx'z 
+     &   + sin(theta)*z  
+      !      cy'x          cy'y          cy'z (zero)
       yr = -sin(beta)*x + cos(beta)*y
+      !              cz'x                    cz'y   
       zr = -sin(theta)*cos(beta)*x - sin(theta)*sin(beta)*y
+      !      cz'z
      &   + cos(theta)*z 
  
       ! Convert back to spherical from cartesian
       lambdar = atan2(yr,xr) 
       phir = asin(zr) 
 
+!      ! New Coriolis (is same as Coriolis calculated on original (lon,lat)
+!      !    2*Omega       cx'z*cos(lambda')*cos(phi')
+!      fr = 2d0*omega*( sin(theta)*cos(lambdar)*cos(phir) 
+!      !                  cz'z*sin(phi') 
+!     &              + cos(theta)*sin(phir) ) 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
