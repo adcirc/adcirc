@@ -1882,8 +1882,8 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          endif
          ! Get owi winds (should only overwrite where they exist) 
          if (NWS.eq.-14) then
-           CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-           CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+           CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
+           CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
          endif
          ! Get the second wind snap
          if (NCICE.eq.14) then
@@ -1893,7 +1893,7 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          endif
          ! Get owi winds (should only overwrite where they exist) 
          if (NWS.eq.-14) then
-           CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+           CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND)
          endif
       ENDIF
 #endif
@@ -2726,8 +2726,8 @@ C     from NAM data
          endif
          ! Get owi winds (should only overwrite where they exist) 
          if (NWS.eq.-14) then
-           CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
-           CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+           CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
+           CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
          endif
          ! Get the second wind snap
          if (NCICE.eq.14) then
@@ -2737,7 +2737,7 @@ C     from NAM data
          endif
          ! Get owi winds (should only overwrite where they exist) 
          if (NWS.eq.-14) then
-           CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+           CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND)
          endif
          WTRATIO = (TimeLoc-WTIME1)/WTIMINC
          DO I=1,NP
@@ -2748,7 +2748,7 @@ C     from NAM data
             WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                !Casey 110518: Enable Mark Powell's sector-based wind drag.
                WDragCo = WindDrag(WindMag,I)
@@ -8620,9 +8620,19 @@ C----------------------------------------------------------------------
 
       if (present(data22)) then
          if (grb2flag) then 
+            ! GRIB2
+            iret = -1; iter = 0
+            do while (iret.le.0.and.iter < 10) 
+               if (iter > 0) then
+                  call logMessage(WARNING,'Trying to read again '//var)
+                  call sleep(5)
+               endif
 #ifdef GRIB2API
-            iret =grb2_inq(fileN,invN,var,str_date,lat=data22,lon=data2)
+               iret = grb2_inq(fileN,invN,var,str_date,
+     &                         lat=data22,lon=data2)
 #endif
+               iter = iter + 1
+            enddo
             if (iret.gt.0) then
                call logMessage(ECHO,'Successfully read LatLon '//var)
             else
@@ -8682,7 +8692,7 @@ C----------------------------------------------------------------------
 #endif
             iter = iter + 1
          enddo
-         if (iret.eq.1.or.iret.eq.2) then
+         if (iret.gt.0) then
             call logMessage(DEBUG,'Successfully read '//var)
          else
             call ArnoldSchwarzenegger(iret,var,fileN)

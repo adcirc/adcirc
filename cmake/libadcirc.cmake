@@ -1,4 +1,4 @@
-SET( LIBADC_SOURCES   src/sizes.F KDTREE2/kdtree2.F 
+SET( LIBADC_SOURCES   src/sizes.F KDTREE2/kdtree2.F src/sponge_layer.F 
                       src/global.F src/boundaries.F src/global_3dvs.F
                       src/messenger.F src/mesh.F src/harm.F wind/vortex.F 
                       src/wind.F src/hashtable.F src/owiwind.F src/rs2.F src/owi_ice.F 

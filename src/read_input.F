@@ -61,7 +61,8 @@ C-----------------------------------------------------------------------
      &   alloc_main1a, alloc_main2, alloc_main3, alloc_main4a, 
      &   alloc_main4b, alloc_main5, alloc_main7, alloc_main8, 
      &   alloc_main10, alloc_main12, alloc_main13, alloc_main9,
-     &   alloc_main6, openfileforread, nhoutonce, omega, TSINT, TSINV
+     &   alloc_main6, openfileforread, nhoutonce, omega, TSINT, TSINV,
+     &   StatPartWetFix, How2FixStatPartWet
 #if defined CSWAN || defined ADCSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
