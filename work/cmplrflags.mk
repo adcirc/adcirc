@@ -323,8 +323,13 @@ ifeq ($(compiler),intel)
         endif
      endif
      ifeq ($(MACHINENAME),frontera)
+        # @jasonfleming : module load netcdf gives us netcdf 4.6.2
         NETCDFHOME :=/opt/apps/intel17/netcdf/4.3.3.1/x86_64
         FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
+        ifeq ($(USER),jgflemin)
+           NETCDFHOME :=/work/00976/jgflemin/frontera/local
+           FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
+        endif
      endif
      # @jasonfleming: Added support for lonestar5 at tacc.utexas.edu;
      # load the following module: netcdf/4.3.3.1
