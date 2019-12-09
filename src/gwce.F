@@ -478,19 +478,19 @@ C              spherical correction
 
                Coef(NMI1,1)  = Coef(NMI1,1)   + (MsFacLOnDiag*SPM1
      &                 +GA00DPAvgOAreaIE4*(FDXX1*FDX1+FDYY1*FDY1))*NCELE
-               Coef(NMI1,J12)= Coef(NMI1,J12) + (MsFacLOffDiag*SPM1
+               Coef(NMI1,J12)= Coef(NMI1,J12) + (MsFacLOffDiag*SPM2
      &                 +GA00DPAvgOAreaIE4*(FDXX1*FDX2+FDYY1*FDY2))*NCELE
-               Coef(NMI1,J13)= Coef(NMI1,J13) + (MsFacLOffDiag*SPM1
+               Coef(NMI1,J13)= Coef(NMI1,J13) + (MsFacLOffDiag*SPM3
      &                 +GA00DPAvgOAreaIE4*(FDXX1*FDX3+FDYY1*FDY3))*NCELE
-               Coef(NMI2,J21)= Coef(NMI2,J21) + (MsFacLOffDiag*SPM2
+               Coef(NMI2,J21)= Coef(NMI2,J21) + (MsFacLOffDiag*SPM1
      &                 +GA00DPAvgOAreaIE4*(FDXX2*FDX1+FDYY2*FDY1))*NCELE
                Coef(NMI2,1)  = Coef(NMI2,1)   + (MsFacLOnDiag*SPM2
      &                 +GA00DPAvgOAreaIE4*(FDXX2*FDX2+FDYY2*FDY2))*NCELE
-               Coef(NMI2,J23)= Coef(NMI2,J23) + (MsFacLOffDiag*SPM2
+               Coef(NMI2,J23)= Coef(NMI2,J23) + (MsFacLOffDiag*SPM3
      &                 +GA00DPAvgOAreaIE4*(FDXX2*FDX3+FDYY2*FDY3))*NCELE
-               Coef(NMI3,J31)= Coef(NMI3,J31) + (MsFacLOffDiag*SPM3
+               Coef(NMI3,J31)= Coef(NMI3,J31) + (MsFacLOffDiag*SPM1
      &                 +GA00DPAvgOAreaIE4*(FDXX3*FDX1+FDYY3*FDY1))*NCELE
-               Coef(NMI3,J32)= Coef(NMI3,J32) + (MsFacLOffDiag*SPM3
+               Coef(NMI3,J32)= Coef(NMI3,J32) + (MsFacLOffDiag*SPM2
      &                 +GA00DPAvgOAreaIE4*(FDXX3*FDX2+FDYY3*FDY2))*NCELE
                Coef(NMI3,1)  = Coef(NMI3,1)   + (MsFacLOnDiag*SPM3
      &                 +GA00DPAvgOAreaIE4*(FDXX3*FDX3+FDYY3*FDY3))*NCELE
