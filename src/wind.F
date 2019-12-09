@@ -8752,8 +8752,8 @@ C.... or netcdf (depending on what is present)
          ! No grib2 file, check for netcdf file
          grb2flag = .false.
          Pfile = 'fort.221.nc'
-         Wfile = 'fort.222.nc'
-         Wfile1 = 'fort.222.nc'
+         Wfile = 'fort.222u.nc'
+         Wfile1 = 'fort.222v.nc'
          Cfile = 'fort.225.nc'
          Pfile1 = 'fort.223.nc'
          !Wfile1 = 'fort.224.nc'
@@ -8963,7 +8963,7 @@ C----------------------------------------------------------------------
       call READNWS14(Wfile,Winv,Uvar,U10)
 
       ! Get the V-winds
-      call READNWS14(Wfile,Winv,Vvar,V10)
+      call READNWS14(Wfile1,Winv,Vvar,V10)
 
       ! Get the ice concentration if required
       if (present(CICE2)) then
@@ -9078,6 +9078,7 @@ C----------------------------------------------------------------------
             if (NT.eq.0) then
                if (Tformat(1:1).eq.'%') then
                   call Check_err(NF90_INQ_VARID(NC_ID,Tvar,Temp_ID))
+               if (Tformat(1:1).eq.'%') then
                   call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
                   ! Determine the first timestep index
                   str_date = CurDT%strftime(trim(Tformat))
