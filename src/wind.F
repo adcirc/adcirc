@@ -8348,13 +8348,14 @@ C.... or netcdf (depending on what is present)
       Pfile = 'fort.221.grb2'
       Pinv  = 'fort.221.inv'
       Wfile = 'fort.222.grb2'
+      Wfile1 = 'fort.222.grb2'
       Winv  = 'fort.222.inv'
       Cfile = 'fort.225.grb2'
       Cinv  = 'fort.225.inv'
 
       Pfile1 = 'fort.223.grb2'
       Pinv1  = 'fort.223.inv'
-      Wfile1 = 'fort.224.grb2'
+      !Wfile1 = 'fort.224.grb2'
       Winv1  = 'fort.224.inv'
 
       Pvar = 'S'  ! searching for PRMSL or MSLET or PRES:SURFACE
@@ -8367,10 +8368,11 @@ C.... or netcdf (depending on what is present)
          ! No grib2 file, check for netcdf file
          grb2flag = .false.
          Pfile = 'fort.221.nc'
-         Wfile = 'fort.222.nc'
+         Wfile = 'fort.222u.nc'
+         Wfile1 = 'fort.222v.nc'
          Cfile = 'fort.225.nc'
          Pfile1 = 'fort.223.nc'
-         Wfile1 = 'fort.224.nc'
+         !Wfile1 = 'fort.224.nc'
          inquire(file=Pfile,exist=Fexists)
          if (.not.Fexists) then
             call allMessage(ERROR,
@@ -8440,31 +8442,31 @@ C.... or netcdf (depending on what is present)
      &                      //'and wrote out fort.225.inv file')
          endif
       endif
-      inquire(file=Pfile1,exist=Fexists)
-      if (Fexists) then
-         inquire(file=Pinv1,exist=Fexists)
-         if (.not.Fexists) then
-         iret = grb2_mk_inv(Pfile1, Pinv1)
-         if (iret.ne.0) then
-            call allMessage(ERROR,
-     &                     'Fatal error in reading fort.223.grb2.')
-            call windTerminate()
-         endif
-         call allMessage(ECHO,'successfully read fort.223.grb2 '
-     &                      //'and wrote out fort.223.inv file')
-         endif
-         inquire(file=Winv1,exist=Fexists)
-         if (.not.Fexists) then
-         iret = grb2_mk_inv(Wfile1, Winv1)
-         if (iret.ne.0) then
-            call allMessage(ERROR,
-     &                      'Fatal error in reading fort.224.grb2.')
-            call windTerminate()
-         endif
-         call allMessage(ECHO,'successfully read fort.224.grb2 '
-     &                      //'and wrote out fort.224.inv file')
-         endif
-      endif
+!      inquire(file=Pfile1,exist=Fexists)
+!      if (Fexists) then
+!         inquire(file=Pinv1,exist=Fexists)
+!         if (.not.Fexists) then
+!         iret = grb2_mk_inv(Pfile1, Pinv1)
+!         if (iret.ne.0) then
+!            call allMessage(ERROR,
+!     &                     'Fatal error in reading fort.223.grb2.')
+!            call windTerminate()
+!         endif
+!         call allMessage(ECHO,'successfully read fort.223.grb2 '
+!     &                      //'and wrote out fort.223.inv file')
+!         endif
+!         inquire(file=Winv1,exist=Fexists)
+!         if (.not.Fexists) then
+!         iret = grb2_mk_inv(Wfile1, Winv1)
+!         if (iret.ne.0) then
+!            call allMessage(ERROR,
+!     &                      'Fatal error in reading fort.224.grb2.')
+!            call windTerminate()
+!         endif
+!         call allMessage(ECHO,'successfully read fort.224.grb2 '
+!     &                      //'and wrote out fort.224.inv file')
+!         endif
+!     endif
 #ifdef CMPI
       endif
       ! Wait til procesor one has written header
@@ -8544,7 +8546,7 @@ C----------------------------------------------------------------------
       call READNWS14(Wfile,Winv,Uvar,U10)
       
       ! Get the V-winds 
-      call READNWS14(Wfile,Winv,Vvar,V10)
+      call READNWS14(Wfile1,Winv,Vvar,V10)
 
       ! Get the ice concentration if required 
       if (present(CICE2)) then
@@ -8611,7 +8613,7 @@ C----------------------------------------------------------------------
       real,allocatable,intent(out),optional :: data22(:,:) 
       character(len=19),allocatable :: TimeStr(:) 
       character(len=200) :: str_date
-      integer :: NC_ID, Temp_ID, NX, NY, TL 
+      integer :: i, NC_ID, Temp_ID, Lat_ID, Lon_ID, NX, NY, TL, ndims
 
       ! Getting the date in str_date format
       if (grb2flag) then
@@ -8651,22 +8653,43 @@ C----------------------------------------------------------------------
             allocate(data2(NX,NY),data22(NX,NY),TimeStr(TL))
             if (NT.eq.0) then
                call Check_err(NF90_INQ_VARID(NC_ID,Tvar,Temp_ID))
-               call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
-               ! Determine the first timestep index
-               str_date = CurDT%strftime(trim(Tformat)) 
-               write(16,*) 'Str_date: ',trim(str_date)
-               do NT = 1,TL
-                  if (trim(str_date).eq.TimeStr(NT)) exit
-               enddo
-               call logMessage(ECHO,'Starting from '//TimeStr(NT))
+               if (Tformat(1:1).eq.'%') then
+                  call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
+                  ! Determine the first timestep index
+                  str_date = CurDT%strftime(trim(Tformat)) 
+                  write(16,*) 'Str_date: ',trim(str_date)
+                  do NT = 1,TL
+                     if (trim(str_date).eq.TimeStr(NT)) exit
+                  enddo
+                  call logMessage(ECHO,'Starting from '//TimeStr(NT))
+               else
+                  call logMessage(ECHO,'Assume to start from beginning')
+                  NT = 1 
+               endif
                write(16,*) ' Starting time indice = ',NT 
             endif
-            call Check_err(NF90_INQ_VARID(NC_ID,Latvar,Temp_ID))
-            call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,data22,
-     &                     start=[1, 1, NT],count=[NX, NY, 1]))
-            call Check_err(NF90_INQ_VARID(NC_ID,Lonvar,Temp_ID))
-            call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,data2,
-     &                     start=[1, 1, NT],count=[NX, NY, 1]))
+            call Check_err(NF90_INQ_VARID(NC_ID,Latvar,Lat_ID))
+            call Check_err(nf90_inquire_variable(NC_ID,Lat_ID,
+     &                     ndims=ndims))
+            call Check_err(NF90_INQ_VARID(NC_ID,Lonvar,Lon_ID))
+            if (ndims.eq.3) then
+               call Check_err(NF90_GET_VAR(NC_ID,Lat_ID,data22,
+     &                        start=[1, 1, NT],count=[NX, NY, 1]))
+               call Check_err(NF90_GET_VAR(NC_ID,Lon_ID,data2,
+     &                        start=[1, 1, NT],count=[NX, NY, 1]))
+            elseif (ndims.eq.2) then
+               call Check_err(NF90_GET_VAR(NC_ID,Lat_ID,data22))
+               call Check_err(NF90_GET_VAR(NC_ID,Lon_ID,data2))
+            else
+               call Check_err(NF90_GET_VAR(NC_ID,Lat_ID,data22(1,:)))
+               call Check_err(NF90_GET_VAR(NC_ID,Lon_ID,data2(:,1)))
+               do i = 2,NX
+                  data22(i,:) = data22(1,:)
+               enddo
+               do i = 2,NY
+                  data2(:,i) = data2(:,1)
+               enddo
+            endif
             call Check_err(NF90_CLOSE(NC_ID))
 #endif
          endif
