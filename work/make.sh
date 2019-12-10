@@ -14,14 +14,16 @@ export NETCDF4=enable
 #export OS=linux-gnu
 ### <<<<<<
 
-#make clean
-#make clobber
+source ../../NEMS/src/conf/modules.nems
 
-rm -rf libadc.a #padcirc adcprep
+make clean
+make clobber
+rm -rf libadc.a padcirc adcprep
+
 make libadc.a 
 make adcprep
 #make adcirc
-#make padcirc
+make padcirc
 #make padcswan
 #make punswan
 #make hstime

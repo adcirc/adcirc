@@ -602,10 +602,11 @@ endif
 clean:
 	rm -f odir*/*.o  odir*/*.mod sizes.o
 	rm -f  ../swan/*.f ../swan/*.for ../swan/*.f90
+	rm -f  ../cpl/nuopc/*.mod  ../cpl/nuopc/*.o ../cpl/nuopc/*.a  ../cpl/nuopc/*.x
 clobber:
 	rm -r -f odir* 
 	rm -f adcprep adcprep_be adcirc $(PARALLEL_ADCIRC) adcswan padcswan p15 owi22 build13 aswip \
-           build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost adccmp libadc.a
+           build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost adccmp libadc.a util/*
 	rm -f  ../swan/*.f ../swan/*.for ../swan/*.f90 .swanlastcompile
 help:
 	@echo "This makefile supports the following:"

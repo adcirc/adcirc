@@ -239,12 +239,6 @@ C   TCM v50.66.02 -- Added for Time Varying Bathymetry
       INTEGER :: IJK
       REAL(SZ) ETA2TMP,DPTMP,DPTMP2,BTRATIO  !tcm v50.66.01 bathymetry changes
 
-      ! add by saeed to test warm-up pounding
-      !REAL(SZ),ALLOCATABLE :: ttt(:), ramp_overshoot(:)
-      REAL(SZ) :: mmm , aaa, bbb , ttt,ramp_overshoot
-
-
-
       call setMessageSource("timestep")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -269,9 +263,6 @@ C     jgf46.21 Combined flux/radiation b.c. for rivers
         FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDP)
       END IF
 #endif
-
-
-
 
 
 C...  COMPUTE MASTER TIME WHICH IS REFERENCED TO THE BEGINNING TIME OF
@@ -548,26 +539,6 @@ C    kmd48.33bc - ramp changes with baroclinic when timestep is changed
 Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
          RampMete=TANH((2.D0*(TimeLoc/86400.D0-DUnRampMete))/DRampMete)
          RampWRad=TANH((2.D0*TimeLoc/86400.D0)/DRampWRad)
-
-
-            ! Saeed test spin-up ramp
-            !IF(.NOT.ALLOCATED(ramp_overshoot))THEN
-            !   ALLOCATE(ramp_overshoot(1:))
-            !   ALLOCATE(ttt           (1:))
-            !END IF
-
-            ttt = (2.d0*timeloc/86400.d0)/dramp
-            mmm  = 8       ! over-shoot
-
-            aaa = (-4 * mmm + 2)  / ttt **2
-            bbb = ( 4 * mmm - 1 ) / ttt
-
-            ramp_overshoot = aaa * ttt ** 2 + bbb * ttt
-
-            Ramp = Ramp * ramp_overshoot
-            DRampElev = Ramp
-
-
       END SELECT
 C
 C     jgf46.21 If there is an external flux (i.e. river) boundary, turn
@@ -1457,7 +1428,6 @@ C... v50.xx sm -- nws=17 for NUOPC coupling hwrf data from coupler
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WindMag = SQRT(WindX*WindX+WindY*WindY)
             WDragCo = WindDrag(WindMag, I)
-
 C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
@@ -1485,19 +1455,6 @@ C  tcm v49.16 20100617
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
             !WVNXOUT(I)=RampMete*WindX
             !WVNYOUT(I)=RampMete*WindY
-            WVNXOUT(I)=WSX2(I)
-            WVNYOUT(I)=WSY2(I)
-
-          !if (abs(WSX2(I)) .gt. 1e2) then
-          !    print *, 'in1in1in1in1in1in1in1in1in1in1in1in1in1in1in1in1'
-          !    print *, 'IT,I,WSX1,WSX2  > ' ,IT,I,WSX1(I),WSY2(I)
-          !    print *, 'IT,I,WSY1,WSY2  > ' ,IT,I,WSY1(I),WSY2(I)
-          !    print *, 'in1in1in1in1in1in1in1in1in1in1in1in1in1in1in1in1'
-              !WSX2(I) = 1e-10
-              !WSY2(I) = 1e-10
-              !WSX1(I) = 1e-10
-              !WSY1(I) = 1e-10
-          !endif
 
           !print *,  'WTRatio ', WTRatio
           !print *,  'RampMete ' , RampMete
@@ -1507,16 +1464,10 @@ C  tcm v49.16 20100617
          END DO
       ENDIF
 
-
-!      if (maxval(WSX1) .gt. 10) then
-!          print *, '1111111111111111111111111111111111111111111111111111111111111111'
-!          print *, 'IT,TimeLoc,maxval(WSX1),  maxval(WSX1)  > ' ,IT,TimeLoc, maxval(WSX1), maxval(WSX2)
-!          print *, 'IT,TimeLoc,maxval(WSY1),  maxval(WSY2)  > ' ,IT,TimeLoc, maxval(WSY1), maxval(WSY2)
-!          print *, 'IT,TimeLoc,maxval(PR1),   maxval(PR2)   > ' ,IT,TimeLoc, maxval(PR1), maxval(PR2)
-!          print *, 'RampMete,WDragCo,WindX,WindMag,WTIMINC  > ',RampMete,WDragCo,WindX,WindMag,WTIMINC
-!          print *, '1111111111111111111111111111111111111111111111111111111111111111'
-!      endif
-
+      !print *, 'maxval(WVNX1), maxval(WVNX2) > ', maxval(WVNX1), maxval(WVNX2)
+      !print *, 'maxval(WSX1), maxval(WSX2) > '  , maxval(WSX1), maxval(WSX2)
+      !print *, 'maxval(PR1),  maxval(PR2) > '   , maxval(PR1), maxval(PR2)
+      !print *, RampMete,WDragCo,WindX,WindMag,WTIMINC
 C
 C    kmd48.33bc - added in information for the sponge layer
        IF ((C3D).AND.(RES_BC_FLAG.GT.0).AND.(NWS.NE.0)) THEN
@@ -1527,6 +1478,40 @@ C    kmd48.33bc - added in information for the sponge layer
        END IF
 
 
+C... v5X.xx saeed -- nws=17 for NUOPC coupling hwrf data from coupler
+      !print *, ' test in time step ...  line 1468'
+      IF(NWS.eq.34242317) THEN
+         !no ramping no interpolation  
+         DO I=1,NP
+            WindX = WVNX2(I)
+            WindY = WVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+           
+            WSX2(I) = 0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = 0.001293d0*WDragCo*WindY*WindMag
+
+            !PRDIFF = (PRN2(I)- 1013.0*100.D0/(RHOWAT0*G) )  ! PRN2 in mH2O
+            !PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            PR2(I) = PRN2(I)
+            WVNXOUT(I)= WindX
+            WVNYOUT(I)= WindY
+         END DO
+      ENDIF
+
+      !print *, 'maxval(WVNX1), maxval(WVNX2) > ', maxval(WVNX1), maxval(WVNX2)
+      !print *, 'maxval(WSX1), maxval(WSX2) > ', maxval(WSX1), maxval(WSX2)
+      !print *, RampMete,WDragCo,WindX,WindMag,WTIMINC
+C
+C    kmd48.33bc - added in information for the sponge layer
+       IF ((C3D).AND.(RES_BC_FLAG.GT.0).AND.(NWS.NE.0)) THEN
+         DO I=1,NP
+            WSX2(I)=sponge(I)*WSX2(I)
+            WSY2(I)=sponge(I)*WSY2(I)
+         END DO
+       END IF
+
+C
 C--------------------END MET FORCING---------------------------------------
 
 C...  UPDATE THE WAVE RADIATION STRESS AND READ IN NEW VALUES FROM
@@ -1591,8 +1576,7 @@ C             in time using the same logic as above.
                ENDIF
 #endif
             
-C... v50.xx sm -- nrs=5 for NUOPC coupling wave data from coupler
-               IF(NRS == 5) THEN    ! saeed
+               IF(NRS .EQ. 5) THEN    ! saeed
                  DO I=1,NP
                    RSX = RSNX1(I)
                    RSY = RSNY1(I)
@@ -1610,8 +1594,13 @@ C... v50.xx sm -- nrs=5 for NUOPC coupling wave data from coupler
                RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
                RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
 
-               RSX = (RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
-               RSY = (RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
+              WVNXOUT(I)= WSX2(I)  ! TODO: JUST a TEST >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 
+              WVNYOUT(I)= WSY2(I)
+
+               WSX2(I) = 0 * WSX2(I) + RSX  ! TODO: JUST a TEST >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+               WSY2(I) = 0 * WSY2(I) + RSY
+
+
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef CSWAN
@@ -1620,10 +1609,6 @@ Casey 090302: Added these lines for output to the rads.64 file.
                   RSNXOUT(I) = RSX
                   RSNYOUT(I) = RSY
                ENDIF
-
-               WSX2(I) =  WSX2(I) +  RSX  ! TODO: JUST a TEST >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-               WSY2(I) =  WSY2(I) +  RSY
-
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
                WAVE_A(I) = WAVE_A1(I) + RSTRATIO*(WAVE_A2(I)-WAVE_A1(I))
@@ -1638,8 +1623,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
             CALL ComputeModifiedWaveFriction(TK)
 #endif
 #endif
-         ENDIF  !nrs = 1,2,or 3,5
-
+         ENDIF  !nrs = 1,2,or 3
 
 C         print *, '>>>>>>>>>>>>>>>>>>>>>>>>>>> NRS', nrs
          ! Tightly Coupled Code with STWAVE
@@ -1664,18 +1648,39 @@ C         print *, '>>>>>>>>>>>>>>>>>>>>>>>>>>> NRS', nrs
             END DO
          ENDIF !(NRS = 4)
 
+         IF(NRS == 5212121) THEN    ! saeed
+               !WSX2 = WSX2 + RSNX2
+               !WSY2 = WSY2 + RSNY2
+
+
+                 DO I=1,NP
+                   RSX = RSNX1(I)
+                   RSY = RSNY1(I)
+                   RSNX1(I) = RSNX2(I)
+                   RSNY1(I) = RSNY2(I)
+                   RSNX2(I) = RSNX2(I) + (RSNX2(I)-RSX)
+                   RSNY2(I) = RSNY2(I) + (RSNY2(I)-RSY)
+                 ENDDO
+
+            DO I=1,NP
+               RSX = RampWRad*RSNX2(I)
+               RSY = RampWRad*RSNY2(I)
+               !WSX2(I) = WSX2(I) + RSX
+               !WSY2(I) = WSY2(I) + RSY
+               
+               WSX2(I) =  RSX
+               WSY2(I) =  RSY
+               
+               !  tcm v50.75 added for use whenever nrs=3 or nrs=4
+               RSNXOUT(I) = RSX
+               RSNYOUT(I) = RSY
+            END DO
+         ENDIF !(NRS = 5)
+      
       ENDIF  !(End test for updating wave radiation stress)
 
-!      if (maxval(WSX1) .gt. 10.0) then
-!        print *, '222222222222222222222222222222222222222222222222222222222222222222'
-!        print *, 'in timestep maxval(RSNX2)',IT,TimeLoc, maxval(RSNX2)
-!        print *, 'in timestep maxval(RSNY2)',IT,TimeLoc, maxval(RSNY2)
-!        print *, 'IT,TimeLoc,maxval(WVNX1), maxval(WVNX2) > ',IT,TimeLoc, maxval(WVNX1), maxval(WVNX2)
-!        print *, 'IT,TimeLoc,maxval(WSX1), maxval(WSX2) > '  ,IT,TimeLoc, maxval(WSX1), maxval(WSX2)
-!        print *, 'IT,TimeLoc,maxval(PR1),  maxval(PR2) > '   ,IT,TimeLoc, maxval(PR1), maxval(PR2)
-!        print *, '2222222222222222222222222222222222222222222222222222222222222222222'
-!      endif
-
+        !print *, 'in timestep maxval(RSNX2)',TimeLoc, maxval(RSNX2)
+        !print *, 'in timestep maxval(RSNY2)',TimeLoc, maxval(RSNY2)
 
 C     jgf48.4627 Skip past GWCE and momentum calculations if only
 C     meteorological output was requested.
@@ -4369,7 +4374,7 @@ C...  Note 2, Boundary conditions using specified fluxes (LBCODEI < 29)
 C...  assume that QN is positive into the domain.  QFORCEJ has a -1
 C...  built in and the terms are not explicitly negated. Boundary
 C...  conditions using computed fluxes (LBCODEI 30, 40) compute a normal
-C...  flux that is positive out of the domain.  Therefore, to match
+C...  flux that  is positive out of the domain.  Therefore, to match
 C...  the formulation these terms must be explicitly multiplied by -1.
 
 C...Note 3, Eta1 is the latest computed elevation (it was updated above).

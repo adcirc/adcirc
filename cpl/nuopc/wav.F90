@@ -752,7 +752,7 @@ module WAV
       ! <<<<< RECEIVE and UN-PACK ZETA
       !call State_getFldPtr(ST=importState,fldname='zeta',fldptr=dataPtr_zeta,rc=rc)
       call State_getFldPtr_(ST=importState,fldname='zeta',fldptr=dataPtr_zeta, &
-        rc=rc,dump=.true.,timeStr=timeStr)
+        rc=rc,dump=.false.,timeStr=timeStr)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, &
         file=__FILE__)) &
@@ -806,7 +806,7 @@ module WAV
     ! >>>>> PACK and send SXX
     !call State_getFldPtr(ST=exportState,fldname='sxx',fldptr=dataPtr_sxx,rc=rc)
     call State_getFldPtr_(ST=exportState,fldname='sxx',fldptr=dataPtr_sxx, &
-      rc=rc,dump=.true.,timeStr=timeStr)
+      rc=rc,dump=.false.,timeStr=timeStr)
 
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &

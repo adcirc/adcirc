@@ -765,7 +765,7 @@ module ATMESH
     !----------------------------------------
     ! >>>>> PACK and send PRES
     call State_getFldPtr_(ST=exportState,fldname='pmsl',fldptr=dataPtr_pres,&
-      rc=rc,dump=.true.,timeStr=timeStr)
+      rc=rc,dump=.false.,timeStr=timeStr)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &

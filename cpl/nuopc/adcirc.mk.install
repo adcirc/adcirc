@@ -1,0 +1,6 @@
+# ESMF self-describing build dependency makefile fragment
+
+ESMF_DEP_FRONT     = adc_cap
+ESMF_DEP_INCPATH   = /scratch2/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/tests/NSEModel_try_err_branches/hera/HWRF2ADC_test02/ADCIRC/cpl/nuopc /scratch2/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/tests/NSEModel_try_err_branches/hera/HWRF2ADC_test02/ADCIRC-INSTALL 
+ESMF_DEP_CMPL_OBJS = 
+ESMF_DEP_LINK_OBJS =  -L/scratch2/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/tests/NSEModel_try_err_branches/hera/HWRF2ADC_test02/ADCIRC-INSTALL -ladc /scratch2/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/tests/NSEModel_try_err_branches/hera/HWRF2ADC_test02/ADCIRC-INSTALL/libadc_cap.a  -L/scratch2/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/tests/NSEModel_try_err_branches/hera/HWRF2ADC_test02/ADCIRC/work/  /scratch2/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/tests/NSEModel_try_err_branches/hera/HWRF2ADC_test02/ADCIRC/work/libadc.a  

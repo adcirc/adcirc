@@ -608,11 +608,13 @@ module adc_cap
     !    print *,"ADC ..3.............................................. >> "
     !
     
-    call ESMF_MeshWrite(ModelMesh, filename="adc_mesh.nc", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+    if (.false.) then
+        call ESMF_MeshWrite(ModelMesh, filename="adc_mesh.nc", rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+    end if
 
     !print *,"ADC >> "
     !print *,"NumNd", mdata%NumNd
@@ -1157,7 +1159,7 @@ module adc_cap
                                       !TODO: 
         !Get and fill imported fields
         ! <<<<< RECEIVE and UN-PACK pmsl
-        call State_getFldPtr_(ST=importState,fldname='pmsl',fldptr=dataPtr_pmsl,rc=rc,dump=.true.,timeStr=timeStr)
+        call State_getFldPtr_(ST=importState,fldname='pmsl',fldptr=dataPtr_pmsl,rc=rc,dump=.false.,timeStr=timeStr)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, &
           file=__FILE__)) &
@@ -1350,7 +1352,7 @@ module adc_cap
 
       ! >>>>> PACK and send ZETA
       call State_getFldPtr_(ST=exportState,fldname='zeta',fldptr=dataPtr_zeta, &
-        rc=rc,dump=.false.,timeStr=timeStr)
+        rc=rc,dump=.true.,timeStr=timeStr)
       !call State_getFldPtr(ST=exportState,fldname='zeta',fldptr=dataPtr_zeta, &
       !  rc=rc)
 

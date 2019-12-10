@@ -1,26 +1,31 @@
 # SRCDIR is set in makefile or on the compile line
 INCDIRS := -I . -I $(SRCDIR)/prep
 
+
+#take from env after load modules : hera 9/10/2019
+#NETCDF         := /apps/netcdf/4.7.0/intel/18.0.5.274
+
+NETCDFHOME     = $(NETCDF)
+HDF5HOME       = $(HDF5)
+
 INCDIRS += -I$(NETCDFHOME)/include/  
 LIBDIRS += -L$(NETCDFHOME)/lib/
 
 INCDIRS += -I$(HDF5HOME)/include/   
 LIBDIRS += -L$(HDF5HOME)/lib/
 
-LIBDIRS += -DALL_TRACE
+LIBSS += -DALL_TRACE
 
-LIBDIRS += -DNUOPC
+LIBSS += -DNUOPC
 
 # debug for gfortran
 # -- INCDIRS += -g -O0 -fbacktrace 
 
-
-# debug for intel
-## INCDIRS += -g -traceback 
-
-LIBSS   :=  -lnetcdf  -lnetcdff -lhdf5 -lhdf5_fortran
-
+LIBSS   :=  -lnetcdf  -lnetcdff -lhdf5 -lhdf5_fortran 
 FLIBS   := $(LIBDIRS)  $(LIBSS)
+
+# debug for gfortran
+# -- INCDIRS += -g -O0 -fbacktrace 
 
 
 ########################################################################
@@ -134,12 +139,18 @@ ifeq ($(compiler),intel)
   CCBE          := $(CC)
   CFLAGS        := $(INCDIRS) -O3 -m64 -mcmodel=medium -DLINUX
   CLIBS         :=
-  FLIBS         :=
+  FLIBS         :=  
   MSGLIBS       :=
-  NETCDFHOME     :=/apps/netcdf/4.3.0-intel
-  HDF5HOME       :=/apps/hdf5/1.8.14-intel/lib/
+  NETCDFHOME    := $(NETCDF)
+  HDF5HOME      := $(HDF5)
   ifeq ($(NETCDF),enable)
-        FLIBS          := $(FLIBS) -lnetcdff -L$(HDF5HOME) -lhdf5_fortran -lhdf5_hl -lhdf5
+# debug for intel
+## INCDIRS += -g -traceback 
+
+        #LIBSS   :=  -lnetcdf  -lnetcdff -lhdf5 -lhdf5_fortran 
+        #FLIBS   := $(LIBDIRS)  $(LIBSS)
+        FLIBS   :=$(FLIBS)
+##      FLIBS          := -L$(HDF5HOME)/lib -L$(NETCDFHOME)/lib  -lhdf5_fortran -lhdf5_hl -lhdf5  -lnetcdff -lnetcdf
   endif
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
