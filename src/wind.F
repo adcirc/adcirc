@@ -723,13 +723,13 @@ C........This formula is a function that explicitly
 C....... combines air-sea drag (Garratt) with sea-ice skin drag and
 C....... sea-ice form drag components with area fraction weights 
 C....... see: Lüpkes, et al. (2012), JGR: doi:10.1029/2012JD017630. &
-C....... Joyce et al. (2019), Ocean Modelling, minor rev.
+C....... Joyce et al. (2019), OM: doi:10.1016/j.ocemod.2019.101421
          IF (PercentIce.lt.0.d0) then
             WindIceDrag = WindDrag
          ELSE
-            pic = PercentIce*0.01d0
+            pic = min(PercentIce*0.01d0,1d0)
             Cform = Cform_max*(1d0-pic)**beta
-            WindIceDrag = WindDrag*(1d0 - pic) + (Cskin + Cform)*pic 
+            WindIceDrag = WindDrag*(1d0 - pic) + (Cskin + Cform)*pic
          ENDIF
 
       CASE DEFAULT
