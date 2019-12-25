@@ -1088,6 +1088,7 @@ C
       DO I=1,NTIF
         READ(15,80)  TIPOTAG(I)
         READ(15,80)  TPKMSG(I)
+        TIPOTAG(I)=ADJUSTL(TIPOTAG(I))
         READ(TPKMSG(I),*)  TPK(I),AMIGT(I),ETRF(I),FFT(I),FACET(I)
       ENDDO
 C
