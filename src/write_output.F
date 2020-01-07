@@ -67,9 +67,9 @@ Cobell Added a descript for time varying weir tracking
       type(OutputDataDescript_t), target :: weirElevDescript
       ! @jasonfleming: adding output for wind drag
       type(OutputDataDescript_t), target :: windDragDescript
-      ! jgf: added support for water level offset 
-      type(OutputDataDescript_t), target :: offsetDescript      
-      type(OutputDataDescript_t), target :: offsetStaDescript      
+      ! jgf: added support for dynamic water level offset 
+      type(OutputDataDescript_t), target :: dynamicWaterLevelCorrectionDescript      
+      type(OutputDataDescript_t), target :: dynamicWaterLevelCorrectionStaDescript      
       type(OutputDataDescript_t), target :: labelsDescript
 
 C     jgf48.03 Full domain arrays used when writing globalio output.
@@ -104,8 +104,8 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       integer, allocatable, target :: noff_out_g(:)
       real(sz), allocatable, target :: windDragOut_g(:)
       ! jgf: Added support for water level offset
-      real(sz), allocatable, target :: offset2_g(:)
-      real(sz), allocatable, target :: offsetSta_g(:)
+      real(sz), allocatable, target :: dynamicWaterLevelCorrection2_g(:)
+      real(sz), allocatable, target :: dynamicWaterLevelCorrectionSta_g(:)
       !
       !  H A R M O N I C   A N A L Y S I S   D A T A
       !
@@ -349,10 +349,12 @@ C----------------------------------------------------------------------
      &   fauxFilePosition, initiallyDrySpoolCounter,
      &   inundationOutput, ihot, logMessage, windDragFilePosition,
      &   windDragOut, windDragSpoolCounter, outputWindDrag,
-     &   offsetFilePos, offsetSpoolCounter, offset2, usingWaterLevelOffset,
-     &   offsetSpoolCounter, offset2, usingWaterLevelOffset,
-     &   offsetStaSpoolCounter, offsetFilePos, offsetSta,
-     &   offsetStaFilePos, PRBCKGRND
+     &   dynamicWaterLevelCorrectionFilePos, dynamicWaterLevelCorrectionSpoolCounter, 
+     &   dynamicWaterLevelCorrection2, usingDynamicWaterLevelCorrection,
+     &   dynamicWaterLevelCorrectionSpoolCounter, dynamicWaterLevelCorrection2, 
+     &   usingdynamicWaterLevelCorrection, dynamicWaterLevelCorrectionStaSpoolCounter, 
+     &   dynamicWaterLevelCorrectionFilePos, dynamicWaterLevelCorrectionSta,
+     &   dynamicWaterLevelCorrectionStaFilePos, PRBCKGRND
 
       USE MESH, ONLY : NP, NE, DP, NM, ICS, labels
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim,
@@ -421,8 +423,8 @@ C
       ptr(30)%descript2D => initiallyDryDescript
       ptr(31)%descript2D => everDriedDescript
       ptr(32)%descript2D => windDragDescript
-      ptr(33)%descript2D => offsetDescript
-      ptr(34)%descript2D => offsetStaDescript
+      ptr(33)%descript2D => dynamicWaterLevelCorrectionDescript
+      ptr(34)%descript2D => dynamicWaterLevelCorrectionStaDescript
 
 !... For SWAN, there are additional output arrays
 #ifdef CSWAN
@@ -759,54 +761,54 @@ C
 
       ! jgf: water level offset timeseries offset.63
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(offset2_g(NP_G))
+         ALLOCATE(dynamicWaterLevelCorrection2_g(NP_G))
       ENDIF
-      offsetDescript % lun                  = 108
-      offsetDescript % specifier            = NOUTGE
-      offsetDescript % startTimeStep           = NTCYSGE
-      offsetDescript % endTimeStep             = NTCYFGE
-      offsetDescript % outputTimeStepIncrement = NSPOOLGE
-      offsetDescript % spoolCounter            => offsetSpoolCounter
-      offsetDescript % filepos                 => offsetFilePos
-      offsetDescript % array                => offset2
-      offsetDescript % array_g              => offset2_g
-      offsetDescript % field_name           = 'offset'
-      offsetDescript % file_basename        = 'offset'
-      offsetDescript % file_extension       = 63
-      offsetDescript % writeFlag            = usingWaterLevelOffset
+      dynamicWaterLevelCorrectionDescript % lun                  = 108
+      dynamicWaterLevelCorrectionDescript % specifier            = NOUTGE
+      dynamicWaterLevelCorrectionDescript % startTimeStep           = NTCYSGE
+      dynamicWaterLevelCorrectionDescript % endTimeStep             = NTCYFGE
+      dynamicWaterLevelCorrectionDescript % outputTimeStepIncrement = NSPOOLGE
+      dynamicWaterLevelCorrectionDescript % spoolCounter => dynamicWaterLevelCorrectionSpoolCounter
+      dynamicWaterLevelCorrectionDescript % filepos => dynamicWaterLevelCorrectionFilePos
+      dynamicWaterLevelCorrectionDescript % array => dynamicWaterLevelCorrection2
+      dynamicWaterLevelCorrectionDescript % array_g => dynamicWaterLevelCorrection2_g
+      dynamicWaterLevelCorrectionDescript % field_name           = 'dynamicWaterlevelCorrection'
+      dynamicWaterLevelCorrectionDescript % file_basename        = 'dynamicWaterlevelCorrection'
+      dynamicWaterLevelCorrectionDescript % file_extension       = 63
+      dynamicWaterLevelCorrectionDescript % writeFlag            = usingDynamicWaterLevelCorrection
       ! offset.61
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(offsetSta_g(NSTAE_G))
+         ALLOCATE(dynamicWaterLevelCorrectionSta_g(NSTAE_G))
       ENDIF
-      offsetStaDescript % lun                  = 109
-      offsetStaDescript % specifier            = NOUTE
-      offsetStaDescript % num_fd_records       = NSTAE_G
-      offsetStaDescript % num_records_this     = NSTAE
-      offsetStaDescript % imap                 => IMAP_STAE_LG
-      offsetStaDescript % array                => offsetSta
-      offsetStaDescript % array_g              => offsetSta_g
-      offsetStaDescript % interped_array       => offset2
-      offsetStaDescript % field_name           = 'offset'
-      offsetStaDescript % file_basename        = 'offset'
-      offsetStaDescript % isStation            = .true.
-      offsetStaDescript % startTimeStep           = NTCYSE
-      offsetStaDescript % endTimeStep             = NTCYFE
-      offsetStaDescript % outputTimeStepIncrement = NSPOOLE
-      offsetStaDescript % spoolCounter            => offsetStaSpoolCounter
-      offsetStaDescript % filepos                 => offsetStaFilePos
-      offsetStaDescript % elements                => NNE
-      offsetStaDescript % interp_fac1             => STAIE1 
-      offsetStaDescript % interp_fac2             => STAIE2
-      offsetStaDescript % interp_fac3             => STAIE3
+      dynamicWaterLevelCorrectionStaDescript % lun                  = 109
+      dynamicWaterLevelCorrectionStaDescript % specifier            = NOUTE
+      dynamicWaterLevelCorrectionStaDescript % num_fd_records       = NSTAE_G
+      dynamicWaterLevelCorrectionStaDescript % num_records_this     = NSTAE
+      dynamicWaterLevelCorrectionStaDescript % imap                 => IMAP_STAE_LG
+      dynamicWaterLevelCorrectionStaDescript % array                => dynamicWaterLevelCorrectionSta
+      dynamicWaterLevelCorrectionStaDescript % array_g              => dynamicWaterLevelCorrectionSta_g
+      dynamicWaterLevelCorrectionStaDescript % interped_array       => dynamicWaterLevelCorrection2
+      dynamicWaterLevelCorrectionStaDescript % field_name           = 'dynamicWaterlevelCorrection'
+      dynamicWaterLevelCorrectionStaDescript % file_basename        = 'dynamicWaterlevelCorrection'
+      dynamicWaterLevelCorrectionStaDescript % isStation            = .true.
+      dynamicWaterLevelCorrectionStaDescript % startTimeStep           = NTCYSE
+      dynamicWaterLevelCorrectionStaDescript % endTimeStep             = NTCYFE
+      dynamicWaterLevelCorrectionStaDescript % outputTimeStepIncrement = NSPOOLE
+      dynamicWaterLevelCorrectionStaDescript % spoolCounter => dynamicWaterLevelCorrectionStaSpoolCounter
+      dynamicWaterLevelCorrectionStaDescript % filepos => dynamicWaterLevelCorrectionStaFilePos
+      dynamicWaterLevelCorrectionStaDescript % elements                => NNE
+      dynamicWaterLevelCorrectionStaDescript % interp_fac1             => STAIE1 
+      dynamicWaterLevelCorrectionStaDescript % interp_fac2             => STAIE2
+      dynamicWaterLevelCorrectionStaDescript % interp_fac3             => STAIE3
       IF (ICS.eq.1) THEN
-         offsetStaDescript % x_coord              => XEL ! use orig coord
-         offsetStaDescript % y_coord              => YEL
+         dynamicWaterLevelCorrectionStaDescript % x_coord              => XEL ! use orig coord
+         dynamicWaterLevelCorrectionStaDescript % y_coord              => YEL
       ELSE
-         offsetStaDescript % x_coord              => SLEL ! radians
-         offsetStaDescript % y_coord              => SFEL
+         dynamicWaterLevelCorrectionStaDescript % x_coord              => SLEL ! radians
+         dynamicWaterLevelCorrectionStaDescript % y_coord              => SFEL
       ENDIF
-      offsetStaDescript % file_extension       = 61
-      offsetStaDescript % writeFlag            = usingWaterLevelOffset
+      dynamicWaterLevelCorrectionStaDescript % file_extension       = 61
+      dynamicWaterLevelCorrectionStaDescript % writeFlag            = usingDynamicWaterLevelCorrection
       !
       ! fort.74
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
@@ -1631,7 +1633,7 @@ C----------------------------------------------------------------------
             !  W R I T E   U S I N G   P R O C E S S O R   0
             !
             if ( ptr(i) % descript2D % num_items_per_record .eq. 1 ) then
-                  call writeOutArray(TimeLoc, IT, ptr(i) % descript2D,
+               call writeOutArray(TimeLoc, IT, ptr(i) % descript2D,
      &                               packOne, unpackOne)
             else
                call writeOutArray(TimeLoc, IT, ptr(i) % descript2D,

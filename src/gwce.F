@@ -230,7 +230,7 @@ C
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM,
-     &   usingWaterLevelOffset, offset1, TKM
+     &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1, TKM
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
@@ -564,7 +564,7 @@ C...  Initialize variables to zero if these forcings are not used
 
       ! jgf: Adding support for water level offset as a pseudo
       ! barometric pressure
-      if (usingWaterLevelOffset.eqv..false.) then
+      if (usingDynamicWaterLevelCorrection.eqv..false.) then
          Off1N1 = 0.d0
          Off1N2 = 0.d0
          Off1N3 = 0.d0
@@ -822,10 +822,10 @@ Corbitt 120322: Localized Advection
          ENDIF
          ! jgf: Adding support for water level offset as a pseudo barometric
          ! pressure
-         if (usingWaterLevelOffset.eqv..true.) then
-            Off1N1 = offset1(NM1)
-            Off1N2 = offset1(NM2)
-            Off1N3 = offset1(NM3)
+         if (usingDynamicWaterLevelCorrection.eqv..true.) then
+            Off1N1 = dynamicWaterLevelCorrection1(NM1)
+            Off1N2 = dynamicWaterLevelCorrection1(NM2)
+            Off1N3 = dynamicWaterLevelCorrection1(NM3)
          endif
          IF (CTIP) THEN                        !tidal potential
             TiPN1=TiP1(NM1)
@@ -1180,9 +1180,9 @@ C     on and off according to analyst preference.
       endif
 
       !jgf: Added water level offset to elevation specified boundary
-      if (usingWaterLevelOffset.eqv..true.) then
+      if (usingDynamicWaterLevelCorrection.eqv..true.) then
          DO I=1,NETA
-            ETA2(NBD(I))=ETA2(NBD(I)) + offset1(nbd(i)) 
+            ETA2(NBD(I))=ETA2(NBD(I)) + dynamicWaterLevelCorrection1(nbd(i)) 
            END DO
       endif
 

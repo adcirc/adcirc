@@ -484,10 +484,11 @@ C...tcm v51.20.03 Local variables for external station location files
 C
 C.....tcm v52.30.01 added for Smag_Control
       INTEGER :: IOS_Smag = 0
-      ! jgf: Added support for water level offset
-      namelist /offsetControl/ offsetFileName, offsetSkipSnaps, 
-     &  offsetMultiplier, offsetRampStart, offsetRampEnd,
-     &  offsetRampReferenceTime
+      ! jgf: Added support for water level correction
+      NAMELIST /dynamicWaterLevelCorrectionControl/ dynamicWaterLevelCorrectionFileName, 
+     &  dynamicWaterLevelCorrectionSkipSnaps, dynamicWaterlevelCorrectionMultiplier, 
+     &  dynamicWaterLevelCorrectionRampStart, dynamicWaterLevelCorrectionRampEnd,
+     &  dynamicWaterLevelCorrectionRampReferenceTime
       
 c.....tcm v51.20.03 initialize external station location specifications
 C..... to false, meaning if locations are supplied they are in the fort.15 
@@ -502,7 +503,7 @@ C
       found_tvw_nml = .false.
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       FOUND_WC_NML = .FALSE.
-      foundOffsetControlNamelist = .false.
+      foundCorrectionControlNamelist = .false.
 C
       call setMessageSource("read15")
 #ifdef READ_GLOBAL_TRACE
@@ -610,21 +611,21 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       rewind(15)  !Return to the top of the fort.15 file
       !
       !jgf:   O F F S E T   C O N T R O L   N A M E L I S T
-      read(unit=15,nml=offsetControl,iostat=ios)
+      read(unit=15,nml=dynamicWaterLevelCorrectionControl,iostat=ios)
       select case(ios)
       case(0) ! zero indicates success
-         foundOffsetControlNamelist = .true.
+         foundCorrectionControlNamelist = .true.
          call logMessage(INFO,
-     &         'The offsetControl namelist was found.')
+     &         'The dynamicWaterLevelCorrectionControl namelist was found.')
       case(1:)
          write(scratchMessage,'(a,i0,a)')
-     &      'Could not read offsetControl'//
+     &      'Could not read dynamicWaterLevelCorrectionControl'//
      &     ' namelist. The Fortran i/o error code was ',ios,'.'
          call allMessage(ERROR,scratchMessage)
          stop
       case default
          call logMessage(INFO,
-     &      'End-of-file when searching for offsetControl namelist.')
+     &      'End-of-file when searching for dynamicWaterLevelCorrectionControl namelist.')
       end select    
       rewind(15)  !Return to the top of the fort.15 file
 

@@ -627,7 +627,7 @@ Casey 090302: Corrected the unit number from 10 to 90.
       endif
 
       ! jgf: Added init for full domain water level offset output file 
-      if ( (NOUTGE.eq.-1).and.(usingWaterLevelOffset.eqv..true.) ) then
+      if ( (NOUTGE.eq.-1).and.(usingDynamicWaterLevelCorrection.eqv..true.) ) then
          if (write_local_files.eqv..true.) then
             call writeDomainHeader(108,trim(localdir)//'/'//
      &           'offset.63',NP_G, NP, 'offset     ')
@@ -637,7 +637,7 @@ Casey 090302: Corrected the unit number from 10 to 90.
            endif
       endif
       ! jgf: Added init for station water level offset output file 
-      IF( (NOUTE.EQ.-1).and.(usingWaterLevelOffset.eqv..true.)) THEN
+      IF( (NOUTE.EQ.-1).and.(usingDynamicWaterLevelCorrection.eqv..true.)) THEN
          if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(109, TRIM(GLOBALDIR)//'/'//'offset.61',
      &       NSTAE_G, NSTAE, HEADER61)

@@ -198,8 +198,8 @@ C
       type(stationData), private, save :: HAelevSta ! har elev stations (fort.51)
       type(stationData), private, save :: HAvelSta ! har vel stations (fort.52)
 
-      !jgf: Water level offset data
-      type(stationData), private, save :: offSta ! for offset.61     
+      !jgf: Water level correction data
+      type(stationData), private, save :: dynamiccorrectionSta ! for dynamicwaterlevelcorrection.61     
 C
       TYPE, PRIVATE :: nodalData
          INTEGER ncid              ! the id of its netcdf file
@@ -270,8 +270,8 @@ C
       type(nodalData), private, save :: eRisInun ! for endrisinginun.63
       type(nodalData), private, save, target :: evrDry ! for everdried.63
 
-      !jgf: Water level offset data
-      type(nodalData), private, save :: offs ! for offset.63     
+      !jgf: Water level correction data
+      type(nodalData), private, save :: dynamiccorrection ! for dynamicwaterlevelcorrection.63    
 C
       TYPE, PRIVATE :: hotstartData
          INTEGER lun               ! ADCIRC's logical unit number
@@ -518,12 +518,10 @@ C
             CALL initNodalDataFile(eRisInun, descript1, reterr)
          CASE(404)
             CALL initNodalDataFile(evrDry, descript1, reterr)
-
-         !jgf: offset.63 and offset.61
          CASE(108)
-            CALL initNodalDataFile(offs, descript1, reterr)
+            CALL initNodalDataFile(dynamiccorrection, descript1, reterr)
          CASE(109)
-            CALL initStationFile(offSta, descript1, reterr)
+            CALL initStationFile(dynamiccorrectionSta, descript1, reterr)
 
          CASE DEFAULT
             write(scratchMessage,
@@ -1297,17 +1295,17 @@ C
 
             sta%station_data_dims(1) = sta%num_sta_dim_id
             sta%station_data_dims(2) = sta%myTime%timenc_dim_id
-            iret = nf90_def_var(sta%ncid, 'offset', NF90_DOUBLE,
+            iret = nf90_def_var(sta%ncid, 'dynamicWaterlevelCorrection', NF90_DOUBLE,
      &             sta%station_data_dims, sta%station_data_id)
             CALL check_err(iret)
 !           Define water surface elevation attributes
             iret = nf90_put_att(sta%ncid, sta%station_data_id,
      &         'long_name', 
-     &         'water surface offset above dynamic water level')
+     &         'dynamic water surface correction above water level')
             CALL check_err(iret)
             iret = nf90_put_att(sta%ncid, sta%station_data_id,
      &         'standard_name',
-     &         'sea_surface_offset_above_dynamic_water_level')
+     &         'dynamic_sea_surface_correction_above_water_level')
             CALL check_err(iret)
             CALL putUnitsAttribute(sta%ncid, sta%station_data_id,
      &           'm', 'ft')
@@ -3529,22 +3527,22 @@ C
      &             '_FillValue', doubleval)            
             CALL check_err(iret)
 
-         !jgf: offset.63
+         !jgf: dynamicWaterlevelCorrection.63
          CASE(108)
 C
             dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
             dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
-            dat%varnames(1) = 'offset'
+            dat%varnames(1) = 'dynamicWaterlevelCorrection'
             iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
      &         NF90_DOUBLE, dat%nodal_data_dims, dat%nodal_data_id)
             CALL check_err(iret)
             iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
      &         'long_name',
-     &         'water surface offset above dynamic water level')
+     &         'dynamic water surface correction above water level')
             CALL check_err(iret)
             iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
      &         'standard_name', 
-     &         'sea_surface_offset_above_dynamic_water_level')
+     &         'dynamic_sea_surface_correction_above_water_level')
             CALL check_err(iret)
             iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
      &             'coordinates', 'time y x')
@@ -4228,9 +4226,9 @@ C
             CALL writeNodalData(evrDry, lun, descript1, timesec)
 
          CASE(108)
-            CALL writeNodalData(offs, lun, descript1, timesec)
+            CALL writeNodalData(dynamiccorrection, lun, descript1, timesec)
          CASE(109)
-            CALL writeStationData(offSta, lun, descript1, timesec)
+            CALL writeStationData(dynamiccorrectionSta, lun, descript1, timesec)
 
          CASE DEFAULT
             write(scratchMessage,
@@ -4541,7 +4539,7 @@ C
          ENDIF
 
       CASE(109)
-         iret=nf90_inq_varid(sta%ncid, "offset", sta%station_data_id)
+         iret=nf90_inq_varid(sta%ncid, "dynamicWaterlevelCorrection", sta%station_data_id)
          CALL check_err(iret)
          IF (MNPROC.eq.1) THEN
             iret = nf90_put_var(sta%ncid, sta%station_data_id,
@@ -4859,7 +4857,7 @@ C
         CALL check_err(iret)
 
       CASE(108)
-         iret=nf90_inq_varid(dat%ncid,"offset",dat%nodal_data_id)
+         iret=nf90_inq_varid(dat%ncid,"dynamicWaterlevelCorrection",dat%nodal_data_id)
          CALL check_err(iret)
 
 

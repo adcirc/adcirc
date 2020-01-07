@@ -285,14 +285,14 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       logical :: inundationOutput = .false.
       real(sz) :: inunThresh = 0.6d0
 
-      ! jgf: added support for water level offset
-      logical :: foundOffsetControlNamelist = .false. 
-      character(len=2048) :: offsetFileName='null' ! water level offset file 
-      integer :: offsetSkipSnaps=0 ! number of offset data sets to skip 
-      real(sz) :: offsetMultiplier = 1.d0 ! multiply each offset value by this
-      real(sz) :: offsetRampStart = 0.d0 ! seconds after run start
-      real(sz) :: offsetRampEnd = 0.d0   ! seconds after run start     
-      character(len=10) :: offsetRampReferenceTime = 'hotstart'
+      ! jgf: added support for water level correction
+      logical :: foundCorrectionControlNamelist = .false. 
+      character(len=2048) :: dynamicWaterLevelCorrectionFileName='null' ! water level correction file 
+      integer :: dynamicWaterLevelCorrectionSkipSnaps=0 ! number of correction data sets to skip 
+      real(sz) :: dynamicWaterLevelCorrectionMultiplier = 1.d0 ! multiply each correction value by this
+      real(sz) :: dynamicWaterLevelCorrectionRampStart = 0.d0 ! seconds after run start
+      real(sz) :: dynamicWaterLevelCorrectionRampEnd = 0.d0   ! seconds after run start     
+      character(len=10) :: dynamicWaterLevelCorrectionRampReferenceTime = 'hotstart'
 C
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX

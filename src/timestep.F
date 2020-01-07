@@ -60,7 +60,8 @@ C
      &    WVNXOUT, WVNYOUT, WarnElev, PERT, FACET, FFT, AMIGT, SALTPHA,
      &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF, 
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
-     &    BCFLAG_LNM, usingWaterLevelOffset, offset1, offset2, L_N, TKM, 
+     &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
+     &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
      &    WarnElevDump, nodes_lg,NT
 #ifdef CSWAN
      &  , waveWindMultiplier
@@ -79,7 +80,7 @@ C
       USE GLOBAL_IO, ONLY : nddt2get
       USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
-     &    getOffsets
+     &    getdynamicWaterLevelCorrections
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET
@@ -278,9 +279,9 @@ C     TIP..Tidal potential forcing
       END DO
       !
       ! jgf: shift water level offset values
-      if (usingWaterLevelOffset.eqv..true.) then
-         offset1(:) = offset2(:)
-         offset2(:) = 0.d0
+      if (usingDynamicWaterLevelCorrection.eqv..true.) then
+         dynamicWaterLevelCorrection1(:) = dynamicWaterLevelCorrection2(:)
+         dynamicWaterLevelCorrection2(:) = 0.d0
       endif
       
 C...TCM V50.66.01 -- ADDING TIME DEPENDENT BATHYMETRY
@@ -552,8 +553,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
 C--------------------END ICE FIELDS----------------------------------------
 C---------------------WATER LEVEL OFFSET-----------------------------------
 C     jgf: update water level correction fields
-      if (usingWaterLevelOffset.eqv..true.) then
-         call getOffsets(offset2, timeloc)
+      if (usingDynamicWaterLevelCorrection.eqv..true.) then
+         call getDynamicWaterLevelCorrections(dynamicWaterLevelCorrection2, timeloc)
       endif
 
 C
