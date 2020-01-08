@@ -759,7 +759,7 @@ C
          PrDescript % writeFlag         = .false.
       endif
 
-      ! jgf: water level offset timeseries offset.63
+      ! jgf: water level dynamicWaterlevelCorrection.63
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
          ALLOCATE(dynamicWaterLevelCorrection2_g(NP_G))
       ENDIF
@@ -776,7 +776,7 @@ C
       dynamicWaterLevelCorrectionDescript % file_basename        = 'dynamicWaterlevelCorrection'
       dynamicWaterLevelCorrectionDescript % file_extension       = 63
       dynamicWaterLevelCorrectionDescript % writeFlag            = usingDynamicWaterLevelCorrection
-      ! offset.61
+      ! dynamicWaterlevelCorrection.61
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
          ALLOCATE(dynamicWaterLevelCorrectionSta_g(NSTAE_G))
       ENDIF

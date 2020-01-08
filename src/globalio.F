@@ -1437,7 +1437,7 @@ C
       character(*), intent(in) :: filename     ! name of file to create
       integer, intent(in) :: numSta    ! number of stations in subdomain in parallel
       integer, intent(in) :: numSta_g  ! number of fulldomain stations in parallel 
-      character(len=10), intent(in) :: typeStr ! the type of header to write
+      character(len=*), intent(in) :: typeStr ! the type of header to write
       integer :: nstations
 
 C     Open the file

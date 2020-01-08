@@ -2783,20 +2783,20 @@ c          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO B
       if ( (NOUTGE.eq.-1).and.(usingDynamicWaterLevelCorrection.eqv..true.) ) then
          if (write_local_files.eqv..true.) then
             call writeDomainHeader(108,trim(localdir)//'/'//
-     &           'offset.63',NP_G, NP, 'offset     ')
+     &           'dynamicWaterlevelCorrection.63',NP_G, NP, 'dynamicWaterlevelCorrection')
          else
               call writeDomainHeader(108,trim(globaldir)//'/'//
-     &           'offset.63',NP_G, NP, 'offset     ')
+     &           'dynamicWaterlevelCorrection.63',NP_G, NP, 'dynamicWaterlevelCorrection')
          endif
       endif
       ! jgf: Added init for water level offset output file 
       if ( (NOUTE.eq.-1).and.(usingDynamicWaterLevelCorrection.eqv..true.) ) then
          if (write_local_files.eqv..true.) then
             call writeStationHeader(109,trim(localdir)//'/'//
-     &           'offset.61',NSTAE_G, NSTAE, 'offset     ')
+     &           'dynamicWaterlevelCorrection.61',NSTAE_G, NSTAE, 'dynamicWaterlevelCorrection')
          else
               call writeStationHeader(109,trim(globaldir)//'/'//
-     &           'offset.61',NSTAE_G, NSTAE, 'offset     ')
+     &           'dynamicWaterlevelCorrection.61',NSTAE_G, NSTAE, 'dynamicWaterlevelCorrection')
          endif
       endif
 
