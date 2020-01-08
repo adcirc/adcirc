@@ -57,6 +57,8 @@ C..   Ali's full dispersion coefficient for M2
       REAL(SZ) :: Ad = 0.0050189_SZ ! coefficient of depth (default)
       REAL(SZ) :: Cs = 1500.0_SZ ! Speed of sound in water
       REAL(SZ) :: Cs2 ! Speed of sound in water^2
+      REAL(SZ), PARAMETER :: TWOB = 2d0*0.4779d0
+      REAL(SZ), PARAMETER :: GM2  = 3.486d0**2
 C     jgf46.21 Added support for IBTYPE=52.
       REAL(SZ),ALLOCATABLE, TARGET ::   ElevDisc(:)
       REAL(SZ) FluxSettlingTime

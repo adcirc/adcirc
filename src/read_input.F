@@ -1085,6 +1085,19 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
             CGWCE_HDP = .TRUE.
             IFNL_HDP = 1
             WRITE(16,*) '        w/ implicit finite-amplitude term'
+         ELSEIF (IMDig6.EQ.0) THEN
+            ILump=0
+            WRITE(16,*) '        Consistent GWCE mass matrix'
+            CGWCE_HDP = .TRUE.
+            IFNL_HDP = 1
+            WRITE(16,*) '        w/ implicit finite-amplitude term'
+            CAliDisp = .TRUE.
+            WRITE(16,*) '        & Alis improved dispersion relation'
+         ENDIF
+         ! WJP modifications for adding baroclinic mode
+         IF (IMDig6 > 4) THEN
+            CBaroclinic = .TRUE.
+            WRITE(16,*) '        and baroclinic mode'
          ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
       ELSE
