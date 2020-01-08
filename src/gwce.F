@@ -231,8 +231,9 @@ C
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
      &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1, TKM,
-     &   VIDISPDXOH, VIDISPDYOH, BXX, BYY, BXY, !VIDISPDXOH, VIDISPDYOH
-     &   NPERSEG, NNPERBC, IPERCONN, TSINV, TSINT 
+     &   NPERSEG, NTIP, GM2, TWOB,
+     &   NNPERBC, IPERCONN, VIDispDXOH, VIDispDYOH, TSINV, TSINT, 
+     &   IFNL_HDP, CGWCE_HDP, CAliDisp
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
@@ -277,6 +278,7 @@ C... DW
       REAL(SZ) BSXN1, BSXN2, BSXN3, BSYN1, BSYN2, BSYN3, BSXAvg, BSYAvg
       REAL(SZ) CorifAvg
       REAL(SZ) DPAvg, GDPAvgOAreaIE4
+      REAL(SZ) DPAvgS0, GDPAvgOAreaIE4_S0
       REAL(SZ) DispX, DispY, DispXAvg, DispYAvg
       REAL(SZ) E0N1, E0N2, E0N3, E0XGrad2A, E0YGrad2A
       REAL(SZ) E1N1, E1N2, E1N3, E1XGrad2A, E1YGrad2A
@@ -368,7 +370,9 @@ C...
 C...  Recompute the GWCE system matrix at the first time step or if any
 C...  wetting or drying occurred in the previous time step.
 C...
-      NCIFBLCK: IF(NCChange.GT.0) THEN !if any subdomain grid has changed
+C..... DW, Dev 2019
+C.....  if CGWCE_HDP = .true. use H instead of DP in the surface gradient term
+      NCIFBLCK: IF(NCChange.GT.0 .or. CGWCE_HDP ) THEN !if any subdomain grid has changed
          NCChange=0
 C.....Set up the LHS matrix (for the iterative matrix solver)
          IF ( ILump.eq.0 ) THEN ! default, fully consistent case
@@ -432,12 +436,21 @@ C.... WJP: adding the spherical correction in continuity through new FDXX/FDYY t
                FDYY3 = FDYE(3,IE)*SLacAvg ;    !c  FDY3=X(NM2)-X(NM1) !a3
 C.... End WJP
                AreaIE2=Areas(IE)
-               AreaIE =AreaIE2/2.0d0
+               AreaIE =AreaIE2*0.5d0
                AreaIE4=AreaIE2*2.0d0
 
-               DPAvg=(DP(NMI1)+DP(NMI2)+DP(NMI3))/3.d0
-               GA00DPAvgOAreaIE4=G*A00*DPAvg/AreaIE4
-               Tau0Avg=(Tau0Var(NMI1)+Tau0Var(NMI2)+Tau0Var(NMI3))/3.d0
+C.... DW, Nov 2019 if IFNL_HDP = 1 use DP + ETA = H in the GWCE
+               DPAvg = (DP(NMI1)+DP(NMI2)+DP(NMI3))/3.d0 +   ! BAVG if GWCE_NL_HDP = .FALSE.
+     &              IFNLFA*IFNL_HDP*(ETA2(NMI1) + ! HAVG otherwise
+     &              ETA2(NMI2)+ETA2(NMI3))/3.d0 ; 
+C..... DW
+C            WJP here for new dispersion equation 
+               if (CAliDisp) then
+                  GA00DPAvgOAreaIE4 = A00*min(G*DPAvg,GM2*DPAvg**TWOB)/AreaIE4
+               else
+                  GA00DPAvgOAreaIE4 = A00*G*DPAvg/AreaIE4
+               endif
+               Tau0Avg = (Tau0Var(NMI1)+Tau0Var(NMI2)+Tau0Var(NMI3))/3.d0
 
 C........... DW, Absorbing layer
 C    
@@ -472,9 +485,13 @@ C.......... DW
                END DO
 C.........     WJP multiplying by cosine(lat) if doing the 
 C              spherical correction 
+C              Node by Node
                SPM1 = TSINV + TSINT*csfea(NMI1)**projtype
                SPM2 = TSINV + TSINT*csfea(NMI2)**projtype
                SPM3 = TSINV + TSINT*csfea(NMI3)**projtype
+C              Element averaged
+C               SPM1 = TSINV + TSINT*CSfeaEle(IE)**projtype
+C               SPM2 = SPM1; SPM3 = SPM1;
 
                Coef(NMI1,1)  = Coef(NMI1,1)   + (MsFacLOnDiag*SPM1
      &                 +GA00DPAvgOAreaIE4*(FDXX1*FDX1+FDYY1*FDY1))*NCELE
@@ -1117,8 +1134,21 @@ C...     Compute elemental averages
          QX1Avg=(QX1N1+QX1N2+QX1N3)/3.d0
          QY1Avg=(QY1N1+QY1N2+QY1N3)/3.d0
          ESAvg=(ESN1+ESN2+ESN3)/3.d0
-         DPAvg=(DP(NM1)+DP(NM2)+DP(NM3))/3.d0
-         GDPAvgOAreaIE4=G*DPAvg/AreaIE4
+C.....   DW, Nov 2019 
+         DPAvg = (DP(NM1)+DP(NM2)+DP(NM3))/3.d0 + ! BAVG if GWCE_HDP = .FALSE. 
+     &        IFNLFA*IFNL_HDP*(E1N1 + E1N2 + E1N3)/3.d0 ; ! H^{s}_{avg} otherwise
+         
+         DPAvgS0 = (DP(NM1)+DP(NM2)+DP(NM3))/3.d0 + ! BAVG if GWCE_HDP = .FALSE. 
+     &        IFNLFA*IFNL_HDP*(E0N1 + E0N2 + E0N3)/3.d0 ; ! H^{s-1}_{avg} otherwise
+C        WJP Change here to implement new dispersive equation
+         if (CAliDisp) then
+            GDPAvgOAreaIE4 = min(G*DPAvg,GM2*DPAvg**TWOB)/AreaIE4
+            GDPAvgOAreaIE4_S0 = min(G*DPAvgS0,GM2*DPAvgS0**TWOB)/AreaIE4
+         else
+            GDPAvgOAreaIE4 = G*DPAvg/AreaIE4
+            GDPAvgOAreaIE4_S0 = G*DPAvgS0/AreaIE4
+         endif
+C....  END DW & WJP
          HAvg=(H1N1+H1N2+H1N3)/3.d0
          GHAvg=G*HAvg
          GHAvgOAreaIE2=GHAvg/AreaIE2
@@ -1199,21 +1229,22 @@ C
 
 C...     Compute the JX, JY terms less the advection terms
          JXAvg = CorifAvg*QY1Avg
-     &          -IFNLFA*GOAreaIE4*(E1N1SQ*FDX1+E1N2SQ*FDX2
-     &                                        +E1N3SQ*FDX3)
-     &          -GHAvgOAreaIE2*((PR1N1-TiPN1-Off1N1)*FDX1
-     &          +(PR1N2-TiPN2-Off1N2)*FDX2+(PR1N3-TiPN3-Off1N3)*FDX3)
-     &          +WSXAvg-BSXAvg+MXAvg-DispXAvg-BCXAvg+Tau0QXAvg
+     &          -IFNLFA*GOAreaIE4*(1 - IFNL_HDP)*(
+     &               E1N1SQ*FDX1 +E1N2SQ*FDX2 + E1N3SQ*FDX3)
+     &          -GHAvgOAreaIE2*((PR1N1-TiPN1)*FDX1
+     &                     +(PR1N2-TiPN2)*FDX2+(PR1N3-TiPN3)*FDX3)
+     &          +WSXAvg-BSXAvg+MXAvg-DispXAvg-BCXAvg+Tau0QXAvg 
 C--- begin: DW, absorbing layer
-     &          -SigmaQxAvg*sponge_dis_mthd
-     &          +AvgSigmaHAbsU*sponge_dis_mthd 
+     &          - SigmaQxAvg*sponge_dis_mthd
+     &          + AvgSigmaHAbsU*sponge_dis_mthd 
 C--- end DW
 
+
          JYAvg =-CorifAvg*QX1Avg
-     &          -IFNLFA*GOAreaIE4*(E1N1SQ*FDY1+E1N2SQ*FDY2
-     &                                        +E1N3SQ*FDY3)
-     &          -GHAvgOAreaIE2*((PR1N1-TiPN1-Off1N1)*FDY1
-     &          +(PR1N2-TiPN2-Off1N2)*FDY2+(PR1N3-TiPN3-Off1N3)*FDY3)
+     &          -IFNLFA*GOAreaIE4*(1 - IFNL_HDP)*(
+     &                E1N1SQ*FDY1+E1N2SQ*FDY2+E1N3SQ*FDY3)
+     &          -GHAvgOAreaIE2*((PR1N1-TiPN1)*FDY1
+     &                    +(PR1N2-TiPN2)*FDY2+(PR1N3-TiPN3)*FDY3)
      &          +WSYAvg-BSYAvg+MYAvg-DispYAvg-BCYAvg+Tau0QYAvg
 C--- begin: DW, absorbing layer
      &          -SigmaQYAvg*sponge_dis_mthd 
@@ -1269,9 +1300,14 @@ C        implement by recalculating FDX/FDY here
          FDY2 = FDYE(2,IE)*SLacAvg ;    !c  FDY2=X(NM1)-X(NM3) !a2
          FDY3 = FDYE(3,IE)*SLacAvg ;    !c  FDY3=X(NM2)-X(NM1) !a3
 C...     Needs multiplying by cos(lat) in case of the correction 
+C        Node by node
          ESN1 = ESN1*(TSINV + TSINT*csfea(NM1)**projtype)
          ESN2 = ESN2*(TSINV + TSINT*csfea(NM2)**projtype)
          ESN3 = ESN3*(TSINV + TSINT*csfea(NM3)**projtype)
+C        Element averaged
+C         ESN1 = ESN1*(TSINV + TSINT*CSfeaEle(IE)**projtype)
+C         ESN2 = ESN2*(TSINV + TSINT*CSfeaEle(IE)**projtype)
+C         ESN3 = ESN3*(TSINV + TSINT*CSfeaEle(IE)**projtype)
 
 C...     Assemble forcing for node NM1 (local index j=1)
 
@@ -1282,8 +1318,10 @@ C...    (consistent mass matrix: ILump=0, lumped mass matrix: ILump=1)
      &         (OnDiag*ESN1 + OffDiag*(ESN2+ESN3))*MsFacR
 
 C...     Free surface terms from LHS (time levels s-1 & s)
-     &        -GDPAvgOAreaIE4*(  C00  *(FDX1*E0XGrad2A+FDY1*E0YGrad2A)
-     &                        +A00pB00*(FDX1*E1XGrad2A+FDY1*E1YGrad2A))
+     &        - GDPAvgOAreaIE4_S0*( C00*( FDX1*E0XGrad2A + 
+     &                                    FDY1*E0YGrad2A ) ) 
+     &        - GDPAvgOAreaIE4*( A00pB00*(FDX1*E1XGrad2A +
+     &                                    FDY1*E1YGrad2A ) )
 
 C...     Terms from momentum eqs.
      &        +(JXAvg*FDX1 + JYAvg*FDY1)*0.5d0
@@ -1307,8 +1345,10 @@ C...    (consistent mass matrix: ILump=0, lumped mass matrix: ILump=1)
      &         (OnDiag*ESN2 + OffDiag*(ESN1+ESN3))*MsFacR
 
 C...     Free surface terms from LHS (time levels s-1 & s)
-     &        -GDPAvgOAreaIE4*(  C00  *(FDX2*E0XGrad2A+FDY2*E0YGrad2A)
-     &                        +A00pB00*(FDX2*E1XGrad2A+FDY2*E1YGrad2A))
+     &        - GDPAvgOAreaIE4_S0*( C00*( FDX2*E0XGrad2A + 
+     &                                    FDY2*E0YGrad2A ) ) 
+     &        - GDPAvgOAreaIE4*( A00pB00*(FDX2*E1XGrad2A +
+     &                                    FDY2*E1YGrad2A ) )
 
 C...     Terms from momentum eqs.
      &        +(JXAvg*FDX2 + JYAvg*FDY2)*0.5d0
@@ -1334,8 +1374,10 @@ C...    (consistent mass matrix: ILump=0, lumped mass matrix: ILump=1)
      &         (OnDiag*ESN3 + OffDiag*(ESN1+ESN2))*MsFacR
 
 C...     Free surface terms from LHS (time levels s-1 & s)
-     &        -GDPAvgOAreaIE4*(  C00  *(FDX3*E0XGrad2A+FDY3*E0YGrad2A)
-     &                        +A00pB00*(FDX3*E1XGrad2A+FDY3*E1YGrad2A))
+     &        - GDPAvgOAreaIE4_S0*( C00*( FDX3*E0XGrad2A + 
+     &                                    FDY3*E0YGrad2A ) ) 
+     &        - GDPAvgOAreaIE4*( A00pB00*(FDX3*E1XGrad2A +
+     &                                    FDY3*E1YGrad2A ) )
 
 C...     Terms from momentum eqs.
      &        +(JXAvg*FDX3 + JYAvg*FDY3)*0.5d0

@@ -52,6 +52,9 @@ C.....Days to seconds conversion
       REAL(8), PARAMETER :: ms2kt = 1.d0 / kt2ms ! m/s to knots
       REAL(8), PARAMETER :: omega = 2.0d0*pi / 86164.2d0
       REAL(8), PARAMETER :: mb2pa = 100.d0
+C..   Ali's full dispersion coefficient for M2
+      REAL(SZ), PARAMETER :: TWOB = 2d0*0.4779d0
+      REAL(SZ), PARAMETER :: GM2  = 3.486d0**2 
 C     jgf46.21 Added support for IBTYPE=52.
       REAL(SZ),ALLOCATABLE, TARGET ::   ElevDisc(:)
       REAL(SZ) FluxSettlingTime
@@ -451,6 +454,7 @@ C     jgf45.07 The definitions of many of these are in timestep.F
       LOGICAL :: CGWCE_Advec_NC      = .FALSE.
       LOGICAL :: CGWCE_Advec_C1      = .FALSE.
       LOGICAL :: CGWCE_Advec_C2      = .FALSE.
+      LOGICAL :: CGWCE_HDP           = .FALSE.
       LOGICAL :: CME_Orig            = .FALSE.
       LOGICAL :: CME_New_NC          = .FALSE.
       LOGICAL :: CME_New_C1          = .FALSE.
@@ -465,6 +469,7 @@ C     jgf45.07 The definitions of many of these are in timestep.F
       LOGICAL :: CME_AreaInt_Orig    = .FALSE.
       LOGICAL :: CME_AreaInt_Corr    = .FALSE.
       LOGICAL :: CTIP                = .FALSE.
+      LOGICAL :: CAliDisp            = .FALSE.
 C    kmd48.33bc  - logical statement for hot start using different time step
       ! This is .true. if the time step size of the current run is
       ! different from the time step size in the hotstart file; also
@@ -504,6 +509,7 @@ C     size has changed after a hotstart.
 
 Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  IFNLCAT, IFNLCT, IFNLFA, IFNLCTE, IFNLCATE
+      INTEGER :: IFNL_HDP = 0 ! use H (1) or D (0) in LHS surface gradient term
       INTEGER  IFWIND
       integer :: TSINT = 0, TSINV = 1
       ! 
