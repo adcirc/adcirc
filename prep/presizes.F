@@ -751,10 +751,10 @@ c        C3DDSS = .TRUE.
          C3D_PTrans    = .TRUE.
          CBaroclinic   = .TRUE.
       CASE DEFAULT
-         IF ((IM.GE.111111).AND.(IM.LE.534322)) THEN
+         IF ((IM.GE.111111).AND.(IM.LE.534328)) THEN
             C2DDI = .TRUE.
-            IF (IM-int(IM*0.1)*10 > 2) THEN
-                ! WJP allowing for e.g. 511113 
+            IF (IM-int(IM*0.1)*10 > 4) THEN
+                ! Setting Baroclinic true 
                 CBaroclinic = .TRUE.
             ENDIF
          ELSEIF ((IM.GE.611111).AND.(IM.LE.634322)) THEN

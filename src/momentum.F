@@ -1,4 +1,4 @@
-C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
+
 C 
 C                       M O D U L E   M O M E N T U M
 C
@@ -61,11 +61,12 @@ C******************************************************************************
      &   allMessage, logMessage, unsetMessageSource
       implicit none
 
-      real(sz),allocatable :: auv11(:),auv12(:)
-      real(SZ),allocatable :: auv(:,:) ! WJP allowing for the case auv11 ~= auv22
-      real(sz) :: auv21, auv22
+      real(sz),allocatable :: auv(:,:) ! WJP allowing for the case auv11 ~= auv22
+      real(sz),allocatable :: auv11(:), auv12(:)! For the pc subroutine
       real(sz) :: dto2  ! time step divided by 2.0
       real(sz) :: go2   ! gravitational acceleration divided by 2.0
+      real(sz) :: GRat  ! ratio of dispersive gravity to real gravity 
+      real(sz) :: gmo2  ! GM2 gravity divided by 2.0 
       
       contains
 
@@ -77,17 +78,15 @@ C******************************************************************************
 !----------------------------------------------------------------------
       subroutine initMomentumEq()
       use sizes, only : mnp
-      use global, only : dt, CME_New_NC, g
+      use global, only : dt, g, GM2
       implicit none
 
-      IF (CME_New_NC) THEN
-         !WJP 02.24.2018 I only put this in Mom_Eqs_New_NC so far..
-         allocate(auv(4,mnp))
-      ELSE
-         allocate(auv11(mnp),auv12(mnp))
-      ENDIF
+      !WJP 02.24.2018 I only put this in Mom_Eqs_New_NC so far..
+      allocate(auv(4,mnp))
       dto2=dt/2.d0
-      go2=g/2.d0
+      go2 = g/2.d0
+      GRat = GM2/G
+      gmo2 = GM2/2.d0
 
 !----------------------------------------------------------------------
       end subroutine initMomentumEq
@@ -151,13 +150,13 @@ C*******************************************************************************
       USE GLOBAL, ONLY : UU2, VV2, QX2, QY2, CBaroclinic, C3D, IDEN,
      &  CME_AreaInt_Corr, CME_AreaInt_Orig, CME_LS_IBPQ, CME_LS_IBPSQ,
      &  CME_LS_IBPSV, CSmag_Eh, Smag_Comp_Flag, CTIP, DT, CME_LS_IBPV,
-     &  IFNLCT, IFNLFA, IFWIND, NRS, NWS, SMAG_LOWER_LIM, SMAG_UPPER_LIM,
+     &  IFNLCT, IFNLFA, IFWIND, NRS, NWS, SMAG_LOWER_LIM,SMAG_UPPER_LIM,
      &  NODECODE, NOFF, UU1, VV1, ETA2, ETA1, QX1, QX2, QY1, PR1, PR2,
      &  TiP1, TiP2, WSX2, WSY2, TK, CORIF, WSX1, WSY1, VIDBCPDXOH,
      &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y, usingDynamicWaterLevelCorrection,
      &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, TKM, 
-     &  adcirc_norm2, QN2, MOM_LV_X, MOM_LV_Y, BXX, BXY, BYY, VIDispDXOH, 
-     &  VIDispDYOH, NPERSEG, NNPERBC, IPERCONN, TSINT
+     &  adcirc_norm2, QN2, MOM_LV_X, MOM_LV_Y, VIDispDXOH, 
+     &  VIDispDYOH, NPERSEG, NNPERBC, IPERCONN, TSINT, CAliDisp, TWOB
       USE MESH, ONLY : NE, NP, NM, DP, Areas, TotalArea, sfar,
      &                 NNeigh, NeiTab, NeiTabEle, MJU, FDXE, FDYE,
      &                 SWITCH_ELTAB_PERBC, SFacEle, SLacEle
@@ -183,15 +182,15 @@ C----- END DW
       INTEGER NNFirst
 
       REAL(SZ) BTP1N1, BTP1N2, BTP1N3, BTP2N1, BTP2N2, BTP2N3
-      REAL(SZ) DBTPDXA, DBTPDYA
+      REAL(SZ) DBTPDXA, DBTPDYA, DBTPDX1A, DBTPDY1A, DBTPDX2A, DBTPDY2A
       REAL(SZ) DBCPDX1A, DBCPDY1A, DBCPDX2A, DBCPDY2A
       REAL(SZ) DBCPDX3A, DBCPDY3A, DDU
       REAL(SZ) DQX1DX, DQX1DY, DQY1DX, DQY1DY
       REAL(SZ) DU1DX, DU1DY, DV1DX, DV1DY
       REAL(SZ) DU1DXA, DU1DYA, DV1DXA, DV1DYA
       REAL(SZ) EVMH1N1, EVMH1N2, EVMH1N3, EVMEle, EVMSmag
-      REAL(SZ) H1, H1N1, H1N2, H1N3
-      REAL(SZ) H2, H2N1, H2N2, H2N3
+      REAL(SZ) H1, H1N1, H1N2, H1N3, H1Avg
+      REAL(SZ) H2, H2N1, H2N2, H2N3, H2Avg
       REAL(SZ) LSXXN1, LSXXN2, LSXXN3
       REAL(SZ) LSXYN1, LSXYN2, LSXYN3
       REAL(SZ) LSYXN1, LSYXN2, LSYXN3
@@ -216,6 +215,8 @@ C----- END DW
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       INTEGER :: nele
       REAL(SZ) :: VCOEFXX, VCOEFYY, VCOEFXY, VCOEFYX
+      REAL(SZ) :: cfac1, cfac2
+      REAL(SZ), PARAMETER :: THIRD = 1.0_SZ/3.0_SZ
 C..... DW
       LOGICAL :: MOM_SPONGE = .false.
       REAL(8) :: SPNGCOEF_X, SPNGCOEF_Y
@@ -245,6 +246,7 @@ C..... DW
 C     WJP: initialize baroclinic pressure gradients to zero
       DBCPDX1A = 0d0; DBCPDX2A = 0d0; DBCPDX3A = 0d0;
       DBCPDY1A = 0d0; DBCPDY2A = 0d0; DBCPDY3A = 0d0;
+      cfac1 = 1d0; cfac2 = 1d0;
 
       DO IE=1,NE
 
@@ -282,8 +284,8 @@ Corbitt 120322: Localized Advection
          SFacAvg = SFacEle(IE)
          SLacAvg = SLacEle(IE)
 
-         AreaIE2=Areas(IE)
-         AreaIE =AreaIE2/2.d0
+         AreaIE2 = Areas(IE)
+         AreaIE  = 0.5d0*AreaIE2
 C..... DW
          FDX1 = FDXE(1,IE)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
          FDX2 = FDXE(2,IE)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
@@ -295,15 +297,15 @@ C..... DW
 
 C...  Compute element averaged quantities
 
-         U1Avg =(U1N1+U1N2+U1N3)/3.d0
-         V1Avg =(V1N1+V1N2+V1N3)/3.d0
+         U1Avg = THIRD*(U1N1+U1N2+U1N3)
+         V1Avg = THIRD*(V1N1+V1N2+V1N3)
 
-         DU1DXA=(U1N1*FDX1+U1N2*FDX2+U1N3*FDX3)/2.d0
-         DU1DYA=(U1N1*FDY1+U1N2*FDY2+U1N3*FDY3)/2.d0
-         DV1DXA=(V1N1*FDX1+V1N2*FDX2+V1N3*FDX3)/2.d0
-         DV1DYA=(V1N1*FDY1+V1N2*FDY2+V1N3*FDY3)/2.d0
+         DU1DXA=(U1N1*FDX1+U1N2*FDX2+U1N3*FDX3)*0.5d0
+         DU1DYA=(U1N1*FDY1+U1N2*FDY2+U1N3*FDY3)*0.5d0
+         DV1DXA=(V1N1*FDX1+V1N2*FDX2+V1N3*FDX3)*0.5d0
+         DV1DYA=(V1N1*FDY1+V1N2*FDY2+V1N3*FDY3)*0.5d0
 
-         EVMEle=(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
+         EVMEle= THIRD*(EVM(NM1)+EVM(NM2)+EVM(NM3))
          !If using Smagorinski vertically-integrated lateral stress coefficient
          IF (CSmag_Eh.or.Smag_Comp_Flag) THEN  
             EVMSmag=EVMEle*
@@ -386,12 +388,21 @@ C.......If using tidal potential terms, add these into the barotropic pressure
 
 C...  Compute the barotropic pressure gradient x area for the element
 
-         DBTPDXA=((BTP1N1*FDX1+BTP1N2*FDX2+BTP1N3*FDX3)
-     &           +(BTP2N1*FDX1+BTP2N2*FDX2+BTP2N3*FDX3))*0.5d0
-         DBTPDYA=((BTP1N1*FDY1+BTP1N2*FDY2+BTP1N3*FDY3)
-     &           +(BTP2N1*FDY1+BTP2N2*FDY2+BTP2N3*FDY3))*0.5d0
-
-C...     WJP: Compute the baroclinic pressure gradient from a 3D ocean model
+         DBTPDX1A = BTP1N1*FDX1+BTP1N2*FDX2+BTP1N3*FDX3
+         DBTPDX2A = BTP2N1*FDX1+BTP2N2*FDX2+BTP2N3*FDX3 
+         DBTPDY1A = BTP1N1*FDY1+BTP1N2*FDY2+BTP1N3*FDY3
+         DBTPDY2A = BTP2N1*FDY1+BTP2N2*FDY2+BTP2N3*FDY3
+C...  WJP: For the new dispersion relation
+         IF (CAliDisp) THEN
+            H1Avg = THIRD*(H1N1 + H1N2 + H1N3)
+            H2Avg = THIRD*(H2N1 + H2N2 + H2N3)
+            cfac1 = min(1.d0,GRat*H1Avg**(TWOB-1d0))
+            cfac2 = min(1.d0,GRat*H2Avg**(TWOB-1d0))
+         ENDIF
+         DBTPDXA = 0.5d0*(cfac1*DBTPDX1A + cfac2*DBTPDX2A)
+         DBTPDYA = 0.5d0*(cfac1*DBTPDY1A + cfac2*DBTPDY2A)
+ 
+C...  WJP: Compute the baroclinic pressure gradient from a 3D ocean model
          IF (CBaroclinic) THEN
             DBCPDX1A = VIDBCPDXOH(NM1) * AreaIE
             DBCPDX2A = VIDBCPDXOH(NM2) * AreaIE 
@@ -974,12 +985,12 @@ C*******************************************************************************
 C
       USE GLOBAL, only: NWS, CTIP, PR2, PR1, TIP1, TIP2, CME_NEW_C1, DT,
      & CME_NEW_C2, CME_LS_IBPSQ, CME_LS_IBPV, CME_LS_IBPSV, CME_LS_IBPQ,
-     & IFNLCT, MOM_LV_X, MOM_LV_Y, TK, CORIF, VIDBCPDXOH, VIDBCPDYOH,
+     & IFNLCT, MOM_LV_X, MOM_LV_Y, TKM, CORIF, VIDBCPDXOH, VIDBCPDYOH,
      & NRS, IFWIND, WSX1, WSY1, WSX2, WSY2, QX2, QY2, QN2, UU2, VV2,
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
      & SMAG_LOWER_LIM, NODECODE, TSINT, VIDISPDXOH, VIDISPDYOH, 
-     & CBaroclinic
+     & CBaroclinic, CAliDisp, TWOB
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &   NEITAB, NEITABELE, NNEIGH, SFacEle, SLacEle, Sfar, FDXE, FDYE 
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI, 
@@ -1002,8 +1013,8 @@ C
       REAL(SZ) DQX1DX2A, DQX1DY2A, DQY1DX2A, DQY1DY2A
       REAL(SZ) DU1QX1DXA, DV1QX1DYA, DU1QY1DXA, DV1QY1DYA
       REAL(SZ) EVMH1N1, EVMH1N2, EVMH1N3, EVMEle, EVMSmag
-      REAL(SZ) H1, H1N1, H1N2, H1N3, H1Avg
-      REAL(SZ) H2, H2N1, H2N2, H2N3, H2Avg
+      REAL(SZ) H1, H1N1, H1N2, H1N3, H1Avg, GH1Avg
+      REAL(SZ) H2, H2N1, H2N2, H2N3, H2Avg, GH2Avg
       REAL(SZ) LSXXN1, LSXXN2, LSXXN3
       REAL(SZ) LSXYN1, LSXYN2, LSXYN3
       REAL(SZ) LSYXN1, LSYXN2, LSYXN3
@@ -1016,7 +1027,7 @@ C
       REAL(SZ) TEMP_LV_B1, TEMP_LV_B2, TEMP_LV_B3
       REAL(SZ) U1N1, U1N2, U1N3, U1Avg, U1DQX1DXA, U1DQY1DXA
       REAL(SZ) V1N1, V1N2, V1N3, V1Avg, V1DQX1DYA, V1DQY1DYA
-      REAL(SZ) VCoef1, VCoef2
+      REAL(SZ) :: VCOEFXX, VCOEFYY, VCOEFXY, VCOEFYX
       REAL(SZ) VIDBCPDX, VIDBCPDY
       REAL(SZ) WSX, WSY
       REAL(SZ) ZNGLHS,ZNGRHS1,ZNGRHS2
@@ -1122,7 +1133,7 @@ C...  Compute terms associated with the barotropic pressure
 
 C.......If using atm pressure add it into the barotropic pressure
 
-         IF(NWS.NE.0) THEN
+         IF (NWS.NE.0) THEN
             BTP1N1=BTP1N1+PR1(NM1)
             BTP2N1=BTP2N1+PR2(NM1)
             BTP1N2=BTP1N2+PR1(NM2)
@@ -1143,23 +1154,31 @@ C.......If using tidal potential terms, add these into the barotropic pressure
          ENDIF
 
 C...  Compute the element avg depth x barotropic pressure gradient x area for the element
+C.... WJP: For the new dispersion relation
+         IF (CAliDisp) THEN
+            GH1Avg = min(GO2*H1Avg,GMO2*H1Avg**TWOB)
+            GH2Avg = min(GO2*H2Avg,GMO2*H2Avg**TWOB)
+         ELSE
+            GH1Avg = GO2*H1Avg
+            GH2Avg = GO2*H2Avg
+         ENDIF
 
-         DBTPDXA=(H1Avg*(BTP1N1*FDX1+BTP1N2*FDX2+BTP1N3*FDX3)
-     &           +H2Avg*(BTP2N1*FDX1+BTP2N2*FDX2+BTP2N3*FDX3))/2.d0
-         DBTPDYA=(H1Avg*(BTP1N1*FDY1+BTP1N2*FDY2+BTP1N3*FDY3)
-     &           +H2Avg*(BTP2N1*FDY1+BTP2N2*FDY2+BTP2N3*FDY3))/2.d0
+         DBTPDXA=(GH1Avg*(BTP1N1*FDX1+BTP1N2*FDX2+BTP1N3*FDX3)
+     &           +GH2Avg*(BTP2N1*FDX1+BTP2N2*FDX2+BTP2N3*FDX3))*0.5d0
+         DBTPDYA=(GH1Avg*(BTP1N1*FDY1+BTP1N2*FDY2+BTP1N3*FDY3)
+     &           +GH2Avg*(BTP2N1*FDY1+BTP2N2*FDY2+BTP2N3*FDY3))*0.5d0
 
 C...  Compute the advective term gradients for the element version 1
 
          IF (CME_New_C1) THEN
             DU1QX1DXA=(U1N1*QX1N1*FDX1+U1N2*QX1N2*FDX2+U1N3*QX1N3*FDX3)
-     &                                                             /2.d0
+     &                                                            *0.5d0
             DV1QX1DYA=(V1N1*QX1N1*FDY1+V1N2*QX1N2*FDY2+V1N3*QX1N3*FDY3)
-     &                                                             /2.d0
+     &                                                            *0.5d0
             DU1QY1DXA=(U1N1*QY1N1*FDX1+U1N2*QY1N2*FDX2+U1N3*QY1N3*FDX3)
-     &                                                             /2.d0
+     &                                                            *0.5d0
             DV1QY1DYA=(V1N1*QY1N1*FDY1+V1N2*QY1N2*FDY2+V1N3*QY1N3*FDY3)
-     &                                                             /2.d0
+     &                                                            *0.5d0
          ENDIF
 
 C...  Compute the advective term gradients for the element version 2
@@ -1281,7 +1300,7 @@ C...  TEMP_LV_A VECTOR FOR NODE NM1
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(DU1QX1DXA+DV1QX1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
-     &             -GO2*DBTPDXA
+     &             -DBTPDXA
 C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSXXN1*FDX1+LSXYN1*FDY1)
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
@@ -1295,7 +1314,7 @@ C...
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(DU1QX1DXA+DV1QX1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
-     &             -GO2*DBTPDXA
+     &             -DBTPDXA
 C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSXXN2*FDX2+LSXYN2*FDY2)
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
@@ -1309,7 +1328,7 @@ C...
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(DU1QX1DXA+DV1QX1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
-     &             -GO2*DBTPDXA
+     &             -DBTPDXA
 C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSXXN3*FDX3+LSXYN3*FDY3)
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
@@ -1322,7 +1341,7 @@ C...  TEMP_LV_B VECTOR FOR NODE NM1
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(DU1QY1DXA+DV1QY1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
-     &             -GO2*DBTPDYA
+     &             -DBTPDYA
 C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSYXN1*FDX1+LSYYN1*FDY1)
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
@@ -1335,7 +1354,7 @@ C...  TEMP_LV_B VECTOR FOR NODE NM2
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(DU1QY1DXA+DV1QY1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
-     &             -GO2*DBTPDYA
+     &             -DBTPDYA
 C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSYXN2*FDX2+LSYYN2*FDY2)
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
@@ -1348,7 +1367,7 @@ C...  TEMP_LV_B VECTOR FOR NODE NM3
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(DU1QY1DXA+DV1QY1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
-     &             -GO2*DBTPDYA
+     &             -DBTPDYA
 C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSYXN3*FDX3+LSYYN3*FDY3)
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
@@ -1439,31 +1458,35 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
             WSX=DTO2*IFWIND*(WSX1(I)+WSX2(I))
             WSY=DTO2*IFWIND*(WSY1(I)+WSY2(I))
          ENDIF
-         VCoef1=DTO2*TK(I)
+         VCOEFXX = DTO2*TKM(1,I) 
+         VCOEFYY = DTO2*TKM(2,I)
 C        WJP 05.28.2019: Add the Spherical coordinate correction term 
 C        (refer; Kolar et al., 1994, doi:10.1080/00221689409498786)
 C        Equation (41) [refer also Eq. (37)]
          CorifA  = CORIF(I) + IFNLCT*TSINT*UU1(I)*sfar(I)
-         VCoef2  = DTO2*CorifA
+         VCOEFXY = DTO2*(TKM(3,I) - CorifA)
+         VCOEFYX = DTO2*(TKM(3,I) + CorifA)
 
 C...     WJP: Use the spatial gradients of the baroclinic pressure
 C        gradient and momentum dispersion terms from a 3D ocean model
-         IF (CBaroclinic) THEN
-            VIDBCPDX = DT*VIDBCPDXOH(I)*H2
-            VIDBCPDY = DT*VIDBCPDYOH(I)*H2
-            DispX    = DT*VIDispDXOH(I)*H2
-            DispY    = DT*VIDispDYOH(I)*H2
-         ENDIF
+C         IF (CBaroclinic) THEN
+C            VIDBCPDX = DT*VIDBCPDXOH(I)*H2
+C            VIDBCPDY = DT*VIDBCPDYOH(I)*H2
+C            DispX    = DT*VIDispDXOH(I)*H2
+C            DispY    = DT*VIDispDYOH(I)*H2
+C         ENDIF
 
 C        WJP 02.24.2018 Get the righthand side momentum 
-         MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*QX1(I)
-     &              + VCoef2*QY1(I)-VIDBCPDX-DispX)
-         MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*QY1(I)
-     &              - VCoef2*QX1(I)-VIDBCPDY-DispY)
+         MOM_LV_X(I) = NCI*(MOM_LV_X(I)+WSX+(1.D0-VCOEFXX)*QX1(I) 
+     &               - VCOEFXY*QY1(I)) !-VIDBCPDX) !-DispX)
+         MOM_LV_Y(I) = NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCOEFYY)*QY1(I)
+     &               - VCOEFYX*QX1(I)) !-VIDBCPDY) !-DispY)
          
 C        WJP 02.24.2018 Get the lefthand side momentum 
-         AUV11(I)=1.D0+VCoef1*NCI
-         AUV12(I)=-VCoef2*NCI
+         AUV(1,I) = 1d0 + VCOEFXX*NCI
+         AUV(2,I) = 1d0 + VCOEFYY*NCI
+         AUV(3,I) = VCOEFXY*NCI
+         AUV(4,I) = VCOEFYX*NCI
       ENDDO
 
 C...  Modify the momentum equations to impose velocity boundary
@@ -1478,22 +1501,15 @@ C...  AUV12=-AUV21)
 
 C      Specified essential normal flow and free tangential slip
 
-         IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
-#ifdef CSWAN
-            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
-     &                     -CSII(I)*MOM_LV_Y(NBDI)
-     &                     +QN2(I)*AUV12(NBDI))*NCI          !Tangential Eqn RHS
-            MOM_LV_Y(NBDI)=-QN2(I)*AUV11(NBDI)*NCI           !Normal Eqn RHS
-            AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
-            AUV11(NBDI)=SIII(I)*AUV11(NBDI)
-#else
-            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
-     &                     -CSII(I)*MOM_LV_Y(NBDI)
-     &                     +QN2(I)*AUV12(NBDI))*NCI          !Tangential Eqn RHS
-            MOM_LV_Y(NBDI)=-QN2(I)*AUV11(NBDI)*NCI           !Normal Eqn RHS
-            AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
-            AUV11(NBDI)=SIII(I)*AUV11(NBDI)
-#endif
+         IF ((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
+             MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI)
+     &                       - CSII(I)*MOM_LV_Y(NBDI)
+     &                      )*NCI                      !Tangetial Eqn RHS
+             MOM_LV_Y(NBDI) = -QN2(I)*NCI              !Normal Eqn RHS
+             AUV(1,NBDI) = AUV(1,NBDI)*SIII(I) - AUV(4,NBDI)*CSII(I)
+             AUV(3,NBDI) = AUV(3,NBDI)*SIII(I) - AUV(2,NBDI)*CSII(I)
+             AUV(4,NBDI) = CSII(I)
+             AUV(2,NBDI) = SIII(I)
          ENDIF
 
 C     Specified essential normal flow and no tangential slip
@@ -1502,8 +1518,10 @@ C     Specified essential normal flow and no tangential slip
             QTAN=0.D0
             MOM_LV_X(NBDI)=QTan*NCI                          !Tangential Eqn RHS
             MOM_LV_Y(NBDI)=-QN2(I)*NCI                       !Normal Eqn RHS
-            AUV11(NBDI)=SIII(I)
-            AUV12(NBDI)=-CSII(I)
+            AUV(1,NBDI) = SIII(I)
+            AUV(3,NBDI) = -CSII(I) 
+            AUV(4,NBDI) = CSII(I)
+            AUV(2,NBDI) = SIII(I)
          ENDIF
 
 C     Zero normal flux gradient using a Galerkin approximation to
@@ -1556,17 +1574,17 @@ C     fluxes at the previous time step.
      &                        -(CSII(I)*FDX3+SIII(I)*FDY3)*QY1(NM3)
                ZNGLHS =ZNGLHS + CSII(I)*FDX1+SIII(I)*FDY1
             ENDIF
-            IF(NCI.EQ.0) THEN
-               AUV11(NBDI)=1.d0
-               AUV12(NBDI)=0.d0
+            IF (NCI.EQ.0) THEN
                MOM_LV_X(NBDI)=0.d0
                MOM_LV_Y(NBDI)=0.d0
             ELSE
-               AUV11(NBDI)=1.d0
-               AUV12(NBDI)=0.d0
                MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
                MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
             ENDIF
+            AUV(1,NBDI) = 1.d0
+            AUV(2,NBDI) = 1.d0
+            AUV(3,NBDI) = 0.d0
+            AUV(4,NBDI) = 0.d0
          ENDIF
 
       ENDDO
@@ -1581,15 +1599,15 @@ C.....velocity can be zeroed out to obtain an essential zero velocity at
 C.....interface nodes.
 
       DO I=1,NP
-         AUV22=AUV11(I)
-         AUV21=-AUV12(I)
-         DDU=AUV11(I)*AUV22-AUV12(I)*AUV21
-         QX2(I)=(MOM_LV_X(I)*AUV22-MOM_LV_Y(I)*AUV12(I))/DDU
-         QY2(I)=(MOM_LV_Y(I)*AUV11(I)-MOM_LV_X(I)*AUV21)/DDU
+         ! WJP 02.24.2018 Performing the final solve
+         DDU    = AUV(1,I)*AUV(2,I)-AUV(3,I)*AUV(4,I)
+         QX2(I) = (MOM_LV_X(I)*AUV(2,I)-MOM_LV_Y(I)*AUV(3,I))/DDU
+         QY2(I) = (MOM_LV_Y(I)*AUV(1,I)-MOM_LV_X(I)*AUV(4,I))/DDU
+         
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
 c           QX2(I)=0.D0    !no slip and normal flux
 c           QY2(I)=0.D0    !on wet/dry interface nodes
-c           ENDIF
+c        ENDIF
        END DO
 
 C...
@@ -1746,7 +1764,7 @@ ckmd   Added in parameters for the pc algorithm
       REAL(SZ) DU0DXA, DU0DYA, DV0DXA, DV0DYA
       REAL(SZ) DU2DXA, DU2DYA, DV2DXA, DV2DYA
       REAL(SZ) timewtmom0,timewtmom1,timewtmom2,timebfflag
-      REAL(SZ) VCoef12
+      REAL(SZ) VCoef12, AUV22, AUV21
 
 
       REAL(8) AreaIE, AreaIE2
