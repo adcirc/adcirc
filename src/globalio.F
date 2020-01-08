@@ -1002,7 +1002,7 @@ C
                     endif
                 endif
             else
-                if(descript%considerWetDry)then
+                if((.not.descript%isStation).and.descript%considerWetDry)then
                     if(nodecode(i)==0)then
                         if(descript%isInteger)then
                             write(lun, 1001) labels(i), int(descript % alternate_value)
@@ -1034,13 +1034,13 @@ C
          iglobal = descript % imap(i)
          if (istart <= iglobal .and. iglobal <= iend) then
             if(descript%isInteger)then
-                if(descript%considerWetDry.AND.nodecode(i)==0)then
+                if((.not.descript%isStation).and.descript%considerWetDry.AND.nodecode(i)==0)then
                     integerbuffer(iglobal-ioffset) = int(descript % alternate_value)
                 else
                     integerbuffer(iglobal-ioffset) = descript % iarray(i)
                 endif
             else
-                if(descript%considerWetDry.AND.nodecode(i)==0)then
+                if((.not.descript%isStation).and.descript%considerWetDry.AND.nodecode(i)==0)then
                     buf(iglobal-ioffset) = descript % alternate_value
                 else
                     buf(iglobal-ioffset) = descript % array(i)
@@ -1079,11 +1079,11 @@ C
       if (mnproc.eq.1.or.WRITE_LOCAL_FILES) then
         do i = 1, descript % num_records_this
             if(abs(descript%specifier)==SPARSE_ASCII) then
-               if(descript%considerWetDry.AND.nodecode(i)==0) cycle
+               if((.not.descript%isStation).and.descript%considerWetDry.AND.nodecode(i)==0) cycle
                write(lun , 1000) labels(i), descript % array(i),
      &              descript % array2(i)
             else
-               if(descript%considerWetDry.AND.nodecode(i)==0) then
+               if((.not.descript%isStation).and.descript%considerWetDry.AND.nodecode(i)==0) then
                  write(lun, 1000) labels(i), descript % alternate_value,
      &              descript % alternate_value
                else
@@ -1101,7 +1101,7 @@ C
         iglobal = descript % imap(i)
         if (istart <= iglobal .and. iglobal <= iend) then
           j = 2*(iglobal - ioffset) - 1
-          if(descript%considerWetDry.AND.nodecode(i)==0)then
+          if((.not.descript%isStation).and.descript%considerWetDry.AND.nodecode(i)==0)then
               buf(j)     = descript % alternate_value
               buf(j + 1) = descript % alternate_value
           else
