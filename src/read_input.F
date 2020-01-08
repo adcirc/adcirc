@@ -81,9 +81,10 @@ C
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
      
-      NAMELIST /offsetControl/ offsetFileName, offsetSkipSnaps, 
-     &  offsetMultiplier, offsetRampStart, offsetRampEnd,
-     &  offsetRampReferenceTime
+      NAMELIST /dynamicWaterLevelCorrectionControl/ dynamicWaterLevelCorrectionFileName, 
+     &  dynamicWaterLevelCorrectionSkipSnaps, dynamicWaterLevelCorrectionMultiplier, 
+     &  dynamicWaterLevelCorrectionRampStart, dynamicWaterLevelCorrectionRampEnd,
+     &  dynamicWaterLevelCorrectionRampReferenceTime
       
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
@@ -421,26 +422,31 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
       ! jgf: for water level offset
 
-      namelistSpecifier = 'offsetControl'
-      read(unit=15,nml=offsetControl,iostat=ios)
+      namelistSpecifier = 'dynamicWaterLevelCorrectionControl'
+      read(unit=15,nml=dynamicWaterLevelCorrectionControl,iostat=ios)
       call logNamelistReadStatus(namelistSpecifier,ios)
-      write(scratchMessage,'(a,a)') "offsetFileName=",trim(offsetFileName)
+      write(scratchMessage,'(a,a)') "dynamicWaterLevelCorrectionFileName=",
+     &  trim(dynamicWaterLevelCorrectionFileName)
       call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,'(a,i0)') "offsetSkipSnaps=",offsetSkipSnaps
+      write(scratchMessage,'(a,i0)') "dynamicWaterLevelCorrectionSkipSnaps=",
+     &  dynamicWaterLevelCorrectionSkipSnaps
       call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,'(a,f15.7)') "offsetMultiplier=",offsetMultiplier
+      write(scratchMessage,'(a,f15.7)') "dynamicWaterLevelCorrectionMultiplier=",
+     &  dynamicWaterLevelCorrectionMultiplier
       call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,'(a,f15.7)') "offsetRampStart=",offsetRampStart
+      write(scratchMessage,'(a,f15.7)') "dynamicWaterLevelCorrectionRampStart=",
+     &  dynamicWaterLevelCorrectionRampStart
       call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,'(a,f15.7)') "offsetRampEnd=",offsetRampEnd
+      write(scratchMessage,'(a,f15.7)') "dynamicWaterLevelCorrectionRampEnd=",
+     &  dynamicWaterLevelCorrectionRampEnd
       call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,'(a,a)') "offsetRampReferenceTime=",
-     &  trim(offsetRampReferenceTime)
+      write(scratchMessage,'(a,a)') "dynamicWaterLevelCorrectionRampReferenceTime=",
+     &  trim(dynamicWaterLevelCorrectionRampReferenceTime)
       call logMessage(ECHO,trim(scratchMessage))
-      if (trim(offsetFileName).ne.'null') then
-         usingWaterLevelOffset = .true.
+      if (trim(dynamicWaterLevelCorrectionFileName).ne.'null') then
+         usingDynamicWaterLevelCorrection = .true.
       endif
-      ! exit if there was an error reading the offsetControl namelist
+      ! exit if there was an error reading the dynamicWaterLevelCorrectionControl namelist
       if (ios.gt.0) then
          call adcirc_terminate()    
       endif

@@ -519,8 +519,8 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       ! counter even for output files that are only written once.
       integer, target :: fauxFilePosition 
       ! jgf: added support for water level offset
-      integer, target :: offsetFilePos
-      integer, target :: offsetStaFilePos
+      integer, target :: dynamicWaterLevelCorrectionFilePos
+      integer, target :: dynamicWaterLevelCorrectionStaFilePos
 
       INTEGER  IHOTSTP, IMHS
       INTEGER  ITIME, ITEMPSTP
@@ -547,8 +547,8 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       integer, target :: noffOutSpoolCounter
       integer, target :: initiallyDrySpoolCounter
       integer, target :: windDragSpoolCounter
-      integer, target :: offsetSpoolCounter
-      integer, target :: offsetStaSpoolCounter
+      integer, target :: dynamicWaterLevelCorrectionSpoolCounter
+      integer, target :: dynamicWaterLevelCorrectionStaSpoolCounter
       
       INTEGER :: NSPOOLC, NSPOOLGC, NSPOOLGE ! output increments
       INTEGER :: NSPOOLGV, NSPOOLGW, NSPOOLM, NSPOOL_TVW ! output increments
@@ -782,10 +782,10 @@ C     v49.48.01 tcm 20110126 Variables related to kdtree searches
       TYPE(KDTREE2_RESULT), ALLOCATABLE :: KDRESULTS(:)
 
       !jgf: water level offset at two time levels
-      real(sz), allocatable :: offset1(:)
-      real(sz), allocatable, target :: offset2(:)
-      logical :: usingWaterLevelOffset = .false.
-      real(sz), allocatable, target :: offsetSta(:)
+      real(sz), allocatable :: dynamicWaterLevelCorrection1(:)
+      real(sz), allocatable, target :: dynamicWaterLevelCorrection2(:)
+      logical :: usingDynamicWaterLevelCorrection = .false.
+      real(sz), allocatable, target :: dynamicWaterLevelCorrectionSta(:)
 
       CONTAINS
 

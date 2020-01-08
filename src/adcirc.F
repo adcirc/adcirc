@@ -95,8 +95,9 @@ C******************************************************************************
       USE SIZES, ONLY : sz, rootDir, mnproc, mnwproc, mnallproc, myproc,
      &   read_local_hot_start_files, make_dirname, write_local_harm_files,
      &   get_numwriters, mnstae
-      USE GLOBAL, ONLY : usingWaterLevelOffset, offset1, offset2, 
-     &   offsetSta, DEBUG, INFO, allMessage, itime, dtdp, statim,
+      USE GLOBAL, ONLY : usingDynamicWaterLevelCorrection,
+     &   dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, 
+     &   dynamicWaterLevelCorrectionSta, DEBUG, INFO, allMessage, itime, dtdp, statim,
      &   CHotHS, dtdpHS, g, FileFmtVersion, ifnlcat, nabout, ncchange,
      &   ifnlcate, ifnlct, ifnlcte, ifnlfa, ifwind, ihot, im, iths,
      &   nolica, nolicat, nolifa, nscreen, nstae, nt, rhowat0, screenunit,
@@ -111,7 +112,8 @@ C******************************************************************************
      &                 initHarmonicParameters
       USE GLOBAL_IO, ONLY : allocateFullDomainIOArrays
       USE WRITE_OUTPUT, ONLY : initOutput2D
-      USE WIND, ONLY : initWindModule, initOffset, getOffsets
+      USE WIND, ONLY : initWindModule, initDynamicWaterLevelCorrection,
+     &                 getDynamicWaterLevelCorrections
 #ifdef CMPI
       USE MESSENGER, ONLY : mnwproh, msg_init, msg_table, msg_start,
      &   allnodes
@@ -290,12 +292,12 @@ C...  attached to each node
       END IF
 
       !jgf: Initialize water level offset if needed
-      if (usingWaterLevelOffset.eqv..true.) then
-         allocate(offset1(np))
-         allocate(offset2(np)) ! used in timestepping
-         allocate(offsetSta(mnstae))
-         call initOffset(timeloc) ! initializes the i/o 
-         call getOffsets(offset2, timeloc) ! populate offset2
+      if (usingDynamicWaterLevelCorrection.eqv..true.) then
+         allocate(dynamicWaterLevelCorrection1(np))
+         allocate(dynamicWaterLevelCorrection2(np)) ! used in timestepping
+         allocate(dynamicWaterLevelCorrectionSta(mnstae))
+         call initDynamicWaterLevelCorrection(timeloc) ! initializes the i/o 
+         call getDynamicWaterLevelCorrections(dynamicWaterLevelCorrection2, timeloc) ! populate 
       endif
 C
 C     jgf51.21.24: Initialize output.

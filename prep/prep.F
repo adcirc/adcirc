@@ -2016,7 +2016,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 
          ! wet dry control
          if (foundWetDryControlNameList) then
-            WRITE(15,'(a,l,a,l,a,l,a,l,a,l,a,l)') 
+            WRITE(15,'(a,l,a,l,a,l,a,l,a,i0,a)') 
      &         "&wetDryControl outputNodeCode=",outputNodeCode,
      &         " outputNOFF=",outputNOFF," noffActive=",noffActive,
      &         " StatPartWetFix=",StatPartWetFix,
@@ -2036,16 +2036,17 @@ c...     tcm v52.30.01 additions for Smag_Control Namelist
             write(15,Smag_Control)
             write(15,*) '! -- End Smagorinski Inputs --'
          ENDIF
-         ! jgf: offset control namelist
-         if (foundOffsetControlNamelist) then
+         ! jgf: dynamicWaterlevel control namelist
+         if (foundCorrectionControlNamelist) then
             write(15,'(a,a, a,i0, a,f15.8, a,a, a,f20.8, a,f20.8, a)')
-     &       '&offsetControl offsetFileName="',
-     &       trim(adjustl(offsetFileName)),
-     &       '",  offsetSkipSnaps=',offsetSkipSnaps,
-     &       ', offsetMultiplier=',offsetMultiplier,
-     &       ', offsetRampReferenceTime="',trim(offsetRampReferenceTime),
-     &       '", offsetRampStart=',offsetRampStart,
-     &       ', offsetRampEnd=',offsetRampEnd,'  /'
+     &       '&dynamicWaterLevelCorrectionControl dynamicWaterLevelCorrectionFileName="',
+     &       trim(adjustl(dynamicWaterLevelCorrectionFileName)),
+     &       '",  dynamicWaterLevelCorrectionSkipSnaps=',dynamicWaterLevelCorrectionSkipSnaps,
+     &       ', dynamicWaterlevelCorrectionMultiplier=',dynamicWaterLevelCorrectionMultiplier,
+     &       ', dynamicWaterLevelCorrectionRampReferenceTime="',
+     &       trim(dynamicWaterLevelCorrectionRampReferenceTime),
+     &       '", dynamicWaterLevelCorrectionRampStart=',dynamicWaterLevelCorrectionRampStart,
+     &       ', dynamicWaterLevelCorrectionRampEnd=',dynamicWaterLevelCorrectionRampEnd,'  /'
          endif
 
          CLOSE(15)
@@ -7032,7 +7033,7 @@ C---------------------------------------------------------------------------
      &    theta2, ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd,
      &    nvsd, nltd, nvtd, alp4, C3D, X3DD, Y3DD, SL3DD, SF3DD,
      &    X3DV, Y3DV, SL3DV, SF3DV, X3DT, Y3DT, SL3DT, SF3DT, C3D,
-     &    foundOffsetControlNamelist
+     &    foundCorrectionControlNamelist
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE NETCDFIO, ONLY : setADCIRCParameters, initNetCDFOutputFile,
      &    initNetCDFHotstart3D, initNetCDFHotstart,
@@ -7083,8 +7084,8 @@ C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: EverDriedDescript      ! everdried.63
       type(OutputDataDescript_t), SAVE :: windDragDescript       ! windDrag.173
 
-      type(OutputDataDescript_t), SAVE :: offsetDescript    ! offset.63
-      type(OutputDataDescript_t), SAVE :: offsetStaDescript ! offset.61
+      type(OutputDataDescript_t), SAVE :: dynamicWaterlevelCorrectionDescript    ! dynamicWaterlevelCorrection.63
+      type(OutputDataDescript_t), SAVE :: dynamicWaterlevelCorrectionStaDescript ! dynamicWaterlevelCorrection.61
 
 !      tcm v50.75 moved RSDescript outside of the ifdef adcswan for use with 
 !      nrs = 3 or nrs= 4
@@ -7626,42 +7627,42 @@ C........Radiation Stress
          weirElevDescript % field_name           = "weir_dz"
          weirElevDescript % file_name            = "fort.77"
 C
-C     offset.61
-      offsetStaDescript % specifier            = NOUTE
-      offsetStaDescript % lun                  = 109
-      offsetStaDescript % initial_value        = 0.0
-      offsetStaDescript % num_items_per_record = 1
-      offsetStaDescript % num_fd_records       = abs(NSTAE)
-      offsetStaDescript % num_records_this     = abs(NSTAE)
-      offsetStaDescript % alternate_value      = -99999.0
-      offsetStaDescript % field_name           = 'offset'
+C     dynamicWaterlevelCorrection.61
+      dynamicWaterlevelCorrectionStaDescript % specifier            = NOUTE
+      dynamicWaterlevelCorrectionStaDescript % lun                  = 109
+      dynamicWaterlevelCorrectionStaDescript % initial_value        = 0.0
+      dynamicWaterlevelCorrectionStaDescript % num_items_per_record = 1
+      dynamicWaterlevelCorrectionStaDescript % num_fd_records       = abs(NSTAE)
+      dynamicWaterlevelCorrectionStaDescript % num_records_this     = abs(NSTAE)
+      dynamicWaterlevelCorrectionStaDescript % alternate_value      = -99999.0
+      dynamicWaterlevelCorrectionStaDescript % field_name           = 'dynamicWaterlevelCorrection'
       IF (ICS.eq.2) THEN
-         offsetStaDescript % x_coord           => SLEL
-         offsetStaDescript % y_coord           => SFEL
+         dynamicWaterlevelCorrectionStaDescript % x_coord           => SLEL
+         dynamicWaterlevelCorrectionStaDescript % y_coord           => SFEL
       ELSE
-         offsetStaDescript % x_coord           => XEL
-         offsetStaDescript % y_coord           => YEL
+         dynamicWaterlevelCorrectionStaDescript % x_coord           => XEL
+         dynamicWaterlevelCorrectionStaDescript % y_coord           => YEL
       ENDIF
-      offsetStaDescript % file_extension       = 61
-      offsetStaDescript % file_basename        = 'offset'
-      offsetStaDescript % readMaxMin           = .false.
-      offsetStaDescript % considerWetDry       = .false.
-      call makeFileName(offsetStaDescript)
+      dynamicWaterlevelCorrectionStaDescript % file_extension       = 61
+      dynamicWaterlevelCorrectionStaDescript % file_basename        = 'dynamicWaterlevelCorrection'
+      dynamicWaterlevelCorrectionStaDescript % readMaxMin           = .false.
+      dynamicWaterlevelCorrectionStaDescript % considerWetDry       = .false.
+      call makeFileName(dynamicWaterlevelCorrectionStaDescript)
 C
-C     offset.63
-      offsetDescript % specifier            = NOUTGE
-      offsetDescript % lun                  = 108
-      offsetDescript % initial_value        = 0.0
-      offsetDescript % num_items_per_record = 1
-      offsetDescript % num_fd_records       = MNP
-      offsetDescript % num_records_this     = MNP
-      offsetDescript % alternate_value      = -99999.0
-      offsetDescript % field_name           = 'offset'
-      offsetDescript % file_extension       = 63 
-      offsetDescript % file_basename        = 'offset'
-      offsetDescript % readMaxMin           = .false.
-      offsetDescript % considerWetDry       = .false.
-      call makeFileName(offsetDescript)
+C     dynamicWaterlevelCorrection.63
+      dynamicWaterlevelCorrectionDescript % specifier            = NOUTGE
+      dynamicWaterlevelCorrectionDescript % lun                  = 108
+      dynamicWaterlevelCorrectionDescript % initial_value        = 0.0
+      dynamicWaterlevelCorrectionDescript % num_items_per_record = 1
+      dynamicWaterlevelCorrectionDescript % num_fd_records       = MNP
+      dynamicWaterlevelCorrectionDescript % num_records_this     = MNP
+      dynamicWaterlevelCorrectionDescript % alternate_value      = -99999.0
+      dynamicWaterlevelCorrectionDescript % field_name           = 'dynamicWaterlevelCorrection'
+      dynamicWaterlevelCorrectionDescript % file_extension       = 63 
+      dynamicWaterlevelCorrectionDescript % file_basename        = 'dynamicWaterlevelCorrection'
+      dynamicWaterlevelCorrectionDescript % readMaxMin           = .false.
+      dynamicWaterlevelCorrectionDescript % considerWetDry       = .false.
+      call makeFileName(dynamicWaterlevelCorrectionDescript)
 
 ! tcm v50.75 moved the ifdef adcswan down past the RSDescript
 #ifdef ADCSWAN
@@ -8262,12 +8263,12 @@ C     was specified.
       if (outputWindDrag.eqv..true.)then
          CALL initNetCDFOutputFile(windDragDescript,reterr)
       endif
-      if ( foundOffsetControlNamelist.eqv..true. ) then
+      if ( foundCorrectionControlNamelist.eqv..true. ) then
          if ( NOUTE.ne.0 ) then
-            CALL initNetCDFOutputFile(offsetStaDescript,reterr)
+            CALL initNetCDFOutputFile(dynamicWaterlevelCorrectionStaDescript,reterr)
          endif
          if ( NOUTGE.ne.0 ) then
-            CALL initNetCDFOutputFile(offsetDescript,reterr)
+            CALL initNetCDFOutputFile(dynamicWaterlevelCorrectionDescript,reterr)
          endif
       endif
       !

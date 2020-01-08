@@ -85,16 +85,17 @@ C
       ! it will remain 'default'; this will cause 'Garratt' to be used
       ! in FUNCTION WindDrag, and 'IceCube' to be used in
       ! FUNCTION WindIceDrag.
-#ifndef POWELL
       INTEGER,PARAMETER :: DRAGLAW_GARRATT = 99990
       INTEGER,PARAMETER :: DRAGLAW_POWELL  = 99991
       INTEGER,PARAMETER :: DRAGLAW_SWELL   = 99992
+#ifndef POWELL
       CHARACTER(len=10) :: DragLawString = 'default' ! controls wind drag formulation
       INTEGER :: dragLawType = DRAGLAW_GARRATT
 #else
       ! jgf50.32 Provide backward compatibility with hardcoded POWELL
       ! support.
       CHARACTER(len=10) :: DragLawString = 'Powell'
+      INTEGER :: dragLawType = DRAGLAW_POWELL
 #endif
       !
       ! used for vis/diagnostics on nws19 and nws20
@@ -191,29 +192,29 @@ C
       ! defined in negative degrees east longitude
       logical :: entireMeshIsWestOfGMT ! true if all longitudes are negative
       
-      ! jgf: variables needed for water level offset data
+      ! jgf: variables needed for water level correction data
       ! from control file
-      character(len=2048) :: offsetFileName='null' ! water level offset file 
-      real(sz) :: offsetRampStart = 0.d0 ! seconds after run start
-      real(sz) :: offsetRampEnd = 0.d0   ! seconds after run start
-      integer :: offsetSkipSnaps = 0 ! number of offset data sets to skip 
-      character(len=10) :: offsetRampReferenceTime='hotstart' ! coldstart or hotstart
-      real(sz) :: offsetMultiplier = 1.d0 ! multiply each offset value by this
+      character(len=2048) :: dynamicWaterLevelCorrectionFileName='null' ! water level correction file 
+      real(sz) :: dynamicWaterLevelCorrectionRampStart = 0.d0 ! seconds after run start
+      real(sz) :: dynamicWaterLevelCorrectionRampEnd = 0.d0   ! seconds after run start
+      integer :: dynamicWaterLevelCorrectionSkipSnaps = 0 ! number of correction data sets to skip 
+      character(len=10) :: dynamicWaterLevelCorrectionRampReferenceTime='hotstart' ! coldstart or hotstart
+      real(sz) :: dynamicWaterLevelCorrectionMultiplier = 1.d0 ! multiply each correction value by this
       ! limited to this module 
-      integer, parameter :: offun = 21 ! i/o unit number for water lvl offset
-      integer :: offsetBlankSnaps = 0 ! counter for initial blank snaps
-      integer :: offsetDataSetCounter=0 ! counts real datasets read from file
-      logical :: offsetIsConstant=.false. ! true if only one dataset provided
-      real(sz), allocatable :: offsetsOld_m(:) ! from file in m
-      real(sz), allocatable :: offsetsNew_m(:) ! from file in m
-      real(sz), allocatable :: offsetFD(:) ! hold fulldomain data in parallel
-      character(len=2048) :: offsetComment = 'null' ! comment from offset file
-      real(sz) :: offsetTimeIncrement = 0.d0 ! offset time increment (s)
-      real(sz) :: offsetTimeNew = 0.d0 ! time of latest dataset (s)
-      real(sz) :: offsetTimeOld = 0.d0 ! time of previous dataset (s)
-      real(sz) :: offsetDefaultValue = 0.d0 ! for otherwise unspecified nodes (m)
-      integer :: offsetCurrentLine ! used in error messages
-      logical :: offsetFileEnded = .false. ! true when all data have been read
+      integer, parameter :: dynamicWaterLevelCorrectionUn = 21 ! i/o unit number for water lvl correction
+      integer :: dynamicWaterLevelCorrectionBlankSnaps = 0 ! counter for initial blank snaps
+      integer :: dynamicWaterLevelCorrectionDataSetCounter=0 ! counts real datasets read from file
+      logical :: dynamicWaterLevelCorrectionIsConstant=.false. ! true if only one dataset provided
+      real(sz), allocatable :: dynamicWaterLevelCorrectionsOld_m(:) ! from file in m
+      real(sz), allocatable :: dynamicWaterLevelCorrectionsNew_m(:) ! from file in m
+      real(sz), allocatable :: dynamicWaterLevelCorrectionFD(:) ! hold fulldomain data in parallel
+      character(len=2048) :: dynamicWaterLevelCorrectionComment = 'null' ! comment from correction file
+      real(sz) :: dynamicWaterLevelCorrectionTimeIncrement = 0.d0 ! correction time increment (s)
+      real(sz) :: dynamicWaterLevelCorrectionTimeNew = 0.d0 ! time of latest dataset (s)
+      real(sz) :: dynamicWaterLevelCorrectionTimeOld = 0.d0 ! time of previous dataset (s)
+      real(sz) :: dynamicWaterLevelCorrectionDefaultValue = 0.d0 ! for otherwise unspecified nodes (m)
+      integer :: dynamicWaterLevelCorrectionCurrentLine ! used in error messages
+      logical :: dynamicWaterLevelCorrectionFileEnded = .false. ! true when all data have been read
 
       !...Function interface for wind drag
       !   Used so that the selection of wind drag
@@ -291,6 +292,9 @@ C.... convert background pressure from millibars to meters of water
       SUBROUTINE mapWindDragFunctionPointer()
 !     ----------------------------------------------------------------
           IMPLICIT NONE
+#ifdef POWELL
+          f_computeWindDrag => PowellWindDrag          
+#else
           SELECT CASE(DragLawType)
           CASE(DRAGLAW_GARRATT)
               f_computeWindDrag => CappedGarrattWindDrag
@@ -310,6 +314,7 @@ C.... convert background pressure from millibars to meters of water
 #endif
               STOP
           END SELECT
+#endif              
 !     ----------------------------------------------------------------
       END SUBROUTINE mapWindDragFunctionPointer
 !     ----------------------------------------------------------------
@@ -7565,21 +7570,22 @@ C----------------------------------------------------------------------
 
 
 C----------------------------------------------------------------------
-C          S U B R O U T I N E     I N I T   O F F S E T      
+C          S U B R O U T I N E     
+C  I N I T   D Y N A M I C  W A T E R L E V E L  C O R R E C T I O N
 C----------------------------------------------------------------------
-C      jgf: Initialize i/o for water level offset file.     
+C      jgf: Initialize i/o for water level correction file.     
 C
 C      file format:
 C      ! 1st line is a comment line
 C      14400.0       ! 2nd line: time increment between datasets (s)       
-C      0.0           ! 3rd line: default water level offset value (m)
-C      1     0.3048  ! subsequent lines consist of node number and offset value
+C      0.0           ! 3rd line: default water level correction value (m)
+C      1     0.3048  ! subsequent lines consist of node number and correction value
 C      3     0.3048  ! only for non-default values 
 C      10    0.30
 C      115   0.3048
 C      307   0.305
 C      ##            ! "#" as 2nd character on the line:start of next dataset
-C      1     0.2048  ! subsequent lines consist of node number and offset value
+C      1     0.2048  ! subsequent lines consist of node number and correction value
 C      3     0.2048  ! in second data set ...
 C      10    0.20
 C      115   0.4048
@@ -7589,11 +7595,12 @@ C      ...
 C
 C      If the file consists of only one data set, the data are treated
 C      as a constant throughout the run. Time varying ramping of the 
-C      data are controlled by the offsetRampStart and offsetRampEnd 
-C      parameters in the fort.15 offsetControl namelist. 
+C      data are controlled by the dynamicWaterLevelCorrectionRampStart and 
+C      dynamicWaterLevelCorrectionRampEnd parameters in the fort.15 
+C      dynamicWaterLevelCorrectionControl namelist. 
 C 
 C----------------------------------------------------------------------
-      subroutine initOffset(timesec)
+      subroutine initDynamicWaterLevelCorrection(timesec)
       use sizes, only : globaldir
       use global, only : nabout, np_g
       use mesh, only : np
@@ -7601,20 +7608,21 @@ C----------------------------------------------------------------------
       real(sz), intent(in) :: timesec ! adcirc model time (s)
       integer :: errorio ! i/o error condition code
 
-      call setMessageSource("initOffset")
+      call setMessageSource("initDynamicWaterLevelCorrection")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
       !
-      ! Check to make sure the offset file actually exists and if so, open it
+      ! Check to make sure the correction file actually exists and if so, open it
       errorio = 0
       ! jgf: First try looking in the full domain input file directory
-      call openFileForRead(offun,
-     &   trim(globaldir)//"/"//trim(offsetFileName), errorio)
+      call openFileForRead(dynamicWaterLevelCorrectionUn,
+     &   trim(globaldir)//"/"//trim(dynamicWaterLevelCorrectionFileName), errorio)
       ! If the file was not found, in the directory with the other
       ! full domain input files, perhaps it was provided with a full path?
       if (errorio.gt.0) then
-         call openFileForRead(offun,trim(offsetFileName), errorio)      
+         call openFileForRead(dynamicWaterLevelCorrectionUn,
+     &          trim(dynamicWaterLevelCorrectionFileName), errorio)      
       endif   
       ! give up if the file was still not found      
       if (errorio.gt.0) then
@@ -7622,88 +7630,88 @@ C----------------------------------------------------------------------
       endif
       ! file exists, allocate space to hold the data
 #ifdef CMPI
-      allocate(offsetFD(np_g))
-      offsetFD(:) = 0.d0
+      allocate(dynamicWaterLevelCorrectionFD(np_g))
+      dynamicWaterLevelCorrectionFD(:) = 0.d0
 #endif 
-      allocate(offsetsOld_m(np))
-      allocate(offsetsNew_m(np))      
+      allocate(dynamicWaterLevelCorrectionsOld_m(np))
+      allocate(dynamicWaterLevelCorrectionsNew_m(np))      
       !
       ! read header
-      offsetCurrentLine = 1
+      dynamicWaterLevelCorrectionCurrentLine = 1
       ! first line is a comment line
-      read(offun,'(A)',end=256,err=258,iostat=errorio) offsetComment
-      call logMessage(ECHO,"offsetComment: "//trim(offsetComment))
-      offsetCurrentLine = offsetCurrentLine + 1
+      read(dynamicWaterLevelCorrectionUn,'(A)',end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionComment
+      call logMessage(ECHO,"dynamicWaterLevelCorrectionComment: "//trim(dynamicWaterLevelCorrectionComment))
+      dynamicWaterLevelCorrectionCurrentLine = dynamicWaterLevelCorrectionCurrentLine + 1
       ! 2nd line is time increment between datasets 
-      read(offun,fmt=*,end=256,err=258,iostat=errorio) offsetTimeIncrement
-      write(scratchMessage,'(a,f15.7)') "offsetTimeIncrement: ",
-     &    offsetTimeIncrement 
+      read(dynamicWaterLevelCorrectionUn,fmt=*,end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionTimeIncrement
+      write(scratchMessage,'(a,f15.7)') "dynamicWaterLevelCorrectionTimeIncrement: ",
+     &    dynamicWaterLevelCorrectionTimeIncrement 
       call logMessage(ECHO,scratchMessage)
-      offsetCurrentLine = offsetCurrentLine + 1
+      dynamicWaterLevelCorrectionCurrentLine = dynamicWaterLevelCorrectionCurrentLine + 1
       ! tga20190628: this "if" is needed because it could lead to NaNs 
-      ! if offsetTimeIncrement is zero, plus no reason for negative.
-      if (offsetTimeIncrement.le.0.d0) then
-         call allMessage(ERROR,'Water level offset time increment ' //
-     &       'offsetTimeIncrement must be greater than zero')
+      ! if dynamicWaterLevelCorrectionTimeIncrement is zero, plus no reason for negative.
+      if (dynamicWaterLevelCorrectionTimeIncrement.le.0.d0) then
+         call allMessage(ERROR,'Water level correction time increment ' //
+     &       'dynamicWaterLevelCorrectionTimeIncrement must be greater than zero')
          call windTerminate()
       endif
-      ! 3nd line is default offset value 
-      read(offun,fmt=*,end=256,err=258,iostat=errorio) offsetDefaultValue
-      write(scratchMessage,'(a,f15.7)') "offsetDefaultValue: ",
-     &    offsetDefaultValue 
+      ! 3nd line is default correction value 
+      read(dynamicWaterLevelCorrectionUn,fmt=*,end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionDefaultValue
+      write(scratchMessage,'(a,f15.7)') "dynamicWaterLevelCorrectionDefaultValue: ",
+     &    dynamicWaterLevelCorrectionDefaultValue 
       call logMessage(ECHO,scratchMessage)
-      offsetCurrentLine = offsetCurrentLine + 1            
+      dynamicWaterLevelCorrectionCurrentLine = dynamicWaterLevelCorrectionCurrentLine + 1            
       ! initialize array values to zero -- can be used as blank snaps
-      offsetsOld_m(:) = 0.d0
-      offsetsNew_m(:) = 0.d0
+      dynamicWaterLevelCorrectionsOld_m(:) = 0.d0
+      dynamicWaterLevelCorrectionsNew_m(:) = 0.d0
       !
-      ! the common case is that offsetSkipSnaps will be 0 and we need
+      ! the common case is that dynamicWaterLevelCorrectionSkipSnaps will be 0 and we need
       ! to read the first two datasets
       !
       ! may also need to skip datasets (insert blank datasets if
-      ! offsetSkipSnaps is negative) 
+      ! dynamicWaterLevelCorrectionSkipSnaps is negative) 
       !
-      ! if there is only one dataset, the offsetIsConstant flag is raised
-      offsetDataSetCounter = 0
-      offsetBlankSnaps = 2
-      do while (offsetDataSetCounter.lt.(offsetSkipSnaps+2))
-         if (offsetFileEnded.eqv..true.) then
+      ! if there is only one dataset, the correctionIsConstant flag is raised
+      dynamicWaterLevelCorrectionDataSetCounter = 0
+      dynamicWaterLevelCorrectionBlankSnaps = 2
+      do while (dynamicWaterLevelCorrectionDataSetCounter.lt.(dynamicWaterLevelCorrectionSkipSnaps+2))
+         if (dynamicWaterLevelCorrectionFileEnded.eqv..true.) then
             exit         
          endif
          ! read the next snap from file
-         call readOffsetDataSet()
-         offsetBlankSnaps = offsetBlankSnaps - 1
+         call readDynamicWaterLevelCorrectionDataSet()
+         dynamicWaterLevelCorrectionBlankSnaps = dynamicWaterLevelCorrectionBlankSnaps - 1
       end do
       !
       ! set the time corresponding to the two datasets we are 
       ! interpolating between
-      offsetTimeOld = timesec
-      offsetTimeNew = timesec + offsetTimeIncrement
+      dynamicWaterLevelCorrectionTimeOld = timesec
+      dynamicWaterLevelCorrectionTimeNew = timesec + dynamicWaterLevelCorrectionTimeIncrement
       !
       ! set ramp times relative to specified reference
-      select case(trim(offsetRampReferenceTime))
+      select case(trim(dynamicWaterLevelCorrectionRampReferenceTime))
       case('hotstart','Hotstart','HotStart','HOTSTART')
-         offsetRampStart = timesec + offsetRampStart
-         offsetRampEnd = timesec + offsetRampEnd
+         dynamicWaterLevelCorrectionRampStart = timesec + dynamicWaterLevelCorrectionRampStart
+         dynamicWaterLevelCorrectionRampEnd = timesec + dynamicWaterLevelCorrectionRampEnd
       case('coldstart','Coldstart','ColdStart','COLDSTART')
-         if (offsetRampStart.lt.0.d0.or.offsetRampEnd.lt.0.d0) then
-            call allMessage(ERROR,'Water level offset ramp reference '//
+         if (dynamicWaterLevelCorrectionRampStart.lt.0.d0.or.dynamicWaterLevelCorrectionRampEnd.lt.0.d0) then
+            call allMessage(ERROR,'Water level correction ramp reference '//
      &      'time was set to coldstart but negative ramp time(s) '//
      &      'were found.')
             call windTerminate()
          endif
       case default
-         call allMessage(ERROR,'Water level offset ramp '//
-     &   'reference time was set to "'//trim(offsetRampReferenceTime)//
-     &   '" which is not a valid value. The offsetRampReferenceTime '//
+         call allMessage(ERROR,'Water level correction ramp '//
+     &   'reference time was set to "'//trim(dynamicWaterLevelCorrectionRampReferenceTime)//
+     &   '" which is not a valid value. The dynamicWaterLevelCorrectionRampReferenceTime '//
      &   'parameter must be set to "coldstart" or "hotstart".')
          call windTerminate()
       end select
       ! 
       ! make sure start of ramp occurs before end of ramp
-      if (offsetRampStart.gt.offsetRampEnd) then
+      if (dynamicWaterLevelCorrectionRampStart.gt.dynamicWaterLevelCorrectionRampEnd) then
          call allMessage(ERROR,
-     &   'offsetRampStart is after offsetRampEnd.')
+     &   'dynamicWaterLevelCorrectionRampStart is after dynamicWaterLevelCorrectionRampEnd.')
          call windTerminate()
       endif 
            
@@ -7724,7 +7732,7 @@ C----------------------------------------------------------------------
      &  //' which may aid in troubleshooting this issue.')
       endif
       write(scratchMessage,'("Could not read line ",i0," of ",a,".")')
-     &  offsetCurrentLine, trim(offsetFileName)
+     &  dynamicWaterLevelCorrectionCurrentLine, trim(dynamicWaterLevelCorrectionFileName)
       call allMessage(ERROR,scratchMessage)
       write(scratchMessage,'(a,i0,a)')
      &       'The value of the i/o error flag was ',errorio,'.'
@@ -7733,83 +7741,92 @@ C----------------------------------------------------------------------
 
       
 C----------------------------------------------------------------------
-      end subroutine initOffset
+      end subroutine initdynamicWaterLevelCorrection
 C----------------------------------------------------------------------      
 
 C----------------------------------------------------------------------
-C      S U B R O U T I N E    G E T   O F F S E T S
+C      S U B R O U T I N E    
+C   G E T   D Y N A M I C  W A T E R L E V E L  C O R R E C T I O N S
 C----------------------------------------------------------------------
-C     jgf: Uses water level offset data that has already been
+C     jgf: Uses water level correction data that has already been
 C     read from file, along with control parameters including
-C     offsetMultiplier, offsetRampStart, and offsetRampEnd, 
-C     as well as the current adcirc time to set the offset values
+C     dynamicWaterLevelCorrectionMultiplier, 
+C     dynamicWaterLevelCorrectionRampStart, and 
+C     dynamicWaterLevelCorrectionRampEnd, 
+C     as well as the current adcirc time to set the correction values
 C     for the current time step. 
 C
-C     If all the data have been read from the file, the offset
+C     If all the data have been read from the file, the correction
 C     value remains constant according to the last dataset read
 C     from the file. 
 C----------------------------------------------------------------------
-      subroutine getOffsets(offsetsArray, timesec)
+      subroutine getDynamicWaterLevelCorrections(dynamicWaterLevelCorrectionsArray, timesec)
       use mesh, only : np
       implicit none
       real(sz), intent(in) :: timesec ! current adcirc time
-      real(sz), intent(out) :: offsetsArray(np)
-      real(sz) :: offsetRamp ! linear time varying ramp value
+      real(sz), intent(out) :: dynamicWaterLevelCorrectionsArray(np)
+      real(sz) :: dynamicWaterLevelCorrectionRamp ! linear time varying ramp value
       integer :: i ! jgfdebug
-      call setMessageSource("getOffsets")
+      call setMessageSource("getDynamicWaterLevelCorrections")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif  
       !
       ! hold data constant after last snap 
-      if ( offsetIsConstant.eqv..false.) then
-         if ( (timesec.gt.offsetTimeNew)
-     &        .and.(offsetFileEnded.eqv..true.) ) then
-            offsetIsConstant = .true. 
+      if ( dynamicWaterLevelCorrectionIsConstant.eqv..false.) then
+         if ( (timesec.gt.dynamicWaterLevelCorrectionTimeNew)
+     &        .and.(dynamicWaterLevelCorrectionFileEnded.eqv..true.) ) then
+            dynamicWaterLevelCorrectionIsConstant = .true. 
          endif
       endif
       !
-      if ( offsetIsConstant.eqv..true. ) then
-         offsetsArray(:) = offsetsNew_m(:)
+      if ( dynamicWaterLevelCorrectionIsConstant.eqv..true. ) then
+         dynamicWaterLevelCorrectionsArray(:) = dynamicWaterLevelCorrectionsNew_m(:)
       else        
          ! read new data if it is time
-         if ( timesec.gt.offsetTimeNew ) then
-            do while (timesec.gt.offsetTimeNew) 
+         if ( timesec.gt.dynamicWaterLevelCorrectionTimeNew ) then
+            do while (timesec.gt.dynamicWaterLevelCorrectionTimeNew) 
                ! insert blanks if needed
-               if (offsetSkipSnaps.lt.(-1*offsetBlankSnaps)) then
+               if (dynamicWaterLevelCorrectionSkipSnaps.lt.(-1*dynamicWaterLevelCorrectionBlankSnaps)) then
                   ! both datasets still have all zero values
-                  offsetBlankSnaps = offsetBlankSnaps + 1 
+                  dynamicWaterLevelCorrectionBlankSnaps = dynamicWaterLevelCorrectionBlankSnaps + 1 
                else
-                  call readOffsetDataSet()
+                  call readDynamicWaterLevelCorrectionDataSet()
                endif
-               offsetTimeOld = offsetTimeNew
-               offsetTimeNew = offsetTimeNew + offsetTimeIncrement
-               if ( offsetFileEnded.eqv..true.) then
+               dynamicWaterLevelCorrectionTimeOld = dynamicWaterLevelCorrectionTimeNew
+               dynamicWaterLevelCorrectionTimeNew = dynamicWaterLevelCorrectionTimeNew + 
+     &                  dynamicWaterLevelCorrectionTimeIncrement
+               if ( dynamicWaterLevelCorrectionFileEnded.eqv..true.) then
                   exit
                endif
             end do
          endif
          ! perform time interpolation
-         offsetsArray(:) = 
-     &       (timesec - offsetTimeOld) / (offsetTimeNew - offsetTimeOld ) 
-     &       * ( offsetsNew_m(:) - offsetsOld_m(:) ) + offsetsOld_m(:) 
+         dynamicWaterLevelCorrectionsArray(:) = 
+     &       (timesec - dynamicWaterLevelCorrectionTimeOld) / 
+     &              (dynamicWaterLevelCorrectionTimeNew - dynamicWaterLevelCorrectionTimeOld ) 
+     &       * ( dynamicWaterLevelCorrectionsNew_m(:) - dynamicWaterLevelCorrectionsOld_m(:) ) 
+     &          + dynamicWaterLevelCorrectionsOld_m(:) 
       endif
       !
       ! set to zero everywhere prior to the start of the ramping period 
-      if (timesec.lt.offsetRampStart) then
-         offsetsArray(:) = 0.d0
+      if (timesec.lt.dynamicWaterLevelCorrectionRampStart) then
+         dynamicWaterLevelCorrectionsArray(:) = 0.d0
       endif
       ! compute and apply linear ramp during ramping period
-      if ((timesec.ge.offsetRampStart).and.(timesec.le.offsetRampEnd)) then
+      if ((timesec.ge.dynamicWaterLevelCorrectionRampStart).and.
+     &    (timesec.le.dynamicWaterLevelCorrectionRampEnd)) then
          ! compute linear ramp value
-         offsetRamp = ( timesec - offsetRampStart) 
-     &               / ( offsetRampEnd - offsetRampStart )
-         offsetsArray(:) = offsetsArray(:) * offsetRamp
+         dynamicWaterLevelCorrectionRamp = ( timesec - dynamicWaterLevelCorrectionRampStart) 
+     &               / ( dynamicWaterLevelCorrectionRampEnd - dynamicWaterLevelCorrectionRampStart )
+         dynamicWaterLevelCorrectionsArray(:) = dynamicWaterLevelCorrectionsArray(:) * 
+     &      dynamicWaterLevelCorrectionRamp
       endif
       ! just leave the raw values alone after the end of ramp period
       !
-      ! apply offset multiplier if any
-      offsetsArray(:) = offsetMultiplier * offsetsArray(:)
+      ! apply correction multiplier if any
+      dynamicWaterLevelCorrectionsArray(:) = dynamicWaterLevelCorrectionMultiplier * 
+     &  dynamicWaterLevelCorrectionsArray(:)
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -7818,79 +7835,82 @@ C----------------------------------------------------------------------
       return
 
 C----------------------------------------------------------------------
-      end subroutine getOffsets
+      end subroutine getdynamicWaterLevelCorrections
 C----------------------------------------------------------------------      
 
 
 C----------------------------------------------------------------------
-C      S U B R O U T I N E    R E A D   O F F S E T   D A T A S E T
+C      S U B R O U T I N E    
+C R E A D   D Y N A M I C  W A T E R L E V E L  C O R R E C T I O N  
+C                                                       D A T A S E T
 C----------------------------------------------------------------------
-C     jgf: Reads a water level offset dataset from file. 
+C     jgf: Reads a water level correction dataset from file. 
 C----------------------------------------------------------------------
-      subroutine readOffsetDataSet()
+      subroutine readDynamicWaterLevelCorrectionDataSet()
       use global, only : nabout, np_g, nodes_lg
       use mesh, only : np
       implicit none
-      integer :: numOffsetValues
+      integer :: numCorrectionValues
       integer :: nhg ! fulldomain node number 
-      real(sz) :: offset_val ! water level offset value at that node
+      real(sz) :: correction_val ! water level correction value at that node
       integer :: fd_node_number ! full domain node number
       integer :: sd_node_number ! subdomain node number
-      logical :: nextOffsetDataSetFound ! true if a # is found in 2nd col
+      logical :: nextCorrectionDataSetFound ! true if a # is found in 2nd col
       integer :: errorio ! error message code      
 
-      call setMessageSource("readOffsetDataSet")
+      call setMessageSource("readDynamicWaterLevelCorrectionDataSet")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif  
       !
-      numOffsetValues = np
+      numCorrectionValues = np
 #ifdef CMPI
-      numOffsetValues = np_g
+      numCorrectionValues = np_g
 #endif
-      offsetsOld_m(:) = offsetsNew_m(:)
-      offsetsNew_m(:) = offsetDefaultValue      
-      nextOffsetDataSetFound = .false.
+      dynamicWaterLevelCorrectionsOld_m(:) = dynamicWaterLevelCorrectionsNew_m(:)
+      dynamicWaterLevelCorrectionsNew_m(:) = dynamicWaterLevelCorrectionDefaultValue      
+      nextCorrectionDataSetFound = .false.
       do ! loop until we run out of data or hit a "#" in column 2
-         read(offun,fmt='(a)',end=133,err=258,iostat=errorio) scratchMessage 
-         offsetCurrentLine = offsetCurrentLine + 1
+         read(dynamicWaterLevelCorrectionUn,fmt='(a)',end=133,err=258,iostat=errorio) 
+     &      scratchMessage 
+         dynamicWaterLevelCorrectionCurrentLine = dynamicWaterLevelCorrectionCurrentLine + 1
          ! check to see if the next dataset is about to start
          if (scratchMessage(2:2).eq."#") then
-            nextOffsetDataSetFound = .true.
+            nextCorrectionDataSetFound = .true.
             exit ! break out of do loop
          endif
          ! read the node number and value from the line 
          read(scratchMessage,fmt=*,end=256,err=258,iostat=errorio) 
-     &        nhg, offset_val
+     &        nhg, correction_val
          ! check to make sure this is a valid node number
-         if ( (nhg.lt.1).or.(nhg.gt.numOffsetValues) ) then
+         if ( (nhg.lt.1).or.(nhg.gt.numCorrectionValues) ) then
             write(scratchMessage,'(a,i0,a)')
-     &        'The node number on line ',offsetCurrentLine,
+     &        'The node number on line ',dynamicWaterLevelCorrectionCurrentLine,
      &        ' of the water '//
-     &        ' offset file is out of range.'
+     &        ' correction file is out of range.'
             call allMessage(ERROR,scratchMessage)
             call windTerminate()
          endif     
-         ! set the offset value as specified
+         ! set the correction value as specified
 #ifdef CMPI
-         offsetFD(nhg) = offset_val
+         dynamicWaterLevelCorrectionFD(nhg) = correction_val
 #else
-         offsetsNew_m(nhg) = offset_val
+         dynamicWaterLevelCorrectionsNew_m(nhg) = correction_val
 #endif
       end do
- 133  continue ! jump to here if we've run out of lines in the offset file
-      offsetDataSetCounter = offsetDataSetCounter + 1
+ 133  continue ! jump to here if we've run out of lines in the correction file
+      dynamicWaterLevelCorrectionDataSetCounter = dynamicWaterLevelCorrectionDataSetCounter + 1
       ! write log messages if that was the last dataset
-      if (nextOffsetDataSetFound.eqv..false.) then
-         offsetFileEnded = .true.
+      if (nextCorrectionDataSetFound.eqv..false.) then
+         dynamicWaterLevelCorrectionFileEnded = .true.
          call logMessage(INFO,
-     &    'Finished reading the final water level offset dataset from "'
-     &      //trim(offsetFileName)//'".')
-         if ( offsetDataSetCounter.eq.1 ) then
-            offsetIsConstant = .true.
+     &    'Finished reading the final water level correction dataset from "'
+     &      //trim(dynamicWaterLevelCorrectionFileName)//'".')
+         if ( dynamicWaterLevelCorrectionDataSetCounter.eq.1 ) then
+            dynamicWaterLevelCorrectionIsConstant = .true.
             call logMessage(INFO,
-     &      'Only one water level offset dataset was found. '//
-     &      'The water level offset will therefore be constant in time.')
+     &      'Only one water level correction dataset was found. '//
+     &      'The water level correction will therefore be constant in time.')
          endif
       endif
 
@@ -7902,7 +7922,7 @@ C----------------------------------------------------------------------
          fd_node_number = ABS(NODES_LG(sd_node_number))
          ! fill in the subdomain arrays with the corresponding
          ! fulldomain values
-         offsetsNew_m(sd_node_number) = offsetFD(fd_node_number)
+         dynamicWaterLevelCorrectionsNew_m(sd_node_number) = dynamicWaterLevelCorrectionFD(fd_node_number)
       END DO
 #endif         
 
@@ -7926,7 +7946,7 @@ C     We jump to this section if there was an error reading a file.
      &  //' which may aid in troubleshooting this issue.')
       endif
       write(scratchMessage,'("Could not read line ",i0," of ",a,".")')
-     &  offsetCurrentLine, trim(offsetFileName)
+     &  dynamicWaterLevelCorrectionCurrentLine, trim(dynamicWaterLevelCorrectionFileName)
       call allMessage(ERROR,scratchMessage)
       write(scratchMessage,'(a,i0,a)')
      &       'The value of the i/o error flag was ',errorio,'.'
@@ -7934,7 +7954,7 @@ C     We jump to this section if there was an error reading a file.
       CALL windTerminate()
 
 C----------------------------------------------------------------------
-      end subroutine readOffsetDataSet
+      end subroutine readDynamicWaterLevelCorrectionDataSet
 C----------------------------------------------------------------------      
 
 C----------------------------------------------------------------------
