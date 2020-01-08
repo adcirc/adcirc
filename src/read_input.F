@@ -62,7 +62,8 @@ C-----------------------------------------------------------------------
      &   alloc_main4b, alloc_main5, alloc_main7, alloc_main8, 
      &   alloc_main10, alloc_main12, alloc_main13, alloc_main9,
      &   alloc_main6, openfileforread, nhoutonce, omega, TSINT, TSINV,
-     &   StatPartWetFix, How2FixStatPartWet
+     &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp,
+     &   CAliDisp
 #if defined CSWAN || defined ADCSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
@@ -932,16 +933,30 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
      &           'Momentum Eqs.'
          ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
-         IF(mod(IMDig6,2).EQ.1) THEN
+         IF (mod(IMDig6,4).EQ.1) THEN
             ILump=0
             WRITE(16,*) '        Consistent GWCE mass matrix'
-         ELSE
+         ELSEIF (mod(IMDig6,4).EQ.2) THEN
             ILump=1
             CGWCE_Lump = .TRUE.
             WRITE(16,*) '        Lumped GWCE mass matrix'
+         ELSEIF (mod(IMDig6,4).EQ.3) THEN
+            ILump=0
+            WRITE(16,*) '        Consistent GWCE mass matrix'
+            CGWCE_HDP = .TRUE.
+            IFNL_HDP = 1
+            WRITE(16,*) '        w/ implicit finite-amplitude term'
+         ELSEIF (mod(IMDig6,4).EQ.0) THEN
+            ILump=0
+            WRITE(16,*) '        Consistent GWCE mass matrix'
+            CGWCE_HDP = .TRUE.
+            IFNL_HDP = 1
+            WRITE(16,*) '        w/ implicit finite-amplitude term'
+            CAliDisp = .TRUE.
+            WRITE(16,*) '        & Alis improved dispersion relation'
          ENDIF
          ! WJP modifications for adding baroclinic mode
-         IF (IMDig6 > 2) THEN
+         IF (IMDig6 > 4) THEN
             CBaroclinic = .TRUE.
             WRITE(16,*) '        and baroclinic mode'
          ENDIF
@@ -1043,6 +1058,7 @@ c     WRITE(16,*) '         C3D_BTrans       = ',C3D_BTrans            !haven't 
       WRITE(16,*) '         CGWCE_Advec_NC   = ',CGWCE_Advec_NC
       WRITE(16,*) '         CGWCE_Advec_C1   = ',CGWCE_Advec_C1
       WRITE(16,*) '         CGWCE_Advec_C2   = ',CGWCE_Advec_C2
+      WRITE(16,*) '         CGWCE_HDP        = ',CGWCE_HDP
       WRITE(16,*) '         CME_Orig         = ',CME_Orig
       WRITE(16,*) '         CME_New_NC       = ',CME_New_NC
       WRITE(16,*) '         CME_New_C1       = ',CME_New_C1
