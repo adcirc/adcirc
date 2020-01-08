@@ -2016,7 +2016,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 
          ! wet dry control
          if (foundWetDryControlNameList) then
-            WRITE(15,'(a,l,a,l,a,l,a,l,a,l,a,l)') 
+            WRITE(15,'(a,l,a,l,a,l,a,l,a,i0,a)') 
      &         "&wetDryControl outputNodeCode=",outputNodeCode,
      &         " outputNOFF=",outputNOFF," noffActive=",noffActive,
      &         " StatPartWetFix=",StatPartWetFix,
