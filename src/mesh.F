@@ -1525,7 +1525,6 @@
       ! and the correction factors
          slam = deg2rad * slam
          sfea = deg2rad * sfea
-         !write(16,*) 'Minbefore',minval(cos(sfea))
          do i = 1,np
             call CYLINDERMAP(x(i),y(i),slam(i),sfea(i),slam0,sfea0,ics)
          enddo
