@@ -1680,9 +1680,11 @@ c******************************************************************************
 
       USE SIZES, ONLY : SZ, myproc
       USE GLOBAL, ONLY: G, IFNLFA, IFNLCT, IDEN, RAMP, NODECODE, NOFF, 
-     &    VIDBCPDXOH, VIDBCPDYOH, ETA2, SigT0, DTDP, DASigT, RhoWat0
-      USE MESH, ONLY : NE, NM, X, Y, NP, DP, AREAS, NODELE, 
-     &      NEITABELE, NEITAB, NNEIGH, SFACELE, TOTALAREA
+     &    VIDBCPDXOH, VIDBCPDYOH, ETA2, SigT0, DTDP, DASigT, RhoWat0,
+     &    IFSFM
+      USE MESH, ONLY : NE, NM, FDXE, FDYE, NP, DP, AREAS, NODELE, 
+     &      NEITABELE, NEITAB, NNEIGH, TOTALAREA,
+     &      SFacEle, SFMYEle, SFMXEle
       USE Couple2BC3D, ONLY : Update_BC3D_Info, FBPG_Disp_from_BC3D,
      &                        Put_BC3D_on_ADCIRC_Grid
       IMPLICIT NONE
@@ -1697,7 +1699,7 @@ c******************************************************************************
       INTEGER :: NM1,NM2,NM3    !local node numbers used to compute gradients
       INTEGER :: NC1,NC2,NC3    !local node codes
 
-      REAL(SZ) :: SFacAvg
+      REAL(SZ) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
       REAL(SZ) :: AreaIE2, AreaEle
       REAL(SZ) :: H2N1, H2N2, H2N3
       REAL(SZ) :: FDX1, FDX2, FDX3
@@ -1743,15 +1745,21 @@ c******************************************************************************
          EtaN2=IFNLFA*Eta2(NM2)
          EtaN3=IFNLFA*Eta2(NM3)
          SFacAvg= SFacEle(IE)
+C..... BEG DW/WJP
+         SFmxAvg= SFMXEle(IE) ; 
+         SFmyAvg= SFMYEle(IE) ; 
+         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
+         sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+C..... END DW/WJP
 
          AreaIE2=Areas(IE)
-         AreaEle=NCEle*AreaIE2/2.D0
-         FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-         FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-         FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-         FDY1=X(NM3)-X(NM2) !a1
-         FDY2=X(NM1)-X(NM3) !a2
-         FDY3=X(NM2)-X(NM1) !a3
+         AreaEle=NCEle*AreaIE2*0.5d0
+         FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
+         FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
+         FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
+         FDY1 = FDYE(1,IE)*sfdyfac ; !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
+         FDY2 = FDYE(2,IE)*sfdyfac ; !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
+         FDY3 = FDYE(3,IE)*sfdyfac ; !c FDY3=(X(NM2)-X(NM1))*MY !a3*my         
          FDX1O2A=FDX1/AreaIE2 !dphi1/dx
          FDY1O2A=FDY1/AreaIE2 !dphi1/dy
          FDX2O2A=FDX2/AreaIE2 !dphi2/dx

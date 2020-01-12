@@ -164,7 +164,7 @@ endif
 ifeq ($(BUILDTYPE),adcswan)
   CF:= $(FC)
   O_DIR:=$(SRCDIR)/work/odir33/
-  FFLAGS:= $(FFLAGS2) -DCSWAN $(DA) $(IMODS) $(O_DIR)
+  FFLAGS:= $(FFLAGS2) -DCSWAN $(DA) $(IMODS) $(O_DIR) $(FFLAGSGSW)
   VPATH:=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/swan
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
