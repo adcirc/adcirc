@@ -7492,8 +7492,8 @@ C
      &                     ADC_X,ADC_Y,FNAME,SLAM0,SFEA0,
      &                     MAX_INTERP_DIST)
        USE SIZES
-       USE MESH, ONLY : Project, Rotate
-       USE GLOBAL, ONLY : DEG2RAD,PRBCKGRND,G,RHOWAT0,
+       USE MESH, ONLY: ICS, DRVSPCOORSROTS, CYLINDERMAP
+       USE GLOBAL, ONLY: DEG2RAD,PRBCKGRND,G,RHOWAT0,IFSPROTS,
      &        setMessageSource,unsetMessageSource,allMessage,
      &        logMessage,scratchMessage,DEBUG,ECHO,INFO,ERROR
        USE KDTREE2_MODULE     ! USED FOR FAST SEARCHING
@@ -7577,8 +7577,13 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
           U_WIND_GFDL(I) = UTMP
           V_WIND_GFDL(I) = VTMP
           PRESS_GFDL(I) = PTMP
-          CALL Rotate(LonR,LatR,LON_GFDL,LAT_GFDL)
-          CALL Project(XY_GFDL(1,I),XY_GFDL(2,I),LONR,LATR,SLAM0,SFEA0)
+          IF ( IFSPROTS.eq. 1) THEN
+             CALL DRVSPCOORSROTS( lonr, latr, LON_GFDL, LAT_GFDL )
+          ELSE
+             latr = LAT_GFDL ;  lonr = LON_GFDL; 
+          END IF
+          CALL CYLINDERMAP( XY_GFDL(1,I),XY_GFDL(2,I),
+     &           lonr, latr, SLAM0, SFEA0, ICS) ; 
        ENDDO !I
          
        CLOSE(LUN)  !CLOSE THIS GFDL DATA FILE

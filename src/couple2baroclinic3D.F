@@ -826,15 +826,14 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE FBPG_Disp_from_BC3D
 
-      USE MESH, ONLY : NP, NE, FDXE, FDYE
       USE GLOBAL, ONLY: G, IFNLFA, IFNLCT, RAMP, NODECODE, NOFF, 
      &                  ETA2, RhoWat0 
       USE SPONGELAYER, ONLY: NO_BPG_IN_SPONGE 
       USE NodalAttributes, ONLY: absorblayer_sigma_mnx, 
      &                           absorblayer_sigma_mny
-      USE MESH, ONLY : NE, NM, NP, DP, AREAS, NODELE, SFacEle, 
-     &      NEITABELE, NEITAB, NNEIGH, SFAC, TOTALAREA
-      USE BOUNDARIES, ONLY : NVELME, ME2GW, NBV
+      USE MESH, ONLY: NE, NM, NP, DP, AREAS, NODELE, FDXE, FDYE,
+     &      NEITABELE, NEITAB, NNEIGH, SFAC, TOTALAREA, SFacEle
+      USE BOUNDARIES, ONLY: NVELME, ME2GW, NBV
  
       IMPLICIT NONE
       

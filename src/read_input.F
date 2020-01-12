@@ -51,7 +51,7 @@ C-----------------------------------------------------------------------
      &   tvw, ntcys_tvw, ntcyf_tvw, noutgc, toutsgc, toutfgc, nspoolgc,
      &   warnelevdumplimit, toutse, toutfe, nspoole, staiv1, staiv2,
      &   staiv3, toutfc, noutgw, nspoolgw, toutfgw, toutsgw, noutgw,
-     &   ndsetsc, ntcyfgc, ntcysgc, ndsets_tvw, usingwaterleveloffset,
+     &   ndsetsc, ntcyfgc, ntcysgc, ndsets_tvw, 
      &   smag_comp_flag, wavewindmultiplier, np_g, nibnodecode, ititer,
      &   ne_g, nstae_g, nstav_g, nstam_g, nstac_g, netcdf_avail, title,
      &   nstac_g, nstam_g, institution, references, history, source,
@@ -61,9 +61,9 @@ C-----------------------------------------------------------------------
      &   alloc_main1a, alloc_main2, alloc_main3, alloc_main4a, 
      &   alloc_main4b, alloc_main5, alloc_main7, alloc_main8, 
      &   alloc_main10, alloc_main12, alloc_main13, alloc_main9,
-     &   alloc_main6, openfileforread, nhoutonce, omega, TSINT, TSINV,
+     &   alloc_main6, openfileforread, nhoutonce, omega, IFSPROTS,
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp,
-     &   CAliDisp
+     &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection
 #if defined CSWAN || defined ADCSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
@@ -74,15 +74,15 @@ C-----------------------------------------------------------------------
 #endif
       USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP, NP,
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries,
-     &   freeMesh, node_dict, find, agrid, Projtype
+     &   freeMesh, node_dict, find, agrid, GET_ROTSPCOORD_CORIFVAL
       USE BOUNDARIES, ONLY : ANGINN, COSTSET, NETA, NVEL, NVELME, NPEBC,
      &   NFLUXF, NBD, ME2GW, LBCODEI, NBV, simpleFluxBoundaries, ibtype,
      &   numSimpleFluxBoundaries
       USE GLOBAL_IO, only: RUNDES, RUNID, RDES4, RID4, RDES8, RID8
       USE KDTREE2_MODULE     ! V49.48.02 tcm -- added for fast searching
       USE GLOBAL_3DVS, ONLY: C3D_PTrans, NSTA3DD, NSTA3DV, NSTA3DT,
-     &    I3DSD,I3DSV,I3DST,I3DGD,I3DGV,I3DGT, NSTA3DD_G, NSTA3DV_G,
-     &    NSTA3DT_G, Z0B
+     &   I3DSD,I3DSV,I3DST,I3DGD,I3DGV,I3DGT, NSTA3DD_G, NSTA3DV_G,
+     &   NSTA3DT_G, Z0B
       USE SUBDOMAIN, ONLY : subdomainOn
       USE WRITE_OUTPUT, ONLY : outputNodeCode, outputNOFF
       USE HARM
@@ -90,11 +90,16 @@ C-----------------------------------------------------------------------
       USE TIME_VARYING_WEIR_BOUNDARY
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE WIND, only: WTIMINC, NWLAT, NWLON, IREFYR, IREFMO, IREFDAY,
-     &    IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN, WindDragLimit, 
-     &    BLADJ, STORMNUMBER, WLATINC, WLONINC, GEOFACTOR, PUREVORTEX,
-     &    NWSok, WINDREFTIME, Allowable_NWS, PUREBACKGROUND, TimeConv, 
-     &    DragLawString, OffsetFilename, OffsetSkipSnaps, OffsetRampEnd,
-     &    OffsetMultiplier, OffsetRampStart, OffsetRampReferenceTime
+     &   IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN, WindDragLimit, 
+     &   BLADJ, STORMNUMBER, WLATINC, WLONINC, GEOFACTOR, PUREVORTEX,
+     &   NWSok, WINDREFTIME, Allowable_NWS, PUREBACKGROUND, TimeConv, 
+     &   DragLawString, dynamicWaterLevelCorrectionFileName,
+     &   dynamicWaterLevelCorrectionRampStart,
+     &   dynamicWaterLevelCorrectionRampEnd,
+     &   dynamicWaterLevelCorrectionSkipSnaps,
+     &   dynamicWaterLevelCorrectionRampReferenceTime,
+     &   dynamicWaterLevelCorrectionMultiplier
+      USE OWIWIND,ONLY: nPowellSearchDomains
       USE WETDRY, ONLY : noffActive, velmin
       USE ITPACKV
       USE GWCE, ONLY : a00, b00, c00, convcr, isldia, itmax,
@@ -699,13 +704,34 @@ C...
 C...  READ AND PROCESS ICS - CARTESIAN/SPHERICAL COORDINATE OPTION
 C...
       READ(15,*) ICS
+C     WJP if negative then use rotated coordinates
+      IF (ICS.lt.0) THEN
+         IFSPROTS = 1
+         ICS = abs(ICS)
+      ENDIF
       ! Change ICS here for the true sphere option with 
       ! arbitrary projection
-      IF (ICS.ge.20) then
-         Projtype = ICS - 20; ICS = 2;
-         TSINT = 1; TSINV = 0
-      ENDIF
-      IF (ICS < 1.or.ICS.gt.2) THEN
+      SELECT CASE( ICS )
+      CASE(1)
+         WRITE(16,9736) ICS
+ 9736    FORMAT(/,5X,'ICS = ',I2,
+     &        /,9X,'Governing equations are in Cartesian coordinates')
+      CASE(2)
+         WRITE(16,9737) ICS
+ 9737    FORMAT(/,5X,'ICS = ',I2,
+     &        /,9X,'Governing equations are in Spherical coordinates',
+     &        /,9X,'mapped using a CPP cylindrical projection. ')
+         WRITE(16,*) '    NOTE: Curvature of Earth IS NOT accounted for'
+      CASE(20:24)
+         ! Set logical to true
+         IFSFM = 1   
+         WRITE(16,9738) ICS
+ 9738    FORMAT(/,5X,'ICS = ',I2,
+     &        /,9X,'Governing equations are in Spherical coordinates',
+     &        /,9X,'mapped using a cylindrical projection. '
+     &        /,9X,'=> 20: Equal-area, 21: CPP, 22: Mercator')
+         WRITE(16,*) '     NOTE: Curvature of Earth IS accounted for'
+      CASE DEFAULT
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
             WRITE(ScreenUnit,*) 'ICS =',ICS
@@ -719,22 +745,11 @@ C...
  9735    FORMAT(/,1X,'Your selection of ICS (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
          CALL ADCIRC_Terminate()
-      ENDIF
-      IF(ICS.EQ.1) THEN
-         WRITE(16,9736) ICS
- 9736    FORMAT(/,5X,'ICS = ',I2,
-     &        /,9X,'Governing equations are in Cartesian coordinates')
-      ELSEIF (ICS.eq.2) THEN
-         WRITE(16,9737) ICS, projtype
- 9737    FORMAT(/,5X,'ICS = ',I2,
-     &        /,9X,'Governing equations are in Spherical coordinates',
-     &        /,9X,'mapped using a cylindrical projection of type = '
-     &        /,9X, I2,'    => 0: Equal-area, 1: CPP, 2: Mercator')
-      ENDIF
-      IF (TSINT.eq.1) THEN
-         WRITE(16,*) ' NOTE: Curvature of Earth IS accounted for'
-      ELSE
-         WRITE(16,*) ' NOTE: Curvature of Earth IS NOT accounted for' 
+      END SELECT
+      
+      IF ( IFSPROTS .eq. 1) THEN
+         WRITE(16,*) '     Will perform a rotation of the coordinate ',
+     &               '     system according to the fort.rotm file'
       ENDIF
 C...
 C...  READ AND PROCESS IM - 2D/3D MODEL FORMULATION OPTION
@@ -3006,11 +3021,16 @@ C...
          DO I=1,NP
             CORIF(I)=CORI
          END DO
-      ENDIF
-      IF(NCOR.EQ.1) THEN
-         DO I=1,NP
-            CORIF(I)=2.0d0*omega*SIN(SFEA(I))
-         END DO
+      ELSEIF (NCOR.EQ.1) THEN
+C......DW, Dec 2019   
+         IF ( IFSPROTS .EQ. 1 ) THEN        
+            CALL GET_ROTSPCOORD_CORIFVAL( CORIF ) ;
+         ELSE
+            DO I=1,NP
+               CORIF(I)=2.0d0*omega*SIN(SFEA(I))
+            END DO
+         ENDIF
+C......DW
       ENDIF
 
       IF(NCOR.EQ.0) THEN
@@ -5667,9 +5687,9 @@ C-----------------------------------------------------------------------
      &                        lat, lon, sta1, sta2, sta3, stat_lun,
      &                        Description)
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, parse,
+      USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, parse, IFSPROTS,
      &   a2f, DEBUG, allMessage, setMessageSource, unsetMessageSource
-      USE MESH, ONLY : ICS, Project, Rotate, SLAM0, SFEA0
+      USE MESH, ONLY : ICS, SLAM0, SFEA0, DRVSPCOORSROTS, CYLINDERMAP
       IMPLICIT NONE
       CHARACTER(50) :: names(num_stations)
       INTEGER num_stations, stat_lun
@@ -5703,8 +5723,13 @@ C
          ELSE
             lon(I)=a2f(LVAR(1))*DEG2RAD
             lat(I)=a2f(LVAR(2))*DEG2RAD
-            CALL Rotate(lonR,latR,lon(I),lat(I))
-            CALL Project(xcoord(I),ycoord(I),lonR,latR,SLAM0,SFEA0)
+            IF ( IFSPROTS .EQ. 1 ) THEN            
+               CALL DRVSPCOORSROTS( lonr, latr,  lon(I), lat(I) )
+            ELSE
+               latr = lat(I) ;  lonr = lon(I) ; 
+            END IF
+            CALL CYLINDERMAP( xcoord(I), ycoord(I),
+     &           lonr, latr, SLAM0, SFEA0, ICS) ; 
          ENDIF
 C
 C... v49.48.02 -- tcm replaced with call to kdtsearch

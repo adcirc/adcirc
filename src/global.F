@@ -511,7 +511,8 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  IFNLCAT, IFNLCT, IFNLFA, IFNLCTE, IFNLCATE
       INTEGER :: IFNL_HDP = 0 ! use H (1) or D (0) in LHS surface gradient term
       INTEGER  IFWIND
-      integer :: TSINT = 0, TSINV = 1
+      integer :: IFSFM = 0 ! corrected spherical coordinates (1) or not (0)
+      integer :: IFSPROTS = 0 ! rotated spherical coordinates (1) or not (0)
       ! 
       ! fulldomain (a.k.a. global) file position counters
       integer, target :: igcp ! concentration

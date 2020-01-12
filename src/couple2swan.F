@@ -196,10 +196,10 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE ComputeWaveDrivenForces
 
-      USE GLOBAL, ONLY: NODECODE, NOFF, RSNX2, RSNY2
+      USE GLOBAL, ONLY: NODECODE, NOFF, RSNX2, RSNY2, IFSFM
       USE SIZES, ONLY: SZ
       USE MESH, ONLY : NE, NM, NP, AREAS, NODELE, NEITABELE,
-     &    SFACELE, SLACELE, FDXE, FDYE
+     &    FDXE, FDYE, SFacEle, SFMYEle, SFMXEle
       USE BOUNDARIES, ONLY : NBDV, NBOU, NBVV, NOPE, NVDLL, NVELL
 
       IMPLICIT NONE
@@ -233,7 +233,7 @@ C-----------------------------------------------------------------------
       REAL(SZ) :: TOTALAREA
       REAL(SZ) :: FDX1, FDX2, FDX3
       REAL(SZ) :: FDY1, FDY2, FDY3
-      REAL(SZ) :: SFacAvg, SLacAvg
+      REAL(SZ) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
 
 !     Upper limit on Radiation stresses
 !     (0.1 m^2/s^2 is equivalent to 175 m/s wind speeds!)
@@ -296,15 +296,21 @@ C-----------------------------------------------------------------------
            Node1 = NM(IE,1)
            Node2 = NM(IE,2)
            Node3 = NM(IE,3)
-! WJP should take into account the correction factors..            
+C     WJP: tke into account correction factors
            SFacAvg = SFacEle(IE)
-           SLacAvg = SLacEle(IE)
-           FDX1 = FDXE(1,IE)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-           FDX2 = FDXE(2,IE)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-           FDX3 = FDXE(3,IE)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-           FDY1 = FDYE(1,IE)*SLacAvg ;    !c  FDY1=X(NM3)-X(NM2) !a1
-           FDY2 = FDYE(2,IE)*SLacAvg ;    !c  FDY2=X(NM1)-X(NM3) !a2
-           FDY3 = FDYE(3,IE)*SLacAvg ;    !c  FDY3=X(NM2)-X(NM1) !a3
+C..... BEG DW/WJP
+           SFmxAvg= SFMXEle(IE) ; 
+           SFmyAvg= SFMYEle(IE) ; 
+           sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
+           sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+
+           FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
+           FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
+           FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
+           FDY1 = FDYE(1,IE)*sfdyfac ; !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
+           FDY2 = FDYE(2,IE)*sfdyfac ; !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
+           FDY3 = FDYE(3,IE)*sfdyfac ; !c FDY3=(X(NM2)-X(NM1))*MY !a3*my         
+C..... END DW/WJP
 
            DSXXDX(IE) = (1.D0/AREAS(IE)) *
      &                ( TEMP_SXX(Node1) * FDX1   !(Y(Node2) - Y(Node3))
@@ -403,8 +409,8 @@ C-----------------------------------------------------------------------
            RSNX2(IP) = RSNX2(IP) / TOTALAREA
            RSNY2(IP) = RSNY2(IP) / TOTALAREA
 
-           RSNX2(IP) = min(UL,max(-UL,RSNX2(IP)))
-           RSNY2(IP) = min(UL,max(-UL,RSNY2(IP)))
+C           RSNX2(IP) = min(UL,max(-UL,RSNX2(IP)))
+C           RSNY2(IP) = min(UL,max(-UL,RSNY2(IP)))
 
          ENDDO outer
 
