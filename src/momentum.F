@@ -157,9 +157,9 @@ C*******************************************************************************
      &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, TKM, 
      &  adcirc_norm2, QN2, MOM_LV_X, MOM_LV_Y, VIDispDXOH, 
      &  VIDispDYOH, NPERSEG, NNPERBC, IPERCONN, TSINT, CAliDisp, TWOB
-      USE MESH, ONLY : NE, NP, NM, DP, Areas, TotalArea, sfar,
-     &                 NNeigh, NeiTab, NeiTabEle, MJU, FDXE, FDYE,
-     &                 SWITCH_ELTAB_PERBC, SFacEle, SLacEle
+      USE MESH, ONLY : NE, NP, NM, DP, Areas, TotalArea,
+     &     NNeigh, NeiTab, NeiTabEle, MJU, FDXE, FDYE,
+     &     SWITCH_ELTAB_PERBC, SFacEle, SFMYEle, SFMXEle, TANPHI 
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
      &    CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3                 
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal,
@@ -197,14 +197,13 @@ C----- END DW
       REAL(SZ) LSYYN1, LSYYN2, LSYYN3
       REAL(SZ) QX1N1, QX1N2, QX1N3
       REAL(SZ) QY1N1, QY1N2, QY1N3
-      REAL(SZ) SFacAvg, SLacAvg
+      REAL(SZ) SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
       REAL(SZ) TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
       REAL(SZ) TEMP_LV_B1, TEMP_LV_B2, TEMP_LV_B3
       REAL(SZ) U1N1, U1N2, U1N3, U1Avg
       REAL(SZ) U1AvgDU1DXA, U1AvgDV1DXA
       REAL(SZ) V1N1, V1N2, V1N3, V1Avg
       REAL(SZ) V1AvgDU1DYA, V1AvgDV1DYA
-      REAL(SZ) VCoef1, VCoef2
       REAL(SZ) VelNorm, VelTan
       REAL(SZ) VIDBCPDX, VIDBCPDY
       REAL(SZ) WSX, WSY
@@ -282,17 +281,22 @@ Corbitt 120322: Localized Advection
          QY1N2=QY1(NM2)
          QY1N3=QY1(NM3)
          SFacAvg = SFacEle(IE)
-         SLacAvg = SLacEle(IE)
+C..... BEG DW/WJP
+         SFmxAvg= SFMXEle(IE) ; 
+         SFmyAvg= SFMYEle(IE) ; 
+         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
+         sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+C..... END DW/WJP
 
          AreaIE2 = Areas(IE)
          AreaIE  = 0.5d0*AreaIE2
 C..... DW
-         FDX1 = FDXE(1,IE)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-         FDX2 = FDXE(2,IE)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-         FDX3 = FDXE(3,IE)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-         FDY1 = FDYE(1,IE)*SLacAvg ;    !c  FDY1=X(NM3)-X(NM2) !a1
-         FDY2 = FDYE(2,IE)*SLacAvg ;    !c  FDY2=X(NM1)-X(NM3) !a2
-         FDY3 = FDYE(3,IE)*SLacAvg ;    !c  FDY3=X(NM2)-X(NM1) !a3
+         FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
+         FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
+         FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
+         FDY1 = FDYE(1,IE)*sfdyfac ; !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
+         FDY2 = FDYE(2,IE)*sfdyfac ; !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
+         FDY3 = FDYE(3,IE)*sfdyfac ; !c FDY3=(X(NM2)-X(NM1))*MY !a3*my         
 C..... DW
 
 C...  Compute element averaged quantities
@@ -414,10 +418,10 @@ C...  WJP: Compute the baroclinic pressure gradient from a 3D ocean model
 
 C...  Compute the advective term gradients x area for the element
          
-         U1AvgDU1DXA=U1Avg*0.5d0*(U1N1*FDX1+U1N2*FDX2+U1N3*FDX3)
-         V1AvgDU1DYA=V1Avg*0.5d0*(U1N1*FDY1+U1N2*FDY2+U1N3*FDY3)
-         U1AvgDV1DXA=U1Avg*0.5d0*(V1N1*FDX1+V1N2*FDX2+V1N3*FDX3)
-         V1AvgDV1DYA=V1Avg*0.5d0*(V1N1*FDY1+V1N2*FDY2+V1N3*FDY3)
+         U1AvgDU1DXA=U1Avg*DU1DXA
+         V1AvgDU1DYA=V1Avg*DU1DYA
+         U1AvgDV1DXA=U1Avg*DV1DXA
+         V1AvgDV1DYA=V1Avg*DV1DYA
 
 C...  Compute the lateral viscous terms for the element (flux formulation)
 
@@ -520,7 +524,7 @@ C...  BAROTROPIC & BAROCLINIC PRESSURE GRADIENT TERMS
      &             -GO2*DBTPDXA - DBCPDX1A
 C...  LATERAL VISCOUS TERMS
      &             -(1.5d0*(LSXXN1*FDX1+LSXYN1*FDY1)
-     &             - AreaIE*TSINT*SFAR(NM1)*(LSXYN1+LSYXN1))/H1N1
+     &               - AreaIE*TANPHI(NM1)*(LSXYN1+LSYXN1))/H1N1
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
@@ -535,7 +539,7 @@ C...  BAROTROPIC & BAROCLINIC PRESSURE GRADIENT TERMS
      &             -GO2*DBTPDXA - DBCPDX2A
 C...  LATERAL VISCOUS TERMS
      &             -(1.5d0*(LSXXN2*FDX2+LSXYN2*FDY2)
-     &             - AreaIE*TSINT*SFAR(NM2)*(LSXYN2+LSYXN2))/H1N2
+     &               - AreaIE*TANPHI(NM2)*(LSXYN2+LSYXN2))/H1N2
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
@@ -550,7 +554,7 @@ C...  BAROTROPIC & BAROCLINIC PRESSURE GRADIENT TERMS
      &             -GO2*DBTPDXA - DBCPDX3A
 C...  LATERAL VISCOUS TERMS
      &             -(1.5d0*(LSXXN3*FDX3+LSXYN3*FDY3)
-     &             - AreaIE*TSINT*SFAR(NM3)*(LSXYN3+LSYXN3))/H1N3
+     &               - AreaIE*TANPHI(NM3)*(LSXYN3+LSYXN3))/H1N3
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
@@ -564,7 +568,7 @@ C...  BAROTROPIC & BAROCLINIC PRESSURE GRADIENT TERMS
      &             -GO2*DBTPDYA - DBCPDY1A
 C...  LATERAL VISCOUS TERMS
      &             -(1.5d0*(LSYXN1*FDX1+LSYYN1*FDY1) 
-     &             + AreaIE*TSINT*SFAR(NM1)*(LSXXN1-LSYYN1))/H1N1
+     &               + AreaIE*TANPHI(NM1)*(LSXXN1-LSYYN1))/H1N1
 
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
@@ -579,7 +583,7 @@ C...  BAROTROPIC & BAROCLINIC PRESSURE GRADIENT TERMS
      &             -GO2*DBTPDYA - DBCPDY2A
 C...  LATERAL VISCOUS TERMS
      &             -(1.5d0*(LSYXN2*FDX2+LSYYN2*FDY2)
-     &             + AreaIE*TSINT*SFAR(NM2)*(LSXXN2-LSYYN2))/H1N2
+     &               + AreaIE*TANPHI(NM2)*(LSXXN2-LSYYN2))/H1N2
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
@@ -593,7 +597,7 @@ C...  BAROTROPIC & BAROCLINIC PRESSURE GRADIENT TERMS
      &             -GO2*DBTPDYA - DBCPDY3A
 C...  LATERAL VISCOUS TERMS
      &             -(1.5d0*(LSYXN3*FDX3+LSYYN3*FDY3)
-     &             + AreaIE*TSINT*SFAR(NM3)*(LSXXN3-LSYYN3))/H1N3
+     &               + AreaIE*TANPHI(NM3)*(LSXXN3-LSYYN3))/H1N3
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
@@ -702,7 +706,7 @@ C        WJP 02.24.2018: Get the cofficients of the matrix
 C        WJP 05.28.2019: Add the Spherical coordinate correction term 
 C        (refer; Kolar et al., 1994, doi:10.1080/00221689409498786)
 C        Equation (41) [refer also Eq. (37)]
-         CorifA  = CORIF(I) + IFNLCT*TSINT*UU1(I)*SFAR(I)
+         CorifA  = CORIF(I) + IFNLCT*TANPHI(I)*UU1(I)
          VCOEFXY = DTO2*(TKM(3,I) - CorifA)
          VCOEFYX = DTO2*(TKM(3,I) + CorifA)
       
@@ -814,13 +818,16 @@ C     velocities at the previous time step.
                IF (NEle.NE.0.AND.NCEle.NE.0) THEN !if element is active, compute contribution
 C.....DW
                   SFacAvg = SFacEle(NEle)
-                  SLacAvg = SLacEle(NEle)
-                  FDX1 = FDXE(1,NEle)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-                  FDX2 = FDXE(2,NEle)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-                  FDX3 = FDXE(3,NEle)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-                  FDY1 = FDYE(1,NEle)*SLacAvg ; !c  FDY1=X(NM3)-X(NM2) !a1
-                  FDY2 = FDYE(2,NEle)*SLacAvg ; !c  FDY2=X(NM1)-X(NM3) !a2
-                  FDY3 = FDYE(3,NEle)*SLacAvg ; !c  FDY3=X(NM2)-X(NM1) !a3
+                  SFmxAvg = SFMXEle(NEle)
+                  SFmyAvg = SFMYEle(NEle)
+                  sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
+                  sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+                  FDX1 = FDXE(1,NEle)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
+                  FDX2 = FDXE(2,NEle)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
+                  FDX3 = FDXE(3,NEle)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
+                  FDY1 = FDYE(1,NEle)*sfdyfac ; !c  FDY1=X(NM3)-X(NM2) !a1
+                  FDY2 = FDYE(2,NEle)*sfdyfac ; !c  FDY2=X(NM1)-X(NM3) !a2
+                  FDY3 = FDYE(3,NEle)*sfdyfac ; !c  FDY3=X(NM2)-X(NM1) !a3
 C.....DW
                   ZNGRHS1=ZNGRHS1-(CSII(I)*FDX2+SIII(I)*FDY2)*UU1(NM2)
      &                           -(CSII(I)*FDX3+SIII(I)*FDY3)*UU1(NM3)
@@ -836,13 +843,16 @@ C.....DW
             IF (NEle.NE.0.AND.NCEle.NE.0) THEN
 C.....DW
                SFacAvg = SFacEle(NEle)
-               SLacAvg = SLacEle(NEle)
-               FDX1 = FDXE(1,NEle)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-               FDX2 = FDXE(2,NEle)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-               FDX3 = FDXE(3,NEle)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-               FDY1 = FDYE(1,NEle)*SLacAvg ; !c  FDY1=X(NM3)-X(NM2) !a1
-               FDY2 = FDYE(2,NEle)*SLacAvg ; !c  FDY2=X(NM1)-X(NM3) !a2
-               FDY3 = FDYE(3,NEle)*SLacAvg ; !c  FDY3=X(NM2)-X(NM1) !a3
+               SFmxAvg = SFMXEle(NEle)
+               SFmyAvg = SFMYEle(NEle)
+               sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
+               sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+               FDX1 = FDXE(1,NEle)*sfdxfac ; 
+               FDX2 = FDXE(2,NEle)*sfdxfac ;
+               FDX3 = FDXE(3,NEle)*sfdxfac ; 
+               FDY1 = FDYE(1,NEle)*sfdyfac ; 
+               FDY2 = FDYE(2,NEle)*sfdyfac ; 
+               FDY3 = FDYE(3,NEle)*sfdyfac ; 
 C.....DW
                ZNGRHS1=ZNGRHS1-(CSII(I)*FDX2+SIII(I)*FDY2)*UU1(NM2)
      &                        -(CSII(I)*FDX3+SIII(I)*FDY3)*UU1(NM3)
@@ -989,13 +999,15 @@ C
      & NRS, IFWIND, WSX1, WSY1, WSX2, WSY2, QX2, QY2, QN2, UU2, VV2,
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
-     & SMAG_LOWER_LIM, NODECODE, TSINT, VIDISPDXOH, VIDISPDYOH, 
+     & SMAG_LOWER_LIM, NODECODE, VIDISPDXOH, VIDISPDYOH, IFSFM, 
      & CBaroclinic, CAliDisp, TWOB
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
-     &   NEITAB, NEITABELE, NNEIGH, SFacEle, SLacEle, Sfar, FDXE, FDYE 
+     &   NEITAB, NEITABELE, NNEIGH, FDXE, FDYE,
+     &   SFacEle, SFMYEle, SFMXEle, TANPHI   
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI, 
      &   CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
+       
       IMPLICIT NONE
 
       INTEGER IE, I, J, N                           !local loop counters
@@ -1022,7 +1034,7 @@ C
       REAL(SZ) QTan
       REAL(SZ) QX1N1, QX1N2, QX1N3, QX1Avg, QX1DU1DXA, QX1DV1DYA
       REAL(SZ) QY1N1, QY1N2, QY1N3, QY1Avg, QY1DU1DXA, QY1DV1DYA
-      REAL(SZ) SFacAvg
+      REAL(SZ) SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
       REAL(SZ) TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
       REAL(SZ) TEMP_LV_B1, TEMP_LV_B2, TEMP_LV_B3
       REAL(SZ) U1N1, U1N2, U1N3, U1Avg, U1DQX1DXA, U1DQY1DXA
@@ -1083,15 +1095,22 @@ Corbitt 120322: Localized Advection
          QY1N2=QY1(NM2)
          QY1N3=QY1(NM3)
          SFacAvg= SFacEle(IE)
+C..... BEG DW/WJP
+         SFmxAvg= SFMXEle(IE) ; 
+         SFmyAvg= SFMYEle(IE) ; 
+         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
+         sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+C..... END DW/WJP
 
-         AreaIE2=Areas(IE)
-         AreaIE =AreaIE2/2.d0
-         FDX1 = FDXE(1,IE)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-         FDX2 = FDXE(2,IE)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-         FDX3 = FDXE(3,IE)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-         FDY1 = FDYE(1,IE) ;    !c  FDY1=X(NM3)-X(NM2) !a1
-         FDY2 = FDYE(2,IE) ;    !c  FDY2=X(NM1)-X(NM3) !a2
-         FDY3 = FDYE(3,IE) ;    !c  FDY3=X(NM2)-X(NM1) !a3
+         AreaIE2 = Areas(IE)
+         AreaIE  = 0.5d0*AreaIE2
+C..... DW
+         FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
+         FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
+         FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
+         FDY1 = FDYE(1,IE)*sfdyfac ; !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
+         FDY2 = FDYE(2,IE)*sfdyfac ; !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
+         FDY3 = FDYE(3,IE)*sfdyfac ; !c FDY3=(X(NM2)-X(NM1))*MY !a3*my         
 
 C...  Compute element averaged quantities
 
@@ -1303,6 +1322,7 @@ C...  BAROTROPIC PRESSURE GRADIENT
      &             -DBTPDXA
 C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSXXN1*FDX1+LSXYN1*FDY1)
+     &             +AreaIE*TANPHI(NM1)*(LSXYN1+LSYXN1)
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
@@ -1317,6 +1337,7 @@ C...  BAROTROPIC PRESSURE GRADIENT
      &             -DBTPDXA
 C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSXXN2*FDX2+LSXYN2*FDY2)
+     &             +AreaIE*TANPHI(NM2)*(LSXYN2+LSYXN2)
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
@@ -1331,6 +1352,7 @@ C...  BAROTROPIC PRESSURE GRADIENT
      &             -DBTPDXA
 C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSXXN3*FDX3+LSXYN3*FDY3)
+     &             +AreaIE*TANPHI(NM3)*(LSXYN3+LSYXN3)
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
@@ -1344,6 +1366,7 @@ C...  BAROTROPIC PRESSURE GRADIENT
      &             -DBTPDYA
 C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSYXN1*FDX1+LSYYN1*FDY1)
+     &             -AreaIE*TANPHI(NM1)*(LSXXN1-LSYYN1)
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
@@ -1357,6 +1380,7 @@ C...  BAROTROPIC PRESSURE GRADIENT
      &             -DBTPDYA
 C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSYXN2*FDX2+LSYYN2*FDY2)
+     &             -AreaIE*TANPHI(NM2)*(LSXXN2-LSYYN2)
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
@@ -1370,6 +1394,7 @@ C...  BAROTROPIC PRESSURE GRADIENT
      &             -DBTPDYA
 C...  LATERAL VISCOUS TERMS
      &             -1.5d0*(LSYXN3*FDX3+LSYYN3*FDY3)
+     &             -AreaIE*TANPHI(NM3)*(LSXXN3-LSYYN3)
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
@@ -1463,7 +1488,7 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
 C        WJP 05.28.2019: Add the Spherical coordinate correction term 
 C        (refer; Kolar et al., 1994, doi:10.1080/00221689409498786)
 C        Equation (41) [refer also Eq. (37)]
-         CorifA  = CORIF(I) + IFNLCT*TSINT*UU1(I)*sfar(I)
+         CorifA  = CORIF(I) + IFNLCT*TANPHI(I)*UU1(I)
          VCOEFXY = DTO2*(TKM(3,I) - CorifA)
          VCOEFYX = DTO2*(TKM(3,I) + CorifA)
 
@@ -1542,13 +1567,17 @@ C     fluxes at the previous time step.
                NEle=NeiTabEle(NBDI,N-2)                      !element # defined by nodes NM1,NM2,NM3
                NCEle=NCI*NodeCode(NM2)*NodeCode(NM3)*NOFF(NEle)
                IF((NEle.NE.0).AND.(NCEle.NE.0)) THEN         !if element is active, compute contribution
-                  SFacAvg=SFacEle(NCEle)
-                  FDX1 = FDXE(1,IE)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-                  FDX2 = FDXE(2,IE)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-                  FDX3 = FDXE(3,IE)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-                  FDY1 = FDYE(1,IE) ;    !c  FDY1=X(NM3)-X(NM2) !a1
-                  FDY2 = FDYE(2,IE) ;    !c  FDY2=X(NM1)-X(NM3) !a2
-                  FDY3 = FDYE(3,IE) ;    !c  FDY3=X(NM2)-X(NM1) !a3
+                  SFacAvg = SFacEle(NEle)
+                  SFmxAvg = SFMXEle(NEle)
+                  SFmyAvg = SFMYEle(NEle)
+                  sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
+                  sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+                  FDX1 = FDXE(1,NEle)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
+                  FDX2 = FDXE(2,NEle)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
+                  FDX3 = FDXE(3,NEle)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
+                  FDY1 = FDYE(1,NEle)*sfdyfac ; !c  FDY1=X(NM3)-X(NM2) !a1
+                  FDY2 = FDYE(2,NEle)*sfdyfac ; !c  FDY2=X(NM1)-X(NM3) !a2
+                  FDY3 = FDYE(3,NEle)*sfdyfac ; !c  FDY3=X(NM2)-X(NM1) !a3
                   ZNGRHS1=ZNGRHS1-(CSII(I)*FDX2+SIII(I)*FDY2)*QX1(NM2)
      &                           -(CSII(I)*FDX3+SIII(I)*FDY3)*QX1(NM3)
                   ZNGRHS2=ZNGRHS2-(CSII(I)*FDX2+SIII(I)*FDY2)*QY1(NM2)
@@ -1561,13 +1590,19 @@ C     fluxes at the previous time step.
             NEle=NeiTabEle(NBDI,NNeigh(NBDI)-1)
             NCEle=NCI*NodeCode(NM2)*NodeCode(NM3)*NOFF(NELE)
             IF((NEle.NE.0).AND.(NCEle.NE.0)) THEN
-               SFacAvg=SFacEle(NCEle)
-               FDX1 = FDXE(1,IE)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-               FDX2 = FDXE(2,IE)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-               FDX3 = FDXE(3,IE)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-               FDY1 = FDYE(1,IE) ;    !c  FDY1=X(NM3)-X(NM2) !a1
-               FDY2 = FDYE(2,IE) ;    !c  FDY2=X(NM1)-X(NM3) !a2
-               FDY3 = FDYE(3,IE) ;    !c  FDY3=X(NM2)-X(NM1) !a3
+              
+               SFacAvg = SFacEle(NEle)
+               SFmxAvg = SFMXEle(NEle)
+               SFmyAvg = SFMYEle(NEle)
+               sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
+               sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+               FDX1 = FDXE(1,NEle)*sfdxfac ; 
+               FDX2 = FDXE(2,NEle)*sfdxfac ;
+               FDX3 = FDXE(3,NEle)*sfdxfac ; 
+               FDY1 = FDYE(1,NEle)*sfdyfac ; 
+               FDY2 = FDYE(2,NEle)*sfdyfac ; 
+               FDY3 = FDYE(3,NEle)*sfdyfac ; 
+              
                ZNGRHS1=ZNGRHS1-(CSII(I)*FDX2+SIII(I)*FDY2)*QX1(NM2)
      &                        -(CSII(I)*FDX3+SIII(I)*FDY3)*QX1(NM3)
                ZNGRHS2=ZNGRHS2-(CSII(I)*FDX2+SIII(I)*FDY2)*QY1(NM2)

@@ -371,9 +371,10 @@ C  CANNOT INVALIDATE THE TIME VARYING WEIR INPUT FILE. CHECKS ARE IN PLACE TO EN
 C  THE SAME BOUNDARY NODE IS NOT LOCATED TWICE.
 C-----------------------------------------------------------------------
             SUBROUTINE FIND_BOUNDARY_NODES(LON,LAT,IDX)
-                USE MESH, ONLY: Project, Rotate, ICS, SLAM0, SFEA0
+                USE MESH, ONLY: ICS, SLAM0, SFEA0,
+     &              DRVSPCOORSROTS, CYLINDERMAP
                 USE BOUNDARIES, ONLY: NBV
-                USE GLOBAL, ONLY: DEG2RAD
+                USE GLOBAL, ONLY: DEG2RAD, IFSPROTS
 #ifdef CMPI                
                 USE MESSENGER,ONLY: RESNODE
 #endif                
@@ -401,8 +402,12 @@ C-----------------------------------------------------------------------
                 ELSEIF(ICS.EQ.2)THEN
                     LAT_TEMP = LAT*DEG2RAD
                     LON_TEMP = LON*DEG2RAD
-                    CALL Rotate(LonR,LatR,Lon_Temp,Lat_Temp)
-                    CALL Project(X,Y,LonR,LatR,SLAM0,SFEA0)
+                    IF ( IFSPROTS.eq. 1) THEN
+                       CALL DRVSPCOORSROTS( lonr, latr, LON_TEMP, LAT_TEMP )
+                    ELSE
+                       latr = LAT_TEMP ;  lonr = LON_TEMP 
+                    END IF
+                    CALL CYLINDERMAP( X, Y, lonr, latr, SLAM0, SFEA0, ICS)
                 ENDIF
 
                 CALL KDTREE2_N_NEAREST(TP=BARRIER_SEARCHTREE,

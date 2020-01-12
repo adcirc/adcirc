@@ -16,19 +16,27 @@ C     ------------------------------------------------------------------
       module mesh
 C     ------------------------------------------------------------------
       use hashtable
-      use sizes, only : sz
-      use global, only : DEBUG, INFO, ECHO, WARNING, ERROR,
+      use sizes, only: sz, meshFileName, mne, mnp, mnope, mneta, myproc,
+     &   mnbou, mnvel, nprec, meshtype, ascii, xdmf, mnei, GBLINPUTDIR
+      use global, only: DEBUG, INFO, ECHO, WARNING, ERROR,
      &   scratchMessage, logMessage, screenMessage, allMessage,
      &   setMessageSource, openFileForRead, unsetMessageSource,
-     &   scratchFormat
+     &   scratchFormat, deg2rad, rad2deg, pi, omega, Rearth
+
       implicit none
+       
       character(len=80) :: agrid
       character(4)              :: aid4(20)
       character(8)              :: aid8(10)
       integer :: np   ! number of nodes in the mesh
       integer :: ne   ! number of elements in the mesh
-      integer :: ics  ! mesh coordinate system (1=cartesian, 2=geographic)
-      integer :: Projtype = 1 !(=0 Equal-area, 1= CPP, 2=Mercator)
+      integer :: ics  ! mesh coordinate system (1=cartesian, 2=geographic,
+                      ! 20-24 geographic w/ corrected equations,
+                      ! 20 = equal-area cylindrical,
+                      ! 21 = CPP (equi-distant) cylindrical,
+                      ! 22 = Mercator (conformal) cylindrical,
+                      ! 23 = Miller cylindrical,
+                      ! 24 = Gall-Stereographic cylindrical)
       real(sz),allocatable, target ::  dp(:)  ! bathymetric depth
       integer,allocatable :: nm(:,:)          ! element table size(ne,3)
       real(8),allocatable :: x(:)   ! x cartesian node locations x(np)
@@ -48,8 +56,6 @@ C     ------------------------------------------------------------------
       integer, allocatable :: neitabele(:,:) !(MNP,MNei)table of neighboring elements for each node
       real(8), allocatable :: areas(:) !(MNE) = 2*Element Area
       real(8), allocatable :: totalarea(:)
-      real(sz), allocatable :: sfac(:), slac(:), sfacele(:), slacele(:) ! spherical coordinate correction factor
-      real(sz), allocatable :: csfea(:), csfeaele(:), sfar(:) ! spherical coordinate tan(lat)/R ratio
       real(sz), allocatable :: bcxy(:,:)  ! element barycenters for kdtree
       real(sz), allocatable :: rmax(:)    ! element radii for kdtree
       real(sz), allocatable :: csi(:),sii(:)
@@ -64,6 +70,42 @@ C----- DW --- precomputed
       REAL (SZ), ALLOCATABLE:: FDXE(:,:), FDYE(:,:) 
       INTEGER:: NELNDTAB
       INTEGER, ALLOCATABLE:: PERBC_ELNDTAB(:,:) 
+      
+      REAL (SZ), POINTER, DIMENSION(:,:):: EXV, EYV ! Nov 22, 2019
+      REAL (SZ), POINTER, DIMENSION(:,:):: EXVO, EYVO
+      REAL (SZ), POINTER, DIMENSION(:,:):: EXVR, EYVR
+      REAL (SZ), ALLOCATABLE, DIMENSION(:):: SFEAR, SLAMR
+      !c Matrix mapping two Cartesian frames
+      REAL (SZ):: ROTMAT(3,3) = reshape( (/ 1.0, 0.0, 0.0, 
+     &                             0.0, 1.0, 0.0,
+     &                             0.0, 0.0, 1.0 /), (/3, 3/)) ;  
+      !c 
+      !c RVELF: V(\varphi,\theta)  -> V'(\varphi',\theta')
+      !c RVELI: V'(\varphi,\theta) -> V(\varphi,\theta)
+      REAL (SZ), ALLOCATABLE, DIMENSION(:,:,:):: RVELF, RVELI   
+      
+      ! Temporary vectors
+      REAL (SZ), ALLOCATABLE, DIMENSION(:):: UVECTMP, VVECTMP
+ 
+      ! The correction factors
+      REAL (SZ), allocatable, DIMENSION(:) :: SFac, SFMX, SFMY, SFCT,
+     &    SFCX, SFCY, YCSFAC, TANPHI ! spherical coordinate tan(lat)/R ratio
+C...  Element averages of these...
+      REAL (SZ), allocatable, DIMENSION(:) :: SfacEle, SFCYEle, SFCXEle,
+     &    SFMXEle, SFMYEle, YCSFACEle, TANPHIEle 
+
+      ! Overload a functions 
+      INTERFACE SPCOORSROTS
+        MODULE PROCEDURE SPCOORSROTS1, SPCOORSROTS0
+      END INTERFACE
+
+      INTERFACE DRVSPCOORSROTS
+        MODULE PROCEDURE DRVSPCOORSROTS0, DRVSPCOORSROTS1
+      END INTERFACE
+
+      INTERFACE GET_ROTMAT 
+         MODULE PROCEDURE DRV_ROTMAT_ZNVEC, DRV_ROTMAT_ZXZROT
+      END INTERFACE
 C..... DW
 C
 C     ----------
@@ -76,7 +118,6 @@ C     ------------------------------------------------------------------
 C     jgf51.21.11: Read the ADCIRC mesh in various formats
 C     ------------------------------------------------------------------
       subroutine readMesh()
-      use sizes
       implicit none
 
       call setMessageSource("readMesh")
@@ -106,7 +147,6 @@ C     ------------------------------------------------------------------
 C     jgf51.21.11: Read the ADCIRC mesh in various formats
 C     ------------------------------------------------------------------
       subroutine read14_findDims ()
-      use sizes
       use global, only : nabout
       use boundaries
       implicit none
@@ -266,7 +306,6 @@ C     ------------------------------------------------------------------
       !-----+---------+---------+---------+---------+---------+---------+
       subroutine read14 ()
       use boundaries
-      use sizes, only : meshFileName
       use global, only : openFileForRead, nabout, nperseg, nnperbc,
      &                   iperconn
 
@@ -548,8 +587,6 @@ C...        Periodic boundary, read in a pair of nodes
 !     data structures.
 !----------------------------------------------------------------------
       subroutine readMeshXDMF()
-      use sizes, only : meshFileName, mne, mnp, mnope, mneta,
-     &   mnbou, mnvel
       use global, only : nabout
       use boundaries
       implicit none
@@ -1276,11 +1313,12 @@ C     the fort.15 control file and before the kdtree computations that
 C     are used to locate the elements that contain the stations.
 C     ------------------------------------------------------------------
       subroutine initializeMesh()
-      use sizes, only : nprec, mnei
       use global, only : deg2rad, pi, rad2deg, h0, nolifa, nbfr, ncor, 
-     &                   ntip, Rearth
+     &                   ntip, ifsprots
       use boundaries
+
       implicit none
+
       real(8) x1,x2,x3,x4,y1,y2,y3,y4
       real(8) avgxy,dif1r,dif2r,dif3r
 !     v49.48.02 tcm added these local variable for computing
@@ -1288,9 +1326,9 @@ C     ------------------------------------------------------------------
       real(sz) x2mx1,x3mx2,x1mx3,y2my1,y3my2,y1my3
       real(sz) Lon21,Lon32,Lon13
       real(sz) lened1,lened2,lened3
-      real(sz) :: slamr, sfear
-      real(8) :: slamr1, sfear1, slamr2, sfear2, slamr3, sfear3
       integer :: i, j
+      integer :: SFLAG
+      REAL (SZ), dimension(3):: LONVE, LATVE
 
       call setMessageSource("initializeMesh")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -1316,17 +1354,9 @@ C...
 C...  IF ICS=1 INPUT NODAL COORDINATES AND BATHYMETRY FROM UNIT 14
 C.... IF EITHER NTIP=1 OR NCOR=1, COMPUTE THE INVERSE CPP PROJECTION
 
-      SFAR = 0.0d0 ! set the sfar vector equal to zero by default
-      SFAC = 1.0d0 ! set the sfac vector equal to unity
-      SFACELE = 1.0d0 ! set the sfac vector equal to unity
-      SLAC = 1.0d0 ! set the slac vector equal to unity
-      SLACELE = 1.0d0 ! set the slac vector equal to unity
-      CSFEAELE = 1.0d0 ! set the cosine of lat to unity
-      CSFEA = 1.0d0 ! set the cosine of lat to unity
-      theta = 0d0 ! set rotation to zero 
-      beta  = 0d0 ! set rotation to zero
+      SELECT CASE( ICS )
       ! if the original nodal coordinates were cartesian
-      IF (ICS.EQ.1) THEN
+      CASE(1)
          ! we already read the original coordinates into slam(:) and sfea(:)
          ! so copy these data to x() and y()
          x = slam
@@ -1338,43 +1368,35 @@ C.... IF EITHER NTIP=1 OR NCOR=1, COMPUTE THE INVERSE CPP PROJECTION
                CALL INVCP(X(I),Y(I),SLAM(I),SFEA(I),SLAM0,SFEA0)
             ENDIF
          END DO
-      ENDIF
-      !
+      
+      CASE(2,20:24)
       ! if mesh coordinates were in lon lat degrees then compute the projection
       ! and the correction factors
-      if (ics.eq.2) then
-         ! Apply rotation of grid if max val of lat > 85
-         !if (maxval(slam) > 85d0) then
-         !   ! This puts north pole on Greenland and 
-         !   ! south pole on edge of Antarctica
-         !   theta = 14d0  * deg2rad 
-         !   beta  = 140d0 * deg2rad
-         !endif 
          slam = deg2rad * slam
          sfea = deg2rad * sfea
-         !write(16,*) 'Minbefore',minval(cos(sfea))
          do i = 1,np
-            call Rotate(slamr,sfear,slam(i),sfea(i))
-            call Project(x(i),y(i),slamr,sfear,slam0,sfea0,
-     &                   sfac(i),slac(i))
-            sfar(i)  = tan( sfear ) / Rearth
-            csfea(i) = cos( sfear )
+            call CYLINDERMAP(x(i),y(i),slam(i),sfea(i),slam0,sfea0,ics)
          enddo
-         !write(16,*) 'Minafter',minval(csfea)
           
-C...     WJP, compute the element averaged quantities
-         do i = 1,ne
-            sfacele(i) = ( sfac(nm(i,1)) + sfac(nm(i,2))
-     &                   + sfac(nm(i,3)) ) / 3d0 
-            slacele(i) = ( slac(nm(i,1)) + slac(nm(i,2))
-     &                   + slac(nm(i,3)) ) / 3d0 
-            csfeaele(i) = ( csfea(nm(i,1)) + csfea(nm(i,2))
-     &                     + csfea(nm(i,3)) ) / 3d0
-         enddo
-      endif
+      END SELECT
+
+C.... BEG: DW dec 2019
+      IF ( IFSPROTS .EQ. 1 ) THEN
+CC       Allocate arrays to be used in coordinate rotations
+         CALL ALLOC_SPROTCOORS_MEM( ) ;
+
+C        Read the rotation matrix
+         CALL READFORTROTS( ) ; 
+        
+C        Get the variables assoicated with rotated coordinates
+C        The X and Y vectors are edited in this subroutine (rotated)
+         CALL COMP_ROTSPCOORD_VARS( ICS ) ; 
+C
+      END IF
+C.... END DW
 c...
 c...  if wetting and drying will not be used, make sure all bathymetric
-c...  depths are > or = to h0.
+!c...  depths are > or = to h0.
       if ( (nolifa.eq.0).or.(nolifa.eq.1) ) then
          do i=1,np
             if(dp(i).lt.h0) dp(i)=h0
@@ -1419,36 +1441,69 @@ C     the resolution of the input mesh (i.e., very fine meshes may have
 C     nodes whose coordinates only differ in the last couple decimal
 C     places ... these differences may be lost due to round off error
 C     if there is not enough machine precision
-      DO I=1,NE
-         X1 = X(NM(I,1))
-         X2 = X(NM(I,2))
-         X3 = X(NM(I,3))
-         Y1 = Y(NM(I,1))
-         Y2 = Y(NM(I,2))
-         Y3 = Y(NM(I,3))
-         
-         ! WJP: Check wrap and correct X and Y values in the elements
-         if (ics.eq.2) then
-            call Rotate(slamr1,sfear1,slam(nm(i,1)),sfea(nm(i,1)))
-            call Rotate(slamr2,sfear2,slam(nm(i,2)),sfea(nm(i,2)))
-            call Rotate(slamr3,sfear3,slam(nm(i,3)),sfea(nm(i,3)))
-            Lon21 = slamr2 - slamr1
-            Lon32 = slamr3 - slamr2
-            Lon13 = slamr1 - slamr3
-            if (abs(Lon21) > pi .and. abs(Lon13) > pi) then
-               ! Change X1
-               call Project(X1,Y1,slamr1+sign(2d0*pi,Lon21),
-     &                      sfear1,slam0,sfea0)
-            elseif (abs(Lon21) > pi .and. abs(Lon32) > pi) then
-               ! Change X2
-               call Project(X2,Y2,slamr2+sign(2d0*pi,Lon32),
-     &                      sfear2,slam0,sfea0)
-            elseif (abs(Lon32) > pi .and. abs(Lon13) > pi) then
-               ! Change X3
-               call Project(X3,Y3,slamr3+sign(2d0*pi,Lon13),
-     &                      sfear3,slam0,sfea0)
-            endif
-         endif
+C     BEG DW/WJP 2020
+      PROCELM: DO I=1,NE
+  
+        SELECT CASE( ICS )
+        CASE (1)
+!     c Cartesian coordinate
+           EXV(1,I) = X(NM(I,1))
+           EXV(2,I) = X(NM(I,2))
+           EXV(3,I) = X(NM(I,3))
+           EYV(1,I) = Y(NM(I,1))
+           EYV(2,I) = Y(NM(I,2))
+           EYV(3,I) = Y(NM(I,3)) 
+
+        CASE (2,20:24)
+!     c Spherical coordinates c!
+           
+C.....Dec 2019
+C     lon (in rad)
+           LONVE(1) = SLAM( NM(I,1) ) ;
+           LONVE(2) = SLAM( NM(I,2) ) ;
+           LONVE(3) = SLAM( NM(I,3) ) ;
+           
+C     lat (in rad)
+           LATVE(1) = SFEA( NM(I,1) ) ;
+           LATVE(2) = SFEA( NM(I,2) ) ;
+           LATVE(3) = SFEA( NM(I,3) ) ;           
+           
+           EXV => EXVO ; 
+           EYV => EYVO ;           
+           CALL CAL_ELXV_SPCOOR( EXV(:,I), 
+     &          EYV(:,I), LONVE, LATVE, ICS, SFLAG ) ;
+           
+           IF ( IFSPROTS .EQ. 1 ) THEN
+C     lon in rotated coordinates (in rad)
+              LONVE(1) = SLAMR( NM(I,1) ) ;
+              LONVE(2) = SLAMR( NM(I,2) ) ;
+              LONVE(3) = SLAMR( NM(I,3) ) ;
+              
+C     lat in rotated coordinates (in rad)
+              LATVE(1) = SFEAR( NM(I,1) ) ;
+              LATVE(2) = SFEAR( NM(I,2) ) ;
+              LATVE(3) = SFEAR( NM(I,3) ) ;
+              
+              EXV => EXVR ; 
+              EYV => EYVR ;              
+              CALL CAL_ELXV_SPCOOR( EXV(:,I), 
+     &             EYV(:,I), LONVE, LATVE, ICS, SFLAG ) ;             
+           END IF 
+C.... 
+        END SELECT
+        
+        IF ( IFSPROTS .EQ. 1 ) THEN        
+           EXV => EXVR ; 
+           EYV => EYVR ;              
+        END IF
+        
+        X1 = EXV(1,I) ; 
+        X2 = EXV(2,I) ;
+        X3 = EXV(3,I) ;
+        Y1 = EYV(1,I) ;
+        Y2 = EYV(2,I) ;
+        Y3 = EYV(3,I) ;        
+C........END DW
 
 C...v49.48.02 tcm added these to reuse the computed values
          X2mX1 = (X2 - X1);
@@ -1497,6 +1552,14 @@ c        v49.48.02 tcm rewrote 2 x area to reuse values already being used
          AREAS(I)=(X1mX3)*(-Y3mY2)+(X3mX2)*(Y1mY3)
 C...
 C...     v49.48.02 tcm -- compute element barycenters and element radius
+C.... BEG: DW, Nov 2019
+         x1 = X( NM(I,1) )  ; 
+         x2 = X( NM(I,2) )  ;
+         x3 = X( NM(I,3) )  ;
+         y1 = Y( NM(I,1) )  ;
+         y2 = Y( NM(I,2) )  ;
+         y3 = Y( NM(I,3) )  ;
+
          bcxy(1,i) = (x1+x2+x3)/3.d0
          bcxy(2,i) = (y1+y2+y3)/3.d0
 C
@@ -1504,8 +1567,21 @@ C...     compute the radius of the circle that circumscribes
 C...     the element then scale it by 50% larger to allow for
 C...     a buffer later on
          RMAX(I) = 1.5D0*(LENED1*LENED2*LENED3)/(2.D0*AREAS(I))
-      end do
+      END DO PROCELM
 C
+C...  IF ICS=1 SET THE SFAC VECTOR EQUAL TO UNITY
+C...  IF ICS=2 COMPUTE THE SFAC VECTOR IN ORDER TO ADJUST EQUATIONS TO CPP
+C...  COORDINATES
+C...  
+C...  BEG: DW, DEC 2019 
+      IF ( IFSPROTS .EQ. 1 ) THEN
+         CALL COMPUTE_CYLINPROJ_SFAC( SLAMR, SFEAR ) ; 
+      ELSE
+         CALL COMPUTE_CYLINPROJ_SFAC( SLAM, SFEA ) ; 
+      END IF
+C.... END DW
+
+
 C     check to ensure that the nodal ordering in the connectivity table is
 C     counter clockwise around the elements
       do i=1,ne
@@ -1537,8 +1613,7 @@ C     These finalizations are based on parameters parsed from the
 C     fort.15 control file, including ANGINN.
 C     ------------------------------------------------------------------
       subroutine initializeBoundaries()
-      use sizes, only : mnvel
-      use global, only : deg2rad, rad2deg, nbfr, c2ddi, pi
+      use global, only : deg2rad, rad2deg, nbfr, c2ddi, pi, ifsprots
       use boundaries
       implicit none
       integer  nprbi, nbvk
@@ -1898,7 +1973,7 @@ C        continue processing flow boundary information
 
 C...  PROCESS INFORMATION FOR VARIOUS TYPES OF FLOW BOUNDARY SEGMENTS
 
-         DO IPRBI=1,NPRBI
+         LOOPPRBI: DO IPRBI=1,NPRBI
 
 C...  LOAD PAIRED NODES INTO PRIMARY PROCESSING VECTORS AND RESET
 C...  CONNECTING NODES FOR BACK FACE THUS BACK/CONNECTING NODES ARE
@@ -2034,24 +2109,6 @@ C              jgf46.21 Added IBTYPE=52.
                YGJ = Y(NBVJ)
                YGI = Y(NBVI)
                YGK = Y(NBVK)
-               IF (ICS.EQ.2) THEN
-                  call Rotate(slamrJ,sfearJ,slam(NBVJ),sfea(NBVJ))
-                  call Rotate(slamrI,sfearI,slam(NBVI),sfea(NBVI))
-                  call Rotate(slamrK,sfearK,slam(NBVK),sfea(NBVK))
-                  LonJI = SLAMrJ - SLAMrI
-                  LonIK = SLAMrI - SLAMrK
-                  LonKJ = SLAMrK - SLAMrJ
-                  if (abs(LonJI) > pi .and. abs(LonIK) > pi) then
-                     CALL Project(XGI,YGI,SLAMrI+sign(2d0*pi,LonJI),
-     &                            SFEArI,SLAM0,SFEA0)
-                  elseif (abs(LonJI) > pi .and. abs(LonKJ) > pi) then
-                     CALL Project(XGJ,YGJ,SLAMrJ+sign(2d0*pi,LonKJ),
-     &                            SFEArJ,SLAM0,SFEA0)
-                  elseif (abs(LonKJ) > pi .and. abs(LonIK) > pi) then
-                     CALL Project(XGK,YGK,SLAMrK+sign(2d0*pi,LonIK),
-     &                            SFEArK,SLAM0,SFEA0)
-                  endif
-               ENDIF
                DELX = XGJ - XGI
                DELY = YGJ - YGI
                BNDLEN2O3(JGW) = 2.D0*(SQRT(DELX*DELX+DELY*DELY))/3.D0
@@ -2071,19 +2128,29 @@ C...           X0,Y0)
                   YLJ = YGJ
                   YLK = YGK
                ELSE
-                  CALL Project(XLI,YLI,SLAMrI,SFEArI,SLAMrI,SFEArI)
-                  CALL Project(XLK,YLK,SLAMrK,SFEArK,SLAMrI,SFEArI)
-                  CALL Project(XLJ,YLJ,SLAMrJ,SFEArJ,SLAMrI,SFEArI)
-                  if (abs(LonJI) > pi .and. abs(LonIK) > pi) then
-                     CALL Project(XLI,YLI,SLAMrI+sign(2d0*pi,LonJI),
-     &                    SFEArI,SLAMrI+sign(2d0*pi,LonJI),SFEArI)
-                  elseif (abs(LonJI) > pi .and. abs(LonKJ) > pi) then
-                     CALL Project(XLJ,YLJ,SLAMrJ+sign(2d0*pi,LonKJ),
-     &                    SFEArJ,SLAMrI,SFEArI)
-                  elseif (abs(LonKJ) > pi .and. abs(LonIK) > pi) then
-                     CALL Project(XLK,YLK,SLAMrK+sign(2d0*pi,LonIK),
-     &                    SFEArK,SLAMrI,SFEArI)
-                  endif
+C................ BEG: DW, Nov 2019
+                  IF ( IFSPROTS .EQ. 1 ) THEN
+                     CALL CYLINDERMAP( XLI, YLI, SLAMR(NBVI),
+     &                    SFEAR(NBVI), SLAMR(NBVI),
+     &                    SFEAR(NBVI), ICS ) ;
+                     CALL CYLINDERMAP(XLJ, YLJ, SLAMR(NBVJ),
+     &                    SFEAR(NBVJ), SLAMR(NBVI),
+     &                    SFEAR(NBVI), ICS ) ;
+                     CALL CYLINDERMAP(XLK, YLK, SLAMR(NBVK),
+     &                    SFEAR(NBVK), SLAMR(NBVK),
+     &                    SFEAR(NBVI), ICS)
+                  ELSE
+                     CALL CYLINDERMAP( XLI, YLI, SLAM(NBVI),
+     &                    SFEA(NBVI), SLAM(NBVI),
+     &                    SFEA(NBVI), ICS ) ;
+                     CALL CYLINDERMAP(XLJ, YLJ, SLAM(NBVJ),
+     &                    SFEA(NBVJ), SLAM(NBVI),
+     &                    SFEA(NBVI), ICS ) ;
+                     CALL CYLINDERMAP(XLK, YLK, SLAM(NBVK),
+     &                    SFEA(NBVK), SLAM(NBVI),
+     &                    SFEA(NBVI), ICS)
+                 ENDIF
+C.............. END DW
                ENDIF
 
 C...           NOTE: INTERIOR ANGLE AT ENDS OF BOUNDARIES MUST BE EQUAL, EITHER:
@@ -2497,7 +2564,7 @@ C...  CODE ON THE EXTERNAL BOUNDARY
                ENDIF
 
             END DO NVELL_LOOP ! I = 1,NVELL(K)
-         END DO  !IPRBI=1,NPRBI
+         END DO  LOOPPRBI !IPRBI=1,NPRBI
       END DO NBOULOOP  ! K=1,NBOU
 
 C...  ONCE ALL FLOW BOUNDARY NODES HAVE BEEN PROCESSED, CHECK TO MAKE
@@ -2665,7 +2732,6 @@ C     dimensioned by the number of nodes in the mesh or the number of
 C     elements in the mesh.
 C     ------------------------------------------------------------------
       subroutine allocateNodalAndElementalArrays()
-      use sizes, only : mnp, mne
       implicit none
 
       call setMessageSource("allocateNodalAndElementalArrays")
@@ -2674,15 +2740,12 @@ C     ------------------------------------------------------------------
 #endif
 
       allocate ( slam(mnp),sfea(mnp),x(mnp),y(mnp),labels(mnp))
-      allocate ( csfea(mnp) )
       call dict(node_dict, mnp)
       allocate ( dp(mnp) )
       allocate ( nm(mne,3))
       allocate ( areas(mne), totalarea(mnp))
       allocate ( nneigh(mnp),mju(mnp),nodele(mnp))
       allocate ( lbarray_pointer(mnp))
-      allocate ( sfac(mnp), slac(mnp), sfar(mnp) )
-      allocate ( slacele(mne), sfacele(mne), csfeaele(mne))
 
       allocate ( csi(mnp),sii(mnp))
 C...  v49.48.02 tcm -- Variables related to kdtree searches
@@ -2692,11 +2755,45 @@ C...... DW
       ALLOCATE ( FDXE(3,MNE), FDYE(3,MNE) ) ;
       FDXE = 0.0_SZ ; 
       FDYE = 0.0_SZ ;
+      
+      ALLOCATE( EXVO(3,MNE), EYVO(3,MNE) ) ; 
+      EXVO = 0.0_SZ ;
+      EYVO = 0.0_SZ ; 
+      EXV => EXVO ; 
+      EYV => EYVO ; 
+
+      NULLIFY( EXVR ) ;
+      NULLIFY( EYVR ) ; 
+        
+      ALLOCATE( SFAC(MNP), SFMX(MNP), SFMY(MNP), 
+     &          SFCX(MNP), SFCY(MNP), YCSFAC(MNP),
+     &          SFCT(MNP), TANPHI(MNP) )
+
+      SFCT = 1.0_SZ ; 
+      SFCX = 1.0_SZ ; 
+      SFCY = 1.0_SZ ;
+        
+      SFMX = 1.0_SZ ;
+      SFMY = 1.0_SZ ; 
+
+      TANPHI = 0.0_SZ ;
+      YCSFAC = 1.0_SZ ;
+        
+      ALLOCATE( SfacEle(MNE), SFCYEle(MNE), SFCXEle(MNE),
+     &          SFMXEle(MNE), SFMYEle(MNE), YCSFacEle(MNE),
+     &          TANPHIEle(MNE) ) 
+      SFacEle = 1.0_SZ ; 
+      SFCYEle = 1.0_SZ ;
+      SFCXEle = 1.0_SZ ; 
+      SFMYEle = 1.0_SZ ;
+      SFMXEle = 1.0_SZ ;
+      YCSFacEle = 1.0_SZ ;
+      TANPHIEle = 0.0_SZ ;
+C...... END DW
       !
       ! initialize to something troublesome to make it easy to spot issues
       slam = -99999.d0
       sfea = -99999.d0
-      csfea = -99999.d0
       x = -99999.d0
       y = -99999.d0
       dp = -99999.d0
@@ -2707,12 +2804,6 @@ C...... DW
       mju = -99999
       nodele = -99999
       lbarray_pointer = -99999
-      sfac = -99999.d0
-      sfacele = -99999.d0
-      slac = -99999.d0
-      slacele = -99999.d0
-      csfeaele = -99999.d0
-      sfar = -99999.d0
       csi = -99999.d0
       sii = -99999.d0
       bcxy = -99999.d0
@@ -2733,7 +2824,6 @@ C     ------------------------------------------------------------------
 C     Allocate space for Arrays needed to determine neighbor tables
 C     ------------------------------------------------------------------
       subroutine allocateNeighborArrays()
-      use sizes, only : mnp, mnei
       implicit none
 
       call setMessageSource("allocateNeighborArrays")
@@ -2777,120 +2867,6 @@ c     ------------------------------------------------------------------
       end subroutine freeMesh
 C     ------------------------------------------------------------------
 
-
-C     ------------------------------------------------------------------
-C               S U B R O U T I N E    P R O J E C T
-C     ------------------------------------------------------------------
-C     Transform from lon,lat (lamda,phi) coordinates into a cylindrical
-C     projection of user choice. Lon, Lat must be in radians
-C     ------------------------------------------------------------------
-      SUBROUTINE Project(X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0,SFac,SLac)
-      USE GLOBAL, ONLY : Rearth
-      IMPLICIT NONE
-      real(8), intent(in) :: RLAMBDA   ! longitude in radians
-      real(8), intent(in) :: PHI       ! latitude in radians
-      real(8), intent(in) :: RLAMBDA0  ! longitude at center of projection (radians)
-      real(8), intent(in) :: PHI0      ! latitude at center of projection (radians)
-      real(8), intent(out) :: X        ! projected longitude (m)
-      real(8), intent(out) :: Y        ! projected latitude (m)
-      real(sz), intent(out),optional :: SFac ! The correction factor on d/dx
-      real(sz), intent(out),optional :: SLac ! The correction factor on d/dy
-
-      call setMessageSource("Project")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      ! Standard cylindrical transformation for x
-      X = Rearth*(RLAMBDA-RLAMBDA0)*COS(PHI0)
-      ! Cylindrical transformations for y dependent on projection choice
-      select case(Projtype)
-      case(0)
-         ! Cylindrical Equal-Area
-         Y = Rearth*SIN(PHI)/COS(PHI0)
-      case(1)
-         ! CPP
-         Y = PHI*Rearth
-      case(2)
-         ! Mercator
-         Y = Rearth*LOG(TAN(PHI) + 1d0/COS(PHI))*COS(PHI0)
-      end select
-      ! If present - calculate the SFac/SLac correction factors
-      if (present(SFac)) then
-         SFac = COS(PHI0)/COS(PHI)
-         if (present(SLac)) then
-            SLac = SFac**(Projtype-1)
-         endif
-      endif
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C     ------------------------------------------------------------------
-      END SUBROUTINE Project
-C     ------------------------------------------------------------------
-
-C     ------------------------------------------------------------------
-C               S U B R O U T I N E    R O T A T E
-C     ------------------------------------------------------------------
-C     Rotate lon,lat (lamda,phi) coordinates to avoid pole problem
-C     ------------------------------------------------------------------
-      SUBROUTINE Rotate(LAMBDAR,PHIR,LAMBDA,PHI)
-      implicit none
-      real(8), intent(out) :: LAMBDAR ! rotated longitude in radians
-      real(8), intent(out) :: PHIR    ! rotated latitude in radians
-      real(8), intent(in)  :: LAMBDA  ! original longitude in radians
-      real(8), intent(in)  :: PHI     ! original latitude in radians
-
-      real(sz) :: x, y, z    ! cartesian coordinates
-      real(sz) :: xr, yr, zr ! rotated cartesian coordinates
-      
-      call setMessageSource("Rotate")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-       
-      ! Do this just to avoid floating point precision errors...
-      if (abs(theta) < 1e-3 .and. abs(beta) < 1e-3) then
-         lambdar = lambda
-         phir = phi
-         call unsetMessageSource()
-         return
-      endif   
- 
-      ! Convert from spherical to cartesian
-      x = cos(lambda)*cos(phi) 
-      y = sin(lambda)*cos(phi) 
-      z = sin(phi) 
- 
-      ! Get rotated coordinates
-      !            cx'x                      cx'y      
-      xr = cos(theta)*cos(beta)*x + cos(theta)*sin(beta)*y
-      !      cx'z 
-     &   + sin(theta)*z  
-      !      cy'x          cy'y          cy'z (zero)
-      yr = -sin(beta)*x + cos(beta)*y
-      !              cz'x                    cz'y   
-      zr = -sin(theta)*cos(beta)*x - sin(theta)*sin(beta)*y
-      !      cz'z
-     &   + cos(theta)*z 
- 
-      ! Convert back to spherical from cartesian
-      lambdar = atan2(yr,xr) 
-      phir = asin(zr) 
-
-!      ! New Coriolis (is same as Coriolis calculated on original (lon,lat)
-!      !    2*Omega       cx'z*cos(lambda')*cos(phi')
-!      fr = 2d0*omega*( sin(theta)*cos(lambdar)*cos(phir) 
-!      !                  cz'z*sin(phi') 
-!     &              + cos(theta)*sin(phir) ) 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C     ------------------------------------------------------------------
-      END SUBROUTINE Rotate
-C     ------------------------------------------------------------------
-
 C     ------------------------------------------------------------------
 C               S U B R O U T I N E    N E I G H B
 C     ------------------------------------------------------------------
@@ -2931,7 +2907,6 @@ C       NEIMIN - 1+MINIMUM NUMBER OF NEIGHBORS FOR ANY NODE
 C       NEIMAX - 1+MAXIMUM NUMBER OF NEIGHBORS FOR ANY NODE
 C     ------------------------------------------------------------------
       SUBROUTINE NEIGHB()
-      USE SIZES
       USE GLOBAL, ONLY : rad2deg
       IMPLICIT NONE
       INTEGER :: N,NN,I,J,JJ,K,JLOW
@@ -3637,7 +3612,6 @@ C        (3)
 C            
       SUBROUTINE PERBCSETUP( ETAB )
 
-      use sizes, only: MNP, MNEI
       use global, only: nperseg, perbc_idn_map, iperconn, nnperbc
       IMPLICIT NONE
       
@@ -4212,6 +4186,848 @@ C
       call unsetMessageSource()
       END SUBROUTINE terminate
 
+C*********************************************************************************C
+C                                                                                 C
+C  Spherical coordinates higher level functions & subroutines.                    C 
+C                                                                                 C
+C   Use data declared in the module                                               C
+C                                                                                 C
+C*********************************************************************************C
+      SUBROUTINE READFORTROTS( ) 
+        IMPLICIT NONE
+
+        !
+        CHARACTER (LEN=1024):: FNAME           
+        INTEGER:: FUNIT, errorIO
+        CHARACTER (len=100) :: errorVar 
+        CHARACTER (len=100) :: inputtype
+
+        INTEGER:: II
+        REAL(SZ):: PHIN, THETAN 
+        CHARACTER (LEN=300):: IGNOREMSG, MSG
+
+        ! Euler angle
+        REAL(SZ):: AL, BE, GAM
+
+        
+        FUNIT = 1002 ;    
+        FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.rotm' ;
+        errorVar = ""
+        call openFileForRead( FUNIT, FNAME, errorIO) ;
+
+        inputtype = "" ; 
+        read( FUNIT, *) inputtype ;
+
+        MSG = 
+     &       "**** Solve SWE in the rotated coordinate frame ****" ; 
+        IF ( MyProc .EQ. 0 ) THEN
+           WRITE(6,'(A)') MSG ;   
+        END IF
+
+        errorVar = "inputype" ;
+        SELECT CASE(adjustl(trim(inputtype)))
+        CASE ("znorth_in_spherical_coors")
+           READ(FUNIT, *) PHIN, THETAN, IGNOREMSG ; 
+
+           IF ( MyProc .EQ. 0 ) THEN
+              WRITE(6,'(A)') "A vector describing the north-south axis"//
+     &            " in spherical coordinates (\varphi,\theta) is given." ;
+              WRITE(6,'(A,2F20.8)') " (varphin,thetan) = ", PHIN, THETAN ; 
+           END IF
+           
+           CALL DRV_ROTMAT_ZNVEC( PHIN, THETAN ) ;           
+        CASE ("z-x-z")
+           READ(FUNIT, *) AL, BE, GAM, IGNOREMSG ; 
+
+           IF ( MyProc .EQ. 0 ) THEN
+              WRITE(6,'(A)') "Intrinsic rotation z-x-z (alpha,beta,"//
+     &             "gamma) is given." ;
+              WRITE(6,'(A,3F20.8)') " (alpha,beta,gamma) = ",AL, BE, GAM ; 
+           END IF
+
+           CALL DRV_ROTMAT_ZXZROT( AL, BE, GAM ) ;          
+        CASE ("rotation_matrix")           
+           DO II = 1, 3
+              READ(FUNIT,*) ROTMAT(II,3) ;
+           END DO
+
+           IF ( MyProc .EQ. 0 ) THEN
+              WRITE(6,'(A)') "A rotation matrix R: x -> x' is given" ;
+              WRITE(6,*) "ROTATION MATRIX: " ;
+              DO II = 1, 3 
+                 WRITE(6,'(A,3F12.4,A)') '| ', ROTMAT(II,:), ' |' ; 
+              END DO
+           END IF
+           
+        CASE DEFAULT
+           IF ( MyProc .EQ. 0 ) THEN
+              WRITE(6,'(A)') "Error in readfortrots(): defining"// 
+     &      " rotation matrix through "//adjustl(trim(inputtype))// 
+     &      " is either not valid or has not been implemented" ;
+              WRITE(6,'(A)') "ADCIRC will stop." ;          
+           END IF 
+
+           STOP ;                 
+        END SELECT
+
+        MSG = 
+     &       "***************************************************" ;  
+        IF ( MyProc .EQ. 0 ) THEN
+           WRITE(6,'(A)') MSG ; 
+        END IF
+
+        CLOSE(FUNIT) ;
+
+        RETURN ;      
+      END SUBROUTINE READFORTROTS
+      
+      SUBROUTINE ALLOC_SPROTCOORS_MEM( )  
+        IMPLICIT NONE
+      
+        ALLOCATE( SLAMR(MNP), SFEAR(MNP) ) ;
+        ALLOCATE( RVELF(2,2,MNP), RVELI(2,2,MNP) ) ; 
+        ALLOCATE( UVECTMP(MNP), VVECTMP(MNP) ) ; 
+      
+        SLAMR = 0.0_SZ ; 
+        SFEAR = 0.0_SZ ;
+        
+        RVELF = 0.0_SZ ; 
+        RVELI = 0.0_SZ ;
+
+        UVECTMP = 0.0_SZ ; 
+        VVECTMP = 0.0_SZ ; 
+        
+! To be used in neighb()
+        ALLOCATE( EXVR(3,MNE), EYVR(3,MNE) ) ; 
+        EXVR = 0.0_SZ ; 
+        EYVR = 0.0_SZ ;
+        
+        RETURN ;    
+      END SUBROUTINE ALLOC_SPROTCOORS_MEM
+      
+      SUBROUTINE COMP_ROTSPCOORD_VARS( ICS )
+      IMPLICIT NONE
+      
+        INTEGER:: ICS
+      
+        !c local c!
+        INTEGER:: II, IERR
+
+        CALL CHECK_RTOTMAT( ROTMAT, IERR ) ; 
+        
+        CALL SPCOORSROTS( ROTMAT, SLAMR, SFEAR, SLAM, SFEA, NP ) ;
+        
+        CALL SPVECROTSMAT( RVELF, RVELI, ROTMAT, 
+     &                     SLAMR, SFEAR, SLAM, SFEA, NP ) ;
+          
+        DO II = 1, NP
+           CALL CYLINDERMAP( X(II), Y(II), 
+     &          SLAMR(II), SFEAR(II), SLAM0, SFEA0, ICS ) ;
+        END DO
+        
+        RETURN ;
+      END SUBROUTINE COMP_ROTSPCOORD_VARS
+
+      SUBROUTINE GET_ROTSPCOORD_CORIFVAL( CORIF ) 
+        IMPLICIT NONE
+      
+        REAL (SZ):: CORIF(:)
+        
+        CALL CORIFVAL_ROTSPCOORD(CORIF, ROTMAT, SLAMR, SFEAR, NP) ; 
+
+        RETURN ;
+      END SUBROUTINE GET_ROTSPCOORD_CORIFVAL
+
+      ! 
+      SUBROUTINE CHECK_RTOTMAT( RTOTS, IERR )
+        IMPLICIT NONE
+
+        INTEGER:: IERR
+        REAL (SZ), intent(in):: RTOTS(3,3)
+
+        !c local c!
+        REAL (SZ):: RTT(3,3), TR, SOFFD
+
+        RTT = TRANSPOSE( RTOTS ) ; 
+
+        RTT = MATMUL(RTT, RTOTS ) ; 
+
+        ! trace of a matrix RTT 
+        TR = RTT(1,1) + RTT(2,2) + RTT(3,3) ; 
+       
+        RTT(1,1) = 0.0 ;
+        RTT(2,2) = 0.0 ;
+        RTT(3,3) = 0.0 ;
+        
+        SOFFD = SUM( MATMUL(ABS(RTT), (/ 1.0_SZ, 1.0_SZ, 1.0_SZ /)) )  ;
+
+        IERR = 0 ;
+        IF ( SOFFD > 1.0e-10_SZ ) THEN
+           IERR = 1 ; 
+           
+           WRITE(6,*) "Error: a given rotation matrix is not"// 
+     &          " orthgonal and thus invalid" ;
+        END IF
+
+        RETURN ;
+      END SUBROUTINE CHECK_RTOTMAT
+
+      !c Define a transformation matrix from a given vector in   
+      !c sherical coordinates (1,\varphi,\theta) (\varphi,\theta 
+      !c are in degree) 
+      SUBROUTINE DRV_ROTMAT_ZNVEC( VARPHI, THETA )
+        IMPLICIT NONE
+
+        REAL (SZ):: VARPHI, THETA ! in deg
+
+        !c local c!
+        REAL (SZ):: RADPHI, RADTHETA
+
+        !c deg to rad
+        RADPHI = VARPHI*DEG2RAD ;
+        RADTHETA = THETA*DEG2RAD ;   
+
+        CALL GET_ROTMAT_ZNVEC( ROTMAT, RADPHI, RADTHETA )   ;
+
+        IF ( MyProc .EQ. 0 ) THEN
+           WRITE(6,*) "ROTATION MATRIX: " ;
+           WRITE(6,'(A,3F12.4,A)') '| ', ROTMAT(1,:), ' |' ; 
+           WRITE(6,'(A,3F12.4,A)') '| ', ROTMAT(2,:), ' |' ;
+           WRITE(6,'(A,3F12.4,A)') '| ', ROTMAT(3,:), ' |' ;
+        END IF
+
+        RETURN ;
+      END SUBROUTINE DRV_ROTMAT_ZNVEC
+
+      SUBROUTINE DRV_ROTMAT_ZXZROT( ALPHA, BETA, GAMMA )
+         IMPLICIT NONE
+
+         REAL (SZ):: ALPHA, BETA, GAMMA
+  
+         ! local !
+         REAL (SZ):: RAL, RBE, RGAM
+
+         RAL = ALPHA*DEG2RAD ;
+         RBE = BETA*DEG2RAD ;
+         RGAM = GAMMA*DEG2RAD ;
+
+         CALL GET_ROTMAT_ZXZROT( ROTMAT, RAL, RBE, RGAM )   ;
+         
+         IF ( MyProc .EQ. 0 ) THEN
+            WRITE(6,*) "ROTATION MATRIX: " ;
+            WRITE(6,'(A,3F12.4,A)') '| ', ROTMAT(1,:), ' |' ; 
+            WRITE(6,'(A,3F12.4,A)') '| ', ROTMAT(2,:), ' |' ;
+            WRITE(6,'(A,3F12.4,A)') '| ', ROTMAT(3,:), ' |' ;
+         END IF
+         
+         RETURN ;
+      END SUBROUTINE DRV_ROTMAT_ZXZROT
+
+      !c
+      !c Get Lon-Lat in the rotated frame
+      SUBROUTINE DRVSPCOORSROTS1( LONR, LATR, LONO, LATO, NN )
+        IMPLICIT NONE
+
+        INTEGER:: NN
+        REAL (SZ), dimension(:):: LONR, LATR, LONO, LATO
+        
+        CALL SPCOORSROTS1( ROTMAT, LONR, LATR, LONO, LATO, NN )
+
+        RETURN ;
+      END SUBROUTINE DRVSPCOORSROTS1
+
+      SUBROUTINE DRVSPCOORSROTS0( LONR, LATR, LONO, LATO )
+        IMPLICIT NONE
+
+        REAL (SZ):: LONR, LATR, LONO, LATO
+        
+        CALL SPCOORSROTS0( ROTMAT, LONR, LATR, LONO, LATO )
+
+        RETURN ;
+      END SUBROUTINE DRVSPCOORSROTS0
+
+
+C*********************************************************************************C
+C                                                                                 C
+C  Lower level functions & subroutines.  Do not use data declared in the module   C
+C                                                                                 C
+C*********************************************************************************C
+      !c
+      !c Corilois values in the (x',y',z') at (\varphi',\theta')
+      !c
+      SUBROUTINE CORIFVAL_ROTSPCOORD( CORIF, ROTM, VARPHIR, THETAR, NN ) 
+        IMPLICIT NONE
+      
+        !     dummy !
+        INTEGER:: NN
+        REAL (SZ):: ROTM(3,3)
+        REAL (SZ), DIMENSION(:):: CORIF, VARPHIR, THETAR
+        
+        ! local c!
+        INTEGER:: II
+        REAL (SZ):: EOMEGA2, ROT3(3)
+        
+        ROT3 = ROTM(:,3) ; 
+
+        !c Angular speed of Earth  
+        EOMEGA2 = 2.0_SZ*omega;
+        DO II = 1, NN
+           CORIF(II) = ROT3(1)*cos( THETAR(II) )*cos( VARPHIR(II) ) + 
+     &          ROT3(2)*cos( THETAR(II) )*sin( VARPHIR(II) ) +
+     &          ROT3(3)*sin( THETAR(II) ) ; 
+             
+           CORIF(II) = EOMEGA2*CORIF(II) ;              
+        END DO
+        
+        RETURN ;
+      END SUBROUTINE CORIFVAL_ROTSPCOORD
+
+      !c
+      !c FWD = .TRUE.
+      !c   RVELF*(UUS,VVS) -> (UUD,VVD)
+      !c
+      !c FWD = .FALSE. 
+      !c   RVELI*(UUS,VVS) -> (UUD,VVD)
+      SUBROUTINE DRVMAP2DSPVEC( UUD, VVD, UUS, VVS, NN, FWD )
+        IMPLICIT NONE
+
+        INTEGER:: NN
+        LOGICAL:: FWD
+        REAL (SZ), DIMENSION(:):: UUD, VVD, UUS, VVS
+
+        IF ( FWD ) THEN
+           ! forward transform
+           CALL MAP2DSPVECS( UUD, VVD, UUS, VVS, RVELF, NN )   
+        ELSE
+           ! inverse transform
+           CALL MAP2DSPVECS( UUD, VVD, UUS, VVS, RVELI, NN )   
+        END IF
+
+        RETURN ;
+      END SUBROUTINE DRVMAP2DSPVEC
+
+      !c
+      !c Map two vectors in spherical cooridinates 
+      !c 
+      !c    VR(:,II) = SPRV(:,:,II)*VO(:,II)
+      SUBROUTINE MAP2DSPVECS( VPHIR, VTHETAR, VPHIO, VTHETAO, SPRV, NN )
+        IMPLICIT NONE
+
+        ! dummy !
+        INTEGER:: NN
+        REAL (SZ):: SPRV(:,:,:)
+        REAL (SZ), DIMENSION(:):: VPHIR, VTHETAR
+        REAL (SZ), DIMENSION(:):: VPHIO, VTHETAO
+
+        ! local !
+        INTEGER:: II
+        REAL (SZ):: VO(2), VR(2)
+ 
+        DO  II = 1, NN
+           VO = (/ VPHIO(II), VTHETAO(II) /)  ;
+           VR = MATMUL( SPRV(1:2,1:2,II), VO ) ; 
+           
+           VPHIR(II) = VR(1) ;
+           VTHETAR(II) = VR(2) ;
+        END DO
+        
+        RETURN ;
+      END SUBROUTINE MAP2DSPVECS
+
+      ! Given a radius vector (\varphi,\theta) (in rad)
+      ! of z', the new z after rotation, return
+      ! a transformation matrix:
+      !        RTOT: (x,y,z) -> (x',y',z')  
+      SUBROUTINE GET_ROTMAT_ZNVEC( RTOT, VARPHIN, THETAN )   
+        IMPLICIT NONE
+      
+        REAL (SZ):: RTOT(:,:) 
+        REAL (SZ):: VARPHIN, THETAN
+      
+        RTOT = 0.0_SZ ;
+      
+        RTOT(1,1) = sin( VARPHIN ) ; 
+        RTOT(2,1) = sin( THETAN )*cos( VARPHIN ) ;
+        RTOT(3,1) = cos( THETAN )*cos( VARPHIN ) ; 
+      
+        RTOT(1,2) = -cos( VARPHIN ) ; 
+        RTOT(2,2) = sin( THETAN )*sin( VARPHIN ) ;
+        RTOT(3,2) = cos( THETAN )*sin( VARPHIN ) ; 
+        
+        RTOT(1,3) = 0.0_SZ ;
+        RTOT(2,3) = -cos( THETAN ) ; 
+        RTOT(3,3) =  sin( THETAN ) ; 
+        
+        RETURN ;
+      END SUBROUTINE GET_ROTMAT_ZNVEC
+
+
+      SUBROUTINE GET_ROTMAT_ZXZROT( RTOT, AL, BE, GAM )
+        IMPLICIT NONE
+
+        ! dummy !
+        REAL (SZ):: RTOT(:,:) 
+        REAL (SZ):: AL, BE, GAM
+
+        ! local !
+        REAL (SZ):: RTMP(3,3), RM2D(2,2)
+        
+
+        ! A rotation around z-axis
+        RM2D = RTOT2DMAT( AL ) ;
+
+        RTMP = 0.0_SZ ;
+        RTMP(3,3) = 1.0_SZ ;
+        RTMP(1:2,1:2) = RM2D ; 
+
+        RTOT = RTMP ; 
+
+        ! A rotation around x'-axis    
+        RM2D = RTOT2DMAT( BE ) ;
+
+        RTMP = 0.0_SZ ; 
+        RTMP(1,1) = 1.0_SZ ;
+        RTMP(2:3,2:3) = RM2D ; 
+
+        RTOT = MATMUL( RTOT, RTMP ) ; 
+
+        ! A rotation around z''-axis
+        RM2D = RTOT2DMAT( GAM ) ; 
+
+        RTMP = 0.0_SZ ;
+        RTMP(3,3) = 1.0_SZ ;
+        RTMP(1:2,1:2) = RM2D ; 
+
+        RTOT = MATMUL( RTOT, RTMP ) ; 
+
+        RETURN ;        
+      END SUBROUTINE GET_ROTMAT_ZXZROT
+
+      FUNCTION RTOT2DMAT( ALPHA ) RESULT( RM )
+        IMPLICIT NONE
+
+        REAL (SZ):: ALPHA
+        REAL (SZ):: RM(2,2) 
+           
+        RM(1,1) = cos(ALPHA) ;
+        RM(2,1) = -sin(ALPHA) ;
+        RM(1,2) = sin(ALPHA) ;
+        RM(2,2) = cos(ALPHA) ;
+        
+        RETURN ; 
+      END FUNCTION RTOT2DMAT
+
+
+      ! (e_{r},e_{\varphi},e_{\theta})^{T} = T (i,j,k)^{T}
+      !  x' = R x
+      ! (e_{r'},e_{\varphi'},e_{\theta'})^{T} = T' (i',j',k')^{T}
+      !
+      ! V'(r',\varphi',\theta') = T' R T^{T} V(r,\varphi,\theta)
+      !
+      ! RVELF = T' R T^{T}
+      ! RVELI = (T')^{R} R^{T} T
+      !
+      ! Evaluated the forward and inverse transformation matrices
+      ! between two spherical coordinate
+      !     RVELF: VEC(LONO,LATO) -> VEC(LONR,LATR)
+      !     RVELI: VEC(LONR,LATR) -> VEC(LONO,LATO)
+      !
+      !  lonr,latr in rad
+      !
+      SUBROUTINE SPVECROTSMAT( RVELF, RVELI, RTOTS, 
+     &                         LONR, LATR, LONO, LATO, NN )
+         IMPLICIT NONE
+
+         ! Dummys !
+         REAL (SZ), DIMENSION(:,:,:):: RVELF, RVELI 
+
+         INTEGER:: NN
+         REAL (SZ):: RTOTS(3,3)
+         REAL (SZ), DIMENSION(:):: LONR, LATR, LONO, LATO          
+
+         ! local !
+         INTEGER:: IP
+         REAL (SZ), DIMENSION(3,3):: TP, TM, TRT 
+
+         DO IP = 1, NN
+           TRT = 0.0_SZ ; 
+        
+           ! T' = T(varphi',theta')
+           TP = CT2SP_VECTRANSMAT( LONR(IP), LATR(IP) ) ;
+ 
+           ! T = T(varphi,theta)
+           TM = CT2SP_VECTRANSMAT( LONO(IP), LATO(IP) ) ; 
+           TM = TRANSPOSE( TM ) ; ! T^{T}
+
+           ! T' R T^{T}
+           TRT = MATMUL( RTOTS, TM ) ; 
+           TRT = MATMUL( TP, TRT ) ; 
+
+           RVELF(1:2,1:2,IP) = TRT(2:3,2:3) ; ! forward transform
+           RVELI(:,:,IP) = TRANSPOSE( RVELF(:,:,IP) ) ; ! inverse transform
+         END DO
+
+         RETURN ; 
+      END SUBROUTINE SPVECROTSMAT
+
+      !
+      ! Transformation matrix mapping a vector from the Cartesian to spherical coordinates 
+      !
+      ! [e_{r},e_{varphi},e_{theta}]^{T} = TM [ i, j, k]^{T}
+      FUNCTION CT2SP_VECTRANSMAT( VARPHI, THETA ) RESULT(TM)
+        IMPLICIT NONE
+
+        REAL (SZ):: TM(3,3)
+        REAL (SZ), intent(in):: VARPHI, THETA
+        
+        TM(1,1) = cos( THETA )*cos( VARPHI ) ;
+        TM(2,1) = -sin( VARPHI ) ; 
+        TM(3,1) = -sin( THETA )*cos( VARPHI ) ; 
+        
+        TM(1,2) = cos( THETA )*sin( VARPHI ) ; 
+        TM(2,2) = cos( VARPHI ) ; 
+        TM(3,2) = -sin( THETA )*sin( VARPHI ) ; 
+        
+        TM(1,3) = sin( THETA ) ; 
+        TM(2,3) = 0.0_SZ ; 
+        TM(3,3) = cos( THETA ) ;    
+        
+        RETURN ;   
+      END FUNCTION CT2SP_VECTRANSMAT 
+      
+      SUBROUTINE SPCOORSROTS1( RTOTS, LONR, LATR, LONO, LATO, NN )
+        IMPLICIT NONE
+
+        !c dummy c!
+        INTEGER:: NN
+        REAL (SZ):: RTOTS(3,3)
+        REAL (SZ), dimension(:):: LONR, LATR, LONO, LATO
+
+        !c local c!
+        INTEGER:: IP
+        REAL (SZ):: XP(3), XPR(3), LLO, LTO
+
+        DO IP = 1, NN
+           LLO = LONO( IP ) ; 
+           LTO = LATO( IP ) ; 
+ 
+           XP(1) = cos( LTO )*cos( LLO ) ; 
+           XP(2) = cos( LTO )*sin( LLO ) ; 
+           XP(3) = sin( LTO ) ; 
+
+           XPR = MATMUL( RTOTS, XP) ;
+
+           LATR(IP) = atan2( XPR(3), SQRT(XPR(1)*XPR(1) 
+     &                                  + XPR(2)*XPR(2)) )
+           LONR(IP) = atan2( XPR(2), XPR(1) ) ;   
+        END DO
+        
+        RETURN ; 
+      END SUBROUTINE SPCOORSROTS1
+
+      SUBROUTINE SPCOORSROTS0( RTOTS, LONR, LATR, LONO, LATO )
+        IMPLICIT NONE
+
+        !c dummy c!
+        REAL (SZ):: RTOTS(3,3)
+        REAL (SZ):: LONR, LATR, LONO, LATO
+
+        !c local c!
+        INTEGER:: IP
+        REAL (SZ):: XP(3), XPR(3), LLO, LTO
+
+
+        LLO = LONO  ; 
+        LTO = LATO  ; 
+ 
+        XP(1) = cos( LTO )*cos( LLO ) ; 
+        XP(2) = cos( LTO )*sin( LLO ) ; 
+        XP(3) = sin( LTO ) ; 
+        
+        XPR = MATMUL( RTOTS, XP) ;
+        
+        LATR = atan2( XPR(3), SQRT(XPR(1)*XPR(1) + XPR(2)*XPR(2)) ) ;
+        LONR = atan2( XPR(2), XPR(1) ) ;   
+
+        RETURN ; 
+      END SUBROUTINE SPCOORSROTS0
+C******************************************************************************
+C                                                                             *
+C    Transform from lon,lat (lamda,phi) coordinates into the cylindrical      *
+C    mapping coordinates.                                                     *
+C    Lon,Lat must be in radians.                                              *
+C                                                                             *
+C******************************************************************************
+      SUBROUTINE CYLINDERMAP(X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0,MTYPE)
+      IMPLICIT NONE
+      
+      INTEGER, INTENT(IN):: MTYPE
+      REAL*8 X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0
+      
+      SELECT CASE(MTYPE)
+      CASE (2,21) !c CPP
+         X= Rearth*(RLAMBDA-RLAMBDA0)*COS(PHI0)
+         Y= PHI*Rearth
+      CASE (20) !c Equal area map
+         X= Rearth*(RLAMBDA-RLAMBDA0)*COS(PHI0)
+         Y= Rearth*SIN(PHI)/COS(PHI0) ; 
+      CASE (22) ! Mercartor
+         X= Rearth*(RLAMBDA-RLAMBDA0)*COS(PHI0)  ;
+         Y= Rearth*log(tan(PHI) + 1.0d0/cos(PHI))*cos(PHI0) ;          
+      CASE (23) ! Miller, Compromised Mercator'
+         X= Rearth*(RLAMBDA-RLAMBDA0)*COS(PHI0)  ;
+         Y= 1.25d0*Rearth*log(tan(0.25D0*PI + 0.4d0*PHI))*cos(PHI0)
+      CASE (24) ! Gall stereographic
+         X = 0.5D0*SQRT(2.D0)*RLAMBDA ;
+         Y = Rearth*(1.0 + 0.5D0*SQRT(2.D0))*tan( 0.5D0*PHI )
+      CASE DEFAULT
+         WRITE(6,'(A)') "Error in cylindermap(): "
+         WRITE(6,'(A,I1,A)') "   Mapping type =  ", MTYPE, 
+     &                      " has not been implemented" ;
+         WRITE(6,'(A)') "  Valid MTYPE = 2, 20-24" ;
+      END SELECT
+      
+      RETURN ;
+      END 
+C... 
+
+C... 
+C...
+      !c------ BEG: DW, Nov 2019
+      SUBROUTINE SFAC_ELEAVG( SFAELES, SFNODES, NM, NE ) 
+
+      IMPLICIT NONE
+
+      INTEGER :: NM(:,:), NE
+      REAL(SZ), dimension(:) :: SFAELES, SFNODES
+      
+      ! local
+      INTEGER:: IE, NMI1, NMI2, NMI3
+      REAL (SZ):: ONETRD 
+      
+      ONETRD = 1.0_SZ/3.0_SZ ;
+      DO IE = 1, NE
+         NMI1 = NM(IE,1) ; 
+         NMI2 = NM(IE,2) ; 
+         NMI3 = NM(IE,3) ;  
+         
+         SFAELES(IE) = (SFNODES(NMI1) + 
+     &        SFNODES(NMI2) + SFNODES(NMI3))*ONETRD ; 
+      END DO
+      
+      RETURN ;
+      END SUBROUTINE SFAC_ELEAVG 
+C...
+      SUBROUTINE CAL_ELXV_SPCOOR( XVE, YVE, LONVE, LATVE, ICS, SFLAG )
+
+      IMPLICIT NONE
+
+      !c Dummy 
+      !c   XVE, YVE     -- output
+      !c   LONVE, LATVE -- input
+      INTEGER, optional:: SFLAG
+      INTEGER:: ICS
+      REAL (SZ), DIMENSION(:):: XVE, YVE, LONVE, LATVE
+      
+      !c Local 
+      INTEGER:: II, IDX, SPF
+      REAL (SZ):: XC, YC
+      REAL (SZ):: Jac1, Jac2
+      REAL (SZ), dimension(3):: LONM, LATM, LONTMP
+      REAL (SZ), dimension(3):: DLX, DL
+      REAL (SZ):: DLED1, DLED2
+  
+      !c Rad -> deg
+      LATM(:) = LATVE(1:3)*RAD2DEG ;
+
+      !c Adjust so that 0 <= lon <= 360 
+      LONM(:) = MODULO( LONVE(1:3)*RAD2DEG, 360.0_SZ ) ; 
+      LONTMP = LONM ; 
+
+      CALL CAL_JAC( Jac1, LONM, LATM )
+      CALL CAL_EDGELENGTH( DLED1, LONM, LATM ) ; 
+   
+      SPF = 0 ; 
+      IF (  Jac1 < 0.0_SZ .OR. 
+     &     (Jac1 > 0.0_SZ .AND. DLED1 > 360.0_SZ ) ) THEN
+         !c An element has a circular index. 
+         !c Put a wrapped node on the other side
+
+         !c A wrapped node is on the left of 180
+         IF ( COUNT( LONM > 180.0_SZ ) == 1 ) THEN
+            IDX = sum( merge( (/ 1, 2, 3 /), 
+     &           (/ 0, 0, 0 /), LONM > 180.0_SZ ) ) ;
+
+            LONM(IDX) = LONM(IDX) - 360.0_SZ ; 
+         END IF
+         
+         !c A wrapped node is on the right of 180
+         IF ( COUNT( LONM < 180.0_SZ ) == 1 ) THEN
+            IDX = sum( merge( (/ 1, 2, 3 /), 
+     &           (/ 0, 0, 0 /), LONM < 180.0_SZ ) ) ;
+            
+            LONM(IDX) = LONM(IDX) + 360.0_SZ ; 
+         END IF        
+
+         CALL CAL_JAC( Jac2, LONM, LATM )
+         CALL CAL_EDGELENGTH( DLED2, LONM, LATM ) ; 
+
+         SPF = 1 ;
+         IF ( Jac2 < 0.0_SZ .OR.
+     &        (Jac1 > 0.0_SZ .AND. DLED2 > DLED1) ) THEN
+            LONM = LONTMP ;  
+            SPF = 0 ; 
+         END IF
+      END IF
+            
+      !c deg -> rad
+      LONM = LONM*DEG2RAD ;
+      LATM = LATM*DEG2RAD ;
+      DO II = 1, 3
+         CALL CYLINDERMAP(XC, YC, LONM(II), LATM(II), SLAM0, SFEA0, ICS)
+
+         XVE(II) = XC ;
+         YVE(II) = YC ; 
+      END DO
+      
+      IF ( PRESENT( SFLAG ) ) THEN
+         SFLAG = SPF ; 
+      END IF
+      
+      RETURN ;
+
+      CONTAINS
+
+         SUBROUTINE CAL_EDGELENGTH( DEDGE, LON, LAT ) 
+           IMPLICIT NONE
+
+           REAL (SZ):: DEDGE, LON(3), LAT(3)
+
+           !c local c!
+           REAL (SZ), dimension(3):: DLX, DLY
+
+           DLX = (/ LON(2) - LON(1), 
+     &          LON(3) - LON(2), LON(1) - LON(3) /) ; 
+           DLY = (/ LAT(2) - LAT(1), 
+     &          LAT(3) - LAT(2), LAT(1) - LAT(3) /) ; 
+           
+           DEDGE = SQRT( SUM(DLX*DLX + DLY*DLY) ) ; 
+
+           RETURN ;
+         END SUBROUTINE CAL_EDGELENGTH
+
+         SUBROUTINE CAL_JAC( Jac, LON, LAT )
+           IMPLICIT NONE
+
+           REAL (SZ):: Jac, LON(3), LAT(3)
+
+           REAL (SZ):: XR(2), XS(2)
+
+           XR = 0.5_SZ*(/ LON(2) - LON(1), LAT(2) - LAT(1) /) ; 
+           XS = 0.5_SZ*(/ LON(3) - LON(1), LAT(3) - LAT(1) /) ; 
+
+           Jac = (XR(1)*XS(2) - XR(2)*XS(1)) ; ! Find Jacobian
+
+           RETURN ;
+         END SUBROUTINE CAL_JAC
+
+      END SUBROUTINE CAL_ELXV_SPCOOR
+!c----- END DW
+
+C.... BEG: DW
+      SUBROUTINE COMPUTE_CYLINPROJ_SFAC( SLAMV, SFEAV )
+        IMPLICIT NONE
+
+! dummy !
+        REAL (SZ):: SLAMV(:), SFEAV(:)
+       
+        ! local !
+        INTEGER:: I, MEXP
+        REAL (SZ):: RFAC1, RFAC2, RFAC3
+C.... Set:
+C.... SFCT, SFCX, SFCY, SFMX, SFMY, YCSFAC
+C.... accordingly in order to determine the forms of equations to be solved
+C     
+C.....DEFAULT:
+C     Cartesian coordinate 
+
+        SELECT CASE( ICS )
+        CASE (1)                  !c Cartesian
+           SFAC = 1.0_SZ ; 
+        CASE (2)                !c Original SWE form in spherical coordinates
+           DO I=1,NP
+              SFAC(I)=COS(SFEA0)/COS(SFEAV(I)) ;
+           END DO
+         
+           SFCX = SFAC ;
+           SFMX = SFAC ;
+        CASE (20,21,22)         ! Alternative SWE form in spherical coordinates
+           MEXP = MOD(ICS,20) ;
+C......ICS = 20 : Equal area projection
+C......    = 21 : CPP
+C.....     = 22 : Mercartor
+C......from WP
+           DO I = 1, NP
+              SFCT(I) = cos(SFEAV(I))**MEXP ;           
+              SFCX(I) = cos(SFEA0)*( cos(SFEAV(I))**(MEXP - 1) ) ;
+              SFCY(I) = cos(SFEA0)**(MEXP - 1) ; 
+            
+              SFMX(I) = cos(SFEA0)/COS(SFEAV(I)) ;
+              SFMY(I) = SFMX(I)**(MEXP - 1) ;
+
+              TANPHI(I) = (TAN(SFEAV(I))/Rearth) ;
+              YCSFAC(I) = cos( SFEAV(I) ) ; 
+           END DO
+        CASE (23)
+C.......ICS = 23: Miller - compromised Mercator
+           DO I = 1, NP
+              SFCT(I) = cos(SFEAV(I))*COS(4.D0*SFEAV(I)/5.D0) ;       
+              SFCX(I) = cos(SFEA0)*COS(4.D0*SFEAV(I)/5.D0) ;           
+              SFCY(I) = cos(SFEA0) ;
+              
+              SFMX(I) = cos(SFEA0)/COS(SFEAV(I)) ;
+              SFMY(I) = cos(SFEA0)/COS(4.D0*SFEAV(I)/5.D0) ;
+              
+              TANPHI(I) = (TAN(SFEAV(I))/Rearth) ;
+              YCSFAC(I) = cos( SFEAV(I) ) ; 
+           END DO
+        CASE (24)
+C......ICS = 24: Gall Stereographic projection           
+           RFAC1 = 0.5D0*SQRT(2.D0) ;
+           RFAC2 = 0.5D0*(1.D0 + 0.5D0*SQRT(2.D0)) ;
+
+           DO I = 1, NP
+              RFAC3 = cos(0.5D0*SFEAV(I))**2 ;
+  
+              SFCT(I) = cos(SFEAV(I))*RFAC3         
+              SFCX(I) = RFAC1*RFAC3 ;            
+              SFCY(I) = RFAC2 ;
+              
+              SFMX(I) = RFAC1/cos(SFEAV(I)) ;
+              SFMY(I) = RFAC2/RFAC3 ;
+              
+              TANPHI(I) = (TAN(SFEAV(I))/Rearth) ;
+              YCSFAC(I) = cos( SFEAV(I) ) ; 
+           END DO
+        END SELECT
+        
+C     COMPUTE ELEMENT AVERAGE FROM NODAL VECTORS ADJUSTING EQUATIONS
+C     TO CYLINDER COORDINATES
+        CALL SFAC_ELEAVG( SFacEle, SFAC, NM, NE ) ; 
+        CALL SFAC_ELEAVG( SFCXEle, SFCX, NM, NE ) ; 
+        CALL SFAC_ELEAVG( SFCYEle, SFCY, NM, NE ) ; 
+        CALL SFAC_ELEAVG( SFMXEle, SFMX, NM, NE ) ; 
+        CALL SFAC_ELEAVG( SFMYEle, SFMY, NM, NE ) ; 
+        CALL SFAC_ELEAVG( YCSFacEle, YCSFAC, NM, NE ) ;          
+        CALL SFAC_ELEAVG( TANPHIEle, TANPHI, NM, NE ) ;          
+        
+C      Only need the  averages of these... 
+        DEALLOCATE( SFMX, SFMY, SFCX, SFCY, YCSFAC )
+        
+        RETURN ; 
+      END SUBROUTINE COMPUTE_CYLINPROJ_SFAC
+C.... END DW
+C.....
 C     ------------------------------------------------------------------
       end module mesh
 C     ------------------------------------------------------------------
