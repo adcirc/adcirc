@@ -2191,7 +2191,8 @@ C     WJP 02.24.2018 put into v53.dev
 C     WJP 07.24.2018 updated for baroclinic coupling type 
 C     ----------------------------------------------------------------
       SUBROUTINE Apply2DInternalWaveDrag(NP, TK, TKM, U, V, DP, IT)
-      USE GLOBAL, ONLY: CBaroclinic, CORIF, DTDP, NB, NM, IDEN
+      USE GLOBAL, ONLY: CBaroclinic, CORIF, DTDP, NB, NM, IDEN, IFSPROTS
+      USE MESH, ONLY: DRVMAP2DSPVEC, UVECTMP, VVECTMP, RVELF
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
       REAL(SZ), intent(in), dimension(NP) :: TK   ! scalar friction
@@ -2200,14 +2201,41 @@ C     ----------------------------------------------------------------
       REAL(SZ), intent(in), dimension(NP),optional :: U    ! x-dir velocities
       REAL(SZ), intent(in), dimension(NP),optional :: V    ! y-dir velocities
       REAL(SZ), intent(in), dimension(NP),optional :: DP   ! depth
+      REAL(SZ), allocatable :: Hx(:), Hy(:)
       INTEGER  :: I, L, Lm, Lind 
       REAL(SZ) :: omega = 1.4052d-4 ![rad/s] M2 tidal frequency
       REAL(SZ) :: hr = 3600d0 ! means one hour in seconds
       REAL(SZ) :: Fit, alpha2, gamma2, slope2, uavnow, vavnow 
       REAL(SZ) :: Nmdiff, Nbdiff, Fdiff, adju, adjv, adjuv
+      logical, save ::  first_entry = .TRUE.
 C     Compute TKM by adding wave drag contribution to 
 C     current value of the bottom friction, TK
       LoadITFric: IF (LoadIT_Fric) THEN
+         IF ( FIRST_ENTRY ) THEN
+            FIRST_ENTRY = .FALSE.
+            IF ( IFSPROTS.eq.1 ) THEN
+C              Rotate the IT_Fric first time step if necessary
+               IF ( IT_FricNoOfVals.eq.3 ) THEN
+                  allocate(Hx(NP),Hy(NP))
+                  DO I = 1,NP
+                     Hx(I) = sqrt(IT_Fric(I,1))
+                     Hy(I) = sign(sqrt(IT_Fric(I,2)),IT_Fric(I,3))
+                     UVECTMP(I) = Hx(I); 
+                     VVECTMP(I) = Hy(I);
+                  ENDDO
+                  CALL DRVMAP2DSPVEC( Hx, Hy,
+     &                UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
+                  DO I = 1,NP
+                     IT_Fric(I,1) = Hx(I)*Hx(I)
+                     IT_Fric(I,2) = Hy(I)*Hy(I)
+                     IT_Fric(I,3) = Hx(I)*Hy(I)
+                  ENDDO           
+                  deallocate(Hx,Hy)
+               ELSEIF ( IT_FricNoOfVals.eq.5 ) THEN
+                  ! need do something else
+               ENDIF
+            ENDIF
+         ENDIF
          Baroc: IF (CBaroclinic.and.abs(IDEN).ge.5) THEN
             L  = floor((IT-1)*DTDP/hr) ! Get the current hour number
             Lm = floor((IT-2)*DTDP/hr) ! Get the previous hour number
