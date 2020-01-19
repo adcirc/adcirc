@@ -94,7 +94,7 @@ C
       USE SIZES, ONLY : SZ, MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR,
      &                   WRITE_LOCAL_HARM_FILES
       USE GLOBAL, ONLY : screenMessage, logMessage, DEBUG, ECHO, INFO,
-     &                   WARNING, ERROR, setMessageSource, pi,
+     &                   WARNING, ERROR, setMessageSource, pi, IFSPROTS,
      &                   unsetMessageSource, allMessage, scratchMessage
 C
 C
@@ -628,7 +628,7 @@ C--------------------------------------------------------------------
       USE GLOBAL, ONLY : ET00, UU00, VV00, ETA2, UU2, VV2,
      &                   STAIE1, STAIE2, STAIE3, STAIV1, STAIV2, STAIV3,
      &                   NSTAE, NSTAV, NNE, NNV
-      USE MESH, ONLY : NP, NM
+      USE MESH, ONLY : NP, NM, UVECTMP, VVECTMP, DRVMAP2DSPVEC
       IMPLICIT NONE
       INTEGER, intent(in) :: it    ! current ADCIRC timestep
       REAL(8), intent(in) :: timeh ! time (sec) incl. STATIM and REFTIM
@@ -652,6 +652,18 @@ C...
 C...
 C.....UPDATE THE LHS MATRIX
 C...
+C.... BEG: DW 2019       
+               IF ( (NHASV .EQ. 1) .OR. (NHAGV .EQ. 1) ) THEN 
+                  IF ( IFSPROTS .EQ. 1 ) THEN
+                     UVECTMP = UU2 ;
+                     VVECTMP = VV2 ;
+                     
+                     CALL DRVMAP2DSPVEC( UU2, VV2,
+     &                    UVECTMP, VVECTMP, NP, FWD = .FALSE. )   
+                  END IF
+               END IF
+C.... DW
+
                CALL LSQUPDLHS(timeh,IT)
 
 C...  IF DESIRED COMPUTE ELEVATION STATION INFORMATION AND UPDATE LOAD
@@ -690,6 +702,15 @@ C...
 C.....IF DESIRED UPDATE GLOBAL VELOCITY LOAD VECTOR
 C...
                IF(NHAGV.ne.0) CALL LSQUPDVG(UU2,VV2,NP)
+
+C.... BEG: DW 2019       
+               IF ( (NHASV .EQ. 1) .OR. (NHAGV .EQ. 1) ) THEN 
+                  IF ( IFSPROTS .EQ. 1 ) THEN
+                     UU2 = UVECTMP ;
+                     VV2 = VVECTMP ;
+                  END IF
+               END IF
+C.... DW
 
             ENDIF
          ENDIF

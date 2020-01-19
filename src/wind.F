@@ -861,17 +861,17 @@ C----------------------------------------------------------------------
       use owiwind,only : nws12get, findStormCenter    ! sb added 09/xx/2006     
       use global, only : ciceout, h0, g, eta2, ncice, rampmete,
      &   sponge, res_bc_flag, IDEN, SigTS, cice1, cice2, cice_time1,
-     &   cice_time2, cice_timinc
+     &   cice_time2, cice_timinc, IFSPROTS
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
-      use mesh, only : dp, ics, np
+      use mesh, only : dp, ics, np, uvectmp, vvectmp, DRVMAP2DSPVEC
       implicit none
       integer, intent(in) :: nws
-      real(sz), intent(out) :: wsx2(*)
-      real(sz), intent(out) :: wsy2(*)
-      real(sz), intent(out) :: pr2(*)
-      real(sz), intent(out) :: wvnxout(*)
-      real(sz), intent(out) :: wvnyout(*)
+      real(sz), intent(out) :: wsx2(:)
+      real(sz), intent(out) :: wsy2(:)
+      real(sz), intent(out) :: pr2(:)
+      real(sz), intent(out) :: wvnxout(:)
+      real(sz), intent(out) :: wvnyout(:)
       real(sz), intent(in) :: timeloc
       real(sz) :: windx ! wind vel (m/s) in x-dir
       real(sz) :: windy ! wind vel (m/s) in y-dir
@@ -1650,6 +1650,15 @@ C    kmd48.33bc - added in information for the sponge layer
             WSY2(I)=sponge(I)*WSY2(I)
          END DO
        END IF
+         
+C      DW/WJP: rotate wind stresses if coordinate transform
+       IF ( IFSPROTS .eq. 1 ) THEN
+          UVECTMP(1:NP) = WSX2(1:NP); 
+          VVECTMP(1:NP) = WSY2(1:NP);
+          CALL DRVMAP2DSPVEC( WSX2, WSY2,
+     &              UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
+       ENDIF
+
 C--------------------END MET FORCING---------------------------------------
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -1941,18 +1950,18 @@ C----------------------------------------------------------------------
       use sizes, only : gblinputdir, inputdir
       use global, only : ciceout, h0, g, eta2, ncice, rampmete,
      &   sponge, res_bc_flag, statim, dtdp, dtdphs, iths,
-     &   IDEN, SigTS, cice1, cice2
+     &   IDEN, SigTS, cice1, cice2, IFSPROTS
       use owiwind,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
-      use mesh, only : dp, ics, np
+      use mesh, only : dp, ics, np, uvectmp, vvectmp, DRVMAP2DSPVEC
       implicit none
       integer, intent(in) :: nws
-      real(sz), intent(out) :: wsx2(*)
-      real(sz), intent(out) :: wsy2(*)
-      real(sz), intent(out) :: pr2(*)
-      real(sz), intent(out) :: wvnxout(*)
-      real(sz), intent(out) :: wvnyout(*)
+      real(sz), intent(out) :: wsx2(:)
+      real(sz), intent(out) :: wsy2(:)
+      real(sz), intent(out) :: pr2(:)
+      real(sz), intent(out) :: wvnxout(:)
+      real(sz), intent(out) :: wvnyout(:)
       real(sz), intent(in) :: timeloc
       real(sz), intent(in) :: rampMete2   ! Ramp for wind and atmospheric pressure @ITHS     
       real(sz) :: timeit       
@@ -2894,22 +2903,30 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
              WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
           END DO
        ENDIF
-      !
-      ! jgf52.14: Implementing Casey's fix for uninitialized
-      ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
-      ! by the parametric vortex meteorological models but are used in
-      ! the padcswan_init() subroutine to initialize the SWAN wind 
-      ! velocities. Failure to initialize them causes NaNs in the 
-      ! solution. 
-      if ( (abs(nws).eq.8).or.(abs(nws).eq.19).or.(abs(nws).eq.20)) then 
-         WVNX1 = WVNX2
-         WVNY1 = WVNY2
-      endif
+       !
+       ! jgf52.14: Implementing Casey's fix for uninitialized
+       ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
+       ! by the parametric vortex meteorological models but are used in
+       ! the padcswan_init() subroutine to initialize the SWAN wind 
+       ! velocities. Failure to initialize them causes NaNs in the 
+       ! solution. 
+       if ( (abs(nws).eq.8).or.(abs(nws).eq.19).or.(abs(nws).eq.20)) then
+          WVNX1 = WVNX2
+          WVNY1 = WVNY2
+       endif
+
+C      DW/WJP: rotate wind stresses if coordinate transform
+       IF ( IFSPROTS .eq. 1 ) THEN
+          UVECTMP(1:NP) = WSX2(1:NP); 
+          VVECTMP(1:NP) = WSY2(1:NP);
+          CALL DRVMAP2DSPVEC( WSX2, WSY2,
+     &              UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
+       ENDIF
       
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
+       call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()
+       call unsetMessageSource()
       
 C--------------------END MET FORCING-----------------------------------
       end subroutine hotstartMeteorologicalForcing
