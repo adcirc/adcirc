@@ -82,7 +82,7 @@ C----- DW --- precomputed
       !c 
       !c RVELF: V(\varphi,\theta)  -> V'(\varphi',\theta')
       !c RVELI: V'(\varphi,\theta) -> V(\varphi,\theta)
-      REAL (SZ), ALLOCATABLE, DIMENSION(:,:,:):: RVELF, RVELI   
+      REAL (SZ), ALLOCATABLE, DIMENSION(:,:,:) :: RVELF, RVELI   
       
       ! Temporary vectors
       REAL (SZ), ALLOCATABLE, DIMENSION(:):: UVECTMP, VVECTMP
@@ -1327,7 +1327,7 @@ C     ------------------------------------------------------------------
       real(sz) Lon21,Lon32,Lon13
       real(sz) lened1,lened2,lened3
       integer :: i, j
-      integer :: SFLAG
+      integer :: SFLAG, NMM(3)
       REAL (SZ), dimension(3):: LONVE, LATVE
 
       call setMessageSource("initializeMesh")
@@ -1443,8 +1443,8 @@ C     places ... these differences may be lost due to round off error
 C     if there is not enough machine precision
 C     BEG DW/WJP 2020
       PROCELM: DO I=1,NE
-  
-        SELECT CASE( ICS )
+
+  133   SELECT CASE( ICS )
         CASE (1)
 !     c Cartesian coordinate
            EXV(1,I) = X(NM(I,1))
@@ -1550,6 +1550,13 @@ C v49.48.02 tcm -- These are the lengths of each element edge
 C        compute and store 2 x element areas
 c        v49.48.02 tcm rewrote 2 x area to reuse values already being used
          AREAS(I)=(X1mX3)*(-Y3mY2)+(X3mX2)*(Y1mY3)
+  
+         IF ( IFSPROTS.EQ.1 .and. AREAS(I).lt.0d0 ) THEN
+c           reorder and start loop again
+            NMM = NM(I,:)
+            NM(I,2) = NMM(3); NM(I,3) = NMM(2);
+            goto 133
+         ENDIF
 C...
 C...     v49.48.02 tcm -- compute element barycenters and element radius
 C.... BEG: DW, Nov 2019
@@ -4455,7 +4462,7 @@ C*******************************************************************************
       !c
       !c Corilois values in the (x',y',z') at (\varphi',\theta')
       !c
-      SUBROUTINE CORIFVAL_ROTSPCOORD( CORIF, ROTM, VARPHIR, THETAR, NN ) 
+      SUBROUTINE CORIFVAL_ROTSPCOORD( CORIF, ROTM, VARPHIR, THETAR, NN )
         IMPLICIT NONE
       
         !     dummy !
@@ -4505,9 +4512,8 @@ C*******************************************************************************
 
         RETURN ;
       END SUBROUTINE DRVMAP2DSPVEC
-
       !c
-      !c Map two vectors in spherical cooridinates 
+      !c Map two vectors in spherical coordinates 
       !c 
       !c    VR(:,II) = SPRV(:,:,II)*VO(:,II)
       SUBROUTINE MAP2DSPVECS( VPHIR, VTHETAR, VPHIO, VTHETAO, SPRV, NN )
@@ -4533,7 +4539,6 @@ C*******************************************************************************
         
         RETURN ;
       END SUBROUTINE MAP2DSPVECS
-
       ! Given a radius vector (\varphi,\theta) (in rad)
       ! of z', the new z after rotation, return
       ! a transformation matrix:
