@@ -3,7 +3,7 @@ C******************************************************************************
 C*    Non-ESMF ADCIRC DRIVER
 C******************************************************************************
 C******************************************************************************
-      PROGRAM ADCIRC
+      subroutine mpi_main
 C
       USE ADCIRC_Mod, ONLY : ADCIRC_Init, ADCIRC_Run, ADCIRC_Final
 C
@@ -40,4 +40,4 @@ C
       CALL ADCIRC_Final
 C
       STOP
-      END PROGRAM ADCIRC
+      END subroutine mpi_main
