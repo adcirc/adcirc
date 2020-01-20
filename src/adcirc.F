@@ -73,6 +73,7 @@ C******************************************************************************
 C******************************************************************************
 C******************************************************************************
       MODULE ADCIRC_Mod
+      use CkLunMod, only : CK_LUN
 C******************************************************************************
 C******************************************************************************
 
@@ -135,13 +136,18 @@ C
       ! jgf51.52.07: Added command line option to just write out
       ! the ADCIRC version number and exit. This is to allow 
       ! external applications to query the version number so that
-      ! they can behave in version-appropriate ways. 
-      argcount  = iargc()  ! get number of command line arguments
+! they can behave in version-appropriate ways.
+      integer :: ierr
+      integer, parameter :: arg_len = 128
+      character(len=arg_len), dimension(:), allocatable:: raw_arguments
+c      argcount  = iargc()       ! get number of command line arguments
+      call ampi_command_argument_count(argcount)
+      allocate(raw_arguments(argcount))
       if ((argcount.gt.0).and.(myproc.eq.0)) then
          i = 0
          do while (i.lt.argcount)
             i = i + 1
-            call getarg(i, cmdlinearg)
+            call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
             select case(cmdlinearg(1:2))
             case("-V","-v") 
                ! write the version number string ... actually it is
