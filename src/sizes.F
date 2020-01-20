@@ -122,11 +122,16 @@ C-----------------------------------------------------------------------
       CHARACTER(8)    :: PREFIX(2) = (/ '/PE0000 ', '/DOM0000' /)
       logical         :: fileFound
       logical(4) :: dir_result
-
+      integer :: ierr
+      integer, parameter :: arg_len = 128
+      character(len=arg_len), dimension(:), allocatable:: raw_arguments
+      
       INPUTDIR  = ""
       GLOBALDIR = ""
       LOCALDIR  = ""
-      ARGCOUNT  = IARGC()
+c      argcount  = IARGC()
+      call ampi_command_argument_COUNT(argcount)
+      allocate(raw_arguments(argcount))
       WRITE_LOCAL_HOT_START_FILES = .FALSE.
       READ_LOCAL_HOT_START_FILES = .FALSE.
       WRITE_LOCAL_FILES = .FALSE.
@@ -163,8 +168,9 @@ Cobell 110518: Add compiler flag for local hot start.
          ! launch this executable.
          i=0
          wholeCommandLine(:) = ' '
-         do while (i.lt.argcount) 
-            call getarg(i, cmdlinearg)
+         do while (i.lt.argcount)
+            call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c            call getarg(i, cmdlinearg)
             wholeCommandLine = ' ' // trim(adjustl(wholeCommandLine)) 
      &         // ' ' // trim(adjustl(cmdlinearg)) 
             i=i+1          
@@ -178,18 +184,21 @@ Cobell 110518: Add compiler flag for local hot start.
          i = 0
          do while (i < ARGCOUNT)
             i = i + 1
-            call getarg(i, CMDLINEARG)
+            call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+C            call getarg(i, CMDLINEARG)
             select case(cmdlinearg(1:2))
             case("-I","-i") 
                i = i + 1
-               call getarg(i,INPUTDIR)
+               call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c               call getarg(i,INPUTDIR)
                if (myProc.eq.0) then
                   write(*,*) "INFO: Processing '",cmdlinearg(1:2)," ",
      &               trim(INPUTDIR),"'."
                endif
             case("-O","-o")
                i = i + 1
-               call getarg(i,GLOBALDIR)
+               call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c               call getarg(i,GLOBALDIR)
                if (myProc.eq.0) then
                  write(*,*) "INFO: Processing '",cmdlinearg(1:2)," ",
      &              trim(GLOBALDIR),"'."
@@ -225,7 +234,8 @@ Cobell 110518: Add compiler flag for local hot start.
                select case(cmdlinearg(1:4))
                case("-MFT","-mft") ! mesh file type 
                   i = i + 1
-                  call getarg(i, CMDLINEARG)
+                  call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c                  call getarg(i, CMDLINEARG)
                   select case(trim(cmdlinearg))
                   case("ASCII","Ascii","ascii")
                      meshType = ASCII ! this is the default anyway
@@ -241,7 +251,8 @@ Cobell 110518: Add compiler flag for local hot start.
                case("-MFN","-mfn") ! mesh file name
                   meshFileNameSpecified = .true.
                   i = i + 1
-                  call getarg(i,meshFileName)                                 
+                  call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c                  call getarg(i,meshFileName)                                 
                case default
                   ! jgf51.44: -m by itself triggers subdomain harmonic
                   ! analysis output files. 
@@ -262,7 +273,8 @@ Cobell 110518: Add compiler flag for local hot start.
                select case(cmdlinearg(1:4))
                case("-NFT","-nft") ! nodal attributes file type 
                   i = i + 1
-                  call getarg(i, CMDLINEARG)
+                  call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c                  call getarg(i, CMDLINEARG)
                   select case(trim(cmdlinearg))
                   case("ASCII","Ascii","ascii")
                      naType = ASCII ! this is the default anyway
@@ -279,7 +291,8 @@ Cobell 110518: Add compiler flag for local hot start.
                case("-NFN","-nfn") ! nodal attributes file name
                   naFileNameSpecified = .true.
                   i = i + 1
-                  call getarg(i,naFileName)                                 
+                  call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c                  call getarg(i,naFileName)                                 
                case default
                   if (myProc.eq.0) then
                      write(*,*) "WARNING: The command line option '",
@@ -407,7 +420,11 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: IARGC, ARGCOUNT, I
       CHARACTER(2048) :: CMDLINEARG
-      ARGCOUNT  = IARGC()
+      integer :: ierr
+      integer, parameter :: arg_len = 128
+      character(len=arg_len), dimension(:), allocatable:: raw_arguments
+
+      call ampi_command_ARGument_COUNT(argcount)
       MNWPROC = 0
       isplit = .false. !st3 100708:split file
 
@@ -415,13 +432,15 @@ C-----------------------------------------------------------------------
          i = 0
          do while (i < ARGCOUNT)
             i = i + 1
-            call getarg(i, CMDLINEARG)
+            call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)            
+c            call getarg(i, CMDLINEARG)
             if (cmdlinearg(1:2) == "-W") then
                if( cmdlinearg(1:3) == "-Ws" ) then  !st3 100708: split file
                   isplit = .true.                   !st3 100708: split file
                endif                                !st3 100708: split file
                i = i + 1
-               call getarg(i,cmdlinearg)
+               call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c               call getarg(i,cmdlinearg)
                read(cmdlinearg,*) MNWPROC
             endif
          end do
@@ -432,10 +451,12 @@ C-----------------------------------------------------------------------
          i = 0
          do while (i < ARGCOUNT)
             i = i + 1
-            call getarg(i, CMDLINEARG)
+            call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c            call getarg(i, CMDLINEARG)
             if (cmdlinearg(1:2) == "-H") then
                i = i + 1
-               call getarg(i,cmdlinearg)
+               call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c               call getarg(i,cmdlinearg)
                read(cmdlinearg,*) MNWPROH
             endif
          end do
