@@ -183,6 +183,7 @@ C
       ELSE
         CALL MSG_INIT()      ! Init MPI and get MPI-rank of this cpu
       ENDIF
+      call setampizedlun(myproc) ! initialze ck_lun
       CALL MAKE_DIRNAME()    ! Establish Working Directory Name
       call openLogFile()     ! jgf50.65: open subdomain log files (fort.16)
       CALL WRITER_INIT()     ! Initialize WRITER module
