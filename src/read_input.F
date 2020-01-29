@@ -162,7 +162,8 @@ C
      &  dynamicWaterLevelCorrectionSkipSnaps, dynamicWaterLevelCorrectionMultiplier, 
      &  dynamicWaterLevelCorrectionRampStart, dynamicWaterLevelCorrectionRampEnd,
      &  dynamicWaterLevelCorrectionRampReferenceTime
-      
+      NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
+     &  WarnElevDumpLimit, ErrorElev
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       CHARACTER(len=2000) :: origLineTVW
@@ -533,6 +534,29 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
          call adcirc_terminate()    
       endif
       rewind(15)
+
+C     jgf46.10 Add user-controllable warning, output, and stop criteria
+C     for elevations. Initialize default values.
+      WarnElev = 20.0         ! default
+      iWarnElevDump = 0       ! init
+      WarnElevDump = .False.  ! default
+      WarnElevDumpLimit = 50  ! default
+      WarnElevDumpCounter = 0 ! init
+      ErrorElev = 1000.0      ! default
+C     WJP add namelist
+      namelistSpecifier = 'WarnElevControl'
+      read(unit=15,nml=WarnElevControl,iostat=IOS)
+      call logNameListReadStatus(namelistSpecifier,ios)
+      write(scratchMessage,'(a,f15.7)') "WarnElev=",WarnElev
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "WarnElevDump=",WarnElevDump
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,i0)') "WarnElevDumpLimit=",WarnElevDumpLimit
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7)') "ErrorElev=",ErrorElev
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
 C...  IDENTIFICATION
@@ -559,18 +583,11 @@ C...
 C... READ AND PROCESS NFOVER - NONFATAL ERROR OVERRIDE OPTION
 C...
 C
-C     jgf46.10 Add user-controllable warning, output, and stop criteria
-C     for elevations. Initialize default values.
-      WarnElev = 20.0         ! default
-      iWarnElevDump = 0       ! init
-      WarnElevDump = .False.  ! default
-      WarnElevDumpLimit = 50  ! default
-      WarnElevDumpCounter = 0 ! init
-      ErrorElev = 1000.0      ! default
-C
 #ifndef DEBUG_WARN_ELEV
       READ(15,*) NFOVER
 #else
+C     jgf46.10 Add user-controllable warning, output, and stop criteria
+C     for elevations. 
       READ(15,*) NFOVER, WarnElev, iWarnElevDump, WarnElevDumpLimit,
      &  ErrorElev
 #endif

@@ -497,7 +497,7 @@ C   -- initially read in within the READ14() subroutine.
             WRITE(*,*)
      &         "INFO: Decomposing fort.20 (variable flux) file."
             CALL RELOCALIZE()
-            CALL PREP20()
+            CALL PREP20( .false. )
             GOTO 9999
          endif
       ENDIF
@@ -779,7 +779,7 @@ C   -- initially read in within the READ14() subroutine.
 C
       IF (PREP_ALL) THEN
          if (EXIST_FLUX .ne. 0 .and. APERIODIC_FLOW_BC) then
-            CALL PREP20()
+            CALL PREP20( .false. )
          endif
       ENDIF
 C
