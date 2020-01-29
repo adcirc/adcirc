@@ -2295,6 +2295,13 @@ c...     tcm v52.30.01 additions for Smag_Control Namelist
      &       ', dynamicWaterLevelCorrectionRampEnd=',dynamicWaterLevelCorrectionRampEnd,'  /'
          endif
 
+c...     wjp additions for WarnElev Namelist
+         IF (FOUND_WARNELEV_NML) then  !If there was a namelist in the original fort.15 put it in the decomp 15's
+            write(15,*) '! -- Begin WarnElev Control NameList --'
+            write(15,WarnElevControl)
+            write(15,*) '! -- End WarnElev Control NameList --'
+         ENDIF
+
          CLOSE(15)
 C
  1000 CONTINUE
@@ -2886,12 +2893,10 @@ C---------------------------------------------------------------------------
       proc_no = 20;
       FLUX_NUM = EXIST_FLUX
 C     Open full domain and subdomain fort.20 files
-      if (present(sponge)) THEN
-         if (sponge) then
-            proc_no = 2001
-            FLUX_NUM = ubound(nodeNumSP,1)
-            write(*,*) 'FLUX_NUM = ',FLUX_NUM 
-         endif
+      if (sponge) then
+         proc_no = 2001
+         FLUX_NUM = ubound(nodeNumSP,1)
+         write(*,*) 'FLUX_NUM = ',FLUX_NUM 
       endif  
 
       CALL OpenPrepFiles(proc_no, 'aperiodic flux boundary       ',
@@ -2916,15 +2921,11 @@ C
  33   DO I = 1, FLUX_NUM             ! loop through full domain flow nodes
 !         READ(20,*,END=40) FLUX_VAL ! get a flo val for this f.d. flow node
          READ(proc_no,'(A80)',END=40) FLUX_MSG ! get a flo val for this f.d. flow node
-         if (present(sponge)) THEN
-            if (sponge) then
-                INDX = nodeNumSP(I) 
-            else
-                INDX = FLUX14_ARY(I)      ! get full domain flow node number
-            endif
+         if (sponge) then
+             INDX = nodeNumSP(I) 
          else
-            INDX = FLUX14_ARY(I)      ! get full domain flow node number
-         endif  
+             INDX = FLUX14_ARY(I)      ! get full domain flow node number
+         endif
          DO J=1, ITOTPROC(INDX)    ! loop over subdomains for 1 f.d. node
             IPROC2 = IMAP_NOD_GL2(2*(J-1)+1,INDX) ! find next subdomain
             DO IPROC=1, NPROC

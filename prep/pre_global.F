@@ -275,7 +275,6 @@ c.... !tcm v52.30.01 added for forced use of Smagorinski Eddy Viscosity
 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       LOGICAL :: FOUND_WC_NML
-
       logical :: foundWetDryControlNamelist = .false. ! for namelist 
       logical :: outputNodeCode = .false.
       logical :: outputNOFF = .false.
