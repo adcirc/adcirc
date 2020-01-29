@@ -11,7 +11,7 @@ C
      &    DEBUG, ECHO, INFO, WARNING, ERROR, scratchMessage,
      &    Rearth, pi, deg2rad, rad2deg, e, PRBCKGRND, g, rhoWat0,
      &    sphericalDistance, rhoAir, one2ten, windReduction,
-     &    openFileForRead, RNDAY
+     &    openFileForRead, RNDAY, cice_timinc, cice_time1, cice_time2
 #ifdef DATETIME
      &   ,basedatetime
 #endif
@@ -234,7 +234,18 @@ C
       real(sz) :: dynamicWaterLevelCorrectionDefaultValue = 0.d0 ! for otherwise unspecified nodes (m)
       integer :: dynamicWaterLevelCorrectionCurrentLine ! used in error messages
       logical :: dynamicWaterLevelCorrectionFileEnded = .false. ! true when all data have been read
-
+#ifdef DATETIME
+      integer :: ub, ubc ! size of weightsp and indp interpolant weights
+      real(sz),allocatable :: weightsp(:,:,:) 
+      integer,allocatable  :: indp(:,:,:) 
+      character(len=200) :: Pfile, Wfile, Pinv, Winv, Cinv, Cfile
+      character(len=200) :: Pfile1, Wfile1, Pinv1, Winv1
+      character(len=200) :: Pvar, Uvar, Vvar, Cvar, Tvar, Lonvar, Latvar
+      character(len=200) :: Tdim, Londim, Latdim, Tformat
+      type(datetime) :: CurDT
+      logical :: grb2flag
+      integer :: NT, NTC
+#endif
       !...Function interface for wind drag
       !   Used so that the selection of wind drag
       !   is only performed once. Each wind drag 
@@ -860,8 +871,7 @@ C----------------------------------------------------------------------
      &   wvnxout, wvnyout, timeloc)
       use owiwind,only : nws12get, findStormCenter    ! sb added 09/xx/2006     
       use global, only : ciceout, h0, g, eta2, ncice, rampmete,
-     &   sponge, res_bc_flag, IDEN, SigTS, cice1, cice2, cice_time1,
-     &   cice_time2, cice_timinc, IFSPROTS
+     &   sponge, res_bc_flag, IDEN, SigTS, cice1, cice2, IFSPROTS
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np, uvectmp, vvectmp, DRVMAP2DSPVEC
@@ -881,7 +891,7 @@ C----------------------------------------------------------------------
       real(sz) :: wDragCo
       real(sz) :: windMag
       real(sz) :: wtratio ! used to time interpolated between met datasets
-      real(sz) :: cicenow, icedragco, cice_ratio, icemag, icex, icey 
+      real(sz) :: cicenow, icedragco, ctratio, icemag, icex, icey 
       integer :: nhg ! node number temp
       real(sz) :: bf ! blend factor for multiple sets of wind data 
       integer :: i ! node loop counter
@@ -1312,9 +1322,16 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
 #ifdef DATETIME
 #if defined(GRIB2API) || defined(ADCNETCDF)
             ELSE
-               IF (NCICE.eq.14) then
+               IF ((NCICE.eq.14.or.NCICE.eq.13).and.
+     &             TimeLoc.GT.CICE_TIME2) THEN
+                  CICE_TIME1 = CICE_TIME2
+                  CICE_TIME2 = CICE_TIME2 + CICE_TIMINC
                   CICE1 = CICE2
                   CALL NWS14GET(WVNX2,WVNY2,PRN2,CICE2)
+                  ! NICICE = 13: For GOFS ice drift coupling 
+                  !CICE1 = CICE2; ICET1 = ICET2;
+                  !ICEX1 = ICEX2; ICEY1 = ICEY2; 
+                  !call GetIceInfo(CICE2,ICEX2,ICEY2,ICET2)
                ELSE
                   CALL NWS14GET(WVNX2,WVNY2,PRN2) 
                ENDIF
@@ -1331,17 +1348,7 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
             endif
          ENDIF
          WTRATIO = (TimeLoc-WTIME1)/WTIMINC
-         ! For GOFS ice drift coupling 
-         if (NCICE.eq.13) then
-            if (TimeLoc.gt.CIce_Time2) then  
-               CIce_TIME1 = CIce_TIME2
-               CIce_TIME2 = CIce_TIME2 + CIce_TIMINC
-               !CICE1 = CICE2; ICET1 = ICET2;
-               !ICEX1 = ICEX2; ICEY1 = ICEY2; 
-               !call GetIceInfo(CICE2,ICEX2,ICEY2,ICET2) 
-            endif
-            Cice_Ratio = (TimeLoc-Cice_TIME1)/CIce_TIMINC
-         endif
+         CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
          DO I = 1,NP
             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
@@ -1361,9 +1368,9 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF (NCICE.eq.14) then
                Cicenow = 100d0*(CICE1(I) + 
-     &                          WTRATIO*(CICE2(I)-CICE1(I)))
+     &                          CTRATIO*(CICE2(I)-CICE1(I)))
                WDragCo = WindIceDrag(WDragCo,Cicenow)
-            elseif(NCICE.NE.0.and.NCICE.ne.13) THEN
+            elseif (NCICE.ne.0.and.NCICE.ne.13) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             endif
             ! WJP: added varying sea surface density
@@ -1375,25 +1382,25 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
                endif
             endif
             ! If total drag includes ice drift (NCICE.eq.13)
-            if (NCICE.eq.13) then
-               ! Get ice area fraction
-               Cicenow = CICE1(I) + Cice_Ratio*(CICE2(I)-CICE1(I))
-               ! Adjust Wdragcoefficient by non-ice area fraction
-               WdragCo = WdragCo*(1d0 - Cicenow)
-               ! Get ice drag coefficient and multiply by ice area fraction
-               IceDragCo = 0.0025d0*Cicenow
-               ! This is ice drift (differential from ocean surface vel)
-               !IceX = IceX1(I) + CIce_Ratio*(IceX2(I)-IceX1(I))
-               !IceY = IceY1(I) + CIce_Ratio*(IceX2(I)-IceY1(I))
-               IceMag = sqrt(IceX*IceX + IceY*IceY) 
-               WSX2(I) = RampMete*(airwaterdensityrat*WDRAGCO*WINDX*WINDMAG +
-     &                             IceDragCo*IceX*IceMag)
-               WSY2(I) = RampMete*(airwaterdensityrat*WDRAGCO*WINDY*WINDMAG +
-     &                             IceDragCo*IceY*IceMag)
-            else
-               WSX2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
-               WSY2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
-            endif
+            !if (NCICE.eq.13) then
+            !   ! Get ice area fraction
+            !   Cicenow = CICE1(I) + Cice_Ratio*(CICE2(I)-CICE1(I))
+            !   ! Adjust Wdragcoefficient by non-ice area fraction
+            !   WdragCo = WdragCo*(1d0 - Cicenow)
+            !   ! Get ice drag coefficient and multiply by ice area fraction
+            !   IceDragCo = 0.0025d0*Cicenow
+            !   ! This is ice drift (differential from ocean surface vel)
+            !   !IceX = IceX1(I) + CIce_Ratio*(IceX2(I)-IceX1(I))
+            !   !IceY = IceY1(I) + CIce_Ratio*(IceX2(I)-IceY1(I))
+            !   IceMag = sqrt(IceX*IceX + IceY*IceY) 
+            !   WSX2(I) = RampMete*(airwaterdensityrat*WDRAGCO*WINDX*WINDMAG +
+     &      !                       IceDragCo*IceX*IceMag)
+            !   WSY2(I) = RampMete*(airwaterdensityrat*WDRAGCO*WINDY*WINDMAG +
+     &      !                       IceDragCo*IceY*IceMag)
+            !else
+            WSX2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
+            !endif
             PRDIFF  = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                          -PRBCKGRND_MH2O)
 #ifdef NOIVB
@@ -1885,6 +1892,8 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          ! Initialising winds (pressure is already initialized)
          ! Get the first wind snap
          if (NCICE.eq.14) then
+            CICE_TIME1 = WTIME1
+            CICE_TIME2 = CICE_TIME1 + CICE_TIMINC 
             CALL NWS14GET(WVNX1,WVNY1,PRN1,CICE1)
          else
             CALL NWS14GET(WVNX1,WVNY1,PRN1)
@@ -1971,7 +1980,7 @@ C----------------------------------------------------------------------
       real(sz) :: wDragCo
       real(sz) :: windMag
       real(sz) :: wtratio ! used to time interpolated between met datasets
-      real(sz) :: cicenow 
+      real(sz) :: cicenow, ctratio 
       integer :: nhg ! node number temp
       real(sz) :: bf ! blend factor for multiple sets of wind data 
       real(sz) :: vortexPRDIFF
@@ -2729,6 +2738,8 @@ C     from NAM data
          ! Initialising winds (pressure is already initialized)
          ! Get the first wind snap
          if (NCICE.eq.14) then
+            CICE_TIME1 = CICE_TIMINC*floor(TimeLoc/CICE_TIMINC)
+            CICE_TIME2 = TimeLoc + CICE_TIMINC
             CALL NWS14GET(WVNX1,WVNY1,PRN1,CICE1)
          else
             CALL NWS14GET(WVNX1,WVNY1,PRN1)
@@ -2749,6 +2760,7 @@ C     from NAM data
            CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND)
          endif
          WTRATIO = (TimeLoc-WTIME1)/WTIMINC
+         CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
          DO I=1,NP
             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
@@ -2769,7 +2781,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                if (NCICE.eq.14) then
                   Cicenow = 100d0*(CICE1(I) + 
-     &                             WTRATIO*(CICE2(I)-CICE1(I)))
+     &                             CTRATIO*(CICE2(I)-CICE1(I)))
                   WDragCo = WindIceDrag(WDragCo,Cicenow)
                else
                   WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -8362,7 +8374,7 @@ C.... or netcdf (depending on what is present)
       
       ! Initialise the datetime
       CurDT = basedatetime + timedelta(minutes=floor(WTIME1/60d0))
-      NT = 0
+      NT = 0; NTC = 0;
 
       ! Set the file names
       ! Trying to read from grib2
@@ -8390,8 +8402,8 @@ C.... or netcdf (depending on what is present)
          ! No grib2 file, check for netcdf file
          grb2flag = .false.
          Pfile = 'fort.221.nc'
-         Wfile = 'fort.222u.nc'
-         Wfile1 = 'fort.222v.nc'
+         Wfile = 'fort.222.nc'
+         Wfile1 = 'fort.222.nc'
          Cfile = 'fort.225.nc'
          Pfile1 = 'fort.223.nc'
          !Wfile1 = 'fort.224.nc'
@@ -8401,6 +8413,12 @@ C.... or netcdf (depending on what is present)
      &                     'neither .grb2 nor .nc wind files exist.')
             call windTerminate()
          endif
+         inquire(file=Wfile,exist=Fexists)
+         if (.not.Fexists) then
+            ! Must be using two files one for each of u and v
+            Wfile = 'fort.222u.nc'
+            Wfile1 = 'fort.222v.nc'
+         endif 
          inquire(file='fort.22',exist=Fexists)
          if (.not.Fexists) then
             call allMessage(ERROR,'fort.22 header file required to '//
@@ -8419,6 +8437,9 @@ C.... or netcdf (depending on what is present)
                read(22,*) Pvar    ! Pressure var name
                read(22,*) Uvar    ! U10 var name
                read(22,*) Vvar    ! V10 Var name
+               if (NCICE.eq.14) then
+                  read(22,*) Cvar ! Ice var name
+               endif
             close(22) 
          endif    
       endif
@@ -8506,7 +8527,7 @@ C----------------------------------------------------------------------
 
       real(sz),intent(out) :: PRN2(NP), WVNX2(NP), WVNY2(NP)
       real(sz),intent(out),optional :: CICE2(NP)
-      integer :: i, ii, nxp, nyp, indt(4)
+      integer :: i, ii, nxp, nyp, indt(4), NTkeep
       real,allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice, lat, lon
       real(sz) :: xx, yy, wt(4) 
 
@@ -8572,7 +8593,9 @@ C----------------------------------------------------------------------
 
       ! Get the ice concentration if required 
       if (present(CICE2)) then
+         NTkeep = NT; NT = NTC
          call READNWS14(Cfile,Cinv,Cvar,Cice)
+         NT = NTkeep;
       endif      
 
       ! Doing the interpolation from their grid to ours
@@ -8601,15 +8624,27 @@ C----------------------------------------------------------------------
       enddo 
       deallocate(Pmsl,U10,V10)
       
+      ! Add WTIMINC on CurDT for next WTIME  
+      CurDT = CurDT + timedelta(minutes=nint(WTIMINC/60d0))
+      ! Next time index for the netcdf reading
+      NT = NT + 1
+      
       ! If ice concentration is present
       if (present(CICE2)) then
          do i = 1,np
-            CICE2(i) = Cice(indp(ubc,1,i),indp(ubc,2,i))*weightsp(ubc,1,i) + 
-     &                 Cice(indp(ubc,3,i),indp(ubc,2,i))*weightsp(ubc,2,i) +
-     &                 Cice(indp(ubc,1,i),indp(ubc,4,i))*weightsp(ubc,3,i) +
-     &                 Cice(indp(ubc,3,i),indp(ubc,4,i))*weightsp(ubc,4,i)
+            if (indp(ubc,1,i) < 0) then
+               CICE2(i) = 0d0;
+            else
+               CICE2(i) = 
+     &             Cice(indp(ubc,1,i),indp(ubc,2,i))*weightsp(ubc,1,i) +
+     &             Cice(indp(ubc,3,i),indp(ubc,2,i))*weightsp(ubc,2,i) +
+     &             Cice(indp(ubc,1,i),indp(ubc,4,i))*weightsp(ubc,3,i) +
+     &             Cice(indp(ubc,3,i),indp(ubc,4,i))*weightsp(ubc,4,i)
+            endif
          enddo
          deallocate(Cice)
+         ! Next ice time index for the netcdf reading
+         NTC = NTC + 1
       endif
 
       ! Add WTIMINC on CurDT for next WTIME  
@@ -8688,7 +8723,8 @@ C----------------------------------------------------------------------
                   call logMessage(ECHO,'Assume to start from beginning')
                   NT = 1 
                endif
-               write(16,*) ' Starting time indice = ',NT 
+               write(16,*) ' Starting time indice = ',NT
+               NTC = NT
             endif
             call Check_err(NF90_INQ_VARID(NC_ID,Latvar,Lat_ID))
             call Check_err(nf90_inquire_variable(NC_ID,Lat_ID,

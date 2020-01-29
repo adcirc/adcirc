@@ -56,7 +56,7 @@ c
       CHARACTER(80),ALLOCATABLE ::  DNVELLMSG(:)
       CHARACTER(80) DUM
 ! kmd - variable for river in baroclinic simulation
-      LOGICAL BC_Rivers
+      LOGICAL :: BC_Rivers = .False.
 
       ALLOCATE ( DNVELL(MNBOU),DNBVV(MNBOU,0:MNVEL),DIBTYPE(MNBOU) )
       ALLOCATE ( DNVELLMSG(MNBOU+1) )
@@ -693,10 +693,16 @@ c....    a non-default value we can determine this was the case.
 
       REWIND(15)  !Return to the top of the fort.15 file (instead of closing then opening)
 c..
-
-
-
-
+      read(unit=15,nml=WarnElevControl,iostat=ios)
+      if ( ios.ge.0) then
+         FOUND_WARNELEV_NML = .true.
+         call logMessage(INFO,
+     &         'The WarnElev namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The WarnElev namelist was not found.')
+      endif
+      rewind(15)  !Return to the top of the fort.15 file
 
       READ(15,80) RUNDES
 C

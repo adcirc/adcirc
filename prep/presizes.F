@@ -226,6 +226,16 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       ! @jasonfleming: reduce memory usage if there are no weir boundaries
       ! with cross barrier pipes
       logical :: meshHasWeirWithPipes
+      ! Warn Elev control namelist
+      NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
+     &  WarnElevDumpLimit, ErrorElev
+c.... !wjp added for warnElev namelist
+      REAL(SZ) :: WarnElev = 20.0  !
+      REAL(SZ) :: ErrorElev = 1000.0  !
+      LOGICAL :: WarnElevDump = .FALSE.  
+      INTEGER :: WarnElevDumpLimit = 50  !
+      LOGICAL :: WARN_ELEV_FLAG = .FALSE.   
+      LOGICAL :: FOUND_WARNELEV_NML = .false.  !
 
 C---------------------end of data declarations--------------------------------C
 
@@ -490,6 +500,7 @@ c... tcm v50.79 addition for metControl namelist
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       LOGICAL :: FOUND_WC_NML
       LOGICAL :: found_tvw_nml
+      LOGICAL :: found_WarnElev_nml = .false.
 C.... tcm v51.20.04 additions for station location file
       integer ::  ios_stations
       integer :: MNSTAE2,MNSTAV2,MNSTAC2,MNSTAM2
@@ -676,6 +687,13 @@ c....    a non-default value we can determine this was the case.
 C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       REWIND(15)
 
+      READ(UNIT=15,NML=WarnElevControl,IOSTAT=IOS)
+      IF (IOS.gt.0) THEN
+         write(*,*) "INFO: The WarnElevControl namelist was not found."
+      ELSE
+         found_WarnElev_nml = .true.  
+      ENDIF
+      REWIND(15)
 C
 C
 C  Initialize all runtime option logicals to false
