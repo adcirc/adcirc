@@ -1452,8 +1452,26 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
                   airwaterdensityrat = rhoAir/(SigTS(I) + RhoWat0)
                endif
             endif
+            ! If total drag includes ice drift (NCICE.eq.13)
+            !if (NCICE.eq.13) then
+            !   ! Get ice area fraction
+            !   Cicenow = CICE1(I) + Cice_Ratio*(CICE2(I)-CICE1(I))
+            !   ! Adjust Wdragcoefficient by non-ice area fraction
+            !   WdragCo = WdragCo*(1d0 - Cicenow)
+            !   ! Get ice drag coefficient and multiply by ice area fraction
+            !   IceDragCo = 0.0025d0*Cicenow
+            !   ! This is ice drift (differential from ocean surface vel)
+            !   !IceX = IceX1(I) + CIce_Ratio*(IceX2(I)-IceX1(I))
+            !   !IceY = IceY1(I) + CIce_Ratio*(IceX2(I)-IceY1(I))
+            !   IceMag = sqrt(IceX*IceX + IceY*IceY)
+            !   WSX2(I) = RampMete*(airwaterdensityrat*WDRAGCO*WINDX*WINDMAG +
+     &      !                       IceDragCo*IceX*IceMag)
+            !   WSY2(I) = RampMete*(airwaterdensityrat*WDRAGCO*WINDY*WINDMAG +
+     &      !                       IceDragCo*IceY*IceMag)
+            !else
             WSX2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
+            !endif
             PRDIFF  = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                          -PRBCKGRND_MH2O)
 #ifdef NOIVB
@@ -2979,6 +2997,8 @@ C     from NAM data
          if (NWS.eq.-14) then
             CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND,HasData)
          endif
+         WTRATIO = (TimeLoc-WTIME1)/WTIMINC
+         CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
          DO I=1,NP
             IF (NWS.eq.-14) then
                WTRATIO = WTRATIO_14
@@ -8752,8 +8772,8 @@ C.... or netcdf (depending on what is present)
          ! No grib2 file, check for netcdf file
          grb2flag = .false.
          Pfile = 'fort.221.nc'
-         Wfile = 'fort.222u.nc'
-         Wfile1 = 'fort.222v.nc'
+         Wfile = 'fort.222.nc'
+         Wfile1 = 'fort.222.nc'
          Cfile = 'fort.225.nc'
          Pfile1 = 'fort.223.nc'
          !Wfile1 = 'fort.224.nc'
@@ -8967,7 +8987,9 @@ C----------------------------------------------------------------------
 
       ! Get the ice concentration if required
       if (present(CICE2)) then
+         NTkeep = NT; NT = NTC
          call READNWS14(Cfile,Cinv,Cvar,Cice)
+         NT = NTkeep;
       endif
 
       ! Doing the interpolation from their grid to ours
