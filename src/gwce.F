@@ -230,10 +230,9 @@ C
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
-     &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1, TKM,
-     &   NPERSEG, NTIP, GM2, TWOB, IFSFM, IFNL_HDP, CGWCE_HDP,
-     &   NNPERBC, IPERCONN, VIDispDXOH, VIDispDYOH, TSINV, TSINT, 
-     &   IFNL_HDP, CGWCE_HDP, CAliDisp
+     &   TKM, NPERSEG, NTIP, NNPERBC, IPERCONN, VIDispDXOH, Bd, Ad, Cs2,
+     &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, 
+     &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
@@ -341,6 +340,7 @@ C...... DW
       REAL(SZ):: fwsy1, fwsy2, fwsy3
       REAL(SZ) :: SPM1, SPM2, SPM3 
       LOGICAL :: ETA_SPONGE = .false., GWCE_SPONGE = .false.
+      REAL(SZ) :: Ma2, Cfac = 1.0_SZ, CfacS0 = 1.0_SZ
       
       IF ( LoadAbsLayerSigma ) THEN
          IF (NumNodesAbsLayer(1) > 0 ) ETA_SPONGE = .true.
@@ -440,12 +440,15 @@ C.... DW, Nov 2019 if IFNL_HDP = 1 use DP + ETA = H in the GWCE
                DPAvg = (DP(NMI1)+DP(NMI2)+DP(NMI3))/3.d0 +   ! BAVG if GWCE_NL_HDP = .FALSE.
      &              IFNLFA*IFNL_HDP*(ETA2(NMI1) + ! HAVG otherwise
      &              ETA2(NMI2)+ETA2(NMI3))/3.d0 ; 
-C.....        WJP here for new dispersion equation 
+                  
+C.....         WJP adjust the dispersion equation through
+C              Ali et al. formula
                if (CAliDisp) then
-                  GA00DPAvgOAreaIE4 = A00*min(G*DPAvg,GM2*DPAvg**TWOB)/AreaIE4
-               else
-                  GA00DPAvgOAreaIE4 = A00*G*DPAvg/AreaIE4
+                  Ma2   = G*DPavg/Cs2
+                  Cfac = (1.0_SZ - 0.25_SZ*Ma2 - Ad*DPavg**Bd)**2
                endif
+               
+               GA00DPAvgOAreaIE4 = A00*G*DPAvg*Cfac/AreaIE4
                Tau0Avg = (Tau0Var(NMI1)+Tau0Var(NMI2)+Tau0Var(NMI3))/3.d0
 
 C........... DW, Absorbing layer
@@ -1172,14 +1175,18 @@ C.....   DW, Nov 2019
          
          DPAvgS0 = (DP(NM1)+DP(NM2)+DP(NM3))/3.d0 + ! BAVG if GWCE_HDP = .FALSE. 
      &        IFNLFA*IFNL_HDP*(E0N1 + E0N2 + E0N3)/3.d0 ; ! H^{s-1}_{avg} otherwise
-C        WJP Change here to implement new dispersive equation
+
+C.....   WJP adjust the dispersion equation through
+C        Ali et al. formula
          if (CAliDisp) then
-            GDPAvgOAreaIE4 = min(G*DPAvg,GM2*DPAvg**TWOB)/AreaIE4
-            GDPAvgOAreaIE4_S0 = min(G*DPAvgS0,GM2*DPAvgS0**TWOB)/AreaIE4
-         else
-            GDPAvgOAreaIE4 = G*DPAvg/AreaIE4
-            GDPAvgOAreaIE4_S0 = G*DPAvgS0/AreaIE4
+            Ma2    = G*DPavg/Cs2
+            Cfac   = (1.0_SZ - 0.25_SZ*Ma2 - Ad*DPavg**Bd)**2
+            Ma2    = G*DPavg/Cs2
+            CfacS0 = (1.0_SZ - 0.25_SZ*Ma2 - Ad*DPavgS0**Bd)**2
          endif
+
+         GDPAvgOAreaIE4 = G*DPAvg*Cfac/AreaIE4
+         GDPAvgOAreaIE4_S0 = G*DPAvgS0*CfacS0/AreaIE4
 C....  END DW & WJP
          HAvg=(H1N1+H1N2+H1N3)/3.d0
          GHAvg=G*HAvg
@@ -1196,7 +1203,8 @@ C
 C...... DW absorbing layer
 C
          SigmaAvg = (SgN1_eta + SgN2_eta + SgN3_eta)/3.D0
-         Tau0SigmaAvg = (SgN1_eta*T0N1 + SgN2_eta*T0N2 + SgN3_eta*T0N3)/3.d0
+         Tau0SigmaAvg = (SgN1_eta*T0N1 + SgN2_eta*T0N2 + 
+     &                   SgN3_eta*T0N3)/3.d0
 
          ! Use in the momentum equation parts
          SigmaQxAvg = (SgN1_mnx*QX1N1 +
