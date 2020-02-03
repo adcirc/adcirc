@@ -65,8 +65,6 @@ C******************************************************************************
       real(sz),allocatable :: auv11(:), auv12(:)! For the pc subroutine
       real(sz) :: dto2  ! time step divided by 2.0
       real(sz) :: go2   ! gravitational acceleration divided by 2.0
-      real(sz) :: GRat  ! ratio of dispersive gravity to real gravity 
-      real(sz) :: gmo2  ! GM2 gravity divided by 2.0 
       
       contains
 
@@ -78,15 +76,13 @@ C******************************************************************************
 !----------------------------------------------------------------------
       subroutine initMomentumEq()
       use sizes, only : mnp
-      use global, only : dt, g, GM2
+      use global, only : dt, g
       implicit none
 
       !WJP 02.24.2018 I only put this in Mom_Eqs_New_NC so far..
       allocate(auv(4,mnp))
       dto2=dt/2.d0
       go2 = g/2.d0
-      GRat = GM2/G
-      gmo2 = GM2/2.d0
 
 !----------------------------------------------------------------------
       end subroutine initMomentumEq
@@ -153,10 +149,10 @@ C*******************************************************************************
      &  IFNLCT, IFNLFA, IFWIND, NRS, NWS, SMAG_LOWER_LIM,SMAG_UPPER_LIM,
      &  NODECODE, NOFF, UU1, VV1, ETA2, ETA1, QX1, QX2, QY1, PR1, PR2,
      &  TiP1, TiP2, WSX2, WSY2, TK, CORIF, WSX1, WSY1, VIDBCPDXOH,
-     &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y, usingDynamicWaterLevelCorrection,
-     &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, TKM, 
-     &  adcirc_norm2, QN2, MOM_LV_X, MOM_LV_Y, VIDispDXOH, 
-     &  VIDispDYOH, NPERSEG, NNPERBC, IPERCONN, TSINT, CAliDisp, TWOB
+     &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y, TKM, NPERSEG, NNPERBC, 
+     &  IPERCONN, VIDispDXOH, VIDispDYOH, IFSFM, adcirc_norm2, CAliDisp,
+     &  usingDynamicWaterLevelCorrection, Cs2, Ad, Bd, G,
+     &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2
       USE MESH, ONLY : NE, NP, NM, DP, Areas, TotalArea,
      &     NNeigh, NeiTab, NeiTabEle, MJU, FDXE, FDYE,
      &     SWITCH_ELTAB_PERBC, SFacEle, SFMYEle, SFMXEle, TANPHI 
@@ -214,7 +210,7 @@ C----- END DW
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       INTEGER :: nele
       REAL(SZ) :: VCOEFXX, VCOEFYY, VCOEFXY, VCOEFYX
-      REAL(SZ) :: cfac1, cfac2
+      REAL(SZ) :: Ma2, Cfac1 = 1.0_SZ, Cfac2 = 1.0_SZ
       REAL(SZ), PARAMETER :: THIRD = 1.0_SZ/3.0_SZ
 C..... DW
       LOGICAL :: MOM_SPONGE = .false.
@@ -245,7 +241,6 @@ C..... DW
 C     WJP: initialize baroclinic pressure gradients to zero
       DBCPDX1A = 0d0; DBCPDX2A = 0d0; DBCPDX3A = 0d0;
       DBCPDY1A = 0d0; DBCPDY2A = 0d0; DBCPDY3A = 0d0;
-      cfac1 = 1d0; cfac2 = 1d0;
 
       DO IE=1,NE
 
@@ -398,13 +393,18 @@ C...  Compute the barotropic pressure gradient x area for the element
          DBTPDY2A = BTP2N1*FDY1+BTP2N2*FDY2+BTP2N3*FDY3
 C...  WJP: For the new dispersion relation
          IF (CAliDisp) THEN
+            ! time 1
             H1Avg = THIRD*(H1N1 + H1N2 + H1N3)
+            Ma2   = G*H1Avg/Cs2
+            Cfac1 = (1.0_SZ - 0.25_SZ*Ma2 - Ad*H1Avg**Bd)**2
+            ! time 2
             H2Avg = THIRD*(H2N1 + H2N2 + H2N3)
-            cfac1 = min(1.d0,GRat*H1Avg**(TWOB-1d0))
-            cfac2 = min(1.d0,GRat*H2Avg**(TWOB-1d0))
+            Ma2   = G*H2Avg/Cs2
+            Cfac2 = (1.0_SZ - 0.25_SZ*Ma2 - Ad*H2Avg**Bd)**2
          ENDIF
-         DBTPDXA = 0.5d0*(cfac1*DBTPDX1A + cfac2*DBTPDX2A)
-         DBTPDYA = 0.5d0*(cfac1*DBTPDY1A + cfac2*DBTPDY2A)
+
+         DBTPDXA = 0.5_SZ*(Cfac1*DBTPDX1A + Cfac2*DBTPDX2A)
+         DBTPDYA = 0.5_SZ*(Cfac1*DBTPDY1A + Cfac2*DBTPDY2A)
  
 C...  WJP: Compute the baroclinic pressure gradient from a 3D ocean model
          IF (CBaroclinic) THEN
@@ -1000,7 +1000,7 @@ C
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
      & SMAG_LOWER_LIM, NODECODE, VIDISPDXOH, VIDISPDYOH, IFSFM, 
-     & CBaroclinic, CAliDisp, TWOB
+     & CBaroclinic, CAliDisp, Cs2, Ad, Bd, G
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &   NEITAB, NEITABELE, NNEIGH, FDXE, FDYE,
      &   SFacEle, SFMYEle, SFMXEle, TANPHI   
@@ -1048,6 +1048,7 @@ C
       REAL(8) AREAIE, AREAIE2
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       INTEGER :: nele
+      REAL(SZ) :: Ma2, Cfac 
 
       call setMessageSource("mom_eqs_new_conserv")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -1172,14 +1173,20 @@ C.......If using tidal potential terms, add these into the barotropic pressure
             BTP2N3=BTP2N3-TIP2(NM3)
          ENDIF
 
+         GH1Avg = GO2*H1Avg
+         GH2Avg = GO2*H2Avg
+
 C...  Compute the element avg depth x barotropic pressure gradient x area for the element
 C.... WJP: For the new dispersion relation
          IF (CAliDisp) THEN
-            GH1Avg = min(GO2*H1Avg,GMO2*H1Avg**TWOB)
-            GH2Avg = min(GO2*H2Avg,GMO2*H2Avg**TWOB)
-         ELSE
-            GH1Avg = GO2*H1Avg
-            GH2Avg = GO2*H2Avg
+            ! time 1
+            Ma2    = G*H1avg/Cs2
+            Cfac   = (1.0_SZ - 0.25_SZ*Ma2 - Ad*H1Avg**Bd)**2
+            GH1Avg = Cfac*GH1Avg
+            ! time 2
+            Ma2    = G*H2avg/Cs2
+            Cfac   = (1.0_SZ - 0.25_SZ*Ma2 - Ad*H2Avg**Bd)**2
+            GH2Avg = Cfac*GH2Avg
          ENDIF
 
          DBTPDXA=(GH1Avg*(BTP1N1*FDX1+BTP1N2*FDX2+BTP1N3*FDX3)
