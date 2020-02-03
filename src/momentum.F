@@ -65,8 +65,6 @@ C******************************************************************************
       real(sz),allocatable :: auv11(:), auv12(:)! For the pc subroutine
       real(sz) :: dto2  ! time step divided by 2.0
       real(sz) :: go2   ! gravitational acceleration divided by 2.0
-      real(sz) :: GRat  ! ratio of dispersive gravity to real gravity
-      real(sz) :: gmo2  ! GM2 gravity divided by 2.0
 
       contains
 
@@ -78,15 +76,13 @@ C******************************************************************************
 !----------------------------------------------------------------------
       subroutine initMomentumEq()
       use sizes, only : mnp
-      use global, only : dt, g, GM2
+      use global, only : dt, g
       implicit none
 
       !WJP 02.24.2018 I only put this in Mom_Eqs_New_NC so far..
       allocate(auv(4,mnp))
       dto2=dt/2.d0
       go2 = g/2.d0
-      GRat = GM2/G
-      gmo2 = GM2/2.d0
 
 !----------------------------------------------------------------------
       end subroutine initMomentumEq
@@ -1004,7 +1000,7 @@ C
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF,
      & SMAG_LOWER_LIM, NODECODE, VIDISPDXOH, VIDISPDYOH, IFSFM,
-     & CBaroclinic, CAliDisp, Cs2, Ad, Bd, G, TWOB
+     & CBaroclinic, CAliDisp, Cs2, Ad, Bd, G
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &   NEITAB, NEITABELE, NNEIGH, FDXE, FDYE,
      &   SFacEle, SFMYEle, SFMXEle, TANPHI
