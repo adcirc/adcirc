@@ -398,7 +398,7 @@ C     jgf50.41: Checks harmonic analysis settings.
 C     WJP 02.20.2018: Allowing for > 1 options for netcdf output
 C--------------------------------------------------------------------
       SUBROUTINE checkHarmonicParameters()
-      USE GLOBAL, ONLY :  NFOVER
+      USE GLOBAL, ONLY :  NFOVER, useNetCDF, useNetCDFOutput
       IMPLICIT NONE
 C
       call setMessageSource("checkHarmonicParameters")
@@ -421,6 +421,8 @@ C
          CALL logMessage(INFO,
      &        'STATION ELEVATION HARMONIC ANALYSIS'
      &        //' WILL BE WRITTEN TO UNIT 51 IN NETCDF FORMAT.')
+         useNetCDF = .true. 
+         useNetCDFOutput = .true.
       ENDIF
 
       IF((NHASV.LT.0).OR.(NHASV.GT.5)) THEN
@@ -438,6 +440,8 @@ C
          CALL logMessage(INFO,
      &        'STATION VELOCITY HARMONIC ANALYSIS'
      &        //' WILL BE WRITTEN TO UNIT 52 IN NETCDF FORMAT.')
+         useNetCDF = .true. 
+         useNetCDFOutput = .true.
       ENDIF
 
       IF((NHAGE.LT.0).OR.(NHAGE.GT.5)) THEN
@@ -455,6 +459,8 @@ C
          CALL logMessage(INFO,
      &        'FULL DOMAIN ELEVATION HARMONIC ANALYSIS'
      &        //' WILL BE WRITTEN TO UNIT 53 IN NETCDF FORMAT.')
+         useNetCDF = .true. 
+         useNetCDFOutput = .true.
       ENDIF
 
       IF((NHAGV.LT.0).OR.(NHAGV.GT.5)) THEN
@@ -472,6 +478,8 @@ C
          CALL logMessage(INFO,
      &        'FULL DOMAIN VELOCITY HARMONIC ANALYSIS'
      &        //' WILL BE WRITTEN TO UNIT 54 NETCDF FORMAT.')
+         useNetCDF = .true. 
+         useNetCDFOutput = .true.
       ENDIF
 
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
