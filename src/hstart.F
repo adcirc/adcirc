@@ -2780,7 +2780,7 @@ c          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO B
       ! subroutine in write_output module. 
          
       ! jgf: Added init for water level offset output file 
-      if ( (NOUTGE.eq.-1).and.(usingDynamicWaterLevelCorrection.eqv..true.) ) then
+      if ( (NOUTGE.eq.-1.or.NOUTGE.eq.-4).and.(usingDynamicWaterLevelCorrection.eqv..true.) ) then
          if (write_local_files.eqv..true.) then
             call writeDomainHeader(108,trim(localdir)//'/'//
      &           'dynamicWaterlevelCorrection.63',NP_G, NP, 'dynamicWaterlevelCorrection')
