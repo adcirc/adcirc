@@ -276,7 +276,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       logical :: outputNOFF = .false.
       logical :: noffActive = .true.
       logical :: StatPartWetFix = .false.  ! tcm v53.01.02
-      integer :: How2FixStatPartWet = 0    ! tcm v52.01.02
+      integer :: How2FixStatPartWet = 0    ! tcm v52.01.02 (Can also be 1 in v54.)
 
       ! jgf52.08.02: For inundation output control. Wanted to just
       ! use the variables of the same name from the write_output module,
