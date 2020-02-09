@@ -1608,12 +1608,12 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
       IF ((abs(NWS).EQ.29).or.(abs(NWS).eq.30)) THEN
          ! now blend in the vortex met field
          ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
-         if (nws.eq.29) then
+         if (abs(nws).eq.29) then
             OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
      &           STATUS='OLD')
             CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,STATIM*86400.D0)
          endif
-         if (nws.eq.30) then
+         if (abs(nws).eq.30) then
             OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
      &           STATUS='OLD')
             CALL NWS20GET(vortexWVNX2,vortexWVNY2,vortexPRN2,STATIM*86400.D0)

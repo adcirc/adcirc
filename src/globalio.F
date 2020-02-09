@@ -1525,7 +1525,7 @@ C
       character(*) filename     ! name of file to create
       integer numNodes          ! number of nodes in this domain
       integer numNodes_g        ! number of nodes in the full domain
-      character(len=10) typeStr ! the type of header to write
+      character(len=*) typeStr ! the type of header to write
       integer nodes             ! number of nodes to write into header
 C
 C     Unless we are processor 0 or we are supposed to write local
@@ -1590,7 +1590,7 @@ C     Open the file
      &                 nspoolge, 1, FileFmtVersion
       case("initDry")
           write(lun, 1010) 1, nodes, 0.d0, 0, 1, FileFmtVersion
-      case("offset")
+      case("dynamicWaterlevelCorrection")
           write(lun, 1010) 1, nodes, dtdp*nspoolge, nspoolge, 1, 
      &    FileFmtVersion
       case default

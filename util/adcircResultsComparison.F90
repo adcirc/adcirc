@@ -20,7 +20,7 @@
         MODULE adcircCompare_module
             USE NETCDF
 
-            INTEGER,PARAMETER   :: nNetCDFVariables = 39
+            INTEGER,PARAMETER   :: nNetCDFVariables = 40
             CHARACTER(200),SAVE :: netcdf_types(nNetCDFVariables)
             CHARACTER(200),SAVE :: nc_longname(nNetCDFVariables)
             CHARACTER(200),SAVE :: nc_stdname(nNetCDFVariables)
@@ -150,6 +150,7 @@
                 NETCDF_TYPES(37) = "swan_TMM10"
                 NETCDF_TYPES(38) = "swan_TMM10_max"
                 NETCDF_TYPES(39) = "winddrag"
+                NETCDF_TYPES(40) = "dynamicWaterlevelCorrection"
 
                 NC_LONGNAME(:)  = ""
                 NC_LONGNAME(1)  = "water column vertically varying density"
@@ -190,6 +191,8 @@
                 NC_LONGNAME(36) = "maximum TM02 mean wave period"
                 NC_LONGNAME(37) = "mean absolute wave period"
                 NC_LONGNAME(38) = "maximum TMM10 mean wave period"
+                NC_LONGNAME(39) = "wind drag"
+                NC_LONGNAME(40) = "dynamic water surface correction above water level"
 
                 NC_STDNAME(:)  = ""
                 NC_STDNAME(1)  = "water_density_vertically_varying"
@@ -230,6 +233,8 @@
                 NC_STDNAME(36) = "maximum_sea_surface_wave_mean_period_from_variance_spectral_density_second_frequency_moment"
                 NC_STDNAME(37) = "sea_surface_wave_mean_period_from_variance_spectral_density_inverse_frequency_moment"
                 NC_STDNAME(38) = "maximum_sea_surface_wave_mean_period_from_variance_spectral_density_inverse_frequency_moment"
+                NC_STDNAME(39) = "wind_drag"
+                NC_STDNAME(40) = "dynamic_sea_surface_correction_above_water_level"
 
                 RETURN
 
