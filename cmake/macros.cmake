@@ -97,9 +97,8 @@ MACRO(swanConfigureAdcswan)
         )
     ELSE(WIN32)
         ADD_CUSTOM_COMMAND( OUTPUT ${SWAN1SERIAL_SOURCES} ${SWAN2SERIAL_SOURCES}
-            COMMAND ${PERL} switch.pl -adcirc -unix *.ftn *.ftn90
             COMMAND mkdir -p ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source
-            COMMAND mv *.f *.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/.
+            COMMAND ${PERL} switch.pl -adcirc -unix -outdir ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source *.ftn *.ftn90
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
             COMMENT "Generating Serial unSWAN Sources..."
         )
@@ -119,9 +118,8 @@ MACRO(swanConfigurePadcswan)
         )  
     ELSE(WIN32)
         ADD_CUSTOM_COMMAND( OUTPUT ${SWAN1PARALLEL_SOURCES} ${SWAN2PARALLEL_SOURCES}
-            COMMAND ${PERL} switch.pl -pun -adcirc -unix *.ftn *.ftn90
             COMMAND mkdir -p ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source
-            COMMAND mv *.f *.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/.
+            COMMAND ${PERL} switch.pl -pun -adcirc -unix -outdir ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source *.ftn *.ftn90
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
             COMMENT "Generating Parallel unSWAN Sources..."
         )
@@ -141,9 +139,8 @@ MACRO(swanConfigureSerial)
         )  
     ELSE(WIN32)
         ADD_CUSTOM_COMMAND( OUTPUT ${SWANONLY_SERIAL_SOURCES} 
-            COMMAND ${PERL} switch.pl -unix *.ftn *.ftn90
             COMMAND mkdir -p ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source
-            COMMAND mv *.f *.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source/.
+            COMMAND ${PERL} switch.pl -unix -outdir ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source *.ftn *.ftn90
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
             COMMENT "Generating Serial SWAN stand alone Sources..."
         )
@@ -163,9 +160,8 @@ MACRO(swanConfigureParallel)
         )  
     ELSE(WIN32)
         ADD_CUSTOM_COMMAND( OUTPUT ${SWANONLY1_PARALLEL_SOURCES} ${SWANONLY2_PARALLEL_SOURCES}
-            COMMAND ${PERL} switch.pl -pun -unix *.ftn *.ftn90
             COMMAND mkdir -p ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source
-            COMMAND mv *.f *.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/.
+            COMMAND ${PERL} switch.pl -pun -unix -outdir ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source *.ftn *.ftn90
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
             COMMENT "Generating Parallel unSWAN Sources..."
         )
