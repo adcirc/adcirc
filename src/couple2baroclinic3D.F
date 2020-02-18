@@ -473,7 +473,8 @@ C
       BC3D_Name = 'fort.11.nc'
       ! Read first value in time 
       BC3D_IT = 1
-      DTIME1  = TimeLoc
+      ! Times are rounded down to nearest minute
+      DTIME1  = floor(TimeLoc/60d0)*60d0
 #ifdef DATETIME
       CurDT   = basedatetime + timedelta(minutes=floor(DTIME1/60d0))
 #endif            
@@ -539,7 +540,8 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE Update_BC3D_Info(flag,TimeLoc)
 
-      use mesh, only: np, ne
+      use mesh, only: np, ne, uvectmp, vvectmp, DRVMAP2DSPVEC
+      use global, only: IFSPROTS
       implicit none
       
       integer, intent(in) :: flag
@@ -619,11 +621,18 @@ C
            SigTS(J) = SigTS_F(1,J) + DTRATIO*(SigTS_F(2,J)-SigTS_F(1,J))
            ! This is interpolated onto element and put back onto node in
            ! another subroutine (FBPG_Disp_from_BC3D)
-            BXE(J) = VIDBCPDXOH_F(1,J) + DTRATIO * 
+           BXE(J) = VIDBCPDXOH_F(1,J) + DTRATIO * 
      &              (VIDBCPDXOH_F(2,J) - VIDBCPDXOH_F(1,J))
-            BYE(J) = VIDBCPDYOH_F(1,J) + DTRATIO * 
-     &               (VIDBCPDYOH_F(2,J) - VIDBCPDYOH_F(1,J))
+           BYE(J) = VIDBCPDYOH_F(1,J) + DTRATIO * 
+     &              (VIDBCPDYOH_F(2,J) - VIDBCPDYOH_F(1,J))
          ENDDO
+C        DW/WJP: rotate BCP if coordinate transform
+         IF ( IFSPROTS .eq. 1 ) THEN
+            UVECTMP(1:NP) = BXE(1:NP); 
+            VVECTMP(1:NP) = BYE(1:NP);
+            CALL DRVMAP2DSPVEC( BXE, BYE,
+     &             UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
+         ENDIF
       endif
       IF (LoadIT_Fric) then
          DO J = 1,NP
@@ -654,6 +663,13 @@ C
             DYE(J) = VIDISPDYOH_F(1,J) + DTRATIO * 
      &               (VIDISPDYOH_F(2,J) - VIDISPDYOH_F(1,J))
          ENDDO
+C        DW/WJP: rotate dispersion gradients if coordinate transform
+         IF ( IFSPROTS .eq. 1 ) THEN
+            UVECTMP(1:NP) = DXE(1:NP); 
+            VVECTMP(1:NP) = DYE(1:NP);
+            CALL DRVMAP2DSPVEC( DXE, DYE,
+     &            UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
+         ENDIF
       ENDIF
 C
 #if defined(ALL_TRACE)
