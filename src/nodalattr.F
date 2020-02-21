@@ -2045,6 +2045,7 @@ C
 C     Step 0. Convert Manning's N to Cd, if necessary.
       IF (LoadManningsN) THEN
          DO I=1, NP
+            IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
             FRIC(I)=g*ManningsN(I)**2.d0
      &           /( ( DP(I)+IFNLFA*ETA2(I) )**(1.d0/3.d0) ) ! sb46.28sb02
             !sb46.28sb02  Lower limit is applied here.
