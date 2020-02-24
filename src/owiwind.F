@@ -288,7 +288,7 @@
               WVNY(:) = 0D0
               PRN(:) = Prdeflt*100D0/RHOWATG
            endif
-           if (present(HasData)) then 
+           if (present(HasData)) then
               HasData(:) = .false.
            endif
            write(scratchMessage,16) cntSnaps
@@ -348,8 +348,8 @@
               WVNY(i) = vv * windMultiplier
 
            endif
-              
-           if (present(HasData)) then 
+
+           if (present(HasData)) then
               HasData(i) = uvpHasBeenSet
            endif
 
