@@ -3,10 +3,11 @@
 ## moghimis@gmail.com
 ## ADCIRC  for Theia
 
-export compiler=intel
+#export compiler=intel
+export compiler=intel-ND
 export NETCDF=enable
 export NETCDF4=enable
-#export NETCDF4_COMPRESSION=enable
+export NETCDF4_COMPRESSION=enable
 
 ### GNU >>>>>
 #export MACHINE=x86_64
@@ -20,15 +21,15 @@ make clean
 make clobber
 rm -rf libadc.a padcirc adcprep
 
-make libadc.a 
+#make libadc.a 
 make adcprep
 #make adcirc
-make padcirc
+#make padcirc
 #make padcswan
 #make punswan
 #make hstime
 #make adccmp
-make aswip
+#make aswip
 #make adcpost
 #make adcprep_be
 #make adcswan
