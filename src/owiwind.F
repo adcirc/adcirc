@@ -281,10 +281,11 @@
 
         ! Put a blank snap for the first 'numBlankSnaps' snaps and then return
         if (cntSnaps.LE.numBlankSnaps) then
-           WVNX(:) = 0D0
-           WVNY(:) = 0D0
-           PRN(:) = Prdeflt*100D0/RHOWATG
-
+           if (abs(NWS).ne.14) then ! WJP: Don't overwrite if NWS = 14
+              WVNX(:) = 0D0
+              WVNY(:) = 0D0
+              PRN(:) = Prdeflt*100D0/RHOWATG
+           endif
            write(scratchMessage,16) cntSnaps
  16        format('INSERTING A BLANK WIND SNAP, COUNT=',i4)
            call allMessage(INFO,trim(scratchMessage))
@@ -327,9 +328,11 @@
            call owi_interpolateToMesh(i,uu,vv,pp,uvpHasBeenSet)
 
            if (.not.uvpHasBeenSet) then
-              WVNX(I)=0.d0
-              WVNY(I)=0.d0
-              PRN(I)=PRdeflt*100.d0/RHOWATG
+              if (abs(NWS).ne.14) then ! WJP: Don't overwrite if NWS = 14
+                 WVNX(I)=0.d0
+                 WVNY(I)=0.d0
+                 PRN(I)=PRdeflt*100.d0/RHOWATG
+              endif
            else
               !Convert millibars to m of water
               PRN(i)  = 100.d0*PP/RHOWATG
