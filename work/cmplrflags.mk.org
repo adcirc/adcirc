@@ -67,7 +67,7 @@ ifeq ($(compiler),gnu)
   CLIBS	:=
   LIBS		:=
   MSGLIBS	:=
-  ifeq ($(NETCDFLAG),enable)
+  ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),blueridge)
         # FLIBS       := $(FLIBS) -L$(HDF5HOME) -lhdf5  
         NETCDFHOME    :=/usr
@@ -141,7 +141,7 @@ ifeq ($(compiler),intel)
   MSGLIBS       :=
   NETCDFHOME    := $(NETCDFHOME)
   HDF5HOME      := $(HDF5)
-  ifeq ($(NETCDFLAG),enable)
+  ifeq ($(NETCDF),enable)
     # debug for intel
     INCDIRS += -g -traceback 
     #  LIBSS   :=  -lnetcdf  -lnetcdff -lhdf5 -lhdf5_fortran 
@@ -182,7 +182,7 @@ ifeq ($(compiler),intel-ND)
   ifeq ($(DEBUG),full)
      CFLAGS        := $(INCDIRS) -g -O0 -march=k8 -m64 -mcmodel=medium -DLINUX
   endif
-  ifeq ($(NETCDFLAG),enable)
+  ifeq ($(NETCDF),enable)
      HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
      FLIBS      := $(FLIBS) -lnetcdff -L$(HDF5HOME) 
   endif   
@@ -236,7 +236,7 @@ ifeq ($(compiler),intel-lonestar)
   TACC_NETCDF_INC=${NETCDFHOME}include
   TACC_NETCDF_LIB=${NETCDFHOME}lib
   TACC_HDF5_LIB=${HDF5HOME}lib
-  ifeq ($(NETCDFLAG),enable)
+  ifeq ($(NETCDF),enable)
      FLIBS      := $(FLIBS) -I${TACC_NETCDF_INC} -L${TACC_NETCDF_LIB} -lnetcdf -lnetcdff -L${TACC_HDF5_LIB} -lhdf5 -lhdf5 -lz -lm
   endif
 endif
@@ -264,7 +264,7 @@ ifeq ($(compiler),cray_xt3)
 # jgf20101102: on Sapphire,
 #              NETCDFHOME=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.1.1-serial
 #              HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.5-serial/lib
-  ifeq ($(NETCDFLAG),enable)
+  ifeq ($(NETCDF),enable)
      FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5_fortran -lhdf5_hl -lhdf5 -lz
   endif
   BACKEND_EXEC  := metis_be adcprep_be
@@ -309,7 +309,7 @@ ifeq ($(compiler),cray_xt4)
 # jgf20101102: on Jade, HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.4-serial/lib
 # jgf20101103: on Jade, SZIPHOME=/usr/local/usp/PETtools/CE/pkgs/szip-2.1/lib
 # jgf20110728: on Garnet, NETCDFHOME=/opt/cray/netcdf/4.1.1.0/netcdf-pgi
-  ifeq ($(NETCDFLAG),enable)
+  ifeq ($(NETCDF),enable)
      FLIBS          := $(FLIBS) -L$(HDF5HOME) -L$(SZIPHOME) -lhdf5_fortran -lhdf5_hl -lhdf5 -lsz -lz
   endif
   MSGLIBS	:=
@@ -343,7 +343,7 @@ ifeq ($(compiler),cray_xt5)
 # be linked in, so the user must specify HDF5HOME on the command line.
 # jgf20090518: on Jade, NETCDFHOME=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.0
 # jgf20090518: on Jade, HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.2/lib
-  ifeq ($(NETCDFLAG),enable)
+  ifeq ($(NETCDF),enable)
      FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
   endif
   MSGLIBS	:=
@@ -416,7 +416,7 @@ ifeq ($(compiler),utils)
 # jgf20101102: on Jade, HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.4-serial/lib
 # jgf20101103: on Jade, SZIPHOME=/usr/local/usp/PETtools/CE/pkgs/szip-2.1/lib
 # jgf20110728: on Garnet, NETCDFHOME=/opt/cray/netcdf/4.1.1.0/netcdf-pgi
-  ifeq ($(NETCDFLAG),enable)
+  ifeq ($(NETCDF),enable)
      FLIBS          := $(FLIBS) -L$(HDF5HOME) -L$(SZIPHOME) -lhdf5_fortran -lhdf5_hl -lhdf5 -lsz -lz
   endif
   MSGLIBS       :=
@@ -489,7 +489,7 @@ ifeq ($(compiler),diamond)
 # be linked in, so the user must specify HDF5HOME on the command line.
 # jgf20101103: on Diamond, NETCDFHOME=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.0.1-serial
 # jgf20101103: on Diamond, HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.4-serial/lib
-  ifeq ($(NETCDFLAG),enable)
+  ifeq ($(NETCDF),enable)
      NETCDFHOME     :=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.2.1.1-intel-serial
      FFLAGS1        :=$(FFLAGS1) -I/usr/local/usp/PETtools/CE/pkgs/netcdf-4.2.1.1-intel-serial/include
      FFLAGS2        :=$(FFLAGS1)
@@ -535,7 +535,7 @@ ifeq ($(compiler),garnet)
 # jgf20110815: on Garnet, HDF5HOME=/opt/cray/hdf5/default/hdf5-pgi
 # jgf20130815: on Garnet, load module cray-netcdf, with the path to the
 #              installation being /opt/cray/netcdf/4.3.0
-  ifeq ($(NETCDFLAG),enable)
+  ifeq ($(NETCDF),enable)
      FLIBS          := $(FLIBS) -lnetcdff
   endif
   FLIBS  	:= $(FLIBS)
@@ -687,7 +687,7 @@ ifeq ($(compiler),gnu)
   endif
   CLIBS	:=
   FLIBS		:=
-  ifeq ($(NETCDFLAG),enable)
+  ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),jason-desktop)
         NETCDFHOME := /usr/local
         HDF5HOME   := /usr/local/hdf5/hdf5-1.8.8/hdf5
@@ -734,7 +734,7 @@ ifeq ($(compiler),gfortran)
      DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
   endif
   FLIBS         := 
-  ifeq ($(NETCDFLAG),enable)
+  ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),jason-desktop)
         NETCDFHOME := /usr
      endif
@@ -899,7 +899,7 @@ ifeq ($(IBM),p6)
    FFLAGS1       := $(INCDIRS) -q64 -w -O2 -qfixed=132 -qarch=auto -qcache=auto
    FFLAGS2       := $(FFLAGS1)
    FFLAGS3       := $(FFLAGS1)
-   ifeq ($(NETCDFLAG),enable))
+   ifeq ($(NETCDF),enable))
       DA            := -WF,"-DREAL8,-DIBM,-DNETCDF,-DCSCA"
       DP            := -tF -WF,"-DREAL8,-DIBM,-DNETCDF,-DCSCA,-DCMPI"
       DPRE          := -tF -WF,"-DREAL8,-DIBM,-DNETCDF"
@@ -920,7 +920,7 @@ ifeq ($(IBM),p6)
 # yf20110301: on Cirrus/Stratus, NETCDFHOME=/usrx/local/bin/
 # yf20110301: on Cirrus/Stratus, HDF5HOME=/usrx/local/hdf5/lib
   HDF5HOME=/usrx/local/hdf5/lib
-  ifeq ($(NETCDFLAG),enable)
+  ifeq ($(NETCDF),enable)
      FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5_fortran -lhdf5_hl -lhdf5 -lz
   endif
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
