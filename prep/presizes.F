@@ -592,6 +592,9 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       READ(UNIT=15,NML=SWANOutputControl,IOSTAT=IOS)
       IF (IOS.gt.0) THEN
          write(*,*)"INFO: The SWANOutputControl namelist was not found."
+         SWAN_OutputHS=.TRUE.
+         SWAN_OutputTPS=.TRUE.
+         SWAN_OutputDIR=.TRUE.
       ENDIF
       REWIND(15)
 #endif
