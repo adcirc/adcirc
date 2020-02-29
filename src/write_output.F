@@ -1821,6 +1821,12 @@ C-----------------------------------------------------------------------
             d2=d2/H2N2
             d3=d3/H2N3
          endif
+         if (StatPartWetFix .eqv. .true.) then
+         ! Compute the z depth (DP)  at the station
+           dpstn = DP(NM(e,1)) * descript % interp_fac1(j) +
+     &            DP(NM(e,2)) * descript % interp_fac2(j) +
+     &            DP(NM(e,3)) * descript % interp_fac3(j)
+         endif
          !
          ! perform spatial interpolation
          toArray(j) = d1 * descript % interp_fac1(j) +
@@ -1854,17 +1860,32 @@ C-----------------------------------------------------------------------
                    tmpwts(2) = descript % interp_fac2(j)
                    tmpwts(3) = descript % interp_fac3(j)
                    if ( How2FixStatPartWet .eq. 0 ) then !Use nearest neighbor value
+                                                         !if total H > 0.8H0
                       ilocmaxwt = maxloc(tmpwts) !nearest neighbor location (maximum weight)
-                      wlstn = eta2(nm(e,ilocmaxwt(1)))
-                      dpstn = dp(nm(e,ilocmaxwt(1)))
-                      wdstn = wlstn + dpstn
+
+                      !tcm v54.00 compute dp at the actual station location instead
+                      ! of the nearest node, dpstn is computed above.
+                      wlstn = eta2(nm(e,ilocmaxwt(1)))  !nearest nodes elevation
+                      wdstn = wlstn + dpstn             !total depth at station
+
                       !if the nearest neighbor is wet, then use that value
-                      if (nodecode(nm(e,ilocmaxwt(1))).gt.0 .and. 
-     &                    wdstn.gt.0.8D0*h0) then
+                      if ( (nodecode(nm(e,ilocmaxwt(1))).gt.0) .and.
+     &                     (wdstn.gt.0.8D0*h0) ) then
+                         toArray(j)=fromArray(nm(e,ilocmaxwt(1)))
+                      else !nearest neighbor is dry or station  H < 0.8H0
+                         toArray(j) = descript % alternate_value
+                      endif
+                  elseif ( How2FixStatPartWet .eq. 1 ) then !Use nearest neighbor value
+                                                            !regardless of total H
+                      ilocmaxwt = maxloc(tmpwts) !nearest neighbor location (maximum weight)
+                      !if the nearest neighbor is wet, then use that value
+                      if (nodecode(nm(e,ilocmaxwt(1))).gt.0) then
                          toArray(j)=fromArray(nm(e,ilocmaxwt(1)))
                       else !nearest neighbor is dry
                          toArray(j) = descript % alternate_value
                       endif
+
+
                   else !left space for other options later
                      toArray(j) = descript % alternate_value
                   endif

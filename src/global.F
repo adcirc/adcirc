@@ -659,6 +659,9 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       LOGICAL :: StatPartWetFix = .FALSE.   !.true. if one wants to handle partially wet/dry elements in a special way
       INTEGER :: How2FixStatPartWet = 0     ! other numbers could be used later for different ways to interpolate,
                                             ! instead of nearest neighbor
+                                            ! 0 is use nearest neighbor if wet and H > 0.8H0
+                                            ! 1 is use nearest neighbor if wet regardless if H > 0.8H0
+
       ! 
       ! all info needed for self describing dataset in XDMF
       type xdmfMetaData_t
