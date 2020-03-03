@@ -22,6 +22,7 @@ C                                                                      *
 C***********************************************************************
 
       SUBROUTINE TIMECONV(IYR,IMO,IDAY,IHR,IMIN,SEC,TIMESEC)
+      use CkLunMod, only : CK_LUN
       USE PRESIZES, ONLY : SZ
       IMPLICIT NONE
       REAL(8) TIMESEC
@@ -49,8 +50,8 @@ C
       IF(IMO.GE.11) TIMESEC = TIMESEC + 31*86400
       IF(IMO.EQ.12) TIMESEC = TIMESEC + 30*86400
       IF(IMO.GT.12) THEN
-        WRITE(6,*) 'FATAL ERROR IN SUBROUTINE TIMECONV - MONTH > 12 '
-        WRITE(16,*) 'FATAL ERROR IN SUBROUTINE TIMECONV - MONTH > 12 '
+        WRITE(6+CK_LUN,*) 'FATAL ERROR IN SUBROUTINE TIMECONV - MONTH > 12 '
+        WRITE(16+CK_LUN,*) 'FATAL ERROR IN SUBROUTINE TIMECONV - MONTH > 12 '
         STOP
         ENDIF
       RETURN
@@ -128,7 +129,7 @@ C
      &           PRN(MNWLAT,MNWLON) )
 C
       ISTAT = 0
-      READ(22,*,END=9999) IWTIME
+      READ(22+CK_LUN,*,END=9999) IWTIME
       IWYR = IWTIME/1000000
       IWMO = IWTIME/10000 - IWYR*100
       IWDAY = IWTIME/100 - IWYR*10000 - IWMO*100
@@ -136,10 +137,10 @@ C
       CALL TIMECONV(IWYR,IWMO,IWDAY,IWHR,0,0.0d0,WTIMED)
 
       DO I=1,NWLAT
-        READ(22,*) (WVXFN(I,J),J=1,NWLON)
+        READ(22+CK_LUN,*) (WVXFN(I,J),J=1,NWLON)
       END DO
       DO I=1,NWLAT
-        READ(22,*) (WVYFN(I,J),J=1,NWLON)
+        READ(22+CK_LUN,*) (WVYFN(I,J),J=1,NWLON)
       END DO
 
       DO I=1,NWLAT                             !CONVERT TO X AND Y COMPONENTS
@@ -234,7 +235,7 @@ C
         PRN(I)=101300.d0/RHOWATG
       END DO
 C
-  170 READ(22,'(A80)',END=9999) PBLJAGF
+  170 READ(22+CK_LUN,'(A80)',END=9999) PBLJAGF
       IF(PBLJAGF(2:2).EQ.'#') GOTO 170
   171 READ(PBLJAGF,'(I8,3E13.5)',END=9999) NHG,WVNX(NHG),WVNY(NHG),
      &                                     PRN(NHG)
@@ -248,7 +249,7 @@ C     jgf46.02 Added the following two lines.
       WVNX(NHG)=WVNX(NHG)*0.5144d0         !CONVERT KNOTS TO M/S
       WVNY(NHG)=WVNY(NHG)*0.5144d0
       PRN(NHG)=100.d0*PRN(NHG)/RHOWATG   !CONVERT MILLIBARS TO M OF WATER
-      READ(22,'(A80)',END=9999) PBLJAGF
+      READ(22+CK_LUN,'(A80)',END=9999) PBLJAGF
 C
       IF(PBLJAGF(2:2).NE.'#') THEN
          GOTO 171
@@ -407,27 +408,27 @@ C
 C
   32  WRITE(*,1011) FNAME1
       GBL(1:8) = FNAME1
-      OPEN(IEXT,FILE=FNAME1,status='old',access='sequential',
+      OPEN(IEXT+CK_LUN,FILE=FNAME1,status='old',access='sequential',
      &     form='unformatted',iostat=kerr)
 
 C...Read the GRIB data file
 
-      READ(IEXT,END=1100) LENPDS,LENKGDS,NWORDS
-      IF(LENPDS.GT.0) READ(IEXT,END=1100) (pds(j),j=1,lenpds)
-      IF(LENKGDS.GT.0) READ(IEXT,END=1100) (kgds(j),j=1,lenkgds)
-      IF(NWORDS.GT.0) READ(IEXT,END=1100) (UG(J),J=1,NWORDS)
+      READ(IEXT+CK_LUN,END=1100) LENPDS,LENKGDS,NWORDS
+      IF(LENPDS.GT.0) READ(IEXT+CK_LUN,END=1100) (pds(j),j=1,lenpds)
+      IF(LENKGDS.GT.0) READ(IEXT+CK_LUN,END=1100) (kgds(j),j=1,lenkgds)
+      IF(NWORDS.GT.0) READ(IEXT+CK_LUN,END=1100) (UG(J),J=1,NWORDS)
 
-      READ(IEXT,END=1100) LENPDS,LENKGDS,NWORDS
-      IF(LENPDS.GT.0) READ(IEXT,END=1100) (pds(j),j=1,lenpds)
-      IF(LENKGDS.GT.0) READ(IEXT,END=1100) (kgds(j),j=1,lenkgds)
-      IF(NWORDS.GT.0) READ(IEXT,END=1100) (VG(J),J=1,NWORDS)
+      READ(IEXT+CK_LUN,END=1100) LENPDS,LENKGDS,NWORDS
+      IF(LENPDS.GT.0) READ(IEXT+CK_LUN,END=1100) (pds(j),j=1,lenpds)
+      IF(LENKGDS.GT.0) READ(IEXT+CK_LUN,END=1100) (kgds(j),j=1,lenkgds)
+      IF(NWORDS.GT.0) READ(IEXT+CK_LUN,END=1100) (VG(J),J=1,NWORDS)
 
-      READ(IEXT,END=1100) LENPDS,LENKGDS,NWORDS
-      IF(LENPDS.GT.0) READ(IEXT,END=1100) (pds(j),j=1,lenpds)
-      IF(LENKGDS.GT.0) READ(IEXT,END=1100) (kgds(j),j=1,lenkgds)
-      IF(NWORDS.GT.0) READ(IEXT,END=1100) (PG(J),J=1,NWORDS)
+      READ(IEXT+CK_LUN,END=1100) LENPDS,LENKGDS,NWORDS
+      IF(LENPDS.GT.0) READ(IEXT+CK_LUN,END=1100) (pds(j),j=1,lenpds)
+      IF(LENKGDS.GT.0) READ(IEXT+CK_LUN,END=1100) (kgds(j),j=1,lenkgds)
+      IF(NWORDS.GT.0) READ(IEXT+CK_LUN,END=1100) (PG(J),J=1,NWORDS)
 
- 1100 CLOSE(IEXT)
+ 1100 CLOSE(IEXT+CK_LUN)
 
 
 C.....Do from the Gaussian grid to the ADCIRC grid
@@ -599,6 +600,7 @@ C      DIMENSION FLAT(*),FLON(*)
 C      DIMENSION N00(*),N10(*),N11(*),N01(*),D00(*),D10(*),D11(*),D01(*)
 
       INTEGER, SAVE :: ICALL
+!$omp threadprivate(ICALL)
       DATA ICALL/0/
 C     jgf46.00 Explicitly declared the following variables.
       REAL(SZ), DIMENSION(*) :: GCLAT
@@ -887,27 +889,27 @@ c
       GBL(1:8) = FNAME1
       IF ((NWSEGWI.EQ.0).OR.(IDSETFLG.EQ.1)) THEN
         WRITE(*,1011) FNAME1
-        OPEN(IEXT,FILE=FNAME1,status='old',access='sequential',
+        OPEN(IEXT+CK_LUN,FILE=FNAME1,status='old',access='sequential',
      &   form='unformatted',iostat=kerr)
       ENDIF
 
 C...Read the met data file
 
-      READ(IEXT,END=1100) IYEAR,IMONTH,IDAY,IHOUR
-      READ(IEXT,END=1100) (UE(N),N=1,NWLON*NWLAT),
+      READ(IEXT+CK_LUN,END=1100) IYEAR,IMONTH,IDAY,IHOUR
+      READ(IEXT+CK_LUN,END=1100) (UE(N),N=1,NWLON*NWLAT),
      &                    (VE(N),N=1,NWLON*NWLAT),
      &                    (PE(N),N=1,NWLON*NWLAT)
 
       IF(NWSEGWI.EQ.0) THEN  !If the first file, read until the end
         DO I=2,IDSETFLG
-          READ(IEXT,END=1100) IYEAR,IMONTH,IDAY,IHOUR
-          READ(IEXT,END=1100) (UE(N),N=1,NWLON*NWLAT),
+          READ(IEXT+CK_LUN,END=1100) IYEAR,IMONTH,IDAY,IHOUR
+          READ(IEXT+CK_LUN,END=1100) (UE(N),N=1,NWLON*NWLAT),
      &                        (VE(N),N=1,NWLON*NWLAT),
      &                        (PE(N),N=1,NWLON*NWLAT)
           ENDDO
         ENDIF
 
- 1100 IF(IDSETFLG.EQ.8) CLOSE(IEXT)
+ 1100 IF(IDSETFLG.EQ.8) CLOSE(IEXT+CK_LUN)
 
 C.....Interpolate onto ADCIRC grid
 C.....Convert velocity from the E grid reference to a lat/lon reference

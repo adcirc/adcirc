@@ -11,6 +11,7 @@ C
 C****************************************************************************** 
 C 
       MODULE OWI_ICE
+      use CkLunMod, only : CK_LUN
 C
       USE SIZES,ONLY : SZ,MYPROC
       USE GLOBAL,ONLY : NSCREEN, ScreenUnit
@@ -19,40 +20,66 @@ C
 #endif         
       IMPLICIT NONE
       character*100 :: title
+!$omp threadprivate(title)
 
 !      tcm v48.4645 Changed the way the header line is read
 !      character :: part1*12,part2*7,part3*6
       character :: owiheader*80
+!$omp threadprivate(owiheader)
 
       real(SZ), dimension(:,:), allocatable :: CiceR,CiceB
+!$omp threadprivate(CiceR,CiceB)
       real(SZ), dimension(:), allocatable :: latR,longR,latB,longB
+!$omp threadprivate(latR,longR,latB,longB)
       real(SZ) :: Along, Alat
+!$omp threadprivate(Along,Alat)
       real(SZ) :: ramp,rampfrac
+!$omp threadprivate(ramp,rampfrac)
       real(SZ) :: Cice1
+!$omp threadprivate(Cice1)
       real(SZ) :: Cice_env
+!$omp threadprivate(Cice_env)
       integer(8):: date1R,date2R,date1B,date2B
+!$omp threadprivate(date1R,date2R,date1B,date2B)
       integer(8):: date1ice,date2ice
+!$omp threadprivate(date1ice,date2ice)
       integer :: iLatR,iLongR,iCYMDHR,iMinR
+!$omp threadprivate(iLatR,iLongR,iCYMDHR,iMinR)
       real(SZ)  :: dxR,dyR,swlatR,swlongR
+!$omp threadprivate(dxR,dyR,swlatR,swlongR)
       integer :: iLatB,iLongB,iCYMDHB,iMinB
+!$omp threadprivate(iLatB,iLongB,iCYMDHB,iMinB)
       real(SZ)  :: dxB,dyB,swlatB,swlongB
+!$omp threadprivate(dxB,dyB,swlatB,swlongB)
       integer,save :: iLatc,iLongc,iCYMDHc,iMinc
+!$omp threadprivate(iLatc,iLongc,iCYMDHc,iMinc)
       real(SZ)  :: dxc,dyc,swlatc,swlongc
+!$omp threadprivate(dxc,dyc,swlatc,swlongc)
       integer :: isnapR,updateR
+!$omp threadprivate(isnapR,updateR)
       integer :: isnapB,updateB
+!$omp threadprivate(isnapB,updateB)
 
       logical :: regionExists
+!$omp threadprivate(regionExists)
 
       integer,allocatable :: swpointsR(:,:)
+!$omp threadprivate(swpointsR)
       integer,allocatable :: swpointsB(:,:)
+!$omp threadprivate(swpointsB)
 
       real(SZ) :: w,w1,w2,w3,w4
+!$omp threadprivate(w,w1,w2,w3,w4)
       real(SZ),allocatable :: wR(:,:)
+!$omp threadprivate(wR)
       real(SZ),allocatable :: wB(:,:)
+!$omp threadprivate(wB)
 
       CHARACTER FNAME*60
+!$omp threadprivate(FNAME)
 
       integer :: numSets,numBlankSnaps,cntSnaps,numSkipSnaps
+!$omp threadprivate(numSets,numBlankSnaps,cntSnaps,numSkipSnaps)
 
       PUBLIC
 
@@ -79,7 +106,7 @@ C***********************************************************************
       
 ! Read meta info -------------------------------------------------
 
-      OPEN(25,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.25',STATUS='OLD',
+      OPEN(25+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.25',STATUS='OLD',
      & ACTION='READ')
 
       ! Read the number of sets of .ice files.
@@ -87,11 +114,11 @@ C***********************************************************************
       ! If numSets = 2 then ADCIRC requires UNIT 225 and 227.
       !   UNIT 225 and 227 are ice concentration fields
 
-      read(25,*,err=99999) numSets
+      read(25+CK_LUN,*,err=99999) numSets
 
       if(numSets.NE.1.AND.numSets.NE.2) then
-        if (myproc == 0) write(screenunit,1004)
-        write(16,1004)
+        if (myproc == 0) write(screenunit+CK_LUN,1004)
+        write(16+CK_LUN,1004)
 #ifdef CMPI
         call msg_fini()
 #endif
@@ -99,7 +126,7 @@ C***********************************************************************
       endif
 
       ! Read the number of blank snaps to be inserted before OWI ice fields start
-      read(25,*,err=99999) numBlankSnaps
+      read(25+CK_LUN,*,err=99999) numBlankSnaps
 
       ! If numBlankSnaps < 0, ABS(numBlankSnaps) snaps in OWI ice files (UNIT225 and 227) will be skipped.
       if(numBlankSnaps.LT.0) then
@@ -111,11 +138,11 @@ C***********************************************************************
         numSkipSnaps = 0 
       endif
 
-      close(25)
+      close(25+CK_LUN)
 
 ! Read basin ice file header ------------------------------------------------
 
-      OPEN(225,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.225', STATUS='OLD')
+      OPEN(225+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.225', STATUS='OLD')
 
       ! Read begining/ending dates of ice file
 !      tcm v48.4645 changed the way the header is read
@@ -123,13 +150,13 @@ C***********************************************************************
 ! 11   FORMAT(a,1x,a,1x,a)
 !      read(225,*)date1ice,date2ice
       owiheader(:) = ' '  !set owiheader to blanks before read
-      read(225,fmt='(a80)',err=99999) owiheader
+      read(225+CK_LUN,fmt='(a80)',err=99999) owiheader
       read(owiheader(56:65),'(I10)') date1ice
       read(owiheader(71:80),'(I10)') date2ice
 
       if (myproc == 0)then
-         write(screenunit,*)'date1 in basin ice file = ',date1ice
-         write(screenunit,*)'date2 in basin ice file = ',date2ice
+         write(screenunit+CK_LUN,*)'date1 in basin ice file = ',date1ice
+         write(screenunit+CK_LUN,*)'date2 in basin ice file = ',date2ice
       endif
 
       date1B = date1ice
@@ -141,20 +168,20 @@ C***********************************************************************
 
 ! Read region ice file header -----------------------------------------------
 
-      OPEN(227,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.227',STATUS='OLD')
+      OPEN(227+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.227',STATUS='OLD')
 
       ! Read begining/ending dates of ice file
 !      tcm v48.4645 changed the way the header is read
 !      read(227,'(a,1x,a,1x,a)',err=99999,ADVANCE="NO")part1,part2,part3
 !      read(227,*)date1ice,date2ice
       owiheader(:) = ' '  !set owiheader to blanks before read
-      read(227,fmt='(a80)',err=99999) owiheader
+      read(227+CK_LUN,fmt='(a80)',err=99999) owiheader
       read(owiheader(56:65),'(I10)') date1ice
       read(owiheader(71:80),'(I10)') date2ice
 
       if (myproc == 0)then
-         write(screenunit,*)'date1 in region ice file = ',date1ice
-         write(screenunit,*)'date2 in region ice file = ',date2ice
+         write(screenunit+CK_LUN,*)'date1 in region ice file = ',date1ice
+         write(screenunit+CK_LUN,*)'date2 in region ice file = ',date2ice
       endif
 
       date1R = date1ice
@@ -220,9 +247,9 @@ C***********************************************************************
         enddo
         IF(NSCREEN.GE.1) THEN
           if(MYPROC.EQ.0) then
-            WRITE(screenunit,16) cntSnaps
+            WRITE(screenunit+CK_LUN,16) cntSnaps
           endif
-          WRITE(16,16) cntSnaps    !TCMv48.4629 (Changed format number from 15 to 16)
+          WRITE(16+CK_LUN,16) cntSnaps    !TCMv48.4629 (Changed format number from 15 to 16)
         ENDIF
         return
       endif
@@ -232,7 +259,7 @@ C***********************************************************************
       isnapB = isnapB+1
 
       ! Read grid specifications/date in ice file
-      read (225,11,end=10000,err=99999) 
+      read (225+CK_LUN,11,end=10000,err=99999) 
      &      iLatc,iLongc,dxc,dyc,swlatc,swlongc,iCYMDHc,iMinc
 
 
@@ -256,7 +283,7 @@ C***********************************************************************
       endif
       
       ! Read ice concentrations
-      read(225,22,end=9999,err=99999) ((CiceB(i,j),i=1,iLongB),j=1,iLatB)
+      read(225+CK_LUN,22,end=9999,err=99999) ((CiceB(i,j),i=1,iLongB),j=1,iLatB)
 
 ! Read region data  --------------------------------------------------------
 
@@ -273,7 +300,7 @@ C***********************************************************************
       isnapR = isnapR+1
 
       ! Read grid specifications/date in ice file
-      read (227,11,end=10000,err=99999) 
+      read (227+CK_LUN,11,end=10000,err=99999) 
      &     iLatc,iLongc,dxc,dyc,swlatc,swlongc,iCYMDHc,iMinc
 
       ! Check if header info has changed from the previous snapshot
@@ -294,15 +321,15 @@ C***********************************************************************
 
       if(iCYMDHB.ne.iCYMDHR.or.iMinB.ne.iMinR) then
         if (myproc == 0) then
-          WRITE(screenunit,*) 'SNAPSHOTS NOT SYNCRONIZED'
-          WRITE(screenunit,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
-          WRITE(screenunit,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
-          WRITE(screenunit,*) 'EXECUTION WILL BE TERMINATED'
+          WRITE(screenunit+CK_LUN,*) 'SNAPSHOTS NOT SYNCRONIZED'
+          WRITE(screenunit+CK_LUN,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
+          WRITE(screenunit+CK_LUN,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
+          WRITE(screenunit+CK_LUN,*) 'EXECUTION WILL BE TERMINATED'
         endif
-        WRITE(16,*) 'SNAPSHOTS NOT SYNCRONIZED'
-        WRITE(16,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
-        WRITE(16,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
-        WRITE(16,*) 'EXECUTION WILL BE TERMINATED'
+        WRITE(16+CK_LUN,*) 'SNAPSHOTS NOT SYNCRONIZED'
+        WRITE(16+CK_LUN,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
+        WRITE(16+CK_LUN,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
+        WRITE(16+CK_LUN,*) 'EXECUTION WILL BE TERMINATED'
 #ifdef CMPI
         call msg_fini()
 #endif
@@ -315,7 +342,7 @@ C***********************************************************************
       endif
 
       ! Read ice concentrations
-      read(223,22,end=9999,err=99999) ((CiceR(i,j),i=1,iLongR),j=1,iLatR)
+      read(223+CK_LUN,22,end=9999,err=99999) ((CiceR(i,j),i=1,iLongR),j=1,iLatR)
 
 
  100  CONTINUE
@@ -331,14 +358,14 @@ c      end if
       IF(NSCREEN.GE.1) THEN
         if(regionExists.EQV..TRUE.) then
           if(MYPROC.EQ.0) then
-            WRITE(screenunit,15) iCYMDHB,iMinB
+            WRITE(screenunit+CK_LUN,15) iCYMDHB,iMinB
           endif
-          WRITE(16,15) iCYMDHB,iMinB
+          WRITE(16+CK_LUN,15) iCYMDHB,iMinB
         else
           if(MYPROC.EQ.0) then
-            WRITE(screenunit,14) iCYMDHB,iMinB
+            WRITE(screenunit+CK_LUN,14) iCYMDHB,iMinB
           endif
-          WRITE(16,14) iCYMDHB,iMinB
+          WRITE(16+CK_LUN,14) iCYMDHB,iMinB
         endif
       ENDIF
 
@@ -435,19 +462,19 @@ c      end if
 9999  continue
 
       if (myproc == 0) then
-      WRITE(screenunit,*)''
-      WRITE(screenunit,*)' !!!!!FATAL ERROR!!!!!'
-      WRITE(screenunit,*)'EITHER UNIT 225 or 227',
+      WRITE(screenunit+CK_LUN,*)''
+      WRITE(screenunit+CK_LUN,*)' !!!!!FATAL ERROR!!!!!'
+      WRITE(screenunit+CK_LUN,*)'EITHER UNIT 225 or 227',
      & ' COULD NOT BE READ'
-      WRITE(screenunit,*)' EXECUTION WILL BE TERMINATED'
-      WRITE(screenunit,*)''
+      WRITE(screenunit+CK_LUN,*)' EXECUTION WILL BE TERMINATED'
+      WRITE(screenunit+CK_LUN,*)''
       endif
 
-      WRITE(16,*) ''
-      WRITE(16,*) ' !!!!!FATAL ERROR!!!!!'
-      WRITE(16,*) ' EITHER UNIT 225 or 227 COULD NOT BE READ'
-      WRITE(16,*) ' EXECUTION WILL BE TERMINATED'
-      WRITE(16,*) ''
+      WRITE(16+CK_LUN,*) ''
+      WRITE(16+CK_LUN,*) ' !!!!!FATAL ERROR!!!!!'
+      WRITE(16+CK_LUN,*) ' EITHER UNIT 225 or 227 COULD NOT BE READ'
+      WRITE(16+CK_LUN,*) ' EXECUTION WILL BE TERMINATED'
+      WRITE(16+CK_LUN,*) ''
 #ifdef CMPI
       call msg_fini()
 #endif
@@ -456,18 +483,18 @@ c      end if
 10000 continue
 
       IF(MYPROC.EQ.0) THEN
-        WRITE(screenunit,*) ''
-        WRITE(screenunit,*) ' !!! WARNING !!!'
-        WRITE(screenunit,*) ' EITHER UNIT 225 or 227 RAN OUT'
-        WRITE(screenunit,*) ' EXECUTION WILL CONTINUE'
-        WRITE(screenunit,*) ''
+        WRITE(screenunit+CK_LUN,*) ''
+        WRITE(screenunit+CK_LUN,*) ' !!! WARNING !!!'
+        WRITE(screenunit+CK_LUN,*) ' EITHER UNIT 225 or 227 RAN OUT'
+        WRITE(screenunit+CK_LUN,*) ' EXECUTION WILL CONTINUE'
+        WRITE(screenunit+CK_LUN,*) ''
       ENDIF
 
-      WRITE(16,*) ''
-      WRITE(16,*) ' !!! WARNING !!!'
-      WRITE(16,*) ' EITHER UNIT 225 or 227 RAN OUT'
-      WRITE(16,*) ' EXECUTION WILL CONTINUE'
-      WRITE(16,*) ''
+      WRITE(16+CK_LUN,*) ''
+      WRITE(16+CK_LUN,*) ' !!! WARNING !!!'
+      WRITE(16+CK_LUN,*) ' EITHER UNIT 225 or 227 RAN OUT'
+      WRITE(16+CK_LUN,*) ' EXECUTION WILL CONTINUE'
+      WRITE(16+CK_LUN,*) ''
 
       do i=1,NP
         Ciceval(I)=0.d0
@@ -511,9 +538,9 @@ C***********************************************************************
       INTEGER   NP,I,J,K,XI,YI
       REAL(SZ)  adcLat,adcLong
 
-      WRITE(16,*) ''
-      WRITE(16,*) 'BASIN-SCALE ICE MAPPING UPDATED'
-      WRITE(16,*) ''
+      WRITE(16+CK_LUN,*) ''
+      WRITE(16+CK_LUN,*) 'BASIN-SCALE ICE MAPPING UPDATED'
+      WRITE(16+CK_LUN,*) ''
         
       iLatB = iLatc
       iLongB = iLongc
@@ -602,9 +629,9 @@ C***********************************************************************
       INTEGER   NP,I,J,K,XI,YI
       REAL(SZ)  adcLat,adcLong
 
-      WRITE(16,*) ''
-      WRITE(16,*) 'REGION-SCALE ICE MAPPING UPDATED'
-      WRITE(16,*) ''
+      WRITE(16+CK_LUN,*) ''
+      WRITE(16+CK_LUN,*) 'REGION-SCALE ICE MAPPING UPDATED'
+      WRITE(16+CK_LUN,*) ''
         
       iLatR = iLatc
       iLongR = iLongc

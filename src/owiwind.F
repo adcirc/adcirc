@@ -65,6 +65,7 @@
 !
 !-----------------------------------------------------------------------
       MODULE OWIWIND
+      use CkLunMod, only : CK_LUN
 !-----------------------------------------------------------------------
 
         USE SIZES,ONLY : SZ,MYPROC
@@ -78,12 +79,19 @@
         IMPLICIT NONE
 
         integer  :: nPowellSearchDomains = -1 !< Number of search domains for Powell wind drag
+!$omp threadprivate(nPowellSearchDomains)
         integer  :: numSets !< Number of sets of wind and pressure fields
+!$omp threadprivate(numSets)
         integer  :: numBlankSnaps !< Number of blank snaps to prepend to Oceanweather files
+!$omp threadprivate(numBlankSnaps)
         integer  :: numSkipSnaps !< Number of snaps to skip in Oceanweather files
+!$omp threadprivate(numSkipSnaps)
         integer  :: cntSnaps !< Counter for number of snaps that have been processed so far
+!$omp threadprivate(cntSnaps)
         real(SZ) :: windMultiplier !< Wind multiplier applied to Oceanweather wind velicities
+!$omp threadprivate(windMultiplier)
         logical  :: moving_grid = .false. !< indicates the owi domains use a moving grid (for aswip.F)
+!$omp threadprivate(moving_grid)
         
         TYPE OCEANWEATHER !< Container for Oceanweather domains. Represents a wind and pressure field
             CHARACTER(1024)      :: pressure_file !< filename used for the pressure field
@@ -114,6 +122,7 @@
         END TYPE OCEANWEATHER
 
         TYPE(OCEANWEATHER),ALLOCATABLE :: owi(:) !< Array containing each of the wind and pressure field used
+!$omp threadprivate(owi)
 
         PUBLIC nws12get,nws12init,findStormCenter,windMultiplier
         PUBLIC nPowellSearchDomains,moving_grid
@@ -155,9 +164,11 @@
         REAL(SZ)              :: PRdeflt
         character(len=1024)   :: tmpstr
         character(len=1024)   :: errorVar = ""
+!$omp threadprivate(errorVar)
         character(len=1024)   :: fname,f1,f2
         integer               :: iounit
         integer               :: errorIO = 0
+!$omp threadprivate(errorIO)
 
         call setMessageSource("nws12init")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -172,7 +183,7 @@
         call check_owi_err(errorIO,errorVar,fname,iounit)
         
         errorVar = "reading number of wind sets" ! used in error msgs
-        read(iounit,*,err=99999,end=99998,iostat=errorIO) numSets
+        read(iounit+CK_LUN,*,err=99999,end=99998,iostat=errorIO) numSets
         call check_owi_err(errorIO,errorVar,fname,iounit)
 
         if(numSets.EQ.0)then
@@ -181,7 +192,7 @@
 
         ! Read the number of blank snaps to be inserted before OWI winds start
         errorVar = "reading number of blank snaps" ! used in error messages
-        read(iounit,*,err=99999,end=99998,iostat=errorIO) numBlankSnaps
+        read(iounit+CK_LUN,*,err=99999,end=99998,iostat=errorIO) numBlankSnaps
         call check_owi_err(errorIO, "read number of blank snaps",fname,iounit)
         ! If numBlankSnaps < 0, ABS(numBlankSnaps) snaps
         ! in OWI wind files (UNIT 221,222,223, 224 and 217 & 218) will be skipped.
@@ -194,7 +205,7 @@
 
         ! Read a wind velocity multiplier
         errorVar = "reading wind multiplier" ! used in error messages
-        read(iounit,*,err=99999, end=99998, iostat=errorIO) windMultiplier
+        read(iounit+CK_LUN,*,err=99999, end=99998, iostat=errorIO) windMultiplier
         call check_owi_err(errorIO,errorVar,fname,iounit)
 
         errorIO=0
@@ -202,7 +213,7 @@
         ! Allocate the owi arrays
         allocate(owi(1:abs(numSets)))
         call owi_setFilenames(owi,iounit,numSets)
-        close(iounit)
+        close(iounit+CK_LUN)
 
         ! set the files to contain data
         do i = 1,abs(numSets)
@@ -481,7 +492,7 @@
         filename = owi(idx)%pressure_file
         iounit = owi(idx)%iounit_pressure
         write(errorVar,'(A,I0)') "read grid specifications/date in Oceanweather pressure file, domain ",idx
-        read (owi(idx)%iounit_pressure,11,end=10000,err=9999,iostat=errorIO)
+        read (owi(idx+CK_LUN)%iounit_pressure,11,end=10000,err=9999,iostat=errorIO)
      &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
         call check_owi_err(errorIO,errorVar,filename,iounit)
 
@@ -500,7 +511,7 @@
         filename = owi(idx)%wind_file
         iounit = owi(idx)%iounit_wind
         WRITE(errorVar,'(A,I0)') "read grid specifications/date in Oceanweather wind file, domain ",idx
-        read (owi(idx)%iounit_wind,11,end=10000,err=9999,iostat=errorIO)
+        read (owi(idx+CK_LUN)%iounit_wind,11,end=10000,err=9999,iostat=errorIO)
      &        iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
         call check_owi_err(errorIO,errorVar,filename,iounit)
 
@@ -546,7 +557,7 @@
         filename = owi(idx)%pressure_file
         iounit =  owi(idx)%iounit_pressure
         WRITE(errorVar,'(A,I0)') "reading atmospheric pressure snapshot, domain ",idx
-        read(owi(idx)%iounit_pressure,22,end=10000,err=9999,iostat=errorIO)
+        read(owi(idx+CK_LUN)%iounit_pressure,22,end=10000,err=9999,iostat=errorIO)
      &     ((owi(idx)%p(i,j),i=1,owi(idx)%iLon),j=1,owi(idx)%iLat)
         call check_owi_err(errorIO,errorVar,filename,iounit)
 
@@ -554,13 +565,13 @@
         filename = owi(idx)%wind_file
         iounit = owi(idx)%iounit_wind
         WRITE(errorVar,'(A,I0)') "reading wind u-velocity snapshot, domain ",idx
-        read(owi(idx)%iounit_wind,22,end=10000,err=9999,iostat=errorIO)
+        read(owi(idx+CK_LUN)%iounit_wind,22,end=10000,err=9999,iostat=errorIO)
      &     ((owi(idx)%u(i,j),i=1,owi(idx)%iLon),j=1,owi(idx)%iLat)
         call check_owi_err(errorIO,errorVar,filename,iounit)
         filename = owi(idx)%wind_file
         iounit = owi(idx)%iounit_wind
         WRITE(errorVar,'(A,I0)') "reading wind v-velocity snapshot, domain ",idx
-        read(owi(idx)%iounit_wind,22,end=10000,err=9999,iostat=errorIO)
+        read(owi(idx+CK_LUN)%iounit_wind,22,end=10000,err=9999,iostat=errorIO)
      &     ((owi(idx)%v(i,j),i=1,owi(idx)%iLon),j=1,owi(idx)%iLat)
         call check_owi_err(errorIO,errorVar,filename,iounit)
 
@@ -867,7 +878,7 @@
             call allMessage(DEBUG,"Enter.")
 #endif
             do i = 1,nWindFields
-              read(iounit,*) f1, f2
+              read(iounit+CK_LUN,*) f1, f2
               owi(i)%pressure_file = TRIM(GBLINPUTDIR)//"/"//TRIM(f1)
               owi(i)%wind_file = TRIM(GBLINPUTDIR)//"/"//TRIM(f2)
               owi(i)%iounit_pressure = 500+i
@@ -1065,9 +1076,9 @@
       call allMessage(DEBUG,"Enter.")
 #endif
 
-      WRITE(16,'(A)') ''
-      WRITE(16,'(A,I0)') 'WIND MAPPING UPDATED FOR REGION ',IDX
-      WRITE(16,'(A)') ''
+      WRITE(16+CK_LUN,'(A)') ''
+      WRITE(16+CK_LUN,'(A,I0)') 'WIND MAPPING UPDATED FOR REGION ',IDX
+      WRITE(16+CK_LUN,'(A)') ''
 
       CALL owi_allocate(owi(idx))
       CALL owi_generateCoordinates(owi(idx),lat,lon)
@@ -1156,7 +1167,7 @@
       ! Read begining/ending dates of pre file
       owiheader(:) = ' '  !set owiheader to blanks before read
       errorVar = "reading Oceanweather header line"
-      read(lun, fmt='(a80)',
+      read(lun+CK_LUN, fmt='(a80)',
      &   end=99998,err=99999,iostat=errorIO) owiheader
       call check_owi_err(errorIO,errorVar,filename,lun)
 

@@ -5,6 +5,7 @@ C                                                                             *
 C******************************************************************************
 C
       MODULE SIZES
+      use CkLunMod, only : CK_LUN
       IMPLICIT NONE
 C
 C...SET NUMBER OF BYTES "SZ" IN REAL(SZ) DECLARATIONS
@@ -28,34 +29,53 @@ C   THAN 5 DIGITS OF PRECISION, THE MODEL RESULTS MAY NOT BE TRUSTWORTHY.
 C
       INTEGER ::  MNE,MNP,MNEI,MNOPE,MNETA,MNBOU,MNVEL,
      &  MNTIF,MNBFR,MNFFR,MNSTAE,MNSTAV,MNSTAC,MNSTAM,MNHARF
+!$omp threadprivate(MNE,MNP,MNEI,MNOPE,MNETA,MNBOU,MNVEL,MNTIF,MNBFR,MNFFR)
+!$omp threadprivate(MNSTAE,MNSTAV,MNSTAC,MNSTAM,MNHARF)
       INTEGER :: MNPROC         ! Number of compute processors
+!$omp threadprivate(MNPROC)
       INTEGER :: MNWPROC        ! Number of writer processors
+!$omp threadprivate(MNWPROC)
       INTEGER :: MNWPROH        ! Number of Hwriter processors !st3 100711
+!$omp threadprivate(MNWPROH)
       LOGICAL :: ISPLIT         ! .true. if splitting output for writer !st3 100708:
+!$omp threadprivate(ISPLIT)
       INTEGER :: MNALLPROC      ! Number of all processors (= MNPROC + MNWPROC)
+!$omp threadprivate(MNALLPROC)
 C
 C     Dimension of vertical FE mesh (To interface 2D & 3D)
 c     INTEGER :: MNODES                                        !changed to MNFEN 08/16/2005
       INTEGER :: MNFEN
+!$omp threadprivate(MNFEN)
 
 c     LOGICAL C2DDI,C3D,C3DDSS,C3DVS,CLUMP,CTIP,CHARMV         !moved to GLOBAL.F  04/09/2004
 C
 C For Definition of Working Directory
 C
       INTEGER      :: MYPROC
+!$omp threadprivate(MYPROC)
       LOGICAL      :: WRITE_LOCAL_FILES
+!$omp threadprivate(WRITE_LOCAL_FILES)
       LOGICAL      :: WRITE_LOCAL_HOT_START_FILES
+!$omp threadprivate(WRITE_LOCAL_HOT_START_FILES)
       ! jgf49.44: Make it an option to read local binary hotstart files
       LOGICAL      :: READ_LOCAL_HOT_START_FILES
+!$omp threadprivate(READ_LOCAL_HOT_START_FILES)
       ! kmd51: Trying to make harmonic files write to local directory
       LOGICAL      :: WRITE_LOCAL_HARM_FILES
+!$omp threadprivate(WRITE_LOCAL_HARM_FILES)
 
       CHARACTER(256) :: ROOTDIR
+!$omp threadprivate(ROOTDIR)
       CHARACTER(2048), TARGET :: INPUTDIR  ! directory containing input files
+!$omp threadprivate(INPUTDIR)
       CHARACTER(2048), TARGET :: GLOBALDIR ! directory for fulldomain files
+!$omp threadprivate(GLOBALDIR)
       CHARACTER(2048), TARGET :: LOCALDIR  ! directory for subdomain files
+!$omp threadprivate(LOCALDIR)
       CHARACTER(2048), TARGET :: HARMDIR   ! directory where harmonic analysis file are written
+!$omp threadprivate(HARMDIR)
       CHARACTER(2048) :: GBLINPUTDIR
+!$omp threadprivate(GBLINPUTDIR)
       !
       ! file formats
       integer, parameter :: numFormats = 7
@@ -69,28 +89,40 @@ C
       character(len=20) :: formatString(0:7) = (/ 'OFF         ', 
      &   'ASCII       ', 'BINARY      ', 'NETCDF3     ', 'SPARSE_ASCII', 
      &   'NETCDF4     ', 'UNDEF       ', 'XDMF        ' /)
+!$omp threadprivate(formatString)
            
       !
       ! parameters related to input files
       !
       ! mesh (fort.14) file
       INTEGER :: meshType
+!$omp threadprivate(meshType)
       LOGICAL :: meshFileNameSpecified ! .true. if the user explicitly gave the fn
+!$omp threadprivate(meshFileNameSpecified)
       CHARACTER(2048) :: meshFileName ! if different from the default fort.14
+!$omp threadprivate(meshFileName)
       ! name of full domain mesh file in parallel (only used by XDMF in parallel)
       CHARACTER(2048) :: meshFileName_g 
+!$omp threadprivate(meshFileName_g)
       !
       ! control (fort.15) file
       INTEGER :: controlType
+!$omp threadprivate(controlType)
       LOGICAL :: controlFileNameSpecified ! .true. if the user explicitly gave the fn
+!$omp threadprivate(controlFileNameSpecified)
       CHARACTER(2048) :: controlFileName ! if different from the default (fort.15)
+!$omp threadprivate(controlFileName)
       ! name of full domain mesh file in parallel (only used by XDMF in parallel)
       CHARACTER(2048) :: controlFileName_g
+!$omp threadprivate(controlFileName_g)
       !
       ! nodal attributes (fort.13) file
       INTEGER :: naType
+!$omp threadprivate(naType)
       LOGICAL :: naFileNameSpecified ! .true. if the user explicitly gave the fn
+!$omp threadprivate(naFileNameSpecified)
       CHARACTER(2048) :: naFileName ! if different from the default fort.14
+!$omp threadprivate(naFileName)
   
 
 C---------------------end of data declarations--------------------------------C
@@ -122,11 +154,16 @@ C-----------------------------------------------------------------------
       CHARACTER(8)    :: PREFIX(2) = (/ '/PE0000 ', '/DOM0000' /)
       logical         :: fileFound
       logical(4) :: dir_result
-
+      integer :: ierr
+      integer, parameter :: arg_len = 128
+      character(len=arg_len), dimension(:), allocatable:: raw_arguments
+      
       INPUTDIR  = ""
       GLOBALDIR = ""
       LOCALDIR  = ""
-      ARGCOUNT  = IARGC()
+c      argcount  = IARGC()
+      call ampi_command_argument_COUNT(argcount)
+      allocate(raw_arguments(argcount))
       WRITE_LOCAL_HOT_START_FILES = .FALSE.
       READ_LOCAL_HOT_START_FILES = .FALSE.
       WRITE_LOCAL_FILES = .FALSE.
@@ -163,8 +200,9 @@ Cobell 110518: Add compiler flag for local hot start.
          ! launch this executable.
          i=0
          wholeCommandLine(:) = ' '
-         do while (i.lt.argcount) 
-            call getarg(i, cmdlinearg)
+         do while (i.lt.argcount)
+            call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c            call getarg(i, cmdlinearg)
             wholeCommandLine = ' ' // trim(adjustl(wholeCommandLine)) 
      &         // ' ' // trim(adjustl(cmdlinearg)) 
             i=i+1          
@@ -178,18 +216,21 @@ Cobell 110518: Add compiler flag for local hot start.
          i = 0
          do while (i < ARGCOUNT)
             i = i + 1
-            call getarg(i, CMDLINEARG)
+            call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+C            call getarg(i, CMDLINEARG)
             select case(cmdlinearg(1:2))
             case("-I","-i") 
                i = i + 1
-               call getarg(i,INPUTDIR)
+               call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c               call getarg(i,INPUTDIR)
                if (myProc.eq.0) then
                   write(*,*) "INFO: Processing '",cmdlinearg(1:2)," ",
      &               trim(INPUTDIR),"'."
                endif
             case("-O","-o")
                i = i + 1
-               call getarg(i,GLOBALDIR)
+               call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c               call getarg(i,GLOBALDIR)
                if (myProc.eq.0) then
                  write(*,*) "INFO: Processing '",cmdlinearg(1:2)," ",
      &              trim(GLOBALDIR),"'."
@@ -225,7 +266,8 @@ Cobell 110518: Add compiler flag for local hot start.
                select case(cmdlinearg(1:4))
                case("-MFT","-mft") ! mesh file type 
                   i = i + 1
-                  call getarg(i, CMDLINEARG)
+                  call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c                  call getarg(i, CMDLINEARG)
                   select case(trim(cmdlinearg))
                   case("ASCII","Ascii","ascii")
                      meshType = ASCII ! this is the default anyway
@@ -241,7 +283,8 @@ Cobell 110518: Add compiler flag for local hot start.
                case("-MFN","-mfn") ! mesh file name
                   meshFileNameSpecified = .true.
                   i = i + 1
-                  call getarg(i,meshFileName)                                 
+                  call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c                  call getarg(i,meshFileName)                                 
                case default
                   ! jgf51.44: -m by itself triggers subdomain harmonic
                   ! analysis output files. 
@@ -262,7 +305,8 @@ Cobell 110518: Add compiler flag for local hot start.
                select case(cmdlinearg(1:4))
                case("-NFT","-nft") ! nodal attributes file type 
                   i = i + 1
-                  call getarg(i, CMDLINEARG)
+                  call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c                  call getarg(i, CMDLINEARG)
                   select case(trim(cmdlinearg))
                   case("ASCII","Ascii","ascii")
                      naType = ASCII ! this is the default anyway
@@ -279,7 +323,8 @@ Cobell 110518: Add compiler flag for local hot start.
                case("-NFN","-nfn") ! nodal attributes file name
                   naFileNameSpecified = .true.
                   i = i + 1
-                  call getarg(i,naFileName)                                 
+                  call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c                  call getarg(i,naFileName)                                 
                case default
                   if (myProc.eq.0) then
                      write(*,*) "WARNING: The command line option '",
@@ -407,7 +452,11 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: IARGC, ARGCOUNT, I
       CHARACTER(2048) :: CMDLINEARG
-      ARGCOUNT  = IARGC()
+      integer :: ierr
+      integer, parameter :: arg_len = 128
+      character(len=arg_len), dimension(:), allocatable:: raw_arguments
+
+      call ampi_command_ARGument_COUNT(argcount)
       MNWPROC = 0
       isplit = .false. !st3 100708:split file
 
@@ -415,13 +464,15 @@ C-----------------------------------------------------------------------
          i = 0
          do while (i < ARGCOUNT)
             i = i + 1
-            call getarg(i, CMDLINEARG)
+            call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)            
+c            call getarg(i, CMDLINEARG)
             if (cmdlinearg(1:2) == "-W") then
                if( cmdlinearg(1:3) == "-Ws" ) then  !st3 100708: split file
                   isplit = .true.                   !st3 100708: split file
                endif                                !st3 100708: split file
                i = i + 1
-               call getarg(i,cmdlinearg)
+               call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c               call getarg(i,cmdlinearg)
                read(cmdlinearg,*) MNWPROC
             endif
          end do
@@ -432,10 +483,12 @@ C-----------------------------------------------------------------------
          i = 0
          do while (i < ARGCOUNT)
             i = i + 1
-            call getarg(i, CMDLINEARG)
+            call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c            call getarg(i, CMDLINEARG)
             if (cmdlinearg(1:2) == "-H") then
                i = i + 1
-               call getarg(i,cmdlinearg)
+               call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+c               call getarg(i,cmdlinearg)
                read(cmdlinearg,*) MNWPROH
             endif
          end do

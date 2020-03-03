@@ -39,6 +39,7 @@
       !                                            files. Added in fort.51-54.nc
       !=================================================================
       MODULE NETCDFIO
+      use CkLunMod, only : CK_LUN
       USE SIZES, ONLY : SZ, OFF, ASCII, BINARY, SPARSE_ASCII, NETCDF3,
      &   NETCDF4, XDMF
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
@@ -54,302 +55,544 @@ C
 C
       TYPE, PRIVATE :: meshStructure
          LOGICAL :: initialized = .false.
+!$omp threadprivate(initialized)
          INTEGER :: X_id          ! x-coordinate or longitude
+!$omp threadprivate(X_id)
          INTEGER :: Y_id          ! y-coordinate or latitude
+!$omp threadprivate(Y_id)
          INTEGER :: sigma_id      ! relative depth of 3D layer
+!$omp threadprivate(sigma_id)
          INTEGER :: DEPTH_id      ! distance from geoid
+!$omp threadprivate(DEPTH_id)
          INTEGER :: ELE_id        ! elements in grid
+!$omp threadprivate(ELE_id)
          INTEGER :: nbdvnc_id       ! nodes on elev spec boundary seg
+!$omp threadprivate(nbdvnc_id)
          INTEGER :: nbvvnc_id       ! nodes on normal flow boundary seg
+!$omp threadprivate(nbvvnc_id)
          INTEGER :: nvdllnc_id      ! num nodes on elev boundary seg
+!$omp threadprivate(nvdllnc_id)
          INTEGER :: ibtypenc_id   ! discharge boundary type
+!$omp threadprivate(ibtypenc_id)
          INTEGER :: ibtypeenc_id  ! elevation boundary type
+!$omp threadprivate(ibtypeenc_id)
          INTEGER :: nvellnc_id    ! nodes on norm flow spec boundary seg
+!$omp threadprivate(nvellnc_id)
          INTEGER :: max_nvdllnc_id ! max num nodes on any elev boundary seg
+!$omp threadprivate(max_nvdllnc_id)
          INTEGER :: max_nvellnc_id ! max num nodes on any discharge boundary seg
+!$omp threadprivate(max_nvellnc_id)
          INTEGER :: slam0nc_id
+!$omp threadprivate(slam0nc_id)
          INTEGER :: sfea0nc_id
+!$omp threadprivate(sfea0nc_id)
          INTEGER :: netanc_id
+!$omp threadprivate(netanc_id)
          INTEGER :: nvelnc_id
+!$omp threadprivate(nvelnc_id)
          INTEGER :: mesh_id        ! Mesh Definition (Corbitt)
+!$omp threadprivate(mesh_id)
 !        Dimension ids
          INTEGER :: num_nodes_dim_id
+!$omp threadprivate(num_nodes_dim_id)
          INTEGER :: num_elems_dim_id
+!$omp threadprivate(num_elems_dim_id)
          INTEGER :: nface_dim_id
+!$omp threadprivate(nface_dim_id)
          INTEGER :: nopenc_dim_id   ! num elev spec boundary forcing segs
+!$omp threadprivate(nopenc_dim_id)
          INTEGER :: nbounc_dim_id  ! number of normal flow specified boundary segment
+!$omp threadprivate(nbounc_dim_id)
          INTEGER :: ibtypenc_dim_id
+!$omp threadprivate(ibtypenc_dim_id)
          INTEGER :: ibtypeenc_dim_id  ! elevation boundary types
+!$omp threadprivate(ibtypeenc_dim_id)
          INTEGER :: max_nvdllnc_dim_id
+!$omp threadprivate(max_nvdllnc_dim_id)
          INTEGER :: max_nvellnc_dim_id
+!$omp threadprivate(max_nvellnc_dim_id)
          INTEGER :: num_v_nodes_dim_id
+!$omp threadprivate(num_v_nodes_dim_id)
          INTEGER :: mesh_dim_id       ! Mesh Definition (Corbitt)
+!$omp threadprivate(mesh_dim_id)
          !WJP 02.20.2018: for one dimensional boundary
          INTEGER :: nvelnc_dim_id
+!$omp threadprivate(nvelnc_dim_id)
          INTEGER :: netanc_dim_id
+!$omp threadprivate(netanc_dim_id)
 !        Dimension lengths
          INTEGER :: num_nodes
+!$omp threadprivate(num_nodes)
          INTEGER :: num_elems
+!$omp threadprivate(num_elems)
          INTEGER :: nface_len
+!$omp threadprivate(nface_len)
          INTEGER :: nopenc
+!$omp threadprivate(nopenc)
          INTEGER :: nbounc
+!$omp threadprivate(nbounc)
          INTEGER :: max_nvdllnc
+!$omp threadprivate(max_nvdllnc)
          INTEGER :: max_nvellnc
+!$omp threadprivate(max_nvellnc)
          INTEGER :: num_v_nodes
+!$omp threadprivate(num_v_nodes)
 !        Rank (number of dimensions) for each variable
 !        Variable shapes
          INTEGER :: x_dims(1)
+!$omp threadprivate(x_dims)
          INTEGER :: y_dims(1)
+!$omp threadprivate(y_dims)
          INTEGER :: sigma_dims(1)
+!$omp threadprivate(sigma_dims)
          INTEGER :: depth_dims(1)
+!$omp threadprivate(depth_dims)
          INTEGER :: ele_dims(2)
+!$omp threadprivate(ele_dims)
          INTEGER :: nvdll_dims(1)
+!$omp threadprivate(nvdll_dims)
          INTEGER :: nbounc_dims(1)
+!$omp threadprivate(nbounc_dims)
          INTEGER :: ibtypenc_dims(1)
+!$omp threadprivate(ibtypenc_dims)
          INTEGER :: ibtypeenc_dims(1)
+!$omp threadprivate(ibtypeenc_dims)
          INTEGER :: nvellnc_dims(1)
+!$omp threadprivate(nvellnc_dims)
          INTEGER :: nvdllnc_dims(1)
+!$omp threadprivate(nvdllnc_dims)
          INTEGER :: nopenc_dims(1)
+!$omp threadprivate(nopenc_dims)
          INTEGER :: nbdvnc_dims(2)
+!$omp threadprivate(nbdvnc_dims)
          INTEGER :: nbvvnc_dims(2)
+!$omp threadprivate(nbvvnc_dims)
          INTEGER :: mesh_dims(1)       ! Mesh Definition (Corbitt)
+!$omp threadprivate(mesh_dims)
          REAL(SZ), ALLOCATABLE :: xnc(:) ! x coordinate or longitude
+!$omp threadprivate(xnc)
          REAL(SZ), ALLOCATABLE :: ync(:) ! y coordinate or latitude
+!$omp threadprivate(ync)
          !WJP 02.20.2018: changed to one dimensional boundary
          INTEGER, ALLOCATABLE ::  nbvvnc(:) ! boundary array
+!$omp threadprivate(nbvvnc)
          INTEGER, ALLOCATABLE ::  nbdvnc(:) ! boundary array
+!$omp threadprivate(nbdvnc)
          INTEGER, ALLOCATABLE ::  nvellnc(:)  ! boundary array
+!$omp threadprivate(nvellnc)
          INTEGER, ALLOCATABLE ::  nvdllnc(:)  ! boundary array
+!$omp threadprivate(nvdllnc)
          INTEGER, ALLOCATABLE ::  ibtypenc(:)     ! boundary array
+!$omp threadprivate(ibtypenc)
          INTEGER, ALLOCATABLE ::  ibtypeenc(:)
+!$omp threadprivate(ibtypeenc)
          INTEGER, ALLOCATABLE ::  nmnc(:,:)
+!$omp threadprivate(nmnc)
          INTEGER, ALLOCATABLE ::  element(:,:)
+!$omp threadprivate(element)
          INTEGER :: netanc
+!$omp threadprivate(netanc)
          INTEGER :: nvelnc
+!$omp threadprivate(nvelnc)
          !WJP 02.20.2018: added fort.53-54 harmonic outputs
          INTEGER :: const_id
+!$omp threadprivate(const_id)
          INTEGER :: constl_dim_id
+!$omp threadprivate(constl_dim_id)
       END TYPE meshStructure
 
       type(meshStructure), private, save, target :: adcircMesh
+!$omp threadprivate(adcircMesh)
 
       TYPE, PRIVATE :: fileData
          INTEGER :: record_counter
+!$omp threadprivate(record_counter)
          INTEGER :: ncformat   ! netcdf file format to create
+!$omp threadprivate(ncformat)
          LOGICAL :: createFile ! .true. if a new netCDF file must be created p
+!$omp threadprivate(createFile)
          CHARACTER(len=1024) :: filename
+!$omp threadprivate(filename)
          LOGICAL :: fileFound  ! .true. if the netCDF file is present
+!$omp threadprivate(fileFound)
       END Type fileData
 
       TYPE, PRIVATE :: timeData
          LOGICAL :: initialized = .false.
+!$omp threadprivate(initialized)
          INTEGER :: timenc_len = 1  ! number of time slices to write
+!$omp threadprivate(timenc_len)
          INTEGER :: timenc_dim_id
+!$omp threadprivate(timenc_dim_id)
          INTEGER :: timenc_id
+!$omp threadprivate(timenc_id)
          INTEGER :: timenc_dims(1)
+!$omp threadprivate(timenc_dims)
          REAL(8), ALLOCATABLE :: timenc(:)
+!$omp threadprivate(timenc)
       END TYPE timeData
 
       TYPE, PRIVATE :: stationData
          INTEGER :: ncid              ! the id of its netcdf file
+!$omp threadprivate(ncid)
          INTEGER :: num_stations      ! total number of stations
+!$omp threadprivate(num_stations)
          INTEGER :: num_v_nodes
+!$omp threadprivate(num_v_nodes)
          INTEGER :: num_sta_dim_id
+!$omp threadprivate(num_sta_dim_id)
          INTEGER :: num_v_nodes_dim_id
+!$omp threadprivate(num_v_nodes_dim_id)
          CHARACTER(50) :: varname(3)  ! name(s) of this data in netcdf file
+!$omp threadprivate(varname)
          INTEGER, ALLOCATABLE :: name_lengths(:) ! lengths of station names
+!$omp threadprivate(name_lengths)
          CHARACTER(50), POINTER :: statnames(:)
+!$omp threadprivate(statnames)
          INTEGER :: slen_dim_id
+!$omp threadprivate(slen_dim_id)
          INTEGER :: station_id
+!$omp threadprivate(station_id)
          INTEGER :: station_dims(2)
+!$omp threadprivate(station_dims)
          INTEGER :: x_id          ! station x-coordinate or longitude
+!$omp threadprivate(x_id)
          INTEGER :: y_id          ! station y-coordinate or latitude
+!$omp threadprivate(y_id)
          INTEGER :: x_dims(1)
+!$omp threadprivate(x_dims)
          INTEGER :: y_dims(1)
+!$omp threadprivate(y_dims)
          REAL(SZ), ALLOCATABLE :: x(:) ! x coordinate or longitude
+!$omp threadprivate(x)
          REAL(SZ), ALLOCATABLE :: y(:) ! y coordinate or latitude
+!$omp threadprivate(y)
          INTEGER :: station_data_id
+!$omp threadprivate(station_data_id)
          INTEGER :: u_station_data_id
+!$omp threadprivate(u_station_data_id)
          INTEGER :: v_station_data_id
+!$omp threadprivate(v_station_data_id)
          INTEGER :: w_station_data_id
+!$omp threadprivate(w_station_data_id)
          INTEGER :: station_data_dims(2)
+!$omp threadprivate(station_data_dims)
          INTEGER :: station_data_dims_3D(3)
+!$omp threadprivate(station_data_dims_3D)
          !WJP 02.20.2018: added fort.51-52 harmonic outputs
          INTEGER :: const_id
+!$omp threadprivate(const_id)
          INTEGER :: constl_dim_id
+!$omp threadprivate(constl_dim_id)
          INTEGER :: station_ha_data_id
+!$omp threadprivate(station_ha_data_id)
          INTEGER :: ha_u_station_data_id
+!$omp threadprivate(ha_u_station_data_id)
          INTEGER :: ha_v_station_data_id
+!$omp threadprivate(ha_v_station_data_id)
          INTEGER :: station_hg_data_id
+!$omp threadprivate(station_hg_data_id)
          INTEGER :: hg_u_station_data_id
+!$omp threadprivate(hg_u_station_data_id)
          INTEGER :: hg_v_station_data_id
+!$omp threadprivate(hg_v_station_data_id)
          type(timeData) :: myTime
+!$omp threadprivate(myTime)
          type(fileData) :: myFile
+!$omp threadprivate(myFile)
       END TYPE stationData
 C
       type(stationData), private, save :: elevSta ! elev stations (fort.61)
+!$omp threadprivate(elevSta)
       type(stationData), private, save :: prSta   ! pressure stations (fort.71)
+!$omp threadprivate(prSta)
       type(stationData), private, save :: velSta  ! velocity stations (fort.62)
+!$omp threadprivate(velSta)
       type(stationData), private, save :: wVelSta ! wind vel stations (fort.72)
+!$omp threadprivate(wVelSta)
       type(stationData), private, save :: densityStations3D    ! for fort.41
+!$omp threadprivate(densityStations3D)
       type(stationData), private, save :: velocityStations3D   ! for fort.42
+!$omp threadprivate(velocityStations3D)
       type(stationData), private, save :: turbulenceStations3D ! for fort.43
+!$omp threadprivate(turbulenceStations3D)
       !WJP 02.20.2018: added fort.51-52 harmonic outputs
       type(stationData), private, save :: HAelevSta ! har elev stations (fort.51)
+!$omp threadprivate(HAelevSta)
       type(stationData), private, save :: HAvelSta ! har vel stations (fort.52)
+!$omp threadprivate(HAvelSta)
 
       !jgf: Water level offset data
       type(stationData), private, save :: offSta ! for offset.61     
+!$omp threadprivate(offSta)
 C
       TYPE, PRIVATE :: nodalData
          INTEGER ncid              ! the id of its netcdf file
+!$omp threadprivate(ncid)
          REAL(SZ) :: initial_value ! array will be initialized to this
+!$omp threadprivate(initial_value)
          INTEGER :: nodal_data_id
+!$omp threadprivate(nodal_data_id)
          !WJP 02.20.2018: added fort.53-54 harmonic outputs
          INTEGER :: ha_nodal_data_id
+!$omp threadprivate(ha_nodal_data_id)
          INTEGER :: hg_nodal_data_id
+!$omp threadprivate(hg_nodal_data_id)
          INTEGER :: u_ha_nodal_data_id
+!$omp threadprivate(u_ha_nodal_data_id)
          INTEGER :: u_hg_nodal_data_id
+!$omp threadprivate(u_hg_nodal_data_id)
          INTEGER :: v_ha_nodal_data_id
+!$omp threadprivate(v_ha_nodal_data_id)
          INTEGER :: v_hg_nodal_data_id
+!$omp threadprivate(v_hg_nodal_data_id)
          INTEGER :: u_nodal_data_id
+!$omp threadprivate(u_nodal_data_id)
          INTEGER :: v_nodal_data_id
+!$omp threadprivate(v_nodal_data_id)
          INTEGER :: w_nodal_data_id
+!$omp threadprivate(w_nodal_data_id)
          INTEGER :: max_nodal_data_id
+!$omp threadprivate(max_nodal_data_id)
          INTEGER :: time_max_nodal_data_id        !tcm v51.20.06 added
+!$omp threadprivate(time_max_nodal_data_id)
          INTEGER :: nodal_data_dims(2)
+!$omp threadprivate(nodal_data_dims)
          INTEGER :: nodal_data_dims_max(1)
+!$omp threadprivate(nodal_data_dims_max)
          INTEGER :: nodal_data_dims_3D(3)
+!$omp threadprivate(nodal_data_dims_3D)
          CHARACTER(50) :: varnames(6) ! name(s) of this data in netcdf file
+!$omp threadprivate(varnames)
          type(timeData) :: myTime
+!$omp threadprivate(myTime)
          type(fileData) :: myFile
+!$omp threadprivate(myFile)
          type(meshStructure), pointer :: myMesh
+!$omp threadprivate(myMesh)
       END TYPE nodalData
 C
       type(nodalData), private, save :: elev       ! for fort.63
+!$omp threadprivate(elev)
       type(nodalData), private, save :: pr         ! for fort.73
+!$omp threadprivate(pr)
       type(nodalData), private, save :: wDrag      ! for windDragOut
+!$omp threadprivate(wDrag)
       type(nodalData), private, save :: currentVel ! for fort.64
+!$omp threadprivate(currentVel)
       type(nodalData), private, save :: windVel    ! for fort.74
+!$omp threadprivate(windVel)
       type(nodalData), private, save :: weirElev   ! for fort.77
+!$omp threadprivate(weirElev)
       type(nodalData), private, save :: tau0nc     ! for fort.90
+!$omp threadprivate(tau0nc)
       type(nodalData), private, save, target :: EtaMax     ! for maxele.63
+!$omp threadprivate(EtaMax)
       type(nodalData), private, save, target :: PrMin      ! for minpr.63
+!$omp threadprivate(PrMin)
       type(nodalData), private, save, target :: UMax       ! for maxvel.63
+!$omp threadprivate(UMax)
       type(nodalData), private, save, target :: WVMax      ! for maxwvel.63
+!$omp threadprivate(WVMax)
       type(nodalData), private, save, target :: RSMax      ! for rads_max.63
+!$omp threadprivate(RSMax)
       type(nodalData), private, save :: rads       ! for rads.64
+!$omp threadprivate(rads)
 #if defined CSWAN || defined ADCSWAN
       type(nodalData), private, save :: sw_hs      ! for swan_HS.63
+!$omp threadprivate(sw_hs)
       type(nodalData), private, save :: sw_dir     ! for swan_DIR.63
+!$omp threadprivate(sw_dir)
       type(nodalData), private, save :: sw_tm01    ! for swan_TM01.63
+!$omp threadprivate(sw_tm01)
       type(nodalData), private, save :: sw_tps     ! for swan_TPS.63
+!$omp threadprivate(sw_tps)
       type(nodalData), private, save :: sw_wind    ! for swan_WIND.64
+!$omp threadprivate(sw_wind)
       type(nodalData), private, save :: sw_tm02    ! for swan_TM02.63
+!$omp threadprivate(sw_tm02)
       type(nodalData), private, save :: sw_tmm10   ! for swan_tmm10.63
+!$omp threadprivate(sw_tmm10)
       type(nodalData), private, save :: sw_hs_max     ! for swan_HS_max.63
+!$omp threadprivate(sw_hs_max)
       type(nodalData), private, save :: sw_dir_max    ! for swan_DIR_max.63
+!$omp threadprivate(sw_dir_max)
       type(nodalData), private, save :: sw_tm01_max   ! for swan_TM01_max.63
+!$omp threadprivate(sw_tm01_max)
       type(nodalData), private, save :: sw_tps_max    ! for swan_TPS_max.63
+!$omp threadprivate(sw_tps_max)
       type(nodalData), private, save :: sw_wind_max   ! for swan_WIND_max.63
+!$omp threadprivate(sw_wind_max)
       type(nodalData), private, save :: sw_tm02_max   ! for swan_TM02_max.63
+!$omp threadprivate(sw_tm02_max)
       type(nodalData), private, save :: sw_tmm10_max  ! for swan_TMM10_max.63
+!$omp threadprivate(sw_tmm10_max)
 #endif
       type(nodalData), private, save :: density3D    ! for fort.44
+!$omp threadprivate(density3D)
       type(nodalData), private, save :: velocity3D   ! for fort.45
+!$omp threadprivate(velocity3D)
       type(nodalData), private, save :: turbulence3D ! for fort.46
+!$omp threadprivate(turbulence3D)
       type(nodalData), private, save :: futureSurfaceTemperature ! for fort.47
+!$omp threadprivate(futureSurfaceTemperature)
       !WJP 02.20.2018: added fort.53-54 harmonic outputs
       type(nodalData), private, save :: HAelev     ! for fort.53
+!$omp threadprivate(HAelev)
       type(nodalData), private, save :: HAvel      ! for fort.54	  
+!$omp threadprivate(HAvel)
   
       !jgf52.08.03: inundation data
       type(nodalData), private, save :: coldDry  ! for initiallydry.63
+!$omp threadprivate(coldDry)
       type(nodalData), private, save, target :: maxInDep ! for maxinundepth.63
+!$omp threadprivate(maxInDep)
       type(nodalData), private, save, target :: inTime   ! for inundationtime.63
+!$omp threadprivate(inTime)
       type(nodalData), private, save :: eRisInun ! for endrisinginun.63
+!$omp threadprivate(eRisInun)
       type(nodalData), private, save, target :: evrDry ! for everdried.63
+!$omp threadprivate(evrDry)
 
       !jgf: Water level offset data
       type(nodalData), private, save :: offs ! for offset.63     
+!$omp threadprivate(offs)
 C
       TYPE, PRIVATE :: hotstartData
          INTEGER lun               ! ADCIRC's logical unit number
+!$omp threadprivate(lun)
          INTEGER ncid              ! the id of its netcdf file
+!$omp threadprivate(ncid)
          INTEGER :: FileFmtMajorFile !
+!$omp threadprivate(FileFmtMajorFile)
          INTEGER :: FileFmtMinorFile
+!$omp threadprivate(FileFmtMinorFile)
          INTEGER :: FileFmtRevFile
+!$omp threadprivate(FileFmtRevFile)
          type(fileData) :: myFile
+!$omp threadprivate(myFile)
          type(timeData) :: myTime
+!$omp threadprivate(myTime)
          type(meshStructure), pointer :: myMesh
+!$omp threadprivate(myMesh)
 C        2D simulation state
          type(nodalData) :: zeta1
+!$omp threadprivate(zeta1)
          type(nodalData) :: zeta2
+!$omp threadprivate(zeta2)
          type(nodalData) :: zetad
+!$omp threadprivate(zetad)
          type(nodalData) :: vel
+!$omp threadprivate(vel)
          type(nodalData) :: ch1
+!$omp threadprivate(ch1)
          type(nodalData) :: nodecodenc
+!$omp threadprivate(nodecodenc)
          type(nodalData) :: noffnc
+!$omp threadprivate(noffnc)
 C        3D simulation state
          type(nodalData) :: duu
+!$omp threadprivate(duu)
          type(nodalData) :: duv
+!$omp threadprivate(duv)
          type(nodalData) :: dvv
+!$omp threadprivate(dvv)
          type(nodalData) :: uu
+!$omp threadprivate(uu)
          type(nodalData) :: vv
+!$omp threadprivate(vv)
          type(nodalData) :: bsx
+!$omp threadprivate(bsx)
          type(nodalData) :: bsy
+!$omp threadprivate(bsy)
          type(nodalData) :: density3D
+!$omp threadprivate(density3D)
          type(nodalData) :: velocity3D
+!$omp threadprivate(velocity3D)
          type(nodalData) :: turbulence3D
+!$omp threadprivate(turbulence3D)
 C        harmonic analysis components
          INTEGER :: namefr_len = 10
+!$omp threadprivate(namefr_len)
          INTEGER :: namefr_len_dim_id
+!$omp threadprivate(namefr_len_dim_id)
          INTEGER :: namefr_dims(2)
+!$omp threadprivate(namefr_dims)
          INTEGER :: mnharf_dim_id
+!$omp threadprivate(mnharf_dim_id)
          INTEGER :: load_vector_dim_id  ! 2x the number of frequencies
+!$omp threadprivate(load_vector_dim_id)
          INTEGER :: component_dims(1)
+!$omp threadprivate(component_dims)
          INTEGER :: ha_dims(2)
+!$omp threadprivate(ha_dims)
          INTEGER :: hafreq_id
+!$omp threadprivate(hafreq_id)
          INTEGER :: haff_id
+!$omp threadprivate(haff_id)
          INTEGER :: haface_id
+!$omp threadprivate(haface_id)
          INTEGER :: ha_id
+!$omp threadprivate(ha_id)
          INTEGER :: namefr_id
+!$omp threadprivate(namefr_id)
 C        harmonic analysis load vectors
          type(nodalData) :: gloelv
+!$omp threadprivate(gloelv)
          type(nodalData) :: glovellv
+!$omp threadprivate(glovellv)
          type(stationData) :: staelv
+!$omp threadprivate(staelv)
          type(stationData) :: stavellv
+!$omp threadprivate(stavellv)
 C        harmonic analysis means and variance calculations
          type(nodalData) :: xvelav
+!$omp threadprivate(xvelav)
          type(nodalData) :: yvelav
+!$omp threadprivate(yvelav)
          type(nodalData) :: xvelva
+!$omp threadprivate(xvelva)
          type(nodalData) :: yvelva
+!$omp threadprivate(yvelva)
          type(nodalData) :: elav
+!$omp threadprivate(elav)
          type(nodalData) :: elva
+!$omp threadprivate(elva)
       END TYPE hotstartData
 C
       type(hotstartData), private, save, target :: hs67 ! for fort.67
+!$omp threadprivate(hs67)
       type(hotstartData), private, save, target :: hs68 ! for fort.68
+!$omp threadprivate(hs68)
       type(hotstartData), private, pointer :: hs   ! current hs file
+!$omp threadprivate(hs)
       !
       ! lists of fulldomain node and element numbers that map to the
       ! nodes and elements of this subdomain in parallel
       INTEGER, ALLOCATABLE, TARGET :: fullDomainNodeList(:)
+!$omp threadprivate(fullDomainNodeList)
       INTEGER, ALLOCATABLE, TARGET :: fullDomainElementList(:)
+!$omp threadprivate(fullDomainElementList)
       ! lists of fulldomain elevation and velocity station numbers that
       ! map to this subdomain's stations in parallel
       INTEGER, ALLOCATABLE, TARGET :: fullDomainElevationStationList(:)
+!$omp threadprivate(fullDomainElevationStationList)
       INTEGER, ALLOCATABLE, TARGET :: fullDomainVelocityStationList(:)
+!$omp threadprivate(fullDomainVelocityStationList)
       ! used to specify the array of indexes to be used in a mapping
       INTEGER, POINTER :: fullDomainIndexList(:)
+!$omp threadprivate(fullDomainIndexList)
       ! usually initialized by readNetCDFHotstart(); otherwise in
       ! readAndMapToSubdomainMinMaxNetCDF()
       LOGICAL :: fullDomainIndexListsInitialized = .false.
+!$omp threadprivate(fullDomainIndexListsInitialized)
 C
       CHARACTER(1024) :: att_text ! scratch variable for attribute text
+!$omp threadprivate(att_text)
 C
 C     ZCobell:
       logical :: writerReadMetaData=.FALSE. !...variable to allow writers to read 
+!$omp threadprivate(writerReadMetaData)
                                             !   NetCDF metadata from ADCPREP processed
                                             !   files on first pass
 

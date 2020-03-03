@@ -6,6 +6,7 @@ C                                                              05 Feb 2007, sb
 C******************************************************************************
 C
       module writer
+      use CkLunMod, only : CK_LUN
       use sizes, only : sz, mnproc, mnwproc, OFF, ASCII, SPARSE_ASCII,
      &     NETCDF3, NETCDF4, XDMF, iSplit, globalDir, meshType, 
      &     controlType, meshFileName_g, controlFileName_g
@@ -29,8 +30,10 @@ C
       ! jgf52.08.25: increased intbuf to 7 to transmit nabout
       integer, parameter :: numIntMetadata = 7
       integer :: intBuf(numIntMetadata)  ! used to transmit pieces of descript via mpi
+!$omp threadprivate(intBuf)
       integer, parameter :: numRealMetadata = 2
       real(sz) :: reBuf(numRealMetadata) ! used to transmit pieces of descript via mpi
+!$omp threadprivate(reBuf)
       !
       ! maximum number of buffers that each writer processor has
       ! for storing data; each writer will only allocate the space that
@@ -42,6 +45,7 @@ C
       ! metadata on the compute processor; this is dimensioned by the 
       ! num_buf_max parameter
       type(OutputDataDescript_t), allocatable :: writer_descripts(:)
+!$omp threadprivate(writer_descripts)
       ! 
       ! .true. if a writer processor has received data into one or more
       ! of its local buffers but has not written it yet; the nwloaded
@@ -49,15 +53,18 @@ C
       ! this is an array that is updated and used by compute processors
       ! not writer processors
       logical, allocatable :: nwloaded(:)   !st3 100708: round robin chamber
+!$omp threadprivate(nwloaded)
       !
       ! buffer number on a particular writer processor; each writer 
       ! processor manages its own bufID so it knows where to store the
       ! next dataset it receives
       integer :: bufID    
+!$omp threadprivate(bufID)
       !
       ! wcommID is incremented by and used only by compute processors to
       ! determine which writer processor to send data to each time
       integer :: wcommID  ! writer processor number (1 -> MNWPROC)
+!$omp threadprivate(wcommID)
 
 C---------------------end of data declarations--------------------------------C
 
@@ -609,7 +616,7 @@ C-----------------------------------------------------------------------
                fstat = 'replace'
                fpos = 'asis'
             endif
-            open(fid, file=writer_descripts(ibuf) % file_name, 
+            open(fid+CK_LUN, file=writer_descripts(ibuf) % file_name, 
      &             status=fstat, position=fpos, action='write')
          endif
          ! 
@@ -620,17 +627,17 @@ C-----------------------------------------------------------------------
          ! tcm v50.27 added full record writing options
          case(ASCII)
             ! write dataset header
-            write(fid, 100) writer_descripts(ibuf) % wMD % myTime,
+            write(fid+CK_LUN, 100) writer_descripts(ibuf) % wMD % myTime,
      &            writer_descripts(ibuf) % wMD % myTimeStep 
             ! write dataset
             select case(writer_descripts(ibuf)%num_items_per_record)
             case(1)
                do i=1, writer_descripts(ibuf) % num_fd_records
-                  write(fid,1000) labels_g(i), writer_descripts(ibuf) % array_g(i)
+                  write(fid+CK_LUN,1000) labels_g(i), writer_descripts(ibuf) % array_g(i)
                end do
             case(2)
                do i=1, writer_descripts(ibuf) % num_fd_records
-                  write(fid,2000) labels_g(i), writer_descripts(ibuf) % array_g(i),
+                  write(fid+CK_LUN,2000) labels_g(i), writer_descripts(ibuf) % array_g(i),
      &               writer_descripts(ibuf) % array2_g(i)
                end do
             case default
@@ -639,7 +646,7 @@ C-----------------------------------------------------------------------
      &            ' component data.'
                call allMessage(ERROR,scratchMessage)
             end select
-            close(fid)
+            close(fid+CK_LUN)
          !
          !  S P A R S E   A S C I I 
          !
@@ -660,18 +667,18 @@ C-----------------------------------------------------------------------
             case(1) 
                nNonDefVal = count(areDefault1.eqv..false.)
                ! write dataset header
-               write(fid, 100) writer_descripts(ibuf) % wMD % myTime,
+               write(fid+CK_LUN, 100) writer_descripts(ibuf) % wMD % myTime,
      &               writer_descripts(ibuf) % wMD % myTimeStep, 
      &               nNonDefVal, 
      &               writer_descripts(ibuf) % alternate_value
                ! write sparse scalar dataset
                do i=1, writer_descripts(ibuf) % num_fd_records
                   if (areDefault1(i).eqv..false.) then
-                     write(fid,1000) labels_g(i), 
+                     write(fid+CK_LUN,1000) labels_g(i), 
      &                     writer_descripts(ibuf) % array_g(i)
                   endif
                end do
-               close(fid)
+               close(fid+CK_LUN)
                deallocate(areDefault1)
             !
             !.... Sparse ASCII Vector data
@@ -688,7 +695,7 @@ C-----------------------------------------------------------------------
                nNonDefVal = count((areDefault1.eqv..false.)
      &                          .and.(areDefault2.eqv..false.))
                ! write dataset header
-               write(fid, 100) writer_descripts(ibuf) % wMD % myTime,
+               write(fid+CK_LUN, 100) writer_descripts(ibuf) % wMD % myTime,
      &               writer_descripts(ibuf) % wMD % myTimeStep, 
      &               nNonDefVal, 
      &               writer_descripts(ibuf) % alternate_value
@@ -696,12 +703,12 @@ C-----------------------------------------------------------------------
                do i=1, writer_descripts(ibuf) % num_fd_records
                   if ((areDefault1(i).eqv..false.).or.
      &                   (areDefault2(i).eqv..false.)) then
-                     write(fid,2000) labels_g(i), 
+                     write(fid+CK_LUN,2000) labels_g(i), 
      &                     writer_descripts(ibuf) % array_g(i),
      &                     writer_descripts(ibuf) % array2_g(i)
                   endif
                end do
-               close(fid)
+               close(fid+CK_LUN)
                deallocate(areDefault1, areDefault2)
             case default
                write(scratchMessage,'(a,i0,a)') 'Writer cannot write ',
@@ -709,7 +716,7 @@ C-----------------------------------------------------------------------
      &               ' component data.'
                call allMessage(ERROR, scratchMessage)
             end select
-            close(fid)
+            close(fid+CK_LUN)
          !
          !     N E T C D F
          ! 
@@ -843,8 +850,8 @@ C
          ! 'fulldomainInputFiles' file is created by adcprep
          call openFileForRead(30,trim(globaldir)//'/fulldomainInputFiles', ierr)
          do 
-            read(30,fmt='(a80)',end=10) fileKeyword
-            read(30,fmt='(a80)',end=10) fileValue
+            read(30+CK_LUN,fmt='(a80)',end=10) fileKeyword
+            read(30+CK_LUN,fmt='(a80)',end=10) fileValue
             select case(trim(fileKeyword))
             case('meshType')
                call getFormatInteger(fileValue, meshType)
@@ -858,7 +865,7 @@ C
                ! ignore the keywords and values we are not interested in
             end select
          end do
-10       close(30)
+10       close(30+CK_LUN)
          call mpi_send(meshFileName_g, 2048, mpi_character,
      &      mnproc, tag, comm_writer(wcommID), ierr)
          call mpi_send(controlFileName_g, 2048, mpi_character,
@@ -1013,6 +1020,7 @@ C  This module is for writer processors for hotstart files based on S.Bunya's
 C_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 C
       MODULE HSWRITER
+      use CkLunMod, only : CK_LUN
         USE SIZES
         USE GLOBAL
         USE MESSENGER, ONLY: TAG, COMM_WRITEH, COMM_HSLEEP, WRITER_ID,
@@ -1022,6 +1030,7 @@ C
 #endif
       IMPLICIT NONE
       INTEGER :: WCOMMID, WCOMM
+!$omp threadprivate(WCOMMID,WCOMM)
       CONTAINS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!?
 
 !------------------------------------------------------------
@@ -1051,18 +1060,18 @@ C...  Main loop
      &       COMM_WRITEH(WRITER_ID),STAT,IERR)
 
         IF(SIG == SIG_WRITE) THEN
-          WRITE(ScreenUnit,*) 'HSWRITER PROC ',WRITER_ID,
+          WRITE(ScreenUnit+CK_LUN,*) 'HSWRITER PROC ',WRITER_ID,
      &         ' RECEIVED SIG_WRITE'
           CALL writeHotstart_through_HSwriter(0.0d0, 0)
 
 !tcm v49.52.01 added SIG_PAUSE
         ELSE IF(SIG == SIG_PAUSE) then
-           WRITE(ScreenUnit,*) 'HSWRITER PROC ',WRITER_ID,
+           WRITE(ScreenUnit+CK_LUN,*) 'HSWRITER PROC ',WRITER_ID,
      &         ' RECEIVED SIG_PAUSE'
            EXIT
 
         ELSE IF(SIG == SIG_TERM) THEN
-          WRITE(ScreenUnit,*) 'HSWRITER PROC ',WRITER_ID,
+          WRITE(ScreenUnit+CK_LUN,*) 'HSWRITER PROC ',WRITER_ID,
      &         ' RECEIVED SIG_TERM'
           EXIT
         ENDIF
@@ -1136,13 +1145,21 @@ C-----------------------------------------------------------------------
       CHARACTER*9 :: itstr  !tcm v51.26 added for time-stamped hot start file name adjustments
 
       type(OutputDataDescript_t), SAVE :: Elev1Descript
+!$omp threadprivate(Elev1Descript)
       type(OutputDataDescript_t), SAVE :: Elev2Descript
+!$omp threadprivate(Elev2Descript)
       type(OutputDataDescript_t), SAVE :: VelDescript
+!$omp threadprivate(VelDescript)
       type(OutputDataDescript_t), SAVE :: CH1Descript
+!$omp threadprivate(CH1Descript)
       type(OutputDataDescript_t), SAVE :: EtaDiscDescript
+!$omp threadprivate(EtaDiscDescript)
       type(OutputDataDescript_t), SAVE :: NodeCodeDescript
+!$omp threadprivate(NodeCodeDescript)
       type(OutputDataDescript_t), SAVE :: NOFFDescript
+!$omp threadprivate(NOFFDescript)
       LOGICAL,  SAVE :: FirstCall = .true.
+!$omp threadprivate(FirstCall)
 !
 
       call setMessageSource("writeHotstart_through_HSwriter")
@@ -1239,17 +1256,17 @@ C-----------------------------------------------------------------------
       CALL MPI_BARRIER(WCOMM,IERR) !st3
 
       IF (WRITE_LOCAL_HOT_START_FILES) THEN
-         write(6,*) 'HSWriter can not treat Local HOT START FILES'
+         write(6+CK_LUN,*) 'HSWriter can not treat Local HOT START FILES'
          STOP
       ENDIF
 !
-      WRITE(16,*) "***********WRITE HOTSTART*********************"
-      WRITE(16,*) "NHSTAR = ", NHSTAR
-      WRITE(16,*) "FirstCall = ", FirstCall
+      WRITE(16+CK_LUN,*) "***********WRITE HOTSTART*********************"
+      WRITE(16+CK_LUN,*) "NHSTAR = ", NHSTAR
+      WRITE(16+CK_LUN,*) "FirstCall = ", FirstCall
       IF (FirstCall) THEN
          IF ( WRITER_ID /= 0  ) THEN
             IF (.not.ALLOCATED(ETA1_g)) THEN
-              write(16,*) 'Allocating Elev1Descript'
+              write(16+CK_LUN,*) 'Allocating Elev1Descript'
               ALLOCATE(ETA1_g(NP_G))
             ENDIF
          ENDIF
@@ -1264,7 +1281,7 @@ C-----------------------------------------------------------------------
 
          IF ( WRITER_ID /= 0 ) THEN
             IF (.not.ALLOCATED(ETA2_g)) THEN
-               write(16,*) 'Allocating Elev2Descript'
+               write(16+CK_LUN,*) 'Allocating Elev2Descript'
                ALLOCATE(ETA2_g(NP_G))
             ENDIF
          ENDIF
@@ -1279,7 +1296,7 @@ C-----------------------------------------------------------------------
 
          IF ( WRITER_ID /= 0 ) THEN
             IF (.not.ALLOCATED(UU2_g)) THEN
-               write(16,*) 'Allocating VelDescript'
+               write(16+CK_LUN,*) 'Allocating VelDescript'
                ALLOCATE(UU2_g(NP_G))
                ALLOCATE(VV2_g(NP_G))
             ENDIF
@@ -1297,7 +1314,7 @@ C-----------------------------------------------------------------------
 
          IF (IM.eq.10) THEN
             IF ( WRITER_ID /= 0 ) THEN
-               write(16,*) 'Allocating CH1Descript'
+               write(16+CK_LUN,*) 'Allocating CH1Descript'
                ALLOCATE(CH1_g(NP_G))
             ENDIF
             CH1Descript % specifier            = NHSTAR
@@ -1311,7 +1328,7 @@ C-----------------------------------------------------------------------
          ENDIF
 
          IF ( WRITER_ID /= 0 ) THEN
-            write(16,*) 'Allocating EtaDiscDescript'
+            write(16+CK_LUN,*) 'Allocating EtaDiscDescript'
             ALLOCATE(EtaDisc_g(NP_G))
          ENDIF
          EtaDiscDescript % specifier            = NHSTAR
@@ -1324,7 +1341,7 @@ C-----------------------------------------------------------------------
          EtaDiscDescript % array_g              => EtaDisc_g
 
          IF ( WRITER_ID /= 0 ) THEN
-            write(16,*) 'Allocating NodeCodeDescript'
+            write(16+CK_LUN,*) 'Allocating NodeCodeDescript'
             ALLOCATE(NodeCode_g(NP_G))
          ENDIF
          NodeCodeDescript % specifier            = NHSTAR
@@ -1337,7 +1354,7 @@ C-----------------------------------------------------------------------
          NodeCodeDescript % iarray_g             => NODECODE_g
 
          IF ( WRITER_ID /= 0 ) THEN
-            write(16,*) 'Allocating NOFFDescript'
+            write(16+CK_LUN,*) 'Allocating NOFFDescript'
             ALLOCATE(NOFF_g(NE_G))
          ENDIF
          NOFFDescript % specifier            = NHSTAR
@@ -1366,7 +1383,7 @@ C     collect up the data from subdomains if running in parallel
 ! tcm v49.54 -- changed noff to noff_g to fix an allocation bug in hot start writer
          WHERE (NOFF_G.gt.1) NOFF_g = 1
 !
-         WRITE(16,*) "FINISH collectFullDomainArray"
+         WRITE(16+CK_LUN,*) "FINISH collectFullDomainArray"
       SELECT CASE (NHSTAR)
       !tcm v51.26 added nhstar=-1 for time-stamped hot starts
       CASE(-1,1) ! nonportable binary (1 for backwards compatibility)
@@ -1381,114 +1398,114 @@ C     collect up the data from subdomains if running in parallel
                WRITE(itstr,'(I9.9)') IIT  !note that IIT is the correct value and not IT for writers
                hss % filename(9:17) = itstr
             ENDIF
-            OPEN(hss % lun ,FILE=TRIM(adjustl(GLOBALDIR))//'/'//trim(adjustl(hss%filename)),
+            OPEN(hss % lun +CK_LUN,FILE=TRIM(adjustl(GLOBALDIR))//'/'//trim(adjustl(hss%filename)),
      $      ACCESS='DIRECT',RECL=8)
             IHOTSTP=1
-            WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) FileFmtVersion
             IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) IM   ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) ttime; IHOTSTP = IHOTSTP + 1 !st3
-            WRITE(hss % lun,REC=IHOTSTP) iit  ; IHOTSTP = IHOTSTP + 1 !st3
-            WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) IM   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) ttime; IHOTSTP = IHOTSTP + 1 !st3
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) iit  ; IHOTSTP = IHOTSTP + 1 !st3
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
          ENDIF
          IF ( WRITER_ID /= 0 ) THEN
             DO I=1, Elev1Descript % num_fd_records
-               WRITE(hss % lun,REC=IHOTSTP) Elev1Descript % array_g(I)
+               WRITE(hss % lun+CK_LUN,REC=IHOTSTP) Elev1Descript % array_g(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
             DO I=1, Elev2Descript % num_fd_records
-               WRITE(hss % lun,REC=IHOTSTP) Elev2Descript % array_g(I)
+               WRITE(hss % lun+CK_LUN,REC=IHOTSTP) Elev2Descript % array_g(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
             DO I=1, EtaDiscDescript % num_fd_records
-               WRITE(hss % lun,REC=IHOTSTP) EtaDiscDescript % array_g(I)
+               WRITE(hss % lun+CK_LUN,REC=IHOTSTP) EtaDiscDescript % array_g(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
             DO I=1, VelDescript % num_fd_records
-               WRITE(hss % lun,REC=IHOTSTP) VelDescript % array_g(I)
+               WRITE(hss % lun+CK_LUN,REC=IHOTSTP) VelDescript % array_g(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
             DO I=1, VelDescript % num_fd_records
-               WRITE(hss % lun,REC=IHOTSTP) VelDescript % array2_g(I)
+               WRITE(hss % lun+CK_LUN,REC=IHOTSTP) VelDescript % array2_g(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
             IF (IM.eq.10) THEN
                DO I=1, CH1Descript % num_fd_records
-                  WRITE(hss % lun,REC=IHOTSTP) CH1Descript % array_g(I)
+                  WRITE(hss % lun+CK_LUN,REC=IHOTSTP) CH1Descript % array_g(I)
                   IHOTSTP=IHOTSTP+1
                ENDDO
             ENDIF
             DO I=1, NodeCodeDescript % num_fd_records
-              WRITE(hss % lun,REC=IHOTSTP)NodeCodeDescript % iarray_g(I)
+              WRITE(hss % lun+CK_LUN,REC=IHOTSTP)NodeCodeDescript % iarray_g(I)
               IHOTSTP=IHOTSTP+1
             ENDDO
             DO I=1, NOFFDescript % num_fd_records
-               WRITE(hss % lun,REC=IHOTSTP) NOFFDescript % iarray_g(I)
+               WRITE(hss % lun+CK_LUN,REC=IHOTSTP) NOFFDescript % iarray_g(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
          ENDIF
 C
          IF (WRITER_ID /= 0) THEN
-            WRITE(hss % lun,REC=IHOTSTP) IESTP   ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) IESTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IVSTP   ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) IVSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) ICSTP   ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NSCOUC  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) ICSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) NSCOUC  ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IPSTP   ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) IWSTP   ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NSCOUM  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) IPSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) IWSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) NSCOUM  ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IGEP    ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) IGEP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IGVP    ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) IGVP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IGCP    ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) IGCP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IGPP    ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) IGWP    ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) IGPP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) IGWP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun+CK_LUN,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
          ENDIF
       CASE(2) ! ascii?
-         write(16,*) 'ASCII Hotstart file not implemented yet.'
+         write(16+CK_LUN,*) 'ASCII Hotstart file not implemented yet.'
 
       CASE(3) ! netcdf
-         write(16,*) 'NetCDF Hotstart undergoing testing.'
+         write(16+CK_LUN,*) 'NetCDF Hotstart undergoing testing.'
 
       CASE DEFAULT
-         write(ScreenUnit,*) 'The value of NHSTAR=',NHSTAR
-         write(ScreenUnit,*) 'is not supported.'
-         write(ScreenUnit,*) 'Hotstart file not written.'
+         write(ScreenUnit+CK_LUN,*) 'The value of NHSTAR=',NHSTAR
+         write(ScreenUnit+CK_LUN,*) 'is not supported.'
+         write(ScreenUnit+CK_LUN,*) 'Hotstart file not written.'
       END SELECT
 C...
 C...    CLOSE THE HOT START OUTPUT FILE
 C...
       IF(ABS(NHSTAR).EQ.1) THEN                                              ! added by mcf 7/14/08 tcm v51.26 added abs(nhstar)
-         if (WRITER_ID /= 0) CLOSE(hss % lun)
+         if (WRITER_ID /= 0) CLOSE(hss % lun+CK_LUN)
       ENDIF                                                             ! end NHSTAR=1
 
       IF(NSCREEN.NE.0.AND. WRITER_ID /= 0 ) THEN
-         WRITE(ScreenUnit,24541) hss % lun, WRITER_ID, IIT, ttime  !tcm v51.26 changed IT to IIT and TimeLoc to ttime since
-         WRITE(16,24541) hss % lun, WRITER_ID, IIT, ttime !IT and TimeLoc are not known by writer processor id /=0  (echoing to writer file)
+         WRITE(ScreenUnit+CK_LUN,24541) hss % lun, WRITER_ID, IIT, ttime  !tcm v51.26 changed IT to IIT and TimeLoc to ttime since
+         WRITE(16+CK_LUN,24541) hss % lun, WRITER_ID, IIT, ttime !IT and TimeLoc are not known by writer processor id /=0  (echoing to writer file)
       ELSE
-         WRITE(16,24541) hss % lun,WRITER_ID,IT,TimeLoc
+         WRITE(16+CK_LUN,24541) hss % lun,WRITER_ID,IT,TimeLoc
       ENDIF
 24541 FORMAT(1X,'HOT START OUTPUT WRITTEN TO UNIT ',I2,'  HSWriter:',i2
      &    ' AT TIME STEP = ',I9,' TIME = ',E15.8)
       IF(hss % lun.EQ.67) THEN
 C        jgf45.07 added option to stop ADCIRC after writing hot start file.
          IF (NHSTAR.EQ.67) THEN
-            WRITE(ScreenUnit,*) 'NHSTAR.EQ.67; ADCIRC stopping.'
-            WRITE(16,*) 'NHSTAR.EQ.67; ADCIRC stopping.'
+            WRITE(ScreenUnit+CK_LUN,*) 'NHSTAR.EQ.67; ADCIRC stopping.'
+            WRITE(16+CK_LUN,*) 'NHSTAR.EQ.67; ADCIRC stopping.'
          ENDIF
          hss % lun      = 68
          IF(NHSTAR.EQ.1) THEN
@@ -1506,8 +1523,8 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
          
       ELSE
          IF (NHSTAR.EQ.68) THEN
-            WRITE(ScreenUnit,*) 'NHSTAR.EQ.68; ADCIRC stopping.'
-            WRITE(16,*) 'NHSTAR.EQ.68; ADCIRC stopping.'
+            WRITE(ScreenUnit+CK_LUN,*) 'NHSTAR.EQ.68; ADCIRC stopping.'
+            WRITE(16+CK_LUN,*) 'NHSTAR.EQ.68; ADCIRC stopping.'
          ENDIF
          hss % lun=67
          IF(NHSTAR.EQ.1) THEN
@@ -1564,6 +1581,7 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
 !     ! the subroutine used to write the file
       integer      :: ierr, status(MPI_STATUS_SIZE), request
       integer, save:: tagbase = 6000
+!$omp threadprivate(tagbase)
       integer      :: iproc
       integer      :: bufsize
       integer      :: ibucket
@@ -1629,6 +1647,7 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
 !     ! the subroutine used to write the file
       integer      :: ierr, status(MPI_STATUS_SIZE), request
       integer, save:: tagbase = 6000
+!$omp threadprivate(tagbase)
       integer      :: iproc
       integer      :: bufsize
       integer      :: ibucket

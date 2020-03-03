@@ -1,4 +1,5 @@
       module soln
+      use CkLunMod, only : CK_LUN
          implicit none
          integer, parameter :: PATH = 2048, VS=30
          type Soln_t
@@ -26,8 +27,11 @@
          end type SolnFile_t
 
          integer, pointer   :: ncList(:)
+!$omp threadprivate(ncList)
          integer,save       :: icount = 0
+!$omp threadprivate(icount)
          integer,save       :: isz    = 0
+!$omp threadprivate(isz)
 
 
          contains
@@ -96,20 +100,33 @@
       implicit none
 
       type(SolnFile_t), allocatable :: fileA(:)
+!$omp threadprivate(fileA)
       type(Soln_t) :: trial, gold
+!$omp threadprivate(trial,gold)
       integer      :: count, iargc, nvar, ivar, lunGold, lunTrial
+!$omp threadprivate(count,iargc,nvar,ivar,lunGold,lunTrial)
       integer      :: iarg , nstepsGold, nstepsTrial, istep
+!$omp threadprivate(iarg,nstepsGold,nstepsTrial,istep)
       integer      :: nfiles, i, k
+!$omp threadprivate(nfiles,i,k)
       logical      :: foundGold, foundTrial, compare, results, passed
+!$omp threadprivate(foundGold,foundTrial,compare,results,passed)
       logical      :: eof_gold, eof_trial, readarray1, readarray2
+!$omp threadprivate(eof_gold,eof_trial,readarray1,readarray2)
       logical      :: etaType
+!$omp threadprivate(etaType)
       character(PATH) :: gold_dir, trial_dir, fnameGold, fnameTrial
+!$omp threadprivate(gold_dir,trial_dir,fnameGold,fnameTrial)
       character(VS)   :: varname, str_rel_err, str_abs_err
+!$omp threadprivate(varname,str_rel_err,str_abs_err)
 
       character(80) :: usage, flag
+!$omp threadprivate(usage,flag)
 
       common /report_cmn/ reportFile
+!$omp threadprivate(/report_cmn/)
       logical reportFile
+!$omp threadprivate(reportFile)
 
 
       usage = "Usage: adccmp gold_dir trial_dir varname1 "//
@@ -231,8 +248,8 @@
 
 
         enddo  ! timesteps
-        close(lunGold)
-        close(lunTrial)
+        close(lunGold+CK_LUN)
+        close(lunTrial+CK_LUN)
 
       end do   ! files
 
@@ -256,6 +273,7 @@
 !-------------------------------------------------------------------------------
 
       subroutine readheader(lun, fname, x)
+      use CkLunMod, only : CK_LUN
       use soln
       implicit none
 
@@ -268,11 +286,11 @@
 
       call check_format(lun, fname, x % itype)
 
-      open (lun, file=fname)
+      open (lun+CK_LUN, file=fname)
 
 
-      read(lun, '(a)') title
-      read(lun, *) nsteps, nsize, dt, idummy, rectype
+      read(lun+CK_LUN, '(a)') title
+      read(lun+CK_LUN, *) nsteps, nsize, dt, idummy, rectype
 
       if (nsize < 1) then
         call report("failed", "Array size is zero in: "//fname,
@@ -288,6 +306,7 @@
 !-------------------------------------------------------------------------------
 
       function readarray1(lun, etaType, x) result(eof)
+      use CkLunMod, only : CK_LUN
       use soln
       implicit none
 
@@ -300,22 +319,22 @@
       eof = .FALSE.
 
       if (x % itype == 1) then
-        read(lun, 1100, end = 200) x % time, x % it, nitems
+        read(lun+CK_LUN, 1100, end = 200) x % time, x % it, nitems
         x % a(1: x % nsize) = 0.0
         if (etatype) x % nc(1:x % nsize) = 0       ! vjp
         do i = 1, nitems
-          read(lun, *, err = 100, end = 150) iglobal, x1
+          read(lun+CK_LUN, *, err = 100, end = 150) iglobal, x1
           x % a(iglobal)  = x1
           if (etatype) x % nc(iglobal) = 1         ! vjp
         end do
         return
 
       else if ( x % itype == 2) then
-        read(lun, 1100, end = 200) x % time, x % it
+        read(lun+CK_LUN, 1100, end = 200) x % time, x % it
 
         x % nc(1:x % nsize) = 1
         do i = 1, x % nsize
-          read(lun, *, end = 200) iglobal, x1
+          read(lun+CK_LUN, *, end = 200) iglobal, x1
           if (etaType .and. x1 == -99999.0) then
              x1 = 0.0
              x % nc(iglobal) = 0
@@ -345,6 +364,7 @@
 !-------------------------------------------------------------------------------
 
       function readarray2(lun, x) result(eof)
+      use CkLunMod, only : CK_LUN
       use soln
       implicit none
 
@@ -357,19 +377,19 @@
       eof = .FALSE.
 
       if (x % itype == 1) then
-        read(lun, 1100, end = 200) x % time, x % it, nitems
+        read(lun+CK_LUN, 1100, end = 200) x % time, x % it, nitems
         x % a(1: x % nsize) = 0.0
         x % b(1: x % nsize) = 0.0
         do i = 1, nitems    
-          read(lun, *, end = 150, err = 100) iglobal, x1, x2
+          read(lun+CK_LUN, *, end = 150, err = 100) iglobal, x1, x2
           x % a(iglobal)  = x1
           x % b(iglobal)  = x2
         end do
 
       else if ( x % itype == 2) then
-        read(lun, 1100, end = 200) x % time, x % it
+        read(lun+CK_LUN, 1100, end = 200) x % time, x % it
         do i = 1, x % nsize
-          read(lun, *, end = 200) iglobal, x1, x2
+          read(lun+CK_LUN, *, end = 200) iglobal, x1, x2
           x % a(iglobal) = x1
           x % b(iglobal) = x2
         end do
@@ -395,6 +415,7 @@
 ! Resize solution array to be big enough
 !-----------------------------------------------------------------------
       subroutine resize(nsize, rectype, x)
+      use CkLunMod, only : CK_LUN
       use soln
       implicit none
       type(Soln_t) :: x
@@ -428,6 +449,7 @@
 
       subroutine build_fileA(nfiles, fileA)
 
+      use CkLunMod, only : CK_LUN
       use soln
       implicit none
 
@@ -471,6 +493,7 @@
 !-------------------------------------------------------------------------------
       function compare(file, gold, trial) result(r)
 
+      use CkLunMod, only : CK_LUN
       use soln
       implicit none
 
@@ -478,6 +501,7 @@
       type (SolnFile_t) :: file
       logical           :: r
       integer           :: i, ivar, ierror = 0, iszOld, nodDiff(2)
+!$omp threadprivate(ierror)
       logical           :: relFlag, absFlag, ncFlag
 
       real(8)           :: sumDiff(2), diff(2), varMax(2)
@@ -637,6 +661,7 @@
       character(8)  :: day
       character(10) :: tm
       common /report_cmn/ reportFile
+!$omp threadprivate(/report_cmn/)
       logical reportFile
 
       if (.not. reportFile) then
@@ -645,8 +670,8 @@
 
         call date_and_time(day,tm)
 
-        open(27,file="results.lua")
-        write(27,1000) trim(day), trim(tm), trim(flag), trim(msg)
+        open(27+CK_LUN,file="results.lua")
+        write(27+CK_LUN,1000) trim(day), trim(tm), trim(flag), trim(msg)
 
       endif
       if (abort) stop
@@ -668,12 +693,12 @@
       integer       :: lun, itype, i(2), isum, icount
       real(8)       :: time
 
-      open (lun, file=fname)
+      open (lun+CK_LUN, file=fname)
 
       itype = 0
-      read(lun,'(A)',end=100) line
-      read(lun,'(A)',end=100) line
-      read(lun,'(A)',end=100) line
+      read(lun+CK_LUN,'(A)',end=100) line
+      read(lun+CK_LUN,'(A)',end=100) line
+      read(lun+CK_LUN,'(A)',end=100) line
 
       i(:) = 0
       read(line,*,end=10) time,i
@@ -686,11 +711,11 @@
          itype = 2
       endif
 
-      close(lun)
+      close(lun+CK_LUN)
       print *, "file format = ", itype
       return
   100 continue
-      close(lun)
+      close(lun+CK_LUN)
       end subroutine check_format
 
       function icount(i) result (isum)

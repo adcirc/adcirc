@@ -6,6 +6,7 @@
       !--------------------------------------------------------------
 
       module global_io
+      use CkLunMod, only : CK_LUN
       use SIZES
       use VERSION
       use GLOBAL
@@ -85,6 +86,7 @@ C--------------------------------------------------------------------
       ! the subroutine used to write the file
       integer      :: ierr, status(MPI_STATUS_SIZE), request
       integer, save:: tagbase = 6000
+!$omp threadprivate(tagbase)
       integer      :: iproc
       integer      :: bufsize
       integer      :: ibucket
@@ -545,9 +547,9 @@ C
       if (mnproc == 1 .or. WRITE_LOCAL_FILES) szz = size_this
 
       if (myproc == 0 .or. WRITE_LOCAL_FILES) then
-        open(lun, file=trim(filename), status='UNKNOWN')
+        open(lun+CK_LUN, file=trim(filename), status='UNKNOWN')
         call write_header(lun,szz)
-        close(lun)
+        close(lun+CK_LUN)
       end if
 
 #ifdef GLOBALIO_TRACE
@@ -587,9 +589,9 @@ C
       if (mnproc == 1 .or. WRITE_LOCAL_FILES) szz = size_this
 
       if (myproc == 0 .or. WRITE_LOCAL_FILES) then
-        open(lun, file=trim(filename), status='REPLACE')
+        open(lun+CK_LUN, file=trim(filename), status='REPLACE')
         call write_header(lun,szz,nrecs_this)
-        close(lun)
+        close(lun+CK_LUN)
       end if
 
 #ifdef GLOBALIO_TRACE
@@ -627,6 +629,7 @@ C
       integer      :: nLWetNodes
       integer      :: num, i, j, k
       integer, save:: tagbase = 6000
+!$omp threadprivate(tagbase)
       integer      :: iproc
       integer      :: bufsize, ibucket
       integer      :: istart, iend, tag
@@ -638,11 +641,11 @@ C
 
       ! serial or writing local files
       if ((mnproc.eq.1).or.(WRITE_LOCAL_FILES)) then
-         open(descript%lun, file=trim(descript%file_name), 
+         open(descript%lun+CK_LUN, file=trim(descript%file_name), 
      &       access='SEQUENTIAL', position='APPEND')
-         write(descript%lun, 1101) TimeLoc, it
+         write(descript%lun+CK_LUN, 1101) TimeLoc, it
          call write_cmd(descript % lun, descript, 1, descript % num_records_this)
-         close(descript % lun)
+         close(descript % lun+CK_LUN)
 #ifdef GLOBALIO_TRACE
          call allMessage(DEBUG,"Return")
 #endif
@@ -652,9 +655,9 @@ C
 #ifdef CMPI
    
          if (myproc == 0) then
-           open(descript%lun, file=trim(descript%file_name), 
+           open(descript%lun+CK_LUN, file=trim(descript%file_name), 
      &         access='SEQUENTIAL', position='APPEND')
-           write(descript%lun, 1101) TimeLoc, it
+           write(descript%lun+CK_LUN, 1101) TimeLoc, it
          endif
    
          bufsize = min(BUFSIZE_MAX,
@@ -692,10 +695,10 @@ C
                j = 1 + (i-istart)*descript % num_items_per_record
    
                if(descript%isInteger)then
-                 write(descript % lun, 1001) labels_g(i), (integerResultBuffer(k), k = j, j +
+                 write(descript % lun+CK_LUN, 1001) labels_g(i), (integerResultBuffer(k), k = j, j +
      &              descript % num_items_per_record - 1)
                else
-                 write(descript % lun, 1000) labels_g(i), (resultBuf(k), k = j, j +
+                 write(descript % lun+CK_LUN, 1000) labels_g(i), (resultBuf(k), k = j, j +
      &              descript % num_items_per_record - 1)
                endif
              end do
@@ -706,7 +709,7 @@ C
            num    = iend - istart + 1
          end do
          if (myproc == 0) then
-           close(descript%lun)
+           close(descript%lun+CK_LUN)
          endif
 #endif
       endif
@@ -741,60 +744,60 @@ C
 
          IF ( (MNPROC.gt.1).and.(MyProc.eq.0)
      &         .and.(.not.WRITE_LOCAL_FILES)) THEN
-            OPEN(descript%lun,FILE=trim(descript%file_name),
+            OPEN(descript%lun+CK_LUN,FILE=trim(descript%file_name),
      &           ACCESS='DIRECT',RECL=NBYTE)
-            WRITE(descript % lun,REC=descript % filepos+1) TimeLoc
-            WRITE(descript % lun,REC=descript % filepos+2) IT
+            WRITE(descript % lun+CK_LUN,REC=descript % filepos+1) TimeLoc
+            WRITE(descript % lun+CK_LUN,REC=descript % filepos+2) IT
             descript%filepos = descript%filepos + 2
             IF ( descript % num_items_per_record .eq. 1 ) THEN
                DO I=1, descript % num_fd_records
-                  WRITE(descript % lun,REC=descript % filepos+I)
+                  WRITE(descript % lun+CK_LUN,REC=descript % filepos+I)
      &               descript % array_g(I)
                END DO
             ENDIF
             IF ( descript % num_items_per_record .eq. 2 ) THEN
                DO I=1, descript % num_fd_records
-                  WRITE(descript % lun,REC=descript % filepos+2*I-1)
+                  WRITE(descript % lun+CK_LUN,REC=descript % filepos+2*I-1)
      &                descript % array_g(I)
-                  WRITE(descript % lun,REC=descript % filepos+2*I)
+                  WRITE(descript % lun+CK_LUN,REC=descript % filepos+2*I)
      &                descript % array2_g(I)
                END DO
             ENDIF
-            CLOSE(descript%lun)
+            CLOSE(descript%lun+CK_LUN)
          ENDIF
 
          IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES)) THEN
-            OPEN(descript % lun,FILE=TRIM(descript % file_name),
+            OPEN(descript % lun+CK_LUN,FILE=TRIM(descript % file_name),
      &           ACCESS='DIRECT',RECL=NBYTE)
-            WRITE(descript % lun,REC=descript % filepos+1) TimeLoc
-            WRITE(descript % lun,REC=descript % filepos+2) IT
+            WRITE(descript % lun+CK_LUN,REC=descript % filepos+1) TimeLoc
+            WRITE(descript % lun+CK_LUN,REC=descript % filepos+2) IT
             descript % filepos = descript % filepos + 2
             IF ( descript % num_items_per_record .eq. 1 ) THEN
                IF ((trim(descript % field_name) .eq. 'Elev').and.
      &             (descript % ConsiderWetDry .EQV. .TRUE.)) THEN
                   DO I=1, descript % num_records_this
                      if(NODECODE(I).EQ.1) THEN
-                        WRITE(descript % lun,REC=descript % filepos+I) descript % array(I)
+                        WRITE(descript % lun+CK_LUN,REC=descript % filepos+I) descript % array(I)
                      ELSE
-                        WRITE(descript % lun,REC=descript % filepos+I)
+                        WRITE(descript % lun+CK_LUN,REC=descript % filepos+I)
      &                    descript % alternate_value !-99999.0 for dry nodes
                      ENDIF
                   END DO
                ELSE
                   DO I=1, descript % num_records_this
-                     WRITE(descript % lun,REC=descript % filepos+I) descript % array(I)
+                     WRITE(descript % lun+CK_LUN,REC=descript % filepos+I) descript % array(I)
                   END DO
                ENDIF
             ENDIF
             IF ( descript % num_items_per_record .eq. 2 ) THEN
                DO I=1, descript % num_records_this
                   !tcmv48.4618 -- changed from array_g to array
-                  WRITE(descript % lun,REC=descript % filepos+2*I-1) descript % array(I)
+                  WRITE(descript % lun+CK_LUN,REC=descript % filepos+2*I-1) descript % array(I)
                   !tcmv48.4618 -- changed from array2_g to array2
-                  WRITE(descript % lun,REC=descript % filepos+2*I)   descript % array2(I)
+                  WRITE(descript % lun+CK_LUN,REC=descript % filepos+2*I)   descript % array2(I)
                END DO
             ENDIF
-            CLOSE(descript % lun)
+            CLOSE(descript % lun+CK_LUN)
          ENDIF
          descript % filepos = descript % filepos + descript % num_records_this
          return
@@ -827,6 +830,7 @@ C
       integer      :: nLWetNodes
       integer      :: num, i, j, k
       integer, save:: tagbase = 6000
+!$omp threadprivate(tagbase)
       integer      :: iproc
       integer      :: bufsize, ibucket
       integer      :: istart, iend, tag
@@ -838,7 +842,7 @@ C
 
       ! serial or writing local files
       if ((mnproc.eq.1).or.(WRITE_LOCAL_FILES)) then
-         open(descript%lun, file=trim(descript%file_name), 
+         open(descript%lun+CK_LUN, file=trim(descript%file_name), 
      &       access='SEQUENTIAL', position='APPEND')
          nLWetNodes=0
          do i=1,np
@@ -859,9 +863,9 @@ C
                 nLWetNodes=nLWetNodes+1
             endif
          enddo
-         write(descript%lun, 1101) TimeLoc, it, nLWetNodes, descript%alternate_value
+         write(descript%lun+CK_LUN, 1101) TimeLoc, it, nLWetNodes, descript%alternate_value
          call write_cmd(descript % lun, descript, 1, descript % num_records_this)
-         close(descript % lun)
+         close(descript % lun+CK_LUN)
 #ifdef GLOBALIO_TRACE
          call allMessage(DEBUG,"Return")
 #endif
@@ -894,9 +898,9 @@ C
      &        MPI_SUM, 0, comm, ierr)
    
          if (myproc == 0) then
-           open(descript%lun, file=trim(descript%file_name), 
+           open(descript%lun+CK_LUN, file=trim(descript%file_name), 
      &         access='SEQUENTIAL', position='APPEND')
-           write(descript%lun, 1101) TimeLoc, it, nGWetNodes, descript%alternate_value
+           write(descript%lun+CK_LUN, 1101) TimeLoc, it, nGWetNodes, descript%alternate_value
          endif
    
          bufsize = min(BUFSIZE_MAX,
@@ -936,7 +940,7 @@ C
                    if(resultBuf(j).eq.descript % alternate_value) cycle
                endif
    
-               write(descript % lun, 1000) labels_g(i), (resultBuf(k), k = j, j +
+               write(descript % lun+CK_LUN, 1000) labels_g(i), (resultBuf(k), k = j, j +
      &           descript % num_items_per_record - 1)
              end do
            end if
@@ -946,7 +950,7 @@ C
            num    = iend - istart + 1
          end do
          if (myproc == 0) then
-           close(descript%lun)
+           close(descript%lun+CK_LUN)
          endif
 #endif
       endif
@@ -988,39 +992,39 @@ C
                 if(descript%considerWetDry)then
                     if(nodecode(i)==0)cycle
                     if(descript%isInteger)then
-                        write(lun , 1001) labels(i), descript % iarray(i)
+                        write(lun +CK_LUN, 1001) labels(i), descript % iarray(i)
                     else
-                        write(lun , 1000) labels(i), descript % array(i)
+                        write(lun +CK_LUN, 1000) labels(i), descript % array(i)
                     endif
                 else
                     if(descript%isInteger)then
                         if(descript%iarray(i)==int(descript%alternate_value))cycle
-                        write(lun , 1001) labels(i), descript % iarray(i)
+                        write(lun +CK_LUN, 1001) labels(i), descript % iarray(i)
                     else
                         if(descript%array(i)==descript%alternate_value)cycle
-                        write(lun , 1000) labels(i), descript % array(i)
+                        write(lun +CK_LUN, 1000) labels(i), descript % array(i)
                     endif
                 endif
             else
                 if(descript%considerWetDry)then
                     if(nodecode(i)==0)then
                         if(descript%isInteger)then
-                            write(lun, 1001) labels(i), int(descript % alternate_value)
+                            write(lun+CK_LUN, 1001) labels(i), int(descript % alternate_value)
                         else
-                            write(lun, 1000) labels(i), descript % alternate_value
+                            write(lun+CK_LUN, 1000) labels(i), descript % alternate_value
                         endif
                     else
                         if(descript%isInteger)then
-                            write(lun, 1001) labels(i), descript % iarray(i)
+                            write(lun+CK_LUN, 1001) labels(i), descript % iarray(i)
                         else
-                            write(lun, 1000) labels(i), descript % array(i)
+                            write(lun+CK_LUN, 1000) labels(i), descript % array(i)
                         endif
                     endif
                 else
                     if(descript%isInteger)then
-                        write(lun , 1001) labels(i), descript % iarray(i)
+                        write(lun +CK_LUN, 1001) labels(i), descript % iarray(i)
                     else
-                        write(lun , 1000) labels(i), descript % array(i)
+                        write(lun +CK_LUN, 1000) labels(i), descript % array(i)
                     endif
                 endif
             endif
@@ -1080,14 +1084,14 @@ C
         do i = 1, descript % num_records_this
             if(abs(descript%specifier)==SPARSE_ASCII) then
                if(descript%considerWetDry.AND.nodecode(i)==0) cycle
-               write(lun , 1000) labels(i), descript % array(i),
+               write(lun +CK_LUN, 1000) labels(i), descript % array(i),
      &              descript % array2(i)
             else
                if(descript%considerWetDry.AND.nodecode(i)==0) then
-                 write(lun, 1000) labels(i), descript % alternate_value,
+                 write(lun+CK_LUN, 1000) labels(i), descript % alternate_value,
      &              descript % alternate_value
                else
-                 write(lun, 1000) labels(i), descript % array(i),
+                 write(lun+CK_LUN, 1000) labels(i), descript % array(i),
      &              descript % array2(i)
                endif
             endif
@@ -1137,8 +1141,8 @@ C
       implicit none
       integer :: lun, size_this
 
-      write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspe, size_this, dtdp*nspoole, nspoole, 1,
+      write(lun+CK_LUN, 1000) rundes, runid, agrid
+      write(lun+CK_LUN, 1010) ntrspe, size_this, dtdp*nspoole, nspoole, 1,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1159,8 +1163,8 @@ C
       implicit none
       integer :: lun, size_this
 
-      write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspv, size_this, dtdp*nspoolv, nspoolv, 2,
+      write(lun+CK_LUN, 1000) rundes, runid, agrid
+      write(lun+CK_LUN, 1010) ntrspv, size_this, dtdp*nspoolv, nspoolv, 2,
      &     FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1181,8 +1185,8 @@ C
       implicit none
       integer :: lun, size_this
 
-      write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsetse, size_this, dtdp*nspoolge, nspoolge, 1,
+      write(lun+CK_LUN, 1000) rundes, runid, agrid
+      write(lun+CK_LUN, 1010) ndsetse, size_this, dtdp*nspoolge, nspoolge, 1,
      &                 FileFmtVersion
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
@@ -1203,9 +1207,9 @@ C
       integer :: lun, size_this
       integer :: nrecs_this  !tcm v51.20.06
 
-      write(lun, 1000) rundes, runid, agrid
+      write(lun+CK_LUN, 1000) rundes, runid, agrid
       !tcm v51.20.06 Changed number of records from 1 to nrecs_this (1 or 2)
-      write(lun, 1010) nrecs_this, size_this, 1.d0, 1, 1, FileFmtVersion
+      write(lun+CK_LUN, 1010) nrecs_this, size_this, 1.d0, 1, 1, FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
@@ -1225,8 +1229,8 @@ C
       implicit none
       integer :: lun, size_this
 
-      write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsetsv, size_this, dtdp*nspoolgv, nspoolgv, 2,
+      write(lun+CK_LUN, 1000) rundes, runid, agrid
+      write(lun+CK_LUN, 1010) ndsetsv, size_this, dtdp*nspoolgv, nspoolgv, 2,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1247,8 +1251,8 @@ C
       implicit none
       integer :: lun, size_this
 
-      write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1,
+      write(lun+CK_LUN, 1000) rundes, runid, agrid
+      write(lun+CK_LUN, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1269,8 +1273,8 @@ C
       implicit none
       integer :: lun, size_this
 
-      write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 2,
+      write(lun+CK_LUN, 1000) rundes, runid, agrid
+      write(lun+CK_LUN, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 2,
      &                  FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1291,8 +1295,8 @@ C
       implicit none
       integer :: lun, size_this
 
-      write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 1,
+      write(lun+CK_LUN, 1000) rundes, runid, agrid
+      write(lun+CK_LUN, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 1,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1313,8 +1317,8 @@ C
       implicit none
       integer :: lun, size_this
 
-      write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 2,
+      write(lun+CK_LUN, 1000) rundes, runid, agrid
+      write(lun+CK_LUN, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 2,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1335,8 +1339,8 @@ C
       implicit none
       integer :: lun, size_this
 
-      write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsets_tvw, size_this, dtdp*nspool_tvw,
+      write(lun+CK_LUN, 1000) rundes, runid, agrid
+      write(lun+CK_LUN, 1010) ndsets_tvw, size_this, dtdp*nspool_tvw,
      &                 nspool_tvw, 1, FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1358,8 +1362,8 @@ C
       implicit none
       integer :: lun, size_this
 
-      write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1,
+      write(lun+CK_LUN, 1000) rundes, runid, agrid
+      write(lun+CK_LUN, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1381,8 +1385,8 @@ C
       implicit none
       integer :: lun, size_this
 
-      write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 1,
+      write(lun+CK_LUN, 1000) rundes, runid, agrid
+      write(lun+CK_LUN, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 1,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1404,8 +1408,8 @@ C
       implicit none
       integer :: lun, size_this
 
-      write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspc, size_this, dtdp*nspoolc, nspoolc, 1,
+      write(lun+CK_LUN, 1000) rundes, runid, agrid
+      write(lun+CK_LUN, 1010) ntrspc, size_this, dtdp*nspoolc, nspoolc, 1,
      &                  FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1441,8 +1445,8 @@ C
       integer :: nstations
 
 C     Open the file
-      open(lun, file=filename, status='UNKNOWN')
-      write(lun, 1000) rundes, runid, agrid
+      open(lun+CK_LUN, file=filename, status='UNKNOWN')
+      write(lun+CK_LUN, 1000) rundes, runid, agrid
       
 C     Unless we are processor 0 or we are supposed to write local
 C     files, there is nothing to do but *** RETURN EARLY ***
@@ -1457,39 +1461,39 @@ C     Set the appropriate number of nodes
 C    
       select case(trim(typeStr))
       case("Elev")
-          write(lun, 1010) ntrspe, nstations, dtdp*nspoole, nspoole, 1,
+          write(lun+CK_LUN, 1010) ntrspe, nstations, dtdp*nspoole, nspoole, 1,
      &         FileFmtVersion
       case("offset")
-          write(lun, 1010) ntrspe, nstations, dtdp*nspoole, nspoole, 1,
+          write(lun+CK_LUN, 1010) ntrspe, nstations, dtdp*nspoole, nspoole, 1,
      &         FileFmtVersion
       case("Vel2D")
-          write(lun, 1010) ntrspv, nstations, dtdp*nspoolv, nspoolv, 2,
+          write(lun+CK_LUN, 1010) ntrspv, nstations, dtdp*nspoolv, nspoolv, 2,
      &         FileFmtVersion
       case("Vel3D")
-          write(lun, 1020) ndset3dsv, nstations, dtdp*nspo3dsv,
+          write(lun+CK_LUN, 1020) ndset3dsv, nstations, dtdp*nspo3dsv,
      &         nspo3dsv, nfen, 3, FileFmtVersion
       case("Turb3D")
-          write(lun, 1020) ndset3dst, nstations, dtdp*nspo3dst,
+          write(lun+CK_LUN, 1020) ndset3dst, nstations, dtdp*nspo3dst,
      &         nspo3dst, nfen, 3, FileFmtVersion
       case("Dens2D")
-          write(ScreenUnit,*)
+          write(ScreenUnit+CK_LUN,*)
      &         'ERROR: 2D density station output not implemented.'
           stop
       case("Dens3D")
-          write(lun, 1020) ndset3dsd, nstations, dtdp*nspo3dsd,
+          write(lun+CK_LUN, 1020) ndset3dsd, nstations, dtdp*nspo3dsd,
      &         nspo3dsd, nfen, 3, FileFmtVersion
       case("Press","Wind")
-          write(lun, 1010) ntrspm, nstations, dtdp*nspoolm, nspoolm, 1,
+          write(lun+CK_LUN, 1010) ntrspm, nstations, dtdp*nspoolm, nspoolm, 1,
      &                 FileFmtVersion
       case("Conc2D")
-          write(lun, 1010) ntrspc, nstations, dtdp*nspoolc, nspoolc, 1,
+          write(lun+CK_LUN, 1010) ntrspc, nstations, dtdp*nspoolc, nspoolc, 1,
      &                  FileFmtVersion
       case("Conc3D")
-          write(ScreenUnit,*)
+          write(ScreenUnit+CK_LUN,*)
      &         'ERROR: 3D conc. station output not implemented.'
           stop
       case default
-          write(ScreenUnit,*)
+          write(ScreenUnit+CK_LUN,*)
      &         'ERROR: Station header type unrecongnized.'
           stop
       end select
@@ -1540,66 +1544,66 @@ C     Set the appropriate number of nodes
       endif
 C
 C     Open the file
-      open(lun, file=filename, status='UNKNOWN')
-      write(lun, 1000) rundes, runid, agrid
+      open(lun+CK_LUN, file=filename, status='UNKNOWN')
+      write(lun+CK_LUN, 1000) rundes, runid, agrid
 
       select case(trim(typeStr))
       case("Elev")
-          write(lun, 1010) ndsetse, nodes, dtdp*nspoolge,
+          write(lun+CK_LUN, 1010) ndsetse, nodes, dtdp*nspoolge,
      &                 nspoolge, 1, FileFmtVersion
       case("ElevMax")
-          write(lun, 1010) 1, numNodes, 1.d0, 1, 1, FileFmtVersion
+          write(lun+CK_LUN, 1010) 1, numNodes, 1.d0, 1, 1, FileFmtVersion
       case("Vel2D")
-          write(lun, 1010) ndsetsv, nodes, dtdp*nspoolgv,
+          write(lun+CK_LUN, 1010) ndsetsv, nodes, dtdp*nspoolgv,
      &                     nspoolgv, 2, FileFmtVersion
       case("Vel3D")
-          write(lun, 1020) ndset3dgv, nodes, dtdp*nspo3dgv,
+          write(lun+CK_LUN, 1020) ndset3dgv, nodes, dtdp*nspo3dgv,
      &                     nspo3dgv, nfen, 3, FileFmtVersion
       case("Turb3D")
-          write(lun, 1020) ndset3dgt, nodes, dtdp*nspo3dgt,
+          write(lun+CK_LUN, 1020) ndset3dgt, nodes, dtdp*nspo3dgt,
      &                     nspo3dgt, nfen, 3, FileFmtVersion
       case("Dens2D")
-          write(ScreenUnit,*)
+          write(ScreenUnit+CK_LUN,*)
      &         'ERROR: 2D density output not implemented.'
           stop
       case("Dens3D")
-          write(lun, 1020) ndset3dgd, nodes, dtdp*nspo3dgd,
+          write(lun+CK_LUN, 1020) ndset3dgd, nodes, dtdp*nspo3dgd,
      &                     nspo3dgd, nfen, 3, FileFmtVersion
       case("Press","Wind")
-          write(lun, 1010) ndsetsw, nodes, dtdp*nspoolgw,
+          write(lun+CK_LUN, 1010) ndsetsw, nodes, dtdp*nspoolgw,
      &                     nspoolgw, 1, FileFmtVersion
       case("Conc2D")
-          write(ScreenUnit,*)
+          write(ScreenUnit+CK_LUN,*)
      &         'ERROR: 2D conc. output not implemented.'
           stop
       case("Conc3D")
-          write(ScreenUnit,*)
+          write(ScreenUnit+CK_LUN,*)
      &         'ERROR: 3D conc. output not implemented.'
           stop
       case("Tau0")
-          write(lun, 1010) ndsetse, nodes, dtdp*nspoolge,
+          write(lun+CK_LUN, 1010) ndsetse, nodes, dtdp*nspoolge,
      &                 nspoolge, 1, FileFmtVersion
       case("sponge")
-          write(lun, 1010) 1, nodes, dtdp*nspoolge,
+          write(lun+CK_LUN, 1010) 1, nodes, dtdp*nspoolge,
      &                 nspoolge, 1, FileFmtVersion
       case("noff")
-          write(lun, 1010) 1, nodes, dtdp*nspoolge,
+          write(lun+CK_LUN, 1010) 1, nodes, dtdp*nspoolge,
      &                 nspoolge, 1, FileFmtVersion
       case("nodecode")
-          write(lun, 1010) 1, nodes, dtdp*nspoolge,
+          write(lun+CK_LUN, 1010) 1, nodes, dtdp*nspoolge,
      &                 nspoolge, 1, FileFmtVersion
       case("initDry")
-          write(lun, 1010) 1, nodes, 0.d0, 0, 1, FileFmtVersion
+          write(lun+CK_LUN, 1010) 1, nodes, 0.d0, 0, 1, FileFmtVersion
       case("offset")
-          write(lun, 1010) 1, nodes, dtdp*nspoolge, nspoolge, 1, 
+          write(lun+CK_LUN, 1010) 1, nodes, dtdp*nspoolge, nspoolge, 1, 
      &    FileFmtVersion
       case default
-          write(ScreenUnit,*)
+          write(ScreenUnit+CK_LUN,*)
      &         'ERROR: Full domain header type unrecongnized.'
       end select
 C
 C     close the file
-      close(lun)
+      close(lun+CK_LUN)
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
@@ -1646,9 +1650,9 @@ C----------------------------------------------------------------------
 #endif
       !
       ! Process Header Lines
-      read(descript%lun,*,end=3990,err=3990) skipline   ! 1st header line
+      read(descript%lun+CK_LUN,*,end=3990,err=3990) skipline   ! 1st header line
       !tcm v51.20.01 added specific reading of 2nd header line
-      read(descript%lun,*,end=3990,err=3990) ndsetmax,size_this,
+      read(descript%lun+CK_LUN,*,end=3990,err=3990) ndsetmax,size_this,
      &                       time_this,nspoolmax,irtype,dmstr,ffv   
       !
       ! jgf52.08.20: Read time and timestep and reject min/max data that correspond
@@ -1663,7 +1667,7 @@ C----------------------------------------------------------------------
       ! continue if non-fatal override is enabled, since it would be 
       ! annoying to have ADCIRC bomb out every time the analyst mistakenly
       ! leaves a min/max file in place. 
-      read(descript%lun,*,end=3990,err=3990) TimeMM, ITMM   ! TIME and IT line
+      read(descript%lun+CK_LUN,*,end=3990,err=3990) TimeMM, ITMM   ! TIME and IT line
       if (TimeMM.gt.TimeLoc) then
          call allMessage(ERROR,'Max/min file '//trim(descript % file_name)//
      &     ' contains data written after the hotstart time. '// 
@@ -1683,7 +1687,7 @@ C----------------------------------------------------------------------
              call allMessage(DEBUG,"Return.")
 #endif
              call unsetMessageSource()
-             CLOSE(descript%lun)  !close the max/min file
+             CLOSE(descript%lun+CK_LUN)  !close the max/min file
              return ! EARLY RETURN
          endif
       endif
@@ -1703,9 +1707,9 @@ C----------------------------------------------------------------------
       !
       do I=1, descript % num_fd_records
          if (descript % isInteger.eqv..true.) then
-            read(descript%lun,*,end=3990,err=3990) rawNode, irawDatum !integer
+            read(descript%lun+CK_LUN,*,end=3990,err=3990) rawNode, irawDatum !integer
          else
-            read(descript%lun,*,end=3990,err=3990) rawNode, rawDatum  !float
+            read(descript%lun+CK_LUN,*,end=3990,err=3990) rawNode, rawDatum  !float
          endif
          if ((rawNode.ge.1).and.(rawNode.le.descript%num_fd_records)) then
             node = rawNode
@@ -1730,12 +1734,12 @@ C----------------------------------------------------------------------
          if (mnproc.gt.1) then
             rdata => descript % array2_g
          endif
-         read(descript%lun,*,end=3990,err=3990) skipline   ! TIME and IT line
+         read(descript%lun+CK_LUN,*,end=3990,err=3990) skipline   ! TIME and IT line
          call logMessage(INFO,
      &       'Max/min timestamps were found in '//trim(descript%file_name)//
      &       ' and will be loaded and used.')
          do i=1, descript % num_fd_records
-            read(descript%lun,*,end=3990,err=3990) rawNode, rawDatum
+            read(descript%lun+CK_LUN,*,end=3990,err=3990) rawNode, rawDatum
             if ((rawNode.ge.1).and.(rawNode.le.descript%num_fd_records)) then
                node = rawNode
                rdata(node) = rawDatum
@@ -1768,7 +1772,7 @@ C----------------------------------------------------------------------
      &         //trim(descript % file_name)//'".')
       ENDIF
 
-      CLOSE(descript%lun)  !close the max/min file
+      CLOSE(descript%lun+CK_LUN)  !close the max/min file
 
  450  format('Finished reading ',i0,' lines from the "',a,'" file.')
 
@@ -1807,11 +1811,11 @@ C
 
 C...  go get new record for only some nodes, all
 C...  other nodes keep their current value
- 170  READ(lun,'(A80)') CDUM80
+ 170  READ(lun+CK_LUN,'(A80)') CDUM80
       IF(CDUM80(2:2).EQ.'#') GOTO 170
  171  READ(CDUM80,'(I8,E13.5)') IJK,tmpval    
       if (tmpval.ne.defval) RVAL(IJK) = tmpval  !this allows us to exclude values included for record separation purposes in the parallel version
-      READ(lun,'(A80)',end=172) CDUM80
+      READ(lun+CK_LUN,'(A80)',end=172) CDUM80
       IF(CDUM80(2:2).NE.'#') GOTO 171
  172  CONTINUE
  
@@ -1859,7 +1863,7 @@ C
          if (descript % minmax_timestamp.eqv..true.) then 
             descript % array2(:) = -99999.d0  !tcm v51.20.06
          endif
-         close(descript%lun)
+         close(descript%lun+CK_LUN)
 #if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Return.")
 #endif

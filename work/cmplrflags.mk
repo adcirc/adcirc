@@ -109,6 +109,99 @@ ifeq ($(compiler),gnu)
   endif
 endif
 #
+ifeq ($(compiler),ampi)
+  ifeq ($(MACHINENAME),jason-desktop)
+     XDMFPATH    := /home/jason/projects/XDMF/Code/latestCode
+     XDMFLIBPATH := /home/jason/projects/XDMF/Code/testLatest
+  endif
+#  PPFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp
+  PPFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp
+#  FC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp
+  FC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp
+#  PFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp
+  PFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp
+  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none 
+  ifeq ($(PROFILE),enable)
+    FFLAGS1	:=  $(INCDIRS) -pg -Og -fprofile-arcs -ftest-coverage -ffixed-line-length-none 
+  endif
+  ifeq ($(DEBUG),asan)
+    FFLAGS1	:=  $(INCDIRS) -g3 -Og -ffixed-line-length-none -fbacktrace -fsanitize=address -fno-omit-frame-pointer
+  endif
+  ifeq ($(DEBUG),full)
+    FFLAGS1	:=  $(INCDIRS) -g3 -Og -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND -DDEBUG_WARN_ELEV
+  endif
+  ifeq ($(DEBUG),compiler-warnings)
+    FFLAGS1	:=  $(INCDIRS) -g3 -Og -Wall -Wextra -ffixed-line-length-none -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+  endif
+  ifeq ($(DEBUG),full-not-warnelev)
+    FFLAGS1	:=  $(INCDIRS) -g3 -Og -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND 
+  endif
+  ifeq ($(DEBUG),full-not-fpe)
+    FFLAGS1	:=  $(INCDIRS) -g3 -Og -ffixed-line-length-none -fbacktrace -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
+  endif
+  ifeq ($(DEBUG),trace)
+    FFLAGS1	:=  $(INCDIRS) -g3 -Og -ffixed-line-length-none -fbacktrace -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -finit-local-zero
+  endif
+#  ifneq ($(MACHINENAME),jason-desktop)
+#     FFLAGS1 := $(FFLAGS1) -fno-underscoring
+#  endif
+  FFLAGS2	:=  $(FFLAGS1)
+  FFLAGS3	:=  $(FFLAGS1)
+  DA		:=  -DREAL8 -DLINUX -DCSCA
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DPRE		:=  -DREAL8 -DLINUX
+  ifeq ($(SWAN),enable)
+     DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
+  endif
+  FLIBS         := 
+  ifeq ($(NETCDF),enable)
+     ifeq ($(MACHINENAME),penguin)    
+        # module purge
+        # module load gcc/6.2.0 openmpi/2.1.2/gcc.6.2.0 
+        # curl -O ftp://ftp.unidata.ucar.edu/pub/netcdf/old/netcdf-4.2.1.1.tar.gz
+        # curl -O ftp://ftp.unidata.ucar.edu/pub/netcdf/old/netcdf-fortran-4.2.tar.gz
+        # curl -O https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.12/src/hdf5-1.8.12.tar.gz
+        # CPPFLAGS=-I/home/jgflemin/local/include LDFLAGS=-L/home/jgflemin/local/lib ./configure --prefix=/home/jgflemin/local
+        # 
+        # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/local/lib
+        # export PATH=${PATH}:${HOME}/local/bin
+        NETCDFHOME := ${HOME}/local
+        FFLAGS1 := $(FFLAGS1) -I${HOME}/local/include
+        FFLAGS2 := $(FFLAGS2) -I${HOME}/local/include
+        FFLAGS3 := $(FFLAGS3) -I${HOME}/local/include
+        FLIBS := $(FLIBS) -L${HOME}/local/lib -lnetcdff -lnetcdf
+     endif 
+     ifeq ($(MACHINENAME),jason-desktop)
+        NETCDFHOME := /usr
+        FFLAGS1 := $(FFLAGS1) -L/usr/lib/x86_64-linux-gnu
+        FFLAGS2 := $(FFLAGS2) -L/usr/lib/x86_64-linux-gnu
+        FFLAGS3 := $(FFLAGS3) -L/usr/lib/x86_64-linux-gnu
+     endif
+     ifeq ($(MACHINENAME),rostam)    
+        NETCDFHOME := /usr
+        FFLAGS1 := $(FFLAGS1) -I/usr/lib64/gfortran/modules
+        FFLAGS2 := $(FFLAGS2) -I/usr/lib64/gfortran/modules
+        FFLAGS3 := $(FFLAGS3) -I/usr/lib64/gfortran/modules
+     endif
+     FLIBS      := $(FLIBS) -lnetcdff 
+  endif
+  IMODS 	:=  -I
+  CC		:= gcc
+  CCBE		:= $(CC)
+  CFLAGS	:= $(INCDIRS) -O2 -DLINUX
+  ifeq ($(DEBUG),full)
+     CFLAGS     := $(INCDIRS) -g -O0 -DLINUX
+  endif
+  CLIBS	:=
+  MSGLIBS	:=
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else
+     MULTIPLE := TRUE
+  endif
+endif
+
 ifeq ($(compiler),gfortran)
   ifeq ($(MACHINENAME),jason-desktop)
      XDMFPATH    := /home/jason/projects/XDMF/Code/latestCode

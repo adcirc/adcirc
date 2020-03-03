@@ -25,6 +25,7 @@ C                                                                           C
 C---------------------------------------------------------------------------C
 C
       SUBROUTINE DECOMP()
+      use CkLunMod, only : CK_LUN
       USE pre_global
 
       INTEGER N1, N2, N3, KMIN, VTMAX
@@ -442,7 +443,7 @@ Casey 110518: Added this change from Seizo.
                ! I don't see how this can happen, so I am adding a 
                ! warning message to provide an alert when it does
                ! so that I can examine it more closely. 
-               write(6,'(a,i0,a,i0,a)') 'WARNING: Subdomain ',I, 
+               write(6+CK_LUN,'(a,i0,a,i0,a)') 'WARNING: Subdomain ',I, 
      &       ' added to the list of subdomain neighbors of subdomain ',
      &         INDX,'.' 
             ENDIF
@@ -462,7 +463,7 @@ C  It works for both resident and ghost nodes
             INDX = IMAP_NOD_LG(J,I)
             ITOTPROC(INDX) = ITOTPROC(INDX) + 1
             IF (ITOTPROC(INDX).GT.MNPROC)THEN
-              WRITE(6,*)'Some nodes belong to more processors',
+              WRITE(6+CK_LUN,*)'Some nodes belong to more processors',
      $                  ' than MNPROC'
               STOP
             ENDIF
@@ -486,7 +487,7 @@ C
       DO I=1, NPROC
          PE(1:6) = 'PE0000'
          CALL IWRITE(PE,3,6,I-1)
-         WRITE(6,92) PE, NOD_RES_TOT(I),NNODP(I)-NOD_RES_TOT(I),
+         WRITE(6+CK_LUN,92) PE, NOD_RES_TOT(I),NNODP(I)-NOD_RES_TOT(I),
      &                   NNODP(I),NELP(I)
       ENDDO
  90   FORMAT(1X,A6,25X,I9,2X,I9)
@@ -500,6 +501,7 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------
       subroutine checkMappings(partitionOK,numPartitionAttempts)
+      use CkLunMod, only : CK_LUN
       use pre_global
       implicit none
       logical, intent(out) :: partitionOK 
@@ -644,6 +646,7 @@ C                                                                           C
 C---------------------------------------------------------------------------C
 C
       SUBROUTINE DOMSIZE()
+      use CkLunMod, only : CK_LUN
       USE pre_global
 
       INTEGER N1,N2,N3,VTMAX

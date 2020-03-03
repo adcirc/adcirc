@@ -7,12 +7,17 @@ C     where they can be called by the writer module as well as the
 C     write output module.
 C----------------------------------------------------------------------
       module xdmfio
+      use CkLunMod, only : CK_LUN
 C----------------------------------------------------------------------
       use sizes, only : sz
       logical :: release = .true.  ! .true. to release memory after writing data to HDF5
+!$omp threadprivate(release)
       logical :: writeToHDF5 = .true. ! .true. if XdmfAddGrid should immediately write mesh
+!$omp threadprivate(writeToHDF5)
       integer :: lightDataLimit = 10 ! max values to save as light data (xml)
+!$omp threadprivate(lightDataLimit)
       logical :: meshInitialized = .false. ! needed by dedicated writer processors
+!$omp threadprivate(meshInitialized)
 
       contains
 C-----------------------------------------------------------------------
@@ -41,8 +46,8 @@ C-----------------------------------------------------------------------
       call terminate()
 #else
       !jgfdebug
-      write(6,'(a)') 'fn='//trim(descript % file_name)
-      write(6,'(a,i0)') 'lun=',descript % lun
+      write(6+CK_LUN,'(a)') 'fn='//trim(descript % file_name)
+      write(6+CK_LUN,'(a,i0)') 'lun=',descript % lun
       !
       ! read ADCIRC control data from ascii file unless otherwise specified
       !call readControlFile(controlFileName)
@@ -58,7 +63,7 @@ C-----------------------------------------------------------------------
       !
       ! call the XdmfFortran constructor; return a reference to the XdmfFortran object
       ! (the pointer is packaged as a long int in Fortran)
-      write(6,'(A)') 'INFO: Initializing XDMF object.'
+      write(6+CK_LUN,'(A)') 'INFO: Initializing XDMF object.'
       call xdmfInit(descript % xdmfMD % xdmfFortranObj)
       !
       call xdmfInitHDF5(descript % xdmfMD % xdmfFortranObj,
@@ -122,7 +127,7 @@ C-----------------------------------------------------------------------
       call terminate()
 #else
       !jgfdebug
-      write(6,'(a)') 'call to write '//trim(descript % file_name)
+      write(6+CK_LUN,'(a)') 'call to write '//trim(descript % file_name+CK_LUN)
       ! 
       ! if this is the first Grid to be added to the collection, then
       ! write the mesh and boundary data to the file ... if this is not
@@ -168,7 +173,7 @@ C-----------------------------------------------------------------------
          call addBoundaries(descript)
          !
          ! add bathymetric depth
-         write(6,'(a)') 'INFO: Writing bathy/topo to XDMF file.'
+         write(6+CK_LUN,'(a)') 'INFO: Writing bathy/topo to XDMF file.'
          ! write the bathymetric depth
          !descript % xdmfmd % createdIDs = .false.
          !descript % xdmfmd % variable_name = 'depth'
@@ -186,7 +191,7 @@ C-----------------------------------------------------------------------
      &      'depth'//CHAR(0), 
      &      XDMF_ATTRIBUTE_CENTER_NODE, XDMF_ATTRIBUTE_TYPE_SCALAR, np, 
      &      XDMF_ARRAY_TYPE_FLOAT64, dp)
-         write(6,'(a)') 'INFO: Finished writing bathy/topo to XDMF file.'
+         write(6+CK_LUN,'(a)') 'INFO: Finished writing bathy/topo to XDMF file.'
       else
          ! we've already added Grids to the collection ... don't write
          ! the mesh and boundary data again, just create references to it 
@@ -330,12 +335,12 @@ C-----------------------------------------------------------------------
          timeStepsRemaining = min(timeStepsRemaining, 
      &                            nt - descript % endTimeStep )
       endif
-      write(6,'(a,i0)') 'timesteps remaining=',timeStepsRemaining
+      write(6+CK_LUN,'(a,i0)') 'timesteps remaining=',timeStepsRemaining
       if ( timeStepsRemaining .lt. descript % outputTimeStepIncrement) then
         lastOutput = .true.
       endif
       if ( lastOutput.eqv..true. ) then
-         write(6,'(a)') 'finalizing output'
+         write(6+CK_LUN,'(a)') 'finalizing output'
          call finalizeOutputFileXDMF(descript)
       endif
 #endif
@@ -365,13 +370,13 @@ C-----------------------------------------------------------------------
       ! call the write method; arguments include the name of the xml file, 
       ! the max number of light data values, and whether to release memory
       ! after writing. This actually writes both the light and heavy data.
-      write(6,'(a)') 'INFO: Writing data to file and releasing memory.'
+      write(6+CK_LUN,'(a)') 'INFO: Writing data to file and releasing memory.'
       call XdmfWrite(descript % xdmfMD % xdmfFortranObj, 
      &   trim(descript % file_name)//'.xmf'//char(0), 
      &   lightDataLimit, release)
       !
       ! call the close method (deletes the XdmfFortran object)
-      write(6,'(A)') 'INFO: Cleaning up and deleting XDMF object.'
+      write(6+CK_LUN,'(A)') 'INFO: Cleaning up and deleting XDMF object.'
       call xdmfClose(descript % xdmfMD % xdmfFortranObj)
 #endif
       !----------------------------------------------------------------
@@ -463,7 +468,7 @@ C-----------------------------------------------------------------------
       character(1024) :: fluxBoundaryType ! character represenation of IBTYPE
       integer :: i, j  ! loop counter
       !
-      write(6,'(A)') 'INFO: Adding boundary data.'
+      write(6+CK_LUN,'(A)') 'INFO: Adding boundary data.'
       do i=1, nope 
          ! jgftodo: this is hardcoded to 0 since this is the only type that ADCIRC
          ! supports, and most or all mesh files don't even have this value, although
@@ -592,7 +597,7 @@ C-----------------------------------------------------------------------
      &          nvell(i), XDMF_ARRAY_TYPE_INT32)
             ifwpCount = ifwpCount + 1
          case default
-            write(6,
+            write(6+CK_LUN,
      &       '("ERROR: File contains IBTYPE=",i0," which is invalid.")'), ibtype_orig(i)
          end select
       end do
@@ -687,7 +692,7 @@ C-----------------------------------------------------------------------
      &          nvell(i), XDMF_ARRAY_TYPE_INT32)
             ifwpCount = ifwpCount + 1
          case default
-            write(6,'("ERROR: File contains IBTYPE=",i0," which is not a valid flux boundary type.")'), ibtype_orig(i)
+            write(6+CK_LUN,'("ERROR: File contains IBTYPE=",i0," which is not a valid flux boundary type.")'), ibtype_orig(i)
          end select
       end do
 #endif
@@ -718,7 +723,7 @@ C-----------------------------------------------------------------------
       integer :: i 
       integer :: j
       !
-      write(6,'(a)') 'INFO: Writing control parameters to XDMF.'
+      write(6+CK_LUN,'(a)') 'INFO: Writing control parameters to XDMF.'
       informationID = XdmfAddInformation(xdmfFortranObj, 'rundes'//char(0), 
      &    trim(adjustl(rundes))//char(0))
       informationID = XdmfAddInformation(xdmfFortranObj, 'runid'//char(0), 

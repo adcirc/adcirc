@@ -73,6 +73,7 @@ C******************************************************************************
 C******************************************************************************
 C******************************************************************************
       MODULE ADCIRC_Mod
+      use CkLunMod, only : CK_LUN, setampizedlun
 C******************************************************************************
 C******************************************************************************
 
@@ -80,6 +81,7 @@ C******************************************************************************
       PUBLIC
 
       INTEGER, SAVE :: ITIME_BGN, ITIME_END
+!$omp threadprivate(ITIME_BGN,ITIME_END)
 
 
       CONTAINS
@@ -88,7 +90,7 @@ C******************************************************************************
 C******************************************************************************
 C*    ADCIRC initialize routine
 C******************************************************************************
-      SUBROUTINE ADCIRC_Init(COMM, ROOTD)
+      SUBROUTINE ADCIRC_Init
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       USE VERSION, ONLY : adc_version, fileFmtMajor, fileFmtMinor, 
      &   FileFmtRev
@@ -120,8 +122,8 @@ C******************************************************************************
 #endif
       IMPLICIT NONE
 C
-      INTEGER, OPTIONAL :: COMM
-      CHARACTER(*), OPTIONAL :: ROOTD
+      INTEGER :: COMM
+      CHARACTER(2048) :: ROOTD
       REAL(SZ) :: StaTimHS
       REAL(SZ) :: RefTimHS
       REAL(SZ) :: TimeLoc
@@ -133,19 +135,24 @@ C
       ! jgf51.52.07: Added command line option to just write out
       ! the ADCIRC version number and exit. This is to allow 
       ! external applications to query the version number so that
-      ! they can behave in version-appropriate ways. 
-      argcount  = iargc()  ! get number of command line arguments
+! they can behave in version-appropriate ways.
+      integer :: ierr
+      integer, parameter :: arg_len = 128
+      character(len=arg_len), dimension(:), allocatable:: raw_arguments
+c      argcount  = iargc()       ! get number of command line arguments
+      call ampi_command_argument_count(argcount)
+      allocate(raw_arguments(argcount))
       if ((argcount.gt.0).and.(myproc.eq.0)) then
          i = 0
          do while (i.lt.argcount)
             i = i + 1
-            call getarg(i, cmdlinearg)
+            call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
             select case(cmdlinearg(1:2))
             case("-V","-v") 
                ! write the version number string ... actually it is
                ! a series of two or three numbers with two digits 
                ! separated by dots, e.g., 51.02 or 51.52.07
-               write(6,'(a)') trim(adc_version)                 
+               write(6+CK_LUN,'(a)') trim(adc_version)                 
                stop
             case default
                ! do nothing, this is some other command line argument
@@ -162,19 +169,12 @@ C
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call screenMessage(DEBUG,"Enter.") ! log to screen; don't have log dirname
 #endif
-      IF (PRESENT(ROOTD)) THEN
-        ROOTDIR = TRIM(ROOTD)
-      ELSE
-        ROOTDIR = '.'
-      ENDIF
+      ROOTDIR = '.'
 C
 #ifdef CMPI
       CALL GET_NUMWRITERS()  ! Get number of writer processors from command line arguments
-      IF (PRESENT(COMM)) THEN
-        CALL MSG_INIT(COMM)  ! Init MPI and get MPI-rank of this cpu
-      ELSE
-        CALL MSG_INIT()      ! Init MPI and get MPI-rank of this cpu
-      ENDIF
+      CALL MSG_INIT()           ! Init MPI and get MPI-rank of this cpu
+      call setampizedlun(myproc) ! initialze ck_lun
       CALL MAKE_DIRNAME()    ! Establish Working Directory Name
       call openLogFile()     ! jgf50.65: open subdomain log files (fort.16)
       CALL WRITER_INIT()     ! Initialize WRITER module
@@ -186,6 +186,7 @@ C
          call unsetMessageSource()     
          return
       endif
+c      write(*,*) "p",myproc
       CALL READ_INPUT()      ! Establish sizes by reading fort.14 and fort.15
       CALL MSG_TABLE()       ! Read Message-Passing Tables
       CALL MSG_START()       ! Startup message passing
@@ -203,7 +204,7 @@ C
       FileFmtVersion =
      &   VERSION_NUMBER(FileFmtMajor, FileFmtMinor, FileFmtRev)
       IF ((NSCREEN.NE.0).AND.(MYPROC.EQ.0)) THEN
-         WRITE(ScreenUnit,'(a)')"ADCIRC Version is "//ADC_VERSION
+         WRITE(ScreenUnit+CK_LUN,'(a)')"ADCIRC Version is "//ADC_VERSION
       ENDIF
 
       !jgf49.44: Allocate memory for reading and writing full domain arrays
@@ -261,7 +262,7 @@ C...
             ! the IHOT value was vetted already, so this code should
             ! not be reachable
             IF ((NSCREEN.ne.0).and.(myProc.eq.0)) THEN
-               WRITE(screenUnit,*) "ERROR: IHOT=",IHOT," is not valid."
+               WRITE(screenUnit+CK_LUN,*) "ERROR: IHOT=",IHOT," is not valid."
             ENDIF
       END SELECT
 
@@ -344,10 +345,10 @@ Corbitt 1203022: Local Advection Flags
       GORho=G/RhoWat0
       GORhoOAMB=GORho/AMB
 
-      WRITE(16,1112)
-      WRITE(16,17931)
-      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,17931)
+      WRITE(16+CK_LUN,1112)
+      WRITE(16+CK_LUN,17931)
+      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
+      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,17931)
  1112 FORMAT(/,1X,79('_'))
 17931 FORMAT(//,1X,'LIMITED RUNTIME INFORMATION SECTION ',//)
 
@@ -414,7 +415,10 @@ C
 C
       call allMessage(INFO,"Begin timestepping.")
       DO 100 ITIME=ITIME_BGN,ITIME_END
+c        write(*,*) myproc, "into timestep iter:", ITIME
         CALL TIMESTEP(ITIME)
+c        write(*,*) myproc, "out of timestep iter:", ITIME
+
 C
 #ifdef CSWAN
 Casey 090302: If it is time, then call the following subroutine
@@ -581,9 +585,9 @@ C-----------------------------------------------------------------------
      &      MPI_2INTEGER,MPI_MAXLOC,COMM,IERR)
         IF(TERM_GLOBAL(2).NE.0)THEN
             IF(MYPROC.EQ.0)THEN
-                WRITE(ScreenUnit,'(A,I5)') "ERROR: ADCIRC Terminating "//
+                WRITE(ScreenUnit+CK_LUN,'(A,I5)') "ERROR: ADCIRC Terminating "//
      &          "from error originating from MYPROC = ",TERM_GLOBAL(2)
-                WRITE(ScreenUnit,'(A)')    "       Check the local PE "//
+                WRITE(ScreenUnit+CK_LUN,'(A)')    "       Check the local PE "//
      &          "fort.16 output file for details."
             ENDIF
             CALL ADCIRC_TERMINATE()

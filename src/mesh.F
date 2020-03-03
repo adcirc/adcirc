@@ -14,6 +14,7 @@ C     ------------------------------------------------------------------
 !     module.
 C     ------------------------------------------------------------------
       module mesh
+      use CkLunMod, only : CK_LUN
 C     ------------------------------------------------------------------
       use hashtable
       use sizes, only : sz
@@ -23,38 +24,69 @@ C     ------------------------------------------------------------------
      &   scratchFormat
       implicit none
       character(len=80) :: agrid
+!$omp threadprivate(agrid)
       character(4)              :: aid4(20)
+!$omp threadprivate(aid4)
       character(8)              :: aid8(10)     
+!$omp threadprivate(aid8)
       integer :: np   ! number of nodes in the mesh
+!$omp threadprivate(np)
       integer :: ne   ! number of elements in the mesh
+!$omp threadprivate(ne)
       integer :: ics  ! mesh coordinate system (1=cartesian, 2=geographic)
+!$omp threadprivate(ics)
       real(sz),allocatable, target ::  dp(:)  ! bathymetric depth
+!$omp threadprivate(dp)
       integer,allocatable :: nm(:,:)          ! element table size(ne,3)
+!$omp threadprivate(nm)
       real(8),allocatable :: x(:)   ! x cartesian node locations x(np)
+!$omp threadprivate(x)
       real(8),allocatable :: y(:)   ! y cartesian node locations y(np)
+!$omp threadprivate(y)
       real(8),allocatable :: slam(:) ! longitude node locations in CPP slam(np)
+!$omp threadprivate(slam)
       real(8),allocatable :: sfea(:) ! latitude node locations in CPP sfea(np)
+!$omp threadprivate(sfea)
       type(ipair), allocatable, target :: node_dict(:) ! map node labels to numbers
+!$omp threadprivate(node_dict)
       integer, allocatable, target :: labels(:) ! map node numbers to labels
+!$omp threadprivate(labels)
       integer :: n1, n2, n3 ! nodes 1, 2, 3 for each element
+!$omp threadprivate(n1,n2,n3)
 
 
       integer, allocatable :: lbarray_pointer(:)
+!$omp threadprivate(lbarray_pointer)
       integer, allocatable :: nneigh(:) !(MNP) number of neighboring nodes for each node
+!$omp threadprivate(nneigh)
       integer, allocatable :: nneighele(:)
+!$omp threadprivate(nneighele)
       integer, allocatable :: mju(:)
+!$omp threadprivate(mju)
       integer, allocatable :: nodele(:)
+!$omp threadprivate(nodele)
       integer, allocatable :: neitab(:,:) !(MNP,MNEI) table of neighbor nodes for each node
+!$omp threadprivate(neitab)
       integer, allocatable :: neitabele(:,:) !(MNP,MNei)table of neighboring elements for each node
+!$omp threadprivate(neitabele)
       real(8), allocatable :: areas(:) !(MNE) = 2*Element Area
+!$omp threadprivate(areas)
       real(8), allocatable :: totalarea(:)
+!$omp threadprivate(totalarea)
       real(sz), allocatable :: sfac(:)
+!$omp threadprivate(sfac)
       real(sz), allocatable :: bcxy(:,:)  ! element barycenters for kdtree
+!$omp threadprivate(bcxy)
       real(sz), allocatable :: rmax(:)    ! element radii for kdtree
+!$omp threadprivate(rmax)
       real(sz), allocatable :: csi(:),sii(:)
+!$omp threadprivate(csi,sii)
       character(len=80) :: projection
+!$omp threadprivate(projection)
       real(8) slam0,sfea0 !center point of CPP spherical projection
+!$omp threadprivate(slam0,sfea0)
       integer  neimin,neimax
+!$omp threadprivate(neimin,neimax)
 C
 C     ----------
       contains
@@ -120,25 +152,25 @@ C     ------------------------------------------------------------------
       numInternalFluxBoundariesWithPipes = 0
       !
       ! reading the file
-      read(iunit,'(A80)',err=10,end=20,iostat=ios) agrid
+      read(iunit+CK_LUN,'(A80)',err=10,end=20,iostat=ios) agrid
       lineNum = lineNum + 1
       call logMessage(INFO,"Mesh file comment line: "//trim(agrid))
       call logMessage(INFO,"Reading mesh file dimensions.")
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) ne, np
+      read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios) ne, np
       mne = ne
       mnp = np
       do k = 1, np
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
+         read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios)
          lineNum = lineNum + 1
       enddo
       do k = 1, ne
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
+         read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios)
          lineNum = lineNum + 1
       enddo
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nope  ! total number of elevation boundaries
+      read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios) nope  ! total number of elevation boundaries
       mnope = nope
       lineNum = lineNum + 1
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) neta  ! total number of nodes on elevation boundaries
+      read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios) neta  ! total number of nodes on elevation boundaries
       mneta = neta
       lineNum = lineNum + 1
       call allocateElevationBoundaryLengths()
@@ -146,11 +178,11 @@ C     ------------------------------------------------------------------
       neta_count = 0
       nvdll_max = 0
       do k = 1, nope
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nvdll(k) ! number of nodes on the kth elevation boundary segment
+         read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios) nvdll(k) ! number of nodes on the kth elevation boundary segment
          lineNum = lineNum + 1
          nvdll_max = max(nvdll_max,nvdll(k))
          do j = 1, nvdll(k)
-            read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
+            read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios)
             lineNum = lineNum + 1
             neta_count = neta_count + 1
          enddo
@@ -161,9 +193,9 @@ C     ------------------------------------------------------------------
      &           i0,' but ',i0,' were found.')
          call allMessage(WARNING,scratchMessage)
       endif
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nbou ! total number of flux boundaries
+      read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios) nbou ! total number of flux boundaries
       lineNum = lineNum + 1
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nvel ! total number of nodes on flux boundaries
+      read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios) nvel ! total number of nodes on flux boundaries
       lineNum = lineNum + 1
       mnbou = nbou
       mnvel = nvel*2
@@ -172,12 +204,12 @@ C     ------------------------------------------------------------------
       nvel_count = 0
       nvell_max = 0
       do k = 1, nbou
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
+         read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios)
      &       nvell(k), ibtype_orig(k)  ! number of nodes and type of kth flux boundary
          lineNum = lineNum + 1
          nvell_max = max(nvell_max,nvell(k))
          do j = 1, nvell(k)
-            read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
+            read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios)
             lineNum = lineNum + 1
             nvel_count = nvel_count + 1
          enddo
@@ -226,7 +258,7 @@ C     ------------------------------------------------------------------
             end do
          endif
       endif
-      rewind(iunit)
+      rewind(iunit+CK_LUN)
       call logMessage(INFO,'Finished reading mesh file dimensions.')
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -240,12 +272,12 @@ C     ------------------------------------------------------------------
 1070  format('Reading line ',i0,' gave the following error code: ',
      &   i0,'.')
       call allMessage(ERROR, scratchMessage)
-      close(iunit)
+      close(iunit+CK_LUN)
       call terminate()
  20   write(scratchMessage,1080) lineNum
 1080  format('Reached premature end of file on line ',i0,'.')
       call allMessage(ERROR,scratchMessage)
-      close(iunit)
+      close(iunit+CK_LUN)
       call terminate()
       !-----+---------+---------+---------+---------+---------+---------+
       end subroutine read14_findDims
@@ -322,12 +354,12 @@ C     ------------------------------------------------------------------
       call logMessage(INFO,'Reading mesh file coordinates, '
      &   // ' connectivity, and boundary data.')
       lineNum = 1
-      read(unit=iunit,fmt='(a80)',err=10,end=20,iostat=ios) agrid
+      read(unit=iunit+CK_LUN,fmt='(a80)',err=10,end=20,iostat=ios) agrid
       lineNum = lineNum + 1
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) ne, np
+      read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios) ne, np
       lineNum = lineNum + 1
       do k = 1, np
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) labels(k), slam(k),
+         read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios) labels(k), slam(k),
      &     sfea(k), dp(k)
          lineNum = lineNum + 1
          call add_ipair(node_dict, labels(k), k)
@@ -336,7 +368,7 @@ C     ------------------------------------------------------------------
       !  E L E M E N T   T A B L E
       !
       do k = 1, ne
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
+         read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios)
      &      je, nhy, n1, n2, n3
          nm(k, 1) = find(node_dict, n1)
          nm(k, 2) = find(node_dict, n2)
@@ -347,31 +379,31 @@ C     ------------------------------------------------------------------
       !
       !  B O U N D A R I E S
       !
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nope
+      read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios) nope
       lineNum = lineNum + 1
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) neta
+      read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios) neta
       lineNum = lineNum + 1
       do k = 1, nope
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nvdll(k)
+         read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios) nvdll(k)
          lineNum = lineNum + 1
          elevationBoundaries(k)%indexNum = k
          do j = 1, nvdll(k)
-            read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) n1
+            read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios) n1
             elevationBoundaries(k)%nodes(j) = find(node_dict, n1)
             elevationBoundaries(k)%xdmf_nodes(j) = elevationBoundaries(k)%nodes(j) - 1
             lineNum = lineNum + 1
          enddo
       enddo
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nbou
+      read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios) nbou
       lineNum = lineNum + 1
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nvel
+      read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios) nvel
       lineNum = lineNum + 1
       sfCount = 1
       efCount = 1
       ifCount = 1
       ifwpCount = 1
       do k = 1, nbou
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nvell(k), ibtype_orig(k)
+         read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios) nvell(k), ibtype_orig(k)
          lineNum = lineNum + 1
          select case(ibtype_orig(k))
          ! flux boundaries (mainland, island, river)
@@ -380,7 +412,7 @@ C     ------------------------------------------------------------------
          case(0,1,2,10,11,12,20,21,22,30,52,102,112,122,152)
             simpleFluxBoundaries(sfCount)%indexNum = k
             do j = 1, nvell(k)
-               read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) n1
+               read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios) n1
                simpleFluxBoundaries(sfCount)%nodes(j) = find(node_dict, n1)
                simpleFluxBoundaries(sfCount)%xdmf_nodes(j) =
      &                  simpleFluxBoundaries(sfCount)%nodes(j) - 1
@@ -394,7 +426,7 @@ C     ------------------------------------------------------------------
           case(3,13,23)
             externalFluxBoundaries(efCount)%indexNum = k
             do j = 1, nvell(k)
-               read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
+               read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios)
      &              n1,
      &              externalFluxBoundaries(efCount)%barlanht(j),
      &              externalFluxBoundaries(efCount)%barlancfsp(j)
@@ -413,7 +445,7 @@ C     ------------------------------------------------------------------
          case(4,24)
             internalFluxBoundaries(ifCount)%indexNum = k
             do j = 1, nvell(k)
-               read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
+               read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios)
      &                      n1,
      &                      n2,
      &                      internalFluxBoundaries(ifCount)%barinht(j),
@@ -440,7 +472,7 @@ C     ------------------------------------------------------------------
          case(5,25)
             internalFluxBoundariesWithPipes(ifwpCount)%indexNum = k
             do j = 1, nvell(k)
-               read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
+               read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios)
      &                        n1,
      &                        n2,
      &                        internalFluxBoundariesWithPipes(ifwpCount)%barinht(j),
@@ -467,7 +499,7 @@ C     ------------------------------------------------------------------
             call terminate()
          end select
       end do
-      close(14)
+      close(14+CK_LUN)
       !
       ! populate the adcirc arrays that are used during execution
       call populateADCIRCNativeArrays()
@@ -485,14 +517,14 @@ C     ------------------------------------------------------------------
 10    write(scratchMessage,140) lineNum, ios
 140   format('Reading line ',i0,' gave the following error code: ',i0,'.')
       call allMessage(ERROR,scratchMessage)
-      close(iunit)
+      close(iunit+CK_LUN)
       call terminate()
       !
       ! jump to here on end condition during read
 20    write(scratchMessage,150) lineNum
 150   format('Reached premature end of file on line ',i0,'.')
       call allMessage(ERROR,scratchMessage)
-      close(iunit)
+      close(iunit+CK_LUN)
       call close_dict( node_dict )
       call terminate()
 
@@ -535,6 +567,7 @@ C     ------------------------------------------------------------------
       character(len=nameLength) :: itemName
       integer, parameter :: gridCollectionIndex = 0
       integer :: gridIndex = 0
+!$omp threadprivate(gridIndex)
       integer :: typeHolder
       integer :: topologyPropertyIndex
       integer :: geometryIndex
@@ -1166,7 +1199,7 @@ C     ------------------------------------------------------------------
      &             = internalFluxBoundariesWithPipes(ifwpCount)%pipediam
             ifwpCount = ifwpCount + 1
          case default
-            write(6,*) "Unrecognized boundary type ",ibtype_orig(fluxCount)
+            write(6+CK_LUN,*) "Unrecognized boundary type ",ibtype_orig(fluxCount)
          end select
       end do
       !
@@ -1381,7 +1414,7 @@ C v49.48.02 tcm -- These are the lengths of each element edge
          IF((DIF1R.GT.NPREC).OR.(DIF2R.GT.NPREC).OR.(DIF3R.GT.NPREC)) THEN
             write(scratchMessage,9898) I
             call allMessage(WARNING, scratchMessage)
-            WRITE(16,9898) I
+            WRITE(16+CK_LUN,9898) I
  9898       FORMAT('!!!!!!!!!!  WARNING  !!!!!!!!!' ,
      &              'IF THE GRID COORDINATES HAVE 32 BITS ',
      &              '(APPROX 7 DIGITS) OF PRECISION ',
@@ -1457,6 +1490,7 @@ C     ------------------------------------------------------------------
       logical :: calctheta    ! .true. if theta is to be calculated at a flux boundary node
       real(sz) :: ZNGFicNodeDist,ZNGFicNodeDistTemp
       logical :: ibtype52 = .false.
+!$omp threadprivate(ibtype52)
       real(8) delx,dely
 
       call setMessageSource("initializeBoundaries")
@@ -1490,7 +1524,7 @@ C...  array.
      &              ' boundary segment ',2x,i0,2x,'=',1x,i0)
          call logMessage(ECHO,scratchMessage)
          DO I=1,NVDLL(K)
-            WRITE(16,1855) NBDV(K,I)
+            WRITE(16+CK_LUN,1855) NBDV(K,I)
  1855      FORMAT(7X,I7)
             NBD(JNMM+I)=NBDV(K,I)
          END DO
@@ -1518,14 +1552,14 @@ C...  INFORMATION IS ONLY USED WHEN NORMAL FLOW IS AN ESSENTIAL B.C. AND
 C...  FREE TANGENTIAL SLIP IS ALLOWED.
 
 C...  TOTAL NUMBER OF FLOW BOUNDARY SEGMENTS
-      WRITE(16,1112)
-      WRITE(16,1878)
+      WRITE(16+CK_LUN,1112)
+      WRITE(16+CK_LUN,1878)
 1878  FORMAT(//,1X,'FLOW BOUNDARY INFORMATION ',/)
-      WRITE(16,1879) NBOU
+      WRITE(16+CK_LUN,1879) NBOU
  1879 FORMAT(//,5X,'THE TOTAL NUMBER OF FLOW BOUNDARY SEGMENTS = ',i0)
 
 C.....INPUT THE TOTAL NUMBER OF FLOW BOUNDARY NODES
-      WRITE(16,1881) NVEL
+      WRITE(16+CK_LUN,1881) NVEL
 1881  FORMAT(/,5X,'THE TOTAL NUMBER OF FLOW BOUNDARY NODES = ',i0)
 
       JGW=0
@@ -1543,37 +1577,37 @@ C.....INPUT THE TOTAL NUMBER OF FLOW BOUNDARY NODES
       DO K=1,NBOU
 C        write out flow boundary information to unit 16
          IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
-            WRITE(16,28) K,NVELL(K),K,2*NVELL(K)
+            WRITE(16+CK_LUN,28) K,NVELL(K),K,2*NVELL(K)
  28         FORMAT(///,5X,'TOTAL NUMBER OF PAIRS FOR FLOW BOUNDARY',
      &           ' SEGMENT',2X,i0,2X,'=',2X,i0,
      &           /,5X,'TOTAL NUMBER OF NODES FOR FLOW BOUNDARY',
      &           ' SEGMENT',2X,i0,2X,'=',2X,i0)
          ELSE
-            WRITE(16,128) K,NVELL(K)
+            WRITE(16+CK_LUN,128) K,NVELL(K)
  128        FORMAT(///,5X,'TOTAL NUMBER OF NODES FOR FLOW BOUNDARY',
      &           ' SEGMENT',2X,i0,2X,'=',2X,i0)
          ENDIF
 C        continue processing flow boundary information
          SELECT CASE(IBTYPE(K))
          CASE(0)
-            WRITE(16,2340)
+            WRITE(16+CK_LUN,2340)
  2340       FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &           7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &           7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(1)
-            WRITE(16,2341)
+            WRITE(16+CK_LUN,2341)
  2341       FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BOUNDARY WITH:',/,
      &           7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &           7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(2)
             NFLUXF=1
-            WRITE(16,2342)
+            WRITE(16+CK_LUN,2342)
  2342       FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &           7X,'SPECIFIED NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &           7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(3)
            NFLUXB=1
-           WRITE(16,2344)
+           WRITE(16+CK_LUN,2344)
  2344      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'A BARRIER WHICH ALLOWS FREE SURFACE',
      &               ' SUPERCRITICAL OUTFLOW',/,
@@ -1582,7 +1616,7 @@ C        continue processing flow boundary information
      &            7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(4)
            NFLUXIB=1
-           WRITE(16,2345)
+           WRITE(16+CK_LUN,2345)
  2345      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
      &            7X,'WITH CROSS BARRIER FLOW TREATED AS AN ESSENTIAL ',
      &               ' NORMAL FLOW BOUNDARY CONDITION',/,
@@ -1597,7 +1631,7 @@ C        continue processing flow boundary information
          CASE(5)
            NFLUXIB=1
            NFLUXIBP=1
-           WRITE(16,2347)
+           WRITE(16+CK_LUN,2347)
  2347      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
      &            7X,'WITH ADDITIONAL CROSS BARRIER PIPES ',
      &               'LOCATED UNDER THE CROWN ',/,
@@ -1617,24 +1651,24 @@ C        continue processing flow boundary information
      &          /,7X,' AND THE APPROPRIATE PIPE FLOW FORMULA',/,
      &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
          CASE(10)
-           WRITE(16,2350)
+           WRITE(16+CK_LUN,2350)
  2350      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &            7X,'AND NO TANGENTIAL SLIP',/)
          CASE(11)
-           WRITE(16,2351)
+           WRITE(16+CK_LUN,2351)
  2351      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BOUNDARY WITH:',/,
      &            7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &            7X,'AND NO TANGENTIAL SLIP',/)
          CASE(12)
            NFLUXF=1
-           WRITE(16,2352)
+           WRITE(16+CK_LUN,2352)
  2352      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'SPECIFIED NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &            7X,'AND NO TANGENTIAL SLIP',/)
          CASE(13)
            NFLUXB=1
-           WRITE(16,2353)
+           WRITE(16+CK_LUN,2353)
  2353      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'A BARRIER WHICH ALLOWS FREE SURFACE',
      &               ' SUPERCRITICAL OUTFLOW',/,
@@ -1642,24 +1676,24 @@ C        continue processing flow boundary information
      &               ' OVERTOPPED',/,
      &            7X,'AND NO TANGENTIAL SLIP',/)
          CASE(20)
-           WRITE(16,2354)
+           WRITE(16+CK_LUN,2354)
  2354      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'NO NORMAL FLOW AS A NATURAL B.C.',/,
      &            7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(21)
-           WRITE(16,2355)
+           WRITE(16+CK_LUN,2355)
  2355      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BOUNDARY WITH:',/,
      &            7X,'NO NORMAL FLOW AS A NATURAL B.C.',/,
      &            7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(22)
            NFLUXF=1
-           WRITE(16,2356)
+           WRITE(16+CK_LUN,2356)
  2356      FORMAT(5X,'THIS SEGMENT IS A EXTERNAL BOUNDARY WITH:',/,
      &            7X,'SPECIFIED NORMAL FLOW AS A NATURAL B.C.',/,
      &            7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(23)
            NFLUXB=1
-           WRITE(16,2357)
+           WRITE(16+CK_LUN,2357)
  2357      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'A BARRIER WHICH ALLOWS FREE SURFACE',
      &               ' SUPERCRITICAL OUTFLOW',/,
@@ -1669,7 +1703,7 @@ C        continue processing flow boundary information
      &            7X,'FREE TANGENTIAL SLIP IS ALSO ALLOWED',/)
          CASE(24)
            NFLUXIB=1
-           WRITE(16,2358)
+           WRITE(16+CK_LUN,2358)
  2358      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
      &            7X,'WITH CROSS BARRIER FLOW TREATED AS A NATURAL ',
      &               ' NORMAL FLOW BOUNDARY CONDITION',/,
@@ -1684,7 +1718,7 @@ C        continue processing flow boundary information
          CASE(25)
            NFLUXIB=1
            NFLUXIBP=1
-           WRITE(16,2359)
+           WRITE(16+CK_LUN,2359)
  2359      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
      &            7X,'WITH ADDITIONAL CROSS BARRIER PIPES ',
      &               'LOCATED UNDER THE CROWN ',/,
@@ -1705,7 +1739,7 @@ C        continue processing flow boundary information
      &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
          CASE(30)
            NFluxRBC=1
-           WRITE(16,2360)
+           WRITE(16+CK_LUN,2360)
  2360      FORMAT(5X,'This segment is an outward radiating boundary:',/,
      &            7X,'the GWCE is forced with normal flux.  A wave ',
      &               'radiation condition',
@@ -1718,7 +1752,7 @@ C        continue processing flow boundary information
          CASE(32)
            NFluxRBC=1
            NFluxF=1
-           WRITE(16,2356)
+           WRITE(16+CK_LUN,2356)
  2362      FORMAT(5X,'This segment is a combined specified normal ',
      &               'flux and outward radiating boundary.',/,
      &            7X,'The GWCE is forced with the total normal flux ',
@@ -1732,7 +1766,7 @@ C        continue processing flow boundary information
      &               'node',/)
          CASE(40)
            NFluxGBC=1
-           WRITE(16,2370)
+           WRITE(16+CK_LUN,2370)
  2370      FORMAT(5X,'This segment is a zero normal velocity gradient ',
      &               'boundary:',/,
      &            7X,'the GWCE is forced with normal flux',/,
@@ -1752,7 +1786,7 @@ C        continue processing flow boundary information
      &               'determined by interpolation.',/)
          CASE(41)
            NFluxGBC=1
-           WRITE(16,2371)
+           WRITE(16+CK_LUN,2371)
  2371      FORMAT(5X,'This segment is a zero normal velocity gradient ',
      &               'boundary:',/,
      &            7X,'the GWCE is forced with normal flux',/,
@@ -1763,7 +1797,7 @@ C        continue processing flow boundary information
          CASE(52)
             NFLUXF=1
             IBTYPE52=.TRUE.
-            WRITE(16,6532)
+            WRITE(16+CK_LUN,6532)
  6532       FORMAT(5X,'This segment uses a specified periodic normal ',
      &          'flux as a natural b.c. combined with outward ',
      &          7X,'radiating boundary. The GWCE is forced with the ,'
@@ -1836,10 +1870,10 @@ C...  IS ALSO RESET
 C...        WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES
             IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
                IF(IPRBI.EQ.1) THEN
-                  WRITE(16,1842)
+                  WRITE(16+CK_LUN,1842)
  1842            FORMAT(/,5X,'FRONT FACE OF INTERNAL BARRIER BOUNDARY',/)
                ELSE
-                  WRITE(16,1843)
+                  WRITE(16+CK_LUN,1843)
  1843            FORMAT(/,5X,'BACK FACE OF INTERNAL BARRIER BOUNDARY',/)
                ENDIF
             ENDIF
@@ -1848,18 +1882,18 @@ C...        WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES WITH
 C...        CROSS BARRIER PIPES
             IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
                IF(IPRBI.EQ.1) THEN
-                  WRITE(16,1844)
+                  WRITE(16+CK_LUN,1844)
  1844             FORMAT(/,5X,'FRONT FACE OF INTERNAL BARRIER BOUNDARY',
      &                 ' WITH CROSS BARRIER PIPES',/)
                ELSE
-                  WRITE(16,1845)
+                  WRITE(16+CK_LUN,1845)
  1845             FORMAT(/,5X,'BACK FACE OF INTERNAL BARRIER BOUNDARY',
      &                 ' WITH CROSS BARRIER PIPES',/)
                ENDIF
             ENDIF
 
 C...        WRITE OUT GENERAL HEADER FOR BOUNDARY INFORMATION
-            WRITE(16,1841)
+            WRITE(16+CK_LUN,1841)
  1841      FORMAT('    JGW    JME    ME2GW   NODE #  BNDRY CODE   INNER',
      &      ' ANGLE',7X,'COS',13X,'SIN',9X,'0.667*BNDRY LEN',/)
 
@@ -2011,7 +2045,7 @@ C...           BOUNDARY CODE TO ZERO TANGENTIAL VELOCITIES
                      IF(IBTYPE(K).EQ.2) LBCODEI(JGW)=12
                      IF(IBTYPE(K).EQ.3) LBCODEI(JGW)=13
                      IF((IBTYPE(K).GE.0).AND.(IBTYPE(K).LE.3)) THEN
-                        WRITE(16,1856) NBVV(K,I),THETA
+                        WRITE(16+CK_LUN,1856) NBVV(K,I),THETA
  1856                   FORMAT(2X,i0,4X,'THE INNER ANGLE = ',F8.2,1X,
      &                    'TANGENTIAL SLIP WILL BE ZEROED')
                      ENDIF
@@ -2197,7 +2231,7 @@ C...........   THE CORRECT VECTORS
 
 C...........   WRITE OUT BOUNDARY CONDITION ARRAY INFORMATION
 
-               WRITE(16,1857) JGW,JME,ME2GW(JME),NBV(JGW),LBCODEI(JGW),
+               WRITE(16+CK_LUN,1857) JGW,JME,ME2GW(JME),NBV(JGW),LBCODEI(JGW),
      &              THETA,CSII(JGW),SIII(JGW),BNDLEN2O3(JGW)
  1857          FORMAT(1X,I6,1X,I6,1X,I6,3X,I8,3X,I6,6X,E12.4,2X,E16.8,
      &              1X,E16.8,2X,E16.8)
@@ -2315,7 +2349,7 @@ C...  CODE ON THE EXTERNAL BOUNDARY
                         IF(((IBTYPE(K).EQ.4).AND.(LBCODEI(ICK).EQ.0))
      &                       .OR.((IBTYPE(K).EQ.5)
      &                       .AND.(LBCODEI(ICK).EQ.0))) THEN
-                           WRITE(16,8568) JGW,ICK,ICK
+                           WRITE(16+CK_LUN,8568) JGW,ICK,ICK
  8568                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',
      &               'BOUNDARY NODE',i0,' (WHICH IS AN ESSENTIAL INTER'
      &               ,'NAL BARRIER BOUNDARY NODE)', /,2X,
@@ -2330,7 +2364,7 @@ C...  CODE ON THE EXTERNAL BOUNDARY
                         IF(((IBTYPE(K).EQ.4).AND.(LBCODEI(ICK).EQ.10))
      &                       .OR.((IBTYPE(K).EQ.5)
      &                       .AND.(LBCODEI(ICK).EQ.10))) THEN
-                           WRITE(16,8569) JGW,ICK,ICK
+                           WRITE(16+CK_LUN,8569) JGW,ICK,ICK
  8569                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',
      &               'BOUNDARY NODE ',i0,' (WHICH IS AN ESSENTIAL INTER'
      &               ,'NAL BARRIER BOUNDARY NODE)', /,2X,
@@ -2345,7 +2379,7 @@ C...  CODE ON THE EXTERNAL BOUNDARY
                         IF(((IBTYPE(K).EQ.24).AND.(LBCODEI(ICK).EQ.10))
      &                       .OR.((IBTYPE(K).EQ.25)
      &                       .AND.(LBCODEI(ICK).EQ.10))) THEN
-                           WRITE(16,8570) JGW,ICK,ICK
+                           WRITE(16+CK_LUN,8570) JGW,ICK,ICK
  8570                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',
      &               'BOUNDARY NODE',i0,' (WHICH IS A NATURAL INTERNAL'
      &               ,' BARRIER BOUNDARY NODE)', /,2X,
@@ -2417,20 +2451,20 @@ C.....WRITE OUT EXTERNAL BARRIER BOUNDARY INFORMATION TO UNIT 16 FILE
 C.....NOTE THAT THIS INFORMATION WAS READ IN FROM THE UNIT 14 FILE
       IF(NFLUXB.EQ.1) THEN
 C.....  WRITE OUT INFO ON SPECIFIED EXTERNAL BARRIER BOUNDARIES
-        WRITE(16,1112)
-        WRITE(16,2220)
+        WRITE(16+CK_LUN,1112)
+        WRITE(16+CK_LUN,2220)
  2220   FORMAT(//,1X,'EXTERNAL BARRIER BOUNDARY INFORMATION ',/)
 
 C.......OUTPUT ELEVATION OF EXTERNAL BARRIER NODES ABOVE THE GEOID AND
 C........THE COEFFICIENT OF FREE SURFACE SUPERCRITICAL FLOW AT
 C........DESIGNATED EXTERNAL BARRIER BOUNDARY NODES TO UNIT 16
-         WRITE(16,2224)
+         WRITE(16+CK_LUN,2224)
  2224   FORMAT(//,9X,'NODE',10X,'BARRIER HEIGHT',
      &                     6X,'SUPER-CRIT. EXTERNAL BAR. COEF.',/)
          DO J=1,NVEL
             IF((LBCODEI(J).EQ.3).OR.(LBCODEI(J).EQ.13)
      &         .OR.(LBCODEI(J).EQ.23)) THEN
-               WRITE(16,2225) NBV(J),BARLANHT(J),BARLANCFSP(J)
+               WRITE(16+CK_LUN,2225) NBV(J),BARLANHT(J),BARLANCFSP(J)
  2225         FORMAT(5X,i0,6X,F14.5,15X,F12.3)
             ENDIF
          END DO
@@ -2441,8 +2475,8 @@ C.....WRITE INTERNAL BARRIER BOUNDARY INFORMATION TO UNIT 16 FILE
       IF(NFLUXIB.EQ.1) THEN
 
 C.....   WRITE OUT INFO ON SPECIFIED INTERNAL BARRIER BOUNDARIES
-         WRITE(16,1112)
-         WRITE(16,2320)
+         WRITE(16+CK_LUN,1112)
+         WRITE(16+CK_LUN,2320)
  2320   FORMAT(//,1X,'INTERNAL BARRIER BOUNDARY INFORMATION ',/)
 
 C....... WRITE CONNECTION NODE NUMBER AND ELEVATION OF THE INTERNAL BARRIER
@@ -2450,13 +2484,13 @@ C........NODES ABOVE THE GEOID AND THE COEFFICIENTS OF FREE SURFACE SUPERCRITICA
 C........AND SUBCRITICAL FLOW AT DESIGNATED INTERNAL BARRIER BOUNDARY NODES
 C........TO UNIT 16 (NOTE THAT THIS INFORMATION WAS INPUT FROM THE UNIT 14
 C........FILE WITH BOUNDARY NODE INFORMATION)
-         WRITE(16,2324)
+         WRITE(16+CK_LUN,2324)
  2324   FORMAT(//,9X,'NODE',6X,'CONNECTED NODE',6X,'BARRIER HEIGHT',
      &                4X,'SUB-CRIT. INT. BAR. COEF.',
      &                4X,'SUPER-CRIT. INT. BAR. COEF.',/)
          DO J=1,NVEL
             IF((LBCODEI(J).EQ.4).OR.(LBCODEI(J).EQ.24)) THEN
-               WRITE(16,2325) NBV(J),IBCONN(J),BARINHT(J),
+               WRITE(16+CK_LUN,2325) NBV(J),IBCONN(J),BARINHT(J),
      &                       BARINCFSB(J),BARINCFSP(J)
  2325         FORMAT(5X,i0,7X,i0,6X,F14.5,12X,F12.3,17X,F12.3)
             ENDIF
@@ -2470,8 +2504,8 @@ C.....WRITE INTERNAL BARRIER BOUNDARY INFORMATION WITH CROSS
 C.....BARRIER PIPE INFORMATION TO UNIT 16 FILE
       IF(NFLUXIBP.EQ.1) THEN
 C.....   WRITE OUT INFO ON SPECIFIED INTERNAL BARRIER BOUNDARIES
-         WRITE(16,1112)
-         WRITE(16,2326)
+         WRITE(16+CK_LUN,1112)
+         WRITE(16+CK_LUN,2326)
  2326   FORMAT(//,1X,'INTERNAL BARRIER BOUNDARY WITH CROSS BARRIER',
      &   ' PIPE INFORMATION ',/)
 
@@ -2482,7 +2516,7 @@ C........IN ADDITION TO CROSS BARRIER PIPE CROWN HEIGHT, CROSS BARRIER PIPE
 C........COEFFICIENT AND CROSS BARRIER PIPE DIAMETER TO UNIT 16
 C........(NOTE THAT THIS INFORMATION WAS INPUT FROM THE UNIT 14 FILE WITH
 C........BOUNDARY NODE INFORMATION)
-         WRITE(16,2327)
+         WRITE(16+CK_LUN,2327)
  2327    FORMAT(//,7X,'NODE',4X,'CONNECTED NODE',4X,'BARRIER HEIGHT',
      &                4X,'SUB-CRIT INT BAR COEF',
      &                4X,'SUPER-CRIT INT BAR COEF',
@@ -2491,7 +2525,7 @@ C........BOUNDARY NODE INFORMATION)
      &                4X,'PIPEDIAM',/)
          DO J=1,NVEL
             IF((LBCODEI(J).EQ.5).OR.(LBCODEI(J).EQ.25)) THEN
-               WRITE(16,2328) NBV(J),IBCONN(J),BARINHT(J),
+               WRITE(16+CK_LUN,2328) NBV(J),IBCONN(J),BARINHT(J),
      &                     BARINCFSB(J),BARINCFSP(J),
      &                     PIPEHT(J),PIPECOEF(J),PIPEDIAM(J)
  2328         FORMAT(3X,i0,5X,i0,4X,F14.5,8X,F12.3,12X,F12.3,

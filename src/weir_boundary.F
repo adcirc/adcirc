@@ -22,12 +22,17 @@ C     CALCULATIONS AND THE DIFFERENT TIME LEVELS ASSOCIATED WITH
 C     A TIME VARYING WEIR.
 C-----------------------------------------------------------------------
         MODULE WEIR
+      use CkLunMod, only : CK_LUN
             USE GLOBAL,ONLY:SZ
             IMPLICIT NONE
             REAL(SZ),ALLOCATABLE     :: BARINHT1(:)    !...Internal Barrier elevation at previous timestep
+!$omp threadprivate(BARINHT1)
             REAL(SZ),ALLOCATABLE     :: BARINHT2(:)    !...Internal Barrier elevation at current timestep
+!$omp threadprivate(BARINHT2)
             REAL(SZ),ALLOCATABLE     :: BARLANHT1(:)   !...External Barrier elevation at previous timestep
+!$omp threadprivate(BARLANHT1)
             REAL(SZ),ALLOCATABLE     :: BARLANHT2(:)   !...External Barrier elevation at current timestep
+!$omp threadprivate(BARLANHT2)
             REAL(SZ), PARAMETER      :: BARMIN=0.04D0
 
             !...Averaging information in time for boundaries. 
@@ -35,14 +40,20 @@ C-----------------------------------------------------------------------
             !   option is maintained.
 #ifdef AVERAGEWEIRFLOW 
             REAL(SZ),ALLOCATABLE     :: RBARWL1AVG(:),RBARWL2AVG(:)
+!$omp threadprivate(RBARWL1AVG,RBARWL2AVG)
             REAL(SZ),ALLOCATABLE     :: RPIPEWL1AVG(:),RPIPEWL2AVG(:)
+!$omp threadprivate(RPIPEWL1AVG,RPIPEWL2AVG)
             REAL(SZ),PARAMETER       :: BARAVGWT = 0.0D0
             INTEGER                  :: IBSTART 
+!$omp threadprivate(IBSTART)
 #endif            
             
             LOGICAL                  :: EXT_TVW = .FALSE. !...If there are external barrier TVW present, avoids checking an unallocated array
+!$omp threadprivate(EXT_TVW)
             LOGICAL                  :: INT_TVW = .FALSE. !...If there are internal barrier TVW present, avoids checking an unallocated array
+!$omp threadprivate(INT_TVW)
             LOGICAL                  :: FOUND_TVW_NML = .FALSE.    !...If the namelist in the fort.15 was found
+!$omp threadprivate(FOUND_TVW_NML)
 
 C-----------------------------------------------------------------------
             CONTAINS
@@ -107,6 +118,7 @@ C  TIME VARYING WEIR BOUNDARIES. THESE ROUTINES ARE USED TO SETUP AND
 C  CALCULATE THE ELEVATIONS THROUGHOUT THE SIMULATION
 C-----------------------------------------------------------------------
         MODULE TIME_VARYING_WEIR_BOUNDARY
+      use CkLunMod, only : CK_LUN
             USE SIZES, ONLY: SZ,MYPROC,LOCALDIR,GLOBALDIR
             USE ADCIRC_MOD, ONLY: ADCIRC_TERMINATE
             USE GLOBAL, ONLY: SCREENUNIT,logMessage,allMessage,
@@ -118,17 +130,29 @@ C-----------------------------------------------------------------------
             IMPLICIT NONE
 
             REAL(SZ),ALLOCATABLE     :: BARHT_FINAL(:)          !...Final elevation for time varying boundary
+!$omp threadprivate(BARHT_FINAL)
             REAL(SZ),ALLOCATABLE     :: BAR_LOCATIONS(:,:)      !...Location array for boundary conditions
+!$omp threadprivate(BAR_LOCATIONS)
             REAL(SZ),ALLOCATABLE     :: GHOST_LOCATIONS(:,:)    !...Location array for the ghost nodes
+!$omp threadprivate(GHOST_LOCATIONS)
             REAL(SZ),ALLOCATABLE     :: BAR_DEG_START(:)        !...Start time for time varying boundary
+!$omp threadprivate(BAR_DEG_START)
             REAL(SZ),ALLOCATABLE     :: BAR_DEG_END(:)          !...End time for time varying boundary
+!$omp threadprivate(BAR_DEG_END)
             REAL(SZ),ALLOCATABLE     :: BAR_ETA_MAX(:)          !...Used if the boundary changes at a critical water surface elevation
+!$omp threadprivate(BAR_ETA_MAX)
             REAL(SZ),ALLOCATABLE     :: BAR_FAILURE_START(:)    !...Used to track the first if ETA_MAX has been exceeded
+!$omp threadprivate(BAR_FAILURE_START)
             REAL(SZ),ALLOCATABLE     :: BAR_FAILURE_DURATION(:) !...Amount of time it takes an ETA_MAX barrier to fail to ZF
+!$omp threadprivate(BAR_FAILURE_DURATION)
             LOGICAL,ALLOCATABLE      :: BAR_DEG(:)              !...T/F this node is a time varying boundary
+!$omp threadprivate(BAR_DEG)
             INTEGER,ALLOCATABLE      :: BAR_VARYTYPE(:)         !...Type of variation to apply to this boundary node
+!$omp threadprivate(BAR_VARYTYPE)
             TYPE(KDTREE2),POINTER    :: BARRIER_SEARCHTREE      !...Search tree for boundary nodes
+!$omp threadprivate(BARRIER_SEARCHTREE)
             TYPE(KDTREE2),POINTER    :: GHOST_SEARCHTREE        !...Search tree for ghost nodes
+!$omp threadprivate(GHOST_SEARCHTREE)
 
 C...........CHARACTERIZES A SECTION OF THE SCHEDULE
             TYPE BSCHED
@@ -166,23 +190,38 @@ C           AND IS BASED UPON THE INDIVIDUAL BOUNDARY NODE
                 TYPE(BSCHED),POINTER     :: SECTION(:)    !...A section of the schedule containing a variation
             END TYPE    
             TYPE(BARRIER_SCHEDULE_T),ALLOCATABLE,TARGET   :: SCHEDULE(:)
+!$omp threadprivate(SCHEDULE)
             TYPE(BARRIER_SCHEDULE_P),ALLOCATABLE     :: BAR_SCHEDULE(:)
+!$omp threadprivate(BAR_SCHEDULE)
             CHARACTER(1024),ALLOCATABLE,TARGET  :: SCHEDULE_LIST(:)
+!$omp threadprivate(SCHEDULE_LIST)
             
 C...........THESE VARIABLES ARE PART OF THE NAMELIST THAT IS READ IN
             CHARACTER(200)   :: ScheduleFile
+!$omp threadprivate(ScheduleFile)
             REAL(SZ) :: X1,X2,Y1,Y2
+!$omp threadprivate(X1,X2,Y1,Y2)
             REAL(SZ) :: ZF,ETA_MAX
+!$omp threadprivate(ZF,ETA_MAX)
             REAL(SZ) :: TimeStartDay,TimeStartHour,TimeStartMin
+!$omp threadprivate(TimeStartDay,TimeStartHour,TimeStartMin)
             REAL(SZ) :: TimeStartSec
+!$omp threadprivate(TimeStartSec)
             REAL(SZ) :: TimeEndDay,TimeEndHour,TimeEndMin,TimeEndSec
+!$omp threadprivate(TimeEndDay,TimeEndHour,TimeEndMin,TimeEndSec)
             REAL(SZ) :: FailureDurationDay,FailureDurationHour
+!$omp threadprivate(FailureDurationDay,FailureDurationHour)
             REAL(SZ) :: FailureDurationMin,FailureDurationSec
+!$omp threadprivate(FailureDurationMin,FailureDurationSec)
             REAL(SZ) :: HOTADD
+!$omp threadprivate(HOTADD)
             INTEGER  :: VaryType,HOT
+!$omp threadprivate(VaryType,HOT)
             INTEGER  :: LOOP,NLOOPS
+!$omp threadprivate(LOOP,NLOOPS)
 
             INTEGER  :: NSCHEDULES
+!$omp threadprivate(NSCHEDULES)
 
 C...........THE TIME VARYING WEIR NAMELIST
             NAMELIST /TimeVaryingWeir/ 
@@ -531,8 +570,8 @@ C...............WRITE SCREEN/UNIT 16 INFORMATION AT START/END
                         WRITE(ScratchMessage,1901) TRIM(VC),'BEGAN',
      &                      TIMELOC,NBV(MYIDX)
 #endif
-                        WRITE(ScreenUnit,'(A)') TRIM(ScratchMessage)
-                        WRITE(16,'(A)') TRIM(ScratchMessage)
+                        WRITE(ScreenUnit+CK_LUN,'(A)') TRIM(ScratchMessage)
+                        WRITE(16+CK_LUN,'(A)') TRIM(ScratchMessage)
                     ENDIF
                     IF(BAR_DEG_END(MYIDX).EQ.TIMELOC)THEN
                         IF(BAR_VARYTYPE(MYIDX).EQ.1)THEN
@@ -547,8 +586,8 @@ C...............WRITE SCREEN/UNIT 16 INFORMATION AT START/END
                         WRITE(ScratchMessage,1901) TRIM(VC),'CONCLUDED',
      &                      TIMELOC,NBV(MYIDX)
 #endif
-                        WRITE(ScreenUnit,'(A)') TRIM(ScratchMessage)
-                        WRITE(16,'(A)') TRIM(ScratchMessage)
+                        WRITE(ScreenUnit+CK_LUN,'(A)') TRIM(ScratchMessage)
+                        WRITE(16+CK_LUN,'(A)') TRIM(ScratchMessage)
                     ENDIF
                 END SELECT
  1900           FORMAT('INFO: ',A,' TIME VARYING BOUNDARY ',A,
@@ -671,12 +710,12 @@ C               PREVAILING GROUND. CHECK NODE ACROSS BOUNDARY AS WELL AS LOCAL N
                             BAR_HEIGHT = BARHT_FINAL(MYIDX)
                         ELSE    
 #ifdef CMPI
-                            WRITE(ScreenUnit,1904) TIMELOC,NBV(MYIDX),
+                            WRITE(ScreenUnit+CK_LUN,1904) TIMELOC,NBV(MYIDX),
      &                          MYPROC
-                            WRITE(16,1904) TIMELOC,NBV(MYIDX),MYPROC
+                            WRITE(16+CK_LUN,1904) TIMELOC,NBV(MYIDX),MYPROC
 #else
-                            WRITE(ScreenUnit,1905) TIMELOC,NBV(MYIDX)
-                            WRITE(16,1905) TIMELOC,NBV(MYIDX)
+                            WRITE(ScreenUnit+CK_LUN,1905) TIMELOC,NBV(MYIDX)
+                            WRITE(16+CK_LUN,1905) TIMELOC,NBV(MYIDX)
 #endif
                             BAR_HEIGHT = DEPTH
                         ENDIF   
@@ -845,8 +884,8 @@ C...................INFORM SCREEN AND UNIT 16 WE ARE HERE
 #else
                     WRITE(ScratchMessage,102)MYSEC,NNBB1,TIMELOC
 #endif
-                    WRITE(16,'(A)') TRIM(ScratchMessage)
-                    WRITE(ScreenUnit,'(A)') TRIM(ScratchMessage)
+                    WRITE(16+CK_LUN,'(A)') TRIM(ScratchMessage)
+                    WRITE(ScreenUnit+CK_LUN,'(A)') TRIM(ScratchMessage)
 
 C...................ALTER THE VARIABLES USED IN COMPUTE_BARRIER_HEIGHT_LINEAR
 C                   SO IT CAN CORRECTLY INTERPOLATE NEW BARRIER VALUES
@@ -935,8 +974,8 @@ C...................GET NODE NUMBER AND INFORM SCREEN AND UNIT 16
 #else
                     WRITE(ScratchMessage,104)MYSEC,NNBB1,TIMELOC
 #endif
-                    WRITE(16,'(A)') TRIM(ScratchMessage)
-                    WRITE(ScreenUnit,'(A)') TRIM(ScratchMessage)
+                    WRITE(16+CK_LUN,'(A)') TRIM(ScratchMessage)
+                    WRITE(ScreenUnit+CK_LUN,'(A)') TRIM(ScratchMessage)
 
 C...................CALL THE LAST LINEAR INTERPOLATION                 
                     BARHT_START = BAR_SCHEDULE(MYIDX)%BARHT_START
@@ -1058,7 +1097,7 @@ C-----------------------------------------------------------------------
                     CALL unsetMessageSource()
                     RETURN
                 ENDIF
-                READ(99,*) NTIMEVARYINGWEIRS
+                READ(99+CK_LUN,*) NTIMEVARYINGWEIRS
                 IF(NTIMEVARYINGWEIRS.GT.0)THEN
                     CALL ALLOCATE_TIMEVARYINGWEIRS()
 #ifdef CMPI
@@ -1081,40 +1120,40 @@ C-----------------------------------------------------------------------
                     RETURN
                 ENDIF
 
-                OPEN(UNIT=98,FILE=TRIM(LOCALDIR)//'/namelist.scratch',
+                OPEN(UNIT=98+CK_LUN,FILE=TRIM(LOCALDIR)//'/namelist.scratch',
      &             STATUS='REPLACE',ACTION='WRITE')
                     
 C...............READ IN UNFORMATTED NAMELIST, WRITE TO FORMATTED NAMELIST
                 DO I = 1,NTIMEVARYINGWEIRS
 C...................MODIFY LINE FOR NAMELIST FORMATTING
-                    READ(99,'(A)') InputString
+                    READ(99+CK_LUN,'(A)') InputString
                     modifiedString = "&TimeVaryingWeir "//
      &                  TRIM(ADJUSTL(InputString))//" /"
-                    WRITE(98,'(A)') TRIM(ADJUSTL(modifiedString))
+                    WRITE(98+CK_LUN,'(A)') TRIM(ADJUSTL(modifiedString))
                 ENDDO  
-                CLOSE(98)
+                CLOSE(98+CK_LUN)
 
 C...............OPEN FORMATTED NAMELIST FILE, READ IN NUMBER OF SCHEDULES
 C               WE WILL NEED TO PARSE
-                OPEN(UNIT=98,FILE=TRIM(LOCALDIR)//'/namelist.scratch',
+                OPEN(UNIT=98+CK_LUN,FILE=TRIM(LOCALDIR)//'/namelist.scratch',
      &                  ACTION="READ")
                 NSCHEDULES = 0
                 NSCHEDULES_RAW = 0
                 DO I = 1,NTIMEVARYINGWEIRS
                     CALL NULLIFY_TVW_NML()
-                    READ(98,NML=TimeVaryingWeir,IOSTAT=IOS,ERR=200)
+                    READ(98+CK_LUN,NML=TimeVaryingWeir,IOSTAT=IOS,ERR=200)
                     IF(.NOT.ISNULL(S=SCHEDULEFILE))THEN
                         NSCHEDULES_RAW = NSCHEDULES_RAW + 1
                     ENDIF
                 ENDDO
                 IF(NSCHEDULES_RAW.GT.0)THEN
-                    REWIND(98)
+                    REWIND(98+CK_LUN)
                     IDX = 0
                     ALLOCATE(SCHEDULE_LIST_RAW(1:NSCHEDULES_RAW))
 C...................READ BACK IN A LIST CONTAINING THE SCHEDULE FILE NAMES
                     DO I = 1,NTIMEVARYINGWEIRS
                         CALL NULLIFY_TVW_NML()
-                        READ(98,NML=TimeVaryingWeir,IOSTAT=IOS)
+                        READ(98+CK_LUN,NML=TimeVaryingWeir,IOSTAT=IOS)
                         IF(.NOT.ISNULL(S=SCHEDULEFILE))THEN
                             IDX = IDX + 1
                             SCHEDULE_LIST_RAW(IDX) = SCHEDULEFILE
@@ -1131,14 +1170,14 @@ C...................FIND OUT HOW MANY UNIQUE SCHEDULES THERE ARE
                     ENDDO    
                 ENDIF    
 
-                CLOSE(98)
+                CLOSE(98+CK_LUN)
 C...............OPEN FORMATTED NAMELIST FILE, READ IN 
-                OPEN(UNIT=98,FILE=TRIM(LOCALDIR)//'/namelist.scratch',
+                OPEN(UNIT=98+CK_LUN,FILE=TRIM(LOCALDIR)//'/namelist.scratch',
      &                  ACTION="READ")
                 DO I = 1,NTIMEVARYINGWEIRS
 C...................READ IN NAMELIST LINE
                     CALL NULLIFY_TVW_NML()
-                    READ(98,NML=TimeVaryingWeir,ERR=200,
+                    READ(98+CK_LUN,NML=TimeVaryingWeir,ERR=200,
      &                   IOSTAT=IOS)
 
                     IF(VARYTYPE.EQ.3)THEN
@@ -1435,18 +1474,18 @@ C-----------------------------------------------------------------------
                 IF(EXISTS)THEN
                     OPEN(FILE=TRIM(GLOBALDIR)//"/"//TRIM(MYFILE),
      &                  UNIT=99,ACTION="READ")
-                    READ(99,*) MYSCHED%NSECTIONS
+                    READ(99+CK_LUN,*) MYSCHED%NSECTIONS
                     ALLOCATE(MYSCHED%SECTION(1:MYSCHED%NSECTIONS))
                     OPEN(FILE=TRIM(LOCALDIR)//"/namelist2.scratch",
      &                  UNIT=97,ACTION="WRITE")
                     DO I = 1,MYSCHED%NSECTIONS
-                        READ(99,'(A)') OrigLine
+                        READ(99+CK_LUN,'(A)') OrigLine
                         WRITE(modLine,'(3A)') "&Schedule ",
      &                       TRIM(OrigLine)," /"
-                        WRITE(97,'(A)') TRIM(modLine)
+                        WRITE(97+CK_LUN,'(A)') TRIM(modLine)
                     ENDDO
-                    CLOSE(97)
-                    CLOSE(99)
+                    CLOSE(97+CK_LUN)
+                    CLOSE(99+CK_LUN)
                     OPEN(FILE=TRIM(LOCALDIR)//"/namelist2.scratch",
      &                  UNIT=97,ACTION="READ")
                     DO I = 1,MYSCHED%NSECTIONS
@@ -1461,7 +1500,7 @@ C-----------------------------------------------------------------------
                         HOT           = 0
                         ZF            = -99999D0
                         DELTA         = -99999D0
-                        READ(97,NML=SCHEDULE)
+                        READ(97+CK_LUN,NML=SCHEDULE)
                         IF(HOT.EQ.1)THEN
                             SELECT CASE(IHOT)
                                 CASE(17,67,68,367,368,567,568)
@@ -1508,7 +1547,7 @@ C-----------------------------------------------------------------------
                             ENDIF    
                         ENDIF    
                     ENDDO
-                    CLOSE(97,STATUS="DELETE")
+                    CLOSE(97+CK_LUN,STATUS="DELETE")
                  ENDIF   
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
@@ -1848,6 +1887,7 @@ C   THIS MODULE CONTAINS THE ROUTINES FOR THE WEIR OVERTOPPING FLUX
 C   CALCULATIONS FOR INTERNAL AND EXTERNAL WEIR TYPE BOUNDARIES.
 C-----------------------------------------------------------------------
         MODULE WEIR_FLUX
+      use CkLunMod, only : CK_LUN
             USE GLOBAL,ONLY:G,ETA2,RAMPINTFLUX,
      &          setMessageSource,unsetMessageSource,DEBUG,allMessage    
             USE BOUNDARIES,ONLY: LBCODEI,NBV

@@ -59,18 +59,28 @@ C
       USE POST_GLOBAL
 C
       INTEGER UNIT   ! user input for file to post-process
+!$omp threadprivate(UNIT)
       CHARACTER DUM  ! variable used in waiting for menu choice  
+!$omp threadprivate(DUM)
       INTEGER I,PE,PRECIS,ISP,NWTYPE
+!$omp threadprivate(I,PE,PRECIS,ISP,NWTYPE)
 
       REAL(SZ) TOL,SCALEVAL
+!$omp threadprivate(TOL,SCALEVAL)
       LOGICAL FOUND
+!$omp threadprivate(FOUND)
       CHARACTER DIRCMD*72,CMD*6,PENUM*6,PHASE*9,ISET*6,DIR1*80,DIR2*80,
      &     CONVDIR*6,HOTANS*1
+!$omp threadprivate(DIRCMD,CMD,PENUM,PHASE,ISET,DIR1,DIR2,CONVDIR,HOTANS)
 
       integer :: argcount ! number of command line arguments
+!$omp threadprivate(argcount)
       integer :: iargc    ! function to return command line arguments
+!$omp threadprivate(iargc)
       character(len=2048) :: cmdlinearg ! content of cmd line arg
+!$omp threadprivate(cmdlinearg)
       character(len=2048) :: filename   ! e.g. "fort.63" 
+!$omp threadprivate(filename)
 C
 C--Initialize constants for case ICS = 2 inputs
 C
@@ -92,7 +102,7 @@ C
             case("--filename")
                i = i + 1
                call getarg(i,filename)
-               write(6,'(a)') 'INFO: Processing "'//trim(cmdlinearg)//
+               write(6+CK_LUN,'(a)') 'INFO: Processing "'//trim(cmdlinearg)//
      &           ' '//trim(filename)//'".'
                call mergeSubdomainFiles(filename) 
             case default

@@ -103,10 +103,15 @@ C
       IMPLICIT NONE
 C
       CHARACTER JOB*80 ! user input for menu selection
+!$omp threadprivate(JOB)
       INTEGER :: ARGCOUNT ! number of command line arguments
+!$omp threadprivate(ARGCOUNT)
       INTEGER :: IARGC    ! function to return command line arguments
+!$omp threadprivate(IARGC)
       INTEGER :: I        ! loop counter for command line arguments
+!$omp threadprivate(I)
       CHARACTER(2048) :: CMDLINEARG ! content of cmd line arg
+!$omp threadprivate(CMDLINEARG)
 C
       ! set the names of the log levels for use in log messages
       call initLogging()
@@ -355,6 +360,7 @@ C     This version is compatible with ADCIRC version 46.45. vjp 10/8/2006.
 C---------------------------------------------------------------------------
 C
       SUBROUTINE PREPINPUT()
+      use CkLunMod, only : CK_LUN
       USE PRE_GLOBAL
       use sizes, only : naType, meshType, controlType, ASCII, XDMF,
      &   naFileName, meshFileName, controlFileName, formatString
@@ -426,7 +432,7 @@ C
          call getMeshParametersXDMF() ! defined in prep/read_global.F
          call sizeup15()
       case default
-         write(6,'(a,i0,a)') 'ERROR: The mesh type ',meshType,
+         write(6+CK_LUN,'(a,i0,a)') 'ERROR: The mesh type ',meshType,
      &     ' is invalid'
          stop
       end select
@@ -436,21 +442,21 @@ C
       ! the names of the fulldomain input files for later use by
       ! XDMF output routines
       if (useXDMF.eqv..true.) then
-         open(unit=30,file='fulldomainInputFiles',
+         open(unit=30+CK_LUN,file='fulldomainInputFiles',
      &       status='replace',action='write')
-         write(30,'(a)') 'naType'
-         write(30,'(a)') trim(formatString(naType))
-         write(30,'(a)') 'naFileName'
-         write(30,'(a)') trim(naFileName)
-         write(30,'(a)') 'meshType'
-         write(30,'(a)') trim(formatString(meshType))
-         write(30,'(a)') 'meshFileName'
-         write(30,'(a)') trim(meshFileName)
-         write(30,'(a)') 'controlType'
-         write(30,'(a)') trim(formatString(controlType))
-         write(30,'(a)') 'controlFileName'
-         write(30,'(a)') trim(controlFileName)
-         close(30)      
+         write(30+CK_LUN,'(a)') 'naType'
+         write(30+CK_LUN,'(a)') trim(formatString(naType))
+         write(30+CK_LUN,'(a)') 'naFileName'
+         write(30+CK_LUN,'(a)') trim(naFileName)
+         write(30+CK_LUN,'(a)') 'meshType'
+         write(30+CK_LUN,'(a)') trim(formatString(meshType))
+         write(30+CK_LUN,'(a)') 'meshFileName'
+         write(30+CK_LUN,'(a)') trim(meshFileName)
+         write(30+CK_LUN,'(a)') 'controlType'
+         write(30+CK_LUN,'(a)') trim(formatString(controlType))
+         write(30+CK_LUN,'(a)') 'controlFileName'
+         write(30+CK_LUN,'(a)') trim(controlFileName)
+         close(30+CK_LUN)      
       endif
 
 C--   If ONLY localizing Run Info File ( fort.15 )
@@ -536,12 +542,12 @@ C
          return
       ELSE
         print *, 'INFO: Opening file partmesh.txt'
-        OPEN(990,FILE='partmesh.txt')
+        OPEN(990+CK_LUN,FILE='partmesh.txt')
         DO I=1, MNP
-           READ(990,*) PROC(I)
+           READ(990+CK_LUN,*) PROC(I)
 C           print *," PROC for ",I," = ", PROC(I)
         ENDDO
-        CLOSE(990)
+        CLOSE(990+CK_LUN)
         print *, 'INFO: Closed partmesh.txt file.'
       ENDIF
 C

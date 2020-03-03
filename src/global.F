@@ -10,6 +10,7 @@ C                                                                             *
 C******************************************************************************
 C
       MODULE GLOBAL
+      use CkLunMod, only : CK_LUN
       USE SIZES, ONLY : SZ 
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
       IMPLICIT NONE
@@ -18,6 +19,7 @@ C...
 C...SET GLOBAL PHYSICAL CONSTANTS
 C...
       REAL(sz) :: g = 9.80665 !default gravitational acceleration
+!$omp threadprivate(g)
 C.....nominal density of water RHOWAT0
       REAL(SZ), PARAMETER ::  RhoWat0=1000.D0
 C.....Sigma T value of reference density
@@ -25,11 +27,16 @@ C.....Sigma T value of reference density
 C.....Background Atmospheric Pressure in mb
       REAL(SZ), PARAMETER :: PRBCKGRND = 1013.0d0   !tcm 20100617 v49.16 Added
       REAL(8) :: rhoAir = 1.15d0         ! kg/m^3
+!$omp threadprivate(rhoAir)
       REAL(8) :: windReduction = 0.9d0
+!$omp threadprivate(windReduction)
       REAL(8) :: one2ten = 0.8928d0
+!$omp threadprivate(one2ten)
       REAL(8) :: ten2one = 1.d0/0.8928d0
+!$omp threadprivate(ten2one)
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       REAL(SZ) :: WaveWindMultiplier = 1.D0
+!$omp threadprivate(WaveWindMultiplier)
 C.....PI etc
       REAL(8), PARAMETER ::  PI=3.141592653589793D0
       REAL(8), PARAMETER ::  DEG2RAD = PI/180.D0  ! degrees to radians
@@ -48,33 +55,55 @@ C.....Days to seconds conversion
       REAL(8), PARAMETER :: mb2pa = 100.d0
 C     jgf46.21 Added support for IBTYPE=52.
       REAL(SZ),ALLOCATABLE, TARGET ::   ElevDisc(:)
+!$omp threadprivate(ElevDisc)
       REAL(SZ) FluxSettlingTime
+!$omp threadprivate(FluxSettlingTime)
       INTEGER  FluxSettlingIT
+!$omp threadprivate(FluxSettlingIT)
 C... v49.48 tcm -- added for coupling with STWAVE (NRS=4)
       REAL(8)  :: STARTWAVE   ! Start of Wave Service
+!$omp threadprivate(STARTWAVE)
       REAL(8)  :: ENDWAVE     ! End of Wave Service
+!$omp threadprivate(ENDWAVE)
       LOGICAL  :: CPL2STWAVE = .FALSE.  !Coupled to STWAVE (NRS=4)
+!$omp threadprivate(CPL2STWAVE)
       LOGICAL  :: Flag_ElevError = .FALSE.  
+!$omp threadprivate(Flag_ElevError)
 C      real(sz) rampriver,drampriver,rampriver1,rampriver2
 C     jgf46.08 Fine grained ramp functions (jgf46.21 split flux b.c.s)
       REAL(SZ) RampExtFlux,DRampExtFlux ! Ramp for external flux b.c.s
+!$omp threadprivate(RampExtFlux,DRampExtFlux)
       REAL(SZ) RampIntFlux,DRampIntFlux ! Ramp for internal flux b.c.s
+!$omp threadprivate(RampIntFlux,DRampIntFlux)
       REAL(SZ) RampElev,DRampElev    ! Ramp for elevation boundary conditions.
+!$omp threadprivate(RampElev,DRampElev)
       REAL(SZ) RampTip,DRampTip      ! Ramp for tidal potential
+!$omp threadprivate(RampTip,DRampTip)
       REAL(SZ) RampMete,DRampMete    ! Ramp for wind and atmospheric pressure
+!$omp threadprivate(RampMete,DRampMete)
       REAL(SZ) RampWRad,DRampWRad    ! Ramp for wave radiation stress
+!$omp threadprivate(RampWRad,DRampWRad)
 Corbitt 1203022: Added Zachs Fix for Assigning a Start Time to Mete Ramping
       REAL(SZ) DUnRampMete           ! Time to not have ramped Mete
+!$omp threadprivate(DUnRampMete)
 C
 C     jgf46.10 user-controlled warning, dump and error levels on elevations
       REAL(SZ) WarnElev       ! elevation at which a warning is issued
+!$omp threadprivate(WarnElev)
       INTEGER iWarnElevDump   ! 1 to dump warning elevs to fort.69
+!$omp threadprivate(iWarnElevDump)
       LOGICAL WarnElevDump    ! .True. if iWarnElevDump.eq.1
+!$omp threadprivate(WarnElevDump)
       INTEGER WarnElevDumpLimit ! max dumps; ADCIRC terminates if exceeded
+!$omp threadprivate(WarnElevDumpLimit)
       INTEGER WarnElevDumpCounter ! counter for number of elev dumps to fort.69
+!$omp threadprivate(WarnElevDumpCounter)
       REAL(SZ) ErrorElev      ! ADCIRC terminates if this elev is exceeded
+!$omp threadprivate(ErrorElev)
       INTEGER :: screenUnit = 6 ! jgf46.19 I/O unit where screen output is sent
+!$omp threadprivate(screenUnit)
       INTEGER :: Terminate_LocalProc = 0 ! zc - allow a single processor to initiate code shutdown
+!$omp threadprivate(Terminate_LocalProc)
 C
 C     Variables related to hotstarting.
       type HOTSTART_t
@@ -83,13 +112,17 @@ C     Variables related to hotstarting.
       end type HOTSTART_t
 
       type(HOTSTART_t):: hss
+!$omp threadprivate(hss)
       !       
       ! iLump=0 for consistent mass matrix
       ! iLump=1 for lumped mass matrix 
       integer :: ilump 
+!$omp threadprivate(ilump)
 
       real(sz),allocatable,target ::   mom_lv_x(:)
+!$omp threadprivate(mom_lv_x)
       real(sz),allocatable ::   mom_lv_y(:)
+!$omp threadprivate(mom_lv_y)
 
       !-----------------------------------------------------------------
       !        F U L L   D O M A I N   V A R I A B L E S   
@@ -102,17 +135,23 @@ C     Variables related to hotstarting.
       ! modules, including harm.F, write_output.F, globalio.F et al.
       !-----------------------------------------------------------------
       integer :: comm        ! MPI communicator.
+!$omp threadprivate(comm)
       integer :: np_g, ne_g  ! global (full domain) number of nodes, elements
+!$omp threadprivate(np_g,ne_g)
 
 C     jgf48.03 Arrays for mapping subdomain nodes and elements to full
 C     domain ... used in globalio module but allocated and populated
 C     in messenger module
       integer,allocatable,target :: nodes_lg(:)
+!$omp threadprivate(nodes_lg)
       integer,allocatable,target :: imap_el_lg(:) 
+!$omp threadprivate(imap_el_lg)
 C
 C     global number of elevation, velocity, and meteorological stations
       integer :: nstae_g, nstav_g, nstam_g
+!$omp threadprivate(nstae_g,nstav_g,nstam_g)
       integer :: nstac_g     ! number of concentration stations
+!$omp threadprivate(nstac_g)
 C
 C     jgf49.44: These variables represent fulldomain arrays and are
 C     used in hstart.F for reading fulldomain hotstart files as well as in
@@ -120,79 +159,132 @@ C     write_output.F/writeHotstart and
 C     writer.F/writeHotstart_through_HSwriter
 C     for writing fulldomain hotstart files.
       REAL(SZ), ALLOCATABLE, TARGET :: ETA1_g(:)
+!$omp threadprivate(ETA1_g)
       REAL(SZ), ALLOCATABLE, TARGET :: ETA2_g(:)
+!$omp threadprivate(ETA2_g)
       REAL(SZ), ALLOCATABLE, TARGET :: EtaDisc_g(:)
+!$omp threadprivate(EtaDisc_g)
       REAL(SZ), ALLOCATABLE, TARGET :: UU2_g(:)
+!$omp threadprivate(UU2_g)
       REAL(SZ), ALLOCATABLE, TARGET :: VV2_g(:)
+!$omp threadprivate(VV2_g)
       REAL(SZ), ALLOCATABLE, TARGET :: CH1_g(:)
+!$omp threadprivate(CH1_g)
       INTEGER, ALLOCATABLE, TARGET :: labels_g(:)
+!$omp threadprivate(labels_g)
       INTEGER, ALLOCATABLE, TARGET :: NodeCode_g(:)
+!$omp threadprivate(NodeCode_g)
       INTEGER, ALLOCATABLE :: NNodeCode_g(:)
+!$omp threadprivate(NNodeCode_g)
       INTEGER, ALLOCATABLE, TARGET :: NOFF_g(:)
+!$omp threadprivate(NOFF_g)
       ! full domain min and max files in parallel
       !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_ETAMAX_G(:)
+!$omp threadprivate(HOT_ETAMAX_G)
       REAL(SZ),ALLOCATABLE, TARGET :: ETAMAX_Time(:) 
+!$omp threadprivate(ETAMAX_Time)
       REAL(SZ),ALLOCATABLE, TARGET :: ETAMAX_Time_G(:) 
+!$omp threadprivate(ETAMAX_Time_G)
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_UMAX_G(:)
+!$omp threadprivate(HOT_UMAX_G)
       REAL(SZ),ALLOCATABLE, TARGET :: UMAX_Time(:) 
+!$omp threadprivate(UMAX_Time)
       REAL(SZ),ALLOCATABLE, TARGET :: UMAX_Time_G(:) 
+!$omp threadprivate(UMAX_Time_G)
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_PrMin_G(:)
+!$omp threadprivate(HOT_PrMin_G)
       REAL(SZ),ALLOCATABLE, TARGET :: PrMin_Time(:) 
+!$omp threadprivate(PrMin_Time)
       REAL(SZ),ALLOCATABLE, TARGET :: PrMin_Time_G(:) 
+!$omp threadprivate(PrMin_Time_G)
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_WVNOutMax_G(:)
+!$omp threadprivate(HOT_WVNOutMax_G)
       REAL(SZ),ALLOCATABLE, TARGET :: WVNOutMax_Time(:) 
+!$omp threadprivate(WVNOutMax_Time)
       REAL(SZ),ALLOCATABLE, TARGET :: WVNOutMax_Time_G(:) 
+!$omp threadprivate(WVNOutMax_Time_G)
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax_g(:)
+!$omp threadprivate(HOT_RSNMax_g)
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time(:) 
+!$omp threadprivate(RSNMax_Time)
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time_G(:) 
+!$omp threadprivate(RSNMax_Time_G)
      
 #if defined CSWAN || defined ADCSWAN
       !...Global SWAN Arrays
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSOut_g(:)
+!$omp threadprivate(SWAN_HSOut_g)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIROut_g(:)
+!$omp threadprivate(SWAN_DIROut_g)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM01Out_g(:)
+!$omp threadprivate(SWAN_TM01Out_g)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TPSOut_g(:)
+!$omp threadprivate(SWAN_TPSOut_g)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDXOut_g(:)
+!$omp threadprivate(SWAN_WINDXOut_g)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDYOut_g(:)
+!$omp threadprivate(SWAN_WINDYOut_g)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02Out_g(:)
+!$omp threadprivate(SWAN_TM02Out_g)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10Out_g(:)
+!$omp threadprivate(SWAN_TMM10Out_g)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSMaxOut_g(:)
+!$omp threadprivate(SWAN_HSMaxOut_g)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIRMaxOut_g(:)
+!$omp threadprivate(SWAN_DIRMaxOut_g)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM01MaxOut_g(:)
+!$omp threadprivate(SWAN_TM01MaxOut_g)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TPSMaxOut_g(:)
+!$omp threadprivate(SWAN_TPSMaxOut_g)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDMaxOut_g(:)
+!$omp threadprivate(SWAN_WINDMaxOut_g)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02MaxOut_g(:)
+!$omp threadprivate(SWAN_TM02MaxOut_g)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10MaxOut_g(:)
+!$omp threadprivate(SWAN_TMM10MaxOut_g)
 #endif
       
       ! mappings from subdomain to fulldomain for stations
       integer,allocatable,target :: imap_stae_lg(:)
+!$omp threadprivate(imap_stae_lg)
       integer,allocatable,target :: imap_stav_lg(:)
+!$omp threadprivate(imap_stav_lg)
       integer,allocatable,target :: imap_stam_lg(:)
+!$omp threadprivate(imap_stam_lg)
       integer,allocatable,target :: imap_stac_lg(:)
+!$omp threadprivate(imap_stac_lg)
 C
 C     jgf48.03 Variable, arrays, and datastructure that are used by both
 C     globalio and writer modules
       integer, parameter :: BUFSIZE_MAX = 131072
       real(sz) :: buf(BUFSIZE_MAX)
+!$omp threadprivate(buf)
       real(sz) :: resultBuf(BUFSIZE_MAX)
+!$omp threadprivate(resultBuf)
       integer :: integerBuffer(BUFSIZE_MAX)
+!$omp threadprivate(integerBuffer)
       integer :: integerResultBuffer(BUFSIZE_MAX)
+!$omp threadprivate(integerResultBuffer)
       integer                    :: float_type
+!$omp threadprivate(float_type)
 C
 C     jgf48.03 Variables shared between messenger and writer modules
       integer ::  realtype, dbletype
+!$omp threadprivate(realtype,dbletype)
       !
       ! there is a separate mpi communicator for each dedicated
       ! writer processor; their communicator ids are stored in the 
       ! following array
       integer, allocatable ::  comm_writer(:)
+!$omp threadprivate(comm_writer)
       ! communicators for hotstart file writing !st3
       integer, allocatable ::  comm_writeh(:), comm_hsleep(:)
+!$omp threadprivate(comm_writeh,comm_hsleep)
       !
       ! = 0 if this is a compute proc; > 0 if this is a writer node
       integer :: writer_id
+!$omp threadprivate(writer_id)
       ! following signals are used in messenger.f and writer.f
       integer, parameter :: sig_val   = 1
       integer, parameter :: sig_write = 100
@@ -205,213 +297,353 @@ C     End of variables shared between messenger and other modules
       !----------------------------------------------------------------
 C     
       INTEGER             :: FileFmtVersion      ! File format version.
+!$omp threadprivate(FileFmtVersion)
 
 c..RJW merged 09/02/2008 Casey 071219: Added the following variable declaration for 3D mass balance.
 C             RESELEM is the number of processors on which each element appears.
       INTEGER, ALLOCATABLE :: RESELEM(:)
+!$omp threadprivate(RESELEM)
 c.
 #ifdef CMPI
       INTEGER, ALLOCATABLE ::   IDUMY(:)
+!$omp threadprivate(IDUMY)
       REAL(SZ),ALLOCATABLE ::   DUMY1(:),DUMY2(:)
+!$omp threadprivate(DUMY1,DUMY2)
 #endif
       !jgf50.44: Added variable to record the time that the min or max
       ! has occurred
       REAL(SZ),ALLOCATABLE, TARGET ::  ETA1(:), ETA2(:), UU2(:), VV2(:)
+!$omp threadprivate(ETA1,ETA2,UU2,VV2)
       REAL(SZ),ALLOCATABLE, TARGET ::  ETAMAX(:) ! v46.50 sb 11/11/2006
+!$omp threadprivate(ETAMAX)
       REAL(SZ),ALLOCATABLE, TARGET ::  UMAX(:) ! v46.50 sb 11/11/2006
+!$omp threadprivate(UMAX)
       REAL(SZ),ALLOCATABLE, TARGET ::  ET00(:), UU00(:), VV00(:)
+!$omp threadprivate(ET00,UU00,VV00)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
+!$omp threadprivate(RMP00,RMU00,RMV00)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMICE00(:), CICEOUT(:) !v49.64.01 tcm -added for ice concentration
+!$omp threadprivate(RMICE00,CICEOUT)
 
       REAL(SZ),ALLOCATABLE, TARGET ::  Pr2(:)
+!$omp threadprivate(Pr2)
 #ifdef CSWAN
       REAL(SZ),ALLOCATABLE, TARGET ::  SWAN_WDragCo(:) !MVB
+!$omp threadprivate(SWAN_WDragCo)
 #endif
       REAL(SZ),ALLOCATABLE, TARGET ::  windDragOut(:) !MVB 
+!$omp threadprivate(windDragOut)
 
       REAL(SZ),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
+!$omp threadprivate(PrMin)
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
+!$omp threadprivate(WVNOutMax)
       
       real(sz), allocatable, target :: wvnxout(:) ! output wind velocity in x-dir at each node 
+!$omp threadprivate(wvnxout)
       real(sz), allocatable, target :: wvnyout(:) ! output wind velocity in y-dir at each node 
+!$omp threadprivate(wvnyout)
 
       real(sz),allocatable :: gwce_lv(:)
+!$omp threadprivate(gwce_lv)
 
 
       
 #if defined CSWAN || defined ADCSWAN     
       !...Local SWAN Arrays
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSOut(:)
+!$omp threadprivate(SWAN_HSOut)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIROut(:)
+!$omp threadprivate(SWAN_DIROut)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM01Out(:)
+!$omp threadprivate(SWAN_TM01Out)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TPSOut(:)
+!$omp threadprivate(SWAN_TPSOut)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDXOut(:)
+!$omp threadprivate(SWAN_WINDXOut)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDYOut(:)
+!$omp threadprivate(SWAN_WINDYOut)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02Out(:)
+!$omp threadprivate(SWAN_TM02Out)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10Out(:)
+!$omp threadprivate(SWAN_TMM10Out)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSMaxOut(:)
+!$omp threadprivate(SWAN_HSMaxOut)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIRMaxOut(:)
+!$omp threadprivate(SWAN_DIRMaxOut)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM01MaxOut(:)
+!$omp threadprivate(SWAN_TM01MaxOut)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TPSMaxOut(:)
+!$omp threadprivate(SWAN_TPSMaxOut)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDMaxOut(:)
+!$omp threadprivate(SWAN_WINDMaxOut)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02MaxOut(:)
+!$omp threadprivate(SWAN_TM02MaxOut)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10MaxOut(:)
+!$omp threadprivate(SWAN_TMM10MaxOut)
 #endif      
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef CSWAN
 Casey 090302: Added the following arrays for output of radiation stress gradients.
       REAL(SZ),ALLOCATABLE, TARGET :: RSNXOUT(:), RSNYOUT(:)
+!$omp threadprivate(RSNXOUT,RSNYOUT)
 !#endif
       LOGICAL :: outputWindDrag = .false. ! true if wind drag data should be written to output file
+!$omp threadprivate(outputWindDrag)
 
 #if defined CSWAN || defined ADCSWAN      
 Cobell 20120510: Added logicals for turning on/off swan output files   
       LOGICAL                      :: SWAN_OutputHS = .TRUE.
+!$omp threadprivate(SWAN_OutputHS)
       LOGICAL                      :: SWAN_OutputDIR = .TRUE.
+!$omp threadprivate(SWAN_OutputDIR)
       LOGICAL                      :: SWAN_OutputTM01 = .FALSE.
+!$omp threadprivate(SWAN_OutputTM01)
       LOGICAL                      :: SWAN_OutputTPS = .TRUE.
+!$omp threadprivate(SWAN_OutputTPS)
       LOGICAL                      :: SWAN_OutputWIND = .FALSE.
+!$omp threadprivate(SWAN_OutputWIND)
       LOGICAL                      :: SWAN_OutputTM02 = .FALSE.
+!$omp threadprivate(SWAN_OutputTM02)
       LOGICAL                      :: SWAN_OutputTMM10 = .TRUE.
+!$omp threadprivate(SWAN_OutputTMM10)
       LOGICAL                      :: SWAN_OutputAgg(7)
+!$omp threadprivate(SWAN_OutputAgg)
 #endif
 
 Cobell - Added for Time Varying Weirs, Set to default values
       LOGICAL                      :: USE_TVW = .FALSE.     !..From namelist, used time varying weirs
+!$omp threadprivate(USE_TVW)
       CHARACTER(80)                :: TVW_FILE = 'fort.tvw' !..From namelist, file for time varying weirs
+!$omp threadprivate(TVW_FILE)
       REAL(SZ),ALLOCATABLE,TARGET  :: TVW(:)                !..Current elevation of weirs, for output
+!$omp threadprivate(TVW)
 
 
 Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE, TARGET :: ESLONOFF(:)
+!$omp threadprivate(ESLONOFF)
 
       REAL(SZ),ALLOCATABLE, TARGET ::  CC00(:)
+!$omp threadprivate(CC00)
       REAL(SZ),ALLOCATABLE, TARGET ::  EtaDisc(:) ! vjp 9/2006 added for hotstart file
+!$omp threadprivate(EtaDisc)
       REAL(SZ),ALLOCATABLE, TARGET ::   CH1(:)
+!$omp threadprivate(CH1)
       REAL(SZ),ALLOCATABLE ::   ETAS(:), UU0(:),VV0(:)
+!$omp threadprivate(ETAS,UU0,VV0)
       REAL(SZ),ALLOCATABLE ::   UU1(:),VV1(:)
+!$omp threadprivate(UU1,VV1)
       REAL(SZ),ALLOCATABLE ::   QX1(:)
+!$omp threadprivate(QX1)
       REAL(SZ),ALLOCATABLE,TARGET ::   QX2(:)
+!$omp threadprivate(QX2)
       REAL(SZ),ALLOCATABLE ::   QY1(:)
+!$omp threadprivate(QY1)
       REAL(SZ),ALLOCATABLE,TARGET ::   QY2(:)
+!$omp threadprivate(QY2)
       REAL(SZ),ALLOCATABLE ::   QX0(:),QY0(:)
+!$omp threadprivate(QX0,QY0)
       REAL(SZ),ALLOCATABLE ::   TK0(:),TK2(:)
+!$omp threadprivate(TK0,TK2)
       REAL(SZ),ALLOCATABLE ::  DP1(:),DP2(:) !TCM V50.66.01 FOR TIME VARYING BATHYMETRY
+!$omp threadprivate(DP1,DP2)
 
       REAL(SZ),ALLOCATABLE ::   CORIF(:)
+!$omp threadprivate(CORIF)
       REAL(SZ),ALLOCATABLE ::   TPK(:),FFT(:)
+!$omp threadprivate(TPK,FFT)
       REAL(SZ),ALLOCATABLE ::   FACET(:),ETRF(:)
+!$omp threadprivate(FACET,ETRF)
       REAL(SZ),ALLOCATABLE ::   FFF(:),FFACE(:)
+!$omp threadprivate(FFF,FFACE)
       REAL(SZ),ALLOCATABLE ::   ESBIN1(:),ESBIN2(:)
+!$omp threadprivate(ESBIN1,ESBIN2)
       REAL(SZ),ALLOCATABLE ::   TEMP_LV_A(:,:),TEMP_LV_B(:,:)
+!$omp threadprivate(TEMP_LV_A,TEMP_LV_B)
       REAL(SZ),ALLOCATABLE ::   QN0(:),QN1(:)
+!$omp threadprivate(QN0,QN1)
       REAL(SZ),ALLOCATABLE, TARGET :: QN2(:)
+!$omp threadprivate(QN2)
       REAL(SZ),ALLOCATABLE ::   EN0(:),EN1(:),EN2(:)
+!$omp threadprivate(EN0,EN1,EN2)
       REAL(SZ),ALLOCATABLE ::   QNAM(:,:),QNPH(:,:)
+!$omp threadprivate(QNAM,QNPH)
       REAL(SZ),ALLOCATABLE ::   ENAM(:,:),ENPH(:,:)
+!$omp threadprivate(ENAM,ENPH)
       REAL(SZ),ALLOCATABLE ::   QNIN1(:),QNIN2(:)
+!$omp threadprivate(QNIN1,QNIN2)
       REAL(SZ),ALLOCATABLE ::   ENIN1(:),ENIN2(:)
+!$omp threadprivate(ENIN1,ENIN2)
       !
       ! spatial interpolating factors for elevation stations
       real(sz),allocatable, target :: staie1(:),staie2(:),staie3(:)
+!$omp threadprivate(staie1,staie2,staie3)
       real(8), allocatable, target :: xev(:) ! x coords of current vel stations
+!$omp threadprivate(xev)
       real(8), allocatable, target :: yev(:) ! y coords of current vel stations
+!$omp threadprivate(yev)
       real(8), allocatable, target :: slev(:)! longitudes of current vel sta
+!$omp threadprivate(slev)
       real(8), allocatable, target :: sfev(:)! latitudes of current vel sta
+!$omp threadprivate(sfev)
 
       ! spatial interpolating factors for velocity stations
       real(sz),allocatable, target ::   staiv1(:),staiv2(:),staiv3(:)
+!$omp threadprivate(staiv1,staiv2,staiv3)
       real(8), allocatable, target ::   xec(:),yec(:),slec(:),sfec(:)
+!$omp threadprivate(xec,yec,slec,sfec)
       ! spatial interpolating factors for concentration stations
       real(sz),allocatable ::   staic1(:),staic2(:),staic3(:)
+!$omp threadprivate(staic1,staic2,staic3)
 
       ! spatial interpolating factors for meteorological stations
       real(sz),allocatable, target ::   staim1(:),staim2(:),staim3(:)
+!$omp threadprivate(staim1,staim2,staim3)
       real(8), allocatable, target :: xem(:) ! x coords of met stations
+!$omp threadprivate(xem)
       real(8), allocatable, target :: yem(:) ! y coords of met stations
+!$omp threadprivate(yem)
       real(8), allocatable, target :: slem(:) ! longitudes of met stations
+!$omp threadprivate(slem)
       real(8), allocatable, target :: sfem(:) ! latitudes of met stations
+!$omp threadprivate(sfem)
 
       REAL(SZ),ALLOCATABLE ::   TRANS_LV_B(:),TRANS_LV_A(:)
+!$omp threadprivate(TRANS_LV_B,TRANS_LV_A)
       REAL(SZ),ALLOCATABLE ::   SOURSIN(:)
+!$omp threadprivate(SOURSIN)
       REAL(SZ),ALLOCATABLE ::   WSX1(:),WSY1(:),PR1(:)
+!$omp threadprivate(WSX1,WSY1,PR1)
       REAL(SZ),ALLOCATABLE ::   WSX2(:),WSY2(:)
+!$omp threadprivate(WSX2,WSY2)
       REAL(SZ),ALLOCATABLE ::   PRN1(:)
+!$omp threadprivate(PRN1)
       REAL(SZ),ALLOCATABLE ::   PRN2(:)
+!$omp threadprivate(PRN2)
       REAL(SZ),ALLOCATABLE ::   RSNX1(:),RSNY1(:),RSNX2(:),RSNY2(:)
+!$omp threadprivate(RSNX1,RSNY1,RSNX2,RSNY2)
       REAL(SZ),ALLOCATABLE ::   CICE1(:),CICE2(:)   !v49.64.01 tcm -- added
+!$omp threadprivate(CICE1,CICE2)
                                                     !for ice concentration
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax(:) ! v46.50 sb 11/11/2006
+!$omp threadprivate(RSNMax)
 
       REAL(SZ),ALLOCATABLE :: TK(:)     ! WJP bottom frictiom
+!$omp threadprivate(TK)
       REAL(SZ),ALLOCATABLE :: TKM(:,:)  ! symmetrical friction matrix
+!$omp threadprivate(TKM)
       REAL(8),ALLOCATABLE :: EMO(:,:),EFA(:,:)
+!$omp threadprivate(EMO,EFA)
       REAL(8),ALLOCATABLE,TARGET :: XEL(:)  ! x-coords of elevation stations
+!$omp threadprivate(XEL)
       REAL(8),ALLOCATABLE,TARGET :: YEL(:)  ! y-coords of elevation stations
+!$omp threadprivate(YEL)
       REAL(8),ALLOCATABLE,TARGET :: SLEL(:) ! latitudes of elevation stations
+!$omp threadprivate(SLEL)
       REAL(8),ALLOCATABLE,TARGET :: SFEL(:) ! longitudes of elevation stations
+!$omp threadprivate(SFEL)
 
 
       REAL(SZ),ALLOCATABLE, TARGET ::   DUU1(:),DUV1(:),DVV1(:)
+!$omp threadprivate(DUU1,DUV1,DVV1)
       REAL(SZ),ALLOCATABLE, TARGET ::   BSX1(:),BSY1(:)
+!$omp threadprivate(BSX1,BSY1)
       REAL(SZ),ALLOCATABLE ::   TIP1(:),TIP2(:)
+!$omp threadprivate(TIP1,TIP2)
       REAL(SZ),ALLOCATABLE ::   L_N(:,:)    ! WJP The array for TIP multiplier
+!$omp threadprivate(L_N)
       REAL(SZ),ALLOCATABLE ::   SALTAMP(:,:),SALTPHA(:,:)
+!$omp threadprivate(SALTAMP,SALTPHA)
       REAL(SZ),ALLOCATABLE ::   OBCCOEF(:,:),COEF(:,:)
+!$omp threadprivate(OBCCOEF,COEF)
       REAL(SZ),ALLOCATABLE ::   COEFD(:) !jgf48.4619 from Seizo (Lumped GWCE)
+!$omp threadprivate(COEFD)
       INTEGER  NBFR,NCOR
+!$omp threadprivate(NBFR,NCOR)
 
 C    kmd48.33bc - added variables for the levels of no motion and top temperature boundary condition
       REAL(SZ),ALLOCATABLE ::   LNM_BC1(:), LNM_BC2(:), LNM_BC(:) ! level of no motion
+!$omp threadprivate(LNM_BC1,LNM_BC2,LNM_BC)
       REAL(SZ),ALLOCATABLE ::   q_heat1(:), q_heat2(:), HFLUX(:)  ! top temperature
+!$omp threadprivate(q_heat1,q_heat2,HFLUX)
       REAL(SZ),ALLOCATABLE, TARGET :: Sponge(:)  ! sponge information for boundary conditions
+!$omp threadprivate(Sponge)
 
       INTEGER,ALLOCATABLE, TARGET ::    NOFF(:), NODECODE(:)
+!$omp threadprivate(NOFF,NODECODE)
       INTEGER,ALLOCATABLE ::    NNODECODE(:)
+!$omp threadprivate(NNODECODE)
       INTEGER,ALLOCATABLE ::    NIBNODECODE(:)
+!$omp threadprivate(NIBNODECODE)
       !
       ! lists of elements containing each station 
       integer, allocatable, target :: nnc(:) ! concentration station elements
+!$omp threadprivate(nnc)
       integer, allocatable, target :: nne(:) ! elevation station elements
+!$omp threadprivate(nne)
       integer, allocatable, target :: nnv(:) ! velocity station elements
+!$omp threadprivate(nnv)
       integer, allocatable, target :: nnm(:) ! meteorological station elements
+!$omp threadprivate(nnm)
       !
       INTEGER,ALLOCATABLE ::    IPV(:)
+!$omp threadprivate(IPV)
 C
 C.....for buoyancy forcing
       REAL(SZ),ALLOCATABLE ::   DASigT(:), DASalt(:), DATemp(:)
+!$omp threadprivate(DASigT,DASalt,DATemp)
       REAL(SZ),ALLOCATABLE ::   VIDBCPDXOH(:), VIDBCPDYOH(:)
+!$omp threadprivate(VIDBCPDXOH,VIDBCPDYOH)
 C.....for scalar transport
       REAL(SZ),ALLOCATABLE ::   DAConc(:)
+!$omp threadprivate(DAConc)
 
       REAL(SZ) DT
+!$omp threadprivate(DT)
 C
       INTEGER NOLICA,NOLIFA,IHOT,IDen
+!$omp threadprivate(NOLICA,NOLIFA,IHOT,IDen)
       INTEGER :: NSCREEN = 1
+!$omp threadprivate(NSCREEN)
 C...
 C...DECLARE REAL(8) AND CHAR VARIABLES, EQUIVALENCES
 C...
 
       REAL(8) STATIM,REFTIM
+!$omp threadprivate(STATIM,REFTIM)
       REAL(8) QTIME1,QTIME2
+!$omp threadprivate(QTIME1,QTIME2)
       REAL(8), TARGET :: DTDP      
+!$omp threadprivate(DTDP)
 
       REAL(8) FTIMINC,RSTIME1,RSTIME2,RSTIMINC
+!$omp threadprivate(FTIMINC,RSTIME1,RSTIME2,RSTIMINC)
 
       REAL(8) DIST
+!$omp threadprivate(DIST)
       REAL(8),ALLOCATABLE :: AMIG(:),AMIGT(:),FAMIG(:)
+!$omp threadprivate(AMIG,AMIGT,FAMIG)
       REAL(8),ALLOCATABLE :: PER(:),PERT(:),FPER(:)
+!$omp threadprivate(PER,PERT,FPER)
       REAL(8),ALLOCATABLE :: FREQ(:),FF(:),FACE(:)
+!$omp threadprivate(FREQ,FF,FACE)
 
 
       REAL(8) DTDPHS  !kmd48.33 - added time step for hot start
+!$omp threadprivate(DTDPHS)
       CHARACTER(80)             :: RUNDES, RUNID, AFRIC
+!$omp threadprivate(AFRIC)
       CHARACTER(4)              :: RDES4(20),RID4(20)
+!$omp threadprivate(RID4)
       CHARACTER(8)              :: RDES8(10),RID8(10)
       CHARACTER(10)             :: ALPHA ! periodic constituent name
+!$omp threadprivate(ALPHA)
       CHARACTER(10),ALLOCATABLE :: ELEVALPHA(:) ! periodic constituent name
+!$omp threadprivate(ELEVALPHA)
       CHARACTER(5),ALLOCATABLE  :: TIPOTAG(:),BOUNTAG(:),FBOUNTAG(:)
+!$omp threadprivate(TIPOTAG,BOUNTAG,FBOUNTAG)
 
 c.ral v45.02 to fix compiler problem, see also change in read_input.F
 c      EQUIVALENCE (RDES4(1),RDES8(1),RUNDES), (RID4(1),RID8(1),RUNID),
@@ -422,203 +654,356 @@ C...DECLARE AND INITIALIZE LOGICAL VARIABLES
 C...  jgf45.06 Default choices are set to .TRUE. in read_input.F
 C     jgf45.07 The definitions of many of these are in timestep.F
       LOGICAL :: C2DDI               = .FALSE.
+!$omp threadprivate(C2DDI)
       LOGICAL :: C3D                 = .FALSE.
+!$omp threadprivate(C3D)
       LOGICAL :: C3DDSS              = .FALSE.
+!$omp threadprivate(C3DDSS)
       LOGICAL :: C3DVS               = .FALSE.
+!$omp threadprivate(C3DVS)
       LOGICAL :: C2D_BTrans          = .FALSE.
+!$omp threadprivate(C2D_BTrans)
       LOGICAL :: C2D_PTrans          = .FALSE.
+!$omp threadprivate(C2D_PTrans)
       LOGICAL :: CBaroclinic         = .FALSE.
+!$omp threadprivate(CBaroclinic)
       LOGICAL :: CSmag_Eh            = .FALSE.
+!$omp threadprivate(CSmag_Eh)
       LOGICAL :: CGWCE_New           = .FALSE.
+!$omp threadprivate(CGWCE_New)
       LOGICAL :: CGWCE_Lump          = .FALSE.
+!$omp threadprivate(CGWCE_Lump)
       LOGICAL :: CGWCE_LS_KGQ        = .FALSE.
+!$omp threadprivate(CGWCE_LS_KGQ)
       LOGICAL :: CGWCE_LS_2PartQ     = .FALSE.
+!$omp threadprivate(CGWCE_LS_2PartQ)
       LOGICAL :: CGWCE_LS_2PartV     = .FALSE.
+!$omp threadprivate(CGWCE_LS_2PartV)
       LOGICAL :: CGWCE_LS_2PartSQ    = .FALSE.
+!$omp threadprivate(CGWCE_LS_2PartSQ)
       LOGICAL :: CGWCE_LS_2PartSV    = .FALSE.
+!$omp threadprivate(CGWCE_LS_2PartSV)
       LOGICAL :: CGWCE_Advec_NC      = .FALSE.
+!$omp threadprivate(CGWCE_Advec_NC)
       LOGICAL :: CGWCE_Advec_C1      = .FALSE.
+!$omp threadprivate(CGWCE_Advec_C1)
       LOGICAL :: CGWCE_Advec_C2      = .FALSE.
+!$omp threadprivate(CGWCE_Advec_C2)
       LOGICAL :: CME_Orig            = .FALSE.
+!$omp threadprivate(CME_Orig)
       LOGICAL :: CME_New_NC          = .FALSE.
+!$omp threadprivate(CME_New_NC)
       LOGICAL :: CME_New_C1          = .FALSE.
+!$omp threadprivate(CME_New_C1)
       LOGICAL :: CME_New_C2          = .FALSE.
+!$omp threadprivate(CME_New_C2)
       LOGICAL :: CPRECOR             = .FALSE.
+!$omp threadprivate(CPRECOR)
       LOGICAL :: CME_LS_IBPQ         = .FALSE.
+!$omp threadprivate(CME_LS_IBPQ)
       LOGICAL :: CME_LS_IBPV         = .FALSE.
+!$omp threadprivate(CME_LS_IBPV)
       LOGICAL :: CME_LS_IBPSQ        = .FALSE.
+!$omp threadprivate(CME_LS_IBPSQ)
       LOGICAL :: CME_LS_IBPSV        = .FALSE.
+!$omp threadprivate(CME_LS_IBPSV)
       LOGICAL :: CME_LS_2PartQ       = .FALSE.
+!$omp threadprivate(CME_LS_2PartQ)
       LOGICAL :: CME_LS_2PartV       = .FALSE.
+!$omp threadprivate(CME_LS_2PartV)
       LOGICAL :: CME_AreaInt_Orig    = .FALSE.
+!$omp threadprivate(CME_AreaInt_Orig)
       LOGICAL :: CME_AreaInt_Corr    = .FALSE.
+!$omp threadprivate(CME_AreaInt_Corr)
       LOGICAL :: CTIP                = .FALSE.
+!$omp threadprivate(CTIP)
 C    kmd48.33bc  - logical statement for hot start using different time step
       ! This is .true. if the time step size of the current run is
       ! different from the time step size in the hotstart file; also
       ! true for IDEN=1, 3D baroclinic runs 
       LOGICAL :: CHOTHS              = .FALSE.
+!$omp threadprivate(CHOTHS)
 
 ! kmd - Evan's updates for rivers above MSL
       LOGICAL :: River_above_MSL     = .FALSE.
+!$omp threadprivate(River_above_MSL)
 
 C     jgf48.4627 When only meteorological output is requested, skip past
 C     the GWCE and Momentum equations, so that ADCIRC runs faster and
 C     only calculates the requested quantities.
       LOGICAL :: METONLY             = .FALSE.
+!$omp threadprivate(METONLY)
 C
 C     jgf51.14: Moved the parameters that control output timing 
 C     from read_input.F to here so that they can be used to recalculate
 C     starting and ending time step for output when the time step
 C     size has changed after a hotstart. 
       REAL(SZ) TOUTSC
+!$omp threadprivate(TOUTSC)
       REAL(SZ) TOUTSE,TOUTFE
+!$omp threadprivate(TOUTSE,TOUTFE)
       REAL(SZ) TOUTSV,TOUTFV
+!$omp threadprivate(TOUTSV,TOUTFV)
       REAL(SZ) TOUTFGC, TOUTFGE, TOUTFGV, TOUTFGW, TOUTF_TVW
+!$omp threadprivate(TOUTFGC,TOUTFGE,TOUTFGV,TOUTFGW,TOUTF_TVW)
       REAL(SZ) TOUTFM, TOUTSGC, TOUTSGE, TOUTSGV, TOUTSGW, TOUTSM, TOUTS_TVW
+!$omp threadprivate(TOUTFM,TOUTSGC,TOUTSGE,TOUTSGV,TOUTSGW,TOUTSM,TOUTS_TVW)
 
       REAL(SZ),ALLOCATABLE ::   RPIPEWL1AVG(:),RPIPEWL2AVG(:)
+!$omp threadprivate(RPIPEWL1AVG,RPIPEWL2AVG)
       INTEGER  NODEDRYMIN,NODEWETMIN
+!$omp threadprivate(NODEDRYMIN,NODEWETMIN)
       INTEGER  IM
+!$omp threadprivate(IM)
       INTEGER :: NABOUT = 0
+!$omp threadprivate(NABOUT)
       INTEGER  NFFR
+!$omp threadprivate(NFFR)
       INTEGER  NFOVER,NOLICAT,NOUTC
+!$omp threadprivate(NFOVER,NOLICAT,NOUTC)
       INTEGER  NOUTE,NSPOOLE,NOUTV,NSPOOLV
+!$omp threadprivate(NOUTE,NSPOOLE,NOUTV,NSPOOLV)
       INTEGER  NRAMP,NRS,NSTAE,NSTAV,NT,NTCYFE
+!$omp threadprivate(NRAMP,NRS,NSTAE,NSTAV,NT,NTCYFE)
       INTEGER  NTCYFV,NTCYSE,NTCYSV,NTIF,NTIP,NTRSPE,NTRSPV
+!$omp threadprivate(NTCYFV,NTCYSE,NTCYSV,NTIF,NTIP,NTRSPE,NTRSPV)
       INTEGER  NTCYS_TVW,NTCYF_TVW
+!$omp threadprivate(NTCYS_TVW,NTCYF_TVW)
       INTEGER  NWS
+!$omp threadprivate(NWS)
       INTEGER  ICSTP
+!$omp threadprivate(ICSTP)
 
 Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  IFNLCAT, IFNLCT, IFNLFA, IFNLCTE, IFNLCATE
+!$omp threadprivate(IFNLCAT,IFNLCT,IFNLFA,IFNLCTE,IFNLCATE)
       INTEGER  IFWIND
+!$omp threadprivate(IFWIND)
       ! 
       ! fulldomain (a.k.a. global) file position counters
       integer, target :: igcp ! concentration
+!$omp threadprivate(igcp)
       integer, target :: igep ! elevation
+!$omp threadprivate(igep)
       integer, target :: igpp ! barometric pressure
+!$omp threadprivate(igpp)
       integer, target :: igvp ! water velocity
+!$omp threadprivate(igvp)
       integer, target :: igwp ! wind velocity
+!$omp threadprivate(igwp)
       integer, target :: itau0p ! position in tau0 output file for variable tau0
+!$omp threadprivate(itau0p)
       integer, target :: igsp ! sponge layer output
+!$omp threadprivate(igsp)
       integer, target :: igdp ! debug elevation
+!$omp threadprivate(igdp)
       ! station file position counters
       integer, target :: ivstp ! file position in velocity station file
+!$omp threadprivate(ivstp)
       integer, target :: iwstp ! file position in wind velocity station file
+!$omp threadprivate(iwstp)
       integer, target :: ipstp ! position in barometric pressure station file
+!$omp threadprivate(ipstp)
       integer, target :: iestp ! file position in station elevation file 
+!$omp threadprivate(iestp)
       integer, target :: ig_tvw ! file position in weir elevation file
+!$omp threadprivate(ig_tvw)
       integer, target :: nodeCodeOutFilePos
+!$omp threadprivate(nodeCodeOutFilePos)
       integer, target :: noffOutFilePos
+!$omp threadprivate(noffOutFilePos)
       integer, target :: windDragFilePosition
+!$omp threadprivate(windDragFilePosition)
       ! jgf52.08.03: Some files (e.g., initiallydry.63 and endrisinginun.63)
       ! are only written once, but are written using the same subroutines
       ! that write time varying output files; the output subroutine increments
       ! the file position counter; so we have to have a fake file position 
       ! counter even for output files that are only written once.
       integer, target :: fauxFilePosition 
+!$omp threadprivate(fauxFilePosition)
       ! jgf: added support for water level offset
       integer, target :: offsetFilePos
+!$omp threadprivate(offsetFilePos)
       integer, target :: offsetStaFilePos
+!$omp threadprivate(offsetStaFilePos)
 
       INTEGER  IHOTSTP, IMHS
+!$omp threadprivate(IHOTSTP,IMHS)
       INTEGER  ITIME, ITEMPSTP
+!$omp threadprivate(ITIME,ITEMPSTP)
       INTEGER  ITHS, ITITER    
+!$omp threadprivate(ITHS,ITITER)
       
       INTEGER  LUMPT ! =1/0; LUMP/DO NOT LUMP THE TRANSPORT EQN
+!$omp threadprivate(LUMPT)
       INTEGER  NDSETSC
+!$omp threadprivate(NDSETSC)
       INTEGER  NCChange !jgf45.06 flag indicating wetting / drying has occurred
+!$omp threadprivate(NCChange)
       INTEGER  NDSETSE, NDSETSV, NDSETSW, NDSETS_TVW
+!$omp threadprivate(NDSETSE,NDSETSV,NDSETSW,NDSETS_TVW)
       INTEGER  NHSINC, NHSTAR
+!$omp threadprivate(NHSINC,NHSTAR)
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef CSWAN 
 Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER, TARGET :: IGRadS
+!$omp threadprivate(IGRadS)
 !#endif
       INTEGER  NOUTGC, NOUTGE, NOUTGV, NOUTGW, NOUTM, NOUT_TVW
+!$omp threadprivate(NOUTGC,NOUTGE,NOUTGV,NOUTGW,NOUTM,NOUT_TVW)
       INTEGER, TARGET :: NSCOUC, NSCOUE, NSCOUGC, NSCOUGE, NSCOUGV ! output spool counters
+!$omp threadprivate(NSCOUC,NSCOUE,NSCOUGC,NSCOUGE,NSCOUGV)
       INTEGER, TARGET :: NSCOUGW, NSCOURS, NSCOUGP, NSCOUM, NSCOUV ! output spool counters
+!$omp threadprivate(NSCOUGW,NSCOURS,NSCOUGP,NSCOUM,NSCOUV)
       INTEGER, TARGET :: NSCOUGI, NSCOUGT, NSCOUGS  ! output spool counters
+!$omp threadprivate(NSCOUGI,NSCOUGT,NSCOUGS)
       INTEGER, TARGET :: NSCOU_TVW ! output spool counters
+!$omp threadprivate(NSCOU_TVW)
       INTEGER, TARGET :: NSCOUP ! output spool counter for fort.71 (bar. press. sta.)
+!$omp threadprivate(NSCOUP)
       INTEGER, TARGET :: NSCOUI ! output spool counter for fort.91 (ice sta.)     
+!$omp threadprivate(NSCOUI)
       integer, target :: nodeCodeOutSpoolCounter
+!$omp threadprivate(nodeCodeOutSpoolCounter)
       integer, target :: noffOutSpoolCounter
+!$omp threadprivate(noffOutSpoolCounter)
       integer, target :: initiallyDrySpoolCounter
+!$omp threadprivate(initiallyDrySpoolCounter)
       integer, target :: windDragSpoolCounter
+!$omp threadprivate(windDragSpoolCounter)
       integer, target :: offsetSpoolCounter
+!$omp threadprivate(offsetSpoolCounter)
       integer, target :: offsetStaSpoolCounter
+!$omp threadprivate(offsetStaSpoolCounter)
       
       INTEGER :: NSPOOLC, NSPOOLGC, NSPOOLGE ! output increments
+!$omp threadprivate(NSPOOLC,NSPOOLGC,NSPOOLGE)
       INTEGER :: NSPOOLGV, NSPOOLGW, NSPOOLM, NSPOOL_TVW ! output increments
+!$omp threadprivate(NSPOOLGV,NSPOOLGW,NSPOOLM,NSPOOL_TVW)
       INTEGER  NSTAC, NSTAM, NTCYFC, NTCYFGC, NTCYFGE
+!$omp threadprivate(NSTAC,NSTAM,NTCYFC,NTCYFGC,NTCYFGE)
       INTEGER  NTCYFGV, NTCYFGW
+!$omp threadprivate(NTCYFGV,NTCYFGW)
       INTEGER  NTCYFM, NTCYSC, NTCYSGC, NTCYSGE
+!$omp threadprivate(NTCYFM,NTCYSC,NTCYSGC,NTCYSGE)
       INTEGER  NTCYSGV, NTCYSGW, NTCYSM
+!$omp threadprivate(NTCYSGV,NTCYSGW,NTCYSM)
 
       INTEGER  NTRSPC, NTRSPM, NUMITR, NW, NWSEGWI
+!$omp threadprivate(NTRSPC,NTRSPM,NUMITR,NW,NWSEGWI)
 
       INTEGER  NP_GLOBAL
+!$omp threadprivate(NP_GLOBAL)
 C     kmd48.33bc - added variables for 3D boundary conditions
       INTEGER  RES_BC_FLAG  ! boundary condition flag for salinity and temperature
+!$omp threadprivate(RES_BC_FLAG)
       INTEGER  BCFLAG_LNM   ! boundary condition flag for levels of no motion
+!$omp threadprivate(BCFLAG_LNM)
       INTEGER  BCFLAG_TEMP  ! boundary condition flag for heat flux (top temperature)
+!$omp threadprivate(BCFLAG_TEMP)
       REAL(SZ) RBCTIMEINC, RBCTIME1, RBCTIME2  ! time information for level of no motion
+!$omp threadprivate(RBCTIMEINC,RBCTIME1,RBCTIME2)
       REAL(SZ) SBCTIMEINC, SBCTIME1, SBCTIME2  ! time information for salinity
+!$omp threadprivate(SBCTIMEINC,SBCTIME1,SBCTIME2)
       REAL(SZ) TBCTIMEINC, TBCTIME1, TBCTIME2  ! time information for temperature
+!$omp threadprivate(TBCTIMEINC,TBCTIME1,TBCTIME2)
       REAL(SZ) TTBCTIMEINC, TTBCTIME1, TTBCTIME2  ! time information for heat flux (top temperature)
+!$omp threadprivate(TTBCTIMEINC,TTBCTIME1,TTBCTIME2)
       REAL(SZ) BCSTATIM, RBCRATIO
+!$omp threadprivate(BCSTATIM,RBCRATIO)
       REAL(SZ) SBCSTATIM, SBCRATIO
+!$omp threadprivate(SBCSTATIM,SBCRATIO)
       REAL(SZ) TBCSTATIM, TBCRATIO
+!$omp threadprivate(TBCSTATIM,TBCRATIO)
       REAL(SZ) TTBCSTATIM, TTBCRATIO
+!$omp threadprivate(TTBCSTATIM,TTBCRATIO)
       REAL(SZ) SPONGEDIST  ! distance information for the sponge layer
+!$omp threadprivate(SPONGEDIST)
       LOGICAL :: OUTPUTSPONGE  =  .FALSE.
+!$omp threadprivate(OUTPUTSPONGE)
       REAL(SZ) RIVBCTIMINC, RIVBCTIME1, RIVBCTIME2  ! time information for river - baroclinic
+!$omp threadprivate(RIVBCTIMINC,RIVBCTIME1,RIVBCTIME2)
       REAL(SZ) BCRivRATIO, RIVBCSTATIM
+!$omp threadprivate(BCRivRATIO,RIVBCSTATIM)
       REAL(SZ) BEDSTR
+!$omp threadprivate(BEDSTR)
       REAL(SZ) COND
+!$omp threadprivate(COND)
       REAL(SZ) RAMP, RBARWL
+!$omp threadprivate(RAMP,RBARWL)
       REAL(SZ) RBARWL1,RBARWL1F, RBARWL2, RBARWL2F
+!$omp threadprivate(RBARWL1,RBARWL1F,RBARWL2,RBARWL2F)
       REAL(SZ) TIMEIT, TOUTFC
+!$omp threadprivate(TIMEIT,TOUTFC)
       REAL(SZ) CORI
+!$omp threadprivate(CORI)
       REAL(SZ) DAY,DRAMP
+!$omp threadprivate(DAY,DRAMP)
       REAL(SZ) H0
+!$omp threadprivate(H0)
       REAL(SZ) RNDAY
+!$omp threadprivate(RNDAY)
       REAL(8)  RNP_GLOBAL
+!$omp threadprivate(RNP_GLOBAL)
       REAL(8)  REFSEC   ! required to run in either 32-bit or 64-bit
+!$omp threadprivate(REFSEC)
 
       LOGICAL :: useNetCDF = .false. ! .true. if netcdf is used at all
+!$omp threadprivate(useNetCDF)
       LOGICAL :: useNetCDFOutput = .false. ! only for output, not hotstart
+!$omp threadprivate(useNetCDFOutput)
       LOGICAL :: useXDMF = .false.
+!$omp threadprivate(useXDMF)
 ! CF Start addition for NETCDF I/O 6/21/06
 !     -----------------
 !     Attribute general
 !     -----------------
       CHARACTER(80) :: title       ! description of the dataset
+!$omp threadprivate(title)
       CHARACTER(80) :: institution ! where the original data was produced
+!$omp threadprivate(institution)
       CHARACTER(80) :: source      ! method of production of the original data
+!$omp threadprivate(source)
       CHARACTER(80) :: history     ! provides an audit trail for modifications to the original data
+!$omp threadprivate(history)
       CHARACTER(80) :: base_date
+!$omp threadprivate(base_date)
       CHARACTER(80) :: comments    ! miscellaneous information about the data
+!$omp threadprivate(comments)
       CHARACTER(80) :: host
+!$omp threadprivate(host)
       CHARACTER(80) :: convention
+!$omp threadprivate(convention)
       CHARACTER(80) :: contact     ! user's institution/ e-mail address
+!$omp threadprivate(contact)
       CHARACTER(80) :: references  ! published/web-based references that describe the data
+!$omp threadprivate(references)
       CHARACTER(7),  ALLOCATABLE :: STATNUMB(:,:)
+!$omp threadprivate(STATNUMB)
       CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAME(:)
+!$omp threadprivate(STATNAME)
       CHARACTER(7),  ALLOCATABLE :: STATNUMBV(:,:)
+!$omp threadprivate(STATNUMBV)
       CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMEV(:)
+!$omp threadprivate(STATNAMEV)
       INTEGER, PARAMETER :: SNUMLEN = 7
       INTEGER, PARAMETER :: SNAMLEN = 50
       CHARACTER(7),  ALLOCATABLE  :: STATNUMBM(:,:)
+!$omp threadprivate(STATNUMBM)
       CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMEM(:)
+!$omp threadprivate(STATNAMEM)
       CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMEC(:)
+!$omp threadprivate(STATNAMEC)
 
       INTEGER NCIESTP, NCIPSTP,NCIVSTP,NCIWSTP
+!$omp threadprivate(NCIESTP,NCIPSTP,NCIVSTP,NCIWSTP)
       INTEGER NCIGEP,NCIGPP, NCIGVP,NCIGWP
+!$omp threadprivate(NCIGEP,NCIGPP,NCIGVP,NCIGWP)
       INTEGER NCCOUE,NCCOUM,NCCOUV,NCCOUW
+!$omp threadprivate(NCCOUE,NCCOUM,NCCOUV,NCCOUW)
       INTEGER NCCOUGE,NCCOUGW,NCCOUGV
+!$omp threadprivate(NCCOUGE,NCCOUGW,NCCOUGV)
 
 #ifdef ADCNETCDF
       LOGICAL, PARAMETER :: netcdf_avail = .true. 
@@ -630,34 +1015,55 @@ C     kmd48.33bc - added variables for 3D boundary conditions
 
 ! TCM v49.64.01 Addition for Ice Concentration Fields
       INTEGER :: NCICE
+!$omp threadprivate(NCICE)
       INTEGER, TARGET :: IGIP ! position in fulldomain Ice output file
+!$omp threadprivate(IGIP)
       INTEGER, TARGET :: IICESTP ! position in station Ice output file
+!$omp threadprivate(IICESTP)
       REAL(8) :: CICE_TIMINC,CICE_TIME1,CICE_TIME2
+!$omp threadprivate(CICE_TIMINC,CICE_TIME1,CICE_TIME2)
 
 ! TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
       INTEGER :: NDDT  !FLAG TO USE TIME VARYING BATHYMETRY
+!$omp threadprivate(NDDT)
       REAL(8) :: BTIME1,BTIME2  !TIMES FOR TIME VARYING BATHYMETRY Records
+!$omp threadprivate(BTIME1,BTIME2)
       REAL(8) :: BTIME_END  !time that 
+!$omp threadprivate(BTIME_END)
       !variables related to global bathymetry output file
       INTEGER, TARGET :: IGBP ! position in global bathy output file
+!$omp threadprivate(IGBP)
       INTEGER :: NDSETSB,NTCYFGB,NTCYSGB,NTRSPB
+!$omp threadprivate(NDSETSB,NTCYFGB,NTCYSGB,NTRSPB)
       INTEGER, TARGET :: NSCOUGB
+!$omp threadprivate(NSCOUGB)
       !variables related to station bathymetry output file
       INTEGER :: NTCYSB,NTCYFB
+!$omp threadprivate(NTCYSB,NTCYFB)
       INTEGER, TARGET :: NSCOUB
+!$omp threadprivate(NSCOUB)
       INTEGER, TARGET :: IBSTP  ! position in station bathy output file      
+!$omp threadprivate(IBSTP)
       REAL(8) :: BTIMINC ! TIME INCREMENT (SECONDS) FOR BATHYMETRY CHANGES USED FOR TIME VARYING BATHYMETRY
+!$omp threadprivate(BTIMINC)
       REAL(8) :: BCHGTIMINC ! time increment (seconds) over which bathymetry changes during a btimeinc interval
+!$omp threadprivate(BCHGTIMINC)
       REAL(SZ),ALLOCATABLE, TARGET ::  DP00(:)
+!$omp threadprivate(DP00)
 
 ! TCM v52.30.01 ADDITIONS FOR USING SMAGORINSKY eddy MODEL OPTIONS
       REAL(SZ) :: SMAG_UPPER_LIM = 100.d0  ! m^2/s (default upper limit)
+!$omp threadprivate(SMAG_UPPER_LIM)
       REAL(SZ) :: SMAG_LOWER_LIM = 1.0d-8  ! m^2/s (default lower limit)
+!$omp threadprivate(SMAG_LOWER_LIM)
       LOGICAL :: SMAG_COMP_FLAG = .FALSE.   !BY DEFAULT DO NOT USE SMAG
+!$omp threadprivate(SMAG_COMP_FLAG)
 ! TCM v53.01.02 Addition for special nearest neighbor station interpolation when
 !           station location occurs in a partially wet / partially dry element
       LOGICAL :: StatPartWetFix = .FALSE.   !.true. if one wants to handle partially wet/dry elements in a special way
+!$omp threadprivate(StatPartWetFix)
       INTEGER :: How2FixStatPartWet = 0     ! other numbers could be used later for different ways to interpolate,
+!$omp threadprivate(How2FixStatPartWet)
                                             ! instead of nearest neighbor
       ! 
       ! all info needed for self describing dataset in XDMF
@@ -756,9 +1162,11 @@ C     elements to the structure
       ! inunThresh is used to set a minimum inundation depth for 
       ! accumulating inundationTime for detailed inundation output
       real(sz) :: inunThresh = 0.6d0
+!$omp threadprivate(inunThresh)
       !
       ! inundationOutput can be set to .true. in read_input()
       logical :: inundationOutput = .false. 
+!$omp threadprivate(inundationOutput)
 C
 C     jgf49.44: Log levels, in order from largest amount of log messages
 C     written (DEBUG) to fewest log messages written (ERROR). Compared
@@ -771,21 +1179,33 @@ C     to the screen or to log files.
       INTEGER, PARAMETER :: ERROR = 3   ! don't echo input; only fatal msgs
 C
       CHARACTER(len=10), dimension(5) :: logLevelNames
+!$omp threadprivate(logLevelNames)
       CHARACTER(len=50), dimension(50) :: messageSources ! subroutine names
+!$omp threadprivate(messageSources)
       CHARACTER(len=1024) :: scratchMessage ! used for formatted messages
+!$omp threadprivate(scratchMessage)
       CHARACTER(len=1024) :: scratchFormat  ! used for Fortran format strings
+!$omp threadprivate(scratchFormat)
       INTEGER :: sourceNumber ! index into messageSources for current sub
+!$omp threadprivate(sourceNumber)
 
 C     v49.48.01 tcm 20110126 Variables related to kdtree searches
       INTEGER :: SRCHDP=100
+!$omp threadprivate(SRCHDP)
       TYPE(KDTREE2), POINTER :: TREE
+!$omp threadprivate(TREE)
       TYPE(KDTREE2_RESULT), ALLOCATABLE :: KDRESULTS(:)
+!$omp threadprivate(KDRESULTS)
 
       !jgf: water level offset at two time levels
       real(sz), allocatable :: offset1(:)
+!$omp threadprivate(offset1)
       real(sz), allocatable, target :: offset2(:)
+!$omp threadprivate(offset2)
       logical :: usingWaterLevelOffset = .false.
+!$omp threadprivate(usingWaterLevelOffset)
       real(sz), allocatable, target :: offsetSta(:)
+!$omp threadprivate(offsetSta)
 
       CONTAINS
 
@@ -825,13 +1245,13 @@ C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
 C...
 C     cms51.06: moved fort.33 file from read_input.F to here
 #ifdef CMPI
-      OPEN(16,FILE=trim(localdir)//'/'//'fort.16', ACTION='WRITE',
+      OPEN(16+CK_LUN,FILE=trim(localdir)//'/'//'fort.16', ACTION='WRITE',
      &    STATUS='REPLACE')
-      OPEN(33,FILE=trim(localdir)//'/'//'fort.33', ACTION='WRITE',
+      OPEN(33+CK_LUN,FILE=trim(localdir)//'/'//'fort.33', ACTION='WRITE',
      &    STATUS='REPLACE')
 #else
-      OPEN(16,FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
-      OPEN(33,FILE='fort.33', ACTION='WRITE', STATUS='REPLACE')
+      OPEN(16+CK_LUN,FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
+      OPEN(33+CK_LUN,FILE='fort.33', ACTION='WRITE', STATUS='REPLACE')
 #endif
 C--------------------------------------------------------------------
       END SUBROUTINE openLogFile
@@ -867,16 +1287,16 @@ C
          IF (NSCREEN.ne.0) THEN
             IF (level.ge.NABOUT) THEN
 #ifdef FULL_STACK
-               write(screenUnit,331,advance="no")
+               write(screenUnit+CK_LUN,331,advance="no")
      &             trim(logLevelNames(level+2)),
      &             (trim(messageSources(j)),j=1,sourceNumber)
-               write(screenUnit,332) trim(message)
+               write(screenUnit+CK_LUN,332) trim(message)
 #else
-               write(screenUnit,333) trim(logLevelNames(level+2)),
+               write(screenUnit+CK_LUN,333) trim(logLevelNames(level+2)),
      &             trim(messageSources(sourceNumber)), trim(message)
 #endif
 !#ifdef FLUSH_MESSAGES
-               flush(screenUnit)
+               flush(screenUnit+CK_LUN)
 !#endif
             ENDIF
          ENDIF
@@ -910,15 +1330,15 @@ C--------------------------------------------------------------------
 C
       IF (level.ge.NABOUT) THEN
 #ifdef FULL_STACK
-         write(16,331,advance="no") trim(logLevelNames(level+2)),
+         write(16+CK_LUN,331,advance="no") trim(logLevelNames(level+2)),
      &       (trim(messageSources(j)),j=1,sourceNumber)
-         write(16,332) trim(message)
+         write(16+CK_LUN,332) trim(message)
 #else
-         write(16,333) trim(logLevelNames(level+2)),
+         write(16+CK_LUN,333) trim(logLevelNames(level+2)),
      &       trim(messageSources(sourceNumber)), trim(message)
 #endif
 !#ifdef FLUSH_MESSAGES
-               flush(16)
+               flush(16+CK_LUN)
 !#endif
       ENDIF
 331   FORMAT(A,": ",A,50(:,"->",A))
@@ -1020,7 +1440,7 @@ C     Check to see if file exists
       endif
 C
 C     Open existing file
-      OPEN(lun,FILE=trim(filename),STATUS='OLD',
+      OPEN(lun+CK_LUN,FILE=trim(filename),STATUS='OLD',
      & ACTION='READ',IOSTAT=errorIO)
       if (errorIO.ne.0) then
           write(scratchMessage,25) trim(filename)
@@ -1262,6 +1682,7 @@ C...
       USE SIZES, ONLY : MNFFR, MNVEL
       IMPLICIT NONE
 C
+c      write(*,*) "mnffr",mnffr,"mnvel",mnvel
       ALLOCATE ( QNAM(MNFFR,MNVEL),QNPH(MNFFR,MNVEL))
       ALLOCATE ( ENAM(MNFFR,MNVEL),ENPH(MNFFR,MNVEL))
       ALLOCATE ( FBOUNTAG(MNFFR))
@@ -1480,7 +1901,7 @@ C...
       case('XDMF')
          typeHolder = 7
       case default
-         write(6,'("WARNING: Unrecognized format ",i0,".")') trim(typeString)
+         write(6+CK_LUN,'("WARNING: Unrecognized format ",i0,".")') trim(typeString)
       end select
       !----------------------------------------------------------------------
       end subroutine getFormatInteger

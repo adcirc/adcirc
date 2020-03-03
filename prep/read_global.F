@@ -28,6 +28,7 @@ C     program ADCPP.  This version compatible with ADCIRC_v34.03
 C     vjp  2/28/98
 C---------------------------------------------------------------------
       subroutine prepRead14()
+      use CkLunMod, only : CK_LUN
       use pre_global, only : x, y, dp, nneg, ibtypee, nvdllmsg, nvdll,
      &   nbdv, nvellmsg, nvell, lbcode, ibtype, nbvv, ibconnr,
      &   bar1, bar2, bar3, bar4, bar5, bar6, weir, weird, flux14_ary, 
@@ -40,6 +41,7 @@ C---------------------------------------------------------------------
       implicit none
 
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER I,J,JW,K,ITEMP,ITYPE
       INTEGER DISC,BBN,IBP,I1
       INTEGER MAXNEIGH
@@ -67,11 +69,11 @@ C
 C--Read Grid Title
 C
       EXIST_FLUX = 0
-      READ(14,80) AGRID
+      READ(14+CK_LUN,80) AGRID
 C
 C--Read Total Number of Elements and Nodes
 C
-      READ(14,*) NELG,NNODG
+      READ(14+CK_LUN,*) NELG,NNODG
 c     READ(14,80) NSIZES
 c     READ(NSIZES,*) NELG,NNODG
 c     CALL GETMSG(NSIZES,SIZEMSG)
@@ -85,7 +87,7 @@ C  If ICS=2 Will Convert later in read15
 C
       NUMLINES=2
       DO I = 1,NNODG
-         READ(14,*) labels(I),X(I),Y(I),DP(I)
+         READ(14+CK_LUN,*) labels(I),X(I),Y(I),DP(I)
          IF (labels(I).NE.I) THEN
             print *, I,J
             STOP 'Node Numbering not in Sequential Order'
@@ -96,7 +98,7 @@ C
 C--Read Element Connectivity Table
 C
        DO I = 1,NELG
-          READ(14,*) J,ITEMP,n1,n2,n3
+          READ(14+CK_LUN,*) J,ITEMP,n1,n2,n3
           IF (J.NE.I) THEN
             print *, I,J
             STOP 'Element Numbering not Sequential'
@@ -109,13 +111,13 @@ C
 C...
 C...Read Total Number of Open Boundary Segments
 C...
-      READ(14,80) NOPEMSG
+      READ(14+CK_LUN,80) NOPEMSG
       READ(NOPEMSG,*) NOPE
       NUMLINES=NUMLINES+1
 C...
 C...Read Total Number of Open Boundary Forcing Nodes
 C...
-      READ(14,80) NETAMSG
+      READ(14+CK_LUN,80) NETAMSG
       READ(NETAMSG,*) NETA
       NUMLINES=NUMLINES+1
 C...
@@ -125,11 +127,11 @@ C...
       J=0
       IBTYPEE(:) = 0 !jgf49.32 initialize all elements of the array to zero
       DO K=1,NOPE
-         READ(14,80) NVDLLMSG(K) !jgf49.32: TODO: IBTYPEE should be read here
+         READ(14+CK_LUN,80) NVDLLMSG(K) !jgf49.32: TODO: IBTYPEE should be read here
          NUMLINES=NUMLINES+1
          READ(NVDLLMSG(K),*) NVDLL(K)
          DO I=1,NVDLL(K)
-            READ(14,*) n1 
+            READ(14+CK_LUN,*) n1 
             NBDV(K,I) = find(node_dict,n1)
             NUMLINES=NUMLINES+1
          ENDDO
@@ -149,12 +151,12 @@ C
 C
 C--Read Total Number of Land Boundary Segments
 C
-      READ(14,80) NBOUMSG
+      READ(14+CK_LUN,80) NBOUMSG
       READ(NBOUMSG,*) NBOU
 C
 C--Read Total of Land Boundary Nodes
 C
-      READ(14,80) NVELMSG
+      READ(14+CK_LUN,80) NVELMSG
       READ(NVELMSG,*) NVEL
 C
 C--Read Number of Nodes in the Land Boundary Segment and Boundary Type
@@ -169,7 +171,7 @@ C
       LBCODE(:) = -99
       DO K = 1,NBOU
 C
-         READ(14,80) NVELLMSG(K)
+         READ(14+CK_LUN,80) NVELLMSG(K)
          READ(NVELLMSG(K),*) NVELL(K),IBTYPE(K)
          ITYPE = IBTYPE(K)
 ! kmd - added for rivers in a baroclinic simulation
@@ -193,19 +195,19 @@ C
          select case(ITYPE)
          case(0,10,20,30,40,1,11,21,41)
             DO I=1,NVELL(K)
-               READ(14,*) n1 
+               READ(14+CK_LUN,*) n1 
                NBVV(K,I) = find(node_dict,n1)
               IBCONNR(K,I) = 0
             ENDDO
          case(3,13,23)
             DO I=1,NVELL(K)
-               READ(14,*) n1,BAR1(K,I),BAR2(K,I)
+               READ(14+CK_LUN,*) n1,BAR1(K,I),BAR2(K,I)
                NBVV(K,I) = find(node_dict,n1)
               IBCONNR(K,I) = 0
             ENDDO
          case(4,24)
             DO I=1,NVELL(K)
-               READ(14,*) n1,IBCONNR(K,I),
+               READ(14+CK_LUN,*) n1,IBCONNR(K,I),
      &                    BAR1(K,I),BAR2(K,I),BAR3(K,I)
                NBVV(K,I) = find(node_dict,n1)
                !--Construct List of WEIR nodes and their duals
@@ -215,7 +217,7 @@ C
             ENDDO
          case(5,25)
             DO I =1,NVELL(K)
-               READ(14,*) n1,n2, 
+               READ(14+CK_LUN,*) n1,n2, 
      &                   BAR1(K,I),BAR2(K,I),BAR3(K,I),
      &                   BAR4(K,I),BAR5(K,I),BAR6(K,I)
                NBVV(K,I) = find(node_dict,n1)
@@ -229,7 +231,7 @@ C
            NFLUXF=1 !jgf51.52.23
            DO I=1,NVELL(K)
               EXIST_FLUX = EXIST_FLUX + 1
-              READ(14,*) n1
+              READ(14+CK_LUN,*) n1
               NBVV(K,I) = find(node_dict,n1)
               IBCONNR(K,I) = 0
 !kmd - added river boundary conditions for baroclinic
@@ -255,7 +257,7 @@ C MEB division of fort.20 files between PE directories.
 C MEB This must be modified if fort.14 format changes.
 C MEB --------------------------------------------------
       IF (EXIST_FLUX.GT.0) THEN
-         REWIND(14)
+         REWIND(14+CK_LUN)
          ALLOCATE ( FLUX14_ARY(EXIST_FLUX) )
 !kmd - added river boundary conditions for baroclinic
          ALLOCATE ( BCTS14_ARY(EXIST_BC_TS) )
@@ -265,19 +267,19 @@ c
 C  SKIP OVER UNNEEDED LINES
 c
          DO I=1,NUMLINES
-            READ(14,*) DUM
+            READ(14+CK_LUN,*) DUM
          ENDDO
 C
-         READ(14,80) DNBOUMSG
+         READ(14+CK_LUN,80) DNBOUMSG
          READ(NBOUMSG,*) DNBOU
 C
 C--Read Total of Land Boundary Nodes
 C
-         READ(14,80) DNVELMSG
+         READ(14+CK_LUN,80) DNVELMSG
          READ(NVELMSG,*) DNVEL
 c
          DO K=1,DNBOU
-            READ(14,80) DNVELLMSG(K)
+            READ(14+CK_LUN,80) DNVELLMSG(K)
             READ(DNVELLMSG(K),*) DNVELL(K), DIBTYPE(K)
             DITYPE=DIBTYPE(K)
 ! kmd - added in boundary conditions for rivers in a baroclinic simulation
@@ -294,7 +296,7 @@ c
             case(2,12,22,32,52)
                DO I=1, DNVELL(K)
                   EXIST_FLUX = EXIST_FLUX + 1
-                  READ(14,*) n1
+                  READ(14+CK_LUN,*) n1
                   DNBVV(K,I) = find(node_dict,n1)
                   FLUX14_ARY(EXIST_FLUX) = DNBVV(K,I)
 ! kmd - added in boundary conditions for rivers in a baroclinic simulation
@@ -308,7 +310,7 @@ c
                ENDDO
             case default
                DO I=1, DNVELL(K)
-                  READ(14,*) n1
+                  READ(14+CK_LUN,*) n1
                   DNBVV(K,I) = find(node_dict,n1)
                ENDDO
             end select
@@ -325,7 +327,7 @@ c     jgf45.06 end of section written by MEB04/01/04
 C
 C--Close Global Grid file
 C
-      CLOSE(14)
+      CLOSE(14+CK_LUN)
       call memory_status()
 C
  80   format(a80)
@@ -346,6 +348,7 @@ C     will no longer use pre_global, and will just rely on the adcirc
 C     global module, and we will be able to remove this subroutine.  
 C----------------------------------------------------------------------
       subroutine getMeshParametersXDMF()
+      use CkLunMod, only : CK_LUN
       use memory_usage
       use presizes, only : fluxBoundary, mne, mnp, mnei, mneta, mnope,
      &   skipNeta
@@ -425,6 +428,7 @@ C     program ADCPP.  This version compatible with ADCIRC_v34.03
 C     vjp  3/28/98
 C---------------------------------------------------------------------
       SUBROUTINE READ15()
+      use CkLunMod, only : CK_LUN
       USE PRE_GLOBAL
       USE SIZES, ONLY : MNHARF
       USE MESH, ONLY : CPP
@@ -453,6 +457,7 @@ C    ===================================================================
 
 
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       REAL(SZ) RSTIMINC
       INTEGER N1, N2, N3, KMIN, JG, INDX
       INTEGER I,J,K,M
@@ -484,6 +489,7 @@ C...tcm v51.20.03 Local variables for external station location files
 C
 C.....tcm v52.30.01 added for Smag_Control
       INTEGER :: IOS_Smag = 0
+!$omp threadprivate(IOS_Smag)
       ! jgf: Added support for water level offset
       namelist /offsetControl/ offsetFileName, offsetSkipSnaps, 
      &  offsetMultiplier, offsetRampStart, offsetRampEnd,
@@ -525,7 +531,7 @@ C...  After this search and read, we will close the file and then reopen it
 c...  for further processing the traditional non-namelist components.
 C...
       NDDT = 0  !Set default value to be no time varying bathymetry
-      READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT) 
+      READ(UNIT = 15+CK_LUN,NML = TimeBathyControl,IOSTAT = IOS_NDDT) 
 
       IF (IOS_NDDT < 0) THEN
 c.....   it is possible for the namelist to be present in the file and occuring at the end 
@@ -551,11 +557,11 @@ c....    a non-default value we can determine this was the case.
          STOP   !THERE IS a STOP HERE
       ENDIF
 
-      REWIND(15)  !Return to the top of the fort.15 file (instead of closing then opening)
+      REWIND(15+CK_LUN)  !Return to the top of the fort.15 file (instead of closing then opening)
 c..        
 
 c... tcm v50.79 added
-      READ(UNIT = 15, NML = metControl,IOSTAT = ios_metCon)
+      READ(UNIT = 15+CK_LUN, NML = metControl,IOSTAT = ios_metCon)
       if ( ios_metCon.ge.0) then
          found_metCon_nml = .true.
          call logMessage(INFO,
@@ -564,19 +570,19 @@ c... tcm v50.79 added
          call logMessage(INFO,
      &         'The metControl namelist was not found.')
       endif
-      rewind(15)  !Return to the top of the fort.15 file
+      rewind(15+CK_LUN)  !Return to the top of the fort.15 file
 
 Cobell - Added TVW Namelist
-      READ(15,NML=tvwControl,IOSTAT=IOS_TVW)
+      READ(15+CK_LUN,NML=tvwControl,IOSTAT=IOS_TVW)
       IF(IOS_TVW.EQ.0)THEN
         FOUND_TVW_NML = .TRUE.
       ELSE
         FOUND_TVW_NML = .FALSE.
       ENDIF
-      REWIND(15)
+      REWIND(15+CK_LUN)
 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      READ(UNIT=15,NML=waveCoupling,IOSTAT=IOS_WC)
+      READ(UNIT=15+CK_LUN,NML=waveCoupling,IOSTAT=IOS_WC)
       IF(IOS_WC.EQ.0)THEN
          FOUND_WC_NML = .TRUE.
          call logMessage(INFO,
@@ -585,9 +591,9 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
          call logMessage(INFO,
      &         'The waveCoupling namelist was not found.')
       ENDIF
-      REWIND(15)
+      REWIND(15+CK_LUN)
  
-      READ(UNIT = 15, NML = wetDryControl,IOSTAT = ios_wetDry)
+      READ(UNIT = 15+CK_LUN, NML = wetDryControl,IOSTAT = ios_wetDry)
       if ( ios_wetDry.ge.0) then
          foundWetDryControlNameList = .true.
          call logMessage(INFO,
@@ -596,9 +602,9 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
          call logMessage(INFO,
      &         'The wetDryControl namelist was not found.')
       endif
-      rewind(15)  !Return to the top of the fort.15 file
+      rewind(15+CK_LUN)  !Return to the top of the fort.15 file
 
-      read(unit=15,nml=inundationOutputControl,iostat=ios)
+      read(unit=15+CK_LUN,nml=inundationOutputControl,iostat=ios)
       if ( ios.ge.0) then
          foundInundationOutputControlNamelist = .true.
          call logMessage(INFO,
@@ -607,17 +613,17 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
          call logMessage(INFO,
      &         'The inundationOutput namelist was not found.')
       endif
-      rewind(15)  !Return to the top of the fort.15 file
+      rewind(15+CK_LUN)  !Return to the top of the fort.15 file
       !
       !jgf:   O F F S E T   C O N T R O L   N A M E L I S T
-      read(unit=15,nml=offsetControl,iostat=ios)
+      read(unit=15+CK_LUN,nml=offsetControl,iostat=ios)
       select case(ios)
       case(0) ! zero indicates success
          foundOffsetControlNamelist = .true.
          call logMessage(INFO,
      &         'The offsetControl namelist was found.')
       case(1:)
-         write(scratchMessage,'(a,i0,a)')
+         write(scratchMessage+CK_LUN,'(a,i0,a)')
      &      'Could not read offsetControl'//
      &     ' namelist. The Fortran i/o error code was ',ios,'.'
          call allMessage(ERROR,scratchMessage)
@@ -626,7 +632,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
          call logMessage(INFO,
      &      'End-of-file when searching for offsetControl namelist.')
       end select    
-      rewind(15)  !Return to the top of the fort.15 file
+      rewind(15+CK_LUN)  !Return to the top of the fort.15 file
 
 c...  tcm v52.30.01 Addtions for Smagorinski Limits
 c...  read through the fort.15 file for the namelist (Smag_Control) for
@@ -639,7 +645,7 @@ C...
 C...  After this search and read, we will close the file and then reopen it
 c...  for further processing the traditional non-namelist components.
 C...
-      READ(UNIT = 15,NML = Smag_Control,IOSTAT = IOS_Smag)
+      READ(UNIT = 15+CK_LUN,NML = Smag_Control,IOSTAT = IOS_Smag)
 
       IF (IOS_SMAG < 0) THEN
 c.....   it is possible for the namelist to be present in the file and occuring at the end
@@ -665,18 +671,18 @@ c....    a non-default value we can determine this was the case.
          STOP   !THERE IS a STOP HERE
       ENDIF
 
-      REWIND(15)  !Return to the top of the fort.15 file (instead of closing then opening)
+      REWIND(15+CK_LUN)  !Return to the top of the fort.15 file (instead of closing then opening)
 c..
 
 
 
 
 
-      READ(15,80) RUNDES
+      READ(15+CK_LUN,80) RUNDES
 C
-      READ(15,80) RUNID
+      READ(15+CK_LUN,80) RUNID
 C
-      READ(15,80) OVERMSG
+      READ(15+CK_LUN,80) OVERMSG
       READ(OVERMSG,*) NFOVER
       IF (NFOVER.EQ.1) THEN
 c       print *, "Non-fatal errors will be corrected"
@@ -684,55 +690,55 @@ c       print *, "Non-fatal errors will be corrected"
 c      print *, "Non-fatal errors will stop execution"
       ENDIF
 C
-      READ(15,80) ABOUTMSG
+      READ(15+CK_LUN,80) ABOUTMSG
       READ(ABOUTMSG,*) NABOUT
 C
-      READ(15,80) SCREENMSG
+      READ(15+CK_LUN,80) SCREENMSG
       READ(SCREENMSG,*) NSCREEN
       screenUnit = 6 ! always write to screen in adcprep
 C
-      READ(15,80) HOTMSG
+      READ(15+CK_LUN,80) HOTMSG
       READ(HOTMSG,*) IHOT
 
 C
-      READ(15,80) ICSMSG
+      READ(15+CK_LUN,80) ICSMSG
       READ(ICSMSG,*) ICS
       IF ((ICS.NE.1).AND.(ICS.NE.2)) THEN
         print *, "ICS set incorrectly"
         STOP
         ENDIF
 C
-      READ(15,80) IMMSG
+      READ(15+CK_LUN,80) IMMSG
       READ(IMMSG,*) IM
       IF(IM.EQ.2) THEN
         PRINT *, "DSS Model type not presently supported"
         STOP
       ENDIF
 C     jgf46.28 Read IDEN if necessary
-      IF (CBaroclinic) READ(15,*) IDEN
+      IF (CBaroclinic) READ(15+CK_LUN,*) IDEN
 C
-      READ(15,80) IBFMSG
+      READ(15+CK_LUN,80) IBFMSG
       READ(IBFMSG,*) NOLIBF
       IF((NOLIBF.LT.0).OR.(NOLIBF.GT.2)) THEN
          print *, "Value for NOLIBF not allowed"
          stop
       ENDIF
 C
-      READ(15,80) IFAMSG
+      READ(15+CK_LUN,80) IFAMSG
       READ(IFAMSG,*) NOLIFA
       IF ((NOLIFA.LT.0).OR.(NOLIFA.GT.3)) THEN
          print *, "Value for NOLIFA not allowed"
          stop
       ENDIF
 C
-      READ(15,80) ICAMSG
+      READ(15+CK_LUN,80) ICAMSG
       READ(ICAMSG,*) NOLICA
       IF ((NOLICA.LT.0).OR.(NOLICA.GT.1)) THEN
          print *, "Value for NOLICA not allowed"
          stop
       ENDIF
 C
-      READ(15,80) ICATMSG
+      READ(15+CK_LUN,80) ICATMSG
       READ(ICATMSG,*) NOLICAT
       IF ((NOLICAT.LT.0).OR.(NOLICAT.GT.1)) THEN
          print *, "Value for NOLICAT not allowed"
@@ -751,18 +757,18 @@ C            stop
 C         ENDIF
 C      ENDIF
 C
-      READ(15,80) NWPMSG
+      READ(15+CK_LUN,80) NWPMSG
       READ(NWPMSG,*) NWP
       IF (NWP.gt.0) THEN !jgf46.00 read nodal attribute labels
          ALLOCATE(useNodalAttrNames(NWP))
          nbytes = 4*nwp
          call memory_alloc(nbytes)
          DO I=1, NWP
-            READ(15,80) useNodalAttrNames(I)
+            READ(15+CK_LUN,80) useNodalAttrNames(I)
          ENDDO
       ENDIF
 C
-      READ(15,80) NCORMSG
+      READ(15+CK_LUN,80) NCORMSG
       READ(NCORMSG,*) NCOR
       IF ((NCOR.NE.0).AND.(NCOR.NE.1)) THEN
          print *, "Value for NCOR not allowed"
@@ -784,7 +790,7 @@ C
          ENDIF
       ENDIF
 C
-      READ(15,80) NTIPMSG
+      READ(15+CK_LUN,80) NTIPMSG
       READ(NTIPMSG,*) NTIP
       IF ((NTIP.LT.0).OR.(NTIP.GT.2)) THEN
          print *, "Value for NTIP not allowed"
@@ -808,7 +814,7 @@ C
 C
       NRS=0
       NCICE = 0  !tcm v49.64.01 -- added for ice
-      READ(15,80) NWSMSG
+      READ(15+CK_LUN,80) NWSMSG
       READ(NWSMSG,*) NWS
 
 C....tcm v49.46 -- added logic to handle multiple NRS types (100's place)
@@ -856,7 +862,7 @@ C...  BE SURE NWS AND NCICE ARE COMPATABLE
       ENDIF
 
 C     jgf46.08 Modified to accomodate fine grained ramp functions.
-      READ(15,80) RAMPMSG
+      READ(15+CK_LUN,80) RAMPMSG
       READ(RAMPMSG,*) NRAMP
 Corbitt 120322: Includes Zach's Wind Ramping
       IF ((NRAMP.NE.0).AND.(NRAMP.GT.8)) THEN
@@ -869,7 +875,7 @@ Corbitt 120322: Includes Zach's Wind Ramping
          ENDIF
       ENDIF
 C
-      READ(15,80) GMSG
+      READ(15+CK_LUN,80) GMSG
       READ(GMSG,*) G
       IF ((ICS.EQ.1).AND.(G.NE.9.81d0)) THEN
          IF ((NCOR.EQ.1).OR.(NTIP.EQ.1)) THEN
@@ -899,7 +905,7 @@ C
 C
 C     jgf47.11 Allow the limits of time varying tau0 to be read in from
 C     the fort.15 file
-      READ(15,80) TAU0MSG
+      READ(15+CK_LUN,80) TAU0MSG
       READ(TAU0MSG,*) TAU0
       if ( abs((int(tau0)-tau0-0.1d0)).lt.1d-6 ) then
          outputTau0 = .true.
@@ -907,28 +913,28 @@ C     the fort.15 file
          outputTau0 = .false.
       endif
       IF ( (TAU0.LE.-5.d0).AND.(TAU0.GT.-6.d0) ) THEN
-         READ(15,80) TAU0LIMMSG
+         READ(15+CK_LUN,80) TAU0LIMMSG
          READ(TAU0LIMMSG,*) Tau0FullDomainMin, Tau0FullDomainMax
       ENDIF
 
 C
-      READ(15,80) DTMSG
+      READ(15+CK_LUN,80) DTMSG
       READ(DTMSG,*) DT
 C
-      READ(15,80) STATMSG
+      READ(15+CK_LUN,80) STATMSG
       READ(STATMSG,*) STATIM
 C
-      READ(15,80) REFTMSG
+      READ(15+CK_LUN,80) REFTMSG
       READ(REFTMSG,*) REFTIM
 C
 C--If wind stress and surface pressures are applied process this.
 C
-      IF((NWS.EQ.0).AND.(NRS.GE.1)) READ(15,*) RSTIMMSG ! sb46.28sb03
-      IF((NWS.EQ.1).AND.(NRS.GE.1)) READ(15,*) RSTIMMSG ! sb46.28sb03
+      IF((NWS.EQ.0).AND.(NRS.GE.1)) READ(15+CK_LUN,*) RSTIMMSG ! sb46.28sb03
+      IF((NWS.EQ.1).AND.(NRS.GE.1)) READ(15+CK_LUN,*) RSTIMMSG ! sb46.28sb03
 C
       IF(NWS.EQ.3) THEN
-         READ(15,80) WSMSG1
-         READ(15,80) WSMSG2
+         READ(15+CK_LUN,80) WSMSG1
+         READ(15+CK_LUN,80) WSMSG2
 C....    TCM V49.64.01 ADDITIONS FOR ICE
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) THEN
             READ(WSMSG2,*) NWLAT,NWLON,WLATMAX,WLONMIN,WLATINC,
@@ -955,7 +961,7 @@ C     sb46.28sb01 added NWS=12: OWI format
 C
 C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
       IF(ABS(NWS).EQ.2) THEN
-         READ(15,80) WSMSG1  !tcm v51.17 -- added to correct bug
+         READ(15+CK_LUN,80) WSMSG1  !tcm v51.17 -- added to correct bug
          IF(NRS.EQ.0) READ(WSMSG1,*) WTIMINC
          IF(NRS.GE.1) READ(WSMSG1,*) WTIMINC,RSTIMINC ! sb46.28sb03
       ENDIF
@@ -967,7 +973,7 @@ C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
      &     .OR.(ABS(NWS).EQ.15) !jgf50.38.05: Added NWS=15 for HWind.
      &     .OR.(ABS(NWS).EQ.20) !jie: Added NWS=20 for GAHM
      &     .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.16)) THEN
-         READ(15,80) WSMSG1
+         READ(15+CK_LUN,80) WSMSG1
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(WSMSG1,*) WTIMINC
          IF((NCICE.EQ.0).AND.
      &   ((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4))) READ(WSMSG1,*) WTIMINC,RSTIMINC
@@ -995,11 +1001,11 @@ C     jgf49.0804 Added NWS29 VortexOWI -- don't think we need to
 C     parse out the WTIMINC or other parameters.
       ! jgf: Added NWS30.
       IF (((ABS(NWS)).EQ.29).or.(abs(NWS).eq.30)) THEN
-         READ(15,80) WSMSG1
+         READ(15+CK_LUN,80) WSMSG1
       ENDIF
 C
       IF(ABS(NWS).EQ.6) THEN
-         READ(15,80) WSMSG1
+         READ(15+CK_LUN,80) WSMSG1
 C..... tcm v49.64.01 additions for ICE
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) THEN
             READ(WSMSG1,*) NWLAT,NWLON,WLATMAX,WLONMIN,WLATINC,
@@ -1016,23 +1022,23 @@ C..... tcm v49.64.01 additions for ICE
          ENDIF
       ENDIF
 C
-      READ(15,80) RNDAYMSG
+      READ(15+CK_LUN,80) RNDAYMSG
       READ(RNDAYMSG,*) RNDAY
 C
-      READ(15,80) DRAMPMSG
+      READ(15+CK_LUN,80) DRAMPMSG
       READ(DRAMPMSG,*) DRAMP
 C
-      READ(15,80) COEFMSG
+      READ(15+CK_LUN,80) COEFMSG
       READ(COEFMSG,*) A00,B00,C00
 C
-      READ(15,80) H0MSG
+      READ(15+CK_LUN,80) H0MSG
       IF (NOLIFA.NE.2) THEN
          READ(H0MSG,*) H0
       ELSE
          READ(H0MSG,*) H0,NODEDRYMIN,NODEWETRMP,VELMIN
       ENDIF
 C
-      READ(15,80) SLMSG
+      READ(15+CK_LUN,80) SLMSG
       READ(SLMSG,*) SLAM0,SFEA0
 C
       SL0=DEG2RAD*SLAM0
@@ -1059,7 +1065,7 @@ C
          SF1 = SFEA 
       ENDIF
 C
-      READ(15,80) TAUMSG
+      READ(15+CK_LUN,80) TAUMSG
       IF (NOLIBF.EQ.0) THEN
          READ(TAUMSG,*) TAU
       ELSEIF (NOLIBF.EQ.1) THEN
@@ -1068,17 +1074,17 @@ C
          READ(TAUMSG,*) CF,HBREAK,FTHETA,FGAMMA
       ENDIF
 C
-      READ(15,80) ESLMSG
+      READ(15+CK_LUN,80) ESLMSG
       IF (IM.EQ.10) THEN
          READ(ESLMSG,*) ESLM,ESLC
       ELSE
          READ(ESLMSG,*) ESLM
       ENDIF
 C
-      READ(15,80) CORIMSG
+      READ(15+CK_LUN,80) CORIMSG
       READ(CORIMSG,*) CORI
 C
-      READ(15,80) NTIFMSG
+      READ(15+CK_LUN,80) NTIFMSG
       READ(NTIFMSG,*) NTIF
       IF (NTIF.GT.MNTIF) THEN
          print *, "NTIF = ",NTIF, " exceeds parameter MNTIF = ",MNTIF
@@ -1086,8 +1092,8 @@ C
       ENDIF
 C
       DO I=1,NTIF
-        READ(15,80)  TIPOTAG(I)
-        READ(15,80)  TPKMSG(I)
+        READ(15+CK_LUN,80)  TIPOTAG(I)
+        READ(15+CK_LUN,80)  TPKMSG(I)
         READ(TPKMSG(I),*)  TPK(I),AMIGT(I),ETRF(I),FFT(I),FACET(I)
       ENDDO
 C
@@ -1102,7 +1108,7 @@ C
         ENDIF
       ENDIF
 C
-      READ(15,80) NBFRMSG
+      READ(15+CK_LUN,80) NBFRMSG
       READ(NBFRMSG,*) NBFR
       IF (NBFR.GT.MNBFR) THEN
         print *, "NBFR = ",NBFR, " exceeds parameter MNBFR = ",MNBFR
@@ -1110,20 +1116,20 @@ C
       ENDIF
 C
       DO I=1,NBFR
-        READ(15,80) BOUNTAG(I)
-        READ(15,80) AMIGMSG(I)
+        READ(15+CK_LUN,80) BOUNTAG(I)
+        READ(15+CK_LUN,80) AMIGMSG(I)
         READ(AMIGMSG(I),*) AMIG(I),FF(I),FACE(I)
       ENDDO
 C
       DO I=1,NBFR
-        READ(15,80) ALPHA1(I)
+        READ(15+CK_LUN,80) ALPHA1(I)
         DO J=1,NETA
-          READ(15,80) EMOMSG(I,J)
+          READ(15+CK_LUN,80) EMOMSG(I,J)
           READ(EMOMSG(I,J),*) EMO(I,J),EFA(I,J)
         ENDDO
       ENDDO
 C
-      READ(15,80) ANGMSG
+      READ(15+CK_LUN,80) ANGMSG
       READ(ANGMSG,*) ANGINN
       !
       ! jgf51.52.23: There was code here to detemine if there are
@@ -1140,7 +1146,7 @@ C
 Ckmd Added NFFR=-1 so the river information does not have to start at
 C    time=0.
       IF (NFLUXF.EQ.1) THEN
-         READ(15,80) NFFRMSG
+         READ(15+CK_LUN,80) NFFRMSG
          READ(NFFRMSG,*) NFFR
          IF (NFFR.GT.MNFFR) THEN
             print *, "NFFR = ",NFFR, " exceeds parameter MNFFR = ",MNFFR
@@ -1149,19 +1155,19 @@ C    time=0.
 C
          IF ((NFFR.NE.0).AND.(NFFR.NE.-1)) THEN
             DO I=1,NFFR
-               READ(15,80) FBOUNTAG(I)
-               READ(15,80) FREQMSG(I)
+               READ(15+CK_LUN,80) FBOUNTAG(I)
+               READ(15+CK_LUN,80) FREQMSG(I)
                READ(FREQMSG(I),*) FAMIG(I),FFF(I),FFACE(I)
             ENDDO
             DO I=1,NFFR
-               READ(15,80) ALPHA2(I)
+               READ(15+CK_LUN,80) ALPHA2(I)
                ! jgf51.52.23: Changed the loop extent from NVEL to 
                ! numLBCodeValues
                DO J=1,numLBCodeValues
                   IF ((LBCODE(J).EQ.2).OR.(LBCODE(J).EQ.12)
      &                 .OR.(LBCODE(J).EQ.32)
      &                 .OR.(LBCODE(J).EQ.22).OR.(LBCODE(J).EQ.52)) THEN
-                     READ(15,80) QNMSG(I,J)
+                     READ(15+CK_LUN,80) QNMSG(I,J)
                      READ(QNMSG(I,J),*) QNAM(I,J),QNPH(I,J)
 c     dbug             print *, "disc lbnode index = ",J
                   ENDIF
@@ -1224,16 +1230,16 @@ C........CHECK FOR WEIR FLUX BOUNDARIES
 C
 C--Read Elevation Recording Stations
 C...
-      READ(15,80) STAEMSG
+      READ(15+CK_LUN,80) STAEMSG
       READ(STAEMSG,*) NOUTE,TOUTSE,TOUTFE,NSPOOLE
       IF (ABS(NOUTE).GT.5) THEN
         print *, "The value of NOUTE is not allowed"
         stop
       ENDIF
 C
-      READ(15,80) NSTAEMSG
+      READ(15+CK_LUN,80) NSTAEMSG
       READ(NSTAEMSG,*) NSTAE
-      write(6,*) 'nstae=',nstae ! jgfdebug
+      write(6+CK_LUN,*) 'nstae=',nstae ! jgfdebug
       !tcm v51.20.03 -- addition for external elevation station file
       if (NSTAE < 0 ) then
          WRITE(*,*) "External File Used for Elevation Station Locations"
@@ -1241,8 +1247,8 @@ C
          IOS_STATIONS = 0
          NSTAE = abs(NSTAE)  !reset to positive
          NSTAE2 = 0
-         OPEN(unit=151,file='elev_stat.151',status='old',err=7690,iostat=ios_stations)
-         READ(151,*) NSTAE2
+         OPEN(unit=151+CK_LUN,file='elev_stat.151',status='old',err=7690,iostat=ios_stations)
+         READ(151+CK_LUN,*) NSTAE2
          IF (ABS(NSTAE2).NE. ABS(NSTAE)) THEN
             NSTAE = ABS(NSTAE2)  !RESET THE VALUE TO WHAT'S IN THE FILE
          ENDIF
@@ -1271,9 +1277,9 @@ C     ==================================================================
 #endif
       DO I=1,ABS(NSTAE)
          IF (USE_ELEV_STAT_FILE ) then  !read from external file
-            READ(151,'(A132)') STAELOC(I)
+            READ(151+CK_LUN,'(A132)') STAELOC(I)
          ELSE
-            READ(15,'(A132)') STAELOC(I)
+            READ(15+CK_LUN,'(A132)') STAELOC(I)
          ENDIF
             IF(ICS.EQ.1) THEN
 
@@ -1317,7 +1323,7 @@ C                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I)
             CALL CPP(XEL(I),YEL(I),SLEL(i),SFEL(i),SL0,SF0)
          ENDIF
          ENDDO !loop over elevation stations
-         if (USE_ELEV_STAT_FILE) CLOSE(151) !close external file if one was used
+         if (USE_ELEV_STAT_FILE) CLOSE(151+CK_LUN) !close external file if one was used
  9911    FORMAT(F12.3,2X,F12.3, 6X, A50)
 
 C
@@ -1333,14 +1339,14 @@ c...tcm v49.48.01 replace with new call to kdtsearch
 C
 C--Read Velocity Recording Stations
 C
-      READ(15,80) STAVMSG
+      READ(15+CK_LUN,80) STAVMSG
       READ(STAVMSG,*) NOUTV,TOUTSV,TOUTFV,NSPOOLV
       IF (ABS(NOUTV).GT.5) THEN
         print *, "Value for NOUTV is not allowable"
         stop
       ENDIF
 C
-      READ(15,80) NSTAVMSG
+      READ(15+CK_LUN,80) NSTAVMSG
       READ(NSTAVMSG,*) NSTAV
       !tcm v51.20.03 -- addition for external velocity station location file vel_stat.151
       IF (NSTAV < 0 ) then
@@ -1349,8 +1355,8 @@ C
          IOS_STATIONS = 0
          NSTAV = ABS(NSTAV) ! reset to positive value
          NSTAV2 = 0
-         OPEN(unit=151,file='vel_stat.151',status='old',err=7691,iostat=ios_stations)
-         READ(151,*) NSTAV2
+         OPEN(unit=151+CK_LUN,file='vel_stat.151',status='old',err=7691,iostat=ios_stations)
+         READ(151+CK_LUN,*) NSTAV2
          IF (ABS(NSTAV2).NE. ABS(NSTAV)) THEN
             NSTAV = ABS(NSTAV2)  !RESET THE VALUE TO WHAT'S IN THE FILE
          ENDIF
@@ -1381,9 +1387,9 @@ C
 
       DO I=1,ABS(NSTAV)
          if (USE_VEL_STAT_FILE ) then !read from external file
-            READ(151,'(A132)') STAVLOC(I)
+            READ(151+CK_LUN,'(A132)') STAVLOC(I)
          else
-            READ(15,'(A132)') STAVLOC(I)
+            READ(15+CK_LUN,'(A132)') STAVLOC(I)
          ENDIF
          IF (ICS.eq.1) then
 C     ==================================================================
@@ -1428,7 +1434,7 @@ C     ==================================================================
            CALL CPP(XEV(I),YEV(I),SLEV(i),SFEV(i),SL0,SF0)
          ENDIF  !test for ICS
       ENDDO !loop over velocity stations
-      IF (USE_VEL_STAT_FILE) CLOSE(151) !close external file if one was used
+      IF (USE_VEL_STAT_FILE) CLOSE(151+CK_LUN) !close external file if one was used
 C
 C--For Each Velocity Station:
 C  Find the Global Index of the element it lies in.
@@ -1444,14 +1450,14 @@ C     If Passive Transport is indicated, then read Concentration Station Info
 C
       IF (C2D_PTrans.or.C3D_PTrans) THEN
 C
-        READ(15,80) STACMSG
+        READ(15+CK_LUN,80) STACMSG
         READ(STACMSG,*) NOUTC,TOUTSC,TOUTFC,NSPOOLC
         IF (ABS(NOUTC).GT.2) THEN
           print *, "Value of NOUTC is not allowable"
           stop
         ENDIF
 C
-        READ(15,80) NSTACMSG
+        READ(15+CK_LUN,80) NSTACMSG
         READ(NSTACMSG,*) NSTAC
        !tcm v51.20.03 -- addition for external Concentration station file
         if (NSTAC < 0 ) then
@@ -1460,8 +1466,8 @@ C
            IOS_STATIONS = 0
            NSTAC = ABS(NSTAC) !RESET TO POSITIVE
            NSTAC2 = 0 !INITIALIZE
-           OPEN(unit=151,file='conc_stat.151',status='old',err=7692,iostat=ios_stations)
-           READ(151,*) NSTAC2
+           OPEN(unit=151+CK_LUN,file='conc_stat.151',status='old',err=7692,iostat=ios_stations)
+           READ(151+CK_LUN,*) NSTAC2
            IF (ABS(NSTAC2).NE. ABS(NSTAC)) THEN
               NSTAC = ABS(NSTAC2)  !RESET THE VALUE TO WHAT'S IN THE FILE
            ENDIF
@@ -1481,9 +1487,9 @@ C
 C
         DO I=1,ABS(NSTAC)
            IF (USE_CONC_STAT_FILE) THEN !READ FROM EXTERNAL FILE
-              READ(151,'(A132)') STACLOC(I)
+              READ(151+CK_LUN,'(A132)') STACLOC(I)
            ELSE
-              READ(15,'(A132)') STACLOC(I)
+              READ(15+CK_LUN,'(A132)') STACLOC(I)
            ENDIF
            IF (ICS.EQ.1) THEN
              READ(STACLOC(I),*) XEC(I),YEC(I)
@@ -1494,7 +1500,7 @@ C
              CALL CPP(XEC(I),YEC(I),SLEC(i),SFEC(i),SL0,SF0)
            ENDIF !test for ICS
         ENDDO  !loop over stations
-        IF (USE_CONC_STAT_FILE) CLOSE(151) !CLOSE EXTERNAL FILE IF ONE WAS USED
+        IF (USE_CONC_STAT_FILE) CLOSE(151+CK_LUN) !CLOSE EXTERNAL FILE IF ONE WAS USED
 C
 C--For Each Concentration Recording Station:
 C  Find the Global Index of the element it lies in.
@@ -1512,14 +1518,14 @@ C
       NOUTM = 0
       IF (NWS.NE.0) THEN
 C
-         READ(15,80) STAMMSG
+         READ(15+CK_LUN,80) STAMMSG
          READ(STAMMSG,*) NOUTM,TOUTSM,TOUTFM,NSPOOLM
          IF (ABS(NOUTM).GT.5) THEN
             print *, "Value of NOUTM is not allowable"
             stop
          ENDIF
 C
-         READ(15,80) NSTAMMSG
+         READ(15+CK_LUN,80) NSTAMMSG
          READ(NSTAMMSG,*) NSTAM
          !tcm v51.20.03 -- addition for external met station file
          IF (NSTAM < 0 ) THEN
@@ -1528,9 +1534,9 @@ C
             IOS_STATIONS = 0
             NSTAM = ABS(NSTAM) !RESET TO POSITIVE VALUE
             NSTAM2 = 0 !INITIALIZE
-            OPEN(unit=151,file='met_stat.151',status='old',
+            OPEN(unit=151+CK_LUN,file='met_stat.151',status='old',
      &           err=7693,iostat=ios_stations)
-            READ(151,*) NSTAM2
+            READ(151+CK_LUN,*) NSTAM2
             IF (ABS(NSTAM2).NE. ABS(NSTAM)) THEN
                NSTAM = ABS(NSTAM2)  !RESET THE VALUE TO WHAT'S IN THE FILE
             ENDIF
@@ -1561,9 +1567,9 @@ C
 #endif
          DO I=1,ABS(NSTAM)
             IF (USE_MET_STAT_FILE) THEN !READ FROM EXTERNAL FILE
-               READ(151,'(A132)') STAMLOC(I)
+               READ(151+CK_LUN,'(A132)') STAMLOC(I)
             ELSE
-               READ(15,'(A132)') STAMLOC(I)
+               READ(15+CK_LUN,'(A132)') STAMLOC(I)
             ENDIF
 C
             IF (ICS.EQ.1) THEN
@@ -1608,7 +1614,7 @@ C     ==================================================================
                CALL CPP(XEM(I),YEM(I),SLEM(i),SFEM(i),SL0,SF0)
             ENDIF  !test for ICS
          ENDDO  !loop over stations
-         IF (USE_MET_STAT_FILE) CLOSE(151) !CLOSE EXTERNAL FILE IF ONE WAS USED        
+         IF (USE_MET_STAT_FILE) CLOSE(151+CK_LUN) !CLOSE EXTERNAL FILE IF ONE WAS USED        
 
 C
 C--For Each Meterological Recording Station:
@@ -1625,7 +1631,7 @@ C
 C
 C--Read Global Elevation Data Output
 C
-      READ(15,80) OUTGEMSG
+      READ(15+CK_LUN,80) OUTGEMSG
       READ(OUTGEMSG,*) NOUTGE,TOUTSGE,TOUTFGE,NSPOOLGE
       IF (ABS(NOUTGE).GT.7) THEN
          print *, "NOUTGE does not have an allowable value"
@@ -1634,7 +1640,7 @@ C
 C
 C--Read Global Velocity Data Output
 C
-      READ(15,80) OUTGVMSG
+      READ(15+CK_LUN,80) OUTGVMSG
       READ(OUTGVMSG,*) NOUTGV,TOUTSGV,TOUTFGV,NSPOOLGV
       IF (ABS(NOUTGV).GT.7) THEN
         print *, "NOUTGV does not have an allowable value"
@@ -1644,7 +1650,7 @@ C
 C     If Passive Transport is indicated, read Global Concentration Data Output
 C
       IF (C2D_PTrans.or.C3D_PTrans) THEN
-        READ(15,80) OUTGCMSG
+        READ(15+CK_LUN,80) OUTGCMSG
         READ(OUTGCMSG,*) NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC
         IF (ABS(NOUTGC).GT.2) THEN
           print *, "NOUTGC does not have an allowable value"
@@ -1653,7 +1659,7 @@ C
       ENDIF
 C
       IF (NWS.NE.0) THEN
-        READ(15,80) OUTGWMSG
+        READ(15+CK_LUN,80) OUTGWMSG
         READ(OUTGWMSG,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
 Casey 090302: Changed the following line for ABS(NOUTGW).EQ.4
         IF (ABS(NOUTGW).GT.7) THEN
@@ -1664,7 +1670,7 @@ Casey 090302: Changed the following line for ABS(NOUTGW).EQ.4
 C
 C--Read Harmonic Analysis Data
 C
-      READ(15,80) HARFRMSG
+      READ(15+CK_LUN,80) HARFRMSG
       READ(HARFRMSG,*) NHARFR
       MNHARF = NHARFR
       IF (NHARFR.EQ.0) MNHARF = 1
@@ -1673,14 +1679,14 @@ C
       ALLOCATE(HAFREMSG(MNHARF))
 C
       DO I=1,NHARFR
-          READ(15,'(A10)') NAMEFR(I)
-          READ(15,80) HAFREMSG(I)
+          READ(15+CK_LUN,'(A10)') NAMEFR(I)
+          READ(15+CK_LUN,80) HAFREMSG(I)
           READ(HAFREMSG(I),*) HAFREQ(I),HAFF(I),HAFACE(I)
       ENDDO
 C
-      READ(15,80) HARPARMSG
+      READ(15+CK_LUN,80) HARPARMSG
       READ(HARPARMSG,*) THAS,THAF,NHAINC,FMV
-      READ(15,80) OUTHARMSG
+      READ(15+CK_LUN,80) OUTHARMSG
       READ(OUTHARMSG,*) NHASE,NHASV,NHAGE,NHAGV
       IF ((NHASE.LT.0).OR.(NHASE.GT.5)) THEN
         print *, "NHASE does not have an allowable value"
@@ -1729,7 +1735,7 @@ C--Read Hot Start Data
 C
 C     jgf45.07 added undocumented option to allow ADCIRC to stop after writing
 C     hot start file. This is used to test hot starting capabilities.
-      READ(15,80) HSTARMSG
+      READ(15+CK_LUN,80) HSTARMSG
       READ(HSTARMSG,*) NHSTAR,NHSINC
 C     jgf49.41: Added new options for hotstart file format indicator: 2, 3,
 C     367, 368. Not sure we need to check the validity of NHSTAR values in
@@ -1750,7 +1756,7 @@ C     adcprep though.
 C
 C--Read Solver Data
 C
-      READ(15,80) SOLVMSG
+      READ(15+CK_LUN,80) SOLVMSG
       READ(SOLVMSG,*) ITITER,ISLDIA,CONVCR,ITMAX
       ! jgf49.82: Removed value check on ITITER ... this parameter
       ! is deprecated and its value is now arbitrary.
@@ -1787,16 +1793,16 @@ C
             STOP
          ENDIF
 C
-         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) title
-         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) institution
-         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) source
-         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) history
-         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) references
-         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) comments
-         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) host
-         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) convention
-         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) contact
-         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) base_date
+         READ(15+CK_LUN,'(A80)',ERR=999,END=999,IOSTAT=ios) title
+         READ(15+CK_LUN,'(A80)',ERR=999,END=999,IOSTAT=ios) institution
+         READ(15+CK_LUN,'(A80)',ERR=999,END=999,IOSTAT=ios) source
+         READ(15+CK_LUN,'(A80)',ERR=999,END=999,IOSTAT=ios) history
+         READ(15+CK_LUN,'(A80)',ERR=999,END=999,IOSTAT=ios) references
+         READ(15+CK_LUN,'(A80)',ERR=999,END=999,IOSTAT=ios) comments
+         READ(15+CK_LUN,'(A80)',ERR=999,END=999,IOSTAT=ios) host
+         READ(15+CK_LUN,'(A80)',ERR=999,END=999,IOSTAT=ios) convention
+         READ(15+CK_LUN,'(A80)',ERR=999,END=999,IOSTAT=ios) contact
+         READ(15+CK_LUN,'(A80)',ERR=999,END=999,IOSTAT=ios) base_date
 
 999      IF (ios.ne.0) THEN
             CALL allMessage(ERROR,
@@ -1809,7 +1815,7 @@ C
 C
 C--Close Global Run Info file
 C
-      CLOSE(15)
+      CLOSE(15+CK_LUN)
       call memory_status()
 C
 #ifdef READ_GLOBAL_TRACE
@@ -1829,6 +1835,7 @@ C     ADCIRC_v41.11a
 C     tjc  6/24/02
 C---------------------------------------------------------------------
       SUBROUTINE READ15_3DVS()
+      use CkLunMod, only : CK_LUN
       USE PRE_GLOBAL
       USE GLOBAL, ONLY : parse, a2f, SNAMLEN, deg2rad, day2sec
       USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET, SIGMA,
@@ -1837,6 +1844,7 @@ C---------------------------------------------------------------------
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER I,J,K,M,N                                        ! loop counters
       CHARACTER(50) LVAR(3)
       REAL(8) :: STATIME
@@ -1867,7 +1875,7 @@ C
 
 C     jgf45.10 removed IDIAG
 C... SPECIFY WHETHER A BAROTROPIC OR BAROCLINIC RUN
-      READ(15,80) IDENMSG
+      READ(15+CK_LUN,80) IDENMSG
       READ(IDENMSG,*) IDEN
       IF((IDEN.GT.4).OR.(IDEN.LT.-4)) THEN
          WRITE(*,*) "ERROR: IDEN=",IDEN
@@ -1891,28 +1899,28 @@ C     temperature, etc in prognostic baroclinic simulation.
 
 C... READ IN THE TYPE OF BOTTOM BOUNDARY CONDITION AND THE SLIP COEFFICIENTS
 
-      READ(15,80) SLIPMSG
+      READ(15+CK_LUN,80) SLIPMSG
       READ(SLIPMSG,*) ISLIP,KP
       IF((ISLIP.LT.0).OR.(ISLIP.GT.3)) THEN
-         WRITE(6,350)
-         WRITE(6,360)
+         WRITE(6+CK_LUN,350)
+         WRITE(6+CK_LUN,360)
  360     FORMAT(/,2X,'    THE SLIP CODE MUST = 0,1,2,OR 3.')
          STOP
       ENDIF
 
 C... READ IN THE SURFACE AND BOTTOM ROUGHNESSES
 
-      READ(15,80) Z0MSG
+      READ(15+CK_LUN,80) Z0MSG
       READ(Z0MSG,*) Z0S, Z0B
 
 C... READ IN THE TIME STEPPING COEFFICIENTS
 
-      READ(15,80) ALPMSG
+      READ(15+CK_LUN,80) ALPMSG
       READ(ALPMSG,*) ALP1,ALP2,ALP3
 
 C... READ IN IGC & NFEN: F.E. GRID CODE & # NODES IN F.E. GRID
 
-      READ(15,80) FEMSG
+      READ(15+CK_LUN,80) FEMSG
       READ(FEMSG,*) IGC,NFEN
 
 C     jgf45.12 Add code to read in nondimensional thicknesses of
@@ -1922,7 +1930,7 @@ C     vertical layers.
       call memory_alloc(nbytes)
       IF(IGC.EQ.0) THEN
          DO N=1,NFEN
-            READ(15,*) Sigma(N)
+            READ(15+CK_LUN,*) Sigma(N)
          ENDDO
       ELSE  ! jgf50.60.10 Populate sigma() for netcdf output files
          HH1=0.d0
@@ -1936,7 +1944,7 @@ C     vertical layers.
 
 
 C... SPECIFY TYPE OF EDDY VISCOSITY PROFILE
-      READ(15,80) EVCMSG
+      READ(15+CK_LUN,80) EVCMSG
       READ(EVCMSG,*) IEVC,EVMIN,EVCON
       IF((IEVC.NE.0 ).and.(IEVC.NE.1 ).and.
      &   (IEVC.NE.10).and.(IEVC.NE.11).and.
@@ -1954,7 +1962,7 @@ C... SPECIFY TYPE OF EDDY VISCOSITY PROFILE
          STOP
       ENDIF
       IF((IEVC.EQ.50).OR.(IEVC.EQ.51)) THEN
-         READ(15,80) THETAMSG
+         READ(15+CK_LUN,80) THETAMSG
          READ(THETAMSG,*) THETA1,THETA2
       ENDIF
 C     jgf45.12 Add code to read in vertical eddy viscosity profile.
@@ -1963,16 +1971,16 @@ C     jgf45.12 Add code to read in vertical eddy viscosity profile.
          nbytes = 8*nfen
          call memory_alloc(nbytes)
          DO N=1,NFEN
-            READ(15,*) EVTot(N)
+            READ(15+CK_LUN,*) EVTot(N)
          ENDDO
       ENDIF
 C     -----------------------------------------------------
 C.... Station 3D Density, Temperature, Salinity output
 C     jgf45.11 switched from node numbers to coordinates
 
-      READ(15,80) DSDMSG
+      READ(15+CK_LUN,80) DSDMSG
       READ(DSDMSG,*) I3DSD,TO3DSDS,TO3DSDF,NSPO3DSD
-      READ(15,80) NSTA3DDMSG
+      READ(15+CK_LUN,80) NSTA3DDMSG
       READ(NSTA3DDMSG,*) NSTA3DD
       ALLOCATE(STA3DDLOC(NSTA3DD))
       nbytes = 8*nsta3dd
@@ -2002,7 +2010,7 @@ C  kmd48.33bc changed to -2 and I3DSD not equal to 0
       ENDIF
       IF(NSTA3DD.NE.0) THEN  ! kmd : changed to match 2D option
          DO I=1,NSTA3DD
-            READ(15,80) STA3DDLOC(I)
+            READ(15+CK_LUN,80) STA3DDLOC(I)
             call parse(STA3DDLOC(I), LVAR)
             STATNAMED(I)=LVAR(3)
             IF (ICS.EQ.1) THEN
@@ -2030,9 +2038,9 @@ c...tcm v49.48.01 replace with new call to kdtsearch
 C     -----------------------------------------------------
 C.... Station 3D Velocity output
 C     jgf45.11 switched from node numbers to coordinates
-      READ(15,80) DSVMSG
+      READ(15+CK_LUN,80) DSVMSG
       READ(DSVMSG,*) I3DSV,TO3DSVS,TO3DSVF,NSPO3DSV
-      READ(15,80) NSTA3DVMSG
+      READ(15+CK_LUN,80) NSTA3DVMSG
       READ(NSTA3DVMSG,*) NSTA3DV
       ALLOCATE(IMAP_STA3DV_LG(NSTA3DV,MNPROC))
       nbytes = 4*nsta3dv*mnproc
@@ -2063,7 +2071,7 @@ C  kmd48.33 changed to -2
       ENDIF
       IF(NSTA3DV.NE.0) THEN ! kmd : Changed to match 2D option
          DO I=1,NSTA3DV
-            READ(15,80) STA3DVLOC(I)
+            READ(15+CK_LUN,80) STA3DVLOC(I)
             call parse(STA3DVLOC(I), LVAR)
             STATNAMEV3D(I)=LVAR(3)
             IF (ICS.EQ.1) THEN
@@ -2088,9 +2096,9 @@ c...tcm v49.48.01 replace with new call to kdtsearch
 C     -----------------------------------------------------
 C.... Station 3D turbulence output
 C     jgf45.11 switched from node numbers to coordinates
-      READ(15,80) DSTMSG
+      READ(15+CK_LUN,80) DSTMSG
       READ(DSTMSG,*) I3DST,TO3DSTS,TO3DSTF,NSPO3DST
-      READ(15,80) NSTA3DTMSG
+      READ(15+CK_LUN,80) NSTA3DTMSG
       READ(NSTA3DTMSG,*) NSTA3DT
       ALLOCATE(IMAP_STA3DT_LG(NSTA3DT,MNPROC))
       nbytes = 4*nsta3dt*mnproc
@@ -2117,7 +2125,7 @@ C  kmd48.33 changed to -2
       ENDIF
       IF(NSTA3DT.NE.0) THEN ! kmd - Changed to match 2D option
          DO I=1,NSTA3DT
-            READ(15,80) STA3DTLOC(I)
+            READ(15+CK_LUN,80) STA3DTLOC(I)
             call parse(STA3DTLOC(I), LVAR)
             STATNAMET(I)=LVAR(3)
             IF (ICS.EQ.1) THEN
@@ -2147,7 +2155,7 @@ c...tcm v49.48.01 replace with new call to kdtsearch
       ENDIF
 C....  GLOBAL 3D DENSITY, TEMPERATURE, SALINITY OUTPUT
 
-      READ(15,80) DGDMSG
+      READ(15+CK_LUN,80) DGDMSG
       READ(DGDMSG,*) I3DGD,TO3DGDS,TO3DGDF,NSPO3DGD
 C   kmd48.33bc changed to -2
       IF(ABS(I3DGD).GT.5) THEN  !tcm 20110511 should this be .GT.3 instead of .GT.2 ?
@@ -2159,7 +2167,7 @@ C   kmd48.33bc changed to -2
 
 C....  GLOBAL 3D VELOCITY OUTPUT
 
-      READ(15,80) DGVMSG
+      READ(15+CK_LUN,80) DGVMSG
       READ(DGVMSG,*) I3DGV,TO3DGVS,TO3DGVF,NSPO3DGV
 C   kmd48.33bc changed to -2
       IF(ABS(I3DGV).GT.5) THEN
@@ -2171,27 +2179,27 @@ C   kmd48.33bc changed to -2
 
 C....  GLOBAL 3D TURBULENCE OUTPUT
 
-      READ(15,80) DGTMSG
+      READ(15+CK_LUN,80) DGTMSG
       READ(DGTMSG,*) I3DGT,TO3DGTS,TO3DGTF,NSPO3DGT
 C   kmd48.33bc changed to -2
       IF(ABS(I3DGT).GT.5) THEN
          WRITE(*,350)
-         WRITE(16,516)
+         WRITE(16+CK_LUN,516)
  516     FORMAT(/,2X,'    I3DGT MUST BE -3,-2,-1,0,1,2, or 3')
          STOP
       ENDIF
 
 C   kmd48.33bc add in information for 3D boundary condition
       IF (CBAROCLINIC) THEN
-        READ(15,80) RESBCFLAGMSG
+        READ(15+CK_LUN,80) RESBCFLAGMSG
         READ(RESBCFLAGMSG,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP
         IF (RES_BC_FLAG.NE.0) THEN
            IF (NOPE.GT.0) THEN
-             READ(15,80) BCTIMEMSG
-             READ(15,80) BCSTATMSG
+             READ(15+CK_LUN,80) BCTIMEMSG
+             READ(15+CK_LUN,80) BCSTATMSG
            END IF
            IF (BCFLAG_TEMP.NE.0) THEN
-              READ(15,80) TBCTIMEMSG
+              READ(15+CK_LUN,80) TBCTIMEMSG
            END IF
         END IF
         IF ((RES_BC_FLAG.LT.0).OR.(RES_BC_FLAG.EQ.1))  THEN
@@ -2224,8 +2232,8 @@ C   kmd48.33bc add in information for 3D boundary condition
       END IF
 
       IF (CBAROCLINIC) THEN
-        READ(15,80) SPONGEDISTMSG
-        READ(15,80) EqnstateMSG
+        READ(15+CK_LUN,80) SPONGEDISTMSG
+        READ(15+CK_LUN,80) EqnstateMSG
       END IF
 
 C
@@ -2234,10 +2242,10 @@ C     necessary.
       IF (C3D_BTrans) THEN
 
 C     Lateral and vertical diffusion coefficients.
-         READ(15,*) NLSD, NVSD
-         READ(15,*) NLTD, NVTD
+         READ(15+CK_LUN,*) NLSD, NVSD
+         READ(15+CK_LUN,*) NLTD, NVTD
 C     Time stepping coefficient for the transport equation terms.
-         READ(15,*) ALP4
+         READ(15+CK_LUN,*) ALP4
 C     Temperature boundary condition file type, if necessary
 !         if ( IDEN .eq. 3 .or. IDEN .eq. 4 ) then
 !            READ(15,*) NTF
@@ -2263,6 +2271,7 @@ C  Written by:  Chris Massey, USACE-ERDC-CHL, Vicksburg, MS 39056
 C
 C----------------------------------------------------------------------
       subroutine setup_kdt_search
+      use CkLunMod, only : CK_LUN
       use pre_global, only : SLAM,SFEA,NNEG,RMAX,BCXY,NELG
 
       implicit none
@@ -2313,6 +2322,7 @@ C  Written by:  Chris Massey, USACE-ERDC-CHL, Vicksburg, MS 39056
 C
 C----------------------------------------------------------------------
       subroutine kdtsearch(XCoords,YCoords,FDEle,NumofStations,Desc)
+      use CkLunMod, only : CK_LUN
       use PRE_Global
       use kdtree2_module
 
@@ -2438,6 +2448,7 @@ C     coordinates and find the corresponding elements.
 C
 C-----------------------------------------------------------------------
       SUBROUTINE CoordToEle(XCoords,YCoords,FDEle,NumOfStations,Desc)
+      use CkLunMod, only : CK_LUN
       USE PRE_GLOBAL
       IMPLICIT NONE
       INTEGER, intent(in) :: NumOfStations                     ! total

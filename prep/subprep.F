@@ -15,6 +15,7 @@ C    |                                                                      |
 C    ========================================================================
 
       module subprep
+      use CkLunMod, only : CK_LUN
       use sizes, only : sz
       use global, only : DEBUG, ECHO, INFO, WARNING, ERROR, 
      &  openFileForRead, scratchMessage, logMessage, allMessage,
@@ -22,14 +23,23 @@ C    ========================================================================
 
 C   NCSU Subdomain Modeling variables:
        logical :: subdomainOn
+!$omp threadprivate(subdomainOn)
        integer :: enforceBN
+!$omp threadprivate(enforceBN)
        integer :: psbtiminc, pncbn, pnobn, pnibn
+!$omp threadprivate(psbtiminc,pncbn,pnobn,pnibn)
        real(sz) :: pebn,pubn,pvbn
+!$omp threadprivate(pebn,pubn,pvbn)
        integer,allocatable :: pcbn(:),pncbnp(:) 
+!$omp threadprivate(pcbn,pncbnp)
        integer,allocatable :: pobn(:),pnobnp(:) 
+!$omp threadprivate(pobn,pnobnp)
        integer,allocatable :: pibn(:),pnibnp(:) 
+!$omp threadprivate(pibn,pnibnp)
        integer :: pwdbn
+!$omp threadprivate(pwdbn)
        logical :: found_sm_nml
+!$omp threadprivate(found_sm_nml)
 
       contains
 
@@ -60,7 +70,7 @@ C   NCSU Subdomain Modeling variables:
          !
          ! jgf51.42: Add a namelist for the user to control subdomain
          ! modeling. 
-         READ(UNIT=15,NML=subdomainModeling,IOSTAT=ioerror)
+         READ(UNIT=15+CK_LUN,NML=subdomainModeling,IOSTAT=ioerror)
          IF (ioerror.gt.0) THEN
             call logMessage(INFO,
      &         'The subdomainModeling namelist was not found.')
@@ -71,19 +81,19 @@ C   NCSU Subdomain Modeling variables:
             call logMessage(INFO,
      &         'The subdomainModeling capability is not active.')     
          endif
-         write(scratchMessage,*) "subdomainOn=",subdomainOn
+         write(scratchMessage+CK_LUN,*) "subdomainOn=",subdomainOn
          call logMessage(ECHO,trim(scratchMessage))
-         close(15)
+         close(15+CK_LUN)
                 
          if (subdomainOn) then
             call openFileForRead(1015,'fort.015',ioerror)
             if (ioerror.eq.0) then
                print *, "Subdomain Active"
-               open(1015, file='fort.015')
-               read(1015,*) dummy
-               read(1015,*) dummy
-               read(1015,*) enforceBN
-               close(1015)
+               open(1015+CK_LUN, file='fort.015')
+               read(1015+CK_LUN,*) dummy
+               read(1015+CK_LUN,*) dummy
+               read(1015+CK_LUN,*) enforceBN
+               close(1015+CK_LUN)
             else
                call allMessage(ERROR,'The fort.015 file was not found.')
                stop
@@ -108,13 +118,13 @@ C   NCSU Subdomain Modeling variables:
          integer :: i,j,n,node,iproc
          integer :: gn,p,totalProc,itemp,procTemp
  
-         open(1019, file='fort.019')
-         read(1019,*)
-         read(1019,*) psbtiminc, pncbn
+         open(1019+CK_LUN, file='fort.019')
+         read(1019+CK_LUN,*)
+         read(1019+CK_LUN,*) psbtiminc, pncbn
          allocate( pcbn(pncbn) )
          allocate( pncbnp(nproc) )
          do i=1,pncbn
-             read(1019,*) pcbn(i)
+             read(1019+CK_LUN,*) pcbn(i)
          enddo
 
          do i=1,nproc
@@ -153,8 +163,8 @@ C   NCSU Subdomain Modeling variables:
 
 
         do iproc=1,nproc
-            write(sdu(iproc),*) 'subdomain boundary conditions '
-            write(sdu(iproc),*) psbtiminc,pncbnp(iproc)
+            write(sdu(iproc+CK_LUN),*) 'subdomain boundary conditions '
+            write(sdu(iproc+CK_LUN),*) psbtiminc,pncbnp(iproc)
         enddo
 
         do i=1,pncbn
@@ -164,36 +174,36 @@ C   NCSU Subdomain Modeling variables:
                  itemp = (p-1)*2+1
                  procTemp = IMAP_NOD_GL2(itemp,gnode)
                  lnTemp = IMAP_NOD_GL2(itemp+1,gnode)
-                 write(sdu(procTemp),*) lnTemp
+                 write(sdu(procTemp+CK_LUN),*) lnTemp
             enddo
         enddo                
 
 1000   CONTINUE
 
-        read(1019,*,end=1905) tstep
+        read(1019+CK_LUN,*,end=1905) tstep
         do iproc=1,nproc
-            write(sdu(iproc),*) tstep
+            write(sdu(iproc+CK_LUN),*) tstep
         enddo
    
 
         do i=1,pncbn
-            read(1019,*) gnode,pebn,pubn
-            read(1019,*) pvbn,pwdbn
+            read(1019+CK_LUN,*) gnode,pebn,pubn
+            read(1019+CK_LUN,*) pvbn,pwdbn
             totalProc = itotproc(gnode)
             do p=1,totalProc
                  itemp = (p-1)*2+1
                  procTemp = IMAP_NOD_GL2(itemp,gnode)
                  lnTemp = IMAP_NOD_GL2(itemp+1,gnode)
-                 write(sdu(procTemp),*) lnTemp,pebn,pubn
-                 write(sdu(procTemp),*) pvbn,pwdbn
+                 write(sdu(procTemp+CK_LUN),*) lnTemp,pebn,pubn
+                 write(sdu(procTemp+CK_LUN),*) pvbn,pwdbn
             enddo
         enddo
             
        go to 1000
 
-1905   close(1019)
+1905   close(1019+CK_LUN)
        do iproc=1,nproc
-           close(sdu(iproc))
+           close(sdu(iproc+CK_LUN))
        enddo
 
       END SUBROUTINE subPrep019
@@ -210,13 +220,13 @@ C   NCSU Subdomain Modeling variables:
          integer :: i,j,n,node,iproc
          integer :: gn,p, totalProc, itemp,procTemp
 
-         open(1020, file='fort.020')
-         read(1020,*)
-         read(1020,*) psbtiminc, pnobn
+         open(1020+CK_LUN, file='fort.020')
+         read(1020+CK_LUN,*)
+         read(1020+CK_LUN,*) psbtiminc, pnobn
          allocate( pobn(pnobn) )
          allocate( pnobnp(nproc) )
          do i=1,pnobn
-             read(1020,*) pobn(i)
+             read(1020+CK_LUN,*) pobn(i)
          enddo
 
 
@@ -261,8 +271,8 @@ C   NCSU Subdomain Modeling variables:
 
 
         do iproc=1,nproc
-            write(sdu(iproc),*) 'subdomain boundary conditions '
-            write(sdu(iproc),*) psbtiminc,pnobnp(iproc)
+            write(sdu(iproc+CK_LUN),*) 'subdomain boundary conditions '
+            write(sdu(iproc+CK_LUN),*) psbtiminc,pnobnp(iproc)
         enddo
  
         do i=1,pnobn
@@ -272,15 +282,15 @@ C   NCSU Subdomain Modeling variables:
                  itemp = (p-1)*2+1
                  procTemp = IMAP_NOD_GL2(itemp,gnode)
                  lnTemp = IMAP_NOD_GL2(itemp+1,gnode)
-                 write(sdu(procTemp),*) lnTemp
+                 write(sdu(procTemp+CK_LUN),*) lnTemp
              enddo
          enddo
 
 1000   CONTINUE
 
-        read(1020,*,end=1905) tstep
+        read(1020+CK_LUN,*,end=1905) tstep
         do iproc=1,nproc
-            write(sdu(iproc),*) tstep
+            write(sdu(iproc+CK_LUN),*) tstep
         enddo
 
 !        do i=1,pnobn
@@ -294,24 +304,24 @@ C   NCSU Subdomain Modeling variables:
 
 
         do i=1,pnobn
-            read(1020,*) gnode,pebn,pubn
-            read(1020,*) pvbn,pwdbn
+            read(1020+CK_LUN,*) gnode,pebn,pubn
+            read(1020+CK_LUN,*) pvbn,pwdbn
             totalProc = itotproc(gnode)
             do p=1,totalProc
                  itemp = (p-1)*2+1
                  procTemp = IMAP_NOD_GL2(itemp,gnode)
                  lnTemp = IMAP_NOD_GL2(itemp+1,gnode)
-                 write(sdu(procTemp),*) lnTemp,pebn,pubn
-                 write(sdu(procTemp),*) pvbn,pwdbn
+                 write(sdu(procTemp+CK_LUN),*) lnTemp,pebn,pubn
+                 write(sdu(procTemp+CK_LUN),*) pvbn,pwdbn
             enddo
         enddo
 
 
        go to 1000
 
-1905   close(1020)
+1905   close(1020+CK_LUN)
        do iproc=1,nproc
-           close(sdu(iproc))
+           close(sdu(iproc+CK_LUN))
        enddo
 
       END SUBROUTINE subPrep020
@@ -328,13 +338,13 @@ C   NCSU Subdomain Modeling variables:
          integer :: gn,p, totalProc, itemp,procTemp
 
 
-         open(1021, file='fort.021')
-         read(1021,*)
-         read(1021,*) psbtiminc, pnibn
+         open(1021+CK_LUN, file='fort.021')
+         read(1021+CK_LUN,*)
+         read(1021+CK_LUN,*) psbtiminc, pnibn
          allocate( pibn(pnibn) )
          allocate( pnibnp(nproc) )
          do i=1,pnibn
-             read(1021,*) pibn(i)
+             read(1021+CK_LUN,*) pibn(i)
          enddo
 
 
@@ -377,8 +387,8 @@ C   NCSU Subdomain Modeling variables:
 
 
         do iproc=1,nproc
-            write(sdu(iproc),*) 'subdomain boundary conditions '
-            write(sdu(iproc),*) psbtiminc,pnibnp(iproc)
+            write(sdu(iproc+CK_LUN),*) 'subdomain boundary conditions '
+            write(sdu(iproc+CK_LUN),*) psbtiminc,pnibnp(iproc)
         enddo
 
         do i=1,pnibn
@@ -388,16 +398,16 @@ C   NCSU Subdomain Modeling variables:
                  itemp = (p-1)*2+1
                  procTemp = IMAP_NOD_GL2(itemp,gnode)
                  lnTemp = IMAP_NOD_GL2(itemp+1,gnode)
-                 write(sdu(procTemp),*) lnTemp
+                 write(sdu(procTemp+CK_LUN),*) lnTemp
              enddo
          enddo
 
 
 1000   CONTINUE
 
-        read(1021,*,end=1905) tstep
+        read(1021+CK_LUN,*,end=1905) tstep
         do iproc=1,nproc
-            write(sdu(iproc),*) tstep
+            write(sdu(iproc+CK_LUN),*) tstep
         enddo
 
 !        do i=1,pnibn
@@ -409,21 +419,21 @@ C   NCSU Subdomain Modeling variables:
 
 
         do i=1,pnibn
-            read(1021,*) gnode,pebn
+            read(1021+CK_LUN,*) gnode,pebn
             totalProc = itotproc(gnode)
             do p=1,totalProc
                  itemp = (p-1)*2+1
                  procTemp = IMAP_NOD_GL2(itemp,gnode)
                  lnTemp = IMAP_NOD_GL2(itemp+1,gnode)
-                 write(sdu(procTemp),*) lnTemp,pebn
+                 write(sdu(procTemp+CK_LUN),*) lnTemp,pebn
             enddo
         enddo
 
        go to 1000
 
-1905   close(1021)
+1905   close(1021+CK_LUN)
        do iproc=1,nproc
-           close(sdu(iproc))
+           close(sdu(iproc+CK_LUN))
        enddo
 
       END SUBROUTINE subPrep021
@@ -483,7 +493,7 @@ C
 C     If it does exist, open it
       IF ( FOUND ) THEN
          WRITE(*,1011) FileName !found
-         OPEN(UNIT=UnitNumberIn, FILE=FileName, IOSTAT=ErrorIO)
+         OPEN(UNIT=UnitNumberIn+CK_LUN, FILE=FileName, IOSTAT=ErrorIO)
          Success = .true.
          IF ( ErrorIO .GT. 0 ) THEN
             WRITE(*,*) "ERROR: Full domain file exists but"
@@ -502,7 +512,7 @@ C
          sdFileName = 'PE0000/'//FileName
 #endif
          CALL IWRITE(sdFileName, 3, 6, iproc-1)
-         OPEN (UNIT=SDU(iproc), FILE=sdFileName, IOSTAT=ErrorIO)
+         OPEN (UNIT=SDU(iproc+CK_LUN), FILE=sdFileName, IOSTAT=ErrorIO)
          Success = .true.
          IF ( ErrorIO .GT. 0 ) THEN
             WRITE(*,*) "ERROR: Subdomain file cannot be opened."

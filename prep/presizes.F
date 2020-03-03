@@ -1,4 +1,5 @@
       MODULE MEMORY_USAGE
+      use CkLunMod, only : CK_LUN
 
       ! This module allows monitoring of dynamic memory usage
       ! vjp 10/6/2006
@@ -9,6 +10,7 @@
       end type MemoryDescript_t
 
       type (MemoryDescript_t),save :: mem_descript
+!$omp threadprivate(mem_descript)
 
       CONTAINS
 
@@ -92,6 +94,7 @@ C  46.44 vjp added code for prep13-only command
 C----------------------------------------------------------------------------
 
       MODULE PRESIZES
+      use CkLunMod, only : CK_LUN
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       USE GLOBAL, ONLY :
      &    USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,
@@ -128,84 +131,146 @@ C   THAN 5 DIGITS OF PRECISION, THE MODEL RESULTS MAY NOT BE TRUSTWORTHY.
 C
 C     variables which describe the full domain
       INTEGER MNPROC ! number of subdomains
+!$omp threadprivate(MNPROC)
       INTEGER MNE    ! number of elements
+!$omp threadprivate(MNE)
       INTEGER MNP    ! number of nodes
+!$omp threadprivate(MNP)
       INTEGER MNEI   ! maxnodes connected to any node
+!$omp threadprivate(MNEI)
       INTEGER MNOPE  ! number of elevation boundary segments
+!$omp threadprivate(MNOPE)
       INTEGER MNETA  ! number of Elevation Boundary Nodes
+!$omp threadprivate(MNETA)
       INTEGER MNBOU  ! number of Land Boundary Segments
+!$omp threadprivate(MNBOU)
       INTEGER MNVEL  ! number of Land Boundary Nodes
+!$omp threadprivate(MNVEL)
       INTEGER MNTIF  ! number of Tidal Potential Constituents
+!$omp threadprivate(MNTIF)
       INTEGER MNBFR  ! number of Periodic Elevation Bndry Forcing Constituents
+!$omp threadprivate(MNBFR)
       INTEGER MNFFR  ! number of Periodic Norm. Flow Bndry Forcing Constituents
+!$omp threadprivate(MNFFR)
       INTEGER MNSTAE ! number of Elevation Recording Stations
+!$omp threadprivate(MNSTAE)
       INTEGER MNSTAV ! number of Velocity Recording Stations
+!$omp threadprivate(MNSTAV)
       INTEGER MNSTAC ! number of Concentration Recording Stations
+!$omp threadprivate(MNSTAC)
       INTEGER MNSTAM ! number of meteorological Recording Stations
+!$omp threadprivate(MNSTAM)
       INTEGER MNWP   ! 1 If No Meteorlogical Forcing else = MNP
+!$omp threadprivate(MNWP)
       INTEGER MNWLAT ! number of Latitudes
+!$omp threadprivate(MNWLAT)
       INTEGER MNWLON ! number of Longitudes
+!$omp threadprivate(MNWLON)
 
       INTEGER NSTA3DD! number of 3D density recording stations
+!$omp threadprivate(NSTA3DD)
       INTEGER NSTA3DV! number of 3D velocity recording stations
+!$omp threadprivate(NSTA3DV)
       INTEGER NSTA3DT! number of 3D turbulence recording stations
+!$omp threadprivate(NSTA3DT)
 
 ! kmd48.33bc - added these variables for boundary conditions
       INTEGER RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP
+!$omp threadprivate(RES_BC_FLAG,BCFLAG_LNM,BCFLAG_TEMP)
 
       INTEGER MNPP   ! number of max nodes of any subdomain
+!$omp threadprivate(MNPP)
       INTEGER MNEP   ! number of max elements of any subdomain
+!$omp threadprivate(MNEP)
 C     Model Type:
       INTEGER IDEN        ! determines whether prognostic or diagnostic
+!$omp threadprivate(IDEN)
       LOGICAL C2DDI       ! .TRUE. if 2D depth integrated
+!$omp threadprivate(C2DDI)
       LOGICAL C2D_BTrans  ! .True. if 2D with baroclinic transport
+!$omp threadprivate(C2D_BTrans)
       LOGICAL C2D_PTrans  ! .True. if 2D with passive transport
+!$omp threadprivate(C2D_PTrans)
       LOGICAL CBaroclinic ! .True. if baroclinic (density forcing)
+!$omp threadprivate(CBaroclinic)
       LOGICAL C3D         ! .TRUE. if 3D
+!$omp threadprivate(C3D)
       LOGICAL C3DDSS      ! .TRUE. if 3D stress formulation
+!$omp threadprivate(C3DDSS)
       LOGICAL C3DVS       ! .TRUE. if 3D velocity formulation
+!$omp threadprivate(C3DVS)
       LOGICAL C3D_BTrans  ! .true. if 3D with baroclinic transport
+!$omp threadprivate(C3D_BTrans)
       LOGICAL C3D_PTrans  ! .true. if 3D with passive transport
+!$omp threadprivate(C3D_PTrans)
 C     GWCE Lumping:
       LOGICAL CLUMP  ! .TRUE. only if ILUMP > 0
+!$omp threadprivate(CLUMP)
 C     Tidal Forcing:
       LOGICAL CTIP   ! .TRUE. only if NTIP <> 0
+!$omp threadprivate(CTIP)
 C     Solver Type:
       LOGICAL CSOLIT ! .TRUE. only if ITITER > 0
+!$omp threadprivate(CSOLIT)
       LOGICAL CSOLDIR! .TRUE. only if ITITER = 0
+!$omp threadprivate(CSOLDIR)
       LOGICAL CSOLDIA! .TRUE. only if ITITER < 0
+!$omp threadprivate(CSOLDIA)
 ! kmd - added for baroclinic portion of rivers
       LOGICAL BndBCRiver ! .TRUE. if 3D, baroclinc and includes rivers in the simulation
+!$omp threadprivate(BndBCRiver)
       INTEGER NRIVBCN    ! number of river nodes to be evaluate for salinity and temperature
+!$omp threadprivate(NRIVBCN)
       INTEGER :: NDISC
+!$omp threadprivate(NDISC)
       INTEGER :: skipNETA ! avoid collision with NETA in pre_global module
+!$omp threadprivate(skipNETA)
       LOGICAL :: fluxBoundary = .false. ! avoid collision with NFLUXF in pre_global module
+!$omp threadprivate(fluxBoundary)
 ! tcm v51.20.03 additions for station files outside the fort.15
       LOGICAL USE_ELEV_STAT_FILE    !.true. if an elevation station file exists
+!$omp threadprivate(USE_ELEV_STAT_FILE)
       LOGICAL USE_VEL_STAT_FILE     !.true. if a velocity station file exists
+!$omp threadprivate(USE_VEL_STAT_FILE)
       LOGICAL USE_CONC_STAT_FILE    !.true. if a concentration station file exists
+!$omp threadprivate(USE_CONC_STAT_FILE)
       LOGICAL USE_MET_STAT_FILE     !.true. if a met station file exists
+!$omp threadprivate(USE_MET_STAT_FILE)
       LOGICAL :: invertedBarometerOnElevationBoundary
+!$omp threadprivate(invertedBarometerOnElevationBoundary)
 C
 C For Definition of Working Directory
 C
       INTEGER,SAVE :: LNAME = 6
+!$omp threadprivate(LNAME)
       CHARACTER*6,SAVE :: DIRNAME = 'PE0000'
+!$omp threadprivate(DIRNAME)
 
 C Logicals added for adcprep paths
       LOGICAL PARTITION   ! .true. if only mesh partition is to be performed
+!$omp threadprivate(PARTITION)
       LOGICAL USE_DEFAULT ! .true. iff fort.x to be used as input
+!$omp threadprivate(USE_DEFAULT)
       LOGICAL PREP_ALL    ! .true. if all input files should be written
+!$omp threadprivate(PREP_ALL)
       LOGICAL PREP_15     ! .true. if only RunInfo file is to be localized
+!$omp threadprivate(PREP_15)
       LOGICAL PREP_13     ! .true. if only nodal attributes file is to be localized
+!$omp threadprivate(PREP_13)
       LOGICAL HOT_LOCAL    ! .true. if only hotstart file is to be localized
+!$omp threadprivate(HOT_LOCAL)
       LOGICAL HOT_GLOBAL   ! .true. if only hotstart files is to be globalized
+!$omp threadprivate(HOT_GLOBAL)
       LOGICAL :: PREP_20  ! .true. if user specified --prep20 cmd line option
+!$omp threadprivate(PREP_20)
       !LOGICAL :: PREP_88  ! .true. if user specified --prep88 cmd line option !commented out by tcm v51.27
 
       LOGICAL :: useNetCDF = .false.  !jgf48.07
+!$omp threadprivate(useNetCDF)
       LOGICAL :: useXDMF = .false.    !jgf51.27 trigger metadata read from fort.15
+!$omp threadprivate(useXDMF)
       INTEGER, ALLOCATABLE :: NM(:,:) !jgf48.08
+!$omp threadprivate(NM)
 
 
 #if defined CSWAN || defined ADCSWAN
@@ -219,13 +284,16 @@ C Logicals added for adcprep paths
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &    TOUTF_TVW,NSPOOL_TVW
       LOGICAL :: NETCDF_AVAIL ! true if netCDF was compiled in
+!$omp threadprivate(NETCDF_AVAIL)
       LOGICAL :: XDMF_AVAIL ! true if XDMF was compiled in
+!$omp threadprivate(XDMF_AVAIL)
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       NAMELIST /waveCoupling/ WaveWindMultiplier
       !
       ! @jasonfleming: reduce memory usage if there are no weir boundaries
       ! with cross barrier pipes
       logical :: meshHasWeirWithPipes
+!$omp threadprivate(meshHasWeirWithPipes)
 
 C---------------------end of data declarations--------------------------------C
 
@@ -250,6 +318,7 @@ C     the reading of the fort.15 file.
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER, ALLOCATABLE :: NNEIGH(:)
       INTEGER  I,IL,IDUM,N,N1,N2,N3,NDIF1,NDIF2,NDIF3,NBN,NVEL,
      &  IK,IBN,NBBN,NFLUXB,NFLUXI,NFLUXIPipe,NIBP,NIBPPipe,IBTYPE,IBN1,NETA
@@ -297,14 +366,14 @@ C
         ENDIF
       ENDIF
   32  WRITE(*,1011) trim(GRID)
-      OPEN(14,FILE=trim(GRID))
+      OPEN(14+CK_LUN,FILE=trim(GRID))
 
- 33   READ(14,'(a80)') LINEI                       !SKIP OVER AGRID
+ 33   READ(14+CK_LUN,'(a80)') LINEI                       !SKIP OVER AGRID
       DO I=1,95
          IF(CHARI(I).NE.' ') GOTO 34
       END DO
       GOTO 33
- 34   READ(14,*) MNE,MNP                            !PROCESS MNE,MNP
+ 34   READ(14+CK_LUN,*) MNE,MNP                            !PROCESS MNE,MNP
 C
       ALLOCATE (NNEIGH(MNP))                        !Allocate Neighbor Table
       nbytes = 4*mnp
@@ -315,12 +384,12 @@ C     jgf48.08 For netCDF
       call memory_alloc(nbytes)
 C
       DO IL=1,MNP                                   !SKIP OVER NODES
-         READ(14,*) IDUM
+         READ(14+CK_LUN,*) IDUM
          NNEIGH(IL)=0
       END DO
 C
       DO IL=1,MNE                                   !READ IN THE ELEMENT
-         READ(14,*) N,IDUM,N1,N2,N3                 !CONNECTIVITY TABLE
+         READ(14+CK_LUN,*) N,IDUM,N1,N2,N3                 !CONNECTIVITY TABLE
          NNEIGH(N1)=NNEIGH(N1)+1                    !DETERMINE THE # OF NEIGHBORS
          NNEIGH(N2)=NNEIGH(N2)+1
          NNEIGH(N3)=NNEIGH(N3)+1
@@ -331,15 +400,15 @@ C
       ENDDO
 C
       NETA=0                                        !PROCESS OPEN BOUNDARIES
-      READ(14,*) MNOPE
-      READ(14,*) MNETA
+      READ(14+CK_LUN,*) MNOPE
+      READ(14+CK_LUN,*) MNETA
 C
       MNEI=0                                        !PROCESS MAX # NEIGHBORS
       DO IL=1,MNOPE
-         READ(14,*) NBN
+         READ(14+CK_LUN,*) NBN
          NETA=NETA+NBN
          DO IK=1,NBN
-            READ(14,*) IBN
+            READ(14+CK_LUN,*) IBN
             IF (NNEIGH(IBN).NE.0) THEN
               NNEIGH(IBN)=NNEIGH(IBN)+1
               IF (NNEIGH(IBN).GT.MNEI) MNEI=NNEIGH(IBN)
@@ -362,12 +431,12 @@ C
       NFLUXIPipe=0                      !internal barrier boundary bc with pipes
       fluxBoundary=.false.             !SPECIFIED FLUX BC
 C
-      READ(14,*) MNBOU                  !Land Boundary Segments
-      READ(14,*) MNVEL                  !Land Boundary Nodes
+      READ(14+CK_LUN,*) MNBOU                  !Land Boundary Segments
+      READ(14+CK_LUN,*) MNVEL                  !Land Boundary Nodes
 C
 C     jgf46.21 Added support for IBTYPE=52.
       DO IL=1,MNBOU
-         READ(14,*) NBN,IBTYPE
+         READ(14+CK_LUN,*) NBN,IBTYPE
 ! kmd - added in rivers for baroclinic simulations
          IF (ABS(IBTYPE/100).EQ.1) THEN
             BndBCRiver=.TRUE.
@@ -394,7 +463,7 @@ C     jgf46.21 Added support for IBTYPE=52.
          end select
          IBN1=0
          DO IK=1,NBN
-            READ(14,*) IBN
+            READ(14+CK_LUN,*) IBN
             IF (NNEIGH(IBN).NE.0) THEN
               NNEIGH(IBN)=NNEIGH(IBN)+1
               IF (NNEIGH(IBN).GT.MNEI) MNEI=NNEIGH(IBN)
@@ -418,10 +487,10 @@ C
 C
 C if ONLY partitioning mesh using metis or a prephot
       IF (PARTITION .or. HOT_LOCAL .or. HOT_GLOBAL) THEN
-         CLOSE(14)
+         CLOSE(14+CK_LUN)
          return
       ELSE
-         REWIND(14)         ! performing full prep
+         REWIND(14+CK_LUN)         ! performing full prep
       ENDIF
       !
       ! jgf51.21.27: This subroutine rewinds unit 14 but leaves the
@@ -457,6 +526,7 @@ C
 
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER  I,IL,IDUM,N,N1,N2,N3,NDIF1,NDIF2,NDIF3,
      &  IM,NWP,NCOR,NTIP,NWS,NRAMP,IREFYR,NTIF,IL1,Il2,NHARF,NHAINC,IDUM2,
      &  ITITER,ILUMP,IHOT
@@ -496,10 +566,15 @@ C.... tcm v51.20.04 additions for station location file
 
 C.... tcm v52.30.01 additions for Smagorinski Eddy Viscosity Namelist
       integer :: ios_smag = 0
+!$omp threadprivate(ios_smag)
       REAL(8) :: SMAG_UPPER_LIM = 100.d0  ! m^2/s (default upper limit)
+!$omp threadprivate(SMAG_UPPER_LIM)
       REAL(8) :: SMAG_LOWER_LIM = 1.0d-8  ! m^2/s (default lower limit)
+!$omp threadprivate(SMAG_LOWER_LIM)
       LOGICAL :: SMAG_COMP_FLAG = .FALSE. ! BY DEFAULT DO NOT USE SMAG
+!$omp threadprivate(SMAG_COMP_FLAG)
       LOGICAL :: FOUND_Smag_NML = .false. ! flag to determine if the Smag_Control namelist was present
+!$omp threadprivate(FOUND_Smag_NML)
       NAMELIST /Smag_Control/ SMAG_UPPER_LIM,SMAG_LOWER_LIM,SMAG_COMP_FLAG
 
 #ifdef ADCNETCDF
@@ -547,7 +622,7 @@ C
         ENDIF
       ENDIF
  132  WRITE(*,1011) RUNINFO
-      OPEN(15,FILE=RUNINFO)
+      OPEN(15+CK_LUN,FILE=RUNINFO)
 
 c...  tcm v50.66.02 Addtions for Time Varying Bathymetry
 c...  read through the fort.15 file for the namelist (TimeBathyControl) for
@@ -559,7 +634,7 @@ C...
 C...  After this search and read, we will close the file and then reopen it
 c...  for further processing the traditional non-namelist components.
 C...
-      READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT) 
+      READ(UNIT = 15+CK_LUN,NML = TimeBathyControl,IOSTAT = IOS_NDDT) 
 
       IF (IOS_NDDT < 0) THEN
 c.....   it is possible for the namelist to be present in the file and occuring at the end 
@@ -583,32 +658,32 @@ c....    a non-default value we can determine this was the case.
          stop
       ENDIF
 C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
-      REWIND(15)
+      REWIND(15+CK_LUN)
 
 #if defined CSWAN || defined ADCSWAN
       ! jgf50.60.08: Add a namelist for the user to turn SWAN output
       ! on and off. Similar to tcm's timevaryingbathy namelist.
       IOS = 0
-      READ(UNIT=15,NML=SWANOutputControl,IOSTAT=IOS)
+      READ(UNIT=15+CK_LUN,NML=SWANOutputControl,IOSTAT=IOS)
       IF (IOS.gt.0) THEN
          write(*,*)"INFO: The SWANOutputControl namelist was not found."
       ENDIF
-      REWIND(15)
+      REWIND(15+CK_LUN)
 #endif
       ! jgf50.60.13: Add a namelist for the user to control met forcing.
       ! Similar to tcm's timevaryingbathy namelist.
       call initWindModule()
-      READ(UNIT=15,NML=metControl,IOSTAT=IOS)
+      READ(UNIT=15+CK_LUN,NML=metControl,IOSTAT=IOS)
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The metControl namelist was not found."
       ELSE
          found_metCon_nml = .true.  !tcm v50.79 added
       ENDIF
-      REWIND(15)
+      REWIND(15+CK_LUN)
       
       ! zc: Add namelist for user to control time varying weirs
       IOS = 0
-      READ(UNIT=15,NML=TVWControl,IOSTAT=IOS)
+      READ(UNIT=15+CK_LUN,NML=TVWControl,IOSTAT=IOS)
       IF(IOS.GT.0)THEN
          IF(NOUT_TVW.NE.0)THEN
              WRITE(*,'(2A)') "INFO: The time varying weir control namelist",
@@ -622,18 +697,18 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
      &      " was found."
          found_tvw_nml = .TRUE.
       ENDIF
-      REWIND(15)
+      REWIND(15+CK_LUN)
 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       IOS = 0
-      READ(UNIT=15,NML=waveCoupling,IOSTAT=IOS)
+      READ(UNIT=15+CK_LUN,NML=waveCoupling,IOSTAT=IOS)
       IF(IOS.GT.0)THEN
          WRITE(*,*) "INFO: The waveCoupling namelist was not found."
          FOUND_WC_NML = .FALSE.
       ELSE
          FOUND_WC_NML = .TRUE.
       ENDIF
-      REWIND(15)
+      REWIND(15+CK_LUN)
 
 c...  tcm v52.30.01 Addtions for using the Smagorinski Control Namelist
 c...  read through the fort.15 file for the namelist (Smag_Control) for
@@ -646,7 +721,7 @@ C...  After this search and read, we will close the file and then reopen it
 c...  for further processing the traditional non-namelist components.
 C...
       IOS_SMAG = 0
-      READ(UNIT = 15,NML = Smag_Control,IOSTAT = IOS_SMAG)
+      READ(UNIT = 15+CK_LUN,NML = Smag_Control,IOSTAT = IOS_SMAG)
 
       IF (IOS_SMAG < 0) THEN
 c.....   it is possible for the namelist to be present in the file and occuring at the end
@@ -671,7 +746,7 @@ c....    a non-default value we can determine this was the case.
          stop
       ENDIF
 C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
-      REWIND(15)
+      REWIND(15+CK_LUN)
 
 C
 C
@@ -690,28 +765,28 @@ C
       CTIP   = .FALSE.
       CSOLIT = .FALSE.
 C
- 23   READ(15,80) LINEI                             !SKIP OVER RUNDES
+ 23   READ(15+CK_LUN,80) LINEI                             !SKIP OVER RUNDES
       DO I=1,95
          IF(CHARI(I).NE.' ') GOTO 24
       END DO
       GOTO 23
- 24   READ(15,80) LINEI                             !SKIP OVER RUNID
+ 24   READ(15+CK_LUN,80) LINEI                             !SKIP OVER RUNID
       DO I=1,95
          IF(CHARI(I).NE.' ') GOTO 25
       ENDDO
       GOTO 24
 C
- 25   READ(15,*) IDUM  ! SKIP NFOVER
-      READ(15,*) IDUM  ! SKIP NABOUT
-      READ(15,*) IDUM  ! SKIP NSCREEN
-      READ(15,*) IHOT
+ 25   READ(15+CK_LUN,*) IDUM  ! SKIP NFOVER
+      READ(15+CK_LUN,*) IDUM  ! SKIP NABOUT
+      READ(15+CK_LUN,*) IDUM  ! SKIP NSCREEN
+      READ(15+CK_LUN,*) IHOT
       IF ((IHOT.EQ.367).OR.(IHOT.EQ.368).OR.
      &    (IHOT.EQ.567).OR.(IHOT.EQ.568)) THEN
          useNetCDF = .true.
       ENDIF
-      READ(15,*) IDUM  ! SKIP ICS
+      READ(15+CK_LUN,*) IDUM  ! SKIP ICS
 C
-      READ(15,*) IM                                 !READ IM (model type)
+      READ(15+CK_LUN,*) IM                                 !READ IM (model type+CK_LUN)
 C
       SELECT CASE (IM) ! jgf46.28 added transport/baroclinic support
       CASE(0)
@@ -760,7 +835,7 @@ c        C3DDSS = .TRUE.
       END SELECT
 C
       IDEN=0
-      IF (CBaroclinic) READ(15,*) IDEN
+      IF (CBaroclinic) READ(15+CK_LUN,*) IDEN
       SELECT CASE(IDEN)
       CASE(0) ! Barotropic
          ! do nothing, this is valid when IDEN is read in 3D section
@@ -788,25 +863,25 @@ C               and Temperature forcing'
       END SELECT
 C
       DO IL=1,4                                     !SKIP OVER NOLIBF-NOLICAT
-         READ(15,*) IDUM
+         READ(15+CK_LUN,*) IDUM
       ENDDO
-      READ(15,*) NWP                                !SKIP NWP
+      READ(15+CK_LUN,*) NWP                                !SKIP NWP
       DO IL=1,NWP
-         READ(15,*) skipped                !jgf46.00 skip over nodal attributes
+         READ(15+CK_LUN,*) skipped                !jgf46.00 skip over nodal attributes
       ENDDO
-      READ(15,*) NCOR                               !SKIP OVER NCOR
-      READ(15,*) NTIP                               !READ NTIP
+      READ(15+CK_LUN,*) NCOR                               !SKIP OVER NCOR
+      READ(15+CK_LUN,*) NTIP                               !READ NTIP
       IF (NTIP.NE.0) CTIP = .TRUE.
-      READ(15,*) NWS                                !READ NWS
-      READ(15,*) NRAMP                              !SKIP OVER NRAMP
-      READ(15,*) GRAVITY                            !SKIP OVER GRAVITY
-      READ(15,*) TAU0                               !SKIP OVER TAU0
+      READ(15+CK_LUN,*) NWS                                !READ NWS
+      READ(15+CK_LUN,*) NRAMP                              !SKIP OVER NRAMP
+      READ(15+CK_LUN,*) GRAVITY                            !SKIP OVER GRAVITY
+      READ(15+CK_LUN,*) TAU0                               !SKIP OVER TAU0
       IF ( (TAU0.LE.-5.d0).AND.(TAU0.GT.-6.d0) ) THEN
-         READ(15,*) RDUM, RDUM                      !SKIP OVER TAU0 MIN AND MAX
+         READ(15+CK_LUN,*) RDUM, RDUM                      !SKIP OVER TAU0 MIN AND MAX
       ENDIF
-      READ(15,*) DT                                 !SKIP OVER DT
-      READ(15,*) STATIM                             !SKIP OVER STATIM
-      READ(15,*) REFTIM                             !SKIP OVER REFTIM
+      READ(15+CK_LUN,*) DT                                 !SKIP OVER DT
+      READ(15+CK_LUN,*) STATIM                             !SKIP OVER STATIM
+      READ(15+CK_LUN,*) REFTIM                             !SKIP OVER REFTIM
       MNWLAT = 1
       MNWLON = 1
       MNWP=1
@@ -839,8 +914,8 @@ C.....tcm v49.64.01 Additions for ice
          NWS=INT((ABS(NWS)- NCICE*1000 - NRS*100))*INT(NWS/ABS(NWS))
       ENDIF
 
-      IF((NWS.EQ.0).AND.(NRS.GE.1)) READ(15,*) RSTIMINC ! sb46.28sb03
-      IF((NWS.EQ.1).AND.(NRS.GE.1)) READ(15,*) RSTIMINC ! sb46.28sb03
+      IF((NWS.EQ.0).AND.(NRS.GE.1)) READ(15+CK_LUN,*) RSTIMINC ! sb46.28sb03
+      IF((NWS.EQ.1).AND.(NRS.GE.1)) READ(15+CK_LUN,*) RSTIMINC ! sb46.28sb03
 C     jgf46.02 added NWS=8
 C     jgfdebug46.02 added NWS=45
 C     jgf46.16 merged:
@@ -851,8 +926,8 @@ C     sb46.28sb01 added NWS=12: OWI format
 
 C     tcm v49.64.01 broke nws = 2 out of the group below for additions to ice
       IF(ABS(NWS).eq.2) then
-        IF(NRS.EQ.0) READ(15,*) WTIMINC
-        IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+        IF(NRS.EQ.0) READ(15+CK_LUN,*) WTIMINC
+        IF(NRS.GE.1) READ(15+CK_LUN,*) WTIMINC,RSTIMINC ! sb46.28sb03
         MNWP=MNP
       ENDIF
 
@@ -864,25 +939,25 @@ C.... tcm v48.4641 additions for ice
      &     .OR.(ABS(NWS).EQ.16)  !tcm v51.06.02 added for nws=16 GFDL Met
      &     .OR.(NWS.EQ.10)       !yf added for nws=10 GFS Met
      &     .OR.(ABS(NWS).EQ.12).OR. (NWS.EQ.19)) THEN
-        IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
+        IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15+CK_LUN,*) WTIMINC
         IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4)))
-     &         READ(15,*) WTIMINC,RSTIMINC
+     &         READ(15+CK_LUN,*) WTIMINC,RSTIMINC
         IF((NCICE.EQ.0).AND.(NRS.EQ.3)) THEN  !Casey 090825: Fix for NRS = 3.
           IF(ABS(NWS).EQ.8) THEN
-              READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,RSTIMINC
+              READ(15+CK_LUN,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,RSTIMINC
            ELSE
-              READ(15,*) WTIMINC,RSTIMINC
+              READ(15+CK_LUN,*) WTIMINC,RSTIMINC
            ENDIF
         ENDIF
-        IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,CICE_TIMINC
+        IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15+CK_LUN,*) WTIMINC,CICE_TIMINC
         IF((NCICE.GE.1).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4)))
-     &                READ(15,*) WTIMINC,RSTIMINC,CICE_TIMINC
+     &                READ(15+CK_LUN,*) WTIMINC,RSTIMINC,CICE_TIMINC
         IF((NCICE.GE.1).AND.(NRS.EQ.3)) THEN  !Casey 090825: Fix for NRS = 3.
           IF(ABS(NWS).EQ.8) THEN
-              READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,
+              READ(15+CK_LUN,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,
      &                                     RSTIMINC,CICE_TIMINC
            ELSE
-              READ(15,*) WTIMINC,RSTIMINC,CICE_TIMINC
+              READ(15+CK_LUN,*) WTIMINC,RSTIMINC,CICE_TIMINC
            ENDIF
         ENDIF
         MNWP=MNP
@@ -893,10 +968,10 @@ C.... tcm v48.4641 additions for ice
          SELECT CASE(NRS)
          CASE(0) ! no wave radiation stress
             ! YYYY MM DD HH24 StNum BLAdj WTIMINC pureVortex pureBackgrnd
-            READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,WTIMINC,RDUM,RDUM
+            READ(15+CK_LUN,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,WTIMINC,RDUM,RDUM
          CASE DEFAULT ! some kind of wave radiation stress
             ! YYYY MM DD HH24 StNum BLAdj WTIMINC RSTIMINC pureVortex pureBack
-            READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,
+            READ(15+CK_LUN,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,
      &                 WTIMINC,RSTIMINC,RDUM,RDUM
          END SELECT
       ENDIF
@@ -907,88 +982,88 @@ C.... tcm v48.4641 additions for ice
          CASE(0) ! no wave radiation stress
                       ! YYYY  MM   DD HH24  StNum BLAdj GEOFACTOR 
                       ! WTIMINC pureVortex pureBackgrnd
-            READ(15,*) IDUM,IDUM,IDUM,IDUM, IDUM, RDUM,   IDUM,  
+            READ(15+CK_LUN,*) IDUM,IDUM,IDUM,IDUM, IDUM, RDUM,   IDUM,  
      &                  WTIMINC,   RDUM,      RDUM
          CASE DEFAULT ! some kind of wave radiation stress
                       ! YYYY MM DD HH24 StNum BLAdj GEOFACTOR WTIMINC RSTIMINC pureVortex pureBack
-            READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,IDUM,
+            READ(15+CK_LUN,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,IDUM,
      &                 WTIMINC,RSTIMINC,RDUM,RDUM
          END SELECT
       ENDIF
 
       IF(NWS.EQ.3) THEN
-        READ(15,*) IREFYR                          !SKIP THE REST OF THIS LINE
-        READ(15,*) MNWLAT,MNWLON                   !SKIP THE REST OF THIS LINE
+        READ(15+CK_LUN,*) IREFYR                          !SKIP THE REST OF THIS LINE
+        READ(15+CK_LUN,*) MNWLAT,MNWLON                   !SKIP THE REST OF THIS LINE
         MNWP=MNP
       ENDIF
 C.... tcm v49.64.01 additions for ice
       IF(ABS(NWS).EQ.6) THEN
-        IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC            !SKIP OVER WTIMINC
-        IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC
-        IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,CICE_TIMINC            !SKIP OVER WTIMINC
-        IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC,CICE_TIMINC
+        IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15+CK_LUN,*) WTIMINC            !SKIP OVER WTIMINC
+        IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15+CK_LUN,*) WTIMINC,RSTIMINC
+        IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15+CK_LUN,*) WTIMINC,CICE_TIMINC            !SKIP OVER WTIMINC
+        IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15+CK_LUN,*) WTIMINC,RSTIMINC,CICE_TIMINC
         MNWP=MNP
       ENDIF
 
       DO IL=1,2                                    !SKIP OVER RNDAY,DRAMP
-         READ(15,*) RDUM
+         READ(15+CK_LUN,*) RDUM
       ENDDO
-      READ(15,*) A00,B00,C00                       !READ IN GWCE TIME WEIGHTING COEFFS
+      READ(15+CK_LUN,*) A00,B00,C00                       !READ IN GWCE TIME WEIGHTING COEFFS
       DO IL=1,5                                    !SKIP OVER H0 - CORI
-         READ(15,*) RDUM
+         READ(15+CK_LUN,*) RDUM
       ENDDO
-      READ(15,*) NTIF                              !PROCESS NTIF
+      READ(15+CK_LUN,*) NTIF                              !PROCESS NTIF
       DO IL=1,NTIF                                 !SKIP OVER TIPOTAG & TPK, AMIGT,etc.
- 26      READ(15,80) LINEI
+ 26      READ(15+CK_LUN,80) LINEI
          DO I=1,95
             IF(CHARI(I).NE.' ') GOTO 27
          ENDDO
          GOTO 26
- 27     READ(15,*) RDUM
+ 27     READ(15+CK_LUN,*) RDUM
       ENDDO
       MNTIF=NTIF
       IF(NTIF.EQ.0) MNTIF=1
-      READ(15,*) MNBFR                             !PROCESS MNBFR
+      READ(15+CK_LUN,*) MNBFR                             !PROCESS MNBFR
       DO IL=1,MNBFR                                !SKIP OVER BOUNTAG, & AMIG, FF,etc.
- 28      READ(15,80) LINEI
+ 28      READ(15+CK_LUN,80) LINEI
          DO I=1,95
             IF(CHARI(I).NE.' ') GOTO 29
          ENDDO
          GOTO 28
- 29      READ(15,*) RDUM
+ 29      READ(15+CK_LUN,*) RDUM
 
       ENDDO
       DO IL1=1,MNBFR
- 40      READ(15,80) LINEI                          !SKIP OVER ALPHA
+ 40      READ(15+CK_LUN,80) LINEI                          !SKIP OVER ALPHA
          DO I=1,95
             IF(CHARI(I).NE.' ') GOTO 41
          END DO
          GOTO 40
  41      DO IL2=1,skipNETA
-            READ(15,*) RDUM                          !SKIP OVER BOUNDARY FORCINGS
+            READ(15+CK_LUN,*) RDUM                          !SKIP OVER BOUNDARY FORCINGS
          ENDDO
       ENDDO
       IF(MNBFR.EQ.0) MNBFR=1
-      READ(15,*)  RDUM                             !SKIP OVER ANGIN
+      READ(15+CK_LUN,*)  RDUM                             !SKIP OVER ANGIN
       MNFFR=0
-      IF (fluxBoundary.eqv..true.) READ(15,*) MNFFR   !# FREQ IN NORMAL FLUX B.C.
+      IF (fluxBoundary.eqv..true.) READ(15+CK_LUN,*) MNFFR   !# FREQ IN NORMAL FLUX B.C.
 
       DO IL=1,MNFFR                                !SKIP OVER BOUNTAG, & AMIG, FF,etc.
- 42      READ(15,80) LINEI
+ 42      READ(15+CK_LUN,80) LINEI
          DO I=1,95
             IF(CHARI(I).NE.' ') GOTO 43
          ENDDO
          GOTO 42
- 43      READ(15,*) RDUM
+ 43      READ(15+CK_LUN,*) RDUM
       ENDDO
       DO IL1=1,MNFFR
- 44      READ(15,80) LINEI                          !SKIP OVER ALPHA
+ 44      READ(15+CK_LUN,80) LINEI                          !SKIP OVER ALPHA
          DO I=1,95
             IF(CHARI(I).NE.' ') GOTO 45
          ENDDO
          GOTO 44
  45      DO IL2=1,NDISC
-            READ(15,*) RDUM                          !SKIP OVER BOUNDARY FORCINGS
+            READ(15+CK_LUN,*) RDUM                          !SKIP OVER BOUNDARY FORCINGS
          ENDDO
       ENDDO
       IF((MNFFR.EQ.0).OR.(MNFFR.EQ.-1)) MNFFR=1
@@ -997,18 +1072,18 @@ C..... ELEVATION STATIONS
 C
       MNSTAE=0
       MNSTAE2=0
-      READ(15,*)  IDUM                              !SKIP OVER NOUTE, TOUTSE...
+      READ(15+CK_LUN,*)  IDUM                              !SKIP OVER NOUTE, TOUTSE...
       call setFormatUsage(idum)
 
-      READ(15,*) MNSTAE                             !PROCESS MNSTAE
+      READ(15+CK_LUN,*) MNSTAE                             !PROCESS MNSTAE
       ! tcm v51.20.03 -- added negative mnstae to signal use of external station file elev_stat.151 
       if (MNSTAE < 0) then
          write(*,*) "External File Used for Elevation Station Locations"
          USE_ELEV_STAT_FILE = .TRUE.
          MNSTAE = abs(MNSTAE)  !reset to a positive value
          ! need to open the elev station file and read the number of points
-         open(unit=151,file='elev_stat.151',status='old',err=7690,iostat=ios_stations)
-         read(151,*) MNSTAE2
+         open(unit=151+CK_LUN,file='elev_stat.151',status='old',err=7690,iostat=ios_stations)
+         read(151+CK_LUN,*) MNSTAE2
          if (abs(MNSTAE2).ne. abs(MNSTAE)) then
             MNSTAE = abs(MNSTAE2)  !reset the value to what's in the file
          endif
@@ -1016,12 +1091,12 @@ C
             write(*,*) "Error in Reading Elevation Station File: elev_stat.151"
             stop  ! there is a stop here
          endif 
-         close(151)                 
+         close(151+CK_LUN)                 
       ELSE
          write(*,*) "Elevation Station Locations contained in fort.15"
          USE_ELEV_STAT_FILE = .FALSE.
          DO IL=1,MNSTAE
-            READ(15,*) RDUM                            !SKIP OVER STA COORDS
+            READ(15+CK_LUN,*) RDUM                            !SKIP OVER STA COORDS
          ENDDO
       endif
       IF(MNSTAE.EQ.0) MNSTAE=1
@@ -1030,18 +1105,18 @@ C..... VELOCITY STATIONS
 C
       MNSTAV=0
       MNSTAV2=0
-      READ(15,*) IDUM                               !SKIP OVER NOUTV, TOUTSV...
+      READ(15+CK_LUN,*) IDUM                               !SKIP OVER NOUTV, TOUTSV...
       call setFormatUsage(idum)
 
-      READ(15,*) MNSTAV                             !PROCESS MNSTAV
+      READ(15+CK_LUN,*) MNSTAV                             !PROCESS MNSTAV
       ! tcm v51.20.03 -- added negative mnstav to signal use of external station file vel_stat.151
       if (MNSTAV < 0 ) then
          write(*,*) "External File Used for Velocity Station Locations"
          USE_VEL_STAT_FILE = .true.
          MNSTAV = abs(MNSTAV) !reset to a positive value
          ios_stations = 0
-         open(unit=151,file='vel_stat.151',status='old',err=7691,iostat=ios_stations)
-         read(151,*) MNSTAV2
+         open(unit=151+CK_LUN,file='vel_stat.151',status='old',err=7691,iostat=ios_stations)
+         read(151+CK_LUN,*) MNSTAV2
          if (abs(MNSTAV2).ne. abs(MNSTAV)) then
             MNSTAV = abs(MNSTAV2)  !reset the value to what's in the file
          endif
@@ -1049,12 +1124,12 @@ C
             write(*,*) "Error in Reading Velocity Station File: vel_stat.151"
             stop  ! there is a stop here
          endif
-         close(151)                  
+         close(151+CK_LUN)                  
       else 
          write(*,*) "Velocity Station Locations Contained in fort.15"
          USE_VEL_STAT_FILE = .false.
          DO IL=1,MNSTAV
-            READ(15,*) RDUM                            !SKIP OVER STA COORDS
+            READ(15+CK_LUN,*) RDUM                            !SKIP OVER STA COORDS
          ENDDO
       endif
       IF(MNSTAV.EQ.0) MNSTAV=1
@@ -1064,18 +1139,18 @@ C
       MNSTAC=0
       MNSTAC2=0
       IF(IM.EQ.10) THEN
-         READ(15,*) IDUM                            !SKIP OVER NOUTC, TOUTSC...
+         READ(15+CK_LUN,*) IDUM                            !SKIP OVER NOUTC, TOUTSC...
          call setFormatUsage(idum)
 
-         READ(15,*) MNSTAC                          !PROCESS MNSTAC
+         READ(15+CK_LUN,*) MNSTAC                          !PROCESS MNSTAC
          !tcm v51.20.03 -- added negative mnstac to signal use of external station file conc_stat.151
          if (MNSTAC < 0) then
             write(*,*) "External File Used for Concentration Station Locations"
             USE_CONC_STAT_FILE = .true.
             MNSTAC = abs(MNSTAC) !reset to a positive value
             ios_stations = 0
-            open(unit=151,file='conc_stat.151',status='old',err=7692,iostat=ios_stations)
-            read(151,*) MNSTAC2
+            open(unit=151+CK_LUN,file='conc_stat.151',status='old',err=7692,iostat=ios_stations)
+            read(151+CK_LUN,*) MNSTAC2
             if (abs(MNSTAC2).ne. abs(MNSTAC)) then
                MNSTAC = abs(MNSTAC2)  !reset the value to what's in the file
             endif
@@ -1083,12 +1158,12 @@ C
                write(*,*) "Error in Reading Concentration Station File: conc_stat.151"
                stop  ! there is a stop here
             endif
-            close(151)                  
+            close(151+CK_LUN)                  
          else 
             write(*,*) "Concentration Station Locations Contained in fort.15"
             USE_CONC_STAT_FILE = .false.
             DO IL=1,MNSTAC
-               READ(15,*) RDUM                         !SKIP OVER STA COORDS
+               READ(15+CK_LUN,*) RDUM                         !SKIP OVER STA COORDS
             ENDDO
          endif
       ENDIF
@@ -1099,19 +1174,19 @@ C
       MNSTAM=0
       MNSTAM2=0
       IF(NWS.NE.0) THEN
-        READ(15,*) IDUM                           !SKIP OVER NOUTM, TOUTSM...
+        READ(15+CK_LUN,*) IDUM                           !SKIP OVER NOUTM, TOUTSM...
         call setFormatUsage(idum)
 
-        READ(15,*) MNSTAM                         !PROCESS MNSTAM
+        READ(15+CK_LUN,*) MNSTAM                         !PROCESS MNSTAM
         !tcm v51.20.03 -- added negative mnstam to signal use of external station file met_stat.151
         if (MNSTAM < 0 ) then
            write(*,*) "External File Used for MET Station Locations"
            USE_MET_STAT_FILE = .true.
            MNSTAM = ABS(MNSTAM)  !reset to a positive number
            ios_stations = 0
-           open(unit=151,file='met_stat.151',status='old',
+           open(unit=151+CK_LUN,file='met_stat.151',status='old',
      &           err=7693,iostat=ios_stations)
-           read(151,*) MNSTAM2
+           read(151+CK_LUN,*) MNSTAM2
            if (abs(MNSTAM2).ne. abs(MNSTAM)) then
               MNSTAM = abs(MNSTAM2)  !reset the value to what's in the file
            endif
@@ -1119,48 +1194,48 @@ C
               write(*,*) "Error in Reading MET Station File: met_stat.151"
               stop  ! there is a stop here
            endif
-           close(151)
+           close(151+CK_LUN)
         else 
            write(*,*) "MET Station Locations Contained in fort.15"
            USE_MET_STAT_FILE = .false.
            DO IL=1,MNSTAM
-              READ(15,*) RDUM                        !SKIP OVER STA COORDS
+              READ(15+CK_LUN,*) RDUM                        !SKIP OVER STA COORDS
            END DO
         endif
       ENDIF
       IF(MNSTAM.EQ.0) MNSTAM=1
 C
-      READ(15,*) IDUM                            !SKIP OVER NOUTGE, TOUTSGE...
+      READ(15+CK_LUN,*) IDUM                            !SKIP OVER NOUTGE, TOUTSGE...
       call setFormatUsage(idum)
 
-      READ(15,*) IDUM                            !SKIP OVER NOUTGV, TOUTSGV...
+      READ(15+CK_LUN,*) IDUM                            !SKIP OVER NOUTGV, TOUTSGV...
       call setFormatUsage(idum)
       
       IF (IM.EQ.10) THEN 
-         READ(15,*) IDUM               !SKIP OVER NOUTGC, TOUTSGC...
+         READ(15+CK_LUN,*) IDUM               !SKIP OVER NOUTGC, TOUTSGC...
          call setFormatUsage(idum)
       ENDIF
       IF (NWS.NE.0) THEN
-         READ(15,*) IDUM               !SKIP OVER NOUTGW, TOUTSGW...
+         READ(15+CK_LUN,*) IDUM               !SKIP OVER NOUTGW, TOUTSGW...
          call setFormatUsage(idum)
       ENDIF
-      READ(15,*) NHARF                           !PROCESS MNHARF
+      READ(15+CK_LUN,*) NHARF                           !PROCESS MNHARF
       DO IL1=1,NHARF
- 47      READ(15,80) LINEI                       !SKIP OVER HAFNAM
+ 47      READ(15+CK_LUN,80) LINEI                       !SKIP OVER HAFNAM
          DO I=1,95
             IF(CHARI(I).NE.' ') GOTO 48
          ENDDO
          GOTO 47
- 48      READ(15,*) RDUM,RDUM,RDUM             !SKIP OVER HAFREQ,HAFF,HAFACE
+ 48      READ(15+CK_LUN,*) RDUM,RDUM,RDUM             !SKIP OVER HAFREQ,HAFF,HAFACE
       ENDDO
 C
-      READ(15,*) THAS,THAF,NHAINC,FMV               !READ THAS,...FMV
-      READ(15,*) NHASE,NHASV,NHAGE,NHAGV            !READ NHASE,NHASV,...
+      READ(15+CK_LUN,*) THAS,THAF,NHAINC,FMV               !READ THAS,...FMV
+      READ(15+CK_LUN,*) NHASE,NHASV,NHAGE,NHAGV            !READ NHASE,NHASV,...
       CALL setFormatUsage(NHASE)
       CALL setFormatUsage(NHASV)
       CALL setFormatUsage(NHAGE)
       CALL setFormatUsage(NHAGV)
-      READ(15,*) NHSTAR,IDUM                          !SKIP OVER NHSTAR,NHSINC
+      READ(15+CK_LUN,*) NHSTAR,IDUM                          !SKIP OVER NHSTAR,NHSINC
       PRINT *, "NHSTAR = ", NHSTAR
       IF ((ABS(NHSTAR).EQ.3).OR.(ABS(NHSTAR).EQ.367)
      &    .OR.(ABS(NHSTAR).EQ.368).OR.
@@ -1193,7 +1268,7 @@ C      PRINT *, "Made it to LUMP definition"
        ILUMP=0
 #endif
 
-      READ(15,*) ITITER,IDUM,RDUM,IDUM2             !READ SOLVER TYPE
+      READ(15+CK_LUN,*) ITITER,IDUM,RDUM,IDUM2             !READ SOLVER TYPE
       CSOLIT = .TRUE.
 
 C
@@ -1201,74 +1276,74 @@ C--Read in 3D info
 C
       IF(C3DVS) THEN  !3DVS
 c     jgf45.10 removed IDIAG
-         READ(15,*) IDUM                               !Skip IDEN
-         READ(15,*) IDUM,RDUM                          !Skip ISLIP,KP
-         READ(15,*) RDUM,RDUM                          !Skip Z0S,Z0B
-         READ(15,*) RDUM,RDUM,RDUM                     !Skip ALP1,ALP2,ALP3
+         READ(15+CK_LUN,*) IDUM                               !Skip IDEN
+         READ(15+CK_LUN,*) IDUM,RDUM                          !Skip ISLIP,KP
+         READ(15+CK_LUN,*) RDUM,RDUM                          !Skip Z0S,Z0B
+         READ(15+CK_LUN,*) RDUM,RDUM,RDUM                     !Skip ALP1,ALP2,ALP3
 C     jgf45.12 add code to handle user specified vertical spacing.
-         READ(15,*) IGC,NFEN
+         READ(15+CK_LUN,*) IGC,NFEN
          IF (IGC.EQ.0) THEN
             DO I=1,NFEN
-               READ(15,*) RDUM  !skip over vertical spacing
+               READ(15+CK_LUN,*) RDUM  !skip over vertical spacing
             ENDDO
          ENDIF
 C     jgf45.12 add code to handle user specified vertical eddy viscosity.
-         READ(15,*) IEVC,RDUM,RDUM !Process IEVC
+         READ(15+CK_LUN,*) IEVC,RDUM,RDUM !Process IEVC
          IF (IEVC.EQ.0) THEN
             DO I=1,NFEN
-               READ(15,*) RDUM  !skip over vertical eddy viscosity
+               READ(15+CK_LUN,*) RDUM  !skip over vertical eddy viscosity
             ENDDO
          ENDIF
-         IF((IEVC.EQ.50).OR.(IEVC.EQ.51)) READ(15,*) RDUM,RDUM  !Skip THETA1,THETA2
-         READ(15,*) I3DSD,RDUM,RDUM,IDUM               !Process I3DSD
-         READ(15,*) NSTA3DD                            !Process NSTA3DD
+         IF((IEVC.EQ.50).OR.(IEVC.EQ.51)) READ(15+CK_LUN,*) RDUM,RDUM  !Skip THETA1,THETA2
+         READ(15+CK_LUN,*) I3DSD,RDUM,RDUM,IDUM               !Process I3DSD
+         READ(15+CK_LUN,*) NSTA3DD                            !Process NSTA3DD
          IF(NSTA3DD.NE.0) THEN !kmd : changed to match 2D options
             DO I=1,NSTA3DD
-               READ(15,*) RDUM,RDUM !Skip density stations
+               READ(15+CK_LUN,*) RDUM,RDUM !Skip density stations
             END DO
          ENDIF
-         READ(15,*) I3DSV,RDUM,RDUM,IDUM               !Process I3DSV
-         READ(15,*) NSTA3DV                            !Process NSTA3DV
+         READ(15+CK_LUN,*) I3DSV,RDUM,RDUM,IDUM               !Process I3DSV
+         READ(15+CK_LUN,*) NSTA3DV                            !Process NSTA3DV
          IF (NSTA3DV.NE.0) THEN  !kmd : changed to match 2D options
             DO I=1,NSTA3DV
-               READ(15,*) RDUM,RDUM !Skip velocity stations
+               READ(15+CK_LUN,*) RDUM,RDUM !Skip velocity stations
             END DO
          ENDIF
-         READ(15,*) I3DST,RDUM,RDUM,IDUM !Process I3DST
-         READ(15,*) NSTA3DT                            !Process NSTA3DT
+         READ(15+CK_LUN,*) I3DST,RDUM,RDUM,IDUM !Process I3DST
+         READ(15+CK_LUN,*) NSTA3DT                            !Process NSTA3DT
          IF (NSTA3DT.NE.0) THEN  !kmd : changed to match 2D options
             DO I=1,NSTA3DT
-               READ(15,*) RDUM,RDUM !Skip turbulence stations
+               READ(15+CK_LUN,*) RDUM,RDUM !Skip turbulence stations
             ENDDO
          ENDIF
-         READ(15,*) IDUM,RDUM,RDUM,IDUM !Skip 3D global density output
-         READ(15,*) IDUM,RDUM,RDUM,IDUM                !Skip 3D global velocity output
-         READ(15,*) IDUM,RDUM,RDUM,IDUM                !Skip 3D global turbulence output
+         READ(15+CK_LUN,*) IDUM,RDUM,RDUM,IDUM !Skip 3D global density output
+         READ(15+CK_LUN,*) IDUM,RDUM,RDUM,IDUM                !Skip 3D global velocity output
+         READ(15+CK_LUN,*) IDUM,RDUM,RDUM,IDUM                !Skip 3D global turbulence output
 
 !kmd48.33bc - added this information for the boundary conditions
          IF (CBAROCLINIC) THEN
-           READ(15,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP    !Process RES_BC_FLAG
+           READ(15+CK_LUN,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP    !Process RES_BC_FLAG
            IF ((RES_BC_FLAG.LT.0).OR.(RES_BC_FLAG.EQ.1)) THEN
-              READ(15,*) RDUM
-              READ(15,*) RDUM
+              READ(15+CK_LUN,*) RDUM
+              READ(15+CK_LUN,*) RDUM
            ELSE IF ((RES_BC_FLAG.EQ.2).OR.(RES_BC_FLAG.EQ.3)) THEN
-              READ(15,*) RDUM,RDUM
-              READ(15,*) RDUM,RDUM
+              READ(15+CK_LUN,*) RDUM,RDUM
+              READ(15+CK_LUN,*) RDUM,RDUM
               IF (BCFLAG_TEMP.NE.0) THEN
-                 READ(15,*) RDUM, RDUM
+                 READ(15+CK_LUN,*) RDUM, RDUM
               END IF
            ELSE IF (RES_BC_FLAG.EQ.4) THEN
-              READ(15,*) RDUM,RDUM,RDUM
-              READ(15,*) RDUM,RDUM,RDUM
+              READ(15+CK_LUN,*) RDUM,RDUM,RDUM
+              READ(15+CK_LUN,*) RDUM,RDUM,RDUM
               IF (BCFLAG_TEMP.NE.0) THEN
-                 READ(15,*) RDUM, RDUM
+                 READ(15+CK_LUN,*) RDUM, RDUM
               END IF
            END IF
          END IF
 
 C         PRINT *, "Made it to sponge information"
          IF (CBAROCLINIC) THEN
-            READ(15,*) RDUM
+            READ(15+CK_LUN,*) RDUM
          END IF
 
 
@@ -1276,7 +1351,7 @@ c     ELSEIF(C3DDSS) THEN  !3DDSS
 c
       ENDIF
 C
-      REWIND(15)                                    !FINISHED WITH UNIT 15 FILE
+      REWIND(15+CK_LUN)                                    !FINISHED WITH UNIT 15 FILE
 
 
 C...

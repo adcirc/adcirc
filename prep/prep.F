@@ -31,10 +31,12 @@ C
 C---------------------------------------------------------------------------
       SUBROUTINE PREP10()
 C---------------------------------------------------------------------------
+      use CkLunMod, only : CK_LUN
       USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER I,J
       INTEGER iproc          ! subdomain index
       CHARACTER*80 header1, header2  ! header comments in unit 10 files
@@ -59,17 +61,17 @@ C---------------------------------------------------------------------------
       ENDIF
 C
 C     Read header information from full domain unit 10 file
-      READ(10,80) header1
-      READ(10,80) header2
+      READ(10+CK_LUN,80) header1
+      READ(10+CK_LUN,80) header2
 C
 C     Transcribe header information.
       DO iproc = 1, nproc
-         WRITE(sdu(iproc),80)  header1
-         WRITE(sdu(iproc),80)  header2
+         WRITE(sdu(iproc+CK_LUN),80)  header1
+         WRITE(sdu(iproc+CK_LUN),80)  header2
       ENDDO
 C
 C     Check node number data for consistency (paranoia).
-      READ(10,80) nvn_nvp
+      READ(10+CK_LUN,80) nvn_nvp
       READ(nvn_nvp,*) nvn, nvp
       IF ( nvn .ne. nfen .or. nvp .ne. nnodg ) then
          WRITE(*,*) 'ERROR: NVN or NVP not consistent with input data.'
@@ -85,17 +87,17 @@ c     read in the full domain data
          nbytes = 8*mnp
          call memory_alloc(nbytes)
          DO i=1, NNODG
-            READ(10,*) nhnn, fdData2D(nhnn)
+            READ(10+CK_LUN,*) nhnn, fdData2D(nhnn)
          ENDDO
 c     write out subdomain data
          ALLOCATE ( sdData2D(MNP) )
          nbytes = 8*mnp
          call memory_alloc(nbytes)
          DO iproc = 1, nproc
-            WRITE(sdu(iproc),*) nnodp(iproc)
+            WRITE(sdu(iproc+CK_LUN),*) nnodp(iproc)
             DO i=1, nnodp(iproc)
                sdData2D(i) = fdData2D(IMAP_NOD_LG(i,iproc))
-               WRITE(sdu(iproc),*) i, sdData2D(i)
+               WRITE(sdu(iproc+CK_LUN),*) i, sdData2D(i)
             ENDDO
          ENDDO
          DEALLOCATE ( fdData2D, sdData2D )
@@ -110,7 +112,7 @@ c     read in the full domain data
          call memory_alloc(nbytes)
          DO i=1, NNODG
             DO j=1, nfen
-               READ(10,*) nhnn, nvnn, fdData3D(nhnn,nvnn)
+               READ(10+CK_LUN,*) nhnn, nvnn, fdData3D(nhnn,nvnn)
             ENDDO
          ENDDO
 c     write out subdomain data
@@ -118,11 +120,11 @@ c     write out subdomain data
          nbytes = 8*mnp*nfen
          call memory_alloc(nbytes)
          DO iproc = 1, nproc
-            WRITE(sdu(iproc),*) nfen, nnodp(iproc)
+            WRITE(sdu(iproc+CK_LUN),*) nfen, nnodp(iproc)
             DO i=1, nnodp(iproc)
                DO j=1, nfen
                   sdData3D(i,j) = fdData3D(IMAP_NOD_LG(i,iproc),j)
-                  WRITE(sdu(iproc),*) i, j, sdData3D(i,j)
+                  WRITE(sdu(iproc+CK_LUN),*) i, j, sdData3D(i,j)
                ENDDO
             ENDDO
          ENDDO
@@ -132,9 +134,9 @@ c     write out subdomain data
       ENDIF
 C
 C     Close full domain file and all subdomain files
-      CLOSE(10)
+      CLOSE(10+CK_LUN)
       DO iproc=1, nproc
-         CLOSE(sdu(iproc))
+         CLOSE(sdu(iproc+CK_LUN))
       ENDDO
 C
   80  FORMAT(A80)
@@ -161,10 +163,12 @@ C
 C---------------------------------------------------------------------------
       SUBROUTINE PREP11()
 C---------------------------------------------------------------------------
+      use CkLunMod, only : CK_LUN
       USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER I,J
       INTEGER iproc          ! subdomain index
       CHARACTER*80 header1, header2  ! header comments in unit 11 files
@@ -189,17 +193,17 @@ C---------------------------------------------------------------------------
       ENDIF
 C
 C     Read header information from full domain unit 11 file
-      READ(11,80) header1
-      READ(11,80) header2
+      READ(11+CK_LUN,80) header1
+      READ(11+CK_LUN,80) header2
 C
 C     Transcribe header information.
       DO iproc = 1, nproc
-         WRITE(sdu(iproc),80)  header1
-         WRITE(sdu(iproc),80)  header2
+         WRITE(sdu(iproc+CK_LUN),80)  header1
+         WRITE(sdu(iproc+CK_LUN),80)  header2
       ENDDO
 C
 C     Check node number data for consistency (paranoia).
-      READ(11,80) nvn_nvp
+      READ(11+CK_LUN,80) nvn_nvp
       READ(nvn_nvp,*) nvn, nvp
       IF ( nvn .ne. nfen .or. nvp .ne. nnodg ) then
          WRITE(*,*) 'ERROR: NVN or NVP not consistent with input data.'
@@ -220,7 +224,7 @@ c     read in the full domain data
          call memory_alloc(nbytes)
          DO i=1, NNODG
             DO j=1, nfen
-               READ(11,*) nhnn, nvnn, fdData1(nhnn,nvnn)
+               READ(11+CK_LUN,*) nhnn, nvnn, fdData1(nhnn,nvnn)
             ENDDO
          ENDDO
 
@@ -231,7 +235,7 @@ c     read in the full domain data
          call memory_alloc(nbytes)
          DO i=1, NNODG
             DO j=1, nfen
-               READ(11,*) nhnn, nvnn,
+               READ(11+CK_LUN,*) nhnn, nvnn,
      &              fdData1(nhnn,nvnn),fdData2(nhnn,nvnn)
             ENDDO
          ENDDO
@@ -246,11 +250,11 @@ c     write out subdomain data
          nbytes = 8*mnp*nfen
          call memory_alloc(nbytes)
          DO iproc = 1, nproc
-            WRITE(sdu(iproc),*) nfen, nnodp(iproc)
+            WRITE(sdu(iproc+CK_LUN),*) nfen, nnodp(iproc)
             DO i=1, nnodp(iproc)
                DO j=1, nfen
                   sdData1(i,j) = fdData1(IMAP_NOD_LG(i,iproc),j)
-                  WRITE(sdu(iproc),*) i, j, sdData1(i,j)
+                  WRITE(sdu(iproc+CK_LUN),*) i, j, sdData1(i,j)
                ENDDO
             ENDDO
          ENDDO
@@ -264,12 +268,12 @@ c     write out subdomain data
          nbytes = 16*mnp*nfen
          call memory_alloc(nbytes)
           DO iproc = 1, nproc
-            WRITE(sdu(iproc),*) nfen, nnodp(iproc)
+            WRITE(sdu(iproc+CK_LUN),*) nfen, nnodp(iproc)
             DO i=1, nnodp(iproc)
                DO j=1, nfen
                   sdData1(i,j) = fdData1(IMAP_NOD_LG(i,iproc),j)
                   sdData2(i,j) = fdData2(IMAP_NOD_LG(i,iproc),j)
-                  WRITE(sdu(iproc),*) i, j, sdData1(i,j), sdData2(i,j)
+                  WRITE(sdu(iproc+CK_LUN),*) i, j, sdData1(i,j), sdData2(i,j)
                ENDDO
             ENDDO
          ENDDO
@@ -281,9 +285,9 @@ c     write out subdomain data
       END SELECT
 C
 C     Close full domain file and all subdomain files
-      CLOSE(11)
+      CLOSE(11+CK_LUN)
       DO iproc=1, nproc
-         CLOSE(sdu(iproc))
+         CLOSE(sdu(iproc+CK_LUN))
       ENDDO
 C
   80  FORMAT(A80)
@@ -308,11 +312,13 @@ C
 C---------------------------------------------------------------------------
       SUBROUTINE RELOCALIZE()
 C---------------------------------------------------------------------------
+      use CkLunMod, only : CK_LUN
       USE PRE_GLOBAL
       USE PREP_WEIR,ONLY:NWEIRBNDRY 
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER I, J, K, IPROC, INDX, ITEMP, idumy
       CHARACTER(14) LOCFN
       CHARACTER(80) skipped
@@ -354,15 +360,15 @@ C
       DO IPROC = 1,NPROC
          LOCFN(1:14) = 'PE0000/fort.18'
          CALL IWRITE(LOCFN,3,6,IPROC-1)
-         OPEN (LUNP(IPROC),FILE=LOCFN)
+         OPEN (LUNP(IPROC+CK_LUN),FILE=LOCFN)
       ENDDO
 
 
       print *, "from relocalize: reading local-to-global element maps"
       DO IPROC = 1,NPROC
-         READ(LUNP(IPROC),'(A)') skipped    !  read past fileFmt header
+         READ(LUNP(IPROC+CK_LUN),'(A)') skipped    !  read past fileFmt header
 Casey 100208: Changed I8 to I12.
-         READ(LUNP(IPROC),'(8X,3I12)') NELG, MNEP, NELP(IPROC)
+         READ(LUNP(IPROC+CK_LUN),'(8X,3I12)') NELG, MNEP, NELP(IPROC)
       ENDDO
 !      print *, "nelg = ", nelg
 
@@ -375,14 +381,14 @@ Casey 100208: Changed I8 to I12.
       DO IPROC = 1,NPROC
       DO I=1, NELP(IPROC)
 Casey 100208: Changed I8 to I12.
-         READ(LUNP(IPROC),'(I12)') idumy
+         READ(LUNP(IPROC+CK_LUN),'(I12)') idumy
          IMAP_EL_LG(I,IPROC) = abs(idumy)
       ENDDO
       ENDDO
 
       print *, "from relocalize: reading local-to-global node maps"
       DO IPROC = 1,NPROC
-         READ(LUNP(IPROC),'(8X,3I12)') NNODG, MNPP, NNODP(IPROC)   !tcm v50.21
+         READ(LUNP(IPROC+CK_LUN),'(8X,3I12)') NNODG, MNPP, NNODP(IPROC)   !tcm v50.21
       ENDDO
 !      print *, "nnodg = ", nnodg
 
@@ -394,7 +400,7 @@ Casey 100208: Changed I8 to I12.
 
       DO IPROC = 1,NPROC
       DO I=1, NNODP(IPROC)
-         READ(LUNP(IPROC),'(I12)') idumy        !tcm v50.21
+         READ(LUNP(IPROC+CK_LUN),'(I12)') idumy        !tcm v50.21
          IMAP_NOD_LG(I,IPROC) = abs(idumy)
       ENDDO
       ENDDO
@@ -403,12 +409,12 @@ C  This section for prep15
       IF ((PREP_15.eqv..true.).or.(PREP_20.eqv..true.)) THEN
         print *, "from relocalize: reading nfluxf for each subdomain"
         DO IPROC = 1,NPROC
-           READ(LUNP(IPROC),'(8X,I12)') NFLUXFP(IPROC)        !tcm v50.21
+           READ(LUNP(IPROC+CK_LUN),'(8X,I12)') NFLUXFP(IPROC)        !tcm v50.21
         ENDDO
 
         print *, "from relocalize: reading neta for each subdomain"
         DO IPROC = 1,NPROC
-           READ(LUNP(IPROC),'(8X,3I12)') idumy, NETA_MAX, NETAP(IPROC)   !tcm v50.21
+           READ(LUNP(IPROC+CK_LUN),'(8X,3I12)') idumy, NETA_MAX, NETAP(IPROC)   !tcm v50.21
         ENDDO
 
         if (.not.allocated(obnode_lg)) then
@@ -420,7 +426,7 @@ C  This section for prep15
         print *, "from relocalize: reading open boundary table"
         DO IPROC = 1,NPROC
            DO I=1, NETAP(IPROC)
-              READ(LUNP(IPROC),'(I12)') OBNODE_LG(I,IPROC)    !tcm v50.21
+              READ(LUNP(IPROC+CK_LUN),'(I12)') OBNODE_LG(I,IPROC)    !tcm v50.21
            ENDDO
         ENDDO
       ENDIF
@@ -540,12 +546,14 @@ C
 C---------------------------------------------------------------------------
       subroutine prep13()
 C---------------------------------------------------------------------------
+      use CkLunMod, only : CK_LUN
       use pre_global, only : useNodalAttrNames, nnodg, nnodp, nproc
       use memory_usage
       use nodalattributes
       IMPLICIT NONE
 C
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER ll             ! line loop counter
       INTEGER m              ! attribute default value counter
       INTEGER iproc          ! subdomain loop counter
@@ -585,14 +593,14 @@ C
          ENDIF
 C
 C        Read header information from full domain unit 13 file
-         READ(13,'(A80)') header
-         READ(13,*) NumOfNodes     ! number of nodes according to unit 13
-         READ(13,*) NAttr          ! number of attributes in the unit 13 file
+         READ(13+CK_LUN,'(A80)') header
+         READ(13+CK_LUN,*) NumOfNodes     ! number of nodes according to unit 13
+         READ(13+CK_LUN,*) NAttr          ! number of attributes in the unit 13 file
 C
 C        Check to make sure that the number of nodes in the nodal
 C        attributes file is the same as in the grid file (unit 14).
          IF (NumOfNodes.NE.NNODG) THEN
-            WRITE(6,9900)
+            WRITE(6+CK_LUN,9900)
  9900       FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
      &        //,1X,'The number of nodes in the grid file (unit 14) and'
      &        /,1X,'the nodal attributes file (unit 13) must match.',
@@ -602,24 +610,24 @@ C        attributes file is the same as in the grid file (unit 14).
 C
 C        Transcribe header information into subdomain unit 13 files
          DO iproc = startProc, endProc
-            WRITE(sdu(iproc),'(A80)') header
-            WRITE(sdu(iproc),*) NNODP(iproc)
-            WRITE(sdu(iproc),*) NAttr
+            WRITE(sdu(iproc+CK_LUN),'(A80)') header
+            WRITE(sdu(iproc+CK_LUN),*) NNODP(iproc)
+            WRITE(sdu(iproc+CK_LUN),*) NAttr
          ENDDO
 C
 C        Transcribe attribute names from full domain file to subdomains.
          ALLOCATE(NoOfVals(NAttr))
          ALLOCATE(AttrName(NAttr))!tgaf13mod
          DO k=1, NAttr
-            READ(13,'(A80)') AttrName(k)!tgaf13mod
-            READ(13,'(A80)') Units
-            READ(13,*) NoOfVals(k)
-            READ(13,*) (DefaultVal(m),m=1,NoOfVals(k))
+            READ(13+CK_LUN,'(A80)') AttrName(k)!tgaf13mod
+            READ(13+CK_LUN,'(A80)') Units
+            READ(13+CK_LUN,*) NoOfVals(k)
+            READ(13+CK_LUN,*) (DefaultVal(m),m=1,NoOfVals(k))
             DO iproc=startProc, endProc
-               WRITE(sdu(IPROC),'(A80)') AttrName(k)!tgaf13mod
-               WRITE(sdu(IPROC),'(A80)') Units
-               WRITE(sdu(IPROC),*) NoOfVals(k)
-               WRITE(sdu(IPROC),'(12(1x,e16.9))')
+               WRITE(sdu(IPROC+CK_LUN),'(A80)') AttrName(k)!tgaf13mod
+               WRITE(sdu(IPROC+CK_LUN),'(A80)') Units
+               WRITE(sdu(IPROC+CK_LUN),*) NoOfVals(k)
+               WRITE(sdu(IPROC+CK_LUN),'(12(1x,e16.9))')
      &          (DefaultVal(m),m=1,NoOfVals(k))
             END DO
          END DO
@@ -640,13 +648,13 @@ C        for each attribute.
      &      startProc, endProc, naType,AttrName)!tgaf13mod
 C
 C     Now rewind and advance to the beginning of the data again
-         REWIND(13)
+         REWIND(13+CK_LUN)
          DO ll=1, 3
-            READ(13,*) skipped    ! skip header, NumOfNodes, NAttr
+            READ(13+CK_LUN,*) skipped    ! skip header, NumOfNodes, NAttr
          END DO
          DO k=1, NAttr
             DO ll=1, 4
-               READ(13,*) skipped ! skip AttrName,Units,NoOfVals,Default
+               READ(13+CK_LUN,*) skipped ! skip AttrName,Units,NoOfVals,Default
             END DO
          END DO
 C
@@ -660,9 +668,9 @@ C        appropriate subdomain.
          call memory_dealloc(nbytes)
 C
 C        Close full domain and subdomain files
-         CLOSE (13)
+         CLOSE (13+CK_LUN)
          DO iproc=startProc, endProc
-            CLOSE(sdu(iproc))
+            CLOSE(sdu(iproc+CK_LUN))
          ENDDO
          startProc = endProc + 1
       END DO
@@ -696,6 +704,7 @@ C
 C     ----------------------------------------------------------------
       subroutine processNodalAttr(NAttr, NumCol, mode, sdu, SDNumND,
      &   startProc, endProc, naType,AttrName)!tgaf13mod
+      use CkLunMod, only : CK_LUN
       use pre_global
       use sizes, only : ASCII, XDMF
       use nodalattributes, only : na
@@ -728,17 +737,17 @@ C
       DO k=1, NAttr
          select case(naType)
          case(ASCII)
-            read(13,*) curAttrName!tgaf13mod
+            read(13+CK_LUN,*) curAttrName!tgaf13mod
          case(XDMF)
             curattrName = trim(adjustl(na(k)%attrName))!tgaf13mod
          case default
-            write(6,'(a,i0,a)') 'ERROR: Nodal attribute file format ',naType,
+            write(6+CK_LUN,'(a,i0,a)') 'ERROR: Nodal attribute file format ',naType,
      &         ' is not supported by adcprep.'
            stop
          end select
          IF (Mode.eq.1) THEN
             DO iproc=startProc,endProc
-               WRITE(sdu(iproc),'(A80)') curAttrName!tgaf13mod
+               WRITE(sdu(iproc+CK_LUN),'(A80)') curAttrName!tgaf13mod
             END DO
          ENDIF
 CTGA 20180524: Adjusted code to better handle out-of-order attributes in the body
@@ -751,35 +760,35 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
          ENDDO
          !If a matching attribute wasn't found, write error and stop
          IF (curAttrInd.EQ.-1) THEN
-            WRITE(6,'(A)')'ERROR: Nodal attribute in body could not be '
+            WRITE(6+CK_LUN,'(A)')'ERROR: Nodal attribute in body could not be '
      &                    //'found in header: '//curAttrName
             STOP
          ENDIF
          ALLOCATE(attrData(numCol(curAttrInd)))!tgaf13mod
          select case(naType) 
          case(ASCII)
-            read(13,*) numNotDefault
+            read(13+CK_LUN,*) numNotDefault
          case(XDMF)
             numNotDefault = na(k) % numNodesNotDefault
          case default
-            write(6,'(a,i0,a)') 'ERROR: Nodal attribute file format ',naType,
+            write(6+CK_LUN,'(a,i0,a)') 'ERROR: Nodal attribute file format ',naType,
      &         ' is not supported by adcprep.'
            stop
          end select
          IF (Mode.eq.1) THEN
             DO iproc=startProc,endProc
-               WRITE(sdu(iproc),*) SDNumND(iproc,k)
+               WRITE(sdu(iproc+CK_LUN),*) SDNumND(iproc,k)
             END DO
          ENDIF
          DO i=1, NumNotDefault
             select case(naType)
             case(ASCII)
-               READ(13,*) nodeNum, (AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
+               READ(13+CK_LUN,*) nodeNum, (AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
             case(XDMF)
                nodeNum = na(k) % nonDefaultNodes(i)
                attrData(:) = na(k) % nonDefaultVals(:,nodeNum)
             case default
-               write(6,'(a,i0,a)') 'ERROR: Nodal attribute file format ',naType,
+               write(6+CK_LUN,'(a,i0,a)') 'ERROR: Nodal attribute file format ',naType,
      &         ' is not supported by adcprep.'
                stop
             end select
@@ -791,7 +800,7 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
                IF (Mode.eq.0) SDNumND(iproc,k) = SDNumND(iproc,k)+1
                IF (Mode.eq.1) THEN
                   SDNode = IMAP_NOD_GL(2,NodeNum)
-                  WRITE(sdu(iproc),1100) NodeNum,(AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
+                  WRITE(sdu(iproc+CK_LUN),1100) NodeNum,(AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
                ENDIF
             ELSE
                DO m=1, ITOTPROC(NodeNum)
@@ -803,7 +812,7 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
                         ENDIF
                         IF (Mode.eq.1) THEN
                            SDNode = IMAP_NOD_GL2(2*(m-1)+2,NodeNum)
-                           WRITE(sdu(iproc),1100) NodeNum,
+                           WRITE(sdu(iproc+CK_LUN),1100) NodeNum,
      &                          (AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
                         ENDIF
                      ENDIF
@@ -813,8 +822,8 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
          END DO
          DEALLOCATE(AttrData)
          IF (Mode.eq.1) THEN
-            WRITE(6,'(A25,A80)') '     Finished processing ', curAttrName!tgaf13mod
-            WRITE(6,*) 'for processor range ',startProc,' to ',endProc
+            WRITE(6+CK_LUN,'(A25,A80)') '     Finished processing ', curAttrName!tgaf13mod
+            WRITE(6+CK_LUN,*) 'for processor range ',startProc,' to ',endProc
          ENDIF
       END DO
 C
@@ -833,6 +842,7 @@ C     ----------------------------------------------------------------
 C---------------------------------------------------------------------------
       subroutine prep13XDMF()
 C---------------------------------------------------------------------------
+      use CkLunMod, only : CK_LUN
       use pre_global, only : useNodalAttrNames, nnodg, nnodp, nproc
       use memory_usage
       use nodalattributes
@@ -840,6 +850,7 @@ C---------------------------------------------------------------------------
       implicit none
 
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       integer :: iproc          ! subdomain loop counter
       integer :: sdu(nproc)     ! subdomain unit number for unit 13 files
       integer :: Mode           !=0 to count, =1 to write
@@ -920,10 +931,10 @@ C     Perform decomposition over range of subdomains.
             sdu(iproc) = 105 + (iproc-1)
             sdFileName = 'PE0000/fort.13'
             call iwrite(sdFileName, 3, 6, iproc-1)
-            open(unit=sdu(iproc), file=sdFileName, iostat=ErrorIO)
+            open(unit=sdu(iproc+CK_LUN), file=sdFileName, iostat=ErrorIO)
             Success = .true.
             IF ( ErrorIO .GT. 0 ) THEN
-               write(6,'(a,a,a)') "ERROR: Subdomain file " 
+               write(6+CK_LUN,'(a,a,a)') "ERROR: Subdomain file " 
      &             // trim(sdFileName) // " cannot be opened."
                Success = .false.
                stop
@@ -932,14 +943,14 @@ C     Perform decomposition over range of subdomains.
 C
 C        Transcribe header information into subdomain unit 13 files
          do iproc = startProc, endProc
-            write(sdu(iproc),'(a)') trim(adjustl(nodalAttributesComment))
-            write(sdu(iproc),*) NNODP(iproc)
-            write(sdu(iproc),*) NAttr
+            write(sdu(iproc+CK_LUN),'(a)') trim(adjustl(nodalAttributesComment))
+            write(sdu(iproc+CK_LUN),*) NNODP(iproc)
+            write(sdu(iproc+CK_LUN),*) NAttr
             do i=1,nAttr
-               write(sdu(iproc),'(a)') trim(adjustl(na(i)%attrName))
-               write(sdu(iproc),'(a)') trim(adjustl(na(i)%units))
-               write(sdu(iproc),'(99(i0))') na(i)%numVals
-               write(sdu(iproc),'(99(F15.7))') (na(i)%defaultVals(j), j=1,na(i)%numVals)
+               write(sdu(iproc+CK_LUN),'(a)') trim(adjustl(na(i)%attrName))
+               write(sdu(iproc+CK_LUN),'(a)') trim(adjustl(na(i)%units))
+               write(sdu(iproc+CK_LUN),'(99(i0))') na(i)%numVals
+               write(sdu(iproc+CK_LUN),'(99(F15.7))') (na(i)%defaultVals(j), j=1,na(i)%numVals)
             end do
          end do
 C
@@ -964,7 +975,7 @@ C        appropriate subdomain.
 C
 C        Close subdomain files
          DO iproc=startProc, endProc
-            CLOSE(sdu(iproc))
+            CLOSE(sdu(iproc+CK_LUN))
          ENDDO
          startProc = endProc + 1
       END DO
@@ -983,6 +994,7 @@ C---------------------------------------------------------------------------
 
 
       SUBROUTINE PREP14()
+      use CkLunMod, only : CK_LUN
       USE PRE_GLOBAL
       USE PREP_WEIR,ONLY:NWEIRBNDRY
 C
@@ -1022,7 +1034,7 @@ C
 C
          LOCFN(1:14) = 'PE0000/fort.14'
          CALL IWRITE(LOCFN,3,6,IPROC-1)
-         OPEN (14,FILE=LOCFN)
+         OPEN (14+CK_LUN,FILE=LOCFN)
 C
 C--------------------------------------------------------------------------
 C--OPEN BOUNDARY NODES PROCESSING BEGINS HERE
@@ -1331,24 +1343,24 @@ C--------------------------------------------------------------------------
 C
 C--Write Mesh Data
 C
-          WRITE(14,80) AGRID
+          WRITE(14+CK_LUN,80) AGRID
 C
           NUMS(1) = NELP(IPROC)
           NUMS(2) = NNODP(IPROC)
 c
 cjgf45.06    CALL INSERT(SIZEMSG,OUTMSG,NUMS,2)
 cjgf45.06    WRITE(14,80) OUTMSG
-          WRITE(14,43) NELP(IPROC),NNODP(IPROC) !jgf45.06
+          WRITE(14+CK_LUN,43) NELP(IPROC),NNODP(IPROC) !jgf45.06
 C
           DO J = 1,NNODP(IPROC)
              INDX = IMAP_NOD_LG(J,IPROC)
-             WRITE(14,44) LABELS(INDX),X(INDX),Y(INDX),DP(INDX)
+             WRITE(14+CK_LUN,44) LABELS(INDX),X(INDX),Y(INDX),DP(INDX)
           ENDDO
 c
           DO J = 1,NELP(IPROC)
 !             WRITE(14,45) J,ETYPE,NNEP(1,J,IPROC),NNEP(2,J,IPROC),
 !     &                           NNEP(3,J,IPROC)
-              WRITE(14,45) J,ETYPE,LABELS(IMAP_NOD_LG(NNEP(1,J,IPROC),IPROC)),
+              WRITE(14+CK_LUN,45) J,ETYPE,LABELS(IMAP_NOD_LG(NNEP(1,J,IPROC),IPROC)),
      &                     LABELS(IMAP_NOD_LG(NNEP(2,J,IPROC),IPROC)),
      &                     LABELS(IMAP_NOD_LG(NNEP(3,J,IPROC),IPROC))
           ENDDO
@@ -1359,10 +1371,10 @@ C
 C--Write Open Boundary Data
 C
          CALL NEWINDEX(NOPEMSG,OUTMSG,NOPEP(IPROC))
-         WRITE(14,80) OUTMSG
+         WRITE(14+CK_LUN,80) OUTMSG
 C
          CALL NEWINDEX(NETAMSG,OUTMSG,NETAP(IPROC))
-         WRITE(14,80) OUTMSG
+         WRITE(14+CK_LUN,80) OUTMSG
 C
          ITOT = 0
          DO K = 1,NOPE
@@ -1378,9 +1390,9 @@ C             boundary segment.
                NUMS(2) = K
                CALL INSERT(NVDLLMSG(K),OUTMSG,NUMS,2)
 #endif
-               WRITE(14,80) OUTMSG
+               WRITE(14+CK_LUN,80) OUTMSG
                DO I = 1,NVDLLP(K)
-                  WRITE(14,*) LABELS(IMAP_NOD_LG(NBDVP(K,I),IPROC))
+                  WRITE(14+CK_LUN,*) LABELS(IMAP_NOD_LG(NBDVP(K,I),IPROC))
                ENDDO
             ENDIF
          ENDDO
@@ -1388,10 +1400,10 @@ C
 C--Write Land Boundary Data
 C
          CALL NEWINDEX(NBOUMSG,OUTMSG,NBOUP(IPROC))
-         WRITE(14,80) OUTMSG
+         WRITE(14+CK_LUN,80) OUTMSG
 C
          CALL NEWINDEX(NVELMSG,OUTMSG,NVELP(IPROC))
-         WRITE(14,80) OUTMSG
+         WRITE(14+CK_LUN,80) OUTMSG
 C
          DO K = 1,NBOU
             IF(NVELLP(K).GT.0)THEN
@@ -1407,32 +1419,32 @@ C             boundary segment.
                NUMS(3) = NOPE + K
                CALL INSERT(NVELLMSG(K),OUTMSG,NUMS,3)
 #endif
-               WRITE(14,80) OUTMSG
+               WRITE(14+CK_LUN,80) OUTMSG
 C
                select case(itype)
                case default
                   DO I = 1,NVELLP(K)
-                     WRITE(14,'(I8)') LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC))
+                     WRITE(14+CK_LUN,'(I8)') LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC))
                   ENDDO
                case(3,13,23)
                   IF(USE_TVW)NWEIRBNDRY(IPROC) = 1
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
-                     WRITE(14,81) LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC)),
+                     WRITE(14+CK_LUN,81) LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC)),
      &                            BAR1(K,INDX),BAR2(K,INDX)
                   ENDDO
                case(4,24)
                   IF(USE_TVW)NWEIRBNDRY(IPROC) = 1
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
-                     WRITE(14,82) LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC)),
+                     WRITE(14+CK_LUN,82) LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC)),
      &                        LABELS(IMAP_NOD_LG(IBCONNRP(K,I),IPROC)),
      &                        BAR1(K,INDX),BAR2(K,INDX),BAR3(K,INDX)
                   ENDDO
                case(5,25)
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
-                     WRITE(14,83) LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC)),
+                     WRITE(14+CK_LUN,83) LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC)),
      &                      LABELS(IMAP_NOD_LG(IBCONNRP(K,I),IPROC)),
      &                      BAR1(K,INDX),BAR2(K,INDX),BAR3(K,INDX), 
      &                      BAR4(K,INDX),BAR5(K,INDX),BAR6(K,INDX)
@@ -1441,7 +1453,7 @@ C
             ENDIF
          ENDDO
 C
-         CLOSE(14)
+         CLOSE(14+CK_LUN)
 C
       END DO ! end loop over subdomains
 C
@@ -1479,6 +1491,7 @@ C                                                                           C
 C           Modifications by RL on 10/9/01 to accomodate NWS = -2           C
 C---------------------------------------------------------------------------C
       SUBROUTINE PREP15()
+      use CkLunMod, only : CK_LUN
       USE PRE_GLOBAL
       use memory_usage
       USE PREP_WEIR
@@ -1487,6 +1500,7 @@ C---------------------------------------------------------------------------C
       use nodalattributes, only : outputTau0
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER I,J,K,M,JG,JP,KK, ios_stations
       INTEGER INDX,ITOT,ILNODE,IPROC,IPROC2,ITYPE,NUMS(10)
       CHARACTER LOCFN*80,PE*6,LOCSTATFN*20
@@ -1507,55 +1521,55 @@ C
 
          LOCFN = 'PE0000/fort.15'
          CALL IWRITE(LOCFN,3,6,IPROC-1)
-         OPEN (15,FILE=TRIM(LOCFN))
+         OPEN (15+CK_LUN,FILE=TRIM(LOCFN))
 C
-         WRITE(15,80) RUNDES
-         WRITE(15,80) RUNID
-         WRITE(15,80) OVERMSG
-         WRITE(15,80) ABOUTMSG
-         WRITE(15,80) SCREENMSG
-         WRITE(15,80) HOTMSG
-         WRITE(15,80) ICSMSG
-         WRITE(15,80) IMMSG
+         WRITE(15+CK_LUN,80) RUNDES
+         WRITE(15+CK_LUN,80) RUNID
+         WRITE(15+CK_LUN,80) OVERMSG
+         WRITE(15+CK_LUN,80) ABOUTMSG
+         WRITE(15+CK_LUN,80) SCREENMSG
+         WRITE(15+CK_LUN,80) HOTMSG
+         WRITE(15+CK_LUN,80) ICSMSG
+         WRITE(15+CK_LUN,80) IMMSG
 Casey 140701: Debug.
 C        IF (CBaroclinic) THEN  !jgf46.28
          IF (CBaroclinic.AND.IM.GE.10) THEN  !jgf46.28
-            WRITE(15,80) IDENMSG
+            WRITE(15+CK_LUN,80) IDENMSG
          ENDIF
-         WRITE(15,80) IBFMSG
-         WRITE(15,80) IFAMSG
-         WRITE(15,80) ICAMSG
-         WRITE(15,80) ICATMSG
-         WRITE(15,80) NWPMSG
+         WRITE(15+CK_LUN,80) IBFMSG
+         WRITE(15+CK_LUN,80) IFAMSG
+         WRITE(15+CK_LUN,80) ICAMSG
+         WRITE(15+CK_LUN,80) ICATMSG
+         WRITE(15+CK_LUN,80) NWPMSG
          IF (NWP.gt.0) THEN !jgf46.00 write nodal attributes
             DO I=1, NWP
-               WRITE(15,80) useNodalAttrNames(I)
+               WRITE(15+CK_LUN,80) useNodalAttrNames(I)
             ENDDO
          ENDIF
-         WRITE(15,80) NCORMSG
-         WRITE(15,80) NTIPMSG
+         WRITE(15+CK_LUN,80) NCORMSG
+         WRITE(15+CK_LUN,80) NTIPMSG
 C     jgfdebug46.02 Added check for NWS=45 to write NWS=5
          IF (NWS.EQ.45) THEN
-            WRITE(15,'(A1)') "5"
+            WRITE(15+CK_LUN,'(A1)') "5"
          ELSE
-            WRITE(15,80) NWSMSG
+            WRITE(15+CK_LUN,80) NWSMSG
          ENDIF
-         WRITE(15,80) RAMPMSG
-         WRITE(15,80) GMSG
-         WRITE(15,80) TAU0MSG
+         WRITE(15+CK_LUN,80) RAMPMSG
+         WRITE(15+CK_LUN,80) GMSG
+         WRITE(15+CK_LUN,80) TAU0MSG
 
 C        jgf47.11 Added writing of limits for time varying tau0
          IF ( (TAU0.le.-5.d0).AND.(TAU0.gt.-6.d0) ) THEN
-             WRITE(15,80) TAU0LIMMSG
+             WRITE(15+CK_LUN,80) TAU0LIMMSG
          ENDIF
 
-         WRITE(15,80) DTMSG
-         WRITE(15,80) STATMSG
-         WRITE(15,80) REFTMSG
+         WRITE(15+CK_LUN,80) DTMSG
+         WRITE(15+CK_LUN,80) STATMSG
+         WRITE(15+CK_LUN,80) REFTMSG
 
 !       tcm v49.64.01 No changes needed here for the use of ICE
-         IF((NWS.EQ.0).AND.(NRS.GE.1)) WRITE(15,80) RSTIMMSG  ! sb46.28sb03
-         IF((NWS.EQ.1).AND.(NRS.GE.1)) WRITE(15,80) RSTIMMSG  ! sb46.28sb03
+         IF((NWS.EQ.0).AND.(NRS.GE.1)) WRITE(15+CK_LUN,80) RSTIMMSG  ! sb46.28sb03
+         IF((NWS.EQ.1).AND.(NRS.GE.1)) WRITE(15+CK_LUN,80) RSTIMMSG  ! sb46.28sb03
 C     jgfdebug46.02 Added check for NWS=45.
 C     jgf46.02 Added NWS=8.
 C     jgf46.16 Merged:
@@ -1571,40 +1585,40 @@ C     tcm v51.06.02 added NWS=16: GFDL Met Data
      &        .OR.(ABS(NWS).EQ.16).OR.(ABS(NWS).eq.30)
      &         .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.29).OR.
      &          (ABS(NWS).EQ.20))THEN
-            WRITE(15,80) WSMSG1
+            WRITE(15+CK_LUN,80) WSMSG1
          ENDIF
          IF (NWS.EQ.3) THEN
-            WRITE(15,80) WSMSG1
-            WRITE(15,80) WSMSG2
+            WRITE(15+CK_LUN,80) WSMSG1
+            WRITE(15+CK_LUN,80) WSMSG2
          ENDIF
 
-         WRITE(15,80) RNDAYMSG
-         WRITE(15,80) DRAMPMSG
-         WRITE(15,80) COEFMSG
-         WRITE(15,80) H0MSG
-         WRITE(15,80) SLMSG
-         WRITE(15,80) TAUMSG
-         WRITE(15,80) ESLMSG
-         WRITE(15,80) CORIMSG
-         WRITE(15,80) NTIFMSG
+         WRITE(15+CK_LUN,80) RNDAYMSG
+         WRITE(15+CK_LUN,80) DRAMPMSG
+         WRITE(15+CK_LUN,80) COEFMSG
+         WRITE(15+CK_LUN,80) H0MSG
+         WRITE(15+CK_LUN,80) SLMSG
+         WRITE(15+CK_LUN,80) TAUMSG
+         WRITE(15+CK_LUN,80) ESLMSG
+         WRITE(15+CK_LUN,80) CORIMSG
+         WRITE(15+CK_LUN,80) NTIFMSG
          DO I=1,NTIF
-            WRITE(15,80)  TIPOTAG(I)
-            WRITE(15,80)  TPKMSG(I)
+            WRITE(15+CK_LUN,80)  TIPOTAG(I)
+            WRITE(15+CK_LUN,80)  TPKMSG(I)
          ENDDO
 
-         WRITE(15,80) NBFRMSG
+         WRITE(15+CK_LUN,80) NBFRMSG
          DO I=1,NBFR
-            WRITE(15,80) BOUNTAG(I)
-            WRITE(15,80) AMIGMSG(I)
+            WRITE(15+CK_LUN,80) BOUNTAG(I)
+            WRITE(15+CK_LUN,80) AMIGMSG(I)
          ENDDO
          DO I=1,NBFR
-            WRITE(15,80) ALPHA1(I)
+            WRITE(15+CK_LUN,80) ALPHA1(I)
             DO J=1,NETAP(IPROC)
-               WRITE(15,80) EMOMSG(I,OBNODE_LG(J,IPROC))
+               WRITE(15+CK_LUN,80) EMOMSG(I,OBNODE_LG(J,IPROC))
             ENDDO
          ENDDO
 
-         WRITE(15,80) ANGMSG
+         WRITE(15+CK_LUN,80) ANGMSG
 C
 C--If there were any normal flow boundaries local to PE, process them
 C
@@ -1625,16 +1639,16 @@ C
                ENDDO
             ENDDO
 C
-            WRITE(15,80) NFFRMSG
+            WRITE(15+CK_LUN,80) NFFRMSG
             IF ((NFFR.NE.0).AND.(NFFR.NE.-1)) THEN
                DO I=1,NFFR
-                  WRITE(15,80) FBOUNTAG(I)
-                  WRITE(15,80) FREQMSG(I)
+                  WRITE(15+CK_LUN,80) FBOUNTAG(I)
+                  WRITE(15+CK_LUN,80) FREQMSG(I)
                ENDDO
                DO I=1,NFFR
-                  WRITE(15,80) ALPHA2(I)
+                  WRITE(15+CK_LUN,80) ALPHA2(I)
                   DO J=1,NFLBNP
-                     WRITE(15,80) QNMSG(I,FLBNXP(J))
+                     WRITE(15+CK_LUN,80) QNMSG(I,FLBNXP(J))
 cdebug               print *, "PE=",IPROC," FLUXNODE=",FLBNXP(J)
                   ENDDO
                ENDDO
@@ -1667,12 +1681,12 @@ C
                 IF(NTIMEVARYINGWEIRP(IPROC).GT.0)THEN
                     !...Write fort.tvw namelist file for the
                     !   local PE
-                    WRITE(98,*) NTIMEVARYINGWEIRP(IPROC)
+                    WRITE(98+CK_LUN,*) NTIMEVARYINGWEIRP(IPROC)
                     DO I=1,NNODP(IPROC)
                         INDX = IMAP_NOD_LG(I,IPROC)
                         DO J = 1,NTIMEVARYINGWEIR
                             IF(INDX.EQ.NODES_TVW(J))THEN
-                                WRITE(98,'(A)') 
+                                WRITE(98+CK_LUN,'(A)') 
      &                              TRIM(ADJUSTL(TIMEVARYINGWEIRMSSG(J)))
                             ENDIF
                         ENDDO
@@ -1680,9 +1694,9 @@ C
                 ELSE
                     !...Write an empty fort.tvw to avoid old files from
                     !   previous decompositions
-                    WRITE(98,*) 0
+                    WRITE(98+CK_LUN,*) 0
                 ENDIF
-                CLOSE(98)
+                CLOSE(98+CK_LUN)
             ENDIF
         ENDIF
 C
@@ -1690,7 +1704,7 @@ C--Write Local Elevation Station Info:
 C--Create Local-to-Global element "ownership" of an elevation station
 C
 C     WRITE(15,80) STAEMSG !jgf45.07 we may have changed NOUTE in adcprep
-         WRITE(15,*) NOUTE,TOUTSE,TOUTFE,NSPOOLE
+         WRITE(15+CK_LUN,*) NOUTE,TOUTSE,TOUTFE,NSPOOLE
 C
          NSTAEP(IPROC) = 0
          DO K = 1,abs(NSTAE)                          !tcm -- added the comments below
@@ -1713,34 +1727,34 @@ C...     update the number of stations for this proc's domain
 
          if (use_elev_stat_file ) then  !tcm v51.20.03
             CALL INSERT(NSTAEMSG,OUTMSG,-NSTAEP(IPROC),1)  !keep the negative sign for fort.15
-            write(15,80) OUTMSG
+            write(15+CK_LUN,80) OUTMSG
             CALL INSERT(NSTAEMSG,OUTMSG,NSTAEP(IPROC),1)
             LOCSTATFN(1:20) = 'PE0000/elev_stat.151'
             CALL IWRITE(LOCstatFN,3,6,IPROC-1)
             ios_stations = 0
-            open(unit=151,file=locstatfn,
+            open(unit=151+CK_LUN,file=locstatfn,
      &                    status='unknown',iostat=ios_stations)
-            write(151,80) OUTMSG 
+            write(151+CK_LUN,80) OUTMSG 
          else
             CALL INSERT(NSTAEMSG,OUTMSG,NSTAEP(IPROC),1)
-            write(15,80) OUTMSG
+            write(15+CK_LUN,80) OUTMSG
          endif         
 C
 C...     write the stations located in this proc's domain
          DO K=1,NSTAEP(IPROC)
             INDX = abs(IMAP_STAE_LG(K,IPROC))
             if (use_elev_stat_file) then
-               write(151,80) STAELOC(INDX)
+               write(151+CK_LUN,80) STAELOC(INDX)
             else
-               WRITE(15,80) STAELOC(INDX)
+               WRITE(15+CK_LUN,80) STAELOC(INDX)
             endif
          ENDDO
-         if (use_elev_stat_file ) close(151)
+         if (use_elev_stat_file ) close(151+CK_LUN)
 C
 C--Write Local Velocity Station Info:
 C--Create Local-to-Global element "ownership" of an velocity station
 C
-         WRITE(15,*) NOUTV,TOUTSV,TOUTFV,NSPOOLV
+         WRITE(15+CK_LUN,*) NOUTV,TOUTSV,TOUTFV,NSPOOLV
 C
          NSTAVP(IPROC) = 0
          DO K = 1,abs(NSTAV)
@@ -1761,29 +1775,29 @@ C
 C
          if (use_vel_stat_file ) then  !tcm v51.20.03
             CALL INSERT(NSTAVMSG,OUTMSG,-NSTAVP(IPROC),1)  !keep the negative sign for fort.15
-            write(15,80) OUTMSG
+            write(15+CK_LUN,80) OUTMSG
             CALL INSERT(NSTAVMSG,OUTMSG,NSTAVP(IPROC),1)
             LOCSTATFN(1:19) = 'PE0000/vel_stat.151'
             CALL IWRITE(LOCstatFN,3,6,IPROC-1)
             ios_stations = 0
-            open(unit=151,file=locstatfn(1:19),
+            open(unit=151+CK_LUN,file=locstatfn(1:19),
      &                    status='unknown',iostat=ios_stations)
-            write(151,80) OUTMSG 
+            write(151+CK_LUN,80) OUTMSG 
          else
             CALL INSERT(NSTAVMSG,OUTMSG,NSTAVP(IPROC),1)
-            write(15,80) OUTMSG
+            write(15+CK_LUN,80) OUTMSG
          endif         
 
 C
          DO K=1,NSTAVP(IPROC)
             INDX = abs(IMAP_STAV_LG(K,IPROC))
             if (use_vel_stat_file ) then
-               WRITE(151,80) STAVLOC(INDX)
+               WRITE(151+CK_LUN,80) STAVLOC(INDX)
             else
-               WRITE(15,80) STAVLOC(INDX)
+               WRITE(15+CK_LUN,80) STAVLOC(INDX)
             endif
          ENDDO
-         if (use_vel_stat_file  ) close(151)
+         if (use_vel_stat_file  ) close(151+CK_LUN)
 C
 C--If IM=10 Write Concentration Station Info:
 C--Create Local-to-Global element "ownership" of an concentration station
@@ -1792,7 +1806,7 @@ C
          IF (C2D_PTrans.or.C3D_PTrans) THEN !jgf46.28
 C
 C     WRITE(15,80) STACMSG   !jgf45.07 we may have changed NOUTC in adcprep
-            WRITE(15,*) NOUTC,TOUTSC,TOUTFC,NSPOOLC
+            WRITE(15+CK_LUN,*) NOUTC,TOUTSC,TOUTFC,NSPOOLC
 C
             DO K = 1,abs(NSTAC)
                DO J=1,NELP(IPROC)
@@ -1813,28 +1827,28 @@ C
 C...     update the number of stations for this proc's domain
          if (use_conc_stat_file ) then  !tcm v51.20.03
             CALL INSERT(NSTACMSG,OUTMSG,-NSTACP(IPROC),1)  !keep the negative sign for fort.15
-            write(15,80) OUTMSG
+            write(15+CK_LUN,80) OUTMSG
             CALL INSERT(NSTACMSG,OUTMSG,NSTACP(IPROC),1)
             LOCSTATFN(1:20) = 'PE0000/conc_stat.151'
             CALL IWRITE(LOCstatFN,3,6,IPROC-1)
             ios_stations = 0
-            open(unit=151,file=locstatfn,
+            open(unit=151+CK_LUN,file=locstatfn,
      &                    status='unknown',iostat=ios_stations)
-            write(151,80) OUTMSG 
+            write(151+CK_LUN,80) OUTMSG 
          else
             CALL INSERT(NSTACMSG,OUTMSG,NSTACP(IPROC),1)
-            write(15,80) OUTMSG
+            write(15+CK_LUN,80) OUTMSG
          endif         
 C ... write the stations located in this proc's domain
             DO K=1,NSTACP(IPROC)
                INDX = abs(IMAP_STAC_LG(K,IPROC))
                IF (use_conc_stat_file) then
-                  write(151,80) STACLOC(INDX)
+                  write(151+CK_LUN,80) STACLOC(INDX)
                ELSE
-                  WRITE(15,80) STACLOC(INDX)
+                  WRITE(15+CK_LUN,80) STACLOC(INDX)
                ENDIF
             ENDDO
-            IF (use_conc_stat_file) close(151)
+            IF (use_conc_stat_file) close(151+CK_LUN)
 C
          ENDIF
 C
@@ -1843,7 +1857,7 @@ C--Create Local-to-Global element "ownership" of an elevation station
 C
          NSTAMP(IPROC) = 0
          IF (NWS.NE.0) THEN
-            WRITE(15,*) NOUTM,TOUTSM,TOUTFM,NSPOOLM
+            WRITE(15+CK_LUN,*) NOUTM,TOUTSM,TOUTFM,NSPOOLM
             DO K = 1,abs(NSTAM)
                DO J=1,NELP(IPROC)
                   INDX = abs(IMAP_EL_LG(J,IPROC))
@@ -1863,71 +1877,71 @@ C
 C...        update the number of stations for this proc's domain
          if (use_met_stat_file ) then  !tcm v51.20.03
             CALL INSERT(NSTAMMSG,OUTMSG,-NSTAMP(IPROC),1)  !keep the negative sign for fort.15
-            write(15,80) OUTMSG
+            write(15+CK_LUN,80) OUTMSG
             CALL INSERT(NSTAMMSG,OUTMSG,NSTAMP(IPROC),1)
             LOCSTATFN(1:19) = 'PE0000/met_stat.151'
             CALL IWRITE(LOCstatFN,3,6,IPROC-1)
             ios_stations = 0
-            open(unit=151,file=locstatfn(1:19),
+            open(unit=151+CK_LUN,file=locstatfn(1:19),
      &                    status='unknown',iostat=ios_stations)
-            write(151,80) OUTMSG 
+            write(151+CK_LUN,80) OUTMSG 
          else
             CALL INSERT(NSTAMMSG,OUTMSG,NSTAMP(IPROC),1)
-            write(15,80) OUTMSG
+            write(15+CK_LUN,80) OUTMSG
          endif         
 C
 C...        write the stations located in this proc's domain
             DO K=1,NSTAMP(IPROC)
                INDX = abs(IMAP_STAM_LG(K,IPROC))
                IF (use_met_stat_file) then
-                  WRITE(151,80) STAMLOC(INDX)
+                  WRITE(151+CK_LUN,80) STAMLOC(INDX)
                ELSE
-                  WRITE(15,80) STAMLOC(INDX)
+                  WRITE(15+CK_LUN,80) STAMLOC(INDX)
                ENDIF
             ENDDO
-            IF (use_met_stat_file) CLOSE(151)
+            IF (use_met_stat_file) CLOSE(151+CK_LUN)
          ENDIF
 
 C
 C--Write Local Elevation Data Output Info
 C
 C      WRITE(15,80) OUTGEMSG !jgf45.07 we may have changed NOUTGE in adcprep
-         WRITE(15,*) NOUTGE,TOUTSGE,TOUTFGE,NSPOOLGE
+         WRITE(15+CK_LUN,*) NOUTGE,TOUTSGE,TOUTFGE,NSPOOLGE
 C
 C--Write Local Velocity Data Output Info
 C
 C     WRITE(15,80) OUTGVMSG !jgf45.07 we may have changed NOUTGV in adcprep
-         WRITE(15,*) NOUTGV,TOUTSGV,TOUTFGV,NSPOOLGV
+         WRITE(15+CK_LUN,*) NOUTGV,TOUTSGV,TOUTFGV,NSPOOLGV
 C
 C     jgf45.07 write subdomain concentration data output info if necessary
 C
-         IF (IM.EQ.10) WRITE(15,*) NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC
+         IF (IM.EQ.10) WRITE(15+CK_LUN,*) NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC
 C
 C--Write Local Wind Velocity Data Output Info ( added 4/16/98 vjp )
 C
 C     jgf45.07 we may have changed NOUTGW in adcprep
 C     IF (NWS.NE.0) WRITE(15,80) OUTGWMSG
-         IF (NWS.NE.0) WRITE(15,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
+         IF (NWS.NE.0) WRITE(15+CK_LUN,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
 C
 C--Write Harmonic Analysis Data
 C
-         WRITE(15,80) HARFRMSG
+         WRITE(15+CK_LUN,80) HARFRMSG
          DO I=1,NHARFR
-            WRITE(15,'(A10)') NAMEFR(I)
-            WRITE(15,80) HAFREMSG(I)
+            WRITE(15+CK_LUN,'(A10)') NAMEFR(I)
+            WRITE(15+CK_LUN,80) HAFREMSG(I)
 c           WRITE(15,*) HAFREQ(I),HAFF(I),HAFACE(I)
          ENDDO
 C
-         WRITE(15,80) HARPARMSG
-         WRITE(15,80) OUTHARMSG
+         WRITE(15+CK_LUN,80) HARPARMSG
+         WRITE(15+CK_LUN,80) OUTHARMSG
 C
 C--Write Hot Start Info
 C
-         WRITE(15,80) HSTARMSG
+         WRITE(15+CK_LUN,80) HSTARMSG
 C
 C--Write Solver Info
 C
-         WRITE(15,80) SOLVMSG
+         WRITE(15+CK_LUN,80) SOLVMSG
 C
 C--Write 3DVS Info
 C
@@ -1939,30 +1953,30 @@ c           CALL PREP15_3DDSS(IPROC)
 C
 C     jgf48.03 Write netCDF metadata, if necessary
          IF (useNetCDF.eqv..true.) THEN
-            WRITE(15,*) trim(adjustl(title))
-            WRITE(15,*) trim(adjustl(institution))
-            WRITE(15,*) trim(adjustl(source))
-            WRITE(15,*) trim(adjustl(history))
-            WRITE(15,*) trim(adjustl(references))
-            WRITE(15,*) trim(adjustl(comments))
-            WRITE(15,*) trim(adjustl(host))
-            WRITE(15,*) trim(adjustl(convention))
-            WRITE(15,*) trim(adjustl(contact))
-            WRITE(15,*) trim(adjustl(base_date))
+            WRITE(15+CK_LUN,*) trim(adjustl(title))
+            WRITE(15+CK_LUN,*) trim(adjustl(institution))
+            WRITE(15+CK_LUN,*) trim(adjustl(source))
+            WRITE(15+CK_LUN,*) trim(adjustl(history))
+            WRITE(15+CK_LUN,*) trim(adjustl(references))
+            WRITE(15+CK_LUN,*) trim(adjustl(comments))
+            WRITE(15+CK_LUN,*) trim(adjustl(host))
+            WRITE(15+CK_LUN,*) trim(adjustl(convention))
+            WRITE(15+CK_LUN,*) trim(adjustl(contact))
+            WRITE(15+CK_LUN,*) trim(adjustl(base_date))
          ENDIF
 
 c...     tcm v50.66.02 additions for time varying bathymetry
          IF (FOUND_TBC_NML) then  !If there was a namelist in the original fort.15 put it in the decomp 15's
 !         IF (NDDT.NE.0) THEN
-            write(15,*) '! -- Begin Time Varying Bathymetry Inputs --'
-            write(15,TimeBathyControl)
-            write(15,*) '! -- End Time Varying Bathymetry Inputs --'
+            write(15+CK_LUN,*) '! -- Begin Time Varying Bathymetry Inputs --'
+            write(15+CK_LUN,TimeBathyControl)
+            write(15+CK_LUN,*) '! -- End Time Varying Bathymetry Inputs --'
          ENDIF
 C
 #if defined CSWAN || defined ADCSWAN
-         write(15,*) '! -- Begin SWAN Output Control Namelist --'
-         write(15,SWANOutputControl)
-         write(15,*) '! -- End SWAN Output Control Namelist --'
+         write(15+CK_LUN,*) '! -- Begin SWAN Output Control Namelist --'
+         write(15+CK_LUN,SWANOutputControl)
+         write(15+CK_LUN,*) '! -- End SWAN Output Control Namelist --'
 #endif
 
 ! tcm v50.79 Changed so that metControl namelist is only written if it was found in the
@@ -1973,50 +1987,50 @@ C
 ! should only be written if there was a namelist in the original fort.15.
 !
          if (found_metCon_nml) then  !metControl namelist was found so write it in the parsed files
-            write(15,*) '! -- Begin Met Control Namelist --'
+            write(15+CK_LUN,*) '! -- Begin Met Control Namelist --'
 !         write(15,*) "&metControl WindDragLimit=",WindDragLimit,
 !     &         " DragLawString='",DragLawString,"' rhoAir=",rhoAir," /"
 
-            write(15,*) "&metControl "
-            write(15,*) "    WindDragLimit=",Winddraglimit,","
-            write(15,*) "    DragLawString='",trim(Draglawstring),"',"
-            write(15,*) "    outputWindDrag=",outputWindDrag,","        
-            write(15,*) "    rhoAir=",rhoAir,","
-            write(15,*) "    invertedBarometerOnElevationBoundary=",
+            write(15+CK_LUN,*) "&metControl "
+            write(15+CK_LUN,*) "    WindDragLimit=",Winddraglimit,","
+            write(15+CK_LUN,*) "    DragLawString='",trim(Draglawstring),"',"
+            write(15+CK_LUN,*) "    outputWindDrag=",outputWindDrag,","        
+            write(15+CK_LUN,*) "    rhoAir=",rhoAir,","
+            write(15+CK_LUN,*) "    invertedBarometerOnElevationBoundary=",
      &                        invertedBarometerOnElevationBoundary,","
-            write(15,*) "    nPowellSearchDomains=",nPowellSearchDomains
-            write(15,*) "/"
-            write(15,*) '! -- End Met Control Namelist --'
+            write(15+CK_LUN,*) "    nPowellSearchDomains=",nPowellSearchDomains
+            write(15+CK_LUN,*) "/"
+            write(15+CK_LUN,*) '! -- End Met Control Namelist --'
          endif
 
          if (found_tvw_nml) then
-             write(15,*) '! -- Begin TVW Control Namelist --'
-             write(15,*) "&TVWControl "
-             write(15,*) "    USE_TVW=",USE_TVW,","
-             write(15,*) "    TVW_FILE='",TRIM(ADJUSTL(TVW_FILE)),"',"
-             write(15,*) "    NOUT_TVW=",NOUT_TVW,","
-             write(15,*) "    TOUTS_TVW=",TOUTS_TVW,","
-             write(15,*) "    TOUTF_TVW=",TOUTF_TVW,","
-             write(15,*) "    NSPOOL_TVW=",NSPOOL_TVW
-             write(15,*) "/"
-             write(15,*) '! -- End TVW Control Namelist --'
+             write(15+CK_LUN,*) '! -- Begin TVW Control Namelist --'
+             write(15+CK_LUN,*) "&TVWControl "
+             write(15+CK_LUN,*) "    USE_TVW=",USE_TVW,","
+             write(15+CK_LUN,*) "    TVW_FILE='",TRIM(ADJUSTL(TVW_FILE)),"',"
+             write(15+CK_LUN,*) "    NOUT_TVW=",NOUT_TVW,","
+             write(15+CK_LUN,*) "    TOUTS_TVW=",TOUTS_TVW,","
+             write(15+CK_LUN,*) "    TOUTF_TVW=",TOUTF_TVW,","
+             write(15+CK_LUN,*) "    NSPOOL_TVW=",NSPOOL_TVW
+             write(15+CK_LUN,*) "/"
+             write(15+CK_LUN,*) '! -- End TVW Control Namelist --'
          endif
 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
          IF(FOUND_WC_NML)THEN
-            WRITE(15,*) '! -- Begin Wave Coupling Namelist --'
-            WRITE(15,waveCoupling)
-            WRITE(15,*) '! -- End Wave Coupling Namelist --'
+            WRITE(15+CK_LUN,*) '! -- Begin Wave Coupling Namelist --'
+            WRITE(15+CK_LUN,waveCoupling)
+            WRITE(15+CK_LUN,*) '! -- End Wave Coupling Namelist --'
          ENDIF
 
          ! NCSU Subdomain Modeling
          if (FOUND_SM_NML) then
-         WRITE(15,*) "&subdomainModeling subdomainOn=",subdomainOn," /"
+         WRITE(15+CK_LUN,*) "&subdomainModeling subdomainOn=",subdomainOn," /"
          endif
 
          ! wet dry control
          if (foundWetDryControlNameList) then
-            WRITE(15,'(a,l,a,l,a,l,a,l,a,l,a,l)') 
+            WRITE(15+CK_LUN,'(a,l,a,l,a,l,a,l,a,l,a,l)') 
      &         "&wetDryControl outputNodeCode=",outputNodeCode,
      &         " outputNOFF=",outputNOFF," noffActive=",noffActive,
      &         " StatPartWetFix=",StatPartWetFix,
@@ -2025,20 +2039,20 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 
          ! jgf52.08.02: inundation output control
          if (foundInundationOutputControlNamelist) then
-            write(15,'(a,l,a,f15.8,a)')
+            write(15+CK_LUN,'(a,l,a,f15.8,a)')
      &       '&inundationOutputControl inundationOutput=',
      &       inundationOutput,' inunThresh=',inunThresh," /"
          endif
 
 c...     tcm v52.30.01 additions for Smag_Control Namelist
          IF (FOUND_SMAG_NML) then  !If there was a namelist in the original fort.15 put it in the decomp 15's
-            write(15,*) '! -- Begin Smagorinski Inputs --'
-            write(15,Smag_Control)
-            write(15,*) '! -- End Smagorinski Inputs --'
+            write(15+CK_LUN,*) '! -- Begin Smagorinski Inputs --'
+            write(15+CK_LUN,Smag_Control)
+            write(15+CK_LUN,*) '! -- End Smagorinski Inputs --'
          ENDIF
          ! jgf: offset control namelist
          if (foundOffsetControlNamelist) then
-            write(15,'(a,a, a,i0, a,f15.8, a,a, a,f20.8, a,f20.8, a)')
+            write(15+CK_LUN,'(a,a, a,i0, a,f15.8, a,a, a,f20.8, a,f20.8, a)')
      &       '&offsetControl offsetFileName="',
      &       trim(adjustl(offsetFileName)),
      &       '",  offsetSkipSnaps=',offsetSkipSnaps,
@@ -2048,7 +2062,7 @@ c...     tcm v52.30.01 additions for Smag_Control Namelist
      &       ', offsetRampEnd=',offsetRampEnd,'  /'
          endif
 
-         CLOSE(15)
+         CLOSE(15+CK_LUN)
 C
  1000 CONTINUE
 
@@ -2092,6 +2106,7 @@ C     jgf45.11 Updated to handle new format of 3D input files with stations
 C     defined by coordinates rather than node numbers.
 C---------------------------------------------------------------------------C
       SUBROUTINE PREP15_3DVS(IPROC)
+      use CkLunMod, only : CK_LUN
       USE PRE_GLOBAL
       USE GLOBAL_3DVS, ONLY : SIGMA
       IMPLICIT NONE
@@ -2103,32 +2118,32 @@ C---------------------------------------------------------------------------C
       INTEGER FDEle      ! full domain element
 
 c     jgf45.10 removed IDIAG
-      WRITE(15,80) IDENMSG
-      WRITE(15,80) SLIPMSG
-      WRITE(15,80) Z0MSG
-      WRITE(15,80) ALPMSG
-      WRITE(15,80) FEMSG
+      WRITE(15+CK_LUN,80) IDENMSG
+      WRITE(15+CK_LUN,80) SLIPMSG
+      WRITE(15+CK_LUN,80) Z0MSG
+      WRITE(15+CK_LUN,80) ALPMSG
+      WRITE(15+CK_LUN,80) FEMSG
 C     jgf45.12 Added code to record thicknesses of vertical grid layers,
 C     if necessary.
       IF(IGC.EQ.0) THEN
          DO N=1,NFEN
-            WRITE(15,*) Sigma(N)
+            WRITE(15+CK_LUN,*) Sigma(N)
          ENDDO
       ENDIF
-      WRITE(15,80) EVCMSG
+      WRITE(15+CK_LUN,80) EVCMSG
 C     jgf45.12 Add code to record vertical eddy viscosity profile.
       IF(IEVC.EQ.0) THEN
          DO N=1,NFEN
-            WRITE(15,*) EVTot(N)
+            WRITE(15+CK_LUN,*) EVTot(N)
          ENDDO
       ENDIF
-      IF((IEVC.EQ.50).OR.(IEVC.EQ.51)) WRITE(15,80) THETAMSG
+      IF((IEVC.EQ.50).OR.(IEVC.EQ.51)) WRITE(15+CK_LUN,80) THETAMSG
 C     -------------------------------------------------------------
 C     jgf45.11 Create mapping from full domain 3D density station
 C     elements to corresponding elements in subdomains. Write out
 C     subdomain station locations to fort.15 file.
 C     -------------------------------------------------------------
-      WRITE(15,*) I3DSD,TO3DSDS,TO3DSDF,NSPO3DSD
+      WRITE(15+CK_LUN,*) I3DSD,TO3DSDS,TO3DSDF,NSPO3DSD
 C   kmd48.33bc changed
       IF(NSTA3DD.NE.0) THEN
          NNSTA3DDP(IPROC) = 0
@@ -2141,20 +2156,20 @@ C   kmd48.33bc changed
                ENDIF
             END DO
          END DO
-         WRITE(15,*) NNSTA3DDP(IPROC)
+         WRITE(15+CK_LUN,*) NNSTA3DDP(IPROC)
          DO SDStation = 1, NNSTA3DDP(IPROC)
             FDStation = IMAP_STA3DD_LG(SDStation,IPROC)
-            WRITE(15,80) STA3DDLOC(FDStation)
+            WRITE(15+CK_LUN,80) STA3DDLOC(FDStation)
          ENDDO
       ELSE
-         WRITE(15,80) NSTA3DDMSG
+         WRITE(15+CK_LUN,80) NSTA3DDMSG
       ENDIF
 C     -------------------------------------------------------------
 C     jgf45.11 Create mapping from full domain 3D velocity station
 C     elements to corresponding elements in subdomains. Write out
 C     velocity subdomain station locations to fort.15 file.
 C     -------------------------------------------------------------
-      WRITE(15,*) I3DSV,TO3DSVS,TO3DSVF,NSPO3DSV
+      WRITE(15+CK_LUN,*) I3DSV,TO3DSVS,TO3DSVF,NSPO3DSV
 C   kmd48.33bc changed
       IF(NSTA3DV.NE.0) THEN
          NNSTA3DVP(IPROC) = 0
@@ -2167,20 +2182,20 @@ C   kmd48.33bc changed
                ENDIF
             END DO
          END DO
-         WRITE(15,*) NNSTA3DVP(IPROC)
+         WRITE(15+CK_LUN,*) NNSTA3DVP(IPROC)
          DO SDStation = 1, NNSTA3DVP(IPROC)
             FDStation = IMAP_STA3DV_LG(SDStation,IPROC)
-            WRITE(15,80) STA3DVLOC(FDStation)
+            WRITE(15+CK_LUN,80) STA3DVLOC(FDStation)
          ENDDO
       ELSE
-         WRITE(15,80) NSTA3DVMSG
+         WRITE(15+CK_LUN,80) NSTA3DVMSG
       ENDIF
 C     -------------------------------------------------------------
 C     jgf45.11 Create mapping from full domain 3D turbulence station
 C     elements to corresponding elements in subdomains. Write out
 C     turbulence subdomain station locations to fort.15 file.
 C     -------------------------------------------------------------
-      WRITE(15,*) I3DST,TO3DSTS,TO3DSTF,NSPO3DST
+      WRITE(15+CK_LUN,*) I3DST,TO3DSTS,TO3DSTF,NSPO3DST
 C   kmd48.33bc changed
       IF(NSTA3DT.NE.0) THEN
          NNSTA3DTP(IPROC) = 0
@@ -2193,36 +2208,36 @@ C   kmd48.33bc changed
                ENDIF
             END DO
          END DO
-         WRITE(15,*) NNSTA3DTP(IPROC)
+         WRITE(15+CK_LUN,*) NNSTA3DTP(IPROC)
          DO SDStation = 1, NNSTA3DTP(IPROC)
             FDStation = IMAP_STA3DT_LG(SDStation,IPROC)
-            WRITE(15,80) STA3DTLOC(FDStation)
+            WRITE(15+CK_LUN,80) STA3DTLOC(FDStation)
          ENDDO
       ELSE
-         WRITE(15,80) NSTA3DTMSG
+         WRITE(15+CK_LUN,80) NSTA3DTMSG
       ENDIF
 
-      WRITE(15,80) DGDMSG
-      WRITE(15,80) DGVMSG
-      WRITE(15,80) DGTMSG
+      WRITE(15+CK_LUN,80) DGDMSG
+      WRITE(15+CK_LUN,80) DGVMSG
+      WRITE(15+CK_LUN,80) DGTMSG
 
 C    kmd48.33bc add 3D boundary condition information
       IF (CBAROCLINIC) THEN
-        WRITE(15,80) RESBCFLAGMSG
+        WRITE(15+CK_LUN,80) RESBCFLAGMSG
         IF (RES_BC_FLAG.NE.0) THEN
           IF (NOPEP(IPROC).GT.0) THEN
-             WRITE(15,80) BCTIMEMSG
-             WRITE(15,80) BCSTATMSG
+             WRITE(15+CK_LUN,80) BCTIMEMSG
+             WRITE(15+CK_LUN,80) BCSTATMSG
           END IF
           IF (BCFLAG_TEMP.NE.0) THEN
-             WRITE(15,80) TBCTIMEMSG
+             WRITE(15+CK_LUN,80) TBCTIMEMSG
           END IF
         END IF
       END IF
 
       IF (CBAROCLINIC) THEN
-        WRITE(15,80) SPONGEDISTMSG
-        WRITE(15,80) EqnstateMSG
+        WRITE(15+CK_LUN,80) SPONGEDISTMSG
+        WRITE(15+CK_LUN,80) EqnstateMSG
       END IF
 
 C
@@ -2230,10 +2245,10 @@ C     jgf45.12: Write out the parameters for the transport equation, if
 C     necessary.
       IF (C3D_BTrans) THEN
 C     Lateral and vertical diffusion coefficients.
-         WRITE(15,*) NLSD, NVSD
-         WRITE(15,*) NLTD, NVTD
+         WRITE(15+CK_LUN,*) NLSD, NVSD
+         WRITE(15+CK_LUN,*) NLTD, NVTD
 C     Time stepping coefficient for the transport equation terms.
-         WRITE(15,*) ALP4
+         WRITE(15+CK_LUN,*) ALP4
 C   kmd48.33 took out as it is no longer needed with new heat flux boundary conditions
 C     Temperature boundary condition file type, if necessary
 !         IF ( IDEN .eq. 3 .or. IDEN .eq. 4 ) THEN
@@ -2268,6 +2283,7 @@ C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER N1, N2, N3, KMIN
       INTEGER I,J,K,M,ITEMP,IPR,IPR1
       INTEGER INDX,ITOT,IEL,IELG,ILNODE,IPROC,ITYPE
@@ -2286,25 +2302,25 @@ C
 C
          LOCFN(1:14) = 'PE0000/fort.18'
          CALL IWRITE(LOCFN,3,6,I-1)
-         OPEN (18,FILE=LOCFN)
+         OPEN (18+CK_LUN,FILE=LOCFN)
 
-         write(18,3050) FileFmtVersion, 0, 0
+         write(18+CK_LUN,3050) FileFmtVersion, 0, 0
 
 !vjp 9/17/06
 C--Write the Global indexes of all local elements in local element order
 
 Casey 100209: Changed I8 to I12.
-         WRITE(18,3000) NELG, MNEP, NELP(I)  ! number of Global elements
+         WRITE(18+CK_LUN,3000) NELG, MNEP, NELP(I)  ! number of Global elements
          DO J = 1,NELP(I)
             INDX = IMAP_EL_LG(J,I)
-            WRITE(18,'(I12)') INDX        ! Global index of local element
+            WRITE(18+CK_LUN,'(I12)') INDX        ! Global index of local element
          ENDDO
 
 C--Write the Global indexes of all local nodes in local node order
 C  write global index as positive if a resident node and negative
 C  if a ghost node
 
-         WRITE(18,3001) NNODG, MNPP, NNODP(I)   ! number of Global nodes
+         WRITE(18+CK_LUN,3001) NNODG, MNPP, NNODP(I)   ! number of Global nodes
          ITOT = 0
          DO J = 1,NNODP(I)
             INDX = IMAP_NOD_LG(J,I)
@@ -2312,63 +2328,63 @@ C  if a ghost node
             IF (IPR.EQ.I)THEN
                ITOT = ITOT + 1
                RES_NODE(ITOT) = J
-               WRITE(18,'(I12)') INDX        ! Global index of resident node
+               WRITE(18+CK_LUN,'(I12)') INDX        ! Global index of resident node
             ELSE
-               WRITE(18,'(I12)') -1*INDX     ! Global index of ghost node
+               WRITE(18+CK_LUN,'(I12)') -1*INDX     ! Global index of ghost node
             ENDIF
          ENDDO
          IF (ITOT.NE.NOD_RES_TOT(I)) STOP 'ERROR IN # OF RES. NODES'
 
 C--Write local normal flow boundary flag
 C--vjp This info is used only for relocalizing fort.15
-         WRITE(18,3002) NFLUXFP(I) ! normal flow b.c. flag for subdomain
+         WRITE(18+CK_LUN,3002) NFLUXFP(I) ! normal flow b.c. flag for subdomain
 
 C--Write global and local total number of elevation boundary nodes
 C--vjp This info is used only for relocalizing fort.15
-         WRITE(18,3003) NETA, NETA_MAX, NETAP(I) ! number of global elevation b.c. nodes
+         WRITE(18+CK_LUN,3003) NETA, NETA_MAX, NETAP(I) ! number of global elevation b.c. nodes
          DO J = 1,NETAP(I)
             INDX = OBNODE_LG(J,I)
-            WRITE(18,'(I12)') INDX           ! Global open boundary node index
+            WRITE(18+CK_LUN,'(I12)') INDX           ! Global open boundary node index
          ENDDO
 
 C--Write the Global indexes of all Elevation Stations in local node order
 C  write global index as positive if a resident node and negative
 C  if a ghost node
 
-         WRITE(18,3004) abs(NSTAE), NSTAE_MAX, NSTAEP(I) ! number of Global Elevation Stations
+         WRITE(18+CK_LUN,3004) abs(NSTAE), NSTAE_MAX, NSTAEP(I) ! number of Global Elevation Stations
          DO J = 1,NSTAEP(I)
             INDX = IMAP_STAE_LG(J,I)
-            WRITE(18,'(I12)') INDX           ! Global station number
+            WRITE(18+CK_LUN,'(I12)') INDX           ! Global station number
          ENDDO
 
 C--Write the Global indexes of all Velocity Stations in local node order
 C  write global index as positive if a resident node and negative
 C  if a ghost node
 
-         WRITE(18,3005) abs(NSTAV), NSTAV_MAX, NSTAVP(I) ! number of Global Velocity Stations
+         WRITE(18+CK_LUN,3005) abs(NSTAV), NSTAV_MAX, NSTAVP(I) ! number of Global Velocity Stations
          DO J = 1,NSTAVP(I)
             INDX = IMAP_STAV_LG(J,I)
-            WRITE(18,'(I12)') INDX           ! Global station number
+            WRITE(18+CK_LUN,'(I12)') INDX           ! Global station number
          ENDDO
 
 C--Write the Global indexes of all Elevation Stations in local node order
 C  write global index as positive if a resident node and negative
 C  if a ghost node
 
-         WRITE(18,3006) abs(NSTAM), NSTAM_MAX, NSTAMP(I) ! number of Global Meteorlogical Stations
+         WRITE(18+CK_LUN,3006) abs(NSTAM), NSTAM_MAX, NSTAMP(I) ! number of Global Meteorlogical Stations
          DO J = 1,NSTAMP(I)
             INDX = IMAP_STAM_LG(J,I)
-            WRITE(18,'(I12)') INDX           ! Global station number
+            WRITE(18+CK_LUN,'(I12)') INDX           ! Global station number
          ENDDO
 
 C--Write the Global indexes of all Concentration Stations in local node order
 C  write global index as positive if a resident node and negative
 C  if a ghost node
 
-         WRITE(18,3007) abs(NSTAC), NSTAC_MAX, NSTACP(I) ! number of Global Concentration Stations
+         WRITE(18+CK_LUN,3007) abs(NSTAC), NSTAC_MAX, NSTACP(I) ! number of Global Concentration Stations
          DO J = 1,NSTACP(I)
             INDX = IMAP_STAC_LG(J,I)
-            WRITE(18,'(I12)') INDX           ! Global station number
+            WRITE(18+CK_LUN,'(I12)') INDX           ! Global station number
          ENDDO
 
 C---------------------------------------------------------------------------------
@@ -2377,12 +2393,12 @@ C-------------------------------------------------------------------------------
 C
 C--Write the Resident Node List
 C
-         WRITE(18,3010) (I-1),NOD_RES_TOT(I)
-         WRITE(18,1130) (RES_NODE(J),J=1,ITOT)
+         WRITE(18+CK_LUN,3010) (I-1),NOD_RES_TOT(I)
+         WRITE(18+CK_LUN,1130) (RES_NODE(J),J=1,ITOT)
 C
 C--Write the Number of Communicating PEs
 C
-         WRITE(18,3020) NUM_COMM_PE(I)
+         WRITE(18+CK_LUN,3020) NUM_COMM_PE(I)
 C
 C--Write the Receive List
 C
@@ -2412,8 +2428,8 @@ c uncomment next line and comment preceding line for debugging
 c                 IRECV(IRECV_TOT(J,I)) = INDX
                ENDIF
             ENDDO
-            WRITE(18,3030) (IPR-1), IRECV_TOT(J,I)
-            WRITE(18,1130) (IRECV(K),K=1,IRECV_TOT(J,I))
+            WRITE(18+CK_LUN,3030) (IPR-1), IRECV_TOT(J,I)
+            WRITE(18+CK_LUN,1130) (IRECV(K),K=1,IRECV_TOT(J,I))
          ENDDO
 C
 C--write the send list
@@ -2440,8 +2456,8 @@ c uncomment next line and comment preceding line for debugging
 c                 ISEND(ISEND_TOT(J,I)) = INDX
                ENDIF
             ENDDO
-            WRITE(18,3040)  IPR-1, ISEND_TOT(J,I)
-            WRITE(18,1130) (ISEND(K),K=1,ISEND_TOT(J,I))
+            WRITE(18+CK_LUN,3040)  IPR-1, ISEND_TOT(J,I)
+            WRITE(18+CK_LUN,1130) (ISEND(K),K=1,ISEND_TOT(J,I))
          ENDDO
 C
          IF (C3D.eqv..true.) THEN
@@ -2451,23 +2467,23 @@ C
 C           Write the fulldomain station numbers of all 3D density stations
 C           in local node order; write the fulldomain station number as positive
 C           for resident stations and negative for ghost stations.
-            WRITE(18,3060) NSTA3DD, MAXVAL(NNSTA3DDP), NNSTA3DDP(I)
+            WRITE(18+CK_LUN,3060) NSTA3DD, MAXVAL(NNSTA3DDP), NNSTA3DDP(I)
             DO J=1,NNSTA3DDP(I)
-               WRITE(18,1131) IMAP_STA3DD_LG(J,I)
+               WRITE(18+CK_LUN,1131) IMAP_STA3DD_LG(J,I)
             END DO
 C           3D velocity stations
-            WRITE(18,3061) NSTA3DV, MAXVAL(NNSTA3DVP), NNSTA3DVP(I)
+            WRITE(18+CK_LUN,3061) NSTA3DV, MAXVAL(NNSTA3DVP), NNSTA3DVP(I)
             DO J=1,NNSTA3DVP(I)
-               WRITE(18,'(I12)') IMAP_STA3DV_LG(J,I)
+               WRITE(18+CK_LUN,'(I12)') IMAP_STA3DV_LG(J,I)
             END DO
 C           3D turbulence stations
-            WRITE(18,3062) NSTA3DT, MAXVAL(NNSTA3DTP), NNSTA3DTP(I)
+            WRITE(18+CK_LUN,3062) NSTA3DT, MAXVAL(NNSTA3DTP), NNSTA3DTP(I)
             DO J=1,NNSTA3DTP(I)
-               WRITE(18,'(I12)') IMAP_STA3DT_LG(J,I)
+               WRITE(18+CK_LUN,'(I12)') IMAP_STA3DT_LG(J,I)
             ENDDO
          ENDIF
 C
-         CLOSE(18)
+         CLOSE(18+CK_LUN)
 C
 1000  CONTINUE
 C
@@ -2489,7 +2505,7 @@ C
       DO I=1, NPROC
          PE(1:6) = 'PE0000'
          CALL IWRITE(PE,3,6,I-1)
-         WRITE(6,92) PE, NUM_COMM_PE(I),PROC_SV(I)
+         WRITE(6+CK_LUN,92) PE, NUM_COMM_PE(I),PROC_SV(I)
       ENDDO
 
       deallocate( res_node )
@@ -2540,6 +2556,7 @@ C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER I,J,IPROC
       INTEGER SDU(NPROC) ! subdomain unit numbers
       LOGICAL Success    ! .true. if files opened without errors
@@ -2564,22 +2581,22 @@ C
       nbytes = 8*mneta
       call memory_alloc(nbytes)
 C
-      READ(19,40) ETIMINC
+      READ(19+CK_LUN,40) ETIMINC
       DO IPROC = 1,NPROC
-         WRITE(SDU(IPROC),40)  ETIMINC
+         WRITE(SDU(IPROC+CK_LUN),40)  ETIMINC
       ENDDO
 C
 C--While ( NOT EOF ) Read NETA BCs from Global File
 C
 1000  CONTINUE
       DO I=1, NETA
-         READ(19,40,END=9999)  ESBIN(I)
+         READ(19+CK_LUN,40,END=9999)  ESBIN(I)
       ENDDO
 C
       DO IPROC= 1,NPROC
          DO I=1, NETAP(IPROC)
             ESBINP = ESBIN(OBNODE_LG(I,IPROC))
-            WRITE(SDU(IPROC),40) ESBINP
+            WRITE(SDU(IPROC+CK_LUN),40) ESBINP
          ENDDO
       ENDDO
 C
@@ -2587,9 +2604,9 @@ C
 C
 C--Close Global file and all the Local Files
 C
- 9999 CLOSE (19)
+ 9999 CLOSE (19+CK_LUN)
       DO IPROC=1, NPROC
-         CLOSE (SDU(IPROC))
+         CLOSE (SDU(IPROC+CK_LUN))
       ENDDO
 
       deallocate( esbin )
@@ -2622,6 +2639,7 @@ C---------------------------------------------------------------------------
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER IPROC
       INTEGER INDEX14, I
       REAL(SZ)  FLUX_INC, FLUX_VAL
@@ -2641,9 +2659,9 @@ C     Open full domain and subdomain fort.20 files
 c
 c     Write Increment into all flux files
 c
-      READ(20,*) FLUX_INC
+      READ(20+CK_LUN,*) FLUX_INC
       DO IPROC=1,NPROC
-         WRITE(SDU(IPROC),*) FLUX_INC
+         WRITE(SDU(IPROC+CK_LUN),*) FLUX_INC
       ENDDO
 C
 C     jgf45.12 Write each full domain nodal flux value into each of the
@@ -2652,21 +2670,21 @@ C     node may map to more than one subdomain node if it falls on a
 C     boundary between subdomains (ghost nodes).
 C
  33   DO I=1, EXIST_FLUX            ! loop through full domain flow nodes
-         READ(20,*,END=40) FLUX_VAL ! get a flo val for this f.d. flow node
+         READ(20+CK_LUN,*,END=40) FLUX_VAL ! get a flo val for this f.d. flow node
          INDX = FLUX14_ARY(I)      ! get full domain flow node number
          DO J=1, ITOTPROC(INDX)    ! loop over subdomains for 1 f.d. node
             IPROC2 = IMAP_NOD_GL2(2*(J-1)+1,INDX) ! find next subdomain
             DO IPROC=1, NPROC
                IF (IPROC.EQ.IPROC2) THEN ! full domain node maps to this s.d.
-                  WRITE(SDU(IPROC),50) FLUX_VAL
+                  WRITE(SDU(IPROC+CK_LUN),50) FLUX_VAL
                ENDIF
             END DO
          END DO
       END DO
       GOTO 33
- 40   CLOSE (20)
+ 40   CLOSE (20+CK_LUN)
       DO IPROC=1, NPROC
-         CLOSE (SDU(IPROC))
+         CLOSE (SDU(IPROC+CK_LUN))
       ENDDO
 
       IF (allocated(FLUX14_ARY)) then
@@ -2797,6 +2815,7 @@ C---------------------------------------------------------------------------
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       LOGICAL FOUND,DONE
       INTEGER I,J,IPROC,IPROC2,ILNODE,INDX,NHG,LINDEX
       CHARACTER*80 PBLJAGF
@@ -2859,7 +2878,7 @@ C     (1)  Read a record from Global Wind Stress File
 C     (2)  Use Decomp arrarys to Localize record to a subdomain
 C     (3)  Write Local Wind Stress record in same format
            DO                     ! loop forever (or until file ends)
-              READ(22,*,END=9999)
+              READ(22+CK_LUN,*,END=9999)
      &           (NG(I),WVNXG(I),WVNYG(I),PRG(I),I=1,NNODG)
               DO IPROC = STARTPROC, ENDPROC
                  DO I=1, NNODP(IPROC)
@@ -2869,7 +2888,7 @@ C     (3)  Write Local Wind Stress record in same format
                     PRL(I) = PRG(INDX)
                  ENDDO
                  DO I=1, NNODP(IPROC)
-                    WRITE(SDU(IPROC),1100)  I,WVNXL(I),WVNYL(I),PRL(I)
+                    WRITE(SDU(IPROC+CK_LUN),1100)  I,WVNXL(I),WVNYL(I),PRL(I)
                  ENDDO
               ENDDO
            ENDDO
@@ -2885,11 +2904,11 @@ C
 C--Read a wind field record from the global input file
 C
          DO
-            READ(22,'(A80)',END=9999) PBLJAGF
+            READ(22+CK_LUN,'(A80)',END=9999) PBLJAGF
             IF(PBLJAGF(2:2).EQ.'#') THEN
                DO IPROC =  STARTPROC,ENDPROC
-                  WRITE(SDU(IPROC),1101)
-                  WRITE(SDU(IPROC),1100) 1,0.0,0.0,0.0 !victor didn't like this line 27/11/03
+                  WRITE(SDU(IPROC+CK_LUN),1101)
+                  WRITE(SDU(IPROC+CK_LUN),1100) 1,0.0,0.0,0.0 !victor didn't like this line 27/11/03
                ENDDO
             ELSE
 !     vjp 27/11/03
@@ -2899,7 +2918,7 @@ C              READ(PBLJAGF,'(I8,3E13.5)',END=9999) NHG,U,V,PR
                DO J=1, ITOTPROC(NHG)
                   IPROC  = IMAP_NOD_GL2(2*(J-1)+1,NHG)
                   LINDEX = IMAP_NOD_GL2(2*(J-1)+2,NHG)
-                  WRITE(SDU(IPROC),1100) LINDEX,U,V,PR
+                  WRITE(SDU(IPROC+CK_LUN),1100) LINDEX,U,V,PR
                ENDDO
             ENDIF
          END DO
@@ -2924,7 +2943,7 @@ C
                   PRL(I) = PRG(INDX)
                ENDDO
                DO I=1, NNODP(IPROC)
-                  WRITE(SDU(IPROC),1100)  I,WVNXL(I),WVNYL(I),PRL(I)
+                  WRITE(SDU(IPROC+CK_LUN),1100)  I,WVNXL(I),WVNYL(I),PRL(I)
                ENDDO
             ENDDO
 C--   If reached EOF in NWS4GET last time go close files and return
@@ -2943,9 +2962,9 @@ C        ------------
 C
 C--Close Global file and all the Local Files
 C
- 9999    CLOSE (22)
+ 9999    CLOSE (22+CK_LUN)
          DO IPROC=STARTPROC, ENDPROC
-            CLOSE (SDU(IPROC))
+            CLOSE (SDU(IPROC+CK_LUN))
          ENDDO
          startProc=endProc+1
       ENDDO
@@ -3010,11 +3029,11 @@ C
 C--Read a wave field record from the global input file
 C--and write out to respective local fort.23 file.
 C
- 170  READ(23,'(A80)',END=9999) PBLJAGF
+ 170  READ(23+CK_LUN,'(A80)',END=9999) PBLJAGF
       IF(PBLJAGF(2:2).EQ.'#') THEN
          DO IPROC = 1,NPROC
-            WRITE(SDU(IPROC),1101)
-            WRITE(SDU(IPROC),1100) 1,0.0,0.0 !victor didn't like this line 27/11/03
+            WRITE(SDU(IPROC+CK_LUN),1101)
+            WRITE(SDU(IPROC+CK_LUN),1100) 1,0.0,0.0 !victor didn't like this line 27/11/03
          ENDDO
       ELSE
 ! vjp 27/11/03
@@ -3025,16 +3044,16 @@ C
             DO J=1, ITOTPROC(NHG)
                IPROC  = IMAP_NOD_GL2(2*(J-1)+1,NHG)
                LINDEX = IMAP_NOD_GL2(2*(J-1)+2,NHG)
-               WRITE(SDU(IPROC),1100) LINDEX,U,V
+               WRITE(SDU(IPROC+CK_LUN),1100) LINDEX,U,V
             ENDDO
          ENDIF
       ENDIF
 
       GOTO 170
 
- 9999 CLOSE(23)
+ 9999 CLOSE(23+CK_LUN)
       DO IPROC=1,NPROC
-         CLOSE(SDU(IPROC))
+         CLOSE(SDU(IPROC+CK_LUN))
       ENDDO
 
  1100 FORMAT(I8,2E13.5)
@@ -3060,6 +3079,7 @@ C---------------------------------------------------------------------------
       IMPLICIT NONE
 C
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER i              ! node loop counter
       INTEGER k              ! constituent loop counter
       INTEGER ll             ! line loop counter
@@ -3105,13 +3125,13 @@ C        Loop over the number of constituents
          DO k=1, NTIF
 
 C           Read header information from full domain unit 24 file
-            READ(24,'(A80)') header
-            READ(24,*) Frequency
-            READ(24,*) NoOfVals
-            READ(24,'(A80)') ConstName
+            READ(24+CK_LUN,'(A80)') header
+            READ(24+CK_LUN,*) Frequency
+            READ(24+CK_LUN,*) NoOfVals
+            READ(24+CK_LUN,'(A80)') ConstName
             IF (ConstName(1:2) .ne. TIPOTAG(k)(1:2)) THEN
-                WRITE(6,*) 'CONST 24 =',ConstName,'CONST 15=',TIPOTAG(K)
-                WRITE(6,9924)
+                WRITE(6+CK_LUN,*) 'CONST 24 =',ConstName,'CONST 15=',TIPOTAG(K)
+                WRITE(6+CK_LUN,9924)
  9924           FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
      &          //,1X,'CONSTITUENT NAME AS ABOVE NOT RECOGNISED      '
      &          //,1X,'OR IN THE CORRECT ORDER.                      ',
@@ -3121,22 +3141,22 @@ C           Read header information from full domain unit 24 file
 C
 C           Write header info to the local unit 24
             DO iproc=startProc, endProc
-               WRITE(sdu(IPROC),'(A80)') header
-               WRITE(sdu(IPROC),*) Frequency
-               WRITE(sdu(IPROC),*) NoOfVals
-               WRITE(sdu(IPROC),'(A80)') ConstName
+               WRITE(sdu(IPROC+CK_LUN),'(A80)') header
+               WRITE(sdu(IPROC+CK_LUN),*) Frequency
+               WRITE(sdu(IPROC+CK_LUN),*) NoOfVals
+               WRITE(sdu(IPROC+CK_LUN),'(A80)') ConstName
             END DO
 
 C           Read the amp and phase of the unit 24 file
             DO i = 1,NNODG
-               READ(24,*) ll,SALTAMP(ll),SALTPHS(ll)
+               READ(24+CK_LUN,*) ll,SALTAMP(ll),SALTPHS(ll)
             ENDDO
 C
 C           Write out the info to the local unit 24
             DO iproc=startProc, endProc
                DO i = 1,NNODP(IPROC)
                   ll = IMAP_NOD_LG(i,IPROC)
-                  WRITE(sdu(IPROC),*) LABELS(ll),SALTAMP(ll),SALTPHS(ll)
+                  WRITE(sdu(IPROC+CK_LUN),*) LABELS(ll),SALTAMP(ll),SALTPHS(ll)
                ENDDO
             END DO
 
@@ -3147,9 +3167,9 @@ C        Deallocate the arrays
          call memory_dealloc(nbytes)
 C
 C        Close full domain and subdomain files
-         CLOSE (24)
+         CLOSE (24+CK_LUN)
          DO iproc=startProc, endProc
-            CLOSE(sdu(iproc))
+            CLOSE(sdu(iproc+CK_LUN))
          ENDDO
          startProc = endProc + 1
       END DO
@@ -3182,6 +3202,7 @@ C---------------------------------------------------------------------------
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       LOGICAL FOUND,DONE
       INTEGER I,J,IPROC,IPROC2,ILNODE,INDX,NHG,LINDEX
       CHARACTER*80 PBLJAGF
@@ -3239,7 +3260,7 @@ C     (1)  Read a record from Global Bathymetry File
 C     (2)  Use Decomp arrarys to Localize record to a subdomain
 C     (3)  Write Local Bathymetry record in same format
            DO                     ! loop forever (or until file ends)
-              READ(141,*,END=9999)
+              READ(141+CK_LUN,*,END=9999)
      &           (NG(I),DPG(I),I=1,NNODG)
               DO IPROC = STARTPROC, ENDPROC
                  DO I=1, NNODP(IPROC)
@@ -3247,7 +3268,7 @@ C     (3)  Write Local Bathymetry record in same format
                     DPL(I) = DPG(INDX)
                  ENDDO
                  DO I=1, NNODP(IPROC)
-                    WRITE(SDU(IPROC),*)  I,DPL(I)
+                    WRITE(SDU(IPROC+CK_LUN),*)  I,DPL(I)
                  ENDDO
               ENDDO
            ENDDO
@@ -3269,13 +3290,13 @@ C--- changed then it will be read regardless if it appears twice.
 C
          DO
             PBLJAGF(:) = ' '
-            READ(141,'(A80)',END=9999) PBLJAGF
+            READ(141+CK_LUN,'(A80)',END=9999) PBLJAGF
             IF(PBLJAGF(2:2).EQ.'#') THEN
                DO IPROC =  STARTPROC,ENDPROC
-                  WRITE(SDU(IPROC),1101)
+                  WRITE(SDU(IPROC+CK_LUN),1101)
 !  write a default value to ensure that no empty records
 !  are produced during the decomp phase (default values will be ignored by ADCIRC)
-                  WRITE(SDU(IPROC),1100) 1,-99999.d0
+                  WRITE(SDU(IPROC+CK_LUN),1100) 1,-99999.d0
                ENDDO
             ELSE
                READ(PBLJAGF,*,END=9999) NHG,DPTMP
@@ -3284,7 +3305,7 @@ C
                   LINDEX = IMAP_NOD_GL2(2*(J-1)+2,NHG)
                   IF ( (IPROC.GE.STARTPROC).AND.
      &                 (IPROC.LE.ENDPROC) ) THEN
-                     WRITE(SDU(IPROC),1100) LINDEX,DPTMP
+                     WRITE(SDU(IPROC+CK_LUN),1100) LINDEX,DPTMP
                   endif
                ENDDO
             ENDIF
@@ -3302,9 +3323,9 @@ C        ------------
 C
 C--Close Global file and all the Local Files
 C
- 9999    CLOSE (141)
+ 9999    CLOSE (141+CK_LUN)
          DO IPROC=STARTPROC, ENDPROC
-            CLOSE (SDU(IPROC))
+            CLOSE (SDU(IPROC+CK_LUN))
          ENDDO
          write(*,*) "     Finished processing fort.141 file"
          write(*,*) "for processor range ",startproc," to ",endproc
@@ -3352,6 +3373,7 @@ C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
       INTEGER :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER I,J,IPROC
       INTEGER SDU(NPROC) ! subdomain unit numbers
       LOGICAL Success    ! .true. if files opened without errors
@@ -3382,18 +3404,18 @@ C--While ( NOT EOF ) Read NETA BCs from Global File
 C
 C      PRINT *, "Made it to the reading in of the 35 file"
       DO  ! loop until end of file
-      READ(35,40,END=9999) ETIMINC
+      READ(35+CK_LUN,40,END=9999) ETIMINC
       DO IPROC = 1,NPROC
-         WRITE(SDU(IPROC),40)  ETIMINC
+         WRITE(SDU(IPROC+CK_LUN),40)  ETIMINC
       ENDDO
       DO I=1, NETA
-         READ(35,40,END=9999)  RESBCBIN(I)
+         READ(35+CK_LUN,40,END=9999)  RESBCBIN(I)
       ENDDO
 C
       DO IPROC= 1,NPROC
          DO I=1, NETAP(IPROC)
             RESBCBINP = RESBCBIN(OBNODE_LG(I,IPROC))
-            WRITE(SDU(IPROC),40) RESBCBINP
+            WRITE(SDU(IPROC+CK_LUN),40) RESBCBINP
          ENDDO
       ENDDO
       END DO
@@ -3401,9 +3423,9 @@ C
 C
 C--Close Global file and all the Local Files
 C
- 9999 CLOSE (35)
+ 9999 CLOSE (35+CK_LUN)
       DO IPROC=1, NPROC
-         CLOSE (SDU(IPROC))
+         CLOSE (SDU(IPROC+CK_LUN))
       ENDDO
 
       deallocate(resbcbin)
@@ -3431,6 +3453,7 @@ C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER I,J,IPROC
       INTEGER SDU(NPROC) ! subdomain unit numbers
       LOGICAL Success    ! .true. if files opened without errors
@@ -3464,13 +3487,13 @@ C
 C--While ( NOT EOF ) Read NETA BCs from Global File
 C
       DO  ! loop until end of file
-      READ(36,40,END=9999) ETIMINC
+      READ(36+CK_LUN,40,END=9999) ETIMINC
       DO IPROC = 1,NPROC
-         WRITE(SDU(IPROC),40)  ETIMINC
+         WRITE(SDU(IPROC+CK_LUN),40)  ETIMINC
       ENDDO
 
       DO I=1, NETA
-         READ(36,*,END=9999)  NOD(I), (SalBC(I,M),M=1,NFEN)
+         READ(36+CK_LUN,*,END=9999)  NOD(I), (SalBC(I,M),M=1,NFEN)
       ENDDO
 C
       DO IPROC= 1,NPROC
@@ -3479,7 +3502,7 @@ C
             DO M=1,NFEN
               RESBCBINP(M) = SalBC(OBNODE_LG(I,IPROC),M)
             END DO
-              WRITE(SDU(IPROC),80) NODP, (RESBCBINP(M),M=1,NFEN)
+              WRITE(SDU(IPROC+CK_LUN),80) NODP, (RESBCBINP(M),M=1,NFEN)
          ENDDO
       ENDDO
       END DO
@@ -3487,9 +3510,9 @@ C
 C
 C--Close Global file and all the Local Files
 C
- 9999 CLOSE (36)
+ 9999 CLOSE (36+CK_LUN)
       DO IPROC=1, NPROC
-         CLOSE (SDU(IPROC))
+         CLOSE (SDU(IPROC+CK_LUN))
       ENDDO
 C
       deallocate(salbc)
@@ -3517,6 +3540,7 @@ C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER I,J,IPROC
       INTEGER SDU(NPROC) ! subdomain unit numbers
       LOGICAL Success    ! .true. if files opened without errors
@@ -3550,13 +3574,13 @@ C
 C--While ( NOT EOF ) Read NETA BCs from Global File
 C
       DO  ! loop around until the end of the file
-      READ(37,40,END=9999) ETIMINC
+      READ(37+CK_LUN,40,END=9999) ETIMINC
       DO IPROC = 1,NPROC
-         WRITE(SDU(IPROC),40)  ETIMINC
+         WRITE(SDU(IPROC+CK_LUN),40)  ETIMINC
       ENDDO
 
       DO I=1, NETA
-         READ(37,*,END=9999)  NOD(I), (TempBC(I,M),M=1,NFEN)
+         READ(37+CK_LUN,*,END=9999)  NOD(I), (TempBC(I,M),M=1,NFEN)
       ENDDO
 C
       DO IPROC= 1,NPROC
@@ -3565,7 +3589,7 @@ C
             DO M=1,NFEN
               RESBCBINP(M) = TempBC(OBNODE_LG(I,IPROC),M)
             END DO
-              WRITE(SDU(IPROC),80) NODP, (RESBCBINP(M),M=1,NFEN)
+              WRITE(SDU(IPROC+CK_LUN),80) NODP, (RESBCBINP(M),M=1,NFEN)
          ENDDO
       ENDDO
       END DO
@@ -3573,9 +3597,9 @@ C
 C
 C--Close Global file and all the Local Files
 C
- 9999 CLOSE (37)
+ 9999 CLOSE (37+CK_LUN)
       DO IPROC=1, NPROC
-         CLOSE (SDU(IPROC))
+         CLOSE (SDU(IPROC+CK_LUN))
       ENDDO
 C
       deallocate(TempBC)
@@ -3603,6 +3627,7 @@ C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER I,J,IPROC
       INTEGER SDU(NPROC) ! subdomain unit numbers
       LOGICAL Success    ! .true. if files opened without errors
@@ -3650,7 +3675,7 @@ C--While ( NOT EOF ) Read NETA BCs from Global File
 C
       DO  ! loop until end of file
 
-       READ(38,*,END=9999) (NOD(I),(TopTempBC(I,M),M=1,NFLUX),I=1,NNODG)
+       READ(38+CK_LUN,*,END=9999) (NOD(I),(TopTempBC(I,M),M=1,NFLUX),I=1,NNODG)
 C
       DO IPROC= 1,NPROC
          DO I=1, NNODP(IPROC)
@@ -3658,7 +3683,7 @@ C
             DO M=1,NFLUX
               RESBCBINP(I,M) = TopTempBC(NODP,M)
             END DO
-              WRITE(SDU(IPROC),80) I, (RESBCBINP(I,M),M=1,NFLUX)
+              WRITE(SDU(IPROC+CK_LUN),80) I, (RESBCBINP(I,M),M=1,NFLUX)
          ENDDO
       ENDDO
       END DO
@@ -3666,9 +3691,9 @@ C
 C
 C--Close Global file and all the Local Files
 C
- 9999 CLOSE (38)
+ 9999 CLOSE (38+CK_LUN)
       DO IPROC=1, NPROC
-         CLOSE (SDU(IPROC))
+         CLOSE (SDU(IPROC+CK_LUN))
       ENDDO
 C
       deallocate(toptempbc)
@@ -3698,6 +3723,7 @@ C
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       INTEGER IPROC
       INTEGER INDEX14, I
       REAL(SZ) :: FLUX_INC
@@ -3748,10 +3774,10 @@ C     Open full domain and subdomain fort.20 files
 c
 c     Write Increment into all flux files
 c
-      READ(39,*) FLUX_INC, RIVBCSTATIM
+      READ(39+CK_LUN,*) FLUX_INC, RIVBCSTATIM
       DO IPROC=1,NPROC
 ! arash June 23 2016 added RIVBCSTATIM
-         WRITE(SDU(IPROC),*) FLUX_INC, RIVBCSTATIM
+         WRITE(SDU(IPROC+CK_LUN),*) FLUX_INC, RIVBCSTATIM
       ENDDO
 C
 C     jgf45.12 Write each full domain nodal flux value into each of the
@@ -3769,9 +3795,9 @@ C
 
 ! arash July 7 2016:
          If ( IDEN == 4 ) Then
-            READ(39,*,END=40)  (FLUX_VAL(INDX,M),M=1,2*NFEN)
+            READ(39+CK_LUN,*,END=40)  (FLUX_VAL(INDX,M),M=1,2*NFEN)
          Else
-            READ(39,*,END=40)  (FLUX_VAL(INDX,M),M=1,NFEN)
+            READ(39+CK_LUN,*,END=40)  (FLUX_VAL(INDX,M),M=1,NFEN)
          End If
 
       END DO
@@ -3788,12 +3814,12 @@ C
                      DO M=1,2*NFEN
                         RESBCBINP(M) = FLUX_VAL(INDX,M)
                      END DO
-                     WRITE(SDU(IPROC),80) (RESBCBINP(M),M=1,2*NFEN)
+                     WRITE(SDU(IPROC+CK_LUN),80) (RESBCBINP(M),M=1,2*NFEN)
                   Else
                      DO M=1,NFEN
                         RESBCBINP(M) = FLUX_VAL(INDX,M)
                      END DO
-                     WRITE(SDU(IPROC),80) (RESBCBINP(M),M=1,NFEN)
+                     WRITE(SDU(IPROC+CK_LUN),80) (RESBCBINP(M),M=1,NFEN)
                  End If
 ! -----------------------------------------------
 
@@ -3803,9 +3829,9 @@ C
       END DO
       END DO
 
- 40   CLOSE (39)
+ 40   CLOSE (39+CK_LUN)
       DO IPROC=1, NPROC
-         CLOSE (SDU(IPROC))
+         CLOSE (SDU(IPROC+CK_LUN))
       ENDDO
 
       IF (allocated(BCTS14_ARY)) then
@@ -3839,6 +3865,7 @@ C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       LOGICAL FOUND
       INTEGER I,J,IPROC,IINDX,IHOTSTP, not_active
       INTEGER IMHSF,ITHSF
@@ -3889,15 +3916,15 @@ C     Open full domain and subdomain fort.17 files
 
 C--   Read in info from global initial condition file
 
-      READ(IHOT,*) FileFmtVn
+      READ(IHOT+CK_LUN,*) FileFmtVn
 
-      READ(IHOT,*) IMHSF
-      READ(IHOT,*) TIMEHSF
-      READ(IHOT,*) ITHSF
-      READ(IHOT,*) NP_G_IN
-      READ(IHOT,*) NE_G_IN
-      READ(IHOT,*) NP_A_IN
-      READ(IHOT,*) NE_A_IN
+      READ(IHOT+CK_LUN,*) IMHSF
+      READ(IHOT+CK_LUN,*) TIMEHSF
+      READ(IHOT+CK_LUN,*) ITHSF
+      READ(IHOT+CK_LUN,*) NP_G_IN
+      READ(IHOT+CK_LUN,*) NE_G_IN
+      READ(IHOT+CK_LUN,*) NP_A_IN
+      READ(IHOT+CK_LUN,*) NE_A_IN
       if (nnodg == np_g_in) then
         MNP = nnodg
       else
@@ -3965,28 +3992,28 @@ C
       read(*,*) NFEN
 
       DO I=1,MNP
-         READ(IHOT,*) ETA1(I)
+         READ(IHOT+CK_LUN,*) ETA1(I)
       END DO
       DO I=1,MNP
-         READ(IHOT,*) ETA2(I)
+         READ(IHOT+CK_LUN,*) ETA2(I)
       END DO
       DO I=1,MNP
-         READ(IHOT,*) UU2(I)
+         READ(IHOT+CK_LUN,*) UU2(I)
       END DO
       DO I=1,MNP
-         READ(IHOT,*) VV2(I)
+         READ(IHOT+CK_LUN,*) VV2(I)
       END DO
       IF(IM.EQ.10) THEN
         DO I=1,MNP
            IHOTSTP=IHOTSTP+1
-           READ(IHOT,REC=IHOTSTP) CH1(I)
+           READ(IHOT+CK_LUN,REC=IHOTSTP) CH1(I)
         END DO
       ENDIF
       DO I=1,MNP
-         READ(IHOT,*) NODECODE(I)
+         READ(IHOT+CK_LUN,*) NODECODE(I)
       END DO
       DO I=1,MNE
-         READ(IHOT,*) NOFF(I)
+         READ(IHOT+CK_LUN,*) NOFF(I)
       END DO
 
       PRINT *, "Made it through the 2D values"
@@ -4019,43 +4046,43 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
 
          IF(ITHSF.GT.ITHAS) THEN
             IHOTSTP=IHOTSTP+1
-            READ(IHOT,REC=IHOTSTP) ICHA
+            READ(IHOT+CK_LUN,REC=IHOTSTP) ICHA
          ENDIF
 
          IF(ITHSF.GE.IHABEG) THEN
-            READ(IHOT,REC=IHOTSTP+1) INZ
-            READ(IHOT,REC=IHOTSTP+2) INF
-            READ(IHOT,REC=IHOTSTP+3) IMM
-            READ(IHOT,REC=IHOTSTP+4) INP
-            READ(IHOT,REC=IHOTSTP+5) INSTAE
-            READ(IHOT,REC=IHOTSTP+6) INSTAV
-            READ(IHOT,REC=IHOTSTP+7) IISTAE
-            READ(IHOT,REC=IHOTSTP+8) IISTAV
-            READ(IHOT,REC=IHOTSTP+9) IIGLOE
-            READ(IHOT,REC=IHOTSTP+10) IIGLOV
-            READ(IHOT,REC=IHOTSTP+11) IICALL
-            READ(IHOT,REC=IHOTSTP+12) INFREQ
+            READ(IHOT+CK_LUN,REC=IHOTSTP+1) INZ
+            READ(IHOT+CK_LUN,REC=IHOTSTP+2) INF
+            READ(IHOT+CK_LUN,REC=IHOTSTP+3) IMM
+            READ(IHOT+CK_LUN,REC=IHOTSTP+4) INP
+            READ(IHOT+CK_LUN,REC=IHOTSTP+5) INSTAE
+            READ(IHOT+CK_LUN,REC=IHOTSTP+6) INSTAV
+            READ(IHOT+CK_LUN,REC=IHOTSTP+7) IISTAE
+            READ(IHOT+CK_LUN,REC=IHOTSTP+8) IISTAV
+            READ(IHOT+CK_LUN,REC=IHOTSTP+9) IIGLOE
+            READ(IHOT+CK_LUN,REC=IHOTSTP+10) IIGLOV
+            READ(IHOT+CK_LUN,REC=IHOTSTP+11) IICALL
+            READ(IHOT+CK_LUN,REC=IHOTSTP+12) INFREQ
             IHOTSTP = IHOTSTP+12
 
             DO I=1,INFREQ+INF
-               READ(IHOT,REC=IHOTSTP+1) FNAM8(1)
-               READ(IHOT,REC=IHOTSTP+2) FNAM8(2)
+               READ(IHOT+CK_LUN,REC=IHOTSTP+1) FNAM8(1)
+               READ(IHOT+CK_LUN,REC=IHOTSTP+2) FNAM8(2)
                IHOTSTP = IHOTSTP + 2
                INAMEFR(I) = FNAME1
-               READ(IHOT,REC=IHOTSTP+1) IFREQ(I)
-               READ(IHOT,REC=IHOTSTP+2) IFF(I)
-               READ(IHOT,REC=IHOTSTP+3) IFACE(I)
+               READ(IHOT+CK_LUN,REC=IHOTSTP+1) IFREQ(I)
+               READ(IHOT+CK_LUN,REC=IHOTSTP+2) IFF(I)
+               READ(IHOT+CK_LUN,REC=IHOTSTP+3) IFACE(I)
                IHOTSTP = IHOTSTP + 3
             ENDDO
 
-            READ(IHOT,REC=IHOTSTP+1) TIMEUD
-            READ(IHOT,REC=IHOTSTP+2) ITUD
+            READ(IHOT+CK_LUN,REC=IHOTSTP+1) TIMEUD
+            READ(IHOT+CK_LUN,REC=IHOTSTP+2) ITUD
             IHOTSTP = IHOTSTP + 2
 
             DO I=1,IMM
                DO J=1,IMM
                   IHOTSTP = IHOTSTP + 1
-                  READ(IHOT,REC=IHOTSTP) HA(I,J)
+                  READ(IHOT+CK_LUN,REC=IHOTSTP) HA(I,J)
                ENDDO
             ENDDO
 
@@ -4063,7 +4090,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                DO J=1,INSTAE
                   DO I=1,IMM
                      IHOTSTP=IHOTSTP+1
-                     READ(IHOT,REC=IHOTSTP) STAELV(I,J)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP) STAELV(I,J)
                   ENDDO
                ENDDO
             ENDIF
@@ -4071,8 +4098,8 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
             IF(NHASV.ne.0) THEN
                DO J=1,INSTAV
                   DO I=1,IMM
-                     READ(IHOT,REC=IHOTSTP+1) STAULV(I,J)
-                     READ(IHOT,REC=IHOTSTP+2) STAVLV(I,J)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP+1) STAULV(I,J)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP+2) STAVLV(I,J)
                      IHOTSTP = IHOTSTP + 2
                   ENDDO
                ENDDO
@@ -4082,7 +4109,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                DO J=1,INP
                   DO I=1,IMM
                      IHOTSTP=IHOTSTP+1
-                     READ(IHOT,REC=IHOTSTP) GLOELV(I,J)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP) GLOELV(I,J)
                   ENDDO
                ENDDO
             ENDIF
@@ -4090,8 +4117,8 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
             IF(NHAGV.ne.0) THEN
                DO J=1,INP
                   DO I=1,IMM
-                     READ(IHOT,REC=IHOTSTP+1) GLOULV(I,J)
-                     READ(IHOT,REC=IHOTSTP+2) GLOVLV(I,J)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP+1) GLOULV(I,J)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP+2) GLOVLV(I,J)
                      IHOTSTP = IHOTSTP + 2
                   ENDDO
                ENDDO
@@ -4102,20 +4129,20 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
          IF((FMV.GT.0.).AND.(INFREQ.GT.0).AND.(IM.EQ.0)) THEN !include means and variances
             IF(ITHSF.GT.ITMV) THEN
                IHOTSTP=IHOTSTP+1
-               READ(IHOT,REC=IHOTSTP) NTSTEPS
+               READ(IHOT+CK_LUN,REC=IHOTSTP) NTSTEPS
                IF(NHAGE.EQ.1) THEN
                   DO I=1,INP
-                     READ(IHOT,REC=IHOTSTP+1) ELAV(I)
-                     READ(IHOT,REC=IHOTSTP+2) ELVA(I)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP+1) ELAV(I)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP+2) ELVA(I)
                      IHOTSTP=IHOTSTP+2
                   ENDDO
                ENDIF
                IF(NHAGV.EQ.1) THEN
                   DO I=1,INP
-                     READ(IHOT,REC=IHOTSTP+1) XVELAV(I)
-                     READ(IHOT,REC=IHOTSTP+2) YVELAV(I)
-                     READ(IHOT,REC=IHOTSTP+3) XVELVA(I)
-                     READ(IHOT,REC=IHOTSTP+4) YVELVA(I)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP+1) XVELAV(I)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP+2) YVELAV(I)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP+3) XVELVA(I)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP+4) YVELVA(I)
                      IHOTSTP=IHOTSTP+4
                   ENDDO
                ENDIF
@@ -4132,56 +4159,56 @@ C
          LOC2(IPROC) = 105 + (IPROC-1)
          LOCFN(1:14) = 'PE0000/'//FNAME(1:7)
          CALL IWRITE(LOCFN,3,6,IPROC-1)
-         OPEN (LOC2(IPROC),FILE=LOCFN)
+         OPEN (LOC2(IPROC+CK_LUN),FILE=LOCFN)
       ENDDO
 C
 C--Write out info to local hot start files
 C
       DO IPROC = 1,NPROC
-         WRITE(LOC2(IPROC),*) FileFmtVn
-         WRITE(LOC2(IPROC),*) IMHSF
-         WRITE(LOC2(IPROC),*) TIMEHSF
-         WRITE(LOC2(IPROC),*) ITHSF
-         WRITE(LOC2(IPROC),*) NNODP(IPROC)
-         WRITE(LOC2(IPROC),*) NELP(IPROC)
-         WRITE(LOC2(IPROC),*) NNODP(IPROC)
-         WRITE(LOC2(IPROC),*) NELP(IPROC)
+         WRITE(LOC2(IPROC+CK_LUN),*) FileFmtVn
+         WRITE(LOC2(IPROC+CK_LUN),*) IMHSF
+         WRITE(LOC2(IPROC+CK_LUN),*) TIMEHSF
+         WRITE(LOC2(IPROC+CK_LUN),*) ITHSF
+         WRITE(LOC2(IPROC+CK_LUN),*) NNODP(IPROC)
+         WRITE(LOC2(IPROC+CK_LUN),*) NELP(IPROC)
+         WRITE(LOC2(IPROC+CK_LUN),*) NNODP(IPROC)
+         WRITE(LOC2(IPROC+CK_LUN),*) NELP(IPROC)
 
          DO I=1, NNODP(IPROC)
             IINDX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC2(IPROC),*) ETA1(IINDX)
+            WRITE(LOC2(IPROC+CK_LUN),*) ETA1(IINDX)
          END DO
 
          DO I=1, NNODP(IPROC)
             IINDX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC2(IPROC),*) ETA2(IINDX)
+            WRITE(LOC2(IPROC+CK_LUN),*) ETA2(IINDX)
          END DO
 
          DO I=1, NNODP(IPROC)
             IINDX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC2(IPROC),*) UU2(IINDX)
+            WRITE(LOC2(IPROC+CK_LUN),*) UU2(IINDX)
          END DO
 
          DO I=1, NNODP(IPROC)
             IINDX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC2(IPROC),*) VV2(IINDX)
+            WRITE(LOC2(IPROC+CK_LUN),*) VV2(IINDX)
          END DO
 
          IF(IM.EQ.10) THEN
             DO I=1, NNODP(IPROC)
                IINDX = ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOC2(IPROC),*) CH1(IINDX)
+               WRITE(LOC2(IPROC+CK_LUN),*) CH1(IINDX)
             END DO
          ENDIF
 
          DO I=1, NNODP(IPROC)
             IINDX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC2(IPROC),*) NODECODE(IINDX)
+            WRITE(LOC2(IPROC+CK_LUN),*) NODECODE(IINDX)
          END DO
 
          DO I=1,NELP(IPROC)
             IINDX=ABS(IMAP_EL_LG(I,IPROC))
-            WRITE(LOC2(IPROC),*) NOFF(IINDX)
+            WRITE(LOC2(IPROC+CK_LUN),*) NOFF(IINDX)
          END DO
 
 C
@@ -4235,9 +4262,9 @@ c         ENDIF
 C
 C--Close Global file and all the Local Files
 C
-      CLOSE (IHOT)
+      CLOSE (IHOT+CK_LUN)
       DO IPROC=1, NPROC
-         CLOSE (LOC2(IPROC))
+         CLOSE (LOC2(IPROC+CK_LUN))
       ENDDO
 C
       DEALLOCATE ( LOC2 )
@@ -4279,6 +4306,7 @@ C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       LOGICAL FOUND
       INTEGER I,J,IPROC,INDX,IHOTSTP, not_active
       INTEGER IMHSF,ITHSF, NH, N
@@ -4340,7 +4368,7 @@ C
       IF (FOUND) THEN
          WRITE(*,1011) FNAME
          IF(IHOT.EQ.67.OR.IHOT.EQ.68)
-     &      OPEN(IHOT,FILE=FNAME,ACCESS='DIRECT',RECL=8)
+     &      OPEN(IHOT+CK_LUN,FILE=FNAME,ACCESS='DIRECT',RECL=8)
       ELSE
          WRITE(*,1010) FNAME
          STOP
@@ -4349,7 +4377,7 @@ C
 C--   Read in info from global hot start files
 
       IHOTSTP=1
-      READ(IHOT,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
 
       if (.not. CMP_VERSION_NUMBERS(InputFileFmtVn, FileFmtVersion))then
         write(*, 1001)
@@ -4358,13 +4386,13 @@ C--   Read in info from global hot start files
         !stop
       endif
 
-      READ(IHOT,REC=IHOTSTP) IMHSF        ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) TIMEHSF      ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) ITHSF        ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NP_G_IN      ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NE_G_IN      ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NP_A_IN      ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NE_A_IN      ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) IMHSF        ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) TIMEHSF      ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) ITHSF        ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) NP_G_IN      ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) NE_G_IN      ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) NP_A_IN      ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) NE_A_IN      ; IHOTSTP = IHOTSTP + 1
       if (nnodg == np_g_in) then
         MNP = nnodg
         print *, "MNP = ", MNP
@@ -4400,58 +4428,58 @@ C
       print *, "continuing to read global hotstart file"
 
       DO I=1,MNP
-         READ(IHOT,REC=IHOTSTP) ETA1(I) ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) ETA1(I) ; IHOTSTP = IHOTSTP + 1
       END DO
       DO I=1,MNP
-         READ(IHOT,REC=IHOTSTP) ETA2(I) ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) ETA2(I) ; IHOTSTP = IHOTSTP + 1
       END DO
       DO I=1,MNP
-         READ(IHOT,REC=IHOTSTP) EtaDisc(I) ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) EtaDisc(I) ; IHOTSTP = IHOTSTP + 1
       END DO
       DO I=1,MNP
-         READ(IHOT,REC=IHOTSTP) UU2(I) ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) UU2(I) ; IHOTSTP = IHOTSTP + 1
       END DO
       DO I=1,MNP
-         READ(IHOT,REC=IHOTSTP) VV2(I) ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) VV2(I) ; IHOTSTP = IHOTSTP + 1
       END DO
       IF(IMHSF.EQ.10) THEN
         DO I=1,MNP
-           READ(IHOT,REC=IHOTSTP) CH1(I) ; IHOTSTP = IHOTSTP + 1
+           READ(IHOT+CK_LUN,REC=IHOTSTP) CH1(I) ; IHOTSTP = IHOTSTP + 1
         END DO
       ENDIF
       DO I=1,MNP
-         READ(IHOT,REC=IHOTSTP) NODECODE(I) ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) NODECODE(I) ; IHOTSTP = IHOTSTP + 1
       END DO
 
       DO I=1,MNE
-         READ(IHOT,REC=IHOTSTP) NOFF(I)  ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) NOFF(I)  ; IHOTSTP = IHOTSTP + 1
       END DO
 
-      READ(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
 
-      READ(IHOT,REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
 
-      READ(IHOT,REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
 
-      READ(IHOT,REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
 
-      READ(IHOT,REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
 
-      READ(IHOT,REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
 
-      READ(IHOT,REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
 
-      READ(IHOT,REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT+CK_LUN,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
 
 C kmd48.33 moved 3D hot start information to subroutine
 C          and took out other lines
@@ -4486,47 +4514,47 @@ C.......IF HARMONIC ANALYSIS HAS ALREADY BEGUN, READ IN HOT START
 C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
 
          IF(ITHSF.GT.ITHAS) THEN
-            READ(IHOT,REC=IHOTSTP) ICHA
+            READ(IHOT+CK_LUN,REC=IHOTSTP) ICHA
             IHOTSTP=IHOTSTP+1
          ENDIF
 
          IF(ITHSF.GE.IHABEG) THEN
-            READ(IHOT,REC=IHOTSTP) INZ ; IHOTSTP = IHOTSTP + 1
-            READ(IHOT,REC=IHOTSTP) INF ; IHOTSTP = IHOTSTP + 1
-            READ(IHOT,REC=IHOTSTP) IMM ; IHOTSTP = IHOTSTP + 1
-            READ(IHOT,REC=IHOTSTP) INP ; IHOTSTP = IHOTSTP + 1
-            READ(IHOT,REC=IHOTSTP) INSTAE ; IHOTSTP = IHOTSTP + 1
-            READ(IHOT,REC=IHOTSTP) INSTAV ; IHOTSTP = IHOTSTP + 1
-            READ(IHOT,REC=IHOTSTP) IISTAE ; IHOTSTP = IHOTSTP + 1
-            READ(IHOT,REC=IHOTSTP) IISTAV ; IHOTSTP = IHOTSTP + 1
-            READ(IHOT,REC=IHOTSTP) IIGLOE ; IHOTSTP = IHOTSTP + 1
-            READ(IHOT,REC=IHOTSTP) IIGLOV ; IHOTSTP = IHOTSTP + 1
-            READ(IHOT,REC=IHOTSTP) IICALL ; IHOTSTP = IHOTSTP + 1
-            READ(IHOT,REC=IHOTSTP) INFREQ ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT+CK_LUN,REC=IHOTSTP) INZ ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT+CK_LUN,REC=IHOTSTP) INF ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT+CK_LUN,REC=IHOTSTP) IMM ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT+CK_LUN,REC=IHOTSTP) INP ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT+CK_LUN,REC=IHOTSTP) INSTAE ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT+CK_LUN,REC=IHOTSTP) INSTAV ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT+CK_LUN,REC=IHOTSTP) IISTAE ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT+CK_LUN,REC=IHOTSTP) IISTAV ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT+CK_LUN,REC=IHOTSTP) IIGLOE ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT+CK_LUN,REC=IHOTSTP) IIGLOV ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT+CK_LUN,REC=IHOTSTP) IICALL ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT+CK_LUN,REC=IHOTSTP) INFREQ ; IHOTSTP = IHOTSTP + 1
 
             DO I=1,INFREQ+INF
-               READ(IHOT,REC=IHOTSTP) FNAM8(1) ; IHOTSTP = IHOTSTP + 1
-               READ(IHOT,REC=IHOTSTP) FNAM8(2) ; IHOTSTP = IHOTSTP + 1
+               READ(IHOT+CK_LUN,REC=IHOTSTP) FNAM8(1) ; IHOTSTP = IHOTSTP + 1
+               READ(IHOT+CK_LUN,REC=IHOTSTP) FNAM8(2) ; IHOTSTP = IHOTSTP + 1
 
                INAMEFR(I) = FNAME1
-               READ(IHOT,REC=IHOTSTP) IFREQ(I) ; IHOTSTP = IHOTSTP + 1
-               READ(IHOT,REC=IHOTSTP) IFF(I) ; IHOTSTP = IHOTSTP + 1
-               READ(IHOT,REC=IHOTSTP) IFACE(I) ; IHOTSTP = IHOTSTP + 1
+               READ(IHOT+CK_LUN,REC=IHOTSTP) IFREQ(I) ; IHOTSTP = IHOTSTP + 1
+               READ(IHOT+CK_LUN,REC=IHOTSTP) IFF(I) ; IHOTSTP = IHOTSTP + 1
+               READ(IHOT+CK_LUN,REC=IHOTSTP) IFACE(I) ; IHOTSTP = IHOTSTP + 1
             ENDDO
 
-            READ(IHOT,REC=IHOTSTP) TIMEUD ; IHOTSTP = IHOTSTP + 1
-            READ(IHOT,REC=IHOTSTP) ITUD ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT+CK_LUN,REC=IHOTSTP) TIMEUD ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT+CK_LUN,REC=IHOTSTP) ITUD ; IHOTSTP = IHOTSTP + 1
 
             DO I=1,IMM
                DO J=1,IMM
-                  READ(IHOT,REC=IHOTSTP) HA(I,J) ; IHOTSTP = IHOTSTP + 1
+                  READ(IHOT+CK_LUN,REC=IHOTSTP) HA(I,J) ; IHOTSTP = IHOTSTP + 1
                ENDDO
             ENDDO
 
             IF(NHASE.ne.0) THEN
                DO J=1,INSTAE
                   DO I=1,IMM
-                     READ(IHOT,REC=IHOTSTP) STAELV(I,J)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP) STAELV(I,J)
                      IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDDO
@@ -4535,9 +4563,9 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
             IF(NHASV.ne.0) THEN
                DO J=1,INSTAV
                   DO I=1,IMM
-                     READ(IHOT,REC=IHOTSTP) STAULV(I,J)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP) STAULV(I,J)
                      IHOTSTP = IHOTSTP + 1
-                     READ(IHOT,REC=IHOTSTP) STAVLV(I,J)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP) STAVLV(I,J)
                      IHOTSTP = IHOTSTP + 1
                   ENDDO
                ENDDO
@@ -4546,7 +4574,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
             IF(NHAGE.ne.0) THEN
                DO J=1,INP
                   DO I=1,IMM
-                     READ(IHOT,REC=IHOTSTP) GLOELV(I,J)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP) GLOELV(I,J)
                      IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDDO
@@ -4555,9 +4583,9 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
             IF(NHAGV.ne.0) THEN
                DO J=1,INP
                   DO I=1,IMM
-                     READ(IHOT,REC=IHOTSTP) GLOULV(I,J)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP) GLOULV(I,J)
                      IHOTSTP = IHOTSTP + 1
-                     READ(IHOT,REC=IHOTSTP) GLOVLV(I,J)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP) GLOVLV(I,J)
                      IHOTSTP = IHOTSTP + 1
                   ENDDO
                ENDDO
@@ -4567,25 +4595,25 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
 
          IF((FMV.GT.0.).AND.(INFREQ.GT.0).AND.(IM.EQ.0)) THEN !include means and variances
             IF(ITHSF.GT.ITMV) THEN
-               READ(IHOT,REC=IHOTSTP) NTSTEPS
+               READ(IHOT+CK_LUN,REC=IHOTSTP) NTSTEPS
                IHOTSTP=IHOTSTP+1
                IF(NHAGE.EQ.1) THEN
                   DO I=1,INP
-                     READ(IHOT,REC=IHOTSTP) ELAV(I)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP) ELAV(I)
                      IHOTSTP=IHOTSTP+1
-                     READ(IHOT,REC=IHOTSTP) ELVA(I)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP) ELVA(I)
                      IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDIF
                IF(NHAGV.EQ.1) THEN
                   DO I=1,INP
-                     READ(IHOT,REC=IHOTSTP) XVELAV(I)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP) XVELAV(I)
                      IHOTSTP=IHOTSTP+1
-                     READ(IHOT,REC=IHOTSTP) YVELAV(I)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP) YVELAV(I)
                      IHOTSTP=IHOTSTP+1
-                     READ(IHOT,REC=IHOTSTP) XVELVA(I)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP) XVELVA(I)
                      IHOTSTP=IHOTSTP+1
-                     READ(IHOT,REC=IHOTSTP) YVELVA(I)
+                     READ(IHOT+CK_LUN,REC=IHOTSTP) YVELVA(I)
                      IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDIF
@@ -4602,105 +4630,105 @@ C
          LOC2(IPROC) = 105 + (IPROC-1)
          LOCFN(1:14) = 'PE0000/'//FNAME(1:7)
          CALL IWRITE(LOCFN,3,6,IPROC-1)
-         OPEN (LOC2(IPROC),FILE=LOCFN,ACCESS='DIRECT',RECL=8)
+         OPEN (LOC2(IPROC+CK_LUN),FILE=LOCFN,ACCESS='DIRECT',RECL=8)
       ENDDO
 C
 C--Write out info to local hot start files
 C
       DO IPROC = 1,NPROC
          IHOTSTP=1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) InputFileFmtVn ; 
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) InputFileFmtVn ; 
                                                    IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) IMHSF          ; 
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IMHSF          ; 
                                                    IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) TIMEHSF        ; 
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) TIMEHSF        ; 
                                                    IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) ITHSF          ; 
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) ITHSF          ; 
                                                    IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) NNODP(IPROC)   ; 
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NNODP(IPROC)   ; 
                                                    IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) NELP(IPROC)    ; 
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NELP(IPROC)    ; 
                                                    IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) NNODP(IPROC)   ; 
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NNODP(IPROC)   ; 
                                                    IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) NELP(IPROC)    ;  
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NELP(IPROC)    ;  
                                                    IHOTSTP = IHOTSTP + 1
 
          DO I=1, NNODP(IPROC)
             INDX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC2(IPROC),REC=IHOTSTP) ETA1(INDX)
+            WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) ETA1(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC2(IPROC),REC=IHOTSTP) ETA2(INDX)
+            WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) ETA2(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC2(IPROC),REC=IHOTSTP) EtaDisc(INDX)
+            WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) EtaDisc(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC2(IPROC),REC=IHOTSTP) UU2(INDX)
+            WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) UU2(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC2(IPROC),REC=IHOTSTP) VV2(INDX)
+            WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) VV2(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          IF(IM.EQ.10) THEN
             DO I=1, NNODP(IPROC)
                INDX = ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOC2(IPROC),REC=IHOTSTP) CH1(INDX)
+               WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) CH1(INDX)
                IHOTSTP=IHOTSTP+1
             END DO
          ENDIF
 
          DO I=1, NNODP(IPROC)
             INDX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC2(IPROC),REC=IHOTSTP) NODECODE(INDX)
+            WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NODECODE(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1,NELP(IPROC)
             INDX=ABS(IMAP_EL_LG(I,IPROC))
-            WRITE(LOC2(IPROC),REC=IHOTSTP) NOFF(INDX)
+            WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NOFF(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
-         WRITE(LOC2(IPROC),REC=IHOTSTP) IESTP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IESTP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(LOC2(IPROC),REC=IHOTSTP) IVSTP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IVSTP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(LOC2(IPROC),REC=IHOTSTP) ICSTP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) NSCOUC  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) ICSTP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NSCOUC  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(LOC2(IPROC),REC=IHOTSTP) IPSTP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) IWSTP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) NSCOUM  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IPSTP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IWSTP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NSCOUM  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(LOC2(IPROC),REC=IHOTSTP) IGEP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) NSCOUGE  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IGEP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NSCOUGE  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(LOC2(IPROC),REC=IHOTSTP) IGVP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) NSCOUGV  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IGVP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NSCOUGV  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(LOC2(IPROC),REC=IHOTSTP) IGCP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) NSCOUGC  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IGCP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NSCOUGC  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(LOC2(IPROC),REC=IHOTSTP) IGPP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) IGWP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC2(IPROC),REC=IHOTSTP) NSCOUGW  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IGPP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IGWP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NSCOUGW  ; IHOTSTP = IHOTSTP + 1
 
 C  kmd48.33bc moved 3D hot start information to subroutine
 C jgf49.43 refined check of IMHSF so that it picks up only
@@ -4759,9 +4787,9 @@ c         ENDIF
 C
 C--Close Global file and all the Local Files
 C
-      CLOSE (IHOT)
+      CLOSE (IHOT+CK_LUN)
       DO IPROC=1, NPROC
-         CLOSE (LOC2(IPROC))
+         CLOSE (LOC2(IPROC+CK_LUN))
       ENDDO
 C
       IF(ALLOCATED(LOC2)) DEALLOCATE ( LOC2 )
@@ -4837,6 +4865,7 @@ C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
       LOGICAL FOUND
       INTEGER I,J,IPROC,INDX,IHOTSTP, not_active
       INTEGER IMHSF,ITHSF,IVALUE,IDUMY, NH, N
@@ -4887,7 +4916,7 @@ C
          INQUIRE(FILE=LOCFN,EXIST=FOUND)
          IF (FOUND) THEN
            WRITE(*,1011) LOCFN
-           OPEN (LOC2(IPROC),FILE=LOCFN,ACCESS='DIRECT',RECL=8)
+           OPEN (LOC2(IPROC+CK_LUN),FILE=LOCFN,ACCESS='DIRECT',RECL=8)
          ELSE
           WRITE(*,1010) FNAME
           STOP
@@ -4949,54 +4978,54 @@ C--Read info from local hot start files
 C
       DO IPROC = 1,NPROC
          IHOTSTP=1
-         READ(LOC2(IPROC),REC=IHOTSTP) InputFileFmtVn ; 
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) InputFileFmtVn ; 
                                                    IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) IMHSF          ; 
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IMHSF          ; 
                                                    IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) TIMEHSF        ; 
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) TIMEHSF        ; 
                                                    IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) ITHSF          ; 
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) ITHSF          ; 
                                                    IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) IDUMY          ; 
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IDUMY          ; 
                                                    IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) IDUMY          ; 
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IDUMY          ; 
                                                    IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) IDUMY          ; 
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IDUMY          ; 
                                                    IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) IDUMY          ; 
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IDUMY          ; 
                                                    IHOTSTP = IHOTSTP + 1
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE
+            READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) RVALUE
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) ETA1(INDX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE
+            READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) RVALUE
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) ETA2(INDX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE
+            READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) RVALUE
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) EtaDisc(INDX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE
+            READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) RVALUE
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) UU2(INDX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE
+            READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) RVALUE
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) VV2(INDX) = RVALUE
          END DO
@@ -5004,7 +5033,7 @@ C
          IF(IM.EQ.10) THEN
             DO I=1, NNODP(IPROC)
                INDX = IMAP_NOD_LG(I,IPROC)
-               READ(LOC2(IPROC),REC=IHOTSTP) RVALUE
+               READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) RVALUE
                IHOTSTP=IHOTSTP+1
                IF (INDX > 0) CH1(INDX) = RVALUE
             END DO
@@ -5012,43 +5041,43 @@ C
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC2(IPROC),REC=IHOTSTP) IVALUE
+            READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IVALUE
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) NODECODE(INDX) = IVALUE
          END DO
 
          DO I=1,NELP(IPROC)
             INDX = IMAP_EL_LG(I,IPROC)
-            READ(LOC2(IPROC),REC=IHOTSTP) IVALUE
+            READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IVALUE
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) NOFF(INDX) = IVALUE
          END DO
 
-         READ(LOC2(IPROC),REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
 
-         READ(LOC2(IPROC),REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
 
-         READ(LOC2(IPROC),REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
 
-         READ(LOC2(IPROC),REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
 
-         READ(LOC2(IPROC),REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
 
-         READ(LOC2(IPROC),REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
 
-         READ(LOC2(IPROC),REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
 
-         READ(LOC2(IPROC),REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC2(IPROC),REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC+CK_LUN),REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
 C
 C   kmd48.33bc add information for 3D hot start
 C     jgf46.02 read in 3D hotstart data if appropriate
@@ -5096,7 +5125,7 @@ c             ENDIF
 c           ENDIF
 c         ENDIF
 #endif
-          CLOSE (LOC2(IPROC))
+          CLOSE (LOC2(IPROC+CK_LUN))
 
       ENDDO
 
@@ -5104,79 +5133,79 @@ C-----------------------------------------------------------------------
 C--   Write info to global hot start files
 C-----------------------------------------------------------------------
 
-      OPEN(IHOT,FILE=trim(FNAME),ACCESS='DIRECT',RECL=8)
+      OPEN(IHOT+CK_LUN,FILE=trim(FNAME),ACCESS='DIRECT',RECL=8)
       print *, "opening global hotstart file"
 
       IHOTSTP=1
-      WRITE(IHOT,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
-      WRITE(IHOT,REC=IHOTSTP) IMHSF        ; IHOTSTP = IHOTSTP + 1
-      WRITE(IHOT,REC=IHOTSTP) TIMEHSF      ; IHOTSTP = IHOTSTP + 1
-      WRITE(IHOT,REC=IHOTSTP) ITHSF        ; IHOTSTP = IHOTSTP + 1
-      WRITE(IHOT,REC=IHOTSTP) MNP          ; IHOTSTP = IHOTSTP + 1
-      WRITE(IHOT,REC=IHOTSTP) MNE          ; IHOTSTP = IHOTSTP + 1
-      WRITE(IHOT,REC=IHOTSTP) MNP          ; IHOTSTP = IHOTSTP + 1
-      WRITE(IHOT,REC=IHOTSTP) MNE          ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) IMHSF        ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) TIMEHSF      ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) ITHSF        ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) MNP          ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) MNE          ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) MNP          ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) MNE          ; IHOTSTP = IHOTSTP + 1
 
       DO I=1,MNP
-         WRITE(IHOT,REC=IHOTSTP) ETA1(I)
+         WRITE(IHOT+CK_LUN,REC=IHOTSTP) ETA1(I)
          IHOTSTP = IHOTSTP + 1
       END DO
       DO I=1,MNP
-         WRITE(IHOT,REC=IHOTSTP) ETA2(I)
+         WRITE(IHOT+CK_LUN,REC=IHOTSTP) ETA2(I)
          IHOTSTP = IHOTSTP + 1
       END DO
       DO I=1,MNP
-         WRITE(IHOT,REC=IHOTSTP) EtaDisc(I)
+         WRITE(IHOT+CK_LUN,REC=IHOTSTP) EtaDisc(I)
          IHOTSTP = IHOTSTP + 1
       END DO
       DO I=1,MNP
-         WRITE(IHOT,REC=IHOTSTP) UU2(I)
+         WRITE(IHOT+CK_LUN,REC=IHOTSTP) UU2(I)
          IHOTSTP = IHOTSTP + 1
       END DO
       DO I=1,MNP
-         WRITE(IHOT,REC=IHOTSTP) VV2(I)
+         WRITE(IHOT+CK_LUN,REC=IHOTSTP) VV2(I)
          IHOTSTP = IHOTSTP + 1
       END DO
       IF(IM.EQ.10) THEN
         DO I=1,MNP
-           WRITE(IHOT,REC=IHOTSTP) CH1(I)
+           WRITE(IHOT+CK_LUN,REC=IHOTSTP) CH1(I)
            IHOTSTP=IHOTSTP+1
         END DO
       ENDIF
       DO I=1,MNP
-         WRITE(IHOT,REC=IHOTSTP) NODECODE(I)
+         WRITE(IHOT+CK_LUN,REC=IHOTSTP) NODECODE(I)
          IHOTSTP=IHOTSTP+1
       END DO
       DO I=1,MNE
-         WRITE(IHOT,REC=IHOTSTP) NOFF(I)
+         WRITE(IHOT+CK_LUN,REC=IHOTSTP) NOFF(I)
          IHOTSTP=IHOTSTP+1
       END DO
 
-      WRITE(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
-      WRITE(IHOT,REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
 
-      WRITE(IHOT,REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
-      WRITE(IHOT,REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
 
-      WRITE(IHOT,REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
-      WRITE(IHOT,REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
 
-      WRITE(IHOT,REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
-      WRITE(IHOT,REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
-      WRITE(IHOT,REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
 
-      WRITE(IHOT,REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
-      WRITE(IHOT,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
 
-      WRITE(IHOT,REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
-      WRITE(IHOT,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
 
-      WRITE(IHOT,REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
-      WRITE(IHOT,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
 
-      WRITE(IHOT,REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
-      WRITE(IHOT,REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
-      WRITE(IHOT,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT+CK_LUN,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
 C
 
        ! vjp 2006/9/30 not supporting harmonic analysis or C3D yet
@@ -5205,39 +5234,39 @@ C.......IF HARMONIC ANALYSIS HAS ALREADY BEGUN, READ IN HOT START
 C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
 
          IF(ITHSF.GT.ITHAS) THEN
-            WRITE(IHOT,REC=IHOTSTP) ICHA
+            WRITE(IHOT+CK_LUN,REC=IHOTSTP) ICHA
             IHOTSTP=IHOTSTP+1
          ENDIF
 
          IF(ITHSF.GE.IHABEG) THEN
-            WRITE(IHOT,REC=IHOTSTP) INZ ; IHOTSTP = IHOTSTP + 1
-            WRITE(IHOT,REC=IHOTSTP) INF ;  IHOTSTP = IHOTSTP + 1
-            WRITE(IHOT,REC=IHOTSTP) IMM ;  IHOTSTP = IHOTSTP + 1
-            WRITE(IHOT,REC=IHOTSTP) INP ;  IHOTSTP = IHOTSTP + 1
-            WRITE(IHOT,REC=IHOTSTP) INSTAE ;  IHOTSTP = IHOTSTP + 1
-            WRITE(IHOT,REC=IHOTSTP) INSTAV ;  IHOTSTP = IHOTSTP + 1
-            WRITE(IHOT,REC=IHOTSTP) IISTAE ;  IHOTSTP = IHOTSTP + 1
-            WRITE(IHOT,REC=IHOTSTP) IISTAV ;  IHOTSTP = IHOTSTP + 1
-            WRITE(IHOT,REC=IHOTSTP) IIGLOE ;  IHOTSTP = IHOTSTP + 1
-            WRITE(IHOT,REC=IHOTSTP) IIGLOV ;  IHOTSTP = IHOTSTP + 1
-            WRITE(IHOT,REC=IHOTSTP) IICALL ;  IHOTSTP = IHOTSTP + 1
-            WRITE(IHOT,REC=IHOTSTP) INFREQ ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT+CK_LUN,REC=IHOTSTP) INZ ; IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT+CK_LUN,REC=IHOTSTP) INF ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT+CK_LUN,REC=IHOTSTP) IMM ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT+CK_LUN,REC=IHOTSTP) INP ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT+CK_LUN,REC=IHOTSTP) INSTAE ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT+CK_LUN,REC=IHOTSTP) INSTAV ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT+CK_LUN,REC=IHOTSTP) IISTAE ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT+CK_LUN,REC=IHOTSTP) IISTAV ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT+CK_LUN,REC=IHOTSTP) IIGLOE ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT+CK_LUN,REC=IHOTSTP) IIGLOV ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT+CK_LUN,REC=IHOTSTP) IICALL ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT+CK_LUN,REC=IHOTSTP) INFREQ ;  IHOTSTP = IHOTSTP + 1
 
             DO I=1,INFREQ+INF
-               WRITE(IHOT,REC=IHOTSTP) FNAM8(1) ;  IHOTSTP = IHOTSTP + 1
-               WRITE(IHOT,REC=IHOTSTP) FNAM8(2) ;  IHOTSTP = IHOTSTP + 1
+               WRITE(IHOT+CK_LUN,REC=IHOTSTP) FNAM8(1) ;  IHOTSTP = IHOTSTP + 1
+               WRITE(IHOT+CK_LUN,REC=IHOTSTP) FNAM8(2) ;  IHOTSTP = IHOTSTP + 1
                INAMEFR(I) = FNAME1
-               WRITE(IHOT,REC=IHOTSTP) IFREQ(I) ;  IHOTSTP = IHOTSTP + 1
-               WRITE(IHOT,REC=IHOTSTP) IFF(I) ;  IHOTSTP = IHOTSTP + 1
-               WRITE(IHOT,REC=IHOTSTP) IFACE(I) ;  IHOTSTP = IHOTSTP + 1
+               WRITE(IHOT+CK_LUN,REC=IHOTSTP) IFREQ(I) ;  IHOTSTP = IHOTSTP + 1
+               WRITE(IHOT+CK_LUN,REC=IHOTSTP) IFF(I) ;  IHOTSTP = IHOTSTP + 1
+               WRITE(IHOT+CK_LUN,REC=IHOTSTP) IFACE(I) ;  IHOTSTP = IHOTSTP + 1
             ENDDO
 
-            WRITE(IHOT,REC=IHOTSTP) TIMEUD ;  IHOTSTP = IHOTSTP + 1
-            WRITE(IHOT,REC=IHOTSTP) ITUD ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT+CK_LUN,REC=IHOTSTP) TIMEUD ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT+CK_LUN,REC=IHOTSTP) ITUD ;  IHOTSTP = IHOTSTP + 1
 
             DO I=1,IMM
                DO J=1,IMM
-                  WRITE(IHOT,REC=IHOTSTP) HA(I,J)
+                  WRITE(IHOT+CK_LUN,REC=IHOTSTP) HA(I,J)
                   IHOTSTP = IHOTSTP + 1
                ENDDO
             ENDDO
@@ -5245,7 +5274,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
             IF(NHASE.ne.0) THEN
                DO J=1,INSTAE
                   DO I=1,IMM
-                     WRITE(IHOT,REC=IHOTSTP) STAELV(I,J)
+                     WRITE(IHOT+CK_LUN,REC=IHOTSTP) STAELV(I,J)
                      IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDDO
@@ -5254,9 +5283,9 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
             IF(NHASV.ne.0) THEN
                DO J=1,INSTAV
                   DO I=1,IMM
-                     WRITE(IHOT,REC=IHOTSTP) STAULV(I,J)
+                     WRITE(IHOT+CK_LUN,REC=IHOTSTP) STAULV(I,J)
                      IHOTSTP=IHOTSTP+1
-                     WRITE(IHOT,REC=IHOTSTP) STAVLV(I,J)
+                     WRITE(IHOT+CK_LUN,REC=IHOTSTP) STAVLV(I,J)
                      IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDDO
@@ -5265,7 +5294,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
             IF(NHAGE.ne.0) THEN
                DO J=1,INP
                   DO I=1,IMM
-                     WRITE(IHOT,REC=IHOTSTP) GLOELV(I,J)
+                     WRITE(IHOT+CK_LUN,REC=IHOTSTP) GLOELV(I,J)
                      IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDDO
@@ -5274,9 +5303,9 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
             IF(NHAGV.ne.0) THEN
                DO J=1,INP
                   DO I=1,IMM
-                     WRITE(IHOT,REC=IHOTSTP) GLOULV(I,J)
+                     WRITE(IHOT+CK_LUN,REC=IHOTSTP) GLOULV(I,J)
                      IHOTSTP = IHOTSTP + 1
-                     WRITE(IHOT,REC=IHOTSTP) GLOVLV(I,J)
+                     WRITE(IHOT+CK_LUN,REC=IHOTSTP) GLOVLV(I,J)
                      IHOTSTP = IHOTSTP + 1
                   ENDDO
                ENDDO
@@ -5286,25 +5315,25 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
 
          IF((FMV.GT.0.).AND.(INFREQ.GT.0).AND.(IM.EQ.0)) THEN !include means and variances
             IF(ITHSF.GT.ITMV) THEN
-               WRITE(IHOT,REC=IHOTSTP) NTSTEPS
+               WRITE(IHOT+CK_LUN,REC=IHOTSTP) NTSTEPS
                IHOTSTP=IHOTSTP+1
                IF(NHAGE.EQ.1) THEN
                   DO I=1,INP
-                     WRITE(IHOT,REC=IHOTSTP) ELAV(I)
+                     WRITE(IHOT+CK_LUN,REC=IHOTSTP) ELAV(I)
                      IHOTSTP=IHOTSTP+1
-                     WRITE(IHOT,REC=IHOTSTP) ELVA(I)
+                     WRITE(IHOT+CK_LUN,REC=IHOTSTP) ELVA(I)
                      IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDIF
                IF(NHAGV.EQ.1) THEN
                   DO I=1,INP
-                     WRITE(IHOT,REC=IHOTSTP) XVELAV(I)
+                     WRITE(IHOT+CK_LUN,REC=IHOTSTP) XVELAV(I)
                      IHOTSTP=IHOTSTP+1
-                     WRITE(IHOT,REC=IHOTSTP) YVELAV(I)
+                     WRITE(IHOT+CK_LUN,REC=IHOTSTP) YVELAV(I)
                      IHOTSTP=IHOTSTP+1
-                     WRITE(IHOT,REC=IHOTSTP) XVELVA(I)
+                     WRITE(IHOT+CK_LUN,REC=IHOTSTP) XVELVA(I)
                      IHOTSTP=IHOTSTP+1
-                     WRITE(IHOT,REC=IHOTSTP) YVELVA(I)
+                     WRITE(IHOT+CK_LUN,REC=IHOTSTP) YVELVA(I)
                      IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDIF
@@ -5316,7 +5345,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
 C
 C--Close Global file and all the Local Files
 C
-      CLOSE (IHOT)
+      CLOSE (IHOT+CK_LUN)
 C
       DEALLOCATE ( LOC2 )
       nbytes = 4*nproc
@@ -5386,83 +5415,83 @@ C     Start reading in the data
       ALLOCATE ( Sal(MNP,NFEN), Temp(MNP,NFEN))
 !kmd end of additions
 
-        READ(IHOT,REC=IHOTSTP) IDEN  ;  IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) N3DSD ;  IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) I3DSDRec ;  IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) N3DSV ;  IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) I3DSVRec ;  IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) N3DST ;  IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) I3DSTRec ;  IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) N3DGD ;  IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) I3DGDRec ;  IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) N3DGV ;  IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) I3DGVRec ;  IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) N3DGT ;  IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) I3DGTRec ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) IDEN  ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) N3DSD ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) I3DSDRec ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) N3DSV ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) I3DSVRec ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) N3DST ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) I3DSTRec ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) N3DGD ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) I3DGDRec ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) N3DGV ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) I3DGVRec ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) N3DGT ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) I3DGTRec ;  IHOTSTP = IHOTSTP + 1
 
         DO NH=1,MNP
-          READ(IHOT,REC=IHOTSTP) DUU(NH)
+          READ(IHOT+CK_LUN,REC=IHOTSTP) DUU(NH)
           IHOTSTP=IHOTSTP+1
         END DO
         DO NH=1,MNP
-          READ(IHOT,REC=IHOTSTP) DUV(NH)
+          READ(IHOT+CK_LUN,REC=IHOTSTP) DUV(NH)
           IHOTSTP=IHOTSTP+1
         END DO
         DO NH=1,MNP
-          READ(IHOT,REC=IHOTSTP) DVV(NH)
+          READ(IHOT+CK_LUN,REC=IHOTSTP) DVV(NH)
           IHOTSTP=IHOTSTP+1
         END DO
         DO NH=1,MNP
-          READ(IHOT,REC=IHOTSTP) UU(NH)
+          READ(IHOT+CK_LUN,REC=IHOTSTP) UU(NH)
           IHOTSTP=IHOTSTP+1
         END DO
         DO NH=1,MNP
-          READ(IHOT,REC=IHOTSTP) VV(NH)
+          READ(IHOT+CK_LUN,REC=IHOTSTP) VV(NH)
           IHOTSTP=IHOTSTP+1
         END DO
         DO NH=1,MNP
-          READ(IHOT,REC=IHOTSTP) BSX(NH)
+          READ(IHOT+CK_LUN,REC=IHOTSTP) BSX(NH)
           IHOTSTP=IHOTSTP+1
         END DO
         DO NH=1,MNP
-          READ(IHOT,REC=IHOTSTP) BSY(NH)
+          READ(IHOT+CK_LUN,REC=IHOTSTP) BSY(NH)
           IHOTSTP=IHOTSTP+1
         ENDDO
 
         DO K=1,NFEN
           DO NH=1,MNP
-            READ(IHOT,REC=IHOTSTP) RealQ(NH,K)
+            READ(IHOT+CK_LUN,REC=IHOTSTP) RealQ(NH,K)
             IHOTSTP=IHOTSTP+1
           END DO
         END DO
         DO K=1,NFEN
           DO NH=1,MNP
-            READ(IHOT,REC=IHOTSTP) ImagQ(NH,K)
+            READ(IHOT+CK_LUN,REC=IHOTSTP) ImagQ(NH,K)
             IHOTSTP=IHOTSTP+1
           END DO
         END DO
         DO K=1,NFEN
           DO NH=1,MNP
-            READ(IHOT,REC=IHOTSTP) WZ(NH,K)
+            READ(IHOT+CK_LUN,REC=IHOTSTP) WZ(NH,K)
             IHOTSTP=IHOTSTP+1
           END DO
         END DO
         DO K=1,NFEN
           DO NH=1,MNP
-            READ(IHOT,REC=IHOTSTP) q20(NH,K)
+            READ(IHOT+CK_LUN,REC=IHOTSTP) q20(NH,K)
             IHOTSTP=IHOTSTP+1
           END DO
         END DO
         DO K=1,NFEN
           DO NH=1,MNP
-            READ(IHOT,REC=IHOTSTP) l(NH,K)
+            READ(IHOT+CK_LUN,REC=IHOTSTP) l(NH,K)
             IHOTSTP=IHOTSTP+1
           END DO
         END DO
         IF (ABS(IDEN).EQ.1) THEN
           DO K=1,NFEN
             DO NH=1,MNP
-              READ(IHOT,REC=IHOTSTP) SigT(NH,K)
+              READ(IHOT+CK_LUN,REC=IHOTSTP) SigT(NH,K)
               IHOTSTP=IHOTSTP+1
             END DO
           END DO
@@ -5470,7 +5499,7 @@ C     Start reading in the data
         IF(ABS(IDen).EQ.2) THEN
           DO K=1,NFEN
             DO NH=1,MNP
-              READ(IHOT,REC=IHOTSTP) Sal(NH,K)
+              READ(IHOT+CK_LUN,REC=IHOTSTP) Sal(NH,K)
               IHOTSTP=IHOTSTP+1
             END DO
           END DO
@@ -5478,7 +5507,7 @@ C     Start reading in the data
         IF(ABS(IDen).EQ.3) THEN
           DO K=1,NFEN
             DO NH=1,MNP
-              READ(IHOT,REC=IHOTSTP) Temp(NH,K)
+              READ(IHOT+CK_LUN,REC=IHOTSTP) Temp(NH,K)
               IHOTSTP=IHOTSTP+1
             END DO
           END DO
@@ -5486,13 +5515,13 @@ C     Start reading in the data
         IF(ABS(IDen).EQ.4) THEN
           DO K=1,NFEN
             DO NH=1,MNP
-              READ(IHOT,REC=IHOTSTP) Sal(NH,K)
+              READ(IHOT+CK_LUN,REC=IHOTSTP) Sal(NH,K)
               IHOTSTP=IHOTSTP+1
             END DO
           END DO
           DO K=1,NFEN
             DO NH=1,MNP
-              READ(IHOT,REC=IHOTSTP) Temp(NH,K)
+              READ(IHOT+CK_LUN,REC=IHOTSTP) Temp(NH,K)
               IHOTSTP=IHOTSTP+1
             ENDDO
           ENDDO
@@ -5526,60 +5555,60 @@ C     Start writing out the 3D hotstart information
             LOCHSF=UnitNumber
             IHOTSTP=FilePosition
 
-            WRITE(LOCHSF,REC=IHOTSTP) IDEN ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) N3DSD ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) I3DSDRec ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) N3DSV ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) I3DSVRec ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) N3DST ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) I3DSTRec ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) N3DGD ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) I3DGDRec ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) N3DGV ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) I3DGVRec ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) N3DGT ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) I3DGTRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) IDEN ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) N3DSD ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) I3DSDRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) N3DSV ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) I3DSVRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) N3DST ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) I3DSTRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) N3DGD ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) I3DGDRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) N3DGV ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) I3DGVRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) N3DGT ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) I3DGTRec ; IHOTSTP = IHOTSTP + 1
 
             DO I=1,NNODP(IPROC)
                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) DUU(IINDX)
+               WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) DUU(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) DUV(IINDX)
+               WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) DUV(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) DVV(IINDX)
+               WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) DVV(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) UU(IINDX)
+               WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) UU(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) VV(IINDX)
+               WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) VV(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) BSX(IINDX)
+               WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) BSX(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) BSY(IINDX)
+               WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) BSY(IINDX)
                IHOTSTP=IHOTSTP+1
              ENDDO
 
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
                 IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) RealQ(IINDX,N)
+                WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) RealQ(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
@@ -5587,7 +5616,7 @@ C     Start writing out the 3D hotstart information
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
                 IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) ImagQ(IINDX,N)
+                WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) ImagQ(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
@@ -5595,7 +5624,7 @@ C     Start writing out the 3D hotstart information
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
                 IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) WZ(IINDX,N)
+                WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) WZ(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
@@ -5603,7 +5632,7 @@ C     Start writing out the 3D hotstart information
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
                 IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) q20(IINDX,N)
+                WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) q20(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
@@ -5611,7 +5640,7 @@ C     Start writing out the 3D hotstart information
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
                 IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) l(IINDX,N)
+                WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) l(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
@@ -5620,7 +5649,7 @@ C     Start writing out the 3D hotstart information
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
                   IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) SigT(IINDX,N)
+                  WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) SigT(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
@@ -5629,7 +5658,7 @@ C     Start writing out the 3D hotstart information
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
                   IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) Sal(IINDX,N)
+                  WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) Sal(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
@@ -5638,7 +5667,7 @@ C     Start writing out the 3D hotstart information
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
                   IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) Temp(IINDX,N)
+                  WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) Temp(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
@@ -5647,14 +5676,14 @@ C     Start writing out the 3D hotstart information
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
                   IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) Sal(IINDX,N)
+                  WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) Sal(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
                   IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) Temp(IINDX,N)
+                  WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) Temp(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
@@ -5710,59 +5739,59 @@ C        PRINT *, "Made it to the 3d portion of this"
       ALLOCATE ( Sal(MNP,NFEN), Temp(MNP,NFEN))
 !kmd end of additions
 
-        READ(IHOT,REC=IHOTSTP) IDEN ; IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) N3DSD ; IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) I3DSDRec ; IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) N3DSV ; IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) I3DSVRec ; IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) N3DST ; IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) I3DSTRec ; IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) N3DGD ; IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) I3DGDRec ; IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) N3DGV ; IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) I3DGVRec ; IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) N3DGT ; IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) I3DGTRec ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) IDEN ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) N3DSD ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) I3DSDRec ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) N3DSV ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) I3DSVRec ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) N3DST ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) I3DSTRec ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) N3DGD ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) I3DGDRec ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) N3DGV ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) I3DGVRec ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) N3DGT ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT+CK_LUN,REC=IHOTSTP) I3DGTRec ; IHOTSTP = IHOTSTP + 1
 
         DO I=1,NNODP(IPROC)
           IINDX=IMAP_NOD_LG(I,IPROC)
-          READ(IHOT,REC=IHOTSTP) RVALUE
+          READ(IHOT+CK_LUN,REC=IHOTSTP) RVALUE
           IF (IINDX.GT.0) DUU(IINDX) = RVALUE
           IHOTSTP=IHOTSTP+1
         END DO
         DO I=1,NNODP(IPROC)
           IINDX=IMAP_NOD_LG(I,IPROC)
-          READ(IHOT,REC=IHOTSTP) RVALUE
+          READ(IHOT+CK_LUN,REC=IHOTSTP) RVALUE
           IF (IINDX.GT.0) DUV(IINDX) = RVALUE
           IHOTSTP=IHOTSTP+1
         END DO
         DO I=1,NNODP(IPROC)
           IINDX=IMAP_NOD_LG(I,IPROC)
-          READ(IHOT,REC=IHOTSTP) RVALUE
+          READ(IHOT+CK_LUN,REC=IHOTSTP) RVALUE
           IF (IINDX.GT.0) DVV(IINDX) = RVALUE
           IHOTSTP=IHOTSTP+1
         END DO
         DO I=1,NNODP(IPROC)
           IINDX=IMAP_NOD_LG(I,IPROC)
-          READ(IHOT,REC=IHOTSTP) RVALUE
+          READ(IHOT+CK_LUN,REC=IHOTSTP) RVALUE
           IF (IINDX.GT.0) UU(IINDX) = RVALUE
           IHOTSTP=IHOTSTP+1
         END DO
         DO I=1,NNODP(IPROC)
           IINDX=IMAP_NOD_LG(I,IPROC)
-          READ(IHOT,REC=IHOTSTP) RVALUE
+          READ(IHOT+CK_LUN,REC=IHOTSTP) RVALUE
           IF (IINDX.GT.0) VV(IINDX) = RVALUE
           IHOTSTP=IHOTSTP+1
         END DO
         DO I=1,NNODP(IPROC)
           IINDX=IMAP_NOD_LG(I,IPROC)
-          READ(IHOT,REC=IHOTSTP) RVALUE
+          READ(IHOT+CK_LUN,REC=IHOTSTP) RVALUE
           IF (IINDX.GT.0) BSX(IINDX) = RVALUE
           IHOTSTP=IHOTSTP+1
         END DO
         DO I=1,NNODP(IPROC)
           IINDX=IMAP_NOD_LG(I,IPROC)
-          READ(IHOT,REC=IHOTSTP) RVALUE
+          READ(IHOT+CK_LUN,REC=IHOTSTP) RVALUE
           IF (IINDX.GT.0) BSY(IINDX) = RVALUE
           IHOTSTP=IHOTSTP+1
         END DO
@@ -5770,7 +5799,7 @@ C        PRINT *, "Made it to the 3d portion of this"
         DO K=1,NFEN
           DO I=1,NNODP(IPROC)
             IINDX=IMAP_NOD_LG(I,IPROC)
-            READ(IHOT,REC=IHOTSTP) RVALUE
+            READ(IHOT+CK_LUN,REC=IHOTSTP) RVALUE
             IF (IINDX.GT.0) REALQ(IINDX,K) = RVALUE
             IHOTSTP=IHOTSTP+1
           END DO
@@ -5778,7 +5807,7 @@ C        PRINT *, "Made it to the 3d portion of this"
         DO K=1,NFEN
           DO I=1,NNODP(IPROC)
             IINDX=IMAP_NOD_LG(I,IPROC)
-            READ(IHOT,REC=IHOTSTP) RVALUE
+            READ(IHOT+CK_LUN,REC=IHOTSTP) RVALUE
             IF (IINDX.GT.0) ImagQ(IINDX,K) = RVALUE
             IHOTSTP=IHOTSTP+1
           END DO
@@ -5786,7 +5815,7 @@ C        PRINT *, "Made it to the 3d portion of this"
         DO K=1,NFEN
           DO I=1,NNODP(IPROC)
             IINDX=IMAP_NOD_LG(I,IPROC)
-            READ(IHOT,REC=IHOTSTP) RVALUE
+            READ(IHOT+CK_LUN,REC=IHOTSTP) RVALUE
             IF (IINDX.GT.0) WZ(IINDX,K) = RVALUE
             IHOTSTP=IHOTSTP+1
           END DO
@@ -5794,7 +5823,7 @@ C        PRINT *, "Made it to the 3d portion of this"
         DO K=1,NFEN
           DO I=1,NNODP(IPROC)
             IINDX=IMAP_NOD_LG(I,IPROC)
-            READ(IHOT,REC=IHOTSTP) RVALUE
+            READ(IHOT+CK_LUN,REC=IHOTSTP) RVALUE
             IF (IINDX.GT.0) q20(IINDX,K) = RVALUE
             IHOTSTP=IHOTSTP+1
           END DO
@@ -5802,7 +5831,7 @@ C        PRINT *, "Made it to the 3d portion of this"
         DO K=1,NFEN
           DO I=1,NNODP(IPROC)
             IINDX=IMAP_NOD_LG(I,IPROC)
-            READ(IHOT,REC=IHOTSTP) RVALUE
+            READ(IHOT+CK_LUN,REC=IHOTSTP) RVALUE
             IF (IINDX.GT.0) l(IINDX,K) = RVALUE
             IHOTSTP=IHOTSTP+1
           END DO
@@ -5811,7 +5840,7 @@ C        PRINT *, "Made it to the 3d portion of this"
           DO K=1,NFEN
             DO I=1,NNODP(IPROC)
               IINDX=IMAP_NOD_LG(I,IPROC)
-              READ(IHOT,REC=IHOTSTP) RVALUE
+              READ(IHOT+CK_LUN,REC=IHOTSTP) RVALUE
               IF (IINDX.GT.0) SigT(IINDX,K) = RVALUE
               IHOTSTP=IHOTSTP+1
             END DO
@@ -5821,7 +5850,7 @@ C        PRINT *, "Made it to the 3d portion of this"
           DO K=1,NFEN
             DO I=1,NNODP(IPROC)
               IINDX=IMAP_NOD_LG(I,IPROC)
-              READ(IHOT,REC=IHOTSTP) RVALUE
+              READ(IHOT+CK_LUN,REC=IHOTSTP) RVALUE
               IF (IINDX.GT.0) Sal(IINDX,K) = RVALUE
               IHOTSTP=IHOTSTP+1
             END DO
@@ -5831,7 +5860,7 @@ C        PRINT *, "Made it to the 3d portion of this"
           DO K=1,NFEN
             DO I=1,NNODP(IPROC)
               IINDX=IMAP_NOD_LG(I,IPROC)
-              READ(IHOT,REC=IHOTSTP) RVALUE
+              READ(IHOT+CK_LUN,REC=IHOTSTP) RVALUE
               IF (IINDX.GT.0) Temp(IINDX,K) = RVALUE
               IHOTSTP=IHOTSTP+1
             END DO
@@ -5841,7 +5870,7 @@ C        PRINT *, "Made it to the 3d portion of this"
           DO K=1,NFEN
             DO I=1,NNODP(IPROC)
               IINDX=IMAP_NOD_LG(I,IPROC)
-              READ(IHOT,REC=IHOTSTP) RVALUE
+              READ(IHOT+CK_LUN,REC=IHOTSTP) RVALUE
               IF (IINDX.GT.0) Sal(IINDX,K) = RVALUE
               IHOTSTP=IHOTSTP+1
             END DO
@@ -5849,7 +5878,7 @@ C        PRINT *, "Made it to the 3d portion of this"
           DO K=1,NFEN
             DO I=1,NNODP(IPROC)
               IINDX=IMAP_NOD_LG(I,IPROC)
-              READ(IHOT,REC=IHOTSTP) RVALUE
+              READ(IHOT+CK_LUN,REC=IHOTSTP) RVALUE
               IF (IINDX.GT.0) TEMP(IINDX,K) = RVALUE
               IHOTSTP=IHOTSTP+1
             END DO
@@ -5884,88 +5913,88 @@ C     Start writing out the 3D hotstart information
             LOCHSF=UnitNumber
             IHOTSTP=FilePosition
 
-            WRITE(LOCHSF,REC=IHOTSTP) IDEN ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) N3DSD ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) I3DSDRec ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) N3DSV ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) I3DSVRec ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) N3DST ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) I3DSTRec ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) N3DGD ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) I3DGDRec ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) N3DGV ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) I3DGVRec ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) N3DGT ; IHOTSTP = IHOTSTP + 1
-            WRITE(LOCHSF,REC=IHOTSTP) I3DGTRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) IDEN ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) N3DSD ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) I3DSDRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) N3DSV ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) I3DSVRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) N3DST ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) I3DSTRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) N3DGD ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) I3DGDRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) N3DGV ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) I3DGVRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) N3DGT ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) I3DGTRec ; IHOTSTP = IHOTSTP + 1
 
             DO I=1,MNP
                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) DUU(IINDX)
+               WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) DUU(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) DUV(IINDX)
+               WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) DUV(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) DVV(IINDX)
+               WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) DVV(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) UU(IINDX)
+               WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) UU(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) VV(IINDX)
+               WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) VV(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) BSX(IINDX)
+               WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) BSX(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) BSY(IINDX)
+               WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) BSY(IINDX)
                IHOTSTP=IHOTSTP+1
              ENDDO
 
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
                 IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) RealQ(IINDX,N)
+                WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) RealQ(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
                 IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) ImagQ(IINDX,N)
+                WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) ImagQ(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
                 IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) WZ(IINDX,N)
+                WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) WZ(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
                 IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) q20(IINDX,N)
+                WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) q20(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
                 IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) l(IINDX,N)
+                WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) l(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
@@ -5973,7 +6002,7 @@ C     Start writing out the 3D hotstart information
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
                   IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) SigT(IINDX,N)
+                  WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) SigT(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
@@ -5982,7 +6011,7 @@ C     Start writing out the 3D hotstart information
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
                   IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) Sal(IINDX,N)
+                  WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) Sal(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
@@ -5991,7 +6020,7 @@ C     Start writing out the 3D hotstart information
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
                   IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) Temp(IINDX,N)
+                  WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) Temp(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
@@ -6000,14 +6029,14 @@ C     Start writing out the 3D hotstart information
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
                   IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) Sal(IINDX,N)
+                  WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) Sal(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
                   IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) Temp(IINDX,N)
+                  WRITE(LOCHSF+CK_LUN,REC=IHOTSTP) Temp(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
@@ -6049,71 +6078,71 @@ C     Start reading in the data
 
         IHOT=UnitNumber
 
-        READ(IHOT,*) IDEN
+        READ(IHOT+CK_LUN,*) IDEN
 
         DO NH=1,MNP
-          READ(IHOT,*) BSX(NH)
+          READ(IHOT+CK_LUN,*) BSX(NH)
         END DO
 
         DO NH=1,MNP
-          READ(IHOT,*) BSY(NH)
+          READ(IHOT+CK_LUN,*) BSY(NH)
         END DO
 
         DO K=1,NFEN
           DO NH=1,MNP
-            READ(IHOT,*) RealQ(NH,K)
+            READ(IHOT+CK_LUN,*) RealQ(NH,K)
           END DO
         END DO
         DO K=1,NFEN
           DO NH=1,MNP
-            READ(IHOT,*) ImagQ(NH,K)
+            READ(IHOT+CK_LUN,*) ImagQ(NH,K)
           END DO
         END DO
         DO K=1,NFEN
           DO NH=1,MNP
-            READ(IHOT,*) WZ(NH,K)
+            READ(IHOT+CK_LUN,*) WZ(NH,K)
           END DO
         END DO
         DO K=1,NFEN
           DO NH=1,MNP
-            READ(IHOT,*) q20(NH,K)
+            READ(IHOT+CK_LUN,*) q20(NH,K)
           END DO
         END DO
         DO K=1,NFEN
           DO NH=1,MNP
-            READ(IHOT,*) l(NH,K)
+            READ(IHOT+CK_LUN,*) l(NH,K)
           END DO
         END DO
         IF (ABS(IDEN).EQ.1) THEN
           DO K=1,NFEN
             DO NH=1,MNP
-              READ(IHOT,*) SigT(NH,K)
+              READ(IHOT+CK_LUN,*) SigT(NH,K)
             END DO
           END DO
         END IF
         IF(ABS(IDen).EQ.2) THEN
           DO K=1,NFEN
             DO NH=1,MNP
-              READ(IHOT,*) Sal(NH,K)
+              READ(IHOT+CK_LUN,*) Sal(NH,K)
             END DO
           END DO
         ENDIF
         IF(ABS(IDen).EQ.3) THEN
           DO K=1,NFEN
             DO NH=1,MNP
-              READ(IHOT,*) Temp(NH,K)
+              READ(IHOT+CK_LUN,*) Temp(NH,K)
             END DO
           END DO
         ENDIF
         IF(ABS(IDen).EQ.4) THEN
           DO K=1,NFEN
             DO NH=1,MNP
-              READ(IHOT,*) Sal(NH,K)
+              READ(IHOT+CK_LUN,*) Sal(NH,K)
             END DO
           END DO
           DO K=1,NFEN
             DO NH=1,MNP
-              READ(IHOT,*) Temp(NH,K)
+              READ(IHOT+CK_LUN,*) Temp(NH,K)
             ENDDO
           ENDDO
         END IF
@@ -6144,53 +6173,53 @@ C     Start writing out the 3D initial condition information
 
             LOCHSF=UnitNumber
 
-            WRITE(LOCHSF,*) IDEN
+            WRITE(LOCHSF+CK_LUN,*) IDEN
 
             DO I=1,NNODP(IPROC)
               IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-              WRITE(LOCHSF,*) BSX(IINDX)
+              WRITE(LOCHSF+CK_LUN,*) BSX(IINDX)
             END DO
 
             DO I=1,NNODP(IPROC)
               IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-              WRITE(LOCHSF,*) BSY(IINDX)
+              WRITE(LOCHSF+CK_LUN,*) BSY(IINDX)
             END DO
 
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
                 IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,*) RealQ(IINDX,N)
+                WRITE(LOCHSF+CK_LUN,*) RealQ(IINDX,N)
               END DO
             END DO
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
                 IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,*) ImagQ(IINDX,N)
+                WRITE(LOCHSF+CK_LUN,*) ImagQ(IINDX,N)
               END DO
             END DO
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
                 IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,*) WZ(IINDX,N)
+                WRITE(LOCHSF+CK_LUN,*) WZ(IINDX,N)
               END DO
             END DO
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
                 IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,*) q20(IINDX,N)
+                WRITE(LOCHSF+CK_LUN,*) q20(IINDX,N)
               END DO
             END DO
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
                 IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,*) l(IINDX,N)
+                WRITE(LOCHSF+CK_LUN,*) l(IINDX,N)
               END DO
             END DO
             IF (ABS(IDEN).EQ.1) THEN
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
                   IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,*) SigT(IINDX,N)
+                  WRITE(LOCHSF+CK_LUN,*) SigT(IINDX,N)
                 END DO
               END DO
             ENDIF
@@ -6198,7 +6227,7 @@ C     Start writing out the 3D initial condition information
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
                   IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,*) Sal(IINDX,N)
+                  WRITE(LOCHSF+CK_LUN,*) Sal(IINDX,N)
                 END DO
               END DO
             ENDIF
@@ -6206,7 +6235,7 @@ C     Start writing out the 3D initial condition information
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
                   IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,*) Temp(IINDX,N)
+                  WRITE(LOCHSF+CK_LUN,*) Temp(IINDX,N)
                 END DO
               END DO
             ENDIF
@@ -6214,13 +6243,13 @@ C     Start writing out the 3D initial condition information
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
                   IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,*) Sal(IINDX,N)
+                  WRITE(LOCHSF+CK_LUN,*) Sal(IINDX,N)
                 END DO
               END DO
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
                   IINDX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,*) Temp(IINDX,N)
+                  WRITE(LOCHSF+CK_LUN,*) Temp(IINDX,N)
                 END DO
               END DO
             END IF
@@ -6276,7 +6305,7 @@ C
 C     If it does exist, open it
       IF ( FOUND ) THEN
          WRITE(*,1011) trim(FileName) !found
-         OPEN(UNIT=UnitNumber, FILE=FileName, IOSTAT=ErrorIO)
+         OPEN(UNIT=UnitNumber+CK_LUN, FILE=FileName, IOSTAT=ErrorIO)
          Success = .true.
          IF ( ErrorIO .GT. 0 ) THEN
             WRITE(*,*) "ERROR: Full domain file exists but"
@@ -6341,7 +6370,7 @@ C     Open subdomain file
       sdFileName(1:7) = 'PE0000/'
       sdFileName(8:14) = DefaultName
       CALL IWRITE(sdFileName, 3, 6, iproc-1)
-      OPEN (UNIT=sdu, FILE=sdFileName, IOSTAT=ErrorIO)
+      OPEN (UNIT=sdu+CK_LUN, FILE=sdFileName, IOSTAT=ErrorIO)
       Success = .true.
       IF ( ErrorIO .GT. 0 ) THEN
          WRITE(*,*) "ERROR: Subdomain file cannot be opened."
@@ -6430,7 +6459,7 @@ C
 C     If it does exist, open it
       IF ( FOUND ) THEN
          WRITE(*,1011) FileName !found
-         OPEN(UNIT=UnitNumber, FILE=FileName, IOSTAT=ErrorIO)
+         OPEN(UNIT=UnitNumber+CK_LUN, FILE=FileName, IOSTAT=ErrorIO)
          Success = .true.
          IF ( ErrorIO .GT. 0 ) THEN
             WRITE(*,*) "ERROR: Full domain file exists but"
@@ -6464,7 +6493,7 @@ c........tcm v50.66.03 increased unit number to 100's places
          sdFileName = 'PE0000/'//FileName
 #endif
          CALL IWRITE(sdFileName, 3, 6, iproc-1)
-         OPEN (UNIT=SDU(iproc), FILE=trim(sdFileName), IOSTAT=ErrorIO)
+         OPEN (UNIT=SDU(iproc+CK_LUN), FILE=trim(sdFileName), IOSTAT=ErrorIO)
          Success = .true.
          IF ( ErrorIO .GT. 0 ) THEN
             WRITE(*,*) "ERROR: Subdomain file cannot be opened."
@@ -6668,106 +6697,106 @@ CC    Addition by CF   8/2007
       IMPLICIT NONE
       INTEGER I,K
 C
-      OPEN(UNIT=80,FILE='fort.80')              ! output for ADCPOST
+      OPEN(UNIT=80+CK_LUN,FILE='fort.80')              ! output for ADCPOST
 C
 C--Write out the domain decomposition information into a file
 C  which will later be used in post-processing the results
 C
-      WRITE(80,80) RUNDES
-      WRITE(80,80) RUNID
-      WRITE(80,80) AGRID
-      WRITE(80,'(2I8,16x,A)') NELG,NNODG,'! Total # elements & nodes'
-      WRITE(80,'(I8,24x,A)') NPROC,' ! Number of processors'
-      WRITE(80,'(I8,24x,A)') MNPP,'! Max nodes on any processor'
-      WRITE(80,'(I8,24x,A)') MNEP,'! Max elements on any processor'!jgf45.07
-      WRITE(80,'(I8,24x,A)') IM,'! IM, run type'         !jgf46.02
-      WRITE(80,'(I8,24x,A)') NWS,'! NWS, wind data type' !jgf46.02
-      WRITE(80,'(I8,24x,A)') abs(NSTAE),'! NSTAE'
-      WRITE(80,'(I8,24x,A)') abs(NSTAV),'! NSTAV'
+      WRITE(80+CK_LUN,80) RUNDES
+      WRITE(80+CK_LUN,80) RUNID
+      WRITE(80+CK_LUN,80) AGRID
+      WRITE(80+CK_LUN,'(2I8,16x,A)') NELG,NNODG,'! Total # elements & nodes'
+      WRITE(80+CK_LUN,'(I8,24x,A)') NPROC,' ! Number of processors'
+      WRITE(80+CK_LUN,'(I8,24x,A)') MNPP,'! Max nodes on any processor'
+      WRITE(80+CK_LUN,'(I8,24x,A)') MNEP,'! Max elements on any processor'!jgf45.07
+      WRITE(80+CK_LUN,'(I8,24x,A)') IM,'! IM, run type'         !jgf46.02
+      WRITE(80+CK_LUN,'(I8,24x,A)') NWS,'! NWS, wind data type' !jgf46.02
+      WRITE(80+CK_LUN,'(I8,24x,A)') abs(NSTAE),'! NSTAE'
+      WRITE(80+CK_LUN,'(I8,24x,A)') abs(NSTAV),'! NSTAV'
       IF (IM.EQ.10) THEN
-         WRITE(80,'(I8,24x,A)') abs(NSTAC),' ! NSTAC' !jgf46.02
+         WRITE(80+CK_LUN,'(I8,24x,A)') abs(NSTAC),' ! NSTAC' !jgf46.02
       ENDIF
       IF (NWS.NE.0) THEN
-         WRITE(80,'(I8,24x,A)') abs(NSTAM),'! NSTAM' !jgf46.02
+         WRITE(80+CK_LUN,'(I8,24x,A)') abs(NSTAM),'! NSTAM' !jgf46.02
       ENDIF
-      WRITE(80,'(I8,24x,A)') MNHARF,'! MNHARF'
-      WRITE(80,'(2I8,16x,A)') MNWLAT,MNWLON,'! NWLON, NWLAT'
+      WRITE(80+CK_LUN,'(I8,24x,A)') MNHARF,'! MNHARF'
+      WRITE(80+CK_LUN,'(2I8,16x,A)') MNWLAT,MNWLON,'! NWLON, NWLAT'
 C
 Casey 100301: Changed I8 to I12.
       DO I = 1,NPROC
-         WRITE(80,'(3I8,A33)') I-1, NNODP(I), NOD_RES_TOT(I),
+         WRITE(80+CK_LUN,'(3I8,A33)') I-1, NNODP(I), NOD_RES_TOT(I),
      &        '  ! PE, NNODP(PE), NOD_RES_TOT(PE)'
-         WRITE(80,'(9I12)') (IMAP_NOD_LG(K,I),K=1,NNODP(I))
+         WRITE(80+CK_LUN,'(9I12)') (IMAP_NOD_LG(K,I),K=1,NNODP(I))
       ENDDO
 C
-      WRITE(80,*) "GLOBAL   PE     LOCAL   ( Global-to-Local Nodes )"
+      WRITE(80+CK_LUN,*) "GLOBAL   PE     LOCAL   ( Global-to-Local Nodes )"
       DO I = 1,NNODG
-         WRITE(80,1140) I, IMAP_NOD_GL(1,I)-1, IMAP_NOD_GL(2,I)
+         WRITE(80+CK_LUN,1140) I, IMAP_NOD_GL(1,I)-1, IMAP_NOD_GL(2,I)
       ENDDO
 C
 C     jgf45.07 Add subdomain->fulldomain mapping to handle NOFF processing
 C     IMAP_EL_LG(I,PE) = Global Element Number of Local Element I on PE
 Casey 100301: Changed I8 to I12.
       DO I = 1,NPROC
-         WRITE(80,'(2I8,A33)') I-1, NELP(I), '  ! PE, NELP(PE)'
-         WRITE(80,'(9I12)') (IMAP_EL_LG(K,I),K=1,NELP(I))
+         WRITE(80+CK_LUN,'(2I8,A33)') I-1, NELP(I), '  ! PE, NELP(PE)'
+         WRITE(80+CK_LUN,'(9I12)') (IMAP_EL_LG(K,I),K=1,NELP(I))
       ENDDO
 C
-      WRITE(80,'(I8,2E15.8,I8,A32)') NOUTE,TOUTSE,TOUTFE,NSPOOLE,
+      WRITE(80+CK_LUN,'(I8,2E15.8,I8,A32)') NOUTE,TOUTSE,TOUTFE,NSPOOLE,
      &    '   ! NOUTE,TOUTSE,TOUTFE,NSPOOLE'
 C
       DO I = 1,NPROC
-         WRITE(80,*) I,NSTAEP(I)
+         WRITE(80+CK_LUN,*) I,NSTAEP(I)
          DO K = 1,NSTAEP(I)
-            WRITE(80,*) IMAP_STAE_LG(K,I)
+            WRITE(80+CK_LUN,*) IMAP_STAE_LG(K,I)
          ENDDO
       ENDDO
 C
-      WRITE(80,'(I8,2E15.8,I8,A32)') NOUTV,TOUTSV,TOUTFV,NSPOOLV,
+      WRITE(80+CK_LUN,'(I8,2E15.8,I8,A32)') NOUTV,TOUTSV,TOUTFV,NSPOOLV,
      &    '   ! NOUTV,TOUTSV,TOUTFV,NSPOOLV'
 C
       DO I = 1,NPROC
-         WRITE(80,*) I,NSTAVP(I)
+         WRITE(80+CK_LUN,*) I,NSTAVP(I)
          DO K = 1,NSTAVP(I)
-            WRITE(80,*) IMAP_STAV_LG(K,I)
+            WRITE(80+CK_LUN,*) IMAP_STAV_LG(K,I)
          ENDDO
       ENDDO
 C
       IF (IM.EQ.10) THEN ! jgf46.02
-         WRITE(80,'(I8,2E15.8,I8,A32)') NOUTC,TOUTSC,TOUTFC,NSPOOLC,
+         WRITE(80+CK_LUN,'(I8,2E15.8,I8,A32)') NOUTC,TOUTSC,TOUTFC,NSPOOLC,
      &        '   ! NOUTC,TOUTSC,TOUTFC,NSPOOLC'
          DO I = 1,NPROC
-            WRITE(80,*) I,NSTACP(I)
+            WRITE(80+CK_LUN,*) I,NSTACP(I)
             DO K = 1,NSTACP(I)
-               WRITE(80,*) IMAP_STAC_LG(K,I)
+               WRITE(80+CK_LUN,*) IMAP_STAC_LG(K,I)
             ENDDO
          ENDDO
       ENDIF
 C
       IF (NWS.NE.0) THEN ! jgf46.02
-         WRITE(80,'(I8,2E15.8,I8,A32)') NOUTM,TOUTSM,TOUTFM,NSPOOLM,
+         WRITE(80+CK_LUN,'(I8,2E15.8,I8,A32)') NOUTM,TOUTSM,TOUTFM,NSPOOLM,
      &        '   ! NOUTM,TOUTSM,TOUTFM,NSPOOLM'
          DO I = 1,NPROC
-            WRITE(80,*) I,NSTAMP(I)
+            WRITE(80+CK_LUN,*) I,NSTAMP(I)
             DO K = 1,NSTAMP(I)
-               WRITE(80,*) IMAP_STAM_LG(K,I)
+               WRITE(80+CK_LUN,*) IMAP_STAM_LG(K,I)
             ENDDO
          ENDDO
       ENDIF
 C
-      WRITE(80,'(I8,2E15.8,I8,A32)') NOUTGE, TOUTSGE,TOUTFGE,NSPOOLGE,
+      WRITE(80+CK_LUN,'(I8,2E15.8,I8,A32)') NOUTGE, TOUTSGE,TOUTFGE,NSPOOLGE,
      &    '   ! NOUTGE, TOUTSGE, TOUTFGE, NSPOOLGE'
 C
-      WRITE(80,'(I8,2E15.8,I8,A32)') NOUTGV, TOUTSGV,TOUTFGV,NSPOOLGV,
+      WRITE(80+CK_LUN,'(I8,2E15.8,I8,A32)') NOUTGV, TOUTSGV,TOUTFGV,NSPOOLGV,
      &    '   ! NOUTGV, TOUTSGV, TOUTFGV, NSPOOLGV'
 C
-      WRITE(80,'(I8,2E15.8,I8,A32)') NOUTGC, TOUTSGC,TOUTFGC,NSPOOLGC,
+      WRITE(80+CK_LUN,'(I8,2E15.8,I8,A32)') NOUTGC, TOUTSGC,TOUTFGC,NSPOOLGC,
      &    '   ! NOUTGC, TOUTSGC, TOUTFGC, NSPOOLGC'
 C
-      WRITE(80,'(I8,2E15.8,I8,A32)') NOUTGW, TOUTSGW,TOUTFGW,NSPOOLGW,
+      WRITE(80+CK_LUN,'(I8,2E15.8,I8,A32)') NOUTGW, TOUTSGW,TOUTFGW,NSPOOLGW,
      &    '   ! NOUTGW, TOUTSGW, TOUTFGW, NSPOOLGW'
 C
-      WRITE(80,'(4I4,A32)') NHASE,NHASV,NHAGE,NHAGV,
+      WRITE(80+CK_LUN,'(4I4,A32)') NHASE,NHASV,NHAGE,NHAGV,
      &    '   ! NHASE, NHASV, NHAGE, NHAGV'
 
 C     -------------------------------------------------------------
@@ -6776,59 +6805,59 @@ C     S T A R T   3 D   D A T A
 C
 C     -------------------------------------------------------------
 
-      WRITE(80,*) IDEN !jgf45.11 needed to post process the fort.44 file
+      WRITE(80+CK_LUN,*) IDEN !jgf45.11 needed to post process the fort.44 file
 
 C     -------------------------------------------------------------
 C     jgf45.11 Write mappings for 3D density stations.
 C     -------------------------------------------------------------
-      WRITE(80,81) I3DSD, TO3DSDS, TO3DSDF, NSPO3DSD, NSTA3DD,
+      WRITE(80+CK_LUN,81) I3DSD, TO3DSDS, TO3DSDF, NSPO3DSD, NSTA3DD,
      &       '   ! I3DSD, TO3DSDS, TO3DSDF, NSPO3DSD, NSTA3DD'
       IF(I3DSD.NE.0) THEN
          DO I = 1, NPROC
-            WRITE(80,*) I, NNSTA3DDP(I)
+            WRITE(80+CK_LUN,*) I, NNSTA3DDP(I)
             DO K = 1, NNSTA3DDP(I)
-               WRITE(80,*) IMAP_STA3DD_LG(K,I)
+               WRITE(80+CK_LUN,*) IMAP_STA3DD_LG(K,I)
             ENDDO
          ENDDO
       ENDIF
 C     -------------------------------------------------------------
 C     jgf45.11 Write mappings for 3D velocity stations.
 C     -------------------------------------------------------------
-      WRITE(80,81) I3DSV, TO3DSVS, TO3DSVF, NSPO3DSV, NSTA3DV,
+      WRITE(80+CK_LUN,81) I3DSV, TO3DSVS, TO3DSVF, NSPO3DSV, NSTA3DV,
      &       '   ! I3DSV, TO3DSVS, TO3DSVF, NSPO3DSV, NSTA3DV'
       IF(I3DSV.NE.0) THEN
          DO I = 1, NPROC
-            WRITE(80,*) I, NNSTA3DVP(I)
+            WRITE(80+CK_LUN,*) I, NNSTA3DVP(I)
             DO K = 1, NNSTA3DVP(I)
-               WRITE(80,*) IMAP_STA3DV_LG(K,I)
+               WRITE(80+CK_LUN,*) IMAP_STA3DV_LG(K,I)
             ENDDO
          ENDDO
       ENDIF
 C     -------------------------------------------------------------
 C     jgf45.11 Write mappings for 3D turbulence stations.
 C     -------------------------------------------------------------
-      WRITE(80,81) I3DST, TO3DSTS, TO3DSTF, NSPO3DST, NSTA3DT,
+      WRITE(80+CK_LUN,81) I3DST, TO3DSTS, TO3DSTF, NSPO3DST, NSTA3DT,
      &       '   ! I3DST, TO3DSST, TO3DFST, NSPO3DST, NSTA3DT'
       IF(I3DST.NE.0) THEN
          DO I = 1, NPROC
-            WRITE(80,*) I, NNSTA3DTP(I)
+            WRITE(80+CK_LUN,*) I, NNSTA3DTP(I)
             DO K = 1, NNSTA3DTP(I)
-               WRITE(80,*) IMAP_STA3DT_LG(K,I)
+               WRITE(80+CK_LUN,*) IMAP_STA3DT_LG(K,I)
             ENDDO
          ENDDO
       ENDIF
-      WRITE(80,82) I3DGD, TO3DGDS, TO3DGDF, NSPO3DGD,
+      WRITE(80+CK_LUN,82) I3DGD, TO3DGDS, TO3DGDF, NSPO3DGD,
      &       '   ! I3DGD, TO3DGDS, TO3DGDF, NSPO3DGD'
-      WRITE(80,82) I3DGV, TO3DGVS, TO3DGVF, NSPO3DGV,
+      WRITE(80+CK_LUN,82) I3DGV, TO3DGVS, TO3DGVF, NSPO3DGV,
      &       '   ! I3DGV, TO3DGVS, TO3DGVF, NSPO3DGV'
-      WRITE(80,82) I3DGT, TO3DGTS, TO3DGTF, NSPO3DGT,
+      WRITE(80+CK_LUN,82) I3DGT, TO3DGTS, TO3DGTF, NSPO3DGT,
      &       '   ! I3DGT, TO3DGTS, TO3DGTF, NSPO3DGT'
 C
 C     End 3D data
 C
-      WRITE(80,*) NBYTE
+      WRITE(80+CK_LUN,*) NBYTE
 C
-      CLOSE(80)
+      CLOSE(80+CK_LUN)
 C
   80  FORMAT(A80)
   81  FORMAT(I8,2E15.8,2I8,A32)
@@ -6890,7 +6919,7 @@ C             3. Otherwise, notify the user of the error.
       INQUIRE(FILE='swaninit',EXIST=swanInitFound)
       IF (swanInitFound.eqv..true.) THEN
          WRITE(*,*) "INFO: The swaninit file was found."
-         OPEN(swiLUN,FILE='swaninit',ACTION='READ',
+         OPEN(swiLUN+CK_LUN,FILE='swaninit',ACTION='READ',
      &       ACCESS='SEQUENTIAL',IOSTAT=ErrorIO,STATUS='OLD')
          IF (ErrorIO.ne.0) THEN
             WRITE(*,*) "ERROR: The swaninit file could not be opened."
@@ -6899,11 +6928,11 @@ C             3. Otherwise, notify the user of the error.
      &      "INFO: Parsing swaninit file for swan command file name."
             ! skip down to the 4th line
             DO I=1,4
-               READ(swiLUN,*,ERR=4321,END=4321,IOSTAT=ErrorIO) Line
+               READ(swiLUN+CK_LUN,*,ERR=4321,END=4321,IOSTAT=ErrorIO) Line
             ENDDO
             READ(Line,*,ERR=4321,END=4321,IOSTAT=ErrorIO) swanComFile
 Casey 110627: Close the swaninit file.
-            CLOSE(UNIT=swiLUN,STATUS='KEEP')
+            CLOSE(UNIT=swiLUN+CK_LUN,STATUS='KEEP')
             WRITE(*,*) "INFO: The swan command file is '",
      &         trim(swanComFile),"'."
             readError = .false.
@@ -6919,7 +6948,7 @@ C           ELSE
                IF (swanComFound.eqv..true.) THEN
                   WRITE(*,*) "INFO: The swan command file '",
      &               trim(swanComFile),"' was found."
-                  OPEN(26,FILE=trim(swanComFile),ACTION='READ',
+                  OPEN(26+CK_LUN,FILE=trim(swanComFile),ACTION='READ',
      &            ACCESS='SEQUENTIAL',IOSTAT=ErrorIO,STATUS='OLD')
                   IF (ErrorIO.ne.0) THEN
                      WRITE(*,*) "ERROR: The swan command file '",
@@ -6943,7 +6972,7 @@ Casey 120402: Changes to handle the default INPUT control file.
             WRITE(*,*) "INFO: The swan command file is '",
      &         trim(swanComFile),"'."
             ! Casey 120402: Changes to handle the default INPUT control file.
-            OPEN(UNIT=26,FILE=TRIM(swanComFile),ACTION='READ')
+            OPEN(UNIT=26+CK_LUN,FILE=TRIM(swanComFile),ACTION='READ')
          ENDIF
       ENDIF
 4321  IF ((readError.eqv..true.).or.(ErrorIO.ne.0).or.
@@ -6959,7 +6988,7 @@ C     Open each of the subdomain files
          sdu(iproc) = 105 + (iproc-1)
          sdFileName = 'PE0000/'//swanComFile
          CALL IWRITE(sdFileName, 3, 6, iproc-1)
-         OPEN (UNIT=SDU(iproc), FILE=TRIM(sdFileName), IOSTAT=ErrorIO)
+         OPEN (UNIT=SDU(iproc+CK_LUN), FILE=TRIM(sdFileName), IOSTAT=ErrorIO)
          IF ( ErrorIO .GT. 0 ) THEN
             WRITE(*,*) "ERROR: Subdomain file '",TRIM(sdFileName),
      &         " cannot be opened."
@@ -6970,17 +6999,17 @@ C
 Casey 090304: Changed the formatting through the next section.
 
       DO
-         READ(26,'(A)',END=9999) Line
+         READ(26+CK_LUN,'(A)',END=9999) Line
          DO IPROC = 1,NPROC
-            WRITE(SDU(IPROC),'(A)') trim(Line)
+            WRITE(SDU(IPROC+CK_LUN),'(A)') trim(Line)
          ENDDO
       ENDDO
 C
 C--Close fulldomain file and all the subdomain files
 C
- 9999 CLOSE (26)
+ 9999 CLOSE (26+CK_LUN)
       DO IPROC=1, NPROC
-         CLOSE (SDU(IPROC))
+         CLOSE (SDU(IPROC+CK_LUN))
       ENDDO
 
       RETURN
@@ -7058,105 +7087,191 @@ C     point in the future, adcprep will be part of adcirc, making this
 C     unfortunate cut-and-paste duplication unnecessary.
       !WJP 02.20.2018 Adding capability for fort.51-54
       type(OutputDataDescript_t), SAVE :: HaElevStaDescript  ! fort.51
+!$omp threadprivate(HaElevStaDescript)
       type(OutputDataDescript_t), SAVE :: HaVelStaDescript   ! fort.52
+!$omp threadprivate(HaVelStaDescript)
       type(OutputDataDescript_t), SAVE :: HaElevDescript     ! fort.53
+!$omp threadprivate(HaElevDescript)
       type(OutputDataDescript_t), SAVE :: HaVelDescript      ! fort.54
+!$omp threadprivate(HaVelDescript)
       type(OutputDataDescript_t), SAVE :: ElevStaDescript    ! fort.61
+!$omp threadprivate(ElevStaDescript)
       type(OutputDataDescript_t), SAVE :: VelStaDescript     ! fort.62
+!$omp threadprivate(VelStaDescript)
       type(OutputDataDescript_t), SAVE :: ElevDescript       ! fort.63
+!$omp threadprivate(ElevDescript)
       type(OutputDataDescript_t), SAVE :: Tau0Descript       ! fort.90
+!$omp threadprivate(Tau0Descript)
       type(OutputDataDescript_t), SAVE :: VelDescript        ! fort.64
+!$omp threadprivate(VelDescript)
       type(OutputDataDescript_t), SAVE :: PrStaDescript      ! fort.71
+!$omp threadprivate(PrStaDescript)
       type(OutputDataDescript_t), SAVE :: WindVelStaDescript ! fort.72
+!$omp threadprivate(WindVelStaDescript)
       type(OutputDataDescript_t), SAVE :: PrDescript         ! fort.73
+!$omp threadprivate(PrDescript)
       type(OutputDataDescript_t), SAVE :: WindVelDescript    ! fort.74
+!$omp threadprivate(WindVelDescript)
       type(OutputDataDescript_t), SAVE :: weirElevDescript   ! fort.77
+!$omp threadprivate(weirElevDescript)
       type(OutputDataDescript_t), SAVE :: EtaMaxDescript     ! maxele.63
+!$omp threadprivate(EtaMaxDescript)
       type(OutputDataDescript_t), SAVE :: UMaxDescript       ! maxvel.63
+!$omp threadprivate(UMaxDescript)
       type(OutputDataDescript_t), SAVE :: PrMinDescript      ! minpr.63
+!$omp threadprivate(PrMinDescript)
       type(OutputDataDescript_t), SAVE :: WVMaxDescript      ! maxwvel.63
+!$omp threadprivate(WVMaxDescript)
       type(OutputDataDescript_t), SAVE :: RSMaxDescript    
+!$omp threadprivate(RSMaxDescript)
       type(OutputDataDescript_t), SAVE :: InundationTimeDescript ! inundationtime.63
+!$omp threadprivate(InundationTimeDescript)
       type(OutputDataDescript_t), SAVE :: MaxInunDepthDescript   ! maxinundepth.63
+!$omp threadprivate(MaxInunDepthDescript)
       type(OutputDataDescript_t), SAVE :: InitiallyDryDescript   ! initiallydry.63
+!$omp threadprivate(InitiallyDryDescript)
       type(OutputDataDescript_t), SAVE :: EndRisingInunDescript  ! endrisinginun.63
+!$omp threadprivate(EndRisingInunDescript)
       type(OutputDataDescript_t), SAVE :: EverDriedDescript      ! everdried.63
+!$omp threadprivate(EverDriedDescript)
       type(OutputDataDescript_t), SAVE :: windDragDescript       ! windDrag.173
+!$omp threadprivate(windDragDescript)
 
       type(OutputDataDescript_t), SAVE :: offsetDescript    ! offset.63
+!$omp threadprivate(offsetDescript)
       type(OutputDataDescript_t), SAVE :: offsetStaDescript ! offset.61
+!$omp threadprivate(offsetStaDescript)
 
 !      tcm v50.75 moved RSDescript outside of the ifdef adcswan for use with 
 !      nrs = 3 or nrs= 4
       type(OutputDataDescript_t), SAVE :: RSDescript
+!$omp threadprivate(RSDescript)
 
 #ifdef ADCSWAN
 Cobell 20120510: SWAN Output Data
       type(OutputDataDescript_t), SAVE :: SwanHSDescript
+!$omp threadprivate(SwanHSDescript)
       type(OutputDataDescript_t), SAVE :: SwanDIRDescript
+!$omp threadprivate(SwanDIRDescript)
       type(OutputDataDescript_t), SAVE :: SwanTM01Descript
+!$omp threadprivate(SwanTM01Descript)
       type(OutputDataDescript_t), SAVE :: SwanTPSDescript
+!$omp threadprivate(SwanTPSDescript)
       type(OutputDataDescript_t), SAVE :: SwanWindDescript
+!$omp threadprivate(SwanWindDescript)
       type(OutputDataDescript_t), SAVE :: SwanTM02Descript
+!$omp threadprivate(SwanTM02Descript)
       type(OutputDataDescript_t), SAVE :: SwanTMM10Descript
+!$omp threadprivate(SwanTMM10Descript)
 !      type(OutputDataDescript_t), SAVE :: RSDescript   ! tcm v50.75 moved
       type(OutputDataDescript_t), SAVE :: SwanHSMaxDescript
+!$omp threadprivate(SwanHSMaxDescript)
       type(OutputDataDescript_t), SAVE :: SwanDIRMaxDescript
+!$omp threadprivate(SwanDIRMaxDescript)
       type(OutputDataDescript_t), SAVE :: SwanTM01MaxDescript
+!$omp threadprivate(SwanTM01MaxDescript)
       type(OutputDataDescript_t), SAVE :: SwanTPSMaxDescript
+!$omp threadprivate(SwanTPSMaxDescript)
       type(OutputDataDescript_t), SAVE :: SwanWindMaxDescript
+!$omp threadprivate(SwanWindMaxDescript)
       type(OutputDataDescript_t), SAVE :: SwanTM02MaxDescript
+!$omp threadprivate(SwanTM02MaxDescript)
       type(OutputDataDescript_t), SAVE :: SwanTMM10MaxDescript
+!$omp threadprivate(SwanTMM10MaxDescript)
 #endif
 C     3D output data
       type(OutputDataDescript_t), save :: SigTStaDescript    ! fort.41
+!$omp threadprivate(SigTStaDescript)
       type(OutputDataDescript_t), save :: SalStaDescript
+!$omp threadprivate(SalStaDescript)
       type(OutputDataDescript_t), save :: TempStaDescript
+!$omp threadprivate(TempStaDescript)
       type(OutputDataDescript_t), save :: QSurfKp1Descript
+!$omp threadprivate(QSurfKp1Descript)
       type(OutputDataDescript_t), save :: RealQStaDescript   ! fort.42
+!$omp threadprivate(RealQStaDescript)
       type(OutputDataDescript_t), save :: ImaginaryQStaDescript
+!$omp threadprivate(ImaginaryQStaDescript)
       type(OutputDataDescript_t), save :: WZStaDescript
+!$omp threadprivate(WZStaDescript)
       type(OutputDataDescript_t), save :: Q20StaDescript     ! fort.43
+!$omp threadprivate(Q20StaDescript)
       type(OutputDataDescript_t), save :: LStaDescript
+!$omp threadprivate(LStaDescript)
       type(OutputDataDescript_t), save :: EVStaDescript
+!$omp threadprivate(EVStaDescript)
       type(OutputDataDescript_t), save :: SigTDescript       ! fort.44
+!$omp threadprivate(SigTDescript)
       type(OutputDataDescript_t), save :: SalDescript
+!$omp threadprivate(SalDescript)
       type(OutputDataDescript_t), save :: TempDescript
+!$omp threadprivate(TempDescript)
       type(OutputDataDescript_t), save :: RealQDescript      ! fort.45
+!$omp threadprivate(RealQDescript)
       type(OutputDataDescript_t), save :: ImaginaryQDescript
+!$omp threadprivate(ImaginaryQDescript)
       type(OutputDataDescript_t), save :: WZDescript
+!$omp threadprivate(WZDescript)
       type(OutputDataDescript_t), save :: Q20Descript        ! fort.46
+!$omp threadprivate(Q20Descript)
       type(OutputDataDescript_t), save :: LDescript
+!$omp threadprivate(LDescript)
       type(OutputDataDescript_t), save :: EVDescript
+!$omp threadprivate(EVDescript)
 C     For hotstart files:
       type(OutputDataDescript_t), SAVE :: Elev1Descript
+!$omp threadprivate(Elev1Descript)
       type(OutputDataDescript_t), SAVE :: Elev2Descript
+!$omp threadprivate(Elev2Descript)
       type(OutputDataDescript_t), SAVE :: CH1Descript
+!$omp threadprivate(CH1Descript)
       type(OutputDataDescript_t), SAVE :: EtaDiscDescript
+!$omp threadprivate(EtaDiscDescript)
       type(OutputDataDescript_t), SAVE :: NodeCodeDescript
+!$omp threadprivate(NodeCodeDescript)
       type(OutputDataDescript_t), SAVE :: NOFFDescript
+!$omp threadprivate(NOFFDescript)
 C     for hotstart 3D data
       type(OutputDataDescript_t),SAVE :: Duudescript
+!$omp threadprivate(Duudescript)
       type(OutputDataDescript_t),SAVE :: Duvdescript
+!$omp threadprivate(Duvdescript)
       type(OutputDataDescript_t),SAVE :: Dvvdescript
+!$omp threadprivate(Dvvdescript)
       type(OutputDataDescript_t),SAVE :: Uudescript
+!$omp threadprivate(Uudescript)
       type(OutputDataDescript_t),SAVE :: Vvdescript
+!$omp threadprivate(Vvdescript)
       type(OutputDataDescript_t),SAVE :: Bsxdescript
+!$omp threadprivate(Bsxdescript)
       type(OutputDataDescript_t),SAVE :: Bsydescript
+!$omp threadprivate(Bsydescript)
 C     for hotstart harmonic analysis
       type(OutputDataDescript_t), SAVE :: HarmElevFDLVDescript
+!$omp threadprivate(HarmElevFDLVDescript)
       type(OutputDataDescript_t), SAVE :: HarmElevSLVDescript
+!$omp threadprivate(HarmElevSLVDescript)
       type(OutputDataDescript_t), SAVE :: HarmUVelFDLVDescript
+!$omp threadprivate(HarmUVelFDLVDescript)
       type(OutputDataDescript_t), SAVE :: HarmVVelFDLVDescript
+!$omp threadprivate(HarmVVelFDLVDescript)
       type(OutputDataDescript_t), SAVE :: HarmUVelSLVDescript
+!$omp threadprivate(HarmUVelSLVDescript)
       type(OutputDataDescript_t), SAVE :: HarmVVelSLVDescript
+!$omp threadprivate(HarmVVelSLVDescript)
 C     for hotstart harmoinc analysis means and variance calculations
       type(OutputDataDescript_t), SAVE :: ELAVDescript
+!$omp threadprivate(ELAVDescript)
       type(OutputDataDescript_t), SAVE :: ELVADescript
+!$omp threadprivate(ELVADescript)
       type(OutputDataDescript_t), SAVE :: XVELAVDescript
+!$omp threadprivate(XVELAVDescript)
       type(OutputDataDescript_t), SAVE :: YVELAVDescript
+!$omp threadprivate(YVELAVDescript)
       type(OutputDataDescript_t), SAVE :: XVELVADescript
+!$omp threadprivate(XVELVADescript)
       type(OutputDataDescript_t), SAVE :: YVELVADescript
+!$omp threadprivate(YVELVADescript)
 C
       INTEGER numHotstartWrites ! number writes to hot start files
       INTEGER nextLun           ! next LUN to write to, after initial write

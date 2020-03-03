@@ -2,14 +2,20 @@
 
       implicit none
       integer :: ni, nj, in, out, nsteps, ios
+!$omp threadprivate(ni,nj,in,out,nsteps,ios)
 
       integer :: iargc, i, j, k, istep
+!$omp threadprivate(iargc,i,j,k,istep)
       character(80) :: fnameIn, fnameOut, buf
+!$omp threadprivate(fnameIn,fnameOut,buf)
       character(40) :: buf
+!$omp threadprivate(buf)
 
       real(8), allocatable :: rs(:,:,:)
+!$omp threadprivate(rs)
 
       real(8) :: x , y
+!$omp threadprivate(x,y)
 
       if (iargc() < 2) then
         print *, "Usage: radedit file num_steps"
@@ -25,30 +31,30 @@
       print *, "nsteps:", nsteps
 
       in = 10
-      open(in, file=fnameIn)
+      open(in+CK_LUN, file=fnameIn)
 
       fnameOut = trim(fnameIn)//".new"
 
       out = 11
-      open(out, file= fnameOut)
+      open(out+CK_LUN, file= fnameOut)
 
       
-      read(in,*) ni, nj, x , y
-      read(in,*) buf
+      read(in+CK_LUN,*) ni, nj, x , y
+      read(in+CK_LUN,*) buf
 
-      write(out,*) ni, nj, x, y
-      write(out,*) buf
+      write(out+CK_LUN,*) ni, nj, x, y
+      write(out+CK_LUN,*) buf
 
       allocate (rs(2, ni, nj))
 
       do istep = 1, nsteps
 
         do j = nj, 1, -1
-          read(in,*, iostat=ios) ((rs(k,i,j), k= 1,2), i = 1,ni)
+          read(in+CK_LUN,*, iostat=ios) ((rs(k,i,j), k= 1,2), i = 1,ni)
         end do
 
         do j = nj, 1, -1
-          write(out,1000) ((rs(k,i,j), k= 1,2), i = 1,ni)
+          write(out+CK_LUN,1000) ((rs(k,i,j), k= 1,2), i = 1,ni)
         end do
 
       end do

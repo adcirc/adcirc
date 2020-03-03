@@ -1,4 +1,5 @@
       SUBROUTINE METIS()
+      use CkLunMod, only : CK_LUN
       USE PRE_GLOBAL
       IMPLICIT NONE
 C----------------------------------------------------------------------
@@ -252,12 +253,12 @@ C
       IDUMP = 1
       IF (IDUMP.EQ.1) THEN
          OPEN(FILE='metis_graph.txt',UNIT=99)
-         WRITE(99,100) MNP, NEDGETOT, 11, 1
+         WRITE(99+CK_LUN,100) MNP, NEDGETOT, 11, 1
          DO INODE=1, MNP
-            WRITE(99,200) VWGTS(INODE),
+            WRITE(99+CK_LUN,200) VWGTS(INODE),
      &     (CO_NODES(J,INODE), EWGTS(XADJ(INODE)+J-1),J=1,NEDGES(INODE))
          ENDDO
-         CLOSE(99)
+         CLOSE(99+CK_LUN)
       ENDIF
 
 C
@@ -323,11 +324,11 @@ C
 !      end do
 
       write(*,'(a)') 'INFO: Writing mesh partition to partmesh.txt.'
-      OPEN(990,FILE='partmesh.txt')
+      OPEN(990+CK_LUN,FILE='partmesh.txt')
       DO I=1, MNP
-         WRITE(990,*) PROC(I)
+         WRITE(990+CK_LUN,*) PROC(I)
       ENDDO
-      CLOSE(990)
+      CLOSE(990+CK_LUN)
 
       deallocate(iduals)
       deallocate(itvect,itvect2)

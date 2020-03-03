@@ -18,12 +18,16 @@
 !-----------------------------------------------------------------------
 
         MODULE adcircCompare_module
+      use CkLunMod, only : CK_LUN
             USE NETCDF
 
             INTEGER,PARAMETER   :: nNetCDFVariables = 39
             CHARACTER(200),SAVE :: netcdf_types(nNetCDFVariables)
+!$omp threadprivate(netcdf_types)
             CHARACTER(200),SAVE :: nc_longname(nNetCDFVariables)
+!$omp threadprivate(nc_longname)
             CHARACTER(200),SAVE :: nc_stdname(nNetCDFVariables)
+!$omp threadprivate(nc_stdname)
             REAL(8),PARAMETER   :: eps = EPSILON(1D0)
 
             PRIVATE nNetCDFVariables,netcdf_types,nc_longname,initializeNetcdf
@@ -481,10 +485,10 @@
 
                 io = getFreeUnit()
                 OPEN(FILE=TRIM(filename),UNIT=io,ACTION="READ")
-                READ(io,'(A)') header
-                READ(io,'(A)') header
-                READ(io,'(A)') header
-                CLOSE(io)
+                READ(io+CK_LUN,'(A)') header
+                READ(io+CK_LUN,'(A)') header
+                READ(io+CK_LUN,'(A)') header
+                CLOSE(io+CK_LUN)
 
                 READ(header,*,ERR=100,END=100) JunkR,JunkI,JunkI,JunkR
                 checkFormat_fullFormatAscii = .FALSE.
@@ -504,10 +508,10 @@
 
                 io = getFreeUnit()
                 OPEN(FILE=TRIM(filename),UNIT=io,ACTION="READ")
-                READ(io,'(A)') header
-                READ(io,'(A)') header
-                READ(io,'(A)') header
-                CLOSE(io)
+                READ(io+CK_LUN,'(A)') header
+                READ(io+CK_LUN,'(A)') header
+                READ(io+CK_LUN,'(A)') header
+                CLOSE(io+CK_LUN)
 
                 READ(header,*,ERR=100,END=100) JunkR,JunkI,JunkI,JunkR
                 checkFormat_sparseFormatAscii = .TRUE.
@@ -548,9 +552,9 @@
                 CHARACTER(200)          :: header
                 io = getFreeUnit()
                 OPEN(FILE=TRIM(filename),UNIT=io,ACTION="READ")
-                READ(io,'(A)') header
-                READ(io,'(A)') header
-                CLOSE(io)
+                READ(io+CK_LUN,'(A)') header
+                READ(io+CK_LUN,'(A)') header
+                CLOSE(io+CK_LUN)
                 ! FIXME: the numsnaps in the ascii output file header
                 ! will be wrong if the file has been appended after 
                 ! hotstart (numsnaps is computed and written at cold
@@ -595,8 +599,8 @@
                 IF(filetype.EQ.1.OR.filetype.EQ.4)THEN
                     fileunit = getFreeUnit()
                     OPEN(FILE=TRIM(filename),UNIT=fileunit,ACTION="READ")
-                    READ(fileunit,*) header
-                    READ(fileunit,*) header
+                    READ(fileunit+CK_LUN,*) header
+                    READ(fileunit+CK_LUN,*) header
                 ELSEIF(filetype.EQ.3)THEN
                     CALL CHECK(NF90_OPEN(TRIM(filename),NF90_NOWRITE,fileunit))
                 ELSE
@@ -612,7 +616,7 @@
                 INTEGER,INTENT(IN) :: filetype
 
                 IF(filetype.EQ.1.OR.filetype.EQ.4)THEN
-                    CLOSE(fileunit)
+                    CLOSE(fileunit+CK_LUN)
                 ELSEIF(filetype.EQ.3)THEN
                     !CALL CHECK(NF90_CLOSE(fileunit))
                 ELSE
@@ -633,9 +637,9 @@
                 INTEGER               :: I,J
                 INTEGER               :: junki
 
-                READ(io_unit,*) time,timestep
+                READ(io_unit+CK_LUN,*) time,timestep
                 DO I = 1,nnodes
-                   READ(io_unit,*) junkI,(nodalData(I,J),J=1,nvalues)
+                   READ(io_unit+CK_LUN,*) junkI,(nodalData(I,J),J=1,nvalues)
                 ENDDO
 
                 RETURN
@@ -654,10 +658,10 @@
                 INTEGER               :: I,J
                 REAL(8)               :: defaultvalue
 
-                READ(io_unit,*) time,timestep,nnondefault,defaultvalue
+                READ(io_unit+CK_LUN,*) time,timestep,nnondefault,defaultvalue
                 nodaldata(:,:) = defaultvalue
                 DO I = 1,nnondefault
-                    READ(io_unit,*) node,(nodalData(node,J),J=1,nvalues)
+                    READ(io_unit+CK_LUN,*) node,(nodalData(node,J),J=1,nvalues)
                 ENDDO
 
                 RETURN
@@ -775,21 +779,37 @@
             IMPLICIT NONE
 
             CHARACTER(2000)     :: file1,file2
+!$omp threadprivate(file1,file2)
             INTEGER             :: noutfile1,noutfile2
+!$omp threadprivate(noutfile1,noutfile2)
             INTEGER             :: nsnapfile1,nsnapfile2
+!$omp threadprivate(nsnapfile1,nsnapfile2)
             INTEGER             :: nnodefile1,nnodefile2
+!$omp threadprivate(nnodefile1,nnodefile2)
             INTEGER             :: nvalues1,nvalues2
+!$omp threadprivate(nvalues1,nvalues2)
             INTEGER             :: ncol1,ncol2
+!$omp threadprivate(ncol1,ncol2)
             INTEGER             :: io_unit1,io_unit2
+!$omp threadprivate(io_unit1,io_unit2)
             INTEGER             :: varid11,varid12,varid21,varid22
+!$omp threadprivate(varid11,varid12,varid21,varid22)
             INTEGER             :: I,J
+!$omp threadprivate(I,J)
             INTEGER,ALLOCATABLE :: nerror(:,:),ndiff(:,:)
+!$omp threadprivate(nerror,ndiff)
             REAL(8),ALLOCATABLE :: maxdiff(:,:),avgdiff(:,:)
+!$omp threadprivate(maxdiff,avgdiff)
             REAL(8)             :: tolerance
+!$omp threadprivate(tolerance)
             REAL(8)             :: time1,time2
+!$omp threadprivate(time1,time2)
             REAL(8),ALLOCATABLE :: nodaldata1(:,:),nodaldata2(:,:)
+!$omp threadprivate(nodaldata1,nodaldata2)
             LOGICAL             :: wetdry,verbose,cont
+!$omp threadprivate(wetdry,verbose,cont)
             LOGICAL :: minmax ! .true. if this is a min or max file (e.g., maxvel.63)
+!$omp threadprivate(minmax)
 
             !...Process the command line arguments from the user
             CALL processCommandLineArgs(file1,file2,tolerance,wetdry,minmax,verbose,cont)

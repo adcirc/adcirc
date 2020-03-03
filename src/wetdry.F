@@ -73,16 +73,22 @@ CWET...
       use sizes, only : sz
       
       real(sz) :: habsmin
+!$omp threadprivate(habsmin)
       real(sz) :: hoff
+!$omp threadprivate(hoff)
       real(sz) :: velmin
+!$omp threadprivate(velmin)
       
       integer,allocatable ::    nibcnt(:)
+!$omp threadprivate(nibcnt)
       integer,allocatable ::    noffold(:)
+!$omp threadprivate(noffold)
 
       ! jgf52.08.08: Enable analyst to remove NOFF from wetting and
       ! drying algorithm; .true. by default to conform with prior
       ! ADCIRC versions. 
       LOGICAL :: noffActive = .true.
+!$omp threadprivate(noffActive)
 
       contains
 

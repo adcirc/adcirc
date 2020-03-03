@@ -10,6 +10,7 @@ C******************************************************************************
 C
 C
         MODULE PREP_WEIR    
+      use CkLunMod, only : CK_LUN
             USE PRE_GLOBAL,ONLY: NVELL,IBCONNR,LBCODE,NBOU,MNVEL,NBVV,X,
      &                           Y,NVEL,NPROC,NNODG 
             USE KDTREE2_MODULE
@@ -19,15 +20,25 @@ C
             IMPLICIT NONE
             
             REAL(SZ),ALLOCATABLE       :: BAR_LOCATIONS(:,:)
+!$omp threadprivate(BAR_LOCATIONS)
             INTEGER,ALLOCATABLE        :: LNBV(:)
+!$omp threadprivate(LNBV)
             INTEGER,ALLOCATABLE        :: LIBCONN(:)
+!$omp threadprivate(LIBCONN)
             INTEGER,ALLOCATABLE        :: LBCODEI(:)
+!$omp threadprivate(LBCODEI)
             INTEGER,ALLOCATABLE        :: NODES_TVW(:)
+!$omp threadprivate(NODES_TVW)
             INTEGER,ALLOCATABLE        :: NWEIRBNDRY(:)
+!$omp threadprivate(NWEIRBNDRY)
             INTEGER                    :: NTIMEVARYINGWEIR
+!$omp threadprivate(NTIMEVARYINGWEIR)
             TYPE(KDTREE2),POINTER      :: BARRIER_SEARCHTREE
+!$omp threadprivate(BARRIER_SEARCHTREE)
             TYPE(KDTREE2),POINTER      :: GLOBAL_SEARCHTREE
+!$omp threadprivate(GLOBAL_SEARCHTREE)
             CHARACTER(400),ALLOCATABLE :: TIMEVARYINGWEIRMSSG(:)
+!$omp threadprivate(TIMEVARYINGWEIRMSSG)
 
             CONTAINS
             
@@ -118,33 +129,33 @@ C...............OPEN THE TIME VARYING WEIR FILE IF FOUND
                     RETURN
                 ENDIF    
                 OPEN(FILE=TRIM(TVW_FILE),UNIT=98,ACTION="READ")        
-                READ(98,*) NTIMEVARYINGWEIR
+                READ(98+CK_LUN,*) NTIMEVARYINGWEIR
                 ALLOCATE(TIMEVARYINGWEIRMSSG(NTIMEVARYINGWEIR))
                 ALLOCATE(NODES_TVW(NTIMEVARYINGWEIR))
                 NODES_TVW(:) = -1
 C...............WRITE NAMELIST INPUT TO SCRATCH FILE
-                OPEN(UNIT=99,FILE="namelist.scratch",ACTION="WRITE")
+                OPEN(UNIT=99+CK_LUN,FILE="namelist.scratch",ACTION="WRITE")
                 DO I = 1,NTIMEVARYINGWEIR
-                    READ(98,'(A)') InputString
+                    READ(98+CK_LUN,'(A)') InputString
                     TIMEVARYINGWEIRMSSG(I) = ADJUSTL(InputString)
                     WRITE(modifiedString,'(A)') "&TimeVaryingWeir "//
      &                  TRIM(ADJUSTL(InputString))//" /"
-                    WRITE(99,'(A)') TRIM(modifiedString)
+                    WRITE(99+CK_LUN,'(A)') TRIM(modifiedString)
                 ENDDO
-                CLOSE(99)
+                CLOSE(99+CK_LUN)
 
-                OPEN(UNIT=99,FILE="namelist.scratch",ACTION="READ",
+                OPEN(UNIT=99+CK_LUN,FILE="namelist.scratch",ACTION="READ",
      &               IOSTAT=IOS,ERR=200)
                 DO I = 1,NTIMEVARYINGWEIR
                     X1 = -99999D0
                     Y1 = -99999D0
-                    READ(99,NML=TimeVaryingWeir,IOSTAT=IOS)
+                    READ(99+CK_LUN,NML=TimeVaryingWeir,IOSTAT=IOS)
                     CALL FIND_BOUNDARY_NODES(X1,Y1,IDX)
                     NODES_TVW(I) = IDX
                 ENDDO    
-                CLOSE(99,STATUS="DELETE")
+                CLOSE(99+CK_LUN,STATUS="DELETE")
                 RETURN
-200             WRITE(SCREENUNIT,'(A)') "FATAL ERROR: ERROR WHILE "//
+200             WRITE(SCREENUNIT+CK_LUN,'(A)') "FATAL ERROR: ERROR WHILE "//
      &              "READING TIME VARYING BOUNDARY INFORMATION!"
                 STOP
 

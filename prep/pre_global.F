@@ -10,6 +10,7 @@ C                     current for ADCIRC v46.34   09/20/2006
 C----------------------------------------------------------------------------
 
       MODULE PRE_GLOBAL
+      use CkLunMod, only : CK_LUN
       USE GLOBAL,ONLY: REarth,DEG2RAD,RAD2DEG
       USE GLOBAL_3DVS, ONLY: NFEN
       USE PRESIZES
@@ -21,298 +22,500 @@ C     Land Boundary Nodes and Segment Definitions:
 
 C     PARM14 section
       INTEGER NELG,NNODG
+!$omp threadprivate(NELG,NNODG)
       INTEGER NOPE, NETA, NETA_MAX
+!$omp threadprivate(NOPE,NETA,NETA_MAX)
       INTEGER NBOU  ! Number of Global Land Boundary Segments
+!$omp threadprivate(NBOU)
       INTEGER NVEL  ! Total Number of Global Land Boundary Nodes
+!$omp threadprivate(NVEL)
       INTEGER,ALLOCATABLE::NNEG(:,:)
+!$omp threadprivate(NNEG)
       INTEGER,ALLOCATABLE::NVDLL(:)
+!$omp threadprivate(NVDLL)
       INTEGER,ALLOCATABLE::NBDV(:,:)
+!$omp threadprivate(NBDV)
       INTEGER,ALLOCATABLE::NVELL(:)  ! NVELL(K) Number of Global Land Boundary
+!$omp threadprivate(NVELL)
                                      ! Nodes of Segment K
       INTEGER,ALLOCATABLE::NBVV(:,:) ! NBVV(K,I) Global Node Number of
+!$omp threadprivate(NBVV)
 C                                    ! I-th Node on Land Boundary Segment K
       INTEGER,ALLOCATABLE::IBTYPE(:) ! Type of discharge boundary segment K
+!$omp threadprivate(IBTYPE)
 
       INTEGER,ALLOCATABLE::IBTYPEE(:) ! Type of elevation boundary segment K
+!$omp threadprivate(IBTYPEE)
       INTEGER,ALLOCATABLE::IBCONNR(:,:)
+!$omp threadprivate(IBCONNR)
       INTEGER,ALLOCATABLE::LBCODE(:) ! LBCODE(I) Boundary Type of Land Boundary
+!$omp threadprivate(LBCODE)
                                      ! Node I
       INTEGER :: numLBCodeValues ! number of values in LBCODE array
+!$omp threadprivate(numLBCodeValues)
       INTEGER,ALLOCATABLE::WEIR(:)
+!$omp threadprivate(WEIR)
       INTEGER,ALLOCATABLE::WEIRD(:)
+!$omp threadprivate(WEIRD)
 
       TYPE(ipair),ALLOCATABLE, TARGET :: node_dict(:)
+!$omp threadprivate(node_dict)
       INTEGER,ALLOCATABLE             :: labels(:)
+!$omp threadprivate(labels)
 
 C     METIS interface section
       INTEGER,ALLOCATABLE ::  PROC(:)
+!$omp threadprivate(PROC)
 C
 C     GRID14 section
       REAL(8)  ,ALLOCATABLE ::    X(:),Y(:),SLAM(:),SFEA(:)
+!$omp threadprivate(X,Y,SLAM,SFEA)
       REAL(SZ) ,ALLOCATABLE ::   DP(:)
+!$omp threadprivate(DP)
       REAL(8) SL0,SF0            ! center of cpp projection, in radians
+!$omp threadprivate(SL0,SF0)
       REAL(8), ALLOCATABLE :: SL1(:),SF1(:) ! nodal coordinates, in radians
+!$omp threadprivate(SL1,SF1)
 C
 C     BARRIER14 section
       REAL(SZ) ,ALLOCATABLE ::  BAR1(:,:),BAR2(:,:),BAR3(:,:)
+!$omp threadprivate(BAR1,BAR2,BAR3)
       REAL(SZ) ,ALLOCATABLE ::  BAR4(:,:),BAR5(:,:),BAR6(:,:)
+!$omp threadprivate(BAR4,BAR5,BAR6)
 
 C     FLOWBC section
       INTEGER NFLBN    ! NFLBN Number of Global Flow Boundary Nodes
+!$omp threadprivate(NFLBN)
       INTEGER NFLBNP   ! NFLBNP(PE) Number of Flow boundary Nodes on PE
+!$omp threadprivate(NFLBNP)
       INTEGER,ALLOCATABLE::FLBN(:)  ! FLBN(I) Global Node number of
+!$omp threadprivate(FLBN)
 C                                   ! Ith Flow Boundary Node
       INTEGER,ALLOCATABLE::FLBNX(:) ! FLBNX(I) Index of Ith Flow Boundary Node
+!$omp threadprivate(FLBNX)
       INTEGER,ALLOCATABLE::FLBNXP(:)! FLBNXP(I) Index of Ith Flow Boundary Node
+!$omp threadprivate(FLBNXP)
       INTEGER,ALLOCATABLE::FLUX14_ARY(:)
+!$omp threadprivate(FLUX14_ARY)
       REAL(SZ),ALLOCATABLE::FLUX20_ARY(:,:)
+!$omp threadprivate(FLUX20_ARY)
       INTEGER EXIST_FLUX
+!$omp threadprivate(EXIST_FLUX)
       LOGICAL APERIODIC_FLOW_BC     ! .true. if EXIST_FLUX is .true. .AND.
+!$omp threadprivate(APERIODIC_FLOW_BC)
                                     ! NFFR=0 in fort.15
                                     
       ! @jasonfleming: add boundary weights for perturbing the domain
       ! decomposition in subroutine metis()
       logical :: strictBoundaries ! true if subdomain boundaries must match fulldomain
+!$omp threadprivate(strictBoundaries)
       integer, allocatable :: boundaryWeights(:) ! mnp
+!$omp threadprivate(boundaryWeights)
 
 ! kmd - updates for rivers in a baroclinic simulation
       INTEGER EXIST_BC_TS
+!$omp threadprivate(EXIST_BC_TS)
       LOGICAL APERIODIC_BC_TS
+!$omp threadprivate(APERIODIC_BC_TS)
       INTEGER, ALLOCATABLE :: BCTS14_ARY(:)
+!$omp threadprivate(BCTS14_ARY)
 ! kmd - Evan's changes for rivers above MSL
       LOGICAL River_above_MSL
+!$omp threadprivate(River_above_MSL)
 C
 C     STRING14 section
       CHARACTER(80) AGRID,NSIZES,SIZEMSG
+!$omp threadprivate(AGRID,NSIZES,SIZEMSG)
       CHARACTER(80) NOPEMSG,NETAMSG
+!$omp threadprivate(NOPEMSG,NETAMSG)
       CHARACTER(80) NBOUMSG,NVELMSG
+!$omp threadprivate(NBOUMSG,NVELMSG)
       CHARACTER(80),ALLOCATABLE   ::  NVELLMSG(:),NVDLLMSG(:)
+!$omp threadprivate(NVELLMSG,NVDLLMSG)
 C
 C     PARM15  section
       INTEGER  NOUTE,NSPOOLE,NSTAE,NSTAE_MAX
+!$omp threadprivate(NOUTE,NSPOOLE,NSTAE,NSTAE_MAX)
       INTEGER  NOUTV,NSPOOLV,NSTAV,NSTAV_MAX
+!$omp threadprivate(NOUTV,NSPOOLV,NSTAV,NSTAV_MAX)
       INTEGER  NOUTM,NSPOOLM,NSTAM,NSTAM_MAX
+!$omp threadprivate(NOUTM,NSPOOLM,NSTAM,NSTAM_MAX)
       INTEGER  NOUTC,NSPOOLC,NSTAC,NSTAC_MAX
+!$omp threadprivate(NOUTC,NSPOOLC,NSTAC,NSTAC_MAX)
       INTEGER  NFOVER,NABOUT,NSCREEN
+!$omp threadprivate(NFOVER,NABOUT,NSCREEN)
       INTEGER  IHOT,ICS,IM
+!$omp threadprivate(IHOT,ICS,IM)
       INTEGER  NOLIBF,NOLIFA,NOLICA,NOLICAT
+!$omp threadprivate(NOLIBF,NOLIFA,NOLICA,NOLICAT)
       INTEGER  NWP,NCOR,NTIP,NWS,NRAMP
+!$omp threadprivate(NWP,NCOR,NTIP,NWS,NRAMP)
       INTEGER  NRS
+!$omp threadprivate(NRS)
       INTEGER  NCICE  !tcm v49.64.01 added ice concentration
+!$omp threadprivate(NCICE)
       INTEGER  NTIF,NBFR,NFFR
+!$omp threadprivate(NTIF,NBFR,NFFR)
       INTEGER  NOUTGE,NSPOOLGE
+!$omp threadprivate(NOUTGE,NSPOOLGE)
       INTEGER  NOUTGV,NSPOOLGV
+!$omp threadprivate(NOUTGV,NSPOOLGV)
       INTEGER  NOUTGC,NSPOOLGC
+!$omp threadprivate(NOUTGC,NSPOOLGC)
       INTEGER  NOUTGW,NSPOOLGW
+!$omp threadprivate(NOUTGW,NSPOOLGW)
       INTEGER  NHARFR,NHSINC
+!$omp threadprivate(NHARFR,NHSINC)
       INTEGER  NHSTAR
+!$omp threadprivate(NHSTAR)
       INTEGER  IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN
+!$omp threadprivate(IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN)
       INTEGER  NWLAT,NWLON,NFLUXF,NFLUXIB,NFLUXIBP,NFLUXB
+!$omp threadprivate(NWLAT,NWLON,NFLUXF,NFLUXIB,NFLUXIBP,NFLUXB)
       INTEGER,ALLOCATABLE ::   NNSEG(:),NNSVG(:),NNSCG(:),NNSMG(:)
+!$omp threadprivate(NNSEG,NNSVG,NNSCG,NNSMG)
 C
 C     jgf46.00 Nodal attributes section.
       CHARACTER(len=80), ALLOCATABLE :: useNodalAttrNames(:) ! labels
+!$omp threadprivate(useNodalAttrNames)
 C
 C     STRING15 section
 C
       CHARACTER(80) RUNDES,RUNID,OVERMSG,ABOUTMSG,SCREENMSG,HOTMSG
+!$omp threadprivate(RUNDES,RUNID,OVERMSG,ABOUTMSG,SCREENMSG,HOTMSG)
       CHARACTER(80) ICSMSG,IMMSG,IBFMSG,IFAMSG,ICAMSG,ICATMSG,NWPMSG,
      &  NCORMSG
+!$omp threadprivate(ICSMSG,IMMSG,IBFMSG,IFAMSG,ICAMSG,ICATMSG,NWPMSG,NCORMSG)
       CHARACTER(80) NTIPMSG,NWSMSG,RAMPMSG,GMSG,TAU0MSG,DTMSG,
      &  STATMSG,REFTMSG
+!$omp threadprivate(NTIPMSG,NWSMSG,RAMPMSG,GMSG,TAU0MSG,DTMSG,STATMSG,REFTMSG)
       CHARACTER(80) RNDAYMSG,DRAMPMSG,COEFMSG,H0MSG,SLMSG,TAUMSG,
      &  ESLMSG,CORIMSG
+!$omp threadprivate(RNDAYMSG,DRAMPMSG,COEFMSG,H0MSG,SLMSG,TAUMSG,ESLMSG,CORIMSG)
       CHARACTER(80)  NTIFMSG,NBFRMSG,ANGMSG,NFFRMSG,STAEMSG,
      &  NSTAEMSG,STAVMSG,RSTIMMSG
+!$omp threadprivate(NTIFMSG,NBFRMSG,ANGMSG,NFFRMSG,STAEMSG,NSTAEMSG,STAVMSG)
+!$omp threadprivate(RSTIMMSG)
       CHARACTER(80)  NSTAVMSG,STACMSG,NSTACMSG,STAMMSG,NSTAMMSG
+!$omp threadprivate(NSTAVMSG,STACMSG,NSTACMSG,STAMMSG,NSTAMMSG)
       CHARACTER(80)  OUTGEMSG,OUTGVMSG,OUTGCMSG,OUTGWMSG
+!$omp threadprivate(OUTGEMSG,OUTGVMSG,OUTGCMSG,OUTGWMSG)
       CHARACTER(80)  HARFRMSG,HARPARMSG,OUTHARMSG,HSTARMSG
+!$omp threadprivate(HARFRMSG,HARPARMSG,OUTHARMSG,HSTARMSG)
       CHARACTER(80)  SOLVMSG,WSMSG1,WSMSG2
+!$omp threadprivate(SOLVMSG,WSMSG1,WSMSG2)
       CHARACTER(132),ALLOCATABLE :: STAELOC(:),STAVLOC(:),STACLOC(:)
+!$omp threadprivate(STAELOC,STAVLOC,STACLOC)
       CHARACTER(132),ALLOCATABLE :: STAMLOC(:)
+!$omp threadprivate(STAMLOC)
       CHARACTER*80,ALLOCATABLE :: HAFREMSG(:)
+!$omp threadprivate(HAFREMSG)
       CHARACTER*80,ALLOCATABLE :: TIPOTAG(:),BOUNTAG(:),FBOUNTAG(:)
+!$omp threadprivate(TIPOTAG,BOUNTAG,FBOUNTAG)
       CHARACTER*80,ALLOCATABLE :: ALPHA1(:),ALPHA2(:),FREQMSG(:),
      &  QNMSG(:,:)
+!$omp threadprivate(ALPHA1,ALPHA2,FREQMSG,QNMSG)
       CHARACTER*80,ALLOCATABLE :: AMIGMSG(:),EMOMSG(:,:),TPKMSG(:)
+!$omp threadprivate(AMIGMSG,EMOMSG,TPKMSG)
 
 C
 C     PARM15-3DVS section
       INTEGER :: ISLIP,ICG,IEVC
+!$omp threadprivate(ISLIP,ICG,IEVC)
       INTEGER :: I3DSD,NSPO3DSD       ! NSTA3DD is in presizes
+!$omp threadprivate(I3DSD,NSPO3DSD)
       INTEGER :: I3DSV,NSPO3DSV       ! NSTA3DV is in presizes
+!$omp threadprivate(I3DSV,NSPO3DSV)
       INTEGER :: I3DST,NSPO3DST       ! NSTA3DT is in presizes
+!$omp threadprivate(I3DST,NSPO3DST)
       REAL(SZ) :: TO3DSDS,TO3DSDF
+!$omp threadprivate(TO3DSDS,TO3DSDF)
       REAL(SZ) :: TO3DSVS,TO3DSVF
+!$omp threadprivate(TO3DSVS,TO3DSVF)
       REAL(SZ) :: TO3DSTS,TO3DSTF
+!$omp threadprivate(TO3DSTS,TO3DSTF)
       INTEGER,ALLOCATABLE :: ISDHOUT(:),ISVHOUT(:),ISTHOUT(:)
+!$omp threadprivate(ISDHOUT,ISVHOUT,ISTHOUT)
       INTEGER :: I3DGD,NSPO3DGD
+!$omp threadprivate(I3DGD,NSPO3DGD)
       INTEGER :: I3DGV,NSPO3DGV
+!$omp threadprivate(I3DGV,NSPO3DGV)
       INTEGER :: I3DGT,NSPO3DGT
+!$omp threadprivate(I3DGT,NSPO3DGT)
       REAL(SZ) :: TO3DGDS,TO3DGDF
+!$omp threadprivate(TO3DGDS,TO3DGDF)
       REAL(SZ) :: TO3DGVS,TO3DGVF
+!$omp threadprivate(TO3DGVS,TO3DGVF)
       REAL(SZ) :: TO3DGTS,TO3DGTF
+!$omp threadprivate(TO3DGTS,TO3DGTF)
       REAL(SZ) :: KP,Z0S,Z0B,ALP1,ALP2,ALP3,EVMIN,EVCON,THETA1,THETA2
+!$omp threadprivate(KP,Z0S,Z0B,ALP1,ALP2,ALP3,EVMIN,EVCON,THETA1,THETA2)
       REAL(8),ALLOCATABLE,TARGET :: X3DD(:),Y3DD(:),SX3DD(:),SY3DD(:)
+!$omp threadprivate(X3DD,Y3DD,SX3DD,SY3DD)
       REAL(8),ALLOCATABLE,TARGET :: SL3DD(:),SF3DD(:)
+!$omp threadprivate(SL3DD,SF3DD)
       REAL(8),ALLOCATABLE,TARGET :: X3DV(:),Y3DV(:),SX3DV(:),SY3DV(:)
+!$omp threadprivate(X3DV,Y3DV,SX3DV,SY3DV)
       REAL(8),ALLOCATABLE,TARGET :: SL3DV(:),SF3DV(:)
+!$omp threadprivate(SL3DV,SF3DV)
       REAL(8),ALLOCATABLE,TARGET :: X3DT(:),Y3DT(:),SX3DT(:),SY3DT(:)
+!$omp threadprivate(X3DT,Y3DT,SX3DT,SY3DT)
       REAL(8),ALLOCATABLE,TARGET :: SL3DT(:),SF3DT(:)
+!$omp threadprivate(SL3DT,SF3DT)
       CHARACTER*132,ALLOCATABLE :: STA3DDLOC(:),STA3DVLOC(:),
      &   STA3DTLOC(:)
+!$omp threadprivate(STA3DDLOC,STA3DVLOC,STA3DTLOC)
       INTEGER,ALLOCATABLE ::   NNS3DDG(:),NNS3DVG(:),NNS3DTG(:)
+!$omp threadprivate(NNS3DDG,NNS3DVG,NNS3DTG)
       REAL(SZ),ALLOCATABLE :: EVTot(:) !(NFEN) Vertical eddy viscosity
+!$omp threadprivate(EVTot)
       INTEGER IGC                      ! vertical grid code in fort.15
+!$omp threadprivate(IGC)
 
 C   kmd48.33bc variables for 3D baroclinic and hot start
       REAL(SZ) :: RBCTIMEINC, SBCTIMEINC, TBCTIMEINC    ! flag for bcs on baroclinic
+!$omp threadprivate(RBCTIMEINC,SBCTIMEINC,TBCTIMEINC)
       REAL(SZ) :: BCSTATIM, SBCSTATIM, TBCSTATIM       ! flag for bcs on baroclinic
+!$omp threadprivate(BCSTATIM,SBCSTATIM,TBCSTATIM)
       REAL(SZ) :: TTBCSTATIM, TTBCTIMEINC       ! flag for bcs on baroclinic
+!$omp threadprivate(TTBCSTATIM,TTBCTIMEINC)
       INTEGER N3DSD, I3DSDRec, N3DSV, I3DSVRec, N3DST, I3DSTRec
+!$omp threadprivate(N3DSD,I3DSDRec,N3DSV,I3DSVRec,N3DST,I3DSTRec)
       INTEGER N3DGD, I3DGDRec, N3DGV, I3DGVRec, N3DGT, I3DGTRec
+!$omp threadprivate(N3DGD,I3DGDRec,N3DGV,I3DGVRec,N3DGT,I3DGTRec)
       REAL(SZ),ALLOCATABLE :: DUU(:),DUV(:),DVV(:)
+!$omp threadprivate(DUU,DUV,DVV)
       REAL(SZ),ALLOCATABLE :: UU(:),VV(:)
+!$omp threadprivate(UU,VV)
       REAL(SZ),ALLOCATABLE :: BSX(:),BSY(:)
+!$omp threadprivate(BSX,BSY)
       REAL(SZ),ALLOCATABLE :: WZ(:,:), q20(:,:), l(:,:)
+!$omp threadprivate(WZ,q20,l)
       REAL(SZ),ALLOCATABLE :: SigT(:,:), Sal(:,:), Temp(:,:)
+!$omp threadprivate(SigT,Sal,Temp)
       REAL(SZ),ALLOCATABLE :: RealQ(:,:), ImagQ(:,:)
+!$omp threadprivate(RealQ,ImagQ)
       INTEGER,ALLOCATABLE :: NODECODE(:)
+!$omp threadprivate(NODECODE)
       INTEGER IESTP,NSCOUE,IVSTP,NSCOUV,ICSTP,NSCOUC,IPSTP,IWSTP,NSCOUM,
      &        IGEP,NSCOUGE,IGVP,NSCOUGV,IGCP,NSCOUGC,IGPP,IGWP,NSCOUGW
+!$omp threadprivate(IESTP,NSCOUE,IVSTP,NSCOUV,ICSTP,NSCOUC,IPSTP,IWSTP,NSCOUM)
+!$omp threadprivate(IGEP,NSCOUGE,IGVP,NSCOUGV,IGCP,NSCOUGC,IGPP,IGWP,NSCOUGW)
 
 C     jgf45.12 Terms added for the transport parameters
 C     diffusion coefficients for the salinity field
       REAL(SZ) :: NLSD, NVSD
+!$omp threadprivate(NLSD,NVSD)
 C     diffusion coefficients for the temperature field
       REAL(SZ) :: NLTD, NVTD
+!$omp threadprivate(NLTD,NVTD)
 c     time weighting coefficient for the vertical diffusion term in the
 c     transport equation
       REAL(SZ) :: Alp4
+!$omp threadprivate(Alp4)
 C     Flag for the top boundary condition for the temperature field in
 C     the transport equation
 !      INTEGER :: NTF ! kmd48.33bc took out with new evaluation of boundary condition
 C
 C     STRING15-3DVS section
       CHARACTER(80) :: IDENMSG,SLIPMSG,Z0MSG,ALPMSG,FEMSG
+!$omp threadprivate(IDENMSG,SLIPMSG,Z0MSG,ALPMSG,FEMSG)
       CHARACTER(80) :: EVCMSG,THETAMSG
+!$omp threadprivate(EVCMSG,THETAMSG)
       CHARACTER(80) :: DSDMSG,DSVMSG,DSTMSG,DGDMSG,DGVMSG,DGTMSG
+!$omp threadprivate(DSDMSG,DSVMSG,DSTMSG,DGDMSG,DGVMSG,DGTMSG)
       CHARACTER(80) :: NSTA3DDMSG,NSTA3DVMSG,NSTA3DTMSG
+!$omp threadprivate(NSTA3DDMSG,NSTA3DVMSG,NSTA3DTMSG)
 
 C  kmd48.33bc variables for boundary conditions
       CHARACTER(80) :: RESBCFLAGMSG, BCTIMEMSG, BCSTATMSG, TBCTIMEMSG
+!$omp threadprivate(RESBCFLAGMSG,BCTIMEMSG,BCSTATMSG,TBCTIMEMSG)
       CHARACTER(80) :: SPONGEDISTMSG, EqnstateMSG
+!$omp threadprivate(SPONGEDISTMSG,EqnstateMSG)
 C
 C     ELESTAT section
       REAL(SZ) TOUTSE,TOUTFE,TOUTSGE,TOUTFGE
+!$omp threadprivate(TOUTSE,TOUTFE,TOUTSGE,TOUTFGE)
       REAL(8),ALLOCATABLE, TARGET :: XEL(:),YEL(:),SLEL(:),SFEL(:)
+!$omp threadprivate(XEL,YEL,SLEL,SFEL)
 C
 C     VELSTAT section
       REAL(SZ) TOUTSGV,TOUTFGV,TOUTSV,TOUTFV
+!$omp threadprivate(TOUTSGV,TOUTFGV,TOUTSV,TOUTFV)
       REAL(8),ALLOCATABLE, TARGET :: XEV(:),YEV(:),SLEV(:),SFEV(:)
+!$omp threadprivate(XEV,YEV,SLEV,SFEV)
 C
 C     CONSTAT section
       REAL(SZ) TOUTSC,TOUTFC,TOUTSGC,TOUTFGC
+!$omp threadprivate(TOUTSC,TOUTFC,TOUTSGC,TOUTFGC)
       REAL(8),ALLOCATABLE, TARGET :: XEC(:),YEC(:),SLEC(:),SFEC(:)
+!$omp threadprivate(XEC,YEC,SLEC,SFEC)
 C
 C     METSTAT section
       REAL(SZ) TOUTSM,TOUTFM,TOUTSGM,TOUTFGM
+!$omp threadprivate(TOUTSM,TOUTFM,TOUTSGM,TOUTFGM)
       REAL(8),ALLOCATABLE, TARGET ::  XEM(:),YEM(:),SLEM(:),SFEM(:)
+!$omp threadprivate(XEM,YEM,SLEM,SFEM)
       REAL(SZ) TOUTSGW,TOUTFGW
+!$omp threadprivate(TOUTSGW,TOUTFGW)
 C
 C     INPUT15 section
       INTEGER    NODEDRYMIN,NODEWETRMP
+!$omp threadprivate(NODEDRYMIN,NODEWETRMP)
       REAL(SZ)   G
+!$omp threadprivate(G)
       REAL(SZ)   TAU0,RNDAY,DRAMP
+!$omp threadprivate(TAU0,RNDAY,DRAMP)
       REAL(SZ)   A00,B00,C00,H0,VELMIN
+!$omp threadprivate(A00,B00,C00,H0,VELMIN)
       REAL(8)    SLAM0,SFEA0
+!$omp threadprivate(SLAM0,SFEA0)
       REAL(SZ)   TAU,CF,ESL,CORI,ANGINN
+!$omp threadprivate(TAU,CF,ESL,CORI,ANGINN)
       REAL(8)    DTDP
+!$omp threadprivate(DTDP)
       REAL(SZ)   ESLM,ESLC,HBREAK,FTHETA,FGAMMA
+!$omp threadprivate(ESLM,ESLC,HBREAK,FTHETA,FGAMMA)
       REAL(8)    REFSEC
+!$omp threadprivate(REFSEC)
       REAL(SZ)   WLATMAX,WLONMIN,WLATINC,WLONINC
+!$omp threadprivate(WLATMAX,WLONMIN,WLATINC,WLONINC)
       REAL(SZ),ALLOCATABLE ::  FF(:),FACE(:)
+!$omp threadprivate(FF,FACE)
       REAL(8) ,ALLOCATABLE ::  EMO(:,:),EFA(:,:)
+!$omp threadprivate(EMO,EFA)
       REAL(SZ),ALLOCATABLE ::  TPK(:),ETRF(:),FFT(:),FACET(:)
+!$omp threadprivate(TPK,ETRF,FFT,FACET)
       REAL(SZ),ALLOCATABLE ::  QNAM(:,:),QNPH(:,:)
+!$omp threadprivate(QNAM,QNPH)
       REAL(SZ),ALLOCATABLE ::  FFF(:),FFACE(:)
+!$omp threadprivate(FFF,FFACE)
 C
 C     Time varying tau0 min and max
       CHARACTER(80) :: TAU0LIMMSG
+!$omp threadprivate(TAU0LIMMSG)
       REAL(SZ) Tau0FullDomainMin, Tau0FullDomainMax
+!$omp threadprivate(Tau0FullDomainMin,Tau0FullDomainMax)
 C
 C     INPUT15D section
       REAL(SZ)   DT
+!$omp threadprivate(DT)
       REAL(8)    STATIM,REFTIM,WTIMINC
+!$omp threadprivate(STATIM,REFTIM,WTIMINC)
       REAL(8),ALLOCATABLE ::   AMIG(:),AMIGT(:),FAMIG(:)
+!$omp threadprivate(AMIG,AMIGT,FAMIG)
       REAL(8)  CICE_TIMINC   ! tcm v49.64.01 addition for ice
+!$omp threadprivate(CICE_TIMINC)
 
 c.... tcm v50.66.02 added for time varying bathymetry
       INTEGER  NDDT   !tcm v50.66.02 added for time varying bathymetry
+!$omp threadprivate(NDDT)
       REAL(8)  BTIMINC ! TIME INCREMENT (SECONDS) FOR BATHYMETRY CHANGES USED FOR TIME VARYING BATHYMETRY
+!$omp threadprivate(BTIMINC)
       REAL(8) :: BCHGTIMINC ! time increment (seconds) over which bathymetry changes during a btimeinc interval
+!$omp threadprivate(BCHGTIMINC)
       LOGICAL :: FOUND_TBC_NML   !flag to determine if the timebathycontrol namelist was present
+!$omp threadprivate(FOUND_TBC_NML)
       NAMELIST /TimeBathyControl/ NDDT,BTIMINC,BCHGTIMINC
 
 c.... !tcm v52.30.01 added for forced use of Smagorinski Eddy Viscosity
       REAL(8) :: SMAG_UPPER_LIM = 100.d0  ! m^2/s (default upper limit)
+!$omp threadprivate(SMAG_UPPER_LIM)
       REAL(8) :: SMAG_LOWER_LIM = 1.0d-8  ! m^2/s (default lower limit)
+!$omp threadprivate(SMAG_LOWER_LIM)
       LOGICAL :: SMAG_COMP_FLAG = .FALSE.   !BY DEFAULT DO NOT USE SMAG
+!$omp threadprivate(SMAG_COMP_FLAG)
       LOGICAL :: FOUND_Smag_NML  ! flag to determine if the Smag_Control namelist was present
+!$omp threadprivate(FOUND_Smag_NML)
       NAMELIST /Smag_Control/ SMAG_UPPER_LIM,SMAG_LOWER_LIM,SMAG_COMP_FLAG
 
 
       ! tcm v50.79 added for metControl namelist
       LOGICAL :: FOUND_METCON_NML  !flag to determine if the metControl namelist was present
+!$omp threadprivate(FOUND_METCON_NML)
 
       ! zc - added for tvw namelist
       LOGICAL :: FOUND_TVW_NML
+!$omp threadprivate(FOUND_TVW_NML)
 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       LOGICAL :: FOUND_WC_NML
+!$omp threadprivate(FOUND_WC_NML)
 
       logical :: foundWetDryControlNamelist = .false. ! for namelist 
+!$omp threadprivate(foundWetDryControlNamelist)
       logical :: outputNodeCode = .false.
+!$omp threadprivate(outputNodeCode)
       logical :: outputNOFF = .false.
+!$omp threadprivate(outputNOFF)
       logical :: noffActive = .true.
+!$omp threadprivate(noffActive)
       logical :: StatPartWetFix = .false.  ! tcm v53.01.02
+!$omp threadprivate(StatPartWetFix)
       integer :: How2FixStatPartWet = 0    ! tcm v52.01.02
+!$omp threadprivate(How2FixStatPartWet)
 
       ! jgf52.08.02: For inundation output control. Wanted to just
       ! use the variables of the same name from the write_output module,
       ! but this must wait until build dependencies are resolved. 
       logical :: foundInundationOutputControlNamelist = .false.
+!$omp threadprivate(foundInundationOutputControlNamelist)
       logical :: inundationOutput = .false.
+!$omp threadprivate(inundationOutput)
       real(sz) :: inunThresh = 0.6d0
+!$omp threadprivate(inunThresh)
 
       ! jgf: added support for water level offset
       logical :: foundOffsetControlNamelist = .false. 
+!$omp threadprivate(foundOffsetControlNamelist)
       character(len=2048) :: offsetFileName='null' ! water level offset file 
+!$omp threadprivate(offsetFileName)
       integer :: offsetSkipSnaps=0 ! number of offset data sets to skip 
+!$omp threadprivate(offsetSkipSnaps)
       real(sz) :: offsetMultiplier = 1.d0 ! multiply each offset value by this
+!$omp threadprivate(offsetMultiplier)
       real(sz) :: offsetRampStart = 0.d0 ! seconds after run start
+!$omp threadprivate(offsetRampStart)
       real(sz) :: offsetRampEnd = 0.d0   ! seconds after run start     
+!$omp threadprivate(offsetRampEnd)
       character(len=10) :: offsetRampReferenceTime = 'hotstart'
+!$omp threadprivate(offsetRampReferenceTime)
 C
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX
+!$omp threadprivate(ITITER,ISLDIA,ITMAX)
       REAL(SZ) CONVCR
+!$omp threadprivate(CONVCR)
 C
 C     jgf48.03 netCDF metadata
       CHARACTER(80) title
+!$omp threadprivate(title)
       CHARACTER(80) institution
+!$omp threadprivate(institution)
       CHARACTER(80) source
+!$omp threadprivate(source)
       CHARACTER(80) history
+!$omp threadprivate(history)
       CHARACTER(80) references
+!$omp threadprivate(references)
       CHARACTER(80) comments
+!$omp threadprivate(comments)
       CHARACTER(80) host
+!$omp threadprivate(host)
       CHARACTER(80) convention
+!$omp threadprivate(convention)
       CHARACTER(80) contact
+!$omp threadprivate(contact)
       CHARACTER(80) base_date
+!$omp threadprivate(base_date)
       INTEGER NT
+!$omp threadprivate(NT)
       INTEGER NTRSPE, NTRSPV, NTRSPM, NDSETSE, NDSETSV, NDSETSM
+!$omp threadprivate(NTRSPE,NTRSPV,NTRSPM,NDSETSE,NDSETSV,NDSETSM)
       INTEGER NDSETSW
+!$omp threadprivate(NDSETSW)
       INTEGER NHY
+!$omp threadprivate(NHY)
 C
 C
 C--------------------------------------------------------------------------C
@@ -325,74 +528,114 @@ C--Local Map Variable Declarations
 C
 C     LOCALI section
       INTEGER NPROC,MSHAR,NWEIR
+!$omp threadprivate(NPROC,MSHAR,NWEIR)
       INTEGER,ALLOCATABLE::NELP(:), NNODP(:), NNEP(:,:,:)
+!$omp threadprivate(NELP,NNODP,NNEP)
       INTEGER,ALLOCATABLE::NOD_RES_TOT(:),NSTACP(:), NSTAMP(:)
+!$omp threadprivate(NOD_RES_TOT,NSTACP,NSTAMP)
       INTEGER,ALLOCATABLE::NWEIRP(:),NSTAEP(:),NSTAVP(:)
+!$omp threadprivate(NWEIRP,NSTAEP,NSTAVP)
       INTEGER,ALLOCATABLE::NOPEP(:),NETAP(:),NVDLLP(:)
+!$omp threadprivate(NOPEP,NETAP,NVDLLP)
       INTEGER,ALLOCATABLE::NBDVP(:,:)
+!$omp threadprivate(NBDVP)
       INTEGER,ALLOCATABLE::NBOUP(:)    ! NBOUP(PE) Number of Land Boundary
+!$omp threadprivate(NBOUP)
 C                                      ! Segments on PE
       INTEGER,ALLOCATABLE::NVELLP(:)   ! NVELLP(K,PE) Number of Land Boundary
+!$omp threadprivate(NVELLP)
 C                                      ! Nodes of Segment K on PE
       INTEGER,ALLOCATABLE::NVELP(:)    ! NVELP(PE) Total Number of Land
+!$omp threadprivate(NVELP)
 C                                      ! Boundary Nodes on PE
       INTEGER,ALLOCATABLE::NBVVP(:,:)  ! NBVVP(K,I) Local Node Number of I-th
+!$omp threadprivate(NBVVP)
 C                                      ! Node on Land Boundary Segment K on PE
       INTEGER,ALLOCATABLE::IBTYPEP(:,:)! IBTYPEP(K,PE) Type Land Boundary
+!$omp threadprivate(IBTYPEP)
 C                                      ! Segment K on PE (0=mainland,1=island)
       INTEGER,ALLOCATABLE::IBTYPEEP(:,:)! IBTYPEEP(K,PE) Type Elev Boundary
+!$omp threadprivate(IBTYPEEP)
 C                                      ! Segment K on PE
       INTEGER,ALLOCATABLE::LBCODEP(:,:)! LBCODEP(I,PE) Boundary Type of Land
+!$omp threadprivate(LBCODEP)
 C                                      ! Boundary Node I on PE
       INTEGER,ALLOCATABLE::NFLUXFP(:)
+!$omp threadprivate(NFLUXFP)
       INTEGER,ALLOCATABLE::IBCONNRP(:,:)
+!$omp threadprivate(IBCONNRP)
 
       INTEGER,ALLOCATABLE::NNSTA3DDP(:)! Number of 3D density stations on (PE)
+!$omp threadprivate(NNSTA3DDP)
       INTEGER,ALLOCATABLE::NNSTA3DVP(:)! Number of 3D velocity stations on (PE)
+!$omp threadprivate(NNSTA3DVP)
       INTEGER,ALLOCATABLE::NNSTA3DTP(:)! Number of 3D turbulence stationson(PE)
+!$omp threadprivate(NNSTA3DTP)
 C
 C     DIAGS section
       REAL(SZ),ALLOCATABLE ::   PROC_SV(:)
+!$omp threadprivate(PROC_SV)
 C
 C--Local-to-Global Mapping Variables
 C
 C     LOC2G section
       INTEGER,ALLOCATABLE  ::   IMAP_NOD_LG(:,:)
+!$omp threadprivate(IMAP_NOD_LG)
       INTEGER,ALLOCATABLE  ::   IMAP_EL_LG(:,:),   EL_SHARE(:)
+!$omp threadprivate(IMAP_EL_LG,EL_SHARE)
       INTEGER,ALLOCATABLE  ::   IMAP_STAE_LG(:,:), STAE_SHARE(:)
+!$omp threadprivate(IMAP_STAE_LG,STAE_SHARE)
       INTEGER,ALLOCATABLE  ::   IMAP_STAV_LG(:,:), STAV_SHARE(:)
+!$omp threadprivate(IMAP_STAV_LG,STAV_SHARE)
       INTEGER,ALLOCATABLE  ::   IMAP_STAC_LG(:,:), STAC_SHARE(:)
+!$omp threadprivate(IMAP_STAC_LG,STAC_SHARE)
       INTEGER,ALLOCATABLE  ::   IMAP_STAM_LG(:,:), STAM_SHARE(:)
+!$omp threadprivate(IMAP_STAM_LG,STAM_SHARE)
       INTEGER,ALLOCATABLE  ::   OBNODE_LG(:,:)
+!$omp threadprivate(OBNODE_LG)
       INTEGER,ALLOCATABLE  ::   WEIRP_LG(:,:)
+!$omp threadprivate(WEIRP_LG)
       INTEGER,ALLOCATABLE  ::   WEIRDP_LG(:,:)
+!$omp threadprivate(WEIRDP_LG)
       INTEGER,ALLOCATABLE  ::   LBINDEX_LG(:,:)
+!$omp threadprivate(LBINDEX_LG)
 C
 C     jgf45.11 Subdomain->Fulldomain element mappings for 3D recording stations
       INTEGER,ALLOCATABLE::IMAP_STA3DD_LG(:,:) ! density
+!$omp threadprivate(IMAP_STA3DD_LG)
       INTEGER,ALLOCATABLE::IMAP_STA3DV_LG(:,:) ! velocity
+!$omp threadprivate(IMAP_STA3DV_LG)
       INTEGER,ALLOCATABLE::IMAP_STA3DT_LG(:,:) ! turbulence
+!$omp threadprivate(IMAP_STA3DT_LG)
 C
 C--Global-to-Local Mapping Variables
 C
 C     GLOB2L section
       INTEGER,ALLOCATABLE::ITOTPROC(:)
+!$omp threadprivate(ITOTPROC)
       INTEGER,ALLOCATABLE  ::   IMAP_NOD_GL(:,:),IMAP_NOD_GL2(:,:)
+!$omp threadprivate(IMAP_NOD_GL,IMAP_NOD_GL2)
 C
 C--Message-Passing Variables
 C
 C     MSGTAB section
       INTEGER,ALLOCATABLE  ::   NUM_COMM_PE(:), COMM_PE_NUM(:,:)
+!$omp threadprivate(NUM_COMM_PE,COMM_PE_NUM)
       INTEGER,ALLOCATABLE  ::   IRECV_TOT(:,:),IRECV(:)
+!$omp threadprivate(IRECV_TOT,IRECV)
       INTEGER,ALLOCATABLE  ::   ISEND_TOT(:,:),ISEND(:)
+!$omp threadprivate(ISEND_TOT,ISEND)
 
       integer, save       :: FileFmtVersion      ! File format version.
+!$omp threadprivate(FileFmtVersion)
 
 C...tcm v49.48.01 -- Added for new point in element searches
 C-- KDTREE2 ENABLED SEARCH ALGORITHM VARIABLES
 C
       INTEGER :: SRCHDP=100
+!$omp threadprivate(SRCHDP)
       REAL(sz), ALLOCATABLE ::  RMAX(:),BCXY(:,:)
+!$omp threadprivate(RMAX,BCXY)
 
 C-------------------end of data declarations------------------------C
 
@@ -424,6 +667,7 @@ c----------------------------------------------------------------------
 c----------------------------------------------------------------------
       use memory_usage
       integer :: nbytes = 0
+!$omp threadprivate(nbytes)
 C
 C     Allocate space for Arrays except those dimensioned by MNPP and MNEP
 C

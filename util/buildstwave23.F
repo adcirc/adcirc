@@ -3,30 +3,45 @@
       implicit none
 
       integer :: i,j,k,e,s,idum,cnt
+!$omp threadprivate(i,j,k,e,s,idum,cnt)
       character(len=100) :: inputfile,outputfile,dummyc,title
+!$omp threadprivate(inputfile,outputfile,dummyc,title)
       double precision :: x,y,rdum
 
       !variables for input file
       integer :: type ! type of output file to produce, 1: include wave radiation
+!$omp threadprivate(type)
                       !                                 2: does not include wave radiation
       integer :: ns ! number of stwave grids
+!$omp threadprivate(ns)
       character(len=100),allocatable,dimension(:) :: simfiles ! names of .sim files
+!$omp threadprivate(simfiles)
       character(len=100),allocatable,dimension(:) :: radfiles ! names of .rad files
+!$omp threadprivate(radfiles)
       character(len=100),allocatable,dimension(:) :: spgfiles ! names of grid files in state plane coordinates
+!$omp threadprivate(spgfiles)
       integer,allocatable,dimension(:)            :: fullplanes ! 0: half plane, 1: full plane
+!$omp threadprivate(fullplanes)
       integer,allocatable,dimension(:)            :: nbs ! number of blank snaps
+!$omp threadprivate(nbs)
       integer,allocatable,dimension(:)            :: rfids ! id of .rad files
+!$omp threadprivate(rfids)
 
       !variables for a grid in Geophysical coordiantes
       integer :: np,ne
+!$omp threadprivate(np,ne)
       character(len=100) :: geoGridFile
+!$omp threadprivate(geoGridFile)
       double precision,allocatable,dimension(:,:) :: xy
       integer,allocatable,dimension(:,:) :: nm
+!$omp threadprivate(nm)
 
       !variables for a grid in state plane coordiantes
       integer :: spnp,spne
+!$omp threadprivate(spnp,spne)
       double precision,allocatable,dimension(:,:) :: spxy
       integer,allocatable,dimension(:,:) :: spnm
+!$omp threadprivate(spnm)
 
       !variables for .sim files
       double precision :: x0,y0,azimuth
@@ -34,27 +49,38 @@
 
       !variables for stwave grid
       integer :: ni,nj
+!$omp threadprivate(ni,nj)
       integer,allocatable,dimension(:) :: nis,njs
+!$omp threadprivate(nis,njs)
       double precision :: dxinc,dyinc
       double precision,allocatable,dimension(:) :: dxincs,dyincs
       double precision,allocatable,dimension(:,:,:) :: stwxy,stwlonlat
 
       !variables for searching
       integer :: numElemInside
+!$omp threadprivate(numElemInside)
       integer,allocatable,dimension(:) :: elemInside
+!$omp threadprivate(elemInside)
       integer,allocatable,dimension(:,:) :: elemInsideBins
+!$omp threadprivate(elemInsideBins)
       integer,allocatable,dimension(:) :: numElemInsideBins
+!$omp threadprivate(numElemInsideBins)
       double precision,allocatable,dimension(:) :: elemInsideBinPartition
       integer :: elem,n1,n2,n3
+!$omp threadprivate(elem,n1,n2,n3)
       double precision :: w1,w2,w3,x1,x2,x3,y1,y2,y3
       integer,parameter :: numBins = 600
       double precision :: stwminx,stwmaxx
       real :: tol,exmax,exmin,p1,p2
+!$omp threadprivate(tol,exmax,exmin,p1,p2)
       integer :: i1,i2,j1,j2
+!$omp threadprivate(i1,i2,j1,j2)
 
       !variables for snaps
       integer,allocatable,dimension(:) :: endoffile
+!$omp threadprivate(endoffile)
       integer :: ios,snapCnt,fid,spectrum_id
+!$omp threadprivate(ios,snapCnt,fid,spectrum_id)
       double precision,allocatable,dimension(:,:,:) :: wxyrs
 
 
@@ -69,20 +95,20 @@
       write(*,*) ""
       write(*,*) ""
 
-      open(1,file=inputfile,status="old",action="read")
-      open(2,file=outputfile,action="write")
+      open(1+CK_LUN,file=inputfile,status="old",action="read")
+      open(2+CK_LUN,file=outputfile,action="write")
 
-      read(1,*) type
+      read(1+CK_LUN,*) type
       if(type.ne.1.and.type.ne.2) then
          print *, 'type must be 1 or 2.'
          print *, 'program will be terminated.'
       endif
-      read(1,*) geoGridFile
-      read(1,*) ns
+      read(1+CK_LUN,*) geoGridFile
+      read(1+CK_LUN,*) ns
 
-      write(2,'(i1,a)') type, 
+      write(2+CK_LUN,'(i1,a)') type, 
      &' ! 1: rad vecs included; 2: rad vecs not included'
-      write(2,'(i1,a)') ns, ' ! number of stwave grids'
+      write(2+CK_LUN,'(i1,a)') ns, ' ! number of stwave grids'
 
 
       allocate(simfiles(ns),radfiles(ns),spgfiles(ns))
@@ -92,30 +118,30 @@
       allocate(endoffile(ns))
 
       do i=1,ns
-         read(1,*)  ! skip a line
-         read(1,'(A100)') simfiles(i)
-         read(1,'(A100)') radfiles(i)
-         read(1,'(A100)') spgfiles(i)
-         read(1,*) fullplanes(i)
-         read(1,*) nbs(i)
+         read(1+CK_LUN,*)  ! skip a line
+         read(1+CK_LUN,'(A100)') simfiles(i)
+         read(1+CK_LUN,'(A100)') radfiles(i)
+         read(1+CK_LUN,'(A100)') spgfiles(i)
+         read(1+CK_LUN,*) fullplanes(i)
+         read(1+CK_LUN,*) nbs(i)
          if(type.eq.2) then
-            read(1, *) x0s(i), y0s(i), azimuths(i)
+            read(1+CK_LUN, *) x0s(i), y0s(i), azimuths(i)
             if(fullplanes(i).eq.1) then
-               read (1,*) nis(i), njs(i), dxincs(i), dyincs(i)
+               read (1+CK_LUN,*) nis(i), njs(i), dxincs(i), dyincs(i)
             else
-               read (1,*) nis(i), njs(i), dxincs(i)
+               read (1+CK_LUN,*) nis(i), njs(i), dxincs(i)
                dyincs(i) = dxincs(i)
             endif
          endif
       enddo
 
-      close(1)
+      close(1+CK_LUN)
 
       !read adcirc grid in geophysical coordinates
       print *, 'reading adcirc grid :', geoGridFile
-      open(14,file=geoGridFile,status='old',action='read')
-      read(14,'(A80)') title
-      read(14,*) ne, np
+      open(14+CK_LUN,file=geoGridFile,status='old',action='read')
+      read(14+CK_LUN,'(A80)') title
+      read(14+CK_LUN,*) ne, np
 
       print *, ' grid id = ', trim(title)
       print *, ' np = ',np,', ne = ',ne
@@ -123,14 +149,14 @@
       allocate(xy(2,np),nm(3,ne))
 
       do i=1,np
-         read(14,*) idum, xy(1,i), xy(2,i), rdum
+         read(14+CK_LUN,*) idum, xy(1,i), xy(2,i), rdum
       enddo
 
       do i=1,ne
-         read(14,*) idum, idum, nm(1,i), nm(2,i), nm(3,i)
+         read(14+CK_LUN,*) idum, idum, nm(1,i), nm(2,i), nm(3,i)
       enddo
 
-      close(14)
+      close(14+CK_LUN)
 
       allocate(elemInside(ne))
 
@@ -142,8 +168,8 @@
 
          if(type.eq.1) then
             !simfile
-            open(1,file=simfiles(s),status="old",action="read")
-            read (1, *) dummyc, x0, y0, azimuth
+            open(1+CK_LUN,file=simfiles(s),status="old",action="read")
+            read (1+CK_LUN, *) dummyc, x0, y0, azimuth
 
             print *, ' stwave grid info'
             print *, ' ID     = ', dummyc
@@ -151,15 +177,15 @@
             print *, ' y0     = ', y0
             print *, ' azimuth= ',azimuth
 
-            close(1)
+            close(1+CK_LUN)
 
             !radfile
             rfids(s) = s+20
-            open(rfids(s),file=radfiles(s),status="old",action="read")
+            open(rfids(s+CK_LUN),file=radfiles(s),status="old",action="read")
             if(fullplanes(s).eq.1) then
-               read (rfids(s),*) ni, nj, dxinc, dyinc
+               read (rfids(s+CK_LUN),*) ni, nj, dxinc, dyinc
             else
-               read (rfids(s),*) ni, nj, dxinc
+               read (rfids(s+CK_LUN),*) ni, nj, dxinc
                dyinc = dxinc
             endif
 
@@ -195,9 +221,9 @@
          print *, ''
          print *, 'reading adcirc grid :', trim(spgfiles(s))
 
-         open(14,file=spgfiles(s),status='old',action='read')
-         read(14,'(A80)') title
-         read(14,*) spne, spnp
+         open(14+CK_LUN,file=spgfiles(s),status='old',action='read')
+         read(14+CK_LUN,'(A80)') title
+         read(14+CK_LUN,*) spne, spnp
 
          print *, ' grid id = ', trim(title)
          print *, ' np = ',np,', ne = ',ne
@@ -205,14 +231,14 @@
          allocate(spxy(2,np),spnm(3,ne))
          
          do i=1,np
-            read(14,*) idum, spxy(1,i), spxy(2,i), rdum
+            read(14+CK_LUN,*) idum, spxy(1,i), spxy(2,i), rdum
          enddo
 
          do i=1,ne
-            read(14,*) idum, idum, spnm(1,i), spnm(2,i), spnm(3,i)
+            read(14+CK_LUN,*) idum, idum, spnm(1,i), spnm(2,i), spnm(3,i)
          enddo
 
-         close(14)
+         close(14+CK_LUN)
     
 
          if(spnp.ne.np) then
@@ -377,7 +403,7 @@
      &                 real(i-i1)/real(i1-i2)
                   endif
                   if(x.gt.0) then
-                     write(0,*) '2 x,y=',x,y,i,j,stwlonlat(1,i1,j),
+                     write(0+CK_LUN,*) '2 x,y=',x,y,i,j,stwlonlat(1,i1,j),
      &                 (stwlonlat(1,i1+1,j) - stwlonlat(1,i1,j))*(i-i1),
      &                 (stwlonlat(1,i1+1,j) - stwlonlat(1,i1,j)), (i-i1)
                      stop
@@ -446,31 +472,31 @@
          print *, ''
          print *, 'writing header'
 
-         write(2,'(a,1x,i2)') '# grid ', s
+         write(2+CK_LUN,'(a,1x,i2)') '# grid ', s
          if(type.eq.2) then
-            write(2,'(a)') trim(simfiles(s))
-            write(2,'(a)') trim(radfiles(s))
-            write(2,'(i2,1x,a)') nbs(s), 
+            write(2+CK_LUN,'(a)') trim(simfiles(s))
+            write(2+CK_LUN,'(a)') trim(radfiles(s))
+            write(2+CK_LUN,'(i2,1x,a)') nbs(s), 
      &      ' ! number of blank snaps to be inserted at the beginning'
-            write(2,'(3(f14.4,1x),a)') real(x0s(s)), real(y0s(s)), 
+            write(2+CK_LUN,'(3(f14.4,1x),a)') real(x0s(s)), real(y0s(s)), 
      &      real(azimuths(s)),'  !x0 y0 azimuths'
          endif
 
-         write(2,'(i2,1x,a)') 
+         write(2+CK_LUN,'(i2,1x,a)') 
      &     fullplanes(s), ' ! 0: half plane 1: full plane'
 
          if(fullplanes(s).eq.1) then
-            write(2,100) nis(s), njs(s), real(dxincs(s)), 
+            write(2+CK_LUN,100) nis(s), njs(s), real(dxincs(s)), 
      &                   real(dyincs(s)),'  !ni nj dxinc dyinc'
          else
-            write(2,101) nis(s), njs(s), real(dxincs(s)),' !ni nj dxinc'
+            write(2+CK_LUN,101) nis(s), njs(s), real(dxincs(s)),' !ni nj dxinc'
          endif
 
  100     FORMAT(i6,i6,1x,f10.4,1x,f10.4,1x,a)
  101     FORMAT(i6,i6,1x,f10.4,1x,a)
 
          do j=1,nj
-            write(2,'(5E15.7)') ((stwlonlat(k,i,j), k=1,2), i=1,ni)
+            write(2+CK_LUN,'(5E15.7)') ((stwlonlat(k,i,j), k=1,2), i=1,ni)
          enddo
 
          deallocate(stwxy)
@@ -495,29 +521,29 @@
          snapCnt = snapCnt + 1
          print *, ''
          print *, ' snap ',snapCnt
-         write(2,*) ' # snap ', snapCnt
+         write(2+CK_LUN,*) ' # snap ', snapCnt
          do s=1,ns
-            write(2,*) ' ## grid ', s
+            write(2+CK_LUN,*) ' ## grid ', s
             if(nbs(s).gt.0) then
                nbs(s) = nbs(s) - 1
-               write(2,*) 0,'  !this snap is 0: inactive, 1: active'
+               write(2+CK_LUN,*) 0,'  !this snap is 0: inactive, 1: active'
                cycle
             endif
 
             fid = rfids(s)
 
-            read (fid,*,iostat=ios) spectrum_id ! spectrum identifier
+            read (fid+CK_LUN,*,iostat=ios) spectrum_id ! spectrum identifier
 
             if(ios.ne.0) then
                if(endoffile(s).eq.0) then
                   print *, '  stwave grid ',s,' is done.'
                endif
                endoffile(s) = 1
-               write(2,*) 0,'  !this snap is 0: inactive, 1: active'
+               write(2+CK_LUN,*) 0,'  !this snap is 0: inactive, 1: active'
                cycle
             endif
                
-            write(2,*) 1,'  !this snap is 0: inactive, 1: active'
+            write(2+CK_LUN,*) 1,'  !this snap is 0: inactive, 1: active'
 
             print *, '  spectrum id = ', spectrum_id, '(grid ',s,')'
             
@@ -527,13 +553,13 @@
             allocate(wxyrs(2,ni,nj))
 
             do j = nj, 1, -1
-                read (fid,*,iostat=ios) ((wxyrs(k,i,j),k=1,2),i=1,ni)
+                read (fid+CK_LUN,*,iostat=ios) ((wxyrs(k,i,j),k=1,2),i=1,ni)
                 if(ios.ne.0) then
                    print *, ' .rad file is not complete.'
                    print *, ' program will be terminated.'
                    stop
                 endif
-                write(2,'(5E15.7)',iostat=ios) ((wxyrs(k,i,j),k=1,2),i=1,ni)
+                write(2+CK_LUN,'(5E15.7)',iostat=ios) ((wxyrs(k,i,j),k=1,2),i=1,ni)
                 if(ios.ne.0) then
                    print *, ' error deteced in writing output file.'
                    print *, ' program will be terminated.'
@@ -554,7 +580,7 @@
 
  9999 continue
 
-      close(2)
+      close(2+CK_LUN)
 
       print *, ''
       print *, 'done.'

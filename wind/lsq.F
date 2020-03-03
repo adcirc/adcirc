@@ -1,4 +1,5 @@
       MODULE lsq
+      use CkLunMod, only : CK_LUN
 
 !  Module for unconstrained linear least-squares calculations.
 !  The algorithm is suitable for updating LS calculations as more
@@ -95,10 +96,13 @@
       IMPLICIT NONE
 
       INTEGER, SAVE                :: nobs, ncol, r_dim
+!$omp threadprivate(nobs,ncol,r_dim)
       INTEGER, ALLOCATABLE, SAVE   :: vorder(:), row_ptr(:)
+!$omp threadprivate(vorder,row_ptr)
       LOGICAL, SAVE                :: initialized = .false., 
      &                                tol_set = .false.,
      &                                rss_set = .false.
+!$omp threadprivate(initialized,tol_set,rss_set)
 
 ! Note. dp is being set to give at least 12 decimal digit
 !       representation of floating point numbers.   This should be adequate
@@ -110,8 +114,11 @@
 
 !     INTEGER, PARAMETER          :: dp = SELECTED_REAL_KIND(p=12, r=60)
       REAL (sz), ALLOCATABLE, SAVE :: d(:), rhs(:), r(:), tol(:), rss(:)
+!$omp threadprivate(d,rhs,r,tol,rss)
       REAL (sz), SAVE              :: zero = 0.d0, one = 1.d0, vsmall
+!$omp threadprivate(vsmall,zero,one)
       REAL (sz), SAVE              :: sserr, toly
+!$omp threadprivate(sserr,toly)
 
       PUBLIC                       :: dp, nobs, ncol, r_dim, vorder,
      &                                row_ptr, initialized,
@@ -327,6 +334,7 @@
 
       INTEGER    :: col, row, pos
       REAL (sz)  :: eps1, ten = 10.0, total, work(ncol)
+!$omp threadprivate(ten)
 
 !     EPS is a machine-dependent constant.
 
