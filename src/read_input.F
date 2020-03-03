@@ -267,6 +267,11 @@ c     a non-default value we can determine this was the case.
       ! on and off. Similar to tcm's timevaryingbathy namelist.
       namelistSpecifier = 'SWANOutputControl'
       read(unit=15,nml=SWANOutputControl,iostat=ios)
+      IF(IOS.GT.0)THEN
+        SWAN_OutputHS=.TRUE.
+        SWAN_OutputTPS=.TRUE.
+        SWAN_OutputDIR=.TRUE.
+      ENDIF
       call logNamelistReadStatus(namelistSpecifier, ios)     
       call logMessage(ECHO,
      &    "The values of SWANOutputControl are as follows:")
