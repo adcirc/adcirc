@@ -507,7 +507,7 @@ c     description of variables in common blocks in routine jcg
 c
 c ... compute new estimate for cme if adapt = .true.
 c
-      save
+c      save
 
       if (adapt) call chgcon (itmax,tri,gamold,rhoold,1)
 c
@@ -924,7 +924,7 @@ c
 c ... local itpackv references --
 c
 c          eigvns, eigvss
-      save
+c      save
       go to (10,20,30), ibmth
 c
 c ... jacobi conjugate gradient
