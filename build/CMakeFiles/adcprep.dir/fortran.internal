@@ -1,0 +1,22 @@
+# The fortran modules provided by this target.
+provides
+ boundaries
+ global
+ global_3dvs
+ harm
+ kdtree2_module
+ kdtree2_precision_module
+ kdtree2_priority_queue_module
+ memory_usage
+ mesh
+ nodalattributes
+ owi_ice
+ owiwind
+ pre_global
+ prep_weir
+ presizes
+ rs2
+ sizes
+ subprep
+ vortex
+ wind

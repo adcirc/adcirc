@@ -33,14 +33,32 @@ export NETCDFLAG=enable
 export NETCDF4FLAG=enable
 export NETCDF4_COMPRESSION=enable
 
+export ADCDIR=$(pwd)
+
 # #make padcirc -d compiler=$compiler NETCDFLAG=enable NETCDF4FLAG=enable NETCDF4_COMPRESSION=enable
 export MAKELEVEL=0
 make libadc.a 
 
 # build adcric nuopc
-export ADCDIR=$(pwd)
-cd ../cpl/nuopc
+cd  ../cpl/nuopc
 make -f makefile.adc_cap.nuopc nuopc
+
+cd $ADCDIR
+#make adcprep
+make -f 
+
+#
+#build tide_fac exe
+mkdir -p $ADCDIR/util
+cd $ADCDIR/../util/estofs_tide_fac/
+make
+cp -f estofs_tide_fac $ADCDIR/util/tidefac
+
+
+
+
+
+
 
 
 
