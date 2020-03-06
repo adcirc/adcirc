@@ -2,7 +2,7 @@
 !! @mainpage ADCIRC NUOPC Cap
 !! @author Saeed Moghimi (moghimis@gmail.com)
 !! @date 15/1/17 Original documentation
-!------------------------------------------------------
+!---------------------------------------------
 !LOG-----------------
 !
 !
