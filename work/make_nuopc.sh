@@ -44,8 +44,7 @@ cd  ../cpl/nuopc
 make -f makefile.adc_cap.nuopc nuopc
 
 cd $ADCDIR
-#make adcprep
-make -f 
+make adcprep
 
 #
 #build tide_fac exe

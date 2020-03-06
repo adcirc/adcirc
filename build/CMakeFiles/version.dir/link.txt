@@ -1,2 +1,0 @@
-/usr/bin/ar cr CMakeFiles/libversion.a  CMakeFiles/version.dir/version.F.o
-/usr/bin/ranlib CMakeFiles/libversion.a
