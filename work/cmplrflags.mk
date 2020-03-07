@@ -114,28 +114,38 @@ ifeq ($(compiler),ampi)
      XDMFPATH    := /home/jason/projects/XDMF/Code/latestCode
      XDMFLIBPATH := /home/jason/projects/XDMF/Code/testLatest
   endif
-  PPFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp
-  FC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp
-  PFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp
+#  PPFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp
+  PPFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp
+#  FC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp
+  FC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp
+#  PFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp
+  PFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp
   FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none 
   ifeq ($(PROFILE),enable)
-    FFLAGS1	:=  $(INCDIRS) -pg -O0 -fprofile-arcs -ftest-coverage -ffixed-line-length-none 
+    FFLAGS1	:=  $(INCDIRS) -pg -Og -fprofile-arcs -ftest-coverage -ffixed-line-length-none 
+  endif
+  ifeq ($(DEBUG),asan)
+    FFLAGS1	:=  $(INCDIRS) -g3 -Og -ffixed-line-length-none -fbacktrace -fsanitize=address -fno-omit-frame-pointer
   endif
   ifeq ($(DEBUG),full)
-    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND -DDEBUG_WARN_ELEV
+    FFLAGS1	:=  $(INCDIRS) -g3 -Og -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND -DDEBUG_WARN_ELEV
   endif
   ifeq ($(DEBUG),compiler-warnings)
-    FFLAGS1	:=  $(INCDIRS) -g -O0 -Wall -Wextra -ffixed-line-length-none -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+    FFLAGS1	:=  $(INCDIRS) -g3 -Og -Wall -Wextra -ffixed-line-length-none -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
   endif
   ifeq ($(DEBUG),full-not-warnelev)
-    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND 
+    FFLAGS1	:=  $(INCDIRS) -g3 -Og -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND 
   endif
   ifeq ($(DEBUG),full-not-fpe)
-    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
+    FFLAGS1	:=  $(INCDIRS) -g3 -Og -ffixed-line-length-none -fbacktrace -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
   endif
   ifeq ($(DEBUG),trace)
-    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+    FFLAGS1	:=  $(INCDIRS) -g3 -Og -ffixed-line-length-none -fbacktrace -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -finit-local-zero
   endif
+  ifeq ($(DEBUG),proj)
+    FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none -fbacktrace -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -finit-local-zero -tracemode projections
+  endif
+
 #  ifneq ($(MACHINENAME),jason-desktop)
 #     FFLAGS1 := $(FFLAGS1) -fno-underscoring
 #  endif
