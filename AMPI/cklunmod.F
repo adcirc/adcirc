@@ -5,7 +5,6 @@ C***********************************************************************
 
       module CkLUNMod
       implicit none
-      save
 C     obtain AMPI rank
 C     multiply by LUN factor, default 100000
       integer CK_LUN
@@ -15,15 +14,15 @@ C     multiply by LUN factor, default 100000
       contains 
 
 C-----------------------------------------------------------------------
-      integer function setAMPIzedLUN(thisRank)
+      subroutine setAMPIzedLUN(thisRank)
       implicit none
       integer, intent(in) :: thisRank
 
       CK_LUN = thisRank * CkLUNFactor
-      setAMPIzedLUN = CK_LUN
+
       RETURN
       
-      end function setAMPIzedLUN
+      end subroutine setAMPIzedLUN
 C-----------------------------------------------------------------------
 
       end module CkLUNMod
