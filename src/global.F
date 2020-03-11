@@ -267,13 +267,13 @@ Casey 090302: Added the following arrays for output of radiation stress gradient
 
 #if defined CSWAN || defined ADCSWAN      
 Cobell 20120510: Added logicals for turning on/off swan output files   
-      LOGICAL                      :: SWAN_OutputHS = .TRUE.
-      LOGICAL                      :: SWAN_OutputDIR = .TRUE.
+      LOGICAL                      :: SWAN_OutputHS = .FALSE.
+      LOGICAL                      :: SWAN_OutputDIR = .FALSE.
       LOGICAL                      :: SWAN_OutputTM01 = .FALSE.
-      LOGICAL                      :: SWAN_OutputTPS = .TRUE.
+      LOGICAL                      :: SWAN_OutputTPS = .FALSE.
       LOGICAL                      :: SWAN_OutputWIND = .FALSE.
       LOGICAL                      :: SWAN_OutputTM02 = .FALSE.
-      LOGICAL                      :: SWAN_OutputTMM10 = .TRUE.
+      LOGICAL                      :: SWAN_OutputTMM10 = .FALSE.
       LOGICAL                      :: SWAN_OutputAgg(7)
 #endif
 
