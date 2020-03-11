@@ -10,6 +10,7 @@
 
 
       module kdtree2_precision_module
+      use CkLunMod, only : CK_LUN
       use sizes, only: sz
       integer, parameter :: sp = kind(0.0)
       integer, parameter :: dp = kind(0.0d0)
@@ -32,6 +33,7 @@
       end module kdtree2_precision_module
 
       module kdtree2_priority_queue_module
+      use CkLunMod, only : CK_LUN
       use kdtree2_precision_module
       !
       ! maintain a priority queue (PQ) of data, pairs of 'priority/payload', 
@@ -480,6 +482,7 @@
 
 
       module kdtree2_module
+      use CkLunMod, only : CK_LUN
       use kdtree2_precision_module
       use kdtree2_priority_queue_module
       ! K-D tree routines in Fortran 90 by Matt Kennel.
@@ -610,6 +613,7 @@
       ! everything else is private.
 
       type(tree_search_record), save, target :: sr   ! A GLOBAL VARIABLE for search
+!$omp threadprivate(sr)
 
       contains
 
@@ -705,6 +709,7 @@
          ! ..
          integer :: j
          type(tree_node), pointer :: dummy => null()
+!$omp threadprivate(dummy)
          ! ..
          allocate (tp%ind(tp%n))
          forall (j=1:tp%n)

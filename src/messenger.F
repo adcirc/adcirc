@@ -3,6 +3,7 @@ C PADCIRC VERSION 47.xx 10/13/2006                                             *
 C******************************************************************************
 C
       MODULE MESSENGER
+      use CkLunMod, only : CK_LUN
       USE SIZES
       USE GLOBAL, ONLY: C3D, COMM,
      &    IMAP_STAE_LG, IMAP_STAV_LG, IMAP_STAM_LG, IMAP_STAC_LG,
@@ -29,32 +30,54 @@ C--------------------------------------------------------------------------
 C  Message-Passing Array space
 
       INTEGER :: MPI_COMM_ADCIRC ! Local communicator
+!$omp threadprivate(MPI_COMM_ADCIRC)
       INTEGER :: NEIGHPROC  ! number of subdomains neighboring this one
+!$omp threadprivate(NEIGHPROC)
       INTEGER :: RDIM  ! total send/recieve requests when passing info 
+!$omp threadprivate(RDIM)
                         ! between subdomain neighbors, =2*neighproc
       INTEGER :: IERR  ! error status of mpi subroutine call
+!$omp threadprivate(IERR)
       INTEGER :: TAG = 100
+!$omp threadprivate(TAG)
       INTEGER :: COMM_COMP                           ! COMMUNICATOR FOR COMPUTATION
+!$omp threadprivate(COMM_COMP)
       INTEGER :: GROUP_WORLD, GROUP_COMP, GROUP_WRITER_ONLY
+!$omp threadprivate(GROUP_WORLD,GROUP_COMP,GROUP_WRITER_ONLY)
       INTEGER, ALLOCATABLE ::  GROUP_WRITER(:)        ! GROUPS FOR GLOBAL FILE WRITING
+!$omp threadprivate(GROUP_WRITER)
       INTEGER, ALLOCATABLE ::  GROUP_WRITEH(:)        ! GROUPS FOR HOTSTART FILE WRITING !st3 100711
+!$omp threadprivate(GROUP_WRITEH)
       INTEGER, ALLOCATABLE ::  GROUP_HSLEEP(:)        ! GROUPS FOR HOTSTART FILE WRITING !st3 100711
+!$omp threadprivate(GROUP_HSLEEP)
       LOGICAL, ALLOCATABLE :: RESNODE(:)
+!$omp threadprivate(RESNODE)
 
       INTEGER, ALLOCATABLE :: IPROC(:), NNODELOC(:), NNODSEND(:),
      &    NNODRECV(:), IBELONGTO(:),ISENDLOC(:,:), IRECVLOC(:,:),
      &    ISENDBUF(:,:), IRECVBUF(:,:)
+!$omp threadprivate(IPROC,NNODELOC,NNODSEND,NNODRECV,IBELONGTO,ISENDLOC)
+!$omp threadprivate(IRECVLOC,ISENDBUF,IRECVBUF)
 
       INTEGER, ALLOCATABLE :: REQ_I1(:), REQ_I2(:)
+!$omp threadprivate(REQ_I1,REQ_I2)
       INTEGER, ALLOCATABLE :: STAT_I1(:,:), STAT_I2(:,:)
+!$omp threadprivate(STAT_I1,STAT_I2)
       INTEGER, ALLOCATABLE :: REQ_R1(:), REQ_R2(:), REQ_R3(:)
+!$omp threadprivate(REQ_R1,REQ_R2,REQ_R3)
       INTEGER, ALLOCATABLE :: STAT_R1(:,:), STAT_R2(:,:), STAT_R3(:,:)
+!$omp threadprivate(STAT_R1,STAT_R2,STAT_R3)
       INTEGER, ALLOCATABLE :: REQ_R3D(:), STAT_R3D(:,:)
+!$omp threadprivate(REQ_R3D,STAT_R3D)
       INTEGER, ALLOCATABLE :: REQ_C3D(:), STAT_C3D(:,:)
+!$omp threadprivate(REQ_C3D,STAT_C3D)
       INTEGER, ALLOCATABLE :: INDX(:)
+!$omp threadprivate(INDX)
       REAL(SZ),ALLOCATABLE :: SENDBUF(:,:), RECVBUF(:,:)
+!$omp threadprivate(SENDBUF,RECVBUF)
       !jgf50.82: Create a flag for unrecoverable issue on a subdomain
       LOGICAL :: subdomainFatalError ! true if mpi_abort should be called
+!$omp threadprivate(subdomainFatalError)
 
 C
 C
@@ -219,7 +242,7 @@ C
       IF(MNWPROC > 0) THEN
         IF(MYPROC.eq.0) THEN
           DO I=1,MNWPROC
-            WRITE(16,*)'PROC ',MYPROC,' IS SENDING SIG_TERM TO WRITER ',
+            WRITE(16+CK_LUN,*)'PROC ',MYPROC,' IS SENDING SIG_TERM TO WRITER ',
      &           I
             CALL MPI_SEND(SIG_TERM,1,MPI_INTEGER,MNPROC,
      &           TAG,COMM_WRITER(I),IERR)
@@ -230,7 +253,7 @@ C
       IF(MNWPROH > 0) THEN             !st3 100711 for hsfile
         IF(MYPROC.eq.0) THEN
           DO I=1,MNWPROH
-            WRITE(16,*)'PROC ',MYPROC,' IS SENDING SIG_TERM TO HSWRITER',
+            WRITE(16+CK_LUN,*)'PROC ',MYPROC,' IS SENDING SIG_TERM TO HSWRITER',
      &           I
             CALL MPI_BARRIER(COMM_HSLEEP(I),IERR)
             CALL MPI_SEND(SIG_TERM,1,MPI_INTEGER,MNPROC,
@@ -322,40 +345,40 @@ C
          STOP
       ENDIF
 C
-      OPEN(18,FILE=TRIM(INPUTDIR)//'/'//'fort.18',STATUS='OLD')
+      OPEN(18+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.18',STATUS='OLD')
 C
-      READ(18,3020) BlkName, inputFileFmtVn
+      READ(18+CK_LUN,3020) BlkName, inputFileFmtVn
       if (Trim(BlkName) /= 'FileFmt' .and.
      $  .not. CMP_VERSION_NUMBERS(FileFmtVersion, inputFileFmtVn)) then
-        write(16,*) 'File Format of Fort.18 does not match aborting'
+        write(16+CK_LUN,*) 'File Format of Fort.18 does not match aborting'
         stop
       end if
 
 C Read Global number of elements and Local-to_Global element map ( used by module global_io )
 Casey 100209: Changed from FMT=3015.
-      READ(18,'(8X,3I12)') NE_G
+      READ(18+CK_LUN,'(8X,3I12)') NE_G
       ALLOCATE ( IMAP_EL_LG(MNE) )
       DO I=1,MNE
-         READ(18,*) IMAP_EL_LG(I)
+         READ(18+CK_LUN,*) IMAP_EL_LG(I)
       ENDDO
 
 C Read Global number of nodes and Local-to_Global node map ( used by module global_io )
-      READ(18,3015) NP_G
+      READ(18+CK_LUN,3015) NP_G
       ALLOCATE ( NODES_LG(MNP) )
       DO I=1,MNP
-         READ(18,*) NODES_LG(I)
+         READ(18+CK_LUN,*) NODES_LG(I)
       ENDDO
 
 C  This information is provided for relocalizing fort.15
 C  Just read past it.
-      READ(18,'(8X,I12)') jdumy                          ! nfluxf for subdomain
-      READ(18,'(8X,3I12)') jdumy_g, jdumy_max, jdumy_loc ! neta for subdomain
+      READ(18+CK_LUN,'(8X,I12)') jdumy                          ! nfluxf for subdomain
+      READ(18+CK_LUN,'(8X,3I12)') jdumy_g, jdumy_max, jdumy_loc ! neta for subdomain
       DO I=1, jdumy_loc
-         READ(18,'(I12)') jdumy                          ! obnode_lg table
+         READ(18+CK_LUN,'(I12)') jdumy                          ! obnode_lg table
       ENDDO
 
 C Read Global indexes of Elevation Station nodes ( used by module global_io )
-      READ(18,3015) NSTAE_G,jdumy_max,jdumy_loc    !tcm v51.20.05
+      READ(18+CK_LUN,3015) NSTAE_G,jdumy_max,jdumy_loc    !tcm v51.20.05
       IF (NSTAE .ne. jdumy_loc ) then
          call allMessage(ERROR,"Elevation Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
@@ -364,12 +387,12 @@ C Read Global indexes of Elevation Station nodes ( used by module global_io )
       IF (NSTAE > 0) THEN
         ALLOCATE ( IMAP_STAE_LG(NSTAE) )
         DO I=1,NSTAE
-           READ(18,'(I12)') IMAP_STAE_LG(I)
+           READ(18+CK_LUN,'(I12)') IMAP_STAE_LG(I)
         ENDDO
       ENDIF
 
 C Read Global indexes of Velocity  Station nodes ( used by module global_io )
-      READ(18,3015) NSTAV_G,jdumy_max,jdumy_loc    !tcm v51.20.05
+      READ(18+CK_LUN,3015) NSTAV_G,jdumy_max,jdumy_loc    !tcm v51.20.05
       IF (NSTAV .ne. jdumy_loc ) then
          call allMessage(ERROR,"Velocity Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
@@ -378,12 +401,12 @@ C Read Global indexes of Velocity  Station nodes ( used by module global_io )
       IF (NSTAV > 0) THEN
         ALLOCATE ( IMAP_STAV_LG(NSTAV) )
         DO I=1,NSTAV
-           READ(18,'(I12)') IMAP_STAV_LG(I)
+           READ(18+CK_LUN,'(I12)') IMAP_STAV_LG(I)
         ENDDO
       ENDIF
 
 C Read Global indexes of Meteorlogical Station nodes ( used by module global_io )
-      READ(18,3015) NSTAM_G,jdumy_max,jdumy_loc    !tcm v51.20.05
+      READ(18+CK_LUN,3015) NSTAM_G,jdumy_max,jdumy_loc    !tcm v51.20.05
       IF (NSTAM .ne. jdumy_loc ) then
          call allMessage(ERROR,"Met. Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
@@ -392,12 +415,12 @@ C Read Global indexes of Meteorlogical Station nodes ( used by module global_io 
       IF (NSTAM > 0) THEN
         ALLOCATE ( IMAP_STAM_LG(NSTAM) )
         DO I=1,NSTAM
-           READ(18,'(I12)') IMAP_STAM_LG(I)
+           READ(18+CK_LUN,'(I12)') IMAP_STAM_LG(I)
         ENDDO
       ENDIF
 
 C Read Global indexes of Concentration Station nodes ( used by module global_io )
-      READ(18,3015) NSTAC_G,jdumy_max,jdumy_loc    !tcm v51.20.05
+      READ(18+CK_LUN,3015) NSTAC_G,jdumy_max,jdumy_loc    !tcm v51.20.05
       IF (NSTAC .ne. jdumy_loc ) then
          call allMessage(ERROR,"Conc. Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
@@ -406,7 +429,7 @@ C Read Global indexes of Concentration Station nodes ( used by module global_io 
       IF (NSTAC > 0) THEN
         ALLOCATE ( IMAP_STAC_LG(NSTAC) )
         DO I=1,NSTAC
-           READ(18,'(I12)') IMAP_STAC_LG(I)
+           READ(18+CK_LUN,'(I12)') IMAP_STAC_LG(I)
         ENDDO
       ENDIF
 
@@ -414,9 +437,9 @@ C-------------------------------------------------------------------------------
 C--Message-Passing tables start here
 C---------------------------------------------------------------------------------
 
-      READ(18,3010) IDPROC,NLOCAL
+      READ(18+CK_LUN,3010) IDPROC,NLOCAL
       ALLOCATE ( NNODELOC(NLOCAL) )
-      READ(18,1130) (NNODELOC(I), I=1,NLOCAL)
+      READ(18+CK_LUN,1130) (NNODELOC(I), I=1,NLOCAL)
       ALLOCATE ( IBELONGTO(MNP),RESNODE(MNP) )
 
       DO I=1,MNP
@@ -433,7 +456,7 @@ C-------------------------------------------------------------------------------
          ENDIF
       ENDDO
 
-      READ(18,3015) NEIGHPROC
+      READ(18+CK_LUN,3015) NEIGHPROC
 
       RDIM = 2*NEIGHPROC
       ALLOCATE( INDX(RDIM) )
@@ -441,47 +464,47 @@ C-------------------------------------------------------------------------------
       ALLOCATE( IRECVLOC(MNP,NEIGHPROC) )
 
       DO J=1,NEIGHPROC
-         READ(18,3010) IPROC(J),NNODRECV(J)
-         READ(18,1130) (IRECVLOC(I,J), I=1,NNODRECV(J))
+         READ(18+CK_LUN,3010) IPROC(J),NNODRECV(J)
+         READ(18+CK_LUN,1130) (IRECVLOC(I,J), I=1,NNODRECV(J))
       ENDDO
 
       ALLOCATE( NNODSEND(NEIGHPROC) )
       ALLOCATE( ISENDLOC(MNP,NEIGHPROC) )
 
       DO J=1,NEIGHPROC
-         READ(18,3010) IPROC(J),NNODSEND(J)
-         READ(18,1130) (ISENDLOC(I,J), I=1,NNODSEND(J))
+         READ(18+CK_LUN,3010) IPROC(J),NNODSEND(J)
+         READ(18+CK_LUN,1130) (ISENDLOC(I,J), I=1,NNODSEND(J))
       ENDDO
 C
 C     jgf49.43.18: Add 3D station mappings if appropriate. Used by globalio.
       IF (C3D) THEN
-         READ(18,3015) NSTA3DD_G
+         READ(18+CK_LUN,3015) NSTA3DD_G
          IF (NSTA3DD > 0) THEN
             ALLOCATE ( IMAP_STA3DD_LG(NSTA3DD) )
             DO I=1,NSTA3DD
-               READ(18,'(I12)') IMAP_STA3DD_LG(I)
+               READ(18+CK_LUN,'(I12)') IMAP_STA3DD_LG(I)
             ENDDO
          ENDIF
 
-         READ(18,3015) NSTA3DV_G
+         READ(18+CK_LUN,3015) NSTA3DV_G
          IF (NSTA3DV > 0) THEN
             ALLOCATE ( IMAP_STA3DV_LG(NSTA3DV) )
             DO I=1,NSTA3DV
-               READ(18,'(I12)') IMAP_STA3DV_LG(I)
+               READ(18+CK_LUN,'(I12)') IMAP_STA3DV_LG(I)
             ENDDO
          ENDIF
 
-         READ(18,3015) NSTA3DT_G
+         READ(18+CK_LUN,3015) NSTA3DT_G
          IF (NSTA3DT > 0) THEN
             ALLOCATE ( IMAP_STA3DT_LG(NSTA3DT) )
             DO I=1,NSTA3DT
-               READ(18,'(I12)') IMAP_STA3DT_LG(I)
+               READ(18+CK_LUN,'(I12)') IMAP_STA3DT_LG(I)
             ENDDO
          ENDIF
       ENDIF
 C
 C
-      CLOSE(18)
+      CLOSE(18+CK_LUN)
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif

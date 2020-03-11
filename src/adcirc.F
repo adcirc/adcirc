@@ -73,7 +73,8 @@ C******************************************************************************
 C******************************************************************************
 C******************************************************************************
       MODULE ADCIRC_Mod
-      use CkLunMod, only : CK_LUN
+      use CkLunMod, only : CK_LUN, setAMPIzedLUN
+
 C******************************************************************************
 C******************************************************************************
 
@@ -81,6 +82,7 @@ C******************************************************************************
       PUBLIC
 
       INTEGER, SAVE :: ITIME_BGN, ITIME_END
+!$omp threadprivate(ITIME_BGN,ITIME_END)
 
 
       CONTAINS
@@ -140,20 +142,27 @@ C
       integer :: ierr
       integer, parameter :: arg_len = 128
       character(len=arg_len), dimension(:), allocatable:: raw_arguments
-c      argcount  = iargc()       ! get number of command line arguments
+#ifndef AMPI_COMP
+      argcount  = iargc()       ! get number of command line arguments
+#else
       call ampi_command_argument_count(argcount)
+#endif      
       allocate(raw_arguments(argcount))
       if ((argcount.gt.0).and.(myproc.eq.0)) then
          i = 0
          do while (i.lt.argcount)
             i = i + 1
+#ifndef AMPI_COMP
+            call getarg(i, cmdlinearg)            
+#else            
             call ampi_get_command_argument(i, cmdlinearg, arg_len, ierr)
+#endif            
             select case(cmdlinearg(1:2))
             case("-V","-v") 
                ! write the version number string ... actually it is
                ! a series of two or three numbers with two digits 
                ! separated by dots, e.g., 51.02 or 51.52.07
-               write(6,'(a)') trim(adc_version)                 
+               write(6+CK_LUN,'(a)') trim(adc_version)                 
                stop
             case default
                ! do nothing, this is some other command line argument
@@ -212,7 +221,7 @@ C
       FileFmtVersion =
      &   VERSION_NUMBER(FileFmtMajor, FileFmtMinor, FileFmtRev)
       IF ((NSCREEN.NE.0).AND.(MYPROC.EQ.0)) THEN
-         WRITE(ScreenUnit,'(a)')"ADCIRC Version is "//ADC_VERSION
+         WRITE(ScreenUnit+CK_LUN,'(a)')"ADCIRC Version is "//ADC_VERSION
       ENDIF
 
       !jgf49.44: Allocate memory for reading and writing full domain arrays
@@ -270,7 +279,7 @@ C...
             ! the IHOT value was vetted already, so this code should
             ! not be reachable
             IF ((NSCREEN.ne.0).and.(myProc.eq.0)) THEN
-               WRITE(screenUnit,*) "ERROR: IHOT=",IHOT," is not valid."
+               WRITE(screenUnit+CK_LUN,*) "ERROR: IHOT=",IHOT," is not valid."
             ENDIF
       END SELECT
 
@@ -353,10 +362,10 @@ Corbitt 1203022: Local Advection Flags
       GORho=G/RhoWat0
       GORhoOAMB=GORho/AMB
 
-      WRITE(16,1112)
-      WRITE(16,17931)
-      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,17931)
+      WRITE(16+CK_LUN,1112)
+      WRITE(16+CK_LUN,17931)
+      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
+      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,17931)
  1112 FORMAT(/,1X,79('_'))
 17931 FORMAT(//,1X,'LIMITED RUNTIME INFORMATION SECTION ',//)
 
@@ -590,9 +599,9 @@ C-----------------------------------------------------------------------
      &      MPI_2INTEGER,MPI_MAXLOC,COMM,IERR)
         IF(TERM_GLOBAL(2).NE.0)THEN
             IF(MYPROC.EQ.0)THEN
-                WRITE(ScreenUnit,'(A,I5)') "ERROR: ADCIRC Terminating "//
+                WRITE(ScreenUnit+CK_LUN,'(A,I5)') "ERROR: ADCIRC Terminating "//
      &          "from error originating from MYPROC = ",TERM_GLOBAL(2)
-                WRITE(ScreenUnit,'(A)')    "       Check the local PE "//
+                WRITE(ScreenUnit+CK_LUN,'(A)')    "       Check the local PE "//
      &          "fort.16 output file for details."
             ENDIF
             CALL ADCIRC_TERMINATE()

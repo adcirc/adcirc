@@ -37,6 +37,7 @@ C
 #ifdef IEEE_DEBUG
       USE, INTRINSIC :: IEEE_ARITHMETIC
 #endif
+      use CkLunMod, only : CK_LUN
       USE SIZES, ONLY : SZ, MNP, MNWPROH
       USE GLOBAL, ONLY : UU1, VV1, QX1, QY1, QX2, QY2, UU2, VV2, MOM_LV_X,
      &    MOM_LV_Y, WSX2, WSY2, PR1, PR2, TiP1, TiP2, UU0, VV0, QY0, 
@@ -137,6 +138,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       INTEGER :: errorElevExceeded
       INTEGER :: warnElevExceeded
       logical, save ::  EtaDisc_Fill = .TRUE.
+!$omp threadprivate(EtaDisc_Fill)
 
       REAL(SZ) ArgT, ArgTP, ArgSAlt
       REAL(SZ) CCSFEA
@@ -167,6 +169,7 @@ C   kmd48.33bc - added in the heat flux variables
       CHARACTER(80) :: CDUM80
       INTEGER :: NumofBCNode
       REAL(SZ), SAVE :: StaTimHS, RefTimHS
+!$omp threadprivate(StaTimHS,RefTimHS)
       INTEGER :: NOD
 
 C   TCM V49.64.01 -- ADDED FOR ICE CONCENTRATION FIELDS
@@ -309,7 +312,7 @@ C
             END DO
 !!!        go get new record for all nodes
             DO I=1,NP
-               READ(141,*) IJK,DP2(IJK)
+               READ(141+CK_LUN,*) IJK,DP2(IJK)
             ENDDO
 C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
 C...     DEPTHS ARE > OR = TO H0.
@@ -687,10 +690,10 @@ Casey 140701: Added the following IF statement.
             IF(TimeLoc.GT.RBCTIME2) THEN
                RBCTIME1=RBCTIME2
                RBCTIME2=RBCTIME2+RBCTIMEINC
-               READ(35,'(A)') CDUM80
+               READ(35+CK_LUN,'(A)') CDUM80
                DO I=1,NETA
                  LNM_BC1(I)=LNM_BC2(I)
-                 READ(35,*) NOD,LNM_BC2(I)
+                 READ(35+CK_LUN,*) NOD,LNM_BC2(I)
                END DO
             END IF
             RBCRATIO=(TimeLoc-RBCTIME1)/RBCTIMEINC
@@ -882,7 +885,7 @@ C...
                   IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &                 .OR.(LBCODEI(J).EQ.22)) THEN
                      QNIN1(J)=QNIN2(J)
-                     READ(20,*) QNIN2(J)
+                     READ(20+CK_LUN,*) QNIN2(J)
 
 !                     write(*,*) 'inside timestep: IT = ', IT
 !                     write(*,*) 'inside timestep: J, QNIN2 = ', J, QNIN2(J)
@@ -892,7 +895,7 @@ C...
                   IF(LBCODEI(J).EQ.32) THEN
                      QNIN1(J)=QNIN2(J)
                      ENIN1(J)=ENIN2(J)
-                     READ(20,*) QNIN2(J),ENIN2(J)
+                     READ(20+CK_LUN,*) QNIN2(J),ENIN2(J)
 
 !                     write(*,*) 'inside timestep: IT = ', IT
 !                     write(*,*) 'inside timestep: we should not be here!'
@@ -1151,7 +1154,7 @@ C...
                CALL writeHotstart_through_hswriter(TimeLoc,IT)  !st3 hsfile
 #endif
             else
-               write(6,*) 'HS writer does not support C3D'
+               write(6+CK_LUN,*) 'HS writer does not support C3D'
             endif
          else
 !     IF(myproc.eq.0) PRINT *, " writeHotstart **********"
@@ -1216,11 +1219,11 @@ C     the screen.
 #ifdef CMPI
          IF(MYPROC.EQ.0.AND.ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
-               WRITE(ScreenUnit,1991)
+               WRITE(ScreenUnit+CK_LUN,1991)
      &            IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,
      &            VELMAX,KVMAX,MYPROC
             ELSE
-               WRITE(ScreenUnit,1991)
+               WRITE(ScreenUnit+CK_LUN,1991)
      &            IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,
      &            KVMAX,MYPROC
 
@@ -1236,10 +1239,10 @@ C     the screen.
          IF(ELMAX.GT.WarnElev) THEN
 C     WJP 03.27.2018 with the addition of the hash table we now need to
 C     output the global node number to debug the local PE fort.14s
-            WRITE(ScreenUnit,1993)
+            WRITE(ScreenUnit+CK_LUN,1993)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
      &           VELMAX,NODES_LG(KVMAX),MYPROC
-            WRITE(16,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+            WRITE(16+CK_LUN,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),
      &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
  1993       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
@@ -1258,10 +1261,10 @@ C     output the global node number to debug the local PE fort.14s
          ErrorElevExceeded = 0                ! Clint's Zombie Slyaer
          IF(ELMAX.GT.ErrorElev) THEN
 
-            WRITE(ScreenUnit,1995)
+            WRITE(ScreenUnit+CK_LUN,1995)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
      &           VELMAX,NODES_LG(KVMAX),MYPROC
-            WRITE(16,1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+            WRITE(16+CK_LUN,1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
      &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
  1995       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
@@ -1281,10 +1284,10 @@ C     output the global node number to debug the local PE fort.14s
 #else
          IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
-               WRITE(ScreenUnit,1992)
+               WRITE(ScreenUnit+CK_LUN,1992)
      &              IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
             ELSE
-               WRITE(ScreenUnit,1992)
+               WRITE(ScreenUnit+CK_LUN,1992)
      &              IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX
             ENDIF
  1992       FORMAT(1X,'TIME STEP =',I8,1x,F6.2,'% COMPLETE',
@@ -1294,9 +1297,9 @@ C     output the global node number to debug the local PE fort.14s
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8)
          ENDIF
          IF(ELMAX.GT.WarnElev) THEN
-            WRITE(ScreenUnit,1994)
+            WRITE(ScreenUnit+CK_LUN,1994)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16,1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(16+CK_LUN,1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1994       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
@@ -1307,11 +1310,11 @@ C     output the global node number to debug the local PE fort.14s
 #endif
          ENDIF
          IF(ELMAX.GT.ErrorElev) THEN
-            write(6,*) 'elmax, errorelev',elmax, errorelev !jgf
+            write(6+CK_LUN,*) 'elmax, errorelev',elmax, errorelev !jgf
             Flag_ElevError = .true.
-            WRITE(ScreenUnit,1996)
+            WRITE(ScreenUnit+CK_LUN,1996)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16,1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(16+CK_LUN,1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1996       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
@@ -1351,6 +1354,7 @@ C*******************************************************************************
 C
       SUBROUTINE SCALAR_TRANS_2D (IT,TimeLoc)
 
+      use CkLunMod, only : CK_LUN
       USE GLOBAL
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, SFAC
       USE NodalAttributes, ONLY: EVC
@@ -1661,6 +1665,7 @@ C
 
       SUBROUTINE CALC_SIGMAT_2D ()
 
+      use CkLunMod, only : CK_LUN
       USE GLOBAL
 
       INTEGER NH
@@ -1723,6 +1728,7 @@ c******************************************************************************
 
 Casey: Added the following variable declarations from GLOBAL.
 C
+      use CkLunMod, only : CK_LUN
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY: IFNLFA, IFNLCT,
      &      NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH,
@@ -1800,6 +1806,7 @@ Casey 140701: Debug.
       Real(SZ)     :: time_local
       Real(SZ)     ::  day_local
       Real(Sz)     ::   diff_tol = 1.0d-5
+!$omp threadprivate(diff_tol)
 
       Real(Sz)     :: SigT_mid_point, SigmaMP, f1, f2, f3
       COMPLEX(SZ)  :: BCPG_mid_point
@@ -2201,6 +2208,7 @@ C*************************************************************************
 C
       SUBROUTINE ZSURFBUOY(SigmaNN,BCPressNN,NN,J)
 
+      use CkLunMod, only : CK_LUN
       USE GLOBAL_3DVS
       IMPLICIT NONE
       REAL(SZ) :: BCPressNN
@@ -2282,10 +2290,10 @@ C     jgf46.00 Explicitly declared the following variables
  100  CONTINUE
 
       IF(IDiag.EQ.2) THEN
-         WRITE(2,*) '******** ZSURFBUOY **********'
-         WRITE(2,*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
+         WRITE(2+CK_LUN,*) '******** ZSURFBUOY **********'
+         WRITE(2+CK_LUN,*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
      &        '      BCPressNN'
-         WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,BCPressNN
+         WRITE(2+CK_LUN,777) NN,J,SigmaNN,SigBelo,SigAbov,BCPressNN
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
 
@@ -2313,6 +2321,7 @@ C*************************************************************************
 C
       SUBROUTINE ZSURFBUOY_p3 (SigmaNN,BCPressNN,NN,J)
 
+      use CkLunMod, only : CK_LUN
       USE GLOBAL_3DVS
       IMPLICIT NONE
       REAL(SZ) :: BCPressNN
@@ -2334,6 +2343,7 @@ C     jgf46.00 Explicitly declared the following variables
       REAL(SZ) :: f1, f2, f3, f4                 ! shape functions
       REAL(SZ) :: top, bot
       Integer  :: loop_situation = 0
+!$omp threadprivate(loop_situation)
 
       call setMessageSource("zsurfbuoy_p3")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -2542,10 +2552,10 @@ C     jgf46.00 Explicitly declared the following variables
  100  CONTINUE
 
       IF(IDiag.EQ.2) THEN
-         WRITE(2,*) '******** ZSURFBUOY_p3 **********'
-         WRITE(2,*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
+         WRITE(2+CK_LUN,*) '******** ZSURFBUOY_p3 **********'
+         WRITE(2+CK_LUN,*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
      &        '      BCPressNN'
-         WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,BCPressNN
+         WRITE(2+CK_LUN,777) NN,J,SigmaNN,SigBelo,SigAbov,BCPressNN
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
 
@@ -2562,6 +2572,7 @@ C**********************************************************************
 
        Subroutine Gaussian_filter_complex_BPG ( X, Y, NeiTab, NNeigh, quantity, NP, NFEN, MNEI )
 
+      use CkLunMod, only : CK_LUN
        Use Global,      Only : IFNLFA, ETA2
        Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B
@@ -2575,6 +2586,7 @@ C**********************************************************************
        Real(8) :: velocity_magnitude_max_in_xy
        Real(8) :: element_peclet_number
        Real(8) :: constant_diffusivity = 50.0d0
+!$omp threadprivate(constant_diffusivity)
        Real(8) :: X(NP), Y(NP)
        INTEGER :: NeiTab(NP,MNEI), NNeigh(NP)
        REAL(8), ALLOCATABLE :: Weights(:)

@@ -12,44 +12,78 @@ c
 
       implicit none
       character(100) :: title
+!$omp threadprivate(title)
       integer :: nnAtl,nnR,nnB,ne,numAtl,i
+!$omp threadprivate(nnAtl,nnR,nnB,ne,numAtl,i)
       integer :: j,k,xi,yi
+!$omp threadprivate(j,k,xi,yi)
       real*8, dimension(:,:), allocatable :: uR,vR,pR,uB,vB,pB,Atlonglat
+!$omp threadprivate(uR,vR,pR,uB,vB,pB,Atlonglat)
       real*8, dimension(:), allocatable :: latR,longR,latB,longB
+!$omp threadprivate(latR,longR,latB,longB)
       integer, dimension(:), allocatable :: nAtl
+!$omp threadprivate(nAtl)
       real*8 :: Along, Alat
+!$omp threadprivate(Along,Alat)
       real*8 :: ramp,rampfrac
+!$omp threadprivate(ramp,rampfrac)
       real*8 :: uu,vv,PP
+!$omp threadprivate(uu,vv,PP)
       real*8 :: Penv
+!$omp threadprivate(Penv)
       integer :: date1R,date2R,date1B,date2B
+!$omp threadprivate(date1R,date2R,date1B,date2B)
       integer :: date1w,date2w
+!$omp threadprivate(date1w,date2w)
       integer :: date1p,date2p
+!$omp threadprivate(date1p,date2p)
       integer :: iLatR,iLongR,iCYMDHR,iMinR
+!$omp threadprivate(iLatR,iLongR,iCYMDHR,iMinR)
       real*8  :: dxR,dyR,swlatR,swlongR
+!$omp threadprivate(dxR,dyR,swlatR,swlongR)
       integer :: iLatB,iLongB,iCYMDHB,iMinB
+!$omp threadprivate(iLatB,iLongB,iCYMDHB,iMinB)
       real*8  :: dxB,dyB,swlatB,swlongB
+!$omp threadprivate(dxB,dyB,swlatB,swlongB)
       integer :: iLatw,iLongw,iCYMDHw,iMinw
+!$omp threadprivate(iLatw,iLongw,iCYMDHw,iMinw)
       real*8  :: dxw,dyw,swlatw,swlongw
+!$omp threadprivate(dxw,dyw,swlatw,swlongw)
       integer :: iLatp,iLongp,iCYMDHp,iMinp
+!$omp threadprivate(iLatp,iLongp,iCYMDHp,iMinp)
       real*8  :: dxp,dyp,swlatp,swlongp
+!$omp threadprivate(dxp,dyp,swlatp,swlongp)
       integer :: isnapR,updateR
+!$omp threadprivate(isnapR,updateR)
       integer :: isnapB,updateB
+!$omp threadprivate(isnapB,updateB)
 
       integer :: regionExists
+!$omp threadprivate(regionExists)
 
       integer,allocatable :: swpointsR(:,:)
+!$omp threadprivate(swpointsR)
       integer,allocatable :: swpointsB(:,:)
+!$omp threadprivate(swpointsB)
 
       real*8 :: w,w1,w2,w3,w4
+!$omp threadprivate(w,w1,w2,w3,w4)
       real*8,allocatable :: wR(:,:)
+!$omp threadprivate(wR)
       real*8,allocatable :: wB(:,:)
+!$omp threadprivate(wB)
 
       real*8,allocatable :: umax(:),pmin(:)
+!$omp threadprivate(umax,pmin)
 
       CHARACTER FNAME*60
+!$omp threadprivate(FNAME)
       logical found
+!$omp threadprivate(found)
       logical SkipRegion
+!$omp threadprivate(SkipRegion)
       integer idummy
+!$omp threadprivate(idummy)
 
 ! Set a value for Penv
 
@@ -67,16 +101,16 @@ c
 1010  FORMAT(' File ',A60,/,' WAS NOT FOUND!  Try again',/)
 1011  FORMAT(' File ',A60,/,' WAS FOUND!  Opening & Processing file',/)
 
-      open(1,file=fname)
-      read(1,*) title
-      read(1,*) ne, nnAtl
+      open(1+CK_LUN,file=fname)
+      read(1+CK_LUN,*) title
+      read(1+CK_LUN,*) ne, nnAtl
       allocate(Atlonglat(nnAtl,2))
       allocate(nAtl(nnAtl))
       allocate(umax(nnAtl),pmin(nnAtl))
       allocate(swpointsB(nnAtl,2),wB(nnAtl,4))
       allocate(swpointsR(nnAtl,2),wR(nnAtl,4))
       do i=1,nnAtl
-         read(1,*) numAtl, Along, Alat
+         read(1+CK_LUN,*) numAtl, Along, Alat
          Atlonglat(i,1)=Along
          Atlonglat(i,2)=Alat
          nAtl(i)=numAtl
@@ -91,7 +125,7 @@ c
   41  WRITE(*,*) 'Enter the name of the output unit 22 file:'
       READ(*,'(A60)') FNAME
 
-      open(2,file=fname)
+      open(2+CK_LUN,file=fname)
 1000  format(i8,3e13.5)
 
 ! Ask if there is region-scale files  ----------------------------------
@@ -118,10 +152,10 @@ c
       GOTO 51
   52  WRITE(*,1011) FNAME
 
-      open(31,file=fname)
+      open(31+CK_LUN,file=fname)
 
       ! Read in begining/ending dates of win file
-      read(31,10) title,date1w,title,date2w
+      read(31+CK_LUN,10) title,date1w,title,date2w
 
 10    format(a55,i10,a5,i10)
 
@@ -136,10 +170,10 @@ c
       GOTO 61
   62  WRITE(*,1011) FNAME
 
-      open(41,file=fname)
+      open(41+CK_LUN,file=fname)
 
       ! Read in begining/ending dates of win file
-      read(41,10) title,date1p,title,date2p
+      read(41+CK_LUN,10) title,date1p,title,date2p
 
       if(date1w.ne.date1p.or.date2w.ne.date2p) then
          print *, 'HEADER INFO IN WIN AND PRE FILES DO NOT MATCH'
@@ -163,10 +197,10 @@ c
       GOTO 71
   72  WRITE(*,1011) FNAME
 
-      open(32,file=fname)
+      open(32+CK_LUN,file=fname)
 
       ! Read in begining/ending dates of .win file
-      read(32,10) title,date1w,title,date2w
+      read(32+CK_LUN,10) title,date1w,title,date2w
 
 
 ! Oceanweather region pre file -----------------------------------------------
@@ -179,10 +213,10 @@ c
       GOTO 81
   82  WRITE(*,1011) FNAME
 
-      open(42,file=fname)
+      open(42+CK_LUN,file=fname)
 
       ! Read in begining/ending dates of .pre file
-      read(42,10) title,date1p,title,date2p
+      read(42+CK_LUN,10) title,date1p,title,date2p
 
       if(date1w.ne.date1p.or.date2w.ne.date2p) then
          print *, 'HEADER INFO IN WIN AND PRE FILES DO NOT MATCH'
@@ -212,11 +246,11 @@ c
      &        t44,f8.0,t58,f8.0,t69,i10,i2)
 
          ! Read Grid Specifications/Date
-         read (31,11,end=9999) 
+         read (31+CK_LUN,11,end=9999) 
      &        iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
 
          ! Read Grid Specifications/Date
-         read (41,11,end=9999) 
+         read (41+CK_LUN,11,end=9999) 
      &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
 
          if(iLatw.ne.iLatp.or.iLongw.ne.iLongp.or.dxw.ne.dxp.or. 
@@ -324,14 +358,14 @@ c
       
          ! Read u/v components of the wind
 12       format(8f10.0)
-         read(31,12) ((uB(i,j),i=1,iLongB),j=1,iLatB)
-         read(31,12) ((vB(i,j),i=1,iLongB),j=1,iLatB)
+         read(31+CK_LUN,12) ((uB(i,j),i=1,iLongB),j=1,iLatB)
+         read(31+CK_LUN,12) ((vB(i,j),i=1,iLongB),j=1,iLatB)
 
          uB(:,:) = 1.943844492d0*uB(:,:)
          vB(:,:) = 1.943844492d0*vB(:,:)
 
          ! Read pressure
-         read(41,12) ((pB(i,j),i=1,iLongB),j=1,iLatB)
+         read(41+CK_LUN,12) ((pB(i,j),i=1,iLongB),j=1,iLatB)
 
 
 
@@ -352,11 +386,11 @@ c
          isnapR = isnapR+1
 
          ! Read Grid Specifications/Date
-         read (32,11,end=9999) 
+         read (32+CK_LUN,11,end=9999) 
      &        iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
 
          ! Read Grid Specifications/Date
-         read (42,11,end=9999) 
+         read (42+CK_LUN,11,end=9999) 
      &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
 
          if(iLatw.ne.iLatp.or.iLongw.ne.iLongp.or.dxw.ne.dxp.or.
@@ -475,14 +509,14 @@ c
 
       
          ! Read u/v components of the wind
-         read(32,12) ((uR(i,j),i=1,iLongR),j=1,iLatR)
-         read(32,12) ((vR(i,j),i=1,iLongR),j=1,iLatR)
+         read(32+CK_LUN,12) ((uR(i,j),i=1,iLongR),j=1,iLatR)
+         read(32+CK_LUN,12) ((vR(i,j),i=1,iLongR),j=1,iLatR)
 
          uR(:,:) = 1.943844492d0*uR(:,:)
          vR(:,:) = 1.943844492d0*vR(:,:)
 
          ! Read pressure
-         read(42,12) ((pR(i,j),i=1,iLongR),j=1,iLatR)
+         read(42+CK_LUN,12) ((pR(i,j),i=1,iLongR),j=1,iLatR)
 
 
 10000    continue
@@ -497,7 +531,7 @@ c
          end if
          ramp = 1.0
 
-         write(2,*) '# ', iCYMDHB, iMinB
+         write(2+CK_LUN,*) '# ', iCYMDHB, iMinB
 
          if(regionExists.eq.0) then
 30          format('PROCESSING BASIN DATA',i12,' ',i2,' RAMPING=',F5.2)
@@ -568,7 +602,7 @@ c
                uu = uu * 1.1076
                vv = vv * 1.1076
 
-               write(2,1000) nAtl(i),uu,vv,PP
+               write(2+CK_LUN,1000) nAtl(i),uu,vv,PP
             
                if(umax(i).lt.sqrt(uu*uu+vv*vv)) then
                   umax(i)=sqrt(uu*uu+vv*vv)
@@ -591,36 +625,36 @@ c
       print *, 'DONE'
 
       ! Close files
-      close(1)
-      close(2)
-      close(31)
-      close(41)
+      close(1+CK_LUN)
+      close(2+CK_LUN)
+      close(31+CK_LUN)
+      close(41+CK_LUN)
       IF(.not.SkipRegion) THEN
-        close(32)
-        close(42)
+        close(32+CK_LUN)
+        close(42+CK_LUN)
       ENDIF
 
       ! Write peak pressure velocity
       print *, 'Writing peak pressure velocity in peak73.63 ....'
-      open(10,file="peak73.63")
-      write(10,1110) title
-      WRITE(10,3645) 1,nnAtl,1000,1000,1
-      WRITE(10,2120) 1000,1000
+      open(10+CK_LUN,file="peak73.63")
+      write(10+CK_LUN,1110) title
+      WRITE(10+CK_LUN,3645) 1,nnAtl,1000,1000,1
+      WRITE(10+CK_LUN,2120) 1000,1000
       do i=1,nnAtl
-         write(10,3330) nAtl(i),pmin(i)
+         write(10+CK_LUN,3330) nAtl(i),pmin(i)
       end do
-      close(10)
+      close(10+CK_LUN)
 
       ! Write peak wind velocity
       print *, 'Writing peak wind velocity in peak74.63 ....'
-      open(10,file="peak74.63")
-      write(10,1110) title
-      WRITE(10,3645) 1,nnAtl,1000,1000,1
-      WRITE(10,2120) 1000,1000
+      open(10+CK_LUN,file="peak74.63")
+      write(10+CK_LUN,1110) title
+      WRITE(10+CK_LUN,3645) 1,nnAtl,1000,1000,1
+      WRITE(10+CK_LUN,2120) 1000,1000
       do i=1,nnAtl
-         write(10,3330) nAtl(i),umax(i)
+         write(10+CK_LUN,3330) nAtl(i),umax(i)
       end do
-      close(10)
+      close(10+CK_LUN)
 1110  format(a80) 
 3645  FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
 2120  FORMAT(2X,E20.10,5X,I10)

@@ -114,12 +114,12 @@ ifeq ($(compiler),ampi)
      XDMFPATH    := /home/jason/projects/XDMF/Code/latestCode
      XDMFLIBPATH := /home/jason/projects/XDMF/Code/testLatest
   endif
-#  PPFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp
-  PPFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp
-#  FC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp
-  FC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp
-#  PFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp
-  PFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp
+#  PPFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
+  PPFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP
+#  FC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
+  FC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP
+#  PFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
+  PFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP
   FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none 
   ifeq ($(PROFILE),enable)
     FFLAGS1	:=  $(INCDIRS) -pg -Og -fprofile-arcs -ftest-coverage -ffixed-line-length-none 

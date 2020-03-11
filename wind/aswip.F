@@ -4,6 +4,7 @@ C     M O D U L E    A S Y M M E T R I C  V O R T E X  P R O C E S S I N G
 C
 C-----------------------------------------------------------------------
       module asymmetricVortexProcessing
+      use CkLunMod, only : CK_LUN
          use sizes, only : sz
          use global, only : 
      &                   g, rhowat0, prbckgrnd,
@@ -21,91 +22,168 @@ C-----------------------------------------------------------------------
      &                 writeSpatialuvp, writeNodaluvp,
      &                 geostrophic_switch, geofactor,wvnx2, wvny2, prn2
          integer :: num_entry, num_cycles
+!$omp threadprivate(num_entry,num_cycles)
          integer ,dimension(:),allocatable :: advr
+!$omp threadprivate(advr)
          integer,dimension(:),allocatable :: iFcstInc ! hours between forecasts
+!$omp threadprivate(iFcstInc)
          integer,dimension(:),allocatable :: iyear, imth, iday, ihr
+!$omp threadprivate(iyear,imth,iday,ihr)
          character(len=4),dimension(:),allocatable :: castType! hindcast/nowcast or forecast?
+!$omp threadprivate(castType)
          integer,dimension(:),allocatable :: ilat,ilon
+!$omp threadprivate(ilat,ilon)
          real(sz),dimension(:),allocatable :: rlat,rlon
+!$omp threadprivate(rlat,rlon)
          integer,dimension(:),allocatable :: ispd,icpress
+!$omp threadprivate(ispd,icpress)
          integer , dimension(:,:), allocatable :: irad ! working isotach radii
+!$omp threadprivate(irad)
          integer ,dimension(:),allocatable :: ivr, dir, speed
+!$omp threadprivate(ivr,dir,speed)
          real(sz) , dimension(:,:), allocatable :: rmaxw
+!$omp threadprivate(rmaxw)
          integer ,dimension(:),allocatable :: ipn
+!$omp threadprivate(ipn)
          CHARACTER(1) :: ns ! N or S in latitude column
+!$omp threadprivate(ns)
          CHARACTER(1) :: ew ! E or W in longitude column
+!$omp threadprivate(ew)
          integer  :: ient,icyc,itpc,method,j,iquadrot,nquadrot,approach
+!$omp threadprivate(ient,icyc,itpc,method,j,iquadrot,nquadrot,approach)
          real(sz),dimension(:),allocatable::cycletime
+!$omp threadprivate(cycletime)
          integer,dimension(:),allocatable::atcfrmw
+!$omp threadprivate(atcfrmw)
          real(sz) :: vmax !,speedmax,rmax,rmaxmax
+!$omp threadprivate(vmax)
          real(sz) :: vr,speedmax2
+!$omp threadprivate(vr,speedmax2)
          real(sz) :: vmax_pseudo
+!$omp threadprivate(vmax_pseudo)
          real(sz), dimension(4) ::rmaxw_temp
+!$omp threadprivate(rmaxw_temp)
          real(sz), dimension(4) ::vmaxesbl_temp
+!$omp threadprivate(vmaxesbl_temp)
          real(sz), dimension(4) :: r
+!$omp threadprivate(r)
          real(sz) ,dimension(:),allocatable :: uTrans, vTrans
+!$omp threadprivate(uTrans,vTrans)
          real(sz) ,dimension(:),allocatable :: uTrans2, vTrans2
+!$omp threadprivate(uTrans2,vTrans2)
          REAL(sz),DIMENSION(:),ALLOCATABLE :: HollB
+!$omp threadprivate(HollB)
          REAL(sz),DIMENSION(:,:),ALLOCATABLE :: HollBs
+!$omp threadprivate(HollBs)
          REAL(sz),DIMENSION(:,:),ALLOCATABLE :: PhiFactors
+!$omp threadprivate(PhiFactors)
          REAL(sz),DIMENSION(:,:),ALLOCATABLE :: VmaxesBL
+!$omp threadprivate(VmaxesBL)
          CHARACTER (LEN = 10),DIMENSION(:),ALLOCATABLE :: stormname
+!$omp threadprivate(stormname)
          INTEGER, DIMENSION(0:5) :: lookup_radii ! periodic interpolation
+!$omp threadprivate(lookup_radii)
          real(sz) :: pn
+!$omp threadprivate(pn)
          real(sz) :: pc
+!$omp threadprivate(pc)
          real(sz) :: clat
+!$omp threadprivate(clat)
          real(sz) :: clon
+!$omp threadprivate(clon)
          real(sz) :: dx,dy,dr
+!$omp threadprivate(dx,dy,dr)
          real(sz) :: rhowatg
+!$omp threadprivate(rhowatg)
          real(sz) :: theta
+!$omp threadprivate(theta)
          real(sz), dimension(4) :: gamma ! factor applied to the StormMotion
+!$omp threadprivate(gamma)
          real(sz), dimension(4) :: quadRotateAngle, quadRotateAngle_new
+!$omp threadprivate(quadRotateAngle,quadRotateAngle_new)
          real(sz), dimension(4) :: rmaxwHighIso
+!$omp threadprivate(rmaxwHighIso)
          real(sz), dimension(4) :: epsilonAngle
+!$omp threadprivate(epsilonAngle)
          integer, dimension(4) :: irr
+!$omp threadprivate(irr)
          logical, dimension(4) :: vioflag
+!$omp threadprivate(vioflag)
          integer , dimension(:,:), allocatable :: ir   ! given isotach radii
+!$omp threadprivate(ir)
          integer , dimension(:,:), allocatable :: quadflag
+!$omp threadprivate(quadflag)
          integer ,dimension(:),allocatable :: cycle_num
+!$omp threadprivate(cycle_num)
          integer ,dimension(:),allocatable :: isotachs_per_cycle
+!$omp threadprivate(isotachs_per_cycle)
          real(sz) ,dimension(:),allocatable :: h_speed, h_dir
+!$omp threadprivate(h_speed,h_dir)
          real(sz) :: vmaxbl ! max sustained wind at top of atm. b.l.
+!$omp threadprivate(vmaxbl)
          real(sz) :: vrbl   ! wind vel at top of atm. b.l. at wind radius
+!$omp threadprivate(vrbl)
          real(sz), dimension(4) :: quadrantvr
+!$omp threadprivate(quadrantvr)
          real(sz), dimension(4) :: quadrantangles
+!$omp threadprivate(quadrantangles)
          real(sz), dimension(4) :: quadrantvecangles
+!$omp threadprivate(quadrantvecangles)
          real(sz), dimension(4) :: VmwBL
+!$omp threadprivate(VmwBL)
          integer,  dimension(4) :: VmwBLflag
+!$omp threadprivate(VmwBLflag)
          real(sz), allocatable :: cyclesecs(:) ! time in seconds that each cycle
+!$omp threadprivate(cyclesecs)
                                                ! corresponds to
          real(sz), allocatable :: cyclelons(:) ! longitudes for each cycle
+!$omp threadprivate(cyclelons)
          real(sz), allocatable :: cyclelats(:) ! latitudes for each cycle
+!$omp threadprivate(cyclelats)
          real(sz), allocatable :: cycledirs(:) ! directions for each cycle
+!$omp threadprivate(cycledirs)
          LOGICAL :: writeNWS19,writeNWS20 ! .false. if we don't want to write it
+!$omp threadprivate(writeNWS19,writeNWS20)
          REAL(sz) :: rmax_percent  ! desired percentage change in Rmax relative to the
+!$omp threadprivate(rmax_percent)
                            ! value calculated from isotach radii data (0 to 100)
          REAL(sz) :: forecastRmax ! constant Rmax value for the duration of the
+!$omp threadprivate(forecastRmax)
                                ! forecast (nautical miles)
          LOGICAL :: constantRmax ! .true. if forecastRmax was specified as
+!$omp threadprivate(constantRmax)
                               ! something .gt. zero
                               ! ... takes precedence over percent
                               ! change in Rmax
          LOGICAL :: percentSpecified ! .true. if percent was specified and is
+!$omp threadprivate(percentSpecified)
                                   ! something other than 100 percent
          REAL(sz) :: vmax_percent  ! desired percentage change in Vmax relative to the
+!$omp threadprivate(vmax_percent)
                                 ! given value (original Vmax still used to
                                 ! calculate Rmax
          INTEGER :: radii_sum ! record radius values for filling in missing vals
+!$omp threadprivate(radii_sum)
          INTEGER :: num_nonzero ! number of nonzero isotach radii
+!$omp threadprivate(num_nonzero)
          INTEGER :: first_entry    ! first entry in the cycle
+!$omp threadprivate(first_entry)
          INTEGER :: last_entry     ! last entry in the cycle
+!$omp threadprivate(last_entry)
          LOGICAL :: higher_isotach ! true if a valid Rmax exists at higher isotach
+!$omp threadprivate(higher_isotach)
          REAL(sz) :: stormMotion  ! portion of Vmax attributable to storm motio
+!$omp threadprivate(stormMotion)
          REAL(sz) :: stormMotionU ! U portion of Vmax attributable to storm motion
+!$omp threadprivate(stormMotionU)
          REAL(sz) :: stormMotionV ! V portion of Vmax attributable to storm motion
+!$omp threadprivate(stormMotionV)
          REAL(sz) :: U_Vr
+!$omp threadprivate(U_Vr)
          REAL(sz) :: V_Vr
+!$omp threadprivate(V_Vr)
          REAL(sz) :: temp  
+!$omp threadprivate(temp)
 
       !-------------------------------------------------------------
       contains
@@ -121,6 +199,7 @@ C     ! S U B R O U T I N E
       character(1024), intent(in) :: infile
 
       integer :: errorIO = 0
+!$omp threadprivate(errorIO)
       integer :: i,j,k
 
       ! jgf49.30 Direct Rmax specification takes precedence over percentage
@@ -128,10 +207,10 @@ C     ! S U B R O U T I N E
 
       IF ((constantRmax.eqv..true.).and.
      &           (percentSpecified.eqv..true.)) THEN
-         write(screenunit,*)
+         write(screenunit+CK_LUN,*)
      &     "WARNING: Rmax variation was specified as a percent (-P ",
      &     rmax_percent,") as well as a constant (-R ",forecastRmax,")."
-         write(screenunit,*)
+         write(screenunit+CK_LUN,*)
      &   "WARNING: The percentage variation for Rmax will not be used."
       ENDIF
 
@@ -146,11 +225,11 @@ C     message and terminate.
 
       num_entry=0
       DO
-         READ(22,*,END=991)
+         READ(22+CK_LUN,*,END=991)
          num_entry=num_entry+1
       ENDDO
 991   continue
-      rewind(22)
+      rewind(22+CK_LUN)
 
       allocate(advr(num_entry),iyear(num_entry),imth(num_entry))
       allocate(iday(num_entry),ihr(num_entry),castType(num_entry))
@@ -177,7 +256,7 @@ C     message and terminate.
 
       DO ient=1,num_entry
 
-         READ(22,22) advr(ient), iyear(ient),imth(ient),iday(ient),
+         READ(22+CK_LUN,22) advr(ient), iyear(ient),imth(ient),iday(ient),
      &      ihr(ient), castType(ient),iFcstInc(ient), ilat(ient),ns,
      &      ilon(ient),ew, ispd(ient), icpress(ient), ivr(ient),
      &      (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
@@ -215,7 +294,7 @@ C
          cycleTime(ient) = iFcstInc(ient) * 3600.d0
 
       ENDDO
-      CLOSE(22)
+      CLOSE(22+CK_LUN)
 
       ! calculate overland translation velocity in m/s and knots,
       ! set background pressure
@@ -241,7 +320,7 @@ C
          ! pressure so that it is 1mb higher than the central pressure
          ! to avoid producing negative Holland B values. 
          if (icpress(ient).gt.1012) then 
-               write(scratchMessage,'(a,i0,a)')
+               write(scratchMessage+CK_LUN,'(a,i0,a)')
      &         'The central pressure '
      &       //'is higher than the ADCIRC default background barometric '
      &       //'pressure on line ',ient,
@@ -380,7 +459,7 @@ C
             ! use all these radii as-is
          case default
             ! the following error message should be unreachable
-            write(16,*) "ERROR: aswip: Number of nonzero radii on ",
+            write(16+CK_LUN,*) "ERROR: aswip: Number of nonzero radii on ",
      &      "line ",ient," not in range 0 to 4."
          end select
 
@@ -516,7 +595,7 @@ C        if ivr was zero.
             ! use all these radii as-is
          case default
             ! the following error message should be unreachable
-            write(16,*) "ERROR: aswip: Number of nonzero radii on ",
+            write(16+CK_LUN,*) "ERROR: aswip: Number of nonzero radii on ",
      &      "line ",ient," not in range 0 to 4."
          end select
 
@@ -980,12 +1059,12 @@ C     !-------------------------------------
       integer, intent(in) :: nwswrite
 
       if (nwswrite == 19) then
-        OPEN(222,file="NWS_19_fort.22",status="replace")
+        OPEN(222+CK_LUN,file="NWS_19_fort.22",status="replace")
       else if (nwswrite == 20) then
          if (geostrophic_switch .eqv. .true.) then
-             OPEN(222,file="NWS_20_fort.22",status="replace")
+             OPEN(222+CK_LUN,file="NWS_20_fort.22",status="replace")
          else
-             OPEN(222,file="NWS_20_cyclostr_fort.22",status="replace")
+             OPEN(222+CK_LUN,file="NWS_20_cyclostr_fort.22",status="replace")
          endif
 !         OPEN(6666,file="PhiFactors.6666",status="replace")    
 !116      FORMAT(4(f5.2,x))
@@ -1037,7 +1116,7 @@ C     !-------------------------------------
 C
          select case(abs(nws))
          case(19)     
-           WRITE(222,26) advr(ient), iyear(ient),imth(ient),iday(ient),
+           WRITE(222+CK_LUN,26) advr(ient), iyear(ient),imth(ient),iday(ient),
      &         ihr(ient), castType(ient),iFcstInc(ient), ilat(ient),ns,
      &         ilon(ient),ew, ispd(ient), icpress(ient), ivr(ient),
      &         (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
@@ -1045,7 +1124,7 @@ C
      &         cycle_num(ient),isotachs_per_cycle(cycle_num(ient)),
      &        (quadflag(ient,i),i=1,4),(rmaxw(ient,i),i=1,4),HollB(ient)
          case(20)
-           WRITE(222,27) advr(ient), iyear(ient),imth(ient),iday(ient),
+           WRITE(222+CK_LUN,27) advr(ient), iyear(ient),imth(ient),iday(ient),
      &         ihr(ient), castType(ient),iFcstInc(ient), ilat(ient),ns,
      &         ilon(ient),ew, ispd(ient), icpress(ient), ivr(ient),
      &         (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
@@ -1060,7 +1139,7 @@ C
          case default
          end select
       ENDDO
-      close(222)
+      close(222+CK_LUN)
 !      if (abs(nws)==20) close(6666)
       !-------------------------------------------------------------
        end subroutine writeAsymmetricInputFile
@@ -1077,6 +1156,7 @@ C     M O D U L E    D I A G N O S T I C   O U T P U T
 C
 C-----------------------------------------------------------------------
       module diagnosticOutput
+      use CkLunMod, only : CK_LUN
 
       use sizes, only : sz, globaldir, mnp
       use global, only : nws, prbckgrnd,
@@ -1095,65 +1175,118 @@ C-----------------------------------------------------------------------
      &  num_entry, icyc, ient
       use owiwind, only : nws12init, nws12get, moving_grid ! Jie 09/2013 added OWI
       CHARACTER(2048) :: meshFileName ! name of file containing node locations
+!$omp threadprivate(meshFileName)
       LOGICAL :: nodesFromMesh ! .true. if we are supposed to load a fort.14
+!$omp threadprivate(nodesFromMesh)
       LOGICAL :: nodesFromFile ! .true. if we are supposed to load a list of nodes     
+!$omp threadprivate(nodesFromFile)
 C
 C     Variables for recording domain extents
       REAL(sz) :: xmin ! smallest x coordinate in mesh
+!$omp threadprivate(xmin)
       REAL(sz) :: ymin ! smallest y coordinate in mesh
+!$omp threadprivate(ymin)
       REAL(sz) :: xmax ! largest x coordinate in mesh
+!$omp threadprivate(xmax)
       REAL(sz) :: ymax ! largest y coordinate in mesh
+!$omp threadprivate(ymax)
       INTEGER :: num_outputs ! number of writes to output file
+!$omp threadprivate(num_outputs)
       INTEGER :: iout        ! output counter
+!$omp threadprivate(iout)
       REAL(sz), ALLOCATABLE :: outputSecs(:) ! time in seconds for output
+!$omp threadprivate(outputSecs)
       REAL(sz), ALLOCATABLE :: outputLons(:) ! longitudes at each output time
+!$omp threadprivate(outputLons)
       REAL(sz), ALLOCATABLE :: outputLats(:) ! latitudes at each output time
+!$omp threadprivate(outputLats)
       REAL(sz), ALLOCATABLE :: outputDirs(:) ! storm direction at output times
+!$omp threadprivate(outputDirs)
       REAL(sz) :: interp   ! time interpolation factor for time varying params
+!$omp threadprivate(interp)
       REAL(sz) :: trigDir
+!$omp threadprivate(trigDir)
       REAL(sz) :: azimuth  ! angle of node w.r.t. vortex (radians)
+!$omp threadprivate(azimuth)
       REAL(sz) :: vtest    ! wind speed along Rmax curve
+!$omp threadprivate(vtest)
       REAL(sz) :: vmax_azimuth ! azimuthal angle at which vmax occurs
+!$omp threadprivate(vmax_azimuth)
       INTEGER, PARAMETER :: radial_extent = 400 ! (nm) max dist. to write V,P
       INTEGER, PARAMETER :: quadrant_radial_resolution = 2 ! data points per nm
       INTEGER, PARAMETER :: spatial_radial_increment = 1
       INTEGER, PARAMETER :: azimuthal_increment = 5
       INTEGER :: num_rvalues ! dimension in radial direction for spatial output
+!$omp threadprivate(num_rvalues)
       INTEGER :: num_avalues ! dimension in the azimuthal direction for spatial
+!$omp threadprivate(num_avalues)
       INTEGER :: ry, t  ! loop counters in radial and theta directions
+!$omp threadprivate(ry,t)
       CHARACTER(80) :: rmax_file_name ! name of full circle rmax output
+!$omp threadprivate(rmax_file_name)
       CHARACTER(80) :: radialvp_file_name ! name of radial V and P output
+!$omp threadprivate(radialvp_file_name)
       CHARACTER(80) :: node_file_name ! name of file containing node locations
+!$omp threadprivate(node_file_name)
       CHARACTER(80) :: station_output_name ! name of output at given stations
+!$omp threadprivate(station_output_name)
       CHARACTER(80) :: spatial_file_name ! file containing spatial output
+!$omp threadprivate(spatial_file_name)
       CHARACTER(80) :: scratch  ! throw-away line from file
+!$omp threadprivate(scratch)
       REAL(sz) :: output_increment    ! time increment for output (seconds)
+!$omp threadprivate(output_increment)
       LOGICAL :: defaultOutputIncrement = .true. ! equal to cycle time incr.
+!$omp threadprivate(defaultOutputIncrement)
       INTEGER :: frame ! output frame number to render (0 for all frames)
+!$omp threadprivate(frame)
       INTEGER :: cell_list_size ! size of elements list for vtk output
+!$omp threadprivate(cell_list_size)
       LOGICAL :: meshFileReadComplete ! only need to read fort.14 once
+!$omp threadprivate(meshFileReadComplete)
       CHARACTER(1024) :: elementTableFileName !needed to post process spatialvp
+!$omp threadprivate(elementTableFileName)
       LOGICAL :: elementTableProvided = .false. ! changes output format!
+!$omp threadprivate(elementTableProvided)
       REAL(sz), ALLOCATABLE :: nodex(:) ! cpp projected x coord (meters)
+!$omp threadprivate(nodex)
       REAL(sz), ALLOCATABLE :: nodey(:) ! cpp projected x coord (meters)
+!$omp threadprivate(nodey)
       INTEGER, ALLOCATABLE :: outer_boundary_nodes(:) ! node numbers
+!$omp threadprivate(outer_boundary_nodes)
       INTEGER, ALLOCATABLE :: inner_boundary_nodes(:) ! node numbers
+!$omp threadprivate(inner_boundary_nodes)
       REAL(sz), DIMENSION(:), ALLOCATABLE :: pressure
+!$omp threadprivate(pressure)
       REAL(sz), DIMENSION(:), ALLOCATABLE :: radial_speed
+!$omp threadprivate(radial_speed)
       REAL(sz), DIMENSION(:), ALLOCATABLE :: tempspd
+!$omp threadprivate(tempspd)
 
       REAL(sz) :: totalWindStress ! magnitude, summed over all nodes
+!$omp threadprivate(totalWindStress)
       REAL(sz) :: windMag ! wind speed, m/s
+!$omp threadprivate(windMag)
       REAL(sz) :: windDragCoef ! wind drag coefficient
+!$omp threadprivate(windDragCoef)
       REAL(sz) :: stressX  ! wind stress in x-dir
+!$omp threadprivate(stressX)
       REAL(sz) :: stressY  ! wind stress in y-dir
+!$omp threadprivate(stressY)
       REAL(8) :: timeOffset ! like a hotstart time
+!$omp threadprivate(timeOffset)
       REAL(sz) :: owi_skip ! total number of owi snaps to be skipped
+!$omp threadprivate(owi_skip)
       REAL(sz) :: owi_output_factor !frequency to output owi snaps
+!$omp threadprivate(owi_output_factor)
       real(sz) :: dist     ! (m) distance from storm center to mesh node
+!$omp threadprivate(dist)
       real(sz) :: angle    ! (nm) angle to location of mesh vmax (on subdomain in parallel)
+!$omp threadprivate(angle)
       real(sz) :: maxSpeed ! (m/s) max wind speed on mesh (subdomain in parallel)
+!$omp threadprivate(maxSpeed)
       integer  :: maxNode  ! mesh node on which maxSpeed occurs
+!$omp threadprivate(maxNode)
       !-------------------------------------------------------------
       contains
       !-------------------------------------------------------------
@@ -1185,14 +1318,14 @@ C
          ! form a mesh around it each time
          call openFileForRead(22,'fort.22',errorIO)
          if (errorIO.ne.0) stop
-         READ(22,*) !# of files
-         READ(22,*) owi_skip ! skip or insert snaps 
-         READ(22,*) ! wind multiplier
+         READ(22+CK_LUN,*) !# of files
+         READ(22+CK_LUN,*) owi_skip ! skip or insert snaps 
+         READ(22+CK_LUN,*) ! wind multiplier
          ! The above 3 parameters will be treated by nws12init
-         READ(22,*) num_entry
-         READ(22,*) wtiminc ! in seconds
-         READ(22,*) owi_output_factor ! frequency to output owi snaps (default=1)
-         close(22)
+         READ(22+CK_LUN,*) num_entry
+         READ(22+CK_LUN,*) wtiminc ! in seconds
+         READ(22+CK_LUN,*) owi_output_factor ! frequency to output owi snaps (default=1)
+         close(22+CK_LUN)
          num_cycles = num_entry + owi_skip     
          allocate(cycleTime(num_cycles))
          DO i = 1, num_cycles
@@ -1280,12 +1413,12 @@ C
          ENDDO
          ! write storm center locations to a file
 400      FORMAT(f10.2,x,2(f8.4,x)) 
-         OPEN(399,FILE='OWI_snap_storm_centers.txt',STATUS='REPLACE')
+         OPEN(399+CK_LUN,FILE='OWI_snap_storm_centers.txt',STATUS='REPLACE')
          do icyc = 1,num_cycles
-            write(399,400) cycleSecs(icyc), cycleLats(icyc), 
+            write(399+CK_LUN,400) cycleSecs(icyc), cycleLats(icyc), 
      &         cycleLons(icyc)
          end do
-         close(399)
+         close(399+CK_LUN)
       endif 
       
       ! Jie: for NWS15, need to assign cycleSecs according to cycleTime;
@@ -1398,10 +1531,10 @@ C
       write(*,*) ' Initialization Finished Successfully'
       ! for nws12, need to rewind wind file and start over again
       if (abs(nws).eq.12) then  ! Jie 2013/09
-         close(221)
-         close(222)
-         close(223)
-         close(224)
+         close(221+CK_LUN)
+         close(222+CK_LUN)
+         close(223+CK_LUN)
+         close(224+CK_LUN)
          
          slam(:) = -79.0d0*deg2rad ! initialize to avoid spurious error messages
          sfea(:) = 34.0d0*deg2rad
@@ -1412,8 +1545,8 @@ C
       write(*,*) ' Begin to process diagnostic outputs for NWS = ', nws
       ! write storm center locations to a file
 402   FORMAT(f10.2,x,2(f8.4,x)) 
-      OPEN(401,FILE='Output_storm_centers.txt',STATUS='REPLACE')
-      open(1044, file='TC_centerloc.txt',status='replace')
+      OPEN(401+CK_LUN,FILE='Output_storm_centers.txt',STATUS='REPLACE')
+      open(1044+CK_LUN, file='TC_centerloc.txt',status='replace')
             
       do iout=1,num_outputs
          write(*,*) 'iout = ', iout
@@ -1430,7 +1563,7 @@ C
             call nws15get(wvnx2, wvny2, prn2, outputSecs(iout))
             outputLats(iout) = EyeLat(3)
             outputLons(iout) = EyeLon(3)
-            write(401,402) OutputSecs(iout), outputLats(iout), 
+            write(401+CK_LUN,402) OutputSecs(iout), outputLats(iout), 
      &         outputLons(iout)
          endif
 
@@ -1438,7 +1571,7 @@ C
          write(rmax_file_name,'(I4.4,".d")') iout
          rmax_file_name = "full_circle_rmaxes_"//
      &                           rmax_file_name//".d"
-         OPEN(444,FILE=trim(rmax_file_name),STATUS='REPLACE')
+         OPEN(444+CK_LUN,FILE=trim(rmax_file_name),STATUS='REPLACE')
          write(node_file_name,'(I4.4,".d")') iout
          node_file_name = "full_circle_latlon_"//
      &                           node_file_name//".d"
@@ -1453,11 +1586,11 @@ C
          enddo
          !
          ! write circular lat/lon values to a file for plotting
-         OPEN(333,FILE=trim(node_file_name),STATUS='REPLACE')
+         OPEN(333+CK_LUN,FILE=trim(node_file_name),STATUS='REPLACE')
          do i=1,np
-            write(333,*) slam(i)*rad2deg, sfea(i)*rad2deg
+            write(333+CK_LUN,*) slam(i)*rad2deg, sfea(i)*rad2deg
          end do
-         close(333)
+         close(333+CK_LUN)
          !
 443      FORMAT(5(f10.4,x)) 
          select case(abs(nws))
@@ -1511,7 +1644,7 @@ C
      &              (sfea(maxNode)-deg2rad*outputLats(iout)))
          
                     if ( angle > 360.d0) angle = angle - 360.d0
-                       write(444,443) dist, angle , real(maxNode-j+1),
+                       write(444+CK_LUN,443) dist, angle , real(maxNode-j+1),
      &                 azimuth*rad2deg, (ten2one * maxSpeed /0.514444d0)
                   enddo
                endif         
@@ -1539,7 +1672,7 @@ C
             write(*,*) "ERROR: aswip: -n ",nws,
      &           " is not an nws value supported by aswip."
          end select
-         CLOSE(444)
+         CLOSE(444+CK_LUN)
          ! search around the storm along Rmax to find the vmax
          ! as well as the azimuth where vmax occurs
          vmax = 0.d0
@@ -1592,10 +1725,10 @@ C
       write(*,*) ' Initialization Finished Successfully'
       ! for nws12, need to rewind wind file and start over again
       if (abs(nws).eq.12) then  ! Jie 2013/09
-         close(221)
-         close(222)
-         close(223)
-         close(224)
+         close(221+CK_LUN)
+         close(222+CK_LUN)
+         close(223+CK_LUN)
+         close(224+CK_LUN)
          
          slam(:) = -79.0d0*deg2rad ! initialize to avoid spurious error messages
          sfea(:) = 34.0d0*deg2rad
@@ -1607,7 +1740,7 @@ C
       write(*,*) ' Begin to process diagnostic outputs for NWS = ', nws
       ! write storm center locations to a file
 402      FORMAT(f10.2,x,2(f8.4,x)) 
-         OPEN(401,FILE='Output_storm_centers.txt',STATUS='REPLACE')
+         OPEN(401+CK_LUN,FILE='Output_storm_centers.txt',STATUS='REPLACE')
       do iout=1,num_outputs
          write(*,*) 'iout = ', iout
          ! if we only want one output frame, and this is not it,
@@ -1625,7 +1758,7 @@ C
             outputLats(iout) = EyeLat(3)
             outputLons(iout) = EyeLon(3)
          endif
-            write(401,402) OutputSecs(iout), outputLats(iout), 
+            write(401+CK_LUN,402) OutputSecs(iout), outputLats(iout), 
      &         outputLons(iout)
          ! create four strings of nodes in straight lines out from
          ! the center of the storm, one in the center of each quadrant
@@ -1682,11 +1815,11 @@ C
          node_file_name = "radialvp_latlon_"//
      &                           node_file_name//".d"
          ! write lat/lon values to a file for plotting
-         OPEN(333,FILE=trim(node_file_name),STATUS='REPLACE')
+         OPEN(333+CK_LUN,FILE=trim(node_file_name),STATUS='REPLACE')
          do i=1,np
-            write(333,*) slam(i)*rad2deg, sfea(i)*rad2deg
+            write(333+CK_LUN,*) slam(i)*rad2deg, sfea(i)*rad2deg
          end do
-         close(333)
+         close(333+CK_LUN)
          select case(abs(nws))
          case(12)
             ! output each frame only, no jumping, no time-interpolation
@@ -1714,7 +1847,7 @@ C
          write(radialvp_file_name,'(I4.4,".d")') iout
          radialvp_file_name = "radialvp_"//
      &                           radialvp_file_name//".d"
-         OPEN(555,FILE=trim(radialvp_file_name),STATUS='REPLACE')
+         OPEN(555+CK_LUN,FILE=trim(radialvp_file_name),STATUS='REPLACE')
          ! convert from m/s velocity to speed in kt and convert
          ! from 10minute averaged winds (needed by ADCIRC) back
          ! to 1minute averaged winds (which match the data from NHC)
@@ -1738,13 +1871,13 @@ C
          dr = 0.0d0
          do i=1,np-5,5
 !TGA            write(555,*) dr,(radial_speed(i+j),j=0,4),
-            write(555,'(F19.13,5(x,F19.13),5(x,F19.12))') dr,
+            write(555+CK_LUN,'(F19.13,5(x,F19.13),5(x,F19.12))') dr,
      &                   (radial_speed(i+j),j=0,4),(pressure(i+j),j=0,4)
             dr = dr + 1.0d0/real(quadrant_radial_resolution)
          end do
-         CLOSE(555)
+         CLOSE(555+CK_LUN)
       end do
-      close(401)
+      close(401+CK_LUN)
       !-------------------------------------------------------------
       end subroutine radialVandP
       !-------------------------------------------------------------
@@ -1772,8 +1905,8 @@ C
       else
          call openFileForRead(14,trim(meshFileName),errorIO)
          if (errorIO.ne.0) stop
-         read(14,*) scratch  ! throw away AGRID
-         read(14,*) ne, np
+         read(14+CK_LUN,*) scratch  ! throw away AGRID
+         read(14+CK_LUN,*) ne, np
       endif
 
       call allocPseudoMeshArrays()
@@ -1814,8 +1947,8 @@ C
             ! elements to interpolate over)
             if ( elementTableProvided.eqv..false.) then
                allocate(nodex(np),nodey(np))
-               open(777,file="spatial.nod",status="replace")
-               write(777,'(i12,A)') np, "  ! NC, number of nodes"
+               open(777+CK_LUN,file="spatial.nod",status="replace")
+               write(777+CK_LUN,'(i12,A)') np, "  ! NC, number of nodes"
             endif
             ! create outer boundary
             do t=1, num_avalues
@@ -1877,28 +2010,28 @@ C
      &                 + outputLats(iout) * deg2rad
             ! now write the .nod file if needed
             if (elementTableProvided.eqv..false.) then
-               write(777,'(A)') "2   ! NB, number of boundaries"
+               write(777+CK_LUN,'(A)') "2   ! NB, number of boundaries"
                ! start with the outer boundary
-               write(777,'(I3,A)') num_avalues,
+               write(777+CK_LUN,'(I3,A)') num_avalues,
      &                  "   ! num nodes on outer boundry"
                do i=1,num_avalues
-                  write(777,'(2(E15.8,2X),A)')
+                  write(777+CK_LUN,'(2(E15.8,2X),A)')
      &                     nodex(i), nodey(i)," 0.0"
                enddo
                ! now the inner boundary
-               write(777,'(I3,A)') num_avalues,
+               write(777+CK_LUN,'(I3,A)') num_avalues,
      &                   "      ! num nodes on inner boundry"
                do i=num_avalues+1,num_avalues*2
-                  write(777,'(2(E15.8,2X),A)')
+                  write(777+CK_LUN,'(2(E15.8,2X),A)')
      &                     nodex(i), nodey(i), " 0.0"
                enddo
                ! then write the list of internal (nonboundary) nodes
-               write(777,'(I12)') (np-2*num_avalues)
+               write(777+CK_LUN,'(I12)') (np-2*num_avalues)
                do i=(2*num_avalues+1),np
-                  write(777,'(2(E15.8,2X),A)')
+                  write(777+CK_LUN,'(2(E15.8,2X),A)')
      &                     nodex(i), nodey(i)," 0.0"
                enddo
-               close(777)
+               close(777+CK_LUN)
             else
                ! we have been provided with an element table
                if ( meshFileReadComplete.eqv..false.) then
@@ -1909,20 +2042,20 @@ C
                   ! first count the number of elements in the file
                   ne=0
                   do
-                     read(14,'(I8)',end=9295) i
+                     read(14+CK_LUN,'(I8)',end=9295) i
                      ne=ne+1
                   enddo
 9295                   continue
-                  rewind(14)
+                  rewind(14+CK_LUN)
                   ! now allocate memory and read in the element table
                   allocate(nm(ne,3)) !TODO: this effectively hardcodes nhy=3
                   cell_list_size=0
                   nhy=3
                   do i=1,ne
-                     read(14,'(3I8)') nm(i,1),nm(i,2),nm(i,3)
+                     read(14+CK_LUN,'(3I8)') nm(i,1),nm(i,2),nm(i,3)
                      cell_list_size = cell_list_size + 1 + nhy
                   enddo
-                  close(14)
+                  close(14+CK_LUN)
                   meshFileReadComplete=.true.
                endif
             endif
@@ -1931,7 +2064,7 @@ C
             ! file (fort.14)
             if (meshFileReadComplete.eqv..false.) then
                do i=1,np
-                  read(14,*) j, dx, dy
+                  read(14+CK_LUN,*) j, dx, dy
                   slam(j) = dx
                   sfea(j) = dy
                enddo
@@ -1940,7 +2073,7 @@ C
                allocate(nm(ne,3)) ! TODO: this effectively hardcodes nhy=3
                cell_list_size=0
                do i=1,ne
-                  read(14,*) j,nhy,nm(j,1),nm(j,2),nm(j,3)
+                  read(14+CK_LUN,*) j,nhy,nm(j,1),nm(j,2),nm(j,3)
                   cell_list_size = cell_list_size + 1 + nhy
                enddo
                slam0=outputLons(iout)
@@ -1956,14 +2089,14 @@ C
          write(spatial_file_name,'(I4.4,".d")') iout
          spatial_file_name = "spatial_data_"//
      &                           spatial_file_name//".d"
-         open(555,FILE=trim(spatial_file_name),STATUS='REPLACE')
-         write(555,'(A)') '# vtk DataFile Version 3.0'
-         write(555,'(A)') 'Vortex V and P data'
-         write(555,'(A)') 'ASCII'
+         open(555+CK_LUN,FILE=trim(spatial_file_name),STATUS='REPLACE')
+         write(555+CK_LUN,'(A)') '# vtk DataFile Version 3.0'
+         write(555+CK_LUN,'(A)') 'Vortex V and P data'
+         write(555+CK_LUN,'(A)') 'ASCII'
          !write(555,'(A)') 'DATASET STRUCTURED_GRID'
-         write(555,'(A)') 'DATASET UNSTRUCTURED_GRID'
+         write(555+CK_LUN,'(A)') 'DATASET UNSTRUCTURED_GRID'
          !write(555,'(A,I3,I3,I3)') 'DIMENSIONS 360 400 1'
-         write(555,'(A,I6,A)') 'POINTS ',np,' float'
+         write(555+CK_LUN,'(A,I6,A)') 'POINTS ',np,' float'
          ! save coordinates as Cartesian (m) for use in VTK
          xmin=huge(1.d0)
          ymin=huge(1.d0)
@@ -1972,7 +2105,7 @@ C
          do i=1,np
             call latlon2xy(sfea(i)*rad2deg-sfea0,
      &              slam(i)*rad2deg, sfea0, slam0, dx, dy)
-            write(555,'(E15.8,2X,E15.8,2X,E15.8)')
+            write(555+CK_LUN,'(E15.8,2X,E15.8,2X,E15.8)')
      &              dx, dy, 0.0d0
             if ( dx.gt.xmax ) xmax=dx
             if ( dx.lt.xmin ) xmin=dx
@@ -1984,28 +2117,28 @@ C
          if ((nodesFromMesh.eqv..false.).and.
      &             (elementTableProvided.eqv..false.)) then
             ! we write this out as an unstructured point set for vtk
-            write(555,'(A,I6,I7)') 'CELLS ',np,np*2
+            write(555+CK_LUN,'(A,I6,I7)') 'CELLS ',np,np*2
             do i=1,np
-               write(555,'(A,I6)') '1 ',i
+               write(555+CK_LUN,'(A,I6)') '1 ',i
             enddo
-            write(555,'(A,I6)') 'CELL_TYPES ',np
+            write(555+CK_LUN,'(A,I6)') 'CELL_TYPES ',np
             do i=1,np
-               write(555,'(A)') '1'
+               write(555+CK_LUN,'(A)') '1'
             enddo
          else
             ! write out cells (triangular elements), provided by
             ! an ADCIRC mesh file or an element table file
-            write(555,'(A,I6,2X,I7)') 'CELLS ',ne,cell_list_size
+            write(555+CK_LUN,'(A,I6,2X,I7)') 'CELLS ',ne,cell_list_size
             do i=1,ne
                ! vtk zero-indexes the node numbers, so we have
                ! to subtract 1 from the adcirc node numbers, b/c
                ! they are indexed starting at 1
-               write(555,'(A,3(I6,2X))') '3 ',
+               write(555+CK_LUN,'(A,3(I6,2X))') '3 ',
      &                  nm(i,1)-1, nm(i,2)-1, nm(i,3)-1
             enddo
-            write(555,'(A,I6)') 'CELL_TYPES ',ne
+            write(555+CK_LUN,'(A,I6)') 'CELL_TYPES ',ne
             do i=1,ne
-               write(555,'(A)') '5'
+               write(555+CK_LUN,'(A)') '5'
             enddo
          endif
          select case(abs(nws))
@@ -2017,26 +2150,26 @@ C
             write(*,*) "ERROR: aswip: -n ",nws,
      &           " is not an nws value supported by aswip."
          end select
-         write(555,'(A,I6)') 'POINT_DATA ',np
-         write(555,'(A)') 'SCALARS WindSpeed float 1'
-         write(555,'(A)') 'LOOKUP_TABLE default'
+         write(555+CK_LUN,'(A,I6)') 'POINT_DATA ',np
+         write(555+CK_LUN,'(A)') 'SCALARS WindSpeed float 1'
+         write(555+CK_LUN,'(A)') 'LOOKUP_TABLE default'
          do i=1,np
-            write(555,'(E15.8)')
+            write(555+CK_LUN,'(E15.8)')
      &              (ten2one * sqrt(wvnx2(i)**2 + wvny2(i)**2)
      &                       /0.514444d0)
          enddo
-         write(555,'(A)') 'SCALARS Pressure float 1'
-         write(555,'(A)') 'LOOKUP_TABLE default'
+         write(555+CK_LUN,'(A)') 'SCALARS Pressure float 1'
+         write(555+CK_LUN,'(A)') 'LOOKUP_TABLE default'
          do i=1,np
-            write(555,'(E15.8)') prn2(i) * RhoWatG / 100.d0
+            write(555+CK_LUN,'(E15.8)') prn2(i) * RhoWatG / 100.d0
          enddo
-         write(555,'(A)') 'VECTORS WindVelocity float'
+         write(555+CK_LUN,'(A)') 'VECTORS WindVelocity float'
          do i=1,np
-            write(555,'(E15.8,E15.8,E15.8)')
+            write(555+CK_LUN,'(E15.8,E15.8,E15.8)')
      &              (ten2one*wvnx2(i)/0.514444d0),
      &              (ten2one*wvny2(i)/0.514444d0), 0.0d0
          enddo
-         close(555)
+         close(555+CK_LUN)
       end do
       !-------------------------------------------------------------
       end subroutine spatialVandP
@@ -2071,8 +2204,8 @@ C
       else
          call openFileForRead(14,trim(meshFileName),errorIO)
          if (errorIO.ne.0) stop
-         read(14,*) scratch  ! throw away AGRID
-         read(14,*) ne, np
+         read(14+CK_LUN,*) scratch  ! throw away AGRID
+         read(14+CK_LUN,*) ne, np
       endif
 
       call allocPseudoMeshArrays()
@@ -2094,10 +2227,10 @@ C
             write(*,*) ' Initialization Finished Successfully'
       ! for nws12, need to rewind wind file and start over again
       if (abs(nws).eq.12) then  ! Jie 2013/09
-         close(221)
-         close(222)
-         close(223)
-         close(224)
+         close(221+CK_LUN)
+         close(222+CK_LUN)
+         close(223+CK_LUN)
+         close(224+CK_LUN)
          
          slam(:) = -79.0d0*deg2rad ! initialize to avoid spurious error messages
          sfea(:) = 34.0d0*deg2rad
@@ -2109,8 +2242,8 @@ C
       write(*,*) ' Begin to process diagnostic outputs for NWS = ', nws
       ! write storm center locations to a file
 402   FORMAT(f10.2,x,2(f8.4,x)) 
-      OPEN(401,FILE='Output_storm_centers.txt',STATUS='REPLACE')
-      open(1044, file='TC_centerloc.txt',status='replace')
+      OPEN(401+CK_LUN,FILE='Output_storm_centers.txt',STATUS='REPLACE')
+      open(1044+CK_LUN, file='TC_centerloc.txt',status='replace')
       do iout=1,num_outputs
          write(*,*) 'iout = ', iout
          ! if we only want one output frame, and this is not it,
@@ -2127,7 +2260,7 @@ C
             outputLats(iout) = EyeLat(3)
             outputLons(iout) = EyeLon(3)
          endif
-         write(401,402) OutputSecs(iout), outputLats(iout), 
+         write(401+CK_LUN,402) OutputSecs(iout), outputLats(iout), 
      &         outputLons(iout)
          if (nodesFromMesh.eqv..false.) then
             ! create a set of nodes in circles around the center of the
@@ -2144,8 +2277,8 @@ C
             ! elements to interpolate over)
             if ( elementTableProvided.eqv..false.) then
                allocate(nodex(np),nodey(np))
-               open(777,file="spatial.nod",status="replace")
-               write(777,'(i12,A)') np, "  ! NC, number of nodes"
+               open(777+CK_LUN,file="spatial.nod",status="replace")
+               write(777+CK_LUN,'(i12,A)') np, "  ! NC, number of nodes"
             endif
             ! create outer boundary
             do t=1, num_avalues
@@ -2208,28 +2341,28 @@ C
             ! write(*,*) "converting (dr,angle) to (lon,lat)"
             ! now write the .nod file if needed
             if (elementTableProvided.eqv..false.) then
-               write(777,'(A)') "2   ! NB, number of boundaries"
+               write(777+CK_LUN,'(A)') "2   ! NB, number of boundaries"
                ! start with the outer boundary
-               write(777,'(I3,A)') num_avalues,
+               write(777+CK_LUN,'(I3,A)') num_avalues,
      &                  "   ! num nodes on outer boundry"
                do i=1,num_avalues
-                  write(777,'(2(E15.8,2X),A)')
+                  write(777+CK_LUN,'(2(E15.8,2X),A)')
      &                     nodex(i), nodey(i)," 0.0"
                enddo
                ! now the inner boundary
-               write(777,'(I3,A)') num_avalues,
+               write(777+CK_LUN,'(I3,A)') num_avalues,
      &                   "      ! num nodes on inner boundry"
                do i=num_avalues+1,num_avalues*2
-                  write(777,'(2(E15.8,2X),A)')
+                  write(777+CK_LUN,'(2(E15.8,2X),A)')
      &                     nodex(i), nodey(i), " 0.0"
                enddo
                ! then write the list of internal (nonboundary) nodes
-               write(777,'(I12)') (np-2*num_avalues)
+               write(777+CK_LUN,'(I12)') (np-2*num_avalues)
                do i=(2*num_avalues+1),np
-                  write(777,'(2(E15.8,2X),A)')
+                  write(777+CK_LUN,'(2(E15.8,2X),A)')
      &                     nodex(i), nodey(i)," 0.0"
                enddo
-               close(777)
+               close(777+CK_LUN)
             else  !(elementTableProvided.eqv..true.)
                ! we have been provided with an element table
                if ( meshFileReadComplete.eqv..false.) then
@@ -2240,20 +2373,20 @@ C
                   ! first count the number of elements in the file
                   ne=0
                   do
-                     read(14,'(I8)',end=9295) i
+                     read(14+CK_LUN,'(I8)',end=9295) i
                      ne=ne+1
                   enddo
 9295                   continue
-                  rewind(14)
+                  rewind(14+CK_LUN)
                   ! now allocate memory and read in the element table
                   allocate(nm(ne,3)) !TODO: this effectively hardcodes nhy=3
                   cell_list_size=0
                   nhy=3
                   do i=1,ne
-                     read(14,'(3I8)') nm(i,1),nm(i,2),nm(i,3)
+                     read(14+CK_LUN,'(3I8)') nm(i,1),nm(i,2),nm(i,3)
                      cell_list_size = cell_list_size + 1 + nhy
                   enddo
-                  close(14)
+                  close(14+CK_LUN)
                   meshFileReadComplete=.true.
                endif
             endif
@@ -2262,7 +2395,7 @@ C
             ! file (fort.14)
             if (meshFileReadComplete.eqv..false.) then
                do i=1,np
-                  read(14,*) j, dx, dy
+                  read(14+CK_LUN,*) j, dx, dy
                   slam(j) = dx
                   sfea(j) = dy
                enddo
@@ -2271,7 +2404,7 @@ C
                allocate(nm(ne,3)) ! TODO: this effectively hardcodes nhy=3
                cell_list_size=0
                do i=1,ne
-                  read(14,*) j,nhy,nm(j,1),nm(j,2),nm(j,3)
+                  read(14+CK_LUN,*) j,nhy,nm(j,1),nm(j,2),nm(j,3)
                   cell_list_size = cell_list_size + 1 + nhy
                enddo
                slam0=outputLons(iout)
@@ -2287,7 +2420,7 @@ C
          write(spatial_file_name,'(I4.4,".d")') iout
          spatial_file_name = "spatial_data_"//
      &                           spatial_file_name//".d"
-         open(555,FILE=trim(spatial_file_name),STATUS='REPLACE')
+         open(555+CK_LUN,FILE=trim(spatial_file_name),STATUS='REPLACE')
 !         write(555,'(A)') '# vtk DataFile Version 3.0'
 !         write(555,'(A)') 'Vortex V and P data'
 !         write(555,'(A)') 'ASCII'
@@ -2314,13 +2447,13 @@ C
          if ((nodesFromMesh.eqv..false.).and.
      &             (elementTableProvided.eqv..false.)) then
             ! we write this out as an unstructured point set for vtk
-            write(555,'(A,I6,I7)') 'CELLS ',np,np*2
+            write(555+CK_LUN,'(A,I6,I7)') 'CELLS ',np,np*2
             do i=1,np
-               write(555,'(A,I6)') '1 ',i
+               write(555+CK_LUN,'(A,I6)') '1 ',i
             enddo
-            write(555,'(A,I6)') 'CELL_TYPES ',np
+            write(555+CK_LUN,'(A,I6)') 'CELL_TYPES ',np
             do i=1,np
-               write(555,'(A)') '1'
+               write(555+CK_LUN,'(A)') '1'
             enddo
          else
             ! write out cells (triangular elements), provided by
@@ -2382,7 +2515,7 @@ C
 !         enddo
             ! Jie: output hurricane center locations for use in MATLAB script
 104         FORMAT(f6.2,x,2(f6.2,x))            
-            write(1044,104) outputsecs(iout)/3600.d0, 
+            write(1044+CK_LUN,104) outputsecs(iout)/3600.d0, 
      &       outputLons(iout), outputLats(iout)
 !445         FORMAT(a7, x, 2(f6.2,x),a14,x,f6.2)            
 !            write(*,445) "TC at [",  slam0, sfea0, 
@@ -2396,16 +2529,16 @@ C
          do i=1,np
             call latlon2xy(sfea(i)*rad2deg-sfea0,
      &              slam(i)*rad2deg, sfea0, slam0, dx, dy)    
-            write(555,'(E15.6,2X,E15.6,2X,E15.6,2X,E15.6,2X,E15.6)')
+            write(555+CK_LUN,'(E15.6,2X,E15.6,2X,E15.6,2X,E15.6,2X,E15.6)')
      &              dx, dy, ! output slam & sfea will make the image distorted
      &              (ten2one*wvnx2(i)/0.514444d0),
      &              (ten2one*wvny2(i)/0.514444d0), 
      &               prn2(i) * RhoWatG / 100.d0
          enddo
-         close(555)
+         close(555+CK_LUN)
       end do
-      close(401)
-      close(1044)
+      close(401+CK_LUN)
+      close(1044+CK_LUN)
       !-------------------------------------------------------------
       end subroutine spatialuvp
       
@@ -2434,7 +2567,7 @@ C
       if (nodesFromFile.eqv..true.) then
          call openFileForRead(14,trim(meshFileName),errorIO)
          if (errorIO.ne.0) stop
-         read(14,*) np  
+         read(14+CK_LUN,*) np  
          write(*,*) "Total station# = ", np
          call allocPseudoMeshArrays()
 C      elseif (nodesFromMesh.eqv..true.) then
@@ -2443,7 +2576,7 @@ C         if (errorIO.ne.0) stop
 C         read(14,*) scratch  ! throw away AGRID
 C         read(14,*) ne, np
               do i=1,np 
-                  read(14,*) j, dx, dy
+                  read(14+CK_LUN,*) j, dx, dy
                   slam(i) = dx
                   sfea(i) = dy
                  write(*,*) "lon=", dx, "  lat=", dy
@@ -2452,17 +2585,17 @@ C         read(14,*) ne, np
          ! open the file where nodal coordinates, and spatial uvp
          ! will be written
          station_output_name = "station_timeseries.d"
-         open(555,FILE=trim(station_output_name),STATUS='REPLACE')
+         open(555+CK_LUN,FILE=trim(station_output_name),STATUS='REPLACE')
          
       elseif (nodesFromMesh.eqv..true.) then
          call openFileForRead(14,trim(meshFileName),errorIO)
          if (errorIO.ne.0) stop
-         read(14,*) scratch  ! throw away AGRID
-         read(14,*) ne, np  
+         read(14+CK_LUN,*) scratch  ! throw away AGRID
+         read(14+CK_LUN,*) ne, np  
          write(*,*) "Total number of nodes = ", np
          call allocPseudoMeshArrays()
               do i=1,np 
-                  read(14,*) j, dx, dy
+                  read(14+CK_LUN,*) j, dx, dy
                   slam(i) = dx
                   sfea(i) = dy
 C                  write(*,*) "lon=", dx, "  lat=", dy
@@ -2490,10 +2623,10 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
       write(*,*) ' Initialization Finished Successfully'
       ! for nws12, need to rewind wind file and start over again
       if (abs(nws).eq.12) then  ! Jie 2013/09
-         close(221)
-         close(222)
-         close(223)
-         close(224)
+         close(221+CK_LUN)
+         close(222+CK_LUN)
+         close(223+CK_LUN)
+         close(224+CK_LUN)
          
          slam(:) = -79.0d0*deg2rad ! initialize to avoid spurious error messages
          sfea(:) = 34.0d0*deg2rad
@@ -2503,7 +2636,7 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
       endif
       
       write(*,*) ' Begin to process diagnostic outputs for NWS = ', nws
-      open(1044, file='TC_centerloc.txt',status='replace')
+      open(1044+CK_LUN, file='TC_centerloc.txt',status='replace')
       
       write(*,*) "num_outputs = ", num_outputs
       do iout=1,num_outputs
@@ -2604,7 +2737,7 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
 !     &                                   maxval(sfea(:))*rad2deg, "]"
          if (nodesFromFile.eqv..true.) then
          
-                     write(555,'(f12.2,2X,150(E15.6,2X))')
+                     write(555+CK_LUN,'(f12.2,2X,150(E15.6,2X))')
      &               (outputSecs(iout)/3600.d0),
      &              ((ten2one*wvnx2(i)/0.514444d0),i=1,np),
      &              ((ten2one*wvny2(i)/0.514444d0),i=1,np), 
@@ -2615,20 +2748,20 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
              node_file_name = "mesh_timeseries_"//
      &                           node_file_name//".d"
              ! write lat/lon values to a file for plotting
-             OPEN(555,FILE=trim(node_file_name),STATUS='REPLACE')
+             OPEN(555+CK_LUN,FILE=trim(node_file_name),STATUS='REPLACE')
              do i=1,np
-                write(555,'(3(E15.6,2X))') 
+                write(555+CK_LUN,'(3(E15.6,2X))') 
      &                       ten2one*wvnx2(i)/0.514444d0,
      &                       ten2one*wvny2(i)/0.514444d0,    
      &                       prn2(i) * RhoWatG / 100.d0       
              end do
-             close(555)  
+             close(555+CK_LUN)  
              write(*,*) "Finish writing output for iout = ", iout
           else
            do i=1,np
              call latlon2xy(sfea(i)*rad2deg-sfea0,
      &              slam(i)*rad2deg, sfea0, slam0, dx, dy)    
-             write(555,'(E15.6,2X,E15.6,2X,E15.6,2X,E15.6,2X,E15.6)')
+             write(555+CK_LUN,'(E15.6,2X,E15.6,2X,E15.6,2X,E15.6,2X,E15.6)')
      &              dx, dy, ! output slam & sfea will make the image distorted
      &              (ten2one*wvnx2(i)/0.514444d0),
      &              (ten2one*wvny2(i)/0.514444d0), 
@@ -2638,8 +2771,8 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
           endif
      
       end do
-      if (nodesFromFile.eqv..true.) close(555)
-      if (nodesFromFile.eqv..true.) close(1044)
+      if (nodesFromFile.eqv..true.) close(555+CK_LUN)
+      if (nodesFromFile.eqv..true.) close(1044+CK_LUN)
       !-------------------------------------------------------------
       end subroutine nodaluvp
       
@@ -2680,12 +2813,18 @@ C-----------------------------------------------------------------------
 C
 C     jgf49.30: New variables to support command line options
       INTEGER :: IARGC   ! function to return number of command line arguments
+!$omp threadprivate(IARGC)
       INTEGER :: ARGCOUNT ! number of command line arguments
+!$omp threadprivate(ARGCOUNT)
       CHARACTER(2048) :: CMDLINEARG
+!$omp threadprivate(CMDLINEARG)
       CHARACTER(2048) :: infile ! name of input file, default is "fort.22"
+!$omp threadprivate(infile)
 
       CHARACTER(2) :: CMDLINEOPTION ! the option flag itself
+!$omp threadprivate(CMDLINEOPTION)
       integer :: i
+!$omp threadprivate(i)
 
       call initLogging()
       call setMessageSource("aswip")
@@ -2723,46 +2862,46 @@ C     jgf49.30 Initialize to reasonable defaults.
             CMDLINEOPTION = CMDLINEARG(1:2)
             SELECT CASE(CMDLINEOPTION)
             CASE("-A","-a") ! Rmw and Azimuth vals req. (360 deg/1deg incr.)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            "'."
                writeFullCircleRmaxes=.true.
             CASE("-V","-v") ! radial V and P values requested
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            "'."
                writeRadialVandP=.true.
             CASE("-S","-s") ! spatial V and P unstructured mesh vals requested
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            "'."
                writeSpatialVandP=.true.
             CASE("-B","-b") ! uvp at given node location xy
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            "'."
                writeNodaluvp=.true.     
             CASE("-C","-c") ! spatial xy&uvp,unstructured mesh vals requested
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            "'."
                writeSpatialuvp=.true.               
             CASE("-D","-d") ! don't write NWS19 fort.22
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            "'."
                writeNWS19=.false.
             CASE("-E","-e")  ! providing an element table for spatial output
                I=I+1
                CALL GETARG(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &           "'."
                elementTableFileName = trim(CMDLINEARG)
                elementTableProvided=.true.
             CASE("-F","-f")  ! selecting a particular frame to render
                I=I+1
                CALL GETARG(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) frame
             CASE("-G","-g")  ! selecting geostrophic or cyclostrophic
                I=I+1
                CALL GETARG(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) geofactor
                IF ( geofactor.NE.1 ) THEN
@@ -2772,46 +2911,46 @@ C     jgf49.30 Initialize to reasonable defaults.
             CASE("-I","-i")  ! input fort.14 file containing mesh locations
                I=I+1
                CALL GETARG(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                meshFileName = trim(CMDLINEARG)
                nodesFromMesh = .true.
             CASE("-L","-l")  ! input text file containing station locations
                I=I+1
                CALL GETARG(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                meshFileName = trim(CMDLINEARG)
                nodesFromFile = .true.               
             CASE("-M","-m")  ! method of selecting quadrant Rmax values
                I=I+1
                CALL GETARG(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) method
             CASE("-Z","-z")  ! approach of calculating quadrantVr
                I=I+1
                CALL GETARG(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) approach   
             CASE("-O","-o")  ! time increment for writing output (seconds)
                defaultOutputIncrement = .false.
                I=I+1
                CALL GETARG(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) output_increment
             CASE("-N","-n")  ! nws parameter (12, 15 or 19, or 20)
                I=I+1
                CALL GETARG(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) nws
             CASE("-P","-p")  ! percent change of rmax relative to calculated val
                I=I+1
                CALL GETARG(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) rmax_percent
                IF ( rmax_percent.ne.100 ) THEN
@@ -2820,13 +2959,13 @@ C     jgf49.30 Initialize to reasonable defaults.
             CASE("-X","-x")  ! percent change of vmax relative to given val
                I=I+1
                CALL GETARG(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) vmax_percent
             CASE("-T","-t")  ! time offset (like hotstart time)
                I=I+1
                CALL GETARG(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) timeOffset
                ihot = 1
@@ -2834,11 +2973,11 @@ C     jgf49.30 Initialize to reasonable defaults.
                I=I+1
                CALL GETARG(I,CMDLINEARG)
                READ(CMDLINEARG,*) forecastRmax
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+               write(screenunit+CK_LUN,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                IF ( forecastRmax.gt.0 ) THEN
                   constantRmax=.true.
-                  write(screenunit,*)
+                  write(screenunit+CK_LUN,*)
      &               "INFO: All quadrant Rmaxes will be set to ",
      &               forecastRmax," throughout the forecast."
                ENDIF
@@ -2846,12 +2985,12 @@ C     jgf49.30 Initialize to reasonable defaults.
                             ! ("fort.22" is default)
                I=I+1
                CALL GETARG(I,CMDLINEARG)
-               write(scratchMessage,*) "Processing '",
+               write(scratchMessage+CK_LUN,*) "Processing '",
      &            trim(CMDLINEOPTION)," ",trim(CMDLINEARG),"'."
                call screenMessage(INFO,scratchMessage)
                infile = trim(CMDLINEARG)
             CASE DEFAULT
-               write(screenunit,*) "WARNING: The command line option '",
+               write(screenunit+CK_LUN,*) "WARNING: The command line option '",
      &             CMDLINEARG(1:2),"' is not valid and will be ignored."
             END SELECT
          END DO

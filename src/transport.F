@@ -31,6 +31,7 @@ C                     boundary conditions on the ocean boundary.
 C
 C  kmd48.33bc add variables from global for boundary conditions and
 C             removed ScreenUnit
+      use CkLunMod, only : CK_LUN
       USE GLOBAL, ONLY: NODECODE, NOFF,  
      &                  HFLUX, sponge, TTBCTIME1, TTBCTIME2,TTBCRATIO,
      &                  q_heat1, q_heat2, TTBCTIMEINC, BCFLAG_TEMP 
@@ -112,6 +113,7 @@ C     Local variables
 !      REAL(8) :: NTVTot(MNFEN)      ! transport diffusion coefficients
       REAL(8) :: tempbcskp1,tempbcsk,topbcs ! top boundary conditions variables for temperature
       REAL(SZ) :: cpwater=4000.0d0          ! variable utilized in the top boundary condition for temperature
+!$omp threadprivate(cpwater)
       REAL(8) :: saltbcskp1,saltbcsk        ! top boundary conditions variables for salinity (later implementation) 
 
       REAL(SZ) :: Frtrans(MNFEN)     !right side forcing vector
@@ -156,10 +158,12 @@ C  kmd48.33bc added in variables used in the heat flux boundary condition
 ! to this end, we interpolate c (quantity to be transported) at the same z levels, and compute horizontal spatial derivatives.
       REAL(SZ) :: transN1_z, transN2_z, transN3_z, transNFirst_z  !nodal values of transport equation (at the same z)
       Real(Sz) :: diff_tol = 1.0d-5
+!$omp threadprivate(diff_tol)
       Real(Sz) :: minimum_diffusion
       Real(Sz) :: max_diffusion
       REAL(SZ) :: inarray_vertical(NFEN) 
       REAL(SZ) :: diffusion_ratio = 0.20d0
+!$omp threadprivate(diffusion_ratio)
 
 ! af 01/04/2016: Biharmonic viscosity for transport
       Real(SZ) :: DSalOrTempDXDPhiDX2A, DSalOrTempDYDPhiDY2A
@@ -427,7 +431,7 @@ C   kmd48.33 add information for the top temperature boundary condition
               TTBCTIME2=TTBCTIME1+TTBCTIMEINC
               DO NumofNodes=1,NP
                  q_heat1(NumofNodes)=q_heat2(NumofNodes)
-                 READ(38,*) NOD, q_heat2(NumofNodes)
+                 READ(38+CK_LUN,*) NOD, q_heat2(NumofNodes)
               END DO
            END IF ! ends time if loop
            TTBCRATIO=(TimeLoc-TTBCTIME1)/TTBCTIMEINC
@@ -450,7 +454,7 @@ C   kmd48.33 add information for the top temperature boundary condition
               DO NumofNodes=1,NP
                  q_heat1(NumofNodes)=q_heat2(NumofNodes)
               END DO
-              READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
+              READ(38+CK_LUN,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
               DO NumofNodes=1,NP
                 q_heat2(NumofNodes)=-TMP(NumofNodes,1)-
      &               TMP(NumofNodes,2)+TMP(NumofNodes,3)-
@@ -479,7 +483,7 @@ C   kmd48.33 add information for the top temperature boundary condition
               DO NumofNodes=1,NP
                  q_heat1(NumofNodes)=q_heat2(NumofNodes)
               END DO
-              READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
+              READ(38+CK_LUN,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
               DO NumofNodes=1,NP
                 q_heat2(NumofNodes)=TMP(NumofNodes,4)+
      &               TMP(NumofNodes,3)-TMP(NumofNodes,1)+
@@ -1300,6 +1304,7 @@ C    Adapted from Numerical Recipes chapter 2                          *
 C***********************************************************************
 c
       SUBROUTINE TRIDAG2(A,B,C,R,U,N)
+      use CkLunMod, only : CK_LUN
       USE GLOBAL, ONLY: ScreenUnit
       USE GLOBAL_3DVS, ONLY : SZ
       IMPLICIT NONE
@@ -1313,7 +1318,7 @@ c     check for zero elements on diagonal
 c     
       DO J=1,N
          if(B(j).EQ.0.) then
-            write(screenunit,*) 'Problem in Tridag Solver.  ',
+            write(screenunit+CK_LUN,*) 'Problem in Tridag Solver.  ',
      +           'B array value in row ',j,' = 0'
             stop
          endif
@@ -1324,7 +1329,7 @@ c
          GAM(J) = C(J-1)/BET
          BET=B(J)-A(J)*GAM(J)
          if (BET.EQ.0) then
-            write(screenunit,*) ' Problem in Tridag Solver.  ',
+            write(screenunit+CK_LUN,*) ' Problem in Tridag Solver.  ',
      +           ' BET  = 0.  Solver failed.'
             stop
          endif
@@ -1408,6 +1413,7 @@ C*************************************************************************
       REAL(SZ) :: f1, f2, f3, f4                 ! shape functions
       REAL(SZ) :: top, bot
       Integer  :: loop_situation = 0
+!$omp threadprivate(loop_situation)
 
       REAL(SZ) :: inarray_vertical
       Dimension  inarray_vertical ( NFEN )
@@ -1542,10 +1548,10 @@ C*************************************************************************
  100  CONTINUE
 
       IF(IDiag.EQ.2) THEN
-         WRITE(2,*) '******** cubic_vertical_interpolation **********'
-         WRITE(2,*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
+         WRITE(2+CK_LUN,*) '******** cubic_vertical_interpolation **********'
+         WRITE(2+CK_LUN,*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
      &        '      transN2_z'
-         WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,transN2_z
+         WRITE(2+CK_LUN,777) NN,J,SigmaNN,SigBelo,SigAbov,transN2_z
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
 

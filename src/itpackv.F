@@ -13,6 +13,7 @@ C  v40.02m002 - 12/22 - jjw/vjp - Vic suggested to avoid compiler conflicts   *
 C****************************************************************************** 
 C 
       MODULE ITPACKV
+      use CkLunMod, only : CK_LUN
 C
 C  vjp  9/19/99
 c
@@ -33,7 +34,6 @@ c
       USE SIZES
 #endif
 
-
 c--------------------data declarations end here-------------------------------c
 
 
@@ -49,20 +49,25 @@ c--------------------data declarations end here-------------------------------c
       real(sz) timi1,timj1,temp,time1,time2,timi2,timj2,digit1,
      *   digit2,tol
       real(sz) coef(ndim,maxnz),rhs(n),u(n),wksp(nw),rparm(12)
+      real(sz) dtnrm,c1,c2,c3,c4,gamold,rhotmp,rhoold,dnrm,con
+      logical q1
 c
 c *** begin -- itpackv common
 c
       integer in,is,isym,itmax,level,nout,numwav
       common /itcom1/ in,is,isym,itmax,level,nout,numwav
+!$omp threadprivate(/itcom1/)
 c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
+!$omp threadprivate(/itcom2/)
 c
       real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
+!$omp threadprivate(/itcom3/)
 c
 c *** end   -- itpackv common
 c
@@ -190,10 +195,23 @@ c     zeta   - stopping criterion
 c
 c ... initialize common blocks
 c
+c
+      q1=.false.
+      con=0.0d0
+      dtnrm=0.0d0
+      dnrm=0.0d0
+      c1=0.0d0
+      c2=0.0d0
+      c3=0.0d0
+      c4=0.0d0
+      gamold=0.0d0
+      rhotmp=0.0d0
+      rhoold=0.0d0
+c
       ier = 0
       level = iparm(2)
       nout = iparm(4)
-      if (level.ge.1) write (nout,10)
+      if (level.ge.1) write (nout+CK_LUN,10)
    10 format (///1x,'i t p a c k      j c g      ')
       if (iparm(1).le.0) go to 370
 c     if (iparm(11).eq.0) timj1 = timer(0.0)
@@ -201,7 +219,7 @@ c     if (iparm(11).eq.0) timj1 = timer(0.0)
 C      temp = 500.0*srelpr  !jgf46.00 commented out
       temp = 512.0D0*srelpr !jgf46.00 added
       if (zeta.ge.temp) go to 30
-      if (level.ge.1) write (nout,20) zeta,srelpr,temp
+      if (level.ge.1) write (nout+CK_LUN,20) zeta,srelpr,temp
    20 format (/1x,'*** w a r n i n g ************'//1x,
      *      '    in itpackv routine jcg'/1x,
      *      '    rparm(1) =',e10.3,' (zeta)'/1x,
@@ -219,7 +237,7 @@ c ... verify n
 c
       if (n.gt.0) go to 50
       ier = 11
-      if (level.ge.0) write (nout,40) n
+      if (level.ge.0) write (nout+CK_LUN,40) n
    40 format (/1x,'*** f a t a l     e r r o r ************'//1x,
      *        '    called from itpackv routine jcg '/1x,
      *        '    invalid matrix dimension, n =',i8)
@@ -231,7 +249,7 @@ c
    50 continue
       call scal (n,ndim,maxnz,jcoef,coef,rhs,u,wksp,ier)
       if (ier.eq.0) go to 70
-      if (level.ge.0) write (nout,60) ier
+      if (level.ge.0) write (nout+CK_LUN,60) ier
    60 format (/1x,'*** f a t a l     e r r o r ************'//1x,
      *   '    called from itpackv routine jcg '/1x,
      *   '    error detected in routine  scal  '/1x,
@@ -266,7 +284,7 @@ c
       call prbndx (n,ndim,maxnz,jcoef,iwksp,iwksp(ib2),nb,level,nout,
      *   ier)
       if (ier.eq.0) go to 110
-      if (level.ge.0) write (nout,100) ier,nb
+      if (level.ge.0) write (nout+CK_LUN,100) ier,nb
   100 format (/1x,'*** f a t a l     e r r o r ************'//1x,
      *   '    called from itpackv routine jcg  '/1x,
      *   '    error detected in routine  prbndx'/1x,
@@ -275,7 +293,7 @@ c
       go to 350
   110 if (nb.ge.0.and.nb.le.n) go to 130
       ier = 14
-      if (level.ge.0) write (nout,120) ier,nb
+      if (level.ge.0) write (nout+CK_LUN,120) ier,nb
   120 format (/1x,'*** f a t a l     e r r o r ************'//1x,
      *   '    called from itpackv routine jcg      '/1x,
      *   '    error detected in red-black subsystem index'/1x,
@@ -284,13 +302,13 @@ c
   130 if (nb.ne.0.and.nb.ne.n) go to 150
       nbo = nb
       nb = n/2
-      if (level.ge.2) write (nout,140) nbo,nb
+      if (level.ge.2) write (nout+CK_LUN,140) nbo,nb
   140 format (/10x,' nb = ',i5,' implies matrix is diagonal'/10x,
      *   ' nb reset to ',i5)
 c
 c ... permute matrix and rhs
 c
-  150 if (level.ge.2) write (nout,160) nb
+  150 if (level.ge.2) write (nout+CK_LUN,160) nb
   160 format (/10x,'order of black subsystem = ',i5,' (nb)')
       if (iparm(9).ge.0) go to 170
       call permat (n,ndim,maxnz,jcoef,coef,iwksp,wksp,iwksp(ib3))
@@ -302,7 +320,7 @@ c
   170 iparm(8) = 4*n+4*itmax
       if (nw.ge.iparm(8)) go to 190
       ier = 12
-      if (level.ge.0) write (nout,180) nw,iparm(8)
+      if (level.ge.0) write (nout+CK_LUN,180) nw,iparm(8)
   180 format (/1x,'*** f a t a l     e r r o r ************'//1x,
      *   '    called from itpackv routine jcg '/1x,
      *   '    not enough workspace at ',i10/1x,
@@ -311,10 +329,10 @@ c
 c
   190 continue
       if (level.le.2) go to 220
-      write (nout,200)
+      write (nout+CK_LUN,200)
   200 format (///1x,'in the following, rho and gamma are',
      *   ' acceleration parameters')
-      if (adapt) write (nout,210)
+      if (adapt) write (nout+CK_LUN,210)
   210 format (1x,'cme is the estimate of the largest eigenvalue of',
      *   ' the jacobi matrix')
   220 continue
@@ -344,7 +362,8 @@ c     u           = u(in)             wksp(ib2) = del(in)
 c     wksp(ib1)   = u(in-1)           wksp(ib3) = del(in-1)
 c
          call itjcg (n,ndim,maxnz,jcoef,coef,u,wksp(ib1),wksp(ib2),
-     *      wksp(ib3),wksp(ib4),wksp(ib5))
+     $      wksp(ib3),wksp(ib4),wksp(ib5),dnrm,dtnrm,c1,c2,c3,c4,gamold,
+     $        rhoold,rhotmp,q1,con)
 c
          if (halt) go to 290
          go to 260
@@ -355,7 +374,8 @@ c     u           = u(in-1)           wksp(ib2) = del(in-1)
 c     wksp(ib1)   = u(in)             wksp(ib3) = del(in)
 c
   250    call itjcg (n,ndim,maxnz,jcoef,coef,wksp(ib1),u,wksp(ib3),
-     *      wksp(ib2),wksp(ib4),wksp(ib5))
+     $     wksp(ib2),wksp(ib4),wksp(ib5),dnrm,dtnrm,c1,c2,c3,c4,gamold,
+     $     rhoold,rhotmp,q1,con)
 c
          if (halt) go to 290
   260 continue
@@ -366,7 +386,7 @@ c
 c     timi2 = timer(0.0)
 c     time1 = timi2-timi1
   270 ier = 13
-      if (level.ge.1) write (nout,280) itmax
+      if (level.ge.1) write (nout+CK_LUN,280) itmax
   280 format (/1x,'*** w a r n i n g ************'//1x,
      *   '    in itpackv routine jcg'/1x,
      *   '    failure to converge in',i5,' iterations')
@@ -378,7 +398,7 @@ c
   290 if (iparm(11).ne.0) go to 300
 c     timi2 = timer(0.0)
 c     time1 = timi2-timi1
-  300 if (level.ge.1) write (nout,310) in
+  300 if (level.ge.1) write (nout+CK_LUN,310) in
   310 format (/1x,'jcg  has converged in ',i5,' iterations')
 c
 c ... put solution into u if not already there.
@@ -428,14 +448,15 @@ c
   370 continue
       if (level.ge.3) call echall (n,ndim,maxnz,jcoef,coef,rhs,iparm,
      *   rparm,2)
-      if (ier.eq.0.and.level.ge.1) write (nout,380)
+      if (ier.eq.0.and.level.ge.1) write (nout+CK_LUN,380)
   380 format (/1x,'execution successful')
 c
       return
       end subroutine
 
 
-      subroutine itjcg (n,ndim,maxnz,jcoef,coef,u,u1,d,d1,dtwd,tri)
+      subroutine itjcg (n,ndim,maxnz,jcoef,coef,u,u1,d,d1,dtwd,tri,
+     $     dnrm,dtnrm,c1,c2,c3,c4,gamold,rhoold,rhotmp,q1,con)
       implicit none
 C
       integer n,ndim,maxnz,i,j
@@ -451,15 +472,18 @@ c *** begin -- itpackv common
 c
       integer in,is,isym,itmax,level,nout,numwav
       common /itcom1/ in,is,isym,itmax,level,nout,numwav
+!$omp threadprivate(/itcom1/)
 c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
+!$omp threadprivate(/itcom2/)
 c
       real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
+!$omp threadprivate(/itcom3/)
 c
 c *** end   -- itpackv common
 c
@@ -500,7 +524,6 @@ c     description of variables in common blocks in routine jcg
 c
 c ... compute new estimate for cme if adapt = .true.
 c
-      save
 
       if (adapt) call chgcon (itmax,tri,gamold,rhoold,1)
 c
@@ -590,15 +613,18 @@ c *** begin -- itpackv common
 c
       integer in,is,isym,itmax,level,nout,numwav
       common /itcom1/ in,is,isym,itmax,level,nout,numwav
+!$omp threadprivate(/itcom1/)
 c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
+!$omp threadprivate(/itcom2/)
 c
       real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
+!$omp threadprivate(/itcom3/)
 c
 c *** end   -- itpackv common
 c
@@ -675,7 +701,7 @@ c
    30 digit2 = -log10(abs(srelpr))
 c
    40 if ((idgts.lt.1).or.(level.le.0)) go to 70
-      write (nout,50) digit1,digit2
+      write (nout+CK_LUN,50) digit1,digit2
    50 format (/10x,'approx. no. of digits in stopping test =',
      *                f5.1,'  (digit1)'
      *        /10x,'approx. no. of digits in ratio test    =',
@@ -702,15 +728,18 @@ c *** begin -- itpackv common
 c
       integer in,is,isym,itmax,level,nout,numwav
       common /itcom1/ in,is,isym,itmax,level,nout,numwav
+!$omp threadprivate(/itcom1/)
 c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
+!$omp threadprivate(/itcom2/)
 c
       real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
+!$omp threadprivate(/itcom3/)
 c
 c *** end   -- itpackv common
 c
@@ -790,15 +819,18 @@ c *** begin -- itpackv common
 c
       integer in,is,isym,itmax,level,nout,numwav
       common /itcom1/ in,is,isym,itmax,level,nout,numwav
+!$omp threadprivate(/itcom1/)
 c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
+!$omp threadprivate(/itcom2/)
 c
       real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
+!$omp threadprivate(/itcom3/)
 c
 c *** end   -- itpackv common
 c
@@ -874,15 +906,18 @@ c *** begin -- itpackv common
 c
       integer in,is,isym,itmax,level,nout,numwav
       common /itcom1/ in,is,isym,itmax,level,nout,numwav
+!$omp threadprivate(/itcom1/)
 c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
+!$omp threadprivate(/itcom2/)
 c
       real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
+!$omp threadprivate(/itcom3/)
 c
 c *** end   -- itpackv common
 c
@@ -905,7 +940,7 @@ c
 c ... local itpackv references --
 c
 c          eigvns, eigvss
-      save
+c      save
       go to (10,20,30), ibmth
 c
 c ... jacobi conjugate gradient
@@ -956,7 +991,7 @@ c
       if (isym.ne.0) go to 80
       end1 = eigvss(ip,tri,start,zeta,itmax,ier)
       if (ier.eq.0) go to 100
-      if (level.ge.2) write (nout,70) ier
+      if (level.ge.2) write (nout+CK_LUN,70) ier
    70 format (/10x,'difficulty in computation of maximum eigenvalue'/
      *         15x,'of iteration matrix'/
      *         10x,'routine zbrent returned ier =',i5)
@@ -964,7 +999,7 @@ c
    80 continue
       end1 = eigvns(ldt,ip,tri,tri(1,3),tri(1,4),ier)
       if (ier.eq.0) go to 100
-      if (level.ge.2) write (nout,90) ier
+      if (level.ge.2) write (nout+CK_LUN,90) ier
    90 format (/10x,'difficulty in computation of maximum eigenvalue'/
      *         15x,'of iteration matrix'/
      *         10x,'routine eqrt1s returned ier =',i5)
@@ -991,7 +1026,7 @@ c     procedure and keep old value of cme.
 c
   130 adapt = .false.
       partad = .false.
-      if (level.ge.2) write (nout,140) in,start
+      if (level.ge.2) write (nout+CK_LUN,140) in,start
   140 format (/10x,'estimate of maximum eigenvalue of jacobi   '/15x,
      *   'matrix (cme) not accurate'/10x,
      *   'adaptive procedure turned off at iteration ',i5/10x,
@@ -1051,15 +1086,18 @@ c *** begin -- itpackv common
 c
       integer in,is,isym,itmax,level,nout,numwav
       common /itcom1/ in,is,isym,itmax,level,nout,numwav
+!$omp threadprivate(/itcom1/)
 c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
+!$omp threadprivate(/itcom2/)
 c
       real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
+!$omp threadprivate(/itcom3/)
 c
 c *** end   -- itpackv common
 c
@@ -1153,15 +1191,18 @@ c *** begin -- itpackv common
 c
       integer in,is,isym,itmax,level,nout,numwav
       common /itcom1/ in,is,isym,itmax,level,nout,numwav
+!$omp threadprivate(/itcom1/)
 c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
+!$omp threadprivate(/itcom2/)
 c
       real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
+!$omp threadprivate(/itcom3/)
 c
 c *** end   -- itpackv common
 c
@@ -1233,38 +1274,38 @@ c
 c     this section of echall causes printing of the linear system and
 c     the iterative parameters
 c
-      write (nout,10)
+      write (nout+CK_LUN,10)
    10 format (///5x,'the linear system is as follows')
-      write (nout,20)
+      write (nout+CK_LUN,20)
    20 format (/2x,'jcoef array')
       do 30 i = 1,n
-         write (nout,40) (jcoef(i,j),j=1,maxnz)
+         write (nout+CK_LUN,40) (jcoef(i,j),j=1,maxnz)
    30 continue
    40 format (1x,8(1x,i8))
-      write (nout,50)
+      write (nout+CK_LUN,50)
    50 format (/2x,'coef array')
       do 60 i = 1,n
-         write (nout,70) (coef(i,j),j=1,maxnz)
+         write (nout+CK_LUN,70) (coef(i,j),j=1,maxnz)
    60 continue
    70 format (1x,5(2x,g14.6))
-      write (nout,80)
+      write (nout+CK_LUN,80)
    80 format (/2x,'rhs array')
-      write (nout,90) (rhs(i),i=1,n)
+      write (nout+CK_LUN,90) (rhs(i),i=1,n)
    90 format (1x,5g16.6)
   100 if (level.le.2) return
-      write (nout,110)
+      write (nout+CK_LUN,110)
   110 format (///5x,'initial iterative parameters'/)
       go to 140
-  120 write (nout,130)
+  120 write (nout+CK_LUN,130)
   130 format (///5x,'final iterative parameters'/)
-  140 write (nout,150) iparm(1),level,iparm(3),nout,isym,iparm(6)
+  140 write (nout+CK_LUN,150) iparm(1),level,iparm(3),nout,isym,iparm(6)
   150 format (10x,'iparm(1)  =',i15,4x,'(itmax)'/
      *        10x,'iparm(2)  =',i15,4x,'(level)'/
      *        10x,'iparm(3)  =',i15,4x,'(ireset)'/
      *        10x,'iparm(4)  =',i15,4x,'(nout)'/
      *        10x,'iparm(5)  =',i15,4x,'(isym)'/
      *        10x,'iparm(6)  =',i15,4x,'(iadapt)')
-      write (nout,160) iparm(7),iparm(8),iparm(9),iparm(10),iparm(11),
+      write (nout+CK_LUN,160) iparm(7),iparm(8),iparm(9),iparm(10),iparm(11),
      *   iparm(12)
   160 format (10x,'iparm(7)  =',i15,4x,'(icase)'/
      *        10x,'iparm(8)  =',i15,4x,'(nwksp)'/
@@ -1272,14 +1313,14 @@ c
      *        10x,'iparm(10) =',i15,4x,'(iremove)'/
      *        10x,'iparm(11) =',i15,4x,'(itime)'/
      *        10x,'iparm(12) =',i15,4x,'(idgts)')
-      write (nout,170) zeta,cme,sme,ff,omega,specr
+      write (nout+CK_LUN,170) zeta,cme,sme,ff,omega,specr
   170 format (10x,'rparm(1)  =',e15.8,4x,'(zeta)'/
      *        10x,'rparm(2)  =',e15.8,4x,'(cme)'/
      *        10x,'rparm(3)  =',e15.8,4x,'(sme)'/
      *        10x,'rparm(4)  =',e15.8,4x,'(ff)'/
      *        10x,'rparm(5)  =',e15.8,4x,'(omega)'/
      *        10x,'rparm(6)  =',e15.8,4x,'(specr)')
-      write (nout,180) betab,rparm(8),rparm(9),rparm(10),rparm(11),
+      write (nout+CK_LUN,180) betab,rparm(8),rparm(9),rparm(10),rparm(11),
      *   rparm(12)
   180 format (10x,'rparm(7)  =',e15.8,4x,'(betab)'/
      *        10x,'rparm(8)  =',e15.8,4x,'(tol)'/
@@ -1386,15 +1427,18 @@ c *** begin -- itpackv common
 c
       integer in,is,isym,itmax,level,nout,numwav
       common /itcom1/ in,is,isym,itmax,level,nout,numwav
+!$omp threadprivate(/itcom1/)
 c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
+!$omp threadprivate(/itcom2/)
 c
       real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
+!$omp threadprivate(/itcom3/)
 c
 c *** end   -- itpackv common
 c
@@ -1508,7 +1552,7 @@ c
          if (delta.gt.dlam) go to 90
          if (delta.ge.(-dlam)) go to 160
          ier = 602
-         if (level.ge.1) write (nout,80)
+         if (level.ge.1) write (nout+CK_LUN,80)
    80    format (/1x,'*** w a r n i n g ************'/1x,
      *      '    in itpackv routine eqrt1s'/1x,
      *      '    parameter isw = 1 but matrix'/1x,
@@ -1540,7 +1584,7 @@ c
             if (delta.gt.dlam) go to 120
             if (delta.ge.(-dlam)) go to 160
             ier = 602
-            if (level.ge.1) write (nout,80)
+            if (level.ge.1) write (nout+CK_LUN,80)
             go to 200
   120       f = e2(i)/q
             qp = delta+f
@@ -1551,7 +1595,7 @@ c
          if (tot+s.gt.tot) go to 70
          ier = 601
          e2(1) = k
-         if (level.ge.1) write (nout,150) k
+         if (level.ge.1) write (nout+CK_LUN,150) k
   150    format (/1x,'*** w a r n i n g ************'//1x,
      *      '    in itpackv routine eqrt1s'/1x,
      *      '    successive iterates to the',i10/1x,
@@ -1590,15 +1634,18 @@ c *** begin -- itpackv common
 c
       integer in,is,isym,itmax,level,nout,numwav
       common /itcom1/ in,is,isym,itmax,level,nout,numwav
+!$omp threadprivate(/itcom1/)
 c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
+!$omp threadprivate(/itcom2/)
 c
       real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
+!$omp threadprivate(/itcom3/)
 c
 c *** end   -- itpackv common
 c
@@ -1633,14 +1680,14 @@ c
 c
 c ... print header for jcg and rscg
 c
-      write (nout,20)
+      write (nout+CK_LUN,20)
    20 format (////5x,'intermediate output after each iteration'//
      *   ' number of',3x,'convergence',5x,'cme ',10x,'rho',8x,'gamma'/
      *   ' iterations',5x,'test '//)
 c
 c ... print summary line
 c
-   30 write (nout,40) in,stptst,cme,rho,gamma
+   30 write (nout+CK_LUN,40) in,stptst,cme,rho,gamma
    40 format (3x,i5,3x,5e13.5)
       if (level.ge.4) go to 200
 c
@@ -1650,7 +1697,7 @@ c
 c
 c ... print header for ssor-si
 c
-      write (nout,60)
+      write (nout+CK_LUN,60)
    60 format (////5x,'intermediate output after each iteration'//
      *   ' number of',3x,'convergence',3x,'parameter change test',8x,
      *   'rho',8x,'gamma'/' iterations',5x,'test ',6x,'lhs(qa)',4x,
@@ -1662,11 +1709,11 @@ c
       if (imthd.eq.7) ip = 2*ip
       if (ip.lt.3) go to 80
       qtff = qt**ff
-      write (nout,40) in,stptst,qa,qtff,rho,gamma
+      write (nout+CK_LUN,40) in,stptst,qa,qtff,rho,gamma
       if (level.ge.4) go to 200
       return
 c
-   80 write (nout,90) in,stptst,rho,gamma
+   80 write (nout+CK_LUN,90) in,stptst,rho,gamma
    90 format (3x,i5,3x,e13.5,26x,2e13.5)
       if (level.ge.4) go to 200
       return
@@ -1675,7 +1722,7 @@ c
 c
 c ... print header for j-si and rs-si
 c
-      write (nout,110)
+      write (nout+CK_LUN,110)
   110 format (////5x,'intermediate output after each iteration'//
      *   ' number of',3x,'convergence',3x,'parameter change test',8x,
      *   'rho'/' iterations',5x,'test ',6x,'lhs(qa)',4x,'rhs(qt**ff)'//)
@@ -1686,11 +1733,11 @@ c
       if (imthd.eq.7) ip = 2*ip
       if (ip.lt.3) go to 130
       qtff = qt**ff
-      write (nout,40) in,stptst,qa,qtff,rho
+      write (nout+CK_LUN,40) in,stptst,qa,qtff,rho
       if (level.ge.4) go to 200
       return
 c
-  130 write (nout,90) in,stptst,rho
+  130 write (nout+CK_LUN,90) in,stptst,rho
       if (level.ge.4) go to 200
       return
 c
@@ -1700,7 +1747,7 @@ c
 c
 c ... print header for sor
 c
-      write (nout,150)
+      write (nout+CK_LUN,150)
   150 format (////5x,'intermediate output after each iteration'//
      *   ' number of',3x,'convergence',5x,'cme ',8x,'omega',7x,
      *   'spectral'/' iterations',5x,'test',34x,'radius'//)
@@ -1708,7 +1755,7 @@ c
 c ... print summary line for sor
 c
   160 continue
-      write (nout,40) in,stptst,cme,omega,specr
+      write (nout+CK_LUN,40) in,stptst,cme,omega,specr
       if (level.ge.4) go to 200
 c
       return
@@ -1719,7 +1766,7 @@ c
 c
 c ... print header for ssor-cg
 c
-      write (nout,180)
+      write (nout+CK_LUN,180)
   180 format (////5x,'intermediate output after each iteration'//
      *   ' number of',3x,'convergence',2x,' spectral',5x,'s-prime',9x,
      *   'rho',8x,'gamma'/' iterations',5x,'test ',7x,'radius'//)
@@ -1727,23 +1774,23 @@ c
 c ... print summary line for ssor-cg
 c
   190 continue
-      write (nout,40) in,stptst,specr,spr,rho,gamma
+      write (nout+CK_LUN,40) in,stptst,specr,spr,rho,gamma
       if (level.ge.4) go to 200
       return
 c
   200 if (imthd.gt.5) go to 220
-      write (nout,210) in
+      write (nout+CK_LUN,210) in
   210 format (/1x,2x,'estimate of solution at iteration ',i5)
       go to 240
-  220 write (nout,230) in
+  220 write (nout+CK_LUN,230) in
   230 format (/1x,2x,'estimate of solution at black points ',
      *   'at iteration ',i5)
   240 do 250 i = 1,n
          wk(i) = u(i)*coef(i,1)
   250 continue
-      write (nout,260) (wk(i),i=1,n)
+      write (nout+CK_LUN,260) (wk(i),i=1,n)
   260 format (1x,5g16.7)
-      write (nout,270)
+      write (nout+CK_LUN,270)
   270 format (//)
 c
       return
@@ -1758,15 +1805,18 @@ c *** begin -- itpackv common
 c
       integer in,is,isym,itmax,level,nout,numwav
       common /itcom1/ in,is,isym,itmax,level,nout,numwav
+!$omp threadprivate(/itcom1/)
 c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
+!$omp threadprivate(/itcom2/)
 c
       real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
+!$omp threadprivate(/itcom3/)
 c
 c *** end   -- itpackv common
 c
@@ -2193,7 +2243,7 @@ c
 c ...... type conflict
 c
   140 ier = 201
-      if (level.ge.0) write (nout,150)
+      if (level.ge.0) write (nout+CK_LUN,150)
   150 format (//1x,'*** f a t a l     e r r o r ************'//1x,
      *   '    in itpackv routine prbndx  '/1x,
      *   '    red-black indexing not possible')
@@ -2266,15 +2316,18 @@ c *** begin -- itpackv common
 c
       integer in,is,isym,itmax,level,nout,numwav
       common /itcom1/ in,is,isym,itmax,level,nout,numwav
+!$omp threadprivate(/itcom1/)
 c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
+!$omp threadprivate(/itcom2/)
 c
       real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
+!$omp threadprivate(/itcom3/)
 c
 c *** end   -- itpackv common
 c
@@ -2319,7 +2372,7 @@ c
 c ... fatal error -- no diagonal entry for row i.
 c
    20    ier = 402
-         if (level.ge.0) write (nout,30) i
+         if (level.ge.0) write (nout+CK_LUN,30) i
    30    format (//1x,'*** f a t a l     e r r o r ************'//1x,
      *      '    in itpackv routine scal    '/1x,
      *      '    no diagonal entry in row',i10)
@@ -2342,7 +2395,7 @@ c
    70    continue
          rhs(i) = -rhs(i)
          nsgncg = nsgncg+1
-         if (level.ge.5) write (nout,80) i
+         if (level.ge.5) write (nout+CK_LUN,80) i
    80    format (//1x,'*** n o t e ***'//1x,
      *      '    in itpackv routine scal'/1x,
      *      '    equation ',i10,' has been negated')
@@ -2351,7 +2404,7 @@ c
 c ... fatal error -- zero diagonal element for row i.
 c
    90    ier = 401
-         if (level.ge.0) write (nout,100) i
+         if (level.ge.0) write (nout+CK_LUN,100) i
   100    format (//1x,'*** f a t a l     e r r o r ************'//1x,
      *      '    in itpackv routine scal    '/1x,
      *      '    diagonal entry in row ',i10,' is zero')
@@ -2479,19 +2532,19 @@ c
 c        if (n .le. 0) return
 c
       kupper = min0(n,4)
-      if (iswt.eq.1) write (nout,10)
+      if (iswt.eq.1) write (nout+CK_LUN,10)
    10 format (//5x,'residual vector')
-      if (iswt.eq.2) write (nout,20)
+      if (iswt.eq.2) write (nout+CK_LUN,20)
    20 format (//5x,'solution vector')
-      write (nout,30) (i,i=1,kupper)
+      write (nout+CK_LUN,30) (i,i=1,kupper)
    30 format (10x,4i15)
-      write (nout,40)
+      write (nout+CK_LUN,40)
    40 format (10x,65('-')/)
 c
       do 60 j = 1,n,4
          kupper = min0(j+3,n)
          jm1 = j-1
-         write (nout,50) jm1,(v(k),k=j,kupper)
+         write (nout+CK_LUN,50) jm1,(v(k),k=j,kupper)
    50    format (4x,i5,'+  ',4e15.5)
    60 continue
 c
@@ -2509,15 +2562,18 @@ c *** begin -- itpackv common
 c
       integer in,is,isym,itmax,level,nout,numwav
       common /itcom1/ in,is,isym,itmax,level,nout,numwav
+!$omp threadprivate(/itcom1/)
 c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
+!$omp threadprivate(/itcom2/)
 c
       real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
+!$omp threadprivate(/itcom3/)
 c
 c *** end   -- itpackv common
 c
@@ -2748,7 +2804,7 @@ c
    90 ier = 501
       a = c
       maxfn = ic
-      if (level.ge.1) write (nout,100) maxfn
+      if (level.ge.1) write (nout+CK_LUN,100) maxfn
   100 format (/1x,'*** w a r n i n g ************'//1x,
      *   '    in itpackv routine zbrent'/1x,
      *   '    algorithm failed to converge'/1x,
@@ -2760,7 +2816,7 @@ c                                  the same sign
 c
   110 ier = 502
       maxfn = ic
-      if (level.ge.1) write (nout,120)
+      if (level.ge.1) write (nout+CK_LUN,120)
   120 format (/1x,'*** w a r n i n g ************'//1x,
      *   '    in itpackv routine zbrent  '/1x,
      *   '    f(a) and f(b) have same sign   ')

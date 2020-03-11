@@ -57,35 +57,53 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C******************************************************************************
 
       module gwce
+      use CkLunMod, only : CK_LUN
       use sizes, only : sz
       use global, only : DEBUG, INFO, WARNING, ERROR, logMessage, 
      &   setMessageSource, unsetMessageSource, allMessage
       implicit none
 
       real(sz),allocatable :: lsxx(:),lsxy(:),lsyx(:),lsyy(:)
+!$omp threadprivate(lsxx,lsxy,lsyx,lsyy)
       real(sz),allocatable :: etas0(:)      
+!$omp threadprivate(etas0)
       real(sz),allocatable :: eta0(:)
+!$omp threadprivate(eta0)
       real(sz) :: convcr
+!$omp threadprivate(convcr)
       integer :: isldia
+!$omp threadprivate(isldia)
       integer :: itmax
+!$omp threadprivate(itmax)
       real(sz) :: a00,b00,c00
+!$omp threadprivate(a00,b00,c00)
       real(sz) :: dt2
+!$omp threadprivate(dt2)
       real(sz) :: ga00 
+!$omp threadprivate(ga00)
 
 C     Arrays used by JCG iterative solver
       integer :: nw
+!$omp threadprivate(nw)
       integer, allocatable :: iwksp(:)
+!$omp threadprivate(iwksp)
       real(sz), allocatable :: wksp(:)
+!$omp threadprivate(wksp)
       integer, allocatable :: iparm(:)
+!$omp threadprivate(iparm)
       real(sz), allocatable :: rparm(:)
+!$omp threadprivate(rparm)
       integer :: numitr ! number of iterations per timestep 
+!$omp threadprivate(numitr)
 
 cjjw...added 2 lines
 C.....for matrix conditioning,global to allow for reading in from hotstart file
       REAL(SZ) :: EP !jgf45.08 EP global for predictor-corrector
+!$omp threadprivate(EP)
       !
       ! for managing datasets for aperiodic elevation specified boundaries (fort.19)
       real(sz) :: etime1, etime2, etiminc 
+!$omp threadprivate(etime1,etime2,etiminc)
 
       ! jgf52.30.04: Allow the inverted barometer condition to be 
       ! activated on elevation-specified boundaries so that low pressure
@@ -93,6 +111,7 @@ C.....for matrix conditioning,global to allow for reading in from hotstart file
       ! This is normally .false. but can be set to .true. in the fort.15
       ! in the metControl namelist. 
       logical :: invertedBarometerOnElevationBoundary = .false.
+!$omp threadprivate(invertedBarometerOnElevationBoundary)
 
       contains
 
@@ -486,26 +505,26 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
                IF(COEF(I,1).EQ.0.d0) COEF(I,1)=EP
                IF(COEF(I,1).LT.0.d0) THEN                  
                   IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
-     &              WRITE(ScreenUnit,1019) I,COEF(I,1)
-                  WRITE(16,1019) I,COEF(I,1)
+     &              WRITE(ScreenUnit+CK_LUN,1019) I,COEF(I,1)
+                  WRITE(16+CK_LUN,1019) I,COEF(I,1)
                   DIE = .TRUE.
                ENDIF
             ENDDO
             IF (DIE) THEN
                ! jgfdebug
-               open(899,file='debug.txt',status='replace',action='write')
+               open(899+CK_LUN,file='debug.txt',status='replace',action='write')
                   do i=1,np
                      if (coef(i,1).lt.0.d0) then
                         do j=2,nneighele(i)
                            if (neitabele(i,j).ne.0) then
-                              write(6,
+                              write(6+CK_LUN,
      & '("Node ",i0," element ",i0," area=",f15.7)') i, j, 
      &  areas(neitabele(i,j))
                            endif
                         enddo
                      endif
                   enddo
-               close(899)
+               close(899+CK_LUN)
                ! end jgfdebug
                CALL gwceTerminate()
             ENDIF
@@ -530,8 +549,8 @@ C.....      Check that all the diagonal elements in "COEFD" are > 0.
                IF(COEFD(I).EQ.0.d0) COEFD(I)=EP
                IF(COEFD(I).LT.0.d0) THEN
                   IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
-     &              WRITE(ScreenUnit,1019) I,COEFD(I)
-                  WRITE(16,1019) I,COEFD(I)
+     &              WRITE(ScreenUnit+CK_LUN,1019) I,COEFD(I)
+                  WRITE(16+CK_LUN,1019) I,COEFD(I)
  1019             FORMAT(/,1X,'!!!!!!!!  ERROR  !!!!!!!',
      &              /,1X,'THE DIAGONAL TERM IN THE EQUATION FOR NODE ',I10,
      &                '= ',E15.6,' AND IS <= 0',/)
@@ -1140,7 +1159,7 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
                ETIME2=ETIME1+ETIMINC
                DO J=1,NETA
                   ESBIN1(J)=ESBIN2(J)
-                  READ(19,*) ESBIN2(J)
+                  READ(19+CK_LUN,*) ESBIN2(J)
                END DO
             ENDIF
             ETRATIO=(TimeLoc-ETIME1)/ETIMINC
@@ -2213,7 +2232,7 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
             ETIME2=ETIME1+ETIMINC
             DO J=1,NETA
                ESBIN1(J)=ESBIN2(J)
-               READ(19,*) ESBIN2(J)
+               READ(19+CK_LUN,*) ESBIN2(J)
             END DO
          ENDIF
          ETRATIO=(TimeLoc-ETIME1)/ETIMINC
@@ -2514,7 +2533,9 @@ C
       real(sz), intent(inout) :: Eta2lim(LocNP)
       REAL(8) :: AreaEle
       REAL(sz), ALLOCATABLE, SAVE :: elevSum(:) ! used if elemental slope limiter is active
+!$omp threadprivate(elevSum)
       LOGICAL, SAVE :: firstCall = .true.
+!$omp threadprivate(firstCall)
 
 
       call setMessageSource("check_slopes")

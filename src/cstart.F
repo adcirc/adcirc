@@ -12,6 +12,7 @@ C******************************************************************************
 C
       SUBROUTINE COLDSTART()
 C
+      use CkLunMod, only : CK_LUN
       USE SIZES
       USE GLOBAL
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
@@ -89,16 +90,16 @@ C...    read in the second depth dp2 for btime2
             CALL ADCIRC_Terminate()
          ENDIF
 
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1976)
-         WRITE(16,1976)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
+         WRITE(16+CK_LUN,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1976)
+         WRITE(16+CK_LUN,1976)
  1976    FORMAT(/,1X,'TIME VARYING BATHYMETRY INFORMATION ',
      &        'READ FROM UNIT 141',/)
 
          IF (ABS(NDDT).EQ.1) THEN
             DO I=1,NP
-               READ(141,*) IJK,DP2(IJK)
+               READ(141+CK_LUN,*) IJK,DP2(IJK)
             ENDDO
          ENDIF
          IF (ABS(NDDT).EQ.2) THEN
@@ -148,21 +149,21 @@ C...  REQUIRES THE USE OF THE UNIT 19 FILE.
 C...
 
       IF((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1977)
-         WRITE(16,1977)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
+         WRITE(16+CK_LUN,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1977)
+         WRITE(16+CK_LUN,1977)
  1977    FORMAT(/,1X,'ELEVATION SPECIFIED INFORMATION READ FROM UNIT ',
      &        '19',/)
          ! NCSU Subdomain Modeling
          if (subdomainOn.eqv..false.) then
-            OPEN(19,FILE=TRIM(INPUTDIR)//'/'//'fort.19')
-            READ(19,*) ETIMINC
+            OPEN(19+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.19')
+            READ(19+CK_LUN,*) ETIMINC
             DO J=1,NETA
-               READ(19,*) ESBIN1(J)
+               READ(19+CK_LUN,*) ESBIN1(J)
             END DO
             DO J=1,NETA
-               READ(19,*) ESBIN2(J)
+               READ(19+CK_LUN,*) ESBIN2(J)
             END DO
             ETIME1 = STATIM*86400.D0
             ETIME2 = ETIME1 + ETIMINC
@@ -178,26 +179,26 @@ C
       END DO
 
       IF((NFLUXF.EQ.1).AND.(NFFR.EQ.0)) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1979)
-         WRITE(16,1979)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
+         WRITE(16+CK_LUN,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1979)
+         WRITE(16+CK_LUN,1979)
  1979    FORMAT(/,1X,'NORMAL FLOW INFORMATION READ FROM UNIT 20',/)
-         OPEN(20,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
-         READ(20,*) FTIMINC
+         OPEN(20+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
+         READ(20+CK_LUN,*) FTIMINC
 
          DO J=1,NVEL
             QNIN1(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &          .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
-               READ(20,*) QNIN1(J)
+               READ(20+CK_LUN,*) QNIN1(J)
             ENDIF
          END DO
          DO J=1,NVEL
             QNIN2(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
-               READ(20,*) QNIN2(J)
+               READ(20+CK_LUN,*) QNIN2(J)
             ENDIF
          END DO
          QTIME1 = STATIM*86400.D0
@@ -228,22 +229,22 @@ C        momentum equations
          ENDIF
          IF ( metOutputOn .AND. nonMetOutputOff ) THEN
             IF ((NSCREEN.NE.0).AND.MYPROC.EQ.0) THEN
-               WRITE(ScreenUnit,*)
+               WRITE(ScreenUnit+CK_LUN,*)
      &      'INFO: Only meteorological output was requested. ADCIRC'
-               WRITE(ScreenUnit,*)
+               WRITE(ScreenUnit+CK_LUN,*)
      &      'will not solve the GWCE or momentum equations.'
              ENDIF
-             WRITE(16,*)
+             WRITE(16+CK_LUN,*)
      &      'INFO: Only meteorological output was requested. ADCIRC'
-             WRITE(16,*)
+             WRITE(16+CK_LUN,*)
      &      'will not solve the GWCE or momentum equations.'
             METONLY = .TRUE. ! set flag
          ENDIF
 
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1980)
-         WRITE(16,1980)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
+         WRITE(16+CK_LUN,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1980)
+         WRITE(16+CK_LUN,1980)
  1980    FORMAT(/,1X,'WIND (AND PRESSURE) INFORMATION READ.',/)
 
          call coldstartMeteorologicalForcing(nws)
@@ -258,7 +259,7 @@ C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
          RSTIME1 = STATIM*86400.D0
          RSTIME2 = RSTIME1+RSTIMINC
          IF(NRS.EQ.1) THEN
-           OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
+           OPEN(23+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
            CALL RSGET(RSNX1,RSNY1)
            CALL RSGET(RSNX2,RSNY2)
          ENDIF
@@ -267,10 +268,10 @@ C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
            CALL RS2GET(RSNX1,RSNY1,NP)
            CALL RS2GET(RSNX2,RSNY2,NP)
          ENDIF
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1981)
-         WRITE(16,1981)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
+         WRITE(16+CK_LUN,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1981)
+         WRITE(16+CK_LUN,1981)
  1981    FORMAT(/,1X,'RADIATION STRESS INFORMATION READ.',/)
       ENDIF
 
@@ -278,10 +279,10 @@ C... v49.64.01 - tcm added
 C...INPUT ICE CONCENTRATION INFORMATION FROM UNIT 25
 C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
       IF (NCICE.GE.1) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,2980)
-         WRITE(16,2980)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
+         WRITE(16+CK_LUN,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,2980)
+         WRITE(16+CK_LUN,2980)
  2980    FORMAT(/,1X,'ICE CONCENTRATION INFORMATION READ.',/)
 
          IF(NCICE.EQ.12) THEN
@@ -327,12 +328,12 @@ C...
       ENDIF
 
       IF(ABS(NOUTE).EQ.2) THEN
-         OPEN(61,FILE=TRIM(LOCALDIR)//'/'//'fort.61',
+         OPEN(61+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.61',
      &           ACCESS='DIRECT',RECL=NBYTE)
          call writeBinaryOutputFileHeader(61, 1, IESTP,
      &      NTRSPE, NSTAE, NSPOOLE)
 
-         CLOSE(61)
+         CLOSE(61+CK_LUN)
          ENDIF
 
 C...
@@ -356,11 +357,11 @@ C...
       ENDIF
 
       IF(ABS(NOUTV).EQ.2) THEN
-         OPEN(62,FILE=TRIM(LOCALDIR)//'/'//'fort.62',
+         OPEN(62+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.62',
      &           ACCESS='DIRECT',RECL=NBYTE)
          call writeBinaryOutputFileHeader(62, 2, IVSTP,
      &      NTRSPV, NSTAV, NSPOOLV)
-         CLOSE(62)
+         CLOSE(62+CK_LUN)
       ENDIF
 
 C...
@@ -384,11 +385,11 @@ C...
       ENDIF
 
       IF(ABS(NOUTC).EQ.2) THEN
-         OPEN(81,FILE=TRIM(LOCALDIR)//'/'//'fort.81',
+         OPEN(81+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.81',
      &           ACCESS='DIRECT',RECL=NBYTE)
          call writeBinaryOutputFileHeader(81, 1, ICSTP,
      &      NTRSPC, NSTAC, NSPOOLC)
-         CLOSE(81)
+         CLOSE(81+CK_LUN)
       ENDIF
 
 C...
@@ -433,36 +434,36 @@ C...
       ENDIF
 
       IF(ABS(NOUTM).EQ.2) THEN
-         OPEN(71,FILE=TRIM(LOCALDIR)//'/'//'fort.71',
+         OPEN(71+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.71',
      &           ACCESS='DIRECT',RECL=NBYTE)
-         OPEN(72,FILE=TRIM(LOCALDIR)//'/'//'fort.72',
+         OPEN(72+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.72',
      &           ACCESS='DIRECT',RECL=NBYTE)
 ! V49.64.01 TCM -ADDED ICE STATIONS
          IF(NCICE.NE.0) THEN
-            OPEN(91,FILE=TRIM(LOCALDIR)//'/'//'fort.91',
+            OPEN(91+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.91',
      &           ACCESS='DIRECT',RECL=NBYTE)
          ENDIF
          IF(NBYTE.EQ.4) THEN
             DO I=1,8
-               WRITE(71,REC=IPSTP+I) RDES4(I)
-               WRITE(72,REC=IWSTP+I) RDES4(I)
-               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RDES4(I)
+               WRITE(71+CK_LUN,REC=IPSTP+I) RDES4(I)
+               WRITE(72+CK_LUN,REC=IWSTP+I) RDES4(I)
+               IF (NCICE.NE.0) WRITE(91+CK_LUN,REC=IICESTP+I) RDES4(I)
             ENDDO
             IPSTP=IPSTP+8
             IWSTP=IWSTP+8
             IF (NCICE.NE.0) IICESTP = IICESTP+8
             DO I=1,6
-               WRITE(71,REC=IPSTP+I) RID4(I)
-               WRITE(72,REC=IWSTP+I) RID4(I)
-               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RID4(I)
+               WRITE(71+CK_LUN,REC=IPSTP+I) RID4(I)
+               WRITE(72+CK_LUN,REC=IWSTP+I) RID4(I)
+               IF (NCICE.NE.0) WRITE(91+CK_LUN,REC=IICESTP+I) RID4(I)
             ENDDO
             IPSTP=IPSTP+6
             IWSTP=IWSTP+6
             IF (NCICE.NE.0) IICESTP = IICESTP+6
             DO I=1,6
-               WRITE(71,REC=IPSTP+I) AID4(I)
-               WRITE(72,REC=IWSTP+I) AID4(I)
-               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) AID4(I)
+               WRITE(71+CK_LUN,REC=IPSTP+I) AID4(I)
+               WRITE(72+CK_LUN,REC=IWSTP+I) AID4(I)
+               IF (NCICE.NE.0) WRITE(91+CK_LUN,REC=IICESTP+I) AID4(I)
             ENDDO
             IPSTP=IPSTP+6
             IWSTP=IWSTP+6
@@ -470,53 +471,53 @@ C...
          ENDIF
          IF(NBYTE.EQ.8) THEN
             DO I=1,4
-               WRITE(71,REC=IPSTP+I) RDES8(I)
-               WRITE(72,REC=IWSTP+I) RDES8(I)
-               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RDES8(I)
+               WRITE(71+CK_LUN,REC=IPSTP+I) RDES8(I)
+               WRITE(72+CK_LUN,REC=IWSTP+I) RDES8(I)
+               IF (NCICE.NE.0) WRITE(91+CK_LUN,REC=IICESTP+I) RDES8(I)
             ENDDO
             IPSTP=IPSTP+4
             IWSTP=IWSTP+4
             IF (NCICE.NE.0) IICESTP = IICESTP+4
             DO I=1,3
-               WRITE(71,REC=IPSTP+I) RID8(I)
-               WRITE(72,REC=IWSTP+I) RID8(I)
-               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RID8(I)
+               WRITE(71+CK_LUN,REC=IPSTP+I) RID8(I)
+               WRITE(72+CK_LUN,REC=IWSTP+I) RID8(I)
+               IF (NCICE.NE.0) WRITE(91+CK_LUN,REC=IICESTP+I) RID8(I)
             ENDDO
             IPSTP=IPSTP+3
             IWSTP=IWSTP+3
             IF (NCICE.NE.0) IICESTP = IICESTP+3
             DO I=1,3
-               WRITE(71,REC=IPSTP+I) AID8(I)
-               WRITE(72,REC=IWSTP+I) AID8(I)
-               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) AID8(I)
+               WRITE(71+CK_LUN,REC=IPSTP+I) AID8(I)
+               WRITE(72+CK_LUN,REC=IWSTP+I) AID8(I)
+               IF (NCICE.NE.0) WRITE(91+CK_LUN,REC=IICESTP+I) AID8(I)
             ENDDO
             IPSTP=IPSTP+3
             IWSTP=IWSTP+3
             IF (NCICE.NE.0) IICESTP = IICESTP+3
          ENDIF
-         WRITE(71,REC=IPSTP+1) NTRSPM
-         WRITE(71,REC=IPSTP+2) NSTAM
-         WRITE(71,REC=IPSTP+3) DT*NSPOOLM
-         WRITE(71,REC=IPSTP+4) NSPOOLM
-         WRITE(71,REC=IPSTP+5) 1
-         WRITE(72,REC=IWSTP+1) NTRSPM
-         WRITE(72,REC=IWSTP+2) NSTAM
-         WRITE(72,REC=IWSTP+3) DT*NSPOOLM
-         WRITE(72,REC=IWSTP+4) NSPOOLM
-         WRITE(72,REC=IWSTP+5) 2
+         WRITE(71+CK_LUN,REC=IPSTP+1) NTRSPM
+         WRITE(71+CK_LUN,REC=IPSTP+2) NSTAM
+         WRITE(71+CK_LUN,REC=IPSTP+3) DT*NSPOOLM
+         WRITE(71+CK_LUN,REC=IPSTP+4) NSPOOLM
+         WRITE(71+CK_LUN,REC=IPSTP+5) 1
+         WRITE(72+CK_LUN,REC=IWSTP+1) NTRSPM
+         WRITE(72+CK_LUN,REC=IWSTP+2) NSTAM
+         WRITE(72+CK_LUN,REC=IWSTP+3) DT*NSPOOLM
+         WRITE(72+CK_LUN,REC=IWSTP+4) NSPOOLM
+         WRITE(72+CK_LUN,REC=IWSTP+5) 2
          IPSTP=IPSTP+5
          IWSTP=IWSTP+5
-         CLOSE(71)
-         CLOSE(72)
+         CLOSE(71+CK_LUN)
+         CLOSE(72+CK_LUN)
 !  v49.64.01 tcm - added ice station support
          IF(NCICE.NE.0) THEN
-            WRITE(91,REC=IICESTP+1) NTRSPM
-            WRITE(91,REC=IICESTP+2) NSTAM
-            WRITE(91,REC=IICESTP+3) DT*NSPOOLM
-            WRITE(91,REC=IICESTP+4) NSPOOLM
-            WRITE(91,REC=IICESTP+5) 1
+            WRITE(91+CK_LUN,REC=IICESTP+1) NTRSPM
+            WRITE(91+CK_LUN,REC=IICESTP+2) NSTAM
+            WRITE(91+CK_LUN,REC=IICESTP+3) DT*NSPOOLM
+            WRITE(91+CK_LUN,REC=IICESTP+4) NSPOOLM
+            WRITE(91+CK_LUN,REC=IICESTP+5) 1
             IICESTP = IICESTP + 5
-            CLOSE(91)
+            CLOSE(91+CK_LUN)
          ENDIF
       ENDIF
 
@@ -544,11 +545,11 @@ C...
       ENDIF
 
       IF ((NDDT.NE.0).AND.(ABS(NOUTE).EQ.2)) THEN
-         OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
+         OPEN(75+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
      &           ACCESS='DIRECT',RECL=NBYTE)
          call writeBinaryOutputFileHeader(75, 1, IBSTP,
      &      NTRSPE, NSTAE, NSPOOLE)
-         CLOSE(75)
+         CLOSE(75+CK_LUN)
       ENDIF
 
 C...
@@ -651,11 +652,11 @@ Casey 090302: Corrected the unit number from 10 to 90.
 
 
       IF(ABS(NOUTGE).EQ.2) THEN
-         OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
+         OPEN(63+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
      &           ACCESS='DIRECT',RECL=NBYTE)
          call writeBinaryOutputFileHeader(63, 1, IGEP,
      &      NDSETSE, NP, NSPOOLGE)
-         CLOSE(63)
+         CLOSE(63+CK_LUN)
       ENDIF
 C...
 C....INITIALIZE GLOBAL VELOCITY SPOOL COUNTER
@@ -681,11 +682,11 @@ C...
       ENDIF
 
       IF(ABS(NOUTGV).EQ.2) THEN
-         OPEN(64,FILE=TRIM(LOCALDIR)//'/'//'fort.64',
+         OPEN(64+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.64',
      &        ACCESS='DIRECT',RECL=NBYTE)
          call writeBinaryOutputFileHeader(64, 2, IGVP,
      &      NDSETSV, NP, NSPOOLGV)
-         CLOSE(64)
+         CLOSE(64+CK_LUN)
        ENDIF
 
 Cobell - Open the fort.77 (weir elevation change) file
@@ -698,11 +699,11 @@ Cobell - Open the fort.77 (weir elevation change) file
                 IG_TVW = 2
             ENDIF   
             IF(ABS(NOUT_TVW).EQ.2)THEN
-               OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
+               OPEN(77+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
      &              ACCESS='DIRECT',RECL=NBYTE)
                call writeBinaryOutputFileHeader(77, 2, IG_TVW,
      &            NDSETS_TVW, NP, NSPOOL_TVW)
-               CLOSE(77)
+               CLOSE(77+CK_LUN)
             ENDIF    
          ENDIF    
             
@@ -753,36 +754,36 @@ C...
       ENDIF
 
       IF(ABS(NOUTGW).EQ.2) THEN
-         OPEN(73,file=trim(LOCALDIR)//'/'//'fort.73',
+         OPEN(73+CK_LUN,file=trim(LOCALDIR)//'/'//'fort.73',
      &           ACCESS='DIRECT',RECL=NByte)
-         OPEN(74,FILE=TRIM(LOCALDIR)//'/'//'fort.74',
+         OPEN(74+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.74',
      &           ACCESS='DIRECT',RECL=NByte)
 ! tcm v49.64.01 added for ice
          IF(NCICE.NE.0) THEN
-            OPEN(93,FILE=TRIM(LOCALDIR)//'/'//'fort.93',
+            OPEN(93+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.93',
      &           ACCESS='DIRECT',RECL=NByte)
          ENDIF
          IF(NBYTE.EQ.4) THEN
             DO I=1,8
-               write(73,rec=igpp+i) rdes4(i)
-               WRITE(74,REC=IGWP+I) RDES4(I)
-               if(ncice.ne.0) write(93,rec=igip+i) rdes4(i)
+               write(73+CK_LUN,rec=igpp+i) rdes4(i)
+               WRITE(74+CK_LUN,REC=IGWP+I) RDES4(I)
+               if(ncice.ne.0) write(93+CK_LUN,rec=igip+i) rdes4(i)
             ENDDO
             igpp=igpp+8
             IGWP=IGWP+8
             if(ncice.ne.0) igip = igip+8
             DO I=1,6
-               write(73,rec=igpp+i) rid4(i)
-               WRITE(74,REC=IGWP+I) RID4(I)
-               if(ncice.ne.0) write(93,rec=igip+i) rid4(i)
+               write(73+CK_LUN,rec=igpp+i) rid4(i)
+               WRITE(74+CK_LUN,REC=IGWP+I) RID4(I)
+               if(ncice.ne.0) write(93+CK_LUN,rec=igip+i) rid4(i)
             ENDDO
             igpp=igpp+6
             IGWP=IGWP+6
             if(ncice.ne.0) igip = igip+6
             DO I=1,6
-               write(73,rec=igpp+i) aid4(i)
-               WRITE(74,REC=IGWP+I) AID4(I)
-               if(ncice.ne.0) write(93,rec=igip+i) aid4(i)
+               write(73+CK_LUN,rec=igpp+i) aid4(i)
+               WRITE(74+CK_LUN,REC=IGWP+I) AID4(I)
+               if(ncice.ne.0) write(93+CK_LUN,rec=igip+i) aid4(i)
             ENDDO
             igpp=igpp+6
             IGWP=IGWP+6
@@ -790,52 +791,52 @@ C...
          ENDIF
          IF(NBYTE.EQ.8) THEN
             DO I=1,4
-               write(73,rec=igpp+i) rdes8(i)
-               WRITE(74,REC=IGWP+I) RDES8(I)
-               if(ncice.ne.0) write(93,rec=igip+i) rdes8(i)
+               write(73+CK_LUN,rec=igpp+i) rdes8(i)
+               WRITE(74+CK_LUN,REC=IGWP+I) RDES8(I)
+               if(ncice.ne.0) write(93+CK_LUN,rec=igip+i) rdes8(i)
             ENDDO
             igpp=igpp+4
             IGWP=IGWP+4
             if(ncice.ne.0) igip = igip+4
             DO I=1,3
-               write(73,rec=igpp+i) rid8(i)
-               WRITE(74,REC=IGWP+I) RID8(I)
-               if(ncice.ne.0) write(93,rec=igip+i) rid8(i)
+               write(73+CK_LUN,rec=igpp+i) rid8(i)
+               WRITE(74+CK_LUN,REC=IGWP+I) RID8(I)
+               if(ncice.ne.0) write(93+CK_LUN,rec=igip+i) rid8(i)
             ENDDO
             igpp=igpp+3
             IGWP=IGWP+3
             if(ncice.ne.0) igip = igip+3
             DO I=1,3
-               write(73,rec=igpp+i) aid8(i)
-               WRITE(74,REC=IGWP+I) AID8(I)
-               if(ncice.ne.0) write(93,rec=igip+i) aid8(i)
+               write(73+CK_LUN,rec=igpp+i) aid8(i)
+               WRITE(74+CK_LUN,REC=IGWP+I) AID8(I)
+               if(ncice.ne.0) write(93+CK_LUN,rec=igip+i) aid8(i)
             ENDDO
             igpp=igpp+3
             IGWP=IGWP+3
             if(ncice.ne.0) igip = igip+3
          ENDIF
-         write(73,rec=igpp+1) ndsetsw
-         write(73,rec=igpp+2) np
-         write(73,rec=igpp+3) dt*nspoolgw
-         write(73,rec=igpp+4) nspoolgw
-         write(73,rec=igpp+5) 2
+         write(73+CK_LUN,rec=igpp+1) ndsetsw
+         write(73+CK_LUN,rec=igpp+2) np
+         write(73+CK_LUN,rec=igpp+3) dt*nspoolgw
+         write(73+CK_LUN,rec=igpp+4) nspoolgw
+         write(73+CK_LUN,rec=igpp+5) 2
          igpp=igpp+5
-         close(73)
-         WRITE(74,REC=IGWP+1) NDSETSW
-         WRITE(74,REC=IGWP+2) NP
-         WRITE(74,REC=IGWP+3) DT*NSPOOLGW
-         WRITE(74,REC=IGWP+4) NSPOOLGW
-         WRITE(74,REC=IGWP+5) 2
+         close(73+CK_LUN)
+         WRITE(74+CK_LUN,REC=IGWP+1) NDSETSW
+         WRITE(74+CK_LUN,REC=IGWP+2) NP
+         WRITE(74+CK_LUN,REC=IGWP+3) DT*NSPOOLGW
+         WRITE(74+CK_LUN,REC=IGWP+4) NSPOOLGW
+         WRITE(74+CK_LUN,REC=IGWP+5) 2
          IGWP=IGWP+5
-         CLOSE(74)
+         CLOSE(74+CK_LUN)
          IF(NCICE.NE.0) THEN
-            WRITE(93,REC=IGIP+1) NDSETSW
-            WRITE(93,REC=IGIP+2) NP
-            WRITE(93,REC=IGIP+3) DT*NSPOOLGW
-            WRITE(93,REC=IGIP+4) NSPOOLGW
-            WRITE(93,REC=IGIP+5) 2
+            WRITE(93+CK_LUN,REC=IGIP+1) NDSETSW
+            WRITE(93+CK_LUN,REC=IGIP+2) NP
+            WRITE(93+CK_LUN,REC=IGIP+3) DT*NSPOOLGW
+            WRITE(93+CK_LUN,REC=IGIP+4) NSPOOLGW
+            WRITE(93+CK_LUN,REC=IGIP+5) 2
             IGIP=IGIP+5
-            CLOSE(93)
+            CLOSE(93+CK_LUN)
          ENDIF
       ENDIF
 
@@ -855,11 +856,11 @@ Casey 090302: Added the output of radiation stress gradients.
             IGRadS=2
          ENDIF
          IF(ABS(NOUTGW).EQ.2) THEN
-            OPEN(164,FILE=TRIM(LOCALDIR)//'/'//'rads.64',
+            OPEN(164+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'rads.64',
      &              ACCESS='DIRECT',RECL=NByte)
             call writeBinaryOutputFileHeader(164, 2, IGRadS,
      &            NDSETSW, NP, NSPOOLGW)
-            CLOSE(164)
+            CLOSE(164+CK_LUN)
          ENDIF
       endif
 !#endif
@@ -875,19 +876,19 @@ C...
       IGCP=0
 
       IF(ABS(NOUTGC).EQ.1) THEN
-         OPEN(83,FILE=TRIM(INPUTDIR)//'/'//'fort.83')
-         WRITE(83,3220) RUNDES,RUNID,AGRID
-         WRITE(83,3645) NDSETSC,NP,DTDP*NSPOOLGC,NSPOOLGC,1
-         CLOSE(83)
+         OPEN(83+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.83')
+         WRITE(83+CK_LUN,3220) RUNDES,RUNID,AGRID
+         WRITE(83+CK_LUN,3645) NDSETSC,NP,DTDP*NSPOOLGC,NSPOOLGC,1
+         CLOSE(83+CK_LUN)
          IGCP=2
          ENDIF
 
       IF(ABS(NOUTGC).EQ.2) THEN
-         OPEN(83,FILE=TRIM(INPUTDIR)//'/'//'fort.83',
+         OPEN(83+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.83',
      &           ACCESS='DIRECT',RECL=NBYTE)
          call writeBinaryOutputFileHeader(83, 1, IGCP,
      &            NDSETSC, NP, NSPOOLGC)
-         CLOSE(83)
+         CLOSE(83+CK_LUN)
       ENDIF
 C
  1112 FORMAT(/,1X,79('_'))
@@ -919,11 +920,11 @@ C...
       ENDIF
 
       IF ((NDDT.NE.0).AND.(ABS(NOUTGE).EQ.2)) THEN
-         OPEN(76,FILE=TRIM(LOCALDIR)//'/'//'fort.76',
+         OPEN(76+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.76',
      &           ACCESS='DIRECT',RECL=NBYTE)
          call writeBinaryOutputFileHeader(76, 1, IGBP,
      &            NDSETSE, NP, NSPOOLGE)
-         CLOSE(76)
+         CLOSE(76+CK_LUN)
       ENDIF
 
 C...
@@ -960,6 +961,7 @@ C                                                                             *
 c******************************************************************************
 
       SUBROUTINE COLDSTART_3D()
+      use CkLunMod, only : CK_LUN
       USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
       USE WRITE_OUTPUT, ONLY : initOutput3D
       USE GLOBAL_3DVS
@@ -1007,9 +1009,9 @@ C...  IF A BAROCLINIC RUN, READ IN INITIAL DENSITY FIELD
 
       IF(CBaroclinic.and.(.not.C3DVS)) THEN
          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-            WRITE(16,*) "CBaroclinic is ",CBaroclinic
-            WRITE(16,*) "CB3DVS is ",C3DVS
-            WRITE(16,*)
+            WRITE(16+CK_LUN,*) "CBaroclinic is ",CBaroclinic
+            WRITE(16+CK_LUN,*) "CB3DVS is ",C3DVS
+            WRITE(16+CK_LUN,*)
      &           "ERROR: 2DDI baroclinic runs not currently supported."
          ENDIF
          CALL ADCIRC_Terminate()
@@ -1017,17 +1019,17 @@ C...  IF A BAROCLINIC RUN, READ IN INITIAL DENSITY FIELD
 C
 
       IF(CBaroclinic .and. C3DVS) THEN
-         WRITE(16,424)
+         WRITE(16+CK_LUN,424)
  424     FORMAT(/,5X,'INITIAL DENSITY FIELD READ IN FROM UNIT 11',/)
-         OPEN(11,FILE=TRIM(INPUTDIR)//'/'//'fort.11')
-         READ(11,*)             !skip over header line
-         READ(11,*)             !skip over header line
-         READ(11,*) NVN, NVP
+         OPEN(11+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.11')
+         READ(11+CK_LUN,*)             !skip over header line
+         READ(11+CK_LUN,*)             !skip over header line
+         READ(11+CK_LUN,*) NVN, NVP
          IF(NVN.NE.NFEN) THEN
             IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-               WRITE(ScreenUnit,351) NVN,NFEN
+               WRITE(ScreenUnit+CK_LUN,351) NVN,NFEN
             ENDIF
-            WRITE(16,351) NVN,NFEN
+            WRITE(16+CK_LUN,351) NVN,NFEN
  351        FORMAT(/,2X,'***** INVALID INPUT IN THE DENSITY INITIAL ',
      &           'CONDITION FILE (UNIT 11) *****',
      &           /,2X,'***** NVN = ',I4,' MUST MATCH NFEN = ',I4,
@@ -1038,16 +1040,16 @@ C
          DO IHN=1,NP
             DO IVN=1,NFEN
                IF(ABS(IDen).EQ.1)
-     &              READ(11,*) NHNN,NVNN,SigT(NHNN,NVNN)
+     &              READ(11+CK_LUN,*) NHNN,NVNN,SigT(NHNN,NVNN)
                IF(ABS(IDen).EQ.2)
-     &              READ(11,*) NHNN,NVNN,Sal(NHNN,NVNN)
+     &              READ(11+CK_LUN,*) NHNN,NVNN,Sal(NHNN,NVNN)
                IF(ABS(IDen).EQ.3)
-     &              READ(11,*) NHNN,NVNN,Temp(NHNN,NVNN)
+     &              READ(11+CK_LUN,*) NHNN,NVNN,Temp(NHNN,NVNN)
                IF(ABS(IDen).EQ.4)
-     &              READ(11,*) NHNN,NVNN,Temp(NHNN,NVNN),Sal(NHNN,NVNN)
+     &              READ(11+CK_LUN,*) NHNN,NVNN,Temp(NHNN,NVNN),Sal(NHNN,NVNN)
             ENDDO
          ENDDO
-         CLOSE(11)
+         CLOSE(11+CK_LUN)
       ENDIF
 
       IF (CBaroclinic) THEN
@@ -1064,11 +1066,11 @@ C
                   qsurf(IHN)=0.d0
                END DO
             ELSE IF (NTF.EQ.1) THEN
-               OPEN(111,FILE=TRIM(INPUTDIR)//'/'//'fort.111')
+               OPEN(111+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.111')
                DO IHN=1,NP
-                  READ(111,*) NHNN,qsurfkp1(IHN),qsurf(IHN)
+                  READ(111+CK_LUN,*) NHNN,qsurfkp1(IHN),qsurf(IHN)
                END DO
-               CLOSE(111)
+               CLOSE(111+CK_LUN)
             END IF
          END IF
       END IF
@@ -1080,16 +1082,16 @@ C...  and baroclinic.
       IF ((CBAROCLINIC).AND.(IDEN.GE.1)) THEN
          IF ((ABS(RES_BC_FLAG).GE.1).AND.(NOPE.GT.0)) THEN
            IF (BCFLAG_LNM.EQ.1) THEN
-             OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
+             OPEN(35+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
              RBCTIME1=BCSTATIM*86400.d0
              RBCTIME2=RBCTIME1+RBCTIMEINC
-             READ(35,'(A)') CDUM80
+             READ(35+CK_LUN,'(A)') CDUM80
              DO NumofBCNodes=1,NETA
-                READ(35,*) NOD,LNM_BC1(NumofBCNodes)
+                READ(35+CK_LUN,*) NOD,LNM_BC1(NumofBCNodes)
              END DO
-             READ(35,'(A)') CDUM80
+             READ(35+CK_LUN,'(A)') CDUM80
              DO NumofBCNodes=1,NETA
-                READ(35,*) NOD,LNM_BC2(NumofBCNodes)
+                READ(35+CK_LUN,*) NOD,LNM_BC2(NumofBCNodes)
              END DO
            ELSE IF (BCFLAG_LNM.EQ.2) THEN
              ! to be added later but currently information
@@ -1104,57 +1106,57 @@ C...  and baroclinic.
          END IF
          IF ((ABS(RES_BC_FLAG).EQ.2).OR.(ABS(RES_BC_FLAG).EQ.4)) THEN
            IF (NOPE.GT.0) THEN
-             OPEN(36,FILE=TRIM(INPUTDIR)//'/'//'fort.36')
+             OPEN(36+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.36')
              SBCTIME1=SBCSTATIM*86400.D0
              SBCTIME2=SBCTIME1+SBCTIMEINC
-             READ(36,'(A)') CDUM80
+             READ(36+CK_LUN,'(A)') CDUM80
              DO NumofBCNodes=1,NETA
-                READ(36,*) NOD,(RESSAL1(NumofBCNodes,J),J=1,NFEN)
+                READ(36+CK_LUN,*) NOD,(RESSAL1(NumofBCNodes,J),J=1,NFEN)
              END DO
-             READ(36,'(A)') CDUM80
+             READ(36+CK_LUN,'(A)') CDUM80
              DO NumofBCNodes=1,NETA
-                READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
+                READ(36+CK_LUN,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
              END DO
            END IF
          END IF
          IF ((ABS(RES_BC_FLAG).EQ.3).OR.
      &            (ABS(RES_BC_FLAG).EQ.4)) THEN
            IF (NOPE.GT.0) THEN
-             OPEN(37,FILE=TRIM(INPUTDIR)//'/'//'fort.37')
+             OPEN(37+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.37')
              TBCTIME1=TBCSTATIM*86400.D0
              TBCTIME2=TBCTIME1+TBCTIMEINC
-             READ(37,'(A)') CDUM80
+             READ(37+CK_LUN,'(A)') CDUM80
              DO NumofBCNodes=1,NETA
-                READ(37,*) NOD,(RESTEMP1(NumofBCNodes,J),J=1,NFEN)
+                READ(37+CK_LUN,*) NOD,(RESTEMP1(NumofBCNodes,J),J=1,NFEN)
              END DO
-             READ(37,'(A)') CDUM80
+             READ(37+CK_LUN,'(A)') CDUM80
              DO NumofBCNodes=1,NETA
-                READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
+                READ(37+CK_LUN,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
              END DO
            END IF
            IF (BCFLAG_TEMP.EQ.1) THEN ! read in file with multiple values but no calcs
-              OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+              OPEN(38+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
               TTBCTIME1=TTBCSTATIM*86400.D0
               TTBCTIME2=TTBCTIME1+TTBCTIMEINC
               DO NumofNodes=1,NP
-                 READ(38,*) NOD, q_heat1(Numofnodes)
+                 READ(38+CK_LUN,*) NOD, q_heat1(Numofnodes)
               END DO
               DO NumofNodes=1,NP
-                 READ(38,*) NOD, q_heat2(NumofNodes)
+                 READ(38+CK_LUN,*) NOD, q_heat2(NumofNodes)
               END DO
            ELSE IF (BCFLAG_TEMP.EQ.2) THEN ! read in from file with 6 components
               ALLOCATE (TMP(NP,6))
-              OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+              OPEN(38+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
               TTBCTIME1=TTBCSTATIM*86400.D0
               TTBCTIME2=TTBCTIME1+TTBCTIMEINC
-              READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
+              READ(38+CK_LUN,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
               DO NumofNodes=1,NP
                  q_heat1(NumofNodes)=-TMP(NumofNodes,1)-
      &              TMP(NumofNodes,2)+TMP(NumofNodes,3)-
      &              TMP(NumofNodes,5)+TMP(NumofNodes,4)-
      &              TMP(NumofNodes,6)
               END DO
-              READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
+              READ(38+CK_LUN,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
               DO NumofNodes=1,NP
                  q_heat2(NumofNodes)=-TMP(NumofNodes,1)-
      &              TMP(NumofNodes,2)+TMP(NumofNodes,3)-
@@ -1164,16 +1166,16 @@ C...  and baroclinic.
               DEALLOCATE(TMP)
            ELSE IF (BCFLAG_TEMP.EQ.3) THEN ! read in from file with 4 components
               ALLOCATE (TMP(NP,4))
-              OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+              OPEN(38+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
               TTBCTIME1=TTBCSTATIM*86400.D0
               TTBCTIME2=TTBCTIME1+TTBCTIMEINC
-              READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
+              READ(38+CK_LUN,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
               DO NumofNodes=1,NP
                  q_heat1(NumofNodes)=TMP(NumofNodes,4)+
      &              TMP(NumofNodes,3)-TMP(NumofNodes,1)+
      &              TMP(NumofNodes,2)
               END DO
-              READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
+              READ(38+CK_LUN,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
               DO NumofNodes=1,NP
                  q_heat2(NumofNodes)=TMP(NumofNodes,4)+
      &              TMP(NumofNodes,3)-TMP(NumofNodes,1)+
@@ -1185,10 +1187,10 @@ C...  and baroclinic.
       ELSE IF ((CBAROCLINIC).AND.(IDEN.LE.-1)) THEN
          IF ((RES_BC_FLAG.LT.0).AND.(NOPE.GT.0)) THEN
           IF (BCFLAG_LNM.EQ.1) THEN
-            OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
-            READ(35,'(A)') CDUM80
+            OPEN(35+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
+            READ(35+CK_LUN,'(A)') CDUM80
             DO NumofBCNodes=1,NETA
-                READ(35,*) NOD,LNM_BC(NumofBCNodes)
+                READ(35+CK_LUN,*) NOD,LNM_BC(NumofBCNodes)
             END DO
           ELSE IF (BCFLAG_LNM.EQ.2) THEN
             ! add later
@@ -1203,11 +1205,11 @@ C...  and baroclinic.
 
 C kmd - River information for boundary conditions in baroclinic simulation
       IF (BndBCRiver) THEN
-        OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39')
+        OPEN(39+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.39')
 
 !        write(*,*) 'file fort.39 opened.'
 
-        READ(39,*) RIVBCTIMINC, RIVBCSTATIM
+        READ(39+CK_LUN,*) RIVBCTIMINC, RIVBCSTATIM
         RIVBCTIME1=RIVBCSTATIM*86400.d0
         RIVBCTIME2=RIVBCTIME1+RIVBCTIMINC
         DO J=1,totalbcrivernodes
@@ -1215,11 +1217,11 @@ C kmd - River information for boundary conditions in baroclinic simulation
 !         write(*,*) 'inside the DO J=1,totalbcrivernodes loop.'
 
          IF (IDEN.EQ.2) THEN
-           READ(39,*) (BCRivSalN1(J,K),K=1,NFEN)
+           READ(39+CK_LUN,*) (BCRivSalN1(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.3) THEN
-           READ(39,*) (BCRivTempN1(J,K),K=1,NFEN)
+           READ(39+CK_LUN,*) (BCRivTempN1(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.4) THEN
-           READ(39,*) (BCRivSalN1(J,K), BCRivTempN1(J,K),K=1,NFEN)
+           READ(39+CK_LUN,*) (BCRivSalN1(J,K), BCRivTempN1(J,K),K=1,NFEN)
 
 
 
@@ -1233,11 +1235,11 @@ C kmd - River information for boundary conditions in baroclinic simulation
         END DO
         DO J=1,totalbcrivernodes
          IF (IDEN.EQ.2) THEN
-           READ(39,*) (BCRivSalN2(J,K),K=1,NFEN)
+           READ(39+CK_LUN,*) (BCRivSalN2(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.3) THEN
-           READ(39,*) (BCRivTempN2(J,K),K=1,NFEN)
+           READ(39+CK_LUN,*) (BCRivTempN2(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.4) THEN
-           READ(39,*) (BCRivSalN2(J,K), BCRivTempN2(J,K),K=1,NFEN)
+           READ(39+CK_LUN,*) (BCRivSalN2(J,K), BCRivTempN2(J,K),K=1,NFEN)
 
 
            ! arash debug
@@ -1318,10 +1320,10 @@ C     jgf46.27 Replaced IRType with IDen in header.
          IF ((MNPROC.EQ.1.).OR.(WRITE_LOCAL_FILES.eqv..true.)) THEN
             IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
                IF (BCFLAG_TEMP.NE.0) THEN
-                  OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
-                  WRITE(47,499) RUNDES,RUNID,AGRID
-                  WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
-                  CLOSE(47)
+                  OPEN(47+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
+                  WRITE(47+CK_LUN,499) RUNDES,RUNID,AGRID
+                  WRITE(47+CK_LUN,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
+                  CLOSE(47+CK_LUN)
                END IF
             END IF
          ENDIF
@@ -1329,10 +1331,10 @@ C     jgf46.27 Replaced IRType with IDen in header.
      &       (myProc.eq.0)) THEN
             IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
                IF (BCFLAG_TEMP.NE.0) THEN
-                  OPEN(47,FILE=TRIM(GLOBALDIR)//'/'//'fort.47')
-                  WRITE(47,499) RUNDES,RUNID,AGRID
-                  WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
-                  CLOSE(47)
+                  OPEN(47+CK_LUN,FILE=TRIM(GLOBALDIR)//'/'//'fort.47')
+                  WRITE(47+CK_LUN,499) RUNDES,RUNID,AGRID
+                  WRITE(47+CK_LUN,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
+                  CLOSE(47+CK_LUN)
                END IF
             END IF
          ENDIF
@@ -1375,6 +1377,7 @@ C     the hotstart wet/dry state and water surface elevation ends up
 C     overwriting the values computed here. 
 C----------------------------------------------------------------------
       subroutine setColdWetDryStateAndWaterSurfaceElevation()
+      use CkLunMod, only : CK_LUN
       use sizes, only : inputdir
       use mesh, only : dp, np, mju, ne, nm
       use boundaries, only : nvel, lbcodei, nbv

@@ -5,6 +5,7 @@ C                                                                      *
 C***********************************************************************
 C
        MODULE WIND
+      use CkLunMod, only : CK_LUN
        USE SIZES, ONLY : SZ, LOCALDIR
        USE GLOBAL, ONLY : ScreenUnit, setMessageSource, allMessage,
      &    screenMessage, logMessage, unsetMessageSource, 
@@ -18,68 +19,105 @@ C
       integer, parameter :: allowable_nws(18)
      &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,19,20,29,30/)
       logical nwsOK     ! true if NWS value in fort.15 is allowed
+!$omp threadprivate(nwsOK)
 
       real(sz), allocatable :: wvnx1(:) ! wind velocity in x-dir at each node at prev ts
+!$omp threadprivate(wvnx1)
       real(sz), allocatable :: wvny1(:) ! wind velocity in y-dir at each node at prev ts
+!$omp threadprivate(wvny1)
       real(sz), allocatable :: wvnx2(:) ! wind velocity in x-dir at each node at new ts
+!$omp threadprivate(wvnx2)
       real(sz), allocatable :: wvny2(:) ! wind velocity in y-dir at each node at new ts
+!$omp threadprivate(wvny2)
       real(sz), allocatable :: prn1(:) ! barometric presssure at each node at prev ts
+!$omp threadprivate(prn1)
       real(sz), allocatable :: prn2(:) ! barometric pressure at each node at new ts
+!$omp threadprivate(prn2)
 
       real(sz) :: wtime1 ! time associated with previous met dataset
+!$omp threadprivate(wtime1)
       real(sz) :: wtime2 ! time associated with new met dataset
+!$omp threadprivate(wtime2)
       real(sz) :: wtiminc ! time increment between met datasets (seconds)
+!$omp threadprivate(wtiminc)
       real(sz) :: wtimed ! time in seconds associated with a dataset
+!$omp threadprivate(wtimed)
       real(sz) :: wreftim ! met reference time
+!$omp threadprivate(wreftim)
 
 Casey 110518: Added for Mark Powell's sectorial wind drag.
       REAL(8)  :: EyeLat(3) = 0.D0
+!$omp threadprivate(EyeLat)
       REAL(8)  :: EyeLon(3) = 0.D0
+!$omp threadprivate(EyeLon)
       LOGICAL  :: FoundEye
+!$omp threadprivate(FoundEye)
 C
       ! related to NWS=11
       integer :: IDSETFLG 
+!$omp threadprivate(IDSETFLG)
       integer :: IWTIME
+!$omp threadprivate(IWTIME)
       integer :: IWTIMEP
+!$omp threadprivate(IWTIMEP)
       integer :: IWYR 
+!$omp threadprivate(IWYR)
       integer :: NWSEGWI
+!$omp threadprivate(NWSEGWI)
       integer :: NWSGGWI
+!$omp threadprivate(NWSGGWI)
 
       integer  :: NWLON,NWLAT
+!$omp threadprivate(NWLON,NWLAT)
       real(sz) :: WLATMAX,WLONMIN,WLATINC,WLONINC
+!$omp threadprivate(WLATMAX,WLONMIN,WLATINC,WLONINC)
       integer  :: IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN
+!$omp threadprivate(IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN)
 
       REAL(8), PARAMETER :: TWOPI=PI*2.D0
       REAL(8), PARAMETER :: HFPI=PI/2.D0
       REAL(8), PARAMETER :: mperdeg  = Rearth * pi / 180.0d0
       real(sz) :: prbckgrnd_mH2O
+!$omp threadprivate(prbckgrnd_mH2O)
 
       INTEGER StormNumber !jgf46.28 For Holland Wind model wind multiplier
+!$omp threadprivate(StormNumber)
       REAL(8) WindRefTime !jgf46.29 seconds since beginning of year, this
+!$omp threadprivate(WindRefTime)
                           !corresponds to time=0 of the simulation
       REAL(8) BLAdj       !jgf46.32 boundary layer adjustment for Holland model
+!$omp threadprivate(BLAdj)
 
       ! jgf49.1001 Variables for use in NWS=29, for embedding an asymmetric
       ! vortex from NWS19 into an OWI basin scale met field from NAM
       ! using NWS12
       REAL(SZ) vortexRMW  ! Rmax of vortex data, nautical miles
+!$omp threadprivate(vortexRMW)
       REAL(SZ) vortexLat  ! @center of vortex, degrees west latitude
+!$omp threadprivate(vortexLat)
       REAL(SZ) vortexLon  ! @center of vortex, degrees north longitude
+!$omp threadprivate(vortexLon)
       REAL(SZ), ALLOCATABLE :: vortexWVNX2(:) ! u wind vel from vortex model
+!$omp threadprivate(vortexWVNX2)
       REAL(SZ), ALLOCATABLE :: vortexWVNY2(:) ! v wind vel from vortex model
+!$omp threadprivate(vortexWVNY2)
       REAL(SZ), ALLOCATABLE :: vortexPRN2(:)  ! bar. press. from vortex model
+!$omp threadprivate(vortexPRN2)
       !
       ! radial extent of unblended vortex winds, normalized to current Rmax
       REAL(SZ) pureVortex
+!$omp threadprivate(pureVortex)
       !
       ! radial distance to point where vortex effects insignificant,
       ! normalized to current Rmax
       REAL(SZ) pureBackground
+!$omp threadprivate(pureBackground)
       !
       ! jgf50.32: The wind drag limit was originally set to 0.002d0
       ! in v46 ... the higher value of 0.0035d0 was used in ~v48 and
       ! is now the default.
       REAL(SZ) :: WindDragLimit = 0.0035d0   ! maximum wind drag value
+!$omp threadprivate(WindDragLimit)
 
       ! jgf50.32: If DragLawString is not set in the fort.15 input file,
       ! it will remain 'default'; this will cause 'Garratt' to be used
@@ -90,26 +128,37 @@ C
       INTEGER,PARAMETER :: DRAGLAW_SWELL   = 99992
 #ifndef POWELL
       CHARACTER(len=10) :: DragLawString = 'default' ! controls wind drag formulation
+!$omp threadprivate(DragLawString)
       INTEGER :: dragLawType = DRAGLAW_GARRATT
+!$omp threadprivate(dragLawType)
 #else
       ! jgf50.32 Provide backward compatibility with hardcoded POWELL
       ! support.
       CHARACTER(len=10) :: DragLawString = 'Powell'
+!$omp threadprivate(DragLawString)
       INTEGER :: dragLawType = DRAGLAW_POWELL
+!$omp threadprivate(dragLawType)
 #endif
       !
       ! used for vis/diagnostics on nws19 and nws20
       LOGICAL :: writeFullCircleRmaxes = .false.
+!$omp threadprivate(writeFullCircleRmaxes)
       LOGICAL :: writeRadialVandP = .false.
+!$omp threadprivate(writeRadialVandP)
       LOGICAL :: writeSpatialVandP = .false.
+!$omp threadprivate(writeSpatialVandP)
       LOGICAL :: writeSpatialuvp = .false.
+!$omp threadprivate(writeSpatialuvp)
       LOGICAL :: writeNodaluvp = .false.
+!$omp threadprivate(writeNodaluvp)
       
       !switch to turn on or off geostrophic balance in GAHM
       ! on (default): Coriolis term included, phifactors will be calculated before being used 
       ! off:parameter is set to 'true', phifactors will be set to constant 1
       LOGICAL :: geostrophic_switch = .true.
+!$omp threadprivate(geostrophic_switch)
       INTEGER :: geofactor = 1  !turn on or off gostrophic balance
+!$omp threadprivate(geofactor)
       
       ! jgf50.38.05: used to keep track of HWind files and data
       type hWindData_t
@@ -195,26 +244,41 @@ C
       ! jgf: variables needed for water level correction data
       ! from control file
       character(len=2048) :: dynamicWaterLevelCorrectionFileName='null' ! water level correction file 
+!$omp threadprivate(dynamicWaterLevelCorrectionFileName)
       real(sz) :: dynamicWaterLevelCorrectionRampStart = 0.d0 ! seconds after run start
+!$omp threadprivate(dynamicWaterLevelCorrectionRampStart)
       real(sz) :: dynamicWaterLevelCorrectionRampEnd = 0.d0   ! seconds after run start
+!$omp threadprivate(dynamicWaterLevelCorrectionRampEnd)
       integer :: dynamicWaterLevelCorrectionSkipSnaps = 0 ! number of correction data sets to skip 
+!$omp threadprivate(dynamicWaterLevelCorrectionSkipSnaps)
       character(len=10) :: dynamicWaterLevelCorrectionRampReferenceTime='hotstart' ! coldstart or hotstart
+!$omp threadprivate(dynamicWaterLevelCorrectionRampReferenceTime)
       real(sz) :: dynamicWaterLevelCorrectionMultiplier = 1.d0 ! multiply each correction value by this
+!$omp threadprivate(dynamicWaterLevelCorrectionMultiplier)
       ! limited to this module 
       integer, parameter :: dynamicWaterLevelCorrectionUn = 21 ! i/o unit number for water lvl correction
       integer :: dynamicWaterLevelCorrectionBlankSnaps = 0 ! counter for initial blank snaps
+!$omp threadprivate(dynamicWaterLevelCorrectionBlankSnaps)
       integer :: dynamicWaterLevelCorrectionDataSetCounter=0 ! counts real datasets read from file
+!$omp threadprivate(dynamicWaterLevelCorrectionDataSetCounter)
       logical :: dynamicWaterLevelCorrectionIsConstant=.false. ! true if only one dataset provided
+!$omp threadprivate(dynamicWaterLevelCorrectionIsConstant)
       real(sz), allocatable :: dynamicWaterLevelCorrectionsOld_m(:) ! from file in m
       real(sz), allocatable :: dynamicWaterLevelCorrectionsNew_m(:) ! from file in m
       real(sz), allocatable :: dynamicWaterLevelCorrectionFD(:) ! hold fulldomain data in parallel
       character(len=2048) :: dynamicWaterLevelCorrectionComment = 'null' ! comment from correction file
+!$omp threadprivate(dynamicWaterLevelCorrectionComment)
       real(sz) :: dynamicWaterLevelCorrectionTimeIncrement = 0.d0 ! correction time increment (s)
+!$omp threadprivate(dynamicWaterLevelCorrectionTimeIncrement)
       real(sz) :: dynamicWaterLevelCorrectionTimeNew = 0.d0 ! time of latest dataset (s)
+!$omp threadprivate(dynamicWaterLevelCorrectionTimeNew)
       real(sz) :: dynamicWaterLevelCorrectionTimeOld = 0.d0 ! time of previous dataset (s)
+!$omp threadprivate(dynamicWaterLevelCorrectionTimeOld)
       real(sz) :: dynamicWaterLevelCorrectionDefaultValue = 0.d0 ! for otherwise unspecified nodes (m)
+!$omp threadprivate(dynamicWaterLevelCorrectionDefaultValue)
       integer :: dynamicWaterLevelCorrectionCurrentLine ! used in error messages
       logical :: dynamicWaterLevelCorrectionFileEnded = .false. ! true when all data have been read
+!$omp threadprivate(dynamicWaterLevelCorrectionFileEnded)
 
       !...Function interface for wind drag
       !   Used so that the selection of wind drag
@@ -621,9 +685,9 @@ C....... and Ray's Ice for low ice values and low winds
          ENDIF
 
       CASE DEFAULT
-         WRITE(16,*) 'ERROR: Ice drag law not recognized:'
-         WRITE(16,'(A10)') DragLawString
-         WRITE(16,*) 'Execution will now be terminated.'
+         WRITE(16+CK_LUN,*) 'ERROR: Ice drag law not recognized:'
+         WRITE(16+CK_LUN,'(A10)') DragLawString
+         WRITE(16+CK_LUN,*) 'Execution will now be terminated.'
 #ifdef CMPI
          call msg_fini()
 #endif
@@ -790,7 +854,7 @@ C
 C     No wind, radiation stress or atmospheric pressure forcings are used.
       IF(NWS.EQ.1) THEN
          DO I=1,NP
-            READ(22,*) NHG,WSX2(I),WSY2(I),PR2(I) !read in
+            READ(22+CK_LUN,*) NHG,WSX2(I),WSY2(I),PR2(I) !read in
             WSX2(I)=RampMete*WSX2(I) ! apply ramp function
             WSY2(I)=RampMete*WSY2(I)
 C  tcm v49.16 20100617
@@ -814,7 +878,7 @@ C     pressure information with the model time step.
                WVNX1(I)=WVNX2(I) ! move current data to old
                WVNY1(I)=WVNY2(I)
                PRN1(I)=PRN2(I)
-               READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I) ! read in
+               READ(22+CK_LUN,*) NHG,WVNX2(I),WVNY2(I),PRN2(I) ! read in
             END DO
          ENDIF
          WTRatio=(TimeLoc-WTIME1)/WTIMINC ! interpolate
@@ -932,7 +996,7 @@ C     is used to compute wind stress from wind velocity.
                WVNX1(I)=WVNX2(I)
                WVNY1(I)=WVNY2(I)
                PRN1(I)=PRN2(I)
-               READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
+               READ(22+CK_LUN,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
             END DO
          ENDIF
          WTRatio=(TimeLoc-WTIME1)/WTIMINC
@@ -1483,13 +1547,13 @@ C----------------------------------------------------------------------
 
      
       IF(NWS.EQ.1) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
       ENDIF
 
       IF(ABS(NWS).EQ.2) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         READ(22+CK_LUN,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(22+CK_LUN,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
       ENDIF
@@ -1498,7 +1562,7 @@ C----------------------------------------------------------------------
 C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
 C....                           to correspond with having only a global wind file.
 !         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         OPEN(22+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
 
  2222    CALL NWS3GET()
          IF(IWYR.NE.IREFYR) THEN
@@ -1526,7 +1590,7 @@ C....                           to correspond with having only a global wind fil
       ENDIF
 
       IF(ABS(NWS).EQ.4) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = STATIM*86400.D0
          WTIME2=WTIME1+WTIMINC
          CALL NWS4GET()
@@ -1536,9 +1600,9 @@ C....                           to correspond with having only a global wind fil
       ENDIF
 
       IF(ABS(NWS).EQ.5) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         READ(22+CK_LUN,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(22+CK_LUN,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
       ENDIF
@@ -1547,7 +1611,7 @@ C....                           to correspond with having only a global wind fil
 C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
 C....                           to correspond with having only a global wind file.
 !         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         OPEN(22+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
          CALL NWS6GET()
          wvnx1 = wvnx2
          wvny1 = wvny2
@@ -1559,9 +1623,9 @@ C....                           to correspond with having only a global wind fil
 C     jgf46.00 Added option to directly apply surface stress without any
 C     other correction factors.
       IF(ABS(NWS).EQ.7) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         READ(22+CK_LUN,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(22+CK_LUN,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
       ENDIF
@@ -1575,13 +1639,13 @@ C     generate hurricane winds from the Holland Wind Model.
 C     RJW Merged:
 !    rjw added nws = 19: asymmetric hurricane winds v2.0
       IF(NWS.EQ.19) THEN
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+         OPEN(22+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
         CALL NWS19GET(WVNX2,WVNY2,PRN2,STATIM*86400.D0)
       ENDIF
       
 !    jie added nws = 20: generalized asymmetric vortex model
       IF(NWS.EQ.20) THEN
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+         OPEN(22+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
         CALL NWS20GET(WVNX2,WVNY2,PRN2,STATIM*86400.D0)
       ENDIF      
 
@@ -1609,12 +1673,12 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          ! now blend in the vortex met field
          ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
          if (abs(nws).eq.29) then
-            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
+            OPEN(22+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
      &           STATUS='OLD')
             CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,STATIM*86400.D0)
          endif
          if (abs(nws).eq.30) then
-            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
+            OPEN(22+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
      &           STATUS='OLD')
             CALL NWS20GET(vortexWVNX2,vortexWVNY2,vortexPRN2,STATIM*86400.D0)
          endif
@@ -1729,10 +1793,10 @@ C......RESTART WIND AND PRESSURE INFORMATION
 
 C     No wind, radiation stress or atmospheric pressure forcings are used.
       IF(NWS.EQ.1) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          DO J=1,ITHS
             DO I=1,NP
-               READ(22,*) NHG,WSX2(I),WSY2(I),PR2(I)
+               READ(22+CK_LUN,*) NHG,WSX2(I),WSY2(I),PR2(I)
             END DO
          END DO
          DO I=1,NP
@@ -1750,11 +1814,11 @@ C     at a time interval that does not equal the model time
 C     step. Interpolation in time is used to synchronize the wind and
 C     pressure information with the model time step.
       IF(NWS.EQ.2) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         READ(22+CK_LUN,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
+         READ(22+CK_LUN,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          DO IT=1,ITHS
             TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
             IF(TIMEIT.GT.WTIME2) THEN
@@ -1764,7 +1828,7 @@ C     pressure information with the model time step.
                   WVNX1(I)=WVNX2(I)
                   WVNY1(I)=WVNY2(I)
                   PRN1(I)=PRN2(I)
-                  READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
+                  READ(22+CK_LUN,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
                END DO
             ENDIF
          END DO
@@ -1783,11 +1847,11 @@ C  tcm v49.16 20100617
       ENDIF
 
       IF(NWS.EQ.-2) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = TimeLoc
          WTIME2 = WTIME1 + WTIMINC
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         READ(22+CK_LUN,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(22+CK_LUN,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          DO I=1,NP
             WSX2(I) = RampMete2*WVNX1(I)
             WSY2(I) = RampMete2*WVNY1(I)
@@ -1806,7 +1870,7 @@ C     is used to compute wind stress from the wind velocity.
 C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
 C....                           to correspond with having only a global wind file.
 !         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         OPEN(22+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
  2223    CALL NWS3GET()
          IF(IWYR.NE.IREFYR) THEN
             IWTIMEP=IWTIME
@@ -1875,7 +1939,7 @@ C     used to synchronize the wind and pressure information with the
 C     model time step. Garratt's formula is used to compute wind stress
 C     from wind velocity.
       IF(NWS.EQ.4) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
          CALL NWS4GET()  !TCM v49.02 Added read for rec. 1
@@ -1925,7 +1989,7 @@ C  tcm v49.16 20100617
       ENDIF
 
       IF(NWS.EQ.-4) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = TimeLoc
          WTIME2 = WTIME1 + WTIMINC
          CALL NWS4GET()
@@ -1964,11 +2028,11 @@ C     nodes. Interpolation in time is used to synchronize the wind and
 C     pressure information with the model time step. Garratt's formula
 C     is used to compute wind stress from wind velocity.
       IF(NWS.EQ.5) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         READ(22+CK_LUN,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
+         READ(22+CK_LUN,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          DO IT=1,ITHS
             TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
             IF(TIMEIT.GT.WTIME2) THEN
@@ -1978,7 +2042,7 @@ C     is used to compute wind stress from wind velocity.
                   WVNX1(I)=WVNX2(I)
                   WVNY1(I)=WVNY2(I)
                   PRN1(I)=PRN2(I)
-                  READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
+                  READ(22+CK_LUN,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
                END DO
             ENDIF
          END DO
@@ -2015,11 +2079,11 @@ C     jjw-42.06j wrote, jgf46.00 added following two lines:
       ENDIF
 
       IF(NWS.EQ.-5) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = TimeLoc
          WTIME2 = WTIME1 + WTIMINC
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         READ(22+CK_LUN,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(22+CK_LUN,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          WTRATIO=(TimeLoc-WTIME1)/WTIMINC !jgf46.00 added
          DO I=1,NP
             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
@@ -2061,7 +2125,7 @@ C     wind velocity.
 C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
 C....                           to correspond with having only a global wind file.
 !         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         OPEN(22+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
 C     The following 3 lines are a hardwire to allow a non standard met
 C     file to be read in at time zero in a hot start.  They should be
 C     eliminated or commented out for normal operation
@@ -2112,7 +2176,7 @@ C     is used to synchronize the wind and pressure information with the
 C     model time step.
 C
       IF(NWS.EQ.7) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = STATIM*86400.D0
          CALL NWS7GET()  !TCMv49.02 Changed (WVNX2,WVNY2,PRN2) to (WVNX1,WVNY1,PRN1)
          wvnx1 = wvnx2
@@ -2137,7 +2201,7 @@ C  tcm v49.16 20100617
       ENDIF
 
       IF(NWS.EQ.-7) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = STATIM*86400.D0
          CALL NWS7GET()
          wvnx1 = wvnx2
@@ -2198,7 +2262,7 @@ C  tcm v49.16 20100617
 !     rjw added nws = 19: asymmetric hurricane winds v2.0
 
       IF(ABS(NWS).EQ.19) THEN
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+         OPEN(22+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
          CALL NWS19GET(WVNX2,WVNY2,PRN2,TimeLoc)
          DO I=1,NP
             WindX = WVNX2(I)
@@ -2231,7 +2295,7 @@ C  tcm v49.16 20100617
 !     jie added nws = 20: generalized asymmetric vortex model
 
       IF(ABS(NWS).EQ.20) THEN
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+         OPEN(22+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
          CALL NWS20GET(WVNX2,WVNY2,PRN2,TimeLoc)
          DO I=1,NP
             WindX = WVNX2(I)
@@ -2421,12 +2485,12 @@ C     from NAM data
          ! Now blend in the vortex winds into the background OWI wind field.
          ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
          if (abs(nws).eq.29) then
-            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
+            OPEN(22+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
      &           STATUS='OLD')
             CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,TimeLoc)
          endif
          if (abs(nws).eq.30) then
-            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
+            OPEN(22+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
      &           STATUS='OLD')
             CALL NWS20GET(vortexWVNX2,vortexWVNY2,vortexPRN2,TimeLoc)
          endif         
@@ -2608,6 +2672,7 @@ C***********************************************************************
       USE MESH, ONLY : X,Y,SLAM,SFEA,NP,ICS
       IMPLICIT NONE
       INTEGER, SAVE :: FIRSTCALL = 0
+!$omp threadprivate(FIRSTCALL)
       INTEGER I,J
       INTEGER NScreen,ScreenUnit
       REAL*8 XCOOR,YCOOR
@@ -2615,6 +2680,7 @@ C***********************************************************************
       REAL(SZ) WSPEED,WDIR
       REAL(SZ) WLATM,WLONM,XWRATIO,YWRATIO
       REAL(SZ),ALLOCATABLE,SAVE :: WVXFN(:,:),WVYFN(:,:)
+!$omp threadprivate(WVXFN,WVYFN)
       INTEGER :: IWYR, IWMO, IWDAY, IWHR
 
       call setMessageSource("nws3get")
@@ -2629,7 +2695,7 @@ C
          ALLOCATE ( WVXFN(NWLAT,NWLON),WVYFN(NWLAT,NWLON) )
       ENDIF
 C
-      READ(22,*) IWTIME
+      READ(22+CK_LUN,*) IWTIME
       IWYR = IWTIME/1000000
       IWMO = IWTIME/10000 - IWYR*100
       IWDAY = IWTIME/100 - IWYR*10000 - IWMO*100
@@ -2637,10 +2703,10 @@ C
       CALL TIMECONV(IWYR,IWMO,IWDAY,IWHR,0,0.0D0,WTIMED)
       
       DO I=1,NWLAT
-         READ(22,*) (WVXFN(I,J),J=1,NWLON)
+         READ(22+CK_LUN,*) (WVXFN(I,J),J=1,NWLON)
       END DO
       DO I=1,NWLAT
-         READ(22,*) (WVYFN(I,J),J=1,NWLON)
+         READ(22+CK_LUN,*) (WVYFN(I,J),J=1,NWLON)
       END DO
 C
       DO I=1,NWLAT              !CONVERT TO X AND Y COMPONENTS
@@ -2729,7 +2795,7 @@ C
         WVNY2(I)=0.d0
         PRN2(I)=101300.d0/RHOWATG
       END DO
- 170  READ(22,'(A80)') PBLJAGF
+ 170  READ(22+CK_LUN,'(A80)') PBLJAGF
       IF(PBLJAGF(2:2).EQ.'#') GOTO 170
  171  READ(PBLJAGF,'(I8,5E13.5)') NHG,WVNX2(NHG),WVNY2(NHG),
      &                            PRN2(NHG)
@@ -2744,7 +2810,7 @@ C     jgf46.02 Added the following two lines.
       WVNY2(NHG)=WVNY2(NHG)*0.5144d0
       PRN2(NHG)=100.d0*PRN2(NHG)/RHOWATG !CONVERT MILLIBARS TO M OF WATER
       IF(PRN2(NHG).EQ.0.) PRN2(NHG)=101300.d0/RHOWATG                       !RAL0315+ OK
-      READ(22,'(A80)') PBLJAGF
+      READ(22+CK_LUN,'(A80)') PBLJAGF
       IF(PBLJAGF(2:2).NE.'#') GOTO 171
       RETURN
 
@@ -2836,6 +2902,7 @@ C***********************************************************************
       USE MESH, ONLY : X,Y,SLAM,SFEA,NP,ICS
       IMPLICIT NONE
       INTEGER, SAVE :: FIRSTCALL = 0
+!$omp threadprivate(FIRSTCALL)
       INTEGER :: I,J
       REAL(SZ) :: RHOWATG
       INTEGER  LATIND1,LATIND2,LONIND1,LONIND2
@@ -2843,6 +2910,7 @@ C***********************************************************************
       REAL(SZ) WLATM,WLONM
       REAL(SZ) :: XCOOR,YCOOR
       REAL(SZ),SAVE,ALLOCATABLE :: WVXFN(:,:),WVYFN(:,:),PRN(:,:)
+!$omp threadprivate(WVXFN,WVYFN,PRN)
 
       call setMessageSource("nws6get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -2859,7 +2927,7 @@ C
       RHOWATG=RHOWAT0*G
       DO I=1,NWLAT
          DO J=1,NWLON
-            READ(22,*) WVXFN(I,J),WVYFN(I,J),PRN(I,J)
+            READ(22+CK_LUN,*) WVXFN(I,J),WVYFN(I,J),PRN(I,J)
          END DO
       END DO
 
@@ -2979,7 +3047,9 @@ C     ----------------------------------------------------------------
       REAL(SZ) WLATM,WLONM,XWRATIO,YWRATIO
       REAL(8) XCOOR,YCOOR
       REAL(SZ), SAVE, ALLOCATABLE :: WVXFN(:,:),WVYFN(:,:),PRN(:,:)
+!$omp threadprivate(WVXFN,WVYFN,PRN)
       LOGICAL, SAVE :: MemoryAllocated = .False.
+!$omp threadprivate(MemoryAllocated)
 
       call setMessageSource("nws7get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -2996,7 +3066,7 @@ C
       RHOWATG=RHOWAT0*G
       DO K=1,NWLAT
          DO J=1,NWLON
-            READ(22,*) WVXFN(K,J),WVYFN(K,J),PRN(K,J)
+            READ(22+CK_LUN,*) WVXFN(K,J),WVYFN(K,J),PRN(K,J)
          END DO
       END DO
 C
@@ -3273,6 +3343,7 @@ C***********************************************************************
       character(len=8) :: fname1 ! name of GFS file to read
       integer :: iext        ! numerical extension to file name
       integer :: ios = 0     ! i/o status for opening the fort.xxx files
+!$omp threadprivate(ios)
       integer :: i, n        ! loop counters
 
       call setMessageSource("nws10get")
@@ -3303,9 +3374,9 @@ C
 C
 C...  Read the ASCII data file
       do i=1,lonb*latb
-         read(iext,*) pg(i),ug(i),vg(i)
+         read(iext+CK_LUN,*) pg(i),ug(i),vg(i)
       enddo
-      close(iext)
+      close(iext+CK_LUN)
 C
 C.....Go from the Gaussian grid to the ADCIRC grid
 C.....Convert pressure from N/M^2 to M of H20
@@ -3485,14 +3556,18 @@ C***********************************************************************
       USE MESH, ONLY : NP, SLAM, SFEA
       IMPLICIT NONE
       INTEGER,SAVE  ::  ICALL = 0
+!$omp threadprivate(ICALL)
       INTEGER I,IEXT,IDIG1,IDIG2,IDIG3,KERR,N
       INTEGER IYEAR,IMONTH,IDAY,IHOUR
       REAL*8 RHOWATG100,FLONDEG,FLATDEG
       REAL(SZ) P1,P2,P3,U1,U2,U3,V1,V2,V3,UE29,VE29,CBETAU,SBETAU
 C
       INTEGER,SAVE,ALLOCATABLE ::  N1(:),N2(:),N3(:)
+!$omp threadprivate(N1,N2,N3)
       REAL(SZ),SAVE,ALLOCATABLE :: D1(:),D2(:),D3(:),BETAU(:)
+!$omp threadprivate(D1,D2,D3,BETAU)
       REAL(SZ),SAVE,ALLOCATABLE :: UE(:),VE(:),PE(:)
+!$omp threadprivate(UE,VE,PE)
 C
       CHARACTER*1 FNAME2(8)
       CHARACTER*8 FNAME1
@@ -3551,17 +3626,17 @@ C...  If appropriate, enter, locate and open the met data file
 
 C...  Read the met data file
 
-      READ(IEXT,END=1100) IYEAR,IMONTH,IDAY,IHOUR
-      READ(IEXT,END=1100) UE,VE,PE
+      READ(IEXT+CK_LUN,END=1100) IYEAR,IMONTH,IDAY,IHOUR
+      READ(IEXT+CK_LUN,END=1100) UE,VE,PE
 
       IF(NWSEGWI.EQ.0) THEN     !If the first file, read until the end
          DO I=2,IDSETFLG
-            READ(IEXT,END=1100) IYEAR,IMONTH,IDAY,IHOUR
-            READ(IEXT,END=1100) UE,VE,PE
+            READ(IEXT+CK_LUN,END=1100) IYEAR,IMONTH,IDAY,IHOUR
+            READ(IEXT+CK_LUN,END=1100) UE,VE,PE
          ENDDO
       ENDIF
 
- 1100 IF(IDSETFLG.EQ.8) CLOSE(IEXT)
+ 1100 IF(IDSETFLG.EQ.8) CLOSE(IEXT+CK_LUN)
 
 C.....Interpolate onto ADCIRC grid
 C.....Convert velocity from the E grid reference to a lat/lon reference
@@ -4243,9 +4318,13 @@ C     ----------------------------------------------------------------
       REAL(SZ), intent(out), dimension(NP) :: PRESS
       INTEGER I, J
       REAL(SZ),SAVE,ALLOCATABLE :: RAD(:),DX(:),DY(:)
+!$omp threadprivate(RAD,DX,DY)
       REAL(SZ),SAVE,ALLOCATABLE :: XCOOR(:),YCOOR(:) !lat and lon of nodes
+!$omp threadprivate(XCOOR,YCOOR)
       REAL(SZ),SAVE,ALLOCATABLE :: V_r(:)            !wind sp. as fn. of dist
+!$omp threadprivate(V_r)
       REAL(SZ),SAVE,ALLOCATABLE :: THETA(:)
+!$omp threadprivate(THETA)
       REAL(SZ) :: TVX,TVY,RRP,RMW,A,B,WTRATIO
       REAL(SZ) :: TransSpdX, TransSpdY
       REAL(SZ) :: TM, cpress, lon, lat, spd
@@ -4257,6 +4336,7 @@ C
       REAL(8) :: mperdeg
 
       LOGICAL, SAVE :: FIRSTCALL = .True.
+!$omp threadprivate(FIRSTCALL)
 
       call setMessageSource("hollandget")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -4346,7 +4426,7 @@ C     Calculate Holland A parameter. (jgf46.32jgf4 commented out)
 C      A = (RMW*1000.d0)**B
 C
 #ifdef DEBUG_HOLLAND
-      WRITE(16,4321) B
+      WRITE(16+CK_LUN,4321) B
  4321 FORMAT(/,2x,'Holland B parameter is ',e16.8)
 #endif
 C     jgf46.28 If we are running storm 2 in the Lake Pontchartrain
@@ -4451,22 +4531,39 @@ C
       REAL(SZ),intent(out) :: SpdOut, RRPOut, RMWOut, TVXOut, TVYOut
 C
       INTEGER, ALLOCATABLE, SAVE :: iYear(:),iMth(:),iDay(:),iHr(:)
+!$omp threadprivate(iYear,iMth,iDay,iHr)
       INTEGER, ALLOCATABLE, SAVE :: iLat(:),iLon(:)
+!$omp threadprivate(iLat,iLon)
       CHARACTER(1), ALLOCATABLE, SAVE :: ns(:), ew(:)
+!$omp threadprivate(ns,ew)
       INTEGER, ALLOCATABLE, SAVE :: iSpd(:),iCPress(:),iRRP(:),iRMW(:)
+!$omp threadprivate(iSpd,iCPress,iRRP,iRMW)
       REAL(SZ), ALLOCATABLE, SAVE :: Lat(:),Lon(:),Spd(:)
+!$omp threadprivate(Lat,Lon,Spd)
       REAL(SZ), ALLOCATABLE, SAVE :: CPress(:),RRP(:),RMW(:)
+!$omp threadprivate(CPress,RRP,RMW)
       REAL(SZ), ALLOCATABLE, SAVE :: TVX(:), TVY(:)      ! jgf46.32jgf9
+!$omp threadprivate(TVX,TVY)
       CHARACTER(len=4), ALLOCATABLE, SAVE :: CastType(:) !hindcast,forecast
+!$omp threadprivate(CastType)
       INTEGER, ALLOCATABLE, SAVE :: iFcstInc(:) ! hours
+!$omp threadprivate(iFcstInc)
       REAL(SZ), ALLOCATABLE, SAVE :: FcstInc(:) ! seconds
+!$omp threadprivate(FcstInc)
       REAL(SZ),SAVE :: WTRATIO          !time ratio used for interpolation
+!$omp threadprivate(WTRATIO)
       REAL(8), ALLOCATABLE, SAVE :: CastTime(:) ! seconds since start of year
+!$omp threadprivate(CastTime)
       INTEGER,SAVE :: iNowcastCPress, iNowcastRRP, iNowcastRMW
+!$omp threadprivate(iNowcastCPress,iNowcastRRP,iNowcastRMW)
       LOGICAL,SAVE :: FIRSTCALL = .True.
+!$omp threadprivate(FIRSTCALL)
       INTEGER,SAVE :: i  ! Current array counter for fort.22 file
+!$omp threadprivate(i)
       INTEGER,SAVE :: nl ! Number of lines in the fort.22 file
+!$omp threadprivate(nl)
       INTEGER,SAVE :: pl ! populated length of Holland Data array
+!$omp threadprivate(pl)
       INTEGER :: j ! loop counter
       INTEGER :: ios ! return code for an i/o operation
       call setMessageSource("getHollandStormData")
@@ -4490,10 +4587,10 @@ C     Determine the number of lines in the file.
          endif
 
          DO
-            READ(UNIT=22,FMT='(A170)',END=8888)
+            READ(UNIT=22+CK_LUN,FMT='(A170)',END=8888)
             nl=nl+1
          ENDDO
- 8888    REWIND(22)
+ 8888    REWIND(22+CK_LUN)
 C
 C     Dimension the arrays according to the number of lines in the file,
 C     this will be greater than or equal to the size of the array we need
@@ -4519,7 +4616,7 @@ C     quadrant-by-quadrant wind data. Repeated time data occur in the
 C     forecast because the time data is just the time that the forecast
 C     was made. The important parameter in the forecast file is the
 C     forecast increment.
-            READ(UNIT=22,FMT=228,END=9999)
+            READ(UNIT=22+CK_LUN,FMT=228,END=9999)
      &           iYear(i),iMth(i),iDay(i),iHr(i),
      &           CastType(i),iFcstInc(i),iLat(i),ns(i),iLon(i),ew(i),
      &           iSpd(i),iCPress(i),iRRP(i),iRMW(i)
@@ -4679,7 +4776,7 @@ C     Increment array counter
             i=i+1
 C
          ENDDO
- 9999    CLOSE(22)
+ 9999    CLOSE(22+CK_LUN)
 C
 C     Calculate storm translation velocities based on change in position, then
 C     convert degrees/time to m/s
@@ -4834,19 +4931,26 @@ C23456
       REAL(8), PARAMETER :: Coriolis=7.287588493541447D-05  ! 1/sec
       REAL(8), PARAMETER :: Rho_Air = 1.15d0                ! kg/ m/m/m
       INTEGER, SAVE :: FIRSTCALL = 0
+!$omp threadprivate(FIRSTCALL)
       INTEGER NP,I,J,ICS
       REAL(SZ) RHOWAT0,G,WTIME1,WTIME2,TIMELOC,WTIMINC
       REAL(SZ) X(*),Y(*),SLAM(*),SFEA(*)
       REAL(SZ) WVNX(*),WVNY(*),PRESS(*)
 ! LOCAL VARIABLES
       REAL(SZ),SAVE,ALLOCATABLE :: RAD(:),DX(:),DY(:),XCOOR (:),YCOOR(:)
+!$omp threadprivate(RAD,DX,DY,XCOOR,YCOOR)
       REAL(SZ),SAVE,ALLOCATABLE :: EARG(:)
+!$omp threadprivate(EARG)
       REAL(SZ),SAVE,ALLOCATABLE :: VG(:),THETA(:)
+!$omp threadprivate(VG,THETA)
       REAL(SZ),SAVE :: XC1,YC1,DP1,TVX1,TVY1,RMW1,A1,B1
+!$omp threadprivate(XC1,YC1,DP1,TVX1,TVY1,RMW1,A1,B1)
       REAL(SZ),SAVE :: XC2,YC2,DP2,TVX2,TVY2,RMW2,A2,B2
+!$omp threadprivate(XC2,YC2,DP2,TVX2,TVY2,RMW2,A2,B2)
       REAL(SZ) :: XC,YC,DP,TVX,TVY,RMW,A,B,WTRATIO
       REAL(SZ) :: Central_Pressure,T1,T2,T3,D,N,TT,TM
       REAL(SZ),SAVE :: RHOWATG
+!$omp threadprivate(RHOWATG)
       IF (FIRSTCALL.EQ.0) THEN
          FIRSTCALL = 1
          RHOWATG=RHOWAT0*G
@@ -4864,9 +4968,9 @@ C23456
 !                  YCOOR(i)=Y(i)
 !            END DO
 !         ENDIF
-         READ(22,*) TT,XC1,YC1,DP1,TVX1,TVY1,RMW1,B1
-         READ(22,*) TT,XC2,YC2,DP2,TVX2,TVY2,RMW2,B2
-         OPEN(667,file='fort.22.adc')
+         READ(22+CK_LUN,*) TT,XC1,YC1,DP1,TVX1,TVY1,RMW1,B1
+         READ(22+CK_LUN,*) TT,XC2,YC2,DP2,TVX2,TVY2,RMW2,B2
+         OPEN(667+CK_LUN,file='fort.22.adc')
       ENDIF
       IF(TIMELOC.GT.WTIME2) THEN
          WTIME1=WTIME2
@@ -4878,7 +4982,7 @@ C23456
          TVY1=TVY2
          RMW1=RMW2
          B1=B2
-         READ(22,*) TT,XC2,YC2,DP2,TVX2,TVY2,RMW2,B2
+         READ(22+CK_LUN,*) TT,XC2,YC2,DP2,TVX2,TVY2,RMW2,B2
       END IF
       WTRATIO=(TIMELOC-WTIME1)/WTIMINC
       DP  = DP1  + WTRATIO*(DP2-DP1)
@@ -5025,62 +5129,107 @@ C     ----------------------------------------------------------------
       INTEGER  :: num_entry
       REAL(sz) :: TIMELOC, time1, wtratio
       REAL( 8), SAVE, ALLOCATABLE :: xcoor(:),ycoor(:)
+!$omp threadprivate(xcoor,ycoor)
       REAL( 8) :: wvnx(np),wvny(np), press(np)
       REAL(sz) :: RhoWatG
 
       REAL(SZ),DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
+!$omp threadprivate(lat,lon)
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ilat,ilon,atcfRMW
+!$omp threadprivate(ilat,ilon,atcfRMW)
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ilat1,ilon1,atcfRMW1
+!$omp threadprivate(ilat1,ilon1,atcfRMW1)
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ispd,icpress
+!$omp threadprivate(ispd,icpress)
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ispd1,icpress1
+!$omp threadprivate(ispd1,icpress1)
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: iyear,imth,iday,ihr
+!$omp threadprivate(iyear,imth,iday,ihr)
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE ::iyear1,imth1,iday1,ihr1
+!$omp threadprivate(iyear1,imth1,iday1,ihr1)
       REAL(sz), SAVE ::  lat1, lon1,  spd1,  cpress1,  rmw1
+!$omp threadprivate(lat1,lon1,spd1,cpress1,rmw1)
       REAL(sz), SAVE ::  dt, told, cLat1, cLon1
+!$omp threadprivate(dt,told,cLat1,cLon1)
       CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE, SAVE:: type! hindcast/nowcast or forecast?
+!$omp threadprivate(type)
       CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE, SAVE:: type1 !hindcast/nowcast or forecast?
+!$omp threadprivate(type1)
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::iFcstInc1, iFcstInc ! hours between forecasts
+!$omp threadprivate(iFcstInc1,iFcstInc)
       INTEGER , SAVE :: firstCall = 0
+!$omp threadprivate(firstCall)
       LOGICAL , SAVE :: firstTime = .TRUE.
+!$omp threadprivate(firstTime)
       REAL(sz),DIMENSION(:),ALLOCATABLE,SAVE :: HollB,HollB1
+!$omp threadprivate(HollB,HollB1)
       INTEGER ,DIMENSION(:),ALLOCATABLE,SAVE :: advr,advr1
+!$omp threadprivate(advr,advr1)
       REAL(sz), SAVE :: Vmax
+!$omp threadprivate(Vmax)
       REAL(sz), SAVE :: Vr
+!$omp threadprivate(Vr)
       REAL(sz), SAVE, DIMENSION(4) :: r
+!$omp threadprivate(r)
       REAL(sz), SAVE :: Pn
+!$omp threadprivate(Pn)
       REAL(sz), SAVE :: Pc
+!$omp threadprivate(Pc)
       REAL(sz), SAVE :: cLat
+!$omp threadprivate(cLat)
       REAL(sz), SAVE :: cLon
+!$omp threadprivate(cLon)
       REAL(sz), SAVE :: cHollB
+!$omp threadprivate(cHollB)
       REAL(sz) , DIMENSION(4), SAVE :: crmaxw
+!$omp threadprivate(crmaxw)
       REAL(sz), SAVE :: timeOffset
+!$omp threadprivate(timeOffset)
 !-------------------------------
       INTEGER,SAVE :: icyc
+!$omp threadprivate(icyc)
 !------------------------------
       INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: cycle_num
+!$omp threadprivate(cycle_num)
       INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: isotachs_per_cycle
+!$omp threadprivate(isotachs_per_cycle)
       INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: isotachs_per_cycle1
+!$omp threadprivate(isotachs_per_cycle1)
       INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: ipn,ipn1,cycle_num1
+!$omp threadprivate(ipn,ipn1,cycle_num1)
 
       REAL(sz) , DIMENSION(:,:), ALLOCATABLE,SAVE :: rmaxw,rmaxw1
+!$omp threadprivate(rmaxw,rmaxw1)
       REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::CycleTime,CycleTime1
+!$omp threadprivate(CycleTime,CycleTime1)
       REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::uTrans1,uTrans
+!$omp threadprivate(uTrans1,uTrans)
       REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::vTrans1,vTrans
+!$omp threadprivate(vTrans1,vTrans)
       REAL(sz), DIMENSION(:), ALLOCATABLE, SAVE :: h_speed
+!$omp threadprivate(h_speed)
       INTEGER , DIMENSION(:,:), ALLOCATABLE,SAVE::quadflag,quadflag1
+!$omp threadprivate(quadflag,quadflag1)
       INTEGER ,DIMENSION(:),ALLOCATABLE,SAVE :: ivr, dir,speed
+!$omp threadprivate(ivr,dir,speed)
       REAL(sz), SAVE :: dx,dy
+!$omp threadprivate(dx,dy)
       REAL(sz) :: VmaxBL
       REAL(sz) :: stormMotionU
       REAL(sz) :: stormMotionV
       REAL(sz) :: stormMotion
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ivr1, dir1, speed1
+!$omp threadprivate(ivr1,dir1,speed1)
       INTEGER , DIMENSION(:,:),ALLOCATABLE, SAVE :: ir,ir1
+!$omp threadprivate(ir,ir1)
       CHARACTER(LEN = 10),DIMENSION(:),ALLOCATABLE,SAVE::name,name1
+!$omp threadprivate(name,name1)
       REAL(sz),SAVE :: timeOld,timeNew
+!$omp threadprivate(timeOld,timeNew)
       REAL(sz) :: uTransNow, vTransNow ! time-interpolated overland speed, kts
       CHARACTER(1) ew,ns
       INTEGER, SAVE :: num_cycles ! num unique date/times in the fort.22
+!$omp threadprivate(num_cycles)
       REAL(sz) :: rndaySeconds ! end time of the run in seconds
 
 C
@@ -5129,12 +5278,12 @@ C
          rndaySeconds = RNDAY * 86400.d0
          i=0
          DO      ! determine the number of entries in the file
-            READ(22,*,END=991)
+            READ(22+CK_LUN,*,END=991)
             i=i+1
          ENDDO
 991      continue
          num_entry=i
-         rewind(22)
+         rewind(22+CK_LUN)
          i=num_entry
 
          allocate(advr1(i),iyear1(i),imth1(i),iday1(i),ihr1(i),type1(i))
@@ -5163,7 +5312,7 @@ C
 
          ient=1
 
-         READ(22,26) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
+         READ(22+CK_LUN,26) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
      &    ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
      &    ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
      &    (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
@@ -5221,7 +5370,7 @@ C
 ! ---------------------------------------------------------------------------
          DO ient=2,num_entry  ! LOOP through entris (lines) in input file
 
-            READ(22,26) advr1(ient), iyear1(ient),imth1(ient),
+            READ(22+CK_LUN,26) advr1(ient), iyear1(ient),imth1(ient),
      &        iday1(ient),
      &        ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
      &        ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
@@ -5441,7 +5590,7 @@ C     we are running off the end of the data.
          press(i) = press(i) / RhoWatG
 
          if (writeFullCircleRmaxes.eqv..true.) then
-            write(444,*) getLatestRmax(), getLatestAngle()
+            write(444+CK_LUN,*) getLatestRmax(), getLatestAngle()
          endif
 
       END DO
@@ -5571,6 +5720,7 @@ C***********************************************************************
       INTEGER  :: num_entry
       REAL(sz) :: TIMELOC, wtratio
       REAL( 8), SAVE, ALLOCATABLE :: xcoor(:),ycoor(:)
+!$omp threadprivate(xcoor,ycoor)
       REAL( 8) :: wvnx(np),wvny(np), press(np)
       REAL(sz) :: RhoWatG
       REAL(sz) :: corio                       ! Coriolis force (1/s)
@@ -5578,75 +5728,132 @@ C***********************************************************************
       !REAL(SZ),DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
       ! jgf53.dev: FIXME this should be REAL(SZ) as above
       REAL,DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
+!$omp threadprivate(lat,lon)
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ilat,ilon,atcfRMW
+!$omp threadprivate(ilat,ilon,atcfRMW)
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ilat1,ilon1,atcfRMW1
+!$omp threadprivate(ilat1,ilon1,atcfRMW1)
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ispd,icpress
+!$omp threadprivate(ispd,icpress)
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ispd1,icpress1
+!$omp threadprivate(ispd1,icpress1)
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: iyear,imth,iday,ihr
+!$omp threadprivate(iyear,imth,iday,ihr)
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE ::iyear1,imth1,iday1,ihr1
+!$omp threadprivate(iyear1,imth1,iday1,ihr1)
       CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE, SAVE:: type! hindcast/nowcast or forecast?
+!$omp threadprivate(type)
       CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE, SAVE:: type1 !hindcast/nowcast or forecast?
+!$omp threadprivate(type1)
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::iFcstInc1, iFcstInc ! hours between forecasts
+!$omp threadprivate(iFcstInc1,iFcstInc)
       INTEGER , SAVE :: firstCall = 0
+!$omp threadprivate(firstCall)
       LOGICAL , SAVE :: firstTime = .TRUE.
+!$omp threadprivate(firstTime)
       REAL(sz),DIMENSION(:),ALLOCATABLE,SAVE :: HollB,HollB1
+!$omp threadprivate(HollB,HollB1)
       REAL(sz),DIMENSION(:,:),ALLOCATABLE,SAVE :: VmaxesBL1,HollBs1
+!$omp threadprivate(VmaxesBL1,HollBs1)
       REAL(sz),DIMENSION(:,:,:),ALLOCATABLE,SAVE :: HollBs,VmaxesBL
+!$omp threadprivate(HollBs,VmaxesBL)
       INTEGER ,DIMENSION(:),ALLOCATABLE,SAVE :: advr,advr1
+!$omp threadprivate(advr,advr1)
       REAL(sz), SAVE :: Vr
+!$omp threadprivate(Vr)
       REAL(sz), SAVE, DIMENSION(4) :: r
+!$omp threadprivate(r)
       REAL(sz), SAVE :: Pn
+!$omp threadprivate(Pn)
       REAL(sz), SAVE :: Pc
+!$omp threadprivate(Pc)
       REAL(sz), SAVE :: cLat
+!$omp threadprivate(cLat)
       REAL(sz), SAVE :: cLon
+!$omp threadprivate(cLon)
       REAL(SZ), SAVE :: told
+!$omp threadprivate(told)
       ! save parameters for each node 
       ! change them to allocatable, save Aug. 2013, Jie
       REAL(sz), ALLOCATABLE, SAVE :: cHollBs1(:), cHollBs2(:)
+!$omp threadprivate(cHollBs1,cHollBs2)
       REAL(sz), ALLOCATABLE, SAVE :: cPhiFactor1(:), cPhiFactor2(:)
+!$omp threadprivate(cPhiFactor1,cPhiFactor2)
       REAL(sz), ALLOCATABLE, SAVE :: cVmwBL1(:), cVmwBL2(:)
+!$omp threadprivate(cVmwBL1,cVmwBL2)
       REAL(sz), ALLOCATABLE, SAVE :: crmaxw1(:), crmaxw2(:)
+!$omp threadprivate(crmaxw1,crmaxw2)
       REAL(sz), ALLOCATABLE, SAVE :: crmaxwTrue1(:), crmaxwTrue2(:)
+!$omp threadprivate(crmaxwTrue1,crmaxwTrue2)
       REAL(sz), ALLOCATABLE, SAVE :: cHollBs(:)
+!$omp threadprivate(cHollBs)
       REAL(sz), ALLOCATABLE, SAVE :: cPhiFactor(:)
+!$omp threadprivate(cPhiFactor)
       REAL(sz), ALLOCATABLE, SAVE :: cVmwBL(:)
+!$omp threadprivate(cVmwBL)
       REAL(sz), ALLOCATABLE, SAVE :: crmaxw(:)
+!$omp threadprivate(crmaxw)
       REAL(sz), ALLOCATABLE, SAVE :: crmaxwTrue(:)
+!$omp threadprivate(crmaxwTrue)
       REAL(sz), ALLOCATABLE, SAVE :: aziangle(:), dist(:)
+!$omp threadprivate(aziangle,dist)
       REAL(sz), SAVE :: timeOffset
+!$omp threadprivate(timeOffset)
 !-------------------------------
       INTEGER,SAVE :: icyc
+!$omp threadprivate(icyc)
       INTEGER,SAVE :: isot
+!$omp threadprivate(isot)
 !------------------------------
       INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: cycle_num
+!$omp threadprivate(cycle_num)
       INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: isotachs_per_cycle
+!$omp threadprivate(isotachs_per_cycle)
       INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: isotachs_per_cycle1
+!$omp threadprivate(isotachs_per_cycle1)
       INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: ipn,ipn1,cycle_num1
+!$omp threadprivate(ipn,ipn1,cycle_num1)
 
       REAL(sz) , DIMENSION(:,:), ALLOCATABLE,SAVE :: rmaxw1
+!$omp threadprivate(rmaxw1)
       REAL(sz) , DIMENSION(:,:,:), ALLOCATABLE,SAVE :: rmaxw
+!$omp threadprivate(rmaxw)
       REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::CycleTime,CycleTime1
+!$omp threadprivate(CycleTime,CycleTime1)
       REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::uTrans1,uTrans
+!$omp threadprivate(uTrans1,uTrans)
       REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::vTrans1,vTrans
+!$omp threadprivate(vTrans1,vTrans)
       REAL(sz), DIMENSION(:), ALLOCATABLE, SAVE :: h_speed
+!$omp threadprivate(h_speed)
       INTEGER , DIMENSION(:,:), ALLOCATABLE,SAVE::quadflag1
+!$omp threadprivate(quadflag1)
       INTEGER , DIMENSION(:,:,:), ALLOCATABLE,SAVE::quadflag
+!$omp threadprivate(quadflag)
       INTEGER ,DIMENSION(:),ALLOCATABLE,SAVE :: ivr, dir,speed
+!$omp threadprivate(ivr,dir,speed)
       REAL(sz), SAVE :: dx,dy
+!$omp threadprivate(dx,dy)
       REAL(sz) :: VmaxBL
       REAL(sz) :: stormMotionU
       REAL(sz) :: stormMotionV
       REAL(sz) :: stormMotion
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ivr1, dir1, speed1
+!$omp threadprivate(ivr1,dir1,speed1)
       INTEGER , DIMENSION(:,:),ALLOCATABLE, SAVE :: ir1
+!$omp threadprivate(ir1)
       INTEGER , DIMENSION(:,:,:),ALLOCATABLE, SAVE :: ir
+!$omp threadprivate(ir)
       CHARACTER(LEN = 10),DIMENSION(:),ALLOCATABLE,SAVE::name,name1
+!$omp threadprivate(name,name1)
       REAL(sz),SAVE :: timeNew
+!$omp threadprivate(timeNew)
       REAL(sz) :: uTransNow, vTransNow ! time-interpolated overland speed, kts
       REAL(sz) :: dirNow ! Jie
       REAL(sz) :: numRmaxes ! number of Rmax values selected by user
       CHARACTER(1) ew,ns
       INTEGER, SAVE :: num_cycles ! num unique date/times in the fort.22
+!$omp threadprivate(num_cycles)
 
       REAL(sz) :: rndaySeconds ! end time of the run in seconds
       real(sz) :: newVortexRMW ! average Rmax at icyc   (next fort.22 time value)
@@ -5708,12 +5915,12 @@ C***********************************************************************
       IF (firstCall .EQ. 0) THEN  ! first time the routine is called
          i=0
          DO      ! determine the number of entries in the file
-            READ(22,*,END=992)
+            READ(22+CK_LUN,*,END=992)
             i=i+1
          ENDDO
 992      continue
          num_entry=i
-         rewind(22)
+         rewind(22+CK_LUN)
          i=num_entry
 
          allocate(advr1(i),iyear1(i),imth1(i),iday1(i),ihr1(i),type1(i))
@@ -5752,7 +5959,7 @@ C***********************************************************************
 
          ient = 1
 
-         READ(22,27) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
+         READ(22+CK_LUN,27) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
      &    ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
      &    ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
      &    (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
@@ -5815,7 +6022,7 @@ C***********************************************************************
 ! ---------------------------------------------------------------------------
          DO ient=2,num_entry  ! LOOP through entris (lines) in input file
 
-         READ(22,27) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
+         READ(22+CK_LUN,27) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
      &    ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
      &    ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
      &    (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
@@ -6080,7 +6287,7 @@ C     we are running off the end of the data.
      
       if (writeFullCircleRmaxes.eqv..true.) then
          do i=1,np
-            write(444,*)  crmaxw(i), aziangle(i),dist(i)
+            write(444+CK_LUN,*)  crmaxw(i), aziangle(i),dist(i)
          end do
       endif     
       ! jgf49.0803 Make the current Rmax and center location
@@ -6207,12 +6414,12 @@ C
       currentLine = 1
       do i=1,3
          ! throw header away this time
-         read(22,'(A)',end=246,err=248,iostat=errorio) scratchMessage
+         read(22+CK_LUN,'(A)',end=246,err=248,iostat=errorio) scratchMessage
          currentLine = currentLine + 1
       end do
       numFiles = 0
       do   ! loop until we run out of data, just counting the files this time
-         read(22,'(A)',end=123,err=248,iostat=errorio) scratchMessage
+         read(22+CK_LUN,'(A)',end=123,err=248,iostat=errorio) scratchMessage
          currentLine = currentLine + 1
          numFiles = numFiles + 1
       end do
@@ -6220,23 +6427,23 @@ C
       allocate(hWindFiles(numFiles))
       !
       ! now go back to the beginning of the file and read in the data
-      rewind(22)
+      rewind(22+CK_LUN)
       currentLine = 1
-      read(22,'(A)',end=246,err=248,iostat=errorio) metComment
+      read(22+CK_LUN,'(A)',end=246,err=248,iostat=errorio) metComment
       call logMessage(ECHO,"metComment: "//trim(metComment))
       currentLine = currentLine + 1
-      read(22,*,end=246,err=248,iostat=errorio) hWindMultiplier
+      read(22+CK_LUN,*,end=246,err=248,iostat=errorio) hWindMultiplier
       currentLine = currentLine + 1
       write(scratchMessage,'("hWindMultiplier=",E15.8)') hWindMultiplier
       call logMessage(ECHO,scratchMessage)
-      read(22,'(A)',end=248,err=248,iostat=errorio) scratchMessage
+      read(22+CK_LUN,'(A)',end=248,err=248,iostat=errorio) scratchMessage
       currentLine = currentLine + 1
       pressureWindRelationship
      &      = scratchMessage(1:index(adjustl(scratchMessage)," "))
       call logMessage(ECHO,"pressureWindRelationship: "
      &     //trim(pressureWindRelationship))
       do i=1,numFiles
-         read(22,*,end=246,err=248,iostat=errorio)
+         read(22+CK_LUN,*,end=246,err=248,iostat=errorio)
      &     hWindFiles(i)%cycleTime,
      &     hWindFiles(i)%Pc,
      &     hWindFiles(i)%rampVal,
@@ -6248,7 +6455,7 @@ C
          call logMessage(ECHO,scratchMessage)
          currentLine = currentLine + 1
       end do
-      close(22)
+      close(22+CK_LUN)
       !
       ! log the number of HWind files that were specified
       write(scratchMessage,
@@ -6558,7 +6765,7 @@ C
      &       * ATAN2((slam(maxNode)-deg2rad*cLonNow),
      &                (sfea(maxNode)-deg2rad*cLatNow))
          if ( angle > 360.d0) angle = angle - 360.d0
-         write(444,*) dist, angle
+         write(444+CK_LUN,*) dist, angle
       endif
       !
       ! use max wind speed to estimate minimum central pressure
@@ -6669,12 +6876,12 @@ C
       dataset = 0
       !
       ! SURFACE WIND COMPONENTS FOR HURRICANE  name_0825_22_30
-      read(220,'(A)',end=246,err=248,iostat=errorio) scratchMessage
+      read(220+CK_LUN,'(A)',end=246,err=248,iostat=errorio) scratchMessage
       call logMessage(ECHO,"HWind comment line: "//trim(scratchMessage))
       !
       ! DX=DY= 6.02280 KILOMETERS.
       currentLine = currentLine + 1
-      read(220,'(7X,F8.5,A)',end=246,err=248,iostat=errorio)
+      read(220+CK_LUN,'(7X,F8.5,A)',end=246,err=248,iostat=errorio)
      &   hWindFiles(cn)%dh
       write(scratchMessage,'("Mercator grid spacing is ",F8.5," km.")')
      &    hWindFiles(cn)%dh
@@ -6682,7 +6889,7 @@ C
       !
       ! STORM CENTER LOCALE IS -77.2730 EAST LONGITUDE and  27.2950 NORTH LATITUDE ... STORM CENTER IS AT (X,Y)=(0,0)
       currentLine = currentLine + 1
-      read(220,'(23X,F9.4,18X,F9.4,A)',end=246,err=248,iostat=errorio)
+      read(220+CK_LUN,'(23X,F9.4,18X,F9.4,A)',end=246,err=248,iostat=errorio)
      &   hWindFiles(cn)%cLon, hWindFiles(cn)%cLat ! degrees
       write(scratchMessage,'("center lon=",E15.8," center lat=",E15.8)')
      &   hWindFiles(cn)%cLon, hWindFiles(cn)%cLat
@@ -6690,16 +6897,16 @@ C
       ! dimensions
       do i=1,4
          currentLine = currentLine + 1
-         read(220,'(A)',end=246,err=248,iostat=errorio) scratchMessage
+         read(220+CK_LUN,'(A)',end=246,err=248,iostat=errorio) scratchMessage
          call logMessage(ECHO,"Coordinate: "//trim(scratchMessage))
          currentLine = currentLine + 1
-         read(220,*,end=246,err=248,iostat=errorio) hWindFiles(cn)%nh
+         read(220+CK_LUN,*,end=246,err=248,iostat=errorio) hWindFiles(cn)%nh
          write(scratchMessage,'("HWind dimension read: ",i3,".")')
      &      hWindFiles(cn)%nh
          call logMessage(ECHO,scratchMessage)
          ! we won't need the actual coordinates
          currentLine = currentLine + 1
-         read(220,'(6F13.4)',end=246,err=248,iostat=errorio)
+         read(220+CK_LUN,'(6F13.4)',end=246,err=248,iostat=errorio)
      &      (throwAwayCoordinate,j=1,hWindFiles(cn)%nh)
       end do
       !
@@ -6707,12 +6914,12 @@ C
       !
       ! SURFACE WIND COMPONENTS ... M/S ... COMPLEX ARRAY W=(U,V)
       currentLine = currentLine + 1
-      read(220,'(A)',end=246,err=248,iostat=errorio) scratchMessage
+      read(220+CK_LUN,'(A)',end=246,err=248,iostat=errorio) scratchMessage
       currentLine = currentLine + 1
       call logMessage(ECHO,"HWind sfc wind line: "
      &      //trim(scratchMessage))
       currentLine = currentLine + 1
-      read(220,'(A)',end=246,err=248,iostat=errorio) scratchMessage
+      read(220+CK_LUN,'(A)',end=246,err=248,iostat=errorio) scratchMessage
       currentLine = currentLine + 1
       call logMessage(ECHO,"HWind sfc wind dimensions line: "
      &       //trim(scratchMessage))
@@ -6727,13 +6934,13 @@ C
       dataset = 1
       do j=-indexLimit,indexLimit
             ! ref bottom of http://www.aoml.noaa.gov/hrd/Storm_pages/grid.html
-         read(220,'(2(A1,F13.5,A1,F13.5,A1))',end=246,err=248,iostat=errorio)
+         read(220+CK_LUN,'(2(A1,F13.5,A1,F13.5,A1))',end=246,err=248,iostat=errorio)
      &       (paren, hWindFiles(cn)%u(i,j), comma,
      &        hWindFiles(cn)%v(i,j), paren,
      &        i=-indexLimit, indexLimit)
          dataset = dataset + 1
       end do
-      close(220)
+      close(220+CK_LUN)
       call logMessage(INFO,"Finished loading the HWind file '"
      &                     //trim(hWindFiles(cn)%file_name)//"'.")
       !
@@ -6939,12 +7146,12 @@ C
       currentLine = 1
       do i=1,3
          ! throw header away this time
-         read(22,'(A)',end=246,err=248,iostat=errorio) scratchMessage
+         read(22+CK_LUN,'(A)',end=246,err=248,iostat=errorio) scratchMessage
          currentLine = currentLine + 1
       end do
       numFiles = 0      
       do   ! loop until we run out of data, just counting the files this time
-         read(22,'(A)',end=123,err=248,iostat=errorio) scratchMessage
+         read(22+CK_LUN,'(A)',end=123,err=248,iostat=errorio) scratchMessage
          currentLine = currentLine + 1
          numFiles = numFiles + 1
       end do
@@ -6953,23 +7160,23 @@ C
 
       !
       ! now go back to the beginning of the file and read in the data
-      rewind(22)
+      rewind(22+CK_LUN)
       currentLine = 1
-      read(22,'(A)',end=246,err=248,iostat=errorio) metComment
+      read(22+CK_LUN,'(A)',end=246,err=248,iostat=errorio) metComment
       call logMessage(ECHO,"metComment: "//trim(metComment))
       currentLine = currentLine + 1
-      read(22,*,end=246,err=248,iostat=errorio) GFDL_WindMultiplier
+      read(22+CK_LUN,*,end=246,err=248,iostat=errorio) GFDL_WindMultiplier
       currentLine = currentLine + 1
       write(scratchMessage,'("WindMultiplier=",E15.8)') GFDL_WindMultiplier
       call logMessage(ECHO,scratchMessage)
-      read(22,*,end=246,err=248,iostat=errorio) GFDL_max_extrap_dist
+      read(22+CK_LUN,*,end=246,err=248,iostat=errorio) GFDL_max_extrap_dist
       currentLine = currentLine + 1
       write(scratchMessage,
      &  '("GFDL Maximum Extrapolation Distance=",E15.8)') GFDL_max_extrap_dist
       call logMessage(ECHO,scratchMessage)
 
       do i=1,numFiles
-         read(22,*,end=246,err=248,iostat=errorio)
+         read(22+CK_LUN,*,end=246,err=248,iostat=errorio)
      &     GFDL_Files(i)%cycleTime,
      &     GFDL_Files(i)%rampVal,
      &     GFDL_Files(i)%file_name
@@ -6983,7 +7190,7 @@ C
          call logMessage(ECHO,scratchMessage)
          currentLine = currentLine + 1
       end do
-      close(22)
+      close(22+CK_LUN)
  
       ! log the number of GFDL Met files that were specified
       write(scratchMessage,
@@ -7223,7 +7430,7 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
        ! READ THE FIRST LINE OF THE GFDL OUTPUT WHICH IS THE NUMBER OF POINTS IN THIS RECORD
 !       READ(LUN,'(F10.4)') RPTS_GFDL  
 !       NPTS_GFDL = INT(RPTS_GFDL)
-        read(LUN,'(I10)') NPTS_GFDL
+        read(LUN+CK_LUN,'(I10)') NPTS_GFDL
         rpts_gfdl = real(npts_gfdl,sz)
 
 !       tcm 20130507 -- changed the read above due to changes in GFDL ASCII files
@@ -7236,7 +7443,7 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
        DO I=1,NPTS_GFDL
 !          READ(LUN,'(10F10.4)') UTMP,VTMP,TTMP,MTMP,SPTMP,PTMP,
 !     &                      LONGTMP,LATTMP,HTMP,NTMP
-          READ(LUN,'(9F10.4)') UTMP,VTMP,TTMP,MTMP,SPTMP,PTMP,
+          READ(LUN+CK_LUN,'(9F10.4)') UTMP,VTMP,TTMP,MTMP,SPTMP,PTMP,
      &                      LONGTMP,LATTMP,HTMP
           LON_GFDL = LONGTMP*DEG2RAD !CONVERT TO RADIANS
           LAT_GFDL = LATTMP*DEG2RAD  !CONVERT TO RADIANS
@@ -7248,7 +7455,7 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
 
        ENDDO !I
          
-       CLOSE(LUN)  !CLOSE THIS GFDL DATA FILE
+       CLOSE(LUN+CK_LUN)  !CLOSE THIS GFDL DATA FILE
 
        write(scratchMessage,'("Read ",i0," GFDL Met Points.")')
      &    NPTS_GFDL
@@ -7508,6 +7715,7 @@ C***********************************************************************
       real(sz), intent(out), dimension(np) :: rsny
       integer :: nhg
       integer, save :: lineNum = 0
+!$omp threadprivate(lineNum)
       real(sz) :: rsnxRaw, rsnyRaw
       character*80 pbljagf
       integer :: errorio
@@ -7520,7 +7728,7 @@ C
       rsny(1:np) = 0.d0
 C      
       lineNum = lineNum + 1
- 170  read(23,'(a80)',end=500,err=600,iostat=errorio) pbljagf
+ 170  read(23+CK_LUN,'(a80)',end=500,err=600,iostat=errorio) pbljagf
       if (pbljagf(1:1).eq.'#') then
          call allMessage(ERROR,'Found "#" in column 1 of fort.23.')
          call windTerminate()
@@ -7533,7 +7741,7 @@ C
       rsnx(nhg) = rsnxRaw
       rsny(nhg) = rsnyRaw
       lineNum = lineNum + 1      
-      read(23,'(a80)') pbljagf
+      read(23+CK_LUN,'(a80)') pbljagf
       if (pbljagf(1:1).eq.'#') then
          call allMessage(ERROR,'Found "#" in column 1 of fort.23; '//
      &      ' this character should only appear in column 2.')
@@ -7639,11 +7847,11 @@ C----------------------------------------------------------------------
       ! read header
       dynamicWaterLevelCorrectionCurrentLine = 1
       ! first line is a comment line
-      read(dynamicWaterLevelCorrectionUn,'(A)',end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionComment
+      read(dynamicWaterLevelCorrectionUn+CK_LUN,'(A)',end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionComment
       call logMessage(ECHO,"dynamicWaterLevelCorrectionComment: "//trim(dynamicWaterLevelCorrectionComment))
       dynamicWaterLevelCorrectionCurrentLine = dynamicWaterLevelCorrectionCurrentLine + 1
       ! 2nd line is time increment between datasets 
-      read(dynamicWaterLevelCorrectionUn,fmt=*,end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionTimeIncrement
+      read(dynamicWaterLevelCorrectionUn+CK_LUN,fmt=*,end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionTimeIncrement
       write(scratchMessage,'(a,f15.7)') "dynamicWaterLevelCorrectionTimeIncrement: ",
      &    dynamicWaterLevelCorrectionTimeIncrement 
       call logMessage(ECHO,scratchMessage)
@@ -7656,7 +7864,7 @@ C----------------------------------------------------------------------
          call windTerminate()
       endif
       ! 3nd line is default correction value 
-      read(dynamicWaterLevelCorrectionUn,fmt=*,end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionDefaultValue
+      read(dynamicWaterLevelCorrectionUn+CK_LUN,fmt=*,end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionDefaultValue
       write(scratchMessage,'(a,f15.7)') "dynamicWaterLevelCorrectionDefaultValue: ",
      &    dynamicWaterLevelCorrectionDefaultValue 
       call logMessage(ECHO,scratchMessage)
@@ -7871,7 +8079,7 @@ C----------------------------------------------------------------------
       dynamicWaterLevelCorrectionsNew_m(:) = dynamicWaterLevelCorrectionDefaultValue      
       nextCorrectionDataSetFound = .false.
       do ! loop until we run out of data or hit a "#" in column 2
-         read(dynamicWaterLevelCorrectionUn,fmt='(a)',end=133,err=258,iostat=errorio) 
+         read(dynamicWaterLevelCorrectionUn+CK_LUN,fmt='(a)',end=133,err=258,iostat=errorio) 
      &      scratchMessage 
          dynamicWaterLevelCorrectionCurrentLine = dynamicWaterLevelCorrectionCurrentLine + 1
          ! check to see if the next dataset is about to start

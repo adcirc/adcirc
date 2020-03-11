@@ -19,21 +19,30 @@ Casey 090302: The coupling interval controls how ADCIRC and SWAN
 C             take turns during the simulation.  It is set
 C             at the end of PADCSWAN_INIT.
       INTEGER :: CouplingInterval
+!$omp threadprivate(CouplingInterval)
       INTEGER,SAVE :: SwanTimeStep ! Counter for SWAN time steps.
+!$omp threadprivate(SwanTimeStep)
 
 Casey 090302: These logical variables will be reset to .TRUE.
 C             if the water levels in SWAN are coupled to ADCIRC.
       LOGICAL :: COUPCUR
+!$omp threadprivate(COUPCUR)
       LOGICAL :: COUPWIND
+!$omp threadprivate(COUPWIND)
       LOGICAL :: COUPWLV
+!$omp threadprivate(COUPWLV)
 Casey 091216: Added another coupling variable.
       LOGICAL :: COUPFRIC
+!$omp threadprivate(COUPFRIC)
 
 Casey 090302: These arrays contain the radiation stresses.
 Casey 090820: Be explicit about the size of these REAL variables.
       REAL(4) ,ALLOCATABLE :: ADCIRC_SXX(:,:)
+!$omp threadprivate(ADCIRC_SXX)
       REAL(4) ,ALLOCATABLE :: ADCIRC_SXY(:,:)
+!$omp threadprivate(ADCIRC_SXY)
       REAL(4) ,ALLOCATABLE :: ADCIRC_SYY(:,:)
+!$omp threadprivate(ADCIRC_SYY)
 
 Casey 090302: The interpolation weight controls which value
 C             is taken when information is passed between ADCIRC
@@ -42,16 +51,23 @@ C             is taken from the beginning of the coupling interval.
 C             If InterpoWeight = 1, then the value is taken from
 C             the end of the coupling interval.
       REAL(SZ) :: InterpoWeight
+!$omp threadprivate(InterpoWeight)
 
 Casey 090302: The following arrays will contain the ADCIRC values
 C             that may be passed to SWAN.
       REAL(SZ),ALLOCATABLE :: SWAN_ETA2(:,:)
+!$omp threadprivate(SWAN_ETA2)
       REAL(SZ),ALLOCATABLE :: SWAN_UU2(:,:)
+!$omp threadprivate(SWAN_UU2)
       REAL(SZ),ALLOCATABLE :: SWAN_VV2(:,:)
+!$omp threadprivate(SWAN_VV2)
       REAL(SZ),ALLOCATABLE :: SWAN_WX2(:,:)
+!$omp threadprivate(SWAN_WX2)
       REAL(SZ),ALLOCATABLE :: SWAN_WY2(:,:)
+!$omp threadprivate(SWAN_WY2)
 Casey 091216: Added another array.
       REAL(SZ),ALLOCATABLE :: SWAN_Z0(:,:)
+!$omp threadprivate(SWAN_Z0)
 
 Casey 090302: These variables control SWAN output.
       ! jgf51.21.25: Added target attribute to file position counters
@@ -59,25 +75,37 @@ Casey 090302: These variables control SWAN output.
       ! for each output type and updated in subroutine writeOutArray in
       ! the write_output module. 
       INTEGER, ALLOCATABLE, TARGET :: IGSW(:) ! file position counters
+!$omp threadprivate(IGSW)
       INTEGER              :: NumSwanOutput
+!$omp threadprivate(NumSwanOutput)
       LOGICAL              :: Processed26 = .FALSE.
+!$omp threadprivate(Processed26)
       LOGICAL              :: SWAN_OQPROC(NMOVAR)
+!$omp threadprivate(SWAN_OQPROC)
       INTEGER              :: SWAN_VOQR(NMOVAR)
+!$omp threadprivate(SWAN_VOQR)
 
 Casey 090303: Add variable for maximum SWAN output.
       REAL(SZ),ALLOCATABLE        :: SWAN_MAX(:,:)
+!$omp threadprivate(SWAN_MAX)
       REAL(SZ),ALLOCATABLE,TARGET :: SWAN_MAXTEMP(:)
+!$omp threadprivate(SWAN_MAXTEMP)
       REAL(SZ),ALLOCATABLE,TARGET :: SWAN_MAXTEMP_G(:) !...Cobell added
+!$omp threadprivate(SWAN_MAXTEMP_G)
 
 Casey 100205: Add variables for writing of SWAN hot-start files.
       INTEGER              :: SwanHotStartUnit
+!$omp threadprivate(SwanHotStartUnit)
       LOGICAL              :: WriteSwanHotStart = .FALSE.
+!$omp threadprivate(WriteSwanHotStart)
 
 Casey 120302: Merging ice changes from Taylor Asher.
 CTGA 110912:  Implementing SWAN ice handling.  This variable is set to
 C             0 wherever ice reaches/exceeds a threshold value
       INTEGER,ALLOCATABLE :: ICY(:)
+!$omp threadprivate(ICY)
       REAL(SZ),ALLOCATABLE :: SWAN_CICE2(:,:)
+!$omp threadprivate(SWAN_CICE2)
 
 C-----------------------------------------------------------------------
       CONTAINS
@@ -215,6 +243,7 @@ C-----------------------------------------------------------------------
       INTEGER :: NUMFOUND
 
       LOGICAL :: Marcel = .FALSE.
+!$omp threadprivate(Marcel)
 
       REAL(SZ),ALLOCATABLE :: DSXXDX(:)
       REAL(SZ),ALLOCATABLE :: DSXYDY(:)
@@ -456,6 +485,7 @@ C-----------------------------------------------------------------------
 
       REAL(SZ) :: H
       REAL(SZ) :: K = 0.4D0
+!$omp threadprivate(K)
       REAL(SZ) :: N
       REAL(SZ) :: Z0
 
@@ -616,6 +646,7 @@ C-----------------------------------------------------------------------
       INTEGER                       :: IW
       INTEGER                       :: SWAN_BKC
       INTEGER,SAVE                  :: SWAN_MTC
+!$omp threadprivate(SWAN_MTC)
       INTEGER                       :: UnitNumber
       INTEGER                       :: IFileCounter   !st3 100708:
       INTEGER                       :: UpdateMax(NP)

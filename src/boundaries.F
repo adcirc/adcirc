@@ -12,58 +12,98 @@ C     ------------------------------------------------------------------
 !     module. 
 C     ------------------------------------------------------------------
       module boundaries
+      use CkLunMod, only : CK_LUN
 C     ------------------------------------------------------------------
       use sizes, only : sz
       implicit none
       REAL(SZ),ALLOCATABLE ::   BNDLEN2O3(:)
+!$omp threadprivate(BNDLEN2O3)
       REAL(SZ),ALLOCATABLE ::   CSII(:),SIII(:)
+!$omp threadprivate(CSII,SIII)
       INTEGER,ALLOCATABLE ::    ME2GW(:)
+!$omp threadprivate(ME2GW)
       INTEGER,ALLOCATABLE ::    NBV(:),LBCODEI(:)
+!$omp threadprivate(NBV,LBCODEI)
  
       INTEGER,ALLOCATABLE ::    NVDLL(:),NBD(:)
+!$omp threadprivate(NVDLL,NBD)
       INTEGER,ALLOCATABLE ::    NBDV(:,:)
+!$omp threadprivate(NBDV)
       INTEGER,ALLOCATABLE ::    NVELL(:)
+!$omp threadprivate(NVELL)
       INTEGER,ALLOCATABLE ::    NBVV(:,:)
+!$omp threadprivate(NBVV)
       INTEGER,ALLOCATABLE ::    IBTYPE(:)  !jgf49.32 now ibtype is an array
+!$omp threadprivate(IBTYPE)
       INTEGER,ALLOCATABLE ::    IBTYPEE(:) !jgf49.32 added ibtypee
+!$omp threadprivate(IBTYPEE)
       integer, allocatable :: ibtype_orig(:)
+!$omp threadprivate(ibtype_orig)
       INTEGER,ALLOCATABLE ::    NEleZNG(:)
+!$omp threadprivate(NEleZNG)
       REAL(SZ),ALLOCATABLE ::   ZNGIF1(:),ZNGIF2(:),ZNGIF3(:)
+!$omp threadprivate(ZNGIF1,ZNGIF2,ZNGIF3)
 C.....for internal barrier boundaries with flowthrough pipes
       REAL(SZ),ALLOCATABLE ::   BARLANHT(:),BARLANCFSP(:)
+!$omp threadprivate(BARLANHT,BARLANCFSP)
       REAL(SZ),ALLOCATABLE ::   BARINHT(:),BARINCFSB(:),BARINCFSP(:)
+!$omp threadprivate(BARINHT,BARINCFSB,BARINCFSP)
       REAL(SZ),ALLOCATABLE ::   PIPEHT(:),PIPECOEF(:),PIPEDIAM(:)
+!$omp threadprivate(PIPEHT,PIPECOEF,PIPEDIAM)
       INTEGER, ALLOCATABLE ::   IBCONN(:)
+!$omp threadprivate(IBCONN)
       ! these arrays will only be needed temporarily, between reading 
       ! the ascii mesh file and initializing the boundaries
       REAL(SZ),ALLOCATABLE ::   BARLANHTR(:,:),BARLANCFSPR(:,:)
+!$omp threadprivate(BARLANHTR,BARLANCFSPR)
       REAL(SZ),ALLOCATABLE ::   BARINHTR(:,:),BARINCFSBR(:,:),BARINCFSPR(:,:)
+!$omp threadprivate(BARINHTR,BARINCFSBR,BARINCFSPR)
       REAL(SZ),ALLOCATABLE ::   PIPEHTR(:,:),PIPECOEFR(:,:),PIPEDIAMR(:,:)
+!$omp threadprivate(PIPEHTR,PIPECOEFR,PIPEDIAMR)
       INTEGER, ALLOCATABLE ::  IBCONNR(:,:)
+!$omp threadprivate(IBCONNR)
       !      
       INTEGER  NOPE
+!$omp threadprivate(NOPE)
       ! kmd - added for rivers in baroclinic simulation
       INTEGER,ALLOCATABLE ::    BCRNBVV(:,:)
+!$omp threadprivate(BCRNBVV)
       INTEGER,ALLOCATABLE ::    BCRNVELL(:)
+!$omp threadprivate(BCRNVELL)
       INTEGER  totalbcrivernodes  ! nodes for the river boundary conditions for baroclinic
+!$omp threadprivate(totalbcrivernodes)
       INTEGER  bcriversec  ! river boundary information
+!$omp threadprivate(bcriversec)
       LOGICAL :: BndBCRiver          = .FALSE.
+!$omp threadprivate(BndBCRiver)
 
       INTEGER  NBOU
+!$omp threadprivate(NBOU)
       INTEGER  NETA
+!$omp threadprivate(NETA)
       INTEGER  NBVI,NBVJ
+!$omp threadprivate(NBVI,NBVJ)
 
       INTEGER  NVEL,NVELEXT,NVELME
+!$omp threadprivate(NVEL,NVELEXT,NVELME)
       INTEGER  IM,JGW,JKI,JME
+!$omp threadprivate(IM,JGW,JKI,JME)
       INTEGER  NFLUXIBP,NPIPE
+!$omp threadprivate(NFLUXIBP,NPIPE)
       integer  nfluxb,nfluxf,nfluxib,nfluxrbc,nfluxgbc
+!$omp threadprivate(nfluxb,nfluxf,nfluxib,nfluxrbc,nfluxgbc)
       real(sz) :: costset
+!$omp threadprivate(costset)
       real(sz) :: anginn
+!$omp threadprivate(anginn)
 
   
       REAL(SZ),ALLOCATABLE ::   BTRAN3(:),BTRAN4(:),BTRAN5(:)
+!$omp threadprivate(BTRAN3,BTRAN4,BTRAN5)
       REAL(SZ),ALLOCATABLE ::   BTRAN6(:),BTRAN7(:),BTRAN8(:)
+!$omp threadprivate(BTRAN6,BTRAN7,BTRAN8)
       INTEGER, ALLOCATABLE ::   NTRAN1(:),NTRAN2(:)
+!$omp threadprivate(NTRAN1,NTRAN2)
 
 !     &       LBARRAY_POINTER,              !LBARRAY_POINTER(MNP) = pointer into array of land or flux boundary
 !     &       LBCODEI,                      !LBCODEI(MNVel) = array of land or flux boundary codes
@@ -83,12 +123,16 @@ C.....for internal barrier boundaries with flowthrough pipes
       end type simpleBoundary_t
       ! variable holding elevation boundaries
       type(simpleBoundary_t), allocatable :: elevationBoundaries(:)
+!$omp threadprivate(elevationBoundaries)
       
       ! variable holding flux boundaries with 
       ! ibtype = 0, 1, 2, 10, 11, 12, 20, 21, 22, 30, 52, 102, 112, 122, 152
       type(simpleBoundary_t), allocatable :: simpleFluxBoundaries(:)
+!$omp threadprivate(simpleFluxBoundaries)
       integer :: numSimpleFluxBoundaries ! for memory allocation
+!$omp threadprivate(numSimpleFluxBoundaries)
       integer :: sfCount   ! index into the simpleFluxBoundaries array
+!$omp threadprivate(sfCount)
       !
       ! flux boundaries where ibtype = 3, 13, 23
       type externalFluxBoundary_t
@@ -104,8 +148,11 @@ C.....for internal barrier boundaries with flowthrough pipes
          integer, allocatable :: xdmf_nodes(:)
       end type externalFluxBoundary_t
       type(externalFluxBoundary_t), allocatable :: externalFluxBoundaries(:)
+!$omp threadprivate(externalFluxBoundaries)
       integer :: numExternalFluxBoundaries 
+!$omp threadprivate(numExternalFluxBoundaries)
       integer :: efCount   ! index into the externalFluxBoundaries array
+!$omp threadprivate(efCount)
       !
       ! flux boundaries where ibtype = 4, 24
       type internalFluxBoundary_t
@@ -125,8 +172,11 @@ C.....for internal barrier boundaries with flowthrough pipes
          integer, allocatable :: ibTypeAttribute(:) ! used for visualization
       end type internalFluxBoundary_t
       type(internalFluxBoundary_t), allocatable :: internalFluxBoundaries(:)
+!$omp threadprivate(internalFluxBoundaries)
       integer :: numInternalFluxBoundaries    
+!$omp threadprivate(numInternalFluxBoundaries)
       integer :: ifCount   ! index into the internalFluxBoundaries array
+!$omp threadprivate(ifCount)
       
       ! flux boundaries where ibtype = 5, 25
       type internalFluxBoundaryWithPipes_t
@@ -148,8 +198,11 @@ C.....for internal barrier boundaries with flowthrough pipes
          integer, allocatable :: xdmf_ibconn(:)
       end type internalFluxBoundaryWithPipes_t      
       type(internalFluxBoundaryWithPipes_t), allocatable :: internalFluxBoundariesWithPipes(:)
+!$omp threadprivate(internalFluxBoundariesWithPipes)
       integer :: numInternalFluxBoundariesWithPipes
+!$omp threadprivate(numInternalFluxBoundariesWithPipes)
       integer :: ifwpCount ! index into the internalFluxBoundariesWithPipes array
+!$omp threadprivate(ifwpCount)
       
       integer, parameter :: specifiedFluxBoundaryTypes(5) = (/ 2, 12, 22, 32, 52 /)
       ! 
@@ -353,7 +406,7 @@ C     ---------
      &         internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn(nvell(i)))            
             ifwpCount = ifwpCount + 1            
          case default
-             write(6,'(a,i0,a)') "ERROR: The boundary type ",ibtype_orig(i),
+             write(6+CK_LUN,'(a,i0,a)') "ERROR: The boundary type ",ibtype_orig(i),
      &        " was found in the file but is not valid."
              stop
          end select
@@ -585,7 +638,7 @@ C     ------------------------------------------------------------------
             print *, 'error: ibtype 5 and 25 not supported by adcprep.'
             stop
          case default
-            write(6,'(a,i0,a)') 'ERROR: ibtype ',ibtype(k),
+            write(6+CK_LUN,'(a,i0,a)') 'ERROR: ibtype ',ibtype(k),
      &          ' not supported by adcprep.'
          end select
       end do    

@@ -10,186 +10,360 @@
       ! reading/writing for adcirc as well as adcprep in future versions.
       !----------------------------------------------------------------
       module control
+      use CkLunMod, only : CK_LUN
       use sizes, only : sz 
       use wind,only: nwlon,nwlat,wlatmax,wlonmin,wlatinc,wloninc 
       implicit none
       character(len=80) :: rundes
+!$omp threadprivate(rundes)
       character(len=80) :: runid
+!$omp threadprivate(runid)
       integer :: nfover
+!$omp threadprivate(nfover)
       real(sz) :: warnElev
+!$omp threadprivate(warnElev)
       integer :: iWarnElevDump
+!$omp threadprivate(iWarnElevDump)
       real(sz) :: warnElevDumpLimit
+!$omp threadprivate(warnElevDumpLimit)
       integer :: nabout
+!$omp threadprivate(nabout)
       integer :: nscreen
+!$omp threadprivate(nscreen)
       integer :: ihot
+!$omp threadprivate(ihot)
       integer :: ics
+!$omp threadprivate(ics)
       integer :: im
+!$omp threadprivate(im)
       integer :: iden
+!$omp threadprivate(iden)
       integer :: nolibf
+!$omp threadprivate(nolibf)
       integer :: nolifa
+!$omp threadprivate(nolifa)
       integer :: nolica
+!$omp threadprivate(nolica)
       integer :: nolicat
+!$omp threadprivate(nolicat)
       integer :: nwp
+!$omp threadprivate(nwp)
       character(len=1024), allocatable :: attrName(:)
+!$omp threadprivate(attrName)
       integer :: ncor
+!$omp threadprivate(ncor)
       integer :: ntip
+!$omp threadprivate(ntip)
       integer :: nws
+!$omp threadprivate(nws)
       integer :: nrs
+!$omp threadprivate(nrs)
       integer :: ncice
+!$omp threadprivate(ncice)
       integer :: nramp
+!$omp threadprivate(nramp)
       real(sz) :: g
+!$omp threadprivate(g)
       real(sz) :: tau0
+!$omp threadprivate(tau0)
       real(sz) :: tau0FullDomainMin
+!$omp threadprivate(tau0FullDomainMin)
       real(sz) :: tau0FullDomainMax
+!$omp threadprivate(tau0FullDomainMax)
       real(8) :: dtdp
+!$omp threadprivate(dtdp)
       real(sz) :: statim
+!$omp threadprivate(statim)
       real(sz) :: reftim
+!$omp threadprivate(reftim)
       real(sz) :: rstiminc
+!$omp threadprivate(rstiminc)
       real(sz) :: wtiminc
+!$omp threadprivate(wtiminc)
       integer :: irefyr
+!$omp threadprivate(irefyr)
       integer :: irefmo
+!$omp threadprivate(irefmo)
       integer :: irefday
+!$omp threadprivate(irefday)
       integer :: irefhr
+!$omp threadprivate(irefhr)
       integer :: irefmin
+!$omp threadprivate(irefmin)
       integer :: irefsec
+!$omp threadprivate(irefsec)
       real(sz) :: refsec
+!$omp threadprivate(refsec)
       real(sz) :: cice_timinc
+!$omp threadprivate(cice_timinc)
       real(sz) :: pureVortex
+!$omp threadprivate(pureVortex)
       real(sz) :: pureBackground
+!$omp threadprivate(pureBackground)
       integer :: stormNumber
+!$omp threadprivate(stormNumber)
       real(sz) :: bladj
+!$omp threadprivate(bladj)
       real(sz) :: rnday
+!$omp threadprivate(rnday)
       real(sz) :: dramp
+!$omp threadprivate(dramp)
       real(sz) :: drampextflux
+!$omp threadprivate(drampextflux)
       real(sz) :: fluxsettlingtime
+!$omp threadprivate(fluxsettlingtime)
       real(sz) :: drampintflux
+!$omp threadprivate(drampintflux)
       real(sz) :: drampelev
+!$omp threadprivate(drampelev)
       real(sz) :: dramptip
+!$omp threadprivate(dramptip)
       real(sz) :: drampmete
+!$omp threadprivate(drampmete)
       real(sz) :: drampwrad
+!$omp threadprivate(drampwrad)
       real(sz) :: dunrampmete
+!$omp threadprivate(dunrampmete)
       real(sz) :: a00
+!$omp threadprivate(a00)
       real(sz) :: b00
+!$omp threadprivate(b00)
       real(sz) :: c00
+!$omp threadprivate(c00)
       real(sz) :: h0
+!$omp threadprivate(h0)
       integer :: nodedrymin
+!$omp threadprivate(nodedrymin)
       integer :: nodewetmin
+!$omp threadprivate(nodewetmin)
       real(sz) :: velmin
+!$omp threadprivate(velmin)
       real(sz) :: tau
+!$omp threadprivate(tau)
       real(sz) :: cf
+!$omp threadprivate(cf)
       real(sz) :: hbreak
+!$omp threadprivate(hbreak)
       real(sz) :: ftheta
+!$omp threadprivate(ftheta)
       real(sz) :: fgamma
+!$omp threadprivate(fgamma)
       real(sz) :: eslm
+!$omp threadprivate(eslm)
       real(sz) :: eslc
+!$omp threadprivate(eslc)
       real(sz) :: cori
+!$omp threadprivate(cori)
       integer :: ntif
+!$omp threadprivate(ntif)
       character(len=5), allocatable :: tipotag(:)
+!$omp threadprivate(tipotag)
       real(sz), allocatable :: tpk(:)
+!$omp threadprivate(tpk)
       real(sz), allocatable :: amigt(:)
+!$omp threadprivate(amigt)
       real(sz), allocatable :: etrf(:)
+!$omp threadprivate(etrf)
       real(sz), allocatable :: fft(:)
+!$omp threadprivate(fft)
       real(sz), allocatable :: facet(:)
+!$omp threadprivate(facet)
       integer :: nbfr
+!$omp threadprivate(nbfr)
       character(len=5), allocatable :: bountag(:)
+!$omp threadprivate(bountag)
       real(sz), allocatable :: amig(:)
+!$omp threadprivate(amig)
       real(sz), allocatable :: ff(:)
+!$omp threadprivate(ff)
       real(sz), allocatable :: face(:)
+!$omp threadprivate(face)
       character(len=10), allocatable :: nbfr_alpha(:)
+!$omp threadprivate(nbfr_alpha)
       real(sz), allocatable :: emo(:,:)
+!$omp threadprivate(emo)
       real(sz), allocatable :: efa(:,:)
+!$omp threadprivate(efa)
       real(sz) :: anginn
+!$omp threadprivate(anginn)
       integer :: nffr
+!$omp threadprivate(nffr)
       character(len=5), allocatable :: fbountag(:)
+!$omp threadprivate(fbountag)
       real(sz), allocatable :: famig(:)
+!$omp threadprivate(famig)
       real(sz), allocatable :: fff(:)
+!$omp threadprivate(fff)
       real(sz), allocatable :: fface(:)
+!$omp threadprivate(fface)
       character(len=10), allocatable :: nffr_alpha(:)
+!$omp threadprivate(nffr_alpha)
       real(sz), allocatable :: qnam(:,:)
+!$omp threadprivate(qnam)
       real(sz), allocatable :: qnph(:,:)
+!$omp threadprivate(qnph)
       real(sz), allocatable :: enam(:,:)
+!$omp threadprivate(enam)
       real(sz), allocatable :: enph(:,:)
+!$omp threadprivate(enph)
       integer :: noute
+!$omp threadprivate(noute)
       real(sz) :: toutse
+!$omp threadprivate(toutse)
       real(sz) :: toutfe
+!$omp threadprivate(toutfe)
       integer :: nspoole
+!$omp threadprivate(nspoole)
       integer :: nstae
+!$omp threadprivate(nstae)
       real(sz), allocatable :: xel(:)
+!$omp threadprivate(xel)
       real(sz), allocatable :: yel(:)
+!$omp threadprivate(yel)
       integer :: noutv
+!$omp threadprivate(noutv)
       real(sz) :: toutsv
+!$omp threadprivate(toutsv)
       real(sz) :: toutfv
+!$omp threadprivate(toutfv)
       integer :: nspoolv
+!$omp threadprivate(nspoolv)
       integer :: nstav
+!$omp threadprivate(nstav)
       real(sz), allocatable :: xev(:)
+!$omp threadprivate(xev)
       real(sz), allocatable :: yev(:)
+!$omp threadprivate(yev)
       integer :: noutc
+!$omp threadprivate(noutc)
       real(sz) :: toutsc
+!$omp threadprivate(toutsc)
       real(sz) :: toutfc
+!$omp threadprivate(toutfc)
       integer :: nspoolc
+!$omp threadprivate(nspoolc)
       integer :: nstac
+!$omp threadprivate(nstac)
       real(sz), allocatable :: xec(:)
+!$omp threadprivate(xec)
       real(sz), allocatable :: yec(:)
+!$omp threadprivate(yec)
       integer :: noutm
+!$omp threadprivate(noutm)
       real(sz) :: toutsm
+!$omp threadprivate(toutsm)
       real(sz) :: toutfm
+!$omp threadprivate(toutfm)
       integer :: nspoolm
+!$omp threadprivate(nspoolm)
       integer :: nstam
+!$omp threadprivate(nstam)
       real(sz), allocatable :: xem(:)
+!$omp threadprivate(xem)
       real(sz), allocatable :: yem(:)
+!$omp threadprivate(yem)
       integer :: noutge
+!$omp threadprivate(noutge)
       real(sz) :: toutsge
+!$omp threadprivate(toutsge)
       real(sz) :: toutfge
+!$omp threadprivate(toutfge)
       integer :: nspoolge
+!$omp threadprivate(nspoolge)
       integer :: noutgv
+!$omp threadprivate(noutgv)
       real(sz) :: toutsgv
+!$omp threadprivate(toutsgv)
       real(sz) :: toutfgv
+!$omp threadprivate(toutfgv)
       integer :: nspoolgv
+!$omp threadprivate(nspoolgv)
       integer :: noutgc
+!$omp threadprivate(noutgc)
       real(sz) :: toutsgc
+!$omp threadprivate(toutsgc)
       real(sz) :: toutfgc
+!$omp threadprivate(toutfgc)
       integer :: nspoolgc
+!$omp threadprivate(nspoolgc)
       integer :: noutgw
+!$omp threadprivate(noutgw)
       real(sz) :: toutsgw
+!$omp threadprivate(toutsgw)
       real(sz) :: toutfgw
+!$omp threadprivate(toutfgw)
       integer :: nspoolgw
+!$omp threadprivate(nspoolgw)
       integer :: nfreq
+!$omp threadprivate(nfreq)
       character(len=10), allocatable :: namefr(:)
+!$omp threadprivate(namefr)
       real(sz), allocatable :: hafreq(:)
+!$omp threadprivate(hafreq)
       real(sz), allocatable :: haff(:)
+!$omp threadprivate(haff)
       real(sz), allocatable :: haface(:)
+!$omp threadprivate(haface)
       real(sz) :: thas
+!$omp threadprivate(thas)
       real(sz) :: thaf
+!$omp threadprivate(thaf)
       integer :: nhainc
+!$omp threadprivate(nhainc)
       real(sz) :: fmv
+!$omp threadprivate(fmv)
       integer :: nhase
+!$omp threadprivate(nhase)
       integer :: nhasv
+!$omp threadprivate(nhasv)
       integer :: nhage
+!$omp threadprivate(nhage)
       integer :: nhagv
+!$omp threadprivate(nhagv)
       integer :: nhstar
+!$omp threadprivate(nhstar)
       integer :: nhsinc
+!$omp threadprivate(nhsinc)
       integer :: ititer
+!$omp threadprivate(ititer)
       integer :: isldia
+!$omp threadprivate(isldia)
       real(sz) :: convcr
+!$omp threadprivate(convcr)
       integer :: itmax
+!$omp threadprivate(itmax)
       character(len=80) :: title 
+!$omp threadprivate(title)
       character(len=80) :: institution
+!$omp threadprivate(institution)
       character(len=80) :: source
+!$omp threadprivate(source)
       character(len=80) :: history
+!$omp threadprivate(history)
       character(len=80) :: references
+!$omp threadprivate(references)
       character(len=80) :: comments
+!$omp threadprivate(comments)
       character(len=80) :: host
+!$omp threadprivate(host)
       character(len=80) :: convention
+!$omp threadprivate(convention)
       character(len=80) :: contact
+!$omp threadprivate(contact)
       character(len=80) :: base_date
+!$omp threadprivate(base_date)
       !
       logical :: readMetaData
+!$omp threadprivate(readMetaData)
       integer, parameter :: metadataRequired(9)          
      &     = (/3, 5, 7, 367, 368, 567, 568, 667, 668/)
       integer :: outputSpecifiers(9)
+!$omp threadprivate(outputSpecifiers)
       !
       integer :: lineNum  ! line number being read from fort.15
+!$omp threadprivate(lineNum)
       integer :: echoLine ! line number being echoed to screen
+!$omp threadprivate(echoLine)
       !
       !-----------------------------------
       contains !   C O N T A I N S
@@ -217,64 +391,64 @@
       !
       CALL openFileForRead(15,trim(controlFileName),ios)
       !
-      read(15,fmt='(a80)',err=10,end=20,iostat=ios) rundes
+      read(15+CK_LUN,fmt='(a80)',err=10,end=20,iostat=ios) rundes
       linenum = linenum + 1
-      read(15,fmt='(a80)',err=10,end=20,iostat=ios) runid
+      read(15+CK_LUN,fmt='(a80)',err=10,end=20,iostat=ios) runid
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nfover
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) nfover
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nabout
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) nabout
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nscreen
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) nscreen
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) ihot
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) ihot
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) ics
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) ics
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) im
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) im
       linenum = linenum + 1
       if ((im.eq.21).or.(im.eq.31)) then
-         read(15,*,err=10,end=20,iostat=ios) iden
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) iden
          linenum = linenum + 1
       endif
-      read(15,*,err=10,end=20,iostat=ios) nolibf
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) nolibf
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nolifa
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) nolifa
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nolica
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) nolica
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nolicat
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) nolicat
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nwp
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) nwp
       linenum = linenum + 1
       if (nwp.ne.0) then
          allocate(attrName(nwp))
          do i=1, nwp
-            read(15,*,err=10,end=20,iostat=ios) attrName(i)
+            read(15+CK_LUN,*,err=10,end=20,iostat=ios) attrName(i)
             linenum = linenum + 1
          end do
       endif
-      read(15,*,err=10,end=20,iostat=ios) ncor
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) ncor
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) ntip
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) ntip
       linenum = linenum + 1
-      read(15,fmt=*,err=10,end=20,iostat=ios) nws
+      read(15+CK_LUN,fmt=*,err=10,end=20,iostat=ios) nws
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nramp
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) nramp
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) g
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) g
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) tau0
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) tau0
       linenum = linenum + 1
       if ((tau0.le.-5.0).and.(tau0.ge.-5.99)) then
-         read(15,*,err=10,end=20,iostat=ios) tau0fulldomainmin, tau0fulldomainmax
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) tau0fulldomainmin, tau0fulldomainmax
          linenum = linenum + 1
       endif
-      read(15,*,err=10,end=20,iostat=ios) dtdp
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) dtdp
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) statim
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) statim
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) reftim
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) reftim
       linenum = linenum + 1
       !
       ! parse the digits of nws 
@@ -293,7 +467,7 @@
       !
       ! now use the ncice, nrs, and nws values to parse the wtiminc line
       if ((nws.ne.0).or.(nrs.ne.0).or.(ncice.ne.0)) then
-         read(15,'(a80)',err=10,end=20,iostat=ios) wtimincLine
+         read(15+CK_LUN,'(a80)',err=10,end=20,iostat=ios) wtimincLine
       endif
       numFields = 0
       select case(abs(nws))
@@ -330,80 +504,80 @@
      &       irefyr,irefmo,irefday,irefhr,stormnumber,bladj,purevortex,purebackground,wtiminc
          numFields = 9
       case default
-         write(6,'("ERROR: The value of nws is ",i6," but this is not a valid value.")') nws
+         write(6+CK_LUN,'("ERROR: The value of nws is ",i6," but this is not a valid value.")') nws
          stop
       end select
       if ((nrs.ne.0).or.(ncice.ne.0)) then
          call parseWaveAndIceTimeIncrements(wtimincLine,numFields)
       endif
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) rnday
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) rnday
       linenum = linenum + 1
       select case(nramp)
       case(0,1)
-         read(15,*,err=10,end=20,iostat=ios) dramp
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) dramp
       case(2) 
-         read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) dramp,drampextflux,
      &       fluxsettlingtime
       case(3) 
-         read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) dramp,drampextflux,
      &       fluxsettlingtime,drampintflux
       case(4) 
-         read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) dramp,drampextflux,
      &       fluxsettlingtime,drampintflux, drampelev
       case(5) 
-         read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) dramp,drampextflux,
      &       fluxsettlingtime,drampintflux,drampelev,dramptip
       case(6) 
-         read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) dramp,drampextflux,
      &    fluxsettlingtime,drampintflux,drampelev,dramptip,drampmete
       case(7) 
-         read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) dramp,drampextflux,
      &    fluxsettlingtime,drampintflux,drampelev,dramptip,
      &    drampmete,drampwrad
       case(8) 
-         read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) dramp,drampextflux,
      &    fluxsettlingtime,drampintflux,drampelev,dramptip,drampmete,
      &    drampwrad,dunrampmete
       case default
-         write(6,'(a,i0,a)') 'ERROR: The value of nramp is ',nramp,
+         write(6+CK_LUN,'(a,i0,a)') 'ERROR: The value of nramp is ',nramp,
      &    ' but this is not a valid value.'
          stop
       end select
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) a00,b00,c00
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) a00,b00,c00
       linenum = linenum + 1
       if (nolifa.eq.2) then
-         read(15,*,err=10,end=20,iostat=ios) h0,nodedrymin,nodewetmin,velmin
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) h0,nodedrymin,nodewetmin,velmin
       else
-         read(15,*,err=10,end=20,iostat=ios) h0
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) h0
       endif
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) slam0,sfea0
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) slam0,sfea0
       linenum = linenum + 1
       select case(nolibf)
       case(0)
-         read(15,*,err=10,end=20,iostat=ios) tau
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) tau
       case(1)
-         read(15,*,err=10,end=20,iostat=ios) cf
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) cf
       case(2)
-         read(15,*,err=10,end=20,iostat=ios) cf,hbreak,ftheta,fgamma
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) cf,hbreak,ftheta,fgamma
       case default
-         write(6,'(a,i0,a)') 'ERROR: The value of nolibf is ',nolibf,
+         write(6+CK_LUN,'(a,i0,a)') 'ERROR: The value of nolibf is ',nolibf,
      &       ' but this is not a valid value.'
          stop
       end select
       linenum = linenum + 1
       if (im.eq.10) then
-         read(15,*,err=10,end=20,iostat=ios) eslm,eslc
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) eslm,eslc
          linenum = linenum + 1
       else
-        read(15,*,err=10,end=20,iostat=ios) eslm
+        read(15+CK_LUN,*,err=10,end=20,iostat=ios) eslm
         linenum = linenum + 1
       endif
-      read(15,*,err=10,end=20,iostat=ios) cori
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) cori
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) ntif
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) ntif
       linenum = linenum + 1
       if (ntif.ne.0) then
          allocate(tipotag(ntif))
@@ -413,14 +587,14 @@
          allocate(fft(ntif))
          allocate(facet(ntif))
          do i=1,ntif
-            read(15,'(a5)',err=10,end=20,iostat=ios)  tipotag(i)
+            read(15+CK_LUN,'(a5)',err=10,end=20,iostat=ios)  tipotag(i)
             linenum = linenum + 1
-            read(15,*,err=10,end=20,iostat=ios)  
+            read(15+CK_LUN,*,err=10,end=20,iostat=ios)  
      &          tpk(i),amigt(i),etrf(i),fft(i),facet(i)
             linenum = linenum + 1
          end do
       endif
-      read(15,*,err=10,end=20,iostat=ios) nbfr
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) nbfr
       linenum = linenum + 1
       if (nbfr.ne.0) then
          allocate(bountag(nbfr))
@@ -428,27 +602,27 @@
          allocate(ff(nbfr)) 
          allocate(face(nbfr))
          do i=1, nbfr
-            read(15,'(a5)',err=10,end=20,iostat=ios) bountag(i)
+            read(15+CK_LUN,'(a5)',err=10,end=20,iostat=ios) bountag(i)
             linenum = linenum + 1
-            read(15,*,err=10,end=20,iostat=ios) amig(i),ff(i),face(i)
+            read(15+CK_LUN,*,err=10,end=20,iostat=ios) amig(i),ff(i),face(i)
             linenum = linenum + 1
          end do
          allocate(nbfr_alpha(nbfr))
          allocate(emo(nbfr,neta))
          allocate(efa(nbfr,neta))
          do i=1, nbfr
-            read(15,'(a10)',err=10,end=20,iostat=ios) nbfr_alpha(i)
+            read(15+CK_LUN,'(a10)',err=10,end=20,iostat=ios) nbfr_alpha(i)
             linenum = linenum + 1
             do j=1,neta
-               read(15,*,err=10,end=20,iostat=ios) emo(i,j),efa(i,j)
+               read(15+CK_LUN,*,err=10,end=20,iostat=ios) emo(i,j),efa(i,j)
                linenum = linenum + 1
             end do
          end do
       endif
-      read(15,*,err=10,end=20,iostat=ios) anginn
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) anginn
       linenum = linenum + 1
       if (nfluxf.ne.0) then
-         read(15,*,err=10,end=20,iostat=ios) nffr
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) nffr
          linenum = linenum + 1
       endif
       if ((nfluxf.ne.0).and.(nffr.gt.0)) then
@@ -460,18 +634,18 @@
          allocate(qnam(nffr,nvel))
          allocate(qnph(nffr,nvel))
          do i=1,nffr
-            read(15,'(a5)',err=10,end=20,iostat=ios) fbountag(i)
+            read(15+CK_LUN,'(a5)',err=10,end=20,iostat=ios) fbountag(i)
             linenum = linenum + 1
-            read(15,*,err=10,end=20,iostat=ios) famig(i),fff(i),fface(i)
+            read(15+CK_LUN,*,err=10,end=20,iostat=ios) famig(i),fff(i),fface(i)
             linenum = linenum + 1
          end do 
          do i=1,nffr
-            read(15,'(a10)',err=10,end=20,iostat=ios) nffr_alpha(i)
+            read(15+CK_LUN,'(a10)',err=10,end=20,iostat=ios) nffr_alpha(i)
             linenum = linenum + 1
             do j=1,nvel
                select case(lbcodei(j))
                case(2,12,22,52)
-                  read(15,*,err=10,end=20,iostat=ios) qnam(i,j), qnph(i,j)
+                  read(15+CK_LUN,*,err=10,end=20,iostat=ios) qnam(i,j), qnph(i,j)
                   linenum = linenum + 1
                case default
                   cycle
@@ -479,43 +653,43 @@
             end do
          end do
       endif
-      read(15,*,err=10,end=20,iostat=ios) noute,toutse,toutfe,nspoole
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) noute,toutse,toutfe,nspoole
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nstae
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) nstae
       linenum = linenum + 1
       call readStations(nstae, xel, yel)
-      read(15,*,err=10,end=20,iostat=ios) noutv,toutsv,toutfv,nspoolv
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) noutv,toutsv,toutfv,nspoolv
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nstav
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) nstav
       linenum = linenum + 1
       call readStations(nstav, xev, yev)
       if (im.eq.10) then
-         read(15,*,err=10,end=20,iostat=ios) noutc,toutsc,toutfc,nspoolc
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) noutc,toutsc,toutfc,nspoolc
          linenum = linenum + 1
-         read(15,*,err=10,end=20,iostat=ios) nstac
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) nstac
          linenum = linenum + 1
          call readStations(nstac, xec, yec)
       endif
       if (nws.ne.0) then
-         read(15,*,err=10,end=20,iostat=ios) noutm,toutsm,toutfm,nspoolm
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) noutm,toutsm,toutfm,nspoolm
          linenum = linenum + 1
-         read(15,*,err=10,end=20,iostat=ios) nstam
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) nstam
          linenum = linenum + 1
          call readStations(nstam, xem, yem)
       endif
-      read(15,*,err=10,end=20,iostat=ios) noutge,toutsge,toutfge,nspoolge
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) noutge,toutsge,toutfge,nspoolge
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) noutgv,toutsgv,toutfgv,nspoolgv
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) noutgv,toutsgv,toutfgv,nspoolgv
       linenum = linenum + 1
       if (im.eq.10) then
-         read(15,*,err=10,end=20,iostat=ios) noutgc,toutsgc,toutfgc,nspoolgc
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) noutgc,toutsgc,toutfgc,nspoolgc
          linenum = linenum + 1
       endif
       if (nws.ne.0) then
-         read(15,*,err=10,end=20,iostat=ios) noutgw,toutsgw,toutfgw,nspoolgw
+         read(15+CK_LUN,*,err=10,end=20,iostat=ios) noutgw,toutsgw,toutfgw,nspoolgw
          linenum = linenum + 1
       endif
-      read(15,*,err=10,end=20,iostat=ios) nfreq
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) nfreq
       linenum = linenum + 1
       if (nfreq.ne.0) then
          allocate(namefr(nfreq))
@@ -523,19 +697,19 @@
          allocate(haff(nfreq))
          allocate(haface(nfreq))
          do i=1,nfreq
-            read(15,'(a10)',err=10,end=20,iostat=ios) namefr(i)
+            read(15+CK_LUN,'(a10)',err=10,end=20,iostat=ios) namefr(i)
             linenum = linenum + 1
-            read(15,*,err=10,end=20,iostat=ios) hafreq(i),haff(i),haface(i)
+            read(15+CK_LUN,*,err=10,end=20,iostat=ios) hafreq(i),haff(i),haface(i)
             linenum = linenum + 1
          end do
       endif
-      read(15,*,err=10,end=20,iostat=ios) thas,thaf,nhainc,fmv
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) thas,thaf,nhainc,fmv
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nhase,nhasv,nhage,nhagv
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) nhase,nhasv,nhage,nhagv
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nhstar,nhsinc
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) nhstar,nhsinc
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) ititer,isldia,convcr,itmax
+      read(15+CK_LUN,*,err=10,end=20,iostat=ios) ititer,isldia,convcr,itmax
       linenum = linenum + 1
       !
       ! read metadata if netcdf or xdmf format was specified in the output 
@@ -561,41 +735,41 @@
       end do outputSpec
       ! now read metadata if any output format indicated it
       if (readMetaData.eqv..true.) then 
-         read(15,'(a80)',err=10,end=20,iostat=ios) title
+         read(15+CK_LUN,'(a80)',err=10,end=20,iostat=ios) title
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) institution
+         read(15+CK_LUN,'(a80)',err=10,end=20,iostat=ios) institution
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) source 
+         read(15+CK_LUN,'(a80)',err=10,end=20,iostat=ios) source 
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) history
+         read(15+CK_LUN,'(a80)',err=10,end=20,iostat=ios) history
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) references
+         read(15+CK_LUN,'(a80)',err=10,end=20,iostat=ios) references
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) comments
+         read(15+CK_LUN,'(a80)',err=10,end=20,iostat=ios) comments
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) host
+         read(15+CK_LUN,'(a80)',err=10,end=20,iostat=ios) host
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) convention
+         read(15+CK_LUN,'(a80)',err=10,end=20,iostat=ios) convention
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) contact
+         read(15+CK_LUN,'(a80)',err=10,end=20,iostat=ios) contact
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) base_date
+         read(15+CK_LUN,'(a80)',err=10,end=20,iostat=ios) base_date
       endif 
       !
       if (verbose.eqv..true.) then
          call echoControlFile(6)
       endif
-      close(15)
+      close(15+CK_LUN)
       return
- 10   write(6,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
+ 10   write(6+CK_LUN,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
      &    ' gave the following error code: ',ios,'.'
       call echoControlFile(6)
-      close(15)
+      close(15+CK_LUN)
       stop
- 20   write(6,'(a,i0,a)') 'ERROR: Reached premature end of file on line ',
+ 20   write(6+CK_LUN,'(a,i0,a)') 'ERROR: Reached premature end of file on line ',
      &    lineNum,'.'
       call echoControlFile(6)
-      close(15)
+      close(15+CK_LUN)
       stop
       !---------------------------------------------------------------------
       end subroutine readControlFile
@@ -615,16 +789,16 @@
          allocate(stax(nsta))
          allocate(stay(nsta))
          do i=1,nsta
-            read(15,*,err=10,end=20,iostat=ios) stax(i), stay(i)
+            read(15+CK_LUN,*,err=10,end=20,iostat=ios) stax(i), stay(i)
             linenum = linenum + 1
          end do
       endif
       return
- 10   write(6,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
+ 10   write(6+CK_LUN,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
      &   ' gave the following error code: ',ios,'.' 
       call echoControlFile(6)
       stop
- 20   write(6,'(a,i0,a)') 
+ 20   write(6+CK_LUN,'(a,i0,a)') 
      &   'ERROR: Reached premature end of file on line ',lineNum,'.'
       call echoControlFile(6)
       stop
@@ -698,11 +872,11 @@
          numFields = numFields + 1 
       endif
       return
-  10  write(6,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
+  10  write(6+CK_LUN,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
      &  ' gave the following error code: ',ios,'.'
       call echoControlFile(6)
       stop
- 20   write(6,'(a,i0,a)') 'ERROR: Reached premature end of file on line '
+ 20   write(6+CK_LUN,'(a,i0,a)') 'ERROR: Reached premature end of file on line '
      & ,lineNum,'.'
       call echoControlFile(6)
       stop
@@ -729,71 +903,71 @@
       ! initialization
       echoLine = 1
       !
-      write(6,*) 'INFO: Echoing control file after reading ',
+      write(6+CK_LUN,*) 'INFO: Echoing control file after reading ',
      &  lineNum,' lines.'
-      write(echoUnit,fmt='(A,10x,"! rundes")') trim(rundes)
+      write(echoUnit+CK_LUN,fmt='(A,10x,"! rundes")') trim(rundes)
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return 
-      write(echoUnit,fmt='(A,10x,"! runid")') trim(runid)
+      write(echoUnit+CK_LUN,fmt='(A,10x,"! runid")') trim(runid)
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0,10x,"! nfover")') nfover
+      write(echoUnit+CK_LUN,fmt='(i0,10x,"! nfover")') nfover
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0,10x,"! nabout")') nabout
+      write(echoUnit+CK_LUN,fmt='(i0,10x,"! nabout")') nabout
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! nscreen")') nscreen
+      write(echoUnit+CK_LUN,fmt='(i0, 10x, "! nscreen")') nscreen
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0,10x,"! ihot")') ihot
+      write(echoUnit+CK_LUN,fmt='(i0,10x,"! ihot")') ihot
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! ics")') ics
+      write(echoUnit+CK_LUN,fmt='(i0, 10x, "! ics")') ics
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! im")') im
+      write(echoUnit+CK_LUN,fmt='(i0, 10x, "! im")') im
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if ((im.eq.21).or.(im.eq.31)) then
-         write(echoUnit,fmt='(i0, 10x, "! iden")') iden
+         write(echoUnit+CK_LUN,fmt='(i0, 10x, "! iden")') iden
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       endif
-      write(echoUnit,fmt='(i0, 10x, "! nolibf")') nolibf
+      write(echoUnit+CK_LUN,fmt='(i0, 10x, "! nolibf")') nolibf
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! nolifa")') nolifa
+      write(echoUnit+CK_LUN,fmt='(i0, 10x, "! nolifa")') nolifa
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! nolica")') nolica
+      write(echoUnit+CK_LUN,fmt='(i0, 10x, "! nolica")') nolica
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! nolicat")') nolicat
+      write(echoUnit+CK_LUN,fmt='(i0, 10x, "! nolicat")') nolicat
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! nwp")') nwp
+      write(echoUnit+CK_LUN,fmt='(i0, 10x, "! nwp")') nwp
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if (nwp.ne.0) then
          do i=1, nwp
-            write(echoUnit,fmt='(a, 10x, "! attrname")') trim(attrName(i))
+            write(echoUnit+CK_LUN,fmt='(a, 10x, "! attrname")') trim(attrName(i))
             echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          end do
       endif
-      write(echoUnit,fmt='(i0, 10x, "! ncor")') ncor
+      write(echoUnit+CK_LUN,fmt='(i0, 10x, "! ncor")') ncor
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! ntip")') ntip
+      write(echoUnit+CK_LUN,fmt='(i0, 10x, "! ntip")') ntip
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       controlnws = 1000 * ncice + 100 * nrs + abs(nws)
       if (nws.ne.0) then
          controlnws = controlnws * abs(nws)/nws ! to get the sign right
       endif
-      write(echoUnit,fmt='(i0, 10x, "! nws")') controlnws
+      write(echoUnit+CK_LUN,fmt='(i0, 10x, "! nws")') controlnws
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! nramp")') nramp
+      write(echoUnit+CK_LUN,fmt='(i0, 10x, "! nramp")') nramp
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(f10.5, 10x, "! g")') g
+      write(echoUnit+CK_LUN,fmt='(f10.5, 10x, "! g")') g
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(f6.3, 10x, "! tau0")') tau0
+      write(echoUnit+CK_LUN,fmt='(f6.3, 10x, "! tau0")') tau0
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if ((tau0.le.-5.0).and.(tau0.ge.-5.99)) then
-         write(echoUnit,
+         write(echoUnit+CK_LUN,
      & fmt='(f6.3, f6.3, 10x, "! tau0fulldomainmin tau0fulldomainmax")')
      & tau0fulldomainmin, tau0fulldomainmax
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       endif
-      write(echoUnit,fmt='(f15.7, 10x, "1 dtdp")') dtdp
+      write(echoUnit+CK_LUN,fmt='(f15.7, 10x, "1 dtdp")') dtdp
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(f15.7, 10x, "! statim")') statim
+      write(echoUnit+CK_LUN,fmt='(f15.7, 10x, "! statim")') statim
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(f15.7, 10x, "! reftim")') reftim
+      write(echoUnit+CK_LUN,fmt='(f15.7, 10x, "! reftim")') reftim
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       wtimincLine = ''
       wtimincComment = ''
@@ -807,7 +981,7 @@
          write(wtimincLine,*) irefyr,irefmo,irefday,irefhr,irefmin,refsec 
          wtimincLine = trim(wtimincLine) // 
      &    ' ! irefyr,irefmo,irefday,irefhr,irefmin,refsec'
-         write(echoUnit,'(a)') trim(wtimincLine)
+         write(echoUnit+CK_LUN,'(a)') trim(wtimincLine)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          write(wtimincLine,*) nwlat,nwlon,wlatmax,wlonmin,wlatinc,wloninc,wtiminc
          wtimincComment = 
@@ -826,7 +1000,7 @@
      &    ' ! irefyr,irefmo,irefday,irefhr,stormnumber,bladj,wtiminc,'
      &   // ' purevortex, purebackground'
       case default
-         write(echoUnit,'(a,i0,a)') 'ERROR: The value of nws is ',nws,
+         write(echoUnit+CK_LUN,'(a,i0,a)') 'ERROR: The value of nws is ',nws,
      &    ' but this is not a valid value.'
          stop
       end select
@@ -841,138 +1015,138 @@
           wtimincComment = trim(wtimincComment) // ',cice_timinc'
       endif
       if ((nws.ne.0).or.(nrs.ne.0).or.(ncice.ne.0)) then
-         write(echoUnit,'(a)') trim(wtimincLine) // trim(wtimincComment)
+         write(echoUnit+CK_LUN,'(a)') trim(wtimincLine) // trim(wtimincComment)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       endif
-      write(echoUnit,fmt='(e20.10, 10x, "! rnday")') rnday
+      write(echoUnit+CK_LUN,fmt='(e20.10, 10x, "! rnday")') rnday
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       !
       select case(nramp)
       case(0,1)
-         write(echoUnit,fmt='(9f6.3,10x,"! dramp")') dramp
+         write(echoUnit+CK_LUN,fmt='(9f6.3,10x,"! dramp")') dramp
       case(2) 
-         write(echoUnit,
+         write(echoUnit+CK_LUN,
      &    fmt='(9f6.3,10x,"! dramp,drampextflux,fluxsettlingtime")') 
      &       dramp,drampextflux,fluxsettlingtime
       case(3) 
-         write(echoUnit,
+         write(echoUnit+CK_LUN,
      &    fmt='(9f6.3,10x,' //
      &    '"! dramp,drampextflux,fluxsettlingtime,drampintflux")')  
      &       dramp,drampextflux,fluxsettlingtime,drampintflux
       case(4) 
-         write(echoUnit,fmt='(9f6.3,10x,'// 
+         write(echoUnit+CK_LUN,fmt='(9f6.3,10x,'// 
      & '"! dramp,drampextflux,fluxsettlingtime,drampintflux, drampelev")') 
      &       dramp,drampextflux,fluxsettlingtime,drampintflux, drampelev
       case(5) 
-         write(echoUnit,fmt='(9f6.3,10x,'//
+         write(echoUnit+CK_LUN,fmt='(9f6.3,10x,'//
      & '"! dramp,drampextflux,fluxsettlingtime,drampintflux,'//
      & 'drampelev,dramptip")') 
      & dramp,drampextflux,fluxsettlingtime,drampintflux,drampelev,dramptip
       case(6) 
-         write(echoUnit,fmt='(9f6.3,10x,'//
+         write(echoUnit+CK_LUN,fmt='(9f6.3,10x,'//
      &    '"! dramp,drampextflux,fluxsettlingtime,drampintflux,'//
      &    'drampelev,dramptip,drampmete")') 
      &    dramp,drampextflux,fluxsettlingtime,drampintflux,drampelev,dramptip,drampmete
       case(7) 
-         write(echoUnit,fmt='(9f6.3,10x,'//
+         write(echoUnit+CK_LUN,fmt='(9f6.3,10x,'//
      &    '"! dramp,drampextflux,fluxsettlingtime,drampintflux,'//
      &    'drampelev,dramptip,drampmete,drampwrad")') 
      &   dramp,drampextflux,fluxsettlingtime,drampintflux,
      &              drampelev,dramptip,drampmete,drampwrad
       case(8) 
-         write(echoUnit,fmt='(9f6.3,10x,'//
+         write(echoUnit+CK_LUN,fmt='(9f6.3,10x,'//
      &    '"! dramp,drampextflux,fluxsettlingtime,drampintflux,'//
      &    'drampelev,dramptip,drampmete,drampwrad,drampunmete")') 
      &     dramp,drampextflux,fluxsettlingtime,drampintflux, 
      &     drampelev,dramptip,drampmete,drampwrad,dunrampmete
       case default
-         write(echoUnit,'(a,i0,a)') 'ERROR: The value of nramp is ',nramp,
+         write(echoUnit+CK_LUN,'(a,i0,a)') 'ERROR: The value of nramp is ',nramp,
      &    ' but this is not a valid value.'
          stop
       end select
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(3f6.3, 10x, "! a00, b00, c00")') a00,b00,c00
+      write(echoUnit+CK_LUN,fmt='(3f6.3, 10x, "! a00, b00, c00")') a00,b00,c00
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if (nolifa.eq.2) then
-         write(echoUnit,
+         write(echoUnit+CK_LUN,
      &    fmt='(f15.7, i2, i2, f6.3, 10x, "! h0, int, int, velmin")') 
      &       h0,nodedrymin,nodewetmin,velmin
       else
-         write(echoUnit,fmt='(f15.7,10x,"! h0")') h0
+         write(echoUnit+CK_LUN,fmt='(f15.7,10x,"! h0")') h0
       endif
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(2f15.7,10x,"! slam0, sfea0")') slam0,sfea0
+      write(echoUnit+CK_LUN,fmt='(2f15.7,10x,"! slam0, sfea0")') slam0,sfea0
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       select case(nolibf)
       case(0)
-         write(echoUnit,fmt='(f15.7,10x,"! tau")') tau
+         write(echoUnit+CK_LUN,fmt='(f15.7,10x,"! tau")') tau
       case(1)
-         write(echoUnit,fmt='(f15.7,10x,"! cf")') cf
+         write(echoUnit+CK_LUN,fmt='(f15.7,10x,"! cf")') cf
       case(2)
-         write(echoUnit,fmt='(4f15.7,10x,"! cf, hbreak, ftheta, fgamma")')  
+         write(echoUnit+CK_LUN,fmt='(4f15.7,10x,"! cf, hbreak, ftheta, fgamma")')  
      &       cf,hbreak,ftheta,fgamma
       case default
-         write(echoUnit,'(a,i0,a)') 'ERROR: the value of nolibf is ',nolibf,
+         write(echoUnit+CK_LUN,'(a,i0,a)') 'ERROR: the value of nolibf is ',nolibf,
      &    ' but this is not a valid value.'
          stop
       end select
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if (im.eq.10) then
-         write(echoUnit,fmt='(2f15.7,10x,"! eslm, eslc")') eslm,eslc
+         write(echoUnit+CK_LUN,fmt='(2f15.7,10x,"! eslm, eslc")') eslm,eslc
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       else
-        write(echoUnit,fmt='(f15.7,10x,"! eslm")') eslm
+        write(echoUnit+CK_LUN,fmt='(f15.7,10x,"! eslm")') eslm
         echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       endif
-      write(echoUnit,fmt='(f15.7,10x,"! cori")') cori
+      write(echoUnit+CK_LUN,fmt='(f15.7,10x,"! cori")') cori
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0,10x, "! ntif")') ntif
+      write(echoUnit+CK_LUN,fmt='(i0,10x, "! ntif")') ntif
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       do i=1,ntif
-         write(echoUnit,'(a5,10x,"! tipotag")')  trim(tipotag(i))
+         write(echoUnit+CK_LUN,'(a5,10x,"! tipotag")')  trim(tipotag(i))
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,
+         write(echoUnit+CK_LUN,
      &    fmt='(5f15.7,10x,"! tpk(i),amigt(i),etrf(i),fft(i),facet(i)")') 
      &    tpk(i),amigt(i),etrf(i),fft(i),facet(i)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       end do
-      write(echoUnit,fmt='(i0,10x,"! nbfr")') nbfr
+      write(echoUnit+CK_LUN,fmt='(i0,10x,"! nbfr")') nbfr
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       do i=1, nbfr
-         write(echoUnit,'(a5,10x,"! bountag")') trim(bountag(i))
+         write(echoUnit+CK_LUN,'(a5,10x,"! bountag")') trim(bountag(i))
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(3f15.7,10x,"! amig(i),ff(i),face(i)")') amig(i),ff(i),face(i)
+         write(echoUnit+CK_LUN,fmt='(3f15.7,10x,"! amig(i),ff(i),face(i)")') amig(i),ff(i),face(i)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       end do
       do i=1, nbfr
-         write(echoUnit,'(a10,10x,"! alpha(i)")') nbfr_alpha(i)
+         write(echoUnit+CK_LUN,'(a10,10x,"! alpha(i)")') nbfr_alpha(i)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          do j=1,neta
-            write(echoUnit,fmt='(2f15.7,10x,"! emo(i,j), efa(i,j)")') emo(i,j),efa(i,j)
+            write(echoUnit+CK_LUN,fmt='(2f15.7,10x,"! emo(i,j), efa(i,j)")') emo(i,j),efa(i,j)
             echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          end do
       end do
-      write(echoUnit,fmt='(f15.7,10x,"! anginn")') anginn
+      write(echoUnit+CK_LUN,fmt='(f15.7,10x,"! anginn")') anginn
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if ((nfluxf.ne.0).and.(nffr.ne.0)) then
-         write(echoUnit,fmt='(i0,10x,"! nffr")') nffr
+         write(echoUnit+CK_LUN,fmt='(i0,10x,"! nffr")') nffr
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          if (nffr.gt.0) then
             do i=1,nffr
-               write(echoUnit,'(a5,10x,"! fbountag(i)")') fbountag(i)
+               write(echoUnit+CK_LUN,'(a5,10x,"! fbountag(i)")') fbountag(i)
                echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-               write(echoUnit,
+               write(echoUnit+CK_LUN,
      &             fmt='(3f6.3,10x,"! famig(i),fff(i),fface(i)")') 
      &              famig(i),fff(i),fface(i)
                echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
             end do 
             do i=1,nffr
-               write(echoUnit,'(a10,10x,"! nffr_alpha(i)")') nffr_alpha(i)
+               write(echoUnit+CK_LUN,'(a10,10x,"! nffr_alpha(i)")') nffr_alpha(i)
                echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
                do j=1,nvel
                   select case(lbcodei(j))
                   case(2,12,22,52)
-                     write(echoUnit,
+                     write(echoUnit+CK_LUN,
      &                 fmt='(2f6.3,10x,"! qnam(i,j), qnph(i,j)")') qnam(i,j), qnph(i,j)
                      echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
                   case default
@@ -982,76 +1156,76 @@
             end do
          endif
       endif
-      write(echoUnit,
+      write(echoUnit+CK_LUN,
      &  fmt='(i0,1x,2f6.3,1x,i0,10x,"! noute,toutse,toutfe,nspoole")') 
      &  noute,toutse,toutfe,nspoole
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0,10x,"! nstae")') nstae
+      write(echoUnit+CK_LUN,fmt='(i0,10x,"! nstae")') nstae
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       call echoStations(nstae, xel, yel, echoUnit)
-      write(echoUnit,
+      write(echoUnit+CK_LUN,
      &  fmt='(i0,1x,2f15.7,1x,i0,10x,"! noutv,toutsv,toutfv,nspoolv")')
      &  noutv,toutsv,toutfv,nspoolv
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0,10x,"! nstav")') nstav
+      write(echoUnit+CK_LUN,fmt='(i0,10x,"! nstav")') nstav
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       call echoStations(nstav, xev, yev, echoUnit)
       if (im.eq.10) then
-         write(echoUnit,
+         write(echoUnit+CK_LUN,
      &     fmt='(i0,1x,2f15.7,1x,i0,10x,"! noutc,toutsc,toutfc,nspoolc")')
      &     noutc,toutsc,toutfc,nspoolc
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(i0,10x,"! nstac")') nstac
+         write(echoUnit+CK_LUN,fmt='(i0,10x,"! nstac")') nstac
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          call echoStations(nstac, xec, yec, echoUnit)
       endif
       if (nws.ne.0) then
-         write(echoUnit,
+         write(echoUnit+CK_LUN,
      &    fmt='(i0,1x,2f15.7,1x,i0,10x,"! noutm,toutsm,toutfm,nspoolm")')
      &    noutm,toutsm,toutfm,nspoolm
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(i0,10x,"! nstam")') nstam
+         write(echoUnit+CK_LUN,fmt='(i0,10x,"! nstam")') nstam
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          call echoStations(nstam, xem, yem, echoUnit)
       endif
-      write(echoUnit,fmt='(i0,1x,2f15.7,1x,i0,10x,'//
+      write(echoUnit+CK_LUN,fmt='(i0,1x,2f15.7,1x,i0,10x,'//
      &   '"! noutge,toutsge,toutfge,nspoolge")') noutge,toutsge,toutfge,nspoolge
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0,1x,2f15.7,1x,i0,10x,'//
+      write(echoUnit+CK_LUN,fmt='(i0,1x,2f15.7,1x,i0,10x,'//
      & '"! noutgv,toutsgv,toutfgv,nspoolgv")') noutgv,toutsgv,toutfgv,nspoolgv
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if (im.eq.10) then
-         write(echoUnit,
+         write(echoUnit+CK_LUN,
      & fmt='(i0,1x,2f15.7,1x,i0,10x,"! noutgc,toutsgc,toutfgc,nspoolgc")')
      &  noutgc,toutsgc,toutfgc,nspoolgc
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       endif
       if (nws.ne.0) then
-         write(echoUnit,
+         write(echoUnit+CK_LUN,
      & fmt='(i0,1x,2f15.7,1x,i0,10x,"! noutgw,toutsgw,toutfgw,nspoolgw")')
      &  noutgw,toutsgw,toutfgw,nspoolgw
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       endif
-      write(echoUnit,fmt='(i0,10x,"! nfreq")') nfreq
+      write(echoUnit+CK_LUN,fmt='(i0,10x,"! nfreq")') nfreq
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if (nfreq.ne.0) then
          do i=1,nfreq
-            write(echoUnit,'(a10,10x,"! namefr(i)")') namefr(i)
+            write(echoUnit+CK_LUN,'(a10,10x,"! namefr(i)")') namefr(i)
             echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-            write(echoUnit,
+            write(echoUnit+CK_LUN,
      &       fmt='(3f15.7,10x,"! hafreq(i),haff(i),haface(i)")') hafreq(i),haff(i),haface(i)
             echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          end do
       endif
-      write(echoUnit,
+      write(echoUnit+CK_LUN,
      &  fmt='(2f15.7,1x,i0,1x,f15.7,10x,"! thas,thaf,nhainc,fmv")') thas,thaf,nhainc,fmv
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,
+      write(echoUnit+CK_LUN,
      & fmt='(i0,1x,i0,1x,i0,1x,i0,10x,"! nhase,nhasv,nhage,nhagv")') nhase,nhasv,nhage,nhagv
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0,1x,i0,10x,"! nhstar,nhsinc")') nhstar,nhsinc
+      write(echoUnit+CK_LUN,fmt='(i0,1x,i0,10x,"! nhstar,nhsinc")') nhstar,nhsinc
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,
+      write(echoUnit+CK_LUN,
      & fmt='(i0,1x,i0,f15.7,1x,i0,10x,"! ititer,isldia,convcr,itmax")')
      &  ititer,isldia,convcr,itmax
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
@@ -1069,25 +1243,25 @@
       outputSpecifiers(9) = nhstar
       ! now write metadata if any output format indicated it
       if (readMetaData.eqv..true.) then 
-         write(echoUnit,fmt='(a)') trim(title)
+         write(echoUnit+CK_LUN,fmt='(a)') trim(title)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(institution)
+         write(echoUnit+CK_LUN,fmt='(a)') trim(institution)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(source)
+         write(echoUnit+CK_LUN,fmt='(a)') trim(source)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(history)
+         write(echoUnit+CK_LUN,fmt='(a)') trim(history)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(references)
+         write(echoUnit+CK_LUN,fmt='(a)') trim(references)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(comments)
+         write(echoUnit+CK_LUN,fmt='(a)') trim(comments)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(host)
+         write(echoUnit+CK_LUN,fmt='(a)') trim(host)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(convention)
+         write(echoUnit+CK_LUN,fmt='(a)') trim(convention)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(contact)
+         write(echoUnit+CK_LUN,fmt='(a)') trim(contact)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(base_date)
+         write(echoUnit+CK_LUN,fmt='(a)') trim(base_date)
       endif 
       !---------------------------------------------------------------------
       end subroutine echoControlFile
@@ -1105,7 +1279,7 @@
       integer :: i
       if (nsta.ne.0) then
          do i=1,nsta
-            write(echoUnit,fmt='(2f15.7,10x,"! lon lat")') stax(i), stay(i)
+            write(echoUnit+CK_LUN,fmt='(2f15.7,10x,"! lon lat")') stax(i), stay(i)
             echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          end do
       endif

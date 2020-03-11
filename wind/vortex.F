@@ -60,6 +60,7 @@
       !
       !=================================================================
       MODULE vortex
+      use CkLunMod, only : CK_LUN
       USE SIZES, ONLY : sz
       USE GLOBAL, ONLY : sphericalDistance, deg2rad, rad2deg,
      &                   omega, mb2pa, rhoAir, kt2ms, nm2m, m2nm,
@@ -94,42 +95,67 @@
       INTEGER, PARAMETER :: nPoints = nQuads+2   ! Number of (theta, Rmax)
                                                  ! points for curve fit
       REAL(sz), DIMENSION(nPoints) :: Rmaxes     ! Radius of maximum winds
+!$omp threadprivate(Rmaxes)
       REAL(sz), DIMENSION(nPoints,4) :: Rmaxes4  ! (nautical miles)
+!$omp threadprivate(Rmaxes4)
       REAL(sz) :: Pn                          ! Ambient surface pressure (mb)
+!$omp threadprivate(Pn)
       REAL(sz) :: Pc                          ! Surface pressure at center of
+!$omp threadprivate(Pc)
                                               ! storm (mb)
       REAL(sz) :: cLat                        ! Latitude  of storm center
+!$omp threadprivate(cLat)
                                               ! (degrees north)
       REAL(sz) :: cLon                        ! Longitude of storm center
+!$omp threadprivate(cLon)
                                               ! (degrees east )
       REAL(sz) :: Vmax                        ! Max sustained wind velocity
+!$omp threadprivate(Vmax)
                                               ! in storm (knots)
       REAL(sz) :: B                           ! Exponential shape parameter
       REAL(sz) :: corio                       ! Coriolis force (1/s)
+!$omp threadprivate(corio)
       REAL(sz) :: Vr                          ! Velocity @ wind radii (knots)
+!$omp threadprivate(Vr)
       REAL(sz) :: Phi
+!$omp threadprivate(Phi)
       REAL(sz), DIMENSION(nPoints) :: Bs        
+!$omp threadprivate(Bs)
       REAL(sz), DIMENSION(nPoints) :: Phis    ! Correction factor to B and Vh
+!$omp threadprivate(Phis)
       REAL(sz), DIMENSION(nPoints) :: VmBL
+!$omp threadprivate(VmBL)
       REAL(sz), DIMENSION(nPoints,4) :: Bs4        
+!$omp threadprivate(Bs4)
       REAL(sz), DIMENSION(nPoints,4) :: Phis4    ! Correction factor to B and Vh
+!$omp threadprivate(Phis4)
       REAL(sz), DIMENSION(nPoints,4) :: VmBL4
+!$omp threadprivate(VmBL4)
       INTEGER,  DIMENSION(nPoints,4) :: QuadFlag4  
+!$omp threadprivate(QuadFlag4)
       REAL(sz), DIMENSION(nPoints,4) :: QuadIr4        
+!$omp threadprivate(QuadIr4)
       REAL(sz), DIMENSION(nQuads) :: VrQuadrant
+!$omp threadprivate(VrQuadrant)
       REAL(sz), DIMENSION(nQuads) :: radius   ! Wind radii - the distance
+!$omp threadprivate(radius)
                                               ! winds of velocity Vr extend
                                               ! outward from center of storm
                                               ! (nautical miles)
       INTEGER  :: quad                        ! Quadrant counter
+!$omp threadprivate(quad)
 
       REAL(sz) :: latestRmax                  ! most recently calculated
+!$omp threadprivate(latestRmax)
                                               ! value of fitted rmax
       REAL(sz) :: latestAngle                 ! angle of the most recently
+!$omp threadprivate(latestAngle)
                                               ! calculated node w.r.t. the
                                               ! storm location
       LOGICAL :: useQuadrantVr
+!$omp threadprivate(useQuadrantVr)
       LOGICAL :: useVmaxesBL
+!$omp threadprivate(useVmaxesBL)
       CONTAINS
 
       !=================

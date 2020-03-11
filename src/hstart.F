@@ -33,6 +33,7 @@ C
 C**************************************************************************
 C
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
+      use CkLunMod, only : CK_LUN
       USE SIZES, ONLY : inputDir, globalDir, mnproc
       USE GLOBAL
       USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4, AID8
@@ -237,40 +238,40 @@ C        Determine if the hot start file exists.
          ENDIF
 C
          IF (fileFound.eqv..false.) THEN
-            WRITE(16,1701)         ! hot start file
-            WRITE(16,1711)         ! was not found.
-            WRITE(16,9773)         ! execution terminated
+            WRITE(16+CK_LUN,1701)         ! hot start file
+            WRITE(16+CK_LUN,1711)         ! was not found.
+            WRITE(16+CK_LUN,9773)         ! execution terminated
             IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-               WRITE(ScreenUnit,1701)
-               WRITE(ScreenUnit,1711)
-               WRITE(16,9773)      ! execution terminated
+               WRITE(ScreenUnit+CK_LUN,1701)
+               WRITE(ScreenUnit+CK_LUN,1711)
+               WRITE(16+CK_LUN,9773)      ! execution terminated
             ENDIF
             CALL ADCIRC_Terminate()
          ENDIF
 C        start reading ascii initial conditions file
-         WRITE(16,1740)
+         WRITE(16+CK_LUN,1740)
  1740    FORMAT(/,9X,
      &    'Initial condition or ascii hot start file was found.',
      &     ' Opening file.')
 
          IF ((MNPROC.eq.1).or.
      &       (READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-            OPEN(IHOT,FILE=TRIM(INPUTDIR)//'/'//hsfn,ACTION='READ',
+            OPEN(IHOT+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//hsfn,ACTION='READ',
      &           ACCESS='SEQUENTIAL',RECL=8,IOSTAT=ErrorIO,STATUS='OLD')
          ELSE
             ! fulldomain hotstart file
-            OPEN(IHOT,FILE=TRIM(GBLINPUTDIR)//'/'//hsfn,ACTION='READ',
+            OPEN(IHOT+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//hsfn,ACTION='READ',
      &           ACCESS='SEQUENTIAL',RECL=8,IOSTAT=ErrorIO,STATUS='OLD')
          ENDIF
 
          IF (ErrorIO.GT.0) THEN
-            WRITE(16,1701)         ! hot start file
-            WRITE(16,1705)         ! exists but can't be opened
-            WRITE(16,9773)         ! execution terminated
+            WRITE(16+CK_LUN,1701)         ! hot start file
+            WRITE(16+CK_LUN,1705)         ! exists but can't be opened
+            WRITE(16+CK_LUN,9773)         ! execution terminated
             IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-               WRITE(ScreenUnit,1701)
-               WRITE(ScreenUnit,1705)
-               WRITE(ScreenUnit,9773)
+               WRITE(ScreenUnit+CK_LUN,1701)
+               WRITE(ScreenUnit+CK_LUN,1705)
+               WRITE(ScreenUnit+CK_LUN,9773)
             ENDIF
 #ifdef CMPI
             CALL MSG_FINI()
@@ -287,15 +288,15 @@ C
 C        Now read the readable initial condition or hot start file.
          moderbin=2
          IHOTSTP=1
-         READ(IHOT,*) gridinfo
-         READ(IHOT,*) IMHS
-         READ(IHOT,*) TimeLoc
-         READ(IHOT,*) ITHS
+         READ(IHOT+CK_LUN,*) gridinfo
+         READ(IHOT+CK_LUN,*) IMHS
+         READ(IHOT+CK_LUN,*) TimeLoc
+         READ(IHOT+CK_LUN,*) ITHS
 
-         READ(IHOT,*) NP_G_IN
-         READ(IHOT,*) NE_G_IN
-         READ(IHOT,*) NP_A_IN
-         READ(IHOT,*) NE_A_IN
+         READ(IHOT+CK_LUN,*) NP_G_IN
+         READ(IHOT+CK_LUN,*) NE_G_IN
+         READ(IHOT+CK_LUN,*) NP_A_IN
+         READ(IHOT+CK_LUN,*) NE_A_IN
 C
 C        jgf49.44: Add capability to read fulldomain binary hotstart
 C        file in parallel.
@@ -313,44 +314,44 @@ C        jgf46.34 Added support for IBTYPE=52.
          nodecode(:) = nnodecode(:)
          CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
 C
-         READ(IHOT,*) IESTP
-         READ(IHOT,*) NSCOUE
-         READ(IHOT,*) IVSTP
-         READ(IHOT,*) NSCOUV
-         READ(IHOT,*) ICSTP
-         READ(IHOT,*) NSCOUC
-         READ(IHOT,*) IPSTP
-         READ(IHOT,*) IWSTP
-         READ(IHOT,*) NSCOUM
-         READ(IHOT,*) IGEP
-         READ(IHOT,*) NSCOUGE
-         READ(IHOT,*) IGVP
-         READ(IHOT,*) NSCOUGV
-         READ(IHOT,*) IGCP
-         READ(IHOT,*) NSCOUGC
-         READ(IHOT,*) IGPP
-         READ(IHOT,*) IGWP
-         READ(IHOT,*) NSCOUGW
+         READ(IHOT+CK_LUN,*) IESTP
+         READ(IHOT+CK_LUN,*) NSCOUE
+         READ(IHOT+CK_LUN,*) IVSTP
+         READ(IHOT+CK_LUN,*) NSCOUV
+         READ(IHOT+CK_LUN,*) ICSTP
+         READ(IHOT+CK_LUN,*) NSCOUC
+         READ(IHOT+CK_LUN,*) IPSTP
+         READ(IHOT+CK_LUN,*) IWSTP
+         READ(IHOT+CK_LUN,*) NSCOUM
+         READ(IHOT+CK_LUN,*) IGEP
+         READ(IHOT+CK_LUN,*) NSCOUGE
+         READ(IHOT+CK_LUN,*) IGVP
+         READ(IHOT+CK_LUN,*) NSCOUGV
+         READ(IHOT+CK_LUN,*) IGCP
+         READ(IHOT+CK_LUN,*) NSCOUGC
+         READ(IHOT+CK_LUN,*) IGPP
+         READ(IHOT+CK_LUN,*) IGWP
+         READ(IHOT+CK_LUN,*) NSCOUGW
          !
          !     R E A D   3 D   H O T S T A R T   D A T A
          !
          IF (C3D) THEN
-            READ(IHOT,*) IDenHS
+            READ(IHOT+CK_LUN,*) IDenHS
             !3D station density output time counter
-            READ(IHOT,*) N3DSD
-            READ(IHOT,*) I3DSDRec
+            READ(IHOT+CK_LUN,*) N3DSD
+            READ(IHOT+CK_LUN,*) I3DSDRec
             !3D station velocity output time counter
-            READ(IHOT,*) N3DSV
-            READ(IHOT,*) I3DSVRec
+            READ(IHOT+CK_LUN,*) N3DSV
+            READ(IHOT+CK_LUN,*) I3DSVRec
             !3D station turbulence output time counter
-            READ(IHOT,*) N3DST
-            READ(IHOT,*) I3DSTRec
-            READ(IHOT,*) N3DGD
-            READ(IHOT,*) I3DGDRec
-            READ(IHOT,*) N3DGV
-            READ(IHOT,*) I3DGVRec
-            READ(IHOT,*) N3DGT
-            READ(IHOT,*) I3DGTRec
+            READ(IHOT+CK_LUN,*) N3DST
+            READ(IHOT+CK_LUN,*) I3DSTRec
+            READ(IHOT+CK_LUN,*) N3DGD
+            READ(IHOT+CK_LUN,*) I3DGDRec
+            READ(IHOT+CK_LUN,*) N3DGV
+            READ(IHOT+CK_LUN,*) I3DGVRec
+            READ(IHOT+CK_LUN,*) N3DGT
+            READ(IHOT+CK_LUN,*) I3DGTRec
 C           kmd48.33bc - changed to the format used with the global IO
 C           jgf49.44: Add capability to read fulldomain 3D binary hotstart
 C           file in parallel.
@@ -419,7 +420,7 @@ C...
 !               CALL readBinaryHAHotstart(IHOT, IHOTSTP)
 !            ENDIF
 !         ENDIF    !IHARIND
-         CLOSE(IHOT)  ! close portable ascii hotstart file
+         CLOSE(IHOT+CK_LUN)  ! close portable ascii hotstart file
 C
 C
       CASE(67,68) ! non-portable binary file format
@@ -447,13 +448,13 @@ C        Determine if the hot start file exists.
          ENDIF
 C
          IF (fileFound.eqv..false.) THEN
-            WRITE(16,1001)         ! hot start file
-            WRITE(16,1011)         ! was not found.
-            WRITE(16,9973)         ! execution terminated
+            WRITE(16+CK_LUN,1001)         ! hot start file
+            WRITE(16+CK_LUN,1011)         ! was not found.
+            WRITE(16+CK_LUN,9973)         ! execution terminated
             IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-               WRITE(ScreenUnit,1001)
-               WRITE(ScreenUnit,1011)
-               WRITE(16,9973)      ! execution terminated
+               WRITE(ScreenUnit+CK_LUN,1001)
+               WRITE(ScreenUnit+CK_LUN,1011)
+               WRITE(16+CK_LUN,9973)      ! execution terminated
             ENDIF
 #ifdef CMPI
             CALL MSG_FINI()
@@ -461,28 +462,28 @@ C
             STOP
          ENDIF
 C        start reading binary hot start file
-         WRITE(16,240)
+         WRITE(16+CK_LUN,240)
  240     FORMAT(/,9X,'Hot start file was found.',
      &     ' Opening file.')
 
          IF ((MNPROC.eq.1).or.
      &       (READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-            OPEN(IHOT,FILE=TRIM(INPUTDIR)//'/'//hsfn,ACTION='READ',
+            OPEN(IHOT+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//hsfn,ACTION='READ',
      &            ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO,STATUS='OLD')
          ELSE
             ! fulldomain hotstart file
-            OPEN(IHOT,FILE=TRIM(GBLINPUTDIR)//'/'//hsfn,ACTION='READ',
+            OPEN(IHOT+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//hsfn,ACTION='READ',
      &            ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO,STATUS='OLD')
          ENDIF
 
          IF (ErrorIO.GT.0) THEN
-            WRITE(16,1001)         ! hot start file
-            WRITE(16,1005)         ! exists but can't be opened
-            WRITE(16,9973)         ! execution terminated
+            WRITE(16+CK_LUN,1001)         ! hot start file
+            WRITE(16+CK_LUN,1005)         ! exists but can't be opened
+            WRITE(16+CK_LUN,9973)         ! execution terminated
             IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-               WRITE(ScreenUnit,1001)
-               WRITE(ScreenUnit,1005)
-               WRITE(ScreenUnit,9973)
+               WRITE(ScreenUnit+CK_LUN,1001)
+               WRITE(ScreenUnit+CK_LUN,1005)
+               WRITE(ScreenUnit+CK_LUN,9973)
             ENDIF
 #ifdef CMPI
             CALL MSG_FINI()
@@ -499,30 +500,30 @@ C
 C        Now read the non-portable binary hot start file.
          moderbin=1 ! kmd - sets the flag for the readAndMapToSubdomain subroutines
          IHOTSTP=1
-         READ(IHOT,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
          if (.not.
      &     CMP_VERSION_NUMBERS(InputFileFmtVn,FileFmtVersion))then
-            WRITE(16, 1001)
-            write(16, 1012)
-            write(16, 9973)
+            WRITE(16+CK_LUN, 1001)
+            write(16+CK_LUN, 1012)
+            write(16+CK_LUN, 9973)
             if (NScreen /= 0 .and. myproc == 0) then
-               WRITE(ScreenUnit, 1001)
-               write(ScreenUnit, 1012)
-               write(ScreenUnit, 9973)
+               WRITE(ScreenUnit+CK_LUN, 1001)
+               write(ScreenUnit+CK_LUN, 1012)
+               write(ScreenUnit+CK_LUN, 9973)
             endif
 #ifdef CMPI
             call msg_fini()
 #endif
             stop
          endif
-         READ(IHOT,REC=IHOTSTP) IMHS         ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) TimeLoc         ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) ITHS         ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) IMHS         ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) TimeLoc         ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) ITHS         ; IHOTSTP = IHOTSTP + 1
 
-         READ(IHOT,REC=IHOTSTP) NP_G_IN      ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) NE_G_IN      ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) NP_A_IN      ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) NE_A_IN      ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) NP_G_IN      ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) NE_G_IN      ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) NP_A_IN      ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) NE_A_IN      ; IHOTSTP = IHOTSTP + 1
 C
 C        jgf49.44: Add capability to read fulldomain binary hotstart
 C        file in parallel.
@@ -540,56 +541,56 @@ C        jgf46.34 Added support for IBTYPE=52.
          nodecode(:) = nnodecode(:)
          CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
 C
-         READ(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT+CK_LUN,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
          !
          !     R E A D   3 D   H O T S T A R T   D A T A
          !
          IF (C3D) THEN
-            READ(IHOT,REC=IHOTSTP) IDenHS
+            READ(IHOT+CK_LUN,REC=IHOTSTP) IDenHS
             IHOTSTP=IHOTSTP+1
             !3D station density output time counter
-            READ(IHOT,REC=IHOTSTP) N3DSD
+            READ(IHOT+CK_LUN,REC=IHOTSTP) N3DSD
             IHOTSTP=IHOTSTP+1
-            READ(IHOT,REC=IHOTSTP) I3DSDRec
+            READ(IHOT+CK_LUN,REC=IHOTSTP) I3DSDRec
             IHOTSTP=IHOTSTP+1
             !3D station velocity output time counter
-            READ(IHOT,REC=IHOTSTP) N3DSV
+            READ(IHOT+CK_LUN,REC=IHOTSTP) N3DSV
             IHOTSTP=IHOTSTP+1
-            READ(IHOT,REC=IHOTSTP) I3DSVRec
+            READ(IHOT+CK_LUN,REC=IHOTSTP) I3DSVRec
             IHOTSTP=IHOTSTP+1
             !3D station turbulence output time counter
-            READ(IHOT,REC=IHOTSTP) N3DST
+            READ(IHOT+CK_LUN,REC=IHOTSTP) N3DST
             IHOTSTP=IHOTSTP+1
-            READ(IHOT,REC=IHOTSTP) I3DSTRec
+            READ(IHOT+CK_LUN,REC=IHOTSTP) I3DSTRec
             IHOTSTP=IHOTSTP+1
-            READ(IHOT,REC=IHOTSTP) N3DGD
+            READ(IHOT+CK_LUN,REC=IHOTSTP) N3DGD
             IHOTSTP=IHOTSTP+1
-            READ(IHOT,REC=IHOTSTP) I3DGDRec
+            READ(IHOT+CK_LUN,REC=IHOTSTP) I3DGDRec
             IHOTSTP=IHOTSTP+1
-            READ(IHOT,REC=IHOTSTP) N3DGV
+            READ(IHOT+CK_LUN,REC=IHOTSTP) N3DGV
             IHOTSTP=IHOTSTP+1
-            READ(IHOT,REC=IHOTSTP) I3DGVRec
+            READ(IHOT+CK_LUN,REC=IHOTSTP) I3DGVRec
             IHOTSTP=IHOTSTP+1
-            READ(IHOT,REC=IHOTSTP) N3DGT
+            READ(IHOT+CK_LUN,REC=IHOTSTP) N3DGT
             IHOTSTP=IHOTSTP+1
-            READ(IHOT,REC=IHOTSTP) I3DGTRec
+            READ(IHOT+CK_LUN,REC=IHOTSTP) I3DGTRec
             IHOTSTP=IHOTSTP+1
 C           kmd48.33bc - changed to the format used with the global IO
 C           jgf49.44: Add capability to read fulldomain 3D binary hotstart
@@ -657,13 +658,13 @@ C........   IF HARMONIC ANALYSIS HAS ALREADY BEGUN, READ IN HOT START
 C........   HARMONIC ANALYSIS, MEAN AND SQUARE INFO
 C...
             IF(ITHS.GT.ITHAS) THEN
-               READ(IHOT,REC=IHOTSTP) ICHA
+               READ(IHOT+CK_LUN,REC=IHOTSTP) ICHA
             ENDIF
             IF(ITHS.GE.IHABEG) THEN
                CALL readBinaryHAHotstart(IHOT, IHOTSTP)
             ENDIF
          ENDIF    !IHARIND
-         CLOSE(IHOT)  ! close non-portable binary hotstart file
+         CLOSE(IHOT+CK_LUN)  ! close non-portable binary hotstart file
 C
 C
 #ifdef ADCNETCDF
@@ -830,8 +831,8 @@ C
 
 C.... SET POSITIONS IN BOUNDARY CONDITION, WIND AND OUTPUT FILES
 C
-      WRITE(16,1112)
-      WRITE(16,1794)
+      WRITE(16+CK_LUN,1112)
+      WRITE(16+CK_LUN,1794)
  1794 FORMAT(//,' INFORMATION ABOUT RE-STARTING THE TIME SERIES',
      &     ' OUTPUT FILES (UNITS 61-64,71-74,81,83),',
      &     /,' WIND/PRESSURE FILE (UNIT 22) AND FLOW BOUNDARY',
@@ -853,23 +854,23 @@ C.... BOUNDARY CONDITION FILE IF IT IS REQURIED.
        endif                                   ! NCSU Subdomain
 
       IF((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1976)
-         WRITE(16,1976)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
+         WRITE(16+CK_LUN,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1976)
+         WRITE(16+CK_LUN,1976)
  1976    FORMAT(/,1X,'LOCATING ELEVATION SPECIFIED INFORMATION IN ',
      &        'UNIT 19',/)
 
          if ((subdomainOn.eqv..false.).or.(enforceBN.ne.1)) then ! NCSU Subdomain
-            OPEN(19,FILE=TRIM(INPUTDIR)//'/'//'fort.19')
-            READ(19,*) ETIMINC
+            OPEN(19+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.19')
+            READ(19+CK_LUN,*) ETIMINC
             ETIME1=STATIM*86400.D0
             ETIME2=ETIME1+ETIMINC
             DO J=1,NETA
-               READ(19,*) ESBIN1(J)
+               READ(19+CK_LUN,*) ESBIN1(J)
             END DO
             DO J=1,NETA
-               READ(19,*) ESBIN2(J)
+               READ(19+CK_LUN,*) ESBIN2(J)
             END DO
             DO IT=1,ITHS-1
                TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
@@ -878,7 +879,7 @@ C.... BOUNDARY CONDITION FILE IF IT IS REQURIED.
                   ETIME2=ETIME1+ETIMINC
                   DO J=1,NETA
                      ESBIN1(J)=ESBIN2(J)
-                     READ(19,*) ESBIN2(J)
+                     READ(19+CK_LUN,*) ESBIN2(J)
                   END DO
                ENDIF
             END DO
@@ -887,7 +888,7 @@ C.... BOUNDARY CONDITION FILE IF IT IS REQURIED.
                ETIME2=ETIME1+ETIMINC
                DO J=1,NETA
                   ESBIN1(J)=ESBIN2(J)
-                  READ(19,*) ESBIN2(J)
+                  READ(19+CK_LUN,*) ESBIN2(J)
                END DO
             ENDIF
             ETRATIO=(TIMEIT-ETIME1)/ETIMINC
@@ -898,26 +899,26 @@ C......FIND PROPER PLACE IN THE APERIODIC NORMAL FLOW BOUNDARY CONDITION
 C......FILE IF IT IS REQUIRED
 
       IF((NFLUXF.EQ.1).AND.(NFFR.EQ.0)) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1978)
-         WRITE(16,1978)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
+         WRITE(16+CK_LUN,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1978)
+         WRITE(16+CK_LUN,1978)
  1978    FORMAT(/,1X,'LOCATING NORMAL FLOW INFORMATION IN UNIT 20',/)
-         OPEN(20,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
-         READ(20,*) FTIMINC
+         OPEN(20+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
+         READ(20+CK_LUN,*) FTIMINC
          QTIME1=STATIM*86400.D0
          QTIME2=QTIME1+FTIMINC
          DO J=1,NVEL
             QNIN1(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32))
-     &           READ(20,*) QNIN1(J)
+     &           READ(20+CK_LUN,*) QNIN1(J)
          END DO
          DO J=1,NVEL
             QNIN2(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32))
-     &           READ(20,*) QNIN2(J)
+     &           READ(20+CK_LUN,*) QNIN2(J)
          END DO
          DO IT=1,ITHS-1
             TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
@@ -928,7 +929,7 @@ C......FILE IF IT IS REQUIRED
                   IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &                 .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
                      QNIN1(J)=QNIN2(J)
-                     READ(20,*) QNIN2(J)
+                     READ(20+CK_LUN,*) QNIN2(J)
                   ENDIF
                END DO
             ENDIF
@@ -944,7 +945,7 @@ C......FILE IF IT IS REQUIRED
                IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &              .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
                   QNIN1(J)=QNIN2(J)
-                  READ(20,*) QNIN2(J)
+                  READ(20+CK_LUN,*) QNIN2(J)
                ENDIF
             END DO
          ENDIF
@@ -956,29 +957,29 @@ C......FILE IF IT IS REQUIRED
 
 ! kmd - added in a option to start the river information at the hot start time
       IF((NFLUXF.EQ.1).AND.(NFFR.EQ.-1)) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1978)
-         WRITE(16,1978)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
+         WRITE(16+CK_LUN,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1978)
+         WRITE(16+CK_LUN,1978)
 ! 1978    FORMAT(/,1X,'LOCATING NORMAL FLOW INFORMATION IN UNIT 20',/)
 C         IF (MYPROC.EQ.7) THEN
 C            PRINT *, "Made it to the reading in of the river file"
 C         END IF
-         OPEN(20,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
-         READ(20,*) FTIMINC
+         OPEN(20+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
+         READ(20+CK_LUN,*) FTIMINC
          QTIME1=TIMELOC
          QTIME2=QTIME1+FTIMINC
          DO J=1,NVEL
             QNIN1(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32))
-     &           READ(20,*) QNIN1(J)
+     &           READ(20+CK_LUN,*) QNIN1(J)
          END DO
          DO J=1,NVEL
             QNIN2(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32))
-     &           READ(20,*) QNIN2(J)
+     &           READ(20+CK_LUN,*) QNIN2(J)
          END DO
          QTRATIO=(TIMEIT-QTIME1)/FTIMINC
          DO I=1,NVEL
@@ -991,7 +992,7 @@ C         END IF
                IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &              .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
                   QNIN1(J)=QNIN2(J)
-                  READ(20,*) QNIN2(J)
+                  READ(20+CK_LUN,*) QNIN2(J)
                ENDIF
             END DO
          ENDIF
@@ -1245,13 +1246,13 @@ C     at a time interval that does not equal the model time
 C     step. Interpolation in time is used to synchronize the 
 C     bathymetry information with the model time step.
       IF(Nddt.EQ.1) THEN
-         OPEN(141,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
+         OPEN(141+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
          bTIME1 = STATIM*86400.D0
          bTIME2 = bTIME1 + bTIMINC
          BTIME_END = BTIME1 + BCHGTIMINC  !ending time for bathymetry changes during the btiminc interval
          DP1(:) = DP(:)
          DP2(:) = DP(:)
-         READ(141,*) (IJK,dp2(IJK),I=1,NP)
+         READ(141+CK_LUN,*) (IJK,dp2(IJK),I=1,NP)
 C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
 C...     DEPTHS ARE > OR = TO H0.
          IF ((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
@@ -1267,7 +1268,7 @@ C...     DEPTHS ARE > OR = TO H0.
                BTIME_END = BTIME1 + BCHGTIMINC
                dp1(:) = dp2(:)
                DO I=1,NP
-                  READ(141,*) IJK,DP2(IJK)
+                  READ(141+CK_LUN,*) IJK,DP2(IJK)
                END DO
 C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
 C...     DEPTHS ARE > OR = TO H0.
@@ -1295,13 +1296,13 @@ C.......If time is during the bathymetry change interval, then update bathymetry
       ENDIF
 
       IF(NDDT.EQ.-1) THEN
-         OPEN(141,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
+         OPEN(141+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
          bTIME1 = timeLoc
          bTIME2 = bTIME1 + bTIMINC
          BTIME_END = BTIME1 + BCHGTIMINC
          DP1(:) = DP(:)
          DP2(:) = DP(:)
-         READ(141,*) (IJK,DP2(IJK),I=1,NP)
+         READ(141+CK_LUN,*) (IJK,DP2(IJK),I=1,NP)
 C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
 C...     DEPTHS ARE > OR = TO H0.
          IF ((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
@@ -1325,7 +1326,7 @@ C.......If time is during the bathymetry change interval, then update bathymetry
       ENDIF
 
       IF(NDDT.EQ.2) THEN
-         OPEN(141,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
+         OPEN(141+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
          bTIME1 = STATIM*86400.D0
          bTIME2 = bTIME1 + bTIMINC
          BTIME_END = BTIME1 + BCHGTIMINC  !ending time for bathymetry changes during the btiminc interval
@@ -1379,7 +1380,7 @@ C.......If time is during the bathymetry change interval, then update bathymetry
       ENDIF
 
       IF(NDDT.EQ.-2) THEN
-         OPEN(141,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
+         OPEN(141+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
          bTIME1 = timeLoc
          bTIME2 = bTIME1 + bTIMINC
          BTIME_END = BTIME1 + BCHGTIMINC
@@ -1470,7 +1471,7 @@ C......RESTART THE WAVE RADIATION STRESS
            RSTIME2 = RSTIME1 + RSTIMINC
            SELECT CASE(NRS)
            CASE(1)           
-              OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
+              OPEN(23+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
               CALL RSGET(RSNX1,RSNY1)
               CALL RSGET(RSNX2,RSNY2)
            CASE(2)
@@ -1580,7 +1581,7 @@ C...
 C....IF RESTARTING THE ELEVATION STATION OUTPUT FILE, GO TO THE PROPER PLACE
 C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
 C...
-      WRITE(16,1040) IESTP,NSCOUE
+      WRITE(16+CK_LUN,1040) IESTP,NSCOUE
  1040 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN ELEVATION ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER = ',I6)
@@ -1594,7 +1595,7 @@ C...
           IF(NTCYSE.LT.ITHS) NTCYSE=NTCYSE+NSPOOLE
           IF(NSPOOLE.NE.0) NTRSPE=(NTCYFE-NTCYSE)/NSPOOLE
         ENDIF
-        WRITE(16,1041)
+        WRITE(16+CK_LUN,1041)
  1041   FORMAT(//,' A NEW ELEVATION STATION FILE WILL BE STARTED')
       ENDIF
       if (write_local_files.eqv..false.) then
@@ -1606,10 +1607,10 @@ C...
       endif
       select case(noute)
       case(-2)
-         OPEN(61,FILE=TRIM(fname),ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(61+CK_LUN,FILE=TRIM(fname),ACCESS='DIRECT',RECL=NBYTE)
          call writeBinaryOutputFileHeader(61, 1, IESTP,
      &      NTRSPE, NSTAE, NSPOOLE)
-         CLOSE(61)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+         CLOSE(61+CK_LUN)                    ! DO THIS TO FLUSH THE WRITE BUFFER
       case(-1)
          CALL OPEN_GBL_FILE(61, TRIM(fname),NSTAE_G, NSTAE, HEADER61)
          IESTP=2
@@ -1620,23 +1621,23 @@ C...
             CALL OPEN_GBL_FILE(61, TRIM(fname),NSTAE_G, NSTAE, HEADER61)
             IESTP=2
          else
-            open(61,file=trim(fname),status='old',action='readwrite',
+            open(61+CK_LUN,file=trim(fname),status='old',action='readwrite',
      &            position='rewind', access='sequential')
             call skipDownToAppendOutputFile(61, timeloc, numRecordsPerSnap,noute) 
-            close(61)
+            close(61+CK_LUN)
          endif
       case(2)
-         OPEN(61,FILE=TRIM(LOCALDIR)//'/'//'fort.61',
+         OPEN(61+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.61',
      &                      ACCESS='DIRECT',RECL=NBYTE)
 c       WRITE(61,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-         CLOSE(61)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+         CLOSE(61+CK_LUN)                         ! DO THIS TO FLUSH THE WRITE BUFFER
       case default
       end select
 
 C...
 C....GO TO THE PROPER PLACE IN THE VELOCITY STATION OUTPUT FILE
 C...
-      WRITE(16,1042) IVSTP,NSCOUV
+      WRITE(16+CK_LUN,1042) IVSTP,NSCOUV
  1042 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN VELOCITY ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER =',I6)
@@ -1650,7 +1651,7 @@ C...
           IF(NTCYSV.LT.ITHS) NTCYSV=NTCYSV+NSPOOLV
           NTRSPV=(NTCYFV-NTCYSV)/NSPOOLV
         ENDIF
-        WRITE(16,1043)
+        WRITE(16+CK_LUN,1043)
  1043   FORMAT(//,' A NEW VELOCITY STATION FILE WILL BE STARTED')
       ENDIF
       if (write_local_files.eqv..false.) then
@@ -1662,10 +1663,10 @@ C...
       endif
       select case(noutv)
       case(-2)
-         OPEN(62,FILE=TRIM(fname),ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(62+CK_LUN,FILE=TRIM(fname),ACCESS='DIRECT',RECL=NBYTE)
          call writeBinaryOutputFileHeader(62, 2, IVSTP,
      &       NTRSPV, NSTAV, NSPOOLV)
-         CLOSE(62)                    ! DO THIS TO FLUSH THE WRITE BUFFER 
+         CLOSE(62+CK_LUN)                    ! DO THIS TO FLUSH THE WRITE BUFFER 
       case(-1)
          CALL OPEN_GBL_FILE(62, TRIM(fname),NSTAV_G, NSTAV, HEADER62)
          IVSTP=2
@@ -1676,23 +1677,23 @@ C...
             CALL OPEN_GBL_FILE(62, TRIM(fname),NSTAV_G, NSTAV, HEADER62)
             IVSTP=2
          else
-            open(62,file=trim(fname),status='old',action='readwrite',
+            open(62+CK_LUN,file=trim(fname),status='old',action='readwrite',
      &            position='rewind', access='sequential')
             call skipDownToAppendOutputFile(62, timeloc, numRecordsPerSnap,noutv) 
-            close(62)
+            close(62+CK_LUN)
          endif
       case(2)
-        OPEN(62,FILE=TRIM(LOCALDIR)//'/'//'fort.62',
+        OPEN(62+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.62',
      &                      ACCESS='DIRECT',RECL=NBYTE)
 c       WRITE(62,REC=ITEMPSTP+1) NTRSPV   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-        CLOSE(62)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+        CLOSE(62+CK_LUN)                         ! DO THIS TO FLUSH THE WRITE BUFFER
       case default
       end select
 
 C...
 C....GO TO THE PROPER PLACE IN THE CONCENTRATION STATION OUTPUT FILE
 C...
-      WRITE(16,1044) ICSTP,NSCOUC
+      WRITE(16+CK_LUN,1044) ICSTP,NSCOUC
  1044 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN CONCENTRATION ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER = ',I6)
@@ -1705,7 +1706,7 @@ C...
           IF(NTCYSC.LT.ITHS) NTCYSC=NTCYSC+NSPOOLC
           NTRSPC=(NTCYFC-NTCYSC)/NSPOOLC
         ENDIF
-        WRITE(16,1045)
+        WRITE(16+CK_LUN,1045)
  1045   FORMAT(//,' A NEW CONCENTRATION STATION FILE WILL BE STARTED')
       ENDIF
       if (write_local_files.eqv..false.) then
@@ -1717,14 +1718,14 @@ C...
       endif
       select case(noutc)
       case(-2)
-         OPEN(81,FILE=TRIM(fname),ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(81+CK_LUN,FILE=TRIM(fname),ACCESS='DIRECT',RECL=NBYTE)
          call writeBinaryOutputFileHeader(81, 1, ICSTP,
      &       NTRSPC, NSTAC, NSPOOLC)
-         CLOSE(81)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+         CLOSE(81+CK_LUN)                    ! DO THIS TO FLUSH THE WRITE BUFFER
       case(-1)
          CALL OPEN_GBL_FILE(81, TRIM(fname),NSTAC_G, NSTAC, HEADER81)
          ICSTP=2
-         CLOSE(81)
+         CLOSE(81+CK_LUN)
       case(1)
          inquire(file=trim(fname),exist=fileFound)
          ! start anew if the file was not found
@@ -1732,16 +1733,16 @@ C...
             CALL OPEN_GBL_FILE(81, TRIM(fname),NSTAC_G, NSTAC, HEADER81)
             ICSTP=2
          else
-            open(81,file=trim(fname),status='old',action='readwrite',
+            open(81+CK_LUN,file=trim(fname),status='old',action='readwrite',
      &            position='rewind', access='sequential')
             call skipDownToAppendOutputFile(81,timeloc,numRecordsPerSnap,noutc) 
-            close(81)
+            close(81+CK_LUN)
          endif         
       case(2)
-        OPEN(81,FILE=TRIM(LOCALDIR)//'/'//'fort.81',
+        OPEN(81+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.81',
      &                      ACCESS='DIRECT',RECL=NBYTE)
 c       WRITE(81,REC=ITEMPSTP+1) NTRSPC   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-        CLOSE(81)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+        CLOSE(81+CK_LUN)                         ! DO THIS TO FLUSH THE WRITE BUFFER
       case default
       end select
 C...
@@ -1749,12 +1750,12 @@ C....GO TO THE PROPER PLACE IN THE METEOROLOGICAL STATION OUTPUT FILE
 C...
 c... v49.64.01 tcm -added support for ice stations
       IF(NCICE.EQ.0)  THEN
-         WRITE(16,1038) IWSTP,IPSTP,NSCOUM
+         WRITE(16+CK_LUN,1038) IWSTP,IPSTP,NSCOUM
       ELSE
          IICESTP = IPSTP  !SET TO THE SAME PLACE AS THE PRESSURE FILE
-         WRITE(16,2038) IWSTP,IPSTP,IICESTP,NSCOUM
+         WRITE(16+CK_LUN,2038) IWSTP,IPSTP,IICESTP,NSCOUM
       ENDIF
-      WRITE(16,1038) IWSTP,IPSTP,NSCOUM
+      WRITE(16+CK_LUN,1038) IWSTP,IPSTP,NSCOUM
  1038 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE WIND STATION',
      &                ' FILE BY THE TIME OF THE HOT START',
      &        /,1X,I6,' LINES OR RECORDS WRITTIN IN THE PRES STATION',
@@ -1779,42 +1780,42 @@ C
           IF(NTCYSM.LT.ITHS) NTCYSM=NTCYSM+NSPOOLM
           NTRSPM=(NTCYFM-NTCYSM)/NSPOOLM
         ENDIF
-        WRITE(16,1039)
+        WRITE(16+CK_LUN,1039)
  1039   FORMAT(//,' A NEW METEOROLOGICAL STATION FILE WILL BE STARTED')
       ENDIF
    
 
       IF(NOUTM.EQ.-2) THEN
-        OPEN(71,FILE=TRIM(LOCALDIR)//'/'//'fort.71',
+        OPEN(71+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.71',
      &                      ACCESS='DIRECT',RECL=NBYTE)
-        OPEN(72,FILE=TRIM(LOCALDIR)//'/'//'fort.72',
+        OPEN(72+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.72',
      &                      ACCESS='DIRECT',RECL=NBYTE)
 !       v49.64.01 tcm added ice station
         IF(NCICE.NE.0) THEN
-           OPEN(91,FILE=TRIM(LOCALDIR)//'/'//'fort.91',
+           OPEN(91+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.91',
      &                      ACCESS='DIRECT',RECL=NBYTE)
         ENDIF
         IF(NBYTE.EQ.4) THEN
           DO I=1,8
-            WRITE(71,REC=IPSTP+I) RDES4(I)
-            WRITE(72,REC=IWSTP+I) RDES4(I)
-            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RDES4(I)
+            WRITE(71+CK_LUN,REC=IPSTP+I) RDES4(I)
+            WRITE(72+CK_LUN,REC=IWSTP+I) RDES4(I)
+            IF (NCICE.NE.0) WRITE(91+CK_LUN,REC=IICESTP+I) RDES4(I)
           ENDDO
           IPSTP=IPSTP+8
           IWSTP=IWSTP+8
           IF (NCICE.NE.0) IICESTP = IICESTP+8
           DO I=1,6
-            WRITE(71,REC=IPSTP+I) RID4(I)
-            WRITE(72,REC=IWSTP+I) RID4(I)
-            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RID4(I)
+            WRITE(71+CK_LUN,REC=IPSTP+I) RID4(I)
+            WRITE(72+CK_LUN,REC=IWSTP+I) RID4(I)
+            IF (NCICE.NE.0) WRITE(91+CK_LUN,REC=IICESTP+I) RID4(I)
           ENDDO
           IPSTP=IPSTP+6
           IWSTP=IWSTP+6
           IF (NCICE.NE.0) IICESTP = IICESTP+6
           DO I=1,6
-            WRITE(71,REC=IPSTP+I) AID4(I)
-            WRITE(72,REC=IWSTP+I) AID4(I)
-            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) AID4(I)
+            WRITE(71+CK_LUN,REC=IPSTP+I) AID4(I)
+            WRITE(72+CK_LUN,REC=IWSTP+I) AID4(I)
+            IF (NCICE.NE.0) WRITE(91+CK_LUN,REC=IICESTP+I) AID4(I)
           ENDDO
           IPSTP=IPSTP+6
           IWSTP=IWSTP+6
@@ -1822,53 +1823,53 @@ C
         ENDIF
         IF(NBYTE.EQ.8) THEN
           DO I=1,4
-            WRITE(71,REC=IPSTP+I) RDES8(I)
-            WRITE(72,REC=IWSTP+I) RDES8(I)
-            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RDES8(I)
+            WRITE(71+CK_LUN,REC=IPSTP+I) RDES8(I)
+            WRITE(72+CK_LUN,REC=IWSTP+I) RDES8(I)
+            IF (NCICE.NE.0) WRITE(91+CK_LUN,REC=IICESTP+I) RDES8(I)
           ENDDO
           IPSTP=IPSTP+4
           IWSTP=IWSTP+4
           IF (NCICE.NE.0) IICESTP = IICESTP+4
           DO I=1,3
-            WRITE(71,REC=IPSTP+I) RID8(I)
-            WRITE(72,REC=IWSTP+I) RID8(I)
-            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RID8(I)
+            WRITE(71+CK_LUN,REC=IPSTP+I) RID8(I)
+            WRITE(72+CK_LUN,REC=IWSTP+I) RID8(I)
+            IF (NCICE.NE.0) WRITE(91+CK_LUN,REC=IICESTP+I) RID8(I)
           ENDDO
           IPSTP=IPSTP+3
           IWSTP=IWSTP+3
           IF (NCICE.NE.0) IICESTP = IICESTP+3
           DO I=1,3
-            WRITE(71,REC=IPSTP+I) AID8(I)
-            WRITE(72,REC=IWSTP+I) AID8(I)
-            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) AID8(I)
+            WRITE(71+CK_LUN,REC=IPSTP+I) AID8(I)
+            WRITE(72+CK_LUN,REC=IWSTP+I) AID8(I)
+            IF (NCICE.NE.0) WRITE(91+CK_LUN,REC=IICESTP+I) AID8(I)
           ENDDO
           IPSTP=IPSTP+3
           IWSTP=IWSTP+3
           IF (NCICE.NE.0) IICESTP = IICESTP+3
         ENDIF
-        WRITE(71,REC=IPSTP+1) NTRSPM
-        WRITE(71,REC=IPSTP+2) NSTAM
-        WRITE(71,REC=IPSTP+3) DT*NSPOOLM
-        WRITE(71,REC=IPSTP+4) NSPOOLM
-        WRITE(71,REC=IPSTP+5) 1
-        WRITE(72,REC=IWSTP+1) NTRSPM
-        WRITE(72,REC=IWSTP+2) NSTAM
-        WRITE(72,REC=IWSTP+3) DT*NSPOOLM
-        WRITE(72,REC=IWSTP+4) NSPOOLM
-        WRITE(72,REC=IWSTP+5) 2
+        WRITE(71+CK_LUN,REC=IPSTP+1) NTRSPM
+        WRITE(71+CK_LUN,REC=IPSTP+2) NSTAM
+        WRITE(71+CK_LUN,REC=IPSTP+3) DT*NSPOOLM
+        WRITE(71+CK_LUN,REC=IPSTP+4) NSPOOLM
+        WRITE(71+CK_LUN,REC=IPSTP+5) 1
+        WRITE(72+CK_LUN,REC=IWSTP+1) NTRSPM
+        WRITE(72+CK_LUN,REC=IWSTP+2) NSTAM
+        WRITE(72+CK_LUN,REC=IWSTP+3) DT*NSPOOLM
+        WRITE(72+CK_LUN,REC=IWSTP+4) NSPOOLM
+        WRITE(72+CK_LUN,REC=IWSTP+5) 2
         IPSTP=IPSTP+5
         IWSTP=IWSTP+5
-        CLOSE(71)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-        CLOSE(72)
+        CLOSE(71+CK_LUN)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+        CLOSE(72+CK_LUN)
         ! v49.64.01 tcm -- added ice stations
         IF(NCICE.NE.0) THEN
-           WRITE(91,REC=IICESTP+1) NTRSPM
-           WRITE(91,REC=IICESTP+2) NSTAM
-           WRITE(91,REC=IICESTP+3) DT*NSPOOLM
-           WRITE(91,REC=IICESTP+4) NSPOOLM
-           WRITE(91,REC=IICESTP+5) 1
+           WRITE(91+CK_LUN,REC=IICESTP+1) NTRSPM
+           WRITE(91+CK_LUN,REC=IICESTP+2) NSTAM
+           WRITE(91+CK_LUN,REC=IICESTP+3) DT*NSPOOLM
+           WRITE(91+CK_LUN,REC=IICESTP+4) NSPOOLM
+           WRITE(91+CK_LUN,REC=IICESTP+5) 1
            IICESTP = IICESTP + 5
-           CLOSE(91)
+           CLOSE(91+CK_LUN)
         ENDIF
       ENDIF
       IF(NOUTM.EQ.-1) THEN
@@ -1919,10 +1920,10 @@ C
             CALL OPEN_GBL_FILE(71, TRIM(fname),NSTAM_G, NSTAM, HEADER71)
             IPSTP=2
          else
-            open(71,file=trim(fname),status='old',action='readwrite',
+            open(71+CK_LUN,file=trim(fname),status='old',action='readwrite',
      &            position='rewind', access='sequential')
             call skipDownToAppendOutputFile(71, timeloc, numRecordsPerSnap,noutm) 
-            close(71)
+            close(71+CK_LUN)
          endif
          ! wind station file
          if (write_local_files.eqv..false.) then
@@ -1938,10 +1939,10 @@ C
             CALL OPEN_GBL_FILE(72, TRIM(fname),NSTAM_G, NSTAM, HEADER72)
             IPSTP=2
          else
-            open(72,file=trim(fname),status='old',action='readwrite',
+            open(72+CK_LUN,file=trim(fname),status='old',action='readwrite',
      &            position='rewind', access='sequential')
             call skipDownToAppendOutputFile(72, timeloc, numRecordsPerSnap,noutm) 
-            close(72)
+            close(72+CK_LUN)
          endif
          ! ice station file
          if (ncice.ne.0) then
@@ -1958,28 +1959,28 @@ C
                CALL OPEN_GBL_FILE(91, TRIM(fname),NSTAM_G, NSTAM, HEADER91)
                IICESTP=2
             else
-               open(91,file=trim(fname),status='old',action='readwrite',
+               open(91+CK_LUN,file=trim(fname),status='old',action='readwrite',
      &            position='rewind', access='sequential')
                call skipDownToAppendOutputFile(91, timeloc, numRecordsPerSnap,noutm) 
-               close(91)
+               close(91+CK_LUN)
             endif
          endif
       endif
 
       IF(NOUTM.EQ.2) THEN
-        OPEN(71,FILE=TRIM(LOCALDIR)//'/'//'fort.71',
+        OPEN(71+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.71',
      &                      ACCESS='DIRECT',RECL=NBYTE)
-        OPEN(72,FILE=TRIM(LOCALDIR)//'/'//'fort.72',
+        OPEN(72+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.72',
      &                      ACCESS='DIRECT',RECL=NBYTE)
 c         WRITE(71,REC=ITEMPSTP+1) NTRSPM   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
 c         WRITE(72,REC=ITMEPSTP+1) NTRSPM
-        CLOSE(71)                         ! DO THIS TO FLUSH THE WRITE BUFFER
-        CLOSE(72)
+        CLOSE(71+CK_LUN)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+        CLOSE(72+CK_LUN)
 !       v49.64.01 tcm added ice station support
         IF(NCICE.NE.0) THEN
-           OPEN(91,FILE=TRIM(LOCALDIR)//'/'//'fort.91',
+           OPEN(91+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.91',
      &                      ACCESS='DIRECT',RECL=NBYTE)
-           CLOSE(91)
+           CLOSE(91+CK_LUN)
         ENDIF
       ENDIF
 
@@ -1991,7 +1992,7 @@ C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
 C...
 
       IF (NDDT.NE.0) then
-         WRITE(16,1035) IBSTP,NSCOUB
+         WRITE(16+CK_LUN,1035) IBSTP,NSCOUB
  1035 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN BATHYMETRY ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER = ',I6)
@@ -2005,7 +2006,7 @@ C...
                IF(NTCYSB.LT.ITHS) NTCYSB=NTCYSB+NSPOOLE
                IF(NSPOOLE.NE.0) NTRSPB=(NTCYFB-NTCYSB)/NSPOOLE
             ENDIF
-         WRITE(16,1036)
+         WRITE(16+CK_LUN,1036)
  1036    FORMAT(//,' A NEW BATHYMETRY STATION FILE WILL BE STARTED')
          ENDIF
          if (write_local_files.eqv..false.) then
@@ -2017,10 +2018,10 @@ C...
          endif
          select case(noute)
          case(-2)
-            OPEN(75,FILE=TRIM(fname),ACCESS='DIRECT',RECL=NBYTE)
+            OPEN(75+CK_LUN,FILE=TRIM(fname),ACCESS='DIRECT',RECL=NBYTE)
             call writeBinaryOutputFileHeader(75, 1, IBSTP,
      &         NTRSPB, NSTAE, NSPOOLE)
-            CLOSE(75)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+            CLOSE(75+CK_LUN)                    ! DO THIS TO FLUSH THE WRITE BUFFER
          case(-1)
             CALL OPEN_GBL_FILE(75, TRIM(fname),NSTAE_G, NSTAE, HEADER61)
             IESTP=2
@@ -2031,16 +2032,16 @@ C...
                CALL OPEN_GBL_FILE(75, TRIM(fname),NSTAE_G, NSTAE, HEADER61)
                IESTP=2
             else
-               open(75,file=trim(fname),status='old',action='readwrite',
+               open(75+CK_LUN,file=trim(fname),status='old',action='readwrite',
      &            position='rewind', access='sequential')
                call skipDownToAppendOutputFile(75,timeloc, numRecordsPerSnap,noute) 
-               close(75)
+               close(75+CK_LUN)
             endif
          case(2)
-            OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
+            OPEN(75+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
      &                      ACCESS='DIRECT',RECL=NBYTE)
 c           WRITE(75,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-            CLOSE(75)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+            CLOSE(75+CK_LUN)                         ! DO THIS TO FLUSH THE WRITE BUFFER
          case default
          end select
       ENDIF
@@ -2048,7 +2049,7 @@ c           WRITE(75,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO 
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL ELEVATION OUTPUT FILE
 C...
-      WRITE(16,1046) IGEP,NSCOUGE
+      WRITE(16+CK_LUN,1046) IGEP,NSCOUGE
  1046 FORMAT(//,1X,I8,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'ELEVATION FILE BY THE TIME OF THE HOT START',
      &          /,8X,'SPOOL COUNTER =',I8)
@@ -2075,16 +2076,16 @@ C           kmd48.33bc - changed NDSETSE for use of new DTDPHS
                NDSETSE=(NTCYFGE-NTCYSGE)/NSPOOLGE
             END IF
          ENDIF
-         WRITE(16,1047)
+         WRITE(16+CK_LUN,1047)
  1047    FORMAT(//,' A NEW GLOBAL ELEVATION FILE WILL BE STARTED')
       ENDIF
 
       IF(NOUTGE.EQ.-2) THEN
-         OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
+         OPEN(63+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
      &          ACCESS='DIRECT',RECL=NBYTE)
          call writeBinaryOutputFileHeader(63, 1, IGEP,
      &       NDSETSE, NP, NSPOOLGE)
-          CLOSE(63)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+          CLOSE(63+CK_LUN)                    ! DO THIS TO FLUSH THE WRITE BUFFER
       ENDIF
 
 Casey 090310: Added the possibility for NOUTGE = -4.
@@ -2147,10 +2148,10 @@ C kmd48.33bc - information for writing out the sponge layer
             CALL OPEN_GBL_FILE(63, TRIM(fname),NP_G, NP, HEADER63)
             IGEP=2
          else
-            open(63,file=trim(fname),status='old',action='readwrite',
+            open(63+CK_LUN,file=trim(fname),status='old',action='readwrite',
      &            position='rewind', access='sequential')
             call skipDownToAppendOutputFile(63,timeloc, numRecordsPerSnap,noutge) 
-            close(63)
+            close(63+CK_LUN)
          endif
          ! fort.90 (tau0)
          if (outputtau0) then
@@ -2169,10 +2170,10 @@ C kmd48.33bc - information for writing out the sponge layer
      $                  NP_G, NP, 'Tau0      ')
                IGEP=2
             else
-               open(90,file=trim(fname),status='old',action='readwrite',
+               open(90+CK_LUN,file=trim(fname),status='old',action='readwrite',
      &            position='rewind', access='sequential')
                call skipDownToAppendOutputFile(90,timeloc, numRecordsPerSnap,noutge) 
-               close(90)
+               close(90+CK_LUN)
             endif
          endif
          ! fort.92 sponge layer
@@ -2192,25 +2193,25 @@ C kmd48.33bc - information for writing out the sponge layer
      $                NP_G, NP, 'sponge      ')
                IGEP=2
             else
-               open(92,file=trim(fname),status='old',action='readwrite',
+               open(92+CK_LUN,file=trim(fname),status='old',action='readwrite',
      &            position='rewind', access='sequential')
                call skipDownToAppendOutputFile(92,timeloc, numRecordsPerSnap,noutge) 
-               close(92)
+               close(92+CK_LUN)
             endif
          endif
       endif
       
       IF(NOUTGE.EQ.2) THEN
-          OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
+          OPEN(63+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
      &          ACCESS='DIRECT',RECL=NBYTE)
 c         WRITE(63,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-          CLOSE(63)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+          CLOSE(63+CK_LUN)                         ! DO THIS TO FLUSH THE WRITE BUFFER
       ENDIF
 
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL VELOCITY OUTPUT FILE
 C...
-        WRITE(16,1048) IGVP,NSCOUGV
+        WRITE(16+CK_LUN,1048) IGVP,NSCOUGV
  1048   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'VELOCITY FILE BY THE TIME OF THE HOT START',
      &          /,8X,'SPOOL COUNTER =',I6)
@@ -2229,16 +2230,16 @@ C  kmd48.33bc - change the NDSETSV for the change in the DTDP
               NDSETSV=(NTCYFGV-NTCYSGV)/NSPOOLGV
             END IF
             ENDIF
-          WRITE(16,1049)
+          WRITE(16+CK_LUN,1049)
  1049     FORMAT(//,' A NEW GLOBAL VELOCITY FILE WILL BE STARTED')
           ENDIF
 
         IF(NOUTGV.EQ.-2) THEN
-          OPEN(64,FILE=TRIM(LOCALDIR)//'/'//'fort.64',
+          OPEN(64+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.64',
      &          ACCESS='DIRECT',RECL=NBYTE)
           call writeBinaryOutputFileHeader(64, 2, IGVP,
      &        NDSETSV, NP, NSPOOLGV)
-          CLOSE(64)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+          CLOSE(64+CK_LUN)                    ! DO THIS TO FLUSH THE WRITE BUFFER
        ENDIF
       IF((NOUTGV.EQ.-1).OR.(NOUTGV.EQ.-4)) THEN
          if (write_local_files.eqv..false.) then 
@@ -2251,10 +2252,10 @@ C  kmd48.33bc - change the NDSETSV for the change in the DTDP
       IGVP=2
       ENDIF
         IF(NOUTGV.EQ.2) THEN
-          OPEN(64,FILE=TRIM(LOCALDIR)//'/'//'fort.64',
+          OPEN(64+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.64',
      &          ACCESS='DIRECT',RECL=NBYTE)
 c         WRITE(64,REC=ITEMPSTP+1) NDSETSV  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-          CLOSE(64)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+          CLOSE(64+CK_LUN)                         ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
 
       IF((NOUTGV.EQ.1).or.(NOUTGV.eq.4)) THEN
@@ -2272,10 +2273,10 @@ c         WRITE(64,REC=ITEMPSTP+1) NDSETSV  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
             CALL OPEN_GBL_FILE(64, TRIM(fname),NP_G, NP, HEADER64)
             IGVP=2
          else
-            open(64,file=trim(fname),status='old',action='readwrite',
+            open(64+CK_LUN,file=trim(fname),status='old',action='readwrite',
      &            position='rewind', access='sequential')
             call skipDownToAppendOutputFile(64,timeloc, numRecordsPerSnap,noutgv) 
-            close(64)
+            close(64+CK_LUN)
          endif
       endif
 
@@ -2295,16 +2296,16 @@ Cobell - Open the fort.77 (weir elevation change) if necessary
               NDSETS_TVW=(NTCYF_TVW-NTCYS_TVW)/NSPOOL_TVW
             ENDIF
           ENDIF
-          WRITE(16,1057)
+          WRITE(16+CK_LUN,1057)
  1057     FORMAT(//,' A NEW WEIR ELEVATION FILE WILL BE STARTED')
         ENDIF
 
         IF(NOUT_TVW.EQ.-2) THEN
-          OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
+          OPEN(77+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
      &          ACCESS='DIRECT',RECL=NBYTE)
           call writeBinaryOutputFileHeader(77, 1, IG_TVW,
      &        NDSETS_TVW, NP, NSPOOL_TVW)
-          CLOSE(77)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+          CLOSE(77+CK_LUN)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
         IF((NOUT_TVW.EQ.-1).OR.(NOUT_TVW.EQ.-4)) THEN
            CALL OPEN_GBL_FILE(77, TRIM(GLOBALDIR)//'/'//'fort.77',
@@ -2312,16 +2313,16 @@ Cobell - Open the fort.77 (weir elevation change) if necessary
            IG_TVW=2
         ENDIF
         IF(NOUT_TVW.EQ.2) THEN
-          OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
+          OPEN(77+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
      &          ACCESS='DIRECT',RECL=NBYTE)
 c         WRITE(77,REC=ITEMPSTP+1) NDSETS_TVW  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-          CLOSE(77)                           ! DO THIS TO FLUSH THE WRITE BUFFER
+          CLOSE(77+CK_LUN)                           ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
 
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL CONCENTRATION OUTPUT FILE
 C...
-        WRITE(16,1053) IGCP,NSCOUGC
+        WRITE(16+CK_LUN,1053) IGCP,NSCOUGC
  1053   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                'CONCENTRATION FILE BY THE TIME OF THE HOT START',
      &          /,8X,'SPOOL COUNTER =',I6)
@@ -2341,38 +2342,38 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
               NDSETSC=(NTCYFGC-NTCYSGC)/NSPOOLGC
             END IF
             ENDIF
-          WRITE(16,1054)
+          WRITE(16+CK_LUN,1054)
  1054     FORMAT(//,' A NEW GLOBAL CONCENTRATION FILE WILL BE STARTED')
         ENDIF
 
         IF(NOUTGC.EQ.-2) THEN
-          OPEN(83,FILE=TRIM(LOCALDIR)//'/'//'fort.83',
+          OPEN(83+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.83',
      &           ACCESS='DIRECT',RECL=NBYTE)
           call writeBinaryOutputFileHeader(83, 1, IGCP,
      &        NDSETSC, NP, NSPOOLGC)    
-          CLOSE(83)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+          CLOSE(83+CK_LUN)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
         IF(NOUTGC.EQ.-1) THEN
-          OPEN(83,FILE=TRIM(LOCALDIR)//'/'//'fort.83')
-          WRITE(83,3220) RUNDES,RUNID,AGRID
-          WRITE(83,3645) NDSETSC,NP,DTDP*NSPOOLGC,NSPOOLGC,1
+          OPEN(83+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.83')
+          WRITE(83+CK_LUN,3220) RUNDES,RUNID,AGRID
+          WRITE(83+CK_LUN,3645) NDSETSC,NP,DTDP*NSPOOLGC,NSPOOLGC,1
           IGCP=2
-          CLOSE(83)
+          CLOSE(83+CK_LUN)
         ENDIF
         IF(NOUTGC.EQ.1) THEN
-          OPEN(83,FILE=TRIM(LOCALDIR)//'/'//'fort.83')
+          OPEN(83+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.83')
           DO I=1,IGCP           !I DON'T KNOW OF A PRACTICAL WAY TO CHANGE NDSETSC
-            READ(83,1050)
+            READ(83+CK_LUN,1050)
  1050       FORMAT(1X)
           ENDDO
           ENDFILE(83)
-          CLOSE(83)
+          CLOSE(83+CK_LUN)
         ENDIF
         IF(NOUTGC.EQ.2) THEN
-          OPEN(83,FILE=TRIM(LOCALDIR)//'/'//'fort.83',
+          OPEN(83+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.83',
      &          ACCESS='DIRECT',RECL=NBYTE)
 c         WRITE(83,REC=ITEMPSTP+1) NDSETSC  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-          CLOSE(83)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+          CLOSE(83+CK_LUN)                         ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
 
 C...
@@ -2380,9 +2381,9 @@ C....GO TO THE PROPER PLACE IN THE GLOBAL METEOROLOGICAL OUTPUT FILES
 C...
 !       V49.64.01 TCM ADDED GLOBAL ICE CONCENTRATION FILES
         IF(NCICE.NE.0) THEN
-           WRITE(16,2055) IGWP,IGPP,IGIP,NSCOUGW
+           WRITE(16+CK_LUN,2055) IGWP,IGPP,IGIP,NSCOUGW
         ELSE
-           WRITE(16,1055) IGWP,IGPP,NSCOUGW
+           WRITE(16+CK_LUN,1055) IGWP,IGPP,NSCOUGW
         ENDIF
  1055   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'WIND FILE BY THE TIME OF THE HOT START',
@@ -2416,46 +2417,46 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
           ENDIF
 ! TCM V49.64.01 -- ADDED ICE SUPPORT
           IF(NCICE.NE.0) THEN
-             WRITE(16,2056)
+             WRITE(16+CK_LUN,2056)
           ELSE
-             WRITE(16,1056)
+             WRITE(16+CK_LUN,1056)
           ENDIF
-          WRITE(16,1056)
+          WRITE(16+CK_LUN,1056)
  1056     FORMAT(//,' NEW GLOBAL WIND & pressure FILEs WILL BE STARTED')
  2056   FORMAT(//,' NEW GLOBAL WIND & pressure & Ice FILEs WILL BE STARTED')
         ENDIF
 
         IF(NOUTGW.EQ.-2) THEN
-          OPEN(73,file=trim(LOCALDIR)//'/'//'fort.73',
+          OPEN(73+CK_LUN,file=trim(LOCALDIR)//'/'//'fort.73',
      &          access='DIRECT',recl=nbyte)
-          OPEN(74,FILE=TRIM(LOCALDIR)//'/'//'fort.74',
+          OPEN(74+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.74',
      &          ACCESS='DIRECT',RECL=NBYTE)
 ! TCM V49.64.01 -- ADDED ICE SUPPORT
           IF(NCICE.NE.0) THEN
-             OPEN(93,FILE=TRIM(LOCALDIR)//'/'//'fort.93',
+             OPEN(93+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.93',
      &          ACCESS='DIRECT',RECL=NBYTE)
           ENDIF
           IF(NBYTE.EQ.4) THEN
             DO I=1,8
-              write(73,rec=igpp+i) rdes4(i)
-              WRITE(74,REC=IGWP+I) RDES4(I)
-              IF(NCICE.NE.0) write(93,rec=igip+i) rdes4(i)
+              write(73+CK_LUN,rec=igpp+i) rdes4(i)
+              WRITE(74+CK_LUN,REC=IGWP+I) RDES4(I)
+              IF(NCICE.NE.0) write(93+CK_LUN,rec=igip+i) rdes4(i)
               ENDDO
             igpp=igpp+8
             IGWP=IGWP+8
             if(ncice.ne.0) igip = igip+8
             DO I=1,6
-              write(73,rec=igpp+i) rid4(i)
-              WRITE(74,REC=IGWP+I) RID4(I)
-              IF(NCICE.NE.0) write(93,rec=igip+i) rid4(i)
+              write(73+CK_LUN,rec=igpp+i) rid4(i)
+              WRITE(74+CK_LUN,REC=IGWP+I) RID4(I)
+              IF(NCICE.NE.0) write(93+CK_LUN,rec=igip+i) rid4(i)
             ENDDO
             igpp=igpp+6
             IGWP=IGWP+6
             if(ncice.ne.0) igip = igip+6
             DO I=1,6
-              write(73,rec=igpp+i) aid4(i)
-              WRITE(74,REC=IGWP+I) AID4(I)
-              IF(NCICE.NE.0) write(93,rec=igip+i) aid4(i)
+              write(73+CK_LUN,rec=igpp+i) aid4(i)
+              WRITE(74+CK_LUN,REC=IGWP+I) AID4(I)
+              IF(NCICE.NE.0) write(93+CK_LUN,rec=igip+i) aid4(i)
             ENDDO
             igpp=igpp+6
             IGWP=IGWP+6
@@ -2463,53 +2464,53 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
           ENDIF
           IF(NBYTE.EQ.8) THEN
             DO I=1,4
-              write(73,rec=igpp+i) rdes8(i)
-              WRITE(74,REC=IGWP+I) RDES8(I)
-              IF(NCICE.NE.0) write(93,rec=igip+i) rdes8(i)
+              write(73+CK_LUN,rec=igpp+i) rdes8(i)
+              WRITE(74+CK_LUN,REC=IGWP+I) RDES8(I)
+              IF(NCICE.NE.0) write(93+CK_LUN,rec=igip+i) rdes8(i)
             ENDDO
             igpp=igpp+4
             IGWP=IGWP+4
             if(ncice.ne.0) igip = igip+4
             DO I=1,3
-              write(73,rec=igpp+i) rid8(i)
-              WRITE(74,REC=IGWP+I) RID8(I)
-              IF(NCICE.NE.0) write(93,rec=igip+i) rid8(i)
+              write(73+CK_LUN,rec=igpp+i) rid8(i)
+              WRITE(74+CK_LUN,REC=IGWP+I) RID8(I)
+              IF(NCICE.NE.0) write(93+CK_LUN,rec=igip+i) rid8(i)
             ENDDO
             igpp=igpp+3
             IGWP=IGWP+3
             if(ncice.ne.0) igip = igip+3
             DO I=1,3
-              write(73,rec=igpp+i) aid8(i)
-              WRITE(74,REC=IGWP+I) AID8(I)
-              IF(NCICE.NE.0) write(93,rec=igip+i) aid8(i)
+              write(73+CK_LUN,rec=igpp+i) aid8(i)
+              WRITE(74+CK_LUN,REC=IGWP+I) AID8(I)
+              IF(NCICE.NE.0) write(93+CK_LUN,rec=igip+i) aid8(i)
             ENDDO
             igpp=igpp+3
             IGWP=IGWP+3
             if(ncice.ne.0) igip = igip+3
           ENDIF
-          WRITE(73,rec=igpp+1) ndsetsw
-          WRITE(73,rec=igpp+2) np
-          WRITE(73,rec=igpp+3) dt*nspoolgw
-          WRITE(73,rec=igpp+4) nspoolgw
-          WRITE(73,rec=igpp+5) 2
+          WRITE(73+CK_LUN,rec=igpp+1) ndsetsw
+          WRITE(73+CK_LUN,rec=igpp+2) np
+          WRITE(73+CK_LUN,rec=igpp+3) dt*nspoolgw
+          WRITE(73+CK_LUN,rec=igpp+4) nspoolgw
+          WRITE(73+CK_LUN,rec=igpp+5) 2
           IGPP=IGPP+5
-          CLOSE(73)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-          WRITE(74,REC=IGWP+1) NDSETSW
-          WRITE(74,REC=IGWP+2) NP
-          WRITE(74,REC=IGWP+3) DT*NSPOOLGW
-          WRITE(74,REC=IGWP+4) NSPOOLGW
-          WRITE(74,REC=IGWP+5) 2
+          CLOSE(73+CK_LUN)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+          WRITE(74+CK_LUN,REC=IGWP+1) NDSETSW
+          WRITE(74+CK_LUN,REC=IGWP+2) NP
+          WRITE(74+CK_LUN,REC=IGWP+3) DT*NSPOOLGW
+          WRITE(74+CK_LUN,REC=IGWP+4) NSPOOLGW
+          WRITE(74+CK_LUN,REC=IGWP+5) 2
           IGWP=IGWP+5
-          CLOSE(74)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+          CLOSE(74+CK_LUN)                    ! DO THIS TO FLUSH THE WRITE BUFFER
 ! TCM V49.64.01 -- ADDED ICE SUPPORT
           IF(NCICE.NE.0) THEN
-             WRITE(93,REC=IGIP+1) NDSETSW
-             WRITE(93,REC=IGIP+2) NP
-             WRITE(93,REC=IGIP+3) DT*NSPOOLGW
-             WRITE(93,REC=IGIP+4) NSPOOLGW
-             WRITE(93,REC=IGIP+5) 2
+             WRITE(93+CK_LUN,REC=IGIP+1) NDSETSW
+             WRITE(93+CK_LUN,REC=IGIP+2) NP
+             WRITE(93+CK_LUN,REC=IGIP+3) DT*NSPOOLGW
+             WRITE(93+CK_LUN,REC=IGIP+4) NSPOOLGW
+             WRITE(93+CK_LUN,REC=IGIP+5) 2
              IGIP=IGIP+5
-             CLOSE(93)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+             CLOSE(93+CK_LUN)                    ! DO THIS TO FLUSH THE WRITE BUFFER
           ENDIF
         ENDIF
 
@@ -2554,11 +2555,11 @@ Casey 090310: Added the output of radiation stress gradients.
               IGRadS=0
            ENDIF
            IF(NOUTGW.EQ.-2)THEN
-              OPEN(164,FILE=TRIM(LOCALDIR)//'/'//'rads.64',
+              OPEN(164+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'rads.64',
      &            ACCESS='DIRECT',RECL=NBYTE)
               call writeBinaryOutputFileHeader(164, 2, IGRadS,
      &            NDSETSW, NP, NSPOOLGW)
-              CLOSE(164)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+              CLOSE(164+CK_LUN)                    ! DO THIS TO FLUSH THE WRITE BUFFER
            ENDIF
            IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
               if (write_local_files.eqv..false.) then
@@ -2588,10 +2589,10 @@ Casey 090310: Added the output of radiation stress gradients.
             CALL OPEN_GBL_FILE(73, TRIM(fname),NP_G, NP, HEADER73)
             IGPP=2
          else
-            open(73,file=trim(fname),status='old',action='readwrite',
+            open(73+CK_LUN,file=trim(fname),status='old',action='readwrite',
      &            position='rewind', access='sequential')
             call skipDownToAppendOutputFile(73,timeloc, numRecordsPerSnap,noutgw) 
-            close(73)
+            close(73+CK_LUN)
          endif
          ! append fort.74 
          if (write_local_files.eqv..false.) then
@@ -2607,10 +2608,10 @@ Casey 090310: Added the output of radiation stress gradients.
             CALL OPEN_GBL_FILE(74, TRIM(fname),NP_G, NP, HEADER74)
             IGWP=2
          else
-            open(74,file=trim(fname),status='old',action='readwrite',
+            open(74+CK_LUN,file=trim(fname),status='old',action='readwrite',
      &            position='rewind', access='sequential')
             call skipDownToAppendOutputFile(74,timeloc, numRecordsPerSnap,noutgw) 
-            close(74)
+            close(74+CK_LUN)
          endif
          ! append wave radiation stresses
          IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
@@ -2627,10 +2628,10 @@ Casey 090310: Added the output of radiation stress gradients.
                CALL OPEN_GBL_FILE(164, TRIM(fname),NP_G, NP, HEADER74)
                IGWP=2
             else
-               open(164,file=trim(fname),status='old',action='readwrite',
+               open(164+CK_LUN,file=trim(fname),status='old',action='readwrite',
      &            position='rewind', access='sequential')
                call skipDownToAppendOutputFile(164,timeloc, numRecordsPerSnap,noutgw) 
-               close(164)
+               close(164+CK_LUN)
             endif
          endif
          ! append ice
@@ -2648,29 +2649,29 @@ Casey 090310: Added the output of radiation stress gradients.
                CALL OPEN_GBL_FILE(93, TRIM(fname),NP_G, NP, HEADER93)
                IGIP=2
             else
-               open(164,file=trim(fname),status='old',action='readwrite',
+               open(164+CK_LUN,file=trim(fname),status='old',action='readwrite',
      &            position='rewind', access='sequential')
                call skipDownToAppendOutputFile(93,timeloc, numRecordsPerSnap,noutgw) 
-               close(93)
+               close(93+CK_LUN)
             endif
          endif
       endif
 
         IF(NOUTGW.EQ.2) THEN
-          open(73,file=TRIM(LOCALDIR)//'/'//'fort.73',
+          open(73+CK_LUN,file=TRIM(LOCALDIR)//'/'//'fort.73',
      &          access='DIRECT',recl=nbyte)
 c         WRITE(73,REC=ITempStp+1) ndsetsw  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-          close(73)                         ! DO THIS TO FLUSH THE WRITE BUFFER
-          OPEN(74,FILE=TRIM(LOCALDIR)//'/'//'fort.74',
+          close(73+CK_LUN)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+          OPEN(74+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.74',
      &          ACCESS='DIRECT',RECL=NBYTE)
 c         WRITE(74,REC=ITEMPSTP+1) NDSETSW  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-          CLOSE(74)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+          CLOSE(74+CK_LUN)                         ! DO THIS TO FLUSH THE WRITE BUFFER
 ! TCM V49.64.01 -- ADDED ICE SUPPORT
           IF(NCICE.NE.0) THEN
-             OPEN(93,FILE=TRIM(LOCALDIR)//'/'//'fort.93',
+             OPEN(93+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.93',
      &          ACCESS='DIRECT',RECL=NBYTE)
 c         WRITE(93,REC=ITempStp+1) ndsetsw  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-             CLOSE(93)                      ! DO THIS TO FLUSH THE WRITE BUFFER
+             CLOSE(93+CK_LUN)                      ! DO THIS TO FLUSH THE WRITE BUFFER
           ENDIF
         ENDIF
 
@@ -2678,7 +2679,7 @@ C... TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
 C... THIS FILE IS CONTROLED BY THE ELEVATION OUTPUT OPTIONS
 C....GO TO THE PROPER PLACE IN THE GLOBAL BATHYMETRY OUTPUT FILE
 C...
-        IF (NDDT.NE.0) WRITE(16,1051) IGBP,NSCOUGB
+        IF (NDDT.NE.0) WRITE(16+CK_LUN,1051) IGBP,NSCOUGB
  1051   FORMAT(//,1X,I8,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'BATHYMETRY FILE BY THE TIME OF THE HOT START',
      &          /,8X,'SPOOL COUNTER =',I8)
@@ -2697,16 +2698,16 @@ C...
                  NDSETSB=(NTCYFGB-NTCYSGB)/NSPOOLGE
               ENDIF
            ENDIF
-           WRITE(16,1052)
+           WRITE(16+CK_LUN,1052)
  1052      FORMAT(//,' A NEW GLOBAL BATHYMETRY FILE WILL BE STARTED')
         ENDIF
 
         IF ((NDDT.NE.0).AND.(NOUTGE.EQ.-2)) THEN
-           OPEN(76,FILE=TRIM(LOCALDIR)//'/'//'fort.76',
+           OPEN(76+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.76',
      &          ACCESS='DIRECT',RECL=NBYTE)
            call writeBinaryOutputFileHeader(76, 2, IGBP,
      &            NDSETSE, NP, NSPOOLGE)
-           CLOSE(76)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+           CLOSE(76+CK_LUN)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
 
         IF ((NDDT.NE.0).AND.
@@ -2736,20 +2737,20 @@ C...
             CALL OPEN_GBL_FILE(76, TRIM(fname),NP_G, NP, HEADER63)
             IGBP=2
          else
-            open(76,file=trim(fname),status='old',action='readwrite',
+            open(76+CK_LUN,file=trim(fname),status='old',action='readwrite',
      &            position='rewind', access='sequential')
             call skipDownToAppendOutputFile(76,timeloc, numRecordsPerSnap,noutge) 
-            close(76)
+            close(76+CK_LUN)
          endif
       endif
         
         
         
         IF ((NDDT.NE.0).AND.(NOUTGE.EQ.2)) THEN
-           OPEN(76,FILE=TRIM(LOCALDIR)//'/'//'fort.76',
+           OPEN(76+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.76',
      &          ACCESS='DIRECT',RECL=NBYTE)
 c          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-           CLOSE(76)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+           CLOSE(76+CK_LUN)                         ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
 
 
@@ -2831,6 +2832,7 @@ C                                                                             *
 c******************************************************************************
 
       SUBROUTINE HOTSTART_3D(TimeLoc,ITHS)
+      use CkLunMod, only : CK_LUN
       USE GLOBAL_3DVS
       USE MESH, ONLY : NP, AGRID
       USE WRITE_OUTPUT, ONLY : initOutput3D
@@ -2887,36 +2889,36 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
        IF((RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN
          IF ((ABS(RES_BC_FLAG).GE.1).AND.(NOPE.GT.0)) THEN
             IF (BCFLAG_LNM.EQ.1) THEN
-              OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
+              OPEN(35+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
               RBCTIME1=BCSTATIM*86400.d0
               RBCTIME2=RBCTIME1+RBCTIMEINC
-              READ(35,'(A)') CDUM80
+              READ(35+CK_LUN,'(A)') CDUM80
               DO NumofBCNodes=1,NETA
-                 READ(35,*) NOD,LNM_BC1(NumofBCNodes)
+                 READ(35+CK_LUN,*) NOD,LNM_BC1(NumofBCNodes)
               END DO
-              READ(35,'(A)') CDUM80
+              READ(35+CK_LUN,'(A)') CDUM80
               DO NumofBCNodes=1,NETA
-                 READ(35,*) NOD,LNM_BC2(NumofBCNodes)
+                 READ(35+CK_LUN,*) NOD,LNM_BC2(NumofBCNodes)
               END DO
               DO IT=1,ITHS
                  TIMEIT=IT*DTDPHS + STATIM*86400.D0
                  IF(TIMEIT.GT.RBCTIME2) THEN
                     RBCTIME1=RBCTIME2
                     RBCTIME2=RBCTIME1+RBCTIMEINC
-                    READ(35,'(A)') CDUM80
+                    READ(35+CK_LUN,'(A)') CDUM80
                     DO NumofBCNodes=1,NETA
                        LNM_BC1(NumofBCNodes)=LNM_BC2(NumofBCNodes)
-                       READ(35,*) NOD,LNM_BC2(NumofBCNodes)
+                       READ(35+CK_LUN,*) NOD,LNM_BC2(NumofBCNodes)
                     END DO
                  END IF
               END DO
               IF(TimeLoc.GT.RBCTIME2) THEN
                  RBCTIME1=RBCTIME2
                  RBCTIME2=RBCTIME2+RBCTIMEINC
-                 READ(35,'(A)') CDUM80
+                 READ(35+CK_LUN,'(A)') CDUM80
                  DO NumofBCNodes=1,NETA
                    LNM_BC1(NumofBCNodes)=LNM_BC2(NumofBCNodes)
-                   READ(35,*) NOD,LNM_BC2(NumofBCNodes)
+                   READ(35+CK_LUN,*) NOD,LNM_BC2(NumofBCNodes)
                  END DO
               END IF
               RBCRATIO=(TIMEIT-RBCTIME1)/RBCTIMEINC
@@ -2933,40 +2935,40 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
          END IF
          IF ((ABS(RES_BC_FLAG).EQ.2).OR.(ABS(RES_BC_FLAG).EQ.4)) THEN
             IF (NOPE.GT.0) THEN
-              OPEN(36,FILE=TRIM(INPUTDIR)//'/'//'fort.36')
+              OPEN(36+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.36')
               SBCTIME1=SBCSTATIM*86400.D0
               SBCTIME2=SBCTIME1+SBCTIMEINC
-              READ(36,'(A)') CDUM80
+              READ(36+CK_LUN,'(A)') CDUM80
               DO NumofBCNodes=1,NETA
-                 READ(36,*) NOD,(RESSAL1(NumofBCNodes,J),J=1,NFEN)
+                 READ(36+CK_LUN,*) NOD,(RESSAL1(NumofBCNodes,J),J=1,NFEN)
               END DO
-              READ(36,'(A)') CDUM80
+              READ(36+CK_LUN,'(A)') CDUM80
               DO NumofBCNodes=1,NETA
-                 READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
+                 READ(36+CK_LUN,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
               END DO
               DO IT=1,ITHS
                  TIMEIT=IT*DTDPHS + STATIM*86400.D0
                  IF(TIMEIT.GT.SBCTIME2) THEN
                     SBCTIME1=SBCTIME2
                     SBCTIME2=SBCTIME1+SBCTIMEINC
-                    READ(36,'(A)') CDUM80
+                    READ(36+CK_LUN,'(A)') CDUM80
                     DO NumofBCNodes=1,NETA
                        DO J=1,NFEN
                          RESSAL1(NumofBCNodes,J)=RESSAL2(NumofBCNodes,J)
                        END DO
-                       READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
+                       READ(36+CK_LUN,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
                     END DO
                  END IF
               END DO
               IF(TIMELOC.GT.SBCTIME2) THEN
                  SBCTIME1=SBCTIME2
                  SBCTIME2=SBCTIME2+SBCTIMEINC
-                 READ(36,'(A)') CDUM80
+                 READ(36+CK_LUN,'(A)') CDUM80
                  DO NumofBCNodes=1,NETA
                    DO J=1,NFEN
                      RESSAL1(NumofBCNodes,J)=RESSAL2(NumofBCNodes,J)
                    END DO
-                   READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
+                   READ(36+CK_LUN,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
                  END DO
               END IF
               SBCRATIO=(TIMEIT-SBCTIME1)/SBCTIMEINC
@@ -2975,53 +2977,53 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
          IF ((ABS(RES_BC_FLAG).EQ.3).OR.
      &            (ABS(RES_BC_FLAG).EQ.4)) THEN
             IF (NOPE.GT.0) THEN
-              OPEN(37,FILE=TRIM(INPUTDIR)//'/'//'fort.37')
+              OPEN(37+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.37')
               TBCTIME1=TBCSTATIM*86400.D0
               TBCTIME2=TBCTIME1+TBCTIMEINC
-              READ(37,'(A)') CDUM80
+              READ(37+CK_LUN,'(A)') CDUM80
               DO NumofBCNodes=1,NETA
-                 READ(37,*) NOD,(RESTEMP1(NumofBCNodes,J),J=1,NFEN)
+                 READ(37+CK_LUN,*) NOD,(RESTEMP1(NumofBCNodes,J),J=1,NFEN)
               END DO
-              READ(37,'(A)') CDUM80
+              READ(37+CK_LUN,'(A)') CDUM80
               DO NumofBCNodes=1,NETA
-                 READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
+                 READ(37+CK_LUN,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
               END DO
               DO IT=1,ITHS
                  TIMEIT=IT*DTDPHS + STATIM*86400.D0
                  IF(TIMEIT.GT.TBCTIME2) THEN
                     TBCTIME1=TBCTIME2
                     TBCTIME2=TBCTIME1+TBCTIMEINC
-                    READ(37,'(A)') CDUM80
+                    READ(37+CK_LUN,'(A)') CDUM80
                     DO NumofBCNodes=1,NETA
                        DO J=1,NFEN
                          RESTEMP1(NumofBCNodes,J)=RESTEMP2(NumofBCNodes,J)
                        END DO
-                       READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
+                       READ(37+CK_LUN,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
                     END DO
                  END IF
               END DO
               IF(TIMELOC.GT.TBCTIME2) THEN
                  TBCTIME1=TBCTIME2
                  TBCTIME2=TBCTIME2+TBCTIMEINC
-                 READ(37,'(A)') CDUM80
+                 READ(37+CK_LUN,'(A)') CDUM80
                  DO NumofBCNodes=1,NETA
                    DO J=1,NFEN
                      RESTEMP1(NumofBCNodes,J)=RESTEMP2(NumofBCNodes,J)
                    END DO
-                   READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
+                   READ(37+CK_LUN,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
                  END DO
               END IF
               TBCRATIO=(TIMEIT-TBCTIME1)/TBCTIMEINC
             END IF
             IF (BCFLAG_TEMP.EQ.1) THEN ! read in file with multiple values but no calcs
-               OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+               OPEN(38+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
                TTBCTIME1=TTBCSTATIM*86400.D0
                TTBCTIME2=TTBCTIME1+TTBCTIMEINC
                DO NumofNodes=1,NP
-                  READ(38,*) NOD, q_heat1(Numofnodes)
+                  READ(38+CK_LUN,*) NOD, q_heat1(Numofnodes)
                END DO
                DO NumofNodes=1,NP
-                  READ(38,*) NOD, q_heat2(NumofNodes)
+                  READ(38+CK_LUN,*) NOD, q_heat2(NumofNodes)
                END DO
                DO IT=1,ITHS
                   TIMEIT=IT*DTDPHS + STATIM*86400.D0
@@ -3030,7 +3032,7 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
                      TTBCTIME2=TTBCTIME1+TTBCTIMEINC
                      DO NumofNodes=1,NH
                        q_heat1(NumofNodes)=q_heat2(NumofNodes)
-                       READ(38,*) NOD, q_heat2(NumofNodes)
+                       READ(38+CK_LUN,*) NOD, q_heat2(NumofNodes)
                      END DO
                   END IF
                END DO
@@ -3043,17 +3045,17 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
                END DO
             ELSE IF (BCFLAG_TEMP.EQ.2) THEN ! read in from file with 6 components
                ALLOCATE (TMP(NP,6))
-               OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+               OPEN(38+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
                TTBCTIME1=TTBCSTATIM*86400.D0
                TTBCTIME2=TTBCTIME1+TTBCTIMEINC
-               READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
+               READ(38+CK_LUN,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
                DO NumofNodes=1,NP
                   q_heat1(NumofNodes)=-TMP(NumofNodes,1)-
      &               TMP(NumofNodes,2)+TMP(NumofNodes,3)-
      &               TMP(NumofNodes,5)+TMP(NumofNodes,4)-
      &               TMP(NumofNodes,6)
                END DO
-               READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
+               READ(38+CK_LUN,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
                DO NumofNodes=1,NP
                   q_heat2(NumofNodes)=-TMP(NumofNodes,1)-
      &               TMP(NumofNodes,2)+TMP(NumofNodes,3)-
@@ -3068,7 +3070,7 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
                      DO NumofNodes=1,NP
                         q_heat1(NumofNodes)=q_heat2(NumofNodes)
                      END DO
-                     READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
+                     READ(38+CK_LUN,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
                      DO NumofNodes=1,NP
                         q_heat2(NumofNodes)=-TMP(NumofNodes,1)-
      &                     TMP(NumofNodes,2)+TMP(NumofNodes,3)-
@@ -3087,16 +3089,16 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
                DEALLOCATE(TMP)
             ELSE IF (BCFLAG_TEMP.EQ.3) THEN ! read in from file with 4 components
                ALLOCATE (TMP(NP,4))
-               OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+               OPEN(38+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
                TTBCTIME1=TTBCSTATIM*86400.D0
                TTBCTIME2=TTBCTIME1+TTBCTIMEINC
-               READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
+               READ(38+CK_LUN,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
                DO NumofNodes=1,NP
                   q_heat1(NumofNodes)=TMP(NumofNodes,4)+
      &               TMP(NumofNodes,3)-TMP(NumofNodes,1)+
      &               TMP(NumofNodes,2)
                END DO
-               READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
+               READ(38+CK_LUN,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
                DO NumofNodes=1,NP
                   q_heat2(NumofNodes)=TMP(NumofNodes,4)+
      &               TMP(NumofNodes,3)-TMP(NumofNodes,1)+
@@ -3110,7 +3112,7 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
                      DO NumofNodes=1,NP
                         q_heat1(NumofNodes)=q_heat2(NumofNodes)
                      END DO
-                     READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
+                     READ(38+CK_LUN,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
                      DO NumofNodes=1,NP
                         q_heat2(NumofNodes)=TMP(NumofNodes,4)+
      &                     TMP(NumofNodes,3)-TMP(NumofNodes,1)+
@@ -3130,10 +3132,10 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
          END IF ! end if for temperature boundary and heat flux
       ELSE IF ((RES_BC_FLAG.LT.0).AND.(CBAROCLINIC).AND.(NOPE.GT.0)) THEN
          IF (BCFLAG_LNM.EQ.1) THEN
-            OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
-            READ(35,'(A)') CDUM80
+            OPEN(35+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
+            READ(35+CK_LUN,'(A)') CDUM80
             DO NumofBCNodes=1,NETA
-                READ(35,*) NOD,LNM_BC(NumofBCNodes)
+                READ(35+CK_LUN,*) NOD,LNM_BC(NumofBCNodes)
             END DO
          ELSE IF (BCFLAG_LNM.EQ.2) THEN
             ! add later
@@ -3147,26 +3149,26 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
 
 C kmd - River information for boundary conditions
       IF (BndBCRiver) THEN
-        OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39')
-        READ(39,*) RIVBCTIMINC, RIVBCSTATIM
+        OPEN(39+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.39')
+        READ(39+CK_LUN,*) RIVBCTIMINC, RIVBCSTATIM
         RIVBCTIME1=RIVBCSTATIM*86400.d0
         RIVBCTIME2=RIVBCTIME1+RIVBCTIMINC
         DO J=1,totalbcrivernodes
          IF (IDEN.EQ.2) THEN
-           READ(39,*) (BCRivSalN1(J,K),K=1,NFEN)
+           READ(39+CK_LUN,*) (BCRivSalN1(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.3) THEN
-           READ(39,*) (BCRivTempN1(J,K),K=1,NFEN)
+           READ(39+CK_LUN,*) (BCRivTempN1(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.4) THEN
-           READ(39,*) (BCRivSalN1(J,K), BCRivTempN1(J,K),K=1,NFEN)
+           READ(39+CK_LUN,*) (BCRivSalN1(J,K), BCRivTempN1(J,K),K=1,NFEN)
          END IF
         END DO
         DO J=1,totalbcrivernodes
          IF (IDEN.EQ.2) THEN
-           READ(39,*) (BCRivSalN2(J,K),K=1,NFEN)
+           READ(39+CK_LUN,*) (BCRivSalN2(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.3) THEN
-           READ(39,*) (BCRivTempN2(J,K),K=1,NFEN)
+           READ(39+CK_LUN,*) (BCRivTempN2(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.4) THEN
-           READ(39,*) (BCRivSalN2(J,K), BCRivTempN2(J,K),K=1,NFEN)
+           READ(39+CK_LUN,*) (BCRivSalN2(J,K), BCRivTempN2(J,K),K=1,NFEN)
          END IF
         END DO
         DO IT=1,ITHS-1
@@ -3179,18 +3181,18 @@ C kmd - River information for boundary conditions
                  DO K=1,NFEN
                    BCRivSalN1(J,K)=BCRivSalN2(J,K)
                  END DO
-                 READ(39,*) (BCRivSalN2(J,K),K=1,NFEN)
+                 READ(39+CK_LUN,*) (BCRivSalN2(J,K),K=1,NFEN)
                 ELSE IF (IDEN.EQ.3) THEN
                  DO K=1,NFEN
                    BCRivTempN1(J,K)=BCRivTempN2(J,K)
                  END DO
-                 READ(39,*) (BCRivTempN2(J,K),K=1,NFEN)
+                 READ(39+CK_LUN,*) (BCRivTempN2(J,K),K=1,NFEN)
                 ELSE IF (IDEN.EQ.4) THEN
                  DO K=1,NFEN
                    BCRivSalN1(J,K)=BCRivSalN2(J,K)
                    BCRivTempN1(J,K)=BCRivTempN2(J,K)
                  END DO
-                 READ(39,*) (BCRivSalN2(J,K), BCRivTempN2(J,K),K=1,NFEN)
+                 READ(39+CK_LUN,*) (BCRivSalN2(J,K), BCRivTempN2(J,K),K=1,NFEN)
                 END IF
               END DO
            END IF
@@ -3290,10 +3292,10 @@ C     jgf46.27 Replaced IRType with IDen
       IF(I3DGD.EQ.-1) THEN         !start a new ASCII file
         IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
           IF (BCFLAG_TEMP.NE.0) THEN
-            OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
-            WRITE(47,499) RUNDES,RUNID,AGRID
-            WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
-            CLOSE(47)
+            OPEN(47+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
+            WRITE(47+CK_LUN,499) RUNDES,RUNID,AGRID
+            WRITE(47+CK_LUN,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
+            CLOSE(47+CK_LUN)
           END IF
         END IF
       ENDIF
@@ -3343,6 +3345,7 @@ C     the hotstart file may have had a different time step than this run.
 C-----------------------------------------------------------------------
       SUBROUTINE setOutputTiming(tsCounter, recCounter,
      &   startTS, endTS, tsPeriod, nSets, iths, dtdphs)
+      use CkLunMod, only : CK_LUN
       USE GLOBAL, ONLY : DTDP, setMessageSource, unsetMessageSource,
      &   screenMessage, DEBUG, allMessage, CHOTHS
       IMPLICIT NONE
@@ -3395,6 +3398,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE recalculateStartingAndEndingTimestepsForOutput(
      &   outputStartDay, outputEndDay, 
      &   outputStartTimeStep, OutputEndTimeStep )
+      use CkLunMod, only : CK_LUN
       USE GLOBAL, ONLY : DTDPHS, ITHS, STATIM, setMessageSource, 
      &    unsetMessageSource, screenMessage, DEBUG, allMessage, INFO,
      &    logMessage
@@ -3439,6 +3443,7 @@ C     or output should occur.
 C
 C     ----------------------------------------------------------------
       SUBROUTINE calcTS(elapsed, outputtime, ts)
+      use CkLunMod, only : CK_LUN
       USE GLOBAL, ONLY: iths, dtdp, setMessageSource, allMessage,
      &   DEBUG, unsetMessageSource
 C
@@ -3483,6 +3488,7 @@ C     a 1D fortran array because the array represents a 2D physical
 C     quantity in an unstructured mesh.
 C--------------------------------------------------------------------
       SUBROUTINE binaryRead2D(array, length, lun, counter)
+      use CkLunMod, only : CK_LUN
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
      &                    allMessage, DEBUG
@@ -3499,7 +3505,7 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
        DO i=1, length
-          READ(lun,REC=counter) array(i)
+          READ(lun+CK_LUN,REC=counter) array(i)
           counter = counter + 1
        END DO
 C
@@ -3520,6 +3526,7 @@ C     same format as the binary version but does not require the
 C     file counter.
 C--------------------------------------------------------------------
       SUBROUTINE realRead2D(array, length, lun )
+      use CkLunMod, only : CK_LUN
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
      &                    allMessage, DEBUG
@@ -3535,7 +3542,7 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
        DO i=1, length
-          READ(lun,*) array(i)
+          READ(lun+CK_LUN,*) array(i)
        END DO
 C
 #if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
@@ -3552,6 +3559,7 @@ C--------------------------------------------------------------------
 C     jgf49.44: Same as binaryRead2D except it reads an integer.
 C--------------------------------------------------------------------
       SUBROUTINE binaryIntRead2D(array, length, lun, counter)
+      use CkLunMod, only : CK_LUN
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
      &                    allMessage, DEBUG
@@ -3569,7 +3577,7 @@ C
 #endif
 C
        DO i=1, length
-          READ(lun,REC=counter) array(i)
+          READ(lun+CK_LUN,REC=counter) array(i)
           counter = counter + 1
        END DO
 C
@@ -3587,6 +3595,7 @@ C--------------------------------------------------------------------
 C     kmd: Same as realRead2D except it reads an integer.
 C--------------------------------------------------------------------
       SUBROUTINE realIntRead2D(array, length, lun)
+      use CkLunMod, only : CK_LUN
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
      &                    allMessage, DEBUG
@@ -3603,7 +3612,7 @@ C
 #endif
 C
        DO i=1, length
-          READ(lun,*) array(i)
+          READ(lun+CK_LUN,*) array(i)
        END DO
 C
 #if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
@@ -3622,6 +3631,7 @@ C     kmd: Same as realRead2D except it reads data with
 C     both horizontal and vertical lengths.
 C--------------------------------------------------------------------
       SUBROUTINE realRead3D(array, iLength, jLength, lun)
+      use CkLunMod, only : CK_LUN
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
      &                    allMessage, DEBUG
@@ -3639,7 +3649,7 @@ C
 #endif
        DO j=1, jLength
           DO i=1, iLength
-            READ(lun,*) array(i,j)
+            READ(lun+CK_LUN,*) array(i,j)
           END DO
        END DO
 C
@@ -3660,6 +3670,7 @@ C     to a subdomain array.
 C     kmd: Updated to include a real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomain2D(sd_array, lun, counter, method)
+      use CkLunMod, only : CK_LUN
       USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : ERROR, setMessageSource, allMessage,
      &                    unsetMessageSource, DEBUG, NP_G, NODES_LG
@@ -3717,7 +3728,7 @@ C
             END DO
             deallocate(fd_array)
          ELSE
-            WRITE(16,*) "Passing of binary or real
+            WRITE(16+CK_LUN,*) "Passing of binary or real
      &         information incorrect"
             STOP
          END IF
@@ -3740,6 +3751,7 @@ C     to a subdomain array.
 C     kmd: Updated to include real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomainInt2D(sd_array, lun, counter, method)
+      use CkLunMod, only : CK_LUN
       USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
      &                    allMessage, DEBUG, NP_G, NODES_LG
@@ -3766,7 +3778,7 @@ C
          ELSE IF (method.EQ.2) THEN
            CALL realIntRead2D(sd_array, NP, lun)
          ELSE
-            WRITE(16,*) "Passing of binary or real
+            WRITE(16+CK_LUN,*) "Passing of binary or real
      &         information incorrect"
             STOP
          END IF
@@ -3797,7 +3809,7 @@ C
             END DO
             deallocate(fd_array)
          ELSE
-            WRITE(16,*) "Passing of binary or real
+            WRITE(16+CK_LUN,*) "Passing of binary or real
      &         information incorrect"
             STOP
          END IF
@@ -3822,6 +3834,7 @@ C     mapping).
 C     kmd : Updated to include a real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapEleToSubdomainInt2D(sd_array, lun, counter,method)
+      use CkLunMod, only : CK_LUN
       USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
      &                    allMessage, DEBUG, NE_G, IMAP_EL_LG
@@ -3848,7 +3861,7 @@ C
          ELSE IF (method.EQ.2) THEN
             CALL realIntRead2D(sd_array, NE, lun)
          ELSE
-            WRITE(16,*) "Passing of binary or real
+            WRITE(16+CK_LUN,*) "Passing of binary or real
      &         information incorrect"
             STOP
          END IF
@@ -3879,7 +3892,7 @@ C
             END DO
             deallocate(fd_array)
          ELSE
-            WRITE(16,*) "Passing of binary or real
+            WRITE(16+CK_LUN,*) "Passing of binary or real
      &         information incorrect"
             STOP
          END IF
@@ -3903,6 +3916,7 @@ C     to a subdomain array.
 C     kmd : Updated to include a real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomain3D(sd_array, nfen, lun, counter,method)
+      use CkLunMod, only : CK_LUN
       USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
      &                    allMessage, DEBUG, NP_G, NODES_LG
@@ -3931,7 +3945,7 @@ C
          ELSE IF (method.EQ.2) THEN
             CALL realRead3D(sd_array, NP, NFEN, lun)
          ELSE
-            WRITE(16,*) "Passing of binary or real
+            WRITE(16+CK_LUN,*) "Passing of binary or real
      &         information incorrect"
             STOP
          END IF
@@ -3962,7 +3976,7 @@ C
             END DO
             deallocate(fd_array)
          ELSE
-            WRITE(16,*) "Passing of binary or real
+            WRITE(16+CK_LUN,*) "Passing of binary or real
      &         information incorrect"
             STOP
          END IF

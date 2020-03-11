@@ -56,111 +56,182 @@ C
 c***********************************************************************************
 
       MODULE P15EXTENTS
+      use CkLunMod, only : CK_LUN
       INTEGER NBIG
+!$omp threadprivate(NBIG)
       INTEGER NE, NBR
+!$omp threadprivate(NE,NBR)
       END MODULE P15EXTENTS
 
       MODULE P1
+      use CkLunMod, only : CK_LUN
       USE P15EXTENTS
       INTEGER ITOT
+!$omp threadprivate(ITOT)
       REAL,ALLOCATABLE :: XXLAT(:),XXLON(:),XTIME(:),XXVEL(:),XXPRES(:)
+!$omp threadprivate(XXLAT,XXLON,XTIME,XXVEL,XXPRES)
       END MODULE P1
 
       MODULE C0
+      use CkLunMod, only : CK_LUN
       INTEGER  IMO,IDY,IYR,ISTART,NPTS
+!$omp threadprivate(IMO,IDY,IYR,ISTART,NPTS)
       REAL IHR1,TIMEINC
+!$omp threadprivate(IHR1,TIMEINC)
       END MODULE C0
 
       MODULE C1
+      use CkLunMod, only : CK_LUN
       INTEGER  NSNAP,NZ,NM,IB
+!$omp threadprivate(NSNAP,NZ,NM,IB)
       REAL AN1(600)
+!$omp threadprivate(AN1)
       REAL DX,DT,F,SGW,UC,VC,UG,VG,CS,ST12
+!$omp threadprivate(DX,DT,F,SGW,UC,VC,UG,VG,CS,ST12)
       END MODULE C1
 
       MODULE C2
+      use CkLunMod, only : CK_LUN
       REAL,TARGET  :: AB(21,21,15),AC(21,7,21)                       
+!$omp threadprivate(AB,AC)
       REAL,TARGET  ::  JA(15)
+!$omp threadprivate(JA)
       REAL,POINTER ::  ITRACK    ! Map of JA
+!$omp threadprivate(ITRACK)
       REAL,POINTER ::  EYELAT
+!$omp threadprivate(EYELAT)
       REAL,POINTER ::  EYELONG 
+!$omp threadprivate(EYELONG)
       REAL,POINTER ::  DIREC 
+!$omp threadprivate(DIREC)
       REAL,POINTER ::  SPEED 
+!$omp threadprivate(SPEED)
       REAL,POINTER ::  IQUAD 
+!$omp threadprivate(IQUAD)
       REAL,POINTER ::  EYPRES 
+!$omp threadprivate(EYPRES)
       REAL,POINTER,DIMENSION(:) ::  RADIUS, PFAR
+!$omp threadprivate(RADIUS,PFAR)
       END MODULE C2
 
       MODULE C3
+      use CkLunMod, only : CK_LUN
       REAL  U(21,21,5),V(21,21,5),UN(21,21,5),VN(21,21,5)
+!$omp threadprivate(U,V,UN,VN)
       REAL  PX(21,21,5),PY(21,21,5),VTN(21,21,5),ANG(21,21,5)
+!$omp threadprivate(PX,PY,VTN,ANG)
       REAL  LW(21,21,5)
+!$omp threadprivate(LW)
       END MODULE C3
 
       MODULE C4
+      use CkLunMod, only : CK_LUN
       REAL  CDR(100,2,2),UXV(100,2),TURN(100,2)    
+!$omp threadprivate(CDR,UXV,TURN)
       END MODULE C4
 
       MODULE C5
+      use CkLunMod, only : CK_LUN
       INTEGER K123,LS
+!$omp threadprivate(K123,LS)
       REAL HH,HL,K2,K35
+!$omp threadprivate(HH,HL,K2,K35)
       REAL FLAT,PTH,DTH(2),Z0LAND,VV(100),UX(3),UV(3)   
+!$omp threadprivate(FLAT,PTH,DTH,Z0LAND,VV,UX,UV)
       REAL DUV(3),G,GA,DEN,VV2,Z0,ZLOG,AM,BM,CM,FF
+!$omp threadprivate(DUV,G,GA,DEN,VV2,Z0,ZLOG,AM,BM,CM,FF)
       END MODULE C5
 
       MODULE C6
+      use CkLunMod, only : CK_LUN
       USE P15EXTENTS
       REAL PFAR1
+!$omp threadprivate(PFAR1)
       REAL RADIUS1(600)
+!$omp threadprivate(RADIUS1)
       REAL,ALLOCATABLE :: ZLA(:),ZLO(:),ZPR(:),ZAN(:),ZSP(:)
+!$omp threadprivate(ZLA,ZLO,ZPR,ZAN,ZSP)
       END MODULE C6
 
       MODULE C8
+      use CkLunMod, only : CK_LUN
       USE P15EXTENTS
       INTEGER,ALLOCATABLE :: ILAD(:),ILAM(:),ILOD(:),ILOM(:)
+!$omp threadprivate(ILAD,ILAM,ILOD,ILOM)
       INTEGER,ALLOCATABLE :: ISNAP1(:),ISNAP2(:),IROT(:)
+!$omp threadprivate(ISNAP1,ISNAP2,IROT)
       REAL,ALLOCATABLE :: PCT1(:)
+!$omp threadprivate(PCT1)
       END MODULE C8
 
 
       MODULE D13
+      use CkLunMod, only : CK_LUN
       INTEGER LANSEA
+!$omp threadprivate(LANSEA)
       REAL LA0,LO0,LA1,LO1
+!$omp threadprivate(LA0,LO0,LA1,LO1)
       REAL ROT,DX,STHT,W1,TH1,D,AL
+!$omp threadprivate(ROT,DX,STHT,W1,TH1,D,AL)
       REAL,TARGET :: UST   
+!$omp threadprivate(UST)
       REAL XX(21,21,10)
+!$omp threadprivate(XX)
       INTEGER NSNAP1(600),NSNAP2(600),IPI(600),NHT,INTVN,INTVI
+!$omp threadprivate(NSNAP1,NSNAP2,IPI,NHT,INTVN,INTVI)
       REAL PCT(600)
+!$omp threadprivate(PCT)
       END MODULE D13
 
       MODULE DJM
+      use CkLunMod, only : CK_LUN
       INTEGER NTIMES
+!$omp threadprivate(NTIMES)
       CHARACTER*4 SMF_NAM(100)
+!$omp threadprivate(SMF_NAM)
       REAL SMF_UN(21,21,5,100), SMF_VN(21,21,5,100)
+!$omp threadprivate(SMF_UN,SMF_VN)
       REAL ISMF_JA(15,100)
+!$omp threadprivate(ISMF_JA)
       REAL SMF_DXX(100), SMF_SGW(100), SMF_AN1(100)
+!$omp threadprivate(SMF_DXX,SMF_SGW,SMF_AN1)
       REAL SMF_ST1(100), SMF_HHH(100), SMF_GAR(100)
+!$omp threadprivate(SMF_ST1,SMF_HHH,SMF_GAR)
       REAL SMF_PTH(100), SMF_K35(100), SMF_DTH1(100), SMF_DTH2(100)
+!$omp threadprivate(SMF_PTH,SMF_K35,SMF_DTH1,SMF_DTH2)
       END MODULE DJM
 
       MODULE C57
+      use CkLunMod, only : CK_LUN
       INTEGER K123
+!$omp threadprivate(K123)
       REAL PTH,DTH,HH,ZCOEFF(3,5),LAKE,VV(100),UX(3),UV(3)     
+!$omp threadprivate(PTH,DTH,HH,ZCOEFF,LAKE,VV,UX,UV)
       REAL DUV(3),K35,K2,G,GA,DEN,VV2,HL,Z0,ZLOG,AM,BM,CM
+!$omp threadprivate(DUV,K35,K2,G,GA,DEN,VV2,HL,Z0,ZLOG,AM,BM,CM)
       REAL UXV(100,6),TURN(100,6),COST(100),SINT(100) 
+!$omp threadprivate(UXV,TURN,COST,SINT)
       END MODULE C57
 
       MODULE P15GLOBAL
+      use CkLunMod, only : CK_LUN
       USE P15EXTENTS
       ! WAS BLANK COMMON
       REAL U99,V99,PRESS
+!$omp threadprivate(U99,V99,PRESS)
       REAL P0SNP(100),PFRSNP(100),RADSNP(100)
+!$omp threadprivate(P0SNP,PFRSNP,RADSNP)
       INTEGER,ALLOCATABLE :: KSTA(:)
+!$omp threadprivate(KSTA)
       REAL,ALLOCATABLE :: YLA(:),YLO(:),WINDRED(:,:)
+!$omp threadprivate(YLA,YLO,WINDRED)
       END MODULE P15GLOBAL
 
       MODULE IHOUR
+      use CkLunMod, only : CK_LUN
       USE P15EXTENTS
       INTEGER,ALLOCATABLE :: IHR(:)
+!$omp threadprivate(IHR)
       END MODULE IHOUR
 
 
@@ -169,14 +240,23 @@ c*******************************************************************************
       USE P1; USE C0; USE C1; USE C2; USE C3; USE C4; USE C5
       USE C6; USE C8; USE DJM; USE P15GLOBAL
       CHARACTER*30 TITLE,INPUTFILE,GRIDFILE
+!$omp threadprivate(TITLE,INPUTFILE,GRIDFILE)
       CHARACTER*9  TSTAMP(200)
+!$omp threadprivate(TSTAMP)
       REAL A(500,4)
+!$omp threadprivate(A)
       INTEGER ISPD(500),IPRES(500)
+!$omp threadprivate(ISPD,IPRES)
       REAL TIME(500),XLAT(500),XLON(500)
+!$omp threadprivate(TIME,XLAT,XLON)
       REAL XPRES(500),XVEL(500)
+!$omp threadprivate(XPRES,XVEL)
       REAL RZERO(600)
+!$omp threadprivate(RZERO)
       REAL SPEEDUP
+!$omp threadprivate(SPEEDUP)
       REAL,ALLOCATABLE :: ANGLE(:),SPED(:)
+!$omp threadprivate(ANGLE,SPED)
 
       WRITE(*,*) 'Enter name of input file to use:  '
       read(*,'(A)') inputfile
@@ -189,9 +269,9 @@ c*******************************************************************************
       write(*,*) 'Enter the day of the month storm starts:  '
       read(*,*) idy
 
-      open(10,file=gridfile,STATUS='unknown')
-      READ(10,'(A)') TITLE
-      READ(10,*)  NE, NBR
+      open(10+CK_LUN,file=gridfile,STATUS='unknown')
+      READ(10+CK_LUN,'(A)') TITLE
+      READ(10+CK_LUN,*)  NE, NBR
       NBIG = INT(1.25*REAL(NBR))
 
       CALL ALLOC1()
@@ -205,13 +285,13 @@ c*******************************************************************************
       NN=0
 
 c   READ INFO FROM TRACK FILE AND GET TIMEINC FROM FIRST TWO RECORDS
-      OPEN(11,FILE=INPUTFILE,STATUS='UNKNOWN')
-      READ(11,*) 
-      READ(11,'(A)') title
-      READ(11,*)
+      OPEN(11+CK_LUN,FILE=INPUTFILE,STATUS='UNKNOWN')
+      READ(11+CK_LUN,*) 
+      READ(11+CK_LUN,'(A)') title
+      READ(11+CK_LUN,*)
       NPTS = 0
       DO I=1,100
-         READ(11,1000,END=1010) INUM,XLAT(I),XLON(I),TSTAMP(I),
+         READ(11+CK_LUN,1000,END=1010) INUM,XLAT(I),XLON(I),TSTAMP(I),
      &                          ISPD(I),IPRES(I)
          print *, INUM,XLAT(I),XLON(I),TSTAMP(I),ISPD(I),IPRES(I)
          NPTS=NPTS+1
@@ -537,7 +617,7 @@ C      CHARACTER*20 TITLE
 C--------------------------------------------------------------------------
 
       DO 10 N=1,NBR
-      READ(10,*) NODE,YLO(N),YLA(N),DEPP
+      READ(10+CK_LUN,*) NODE,YLO(N),YLA(N),DEPP
       KSTA(N)=N
       YLO(N)=ABS(YLO(N))
    10 CONTINUE
@@ -654,7 +734,7 @@ C-------------------------------------------------------------------------------
         write(*,*) DTH,HH,GARR,PTH,K35   
         write(*,*) JA   
  20   CONTINUE                                                          
-      WRITE (6,25)                                                     
+      WRITE (6+CK_LUN,25)                                                     
    25 FORMAT('1 END OF SNAP/MAIN') 
       RETURN                                                            
       END 
@@ -712,8 +792,8 @@ C-------------------------------------------------------------------------------
       KSNAP1 = 0    
       KSNAP2 = 0    
       LTEMP = 43                                                    
-      OPEN(UNIT=LTEMP, FILE='LTEMP.OUT',STATUS='UNKNOWN')
-      OPEN(UNIT=69, FILE='fort.22',STATUS='UNKNOWN')
+      OPEN(UNIT=LTEMP+CK_LUN, FILE='LTEMP.OUT',STATUS='UNKNOWN')
+      OPEN(UNIT=69+CK_LUN, FILE='fort.22',STATUS='UNKNOWN')
 C-----------------------------------------------------------------------------------
       IZONE='GMT'
       GRIDHT=FLOAT(IGRDHT)/10.                                          
@@ -867,8 +947,8 @@ C-------------------------------------------------------------------------------
 C                                                                               
       IF (KHR.EQ.1) GO TO 75                                           
       IF (JSEQ(KHR).EQ.JSEQ(KHR-1)) GO TO 80
-   75 WRITE(LTEMP,*) XX
-      WRITE(LTEMP,*) JSEQ(KHR)
+   75 WRITE(LTEMP+CK_LUN,*) XX
+      WRITE(LTEMP+CK_LUN,*) JSEQ(KHR)
    80 CONTINUE
       IF (NBR.EQ.0) GO TO 106                                       
 C                                                              
@@ -881,17 +961,17 @@ C--------------------------------------------------------------------------
 C--------------------------------------------------------------------------
       DO 100 KHR = 1, NTIM
          ramp=tanh((khr-1)/18.d0)
-      WRITE(69,2222) KHR,NAD(KHR),NAM(KHR),NOD(KHR),NOM(KHR),
+      WRITE(69+CK_LUN,2222) KHR,NAD(KHR),NAM(KHR),NOD(KHR),NOM(KHR),
      1               PFRSNP(NSNAP1(KHR)),SGW
-      WRITE(6,2222) KHR,NAD(KHR),NAM(KHR),NOD(KHR),NOM(KHR),
+      WRITE(6+CK_LUN,2222) KHR,NAD(KHR),NAM(KHR),NOD(KHR),NOM(KHR),
      1              PFRSNP(NSNAP1(KHR)),SGW
  2222 FORMAT(' #',I10,' EYE AT (LAT,LON)',2I3,2X,2I3,
      $       ' PFAR =',F8.2,' SGW =',F8.2)
 C-------------------------------------------------------------------------- 
       IF (KHR.EQ.1) GO TO 85                                           
       IF ( JSEQ(KHR) .EQ. JSEQ(KHR-1) ) GO TO 90
-   85 READ (LTEMP,*) XX
-      READ(LTEMP,*) KSEQ
+   85 READ (LTEMP+CK_LUN,*) XX
+      READ(LTEMP+CK_LUN,*) KSEQ
  90   CONTINUE
 C--------------------------------------------------------------------------
       iout=0
@@ -947,13 +1027,13 @@ C-- Convert 30-min winds to 10-min winds
       V99 = V99 * 1.04d0
 C--
       ramppress=1013.-ramp*(1013.-press)
-      WRITE(69,2223) KSTA(K), ramp*fr*U99, ramp*fr*V99, ramppress
+      WRITE(69+CK_LUN,2223) KSTA(K), ramp*fr*U99, ramp*fr*V99, ramppress
  2223 FORMAT( I8, 5E13.5)
   105 CONTINUE
-      if(iout.eq.0) WRITE(69,2223) 1, 0., 0., 1013.
+      if(iout.eq.0) WRITE(69+CK_LUN,2223) 1, 0., 0., 1013.
   100 CONTINUE                                             
   106 CONTINUE
-  135 WRITE (LP,205)                                                   
+  135 WRITE (LP+CK_LUN,205)                                                   
 cvjp  CALL SYSTEM('rm LTEMP.OUT')
       STOP 999                   
   160 FORMAT (4X,I6,4X,I8,I3)                                       
@@ -1207,6 +1287,7 @@ C     COMPUTES JULIAN DATE.
       SUBROUTINE LPRINT(KHR,ISTART,IZONE,WIND,LSTAB) 
       PARAMETER (MAXI=11,MAXJ=11,NLN=2,NLT=2)
       COMMON /LGRID/ ILAT(MAXJ),ILONG(MAXI)                        
+!$omp threadprivate(/LGRID/)
       DIMENSION WIND(2,MAXI,MAXJ),LSTAB(MAXI,MAXJ)        
       DIMENSION ILN(NLN),LLN(NLN),ILT(NLT),LLT(NLT),KODES(6)  
       DIMENSION LIST(24)                               
@@ -1251,6 +1332,7 @@ C
       SUBROUTINE RDGRID(ZLA,ZLO,LSTAB)   
       PARAMETER (MAXI=11,MAXJ=11)                                
       COMMON /LGRID/ ILAT(MAXJ),ILONG(MAXI)                
+!$omp threadprivate(/LGRID/)
       DIMENSION LSTAB(MAXI,MAXJ)                 
       DIMENSION ZLA(MAXI,MAXJ),ZLO(MAXI,MAXJ) 
 C     
@@ -2041,21 +2123,21 @@ C     NEST LV IS PRINTED AS INNER NEST, LV+1 AS OUTER NEST.
       DIMENSION KREDUC(2)                                         
       DATA KREDUC/'NOT ', '    '/ 
       DATA LU/6/                                         
-      WRITE (LU,100)                                               
+      WRITE (LU+CK_LUN,100)                                               
   100 FORMAT(1H1)                                                  
       LVP=LV+1                                                       
       I20P=I20+1                                                    
-      WRITE (LU,200) IDENT,KSEQ,LVP,KREDUC(I20P)                     
+      WRITE (LU+CK_LUN,200) IDENT,KSEQ,LVP,KREDUC(I20P)                     
   200 FORMAT(1H+,20X,A6,5X,A4,1X,I4,'   LEVEL',I3,5X,A4,'REDUCED')  
       DXI=2.0**(LV-1)*DS
       DXO=2.0*DXI
-      WRITE(LU,210) DXI,DXO
+      WRITE(LU+CK_LUN,210) DXI,DXO
   210 FORMAT(21X,'( INNER-GRID STEP =',F6.1,' KM',6X,'OUTER-GRID STEP =
      1       ',F6.1,' KM',' )')
- 1190 WRITE (LU,1200) (J, J=1,12)                                      
+ 1190 WRITE (LU+CK_LUN,1200) (J, J=1,12)                                      
  1200 FORMAT(1H0,11X,12(I2,8X))                                        
       DO 1210 I=1,5                                                     
-      WRITE(LU,1220) I,(VTN(I,J,LVP),J=1,12),(ANG(I,J,LVP),J=1,12)     
+      WRITE(LU+CK_LUN,1220) I,(VTN(I,J,LVP),J=1,12),(ANG(I,J,LVP),J=1,12)     
  1210 continue
  1220 FORMAT(1H0,6X,I2,12(1PF5.0,5X)/9X,12(0PF5.0,5X),/1H0,/)     
  1240 DO 1248 I=1,11                                              
@@ -2063,25 +2145,25 @@ C     NEST LV IS PRINTED AS INNER NEST, LV+1 AS OUTER NEST.
       IO=2*I-1                                                          
       IE=2*I                                                           
       IF(I-11) 1242,1246,1246                                           
- 1242 WRITE (LU,1244) IL,(VTN(IL,J,LVP),J=1,5),(VTN(IO,N,LV),N=1,13)  
+ 1242 WRITE (LU+CK_LUN,1244) IL,(VTN(IL,J,LVP),J=1,5),(VTN(IO,N,LV),N=1,13)  
      1 ,(ANG(IL,J,LVP),J=1,5),(ANG(IO,N,LV),N=1,13)                     
      2 ,(VTN(IE,N,LV),N=1,13),(ANG(IE,N,LV),N=1,13)                  
  1244 FORMAT(1H0,6X,I2,5(1PF5.0,5X),13(1PF5.0)/9X,5(0PF5.0,5X),       
      1  13(0PF5.0)/1H0,58X,13(1PF5.0)/59X,13(0PF5.0))           
       GO TO 1248                                             
- 1246 WRITE (LU,1247) IL,(VTN(IL,J,LVP),J=1,5),(VTN(IO,N,LV),N=1,13)    
+ 1246 WRITE (LU+CK_LUN,1247) IL,(VTN(IL,J,LVP),J=1,5),(VTN(IO,N,LV),N=1,13)    
      1  ,(ANG(IL,J,LVP),J=1,5),(ANG(IO,N,LV),N=1,13)       
  1247 FORMAT(1H0,6X,I2,5(1PF5.0,5X),13(1PF5.0)/9X,5(0PF5.0,5X),   
      1  13(0PF5.0)/1H0,//)                            
  1248 CONTINUE                                          
       DO 1300 I=17,21                                          
-      WRITE (LU,1220) I,(VTN(I,J,LVP),J=1,12),(ANG(I,J,LVP),J=1,12)   
+      WRITE (LU+CK_LUN,1220) I,(VTN(I,J,LVP),J=1,12),(ANG(I,J,LVP),J=1,12)   
  1300 continue
-      WRITE(LU,100)                                                    
-      WRITE (LU,1340) (J,J=13,21)                                  
+      WRITE(LU+CK_LUN,100)                                                    
+      WRITE (LU+CK_LUN,1340) (J,J=13,21)                                  
  1340 FORMAT(1H0,16X,9(I2,8X))                                        
       DO 1345 I=1,5                                                    
-      WRITE (LU,1350) (VTN(I,J,LVP),J=13,21),I,(ANG(I,J,LVP),J=13,21)  
+      WRITE (LU+CK_LUN,1350) (VTN(I,J,LVP),J=13,21),I,(ANG(I,J,LVP),J=13,21)  
  1345   continue
  1350 FORMAT(1H0,13X,9(1PF5.0,5X),I2/14X,9(0PF5.0,5X),/1H0,/)      
  1370 DO 1378 I=1,11                                              
@@ -2089,19 +2171,19 @@ C     NEST LV IS PRINTED AS INNER NEST, LV+1 AS OUTER NEST.
       IO=2*I-1                                                      
       IE=2*I                                                          
       IF(I-11) 1372,1376,1376                                          
- 1372 WRITE (LU,1374) (VTN(IO,N,LV),N=14,21),(VTN(IL,J,LVP),J=17,21),IL 
+ 1372 WRITE (LU+CK_LUN,1374) (VTN(IO,N,LV),N=14,21),(VTN(IL,J,LVP),J=17,21),IL 
      1  ,(ANG(IO,N,LV),N=14,21), (ANG(IL,J,LVP),J=17,21),               
      2  (VTN(IE,N,LV),N=14,21),(ANG(IE,N,LV),N=14,21)                  
  1374 FORMAT(1H0,8X,8(1PF5.0),5X,5(1PF5.0,5X),I2/9X,8(0PF5.0),5X,   
      1  5(0PF5.0,5X)/1H0,8X, 8(1PF5.0)/9X, 8(0PF5.0))                
       GO TO 1378                                                   
- 1376 WRITE(LU,1377) (VTN(IO,N,LV),N=14,21),(VTN(IL,J,LVP),J=17,21),IL, 
+ 1376 WRITE(LU+CK_LUN,1377) (VTN(IO,N,LV),N=14,21),(VTN(IL,J,LVP),J=17,21),IL, 
      1  (ANG(IO,N,LV),N=14,21), (ANG(IL,J,LVP),J=17,21)                
  1377 FORMAT(1H0,8X,8(1PF5.0),5X,5(1PF5.0,5X),I2/9X,8(0PF5.0),5X,     
      1  5(0PF5.0,5X)/1H0,//)                                       
  1378 CONTINUE                                                        
       DO 1400 I=17,21                                                  
-      WRITE(LU,1350)  (VTN(I,J,LVP),J=13,21),I,(ANG(I,J,LVP),J=13,21)   
+      WRITE(LU+CK_LUN,1350)  (VTN(I,J,LVP),J=13,21),I,(ANG(I,J,LVP),J=13,21)   
  1400   continue
       RETURN                                                          
       END 
@@ -2122,8 +2204,8 @@ C
       NW=0
       IG21=MAXI/21
       IR21=MOD(MAXI,21)
-   10 READ(7,'(I10)',END=140) NTOD
-      READ(8,'(I10)') NTOD
+   10 READ(7+CK_LUN,'(I10)',END=140) NTOD
+      READ(8+CK_LUN,'(I10)') NTOD
       NW=NW+1
       DO 60 NN=1,2
         IF (IG21.EQ.0) GOTO 40
@@ -2131,16 +2213,16 @@ C
           IB=(IK-1)*21+1
           IE=IK*21
           DO 20 J=MAXJ,1,-1
-            READ(7,'(21F6.1)') (WIND7(NN,I,J),I=IB,IE)
-            READ(8,'(21F6.1)') (WIND8(NN,I,J),I=IB,IE)
+            READ(7+CK_LUN,'(21F6.1)') (WIND7(NN,I,J),I=IB,IE)
+            READ(8+CK_LUN,'(21F6.1)') (WIND8(NN,I,J),I=IB,IE)
    20     CONTINUE
    30   CONTINUE
    40   IF (IR21.EQ.0) GOTO 60
         IB=IG21*21+1
         IE=MAXI
         DO 50 J=MAXJ,1,-1
-          READ(7,'(21F6.1)') (WIND7(NN,I,J),I=IB,IE)
-          READ(8,'(21F6.1)') (WIND8(NN,I,J),I=IB,IE)
+          READ(7+CK_LUN,'(21F6.1)') (WIND7(NN,I,J),I=IB,IE)
+          READ(8+CK_LUN,'(21F6.1)') (WIND8(NN,I,J),I=IB,IE)
    50   CONTINUE
    60 CONTINUE
       NB=0
@@ -2156,25 +2238,25 @@ C
           ENDIF
    70   CONTINUE
    80 CONTINUE
-      WRITE(11,'(I10)') NTOD
+      WRITE(11+CK_LUN,'(I10)') NTOD
       DO 130 NN=1,2
         IF (IG21.EQ.0) GOTO 110
         DO 100 IK=1,IG21
           IB=(IK-1)*21+1
           IE=IK*21
           DO 90 J=MAXJ,1,-1
-            WRITE(11,'(21F6.1)') (WIND(NN,I,J),I=IB,IE)
+            WRITE(11+CK_LUN,'(21F6.1)') (WIND(NN,I,J),I=IB,IE)
    90     CONTINUE
   100   CONTINUE
   110   IF (IR21.EQ.0) GOTO 130
         IB=IG21*21+1
         IE=MAXI
         DO 120 J=MAXJ,1,-1
-          WRITE(11,'(21F6.1)') (WIND(NN,I,J),I=IB,IE)
+          WRITE(11+CK_LUN,'(21F6.1)') (WIND(NN,I,J),I=IB,IE)
   120   CONTINUE
   130 CONTINUE
       IF (NB.GT.0) THEN
-        WRITE(6,'(7H REC # ,I3,3X,I4,15H VALUES BLENDED)') NW,NB
+        WRITE(6+CK_LUN,'(7H REC # ,I3,3X,I4,15H VALUES BLENDED)') NW,NB
       ENDIF
       GOTO 10
   140 STOP

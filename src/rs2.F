@@ -14,6 +14,7 @@ C vjp 10/21/2006  modified logic for type2
 C****************************************************************************** 
 C 
       MODULE RS2
+      use CkLunMod, only : CK_LUN
       USE SIZES
 
       USE GLOBAL,ONLY : NSCREEN, ScreenUnit
@@ -24,22 +25,36 @@ C
 
       !variables for input file
       integer :: ns,type
+!$omp threadprivate(ns,type)
       character(len=100),allocatable,dimension(:) :: simfiles ! names of .sim files
+!$omp threadprivate(simfiles)
       character(len=100),allocatable,dimension(:) :: radfiles ! names of .rad files
+!$omp threadprivate(radfiles)
       integer,allocatable,dimension(:)            :: fullplanes ! 0: half plane, 1: full plane
+!$omp threadprivate(fullplanes)
       integer,allocatable,dimension(:)            :: nbs ! number of blank snaps
+!$omp threadprivate(nbs)
       integer,allocatable,dimension(:)            :: rfids ! id of .rad files
+!$omp threadprivate(rfids)
       integer,allocatable,dimension(:) :: nis,njs
+!$omp threadprivate(nis,njs)
       integer,save,allocatable,dimension(:) :: endoffile
+!$omp threadprivate(endoffile)
 
       integer,allocatable,dimension(:,:,:) :: rsij
+!$omp threadprivate(rsij)
       real(sz),allocatable,dimension(:,:,:) :: rscnf
+!$omp threadprivate(rscnf)
 
       real(sz),allocatable,dimension(:) :: dxincs,dyincs
+!$omp threadprivate(dxincs,dyincs)
       real(sz),allocatable,dimension(:) :: x0s,y0s,azimuths
+!$omp threadprivate(x0s,y0s,azimuths)
 
       integer :: numSets,numBlankSnaps,cntSnaps,numSkipSnaps
+!$omp threadprivate(numSets,numBlankSnaps,cntSnaps,numSkipSnaps)
       real(SZ) :: windMultiplier
+!$omp threadprivate(windMultiplier)
 
 
       PUBLIC
@@ -61,20 +76,20 @@ C***********************************************************************
       real(sz),intent(out) :: rsnx(:),rsny(:)
 
       if(myproc.eq.0) then
-        write(screenunit,*)
-        write(screenunit,*) 'INIT RADIATION STRESS ARRAYS (NRS=2)...'
+        write(screenunit+CK_LUN,*)
+        write(screenunit+CK_LUN,*) 'INIT RADIATION STRESS ARRAYS (NRS=2)...'
       endif
-      write(16,*)
-      write(16,*) 'INITIALIZING RADIATION STRESS ARRAYS (NRS=2)...'
+      write(16+CK_LUN,*)
+      write(16+CK_LUN,*) 'INITIALIZING RADIATION STRESS ARRAYS (NRS=2)...'
 
       !read meta info
 
 
-      OPEN(23,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.23',STATUS='OLD')
+      OPEN(23+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.23',STATUS='OLD')
 
       ! type of fort.23 file, 1: include wave radiation
       !                       2: does not include wave radiation
-      read(23,*,err=99999) type
+      read(23+CK_LUN,*,err=99999) type
 
       if(type.eq.1) then
         stop 'RS2INIT: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
@@ -422,11 +437,11 @@ C***********************************************************************
       real(sz) :: p1,p2,cmax,cmin,tol
 
 
-      read(23,*,err=99999) ns    !number of stwave grid files
+      read(23+CK_LUN,*,err=99999) ns    !number of stwave grid files
 
       if(ns.le.0) then
-        write(screenunit,1004)
-        write(16,1004)
+        write(screenunit+CK_LUN,1004)
+        write(16+CK_LUN,1004)
 #ifdef CMPI
         call msg_fini()
 #endif
@@ -447,25 +462,25 @@ C***********************************************************************
 
       !compute mapping coefficients
       do s=1,ns
-        read(23,*,err=99999) ! skip a line
+        read(23+CK_LUN,*,err=99999) ! skip a line
 
-        read(23,'(A)',err=99999) simfiles(s)
+        read(23+CK_LUN,'(A)',err=99999) simfiles(s)
         simfiles(s) = adjustl(simfiles(s))
-        read(23,'(A)',err=99999) radfiles(s)
+        read(23+CK_LUN,'(A)',err=99999) radfiles(s)
         radfiles(s) = adjustl(radfiles(s))
-        read(23,*,err=99999) nbs(s)
+        read(23+CK_LUN,*,err=99999) nbs(s)
         if (myproc == 0) then
-         write(screenunit,*) " NUMBER BLANK RS SNAPS FOR REGION ",s,
+         write(screenunit+CK_LUN,*) " NUMBER BLANK RS SNAPS FOR REGION ",s,
      &                         " = ", nbs(s)
         endif
-        read(23,*,err=99999) x0s(s),y0s(s),azimuths(s)
+        read(23+CK_LUN,*,err=99999) x0s(s),y0s(s),azimuths(s)
 
-        read(23,*,err=99999) fullplanes(s)
+        read(23+CK_LUN,*,err=99999) fullplanes(s)
 
         if(fullplanes(s).eq.1) then
-          read(23,*,err=99999) nis(s), njs(s), dxincs(s), dyincs(s)
+          read(23+CK_LUN,*,err=99999) nis(s), njs(s), dxincs(s), dyincs(s)
         else
-          read(23,*,err=99999) nis(s), njs(s), dxincs(s)
+          read(23+CK_LUN,*,err=99999) nis(s), njs(s), dxincs(s)
           dyincs(s) = dxincs(s)
         endif       
         
@@ -474,7 +489,7 @@ C***********************************************************************
 
         allocate(stwlonlat(2,ni,nj))
         do j=1,nj
-          read(23,*) ((stwlonlat(k,i,j), k=1,2), i=1,ni)
+          read(23+CK_LUN,*) ((stwlonlat(k,i,j), k=1,2), i=1,ni)
         enddo
         
         stwlonmin =  1d10
@@ -497,7 +512,7 @@ C***********************************************************************
         allocate(searchBinPartitions(nSearchBins+1))
         searchBinPartitions(1) = stwlonmin
         if(myproc.eq.0) then
-          write(screenunit,*) 'PREPARING SEARCH BINS FOR GRID ',s,'...'
+          write(screenunit+CK_LUN,*) 'PREPARING SEARCH BINS FOR GRID ',s,'...'
         endif
         tol = abs(stwlonmax-stwlonmin)/real(nSearchBins)*0.01d0
         do p=1,nSearchBins
@@ -539,7 +554,7 @@ C***********************************************************************
           enddo
         enddo
         if(myproc.eq.0) then
-          write(screenunit,*) ' SEARCH BINS ARE READY'
+          write(screenunit+CK_LUN,*) ' SEARCH BINS ARE READY'
         endif
 
         do n=1,np
@@ -677,26 +692,26 @@ C***********************************************************************
       !open .rad files if necessary
       do s=1,ns
         rfids(s) = 230 + s
-        open(rfids(s),file=TRIM(GBLINPUTDIR)//'/'//trim(radfiles(s)),
+        open(rfids(s+CK_LUN),file=TRIM(GBLINPUTDIR)//'/'//trim(radfiles(s)),
      & status='old')
         if(fullplanes(s).eq.1) then
-          read (rfids(s),*) ni, nj, dxinc, dyinc
+          read (rfids(s+CK_LUN),*) ni, nj, dxinc, dyinc
         else
-          read (rfids(s),*) ni, nj, dxinc
+          read (rfids(s+CK_LUN),*) ni, nj, dxinc
           dyinc = dxinc
         endif
         if((ni.ne.nis(s)).or.(nj.ne.njs(s)).or.
      &       (dxinc.ne.dxincs(s)).or.(dyinc.ne.dyincs(s))) then
           if(myproc.eq.0) then
-            write(screenunit,*) ''
-            write(screenunit,*) 'FORT.23 INCONSISTENT WITH .RAD FILES'
-            write(screenunit,*) 'PROGRAM WILL BE TERMINATED'
-            write(screenunit,*) ''
+            write(screenunit+CK_LUN,*) ''
+            write(screenunit+CK_LUN,*) 'FORT.23 INCONSISTENT WITH .RAD FILES'
+            write(screenunit+CK_LUN,*) 'PROGRAM WILL BE TERMINATED'
+            write(screenunit+CK_LUN,*) ''
           endif
-          write(16,*) ''
-          write(16,*) 'FORT.23 SEEMS INCONSISTENT WITH .RAD FILES'
-          write(16,*) 'PROGRAM WILL BE TERMINATED'
-          write(16,*) ''
+          write(16+CK_LUN,*) ''
+          write(16+CK_LUN,*) 'FORT.23 SEEMS INCONSISTENT WITH .RAD FILES'
+          write(16+CK_LUN,*) 'PROGRAM WILL BE TERMINATED'
+          write(16+CK_LUN,*) ''
 #ifdef CMPI
           call msg_fini()
 #endif
@@ -718,11 +733,11 @@ C***********************************************************************
       endoffile(:) = 0
 
       if(myproc.eq.0) then
-        write(screenunit,*)
-        write(screenunit,*) 'INIT OF RADIATION STRESS ARRAYS IS DONE.'
+        write(screenunit+CK_LUN,*)
+        write(screenunit+CK_LUN,*) 'INIT OF RADIATION STRESS ARRAYS IS DONE.'
       endif
-      write(16,*)
-      write(16,*) 'INIT OF RADIATION STRESS ARRAYS IS DONE.'
+      write(16+CK_LUN,*)
+      write(16+CK_LUN,*) 'INIT OF RADIATION STRESS ARRAYS IS DONE.'
 
       return
 
@@ -987,11 +1002,11 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
       real(sz) :: angle_st,pi
 
       if(myproc.eq.0) then
-        write(screenunit,*)
-        write(screenunit,*) 'READING IN RADIATION STRESS'
+        write(screenunit+CK_LUN,*)
+        write(screenunit+CK_LUN,*) 'READING IN RADIATION STRESS'
       endif
-      write(16,*)
-      write(16,*) 'READING IN RADIATION STRESS'
+      write(16+CK_LUN,*)
+      write(16+CK_LUN,*) 'READING IN RADIATION STRESS'
 
       pi = 4.d0*atan(1.d0)
 
@@ -1013,10 +1028,10 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
         if(cntsnaps.le.nbs(s)) then
           if(abs(nscreen) >= 1) then
             if(myproc.eq.0) then
-         write(screenunit,*) 'INSERTING A BLANK RS SNAP, REGION = ',s,
+         write(screenunit+CK_LUN,*) 'INSERTING A BLANK RS SNAP, REGION = ',s,
      &                   ', COUNT = ',cntsnaps
             endif
-            write(16,*) 'INSERTING A BLANK RS SNAP, REGION = ',s,
+            write(16+CK_LUN,*) 'INSERTING A BLANK RS SNAP, REGION = ',s,
      &                  ', COUNT = ',cntsnaps
           endif
           cycle    
@@ -1025,9 +1040,9 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
         ! if previous EOF write blank RS SNAP
         if(endoffile(s).eq.1) then
           if (myproc.eq.0) then
-             write(screenunit,*) trim(radfiles(s)),
+             write(screenunit+CK_LUN,*) trim(radfiles(s)),
      &                          ' PREVIOUSLY REACHED EOF.'
-             write(screenunit,'(A25,I6,A9,I6)') 
+             write(screenunit+CK_LUN,'(A25,I6,A9,I6)') 
      &         " BLANK RS SNAP, REGION = ",s, " COUNT = ", cntsnaps
           endif
           cycle
@@ -1042,7 +1057,7 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
 
         if (endoffile(s) .eq. 0) then
           if (myproc.eq.0) then
-            read (fid,'(A)',iostat=ios(1)) spectrum_id(1) ! spectrum identifier
+            read (fid+CK_LUN,'(A)',iostat=ios(1)) spectrum_id(1) ! spectrum identifier
           endif
 #ifdef CMPI    
           call msg_ibcast(ios,1)
@@ -1051,15 +1066,15 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
           if (ios(1) < 0) then
             endoffile(s) = 1
             if (myproc.eq.0) then
-              write(screenunit,*) trim(radfiles(s)),' REACHED EOF.'
-              write(screenunit,'(A25,I6,A9,I6)') 
+              write(screenunit+CK_LUN,*) trim(radfiles(s)),' REACHED EOF.'
+              write(screenunit+CK_LUN,'(A25,I6,A9,I6)') 
      &           " BLANK RS SNAP, REGION = ",s, " COUNT = ", cntsnaps
             endif
             goto 100
           else
             if (myproc.eq.0) then
-        write(screenunit,'(A)') " spectrum_id = "//trim(spectrum_id(1))
-              write(screenunit,'(A19,I6,A9,I6)') 
+        write(screenunit+CK_LUN,'(A)') " spectrum_id = "//trim(spectrum_id(1))
+              write(screenunit+CK_LUN,'(A19,I6,A9,I6)') 
      &         " RS SNAP, REGION = ",s, " COUNT = ", cntsnaps
             endif
           endif
@@ -1069,7 +1084,7 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
         if(myproc.eq.0) then
           ios(1) = 0
           do j = nj, 1, -1
-            read (fid,*,err=511) 
+            read (fid+CK_LUN,*,err=511) 
      &           ((rsxy(k,i,j),k=1,2),i=1,ni)
           enddo
           go to 512
@@ -1085,7 +1100,7 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
         endif
 #else
         do j = nj, 1, -1
-          read (fid,*,err=9999) 
+          read (fid+CK_LUN,*,err=9999) 
      &         ((rsxy(k,i,j),k=1,2),i=1,ni)
         enddo
 #endif
@@ -1134,22 +1149,22 @@ C--------------------------------------------------------------------------
       enddo       ! end s-loop
 
       if(myproc.eq.0) then
-        write(screenunit,*) 'RADIATION STRESS IS LOADED'
-        write(screenunit,*)
+        write(screenunit+CK_LUN,*) 'RADIATION STRESS IS LOADED'
+        write(screenunit+CK_LUN,*)
       endif
-      write(16,*) 'RADIATION STRESS IS LOADED'
-      write(16,*)
+      write(16+CK_LUN,*) 'RADIATION STRESS IS LOADED'
+      write(16+CK_LUN,*)
 
       return
 
  9999 continue
       if(myproc.eq.0) then
-        write(screenunit,*) trim(radfiles(s)),' IS NOT COMPLETE.'
-        write(screenunit,*) 'PROGRAM WILL BE TERMINATED.'
+        write(screenunit+CK_LUN,*) trim(radfiles(s)),' IS NOT COMPLETE.'
+        write(screenunit+CK_LUN,*) 'PROGRAM WILL BE TERMINATED.'
       endif
-      write(16,*) trim(radfiles(s)),' IS NOT COMPLETE.'
-      write(16,*) 'PROGRAM WILL BE TERMINATED.'
-      close(16)
+      write(16+CK_LUN,*) trim(radfiles(s)),' IS NOT COMPLETE.'
+      write(16+CK_LUN,*) 'PROGRAM WILL BE TERMINATED.'
+      close(16+CK_LUN)
 
 #ifdef CMPI
       call msg_fini()

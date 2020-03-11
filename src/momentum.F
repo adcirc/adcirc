@@ -56,16 +56,22 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
       module momentum
+      use CkLunMod, only : CK_LUN
       use sizes, only : sz
       use global, only : DEBUG, INFO, WARNING, ERROR, setMessageSource,
      &   allMessage, logMessage, unsetMessageSource
       implicit none
 
       real(sz),allocatable :: auv11(:),auv12(:)
+!$omp threadprivate(auv11,auv12)
       real(SZ),allocatable :: auv(:,:) ! WJP allowing for the case auv11 ~= auv22
+!$omp threadprivate(auv)
       real(sz) :: auv21, auv22
+!$omp threadprivate(auv21,auv22)
       real(sz) :: dto2  ! time step divided by 2.0
+!$omp threadprivate(dto2)
       real(sz) :: go2   ! gravitational acceleration divided by 2.0
+!$omp threadprivate(go2)
       
       contains
 
@@ -1472,16 +1478,16 @@ C...  Compute velocities
             UU2(I)=QX2(I)/H2
             VV2(I)=QY2(I)/H2
             ELSE
-            WRITE(16,*) ''
-            WRITE(16,*) ''
-            WRITE(16,*) '*******************************************'
-            WRITE(16,*) '*******************************************'
-            WRITE(16,*) 'WARNING: Total water depth = 0 at node  ',I
-            WRITE(16,*) '         Velocities set = -999.'
-            WRITE(16,*) '*******************************************'
-            WRITE(16,*) '*******************************************'
-            WRITE(16,*) ''
-            WRITE(16,*) ''
+            WRITE(16+CK_LUN,*) ''
+            WRITE(16+CK_LUN,*) ''
+            WRITE(16+CK_LUN,*) '*******************************************'
+            WRITE(16+CK_LUN,*) '*******************************************'
+            WRITE(16+CK_LUN,*) 'WARNING: Total water depth = 0 at node  ',I
+            WRITE(16+CK_LUN,*) '         Velocities set = -999.'
+            WRITE(16+CK_LUN,*) '*******************************************'
+            WRITE(16+CK_LUN,*) '*******************************************'
+            WRITE(16+CK_LUN,*) ''
+            WRITE(16+CK_LUN,*) ''
             UU2(I)=-999.
             VV2(I)=-999.
             ENDIF

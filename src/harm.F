@@ -90,6 +90,7 @@ c                                                                      *
 c***********************************************************************
 C
       MODULE HARM
+      use CkLunMod, only : CK_LUN
 C
       USE SIZES, ONLY : SZ, MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR,
      &                   WRITE_LOCAL_HARM_FILES
@@ -101,91 +102,155 @@ C
       ! jgf49.44: parameters describing the harmonic constituents to be
       ! included in the harmonic analysis of model results
       INTEGER :: IHARIND ! =1 if harmonic analysis was requested, 0 otherwise
+!$omp threadprivate(IHARIND)
       LOGICAL :: CHARMV=.false.  ! .true. for timeseries reconstruction
+!$omp threadprivate(CHARMV)
       INTEGER :: NFREQ                      ! number of frequencies
+!$omp threadprivate(NFREQ)
       CHARACTER*10,ALLOCATABLE :: NAMEFR(:) ! "M2", "S2", etc
+!$omp threadprivate(NAMEFR)
       REAL(SZ), ALLOCATABLE :: HAFREQ(:)    ! frequency (rad/s)
+!$omp threadprivate(HAFREQ)
       REAL(SZ), ALLOCATABLE :: HAFF(:)      ! nodal factor
+!$omp threadprivate(HAFF)
       REAL(SZ), ALLOCATABLE :: HAFACE(:)    ! equilibrium argument (deg)
+!$omp threadprivate(HAFACE)
 C
       INTEGER :: NZ ! nz=0 if there is a steady component, nz=1 otherwise
+!$omp threadprivate(NZ)
       INTEGER :: NF ! nf=0 if no steady constituent, nf=1 otherwise
+!$omp threadprivate(NF)
 C
       INTEGER :: ITHAS  ! time step upon which harmonic analysis starts
+!$omp threadprivate(ITHAS)
       INTEGER :: ITHAF  ! time step upon which harmonic analysis finishes
+!$omp threadprivate(ITHAF)
       INTEGER :: ITMV   ! time step upon which means and variance calcs start
+!$omp threadprivate(ITMV)
       INTEGER :: TIMEBEG ! model time (sec) at which means and var calcs start
+!$omp threadprivate(TIMEBEG)
       INTEGER :: IHABEG ! 1 h.a. time increment past the start of h.a.
+!$omp threadprivate(IHABEG)
       INTEGER :: ICHA   ! spool counter for HA updates
+!$omp threadprivate(ICHA)
       INTEGER :: NTSTEPS! number of time steps into means and variance calcs
+!$omp threadprivate(NTSTEPS)
       INTEGER :: ICALL  ! number of times HA update sub has been called
+!$omp threadprivate(ICALL)
       INTEGER :: ITUD   ! time step of most recent HA update
+!$omp threadprivate(ITUD)
       REAL(8) :: TIMEUD ! model time of most recent HA update
+!$omp threadprivate(TIMEUD)
 C
       REAL(SZ), ALLOCATABLE :: HA(:,:) ! LHS matrix
+!$omp threadprivate(HA)
       INTEGER :: MM ! 2nd dim of HA matrix; 2x num freqs (+ steady)
+!$omp threadprivate(MM)
       REAL(SZ), ALLOCATABLE :: HAP(:)  ! used in matrix solution
+!$omp threadprivate(HAP)
       REAL(SZ), ALLOCATABLE :: HAX(:)  ! used in matrix solution
+!$omp threadprivate(HAX)
 C
 C     Load Vectors
       REAL(SZ), ALLOCATABLE, TARGET :: GLOELV(:,:) ! fulldomain elevation
+!$omp threadprivate(GLOELV)
       REAL(SZ), ALLOCATABLE, TARGET :: GLOULV(:,:) ! fulldomain u velocity
+!$omp threadprivate(GLOULV)
       REAL(SZ), ALLOCATABLE, TARGET :: GLOVLV(:,:) ! fulldomain v velocity
+!$omp threadprivate(GLOVLV)
       REAL(SZ), ALLOCATABLE, TARGET :: STAELV(:,:) ! station elevation
+!$omp threadprivate(STAELV)
       REAL(SZ), ALLOCATABLE, TARGET :: STAULV(:,:) ! station u velocity
+!$omp threadprivate(STAULV)
       REAL(SZ), ALLOCATABLE, TARGET :: STAVLV(:,:) ! station v velocity
+!$omp threadprivate(STAVLV)
 C
 C     Arrays for time series reconstruction.
       REAL(SZ),ALLOCATABLE,TARGET :: XVELAV(:)
+!$omp threadprivate(XVELAV)
       REAL(SZ),ALLOCATABLE,TARGET :: YVELAV(:)
+!$omp threadprivate(YVELAV)
       REAL(SZ),ALLOCATABLE,TARGET :: XVELVA(:)
+!$omp threadprivate(XVELVA)
       REAL(SZ),ALLOCATABLE,TARGET :: YVELVA(:)
+!$omp threadprivate(YVELVA)
       REAL(SZ),ALLOCATABLE,TARGET :: ELAV(:)
+!$omp threadprivate(ELAV)
       REAL(SZ),ALLOCATABLE,TARGET :: ELVA(:)
+!$omp threadprivate(ELVA)
 C
 C     jgf49.44: Parameters that control the spatial locations where
 C     harmonic analysis is performed:
       INTEGER :: NHASE ! /= 0 to perform HA at elevation recording stations
+!$omp threadprivate(NHASE)
       INTEGER :: NHASV ! /= 0 to perform HA at velocity recording stations
+!$omp threadprivate(NHASV)
       INTEGER :: NHAGE ! /= 0 to do elevation HA at all nodes in the mesh
+!$omp threadprivate(NHAGE)
       INTEGER :: NHAGV ! /= 0 to do velocity HA at all nodes in the mesh
+!$omp threadprivate(NHAGV)
 C
 C     jgf49.44: Parameters that control the calculation of harmonic
 C     constituents:
       REAL(SZ) :: THAS ! number of days b/f harmonic analysis starts
+!$omp threadprivate(THAS)
       REAL(SZ) :: THAF ! number of days at which harmonic analysis ends
+!$omp threadprivate(THAF)
       INTEGER :: NHAINC ! time step increment for including data in HA
+!$omp threadprivate(NHAINC)
       REAL(SZ) :: FMV  ! fraction of HA period for means and var. calcs (0to1)
+!$omp threadprivate(FMV)
 C
 C     jgf49.44: Harmonic analysis hotstarting:
       REAL(SZ), ALLOCATABLE, TARGET :: GLOELV_g(:,:)
+!$omp threadprivate(GLOELV_g)
       REAL(SZ), ALLOCATABLE, TARGET :: STAELV_g(:,:)
+!$omp threadprivate(STAELV_g)
       REAL(SZ), ALLOCATABLE, TARGET :: GLOULV_g(:,:)
+!$omp threadprivate(GLOULV_g)
       REAL(SZ), ALLOCATABLE, TARGET :: GLOVLV_g(:,:)
+!$omp threadprivate(GLOVLV_g)
       REAL(SZ), ALLOCATABLE, TARGET :: STAULV_g(:,:)
+!$omp threadprivate(STAULV_g)
       REAL(SZ), ALLOCATABLE, TARGET :: STAVLV_g(:,:)
+!$omp threadprivate(STAVLV_g)
       REAL(SZ), ALLOCATABLE, TARGET :: ELAV_g(:)
+!$omp threadprivate(ELAV_g)
       REAL(SZ), ALLOCATABLE, TARGET :: ELVA_g(:)
+!$omp threadprivate(ELVA_g)
       REAL(SZ), ALLOCATABLE, TARGET :: XVELAV_g(:)
+!$omp threadprivate(XVELAV_g)
       REAL(SZ), ALLOCATABLE, TARGET :: YVELAV_g(:)
+!$omp threadprivate(YVELAV_g)
       REAL(SZ), ALLOCATABLE, TARGET :: XVELVA_g(:)
+!$omp threadprivate(XVELVA_g)
       REAL(SZ), ALLOCATABLE, TARGET :: YVELVA_g(:)
+!$omp threadprivate(YVELVA_g)
 C
 C     jgf49.44: Equivalence variables for reading in hotstart data, either
 C     in serial or in parallel.
       REAL(SZ), POINTER :: STAELV_pt(:,:),STAULV_pt(:,:),STAVLV_pt(:,:)
+!$omp threadprivate(STAELV_pt,STAULV_pt,STAVLV_pt)
       REAL(SZ), POINTER :: GLOELV_pt(:,:),GLOULV_pt(:,:),GLOVLV_pt(:,:)
+!$omp threadprivate(GLOELV_pt,GLOULV_pt,GLOVLV_pt)
       REAL(SZ), POINTER :: ELAV_pt(:), ELVA_pt(:)
+!$omp threadprivate(ELAV_pt,ELVA_pt)
       REAL(SZ), POINTER :: XVELAV_pt(:), YVELAV_pt(:)
+!$omp threadprivate(XVELAV_pt,YVELAV_pt)
       REAL(SZ), POINTER :: XVELVA_pt(:), YVELVA_pt(:)
+!$omp threadprivate(XVELVA_pt,YVELVA_pt)
 C
 C     jgf49.44: The following variables are read from the hotstart file and
 C     later compared with the values from the fort.15 to ensure that they
 C     match.
       INTEGER INHASE, INHASV, INHAGE, INHAGV, IFLAG
+!$omp threadprivate(INHASE,INHASV,INHAGE,INHAGV,IFLAG)
       INTEGER INFREQ, INSTAE, INSTAV, INP, INZ, INF, IMM, IICALL
+!$omp threadprivate(INFREQ,INSTAE,INSTAV,INP,INZ,INF,IMM,IICALL)
       REAL(SZ),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)
+!$omp threadprivate(IFREQ,IFF,IFACE)
       CHARACTER*10,ALLOCATABLE :: INAMEFR(:)
+!$omp threadprivate(INAMEFR)
 C
       CHARACTER*16 FNAME
       CHARACTER*8 FNAM8(2)
@@ -196,39 +261,67 @@ C     full domain counterparts for globalio. These arrays represent
 C     magnitudes and phases for each frequency at each station or node.
 C     Stations:
       REAL(SZ), ALLOCATABLE, TARGET :: EMAG(:,:)    ! elevation magnitudes
+!$omp threadprivate(EMAG)
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDE(:,:) ! elevation phases
+!$omp threadprivate(PHASEDE)
       REAL(SZ), ALLOCATABLE, TARGET :: UMAG(:,:)    ! u velocity magnitudes
+!$omp threadprivate(UMAG)
       REAL(SZ), ALLOCATABLE, TARGET :: VMAG(:,:)    ! v velocity magnitudes
+!$omp threadprivate(VMAG)
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDU(:,:) ! u velocity phases
+!$omp threadprivate(PHASEDU)
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDV(:,:) ! v velocity phases
+!$omp threadprivate(PHASEDV)
 C     Nodes:
       REAL(SZ), ALLOCATABLE, TARGET :: EMAGT(:,:)    ! elevation magnitudes
+!$omp threadprivate(EMAGT)
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDEN(:,:) ! elevation phases
+!$omp threadprivate(PHASEDEN)
       REAL(SZ), ALLOCATABLE, TARGET :: UMAGT(:,:)    ! u velocity magnitudes
+!$omp threadprivate(UMAGT)
       REAL(SZ), ALLOCATABLE, TARGET :: VMAGT(:,:)    ! v velocity magnitudes
+!$omp threadprivate(VMAGT)
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDUT(:,:) ! u velocity phases
+!$omp threadprivate(PHASEDUT)
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDVT(:,:) ! v velocity phases
+!$omp threadprivate(PHASEDVT)
 C     Time series reconstruction:
       REAL(SZ), ALLOCATABLE, TARGET :: EAV(:)
+!$omp threadprivate(EAV)
       REAL(SZ), ALLOCATABLE, TARGET :: ESQ(:)
+!$omp threadprivate(ESQ)
       REAL(SZ), ALLOCATABLE, TARGET :: EAVDIF(:)
+!$omp threadprivate(EAVDIF)
       REAL(SZ), ALLOCATABLE, TARGET :: EVADIF(:)
+!$omp threadprivate(EVADIF)
 C
       REAL(SZ), ALLOCATABLE, TARGET :: UAV(:)
+!$omp threadprivate(UAV)
       REAL(SZ), ALLOCATABLE, TARGET :: USQ(:)
+!$omp threadprivate(USQ)
       REAL(SZ), ALLOCATABLE, TARGET :: UAVDIF(:)
+!$omp threadprivate(UAVDIF)
       REAL(SZ), ALLOCATABLE, TARGET :: UVADIF(:)
+!$omp threadprivate(UVADIF)
 C
       REAL(SZ), ALLOCATABLE, TARGET :: VAV(:)
+!$omp threadprivate(VAV)
       REAL(SZ), ALLOCATABLE, TARGET :: VSQ(:)
+!$omp threadprivate(VSQ)
       REAL(SZ), ALLOCATABLE, TARGET :: VAVDIF(:)
+!$omp threadprivate(VAVDIF)
       REAL(SZ), ALLOCATABLE, TARGET :: VVADIF(:)
+!$omp threadprivate(VVADIF)
 
       !jgf51.52.01: Variables used in adcpost.
       REAL(SZ), ALLOCATABLE,TARGET :: XELAV(:)
+!$omp threadprivate(XELAV)
       REAL(SZ), ALLOCATABLE,TARGET :: YELAV(:)
+!$omp threadprivate(YELAV)
       REAL(SZ), ALLOCATABLE,TARGET :: XELVA(:)
+!$omp threadprivate(XELVA)
       REAL(SZ), ALLOCATABLE,TARGET :: YELVA(:)
+!$omp threadprivate(YELVA)
      
 
 C-----------------END OF DECLARATIONS---------------------------------------
@@ -367,16 +460,16 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
       IF (myproc.eq.0) THEN
-         OPEN(56,FILE=TRIM(GLOBALDIR)//'/'//'fort.56',
+         OPEN(56+CK_LUN,FILE=TRIM(GLOBALDIR)//'/'//'fort.56',
      &      STATUS='UNKNOWN',ACCESS='SEQUENTIAL',ACTION='WRITE',
      &      POSITION='APPEND')
-         WRITE(56,2120) timesec, it 
+         WRITE(56+CK_LUN,2120) timesec, it 
          DO i=1,2*MNHARF
             DO j=1,2*MNHARF
-               write(56,2130) i, j, ha(i,j)
+               write(56+CK_LUN,2130) i, j, ha(i,j)
             END DO
          END DO
-         CLOSE(56)
+         CLOSE(56+CK_LUN)
       ENDIF
 
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
@@ -1445,16 +1538,16 @@ C
 C
       if (charmv) then
 c
-      WRITE(16,7740)
+      WRITE(16+CK_LUN,7740)
  7740 FORMAT(///,5X,'THE LARGEST VALUES OF THE RATIO ',
      &              'RESYNTHESIZED ELEV TIME SERIES/RAW TIME SERIES:',/)
-      WRITE(16,7741) EAVMAX,NEAVMAX
-      WRITE(16,7742) EVAMAX,NEVAMAX
-      WRITE(16,7747)
+      WRITE(16+CK_LUN,7741) EAVMAX,NEAVMAX
+      WRITE(16+CK_LUN,7742) EVAMAX,NEVAMAX
+      WRITE(16+CK_LUN,7747)
  7747 FORMAT(/,5X,'THE LOWEST VALUES OF THE RATIO ',
      &            'RESYNTHESIZED ELEV TIME SERIES/RAW TIME SERIES:',/)
-      WRITE(16,7741) EAVMIN,NEAVMIN
-      WRITE(16,7742) EVAMIN,NEVAMIN
+      WRITE(16+CK_LUN,7741) EAVMIN,NEAVMIN
+      WRITE(16+CK_LUN,7742) EVAMIN,NEVAMIN
  7741 FORMAT(9X,'  AVERAGE ELEVATION RATIO = ',E15.7,' AT NODE ',I8)
  7742 FORMAT(9X,' VARIANCE ELEVATION RATIO = ',E15.7,' AT NODE ',I8)
 c
@@ -1658,20 +1751,20 @@ CHARMV...Compare resynthesized values with those computed during time stepping.
 
       if ( charmv ) then
 c
-         WRITE(16,7740)
+         WRITE(16+CK_LUN,7740)
  7740    FORMAT(///,5X,'THE LARGEST VALUES OF THE RATIO ',
      &              'RESYNTHESIZED VEL TIME SERIES/RAW TIME SERIES:',/)
-         WRITE(16,7743) UAVMAX,NUAVMAX
-         WRITE(16,7744) UVAMAX,NUVAMAX
-         WRITE(16,7745) VAVMAX,NVAVMAX
-         WRITE(16,7746) VVAMAX,NVVAMAX
-         WRITE(16,7747)
+         WRITE(16+CK_LUN,7743) UAVMAX,NUAVMAX
+         WRITE(16+CK_LUN,7744) UVAMAX,NUVAMAX
+         WRITE(16+CK_LUN,7745) VAVMAX,NVAVMAX
+         WRITE(16+CK_LUN,7746) VVAMAX,NVVAMAX
+         WRITE(16+CK_LUN,7747)
  7747    FORMAT(//,5X,'THE LOWEST VALUES OF THE RATIO ',
      &             'RESYNTHESIZED VEL TIME SERIES/RAW TIME SERIES:',/)
-         WRITE(16,7743) UAVMIN,NUAVMIN
-         WRITE(16,7744) UVAMIN,NUVAMIN
-         WRITE(16,7745) VAVMIN,NVAVMIN
-         WRITE(16,7746) VVAMIN,NVVAMIN
+         WRITE(16+CK_LUN,7743) UAVMIN,NUAVMIN
+         WRITE(16+CK_LUN,7744) UVAMIN,NUVAMIN
+         WRITE(16+CK_LUN,7745) VAVMIN,NVAVMIN
+         WRITE(16+CK_LUN,7746) VVAMIN,NVVAMIN
  7743    FORMAT(9X,' AVERAGE U VELOCITY RATIO = ',E15.7,' AT NODE ',I8)
  7744    FORMAT(9X,'VARIANCE U VELOCITY RATIO = ',E15.7,' AT NODE ',I8)
  7745    FORMAT(9X,' AVERAGE V VELOCITY RATIO = ',E15.7,' AT NODE ',I8)
@@ -1759,35 +1852,35 @@ C        ! read full domain hotstart file in parallel
 c
 c***** Read in parameter values
 c
-      READ(lun,REC=counter+1) inz
-      READ(lun,REC=counter+2) inf
-      READ(lun,REC=counter+3) imm
-      READ(lun,REC=counter+4) inp
-      READ(lun,REC=counter+5) instae
-      READ(lun,REC=counter+6) instav
-      READ(lun,REC=counter+7) inhase
-      READ(lun,REC=counter+8) inhasv
-      READ(lun,REC=counter+9) inhage
-      READ(lun,REC=counter+10) inhagv
-      READ(lun,REC=counter+11) iicall
-      READ(lun,REC=counter+12) infreq
+      READ(lun+CK_LUN,REC=counter+1) inz
+      READ(lun+CK_LUN,REC=counter+2) inf
+      READ(lun+CK_LUN,REC=counter+3) imm
+      READ(lun+CK_LUN,REC=counter+4) inp
+      READ(lun+CK_LUN,REC=counter+5) instae
+      READ(lun+CK_LUN,REC=counter+6) instav
+      READ(lun+CK_LUN,REC=counter+7) inhase
+      READ(lun+CK_LUN,REC=counter+8) inhasv
+      READ(lun+CK_LUN,REC=counter+9) inhage
+      READ(lun+CK_LUN,REC=counter+10) inhagv
+      READ(lun+CK_LUN,REC=counter+11) iicall
+      READ(lun+CK_LUN,REC=counter+12) infreq
       counter = counter+12
 c
       do i=1,nfreq+nf
-         READ(lun,REC=counter+1) FNAM8(1)
-         READ(lun,REC=counter+2) FNAM8(2)
+         READ(lun+CK_LUN,REC=counter+1) FNAM8(1)
+         READ(lun+CK_LUN,REC=counter+2) FNAM8(2)
          counter = counter + 2
          INAMEFR(I) = FNAME
-         read(lun,REC=counter+1) ifreq(i)
-         read(lun,REC=counter+2) iff(i)
-         read(lun,REC=counter+3) iface(i)
+         read(lun+CK_LUN,REC=counter+1) ifreq(i)
+         read(lun+CK_LUN,REC=counter+2) iff(i)
+         read(lun+CK_LUN,REC=counter+3) iface(i)
          counter = counter + 3
       end do
 c
 c***** Read in time of most recent H.A. update
 c
-      READ(lun,REC=counter+1) TIMEUD
-      READ(lun,REC=counter+2) ITUD
+      READ(lun+CK_LUN,REC=counter+1) TIMEUD
+      READ(lun+CK_LUN,REC=counter+2) ITUD
       counter = counter + 2
 c
 c     Read in LHS Matrix
@@ -1798,7 +1891,7 @@ c     Read in LHS Matrix
       ! written with an inner i loop
       do i=1,mm
          do j=1,mm
-            READ(lun,REC=counter) HA(I,J)
+            READ(lun+CK_LUN,REC=counter) HA(I,J)
             counter = counter + 1
          end do
       end do
@@ -1812,8 +1905,8 @@ c     Read in Station Velocity LHS load vector
       IF (NHASV.ne.0) THEN
          do n=1,num_vel_sta
             do i=1,mm
-               READ(lun,REC=counter) STAULV_pt(I,N)
-               READ(lun,REC=counter+1) STAVLV_pt(I,N)
+               READ(lun+CK_LUN,REC=counter) STAULV_pt(I,N)
+               READ(lun+CK_LUN,REC=counter+1) STAVLV_pt(I,N)
                counter = counter + 2
             enddo
          enddo
@@ -1826,8 +1919,8 @@ c     Read in Global Velocity LHS load vector
       IF (NHAGV.ne.0) THEN
          do n=1,num_nodes
             do i=1,mm
-               READ(lun,REC=counter) GLOULV_pt(I,N)
-               READ(lun,REC=counter+1) GLOVLV_pt(I,N)
+               READ(lun+CK_LUN,REC=counter) GLOULV_pt(I,N)
+               READ(lun+CK_LUN,REC=counter+1) GLOVLV_pt(I,N)
                counter = counter + 2
             end do
          end do
@@ -1835,24 +1928,24 @@ c     Read in Global Velocity LHS load vector
 C..   Read in Means and Squares
       IF (CHARMV.eqv..true.) THEN
          IF ((FMV.NE.0.).AND.(ITHS.GT.ITMV)) THEN
-            READ(lun,REC=counter) NTSTEPS ; counter = counter + 1
+            READ(lun+CK_LUN,REC=counter) NTSTEPS ; counter = counter + 1
             IF(NHAGE.ne.0) THEN
                DO I=1,num_nodes
-                  READ(lun,REC=counter) ELAV_pt(I)
+                  READ(lun+CK_LUN,REC=counter) ELAV_pt(I)
                   counter = counter + 1
-                  READ(lun,REC=counter) ELVA_pt(I)
+                  READ(lun+CK_LUN,REC=counter) ELVA_pt(I)
                   counter = counter + 1
                ENDDO
             ENDIF
             IF (NHAGV.ne.0) THEN
                DO I=1,num_nodes
-                  READ(lun,REC=counter) XVELAV_pt(I)
+                  READ(lun+CK_LUN,REC=counter) XVELAV_pt(I)
                   counter = counter + 1
-                  READ(lun,REC=counter) YVELAV_pt(I)
+                  READ(lun+CK_LUN,REC=counter) YVELAV_pt(I)
                   counter = counter + 1
-                  READ(lun,REC=counter) XVELVA_pt(I)
+                  READ(lun+CK_LUN,REC=counter) XVELVA_pt(I)
                   counter = counter + 1
-                  READ(lun,REC=counter) YVELVA_pt(I)
+                  READ(lun+CK_LUN,REC=counter) YVELVA_pt(I)
                   counter = counter + 1
                ENDDO
             ENDIF
@@ -2174,7 +2267,7 @@ C
 #endif
        DO j=1, jLength
           DO i=1, iLength
-            READ(lun,REC=counter) array(i,j)
+            READ(lun+CK_LUN,REC=counter) array(i,j)
             counter = counter + 1
           END DO
        END DO
