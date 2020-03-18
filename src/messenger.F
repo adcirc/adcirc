@@ -85,6 +85,44 @@ C
 
 C---------------------end of data declarations--------------------------------C
 
+C----------------------------------------------------------------------
+C   S U B R O U T I N E    A B O U T _ T O _ M I G R A T E
+C----------------------------------------------------------------------
+C  Routine called by AMPI before migrating, should close all open files.
+C----------------------------------------------------------------------
+      SUBROUTINE ABOUT_TO_MIGRATE()
+      IMPLICIT NONE
+
+      INTEGER :: RANK, IERR, FLAG, OLD_PE
+
+      CALL MPI_COMM_RANK(RANK, MPI_COMM_ADCIRC, IERR)
+      CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, OLD_PE, FLAG, IERR)
+
+      PRINT *,"Rank ",RANK," about to migrate from PE ",OLD_PE
+
+C     TODO: close files temporarily during migration
+
+      END SUBROUTINE ABOUT_TO_MIGRATE
+
+C----------------------------------------------------------------------
+C   S U B R O U T I N E    J U S T _ M I G R A T E D
+C----------------------------------------------------------------------
+C  Routine called by AMPI after migrating, should re-open all closed files.
+C----------------------------------------------------------------------
+      SUBROUTINE JUST_MIGRATED()
+      IMPLICIT NONE
+
+      INTEGER :: RANK, IERR, FLAG, NEW_PE
+
+      CALL MPI_COMM_RANK(RANK, MPI_COMM_ADCIRC, IERR)
+      CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, NEW_PE, FLAG, IERR)
+
+      PRINT *,"Rank ",RANK," just migrated to PE ",NEW_PE
+
+C     TODO: re-open files closed temporarily during migration
+
+      END SUBROUTINE JUST_MIGRATED
+
 
 C----------------------------------------------------------------------
 C   S U B R O U T I N E    M S G _ I N I T 
@@ -131,6 +169,9 @@ C.......Initialize MPI
         CALL MPI_INIT (IERR)
 C.......Duplicate communicator
         CALL MPI_COMM_DUP (MPI_COMM_WORLD,MPI_COMM_ADCIRC,IERR)
+C.......Register aboutToMigrate and justMigrated callbacks with AMPI
+        CALL AMPI_REGISTER_ABOUT_TO_MIGRATE(ABOUT_TO_MIGRATE)
+        CALL AMPI_REGISTER_JUST_MIGRATED(JUST_MIGRATED)
       ENDIF
 
       CALL MPI_COMM_SIZE (MPI_COMM_ADCIRC,MNALLPROC,IERR)   ! Get number of procs

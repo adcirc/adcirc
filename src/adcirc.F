@@ -69,7 +69,6 @@ C                             summer 2002                                     *
 C                                                                             *
 C******************************************************************************
 
-
 C******************************************************************************
 C******************************************************************************
       MODULE ADCIRC_Mod
@@ -386,6 +385,7 @@ C******************************************************************************
 C*    ADCIRC run routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Run(NTIME_STP)
+      USE MPI
       USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
       USE GLOBAL, ONLY : iTime, DEBUG, INFO, setMessageSource, allMessage,
      &   unsetMessageSource, statim, dtdp
@@ -403,6 +403,9 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
       IMPLICIT NONE
 C
       INTEGER, OPTIONAL :: NTIME_STP
+      INTEGER :: AMPI_LB_FREQ, IERR
+
+      AMPI_LB_FREQ = 10 ! TODO: set this from the command line
 C
       call setMessageSource("ADCIRC_Run")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
@@ -445,6 +448,12 @@ C             to then call the SWAN time-stepping subroutine.
         !   zc - moved this here so that output occurs after
         !        the SWAN time step has been completed.
         CALL writeOutput2D(ITIME,ITIME*DTDP+StaTim*86400D0) ! =>see write_output.F
+
+        IF(MOD(ITIME,AMPI_LB_FREQ).EQ.0)THEN
+C          TODO: uncomment below for load balancing:
+C          CALL AMPI_MIGRATE(AMPI_INFO_LB_SYNC, IERR)
+        ENDIF
+
 100   CONTINUE
 C
       IF (PRESENT(NTIME_STP)) THEN
