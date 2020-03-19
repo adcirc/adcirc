@@ -449,10 +449,12 @@ C             to then call the SWAN time-stepping subroutine.
         !        the SWAN time step has been completed.
         CALL writeOutput2D(ITIME,ITIME*DTDP+StaTim*86400D0) ! =>see write_output.F
 
+#ifdef AMPI_COMP
         IF(MOD(ITIME,AMPI_LB_FREQ).EQ.0)THEN
 C          TODO: uncomment below for load balancing:
 C          CALL AMPI_MIGRATE(AMPI_INFO_LB_SYNC, IERR)
         ENDIF
+#endif
 
 100   CONTINUE
 C
