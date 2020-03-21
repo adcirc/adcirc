@@ -93,7 +93,7 @@ C-----------------------------------------------------------------------
      &   IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN, WindDragLimit, 
      &   BLADJ, STORMNUMBER, WLATINC, WLONINC, GEOFACTOR, PUREVORTEX,
      &   NWSok, WINDREFTIME, Allowable_NWS, PUREBACKGROUND, TimeConv, 
-     &   DragLawString, dynamicWaterLevelCorrectionFileName,
+     &   DragLawString, dynamicWaterLevelCorrectionFileName, WTIMINC_12,
      &   dynamicWaterLevelCorrectionRampStart,
      &   dynamicWaterLevelCorrectionRampEnd,
      &   dynamicWaterLevelCorrectionSkipSnaps,
@@ -2271,7 +2271,7 @@ C...
          READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN,REFSEC
          WRITE(16,1116) IREFMO,IREFDAY,IREFYR,IREFHR,IREFMIN,REFSEC
  1116    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
-     &        I2,'/',I2,'/',I2,'  ',I2,':',I2,':',f7.4,/)
+     &        I2,'/',I2,'/',I4,'  ',I2,':',I2,':',f7.4,/)
          CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN,REFSEC,
      &        WREFTIM)
 C...     TCM V49.64.01 CHANGES FOR ICE CONCENTRATION
@@ -2334,7 +2334,7 @@ C...     WHERE NRS=2, NRS=4 WERE NOT BEING INCLUDED
          ENDIF
          WRITE(16,6111) IREFMO,IREFDAY,IREFYR,IREFHR
  6111    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
-     &           I2,'/',I2,'/',I2,'  ',I2,'H',/)
+     &           I2,'/',I2,'/',I4,'  ',I2,'H',/)
          CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
      &        WindRefTime)
       ENDIF
@@ -2374,12 +2374,23 @@ C     sb46.28sb01 Added NWS=12 (OWI format)
 C     WJP Oct 20 2018, Used this also for NWS = 14 (grb2)
       IF(ABS(NWS).EQ.12.or.ABS(NWS).eq.14) THEN
 C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
-         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
-         IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
-         IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,
+         IF (NWS.eq.-14) THEN
+            IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,
+     &                                                 WTIMINC_12
+            IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,
+     &                                              WTIMINC_12, RSTIMINC
+            IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,
+     &                                           WTIMINC_12, CICE_TIMINC
+            IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,
+     &                                 WTIMINC_12, RSTIMINC, CICE_TIMINC
+         ELSE
+            IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
+            IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+            IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,
      &                                                 CICE_TIMINC
-         IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC, ! sb46.28sb03
+            IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC, ! sb46.28sb03
      &                                                 CICE_TIMINC
+         ENDIF
       ENDIF
 C     rjw added nws = 19: asymmetric hurricane winds
       IF(ABS(NWS).EQ.19) THEN
@@ -2400,7 +2411,7 @@ C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
 C LETS not use this now but have the option to i nthe future
 c            WRITE(16,6111) IREFMO,IREFDAY,IREFYR,IREFHR
 c 6112       FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
-c     &           I2,'/',I2,'/',I2,'  ',I2,'H',/)
+c     &           I2,'/',I2,'/',I4,'  ',I2,'H',/)
 c         CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
 c     &        WindRefTime, MyProc, NScreen, ScreenUnit)
       ENDIF
@@ -2428,7 +2439,7 @@ C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
 C LETS not use this now but have the option to i nthe future
 c            WRITE(16,6111) IREFMO,IREFDAY,IREFYR,IREFHR
 c 6112       FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
-c     &           I2,'/',I2,'/',I2,'  ',I2,'H',/)
+c     &           I2,'/',I2,'/',I4,'  ',I2,'H',/)
 c         CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
 c     &        WindRefTime, MyProc, NScreen, ScreenUnit)
       ENDIF

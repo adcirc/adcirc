@@ -246,6 +246,10 @@ C
       logical :: grb2flag
       integer :: NT, NTC
 #endif
+      real(sz) :: wtime1_12 ! time associated with previous met dataset
+      real(sz) :: wtime2_12 ! time associated with new met dataset
+      real(sz) :: wtiminc_12 ! time increment between met datasets (seconds)
+      logical,allocatable :: hasdata(:) ! if OWI data exists at this vertex
       !...Function interface for wind drag
       !   Used so that the selection of wind drag
       !   is only performed once. Each wind drag 
@@ -311,6 +315,7 @@ C     ----------------------------------------------------------------
       allocate ( wvnx2(np),wvny2(np) )
       allocate ( prn1(np) )
       allocate ( prn2(np) )
+      if (NWS.eq.-14) allocate ( HasData(np) )
   
       airwaterdensityrat = rhoAir / rhoWat0
 C.... tcm v49.16 20100617 added
@@ -352,9 +357,9 @@ C.... convert background pressure from millibars to meters of water
             WRITE(16,'(A10)') DragLawString
             WRITE(16,*) 'Execution will now be terminated.'
 #ifdef CMPI
-         call msg_fini()
+            call msg_fini()
 #endif
-         STOP
+            STOP
 C
       END SELECT
 
@@ -895,6 +900,7 @@ C----------------------------------------------------------------------
       integer :: nhg ! node number temp
       real(sz) :: bf ! blend factor for multiple sets of wind data 
       integer :: i ! node loop counter
+      real(sz) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
 
       call setMessageSource("getMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -1349,7 +1355,28 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
          ENDIF
          WTRATIO = (TimeLoc-WTIME1)/WTIMINC
          CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+         IF (NWS.eq.-14) then
+            IF (TimeLoc.GT.WTIME2_12) THEN
+               ! Now get OWI file data (will overwrite where data
+               ! exists)
+               WTIME1_12 = WTIME2_12
+               WTIME2_12 = WTIME2_12 + WTIMINC_12
+               DO I = 1,NP
+                  IF (.not.HasData(I)) cycle
+                  WVNX1(I) = WVNX2(I)
+                  WVNY1(I) = WVNY2(I)
+                  PRN1(I)  = PRN2(I)
+               END DO
+               CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND,HasData)
+            ENDIF
+            WTRATIO_12 = (TimeLoc-WTIME1_12)/WTIMINC_12
+            WTRATIO_14 = WTRATIO
+         ENDIF
          DO I = 1,NP
+            IF (NWS.eq.-14) then
+               WTRATIO = WTRATIO_14
+               IF (HasData(I)) WTRATIO = WTRATIO_12
+            ENDIF
             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
@@ -1900,8 +1927,10 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          endif
          ! Get owi winds (should only overwrite where they exist) 
          if (NWS.eq.-14) then
-           CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
-           CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
+            CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
+            CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,PRBCKGRND,HasData)
+            WTIME1_12 = WTIME1
+            WTIME2_12 = WTIME1_12 + WTIMINC_12
          endif
          ! Get the second wind snap
          if (NCICE.eq.14) then
@@ -1911,7 +1940,7 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          endif
          ! Get owi winds (should only overwrite where they exist) 
          if (NWS.eq.-14) then
-           CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND)
+            CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND,HasData)
          endif
       ENDIF
 #endif
@@ -1987,6 +2016,7 @@ C----------------------------------------------------------------------
       integer :: it
       integer :: i ! node loop counter
       integer :: j
+      real(sz) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
 
       call setMessageSource("hotStartMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -2733,6 +2763,8 @@ C     from NAM data
          ! TimeLoc should be rounded down to nearest WTIMINC
          WTIME1 = WTIMINC*floor(TimeLoc/WTIMINC)
          WTIME2 = TimeLoc + WTIMINC
+         WTRATIO = (TimeLoc-WTIME1)/WTIMINC
+         CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
          ! Set datetime and make/check the grib header
          CALL NWS14INIT()
          ! Initialising winds (pressure is already initialized)
@@ -2746,8 +2778,12 @@ C     from NAM data
          endif
          ! Get owi winds (should only overwrite where they exist) 
          if (NWS.eq.-14) then
-           CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
-           CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
+            CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
+            CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,PRBCKGRND,HasData)
+            WTIME1_12 = WTIME1
+            WTIME2_12 = TimeLoc + WTIMINC_12
+            WTRATIO_12 = (TimeLoc-WTIME1_12)/WTIMINC_12
+            WTRATIO_14 = WTRATIO
          endif
          ! Get the second wind snap
          if (NCICE.eq.14) then
@@ -2757,11 +2793,13 @@ C     from NAM data
          endif
          ! Get owi winds (should only overwrite where they exist) 
          if (NWS.eq.-14) then
-           CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND)
+            CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND,HasData)
          endif
-         WTRATIO = (TimeLoc-WTIME1)/WTIMINC
-         CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
          DO I=1,NP
+            IF (NWS.eq.-14) then
+               WTRATIO = WTRATIO_14
+               IF (HasData(I)) WTRATIO = WTRATIO_12
+            ENDIF
             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)

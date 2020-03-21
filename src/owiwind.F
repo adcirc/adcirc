@@ -251,8 +251,9 @@
 !> @param[inout] prn     atmospheric pressure
 !> @param[in]    np      number of nodes in the adcirc mesh for this processor
 !> @param[in]    prdeflt background atmospheric pressure
+!> @param[out]   hasdata (otional), index of where OWI data is assigned
 !-----------------------------------------------------------------------
-      SUBROUTINE NWS12GET(WVNX,WVNY,PRN,NP,PRdeflt)
+      SUBROUTINE NWS12GET(WVNX,WVNY,PRN,NP,PRdeflt,HasData)
 !-----------------------------------------------------------------------
         USE SIZES,ONLY: MYPROC,MNPROC,GBLINPUTDIR
         USE GLOBAL,ONLY: RHOWAT0, G
@@ -268,6 +269,7 @@
         REAL(SZ)               :: w1,w2,w3,w4
         INTEGER                :: errorIO
         LOGICAL                :: uvpHasBeenSet
+        LOGICAL,intent(out),optional :: HasData(:)
 
         call setMessageSource("nws12get")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -285,6 +287,9 @@
               WVNX(:) = 0D0
               WVNY(:) = 0D0
               PRN(:) = Prdeflt*100D0/RHOWATG
+           endif
+           if (present(HasData)) then 
+              HasData(:) = .false.
            endif
            write(scratchMessage,16) cntSnaps
  16        format('INSERTING A BLANK WIND SNAP, COUNT=',i4)
@@ -342,6 +347,10 @@
               WVNX(i) = uu * windMultiplier
               WVNY(i) = vv * windMultiplier
 
+           endif
+              
+           if (present(HasData)) then 
+              HasData(i) = uvpHasBeenSet
            endif
 
         enddo
