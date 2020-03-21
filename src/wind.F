@@ -2833,17 +2833,17 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
                   airwaterdensityrat = rhoAir/(SigTS(I) + RhoWat0)
                endif
             endif
-            WSX2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
-            PRDIFF  = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+            WSX2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
+            PRDIFF  = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                          -PRBCKGRND_MH2O)
 #ifdef NOIVB
             PR2(I)  = PRBCKGRND_MH2O
 #else
             PR2(I)  = PRBCKGRND_MH2O + PRDIFF
 #endif
-            WVNXOUT(I) = RampMete*WINDX
-            WVNYOUT(I) = RampMete*WINDY
+            WVNXOUT(I) = RampMete2*WINDX
+            WVNYOUT(I) = RampMete2*WINDY
 
           END DO
       ENDIF
