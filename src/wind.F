@@ -320,6 +320,7 @@ C     ----------------------------------------------------------------
       allocate ( wvnx2(np),wvny2(np) )
       allocate ( prn1(np) )
       allocate ( prn2(np) )
+      if (NWS.eq.-14) allocate ( HasData(np) )
 
       if (NWS.eq.-14) allocate ( HasData(np) )
 C     WJP: this is the value used in the surface stress computation  
@@ -3034,8 +3035,6 @@ C     from NAM data
          if (NWS.eq.-14) then
             CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND,HasData)
          endif
-         WTRATIO = (TimeLoc-WTIME1)/WTIMINC
-         CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
          DO I=1,NP
             IF (NWS.eq.-14) then
                WTRATIO = WTRATIO_14
