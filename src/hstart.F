@@ -784,6 +784,7 @@ C     for IBTYPE=52.
 Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
          RampMete2=TANH((2.D0*((ITHS)*DTDPHS/86400.D0-DUnRampMete))/DRampMete)
          RampWRad2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampWRad)
+         write(16,*) 'Initial RampMete2 is =',RampMete2 
       ENDIF
 #ifdef IBM
       FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS,KIND(0.0D0))

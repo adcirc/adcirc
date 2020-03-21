@@ -2667,10 +2667,6 @@ C
          WRITE(16,8763) DRAMP
  8763    FORMAT(/,5X,'VALUE FOR DRAMP USED IN RAMP EVALUATION =',F12.4,
      &        5X,'DAYS',/)
-
-         WRITE(16,5841)
- 5841    FORMAT(11X,' DAYS OF SIMULATION',2X,' TIME  ',6X,'  RAMP VALUE'
-     &                                                               ,/)
          IF (DRAMP.lt.1.0d-6) THEN !jgf49.44: cover the case where DRAMP is zero
             WRITE(16,*)
      &         "WARNING: DRAMP=",DRAMP,". It will be rounded to zero."
@@ -2678,6 +2674,9 @@ C
      &         "All forcing and boundary conditions will be at full"
             WRITE(16,*) "strength from the start of the simulation."
          ELSE
+            WRITE(16,5841)
+ 5841       FORMAT(11X,' DAYS OF SIMULATION',2X,' TIME  ',6X,
+     &         '  RAMP VALUE',/)
             Day=0.0d0
  999        RampVal=TANH(Day*2.d0/DRAMP)
             WRITE(16,5845) Day,Day+StaTim,RampVal
@@ -2686,6 +2685,16 @@ C
             IF(Day.LT.DRAMP*1.25) GOTO 999
          ENDIF
       ENDIF
+      WRITE(16,8764) DRampExtFlux,FluxSettlingTime,DRampIntFlux,
+     &        DRampElev,DRampTip,DRampMete,DRampWRad,DUnRampMete
+8764  FORMAT(9X,'DRAMPExtFlux = ',F12.4,
+     &     /,9X,'FluxSettlingTime = ',F12.4,
+     &     /,9X,'DRampIntFLux = ',F12.4,
+     &     /,9X,'DRampElev = ',F12.4,
+     &     /,9X,'DRampTip = ',F12.4,
+     &     /,9X,'DRampMete = ',F12.4,
+     &     /,9X,'DRampWRad = ',F12.4,
+     &     /,9X,'DUnRampMete = ',F12.4,/)
 C...
 C...  READ GWCE TIME WEIGHTING FACTORS
 C...
