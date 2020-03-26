@@ -321,7 +321,7 @@ $(O_DIR):
 
 ################# Module Source, Object, & Mod Files ######################
 HASH_MSRC  =  hashtable.F
-WD_MSRC    =  wetdry.F
+WD_MSRC    =  wetdry.F90
 MOM_MSRC   =  momentum.F
 GWCE_MSRC  =  gwce.F
 SUBD_MSRC  =  subdomain.F
@@ -381,7 +381,7 @@ KDTREE_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(KDTREE_MSRC) )
 
 METIS_SRC  =  metis.F
 PREP_SRC   =  adcprep.F decomp.F prep_weir.F read_global.F prep.F interp.F machdep.F
-ADC_SRC    =  adcirc.F weir_boundary.F wetdry.F read_input.F cstart.F hstart.F gwce.F momentum.F timestep.F vsmy.F transport.F
+ADC_SRC    =  adcirc.F weir_boundary.F wetdry.F90 read_input.F cstart.F hstart.F gwce.F momentum.F timestep.F vsmy.F transport.F
 POST_SRC   =  adcpost.F post.F compare.F diffmerge.F machdep.F
 P15_SRC    =  p15.F
 OWI_SRC    =  owi22.F
@@ -705,7 +705,7 @@ endif
 
 $(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)subdomain.o $(O_DIR)momentum.o
 $(O_DIR)momentum.o    :  momentum.F $(O_DIR)subdomain.o
-$(O_DIR)wetdry.o      :  wetdry.F $(O_DIR)subdomain.o
+$(O_DIR)wetdry.o      :  wetdry.F90 $(O_DIR)subdomain.o
 $(O_DIR)messenger.o   :  messenger.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)global_3dvs.o
 #!st3 100711: Added globalio.o to writer.F for HSWRITER MODULE
 WRITER_DEP := writer.F  $(O_DIR)messenger.o $(O_DIR)globalio.o

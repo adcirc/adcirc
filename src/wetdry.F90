@@ -70,13 +70,9 @@
       use sizes, only : sz, mne, mnp
       use global, only : noff, nodecode, nnodecode, eta2, tk, nolifa,&
           bsx1, bsy1, btime_end, C2DDI, C3D, g, h0, ifnlfa, nddt, &
-          nibnodecode, ilump, ncchange, tkm, &
+          nibnodecode, ilump, ncchange, tkm
 #ifdef CMPI 
-      idumy
-#else 
-      junk
-#endif 
-#ifdef CMPI
+      use global, only : idumy
       use messenger
 #endif
       use mesh, only : ne, np, dp, mju, totalArea, nm, x, y, areas
@@ -293,10 +289,7 @@
                 
                 ! Do not rotate the first time!
                 IF(J.GT.1) THEN 
-                  DO JJ = 1,3
-                    NEW = MOD(JJ,3)+1
-                    temp_NM(I,NEW) = NM(I,JJ)
-                  ENDDO
+                  temp_NM(I,1:3) = CSHIFT(NM(I,1:3),J-1)
                 ENDIF
 
                 NM1=temp_NM(I,1)

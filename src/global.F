@@ -14,8 +14,6 @@ C
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
       IMPLICIT NONE
       SAVE
-
-      INTEGER :: JUNK ! to fix imports in wet/dry 
 C...
 C...SET GLOBAL PHYSICAL CONSTANTS
 C...
