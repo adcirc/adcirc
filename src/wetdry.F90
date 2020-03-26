@@ -70,7 +70,12 @@
       use sizes, only : sz, mne, mnp
       use global, only : noff, nodecode, nnodecode, eta2, tk, nolifa,&
           bsx1, bsy1, btime_end, C2DDI, C3D, g, h0, ifnlfa, nddt, &
-          nibnodecode, ilump, ncchange, tkm, idumy
+          nibnodecode, ilump, ncchange, tkm, &
+#ifdef CMPI 
+      idumy
+#else 
+      junk
+#endif 
 #ifdef CMPI
       use messenger
 #endif
