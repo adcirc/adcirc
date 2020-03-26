@@ -6,9 +6,6 @@
 !C Logical Variable List (default value .FALSE., set in global.f)       *
 !C- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 !C     C2DDI            - 2D Depth Integrated model run                 *
-!C     C3D              - 3D model run                                  *
-!C     C3DDSS           - Stress form of the 3D momentum equations      *
-!C     C3DVS            - Velocity form of the 3D momentum equations    *
 !C- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 !C   See header.f for a summary history of code modifications.          *
 !C***********************************************************************
@@ -69,13 +66,29 @@
 !CWET...If MJU < NODELE for any node, it must lie along the wet/dry interface.  See
 !CWET...further comments at the end of the momentum equation solution section.
 !CWET...
-      module wetdry
-      use sizes, only : sz
-      
-      real(sz) :: habsmin
+      MODULE WetDry
+      use sizes, only : sz, mne, mnp
+      use global, only : noff, nodecode, nnodecode, eta2, tk, nolifa,&
+          bsx1, bsy1, btime_end, C2DDI, C3D, g, h0, ifnlfa, nddt, &
+          nibnodecode, ilump, ncchange, tkm, idumy
+#ifdef CMPI
+      use messenger
+#endif
+      use mesh, only : ne, np, dp, mju, totalArea, nm, x, y, areas
+      use nodalattributes, only : BFCdLLimit, fgamma, ftheta, fric,&
+           manningsn, hbreak, ifhybf, ifnlbf, iflinbf, loadManningsN,&
+           loadZ0B_var, z0b_var
+      use global_3dvs, only : a, b, islip, kp, z0b, sigma, evtot, q
+      use subdomain, only : subdomainOn, enforceBN, enforceWDcb, enforceWDob
+
+      implicit none
+
+      complex(sz) :: duds !jgf48.50 declare size SZ instead of plain COMPLEX
+           
+      real(sz) :: habsmin 
       real(sz) :: hoff
       real(sz) :: velmin
-      
+     
       integer,allocatable ::    nibcnt(:)
       integer,allocatable ::    noffold(:)
 
@@ -86,7 +99,48 @@
 
       integer,allocatable :: temp_NM(:,:)
 
+
       contains
+!----------------------------------------------------------------------
+!                   S U B R O U T I N E
+!     C O M P U T E   W E T T I N G   A N D   D R Y I N G
+!----------------------------------------------------------------------
+!     Determines which nodes should be wet and which should be dry.
+!----------------------------------------------------------------------
+      subroutine computeWettingAndDrying(it)
+      implicit none
+
+      integer, intent(in) :: it ! time step number
+
+
+      if (nolifa.ne.2) then
+         return ! wetting and drying is not active 
+      endif
+
+      CALL updateNOFF()
+
+      CALL dryingCriteriaD1()
+
+      CALL wettingCriteriaW1_W2a()
+#ifdef CMPI
+      CALL updateI(NNODECODE,NIBCNT,2)
+#endif
+      CALL wettingCriteriaW2b()
+
+      CALL dryingCriteriaDE1()
+
+      CALL dryingCriteriaD2() 
+#ifdef CMPI
+      CALL updateI(NNODECODE,IDUMY,1)
+#endif
+      CALL updateNnodecodeAtGhosts() 
+
+      CALL finalizeWettingAndDrying() 
+
+!----------------------------------------------------------------------
+      END SUBROUTINE ComputeWettingAndDrying
+!----------------------------------------------------------------------
+
 
 !----------------------------------------------------------------------
 !                  S U B R O U T I N E
@@ -148,13 +202,14 @@
 !----------------------------------------------------------------------
     subroutine dryingCriteriaD1() 
 !----------------------------------------------------------------------
-!  Dry the node if the total water depth falls below H0.
-!  Note: if the total water depth falls below 0.8*H0, the surface elevation
-!  is lifted up so that the total water depth = 0.8*H0.
+!  D1) Dry the node if the total water depth falls below H0.
+!      Note: if the total water depth falls below 0.8*H0, the surface elevation
+!      is lifted up so that the total water depth = 0.8*H0 (HABSMIN)
 !----------------------------------------------------------------------
     implicit none
 
     integer :: I
+    real(sz) :: HTOT 
 
     DO I=1,NP
        IF(NODECODE(I).EQ.1) THEN
@@ -201,21 +256,42 @@
 !----------------------------------------------------------------------
         IMPLICIT NONE 
 
-        INTEGER :: I 
-        INTEGER :: R1=(/3,1,2/)
-        INTEGER :: R1=(/2,3,1/)
+        INTEGER :: NM1,NM2,NM3
+        INTEGER :: NM123
+        INTEGER :: NCELE 
+        INTEGER :: NCTOT 
+        INTEGER :: NBNCTOT 
+        REAL(SZ) :: ETAN1,ETAN2,ETAN3
+        REAL(SZ) :: hTotN1,hTotN2,hTotN3      
+        REAL(SZ) :: deldist,deleta
+        REAL(sz) :: h1
+        REAL(SZ) :: TKWET
+        REAL(sz) :: vel
+        
+        INTEGER :: I
+        INTEGER :: J
+        INTEGER :: JJ
+        INTEGER :: NEW
 
-        ! element table to be rotated
-        temp_NM = NM 
+
+        ! temp element table to be rotated ccw
+        DO I=1,NE
+            DO J=1,3
+                temp_NM(I,J) = NM(I,J)
+            ENDDO
+        ENDDO
 
         DO I=1,NE
 
-            ! Rotate element table  CCW here 
-            DO R=1,3
+            ! Rotate element table CCW here 
+            DO J=1,3
                 
-                ! Do not rotate the first time 
-                IF(R.GT.1) THEN 
-                  temp_NM = 
+                ! Do not rotate the first time!
+                IF(J.GT.1) THEN 
+                  DO JJ = 1,3
+                    NEW = MOD(JJ,3)+1
+                    temp_NM(I,NEW) = NM(I,JJ)
+                  ENDDO
                 ENDIF
 
                 NM1=temp_NM(I,1)
@@ -276,11 +352,11 @@
 
                             ! Third node of element met wetting criteria met?
                             IF(VEL.GT.VELMIN) THEN
-                                ! Yup..Wet it!
+                                ! Yup...wet it!
                                 NNODECODE(NM3)=1
 
-                                TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
-     &                          (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
+                                TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*&
+                                    (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
     
                                 !WJP needed for internal_tide parameterization
                                 TKM(1:2,NM123) = TK(NM123) 
@@ -340,7 +416,13 @@
 !----------------------------------------------------------------------
     IMPLICIT NONE 
 
+    INTEGER :: NM1,NM2,NM3
+    INTEGER :: NBNCTOT 
+    REAL(SZ) :: ETAN1,ETAN2,ETAN3
+    REAL(SZ) :: HTOTN1,HTOTN2,HTOTN3
+
     INTEGER :: I 
+
 
     DO I=1,NE
 
@@ -388,6 +470,7 @@
 !----------------------------------------------------------------------
 
 
+
 !----------------------------------------------------------------------
     subroutine dryingCriteriaD2
 !----------------------------------------------------------------------
@@ -397,7 +480,13 @@
 !----------------------------------------------------------------------
         IMPLICIT NONE 
 
-        INTEGER :: I
+        INTEGER :: NM1,NM2,NM3 
+        INTEGER :: NC1,NC2,NC3
+        INTEGER :: NCEle
+        REAL(SZ) :: AreaEle
+
+        INTEGER I
+        INTEGER IE 
 
          DO I=1,NP
             MJU(I)=0
@@ -437,6 +526,7 @@
 !----------------------------------------------------------------------
 
 
+
 !----------------------------------------------------------------------
     subroutine updateNnodecodeAtGhosts() 
 !----------------------------------------------------------------------
@@ -449,6 +539,7 @@
 
     INTEGER :: I 
 
+
     DO I=1,NP
        IF(NNODECODE(I).NE.NODECODE(I)) THEN
           NODECODE(I)=NNODECODE(I)
@@ -459,6 +550,7 @@
 !----------------------------------------------------------------------
     end subroutine 
 !----------------------------------------------------------------------
+
 
 !----------------------------------------------------------------------
     subroutine finalizeWettingAndDrying() 
@@ -497,82 +589,9 @@
 !----------------------------------------------------------------------
 
 
-!----------------------------------------------------------------------
-!                   S U B R O U T I N E
-!     C O M P U T E   W E T T I N G   A N D   D R Y I N G
-!----------------------------------------------------------------------
-!     Determines which nodes should be wet and which should be dry.
-!----------------------------------------------------------------------
-      subroutine computeWettingAndDrying(it)
-      use sizes, only : sz, mne, mnp
-      use global, only : noff, nodecode, nnodecode, eta2, tk, nolifa,
-     &    bsx1, bsy1, btime_end, C2DDI, C3D, g, h0, ifnlfa, nddt,
-     &    nibnodecode, ilump, ncchange, tkm
-#ifdef CMPI
-     &    ,idumy
-      use messenger
-#endif
-      use mesh, only : ne, np, dp, mju, totalArea, nm, x, y, areas
-      use nodalattributes, only : BFCdLLimit, fgamma, ftheta, fric,
-     &   manningsn, hbreak, ifhybf, ifnlbf, iflinbf, loadManningsN,
-     &   loadZ0B_var, z0b_var
-      use global_3dvs, only : a, b, islip, kp, z0b, sigma, evtot, q
-      use subdomain, only : subdomainOn, enforceBN, enforceWDcb, enforceWDob
-      implicit none
-      integer, intent(in) :: it ! time step number
-      complex(sz) :: duds !jgf48.50 declare size SZ instead of plain COMPLEX
-      integer :: nc1, nc2, nc3
-      integer :: nm1, nm2, nm3
-      integer :: nm123
-      integer :: ncele
-      integer :: nctot
-      real(sz) :: kslip
-      real(sz) :: vel
-      real(sz) :: z0b1
-      real(sz) :: areaEle
-      real(sz) :: tkWet
-      real(sz) :: etaN1,etaN2,etaN3
-      real(sz) :: hTotN1,hTotN2,hTotN3      
-      real(sz) :: deldist,deleta
-      real(sz) :: htot
-      real(sz) :: h1
-      integer :: nbnctot
-      integer :: i
-      integer :: ie
-
-      if (nolifa.ne.2) then
-         return ! wetting and drying is not active 
-      endif
-
-      CALL updateNOFF()
-
-      CALL dryingCriteriaD1()
-
-      CALL wettingCriteriaW1_W2a()
-#ifdef CMPI
-      CALL UPDATEI(NNODECODE,NIBCNT,2)
-#endif
-      CALL wettingCriteriaW2b()
-
-      CALL dryingCriteriaDE1()
-
-      CALL dryingCriteriaD2() 
-#ifdef CMPI
-      CALL UPDATEI(NNODECODE,IDUMY,1)
-#endif
-      CALL updateNnodecodeAtGhosts() 
-
-      CALL finalizeWettingAndDrying() 
-
-!----------------------------------------------------------------------
-      END SUBROUTINE ComputeWettingAndDrying
-!----------------------------------------------------------------------
-
-
-
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-      end module wetDry
+      END MODULE WetDry
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 
