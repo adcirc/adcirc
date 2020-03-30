@@ -270,6 +270,16 @@ ifeq ($(compiler),intel)
         CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX -xSSE4.2 
         FLIBS   := $(INCDIRS) -xSSE4.2 
      endif
+  ifeq ($(MACHINENAME),supermic) 
+     FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xAVX -assume buffered_io
+     CFLAGS  := $(INCDIRS) -O3 -DLINUX -xAVX
+     FLIBS   := $(INCDIRS) -xAVX
+     ifeq ($(DEBUG),trace)
+        FFLAGS1 := $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -xAVX -assume buffered_io
+        CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX  -xAVX 
+        FLIBS   := $(INCDIRS) -xAVX
+     endif
+  endif
   endif
   #
   #@jasonfleming Added to fix bus error on hatteras@renci
@@ -302,6 +312,11 @@ ifeq ($(compiler),intel)
      ifeq ($(MACHINENAME),queenbee)
         FLIBS       := $(FLIBS) -L/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0/lib -lnetcdff -lnetcdf
         NETCDFHOME    :=/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0
+     endif
+     ifeq ($(MACHINENAME),supermic)
+        FLIBS      := $(FLIBS) -L /usr/local/packages/netcdf_fortran/4.2/INTEL-140-MVAPICH2-2.0/lib -lnetcdff -L/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0/lib -lnetcdf -lnetcdf -liomp5 -lpthread
+        NETCDFHOME :=/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0/include
+        FFLAGS1    :=$(FFLAGS1) -I/usr/local/packages/hdf5/1.8.12/INTEL-140-MVAPICH2-2.0/include
      endif
      ifeq ($(MACHINENAME),stampede)
         NETCDFHOME :=/opt/apps/intel17/netcdf/4.3.3.1/x86_64
