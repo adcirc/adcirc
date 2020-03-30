@@ -1,6 +1,7 @@
 adcirc
 padcirc
 adcprep
+adcpost
 adccmp
 inflate
 hot2asc
@@ -19,3 +20,6 @@ actualflags.txt
 .swanlastcompile
 changelog
 version.F
+*.sw*
+swan/*.f
+swan/*.f90
