@@ -289,6 +289,16 @@ ifeq ($(compiler),intel)
         CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX  -xAVX 
         FLIBS   := $(INCDIRS) -xAVX
      endif
+  ifeq ($(MACHINENAME),supermic) 
+     FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xAVX -assume buffered_io
+     CFLAGS  := $(INCDIRS) -O3 -DLINUX -xAVX
+     FLIBS   := $(INCDIRS) -xAVX
+     ifeq ($(DEBUG),trace)
+        FFLAGS1 := $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -xAVX -assume buffered_io
+        CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX  -xAVX 
+        FLIBS   := $(INCDIRS) -xAVX
+     endif
+  endif
   endif
   endif
   #
