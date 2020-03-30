@@ -627,19 +627,20 @@ Casey 090302: Corrected the unit number from 10 to 90.
       endif
 
       ! jgf: Added init for full domain dynamic waterlevel correction output file 
-      if ( (NOUTGE.eq.-1).and.(usingDynamicWaterLevelCorrection.eqv..true.) ) then
+      if ( (ABS(NOUTGE).eq.1.or.ABS(NOUTGE).eq.4).and.
+     &      (usingDynamicWaterLevelCorrection.eqv..true.) ) then
          if (write_local_files.eqv..true.) then
             call writeDomainHeader(108,trim(localdir)//'/'//
-     &           'dymamicWaterlevelCorrection.63',NP_G, NP, 'dymamicWaterlevelCorrection')
+     &           'dynamicWaterlevelCorrection.63',NP_G, NP, 'dynamicWaterlevelCorrection')
            else
               call writeDomainHeader(108,trim(globaldir)//'/'//
-     &           'dymamicWaterlevelCorrection.63',NP_G, NP, 'dymamicWaterlevelCorrection')
+     &           'dynamicWaterlevelCorrection.63',NP_G, NP, 'dynamicWaterlevelCorrection')
            endif
       endif
       ! jgf: Added init for station dynamic waterlevel correction output file 
-      IF( (NOUTE.EQ.-1).and.(usingDynamicWaterLevelCorrection.eqv..true.)) THEN
+      IF( (ABS(NOUTE).EQ.1).and.(usingDynamicWaterLevelCorrection.eqv..true.)) THEN
          if (write_local_files.eqv..false.) then
-            CALL OPEN_GBL_FILE(109, TRIM(GLOBALDIR)//'/'//'dymamicWaterlevelCorrection.61',
+            CALL OPEN_GBL_FILE(109, TRIM(GLOBALDIR)//'/'//'dynamicWaterlevelCorrection.61',
      &       NSTAE_G, NSTAE, HEADER61)
          else 
             CALL OPEN_GBL_FILE(109, TRIM(LOCALDIR)//'/'//'dynamicWaterlevelCorrection.61',
