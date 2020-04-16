@@ -249,7 +249,8 @@ C
       real(sz) :: wtime1_12 ! time associated with previous met dataset
       real(sz) :: wtime2_12 ! time associated with new met dataset
       real(sz) :: wtiminc_12 ! time increment between met datasets (seconds)
-      logical,allocatable :: hasdata(:) ! if OWI data exists at this vertex
+      logical  :: change_14 ! true when the NWS = 14 data has been updated
+      logical,allocatable :: hasdata(:) ! if OWI data exists at this vertex       
       !...Function interface for wind drag
       !   Used so that the selection of wind drag
       !   is only performed once. Each wind drag 
@@ -1316,9 +1317,10 @@ C...  sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
 C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
       IF (ABS(NWS).EQ.12.or.ABS(NWS).eq.14) THEN
          IF (TimeLoc.GT.WTIME2) THEN
+            CHANGE_14 = .true.
             WTIME1 = WTIME2
             WTIME2 = WTIME2 + WTIMINC
-            DO I=1,NP
+            DO I = 1,NP
               WVNX1(I) = WVNX2(I)
               WVNY1(I) = WVNY2(I)
               PRN1(I)  = PRN2(I)
@@ -1352,6 +1354,8 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
             if (draglawtype.EQ.draglaw_powell) then
                call findStormCenter(eyeLat, eyeLon, foundEye)
             endif
+         ELSE
+            CHANGE_14 = .false.
          ENDIF
          WTRATIO = (TimeLoc-WTIME1)/WTIMINC
          CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
@@ -1361,13 +1365,20 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
                ! exists)
                WTIME1_12 = WTIME2_12
                WTIME2_12 = WTIME2_12 + WTIMINC_12
-               DO I = 1,NP
-                  IF (.not.HasData(I)) cycle
-                  WVNX1(I) = WVNX2(I)
-                  WVNY1(I) = WVNY2(I)
-                  PRN1(I)  = PRN2(I)
-               END DO
+               ! Don't do this is we have already for NWS = 14 data
+               ! on same time snap
+               IF (.not.CHANGE_14) THEN
+                  DO I = 1,NP
+                     IF (.not.HasData(I)) cycle
+                     WVNX1(I) = WVNX2(I)
+                     WVNY1(I) = WVNY2(I)
+                     PRN1(I)  = PRN2(I)
+                  END DO
+               ENDIF
                CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND,HasData)
+               if (draglawtype.EQ.draglaw_powell) then
+                  call findStormCenter(eyeLat, eyeLon, foundEye)
+               endif
             ENDIF
             WTRATIO_12 = (TimeLoc-WTIME1_12)/WTIMINC_12
             WTRATIO_14 = WTRATIO
