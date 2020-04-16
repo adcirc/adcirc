@@ -51,7 +51,7 @@ C-----------------------------------------------------------------------
      &   tvw, ntcys_tvw, ntcyf_tvw, noutgc, toutsgc, toutfgc, nspoolgc,
      &   warnelevdumplimit, toutse, toutfe, nspoole, staiv1, staiv2,
      &   staiv3, toutfc, noutgw, nspoolgw, toutfgw, toutsgw, noutgw,
-     &   ndsetsc, ntcyfgc, ntcysgc, ndsets_tvw, 
+     &   ndsetsc, ntcyfgc, ntcysgc, ndsets_tvw, Ad, Bd,  
      &   smag_comp_flag, wavewindmultiplier, np_g, nibnodecode, ititer,
      &   ne_g, nstae_g, nstav_g, nstam_g, nstac_g, netcdf_avail, title,
      &   nstac_g, nstam_g, institution, references, history, source,
@@ -1393,7 +1393,12 @@ C...
 C...
 C...  READ AND PROCESS NTIP - TIDAL POTENTIAL FORCING
 C...
-      READ(15,*) NTIP
+      if (mod(IMDig6,4).eq.0) then
+         ! WJP: read Ali's dispersion relation coefficients
+         READ(15,*) NTIP, Ad, Bd
+      else
+         READ(15,*) NTIP
+      endif
       IF((NTIP.LT.0).OR.(NTIP.GT.2)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
@@ -1443,6 +1448,11 @@ C...
          WRITE(16,239)
  239     FORMAT(9X,'SELF ATTRACTION/LOAD TIDE FORCING IS ALSO USED ',
      &        'IN THE COMPUTATION')
+      ENDIF
+      if (mod(IMDig6,4).eq.0) then
+         ! WJP: read Ali's dispersion relation coefficients
+         WRITE(16,2399) Ad, Bd
+ 2399    FORMAT(/,5X,'Ali Disp coefs: Ad = ',F13.10,', Bd = ',F10.7)
       ENDIF
 C...
 C...  READ AND PROCESS NWS - WIND AND PRESSURE FORCING & WAVE RADIATION
