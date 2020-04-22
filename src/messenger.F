@@ -11,7 +11,7 @@ C
      &    SIG_TERM, FLOAT_TYPE, REALTYPE, DBLETYPE,
      &    DEBUG, ECHO, INFO, WARNING, ERROR, CPL2STWAVE,Flag_ElevError,
      &    screenMessage, logMessage, allMessage, setMessageSource,
-     &    unsetMessageSource, scratchMessage     
+     &    unsetMessageSource, scratchMessage, closeLogFile, openLogFile     
      
 #ifdef HAVE_MPI_MOD
       USE MPI
@@ -102,6 +102,8 @@ C----------------------------------------------------------------------
       PRINT *,"Rank ",RANK," about to migrate from PE ",OLD_PE
 
 C     TODO: close files temporarily during migration
+      CALL closeLogFile() ;
+      ! will need clsoe input files
 #endif
 
       END SUBROUTINE ABOUT_TO_MIGRATE
@@ -123,8 +125,13 @@ C----------------------------------------------------------------------
       PRINT *,"Rank ",RANK," just migrated to PE ",NEW_PE
 
 C     TODO: re-open files closed temporarily during migration
-#endif
+      CALL closeLogFile() ;
 
+!     will need to reopen input file and return to the point where
+!     it is closed.
+      
+#endif
+      
       END SUBROUTINE JUST_MIGRATED
 
 

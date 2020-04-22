@@ -54,7 +54,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=g95
 #compiler=gfortran
 #compiler=intel
-#compiler=intel-ND
+compiler=intel-ND
 #compiler=intel-lonestar
 #compiler=intel-sgi
 #compiler=cray_xt3
@@ -487,8 +487,9 @@ ifeq ($(compiler),intel-ND)
   else
      MULTIPLE := TRUE
   endif
-  NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/netcdf/rhel6/4.1.3/intel-12.0/
+  #NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/netcdf/rhel6/4.1.3/intel-12.0/
   #NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/scilib/netcdf/4.1.2/intel-12.0/inst
+  NETCDFHOME=/opt/crc/n/netcdf/4.7.0/intel/18.0
 endif
 #
 # SGI ICE X (e.g. topaz@ERDC) using Intel compilers, added by TCM

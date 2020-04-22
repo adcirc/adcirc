@@ -2780,7 +2780,8 @@ C
 #endif
       CASE DEFAULT
          write(scratchMessage,'(a,i0,a)')
-     &  'Invalid harmonic analysis format specifier: ',mag1%specifier,'.'
+     &        'Invalid harmonic analysis format specifier: ',
+     &        mag1%specifier,'.'
          call allMessage(ERROR,scratchMessage)
       END SELECT
 
@@ -2835,10 +2836,6 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
 C
-
-
-
-
 
       ios=0
 C

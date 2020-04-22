@@ -171,7 +171,7 @@ C
       !
       call initLogging()
       nabout = 0 !jgf52.08.01: Initialize log level to ECHO.
-#ifdef EBUG
+#ifdef DEBUG
       nabout = -1 !jgf52.08.01: Initialize log level to DEBUG if so compiled
 #endif
       call setMessageSource("ADCIRC_Init")
@@ -278,8 +278,9 @@ C...
             ! the IHOT value was vetted already, so this code should
             ! not be reachable
             IF ((NSCREEN.ne.0).and.(myProc.eq.0)) THEN
-               WRITE(screenUnit+CK_LUN,*) "ERROR: IHOT=",IHOT," is not valid."
-            ENDIF
+               WRITE(screenUnit+CK_LUN,*) "ERROR: IHOT=",IHOT,
+     &          " is not valid."
+     xs       ENDIF
       END SELECT
 
 C...Default beginning and ending time steps
