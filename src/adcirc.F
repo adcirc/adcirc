@@ -106,6 +106,7 @@ C******************************************************************************
      &   version_number, initLogging, setMessageSource, screenMessage,
      &   openLogFile, unsetMessageSource, np_global, rnp_global,
      &   scratchMessage, CTIP, L_N
+
       USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB 
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np, SFEA
       USE GWCE, ONLY : initGWCE
@@ -280,7 +281,7 @@ C...
             IF ((NSCREEN.ne.0).and.(myProc.eq.0)) THEN
                WRITE(screenUnit+CK_LUN,*) "ERROR: IHOT=",IHOT,
      &          " is not valid."
-     xs       ENDIF
+            ENDIF
       END SELECT
 
 C...Default beginning and ending time steps
@@ -436,7 +437,9 @@ C
 C
       call allMessage(INFO,"Begin timestepping.")
       DO 100 ITIME=ITIME_BGN,ITIME_END
+
         CALL TIMESTEP(ITIME)
+
 C
 #ifdef CSWAN
 Casey 090302: If it is time, then call the following subroutine

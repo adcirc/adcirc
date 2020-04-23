@@ -1314,7 +1314,7 @@ C     Check to see if file exists
       
       if (fileFound.eqv..false.) then
          write(scratchMessage,23) trim(filename)
-  23     format("The file '",A,"' was not found. It will be created".)
+  23     format("The file '",A,"' was not found. It will be created.")
          call allMessage(INFO,scratchMessage)
 C         errorIO = 1
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
@@ -1339,9 +1339,10 @@ C     Open a new file
  26         format("The file '",A,"' was opened successfully.")
             call logMessage(INFO,trim(scratchMessage))
          endif         
+   
       else
          write(scratchMessage,24) trim(filename)
-  24     format("The file '",A,"' was found. The file will be append.")
+ 24      format("The file '",A,"' was found. The file will be append.")
          call logMessage(INFO,trim(scratchMessage))
 
      
@@ -1349,8 +1350,8 @@ C     Open an existing file
          OPEN(lun+CK_LUN,FILE=trim(filename),STATUS='OLD',
      &        ACTION='WRITE',POSITION='APPEND',IOSTAT=errorIO)
          if (errorIO.ne.0) then
-            write(scratchMessage,25) trim(filename)
- 25         format("Could not open the file '",A,"'.")
+            write(scratchMessage,27) trim(filename)
+ 27         format("Could not open the file '",A,"'.")
             call allMessage(ERROR,trim(scratchMessage))
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
             call allMessage(DEBUG,"Return.")
@@ -1358,8 +1359,8 @@ C     Open an existing file
             call unsetMessageSource()
             return ;            ! file found but could not be opened
          else
-            write(scratchMessage,26) trim(filename)
- 26         format("The file '",A,"' was opened successfully.")
+            write(scratchMessage,28) trim(filename)
+ 28         format("The file '",A,"' was opened successfully.")
             call logMessage(INFO,trim(scratchMessage))
          endif
          
