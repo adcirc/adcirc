@@ -2372,14 +2372,17 @@ C     ----------------------------------------------------------------
 !>
 !>    Additionally, the z0 coefficient supplied by the user is modified
 !>    by subtracting a factor of depth/30 to account for inundation
+!>    
+!>    Values are linearly interpolated between heading bins to the actual 
+!>    wind direction.  
 !>
 !>    @param[in] NodeNumber index of node under consideration
 !>    @param[in] WindDragCo current wind drag coefficient being applied
 !>    @param[in] WindMag    current wind speed magnitude at the specified node
 !>    @param[in] BathymetricDepth bathymetric depth used to calculate total depth
 !>    @param[in] Elevation water surface elevation above datum (eta2)
-!>    @param[in] WindX wind velocity, x-component
-!>    @param[in] WindY wind velocity, y-component
+!>    @param[in,out] WindX wind velocity, x-component
+!>    @param[in,out] WindY wind velocity, y-component
 !     ----------------------------------------------------------------
       SUBROUTINE ApplyDirectionalWindReduction(NodeNumber, WindDragCo,
      &     WindMag, BathymetricDepth, Elevation, WindX, WindY)
@@ -2395,8 +2398,10 @@ C     ----------------------------------------------------------------
         real(SZ), intent(inout) :: WindY  
         
         real(SZ),parameter      :: CutoffDepth = 999999.d0          !< Depth above which reduction is not applied
+        real(SZ),parameter,dimension(12) :: z0Angles=(/(i*30,i=0,5),(i*30-180,i=0,5)/)  !< centers of directional bins
         
-        integer                 :: idir        !< code for wind direction
+        integer                 :: idir        !< code for wind direction bins to interpolate between
+        integer                 :: idir2       !< code for wind direction bins to interpolate between
         real(SZ)                :: z0m         !< marine roughness coefficient based on Garratt's formula
         real(SZ)                :: angle       !< direction wind is coming from
         real(SZ)                :: z0l         !< drag for a particular node, for particular direction
@@ -2406,42 +2411,60 @@ C     ----------------------------------------------------------------
 !       if windspeed is zero, exit now
         if((WindX.eq.0d0).and.(WindY.eq.0d0))return
 
-!       compute direction  that the wind is coming from
+!       compute direction  that the wind is going to
         angle=atan2(WindY,WindX)*RAD2DEG
         idir=0
-        if((angle.gt.-15d0).and.(angle.le.15d0))then
-            idir=1
-        elseif((angle.gt.15d0).and.(angle.le.45d0))then
-            idir=2
-        elseif((angle.gt.45d0).and.(angle.le.75d0))then 
-            idir=3
-        elseif((angle.gt.75d0).and.(angle.le.105d0))then 
-            idir=4
-        elseif((angle.gt.105d0).and.(angle.le.135d0))then 
-            idir=5
-        elseif((angle.gt.135d0).and.(angle.le.165d0))then 
-            idir=6
-        elseif((angle.gt.165d0).and.(angle.le.180d0))then 
+        idir2=0
+        if(angle.lt.-150d0)then
             idir=7
-        elseif((angle.gt.-45d0).and.(angle.le.-15d0))then 
-            idir=12
-        elseif((angle.gt.-75d0).and.(angle.le.-45d0))then 
-            idir=11
-        elseif((angle.gt.-105d0).and.(angle.le.-75d0))then 
-            idir=10
-        elseif((angle.gt.-135d0).and.(angle.le.-105d0))then 
-            idir=9
-        elseif((angle.gt.-165d0).and.(angle.le.-135d0))then 
+            idir2=8
+        elseif(angle.lt.-120d0)then
             idir=8
-        elseif((angle.ge.-180d0).and.(angle.le.-165d0))then 
-            idir=7
+            idir2=9
+        elseif(angle.lt. -90d0)then
+            idir=9
+            idir2=10
+        elseif(angle.lt. -60d0)then
+            idir=10
+            idir2=11
+        elseif(angle.lt. -30d0)then
+            idir=11
+            idir2=12
+        elseif(angle.lt.   0d0)then
+            idir=12
+            idir2=1
+        elseif(angle.lt.  30d0)then
+            idir=1
+            idir2=2
+        elseif(angle.lt.  60d0)then
+            idir=2
+            idir2=3
+        elseif(angle.lt.  90d0)then
+            idir=3
+            idir2=4
+        elseif(angle.lt. 120d0)then
+            idir=4
+            idir2=5
+        elseif(angle.lt. 150d0)then
+            idir=5
+            idir2=6
+        elseif(angle.le. 180d0)then
+            idir=6
+            idir2=7
         endif
+
 
 !       compute marine roughness coefficient based on Garratt's formula
         z0m=(0.018d0/G)*WindDragCo*WindMag**2.d0
 
-!       define land roughness from mesh values
-        z0l=z0land(NodeNumber,idir)
+        !tga 2020-04 updated code to linearly interpolate z0 values, 
+        !code previously did nearest neighbor (i.e. binned) z0 values.  
+        !Define roughness by linearly (in angle-z0 space) interpolating
+        !between binned values.  
+        !The 30d0 here comes from assuming the directional bins are 30 
+        !degrees apiece. 
+        z0l=(z0land(NodeNumber,idir2)-z0land(NodeNumber,idir))/30d0
+     &      *(angle-z0Angles(idir))+z0land(NodeNumber,idir)
 
 !       apply overland flooding correction
         TotalDepth = BathymetricDepth + Elevation
@@ -2451,7 +2474,9 @@ C     ----------------------------------------------------------------
         endif
 
 !       compute land wind reduction factor
-        if(z0l.gt.0.0001D0) then
+!       Reduction factor is bounded to not exceed 1, i.e. assumes the 
+!       land roughness is never less than the water.  
+        if(z0l.gt.z0m) then
            fr=min(1.0D0,(z0l/z0m)**0.0706d0 * log(10.d0/z0l) / log(10.d0/z0m))
         else
            fr=1.000d0

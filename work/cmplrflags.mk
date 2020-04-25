@@ -311,7 +311,7 @@ ifeq ($(compiler),intel)
   MSGLIBS       :=
   ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),hatteras)
-        NETCDFHOME  :=/usr/share/Modules/software/CentOS-7/netcdf-Fortran/4.4.0_intel-18.0.0
+        NETCDFHOME  :=$(shell nc-config --prefix)
         FLIBS       :=$(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
         FFLAGS1     :=$(FFLAGS1) -I$(NETCDFHOME)/include
         FFLAGS2     :=$(FFLAGS1)
