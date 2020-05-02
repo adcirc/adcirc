@@ -36,7 +36,8 @@ IF(BUILD_PADCSWAN AND PERL_FOUND)
                                ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanPunCollect.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanSumOverNodes.f90 
                                ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanMinOverNodes.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanMaxOverNodes.f90 
                                ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/ocpids.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/ocpcre.f 
-                               ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/ocpmix.f )
+                               ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/ocpmix.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/SdsBabanin.f90  
+                               ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGradVel.f90 )
      
     SET( PADCSWAN1_SOURCES  src/sizes.F KDTREE2/kdtree2.F src/global.F src/boundaries.F src/global_3dvs.F
                             src/messenger.F src/mesh.F src/harm.F wind/vortex.F src/wind.F src/hashtable.F 
