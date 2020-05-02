@@ -35,7 +35,8 @@ IF(BUILD_SWAN AND PERL_FOUND)
                                ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source/SwanPunCollect.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source/SwanSumOverNodes.f90 
                                ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source/SwanMinOverNodes.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source/SwanMaxOverNodes.f90 
                                ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source/ocpids.f ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source/ocpcre.f 
-                               ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source/ocpmix.f )
+                               ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source/ocpmix.f ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source/SdsBabanin.f90  
+                               ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source/SwanGradVel.f90 )
     
     ADD_EXECUTABLE(swan ${SWANONLY_SERIAL_SOURCES})
 
