@@ -36,7 +36,8 @@ IF(BUILD_ADCSWAN AND PERL_FOUND)
                              ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanPunCollect.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanSumOverNodes.f90 
                              ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanMinOverNodes.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanMaxOverNodes.f90 
                              ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/ocpids.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/ocpcre.f 
-                             ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/ocpmix.f )
+                             ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/ocpmix.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/SdsBabanin.f90  
+                             ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanGradVel.f90 )
     
     SET( ADCSWAN1_SOURCES    src/sizes.F KDTREE2/kdtree2.F src/global.F src/boundaries.F src/mesh.F src/hashtable.F
                              src/global_3dvs.F src/harm.F wind/vortex.F src/wind.F src/owiwind.F src/rs2.F
