@@ -53,9 +53,10 @@ C.....Days to seconds conversion
       REAL(8), PARAMETER :: omega = 2.0d0*pi / 86164.2d0
       REAL(8), PARAMETER :: mb2pa = 100.d0
 C..   Ali's full dispersion coefficient for M2
-      REAL(SZ) :: Bd = 0.19891_SZ  ! exponent of depth (default)
-      REAL(SZ) :: Ad = 0.0050861_SZ ! coefficient of depth (default)
-      REAL(SZ), PARAMETER :: Cs2 = 1500.0_SZ**2 ! Speed of sound in water^2
+      REAL(SZ) :: Bd = 0.23394_SZ  ! exponent of depth (default)
+      REAL(SZ) :: Ad = 0.0050189_SZ ! coefficient of depth (default)
+      REAL(SZ) :: Cs = 1500.0_SZ ! Speed of sound in water
+      REAL(SZ) :: Cs2 = 1500.0_SZ**2 ! Speed of sound in water^2
 C     jgf46.21 Added support for IBTYPE=52.
       REAL(SZ),ALLOCATABLE, TARGET ::   ElevDisc(:)
       REAL(SZ) FluxSettlingTime
