@@ -51,7 +51,6 @@ ENDIF()
 ###########################################################################
 
 
-
 ###########################################################################
 #...Language Specifications
 ENABLE_LANGUAGE(Fortran)
@@ -86,6 +85,14 @@ INCLUDE(${CMAKE_SOURCE_DIR}/cmake/options_flags.cmake)
 #...Ensure that the netCDF libraries are working
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 INCLUDE(${CMAKE_SOURCE_DIR}/cmake/netcdf_check.cmake)
+
+IF(ENABLE_GRIB2)
+    ADD_SUBDIRECTORY(${CMAKE_SOURCE_DIR}/thirdparty/wgrib2 EXCLUDE_FROM_ALL )
+ENDIF()
+
+IF(ENABLE_DATETIME)
+    ADD_SUBDIRECTORY(${CMAKE_SOURCE_DIR}/thirdparty/datetime_fortran EXCLUDE_FROM_ALL )
+ENDIF()
 
 #...Ensure that the XDMF libraries are working
 INCLUDE(${CMAKE_SOURCE_DIR}/cmake/xdmf_check.cmake)
