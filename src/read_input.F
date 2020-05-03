@@ -51,7 +51,7 @@ C-----------------------------------------------------------------------
      &   tvw, ntcys_tvw, ntcyf_tvw, noutgc, toutsgc, toutfgc, nspoolgc,
      &   warnelevdumplimit, toutse, toutfe, nspoole, staiv1, staiv2,
      &   staiv3, toutfc, noutgw, nspoolgw, toutfgw, toutsgw, noutgw,
-     &   ndsetsc, ntcyfgc, ntcysgc, ndsets_tvw, Ad, Bd,  
+     &   ndsetsc, ntcyfgc, ntcysgc, ndsets_tvw, Ad, Bd, Cs, Cs2, 
      &   smag_comp_flag, wavewindmultiplier, np_g, nibnodecode, ititer,
      &   ne_g, nstae_g, nstav_g, nstam_g, nstac_g, netcdf_avail, title,
      &   nstac_g, nstam_g, institution, references, history, source,
@@ -788,6 +788,10 @@ c     CME_Orig         = .TRUE. !uncomment for original momentum eqs
          CME_New_NC       = .TRUE. !comment out for original momentum eqs
          CME_LS_IBPV      = .TRUE. !comment out for original momentum eqs
          CME_AreaInt_Corr = .TRUE.
+C     WJP: setting IMDig to default values for IM = 0 here
+C       refer: https://wiki.adcirc.org/wiki/IM 
+         IMDig1 = 1; IMDig2 = 1; IMDig3 = 1; 
+         IMDig4 = 1; IMDig5 = 1; IMDig6 = 1;
       ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
       IF (IM.EQ.0) THEN
@@ -1394,8 +1398,13 @@ C...
 C...  READ AND PROCESS NTIP - TIDAL POTENTIAL FORCING
 C...
       if (mod(IMDig6,4).eq.0) then
-         ! WJP: read Ali's dispersion relation coefficients
-         READ(15,*) NTIP, Ad, Bd
+         ! WJP: read speed of sound and Ali's dispersion relation coefficients
+         READ(15,*) NTIP, Cs, Ad, Bd
+         if (Cs.le.0.0_SZ) then
+             Cs2 = huge(0.0_SZ)
+         else
+             Cs2 = Cs*Cs
+         endif
       else
          READ(15,*) NTIP
       endif
@@ -1451,6 +1460,7 @@ C...
       ENDIF
       if (mod(IMDig6,4).eq.0) then
          ! WJP: read Ali's dispersion relation coefficients
+         WRITE(16,*) '     Speed of sound squared = ',Cs2
          WRITE(16,2399) Ad, Bd
  2399    FORMAT(/,5X,'Ali Disp coefs: Ad = ',F13.10,', Bd = ',F10.7)
       ENDIF
