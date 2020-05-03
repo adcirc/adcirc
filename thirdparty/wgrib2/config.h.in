@@ -1,0 +1,20 @@
+/* config.h */
+#cmakedefine USE_REGEX
+#cmakedefine USE_TIGGE
+#cmakedefine DISABLE_ALARM
+#cmakedefine DISABLE_TIMEZONE
+#cmakedefine USE_UDF
+#cmakedefine IPOLATES_LIB "@IPOLATES_LIB_STRING@"
+#cmakedefine USE_IPOLATES @USE_IPOLATES_TYPE@
+#cmakedefine USE_G2CLIB
+#cmakedefine USE_PROJ4
+#cmakedefine USE_JASPER
+#cmakedefine USE_AEC
+#cmakedefine USE_NETCDF3
+#cmakedefine USE_NETCDF4
+#cmakedefine USE_MYSQL
+#define CC "adcirc_cc"
+#define FORTRAN "adcirc_ftn"
+#define BUILD_COMMENTS "adcirc build"
+#cmakedefine USE_PNG
+#cmakedefine WMO_VALIDATION

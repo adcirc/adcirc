@@ -30,3 +30,4 @@ ignore:
   - metis/Lib/*
   - KDTREE2/*
   - swan/*  
+  - thirdparty/*
