@@ -1499,8 +1499,13 @@ C...
 C...  READ AND PROCESS NTIP - TIDAL POTENTIAL FORCING
 C...
       if (mod(IMDig6,4).eq.0) then
-         ! WJP: read Ali's dispersion relation coefficients
-         READ(15,*) NTIP, Ad, Bd
+         ! WJP: read speed of sound and Ali's dispersion relation coefficients
+         READ(15,*) NTIP, Cs, Ad, Bd
+         if (Cs.le.0.0_SZ) then
+             Cs2 = huge(0.0_SZ)
+         else
+             Cs2 = Cs*Cs
+         endif
       else
          READ(15,*) NTIP
       endif
@@ -1556,6 +1561,7 @@ C...
       ENDIF
       if (IMDig6.eq.0) then
          ! WJP: read Ali's dispersion relation coefficients
+         WRITE(16,*) '     Speed of sound squared = ',Cs2
          WRITE(16,2399) Ad, Bd
  2399    FORMAT(/,5X,'Ali Disp coefs: Ad = ',F13.10,', Bd = ',F10.7)
       ENDIF
