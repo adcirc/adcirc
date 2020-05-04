@@ -72,7 +72,7 @@ C
       USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart, 
      &    writeWarnElev, collectInundationData, collectMinMaxData
       USE MESH, ONLY : NE, NP, DP, SLAM, SFEA, ICS, TotalArea,
-     &                  MJU, Areas, SFAC 
+     &                  MJU, Areas, SFAC
       USE BOUNDARIES, ONLY : NOPE, NETA, NBOU, NVEL, LBCODEI, NBV, SIII,
      &    NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, NFLUXIBP, NFLUXRBC, CSII,
      &    BARLANHT, BARLANCFSP, NVELL, IBCONN, BARINHT, BARINCFSP,
@@ -91,7 +91,7 @@ C.....sb46.28sb03 added 09/xx/2006
      &     Apply2DInternalWaveDrag,
      &     Apply3DBottomFriction
      &    ,GeoidOffset
-      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS, 
+      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS,
      &    writeFort066, writeFort067, writeFort065, 
      &    readFort020, readFort021, readFort019 
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
@@ -398,7 +398,7 @@ C.............................DW, sponge layer ..................
          IF ( .NOT. FIRST_ENTER ) THEN
             !c u_{ext}^{n + 1} -- > eta2, 
             CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev,
-     &           GeoidOffset ) 
+     &           GeoidOffset )
          ELSE
 
             RampTMP = RampElev ;
@@ -411,14 +411,14 @@ C.............................DW, sponge layer ..................
                !  u_{ext}^{n + 1 - istep} --> uu2
                CALL GETABSLAYEREXT( IT - istep, TimeLoc - istep*DTDP,
      &              TimeH - istep*DTDP, RampTMP,
-     &              GeoidOffset ) 
+     &              GeoidOffset )
 
                CALL SPONGE_SHIFT_SOLN( ) ; 
                ! eta1 --> eta0, eta2 --> eta1, u2 --> u1          
             END DO
             !c u_{ext}^{n + 1} -- > eta2, 
             CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev,
-     &           GeoidOffset ) 
+     &           GeoidOffset )
             FIRST_ENTER = .FALSE. ;
          END IF
          !
@@ -1024,7 +1024,7 @@ C...
       if(subdomainOn.and.enforceBN.eq.1) call readFort019(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)  ! NCSU Subdomain
-      
+
 
 
 

@@ -13,8 +13,8 @@ C
      &    bufsize_max, buf, resultbuf, outputdatadescript_t, float_type,
      &     debug, echo, info, warning, error, logmessage, allmessage,
      &     setmessagesource, unsetmessagesource, initLogging, nabout,
-     &     scratchMessage, dbletype, realtype, 
-     &     sig_val, sig_write, sig_ini, sig_pause, comm_writer, 
+     &     scratchMessage, dbletype, realtype,
+     &     sig_val, sig_write, sig_ini, sig_pause, comm_writer,
      &     sig_term, sig_mesh, writer_id
       use messenger, only: tag, msg_fini
 #ifdef HAVE_MPI_MOD
@@ -176,17 +176,17 @@ C
       !
       ! infinite loop
 
-      do 
+      do
          call mpi_recv(sig, 1, mpi_integer, 0, tag,
      &       comm_writer(writer_id), mpistat, ierr)
 
          select case(sig)
-         case(sig_ini) 
+         case(sig_ini)
             write(scratchMessage,
      &       '("Writer processor ",i0," received sig_ini.")') writer_id
             call logMessage(INFO,scratchMessage)
             call sendLabelInfoToWriters()
-         case(sig_val) 
+         case(sig_val)
             write(scratchMessage,
      &       '("Writer processor ",i0," received sig_val.")') writer_id
             call logMessage(INFO,scratchMessage)

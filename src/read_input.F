@@ -17,8 +17,8 @@ C     READS INPUT FILES
 C
 C-----------------------------------------------------------------------
       SUBROUTINE READ_INPUT()
-      USE SIZES          
-      USE GLOBAL, only: toutsge, toutfge, nspoolge, im, ff, bountag, 
+      USE SIZES
+      USE GLOBAL, only: toutsge, toutfge, nspoolge, im, ff, bountag,
      &   noutge, use_tvw, nscreen, nabout, nfover, warnelev, ihot, hss,
      &   smag_lower_lim, iwarnelevdump, warnelevdump, errorelev, c2ddi,
      &   usenetcdf, cgwce_new, cme_new_nc, cme_ls_ibpv, cgwce_ls_kgq, g,
@@ -51,15 +51,15 @@ C-----------------------------------------------------------------------
      &   tvw, ntcys_tvw, ntcyf_tvw, noutgc, toutsgc, toutfgc, nspoolgc,
      &   warnelevdumplimit, toutse, toutfe, nspoole, staiv1, staiv2,
      &   staiv3, toutfc, noutgw, nspoolgw, toutfgw, toutsgw, noutgw,
-     &   ndsetsc, ntcyfgc, ntcysgc, ndsets_tvw, Ad, Bd, Cs, Cs2, 
+     &   ndsetsc, ntcyfgc, ntcysgc, ndsets_tvw, Ad, Bd, Cs, Cs2,
      &   smag_comp_flag, wavewindmultiplier, np_g, nibnodecode, ititer,
      &   ne_g, nstae_g, nstav_g, nstam_g, nstac_g, netcdf_avail, title,
      &   nstac_g, nstam_g, institution, references, history, source,
      &   nout_tvw, touts_tvw, toutf_tvw, nspool_tvw, btiminc,vidispdyoh,
      &   bchgtiminc, base_date, contact, convention, host, comments,
      &   nhstar, nhsinc, ndsetsw, ntcysgw, ntcyfgw, cpl2stwave, c3d,
-     &   alloc_main1a, alloc_main2, alloc_main3, alloc_main4a, 
-     &   alloc_main4b, alloc_main5, alloc_main7, alloc_main8, 
+     &   alloc_main1a, alloc_main2, alloc_main3, alloc_main4a,
+     &   alloc_main4b, alloc_main5, alloc_main7, alloc_main8,
      &   alloc_main10, alloc_main12, alloc_main13, alloc_main9,
      &   alloc_main6, openfileforread, nhoutonce, omega, IFSPROTS,
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp,
@@ -92,9 +92,9 @@ C-----------------------------------------------------------------------
       USE TIME_VARYING_WEIR_BOUNDARY
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE WIND, only: WTIMINC, NWLAT, NWLON, IREFYR, IREFMO, IREFDAY,
-     &   IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN, WindDragLimit, 
+     &   IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN, WindDragLimit,
      &   BLADJ, STORMNUMBER, WLATINC, WLONINC, GEOFACTOR, PUREVORTEX,
-     &   NWSok, WINDREFTIME, Allowable_NWS, PUREBACKGROUND, TimeConv, 
+     &   NWSok, WINDREFTIME, Allowable_NWS, PUREBACKGROUND, TimeConv,
      &   DragLawString, dynamicWaterLevelCorrectionFileName, WTIMINC_12,
      &   dynamicWaterLevelCorrectionRampStart,
      &   dynamicWaterLevelCorrectionRampEnd,
@@ -114,10 +114,10 @@ C-----------------------------------------------------------------------
      &     InitNAModule, ReadNodalAttr, InitNodalAttr, ESLM, ESLC,
      &     Tau0FullDomainMin, Tau0FullDomainMax, Z0b_var,
 C ....DW
-     &     LoadAbsLayerSigma, FoundAbsLayerSigma 
+     &     LoadAbsLayerSigma, FoundAbsLayerSigma
       USE SPONGELAYER, ONLY: SpongeLayerRelatedPrep, FLAGSPONGEELEM
 C ... END DW
-      USE Couple2BC3D, ONLY: BC3D_DT, DTIME1, DTIME2, ALLOC_BC3D_to_2D, 
+      USE Couple2BC3D, ONLY: BC3D_DT, DTIME1, DTIME2, ALLOC_BC3D_to_2D,
      &    NP11, densityTimeIterator, densityFileName
 #ifdef ADCNETCDF
      &     ,Read_BC3D_Netcdf
@@ -177,7 +177,7 @@ C
       NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
      &  WarnElevDumpLimit, ErrorElev
       NAMELIST /AliDispersionControl/ CAliDisp, Cs, Ad, Bd
-      NAMELIST /densityControl/ densityRunType, densityFileName, 
+      NAMELIST /densityControl/ densityRunType, densityFileName,
      &  densityTimeIterator, densityForcingType
 #ifdef ADCNETCDF
       NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,
@@ -585,7 +585,7 @@ C     WJP add namelist
       rewind(15)
 
 !     WJP add namelist for Ali's dispersion
-!     Defaults are already in global 
+!     Defaults are already in global
       namelistSpecifier = 'AliDispersionControl'
       read(unit=15,nml=AliDispersionControl,iostat=IOS)
       call logNameListReadStatus(namelistSpecifier,ios)
@@ -630,7 +630,7 @@ C     WJP add namelist
      &      densityTimeIterator
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
-      ! Convert to IDEN 
+      ! Convert to IDEN
       IDEN = 0; IDENsign = 0
       if (trim(densityRunType).eq.'diagnostic') then
          IDENsign = -1
@@ -688,7 +688,7 @@ C
       READ(15,*) NFOVER
 #else
 C     jgf46.10 Add user-controllable warning, output, and stop criteria
-C     for elevations. 
+C     for elevations.
       READ(15,*) NFOVER, WarnElev, iWarnElevDump, WarnElevDumpLimit,
      &  ErrorElev
 #endif
@@ -827,7 +827,7 @@ C     WJP if negative then use rotated coordinates
          IFSPROTS = 1
          ICS = abs(ICS)
       ENDIF
-      ! Change ICS here for the true sphere option with 
+      ! Change ICS here for the true sphere option with
       ! arbitrary projection
       SELECT CASE( ICS )
       CASE(1)
@@ -842,7 +842,7 @@ C     WJP if negative then use rotated coordinates
          WRITE(16,*) '    NOTE: Curvature of Earth IS NOT accounted for'
       CASE(20:24)
          ! Set logical to true
-         IFSFM = 1   
+         IFSFM = 1
          WRITE(16,9738) ICS
  9738    FORMAT(/,5X,'ICS = ',I2,
      &        /,9X,'Governing equations are in Spherical coordinates',
@@ -864,7 +864,7 @@ C     WJP if negative then use rotated coordinates
      &        'parameter) is not an allowable value')
          CALL ADCIRC_Terminate()
       END SELECT
-      
+
       IF ( IFSPROTS .eq. 1) THEN
          WRITE(16,*) '     Will perform a rotation of the coordinate ',
      &               '     system according to the fort.rotm file'
@@ -890,8 +890,8 @@ c     CME_Orig         = .TRUE. !uncomment for original momentum eqs
          CME_LS_IBPV      = .TRUE. !comment out for original momentum eqs
          CME_AreaInt_Corr = .TRUE.
 C     WJP: setting IMDig to default values for IM = 0 here
-C       refer: https://wiki.adcirc.org/wiki/IM 
-         IMDig1 = 1; IMDig2 = 1; IMDig3 = 1; 
+C       refer: https://wiki.adcirc.org/wiki/IM
+         IMDig1 = 1; IMDig2 = 1; IMDig3 = 1;
          IMDig4 = 1; IMDig5 = 1; IMDig6 = 1;
       ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1112,8 +1112,8 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
          write(scratchMessage,'("IDEN is set to ",i0,".")') IDEN
          call logMessage(ECHO,scratchMessage)
          !
-         ! WJP: 3/8/2018 I think these were round the wrong way 
-         ! (was opposite to the adcirc.org page) 
+         ! WJP: 3/8/2018 I think these were round the wrong way
+         ! (was opposite to the adcirc.org page)
          if (iden.lt.0) then
             densityRunType = ' diagnostic'
          else
@@ -1125,13 +1125,13 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
          !
          select case(abs(iden))
          case(1)
-            densityForcingType = ' sigmaT'       
+            densityForcingType = ' sigmaT'
          case(2)
             densityForcingType = ' salinity'
          case(3)
             densityForcingType = ' temperature'
          case(4)
-            densityForcingType = ' salinity and temperature'         
+            densityForcingType = ' salinity and temperature'
          case(5)
             densityForcingType = ' depth-integrated baroclinic '
      &                        //'gradients with buoyancy frequency'
@@ -1424,10 +1424,10 @@ C     startdry, etc. The full initialization and error checking of these
 C     data must wait until the grid has been read in from unit 14.
       READ(15,*) NWP
       CALL ReadNodalAttr(NScreen, ScreenUnit, MyProc, NAbOut)
-C................ DW ......... 
+C................ DW .........
 C     For sponge layer
       IF ( LoadAbsLayerSigma .AND. FoundAbsLayerSigma ) THEN
-        CALL SpongeLayerRelatedPrep( ) 
+        CALL SpongeLayerRelatedPrep( )
       END IF
 C................END DW.......
 C...
@@ -2631,11 +2631,11 @@ C     an OWI basin scale met field derived from NAM winds.
      &                                                 CICE_TIMINC
       ENDIF
 
-C... v50.xx sm -- added for NWS=17 to read ice flag 
+C... v50.xx sm -- added for NWS=17 to read ice flag
 C...  We read both WTIMINC,RSTIMINC but dummy for now
 C...  TODO:Some thing fishy is going on here . I hope Jason can go through this and prep !!!!!!!! -Saeed
 C...  I like not to read WTIMINC,RSTIMINC,CICE_TIMINC at all. Coupler should provide these info internally
-C saeed added  TODO: I should remove this partialy: cap should provide the time of data exchanges 
+C saeed added  TODO: I should remove this partialy: cap should provide the time of data exchanges
       IF(ABS(NWS).EQ.17) THEN
          !IF(NCICE.EQ.0) READ(15,*) WTIMINC,RSTIMINC   !read dummy for now
          !IF(NCICE.GE.1) READ(15,*) WTIMINC,RSTIMINC ,CICE_TIMINC
@@ -2939,10 +2939,10 @@ C...
 
          ! Allocate arrays for the baroclinic coupling from 3D model to 2D model
          if (abs(IDEN).ge.5) call ALLOC_BC3D_to_2D()
-               
+
          IF (abs(IDEN).lt.5) THEN
             OPEN(11,FILE=TRIM(INPUTDIR)//'/'//'fort.11')
-            READ(11,*) 
+            READ(11,*)
             READ(11,*) BC3D_DT
             READ(11,*) NP11
             IF (NP11.NE.NP) THEN
@@ -3194,8 +3194,8 @@ C...
             CORIF(I)=CORI
          END DO
       ELSEIF (NCOR.EQ.1) THEN
-C......DW, Dec 2019   
-         IF ( IFSPROTS .EQ. 1 ) THEN        
+C......DW, Dec 2019
+         IF ( IFSPROTS .EQ. 1 ) THEN
             CALL GET_ROTSPCOORD_CORIFVAL( CORIF ) ;
          ELSE
             DO I=1,NP
@@ -3383,7 +3383,7 @@ C     Allocate arrays dimensioned by MNBFR
          ENDIF
       END DO
       IF (NPEBC) WRITE(16,*) ' NON-PERIODIC ELEVATION BOUNDARY ',
-     &                       'CONDITION WILL BE READ FROM FORT.19' 
+     &                       'CONDITION WILL BE READ FROM FORT.19'
 
 C...  INPUT FORCING CONDITIONS ON PERIODIC ELEVATION SPECIFIED
 C...  BOUNDARIES FOR EACH OF THE ELEVATION FORCING FREQUENCIES FROM UNIT
@@ -4592,7 +4592,7 @@ C     This option will be used in testing ADCIRC's hot start capabilities.
      &      NHSTAR, NHSINC
       CALL logMessage(ECHO,scratchMessage)
 C
-C     ! Only output hotstart once at first NHSINC 
+C     ! Only output hotstart once at first NHSINC
       IF (NHSTAR.lt.-1) then
          NHOUTONCE = .true.
          NHSTAR = -NHSTAR
@@ -5896,13 +5896,13 @@ C
          ELSE
             lon(I)=a2f(LVAR(1))*DEG2RAD
             lat(I)=a2f(LVAR(2))*DEG2RAD
-            IF ( IFSPROTS .EQ. 1 ) THEN            
+            IF ( IFSPROTS .EQ. 1 ) THEN
                CALL DRVSPCOORSROTS( lonr, latr,  lon(I), lat(I) )
             ELSE
-               latr = lat(I) ;  lonr = lon(I) ; 
+               latr = lat(I) ;  lonr = lon(I) ;
             END IF
             CALL CYLINDERMAP( xcoord(I), ycoord(I),
-     &           lonr, latr, SLAM0, SFEA0, ICS) ; 
+     &           lonr, latr, SLAM0, SFEA0, ICS) ;
          ENDIF
 C
 C... v49.48.02 -- tcm replaced with call to kdtsearch

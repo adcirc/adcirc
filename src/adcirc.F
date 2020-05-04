@@ -148,7 +148,7 @@ C
                ! a series of two or three numbers with two digits 
                ! separated by dots, e.g., 51.02 or 51.52.07
                write(6,'(a)') trim(adc_version)                 
-               CALL EXIT(0) 
+               CALL EXIT(0)
             case default
                ! do nothing, this is some other command line argument
             end select
@@ -250,7 +250,7 @@ C     jgf45.08 put this here so it can be used in hot start
 
 C...************* Make the L_N Tidal potential multiple function *************
 C... WJP: Feb 21 2018; moved here before hstart Feb 27 2019
-C..  Corrected long term species (unfortunately there is a mistake in old ADCIRC 
+C..  Corrected long term species (unfortunately there is a mistake in old ADCIRC
 C..  theory report that also propagated into some subsequent publications)
       IF (CTIP) THEN
 
@@ -532,7 +532,7 @@ C
         CALL MSG_FINI()
       ENDIF
 #endif
-      CALL EXIT(1) 
+      CALL EXIT(1)
 C
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable

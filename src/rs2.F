@@ -127,7 +127,7 @@ c$$$      real(sz) :: p1,p2,cmax,cmin,tol
 c$$$
 c$$$
 c$$$      write(*,'(a)') 'RS2INIT_TYPE1: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
-c$$$      CALL EXIT(1) 
+c$$$      CALL EXIT(1)
 c$$$
 c$$$      read(23,*,err=99999) ns    !number of stwave grid files
 c$$$
@@ -395,7 +395,7 @@ c$$$#ifdef CMPI
 c$$$      call msg_fini()
 c$$$#endif
 c$$$      write(*,'(a)') 'RADIATION STRESS READ ERROR (RS2-1)'
-c$$$      CALL EXIT(1) 
+c$$$      CALL EXIT(1)
 c$$$
 c$$$      END SUBROUTINE
 
@@ -758,13 +758,13 @@ C***********************************************************************
 
       if(type.eq.1) then
         write(*,'(a)') 'RS2GET: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
-        CALL EXIT(1) 
+        CALL EXIT(1)
 C        call rs2get_type1(rsnx,rsny,np)
       else if(type.eq.2) then
         call rs2get_type2(rsnx,rsny,np)
       else
          write(*,'(a)') 'RS2 TYPE IS NEITHER 1 NOR 2.  TERMINATED.'
-         CALL EXIT(1) 
+         CALL EXIT(1)
       endif
 
       return
