@@ -784,7 +784,7 @@ C     for IBTYPE=52.
 Corbitt 1203022: Added Zach''s Fix for Assigning a Start Time to Mete Ramping
          RampMete2=TANH((2.D0*((ITHS)*DTDPHS/86400.D0-DUnRampMete))/DRampMete)
          RampWRad2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampWRad)
-         write(16,*) 'Initial RampMete2 is =',RampMete2 
+         write(16,*) 'Initial RampMete2 is =',RampMete2
       ENDIF
 #ifdef IBM
       FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS,KIND(0.0D0))
@@ -1477,12 +1477,12 @@ C......RESTART THE WAVE RADIATION STRESS
 !            WSY2(I) = WSY2(I)+RampWRad2*RSNY1(I)
 !          END DO
 
-#ifdef ADCNETCDF     
-      ! For the Coupling to 3D Baroclinic mode 
+#ifdef ADCNETCDF
+      ! For the Coupling to 3D Baroclinic mode
       IF (C2DDI.and.CBaroclinic.and.abs(IDEN).ge.5) THEN
          call Initial_BC3D_NetCDF(TimeLoc)
       endif
-#endif       
+#endif
 
        if (CTIP) then
 Cjromo 11-01-00  Initialize TIP2 for HOTSTART
@@ -1757,7 +1757,7 @@ C...
          if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(81, TRIM(GLOBALDIR)//'/'//'fort.81',
      $       NSTAC_G, NSTAC, HEADER81)
-         else 
+         else
             CALL OPEN_GBL_FILE(81, TRIM(LOCALDIR)//'/'//'fort.81',
      $       NSTAC_G, NSTAC, HEADER81)
          endif
@@ -2018,8 +2018,8 @@ C...
      $         NSTAE_G, NSTAE, HEADER61)
          else
             CALL OPEN_GBL_FILE(75, TRIM(LOCALDIR)//'/'//'fort.75',
-     $         NSTAE_G, NSTAE, HEADER61)         
-         endif 
+     $         NSTAE_G, NSTAE, HEADER61)
+         endif
         IESTP=2
       ENDIF
 
@@ -2041,7 +2041,7 @@ C...
      &          /,8X,'SPOOL COUNTER =',I8)
 
 C....   TCM V50.66.01 ADDITIONS FOR TIME VARYING BATYMETRY
-C....   SET THESE VARIABLES FOR USE LATER 
+C....   SET THESE VARIABLES FOR USE LATER
         IGBP = IGEP
         NTCYSGB = NTCYSGE
         NTCYFGB = NTCYFGE
