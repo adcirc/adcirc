@@ -2499,12 +2499,6 @@ C...
 C...
 C...  READ MINIMUM DEPTH OR WET/DRY PARAMETERS FROM UNIT 15
 C...
-      IF(NOLIFA.NE.2) THEN
-         READ(15,*) H0
-         WRITE(16,16) H0
- 16      FORMAT(//,5X,'THE BATHYMETRIC DEPTH AT ALL NODES WILL BE ',
-     &               'INCREASED TO H0= ',F12.4,' IF NECESSARY'/)
-      ENDIF
       IF(NOLIFA.EQ.2) THEN
          READ(15,*) H0,NODEDRYMIN,NODEWETMIN,VELMIN
          WRITE(16,17) H0,NODEWETMIN,VELMIN,NODEDRYMIN
@@ -2518,6 +2512,20 @@ C...
      &          /,5X,'WOULD DRIVE A STEADY VELOCITY TOWARDS A DRY NODE',
      &          /,5X,'THAT IS GREATER THAN VELMIN = ',F10.5,
      &          /,5X,'AND NODEREP > NODEDRYMIN = ',I6,' TIME STEPS',/)
+      ELSE
+         READ(15,*) H0
+         WRITE(16,16) H0
+ 16      FORMAT(//,5X,'THE BATHYMETRIC DEPTH AT ALL NODES WILL BE ',
+     &               'INCREASED TO H0= ',F12.4,' IF NECESSARY'/)
+      ENDIF
+      IF(H0.LE.0D0)THEN
+        WRITE(scratchMessage,'(A,F0.5)') "H0 must be > 0.0. It is "//
+     &                                   "currently set to ",H0
+        call allMessage(ERROR,scratchMessage)
+#ifdef CMPI
+        call msg_fini()
+#endif
+        STOP 1
       ENDIF
 C
 C     jgf46.00 Read longitude and latitude on which the CPP coordinate
