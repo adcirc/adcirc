@@ -1276,7 +1276,7 @@ C     output the global node number to debug the local PE fort.14s
          IF( ErrorElevExceeded /= 0 ) THEN    !  Finalize MPI Environment,
            Flag_ElevError = .true. 
            CALL MSG_FINI()                    !  if there are Error Elvation nodes.
-           STOP                               !
+           STOP 1                             !
          ENDIF                                !st3
 #else
          IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
