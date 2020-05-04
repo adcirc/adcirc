@@ -1945,7 +1945,7 @@ C     jgf46.08 Change to the number of ramp functions that will be used.
 #ifdef CMPI
          call msg_fini()
 #endif
-         STOP
+         STOP 1
       ENDIF
       IF(NRAMP.EQ.0) THEN
          WRITE(16,240) NRAMP
@@ -1996,7 +1996,7 @@ C...
 #ifdef CMPI
          call msg_fini()
 #endif
-         STOP
+         STOP 1
       ENDIF
       WRITE(16,5) G
     5 FORMAT(///,5X,'GRAVITATIONAL CONSTANT G =',F10.5,/)
@@ -2459,7 +2459,7 @@ C     ------------
 #ifdef CMPI
          call msg_fini()
 #endif
-         STOP
+         STOP 1
 C
       END SELECT
 C
@@ -2769,7 +2769,7 @@ C     initialized in the call to InitNodalAttr.
 #ifdef CMPI
             call msg_fini()
 #endif
-            STOP
+            STOP 1
           ENDIF
         ELSE
           WRITE(16,11) ESLM
@@ -3231,7 +3231,7 @@ C       elevation station locations
 #ifdef CMPI
             call msg_fini()
 #endif
-            stop  ! there is a stop here
+            stop 1  ! there is a stop here
          ENDIF                  
       ELSE         
          WRITE(16,3007) NSTAE
@@ -3370,7 +3370,7 @@ C....RECORDING STATIONS
 #ifdef CMPI
             call msg_fini()
 #endif
-            stop  ! there is a stop here
+            stop 1 ! there is a stop here
          ENDIF                  
       ELSE         
          WRITE(16,3107) NSTAV
@@ -3515,7 +3515,7 @@ C...  RECORDING STATIONS
 #ifdef CMPI
                call msg_fini()
 #endif
-               stop  ! there is a stop here
+               stop 1 ! there is a stop here
             ENDIF                  
          ELSE         
             WRITE(16,3207) NSTAC
@@ -3666,7 +3666,7 @@ C...  RECORDING STATIONS
 #ifdef CMPI
                call msg_fini()
 #endif
-               stop  ! there is a stop here
+               stop 1  ! there is a stop here
             ENDIF                  
          ELSE         
             WRITE(16,3217) NSTAM
@@ -4099,7 +4099,7 @@ C     allocate harmonic analysis arrays
 C#ifdef CMPI
 C         CALL ADCIRC_LOCALTERMINATE()
 Cendif
-         STOP
+         STOP 1
       ENDIF
       IF(NFREQ.GT.0) WRITE(16,2330)
  2330 FORMAT(/,7X,'FREQUENCY',4X,'NODAL FACTOR',6X,'EQU.ARG(DEG)',
@@ -4252,7 +4252,7 @@ C     read in and check matrix solver parameters
 #ifdef CMPI
             CALL ADCIRC_Terminate()
 #endif
-            STOP
+            STOP 1
          ENDIF
       ENDIF
 
@@ -4601,7 +4601,7 @@ C...  READ IN THE TYPE OF BOTTOM BOUNDARY CONDITION AND THE SLIP COEFFICIENTS
 #ifdef CMPI
         call msg_fini()
 #endif
-        STOP
+        STOP 1
       ENDIF
 
 C...  READ IN THE SURFACE AND BOTTOM ROUGHNESSES

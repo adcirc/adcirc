@@ -7920,7 +7920,7 @@ C     Open fulldomain file
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
-         STOP
+         STOP 1
       ELSE
          iret = nf90_open(hs%myFile%FILENAME, NF90_NOWRITE, hs%ncid)
          CALL check_err(iret)
@@ -8674,7 +8674,7 @@ C     Open fulldomain file
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
-         STOP
+         STOP 1
       ELSE
          iret = nf90_open(hs%myFile%FILENAME, NF_NOWRITE, hs%ncid)
          CALL check_err(iret)
@@ -8997,7 +8997,7 @@ C     Open fulldomain file
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
-         STOP
+         STOP 1
       ELSE
          iret = nf90_open(hs%myFile%FILENAME, NF_NOWRITE, hs%ncid)
          CALL check_err(iret)
@@ -9139,7 +9139,7 @@ C     Open fulldomain file
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
-         STOP
+         STOP 1
       ELSE
          iret = nf90_open(hs%myFile%FILENAME, NF_NOWRITE, hs%ncid)
          CALL check_err(iret)
@@ -10444,7 +10444,7 @@ C
         CALL MSG_FINI()
       ENDIF
 #endif
-      STOP 
+      STOP 1 
 C
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable

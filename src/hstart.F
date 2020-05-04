@@ -275,7 +275,7 @@ C        start reading ascii initial conditions file
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
-            STOP                   ! We're toast.
+            STOP 1                 ! We're toast.
          ENDIF
 C
  1701    FORMAT('ERROR: The initial condition or ascii hot start file')
@@ -458,7 +458,7 @@ C
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
-            STOP
+            STOP 1
          ENDIF
 C        start reading binary hot start file
          WRITE(16,240)
@@ -487,7 +487,7 @@ C        start reading binary hot start file
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
-            STOP                   ! We're toast.
+            STOP 1                 ! We're toast.
          ENDIF
 C
  1001    FORMAT('ERROR: The hot start file')
@@ -513,7 +513,7 @@ C        Now read the non-portable binary hot start file.
 #ifdef CMPI
             call msg_fini()
 #endif
-            stop
+            stop 1
          endif
          READ(IHOT,REC=IHOTSTP) IMHS         ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) TimeLoc         ; IHOTSTP = IHOTSTP + 1
@@ -3688,7 +3688,7 @@ C
          ELSE
             call allMessage(ERROR,
      &          "Passing of binary or real information incorrect")
-            STOP
+            STOP 1
          END IF
       ! parallel
       ELSE
@@ -3719,7 +3719,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            STOP
+            STOP 1
          END IF
       ENDIF
 C
@@ -3768,7 +3768,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            STOP
+            STOP 1
          END IF
       ! parallel
       ELSE
@@ -3799,7 +3799,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            STOP
+            STOP 1
          END IF
       ENDIF
 C
@@ -3850,7 +3850,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            STOP
+            STOP 1
          END IF
       ! parallel
       ELSE
@@ -3881,7 +3881,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            STOP
+            STOP 1
          END IF
       ENDIF
 C
@@ -3933,7 +3933,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            STOP
+            STOP 1
          END IF
       ! parallel
       ELSE
@@ -3964,7 +3964,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            STOP
+            STOP 1
          END IF
       ENDIF
 C
