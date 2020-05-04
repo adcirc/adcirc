@@ -1931,7 +1931,7 @@ C
         CALL MSG_FINI()
       ENDIF
 #endif
-      CALL EXIT(1) 
+      CALL EXIT(1)
 C
 #if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable
