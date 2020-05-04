@@ -77,12 +77,14 @@ C***********************************************************************
       read(23,*,err=99999) type
 
       if(type.eq.1) then
-        stop 'RS2INIT: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
+        write(*,'(a)') 'RS2INIT: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
+        stop 1
 C        call rs2init_type1(rsnx,rsny,np)
       else if(type.eq.2) then
         call rs2init_type2(rsnx,rsny,np)
       else
-         stop 'RS2 TYPE IS NEITHER 1 NOR 2.  TERMINATED.'
+         write(*,'(a)') 'RS2 TYPE IS NEITHER 1 NOR 2.  TERMINATED.'
+         stop 1
       endif
 
       return
@@ -92,7 +94,8 @@ C        call rs2init_type1(rsnx,rsny,np)
 #ifdef CMPI
       call msg_fini()
 #endif
-      STOP 'RADIATION STRESS READ ERROR (RS2-0)'
+      WRITE(*,'(a)') 'RADIATION STRESS READ ERROR (RS2-0)'
+      STOP 1
 
       END SUBROUTINE
 
@@ -123,7 +126,8 @@ c$$$      real(sz),allocatable :: searchBinPartitions(:)
 c$$$      real(sz) :: p1,p2,cmax,cmin,tol
 c$$$
 c$$$
-c$$$      stop 'RS2INIT_TYPE1: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
+c$$$      write(*,'(a)') 'RS2INIT_TYPE1: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
+c$$$      stop 1 
 c$$$
 c$$$      read(23,*,err=99999) ns    !number of stwave grid files
 c$$$
@@ -133,7 +137,7 @@ c$$$        write(16,1004)
 c$$$#ifdef CMPI
 c$$$        call msg_fini()
 c$$$#endif
-c$$$        stop
+c$$$        stop 1
 c$$$      endif
 c$$$
 c$$$      allocate(fullplanes(ns),rfids(ns))
@@ -390,7 +394,8 @@ c$$$
 c$$$#ifdef CMPI
 c$$$      call msg_fini()
 c$$$#endif
-c$$$      STOP 'RADIATION STRESS READ ERROR (RS2-1)'
+c$$$      write(*,'(a)') 'RADIATION STRESS READ ERROR (RS2-1)'
+c$$$      STOP 1 
 c$$$
 c$$$      END SUBROUTINE
 
@@ -430,7 +435,7 @@ C***********************************************************************
 #ifdef CMPI
         call msg_fini()
 #endif
-        stop
+        stop 1
       endif
 
       allocate(fullplanes(ns),rfids(ns))
@@ -700,7 +705,7 @@ C***********************************************************************
 #ifdef CMPI
           call msg_fini()
 #endif
-          stop 'RS2INIT-1'
+          stop 1
         endif
       enddo
 
@@ -735,7 +740,8 @@ C***********************************************************************
 #ifdef CMPI
       call msg_fini()
 #endif
-      STOP 'RADIATION STRESS READ ERROR (RS2-1)'
+      WRITE(*,'(a)') 'RADIATION STRESS READ ERROR (RS2-1)'
+      STOP 1
 
       END SUBROUTINE
 
@@ -751,12 +757,14 @@ C***********************************************************************
       real(sz),intent(out) :: rsnx(:),rsny(:)
 
       if(type.eq.1) then
-        stop 'RS2GET: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
+        write(*,'(a)') 'RS2GET: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
+        stop 1 
 C        call rs2get_type1(rsnx,rsny,np)
       else if(type.eq.2) then
         call rs2get_type2(rsnx,rsny,np)
       else
-         stop 'RS2 TYPE IS NEITHER 1 NOR 2.  TERMINATED.'
+         write(*,'(a)') 'RS2 TYPE IS NEITHER 1 NOR 2.  TERMINATED.'
+         stop 1 
       endif
 
       return
@@ -790,7 +798,8 @@ c$$$      real(sz), dimension(:,:,:), allocatable :: rsxy
 c$$$      real(sz) :: rsx,rsy,rsx1,rsx2,rsx3,rsy1,rsy2,rsy3,cnf1,cnf2,cnf3
 c$$$      real(sz) :: angle_st,pi
 c$$$
-c$$$      stop 'RS2GET_TYPE1: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
+c$$$      write(*,'(a)') 'RS2GET_TYPE1: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
+c$$$      stop 1
 c$$$
 c$$$      if(myproc.eq.0) then
 c$$$        write(screenunit,*)
@@ -953,7 +962,7 @@ c$$$
 c$$$#ifdef CMPI
 c$$$      call msg_fini()
 c$$$#endif
-c$$$      stop
+c$$$      stop 1
 c$$$
 c$$$      end subroutine
 
@@ -1154,7 +1163,7 @@ C--------------------------------------------------------------------------
 #ifdef CMPI
       call msg_fini()
 #endif
-      stop
+      stop 1
 
       end subroutine
 
