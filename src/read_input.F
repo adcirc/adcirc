@@ -4768,7 +4768,7 @@ C
 #ifdef DATETIME
          ! Convert base_date to datetime WJP
          basedatetime = strptime(adjustl(trim(base_date)),
-     &                           "%Y-%m-%d %H:%M")
+     &                           "%Y-%m-%d %H:%M:%S")
          ! Check this a valid time
          if (.not.basedatetime%isvalid()) then
             call allMessage(ERROR,'Invalid base datetime: '
