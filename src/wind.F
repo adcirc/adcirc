@@ -8446,8 +8446,11 @@ C.... or netcdf (depending on what is present)
       Uvar = ':UGRD:10 m above ground:' 
       Vvar = ':VGRD:10 m above ground:' 
       Cvar = ':ICEC:surface:' 
+#ifdef GRIB2API
+      ! Don't check if no grib
       inquire(file=Pfile,exist=Fexists)
       if (.not.Fexists) then
+#endif
          ! No grib2 file, check for netcdf file
          grb2flag = .false.
          Pfile = 'fort.221.nc'
@@ -8459,7 +8462,8 @@ C.... or netcdf (depending on what is present)
          inquire(file=Pfile,exist=Fexists)
          if (.not.Fexists) then
             call allMessage(ERROR,
-     &                     'neither .grb2 nor .nc wind files exist.')
+     &       'Neither .grb2 nor .nc wind files exist. Or, if .grb2 '//
+     &       'files exist, did you compile with GRIB2 compiler flags?')
             call windTerminate()
          endif
          inquire(file=Wfile,exist=Fexists)
@@ -8491,8 +8495,8 @@ C.... or netcdf (depending on what is present)
                endif
             close(22) 
          endif    
-      endif
 #ifdef GRIB2API
+      endif
       if (grb2flag) then
 #ifdef CMPI
       ! only get header with one processor
