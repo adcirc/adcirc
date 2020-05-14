@@ -126,12 +126,12 @@ int enc_jpeg2000_clone(unsigned char *cin,int width,int height,int nbits,
    is only used for japser version 1.x up to 1.9.24
    for newer code the above line is removed
  */
-#if JAS_VERSION_MAJOR == 1
-   image.inmem_=1;
-#endif
-#ifndef JAS_VERSION_MAJOR
-   image.inmem_=1;
-#endif
+//#if JAS_VERSION_MAJOR == 1
+//   image.inmem_=1;
+//#endif
+//#ifndef JAS_VERSION_MAJOR
+//   image.inmem_=1;
+//#endif
 
 
 

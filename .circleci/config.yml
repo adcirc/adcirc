@@ -30,7 +30,7 @@ version: 2
 jobs:
   build_legacy_without_netcdf:
       docker:
-        - image: zcobell/adcirc_20191101 
+        - image: zcobell/adcirc_20200513 
       steps:
         - checkout
         - run: 
@@ -41,7 +41,7 @@ jobs:
             command: cd work ; make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan
   build_legacy_with_netcdf:
       docker:
-        - image: zcobell/adcirc_20191101 
+        - image: zcobell/adcirc_20200513 
       steps:
         - checkout
         - run: 
@@ -52,7 +52,7 @@ jobs:
             command: cd work ; make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan NETCDF=enable NETCDF4=enable     NETCDF4_COMPRESSION=enable NETCDFHOME=/usr
   build_legacy_with_netcdf_and_xdmf:
       docker:
-        - image: zcobell/adcirc_20191101 
+        - image: zcobell/adcirc_20200513 
       steps:
         - checkout
         - run: 
@@ -63,7 +63,7 @@ jobs:
             command: cd work ; make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=/usr XDMF=enable XDMFHOME=/usr
   build_cmake_without_netcdf:
       docker:
-        - image: zcobell/adcirc_20191101 
+        - image: zcobell/adcirc_20200513 
       steps:
         - checkout
         - run: 
@@ -71,7 +71,7 @@ jobs:
             command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DCMAKE_Fortran_FLAGS="-O0"; make -j4 
   build_cmake_with_netcdf:
       docker:
-        - image: zcobell/adcirc_20191101 
+        - image: zcobell/adcirc_20200513 
       steps:
         - checkout
         - run: 
@@ -79,7 +79,7 @@ jobs:
             command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DNETCDFHOME=/usr -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS="-O0" ; make -j4
   build_cmake_with_netcdf_and_xdmf:
       docker:
-        - image: zcobell/adcirc_20191101 
+        - image: zcobell/adcirc_20200513 
       steps:
         - checkout
         - run: 
@@ -87,7 +87,7 @@ jobs:
             command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DNETCDFHOME=/usr -DXDMFHOME=/usr -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS="-O0" ; make -j4
   acceptance_tests:
     docker: 
-      - image: zcobell/adcirc_20191101
+      - image: zcobell/adcirc_20200513
     steps:
       - checkout
       - run: 

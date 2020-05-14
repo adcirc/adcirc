@@ -1,0 +1,182 @@
+#! /bin/bash
+# Copyright (c) 2016 Michael David Adams
+################################################################################
+
+# Reference on sanitizer options:
+# https://github.com/google/sanitizers/wiki/SanitizerCommonFlags
+
+################################################################################
+
+cmd_dir=$(dirname "$0") || exit 1
+source "$cmd_dir"/utilities || exit 1
+
+################################################################################
+
+set_source_and_build_dirs || panic "cannot set source and build directories"
+
+#abs_source_dir="$1"
+#abs_build_dir="$2"
+
+top_dir="$cmd_dir/../.."
+data_dir="$top_dir/data"
+
+imginfo="$abs_top_builddir/src/appl/imginfo"
+jasper="$abs_top_builddir/src/appl/jasper"
+
+################################################################################
+
+verbose=0
+if [ $# -ge 1 ]; then
+	verbose=1
+fi
+
+################################################################################
+
+# Decoder tests for valid data.
+good_list=("$data_dir"/test/good/*.*)
+
+# Decoder tests for invalid data.
+bad_list=("$data_dir"/test/bad/*.*)
+
+# Encoder tests that should fail.
+enc_list=()
+enc_list+=("$data_dir"/test/good/109-PoC.jp2)
+
+error_count=0
+
+jpeg_turbo_lib_version=$("$imginfo" -o version \
+  < "$data_dir/images/goldenears.jpg" | \
+  awk '{print $2;}' ) || \
+  panic "cannot get JPEG turbo library version"
+if [ -z "$jpeg_turbo_lib_version" ]; then
+	jpeg_turbo_lib_version=unknown
+fi
+
+echo "JPEG Turbo Library version: $jpeg_turbo_lib_version"
+
+echo "############################################################"
+echo "PART 1: Decoder tests --- valid data sets"
+echo "############################################################"
+
+for in_file in "${good_list[@]}"; do
+	echo "############################################################"
+	expected_status=0
+	echo "Input file: $in_file"
+	"$imginfo" < "$in_file"
+	status=$?
+	echo "actual exit status: $status"
+	echo "expected exit status: $expected_status"
+	if [ "$status" -ne "$expected_status" ]; then
+		echo "ERROR: imginfo command had unexpected exit status " \
+		  "(expected $expected_status got $status)"
+		error_count=$((error_count + 1))
+	fi
+done
+echo "############################################################"
+
+echo "############################################################"
+echo "PART 2: Decoder tests --- invalid data sets"
+echo "############################################################"
+
+for in_file in "${bad_list[@]}"; do
+	name=$(basename "$in_file")
+	echo "############################################################"
+
+	# Select the maximum number of samples that is allowed to be decoded.
+	#
+	# The information below should be taken into consideration when
+	# selecting the maximum number of samples for decoding.
+	#
+	# 5_crashes.bmp
+	# This file will effectively hang some systems by requesting
+	# a very large amount of virtual memory.  So, the number of samples
+	# to be decoded must be restricted to make decoding fail from the start.
+	#
+	# jasper-doublefree-mem_close.jpg
+	# 1_crash.jpg
+	# 00028-jasper-uaf-jas_realloc.jpg
+	# These files must restrict the number of samples to be decoded in order
+	# to force decoding to fail; otherwise the test could pass or fail
+	# depending on the version of the JPEG library used.
+	# Furthermore, if the decoding test passes, it will take a very long
+	# time due complete due to the large image involved.
+	#
+	# 00047-jasper-stackoverflow-jpc_tsfb_getbands2.jpc
+	# This test must be allowed to fully decode in order to check for
+	# array/buffer overrun.
+	case "$name" in
+	00047-jasper-stackoverflow-jpc_tsfb_getbands2.jpc)
+		max_samples=0;;
+	5_crashes.bmp | \
+	2_crashes.bmp | \
+	1_crash.jpg | \
+	00028-jasper-uaf-jas_realloc.jpg | \
+	jasper-doublefree-mem_close.jpg \
+	)
+		max_samples=100000000;;
+	*)
+		max_samples=0;;
+	esac
+
+	echo "Input file: $in_file"
+	case "$name" in
+	*.jpg)
+		echo "JPEG Turbo Library version: $jpeg_turbo_lib_version"
+		;;
+	esac
+	imginfo_opts=()
+	imginfo_opts+=(--max-samples "$max_samples")
+	special_asan_options=()
+	special_asan_options+=(exitcode=10)
+	special_asan_options+=(allocator_may_return_null=true)
+	special_asan_options+=(detect_leaks=false)
+	#special_asan_options+=(soft_rss_limit_mb=1024)
+	expected_status=1
+	ASAN_OPTIONS="${special_asan_options[*]}" \
+	  "$imginfo" "${imginfo_opts[@]}" < "$in_file"
+	status=$?
+	echo "actual exit status: $status"
+	echo "expected exit status: $expected_status"
+	if [ "$status" -ne 1 ]; then
+		echo "ERROR: imginfo command had unexpected exit status " \
+		  "(expected $expected_status got $status)"
+		error_count=$((error_count + 1))
+	fi
+done
+echo "############################################################"
+
+echo "############################################################"
+echo "PART 3: Encoder tests"
+echo "############################################################"
+
+for in_file in "${enc_list[@]}"; do
+	echo "############################################################"
+	echo "Input file: $in_file"
+	special_asan_options=()
+	special_asan_options+=(exitcode=10)
+	special_asan_options+=(allocator_may_return_null=true)
+	special_asan_options+=(detect_leaks=false)
+	expected_status=1
+	if [ "$verbose" -ge 1 ]; then
+		echo "Running ASAN_OPTIONS=${special_asan_options[*]} $jasper -f $in_file -T jp2 -F - > /dev/null"
+	fi
+	ASAN_OPTIONS="${special_asan_options[*]}" \
+	  "$jasper" -f "$in_file" -T jp2 -F - > /dev/null
+	status=$?
+	if [ "$status" -ne "$expected_status" ]; then
+		echo "ERROR: imginfo command had unexpected exit status " \
+		  "(expected $expected_status got $status)"
+		error_count=$((error_count + 1))
+	fi
+done
+echo "############################################################"
+
+echo "############################################################"
+
+echo "error count: $error_count"
+if [ "$error_count" -gt 0 ]; then
+	echo "STATUS: FAILED"
+	panic "FAILED"
+fi
+
+echo "STATUS: PASSED"

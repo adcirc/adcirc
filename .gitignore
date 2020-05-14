@@ -28,3 +28,4 @@ lib/
 swan/*.f90
 swan/*.f
 build/
+config.h
