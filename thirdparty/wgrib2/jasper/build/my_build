@@ -1,0 +1,116 @@
+#! /bin/bash
+
+panic()
+{
+	echo "ERROR: $@"
+	exit 1
+}
+
+cmd_dir=$(dirname "$0") || exit 1
+abs_cmd_dir=$(readlink -f "$cmd_dir") || panic
+
+do_install=0
+enable_debug=0
+do_make_test=0
+verbose=0
+enable_asan=0
+enable_usan=0
+sde_top_dir="$HOME/public/sde"
+#sde_top_dir=""
+
+while getopts E:AUditv opt; do
+	case $opt in
+	A)
+		enable_asan=1;;
+	U)
+		enable_usan=1;;
+	i)
+		do_install=1;;
+	d)
+		enable_debug=1;;
+	t)
+		do_make_test=1;;
+	v)
+		verbose=1;;
+	E)
+		sde_top_dir="$OPTARG";;
+	\?)
+		usage
+		break;;
+	esac
+done
+shift $((OPTIND - 1))
+
+if [ "$enable_debug" -ne 0 ]; then
+	enable_asan=1
+	enable_usan=1
+fi
+
+source_dir="$abs_cmd_dir/.."
+tmp_dir="$source_dir/tmp_cmake"
+build_dir="$tmp_dir/build"
+install_dir="$tmp_dir/install"
+
+echo "source directory $source_dir"
+echo "build directory $build_dir"
+echo "install directory $install_dir"
+if [ -n "$CC" ]; then
+	echo "C compiler $CC"
+fi
+
+#sde_gcc="$sde_top_dir/bin/gcc"
+sde_setup="$sde_top_dir/bin/sde_make_setup"
+eval $("$sde_setup") || panic "setup failed"
+
+if [ -e "$tmp_dir" ]; then
+	echo "Removing $tmp_dir"
+	rm -rf "$tmp_dir" || panic "cannot remove directory $tmp_dir"
+fi
+
+opts=()
+opts+=(-B"$build_dir")
+opts+=(-H"$source_dir")
+#if [ -n "$sde_top_dir" ]; then
+#	opts+=("-DCMAKE_C_COMPILER=$sde_gcc")
+#fi
+opts+=("-DCMAKE_INSTALL_PREFIX=$install_dir")
+opts+=("-DJAS_ENABLE_STRICT=true")
+if [ "$enable_debug" -ne 0 ]; then
+	opts+=("-DCMAKE_BUILD_TYPE=Debug")
+	opts+=("-DJAS_ENABLE_SHARED=false")
+else
+	opts+=("-DCMAKE_BUILD_TYPE=Release")
+fi
+if [ "$enable_asan" -ne 0 ]; then
+	opts+=("-DJAS_ENABLE_ASAN=true")
+fi
+if [ "$enable_usan" -ne 0 ]; then
+	opts+=("-DJAS_ENABLE_USAN=true")
+fi
+opts+=("$@")
+echo "Running cmake ${opts[@]}"
+cmake "${opts[@]}" || panic "cmake failed"
+
+make_opts=()
+if [ "$verbose" -ne 0 ]; then
+	make_opts+=("VERBOSE=1")
+fi
+targets=()
+targets+=(clean)
+targets+=(all)
+if [ "$do_install" -ne 0 ]; then
+	targets+=(install)
+fi
+for target in "${targets[@]}"; do
+	(cd "$build_dir" && make "$target" "${make_opts[@]}") || \
+	  panic "make $target failed"
+done
+
+make_opts=()
+if [ "$verbose" -ne 0 ]; then
+	make_opts+=("ARGS=-V")
+fi
+if [ "$do_make_test" -ne 0 ]; then
+	(cd "$build_dir" && make test "${make_opts[@]}") || \
+	  panic "make test failed"
+fi

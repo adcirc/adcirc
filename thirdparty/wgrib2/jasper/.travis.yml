@@ -1,0 +1,42 @@
+language: c
+
+# Trusty Tahr release date: April 17, 2014
+dist: trusty
+sudo: required
+#sudo: false
+##group: beta
+
+# Precise Pangolin release date: April 26, 2012
+#dist: precise
+#sudo: required
+
+os:
+    - linux
+    - osx
+
+#osx_image:
+#    - xcode7.3
+#    #- xcode8
+
+compiler:
+    - clang
+    - gcc
+
+before_install:
+    - build/travis/prebuild
+#    - bash --version
+#    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install freeglut; fi
+#    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
+#    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew outdated bash || brew upgrade bash; fi
+#    - bash --version
+
+#install:
+
+script:
+    - build/travis/build
+
+notifications:
+    email:
+        on_success: change
+        on_failure: always
+
