@@ -1340,7 +1340,9 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
             CHANGE_14 = .false.
          ENDIF
          WTRATIO = (TimeLoc-WTIME1)/WTIMINC
-         CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+         IF(NCICE.NE.0)THEN
+             CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+         ENDIF
          IF (NWS.eq.-14) then
             IF (TimeLoc.GT.WTIME2_12) THEN
                ! Now get OWI file data (will overwrite where data
@@ -2757,7 +2759,9 @@ C     from NAM data
          WTIME1 = WTIMINC*floor(TimeLoc/WTIMINC)
          WTIME2 = TimeLoc + WTIMINC
          WTRATIO = (TimeLoc-WTIME1)/WTIMINC
-         CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+         IF(NCICE.NE.0)THEN
+             CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+         ENDIF
          ! Set datetime and make/check the grib header
          CALL NWS14INIT()
          ! Initialising winds (pressure is already initialized)

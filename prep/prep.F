@@ -6998,7 +6998,7 @@ C     Open each of the subdomain files
          sdu(iproc) = 505 + (iproc-1)  !tcm v51.31 changed 105 to 505 to avoid conflicts with fort.141 file
          sdFileName(1:7) = 'PE0000/'
 c........tcm v50.66.03 increased unit number to 100's places
-         sdFileName = trim(DefaultName) ;    
+         sdFileName(8:) = trim(DefaultName)     
 #ifdef ADCSWAN
          sdFileName = 'PE0000/'//FileName
 #endif
