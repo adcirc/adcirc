@@ -32,6 +32,12 @@ ELSEIF(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
     SET(IPOLATES_R8_FLAG "-fdefault-real-8 -fdefault-double-8")
 ENDIF()
 ###########################################################################
+    
+###########################################################################
+# JASPER
+###########################################################################
+ADD_SUBDIRECTORY(${CMAKE_CURRENT_SOURCE_DIR}/jasper EXCLUDE_FROM_ALL )
+###########################################################################
 
 ###########################################################################
 # config.h file generation
@@ -47,7 +53,7 @@ SET( IPOLATES_LIB TRUE )
 SET( IPOLATES_LIB_STRING "ip2lib_d" )
 SET( USE_G2CLIB FALSE )
 SET( USE_PROJ4 FALSE )
-SET( USE_JASPER FALSE )
+SET( USE_JASPER TRUE )
 SET( USE_AEC FALSE )
 SET( USE_MYSQL FALSE )
 SET( USE_PNG FALSE )
@@ -65,6 +71,12 @@ ELSE()
     SET(USE_NETCDF4 FALSE)
 ENDIF()
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/config.h)
+###########################################################################
+
+###########################################################################
+# JPEG
+###########################################################################
+FIND_LIBRARY( JPEG TRUE )
 ###########################################################################
 
 ###########################################################################
@@ -384,7 +396,7 @@ ADD_LIBRARY( grib2 STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/ftn_api/wgrib2lowapi.f90 
     ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/wgrib2.c ) 
 
-ADD_DEPENDENCIES( grib2 ipolates geo ) 
+ADD_DEPENDENCIES( grib2 ipolates geo libjasper ) 
 TARGET_INCLUDE_DIRECTORIES( grib2 PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/ipolates 
                                           ${CMAKE_CURRENT_SOURCE_DIR}/gctpc/source
                                           ${CMAKE_CURRENT_SOURCE_DIR} )
@@ -395,7 +407,10 @@ IF(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel")
 ELSEIF(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
     TARGET_COMPILE_DEFINITIONS( grib2 PRIVATE "GFORTRAN" )
 ENDIF()
-TARGET_LINK_LIBRARIES( grib2 PRIVATE ipolates geo )
+TARGET_LINK_LIBRARIES( grib2 PRIVATE ipolates geo libjasper ${JPEG_LIBRARIES} )
+TARGET_INCLUDE_DIRECTORIES( grib2 PRIVATE ${JPEG_INCLUDE_DIR} )
+TARGET_INCLUDE_DIRECTORIES( grib2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/jasper/src/libjasper/include )
+TARGET_INCLUDE_DIRECTORIES( grib2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/jasper/src/libjasper/include )
 IF(NETCDF_WORKING)
     TARGET_INCLUDE_DIRECTORIES(grib2 PRIVATE ${NETCDF_INCLUDE_DIRS})
     TARGET_LINK_LIBRARIES(grib2 PRIVATE ${NETCDF_LIBRARIES} ${NETCDF_AdditionalLibs})

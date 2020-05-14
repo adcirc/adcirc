@@ -1,0 +1,9 @@
+libdir=@CMAKE_INSTALL_FULL_LIBDIR@
+includedir=@CMAKE_INSTALL_FULL_INCLUDEDIR@
+
+Name: JasPer
+Description: Image Processing/Coding Tool Kit with JPEG-2000 Support
+Version: @JAS_VERSION@
+
+Libs: -L${libdir} -ljasper
+Cflags: -I${includedir}/jasper
