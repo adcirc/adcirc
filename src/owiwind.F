@@ -256,7 +256,7 @@
       SUBROUTINE NWS12GET(WVNX,WVNY,PRN,NP,PRdeflt,HasData)
 !-----------------------------------------------------------------------
         USE SIZES,ONLY: MYPROC,MNPROC,GBLINPUTDIR
-        USE GLOBAL,ONLY: RHOWAT0, G
+        USE GLOBAL,ONLY: RHOWAT0, G, NWS
         IMPLICIT NONE
         INTEGER,intent(in)     :: NP
         REAL(SZ),intent(out)   :: WVNX(:),WVNY(:),PRN(:)
