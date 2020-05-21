@@ -268,19 +268,6 @@ C
       END INTERFACE
       PROCEDURE(p_computeWindDrag),POINTER :: f_computeWindDrag => null()
 
-#ifdef GRIB2API
-#ifdef DATETIME
-      integer :: ub, ubc ! size of weightsp and indp interpolant weights
-      real(sz),allocatable :: weightsp(:,:,:)
-      integer,allocatable  :: indp(:,:,:)
-      character(len=200) :: Pfile, Wfile, Pinv, Winv, Cinv, Cfile
-      character(len=200) :: Pfile1, Wfile1, Pinv1, Winv1
-      character(len=200) :: Pvar, Uvar, Vvar, Cvar, Tvar, Lonvar, Latvar
-      character(len=200) :: Tdim, Londim, Latdim, Tformat
-      type(datetime) :: CurDT
-      logical :: grb2flag
-      integer :: NT
-#endif
 C------------------------end of data declarations-----------------------
       CONTAINS
 C
