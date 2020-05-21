@@ -236,8 +236,9 @@ C-----------------------------------------------------------------------
       REAL(SZ) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
 
 !     Upper limit on Radiation stresses
+!     Default - don't limit (set to high value) but may want to use: UL = 0.1_SZ     
 !     (0.1 m^2/s^2 is equivalent to 175 m/s wind speeds!)
-      REAL(SZ),parameter :: UL = 0.1d0
+      REAL(SZ),parameter :: UL = 999_SZ 
 
       call setMessageSource("ComputeWaveDrivenForces")
 #if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
@@ -409,8 +410,10 @@ C..... END DW/WJP
            RSNX2(IP) = RSNX2(IP) / TOTALAREA
            RSNY2(IP) = RSNY2(IP) / TOTALAREA
 
-C           RSNX2(IP) = min(UL,max(-UL,RSNX2(IP)))
-C           RSNY2(IP) = min(UL,max(-UL,RSNY2(IP)))
+C    WJPs artifical limiter; UL is to a really large by default, user
+C    can change UL to be a strict value if they please
+           RSNX2(IP) = min(UL,max(-UL,RSNX2(IP)))
+           RSNY2(IP) = min(UL,max(-UL,RSNY2(IP)))
 
          ENDDO outer
 
