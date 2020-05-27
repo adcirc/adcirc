@@ -1513,7 +1513,7 @@ Casey 180318: Added for NWS=13, ARC modified 190108
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
             WVNXOUT(I)=RampMete*WINDX
             WVNYOUT(I)=RampMete*WINDY
-          ENDDO
+          END DO
         ENDIF
 #endif
 
@@ -1830,6 +1830,9 @@ C----------------------------------------------------------------------
 #ifdef ADCNETCDF
 Casey 180318: Added for NWS=13
       USE OWIWIND_NETCDF, ONLY: NWS13INIT,NWS13GET
+#endif
+#ifdef DATETIME
+      use datetime_module, only: datetime
 #endif
       implicit none
       integer, intent(in) :: nws
