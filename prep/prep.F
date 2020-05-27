@@ -8001,7 +8001,7 @@ C     fort.74
       WindVelDescript % readMaxMin           = .false.
       call makeFileName(WindVelDescript)
 
-C     windDrag.63
+C     windDrag.173
       windDragDescript % specifier            = NOUTGW
       windDragDescript % lun                  = 173
       windDragDescript % initial_value        = 0.0
@@ -8816,6 +8816,7 @@ C     was specified.
       CALL initNetCDFOutputFile(PrStaDescript, reterr)
       CALL initNetCDFOutputFile(WindVelStaDescript, reterr)
       CALL initNetCDFOutputFile(PrDescript, reterr)
+      CALL initNetCDFOutputFile(WindDragDescript, reterr)
       CALL initNetCDFOutputFile(WindVelDescript, reterr)
       CALL initNetCDFOutputFile(WeirElevDescript, reterr)
       CALL initNetCDFOutputFile(EtaMaxDescript, reterr)
