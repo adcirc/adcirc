@@ -937,5 +937,12 @@
                 ENDIF
             ENDDO
             WRITE(*,'(A)') "Results match within specified tolerance."
+            
+            DEALLOCATE(nodaldata1)
+            DEALLOCATE(nodaldata2)
+            DEALLOCATE(ndiff)
+            DEALLOCATE(nerror)
+            DEALLOCATE(avgdiff)
+            DEALLOCATE(maxdiff)
 
         END PROGRAM adcircResultCompare

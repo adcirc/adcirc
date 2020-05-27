@@ -6924,14 +6924,14 @@ C---------------------------------------------------------------------------
       LOGICAL, intent(out):: Success     ! .true. if files opened w/o errors
       LOGICAL Found               !.true. if the full domain file exists
       CHARACTER(len=80) FileName   ! name of full domain file
-      CHARACTER(len=20) DefaultName! default name of full domain file  !increased from 7 to 8 tcm v50.66.03
+      CHARACTER(len=80) DefaultName! default name of full domain file
       INTEGER :: dnlen  !length of defaultname (7 or 8)
       INTEGER ErrorIO             ! zero if file opened successfully
       INTEGER iproc               ! subdomain index
       CHARACTER(len=20) sdFileName     ! subdomain file name   !increased from 14 to 15 tcm v50.66.03
       CHARACTER(len=4) skipstring ! indicates user wants to skip this file
       INTEGER:: unitwidth
-      CHARACTER (len=20):: fmt
+      CHARACTER (len=20):: unitnumberstr
 
       Found = .false.
       Success = .false.
@@ -6943,10 +6943,8 @@ C---------------------------------------------------------------------------
 
       unitwidth = ceiling(log(dble(UnitNumber))/log(10.0)) ;        
       dnlen = 5 + unitwidth ;   
-      WRITE(FMT,'(I3)') unitwidth ;
-
-      FMT = '(I'//TRIM(ADJUSTL(FMT))//')' ;          
-      WRITE(DefaultName(6:dnlen),TRIM(FMT)) UnitNumber ;
+      WRITE(unitnumberstr,'(I0)') UnitNumber ;
+      DefaultName = TRIM(ADJUSTL(DefaultName))//TRIM(ADJUSTL(unitNumberStr))
 
 C
 C     Determine the name of the file; if found, open it
@@ -7608,6 +7606,7 @@ C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: PrStaDescript      ! fort.71
       type(OutputDataDescript_t), SAVE :: WindVelStaDescript ! fort.72
       type(OutputDataDescript_t), SAVE :: PrDescript         ! fort.73
+      type(OutputDataDescript_t), SAVE :: windDragDescript   ! winddrag.173
       type(OutputDataDescript_t), SAVE :: WindVelDescript    ! fort.74
       type(OutputDataDescript_t), SAVE :: weirElevDescript   ! fort.77
       type(OutputDataDescript_t), SAVE :: EtaMaxDescript     ! maxele.63
@@ -7968,7 +7967,7 @@ C     fort.74
       WindVelDescript % readMaxMin           = .false.
       call makeFileName(WindVelDescript)
 
-C     windDrag.63
+C     windDrag.173
       windDragDescript % specifier            = NOUTGW
       windDragDescript % lun                  = 173
       windDragDescript % initial_value        = 0.0
@@ -8783,6 +8782,7 @@ C     was specified.
       CALL initNetCDFOutputFile(PrStaDescript, reterr)
       CALL initNetCDFOutputFile(WindVelStaDescript, reterr)
       CALL initNetCDFOutputFile(PrDescript, reterr)
+      CALL initNetCDFOutputFile(WindDragDescript, reterr)
       CALL initNetCDFOutputFile(WindVelDescript, reterr)
       CALL initNetCDFOutputFile(WeirElevDescript, reterr)
       CALL initNetCDFOutputFile(EtaMaxDescript, reterr)

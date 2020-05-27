@@ -18,9 +18,6 @@ C
 #ifdef CMPI
       use messenger, only : msg_fini
 #endif
-      use datetime_module, only: datetime
-      integer, parameter :: allowable_nws(19)
-     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,14,15,16,19,20,29,30/)
 #ifdef DATETIME
       use datetime_module, only: datetime, timedelta
 #endif
@@ -1435,40 +1432,6 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
 
           END DO
         ENDIF
-C    WJP: Added for NSW = 14 (GRIB2 e.g. CFS)
-        IF (ABS(NWS).EQ.14) THEN
-           IF (TimeLoc + 1d-4 < 86400d0*RNDAY) then
-              CALL NWS14GET(TimeLoc,WTRATIO,WVNX1,WVNY1,PRN1,
-     &                      WVNX2,WVNY2,PRN2)
-           ELSE
-              WTRATIO = 1.0d0
-           ENDIF
-           DO I=1,NP
-              WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-              WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
-              WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-              WDragCo = WindDrag(WindMag, I)
-              IF (LoadDirEffRLen) THEN
-                 CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &             WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-              WindMag = SQRT(WindX*WindX+WindY*WindY)
-              WDragCo = WindDrag(WindMag,I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            IF(NCICE.NE.0) THEN
-               WDragCo = WindIceDrag(WDragCo,ciceout(i))
-            ENDIF
-            WSX2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
-            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                          -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete*WINDX
-            WVNYOUT(I)=RampMete*WINDY
-          ENDDO
-        ENDIF
-      ENDIF
 
 C     RJW ffpl Merged:
 !     rjw added nws = 19: asymmetric hurricane winds
@@ -1715,7 +1678,9 @@ C----------------------------------------------------------------------
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np
+#ifdef DATETIME      
       use datetime_module, only: datetime
+#endif      
       implicit none
       integer, intent(in) :: nws
       real(sz) :: windx ! wind vel (m/s) in x-dir
