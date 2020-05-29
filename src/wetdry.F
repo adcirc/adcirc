@@ -78,6 +78,7 @@ CWET...
       
       integer,allocatable ::    nibcnt(:)
       integer,allocatable ::    noffold(:)
+      integer,allocatable ::    noff_sg(:)
 
       ! jgf52.08.08: Enable analyst to remove NOFF from wetting and
       ! drying algorithm; .true. by default to conform with prior
@@ -95,10 +96,12 @@ CWET...
       subroutine initializeWettingAndDrying()
       use sizes, only : mne, mnp
       use global, only : h0, nodecode, nnodecode
+      use nodalattributes,only: loadSubgridBarrier
       implicit none
 
       allocate ( nibcnt(mnp) )
       allocate ( noffold(mne))
+      if(loadSubgridBarrier)allocate(noff_sg(mne))
       nnodecode = 1
       nodecode = 1
       noffold(:) = 1
@@ -118,6 +121,7 @@ CWET...
 !----------------------------------------------------------------------
       subroutine computeWettingAndDrying(it)
       use sizes, only : sz, mne, mnp
+      use nodalattributes,only: loadSubgridBarrier
       use global, only : noff, nodecode, nnodecode, eta2, tk, nolifa,
      &    bsx1, bsy1, btime_end, C2DDI, C3D, g, h0, ifnlfa, nddt,
      &    nibnodecode, ilump, ncchange, tkm
@@ -128,7 +132,7 @@ CWET...
       use mesh, only : ne, np, dp, mju, totalArea, nm, x, y, areas
       use nodalattributes, only : BFCdLLimit, fgamma, ftheta, fric,
      &   manningsn, hbreak, ifhybf, ifnlbf, iflinbf, loadManningsN,
-     &   loadZ0B_var, z0b_var
+     &   loadZ0B_var, z0b_var, loadSubgridBarrier
       use global_3dvs, only : a, b, islip, kp, z0b, sigma, evtot, q
       use subdomain, only : subdomainOn, enforceBN, enforceWDcb, enforceWDob
       implicit none
@@ -167,6 +171,9 @@ CWET...
             NOFFOLD(I)=NOFF(I)
             NOFF(I)=1
          ENDDO
+
+         IF(loadSubgridBarrier)call applySubgridBarrier()
+
 CWET...
 CWET...WET/DRY - PART 1 - NODAL DRYING CRITERIA D1
 CWET....Drying Criteria D1: this depends on NODECODE and updates NODECODE
@@ -1029,6 +1036,18 @@ CWET... of the subdomains, the NCCHANGE flag will be activated on all
 CWET... of the subdomains, to prevent them from getting out of sync
 CWET... with their MPI calls as some reset the GWCE and others do not.
 CWET...
+
+         IF(LoadSubgridBarrier)THEN
+             DO I=1,NE
+                 IF(NOFF_SG(I).EQ.0)THEN
+                     IF(NOFF(I).NE.0)THEN
+                         NOFF(I) = 0
+                         NCCHANGE=NCCHANGE+1
+                     ENDIF
+                 ENDIF
+             ENDDO
+         ENDIF
+
 #ifdef CMPI
          !jgf48.4619 implementing Seizo's changes for Lumped, fully
          ! explicit operation. In that case, the GWCE LHS matrix is
@@ -1048,6 +1067,91 @@ CWET...
 c.....
 !-----------------------------------------------------------------------
       end subroutine computeWettingAndDrying
+!-----------------------------------------------------------------------
+
+
+!-----------------------------------------------------------------------
+!   Apply a subgrid barrier.
+!
+!   Assumptions: When the subgrid barrier is not being overtopped,
+!                the cross-barrier flow is disabled and the nodes 
+!                are placed at the elevation found in the mesh 
+!                geometry. When the barrier becomes overtopped, 
+!                the nodes are elevated temporarily during the 
+!                overtopping process. When the overtopping
+!                concludes, the nodes are returned to their mesh
+!                specified elevations and the cross-barrier flow 
+!                is turned off again
+!-----------------------------------------------------------------------
+      subroutine applySubgridBarrier()
+!-----------------------------------------------------------------------
+          USE SIZES,ONLY: SZ
+          USE MESH,ONLY: DP,DP_ORIG,NM,NE
+          USE GLOBAL,ONLY: ETA2,NOFF,H0,NODECODE,NCCHANGE,ILUMP
+          USE NODALATTRIBUTES,ONLY: SubgridBarrier,
+     &                              SubgridBarrierOvertopping
+#ifdef CMPI
+          USE MESSENGER,ONLY:wetDrySum
+#endif          
+          IMPLICIT NONE
+          INTEGER  :: I,NM1,NM2,NM3,NCELE
+          REAL(SZ) :: SB1,SB2,SB3
+          REAL(SZ) :: ETABAR,BARHEIGHT
+          REAL(SZ) :: DOT,DOT1,DOT2,DOT3
+          REAL(SZ) :: E1,E2,E3,ETA
+          REAL(SZ),PARAMETER :: SBDT = 50D0
+
+          NOFF_SG(:) = 1
+
+          DO I = 1,NE
+             NM1=NM(I,1)
+             NM2=NM(I,2)
+             NM3=NM(I,3)
+             SB1=subgridBarrier(NM1,1)
+             SB2=subgridBarrier(NM2,1)
+             SB3=subgridBarrier(NM3,1)
+
+             NCELE = NODECODE(NM1)*NODECODE(NM2)*NODECODE(NM3)*NOFF(I)
+             IF(NCELE.EQ.0)CYCLE
+
+             IF(SB1.LT.DP_ORIG(NM1).AND.
+     &          SB2.LT.DP_ORIG(NM2).AND.
+     &          SB3.LT.DP_ORIG(NM3))THEN
+
+                E1 = ETA2(NM1)
+                E2 = ETA2(NM2)
+                E3 = ETA2(NM3)
+                ETA = MAX(E1,E2,E3)
+                DOT1 = E1*NODECODE(NM1)+SB1
+                DOT2 = E2*NODECODE(NM2)+SB2
+                DOT3 = E3*NODECODE(NM3)+SB3
+                DOT  = MAX(DOT1,DOT2,DOT3)
+
+                IF(DOT.GT.-1.2D0*H0)THEN
+                    DP(NM1) = MAX(SB1,DP(NM1)+SB1/SBDT)
+                    DP(NM2) = MAX(SB2,DP(NM2)+SB2/SBDT)
+                    DP(NM3) = MAX(SB3,DP(NM3)+SB3/SBDT)
+                    SubgridBarrierOvertopping(NM1) = .TRUE.
+                    SubgridBarrierOvertopping(NM2) = .TRUE.
+                    SubgridBarrierOvertopping(NM3) = .TRUE.
+                ELSE
+                    DP(NM1) = MIN(DP_ORIG(NM1),DP(NM1)-SB1/SBDT)
+                    DP(NM2) = MIN(DP_ORIG(NM2),DP(NM2)-SB2/SBDT)
+                    DP(NM3) = MIN(DP_ORIG(NM3),DP(NM3)-SB3/SBDT)
+                    NOFF_SG(I) = 0
+                    SubgridBarrierOvertopping(NM1) = .FALSE.
+                    SubgridBarrierOvertopping(NM2) = .FALSE.
+                    SubgridBarrierOvertopping(NM3) = .FALSE.
+                ENDIF
+             ELSE
+                SubgridBarrierOvertopping(NM1) = .FALSE.
+                SubgridBarrierOvertopping(NM2) = .FALSE.
+                SubgridBarrierOvertopping(NM3) = .FALSE.
+             ENDIF
+          ENDDO
+
+!-----------------------------------------------------------------------
+      end subroutine applySubgridBarrier
 !-----------------------------------------------------------------------
 
 
