@@ -38,6 +38,7 @@
                       ! 23 = Miller cylindrical,
                       ! 24 = Gall-Stereographic cylindrical)
       real(sz),allocatable, target ::  dp(:)  ! bathymetric depth
+      real(sz),allocatable         :: dp_orig(:) ! original bathymetric depth
       integer,allocatable :: nm(:,:)          ! element table size(ne,3)
       real(8),allocatable :: x(:)   ! x cartesian node locations x(np)
       real(8),allocatable :: y(:)   ! y cartesian node locations y(np)
@@ -1404,6 +1405,7 @@
 !     estimate the number of neighbor nodes around any node = number of
 !     elements containing that node.  This is correct for non-boundary
 !     nodes and one too small for boundary nodes
+      dp_orig = dp
       NNeigh(:) = 0
       DO I=1,NE
         NNeigh(NM(I,1))=NNeigh(NM(I,1))+1
@@ -2733,6 +2735,7 @@
       allocate ( slam(mnp),sfea(mnp),x(mnp),y(mnp),labels(mnp))
       call dict(node_dict, mnp)
       allocate ( dp(mnp) )
+      allocate ( dp_orig(mnp) )
       allocate ( nm(mne,3))
       allocate ( areas(mne), totalarea(mnp))
       allocate ( nneigh(mnp),mju(mnp),nodele(mnp))
@@ -2787,6 +2790,7 @@
       x = -99999.d0
       y = -99999.d0
       dp = -99999.d0
+      dp_orig = -99999.d0
       nm = -99999
       areas = -99999.d0
       totalarea = -99999.d0
