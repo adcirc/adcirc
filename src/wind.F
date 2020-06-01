@@ -1514,7 +1514,7 @@ Casey 180318: Added for NWS=13, ARC modified 190108
             WVNXOUT(I)=RampMete*WINDX
             WVNYOUT(I)=RampMete*WINDY
           END DO
-        ENDIF
+      ENDIF
 #endif
 
 C     RJW ffpl Merged:
