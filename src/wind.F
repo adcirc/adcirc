@@ -238,8 +238,8 @@ C
       logical :: dynamicWaterLevelCorrectionFileEnded = .false. ! true when all data have been read
 #ifdef DATETIME
       integer :: ub, ubc ! size of weightsp and indp interpolant weights
-      real(sz),allocatable :: weightsp(:,:,:) 
-      integer,allocatable  :: indp(:,:,:) 
+      real(sz),allocatable :: weightsp(:,:,:)
+      integer,allocatable  :: indp(:,:,:)
       character(len=200) :: Pfile, Wfile, Pinv, Winv, Cinv, Cfile
       character(len=200) :: Pfile1, Wfile1, Pinv1, Winv1
       character(len=200) :: Pvar, Uvar, Vvar, Cvar, Tvar, Lonvar, Latvar
@@ -252,7 +252,7 @@ C
       real(sz) :: wtime2_12 ! time associated with new met dataset
       real(sz) :: wtiminc_12 ! time increment between met datasets (seconds)
       logical  :: change_14 ! true when the NWS = 14 data has been updated
-      logical,allocatable :: hasdata(:) ! if OWI data exists at this vertex       
+      logical,allocatable :: hasdata(:) ! if OWI data exists at this vertex
       !...Function interface for wind drag
       !   Used so that the selection of wind drag
       !   is only performed once. Each wind drag
@@ -296,7 +296,7 @@ C     ----------------------------------------------------------------
       use mesh, only : np
       use global, only: NWS
       implicit none
-      
+
       call setMessageSource("initWindModule")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -308,7 +308,7 @@ C     ----------------------------------------------------------------
       if (NWS.eq.-14) allocate ( HasData(np) )
 
       if (NWS.eq.-14) allocate ( HasData(np) )
-C     WJP: this is the value used in the surface stress computation  
+C     WJP: this is the value used in the surface stress computation
 C     (can contol through the rhoAir parameter in namelist)
       airwaterdensityrat = rhoAir / rhoWat0
 
@@ -324,16 +324,16 @@ C.... convert background pressure from millibars to meters of water
 
       if (NWS.eq.0) return
 
-      ! Make logicals here if NWS is not 0 
+      ! Make logicals here if NWS is not 0
       garatt = .false.; swell = .false.; powell = .false.
       SELECT CASE(TRIM(DragLawString))
          CASE("Garratt","GARRATT","garratt","default")
              garatt = .true.
-             write(16,*) 'Garratt drag law used' 
+             write(16,*) 'Garratt drag law used'
 #ifdef CSWAN
          CASE("Swell","SWELL","swell")
              swell   = .true.
-             write(16,*) 'Swell drag law used' 
+             write(16,*) 'Swell drag law used'
 #endif
          CASE("Powell","POWELL","powell")
              if (NWS.eq.12.or.NWS.eq.29.or.NWS.eq.30) then
@@ -343,7 +343,7 @@ C.... convert background pressure from millibars to meters of water
                 write(16,*) 'Powell drag law used'
              else
                 garatt = .true.
-                write(16,*) 'Garratt drag law used because NWS ', 
+                write(16,*) 'Garratt drag law used because NWS ',
      &                      'incompatible with Powell'
              endif
          CASE DEFAULT
@@ -727,11 +727,11 @@ C....... and Ray's Ice for low ice values and low winds
      &              + 0.2d0*pic*pic*pic)*0.01d0
             WindIceDrag = max(IceDrag,WindDrag)
          ENDIF
-      
+
       CASE("Lupkes","default","Powell")
 C........This formula is a function that explicitly
 C....... combines air-sea drag (Garratt) with sea-ice skin drag and
-C....... sea-ice form drag components with area fraction weights 
+C....... sea-ice form drag components with area fraction weights
 C....... see: Lüpkes, et al. (2012), JGR: doi:10.1029/2012JD017630. &
 C....... Joyce et al. (2019), OM: doi:10.1016/j.ocemod.2019.101421
          IF (PercentIce.lt.0.d0) then
@@ -907,7 +907,7 @@ C----------------------------------------------------------------------
       real(sz) :: wDragCo
       real(sz) :: windMag
       real(sz) :: wtratio ! used to time interpolated between met datasets
-      real(sz) :: cicenow, icedragco, ctratio, icemag, icex, icey 
+      real(sz) :: cicenow, icedragco, ctratio, icemag, icex, icey
       integer :: nhg ! node number temp
       real(sz) :: bf ! blend factor for multiple sets of wind data
       integer :: i ! node loop counter
@@ -1237,11 +1237,11 @@ C     formula is used to compute wind stress from the wind velocity.
                WVNY1(I)=WVNY2(I)
                PRN1(I)=PRN2(I)
             END DO
-            IF (NCICE.eq.10) THEN 
+            IF (NCICE.eq.10) THEN
                cice1 = cice2
-               call nws10get(wvnx2,wvny2,prn2,cice2) 
+               call nws10get(wvnx2,wvny2,prn2,cice2)
             ELSE
-               call nws10get(wvnx2,wvny2,prn2) 
+               call nws10get(wvnx2,wvny2,prn2)
             ENDIF
          ENDIF
          WTRatio=(TimeLoc-WTIME1)/WTIMINC
@@ -1261,7 +1261,7 @@ C     jgf46.00 Add directional wind reduction.
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF (NCICE.eq.10) then
-               Cicenow = 100d0*( CICE1(I) + 
+               Cicenow = 100d0*( CICE1(I) +
      &                           WTRatio*( CICE2(I)-CICE1(I) ) )
                WDragCo = WindIceDrag(WDragCo,Cicenow)
             ELSEIF (NCICE.NE.0) THEN
@@ -1355,7 +1355,7 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
                   CICE1 = CICE2
                   CALL NWS14GET(WVNX2,WVNY2,PRN2,CICE2)
                ELSE
-                  CALL NWS14GET(WVNX2,WVNY2,PRN2) 
+                  CALL NWS14GET(WVNX2,WVNY2,PRN2)
                ENDIF
 #endif
 #endif
@@ -1416,7 +1416,7 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
             ENDIF
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF (NCICE.eq.14) then
-               Cicenow = 100d0*(CICE1(I) + 
+               Cicenow = 100d0*(CICE1(I) +
      &                          CTRATIO*(CICE2(I)-CICE1(I)))
                WDragCo = WindIceDrag(WDragCo,Cicenow)
             elseif (NCICE.ne.0.and.NCICE.ne.13) THEN
@@ -1719,7 +1719,7 @@ C    kmd48.33bc - added in information for the sponge layer
          
 C      DW/WJP: rotate wind stresses if coordinate transform
        IF ( IFSPROTS .eq. 1 ) THEN
-          UVECTMP(1:NP) = WSX2(1:NP); 
+          UVECTMP(1:NP) = WSX2(1:NP);
           VVECTMP(1:NP) = WSY2(1:NP);
           CALL DRVMAP2DSPVEC( WSX2, WSY2,
      &              UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
@@ -1938,9 +1938,9 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          ! interpolate onto adcirc mesh
          IF (NCICE.eq.10) THEN
             cice1 = 0.d0
-            call nws10get(wvnx2,wvny2,prn2,cice2) 
-         ELSE 
-            call nws10get(wvnx2,wvny2,prn2) 
+            call nws10get(wvnx2,wvny2,prn2,cice2)
+         ELSE
+            call nws10get(wvnx2,wvny2,prn2)
          ENDIF
       ENDIF
 
@@ -1961,7 +1961,7 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          CALL NWS11GET()        !NOW INTERPOLATE 1st WIND FIELD
       ENDIF
       !
-      ! 
+      !
 #ifdef DATETIME
 #if defined(GRIB2API) || defined(ADCNETCDF)
       IF (ABS(NWS).eq.14) THEN
@@ -1973,12 +1973,12 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          ! Get the first wind snap
          if (NCICE.eq.14) then
             CICE_TIME1 = WTIME1
-            CICE_TIME2 = CICE_TIME1 + CICE_TIMINC 
+            CICE_TIME2 = CICE_TIME1 + CICE_TIMINC
             CALL NWS14GET(WVNX1,WVNY1,PRN1,CICE1)
          else
             CALL NWS14GET(WVNX1,WVNY1,PRN1)
          endif
-         ! Get owi winds (should only overwrite where they exist) 
+         ! Get owi winds (should only overwrite where they exist)
          if (NWS.eq.-14) then
             CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
             CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,PRBCKGRND,HasData)
@@ -1991,7 +1991,7 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          else
             CALL NWS14GET(WVNX2,WVNY2,PRN2)
          endif
-         ! Get owi winds (should only overwrite where they exist) 
+         ! Get owi winds (should only overwrite where they exist)
          if (NWS.eq.-14) then
             CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND,HasData)
          endif
@@ -2081,7 +2081,7 @@ C----------------------------------------------------------------------
       real(sz) :: wDragCo
       real(sz) :: windMag
       real(sz) :: wtratio ! used to time interpolated between met datasets
-      real(sz) :: cicenow, ctratio 
+      real(sz) :: cicenow, ctratio
       integer :: nhg ! node number temp
       real(sz) :: bf ! blend factor for multiple sets of wind data
       real(sz) :: vortexPRDIFF
@@ -2652,12 +2652,12 @@ C     formula is used to compute wind stress from the wind velocity.
          ! read from fort.200 and spatially interpolate onto adcirc mesh
          IF (NCICE.eq.10) THEN
             ! read from fort.200 and spatially interpolate onto adcirc mesh
-            call nws10get(wvnx1,wvny1,prn1,cice1)          
+            call nws10get(wvnx1,wvny1,prn1,cice1)
             ! read from first file after fort.200 and spatially interpolate onto adcirc mesh
             call nws10get(wvnx2,wvny2,prn2,cice2)
          else
             ! read from fort.200 and spatially interpolate onto adcirc mesh
-            call nws10get(wvnx1,wvny1,prn1)          
+            call nws10get(wvnx1,wvny1,prn1)
             ! read from first file after fort.200 and spatially interpolate onto adcirc mesh
             call nws10get(wvnx2,wvny2,prn2)
          endif
@@ -2679,7 +2679,7 @@ C     jgf46.00 Add directional wind reduction.
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF (NCICE.eq.10) then
-               Cicenow = 100d0*( CICE1(I) + 
+               Cicenow = 100d0*( CICE1(I) +
      &                           WTRatio*( CICE2(I)-CICE1(I) ) )
                WDragCo = WindIceDrag(WDragCo,Cicenow)
             ELSEIF (NCICE.NE.0) THEN
@@ -2828,8 +2828,8 @@ Casey 180318: Added for NWS=13, ARC modified 190108
             CALL ApplyCanopyCoefficient(I,WindX,WindY)
           ENDIF
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-          WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-          WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+          WSX2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+          WSY2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
           PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &        -PRBCKGRND_MH2O)
           PR2(I) = PRBCKGRND_MH2O + PRDIFF
@@ -2907,7 +2907,7 @@ C     from NAM data
          else
             CALL NWS14GET(WVNX1,WVNY1,PRN1)
          endif
-         ! Get owi winds (should only overwrite where they exist) 
+         ! Get owi winds (should only overwrite where they exist)
          if (NWS.eq.-14) then
             CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
             CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,PRBCKGRND,HasData)
@@ -2922,7 +2922,7 @@ C     from NAM data
          else
             CALL NWS14GET(WVNX2,WVNY2,PRN2)
          endif
-         ! Get owi winds (should only overwrite where they exist) 
+         ! Get owi winds (should only overwrite where they exist)
          if (NWS.eq.-14) then
             CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND,HasData)
          endif
@@ -2949,7 +2949,7 @@ C     from NAM data
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                if (NCICE.eq.14) then
-                  Cicenow = 100d0*(CICE1(I) + 
+                  Cicenow = 100d0*(CICE1(I) +
      &                             CTRATIO*(CICE2(I)-CICE1(I)))
                   WDragCo = WindIceDrag(WDragCo,Cicenow)
                else
@@ -3127,9 +3127,9 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
        ! jgf52.14: Implementing Casey's fix for uninitialized
        ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
        ! by the parametric vortex meteorological models but are used in
-       ! the padcswan_init() subroutine to initialize the SWAN wind 
-       ! velocities. Failure to initialize them causes NaNs in the 
-       ! solution. 
+       ! the padcswan_init() subroutine to initialize the SWAN wind
+       ! velocities. Failure to initialize them causes NaNs in the
+       ! solution.
        if ( (abs(nws).eq.8).or.(abs(nws).eq.19).or.(abs(nws).eq.20)) then
           WVNX1 = WVNX2
           WVNY1 = WVNY2
@@ -3137,12 +3137,12 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
 
 C      DW/WJP: rotate wind stresses if coordinate transform
        IF ( IFSPROTS .eq. 1 ) THEN
-          UVECTMP(1:NP) = WSX2(1:NP); 
+          UVECTMP(1:NP) = WSX2(1:NP);
           VVECTMP(1:NP) = WSY2(1:NP);
           CALL DRVMAP2DSPVEC( WSX2, WSY2,
      &              UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
        ENDIF
-      
+
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
        call allMessage(DEBUG,"Return.")
 #endif
@@ -3645,7 +3645,7 @@ C     ----------------------------------------------------------------
       ! gaussian met values
       allocate ( ug(latb*lonb),vg(latb*lonb),pg(latb*lonb) )
       if (ncice.eq.10) allocate ( ig(latb*lonb) )
-      ! four corner met values in grid cell associated with each adcirc mesh vertex 
+      ! four corner met values in grid cell associated with each adcirc mesh vertex
       allocate ( n00(np),n10(np),n11(np),n01(np) )
       ! four interpolating factors associated with each adcirc mesh vertex
       allocate ( d00(np),d10(np),d11(np),d01(np) )
@@ -3918,10 +3918,10 @@ C.....Convert pressure from N/M^2 to M of H20
          pll(n)=pll(n)/rhowatg
       end do
 
-!     WJP: Interpolate ice concentration if present 
+!     WJP: Interpolate ice concentration if present
       if (present(ill)) then
          do n=1,np
-            ! grab the numerical values at the 4 corners of the grid 
+            ! grab the numerical values at the 4 corners of the grid
             ! cell containing this mesh node
             i1=ig(n00(n))
             i2=ig(n10(n))
@@ -7854,10 +7854,10 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
           IF ( IFSPROTS.eq. 1) THEN
              CALL DRVSPCOORSROTS( lonr, latr, LON_GFDL, LAT_GFDL )
           ELSE
-             latr = LAT_GFDL ;  lonr = LON_GFDL; 
+             latr = LAT_GFDL ;  lonr = LON_GFDL;
           END IF
           CALL CYLINDERMAP( XY_GFDL(1,I),XY_GFDL(2,I),
-     &           lonr, latr, SLAM0, SFEA0, ICS) ; 
+     &           lonr, latr, SLAM0, SFEA0, ICS) ;
        ENDDO !I
 
        CLOSE(LUN)  !CLOSE THIS GFDL DATA FILE
@@ -8616,10 +8616,10 @@ C.... or netcdf (depending on what is present)
       use messenger, only: msg_barrier
 #endif
       implicit none
-      
+
       integer :: iret, PvarInd
       logical :: Fexists
-      
+
       ! Initialise the datetime
       CurDT = basedatetime + timedelta(minutes=floor(WTIME1/60d0))
       NT = 0; NTC = 0;
@@ -8642,9 +8642,9 @@ C.... or netcdf (depending on what is present)
 
       Pvar = 'S'  ! searching for PRMSL or MSLET or PRES:SURFACE
                   ! prev: :PRMSL:mean sea level:'
-      Uvar = ':UGRD:10 m above ground:' 
-      Vvar = ':VGRD:10 m above ground:' 
-      Cvar = ':ICEC:surface:' 
+      Uvar = ':UGRD:10 m above ground:'
+      Vvar = ':VGRD:10 m above ground:'
+      Cvar = ':ICEC:surface:'
 #ifdef GRIB2API
       ! Don't check if no grib
       inquire(file=Pfile,exist=Fexists)
@@ -8670,7 +8670,7 @@ C.... or netcdf (depending on what is present)
             ! Must be using two files one for each of u and v
             Wfile = 'fort.222u.nc'
             Wfile1 = 'fort.222v.nc'
-         endif 
+         endif
          inquire(file='fort.22',exist=Fexists)
          if (.not.Fexists) then
             call allMessage(ERROR,'fort.22 header file required to '//
@@ -8698,8 +8698,8 @@ C.... or netcdf (depending on what is present)
               rhoWat0g = rhoWat0g/100d0
               Pvar = Pvar(1:PvarInd-1)
               write(16,*) 'Pressure is in Hpa, New Pvar = ',trim(Pvar)
-            endif 
-        endif 
+            endif
+        endif
 #ifdef GRIB2API
       endif
       if (grb2flag) then
@@ -8884,23 +8884,23 @@ C----------------------------------------------------------------------
             endif
          enddo
       endif
-      
+
       ! Get the Pressure
       !':PRMSL:mean sea level:'
       call READNWS14(Pfile,Pinv,Pvar,Pmsl)
 
-      ! Get the U-winds 
+      ! Get the U-winds
       call READNWS14(Wfile,Winv,Uvar,U10)
-      
-      ! Get the V-winds 
+
+      ! Get the V-winds
       call READNWS14(Wfile1,Winv,Vvar,V10)
 
-      ! Get the ice concentration if required 
+      ! Get the ice concentration if required
       if (present(CICE2)) then
          NTkeep = NT; NT = NTC
          call READNWS14(Cfile,Cinv,Cvar,Cice)
          NT = NTkeep;
-      endif      
+      endif
 
       ! Get the Pressure
       !':PRMSL:mean sea level:'
@@ -8923,11 +8923,11 @@ C----------------------------------------------------------------------
       do i = 1,np
          if (indp(1,1,i) < 0) then
             PRN2(i) = PRBCKGRND_MH2O
-         else           
-            PRN2(i) = ( Pmsl(indp(1,1,i),indp(1,2,i))*weightsp(1,1,i) + 
+         else
+            PRN2(i) = ( Pmsl(indp(1,1,i),indp(1,2,i))*weightsp(1,1,i) +
      &             Pmsl(indp(1,3,i),indp(1,2,i))*weightsp(1,2,i)      +
      &             Pmsl(indp(1,1,i),indp(1,4,i))*weightsp(1,3,i)      +
-     &             Pmsl(indp(1,3,i),indp(1,4,i))*weightsp(1,4,i) )  
+     &             Pmsl(indp(1,3,i),indp(1,4,i))*weightsp(1,4,i) )
      &              / rhoWat0g
          endif
          if (indp(ub,1,i) < 0) then
@@ -8950,19 +8950,19 @@ C----------------------------------------------------------------------
 #endif
       enddo
       deallocate(Pmsl,U10,V10)
-      
-      ! Add WTIMINC on CurDT for next WTIME  
+
+      ! Add WTIMINC on CurDT for next WTIME
       CurDT = CurDT + timedelta(minutes=nint(WTIMINC/60d0))
       ! Next time index for the netcdf reading
       NT = NT + 1
-      
+
       ! If ice concentration is present
       if (present(CICE2)) then
          do i = 1,np
             if (indp(ubc,1,i) < 0) then
                CICE2(i) = 0d0;
             else
-               CICE2(i) = 
+               CICE2(i) =
      &             Cice(indp(ubc,1,i),indp(ubc,2,i))*weightsp(ubc,1,i) +
      &             Cice(indp(ubc,3,i),indp(ubc,2,i))*weightsp(ubc,2,i) +
      &             Cice(indp(ubc,1,i),indp(ubc,4,i))*weightsp(ubc,3,i) +
@@ -8988,22 +8988,22 @@ C----------------------------------------------------------------------
       integer :: iret, iter
       !integer,intent(in) :: startI(4), endI(4)
       character(len=200),intent(in) :: var, fileN, invN
-      real,allocatable,intent(out) :: data2(:,:) 
-      real,allocatable,intent(out),optional :: data22(:,:) 
-      character(len=19),allocatable :: TimeStr(:) 
+      real,allocatable,intent(out) :: data2(:,:)
+      real,allocatable,intent(out),optional :: data22(:,:)
+      character(len=19),allocatable :: TimeStr(:)
       character(len=200) :: str_date
       integer :: i, NC_ID, Temp_ID, Lat_ID, Lon_ID, NX, NY, TL, ndims
 
       ! Getting the date in str_date format
       if (grb2flag) then
          str_date = ':start_FT='//CurDT%strftime("%Y%m%d%H")//'0000:'
-      endif      
+      endif
 
       if (present(data22)) then
-         if (grb2flag) then 
+         if (grb2flag) then
             ! GRIB2
             iret = -1; iter = 0
-            do while (iret.le.0.and.iter < 10) 
+            do while (iret.le.0.and.iter < 10)
                if (iter > 0) then
                   call logMessage(WARNING,'Trying to read again '//var)
                   call sleep(5)
@@ -9019,7 +9019,7 @@ C----------------------------------------------------------------------
             else
                call ArnoldSchwarzenegger(iret,var,fileN)
             endif
-         else 
+         else
             ! Read lon and lat
 #ifdef ADCNETCDF
             call Check_err(NF90_OPEN(fileN,nf90_nowrite,NC_ID))
@@ -9037,7 +9037,7 @@ C----------------------------------------------------------------------
                   call Check_err(NF90_INQ_VARID(NC_ID,Tvar,Temp_ID))
                   call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
                   ! Determine the first timestep index
-                  str_date = CurDT%strftime(trim(Tformat)) 
+                  str_date = CurDT%strftime(trim(Tformat))
                   write(16,*) 'Str_date: ',trim(str_date)
                   do NT = 1,TL
                      if (trim(str_date).eq.TimeStr(NT)) exit
@@ -9045,7 +9045,7 @@ C----------------------------------------------------------------------
                   call logMessage(ECHO,'Starting from '//TimeStr(NT))
                else
                   call logMessage(ECHO,'Assume to start from beginning')
-                  NT = 1 
+                  NT = 1
                endif
                write(16,*) ' Starting time indice = ',NT
                NTC = NT
@@ -9082,7 +9082,7 @@ C----------------------------------------------------------------------
       if (grb2flag) then
          ! GRIB2
          iret = -1; iter = 0
-         do while (iret.le.0.and.iter < 10) 
+         do while (iret.le.0.and.iter < 10)
             if (iter > 0) then
                call logMessage(WARNING,'Trying to read again '//var)
                call sleep(5)
@@ -9103,7 +9103,7 @@ C----------------------------------------------------------------------
          else
             call ArnoldSchwarzenegger(iret,var,fileN)
          endif
-C..... 
+C.....
       else
          ! NETCDF
 #ifdef ADCNETCDF
@@ -9130,7 +9130,7 @@ C
       if (iret.eq.0) then
          call allMessage(ERROR,'Cound not find message when reading '
      &                         //trim(var)//' in '//trim(fileN)//'.')
-      elseif (iret.lt.0) then 
+      elseif (iret.lt.0) then
          call allMessage(ERROR,'Fatal error when reading '
      &                         //trim(var)//' in '//trim(fileN)//'.')
       elseif (iret.gt.1) then
