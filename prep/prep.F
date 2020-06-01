@@ -7709,7 +7709,7 @@ C     fort.51
       HaElevStaDescript % ConsiderWetDry       = .TRUE.
       HaElevStaDescript % alternate_value      = -99999.0
       HaElevStaDescript % field_name           = 'HaElevSta'
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          HaElevStaDescript % x_coord           => SLEL
          HaElevStaDescript % y_coord           => SFEL
       ELSE
@@ -7731,7 +7731,7 @@ C     fort.52
       HaVelStaDescript % ConsiderWetDry       = .FALSE.
       HaVelStaDescript % alternate_value      = 0.0
       HaVelStaDescript % field_name           = 'HaVelSta'
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          HaVelStaDescript % x_coord           => SLEV
          HaVelStaDescript % y_coord           => SFEV
       ELSE
@@ -7783,7 +7783,7 @@ C     fort.61
       ElevStaDescript % ConsiderWetDry       = .TRUE.
       ElevStaDescript % alternate_value      = -99999.0
       ElevStaDescript % field_name           = 'ElevSta'
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          ElevStaDescript % x_coord           => SLEL
          ElevStaDescript % y_coord           => SFEL
       ELSE
@@ -7805,7 +7805,7 @@ C     fort.62
       VelStaDescript % ConsiderWetDry       = .FALSE.
       VelStaDescript % alternate_value      = 0.0
       VelStaDescript % field_name           = 'VelSta'
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          VelStaDescript % x_coord           => SLEV
          VelStaDescript % y_coord           => SFEV
       ELSE
@@ -7903,7 +7903,7 @@ C     fort.71
       PrStaDescript % ConsiderWetDry       = .FALSE.
       PrStaDescript % alternate_value      = 0.0
       PrStaDescript % field_name           = 'PrSta'
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          PrStaDescript % x_coord           => SLEM
          PrStaDescript % y_coord           => SFEM
       ELSE
@@ -7925,7 +7925,7 @@ C     fort.72
       WindVelStaDescript % ConsiderWetDry       = .FALSE.
       WindVelStaDescript % alternate_value      = 0.0
       WindVelStaDescript % field_name           = 'WindVelSta'
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          WindVelStaDescript % x_coord           => SLEM
          WindVelStaDescript % y_coord           => SFEM
       ELSE
@@ -8172,7 +8172,7 @@ C     dynamicWaterlevelCorrection.61
       dynamicWaterlevelCorrectionStaDescript % num_records_this     = abs(NSTAE)
       dynamicWaterlevelCorrectionStaDescript % alternate_value      = -99999.0
       dynamicWaterlevelCorrectionStaDescript % field_name           = 'dynamicWaterlevelCorrection'
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          dynamicWaterlevelCorrectionStaDescript % x_coord           => SLEL
          dynamicWaterlevelCorrectionStaDescript % y_coord           => SFEL
       ELSE
@@ -8415,7 +8415,7 @@ C     fort.41
       SigTStaDescript % num_fd_records       = NSTA3DD
       SigTStaDescript % num_records_this     = NSTA3DD
       SigTStaDescript % field_name           = 'SigmaTStations'
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          SigTStaDescript % x_coord           => SL3DD
          SigTStaDescript % y_coord           => SF3DD
       ELSE
@@ -8433,7 +8433,7 @@ C     fort.41
       SalStaDescript % num_fd_records       = NSTA3DD
       SalStaDescript % num_records_this     = NSTA3DD
       SalStaDescript % field_name           = 'SalinityStations'
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          SalStaDescript % x_coord           => SL3DD
          SalStaDescript % y_coord           => SF3DD
       ELSE
@@ -8448,7 +8448,7 @@ C     fort.41
       TempStaDescript % num_fd_records       = NSTA3DD
       TempStaDescript % num_records_this     = NSTA3DD
       TempStaDescript % field_name           = 'TemperatureStations'
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          TempStaDescript % x_coord           => SL3DD
          TempStaDescript % y_coord           => SF3DD
       ELSE
@@ -8464,7 +8464,7 @@ C     fort.42
       RealQStaDescript % num_fd_records       =  NSta3DV
       RealQStaDescript % num_records_this     =  NSta3DV
       RealQStaDescript % field_name           = 'RealQStations'
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          RealQStaDescript % x_coord           => SL3DV
          RealQStaDescript % y_coord           => SF3DV
       ELSE
@@ -8482,7 +8482,7 @@ C     fort.42
       ImaginaryQStaDescript % num_fd_records       =  NSTA3DV
       ImaginaryQStaDescript % num_records_this     =  NSTA3DV
       ImaginaryQStaDescript % field_name      ='ImaginaryQStations'
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          ImaginaryQStaDescript % x_coord           => SL3DV
          ImaginaryQStaDescript % y_coord           => SF3DV
       ELSE
@@ -8497,7 +8497,7 @@ C     fort.42
       WZStaDescript % num_fd_records       =  NSTA3DV
       WZStaDescript % num_records_this     =  NSTA3DV
       WZStaDescript % field_name           = 'WZStations'
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          WZStaDescript % x_coord           => SL3DV
          WZStaDescript % y_coord           => SF3DV
       ELSE
@@ -8513,7 +8513,7 @@ C     fort.43
       Q20StaDescript % num_fd_records       =  NSta3DT
       Q20StaDescript % num_records_this     =  NSta3DT
       Q20StaDescript % field_name           = 'q20Stations'
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          Q20StaDescript % x_coord           => SL3DT
          Q20StaDescript % y_coord           => SF3DT
       ELSE
@@ -8531,7 +8531,7 @@ C     fort.43
       LStaDescript % num_fd_records       =  NSTA3DT
       LStaDescript % num_records_this     =  NSTA3DT
       LStaDescript % field_name           = 'LStations'
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          LStaDescript % x_coord           => SL3DT
          LStaDescript % y_coord           => SF3DT
       ELSE
@@ -8546,7 +8546,7 @@ C     fort.43
       EVStaDescript % num_fd_records       =  NSTA3DT
       EVStaDescript % num_records_this     =  NSTA3DT
       EVStaDescript % field_name           = 'EVStations'
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          EVStaDescript % x_coord           => SL3DT
          EVStaDescript % y_coord           => SF3DT
       ELSE
