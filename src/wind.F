@@ -301,7 +301,8 @@ C     ----------------------------------------------------------------
       allocate ( prn1(np) )
       allocate ( prn2(np) )
       if (NWS.eq.-14) allocate ( HasData(np) )
-  
+C     WJP: this is the value used in the surface stress computation  
+C     (can contol through the rhoAir parameter in namelist)
       airwaterdensityrat = rhoAir / rhoWat0
 C.... tcm v49.16 20100617 added
 C.... convert background pressure from millibars to meters of water
@@ -981,8 +982,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+            WSX2(I) = RampMete*airwaterdensityrat*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*airwaterdensityrat*WDragCo*WindY*WindMag
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
          END DO
@@ -1023,8 +1024,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+            WSX2(I) = RampMete*airwaterdensityrat*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*airwaterdensityrat*WDragCo*WindY*WindMag
 C  tcm v49.16 20100617
 !            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
@@ -1069,8 +1070,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+            WSX2(I) = RampMete*airwaterdensityrat*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*airwaterdensityrat*WDragCo*WindY*WindMag
 C  tcm v49.16 20100617
 !            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
@@ -1119,8 +1120,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+            WSX2(I) = RampMete*airwaterdensityrat*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*airwaterdensityrat*WDragCo*WindY*WindMag
 C  tcm v49.16 20100617
 !            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
@@ -1185,8 +1186,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+            WSX2(I) = RampMete*airwaterdensityrat*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*airwaterdensityrat*WDragCo*WindY*WindMag
 C  tcm v49.16 20100617
 !            PR2(I)=RampMete*PRN2(I)
             PRDIFF = RampMete*(PRN2(I)-PRBCKGRND_MH2O)
@@ -1232,8 +1233,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+            WSX2(I) = RampMete*airwaterdensityrat*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*airwaterdensityrat*WDragCo*WindY*WindMag
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                          -PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
@@ -1285,8 +1286,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+            WSX2(I) = RampMete*airwaterdensityrat*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*airwaterdensityrat*WDragCo*WindY*WindMag
 C  tcm v49.16 20100617
 !            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
@@ -1450,8 +1451,8 @@ C     RJW ffpl Merged:
             ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+            WSX2(I) = RampMete*airwaterdensityrat*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*airwaterdensityrat*WDragCo*WindY*WindMag
 C  tcm v49.16 20100617C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -1480,8 +1481,8 @@ C     jie added nws = 20: generalized asymmetric vortex model
             ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+            WSX2(I) = RampMete*airwaterdensityrat*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*airwaterdensityrat*WDragCo*WindY*WindMag
 C  tcm v49.16 20100617C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -1531,8 +1532,8 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
             ! jgf49.1001 NAM winds already contain wind reduction
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            WSX2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                          -PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
@@ -1553,9 +1554,9 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
             CALL getBlendFactor(I, bf)
             ! blend the wind stresses and barometric pressures
-            WSX2(I) = bf*RampMete*0.001293d0*WDragCo*WindX*WindMag
+            WSX2(I) = bf*RampMete*airwaterdensityrat*WDragCo*WindX*WindMag
      &               +(1.0d0-bf)*WSX2(I)
-            WSY2(I) = bf*RampMete*0.001293d0*WDragCo*WindY*WindMag
+            WSY2(I) = bf*RampMete*airwaterdensityrat*WDragCo*WindY*WindMag
      &               +(1.0d0-bf)*WSY2(I)
             vortexPRDIFF = RampMete*(vortexPRN2(I)-PRBCKGRND_MH2O)
             vortexPRN2(I) = PRBCKGRND_MH2O + vortexPRDIFF
@@ -1586,8 +1587,8 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-             WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
-             WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
+             WSX2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+             WSY2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
              PR2(I) = PRBCKGRND_MH2O + RampMete*(PRN2(I)-PRBCKGRND_MH2O)
              WVNXOUT(I)=RampMete*WINDX
              WVNYOUT(I)=RampMete*WINDY
@@ -1625,8 +1626,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            WSX2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                          -PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
@@ -2120,8 +2121,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I)=RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I)=RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            WSX2(I)=RampMete2*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+            WSY2(I)=RampMete2*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
          END DO
       ENDIF
 
@@ -2170,8 +2171,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            WSX2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
 C  tcm v49.16 20100617
 !            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
@@ -2206,8 +2207,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            WSX2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
 C  tcm v49.16 20100617
 !            PR2(I)=RampMete2*PRN1(I)
             PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
@@ -2257,8 +2258,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            WSX2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
 C  tcm v49.16 20100617
 !            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
@@ -2295,8 +2296,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            WSX2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
 C  tcm v49.16 20100617
 !            PR2(I)=RampMete2*PRN1(I)
             PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
@@ -2350,8 +2351,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            WSX2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
 C  tcm v49.16 20100617
 !            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
@@ -2440,8 +2441,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
+            WSX2(I) = RampMete2*airwaterdensityrat*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete2*airwaterdensityrat*WDragCo*WindY*WindMag
 C  tcm v49.16 20100617
 !            PR2(I)=RampMete2*PRN2(I)
             PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
@@ -2473,8 +2474,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
+            WSX2(I) = RampMete2*airwaterdensityrat*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete2*airwaterdensityrat*WDragCo*WindY*WindMag
 C  tcm v49.16 20100617
 !            PR2(I)=RampMete2*PRN2(I)
             PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
@@ -2506,8 +2507,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
+            WSX2(I) = RampMete2*airwaterdensityrat*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete2*airwaterdensityrat*WDragCo*WindY*WindMag
 C  tcm v49.16 20100617
 !            PR2(I)=RampMete2*PRN2(I)
             PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
@@ -2554,8 +2555,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            WSX2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
             PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                           -PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
@@ -2607,8 +2608,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            WSX2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
 C  tcm v49.16 20100617
 !            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
@@ -2659,8 +2660,8 @@ C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            WSX2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
             PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                          -PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
@@ -2700,9 +2701,9 @@ C     from NAM data
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
             CALL getBlendFactor(I, bf)
-            WSX2(I) = bf*RampMete2*0.001293d0*WDragCo*WindX*WindMag
+            WSX2(I) = bf*RampMete2*airwaterdensityrat*WDragCo*WindX*WindMag
      &               +(1.0d0-bf)*WSX2(I)
-            WSY2(I) = bf*RampMete2*0.001293d0*WDragCo*WindY*WindMag
+            WSY2(I) = bf*RampMete2*airwaterdensityrat*WDragCo*WindY*WindMag
      &               +(1.0d0-bf)*WSY2(I)
             vortexPRDIFF = RampMete2*(vortexPRN2(I)-PRBCKGRND_MH2O)
             vortexPRN2(I) = PRBCKGRND_MH2O + vortexPRDIFF
@@ -2829,8 +2830,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+             WSX2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+             WSY2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
              PR2(I) = PRBCKGRND_MH2O + RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
              WVNXOUT(I)=RampMete2*WINDX
              WVNYOUT(I)=RampMete2*WINDY
@@ -2873,8 +2874,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+             WSX2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+             WSY2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
              PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                           -PRBCKGRND_MH2O)
              PR2(I) = PRBCKGRND_MH2O + PRDIFF
@@ -2904,8 +2905,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
-             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
-             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+             WSX2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
+             WSY2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
              PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
              PR2(I) = PRBCKGRND_MH2O + PRDIFF
              WVNXOUT(I)=RampMete2*WINDX  ! tcm 20100618 v49.16 changed RampMete to RampMete2
