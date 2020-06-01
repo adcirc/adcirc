@@ -399,7 +399,7 @@ C-----------------------------------------------------------------------
                 IF(ICS.EQ.1)THEN
                     X = LON
                     Y = LAT
-                ELSEIF(ICS.EQ.2)THEN
+                ELSEIF(ICS.NE.1)THEN
                     LAT_TEMP = LAT*DEG2RAD
                     LON_TEMP = LON*DEG2RAD
                     IF ( IFSPROTS.eq. 1) THEN

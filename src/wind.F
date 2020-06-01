@@ -1431,7 +1431,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             WVNYOUT(I) = RampMete*WINDY
 
           END DO
-        ENDIF
+      ENDIF
 
 C     RJW ffpl Merged:
 !     rjw added nws = 19: asymmetric hurricane winds
@@ -1678,9 +1678,6 @@ C----------------------------------------------------------------------
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np
-#ifdef DATETIME      
-      use datetime_module, only: datetime
-#endif      
       implicit none
       integer, intent(in) :: nws
       real(sz) :: windx ! wind vel (m/s) in x-dir
@@ -3016,7 +3013,7 @@ C
       END DO
 
       DO I=1,NP                 !INTERPOLATE TO ADCIRC GRID
-         IF(ICS.EQ.2) THEN
+         IF(ICS.NE.1) THEN
             YCOOR=SFEA(I)*RAD2DEG
             XCOOR=SLAM(I)*RAD2DEG
          ENDIF
@@ -3227,7 +3224,7 @@ C
       END DO
 
       DO I=1,NP                 !INTERPOLATE TO ADCIRC GRID
-         IF(ICS.EQ.2) THEN
+         IF(ICS.NE.1) THEN
             YCOOR=SFEA(I)*RAD2DEG
             XCOOR=SLAM(I)*RAD2DEG
          ENDIF
@@ -3364,7 +3361,7 @@ C
       END DO
 C
       DO I=1,NP                 !INTERPOLATE TO ADCIRC GRID
-         IF(ICS.EQ.2) THEN
+         IF(ICS.NE.1) THEN
             YCOOR=SFEA(I)*RAD2DEG
             XCOOR=SLAM(I)*RAD2DEG
          ENDIF
@@ -5215,7 +5212,7 @@ C23456
          RHOWATG=RHOWAT0*G
          ALLOCATE (RAD(NP),DX(NP),DY(NP),XCOOR(NP),YCOOR(NP),EARG (NP))
          ALLOCATE (VG(NP),THETA(NP))
-!         IF(ICS.EQ.2) THEN
+!         IF(ICS.NE.1) THEN
             DO I=1,NP
             XCOOR(I)=SLAM(I)*RAD2DEG
             YCOOR(I)=SFEA(I)*RAD2DEG
