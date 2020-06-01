@@ -622,7 +622,7 @@ C     if we didn't need to create a file, update metadata and return
 C
 C     Set coordinates of each station, converting to degrees if we
 C     are in spherical coordinates.
-      IF(ICS.EQ.2) THEN
+      IF(ICS.NE.1) THEN
          sta%x = descript1%x_coord * RAD2DEG
          sta%y = descript1%y_coord * RAD2DEG
       ELSE
@@ -748,7 +748,7 @@ C
             iret = nf90_def_var(sta%ncid, 'w-vel3D', NF90_DOUBLE,
      &             sta%station_data_dims_3D,  sta%w_station_data_id)
             CALL check_err(iret)
-            if (ics.eq.2) then
+            if (ics.ne.1) then
                ! u
                att_text =
      &    'station water column vertically varying east/west velocity'
@@ -1068,7 +1068,7 @@ C     &      'm s-1', 'ft s-1') !TODO: jgf49.48.01: units for q20??
             iret = nf90_def_var(sta%ncid, 'v-vel', NF90_DOUBLE,
      &             sta%station_data_dims, sta%v_station_data_id)
             CALL check_err(iret)
-            if (ics.eq.2) then
+            if (ics.ne.1) then
                ! u
                iret = nf90_put_att(sta%ncid, sta%u_station_data_id,
      &         'long_name',
@@ -1178,7 +1178,7 @@ C     &      'm s-1', 'ft s-1') !TODO: jgf49.48.01: units for q20??
      &         sta%station_data_dims, sta%v_station_data_id)
             CALL check_err(iret)
 C
-            if (ics.eq.2) then
+            if (ics.ne.1) then
                select case(abs(nws))
                   case(1,2)
                     iret = nf90_put_att(sta%ncid, sta%u_station_data_id,
@@ -1606,7 +1606,7 @@ C
             iret = nf90_def_var(dat%ncid, 'w-vel3D', NF90_DOUBLE,
      &             dat%nodal_data_dims_3D, dat%w_nodal_data_id)
             CALL check_err(iret)
-            if (ics.eq.2) then
+            if (ics.ne.1) then
                ! u
                att_text =
      &         'water column vertically varying east/west velocity'
@@ -2064,7 +2064,7 @@ C
             iret = nf90_def_var(dat%ncid,trim(dat%varnames(2)),
      &         NF90_DOUBLE, dat%nodal_data_dims, dat%v_nodal_data_id)
             CALL check_err(iret)
-            if (ics.eq.2) then
+            if (ics.ne.1) then
                iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
      &                'long_name',
      &   'water column vertically averaged east/west velocity')
@@ -2158,7 +2158,7 @@ C
      &             dat%time_max_nodal_data_id)
             CALL check_err(iret)
 
-            if (ics.eq.2) then
+            if (ics.ne.1) then
                iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
      &                'long_name',
      &         'maximum water column vertically averaged velocity')
@@ -2360,7 +2360,7 @@ C
             iret = nf90_def_var(dat%ncid,trim(dat%varnames(2)),
      &             NF90_DOUBLE, dat%nodal_data_dims,dat%v_nodal_data_id)
             CALL check_err(iret)
-            if (ics.eq.2) then
+            if (ics.ne.1) then
                select case(abs(nws))
                   case(1,2)
                      iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
@@ -2498,7 +2498,7 @@ C
      &             NF90_DOUBLE, dat%nodal_data_dims_max,
      &             dat%time_max_nodal_data_id)
             CALL check_err(iret)
-            if (ics.eq.2) then
+            if (ics.ne.1) then
                select case(abs(nws))
                   case(1,2)
                      iret=nf90_put_att(dat%ncid,dat%max_nodal_data_id,
@@ -2989,7 +2989,7 @@ C
             iret = nf90_def_var(dat%ncid,trim(dat%varnames(2)),
      &             NF90_DOUBLE, dat%nodal_data_dims,dat%v_nodal_data_id)
             CALL check_err(iret)
-            if (ics.eq.2) then
+            if (ics.ne.1) then
                select case(abs(nws))
                   case(1,2)
                      iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
@@ -3121,7 +3121,7 @@ C
             iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
      &      NF90_DOUBLE,dat%nodal_data_dims_max,dat%max_nodal_data_id)
             CALL check_err(iret)
-            if (ics.eq.2) then
+            if (ics.ne.1) then
                select case(abs(nws))
                   case(1,2)
                   iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
@@ -5343,7 +5343,7 @@ C     U V E L
       iret = nf90_def_var(hs%ncid, 'u-vel', NF90_DOUBLE,
      &       hs%vel%nodal_data_dims,  hs%vel%u_nodal_data_id)
       CALL check_err(iret)
-      if (ics.eq.2) then
+      if (ics.ne.1) then
          iret = nf90_put_att(hs%ncid, hs%vel%u_nodal_data_id,
      &          'long_name', 'vertically averaged e/w velocity')
          CALL check_err(iret)
@@ -5374,7 +5374,7 @@ C     V V E L
       iret = nf90_def_var(hs%ncid, 'v-vel', NF90_DOUBLE,
      &       hs%vel%nodal_data_dims, hs%vel%v_nodal_data_id)
       CALL check_err(iret)
-      if (ics.eq.2) then
+      if (ics.ne.1) then
          iret = nf90_put_att(hs%ncid, hs%vel%v_nodal_data_id,
      &           'long_name', 'vertically averaged n/s velocity')
          CALL check_err(iret)
@@ -9784,7 +9784,7 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
 C
-      if(ics.eq.2) then  ! this indicates spherical coordinates
+      if(ics.ne.1) then  ! this indicates spherical coordinates
 
 C        Define longitude attributes
          iret = nf90_put_att(ncid, xid, 'long_name','longitude')

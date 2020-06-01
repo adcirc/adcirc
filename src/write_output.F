@@ -875,7 +875,7 @@ C
       BathyStaDescript % interp_fac1             => STAIE1
       BathyStaDescript % interp_fac2             => STAIE2
       BathyStaDescript % interp_fac3             => STAIE3
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          BathyStaDescript % x_coord           => SLEL
          BathyStaDescript % y_coord           => SFEL
       ELSE
@@ -1998,7 +1998,7 @@ C     scenario.
                ENDIF
                HAElevStaMagDescript % array2D_g         => EMAG_g
             ENDIF
-            IF (ICS.eq.2) THEN
+            IF (ICS.ne.1) THEN
                HAElevStaMagDescript % x_coord           => SLEL
                HAElevStaMagDescript % y_coord           => SFEL
             ELSE
@@ -2022,7 +2022,7 @@ C     scenario.
                ENDIF
                HAElevStaPhaseDescript % array2D_g         => PHASEDE_g
             ENDIF
-            IF (ICS.eq.2) THEN
+            IF (ICS.ne.1) THEN
                HAElevStaPhaseDescript % x_coord           => SLEL
                HAElevStaPhaseDescript % y_coord           => SFEL
             ELSE
@@ -2053,7 +2053,7 @@ C
                ENDIF
                HAVelStaUMagDescript % array2D_g            => UMAG_g
             ENDIF
-            IF (ICS.eq.2) THEN
+            IF (ICS.ne.1) THEN
                HAVelStaUMagDescript % x_coord           => SLEV
                HAVelStaUMagDescript % y_coord           => SFEV
             ELSE
@@ -2078,7 +2078,7 @@ C
                ENDIF
                HAVelStaVMagDescript % array2D_g            => VMAG_g
             ENDIF
-            IF (ICS.eq.2) THEN
+            IF (ICS.ne.1) THEN
                HAVelStaVMagDescript % x_coord           => SLEV
                HAVelStaVMagDescript % y_coord           => SFEV
             ELSE
@@ -2103,7 +2103,7 @@ C
                ENDIF
                HAVelStaUPhaseDescript % array2D_g            => PHASEDU_g
             ENDIF
-            IF (ICS.eq.2) THEN
+            IF (ICS.ne.1) THEN
                HAVelStaUPhaseDescript % x_coord           => SLEV
                HAVelStaUPhaseDescript % y_coord           => SFEV
             ELSE
@@ -2128,7 +2128,7 @@ C
                ENDIF
                HAVelStaVPhaseDescript % array2D_g            => PHASEDV_g
             ENDIF
-            IF (ICS.eq.2) THEN
+            IF (ICS.ne.1) THEN
                HAVelStaVPhaseDescript % x_coord           => SLEV
                HAVelStaVPhaseDescript % y_coord           => SFEV
             ELSE

@@ -922,7 +922,7 @@ C
          ENDIF
       ENDIF
 C
-      IF ((ICS.EQ.2).AND.(G.NE.9.81d0)) THEN
+      IF ((ICS.NE.1).AND.(G.NE.9.81d0)) THEN
          print *, "G not consistent with ICS=2"
          IF(NFOVER.EQ.1) THEN
             print *, "Program will override and set G = 9.81 m/sec*sec"

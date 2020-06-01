@@ -152,7 +152,7 @@ C
         END DO
 
       DO I=1,NP                                !INTERPOLATE TO ADCIRC GRID
-        IF(ICS.EQ.2) THEN
+        IF(ICS.NE.1) THEN
 cvjp      YCOOR=SFEA(I)*RAD2DEG
 cvjp      XCOOR=SLAM(I)*RAD2DEG
           YCOOR=SFEA(I)
