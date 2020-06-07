@@ -2239,7 +2239,7 @@ C...           COMPUTE COS AND SIN OF OUTWARD NORMAL REGARDLESS OF BOUNDARY TYPE
                   YGJ = YGI
                ENDIF
                XL = SQRT((XGK-XGJ)**2+(YGK-YGJ)**2)
-               CSII(JGW) = SFAC(NBVI)*(YGJ-YGK)/XL
+               CSII(JGW) = SFMX(NBVI)*(YGJ-YGK)/XL
                SIII(JGW) = (XGK-XGJ)/XL
 
 C...           Compute the location of and the element containing the fictitious
@@ -5027,7 +5027,7 @@ C     TO CYLINDER COORDINATES
         CALL SFAC_ELEAVG( TANPHIEle, TANPHI, NM, NE ) ;          
         
 C      Only need the  averages of these... 
-        DEALLOCATE( SFMX, SFMY, SFCX, SFCY, YCSFAC )
+        DEALLOCATE( SFMY, SFCX, SFCY, YCSFAC )
         
         RETURN ; 
       END SUBROUTINE COMPUTE_CYLINPROJ_SFAC
