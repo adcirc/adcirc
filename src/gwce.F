@@ -1271,8 +1271,8 @@ C...     Compute the JX, JY terms less the advection terms
          JXAvg = CorifAvg*QY1Avg
      &          -IFNLFA*GOAreaIE4*(1 - IFNL_HDP)*(
      &               E1N1SQ*FDX1 +E1N2SQ*FDX2 + E1N3SQ*FDX3)
-     &          -GHAvgOAreaIE2*((PR1N1-TiPN1)*FDX1
-     &                     +(PR1N2-TiPN2)*FDX2+(PR1N3-TiPN3)*FDX3)
+     &          -GHAvgOAreaIE2*((PR1N1-TiPN1-Off1N1)*FDX1
+     &          +(PR1N2-TiPN2-Off1N2)*FDX2+(PR1N3-TiPN3-Off1N3)*FDX3)
      &          +WSXAvg-BSXAvg+MXAvg-DispXAvg-BCXAvg+Tau0QXAvg 
 C--- begin: DW, absorbing layer
      &          - SigmaQxAvg*sponge_dis_mthd
@@ -1283,8 +1283,8 @@ C--- end DW
          JYAvg =-CorifAvg*QX1Avg
      &          -IFNLFA*GOAreaIE4*(1 - IFNL_HDP)*(
      &                E1N1SQ*FDY1+E1N2SQ*FDY2+E1N3SQ*FDY3)
-     &          -GHAvgOAreaIE2*((PR1N1-TiPN1)*FDY1
-     &                    +(PR1N2-TiPN2)*FDY2+(PR1N3-TiPN3)*FDY3)
+     &          -GHAvgOAreaIE2*((PR1N1-TiPN1-Off1N1)*FDY1
+     &          +(PR1N2-TiPN2-Off1N2)*FDY2+(PR1N3-TiPN3-Off1N3)*FDY3)
      &          +WSYAvg-BSYAvg+MYAvg-DispYAvg-BCYAvg+Tau0QYAvg
 C--- begin: DW, absorbing layer
      &          -SigmaQYAvg*sponge_dis_mthd 

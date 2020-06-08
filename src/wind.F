@@ -1321,10 +1321,6 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
                   CICE_TIME2 = CICE_TIME2 + CICE_TIMINC
                   CICE1 = CICE2
                   CALL NWS14GET(WVNX2,WVNY2,PRN2,CICE2)
-                  ! NICICE = 13: For GOFS ice drift coupling 
-                  !CICE1 = CICE2; ICET1 = ICET2;
-                  !ICEX1 = ICEX2; ICEY1 = ICEY2; 
-                  !call GetIceInfo(CICE2,ICEX2,ICEY2,ICET2)
                ELSE
                   CALL NWS14GET(WVNX2,WVNY2,PRN2) 
                ENDIF
@@ -1401,26 +1397,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
                   airwaterdensityrat = rhoAir/(SigTS(I) + RhoWat0)
                endif
             endif
-            ! If total drag includes ice drift (NCICE.eq.13)
-            !if (NCICE.eq.13) then
-            !   ! Get ice area fraction
-            !   Cicenow = CICE1(I) + Cice_Ratio*(CICE2(I)-CICE1(I))
-            !   ! Adjust Wdragcoefficient by non-ice area fraction
-            !   WdragCo = WdragCo*(1d0 - Cicenow)
-            !   ! Get ice drag coefficient and multiply by ice area fraction
-            !   IceDragCo = 0.0025d0*Cicenow
-            !   ! This is ice drift (differential from ocean surface vel)
-            !   !IceX = IceX1(I) + CIce_Ratio*(IceX2(I)-IceX1(I))
-            !   !IceY = IceY1(I) + CIce_Ratio*(IceX2(I)-IceY1(I))
-            !   IceMag = sqrt(IceX*IceX + IceY*IceY) 
-            !   WSX2(I) = RampMete*(airwaterdensityrat*WDRAGCO*WINDX*WINDMAG +
-     &      !                       IceDragCo*IceX*IceMag)
-            !   WSY2(I) = RampMete*(airwaterdensityrat*WDRAGCO*WINDY*WINDMAG +
-     &      !                       IceDragCo*IceY*IceMag)
-            !else
             WSX2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
-            !endif
             PRDIFF  = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                          -PRBCKGRND_MH2O)
 #ifdef NOIVB
