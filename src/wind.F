@@ -8345,7 +8345,7 @@ C.... or netcdf (depending on what is present)
 #endif
       implicit none
       
-      integer :: iret
+      integer :: iret, PvarInd
       logical :: Fexists
       
       ! Initialise the datetime
@@ -8420,8 +8420,14 @@ C.... or netcdf (depending on what is present)
                if (NCICE.eq.14) then
                   read(22,*) Cvar ! Ice var name
                endif
-            close(22) 
-         endif    
+            close(22)
+            PvarInd = index(Pvar,'HPa')
+            if (PvarInd > 0) then
+              rhoWat0g = rhoWat0g/100d0
+              Pvar = Pvar(1:PvarInd-1)
+              write(16,*) 'Pressure is in Hpa, New Pvar = ',trim(Pvar)
+            endif 
+        endif 
 #ifdef GRIB2API
       endif
       if (grb2flag) then
