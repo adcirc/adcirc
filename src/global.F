@@ -30,7 +30,7 @@ C.....Background Atmospheric Pressure in mb
       REAL(SZ), PARAMETER :: TBCKGRND = 288.15d0    !wjp degrees kelvin 
       REAL(SZ), PARAMETER :: RAir = 287.058d0        !wjp specific gas
 constant 
-      REAL(sz) :: rhoAir = PRBCKGRND*100d0/(RAir*TBCKGRND)  !wjp Ideal Gas Law kg/m^3
+      REAL(sz) :: rhoAir = 1.293d0 !PRBCKGRND*100d0/(RAir*TBCKGRND)  !wjp Ideal Gas Law kg/m^3
       REAL(8) :: windReduction = 0.9d0
       REAL(8) :: one2ten = 0.8928d0
       REAL(8) :: ten2one = 1.d0/0.8928d0
