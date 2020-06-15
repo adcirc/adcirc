@@ -316,8 +316,7 @@ C***********************************************************************
       endif
 
       ! Read ice concentrations
-      read(223,22,end=9999,err=99999) ((CiceR(i,j),i=1,iLongR),j=1,iLatR)
-
+      read(227,22,end=9999,err=99999) ((CiceR(i,j),i=1,iLongR),j=1,iLatR)
 
  100  CONTINUE
 
