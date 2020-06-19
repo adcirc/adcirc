@@ -792,14 +792,16 @@ C     jgf49.0804 NWS=29 does not need fort.22 decomposition.
 C     jgf: Added NWS=30 and changed to select/case.
 C     tcm v51.06.02 added NWS=16 GFDL Met Data
 c     arc added nws13 190110
+C     xyc v52.30 NWS=7 follows NWS=6 no longer need fort.22
+C     decomposition
          select case(ABS(NWS))
-         case(3,6,12,13,16,29,30)
+         case(3,6,7,12,13,16,29,30)
             call logMessage(INFO,
      & 'The meteorological data does not require domain decomposition.')
-         case(1,2,4,5,45,7)
+         case(1,2,4,5,45)
             call logMessage(INFO,
      &   'Ready to write subdomain fort.22 files.')
-C     jgf46.00 Added NWS=7
+C     jgf46.00 Added NWS=7 (removed NWS=7 xyc52.30)
 C     jgfdebug46.02 Added NWS=45
 C     jgf46.02 Added NWS=8
 C     jgf46.16 Merged:

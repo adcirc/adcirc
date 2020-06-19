@@ -1021,7 +1021,8 @@ C.... tcm v48.4641 additions for ice
         MNWP=MNP
       ENDIF
 C.... tcm v49.64.01 additions for ice
-      IF(ABS(NWS).EQ.6) THEN
+C.... xyc v52.30 NWS=7 follow the same format as NWS=6
+      IF((ABS(NWS).EQ.6).OR.(ABS(NWS).EQ.7)) THEN
         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC            !SKIP OVER WTIMINC
         IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC
         IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,CICE_TIMINC            !SKIP OVER WTIMINC
@@ -1391,11 +1392,12 @@ C
       IF(ABS(NWS).EQ.45) WRITE(*,3015) !jgfdebug46.02
       IF(ABS(NWS).EQ.5) WRITE(*,3016)
       IF(ABS(NWS).EQ.6) WRITE(*,3017)
+      IF(ABS(NWS).EQ.7) WRITE(*,3033)  !xyc52.30 added
       IF(ABS(NWS).EQ.8) WRITE(*,3217)
       IF(NRS.GE.1) WRITE(*,3018) ! sb46.28sb03
       IF(NWS.EQ.10) WRITE(*,3019)
       IF(NWS.EQ.11) WRITE(*,3020)
-C     sb46.28sb01 added NWS=12: OWI format
+C     sb46.28sb01 added NWS=12: OWI format 
       IF(ABS(NWS).EQ.12) WRITE(*,3023)
       IF(ABS(NWS).EQ.19) WRITE(*,3219)
       IF(ABS(NWS).EQ.20) WRITE(*,3220)
@@ -1445,6 +1447,7 @@ C
  3015 FORMAT(' *   Also, NWS=+-4 meteorological forcing is used,   *')
  3016 FORMAT(' *   Also, NWS=+-5 meteorological forcing is used,   *')
  3017 FORMAT(' *   Also, NWS=+-6 meteorological forcing is used,   *')
+ 3033 FORMAT(' *   Also, NWS=+-7 meteorological forcing is used,   *')
  3217 FORMAT(' *   Also, NWS=+-8 Holland wind forcing is used,     *')
  3219 FORMAT(' *   Also, NWS=+-19 Asymmetric Holland wind v2.0     *',/,
      &       ' *                 forcing is used,                  *')
