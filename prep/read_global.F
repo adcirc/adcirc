@@ -924,6 +924,7 @@ C.....tcm v49.64.01 Additions for ice
          NWS=INT((ABS(NWS)- NCICE*1000 - NRS*100))*INT(NWS/ABS(NWS))
       ENDIF
 
+
 C     jgfdebug46.02 added NWS=45
 C     jgf46.02 Added NWS=8.
 C     jgf46.16 merged:
