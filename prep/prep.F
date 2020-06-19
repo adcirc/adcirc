@@ -1565,8 +1565,10 @@ C     sb46.28sb01 added NWS=12: OWI format
 C     jgf50.38.05: added NWS=15: HWind format
 C     tcm v51.06.02 added NWS=16: GFDL Met Data
       ! jgf: Added NWS=30 (GAHM+OWI)
+C     xyc v52.30 added NWS=7 to be consistent with NWS=6
          IF ((ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.45).OR.
      &        (ABS(NWS).EQ.5).OR.(ABS(NWS).EQ.6).OR.(ABS(NWS).EQ.8)
+     &        .OR.(ABS(NWS).EQ.7)
      &        .OR.(ABS(NWS).EQ.10).OR.(ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.15)
      &        .OR.(ABS(NWS).EQ.16).OR.(ABS(NWS).eq.30)
      &         .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.29).OR.

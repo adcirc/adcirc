@@ -1558,10 +1558,17 @@ C....                           to correspond with having only a global wind fil
 
 C     jgf46.00 Added option to directly apply surface stress without any
 C     other correction factors.
+C     xyc52.30 corrected NWS=7 (wind stress input provided on a
+C     rectangular grid, same as NWS=6) 
       IF(ABS(NWS).EQ.7) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+C         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+C         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+C         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         CALL NWS7GET()
+         wvnx1 = wvnx2
+         wvny1 = wvny2
+         CALL NWS7GET()
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
       ENDIF
