@@ -1725,12 +1725,15 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
      &    'DRAG LAW.')
       ENDIF
 C     jgf46.00 Added NWS=7 (direct surface stress).
+C     xyc52.30 corrected NWS=7 (direct surface stress on regular grid as
+C     in NWS=6)
       IF(NWS.EQ.7) THEN
          WRITE(16,1234) NWS
  1234    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'SURFACE STRESS AND PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
-     &    /,9X,'VALUES ARE READ AT ADCIRC GRID NODES FROM UNIT 22',
+     &    /,9X,'VALUES ARE READ FROM A REGULARLY SPACED GRID',
+     &    /,9X,'FROM UNIT 22',
      &    /,9X,'THE UNIT 22 FILE BEGINS AT TIME=STATIM.',
      &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STRESS DATA ',
      &    /,9X,'WITH THE MODEL TIME STEP.')
@@ -1740,7 +1743,8 @@ C     jgf46.00 Added NWS=7 (direct surface stress).
  1235    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'SURFACE STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
-     &    /,9X,'VALUES ARE READ AT ADCIRC GRID NODES FROM UNIT 22',
+     &    /,9X,'VALUES ARE READ FROM A REGULARLY SPACED GRID',
+     &    /,9X,'FROM UNIT 22',
      &    /,9X,'THE UNIT 22 FILE BEGINS AT THE TIME OF THE HOT START.',
      &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STRESS DATA ',
      &    /,9X,'WITH THE MODEL TIME STEP.')
@@ -2404,7 +2408,8 @@ C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
          IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,CICE_TIMINC
          IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC,CICE_TIMINC
       ENDIF
-      IF(NWS.EQ.6) THEN
+C...  xyc v52.30: corrected NWS=7 to follow NWS=6 (structured grid input)
+      IF((NWS.EQ.6).OR.(ABS(NWS).EQ.7)) THEN
 C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) NWLAT,NWLON,WLATMAX,
      &        WLONMIN,WLATINC,WLONINC,WTIMINC
@@ -2416,10 +2421,10 @@ C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
      &        WLONMIN,WLATINC,WLONINC,WTIMINC,RSTIMINC,CICE_TIMINC
       ENDIF
 C     jgf46.00 Added NWS=7 (direct surface stress).
-      IF(ABS(NWS).EQ.7) THEN
-         IF(NRS.EQ.0) READ(15,*) WTIMINC
-         IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
-      ENDIF
+C      IF(ABS(NWS).EQ.7) THEN
+C         IF(NRS.EQ.0) READ(15,*) WTIMINC
+C         IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+C      ENDIF
 C     jgf46.05 Added NWS=8 (Holland Wind Model).
 C     jgf46.28 Changed WTIMINC to StormNumber for activating
 C     wind multiplier to final wind speeds from Holland model.
