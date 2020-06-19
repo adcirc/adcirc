@@ -1,0 +1,22 @@
+README for ADCIRC NUOPC Cap
+----------------------------------
+
+Exprimental and under heavy development use with casutios.
+
+
+Dependencies:
+  - ESMF v7.0.0 beta
+  
+Build:
+  - Set environment variable ESMFMKFILE to point to the esmf.mk of your ESMF
+  - make esm1
+  
+Execution:
+  - mpirun -np X ./esm1 (where X is the total number of PETs)
+  
+Output:
+  - PET*.Log files containing compliance checker output if turned on.
+  
+
+
+

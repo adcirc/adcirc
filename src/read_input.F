@@ -72,6 +72,8 @@ C-----------------------------------------------------------------------
 #ifdef DATETIME
      &   ,basedatetime
 #endif
+     &   ,NUOPC4WAV, NUOPC4MET
+
       USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP, NP,
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries,
      &   freeMesh, node_dict, find, agrid, GET_ROTSPCOORD_CORIFVAL
@@ -1492,7 +1494,8 @@ C.... BREAK OUT THE ICE CONCENTRATION FLAG FROM NWS/NRS
                                                            !PLACE FOR ICE
       ENDIF
       nwsOK = .false.
-      do i=0,4
+!      do i=0,4  ! from sm
+      do i=0,5
          if ( any(nws.eq.(allowable_nws + i*100)).or.
      &        any(nws.eq.(-1*(allowable_nws + i*100))) ) then
             nwsOK = .true.
@@ -1985,6 +1988,28 @@ C     NWS=4xx added for STWAVE tighly coupled run  (v49.46 tcm)
      &    /,9X,'STRESSES ARE COMPUTED ON THE FLY BY STWAVE COMPUTE    ',
      &    /,9X,'PROCS.')
       ENDIF
+
+
+C... v50.xx sm -- added for coupling with NOUPC NRS=5
+      IF(NRS.EQ.5) THEN
+         NUOPC4WAV = .TRUE.   !TODO: to do this here or inside the CAP
+         WRITE(16,2396) NRS
+ 2396   FORMAT(/,5X,'NRS = ',I2,
+     &    /,9X,'WAVE RADIATION STRESS IS USED TO FORCE THE COMPUTATION',
+     &    /,9X,'STRESSES ARE COMPUTED ON THE FLY BY NUOPC',
+     &    /,9X,'.')
+      ENDIF
+
+C... v50.xx sm -- added for coupling with NOUPC NWS=17
+      IF(NWS.EQ.17) THEN
+         NUOPC4MET = .TRUE.  !TODO: to do this here or inside the CAP
+         WRITE(16,2397) NWS
+ 2397   FORMAT(/,5X,'NWS = ',I2,
+     &    /,9X,'Meteo info IS USED TO FORCE THE COMPUTATION',
+     &    /,9X,'PASSED ON THE FLY BY NUOPC',
+     &    /,9X,'.')
+      ENDIF
+
 C
 C------------------ BEGIN ICE CONCENTRATION ---------------------------C
 C
@@ -2181,11 +2206,11 @@ C     jgf46.08 Change to the number of ramp functions that will be used.
          ! check for radiation/flux boundaries
          do i=1,numSimpleFluxBoundaries
             if (ibtype(simpleFluxBoundaries(i)%indexNum).eq.52) then
-               call allMessage(ERROR,'The mesh contains a flux/radiation'//
-     &         ' boundary (ibtype=52) but the fluxSettlingTime was not'//
-     &         ' specified in the control file (fort.15). Please '//
-     &         ' set NRAMP to at least 2 and also provide a value for '//
-     &          ' fluxSettlingTime on the DRAMP line.')
+              call allMessage(ERROR,'The mesh contains a flux/radiation'//
+     &       ' boundary (ibtype=52) but the fluxSettlingTime was not'//
+     &       ' specified in the control file (fort.15). Please '//
+     &       ' set NRAMP to at least 2 and also provide a value for '//
+     &       ' fluxSettlingTime on the DRAMP line.')
                call adcirc_terminate()
             endif
          end do
@@ -2518,6 +2543,21 @@ C     an OWI basin scale met field derived from NAM winds.
          IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC,
      &                                                 CICE_TIMINC
       ENDIF
+
+C... v50.xx sm -- added for NWS=17 to read ice flag 
+C...  We read both WTIMINC,RSTIMINC but dummy for now
+C...  TODO:Some thing fishy is going on here . I hope Jason can go through this and prep !!!!!!!! -Saeed
+C...  I like not to read WTIMINC,RSTIMINC,CICE_TIMINC at all. Coupler should provide these info internally
+C saeed added  TODO: I should remove this partialy: cap should provide the time of data exchanges 
+      IF(ABS(NWS).EQ.17) THEN
+         !IF(NCICE.EQ.0) READ(15,*) WTIMINC,RSTIMINC   !read dummy for now
+         !IF(NCICE.GE.1) READ(15,*) WTIMINC,RSTIMINC ,CICE_TIMINC
+        IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC            !SKIP OVER WTIMINC
+        IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC
+        IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,CICE_TIMINC !SKIP OVER WTIMINC
+        IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC, RSTIMINC, CICE_TIMINC
+      ENDIF
+
 
       IF(NWS.NE.0) WRITE(16,1117) WTIMINC
  1117 FORMAT(5X,'WIND TIME INCREMENT (SEC) = ',F10.2,/)

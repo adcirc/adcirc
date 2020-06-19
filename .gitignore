@@ -13,6 +13,7 @@ padcswan
 build13
 build12
 libadc.a
+*.a
 *.o
 *.mod
 odir*
@@ -29,3 +30,4 @@ swan/*.f90
 swan/*.f
 build/
 config.h
+work/util

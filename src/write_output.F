@@ -1591,6 +1591,10 @@ C----------------------------------------------------------------------
          ! increment the spool counter for this output type
          if ( (it.gt.ptr(i) % descript2D % startTimeStep).and.
      &        (it.le.ptr(i) % descript2D % endTimeStep) ) then
+
+!           if ( MyProc .EQ. 0 ) THEN
+!              PRINT*, "i == ", i ;
+!           endif
             ptr(i) % descript2D % spoolCounter =
      &          ptr(i) % descript2D % spoolCounter + 1
          endif

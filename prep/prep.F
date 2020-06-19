@@ -1816,7 +1816,9 @@ C     tcm v51.06.02 added NWS=16: GFDL Met Data
      &       .OR.(ABS(NWS).EQ.15).OR.(ABS(NWS).EQ.14)
      &       .OR.(ABS(NWS).EQ.16).OR.(ABS(NWS).EQ.30)
      &       .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.29)
-     &       .OR.(ABS(NWS).EQ.20))THEN
+     &       .OR.(ABS(NWS).EQ.20)
+     &       .OR.(ABS(NWS).EQ.17) ! sm NUOPC 
+     &      ) THEN
             WRITE(15,80) WSMSG1
          ENDIF
          IF (NWS.EQ.3) THEN
