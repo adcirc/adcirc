@@ -914,6 +914,7 @@ Casey 180318: Added NWS=13
         IF((NWS.NE.0).AND.    (NWS.NE.1 ) .AND.(ABS(NWS).NE.2).AND.
      &       (NWS.NE.3).AND.(ABS(NWS).NE.4) .AND.(ABS(NWS).NE.5).AND.
      &       (ABS(NWS).NE.45).AND.(ABS(NWS).NE.6).AND.
+     &       (ABS(NWS).NE.7).AND.   ! xyc52.30
      &       (ABS(NWS).NE.8).AND.(ABS(NWS).NE.15).AND. !jgf50.38.05 Added NWS=15
      &       (ABS(NWS).NE.12).AND.(ABS(NWS).NE.13).AND.
      &       (ABS(NWS).NE.14).AND.(ABS(NWS).NE.19).AND.
@@ -925,6 +926,7 @@ Casey 180318: Added NWS=13
 C
 C... TCM v49.64.02 -- added
 C...  BE SURE NWS AND NCICE ARE COMPATABLE
+C...  xyc v52.30: note:Not sure if NWS.EQ.7 here should be removed 
       IF((NCICE.GT.0).AND.
      &       ((NWS.EQ.1).OR.(NWS.EQ.2).OR.(NWS.EQ.7))) THEN
          PRINT*,'NCICE = ',NCICE
@@ -1080,7 +1082,8 @@ C     parse out the WTIMINC or other parameters.
          READ(15,80) WSMSG1
       ENDIF
 C
-      IF(ABS(NWS).EQ.6) THEN
+C...  xyc52.30 added NWS=7 to follow NWS=6
+      IF((ABS(NWS).EQ.6) .OR. (ABS(NWS).EQ.7)) THEN
          READ(15,80) WSMSG1
 C..... tcm v49.64.01 additions for ICE
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) THEN
