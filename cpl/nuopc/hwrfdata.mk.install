@@ -1,0 +1,6 @@
+# ESMF self-describing build dependency makefile fragment
+
+ESMF_DEP_FRONT     = hwrf_cap  
+ESMF_DEP_INCPATH   = /scratch4/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/tests/NSEModel_try_err_branches/HWRF2ADC_test02/ADCIRC/cpl/nuopc /scratch4/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/tests/NSEModel_try_err_branches/HWRF2ADC_test02/HWRFDATA-INSTALL 
+ESMF_DEP_CMPL_OBJS = 
+ESMF_DEP_LINK_OBJS =  -L/scratch4/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/tests/NSEModel_try_err_branches/HWRF2ADC_test02/HWRFDATA-INSTALL /scratch4/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/tests/NSEModel_try_err_branches/HWRF2ADC_test02/HWRFDATA-INSTALL/libhwrfdata_cap.a  
