@@ -125,7 +125,7 @@ C----------------------------------------------------------------------
       PRINT *,"Rank ",RANK," just migrated to PE ",NEW_PE
 
 C     TODO: re-open files closed temporarily during migration
-      CALL closeLogFile() ;
+      CALL openLogFile() ;
 
 !     will need to reopen input file and return to the point where
 !     it is closed.
