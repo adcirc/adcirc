@@ -200,7 +200,7 @@ C
       real(sz), allocatable :: d00(:),d10(:),d11(:),d01(:)
       real(sz), allocatable :: colrab(:),dummy(:),gclat(:),gclon(:)
       ! met values on gaussian grid vertices
-      real(sz), allocatable ::  ug(:),vg(:),pg(:)
+      real(sz), allocatable ::  ug(:), vg(:), pg(:), ig(:)
       integer :: nws10DatasetCounter ! indicates which dataset to read
 
       ! jgf52.30.09: Needed for vortex models with storm centers described
@@ -1212,7 +1212,12 @@ C     formula is used to compute wind stress from the wind velocity.
                WVNY1(I)=WVNY2(I)
                PRN1(I)=PRN2(I)
             END DO
-            call nws10get(wvnx2,wvny2,prn2) 
+            IF (NCICE.eq.10) THEN 
+               cice1 = cice2
+               call nws10get(wvnx2,wvny2,prn2,cice2) 
+            ELSE
+               call nws10get(wvnx2,wvny2,prn2) 
+            ENDIF
          ENDIF
          WTRatio=(TimeLoc-WTIME1)/WTIMINC
          DO I=1,NP
@@ -1230,7 +1235,11 @@ C     jgf46.00 Add directional wind reduction.
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
+            IF (NCICE.eq.10) then
+               Cicenow = 100d0*( CICE1(I) + 
+     &                           WTRatio*( CICE2(I)-CICE1(I) ) )
+               WDragCo = WindIceDrag(WDragCo,Cicenow)
+            ELSEIF (NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
             WSX2(I) = RampMete*airwaterdensityrat*WDragCo*WindX*WindMag
@@ -1289,7 +1298,6 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             WSX2(I) = RampMete*airwaterdensityrat*WDragCo*WindX*WindMag
             WSY2(I) = RampMete*airwaterdensityrat*WDragCo*WindY*WindMag
 C  tcm v49.16 20100617
-!            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                          -PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
@@ -1816,15 +1824,20 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
       !
       ! jgf51.52.21: Fixed NWS10 and cleaned up interface.
       IF(NWS.EQ.10) THEN
-         wtime1=statim*86400.d0
-         wtime2=wtime1+wtiminc
+         wtime1 = statim*86400.d0
+         wtime2 = wtime1 + wtiminc
          call nws10init()
-         wvnx1(:) = 0.d0
-         wvny1(:) = 0.d0
-         prn1(:) = prbckgrnd * mb2pa / ( rhowat0 * g)
+         wvnx1 = 0.d0
+         wvny1 = 0.d0
+         cice1 = 0.d0
+         prn1  = prbckgrnd * mb2pa / ( rhowat0 * g)
          ! read from first available file (not fort.200) and spatially
          ! interpolate onto adcirc mesh
-         call nws10get(wvnx2,wvny2,prn2) 
+         IF (NCICE.eq.10) THEN
+            call nws10get(wvnx2,wvny2,prn2,cice2) 
+         ELSE 
+            call nws10get(wvnx2,wvny2,prn2) 
+         ENDIF
       ENDIF
 
       IF(NWS.EQ.11) THEN
@@ -2504,15 +2517,23 @@ C     Gaussian longitude, latitude grid at a single time. Consecutive
 C     files in the sequence are separated by N hours in time. Garratt's
 C     formula is used to compute wind stress from the wind velocity.
       IF(NWS.EQ.10) THEN
-         WTIME1=TimeLoc
-         WTIME2=WTIME1+WTIMINC
+         WTIME1 = TimeLoc
+         WTIME2 = WTIME1 + WTIMINC
          !
          ! jgf51.52.21: Fixed NWS10 and cleaned up interface.
          call nws10init()
          ! read from fort.200 and spatially interpolate onto adcirc mesh
-         call nws10get(wvnx1,wvny1,prn1)          
-         ! read from first file after fort.200 and spatially interpolate onto adcirc mesh
-         call nws10get(wvnx2,wvny2,prn2)
+         IF (NCICE.eq.10) THEN
+            ! read from fort.200 and spatially interpolate onto adcirc mesh
+            call nws10get(wvnx1,wvny1,prn1,cice1)          
+            ! read from first file after fort.200 and spatially interpolate onto adcirc mesh
+            call nws10get(wvnx2,wvny2,prn2,cice2)
+         else
+            ! read from fort.200 and spatially interpolate onto adcirc mesh
+            call nws10get(wvnx1,wvny1,prn1)          
+            ! read from first file after fort.200 and spatially interpolate onto adcirc mesh
+            call nws10get(wvnx2,wvny2,prn2)
+         endif
          !
          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
          DO I=1,NP
@@ -2530,7 +2551,11 @@ C     jgf46.00 Add directional wind reduction.
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
+            IF (NCICE.eq.10) then
+               Cicenow = 100d0*( CICE1(I) + 
+     &                           WTRatio*( CICE2(I)-CICE1(I) ) )
+               WDragCo = WindIceDrag(WDragCo,Cicenow)
+            ELSEIF (NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
             WSX2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
@@ -3395,7 +3420,7 @@ C     ----------------------------------------------------------------
       ! with uninitialized variables.
       !----------------------------------------------------------------
       subroutine nws10Init()
-      use global, only : ihot
+      use global, only : ihot, ncice
       use mesh, only : np, slam, sfea
       implicit none
       real(sz) :: gdlon
@@ -3408,6 +3433,7 @@ C     ----------------------------------------------------------------
       !
       ! gaussian met values 
       allocate ( ug(latb*lonb),vg(latb*lonb),pg(latb*lonb) )
+      if (ncice.eq.10) allocate ( ig(latb*lonb) )
       ! four corner met values in grid cell associated with each adcirc mesh vertex 
       allocate ( n00(np),n10(np),n11(np),n01(np) )
       ! four interpolating factors associated with each adcirc mesh vertex
@@ -3596,19 +3622,22 @@ C                           R.L. 4/14/99                               *
 C                           R.L.09/04/00 added RHOWAT0 to call         *
 C   R.L. 4/2/01  changed MNWLAT,MNWLON in ALLOCATE statement to        *
 C                LATB,LONB; eliminated MNWP as a dimension             *
+C   WJP 6/29/2020 added ability to read ice concentrations             *
 C***********************************************************************
 
-      subroutine nws10get(ull,vll,pll)
+      subroutine nws10get(ull,vll,pll,ill)
       use global, only : mb2pa
       use sizes, only : gblinputdir
       use mesh, only : np, slam, sfea
       implicit none
       real(sz), intent(out) :: ull(:),vll(:),pll(:) ! mesh met values
+      real(sz), intent(out), optional :: ill(:) ! mesh ice values
       !
       real(sz) :: rhowatg ! density of water * gravitational acceleration
       real(sz) :: p1,p2,p3,p4 ! pressure at 4 corners of gaussian grid cell 
       real(sz) :: u1,u2,u3,u4 ! east velocity at 4 corners of gaussian grid cell
       real(sz) :: v1,v2,v3,v4 ! north velocity at 4 corners of gaussian grid cell
+      real(sz) :: i1,i2,i3,i4 ! ice concentration at 4 corners of gaussian grid cell
       character(len=8) :: fname1 ! name of GFS file to read
       integer :: iext        ! numerical extension to file name
       integer :: ios = 0     ! i/o status for opening the fort.xxx files
@@ -3641,9 +3670,17 @@ C
       endif
 C
 C...  Read the ASCII data file
-      do i=1,lonb*latb
-         read(iext,*) pg(i),ug(i),vg(i)
-      enddo
+!     WJP: With ice
+      if (present(ill)) then
+         do i=1,lonb*latb
+            read(iext,*) pg(i),ug(i),vg(i),ig(i)
+         enddo
+      else
+!     WJP: Without ice
+         do i=1,lonb*latb
+            read(iext,*) pg(i),ug(i),vg(i)
+         enddo
+      endif
       close(iext)
 C
 C.....Go from the Gaussian grid to the ADCIRC grid
@@ -3669,6 +3706,20 @@ C.....Convert pressure from N/M^2 to M of H20
          vll(n)=v1*d00(n)+v2*d10(n)+v3*d11(n)+v4*d01(n)
          pll(n)=pll(n)/rhowatg
       end do
+
+!     WJP: Interpolate ice concentration if present 
+      if (present(ill)) then
+         do n=1,np
+            ! grab the numerical values at the 4 corners of the grid 
+            ! cell containing this mesh node
+            i1=ig(n00(n))
+            i2=ig(n10(n))
+            i3=ig(n11(n))
+            i4=ig(n01(n))
+            ! spatially interpolate from the 4 values to the mesh vertex
+            ill(n)=i1*d00(n)+i2*d10(n)+i3*d11(n)+i4*d01(n)
+         enddo
+      endif
 C
       nws10DatasetCounter = nws10DatasetCounter + 1
 
