@@ -1,11 +1,11 @@
-C***********************************************************************
+C**********************************************************************
 C PADCIRC VERSION 45.12 03/17/2006                                     *
 C last changes in this file VERSION 45.05                              *
 C                                                                      *
 C***********************************************************************
 C
        MODULE WIND
-      use CkLunMod, only : CK_LUN
+       use CkLunMod, only : CK_LUN
        USE SIZES, ONLY : SZ, LOCALDIR
        USE GLOBAL, ONLY : ScreenUnit, setMessageSource, allMessage,
      &    screenMessage, logMessage, unsetMessageSource, 
@@ -13,9 +13,11 @@ C
      &    Rearth, pi, deg2rad, rad2deg, e, PRBCKGRND, g, rhoWat0,
      &    sphericalDistance, rhoAir, one2ten, windReduction,
      &    openFileForRead
-#ifdef CMPI
-      use messenger, only : msg_fini
-#endif
+
+!   DW -- for AMPInn
+!#ifdef CMPI
+!      use messenger, only : msg_fini
+!#endif
       integer, parameter :: allowable_nws(18)
      &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,19,20,29,30/)
       logical nwsOK     ! true if NWS value in fort.15 is allowed
@@ -366,16 +368,20 @@ C.... convert background pressure from millibars to meters of water
               f_computeWindDrag => PowellWindDrag
           CASE(DRAGLAW_SWELL)
 #ifndef CSWAN
-              call allMessage(WARNING,"SWAN Model not enabled. Drag formulation will be Garratt.")
+              call allMessage(WARNING,"SWAN Model not enabled.  
+     &                           Drag formulation will be Garratt.")
               f_computeWindDrag => CappedGarrattWindDrag
 #else              
               f_computeWindDrag => SwanWindDrag
 #endif              
           CASE DEFAULT
               call allMessage(ERROR,"Wind drag law not recognized"//TRIM(DragLawString))
-#ifdef CMPI
-              call msg_fini()
-#endif
+
+! DW
+!#ifdef CMPI
+!              call msg_fini()
+!#endif
+!
               STOP
           END SELECT
 #endif              
@@ -688,9 +694,12 @@ C....... and Ray's Ice for low ice values and low winds
          WRITE(16+CK_LUN,*) 'ERROR: Ice drag law not recognized:'
          WRITE(16+CK_LUN,'(A10)') DragLawString
          WRITE(16+CK_LUN,*) 'Execution will now be terminated.'
-#ifdef CMPI
-         call msg_fini()
-#endif
+
+! DW
+!#ifdef CMPI
+!         call msg_fini()
+!#endif
+!
          STOP
 C
       END SELECT
@@ -1639,7 +1648,7 @@ C     generate hurricane winds from the Holland Wind Model.
 C     RJW Merged:
 !    rjw added nws = 19: asymmetric hurricane winds v2.0
       IF(NWS.EQ.19) THEN
-         OPEN(22+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+        OPEN(22+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
         CALL NWS19GET(WVNX2,WVNY2,PRN2,STATIM*86400.D0)
       ENDIF
       
@@ -3593,7 +3602,8 @@ C...  The first time the subroutine is called, setup the interpolating factors
 C...  between the Eta-29 grid and the ADCIRC grid.
 
       IF((NWSEGWI.EQ.0).AND.(IDSETFLG.EQ.0)) THEN
-         call allMessage(INFO,'Computing ETA29 met field interp factors.')
+         call allMessage(INFO,
+    &       'Computing ETA29 met field interp factors. ')
          DO I=1,NP
             flondeg=rad2deg*slam(i)
             flatdeg=rad2deg*sfea(i)
@@ -6186,12 +6196,12 @@ C     we are running off the end of the data.
          IF (aziangle(i) > 360.d0) aziangle(i) = aziangle(i) - 360.d0
       enddo 
          
- ! set parameters at icyc-1
- !        call setQuadFlag4(reshape(quadflag(icyc-1,:,:),(/4,4/)))
- !        call setQuadIr4(reshape(ir(icyc-1,:,:),(/4,4/)))
- !        call setRmaxes4(reshape(rmaxw(icyc-1,:,:),(/4,4/)))
- !        call setShapeParameters4(reshape(HollBs(icyc-1,:,:),(/4,4/)))
- !        call setVmaxesBL4(reshape(VmaxesBL(icyc-1,:,:),(/4,4/)))
+! set parameters at icyc-1
+!        call setQuadFlag4(reshape(quadflag(icyc-1,:,:),(/4,4/)))
+!        call setQuadIr4(reshape(ir(icyc-1,:,:),(/4,4/)))
+!        call setRmaxes4(reshape(rmaxw(icyc-1,:,:),(/4,4/)))
+!        call setShapeParameters4(reshape(HollBs(icyc-1,:,:),(/4,4/)))
+!        call setVmaxesBL4(reshape(VmaxesBL(icyc-1,:,:),(/4,4/)))
  
       QuadFlag4(2:5,1:4) = quadflag(icyc-1,1:4,1:4)
       QuadIr4(2:5,1:4) = real(ir(icyc-1,1:4,1:4))
@@ -6202,10 +6212,10 @@ C     we are running off the end of the data.
       call fitRmaxes4()
 !699      FORMAT(5(f8.4,2x)) 
 !700      FORMAT(a25, 2x, 3(f12.2,2x))
- !Jie debug GAHM         
- !        WRITE(16,*) 'Previous: Spatially-interpolated storm parameters',
- !    &                   ' at icyc-1= ', icyc-1, 
- !    &                   ' CycleTime=', CycleTime(icyc-1) 
+! Jie debug GAHM         
+!        WRITE(16,*) 'Previous: Spatially-interpolated storm parameters',
+!    &                   ' at icyc-1= ', icyc-1, 
+!    &                   ' CycleTime=', CycleTime(icyc-1) 
       do i=1,np
          crmaxw1(i) = spInterp(aziangle(i),dist(i),1)
          crmaxwTrue1(i) = spInterp(aziangle(i),1.d0,1) 
@@ -6213,9 +6223,9 @@ C     we are running off the end of the data.
          !rmax from the highest isotach is picked
          cHollBs1(i)= spInterp(aziangle(i),dist(i),2)
          cVmwBL1(i) = spInterp(aziangle(i),dist(i),3)
- !Jie debug GAHM       
- !            WRITE(16,699) crmaxw1(i),  crmaxwTrue1(i),
- !    &                   cHollBs1(i) ,cVmwBL1(i)
+!Jie debug GAHM       
+!            WRITE(16,699) crmaxw1(i),  crmaxwTrue1(i),
+!    &                   cHollBs1(i) ,cVmwBL1(i)
       end do
          
          
@@ -6234,10 +6244,10 @@ C     we are running off the end of the data.
       Bs4(2:5,1:4) = HollBs(icyc,1:4,1:4)
       VmBL4(2:5,1:4) = VmaxesBL(icyc,1:4,1:4)
       call fitRmaxes4()
- !Jie debug GAHM         
- !        WRITE(16,*) 'After: Spatially-interpolated storm parameters',
- !    &                   ' at icyc= ', icyc, 
- !    &                   ' CycleTime=', CycleTime(icyc)          
+!Jie debug GAHM         
+!        WRITE(16,*) 'After: Spatially-interpolated storm parameters',
+!    &                   ' at icyc= ', icyc, 
+!    &                   ' CycleTime=', CycleTime(icyc)          
       do i=1,np
          crmaxw2(i) = spInterp(aziangle(i),dist(i),1)
          crmaxwTrue2(i) = spInterp(aziangle(i),1.d0,1) 
@@ -6246,8 +6256,8 @@ C     we are running off the end of the data.
          cHollBs2(i)= spInterp(aziangle(i),dist(i),2)
          cVmwBL2(i) = spInterp(aziangle(i),dist(i),3)
               !Jie debug GAHM       
-  !           WRITE(16,699) crmaxw2(i),  crmaxwTrue2(i),
-  !   &                   cHollBs2(i) ,cVmwBL2(i)
+!           WRITE(16,699) crmaxw2(i),  crmaxwTrue2(i),
+!   &                   cHollBs2(i) ,cVmwBL2(i)
       end do
       ! Perform time interpolation, transform variables from integers
       ! to real numbers for hurricane vortex calcualtions.
@@ -7202,7 +7212,7 @@ C
       if (numFiles.lt.2) then
          call allMessage(ERROR,"Only one GFDL Met file was specified.")
          call allMessage(ERROR,
-     &    "ADCIRC requires at least two GFDL Met files for interpolation.")
+     &  "ADCIRC requires at least two GFDL Met files for interpolation.")
          call windTerminate()
       endif
       !
@@ -7480,7 +7490,8 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
           MAXDIST = MAX_INTERP_DIST
        ENDIF
        
-       write(scratchMessage,'("Maximum GFDL Interpolation Distance = ",e24.16)') maxdist
+       write(scratchMessage,'("Maximum GFDL Interpolation Distance = ",
+     &                e24.16)') maxdist
        call logMessage(ECHO,scratchMessage)
 
        
@@ -8112,13 +8123,15 @@ C----------------------------------------------------------------------
       if (nextCorrectionDataSetFound.eqv..false.) then
          dynamicWaterLevelCorrectionFileEnded = .true.
          call logMessage(INFO,
-     &    'Finished reading the final water level correction dataset from "'
+     &    'Finished reading the final water level correction dataset 
+     &     from "'
      &      //trim(dynamicWaterLevelCorrectionFileName)//'".')
          if ( dynamicWaterLevelCorrectionDataSetCounter.eq.1 ) then
             dynamicWaterLevelCorrectionIsConstant = .true.
             call logMessage(INFO,
      &      'Only one water level correction dataset was found. '//
-     &      'The water level correction will therefore be constant in time.')
+     &      'The water level correction will therefore be constant in 
+     &       time.')
          endif
       endif
 
@@ -8181,9 +8194,12 @@ C
 #endif
 C
       call allMessage(ERROR,"ADCIRC terminating.")
-#ifdef CMPI
-      call msg_fini()
-#endif
+
+!
+!#ifdef CMPI
+!      call msg_fini()
+!#endif
+!
       stop
 C
 

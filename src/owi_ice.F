@@ -15,9 +15,13 @@ C
 C
       USE SIZES,ONLY : SZ,MYPROC
       USE GLOBAL,ONLY : NSCREEN, ScreenUnit
-#ifdef CMPI
-      USE MESSENGER,ONLY : MSG_FINI
-#endif         
+
+! DW AMPI
+!#ifdef CMPI
+!      USE MESSENGER,ONLY : MSG_FINI
+!#endif 
+!
+        
       IMPLICIT NONE
       character*100 :: title
 !$omp threadprivate(title)
@@ -118,10 +122,13 @@ C***********************************************************************
 
       if(numSets.NE.1.AND.numSets.NE.2) then
         if (myproc == 0) write(screenunit+CK_LUN,1004)
-        write(16+CK_LUN,1004)
-#ifdef CMPI
-        call msg_fini()
-#endif
+        write(16+CK_LUN,1004)\
+
+! DW
+!#ifdef CMPI
+!        call msg_fini()
+!#endif
+!
         stop
       endif
 
@@ -213,9 +220,10 @@ C***********************************************************************
 
 99999 CONTINUE
 
-#ifdef CMPI
-      call msg_fini()
-#endif
+! DW
+!#ifdef CMPI
+!      call msg_fini()
+!#endif
       STOP 'OWI_ICE READ ERROR (1)'
 
       END SUBROUTINE
@@ -330,9 +338,12 @@ C***********************************************************************
         WRITE(16+CK_LUN,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
         WRITE(16+CK_LUN,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
         WRITE(16+CK_LUN,*) 'EXECUTION WILL BE TERMINATED'
-#ifdef CMPI
-        call msg_fini()
-#endif
+
+! DW
+!#ifdef CMPI
+!        call msg_fini()
+!#endif
+!
         STOP
       endif
 
@@ -475,9 +486,11 @@ c      end if
       WRITE(16+CK_LUN,*) ' EITHER UNIT 225 or 227 COULD NOT BE READ'
       WRITE(16+CK_LUN,*) ' EXECUTION WILL BE TERMINATED'
       WRITE(16+CK_LUN,*) ''
-#ifdef CMPI
-      call msg_fini()
-#endif
+!  DW
+!#ifdef CMPI
+!      call msg_fini()
+!#endif
+!
       STOP
 
 10000 continue
@@ -515,9 +528,10 @@ c      end if
       
 99999 CONTINUE
 
-#ifdef CMPI
-      call msg_fini()
-#endif
+! DW
+!#ifdef CMPI
+!      call msg_fini()
+!#endif
       STOP 'OWI_ICE READ ERROR (2)'
 
       END SUBROUTINE

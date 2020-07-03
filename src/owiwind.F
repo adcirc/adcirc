@@ -73,9 +73,12 @@
      &     WARNING, ERROR, screenMessage, logMessage, allMessage,
      &     setMessageSource, unsetMessageSource, scratchMessage,
      &     openFileForRead, Flag_ElevError
-#ifdef CMPI
-        USE MESSENGER,ONLY : MSG_FINI
-#endif  
+
+! DW: AMPI - temporarily
+!#ifdef CMPI
+!        USE MESSENGER,ONLY : MSG_FINI
+!
+!#endif  
         IMPLICIT NONE
 
         integer  :: nPowellSearchDomains = -1 !< Number of search domains for Powell wind drag
@@ -491,18 +494,20 @@
         ! Read grid specifications/date in pressure file
         filename = owi(idx)%pressure_file
         iounit = owi(idx)%iounit_pressure
-        write(errorVar,'(A,I0)') "read grid specifications/date in Oceanweather pressure file, domain ",idx
+        write(errorVar,'(A,I0)') "read grid specifications/date in 
+     &                Oceanweather pressure file, domain ",idx
         read (owi(idx+CK_LUN)%iounit_pressure,11,end=10000,err=9999,iostat=errorIO)
      &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
         call check_owi_err(errorIO,errorVar,filename,iounit)
 
         if(idx.eq.1)then
             if(numSets.GT.1)then
-                write(scratchMessage,'("Processing Oceanweather wind data for domain ",I0," through "'//
-     &                               ',I0," for time stamp ",I12," ",I2)') idx,numSets,iCYMDHp,iMinp
+                write(scratchMessage,'("Processing Oceanweather wind
+     &                     data for domain ",I0," through "'//
+     &         ',I0," for time stamp ",I12," ",I2)') idx,numSets,iCYMDHp,iMinp
             else
-                write(scratchMessage,'("Processing Oceanweather wind data for time stamp ",I12," ",I2)') 
-     &              iCYMDHp,iMinp
+                write(scratchMessage,'("Processing Oceanweather wind 
+     &              data for time stamp ",I12," ",I2)') iCYMDHp,iMinp
             endif
             call allmessage(INFO,scratchMessage)
         endif
@@ -844,7 +849,7 @@
             else
                 if(nWindFields.GT.3)then
                   CALL check_owi_err(1,"owi file list must be used for numSets>3. "//
-     &                                 "Use negative numSets to read a file list.","fort.22",22)
+     &                     "Use negative numSets to read a file list.","fort.22",22)
                  endif
                  call owi_setDefaultFilenames(this)
             endif
@@ -967,7 +972,35 @@
 !-----------------------------------------------------------------------
       end subroutine owi_setDefaultFilenames
 !-----------------------------------------------------------------------
-        
+      
+
+!----------- Close owi wind file, DW  
+      subroutine owiwind_closefiles( )
+         implicit none
+
+         INTEGER:: I
+         LOGICAL:: iopened
+
+         DO i = 1, numSets
+          !
+          iopenned = .FALSE. ;
+          INQUIRE( UNIT = owi(i)%iounit_wind + CK_LUN, OPENED = iopened ) ;
+          IF ( iopenned ) THEN 
+            CLOSE( owi(i)%iounit_wind + CK_LUN ) ;
+          END IF
+
+          ioppened = .FALSE. ;
+          INQUIRE( UNIT = owi(i)%iounit_pressure + CK_LUN, OPENED = iopened ) ;
+          IF ( iopenned ) THEN 
+            CLOSE( owi(i)%iounit_pressure + CK_LUN ) ;
+          END IF
+          !
+         END DO
+
+         return ;
+      end subroutime owiwind_closefiles
+
+
 
 !-----------------------------------------------------------------------
 !> @brief Initializes the data in the oceanweather data objects based on
@@ -1233,10 +1266,12 @@
             call allMessage(ERROR,trim(scratchMessage))
          endif
          call allMessage(ERROR,"ADCIRC execution terminated.")
-#ifdef CMPI
-         Flag_ElevError = .true.  !overloading this flag to help kill all mpi proc
-         call msg_fini()
-#endif
+
+! DW, AMPI temporarily
+!#ifdef CMPI
+!         Flag_ElevError = .true.  !overloading this flag to help kill all mpi proc
+!         call msg_fini()
+!#endif
          stop
       endif
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
