@@ -4781,7 +4781,7 @@ C
          if (.not.basedatetime%isvalid()) then
             call allMessage(ERROR,'Invalid base datetime: '
      &           //basedatetime%isoformat(' ')
-     &           //'. Must be formatted as yyyy-MM-dd HH:mm')
+     &           //'. Must be formatted as yyyy-MM-dd HH:mm:ss')
             call adcirc_terminate()
          endif
 #endif
