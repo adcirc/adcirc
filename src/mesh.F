@@ -1,7 +1,7 @@
-C     ------------------------------------------------------------------
-C     ------------------------------------------------------------------
-C                      M O D U L E   M E S H
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
+!                      M O D U L E   M E S H
+!     ------------------------------------------------------------------
 !     jgf51.21.08: Created this mesh module in order to modularize
 !     mesh related data. Modularity gives us greater flexibility in
 !     reading meshes in different file formats (such as NetCDF or XDMF)
@@ -12,9 +12,9 @@ C     ------------------------------------------------------------------
 !     The variables and subroutines in this module were refactored
 !     out of the other parts of the code, particularly from the global
 !     module.
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
       module mesh
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
       use hashtable
       use sizes, only: sz, meshFileName, mne, mnp, mnope, mneta, myproc,
      &   mnbou, mnvel, nprec, meshtype, ascii, xdmf, mnei, GBLINPUTDIR
@@ -64,7 +64,6 @@ C     ------------------------------------------------------------------
  
       real(sz) :: theta ! rotation around y-axis
       real(sz) :: beta  ! rotation around z-axis
-C----- DW --- precomputed 
       !c  FDXE(1:3,1:NE) -- b1, b2, b3
       !c  FDYE(1:3,1:NE) -- a1, a2, a3
       REAL (SZ), ALLOCATABLE:: FDXE(:,:), FDYE(:,:) 
@@ -90,7 +89,7 @@ C----- DW --- precomputed
       ! The correction factors
       REAL (SZ), allocatable, DIMENSION(:) :: SFac, SFMX, SFMY, SFCT,
      &    SFCX, SFCY, YCSFAC, TANPHI ! spherical coordinate tan(lat)/R ratio
-C...  Element averages of these...
+!...  Element averages of these...
       REAL (SZ), allocatable, DIMENSION(:) :: SfacEle, SFCYEle, SFCXEle,
      &    SFMXEle, SFMYEle, YCSFACEle, TANPHIEle 
 
@@ -106,17 +105,16 @@ C...  Element averages of these...
       INTERFACE GET_ROTMAT 
          MODULE PROCEDURE DRV_ROTMAT_ZNVEC, DRV_ROTMAT_ZXZROT
       END INTERFACE
-C..... DW
-C
-C     ----------
+
+!     ----------
       contains
-C     ----------
-C
-C     ------------------------------------------------------------------
-C             S U B R O U T I N E    R E A D   M E S H
-C     ------------------------------------------------------------------
-C     jgf51.21.11: Read the ADCIRC mesh in various formats
-C     ------------------------------------------------------------------
+!     ----------
+
+!     ------------------------------------------------------------------
+!             S U B R O U T I N E    R E A D   M E S H
+!     ------------------------------------------------------------------
+!     jgf51.21.11: Read the ADCIRC mesh in various formats
+!     ------------------------------------------------------------------
       subroutine readMesh()
       implicit none
 
@@ -137,15 +135,15 @@ C     ------------------------------------------------------------------
 #endif
       call unsetMessageSource()
 
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
       end subroutine readMesh
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
 
-C     ------------------------------------------------------------------
-C        S U B R O U T I N E    R E A D  1 4   F I N D   D I M S
-C     ------------------------------------------------------------------
-C     jgf51.21.11: Read the ADCIRC mesh in various formats
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
+!        S U B R O U T I N E    R E A D  1 4   F I N D   D I M S
+!     ------------------------------------------------------------------
+!     jgf51.21.11: Read the ADCIRC mesh in various formats
+!     ------------------------------------------------------------------
       subroutine read14_findDims ()
       use global, only : nabout
       use boundaries
@@ -420,10 +418,9 @@ C     ------------------------------------------------------------------
       efCount = 1
       ifCount = 1
       ifwpCount = 1
-C...  DW, periodic bc
       NPERSEG = 0  ;
       NNPERBC = 0  ;
-C..
+
       do k = 1, nbou
          read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nvell(k), ibtype_orig(k)
          lineNum = lineNum + 1
@@ -515,8 +512,7 @@ C..
             end do
             ifwpCount = ifwpCount + 1
          case(94)
-C....       DW, updated here by WP 
-C...        Periodic boundary, read in a pair of nodes 
+!...        Periodic boundary, read in a pair of nodes 
             !c Allocate memory, if there is a periodic bc segment c!
             IF ( .NOT. ALLOCATED(IPERCONN) ) THEN
                ALLOCATE( IPERCONN(nvell(k),2) ) ;
@@ -537,7 +533,6 @@ C...        Periodic boundary, read in a pair of nodes
                lineNum = lineNum + 1
             end do
             sfCount = sfCount + 1
-!...        end DW
          case default
             scratchFormat = '("IBTYPE ",i0," is not allowed.")'
             write(scratchMessage, scratchFormat) ibtype_orig(k)
@@ -1301,17 +1296,17 @@ C...        Periodic boundary, read in a pair of nodes
       !-----------------------------------------------------------------
 
 
-C     ------------------------------------------------------------------
-C        S U B R O U T I N E    I N I T I A L I Z E   M E S H
-C     ------------------------------------------------------------------
-C     jgf51.21.11: Perform all the startup calculations required for
-C     mesh data, regardless of the file format of the mesh file.
-C     These initializations are adjustments based on parameters parsed
-C     from the fort.15 control file. This must be called after the
-C     ICS, NOLIFA, H0, SLAM0 and SFEA0 parameters have been read from
-C     the fort.15 control file and before the kdtree computations that
-C     are used to locate the elements that contain the stations.
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
+!        S U B R O U T I N E    I N I T I A L I Z E   M E S H
+!     ------------------------------------------------------------------
+!     jgf51.21.11: Perform all the startup calculations required for
+!     mesh data, regardless of the file format of the mesh file.
+!     These initializations are adjustments based on parameters parsed
+!     from the fort.15 control file. This must be called after the
+!     ICS, NOLIFA, H0, SLAM0 and SFEA0 parameters have been read from
+!     the fort.15 control file and before the kdtree computations that
+!     are used to locate the elements that contain the stations.
+!     ------------------------------------------------------------------
       subroutine initializeMesh()
       use global, only : deg2rad, pi, rad2deg, h0, nolifa, nbfr, ncor, 
      &                   ntip, ifsprots
@@ -1350,9 +1345,9 @@ C     ------------------------------------------------------------------
 !
       SLAM0=SLAM0*DEG2RAD
       SFEA0=SFEA0*DEG2RAD
-C...
-C...  IF ICS=1 INPUT NODAL COORDINATES AND BATHYMETRY FROM UNIT 14
-C.... IF EITHER NTIP=1 OR NCOR=1, COMPUTE THE INVERSE CPP PROJECTION
+    
+!...  IF ICS=1 INPUT NODAL COORDINATES AND BATHYMETRY FROM UNIT 14
+!.... IF EITHER NTIP=1 OR NCOR=1, COMPUTE THE INVERSE CPP PROJECTION
 
       SELECT CASE( ICS )
       ! if the original nodal coordinates were cartesian
@@ -1380,53 +1375,51 @@ C.... IF EITHER NTIP=1 OR NCOR=1, COMPUTE THE INVERSE CPP PROJECTION
           
       END SELECT
 
-C.... BEG: DW dec 2019
       IF ( IFSPROTS .EQ. 1 ) THEN
-CC       Allocate arrays to be used in coordinate rotations
+!        Allocate arrays to be used in coordinate rotations
          CALL ALLOC_SPROTCOORS_MEM( ) ;
 
-C        Read the rotation matrix
+!        Read the rotation matrix
          CALL READFORTROTS( ) ; 
         
-C        Get the variables assoicated with rotated coordinates
-C        The X and Y vectors are edited in this subroutine (rotated)
+!        Get the variables assoicated with rotated coordinates
+!        The X and Y vectors are edited in this subroutine (rotated)
          CALL COMP_ROTSPCOORD_VARS( ICS ) ; 
-C
+
       END IF
-C.... END DW
-c...
-c...  if wetting and drying will not be used, make sure all bathymetric
-!c...  depths are > or = to h0.
+!...
+!...  if wetting and drying will not be used, make sure all bathymetric
+!...  depths are > or = to h0.
       if ( (nolifa.eq.0).or.(nolifa.eq.1) ) then
          do i=1,np
             if(dp(i).lt.h0) dp(i)=h0
          end do
       endif
-C
-C      F I N A L I Z E   E L E M E N T   T A B L E
-C
-C...
-C...  Compute neighbor tables.
-C...
-C     estimate the number of neighbor nodes around any node = number of
-C     elements containing that node.  This is correct for non-boundary
-C     nodes and one too small for boundary nodes
+!
+!      F I N A L I Z E   E L E M E N T   T A B L E
+!
+!...
+!...  Compute neighbor tables.
+!...
+!     estimate the number of neighbor nodes around any node = number of
+!     elements containing that node.  This is correct for non-boundary
+!     nodes and one too small for boundary nodes
       NNeigh(:) = 0
       DO I=1,NE
         NNeigh(NM(I,1))=NNeigh(NM(I,1))+1
         NNeigh(NM(I,2))=NNeigh(NM(I,2))+1
         NNeigh(NM(I,3))=NNeigh(NM(I,3))+1
       ENDDO
-C     determine the maximum NNeigh
+!     determine the maximum NNeigh
       MNei=maxval(nneigh)
-C
-C     estimate the maximum array space needed for the neighbor table by
-C     increasing this number by 2, to provide array space for the node itself
-C     and in case the maximum number of nodes occurs at a boundary node
+ 
+!     estimate the maximum array space needed for the neighbor table by
+!     increasing this number by 2, to provide array space for the node itself
+!     and in case the maximum number of nodes occurs at a boundary node
       MNei = MNei+2
-C     allocate space for neighbor tables
+!     allocate space for neighbor tables
       call allocateNeighborArrays()
-C     compute the neighbor table and redo NNeigh array
+!     compute the neighbor table and redo NNeigh array
       call allMessage(INFO,'THE NEIGHBOR TABLE IS BEING COMPUTED.')
       call neighb()
       write(scratchMessage,1195) NEIMIN,NEIMAX,NEIMAX
@@ -1435,13 +1428,12 @@ C     compute the neighbor table and redo NNeigh array
      &   'THE MINIMUM NUMBER OF NEIGHBORS FOR ANY NODE = ',i0,
      &   '. 1+THE MAXIMUM NUMBER OF NEIGHBORS FOR ANY NODE = ',i0,
      &   '. THE PARAMETER MNEI CAN BE SET AS SMALL AS ',i0,'.')
-C
-C     check that sufficient accuracy is provided by the code to handle
-C     the resolution of the input mesh (i.e., very fine meshes may have
-C     nodes whose coordinates only differ in the last couple decimal
-C     places ... these differences may be lost due to round off error
-C     if there is not enough machine precision
-C     BEG DW/WJP 2020
+ 
+!     check that sufficient accuracy is provided by the code to handle
+!     the resolution of the input mesh (i.e., very fine meshes may have
+!     nodes whose coordinates only differ in the last couple decimal
+!     places ... these differences may be lost due to round off error
+!     if there is not enough machine precision
       PROCELM: DO I=1,NE
 
   133   SELECT CASE( ICS )
@@ -1457,13 +1449,12 @@ C     BEG DW/WJP 2020
         CASE (2,20:24)
 !     c Spherical coordinates c!
            
-C.....Dec 2019
-C     lon (in rad)
+!     lon (in rad)
            LONVE(1) = SLAM( NM(I,1) ) ;
            LONVE(2) = SLAM( NM(I,2) ) ;
            LONVE(3) = SLAM( NM(I,3) ) ;
            
-C     lat (in rad)
+!     lat (in rad)
            LATVE(1) = SFEA( NM(I,1) ) ;
            LATVE(2) = SFEA( NM(I,2) ) ;
            LATVE(3) = SFEA( NM(I,3) ) ;           
@@ -1474,12 +1465,12 @@ C     lat (in rad)
      &          EYV(:,I), LONVE, LATVE, ICS, SFLAG ) ;
            
            IF ( IFSPROTS .EQ. 1 ) THEN
-C     lon in rotated coordinates (in rad)
+!     lon in rotated coordinates (in rad)
               LONVE(1) = SLAMR( NM(I,1) ) ;
               LONVE(2) = SLAMR( NM(I,2) ) ;
               LONVE(3) = SLAMR( NM(I,3) ) ;
               
-C     lat in rotated coordinates (in rad)
+!     lat in rotated coordinates (in rad)
               LATVE(1) = SFEAR( NM(I,1) ) ;
               LATVE(2) = SFEAR( NM(I,2) ) ;
               LATVE(3) = SFEAR( NM(I,3) ) ;
@@ -1489,7 +1480,7 @@ C     lat in rotated coordinates (in rad)
               CALL CAL_ELXV_SPCOOR( EXV(:,I), 
      &             EYV(:,I), LONVE, LATVE, ICS, SFLAG ) ;             
            END IF 
-C.... 
+
         END SELECT
         
         IF ( IFSPROTS .EQ. 1 ) THEN        
@@ -1503,9 +1494,8 @@ C....
         Y1 = EYV(1,I) ;
         Y2 = EYV(2,I) ;
         Y3 = EYV(3,I) ;        
-C........END DW
 
-C...v49.48.02 tcm added these to reuse the computed values
+!...v49.48.02 tcm added these to reuse the computed values
          X2mX1 = (X2 - X1);
          X3mX2 = (X3 - X2);
          X1mX3 = (X1 - X3);
@@ -1513,17 +1503,16 @@ C...v49.48.02 tcm added these to reuse the computed values
          Y3mY2 = (Y3 - Y2);
          Y1mY3 = (Y1 - Y3);
 
-c..... BEG DW: for later use for FDX1, FDY1 in gwce, momentum 
+!.....   For later use for FDX1, FDY1 in gwce, momentum 
          FDXE(1,I) = -Y3mY2 ; !c (Y(NM2)-Y(NM3))*SFacAvg !b1
          FDXE(2,I) = -Y1mY3 ; !c (Y(NM3)-Y(NM1))*SFacAvg !b2
          FDXE(3,I) = -Y2mY1 ; !c (Y(NM1)-Y(NM2))*SFacAvg !b3
          FDYE(1,I) =  X3mX2 ; !c  X(NM3)-X(NM2) !a1
          FDYE(2,I) =  X1mX3 ; !c  X(NM1)-X(NM3) !a2
          FDYE(3,I) =  X2mX1 ; !c  X(NM2)-X(NM1) !a3
-C      END DW
 
          AVGXY=(ABS(X1)+ABS(X2)+ABS(X3)+ABS(Y1)+ABS(Y2)+ABS(Y3))/6.d0
-C v49.48.02 tcm -- These are the lengths of each element edge
+! v49.48.02 tcm -- These are the lengths of each element edge
          LENED1=((X2mX1)**2+(Y2mY1)**2)**0.5d0
          LENED2=((X3mX2)**2+(Y3mY2)**2)**0.5d0
          LENED3=((X1mX3)**2+(Y1mY3)**2)**0.5d0
@@ -1547,19 +1536,18 @@ C v49.48.02 tcm -- These are the lengths of each element edge
      &              'MORE PRECISION MUST BE USED IN THE GRID.')
          ENDIF
 
-C        compute and store 2 x element areas
-c        v49.48.02 tcm rewrote 2 x area to reuse values already being used
+!        compute and store 2 x element areas
+!        v49.48.02 tcm rewrote 2 x area to reuse values already being used
          AREAS(I)=(X1mX3)*(-Y3mY2)+(X3mX2)*(Y1mY3)
   
          IF ( IFSPROTS.EQ.1 .and. AREAS(I).lt.0d0 ) THEN
-c           reorder and start loop again
+!           reorder and start loop again
             NMM = NM(I,:)
             NM(I,2) = NMM(3); NM(I,3) = NMM(2);
             goto 133
          ENDIF
-C...
-C...     v49.48.02 tcm -- compute element barycenters and element radius
-C.... BEG: DW, Nov 2019
+    
+!...     v49.48.02 tcm -- compute element barycenters and element radius
          x1 = X( NM(I,1) )  ; 
          x2 = X( NM(I,2) )  ;
          x3 = X( NM(I,3) )  ;
@@ -1569,28 +1557,26 @@ C.... BEG: DW, Nov 2019
 
          bcxy(1,i) = (x1+x2+x3)/3.d0
          bcxy(2,i) = (y1+y2+y3)/3.d0
-C
-C...     compute the radius of the circle that circumscribes
-C...     the element then scale it by 50% larger to allow for
-C...     a buffer later on
+
+!...     compute the radius of the circle that circumscribes
+!...     the element then scale it by 50% larger to allow for
+!...     a buffer later on
          RMAX(I) = 1.5D0*(LENED1*LENED2*LENED3)/(2.D0*AREAS(I))
       END DO PROCELM
-C
-C...  IF ICS=1 SET THE SFAC VECTOR EQUAL TO UNITY
-C...  IF ICS=2 COMPUTE THE SFAC VECTOR IN ORDER TO ADJUST EQUATIONS TO CPP
-C...  COORDINATES
-C...  
-C...  BEG: DW, DEC 2019 
+
+!...  IF ICS=1 SET THE SFAC VECTOR EQUAL TO UNITY
+!...  IF ICS=2 COMPUTE THE SFAC VECTOR IN ORDER TO ADJUST EQUATIONS TO CPP
+!...  COORDINATES
+!...  
       IF ( IFSPROTS .EQ. 1 ) THEN
          CALL COMPUTE_CYLINPROJ_SFAC( SLAMR, SFEAR ) ; 
       ELSE
          CALL COMPUTE_CYLINPROJ_SFAC( SLAM, SFEA ) ; 
       END IF
-C.... END DW
 
 
-C     check to ensure that the nodal ordering in the connectivity table is
-C     counter clockwise around the elements
+!     check to ensure that the nodal ordering in the connectivity table is
+!     counter clockwise around the elements
       do i=1,ne
          if (areas(i).lt.0.0d0) then
             write(scratchMessage,9899) I
@@ -1607,18 +1593,18 @@ C     counter clockwise around the elements
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
       end subroutine initializeMesh
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
 
-C     ------------------------------------------------------------------
-C       S U B R O U T I N E    I N I T I A L I Z E   B O U N D A R I E S
-C     ------------------------------------------------------------------
-C     jgf51.21.11: Perform all the finishing calculations required for
-C     boundary data, regardless of the file format of the mesh file.
-C     These finalizations are based on parameters parsed from the
-C     fort.15 control file, including ANGINN.
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
+!       S U B R O U T I N E    I N I T I A L I Z E   B O U N D A R I E S
+!     ------------------------------------------------------------------
+!     jgf51.21.11: Perform all the finishing calculations required for
+!     boundary data, regardless of the file format of the mesh file.
+!     These finalizations are based on parameters parsed from the
+!     fort.15 control file, including ANGINN.
+!     ------------------------------------------------------------------
       subroutine initializeBoundaries()
       use global, only : deg2rad, rad2deg, nbfr, c2ddi, pi, ifsprots
       use boundaries
@@ -1662,12 +1648,12 @@ C     ------------------------------------------------------------------
 1854  format('Total number of elevation specified boundary nodes :',
      &        i0,'.')
       call logMessage(ECHO,scratchMessage)
-C...
-C...  NODE NUMBERS ON EACH ELEVATION BOUNDARY FORCING SEGMENT
-C...  NOTE: In the future, if a boundary type is included for each
-C...  elevation segment it would be possible to distinguish between
-C...  periodic and aperiodic B.C.s This would require another NBD type
-C...  array.
+!...
+!...  NODE NUMBERS ON EACH ELEVATION BOUNDARY FORCING SEGMENT
+!...  NOTE: In the future, if a boundary type is included for each
+!...  elevation segment it would be possible to distinguish between
+!...  periodic and aperiodic B.C.s This would require another NBD type
+!...  array.
       JNMM=0
       DO K=1,NOPE
          write(scratchMessage,281) k,nvdll(k)
@@ -1681,10 +1667,10 @@ C...  array.
          END DO
          JNMM=JNMM+NVDLL(K)
       END DO !k=1,nope
-C...
-C...  SET UP TO READ IN TIME SERIES ELEVATION SPECIFIED BOUNDARY
-C...  CONDITIONS IF APPROPRIATE
-C...
+!...
+!...  SET UP TO READ IN TIME SERIES ELEVATION SPECIFIED BOUNDARY
+!...  CONDITIONS IF APPROPRIATE
+!...
       if((nbfr.eq.0).and.(nope.gt.0)) then
          write(scratchmessage,1871)
          call logMessage(INFO,scratchMessage)
@@ -1693,23 +1679,23 @@ C...
      &          ' Interpolation in time is done to sync the ',
      &          'elevation data with the model time step.')
       endif
-C...
-C...  FLOW BOUNDARY OUTPUT TO UNIT 16
-C...
-C...  INTERIOR NODES, LBCODE=-1, COS=0, SIN=1
-C...  BOUNDARY NODES, LBCODE=LBCODEI=IBTYPE,
-C...  COS & SIN DETERMINED FROM NORMAL DIRECTION IN ALL CASES, ALTHOUGH THIS
-C...  INFORMATION IS ONLY USED WHEN NORMAL FLOW IS AN ESSENTIAL B.C. AND
-C...  FREE TANGENTIAL SLIP IS ALLOWED.
+!...
+!...  FLOW BOUNDARY OUTPUT TO UNIT 16
+!...
+!...  INTERIOR NODES, LBCODE=-1, COS=0, SIN=1
+!...  BOUNDARY NODES, LBCODE=LBCODEI=IBTYPE,
+!...  COS & SIN DETERMINED FROM NORMAL DIRECTION IN ALL CASES, ALTHOUGH THIS
+!...  INFORMATION IS ONLY USED WHEN NORMAL FLOW IS AN ESSENTIAL B.C. AND
+!...  FREE TANGENTIAL SLIP IS ALLOWED.
 
-C...  TOTAL NUMBER OF FLOW BOUNDARY SEGMENTS
+!...  TOTAL NUMBER OF FLOW BOUNDARY SEGMENTS
       WRITE(16,1112)
       WRITE(16,1878)
 1878  FORMAT(//,1X,'FLOW BOUNDARY INFORMATION ',/)
       WRITE(16,1879) NBOU
  1879 FORMAT(//,5X,'THE TOTAL NUMBER OF FLOW BOUNDARY SEGMENTS = ',i0)
 
-C.....INPUT THE TOTAL NUMBER OF FLOW BOUNDARY NODES
+!.....INPUT THE TOTAL NUMBER OF FLOW BOUNDARY NODES
       WRITE(16,1881) NVEL
 1881  FORMAT(/,5X,'THE TOTAL NUMBER OF FLOW BOUNDARY NODES = ',i0)
 
@@ -1726,7 +1712,7 @@ C.....INPUT THE TOTAL NUMBER OF FLOW BOUNDARY NODES
       ! loop over the flux boundary segments, logging information about
       ! each segment and setting up boundary arrays
       NBOULOOP: DO K=1,NBOU
-C        write out flow boundary information to unit 16
+!        write out flow boundary information to unit 16
          IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
             WRITE(16,28) K,NVELL(K),K,2*NVELL(K)
  28         FORMAT(///,5X,'TOTAL NUMBER OF PAIRS FOR FLOW BOUNDARY',
@@ -1738,7 +1724,7 @@ C        write out flow boundary information to unit 16
  128        FORMAT(///,5X,'TOTAL NUMBER OF NODES FOR FLOW BOUNDARY',
      &           ' SEGMENT',2X,i0,2X,'=',2X,i0)
          ENDIF
-C        continue processing flow boundary information
+!        continue processing flow boundary information
          SELECT CASE(IBTYPE(K))
          CASE(0)
             WRITE(16,2340)
@@ -1978,17 +1964,17 @@ C        continue processing flow boundary information
             npipe = 0
          end select
 
-C...  PROCESS INFORMATION FOR VARIOUS TYPES OF FLOW BOUNDARY SEGMENTS
+!...  PROCESS INFORMATION FOR VARIOUS TYPES OF FLOW BOUNDARY SEGMENTS
 
          LOOPPRBI: DO IPRBI=1,NPRBI
 
-C...  LOAD PAIRED NODES INTO PRIMARY PROCESSING VECTORS AND RESET
-C...  CONNECTING NODES FOR BACK FACE THUS BACK/CONNECTING NODES ARE
-C...  BEING LOADED AS PRIMARY NODES AND FRONT NODES ARE RELOADED AS
-C...  CONNECTING NODES NOTE THAT THE CLOCKWISE ORIENTATION OF ISLAND
-C...  TYPE BOUNDARIES IS BEING MAINTAINED WHEN BACK NODES ARE RELOADED
-C...  AS PRIMARY NODES ADDITIONAL INTERNAL BARRIER BOUNDARY INFORMATION
-C...  IS ALSO RESET
+!...  LOAD PAIRED NODES INTO PRIMARY PROCESSING VECTORS AND RESET
+!...  CONNECTING NODES FOR BACK FACE THUS BACK/CONNECTING NODES ARE
+!...  BEING LOADED AS PRIMARY NODES AND FRONT NODES ARE RELOADED AS
+!...  CONNECTING NODES NOTE THAT THE CLOCKWISE ORIENTATION OF ISLAND
+!...  TYPE BOUNDARIES IS BEING MAINTAINED WHEN BACK NODES ARE RELOADED
+!...  AS PRIMARY NODES ADDITIONAL INTERNAL BARRIER BOUNDARY INFORMATION
+!...  IS ALSO RESET
 
             IF(IPRBI.EQ.2) THEN
                DO I=1,NVELL(K)
@@ -2018,7 +2004,7 @@ C...  IS ALSO RESET
                END DO  !I=1,NVELL(K)
             ENDIF
 
-C...        WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES
+!...        WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES
             IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
                IF(IPRBI.EQ.1) THEN
                   WRITE(16,1842)
@@ -2029,8 +2015,8 @@ C...        WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES
                ENDIF
             ENDIF
 
-C...        WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES WITH
-C...        CROSS BARRIER PIPES
+!...        WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES WITH
+!...        CROSS BARRIER PIPES
             IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
                IF(IPRBI.EQ.1) THEN
                   WRITE(16,1844)
@@ -2043,12 +2029,12 @@ C...        CROSS BARRIER PIPES
                ENDIF
             ENDIF
 
-C...        WRITE OUT GENERAL HEADER FOR BOUNDARY INFORMATION
+!...        WRITE OUT GENERAL HEADER FOR BOUNDARY INFORMATION
             WRITE(16,1841)
  1841      FORMAT('    JGW    JME    ME2GW   NODE #  BNDRY CODE   INNER',
      &      ' ANGLE',7X,'COS',13X,'SIN',9X,'0.667*BNDRY LEN',/)
 
-C...        COMPLETE THE BOUNDARY ARRAY FOR THE Kth FLOW BOUNDARY SEGMENT
+!...        COMPLETE THE BOUNDARY ARRAY FOR THE Kth FLOW BOUNDARY SEGMENT
 
             FLG_IBLEN2 = .FALSE.   !ADDED TCM V51.15 20130906
             NBVV(K,0)=NBVV(K,1) !UNCLOSED EXTERNAL
@@ -2070,31 +2056,31 @@ C...        COMPLETE THE BOUNDARY ARRAY FOR THE Kth FLOW BOUNDARY SEGMENT
             ENDIF
             NBVV(K,NVELL(K)+1)=NBVV(K,NVELL(K))
 
-C...        PUT BOUNDARY INFORMATION INTO 2 TYPES OF ARRAYS, ONE FOR THE GWCE
-C...        B.C. AND ONE FOR THE MOMENTUM EQUATION B.C.
-c
-C...        THE GWCE ARRAYS INCLUDE EVERY NODE IN THE UNIT 14 FILE, I.E.,
-C...        NODES ARE REPEATED WHERE SPECIFIED NORMAL FLOW AND NO NORMAL FLOW
-C...        BOUNDARIES MEET AND AT THE BEGINNING AND END OF CLOSED EXTERNAL
-C...        BOUNDARIES AND ISLANDS.
-c
-C...        THE MOMENTUM EQUATION ARRAYS ARE KEYED TO THE GWCE ARRAYS VIA THE
-C...        ARRAY ME2GW WHICH INDICATES THE LOCATION IN THE GWCE ARRAYS THAT
-C...        THE APPROPRIATE M.E. VALUE LIES.
-c
-C...        THE M.E. ARRAYS DO NOT REPEAT NODES THAT ARE DUPLICATED IN THE
-C...        UNIT 14 FILE, I.E., WHEN SPECIFIED NORMAL FLOW AND NO NORMAL FLOW
-C...        BOUNDARIES MEET, THE SPECIFIED NORMAL FLOW BOUNDARY CONDITION
-C...        TAKES PRECEDENT.  ALSO THE BEGINNING AND ENDING NODES OF CLOSED
-C...        EXTERNAL AND ISLAND BOUNDARIES ARE NOT REPEATED.
+!...        PUT BOUNDARY INFORMATION INTO 2 TYPES OF ARRAYS, ONE FOR THE GWCE
+!...        B.C. AND ONE FOR THE MOMENTUM EQUATION B.C.
+!
+!...        THE GWCE ARRAYS INCLUDE EVERY NODE IN THE UNIT 14 FILE, I.E.,
+!...        NODES ARE REPEATED WHERE SPECIFIED NORMAL FLOW AND NO NORMAL FLOW
+!...        BOUNDARIES MEET AND AT THE BEGINNING AND END OF CLOSED EXTERNAL
+!...        BOUNDARIES AND ISLANDS.
+!
+!...        THE MOMENTUM EQUATION ARRAYS ARE KEYED TO THE GWCE ARRAYS VIA THE
+!...        ARRAY ME2GW WHICH INDICATES THE LOCATION IN THE GWCE ARRAYS THAT
+!...        THE APPROPRIATE M.E. VALUE LIES.
+!
+!...        THE M.E. ARRAYS DO NOT REPEAT NODES THAT ARE DUPLICATED IN THE
+!...        UNIT 14 FILE, I.E., WHEN SPECIFIED NORMAL FLOW AND NO NORMAL FLOW
+!...        BOUNDARIES MEET, THE SPECIFIED NORMAL FLOW BOUNDARY CONDITION
+!...        TAKES PRECEDENT.  ALSO THE BEGINNING AND ENDING NODES OF CLOSED
+!...        EXTERNAL AND ISLAND BOUNDARIES ARE NOT REPEATED.
 
             NVELL_LOOP: DO I=1,NVELL(K)
-C...           SET UP THE GWCE BOUNDARY ARRAYS WHICH CONSIST OF
-C...           BOUNDARY NODE NUMBERS
-C...           BOUNDARY CODES
-C...           0.66667*LENGTH OF EACH BOUNDARY SEGMENT.  NOTE, THE LENGTH OF THE
-C...           LAST BOUNDARY SEGMENT ON EACH BOUNDARY SHOULD BE ZERO
-C              jgf46.21 Added IBTYPE=52.
+!...           SET UP THE GWCE BOUNDARY ARRAYS WHICH CONSIST OF
+!...           BOUNDARY NODE NUMBERS
+!...           BOUNDARY CODES
+!...           0.66667*LENGTH OF EACH BOUNDARY SEGMENT.  NOTE, THE LENGTH OF THE
+!...           LAST BOUNDARY SEGMENT ON EACH BOUNDARY SHOULD BE ZERO
+!              jgf46.21 Added IBTYPE=52.
                JGW=JGW+1
                select case(ibtype(k))
                case(0,10,20,2,12,22,52,3,13,23,30,32,40,41)
@@ -2120,12 +2106,12 @@ C              jgf46.21 Added IBTYPE=52.
                DELY = YGJ - YGI
                BNDLEN2O3(JGW) = 2.D0*(SQRT(DELX*DELX+DELY*DELY))/3.D0
 
-C...           COMPUTE THE INCLUDED ANGLE AND TEST TO DETERMINE WHETHER TO ZERO
-C...           TANGENTIAL VELOCITIES
+!...           COMPUTE THE INCLUDED ANGLE AND TEST TO DETERMINE WHETHER TO ZERO
+!...           TANGENTIAL VELOCITIES
 
-C...           NOTE:.IMPLEMENTATION FOR ICS=2 REQUIRES COMPUTING ALL COORDINATES
-C...           IN A LOCALIZED SYSTEM (I.E. THE TRANSFORMATION IS CENTERED AT
-C...           X0,Y0)
+!...           NOTE:.IMPLEMENTATION FOR ICS=2 REQUIRES COMPUTING ALL COORDINATES
+!...           IN A LOCALIZED SYSTEM (I.E. THE TRANSFORMATION IS CENTERED AT
+!...           X0,Y0)
 
                IF(ICS.EQ.1) THEN
                   XLI = XGI
@@ -2135,7 +2121,6 @@ C...           X0,Y0)
                   YLJ = YGJ
                   YLK = YGK
                ELSE
-C................ BEG: DW, Nov 2019
                   IF ( IFSPROTS .EQ. 1 ) THEN
                      CALL CYLINDERMAP( XLI, YLI, SLAMR(NBVI),
      &                    SFEAR(NBVI), SLAMR(NBVI),
@@ -2157,12 +2142,11 @@ C................ BEG: DW, Nov 2019
      &                    SFEA(NBVK), SLAM(NBVI),
      &                    SFEA(NBVI), ICS)
                  ENDIF
-C.............. END DW
                ENDIF
 
-C...           NOTE: INTERIOR ANGLE AT ENDS OF BOUNDARIES MUST BE EQUAL, EITHER:
-C...           A FICTITIOUSLY LARGE VALUE IF THE BOUNDARY IS NOT CLOSED OR A TRUE
-C...           VALUE IF THE BOUNDARY IS CLOSED
+!...           NOTE: INTERIOR ANGLE AT ENDS OF BOUNDARIES MUST BE EQUAL, EITHER:
+!...           A FICTITIOUSLY LARGE VALUE IF THE BOUNDARY IS NOT CLOSED OR A TRUE
+!...           VALUE IF THE BOUNDARY IS CLOSED
 
                calcTheta = .true.
                ! jgf51.15: special treatment at the start and
@@ -2209,8 +2193,8 @@ C...           VALUE IF THE BOUNDARY IS CLOSED
                   COSTHETA1=COSTHETA
                ENDIF
 
-C...           CHECK WHETHER ANGLE IS LESS THAN MINIMUM ANGLE, IF SO CHANGE THE
-C...           BOUNDARY CODE TO ZERO TANGENTIAL VELOCITIES 
+!...           CHECK WHETHER ANGLE IS LESS THAN MINIMUM ANGLE, IF SO CHANGE THE
+!...           BOUNDARY CODE TO ZERO TANGENTIAL VELOCITIES 
 
                ! jgf53.dev: jgfdebug: FIXME: The 3D code does not appear
                ! to support boundary types with no tangential slip, so
@@ -2231,7 +2215,7 @@ C...           BOUNDARY CODE TO ZERO TANGENTIAL VELOCITIES
                   ENDIF
                endif
 
-C...           COMPUTE COS AND SIN OF OUTWARD NORMAL REGARDLESS OF BOUNDARY TYPE
+!...           COMPUTE COS AND SIN OF OUTWARD NORMAL REGARDLESS OF BOUNDARY TYPE
                ! TCM V51.15 20130906 ADDED TEST TO HANDLE SPECIAL CASE WHEN THE ORIGINAL
                ! INTERIOR BOUNDARY HAD LENGTH 2 AND IBTYPE=1,11, OR 21 AND WAS FORCED CLOSED
                IF (FLG_IBLEN2 .EQV. .TRUE.) THEN
@@ -2242,9 +2226,9 @@ C...           COMPUTE COS AND SIN OF OUTWARD NORMAL REGARDLESS OF BOUNDARY TYPE
                CSII(JGW) = SFMX(NBVI)*(YGJ-YGK)/XL
                SIII(JGW) = (XGK-XGJ)/XL
 
-C...           Compute the location of and the element containing the fictitious
-C...           node used for a zero normal velocity gradient boundary condition
-C...           (type 40)
+!...           Compute the location of and the element containing the fictitious
+!...           node used for a zero normal velocity gradient boundary condition
+!...           (type 40)
 
                IF(IBType(K).EQ.40) Then
                   ZNGFicNodeDist=0.d0
@@ -2296,8 +2280,8 @@ C...           (type 40)
      &                'This should be checked.')
                   ENDIF
 
-C...              Pre-compute the information required to interpolate at zero normal
-C...              gradient fictitious nodes
+!...              Pre-compute the information required to interpolate at zero normal
+!...              gradient fictitious nodes
 
                   N1=NM(NEleZNG(JGW),1)
                   N2=NM(NEleZNG(JGW),2)
@@ -2314,18 +2298,18 @@ C...              gradient fictitious nodes
      &                 /AREAS(NEleZNG(JGW))
                   ZNGIF3(JGW)=(-(X4-X1)*(Y2-Y1)+(Y4-Y1)*(X2-X1))
      &                 /AREAS(NEleZNG(JGW))
-c             WRITE(2,*) 'For Boundary Node # ',NBVV(K,I)
-c             WRITE(2,*) 'The fictitious point is ',X4,Y4
-c             WRITE(2,*) 'which is located in element # ',NEleZNG(JGW)
-c             WRITE(2,*) 'The interpolating factors are ',ZNGIF1(JGW),
-c    &                                           ZNGIF2(JGW),ZNGIF3(JGW)
-c             WRITE(2,*) ' '
+!             WRITE(2,*) 'For Boundary Node # ',NBVV(K,I)
+!             WRITE(2,*) 'The fictitious point is ',X4,Y4
+!             WRITE(2,*) 'which is located in element # ',NEleZNG(JGW)
+!             WRITE(2,*) 'The interpolating factors are ',ZNGIF1(JGW),
+!    &                                           ZNGIF2(JGW),ZNGIF3(JGW)
+!             WRITE(2,*) ' '
                ENDIF
 
-C...
-C...  SET UP THE MOMENTUM EQUATION BOUNDARY ARRAY WHICH CONSISTS OF A
-C...  KEY TO THE GWCE BOUNDARY CONDITION ARRAY
-C...
+!...
+!...  SET UP THE MOMENTUM EQUATION BOUNDARY ARRAY WHICH CONSISTS OF A
+!...  KEY TO THE GWCE BOUNDARY CONDITION ARRAY
+!...
                IF(I.EQ.1) THEN  !DEAL WITH FIRST NODE IN L.B. SEG
                   IF(JGW.EQ.1) THEN !VERY FIRST L.B. SEG
                      JME=JME+1  !M.E. USES IT
@@ -2376,14 +2360,14 @@ C...
                   ENDIF
                ENDIF
 
-C...........   LOAD EXTERNAL BARRIER BOUNDARY INFORMATION INTO THE CORRECT VECTORS
+!...........   LOAD EXTERNAL BARRIER BOUNDARY INFORMATION INTO THE CORRECT VECTORS
                IF((IBTYPE(K).EQ.3).OR.(IBTYPE(K).EQ.13)
      &          .OR.(IBTYPE(K).EQ.23)) THEN
                   BARLANHT(JGW)=BARLANHTR(K,I)
                   BARLANCFSP(JGW)=BARLANCFSPR(K,I)
                ENDIF
 
-C...........   LOAD INTERNAL BARRIER BOUNDARY INFORMATION INTO THE CORRECT VECTORS
+!...........   LOAD INTERNAL BARRIER BOUNDARY INFORMATION INTO THE CORRECT VECTORS
                IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
                   IBCONN(JGW)=IBCONNR(K,I)
                   BARINHT(JGW)=BARINHTR(K,I)
@@ -2391,8 +2375,8 @@ C...........   LOAD INTERNAL BARRIER BOUNDARY INFORMATION INTO THE CORRECT VECTO
                   BARINCFSP(JGW)=BARINCFSPR(K,I)
                ENDIF
 
-C...........   LOAD INTERNAL BARRIER WITH PIPES BOUNDARY INFORMATION INTO
-C...........   THE CORRECT VECTORS
+!...........   LOAD INTERNAL BARRIER WITH PIPES BOUNDARY INFORMATION INTO
+!...........   THE CORRECT VECTORS
                IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
                   IBCONN(JGW)=IBCONNR(K,I)
                   BARINHT(JGW)=BARINHTR(K,I)
@@ -2403,14 +2387,14 @@ C...........   THE CORRECT VECTORS
                   PIPEDIAM(JGW)=PIPEDIAMR(K,I)
                ENDIF
 
-C...........   WRITE OUT BOUNDARY CONDITION ARRAY INFORMATION
+!...........   WRITE OUT BOUNDARY CONDITION ARRAY INFORMATION
 
                WRITE(16,1857) JGW,JME,ME2GW(JME),NBV(JGW),LBCODEI(JGW),
      &              THETA,CSII(JGW),SIII(JGW),BNDLEN2O3(JGW)
  1857          FORMAT(1X,I6,1X,I6,1X,I6,3X,I8,3X,I4,8X,E12.4,2X,E16.8,
      &              1X,E16.8,2X,E16.8)
 
-C...........   CHECK EXTERNAL BARRIER HEIGHTS AGAINST DEPTHS
+!...........   CHECK EXTERNAL BARRIER HEIGHTS AGAINST DEPTHS
                IF((IBTYPE(K).EQ.3).OR.(IBTYPE(K).EQ.13)
      &          .OR.(IBTYPE(K).EQ.23)) THEN
                   IF(BARLANHT(JGW).LT.-DP(NBV(JGW))) THEN
@@ -2430,7 +2414,7 @@ C...........   CHECK EXTERNAL BARRIER HEIGHTS AGAINST DEPTHS
                      CALL terminate()
                   ENDIF
                ENDIF
-C...........   CHECK INTERNAL BARRIER HEIGHTS AGAINST DEPTHS
+!...........   CHECK INTERNAL BARRIER HEIGHTS AGAINST DEPTHS
                IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
                   IF(BARINHT(JGW).LT.-DP(NBV(JGW))) THEN
                      write(scratchMessage,8368)
@@ -2450,7 +2434,7 @@ C...........   CHECK INTERNAL BARRIER HEIGHTS AGAINST DEPTHS
                   ENDIF
                ENDIF
 
-C...........   CHECK INTERNAL BARRIER WITH PIPES BARRIER HEIGHTS AGAINST DEPTHS
+!...........   CHECK INTERNAL BARRIER WITH PIPES BARRIER HEIGHTS AGAINST DEPTHS
                IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
                   IF(BARINHT(JGW).LT.-DP(NBV(JGW))) THEN
                      write(scratchMessage,8370)
@@ -2469,7 +2453,7 @@ C...........   CHECK INTERNAL BARRIER WITH PIPES BARRIER HEIGHTS AGAINST DEPTHS
                      CALL terminate()
                   ENDIF
                ENDIF
-C...           CHECK INTERNAL BARRIER WITH PIPES PIPE HEIGHTS AGAINST DEPTHS
+!...           CHECK INTERNAL BARRIER WITH PIPES PIPE HEIGHTS AGAINST DEPTHS
                IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
                   IF(PIPEHT(JGW).LT.-DP(NBV(JGW))) THEN
                      write(scratchMessage,8372)
@@ -2489,16 +2473,16 @@ C...           CHECK INTERNAL BARRIER WITH PIPES PIPE HEIGHTS AGAINST DEPTHS
                   ENDIF
                ENDIF
 
-C...  CHECK FOR OVERLAPPING OF AN INTERNAL BARRIER BOUNDARY WITH
-C...  ANY EXTERNAL BARRIER BOUNDARY. IF THIS DOES OCCUR, TAKE
-C...  APPROPRIATE ACTION
+!...  CHECK FOR OVERLAPPING OF AN INTERNAL BARRIER BOUNDARY WITH
+!...  ANY EXTERNAL BARRIER BOUNDARY. IF THIS DOES OCCUR, TAKE
+!...  APPROPRIATE ACTION
                IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24).OR.
      &              (IBTYPE(K).EQ.5)
      &              .OR.(IBTYPE(K).EQ.25)) THEN
                   DO ICK=1,NVELEXT
-C...  CHECK IF OVERLAP EXISTS
+!...  CHECK IF OVERLAP EXISTS
                      IF(NBV(ICK).EQ.NBV(JGW)) THEN
-C...  CHECK FOR ILLEGAL OVERLAPS
+!...  CHECK FOR ILLEGAL OVERLAPS
                         IF((LBCODEI(ICK).EQ.2).OR.
      &                   (LBCODEI(ICK).EQ.3).OR.(LBCODEI(ICK).EQ.12).OR.
      &                   (LBCODEI(ICK).EQ.13)) THEN
@@ -2518,8 +2502,8 @@ C...  CHECK FOR ILLEGAL OVERLAPS
                            call allMessage(ERROR, trim(exeTerm9973))
                            call terminate()
                         ENDIF
-C...  CHECK FOR OVERLAPS WHICH REQUIRE ADJUSTMENTS OF BOUNDARY
-C...  CODE ON THE EXTERNAL BOUNDARY
+!...  CHECK FOR OVERLAPS WHICH REQUIRE ADJUSTMENTS OF BOUNDARY
+!...  CODE ON THE EXTERNAL BOUNDARY
                         IF(((IBTYPE(K).EQ.4).AND.(LBCODEI(ICK).EQ.0))
      &                       .OR.((IBTYPE(K).EQ.5)
      &                       .AND.(LBCODEI(ICK).EQ.0))) THEN
@@ -2574,8 +2558,8 @@ C...  CODE ON THE EXTERNAL BOUNDARY
          END DO  LOOPPRBI !IPRBI=1,NPRBI
       END DO NBOULOOP  ! K=1,NBOU
 
-C...  ONCE ALL FLOW BOUNDARY NODES HAVE BEEN PROCESSED, CHECK TO MAKE
-C...  SURE THAT JGW LE MNVEL.  NOTE, JME MUST BE < JGW.
+!...  ONCE ALL FLOW BOUNDARY NODES HAVE BEEN PROCESSED, CHECK TO MAKE
+!...  SURE THAT JGW LE MNVEL.  NOTE, JME MUST BE < JGW.
 
       IF(MNVEL.LT.JGW) THEN
          write(scratchMessage,9947)
@@ -2591,7 +2575,7 @@ C...  SURE THAT JGW LE MNVEL.  NOTE, JME MUST BE < JGW.
       NVEL=JGW
       NVELME=JME
 
-C.....TRANSFER FLOW BOUNDARY INFORMATION INTO NODAL ARRAYS
+!.....TRANSFER FLOW BOUNDARY INFORMATION INTO NODAL ARRAYS
       DO I=1,NP
          LBArray_Pointer(I)=-1
          CSI(I)=0.
@@ -2620,23 +2604,20 @@ C.....TRANSFER FLOW BOUNDARY INFORMATION INTO NODAL ARRAYS
       !end do    
       !stop !jgfdebug
 
-C.... DW, perioidc boundary
-C      PRINT*, UBOUND(NM,1), UBOUND(NM,2) ; 
       CALL PERBCSETUP( NM(:,:) ) ;
-C....
 
-C...  IF ANY EXTERNAL BARRIER BOUNDARIES WERE SPECIFIED, (NFLUXB=1)
-C.....WRITE OUT EXTERNAL BARRIER BOUNDARY INFORMATION TO UNIT 16 FILE
-C.....NOTE THAT THIS INFORMATION WAS READ IN FROM THE UNIT 14 FILE
+!...  IF ANY EXTERNAL BARRIER BOUNDARIES WERE SPECIFIED, (NFLUXB=1)
+!.....WRITE OUT EXTERNAL BARRIER BOUNDARY INFORMATION TO UNIT 16 FILE
+!.....NOTE THAT THIS INFORMATION WAS READ IN FROM THE UNIT 14 FILE
       IF(NFLUXB.EQ.1) THEN
-C.....  WRITE OUT INFO ON SPECIFIED EXTERNAL BARRIER BOUNDARIES
+!.....  WRITE OUT INFO ON SPECIFIED EXTERNAL BARRIER BOUNDARIES
         WRITE(16,1112)
         WRITE(16,2220)
  2220   FORMAT(//,1X,'EXTERNAL BARRIER BOUNDARY INFORMATION ',/)
 
-C.......OUTPUT ELEVATION OF EXTERNAL BARRIER NODES ABOVE THE GEOID AND
-C........THE COEFFICIENT OF FREE SURFACE SUPERCRITICAL FLOW AT
-C........DESIGNATED EXTERNAL BARRIER BOUNDARY NODES TO UNIT 16
+!.......OUTPUT ELEVATION OF EXTERNAL BARRIER NODES ABOVE THE GEOID AND
+!........THE COEFFICIENT OF FREE SURFACE SUPERCRITICAL FLOW AT
+!........DESIGNATED EXTERNAL BARRIER BOUNDARY NODES TO UNIT 16
          WRITE(16,2224)
  2224   FORMAT(//,9X,'NODE',10X,'BARRIER HEIGHT',
      &                     6X,'SUPER-CRIT. EXTERNAL BAR. COEF.',/)
@@ -2649,20 +2630,20 @@ C........DESIGNATED EXTERNAL BARRIER BOUNDARY NODES TO UNIT 16
          END DO
       ENDIF
 
-C...  IF ANY INTERNAL BARRIER BOUNDARIES WERE SPECIFIED, (NFLUXIB=1)
-C.....WRITE INTERNAL BARRIER BOUNDARY INFORMATION TO UNIT 16 FILE
+!...  IF ANY INTERNAL BARRIER BOUNDARIES WERE SPECIFIED, (NFLUXIB=1)
+!.....WRITE INTERNAL BARRIER BOUNDARY INFORMATION TO UNIT 16 FILE
       IF(NFLUXIB.EQ.1) THEN
 
-C.....   WRITE OUT INFO ON SPECIFIED INTERNAL BARRIER BOUNDARIES
+!.....   WRITE OUT INFO ON SPECIFIED INTERNAL BARRIER BOUNDARIES
          WRITE(16,1112)
          WRITE(16,2320)
  2320   FORMAT(//,1X,'INTERNAL BARRIER BOUNDARY INFORMATION ',/)
 
-C....... WRITE CONNECTION NODE NUMBER AND ELEVATION OF THE INTERNAL BARRIER
-C........NODES ABOVE THE GEOID AND THE COEFFICIENTS OF FREE SURFACE SUPERCRITICAL
-C........AND SUBCRITICAL FLOW AT DESIGNATED INTERNAL BARRIER BOUNDARY NODES
-C........TO UNIT 16 (NOTE THAT THIS INFORMATION WAS INPUT FROM THE UNIT 14
-C........FILE WITH BOUNDARY NODE INFORMATION)
+!....... WRITE CONNECTION NODE NUMBER AND ELEVATION OF THE INTERNAL BARRIER
+!........NODES ABOVE THE GEOID AND THE COEFFICIENTS OF FREE SURFACE SUPERCRITICAL
+!........AND SUBCRITICAL FLOW AT DESIGNATED INTERNAL BARRIER BOUNDARY NODES
+!........TO UNIT 16 (NOTE THAT THIS INFORMATION WAS INPUT FROM THE UNIT 14
+!........FILE WITH BOUNDARY NODE INFORMATION)
          WRITE(16,2324)
  2324   FORMAT(//,9X,'NODE',6X,'CONNECTED NODE',6X,'BARRIER HEIGHT',
      &                4X,'SUB-CRIT. INT. BAR. COEF.',
@@ -2676,25 +2657,25 @@ C........FILE WITH BOUNDARY NODE INFORMATION)
          END DO
       ENDIF
 
-cjjwm001 - begin add
-C...  IF ANY INTERNAL BARRIER BOUNDARIES WITH CROSS BARRIER PIPES
-C.....WERE SPECIFIED, (NFLUXIBP=1)
-C.....WRITE INTERNAL BARRIER BOUNDARY INFORMATION WITH CROSS
-C.....BARRIER PIPE INFORMATION TO UNIT 16 FILE
+!jjwm001 - begin add
+!...  IF ANY INTERNAL BARRIER BOUNDARIES WITH CROSS BARRIER PIPES
+!.....WERE SPECIFIED, (NFLUXIBP=1)
+!.....WRITE INTERNAL BARRIER BOUNDARY INFORMATION WITH CROSS
+!.....BARRIER PIPE INFORMATION TO UNIT 16 FILE
       IF(NFLUXIBP.EQ.1) THEN
-C.....   WRITE OUT INFO ON SPECIFIED INTERNAL BARRIER BOUNDARIES
+!.....   WRITE OUT INFO ON SPECIFIED INTERNAL BARRIER BOUNDARIES
          WRITE(16,1112)
          WRITE(16,2326)
  2326   FORMAT(//,1X,'INTERNAL BARRIER BOUNDARY WITH CROSS BARRIER',
      &   ' PIPE INFORMATION ',/)
 
-C....... WRITE CONNECTION NODE NUMBER AND ELEVATION OF THE INTERNAL BARRIER
-C........NODES ABOVE THE GEOID AND THE COEFFICIENTS OF FREE SURFACE SUPERCRITICAL
-C........AND SUBCRITICAL FLOW AT DESIGNATED INTERNAL BARRIER BOUNDARY NODES
-C........IN ADDITION TO CROSS BARRIER PIPE CROWN HEIGHT, CROSS BARRIER PIPE
-C........COEFFICIENT AND CROSS BARRIER PIPE DIAMETER TO UNIT 16
-C........(NOTE THAT THIS INFORMATION WAS INPUT FROM THE UNIT 14 FILE WITH
-C........BOUNDARY NODE INFORMATION)
+!....... WRITE CONNECTION NODE NUMBER AND ELEVATION OF THE INTERNAL BARRIER
+!........NODES ABOVE THE GEOID AND THE COEFFICIENTS OF FREE SURFACE SUPERCRITICAL
+!........AND SUBCRITICAL FLOW AT DESIGNATED INTERNAL BARRIER BOUNDARY NODES
+!........IN ADDITION TO CROSS BARRIER PIPE CROWN HEIGHT, CROSS BARRIER PIPE
+!........COEFFICIENT AND CROSS BARRIER PIPE DIAMETER TO UNIT 16
+!........(NOTE THAT THIS INFORMATION WAS INPUT FROM THE UNIT 14 FILE WITH
+!........BOUNDARY NODE INFORMATION)
          WRITE(16,2327)
  2327    FORMAT(//,7X,'NODE',4X,'CONNECTED NODE',4X,'BARRIER HEIGHT',
      &                4X,'SUB-CRIT INT BAR COEF',
@@ -2712,13 +2693,13 @@ C........BOUNDARY NODE INFORMATION)
             ENDIF
          END DO
       ENDIF
-cjjwm001 - end add
+!jjwm001 - end add
       ! jgf51.11.18: Free memory associated with the reading of the
       ! levee and culvert parameters since it is no longer needed
       call freeFluxBoundaryArrayTemporaries()
-C
-C...GENERAL PURPOSE FORMAT STATEMENTS for subtly expressed error messages
-C...
+!
+!...GENERAL PURPOSE FORMAT STATEMENTS for subtly expressed error messages
+!...
  1112 FORMAT(/,1X,79('_'))
  9973 FORMAT('!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
 
@@ -2726,18 +2707,18 @@ C...
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
       end subroutine initializeBoundaries
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
 
-C     ------------------------------------------------------------------
-C                          S U B R O U T I N E
-C     A L L O C A T E   N O D A L   A N D   E L E M E N T A L   A R R A Y S
-C     ------------------------------------------------------------------
-C     jgf51.21.09: Mesh related memory allocation for any array that is
-C     dimensioned by the number of nodes in the mesh or the number of
-C     elements in the mesh.
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
+!                          S U B R O U T I N E
+!     A L L O C A T E   N O D A L   A N D   E L E M E N T A L   A R R A Y S
+!     ------------------------------------------------------------------
+!     jgf51.21.09: Mesh related memory allocation for any array that is
+!     dimensioned by the number of nodes in the mesh or the number of
+!     elements in the mesh.
+!     ------------------------------------------------------------------
       subroutine allocateNodalAndElementalArrays()
       implicit none
 
@@ -2755,10 +2736,10 @@ C     ------------------------------------------------------------------
       allocate ( lbarray_pointer(mnp))
 
       allocate ( csi(mnp),sii(mnp))
-C...  v49.48.02 tcm -- Variables related to kdtree searches
-C...  which are deallocated at the end of read_input.F
+!...  v49.48.02 tcm -- Variables related to kdtree searches
+!...  which are deallocated at the end of read_input.F
       allocate( bcxy(2,mne), rmax(mne) )
-C...... DW
+
       ALLOCATE ( FDXE(3,MNE), FDYE(3,MNE) ) ;
       FDXE = 0.0_SZ ; 
       FDYE = 0.0_SZ ;
@@ -2796,7 +2777,6 @@ C...... DW
       SFMXEle = 1.0_SZ ;
       YCSFacEle = 1.0_SZ ;
       TANPHIEle = 0.0_SZ ;
-C...... END DW
       !
       ! initialize to something troublesome to make it easy to spot issues
       slam = -99999.d0
@@ -2820,16 +2800,15 @@ C...... END DW
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
       end subroutine allocateNodalAndElementalArrays
-C     ------------------------------------------------------------------
-C.
+!     ------------------------------------------------------------------
 
-C     ------------------------------------------------------------------
-C     S U B R O U T I N E   A L L O C A T E   N E I G H B O R   A R R A Y S
-C     ------------------------------------------------------------------
-C     Allocate space for Arrays needed to determine neighbor tables
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
+!     S U B R O U T I N E   A L L O C A T E   N E I G H B O R   A R R A Y S
+!     ------------------------------------------------------------------
+!     Allocate space for Arrays needed to determine neighbor tables
+!     ------------------------------------------------------------------
       subroutine allocateNeighborArrays()
       implicit none
 
@@ -2845,16 +2824,16 @@ C     ------------------------------------------------------------------
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-c     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
       end subroutine allocateNeighborArrays
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
 
-C     ------------------------------------------------------------------
-C     S U B R O U T I N E   F R E E  M E S H
-C     ------------------------------------------------------------------
-C     De allocate memory that is no longer needed after the input
-C     has been read.
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
+!     S U B R O U T I N E   F R E E  M E S H
+!     ------------------------------------------------------------------
+!     De allocate memory that is no longer needed after the input
+!     has been read.
+!     ------------------------------------------------------------------
       subroutine freeMesh()
       implicit none
 
@@ -2870,49 +2849,49 @@ C     ------------------------------------------------------------------
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-c     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
       end subroutine freeMesh
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
 
-C     ------------------------------------------------------------------
-C               S U B R O U T I N E    N E I G H B
-C     ------------------------------------------------------------------
-C      Subroutine to generate neighbor tables from a connectivity table.
-C
-C      NOTES
-C      a node neighbor table is generated with the node itself is listed as
-C         neighbor #1 and all other neighbors are sorted and placed in cw
-C         order from east
-C      a neighbor element table is generated with:
-C         entry 1 = element # defined by neighbors 1,2,3
-C         entry 2 = element # defined by neighbors 1,3,4
-C         entry 3 = element # defined by neighbors 1,4,5
-C          .......
-C         entry last = element # defined by neighbors 1,nneigh,2
-C         a zero area means that the defined triangle lies outside the domain
-C
-C
-C    v1.0   R.L.   6/29/99  used in 3D code
-C    v2.0   R.L.   5/23/02  adapted to provide neighbor el table
-C
-C     -  PARAMETERS WHICH MUST BE SET TO CONTROL THE DIMENSIONING OF ARRAYS
-C           ARE AS FOLLOWS:
-C
-C          MNP = MAXIMUM NUMBER OF NODAL POINTS
-C          MNE = MAXIMUM NUMBER OF ELEMENTS
-C          MNEI= 1+MAXIMUM NUMBER OF NODES CONNECTED TO ANY ONE NODE IN THE
-C                   FINITE ELEMENT GRID
-C
-C    VARIABLE DEFINITIONS:
-C       NE - NUMBER OF ELEMENTS
-C       NP - NUMBER OF NODES
-C       NM(MNE,3) - NODE NUMBERS ASSOCIATED WITH EACH ELEMENT
-C       NNeigh(MNP) NUMBER OF NEIGHBORS FOR EACH NODE
-C       NeiTab(MNP,NEIMAX) 2D ARRAY OF NEIGHBORS FOR EACH NODE
-C       NeiTabEle(MNP,NEIMAX) 2D ARRAY OF NEIGHBOR ELEMENTS FOR EACH NODE
-C       NEIMIN - 1+MINIMUM NUMBER OF NEIGHBORS FOR ANY NODE
-C       NEIMAX - 1+MAXIMUM NUMBER OF NEIGHBORS FOR ANY NODE
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
+!               S U B R O U T I N E    N E I G H B
+!     ------------------------------------------------------------------
+!      Subroutine to generate neighbor tables from a connectivity table.
+!
+!      NOTES
+!      a node neighbor table is generated with the node itself is listed as
+!         neighbor #1 and all other neighbors are sorted and placed in cw
+!         order from east
+!      a neighbor element table is generated with:
+!         entry 1 = element # defined by neighbors 1,2,3
+!         entry 2 = element # defined by neighbors 1,3,4
+!         entry 3 = element # defined by neighbors 1,4,5
+!          .......
+!         entry last = element # defined by neighbors 1,nneigh,2
+!         a zero area means that the defined triangle lies outside the domain
+!
+!
+!    v1.0   R.L.   6/29/99  used in 3D code
+!    v2.0   R.L.   5/23/02  adapted to provide neighbor el table
+!
+!     -  PARAMETERS WHICH MUST BE SET TO CONTROL THE DIMENSIONING OF ARRAYS
+!           ARE AS FOLLOWS:
+!
+!          MNP = MAXIMUM NUMBER OF NODAL POINTS
+!          MNE = MAXIMUM NUMBER OF ELEMENTS
+!          MNEI= 1+MAXIMUM NUMBER OF NODES CONNECTED TO ANY ONE NODE IN THE
+!                   FINITE ELEMENT GRID
+!
+!    VARIABLE DEFINITIONS:
+!       NE - NUMBER OF ELEMENTS
+!       NP - NUMBER OF NODES
+!       NM(MNE,3) - NODE NUMBERS ASSOCIATED WITH EACH ELEMENT
+!       NNeigh(MNP) NUMBER OF NEIGHBORS FOR EACH NODE
+!       NeiTab(MNP,NEIMAX) 2D ARRAY OF NEIGHBORS FOR EACH NODE
+!       NeiTabEle(MNP,NEIMAX) 2D ARRAY OF NEIGHBOR ELEMENTS FOR EACH NODE
+!       NEIMIN - 1+MINIMUM NUMBER OF NEIGHBORS FOR ANY NODE
+!       NEIMAX - 1+MAXIMUM NUMBER OF NEIGHBORS FOR ANY NODE
+!     ------------------------------------------------------------------
       SUBROUTINE NEIGHB()
       USE GLOBAL, ONLY : rad2deg
       IMPLICIT NONE
@@ -2923,7 +2902,6 @@ C     ------------------------------------------------------------------
       REAL(8), ALLOCATABLE :: ANGLE(:)
       INTEGER, ALLOCATABLE :: NEITEM(:)
 
-C
       call setMessageSource("neighb")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -2932,7 +2910,7 @@ C
       ALLOCATE ( ANGLE(MNEI) )
       ALLOCATE ( NEITEM(MNP) )
       ALLOCATE ( NNeighEle(MNP) )
-C
+
       DO N=1,NP
          NNeigh(N)=0
          NNeighEle(N)=0
@@ -2985,10 +2963,10 @@ C
 
  10   CONTINUE
 
-C
-C     INSERT NODE ITSELF IN PLACE #1 and SORT other NEIGHBORS by
-C     increasing cw angle from East
-C
+!
+!     INSERT NODE ITSELF IN PLACE #1 and SORT other NEIGHBORS by
+!     increasing cw angle from East
+!
       DO I=1,NP
          DO J=1,NNeigh(I)
             NEITEM(J)=NeiTab(I,J)
@@ -3021,16 +2999,16 @@ C
          NeiTab(I,1)=I
          NNeigh(I)=NNeigh(I)+1
       ENDDO
-C
-C     MATCH EACH SET OF 3 NODES WITH CORRESPONDING ELEMENT AND REORDER
-C     ELEMENTS ACCORDINGLY
-C
+!
+!     MATCH EACH SET OF 3 NODES WITH CORRESPONDING ELEMENT AND REORDER
+!     ELEMENTS ACCORDINGLY
+!
       DO I=1,NP
          DO K=1,NNeighEle(I)
             NEITEM(K)=NeiTabEle(I,K)
             NeiTabEle(I,K)=0
          END DO
-         NN = 0; ! DW
+         NN = 0; 
          DO J=2,NNeigh(I)
             NN1=NeiTab(I,1)
             NN3=NeiTab(I,J)
@@ -3064,42 +3042,40 @@ C
          END DO
       END DO
 
-C
-C  DETERMINE THE MAXIMUM AND MINIMUM NUMBER OF NEIGHBORS
-C
+!
+!  DETERMINE THE MAXIMUM AND MINIMUM NUMBER OF NEIGHBORS
+!
       NEIMAX = 0
       NEIMIN = 1000
       DO N=1,NP
          IF(NNeigh(N).LT.NEIMIN) NEIMIN=NNeigh(N)
          IF(NNeigh(N).GT.NEIMAX) NEIMAX=NNeigh(N)
       END DO
-C
-C  WRITE OUT DIAGNOSTIC OUTPUT
-C
-C     OPEN(333,file='fort.333')
-C     DO N=1,NP
-C       WRITE(333,331) (NEIGH(N,J),J=1,NNEIGH(N))
-C       WRITE(333,331) N,(NEIGHELE(N,J),J=1,NNEIGH(N)-1)
-C       WRITE(333,*) ' '
-C331    FORMAT(15(1X,I7))
-C       END DO
-C     CLOSE (333)
+!
+!  WRITE OUT DIAGNOSTIC OUTPUT
+!
+!     OPEN(333,file='fort.333')
+!     DO N=1,NP
+!       WRITE(333,331) (NEIGH(N,J),J=1,NNEIGH(N))
+!       WRITE(333,331) N,(NEIGHELE(N,J),J=1,NNEIGH(N)-1)
+!       WRITE(333,*) ' '
+!331    FORMAT(15(1X,I7))
+!       END DO
+!     CLOSE (333)
 
-C     Deallocate local work arrays
+!     Deallocate local work arrays
       DEALLOCATE ( ANGLE )
       DEALLOCATE ( NEITEM )
-C     DW
-C      DEALLOCATE ( NNEIGHELE )
-C     DW
+!      DEALLOCATE ( NNEIGHELE )
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 
       RETURN
-C
-C     TERMINATE PROGRAM IF MAXIMUM NUMBER OF NEIGHBORS SET TOO SMALL
-C
+!
+!     TERMINATE PROGRAM IF MAXIMUM NUMBER OF NEIGHBORS SET TOO SMALL
+!
  999  write(scratchMessage,99311)
       call allMessage(ERROR,scratchMessage)
 99311 FORMAT('!!!!!!!!!!  FATAL ERROR !!!!!!!!! ',
@@ -3114,25 +3090,25 @@ C
      &     'NODES ',i0,' AND ',i0,' HAVE THE SAME COORDINATES.'
      &     '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
       call terminate()
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
       end subroutine neighb
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
 
-C     ------------------------------------------------------------------
-C           S U B R O U T I N E   T O T A L   A R E A   C A L C
-C     ------------------------------------------------------------------
-C     jgf51.21.10: Refactored and modularized out of the ADCIRC_Init
-C     subroutine in the ADCIRC module.
-C
-C     Determine the number of active elements (MJU), the total number of
-C     elements (NODELE) and the total area of elements (TotalArea)
-C     attached to each node.
-C
-C     The calculation of the number of active elements must wait until
-C     the model has initialized to the point that either cstart() or
-C     hstart() has already been called and nnodecode is already
-C     initialized.
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
+!           S U B R O U T I N E   T O T A L   A R E A   C A L C
+!     ------------------------------------------------------------------
+!     jgf51.21.10: Refactored and modularized out of the ADCIRC_Init
+!     subroutine in the ADCIRC module.
+!
+!     Determine the number of active elements (MJU), the total number of
+!     elements (NODELE) and the total area of elements (TotalArea)
+!     attached to each node.
+!
+!     The calculation of the number of active elements must wait until
+!     the model has initialized to the point that either cstart() or
+!     hstart() has already been called and nnodecode is already
+!     initialized.
+!     ------------------------------------------------------------------
       subroutine totalAreaCalc()
       use global, only : nodecode, nnodecode, noff
       implicit none
@@ -3179,16 +3155,16 @@ C     ------------------------------------------------------------------
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
       end subroutine totalAreaCalc
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
 
-C     ------------------------------------------------------------------
-C                  S U B R O U T I N E   I N V C P
-C     ------------------------------------------------------------------
-C     Transform from CPP coordinates to lon,lat (lamda,phi) coordinates
-C     Lon,Lat is in radians.
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
+!                  S U B R O U T I N E   I N V C P
+!     ------------------------------------------------------------------
+!     Transform from CPP coordinates to lon,lat (lamda,phi) coordinates
+!     Lon,Lat is in radians.
+!     ------------------------------------------------------------------
       SUBROUTINE INVCP(XXCP,YYCP,RLAMBDA,PHI,RLAMBDA0,PHI0)
       USE GLOBAL, ONLY : Rearth
       IMPLICIT NONE
@@ -3206,9 +3182,9 @@ C     ------------------------------------------------------------------
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
       END SUBROUTINE INVCP
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
 
       !----------------------------------------------------------------------
       !                   S U B R O U T I N E
@@ -3603,29 +3579,29 @@ C     ------------------------------------------------------------------
       end subroutine createTopologyTypeString
       !----------------------------------------------------------------------
 
-C... DW, periodic boundary 
-C...  Setting
-C        (1) ID_PERBC_MAP(i) =  i, for i = interior nodes or primary nodes of a node pairs  
-C                            =  p, i = slave nodes of a node pair
-C        (2) PERBC_ELNDTAB(:,1:4) - table for switching vertex labels of elements 
-C                                   containing slave nodes
-C
-C        - Switch from the original node numbering to primary nodes of the node pairs
-C            ETAB( PERBC_ELNATAB(:,2), PERBC_ELNTAB(:,1) ) =   PERBC_ELNATAB(:,3) ;                      
-C
-C        - Switch (back) to original node numbering 
-C            ETAB( PERBC_ELNATAB(:,2), PERBC_ELNTAB(:,1) ) =   PERBC_ELNATAB(:,4) ;                      
-C        (3)   
-C            
+!...  Periodic boundary 
+!...  Setting
+!        (1) ID_PERBC_MAP(i) =  i, for i = interior nodes or primary nodes of a node pairs  
+!                            =  p, i = slave nodes of a node pair
+!        (2) PERBC_ELNDTAB(:,1:4) - table for switching vertex labels of elements 
+!                                   containing slave nodes
+!
+!        - Switch from the original node numbering to primary nodes of the node pairs
+!            ETAB( PERBC_ELNATAB(:,2), PERBC_ELNTAB(:,1) ) =   PERBC_ELNATAB(:,3) ;                      
+!
+!        - Switch (back) to original node numbering 
+!            ETAB( PERBC_ELNATAB(:,2), PERBC_ELNTAB(:,1) ) =   PERBC_ELNATAB(:,4) ;                      
+!        (3)   
+!            
       SUBROUTINE PERBCSETUP( ETAB )
 
       use global, only: nperseg, perbc_idn_map, iperconn, nnperbc
       IMPLICIT NONE
       
-C      dummy variables
+!      dummy variables
       INTEGER:: ETAB(:,:)
       
-C      local variables c!
+!      local variables c!
       INTEGER:: I, J, K, ILOC, IE
       INTEGER:: IC, IA1, IA2, N1, N2, N3
 
@@ -3645,7 +3621,7 @@ C      local variables c!
 !        - For maping original indices to primary periodic indices 
          PERBC_IDN_MAP(IPERCONN(1:NNPERBC,2)) = IPERCONN(1:NNPERBC,1) ; 
 
-C        Create a table for mapping a original element table to periodic bc 
+!        Create a table for mapping a original element table to periodic bc 
          NELNDTAB = SUM( NNeighEle(IPERCONN(1:NNPERBC,2)) )  ;        
          IF ( .NOT. ALLOCATED(PERBC_ELNDTAB) ) THEN
             ALLOCATE( PERBC_ELNDTAB(NELNDTAB,4) ) ;
@@ -3690,16 +3666,16 @@ C        Create a table for mapping a original element table to periodic bc
             ID1 = IPERCONN(I,1) ; ! primary node !
             ID2 = IPERCONN(I,2) ; ! slave node   !
             
-C     Modify the table of nodes sharing the primary nodes
+!     Modify the table of nodes sharing the primary nodes
             N1 = NNeigh(ID1) ; 
             N2 = NNeigh(ID2) ;
             
             ptab(1:N1) = NeiTab(ID1,1:N1) ;
             stab(1:N2) = NeiTab(ID2,1:N2) ;
              
-C           1. Loop through entries in the neighboring-node table associated 
-C              with nodes having the slave node as their neigbor. Replace 
-C              the slave node number by the primary node number.   
+!           1. Loop through entries in the neighboring-node table associated 
+!              with nodes having the slave node as their neigbor. Replace 
+!              the slave node number by the primary node number.   
             DO J = 2, N2
                ID3 = NeiTab(ID2,J) ;               
                IF ( COUNT( (IPERCONN(1:NNPERBC,2) 
@@ -3714,8 +3690,8 @@ C              the slave node number by the primary node number.
                END IF               
             END DO            
 
-C           2. Augment the neighbor tables of the primary nodes   
-C           Switch to a primary node number 
+!           2. Augment the neighbor tables of the primary nodes   
+!           Switch to a primary node number 
             stab(1:N2) = PERBC_IDN_MAP(stab(1:N2)) ;
             
             ia1 = N1 ;
@@ -3759,7 +3735,7 @@ C           Switch to a primary node number
             END IF
             !
             
-C     Modify the table of elements sharing the primary nodes            
+!     Modify the table of elements sharing the primary nodes            
             N1 = NNeighEle(ID1) ;
             N2 = NNeighEle(ID2) ; 
             
@@ -3804,9 +3780,7 @@ C     Modify the table of elements sharing the primary nodes
         END SUBROUTINE EXPAND_NeiTAB
 
       END SUBROUTINE PERBCSETUP
-C....      
 
-C     ...... DW
       SUBROUTINE SWITCH_ELTAB_PERBC( IDIREC )
        use global, only: NPERSEG
        IMPLICIT NONE
@@ -3817,7 +3791,7 @@ C     ...... DW
        IF ( NPERSEG > 0 ) THEN
           SELECT CASE(IDIREC)
           CASE (1)
-C     Switch to the element table to the primary node
+!     Switch to the element table to the primary node
              DO I = 1, NELNDTAB
                 I1 = PERBC_ELNDTAB(I,1) ;
                 I2 = PERBC_ELNDTAB(I,2) ; 
@@ -3826,7 +3800,7 @@ C     Switch to the element table to the primary node
              END DO 
 
           CASE (2)
-C     Switch back to the original element table 
+!     Switch back to the original element table 
              DO I = 1, NELNDTAB
                 I1 = PERBC_ELNDTAB(I,1) ;
                 I2 = PERBC_ELNDTAB(I,2) ; 
@@ -3838,9 +3812,7 @@ C     Switch back to the original element table
 
        RETURN 
       END SUBROUTINE SWITCH_ELTAB_PERBC
-C     ...... DW
-C-----------------------------------------------------------------------
-C     ...... WJP
+!-----------------------------------------------------------------------
       FUNCTION haversine(deglon1,deglon2,deglat1,deglat2) result (dist)
           use global, only: deg2rad, Rearth 
           ! great circle distance -- adapted from Matlab 
@@ -3856,7 +3828,7 @@ C     ...... WJP
           c = 2d0*asin( sqrt(a) )
           dist = Rearth*c
       END FUNCTION haversine
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       FUNCTION binarysearch(length, array, value, delta) 
           ! Given an array and a value, returns the index of the element that
           ! is closest to, but less than, the given value.
@@ -3900,7 +3872,7 @@ C-----------------------------------------------------------------------
           binarysearch = right
 
       END FUNCTION binarysearch
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       SUBROUTINE bl_interp(xp, x_array, yp, y_array, x, y, ii, w)
           ! This function uses bilinear interpolation to get the
           ! interpolation weights, w and the indices for interpolation
@@ -3983,7 +3955,7 @@ C-----------------------------------------------------------------------
           w(4) = xx1*yy1/denom
 
       END SUBROUTINE bl_interp
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       SUBROUTINE bl_interp2(xp, yp, x_mat, y_mat, x, y, ii, w)
           ! This function uses bilinear interpolation to get the
           ! interpolation weights, w and the indices for interpolation
@@ -4071,7 +4043,7 @@ C-----------------------------------------------------------------------
 
       END SUBROUTINE bl_interp2
 
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       SUBROUTINE conserve_interp(xp, x_array, yp, y_array, 
      &           x1, y1, x2, y2, x3, y3, ii, ww)
           ! This function works out the indices of x_array and y_array 
@@ -4123,7 +4095,7 @@ C-----------------------------------------------------------------------
           ww   = 1d4
           !endif
       END SUBROUTINE conserve_interp
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       function PtinTri(p, a, b, c)
         real(sz), intent(in)  :: p(2), a(2), b(2), c(2)
         logical :: PtinTri
@@ -4136,7 +4108,7 @@ C-----------------------------------------------------------------------
         endif
 
       end function PtinTri
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       function SameSide(p1, p2, a, b)
         real(sz), intent(in)  :: p1(2), p2(2), a(2), b(2)
         real(sz) :: cp1, cp2
@@ -4153,7 +4125,7 @@ C-----------------------------------------------------------------------
         endif
 
       end function SameSide
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       function calcarea(x1,y1,x2,y2,x3,y3)
         real(sz), intent(in) :: x1 ,y1, x2, y2, x3, y3
         real(sz) :: calcarea
@@ -4161,7 +4133,7 @@ C-----------------------------------------------------------------------
         calcarea = 0.5d0*abs(x1*(y2-y3) + x2*(y3-y1) + x3*(y1-y2)) 
 
       end function calcarea
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       SUBROUTINE terminate(NO_MPI_FINALIZE)
 #ifdef CMPI
       USE MESSENGER
@@ -4193,13 +4165,13 @@ C
       call unsetMessageSource()
       END SUBROUTINE terminate
 
-C*********************************************************************************C
-C                                                                                 C
-C  Spherical coordinates higher level functions & subroutines.                    C 
-C                                                                                 C
-C   Use data declared in the module                                               C
-C                                                                                 C
-C*********************************************************************************C
+!*********************************************************************************C
+!                                                                                 C
+!  Spherical coordinates higher level functions & subroutines.                    C 
+!                                                                                 C
+!   Use data declared in the module                                               C
+!                                                                                 C
+!*********************************************************************************C
       SUBROUTINE READFORTROTS( ) 
         IMPLICIT NONE
 
@@ -4216,6 +4188,10 @@ C*******************************************************************************
         ! Euler angle
         REAL(SZ):: AL, BE, GAM
 
+        call setMessageSource("ReadFortRots")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
         
         FUNIT = 1002 ;    
         FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.rotm' ;
@@ -4225,67 +4201,79 @@ C*******************************************************************************
         inputtype = "" ; 
         read( FUNIT, *) inputtype ;
 
-        MSG = 
+        WRITE(*,'(a)') ""
+        scratchMessage = 
      &       "**** Solve SWE in the rotated coordinate frame ****" ; 
-        IF ( MyProc .EQ. 0 ) THEN
-           WRITE(6,'(A)') MSG ;   
-        END IF
+        call allMessage(INFO,scratchMessage)
 
         errorVar = "inputype" ;
         SELECT CASE(adjustl(trim(inputtype)))
         CASE ("znorth_in_spherical_coors")
            READ(FUNIT, *) PHIN, THETAN, IGNOREMSG ; 
 
-           IF ( MyProc .EQ. 0 ) THEN
-              WRITE(6,'(A)') "A vector describing the north-south axis"//
-     &            " in spherical coordinates (\varphi,\theta) is given." ;
-              WRITE(6,'(A,2F20.8)') " (varphin,thetan) = ", PHIN, THETAN ; 
-           END IF
-           
+           WRITE(scratchMessage,'(A)') "A vector describing the"//
+     &            " north-south axis in spherical coordinates "//
+     &            "(\varphi,\theta) is given."
+           CALL allMessage(INFO,scratchMessage) 
+           WRITE(scratchMessage,'(A,2F20.8)') " (varphin,thetan) = ",
+     &                                        PHIN, THETAN
+           CALL allMessage(INFO,scratchMessage)
+
            CALL DRV_ROTMAT_ZNVEC( PHIN, THETAN ) ;           
         CASE ("z-x-z")
            READ(FUNIT, *) AL, BE, GAM, IGNOREMSG ; 
-
-           IF ( MyProc .EQ. 0 ) THEN
-              WRITE(6,'(A)') "Intrinsic rotation z-x-z (alpha,beta,"//
+           scratchMessage = "Intrinsic rotation z-x-z (alpha,beta,"//
      &             "gamma) is given." ;
-              WRITE(6,'(A,3F20.8)') " (alpha,beta,gamma) = ",AL, BE, GAM ; 
-           END IF
+           CALL allMessage(INFO,scratchMessage)
+           WRITE(scratchMessage,'(A,3F20.8)') " (alpha,beta,gamma) = ",
+     &           AL, BE, GAM
+           CALL allMessage(INFO,scratchMessage)
 
            CALL DRV_ROTMAT_ZXZROT( AL, BE, GAM ) ;          
         CASE ("rotation_matrix")           
            DO II = 1, 3
               READ(FUNIT,*) ROTMAT(II,3) ;
            END DO
-
-           IF ( MyProc .EQ. 0 ) THEN
-              WRITE(6,'(A)') "A rotation matrix R: x -> x' is given" ;
-              WRITE(6,*) "ROTATION MATRIX: " ;
-              DO II = 1, 3 
-                 WRITE(6,'(A,3F12.4,A)') '| ', ROTMAT(II,:), ' |' ; 
-              END DO
-           END IF
+           
+           scratchMessage = "ROTATION MATRIX: "
+           call allMessage(INFO,scratchMessage)
+           scratchMessage =  
+     &       "****************************************" ;  
+           call allMessage(INFO,scratchMessage)
+           scratchMessage = "A rotation matrix R: x -> x' is given"
+           call allMessage(INFO,scratchMessage)
+           DO II = 1, 3 
+              WRITE(scratchMessage,'(A,3F12.4,A)') '| ', 
+     &            ROTMAT(II,:), ' |' ; 
+              call allMessage(INFO,scratchMessage)
+           END DO
+           scratchMessage =  
+     &       "****************************************" ;  
+           call allMessage(INFO,scratchMessage)
            
         CASE DEFAULT
-           IF ( MyProc .EQ. 0 ) THEN
-              WRITE(6,'(A)') "Error in readfortrots(): defining"// 
-     &      " rotation matrix through "//adjustl(trim(inputtype))// 
-     &      " is either not valid or has not been implemented" ;
-              WRITE(6,'(A)') "ADCIRC will stop." ;          
-           END IF 
-
-           STOP ;                 
+           WRITE(scratchMessage,'(A)') 
+     &     "Error in readfortrots(): defining"// 
+     &     " rotation matrix through "//adjustl(trim(inputtype))// 
+     &     " is either not valid or has not been implemented" 
+           CALL allMessage(ERROR,scratchMessage)
+           scratchMessage = "ADCIRC will stop"
+           CALL allMessage(ERROR,scratchMessage)
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+           call allMessage(DEBUG,"Return.") 
+#endif
+           call unsetMessageSource()
+           STOP                  
         END SELECT
 
-        MSG = 
-     &       "***************************************************" ;  
-        IF ( MyProc .EQ. 0 ) THEN
-           WRITE(6,'(A)') MSG ; 
-        END IF
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") 
+#endif
+      call unsetMessageSource()
 
-        CLOSE(FUNIT) ;
+        CLOSE(FUNIT) 
 
-        RETURN ;      
+        RETURN       
       END SUBROUTINE READFORTROTS
       
       SUBROUTINE ALLOC_SPROTCOORS_MEM( )  
@@ -4320,6 +4308,11 @@ C*******************************************************************************
         !c local c!
         INTEGER:: II, IERR
 
+        call setMessageSource("COMP_ROTSPCOORD_VARS")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
+
         CALL CHECK_RTOTMAT( ROTMAT, IERR ) ; 
         
         CALL SPCOORSROTS( ROTMAT, SLAMR, SFEAR, SLAM, SFEA, NP ) ;
@@ -4331,16 +4324,31 @@ C*******************************************************************************
            CALL CYLINDERMAP( X(II), Y(II), 
      &          SLAMR(II), SFEAR(II), SLAM0, SFEA0, ICS ) ;
         END DO
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.") 
+#endif
+        call unsetMessageSource()
         
-        RETURN ;
+        RETURN 
       END SUBROUTINE COMP_ROTSPCOORD_VARS
 
       SUBROUTINE GET_ROTSPCOORD_CORIFVAL( CORIF ) 
         IMPLICIT NONE
       
         REAL (SZ):: CORIF(:)
+
+        call setMessageSource("GET_ROTSPCOORD_CORIFVAL")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
         
         CALL CORIFVAL_ROTSPCOORD(CORIF, ROTMAT, SLAMR, SFEAR, NP) ; 
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.") 
+#endif
+        call unsetMessageSource()
 
         RETURN ;
       END SUBROUTINE GET_ROTSPCOORD_CORIFVAL
@@ -4354,6 +4362,11 @@ C*******************************************************************************
 
         !c local c!
         REAL (SZ):: RTT(3,3), TR, SOFFD
+
+        call setMessageSource("CHECK_RTOTMAT")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
 
         RTT = TRANSPOSE( RTOTS ) ; 
 
@@ -4376,6 +4389,11 @@ C*******************************************************************************
      &          " orthgonal and thus invalid" ;
         END IF
 
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.") 
+#endif
+        call unsetMessageSource()
+
         RETURN ;
       END SUBROUTINE CHECK_RTOTMAT
 
@@ -4388,7 +4406,12 @@ C*******************************************************************************
         REAL (SZ):: VARPHI, THETA ! in deg
 
         !c local c!
-        REAL (SZ):: RADPHI, RADTHETA
+        REAL(SZ) :: RADPHI, RADTHETA
+
+        call setMessageSource("DRV_ROTMAT_ZNVEC")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
 
         !c deg to rad
         RADPHI = VARPHI*DEG2RAD ;
@@ -4396,23 +4419,41 @@ C*******************************************************************************
 
         CALL GET_ROTMAT_ZNVEC( ROTMAT, RADPHI, RADTHETA )   ;
 
-        IF ( MyProc .EQ. 0 ) THEN
-           WRITE(6,*) "ROTATION MATRIX: " ;
-           WRITE(6,'(A,3F12.4,A)') '| ', ROTMAT(1,:), ' |' ; 
-           WRITE(6,'(A,3F12.4,A)') '| ', ROTMAT(2,:), ' |' ;
-           WRITE(6,'(A,3F12.4,A)') '| ', ROTMAT(3,:), ' |' ;
-        END IF
+        WRITE(scratchMessage,'(A)') "ROTATION MATRIX: " ;
+        CALL allMessage(INFO,scratchMessage)
+        scratchMessage =  
+     &       "****************************************" ;  
+        call allMessage(INFO,scratchMessage)
+        WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMAT(1,:), ' |' 
+        CALL allMessage(INFO,scratchMessage)
+        WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMAT(2,:), ' |' 
+        CALL allMessage(INFO,scratchMessage)
+        WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMAT(3,:), ' |' 
+        CALL allMessage(INFO,scratchMessage)
+        scratchMessage =  
+     &       "****************************************" ;  
+        call allMessage(INFO,scratchMessage)
 
-        RETURN ;
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.") 
+#endif
+        call unsetMessageSource()
+
+        RETURN 
       END SUBROUTINE DRV_ROTMAT_ZNVEC
 
       SUBROUTINE DRV_ROTMAT_ZXZROT( ALPHA, BETA, GAMMA )
          IMPLICIT NONE
 
          REAL (SZ):: ALPHA, BETA, GAMMA
-  
+
          ! local !
          REAL (SZ):: RAL, RBE, RGAM
+
+         call setMessageSource("DRV_ROTMAT_ZXZROT")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Enter.")
+#endif
 
          RAL = ALPHA*DEG2RAD ;
          RBE = BETA*DEG2RAD ;
@@ -4420,12 +4461,25 @@ C*******************************************************************************
 
          CALL GET_ROTMAT_ZXZROT( ROTMAT, RAL, RBE, RGAM )   ;
          
-         IF ( MyProc .EQ. 0 ) THEN
-            WRITE(6,*) "ROTATION MATRIX: " ;
-            WRITE(6,'(A,3F12.4,A)') '| ', ROTMAT(1,:), ' |' ; 
-            WRITE(6,'(A,3F12.4,A)') '| ', ROTMAT(2,:), ' |' ;
-            WRITE(6,'(A,3F12.4,A)') '| ', ROTMAT(3,:), ' |' ;
-         END IF
+         WRITE(scratchMessage,'(A)') "ROTATION MATRIX: " ;
+         CALL allMessage(INFO,scratchMessage)
+         scratchMessage =  
+     &       "****************************************" ;  
+         call allMessage(INFO,scratchMessage)
+         WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMAT(1,:), ' |' 
+         CALL allMessage(INFO,scratchMessage)
+         WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMAT(2,:), ' |' 
+         CALL allMessage(INFO,scratchMessage)
+         WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMAT(3,:), ' |' 
+         CALL allMessage(INFO,scratchMessage)
+         scratchMessage =  
+     &       "****************************************" ;  
+         call allMessage(INFO,scratchMessage)
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.") 
+#endif
+         call unsetMessageSource()
          
          RETURN ;
       END SUBROUTINE DRV_ROTMAT_ZXZROT
@@ -4437,8 +4491,18 @@ C*******************************************************************************
 
         INTEGER:: NN
         REAL (SZ), dimension(:):: LONR, LATR, LONO, LATO
+
+        call setMessageSource("DRVSPCOORSROTS1")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
         
         CALL SPCOORSROTS1( ROTMAT, LONR, LATR, LONO, LATO, NN )
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.") 
+#endif
+        call unsetMessageSource()
 
         RETURN ;
       END SUBROUTINE DRVSPCOORSROTS1
@@ -4448,24 +4512,34 @@ C*******************************************************************************
 
         REAL (SZ):: LONR, LATR, LONO, LATO
         
+        call setMessageSource("DRVSPCOORSROTS0")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
+
         CALL SPCOORSROTS0( ROTMAT, LONR, LATR, LONO, LATO )
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.") 
+#endif
+        call unsetMessageSource()
 
         RETURN ;
       END SUBROUTINE DRVSPCOORSROTS0
 
 
-C*********************************************************************************C
-C                                                                                 C
-C  Lower level functions & subroutines.  Do not use data declared in the module   C
-C                                                                                 C
-C*********************************************************************************C
-      !c
-      !c Corilois values in the (x',y',z') at (\varphi',\theta')
-      !c
+!*********************************************************************************C
+!                                                                                 C
+!  Lower level functions & subroutines.  Do not use data declared in the module   C
+!                                                                                 C
+!*********************************************************************************C
+      ! 
+      !  Corilois values in the (x',y',z') at (\varphi',\theta')
+      ! 
       SUBROUTINE CORIFVAL_ROTSPCOORD( CORIF, ROTM, VARPHIR, THETAR, NN )
-        IMPLICIT NONE
+         IMPLICIT NONE
       
-        !     dummy !
+         !     dummy !
         INTEGER:: NN
         REAL (SZ):: ROTM(3,3)
         REAL (SZ), DIMENSION(:):: CORIF, VARPHIR, THETAR
@@ -4473,6 +4547,11 @@ C*******************************************************************************
         ! local c!
         INTEGER:: II
         REAL (SZ):: EOMEGA2, ROT3(3)
+
+        call setMessageSource("CORIFVAL_ROTSPCOORD")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
         
         ROT3 = ROTM(:,3) ; 
 
@@ -4485,22 +4564,32 @@ C*******************************************************************************
              
            CORIF(II) = EOMEGA2*CORIF(II) ;              
         END DO
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.") 
+#endif
+        call unsetMessageSource()
         
         RETURN ;
       END SUBROUTINE CORIFVAL_ROTSPCOORD
 
-      !c
-      !c FWD = .TRUE.
-      !c   RVELF*(UUS,VVS) -> (UUD,VVD)
-      !c
-      !c FWD = .FALSE. 
-      !c   RVELI*(UUS,VVS) -> (UUD,VVD)
+      !
+      ! FWD = .TRUE.
+      !   RVELF*(UUS,VVS) -> (UUD,VVD)
+      !
+      ! FWD = .FALSE. 
+      !   RVELI*(UUS,VVS) -> (UUD,VVD)
       SUBROUTINE DRVMAP2DSPVEC( UUD, VVD, UUS, VVS, NN, FWD )
         IMPLICIT NONE
 
         INTEGER:: NN
         LOGICAL:: FWD
         REAL (SZ), DIMENSION(:):: UUD, VVD, UUS, VVS
+
+        call setMessageSource("DRVMAP2DSPVEC")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
 
         IF ( FWD ) THEN
            ! forward transform
@@ -4510,12 +4599,17 @@ C*******************************************************************************
            CALL MAP2DSPVECS( UUD, VVD, UUS, VVS, RVELI, NN )   
         END IF
 
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.") 
+#endif
+        call unsetMessageSource()
+
         RETURN ;
       END SUBROUTINE DRVMAP2DSPVEC
-      !c
-      !c Map two vectors in spherical coordinates 
-      !c 
-      !c    VR(:,II) = SPRV(:,:,II)*VO(:,II)
+      !
+      ! Map two vectors in spherical coordinates 
+      ! 
+      !    VR(:,II) = SPRV(:,:,II)*VO(:,II)
       SUBROUTINE MAP2DSPVECS( VPHIR, VTHETAR, VPHIO, VTHETAO, SPRV, NN )
         IMPLICIT NONE
 
@@ -4528,6 +4622,11 @@ C*******************************************************************************
         ! local !
         INTEGER:: II
         REAL (SZ):: VO(2), VR(2)
+
+        call setMessageSource("MAP2DSPVECS")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
  
         DO  II = 1, NN
            VO = (/ VPHIO(II), VTHETAO(II) /)  ;
@@ -4537,6 +4636,11 @@ C*******************************************************************************
            VTHETAR(II) = VR(2) ;
         END DO
         
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.") 
+#endif
+
+        call unsetMessageSource()
         RETURN ;
       END SUBROUTINE MAP2DSPVECS
       ! Given a radius vector (\varphi,\theta) (in rad)
@@ -4548,6 +4652,11 @@ C*******************************************************************************
       
         REAL (SZ):: RTOT(:,:) 
         REAL (SZ):: VARPHIN, THETAN
+
+        call setMessageSource("GET_ROTMAT_ZNVEC")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
       
         RTOT = 0.0_SZ ;
       
@@ -4562,6 +4671,11 @@ C*******************************************************************************
         RTOT(1,3) = 0.0_SZ ;
         RTOT(2,3) = -cos( THETAN ) ; 
         RTOT(3,3) =  sin( THETAN ) ; 
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.") 
+#endif
+        call unsetMessageSource()
         
         RETURN ;
       END SUBROUTINE GET_ROTMAT_ZNVEC
@@ -4577,6 +4691,10 @@ C*******************************************************************************
         ! local !
         REAL (SZ):: RTMP(3,3), RM2D(2,2)
         
+        call setMessageSource("GET_ROTMAT_ZXZROT")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
 
         ! A rotation around z-axis
         RM2D = RTOT2DMAT( AL ) ;
@@ -4605,6 +4723,11 @@ C*******************************************************************************
 
         RTOT = MATMUL( RTOT, RTMP ) ; 
 
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.") 
+#endif
+        call unsetMessageSource()
+
         RETURN ;        
       END SUBROUTINE GET_ROTMAT_ZXZROT
 
@@ -4613,11 +4736,21 @@ C*******************************************************************************
 
         REAL (SZ):: ALPHA
         REAL (SZ):: RM(2,2) 
+
+        call setMessageSource("RTOT2DMAT")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
            
         RM(1,1) = cos(ALPHA) ;
         RM(2,1) = -sin(ALPHA) ;
         RM(1,2) = sin(ALPHA) ;
         RM(2,2) = cos(ALPHA) ;
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.") 
+#endif
+        call unsetMessageSource()
         
         RETURN ; 
       END FUNCTION RTOT2DMAT
@@ -4654,6 +4787,11 @@ C*******************************************************************************
          INTEGER:: IP
          REAL (SZ), DIMENSION(3,3):: TP, TM, TRT 
 
+         call setMessageSource("SPVECROTSMAT")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Enter.")
+#endif
+
          DO IP = 1, NN
            TRT = 0.0_SZ ; 
         
@@ -4672,6 +4810,11 @@ C*******************************************************************************
            RVELI(:,:,IP) = TRANSPOSE( RVELF(:,:,IP) ) ; ! inverse transform
          END DO
 
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.") 
+#endif
+         call unsetMessageSource()
+
          RETURN ; 
       END SUBROUTINE SPVECROTSMAT
 
@@ -4684,6 +4827,11 @@ C*******************************************************************************
 
         REAL (SZ):: TM(3,3)
         REAL (SZ), intent(in):: VARPHI, THETA
+
+        call setMessageSource("CT2SP_VECTRANSMAT")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
         
         TM(1,1) = cos( THETA )*cos( VARPHI ) ;
         TM(2,1) = -sin( VARPHI ) ; 
@@ -4696,6 +4844,11 @@ C*******************************************************************************
         TM(1,3) = sin( THETA ) ; 
         TM(2,3) = 0.0_SZ ; 
         TM(3,3) = cos( THETA ) ;    
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.") 
+#endif
+        call unsetMessageSource()
         
         RETURN ;   
       END FUNCTION CT2SP_VECTRANSMAT 
@@ -4712,6 +4865,11 @@ C*******************************************************************************
         INTEGER:: IP
         REAL (SZ):: XP(3), XPR(3), LLO, LTO
 
+        call setMessageSource("SPCOORSROTS1")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
+
         DO IP = 1, NN
            LLO = LONO( IP ) ; 
            LTO = LATO( IP ) ; 
@@ -4726,6 +4884,11 @@ C*******************************************************************************
      &                                  + XPR(2)*XPR(2)) )
            LONR(IP) = atan2( XPR(2), XPR(1) ) ;   
         END DO
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.") 
+#endif
+        call unsetMessageSource()
         
         RETURN ; 
       END SUBROUTINE SPCOORSROTS1
@@ -4741,6 +4904,10 @@ C*******************************************************************************
         INTEGER:: IP
         REAL (SZ):: XP(3), XPR(3), LLO, LTO
 
+        call setMessageSource("SPCOORSROTS0")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
 
         LLO = LONO  ; 
         LTO = LATO  ; 
@@ -4754,20 +4921,30 @@ C*******************************************************************************
         LATR = atan2( XPR(3), SQRT(XPR(1)*XPR(1) + XPR(2)*XPR(2)) ) ;
         LONR = atan2( XPR(2), XPR(1) ) ;   
 
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.") 
+#endif
+        call unsetMessageSource()
+
         RETURN ; 
       END SUBROUTINE SPCOORSROTS0
-C******************************************************************************
-C                                                                             *
-C    Transform from lon,lat (lamda,phi) coordinates into the cylindrical      *
-C    mapping coordinates.                                                     *
-C    Lon,Lat must be in radians.                                              *
-C                                                                             *
-C******************************************************************************
+!******************************************************************************
+!                                                                             *
+!    Transform from lon,lat (lamda,phi) coordinates into the cylindrical      *
+!    mapping coordinates.                                                     *
+!    Lon,Lat must be in radians.                                              *
+!                                                                             *
+!******************************************************************************
       SUBROUTINE CYLINDERMAP(X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0,MTYPE)
       IMPLICIT NONE
       
       INTEGER, INTENT(IN):: MTYPE
       REAL*8 X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0
+
+      call setMessageSource("CYLINDERMAP")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
       
       SELECT CASE(MTYPE)
       CASE (2,21) !c CPP
@@ -4792,13 +4969,14 @@ C******************************************************************************
          WRITE(6,'(A)') "  Valid MTYPE = 2, 20-24" ;
       END SELECT
       
-      RETURN ;
-      END 
-C... 
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") 
+#endif
+      call unsetMessageSource()
 
-C... 
-C...
-      !c------ BEG: DW, Nov 2019
+      RETURN ;
+      END SUBROUTINE CYLINDERMAP 
+
       SUBROUTINE SFAC_ELEAVG( SFAELES, SFNODES, NM, NE ) 
 
       IMPLICIT NONE
@@ -4809,6 +4987,11 @@ C...
       ! local
       INTEGER:: IE, NMI1, NMI2, NMI3
       REAL (SZ):: ONETRD 
+
+      call setMessageSource("SFAC_ELEAVG")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
       
       ONETRD = 1.0_SZ/3.0_SZ ;
       DO IE = 1, NE
@@ -4819,10 +5002,15 @@ C...
          SFAELES(IE) = (SFNODES(NMI1) + 
      &        SFNODES(NMI2) + SFNODES(NMI3))*ONETRD ; 
       END DO
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") 
+#endif
+      call unsetMessageSource()
       
       RETURN ;
       END SUBROUTINE SFAC_ELEAVG 
-C...
+    
       SUBROUTINE CAL_ELXV_SPCOOR( XVE, YVE, LONVE, LATVE, ICS, SFLAG )
 
       IMPLICIT NONE
@@ -4841,6 +5029,11 @@ C...
       REAL (SZ), dimension(3):: LONM, LATM, LONTMP
       REAL (SZ), dimension(3):: DLX, DL
       REAL (SZ):: DLED1, DLED2
+
+      call setMessageSource("CAL_ELXV_SPCOOR")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
   
       !c Rad -> deg
       LATM(:) = LATVE(1:3)*RAD2DEG ;
@@ -4898,6 +5091,11 @@ C...
       IF ( PRESENT( SFLAG ) ) THEN
          SFLAG = SPF ; 
       END IF
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") 
+#endif
+      call unsetMessageSource()
       
       RETURN ;
 
@@ -4937,9 +5135,7 @@ C...
          END SUBROUTINE CAL_JAC
 
       END SUBROUTINE CAL_ELXV_SPCOOR
-!c----- END DW
 
-C.... BEG: DW
       SUBROUTINE COMPUTE_CYLINPROJ_SFAC( SLAMV, SFEAV )
         IMPLICIT NONE
 
@@ -4949,12 +5145,18 @@ C.... BEG: DW
         ! local !
         INTEGER:: I, MEXP
         REAL (SZ):: RFAC1, RFAC2, RFAC3
-C.... Set:
-C.... SFCT, SFCX, SFCY, SFMX, SFMY, YCSFAC
-C.... accordingly in order to determine the forms of equations to be solved
-C     
-C.....DEFAULT:
-C     Cartesian coordinate 
+
+        call setMessageSource("COMPUTE_CYLINPROJ_SFAC")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.")
+#endif
+
+!.... Set:
+!.... SFCT, SFCX, SFCY, SFMX, SFMY, YCSFAC
+!.... accordingly in order to determine the forms of equations to be solved
+!     
+!.....DEFAULT:
+!     Cartesian coordinate 
 
         SELECT CASE( ICS )
         CASE (1)                  !c Cartesian
@@ -4968,10 +5170,10 @@ C     Cartesian coordinate
            SFMX = SFAC ;
         CASE (20,21,22)         ! Alternative SWE form in spherical coordinates
            MEXP = MOD(ICS,20) ;
-C......ICS = 20 : Equal area projection
-C......    = 21 : CPP
-C.....     = 22 : Mercartor
-C......from WP
+!......ICS = 20 : Equal area projection
+!......    = 21 : CPP
+!.....     = 22 : Mercartor
+!......from WP
            DO I = 1, NP
               SFCT(I) = cos(SFEAV(I))**MEXP ;           
               SFCX(I) = cos(SFEA0)*( cos(SFEAV(I))**(MEXP - 1) ) ;
@@ -4984,7 +5186,7 @@ C......from WP
               YCSFAC(I) = cos( SFEAV(I) ) ; 
            END DO
         CASE (23)
-C.......ICS = 23: Miller - compromised Mercator
+!.......ICS = 23: Miller - compromised Mercator
            DO I = 1, NP
               SFCT(I) = cos(SFEAV(I))*COS(4.D0*SFEAV(I)/5.D0) ;       
               SFCX(I) = cos(SFEA0)*COS(4.D0*SFEAV(I)/5.D0) ;           
@@ -4997,7 +5199,7 @@ C.......ICS = 23: Miller - compromised Mercator
               YCSFAC(I) = cos( SFEAV(I) ) ; 
            END DO
         CASE (24)
-C......ICS = 24: Gall Stereographic projection           
+!......ICS = 24: Gall Stereographic projection           
            RFAC1 = 0.5D0*SQRT(2.D0) ;
            RFAC2 = 0.5D0*(1.D0 + 0.5D0*SQRT(2.D0)) ;
 
@@ -5016,8 +5218,8 @@ C......ICS = 24: Gall Stereographic projection
            END DO
         END SELECT
         
-C     COMPUTE ELEMENT AVERAGE FROM NODAL VECTORS ADJUSTING EQUATIONS
-C     TO CYLINDER COORDINATES
+!     COMPUTE ELEMENT AVERAGE FROM NODAL VECTORS ADJUSTING EQUATIONS
+!     TO CYLINDER COORDINATES
         CALL SFAC_ELEAVG( SFacEle, SFAC, NM, NE ) ; 
         CALL SFAC_ELEAVG( SFCXEle, SFCX, NM, NE ) ; 
         CALL SFAC_ELEAVG( SFCYEle, SFCY, NM, NE ) ; 
@@ -5026,13 +5228,17 @@ C     TO CYLINDER COORDINATES
         CALL SFAC_ELEAVG( YCSFacEle, YCSFAC, NM, NE ) ;          
         CALL SFAC_ELEAVG( TANPHIEle, TANPHI, NM, NE ) ;          
         
-C      Only need the  averages of these... 
+!      Only need the  averages of these... 
         DEALLOCATE( SFMY, SFCX, SFCY, YCSFAC )
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.") 
+#endif
+        call unsetMessageSource()
         
         RETURN ; 
       END SUBROUTINE COMPUTE_CYLINPROJ_SFAC
-C.... END DW
-C.....
-C     ------------------------------------------------------------------
+!.....
+!     ------------------------------------------------------------------
       end module mesh
-C     ------------------------------------------------------------------
+!     ------------------------------------------------------------------
