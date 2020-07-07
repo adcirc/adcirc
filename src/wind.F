@@ -1829,11 +1829,11 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          call nws10init()
          wvnx1 = 0.d0
          wvny1 = 0.d0
-         cice1 = 0.d0
          prn1  = prbckgrnd * mb2pa / ( rhowat0 * g)
          ! read from first available file (not fort.200) and spatially
          ! interpolate onto adcirc mesh
          IF (NCICE.eq.10) THEN
+            cice1 = 0.d0
             call nws10get(wvnx2,wvny2,prn2,cice2) 
          ELSE 
             call nws10get(wvnx2,wvny2,prn2) 
