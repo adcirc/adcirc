@@ -114,14 +114,14 @@ MACRO(swanConfigureAdcswan)
             COMMAND if not exist \"${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source\" mkdir \"${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source\"
             COMMAND move /y *.f \"${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/.\"
             COMMAND move /y *.f90 \"${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source/.\"
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/thirdparty/swan
             COMMENT "Generating Serial unSWAN Sources..."
         )
     ELSE(WIN32)
         ADD_CUSTOM_COMMAND( OUTPUT ${SWAN1SERIAL_SOURCES} ${SWAN2SERIAL_SOURCES}
             COMMAND mkdir -p ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source
             COMMAND ${PERL} switch.pl -adcirc -unix -outdir ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source *.ftn *.ftn90
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/thirdparty/swan
             COMMENT "Generating Serial unSWAN Sources..."
         )
     ENDIF(WIN32)
@@ -135,14 +135,14 @@ MACRO(swanConfigurePadcswan)
             COMMAND if not exist \"${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source\" mkdir \"${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source\"
             COMMAND move /y *.f \"${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/.\"
             COMMAND move /y *.f90 \"${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/.\"
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/thirdparty/swan
             COMMENT "Generating Serial unSWAN Sources..."
         )  
     ELSE(WIN32)
         ADD_CUSTOM_COMMAND( OUTPUT ${SWAN1PARALLEL_SOURCES} ${SWAN2PARALLEL_SOURCES}
             COMMAND mkdir -p ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source
             COMMAND ${PERL} switch.pl -pun -adcirc -unix -outdir ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source *.ftn *.ftn90
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/thirdparty/swan
             COMMENT "Generating Parallel unSWAN Sources..."
         )
     ENDIF(WIN32)
@@ -156,14 +156,14 @@ MACRO(swanConfigureSerial)
             COMMAND if not exist \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source\" mkdir \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source\"
             COMMAND move /y *.f \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source/.\"
             COMMAND move /y *.f90 \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source/.\"
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/thirdparty/swan
             COMMENT "Generating Serial SWAN stand alone Sources..."
         )  
     ELSE(WIN32)
         ADD_CUSTOM_COMMAND( OUTPUT ${SWANONLY_SERIAL_SOURCES} 
             COMMAND mkdir -p ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source
             COMMAND ${PERL} switch.pl -unix -outdir ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source *.ftn *.ftn90
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/thirdparty/swan
             COMMENT "Generating Serial SWAN stand alone Sources..."
         )
     ENDIF(WIN32)
@@ -177,14 +177,14 @@ MACRO(swanConfigureParallel)
             COMMAND if not exist \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source\" mkdir \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source\"
             COMMAND move /y *.f \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/.\"
             COMMAND move /y *.f90 \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/.\"
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/thirdparty/swan
             COMMENT "Generating Parallel SWAN Sources..."
         )  
     ELSE(WIN32)
         ADD_CUSTOM_COMMAND( OUTPUT ${SWANONLY1_PARALLEL_SOURCES} ${SWANONLY2_PARALLEL_SOURCES}
             COMMAND mkdir -p ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source
             COMMAND ${PERL} switch.pl -pun -unix -outdir ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source *.ftn *.ftn90
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/thirdparty/swan
             COMMENT "Generating Parallel unSWAN Sources..."
         )
     ENDIF(WIN32)

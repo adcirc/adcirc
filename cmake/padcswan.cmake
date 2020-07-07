@@ -39,16 +39,47 @@ IF(BUILD_PADCSWAN AND PERL_FOUND)
                                ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/ocpmix.f ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/SdsBabanin.f90  
                                ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGradVel.f90 )
      
-    SET( PADCSWAN1_SOURCES  src/sizes.F KDTREE2/kdtree2.F src/global.F src/boundaries.F src/global_3dvs.F
-                            src/messenger.F src/mesh.F src/harm.F wind/vortex.F src/wind.F src/hashtable.F 
-                            src/owiwind.F src/rs2.F src/owi_ice.F src/itpackv.F src/nodalattr.F src/globalio.F 
-                            src/write_output.F src/writer.F src/couple2swan.F src/netcdfio.F src/subdomain.F 
-                            src/sponge_layer.F src/quadtrature.F src/couple2baroclinic3D.F
-                            src/wetdry.F src/gwce.F src/momentum.F src/xdmfio.F src/control.F )
+    SET( PADCSWAN1_SOURCES  ${CMAKE_SOURCE_DIR}/src/sizes.F 
+                            ${CMAKE_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F 
+                            ${CMAKE_SOURCE_DIR}/src/global.F 
+                            ${CMAKE_SOURCE_DIR}/src/boundaries.F 
+                            ${CMAKE_SOURCE_DIR}/src/global_3dvs.F
+                            ${CMAKE_SOURCE_DIR}/src/messenger.F 
+                            ${CMAKE_SOURCE_DIR}/src/mesh.F 
+                            ${CMAKE_SOURCE_DIR}/src/harm.F 
+                            ${CMAKE_SOURCE_DIR}/wind/vortex.F 
+                            ${CMAKE_SOURCE_DIR}/src/wind.F 
+                            ${CMAKE_SOURCE_DIR}/src/hashtable.F 
+                            ${CMAKE_SOURCE_DIR}/src/owiwind.F 
+                            ${CMAKE_SOURCE_DIR}/src/rs2.F 
+                            ${CMAKE_SOURCE_DIR}/src/owi_ice.F 
+                            ${CMAKE_SOURCE_DIR}/src/itpackv.F 
+                            ${CMAKE_SOURCE_DIR}/src/nodalattr.F 
+                            ${CMAKE_SOURCE_DIR}/src/globalio.F 
+                            ${CMAKE_SOURCE_DIR}/src/write_output.F 
+                            ${CMAKE_SOURCE_DIR}/src/writer.F 
+                            ${CMAKE_SOURCE_DIR}/src/couple2swan.F 
+                            ${CMAKE_SOURCE_DIR}/src/netcdfio.F 
+                            ${CMAKE_SOURCE_DIR}/src/subdomain.F 
+                            ${CMAKE_SOURCE_DIR}/src/sponge_layer.F 
+                            ${CMAKE_SOURCE_DIR}/src/quadtrature.F 
+                            ${CMAKE_SOURCE_DIR}/src/couple2baroclinic3D.F
+                            ${CMAKE_SOURCE_DIR}/src/wetdry.F 
+                            ${CMAKE_SOURCE_DIR}/src/gwce.F 
+                            ${CMAKE_SOURCE_DIR}/src/momentum.F 
+                            ${CMAKE_SOURCE_DIR}/src/xdmfio.F 
+                            ${CMAKE_SOURCE_DIR}/src/control.F )
 
-    SET( PADCSWAN_SOURCES   src/couple2swan.F src/adcirc.F src/subdomain.F 
-                            src/weir_boundary.F src/read_input.F src/cstart.F src/hstart.F 
-                            src/timestep.F src/vsmy.F src/transport.F src/driver.F )
+    SET( PADCSWAN_SOURCES   ${CMAKE_SOURCE_DIR}/src/couple2swan.F 
+                            ${CMAKE_SOURCE_DIR}/src/adcirc.F src/subdomain.F 
+                            ${CMAKE_SOURCE_DIR}/src/weir_boundary.F 
+                            ${CMAKE_SOURCE_DIR}/src/read_input.F 
+                            ${CMAKE_SOURCE_DIR}/src/cstart.F 
+                            ${CMAKE_SOURCE_DIR}/src/hstart.F 
+                            ${CMAKE_SOURCE_DIR}/src/timestep.F 
+                            ${CMAKE_SOURCE_DIR}/src/vsmy.F 
+                            ${CMAKE_SOURCE_DIR}/src/transport.F 
+                            ${CMAKE_SOURCE_DIR}/src/driver.F )
     
     #...SWAN Configuration
     swanConfigurePadcswan()
