@@ -50,7 +50,7 @@ C.....Days to seconds conversion
       REAL(8), PARAMETER :: m2nm = 1.d0/nm2m ! meters to nautical miles
       REAL(8), PARAMETER :: kt2ms = nm2m / 3600.0 ! knots to m/s
       REAL(8), PARAMETER :: ms2kt = 1.d0 / kt2ms ! m/s to knots
-      REAL(8), PARAMETER :: omega = 2.0d0*pi / 86164.2d0
+      REAL(8), PARAMETER :: omega = 7.29212d-5
       REAL(8), PARAMETER :: mb2pa = 100.d0
 C..   Ali's full dispersion coefficient for M2
       REAL(SZ) :: Bd = 0.23394_SZ  ! exponent of depth (default)
