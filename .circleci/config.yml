@@ -92,7 +92,7 @@ jobs:
       - checkout
       - run: 
             name: Build ADCIRC with netCDF and XDMF using CMake
-            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DNETCDFHOME=/usr -DXDMFHOME=/usr -DBUILD_UTILITIES=ON -DENABLE_DATETIME=ON -DENABLE_GRIB2=ON -DCMAKE_Fortran_FLAGS="-march=native -fprofile-arcs -ftest-coverage -g" -DCMAKE_C_FLAGS="-O3 -march=native -fprofile-arcs -ftest-coverage -g" ; make -j4
+            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DNETCDFHOME=/usr -DXDMFHOME=/usr -DBUILD_UTILITIES=ON -DENABLE_DATETIME=ON -DENABLE_GRIB2=ON -DCMAKE_Fortran_FLAGS="-march=native -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" -DCMAKE_C_FLAGS="-O3 -march=native -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" ; make -j4
       - run:
           name: Retrieve Test Suite
           command: git clone --depth=1 -b v55 https://github.com/adcirc/adcirc-cg-testsuite.git /root/adcirc-cg-testsuite
