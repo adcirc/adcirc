@@ -39,9 +39,12 @@ IF(BUILD_PUNSWAN AND PERL_FOUND)
                                ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/ocpmix.f ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SdsBabanin.f90  
                                ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SwanGradVel.f90 )
 
-    SET( MSGLIB_SOURCES  src/sizes.F KDTREE2/kdtree2.F 
-                         src/global.F src/boundaries.F src/global_3dvs.F
-                           src/messenger.F )
+    SET( MSGLIB_SOURCES  ${CMAKE_SOURCE_DIR}/src/sizes.F 
+                         ${CMAKE_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F 
+                         ${CMAKE_SOURCE_DIR}/src/global.F 
+                         ${CMAKE_SOURCE_DIR}/src/boundaries.F 
+                         ${CMAKE_SOURCE_DIR}/src/global_3dvs.F
+                         ${CMAKE_SOURCE_DIR}/src/messenger.F )
     
     ADD_LIBRARY(templib_punmsglib ${MSGLIB_SOURCES})
     ADD_LIBRARY(templib_punswan1  ${SWANONLY1_PARALLEL_SOURCES})

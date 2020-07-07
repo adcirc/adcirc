@@ -1,12 +1,39 @@
 IF(BUILD_ADCPREP)
     
-    SET( ADCPREP_SOURCES  src/sizes.F KDTREE2/kdtree2.F src/global.F src/boundaries.F src/hashtable.F
-                          src/mesh.F src/global_3dvs.F wind/vortex.F src/owiwind.F src/rs2.F
-                          src/owi_ice.F src/wind.F prep/presizes.F prep/pre_global.F prep/metis.F
-                          prep/subprep.F prep/adcprep.F prep/decomp.F prep/prep_weir.F src/itpackv.F
-                          src/nodalattr.F src/harm.F prep/read_global.F src/subdomain.F src/gwce.F
-                          src/wetdry.F src/momentum.F src/netcdfio.F prep/prep.F prep/interp.F prep/machdep.F
-                          src/sponge_layer.F src/quadtrature.F src/couple2baroclinic3D.F)
+    SET( ADCPREP_SOURCES  ${CMAKE_SOURCE_DIR}/src/sizes.F 
+                          ${CMAKE_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F 
+                          ${CMAKE_SOURCE_DIR}/src/global.F 
+                          ${CMAKE_SOURCE_DIR}/src/boundaries.F 
+                          ${CMAKE_SOURCE_DIR}/src/hashtable.F
+                          ${CMAKE_SOURCE_DIR}/src/mesh.F 
+                          ${CMAKE_SOURCE_DIR}/src/global_3dvs.F 
+                          ${CMAKE_SOURCE_DIR}/wind/vortex.F 
+                          ${CMAKE_SOURCE_DIR}/src/owiwind.F 
+                          ${CMAKE_SOURCE_DIR}/src/rs2.F
+                          ${CMAKE_SOURCE_DIR}/src/owi_ice.F 
+                          ${CMAKE_SOURCE_DIR}/src/wind.F 
+                          ${CMAKE_SOURCE_DIR}/prep/presizes.F 
+                          ${CMAKE_SOURCE_DIR}/prep/pre_global.F 
+                          ${CMAKE_SOURCE_DIR}/prep/metis.F
+                          ${CMAKE_SOURCE_DIR}/prep/subprep.F 
+                          ${CMAKE_SOURCE_DIR}/prep/adcprep.F 
+                          ${CMAKE_SOURCE_DIR}/prep/decomp.F 
+                          ${CMAKE_SOURCE_DIR}/prep/prep_weir.F 
+                          ${CMAKE_SOURCE_DIR}/src/itpackv.F
+                          ${CMAKE_SOURCE_DIR}/src/nodalattr.F 
+                          ${CMAKE_SOURCE_DIR}/src/harm.F 
+                          ${CMAKE_SOURCE_DIR}/prep/read_global.F 
+                          ${CMAKE_SOURCE_DIR}/src/subdomain.F 
+                          ${CMAKE_SOURCE_DIR}/src/gwce.F
+                          ${CMAKE_SOURCE_DIR}/src/wetdry.F 
+                          ${CMAKE_SOURCE_DIR}/src/momentum.F 
+                          ${CMAKE_SOURCE_DIR}/src/netcdfio.F 
+                          ${CMAKE_SOURCE_DIR}/prep/prep.F 
+                          ${CMAKE_SOURCE_DIR}/prep/interp.F 
+                          ${CMAKE_SOURCE_DIR}/prep/machdep.F
+                          ${CMAKE_SOURCE_DIR}/src/sponge_layer.F 
+                          ${CMAKE_SOURCE_DIR}/src/quadtrature.F 
+                          ${CMAKE_SOURCE_DIR}/src/couple2baroclinic3D.F )
 
     ADD_EXECUTABLE(adcprep ${ADCPREP_SOURCES})
 

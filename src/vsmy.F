@@ -3403,10 +3403,10 @@ C  kmd48.33bc changed to follow the global IO format
       USE SIZES
       USE GLOBAL
       USE GLOBAL_3DVS
-      USE GLOBAL_IO
 #ifdef CMPI
       USE MESSENGER
 #endif
+      USE GLOBAL_IO
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY : initNetCDFHotstart3D, writeNetCDFHotstart3D,
      &   writeNetCDFHotstart3DVar
