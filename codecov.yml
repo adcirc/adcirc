@@ -26,8 +26,8 @@ comment:
   require_changes: no
 
 ignore:
-  - metis/*
-  - metis/Lib/*
-  - KDTREE2/*
-  - swan/*  
-  - thirdparty/*
+  - metis/**/*
+  - metis/Lib/**/*
+  - KDTREE2/**/*
+  - swan/**/*
+  - thirdparty/**/*
