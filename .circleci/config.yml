@@ -35,7 +35,7 @@ jobs:
         - checkout
         - run: 
             name: Configure SWAN for legacy makefile
-            command: cd work ; cp ../swan/macros.inc.gfortran ../swan/macros.inc
+            command: cd work ; cp ../thirdparty/swan/macros.inc.gfortran ../thirdparty/swan/macros.inc
         - run: 
             name: Build ADCIRC without external libraries using legacy makefile
             command: cd work ; make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan
@@ -46,7 +46,7 @@ jobs:
         - checkout
         - run: 
             name: Configure SWAN for legacy makefile
-            command: cd work ; cp ../swan/macros.inc.gfortran ../swan/macros.inc
+            command: cd work ; cp ../thirdparty/swan/macros.inc.gfortran ../thirdparty/swan/macros.inc
         - run: 
             name: Build ADCIRC with netCDF using legacy makefile
             command: cd work ; make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan NETCDF=enable NETCDF4=enable     NETCDF4_COMPRESSION=enable NETCDFHOME=/usr
@@ -57,7 +57,7 @@ jobs:
         - checkout
         - run: 
             name: Configure SWAN for legacy makefile
-            command: cd work ; cp ../swan/macros.inc.gfortran ../swan/macros.inc
+            command: cd work ; cp ../thirdparty/swan/macros.inc.gfortran ../thirdparty/swan/macros.inc
         - run: 
             name: Build ADCIRC with netCDF and XDMF using legacy makefile
             command: cd work ; make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=/usr XDMF=enable XDMFHOME=/usr

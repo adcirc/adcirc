@@ -33,7 +33,7 @@ $(warning (INFO) The root directory for the build is $(SRCDIR))
 $(warning (INFO) The ADCIRC version is $(shell ../scripts/adcircVersion.sh $(SRCDIR)))
 include cmplrflags.mk
 #Casey 090302: Include variables/flags from SWAN.
-include ../swan/macros.inc
+include ../thirdparty/swan/macros.inc
 
 ifneq ($(compiler),)
 $(warning (INFO) The compiler variable in cmplrflags.mk is set to $(compiler).)
@@ -117,7 +117,7 @@ ifeq ($(BUILDTYPE),adcprep)
   CF:= $(PPFC)
   O_DIR:=$(SRCDIR)/work/odir1/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/KDTREE2:$(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/wind
+  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/wind
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -133,7 +133,7 @@ ifeq ($(BUILDTYPE),adcprep_be)
   CF:= $(FC)
   O_DIR:=$(SRCDIR)/work/odir2/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR)
-  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/KDTREE2:$(SRCDIR)/src:$(SRCDIR):$(SRCDIR)/wind
+  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/src:$(SRCDIR):$(SRCDIR)/wind
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -149,7 +149,7 @@ ifeq ($(BUILDTYPE),adcirc)
   CF:= $(FC)
   O_DIR:=$(SRCDIR)/work/odir3/
   FFLAGS:= $(FFLAGS2) $(DA) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
+  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -165,7 +165,7 @@ ifeq ($(BUILDTYPE),adcswan)
   CF:= $(FC)
   O_DIR:=$(SRCDIR)/work/odir33/
   FFLAGS:= $(FFLAGS2) -DCSWAN $(DA) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/swan
+  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/swan
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -177,18 +177,18 @@ ifeq ($(BUILDTYPE),adcswan)
     include $(SRCDIR)/work/.swanlastcompile
     ifneq ($(SWANLASTCOMPILE),serial)
         $(warning (WARNING) Removing prior parallel SWAN source files)
-        $(shell rm -f ../swan/*.f90 ../swan/*.f ../swan/*.for)
+        $(shell rm -f ../thirdparty/swan/*.f90 ../thirdparty/swan/*.f ../thirdparty/swan/*.for)
     endif
   endif
   $(shell echo "SWANLASTCOMPILE := serial" > $(SRCDIR)/work/.swanlastcompile)
-  $(shell perl ../swan/switch.pl $(swch) -adcirc ../swan/*.ftn ../swan/*.ftn90)
+  $(shell perl ../thirdparty/swan/switch.pl $(swch) -adcirc ../thirdparty/swan/*.ftn ../thirdparty/swan/*.ftn90)
 endif
 #                                      $(PARALLEL_ADCIRC)
 ifeq ($(BUILDTYPE),$(PARALLEL_ADCIRC))
   CF:= $(PFC)
   O_DIR:=$(SRCDIR)/work/odir4/
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
+  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -204,7 +204,7 @@ ifeq ($(BUILDTYPE),padcswan)
   CF:= $(PFC)
   O_DIR:=$(SRCDIR)/work/odir44/
   FFLAGS:= $(FFLAGS3) -DCSWAN $(DP) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/swan
+  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/swan
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -217,18 +217,18 @@ ifeq ($(BUILDTYPE),padcswan)
     include $(SRCDIR)/work/.swanlastcompile
     ifneq ($(SWANLASTCOMPILE),parallel)
         $(warning (WARNING) Removing prior serial SWAN source files)
-        $(shell rm -f ../swan/*.f90 ../swan/*.f ../swan/*.for)
+        $(shell rm -f ../thirdparty/swan/*.f90 ../thirdparty/swan/*.f ../thirdparty/swan/*.for)
     endif
   endif
   $(shell echo "SWANLASTCOMPILE := parallel" > $(SRCDIR)/work/.swanlastcompile)
-  $(shell perl ../swan/switch.pl $(swch) -pun -adcirc ../swan/*.ftn ../swan/*.ftn90)
+  $(shell perl ../thirdparty/swan/switch.pl $(swch) -pun -adcirc ../thirdparty/swan/*.ftn ../thirdparty/swan/*.ftn90)
 endif
 #                                    libadc.a
 ifeq ($(BUILDTYPE),$(LIBADC))
   CF:= $(PFC)
   O_DIR:=$(SRCDIR)/work/odircp/
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
-  VPATH := $(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
+  VPATH := $(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -309,14 +309,14 @@ ifeq ($(BUILDTYPE),adcpost)
   CF:= $(PPFC)
   O_DIR:=$(SRCDIR)/work/odir13/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR)
-  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)
+  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)
 endif
 #                                      aswip
 ifeq ($(BUILDTYPE),aswip)
   CF:= $(PPFC)
   O_DIR:=$(SRCDIR)/work/odir14/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(DA)
-  VPATH := $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
+  VPATH := $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -496,9 +496,9 @@ ifeq ($(MAKELEVEL),0)
    odir_metis_be:
 	mkdir $@
    metis: odir_metis
-	$(MAKE) -C $(SRCDIR)/metis/Lib/ CC="$(CC)" CFLAGS="$(CFLAGS)" O_DIR="$(CURDIR)/odir_metis/" LIBMETIS="$(CURDIR)/odir_metis/libmetis.a" ARFLAGS="$(ARFLAGS)"
+	$(MAKE) -C $(SRCDIR)/thirdparty/metis/Lib/ CC="$(CC)" CFLAGS="$(CFLAGS)" O_DIR="$(CURDIR)/odir_metis/" LIBMETIS="$(CURDIR)/odir_metis/libmetis.a" ARFLAGS="$(ARFLAGS)"
    metis_be: odir_metis_be
-	$(MAKE) -C $(SRCDIR)/metis/Lib/ CC="$(CCBE)" CFLAGS="$(CFLAGS)" O_DIR="$(CURDIR)/odir_metis_be/" LIBMETIS="$(CURDIR)/odir_metis_be/libmetis_be.a" ARFLAGS="$(ARFLAGS)"
+	$(MAKE) -C $(SRCDIR)/thirdparty/metis/Lib/ CC="$(CCBE)" CFLAGS="$(CFLAGS)" O_DIR="$(CURDIR)/odir_metis_be/" LIBMETIS="$(CURDIR)/odir_metis_be/libmetis_be.a" ARFLAGS="$(ARFLAGS)"
    adcprep: metis
 	$(MAKE) BUILDTYPE=adcprep  $@
    adcprep_be: metis_be
@@ -513,7 +513,7 @@ ifeq ($(MAKELEVEL),0)
    adcswan:
 	$(MAKE) BUILDTYPE=adcswan CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
    padcswan:
-	@perl ../swan/switch.pl $(swch) -pun -adcirc ../swan/*.ftn ../swan/*.ftn90
+	@perl ../thirdparty/swan/switch.pl $(swch) -pun -adcirc ../thirdparty/swan/*.ftn ../thirdparty/swan/*.ftn90
 	$(MAKE) BUILDTYPE=padcswan CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
    libadc: $(LIBADC)
    $(LIBADC):
@@ -652,12 +652,12 @@ endif
 
 clean:
 	rm -f odir*/*.o  odir*/*.mod sizes.o
-	rm -f  ../swan/*.f ../swan/*.for ../swan/*.f90
+	rm -f  ../thirdparty/swan/*.f ../thirdparty/swan/*.for ../thirdparty/swan/*.f90
 clobber:
 	rm -r -f odir*
 	rm -f adcprep adcprep_be adcirc $(PARALLEL_ADCIRC) adcswan padcswan p15 owi22 build13 aswip \
            build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost adccmp libadc.a
-	rm -f  ../swan/*.f ../swan/*.for ../swan/*.f90 .swanlastcompile
+	rm -f  ../thirdparty/swan/*.f ../thirdparty/swan/*.for ../thirdparty/swan/*.f90 .swanlastcompile
 help:
 	@echo "This makefile supports the following:"
 	@echo "make all        - makes all seven targets"
