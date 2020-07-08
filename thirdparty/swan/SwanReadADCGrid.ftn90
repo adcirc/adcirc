@@ -66,7 +66,7 @@ subroutine SwanReadADCGrid
 !
 !   Local variables
 !
-    character(80)           :: grdfil       ! name of grid file including path
+    character(140)          :: grdfil       ! name of grid file including path
     integer, save           :: ient = 0     ! number of entries in this subroutine
     integer                 :: idum         ! dummy integer
     integer                 :: ii           ! auxiliary integer
