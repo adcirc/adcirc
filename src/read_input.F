@@ -164,6 +164,7 @@ C
      &  dynamicWaterLevelCorrectionRampReferenceTime
       NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
      &  WarnElevDumpLimit, ErrorElev
+      NAMELIST /AliDispersionControl/ CAliDisp, Cs, Ad, Bd
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       CHARACTER(len=2000) :: origLineTVW
@@ -557,6 +558,29 @@ C     WJP add namelist
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
+!     WJP add namelist for Ali's dispersion
+!     Defaults are already in global 
+      namelistSpecifier = 'AliDispersionControl'
+      read(unit=15,nml=AliDispersionControl,iostat=IOS)
+      call logNameListReadStatus(namelistSpecifier,ios)
+!     Process the speed of sound squared
+      if (Cs.le.0.0_SZ) then
+         Cs2 = huge(0.0_SZ)
+      else
+         Cs2 = Cs*Cs
+      endif
+      write(scratchMessage,'(a,l)') "CAliDisp=",CAliDisp
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7)') "Speed of sound=",Cs
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,e15.8)') "Speed of sound squared=",Cs2
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7)') "Ad coefficient=",Ad
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7)') "Bd coefficient=",Bd
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
 C...  IDENTIFICATION
@@ -861,7 +885,7 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
 c     - - - - - - - - - - - - - - - - - - - - - - - -
 c     f i n e   g r a i n e d   o p t i o n s ( i m )
 c     - - - - - - - - - - - - - - - - - - - - - - - -
-      ELSEIF ((IM.GE.111111).AND.(IM.LE.634322)) THEN
+      ELSEIF ((IM.GE.111111).AND.(IM.LE.634326)) THEN
          IMDig1 = IM/100000
          IMDig2 = (IM - 100000*IMDig1)/10000
          IMDig3 = (IM - 100000*IMDig1 - 10000*IMDig2)/1000
@@ -969,30 +993,22 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
      &           'Momentum Eqs.'
          ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
-         IF (mod(IMDig6,4).EQ.1) THEN
+         IF (mod(IMDig6,3).EQ.1) THEN
             ILump=0
             WRITE(16,*) '        Consistent GWCE mass matrix'
-         ELSEIF (mod(IMDig6,4).EQ.2) THEN
+         ELSEIF (mod(IMDig6,3).EQ.2) THEN
             ILump=1
             CGWCE_Lump = .TRUE.
             WRITE(16,*) '        Lumped GWCE mass matrix'
-         ELSEIF (mod(IMDig6,4).EQ.3) THEN
+         ELSEIF (mod(IMDig6,3).EQ.0) THEN
             ILump=0
             WRITE(16,*) '        Consistent GWCE mass matrix'
             CGWCE_HDP = .TRUE.
             IFNL_HDP = 1
             WRITE(16,*) '        w/ implicit finite-amplitude term'
-         ELSEIF (mod(IMDig6,4).EQ.0) THEN
-            ILump=0
-            WRITE(16,*) '        Consistent GWCE mass matrix'
-            CGWCE_HDP = .TRUE.
-            IFNL_HDP = 1
-            WRITE(16,*) '        w/ implicit finite-amplitude term'
-            CAliDisp = .TRUE.
-            WRITE(16,*) '        & Alis improved dispersion relation'
          ENDIF
          ! WJP modifications for adding baroclinic mode
-         IF (IMDig6 > 4) THEN
+         IF (IMDig6 > 3) THEN
             CBaroclinic = .TRUE.
             WRITE(16,*) '        and baroclinic mode'
          ENDIF
@@ -1397,17 +1413,7 @@ C...
 C...
 C...  READ AND PROCESS NTIP - TIDAL POTENTIAL FORCING
 C...
-      if (mod(IMDig6,4).eq.0) then
-         ! WJP: read speed of sound and Ali's dispersion relation coefficients
-         READ(15,*) NTIP, Cs, Ad, Bd
-         if (Cs.le.0.0_SZ) then
-             Cs2 = huge(0.0_SZ)
-         else
-             Cs2 = Cs*Cs
-         endif
-      else
-         READ(15,*) NTIP
-      endif
+      READ(15,*) NTIP
       IF((NTIP.LT.0).OR.(NTIP.GT.2)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
@@ -1457,12 +1463,6 @@ C...
          WRITE(16,239)
  239     FORMAT(9X,'SELF ATTRACTION/LOAD TIDE FORCING IS ALSO USED ',
      &        'IN THE COMPUTATION')
-      ENDIF
-      if (mod(IMDig6,4).eq.0) then
-         ! WJP: read Ali's dispersion relation coefficients
-         WRITE(16,*) '     Speed of sound squared = ',Cs2
-         WRITE(16,2399) Ad, Bd
- 2399    FORMAT(/,5X,'Ali Disp coefs: Ad = ',F13.10,', Bd = ',F10.7)
       ENDIF
 C...
 C...  READ AND PROCESS NWS - WIND AND PRESSURE FORCING & WAVE RADIATION
