@@ -964,7 +964,7 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
 c     - - - - - - - - - - - - - - - - - - - - - - - -
 c     f i n e   g r a i n e d   o p t i o n s ( i m )
 c     - - - - - - - - - - - - - - - - - - - - - - - -
-      ELSEIF ((IM.GE.111111).AND.(IM.LE.634323)) THEN
+      ELSEIF ((IM.GE.111111).AND.(IM.LE.634326)) THEN
          IMDig1 = IM/100000
          IMDig2 = (IM - 100000*IMDig1)/10000
          IMDig3 = (IM - 100000*IMDig1 - 10000*IMDig2)/1000
@@ -1095,7 +1095,7 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
             WRITE(16,*) '        & Alis improved dispersion relation'
          ENDIF
          ! WJP modifications for adding baroclinic mode
-         IF (IMDig6 > 4) THEN
+         IF (IMDig6 > 3) THEN
             CBaroclinic = .TRUE.
             WRITE(16,*) '        and baroclinic mode'
          ENDIF
@@ -1496,17 +1496,7 @@ C...
 C...
 C...  READ AND PROCESS NTIP - TIDAL POTENTIAL FORCING
 C...
-      if (mod(IMDig6,4).eq.0) then
-         ! WJP: read speed of sound and Ali's dispersion relation coefficients
-         READ(15,*) NTIP, Cs, Ad, Bd
-         if (Cs.le.0.0_SZ) then
-             Cs2 = huge(0.0_SZ)
-         else
-             Cs2 = Cs*Cs
-         endif
-      else
-         READ(15,*) NTIP
-      endif
+      READ(15,*) NTIP
       IF((NTIP.LT.0).OR.(NTIP.GT.2)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
