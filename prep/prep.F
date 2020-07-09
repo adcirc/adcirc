@@ -2302,6 +2302,13 @@ c...     wjp additions for WarnElev Namelist
             write(15,*) '! -- End WarnElev Control NameList --'
          ENDIF
 
+c...     wjp additions for Ali Dispersion Control Namelist
+         IF (FOUND_ALIDISP_NML) then  !If there was a namelist in the original fort.15 put it in the decomp 15's
+            write(15,*) '! -- Begin AliDispersion Control NameList --'
+            write(15,AliDispersionControl)
+            write(15,*) '! -- End AliDispersion Control NameList --'
+         ENDIF
+
          CLOSE(15)
 C
  1000 CONTINUE
