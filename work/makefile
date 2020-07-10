@@ -271,6 +271,17 @@ ifeq ($(BUILDTYPE),inflate)
   VPATH :=  $(SRCDIR)/util
   MSG_MOBJ:=
 endif
+#                                     adcircResultsComparison
+ifeq ($(BUILDTYPE),adcircResultsComparison)
+  CF:= $(PPFC)
+  O_DIR:=$(SRCDIR)/work/odir12/
+  FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(DA)
+  ifeq ($(NETCDF),enable)
+    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
+  endif
+  VPATH :=  $(SRCDIR)/util
+  MSG_MOBJ:=
+endif
 #                                      hstime
 ifeq ($(BUILDTYPE),hstime)
   CF:= $(PPFC)
@@ -389,6 +400,7 @@ B23_SRC    =  buildstwave23.F
 H2A_SRC    =  hot2asc.F
 INF_SRC    =  inflate.F
 HST_SRC    =  hstime.F
+RCMP_SRC   =  adcircResultsComparison.F90
 ASW_SRC    =  aswip_1.0.3.F
 CMP_SRC    =  adccmp.F
 
@@ -403,6 +415,7 @@ B12_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(B12_SRC) )
 B23_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(B23_SRC) )
 H2A_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(H2A_SRC) )
 INF_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(INF_SRC) )
+RCMP_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(RCMP_SRC) )
 HST_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(HST_SRC) )
 ASW_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(ASW_SRC) )
 CMP_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(CMP_SRC) )
@@ -455,7 +468,7 @@ $(O_DIR)%.o  : %.f90
 
 ########################## Executable Targets ############################
 
-.PHONY: all libadc clean clobber metis metis_be adcprep adcprep_be adcpost adcirc $(PARALLEL_ADCIRC)  p15 owi22 build13 build12 buildstwave23 hot2asc inflate hstime aswip adccmp adcswan padcswan
+.PHONY: all libadc clean clobber metis metis_be adcprep adcprep_be adcpost adcirc $(PARALLEL_ADCIRC)  p15 owi22 build13 build12 buildstwave23 hot2asc inflate hstime aswip adccmp adcswan padcswan adcircResultsComparison
 
 all :  metis adcprep $(BACKEND_EXEC) adcpost adcirc $(PARALLEL_ADCIRC)
 
@@ -502,6 +515,8 @@ ifeq ($(MAKELEVEL),0)
 	$(MAKE) BUILDTYPE=hot2asc $@
    inflate:
 	$(MAKE) BUILDTYPE=inflate $@
+   adcircResultsComparison:
+	$(MAKE) BUILDTYPE=adcircResultsComparison $@
    hstime:
 	$(MAKE) BUILDTYPE=hstime $@
    aswip:
@@ -522,6 +537,7 @@ else
    buildstwave23:: $(O_DIR)
    hot2asc:: $(O_DIR)
    inflate:: $(O_DIR)
+   adcircResultsComparison:: $(O_DIR)
    hstime::   $(O_DIR)
    aswip::  $(O_DIR)
    adccmp:  $(O_DIR)
@@ -602,6 +618,9 @@ endif
    inflate ::  $(INF_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
+   adcircResultsComparison :: $(RCMP_OBJ)
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
+
    hstime ::  $(HST_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
@@ -622,7 +641,7 @@ clean:
 clobber:
 	rm -r -f odir*
 	rm -f adcprep adcprep_be adcirc $(PARALLEL_ADCIRC) adcswan padcswan p15 owi22 build13 aswip \
-           build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost adccmp libadc.a
+           build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost adccmp libadc.a adcircResultsComparison
 	rm -f  ../swan/*.f ../swan/*.for ../swan/*.f90 .swanlastcompile
 help:
 	@echo "This makefile supports the following:"
@@ -639,6 +658,7 @@ help:
 	@echo "make buildstwave23 - makes the fort.23 file generator"
 	@echo "make hot2asc       - makes the hotstart debug program"
 	@echo "make inflate       - makes the output file inflation program"
+	@echo "make adcircResultsComparison    - makes the utility used by the ADCIRC test suite"
 	@echo "make hstime   - makes the hot start time examiner"
 	@echo "make adccmp     - makes the output file comparison program"
 #Casey 091013: Add text for the SWAN+ADCIRC targets.
@@ -798,6 +818,10 @@ $(O_DIR)hot2asc.o     : hot2asc.F
 # converter from v46.32 output format to v47 format
 
 $(O_DIR)inflate.o     : inflate.F
+
+# test suite results compare utility
+
+$(O_DIR)adcircResultsComparison.o      : adcircResultsComparison.F90
 
 # hot start time examiner
 
