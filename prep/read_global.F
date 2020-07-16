@@ -875,7 +875,7 @@ C     jgf: Added NWS30.
      &       (ABS(NWS).NE.12).AND.
      &       (ABS(NWS).NE.19).AND.(ABS(NWS).NE.14).AND.
      &       (ABS(NWS).NE.20).AND.(abs(NWS).ne.30).and.(NWS.NE.10).and.
-     &       (ABS(NWS).NE.29).and. (abs(NWS).ne.16)
+     &       (ABS(NWS).NE.29).and. (abs(NWS).ne.16).and.
      &       (ABS(NWS).NE.17))THEN 
            print *,"ERROR: Value for NWS not supported by parallel code"
            stop
