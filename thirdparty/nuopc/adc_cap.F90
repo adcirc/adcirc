@@ -193,7 +193,7 @@ module adc_cap
  ! USE GLOBAL,  ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
   USE WIND,  ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
   USE GLOBAL,  ONLY: RSTIMINC            ! wave time interval
-  use GLOBAL,  ONLY: RhoWat0, NWS, g
+  use GLOBAL,  ONLY: RhoWat0, NUOPC4MET, NUOPC4WAV, NWS, g
   use GLOBAL,  only: ITHS, NT, DTDP, ITIME
   use GLOBAL,  only: allMessage
 
@@ -247,7 +247,7 @@ module adc_cap
 
 ! DW
   logical, save:: first_import_atm = .true. ;
-  logical, save:: first_import_wav = .true. ; 
+  logical, save:: first_import_wav = .true. ;
 
   real,parameter :: wave_force_limmit = 0.05
 
@@ -604,10 +604,10 @@ module adc_cap
     real(ESMF_KIND_R8), pointer:: dataPtr_zeta(:)
     real(ESMF_KIND_R8), pointer:: dataPtr_velx(:)
     real(ESMF_KIND_R8), pointer:: dataPtr_vely(:)
-   
+
     character(len=128)         :: fldname, timeStr
     integer                    :: i1,num
-    logical :: surge_forcing = .false. ; 
+    logical :: surge_forcing = .false. ;
     ! DW
 
     rc = ESMF_SUCCESS
@@ -682,7 +682,7 @@ module adc_cap
       !   EXPORT
       !-----------------------------------------
       !pack and send exported fields: zeta, velx, vely
-     
+
       ! >>>>> PACK and send ZETA
       call State_getFldPtr_(ST=exportState,fldname='zeta',fldptr=dataPtr_zeta, &
         rc=rc,dump=.false.,timeStr=timeStr)
@@ -694,10 +694,10 @@ module adc_cap
         return  ! bail out
 
       !fill only owned nodes for tmp vector
-      do i1 = 1, mdataOut%NumOwnedNd, 1  
+      do i1 = 1, mdataOut%NumOwnedNd, 1
         dataPtr_zeta(i1) = ETA2(mdataOut%owned_to_present_nodes(i1)) ;
       end do
-     
+
       ! >>>>> PACK and send VELX
       call State_getFldPtr(ST=exportState,fldname='velx',fldptr=dataPtr_velx,rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -709,7 +709,7 @@ module adc_cap
       do i1 = 1, mdataOut%NumOwnedNd, 1
          dataPtr_velx(i1) = UU2(mdataOut%owned_to_present_nodes(i1)) ;
       end do
-      
+
       ! >>>>> PACK and send VELY
       call State_getFldPtr(ST=exportState,fldname='vely',fldptr=dataPtr_vely,rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -721,7 +721,7 @@ module adc_cap
       do i1 = 1, mdataOut%NumOwnedNd, 1
         dataPtr_vely(i1) = VV2(mdataOut%owned_to_present_nodes(i1)) ;
       end do
-      
+
     else
       write(info,*) subname,' --- no surge forcing for wave. 1way coupled WW3 -> ADC  ---'
       call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
@@ -1312,19 +1312,19 @@ module adc_cap
         call UPDATER( WVNX1(:), WVNY1(:), PRN1(:),3)
         call UPDATER( WVNX2(:), WVNY2(:), PRN2(:),3)
 
-!c  DW, Sep 2021 
+!c  DW, Sep 2021
 !c   -- Nearest extrapolation in time for the first imported step
         if ( first_import_atm  ) then
-            WVNX1 = WVNX2 ; 
-            WVNY1 = WVNY2 ; 
+            WVNX1 = WVNX2 ;
+            WVNY1 = WVNY2 ;
             PRN1 = PRN2   ;
 
             first_import_atm = .false. ;
         end if
-!c 
+!c
  !       if (first_exchange .and. sum(PRN1) .le. 1.0) then
  !      ! DW:  band-aid fix by zeroing out wind velocity and atm pressure.
- !      !      Todo: look at atmesh code to see if there could be a better fix.  
+ !      !      Todo: look at atmesh code to see if there could be a better fix.
 !        if ( first_exchange .or. sum(PRN1)  .le. 1.0) then
 !          WVNX2 = 1e-10
 !          WVNY2 = 1e-10
@@ -1334,7 +1334,7 @@ module adc_cap
 !          PRN2 = 10.0  !hard coded to handel the 1st exchange zeros problem :TODO! Need to resolve this!
 !          PRN1 = PRN2
 !          first_exchange = .false.
-!        end if  
+!        end if
     
         !if (sum(PRN1) .eq. 0.0 ) then
         !  PRN1 = 10000.0
