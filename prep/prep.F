@@ -2295,7 +2295,7 @@ c...     tcm v52.30.01 additions for Smag_Control Namelist
      &       ', dynamicWaterLevelCorrectionRampEnd=',dynamicWaterLevelCorrectionRampEnd,'  /'
          endif
 
-c...     wjp additions for WarnElev Namelist
+C...     wjp additions for WarnElev Namelist
          IF (FOUND_WARNELEV_NML) then  !If there was a namelist in the original fort.15 put it in the decomp 15's
             write(15,*) '! -- Begin WarnElev Control NameList --'
             write(15,WarnElevControl)
@@ -2307,6 +2307,12 @@ c...     wjp additions for Ali Dispersion Control Namelist
             write(15,*) '! -- Begin AliDispersion Control NameList --'
             write(15,AliDispersionControl)
             write(15,*) '! -- End AliDispersion Control NameList --'
+         ENDIF
+c...     wjp additions for density Control Namelist
+         IF (FOUND_DENSITY_NML) then  !If there was a namelist in the original fort.15 put it in the decomp 15's
+            write(15,*) '! -- Begin density Control NameList --'
+            write(15,densityControl)
+            write(15,*) '! -- End density Control NameList --'
          ENDIF
 
          CLOSE(15)

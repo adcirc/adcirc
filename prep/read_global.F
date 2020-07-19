@@ -714,6 +714,17 @@ c..
      &         'The AliDispersion namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
+      
+      read(unit=15,nml=densityControl,iostat=ios)
+      if ( ios.ge.0) then
+         FOUND_DENSITY_NML = .true.
+         call logMessage(INFO,
+     &         'The density control namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The density control namelist was not found.')
+      endif
+      rewind(15)  !Return to the top of the fort.15 file
 
       READ(15,80) RUNDES
 C

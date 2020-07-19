@@ -2205,7 +2205,8 @@ C     ----------------------------------------------------------------
       REAL(SZ), allocatable :: Hx(:), Hy(:)
       INTEGER  :: I, L, Lm, Lind 
       REAL(SZ) :: omega = 1.4052d-4 ![rad/s] M2 tidal frequency
-      REAL(SZ) :: hr = 3600d0 ! means one hour in seconds
+      REAL(SZ) :: hr = 3600.0_SZ ! means one hour in seconds
+      REAL(SZ) :: SmallV = 1d-10 ! A small value
       REAL(SZ) :: Fit, alpha2, gamma2, slope2, uavnow, vavnow 
       REAL(SZ) :: Nmdiff, Nbdiff, Fdiff, adju, adjv, adjuv
       logical, save ::  first_entry = .TRUE.
@@ -2215,21 +2216,32 @@ C     current value of the bottom friction, TK
          IF ( FIRST_ENTRY ) THEN
             FIRST_ENTRY = .FALSE.
             IF ( IFSPROTS.eq.1 ) THEN
-C              Rotate the IT_Fric first time step if necessary
+C              Rotate the IT_Fric first time step if mesh rotation used
+C              (unnecessary for IT_FricNoOfVals == 1)
                IF ( IT_FricNoOfVals.eq.3 ) THEN
                   allocate(Hx(NP),Hy(NP))
                   DO I = 1,NP
-                     Hx(I) = sqrt(IT_Fric(I,1))
-                     Hy(I) = sign(sqrt(IT_Fric(I,2)),IT_Fric(I,3))
+                     if (CBaroclinic.and.abs(IDEN).ge.5) then
+                        Hx(I) = IT_Fric(I,2)
+                        Hy(I) = IT_Fric(I,3)
+                     else
+                        Hx(I) = sqrt(IT_Fric(I,1))
+                        Hy(I) = sign(sqrt(IT_Fric(I,2)),IT_Fric(I,3))
+                     endif
                      UVECTMP(I) = Hx(I); 
                      VVECTMP(I) = Hy(I);
                   ENDDO
                   CALL DRVMAP2DSPVEC( Hx, Hy,
      &                UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
                   DO I = 1,NP
-                     IT_Fric(I,1) = Hx(I)*Hx(I)
-                     IT_Fric(I,2) = Hy(I)*Hy(I)
-                     IT_Fric(I,3) = Hx(I)*Hy(I)
+                     if (CBaroclinic.and.abs(IDEN).ge.5) then
+                        IT_Fric(I,2) = Hx(I)
+                        IT_Fric(I,3) = Hy(I)
+                     else
+                        IT_Fric(I,1) = Hx(I)*Hx(I)
+                        IT_Fric(I,2) = Hy(I)*Hy(I)
+                        IT_Fric(I,3) = Hx(I)*Hy(I)
+                     endif
                   ENDDO           
                   deallocate(Hx,Hy)
                ELSEIF ( IT_FricNoOfVals.eq.5 ) THEN
@@ -2238,19 +2250,22 @@ C              Rotate the IT_Fric first time step if necessary
             ENDIF
          ENDIF
          Baroc: IF (CBaroclinic.and.abs(IDEN).ge.5) THEN
-            L  = floor((IT-1)*DTDP/hr) ! Get the current hour number
-            Lm = floor((IT-2)*DTDP/hr) ! Get the previous hour number
-            if (abs(IDEN).ne.7.and.L > Lm) then
-               ! Store new hour velocities
-               ! Get actual index (wrap around)
-               Lind = L - filtL*floor((IT-1)*DTDP/filtL/hr) + 1
-               DO I = 1,NP
-                  UAV(Lind,I) = U(I)   
-                  VAV(Lind,I) = V(I)   
-               ENDDO
-               L = min(L,filtL)  
-            endif
 C           2DDI ADCIRC with baroclinic coupling
+            if (abs(IDEN).ne.7) then
+C              Filtering lengths if have baroclinic ocean currents
+               L  = floor((IT-1)*DTDP/hr) ! Get the current hour number
+               Lm = floor((IT-2)*DTDP/hr) ! Get the previous hour number
+               if (L > Lm) then
+                  ! Store new hour velocities
+                  ! Get actual index (wrap around)
+                  Lind = L - filtL*floor((IT-1)*DTDP/filtL/hr) + 1
+                  DO I = 1,NP
+                     UAV(Lind,I) = U(I)   
+                     VAV(Lind,I) = V(I)   
+                  ENDDO
+                  L = min(L,filtL)  
+               endif
+            endif
             IF (IT_FricNoOfVals == 5) THEN
 C           Use the "Nonlocal" Nycander (2005) type tensor wave drag
 C           1st column is coefficient, 2nd and 3rd columns are the Hx and Hy slopes,
@@ -2266,7 +2281,8 @@ C           4th and 5th columns are the Jx and Jy slopes
                      Fit = IT_Fric(I,1)*NB(I)/DP(I)*
      &                     sqrt(1d0 - CORIF(I)**2/omega**2)
                      ! Check criticality of slope
-                     alpha2 =(omega**2 - CORIF(I)**2)/(NB(I)**2 - omega**2)
+                     alpha2 = (omega**2 - CORIF(I)**2) / 
+     &                        (NB(I)**2 - omega**2)
                      gamma2 = (IT_Fric(I,2)**2 + IT_Fric(I,3)**2)/alpha2
                      ! Divide by criticality if > 1 
                      Fit = Fit/max(1d0,gamma2)                   
@@ -2280,35 +2296,35 @@ C           4th and 5th columns are the Jx and Jy slopes
 C           For the "Local" Lyard et al. (2004) type tensor wave drag
 C           1st column is coefficient, 2nd and 3rd columns are the Hx and Hy slopes
 C           For the scalar Zaron & Egbert (2006) type
-C           1st column is coefficient, 2nd column is the hypotenuse slope
+C           1st column is coefficient, 2nd column is the squared hypotenuse slope
                adjuv = 1d0; adju = 1d0; adjv = 1d0;
                DO I = 1,NP
                   NBdiff = (NB(I)**2 - omega**2)
                   NMdiff = (NM(I)**2 - omega**2)
                   Fdiff  = (omega**2 - CORIF(I)**2)
-                  IF (NBdiff.le.1d-10.or.Nmdiff.le.1d-10.or.
-     &                Fdiff.le.1d-10) THEN
+                  IF (NBdiff.le.SmallV.or.Nmdiff.le.SmallV.or.
+     &                Fdiff.le.SmallV) THEN
                      ! No freely propagating internal tides
                      TKM(1:2,I) = TK(I)
                      TKM(3,I)   = 0.0d0
                   ELSE 
                      ! Have freely propagating internal tides
-                     ! Get coefficient
+                     ! Get the full coefficient
                      Fit = IT_Fric(I,1)*sqrt(NBdiff*Nmdiff)/omega
                      ! Check criticality of slope
-                     alpha2 = Fdiff/NBdiff
+                     alpha2 = Fdiff / NBdiff
                      if (IT_FricNoOfVals == 3) then
                         slope2 = IT_Fric(I,2)**2 + IT_Fric(I,3)**2
                      else
                         slope2 = IT_Fric(I,2)
                      endif
                      gamma2 = slope2 / alpha2
-                     ! Divide by criticality if > 1 
+                     ! Divide coefficient by criticality if > 1
+                     ! (saturates out at high criticalities) 
                      Fit = Fit / max(1d0,gamma2)                   
                      ! Calculate adjustment based on tidal residual
                      if (abs(IDEN).ne.7) then
-                        ! Calculate the moving mean
-                        adju = 1d0; adjv = 1d0;
+                        ! Calculate the adjustment factors based on the delayed moving mean
                         if (L.ge.1) then
                            uavnow = sum(UAV(1:L,I)) / L
                            vavnow = sum(VAV(1:L,I)) / L
