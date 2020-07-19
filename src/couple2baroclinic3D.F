@@ -297,6 +297,7 @@ C-----------------------------------------------------------------------
           i   = min(NXo,binarysearch(NXo, BC3D_Lon, Lon_e) + 2) 
           NX  = i - XI + 1; if (NX <  0) NX = NX + NXo;
 
+
           ! For latitude (with buffer)
           YI  = max(1,binarysearch(NY, BC3D_Lat, Lat_s) - 1)
           j   = min(NY,binarysearch(NY, BC3D_Lat, Lat_e) + 2)
