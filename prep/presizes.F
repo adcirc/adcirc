@@ -243,6 +243,14 @@ c.... !wjp added for warnElev namelist
       REAL(SZ) :: Cs = 1500.0_SZ ! Speed of sound in water
       LOGICAL :: CAliDisp= .false.  !
       LOGICAL :: FOUND_ALIDISP_NML = .false.  !
+      ! density control namelist
+      NAMELIST /densityControl/ densityRunType, densityFileName, 
+     &  densityTimeIterator, densityForcingType
+      LOGICAL :: FOUND_DENSITY_NML = .false.  !
+      character(len=100) :: densityRunType = 'none' ! diagnostic or prognostic
+      character(len=100) :: densityForcingType = 'SigmaT' ! sigmaT, salinity, etc
+      character(len=100) :: densityFileName = 'fort.11.nc' ! filename
+      integer :: densityTimeIterator = 1 ! BC3D time step iteration skipper
 
 C---------------------end of data declarations--------------------------------C
 
@@ -509,6 +517,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       LOGICAL :: found_tvw_nml
       LOGICAL :: found_WarnElev_nml = .false.
       LOGICAL :: found_AliDisp_nml = .false.
+      LOGICAL :: found_density_nml = .false.
 C.... tcm v51.20.04 additions for station location file
       integer ::  ios_stations
       integer :: MNSTAE2,MNSTAV2,MNSTAC2,MNSTAM2
@@ -708,6 +717,14 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          write(*,*) "INFO: The AliDisp Control namelist was not found."
       ELSE
          found_AliDisp_nml = .true.  
+      ENDIF
+      REWIND(15)
+      
+      READ(UNIT=15,NML=densityControl,IOSTAT=IOS)
+      IF (IOS.gt.0) THEN
+         write(*,*) "INFO: The density Control namelist was not found."
+      ELSE
+         found_density_nml = .true.  
       ENDIF
       REWIND(15)
 C

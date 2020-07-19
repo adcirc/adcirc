@@ -1685,8 +1685,7 @@ c******************************************************************************
       USE MESH, ONLY : NE, NM, FDXE, FDYE, NP, DP, AREAS, NODELE, 
      &      NEITABELE, NEITAB, NNEIGH, TOTALAREA,
      &      SFacEle, SFMYEle, SFMXEle
-      USE Couple2BC3D, ONLY : Update_BC3D_Info, FBPG_Disp_from_BC3D,
-     &                        Put_BC3D_on_ADCIRC_Grid
+      USE Couple2BC3D, ONLY : Update_BC3D_Info, FBPG_Disp_from_BC3D
       IMPLICIT NONE
     
       INTEGER,INTENT(IN) :: IT 
@@ -1715,7 +1714,7 @@ c******************************************************************************
       REAL(SZ) :: VIDBCPDXOHAvgArea,VIDBCPDYOHAvgArea
 
       ! For the Coupling to 3D Baroclinic mode 
-      IF (ABS(IDEN).ge.5) THEN
+      IF (abs(IDEN).ge.5) THEN
          ! Update the 3D BC Information for the current timestep 
          call Update_BC3D_Info(IDEN,TimeLoc) 
 
@@ -1724,8 +1723,7 @@ c******************************************************************************
             ! momentum dispersion terms required at every timestep
             ! from the 3D BC information that is on a longer time scale 
             call FBPG_Disp_from_BC3D()
-         endif
-        
+         endif 
          RETURN
       ENDIF  
      
