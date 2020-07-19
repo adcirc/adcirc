@@ -28,13 +28,13 @@ C-----------------------------------------------------------------------
 !     a time and interpolate between these. SA and theta are then
 !     converted to N and rho (or sigma_T) as required. 
 
-      CHARACTER(LEN=80) :: BC3D_Name ! Name of the BC3D NETCDF file 
+      CHARACTER(LEN=100) :: densityFileName ! Name of the BC3D NETCDF file (fort.11.nc by default)
       INTEGER  :: NX, NY, NYc, NYs, NXc, NYY, NYYY, NXo, NT, SL ! dimensions of 3D BC model required
       INTEGER  :: XI, YI, XIc, YIc, YIs  ! the 'start' locations in the NETCDF file
       REAL(SZ) :: BC3D_DT    ! Delta T for the 3D Baroclinic inputs
       INTEGER  :: BC3D_IT    ! 3D BC temporal iteration number 
       INTEGER  :: NP11       ! Number of nodes when reading from fort.11
-      INTEGER  :: STEP = 1   ! Iteration step (usually 1)
+      INTEGER  :: densityTimeIterator  ! BC3D time step iteraton skipper (usually 1)
       real(sz),allocatable,dimension(:) :: BC3D_Lon, BC3D_Lat, BXE, BYE,
      &                         DXE, DYE, BC3D_Lats, BC3D_Lonc, BC3D_Latc
       real(sz),allocatable,dimension(:,:) :: BC3D_NM, BC3D_NB, BC3D_BX,
@@ -97,7 +97,7 @@ C-----------------------------------------------------------------------
 #endif
 
       ! Open NETCDF 
-      call Check_err(nf90_open(BC3D_Name,nf90_nowrite,nc_id))
+      call Check_err(nf90_open(densityFileName,nf90_nowrite,nc_id))
     
       ! On first call: 
       ! Get the dimensions and time and spatial arrays of the data,
@@ -105,7 +105,7 @@ C-----------------------------------------------------------------------
       ! On > first call: check the datetimes and update BC3D_DT
       call Get_LonLatDepthTime(nc_id)
 
-      if (iden.ne.7) then     
+      if (abs(iden).ne.7) then     
          ! Read all the necessary temporal varying data 
          ! Depth-averaged east-west baroclinic pressure graidient
          BC3D_BX = read_nc_var(NC_ID,'BPGX',BC3D_IT,XIc,NXc,YI,NY)
@@ -132,7 +132,7 @@ C-----------------------------------------------------------------------
             where(BC3D_CD > 1.d0) BC3D_CD = 1.d0
          endif
       endif
-      if (iden.eq.6) then
+      if (abs(iden).eq.6) then
          ! Depth-averaged east-west baroclinic pressure graidient
          BC3D_DX = read_nc_var(NC_ID,'DispX',BC3D_IT,XI,NX,YIs,NYs)
          ! Depth-averaged north-south baroclinic pressure graidient
@@ -175,8 +175,8 @@ C-----------------------------------------------------------------------
          call check_err(nf90_get_var(nc_id, Temp_ID,        
      &                  TSS,start=[1, BC3D_IT],count=[SL, 1]))
          TNDT = strptime(trim(TSS),"%Y-%m-%d %H:%M")
-         call check_err(nf90_get_var(nc_id, Temp_ID,           
-     &                  TSS,start=[1, BC3D_IT+STEP],count=[SL, 1]))
+         call check_err(nf90_get_var(nc_id, Temp_ID, TSS,
+     &      start=[1, BC3D_IT+densityTimeIterator],count=[SL, 1]))
          TNDT1 = strptime(trim(TSS),"%Y-%m-%d %H:%M")
          DT = TNDT1 - TNDT 
          if (abs(DT%total_seconds() - BC3D_DT) > 1d-6) then
@@ -188,19 +188,22 @@ C-----------------------------------------------------------------------
       endif
 
       ! First call
-      call Check_err(NF90_INQ_DIMID(NC_ID,'NY',Temp_ID))
-      call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NY))
-      call Check_err(NF90_INQ_DIMID(NC_ID,'NYY',Temp_ID))
-      call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NYY))
-      call Check_err(NF90_INQ_DIMID(NC_ID,'NYYY',Temp_ID))
-      call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NYYY))
-      call Check_err(NF90_INQ_DIMID(NC_ID,'NX',Temp_ID))
-      call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NX))
       call check_err(nf90_inq_dimid(nc_id,'time', Temp_ID))
       call Check_err(nf90_inquire_dimension(nc_id,Temp_ID,len=NT))
       call check_err(nf90_inq_dimid(nc_id,'strlen', Temp_ID))
       call Check_err(nf90_inquire_dimension(nc_id,Temp_ID,len=SL))
-         
+      call Check_err(NF90_INQ_DIMID(NC_ID,'NY',Temp_ID))
+      call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NY))
+      call Check_err(NF90_INQ_DIMID(NC_ID,'NX',Temp_ID))
+      call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NX))
+      if (abs(IDEN).ne.7) then
+         call Check_err(NF90_INQ_DIMID(NC_ID,'NYY',Temp_ID))
+         call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NYY))
+      endif
+      if (abs(IDEN).eq.6) then 
+         call Check_err(NF90_INQ_DIMID(NC_ID,'NYYY',Temp_ID))
+         call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NYYY))
+      endif   
       ! Allocate the lat and lon  arrays first 
       allocate(BC3D_Lat(NY),BC3D_Lon(NX),
      &         BC3D_Latc(NYY),BC3D_Lonc(NX),BC3D_Lats(NYYY))
@@ -210,17 +213,21 @@ C-----------------------------------------------------------------------
       call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,BC3D_Lat))
       call Check_err(NF90_INQ_VARID(NC_ID,'lon',Temp_ID))
       call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,BC3D_Lon))
-      
-      call Check_err(NF90_INQ_VARID(NC_ID,'latc',Temp_ID))
-      call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,BC3D_Latc))
-      call Check_err(NF90_INQ_VARID(NC_ID,'lonc',Temp_ID))
-      call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,BC3D_Lonc))
-
-      call Check_err(NF90_INQ_VARID(NC_ID,'lats',Temp_ID))
-      call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,BC3D_Lats))
-      
+      if (abs(IDEN).ne.7) then
+         call Check_err(NF90_INQ_VARID(NC_ID,'latc',Temp_ID))
+         call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,BC3D_Latc))
+         call Check_err(NF90_INQ_VARID(NC_ID,'lonc',Temp_ID))
+         call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,BC3D_Lonc))
+      endif
+      if (abs(IDEN).eq.6) then 
+         call Check_err(NF90_INQ_VARID(NC_ID,'lats',Temp_ID))
+         call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,BC3D_Lats))
+      endif     
+ 
       ! Get the timestep and starting time
       call Check_err(NF90_INQ_VARID(NC_ID,'time',Temp_ID))
+      BC3D_DT = 0d0
+      if (iden.gt.0) then
 #ifdef DATETIME
       ! Let's get the start time index
       do BC3D_IT = 1,NT
@@ -230,8 +237,8 @@ C-----------------------------------------------------------------------
          DT   = CurDT - TNDT
          if (DT%total_seconds() <= 0) exit
       enddo
-      call check_err(nf90_get_var(nc_id, Temp_ID,           
-     &               TSS,start=[1, BC3D_IT+STEP],count=[SL, 1]))
+      call check_err(nf90_get_var(nc_id, Temp_ID, TSS,           
+     &     start=[1, BC3D_IT+densityTimeIterator],count=[SL, 1]))
       TNDT1 = strptime(trim(TSS),"%Y-%m-%d %H:%M")
       DT = TNDT1 - TNDT 
       BC3D_DT = DT%total_seconds()
@@ -239,7 +246,8 @@ C-----------------------------------------------------------------------
       ! Just set at 3 hrs
       BC3D_DT = 3600d0*3d0
 #endif
-       
+      endif
+ 
       ! Get bounds of the mesh
       Lat_s = max(-79.99d0,rad2deg*minval(sfea))
       Lat_e = rad2deg*maxval(sfea)
@@ -286,36 +294,55 @@ C-----------------------------------------------------------------------
           XI  = max(1,binarysearch(NXo, BC3D_Lon, Lon_s) - 1)
           i   = min(NXo,binarysearch(NXo, BC3D_Lon, Lon_e) + 2) 
           NX  = i - XI + 1; if (NX <  0) NX = NX + NXo;
-
-          XIc = max(1,binarysearch(NXo, BC3D_Lonc, Lon_s) - 1)
-          ic  = min(NXo,binarysearch(NXo, BC3D_Lonc, Lon_e) + 2) 
-          NXc = ic - XIc + 1; if (NXc <  0) NXc = NXc + NXo;
-
+          
           ! For latitude (with buffer)
           YI  = max(1,binarysearch(NY, BC3D_Lat, Lat_s) - 1)
           j   = min(NY,binarysearch(NY, BC3D_Lat, Lat_e) + 2)
           NY  = j - YI + 1
 
-          YIc = max(1,binarysearch(NYY, BC3D_Latc, Lat_s) - 1)
-          jc  = min(NYY,binarysearch(NYY, BC3D_Latc, Lat_e) + 2)
-          NYc = jc - YIc + 1
-          
-          YIs = max(1,binarysearch(NYYY, BC3D_Lats, Lat_s) - 1)
-          js  = min(NYYY,binarysearch(NYYY, BC3D_Lats, Lat_e) + 2)
-          NYs = js - YIs + 1
-
           write(16,*) 'BC3D_IT = ',BC3D_IT, 'BC3D_DT = ',BC3D_DT
           write(16,*) 'Lon: ',BC3D_Lon(XI), BC3D_Lon(i)
           write(16,*) 'Lat: ',BC3D_Lat(YI), BC3D_Lat(j)
-          write(16,*) 'Lonc: ',BC3D_Lonc(XIc), BC3D_Lonc(ic)
-          write(16,*) 'Latc: ',BC3D_Latc(YIc), BC3D_Latc(jc)
           write(16,*) 'XI = ',XI, 'i = ', i, 'NX = ',NX
-          write(16,*) 'XIc = ',XIc, 'ic = ', ic, 'NXc = ',NXc
           write(16,*) 'YI = ',YI, 'j = ', j, 'NY = ',NY
-          write(16,*) 'YIc = ',YIc, 'jc = ', jc, 'NYc = ',NYc
+          allocate(Lon(NX),Lat(NY))
+          Lat  = BC3D_Lat(YI:j)
+          if (i > XI) then
+             Lon  = BC3D_Lon(XI:i)
+          else
+             Lon  = [BC3D_Lon(XI:NXo)  , BC3D_Lon(1:i)   + 360d0 ]
+          endif
+          
+          if (abs(IDEN).ne.7) then
+             XIc = max(1,binarysearch(NXo, BC3D_Lonc, Lon_s) - 1)
+             ic  = min(NXo,binarysearch(NXo, BC3D_Lonc, Lon_e) + 2) 
+             NXc = ic - XIc + 1; if (NXc <  0) NXc = NXc + NXo;
+
+             YIc = max(1,binarysearch(NYY, BC3D_Latc, Lat_s) - 1)
+             jc  = min(NYY,binarysearch(NYY, BC3D_Latc, Lat_e) + 2)
+             NYc = jc - YIc + 1
+             write(16,*) 'Lonc: ',BC3D_Lonc(XIc), BC3D_Lonc(ic)
+             write(16,*) 'Latc: ',BC3D_Latc(YIc), BC3D_Latc(jc)
+             write(16,*) 'XIc = ',XIc, 'ic = ', ic, 'NXc = ',NXc
+             write(16,*) 'YIc = ',YIc, 'jc = ', jc, 'NYc = ',NYc
+             allocate(Lonc(NXc),Latc(NYc))
+             allocate(BC3D_BX(NXc,NY),BC3D_BY(NX,NYc),BC3D_SigTS(NX,NY))
+             Latc = BC3D_Latc(YIc:jc)
+             if (ic > XIc) then 
+                Lonc = BC3D_Lonc(XIc:ic)
+             else
+                Lonc = [BC3D_Lonc(XIc:NXo), BC3D_Lonc(1:ic) + 360d0 ]
+             endif
+          endif
+          if (abs(IDEN).eq.6) then 
+             YIs = max(1,binarysearch(NYYY, BC3D_Lats, Lat_s) - 1)
+             js  = min(NYYY,binarysearch(NYYY, BC3D_Lats, Lat_e) + 2)
+             NYs = js - YIs + 1
+             allocate(Lats(NYs))
+             allocate(BC3D_DX(NX,NYs),BC3D_DY(NX,NYs))
+             Lats = BC3D_Lats(YIs:js)
+          endif
   
-          allocate(BC3D_BX(NXc,NY),BC3D_BY(NX,NYc),BC3D_SigTS(NX,NY))
-          allocate(Lon(NX),Lonc(NXc),Lat(NY),Latc(NYc),Lats(NYs))
           if (LoadIT_Fric) allocate(BC3D_NB(NX,NY),BC3D_NM(NX,NY))
           if (NOLIBF.eq.3) then
              if (HBREAK.gt.0d0) then
@@ -324,24 +351,7 @@ C-----------------------------------------------------------------------
                 allocate(BC3D_CD(NX,NYs)) 
              endif
           endif
-          if (iden.eq.6) then
-             allocate(BC3D_DX(NX,NYs),BC3D_DY(NX,NYs))
-          endif
           
-          ! Make the Lon, Lat, Latc, Lonc vectors
-          Lat  = BC3D_Lat(YI:j)
-          Latc = BC3D_Latc(YIc:jc)
-          Lats = BC3D_Lats(YIs:js)
-          if (i > XI) then
-             Lon  = BC3D_Lon(XI:i)
-          else
-             Lon  = [BC3D_Lon(XI:NXo)  , BC3D_Lon(1:i)   + 360d0 ]
-          endif
-          if (ic > XIc) then 
-             Lonc = BC3D_Lonc(XIc:ic)
-          else
-             Lonc = [BC3D_Lonc(XIc:NXo), BC3D_Lonc(1:ic) + 360d0 ]
-          endif
           ! Compute the interpolants
           do i = 1,NP  
              xx = rad2deg*slam(i)
@@ -352,28 +362,29 @@ C-----------------------------------------------------------------------
              call bl_interp(NX,Lon,NY,Lat,xx,yy,indt,wt)
              indm(:,i) = indt
              weightsm(:,i) = wt
-             j = 0; numfound = 0
-             xl = xx; xu = xx
-             yl = yy; yu = yy
-             do j = 1,MNEI
-               if (NEITABELE(i,j).ne.0) then
-                  numfound = numfound + 1
-                  ! Get neighboring element mid-point
-                  x1 = (rad2deg*slam(nm(NEITABELE(i,j),1))
+             ! For gradient variables lets use conserve interp
+             if (abs(iden).ne.7) then
+                j = 0; numfound = 0
+                xl = xx; xu = xx
+                yl = yy; yu = yy
+                do j = 1,MNEI
+                   if (NEITABELE(i,j).ne.0) then
+                   numfound = numfound + 1
+                   ! Get neighboring element mid-point
+                   x1 = (rad2deg*slam(nm(NEITABELE(i,j),1))
      &                + rad2deg*slam(nm(NEITABELE(i,j),2))
      &                + rad2deg*slam(nm(NEITABELE(i,j),3)))/3d0
-                  if (minval(Lon) >= 0d0) then
-                     if (x1 < 0d0) x1 = x1 + 360d0
-                  endif
-                  y1 = (rad2deg*sfea(nm(NEITABELE(i,j),1))
+                   if (minval(Lon) >= 0d0) then
+                      if (x1 < 0d0) x1 = x1 + 360d0
+                   endif
+                   y1 = (rad2deg*sfea(nm(NEITABELE(i,j),1))
      &                + rad2deg*sfea(nm(NEITABELE(i,j),2))
      &                + rad2deg*sfea(nm(NEITABELE(i,j),3)))/3d0
-                  ! Set upper/low bounds
-                  xl = min(x1,xl); xu = max(x1,xu)
-                  yl = min(y1,yl); yu = max(y1,yu)
-               endif
-             enddo  
-             if (iden.ne.7) then
+                   ! Set upper/low bounds
+                   xl = min(x1,xl); xu = max(x1,xu)
+                   yl = min(y1,yl); yu = max(y1,yu)
+                   endif
+                enddo  
                 ! For x-gradient variable (BC3D_BX)
                 call conserve_interp(NXc,Lonc,NY,Lat,
      &                               xx,yy,xl,yl,xu,yu,indt,wt) 
@@ -384,14 +395,18 @@ C-----------------------------------------------------------------------
      &                               xx,yy,xl,yl,xu,yu,indt,wt) 
                 indy(:,i) = indt
                 weightsy(:,i) = wt
+                if (abs(iden).eq.6) then
+                   ! For other momentum dispersion variables (BC3D_DX, BC3D_DY)
+                   call conserve_interp(NX,Lon,NYs,Lats,
+     &                                  xx,yy,xl,yl,xu,yu,indt,wt) 
+                   inds(:,i) = indt
+                   weightss(:,i) = wt
+                endif
              endif
-             ! For other variables (BC3D_DX, BC3D_DY)
-             call conserve_interp(NX,Lon,NYs,Lats,
-     &                            xx,yy,xl,yl,xu,yu,indt,wt) 
-             inds(:,i) = indt
-             weightss(:,i) = wt
-           enddo
-          deallocate(Lon,Lonc,Lat,Latc,Lats)
+          enddo
+          deallocate(Lon,Lat)
+          if (abs(IDEN).ne.7) deallocate(Lonc,Latc)
+          if (abs(IDEN).eq.6) deallocate(Lats)
       endif
       END SUBROUTINE Get_LonLatDepthTime
 C-----------------------------------------------------------------------
@@ -470,7 +485,6 @@ C
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      BC3D_Name = 'fort.11.nc'
       ! Read first value in time 
       BC3D_IT = 1
       ! Times are rounded down to nearest minute
@@ -481,7 +495,7 @@ C
       call Read_BC3D_Netcdf()
       ! Put the first value on ADCIRC grid
       call Put_BC3D_on_ADCIRC_Grid() 
-      call logMessage(ECHO,'Read and processed new BC3D '
+      call logMessage(ECHO,'Read and processed 1st BC3D '
      &                         //'timesnap'
 #ifdef DATETIME
      &                         //': '//CurDT%isoformat(' ')
@@ -489,7 +503,7 @@ C
      &                         ) 
       ! WJP Get the start time and the next data time
       ! Put the first values in first position
-      if (IDEN.ne.7) then
+      if (abs(IDEN).ne.7) then
          VIDBCPDXOH_F(1,:) = VIDBCPDXOH_F(2,:) 
          VIDBCPDYOH_F(1,:) = VIDBCPDYOH_F(2,:) 
          SigTS_F(1,:)      = SigTS_F(2,:)
@@ -505,12 +519,14 @@ C
             CD_F(1,:)   = CD_F(2,:)
          endif
       endif
-      if (IDEN.eq.6) then
+      if (abs(IDEN).eq.6) then
          VIDISPDXOH_F(1,:) = VIDISPDXOH_F(2,:) 
          VIDISPDYOH_F(1,:) = VIDISPDYOH_F(2,:) 
       endif
+      ! Return if diagnostic
+      if (IDEN.lt.0) return
       ! Read next value in time
-      BC3D_IT = BC3D_IT + STEP
+      BC3D_IT = BC3D_IT + densityTimeIterator
 #ifdef DATETIME
       CurDT = CurDT + timedelta(minutes=nint(BC3D_DT/60d0))
 #endif
@@ -519,7 +535,7 @@ C
       DTIME2 = DTIME1 + BC3D_DT
       ! Put the second value on ADCIRC grid
       CALL Put_BC3D_on_ADCIRC_Grid()
-      call logMessage(ECHO,'Read and processed new BC3D '
+      call logMessage(ECHO,'Read and processed 2nd BC3D '
      &                         //'timesnap'
 #ifdef DATETIME
      &                         //': '//CurDT%isoformat(' ')
@@ -553,7 +569,7 @@ C
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      ! Check if dynamic calculation
+      ! Check if prognostic calculation
       IF (BC3D_DT > 0.d0) THEN
          ! Get new times if time is right
          IF (TimeLoc.GT.DTIME2) THEN
@@ -581,7 +597,7 @@ C
             endif
             IF (flag > 0) THEN
 #ifdef ADCNETCDF
-               BC3D_IT = BC3D_IT + STEP
+               BC3D_IT = BC3D_IT + densityTimeIterator
 #ifdef DATETIME
                CurDT = CurDT + timedelta(minutes=nint(BC3D_DT/60d0))
 #endif
@@ -616,7 +632,7 @@ C
       ENDIF
 
       ! Linear interpolate all the values in time
-      if (IDEN.ne.7) then
+      if (abs(IDEN).ne.7) then
          DO J = 1,NP
            SigTS(J) = SigTS_F(1,J) + DTRATIO*(SigTS_F(2,J)-SigTS_F(1,J))
            ! This is interpolated onto element and put back onto node in
@@ -654,7 +670,7 @@ C        DW/WJP: rotate BCP if coordinate transform
             ENDDO
          ENDIF
       ENDIF
-      IF (IDEN.eq.6) THEN
+      IF (abs(IDEN).eq.6) THEN
          ! This is interpolated onto element and put back onto node in
          ! another subroutine (FBPG_Disp_from_BC3D)
          DO J = 1,NP 
@@ -696,7 +712,7 @@ C
 #endif
   
       ! Interpolate to our mesh
-      IDEN7: if (iden.ne.7) then
+      IDEN7: if (abs(iden).ne.7) then
       do i = 1,NP  
          if (BC3D_SigTS(indm(1,i),indm(2,i)) < -1d2.or.
      &       BC3D_SigTS(indm(3,i),indm(2,i)) < -1d2.or.
@@ -800,7 +816,7 @@ C
             enddo
          endif
       endif
-      if (iden.eq.6) then
+      if (abs(iden).eq.6) then
          do i = 1,NP
             if (weightss(1,i).le.1d0) then
                ! Linear interpolation 

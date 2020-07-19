@@ -115,9 +115,8 @@ C ....DW
      &     LoadAbsLayerSigma, FoundAbsLayerSigma 
       USE SPONGELAYER, ONLY: SpongeLayerRelatedPrep, FLAGSPONGEELEM
 C ... END DW
-      USE Couple2BC3D, ONLY: BC3D_DT, DTIME1, DTIME2, SigTS_F, STEP, 
-     &     NM_F, VIDBCPDXOH_F, VIDBCPDYOH_F, VIDISPDXOH_F, VIDISPDYOH_F,
-     &     NB_F, ALLOC_BC3D_to_2D, NP11, Put_BC3D_on_ADCIRC_Grid 
+      USE Couple2BC3D, ONLY: BC3D_DT, DTIME1, DTIME2, ALLOC_BC3D_to_2D, 
+     &    NP11, densityTimeIterator, densityFileName
 #ifdef ADCNETCDF
      &     ,Read_BC3D_Netcdf
 #endif
@@ -139,16 +138,21 @@ Casey 100205: Enable hot-start file generation by SWAN.
       REAL(SZ) RampVal
       CHARACTER(len=80) :: CDUM80
       LOGICAL fileFound
-      INTEGER :: I, J, JKI, JJ, NP2, TT
+      INTEGER :: I, J, JKI, JJ, NP2, IDENsign
       integer :: yyyy,mon,dd,hh,minu
 C
+      !jgf51.52.35: for log messages about IDEN
+      character(len=100) :: densityRunType ! diagnostic or prognostic
+      character(len=100) :: densityDimensions ! 2DDI or 3D
+      character(len=100) :: densityForcingType ! sigmaT, salinity, etc
+
+      CHARACTER(len=1000) namelistSpecifier ! used in log messages
 #if defined CSWAN || defined ADCSWAN
       ! jgf50.60.09: Namelist for turning SWAN output files on or off
       NAMELIST /SWANOutputControl/ SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
-      CHARACTER(len=1000) namelistSpecifier ! used in log messages
       NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,
      &  rhoAir, invertedBarometerOnElevationBoundary, nPowellSearchDomains
       NAMELIST /subdomainModeling/ subdomainOn
@@ -157,7 +161,6 @@ C
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
-     
       NAMELIST /dynamicWaterLevelCorrectionControl/ dynamicWaterLevelCorrectionFileName, 
      &  dynamicWaterLevelCorrectionSkipSnaps, dynamicWaterLevelCorrectionMultiplier, 
      &  dynamicWaterLevelCorrectionRampStart, dynamicWaterLevelCorrectionRampEnd,
@@ -165,16 +168,14 @@ C
       NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
      &  WarnElevDumpLimit, ErrorElev
       NAMELIST /AliDispersionControl/ CAliDisp, Cs, Ad, Bd
+      NAMELIST /densityControl/ densityRunType, densityFileName, 
+     &  densityTimeIterator, densityForcingType
+
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       CHARACTER(len=2000) :: origLineTVW
       INTEGER :: commentStart            ! location of fort.15 comment start
       INTEGER :: ios = 0                 ! i/o status of read operation
-
-      !jgf51.52.35: for log messages about IDEN
-      character(len=100) :: densityRunType ! diagnostic or prognostic
-      character(len=100) :: densityDimensions ! 2DDI or 3D
-      character(len=100) :: densityForcingType ! sigmaT, salinity, etc
 
       !tcm v51.20.04 Additions for External Station Location File
       INTEGER :: IOS_STATIONS = 0
@@ -581,6 +582,57 @@ C     WJP add namelist
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
+!     WJP add densityControl namelist
+!     some defaults
+      densityRunType = 'none';
+      densityForcingType = 'SigmaT';
+      densityFileName = 'fort.11.nc';
+      densityTimeIterator = 1;
+!     read the namelist
+      namelistSpecifier = 'densityControl'
+      read(unit=15,nml=densityControl,iostat=IOS)
+      call logNameListReadStatus(namelistSpecifier,ios)
+      write(scratchMessage,'(a,a)') "densityRunType=",
+     &      trim(densityRunType)
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,a)') "densityForcingType=",
+     &      trim(densityForcingType)
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,a)') "densityFileName=",
+     &      trim(densityFileName)
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,i0)') "densityTimeIterator=",
+     &      densityTimeIterator
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+      ! Convert to IDEN 
+      IDEN = 0; IDENsign = 0
+      if (trim(densityRunType).eq.'diagnostic') then
+         IDENsign = -1
+      elseif (trim(densityRunType).eq.'prognostic') then
+         IDENSign = +1
+      endif
+      !
+      if (trim(densityForcingType).eq.'SigmaT') then
+         IDEN = 1
+      elseif (trim(densityForcingType).eq.'Salinity') then
+         IDEN = 2
+      elseif (trim(densityForcingType).eq.'Temperature') then
+         IDEN = 3
+      elseif (trim(densityForcingType).eq.'SalinityTemperature') then
+         IDEN = 4
+      elseif (trim(densityForcingType).eq.'Baroclinicgradients') then
+         IDEN = 5
+      elseif (trim(densityForcingType).eq.
+     &   'BaroclinicgradientsDispersion') then
+         IDEN = 6
+      elseif (trim(densityForcingType).eq.'Buoyancyfrequencies') then
+         IDEN = 7
+      endif
+!     Make sure to include the sign
+      IDEN = IDEN*IDENsign
+      if (IDEN.ne.0) CBaroclinic = .true.
+
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
 C...  IDENTIFICATION
@@ -830,20 +882,21 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
          WRITE(16,*) '    ADCIRC is configured for a Barotropic 2DDI ',
      &        'run using: New GWCE and Momentum Eq '
          WRITE(16,*) '          formulations + Passive Scalar Transport'
-      ELSEIF (IM.EQ.20) THEN
-         C2DDI         = .TRUE.
-         CBaroclinic   = .TRUE.
-         ILump=0
-         WRITE(16,*) '    ADCIRC is configured for a Baroclinic 2DDI ',
-     &        'run using: New GWCE and Momentum Eq formulations'
-      ELSEIF (IM.EQ.30) THEN
-         C2DDI         = .TRUE.
-         C2D_PTrans    = .TRUE.
-         CBaroclinic   = .TRUE.
-         ILump=0
-         WRITE(16,*) '    ADCIRC is configured for a Baroclinic 2DDI ',
-     &        'run using: New GWCE and Momentum Eq '
-         WRITE(16,*) '          formulations + Passive Scalar Transport'
+      ELSEIF (IM.EQ.20.or.IM.eq.30) THEN
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
+            WRITE(ScreenUnit,9972)
+            WRITE(ScreenUnit,*) 'IM =',IM
+            WRITE(ScreenUnit,9720)
+            WRITE(ScreenUnit,9973)
+         ENDIF
+         WRITE(16,9972)
+         WRITE(16,*) 'IM =',IM
+         WRITE(16,9720)
+         WRITE(16,9973)
+ 9720    FORMAT(/,1X,'IM = 20 & 30 are deprecated. Use the ',
+     &        'densityControl namelist to set baroclinicity for ',
+     &        '2DDI simulations (see adcirc wiki for more details)')
+         CALL ADCIRC_Terminate()
       ELSEIF (IM.EQ.1) THEN
          C3D           = .TRUE.
          C3DVS         = .TRUE.
@@ -885,7 +938,7 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
 c     - - - - - - - - - - - - - - - - - - - - - - - -
 c     f i n e   g r a i n e d   o p t i o n s ( i m )
 c     - - - - - - - - - - - - - - - - - - - - - - - -
-      ELSEIF ((IM.GE.111111).AND.(IM.LE.634326)) THEN
+      ELSEIF ((IM.GE.111111).AND.(IM.LE.634323)) THEN
          IMDig1 = IM/100000
          IMDig2 = (IM - 100000*IMDig1)/10000
          IMDig3 = (IM - 100000*IMDig1 - 10000*IMDig2)/1000
@@ -993,24 +1046,19 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
      &           'Momentum Eqs.'
          ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
-         IF (mod(IMDig6,3).EQ.1) THEN
+         IF (IMDig6.EQ.1) THEN
             ILump=0
             WRITE(16,*) '        Consistent GWCE mass matrix'
-         ELSEIF (mod(IMDig6,3).EQ.2) THEN
+         ELSEIF (IMDig6.EQ.2) THEN
             ILump=1
             CGWCE_Lump = .TRUE.
             WRITE(16,*) '        Lumped GWCE mass matrix'
-         ELSEIF (mod(IMDig6,3).EQ.0) THEN
+         ELSEIF (IMDig6.EQ.3) THEN
             ILump=0
             WRITE(16,*) '        Consistent GWCE mass matrix'
             CGWCE_HDP = .TRUE.
             IFNL_HDP = 1
             WRITE(16,*) '        w/ implicit finite-amplitude term'
-         ENDIF
-         ! WJP modifications for adding baroclinic mode
-         IF (IMDig6 > 3) THEN
-            CBaroclinic = .TRUE.
-            WRITE(16,*) '        and baroclinic mode'
          ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
       ELSE
@@ -1029,14 +1077,9 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
          CALL ADCIRC_Terminate()
       ENDIF
 
-      IDEN=0
       if (CBaroclinic.eqv..true.) then
-         READ(15,'(I2)',advance='no') IDEN
-         if (IDEN.ge.5) then 
-            READ(15,*) STEP
-         else
-            READ(15,*)
-         endif
+         ! WJP: Only read IDEN line if 3D mode (ADCIRC v55+)
+         if (C3D) READ(15,*) IDEN
          ! jgf51.52.35: Removed 0 as a valid choice for IDEN because the
          ! choice between baroclinic and barotropic is specified by IM; 
          ! also removed "2DDI" from the log messages because the choice 
@@ -1047,43 +1090,44 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
          ! WJP: 3/8/2018 I think these were round the wrong way 
          ! (was opposite to the adcirc.org page) 
          if (iden.lt.0) then
-            densityRunType = ' diagnostic '
+            densityRunType = ' diagnostic'
          else
-            densityRunType = ' prognostic '
+            densityRunType = ' prognostic'
          endif
          !        
-         densityDimensions = ' 2DDI '
-         if (C3D.eqv..true.) then
-            densityDimensions = ' 3D '
-         endif
+         densityDimensions = ' 2DDI'
+         if (C3D) densityDimensions = ' 3D'
          !
          select case(abs(iden))
          case(1)
-            densityForcingType = ' sigmaT '       
+            densityForcingType = ' sigmaT'       
          case(2)
-            densityForcingType = ' salinity '
+            densityForcingType = ' salinity'
          case(3)
-            densityForcingType = ' temperature '
+            densityForcingType = ' temperature'
          case(4)
-            densityForcingType = ' salinity and temperature '         
+            densityForcingType = ' salinity and temperature'         
          case(5)
-            densityForcingType = ' 3rd-party salinity and temperature'
+            densityForcingType = ' depth-integrated baroclinic '
+     &                        //'gradients with buoyancy frequency'
          case(6)
-            densityForcingType = ' 3rd-party salinity and temperature'
-     &                         //' with momentum dispersion'
+            densityForcingType = ' depth-integratged baroclinic '
+     &                        //'gradients and momentum dispersion '
+     &                        //'with buoyancy frequency'
          case(7)
-            densityForcingType = ' only use 3rd-party salinity and '
-     &                       //'temperature to get buoyancy frequencies'
+            densityForcingType = ' buoyancy frequency only'
          case default
             call allMessage(ERROR,
      &       'The absolute value of IDEN must be <= 7.')
             call adcirc_terminate()
          end select
         call logMessage(INFO,'This run will be'//trim(densityDimensions)
-     &    //trim(densityRunType)//'baroclinic with'
-     &    //trim(densityForcingType)//'forcing.')
+     &    //trim(densityRunType)//' baroclinic using'
+     &    //trim(densityForcingType)//' forcing.')
          !
          if ( (C2DDI.eqv..true.).and.(CBaroclinic.eqv..true.) ) then
+!           WJP comment: this logical isn't actually used anywhere.
+!           may consider deprecating
             C2D_BTrans = .true.
          endif 
       endif
@@ -2813,7 +2857,7 @@ C...
          ! Allocate arrays for the baroclinic coupling from 3D model to 2D model
          if (abs(IDEN).ge.5) call ALLOC_BC3D_to_2D()
                
-         IF (IDEN.lt.5) THEN
+         IF (abs(IDEN).lt.5) THEN
             OPEN(11,FILE=TRIM(INPUTDIR)//'/'//'fort.11')
             READ(11,*) 
             READ(11,*) BC3D_DT
@@ -2851,41 +2895,9 @@ c           CALL  CALC_SIGMAT_2D()      !need to activate
                   READ(11,*) JKI,DATemp(JKI),DASalt(JKI)
                END DO
 c           CALL CALC_SIGMAT_2D()      !need to activate
-            ELSEIF(IDEN.EQ.-5) THEN
-               ! WJP reading pre-computed 3D baroclinic gradients from
-               ! zero depth (diagnostic - does not change), plus also
-               ! read free surface density to get that effect
-               DO I=1,NP11
-                  READ(11,*) JKI,VIDBCPDXOH_F(1,JKI),
-     &                       VIDBCPDYOH_F(1,JKI),SigTS_F(1,JKI)
-!     &                       ,DUU_F(1,JKI),DVV_F(1,JKI),DUV_F(1,JKI)
-               END DO
-               IF (BC3D_DT > 0.0d0) THEN
-                  DO I=1,NP11
-                     READ(11,*) JKI,VIDBCPDXOH_F(2,JKI),
-     &                          VIDBCPDYOH_F(2,JKI),SigTS_F(2,JKI)
-!     &                          ,DUU_F(2,JKI),DVV_F(2,JKI),DUV_F(2,JKI)
-                  END DO
-               ENDIF
-            ELSEIF(IDEN.EQ.-6) THEN
-               ! WJP reading pre-computed 3D baroclinic gradients from
-               ! zero depth (diagnostic - does not change), plus also
-               ! read free surface density and momentum dispersion
-               DO I=1,NP11
-                  READ(11,*) JKI,VIDBCPDXOH_F(1,JKI),
-     &                       VIDBCPDYOH_F(1,JKI),SigTS_F(1,JKI),
-     &                       VIDISPDXOH_F(1,JKI),VIDISPDYOH_F(1,JKI)
-               END DO
-               IF (BC3D_DT > 0.0d0) THEN
-                  DO I=1,NP11
-                     READ(11,*) JKI,VIDBCPDXOH_F(2,JKI),
-     &                          VIDBCPDYOH_F(2,JKI),SigTS_F(2,JKI),
-     &                          VIDISPDXOH_F(2,JKI),VIDISPDYOH_F(2,JKI)
-                  END DO
-               ENDIF
             ENDIF
             IF (BC3D_DT.le.0.0d0) THEN
-                ! We wanna leave it open for reading
+                ! Close reading for diagnostic
                 CLOSE(11)
             ENDIF
          ENDIF

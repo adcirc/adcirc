@@ -1511,7 +1511,7 @@ C......RESTART THE WAVE RADIATION STRESS
 
 #ifdef ADCNETCDF     
       ! For the Coupling to 3D Baroclinic mode 
-      IF (C2DDI.and.CBaroclinic.and.IDEN.ge.5) THEN
+      IF (C2DDI.and.CBaroclinic.and.abs(IDEN).ge.5) THEN
          call Initial_BC3D_NetCDF(TimeLoc)
       endif
 #endif       
