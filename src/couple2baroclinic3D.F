@@ -65,9 +65,10 @@ C
       allocate ( VIDBCPDXOH_F(2,MNP),VIDBCPDYOH_F(2,MNP))
       VIDBCPDXOH_F = 0.0d0 ; VIDBCPDYOH_F = 0.0d0
       allocate (SigTS_F(2,MNP))
-      SigTS_F = SigT0; 
+      SigTS_F = SigT0 
       allocate ( MLD_F(2,MNP), CD_F(2,MNP))
-      MLD_F = DFV; NM_F = 0.0d0; CD_F = 0.0d0
+      MLD_F = DFV 
+      CD_F = 0.0d0
       allocate ( VIDISPDXOH_F(2,MNE),VIDISPDYOH_F(2,MNE))
       VIDISPDXOH_F = 0.0d0 ; VIDISPDYOH_F = 0.0d0
       allocate (NB_F(2,MNP),NM_F(2,MNP))
