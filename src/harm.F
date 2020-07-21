@@ -2164,7 +2164,7 @@ C
 #ifdef CMPI
       call msg_fini()
 #endif
-      stop
+      CALL EXIT(1)
 C
 
 #if defined(HARM_TRACE) || defined(ALL_TRACE)

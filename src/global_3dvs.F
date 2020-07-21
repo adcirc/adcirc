@@ -573,7 +573,7 @@ c
      &           '  0=Terminate/1=continue. ****'
             write(screenunit,*) '  '
             read(*,*) ians
-            if(ians.ne.1) stop
+            if(ians.ne.1) CALL EXIT(1)
             num = nfen/2
          else
             num=(nfen-1)/2
@@ -627,7 +627,7 @@ c
      &   /,'choices for specifying the vertical grid spacing in 3D.',
      &   /,'Please specify a value for igc from 0 to 6.',
      &   /,'**ADCIRC run terminated due to bad value for igc.**')
-         stop
+         CALL EXIT(1)
 
       end select
 

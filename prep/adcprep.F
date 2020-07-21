@@ -229,7 +229,7 @@ C     having to do a prep all and without having to add menu items).
          ! Conk out if MNPROC was not specified
          IF (MNPROC.EQ.0) THEN
             WRITE(*,*) "ERROR: MNPROC was not specified."
-            STOP
+            CALL EXIT(1)
          ELSE
             NPROC=MNPROC
          ENDIF
@@ -238,7 +238,7 @@ C     having to do a prep all and without having to add menu items).
          USE_DEFAULT = .TRUE.
          CALL PREPINPUT()
          call memory_status()
-         STOP
+         CALL EXIT(0)
       ENDIF
 
 C
@@ -338,7 +338,7 @@ C
 
       print *, "ADCPREP COMPLETED"
 
-      STOP
+      CALL EXIT(1)
 C---------------------------------------------------------------------------
       END PROGRAM ADCPREP
 C---------------------------------------------------------------------------
@@ -445,7 +445,7 @@ C
       case default
          write(6,'(a,i0,a)') 'ERROR: The mesh type ',meshType,
      &     ' is invalid'
-         stop
+         CALL EXIT(1)
       end select
       print *, 'Global Grid file read successfully.'
       !
@@ -544,7 +544,7 @@ C
                   write(*,'(a,i0,a)')
      &              'ERROR: Mesh partitioning has failed after ',
      &               repartitionLimit,' attempts.'
-                  stop
+                  CALL EXIT(1)
                endif
                call metis()
             end do
@@ -638,10 +638,10 @@ C
             CASE(2)
                print *, "Error Creating ",PENUM,
      &               ". The file or path specified was not found."
-               stop
+               CALL EXIT(1)
             CASE(13)
                print *, "Error Creating ",PENUM,".  Access Denied."
-               stop
+               CALL EXIT(1)
             CASE(17)
                print *, PENUM," already exists."
             CASE DEFAULT

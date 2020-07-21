@@ -356,7 +356,7 @@ C     ---------
          case default
              write(6,'(a,i0,a)') "ERROR: The boundary type ",ibtype_orig(i),
      &        " was found in the file but is not valid."
-             stop
+             CALL EXIT(1)
          end select
       end do
       ! initialize to something troublesome to make it easy to spot issues
@@ -493,7 +493,7 @@ C     ------------------------------------------------------------------
             nweir = nweir + nvell(k)
          case(5,25)
             print *, 'error: ibtype 5 and 25 not supported by adcprep.'
-            stop
+            CALL EXIT(1)
          case default
             ! no action required for other boundary types
          end select
@@ -584,7 +584,7 @@ C     ------------------------------------------------------------------
             enddo
          case(5,25)
             print *, 'error: ibtype 5 and 25 not supported by adcprep.'
-            stop
+            CALL EXIT(1)
          case default
             write(6,'(a,i0,a)') 'ERROR: ibtype ',ibtype(k),
      &          ' not supported by adcprep.'

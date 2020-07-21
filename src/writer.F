@@ -1077,7 +1077,7 @@ C...  Main loop
       ENDDO
 !tcm v49.52.01 commented out next two lines
 !      CALL MSG_FINI()
-!      STOP 1
+!      CALL EXIT(1)
 
       call  unsetMessageSource()
       
@@ -1248,7 +1248,7 @@ C-----------------------------------------------------------------------
 
       IF (WRITE_LOCAL_HOT_START_FILES) THEN
          write(6,*) 'HSWriter can not treat Local HOT START FILES'
-         STOP 1
+         CALL EXIT(1)
       ENDIF
 !
       WRITE(16,*) "***********WRITE HOTSTART*********************"
