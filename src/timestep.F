@@ -1252,7 +1252,7 @@ C     output the global node number to debug the local PE fort.14s
          IF( ErrorElevExceeded /= 0 ) THEN    !  Finalize MPI Environment,
            Flag_ElevError = .true. 
            CALL MSG_FINI()                    !  if there are Error Elvation nodes.
-           STOP 1                             !
+           CALL EXIT(1)                             !
          ENDIF                                !st3
 #else
          IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
@@ -2743,7 +2743,7 @@ C**********************************************************************
           End Do
           If ( sum_Weights < 1.0d-6 ) Then
              Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-             Stop
+             CALL EXIT(1)
           End If
          Weights (:) = Weights (:) / sum_Weights
          ! 2.3 debug

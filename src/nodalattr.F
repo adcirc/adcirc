@@ -947,7 +947,7 @@ C     Check to make sure that NWP is a valid number.
          WRITE(16,9973)
  9728    FORMAT(/,1X,'Your selection of NWP (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-         STOP 1          ! We're toast.
+         CALL EXIT(1)          ! We're toast.
       ENDIF
 C
 C     Check to see if there are nodal attributes to be read in. If not,
@@ -1050,7 +1050,7 @@ C
             WRITE(ScreenUnit,1011)
             WRITE(ScreenUnit,9973)      ! execution terminated
          ENDIF
-         STOP 1
+         CALL EXIT(1)
       ENDIF
 C
 C     Now open the nodal attributes (unit 13) file.
@@ -1068,7 +1068,7 @@ C     Now open the nodal attributes (unit 13) file.
             WRITE(ScreenUnit,1005)
             WRITE(ScreenUnit,9973)
          ENDIF
-         STOP 1                 ! We're toast.
+         CALL EXIT(1)                 ! We're toast.
       ENDIF
 C
 C     Read each attribute name, units, number of values, and default value
@@ -1618,7 +1618,7 @@ C     same as the number of nodes in the grid file.
      &        //,1X,'The number of nodes in the grid file (unit 14) and'
      &        /,1X,'the nodal attributes file (unit 13) must match.',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         STOP 1                 ! We're toast.
+         CALL EXIT(1)                 ! We're toast.
       ENDIF
 C
 C     ERROR CHECK: If Chezy, Manning's or Quadratic friction was loaded
@@ -1633,7 +1633,7 @@ C     from the nodal attributes file, NOLIBF must be 1.
      &        /,1X,'NoLiBF must be set to 1. It is set to ',i2,' in',
      &        /,1X,'the model parameter (unit 15) file.',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         STOP 1                 ! We're toast.
+         CALL EXIT(1)                 ! We're toast.
       ENDIF
 C
 C     ERROR CHECK: If Tau0=-3.x or -6.x in fort.15, then tau0 MUST be loaded
@@ -1650,7 +1650,7 @@ C     from nodal attributes file.
      &        /,1X,'load the base value using',
      &        /,1X,'primitive_weighting_in_continuity_equation.',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         STOP 1                 ! We're toast.
+         CALL EXIT(1)                 ! We're toast.
       ENDIF
 C
 C     ERROR CHECK: The canopy coefficient value should be either 0 or 1;
@@ -2605,7 +2605,7 @@ C      IF((NE2.NE.NE).OR.(NP2.NE.NP)) THEN
      &        //,1X,'THE PARAMETER NE2 AND NP2 MUST MATCH NE AND NP ',
      &        /,1X,'USER MUST CHECK FORT.12 INPUT FILE ',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         STOP 1
+         CALL EXIT(1)
       ENDIF
 C
 C...  READ IN STARTDRY CODE VALUES
@@ -2666,7 +2666,7 @@ C     ----------------------------------------------------------------
      &           'YOUR NODAL FRICTION NUMBERING IS NOT SEQUENTIAL ',
      &           /,1X,'CHECK YOUR UNIT 21 INPUT FILE CAREFULLY',//,1X,
      &           '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-            STOP 1
+            CALL EXIT(1)
          ENDIF
       END DO
       WRITE(16,3601) AFRIC
@@ -2719,7 +2719,7 @@ C
         CALL MSG_FINI()
       ENDIF
 #endif
-      STOP 1 
+      CALL EXIT(1) 
 C
 #if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable

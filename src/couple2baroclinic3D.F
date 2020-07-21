@@ -1004,7 +1004,7 @@ C-----------------------------------------------------------------------
       END SUBROUTINE FBPG_Disp_from_BC3D
 C-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-!     S U B R O U T I N E   N E T C D F   T E R M I N A T E
+!     S U B R O U T I N E   B C 3 D  T E R M I N A T E
 !-----------------------------------------------------------------------
       SUBROUTINE BC3DTerminate(NO_MPI_FINALIZE)
       USE SIZES, ONLY : myproc
@@ -1041,7 +1041,7 @@ C
         CALL MSG_FINI()
       ENDIF
 #endif
-      STOP 
+      CALL EXIT(1)
 C
 #ifdef ALL_TRACE
       call allMessage(DEBUG,"Return.") ! should be unreachable

@@ -332,7 +332,7 @@ c     arc add nws13 190110
          numFields = 9
       case default
          write(6,'("ERROR: The value of nws is ",i6," but this is not a valid value.")') nws
-         stop
+         CALL EXIT(1)
       end select
       if ((nrs.ne.0).or.(ncice.ne.0)) then
          call parseWaveAndIceTimeIncrements(wtimincLine,numFields)
@@ -369,7 +369,7 @@ c     arc add nws13 190110
       case default
          write(6,'(a,i0,a)') 'ERROR: The value of nramp is ',nramp,
      &    ' but this is not a valid value.'
-         stop
+         CALL EXIT(1)
       end select
       linenum = linenum + 1
       read(15,*,err=10,end=20,iostat=ios) a00,b00,c00
@@ -392,7 +392,7 @@ c     arc add nws13 190110
       case default
          write(6,'(a,i0,a)') 'ERROR: The value of nolibf is ',nolibf,
      &       ' but this is not a valid value.'
-         stop
+         CALL EXIT(1)
       end select
       linenum = linenum + 1
       if (im.eq.10) then
@@ -592,12 +592,12 @@ c     arc add nws13 190110
      &    ' gave the following error code: ',ios,'.'
       call echoControlFile(6)
       close(15)
-      stop
+      CALL EXIT(1)
  20   write(6,'(a,i0,a)') 'ERROR: Reached premature end of file on line ',
      &    lineNum,'.'
       call echoControlFile(6)
       close(15)
-      stop
+      CALL EXIT(1)
       !---------------------------------------------------------------------
       end subroutine readControlFile
       !---------------------------------------------------------------------
@@ -624,11 +624,11 @@ c     arc add nws13 190110
  10   write(6,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
      &   ' gave the following error code: ',ios,'.'
       call echoControlFile(6)
-      stop
+      CALL EXIT(1)
  20   write(6,'(a,i0,a)')
      &   'ERROR: Reached premature end of file on line ',lineNum,'.'
       call echoControlFile(6)
-      stop
+      CALL EXIT(1)
       !---------------------------------------------------------------------
       end subroutine readStations
       !---------------------------------------------------------------------
@@ -702,11 +702,11 @@ c     arc add nws13 190110
   10  write(6,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
      &  ' gave the following error code: ',ios,'.'
       call echoControlFile(6)
-      stop
+      CALL EXIT(1)
  20   write(6,'(a,i0,a)') 'ERROR: Reached premature end of file on line '
      & ,lineNum,'.'
       call echoControlFile(6)
-      stop
+      CALL EXIT(1)
       !---------------------------------------------------------------------
       end subroutine parseWaveAndIceTimeIncrements
       !---------------------------------------------------------------------
@@ -830,7 +830,7 @@ c     arc add nws13 190110
       case default
          write(echoUnit,'(a,i0,a)') 'ERROR: The value of nws is ',nws,
      &    ' but this is not a valid value.'
-         stop
+         CALL EXIT(1)
       end select
       if (nrs.gt.0) then
           write(rstimincLine,*) rstiminc
@@ -890,7 +890,7 @@ c     arc add nws13 190110
       case default
          write(echoUnit,'(a,i0,a)') 'ERROR: The value of nramp is ',nramp,
      &    ' but this is not a valid value.'
-         stop
+         CALL EXIT(1)
       end select
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       write(echoUnit,fmt='(3f6.3, 10x, "! a00, b00, c00")') a00,b00,c00
@@ -916,7 +916,7 @@ c     arc add nws13 190110
       case default
          write(echoUnit,'(a,i0,a)') 'ERROR: the value of nolibf is ',nolibf,
      &    ' but this is not a valid value.'
-         stop
+         CALL EXIT(1)
       end select
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if (im.eq.10) then

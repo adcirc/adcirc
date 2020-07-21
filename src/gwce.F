@@ -3087,7 +3087,7 @@ C
         call msg_fini()
       endif
 #endif
-      stop 
+      CALL EXIT(1)
 C
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable

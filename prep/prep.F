@@ -771,7 +771,7 @@ C        attributes file is the same as in the grid file (unit 14).
      &        //,1X,'The number of nodes in the grid file (unit 14) and'
      &        /,1X,'the nodal attributes file (unit 13) must match.',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-            STOP                   ! We're toast.
+            CALL EXIT(1)                   ! We're toast.
          ENDIF
 C
 C        Transcribe header information into subdomain unit 13 files
@@ -911,7 +911,7 @@ C
          case default
             write(6,'(a,i0,a)') 'ERROR: Nodal attribute file format ',naType,
      &         ' is not supported by adcprep.'
-           stop
+           CALL EXIT(1)
          end select
          IF (Mode.eq.1) THEN
             DO iproc=startProc,endProc
@@ -930,7 +930,7 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
          IF (curAttrInd.EQ.-1) THEN
             WRITE(6,'(A)')'ERROR: Nodal attribute in body could not be '
      &                    //'found in header: '//curAttrName
-            STOP
+            CALL EXIT(1)
          ENDIF
          ALLOCATE(attrData(numCol(curAttrInd)))!tgaf13mod
          select case(naType)
@@ -941,7 +941,7 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
          case default
             write(6,'(a,i0,a)') 'ERROR: Nodal attribute file format ',naType,
      &         ' is not supported by adcprep.'
-           stop
+           CALL EXIT(1)
          end select
          IF (Mode.eq.1) THEN
             DO iproc=startProc,endProc
@@ -971,7 +971,7 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
             case default
                write(6,'(a,i0,a)') 'ERROR: Nodal attribute file format ',naType,
      &         ' is not supported by adcprep.'
-               stop
+               CALL EXIT(1)
             end select
             IF (ITOTPROC(NodeNum).eq.1) THEN
                iproc = IMAP_NOD_GL(1,NodeNum)
@@ -1117,7 +1117,7 @@ C     Perform decomposition over range of subdomains.
                write(6,'(a,a,a)') "ERROR: Subdomain file "
      &             // trim(sdFileName) // " cannot be opened."
                Success = .false.
-               stop
+               CALL EXIT(1)
             endif
          enddo
 C
@@ -1531,7 +1531,7 @@ c          print *, "changed value from ",NVELP(IPROC)," to ",ITEMP
          IF (NVELP(IPROC)+1.GT.MNVEL) THEN
            print *, "NVEL exceeds parameter value MNVEL on PE",IPROC
            print *, "local NVEL value = ",ITEMP
-           stop
+           CALL EXIT(1)
          ENDIF
 C
 C--Construct a LBCODE for each Land Boundary Node of this PE
@@ -3421,7 +3421,7 @@ C           Read header information from full domain unit 24 file
      &          //,1X,'CONSTITUENT NAME AS ABOVE NOT RECOGNISED      '
      &          //,1X,'OR IN THE CORRECT ORDER.                      ',
      &          //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-                STOP                   ! We're toast
+                CALL EXIT(1)                   ! We're toast
             ENDIF
 C
 C           Write header info to the local unit 24
@@ -3535,7 +3535,7 @@ C     can be open at any one time.
          NCOMP = 4 ;
       CASE DEFAULT
          PRINT*, "Error in PREP5354(): ", FUNIT, " is not allowed." ;
-         STOP ; 
+         CALL EXIT(1) ; 
       END SELECT
 C     
 C     
@@ -4479,7 +4479,7 @@ C--   Read in info from global initial condition file
         print *, "number global nodes does not match hotstart file"
         write(*,'(A,I8)') "expected value   = ", nnodg
         write(*,'(A,I8)') "hotstart value = ", np_g_in
-        stop
+        CALL EXIT(1)
       endif
       if (nelg ==  ne_g_in) then
         MNE = nelg
@@ -4487,7 +4487,7 @@ C--   Read in info from global initial condition file
         print *, "number global elements does not match hotstart file"
         write(*,'(A,I8)') "expected value   = ", nelg
         write(*,'(A,I8)') "hotstart value = ", ne_g_in
-        stop
+        CALL EXIT(1)
       endif
 C
 C Allocate local work arrays
@@ -4918,7 +4918,7 @@ C
      &      OPEN(IHOT,FILE=FNAME,ACCESS='DIRECT',RECL=8)
       ELSE
          WRITE(*,1010) FNAME
-         STOP
+         CALL EXIT(1)
       ENDIF
 
 C--   Read in info from global hot start files
@@ -4947,7 +4947,7 @@ C--   Read in info from global hot start files
         print *, "number global nodes does not match hotstart file"
         write(*,'(A,I8)') "expected value   = ", nnodg
         write(*,'(A,I8)') "hotstart value = ", np_g_in
-        stop
+        CALL EXIT(1)
       endif
       if (nelg ==  ne_g_in) then
         MNE = nelg
@@ -4955,7 +4955,7 @@ C--   Read in info from global hot start files
         print *, "number global elements does not match hotstart file"
         write(*,'(A,I8)') "expected value   = ", nelg
         write(*,'(A,I8)') "hotstart value = ", ne_g_in
-        stop
+        CALL EXIT(1)
       endif
       PRINT *, "IMHSF ", IMHSF
 C
@@ -5465,7 +5465,7 @@ C
            OPEN (LOC2(IPROC),FILE=LOCFN,ACCESS='DIRECT',RECL=8)
          ELSE
           WRITE(*,1010) FNAME
-          STOP
+          CALL EXIT(1)
          ENDIF
       ENDDO
 C
