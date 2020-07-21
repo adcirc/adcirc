@@ -3719,7 +3719,7 @@
                IF ( ia1 == N1 ) THEN
                   WRITE(16,*) "Fatal error in PREBCSETUP(): the primary 
      &            and slave node label are identical for the node ", ID1
-                  STOP 'dw' ;
+                  CALL EXIT(1)
                END IF
             ELSE                              
                WRITE(16,*) "Error in PREBCSETUP(): No. neighbors = ", 
@@ -4157,7 +4157,7 @@ C
         CALL MSG_FINI()
       ENDIF
 #endif
-      STOP
+      CALL EXIT(1)
 C
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable
@@ -4263,7 +4263,7 @@ C
            call allMessage(DEBUG,"Return.") 
 #endif
            call unsetMessageSource()
-           STOP                  
+           CALL EXIT(1)          
         END SELECT
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)

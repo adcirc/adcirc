@@ -321,7 +321,7 @@ C
            GOTO 32
         ELSE
            print *, GRID, " not found"
-           STOP
+           CALL EXIT(1)
         ENDIF
       ELSE
   31    WRITE(*,*) 'Enter the name of the ADCIRC UNIT 14 (Grid) file:'
@@ -582,7 +582,7 @@ C
            GOTO 132
         ELSE
            print *, RUNINFO, " not found"
-           STOP
+           CALL EXIT(1)
         ENDIF
       ELSE
  131    WRITE(*,*) 'Enter the name of ADCIRC UNIT 15 (Run Info) file:'
@@ -628,7 +628,7 @@ c....    a non-default value we can determine this was the case.
          found_tbc_nml = .true.
 !         WRITE(*,*) 'THERE WAS A PROBLEM PROCESSING THE TimeBathyControl NAMELIST'
 !         WRITE(*,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.'
-         stop
+         CALL EXIT(1)
       ENDIF
 C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       REWIND(15)
@@ -731,7 +731,7 @@ c....    a non-default value we can determine this was the case.
          found_smag_nml = .true.
 !         WRITE(*,*) 'THERE WAS A PROBLEM PROCESSING THE Smag_Control NAMELIST'
 !         WRITE(*,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCPREP NOW.'
-         stop
+         CALL EXIT(1)
       ENDIF
 C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       REWIND(15)
@@ -809,7 +809,7 @@ C
 c        C3D  = .TRUE.
 c        C3DDSS = .TRUE.
          print *, "DSS model type not presently supported"
-         stop
+         CALL EXIT(1)
       CASE(10)
          C2DDI = .TRUE.
          C2D_PTrans    = .TRUE.
@@ -845,7 +845,7 @@ c        C3DDSS = .TRUE.
            C3DVS  = .TRUE.
          ELSE
             print *, "model type not supported"
-            stop
+            CALL EXIT(1)
          ENDIF
       END SELECT
 C
@@ -882,7 +882,7 @@ C               with pre-computed momnetum dispersion and BPG
 C             ! with pre-computed momentum dispersion and BPG on structured grid
       CASE DEFAULT
          print *, "IDEN=",IDEN," not supported"
-         stop
+         CALL EXIT(1)
       END SELECT
 C
       DO IL=1,4                                     !SKIP OVER NOLIBF-NOLICAT
@@ -1113,7 +1113,7 @@ C
          endif
 7690     if (ios_stations .ne. 0) then
             write(*,*) "Error in Reading Elevation Station File: elev_stat.151"
-            stop  ! there is a stop here
+            CALL EXIT(1)  ! there is a stop here
          endif
          close(151)
       ELSE
@@ -1146,7 +1146,7 @@ C
          endif
 7691     if (ios_stations .ne. 0) then
             write(*,*) "Error in Reading Velocity Station File: vel_stat.151"
-            stop  ! there is a stop here
+            CALL EXIT(1)  ! there is a stop here
          endif
          close(151)
       else
@@ -1180,7 +1180,7 @@ C
             endif
 7692        if (ios_stations .ne. 0) then
                write(*,*) "Error in Reading Concentration Station File: conc_stat.151"
-               stop  ! there is a stop here
+               CALL EXIT(1)  ! there is a stop here
             endif
             close(151)
          else
@@ -1216,7 +1216,7 @@ C
            endif
 7693       if (ios_stations .ne. 0) then
               write(*,*) "Error in Reading MET Station File: met_stat.151"
-              stop  ! there is a stop here
+              CALL EXIT(1)  ! there is a stop here
            endif
            close(151)
         else
@@ -1271,13 +1271,13 @@ C
          WRITE(*,*)'ERROR: NetCDF input or output files were specified.'
          WRITE(*,*) 'but adcprep was not compiled with NetCDF support.'
          WRITE(*,*) 'Please recompile adcprep with NetCDF libraries.'
-         STOP
+         CALL EXIT(1)
       ENDIF
       IF ( (useXDMF.eqv..true.).AND.(XDMF_AVAIL.eqv..false.) ) THEN
          WRITE(*,*)'ERROR: XDMF output files were specified.'
          WRITE(*,*) 'but adcprep was not compiled with XDMF support.'
          WRITE(*,*) 'Please recompile adcprep with XDMF libraries.'
-         STOP
+         CALL EXIT(1)
       ENDIF
 C
 C...THIS SECTION TO LUMP THE GWCE MATRIX

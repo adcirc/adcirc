@@ -55,7 +55,7 @@ C   NCSU Subdomain Modeling variables:
          call openFileForRead(15,'fort.15',ioerror)
          if (ioerror.ne.0) then
             call allMessage(ERROR,'Failed to open fort.15 file.')
-            stop
+            CALL EXIT(1)
          endif
          !
          ! jgf51.42: Add a namelist for the user to control subdomain
@@ -86,7 +86,7 @@ C   NCSU Subdomain Modeling variables:
                close(1015)
             else
                call allMessage(ERROR,'The fort.015 file was not found.')
-               stop
+               CALL EXIT(1)
             endif
          endif
 

@@ -2306,7 +2306,7 @@ C        ! as the full domain elevation harmonic analysis file (fort.53)
 #ifdef CMPI
                CALL MSG_FINI()
 #endif
-               STOP 1
+               CALL EXIT(1)
             ENDIF
          ENDDO
 #endif
@@ -3190,7 +3190,7 @@ C
          DO i=1,7
             IF (netcdf_error(i).eqv..true.) THEN
                CALL msg_fini()
-               STOP 1
+               CALL EXIT(1)
             ENDIF
          ENDDO
 #endif
@@ -5304,7 +5304,7 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
 #ifdef CMPI
           CALL MSG_FINI()
 #endif
-         STOP 1
+         CALL EXIT(1)
       ENDIF
 
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -5422,7 +5422,7 @@ C     If we have exceeded the user's limit, terminate the run.
 #ifdef CMPI
          CALL MSG_FINI()
 #endif
-         STOP 1
+         CALL EXIT(1)
       ENDIF
 C
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -5459,7 +5459,7 @@ C
         CALL MSG_FINI()
       ENDIF
 #endif
-      STOP 1
+      CALL EXIT(1)
 C
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable

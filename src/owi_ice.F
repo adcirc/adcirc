@@ -95,7 +95,7 @@ C***********************************************************************
 #ifdef CMPI
         call msg_fini()
 #endif
-        stop 1
+        CALL EXIT(1)
       endif
 
       ! Read the number of blank snaps to be inserted before OWI ice fields start
@@ -190,7 +190,7 @@ C***********************************************************************
       call msg_fini()
 #endif
       write(*,'(a)') 'OWI_ICE READ ERROR (1)'
-      stop 1
+      CALL EXIT(1)
 
       END SUBROUTINE
 
@@ -307,7 +307,7 @@ C***********************************************************************
 #ifdef CMPI
         call msg_fini()
 #endif
-        STOP 1
+        CALL EXIT(1)
       endif
 
       ! Update coordinate mapping coefficients if necessary
@@ -451,7 +451,7 @@ c      end if
 #ifdef CMPI
       call msg_fini()
 #endif
-      STOP 1
+      CALL EXIT(1)
 
 10000 continue
 
@@ -492,7 +492,7 @@ c      end if
       call msg_fini()
 #endif
       write(*,'(a)') 'OWI_ICE READ ERROR (2)'
-      stop 1
+      CALL EXIT(1)
 
       END SUBROUTINE
 
