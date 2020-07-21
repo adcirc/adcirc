@@ -2311,7 +2311,11 @@ c...     wjp additions for Ali Dispersion Control Namelist
 c...     wjp additions for density Control Namelist
          IF (FOUND_DENSITY_NML) then  !If there was a namelist in the original fort.15 put it in the decomp 15's
             write(15,*) '! -- Begin density Control NameList --'
-            write(15,densityControl)
+            write(15,'(3A)') '&densityControl densityRunType="',
+     &			     TRIM(densityRunType),'",'
+            write(15,'(3A)') '  densityFilename="',TRIM(densityFilename),'"' 
+            write(15,'(A,I0,A)') '  densityTimeIterator=',densityTimeIterator,","
+            write(15,'(3A)') '  densityForcingType="',TRIM(densityForcingType),'"   /'
             write(15,*) '! -- End density Control NameList --'
          ENDIF
 
