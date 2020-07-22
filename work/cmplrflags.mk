@@ -289,6 +289,16 @@ ifeq ($(compiler),intel)
         CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX  -xAVX 
         FLIBS   := $(INCDIRS) -xAVX
      endif
+  endif
+  ifeq ($(MACHINENAME),queenbeeC) 
+     FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xCORE-AVX512 -assume buffered_io
+     CFLAGS  := $(INCDIRS) -O3 -DLINUX -xCORE-AVX512 
+     FLIBS   := $(INCDIRS) -xCORE-AVX512 
+     ifeq ($(DEBUG),trace)
+        FFLAGS1 := $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -xCORE-AVX512 -assume buffered_io
+        CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX -xCORE-AVX512 
+        FLIBS   := $(INCDIRS) -xCORE-AVX512 
+     endif
   ifeq ($(MACHINENAME),supermic) 
      FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xAVX -assume buffered_io
      CFLAGS  := $(INCDIRS) -O3 -DLINUX -xAVX
@@ -331,7 +341,11 @@ ifeq ($(compiler),intel)
      # netcdf_fortran modules prior to compiling or executing ADCIRC
      ifeq ($(MACHINENAME),queenbee)
         FLIBS       := $(FLIBS) -L/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0/lib -lnetcdff -lnetcdf
-        NETCDFHOME    :=/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0
+        NETCDFHOME  :=/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0
+     endif
+     ifeq ($(MACHINENAME),queenbeeC)
+        FLIBS       := $(FLIBS) -L/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0/lib -lnetcdff -lnetcdf
+        NETCDFHOME  :=/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0
      endif
      ifeq ($(MACHINENAME),supermic)
         FLIBS      := $(FLIBS) -L /usr/local/packages/netcdf_fortran/4.2/INTEL-140-MVAPICH2-2.0/lib -lnetcdff -L/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0/lib -lnetcdf -lnetcdf -liomp5 -lpthread
