@@ -8767,7 +8767,18 @@ C----------------------------------------------------------------------
                yy = rad2deg*sfea(i)
                call bl_interp2(nxp,nyp,lon,lat,xx,yy,indt,wt)
                indp(ii,:,i) = indt
-               weightsp(ii,:,i) = wt 
+               weightsp(ii,:,i) = wt
+               if (i.gt.1) cycle 
+               write(16,*) 'NWS=14 Interpolating check: xx',xx,'yy',yy
+               write(16,*) 'Lon',lon(indt(1),indt(2)),
+     &                           lon(indt(3),indt(2)),
+     &                           lon(indt(1),indt(4)),
+     &                           lon(indt(3),indt(4))
+               write(16,*) 'Lat',lat(indt(1),indt(2)),
+     &                           lat(indt(3),indt(2)),
+     &                           lat(indt(1),indt(4)),
+     &                           lat(indt(3),indt(4))
+               write(16,*) 'Weights',wt
             enddo
             deallocate(lon,lat)
 !            srtI(ii,:) = [minval(indp(ii,1,:)),minval(indp(ii,2,:))]
@@ -8919,6 +8930,7 @@ C----------------------------------------------------------------------
             call Check_err(nf90_inquire_variable(NC_ID,Lat_ID,
      &                     ndims=ndims))
             call Check_err(NF90_INQ_VARID(NC_ID,Lonvar,Lon_ID))
+            write(16,*) 'Lon/Lat dimensions = ',ndims
             if (ndims.eq.3) then
                call Check_err(NF90_GET_VAR(NC_ID,Lat_ID,data22,
      &                        start=[1, 1, NT],count=[NX, NY, 1]))
