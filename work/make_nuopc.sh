@@ -40,7 +40,7 @@ export MAKELEVEL=0
 make NETCDF=enable NETCDF4=enable libadc.a 
 
 # build adcric nuopc
-cd  ../cpl/nuopc
+cd  ../thirdparty/nuopc
 make -f makefile.adc_cap.nuopc nuopc
 
 cd $ADCDIR
@@ -52,10 +52,6 @@ mkdir -p $ADCDIR/util
 cd $ADCDIR/../util/estofs_tide_fac/
 make
 cp -f estofs_tide_fac $ADCDIR/util/tidefac
-
-
-
-
 
 
 
