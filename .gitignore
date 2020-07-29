@@ -31,3 +31,4 @@ swan/*.f
 build/
 config.h
 work/util
+thirdparty/nuopc/adcirc.mk
