@@ -902,6 +902,7 @@ C.....tcm v49.64.01 Additions for ice
          NWS=INT((ABS(NWS)- NCICE*1000 - NRS*100))*INT(NWS/ABS(NWS))
       ENDIF
 
+
 C     jgfdebug46.02 added NWS=45
 C     jgf46.02 Added NWS=8.
 C     jgf46.16 merged:
@@ -917,8 +918,9 @@ Casey 180318: Added NWS=13
      &       (ABS(NWS).NE.8).AND.(ABS(NWS).NE.15).AND. !jgf50.38.05 Added NWS=15
      &       (ABS(NWS).NE.12).AND.(ABS(NWS).NE.13).AND.
      &       (ABS(NWS).NE.14).AND.(ABS(NWS).NE.19).AND.
-     &       (ABS(NWS).NE.20) .AND.(abs(NWS).ne.30).and.(NWS.NE.10).and.
-     &       (ABS(NWS).NE.29).and. (abs(NWS).ne.16))  THEN
+     &       (ABS(NWS).NE.20).AND.(abs(NWS).ne.30).and.(NWS.NE.10).and.
+     &       (ABS(NWS).NE.29).and. (abs(NWS).ne.16).and.
+     &       (ABS(NWS).NE.17))THEN 
            print *,"ERROR: Value for NWS not supported by parallel code"
            CALL EXIT(1)
         ENDIF
@@ -1080,6 +1082,21 @@ C     parse out the WTIMINC or other parameters.
          READ(15,80) WSMSG1
       ENDIF
 C
+C saeed added  TODO: I should remove this partialy: cap should provide the time of data exchanges
+      IF (ABS(NWS).EQ.17) THEN
+         READ(15,80) WSMSG1
+         print *, 'WSMSG1 ' , WSMSG1
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) THEN
+             READ(WSMSG1,*) WTIMINC
+         ELSEIF ((NCICE.EQ.0).AND.(NRS.GE.1)) THEN
+             READ(WSMSG1,*) WTIMINC , RSTIMINC
+         ELSEIF ((NCICE.GE.1).AND.(NRS.EQ.0)) THEN
+             READ(WSMSG1,*) WTIMINC , CICE_TIMINC
+         ELSEIF ((NCICE.GE.1).AND.(NRS.GE.1)) THEN
+             READ(WSMSG1,*) WTIMINC , RSTIMINC, CICE_TIMINC
+         END IF
+      ENDIF
+
       IF(ABS(NWS).EQ.6) THEN
          READ(15,80) WSMSG1
 C..... tcm v49.64.01 additions for ICE

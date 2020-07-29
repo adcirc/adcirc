@@ -1,5 +1,5 @@
 # SRCDIR is set in makefile or on the compile line
-INCDIRS := -I . -I $(SRCDIR)/prep
+INCDIRS := -I . -I$(SRCDIR)/prep
 
 ########################################################################
 # Compiler flags for Linux operating system on 64bit x86 CPU
@@ -229,7 +229,7 @@ ifeq ($(compiler),intel)
   PPFC            :=  ifort
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+  FFLAGS1       := $(INCDIRS) -O2 -g -traceback -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
   CFLAGS        := $(INCDIRS) -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
   FLIBS         :=
   ifeq ($(DEBUG),full)
@@ -280,6 +280,7 @@ ifeq ($(compiler),intel)
         CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX -xSSE4.2
         FLIBS   := $(INCDIRS) -xSSE4.2
      endif
+  endif
   ifeq ($(MACHINENAME),supermic) 
      FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xAVX -assume buffered_io
      CFLAGS  := $(INCDIRS) -O3 -DLINUX -xAVX
@@ -289,7 +290,6 @@ ifeq ($(compiler),intel)
         CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX  -xAVX 
         FLIBS   := $(INCDIRS) -xAVX
      endif
-  endif
   endif
   #
   #@jasonfleming Added to fix bus error on hatteras@renci
