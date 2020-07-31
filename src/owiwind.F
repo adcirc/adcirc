@@ -72,13 +72,13 @@
         USE GLOBAL,ONLY : NSCREEN, ScreenUnit, DEBUG, ECHO, INFO,
      &     WARNING, ERROR, screenMessage, logMessage, allMessage,
      &     setMessageSource, unsetMessageSource, scratchMessage,
-     &     openFileForRead, Flag_ElevError
+     &     openFileForRead, Flag_ElevError, ITIME
+
 
 ! DW: AMPI - temporarily
-!#ifdef CMPI
-!        USE MESSENGER,ONLY : MSG_FINI
-!
-!#endif  
+#ifdef CMPI
+        USE MESSENGER,ONLY : MSG_FINI
+#endif  
         IMPLICIT NONE
 
         integer  :: nPowellSearchDomains = -1 !< Number of search domains for Powell wind drag
@@ -214,7 +214,9 @@
         errorIO=0
 
         ! Allocate the owi arrays
-        allocate(owi(1:abs(numSets)))
+        if ( .NOT. allocated(owi) ) then 
+           allocate(owi(1:abs(numSets)))
+        endif
         call owi_setFilenames(owi,iounit,numSets)
         close(iounit+CK_LUN)
 
@@ -269,7 +271,7 @@
       SUBROUTINE NWS12GET(WVNX,WVNY,PRN,NP,PRdeflt)
 !-----------------------------------------------------------------------
         USE SIZES,ONLY: MYPROC,MNPROC,GBLINPUTDIR
-        USE GLOBAL,ONLY: RHOWAT0, G
+        USE GLOBAL,ONLY: RHOWAT0, G 
         IMPLICIT NONE
         INTEGER,intent(in)     :: NP
         REAL(SZ),intent(out)   :: WVNX(:),WVNY(:),PRN(:)
@@ -306,7 +308,6 @@
            call allMessage(DEBUG,"Return.")
 #endif  
            call unsetMessageSource()
-           RETURN
         endif
 
         DO S = 1,numSets
@@ -338,23 +339,27 @@
         do i=1,NP
            uvpHasBeenSet = .false.
 
+           uu = 0 ; 
+           vv = 0 ;
+           pp = Prdeflt*100D0/RHOWATG
+
+
            call owi_interpolateToMesh(i,uu,vv,pp,uvpHasBeenSet)
 
            if (.not.uvpHasBeenSet) then
               WVNX(I)=0.d0
               WVNY(I)=0.d0
               PRN(I)=PRdeflt*100.d0/RHOWATG
-           else
+           else 
               !Convert millibars to m of water
               PRN(i)  = 100.d0*PP/RHOWATG
 
+
               ! Apply wind velocity multiplier
-              ! and save to arrays
+!              ! and save to arrays
               WVNX(i) = uu * windMultiplier
               WVNY(i) = vv * windMultiplier
-
-           endif
-
+          endif
         enddo
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -494,10 +499,15 @@
         ! Read grid specifications/date in pressure file
         filename = owi(idx)%pressure_file
         iounit = owi(idx)%iounit_pressure
+
         write(errorVar,'(A,I0)') "read grid specifications/date in 
      &                Oceanweather pressure file, domain ",idx
-        read (owi(idx+CK_LUN)%iounit_pressure,11,end=10000,err=9999,iostat=errorIO)
+C        read (owi(idx+CK_LUN)%iounit_pressure,11,end=10000,err=9999,iostat=errorIO)
+C     &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
+
+        read (owi(idx)%iounit_pressure+CK_LUN,11,end=10000,err=9999,iostat=errorIO)
      &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
+
         call check_owi_err(errorIO,errorVar,filename,iounit)
 
         if(idx.eq.1)then
@@ -515,8 +525,10 @@
         ! Read grid specifications/date in wind file
         filename = owi(idx)%wind_file
         iounit = owi(idx)%iounit_wind
-        WRITE(errorVar,'(A,I0)') "read grid specifications/date in Oceanweather wind file, domain ",idx
-        read (owi(idx+CK_LUN)%iounit_wind,11,end=10000,err=9999,iostat=errorIO)
+
+        WRITE(errorVar,'(A,I0)') "read grid specifications/date"//
+     &   " in Oceanweather wind file, domain ",idx
+        read (owi(idx)%iounit_wind+CK_LUN,11,end=10000,err=9999,iostat=errorIO)
      &        iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
         call check_owi_err(errorIO,errorVar,filename,iounit)
 
@@ -524,11 +536,12 @@
         if(iLatp.ne.iLatw.or.iLongp.ne.iLongw.or.dxp.ne.dxw.or.
      &       dyp.ne.dyw.or.swlatp.ne.swlatw.or.swlongp.ne.swlongw.or.
      &       iCYMDHp.ne.iCYMDHw.or.iMinp.ne.iMinw) then
-           call allMessage(ERROR,
-     &    "Grid specifications/date in OWI win and pre files must match.")
+           call allMessage(ERROR, "Grid specifications/date in OWI wind"//
+     &                " and pre files must match.")
            errorVar = ""
            call check_owi_err(errorIO,errorVar,filename,iounit)
         endif
+
 
         if(owi(idx)%isnap.gt.1) then
           if(iLatp.ne.owi(idx)%iLat.or.iLongp.ne.owi(idx)%iLon.or.
@@ -553,7 +566,8 @@
            owi(idx)%dlat = dyp
            owi(idx)%swlat = swlatp
            owi(idx)%swlon = swlongp
-           WRITE(errorVar,'(A,I0)') "Updating grid coordinate mapping coefficients, domain ",idx
+           WRITE(errorVar,'(A,I0)') "Updating grid coordinate mapping"//
+     &        "coefficients, domain ",idx
            call logMessage(INFO,errorVar)
            call nws12interp(idx,np)
         endif
@@ -561,22 +575,26 @@
         ! Read basin scale atmospheric pressure snapshot
         filename = owi(idx)%pressure_file
         iounit =  owi(idx)%iounit_pressure
-        WRITE(errorVar,'(A,I0)') "reading atmospheric pressure snapshot, domain ",idx
-        read(owi(idx+CK_LUN)%iounit_pressure,22,end=10000,err=9999,iostat=errorIO)
+        WRITE(errorVar,'(A,I0)') "reading atmospheric pressure"//
+     &    " snapshot, domain ",idx
+        read(owi(idx)%iounit_pressure+CK_LUN,22,end=10000,err=9999,iostat=errorIO)
      &     ((owi(idx)%p(i,j),i=1,owi(idx)%iLon),j=1,owi(idx)%iLat)
         call check_owi_err(errorIO,errorVar,filename,iounit)
 
         ! Read basin scale snapshot of u/v components of the wind
         filename = owi(idx)%wind_file
         iounit = owi(idx)%iounit_wind
-        WRITE(errorVar,'(A,I0)') "reading wind u-velocity snapshot, domain ",idx
-        read(owi(idx+CK_LUN)%iounit_wind,22,end=10000,err=9999,iostat=errorIO)
+        WRITE(errorVar,'(A,I0)') "reading wind u-velocity"//
+     &    " snapshot, domain ",idx
+        read(owi(idx)%iounit_wind+CK_LUN,22,end=10000,err=9999,iostat=errorIO)
      &     ((owi(idx)%u(i,j),i=1,owi(idx)%iLon),j=1,owi(idx)%iLat)
         call check_owi_err(errorIO,errorVar,filename,iounit)
+
         filename = owi(idx)%wind_file
         iounit = owi(idx)%iounit_wind
-        WRITE(errorVar,'(A,I0)') "reading wind v-velocity snapshot, domain ",idx
-        read(owi(idx+CK_LUN)%iounit_wind,22,end=10000,err=9999,iostat=errorIO)
+        WRITE(errorVar,'(A,I0)') "reading wind v-velocity"//
+     &    " snapshot, domain ",idx
+        read(owi(idx)%iounit_wind+CK_LUN,22,end=10000,err=9999,iostat=errorIO)
      &     ((owi(idx)%v(i,j),i=1,owi(idx)%iLon),j=1,owi(idx)%iLat)
         call check_owi_err(errorIO,errorVar,filename,iounit)
 
@@ -747,6 +765,11 @@
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
             call allMessage(DEBUG,"Enter.")
 #endif
+
+            IF( .NOT. ALLOCATED(this%p)) ALLOCATE(this%p(this%ilon,this%ilat))
+            IF( .NOT. ALLOCATED(this%u)) ALLOCATE(this%u(this%ilon,this%ilat))
+            IF( .NOT. ALLOCATED(this%v)) ALLOCATE(this%v(this%ilon,this%ilat))
+            
             IF((SIZE(this%p,1).NE.this%iLon).OR.(SIZE(this%p,2).NE.this%iLat))THEN
                 CALL owi_deallocate(this)
                 ALLOCATE(this%p(this%ilon,this%ilat))
@@ -979,18 +1002,20 @@
          implicit none
 
          INTEGER:: I
-         LOGICAL:: iopened
+         LOGICAL:: iopenned
 
          DO i = 1, numSets
           !
           iopenned = .FALSE. ;
-          INQUIRE( UNIT = owi(i)%iounit_wind + CK_LUN, OPENED = iopened ) ;
+          INQUIRE( UNIT = owi(i)%iounit_wind + CK_LUN, OPENED = iopenned ) ;
+
+
           IF ( iopenned ) THEN 
             CLOSE( owi(i)%iounit_wind + CK_LUN ) ;
           END IF
 
-          ioppened = .FALSE. ;
-          INQUIRE( UNIT = owi(i)%iounit_pressure + CK_LUN, OPENED = iopened ) ;
+          iopenned = .FALSE. ;
+          INQUIRE( UNIT = owi(i)%iounit_pressure + CK_LUN, OPENED = iopenned ) ;
           IF ( iopenned ) THEN 
             CLOSE( owi(i)%iounit_pressure + CK_LUN ) ;
           END IF
@@ -998,7 +1023,7 @@
          END DO
 
          return ;
-      end subroutime owiwind_closefiles
+      end subroutine owiwind_closefiles
 
 
 
@@ -1071,8 +1096,12 @@
            call allMessage(DEBUG,"Enter.")
 #endif
            do i=1,numSets
-              ALLOCATE(this(i)%interpPoints(numNodes,2))
-              ALLOCATE(this(i)%weight(numNodes,4))
+              if ( .not. allocated(this(i)%interpPoints) ) then
+                 ALLOCATE(this(i)%interpPoints(numNodes,2))
+              endif
+              if ( .not. allocated(this(i)%weight) ) then
+                 ALLOCATE(this(i)%weight(numNodes,4) )
+              endif
            enddo
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -1112,6 +1141,7 @@
       WRITE(16+CK_LUN,'(A)') ''
       WRITE(16+CK_LUN,'(A,I0)') 'WIND MAPPING UPDATED FOR REGION ',IDX
       WRITE(16+CK_LUN,'(A)') ''
+
 
       CALL owi_allocate(owi(idx))
       CALL owi_generateCoordinates(owi(idx),lat,lon)
@@ -1267,11 +1297,11 @@
          endif
          call allMessage(ERROR,"ADCIRC execution terminated.")
 
-! DW, AMPI temporarily
-!#ifdef CMPI
-!         Flag_ElevError = .true.  !overloading this flag to help kill all mpi proc
-!         call msg_fini()
-!#endif
+
+#ifdef CMPI
+         Flag_ElevError = .true.  !overloading this flag to help kill all mpi proc
+         call msg_fini()
+#endif
          stop
       endif
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)

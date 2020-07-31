@@ -738,6 +738,10 @@ C           or higher species (was opposite beforehand)
 #endif
 C           WJP: Rewritten so that we have a general formula for all
 C           species
+           
+C            IF ( MyProc == 0 ) THEN
+C                PRINT*, "My PROC, NA ", MyProc, J, NTIF, NA ;
+C            END IF  
             DO I = 1,NP
                 ARGTP   = ARGT + NA*SLAM(I)
                 ARGSALT = ARGT - SALTPHA(J,I)

@@ -85,55 +85,57 @@ C
 
 C---------------------end of data declarations--------------------------------C
 
-C----------------------------------------------------------------------
-C   S U B R O U T I N E    A B O U T _ T O _ M I G R A T E
-C----------------------------------------------------------------------
-C  Routine called by AMPI before migrating, should close all open files.
-C----------------------------------------------------------------------
-      SUBROUTINE ABOUT_TO_MIGRATE()
-      IMPLICIT NONE
-
-      INTEGER :: RANK, IERR, FLAG, OLD_PE
-
-#ifdef AMPI_COMP
-      CALL MPI_COMM_RANK(RANK, MPI_COMM_ADCIRC, IERR)
-      CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, OLD_PE, FLAG, IERR)
-
-      PRINT *,"Rank ",RANK," about to migrate from PE ",OLD_PE
-
-C     TODO: close files temporarily during migration
-      CALL closeLogFile() ;
-      ! will need clsoe input files
-#endif
-
-      END SUBROUTINE ABOUT_TO_MIGRATE
-
-C----------------------------------------------------------------------
-C   S U B R O U T I N E    J U S T _ M I G R A T E D
-C----------------------------------------------------------------------
-C  Routine called by AMPI after migrating, should re-open all closed files.
-C----------------------------------------------------------------------
-      SUBROUTINE JUST_MIGRATED()
-      IMPLICIT NONE
-
-      INTEGER :: RANK, IERR, FLAG, NEW_PE
-
-#ifdef AMPI_COMP
-      CALL MPI_COMM_RANK(RANK, MPI_COMM_ADCIRC, IERR)
-      CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, NEW_PE, FLAG, IERR)
-
-      PRINT *,"Rank ",RANK," just migrated to PE ",NEW_PE
-
-C     TODO: re-open files closed temporarily during migration
-      CALL openLogFile() ;
-
-!     will need to reopen input file and return to the point where
-!     it is closed.
-      
-#endif
-      
-      END SUBROUTINE JUST_MIGRATED
-
+!C----------------------------------------------------------------------
+!C   S U B R O U T I N E    A B O U T _ T O _ M I G R A T E
+!C----------------------------------------------------------------------
+!C  Routine called by AMPI before migrating, should close all open files.
+!C----------------------------------------------------------------------
+!      SUBROUTINE ABOUT_TO_MIGRATE()
+!      IMPLICIT NONE
+!
+!      INTEGER :: RANK, IERR, FLAG, OLD_PE
+!
+!#ifdef AMPI_COMP
+!      CALL MPI_COMM_RANK(RANK, MPI_COMM_ADCIRC, IERR)
+!      CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, OLD_PE, FLAG, IERR)
+!
+!      PRINT *,"Rank ",RANK," about to migrate from PE ",OLD_PE
+!
+!C     TODO: close files temporarily during migration
+!      CALL closeLogFile() ;
+!      ! will need clsoe input files
+!#endif
+!
+!      END SUBROUTINE ABOUT_TO_MIGRATE
+!
+!
+!C----------------------------------------------------------------------
+!C   S U B R O U T I N E    J U S T _ M I G R A T E D
+!C----------------------------------------------------------------------
+!C  Routine called by AMPI after migrating, should re-open all closed files.
+!C----------------------------------------------------------------------
+!      SUBROUTINE JUST_MIGRATED()
+!      IMPLICIT NONE
+!
+!      INTEGER :: RANK, IERR, FLAG, NEW_PE
+!
+!#ifdef AMPI_COMP
+!      CALL MPI_COMM_RANK(RANK, MPI_COMM_ADCIRC, IERR)
+!      CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, NEW_PE, FLAG, IERR)
+!
+!      PRINT *,"Rank ",RANK," just migrated to PE ",NEW_PE
+!
+!C     TODO: re-open files closed temporarily during migration
+!      CALL openLogFile() ;
+!
+!!     will need to reopen input file and return to the point where
+!!     it is closed.
+!      
+!#endif
+!      
+!      END SUBROUTINE JUST_MIGRATED
+!
+!
 
 C----------------------------------------------------------------------
 C   S U B R O U T I N E    M S G _ I N I T 
@@ -146,12 +148,29 @@ C   (4)  get MPI rank of processor
 C   (5)  initialize adcirc COMM communicator MPI_COMM_WORLD
 C  vjp  10/3/2006
 C----------------------------------------------------------------------
-      SUBROUTINE MSG_INIT (MPI_COMM)
-      IMPLICIT NONE
+C      SUBROUTINE MSG_INIT( MPI_COMM )
+C  DW: Alternative option (?) so that it is not necessary to move this subroutine
+C      to a separate file.  
+C
+      SUBROUTINE MSG_INIT( MPI_COMM, ABOUT_TO_MIGRATE, JUST_MIGRATED )  
+       IMPLICIT NONE
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
-      INTEGER, OPTIONAL :: MPI_COMM
+  
+       !c Dummy variables c!      
+       INTEGER, OPTIONAL:: MPI_COMM
+       OPTIONAL ABOUT_TO_MIGRATE, JUST_MIGRATED
+
+       INTERFACE 
+         SUBROUTINE ABOUT_TO_MIGRATE()
+           IMPLICIT NONE
+         END SUBROUTINE ABOUT_TO_MIGRATE
+         SUBROUTINE JUST_MIGRATED( )
+            IMPLICIT NONE
+         END SUBROUTINE JUST_MIGRATED
+       END INTERFACE
+
       INTEGER :: I
       INTEGER, ALLOCATABLE :: RANKS(:)  ! array of mpi ranks for compute processors
       INTEGER :: SENDBUF, RECVBUF
@@ -174,12 +193,19 @@ C
 #endif
       IF (PRESENT(MPI_COMM)) THEN
 C.......Duplicate communicator passed from outside
-        CALL MPI_COMM_DUP (MPI_COMM,MPI_COMM_ADCIRC,IERR)
+        CALL MPI_COMM_DUP (MPI_COMM, MPI_COMM_ADCIRC, IERR)
+!--- DW: mental node: may need it here too 
+#ifdef AMPI_COMP
+C.......Register aboutToMigrate and justMigrated callbacks with AMPI
+        CALL AMPI_REGISTER_ABOUT_TO_MIGRATE(ABOUT_TO_MIGRATE)
+        CALL AMPI_REGISTER_JUST_MIGRATED(JUST_MIGRATED)
+#endif
+!--- DW 
       ELSE
 C.......Initialize MPI
         CALL MPI_INIT (IERR)
 C.......Duplicate communicator
-        CALL MPI_COMM_DUP (MPI_COMM_WORLD,MPI_COMM_ADCIRC,IERR)
+        CALL MPI_COMM_DUP (MPI_COMM_WORLD, MPI_COMM_ADCIRC, IERR)
 #ifdef AMPI_COMP
 C.......Register aboutToMigrate and justMigrated callbacks with AMPI
         CALL AMPI_REGISTER_ABOUT_TO_MIGRATE(ABOUT_TO_MIGRATE)
@@ -272,13 +298,157 @@ C...     Create communicators for global file writings
 C---------------------------------------------------------------------      
       END SUBROUTINE MSG_INIT
 C---------------------------------------------------------------------
+ 
 
+!
+! Original
+!
+!C----------------------------------------------------------------------
+!C   S U B R O U T I N E    M S G _ I N I T 
+!C----------------------------------------------------------------------
+!C  Routine performs following steps:
+!C   (1)  define mpi data types to be used
+!C   (2)  initialize MPI,
+!C   (3)  get number of processors,
+!C   (4)  get MPI rank of processor
+!C   (5)  initialize adcirc COMM communicator MPI_COMM_WORLD
+!C  vjp  10/3/2006
+!C----------------------------------------------------------------------
+!      SUBROUTINE MSG_INIT (MPI_COMM)
+!      IMPLICIT NONE
+!#ifndef HAVE_MPI_MOD
+!      include 'mpif.h'
+!#endif
+!      INTEGER, OPTIONAL :: MPI_COMM
+!      INTEGER :: I
+!      INTEGER, ALLOCATABLE :: RANKS(:)  ! array of mpi ranks for compute processors
+!      INTEGER :: SENDBUF, RECVBUF
+!      INTEGER :: IRANK_SLEEP(2)        !st3 100711  for hsfile
+!C
+!      call setMessageSource("msg_init")
+!#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+!      call screenMessage(DEBUG,"Enter.") ! log to screen; don't have log dirname
+!#endif
+!C
+!      subdomainFatalError = .false.
+!#ifdef REAL4
+!      REALTYPE = MPI_REAL
+!      DBLETYPE = MPI_DOUBLE_PRECISION
+!      float_type = REALTYPE                    ! used in globalio
+!#else
+!      REALTYPE = MPI_DOUBLE_PRECISION
+!      DBLETYPE = MPI_DOUBLE_PRECISION
+!      float_type = REALTYPE                    ! used in globalio
+!#endif
+!      IF (PRESENT(MPI_COMM)) THEN
+!C.......Duplicate communicator passed from outside
+!        CALL MPI_COMM_DUP (MPI_COMM,MPI_COMM_ADCIRC,IERR)
+!      ELSE
+!C.......Initialize MPI
+!        CALL MPI_INIT (IERR)
+!C.......Duplicate communicator
+!        CALL MPI_COMM_DUP (MPI_COMM_WORLD,MPI_COMM_ADCIRC,IERR)
+!#ifdef AMPI_COMP
+!C.......Register aboutToMigrate and justMigrated callbacks with AMPI
+!        CALL AMPI_REGISTER_ABOUT_TO_MIGRATE(ABOUT_TO_MIGRATE)
+!        CALL AMPI_REGISTER_JUST_MIGRATED(JUST_MIGRATED)
+!#endif
+!      ENDIF
+!
+!      CALL MPI_COMM_SIZE (MPI_COMM_ADCIRC,MNALLPROC,IERR)   ! Get number of procs
+!      CALL MPI_COMM_RANK (MPI_COMM_ADCIRC,MYPROC,IERR)   ! Get MPI rank
+!
+!      MNPROC = MNALLPROC - MNWPROC             ! MNALLPROC = MNPROC + MNWPROC
+!     &                   - MNWPROH             !             + MNWPROH  !st3 100711 for hsfile
+!
+!
+!      ALLOCATE(RANKS(MNPROC+1))
+!
+!C...  Create a communicator for computation
+!      DO I=1,MNPROC
+!         RANKS(I) = I-1
+!      ENDDO
+!      !
+!      ! jgf51.21.27: Create group and communicator consisting
+!      ! only of compute processors
+!      CALL MPI_COMM_GROUP(MPI_COMM_ADCIRC,GROUP_WORLD,IERR)
+!      CALL MPI_GROUP_INCL(GROUP_WORLD,MNPROC,RANKS,GROUP_COMP,IERR)
+!      CALL MPI_COMM_CREATE(MPI_COMM_ADCIRC,GROUP_COMP,COMM_COMP,IERR)
+!      WRITER_ID = 0
+!      !
+!      ! if we have dedicated writer processors, then for each one
+!      ! create a group and communicator that includes
+!      ! that one dedicated writer processor and all the compute 
+!      ! processors ... so if we have 4 dedicated writer processors
+!      ! there will be 4 writer communicators and 4 writer groups
+!      ! ... in each one of these the writer is the highest rank processor
+!      ! in the group (the writer will be of rank mnproc)
+!      IF(MNWPROC > 0) THEN
+!C...     Allocate memory for groups and communicators
+!         ALLOCATE(GROUP_WRITER(MNWPROC),COMM_WRITER(MNWPROC))
+!C...     Create communicators for global file writings
+!         DO I=1,MNWPROC
+!            RANKS(MNPROC+1) = MNPROC - 1 + I
+!            CALL MPI_GROUP_INCL(GROUP_WORLD,MNPROC+1,RANKS,
+!     &                        GROUP_WRITER(I),IERR)
+!            CALL MPI_COMM_CREATE(MPI_COMM_ADCIRC,GROUP_WRITER(I),
+!     &                        COMM_WRITER(I),IERR)
+!
+!            IF(MYPROC == MNPROC - 1 + I) THEN
+!               WRITER_ID = I
+!            ENDIF
+!         ENDDO
+!      ENDIF
+!!st3 for hsfile 05.14.2010
+!#ifdef ADCNETCDF
+!      MNWPROH = 0 !jgfdebug20120215: why is this here?
+!#endif
+!#ifndef CMPI
+!      MNWPROH = 0
+!#endif
+!      IF(MNWPROH > 0) THEN
+!        IRANK_SLEEP(1) = 0
+!        ALLOCATE(GROUP_WRITEH(MNWPROH),COMM_WRITEH(MNWPROH))
+!        ALLOCATE(GROUP_HSLEEP(MNWPROH),COMM_HSLEEP(MNWPROH))
+!        DO I=1,MNWPROH
+!          RANKS(MNPROC+1) = MNPROC + MNWPROC - 1 + I
+!
+!          CALL MPI_GROUP_INCL(GROUP_WORLD,MNPROC+1,RANKS,
+!     &                        GROUP_WRITEH(I),IERR)
+!          CALL MPI_COMM_CREATE(MPI_COMM_ADCIRC,GROUP_WRITEH(I),
+!     &                        COMM_WRITEH(I),IERR)
+!
+!          IRANK_SLEEP(2) = MNPROC + MNWPROC - 1 + I
+!          CALL MPI_GROUP_INCL(GROUP_WORLD,2,IRANK_SLEEP,
+!     &                        GROUP_HSLEEP(I),IERR)
+!          CALL MPI_COMM_CREATE(MPI_COMM_ADCIRC,GROUP_HSLEEP(I),
+!     &                        COMM_HSLEEP(I),IERR)
+!
+!          IF(MYPROC == MNPROC + MNWPROC - 1 + I) THEN
+!            WRITER_ID = I
+!          ENDIF
+!        ENDDO
+!      ENDIF
+!      DEALLOCATE(RANKS)
+!      COMM = COMM_COMP
+!
+!#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+!      call allMessage(DEBUG,"Return.")
+!#endif
+!      call unsetMessageSource()
+!      RETURN
+!C---------------------------------------------------------------------      
+!      END SUBROUTINE MSG_INIT
+!C---------------------------------------------------------------------
+!
 
 C---------------------------------------------------------------------
 C      S U B R O U T I N E   M S G _ F I N I 
 C---------------------------------------------------------------------
 C  Delete MPI resources and Shutdown MPI library.
 C  vjp  8/29/1999
+C---------------------------------------------------------------------
+ 
 C---------------------------------------------------------------------
       SUBROUTINE MSG_FINI (NO_MPI_FINALIZE)
       IMPLICIT NONE

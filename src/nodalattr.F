@@ -1677,10 +1677,12 @@ C     log a warning message if any other values were read.
                exit
             endif
          end do
-         if ( invalidCanopyCoefficient.eqv..true. ) then 
-            call allMessage(WARNING,'Some surface canopy coefficient '//
-     &        'nodal attribute data are neither 0 nor 1.')        
-         endif
+C------------------ DW screen unit conflict
+C         if ( invalidCanopyCoefficient.eqv..true. ) then 
+C            call allMessage(WARNING,'Some surface canopy coefficient '//
+C     &        'nodal attribute data are neither 0 nor 1.')        
+C         endif
+C-----------------
       endif
 C
 C     I N I T    S T A R T D R Y

@@ -76,7 +76,6 @@ C******************************************************************************
 
 C******************************************************************************
 C******************************************************************************
-
       IMPLICIT NONE
       PUBLIC
 
@@ -120,9 +119,13 @@ C******************************************************************************
 #ifdef CMPI
       USE MESSENGER, ONLY : mnwproh, msg_init, msg_table, msg_start,
      &   allnodes
+     
       USE WRITER, ONLY : writer_init
       USE HSWRITER, ONLY : hswriter_init
 #endif
+
+      USE AMPIIOSUBS, ONLY: ABOUT_TO_MIGRATE, JUST_MIGRATED
+
       IMPLICIT NONE
 C
       INTEGER, OPTIONAL :: COMM
@@ -188,9 +191,26 @@ C
 #ifdef CMPI
       CALL GET_NUMWRITERS()  ! Get number of writer processors from command line arguments
       IF (PRESENT(COMM)) THEN
+
+!c ---- DW
+#ifndef AMPI_COMP
         CALL MSG_INIT(COMM)  ! Init MPI and get MPI-rank of this cpu
+#else
+        ! AMPI  
+        CALL MSG_INIT( MPI_COMM = COMM,
+     &      ABOUT_TO_MIGRATE = ABOUT_TO_MIGRATE, 
+     &      JUST_MIGRATED = JUST_MIGRATED )   
+#endif
+
       ELSE
+#ifndef AMPI_COMP 
         CALL MSG_INIT()      ! Init MPI and get MPI-rank of this cpu
+#else
+        ! AMPI
+        CALL MSG_INIT( ABOUT_TO_MIGRATE = ABOUT_TO_MIGRATE, 
+     &      JUST_MIGRATED = JUST_MIGRATED )   
+#endif
+
       ENDIF
       call setampizedlun(myproc) ! initialze ck_lun
       CALL MAKE_DIRNAME()    ! Establish Working Directory Name
@@ -271,8 +291,8 @@ C...
       SELECT CASE(IHOT)
          CASE(0)
             CALL COLDSTART()
-            ITHS = 0  !TCM20091029 v49.02 Initialized to zero for coldstarts
-         ! kmd : added in the initial condition read
+            ITHS = 0  ! TCM20091029 v49.02 Initialized to zero for coldstarts
+                      ! kmd : added in the initial condition read
          CASE(17,67,68,367,368,567,568) ! non-portable binary or netcdf hotstart file
             CALL HOTSTART()
          CASE DEFAULT
@@ -391,6 +411,9 @@ C******************************************************************************
       USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
       USE GLOBAL, ONLY : iTime, DEBUG, INFO, setMessageSource, allMessage,
      &   unsetMessageSource, statim, dtdp
+
+      USE wind, ONLY: wtiminc ! wtiminc - to test
+                                                   ! ampi
 #ifdef CMPI
       USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_main, hswriter_pause
@@ -402,12 +425,20 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
      &                       PADCSWAN_RUN
 #endif
       USE WRITE_OUTPUT,ONLY: writeOutput2D
+
+C..............
+      USE AMPIIOSUBS, ONLY: ABOUT_TO_MIGRATE, JUST_MIGRATED,
+     &    JUST_MIGRATED_TEST, ABOUT_TO_MIGRATE_TEST
+C..............
+
       IMPLICIT NONE
 C
       INTEGER, OPTIONAL :: NTIME_STP
       INTEGER :: AMPI_LB_FREQ, IERR
 
-      AMPI_LB_FREQ = 10 ! TODO: set this from the command line
+!      AMPI_LB_FREQ = 10 ! TODO: set this from the command line
+!      AMPI_LB_FREQ = (4*WTIMINC)/DTDP + 5 ! TODO: set this from the command line
+!      AMPI_LB_FREQ = 300 ;
 C
       call setMessageSource("ADCIRC_Run")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
@@ -437,6 +468,15 @@ C
 C
       call allMessage(INFO,"Begin timestepping.")
       DO 100 ITIME=ITIME_BGN,ITIME_END
+
+
+!c ----- 
+!        IF ( MOD(ITIME,AMPI_LB_FREQ) == 0 ) THEN
+!          CALL ABOUT_TO_MIGRATE_TEST( ) ; 
+!          CALL JUST_MIGRATED_TEST( ) ;
+!        END IF
+!
+
 
         CALL TIMESTEP(ITIME)
 

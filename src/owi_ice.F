@@ -17,9 +17,9 @@ C
       USE GLOBAL,ONLY : NSCREEN, ScreenUnit
 
 ! DW AMPI
-!#ifdef CMPI
-!      USE MESSENGER,ONLY : MSG_FINI
-!#endif 
+#ifdef CMPI
+      USE MESSENGER,ONLY : MSG_FINI
+#endif 
 !
         
       IMPLICIT NONE
@@ -105,8 +105,23 @@ C***********************************************************************
       INTEGER   NP,I
       REAL(SZ)  Ciceval(*)
 
-      allocate(swpointsB(NP,2),wB(NP,4))
-      allocate(swpointsR(NP,2),wR(NP,4))
+
+      IF ( .NOT. allocated(swpointsB) ) THEN
+!        allocate(swpointsB(NP,2),wB(NP,4))
+        allocate(swpointsB(NP,2))
+      END IF
+      IF ( .NOT. allocated(wB) ) THEN
+        allocate( wB(NP,4) ) ; 
+      END IF
+      IF ( .NOT. allocated(swpointsR) ) THEN
+!        allocate(swpointsR(NP,2),wR(NP,4))
+        allocate(swpointsR(NP,2))
+      END IF
+      IF ( .NOT. allocated(wR) ) THEN
+!        allocate(swpointsR(NP,2),wR(NP,4))
+        allocate(wR(NP,2))
+      END IF
+
       
 ! Read meta info -------------------------------------------------
 
@@ -125,9 +140,9 @@ C***********************************************************************
         write(16+CK_LUN,1004)\
 
 ! DW
-!#ifdef CMPI
-!        call msg_fini()
-!#endif
+#ifdef CMPI
+        call msg_fini()
+#endif
 !
         stop
       endif
@@ -149,7 +164,7 @@ C***********************************************************************
 
 ! Read basin ice file header ------------------------------------------------
 
-      OPEN(225+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.225', STATUS='OLD')
+      OPEN(225+CK_LUN,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.225',STATUS='OLD')
 
       ! Read begining/ending dates of ice file
 !      tcm v48.4645 changed the way the header is read
@@ -340,9 +355,9 @@ C***********************************************************************
         WRITE(16+CK_LUN,*) 'EXECUTION WILL BE TERMINATED'
 
 ! DW
-!#ifdef CMPI
-!        call msg_fini()
-!#endif
+#ifdef CMPI
+        call msg_fini()
+#endif
 !
         STOP
       endif
@@ -352,8 +367,9 @@ C***********************************************************************
         call ncice1_interp_region(np)
       endif
 
-      ! Read ice concentrations
-      read(223+CK_LUN,22,end=9999,err=99999) ((CiceR(i,j),i=1,iLongR),j=1,iLatR)
+!      ! Read ice concentrations
+!      read(223+CK_LUN,22,end=9999,err=99999) ((CiceR(i,j),i=1,iLongR),j=1,iLatR)
+      read(227+CK_LUN,22,end=9999,err=99999) ((CiceR(i,j),i=1,iLongR),j=1,iLatR)
 
 
  100  CONTINUE
@@ -564,9 +580,9 @@ C***********************************************************************
       swlongB = swlongc
         
       ! Allocate and create matrices
-      if(allocated(CiceB))    deallocate(CiceB)
-      if(allocated(longB)) deallocate(longB)
-      if(allocated(latB))  deallocate(latB)
+      if( allocated(CiceB) ) deallocate(CiceB)
+      if( allocated(longB) ) deallocate(longB)
+      if( allocated(latB) ) deallocate(latB)
 
       allocate(CiceB(iLongB,iLatB))
       allocate(longB(iLongB),latB(iLatB))

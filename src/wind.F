@@ -1,9 +1,9 @@
-C**********************************************************************
-C PADCIRC VERSION 45.12 03/17/2006                                     *
-C last changes in this file VERSION 45.05                              *
-C                                                                      *
-C***********************************************************************
-C
+!C***********************************************************************
+!C PADCIRC VERSION 45.12 03/17/2006                                     *
+!C last changes in this file VERSION 45.05                              *
+!C                                                                      *
+!C***********************************************************************
+!C
        MODULE WIND
        use CkLunMod, only : CK_LUN
        USE SIZES, ONLY : SZ, LOCALDIR
@@ -14,10 +14,10 @@ C
      &    sphericalDistance, rhoAir, one2ten, windReduction,
      &    openFileForRead
 
-!   DW -- for AMPInn
-!#ifdef CMPI
-!      use messenger, only : msg_fini
-!#endif
+!   DW -- for AMPI
+#ifdef CMPI
+      use messenger, only : msg_fini
+#endif
       integer, parameter :: allowable_nws(18)
      &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,19,20,29,30/)
       logical nwsOK     ! true if NWS value in fort.15 is allowed
@@ -47,7 +47,7 @@ C
       real(sz) :: wreftim ! met reference time
 !$omp threadprivate(wreftim)
 
-Casey 110518: Added for Mark Powell's sectorial wind drag.
+!Casey 110518: Added for Mark Powell's sectorial wind drag.
       REAL(8)  :: EyeLat(3) = 0.D0
 !$omp threadprivate(EyeLat)
       REAL(8)  :: EyeLon(3) = 0.D0
@@ -144,7 +144,7 @@ C
       !
       ! used for vis/diagnostics on nws19 and nws20
       LOGICAL :: writeFullCircleRmaxes = .false.
-!$omp threadprivate(writeFullCircleRmaxes)
+$omp threadprivate(writeFullCircleRmaxes)
       LOGICAL :: writeRadialVandP = .false.
 !$omp threadprivate(writeRadialVandP)
       LOGICAL :: writeSpatialVandP = .false.
@@ -295,22 +295,21 @@ C
       END INTERFACE
       PROCEDURE(p_computeWindDrag),POINTER :: f_computeWindDrag => null()
 
-C------------------------end of data declarations-----------------------
+!C------------------------end of data declarations-----------------------
       CONTAINS
-C
-C***********************************************************************
-C                                                                      *
-C   THE FOLLOWING SUBROUTINES READ IN AND IN SOME CASES INTERPOLATE    *
-C   ONTO THE ADCIRC GRID WIND AND PRESSURE FIELDS IN VARIOUS INPUT     *
-C   FORMATS.                                                           *
-C                                                                      *
-C   ALL WIND SPEEDS ARE CONVERTED TO M/S AND ALL PRESSURES TO M OF H20 *
-C   BEFORE THEY ARE RETURNED.                                          *
-C                                                                      *
-C***********************************************************************
+
+!C***********************************************************************
+!C                                                                      *
+!C   THE FOLLOWING SUBROUTINES READ IN AND IN SOME CASES INTERPOLATE    *
+!C   ONTO THE ADCIRC GRID WIND AND PRESSURE FIELDS IN VARIOUS INPUT     *
+!C   FORMATS.                                                           *!
+!C                                                                      *
+!C   ALL WIND SPEEDS ARE CONVERTED TO M/S AND ALL PRESSURES TO M OF H20 *
+!C   BEFORE THEY ARE RETURNED.                                          *
+!C                                                                      *
+!C***********************************************************************
 
 C-----------------------------------------------------------------------
-
 C     ----------------------------------------------------------------
 C       I N I T   W I N D   M O D U L E
 C     ----------------------------------------------------------------
@@ -378,10 +377,10 @@ C.... convert background pressure from millibars to meters of water
               call allMessage(ERROR,"Wind drag law not recognized"//TRIM(DragLawString))
 
 ! DW
-!#ifdef CMPI
-!              call msg_fini()
-!#endif
-!
+#ifdef CMPI
+              call msg_fini()
+#endif
+
               STOP
           END SELECT
 #endif              
@@ -695,11 +694,11 @@ C....... and Ray's Ice for low ice values and low winds
          WRITE(16+CK_LUN,'(A10)') DragLawString
          WRITE(16+CK_LUN,*) 'Execution will now be terminated.'
 
-! DW
-!#ifdef CMPI
-!         call msg_fini()
-!#endif
-!
+
+#ifdef CMPI
+         call msg_fini()
+#endif
+
          STOP
 C
       END SELECT
@@ -1265,6 +1264,9 @@ C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
               WVNY1(I)=WVNY2(I)
               PRN1(I)=PRN2(I)
             END DO
+
+C           PRINT*, "my proc s2 = ", ubound(wvnx1), ubound(wvny1),
+C     &        ubound(prn1), np
             CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND)
             if(draglawtype.EQ.draglaw_powell)then
               call findStormCenter(eyeLat, eyeLon, foundEye)
@@ -2821,12 +2823,13 @@ C     jgf46.02 Added the following two lines.
       IF(PRN2(NHG).EQ.0.) PRN2(NHG)=101300.d0/RHOWATG                       !RAL0315+ OK
       READ(22+CK_LUN,'(A80)') PBLJAGF
       IF(PBLJAGF(2:2).NE.'#') GOTO 171
-      RETURN
-
+ 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
+
+      RETURN 
       END SUBROUTINE
 
 
@@ -3603,7 +3606,7 @@ C...  between the Eta-29 grid and the ADCIRC grid.
 
       IF((NWSEGWI.EQ.0).AND.(IDSETFLG.EQ.0)) THEN
          call allMessage(INFO,
-    &       'Computing ETA29 met field interp factors. ')
+     &       'Computing ETA29 met field interp factors. ')
          DO I=1,NP
             flondeg=rad2deg*slam(i)
             flatdeg=rad2deg*sfea(i)
@@ -7422,7 +7425,7 @@ C   P_J IS THE VALUE AT LOCATION J
 C   D_I_J - DISTANCE BETWEEN POINT I AND POINT J
 C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS HAVE)
 
-        call logMessage(INFO,"Loading the GFDL Met file '"
+       call logMessage(INFO,"Loading the GFDL Met file '"
      &                     //trim(fname)//"'.")
        call openFileForRead(lun,trim(fname), errorio)
        if (errorio.gt.0) then
@@ -8196,10 +8199,10 @@ C
       call allMessage(ERROR,"ADCIRC terminating.")
 
 !
-!#ifdef CMPI
-!      call msg_fini()
-!#endif
-!
+#ifdef CMPI
+      call msg_fini()
+#endif
+
       stop
 C
 
@@ -8235,6 +8238,7 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
       END SUBROUTINE checkWindDragType
 C----------------------------------------------------------------------
+
 
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------

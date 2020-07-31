@@ -518,10 +518,14 @@ Cobell -  Added the following for output of ESL at end of run
 !$omp threadprivate(WSX1,WSY1,PR1)
       REAL(SZ),ALLOCATABLE ::   WSX2(:),WSY2(:)
 !$omp threadprivate(WSX2,WSY2)
-      REAL(SZ),ALLOCATABLE ::   PRN1(:)
-!$omp threadprivate(PRN1)
-      REAL(SZ),ALLOCATABLE ::   PRN2(:)
-!$omp threadprivate(PRN2)
+!!CCC------ DW: comment out since they are duplicated 
+!!              of those defined in wind.F
+!!      REAL(SZ),ALLOCATABLE ::   PRN1(:)
+!!!$omp threadprivate(PRN1)
+!!      REAL(SZ),ALLOCATABLE ::   PRN2(:)
+!!!$omp threadprivate(PRN2)
+
+
       REAL(SZ),ALLOCATABLE ::   RSNX1(:),RSNY1(:),RSNX2(:),RSNY2(:)
 !$omp threadprivate(RSNX1,RSNY1,RSNX2,RSNY2)
       REAL(SZ),ALLOCATABLE ::   CICE1(:),CICE2(:)   !v49.64.01 tcm -- added
@@ -1250,36 +1254,101 @@ C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
 C...  
 C     cms51.06: moved fort.33 file from read_input.F to here
 #ifdef CMPI
-!     OPEN(16+CK_LUN,FILE=trim(localdir)//'/'//'fort.16', ACTION='WRITE',
-!     &    STATUS='REPLACE')
-!     OPEN(33+CK_LUN,FILE=trim(localdir)//'/'//'fort.33', ACTION='WRITE',
-!     &    STATUS='REPLACE')
+      OPEN(16+CK_LUN,FILE=trim(localdir)//'/'//'fort.16', ACTION='WRITE',
+     &    STATUS='REPLACE')
+      OPEN(33+CK_LUN,FILE=trim(localdir)//'/'//'fort.33', ACTION='WRITE',
+     &    STATUS='REPLACE')
       
-      CALL openFileForWriteAppend(lun=16,
-     &     filename=trim(localdir)//'/'//'fort.16', errorIO=errorIO) ;
-      CALL openFileForWriteAppend(lun=33,
-     &     filename=trim(localdir)//'/'//'fort.33', errorIO=errorIO) ; 
+!      CALL openFileForWriteAppend(lun=16,
+!     &     filename=trim(localdir)//'/'//'fort.16', errorIO=errorIO) ;
+!      CALL openFileForWriteAppend(lun=33,
+!     &     filename=trim(localdir)//'/'//'fort.33', errorIO=errorIO) ; 
 #else
-!     OPEN(16+CK_LUN,FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
-!     OPEN(33+CK_LUN,FILE='fort.33', ACTION='WRITE', STATUS='REPLACE')
-      CALL openFileForWriteAppend(lun=16,
-     &     filename='fort.16', errorIO=errorIO) ;
-      CALL openFileForWriteAppend(lun=33,
-     &     filename='fort.33', errorIO=errorIO) ;       
+      OPEN(16+CK_LUN,FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
+      OPEN(33+CK_LUN,FILE='fort.33', ACTION='WRITE', STATUS='REPLACE')
+!      CALL openFileForWriteAppend(lun=16,
+!     &     filename='fort.16', errorIO=errorIO) ;
+!      CALL openFileForWriteAppend(lun=33,
+!     &     filename='fort.33', errorIO=errorIO) ;       
 #endif
 C--------------------------------------------------------------------
       return ;
       END SUBROUTINE openLogFile
 C--------------------------------------------------------------------
 
+      SUBROUTINE reopenLogFile()
+      use sizes, only : localDir
+      IMPLICIT NONE
+      
+      INTEGER:: errorIO
+      LOGICAL:: fileFound, FileOpened  
+      CHARACTER (LEN=300):: filename       
+C...  
+C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
+C...  
+C     cms51.06: moved fort.33 file from read_input.F to here
+#ifdef CMPI
+      filename = trim(localdir)//'/'//'fort.16' ;
+      inquire(FILE=trim(filename),EXIST=fileFound)
+      IF ( fileFound ) THEN 
+        inquire(UNIT=16+CK_LUN,OPENED=FileOpened) ; 
+        IF ( .NOT. FileOpened ) THEN
+           OPEN(UNIT=16+CK_LUN,FILE=trim(filename),STATUS='OLD',
+     &        ACTION='WRITE',POSITION='APPEND',IOSTAT=errorIO)
+        END IF
+      ELSE
+        OPEN(16+CK_LUN,FILE=trim(filename), 
+     &     ACTION='WRITE', STATUS='REPLACE' )
+      ENDIF     
+
+      filename = trim(localdir)//'/'//'fort.33' ;
+      inquire(FILE=trim(filename),EXIST=fileFound)
+      IF ( fileFound ) THEN 
+        inquire(UNIT=33+CK_LUN,OPENED=FileOpened) ; 
+        IF ( .NOT. FileOpened ) THEN
+           OPEN(UNIT=33+CK_LUN,FILE=trim(filename),STATUS='OLD',
+     &        ACTION='WRITE',POSITION='APPEND',IOSTAT=errorIO)
+        END IF 
+      ELSE
+        OPEN(33+CK_LUN,FILE=trim(filename), 
+     &     ACTION='WRITE', STATUS='REPLACE' )
+      ENDIF     
+#else
+      OPEN(UNIT=16+CK_LUN,FILE='fort.16', ACTION='WRITE', STATUS='REPLACE') ;
+      OPEN(UNIT=33+CK_LUN,FILE='fort.33', ACTION='WRITE', STATUS='REPLACE') ; 
+#endif
+C--------------------------------------------------------------------
+      return ;
+      END SUBROUTINE reopenLogFile
+C--------------------------------------------------------------------
+
+
+
+
 C.....................................
       SUBROUTINE closeLogFile() 
       IMPLICIT NONE
 
-      CLOSE(16+CK_LUN) ;        ! close fort.16
-      CLOSE(33+CK_LUN) ;
+      CALL CLOSEFUNIT( 16 ) ;        ! close fort.16
+      CALL CLOSEFUNIT( 33 ) ;
       ! 
       RETURN ;
+
+      CONTAINS
+
+        SUBROUTINE CLOSEFUNIT( LUN ) 
+          IMPLICIT NONE
+
+          INTEGER:: LUN
+          LOGICAL:: fileOpenned 
+
+          inquire( unit = lun+CK_LUN, OPENED = fileOpenned )  ;
+
+          IF ( fileOpenned ) THEN
+            CLOSE( lun + CK_LUN ) ; 
+          END IF
+        END SUBROUTINE CLOSEFUNIT           
+
       END SUBROUTINE closeLogFile
 C.....................................
       
@@ -1297,7 +1366,7 @@ C-----------------------------------------------------------------------
       INTEGER, intent(in) :: lun   ! fortran logical unit number
       CHARACTER(*), intent(in) :: filename ! full pathname of file
       INTEGER, intent(out) :: errorIO  ! zero if the file opened successfully
-      LOGICAL :: fileFound    ! .true. if the file is present
+      LOGICAL :: fileFound, fileOpenned    ! .true. if the file is present
 C
       call setMessageSource("openFileForWriteAppend")
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
@@ -1309,14 +1378,13 @@ C
 C     Check to see if file exists
       write(scratchMessage,21) lun
   21  format("Searching for file to open on unit ",i0,"...")
-      call logMessage(INFO,trim(scratchMessage))
+C      call logMessage(INFO,trim(scratchMessage))
       inquire(FILE=trim(filename),EXIST=fileFound)
       
       if (fileFound.eqv..false.) then
          write(scratchMessage,23) trim(filename)
   23     format("The file '",A,"' was not found. It will be created.")
-         call allMessage(INFO,scratchMessage)
-C         errorIO = 1
+
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Create File.")
 #endif
@@ -1325,6 +1393,9 @@ C         errorIO = 1
 C     Open a new file
          OPEN(lun+CK_LUN,FILE=trim(filename),STATUS='NEW',
      &        ACTION='WRITE',IOSTAT=errorIO)
+
+         call allMessage(INFO,scratchMessage)
+
          if (errorIO.ne.0) then
             write(scratchMessage,25) trim(filename)
  25         format("Could not open the file '",A,"'.")
@@ -1343,27 +1414,33 @@ C     Open a new file
       else
          write(scratchMessage,24) trim(filename)
  24      format("The file '",A,"' was found. The file will be append.")
-         call logMessage(INFO,trim(scratchMessage))
+C         call logMessage(INFO,trim(scratchMessage))
 
-     
+         inquire( unit = lun+CK_LUN, OPENED = fileOpenned )  ;
+         !
+         if ( .NOT. fileOpenned ) then
 C     Open an existing file
-         OPEN(lun+CK_LUN,FILE=trim(filename),STATUS='OLD',
+           OPEN(lun+CK_LUN,FILE=trim(filename),STATUS='OLD',
      &        ACTION='WRITE',POSITION='APPEND',IOSTAT=errorIO)
-         if (errorIO.ne.0) then
-            write(scratchMessage,27) trim(filename)
- 27         format("Could not open the file '",A,"'.")
-            call allMessage(ERROR,trim(scratchMessage))
+
+           call logMessage(INFO,trim(scratchMessage))
+
+           if (errorIO.ne.0) then
+             write(scratchMessage,27) trim(filename)
+ 27          format("Could not open the file '",A,"'.")
+             call allMessage(ERROR,trim(scratchMessage))
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Return.")
+             call allMessage(DEBUG,"Return.")
 #endif
-            call unsetMessageSource()
-            return ;            ! file found but could not be opened
-         else
-            write(scratchMessage,28) trim(filename)
- 28         format("The file '",A,"' was opened successfully.")
-            call logMessage(INFO,trim(scratchMessage))
-         endif
-         
+             call unsetMessageSource()
+             return ;            ! file found but could not be opened
+           else
+             write(scratchMessage,28) trim(filename)
+ 28          format("The file '",A,"' was opened successfully.")
+             call logMessage(INFO,trim(scratchMessage))
+           endif
+         end if
+         !
       endif
 
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)

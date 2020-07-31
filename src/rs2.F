@@ -448,15 +448,16 @@ C***********************************************************************
         stop
       endif
 
-      allocate(fullplanes(ns),rfids(ns))
-      allocate(nis(ns),njs(ns),dxincs(ns),dyincs(ns))
-      allocate(x0s(ns),y0s(ns),azimuths(ns))
-      allocate(endoffile(ns))
-      allocate(simfiles(ns),radfiles(ns))
-      allocate(nbs(ns))
+      IF ( .NOT. allocated(fullplanes) ) THEN ! dw
+        allocate(fullplanes(ns),rfids(ns))
+        allocate(nis(ns),njs(ns),dxincs(ns),dyincs(ns))
+        allocate(x0s(ns),y0s(ns),azimuths(ns))
+        allocate(endoffile(ns))
+        allocate(simfiles(ns),radfiles(ns))
+        allocate(nbs(ns))
 
-      allocate(rsij(3,np,ns),rscnf(3,np,ns))
-
+        allocate(rsij(3,np,ns),rscnf(3,np,ns))
+      END IF
       rsij(1,:,:) = 0
          
 

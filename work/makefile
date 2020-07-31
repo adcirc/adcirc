@@ -349,6 +349,8 @@ KDTREE_MSRC = kdtree2.F
 XDMF_MSRC = xdmfio.F
 #ejb add lun virtualization
 CKLUNMOD_MSRC = cklunmod.F
+#dw for AMPI I/O 
+AMPIIO_MSRC = ampiadcio.F
 
 HASH_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(HASH_MSRC) )
 WD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(WD_MSRC) )
@@ -378,6 +380,9 @@ COUP_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(COUP_MSRC)  )
 # tcm v49.48.01 Adding rule for kdtree2 fast search algorithm
 KDTREE_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(KDTREE_MSRC) )
 CKLUNMOD_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(CKLUNMOD_MSRC) )
+#
+AMPIIO_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(AMPIIO_MSRC) )
+
 
 ############################# Source & Object Files ######################
 #meb 04/20/2004 - added machdep.F onto POST_SRC
@@ -593,7 +598,7 @@ endif
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
    build13 ::  $(B13_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
+	(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
    build12 ::  $(B12_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
@@ -763,7 +768,10 @@ $(O_DIR)subdomain.o   : subdomain.F $(O_DIR)mesh.o $(O_DIR)messenger.o
 else
 $(O_DIR)subdomain.o   : subdomain.F $(O_DIR)mesh.o
 endif
-$(O_DIR)global_3dvs.o : global_3dvs.F $(O_DIR)global.o $(O_DIR)boundaries.o
+$(O_DIR)global_3dvs.o : global_3dvs.F $(O_DIR)global.o $(O_DIR)boundaries.o 
+
+# AMPI --- DW
+$(O_DIR)ampiadcio.o: ampiadcio.F $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)mesh.o $(O_DIR)nodalattr.o $(O_DIR)globalio.o $(O_DIR)wind.o $(O_DIR)owiwind.o  
 
 #  adcirc & $(PARALLEL_ADCIRC)
 
@@ -773,9 +781,9 @@ $(O_DIR)cstart.o      : cstart.F
 $(O_DIR)hstart.o      : hstart.F
 $(O_DIR)timestep.o    : timestep.F
 ifeq ($(NETCDF),enable)
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ)  $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
+$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(AMPIIO_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
 else
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
+$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(AAMPIIO_MOBJ MPIIO_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
 endif
 $(O_DIR)driver.o      : driver.F $(O_DIR)adcirc.o
 

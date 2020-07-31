@@ -1425,17 +1425,22 @@ C
           CALL NCICE1_INIT(CICE1,NP)
           CALL NCICE1_GET(CICE1,NP)
           CALL NCICE1_GET(CICE2,NP)
-          DO IT=1,ITHS
-             TIMEIT=IT*DTDP + STATIM*86400.D0
-             IF(TIMEIT.GT.CICE_TIME2) THEN
-                CICE_TIME1 = CICE_TIME2
-                CICE_TIME2 = CICE_TIME2 + CICE_TIMINC
-                DO I=1,NP
-                   CICE1(I)=CICE2(I)
-                END DO
-                CALL NCICE1_GET(CICE2,NP)
-             ENDIF
-          END DO
+
+          !
+          IF ( NWS > 0 ) THEN  
+            DO IT=1,ITHS
+              TIMEIT=IT*DTDP + STATIM*86400.D0
+              IF(TIMEIT.GT.CICE_TIME2) THEN
+                 CICE_TIME1 = CICE_TIME2
+                 CICE_TIME2 = CICE_TIME2 + CICE_TIMINC
+                 DO I=1,NP
+                    CICE1(I)=CICE2(I)
+                 END DO
+                 CALL NCICE1_GET(CICE2,NP)
+              ENDIF
+           END DO
+         END IF
+         !
       ENDIF     
       if (ncice.ne.0) then
          CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
