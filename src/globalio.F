@@ -309,7 +309,8 @@ C! CMPI
         iglobal = descript % imap(i)
         if (istart <= iglobal .and. iglobal <= iend) then
           j = 2*(iglobal - ioffset) - 1
-          if(descript%considerWetDry.and.nodecode(i).eq.0)then
+          if(descript%considerWetDry.and.nodecode(i).eq.0.and.
+     &       (.not.descript%isStation))then              
             buf(j)     = descript % alternate_value
             buf(j + 1) = descript % alternate_value
           else
