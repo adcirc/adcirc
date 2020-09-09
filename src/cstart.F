@@ -212,6 +212,7 @@ C
             QNIN1(J)=0.D0
             IF ((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &          .OR.(LBCODEI(J).EQ.22)) THEN
+               READ(20,*) QNIN1(J)
             ELSEIF (LBCODEI(J).EQ.32) THEN
                READ(20,*) QNIN1(J),ENIN1(J)
             ENDIF
