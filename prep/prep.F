@@ -1959,7 +1959,7 @@ C
 C...     update the number of stations for this proc's domain
 
          if (use_elev_stat_file ) then  !tcm v51.20.03
-            CALL INSERT(NSTAEMSG,OUTMSG,-NSTAEP(IPROC),1)  !keep the negative sign for fort.15
+            CALL INSERT(NSTAEMSG,OUTMSG,(/-NSTAEP(IPROC)/),1)  !keep the negative sign for fort.15
             write(15,80) OUTMSG
             CALL INSERT(NSTAEMSG,OUTMSG,NSTAEP(IPROC),1)
             LOCSTATFN(1:20) = 'PE0000/elev_stat.151'
@@ -2007,7 +2007,7 @@ C
          NSTAV_MAX = MAX(NSTAVP(IPROC),NSTAV_MAX)
 C
          if (use_vel_stat_file ) then  !tcm v51.20.03
-            CALL INSERT(NSTAVMSG,OUTMSG,-NSTAVP(IPROC),1)  !keep the negative sign for fort.15
+            CALL INSERT(NSTAVMSG,OUTMSG,(/-NSTAVP(IPROC)/),1)  !keep the negative sign for fort.15
             write(15,80) OUTMSG
             CALL INSERT(NSTAVMSG,OUTMSG,NSTAVP(IPROC),1)
             LOCSTATFN(1:19) = 'PE0000/vel_stat.151'
@@ -2059,7 +2059,7 @@ C
 C
 C...     update the number of stations for this proc's domain
          if (use_conc_stat_file ) then  !tcm v51.20.03
-            CALL INSERT(NSTACMSG,OUTMSG,-NSTACP(IPROC),1)  !keep the negative sign for fort.15
+            CALL INSERT(NSTACMSG,OUTMSG,(/-NSTACP(IPROC)/),1)  !keep the negative sign for fort.15
             write(15,80) OUTMSG
             CALL INSERT(NSTACMSG,OUTMSG,NSTACP(IPROC),1)
             LOCSTATFN(1:20) = 'PE0000/conc_stat.151'
@@ -2109,7 +2109,7 @@ C
 C
 C...        update the number of stations for this proc's domain
          if (use_met_stat_file ) then  !tcm v51.20.03
-            CALL INSERT(NSTAMMSG,OUTMSG,-NSTAMP(IPROC),1)  !keep the negative sign for fort.15
+            CALL INSERT(NSTAMMSG,OUTMSG,(/-NSTAMP(IPROC)/),1)  !keep the negative sign for fort.15
             write(15,80) OUTMSG
             CALL INSERT(NSTAMMSG,OUTMSG,NSTAMP(IPROC),1)
             LOCSTATFN(1:19) = 'PE0000/met_stat.151'
