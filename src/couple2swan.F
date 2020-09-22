@@ -201,6 +201,7 @@ C-----------------------------------------------------------------------
       USE MESH, ONLY : NE, NM, NP, AREAS, NODELE, NEITABELE,
      &    FDXE, FDYE, SFacEle, SFMYEle, SFMXEle
       USE BOUNDARIES, ONLY : NBDV, NBOU, NBVV, NOPE, NVDLL, NVELL
+      USE MESSENGER,ONLY:MYPROC
 
       IMPLICIT NONE
 
@@ -362,6 +363,8 @@ C..... END DW/WJP
 
              IE = IE + 1
 
+             IF(IE.GT.SIZE(NEITABELE,2))EXIT
+
              IF(NEITABELE(IP,IE).EQ.0)THEN
 
                CONTINUE
@@ -397,6 +400,7 @@ C..... END DW/WJP
                ENDIF
 
              ENDIF
+
 
              IF(NUMFOUND.EQ.NODELE(IP))THEN
 
