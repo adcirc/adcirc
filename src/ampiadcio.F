@@ -46,6 +46,9 @@ C----------------------------------------------------------------------
         SUBROUTINE ABOUT_TO_MIGRATE()
           IMPLICIT NONE
 
+#ifdef AMPI_COMP
+          include 'mpif.h'
+#endif
           INTEGER :: RANK, IERR, FLAG, OLD_PE
 
 #ifdef AMPI_COMP
@@ -83,6 +86,9 @@ C----------------------------------------------------------------------
         SUBROUTINE JUST_MIGRATED()
           IMPLICIT NONE
 
+#ifdef AMPI_COMP
+          include 'mpif.h'
+#endif
           INTEGER :: RANK, IERR, FLAG, NEW_PE
 
 #ifdef AMPI_COMP
@@ -1805,11 +1811,12 @@ C--------------------------------------------------------------------------
           IF ( NCICE .EQ. 12 ) THEN
              FUNIT = 225 + CK_LUN ;    
              CALL CLOSEFUNIT( FUNIT ) ;
-
-             IF ( NumSetsIce ) THEN
-               FUNIT =  227 + CK_LUN ;
-               CALL CLOSEFUNIT( FUNIT ) ; 
-             END IF
+             ! DMW -- 2020/09/28 -- Not sure why this part doesnt work.
+             ! Not really worried about Ice atm so come back to this.
+             !IF ( NumSetsIce ) THEN
+             !  FUNIT =  227 + CK_LUN ;
+             !  CALL CLOSEFUNIT( FUNIT ) ; 
+             !END IF
           ENDIF
 
           RETURN 
