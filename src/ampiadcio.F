@@ -1811,12 +1811,11 @@ C--------------------------------------------------------------------------
           IF ( NCICE .EQ. 12 ) THEN
              FUNIT = 225 + CK_LUN ;    
              CALL CLOSEFUNIT( FUNIT ) ;
-             ! DMW -- 2020/09/28 -- Not sure why this part doesnt work.
-             ! Not really worried about Ice atm so come back to this.
-             !IF ( NumSetsIce ) THEN
-             !  FUNIT =  227 + CK_LUN ;
-             !  CALL CLOSEFUNIT( FUNIT ) ; 
-             !END IF
+             
+             IF ( NumSetsIce .gt. 0 ) THEN
+               FUNIT =  227 + CK_LUN ;
+               CALL CLOSEFUNIT( FUNIT ) ; 
+             END IF
           ENDIF
 
           RETURN 
