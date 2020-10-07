@@ -144,7 +144,7 @@ C
       !
       ! used for vis/diagnostics on nws19 and nws20
       LOGICAL :: writeFullCircleRmaxes = .false.
-$omp threadprivate(writeFullCircleRmaxes)
+!$omp threadprivate(writeFullCircleRmaxes)
       LOGICAL :: writeRadialVandP = .false.
 !$omp threadprivate(writeRadialVandP)
       LOGICAL :: writeSpatialVandP = .false.
