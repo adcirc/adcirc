@@ -690,11 +690,17 @@ endif
 clean:
 	rm -f odir*/*.o  odir*/*.mod sizes.o
 	rm -f  ../thirdparty/swan/*.f ../thirdparty/swan/*.for ../thirdparty/swan/*.f90
+	rm -f ../thirdparty/nuopc/*.o ../thirdparty/nuopc/*.mod 
+
 clobber:
 	rm -r -f odir*
 	rm -f adcprep adcprep_be adcirc $(PARALLEL_ADCIRC) adcswan padcswan p15 owi22 build13 aswip \
            build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost adccmp libadc.a
-	rm -f  ../thirdparty/swan/*.f ../thirdparty/swan/*.for ../thirdparty/swan/*.f90 .swanlastcompile
+	rm -f  ../thirdparty/swan/*.f ../thirdparty/swan/*.for ../thirdparty/swan/*.f90 .swanlastcompil
+	rm -f ../thirdparty/nuopc/*.o ../thirdparty/nuopc/*.mod 
+
+#	(cd ../thirdparty/nuopc && make distclean)
+
 help:
 	@echo "This makefile supports the following:"
 	@echo "make all        - makes all seven targets"
