@@ -359,7 +359,7 @@ C...  Transport
          IF(IM.EQ.10) THEN
            TRANS_LV_B(I)=0.D0
            TRANS_LV_A(I)=0.D0
-           ENDIF
+         ENDIF
 
 C...  Wind (& wave radiation stress if used)
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN

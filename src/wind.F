@@ -9,6 +9,7 @@ C
        USE GLOBAL, ONLY : ScreenUnit, setMessageSource, allMessage,
      &    screenMessage, logMessage, unsetMessageSource,
      &    DEBUG, ECHO, INFO, WARNING, ERROR, scratchMessage,
+C PADCIRC VERSION 45.12 03/17/2006                                            *
      &    Rearth, pi, deg2rad, rad2deg, e, PRBCKGRND, g, rhoWat0,
      &    sphericalDistance, rhoAir, one2ten, windReduction,
      &    openFileForRead, RNDAY, cice_timinc, cice_time1, cice_time2
@@ -2139,6 +2140,17 @@ C----------------------------------------------------------------------
 
 C
 C......RESTART WIND AND PRESSURE INFORMATION
+
+      !c DW, for nonwind and NEM
+      SELECT CASE(NWS)
+      CASE (0,17)
+!         WSX1(:) = 0.d0 ;
+!         WSY1(:) = 0.d0 ;
+   
+         WSX2(:) = 0.d0
+         WSY2(:) = 0.D0
+         PR2(:) = PRBCKGRND_MH2O
+      END SELECT
 
 C     No wind, radiation stress or atmospheric pressure forcings are used.
       IF(NWS.EQ.1) THEN

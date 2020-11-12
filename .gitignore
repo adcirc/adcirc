@@ -32,3 +32,4 @@ build/
 config.h
 work/util
 thirdparty/nuopc/adcirc.mk
+util/estofs_tide_fac/estofs_tide_fac
