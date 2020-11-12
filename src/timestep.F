@@ -674,6 +674,8 @@ C             into RSNX1/RSNY1, and then load the future forces into RSNX2/RSNY2
 #endif
 C... v50.xx sm -- nrs=5 for NUOPC coupling wave data from coupler
                NRS5: IF (NRS == 5) THEN    ! saeed
+
+                 PRINT*, "HERE .....", MAXVAL(RSNX1) ; 
                  DO I=1,NP
                    RSX = RSNX1(I)
                    RSY = RSNY1(I)
