@@ -390,6 +390,7 @@ C     Sets up meteorological i/o for a coldstart.
 C----------------------------------------------------------------------
       subroutine coldstartMeteorologicalReopenInputFile( nws, ctimeloc )
 !
+      use global, only: DEBUG, allMessage
       use sizes, only : gblinputdir, inputdir 
       use owiwind, only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006
           
@@ -738,8 +739,8 @@ C----------------------------------------------------------------------
       subroutine hotstartMeteorologicalReopenInputfile( nws, ctimeloc )
       use sizes, only : gblinputdir, inputdir
 !     
-      use global, only: PRBCKGRND,  setMessageSource, 
-     &   unsetMessageSource
+      use global, only: PRBCKGRND,  setMessageSource, DEBUG,
+     &   unsetMessageSource, allMessage
 
       use wind, only: wvnx1, wvnx2, wvny1, wvny2, IWTIME, 
      &    IWTIMEP, IWYR,IREFYR, WTIMED, WREFTIM,  nws3get, nws4get,
