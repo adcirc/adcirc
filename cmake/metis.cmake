@@ -53,3 +53,16 @@ SET( METIS_SOURCES ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/coarsen.c
 ADD_LIBRARY(metis STATIC ${METIS_SOURCES})
 TARGET_INCLUDE_DIRECTORIES(metis PRIVATE ${CMAKE_SOURCE_DIR}/metis/Lib)
 SET_TARGET_PROPERTIES(metis PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+#...In gcc-10+, we need to ignore some things that were elevated to errors. This is a thirdparty
+#   library, so adcirc devs are in nofix mode
+GET_FILENAME_COMPONENT(C_COMPILER_NAME ${CMAKE_C_COMPILER} NAME)
+IF(${C_COMPILER_NAME} MATCHES "gcc.*" OR ${C_COMPILER_NAME} MATCHES "cc" )
+    IF( ${CMAKE_C_COMPILER_VERSION} VERSION_GREATER 10 OR ${CMAKE_C_COMPILER_VERSION} VERSION_EQUAL 10 )
+        SET_TARGET_PROPERTIES(metis PROPERTIES COMPILE_FLAGS "-Wno-implicit-function-declaration" )
+    ENDIF()
+ENDIF()
+
+
+
+

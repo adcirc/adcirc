@@ -9,8 +9,6 @@
 # in a cross platform environment. 
 #
 ###########################################################################
-INCLUDE (GNUInstallDirs)
-INCLUDE (CMakePackageConfigHelpers)
 
 #...Set the default build type
 IF(DEFINED CMAKE_BUILD_TYPE)
@@ -55,6 +53,8 @@ ENDIF()
 #...Language Specifications
 ENABLE_LANGUAGE(Fortran)
 ENABLE_LANGUAGE(C)
+INCLUDE (GNUInstallDirs)
+INCLUDE (CMakePackageConfigHelpers)
 ###########################################################################
 
 
