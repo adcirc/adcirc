@@ -186,6 +186,8 @@ C     kmd -- Added variables for initial conditions
       !
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
+      CALL SYSTEM_CLOCK(model_startwallclock,model_startclockrate,model_startclockmax)
+      model_startwallclock = MOD(model_startwallclock,model_startclockmax) / model_startclockrate
       !
       call initializeWettingAndDrying()
       !

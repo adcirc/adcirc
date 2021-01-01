@@ -626,6 +626,7 @@ C     kmd48.33bc - added variables for 3D boundary conditions
 #ifdef DATETIME
       type(datetime) :: basedatetime
 #endif
+      INTEGER(8)    :: model_startwallclock,model_startclockrate,model_startclockmax
       CHARACTER(80) :: comments    ! miscellaneous information about the data
       CHARACTER(80) :: host
       CHARACTER(80) :: convention
@@ -2033,6 +2034,69 @@ C     available to different parts of ADCIRC.
           ENDDO
       END FUNCTION toUppercase
 
+      SUBROUTINE print_remaining_time(it)
+          IMPLICIT NONE
+          INTEGER,INTENT(IN) :: it
+          INTEGER(8)         :: time_now
+          INTEGER(8)         :: count_rate
+          INTEGER(8)         :: count_max
+          REAL(8)            :: remaining
+          REAL(8)            :: elapsed
+          INTEGER(8)         :: days_elapsed
+          INTEGER(8)         :: hours_elapsed
+          INTEGER(8)         :: minutes_elapsed
+          INTEGER(8)         :: seconds_elapsed
+          INTEGER(8)         :: days_remaining
+          INTEGER(8)         :: hours_remaining
+          INTEGER(8)         :: minutes_remaining
+          INTEGER(8)         :: seconds_remaining
+
+          CALL SYSTEM_CLOCK(time_now,count_rate,count_max)
+          time_now = MOD(time_now,count_max) / count_rate
+          elapsed = REAL(time_now - model_startwallclock,8)
+          remaining = (elapsed / REAL(it,8)) * REAL(NT-IT-ITHS,8)
+
+          days_elapsed = FLOOR(elapsed / 86400D0)
+          elapsed = elapsed - days_elapsed * 86400D0
+          hours_elapsed = FLOOR(elapsed / 3600D0)
+          elapsed = elapsed - hours_elapsed * 3600D0
+          minutes_elapsed = FLOOR(elapsed / 60D0)
+          elapsed = elapsed - minutes_elapsed * 60D0
+          seconds_elapsed = elapsed
+
+          days_remaining = FLOOR(remaining / 86400D0)
+          remaining = remaining - days_remaining * 86400D0
+          hours_remaining = FLOOR(remaining / 3600D0)
+          remaining = remaining - hours_remaining * 3600D0
+          minutes_remaining = FLOOR(remaining / 60D0)
+          remaining = remaining - minutes_remaining * 60D0
+          seconds_remaining = remaining
+
+          WRITE(SCREENUNIT,'(2X,A,$)') "WALL CLOCK TIME ELAPSED: "
+          IF(days_elapsed.GT.0D0)THEN
+            WRITE(SCREENUNIT,10) days_elapsed,hours_elapsed,minutes_elapsed
+          ELSEIF(hours_elapsed.GT.0D0)THEN
+            WRITE(SCREENUNIT,11) hours_elapsed,minutes_elapsed,seconds_elapsed
+          ELSE
+            WRITE(SCREENUNIT,12) minutes_elapsed,seconds_elapsed
+          ENDIF
+          WRITE(*,'(A,$)') ", "
+
+          WRITE(SCREENUNIT,'(2X,A,$)') "WALL CLOCK TIME REMAINING: "
+          IF(days_remaining.GT.0D0)THEN
+            WRITE(SCREENUNIT,10) days_remaining,hours_remaining,minutes_remaining
+          ELSEIF(hours_remaining.GT.0D0)THEN
+            WRITE(SCREENUNIT,11) hours_remaining,minutes_remaining,seconds_remaining
+          ELSE
+            WRITE(SCREENUNIT,12) minutes_remaining,seconds_remaining
+          ENDIF
+          WRITE(*,'(A)') ""
+
+10        FORMAT(I3,"d",I2.2,"h",I2.2,"m",$)
+11        FORMAT(I2,"h",I2.2,"m",I2.2,"s",$)
+12        FORMAT(I2,"m",I2.2,"s",$)
+
+      END SUBROUTINE print_remaining_time
 
 C     ------------------------------------------------------------------
 C     ------------------------------------------------------------------

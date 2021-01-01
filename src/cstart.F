@@ -31,7 +31,8 @@ C
      &    igep, ndsetsw, nspoolgw, igrads, nscougc, igcp, c2ddi, iden, 
      &    rundes, runid, dtdp, ntrspm, nspoolm, nscoub, ibstp, nscouge, 
      &    ndsetsc, nspoolgc, nscougb, igbp, c3d, ipstp, nstav_g, nstav,
-     &    ntrspv, iicestp, nstam_g, nstam, openfileforread, cbaroclinic
+     &    ntrspv, iicestp, nstam_g, nstam, openfileforread, cbaroclinic,
+     &    model_startwallclock,model_startclockrate,model_startclockmax
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4,
      &    agrid 
@@ -81,6 +82,8 @@ C
 #endif
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
+      CALL SYSTEM_CLOCK(model_startwallclock,model_startclockrate,model_startclockmax)
+      model_startwallclock = MOD(model_startwallclock,model_startclockmax) / model_startclockrate
       !
       call initializeWettingAndDrying()
 

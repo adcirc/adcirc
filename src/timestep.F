@@ -62,7 +62,7 @@ C
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
      &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
-     &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE
+     &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE, print_remaining_time
 #ifdef CSWAN
      &  , waveWindMultiplier
 #endif
@@ -96,7 +96,6 @@ C.....sb46.28sb03 added 09/xx/2006
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
       USE GLOBAL_3DVS, ONLY:
      &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA, Z0B,NFEN
-
 ! arash 1/20/2016
      &     , BPG
 
@@ -1199,8 +1198,8 @@ C     the screen.
                WRITE(ScreenUnit,1991)
      &            IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,
      &            KVMAX,MYPROC
-
             ENDIF
+            IF(MYPROC.EQ.0) CALL print_remaining_time(it)
  1991       FORMAT(1X,'TIME STEP =',I8,1x,F6.2,'% COMPLETE',
      &           5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
@@ -1263,6 +1262,7 @@ C     output the global node number to debug the local PE fort.14s
                WRITE(ScreenUnit,1992)
      &              IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX
             ENDIF
+            CALL print_remaining_time(it)
  1992       FORMAT(1X,'TIME STEP =',I8,1x,F6.2,'% COMPLETE',
      &           5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
