@@ -21,9 +21,9 @@ C----------------------------------------------------------------------
       !    2 D   D A T A
       !
 #ifdef CSWAN
-      integer, parameter :: numOutputDescript2D = 48
+      integer, parameter :: numOutputDescript2D = 52
 #else
-      integer, parameter :: numOutputDescript2D = 34
+      integer, parameter :: numOutputDescript2D = 38
 #endif
 
       type descript2D_ptr_t
@@ -63,6 +63,11 @@ C----------------------------------------------------------------------
       !jgf52.05: Added for regular output of wet/dry quantities.
       type(OutputDataDescript_t), target :: noffOutDescript
       type(OutputDataDescript_t), target :: nodeCodeOutDescript
+      ! mvb Added for rainfall
+      type(OutputDataDescript_t), target :: rainfallRateDescript
+      type(OutputDataDescript_t), target :: rainfallTotalDescript
+      type(OutputDataDescript_t), target :: rainfallAccountedDescript
+      type(OutputDataDescript_t), target :: rainfallUnaccountedDescript
 Cobell Added a descript for time varying weir tracking
       type(OutputDataDescript_t), target :: weirElevDescript
       ! @jasonfleming: adding output for wind drag
@@ -102,6 +107,11 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       !jgf52.05: Added for normal output of wet/dry quantities (nodecode and noff)
       integer, allocatable, target :: nodecode_out_g(:)
       integer, allocatable, target :: noff_out_g(:)
+      ! mvb Added for rainfall
+      real(sz), allocatable, target :: rainfallrate_g(:)
+      real(sz), allocatable, target :: rainfalltotal_g(:)
+      real(sz), allocatable, target :: rainfallaccounted_g(:)
+      real(sz), allocatable, target :: rainfallunaccounted_g(:)
       real(sz), allocatable, target :: windDragOut_g(:)
       ! jgf: Added support for water level offset
       real(sz), allocatable, target :: dynamicWaterLevelCorrection2_g(:)
@@ -344,6 +354,8 @@ C----------------------------------------------------------------------
      &   nscours, nscoub, nscougb, nscoui, nscoup,
      &   use_tvw, nout_tvw, ntcys_tvw, ntcyf_tvw, ig_tvw, tvw,
      &   nspool_tvw, nscou_tvw,
+     &   nscourt, nscourr, nscoura, nscouru,
+     &   igrr, igrt, igra, igru,
      &   nodeCodeOutSpoolCounter, noffOutSpoolCounter, noffOutFilePos,
      &   nodeCodeOutFilePos, NE_G, IMAP_EL_LG, nodecode, noff,
      &   fauxFilePosition, initiallyDrySpoolCounter,
@@ -354,13 +366,15 @@ C----------------------------------------------------------------------
      &   dynamicWaterLevelCorrectionSpoolCounter, dynamicWaterLevelCorrection2, 
      &   usingdynamicWaterLevelCorrection, dynamicWaterLevelCorrectionStaSpoolCounter, 
      &   dynamicWaterLevelCorrectionFilePos, dynamicWaterLevelCorrectionSta,
-     &   dynamicWaterLevelCorrectionStaFilePos, PRBCKGRND
+     &   dynamicWaterLevelCorrectionStaFilePos, PRBCKGRND,
+     &   rainfallrate, rainfalltotal, rainfallaccounted,rainfallunaccounted
 
       USE MESH, ONLY : NP, NE, DP, NM, ICS, labels
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim,
      &  elemental_slope_limiter_grad_max,elemental_slope_limiter_active
       USE GLOBAL_IO, ONLY : readAndMapToSubdomainMaxMin,packOne,
      &                      collectFullDomainArray,unpackOne
+      USE RAINFALL, ONLY : use_rain
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY : initNetCDFOutputFile,
      &                      readAndMapToSubdomainMaxMinNetCDF
@@ -424,23 +438,28 @@ C
       ptr(32)%descript2D => windDragDescript
       ptr(33)%descript2D => dynamicWaterLevelCorrectionDescript
       ptr(34)%descript2D => dynamicWaterLevelCorrectionStaDescript
+      ptr(35)%descript2D => rainfallRateDescript
+      ptr(36)%descript2D => rainfallTotalDescript
+      ptr(37)%descript2D => rainfallAccountedDescript
+      ptr(38)%descript2D => rainfallUnaccountedDescript
+
 
 !... For SWAN, there are additional output arrays
 #ifdef CSWAN
-      ptr(35)%descript2D => SwanHSDescript 
-      ptr(36)%descript2D => SwanHSMaxDescript
-      ptr(37)%descript2D => SwanDIRDescript
-      ptr(38)%descript2D => SwanDIRMaxDescript
-      ptr(39)%descript2D => SwanTM01Descript
-      ptr(40)%descript2D => SwanTM01MaxDescript
-      ptr(41)%descript2D => SwanTPSDescript
-      ptr(42)%descript2D => SwanTPSMaxDescript
-      ptr(43)%descript2D => SwanWindDescript
-      ptr(44)%descript2D => SwanWindMaxDescript
-      ptr(45)%descript2D => SwanTM02Descript
-      ptr(46)%descript2D => SwanTM02MaxDescript
-      ptr(47)%descript2D => SwanTMM10Descript
-      ptr(48)%descript2D => SwanTMM10MaxDescript
+      ptr(39)%descript2D => SwanHSDescript 
+      ptr(40)%descript2D => SwanHSMaxDescript
+      ptr(41)%descript2D => SwanDIRDescript
+      ptr(42)%descript2D => SwanDIRMaxDescript
+      ptr(43)%descript2D => SwanTM01Descript
+      ptr(44)%descript2D => SwanTM01MaxDescript
+      ptr(45)%descript2D => SwanTPSDescript
+      ptr(46)%descript2D => SwanTPSMaxDescript
+      ptr(47)%descript2D => SwanWindDescript
+      ptr(48)%descript2D => SwanWindMaxDescript
+      ptr(49)%descript2D => SwanTM02Descript
+      ptr(50)%descript2D => SwanTM02MaxDescript
+      ptr(51)%descript2D => SwanTMM10Descript
+      ptr(52)%descript2D => SwanTMM10MaxDescript
 #endif
 
       ! jgf51.21.24: Set some defaults
@@ -568,6 +587,98 @@ C
       ElevDescript % ConsiderWetDry       = .TRUE.
       ElevDescript % field_name           = 'Elev'
       ElevDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
+
+      ! rainfallrate.63
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+        ALLOCATE(rainfallrate_g(1:NP_G))
+      ENDIF
+      rainfallRateDescript % lun           = 663
+      IF(USE_RAIN)THEN
+        rainfallRateDescript % specifier     = NOUTGE
+      ELSE
+        rainfallRateDescript % specifier     = 0
+      ENDIF
+      rainfallRateDescript % startTimestep = NTCYSGE
+      rainfallRateDescript % endTimestep   = NTCYFGE
+      rainfallRateDescript % outputTimeStepIncrement = NSPOOLGE
+      rainfallRateDescript % spoolCounter  => NSCOURR
+      rainfallRateDescript % filepos       => IGRR
+      rainfallRateDescript % array         => rainfallRate
+      rainfallRateDescript % array_g       => rainfallRate_g
+      rainfallRateDescript % considerWetDry = .TRUE.
+      rainfallRateDescript % field_name     = 'rainfallrate'
+      rainfallrateDescript % writerFormats(1:5) = (/ 1, 3, 4, 5, 7 /)
+      rainfallrateDescript % file_basename   = 'rainfall_rate'
+      rainfallrateDescript % file_extension  = 63
+
+      ! rainfalltotal.63
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+        ALLOCATE(rainfalltotal_g(1:NP_G))
+      ENDIF
+      rainfalltotalDescript % lun           = 665
+      IF(USE_RAIN)THEN
+          rainfalltotalDescript % specifier     = NOUTGE
+      ELSE
+          rainfalltotalDescript % specifier     = 0
+      ENDIF
+      rainfalltotalDescript % startTimestep = NTCYSGE
+      rainfalltotalDescript % endTimestep   = NTCYFGE
+      rainfalltotalDescript % outputTimeStepIncrement = NSPOOLGE
+      rainfalltotalDescript % spoolCounter  => NSCOURT
+      rainfalltotalDescript % filepos       => IGRT
+      rainfalltotalDescript % array         => rainfallTotal
+      rainfalltotalDescript % array_g       => rainfallTotal_g
+      rainfalltotalDescript % considerWetDry = .FALSE.
+      rainfalltotalDescript % field_name     = 'rainfalltotal'
+      rainfalltotalDescript % writerFormats(1:5) = (/ 1, 3, 4, 5, 7 /)
+      rainfalltotalDescript % file_basename   = 'rainfall_total'
+      rainfalltotalDescript % file_extension  = 63
+
+      ! rainfallAccounted.63
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+        ALLOCATE(rainfallaccounted_g(1:NP_G))
+      ENDIF
+      rainfallaccountedDescript % lun           = 666
+      IF(USE_RAIN)THEN
+          rainfallaccountedDescript % specifier     = NOUTGE
+      ELSE
+          rainfallaccountedDescript % specifier     = 0
+      ENDIF
+      rainfallAccountedDescript % startTimestep = NTCYSGE
+      rainfallAccountedDescript % endTimestep   = NTCYFGE
+      rainfallAccountedDescript % outputTimeStepIncrement = NSPOOLGE
+      rainfallAccountedDescript % spoolCounter  => NSCOURA
+      rainfallAccountedDescript % filepos       => IGRA
+      rainfallAccountedDescript % array         => rainfallAccounted
+      rainfallAccountedDescript % array_g       => rainfallAccounted_g
+      rainfallAccountedDescript % considerWetDry = .FALSE.
+      rainfallAccountedDescript % field_name     = 'rainfallAccounted'
+      rainfallAccountedDescript % writerFormats(1:5) = (/ 1, 3, 4, 5, 7 /)
+      rainfallAccountedDescript % file_basename   = 'rainfall_accounted'
+      rainfallAccountedDescript % file_extension  = 63
+
+      ! rainfallUnaccounted.63
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+        ALLOCATE(rainfallunaccounted_g(1:NP_G))
+      ENDIF
+      rainfallunaccountedDescript % lun           = 667
+      IF(USE_RAIN)THEN
+          rainfallunaccountedDescript % specifier     = NOUTGE
+      ELSE
+          rainfallunaccountedDescript % specifier     = 0
+      ENDIF
+      rainfallunaccountedDescript % startTimestep = NTCYSGE
+      rainfallunaccountedDescript % endTimestep   = NTCYFGE
+      rainfallunaccountedDescript % outputTimeStepIncrement = NSPOOLGE
+      rainfallunaccountedDescript % spoolCounter  => NSCOURU
+      rainfallunaccountedDescript % filepos       => IGRU
+      rainfallunaccountedDescript % array         => rainfallunaccounted
+      rainfallunaccountedDescript % array_g       => rainfallunaccounted_g
+      rainfallunaccountedDescript % considerWetDry = .FALSE.
+      rainfallunaccountedDescript % field_name     = 'rainfallUnaccounted'
+      rainfallunaccountedDescript % writerFormats(1:5) = (/ 1, 3, 4, 5, 7 /)
+      rainfallunaccountedDescript % file_basename   = 'rainfall_unaccounted'
+      rainfallunaccountedDescript % file_extension  = 63
 
       ! tau0 fort.90
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN

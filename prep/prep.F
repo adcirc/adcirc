@@ -2250,6 +2250,23 @@ C
              write(15,*) '! -- End TVW Control Namelist --'
          endif
 
+! MVB - added for rainfall
+         if (found_rainfallCon_nml) then
+            write(15,*) "! -- Begin Rainfall Control Namelist --"
+            write(15,*) "&rainfallcontrol "
+            write(15,*) "    USE_RAIN=",USE_RAIN,","
+            write(15,*) "    rainfallType=",rainfallType,","
+            write(15,*) "    rainfallThreshold=",rainfallThreshold,","
+            write(15,*) "    rainfallDepth=",rainfallDepth,","
+            write(15,*) "    rainfallBlankSnaps=",rainfallBlankSnaps,","
+            write(15,*) "    rainfallMultiplier=",rainfallMultiplier,","
+            write(15,*) "    rainfallTimeIncrement=",rainfallTimeIncrement,","
+            write(15,*) "    rainfallFile='",TRIM(rainfallFile),"' "
+            write(15,*) "/"
+            write(15,*) "! -- End Rainfall Control Namelist --"
+         endif
+
+
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
          IF(FOUND_WC_NML)THEN
             WRITE(15,*) '! -- Begin Wave Coupling Namelist --'
@@ -7576,6 +7593,7 @@ C---------------------------------------------------------------------------
 #ifdef ADCNETCDF
       use sizes, only : ASCII, XDMF, myproc
       USE PRESIZES, ONLY: NM, MNTIF, MNE, MNP
+      USE RAINFALL, ONLY : use_rain
       USE HARM, ONLY : IHARIND, CHARMV, NHASE, NHASV, NHAGE, NHAGV
       USE VERSION
       USE PRE_GLOBAL, ONLY: NSTAE, NOUTE, RUNDES, RUNID, AGRID,
@@ -7652,6 +7670,11 @@ C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: InitiallyDryDescript   ! initiallydry.63
       type(OutputDataDescript_t), SAVE :: EndRisingInunDescript  ! endrisinginun.63
       type(OutputDataDescript_t), SAVE :: EverDriedDescript      ! everdried.63
+
+      type(OutputDataDescript_t), SAVE :: rainfallRateDescript          ! rainfallRate.63
+      type(OutputDataDescript_t), SAVE :: rainfallTotalDescript         ! rainfallTotal.63
+      type(OutputDataDescript_t), SAVE :: rainfallAccountedDescript     ! rainfallAccounted.63 
+      type(OutputDataDescript_t), SAVE :: rainfallUnaccountedDescript   ! rainfallUnaccounted.63
 
       type(OutputDataDescript_t), SAVE :: dynamicWaterlevelCorrectionDescript    ! dynamicWaterlevelCorrection.63
       type(OutputDataDescript_t), SAVE :: dynamicWaterlevelCorrectionStaDescript ! dynamicWaterlevelCorrection.61
@@ -7864,6 +7887,66 @@ C     fort.63
       ElevDescript % file_basename        = 'fort'
       ElevDescript % readMaxMin           = .false.
       call makeFileName(ElevDescript)
+C
+C     rainfall_rate.63
+      rainfallRateDescript % specifier            = NOUTGE
+      rainfallRateDescript % lun                  = 663
+      rainfallRateDescript % initial_value        = 0.0
+      rainfallRateDescript % num_items_per_record = 1
+      rainfallRateDescript % num_fd_records       = MNP
+      rainfallRateDescript % num_records_this     = MNP
+      rainfallRateDescript % ConsiderWetDry       = .TRUE.
+      rainfallRateDescript % alternate_value      = -99999.0
+      rainfallRateDescript % field_name           = 'rainrate'
+      rainfallRateDescript % file_extension       = 63
+      rainfallRateDescript % file_basename        = 'rainfall_rate'
+      rainfallRateDescript % readMaxMin           = .false.
+      call makeFileName(RainfallRateDescript)
+C
+C     rainfall_total.63
+      rainfallTotalDescript % specifier            = NOUTGE
+      rainfallTotalDescript % lun                  = 665
+      rainfallTotalDescript % initial_value        = 0.0
+      rainfallTotalDescript % num_items_per_record = 1
+      rainfallTotalDescript % num_fd_records       = MNP
+      rainfallTotalDescript % num_records_this     = MNP
+      rainfallTotalDescript % ConsiderWetDry       = .TRUE.
+      rainfallTotalDescript % alternate_value      = -99999.0
+      rainfallTotalDescript % field_name           = 'raintotal'
+      rainfallTotalDescript % file_extension       = 63
+      rainfallTotalDescript % file_basename        = 'rainfall_total'
+      rainfallTotalDescript % readMaxMin           = .false.
+      call makeFileName(RainfallTotalDescript)
+C
+C     rainfall_accounted.63
+      rainfallAccountedDescript % specifier            = NOUTGE
+      rainfallAccountedDescript % lun                  = 666
+      rainfallAccountedDescript % initial_value        = 0.0
+      rainfallAccountedDescript % num_items_per_record = 1
+      rainfallAccountedDescript % num_fd_records       = MNP
+      rainfallAccountedDescript % num_records_this     = MNP
+      rainfallAccountedDescript % ConsiderWetDry       = .TRUE.
+      rainfallAccountedDescript % alternate_value      = -99999.0
+      rainfallAccountedDescript % field_name           = 'rainaccounted'
+      rainfallAccountedDescript % file_extension       = 63
+      rainfallAccountedDescript % file_basename        = 'rainfall_accounted'
+      rainfallAccountedDescript % readMaxMin           = .false.
+      call makeFileName(RainfallAccountedDescript)
+C
+C     rainfall_unaccounted.63
+      rainfallUnaccountedDescript % specifier            = NOUTGE
+      rainfallUnaccountedDescript % lun                  = 667
+      rainfallUnaccountedDescript % initial_value        = 0.0
+      rainfallUnaccountedDescript % num_items_per_record = 1
+      rainfallUnaccountedDescript % num_fd_records       = MNP
+      rainfallUnaccountedDescript % num_records_this     = MNP
+      rainfallUnaccountedDescript % ConsiderWetDry       = .TRUE.
+      rainfallUnaccountedDescript % alternate_value      = -99999.0
+      rainfallUnaccountedDescript % field_name           = 'rainunaccounted'
+      rainfallUnaccountedDescript % file_extension       = 63
+      rainfallUnaccountedDescript % file_basename        = 'rainfall_unaccounted'
+      rainfallUnaccountedDescript % readMaxMin           = .false.
+      call makeFileName(RainfallUnaccountedDescript)
 C
       ! fort.90 (tau0)
       Tau0Descript % lun                  = 90
@@ -8822,6 +8905,13 @@ C     was specified.
       CALL initNetCDFOutputFile(PrMinDescript, reterr)
       CALL initNetCDFOutputFile(WVMaxDescript, reterr)
       CALL initNetCDFOutputFile(RSMaxDescript,reterr)
+      if (use_rain) then
+          CALL initNetCDFOutputFile(RainfallRateDescript, reterr)
+          CALL initNetCDFOutputFile(RainfallTotalDescript, reterr)
+          CALL initNetCDFOutputFile(RainfallAccountedDescript, reterr)
+          CALL initNetCDFOutputFile(RainfallUnaccountedDescript, reterr)
+      endif
+
       if (inundationOutput.eqv..true.) then
          CALL initNetCDFOutputFile(InundationTimeDescript,reterr)
          CALL initNetCDFOutputFile(MaxInunDepthDescript,reterr)

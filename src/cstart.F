@@ -51,6 +51,7 @@ C
      &    initInundationOutput
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
       USE GWCE, ONLY : etime1, etime2, etiminc
+      USE RAINFALL, ONLY: use_rain, rainfallInit
 #ifdef ADCNETCDF
       use Couple2BC3D, only: Initial_BC3D_NetCDF
 #endif
@@ -275,6 +276,8 @@ C        momentum equations
          call coldstartMeteorologicalForcing(nws)
 
       ENDIF
+
+      if(use_rain)CALL rainfallInit(0.0D0)
 
 C...INPUT RADIATION STRESS INFORMATION FROM UNIT 23
 C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS

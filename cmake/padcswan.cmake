@@ -66,6 +66,7 @@ IF(BUILD_PADCSWAN AND PERL_FOUND)
                             ${CMAKE_SOURCE_DIR}/src/quadtrature.F 
                             ${CMAKE_SOURCE_DIR}/src/couple2baroclinic3D.F
                             ${CMAKE_SOURCE_DIR}/src/wetdry.F 
+                            ${CMAKE_SOURCE_DIR}/src/rainfall.F
                             ${CMAKE_SOURCE_DIR}/src/gwce.F 
                             ${CMAKE_SOURCE_DIR}/src/momentum.F 
                             ${CMAKE_SOURCE_DIR}/src/xdmfio.F 

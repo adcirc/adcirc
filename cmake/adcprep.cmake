@@ -24,7 +24,8 @@ IF(BUILD_ADCPREP)
                           ${CMAKE_SOURCE_DIR}/src/nodalattr.F 
                           ${CMAKE_SOURCE_DIR}/src/harm.F 
                           ${CMAKE_SOURCE_DIR}/prep/read_global.F 
-                          ${CMAKE_SOURCE_DIR}/src/subdomain.F 
+                          ${CMAKE_SOURCE_DIR}/src/subdomain.F
+                          ${CMAKE_SOURCE_DIR}/src/rainfall.F
                           ${CMAKE_SOURCE_DIR}/src/gwce.F
                           ${CMAKE_SOURCE_DIR}/src/wetdry.F 
                           ${CMAKE_SOURCE_DIR}/src/momentum.F 

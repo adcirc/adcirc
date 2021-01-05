@@ -498,6 +498,9 @@ C
       INTEGER :: ios_nddt
       INTEGER :: ios_metCon
       INTEGER :: ios_tvw
+C
+!   mvb -- added for rainfallControl namelist related variables
+      INTEGER :: ios_rain
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       INTEGER :: IOS_WC
 #ifdef ADCNETCDF
@@ -532,6 +535,8 @@ C
       found_tbc_nml = .false.   !flag to determine if the timebathycontrol namelist was present
       found_metCon_nml = .false.   !flag to determine if the metControl namelist was present
       found_tvw_nml = .false.
+C
+      found_rainfallCon_nml = .FALSE.
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       FOUND_WC_NML = .FALSE.
       foundCorrectionControlNamelist = .false.
@@ -606,6 +611,19 @@ Cobell - Added TVW Namelist
         FOUND_TVW_NML = .TRUE.
       ELSE
         FOUND_TVW_NML = .FALSE.
+      ENDIF
+      REWIND(15)
+
+! Bilskie - Added rainfallControl namelist
+      READ(15,NML=rainfallControl,IOSTAT=ios_rain)
+      IF(ios_rain.GE.0)THEN
+          found_rainfallCon_nml = .TRUE.
+          CALL logMessage(INFO,
+     &      'The rainfallControl namelist was found.')
+      ELSE
+          found_rainfallCon_nml = .FALSE.
+          CALL logMessage(INFO,
+     &      'The rainfallControl namelist was not found.')
       ENDIF
       REWIND(15)
 

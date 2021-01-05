@@ -104,6 +104,14 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
      &                  initWindModule
       USE OWIWIND, ONLY: nPowellSearchDomains
+      USE RAINFALL, ONLY : use_rain, rainfallMultiplier,
+     &                          rainfallFile,
+     &                          rainfallType,
+     &                          rainfallTimeIncrement,
+     &                          rainfallThreshold,
+     &                          rainfallDepth,
+     &                          rainfallBlankSnaps,
+     &                          rainfallControl
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
       USE OWIWIND_NETCDF, ONLY: NWS13ColdStartString,
@@ -522,6 +530,9 @@ c....tcm v50.66.02 additions for time varying bathymetry
       NAMELIST /TimeBathyControl/ nddt,BTIMINC,BCHGTIMINC
       INTEGER :: ios  ! return value of i/o operation
 c...
+c... mvb - added for rainfallControl namelist
+      logical :: found_rainfallCon_nml  ! flag to determine if the rainfallControl namelist was found
+c...
 c... tcm v50.79 addition for metControl namelist
       logical :: found_metCon_nml  !flag to determine if the metControl namelist was present
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
@@ -561,6 +572,9 @@ C     tcm v50.66.02 -- additions for time varying bathymetry
       NDDT = 0
       IOS_NDDT = 0
       FOUND_TBC_NML = .FALSE.
+C
+C     mvb -- addition for rainfallControl namelist
+      found_rainfallCon_nml = .FALSE.
 C
 C     tcm v50.79 -- addition for metControl namelist
       FOUND_metCon_NML = .FALSE.
@@ -672,6 +686,16 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          WRITE(*,'(2A)') "INFO: The time varying weir control namelist",
      &      " was found."
          found_tvw_nml = .TRUE.
+      ENDIF
+      REWIND(15)
+
+!mvb - Added for rainfallControl namelist
+      READ(UNIT=15,NML=rainfallControl,IOSTAT=IOS)
+      IF(IOS.GT.0)THEN
+         WRITE(*,*) "INFO: The rainfallControl namelist was not found."
+      ELSE
+         WRITE(*,*) "INFO: The rainfallControl namelist was found."
+         found_rainfallCon_nml = .TRUE.
       ENDIF
       REWIND(15)
 

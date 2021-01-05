@@ -239,6 +239,10 @@ C
       type(nodalData), private, save, target :: WVMax      ! for maxwvel.63
       type(nodalData), private, save, target :: RSMax      ! for rads_max.63
       type(nodalData), private, save :: rads       ! for rads.64
+      type(nodalData), private, save :: rainfallRateNodal
+      type(nodalData), private, save :: rainfallTotalNodal
+      type(nodalData), private, save :: rainfallAccountedNodal
+      type(nodalData), private, save :: rainfallUnaccountedNodal
 #if defined CSWAN || defined ADCSWAN
       type(nodalData), private, save :: sw_hs      ! for swan_HS.63
       type(nodalData), private, save :: sw_dir     ! for swan_DIR.63
@@ -466,6 +470,14 @@ C
             CALL initNodalDataFile(weirElev, descript1, reterr)
          CASE(164)
             CALL initNodalDataFile(rads, descript1, reterr)
+         CASE(663)
+            CALL initNodalDataFile(rainfallRateNodal, descript1, reterr)
+         CASE(665)
+            CALL initNodalDataFile(rainfallTotalNodal, descript1, reterr)
+         CASE(666)
+            CALL initNodalDataFile(rainfallAccountedNodal, descript1, reterr)
+         CASE(667)
+            CALL initNodalDataFile(rainfallUnaccountedNodal, descript1, reterr)
 #if defined CSWAN || defined ADCSWAN
          CASE(301)
             CALL initNodalDataFile(sw_hs, descript1, reterr)
@@ -1950,6 +1962,122 @@ C
             CALL check_err(iret)
             iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
      &             'standard_name', 'sea_surface_height_above_geoid')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'coordinates', 'time y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)
+            CALL putUnitsAttribute(dat%ncid, dat%nodal_data_id,
+     &           'm', 'ft')
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             '_FillValue', doubleval)
+            CALL check_err(iret)
+C
+          CASE(663)
+C
+            dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
+            dat%varnames(1) = 'rainrate'
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &         NF90_DOUBLE, dat%nodal_data_dims, dat%nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'long_name', 'rainfall rate')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'standard_name', 'rainfall_rate')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'coordinates', 'time y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)
+            CALL putUnitsAttribute(dat%ncid, dat%nodal_data_id,
+     &           'mm/hr', 'in/hr')
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             '_FillValue', doubleval)
+            CALL check_err(iret)
+C
+         CASE(665)
+C
+            dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
+            dat%varnames(1) = 'raintotal'
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &         NF90_DOUBLE, dat%nodal_data_dims, dat%nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'long_name', 'rainfall total')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'standard_name', 'rainfall_total')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'coordinates', 'time y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)
+            CALL putUnitsAttribute(dat%ncid, dat%nodal_data_id,
+     &           'm', 'ft')
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             '_FillValue', doubleval)
+            CALL check_err(iret)
+C
+          CASE(666)
+C
+            dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
+            dat%varnames(1) = 'rainaccounted'
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &         NF90_DOUBLE, dat%nodal_data_dims, dat%nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'long_name', 'rainfall accounted for in hydrodynamics')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'standard_name', 'rainfall_accounted')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'coordinates', 'time y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)
+            CALL putUnitsAttribute(dat%ncid, dat%nodal_data_id,
+     &           'm', 'ft')
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             '_FillValue', doubleval)
+            CALL check_err(iret)
+C
+         CASE(667)
+C
+            dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
+            dat%varnames(1) = 'rainunaccounted'
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &         NF90_DOUBLE, dat%nodal_data_dims, dat%nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'long_name', 'rainfall unaccounted for in hydrodynamics')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'standard_name', 'rainfall_unaccounted')
             CALL check_err(iret)
             iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
      &             'coordinates', 'time y x')
@@ -4172,6 +4300,14 @@ C
             CALL writeNodalData(tau0nc, lun, descript1, timesec)
          CASE(164)
             CALL writeNodalData(rads, lun, descript1, timesec)
+        CASE(663)
+            CALL writeNodalData(rainfallRateNodal, lun, descript1, timesec)
+        CASE(665)
+            CALL writeNodalData(rainfallTotalNodal, lun, descript1, timesec)
+        CASE(666)
+            CALL writeNodalData(rainfallAccountedNodal, lun, descript1, timesec)
+        CASE(667)
+            CALL writeNodalData(rainfallUnaccountedNodal, lun, descript1, timesec)
 #if defined CSWAN || defined ADCSWAN
          CASE(301)
             CALL writeNodalData(sw_hs, lun, descript1, timesec)
@@ -4733,6 +4869,18 @@ C
         CALL check_err(iret)
         iret=nf90_inq_varid(dat%ncid, "radstress_y",dat%v_nodal_data_id)
         CALL check_err(iret)
+      CASE(663)
+        iret=nf90_inq_varid(dat%ncid,"rainrate",dat%nodal_data_id)
+        CALL check_err(iret) 
+      CASE(665)
+        iret=nf90_inq_varid(dat%ncid,"raintotal",dat%nodal_data_id)
+        CALL check_err(iret) 
+      CASE(666)
+        iret=nf90_inq_varid(dat%ncid,"rainaccounted",dat%nodal_data_id)
+        CALL check_err(iret) 
+      CASE(667)
+        iret=nf90_inq_varid(dat%ncid,"rainunaccounted",dat%nodal_data_id)
+        CALL check_err(iret) 
 #ifdef CSWAN
       CASE(301)
         iret=nf90_inq_varid(dat%ncid, "swan_HS", dat%nodal_data_id)

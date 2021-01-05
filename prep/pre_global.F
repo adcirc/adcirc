@@ -273,6 +273,9 @@ c.... !tcm v52.30.01 added for forced use of Smagorinski Eddy Viscosity
       ! zc - added for tvw namelist
       LOGICAL :: FOUND_TVW_NML
 
+      ! mvb - added for rainfall namelist
+      LOGICAL :: FOUND_RAINFALLCON_NML
+
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       LOGICAL :: FOUND_WC_NML
 #ifdef ADCNETCDF

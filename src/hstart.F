@@ -78,6 +78,7 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
      &   inundationTime, inundationTime_onset, maxInunDepth, 
      &   maxInunDepth_time, outputNodeCode, outputNOFF
       USE GWCE, ONLY : etime1, etime2, etiminc
+      USE RAINFALL, ONLY : use_rain, rainfallInit
 #ifdef ADCNETCDF
       use Couple2BC3D, only: Initial_BC3D_NetCDF
 #endif
@@ -1452,6 +1453,7 @@ C----------------------MET FORCING------------------------------------
 
       call hotstartMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
      &   wvnxout, wvnyout, timeloc, rampmete2)
+      if(use_rain) CALL rainfallInit(timeloc)
 
 C----------------------MET FORCING------------------------------------
 C

@@ -104,6 +104,13 @@ C-----------------------------------------------------------------------
       USE ITPACKV
       USE GWCE, ONLY : a00, b00, c00, convcr, isldia, itmax,
      &   invertedBarometerOnElevationBoundary
+      USE RAINFALL,ONLY : use_rain, rainfallMultiplier,
+     &                  rainfallFile, rainfallType,
+     &                  rainfallTimeIncrement,
+     &                  rainfallThreshold,
+     &                  rainfallDepth,
+     &                  rainfallBlankSnaps,
+     &                  rainfallControl
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE VERSION
 !     jgf46.00
@@ -195,6 +202,8 @@ C
       LOGICAL :: USE_VEL_STAT_FILE = .false.     !.true. only if a velocity station file exists
       LOGICAL :: USE_CONC_STAT_FILE = .false.    !.true. only if a concentration station file exists
       LOGICAL :: USE_MET_STAT_FILE = .false.     !.true. only  if a met station file exists
+
+      LOGICAL :: found_rainfall_nml = .false.    ! flat to determine if the rainfallControl namelist is present
 
 !   tcm v50.66.02 -- added timebathycontrol namelist related variables
       INTEGER :: ios_nddt
@@ -411,6 +420,27 @@ Casey 180318: Added NWS=13
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 #endif
+
+      !...Read in the rainfall control namelist from fort.15
+      USE_RAIN = .FALSE.
+      rainfallMultiplier = 1.0
+      rainfallType = 0
+      rainfallThreshold = 0.1D0
+      rainfallDepth = 0.1D0
+      rainfallBlankSnaps = 0
+      rainfallFile = ""
+      READ(UNIT=15,NML=rainfallControl,IOSTAT=IOS)
+      CALL logNamelistReadStatus("rainfallControl",ios)
+      WRITE(scratchMessage,*) "use_rain=",use_rain,
+     & "rainfallType=",rainfallType,
+     & "rainfallTimeIncrement=",rainfallTimeIncrement,
+     & "rainfallThreshold=",rainfallThreshold,
+     & "rainfallDepth=",rainfallDepth,
+     & "rainfallBlankSnaps=",rainfallBlankSnaps,
+     & "rainfallMultiplier=",rainfallMultiplier,
+     & "rainfallFile=",TRIM(rainfallFile)
+      CALL logMessage(ECHO,TRIM(scratchMessage))
+      REWIND(15)
 
       !...Read in time varying weir control from fort.15
       NOUT_TVW = -99999

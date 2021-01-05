@@ -58,6 +58,7 @@ IF(BUILD_ADCSWAN AND PERL_FOUND)
                              ${CMAKE_SOURCE_DIR}/src/globalio.F 
                              ${CMAKE_SOURCE_DIR}/src/netcdfio.F 
                              ${CMAKE_SOURCE_DIR}/src/subdomain.F 
+                             ${CMAKE_SOURCE_DIR}/src/rainfall.F
                              ${CMAKE_SOURCE_DIR}/src/gwce.F 
                              ${CMAKE_SOURCE_DIR}/src/wetdry.F 
                              ${CMAKE_SOURCE_DIR}/src/momentum.F 

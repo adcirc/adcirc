@@ -236,6 +236,8 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  ET00(:), UU00(:), VV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMICE00(:), CICEOUT(:) !v49.64.01 tcm -added for ice concentration
+      REAL(SZ),ALLOCATABLE, TARGET ::  rainfallRate(:), rainfallTotal(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  rainfallAccounted(:), rainfallUnaccounted(:)
 
       REAL(SZ),ALLOCATABLE, TARGET ::  Pr2(:)
 #ifdef CSWAN
@@ -525,6 +527,7 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       integer, target :: itau0p ! position in tau0 output file for variable tau0
       integer, target :: igsp ! sponge layer output
       integer, target :: igdp ! debug elevation
+      integer, target :: IGRR, IGRT, IGRA, IGRU
       ! station file position counters
       integer, target :: ivstp ! file position in velocity station file
       integer, target :: iwstp ! file position in wind velocity station file
@@ -563,6 +566,7 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER, TARGET :: NSCOUC, NSCOUE, NSCOUGC, NSCOUGE, NSCOUGV ! output spool counters
       INTEGER, TARGET :: NSCOUGW, NSCOURS, NSCOUGP, NSCOUM, NSCOUV ! output spool counters
       INTEGER, TARGET :: NSCOUGI, NSCOUGT, NSCOUGS  ! output spool counters
+      INTEGER, TARGET :: NSCOURT, NSCOURR, NSCOURA, NSCOURU ! output spool paramters
       INTEGER, TARGET :: NSCOU_TVW ! output spool counters
       INTEGER, TARGET :: NSCOUP ! output spool counter for fort.71 (bar. press. sta.)
       INTEGER, TARGET :: NSCOUI ! output spool counter for fort.91 (ice sta.)     
@@ -1438,6 +1442,17 @@ C
       RSNY1(:) = 0.d0 ! must be initialized to zero for SWAN
       RSNX2(:) = 0.d0
       RSNY2(:) = 0.d0
+
+      !... mvb for rainfall
+      ALLOCATE (rainfallRate(1:MNP))
+      ALLOCATE (rainfallTotal(1:MNP))
+      ALLOCATE (rainfallAccounted(1:MNP))
+      ALLOCATE (rainfallUnaccounted(1:MNP))
+
+      rainfallRate(:)           = 0D0
+      rainfallTotal(:)          = 0D0
+      rainfallAccounted(:)      = 0D0
+      rainfallUnaccounted(:)    = 0D0
 
       if (NCICE.NE.0) then
          ALLOCATE ( CICE1(MNP),CICE2(MNP),CICEOUT(MNP) ) !tcm v49.64.01 added

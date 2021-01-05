@@ -149,6 +149,7 @@ C     the conventional GWCE or (2) the predictor-corrector GWCE.
      & , dumy1, dumy2
       use messenger
 #endif
+      use rainfall, only : use_rain, applyRainfall
       use momentum, only : mom_eqs_new_nc
       use nodalattributes, only : loadEleSlopeLim
       implicit none
@@ -160,6 +161,8 @@ C       -------------PREDICTOR-CORRECTOR-GWCE---------------------------
 ckmd    Changed to include the predictor-corrector algorithm
       IF(CPRECOR) THEN
          CALL GWCE_New(IT,TimeLoc,TimeH)
+!...mvb added call for rainfall
+         IF(USE_RAIN) CALL applyRainfall(TimeLoc)
 c...tcm added call for slope limiting         
          IF (LoadEleSlopeLim) THEN
             call check_slopes(it,TimeLoc)
@@ -191,6 +194,8 @@ C                         -OR-
 C      -------------------GWCE------------------------------------------
       IF(CGWCE_New) THEN
          CALL GWCE_New(IT,TimeLoc,TimeH)
+!...mvb added call for rainfall
+         IF(USE_RAIN) CALL applyRainfall(TimeLoc)
 c.... tcm added call to slope limiter         
          IF (LoadEleSlopeLim) THEN
             call check_slopes(it,TimeLoc)

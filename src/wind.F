@@ -33,6 +33,8 @@ C
 #endif
       logical nwsOK     ! true if NWS value in fort.15 is allowed
 
+      REAL(8)             :: StormDirection
+
       real(sz), allocatable :: wvnx1(:) ! wind velocity in x-dir at each node at prev ts
       real(sz), allocatable :: wvny1(:) ! wind velocity in y-dir at each node at prev ts
       real(sz), allocatable :: wvnx2(:) ! wind velocity in x-dir at each node at new ts
@@ -52,7 +54,9 @@ C
 Casey 110518: Added for Mark Powell's sectorial wind drag.
       REAL(8)  :: EyeLat(3) = 0.D0
       REAL(8)  :: EyeLon(3) = 0.D0
-      LOGICAL  :: FoundEye
+      REAL(sz)  :: rMaxLat = 0.0D0
+      REAL(sz)  :: rMaxLon = 0.0D0
+      LOGICAL   :: FoundEye, FoundRMax
       REAL(SZ),allocatable :: PWeight(:,:)
       Logical,allocatable :: foundSector(:)
 C
@@ -531,7 +535,6 @@ C----------------------------------------------------------------------
           REAL(8)             :: NodeDirection
           REAL(8)             :: NodeLat
           REAL(8)             :: NodeLon
-          REAL(8)             :: StormDirection
           REAL(8)             :: Weight(3)
           REAL(8)             :: PowellDrag
           REAL(8)             :: rawGarrattWindDrag
@@ -1346,7 +1349,7 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
 #endif
             ENDIF
             if (draglawtype.EQ.draglaw_powell) then
-               call findStormCenter(eyeLat, eyeLon, foundEye)
+               call findStormCenter(eyeLat, eyeLon, foundEye, FoundRMax, rMaxLon, rMaxLat)
             endif
          ELSE
             CHANGE_14 = .false.
@@ -1373,7 +1376,7 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
                ENDIF
                CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND,HasData)
                if (draglawtype.EQ.draglaw_powell) then
-                  call findStormCenter(eyeLat, eyeLon, foundEye)
+                  call findStormCenter(eyeLat, eyeLon, FoundEye, FoundRMax, rMaxLon, rMaxLat)
                endif
             ENDIF
             WTRATIO_12 = (TimeLoc-WTIME1_12)/WTIMINC_12
@@ -1549,7 +1552,7 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
             END DO
             CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND)
             if(draglawtype.EQ.draglaw_powell)then
-               call findStormCenter(eyeLat, eyeLon, foundEye)
+               call findStormCenter(eyeLat, eyeLon, FoundEye, FoundRMax, rMaxLon, rMaxLat)
             endif
          ENDIF
          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
@@ -1859,11 +1862,11 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
         if(draglawtype.EQ.draglaw_powell)then
-            call findStormCenter(eyeLat, eyeLon, foundEye)
+            call findStormCenter(eyeLat, eyeLon, FoundEye, FoundRMax, rMaxLon, rMaxLat)
         endif
         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND)
         if(draglawtype.EQ.draglaw_powell)then
-            call findStormCenter(eyeLat, eyeLon, foundEye)
+            call findStormCenter(eyeLat, eyeLon, FoundEye, FoundRMax, rMaxLon, rMaxLat)
         endif
         WTIME1 = STATIM*86400.D0
         WTIME2 = WTIME1 + WTIMINC

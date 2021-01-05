@@ -374,7 +374,7 @@
 !> @param[inout] eyeLon prior 3 locations (x) where the eye was found
 !> @param[out]   foundEye set to true if the eye has been found
 !-----------------------------------------------------------------------
-      subroutine findStormCenter(eyeLat, eyeLon, foundEye)
+      subroutine findStormCenter(eyeLat, eyeLon, foundEye, outfoundRMax, outRMaxLon, outRMaxLat)
 !-----------------------------------------------------------------------
         use GLOBAL,only:PRBCKGRND
         implicit none
@@ -382,15 +382,22 @@
         real(sz), intent(inout) :: eyeLat(3)
         real(sz), intent(inout) :: eyeLon(3)
         logical, intent(out)    :: foundEye
+        logical, intent(out),optional    :: outFoundRMax
+        real(sz), intent(out),optional   :: outRmaxLon, outRMaxLat
         integer                 :: EyeLatI
         integer                 :: EyeLonI
         integer                 :: EyeDomainI
+        integer                 :: maxWindLonI
+        integer                 :: maxWindLatI
         real(SZ)                :: EyeLatTemp
         real(SZ)                :: EyeLonTemp
         real(SZ)                :: EyePressure
+        real(SZ)                :: windMag,windMax
+        real(SZ)                :: rMaxLon,rMaxLat
         real(SZ)                :: minp
         integer                 :: s
         integer                 :: minidx(2)
+        logical                 :: FoundRMax = .FALSE.
 
         call setMessageSource("findStormCenter")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -402,6 +409,7 @@
         EyeDomainI = 0
         EyeLatTemp = 0D0
         EyeLonTemp = 0D0
+        windMax = 0D0
         EyePressure = PRBCKGRND
         
         do S = 1,nPowellSearchDomains
@@ -413,6 +421,13 @@
                     EyeLatI = minidx(2)
                     EyeDomainI = s
                     EyePressure = owi(s)%p(minidx(1),minidx(2))
+                endif
+
+                windMag = (owi(s)%u(minidx(1),minidx(2))**2D0 + owi(s)%v(minidx(1),minidx(2))**2D0)**(1D0/2D0)
+                if(windMag.GT.windMax)THEN
+                    windMax         = windMag
+                    maxWindLonI     = minidx(1)
+                    maxWindLatI     = minidx(2)
                 endif
             endif
         enddo
@@ -426,6 +441,9 @@
                FoundEye = .TRUE.
                EyeLatTemp = owi(EyeDomainI)%swlat+(EyeLatI-1)*owi(EyeDomainI)%dLat
                EyeLonTemp = owi(EyeDomainI)%swlon+(EyeLonI-1)*owi(EyeDomainI)%dLon
+               rMaxLat = owi(EyeDomainI)%swlat+(maxWindLatI-1)*owi(EyeDomainI)%dLat
+               rMaxLon = owi(EyeDomainI)%swlon+(maxWindLonI-1)*owi(EyeDomainI)%dLon 
+               FoundRMax = .TRUE.
                IF((EyeLatTemp.EQ.EyeLat(3)).AND.(EyeLonTemp.EQ.EyeLon(3)))THEN
                   CONTINUE
                ELSE
@@ -439,7 +457,12 @@
             ENDIF
         ELSE
              FoundEye = .FALSE.
+             FoundRMax = .FALSE.
         ENDIF
+
+        IF(PRESENT(outFoundRMax)) outFoundRMax = foundRMax
+        IF(PRESENT(outRMaxLon)) outRMaxLon = rMaxLon
+        IF(PRESENT(outRMaxLat)) outRMaxLat = rMaxLat
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
