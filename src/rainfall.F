@@ -175,16 +175,9 @@
                     ELSEIF(rainfallType.EQ.combinedRainfall)THEN
                         rain = MAX(r1,r2)
                     ENDIF
-
+                    
                     rainfallTotal(I) = rainfallTotal(I)+RAIN                   !..m
                     rainfallRate(I)  = RAIN*3600D0*1000D0/DTDP                 !...mm/h
-                    !...Original code to add rain (or not) to ETA2
-                    !IF(ETA2(I)+DP(I).GT.rainfallThreshold)THEN
-                    !    ETA2(I)              = ETA2(I) + RAIN
-                    !    rainfallAccounted(I) = rainfallAccounted(I) + RAIN     !..m
-                    !ELSE
-                    !    rainfallUnaccounted(I) = rainfallUnaccounted(I) + RAIN !..m
-                    !ENDIF
 
                     IF(STARTDRY(I).EQ.0)THEN    !...Don't collect water in leveed regions
 

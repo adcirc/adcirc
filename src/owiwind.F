@@ -395,7 +395,7 @@
         real(SZ)                :: windMag,windMax
         real(SZ)                :: rMaxLon,rMaxLat
         real(SZ)                :: minp
-        integer                 :: s
+        integer                 :: s,i,j
         integer                 :: minidx(2)
         logical                 :: FoundRMax = .FALSE.
 
@@ -423,15 +423,20 @@
                     EyePressure = owi(s)%p(minidx(1),minidx(2))
                 endif
 
-                windMag = (owi(s)%u(minidx(1),minidx(2))**2D0 + owi(s)%v(minidx(1),minidx(2))**2D0)**(1D0/2D0)
-                if(windMag.GT.windMax)THEN
-                    windMax         = windMag
-                    maxWindLonI     = minidx(1)
-                    maxWindLatI     = minidx(2)
-                endif
+                do i=1,owi(s)%iLon
+                    do j=1,owi(s)%iLat
+                        windMag = (owi(s)%u(i,j)**2D0 + owi(s)%v(i,j)**2D0)**(1D0/2D0)
+                        if(windMag.GT.windMax)then
+                            windMax         = windMag
+                            maxWindLonI     = i
+                            maxWindLatI     = j
+                        endif
+                    enddo
+                enddo
+
             endif
         enddo
-
+        
         IF(EyeDomainI.NE.0)THEN
             IF((EyeLatI.EQ.0).OR.(EyeLonI.EQ.0).OR.(EyeDomainI.EQ.0).OR.
      &         (EyeLatI.EQ.1).OR.(EyeLatI.EQ.owi(EyeDomainI)%iLat).OR.

@@ -290,6 +290,16 @@ ifeq ($(compiler),intel)
         FLIBS   := $(INCDIRS) -xAVX
      endif
   endif
+  ifeq ($(MACHINENAME),sapelo2) 
+     FFLAGS1 := $(INCDIRS) -O3 -assume byterecl -132 -xHOST -assume buffered_io
+     CFLAGS  := $(INCDIRS) -O3 -DLINUX -xHOST
+     FLIBS   := $(INCDIRS) -xHOST
+     ifeq ($(DEBUG),trace)
+        FFLAGS1 := $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -xHOST -assume buffered_io
+        CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX  -xHOSAT
+        FLIBS   := $(INCDIRS) -xHOST
+     endif
+  endif
   endif
   #
   #@jasonfleming Added to fix bus error on hatteras@renci
