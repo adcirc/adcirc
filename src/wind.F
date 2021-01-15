@@ -2050,6 +2050,7 @@ C----------------------------------------------------------------------
       integer :: i ! node loop counter
       integer :: j
       real(sz) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
+      integer :: TimeLoc_NM ! timeloc to the nearest minute
 
       call setMessageSource("hotStartMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -2846,8 +2847,9 @@ C     from NAM data
 !     WJP Feb27-2019: Added for NWS=14 for grib2
       IF (ABS(NWS).eq.14) THEN
          ! TimeLoc should be rounded down to nearest WTIMINC
-         WTIME1 = WTIMINC*floor(TimeLoc/WTIMINC)
-         WTIME2 = TimeLoc + WTIMINC
+         TimeLoc_NM = nint(TimeLoc/60) ! first round to nearest minute
+         WTIME1 = WTIMINC*floor(TimeLoc_NM*60/WTIMINC)
+         WTIME2 = WTIME1 + WTIMINC
          WTRATIO = (TimeLoc-WTIME1)/WTIMINC
          IF(NCICE.NE.0)THEN
              CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
@@ -2857,8 +2859,8 @@ C     from NAM data
          ! Initialising winds (pressure is already initialized)
          ! Get the first wind snap
          if (NCICE.eq.14) then
-            CICE_TIME1 = CICE_TIMINC*floor(TimeLoc/CICE_TIMINC)
-            CICE_TIME2 = TimeLoc + CICE_TIMINC
+            CICE_TIME1 = CICE_TIMINC*floor(TimeLoc_NM*60/CICE_TIMINC)
+            CICE_TIME2 = CICE_TIME1 + CICE_TIMINC
             CALL NWS14GET(WVNX1,WVNY1,PRN1,CICE1)
          else
             CALL NWS14GET(WVNX1,WVNY1,PRN1)
@@ -2868,7 +2870,7 @@ C     from NAM data
             CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
             CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,PRBCKGRND,HasData)
             WTIME1_12 = WTIME1
-            WTIME2_12 = TimeLoc + WTIMINC_12
+            WTIME2_12 = WTIME1_12 + WTIMINC_12
             WTRATIO_12 = (TimeLoc-WTIME1_12)/WTIMINC_12
             WTRATIO_14 = WTRATIO
          endif
@@ -4834,7 +4836,8 @@ C     The subroutine only works for ICS=2 (spherical coordinates)
       ENDIF
 C
 C     Get data for this time step.
-      CALL GetHollandStormData(lat,lon,cpress,spd,rrp,rmw,tvx,tvy,TIMELOC)
+      CALL GetHollandStormData(lat,lon,cpress,spd,rrp,rmw,
+     &                         tvx,tvy,TIMELOC)
       !
       ! @jasonfleming: If this is a "CALM" period, set winds to zero
       ! velocity and pressure equal to the background pressure and return.
@@ -5212,14 +5215,14 @@ C     Convert units.
             Spd(i) = Spd(i) * 0.51444444d0 ! convert kts to m/s
 C
 #ifdef DEBUG_HOLLAND
-            WRITE(scratchMessage,1244) CastTime(i),Lat(i),Lon(i),
+            WRITE(16,1244) CastTime(i),Lat(i),Lon(i),
      &           Spd(i),CPress(i),RRP(i),RMW(i),WindRefTime
-            call logMessage(DEBUG,scratchMessage)
             if ( i.gt.1 ) then
                write(scratchMessage,2355) FcstInc(i-1)
                call logMessage(DEBUG, scratchMessage)
             endif
- 1244       FORMAT('CastTime ',e16.8,' Lat ',f6.2,' Lon ',f6.2,
+ 1244       FORMAT('DEBUG HOLLAND: CastTime ',
+     &           e16.8,' Lat ',f6.2,' Lon ',f6.2,
      &           /,'Spd ',f8.2,' CPress ',f10.2,' RRP ',f12.2,
      &           ' RMW ',f8.2, ' WindRefTime ',e16.8)
  2355       format('FcstInc(i-1) ',e16.8)
@@ -5260,7 +5263,8 @@ C     Determine the correspondence between the current simulation time and
 C     the fort.22 file.
          i=2
          DO
-            IF (TIMELOC.ge.CastTime(i-1).and.TIMELOC.lt.CastTime(i)) THEN
+            IF (ceiling(TIMELOC).ge.CastTime(i-1).and.
+     &          floor(TIMELOC).lt.CastTime(i)) THEN
                EXIT
             ELSE
                i=i+1
@@ -5297,8 +5301,8 @@ C     If time exceeds the next hindcast/nowcast/forecast time, increment the
 C     array counter.
       IF (TIMELOC.gt.CastTime(i)) THEN
          i=i+1
-C         jgf51.14: Check to see that we haven't gone off the end of
-C         meteorological data.
+C        jgf51.14: Check to see that we haven't gone off the end of
+C        meteorological data.
           IF (i.gt.pl) THEN
              call allMessage(ERROR,'The simulation time has extended '//
      &          'beyond the end of the meteorological dataset.')
@@ -6379,16 +6383,16 @@ C***********************************************************************
      &    (HollBs1(ient,i),i=1,4),(VmaxesBL1(ient,i),i=1,4)
 
             if ( cycle_num1(ient) == cycle_num1(ient-1)) then
-                isot=isot+1 ! same icyc, next isotach
-                if (isot.gt.4) then
-            write(scratchMessage,'(a,a,i0,a)')
-     &      'The GAHM fort.22 input file has more than 4 isotachs ',
-     &      ' in cycle ',cycle_num1(ient),'.'
-                   call allMessage(ERROR,scratchMessage)
-                   call windTerminate()
-                endif
+               isot=isot+1 ! same icyc, next isotach
+               if (isot.gt.4) then
+                  write(scratchMessage,'(a,a,i0,a)')
+     &             'The GAHM fort.22 input file has more than 4 ',
+     &             'isotachs in cycle ',cycle_num1(ient),'.'
+                  call allMessage(ERROR,scratchMessage)
+                  call windTerminate()
+               endif
             else
-                isot=1 ! initialize isotach #
+               isot=1 ! initialize isotach #
                IF ( iFcstInc1(ient) == 0 .AND. iFcstInc(icyc) == 0) then
                   icyc = icyc
                ELSE
@@ -6416,9 +6420,9 @@ C***********************************************************************
                cycle_num(icyc) = cycle_num1(ient)
                HollB(icyc) = HollB1(ient)
 
-              ! switch sin and cos b/c these are compass directions
-              uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
-              vTrans(icyc)=cos(dir1(ient)*deg2rad)*speed1(ient)
+               ! switch sin and cos b/c these are compass directions
+               uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
+               vTrans(icyc)=cos(dir1(ient)*deg2rad)*speed1(ient)
 
                CycleTime(icyc) =  iFcstInc(icyc) * 3600.d0 + timeOffset
 
@@ -8775,6 +8779,7 @@ C----------------------------------------------------------------------
                call bl_interp2(nxp,nyp,lon,lat,xx,yy,indt,wt)
                indp(ii,:,i) = indt
                weightsp(ii,:,i) = wt
+#ifdef DEBUG_NWS14
                if (i.gt.1) cycle 
                write(16,*) 'NWS=14 Interpolating check: xx',xx,'yy',yy
                write(16,*) 'Lon',lon(indt(1),indt(2)),
@@ -8786,10 +8791,10 @@ C----------------------------------------------------------------------
      &                           lat(indt(1),indt(4)),
      &                           lat(indt(3),indt(4))
                write(16,*) 'Weights',wt
+               write(16,*) 'Indices',indt
+#endif
             enddo
             deallocate(lon,lat)
-!            srtI(ii,:) = [minval(indp(ii,1,:)),minval(indp(ii,2,:))]
-!            endI(ii,:) = [maxval(indp(ii,3,:)),maxval(indp(ii,4,:))]
          enddo
       endif
       
@@ -8833,6 +8838,12 @@ C----------------------------------------------------------------------
      &              V10(indp(ub,1,i),indp(ub,4,i))*weightsp(ub,3,i)    +
      &              V10(indp(ub,3,i),indp(ub,4,i))*weightsp(ub,4,i)
          endif
+#ifdef DEBUG_NWS14
+         if (i.gt.1) cycle 
+         write(16,*) 'NWS=14 Values check for i = 1'
+         write(16,*) 'Pressure: ',PRN2(i)
+         write(16,*) 'Winds, U10: ',WVNX2(i),'V10: ',WVNY2(i)
+#endif
       enddo 
       deallocate(Pmsl,U10,V10)
       

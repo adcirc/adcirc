@@ -2678,7 +2678,9 @@ C...
 #ifdef IBM
       NT=INT(RNDAY*(86400.D0/DTDP)+0.5d0,KIND(0.0d0))
 #else
-      NT=INT(RNDAY*(86400.D0/DTDP)+0.5d0)
+C     WJP: Changed to use floor to make sure that
+C          met end time is not exceeded at end of simulation
+      NT = FLOOR(RNDAY*86400.D0/DTDP)     
 #endif
       WRITE(16,1920) NT
  1920 FORMAT(5X,'NUMBER OF TIME STEPS  =',I8,/)
