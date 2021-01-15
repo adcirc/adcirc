@@ -115,11 +115,14 @@ OPTION(DEBUG_HARM_TRACE "Write the tracing debug information for the harmonics m
 OPTION(DEBUG_COLDSTART_TRACE "Write the tracing debug information for the coldstart module" OFF)
 OPTION(DEBUG_COUPLE2SWAN_TRACE "Write the tracing debug information for the couple2swan module" OFF)
 OPTION(DEBUG_ADCIRC_TRACE "Write the tracing debug information for the main ADCIRC module" OFF)
+OPTION(DEBUG_HOLLAND "Write the debugging information for the symmetric Holland model" OFF)
+OPTION(DEBUG_NWS14 "Write the debugging information for NWS=14 interpolation" OFF)
 MARK_AS_ADVANCED(DEBUG_GLOBALIO_TRACE DEBUG_WRITER_TRACE DEBUG_WRITE_OUTPUT_TRACE DEBUG_WIND_TRACE 
                  DEBUG_WEIR_TRACE DEBUG_TVW_TRACE DEBUG_VSMY_TRACE DEBUG_TIMESTEP_TRACE DEBUG_SUBPREP_TRACE 
                  DEBUG_SUBDOMAIN_TRACE DEBUG_READ_INPUT_TRACE DEBUG_OWIWIND_TRACE DEBUG_NODALATTR_TRACE 
                  DEBUG_NETCDF_TRACE DEBUG_MESSENGER_TRACE DEBUG_MESH_TRACE DEBUG_HOTSTART_TRACE DEBUG_GLOBAL_TRACE
-                 DEBUG_HARM_TRACE DEBUG_COLDSTART_TRACE DEBUG_COUPLE2SWAN_TRACE DEBUG_ADCIRC_TRACE IBM )
+                 DEBUG_HARM_TRACE DEBUG_COLDSTART_TRACE DEBUG_COUPLE2SWAN_TRACE DEBUG_ADCIRC_TRACE 
+                 DEBUG_HOLLAND DEBUG_NWS14 IBM )
 
 OPTION(ENABLE_POWELL "Force Powell wind drag to be enabled. Warning: Overrides any other options specified at run time." OFF)
 MARK_AS_ADVANCED(ENABLE_POWELL)
