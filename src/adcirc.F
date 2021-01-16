@@ -407,7 +407,6 @@ C******************************************************************************
 C*    ADCIRC run routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Run(NTIME_STP)
-      USE MPI
       USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
       USE GLOBAL, ONLY : iTime, DEBUG, INFO, setMessageSource, allMessage,
      &   unsetMessageSource, statim, dtdp
@@ -430,8 +429,13 @@ C..............
       USE AMPIIOSUBS, ONLY: ABOUT_TO_MIGRATE, JUST_MIGRATED,
      &    JUST_MIGRATED_TEST, ABOUT_TO_MIGRATE_TEST
 C..............
-
-      IMPLICIT NONE
+#ifndef HAVE_MPI_MOD
+      implicit none
+      include 'mpif.h'
+#else
+      use mpi
+      implicit none
+#endif
 C
       INTEGER, OPTIONAL :: NTIME_STP
       INTEGER :: AMPI_LB_FREQ, IERR

@@ -126,11 +126,16 @@ C     correctly
 C-----------------------------------------------------------------------
       SUBROUTINE sendLabelInfoToWriters()
 C-----------------------------------------------------------------------
-          use mpi
           use sizes,only: myproc,mnwproc,mnproc
           use messenger,only: mpi_comm_adcirc
           use global,only: labels_g,np_g
+#ifndef HAVE_MPI_MOD
           implicit none
+          include 'mpif.h'
+#else
+          use mpi
+          implicit none
+#endif
           INTEGER :: ierr
           INTEGER :: I,N
           INTEGER :: mpistat(mpi_status_size)
