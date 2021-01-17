@@ -115,12 +115,12 @@ ifeq ($(compiler),ampi)
      XDMFLIBPATH := /home/jason/projects/XDMF/Code/testLatest
   endif
 #  PPFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
-  PPFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP
+  PPFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP -memory paranoid
 #  FC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
-  FC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP
+  FC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP -memory paranoid
 #  PFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
-  PFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP
-  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none 
+  PFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP -memory paranoid
+  FFLAGS1	:=  $(INCDIRS) -ffixed-line-length-none -O2
   ifeq ($(PROFILE),enable)
     FFLAGS1	:=  $(INCDIRS) -pg -Og -fprofile-arcs -ftest-coverage -ffixed-line-length-none 
   endif
@@ -143,7 +143,7 @@ ifeq ($(compiler),ampi)
     FFLAGS1	:=  $(INCDIRS) -g3 -Og -ffixed-line-length-none -fbacktrace -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -finit-local-zero
   endif
   ifeq ($(DEBUG),proj)
-    FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none -fbacktrace -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -finit-local-zero -tracemode projections
+    FFLAGS1	:=  $(INCDIRS) -ffixed-line-length-none -fbacktrace -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -finit-local-zero -tracemode projections -O2
   endif
 
 #  ifneq ($(MACHINENAME),jason-desktop)
@@ -152,7 +152,7 @@ ifeq ($(compiler),ampi)
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DSKIP_DRY
   DPRE		:=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
      DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
@@ -192,7 +192,7 @@ ifeq ($(compiler),ampi)
   IMODS 	:=  -I
   CC		:= gcc
   CCBE		:= $(CC)
-  CFLAGS	:= $(INCDIRS) -O2 -DLINUX
+  CFLAGS	:= $(INCDIRS) -DLINUX -O2
   ifeq ($(DEBUG),full)
      CFLAGS     := $(INCDIRS) -g -O0 -DLINUX
   endif
