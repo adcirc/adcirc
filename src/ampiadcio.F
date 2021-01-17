@@ -52,7 +52,7 @@ C----------------------------------------------------------------------
           INTEGER :: RANK, IERR, FLAG, OLD_PE
 
 #ifdef AMPI_COMP
-          CALL MPI_COMM_RANK(RANK, MPI_COMM_ADCIRC, IERR)
+          CALL MPI_COMM_RANK(MPI_COMM_ADCIRC, RANK, IERR)
           CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, OLD_PE, FLAG, IERR)
 
           PRINT *,"Rank ",RANK," about to migrate from PE ",OLD_PE
@@ -92,7 +92,7 @@ C----------------------------------------------------------------------
           INTEGER :: RANK, IERR, FLAG, NEW_PE
 
 #ifdef AMPI_COMP
-          CALL MPI_COMM_RANK(RANK, MPI_COMM_ADCIRC, IERR)
+          CALL MPI_COMM_RANK(MPI_COMM_ADCIRC, RANK, IERR)
           CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, NEW_PE, FLAG, IERR)
 
           PRINT *,"Rank ",RANK," just migrated to PE ",NEW_PE

@@ -442,7 +442,7 @@ C
 
 !      AMPI_LB_FREQ = 10 ! TODO: set this from the command line
 !      AMPI_LB_FREQ = (4*WTIMINC)/DTDP + 5 ! TODO: set this from the command line
-!      AMPI_LB_FREQ = 300 ;
+      AMPI_LB_FREQ = 300 ;
 C
       call setMessageSource("ADCIRC_Run")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
@@ -500,7 +500,7 @@ C             to then call the SWAN time-stepping subroutine.
 #ifdef AMPI_COMP
         IF(MOD(ITIME,AMPI_LB_FREQ).EQ.0)THEN
 C          TODO: uncomment below for load balancing:
-C          CALL AMPI_MIGRATE(AMPI_INFO_LB_SYNC, IERR)
+          CALL AMPI_MIGRATE(AMPI_INFO_LB_SYNC, IERR)
         ENDIF
 #endif
 
