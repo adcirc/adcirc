@@ -115,12 +115,12 @@ ifeq ($(compiler),ampi)
      XDMFLIBPATH := /home/jason/projects/XDMF/Code/testLatest
   endif
 #  PPFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
-  PPFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP -memory paranoid
+  PPFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP
 #  FC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
-  FC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP -memory paranoid
+  FC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP
 #  PFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
-  PFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP -memory paranoid
-  FFLAGS1	:=  $(INCDIRS) -ffixed-line-length-none -O2
+  PFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP
+  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none 
   ifeq ($(PROFILE),enable)
     FFLAGS1	:=  $(INCDIRS) -pg -Og -fprofile-arcs -ftest-coverage -ffixed-line-length-none 
   endif
@@ -143,7 +143,7 @@ ifeq ($(compiler),ampi)
     FFLAGS1	:=  $(INCDIRS) -g3 -Og -ffixed-line-length-none -fbacktrace -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -finit-local-zero
   endif
   ifeq ($(DEBUG),proj)
-    FFLAGS1	:=  $(INCDIRS) -ffixed-line-length-none -fbacktrace -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -finit-local-zero -tracemode projections -O2
+    FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none -fbacktrace -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -finit-local-zero -tracemode projections 
   endif
 
 #  ifneq ($(MACHINENAME),jason-desktop)
@@ -192,7 +192,7 @@ ifeq ($(compiler),ampi)
   IMODS 	:=  -I
   CC		:= gcc
   CCBE		:= $(CC)
-  CFLAGS	:= $(INCDIRS) -DLINUX -O2
+  CFLAGS	:= $(INCDIRS) -O2 -DLINUX 
   ifeq ($(DEBUG),full)
      CFLAGS     := $(INCDIRS) -g -O0 -DLINUX
   endif
