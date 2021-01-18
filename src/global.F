@@ -1255,9 +1255,18 @@ C...
 C     cms51.06: moved fort.33 file from read_input.F to here
 #ifdef CMPI
       OPEN(16+CK_LUN,FILE=trim(localdir)//'/'//'fort.16', ACTION='WRITE',
+     &    STATUS='OLD',IOSTAT=errorIO)
+      IF ( errorIO .ne. 0 ) THEN 
+         OPEN(16+CK_LUN,FILE=trim(localdir)//'/'//'fort.16', ACTION='WRITE',
      &    STATUS='REPLACE')
+      ENDIF
+      
       OPEN(33+CK_LUN,FILE=trim(localdir)//'/'//'fort.33', ACTION='WRITE',
+     &    STATUS='OLD',IOSTAT=errorIO)
+      IF ( errorIO .ne. 0 ) THEN 
+         OPEN(33+CK_LUN,FILE=trim(localdir)//'/'//'fort.33', ACTION='WRITE',
      &    STATUS='REPLACE')
+      ENDIF
       
 !      CALL openFileForWriteAppend(lun=16,
 !     &     filename=trim(localdir)//'/'//'fort.16', errorIO=errorIO) ;
