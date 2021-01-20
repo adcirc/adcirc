@@ -1289,17 +1289,27 @@ C...
 C     cms51.06: moved fort.33 file from read_input.F to here
 #ifdef CMPI
       filename = trim(localdir)//'/'//'fort.16' ;
-      OPEN(UNIT=16+CK_LUN,FILE=trim(filename),STATUS='OLD',
+      inquire(FILE=trim(filename),EXIST=fileFound)
+      IF ( fileFound ) THEN 
+        inquire(UNIT=16+CK_LUN,OPENED=FileOpened) ; 
+        IF ( .NOT. FileOpened ) THEN
+           OPEN(UNIT=16+CK_LUN,FILE=trim(filename),STATUS='OLD',
      &        ACTION='WRITE',POSITION='APPEND',IOSTAT=errorIO)
-      IF ( errorIO .ne. 0 ) THEN 
+        END IF
+      ELSE
         OPEN(16+CK_LUN,FILE=trim(filename), 
      &     ACTION='WRITE', STATUS='REPLACE' )
       ENDIF     
 
       filename = trim(localdir)//'/'//'fort.33' ;
-      OPEN(UNIT=33+CK_LUN,FILE=trim(filename),STATUS='OLD',
+      inquire(FILE=trim(filename),EXIST=fileFound)
+      IF ( fileFound ) THEN 
+        inquire(UNIT=33+CK_LUN,OPENED=FileOpened) ; 
+        IF ( .NOT. FileOpened ) THEN
+           OPEN(UNIT=33+CK_LUN,FILE=trim(filename),STATUS='OLD',
      &        ACTION='WRITE',POSITION='APPEND',IOSTAT=errorIO)
-      IF ( errorIO .ne. 0 ) THEN 
+        END IF 
+      ELSE
         OPEN(33+CK_LUN,FILE=trim(filename), 
      &     ACTION='WRITE', STATUS='REPLACE' )
       ENDIF     
