@@ -49,7 +49,9 @@ C----------------------------------------------------------------------
 #ifdef AMPI_COMP
           include 'mpif.h'
 #endif
-          INTEGER :: RANK, IERR, FLAG, OLD_PE
+          INTEGER :: RANK = 999999
+!$omp threadprivate(RANK)
+          INTEGER :: IERR, FLAG, OLD_PE
 
 #ifdef AMPI_COMP
           CALL MPI_COMM_RANK(MPI_COMM_ADCIRC, RANK, IERR)
@@ -58,13 +60,13 @@ C----------------------------------------------------------------------
           PRINT *,"Rank ",RANK," about to migrate from PE ",OLD_PE
 
 C     TODO: close files temporarily during migration
-          CALL closeLogFile() ;
+          CALL closeLogFile() 
 
           ! close a metfile
-          CALL close_met_files() ; 
+          CALL close_met_files() 
 
           ! close time dependent elevation and fluxes (if used)
-          CALL close_elevbc_riverbc_files( ) ;
+          CALL close_elevbc_riverbc_files( ) 
 
           ! close time varying bathymetry
           CALL  close_time_varying_bathymetry_file( )
@@ -89,7 +91,9 @@ C----------------------------------------------------------------------
 #ifdef AMPI_COMP
           include 'mpif.h'
 #endif
-          INTEGER :: RANK, IERR, FLAG, NEW_PE
+          INTEGER :: RANK = 999999
+!$omp threadprivate(RANK)
+          INTEGER :: IERR, FLAG, NEW_PE
 
 #ifdef AMPI_COMP
           CALL MPI_COMM_RANK(MPI_COMM_ADCIRC, RANK, IERR)
@@ -98,11 +102,11 @@ C----------------------------------------------------------------------
           PRINT *,"Rank ",RANK," just migrated to PE ",NEW_PE
 
 C     TODO: re-open files closed temporarily during migration
-C          CALL openLogFile() ;
-          CALL reopenLogFile() ;
+C          CALL openLogFile() 
+          CALL reopenLogFile() 
 
 
-          PRINT*, "reopen met file " ;  
+          PRINT*, "reopen met file "   
           ! open and fast forward to location where the metfile
           ! was closed 
           CALL reopenffwd_met_files( ) 
@@ -139,13 +143,13 @@ C-----------------------------------------------------------------------
           PRINT *,"Rank ",RANK," about to migrate from PE ",OLD_PE
 
 C     TODO: close files temporarily during migration
-          CALL closeLogFile() ;
+          CALL closeLogFile() 
 
           ! close a metfile
-          CALL close_met_files() ; 
+          CALL close_met_files()  
 
           ! close time dependent elevation and fluxes (if used)
-          CALL close_elevbc_riverbc_files( ) ;
+          CALL close_elevbc_riverbc_files( ) 
 
           ! close time varying bathymetry
           CALL  close_time_varying_bathymetry_file( )
@@ -167,7 +171,7 @@ C     TODO: close files temporarily during migration
           PRINT *,"Rank ",RANK," just migrated to PE ",NEW_PE
 
 C     TODO: re-open files closed temporarily during migration
-          CALL openLogFile() ;
+          CALL openLogFile()
  
           ! open and fast forward to location where the metfile
           ! was closed 
@@ -303,7 +307,7 @@ C     from the wind velocity.
 C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
          IF(ABS(NWS).EQ.12) THEN
           ! CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND)
-          CALL owiwind_closefiles( ) ; 
+          CALL owiwind_closefiles( ) 
          ENDIF
 
 C     RJW ffpl Merged:
@@ -322,7 +326,7 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
          IF((ABS(NWS).EQ.29).or.(ABS(NWS).eq.30)) THEN
            ! bring in next set of OWI met data
            ! CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND)
-           CALL owiwind_closefiles( ) ; 
+           CALL owiwind_closefiles( )   
            ! bring in next set of asymmetric vortex met data to separate arrays
            CALL CLOSEFORT22( ) 
          ENDIF
@@ -338,7 +342,7 @@ C.... tcm v51.06.02 added for GFDL Met Data
            ! do nothing
          ENDIF
 
-         RETURN ;
+         RETURN  
       CONTAINS      
 
         ! close fort.22
@@ -347,13 +351,13 @@ C.... tcm v51.06.02 added for GFDL Met Data
 
           LOGICAL:: iopened
  
-          iopened = .FALSE. ;
-          INQUIRE( UNIT = 22 + CK_LUN, OPENED = iopened ) ;
+          iopened = .FALSE.  
+          INQUIRE( UNIT = 22 + CK_LUN, OPENED = iopened )  
           IF ( iopened ) THEN 
-            CLOSE( 22 + CK_LUN ) ;
+            CLOSE( 22 + CK_LUN )  
           END IF
 
-          RETURN ;
+          RETURN  
         END SUBROUTINE CLOSEFORT22 
 
       END SUBROUTINE close_met_files
@@ -367,16 +371,16 @@ C.... tcm v51.06.02 added for GFDL Met Data
 
         SELECT CASE( IHOT )
         CASE (0)
-C           print*, "trying to reopen a met file" ;
-           cTimeLoc = ITIME*DTDP + STATIM*86400.00 ;
+C           print*, "trying to reopen a met file"  
+           cTimeLoc = ITIME*DTDP + STATIM*86400.00  
            CALL coldstartMeteorologicalReopenInputFile( nws, cTimeLoc )
         CASE (17,67,68,367,368,567,568) ! non-portable binary or netcdf hotstart file
            cTimeLoc = (ITIME - ITHS)*DTDP + ITHS*DTDPHS +
-     &         STATIM*86400.00 ;
+     &         STATIM*86400.00  
            CALL hotstartMeteorologicalReopenInputfile( nws, cTimeLoc )
         END SELECT
 
-        RETURN ; 
+        RETURN   
       END SUBROUTINE reopenffwd_met_files   
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -433,24 +437,24 @@ C----------------------------------------------------------------------
 !     &  ubound( wvny1 ), ubound( wvny2 ), ubound( prn1 ), ubound( prn2 )
 
  
-      offsettime = STATIM*86400.D0 ; 
-      nttime = INT((ctimeloc - offsettime)/dtdp) ;
+      offsettime = STATIM*86400.D0   
+      nttime = INT((ctimeloc - offsettime)/dtdp)  
 
-!     print*, "nttime = ", nttime ;
+!     print*, "nttime = ", nttime  
 
       IF(NWS.EQ.1) THEN
-         OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22') ;
-         CALL READFORT22DUMMY(  NP ) ; 
+         OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')  
+         CALL READFORT22DUMMY(  NP )   
          DO idf = 1, nttime
-            CALL READFORT22DUMMY(  NP ) ;
+            CALL READFORT22DUMMY(  NP )  
          END DO
       ENDIF
 
       IF(ABS(NWS).EQ.2) THEN
          OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
 
-         CALL READFORT22DUMMY( NP ) ;
-         CALL READFORT22DUMMY( NP ) ;
+         CALL READFORT22DUMMY( NP )  
+         CALL READFORT22DUMMY( NP )  
 
          WT1 = STATIM*86400.D0 
          WT2 = WT1 + WTIMINC  
@@ -459,7 +463,7 @@ C----------------------------------------------------------------------
              IF ( TIMEIT .GE. WT2 ) THEN   
                WT1 = WT2 
                WT2 = WT1 + WTIMINC 
-               CALL READFORT22DUMMY( NP ) ;
+               CALL READFORT22DUMMY( NP )  
              END IF 
          END DO
       ENDIF
@@ -535,8 +539,8 @@ C....                           to correspond with having only a global wind fil
       IF(ABS(NWS).EQ.5) THEN
          OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
 
-         CALL READFORT22DUMMY( NP ) ;
-         CALL READFORT22DUMMY( NP ) ;
+         CALL READFORT22DUMMY( NP )  
+         CALL READFORT22DUMMY( NP )  
          WT1 = STATIM*86400.D0 
          WT2 = WT1 + WTIMINC
   
@@ -545,7 +549,7 @@ C....                           to correspond with having only a global wind fil
              IF ( TIMEIT .GE. WT2 ) THEN   
                WT1 = WT2 
                WT2 = WT1 + WTIMINC 
-               CALL READFORT22DUMMY( NP ) ;
+               CALL READFORT22DUMMY( NP )  
              END IF 
          END DO
       ENDIF
@@ -690,7 +694,7 @@ C....tcm v51.06.02: Added NWS=16,-16 for reading ASCII GFDL Met data
       ENDIF
       !
       ! jgf52.14: Implementing Casey's fix for uninitialized
-      ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
+      ! wvnx1 and wvny1 arrays  they are not used/needed/initialized
       ! by the parametric vortex meteorological models but are used in
       ! the padcswan_init() subroutine to initialize the SWAN wind 
       ! velocities. Failure to initialize them causes NaNs in the 
@@ -720,7 +724,7 @@ C....tcm v51.06.02: Added NWS=16,-16 for reading ASCII GFDL Met data
 !            READ(22+CK_LUN,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
           END DO
 
-          RETURN ;
+          RETURN  
         END SUBROUTINE READFORT22DUMMY
  
 
@@ -787,7 +791,7 @@ C......RESTART WIND AND PRESSURE INFORMATION
        HsTimeLoc=ITHS*DTDPHS + StaTim*86400.D0
 
      
-      nttime = INT((ctimeloc - hstimeloc)/DTDP) ;
+      nttime = INT((ctimeloc - hstimeloc)/DTDP)  
 C     No wind, radiation stress or atmospheric pressure forcings are used.
       IF(NWS.EQ.1) THEN
          OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
@@ -810,11 +814,11 @@ C     pressure information with the model time step.
          CALL READFORT22DUMMY(  ) 
 
          CALL NWSGETADVANCE( ITHS + nttime, GETTIMEIT_CS,
-     &       READFORT22DUMMY, .TRUE.  )  ;
+     &       READFORT22DUMMY, .TRUE.  )   
 
        
 !         DO IT=1, ITHS + nttime
-!           TIMEIT = GETTIMEIT_CS( IT ) ;
+!           TIMEIT = GETTIMEIT_CS( IT )  
 !
 !           IF( TIMEIT .GT. WT2 ) THEN
 !              WT1=WT2
@@ -834,7 +838,7 @@ C     pressure information with the model time step.
          CALL READFORT22DUMMY(  ) 
 
          CALL NWSGETADVANCE( nttime, GETTIMEIT_HS, 
-     &       READFORT22DUMMY, .TRUE. )  ;
+     &       READFORT22DUMMY, .TRUE. )   
 
 !         DO IT=1, nttime 
 !            TIMEIT=IT*DTDP + hstimeloc ! kmd48.33bc - changed the DTDP to DTDPHS
@@ -879,10 +883,10 @@ C....                           to correspond with having only a global wind fil
          WT2=WTIMED-WREFTIM  !CAST INTO MODEL TIME REFERENCE
          WT1=WT2-WTIMINC
 
-         CALL NWSGETADVANCE( ITHS + nttime, GETTIMEIT_CS, NWS3GET  )  ;
+         CALL NWSGETADVANCE( ITHS + nttime, GETTIMEIT_CS, NWS3GET  )   
 
 !         DO IT=1,ITHS + nttime
-!           TIMEIT = GETTIMEIT_CS( IT ) ;
+!           TIMEIT = GETTIMEIT_CS( IT )  
 !           IF( TIMEIT .GT. WT2 ) THEN
 !               WT1=WT2
 !               WT2=WT2+WTIMINC
@@ -909,7 +913,7 @@ C     from wind velocity.
          wvny1 = wvny2
          CALL NWS4GET()
 
-         CALL NWSGETADVANCE( ITHS + nttime, GETTIMEIT_CS, NWS4GET  )  ;
+         CALL NWSGETADVANCE( ITHS + nttime, GETTIMEIT_CS, NWS4GET  )   
 !
 !         DO IT=1,ITHS + nttime
 !            TIMEIT=GETTIMEIT_CS( IT ) 
@@ -931,14 +935,14 @@ C     from wind velocity.
       IF(NWS.EQ.-4) THEN
          OPEN(22+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
 
-         WT1 = HsTimeLoc ;
-         WT2 = WT1 + WTIMINC ; 
+         WT1 = HsTimeLoc  
+         WT2 = WT1 + WTIMINC   
          CALL NWS4GET()
          wvnx1 = wvnx2
          wvny1 = wvny2
          CALL NWS4GET()
 
-         CALL NWSGETADVANCE( nttime, GETTIMEIT_HS, NWS4GET  )  ;
+         CALL NWSGETADVANCE( nttime, GETTIMEIT_HS, NWS4GET  )   
 !
 !         DO IT = 1, nttime
 !           TIMEIT = GETTIMEIT_HS( RIT= IT )
@@ -968,10 +972,10 @@ C     is used to compute wind stress from wind velocity.
          CALL READFORT22DUMMY(  ) 
          
          CALL NWSGETADVANCE( ITHS + nttime, GETTIMEIT_CS, 
-     &       READFORT22DUMMY,  .TRUE. )  ;
+     &       READFORT22DUMMY,  .TRUE. )   
 
 !          DO IT=1,ITHS + nttime
-!            TIMEIT = GETTIMEIT_CS( IT ) ;
+!            TIMEIT = GETTIMEIT_CS( IT )  
 !            IF(TIMEIT .GT. WT2) THEN
 !               WT1=WT2
 !               WT2=WT2 + WTIMINC
@@ -992,10 +996,10 @@ C     is used to compute wind stress from wind velocity.
          CALL READFORT22DUMMY( ) 
         
          CALL NWSGETADVANCE( nttime, GETTIMEIT_HS, 
-     &       READFORT22DUMMY,  .TRUE. )  ;
+     &       READFORT22DUMMY,  .TRUE. )   
  
 !         DO I = 1, nttime
-!            TIMEIT = GETTIMEIT_HS( IT ) ;
+!            TIMEIT = GETTIMEIT_HS( IT )  
 !            IF(TIMEIT .GT. WT2) THEN
 !               WT1=WT2
 !               WT2=WT2 + WTIMINC
@@ -1030,14 +1034,14 @@ C     The following CALL statement should be uncommented for normal operation
          prn1 = prn2   
  
          CALL NWS6GET()
-         WT1 = HsTimeLoc ;
+         WT1 = HsTimeLoc  
          WT2 = WT1 + WTIMINC 
 
-         CALL NWSGETADVANCE( nttime, GETTIMEIT_HS, NWS6GET )  ;
+         CALL NWSGETADVANCE( nttime, GETTIMEIT_HS, NWS6GET )   
 
 !
 !         DO IT = 1, nttime
-!            TIMEIT = GETTIMEIT_HS( IT ) ;
+!            TIMEIT = GETTIMEIT_HS( IT )  
 !            IF(TIMEIT .GT. WT2) THEN
 !              WT1=WT2
 !              WT2=WT2 + WTIMINC
@@ -1067,10 +1071,10 @@ C
          wvny1 = wvny2
          prn1 = prn2 
          CALL NWS7GET()
-         WT1 = WT2 ; 
-         WT2 = WT1 + WTIMINC ; 
+         WT1 = WT2   
+         WT2 = WT1 + WTIMINC   
          !
-         CALL NWSGETADVANCE( ITHS + nttime, GETTIMEIT_CS, NWS7GET )  ;
+         CALL NWSGETADVANCE( ITHS + nttime, GETTIMEIT_CS, NWS7GET )   
          
 !         DO IT=1, ITHS + nttime
 !            TIMEIT=GETTIMEIT_CS( IT ) 
@@ -1102,7 +1106,7 @@ C
          WT2=WT1+WTIMINC
 
          !
-         CALL NWSGETADVANCE( nttime, GETTIMEIT_HS, NWS7GET ) ;   
+         CALL NWSGETADVANCE( nttime, GETTIMEIT_HS, NWS7GET )     
       ENDIF
 
 C     jgf46.02 New option to read in hurricane locations and generate
@@ -1158,9 +1162,9 @@ C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
 
         ! fast forward if wind data are relative to cold start time
         if (nws.gt.0) then
-           CALL NWSGETADVANCE( ITHS + nttime, GETTIMEIT_CS, NWS12GETDUMMY ) ;
+           CALL NWSGETADVANCE( ITHS + nttime, GETTIMEIT_CS, NWS12GETDUMMY )  
         else
-           CALL NWSGETADVANCE( nttime, GETTIMEIT_HS, NWS12GETDUMMY ) ;
+           CALL NWSGETADVANCE( nttime, GETTIMEIT_HS, NWS12GETDUMMY )  
         endif
         !          
       ENDIF
@@ -1216,7 +1220,7 @@ C
       ENDIF
       !
       ! jgf52.14: Implementing Casey's fix for uninitialized
-      ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
+      ! wvnx1 and wvny1 arrays  they are not used/needed/initialized
       ! by the parametric vortex meteorological models but are used in
       ! the padcswan_init() subroutine to initialize the SWAN wind 
       ! velocities. Failure to initialize them causes NaNs in the 
@@ -1244,7 +1248,7 @@ C
              READ(22+CK_LUN,*) IDUMMY, RDUMMY1, RDUMMY2, RDUMMY3
           END DO
 
-          RETURN ;
+          RETURN  
         END SUBROUTINE READFORT22DUMMY
 
         !
@@ -1253,7 +1257,7 @@ C
 
           CALL NWS12GET( WVNX2, WVNY2, PRN2, NP, PRBCKGRND )
 
-          RETURN ;
+          RETURN  
         END SUBROUTINE NWS12GETDUMMY
 
         !
@@ -1269,7 +1273,7 @@ C
              TIMEIT=(IT - ITHS)*DTDP + HsTimeLoc
           END IF
 
-          RETURN ;
+          RETURN  
        END FUNCTION GETTIMEIT_CS
 
        !
@@ -1279,7 +1283,7 @@ C
          REAL (8):: TIMEIT 
          INTEGER:: RIT
              
-         TIMEIT = RIT*DTDP + HsTimeLoc ;
+         TIMEIT = RIT*DTDP + HsTimeLoc  
 
          RETURN 
        END FUNCTION GETTIMEIT_HS  
@@ -1309,11 +1313,11 @@ C
 
          ASKIP = .FALSE. 
          IF ( PRESENT(FLAGSKIP) ) THEN
-           ASKIP = FLAGSKIP ; 
+           ASKIP = FLAGSKIP   
          END IF
 
          DO IT=1, NTSTEP
-            TIMEIT=REAL(GETTIMEIT( IT ),SZ) ; 
+            TIMEIT=REAL(GETTIMEIT( IT ),SZ)   
  
             IF(TIMEIT .GT. WT2) THEN
               WT1=WT2
@@ -1348,13 +1352,13 @@ C----------------------------------------------------------------------
 
         LOGICAL:: iopened
  
-        iopened = .FALSE. ;
-        INQUIRE( UNIT = FUNIT, OPENED = iopened ) ;
+        iopened = .FALSE.  
+        INQUIRE( UNIT = FUNIT, OPENED = iopened )  
         IF ( iopened ) THEN 
-          CLOSE( FUNIT ) ;
+          CLOSE( FUNIT )  
         END IF
 
-        RETURN ;
+        RETURN  
       END SUBROUTINE CLOSEFUNIT
 
       ! cold start time, 
@@ -1366,7 +1370,7 @@ C----------------------------------------------------------------------
 
         TIMEIT=IT*DTDP + StLocTime 
          
-        RETURN  ;        
+        RETURN           
       END FUNCTION CSTIME_CS0
 
       ! hot start time, IT - relative to the cold strart time
@@ -1377,12 +1381,12 @@ C----------------------------------------------------------------------
         REAL (SZ):: TIMEIT, StLocTime
 
         IF ( IT <= ITHS ) THEN
-          TIMEIT = IT*DTDP + StLocTime ;
+          TIMEIT = IT*DTDP + StLocTime  
         ELSE 
           TIMEIT = (IT - ITHS)*DTDP + ITHS*DTDPHS + StLocTime 
         ENDIF 
 
-        RETURN ;   
+        RETURN     
       END FUNCTION CSTIME_CS1
 
       ! hot start time, IT - relative to the hot start time
@@ -1395,7 +1399,7 @@ C----------------------------------------------------------------------
          
         TIMEIT= IT*DTDP + StLocTime 
            
-        RETURN ;   
+        RETURN     
       END FUNCTION CSTIME_HS
 C----------------------------------------------------------------------
 C---------------------------------------------------------------------
@@ -1416,19 +1420,19 @@ C---------------------------------------------------------------------
         IF((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN
 !         ! NCSU Subdomain Modeling
           if (subdomainOn.eqv..false.) then
-            FUNIT = 19 + CK_LUN ;
-            CALL CLOSEFUNIT( FUNIT ) ; 
+            FUNIT = 19 + CK_LUN  
+            CALL CLOSEFUNIT( FUNIT )   
           endif
         ENDIF
 
         ! Time dependent flux bouundary
         IF((NFLUXF.EQ.1).AND.
      &         ((NFFR.EQ.0).OR.(NFFR.EQ.-1))) THEN         
-          FUNIT = 20 + CK_LUN ; 
-          CALL CLOSEFUNIT( FUNIT ) ;
+          FUNIT = 20 + CK_LUN   
+          CALL CLOSEFUNIT( FUNIT )  
         ENDIF
 
-        RETURN ;
+        RETURN  
       END SUBROUTINE close_elevbc_riverbc_files
 
 !c------------- Reopen and fastforward
@@ -1447,12 +1451,12 @@ C---------------------------------------------------------------------
             OPEN(19+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.19')
             !
             StartTimeLoc = STATIM*86400.00
-            NTTIME = itime ; 
+            NTTIME = itime   
             SELECT CASE(IHOT)
             CASE (0) 
-              CALL FFWDFORT19( NTTIME, CSTIME_CS0, StartTimeLoc ) ;
+              CALL FFWDFORT19( NTTIME, CSTIME_CS0, StartTimeLoc )  
             CASE (17,67,68,367,368,567,568)
-              CALL FFWDFORT19( NTTIME, CSTIME_CS1, StartTimeLoc ) ;
+              CALL FFWDFORT19( NTTIME, CSTIME_CS1, StartTimeLoc )  
             END SELECT
             !
           endif
@@ -1464,7 +1468,7 @@ C......FILE IF IT IS REQUIRED
           OPEN(20+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.20') 
           !
           StartTimeLoc = STATIM*86400.00
-          NTTIME = itime ; 
+          NTTIME = itime   
           SELECT CASE( IHOT ) 
           CASE (0)
             CALL FFWDFORT20( NTTIME, CSTIME_CS0, StartTimeLoc )
@@ -1474,19 +1478,19 @@ C......FILE IF IT IS REQUIRED
         ENDIF
 
 ! kmd - added in a option to start the river information at the hot start time
-            ! StartTimeLocc = ITHS*DTDPHS + STATIM*86400 ;
+            ! StartTimeLocc = ITHS*DTDPHS + STATIM*86400  
         IF((NFLUXF.EQ.1).AND.(NFFR.EQ.-1)) THEN
 
-          StartTimeLoc = ITHS*DTDPHS + STATIM*89400.0 ; 
+          StartTimeLoc = ITHS*DTDPHS + STATIM*89400.0   
           SELECT CASE( IHOT )
           CASE (0)
             NTTIME = ITIME
             StartTimeLoc = STATIM*86400.D0
             CALL FFWDFORT20( NTTIME, CSTIME_CS0, StartTimeLoc )
           CASE (17,67,68,367,368,567,568)
-            StartTimeLoc = ITHS*DTDPHS + STATIM*86400.0 ;
-            NTTIME = itime - ITHS ;
-            CALL FFWDFORT20( NTTIME, CSTIME_HS, StartTimeLoc ) ;
+            StartTimeLoc = ITHS*DTDPHS + STATIM*86400.0  
+            NTTIME = itime - ITHS  
+            CALL FFWDFORT20( NTTIME, CSTIME_HS, StartTimeLoc )  
           END SELECT
             
         ENDIF
@@ -1529,20 +1533,20 @@ C......FILE IF IT IS REQUIRED
           READ(19+CK_LUN,*) ETIMINC_TMP
           ET1=StartLocTime 
           ET2=ET1 + ETIMINC_TMP
-          CALL READFORT19SNAP( ) ;
-          CALL READFORT19SNAP( ) ;
+          CALL READFORT19SNAP( )  
+          CALL READFORT19SNAP( )  
 
           DO IT=1, NTTIME
             ! TIMEIT=(IT - ITHS)*DTDP + ITHS*DTDPHS + STATIM*86400.D0 -- hotstart
-            TIMEIT = CSTIME( IT, StartTimeLoc ) ; 
+            TIMEIT = CSTIME( IT, StartTimeLoc )   
             IF(TIMEIT .GT. ET2) THEN
               ET1 = ET2
               ET2 = ET1 + ETIMINC_TMP
-              CALL READFORT19SNAP( ) ;
+              CALL READFORT19SNAP( )  
             ENDIF
           END DO
                 
-          RETURN ;
+          RETURN  
         END SUBROUTINE FFWDFORT19
 
         SUBROUTINE READFORT20SNAP( )
@@ -1559,7 +1563,7 @@ C......FILE IF IT IS REQUIRED
             END IF
           END DO
            
-          RETURN ; 
+          RETURN   
         END SUBROUTINE READFORT20SNAP
 
         SUBROUTINE FFWDFORT20( NTTIME, CSTIME, StartLocTime )
@@ -1584,12 +1588,12 @@ C......FILE IF IT IS REQUIRED
           READ(20+CK_LUN,*) FTIMINC_TMP
           QT1 = StartLocTime
           QT2 = QT1 + FTIMINC_TMP
-          CALL READFORT20SNAP( ) ;
-          CALL READFORT20SNAP( ) ;
+          CALL READFORT20SNAP( )  
+          CALL READFORT20SNAP( )  
 
           DO IT=1, NTTIME
             ! TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
-            TIMEIT = CSTIME( IT, StartTimeLoc ) ; 
+            TIMEIT = CSTIME( IT, StartTimeLoc )   
             IF(TIMEIT .GT. QT2) THEN
               QT1 = QT2
               QT2 = QT2 + FTIMINC_TMP
@@ -1597,7 +1601,7 @@ C......FILE IF IT IS REQUIRED
             ENDIF
           END DO
  
-          RETURN ;
+          RETURN  
         END SUBROUTINE FFWDFORT20
 
       END SUBROUTINE Reopen_elevbc_riverbc_InputFile
@@ -1611,11 +1615,11 @@ C......FILE IF IT IS REQUIRED
         INTEGER:: FUNIT
         ! Time varying bathmetry
         IF (NDDT.NE.0) then
-           FUNIT = 141 + CK_LUN ; 
+           FUNIT = 141 + CK_LUN   
            CALL CLOSEFUNIT( FUNIT  )  
         ENDIF  !end test for time varying bathymetry
 C
-        RETURN ;
+        RETURN  
       END SUBROUTINE close_time_varying_bathymetry_file
  
 !!-------------------------------------------------------------------------------------
@@ -1636,10 +1640,10 @@ C     bathymetry information with the model time step.
         IF(Nddt.EQ.1) THEN
           OPEN(141+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
 
-          NTTIME = itime ;
+          NTTIME = itime  
           SELECT CASE( IHOT )
           CASE (0)
-            StartTimeLoc = STATIM*86400.D0 ;
+            StartTimeLoc = STATIM*86400.D0  
             CALL FFWDFORT141( NTTIME, CSTIME_CS0, StartTimeLoc )
           CASE (17,67,68,367,368,567,568)
             StartTimeLoc = STATIM*86400.D0
@@ -1653,8 +1657,8 @@ C     bathymetry information with the model time step.
         
           SELECT CASE( IHOT )
           CASE (0)
-            NTTIME = itime ;
-            StartTimeLoc = STATIM*86400.D0 ;
+            NTTIME = itime  
+            StartTimeLoc = STATIM*86400.D0  
             CALL FFWDFORT141( NTTIME, CSTIME_CS0, StartTimeLoc )
           CASE (17,67,68,367,368,567,568)
             NTTIME = itime - ITHS 
@@ -1667,10 +1671,10 @@ C     bathymetry information with the model time step.
         IF(NDDT.EQ.2) THEN
           OPEN(141+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
 
-          NTTIME = itime ;
+          NTTIME = itime  
           SELECT CASE( IHOT )
           CASE (0)
-            StartTimeLoc = STATIM*86400.D0 ;
+            StartTimeLoc = STATIM*86400.D0  
             CALL FFWDFORT141NDDT2( NTTIME, CSTIME_CS0, StartTimeLoc )
           CASE (17,67,68,367,368,567,568)
             StartTimeLoc = STATIM*86400.D0
@@ -1684,11 +1688,11 @@ C     bathymetry information with the model time step.
 
           SELECT CASE( IHOT )
           CASE (0)
-            NTTIME = itime ;
-            StartTimeLoc = STATIM*86400.D0 ;
+            NTTIME = itime  
+            StartTimeLoc = STATIM*86400.D0  
             CALL FFWDFORT141NDDT2( NTTIME, CSTIME_CS0, StartTimeLoc )
           CASE (17,67,68,367,368,567,568)
-            NTTIME = itime - ITHS ;
+            NTTIME = itime - ITHS  
             StartTimeLoc = ITHS*DTDPHS + STATIM*86400.D0
             CALL FFWDFORT141NDDT2( NTTIME, CSTIME_HS, StartTimeLoc )
           END SELECT
@@ -1732,14 +1736,14 @@ C
           bT1 = StartLocTime 
           bT2 = bT1 + bTIMINC
           BT_END = BT1 + BCHGTIMINC  !ending time for bathymetry changes during the btiminc interval
-          CALL READFORT141SNAP( ) ;
+          CALL READFORT141SNAP( )  
 
 C         DO IT=1,ITHS
           DO IT = 1, NTTIME
 C            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
-            TIMEIT = CSTIME( IT, StartTimeLoc ) ;
+            TIMEIT = CSTIME( IT, StartTimeLoc )  
             IF(TIMEIT .GT. bT2) THEN
-              bT1 = bT2 ;
+              bT1 = bT2  
               bT2 = bT2+bTIMINC
               BT_END = BT1 + BCHGTIMINC
               CALL READFORT141SNAP( )
@@ -1771,7 +1775,7 @@ C            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP 
           REAL (SZ), ALLOCATABLE:: DPTMP(:)
 
 !           bT1 = STATIM*86400.D0
-          bT1 = StartLocTime ;
+          bT1 = StartLocTime  
           bT2 = bT1 + bTIMINC 
           BT_END = BT1 + BCHGTIMINC  !ending time for bathymetry changes during the btiminc interval
           
@@ -1794,9 +1798,9 @@ C          DO IT=1,ITHS
           END DO  !IT
           
 
-          DEALLOCATE( DPTMP ) ;
+          DEALLOCATE( DPTMP )  
  
-          RETURN ;
+          RETURN  
         END SUBROUTINE FFWDFORT141NDDT2
 
       END SUBROUTINE Reopen_time_varying_bathymetry
@@ -1810,12 +1814,12 @@ C--------------------------------------------------------------------------
           INTEGER:: FUNIT 
 
           IF ( NCICE .EQ. 12 ) THEN
-             FUNIT = 225 + CK_LUN ;    
-             CALL CLOSEFUNIT( FUNIT ) ;
+             FUNIT = 225 + CK_LUN      
+             CALL CLOSEFUNIT( FUNIT )  
              
              IF ( NumSetsIce .gt. 0 ) THEN
-               FUNIT =  227 + CK_LUN ;
-               CALL CLOSEFUNIT( FUNIT ) ; 
+               FUNIT =  227 + CK_LUN  
+               CALL CLOSEFUNIT( FUNIT )   
              END IF
           ENDIF
 
@@ -1833,26 +1837,26 @@ C--------------------------------------------------------------------------
           IF ( NCICE .EQ. 12 ) THEN
             !
             IF ( NWS .GT.  0 ) THEN
-              NTTIME = ITIME ;
+              NTTIME = ITIME  
               StartLocTime = STATIM*86400.0  
               SELECT CASE(IHOT)   
               CASE (0)
-                  CALL FFWD_OWIICE( NTTIME, CSTIME_CS0, StartLocTime ) ;  
+                  CALL FFWD_OWIICE( NTTIME, CSTIME_CS0, StartLocTime )    
               CASE (17,67,68,367,368,567,568) ! non-portable binary or netcdf hotstart file
-                  CALL FFWD_OWIICE( NTTIME, CSTIME_CS1, StartLocTime ) ; 
+                  CALL FFWD_OWIICE( NTTIME, CSTIME_CS1, StartLocTime )   
               END SELECT
             ENDIF
             !
             IF ( NWS .LT. 0 ) THEN
               SELECT CASE(IHOT)   
               CASE (0)
-                NTTIME = ITIME ; 
-                StartLocTime = STATIM*86400.0 ;  
-                CALL FFWD_OWIICE( NTTIME, CSTIME_CS0, StartLocTime ) ;  
+                NTTIME = ITIME   
+                StartLocTime = STATIM*86400.0    
+                CALL FFWD_OWIICE( NTTIME, CSTIME_CS0, StartLocTime )    
               CASE (17,67,68,367,368,567,568) ! non-portable binary or netcdf hotstart file
-                NTTIME = (ITIME - ITHS) ;
+                NTTIME = (ITIME - ITHS)  
                 StartLocTime = ITHS*DTDPHS +  STATIM*86400.0  
-                CALL FFWD_OWIICE( NTTIME, CSTIME_HS, StartLocTime ) ; 
+                CALL FFWD_OWIICE( NTTIME, CSTIME_HS, StartLocTime )   
               END SELECT
             END IF
             !
@@ -1882,22 +1886,22 @@ C--------------------------------------------------------------------------
            REAL (SZ):: CT1, CT2, TIMEIT
            REAL (SZ), ALLOCATABLE:: CICETMP(:)
 
-           ALLOCATE( CICETMP(NP) ) ; 
+           ALLOCATE( CICETMP(NP) )   
 
 !          CT1 = STATIM*86400.D0
-           CT1 = StartLocTime ;
+           CT1 = StartLocTime  
            CT2 = CT1 + CICE_TIMINC
 
            ! This just initializes some variables and might set CICE,etc...
            ! if skipping ahead is used
-           CALL NCICE1_INIT(CICETMP, NP) ;
-           CALL NCICE1_GET(CICETMP, NP) ;
-           CALL NCICE1_GET(CICETMP, NP) ;
+           CALL NCICE1_INIT(CICETMP, NP)  
+           CALL NCICE1_GET(CICETMP, NP)  
+           CALL NCICE1_GET(CICETMP, NP)  
 
            !  
            DO IT=1, NTTIME
 !             TIMEIT=IT*DTDP + STATIM*86400.D0
-             TIMEIT = CSTIME( IT, StartLocTime ) ;
+             TIMEIT = CSTIME( IT, StartLocTime )  
              IF( TIMEIT .GT. CT2 ) THEN
                   CT1 = CT2
                   CT2 = CT2 + CICE_TIMINC
@@ -1905,9 +1909,9 @@ C--------------------------------------------------------------------------
              ENDIF
            END DO
 
-           DEALLOCATE( CICETMP ) ;
+           DEALLOCATE( CICETMP )  
 
-           RETURN ;  
+           RETURN    
           END SUBROUTINE FFWD_OWIICE
              
  
@@ -1932,8 +1936,8 @@ C--------------------------------------------------------------------------
          IF ( NRS .GE. 1 ) THEN
            SELECT CASE( NRS )
            CASE (1,2)
-              FUNIT = 23 + CK_LUN ; 
-              CALL CLOSEFUNIT( FUNIT ) ;
+              FUNIT = 23 + CK_LUN   
+              CALL CLOSEFUNIT( FUNIT )  
            END SELECT
          ENDIF 
 
@@ -1960,13 +1964,13 @@ C--------------------------------------------------------------------------
          IF(NRS.GE.1) THEN ! sb46.28sb03
             SELECT CASE(IHOT)
             CASE (0)
-                NTTIME = ITIME ;
-                StartLocTime = STATIM*86400.0 ;
-                CALL FFWD_RSFILE( NTTIME, CSTIME_CS0, StartLocTime ) ;
+                NTTIME = ITIME  
+                StartLocTime = STATIM*86400.0  
+                CALL FFWD_RSFILE( NTTIME, CSTIME_CS0, StartLocTime )  
             CASE (17,67,68,367,368,567,568) ! non-portable binary or netcdf hotstart file
                 NTTIME = ITIME - ITHS 
                 StartLocTime = ITHS*DTDPHS + STATIM*86400.0 
-                CALL FFWD_RSFILE( NTTIME, CSTIME_HS, StartLocTime ) ; 
+                CALL FFWD_RSFILE( NTTIME, CSTIME_HS, StartLocTime )   
             END SELECT  
          ENDIF
 
@@ -1990,7 +1994,7 @@ C--------------------------------------------------------------------------
              REAL (SZ):: TIMEIT
              REAL (SZ), ALLOCATABLE:: RSNXTMP(:), RSNYTMP(:) 
            
-             ALLOCATE( RSNXTMP(NP), RSNYTMP(NP) ) ;
+             ALLOCATE( RSNXTMP(NP), RSNYTMP(NP) )  
 
 !             RT1 = TimeLoc
              RT1 = StartLocTime  
@@ -2004,9 +2008,9 @@ C--------------------------------------------------------------------------
                 DO IT = 1, NTTIME
                    TIMEIT = CSTIME( IT, StartLocTime ) 
                    IF ( TIMEIT .GT. RT2 ) THEN 
-                      RT1 = RT2 ;
-                      RT2 = RT1 + RSTIMINC ;
-                      CALL RSGET( RSNXTMP, RSNYTMP ) ;
+                      RT1 = RT2  
+                      RT2 = RT1 + RSTIMINC  
+                      CALL RSGET( RSNXTMP, RSNYTMP )  
                    ENDIF
                 END DO    
              CASE(2)
@@ -2018,9 +2022,9 @@ C--------------------------------------------------------------------------
                 DO IT = 1, NTTIME
                    TIMEIT = CSTIME( IT, StartLocTime ) 
                    IF ( TIMEIT .GT. RT2 ) THEN 
-                      RT1 = RT2 ;
-                      RT2 = RT1 + RSTIMINC ;
-                      CALL RS2GET( RSNXTMP, RSNYTMP, NP ) ;
+                      RT1 = RT2  
+                      RT2 = RT1 + RSTIMINC  
+                      CALL RS2GET( RSNXTMP, RSNYTMP, NP )  
                    ENDIF 
                 END DO 
              CASE(3,4)
