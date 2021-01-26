@@ -57,7 +57,7 @@ C----------------------------------------------------------------------
           CALL MPI_COMM_RANK(MPI_COMM_ADCIRC, RANK, IERR)
           CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, OLD_PE, FLAG, IERR)
 
-          PRINT *,"Rank ",RANK," about to migrate from PE ",OLD_PE
+C          PRINT *,"Rank ",RANK," about to migrate from PE ",OLD_PE
 
 C     TODO: close files temporarily during migration
 C          CALL closeLogFile() 
