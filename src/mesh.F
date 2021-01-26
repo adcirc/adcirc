@@ -154,8 +154,8 @@ C     ------------------------------------------------------------------
       ! reading the file
       read(iunit+CK_LUN,'(A80)',err=10,end=20,iostat=ios) agrid
       lineNum = lineNum + 1
-      call logMessage(INFO,"Mesh file comment line: "//trim(agrid))
-      call logMessage(INFO,"Reading mesh file dimensions.")
+c      call logMessage(INFO,"Mesh file comment line: "//trim(agrid))
+c      call logMessage(INFO,"Reading mesh file dimensions.")
       read(unit=iunit+CK_LUN,fmt=*,err=10,end=20,iostat=ios) ne, np
       mne = ne
       mnp = np
@@ -241,12 +241,12 @@ C     ------------------------------------------------------------------
 1040     format('Number of land boundary nodes was set to ',i0,' but ',
      &      i0,' were found.')
          call allMessage(WARNING, scratchMessage)
-         call logMessage(DEBUG,
-     &      'Here is the summary of land boundary node information:')
+c         call logMessage(DEBUG,
+c     &      'Here is the summary of land boundary node information:')
          write(scratchMessage,1050) nvel, nvel_count
 1050     format('NVEL (specified number of land boundary nodes) = ',
      &       i0,'. Counted number of land boundary nodes = ',i0,'.')
-         call logMessage(DEBUG,scratchMessage)
+c         call logMessage(DEBUG,scratchMessage)
          if (nabout.eq.DEBUG) then
             do k=1,nbou
                write(scratchMessage,1060) k, ibtype_orig(k), k,
@@ -254,12 +254,12 @@ C     ------------------------------------------------------------------
 
 1060          format('ibtype(',i0,')=',i0,', nvell(',i0,')=',i0,
      &                ', total=',i0,'.')
-               call logMessage(DEBUG,scratchMessage)
+c               call logMessage(DEBUG,scratchMessage)
             end do
          endif
       endif
       rewind(iunit+CK_LUN)
-      call logMessage(INFO,'Finished reading mesh file dimensions.')
+c      call logMessage(INFO,'Finished reading mesh file dimensions.')
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -316,31 +316,31 @@ C     ------------------------------------------------------------------
          scratchFormat = '("Number of elevation specified boundaries '
      &    // '(nope): ",i0,".")'
          write(scratchMessage,scratchFormat) nope
-         call logMessage(DEBUG,trim(scratchMessage))
+c         call logMessage(DEBUG,trim(scratchMessage))
          !
          ! land boundaries
          scratchFormat = '("Number of simple flux specified boundaries '
      &     // '(0,1,2,etc): ",i0,".")'
          write(scratchMessage,scratchFormat) numSimpleFluxBoundaries
-         call logMessage(DEBUG,trim(scratchMessage))
+c         call logMessage(DEBUG,trim(scratchMessage))
          !
          ! external over flow (land) boundaries
          scratchFormat = '("Number of external flux boundaries (3,etc):'
      &      // ' ",i0,".")'
          write(scratchMessage,scratchFormat) numExternalFluxBoundaries
-         call logMessage(DEBUG,trim(scratchMessage))
+c         call logMessage(DEBUG,trim(scratchMessage))
          !
          ! levee boundaries
          scratchFormat = '("Number of internal flux boundaries (4,etc):'
      &      // ' ",i0,".")'
          write(scratchMessage,scratchFormat) numInternalFluxBoundaries
-         call logMessage(DEBUG,trim(scratchMessage))
+c         call logMessage(DEBUG,trim(scratchMessage))
          !
          ! levee boundaries with culverts
          scratchFormat = '("Number of internal flux boundaries with '
      &      // 'pipes (5,etc): ",i0,".")'
          write(scratchMessage,scratchFormat) numInternalFluxBoundariesWithPipes
-         call logMessage(DEBUG,trim(scratchMessage))
+c         call logMessage(DEBUG,trim(scratchMessage))
       endif
       !
       call allocateNodalAndElementalArrays()
@@ -351,8 +351,8 @@ C     ------------------------------------------------------------------
       !  N O D E   T A B L E
       !
 
-      call logMessage(INFO,'Reading mesh file coordinates, '
-     &   // ' connectivity, and boundary data.')
+c      call logMessage(INFO,'Reading mesh file coordinates, '
+c     &   // ' connectivity, and boundary data.')
       lineNum = 1
       read(unit=iunit+CK_LUN,fmt='(a80)',err=10,end=20,iostat=ios) agrid
       lineNum = lineNum + 1
@@ -504,8 +504,8 @@ C     ------------------------------------------------------------------
       ! populate the adcirc arrays that are used during execution
       call populateADCIRCNativeArrays()
       !
-      call logMessage(INFO,'Finished reading mesh file coordinates, '
-     & // 'connectivity, and boundary data.')
+c      call logMessage(INFO,'Finished reading mesh file coordinates, '
+c     & // 'connectivity, and boundary data.')
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -640,8 +640,8 @@ C     ------------------------------------------------------------------
          call allMessage(ERROR,"The file " // trim(adjustl(meshFileName)) // " was not found.")
          call terminate()
       endif
-      call logMessage(INFO,'Reading mesh data from the ' //
-     &  trim(adjustl(meshFileName)) // ' XDMF file.')
+c      call logMessage(INFO,'Reading mesh data from the ' //
+c     &  trim(adjustl(meshFileName)) // ' XDMF file.')
       call xdmfInit(xdmfFortranObj)
       call xdmfRead(xdmfFortranObj, trim(adjustl(meshFileName))//char(0))
       !
@@ -659,11 +659,11 @@ C     ------------------------------------------------------------------
       call xdmfRetrieveGeometryNumPoints(xdmfFortranObj, np)
       scratchFormat = '("The Geometry contains ",i0," points (nodes).")'
       write(scratchMessage,scratchFormat) np
-      call logMessage(INFO,trim(scratchMessage))
+c      call logMessage(INFO,trim(scratchMessage))
       call xdmfRetrieveTopologyNumElements(xdmfFortranObj, ne)
       scratchFormat = '("The Topology contains ",i0," elements.")'
       write(scratchMessage,scratchFormat) ne
-      call logMessage(INFO,trim(scratchMessage))
+c      call logMessage(INFO,trim(scratchMessage))
       !
       mnp = np
       mne = ne
@@ -690,7 +690,7 @@ C     ------------------------------------------------------------------
       !
       allocate(tempCoord(2,np))
       tempCoord = -99999.d0
-      call logMessage(INFO,'Reading nodal table.')
+c      call logMessage(INFO,'Reading nodal table.')
       call xdmfRetrieveGeometryValues(xdmfFortranObj, tempCoord,
      &    geometryDataType, 2*np, startIndex, arrayStride, valueStride)
       !
@@ -702,14 +702,14 @@ C     ------------------------------------------------------------------
       call xdmfRetrieveNumAttributes(xdmfFortranObj, numAttributes)
       scratchFormat = '("Grid ",i0," contains ",i0," attributes.")'
       write(scratchMessage,scratchFormat) gridIndex, numAttributes
-      call logMessage(INFO,trim(scratchMessage))
+c      call logMessage(INFO,trim(scratchMessage))
       do attributeIndex=0, numAttributes - 1
          call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,
      &       itemName, nameLength)
          call replaceNullsWithSpaces(itemName)
          scratchFormat = '("Grid ",i0," Attribute ",i0," is named ",a)'
          write(scratchMessage,scratchFormat) gridIndex, attributeIndex, trim(itemName)
-         call logMessage(INFO,trim(scratchMessage))
+c         call logMessage(INFO,trim(scratchMessage))
          select case(trim(itemName))
          case("depth")
             call xdmfRetrieveAttributeValues(xdmfFortranObj, attributeIndex,
@@ -724,26 +724,26 @@ C     ------------------------------------------------------------------
      &    '("node=",i0," x=",f15.7," y=",f15.7," depth=",f8.3)'
          do i=1,np
             write(scratchMessage,scratchFormat) i, slam(i), sfea(i), dp(i)
-            call logMessage(ECHO,trim(scratchMessage))
+c            call logMessage(ECHO,trim(scratchMessage))
          end do
       end if
       !
       !  E L E M E N T   T A B L E
       !
-      call logMessage(INFO,'Reading element table.')
+c      call logMessage(INFO,'Reading element table.')
       call xdmfRetrieveTopologyType(xdmfFortranObj, topologyType)
       ! XDMF supports other topology types, but these are unlikely to
       ! be found in ADCIRC output files
       call createTopologyTypeString(topologyType, topologyTypeString)
       scratchFormat = '("The topology type is ",a,".")'
       write(scratchMessage,scratchFormat) trim(topologyTypeString)
-      call logMessage(DEBUG,scratchMessage)
+c      call logMessage(DEBUG,scratchMessage)
       !
       call xdmfRetrieveTopologyValueType(xdmfFortranObj, topologyDataType)
       call createDataTypeString(topologyDataType, topologyDataTypeString)
       scratchFormat = '("The data type of the topology is ",a,".")'
       write(scratchMessage,scratchFormat) trim(topologyDataTypeString)
-      call logMessage(DEBUG,scratchMessage)
+c      call logMessage(DEBUG,scratchMessage)
       !
       call xdmfRetrieveTopologySize(xdmfFortranObj, numElementValues)
       allocate(xdmf_nm(3,ne))
@@ -765,18 +765,18 @@ C     ------------------------------------------------------------------
          scratchFormat = '("Element ",i0," nodes ",i0," ",i0," ",i0)'
          do i=1,ne
             write(scratchMessage, scratchFormat) i, (nm(i,j), j=1,3)
-            call logMessage(ECHO,scratchMessage)
+c            call logMessage(ECHO,scratchMessage)
          end do
       endif
       !
       ! B O U N D A R I E S
       !
       ! boundaries are saved as sets and attributes
-      call logMessage(INFO,'Reading boundaries.')
+c      call logMessage(INFO,'Reading boundaries.')
       CALL xdmfRetrieveNumSets(xdmfFortranObj, numSets)
       scratchFormat = '("The Grid contains ",i0," boundaries.")'
       write(scratchMessage,scratchFormat) numSets
-      call logMessage(INFO,scratchMessage)
+c      call logMessage(INFO,scratchMessage)
       !
       ! allocate xdmf-specific arrays to hold boundary parameters
       allocate(elevationBoundary(0:numSets-1))
@@ -786,7 +786,7 @@ C     ------------------------------------------------------------------
       !
       ! count the different types of boundaries for use in memory allocation
       !
-      call logMessage(DEBUG,'Counting the various boundary types.')
+c      call logMessage(DEBUG,'Counting the various boundary types.')
       numSimpleFluxBoundaries = 0
       numExternalFluxBoundaries = 0
       numInternalFluxBoundaries = 0
@@ -801,7 +801,7 @@ C     ------------------------------------------------------------------
          firstSetAttributeIndex(setIndex) = numAttributes
          scratchFormat = '("Opening set ",i0,".")'
          write(scratchMessage,scratchFormat) setIndex
-         call logMessage(DEBUG,scratchMessage)
+c         call logMessage(DEBUG,scratchMessage)
          call xdmfOpenSet(xdmfFortranObj, setIndex, openAttributes,
      &         openInformations)
          !
@@ -816,7 +816,7 @@ C     ------------------------------------------------------------------
          call xdmfRetrieveSetSize(xdmfFortranObj, setSize(setIndex), setIndex)
          scratchFormat = '("Set ",i0," contains ",i0," values.")'
          write(scratchMessage,scratchFormat) setIndex, setSize(setIndex)
-         call logMessage(DEBUG,scratchMessage)
+c         call logMessage(DEBUG,scratchMessage)
          !
          call xdmfRetrieveSetNumProperties(xdmfFortranObj, setIndex, numSetProperties)
          do setPropertyIndex=0, numSetProperties-1
@@ -827,18 +827,18 @@ C     ------------------------------------------------------------------
             case("elevation_specified_boundary ")
                scratchFormat = '("The set property is ",a,a,a,".")'
                write(scratchMessage,scratchFormat)'"',trim(itemValue),'"'
-               call logMessage(ECHO,scratchMessage)
-               call logMessage(DEBUG,
-     &              'Found one elevation specified boundary.')
+c               call logMessage(ECHO,scratchMessage)
+c               call logMessage(DEBUG,
+c     &              'Found one elevation specified boundary.')
                nope = nope + 1
                neta = neta + setSize(setIndex)
                elevationBoundary(setIndex) = .true.
             case("flux_specified_boundary")
                scratchFormat = '("The set property is ",a,a,a,".")'
                write(scratchMessage,scratchFormat)'"',trim(itemValue),'"'
-               call logMessage(ECHO,scratchMessage)
-               call logMessage(DEBUG,
-     &              'Found one flux specified boundary.')
+c               call logMessage(ECHO,scratchMessage)
+c               call logMessage(DEBUG,
+c     &              'Found one flux specified boundary.')
                nbou = nbou + 1
                nvel = nvel + setSize(setIndex)
                select case(boundaryTypes(setIndex))
@@ -873,30 +873,30 @@ C     ------------------------------------------------------------------
       ! each type
       scratchFormat = '("Number of elevation boundaries : ",i0,".")'
       write(scratchMessage,scratchFormat) nope
-      call logMessage(INFO,scratchMessage)
+c      call logMessage(INFO,scratchMessage)
       scratchFormat = '("Number of elevation boundary nodes : ",i0,".")'
       write(scratchMessage,scratchFormat) neta
-      call logMessage(INFO,scratchMessage)
+c      call logMessage(INFO,scratchMessage)
       scratchFormat = '("Total number of flux boundaries : ",i0,".")'
       write(scratchMessage,scratchFormat) nbou
-      call logMessage(INFO,scratchMessage)
+c      call logMessage(INFO,scratchMessage)
       scratchFormat = '("Total number of flux boundary nodes : ",i0,".")'
       write(scratchMessage,scratchFormat) nvel
-      call logMessage(INFO,scratchMessage)
+c      call logMessage(INFO,scratchMessage)
 
       scratchFormat = '("Number of simple flux boundaries : ",i0,".")'
       write(scratchMessage,scratchFormat) numSimpleFluxBoundaries
-      call logMessage(INFO,scratchMessage)
+c      call logMessage(INFO,scratchMessage)
       scratchFormat = '("Number of external flux boundaries : ",i0,".")'
       write(scratchMessage,scratchFormat) numExternalFluxBoundaries
-      call logMessage(INFO,scratchMessage)
+c      call logMessage(INFO,scratchMessage)
       scratchFormat = '("Number of internal flux boundaries : ",i0,".")'
       write(scratchMessage,scratchFormat) numInternalFluxBoundaries
-      call logMessage(INFO,scratchMessage)
+c      call logMessage(INFO,scratchMessage)
       scratchFormat = '("Num. int. flux bnd. with cross barrier pipes '
      &                 // ' : ",i0,".")'
       write(scratchMessage,scratchFormat) numInternalFluxBoundariesWithPipes
-      call logMessage(INFO,scratchMessage)
+c      call logMessage(INFO,scratchMessage)
       !
       ! populate nvdll (adcirc array representing number of nodes on each
       ! elevation boundary segment) and nvell (adcirc array representing
@@ -1414,7 +1414,7 @@ C v49.48.02 tcm -- These are the lengths of each element edge
          IF((DIF1R.GT.NPREC).OR.(DIF2R.GT.NPREC).OR.(DIF3R.GT.NPREC)) THEN
             write(scratchMessage,9898) I
             call allMessage(WARNING, scratchMessage)
-            WRITE(16+CK_LUN,9898) I
+c            WRITE(16+CK_LUN,9898) I
  9898       FORMAT('!!!!!!!!!!  WARNING  !!!!!!!!!' ,
      &              'IF THE GRID COORDINATES HAVE 32 BITS ',
      &              '(APPROX 7 DIGITS) OF PRECISION ',
@@ -1505,12 +1505,12 @@ C     ------------------------------------------------------------------
       write(scratchMessage,1852) nope
 1852  format('Total number of elevation boundary forcing segments :',
      &          i0,'.')
-      call logMessage(ECHO,scratchMessage)
+c      call logMessage(ECHO,scratchMessage)
 
       write(scratchMessage,1854) neta
 1854  format('Total number of elevation specified boundary nodes :',
      &        i0,'.')
-      call logMessage(ECHO,scratchMessage)
+c      call logMessage(ECHO,scratchMessage)
 C...
 C...  NODE NUMBERS ON EACH ELEVATION BOUNDARY FORCING SEGMENT
 C...  NOTE: In the future, if a boundary type is included for each
@@ -1522,9 +1522,9 @@ C...  array.
          write(scratchMessage,281) k,nvdll(k)
  281     format('Total number of nodes on elevation specified',
      &              ' boundary segment ',2x,i0,2x,'=',1x,i0)
-         call logMessage(ECHO,scratchMessage)
+c         call logMessage(ECHO,scratchMessage)
          DO I=1,NVDLL(K)
-            WRITE(16+CK_LUN,1855) NBDV(K,I)
+c            WRITE(16+CK_LUN,1855) NBDV(K,I)
  1855      FORMAT(7X,I7)
             NBD(JNMM+I)=NBDV(K,I)
          END DO
@@ -1536,7 +1536,7 @@ C...  CONDITIONS IF APPROPRIATE
 C...
       if((nbfr.eq.0).and.(nope.gt.0)) then
          write(scratchmessage,1871)
-         call logMessage(INFO,scratchMessage)
+c         call logMessage(INFO,scratchMessage)
  1871    format('Time series elevation specified values ',
      &          'will be read from unit 19.',
      &          ' Interpolation in time is done to sync the ',
@@ -1552,14 +1552,14 @@ C...  INFORMATION IS ONLY USED WHEN NORMAL FLOW IS AN ESSENTIAL B.C. AND
 C...  FREE TANGENTIAL SLIP IS ALLOWED.
 
 C...  TOTAL NUMBER OF FLOW BOUNDARY SEGMENTS
-      WRITE(16+CK_LUN,1112)
-      WRITE(16+CK_LUN,1878)
+c      WRITE(16+CK_LUN,1112)
+c      WRITE(16+CK_LUN,1878)
 1878  FORMAT(//,1X,'FLOW BOUNDARY INFORMATION ',/)
-      WRITE(16+CK_LUN,1879) NBOU
+c      WRITE(16+CK_LUN,1879) NBOU
  1879 FORMAT(//,5X,'THE TOTAL NUMBER OF FLOW BOUNDARY SEGMENTS = ',i0)
 
 C.....INPUT THE TOTAL NUMBER OF FLOW BOUNDARY NODES
-      WRITE(16+CK_LUN,1881) NVEL
+c      WRITE(16+CK_LUN,1881) NVEL
 1881  FORMAT(/,5X,'THE TOTAL NUMBER OF FLOW BOUNDARY NODES = ',i0)
 
       JGW=0
@@ -1577,37 +1577,37 @@ C.....INPUT THE TOTAL NUMBER OF FLOW BOUNDARY NODES
       DO K=1,NBOU
 C        write out flow boundary information to unit 16
          IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
-            WRITE(16+CK_LUN,28) K,NVELL(K),K,2*NVELL(K)
+c            WRITE(16+CK_LUN,28) K,NVELL(K),K,2*NVELL(K)
  28         FORMAT(///,5X,'TOTAL NUMBER OF PAIRS FOR FLOW BOUNDARY',
      &           ' SEGMENT',2X,i0,2X,'=',2X,i0,
      &           /,5X,'TOTAL NUMBER OF NODES FOR FLOW BOUNDARY',
      &           ' SEGMENT',2X,i0,2X,'=',2X,i0)
          ELSE
-            WRITE(16+CK_LUN,128) K,NVELL(K)
+c            WRITE(16+CK_LUN,128) K,NVELL(K)
  128        FORMAT(///,5X,'TOTAL NUMBER OF NODES FOR FLOW BOUNDARY',
      &           ' SEGMENT',2X,i0,2X,'=',2X,i0)
          ENDIF
 C        continue processing flow boundary information
          SELECT CASE(IBTYPE(K))
          CASE(0)
-            WRITE(16+CK_LUN,2340)
+c            WRITE(16+CK_LUN,2340)
  2340       FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &           7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &           7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(1)
-            WRITE(16+CK_LUN,2341)
+c            WRITE(16+CK_LUN,2341)
  2341       FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BOUNDARY WITH:',/,
      &           7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &           7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(2)
             NFLUXF=1
-            WRITE(16+CK_LUN,2342)
+c            WRITE(16+CK_LUN,2342)
  2342       FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &           7X,'SPECIFIED NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &           7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(3)
            NFLUXB=1
-           WRITE(16+CK_LUN,2344)
+c           WRITE(16+CK_LUN,2344)
  2344      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'A BARRIER WHICH ALLOWS FREE SURFACE',
      &               ' SUPERCRITICAL OUTFLOW',/,
@@ -1616,7 +1616,7 @@ C        continue processing flow boundary information
      &            7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(4)
            NFLUXIB=1
-           WRITE(16+CK_LUN,2345)
+c           WRITE(16+CK_LUN,2345)
  2345      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
      &            7X,'WITH CROSS BARRIER FLOW TREATED AS AN ESSENTIAL ',
      &               ' NORMAL FLOW BOUNDARY CONDITION',/,
@@ -1631,7 +1631,7 @@ C        continue processing flow boundary information
          CASE(5)
            NFLUXIB=1
            NFLUXIBP=1
-           WRITE(16+CK_LUN,2347)
+c           WRITE(16+CK_LUN,2347)
  2347      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
      &            7X,'WITH ADDITIONAL CROSS BARRIER PIPES ',
      &               'LOCATED UNDER THE CROWN ',/,
@@ -1651,24 +1651,24 @@ C        continue processing flow boundary information
      &          /,7X,' AND THE APPROPRIATE PIPE FLOW FORMULA',/,
      &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
          CASE(10)
-           WRITE(16+CK_LUN,2350)
+c           WRITE(16+CK_LUN,2350)
  2350      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &            7X,'AND NO TANGENTIAL SLIP',/)
          CASE(11)
-           WRITE(16+CK_LUN,2351)
+c           WRITE(16+CK_LUN,2351)
  2351      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BOUNDARY WITH:',/,
      &            7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &            7X,'AND NO TANGENTIAL SLIP',/)
          CASE(12)
            NFLUXF=1
-           WRITE(16+CK_LUN,2352)
+c           WRITE(16+CK_LUN,2352)
  2352      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'SPECIFIED NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &            7X,'AND NO TANGENTIAL SLIP',/)
          CASE(13)
            NFLUXB=1
-           WRITE(16+CK_LUN,2353)
+c           WRITE(16+CK_LUN,2353)
  2353      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'A BARRIER WHICH ALLOWS FREE SURFACE',
      &               ' SUPERCRITICAL OUTFLOW',/,
@@ -1676,24 +1676,24 @@ C        continue processing flow boundary information
      &               ' OVERTOPPED',/,
      &            7X,'AND NO TANGENTIAL SLIP',/)
          CASE(20)
-           WRITE(16+CK_LUN,2354)
+c           WRITE(16+CK_LUN,2354)
  2354      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'NO NORMAL FLOW AS A NATURAL B.C.',/,
      &            7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(21)
-           WRITE(16+CK_LUN,2355)
+c           WRITE(16+CK_LUN,2355)
  2355      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BOUNDARY WITH:',/,
      &            7X,'NO NORMAL FLOW AS A NATURAL B.C.',/,
      &            7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(22)
            NFLUXF=1
-           WRITE(16+CK_LUN,2356)
+c           WRITE(16+CK_LUN,2356)
  2356      FORMAT(5X,'THIS SEGMENT IS A EXTERNAL BOUNDARY WITH:',/,
      &            7X,'SPECIFIED NORMAL FLOW AS A NATURAL B.C.',/,
      &            7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(23)
            NFLUXB=1
-           WRITE(16+CK_LUN,2357)
+c           WRITE(16+CK_LUN,2357)
  2357      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'A BARRIER WHICH ALLOWS FREE SURFACE',
      &               ' SUPERCRITICAL OUTFLOW',/,
@@ -1703,7 +1703,7 @@ C        continue processing flow boundary information
      &            7X,'FREE TANGENTIAL SLIP IS ALSO ALLOWED',/)
          CASE(24)
            NFLUXIB=1
-           WRITE(16+CK_LUN,2358)
+c           WRITE(16+CK_LUN,2358)
  2358      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
      &            7X,'WITH CROSS BARRIER FLOW TREATED AS A NATURAL ',
      &               ' NORMAL FLOW BOUNDARY CONDITION',/,
@@ -1718,7 +1718,7 @@ C        continue processing flow boundary information
          CASE(25)
            NFLUXIB=1
            NFLUXIBP=1
-           WRITE(16+CK_LUN,2359)
+c           WRITE(16+CK_LUN,2359)
  2359      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
      &            7X,'WITH ADDITIONAL CROSS BARRIER PIPES ',
      &               'LOCATED UNDER THE CROWN ',/,
@@ -1739,7 +1739,7 @@ C        continue processing flow boundary information
      &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
          CASE(30)
            NFluxRBC=1
-           WRITE(16+CK_LUN,2360)
+c           WRITE(16+CK_LUN,2360)
  2360      FORMAT(5X,'This segment is an outward radiating boundary:',/,
      &            7X,'the GWCE is forced with normal flux.  A wave ',
      &               'radiation condition',
@@ -1752,7 +1752,7 @@ C        continue processing flow boundary information
          CASE(32)
            NFluxRBC=1
            NFluxF=1
-           WRITE(16+CK_LUN,2356)
+c           WRITE(16+CK_LUN,2356)
  2362      FORMAT(5X,'This segment is a combined specified normal ',
      &               'flux and outward radiating boundary.',/,
      &            7X,'The GWCE is forced with the total normal flux ',
@@ -1766,7 +1766,7 @@ C        continue processing flow boundary information
      &               'node',/)
          CASE(40)
            NFluxGBC=1
-           WRITE(16+CK_LUN,2370)
+c           WRITE(16+CK_LUN,2370)
  2370      FORMAT(5X,'This segment is a zero normal velocity gradient ',
      &               'boundary:',/,
      &            7X,'the GWCE is forced with normal flux',/,
@@ -1786,7 +1786,7 @@ C        continue processing flow boundary information
      &               'determined by interpolation.',/)
          CASE(41)
            NFluxGBC=1
-           WRITE(16+CK_LUN,2371)
+c           WRITE(16+CK_LUN,2371)
  2371      FORMAT(5X,'This segment is a zero normal velocity gradient ',
      &               'boundary:',/,
      &            7X,'the GWCE is forced with normal flux',/,
@@ -1797,7 +1797,7 @@ C        continue processing flow boundary information
          CASE(52)
             NFLUXF=1
             IBTYPE52=.TRUE.
-            WRITE(16+CK_LUN,6532)
+c            WRITE(16+CK_LUN,6532)
  6532       FORMAT(5X,'This segment uses a specified periodic normal ',
      &          'flux as a natural b.c. combined with outward ',
      &          7X,'radiating boundary. The GWCE is forced with the ,'
@@ -1870,10 +1870,10 @@ C...  IS ALSO RESET
 C...        WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES
             IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
                IF(IPRBI.EQ.1) THEN
-                  WRITE(16+CK_LUN,1842)
+c                  WRITE(16+CK_LUN,1842)
  1842            FORMAT(/,5X,'FRONT FACE OF INTERNAL BARRIER BOUNDARY',/)
                ELSE
-                  WRITE(16+CK_LUN,1843)
+c                  WRITE(16+CK_LUN,1843)
  1843            FORMAT(/,5X,'BACK FACE OF INTERNAL BARRIER BOUNDARY',/)
                ENDIF
             ENDIF
@@ -1882,18 +1882,18 @@ C...        WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES WITH
 C...        CROSS BARRIER PIPES
             IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
                IF(IPRBI.EQ.1) THEN
-                  WRITE(16+CK_LUN,1844)
+c                  WRITE(16+CK_LUN,1844)
  1844             FORMAT(/,5X,'FRONT FACE OF INTERNAL BARRIER BOUNDARY',
      &                 ' WITH CROSS BARRIER PIPES',/)
                ELSE
-                  WRITE(16+CK_LUN,1845)
+c                  WRITE(16+CK_LUN,1845)
  1845             FORMAT(/,5X,'BACK FACE OF INTERNAL BARRIER BOUNDARY',
      &                 ' WITH CROSS BARRIER PIPES',/)
                ENDIF
             ENDIF
 
 C...        WRITE OUT GENERAL HEADER FOR BOUNDARY INFORMATION
-            WRITE(16+CK_LUN,1841)
+c            WRITE(16+CK_LUN,1841)
  1841      FORMAT('    JGW    JME    ME2GW   NODE #  BNDRY CODE   INNER',
      &      ' ANGLE',7X,'COS',13X,'SIN',9X,'0.667*BNDRY LEN',/)
 
@@ -2045,7 +2045,7 @@ C...           BOUNDARY CODE TO ZERO TANGENTIAL VELOCITIES
                      IF(IBTYPE(K).EQ.2) LBCODEI(JGW)=12
                      IF(IBTYPE(K).EQ.3) LBCODEI(JGW)=13
                      IF((IBTYPE(K).GE.0).AND.(IBTYPE(K).LE.3)) THEN
-                        WRITE(16+CK_LUN,1856) NBVV(K,I),THETA
+c                        WRITE(16+CK_LUN,1856) NBVV(K,I),THETA
  1856                   FORMAT(2X,i0,4X,'THE INNER ANGLE = ',F8.2,1X,
      &                    'TANGENTIAL SLIP WILL BE ZEROED')
                      ENDIF
@@ -2231,8 +2231,8 @@ C...........   THE CORRECT VECTORS
 
 C...........   WRITE OUT BOUNDARY CONDITION ARRAY INFORMATION
 
-               WRITE(16+CK_LUN,1857) JGW,JME,ME2GW(JME),NBV(JGW),LBCODEI(JGW),
-     &              THETA,CSII(JGW),SIII(JGW),BNDLEN2O3(JGW)
+c               WRITE(16+CK_LUN,1857) JGW,JME,ME2GW(JME),NBV(JGW),LBCODEI(JGW),
+c     &              THETA,CSII(JGW),SIII(JGW),BNDLEN2O3(JGW)
  1857          FORMAT(1X,I6,1X,I6,1X,I6,3X,I8,3X,I6,6X,E12.4,2X,E16.8,
      &              1X,E16.8,2X,E16.8)
 
@@ -2349,7 +2349,7 @@ C...  CODE ON THE EXTERNAL BOUNDARY
                         IF(((IBTYPE(K).EQ.4).AND.(LBCODEI(ICK).EQ.0))
      &                       .OR.((IBTYPE(K).EQ.5)
      &                       .AND.(LBCODEI(ICK).EQ.0))) THEN
-                           WRITE(16+CK_LUN,8568) JGW,ICK,ICK
+c                           WRITE(16+CK_LUN,8568) JGW,ICK,ICK
  8568                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',
      &               'BOUNDARY NODE',i0,' (WHICH IS AN ESSENTIAL INTER'
      &               ,'NAL BARRIER BOUNDARY NODE)', /,2X,
@@ -2364,7 +2364,7 @@ C...  CODE ON THE EXTERNAL BOUNDARY
                         IF(((IBTYPE(K).EQ.4).AND.(LBCODEI(ICK).EQ.10))
      &                       .OR.((IBTYPE(K).EQ.5)
      &                       .AND.(LBCODEI(ICK).EQ.10))) THEN
-                           WRITE(16+CK_LUN,8569) JGW,ICK,ICK
+c                           WRITE(16+CK_LUN,8569) JGW,ICK,ICK
  8569                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',
      &               'BOUNDARY NODE ',i0,' (WHICH IS AN ESSENTIAL INTER'
      &               ,'NAL BARRIER BOUNDARY NODE)', /,2X,
@@ -2379,7 +2379,7 @@ C...  CODE ON THE EXTERNAL BOUNDARY
                         IF(((IBTYPE(K).EQ.24).AND.(LBCODEI(ICK).EQ.10))
      &                       .OR.((IBTYPE(K).EQ.25)
      &                       .AND.(LBCODEI(ICK).EQ.10))) THEN
-                           WRITE(16+CK_LUN,8570) JGW,ICK,ICK
+c                           WRITE(16+CK_LUN,8570) JGW,ICK,ICK
  8570                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',
      &               'BOUNDARY NODE',i0,' (WHICH IS A NATURAL INTERNAL'
      &               ,' BARRIER BOUNDARY NODE)', /,2X,
@@ -2451,20 +2451,20 @@ C.....WRITE OUT EXTERNAL BARRIER BOUNDARY INFORMATION TO UNIT 16 FILE
 C.....NOTE THAT THIS INFORMATION WAS READ IN FROM THE UNIT 14 FILE
       IF(NFLUXB.EQ.1) THEN
 C.....  WRITE OUT INFO ON SPECIFIED EXTERNAL BARRIER BOUNDARIES
-        WRITE(16+CK_LUN,1112)
-        WRITE(16+CK_LUN,2220)
+c        WRITE(16+CK_LUN,1112)
+c        WRITE(16+CK_LUN,2220)
  2220   FORMAT(//,1X,'EXTERNAL BARRIER BOUNDARY INFORMATION ',/)
 
 C.......OUTPUT ELEVATION OF EXTERNAL BARRIER NODES ABOVE THE GEOID AND
 C........THE COEFFICIENT OF FREE SURFACE SUPERCRITICAL FLOW AT
 C........DESIGNATED EXTERNAL BARRIER BOUNDARY NODES TO UNIT 16
-         WRITE(16+CK_LUN,2224)
+c         WRITE(16+CK_LUN,2224)
  2224   FORMAT(//,9X,'NODE',10X,'BARRIER HEIGHT',
      &                     6X,'SUPER-CRIT. EXTERNAL BAR. COEF.',/)
          DO J=1,NVEL
             IF((LBCODEI(J).EQ.3).OR.(LBCODEI(J).EQ.13)
      &         .OR.(LBCODEI(J).EQ.23)) THEN
-               WRITE(16+CK_LUN,2225) NBV(J),BARLANHT(J),BARLANCFSP(J)
+c               WRITE(16+CK_LUN,2225) NBV(J),BARLANHT(J),BARLANCFSP(J)
  2225         FORMAT(5X,i0,6X,F14.5,15X,F12.3)
             ENDIF
          END DO
@@ -2475,8 +2475,8 @@ C.....WRITE INTERNAL BARRIER BOUNDARY INFORMATION TO UNIT 16 FILE
       IF(NFLUXIB.EQ.1) THEN
 
 C.....   WRITE OUT INFO ON SPECIFIED INTERNAL BARRIER BOUNDARIES
-         WRITE(16+CK_LUN,1112)
-         WRITE(16+CK_LUN,2320)
+c         WRITE(16+CK_LUN,1112)
+c         WRITE(16+CK_LUN,2320)
  2320   FORMAT(//,1X,'INTERNAL BARRIER BOUNDARY INFORMATION ',/)
 
 C....... WRITE CONNECTION NODE NUMBER AND ELEVATION OF THE INTERNAL BARRIER
@@ -2484,14 +2484,14 @@ C........NODES ABOVE THE GEOID AND THE COEFFICIENTS OF FREE SURFACE SUPERCRITICA
 C........AND SUBCRITICAL FLOW AT DESIGNATED INTERNAL BARRIER BOUNDARY NODES
 C........TO UNIT 16 (NOTE THAT THIS INFORMATION WAS INPUT FROM THE UNIT 14
 C........FILE WITH BOUNDARY NODE INFORMATION)
-         WRITE(16+CK_LUN,2324)
+c         WRITE(16+CK_LUN,2324)
  2324   FORMAT(//,9X,'NODE',6X,'CONNECTED NODE',6X,'BARRIER HEIGHT',
      &                4X,'SUB-CRIT. INT. BAR. COEF.',
      &                4X,'SUPER-CRIT. INT. BAR. COEF.',/)
          DO J=1,NVEL
             IF((LBCODEI(J).EQ.4).OR.(LBCODEI(J).EQ.24)) THEN
-               WRITE(16+CK_LUN,2325) NBV(J),IBCONN(J),BARINHT(J),
-     &                       BARINCFSB(J),BARINCFSP(J)
+c               WRITE(16+CK_LUN,2325) NBV(J),IBCONN(J),BARINHT(J),
+c     &                       BARINCFSB(J),BARINCFSP(J)
  2325         FORMAT(5X,i0,7X,i0,6X,F14.5,12X,F12.3,17X,F12.3)
             ENDIF
          END DO
@@ -2504,8 +2504,8 @@ C.....WRITE INTERNAL BARRIER BOUNDARY INFORMATION WITH CROSS
 C.....BARRIER PIPE INFORMATION TO UNIT 16 FILE
       IF(NFLUXIBP.EQ.1) THEN
 C.....   WRITE OUT INFO ON SPECIFIED INTERNAL BARRIER BOUNDARIES
-         WRITE(16+CK_LUN,1112)
-         WRITE(16+CK_LUN,2326)
+c         WRITE(16+CK_LUN,1112)
+c         WRITE(16+CK_LUN,2326)
  2326   FORMAT(//,1X,'INTERNAL BARRIER BOUNDARY WITH CROSS BARRIER',
      &   ' PIPE INFORMATION ',/)
 
@@ -2516,7 +2516,7 @@ C........IN ADDITION TO CROSS BARRIER PIPE CROWN HEIGHT, CROSS BARRIER PIPE
 C........COEFFICIENT AND CROSS BARRIER PIPE DIAMETER TO UNIT 16
 C........(NOTE THAT THIS INFORMATION WAS INPUT FROM THE UNIT 14 FILE WITH
 C........BOUNDARY NODE INFORMATION)
-         WRITE(16+CK_LUN,2327)
+c         WRITE(16+CK_LUN,2327)
  2327    FORMAT(//,7X,'NODE',4X,'CONNECTED NODE',4X,'BARRIER HEIGHT',
      &                4X,'SUB-CRIT INT BAR COEF',
      &                4X,'SUPER-CRIT INT BAR COEF',
@@ -2525,9 +2525,9 @@ C........BOUNDARY NODE INFORMATION)
      &                4X,'PIPEDIAM',/)
          DO J=1,NVEL
             IF((LBCODEI(J).EQ.5).OR.(LBCODEI(J).EQ.25)) THEN
-               WRITE(16+CK_LUN,2328) NBV(J),IBCONN(J),BARINHT(J),
-     &                     BARINCFSB(J),BARINCFSP(J),
-     &                     PIPEHT(J),PIPECOEF(J),PIPEDIAM(J)
+c               WRITE(16+CK_LUN,2328) NBV(J),IBCONN(J),BARINHT(J),
+c     &                     BARINCFSB(J),BARINCFSP(J),
+c     &                     PIPEHT(J),PIPECOEF(J),PIPEDIAM(J)
  2328         FORMAT(3X,i0,5X,i0,4X,F14.5,8X,F12.3,12X,F12.3,
      &              2X,F10.5,2X,F10.5,2X,F10.5)
             ENDIF
@@ -3059,18 +3059,18 @@ C     ------------------------------------------------------------------
       call createAttributeCenterString(typeHolder, logString)
       scratchFormat = '("The Attribute Center is ",a,".")'
       write(scratchMessage,scratchFormat) trim(logString)
-      call logMessage(DEBUG,scratchMessage)
+c      call logMessage(DEBUG,scratchMessage)
       !
       call xdmfRetrieveAttributeValueType(xdmfFortranObj, attributeIndex, typeHolder)
       call createDataTypeString(typeHolder, logString)
       scratchFormat = '("The Attribute data type is ",a,".")'
       write(scratchMessage,scratchFormat) trim(logString)
-      call logMessage(DEBUG,scratchMessage)
+c      call logMessage(DEBUG,scratchMessage)
       !
       call xdmfRetrieveAttributeSize(xdmfFortranObj, attributeIndex, typeHolder)
       scratchFormat = '("The Attribute consists of ",i0," values.")'
       write(scratchMessage,scratchFormat) typeHolder
-      call logMessage(DEBUG,scratchMessage)
+c      call logMessage(DEBUG,scratchMessage)
 #endif
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -3410,7 +3410,7 @@ C     ------------------------------------------------------------------
       case default
          scratchFormat = '("Unrecognized topology type ",i0,".")'
          write(scratchMessage,scratchFormat) typeHolder
-         call logMessage(WARNING,scratchMessage)
+c         call logMessage(WARNING,scratchMessage)
       end select
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

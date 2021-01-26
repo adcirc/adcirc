@@ -1659,9 +1659,9 @@ C     maxrs.63
             fileFoundnc = .false.
             fileFound   = .false.
             if ( ptr(i) % descript2D % readMaxMin.eqv..true.) then
-               call logMessage(INFO,'Attempting to read ' //
-     &            trim(ptr(i) % descript2D % file_name) //
-     &            ' to continue the min/max record.')
+c               call logMessage(INFO,'Attempting to read ' //
+c     &            trim(ptr(i) % descript2D % file_name) //
+c     &            ' to continue the min/max record.')
                
                !...Check for the netcdf file up front to prevent warning
                !   about a missing ascii file
@@ -1697,9 +1697,9 @@ C                      ! initialize it if it wasn't initialized above
                      call readAndMapToSubdomainMaxMinNetCDF(
      &                  ptr(i) % descript2D, timeloc)
                   else
-                     call logMessage(INFO,'The file "'//
-     &                   trim(ptr(i) % descript2D % file_name)//
-     &                   '" was not found.')
+c                     call logMessage(INFO,'The file "'//
+c     &                   trim(ptr(i) % descript2D % file_name)//
+c     &                   '" was not found.')
                   endif
                endif
 #endif
@@ -2847,7 +2847,7 @@ C
       IF ((specifier.EQ.-1).OR.((specifier.eq.1).AND.(IHOT.EQ.0))) THEN
          !start a new ASCII file
          IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
-            WRITE(16+CK_LUN,497) lun
+c            WRITE(16+CK_LUN,497) lun
             OPEN(lun+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//fn,STATUS="REPLACE")
             WRITE(lun+CK_LUN,499) RUNDes,RunID,AGrid
             WRITE(lun+CK_LUN,498)
@@ -2858,7 +2858,7 @@ C
          ENDIF
          IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.).AND.
      &        (myProc.eq.0)) THEN
-            WRITE(16+CK_LUN,497) lun
+c            WRITE(16+CK_LUN,497) lun
             OPEN(lun+CK_LUN,FILE=TRIM(GLOBALDIR)//'/'//fn,STATUS="REPLACE")
             WRITE(lun+CK_LUN,499) RUNDes,RunID,AGrid
             WRITE(lun+CK_LUN,498) nset,nPerSet_g,tsPeriod*DTDP,tsPeriod,
@@ -2871,9 +2871,9 @@ C
          ! find spot in existing ASCII file
  123     FORMAT('Skipping down ',I12,' lines in the output file.')
          WRITE(scratchMessage,123) recNum
-         CALL logMessage(DEBUG,scratchMessage)
+c         CALL logMessage(DEBUG,scratchMessage)
          IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
-            WRITE(16+CK_LUN,497) lun
+c            WRITE(16+CK_LUN,497) lun
             OPEN(lun+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//fn)
             DO N=1,recNum
                READ(lun+CK_LUN,*,END=456,ERR=456)
@@ -2889,7 +2889,7 @@ C
             ! jgf49.59 The gfortran compiler complains when we write an
             ! end-of-file record at the end of the file. Sheesh.
 789         IF (ios.lt.0) THEN
-               CALL logMessage(DEBUG,"End of output file reached.")! no big deal
+c               CALL logMessage(DEBUG,"End of output file reached.")! no big deal
             ELSE IF (ios.gt.0) THEN
                CALL allMessage(ERROR,"I/O error ending output file.")
             ENDIF
@@ -2897,7 +2897,7 @@ C
          ENDIF
          IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.).AND.
      &        (myProc.eq.0)) THEN
-            WRITE(16+CK_LUN,497) lun
+c            WRITE(16+CK_LUN,497) lun
             OPEN(lun+CK_LUN,FILE=TRIM(GLOBALDIR)//'/'//fn)
             DO N=1,recNum
                READ(lun+CK_LUN,*,END=654,ERR=654)
@@ -2913,7 +2913,7 @@ C
             ! jgf49.59 The gfortran compiler complains when we write an
             ! end-of-file record at the end of the file. Sheesh.
 987         IF (ios.lt.0) THEN
-               CALL logMessage(DEBUG,"End of output file reached.")! no big deal
+c               CALL logMessage(DEBUG,"End of output file reached.")! no big deal
             ELSE IF (ios.gt.0) THEN
                CALL allMessage(ERROR,"I/O error ending output file.")
             ENDIF
@@ -2922,7 +2922,7 @@ C
       ENDIF
       IF ((specifier.EQ.-2).OR.((specifier.eq.2).AND.(IHOT.EQ.0))) THEN
         !start a new BINARY file
-        WRITE(16+CK_LUN,496) lun
+c        WRITE(16+CK_LUN,496) lun
         OPEN(lun+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//fn,ACCESS='DIRECT',
      &       RECL=NByte,STATUS="REPLACE")
         recNum=0
@@ -2965,7 +2965,7 @@ C
       ENDIF
       IF ((specifier.eq.2).and.(IHOT.NE.0)) THEN
          !find spot in existing BINARY file
-         WRITE(16+CK_LUN,496) lun
+c         WRITE(16+CK_LUN,496) lun
          OPEN(lun+CK_LUN,FILE=TRIM(LOCALDIR)//'/'//fn,ACCESS='DIRECT',
      &       RECL=NByte)
          CLOSE(lun+CK_LUN)
@@ -4461,8 +4461,8 @@ C     write data in ascii text only (other output formats are not supported)
 
       CASE(ASCII,BINARY,SPARSE_ASCII) ! just write ascii text
 
-         call logMessage(INFO,'Opening min/max file "'//
-     &          trim(descript%file_name)//'" for writing.')
+c         call logMessage(INFO,'Opening min/max file "'//
+c     &          trim(descript%file_name)//'" for writing.')
 
          IF ((MNPROC.gt.1).and.(MyProc.eq.0).and.
      &        (.not.WRITE_LOCAL_FILES)) THEN
@@ -4517,8 +4517,8 @@ Casey 120830: Reversed the next two lines.
       CASE(NETCDF3,NETCDF4) !netcdf (portable)
 #ifdef ADCNETCDF
          IF (MYPROC.EQ.0) THEN
-         call logMessage(INFO,'Opening min/max file "'//
-     &          trim(descript%file_name)//'" for writing.')
+c         call logMessage(INFO,'Opening min/max file "'//
+c     &          trim(descript%file_name)//'" for writing.')
             descript % writeFlag = .true.
             ! jgf52.08.03: TODO: Is there ever a case where
             ! we've gotten to this point and any of the min/max files
@@ -5067,7 +5067,7 @@ C...
 C...  ADD IN 3D STUFF IF APPROPRIATE
 C...
          IF (C3D.eqv..true.) THEN
-            CALL logMessage(INFO,"Writing 3D hotstart information.")
+c            CALL logMessage(INFO,"Writing 3D hotstart information.")
             CALL HSTART3D_OUT(IT) ! -> see vsmy.F
          ENDIF
 C...
@@ -5619,7 +5619,7 @@ C
 C
 C     If we have exceeded the user's limit, terminate the run.
       IF (WarnElevDumpCounter.gt.WarnElevDumpLimit) THEN
-         WRITE(16+CK_LUN,*) 'ERROR: WarnElevDumpLimit Exceeded.'
+c         WRITE(16+CK_LUN,*) 'ERROR: WarnElevDumpLimit Exceeded.'
          WRITE(ScreenUnit+CK_LUN,5000) MyProc
  5000    FORMAT('ERROR: WarnElevDumpLimit Exceeded on MyPROC=',i4)
 #ifdef CMPI
@@ -6508,7 +6508,7 @@ C-----------------------------------------------------------------------
                read(skipline,fmt=*,end=999,err=999) existingTime, 
      &            existingIT, numRecordsPerSnap
             case default
-               call logMessage(ERROR,"Output specifier not recognized.")
+c               call logMessage(ERROR,"Output specifier not recognized.")
             end select
             if ( existingTime.gt.timeloc ) then
                backspace(lun)

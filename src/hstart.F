@@ -238,18 +238,18 @@ C        Determine if the hot start file exists.
          ENDIF
 C
          IF (fileFound.eqv..false.) THEN
-            WRITE(16+CK_LUN,1701)         ! hot start file
-            WRITE(16+CK_LUN,1711)         ! was not found.
-            WRITE(16+CK_LUN,9773)         ! execution terminated
+c            WRITE(16+CK_LUN,1701)         ! hot start file
+c            WRITE(16+CK_LUN,1711)         ! was not found.
+c            WRITE(16+CK_LUN,9773)         ! execution terminated
             IF (NScreen.ne.0.and.MyProc.eq.0) THEN
                WRITE(ScreenUnit+CK_LUN,1701)
                WRITE(ScreenUnit+CK_LUN,1711)
-               WRITE(16+CK_LUN,9773)      ! execution terminated
+c               WRITE(16+CK_LUN,9773)      ! execution terminated
             ENDIF
             CALL ADCIRC_Terminate()
          ENDIF
 C        start reading ascii initial conditions file
-         WRITE(16+CK_LUN,1740)
+c         WRITE(16+CK_LUN,1740)
  1740    FORMAT(/,9X,
      &    'Initial condition or ascii hot start file was found.',
      &     ' Opening file.')
@@ -265,9 +265,9 @@ C        start reading ascii initial conditions file
          ENDIF
 
          IF (ErrorIO.GT.0) THEN
-            WRITE(16+CK_LUN,1701)         ! hot start file
-            WRITE(16+CK_LUN,1705)         ! exists but can't be opened
-            WRITE(16+CK_LUN,9773)         ! execution terminated
+c            WRITE(16+CK_LUN,1701)         ! hot start file
+c            WRITE(16+CK_LUN,1705)         ! exists but can't be opened
+c            WRITE(16+CK_LUN,9773)         ! execution terminated
             IF (NScreen.ne.0.and.MyProc.eq.0) THEN
                WRITE(ScreenUnit+CK_LUN,1701)
                WRITE(ScreenUnit+CK_LUN,1705)
@@ -385,8 +385,8 @@ C           one should be used in the simulation.
             END IF
             SELECT CASE(ABS(IDen))
             CASE(0)
-               CALL logMessage(INFO,
-     &          "IDEN=0; This is a barotropic model run.")
+c               CALL logMessage(INFO,
+c     &          "IDEN=0; This is a barotropic model run.")
             CASE(1)
                CALL readAndMapToSubdomain3D(SigT, NFEN, IHOT, IHOTSTP, moderbin)
             CASE(2)
@@ -448,13 +448,13 @@ C        Determine if the hot start file exists.
          ENDIF
 C
          IF (fileFound.eqv..false.) THEN
-            WRITE(16+CK_LUN,1001)         ! hot start file
-            WRITE(16+CK_LUN,1011)         ! was not found.
-            WRITE(16+CK_LUN,9973)         ! execution terminated
+c            WRITE(16+CK_LUN,1001)         ! hot start file
+c            WRITE(16+CK_LUN,1011)         ! was not found.
+c            WRITE(16+CK_LUN,9973)         ! execution terminated
             IF (NScreen.ne.0.and.MyProc.eq.0) THEN
                WRITE(ScreenUnit+CK_LUN,1001)
                WRITE(ScreenUnit+CK_LUN,1011)
-               WRITE(16+CK_LUN,9973)      ! execution terminated
+c               WRITE(16+CK_LUN,9973)      ! execution terminated
             ENDIF
 #ifdef CMPI
             CALL MSG_FINI()
@@ -462,7 +462,7 @@ C
             STOP
          ENDIF
 C        start reading binary hot start file
-         WRITE(16+CK_LUN,240)
+c         WRITE(16+CK_LUN,240)
  240     FORMAT(/,9X,'Hot start file was found.',
      &     ' Opening file.')
 
@@ -477,9 +477,9 @@ C        start reading binary hot start file
          ENDIF
 
          IF (ErrorIO.GT.0) THEN
-            WRITE(16+CK_LUN,1001)         ! hot start file
-            WRITE(16+CK_LUN,1005)         ! exists but can't be opened
-            WRITE(16+CK_LUN,9973)         ! execution terminated
+c            WRITE(16+CK_LUN,1001)         ! hot start file
+c            WRITE(16+CK_LUN,1005)         ! exists but can't be opened
+c            WRITE(16+CK_LUN,9973)         ! execution terminated
             IF (NScreen.ne.0.and.MyProc.eq.0) THEN
                WRITE(ScreenUnit+CK_LUN,1001)
                WRITE(ScreenUnit+CK_LUN,1005)
@@ -503,9 +503,9 @@ C        Now read the non-portable binary hot start file.
          READ(IHOT+CK_LUN,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
          if (.not.
      &     CMP_VERSION_NUMBERS(InputFileFmtVn,FileFmtVersion))then
-            WRITE(16+CK_LUN, 1001)
-            write(16+CK_LUN, 1012)
-            write(16+CK_LUN, 9973)
+c            WRITE(16+CK_LUN, 1001)
+c            write(16+CK_LUN, 1012)
+c            write(16+CK_LUN, 9973)
             if (NScreen /= 0 .and. myproc == 0) then
                WRITE(ScreenUnit+CK_LUN, 1001)
                write(ScreenUnit+CK_LUN, 1012)
@@ -629,8 +629,8 @@ C           one should be used in the simulation.
             END IF
             SELECT CASE(ABS(IDen))
             CASE(0)
-               CALL logMessage(INFO,
-     &          "IDEN=0; This is a barotropic model run.")
+c               CALL logMessage(INFO,
+c     &          "IDEN=0; This is a barotropic model run.")
             CASE(1)
                CALL readAndMapToSubdomain3D(SigT, NFEN, IHOT, IHOTSTP, moderbin)
             CASE(2)
@@ -725,13 +725,13 @@ C     ---------------------------------------------
             RNDAYHS=TimeLoc/86400.d0
             NTHS=INT((RNDAY-RNDAYHS)*(86400.d0/DTDP)+0.5d0)
             NT=ITHS+NTHS
-            call logMessage(INFO,"The time step size is different "//
-     &        "from the time step size listed in the hotstart file. "//
-     &        "The total number of time steps in this "//
-     &        "run has been recalculated accordingly.")
+c            call logMessage(INFO,"The time step size is different "//
+c     &        "from the time step size listed in the hotstart file. "//
+c     &        "The total number of time steps in this "//
+c     &        "run has been recalculated accordingly.")
             WRITE(scratchMessage,
      &          '("The ending time step number is now",I9,".")') NT
-            call logMessage(INFO,scratchMessage)
+c            call logMessage(INFO,scratchMessage)
 C           jgf51.14: Need to recalculate the starting and ending
 C           times for output if time step size has changed
             call recalculateStartingAndEndingTimestepsForOutput(
@@ -831,8 +831,8 @@ C
 
 C.... SET POSITIONS IN BOUNDARY CONDITION, WIND AND OUTPUT FILES
 C
-      WRITE(16+CK_LUN,1112)
-      WRITE(16+CK_LUN,1794)
+c      WRITE(16+CK_LUN,1112)
+c      WRITE(16+CK_LUN,1794)
  1794 FORMAT(//,' INFORMATION ABOUT RE-STARTING THE TIME SERIES',
      &     ' OUTPUT FILES (UNITS 61-64,71-74,81,83),',
      &     /,' WIND/PRESSURE FILE (UNIT 22) AND FLOW BOUNDARY',
@@ -855,9 +855,9 @@ C.... BOUNDARY CONDITION FILE IF IT IS REQURIED.
 
       IF((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
-         WRITE(16+CK_LUN,1112)
+c         WRITE(16+CK_LUN,1112)
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1976)
-         WRITE(16+CK_LUN,1976)
+c         WRITE(16+CK_LUN,1976)
  1976    FORMAT(/,1X,'LOCATING ELEVATION SPECIFIED INFORMATION IN ',
      &        'UNIT 19',/)
 
@@ -900,9 +900,9 @@ C......FILE IF IT IS REQUIRED
 
       IF((NFLUXF.EQ.1).AND.(NFFR.EQ.0)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
-         WRITE(16+CK_LUN,1112)
+c         WRITE(16+CK_LUN,1112)
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1978)
-         WRITE(16+CK_LUN,1978)
+c         WRITE(16+CK_LUN,1978)
  1978    FORMAT(/,1X,'LOCATING NORMAL FLOW INFORMATION IN UNIT 20',/)
          OPEN(20+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
          READ(20+CK_LUN,*) FTIMINC
@@ -958,9 +958,9 @@ C......FILE IF IT IS REQUIRED
 ! kmd - added in a option to start the river information at the hot start time
       IF((NFLUXF.EQ.1).AND.(NFFR.EQ.-1)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
-         WRITE(16+CK_LUN,1112)
+c         WRITE(16+CK_LUN,1112)
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1978)
-         WRITE(16+CK_LUN,1978)
+c         WRITE(16+CK_LUN,1978)
 ! 1978    FORMAT(/,1X,'LOCATING NORMAL FLOW INFORMATION IN UNIT 20',/)
 C         IF (MYPROC.EQ.7) THEN
 C            PRINT *, "Made it to the reading in of the river file"
@@ -1586,7 +1586,7 @@ C...
 C....IF RESTARTING THE ELEVATION STATION OUTPUT FILE, GO TO THE PROPER PLACE
 C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
 C...
-      WRITE(16+CK_LUN,1040) IESTP,NSCOUE
+c      WRITE(16+CK_LUN,1040) IESTP,NSCOUE
  1040 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN ELEVATION ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER = ',I6)
@@ -1600,7 +1600,7 @@ C...
           IF(NTCYSE.LT.ITHS) NTCYSE=NTCYSE+NSPOOLE
           IF(NSPOOLE.NE.0) NTRSPE=(NTCYFE-NTCYSE)/NSPOOLE
         ENDIF
-        WRITE(16+CK_LUN,1041)
+c        WRITE(16+CK_LUN,1041)
  1041   FORMAT(//,' A NEW ELEVATION STATION FILE WILL BE STARTED')
       ENDIF
       if (write_local_files.eqv..false.) then
@@ -1642,7 +1642,7 @@ c       WRITE(61,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO BE W
 C...
 C....GO TO THE PROPER PLACE IN THE VELOCITY STATION OUTPUT FILE
 C...
-      WRITE(16+CK_LUN,1042) IVSTP,NSCOUV
+c      WRITE(16+CK_LUN,1042) IVSTP,NSCOUV
  1042 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN VELOCITY ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER =',I6)
@@ -1656,7 +1656,7 @@ C...
           IF(NTCYSV.LT.ITHS) NTCYSV=NTCYSV+NSPOOLV
           NTRSPV=(NTCYFV-NTCYSV)/NSPOOLV
         ENDIF
-        WRITE(16+CK_LUN,1043)
+c        WRITE(16+CK_LUN,1043)
  1043   FORMAT(//,' A NEW VELOCITY STATION FILE WILL BE STARTED')
       ENDIF
       if (write_local_files.eqv..false.) then
@@ -1698,7 +1698,7 @@ c       WRITE(62,REC=ITEMPSTP+1) NTRSPV   ! ALLOW ADDITIONAL OUTPUT DATA TO BE W
 C...
 C....GO TO THE PROPER PLACE IN THE CONCENTRATION STATION OUTPUT FILE
 C...
-      WRITE(16+CK_LUN,1044) ICSTP,NSCOUC
+c      WRITE(16+CK_LUN,1044) ICSTP,NSCOUC
  1044 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN CONCENTRATION ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER = ',I6)
@@ -1711,7 +1711,7 @@ C...
           IF(NTCYSC.LT.ITHS) NTCYSC=NTCYSC+NSPOOLC
           NTRSPC=(NTCYFC-NTCYSC)/NSPOOLC
         ENDIF
-        WRITE(16+CK_LUN,1045)
+c        WRITE(16+CK_LUN,1045)
  1045   FORMAT(//,' A NEW CONCENTRATION STATION FILE WILL BE STARTED')
       ENDIF
       if (write_local_files.eqv..false.) then
@@ -1755,12 +1755,12 @@ C....GO TO THE PROPER PLACE IN THE METEOROLOGICAL STATION OUTPUT FILE
 C...
 c... v49.64.01 tcm -added support for ice stations
       IF(NCICE.EQ.0)  THEN
-         WRITE(16+CK_LUN,1038) IWSTP,IPSTP,NSCOUM
+c         WRITE(16+CK_LUN,1038) IWSTP,IPSTP,NSCOUM
       ELSE
          IICESTP = IPSTP  !SET TO THE SAME PLACE AS THE PRESSURE FILE
-         WRITE(16+CK_LUN,2038) IWSTP,IPSTP,IICESTP,NSCOUM
+c         WRITE(16+CK_LUN,2038) IWSTP,IPSTP,IICESTP,NSCOUM
       ENDIF
-      WRITE(16+CK_LUN,1038) IWSTP,IPSTP,NSCOUM
+c      WRITE(16+CK_LUN,1038) IWSTP,IPSTP,NSCOUM
  1038 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE WIND STATION',
      &                ' FILE BY THE TIME OF THE HOT START',
      &        /,1X,I6,' LINES OR RECORDS WRITTIN IN THE PRES STATION',
@@ -1785,7 +1785,7 @@ C
           IF(NTCYSM.LT.ITHS) NTCYSM=NTCYSM+NSPOOLM
           NTRSPM=(NTCYFM-NTCYSM)/NSPOOLM
         ENDIF
-        WRITE(16+CK_LUN,1039)
+c        WRITE(16+CK_LUN,1039)
  1039   FORMAT(//,' A NEW METEOROLOGICAL STATION FILE WILL BE STARTED')
       ENDIF
    
@@ -1997,7 +1997,7 @@ C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
 C...
 
       IF (NDDT.NE.0) then
-         WRITE(16+CK_LUN,1035) IBSTP,NSCOUB
+c         WRITE(16+CK_LUN,1035) IBSTP,NSCOUB
  1035 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN BATHYMETRY ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER = ',I6)
@@ -2011,7 +2011,7 @@ C...
                IF(NTCYSB.LT.ITHS) NTCYSB=NTCYSB+NSPOOLE
                IF(NSPOOLE.NE.0) NTRSPB=(NTCYFB-NTCYSB)/NSPOOLE
             ENDIF
-         WRITE(16+CK_LUN,1036)
+c         WRITE(16+CK_LUN,1036)
  1036    FORMAT(//,' A NEW BATHYMETRY STATION FILE WILL BE STARTED')
          ENDIF
          if (write_local_files.eqv..false.) then
@@ -2054,7 +2054,7 @@ c           WRITE(75,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO 
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL ELEVATION OUTPUT FILE
 C...
-      WRITE(16+CK_LUN,1046) IGEP,NSCOUGE
+c      WRITE(16+CK_LUN,1046) IGEP,NSCOUGE
  1046 FORMAT(//,1X,I8,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'ELEVATION FILE BY THE TIME OF THE HOT START',
      &          /,8X,'SPOOL COUNTER =',I8)
@@ -2081,7 +2081,7 @@ C           kmd48.33bc - changed NDSETSE for use of new DTDPHS
                NDSETSE=(NTCYFGE-NTCYSGE)/NSPOOLGE
             END IF
          ENDIF
-         WRITE(16+CK_LUN,1047)
+c         WRITE(16+CK_LUN,1047)
  1047    FORMAT(//,' A NEW GLOBAL ELEVATION FILE WILL BE STARTED')
       ENDIF
 
@@ -2216,7 +2216,7 @@ c         WRITE(63,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL VELOCITY OUTPUT FILE
 C...
-        WRITE(16+CK_LUN,1048) IGVP,NSCOUGV
+c        WRITE(16+CK_LUN,1048) IGVP,NSCOUGV
  1048   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'VELOCITY FILE BY THE TIME OF THE HOT START',
      &          /,8X,'SPOOL COUNTER =',I6)
@@ -2235,7 +2235,7 @@ C  kmd48.33bc - change the NDSETSV for the change in the DTDP
               NDSETSV=(NTCYFGV-NTCYSGV)/NSPOOLGV
             END IF
             ENDIF
-          WRITE(16+CK_LUN,1049)
+c          WRITE(16+CK_LUN,1049)
  1049     FORMAT(//,' A NEW GLOBAL VELOCITY FILE WILL BE STARTED')
           ENDIF
 
@@ -2301,7 +2301,7 @@ Cobell - Open the fort.77 (weir elevation change) if necessary
               NDSETS_TVW=(NTCYF_TVW-NTCYS_TVW)/NSPOOL_TVW
             ENDIF
           ENDIF
-          WRITE(16+CK_LUN,1057)
+c          WRITE(16+CK_LUN,1057)
  1057     FORMAT(//,' A NEW WEIR ELEVATION FILE WILL BE STARTED')
         ENDIF
 
@@ -2327,7 +2327,7 @@ c         WRITE(77,REC=ITEMPSTP+1) NDSETS_TVW  ! ALLOW ADDITIONAL OUTPUT DATA TO
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL CONCENTRATION OUTPUT FILE
 C...
-        WRITE(16+CK_LUN,1053) IGCP,NSCOUGC
+c        WRITE(16+CK_LUN,1053) IGCP,NSCOUGC
  1053   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                'CONCENTRATION FILE BY THE TIME OF THE HOT START',
      &          /,8X,'SPOOL COUNTER =',I6)
@@ -2347,7 +2347,7 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
               NDSETSC=(NTCYFGC-NTCYSGC)/NSPOOLGC
             END IF
             ENDIF
-          WRITE(16+CK_LUN,1054)
+c          WRITE(16+CK_LUN,1054)
  1054     FORMAT(//,' A NEW GLOBAL CONCENTRATION FILE WILL BE STARTED')
         ENDIF
 
@@ -2386,9 +2386,9 @@ C....GO TO THE PROPER PLACE IN THE GLOBAL METEOROLOGICAL OUTPUT FILES
 C...
 !       V49.64.01 TCM ADDED GLOBAL ICE CONCENTRATION FILES
         IF(NCICE.NE.0) THEN
-           WRITE(16+CK_LUN,2055) IGWP,IGPP,IGIP,NSCOUGW
+c           WRITE(16+CK_LUN,2055) IGWP,IGPP,IGIP,NSCOUGW
         ELSE
-           WRITE(16+CK_LUN,1055) IGWP,IGPP,NSCOUGW
+c           WRITE(16+CK_LUN,1055) IGWP,IGPP,NSCOUGW
         ENDIF
  1055   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'WIND FILE BY THE TIME OF THE HOT START',
@@ -2422,11 +2422,11 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
           ENDIF
 ! TCM V49.64.01 -- ADDED ICE SUPPORT
           IF(NCICE.NE.0) THEN
-             WRITE(16+CK_LUN,2056)
+c             WRITE(16+CK_LUN,2056)
           ELSE
-             WRITE(16+CK_LUN,1056)
+c             WRITE(16+CK_LUN,1056)
           ENDIF
-          WRITE(16+CK_LUN,1056)
+c          WRITE(16+CK_LUN,1056)
  1056     FORMAT(//,' NEW GLOBAL WIND & pressure FILEs WILL BE STARTED')
  2056   FORMAT(//,' NEW GLOBAL WIND & pressure & Ice FILEs WILL BE STARTED')
         ENDIF
@@ -2684,7 +2684,7 @@ C... TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
 C... THIS FILE IS CONTROLED BY THE ELEVATION OUTPUT OPTIONS
 C....GO TO THE PROPER PLACE IN THE GLOBAL BATHYMETRY OUTPUT FILE
 C...
-        IF (NDDT.NE.0) WRITE(16+CK_LUN,1051) IGBP,NSCOUGB
+c        IF (NDDT.NE.0) WRITE(16+CK_LUN,1051) IGBP,NSCOUGB
  1051   FORMAT(//,1X,I8,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'BATHYMETRY FILE BY THE TIME OF THE HOT START',
      &          /,8X,'SPOOL COUNTER =',I8)
@@ -2703,7 +2703,7 @@ C...
                  NDSETSB=(NTCYFGB-NTCYSGB)/NSPOOLGE
               ENDIF
            ENDIF
-           WRITE(16+CK_LUN,1052)
+c           WRITE(16+CK_LUN,1052)
  1052      FORMAT(//,' A NEW GLOBAL BATHYMETRY FILE WILL BE STARTED')
         ENDIF
 
@@ -3733,8 +3733,8 @@ C
             END DO
             deallocate(fd_array)
          ELSE
-            WRITE(16+CK_LUN,*) "Passing of binary or real
-     &         information incorrect"
+c            WRITE(16+CK_LUN,*) "Passing of binary or real
+c     &         information incorrect"
             STOP
          END IF
       ENDIF
@@ -3783,8 +3783,8 @@ C
          ELSE IF (method.EQ.2) THEN
            CALL realIntRead2D(sd_array, NP, lun)
          ELSE
-            WRITE(16+CK_LUN,*) "Passing of binary or real
-     &         information incorrect"
+c            WRITE(16+CK_LUN,*) "Passing of binary or real
+c     &         information incorrect"
             STOP
          END IF
       ! parallel
@@ -3814,8 +3814,8 @@ C
             END DO
             deallocate(fd_array)
          ELSE
-            WRITE(16+CK_LUN,*) "Passing of binary or real
-     &         information incorrect"
+c            WRITE(16+CK_LUN,*) "Passing of binary or real
+c     &         information incorrect"
             STOP
          END IF
       ENDIF
@@ -3866,8 +3866,8 @@ C
          ELSE IF (method.EQ.2) THEN
             CALL realIntRead2D(sd_array, NE, lun)
          ELSE
-            WRITE(16+CK_LUN,*) "Passing of binary or real
-     &         information incorrect"
+c            WRITE(16+CK_LUN,*) "Passing of binary or real
+c     &         information incorrect"
             STOP
          END IF
       ! parallel
@@ -3897,8 +3897,8 @@ C
             END DO
             deallocate(fd_array)
          ELSE
-            WRITE(16+CK_LUN,*) "Passing of binary or real
-     &         information incorrect"
+c            WRITE(16+CK_LUN,*) "Passing of binary or real
+c     &         information incorrect"
             STOP
          END IF
       ENDIF
@@ -3950,8 +3950,8 @@ C
          ELSE IF (method.EQ.2) THEN
             CALL realRead3D(sd_array, NP, NFEN, lun)
          ELSE
-            WRITE(16+CK_LUN,*) "Passing of binary or real
-     &         information incorrect"
+c            WRITE(16+CK_LUN,*) "Passing of binary or real
+c     &         information incorrect"
             STOP
          END IF
       ! parallel
@@ -3981,8 +3981,8 @@ C
             END DO
             deallocate(fd_array)
          ELSE
-            WRITE(16+CK_LUN,*) "Passing of binary or real
-     &         information incorrect"
+c            WRITE(16+CK_LUN,*) "Passing of binary or real
+c     &         information incorrect"
             STOP
          END IF
       ENDIF

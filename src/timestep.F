@@ -1246,8 +1246,8 @@ C     output the global node number to debug the local PE fort.14s
             WRITE(ScreenUnit+CK_LUN,1993)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
      &           VELMAX,NODES_LG(KVMAX),MYPROC
-            WRITE(16+CK_LUN,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),
-     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
+c            WRITE(16+CK_LUN,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+c     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
  1993       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
@@ -1268,8 +1268,8 @@ C     output the global node number to debug the local PE fort.14s
             WRITE(ScreenUnit+CK_LUN,1995)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
      &           VELMAX,NODES_LG(KVMAX),MYPROC
-            WRITE(16+CK_LUN,1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
-     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
+c            WRITE(16+CK_LUN,1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+c     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
  1995       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
@@ -1303,7 +1303,7 @@ C     output the global node number to debug the local PE fort.14s
          IF(ELMAX.GT.WarnElev) THEN
             WRITE(ScreenUnit+CK_LUN,1994)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16+CK_LUN,1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+c            WRITE(16+CK_LUN,1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1994       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
@@ -1318,7 +1318,7 @@ C     output the global node number to debug the local PE fort.14s
             Flag_ElevError = .true.
             WRITE(ScreenUnit+CK_LUN,1996)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16+CK_LUN,1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+c            WRITE(16+CK_LUN,1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1996       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,

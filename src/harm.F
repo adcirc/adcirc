@@ -507,13 +507,13 @@ C
             CALL harmonicTerminate()
          ENDIF
       ELSE IF (NHASE.EQ.1) THEN
-         CALL logMessage(INFO,
-     &        'STATION ELEVATION HARMONIC ANALYSIS'
-     &        //' WILL BE WRITTEN TO UNIT 51 IN ASCII FORMAT.')
+c         CALL logMessage(INFO,
+c     &        'STATION ELEVATION HARMONIC ANALYSIS'
+c     &        //' WILL BE WRITTEN TO UNIT 51 IN ASCII FORMAT.')
       ELSEIF (NHASE > 1) THEN
-         CALL logMessage(INFO,
-     &        'STATION ELEVATION HARMONIC ANALYSIS'
-     &        //' WILL BE WRITTEN TO UNIT 51 IN NETCDF FORMAT.')
+c         CALL logMessage(INFO,
+c     &        'STATION ELEVATION HARMONIC ANALYSIS'
+c     &        //' WILL BE WRITTEN TO UNIT 51 IN NETCDF FORMAT.')
       ENDIF
 
       IF((NHASV.LT.0).OR.(NHASV.GT.5)) THEN
@@ -524,13 +524,13 @@ C
             CALL harmonicTerminate()
          ENDIF
       ELSE IF (NHASV.EQ.1) THEN
-         CALL logMessage(INFO,
-     &        'STATION VELOCITY HARMONIC ANALYSIS'
-     &        //' WILL BE WRITTEN TO UNIT 52 IN ASCII FORMAT.')
+c         CALL logMessage(INFO,
+c     &        'STATION VELOCITY HARMONIC ANALYSIS'
+c     &        //' WILL BE WRITTEN TO UNIT 52 IN ASCII FORMAT.')
       ELSE IF (NHASV > 1) THEN
-         CALL logMessage(INFO,
-     &        'STATION VELOCITY HARMONIC ANALYSIS'
-     &        //' WILL BE WRITTEN TO UNIT 52 IN NETCDF FORMAT.')
+c         CALL logMessage(INFO,
+c     &        'STATION VELOCITY HARMONIC ANALYSIS'
+c     &        //' WILL BE WRITTEN TO UNIT 52 IN NETCDF FORMAT.')
       ENDIF
 
       IF((NHAGE.LT.0).OR.(NHAGE.GT.5)) THEN
@@ -541,13 +541,13 @@ C
             CALL harmonicTerminate()
          ENDIF
       ELSE IF (NHAGE.EQ.1) THEN
-         CALL logMessage(INFO,
-     &        'FULL DOMAIN ELEVATION HARMONIC ANALYSIS'
-     &        //' WILL BE WRITTEN TO UNIT 53 IN ASCII FORMAT.')
+c         CALL logMessage(INFO,
+c     &        'FULL DOMAIN ELEVATION HARMONIC ANALYSIS'
+c     &        //' WILL BE WRITTEN TO UNIT 53 IN ASCII FORMAT.')
       ELSE IF (NHAGE > 1) THEN
-         CALL logMessage(INFO,
-     &        'FULL DOMAIN ELEVATION HARMONIC ANALYSIS'
-     &        //' WILL BE WRITTEN TO UNIT 53 IN NETCDF FORMAT.')
+c         CALL logMessage(INFO,
+c     &        'FULL DOMAIN ELEVATION HARMONIC ANALYSIS'
+c     &        //' WILL BE WRITTEN TO UNIT 53 IN NETCDF FORMAT.')
       ENDIF
 
       IF((NHAGV.LT.0).OR.(NHAGV.GT.5)) THEN
@@ -558,13 +558,13 @@ C
             CALL harmonicTerminate()
          ENDIF
       ELSE IF (NHAGV.EQ.1) THEN
-         CALL logMessage(INFO,
-     &        'FULL DOMAIN VELOCITY HARMONIC ANALYSIS'
-     &        //' WILL BE WRITTEN TO UNIT 54 ASCII FORMAT.')
+c         CALL logMessage(INFO,
+c     &        'FULL DOMAIN VELOCITY HARMONIC ANALYSIS'
+c     &        //' WILL BE WRITTEN TO UNIT 54 ASCII FORMAT.')
       ELSE IF (NHAGV > 1) THEN
-         CALL logMessage(INFO,
-     &        'FULL DOMAIN VELOCITY HARMONIC ANALYSIS'
-     &        //' WILL BE WRITTEN TO UNIT 54 NETCDF FORMAT.')
+c         CALL logMessage(INFO,
+c     &        'FULL DOMAIN VELOCITY HARMONIC ANALYSIS'
+c     &        //' WILL BE WRITTEN TO UNIT 54 NETCDF FORMAT.')
       ENDIF
 
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
@@ -610,12 +610,12 @@ C
       ! saving the load vectors and rhs of the harmonic analysis problem.
       if ( (mnproc.gt.1).and.
      &     (write_local_harm_files.eqv..true.) ) then
-         call logMessage(INFO,'Subdomain harmonic analysis files '
-     &                // 'were specified with -m on the command line.')
+c         call logMessage(INFO,'Subdomain harmonic analysis files '
+c     &                // 'were specified with -m on the command line.')
          if ( (NHSTAR.ne.0).and.
      &        (write_local_hot_start_files.eqv..false.) ) then  
-            call logMessage(INFO,'Fulldomain hotstart files will be '
-     &                            // 'created by default.')
+c            call logMessage(INFO,'Fulldomain hotstart files will be '
+c     &                            // 'created by default.')
             call allMessage(ERROR,'Fulldomain hotstart output files '
      &       // 'cannot be used in combination with subdomain harmonic '
      &       // 'analysis output files. '
@@ -628,8 +628,8 @@ C
          endif
          if ( (NHSTAR.ne.0).and. 
      &        (write_local_hot_start_files.eqv..true.) ) then
-            call logMessage(INFO,'Subdomain hotstart files will '
-     &       // 'contain subdomain harmonic analysis data.')
+c            call logMessage(INFO,'Subdomain hotstart files will '
+c     &       // 'contain subdomain harmonic analysis data.')
          endif
       endif
       
@@ -1538,16 +1538,16 @@ C
 C
       if (charmv) then
 c
-      WRITE(16+CK_LUN,7740)
+c      WRITE(16+CK_LUN,7740)
  7740 FORMAT(///,5X,'THE LARGEST VALUES OF THE RATIO ',
      &              'RESYNTHESIZED ELEV TIME SERIES/RAW TIME SERIES:',/)
-      WRITE(16+CK_LUN,7741) EAVMAX,NEAVMAX
-      WRITE(16+CK_LUN,7742) EVAMAX,NEVAMAX
-      WRITE(16+CK_LUN,7747)
+c      WRITE(16+CK_LUN,7741) EAVMAX,NEAVMAX
+c      WRITE(16+CK_LUN,7742) EVAMAX,NEVAMAX
+c      WRITE(16+CK_LUN,7747)
  7747 FORMAT(/,5X,'THE LOWEST VALUES OF THE RATIO ',
      &            'RESYNTHESIZED ELEV TIME SERIES/RAW TIME SERIES:',/)
-      WRITE(16+CK_LUN,7741) EAVMIN,NEAVMIN
-      WRITE(16+CK_LUN,7742) EVAMIN,NEVAMIN
+c      WRITE(16+CK_LUN,7741) EAVMIN,NEAVMIN
+c      WRITE(16+CK_LUN,7742) EVAMIN,NEVAMIN
  7741 FORMAT(9X,'  AVERAGE ELEVATION RATIO = ',E15.7,' AT NODE ',I8)
  7742 FORMAT(9X,' VARIANCE ELEVATION RATIO = ',E15.7,' AT NODE ',I8)
 c
@@ -1751,20 +1751,20 @@ CHARMV...Compare resynthesized values with those computed during time stepping.
 
       if ( charmv ) then
 c
-         WRITE(16+CK_LUN,7740)
+c         WRITE(16+CK_LUN,7740)
  7740    FORMAT(///,5X,'THE LARGEST VALUES OF THE RATIO ',
      &              'RESYNTHESIZED VEL TIME SERIES/RAW TIME SERIES:',/)
-         WRITE(16+CK_LUN,7743) UAVMAX,NUAVMAX
-         WRITE(16+CK_LUN,7744) UVAMAX,NUVAMAX
-         WRITE(16+CK_LUN,7745) VAVMAX,NVAVMAX
-         WRITE(16+CK_LUN,7746) VVAMAX,NVVAMAX
-         WRITE(16+CK_LUN,7747)
+c         WRITE(16+CK_LUN,7743) UAVMAX,NUAVMAX
+c         WRITE(16+CK_LUN,7744) UVAMAX,NUVAMAX
+c         WRITE(16+CK_LUN,7745) VAVMAX,NVAVMAX
+c         WRITE(16+CK_LUN,7746) VVAMAX,NVVAMAX
+c         WRITE(16+CK_LUN,7747)
  7747    FORMAT(//,5X,'THE LOWEST VALUES OF THE RATIO ',
      &             'RESYNTHESIZED VEL TIME SERIES/RAW TIME SERIES:',/)
-         WRITE(16+CK_LUN,7743) UAVMIN,NUAVMIN
-         WRITE(16+CK_LUN,7744) UVAMIN,NUVAMIN
-         WRITE(16+CK_LUN,7745) VAVMIN,NVAVMIN
-         WRITE(16+CK_LUN,7746) VVAMIN,NVVAMIN
+c         WRITE(16+CK_LUN,7743) UAVMIN,NUAVMIN
+c         WRITE(16+CK_LUN,7744) UVAMIN,NUVAMIN
+c         WRITE(16+CK_LUN,7745) VAVMIN,NVAVMIN
+c         WRITE(16+CK_LUN,7746) VVAMIN,NVVAMIN
  7743    FORMAT(9X,' AVERAGE U VELOCITY RATIO = ',E15.7,' AT NODE ',I8)
  7744    FORMAT(9X,'VARIANCE U VELOCITY RATIO = ',E15.7,' AT NODE ',I8)
  7745    FORMAT(9X,' AVERAGE V VELOCITY RATIO = ',E15.7,' AT NODE ',I8)
@@ -2045,8 +2045,8 @@ C
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      call logMessage(INFO,
-     & "Comparing harmonic parameters in hotstart file to fort.15...")
+c      call logMessage(INFO,
+c     & "Comparing harmonic parameters in hotstart file to fort.15...")
 C
       iflag=0
       if(nz.ne.inz) iflag=1
@@ -2090,8 +2090,8 @@ c
       end do
 C
       if(iflag.eq.0) then
-         call logMessage(INFO,
-     &      "Harmonic data in hotstart file matches fort.15. PASSED.")
+c         call logMessage(INFO,
+c     &      "Harmonic data in hotstart file matches fort.15. PASSED.")
       else
 c
 c***** FATAL Error Messages

@@ -91,9 +91,9 @@ C...    read in the second depth dp2 for btime2
          ENDIF
 
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
-         WRITE(16+CK_LUN,1112)
+c         WRITE(16+CK_LUN,1112)
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1976)
-         WRITE(16+CK_LUN,1976)
+c         WRITE(16+CK_LUN,1976)
  1976    FORMAT(/,1X,'TIME VARYING BATHYMETRY INFORMATION ',
      &        'READ FROM UNIT 141',/)
 
@@ -150,9 +150,9 @@ C...
 
       IF((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
-         WRITE(16+CK_LUN,1112)
+c         WRITE(16+CK_LUN,1112)
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1977)
-         WRITE(16+CK_LUN,1977)
+c         WRITE(16+CK_LUN,1977)
  1977    FORMAT(/,1X,'ELEVATION SPECIFIED INFORMATION READ FROM UNIT ',
      &        '19',/)
          ! NCSU Subdomain Modeling
@@ -180,9 +180,9 @@ C
 
       IF((NFLUXF.EQ.1).AND.(NFFR.EQ.0)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
-         WRITE(16+CK_LUN,1112)
+c         WRITE(16+CK_LUN,1112)
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1979)
-         WRITE(16+CK_LUN,1979)
+c         WRITE(16+CK_LUN,1979)
  1979    FORMAT(/,1X,'NORMAL FLOW INFORMATION READ FROM UNIT 20',/)
          OPEN(20+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
          READ(20+CK_LUN,*) FTIMINC
@@ -234,17 +234,17 @@ C        momentum equations
                WRITE(ScreenUnit+CK_LUN,*)
      &      'will not solve the GWCE or momentum equations.'
              ENDIF
-             WRITE(16+CK_LUN,*)
-     &      'INFO: Only meteorological output was requested. ADCIRC'
-             WRITE(16+CK_LUN,*)
-     &      'will not solve the GWCE or momentum equations.'
+c             WRITE(16+CK_LUN,*)
+c     &      'INFO: Only meteorological output was requested. ADCIRC'
+c             WRITE(16+CK_LUN,*)
+c     &      'will not solve the GWCE or momentum equations.'
             METONLY = .TRUE. ! set flag
          ENDIF
 
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
-         WRITE(16+CK_LUN,1112)
+c         WRITE(16+CK_LUN,1112)
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1980)
-         WRITE(16+CK_LUN,1980)
+c         WRITE(16+CK_LUN,1980)
  1980    FORMAT(/,1X,'WIND (AND PRESSURE) INFORMATION READ.',/)
 
          call coldstartMeteorologicalForcing(nws)
@@ -269,9 +269,9 @@ C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
            CALL RS2GET(RSNX2,RSNY2,NP)
          ENDIF
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
-         WRITE(16+CK_LUN,1112)
+c         WRITE(16+CK_LUN,1112)
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1981)
-         WRITE(16+CK_LUN,1981)
+c         WRITE(16+CK_LUN,1981)
  1981    FORMAT(/,1X,'RADIATION STRESS INFORMATION READ.',/)
       ENDIF
 
@@ -280,9 +280,9 @@ C...INPUT ICE CONCENTRATION INFORMATION FROM UNIT 25
 C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
       IF (NCICE.GE.1) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
-         WRITE(16+CK_LUN,1112)
+c         WRITE(16+CK_LUN,1112)
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,2980)
-         WRITE(16+CK_LUN,2980)
+c         WRITE(16+CK_LUN,2980)
  2980    FORMAT(/,1X,'ICE CONCENTRATION INFORMATION READ.',/)
 
          IF(NCICE.EQ.12) THEN
@@ -1007,17 +1007,17 @@ C...  IF A BAROCLINIC RUN, READ IN INITIAL DENSITY FIELD
 
       IF(CBaroclinic.and.(.not.C3DVS)) THEN
          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-            WRITE(16+CK_LUN,*) "CBaroclinic is ",CBaroclinic
-            WRITE(16+CK_LUN,*) "CB3DVS is ",C3DVS
-            WRITE(16+CK_LUN,*)
-     &           "ERROR: 2DDI baroclinic runs not currently supported."
+c            WRITE(16+CK_LUN,*) "CBaroclinic is ",CBaroclinic
+c            WRITE(16+CK_LUN,*) "CB3DVS is ",C3DVS
+c            WRITE(16+CK_LUN,*)
+c     &           "ERROR: 2DDI baroclinic runs not currently supported."
          ENDIF
          CALL ADCIRC_Terminate()
       ENDIF
 C
 
       IF(CBaroclinic .and. C3DVS) THEN
-         WRITE(16+CK_LUN,424)
+c         WRITE(16+CK_LUN,424)
  424     FORMAT(/,5X,'INITIAL DENSITY FIELD READ IN FROM UNIT 11',/)
          OPEN(11+CK_LUN,FILE=TRIM(INPUTDIR)//'/'//'fort.11')
          READ(11+CK_LUN,*)             !skip over header line
@@ -1027,7 +1027,7 @@ C
             IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
                WRITE(ScreenUnit+CK_LUN,351) NVN,NFEN
             ENDIF
-            WRITE(16+CK_LUN,351) NVN,NFEN
+c            WRITE(16+CK_LUN,351) NVN,NFEN
  351        FORMAT(/,2X,'***** INVALID INPUT IN THE DENSITY INITIAL ',
      &           'CONDITION FILE (UNIT 11) *****',
      &           /,2X,'***** NVN = ',I4,' MUST MATCH NFEN = ',I4,
@@ -1513,9 +1513,9 @@ C----------------------------------------------------------------------
  9883    format('Node ',i0,' dried (landlocking).')
          !
          !jgf52.08.23: Report the reasons why a node was initially dried.
-         call logMessage(DEBUG,
-     &      "Nodes were set to an initially dry state "
-     &      // "for the following reasons:")
+c         call logMessage(DEBUG,
+c     &      "Nodes were set to an initially dry state "
+c     &      // "for the following reasons:")
          do i=1,np
             if (nnodecode(i).eq.0) then
                if (dryReasonInitialized(i).eqv..false.) then
@@ -1523,7 +1523,7 @@ C----------------------------------------------------------------------
      &            '("node=",i0," This node is dry for no good reason.")') i
                   dryReasonInitialized(i) = .true.
                endif
-               call logMessage(DEBUG,trim(dryReason(i)))
+c               call logMessage(DEBUG,trim(dryReason(i)))
             endif
          end do 
          ! release memory 

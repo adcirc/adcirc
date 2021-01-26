@@ -1500,16 +1500,16 @@ C...  Compute velocities
             UU2(I)=QX2(I)/H2
             VV2(I)=QY2(I)/H2
             ELSE
-            WRITE(16+CK_LUN,*) ''
-            WRITE(16+CK_LUN,*) ''
-            WRITE(16+CK_LUN,*) '*******************************************'
-            WRITE(16+CK_LUN,*) '*******************************************'
-            WRITE(16+CK_LUN,*) 'WARNING: Total water depth = 0 at node  ',I
-            WRITE(16+CK_LUN,*) '         Velocities set = -999.'
-            WRITE(16+CK_LUN,*) '*******************************************'
-            WRITE(16+CK_LUN,*) '*******************************************'
-            WRITE(16+CK_LUN,*) ''
-            WRITE(16+CK_LUN,*) ''
+c            WRITE(16+CK_LUN,*) ''
+c            WRITE(16+CK_LUN,*) ''
+c            WRITE(16+CK_LUN,*) '*******************************************'
+c            WRITE(16+CK_LUN,*) '*******************************************'
+c            WRITE(16+CK_LUN,*) 'WARNING: Total water depth = 0 at node  ',I
+c            WRITE(16+CK_LUN,*) '         Velocities set = -999.'
+c            WRITE(16+CK_LUN,*) '*******************************************'
+c            WRITE(16+CK_LUN,*) '*******************************************'
+c            WRITE(16+CK_LUN,*) ''
+c            WRITE(16+CK_LUN,*) ''
             UU2(I)=-999.
             VV2(I)=-999.
             ENDIF

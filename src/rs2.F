@@ -79,8 +79,8 @@ C***********************************************************************
         write(screenunit+CK_LUN,*)
         write(screenunit+CK_LUN,*) 'INIT RADIATION STRESS ARRAYS (NRS=2)...'
       endif
-      write(16+CK_LUN,*)
-      write(16+CK_LUN,*) 'INITIALIZING RADIATION STRESS ARRAYS (NRS=2)...'
+c      write(16+CK_LUN,*)
+c      write(16+CK_LUN,*) 'INITIALIZING RADIATION STRESS ARRAYS (NRS=2)...'
 
       !read meta info
 
@@ -441,7 +441,7 @@ C***********************************************************************
 
       if(ns.le.0) then
         write(screenunit+CK_LUN,1004)
-        write(16+CK_LUN,1004)
+c        write(16+CK_LUN,1004)
 #ifdef CMPI
         call msg_fini()
 #endif
@@ -709,10 +709,10 @@ C***********************************************************************
             write(screenunit+CK_LUN,*) 'PROGRAM WILL BE TERMINATED'
             write(screenunit+CK_LUN,*) ''
           endif
-          write(16+CK_LUN,*) ''
-          write(16+CK_LUN,*) 'FORT.23 SEEMS INCONSISTENT WITH .RAD FILES'
-          write(16+CK_LUN,*) 'PROGRAM WILL BE TERMINATED'
-          write(16+CK_LUN,*) ''
+c          write(16+CK_LUN,*) ''
+c          write(16+CK_LUN,*) 'FORT.23 SEEMS INCONSISTENT WITH .RAD FILES'
+c          write(16+CK_LUN,*) 'PROGRAM WILL BE TERMINATED'
+c          write(16+CK_LUN,*) ''
 #ifdef CMPI
           call msg_fini()
 #endif
@@ -737,8 +737,8 @@ C***********************************************************************
         write(screenunit+CK_LUN,*)
         write(screenunit+CK_LUN,*) 'INIT OF RADIATION STRESS ARRAYS IS DONE.'
       endif
-      write(16+CK_LUN,*)
-      write(16+CK_LUN,*) 'INIT OF RADIATION STRESS ARRAYS IS DONE.'
+c      write(16+CK_LUN,*)
+c      write(16+CK_LUN,*) 'INIT OF RADIATION STRESS ARRAYS IS DONE.'
 
       return
 
@@ -1006,8 +1006,8 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
         write(screenunit+CK_LUN,*)
         write(screenunit+CK_LUN,*) 'READING IN RADIATION STRESS'
       endif
-      write(16+CK_LUN,*)
-      write(16+CK_LUN,*) 'READING IN RADIATION STRESS'
+c      write(16+CK_LUN,*)
+c      write(16+CK_LUN,*) 'READING IN RADIATION STRESS'
 
       pi = 4.d0*atan(1.d0)
 
@@ -1032,8 +1032,8 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
          write(screenunit+CK_LUN,*) 'INSERTING A BLANK RS SNAP, REGION = ',s,
      &                   ', COUNT = ',cntsnaps
             endif
-            write(16+CK_LUN,*) 'INSERTING A BLANK RS SNAP, REGION = ',s,
-     &                  ', COUNT = ',cntsnaps
+c            write(16+CK_LUN,*) 'INSERTING A BLANK RS SNAP, REGION = ',s,
+c     &                  ', COUNT = ',cntsnaps
           endif
           cycle    
         endif
@@ -1153,8 +1153,8 @@ C--------------------------------------------------------------------------
         write(screenunit+CK_LUN,*) 'RADIATION STRESS IS LOADED'
         write(screenunit+CK_LUN,*)
       endif
-      write(16+CK_LUN,*) 'RADIATION STRESS IS LOADED'
-      write(16+CK_LUN,*)
+c      write(16+CK_LUN,*) 'RADIATION STRESS IS LOADED'
+c      write(16+CK_LUN,*)
 
       return
 
@@ -1163,9 +1163,9 @@ C--------------------------------------------------------------------------
         write(screenunit+CK_LUN,*) trim(radfiles(s)),' IS NOT COMPLETE.'
         write(screenunit+CK_LUN,*) 'PROGRAM WILL BE TERMINATED.'
       endif
-      write(16+CK_LUN,*) trim(radfiles(s)),' IS NOT COMPLETE.'
-      write(16+CK_LUN,*) 'PROGRAM WILL BE TERMINATED.'
-      close(16+CK_LUN)
+c      write(16+CK_LUN,*) trim(radfiles(s)),' IS NOT COMPLETE.'
+c      write(16+CK_LUN,*) 'PROGRAM WILL BE TERMINATED.'
+c      close(16+CK_LUN)
 
 #ifdef CMPI
       call msg_fini()

@@ -1010,10 +1010,10 @@ C     Check to make sure that NWP is a valid number.
             WRITE(ScreenUnit+CK_LUN,9728)
             WRITE(ScreenUnit+CK_LUN,9973)
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'NWP =',NWP
-         WRITE(16+CK_LUN,9728)
-         WRITE(16+CK_LUN,9973)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'NWP =',NWP
+c         WRITE(16+CK_LUN,9728)
+c         WRITE(16+CK_LUN,9973)
  9728    FORMAT(/,1X,'Your selection of NWP (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
          STOP            ! We're toast.
@@ -1022,7 +1022,7 @@ C
 C     Check to see if there are nodal attributes to be read in. If not,
 C     simply return.
       IF (NWP.EQ.0) THEN
-         WRITE(16+CK_LUN,231) NWP
+c         WRITE(16+CK_LUN,231) NWP
  231     FORMAT(/,5X,'NWP = ',I2,
      &        /,9X,'A Nodal Attributes File (unit 13)',
      &        /,9X,'will not be used.')
@@ -1031,11 +1031,11 @@ C     simply return.
 C
 C     Read the unit 15 control file to determine what data must be
 C     loaded from nodal attributes file.
-      WRITE(16+CK_LUN,235) NWP
+c      WRITE(16+CK_LUN,235) NWP
  235  FORMAT(/,9X,'Need to load ',I2,' nodal attribute(s):')
       DO k=1,NWP
          READ(15+CK_LUN,*) AttrName
-         WRITE(16+CK_LUN,'(14X,A80)') AttrName
+c         WRITE(16+CK_LUN,'(14X,A80)') AttrName
          SELECT CASE (AttrName)
          CASE("primitive_weighting_in_continuity_equation")
             LoadTau0 = .True.
@@ -1082,8 +1082,8 @@ C 09232016 WP: Add spatially varying linear internal tide friction coefficient
          CASE("overland_reduction_factor")
             LoadOverlandReductionFactor = .True.
          CASE DEFAULT
-            WRITE(16+CK_LUN,1000)          ! unit 15 Model Parameter file
-            WRITE(16+CK_LUN,1021) AttrName ! contains invalid name
+c            WRITE(16+CK_LUN,1000)          ! unit 15 Model Parameter file
+c            WRITE(16+CK_LUN,1021) AttrName ! contains invalid name
             IF (NScreen.ne.0.and.MyProc.eq.0) THEN
                WRITE(ScreenUnit+CK_LUN,1000)
                WRITE(ScreenUnit+CK_LUN,1021) AttrName
@@ -1091,7 +1091,7 @@ C 09232016 WP: Add spatially varying linear internal tide friction coefficient
          END SELECT
       ENDDO
 C
-      WRITE(16+CK_LUN,232) NWP
+c      WRITE(16+CK_LUN,232) NWP
  232  FORMAT(/,5X,'NWP = ',I2,
      &     /,9X,'Must read Nodal Attributes File (unit 13).')
       !
@@ -1108,9 +1108,9 @@ C     Determine if the Nodal Attributes File exists.
       INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.13',EXIST=NAFound)
 C
       IF (.not.NAFound) THEN
-         WRITE(16+CK_LUN,1001)         ! Nodal Attributes file
-         WRITE(16+CK_LUN,1011)         ! was not found.
-         WRITE(16+CK_LUN,9973)         ! execution terminated
+c         WRITE(16+CK_LUN,1001)         ! Nodal Attributes file
+c         WRITE(16+CK_LUN,1011)         ! was not found.
+c         WRITE(16+CK_LUN,9973)         ! execution terminated
          IF (NScreen.ne.0.and.MyProc.eq.0) THEN
             WRITE(ScreenUnit+CK_LUN,1001)
             WRITE(ScreenUnit+CK_LUN,1011)
@@ -1120,15 +1120,15 @@ C
       ENDIF
 C
 C     Now open the nodal attributes (unit 13) file.
-      WRITE(16+CK_LUN,240)
+c      WRITE(16+CK_LUN,240)
  240  FORMAT(/,9X,'Nodal Attributes File (unit 13) was found.',
      &     ' Opening file.')
       OPEN(UNIT=13+CK_LUN, FILE=TRIM(INPUTDIR)//'/'//'fort.13',
      &     IOSTAT=ErrorIO)
       IF ( ErrorIO .GT. 0 ) THEN
-         WRITE(16+CK_LUN,1001)         ! Nodal attribute file
-         WRITE(16+CK_LUN,1005)         ! exists but can't be opened
-         WRITE(16+CK_LUN,9973)         ! execution terminated
+c         WRITE(16+CK_LUN,1001)         ! Nodal attribute file
+c         WRITE(16+CK_LUN,1005)         ! exists but can't be opened
+c         WRITE(16+CK_LUN,9973)         ! execution terminated
          IF (NScreen.ne.0.and.MyProc.eq.0) THEN
             WRITE(ScreenUnit+CK_LUN,1001)
             WRITE(ScreenUnit+CK_LUN,1005)
@@ -1139,9 +1139,9 @@ C     Now open the nodal attributes (unit 13) file.
 C
 C     Read each attribute name, units, number of values, and default value
       READ(13+CK_LUN,'(A80)') header
-      WRITE(16+CK_LUN,250)
+c      WRITE(16+CK_LUN,250)
  250  FORMAT(/,9X,'User comment line from unit 13:')
-      WRITE(16+CK_LUN,'(14X,A80,/)') header
+c      WRITE(16+CK_LUN,'(14X,A80,/)') header
       READ(13+CK_LUN,*) NumOfNodes     ! number of nodes according to unit 13     
 C      
 C     ERROR CHECK: If a nodal attributes file is being used, check to
@@ -1164,8 +1164,8 @@ C
       READ(13+CK_LUN,*) NAttr          ! number of attributes in the unit 13 file
       DO k=1, NAttr
          READ(13+CK_LUN,*) AttrName
-         WRITE(16+CK_LUN,'(9X,A80)') AttrName
-         WRITE(16+CK_LUN,260)
+c         WRITE(16+CK_LUN,'(9X,A80)') AttrName
+c         WRITE(16+CK_LUN,260)
  260     FORMAT(14X,'was found!',/)
          SELECT CASE (AttrName)
          CASE("primitive_weighting_in_continuity_equation")
@@ -1271,8 +1271,8 @@ C 09232016 WP: Add spatially varying linear internal tide friction
             READ(13+CK_LUN,*) OverlandReductionFactorNoOfVals
             READ(13+CK_LUN,*) OverlandReductionFactorDefaultValue
          CASE DEFAULT
-            WRITE(16+CK_LUN,1001)          ! Nodal Attributes file
-            WRITE(16+CK_LUN,1021) AttrName ! contains invalid name
+c            WRITE(16+CK_LUN,1001)          ! Nodal Attributes file
+c            WRITE(16+CK_LUN,1021) AttrName ! contains invalid name
             IF (NScreen.ne.0.and.MyProc.eq.0) THEN
                WRITE(ScreenUnit+CK_LUN,1001)
                WRITE(ScreenUnit+CK_LUN,1021) AttrName
@@ -1292,14 +1292,14 @@ C     Allocate memory for nodal attributes
 C
 C     Now read each of the attributes required by the model parameter
 C     (unit 15) file and skip past the others.
-      WRITE(16+CK_LUN,270) NWP
+c      WRITE(16+CK_LUN,270) NWP
  270  FORMAT(/,9X,'Now reading ',I2,' nodal attribute(s).')
       DO k=1, NAttr
-         WRITE(16+CK_LUN,280) k
+c         WRITE(16+CK_LUN,280) k
  280     FORMAT(/,9X,'Attribute ',I2,':')
          READ(13+CK_LUN,*) AttrName
          READ(13+CK_LUN,*) NumNodesNotDefault
-         WRITE(16+CK_LUN,'(14X,A80)') AttrName
+c         WRITE(16+CK_LUN,'(14X,A80)') AttrName
          SELECT CASE (AttrName)
          CASE("primitive_weighting_in_continuity_equation")
             IF (LoadTau0) THEN
@@ -1448,8 +1448,8 @@ C 09232016 WP : Spatially varying linear internal tide friction
             ENDIF
          CASE DEFAULT
             SkipDataSet = .True.
-            WRITE(16+CK_LUN,1001)      ! Nodal Attributes file
-            WRITE(16+CK_LUN,1021) AttrName ! contains invalid name
+c            WRITE(16+CK_LUN,1001)      ! Nodal Attributes file
+c            WRITE(16+CK_LUN,1021) AttrName ! contains invalid name
             IF (NScreen.ne.0.and.MyProc.eq.0) THEN
                WRITE(ScreenUnit+CK_LUN,1001)
                WRITE(ScreenUnit+CK_LUN,1021) AttrName
@@ -1459,10 +1459,10 @@ C 09232016 WP : Spatially varying linear internal tide friction
             DO L=1, NumNodesNotDefault
                READ(13+CK_LUN,*) Skipped
             END DO
-            WRITE(16+CK_LUN,'(9X,A8)') 'Skipped.'
+c            WRITE(16+CK_LUN,'(9X,A8)') 'Skipped.'
             SkipDataSet = .False.
          ELSE
-            WRITE(16+CK_LUN,'(/,9X,A18,A80)') 'Finished loading ', AttrName
+c            WRITE(16+CK_LUN,'(/,9X,A18,A80)') 'Finished loading ', AttrName
          ENDIF
       END DO
 C
@@ -1509,18 +1509,18 @@ C     ----------------------------------------------------------------
       INTEGER             :: DictNode ! node position in array
 C
 C     Set all values to user-specified default values.
-      IF (NABOUT.EQ.0) WRITE(16+CK_LUN,1001) Default
+c      IF (NABOUT.EQ.0) WRITE(16+CK_LUN,1001) Default
       DO i=1, NumOfNodes
          AttributeData(i) = Default
       END DO
 C
-      IF (NABOUT.EQ.0) WRITE(16+CK_LUN,1005)
+c      IF (NABOUT.EQ.0) WRITE(16+CK_LUN,1005)
       DO i=1, NumNodesNotDef
          READ(13+CK_LUN,*) NodeNum, TempData
          DictNode = find(node_dict,NodeNum)
          AttributeData(DictNode) = TempData
-         IF (NABOUT.EQ.0)
-     &       WRITE(16+CK_LUN,1010) NodeNum, TempData
+c         IF (NABOUT.EQ.0)
+c     &       WRITE(16+CK_LUN,1010) NodeNum, TempData
       END DO
 C
  1001 FORMAT(/,10X,'Set all nodes to the default value of ',E16.8,/)
@@ -1560,20 +1560,20 @@ C     ----------------------------------------------------------------
       INTEGER             :: DictNode ! node position in array
 C
 C     Set all nodes to user-specified default values.
-      IF (NABOUT.EQ.0) WRITE(16+CK_LUN,1001)
+c      IF (NABOUT.EQ.0) WRITE(16+CK_LUN,1001)
       DO i=1, NumOfNodes
          DO j=1, NumCol
             AttributeData(i,j)=Default(j)
          END DO
       END DO
 C
-      IF (NABOUT.EQ.0) WRITE(16+CK_LUN,1005)
+c      IF (NABOUT.EQ.0) WRITE(16+CK_LUN,1005)
       DO i=1, NumNodesNotDef
          READ(13+CK_LUN,*) NodeNum, (TempAttData(j),j=1,NumCol)
          DictNode = find(node_dict,NodeNum)
          AttributeData(DictNode,:) = TempAttData(:)
-         IF (NABOUT.EQ.0) WRITE(16+CK_LUN,1010) NodeNum,
-     &        (AttributeData(DictNode,j),j=1,NumCol)
+c         IF (NABOUT.EQ.0) WRITE(16+CK_LUN,1010) NodeNum,
+c     &        (AttributeData(DictNode,j),j=1,NumCol)
       END DO
 C
  1001 FORMAT(/,10X,'Set all nodes to the default values of ',/,
@@ -1627,7 +1627,7 @@ C     see that the number of nodes in the nodal attribute file is the
 C     same as the number of nodes in the grid file.
       IF (NWP.NE.0.AND.NumOfNodes.NE.NP) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,9900)
-         WRITE(16+CK_LUN,9900)
+c         WRITE(16+CK_LUN,9900)
  9900    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
      &        //,1X,'The number of nodes in the grid file (unit 14) and'
      &        /,1X,'the nodal attributes file (unit 13) must match.',
@@ -1640,7 +1640,7 @@ C     from the nodal attributes file, NOLIBF must be 1.
       IF ((LoadChezy.or.LoadManningsN.or.LoadQuadraticFric).and.
      &     NoLiBF.ne.1) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,9800)
-         WRITE(16+CK_LUN,9800)
+c         WRITE(16+CK_LUN,9800)
  9800    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
      &        //,1X,'Nonlinear bottom friction coefficients were loaded'
      &        /,1X,'from the nodal attributes file (unit 13), so ',
@@ -1655,7 +1655,7 @@ C     from nodal attributes file.
       IF ( ((Tau0Dig1.eq.-3).or.(Tau0Dig1.eq.-6))
      &          .and.(.not.LoadTau0) ) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,9700) Tau0
-         WRITE(16+CK_LUN,9700)
+c         WRITE(16+CK_LUN,9700)
  9700    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
      &        //,1X,'Spatially and temporally varying tau0 was '
      &        /,1X,'specified in the fort.15 file with Tau0=',E9.2,
@@ -1708,7 +1708,7 @@ C     jgf46.25 If input tau0 is positive, set all nodes to that value.
             DO I=1,NP
               Tau0Var(I)=Tau0
             END DO
-            WRITE(16+CK_LUN,7) Tau0
+c            WRITE(16+CK_LUN,7) Tau0
  7          FORMAT(/,5X,
      &           'A SPATIALLY CONSTANT WEIGHTING COEFFICIENT (Tau0)'
      &           ,/,5X,' WILL BE USED IN THE GENERALIZED WAVE',
@@ -1722,14 +1722,14 @@ C           based on depth
             ENDDO
             ! jgf47.30.TODO: This logging needs to be cleaned up.
             IF(Tau0.eq.-2) THEN
-               WRITE(16+CK_LUN,6) ! spatially vary tau0 according to hard coded scheme
-               WRITE(16+CK_LUN,62) ! description of scheme
+c               WRITE(16+CK_LUN,6) ! spatially vary tau0 according to hard coded scheme
+c               WRITE(16+CK_LUN,62) ! description of scheme
  62            FORMAT(/,5X,'IF DEPTH > 200           Tau0 = 0.005',
      &              /,5X,'IF 200   > DEPTH > 1     Tau0 = 1/DEPTH  ',
      &              /,5X,'IF 1     > DEPTH         Tau0 = 1.0 ')
             ELSE 
-               WRITE(16+CK_LUN,6) ! spatially vary tau0 according to hard coded scheme
-               WRITE(16+CK_LUN,61) ! description of scheme
+c               WRITE(16+CK_LUN,6) ! spatially vary tau0 according to hard coded scheme
+c               WRITE(16+CK_LUN,61) ! description of scheme
  61            FORMAT(/,5X,' IF DEPTH GE 10           -> TAU0 = 0.005',
      &              /,5X,' IF DEPTH LT 10           -> TAU0 = 0.020',/)
             ENDIF
@@ -1790,7 +1790,7 @@ C     jjw&sb46.38.sb01 If tau0 is loaded from nodal attributes file and
 C     Tau0 is -3, time-varing tau0 optimizer will be applied in timestep.F
       IF (HighResTimeVaryingTau0 .or. FullDomainTimeVaryingTau0) THEN
          ALLOCATE(Tau0Temp(NP))
-         WRITE(16+CK_LUN,8) ! jgf47.30.TODO: This logging should be consolidated.
+c         WRITE(16+CK_LUN,8) ! jgf47.30.TODO: This logging should be consolidated.
       ENDIF
  8    FORMAT(/,5X,'A SPATIALLY TEMPORALLY VARIABLE OPTIMIZED '
      &     ,/,5X,' WEIGHTING COEFFICIENT (Tau0) WILL BE USED '
@@ -2410,7 +2410,7 @@ C     ----------------------------------------------------------------
 C
 C...  READ STARTDRY INFORMATION FROM UNIT 12
       READ(12+CK_LUN,'(A80)') AGRID2
-      WRITE(16+CK_LUN,2038) AGRID2
+c      WRITE(16+CK_LUN,2038) AGRID2
 2038  FORMAT(5X,'STARTDRY FILE IDENTIFICATION : ',A80,/)
       READ(12+CK_LUN,*) NE2,NP2
 C
@@ -2418,7 +2418,7 @@ C...  CHECK THAT NE2 AND NP2 MATCH WITH GRID FILE
 C      IF((NE2.NE.NE).OR.(NP2.NE.NP)) THEN
        IF(NP2.NE.NP) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,9900)
-         WRITE(16+CK_LUN,9900)
+c         WRITE(16+CK_LUN,9900)
  9900    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
      &        //,1X,'THE PARAMETER NE2 AND NP2 MUST MATCH NE AND NP ',
      &        /,1X,'USER MUST CHECK FORT.12 INPUT FILE ',
@@ -2431,7 +2431,7 @@ C...  READ IN STARTDRY CODE VALUES
          READ(12+CK_LUN,*) JKI,DUM1,DUM2,STARTDRY(JKI)
          IF(JKI.NE.I) THEN
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,99805)
-            WRITE(16+CK_LUN,99805)
+c            WRITE(16+CK_LUN,99805)
 99805       FORMAT(////,1X,'!!!!!!!!!!  WARNING - NONFATAL ',
      &           'INPUT ERROR  !!!!!!!!!',
      &           //,1X,'YOUR NODE NUMBERING IS NOT SEQUENTIAL ',
@@ -2478,7 +2478,7 @@ C     ----------------------------------------------------------------
          READ(21+CK_LUN,*) NHG,FRIC(NHG)
          IF(NHG.NE.I) THEN
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,99803)
-            WRITE(16+CK_LUN,99803)
+c            WRITE(16+CK_LUN,99803)
 99803       FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ',
      &           'INPUT ERROR  !!!!!!!!!',//,1X,
      &           'YOUR NODAL FRICTION NUMBERING IS NOT SEQUENTIAL ',
@@ -2487,17 +2487,17 @@ C     ----------------------------------------------------------------
             STOP
          ENDIF
       END DO
-      WRITE(16+CK_LUN,3601) AFRIC
+c      WRITE(16+CK_LUN,3601) AFRIC
  3601 FORMAT(/,5X,'FRICTION FILE IDENTIFICATN : ',A80,/)
       IF(NABOUT.NE.1) THEN
-         WRITE(16+CK_LUN,2080)
+c         WRITE(16+CK_LUN,2080)
  2080    FORMAT(/,10X,'NODE',5X,'BOTTOM FRICTION FRIC',5X,/)
          DO I=1,NP
-            WRITE(16+CK_LUN,2087) I,FRIC(I)
+c            WRITE(16+CK_LUN,2087) I,FRIC(I)
  2087       FORMAT(7X,I6,6X,E17.10)
          END DO
       ELSE
-         WRITE(16+CK_LUN,3504)
+c         WRITE(16+CK_LUN,3504)
  3504    FORMAT(/,5X,'NODAL BOTTOM FRICTION VALUES ARE AVAILABLE',
      &        /,6X,' IN UNIT 21 INPUT FILE')
       ENDIF

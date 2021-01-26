@@ -137,10 +137,10 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 C...
 C...PRINT OUT HEADER FOR OUTPUT INCLUDING VERSION NUMBER AND COPYRIGHT
 C...
-      WRITE(16+CK_LUN,1112)
-      WRITE(16+CK_LUN,1112)
-      WRITE(16+CK_LUN,1114) TRIM(ADC_VERSION)
-      WRITE(16+CK_LUN,1112)
+c      WRITE(16+CK_LUN,1112)
+c      WRITE(16+CK_LUN,1112)
+c      WRITE(16+CK_LUN,1114) TRIM(ADC_VERSION)
+c      WRITE(16+CK_LUN,1112)
 
  1114 FORMAT(//,19X,'PROGRAM ADCIRC   VERSION ',A,
      &     //,5X,'AN ADVANCED CIRCULATION MODEL FOR SHELVES, COASTAL ',
@@ -161,34 +161,34 @@ C...
 C...
 C...  WRITE OUT HEADER INFORMATION DESCRIBING HOW THE CODE HAS BE SET UP
 C...
-      WRITE(16+CK_LUN,1210)
+c      WRITE(16+CK_LUN,1210)
  1210 FORMAT(//,1X,'THE ADCIRC SOURCE CODE HAS BEEN CONFIGURED ',
      &             'BY THE PREPROCESSOR AS FOLLOWS:',/)
 
 #ifdef CMACHSUN
-      WRITE(16+CK_LUN,*) '      - CODE SETUP TO RUN ON SUN 4 OR SPARC ',
-     &            'COMPUTERS'
+c      WRITE(16+CK_LUN,*) '      - CODE SETUP TO RUN ON SUN 4 OR SPARC ',
+c     &            'COMPUTERS'
 #endif
 
 #ifdef REAL4
-      WRITE(16+CK_LUN,*) '      - CODE SETUP TO RUN WITH 4 byte REALS'
-      WRITE(16+CK_LUN,4312)
+c      WRITE(16+CK_LUN,*) '      - CODE SETUP TO RUN WITH 4 byte REALS'
+c      WRITE(16+CK_LUN,4312)
 4312  FORMAT(/,'**** W A R N I N G ****',/
             ' You are running ADCIRC in SINGLE PRECISION! ',/
             ' It is always recommended that you run ADCIRC in ',/
             ' DOUBLE PRECISION ONLY.'
 #else
-      WRITE(16+CK_LUN,*) '      - CODE SETUP TO RUN WITH 8 byte REALS'
+c      WRITE(16+CK_LUN,*) '      - CODE SETUP TO RUN WITH 8 byte REALS'
 #endif
 
 #ifdef CVEC
-      WRITE(16+CK_LUN,*) '      - CODE OPTIMIZED FOR A VECTOR COMPUTER'
+c      WRITE(16+CK_LUN,*) '      - CODE OPTIMIZED FOR A VECTOR COMPUTER'
 #endif
 
 #ifdef CSCA
-      WRITE(16+CK_LUN,*) '      - CODE OPTIMIZED FOR A SCALAR COMPUTER'
+c      WRITE(16+CK_LUN,*) '      - CODE OPTIMIZED FOR A SCALAR COMPUTER'
 #endif
-      write(16+CK_LUN,1112) 
+c      write(16+CK_LUN,1112) 
 C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
 C     Module.
@@ -196,7 +196,6 @@ C     Module.
 
 c     tcm v50.66.01 addition for time varying bathymetry
       NDDT = 0  !set the default value for time varying bathymetry e.g. no changes
-      ios_nddt = 0
 C
       fileFound = .false.
 C
@@ -243,7 +242,7 @@ c...  for further processing the traditional non-namelist components.
 C...
       namelistSpecifier = 'TimeBatyhControl'
       READ(UNIT = 15+CK_LUN,NML = TimeBathyControl,IOSTAT = IOS_NDDT) 
-      call logNamelistReadStatus(namelistSpecifier, ios_nddt)     
+C      call logNamelistReadStatus(namelistSpecifier, ios_nddt)     
 c     it is possible for the namelist to be present in the file and 
 C     occuring at the end of the file with no line breaks after the 
 C     ending "\" which causes the iostat to return a negative value.
@@ -269,7 +268,7 @@ c     a non-default value we can determine this was the case.
       write(scratchMessage,'(a,l,a,i0,a,e15.8,a,e15.8)') 
      &  'found_tbc_nml=',found_tbc_nml,
      &  ' nddt=',nddt,' btiminc=',btiminc,' bchgtiminc=',bchgtiminc
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       rewind(15+CK_LUN)
 
 #if defined CSWAN || defined ADCSWAN
@@ -277,9 +276,9 @@ c     a non-default value we can determine this was the case.
       ! on and off. Similar to tcm's timevaryingbathy namelist.
       namelistSpecifier = 'SWANOutputControl'
       read(unit=15+CK_LUN,nml=SWANOutputControl,iostat=ios)
-      call logNamelistReadStatus(namelistSpecifier, ios)     
-      call logMessage(ECHO,
-     &    "The values of SWANOutputControl are as follows:")
+C      call logNamelistReadStatus(namelistSpecifier, ios)     
+C      call logMessage(ECHO,
+C     &    "The values of SWANOutputControl are as follows:")
       write(scratchMessage,*) "SWAN_OutputHS=",SWAN_OutputHS,
      &    " SWAN_OutputDIR=",SWAN_OutputDIR,
      &    " SWAN_OutputTM01=",SWAN_OutputTM01, 
@@ -287,7 +286,7 @@ c     a non-default value we can determine this was the case.
      &    " SWAN_OutputWIND=",SWAN_OutputWIND,
      &    " SWAN_OutputTM02=",SWAN_OutputTM02, 
      &    " SWAN_OutputTMM10=",SWAN_OutputTMM10
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       rewind(15+CK_LUN)
 #endif
       !
@@ -295,23 +294,23 @@ c     a non-default value we can determine this was the case.
       ! modeling. 
       namelistSpecifier = 'subdomainModeling'
       read(unit=15+CK_LUN,nml=subdomainModeling,iostat=ios)
-      call logNamelistReadStatus(namelistSpecifier, ios)
+C      call logNamelistReadStatus(namelistSpecifier, ios)
       write(scratchMessage,*) "subdomainOn=",subdomainOn
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       rewind(15+CK_LUN)
       !
       ! jgf50.60.13: Add a namelist for the user to control met forcing.
       ! Similar to tcm's timevaryingbathy namelist.
       namelistSpecifier = 'metControl'
       read(unit=15+CK_LUN,nml=metControl,iostat=ios)
-      call logNamelistReadStatus(namelistSpecifier, ios)
+C      call logNamelistReadStatus(namelistSpecifier, ios)
       write(scratchMessage,*) "WindDragLimit=",WindDragLimit,
      & " DragLawString=",DragLawString, " rhoAir=",rhoAir,
      & ' invertedBarometerOnElevationBoundary=', 
      &   invertedBarometerOnElevationBoundary,
      & ' outputWindDrag=',outputWindDrag,
      & ' nPowellSearchDomains=',nPowellSearchDomains
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       rewind(15+CK_LUN)
 
       !...Read in time varying weir control from fort.15
@@ -321,10 +320,10 @@ c     a non-default value we can determine this was the case.
       NSPOOL_TVW = -99999
       READ(UNIT=15+CK_LUN,NML=TVWControl,IOSTAT=IOS)
       IF(IOS.NE.0)THEN
-        CALL logMessage(INFO,"The tvwControl namelist was not found.")
+C        CALL logMessage(INFO,"The tvwControl namelist was not found.")
         found_tvw_nml = .FALSE.
       ELSE
-        CALL logMessage(INFO,"The tvwControl namelist was found.")
+C        CALL logMessage(INFO,"The tvwControl namelist was found.")
         found_tvw_nml = .TRUE.
         IF(USE_TVW)THEN
             IF(NOUT_TVW.EQ.-99999D0)THEN
@@ -346,9 +345,9 @@ c     a non-default value we can determine this was the case.
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       namelistSpecifier = 'waveCoupling'
       read(unit=15+CK_LUN,nml=waveCoupling,iostat=ios)
-      call logNamelistReadStatus(namelistSpecifier,ios)
+C      call logNamelistReadStatus(namelistSpecifier,ios)
       write(scratchMessage,*) "WaveWindMultiplier=",WaveWindMultiplier
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       rewind(15+CK_LUN)
       !
       ! jgf52.05: Add a namelist for the user to control
@@ -357,29 +356,29 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       !  station output in partially wet/dry elements for elevation stations
       namelistSpecifier = 'wetDryControl'
       read(unit=15+CK_LUN,nml=wetDryControl,iostat=IOS)
-      call logNameListReadStatus(namelistSpecifier,ios)
+C      call logNameListReadStatus(namelistSpecifier,ios)
       write(scratchMessage,'(a,l)') "outputNodeCode=",outputNodeCode
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,l)') "outputNOFF=",outputNOFF
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,l)') "noffActive=",noffActive
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,l)') "StatPartWetFix=",StatPartWetFix
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,i1)') "How2FixStatPartWet=",
      &   How2FixStatPartWet
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       rewind(15+CK_LUN)
 
       ! jgf52.08.01: Add a namelist for the user to control
       ! output of detailed inundation data. 
       namelistSpecifier = 'inundationOutputControl'
       READ(UNIT=15+CK_LUN,NML=inundationOutputControl,IOSTAT=IOS)
-      call logNamelistReadStatus(namelistSpecifier,ios)
+C      call logNamelistReadStatus(namelistSpecifier,ios)
       write(scratchMessage,'(a,l)') "inundationOutput=",inundationOutput
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,e15.8)') "inunThresh=",inunThresh
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       rewind(15+CK_LUN)
 
 c...  tcm v52.30.01 Addtions for Using Smagorinsky Namelist Options
@@ -393,9 +392,8 @@ C...  After this search and read, we will close the file and then reopen it
 c...  for further processing the traditional non-namelist components.
 C...
       namelistSpecifier = 'Smag_Control'
-      IOS_Smag = 0
       READ(UNIT = 15+CK_LUN,NML = Smag_Control,IOSTAT = IOS_Smag)
-      call logNamelistReadStatus(namelistSpecifier, ios_Smag)
+C      call logNamelistReadStatus(namelistSpecifier, ios_Smag)
 c
 c     it is possible for the namelist to be present in the file and
 C     occuring at the end of the file with no line breaks after the
@@ -425,7 +423,7 @@ C
      &  ' SMAG_COMP_FLAG=',SMAG_COMP_FLAG,
      &  ' SMAG_UPPER_LIM=',SMAG_UPPER_LIM,
      &  ' SMAG_LOWER_LIM=',SMAG_LOWER_LIM
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       rewind(15+CK_LUN)
 
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
@@ -434,25 +432,25 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
       namelistSpecifier = 'dynamicWaterLevelCorrectionControl'
       read(unit=15+CK_LUN,nml=dynamicWaterLevelCorrectionControl,iostat=ios)
-      call logNamelistReadStatus(namelistSpecifier,ios)
+C      call logNamelistReadStatus(namelistSpecifier,ios)
       write(scratchMessage,'(a,a)') "dynamicWaterLevelCorrectionFileName=",
      &  trim(dynamicWaterLevelCorrectionFileName)
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,i0)') "dynamicWaterLevelCorrectionSkipSnaps=",
      &  dynamicWaterLevelCorrectionSkipSnaps
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,f15.7)') "dynamicWaterLevelCorrectionMultiplier=",
      &  dynamicWaterLevelCorrectionMultiplier
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,f15.7)') "dynamicWaterLevelCorrectionRampStart=",
      &  dynamicWaterLevelCorrectionRampStart
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,f15.7)') "dynamicWaterLevelCorrectionRampEnd=",
      &  dynamicWaterLevelCorrectionRampEnd
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,a)') "dynamicWaterLevelCorrectionRampReferenceTime=",
      &  trim(dynamicWaterLevelCorrectionRampReferenceTime)
-      call logMessage(ECHO,trim(scratchMessage))
+C      call logMessage(ECHO,trim(scratchMessage))
       if (trim(dynamicWaterLevelCorrectionFileName).ne.'null') then
          usingDynamicWaterLevelCorrection = .true.
       endif
@@ -467,9 +465,9 @@ C...  IDENTIFICATION
 C...
       READ(15+CK_LUN,'(A80)') RUNDES
       READ(15+CK_LUN,'(A80)') RUNID
-      WRITE(16+CK_LUN,1) RUNDES
+c      WRITE(16+CK_LUN,1) RUNDES
   1   FORMAT(//,1X,'RUN DESCRIPTION : ',A80)
-      WRITE(16+CK_LUN,209) RUNID
+c      WRITE(16+CK_LUN,209) RUNID
 209   FORMAT(/,1X,'RUN IDENTIFICATION : ',A80)
 
       do I=1,20
@@ -503,22 +501,22 @@ C
      &  ErrorElev
 #endif
 C
-      WRITE(16+CK_LUN,1112)
-      WRITE(16+CK_LUN,1250)
+c      WRITE(16+CK_LUN,1112)
+c      WRITE(16+CK_LUN,1250)
  1250 FORMAT(//,1X,'GENERAL RUN INFORMATION',/)
       IF(NFOVER.EQ.1) THEN
-         WRITE(16+CK_LUN,1951) NFOVER
+c         WRITE(16+CK_LUN,1951) NFOVER
  1951    FORMAT(5X,'NFOVER = ',I2,
      &        /,9X,'IF NON-FATAL INPUT ERRORS ARE DETECTED, THEY WILL ',
      &        'BE CORRECTED AND EXECUTION CONTINUED')
       ELSE
-         WRITE(16+CK_LUN,1952) NFOVER
+c         WRITE(16+CK_LUN,1952) NFOVER
  1952    FORMAT(/,5X,'NFOVER = ',I3,
      &        /,9X,'NON-FATAL INPUT ERRORS WILL STOP EXECUTION ',/)
       ENDIF
 #ifdef DEBUG_WARN_ELEV
       IF (iWarnElevDump .ne. 0) WarnElevDump = .True.
-      WRITE(16+CK_LUN,1953) WarnElev,WarnElevDump,WarnElevDumpLimit,ErrorElev
+ c     WRITE(16+CK_LUN,1953) WarnElev,WarnElevDump,WarnElevDumpLimit,ErrorElev
  1953 FORMAT(//,5X,
      &     'A warning will be issued if elevation exceeds WarnElev = ',
      &     e16.8,
@@ -535,12 +533,12 @@ C...  READ AND PROCESS NABOUT - ABBREVIATED UNIT 16 OUTPUT OPTION
 C...
       READ(15+CK_LUN,*) NABOUT
       IF(NABOUT.EQ.1) THEN
-         WRITE(16+CK_LUN,3501) NABOUT
+c         WRITE(16+CK_LUN,3501) NABOUT
  3501    FORMAT(5X,'NABOUT = ',I2,
      &        /,9X,'ABREVIATED OUTPUT WILL BE PROVIDED TO UNIT 16',/,9X,
      &        'UNIT 14, 21, 22 INPUT DATA WILL NOT BE ECHO PRINTED',/)
       ELSE
-         WRITE(16+CK_LUN,3502) NABOUT
+c         WRITE(16+CK_LUN,3502) NABOUT
  3502    FORMAT(/,5X,'NABOUT = ',I3,
      &        /,9X,'DETAILED OUTPUT WILL BE PROVIDED TO UNIT 16',/,9X,
      &        'UNIT 14, 15, 21, 22 INPUT DATA WILL BE ECHO PRINTED',/)
@@ -562,19 +560,19 @@ C
       ScreenUnit=0
       IF(NSCREEN.GT.0.AND.MYPROC.EQ.0) THEN
          ScreenUnit=6
-         WRITE(16+CK_LUN,3561) NSCREEN
+c         WRITE(16+CK_LUN,3561) NSCREEN
  3561    FORMAT(5X,'NSCREEN = ',I6,
      &        /,9X,'SCREEN OUTPUT WILL BE PROVIDED TO UNIT 6',
      &        /,9X,'EVERY NSCREEN TIME STEPS.',/)
       ELSEIF((NSCREEN.LT.0).AND.(MYPROC.EQ.0)) THEN
          ScreenUnit=999
-         WRITE(16+CK_LUN,3562) NSCREEN
+c         WRITE(16+CK_LUN,3562) NSCREEN
  3562    FORMAT(/,5X,'NSCREEN = ',I6,
      &        /,9X,'SCREEN OUTPUT WILL BE PROVIDED TO adcirc.log',/)
          OPEN(ScreenUnit+CK_LUN,FILE=TRIM(GLOBALDIR)//'/'//'adcirc.log',
      &        STATUS='REPLACE')
       ELSE
-         WRITE(16+CK_LUN,3563) NSCREEN
+c         WRITE(16+CK_LUN,3563) NSCREEN
  3563    FORMAT(/,5X,'NSCREEN = ',I6,
      &        /,9X,'SCREEN OUTPUT WILL NOT BE PROVIDED',/)
       ENDIF
@@ -589,7 +587,7 @@ C...  READ AND PROCESS IHOT - HOT START OPTION
 C...
       READ(15+CK_LUN,*) IHOT
       WRITE(scratchMessage,'("IHOT=",I3,".")') IHOT
-      CALL logMessage(ECHO,scratchMessage)
+C      CALL logMessage(ECHO,scratchMessage)
 
 C     Logic to set the output unit number and output file name of the next
 C     hotstart file to be written (so that the LUNs and file names alternate).
@@ -622,11 +620,11 @@ Casey 100205: Enable hot-start file generation by SWAN.
 #endif
 
       IF(IHOT.NE.0) THEN
-         WRITE(16+CK_LUN,9733) IHOT
+c         WRITE(16+CK_LUN,9733) IHOT
  9733    FORMAT(/,5X,'ADCIRC will be hot started using information ',
      &        'on UNIT ',I3,'.')
       ELSE
-         CALL logMessage(INFO,'ADCIRC will be cold started.')
+C         CALL logMessage(INFO,'ADCIRC will be cold started.')
       ENDIF
 C...
 C...  READ AND PROCESS ICS - CARTESIAN/SPHERICAL COORDINATE OPTION
@@ -639,20 +637,20 @@ C...
             WRITE(ScreenUnit+CK_LUN,9735)
             WRITE(ScreenUnit+CK_LUN,9973)
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'ICS =',ICS
-         WRITE(16+CK_LUN,9735)
-         WRITE(16+CK_LUN,9973)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'ICS =',ICS
+c         WRITE(16+CK_LUN,9735)
+c         WRITE(16+CK_LUN,9973)
  9735    FORMAT(/,1X,'Your selection of ICS (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
          CALL ADCIRC_Terminate()
       ENDIF
       IF(ICS.EQ.1) THEN
-         WRITE(16+CK_LUN,9736) ICS
+c         WRITE(16+CK_LUN,9736) ICS
  9736    FORMAT(/,5X,'ICS = ',I2,
      &        /,9X,'Governing equations are in Cartesian coordinates')
       ELSE
-         WRITE(16+CK_LUN,9737) ICS
+c         WRITE(16+CK_LUN,9737) ICS
  9737    FORMAT(/,5X,'ICS = ',I2,
      &        /,9X,'Governing equations are in Spherical coordinates',
      &        /,9X,'mapped using a CPP projection')
@@ -662,9 +660,9 @@ C...
 C...  READ AND PROCESS IM - 2D/3D MODEL FORMULATION OPTION
 C...
       READ(15+CK_LUN,*) IM
-      WRITE(16+CK_LUN,*) ' '
-      WRITE(16+CK_LUN,*) '    IM = ',IM
-      WRITE(16+CK_LUN,*) ' '
+c      WRITE(16+CK_LUN,*) ' '
+c      WRITE(16+CK_LUN,*) '    IM = ',IM
+c      WRITE(16+CK_LUN,*) ' '
 c     - - - - - - - - - - - - - - - - - - - - - - - -
       IF (IM.LT.100) THEN
 c     jgf Set defaults for model type (IM). All LOGICAL variables are
@@ -683,67 +681,67 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
       IF (IM.EQ.0) THEN
          C2DDI         = .TRUE.
          ILump=0
-         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Barotropic 2DDI ',
-     &        'run using: New GWCE and Momentum Eq formulations'
+c         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Barotropic 2DDI ',
+c     &        'run using: New GWCE and Momentum Eq formulations'
       ELSEIF (IM.EQ.10) THEN
          C2DDI         = .TRUE.
          C2D_PTrans    = .TRUE.
          ILump=0
-         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Barotropic 2DDI ',
-     &        'run using: New GWCE and Momentum Eq '
-         WRITE(16+CK_LUN,*) '          formulations + Passive Scalar Transport'
+c         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Barotropic 2DDI ',
+c     &        'run using: New GWCE and Momentum Eq '
+c         WRITE(16+CK_LUN,*) '          formulations + Passive Scalar Transport'
       ELSEIF (IM.EQ.20) THEN
          C2DDI         = .TRUE.
          CBaroclinic   = .TRUE.
          ILump=0
-         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Baroclinic 2DDI ',
-     &        'run using: New GWCE and Momentum Eq formulations'
+c         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Baroclinic 2DDI ',
+c     &        'run using: New GWCE and Momentum Eq formulations'
       ELSEIF (IM.EQ.30) THEN
          C2DDI         = .TRUE.
          C2D_PTrans    = .TRUE.
          CBaroclinic   = .TRUE.
          ILump=0
-         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Baroclinic 2DDI ',
-     &        'run using: New GWCE and Momentum Eq '
-         WRITE(16+CK_LUN,*) '          formulations + Passive Scalar Transport'
+c         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Baroclinic 2DDI ',
+c     &        'run using: New GWCE and Momentum Eq '
+c         WRITE(16+CK_LUN,*) '          formulations + Passive Scalar Transport'
       ELSEIF (IM.EQ.1) THEN
          C3D           = .TRUE.
          C3DVS         = .TRUE.
          ILump=0
-         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Barotropic 3D ',
-     &        'run using: New GWCE and velocity based ',
-     &        'Momentum Eqs.'
+c         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Barotropic 3D ',
+c     &        'run using: New GWCE and velocity based ',
+c     &        'Momentum Eqs.'
       ELSEIF (IM.EQ.11) THEN
          C3D           = .TRUE.
          C3DVS         = .TRUE.
          C3D_PTrans    = .TRUE.
          ILump=0
-         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Barotropic 3D ',
-     &        'run using: New GWCE and velocity based '
-         WRITE(16+CK_LUN,*) '          Momentum Eqs + Passive Scalar Transport'
+c         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Barotropic 3D ',
+c     &        'run using: New GWCE and velocity based '
+c         WRITE(16+CK_LUN,*) '          Momentum Eqs + Passive Scalar Transport'
       ELSEIF (IM.EQ.21) THEN
          C3D           = .TRUE.
          C3DVS         = .TRUE.
          CBaroclinic   = .TRUE.
          ILump=0
-         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Baroclinic 3D ',
-     &        'run using: New GWCE and velocity based ',
-     &        'Momentum Eqs.'
+c         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Baroclinic 3D ',
+c     &        'run using: New GWCE and velocity based ',
+c     &        'Momentum Eqs.'
       ELSEIF (IM.EQ.31) THEN
          C3D           = .TRUE.
          C3DVS         = .TRUE.
          C3D_PTrans    = .TRUE.
          CBaroclinic   = .TRUE.
          ILump=0
-         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Baroclinic 3D ',
-     &        'run using: New GWCE and velocity based '
-         WRITE(16+CK_LUN,*) '          Momentum Eqs + Passive Scalar Transport'
+c         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Baroclinic 3D ',
+c     &        'run using: New GWCE and velocity based '
+c         WRITE(16+CK_LUN,*) '          Momentum Eqs + Passive Scalar Transport'
       ELSEIF (IM.EQ.2) THEN
          C3D           = .TRUE.
          C3DDSS        = .TRUE.
          ILump=0
-         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a 3D run using',
-     &        ': New GWCE and stress based Momentum Eqs.'
+c         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a 3D run using',
+c     &        ': New GWCE and stress based Momentum Eqs.'
 c     - - - - - - - - - - - - - - - - - - - - - - - -
 c     f i n e   g r a i n e d   o p t i o n s ( i m )
 c     - - - - - - - - - - - - - - - - - - - - - - - -
@@ -759,109 +757,109 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
 
          C2DDI     = .TRUE.
          CGWCE_New = .TRUE.
-         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a 2DDI run using'
-         WRITE(16+CK_LUN,*) '    the new GWCE routine and:'
+c         WRITE(16+CK_LUN,*) '    ADCIRC is configured for a 2DDI run using'
+c         WRITE(16+CK_LUN,*) '    the new GWCE routine and:'
          IF(IMDig1.EQ.1) THEN
             CGWCE_LS_KGQ     = .TRUE. !jgf This is the default.
-            WRITE(16+CK_LUN,*) '        Kolar-Gray, flux based lateral ',
-     &           'stress in GWCE'
+c            WRITE(16+CK_LUN,*) '        Kolar-Gray, flux based lateral ',
+c     &           'stress in GWCE'
          ELSEIF(IMDig1.EQ.2) THEN
             CGWCE_LS_2PartQ  = .TRUE.
-            WRITE(16+CK_LUN,*) '        2 Part, flux based lateral ',
-     &           'stress in GWCE'
+c            WRITE(16+CK_LUN,*) '        2 Part, flux based lateral ',
+c     &           'stress in GWCE'
          ELSEIF(IMDig1.EQ.3) THEN
             CGWCE_LS_2PartV  = .TRUE.
-            WRITE(16+CK_LUN,*) '        2 Part, velocity based lateral ',
-     &           'stress in GWCE'
+c            WRITE(16+CK_LUN,*) '        2 Part, velocity based lateral ',
+c     &           'stress in GWCE'
          ELSEIF(IMDig1.EQ.4) THEN
             CGWCE_LS_2PartSQ  = .TRUE.
-            WRITE(16+CK_LUN,*) '        2 Part, flux based lateral ',
-     &           'symmetric stress in GWCE'
+c            WRITE(16+CK_LUN,*) '        2 Part, flux based lateral ',
+c     &           'symmetric stress in GWCE'
          ELSEIF(IMDig1.EQ.5) THEN
             CGWCE_LS_2PartSV  = .TRUE.
-            WRITE(16+CK_LUN,*) '        2 Part, velocity based lateral ',
-     &           'symmetric stress in GWCE'
+c            WRITE(16+CK_LUN,*) '        2 Part, velocity based lateral ',
+c     &           'symmetric stress in GWCE'
          ELSEIF(IMDig1.EQ.6) THEN
             C2DDI        = .FALSE.
             CGWCE_LS_KGQ  = .TRUE.
             C3D           = .TRUE.
             C3DVS         = .TRUE.
             ILump=0
-          WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Barotropic 3D ',
-     &        'run using: New GWCE and velocity based ',
-     &        'Momentum Eqs.'
-           WRITE(16+CK_LUN,*) '        Kolar-Gray, flux based lateral ',
-     &           'stress in GWCE'
+c          WRITE(16+CK_LUN,*) '    ADCIRC is configured for a Barotropic 3D ',
+c     &        'run using: New GWCE and velocity based ',
+c     &        'Momentum Eqs.'
+c           WRITE(16+CK_LUN,*) '        Kolar-Gray, flux based lateral ',
+c     &           'stress in GWCE'
          ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
          IF(IMDig2.EQ.1) THEN
             CGWCE_Advec_NC   = .TRUE. !jgf This is the default.
-            WRITE(16+CK_LUN,*) '        Non conservative advection in GWCE'
+c            WRITE(16+CK_LUN,*) '        Non conservative advection in GWCE'
          ELSEIF(IMDig2.EQ.2) THEN
             CGWCE_Advec_C1   = .TRUE.
-            WRITE(16+CK_LUN,*) '        Conservative form 1 advection in GWCE'
+c            WRITE(16+CK_LUN,*) '        Conservative form 1 advection in GWCE'
          ELSEIF(IMDig2.EQ.3) THEN
             CGWCE_Advec_C2   = .TRUE.
-            WRITE(16+CK_LUN,*) '        Conservative form 2 advection in GWCE'
+c            WRITE(16+CK_LUN,*) '        Conservative form 2 advection in GWCE'
          ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
          IF(IMDig3.EQ.1) THEN
             CME_LS_IBPV      = .TRUE. !jgf This is the default.
-            WRITE(16+CK_LUN,*) '        Integration by parts, velocity based ',
-     &           'lateral stress in Momentum Eqs.'
+c            WRITE(16+CK_LUN,*) '        Integration by parts, velocity based ',
+c     &           'lateral stress in Momentum Eqs.'
          ELSEIF(IMDig3.EQ.2) THEN
             CME_LS_IBPQ      = .TRUE.
-            WRITE(16+CK_LUN,*) '        Integration by parts, flux based ',
-     &           'lateral stress in Momentum Eqs.'
+c            WRITE(16+CK_LUN,*) '        Integration by parts, flux based ',
+c     &           'lateral stress in Momentum Eqs.'
          ELSEIF(IMDig3.EQ.3) THEN
             CME_LS_IBPSV      = .TRUE.
-            WRITE(16+CK_LUN,*) '        Integration by parts, velocity based ',
-     &           'symmetric lateral stress in Momentum Eqs.'
+c            WRITE(16+CK_LUN,*) '        Integration by parts, velocity based ',
+c     &           'symmetric lateral stress in Momentum Eqs.'
          ELSEIF(IMDig3.EQ.4) THEN
             CME_LS_IBPSQ      = .TRUE.
-            WRITE(16+CK_LUN,*) '        Integration by parts, flux based ',
-     &           'symmetric lateral stress in Momentum Eqs.'
+c            WRITE(16+CK_LUN,*) '        Integration by parts, flux based ',
+c     &           'symmetric lateral stress in Momentum Eqs.'
          ELSEIF(IMDig3.EQ.5) THEN
             CME_LS_2PartV    = .TRUE.
-            WRITE(16+CK_LUN,*) '        2 Part, velocity based lateral ',
-     &           'stress in Momentum Eqs.'
+c            WRITE(16+CK_LUN,*) '        2 Part, velocity based lateral ',
+c     &           'stress in Momentum Eqs.'
          ELSEIF(IMDig3.EQ.6) THEN
             CME_LS_2PartQ    = .TRUE.
-            WRITE(16+CK_LUN,*) '        2 Part, flux based lateral ',
-     &           'stress in Momentum Eqs.'
+c            WRITE(16+CK_LUN,*) '        2 Part, flux based lateral ',
+c     &           'stress in Momentum Eqs.'
          ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
          IF(IMDig4.EQ.1) THEN
             CME_New_NC     = .TRUE. !jgf This is the default.
-            WRITE(16+CK_LUN,*) '        Non conservative advection in ',
-     &           'Momentum Eqs.'
+c            WRITE(16+CK_LUN,*) '        Non conservative advection in ',
+c     &           'Momentum Eqs.'
          ELSEIF(IMDig4.EQ.2) THEN
             CME_New_C1       = .TRUE.
-            WRITE(16+CK_LUN,*) '        Conservative form 1 advection in ',
-     &           'Momentum Eqs.'
+c            WRITE(16+CK_LUN,*) '        Conservative form 1 advection in ',
+c     &           'Momentum Eqs.'
          ELSEIF(IMDig4.EQ.3) THEN
             CME_New_C2     = .TRUE.
-            WRITE(16+CK_LUN,*) '        Conservative form 2 advection in ',
-     &           'Momentum Eqs.'
+c            WRITE(16+CK_LUN,*) '        Conservative form 2 advection in ',
+c     &           'Momentum Eqs.'
          ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
          IF(IMDig5.EQ.1) THEN
             CME_AreaInt_Corr = .TRUE. !jgf This is the default.
-            WRITE(16+CK_LUN,*) '        Corrected Area Integration in ',
-     &           'Momentum Eqs.'
+c            WRITE(16+CK_LUN,*) '        Corrected Area Integration in ',
+c     &           'Momentum Eqs.'
          ELSEIF(IMDig5.EQ.2) THEN
             CME_AreaInt_Orig = .TRUE.
-            WRITE(16+CK_LUN,*) '        Original Area Integration in ',
-     &           'Momentum Eqs.'
+c            WRITE(16+CK_LUN,*) '        Original Area Integration in ',
+c     &           'Momentum Eqs.'
          ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
          IF(IMDig6.EQ.2) THEN
             ILump=1
-            CGWCE_Lump = .TRUE.
-            WRITE(16+CK_LUN,*) '        Lumped GWCE mass matrix'
+c            CGWCE_Lump = .TRUE.
+c            WRITE(16+CK_LUN,*) '        Lumped GWCE mass matrix'
          ELSE
             ILump=0
-            WRITE(16+CK_LUN,*) '        Consistent GWCE mass matrix'
+c            WRITE(16+CK_LUN,*) '        Consistent GWCE mass matrix'
          ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
       ELSE
@@ -871,10 +869,10 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
             WRITE(ScreenUnit+CK_LUN,9721)
             WRITE(ScreenUnit+CK_LUN,9973)
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'IM =',IM
-         WRITE(16+CK_LUN,9721)
-         WRITE(16+CK_LUN,9973)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'IM =',IM
+c         WRITE(16+CK_LUN,9721)
+c         WRITE(16+CK_LUN,9973)
  9721    FORMAT(/,1X,'Your selection of IM (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
          CALL ADCIRC_Terminate()
@@ -888,7 +886,7 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
          ! also removed "2DDI" from the log messages because the choice 
          ! between 2DDI and 3D is specified by IM.  
          write(scratchMessage,'("IDEN is set to ",i0,".")') IDEN
-         call logMessage(ECHO,scratchMessage)
+C         call logMessage(ECHO,scratchMessage)
          !
          densityRunType = ' diagnostic '
          if (iden.lt.0) then
@@ -914,9 +912,9 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
      &       'The absolute value of IDEN must be 1, 2, 3, or 4.')
             call adcirc_terminate()
          end select
-        call logMessage(INFO,'This run will be'//trim(densityDimensions)
-     &    //trim(densityRunType)//'baroclinic with'
-     &    //trim(densityForcingType)//'forcing.')
+C        call logMessage(INFO,'This run will be'//trim(densityDimensions)
+C     &    //trim(densityRunType)//'baroclinic with'
+C     &    //trim(densityForcingType)//'forcing.')
          !
          if ( (C2DDI.eqv..true.).and.(CBaroclinic.eqv..true.) ) then
             C2D_BTrans = .true.
@@ -924,41 +922,41 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
       endif
 
 
-      WRITE(16+CK_LUN,*) ' '
+c      WRITE(16+CK_LUN,*) ' '
 
-      WRITE(16+CK_LUN,*) '     The ADCIRC logical variables are set to:'
-      WRITE(16+CK_LUN,*) '         C2DDI            = ',C2DDI
-      WRITE(16+CK_LUN,*) '         C3D              = ',C3D
-      WRITE(16+CK_LUN,*) '         C3DDSS           = ',C3DDSS
-      WRITE(16+CK_LUN,*) '         C3DVS            = ',C3DVS
-      WRITE(16+CK_LUN,*) '         C2D_BTrans       = ',C2D_BTrans
-      WRITE(16+CK_LUN,*) '         C2D_PTrans       = ',C2D_PTrans
+c      WRITE(16+CK_LUN,*) '     The ADCIRC logical variables are set to:'
+c      WRITE(16+CK_LUN,*) '         C2DDI            = ',C2DDI
+c      WRITE(16+CK_LUN,*) '         C3D              = ',C3D
+c      WRITE(16+CK_LUN,*) '         C3DDSS           = ',C3DDSS
+c      WRITE(16+CK_LUN,*) '         C3DVS            = ',C3DVS
+c      WRITE(16+CK_LUN,*) '         C2D_BTrans       = ',C2D_BTrans
+c      WRITE(16+CK_LUN,*) '         C2D_PTrans       = ',C2D_PTrans
 c     WRITE(16,*) '         C3D_BTrans       = ',C3D_BTrans            !haven't yet read 3D input
-      WRITE(16+CK_LUN,*) '         C3D_PTrans       = ',C3D_PTrans
-      WRITE(16+CK_LUN,*) '         CBaroclinic      = ',CBaroclinic
-      WRITE(16+CK_LUN,*) '         CGWCE_Lump       = ',CGWCE_Lump
-      WRITE(16+CK_LUN,*) '         CGWCE_LS_KGQ     = ',CGWCE_LS_KGQ
-      WRITE(16+CK_LUN,*) '         CGWCE_LS_2PartQ  = ',CGWCE_LS_2PartQ
-      WRITE(16+CK_LUN,*) '         CGWCE_LS_2PartV  = ',CGWCE_LS_2PartV
-      WRITE(16+CK_LUN,*) '         CGWCE_LS_2PartSQ = ',CGWCE_LS_2PartSQ
-      WRITE(16+CK_LUN,*) '         CGWCE_LS_2PartSV = ',CGWCE_LS_2PartSV
-      WRITE(16+CK_LUN,*) '         CGWCE_Advec_NC   = ',CGWCE_Advec_NC
-      WRITE(16+CK_LUN,*) '         CGWCE_Advec_C1   = ',CGWCE_Advec_C1
-      WRITE(16+CK_LUN,*) '         CGWCE_Advec_C2   = ',CGWCE_Advec_C2
-      WRITE(16+CK_LUN,*) '         CME_Orig         = ',CME_Orig
-      WRITE(16+CK_LUN,*) '         CME_New_NC       = ',CME_New_NC
-      WRITE(16+CK_LUN,*) '         CME_New_C1       = ',CME_New_C1
-      WRITE(16+CK_LUN,*) '         CME_New_C2       = ',CME_New_C2
-      WRITE(16+CK_LUN,*) '         CME_LS_IBPQ      = ',CME_LS_IBPQ
-      WRITE(16+CK_LUN,*) '         CME_LS_IBPV      = ',CME_LS_IBPV
-      WRITE(16+CK_LUN,*) '         CME_LS_IBPSQ     = ',CME_LS_IBPSQ
-      WRITE(16+CK_LUN,*) '         CME_LS_IBPSV     = ',CME_LS_IBPSV
-      WRITE(16+CK_LUN,*) '         CME_LS_2PartQ    = ',CME_LS_2PartQ
-      WRITE(16+CK_LUN,*) '         CME_LS_2PartV    = ',CME_LS_2PartV
-      WRITE(16+CK_LUN,*) '         CME_AreaInt_Orig = ',CME_AreaInt_Orig
-      WRITE(16+CK_LUN,*) '         CME_AreaInt_Corr = ',CME_AreaInt_Corr
-      WRITE(16+CK_LUN,*) '         CTIP             = ',CTIP
-      WRITE(16+CK_LUN,*) '         CHARMV           = ',CHARMV
+c      WRITE(16+CK_LUN,*) '         C3D_PTrans       = ',C3D_PTrans
+c      WRITE(16+CK_LUN,*) '         CBaroclinic      = ',CBaroclinic
+c      WRITE(16+CK_LUN,*) '         CGWCE_Lump       = ',CGWCE_Lump
+c      WRITE(16+CK_LUN,*) '         CGWCE_LS_KGQ     = ',CGWCE_LS_KGQ
+c      WRITE(16+CK_LUN,*) '         CGWCE_LS_2PartQ  = ',CGWCE_LS_2PartQ
+c      WRITE(16+CK_LUN,*) '         CGWCE_LS_2PartV  = ',CGWCE_LS_2PartV
+c      WRITE(16+CK_LUN,*) '         CGWCE_LS_2PartSQ = ',CGWCE_LS_2PartSQ
+c      WRITE(16+CK_LUN,*) '         CGWCE_LS_2PartSV = ',CGWCE_LS_2PartSV
+c      WRITE(16+CK_LUN,*) '         CGWCE_Advec_NC   = ',CGWCE_Advec_NC
+c      WRITE(16+CK_LUN,*) '         CGWCE_Advec_C1   = ',CGWCE_Advec_C1
+c      WRITE(16+CK_LUN,*) '         CGWCE_Advec_C2   = ',CGWCE_Advec_C2
+c      WRITE(16+CK_LUN,*) '         CME_Orig         = ',CME_Orig
+c      WRITE(16+CK_LUN,*) '         CME_New_NC       = ',CME_New_NC
+c      WRITE(16+CK_LUN,*) '         CME_New_C1       = ',CME_New_C1
+c      WRITE(16+CK_LUN,*) '         CME_New_C2       = ',CME_New_C2
+c      WRITE(16+CK_LUN,*) '         CME_LS_IBPQ      = ',CME_LS_IBPQ
+c      WRITE(16+CK_LUN,*) '         CME_LS_IBPV      = ',CME_LS_IBPV
+c      WRITE(16+CK_LUN,*) '         CME_LS_IBPSQ     = ',CME_LS_IBPSQ
+c      WRITE(16+CK_LUN,*) '         CME_LS_IBPSV     = ',CME_LS_IBPSV
+c      WRITE(16+CK_LUN,*) '         CME_LS_2PartQ    = ',CME_LS_2PartQ
+c      WRITE(16+CK_LUN,*) '         CME_LS_2PartV    = ',CME_LS_2PartV
+c      WRITE(16+CK_LUN,*) '         CME_AreaInt_Orig = ',CME_AreaInt_Orig
+c      WRITE(16+CK_LUN,*) '         CME_AreaInt_Corr = ',CME_AreaInt_Corr
+c      WRITE(16+CK_LUN,*) '         CTIP             = ',CTIP
+c      WRITE(16+CK_LUN,*) '         CHARMV           = ',CHARMV
 
 C...
 C...  READ AND PROCESS NOLIBF - NONLINEAR BOTTOM FRICTION OPTION
@@ -971,21 +969,21 @@ C...
             WRITE(ScreenUnit+CK_LUN,9722)
             WRITE(ScreenUnit+CK_LUN,9973)
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'NOLIBF =',NOLIBF
-         WRITE(16+CK_LUN,9722)
-         WRITE(16+CK_LUN,9973)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'NOLIBF =',NOLIBF
+c         WRITE(16+CK_LUN,9722)
+c         WRITE(16+CK_LUN,9973)
  9722    FORMAT(/,1X,'Your selection of NOLIBF (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
          CALL ADCIRC_Terminate()
       ENDIF
-      WRITE(16+CK_LUN,9845) NOLIBF
+c      WRITE(16+CK_LUN,9845) NOLIBF
  9845 FORMAT(/,5X,'NOLIBF = ',I3)
-      IF (NOLIBF.EQ.0) WRITE(16+CK_LUN,2050)
+c      IF (NOLIBF.EQ.0) WRITE(16+CK_LUN,2050)
  2050 FORMAT(9X,'THE MODEL WILL USE LINEAR BOTTOM FRICTION')
-      IF (NOLIBF.EQ.1) WRITE(16+CK_LUN,2051)
+c      IF (NOLIBF.EQ.1) WRITE(16+CK_LUN,2051)
  2051 FORMAT(9X,'THE MODEL WILL USE NONLINEAR BOTTOM FRICTION')
-      IF (NOLIBF.EQ.2) WRITE(16+CK_LUN,2052)
+c      IF (NOLIBF.EQ.2) WRITE(16+CK_LUN,2052)
  2052 FORMAT(9X,'THE MODEL WILL USE STANDARD QUADRATIC BOTTOM FRICTION',
      &     'IN DEEP WATER ',
      &     /,9X,'AND A FRICTION FACTOR THAT INCREASES AS THE DEPTH ',
@@ -1000,13 +998,13 @@ C...
             WRITE(ScreenUnit+CK_LUN,*) 'NOLIFA =',NOLIFA
             WRITE(ScreenUnit+CK_LUN,9723)       ! not allowable
          ENDIF
-         WRITE(16+CK_LUN,9972)         ! input error
-         WRITE(16+CK_LUN,*) 'NOLIFA =',NOLIFA
-         WRITE(16+CK_LUN,9723)         ! not allowable
+c         WRITE(16+CK_LUN,9972)         ! input error
+c         WRITE(16+CK_LUN,*) 'NOLIFA =',NOLIFA
+c         WRITE(16+CK_LUN,9723)         ! not allowable
  9723    FORMAT(/,1X,'Your selection of NOLIFA (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
          IF (NoLiFA.eq.3.and.NFOver.eq.1) THEN
-            WRITE(16+CK_LUN,8735)
+c            WRITE(16+CK_LUN,8735)
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,8735)
  8735       FORMAT(/,1X,'WARNING: The StartDry file was replaced ',
      &           'by surface_submergence_state in ',
@@ -1018,7 +1016,7 @@ C...
             NoLiFA = 2
          ELSE
             IF (NoLiFA.eq.3.and.NFOver.eq.0) THEN
-               WRITE(16+CK_LUN,7624)   ! startdry replaced
+c               WRITE(16+CK_LUN,7624)   ! startdry replaced
                IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,7624)
             ENDIF
  7624       FORMAT(/,1X,'ERROR: NOLIFA=3 formerly triggered the ',
@@ -1027,20 +1025,20 @@ C...
      &           'by surface_submergence_state in ',
      &           /,1X,'the Nodal Attributes file (unit 13). Please ',
      &           'use NWP to load this data.',/)
-            WRITE(16+CK_LUN,9973)      ! execution will terminate
+c            WRITE(16+CK_LUN,9973)      ! execution will terminate
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,9973)
             CALL ADCIRC_Terminate()
          ENDIF
       ENDIF
-      WRITE(16+CK_LUN,9846) NOLIFA
+c      WRITE(16+CK_LUN,9846) NOLIFA
  9846 FORMAT(/,5X,'NOLIFA = ',I3)
-      IF(NOLIFA.EQ.0) WRITE(16+CK_LUN,2053)
+c      IF(NOLIFA.EQ.0) WRITE(16+CK_LUN,2053)
  2053 FORMAT(9X,'THE MODEL WILL NOT USE FINITE AMPLITUDE TERMS OR ',
      &     'WETTING AND DRYING')
-      IF(NOLIFA.EQ.1) WRITE(16+CK_LUN,2054)
+c      IF(NOLIFA.EQ.1) WRITE(16+CK_LUN,2054)
  2054 FORMAT(9X,'THE MODEL WILL USE FINITE AMPLITUDE TERMS BUT NO ',
      &     'WETTING AND DRYING')
-      IF(NOLIFA.EQ.2) WRITE(16+CK_LUN,2049)
+c      IF(NOLIFA.EQ.2) WRITE(16+CK_LUN,2049)
  2049 FORMAT(9X,'THE MODEL WILL USE FINITE AMPLITUDE TERMS AND ',
      &     'WETTING AND DRYING')
 C...
@@ -1054,20 +1052,20 @@ C...
             WRITE(ScreenUnit+CK_LUN,9724)
             WRITE(ScreenUnit+CK_LUN,9973)
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'NOLICA =',NOLICA
-         WRITE(16+CK_LUN,9724)
-         WRITE(16+CK_LUN,9973)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'NOLICA =',NOLICA
+c         WRITE(16+CK_LUN,9724)
+c         WRITE(16+CK_LUN,9973)
  9724    FORMAT(/,1X,'Your selection of NOLICA (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
          CALL ADCIRC_Terminate()
       ENDIF
-      WRITE(16+CK_LUN,9847) NOLICA
+c      WRITE(16+CK_LUN,9847) NOLICA
  9847 FORMAT(/,5X,'NOLICA = ',I3)
-      IF(NOLICA.EQ.0) WRITE(16+CK_LUN,2055)
+c      IF(NOLICA.EQ.0) WRITE(16+CK_LUN,2055)
  2055 FORMAT(9X,'THE MODEL WILL NOT USE SPATIAL DERIVATIVE ',
      &     'COMPONENTS OF THE ADVECTIVE TERMS')
-      IF(NOLICA.EQ.1) WRITE(16+CK_LUN,2056)
+c      IF(NOLICA.EQ.1) WRITE(16+CK_LUN,2056)
  2056 FORMAT(9X,'THE MODEL WILL USE SPATIAL DERIVATIVE ',
      &     'COMPONENTS OF THE ADVECTIVE TERMS')
 
@@ -1082,10 +1080,10 @@ C...
             WRITE(ScreenUnit+CK_LUN,9725)
             WRITE(ScreenUnit+CK_LUN,9973)
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'NOLICAT =',NOLICAT
-         WRITE(16+CK_LUN,9725)
-         WRITE(16+CK_LUN,9973)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'NOLICAT =',NOLICAT
+c         WRITE(16+CK_LUN,9725)
+c         WRITE(16+CK_LUN,9973)
  9725    FORMAT(/,1X,'Your selection of NOLICAT (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
          CALL ADCIRC_Terminate()
@@ -1131,10 +1129,10 @@ C      ENDIF
                WRITE(ScreenUnit+CK_LUN,9973)
             ENDIF
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'NOLICAT =',NOLICAT
-         WRITE(16+CK_LUN,9726)
-         WRITE(16+CK_LUN,9974)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'NOLICAT =',NOLICAT
+c         WRITE(16+CK_LUN,9726)
+c         WRITE(16+CK_LUN,9974)
          IF(NFOVER.EQ.1) THEN
             if (myproc == 0) WRITE(ScreenUnit+CK_LUN,9974)
          ELSE
@@ -1154,10 +1152,10 @@ C      ENDIF
                WRITE(ScreenUnit+CK_LUN,9973)
             ENDIF
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'NOLICAT =',NOLICAT
-         WRITE(16+CK_LUN,9727)
-         WRITE(16+CK_LUN,9974)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'NOLICAT =',NOLICAT
+c         WRITE(16+CK_LUN,9727)
+c         WRITE(16+CK_LUN,9974)
  9727    FORMAT(/,1X,'Your selection of NOLICAT (a UNIT 15 input ',
      &        'parameter) is inconsistent with your ',
      &        /,1X,'selection of NOLICA and may lead to mass ',
@@ -1170,12 +1168,12 @@ C      ENDIF
          ENDIF
       ENDIF
 
-      WRITE(16+CK_LUN,9848) NOLICAT
+c      WRITE(16+CK_LUN,9848) NOLICAT
  9848 FORMAT(/,5X,'NOLICAT = ',I3)
-      IF(NOLICAT.EQ.0) WRITE(16+CK_LUN,2057)
+c      IF(NOLICAT.EQ.0) WRITE(16+CK_LUN,2057)
  2057 FORMAT(9X,'THE MODEL WILL NOT USE TIME DERIVATIVE COMPONENTS ',
      &     /,9X,'OF THE ADVECTIVE TERMS IN THE GWCE')
-      IF(NOLICAT.EQ.1) WRITE(16+CK_LUN,2058)
+c      IF(NOLICAT.EQ.1) WRITE(16+CK_LUN,2058)
  2058 FORMAT(9X,'THE MODEL WILL USE TIME DERIVATIVE COMPONENTS ',
      &     /,9X,'OF THE ADVECTIVE TERMS IN THE GWCE')
 C
@@ -1196,10 +1194,10 @@ C...
             WRITE(ScreenUnit+CK_LUN,9729)
             WRITE(ScreenUnit+CK_LUN,9973)
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'NCOR =',NCOR
-         WRITE(16+CK_LUN,9729)
-         WRITE(16+CK_LUN,9973)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'NCOR =',NCOR
+c         WRITE(16+CK_LUN,9729)
+c         WRITE(16+CK_LUN,9973)
  9729    FORMAT(/,1X,'Your selection of NCOR (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
          CALL ADCIRC_Terminate()
@@ -1211,10 +1209,10 @@ C...
             WRITE(ScreenUnit+CK_LUN,9730)
             WRITE(ScreenUnit+CK_LUN,9973)
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'NCOR =',NCOR
-         WRITE(16+CK_LUN,9730)
-         WRITE(16+CK_LUN,9973)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'NCOR =',NCOR
+c         WRITE(16+CK_LUN,9730)
+c         WRITE(16+CK_LUN,9973)
  9730    FORMAT(/,1X,'Your selection of NCOR (a UNIT 15 input ',
      &        'parameter) is inconsistent with your ',
      &        /,1X,'selection of coordinate systems.  Spatially ',
@@ -1223,12 +1221,12 @@ C...
          CALL ADCIRC_Terminate()
       ENDIF
       IF(NCOR.EQ.0) THEN
-         WRITE(16+CK_LUN,233) NCOR
+c         WRITE(16+CK_LUN,233) NCOR
  233     FORMAT(/,5X,'NCOR = ',I2,
      &    /,9X,'A CONSTANT VALUE OF THE CORIOLIS PARAMETER WILL BE ',
      &    /,9X,'USED THROUGHOUT THE DOMAIN')
       ELSE
-         WRITE(16+CK_LUN,234) NCOR
+c         WRITE(16+CK_LUN,234) NCOR
  234     FORMAT(/,5X,'NCOR = ',I2,
      &    /,9X,'SPATIALLY VARYING CORIOLIS VALUES WILL BE COMPUTED ',
      &    'FROM INPUT LATITUDES')
@@ -1245,10 +1243,10 @@ C...
             WRITE(ScreenUnit+CK_LUN,9710)
             WRITE(ScreenUnit+CK_LUN,9973)
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'NTIP =',NTIP
-         WRITE(16+CK_LUN,9710)
-         WRITE(16+CK_LUN,9973)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'NTIP =',NTIP
+c         WRITE(16+CK_LUN,9710)
+c         WRITE(16+CK_LUN,9973)
  9710    FORMAT(/,1X,'Your selection of NTIP (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
          CALL ADCIRC_Terminate()
@@ -1260,10 +1258,10 @@ C...
             WRITE(ScreenUnit+CK_LUN,9711)
             WRITE(ScreenUnit+CK_LUN,9973)
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'NTIP =',NTIP
-         WRITE(16+CK_LUN,9711)
-         WRITE(16+CK_LUN,9973)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'NTIP =',NTIP
+c         WRITE(16+CK_LUN,9711)
+c         WRITE(16+CK_LUN,9973)
  9711    FORMAT(/,1X,'Your selection of NTIP (a UNIT 15 input ',
      &        'parameter) is inconsistent with your ',
      &        /,1X,'selection of coordinate systems.  Tidal',
@@ -1273,18 +1271,18 @@ C...
       ENDIF
       IF (NTIP.NE.0) CTIP = .TRUE.
       IF(NTIP.EQ.0) THEN
-         WRITE(16+CK_LUN,235) NTIP
+c         WRITE(16+CK_LUN,235) NTIP
  235     FORMAT(/,5X,'NTIP = ',I2,/,9X,
      &        'TIDAL POTENTIAL FORCING IS NOT USED IN THE COMPUTATION')
       ENDIF
       IF(NTIP.GE.1) THEN
-         WRITE(16+CK_LUN,236) NTIP
+c         WRITE(16+CK_LUN,236) NTIP
  236     FORMAT(/,5X,'NTIP = ',I2,
      &    /,9X,'TIDAL POTENTIAL FORCING IS USED IN THE COMPUTATION ',
      &   'BASED ON INPUT LONGITUDES/LATITUDES')
       ENDIF
       IF(NTIP.EQ.2) THEN
-         WRITE(16+CK_LUN,239)
+c         WRITE(16+CK_LUN,239)
  239     FORMAT(9X,'SELF ATTRACTION/LOAD TIDE FORCING IS ALSO USED ',
      &        'IN THE COMPUTATION')
       ENDIF
@@ -1360,13 +1358,13 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
       ENDIF
 
       IF(NWS.EQ.0) THEN
-         WRITE(16+CK_LUN,237) NWS
+c         WRITE(16+CK_LUN,237) NWS
  237     FORMAT(/,5X,'NWS = ',I3,/,9X,
      &        'WIND STRESS OR SURFACE PRESSURE ARE NOT USED TO FORCE',
      &        ' THE COMPUTATION')
       ENDIF
       IF(NWS.EQ.1) THEN
-         WRITE(16+CK_LUN,238) NWS
+c         WRITE(16+CK_LUN,238) NWS
  238     FORMAT(/,5X,'NWS = ',I3,
      &        /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &        /,9X,' THE COMPUTATION',
@@ -1374,7 +1372,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
      &        /,9X,' EVERY MODEL TIME STEP')
       ENDIF
       IF(NWS.EQ.2) THEN
-         WRITE(16+CK_LUN,2381) NWS
+c         WRITE(16+CK_LUN,2381) NWS
  2381    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
@@ -1384,7 +1382,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
       IF(NWS.EQ.-2) THEN
-         WRITE(16+CK_LUN,2380) NWS
+c         WRITE(16+CK_LUN,2380) NWS
  2380    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
@@ -1394,7 +1392,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
       IF(NWS.EQ.3) THEN
-         WRITE(16+CK_LUN,2382) NWS
+c         WRITE(16+CK_LUN,2382) NWS
  2382    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS ONLY IS USED TO FORCE THE COMPUTATION.',
      &    /,9X,'WIND SPEEDS AND DIRECTIONS ARE READ FROM A FLEET ',
@@ -1406,7 +1404,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
      &     'DRAG LAW.')
       ENDIF
       IF(NWS.EQ.4) THEN
-         WRITE(16+CK_LUN,2383) NWS
+c         WRITE(16+CK_LUN,2383) NWS
  2383    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
@@ -1419,7 +1417,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
      &    'DRAG LAW.')
       ENDIF
       IF(NWS.EQ.-4) THEN
-         WRITE(16+CK_LUN,2388) NWS
+c         WRITE(16+CK_LUN,2388) NWS
  2388    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
@@ -1432,7 +1430,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
      &    'DRAG LAW.')
       ENDIF
       IF(NWS.EQ.5) THEN
-         WRITE(16+CK_LUN,2384) NWS
+c         WRITE(16+CK_LUN,2384) NWS
  2384    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
@@ -1445,7 +1443,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
      &    'DRAG LAW.')
       ENDIF
       IF(NWS.EQ.-5) THEN
-         WRITE(16+CK_LUN,2389) NWS
+c         WRITE(16+CK_LUN,2389) NWS
  2389    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
@@ -1458,7 +1456,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
      &    'DRAG LAW.')
       ENDIF
       IF(NWS.EQ.6) THEN
-         WRITE(16+CK_LUN,2385) NWS
+c         WRITE(16+CK_LUN,2385) NWS
  2385    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
@@ -1472,7 +1470,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
       ENDIF
 C     jgf46.00 Added NWS=7 (direct surface stress).
       IF(NWS.EQ.7) THEN
-         WRITE(16+CK_LUN,1234) NWS
+c         WRITE(16+CK_LUN,1234) NWS
  1234    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'SURFACE STRESS AND PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
@@ -1482,7 +1480,7 @@ C     jgf46.00 Added NWS=7 (direct surface stress).
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
       IF(NWS.EQ.-7) THEN
-         WRITE(16+CK_LUN,1235) NWS
+c         WRITE(16+CK_LUN,1235) NWS
  1235    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'SURFACE STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
@@ -1493,7 +1491,7 @@ C     jgf46.00 Added NWS=7 (direct surface stress).
       ENDIF
 C     jgf46.03 Added NWS=8 (Holland wind model).
       IF(NWS.EQ.8) THEN
-         WRITE(16+CK_LUN,1237) NWS
+c         WRITE(16+CK_LUN,1237) NWS
  1237    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'HURRICANE PARAMETERS AND THE HOLLAND WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
@@ -1503,7 +1501,7 @@ C     jgf46.03 Added NWS=8 (Holland wind model).
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
       IF(NWS.EQ.-8) THEN
-         WRITE(16+CK_LUN,1238) NWS
+c         WRITE(16+CK_LUN,1238) NWS
  1238    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'HURRICANE PARAMETERS AND THE HOLLAND WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
@@ -1513,7 +1511,7 @@ C     jgf46.03 Added NWS=8 (Holland wind model).
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
       IF(NWS.EQ.10) THEN
-         WRITE(16+CK_LUN,2386) NWS
+c         WRITE(16+CK_LUN,2386) NWS
  2386    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
@@ -1527,7 +1525,7 @@ C     jgf46.03 Added NWS=8 (Holland wind model).
      &    'DRAG LAW.')
       ENDIF
       IF(NWS.EQ.11) THEN
-         WRITE(16+CK_LUN,2387) NWS
+c         WRITE(16+CK_LUN,2387) NWS
  2387    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
@@ -1541,7 +1539,7 @@ C     jgf46.03 Added NWS=8 (Holland wind model).
       ENDIF
 C.....sb46_28sb01 added for NWS=-12,12 09/xx/2006
       IF(NWS.EQ.12) THEN
-         WRITE(16+CK_LUN,12384) NWS
+c         WRITE(16+CK_LUN,12384) NWS
 12384    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
@@ -1555,7 +1553,7 @@ C.....sb46_28sb01 added for NWS=-12,12 09/xx/2006
      &         'DRAG LAW.')
       ENDIF
       IF(NWS.EQ.-12) THEN
-         WRITE(16+CK_LUN,12389) NWS
+c         WRITE(16+CK_LUN,12389) NWS
 12389    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
@@ -1569,7 +1567,7 @@ C.....sb46_28sb01 added for NWS=-12,12 09/xx/2006
      &         'DRAG LAW.')
       ENDIF
       IF (ABS(NWS).EQ.15) THEN
-         WRITE(16+CK_LUN,10389) NWS
+c         WRITE(16+CK_LUN,10389) NWS
 10389    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
@@ -1581,7 +1579,7 @@ C.....sb46_28sb01 added for NWS=-12,12 09/xx/2006
       ENDIF
 C
       IF(NWS.EQ.16) THEN
-         WRITE(16+CK_LUN,12374) NWS
+c         WRITE(16+CK_LUN,12374) NWS
 12374    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
@@ -1597,7 +1595,7 @@ C
      &         'DRAG LAW.')
       ENDIF
       IF(NWS.EQ.-16) THEN
-         WRITE(16+CK_LUN,12379) NWS
+c         WRITE(16+CK_LUN,12379) NWS
 12379    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
@@ -1615,7 +1613,7 @@ C
 C
 C     rjw added nws = 19: asymmetric hurricane winds v2.0
       IF(NWS.EQ.19) THEN
-         WRITE(16+CK_LUN,2400) NWS
+c         WRITE(16+CK_LUN,2400) NWS
  2400    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'HURRICANE PARAMETERS AND THE ASYMMETRIC WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
@@ -1627,7 +1625,7 @@ C     rjw added nws = 19: asymmetric hurricane winds v2.0
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
       IF(NWS.EQ.-19) THEN
-         WRITE(16+CK_LUN,2401) NWS
+c         WRITE(16+CK_LUN,2401) NWS
  2401    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'HURRICANE PARAMETERS AND THE ASYMMETRIC WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
@@ -1641,7 +1639,7 @@ C     rjw added nws = 19: asymmetric hurricane winds v2.0
 
 C     jie added nws = 20: generalized asymmetric wind model
       IF(NWS.EQ.20) THEN
-         WRITE(16+CK_LUN,2404) NWS
+c         WRITE(16+CK_LUN,2404) NWS
  2404    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'THE GENERALIZED ASYMMETRIC VORTEX MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
@@ -1653,7 +1651,7 @@ C     jie added nws = 20: generalized asymmetric wind model
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
       IF(NWS.EQ.-20) THEN
-         WRITE(16+CK_LUN,2405) NWS
+c         WRITE(16+CK_LUN,2405) NWS
  2405    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'HTHE GENERALIZED ASYMMETRIC VORTEX MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
@@ -1668,7 +1666,7 @@ C     jie added nws = 20: generalized asymmetric wind model
 C....Surface Wave Stresses
 C     jgf49.1001 Added option to embed NWS19 in a NAM background wind field
       IF(NWS.EQ.29) THEN
-         WRITE(16+CK_LUN,2402) NWS
+c         WRITE(16+CK_LUN,2402) NWS
  2402    FORMAT(/,5X,'NWS = ',I2,
      &    /,9X,'HURRICANE PARAMETERS AND THE ASYMMETRIC WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
@@ -1684,7 +1682,7 @@ C     jgf49.1001 Added option to embed NWS19 in a NAM background wind field
       ENDIF
 
       IF(NWS.EQ.-29) THEN
-         WRITE(16+CK_LUN,2403) NWS
+c         WRITE(16+CK_LUN,2403) NWS
  2403    FORMAT(/,5X,'NWS = ',I2,
      &    /,9X,'HURRICANE PARAMETERS AND THE ASYMMETRIC WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
@@ -1701,7 +1699,7 @@ C     jgf49.1001 Added option to embed NWS19 in a NAM background wind field
       
       ! jgf: Added option to embed NWS20 in a NAM background wind field
       IF(NWS.EQ.30) THEN
-         WRITE(16+CK_LUN,3403) NWS
+c         WRITE(16+CK_LUN,3403) NWS
  3403    FORMAT(/,5X,'NWS = ',I2,
      &    /,9X,'HURRICANE PARAMETERS AND THE GENERALIZED ASYMMETRIC ',
      &    /,9X,'HOLLAND MODEL (GAHM) ARE USED TO FORCE THE COMPUTATION',
@@ -1718,7 +1716,7 @@ C     jgf49.1001 Added option to embed NWS19 in a NAM background wind field
 
       ! jgf: Added option to embed NWS20 in a NAM background wind field
       IF(NWS.EQ.-30) THEN
-         WRITE(16+CK_LUN,3405) NWS
+c         WRITE(16+CK_LUN,3405) NWS
  3405    FORMAT(/,5X,'NWS = ',I2,
      &    /,9X,'HURRICANE PARAMETERS AND THE GENERALIZED ASYMMETRIC ',
      &    /,9X,'HOLLAND MODEL (GAHM) ARE USED TO FORCE THE COMPUTATION',
@@ -1734,13 +1732,13 @@ C     jgf49.1001 Added option to embed NWS19 in a NAM background wind field
       ENDIF
 
       IF(NRS.EQ.0) THEN
-         WRITE(16+CK_LUN,2390) NRS
+c         WRITE(16+CK_LUN,2390) NRS
  2390    FORMAT(/,5X,'NRS = ',I3,
      &        /,9X,'WAVE RADIATION STRESS IS NOT USED TO FORCE THE ',
      &        'COMPUTATION')
       ENDIF
       IF(NRS.EQ.1) THEN
-         WRITE(16+CK_LUN,2391) NRS
+c         WRITE(16+CK_LUN,2391) NRS
  2391    FORMAT(/,5X,'NRS = ',I3,
      &    /,9X,'WAVE RADIATION STRESS IS USED TO FORCE THE COMPUTATION',
      &    /,9X,'STRESSES ARE READ AT SELECTED ADCIRC GRID NODES FROM A',
@@ -1752,7 +1750,7 @@ C     jgf49.1001 Added option to embed NWS19 in a NAM background wind field
       ENDIF
 C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
       IF(NRS.EQ.2) THEN
-         WRITE(16+CK_LUN,2392) NRS
+c         WRITE(16+CK_LUN,2392) NRS
  2392    FORMAT(/,5X,'NRS = ',I3,
      &    /,9X,'WAVE RADIATION STRESS IS USED TO FORCE THE COMPUTATION',
      &    /,9X,'STRESSES ARE READ AT SELECTED ADCIRC GRID NODES FROM A',
@@ -1767,7 +1765,7 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
 #ifdef CSWAN
 Casey 090302: Added the following lines.
       IF(NRS.EQ.3) THEN
-         WRITE(16+CK_LUN,2393) NRS
+c         WRITE(16+CK_LUN,2393) NRS
  2393    FORMAT(/,5X,'NRS = ',I3,
      &    /,9X,'WAVES WILL BE COUPLED TO SWAN!')
       ENDIF
@@ -1776,7 +1774,7 @@ Casey 090302: Added the following lines.
 C     NWS=4xx added for STWAVE tighly coupled run  (v49.46 tcm)
       IF(NRS.EQ.4) THEN
          CPL2STWAVE = .TRUE.  !flag indicating coupling with STWAVE 
-         WRITE(16+CK_LUN,2394) NRS
+c         WRITE(16+CK_LUN,2394) NRS
  2394    FORMAT(/,5X,'NRS = ',I2,
      &    /,9X,'WAVE RADIATION STRESS IS USED TO FORCE THE COMPUTATION',
      &    /,9X,'STRESSES ARE COMPUTED ON THE FLY BY STWAVE COMPUTE    ',
@@ -1795,10 +1793,10 @@ C     TCM V49.64.01 ADDITION FOR ICE CONCENTRATION FIELDS
             WRITE(ScreenUnit+CK_LUN,9812)
             WRITE(ScreenUnit+CK_LUN,9973)
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'NCICE =',NCICE
-         WRITE(16+CK_LUN,9812)
-         WRITE(16+CK_LUN,9973)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'NCICE =',NCICE
+c         WRITE(16+CK_LUN,9812)
+c         WRITE(16+CK_LUN,9973)
  9812    FORMAT(/,1X,'Your selection of NCICE (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
          CALL ADCIRC_Terminate()
@@ -1814,11 +1812,11 @@ C...  BE SURE NWS AND NCICE ARE COMPATABLE
             WRITE(ScreenUnit+CK_LUN,9813)
             WRITE(ScreenUnit+CK_LUN,9973)
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'NCICE =',NCICE
-         WRITE(16+CK_LUN,*) 'NWS =',NWS
-         WRITE(16+CK_LUN,9813)
-         WRITE(16+CK_LUN,9973)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'NCICE =',NCICE
+c         WRITE(16+CK_LUN,*) 'NWS =',NWS
+c         WRITE(16+CK_LUN,9813)
+c         WRITE(16+CK_LUN,9973)
  9813    FORMAT(/,1X,'Your selection of NCICE (a UNIT 15 input ',
      &    'parameter) is not compatable',
      &    /,1x,'with your NWS value. ',
@@ -1827,13 +1825,13 @@ C...  BE SURE NWS AND NCICE ARE COMPATABLE
       ENDIF
 
       IF(NCICE.EQ.0) THEN
-         WRITE(16+CK_LUN,3294) NCICE
+c         WRITE(16+CK_LUN,3294) NCICE
  3294    FORMAT(/,5X,'NCICE = ',I2,
      &        /,9X,'ICE CONCENTRATION FIELDS ARE NOT USED TO ',
      &        'ADJUST WIND STRESS COMPUTATIONS')
       ENDIF
       IF(NCICE.EQ.12) THEN
-         WRITE(16+CK_LUN,3295) NCICE
+c         WRITE(16+CK_LUN,3295) NCICE
  3295    FORMAT(/,5X,'NCICE = ',I2,
      &    /,9X,'ICE CONCENTRATION FIELDS ARE USED TO ',
      &        'ADJUST WIND STRESS COMPUTATIONS'
@@ -1863,22 +1861,22 @@ C
             WRITE(ScreenUnit+CK_LUN,9814)
             WRITE(ScreenUnit+CK_LUN,9973)
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'NDDT =',NDDT
-         WRITE(16+CK_LUN,9812)
-         WRITE(16+CK_LUN,9973)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'NDDT =',NDDT
+c         WRITE(16+CK_LUN,9812)
+c         WRITE(16+CK_LUN,9973)
  9814    FORMAT(/,1X,'Your selection of NDDT (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
          CALL ADCIRC_Terminate()
       ENDIF
       IF(NDDT.EQ.0) THEN
-         WRITE(16+CK_LUN,837) NDDT
+c         WRITE(16+CK_LUN,837) NDDT
  837     FORMAT(/,5X,'NDDT = ',I2,/,9X,
      &        'A TIME VARYING BATHYMETRY IS NOT USED DURING',
      &        ' THE COMPUTATION')
       ENDIF
       IF(NDDT.EQ.1) THEN
-         WRITE(16+CK_LUN,838) NDDT
+c         WRITE(16+CK_LUN,838) NDDT
  838     FORMAT(/,5X,'NDDT = ',I2,
      &        /,9X,'A TIME VARYING BATHYMETRY IS USED DURING',
      &             ' THE COMPUTATION',
@@ -1889,7 +1887,7 @@ C
      &    /,9X,'DATA WITH THE MODEL TIME STEP.')
       ENDIF
       IF(NDDT.EQ.-1) THEN
-         WRITE(16+CK_LUN,839) NDDT
+c         WRITE(16+CK_LUN,839) NDDT
  839     FORMAT(/,5X,'NDDT = ',I2,
      &        /,9X,'A TIME VARYING BATHYMETRY IS USED DURING',
      &             ' THE COMPUTATION',
@@ -1901,7 +1899,7 @@ C
      &    /,9X,'DATA WITH THE MODEL TIME STEP.')
       ENDIF
       IF(NDDT.EQ.2) THEN
-         WRITE(16+CK_LUN,840) NDDT
+c         WRITE(16+CK_LUN,840) NDDT
  840     FORMAT(/,5X,'NDDT = ',I2,
      &        /,9X,'A TIME VARYING BATHYMETRY IS USED DURING',
      &             ' THE COMPUTATION',
@@ -1912,7 +1910,7 @@ C
      &    /,9X,'DATA WITH THE MODEL TIME STEP.')
       ENDIF
       IF(NDDT.EQ.-2) THEN
-         WRITE(16+CK_LUN,841) NDDT
+c         WRITE(16+CK_LUN,841) NDDT
  841     FORMAT(/,5X,'NDDT = ',I2,
      &        /,9X,'A TIME VARYING BATHYMETRY IS USED DURING',
      &             ' THE COMPUTATION',
@@ -1941,10 +1939,10 @@ C     jgf46.08 Change to the number of ramp functions that will be used.
             WRITE(ScreenUnit+CK_LUN,9713)
             WRITE(ScreenUnit+CK_LUN,9973)
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'NRAMP =',NRAMP
-         WRITE(16+CK_LUN,9713)
-         WRITE(16+CK_LUN,9973)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'NRAMP =',NRAMP
+c         WRITE(16+CK_LUN,9713)
+c         WRITE(16+CK_LUN,9973)
  9713    FORMAT(/,1X,'Your selection of NRAMP (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
 #ifdef CMPI
@@ -1953,11 +1951,11 @@ C     jgf46.08 Change to the number of ramp functions that will be used.
          STOP
       ENDIF
       IF(NRAMP.EQ.0) THEN
-         WRITE(16+CK_LUN,240) NRAMP
+c         WRITE(16+CK_LUN,240) NRAMP
  240     FORMAT(/,5X,'NRAMP = ',I2,
      &        /,9X,'NO RAMP FUNCTION IS USED IN THE COMPUTATION')
       ELSE
-         WRITE(16+CK_LUN,241) NRAMP
+c         WRITE(16+CK_LUN,241) NRAMP
  241     FORMAT(/,5X,'NRAMP = ',I2,
      &    /,9X,'HYPERBOLIC TANGENT RAMP(S) WILL BE APPLIED TO THE ',
      &    'FORCING FUNCTIONS')
@@ -1990,10 +1988,10 @@ C...
             WRITE(ScreenUnit+CK_LUN,9714)
             WRITE(ScreenUnit+CK_LUN,9973)
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'G =',G
-         WRITE(16+CK_LUN,9714)
-         WRITE(16+CK_LUN,9973)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'G =',G
+c         WRITE(16+CK_LUN,9714)
+c         WRITE(16+CK_LUN,9973)
  9714    FORMAT(/,1X,'Your specification of the gravitational ',
      &        'constant, G, (a UNIT 15 input) is not ',
      &        /,1X,'consistant with the use of spherical coordinates.',
@@ -2003,7 +2001,7 @@ C...
 #endif
          STOP
       ENDIF
-      WRITE(16+CK_LUN,5) G
+c      WRITE(16+CK_LUN,5) G
     5 FORMAT(///,5X,'GRAVITATIONAL CONSTANT G =',F10.5,/)
 
 C...
@@ -2028,8 +2026,8 @@ C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 TIME INTEGRATION
 C...  INFORMATION INCLUDING DT,STATIM,REFTIM,AND RNDAY
 C...
-      WRITE(16+CK_LUN,1112)
-      WRITE(16+CK_LUN,245)
+c      WRITE(16+CK_LUN,1112)
+c      WRITE(16+CK_LUN,245)
   245 FORMAT(//,1X,'TIME INTEGRATION INFORMATION',//)
 
 C...
@@ -2046,18 +2044,18 @@ ckmd   order to turn on the predictor-corrector algorithm.
          CME_New_C2 = .FALSE.
          DT=-DTDP
          DTDP=DT
-         WRITE(16+CK_LUN,*) ' ADCIRC is configured for a 2DDI run using'
-         WRITE(16+CK_LUN,*) ' the predictor-corrector algorithm and'
-         WRITE(16+CK_LUN,*) ' the ADCIRC logical variable is set to:    '
-         WRITE(16+CK_LUN,*) '         CPRECOR           = ',CPRECOR
+c         WRITE(16+CK_LUN,*) ' ADCIRC is configured for a 2DDI run using'
+c         WRITE(16+CK_LUN,*) ' the predictor-corrector algorithm and'
+c         WRITE(16+CK_LUN,*) ' the ADCIRC logical variable is set to:    '
+c         WRITE(16+CK_LUN,*) '         CPRECOR           = ',CPRECOR
       ELSE IF(DTDP.GT.0.d0) THEN
          DT=DTDP
-         WRITE(16+CK_LUN,*) ' ADCIRC is configured for a 2DDI run '
-         WRITE(16+CK_LUN,*) ' without the predictor-corrector algorithm and'
-         WRITE(16+CK_LUN,*) ' the ADCIRC logical variable is set to:  '
-         WRITE(16+CK_LUN,*) '         CPRECOR           = ',CPRECOR
+c         WRITE(16+CK_LUN,*) ' ADCIRC is configured for a 2DDI run '
+c         WRITE(16+CK_LUN,*) ' without the predictor-corrector algorithm and'
+c         WRITE(16+CK_LUN,*) ' the ADCIRC logical variable is set to:  '
+c         WRITE(16+CK_LUN,*) '         CPRECOR           = ',CPRECOR
       END IF
-      WRITE(16+CK_LUN,9) DTDP
+c      WRITE(16+CK_LUN,9) DTDP
     9 FORMAT(5X,'TIME STEP =',F12.6,5X,'SECONDS',/)
       DTDPHS = DTDP ! jgf51.14: Initialize; may be changed in hstart()     
 
@@ -2065,14 +2063,14 @@ C...
 C...  READ AND PROCESS STATIM - SIMULATION STARTING TIME
 C...
       READ(15+CK_LUN,*) STATIM
-      WRITE(16+CK_LUN,1113) STATIM
+c      WRITE(16+CK_LUN,1113) STATIM
  1113 FORMAT(5X,'STARTING TIME FOR SIMULATION = ',F14.6,' DAYS',/)
 
 C...
 C...  READ AND PROCESS REFTIM - Harmonic REFERNCE TIME
 C...
       READ(15+CK_LUN,*) REFTIM
-      WRITE(16+CK_LUN,1115) REFTIM
+c      WRITE(16+CK_LUN,1115) REFTIM
  1115 FORMAT(5X,'Harmonic REFERENCE TIME = ',F14.6,' DAYS',/)
 
 C...
@@ -2086,7 +2084,7 @@ C...
       ENDIF
       IF(NWS.EQ.3) THEN
          READ(15+CK_LUN,*) IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN,REFSEC
-         WRITE(16+CK_LUN,1116) IREFMO,IREFDAY,IREFYR,IREFHR,IREFMIN,REFSEC
+c         WRITE(16+CK_LUN,1116) IREFMO,IREFDAY,IREFYR,IREFHR,IREFMIN,REFSEC
  1116    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
      &        I2,'/',I2,'/',I2,'  ',I2,':',I2,':',f7.4,/)
          CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN,REFSEC,
@@ -2149,7 +2147,7 @@ C...     WHERE NRS=2, NRS=4 WERE NOT BEING INCLUDED
             READ(15+CK_LUN,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
      &           RSTIMINC,CICE_TIMINC
          ENDIF
-         WRITE(16+CK_LUN,6111) IREFMO,IREFDAY,IREFYR,IREFHR
+c         WRITE(16+CK_LUN,6111) IREFMO,IREFDAY,IREFYR,IREFHR
  6111    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
      &           I2,'/',I2,'/',I2,'  ',I2,'H',/)
          CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
@@ -2165,7 +2163,7 @@ C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
      &                                                CICE_TIMINC
          IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15+CK_LUN,*) WTIMINC,RSTIMINC,
      &                                                CICE_TIMINC
-         WRITE(16+CK_LUN,1117) WTIMINC
+c         WRITE(16+CK_LUN,1117) WTIMINC
       ENDIF
       IF(NWS.EQ.10) THEN
 C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
@@ -2296,12 +2294,12 @@ C     an OWI basin scale met field derived from NAM winds.
      &                                                 CICE_TIMINC
       ENDIF
 
-      IF(NWS.NE.0) WRITE(16+CK_LUN,1117) WTIMINC
+c      IF(NWS.NE.0) WRITE(16+CK_LUN,1117) WTIMINC
  1117 FORMAT(5X,'WIND TIME INCREMENT (SEC) = ',F10.2,/)
-      IF(NRS.NE.0) WRITE(16+CK_LUN,1118) RSTIMINC
+c      IF(NRS.NE.0) WRITE(16+CK_LUN,1118) RSTIMINC
  1118 FORMAT(5X,'RADIATION STRESS TIME INCREMENT (SEC) = ',F10.2,/)
 C... TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
-      IF(NCICE.NE.0) WRITE(16+CK_LUN,1119) CICE_TIMINC
+c      IF(NCICE.NE.0) WRITE(16+CK_LUN,1119) CICE_TIMINC
  1119 FORMAT(5X,'ICE CONCENTRATION FIELD TIME INCREMENT (SEC) = ',
      &         F10.2,/)
 
@@ -2316,26 +2314,26 @@ C   set in the TimeBathyControl Namelist if present
       IF (ABS(NDDT).NE.0) THEN
 c...     !READ(15,*) BTIMINC,BCHGTIMINC  !read from namelist
          if (btiminc.lt.abs(dtdp)) then
-            write(16+CK_LUN,*) 'BATHYMETRY FIELD RECORD TIME LENGTH ',
-     &      btiminc,'MUST BE GREATER THAN TIME STEP SIZE ',abs(dtdp) 
+c            write(16+CK_LUN,*) 'BATHYMETRY FIELD RECORD TIME LENGTH ',
+c     &      btiminc,'MUST BE GREATER THAN TIME STEP SIZE ',abs(dtdp) 
             CALL ADCIRC_Terminate()
          endif
          if (BCHGTIMINC.gt.btiminc) then
-            write(16+CK_LUN,*) 'BATHYMETRY TRANSITION LENGTH MUST',
-     &         ' BE NO GREATER THAN BATHYMETRY FIELD RECORD',
-     &         ' LENGTHS.  RESETTING.'
+c            write(16+CK_LUN,*) 'BATHYMETRY TRANSITION LENGTH MUST',
+c     &         ' BE NO GREATER THAN BATHYMETRY FIELD RECORD',
+c     &         ' LENGTHS.  RESETTING.'
             BCHGTIMINC = btiminc
          endif
          if (BCHGTIMINC.lt.abs(dtdp)) then
-            write(16+CK_LUN,*) 'BATHYMETRY TRANSITION LENGTH MUST',
-     &         ' BE NO SMALLER THAN THE TIME STEP SIZE.  RESETTING.'
+c            write(16+CK_LUN,*) 'BATHYMETRY TRANSITION LENGTH MUST',
+c     &         ' BE NO SMALLER THAN THE TIME STEP SIZE.  RESETTING.'
             BCHGTIMINC = ABS(DTDP)
          ENDIF
 
 C....... MAKE SURE THAT BATHYMETRY TRANSITION LENGTH IS AN INTEGER MULTIPLE OF THE TIMESTEP SIZE
          IF ( BCHGTIMINC/ABS(DTDP) - REAL(INT(BCHGTIMINC/ABS(DTDP))) .NE. 0.D0 ) THEN
-            WRITE(16+CK_LUN,*) 'BATHYMETRY TRANSITION LENGTH MUST',
-     &         ' BE AN INTEGER MULTIPLE OF THE TIME STEP SIZE.  RESETTING.'
+c            WRITE(16+CK_LUN,*) 'BATHYMETRY TRANSITION LENGTH MUST',
+c     &         ' BE AN INTEGER MULTIPLE OF THE TIME STEP SIZE.  RESETTING.'
             BCHGTIMINC = ABS(DTDP)*REAL(INT(BCHGTIMINC/ABS(DTDP) + 0.5D0))
             DO WHILE ((BCHGTIMINC.GT.BTIMINC).AND.(BCHGTIMINC.GE.ABS(DTDP)) )
                BCHGTIMINC = ABS(DTDP)*REAL(INT(BCHGTIMINC/ABS(DTDP) + 0.5D0)-1)
@@ -2345,7 +2343,7 @@ C....... MAKE SURE THAT BATHYMETRY TRANSITION LENGTH IS AN INTEGER MULTIPLE OF T
          BTIMINC = 0.d0
          BCHGTIMINC = abs(dtdp)
       ENDIF
-      IF (ABS(NDDT).NE.0) WRITE(16+CK_LUN,1120) BTIMINC,BCHGTIMINC
+c      IF (ABS(NDDT).NE.0) WRITE(16+CK_LUN,1120) BTIMINC,BCHGTIMINC
  1120 FORMAT(5X,'BATHYMETRY FIELD TIME INCREMENT (SEC) = ',
      &         F10.2,/,
      &       5X,'BATHYMETRY TRANSITIONING LENGTH (SEC) = ',
@@ -2356,12 +2354,12 @@ C...
 C...  READ AND PROCESS RNDAY - SIMULATION DURATION IN DAYS
 C...
       READ(15+CK_LUN,*) RNDAY
-      WRITE(16+CK_LUN,10) RNDAY
+c      WRITE(16+CK_LUN,10) RNDAY
  10   FORMAT(5X,'TOTAL LENGTH OF NUMERICAL SIMULATION =',F12.4,
      &       5X,'DAYS',/)
 C     NWS=4xx added for STWAVE tighly coupled run 01/03/2008
       IF(NRS.EQ.4) THEN
-         WRITE(16+CK_LUN,2395) NRS
+c         WRITE(16+CK_LUN,2395) NRS
  2395    FORMAT(/,5X,'NRS = ',I2,
      &    /,9X,'WAVE RADIATION STRESS IS USED TO FORCE THE COMPUTATION',
      &    /,9X,'STRESSES ARE COMPUTED ON THE FLY BY STWAVE COMPUTE    ',
@@ -2375,7 +2373,7 @@ C...
 #else
       NT=INT(RNDAY*(86400.D0/DTDP)+0.5d0)
 #endif
-      WRITE(16+CK_LUN,1920) NT
+c      WRITE(16+CK_LUN,1920) NT
  1920 FORMAT(5X,'NUMBER OF TIME STEPS  =',I8,/)
 C...
 C...  READ AND PROCESS EFFECTIVE LENGTH OF THE HYPERBOLIC TANGENT RAMP(S)
@@ -2457,10 +2455,10 @@ C     ------------
             WRITE(ScreenUnit+CK_LUN,9713)
             WRITE(ScreenUnit+CK_LUN,9973)
          ENDIF
-         WRITE(16+CK_LUN,9972)
-         WRITE(16+CK_LUN,*) 'NRAMP =',NRAMP
-         WRITE(16+CK_LUN,9713)
-         WRITE(16+CK_LUN,9973)
+c         WRITE(16+CK_LUN,9972)
+c         WRITE(16+CK_LUN,*) 'NRAMP =',NRAMP
+c         WRITE(16+CK_LUN,9713)
+c         WRITE(16+CK_LUN,9973)
 #ifdef CMPI
          call msg_fini()
 #endif
@@ -2469,23 +2467,23 @@ C
       END SELECT
 C
       IF(NRAMP.NE.0) THEN
-         WRITE(16+CK_LUN,8763) DRAMP
+c         WRITE(16+CK_LUN,8763) DRAMP
  8763    FORMAT(/,5X,'VALUE FOR DRAMP USED IN RAMP EVALUATION =',F12.4,
      &        5X,'DAYS',/)
 
-         WRITE(16+CK_LUN,5841)
+c         WRITE(16+CK_LUN,5841)
  5841    FORMAT(11X,' DAYS OF SIMULATION',2X,' TIME  ',6X,'  RAMP VALUE'
      &                                                               ,/)
          IF (DRAMP.lt.1.0d-6) THEN !jgf49.44: cover the case where DRAMP is zero
-            WRITE(16+CK_LUN,*)
-     &         "WARNING: DRAMP=",DRAMP,". It will be rounded to zero."
-            WRITE(16+CK_LUN,*)
-     &         "All forcing and boundary conditions will be at full"
-            WRITE(16+CK_LUN,*) "strength from the start of the simulation."
+c            WRITE(16+CK_LUN,*)
+c     &         "WARNING: DRAMP=",DRAMP,". It will be rounded to zero."
+c            WRITE(16+CK_LUN,*)
+c     &         "All forcing and boundary conditions will be at full"
+c            WRITE(16+CK_LUN,*) "strength from the start of the simulation."
          ELSE
             Day=0.0d0
  999        RampVal=TANH(Day*2.d0/DRAMP)
-            WRITE(16+CK_LUN,5845) Day,Day+StaTim,RampVal
+c            WRITE(16+CK_LUN,5845) Day,Day+StaTim,RampVal
  5845       FORMAT(15X,F8.2,6X,F8.2,2X,F15.7)
             DAY=DAY+0.5d0
             IF(Day.LT.DRAMP*1.25) GOTO 999
@@ -2495,9 +2493,9 @@ C...
 C...  READ GWCE TIME WEIGHTING FACTORS
 C...
       READ(15+CK_LUN,*) A00,B00,C00
-      WRITE(16+CK_LUN,14)
+c      WRITE(16+CK_LUN,14)
 14    FORMAT(//,5X,'TIME WEIGHTING FACTORS IN THE WAVE EQUATION :'/)
-      WRITE(16+CK_LUN,15) A00,B00,C00
+c      WRITE(16+CK_LUN,15) A00,B00,C00
 15    FORMAT(9X,'AT TIME LEVEL K+1 : ',F8.5,
      &  /,9X,'AT TIME LEVEL K   : ',F8.5,
      &  /,9X,'AT TIME LEVEL K-1 : ',F8.5,/)
@@ -2506,13 +2504,13 @@ C...  READ MINIMUM DEPTH OR WET/DRY PARAMETERS FROM UNIT 15
 C...
       IF(NOLIFA.NE.2) THEN
          READ(15+CK_LUN,*) H0
-         WRITE(16+CK_LUN,16) H0
+c         WRITE(16+CK_LUN,16) H0
  16      FORMAT(//,5X,'THE BATHYMETRIC DEPTH AT ALL NODES WILL BE ',
      &               'INCREASED TO H0= ',F12.4,' IF NECESSARY'/)
       ENDIF
       IF(NOLIFA.EQ.2) THEN
          READ(15+CK_LUN,*) H0,NODEDRYMIN,NODEWETMIN,VELMIN
-         WRITE(16+CK_LUN,17) H0,NODEWETMIN,VELMIN,NODEDRYMIN
+c         WRITE(16+CK_LUN,17) H0,NODEWETMIN,VELMIN,NODEDRYMIN
  17      FORMAT(//,5X,'DRYING WILL OCCUR WHEN THE WATER DEPTH < H0',
      &          /,5X,'H0 = ',F10.6,
      &          /,5X,'AND NODEREP > NODEWETMIN = ',I6,' TIME STEPS',
@@ -2530,8 +2528,8 @@ C     projection is centered (in degrees) if ICS = 2. (The reading of
 C     the top of the grid file, including NE and NP, was moved nearer to
 C     the beginning of this subroutine.)
       READ(15+CK_LUN,*) SLAM0,SFEA0
-      WRITE(16+CK_LUN,1112)
-      WRITE(16+CK_LUN,246)
+c      WRITE(16+CK_LUN,1112)
+c      WRITE(16+CK_LUN,246)
  246  FORMAT(//,1X,'GRID INFORMATION',//)
 
 C     jgf51.12.13: Adjust node table based on ics, nolifa, h0,
@@ -2560,7 +2558,7 @@ C...
          READ(11+CK_LUN,*) NP2
          IF(NP2.NE.NP) THEN
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,9943)
-            WRITE(16+CK_LUN,9943)
+c            WRITE(16+CK_LUN,9943)
  9943       FORMAT(////,' !!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
      &               //,' THE NUMBER OF NODES IN THE BAROCLINIC',
      &                  ' INITIAL CONDITION FILE (UNIT 11) ',
@@ -2603,7 +2601,7 @@ C...
          READ(10+CK_LUN,*) NP2
          IF(NP2.NE.NP) THEN
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,9944)
-            WRITE(16+CK_LUN,9943)
+c            WRITE(16+CK_LUN,9943)
  9944       FORMAT(////,' !!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
      &               //,' THE NUMBER OF NODES IN THE SCALAR ',
      &                  ' INITIAL CONDITION FILE (UNIT 10) ',
@@ -2629,20 +2627,20 @@ C     jgf47.04 If ManningsN is loaded from the nodal attributes (fort.13)
 C     file, the value of BFCdLLimit is set to CF (see nodal attributes
 C     module).
 
-      WRITE(16+CK_LUN,1112)
+c      WRITE(16+CK_LUN,1112)
 
       IF(NOLIBF.EQ.0) READ(15+CK_LUN,*) TAU
       IF(NOLIBF.EQ.1) READ(15+CK_LUN,*) CF
       IF(NOLIBF.EQ.2) READ(15+CK_LUN,*) CF,HBREAK,FTHETA,FGAMMA
 C
-      WRITE(16+CK_LUN,2045)
+c      WRITE(16+CK_LUN,2045)
  2045 FORMAT(//,' BOTTOM FRICTION INFORMATION',//)
       IF(NOLIBF.EQ.0) THEN
-         WRITE(16+CK_LUN,106) TAU
+c         WRITE(16+CK_LUN,106) TAU
  106     FORMAT(5X,'LINEAR BOTTOM FRICTION TAU =',F12.8,5X,'1/sec'/)
          IF(TAU.NE.TAU0) THEN   !CHECK TAU VALUE AGAINST TAU0
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,9951)
-            WRITE(16+CK_LUN,9951)
+c            WRITE(16+CK_LUN,9951)
  9951       FORMAT(////,1X,'!!!!!!!!!!  WARNING - NONFATAL ',
      &           'INPUT ERROR  !!!!!!!!!',
      &           //,1X,'TYPICALLY YOUR INPUT VALUE FOR ',
@@ -2650,11 +2648,11 @@ C
          ENDIF
       ENDIF
       IF(NOLIBF.EQ.1) THEN
-         WRITE(16+CK_LUN,8) CF
+c         WRITE(16+CK_LUN,8) CF
  8       FORMAT(5X,'NONLINEAR FRICTION COEFFICIENT CF =',F12.8,/)
       ENDIF
       IF(NOLIBF.EQ.2) THEN
-         WRITE(16+CK_LUN,101) CF,HBREAK,FTHETA,FGAMMA
+c         WRITE(16+CK_LUN,101) CF,HBREAK,FTHETA,FGAMMA
  101     FORMAT(5X,'HYBRID FRICTION RELATIONSHIP PARAMTERS, CFMIN =',
      &        F12.8,'  HBREAK = ',F8.2,
      &        /,5X,'FTHETA = ',F8.2,'  FGAMMA = ',F10.4,//)
@@ -2671,50 +2669,50 @@ C     jgf46.00 Modified this output routine so that it does not print a
 C     STARTDRY column, whether the STARTDRY array has been loaded from a
 C     file or not.
 C
-      WRITE(16+CK_LUN,2039) AGRID
+c      WRITE(16+CK_LUN,2039) AGRID
  2039 FORMAT(/,5X,'GRID IDENTIFICATION : ',A80,/)
-      WRITE(16+CK_LUN,3) NP
+c      WRITE(16+CK_LUN,3) NP
     3 FORMAT(5X,'TOTAL NUMBER OF NODES =',I8,/)
-      WRITE(16+CK_LUN,4) NE
+c      WRITE(16+CK_LUN,4) NE
     4 FORMAT(5X,'TOTAL NUMBER OF ELEMENTS =',I8,/)
-      IF(ICS.EQ.2) WRITE(16+CK_LUN,13) SLAM0*RAD2DEG,SFEA0*RAD2DEG
+c      IF(ICS.EQ.2) WRITE(16+CK_LUN,13) SLAM0*RAD2DEG,SFEA0*RAD2DEG
  13   FORMAT(5X,'LONGITUDE ABOUT WHICH CPP PROJECTION IS CENTERED',
      &     '  SLAM0 = ',F9.4,' DEGREES',
      &     /,5X,'LATITUDE  ABOUT WHICH CPP PROJECTION IS CENTERED',
      &     '  SFEA0 = ',F9.4,' DEGREES',/)
       IF(NABOUT.LT.1) THEN
-         WRITE(16+CK_LUN,24)
+c         WRITE(16+CK_LUN,24)
  24      FORMAT(/,1X,'NODAL COORDINATES AND BATHYMETRY :')
          IF(ICS.EQ.1) THEN
             IF((NTIP.EQ.0).AND.(NCOR.EQ.0)) THEN
-               WRITE(16+CK_LUN,25)
+c               WRITE(16+CK_LUN,25)
  25            FORMAT(/,10X,'NODE NO.',10X,'X',20X,'Y',15X,'DP',/)
                DO I=1,NP
-                  WRITE (16+CK_LUN,2008) I,X(I),Y(I),DP(I)
+c                  WRITE (16+CK_LUN,2008) I,X(I),Y(I),DP(I)
  2008             FORMAT(5X,I6,2(2X,F20.2),2X,F12.2)
                END DO
             ELSE
-               WRITE(16+CK_LUN,9195)
+c               WRITE(16+CK_LUN,9195)
  9195          FORMAT(/,1X,'   NODE ',7X,'X',14X,'Y',9X,
      &              'LAMBDA(DEG)',6X,'FEA(DEG)',9X,'DP',/)
                DO I=1,NP
-                  WRITE (16+CK_LUN,9197) I,X(I),Y(I),SLAM(I)*RAD2DEG,
-     &                 SFEA(I)*RAD2DEG,DP(I)
+c                  WRITE (16+CK_LUN,9197) I,X(I),Y(I),SLAM(I)*RAD2DEG,
+c     &                 SFEA(I)*RAD2DEG,DP(I)
  9197             FORMAT(1X,I6,2(1X,F14.1),1X,2(1X,E15.7),1X,F8.2)
                END DO
             ENDIF
          ELSE
-            WRITE(16+CK_LUN,9225)
+c            WRITE(16+CK_LUN,9225)
  9225       FORMAT(/,1X,'   NODE ',2X,'LAMBDA(DEG)',5X,'FEA(DEG)',11X,
      &           'XCP',14X,'YCP',11X,'DP',/)
             DO I=1,NP
-               WRITE (16+CK_LUN,9228) I,SLAM(I)*RAD2DEG,SFEA(I)*RAD2DEG,
-     &              X(I),Y(I),DP(I)
+c               WRITE (16+CK_LUN,9228) I,SLAM(I)*RAD2DEG,SFEA(I)*RAD2DEG,
+c     &              X(I),Y(I),DP(I)
  9228          FORMAT(1X,i0,2(1X,F14.8),2(1X,F15.1),1X,F10.2)
             END DO
          ENDIF
       ELSE
-         WRITE(16+CK_LUN,3511)
+c         WRITE(16+CK_LUN,3511)
  3511    FORMAT(/,5X,'NODAL COORDINATES AND BATHYMETRY',
      &        ' INFORMATION IS AVAILABLE IN THE',
      &        /,6X,'UNIT 14 INPUT FILE')
@@ -2723,16 +2721,16 @@ C...
 C...OUTPUT TO UNIT 16 THE GLOBAL CONNECTIVITY TABLE (NODE NUMBERS FOR ELEMENTS)
 C...
       IF(NABOUT.LT.1) THEN
-         WRITE(16+CK_LUN,26)
+c         WRITE(16+CK_LUN,26)
  26      FORMAT(//,5X,'GLOBAL NODE NUMBERS FOR EACH ELEMENT :')
-         WRITE(16+CK_LUN,27)
+c         WRITE(16+CK_LUN,27)
  27      FORMAT(/,9X,'ELEMENT',8X,'N1',9X,'N2',10X,'N3',/)
          DO I=1,NE
-            WRITE(16+CK_LUN,2009) I,NM(I,1),NM(I,2),NM(I,3)
+c            WRITE(16+CK_LUN,2009) I,NM(I,1),NM(I,2),NM(I,3)
  2009       FORMAT(8X,4(I7,4X))
          END DO
       ELSE
-         WRITE(16+CK_LUN,3512)
+c         WRITE(16+CK_LUN,3512)
  3512    FORMAT(/,5X,'THE GLOBAL CONNECTIVITY TABLE',
      &        ' INFORMATION IS AVAILABLE IN THE',
      &        /,6X,'UNIT 14 INPUT FILE')
@@ -2744,7 +2742,7 @@ C     jgf46.18 Made EVM and EVC nodal attributes. Their values are
 C     initialized in the call to InitNodalAttr.
       IF (IM.EQ.10) THEN
         READ(15+CK_LUN,*) ESLM,ESLC
-        WRITE(16+CK_LUN,111) ESLM,ESLC
+c        WRITE(16+CK_LUN,111) ESLM,ESLC
  111    FORMAT(5X,'EVM, EDDY VISCOSITY COEFFICIENT =',E15.8,/,
      &         5X,'EVC, EDDY DIFFUSIVITY COEFFICIENT =',E15.8,//)
       ELSE
@@ -2752,7 +2750,7 @@ C     initialized in the call to InitNodalAttr.
         IF(ESLM.LT.0.) THEN
           CSmag_Eh= .TRUE.
           ESLM=ABS(ESLM)
-          WRITE(16+CK_LUN,1111) ESLM
+c          WRITE(16+CK_LUN,1111) ESLM
  1111     FORMAT(5X,'Smagorinski lateral stress coefficient with ',
      &              'constant =',E15.8,//)
 
@@ -2763,10 +2761,10 @@ C     initialized in the call to InitNodalAttr.
               WRITE(screenunit+CK_LUN,9973)
               WRITE(screenunit+CK_LUN,1110)
               ENDIF
-            WRITE(16+CK_LUN,1112)
-            WRITE(16+CK_LUN,9972)
-            WRITE(16+CK_LUN,9973)
-            WRITE(16+CK_LUN,1110)
+c            WRITE(16+CK_LUN,1112)
+c            WRITE(16+CK_LUN,9972)
+c            WRITE(16+CK_LUN,9973)
+c            WRITE(16+CK_LUN,1110)
 1110        FORMAT(5X,'The Smagorinski lateral stress coefficient is ',
      &                'not compatible with the',//
      &             5X,'Momentum Eqn formulations or with the ',
@@ -2777,7 +2775,7 @@ C     initialized in the call to InitNodalAttr.
             STOP
           ENDIF
         ELSE
-          WRITE(16+CK_LUN,11) ESLM
+c          WRITE(16+CK_LUN,11) ESLM
  11       FORMAT(5X,'Constant lateral stress coefficient =',E15.8,//)
         ENDIF
       ENDIF
@@ -2785,8 +2783,8 @@ C...
 C...  READ CORIOLIS INFORMATION AND COMPUTE THE CORIOLIS VECTOR
 C...  OUTPUT RESULTING CORIOLIS INFORMATION
 C...
-      WRITE(16+CK_LUN,1112)
-      WRITE(16+CK_LUN,2090)
+c      WRITE(16+CK_LUN,1112)
+c      WRITE(16+CK_LUN,2090)
  2090 FORMAT(//,1X,'CORIOLIS INFORMATION ',//)
 
       READ(15+CK_LUN,*) CORI
@@ -2802,18 +2800,18 @@ C...
       ENDIF
 
       IF(NCOR.EQ.0) THEN
-         WRITE(16+CK_LUN,12) CORI
+c         WRITE(16+CK_LUN,12) CORI
  12      FORMAT(5X,'CONSTANT CORIOLIS COEFFICIENT =',E15.8,5X,'1/SEC',/)
       ENDIF
       IF(NCOR.EQ.1) THEN
-         WRITE(16+CK_LUN,3604)
+c         WRITE(16+CK_LUN,3604)
  3604    FORMAT(/,5X,'LATITUDES ARE USED TO COMPUTE VARIABLE CORIOLIS',
      &        /,7X,'AND ARE BASED ON INPUT NODAL COORDINATES',/)
          IF(NABOUT.NE.1) THEN
-            WRITE(16+CK_LUN,2092)
+c            WRITE(16+CK_LUN,2092)
  2092       FORMAT(/,10X,' NODE ',5X,'NODAL CORIOLIS CORIF',/)
             DO I=1,NP
-               WRITE(16+CK_LUN,2096) I,CORIF(I)
+c               WRITE(16+CK_LUN,2096) I,CORIF(I)
  2096          FORMAT(7X,I6,10X,E16.9)
             END DO
          ENDIF
@@ -2873,19 +2871,19 @@ C...
 C...  OUTPUT TO UNIT 16 INFORMATION ABOUT TIDAL POTENTIAL FORCING
 C...  OUTPUT WILL VARY DEPENDING ON VALUES OF NTIP,NTIF AND NCOR
 C...
-      WRITE(16+CK_LUN,1112)
-      WRITE(16+CK_LUN,2102)
+c      WRITE(16+CK_LUN,1112)
+c      WRITE(16+CK_LUN,2102)
  2102 FORMAT(//,1X,'TIDAL POTENTIAL FORCING INFORMATION ',//)
-      WRITE(16+CK_LUN,22) NTIF
+c      WRITE(16+CK_LUN,22) NTIF
  22   FORMAT(/,1X,'TIDAL POTENTIAL IS FORCED FOR ',I5,
      &     ' CONSTITUENT(S) ')
-      IF(NTIF.GT.0) WRITE(16+CK_LUN,23)
+c      IF(NTIF.GT.0) WRITE(16+CK_LUN,23)
  23   FORMAT(/,1X,'AMPLITUDE',4X,'FREQUENCY',5X,
      &     '    ETRF      ','NODAL FACTOR',2X,
      &     'EQU.ARG(DEG)',1X,'CONSTITUENT',/)
       DO I=1,NTIF
-         WRITE(16+CK_LUN,2107) TPK(I),AMIGT(I),ETRF(I),FFT(I),FACET(I),
-     &        TIPOTAG(I)
+c         WRITE(16+CK_LUN,2107) TPK(I),AMIGT(I),ETRF(I),FFT(I),FACET(I),
+c     &        TIPOTAG(I)
  2107    FORMAT(1X,F10.7,1X,F15.12,2X,F10.7,5X,F10.7,1X,F10.3,7X,A5)
       END DO
 C...
@@ -2900,7 +2898,7 @@ C...
       IF(((NTIP.EQ.0).AND.(NTIF.NE.0)).OR.((NTIP.NE.0).AND.
      &     (NTIF.EQ.0))) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,9961)
-         WRITE(16+CK_LUN,9961)
+c         WRITE(16+CK_LUN,9961)
  9961    FORMAT(////,1X,'!!!!!!!!!!  WARNING - NONFATAL ',
      &        'INPUT ERROR  !!!!!!!!!',
      &        //,1X,'YOUR SELECTION OF NTIF AND NTIP (UNIT 15 INPUT ',
@@ -2908,7 +2906,7 @@ C...
      &        /,1X,'PLEASE CHECK THESE VALUES')
          IF(NFOVER.EQ.1) THEN
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,9987)
-            WRITE(16+CK_LUN,9987)
+c            WRITE(16+CK_LUN,9987)
  9987       FORMAT(/,1X,'PROGRAM WILL OVERRIDE THE SPECIFIED ',
      &           'INPUT AND NEGLECT TIDAL POTENTIAL TERMS',
      &           /,1X,' AND/OR RESET NTIP = 0',
@@ -2916,7 +2914,7 @@ C...
             NTIP=0
          ELSE
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,9973)
-            WRITE(16+CK_LUN,9973)
+c            WRITE(16+CK_LUN,9973)
             CALL ADCIRC_Terminate()
          ENDIF
          GOTO 1893
@@ -2928,13 +2926,13 @@ C...  ACTIVATED WITH NTIP=1
 C...
       IF(NTIP.GE.1) THEN
          IF(ICS.EQ.1) THEN
-            WRITE(16+CK_LUN,3605)
+c            WRITE(16+CK_LUN,3605)
  3605      FORMAT(/,5X,'LONGITUDES AND LATITUDES ARE USED TO',
      &             ' COMPUTE THE TIDAL POTENTIAL FUNCTION',
      &             /,7X,'AND ARE BASED ON AN INVERSE CPP PROJECTION ',
      &             'OF THE INPUT COORDINATES',/)
          ELSE
-            WRITE(16+CK_LUN,2109)
+c            WRITE(16+CK_LUN,2109)
  2109       FORMAT(/,5X,'LONGITUDES AND LATITUDES ARE USED TO',
      &             ' COMPUTE THE TIDAL POTENTIAL FUNCTION',
      &             /,7X,'AND ARE BASED ON INPUT NODAL COORDINATES ',/)
@@ -2953,20 +2951,20 @@ C...
 C     Allocate arrays dimensioned by MNBFR
       call alloc_main5()
 
-      WRITE(16+CK_LUN,1112)
-      WRITE(16+CK_LUN,2106)
+c      WRITE(16+CK_LUN,1112)
+c      WRITE(16+CK_LUN,2106)
  2106 FORMAT(//,1X,'ELEVATION SPECIFIED BOUNDARY FORCING INFORMATION '
      &       ,//)
-      WRITE(16+CK_LUN,20) NBFR
+c      WRITE(16+CK_LUN,20) NBFR
  20   FORMAT(/,5X,'NUMBER OF PERIODIC, ELEVATION SPECIFIED ',
      &       'CONSTITUENTS =',I5)
-      IF(NBFR.GE.1) WRITE(16+CK_LUN,21)
+c      IF(NBFR.GE.1) WRITE(16+CK_LUN,21)
  21   FORMAT(/,7X,'CONSTITUENT #',4X,'FREQUENCY',4X,'NODAL FACTOR',
      &       3X,'EQU.ARG (DEG)',2X,'CONSTITUENT',/)
       DO I=1,NBFR
          READ(15+CK_LUN,'(A5)') BOUNTAG(I)
          READ(15+CK_LUN,*) AMIG(I),FF(I),FACE(I)
-         WRITE(16+CK_LUN,1850) I,AMIG(I),FF(I),FACE(I),BOUNTAG(I)
+c         WRITE(16+CK_LUN,1850) I,AMIG(I),FF(I),FACE(I),BOUNTAG(I)
  1850    FORMAT(12X,I2,6X,F16.12,2X,F10.7,2X,F10.3,10X,A5)
          FACE(I)=FACE(I)*DEG2RAD
          IF(AMIG(I).EQ.0.) THEN
@@ -2993,8 +2991,8 @@ C.....WILL BE ZEROED IN THE TANGENTIAL DIRECTIONS WHEN NORMAL FLOW IS AN
 C.....ESSENTIAL B.C.
 
       READ(15+CK_LUN,*) ANGINN
-      WRITE(16+CK_LUN,1112)
-      WRITE(16+CK_LUN,7654) ANGINN
+c      WRITE(16+CK_LUN,1112)
+c      WRITE(16+CK_LUN,7654) ANGINN
 7654  FORMAT(//,5X,'ANGINN = ',F8.2,' DEGREES',
      &  /,5X,'ALL FLOW BOUNDARY NODES WITH NORMAL FLOW AS AN ',
      &       'ESSENTIAL B.C. AND ',
@@ -3016,15 +3014,15 @@ C.....ESSENTIAL B.C.
       ! jgf51.21.12: Now write out log messages that include NBD (the
       ! NBD array was also computed in the call to initializeBoundaries().
       DO I=1,NBFR
-         WRITE(16+CK_LUN,29) I,BOUNTAG(I)
+c         WRITE(16+CK_LUN,29) I,BOUNTAG(I)
  29      FORMAT(////,5X,'ELEVATION BOUNDARY TIDAL FORCING FOR',
      &        ' CONSTITUENT NUMBER',i0,1X,'DESIGNATED : ',A5)
-         WRITE(16+CK_LUN,31) ELEVALPHA(i)
+c         WRITE(16+CK_LUN,31) ELEVALPHA(i)
  31      FORMAT(9X,'VERIFICATION OF CONSTITUENT : ',A10,/)
-         WRITE(16+CK_LUN,30)
+c         WRITE(16+CK_LUN,30)
  30      FORMAT(14X,'NODE',11X,'AMPL.',9X,'PHASE(DEG)',/)
          DO J=1,NETA
-            WRITE(16+CK_LUN,1870) NBD(J),EMO(I,J),EFA(I,J)
+c            WRITE(16+CK_LUN,1870) NBD(J),EMO(I,J),EFA(I,J)
  1870       FORMAT(10X,I8,4X,F14.5,4X,F12.3)
             EFA(I,J)=EFA(I,J)*DEG2RAD
          END DO
@@ -3062,26 +3060,26 @@ Ckmd  Added in a NFFR=-1 for reading information from the fort.20 files
 C     for hot starting the run, so file does not have to include all
 C     river data from time=0.
 
-         WRITE(16+CK_LUN,1112)
-         WRITE(16+CK_LUN,2200)
+c         WRITE(16+CK_LUN,1112)
+c         WRITE(16+CK_LUN,2200)
  2200   FORMAT(//,1X,'NORMAL FLOW BOUNDARY FORCING INFORMATION ',//)
          IF((NFFR.EQ.0).OR.(NFFR.EQ.-1)) THEN
-            WRITE(16+CK_LUN,2201)
+c            WRITE(16+CK_LUN,2201)
  2201      FORMAT(/,5X,'NORMAL FLOW VALUES WILL BE READ FROM UNIT 20 ',
      &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE FLOW DATA ',
      &    /,9X,'WITH THE MODEL TIME STEP.')
          ENDIF
          IF((NFFR.NE.0).AND.(NFFR.NE.-1)) THEN
-            WRITE(16+CK_LUN,2202) NFFR
+c            WRITE(16+CK_LUN,2202) NFFR
  2202      FORMAT(/,5X,'NUMBER OF PERIODIC NORMAL FLOW CONSTITUENTS =',
      &                                                               I5)
-            WRITE(16+CK_LUN,2203)
+c            WRITE(16+CK_LUN,2203)
  2203      FORMAT(/,7X,'CONSTITUENT #',4X,'FREQUENCY',4X,'NODAL FACTOR',
      &         3X,'EQU.ARG (DEG)',2X,'CONSTITUENT',/)
             DO I=1,NFFR
                READ(15+CK_LUN,'(A5)') FBOUNTAG(I)
                READ(15+CK_LUN,*) FAMIG(I),FFF(I),FFACE(I)
-               WRITE(16+CK_LUN,2204) I,FAMIG(I),FFF(I),FFACE(I),FBOUNTAG(I)
+c               WRITE(16+CK_LUN,2204) I,FAMIG(I),FFF(I),FFACE(I),FBOUNTAG(I)
  2204          FORMAT(12X,I2,6X,F16.12,2X,F10.7,2X,F10.3,10X,A5)
                FFACE(I)=FFACE(I)*DEG2RAD
                IF(FAMIG(I).EQ.0.) THEN
@@ -3094,24 +3092,24 @@ C     river data from time=0.
 C.......INPUT PERIODIC NORMAL FLOW FORCING CONDITIONS ON DESIGNATED FLOW BOUNDARIES
 C........FOR EACH OF THE FORCING FREQUENCIES FROM UNIT 15 AND OUTPUT TO UNIT 16
             DO I=1,NFFR
-               WRITE(16+CK_LUN,2206) I,FBOUNTAG(I)
+c               WRITE(16+CK_LUN,2206) I,FBOUNTAG(I)
  2206          FORMAT(////,5X,'PERIODIC NORMAL FLOW CONSTITUENT ',
      &                     'NUMBER',I4,1X,'DESIGNATED : ',A5)
                READ(15+CK_LUN,'(A10)') ALPHA
-               WRITE(16+CK_LUN,31) ALPHA
-               WRITE(16+CK_LUN,30)
+c               WRITE(16+CK_LUN,31) ALPHA
+c               WRITE(16+CK_LUN,30)
                DO J=1,NVEL
                   IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12).OR.
      &                 (LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.52)) THEN
                      READ(15+CK_LUN,*) QNAM(I,J),QNPH(I,J)
-                     WRITE(16+CK_LUN,2205) NBV(J),QNAM(I,J),QNPH(I,J)
+c                     WRITE(16+CK_LUN,2205) NBV(J),QNAM(I,J),QNPH(I,J)
  2205                FORMAT(10X,I8,4X,F14.5,4X,F12.3)
                      QNPH(I,J)=QNPH(I,J)*DEG2RAD
                   ENDIF
                   IF(LBCODEI(J).EQ.32) THEN
                      READ(15+CK_LUN,*) QNAM(I,J),QNPH(I,J),ENAM(I,J),ENPH(I,J)
-                     WRITE(16+CK_LUN,2207) NBV(J),QNAM(I,J),QNPH(I,J),
-     &                  ENAM(I,J),ENPH(I,J)
+c                     WRITE(16+CK_LUN,2207) NBV(J),QNAM(I,J),QNPH(I,J),
+c     &                  ENAM(I,J),ENPH(I,J)
  2207                FORMAT(10X,I8,4X,F14.5,4X,F12.3,4X,F14.5,4X,F12.3)
                      QNPH(I,J)=QNPH(I,J)*DEG2RAD
                      ENPH(I,J)=ENPH(I,J)*DEG2RAD
@@ -3124,8 +3122,8 @@ C...
 C...READ IN INFORMATION CONCERNING OUTPUT REQUIREMENTS FROM UNIT 15 AND
 C...OUTPUT THIS TO UNIT 16
 C...
-      WRITE(16+CK_LUN,1112)
-      WRITE(16+CK_LUN,3000)
+c      WRITE(16+CK_LUN,1112)
+c      WRITE(16+CK_LUN,3000)
 3000  FORMAT(//,1X,'OUTPUT INFORMATION WILL BE PROVIDED AS'
      &  ,' FOLLOWS :')
 
@@ -3138,7 +3136,7 @@ C....ELEVATIONS AT ELEVATION STATIONS ARE SPOOLED TO UNIT 61 EVERY NSPOOLE
 C....TIME STEPS BETWEEN TIMES TOUTSE AND TOUTFE
 
       READ(15+CK_LUN,*) NOUTE,TOUTSE,TOUTFE,NSPOOLE
-      WRITE(16+CK_LUN,3001) NOUTE
+c      WRITE(16+CK_LUN,3001) NOUTE
  3001 FORMAT(///,1X,'ELEVATION RECORDING STATION OUTPUT : ',
      &        //,5X,'NOUTE = ',I2)
 
@@ -3146,22 +3144,22 @@ C....CHECK INPUT PARAMETER NOUTE
       SELECT CASE(ABS(NOUTE))
          CASE(0)
             ! IF STATION ELEVATION OUTPUT WILL NOT BE GENERATED
-            CALL logMessage(INFO,
-     &     'NO OUTPUT WILL BE SPOOLED AT ELEVATION RECORDING STATIONS.')
+c            CALL logMessage(INFO,
+c     &     'NO OUTPUT WILL BE SPOOLED AT ELEVATION RECORDING STATIONS.')
          CASE(1)
-            CALL logMessage(INFO,'UNIT 61 FORMAT WILL BE ASCII.')
+c            CALL logMessage(INFO,'UNIT 61 FORMAT WILL BE ASCII.')
          CASE(2)
-            CALL logMessage(INFO,'UNIT 61 FORMAT WILL BE BINARY.')
+c            CALL logMessage(INFO,'UNIT 61 FORMAT WILL BE BINARY.')
          CASE(3)
             useNetCDF = .true.
             useNetCDFOutput = .true.
-            CALL logMessage(INFO,
-     &       'UNIT 61 WILL BE NETCDF CLASSIC MODEL / NETCDF3 FORMAT.')
+c            CALL logMessage(INFO,
+c     &       'UNIT 61 WILL BE NETCDF CLASSIC MODEL / NETCDF3 FORMAT.')
          CASE(5)
             useNetCDF = .true.
             useNetCDFOutput = .true.
-            CALL logMessage(INFO,
-     &  'UNIT 61 WILL BE NETCDF CLASSIC MODEL / NETCDF4 (HDF5) FORMAT.')
+c            CALL logMessage(INFO,
+c     &  'UNIT 61 WILL BE NETCDF CLASSIC MODEL / NETCDF4 (HDF5) FORMAT.')
          CASE(4,6:)
             call allMessage(ERROR,"This NOUTE value is invalid.")
             call ADCIRC_Terminate()
@@ -3194,7 +3192,7 @@ C......COMPUTE NTRSPE = THE NO. OF DATA SETS TO BE SPOOLED TO UNIT 61
 #endif
 C......WRITE TOUTSE,TOUTFE,NTCYSE,NTCYFE,NSPOOLE TO UNIT 16
 
-         WRITE(16+CK_LUN,3004) TOUTSE,NTCYSE,TOUTFE,NTCYFE,NSPOOLE
+c         WRITE(16+CK_LUN,3004) TOUTSE,NTCYSE,TOUTFE,NTCYFE,NSPOOLE
  3004    FORMAT(/,5X,'DATA RECORDS WILL START AFTER TOUTSE =',F8.3,
      &              ' DAY(S) RELATIVE',
      &         /,9X,'TO THE STARTING TIME OR',I9,
@@ -3218,19 +3216,18 @@ C       elevation station locations
          IOS_STATIONS = 0
          STAT_LUN = 151
          NSTAE = ABS(NSTAE) !SET TO POSITIVE
-         WRITE(16+CK_LUN,*) '    ELEVATION RECORDING STATIONS WILL BE READ FROM',
-     &               ' AN EXTERNAL FILE.'
-         NSTAE2 = 0
+c         WRITE(16+CK_LUN,*) '    ELEVATION RECORDING STATIONS WILL BE READ FROM',
+c     &               ' AN EXTERNAL FILE.'
          OPEN(unit=stat_lun+CK_LUN,file=TRIM(INPUTDIR)//'/'//'elev_stat.151',
      &        status='old',err=7690,iostat=ios_stations)
          READ(151+CK_LUN,*) NSTAE2
          IF (ABS(NSTAE2).NE. ABS(NSTAE)) THEN
             NSTAE = ABS(NSTAE2)  !RESET THE VALUE TO WHAT'S IN THE FILE
          ENDIF
-         WRITE(16+CK_LUN,3007) NSTAE
+c         WRITE(16+CK_LUN,3007) NSTAE
 7690     IF (IOS_STATIONS .NE. 0) THEN
-            WRITE(16+CK_LUN,*) "ERROR IN READING ELEVATION STATION FILE: elev_stat.151"
-            WRITE(16+CK_LUN,*) " Stopping Execution"
+c            WRITE(16+CK_LUN,*) "ERROR IN READING ELEVATION STATION FILE: elev_stat.151"
+c            WRITE(16+CK_LUN,*) " Stopping Execution"
             call allMessage(ERROR,"Problem Reading Elevation Station File.")
             call ADCIRC_Terminate()
 #ifdef CMPI
@@ -3239,9 +3236,9 @@ C       elevation station locations
             stop  ! there is a stop here
          ENDIF                  
       ELSE         
-         WRITE(16+CK_LUN,3007) NSTAE
+c         WRITE(16+CK_LUN,3007) NSTAE
          IF (NSTAE.NE.0) THEN
-            WRITE(16+CK_LUN,*) "ELEVATION STATION LOCATIONS WILL BE READ FROM FORT.15"
+c            WRITE(16+CK_LUN,*) "ELEVATION STATION LOCATIONS WILL BE READ FROM FORT.15"
          ENDIF
       ENDIF
  3007 FORMAT(///,5X,'NUMBER OF INPUT ELEVATION RECORDING STATIONS = ',
@@ -3249,9 +3246,9 @@ C       elevation station locations
 C
 C
       IF(NSTAE.GT.0) THEN
-         IF(ICS.EQ.1) WRITE(16+CK_LUN,3008)
+c         IF(ICS.EQ.1) WRITE(16+CK_LUN,3008)
  3008     FORMAT(/,7X,'STATION #   ELEMENT',9X,'X',13X,'Y',/)
-         IF(ICS.EQ.2) WRITE(16+CK_LUN,3009)
+c         IF(ICS.EQ.2) WRITE(16+CK_LUN,3009)
  3009      FORMAT(/,5X,'STATION   ELEMENT',3X,'LAMBDA(DEG)',
      &           4X,'FEA(DEG)',10X,'XCP',12X,'YCP',/)
          MNSTAE = NSTAE
@@ -3280,7 +3277,7 @@ C....VELOCITY STATIONS ARE SPOOLED TO UNIT 62 EVERY NSPOOLV TIME STEPS BETWEEN
 C....TIMES TOUTSV AND TOUTFV; IF ABS(NOUTV)=2, OUTPUT WILL BE BINARY
 
       READ(15+CK_LUN,*) NOUTV,TOUTSV,TOUTFV,NSPOOLV
-      WRITE(16+CK_LUN,3101) NOUTV
+c      WRITE(16+CK_LUN,3101) NOUTV
  3101 FORMAT(////,1X,'VELOCITY RECORDING STATION OUTPUT : ',
      &         //,5X,'NOUTV = ',I2)
 
@@ -3288,22 +3285,22 @@ C....CHECK INPUT PARAMETER NOUTV
       SELECT CASE(ABS(NOUTV))
          CASE(0)
             ! IF STATION OUTPUT WILL NOT BE GENERATED
-            CALL logMessage(INFO,
-     &      'NO OUTPUT WILL BE SPOOLED AT VELOCITY RECORDING STATIONS')
+c            CALL logMessage(INFO,
+c     &      'NO OUTPUT WILL BE SPOOLED AT VELOCITY RECORDING STATIONS')
          CASE(1)
-            CALL logMessage(INFO,'UNIT 62 FORMAT WILL BE ASCII.')
+c            CALL logMessage(INFO,'UNIT 62 FORMAT WILL BE ASCII.')
          CASE(2)
-            CALL logMessage(INFO,'UNIT 62 FORMAT WILL BE BINARY.')
+c            CALL logMessage(INFO,'UNIT 62 FORMAT WILL BE BINARY.')
          CASE(3)
             useNetCDF = .true.
             useNetCDFOutput = .true.
-            CALL logMessage(INFO,
-     &       'UNIT 62 WILL BE NETCDF CLASSIC MODEL / NETCDF3 FORMAT.')
+c            CALL logMessage(INFO,
+c     &       'UNIT 62 WILL BE NETCDF CLASSIC MODEL / NETCDF3 FORMAT.')
          CASE(5)
             useNetCDF = .true.
             useNetCDFOutput = .true.
-            CALL logMessage(INFO,
-     &  'UNIT 62 WILL BE NETCDF CLASSIC MODEL / NETCDF4 (HDF5) FORMAT.')
+c            CALL logMessage(INFO,
+c     &  'UNIT 62 WILL BE NETCDF CLASSIC MODEL / NETCDF4 (HDF5) FORMAT.')
          CASE(4,6:)
             call allMessage(ERROR,"This NOUTV value is invalid.")
             call ADCIRC_Terminate()
@@ -3336,7 +3333,7 @@ C......CALCULATE NTRSPV = THE NO. OF DATA SETS TO BE SPOOLED TO UNIT 62
 
 C......WRITE NOUTV,TOUTSV,TOUTFV,NTCYSV,NTCYFV,NSPOOLV TO UNIT 16
 
-         WRITE(16+CK_LUN,3104) TOUTSV,NTCYSV,TOUTFV,NTCYFV,NSPOOLV
+c         WRITE(16+CK_LUN,3104) TOUTSV,NTCYSV,TOUTFV,NTCYFV,NSPOOLV
  3104    FORMAT(/,5X,'DATA RECORDS WILL START AFTER TOUTSV =',F8.3,
      &              ' DAY(S) RELATIVE',/,9X,'TO THE STARTING TIME OR',
      &           I9,' TIME STEPS INTO THE SIMULATION',
@@ -3357,19 +3354,18 @@ C....RECORDING STATIONS
          ios_stations = 0
          stat_lun = 151
          NSTAV = ABS(NSTAV) !SET TO POSITIVE
-         WRITE(16+CK_LUN,*) '   VELOCITY RECORDING STATIONS WILL BE READ FROM',
-     &               ' AN EXTERNAL FILE.'
-         NSTAV2 = 0
+c         WRITE(16+CK_LUN,*) '   VELOCITY RECORDING STATIONS WILL BE READ FROM',
+c     &               ' AN EXTERNAL FILE.'
          OPEN(unit=stat_lun+CK_LUN,file=TRIM(INPUTDIR)//'/'//'vel_stat.151',
      &        status='old', err=7691,iostat=ios_stations)
          READ(151+CK_LUN,*) NSTAV2
          IF (ABS(NSTAV2).NE. ABS(NSTAV)) THEN
             NSTAV = ABS(NSTAV2)  !RESET THE VALUE TO WHAT'S IN THE FILE
          ENDIF
-         WRITE(16+CK_LUN,3107) NSTAV
+c         WRITE(16+CK_LUN,3107) NSTAV
 7691     IF (IOS_STATIONS .NE. 0) THEN
-            WRITE(16+CK_LUN,*) "ERROR IN READING VELOCITY STATION FILE: vel_stat.151"
-            WRITE(16+CK_LUN,*) " STOPPING EXECUTION"
+c            WRITE(16+CK_LUN,*) "ERROR IN READING VELOCITY STATION FILE: vel_stat.151"
+c            WRITE(16+CK_LUN,*) " STOPPING EXECUTION"
             call allMessage(ERROR,"Problem Reading Velocity Station File.")
             call ADCIRC_Terminate()
 #ifdef CMPI
@@ -3378,18 +3374,18 @@ C....RECORDING STATIONS
             stop  ! there is a stop here
          ENDIF                  
       ELSE         
-         WRITE(16+CK_LUN,3107) NSTAV
+c         WRITE(16+CK_LUN,3107) NSTAV
          IF (NSTAV.NE.0) THEN
-            WRITE(16+CK_LUN,*) "VELOCITY STATION LOCATIONS WILL BE READ FROM FORT.15"
+c            WRITE(16+CK_LUN,*) "VELOCITY STATION LOCATIONS WILL BE READ FROM FORT.15"
          ENDIF
       ENDIF
  3107 FORMAT(////,5X,'NUMBER OF INPUT VELOCITY RECORDING STATIONS = ',
      &            I5)
 
       IF(NSTAV.GT.0) THEN
-         IF(ICS.EQ.1) WRITE(16+CK_LUN,3108)
+c         IF(ICS.EQ.1) WRITE(16+CK_LUN,3108)
  3108     FORMAT(/,7X,'STATION #   ELEMENT',9X,'X',13X,'Y',/)
-         IF(ICS.EQ.2) WRITE(16+CK_LUN,3109)
+c         IF(ICS.EQ.2) WRITE(16+CK_LUN,3109)
  3109     FORMAT(/,5X,'STATION   ELEMENT',3X,'LAMBDA(DEG)',
      &             4X,'FEA(DEG)',10X,'XCP',12X,'YCP',/)
          MNSTAV = NSTAV
@@ -3421,7 +3417,7 @@ C...  CONCENTRATIONS ARE SPOOLED TO UNIT 81 EVERY NSPOOLC TIME STEPS
 C...  BETWEEN TIMES TOUTSC AND TOUTFC; IF ABS(NOUTC)=2, OUTPUT WILL BE BINARY
 
          READ(15+CK_LUN,*) NOUTC,TOUTSC,TOUTFC,NSPOOLC
-         WRITE(16+CK_LUN,3201) NOUTC
+c         WRITE(16+CK_LUN,3201) NOUTC
  3201    FORMAT(///,1X,'CONCENTRATION RECORDING STATION OUTPUT : ',
      &          //,5X,'NOUTC = ',I2)
 
@@ -3429,22 +3425,22 @@ C...     CHECK INPUT PARAMETER NOUTC
          SELECT CASE(ABS(NOUTC))
             CASE(0)
                ! IF STATION OUTPUT WILL NOT BE GENERATED
-               CALL logMessage(INFO,
-     &         'NO OUTPUT WILL BE SPOOLED AT CONC. RECORDING STATIONS')
+c               CALL logMessage(INFO,
+c     &         'NO OUTPUT WILL BE SPOOLED AT CONC. RECORDING STATIONS')
             CASE(1)
-               CALL logMessage(INFO,'UNIT 81 FORMAT WILL BE ASCII.')
+c               CALL logMessage(INFO,'UNIT 81 FORMAT WILL BE ASCII.')
             CASE(2)
-               CALL logMessage(INFO,'UNIT 81 FORMAT WILL BE BINARY.')
+c               CALL logMessage(INFO,'UNIT 81 FORMAT WILL BE BINARY.')
             CASE(3)
                useNetCDF = .true.
                useNetCDFOutput = .true.
-               CALL logMessage(INFO,
-     &       'UNIT 81 WILL BE NETCDF CLASSIC MODEL / NETCDF3 FORMAT.')
+c               CALL logMessage(INFO,
+c     &       'UNIT 81 WILL BE NETCDF CLASSIC MODEL / NETCDF3 FORMAT.')
             CASE(5)
                useNetCDF = .true.
                useNetCDFOutput = .true.
-               CALL logMessage(INFO,
-     &  'UNIT 81 WILL BE NETCDF CLASSIC MODEL / NETCDF4 (HDF5) FORMAT.')
+c               CALL logMessage(INFO,
+c     &  'UNIT 81 WILL BE NETCDF CLASSIC MODEL / NETCDF4 (HDF5) FORMAT.')
             CASE(4,6:)
                call allMessage(ERROR,"This NOUTC value is invalid.")
                call ADCIRC_Terminate()
@@ -3481,7 +3477,7 @@ C...  COMPUTE NTRSPC = THE NO. OF DATA SETS TO BE SPOOLED TO UNIT 81
 
 C...  WRITE TOUTSC,TOUTFC,NTCYSC,NTCYFC,NSPOOLC TO UNIT 16
 
-            WRITE(16+CK_LUN,3204) TOUTSC,NTCYSC,TOUTFC,NTCYFC,NSPOOLC
+c            WRITE(16+CK_LUN,3204) TOUTSC,NTCYSC,TOUTFC,NTCYFC,NSPOOLC
  3204       FORMAT(/,5X,'DATA RECORDS WILL START AFTER TOUTSC =',F8.3,
      &                ' DAY(S) RELATIVE',/,9X,'TO THE STARTING TIME OR',
      &             I9,' TIME STEPS INTO THE SIMULATION',
@@ -3502,19 +3498,18 @@ C...  RECORDING STATIONS
             IOS_STATIONS = 0
             STAT_LUN = 151
             NSTAC = ABS(NSTAC) !SET TO POSITIVE
-            WRITE(16+CK_LUN,*) 'CONCENTRATION RECORDING STATIONS WILL BE READ FROM',
-     &               ' AN EXTERNAL FILE.'
-            NSTAC2 = 0
+c            WRITE(16+CK_LUN,*) 'CONCENTRATION RECORDING STATIONS WILL BE READ FROM',
+c     &               ' AN EXTERNAL FILE.'
             OPEN(unit=stat_lun+CK_LUN,file=TRIM(INPUTDIR)//'/'//'conc_stat.151',
      &           status='old',err=7692,iostat=ios_stations)
             READ(151+CK_LUN,*) NSTAC2
             IF (ABS(NSTAC2).NE. ABS(NSTAC)) THEN
                NSTAC = ABS(NSTAC2)  !RESET THE VALUE TO WHAT'S IN THE FILE
             ENDIF
-            WRITE(16+CK_LUN,3207) NSTAC
+c            WRITE(16+CK_LUN,3207) NSTAC
 7692        IF (IOS_STATIONS .NE. 0) THEN
-               WRITE(16+CK_LUN,*) "ERROR IN READING CONCENTRATION STATION FILE: conc_stat.151"
-               WRITE(16+CK_LUN,*) " Stopping Execution"
+c               WRITE(16+CK_LUN,*) "ERROR IN READING CONCENTRATION STATION FILE: conc_stat.151"
+c               WRITE(16+CK_LUN,*) " Stopping Execution"
                call allMessage(ERROR,"Problem Reading Concentration Station File.")
                call ADCIRC_Terminate()
 #ifdef CMPI
@@ -3523,18 +3518,18 @@ C...  RECORDING STATIONS
                stop  ! there is a stop here
             ENDIF                  
          ELSE         
-            WRITE(16+CK_LUN,3207) NSTAC
+c            WRITE(16+CK_LUN,3207) NSTAC
             IF (NSTAC.NE.0) THEN
-               WRITE(16+CK_LUN,*) "CONC. STATION LOCATIONS WILL BE READ FROM FORT.15"
+c               WRITE(16+CK_LUN,*) "CONC. STATION LOCATIONS WILL BE READ FROM FORT.15"
             ENDIF
          ENDIF
  3207    FORMAT(///,5X,'NUMBER OF INPUT CONCENTRATION RECORDING ',
      &        'STATIONS = ',I5)
 
          IF(NSTAC.GT.0) THEN
-            IF(ICS.EQ.1) WRITE(16+CK_LUN,3208)
+c            IF(ICS.EQ.1) WRITE(16+CK_LUN,3208)
  3208       FORMAT(/,7X,'STATION #   ELEMENT',9X,'X',13X,'Y',/)
-            IF(ICS.EQ.2) WRITE(16+CK_LUN,3209)
+c            IF(ICS.EQ.2) WRITE(16+CK_LUN,3209)
  3209       FORMAT(/,5X,'STATION   ELEMENT',3X,'LAMBDA(DEG)',
      &           4X,'FEA(DEG)',10X,'XCP',12X,'YCP',/)
             MNSTAC = NSTAC
@@ -3568,7 +3563,7 @@ C...  MET DATA ARE SPOOLED TO UNITS 71&72 EVERY NSPOOLM TIME STEPS
 C...  BETWEEN TIMES TOUTSM AND TOUTFM; IF ABS(NOUTM)=2, OUTPUT WILL BE BINARY
 
          READ(15+CK_LUN,*) NOUTM,TOUTSM,TOUTFM,NSPOOLM
-         WRITE(16+CK_LUN,3211) NOUTM
+c         WRITE(16+CK_LUN,3211) NOUTM
  3211    FORMAT(///,1X,'METEOROLOGICAL RECORDING STATION OUTPUT : ',
      &        //,5X,'NOUTM = ',I2)
 
@@ -3576,26 +3571,26 @@ C...     CHECK INPUT PARAMETER NOUTM
          SELECT CASE(ABS(NOUTM))
             CASE(0)
                ! IF STATION OUTPUT WILL NOT BE GENERATED
-               CALL logMessage(INFO,
-     &         'NO OUTPUT WILL BE SPOOLED AT MET. RECORDING STATIONS')
+c               CALL logMessage(INFO,
+c     &         'NO OUTPUT WILL BE SPOOLED AT MET. RECORDING STATIONS')
             CASE(1)
-               CALL logMessage(INFO,
-     &         'UNIT 71 AND 72 FORMATS WILL BE ASCII.')
+c               CALL logMessage(INFO,
+c     &         'UNIT 71 AND 72 FORMATS WILL BE ASCII.')
             CASE(2)
-               CALL logMessage(INFO,
-     &          'UNIT 71 AND 72 FORMATS WILL BE BINARY.')
+c               CALL logMessage(INFO,
+c     &          'UNIT 71 AND 72 FORMATS WILL BE BINARY.')
             CASE(3)
                useNetCDF = .true.
                useNetCDFOutput = .true.
-               CALL logMessage(INFO,
-     &          'UNIT 71 AND 72 FORMATS WILL BE NETCDF CLASSIC MODEL'
-     &           //' / NETCDF3 FORMAT.')
+c               CALL logMessage(INFO,
+c     &          'UNIT 71 AND 72 FORMATS WILL BE NETCDF CLASSIC MODEL'
+c     &           //' / NETCDF3 FORMAT.')
             CASE(5)
                useNetCDF = .true.
                useNetCDFOutput = .true.
-               CALL logMessage(INFO,
-     &         'UNIT 71 AND 72 FORMATS WILL BE NETCDF CLASSIC MODEL'
-     &         //' / NETCDF4 (HDF5) FORMAT.')
+c               CALL logMessage(INFO,
+c     &         'UNIT 71 AND 72 FORMATS WILL BE NETCDF CLASSIC MODEL'
+c     &         //' / NETCDF4 (HDF5) FORMAT.')
             CASE(4,6:)
                call allMessage(ERROR,"This NOUTM value is invalid.")
                call ADCIRC_Terminate()
@@ -3632,7 +3627,7 @@ C...  COMPUTE NTRSPM = THE NO. OF DATA SETS TO BE SPOOLED TO UNITS 71&72
 
 C...  WRITE TOUTSM,TOUTFM,NTCYSM,NTCYFM,NSPOOLM TO UNIT 16
 
-            WRITE(16+CK_LUN,3214) TOUTSM,NTCYSM,TOUTFM,NTCYFM,NSPOOLM
+c            WRITE(16+CK_LUN,3214) TOUTSM,NTCYSM,TOUTFM,NTCYFM,NSPOOLM
  3214       FORMAT(/,5X,'DATA RECORDS WILL START AFTER TOUTSM =',F8.3,
      &           ' DAY(S) RELATIVE',/,9X,'TO THE STARTING TIME OR',
      &           I9,' TIME STEPS INTO THE SIMULATION',
@@ -3653,19 +3648,18 @@ C...  RECORDING STATIONS
             IOS_STATIONS = 0
             STAT_LUN = 151
             NSTAM = ABS(NSTAM) !SET TO POSITIVE
-            WRITE(16+CK_LUN,*) 'MET RECORDING STATIONS WILL BE READ FROM',
-     &               ' AN EXTERNAL FILE.'
-            NSTAM2 = 0
+c            WRITE(16+CK_LUN,*) 'MET RECORDING STATIONS WILL BE READ FROM',
+c     &               ' AN EXTERNAL FILE.'
             OPEN(unit=stat_lun+CK_LUN,file=TRIM(INPUTDIR)//'/'//'met_stat.151',
      &       status='old',err=7693,iostat=ios_stations)
             READ(151+CK_LUN,*) NSTAM2
             IF (ABS(NSTAM2).NE. ABS(NSTAM)) THEN
                NSTAM = ABS(NSTAM2)  !RESET THE VALUE TO WHAT'S IN THE FILE
             ENDIF
-            WRITE(16+CK_LUN,3217) NSTAM
+c            WRITE(16+CK_LUN,3217) NSTAM
 7693        IF (IOS_STATIONS .NE. 0) THEN
-               WRITE(16+CK_LUN,*) "ERROR IN READING MET STATION FILE: elev_stat.151"
-               WRITE(16+CK_LUN,*) " Stopping Execution"
+c               WRITE(16+CK_LUN,*) "ERROR IN READING MET STATION FILE: elev_stat.151"
+c               WRITE(16+CK_LUN,*) " Stopping Execution"
                call allMessage(ERROR,"Problem Reading Met Station File.")
                call ADCIRC_Terminate()
 #ifdef CMPI
@@ -3674,18 +3668,18 @@ C...  RECORDING STATIONS
                stop  ! there is a stop here
             ENDIF                  
          ELSE         
-            WRITE(16+CK_LUN,3217) NSTAM
+c            WRITE(16+CK_LUN,3217) NSTAM
             IF (NSTAM.NE.0) THEN
-               WRITE(16+CK_LUN,*) "MET STATION LOCATIONS WILL BE READ FROM FORT.15"
+c               WRITE(16+CK_LUN,*) "MET STATION LOCATIONS WILL BE READ FROM FORT.15"
             ENDIF
          ENDIF
  3217    FORMAT(///,5X,'NUMBER OF INPUT METEOROLOGICAL RECORDING ',
      &        'STATIONS = ',I5)
 
          IF(NSTAM.GT.0) THEN
-            IF(ICS.EQ.1) WRITE(16+CK_LUN,3218)
+c            IF(ICS.EQ.1) WRITE(16+CK_LUN,3218)
  3218       FORMAT(/,7X,'STATION #   ELEMENT',9X,'X',13X,'Y',/)
-            IF(ICS.EQ.2) WRITE(16+CK_LUN,3219)
+c            IF(ICS.EQ.2) WRITE(16+CK_LUN,3219)
  3219       FORMAT(/,5X,'STATION   ELEMENT',3X,'LAMBDA(DEG)',
      &           4X,'FEA(DEG)',10X,'XCP',12X,'YCP',/)
             MNSTAM = NSTAM
@@ -3714,7 +3708,7 @@ C...  OUTPUT IS SPOOLED TO UNIT 63 EVERY NSPOOLGE TIME STEPS BETWEEN
 C...  TIMES TOUTSGE AND TOUTFGE; IF ABS(NOUTGE)=2, OUTPUT WILL BE BINARY
 
       READ(15+CK_LUN,*) NOUTGE,TOUTSGE,TOUTFGE,NSPOOLGE
-      WRITE(16+CK_LUN,3301) NOUTGE
+c      WRITE(16+CK_LUN,3301) NOUTGE
  3301 FORMAT(////,1X,'GLOBAL NODAL ELEVATION INFORMATION OUTPUT: ',
      &     //,5X,'NOUTGE = ',I2)
 
@@ -3722,30 +3716,30 @@ C...  CHECK INPUT PARAMETER NOUTGE
       SELECT CASE(ABS(NOUTGE))
          CASE(0)
             ! IF STATION OUTPUT WILL NOT BE GENERATED
-            CALL logMessage(INFO,
-     &         'NO GLOBAL ELEVATION OUTPUT WILL BE SPOOLED.')
+c            CALL logMessage(INFO,
+c     &         'NO GLOBAL ELEVATION OUTPUT WILL BE SPOOLED.')
          CASE(1)
-            CALL logMessage(INFO,'UNIT 63 FORMAT WILL BE ASCII.')
+c            CALL logMessage(INFO,'UNIT 63 FORMAT WILL BE ASCII.')
          CASE(2)
-            CALL logMessage(INFO,'UNIT 63 FORMAT WILL BE BINARY.')
+c            CALL logMessage(INFO,'UNIT 63 FORMAT WILL BE BINARY.')
          CASE(3)
             useNetCDF = .true.
             useNetCDFOutput = .true.
-            CALL logMessage(INFO,
-     &          'UNIT 63 FORMAT WILL BE NETCDF CLASSIC MODEL'
-     &           //' / NETCDF3 FORMAT.')
+c            CALL logMessage(INFO,
+c     &          'UNIT 63 FORMAT WILL BE NETCDF CLASSIC MODEL'
+c     &           //' / NETCDF3 FORMAT.')
          CASE(4)
-            CALL logMessage(INFO,
-     &       'UNIT 63 FORMAT WILL BE COMPACT ASCII.')
+c            CALL logMessage(INFO,
+c     &       'UNIT 63 FORMAT WILL BE COMPACT ASCII.')
          CASE(5)
             useNetCDF = .true.
             useNetCDFOutput = .true.
-            CALL logMessage(INFO,
-     &         'UNIT 63 FORMAT WILL BE NETCDF CLASSIC MODEL'
-     &         //' / NETCDF4 (HDF5) FORMAT.')
+c            CALL logMessage(INFO,
+c     &         'UNIT 63 FORMAT WILL BE NETCDF CLASSIC MODEL'
+c     &         //' / NETCDF4 (HDF5) FORMAT.')
          CASE(7)
             useXDMF = .true.
-            call logMessage(INFO,'UNIT 63 FORMAT WILL BE XDMF.')              
+c            call logMessage(INFO,'UNIT 63 FORMAT WILL BE XDMF.')              
          CASE(6,8:)
             call allMessage(ERROR,"This NOUTGE value is invalid.")
             call ADCIRC_Terminate()
@@ -3781,7 +3775,7 @@ C...  CALCULATE NDSETSE = THE # OF DATA SETS TO BE SPOOLED TO UNIT 63
 
 C...  WRITE NOUTGE,TOUTSGE,TOUTFGE,NTCYSGE,NTCYFGE,NSPOOLGE TO UNIT 16
 
-         WRITE(16+CK_LUN,3304) TOUTSGE,NTCYSGE,TOUTFGE,NTCYFGE,NSPOOLGE
+c         WRITE(16+CK_LUN,3304) TOUTSGE,NTCYSGE,TOUTFGE,NTCYFGE,NSPOOLGE
  3304    FORMAT(/,5X,'DATA RECORDS WILL START AFTER TOUTSGE =',F8.3,
      &              ' DAY(S) RELATIVE',/,9X,'TO THE STARTING TIME OR',
      &           I9,' TIME STEPS INTO THE SIMULATION',
@@ -3800,7 +3794,7 @@ C...  OUTPUT IS SPOOLED TO UNIT 64 EVERY NSPOOLGV TIME STEPS BETWEEN
 C...  TIMES TOUTSGV AND TOUTFGV; IF ABS(NOUTGV)=2, OUTPUT WILL BE BINARY
 
       READ(15+CK_LUN,*) NOUTGV,TOUTSGV,TOUTFGV,NSPOOLGV
-      WRITE(16+CK_LUN,3351) NOUTGV
+c      WRITE(16+CK_LUN,3351) NOUTGV
  3351 FORMAT(////,1X,'GLOBAL NODAL VELOCITY INFORMATION OUTPUT : ',
      &     //,5X,'NOUTGV = ',I2)
 
@@ -3808,30 +3802,30 @@ C...  CHECK INPUT PARAMETER NOUTGV
       SELECT CASE(ABS(NOUTGV))
          CASE(0)
             ! IF STATION OUTPUT WILL NOT BE GENERATED
-            CALL logMessage(INFO,
-     &         'NO GLOBAL VELOCITY OUTPUT WILL BE SPOOLED.')
+c            CALL logMessage(INFO,
+c     &         'NO GLOBAL VELOCITY OUTPUT WILL BE SPOOLED.')
          CASE(1)
-            CALL logMessage(INFO,'UNIT 64 FORMAT WILL BE ASCII.')
+c            CALL logMessage(INFO,'UNIT 64 FORMAT WILL BE ASCII.')
          CASE(2)
-            CALL logMessage(INFO,'UNIT 64 FORMAT WILL BE BINARY.')
+c            CALL logMessage(INFO,'UNIT 64 FORMAT WILL BE BINARY.')
          CASE(3)
             useNetCDF = .true.
             useNetCDFOutput = .true.
-            CALL logMessage(INFO,
-     &          'UNIT 64 FORMAT WILL BE NETCDF CLASSIC MODEL'
-     &           //' / NETCDF3 FORMAT.')
+c            CALL logMessage(INFO,
+c     &          'UNIT 64 FORMAT WILL BE NETCDF CLASSIC MODEL'
+c     &           //' / NETCDF3 FORMAT.')
          CASE(4)
-            CALL logMessage(INFO,
-     &       'UNIT 64 FORMAT WILL BE COMPACT ASCII.')
+c            CALL logMessage(INFO,
+c     &       'UNIT 64 FORMAT WILL BE COMPACT ASCII.')
          CASE(5)
             useNetCDF = .true.
             useNetCDFOutput = .true.
-            CALL logMessage(INFO,
-     &         'UNIT 64 FORMAT WILL BE NETCDF CLASSIC MODEL'
-     &         //' / NETCDF4 (HDF5) FORMAT.')
+c            CALL logMessage(INFO,
+c     &         'UNIT 64 FORMAT WILL BE NETCDF CLASSIC MODEL'
+c     &         //' / NETCDF4 (HDF5) FORMAT.')
          CASE(7)
             useXDMF = .true.
-            CALL logMessage(INFO,'UNIT 64 FORMAT WILL BE XDMF.')
+c            CALL logMessage(INFO,'UNIT 64 FORMAT WILL BE XDMF.')
          CASE(6,8:)
             call allMessage(ERROR,"This NOUTGV value is invalid.")
             call ADCIRC_Terminate()
@@ -3866,7 +3860,7 @@ C...  CALCULATE NDSETSV = THE # OF DATA SETS TO BE SPOOLED TO UNIT 64
 #endif
 C...  WRITE NOUTGV,TOUTSGV,TOUTFGV,NTCYSGV,NTCYFGV,NSPOOLGV TO UNIT 16
 
-          WRITE(16+CK_LUN,3354) TOUTSGV,NTCYSGV,TOUTFGV,NTCYFGV,NSPOOLGV
+c          WRITE(16+CK_LUN,3354) TOUTSGV,NTCYSGV,TOUTFGV,NTCYFGV,NSPOOLGV
  3354     FORMAT(/,5X,'DATA RECORDS WILL START AFTER TOUTSGV =',F8.3,
      &         ' DAY(S) RELATIVE',/,9X,'TO THE STARTING TIME OR',
      &         I9,' TIME STEPS INTO THE SIMULATION',
@@ -3921,7 +3915,7 @@ C...  STEPS BETWEEN TIMES TOUTSGC AND TOUTFGC; IF ABS(NOUTGC)=2, OUTPUT
 C...  WILL BE BINARY
 
          READ(15+CK_LUN,*) NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC
-         WRITE(16+CK_LUN,3401) NOUTGC
+c         WRITE(16+CK_LUN,3401) NOUTGC
  3401    FORMAT(////,1X,'GLOBAL NODAL CONCENTRATION INFORMATION OUTPUT:',
      &         //,5X,'NOUTGC = ',I2)
 
@@ -3929,12 +3923,12 @@ C...  CHECK INPUT PARAMETER NOUTGC
          SELECT CASE(ABS(NOUTGC))
             CASE(0)
                ! IF STATION OUTPUT WILL NOT BE GENERATED
-               CALL logMessage(INFO,
-     &         'NO GLOBAL CONCENTRATION OUTPUT WILL BE SPOOLED.')
+c               CALL logMessage(INFO,
+c     &         'NO GLOBAL CONCENTRATION OUTPUT WILL BE SPOOLED.')
             CASE(1)
-               CALL logMessage(INFO,'UNIT 83 FORMAT WILL BE ASCII.')
+c               CALL logMessage(INFO,'UNIT 83 FORMAT WILL BE ASCII.')
             CASE(2)
-               CALL logMessage(INFO,'UNIT 83 FORMAT WILL BE BINARY.')
+c               CALL logMessage(INFO,'UNIT 83 FORMAT WILL BE BINARY.')
             CASE(3:)
                call allMessage(ERROR,"This NOUTGV value is invalid.")
                call ADCIRC_Terminate()
@@ -3970,7 +3964,7 @@ C...  CALCULATE NDSETSC = THE # OF DATA SETS TO BE SPOOLED TO UNIT 73
 
 C...  WRITE NOUTGC,TOUTSGC,TOUTFGC,NTCYSGC,NTCYFGC,NSPOOLGC TO UNIT 16
 
-            WRITE(16+CK_LUN,3404) TOUTSGC,NTCYSGC,TOUTFGC,NTCYFGC,NSPOOLGC
+c            WRITE(16+CK_LUN,3404) TOUTSGC,NTCYSGC,TOUTFGC,NTCYFGC,NSPOOLGC
  3404       FORMAT(/,5X,'DATA RECORDS WILL START AFTER TOUTSGC =',F8.3,
      &                ' DAY(S) RELATIVE',/,9X,'TO THE STARTING TIME OR',
      &             I9,' TIME STEPS INTO THE SIMULATION',
@@ -3994,39 +3988,39 @@ C...  BETWEEN TIMES TOUTSGW AND TOUTFGW; IF ABS(NOUTGW)=2, OUTPUT WILL
 C...  BE BINARY
 
          READ(15+CK_LUN,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
-         WRITE(16+CK_LUN,3451) NOUTGW
+c         WRITE(16+CK_LUN,3451) NOUTGW
  3451    FORMAT(////,1X,'GLOBAL WIND STRESS INFORMATION OUTPUT : ',
      &           //,5X,'NOUTGW = ',I2)
 
 C...  CHECK INPUT PARAMETER NOUTGW
          SELECT CASE(ABS(NOUTGW))
             CASE(0)
-               CALL logMessage(INFO,
-     &         'NO GLOBAL METEOROLOGICAL OUTPUT WILL BE SPOOLED.')
+c               CALL logMessage(INFO,
+c     &         'NO GLOBAL METEOROLOGICAL OUTPUT WILL BE SPOOLED.')
             CASE(1)
-               CALL logMessage(INFO,
-     &         'UNIT 73 AND 74 FORMATS WILL BE ASCII.')
+c               CALL logMessage(INFO,
+c     &         'UNIT 73 AND 74 FORMATS WILL BE ASCII.')
             CASE(2)
-               CALL logMessage(INFO,
-     &          'UNIT 73 AND 74 FORMATS WILL BE BINARY.')
+c               CALL logMessage(INFO,
+c     &          'UNIT 73 AND 74 FORMATS WILL BE BINARY.')
             CASE(3)
                useNetCDF = .true.
                useNetCDFOutput = .true.
-               CALL logMessage(INFO,
-     &          'UNIT 73 AND 74 FORMATS WILL BE NETCDF CLASSIC MODEL'
-     &           //' / NETCDF3 FORMAT.')
+c               CALL logMessage(INFO,
+c     &          'UNIT 73 AND 74 FORMATS WILL BE NETCDF CLASSIC MODEL'
+c     &           //' / NETCDF3 FORMAT.')
             CASE(4)
-               CALL logMessage(INFO,
-     &          'UNIT 73 AND 74 FORMATS WILL BE COMPACT ASCII.')
+c               CALL logMessage(INFO,
+c     &          'UNIT 73 AND 74 FORMATS WILL BE COMPACT ASCII.')
             CASE(5)
                useNetCDF = .true.
                useNetCDFOutput = .true.
-               CALL logMessage(INFO,
-     &         'UNIT 73 AND 74 FORMATS WILL BE NETCDF CLASSIC MODEL'
-     &         //' / NETCDF4 (HDF5) FORMAT.')
+c               CALL logMessage(INFO,
+c     &         'UNIT 73 AND 74 FORMATS WILL BE NETCDF CLASSIC MODEL'
+c     &         //' / NETCDF4 (HDF5) FORMAT.')
             CASE(7)
-               CALL logMessage(INFO,
-     &            'UNIT 73 AND 74 FORMATS WILL BE XDMF.')
+c               CALL logMessage(INFO,
+c     &            'UNIT 73 AND 74 FORMATS WILL BE XDMF.')
             CASE(6,8:)
                call allMessage(ERROR,"This NOUTGW value is invalid.")
                call ADCIRC_Terminate()
@@ -4061,7 +4055,7 @@ C...  CALCULATE NDSETSW = THE # OF DATA SETS TO BE SPOOLED TO UNIT 74
 
 C...  WRITE NOUTGW,TOUTSGW,TOUTFGW,NTCYSGW,NTCYFGW,NSPOOLGW TO UNIT 16
 
-            WRITE(16+CK_LUN,3454) TOUTSGW,NTCYSGW,TOUTFGW,NTCYFGW,NSPOOLGW
+c            WRITE(16+CK_LUN,3454) TOUTSGW,NTCYSGW,TOUTFGW,NTCYFGW,NSPOOLGW
  3454       FORMAT(/,5X,'DATA RECORDS WILL START AFTER TOUTSGW =',F8.3,
      &                ' DAY(S) RELATIVE',/,9X,'TO THE STARTING TIME OR',
      &             I9,' TIME STEPS INTO THE SIMULATION',
@@ -4078,7 +4072,7 @@ C...
 C...  READ AND CHECK INFORMATION ABOUT HARMONIC ANALYSIS OF MODEL RESULTS
 C...
       READ(15+CK_LUN,*) NFREQ
-      WRITE(16+CK_LUN,99392) NFREQ
+c      WRITE(16+CK_LUN,99392) NFREQ
 99392 FORMAT(////,1X,'HARMONIC ANALYSIS INFORMATION OUTPUT : ',
      &  //,5X,'HARMONIC ANALYSIS PERFORMED FOR ',I4,' CONSTITUENTS',/)
       MNHARF = NFREQ
@@ -4094,7 +4088,7 @@ C     allocate harmonic analysis arrays
 
       IF(NFREQ.LT.0) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,99391)
-         WRITE(16+CK_LUN,99391)
+c         WRITE(16+CK_LUN,99391)
 99391    FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
      &        //,1X,'YOUR SELECTION OF NFREQ (A UNIT 15 '
      &        ,'INPUT PARAMETER) IS NOT AN ALLOWABLE VALUE',/,1X,
@@ -4106,13 +4100,13 @@ C         CALL ADCIRC_LOCALTERMINATE()
 Cendif
          STOP
       ENDIF
-      IF(NFREQ.GT.0) WRITE(16+CK_LUN,2330)
+c      IF(NFREQ.GT.0) WRITE(16+CK_LUN,2330)
  2330 FORMAT(/,7X,'FREQUENCY',4X,'NODAL FACTOR',6X,'EQU.ARG(DEG)',
      +     1X,'CONSTITUENT',/)
       DO 1201 I=1,NFREQ
          READ(15+CK_LUN,'(A10)') NAMEFR(I)
          READ(15+CK_LUN,*) HAFREQ(I),HAFF(I),HAFACE(I)
-         WRITE(16+CK_LUN,2331) HAFREQ(I),HAFF(I),HAFACE(I),NAMEFR(I)
+c         WRITE(16+CK_LUN,2331) HAFREQ(I),HAFF(I),HAFACE(I),NAMEFR(I)
  2331    FORMAT(4X,F15.12,2X,F10.7,5X,F10.3,7X,A10)
  1201 CONTINUE
 
@@ -4134,7 +4128,7 @@ C     compute thas and thaf in terms of the number of time steps
       THAF=ITHAF*DTDP/86400.D0 + STATIM
       ITMV = ITHAF - (ITHAF-ITHAS)*FMV
       IF(NFREQ.GT.0) THEN
-         WRITE(16+CK_LUN,34634) THAS,ITHAS,THAF,ITHAF,NHAINC
+c         WRITE(16+CK_LUN,34634) THAS,ITHAS,THAF,ITHAF,NHAINC
 34634    FORMAT(/,5X,'HARMONIC ANALYSIS WILL START AFTER THAS =',F8.3,
      &        ' DAY(S) RELATIVE',/,9X,'TO THE STARTING TIME OR',I9,
      &        ' TIME STEPS INTO THE SIMULATION',
@@ -4143,14 +4137,14 @@ C     compute thas and thaf in terms of the number of time steps
      &        ' TIME STEPS INTO THE SIMULATION'
      &        ,//,5X,'INFORMATION WILL BE ANALYZED EVERY ',
      &        'NHAINC =',I8,' TIME STEPS.')
-         WRITE(16+CK_LUN,34639) FMV*100.,ITMV
+c         WRITE(16+CK_LUN,34639) FMV*100.,ITMV
 34639    FORMAT(/,5X,'MEANS AND VARIANCES WILL BE COMPUTED FOR THE ',
      &        'FINAL ',F10.5,' %',/9X,'OF THE HARMONIC ANALYSIS ',
      &        'PERIOD OR AFTER ',I9,' TIME STEPS INTO THE ',
      &        'SIMULATION.',/9X,' RESULTS ARE WRITTEN TO UNIT 55.')
 
       ELSE
-         WRITE(16+CK_LUN,34645)
+c         WRITE(16+CK_LUN,34645)
 34645    FORMAT(///,5X,'NO HARMONIC ANALYSIS WILL BE DONE')
       ENDIF
 
@@ -4163,7 +4157,7 @@ C     be done
       WRITE(scratchMessage,
      &   '("NHASE=",I1," NHASV=",I1," NHAGE=",I1," NHAGV=",I1,".")')
      &    NHASE, NHASV, NHAGE, NHAGV
-      CALL logMessage(ECHO,scratchMessage)
+c      CALL logMessage(ECHO,scratchMessage)
       CALL checkHarmonicParameters()
 
 C     compute flag telling whether any harmonic analysis will be done
@@ -4178,28 +4172,28 @@ C     jgf45.07 added undocumented option to STOP after writing hot start file.
 C     This option will be used in testing ADCIRC's hot start capabilities.
       READ(15+CK_LUN,*) NHSTAR,NHSINC
 
-      CALL logMessage(INFO,'HOT START OUTPUT INFORMATION : ')
+c      CALL logMessage(INFO,'HOT START OUTPUT INFORMATION : ')
       WRITE(scratchMessage,'("NHSTAR=",I3," NHSINC=",I8,".")')
      &      NHSTAR, NHSINC
-      CALL logMessage(ECHO,scratchMessage)
+c      CALL logMessage(ECHO,scratchMessage)
 C
       SELECT CASE(NHSTAR)
       CASE(0)
-         CALL logMessage(INFO,'HOT START OUTPUT WILL NOT BE GENERATED.')
+c         CALL logMessage(INFO,'HOT START OUTPUT WILL NOT BE GENERATED.')
       CASE(1,67,68)
-         CALL logMessage(INFO,'HOT START OUTPUT WILL BE GENERATED'
-     &        //' IN NON-PORTABLE BINARY FORMAT.')
+c         CALL logMessage(INFO,'HOT START OUTPUT WILL BE GENERATED'
+c     &        //' IN NON-PORTABLE BINARY FORMAT.')
       CASE(-1)  !tcm v51.26 added for time-stamped hotstart files
-         CALL logMessage(INFO,'HOT START OUTPUT WILL BE GENERATED'
-     &        //' IN NON-PORTABLE BINARY FORMAT IN TIME-STAMPED FILES.')
+c         CALL logMessage(INFO,'HOT START OUTPUT WILL BE GENERATED'
+c     &        //' IN NON-PORTABLE BINARY FORMAT IN TIME-STAMPED FILES.')
       CASE(3,367,368)
          useNetCDF = .true.
-         CALL logMessage(INFO,'HOT START OUTPUT WILL BE GENERATED'
-     &        //' IN PORTABLE NETCDF CLASSIC / NETCDF3 FORMAT.')
+c         CALL logMessage(INFO,'HOT START OUTPUT WILL BE GENERATED'
+c     &        //' IN PORTABLE NETCDF CLASSIC / NETCDF3 FORMAT.')
       CASE(5,567,568)
          useNetCDF = .true.
-         CALL logMessage(INFO,'HOT START OUTPUT WILL BE GENERATED'
-     &        //' IN PORTABLE NETCDF CLASSIC / NETCDF4 (HDF5) FORMAT.')
+c         CALL logMessage(INFO,'HOT START OUTPUT WILL BE GENERATED'
+c     &        //' IN PORTABLE NETCDF CLASSIC / NETCDF4 (HDF5) FORMAT.')
       CASE DEFAULT
          CALL allMessage(ERROR,"Input value of NHSTAR is invalid.")
          CALL ADCIRC_Terminate()
@@ -4213,14 +4207,14 @@ C
          CALL ADCIRC_Terminate()
       ENDIF
 C
-      WRITE(16+CK_LUN,34636) NHSINC
+c      WRITE(16+CK_LUN,34636) NHSINC
 34636 FORMAT(/,5X,'HOT START OUTPUT WILL BE WRITTEN TO UNIT',
      &        ' 67 OR 68 EVERY ',I10,' TIME STEPS')
 C
       IF((NHSTAR.EQ.67).OR.(NHSTAR.EQ.68).OR.
      &      (NHSTAR.EQ.367).OR.(NHSTAR.EQ.368).OR.
      &      (NHSTAR.EQ.567).OR.(NHSTAR.EQ.568) ) THEN
-         WRITE(16+CK_LUN,34626) NHSTAR
+c         WRITE(16+CK_LUN,34626) NHSTAR
 34626    FORMAT(/,5X,'ADCIRC will stop after writing to unit ',I3)
       ENDIF
 C
@@ -4235,25 +4229,25 @@ C     read in and check matrix solver parameters
 
       READ(15+CK_LUN,*) ITITER,ISLDIA,CONVCR,ITMAX
 
-      WRITE(16+CK_LUN,99656)
+c      WRITE(16+CK_LUN,99656)
 99656 FORMAT(//,1X,'SOLVER INFORMATION OUTPUT : ')
       IF((ISLDIA.LT.0).OR.(ISLDIA.GT.5)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,9920)
-         WRITE(16+CK_LUN,9920)
+c         WRITE(16+CK_LUN,9920)
  9920     FORMAT(////,1X,'!!!!!!!!!!  WARNING - NONFATAL INPUT ERROR ',
      &                 '!!!!!!!!!',
      &           //,1X,'ISLDIA (A UNIT 15 INPUT PARAMETER) MUST BE 0-5',
      &            /,1X,'PLEASE CHECK YOUR INPUT')
          IF(NFOVER.EQ.1) THEN
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,9921)
-            WRITE(16+CK_LUN,9921)
+c            WRITE(16+CK_LUN,9921)
  9921       FORMAT(/,1X,'PROGRAM WILL OVERRIDE SPECIFIED INPUT',
      &                ' AND SET ISLDIA EQUAL TO 0 ',
      &           //,1X,'!!!!!! EXECUTION WILL CONTINUE !!!!!!',//)
             ISLDIA=0
          ELSE
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,9973)
-            WRITE(16+CK_LUN,9973)
+c            WRITE(16+CK_LUN,9973)
 #ifdef CMPI
             CALL ADCIRC_Terminate()
 #endif
@@ -4266,7 +4260,7 @@ C     read in and check matrix solver parameters
 !     elements
       IF ((StatPartWetFix.eqv..true.).and.(NSCREEN.NE.0.AND.MYPROC.EQ.0)) THEN
          WRITE(ScreenUnit+CK_LUN,1810)
-         write(16+CK_LUN,1810)
+c         write(16+CK_LUN,1810)
  1810 FORMAT(//,'INFO:  ELEVATION STATIONS LOCATED IN A PARTIALLY WET',
      &          ' ELEMENT WILL USE',
      &        /,'       NEAREST NEIGHBOR INTERPOLATION INSTEAD OF',
@@ -4316,40 +4310,40 @@ C - allocate arrays dealing with wind forcing
 
 C     write table of ADCIRC parameter sizes
 C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
-      WRITE(16+CK_LUN,4010)MNPROC,MNWPROC,MNWPROH,MNE,MNP,MNei,MNOPE,MNETA,
-     & MNBOU,MNVEL,MNTIF,MNBFR,MNSTAE,MNSTAV,MNSTAC,MNSTAM,NWLAT,NWLON,
-     & MNHARF,MNFFR
-      IF(NWS.EQ.0) WRITE(16+CK_LUN,4011)
-      IF(NWS.EQ.1) WRITE(16+CK_LUN,4012)
-      IF(ABS(NWS).EQ.2) WRITE(16+CK_LUN,4013)
-      IF(NWS.EQ.3) WRITE(16+CK_LUN,4014)
-      IF(ABS(NWS).EQ.4) WRITE(16+CK_LUN,4015)
-      IF(ABS(NWS).EQ.5) WRITE(16+CK_LUN,4115)
-      IF(ABS(NWS).EQ.7) WRITE(16+CK_LUN,4013) !46.00 Added NWS=7 (direct stress)
-      IF(NWS.EQ.9) WRITE(16+CK_LUN,4018)      !cf & cm added nws = 9 (jgf46.16 merged)
-      IF(NWS.EQ.9) WRITE(16+CK_LUN,4019)      !cf & cm added nws = 9 (jgf46.16 merged)
-      IF(NWS.EQ.10) WRITE(16+CK_LUN,4016)
-      IF(NWS.EQ.11) WRITE(16+CK_LUN,4017)
-      IF(ABS(NWS).EQ.12) WRITE(16+CK_LUN,4032) ! sb46.28sb01 Added NWS=12 (OWI format)
-      IF(ABS(NWS).EQ.16) WRITE(16+CK_LUN,4026) ! tcm v51.06.02  !gfdl met data
-      IF(NWS.EQ.19) WRITE(16+CK_LUN,4018)      !rjw added nws = 19
-      IF(NWS.EQ.19) WRITE(16+CK_LUN,4019)      !rjw added nws = 19
-      IF(NWS.EQ.20) WRITE(16+CK_LUN,4020)      !jie added nws = 20
-      IF((NFREQ.EQ.0).OR.(FMV.EQ.0.)) WRITE(16+CK_LUN,4021)
-      IF((NFREQ.GE.1).AND.(FMV.NE.0.)) WRITE(16+CK_LUN,4022)
-      IF(ILUMP.EQ.0) WRITE(16+CK_LUN,4031)
-      IF(ILUMP.EQ.1) WRITE(16+CK_LUN,4032)
-      IF(IM.EQ.0) WRITE(16+CK_LUN,4101)
-      IF(IM.EQ.10) WRITE(16+CK_LUN,4109)
-      IF(IM.EQ.1) WRITE(16+CK_LUN,4102)
-      IF(IM.EQ.2) WRITE(16+CK_LUN,4103)
-      WRITE(16+CK_LUN,4105)
-      IF(USE_ELEV_STAT_FILE) WRITE(16+CK_LUN,3180)  !tcm v51.20.05
-      IF(USE_VEL_STAT_FILE) WRITE(16+CK_LUN,3181)   !tcm v51.20.05 
-      IF(USE_MET_STAT_FILE) WRITE(16+CK_LUN,3182)   !tcm v51.20.05
-      IF(USE_CONC_STAT_FILE) WRITE(16+CK_LUN,3183)  !tcm v51.20.05
-      IF(StatPartWetFix.EQV..TRUE.) WRITE(16+CK_LUN,3184) !tcm v53.01.02 
-      WRITE(16+CK_LUN,4108)
+C     WRITE(16+CK_LUN,4010)MNPROC,MNWPROC,MNWPROH,MNE,MNP,MNei,MNOPE,MNETA,
+C     & MNBOU,MNVEL,MNTIF,MNBFR,MNSTAE,MNSTAV,MNSTAC,MNSTAM,NWLAT,NWLON,
+C     & MNHARF,MNFFR
+c      IF(NWS.EQ.0) WRITE(16+CK_LUN,4011)
+c      IF(NWS.EQ.1) WRITE(16+CK_LUN,4012)
+c      IF(ABS(NWS).EQ.2) WRITE(16+CK_LUN,4013)
+c      IF(NWS.EQ.3) WRITE(16+CK_LUN,4014)
+c      IF(ABS(NWS).EQ.4) WRITE(16+CK_LUN,4015)
+c      IF(ABS(NWS).EQ.5) WRITE(16+CK_LUN,4115)
+c      IF(ABS(NWS).EQ.7) WRITE(16+CK_LUN,4013) !46.00 Added NWS=7 (direct stress)
+c      IF(NWS.EQ.9) WRITE(16+CK_LUN,4018)      !cf & cm added nws = 9 (jgf46.16 merged)
+c      IF(NWS.EQ.9) WRITE(16+CK_LUN,4019)      !cf & cm added nws = 9 (jgf46.16 merged)
+c      IF(NWS.EQ.10) WRITE(16+CK_LUN,4016)
+c      IF(NWS.EQ.11) WRITE(16+CK_LUN,4017)
+c      IF(ABS(NWS).EQ.12) WRITE(16+CK_LUN,4032) ! sb46.28sb01 Added NWS=12 (OWI format)
+c      IF(ABS(NWS).EQ.16) WRITE(16+CK_LUN,4026) ! tcm v51.06.02  !gfdl met data
+c      IF(NWS.EQ.19) WRITE(16+CK_LUN,4018)      !rjw added nws = 19
+c      IF(NWS.EQ.19) WRITE(16+CK_LUN,4019)      !rjw added nws = 19
+c      IF(NWS.EQ.20) WRITE(16+CK_LUN,4020)      !jie added nws = 20
+c      IF((NFREQ.EQ.0).OR.(FMV.EQ.0.)) WRITE(16+CK_LUN,4021)
+c      IF((NFREQ.GE.1).AND.(FMV.NE.0.)) WRITE(16+CK_LUN,4022)
+c      IF(ILUMP.EQ.0) WRITE(16+CK_LUN,4031)
+c      IF(ILUMP.EQ.1) WRITE(16+CK_LUN,4032)
+c      IF(IM.EQ.0) WRITE(16+CK_LUN,4101)
+c      IF(IM.EQ.10) WRITE(16+CK_LUN,4109)
+c      IF(IM.EQ.1) WRITE(16+CK_LUN,4102)
+c      IF(IM.EQ.2) WRITE(16+CK_LUN,4103)
+c      WRITE(16+CK_LUN,4105)
+c      IF(USE_ELEV_STAT_FILE) WRITE(16+CK_LUN,3180)  !tcm v51.20.05
+c      IF(USE_VEL_STAT_FILE) WRITE(16+CK_LUN,3181)   !tcm v51.20.05 
+c      IF(USE_MET_STAT_FILE) WRITE(16+CK_LUN,3182)   !tcm v51.20.05
+c      IF(USE_CONC_STAT_FILE) WRITE(16+CK_LUN,3183)  !tcm v51.20.05
+c      IF(StatPartWetFix.EQV..TRUE.) WRITE(16+CK_LUN,3184) !tcm v53.01.02 
+c      WRITE(16+CK_LUN,4108)
 C
 C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
  4010 FORMAT(' *****************************************************',/,
@@ -4428,30 +4422,30 @@ C
          
 
       IF (useNetCDF.eqv..true.) THEN
-         CALL logMessage(INFO,"Now reading metadata from fort.15 file"
-     &     //" for use in NetCDF files.")
+c         CALL logMessage(INFO,"Now reading metadata from fort.15 file"
+c     &     //" for use in NetCDF files.")
          READ(15+CK_LUN,'(A80)',err=99999,end=99998,iostat=ios) title
-         CALL logMessage(ECHO,"metadata, title: "//trim(title))
+c         CALL logMessage(ECHO,"metadata, title: "//trim(title))
          READ(15+CK_LUN,'(A80)',err=99999,end=99998,iostat=ios) institution
-         CALL logMessage(ECHO,"metadata, institution: "
-     &     //trim(institution))
+c         CALL logMessage(ECHO,"metadata, institution: "
+c     &     //trim(institution))
          READ(15+CK_LUN,'(A80)',err=99999,end=99998,iostat=ios) source
-         CALL logMessage(ECHO,"metadata, source: "//trim(source))
+c         CALL logMessage(ECHO,"metadata, source: "//trim(source))
          READ(15+CK_LUN,'(A80)',err=99999,end=99998,iostat=ios) history
-         CALL logMessage(ECHO,"metadata, history: "//trim(history))
+c         CALL logMessage(ECHO,"metadata, history: "//trim(history))
          READ(15+CK_LUN,'(A80)',err=99999,end=99998,iostat=ios) references
-         CALL logMessage(ECHO,"metadata, references: "
-     &     //trim(references))
+c         CALL logMessage(ECHO,"metadata, references: "
+c     &     //trim(references))
          READ(15+CK_LUN,'(A80)',err=99999,end=99998,iostat=ios) comments
-         CALL logMessage(ECHO,"metadata, comments: "//trim(comments))
+c         CALL logMessage(ECHO,"metadata, comments: "//trim(comments))
          READ(15+CK_LUN,'(A80)',err=99999,end=99998,iostat=ios) host
-         CALL logMessage(ECHO,"metadata, host: "//trim(host))
+c         CALL logMessage(ECHO,"metadata, host: "//trim(host))
          READ(15+CK_LUN,'(A80)',err=99999,end=99998,iostat=ios) convention
-         CALL logMessage(ECHO,"metadata, convention: "//trim(convention))
+c         CALL logMessage(ECHO,"metadata, convention: "//trim(convention))
          READ(15+CK_LUN,'(A80)',err=99999,end=99998,iostat=ios) contact
-         CALL logMessage(ECHO,"metadata, contact: "//trim(contact))
+c         CALL logMessage(ECHO,"metadata, contact: "//trim(contact))
          READ(15+CK_LUN,'(A80)',err=99999,end=99998,iostat=ios) base_date
-         CALL logMessage(ECHO,"metadata, base_date: "//trim(base_date))
+c         CALL logMessage(ECHO,"metadata, base_date: "//trim(base_date))
       ENDIF
 C...
 C...  CLOSE FORT.15
@@ -4574,7 +4568,7 @@ C
 C...
 C...  BEGIN READING VERTICAL PARAMETER INFORMATION
 C...
-      WRITE(16+CK_LUN,300)
+c      WRITE(16+CK_LUN,300)
  300  FORMAT(//,1X,'3D SOLUTION INFORMATION',/)
 
 C...  SPECIFY WHETHER A BAROTROPIC OR BAROCLINIC RUN
@@ -4594,15 +4588,15 @@ C...  SPECIFY WHETHER A BAROTROPIC OR BAROCLINIC RUN
 C...  READ IN THE TYPE OF BOTTOM BOUNDARY CONDITION AND THE SLIP COEFFICIENTS
 
       READ(15+CK_LUN,*) ISlip,KP
-      WRITE(16+CK_LUN,355) ISlip,KP
+c      WRITE(16+CK_LUN,355) ISlip,KP
  355  FORMAT(/,5X,'ISlip = ',I3,' KP = ',E12.5)
       IF((ISlip.LT.0).OR.(ISlip.GT.3)) THEN
         IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
           WRITE(ScreenUnit+CK_LUN,350)
           WRITE(ScreenUnit+CK_LUN,360)
         ENDIF
-        WRITE(16+CK_LUN,350)
-        WRITE(16+CK_LUN,360)
+c        WRITE(16+CK_LUN,350)
+c        WRITE(16+CK_LUN,360)
  360    FORMAT(/,2X,'    The Bottom Slip Code Must = 0,1,2,OR 3')
 #ifdef CMPI
         call msg_fini()
@@ -4615,14 +4609,14 @@ C
 C     Made Z0B bottom roughness a nodal attribute read in from fort.13 file if desired
 C
       READ(15+CK_LUN,*) Z0S, Z0B
-      WRITE(16+CK_LUN,380) Z0S,Z0B
+c      WRITE(16+CK_LUN,380) Z0S,Z0B
  380  FORMAT(/,5X,'Z0S = ',E12.5,' Z0B = ',E12.5)
 
 
 C...  READ IN THE TIME STEPPING COEFFICIENTS AND COMPUTE ASSOCIATED VARIABLES
 
       READ(15+CK_LUN,*) Alp1,Alp2,Alp3
-      WRITE(16+CK_LUN,390) Alp1,Alp2,Alp3
+c      WRITE(16+CK_LUN,390) Alp1,Alp2,Alp3
  390  FORMAT(/,5X,'3D TIME STEPPING COEFFS Alp1 = ',E9.2,' Alp2 = ',
      &     E9.2,' Alp3 = ',E9.2)
 
@@ -4636,7 +4630,7 @@ C...  READ IN THE TIME STEPPING COEFFICIENTS AND COMPUTE ASSOCIATED VARIABLES
 C...  READ IN IGC & NFEN: F.E. GRID CODE & # NODES IN F.E. GRID
 
       READ(15+CK_LUN,*,err=99999,end=99998,iostat=ios) IGC,NFEN
-      WRITE(16+CK_LUN,400) IGC,NFEN
+c      WRITE(16+CK_LUN,400) IGC,NFEN
  400  FORMAT(/,5X,'Vertical grid code IGC = ',I3,
      &            '  Number of vertical nodes (NFEN) = ',I5)
       IF((IGC.LT.0).OR.(IGC.GT.6)) THEN
@@ -4644,8 +4638,8 @@ C...  READ IN IGC & NFEN: F.E. GRID CODE & # NODES IN F.E. GRID
           WRITE(screenunit+CK_LUN,350)
           WRITE(screenunit+CK_LUN,408)
         ENDIF
-        WRITE(16+CK_LUN,350)
-        WRITE(16+CK_LUN,408)
+c        WRITE(16+CK_LUN,350)
+c        WRITE(16+CK_LUN,408)
  408    FORMAT(/,2X,'    IGC MUST BE 0, 1, 2, 3, 4, 5, 6')
         CALL ADCIRC_Terminate()
       ENDIF
@@ -4654,8 +4648,8 @@ C...  READ IN IGC & NFEN: F.E. GRID CODE & # NODES IN F.E. GRID
           WRITE(screenunit+CK_LUN,350)
           WRITE(screenunit+CK_LUN,409)
         ENDIF
-        WRITE(16+CK_LUN,350)
-        WRITE(16+CK_LUN,409)
+c        WRITE(16+CK_LUN,350)
+c        WRITE(16+CK_LUN,409)
  409    FORMAT(/,2X,'    NFEN MUST BE > 0')
         CALL ADCIRC_Terminate()
       ENDIF
@@ -4682,9 +4676,9 @@ c     IGC = 0 - Read in grid from UNIT 15
             WRITE(screenunit+CK_LUN,1011)
             WRITE(screenunit+CK_LUN,1012)
           ENDIF
-          WRITE(16+CK_LUN,350)
-          WRITE(16+CK_LUN,1011)
-          WRITE(16+CK_LUN,1012)
+c          WRITE(16+CK_LUN,350)
+c          WRITE(16+CK_LUN,1011)
+c          WRITE(16+CK_LUN,1012)
  1011     FORMAT(' Error reading in the vertical finite element grid')
  1012     FORMAT(' The first point in the finite element grid ',
      +           'must = b (-1) : run terminated'/)
@@ -4696,9 +4690,9 @@ c     IGC = 0 - Read in grid from UNIT 15
             WRITE(screenunit+CK_LUN,1011)
             WRITE(screenunit+CK_LUN,1013)
           ENDIF
-          WRITE(16+CK_LUN,350)
-          WRITE(16+CK_LUN,1011)
-          WRITE(16+CK_LUN,1013)
+c          WRITE(16+CK_LUN,350)
+c          WRITE(16+CK_LUN,1011)
+c          WRITE(16+CK_LUN,1013)
  1013     FORMAT(' The last point in the finite element grid ',
      +           'must = a (1) : run terminated'/)
           CALL ADCIRC_Terminate()
@@ -4720,19 +4714,19 @@ c     IGC <> 0 - Set up grid in subroutine FEGRIDS
 
 c     write out the vertical grid in fort.16 file
 
-      WRITE(16+CK_LUN,1000)
+c      WRITE(16+CK_LUN,1000)
  1000 FORMAT(//,5X,'Vertical Grid Information')
-      WRITE(16+CK_LUN,1001)
+c      WRITE(16+CK_LUN,1001)
  1001 FORMAT(/,5X,'V. Node #',5X,'V. Position',/)
       DO N = 1,NFEN
-         WRITE(16+CK_LUN,*) N,Sigma(N)
+c         WRITE(16+CK_LUN,*) N,Sigma(N)
       ENDDO
 
 
 C...  SPECIFY TYPE OF EDDY VISCOSITY PROFILE
 
       READ(15+CK_LUN,*) IEVC,EVMin,EVCon
-      WRITE(16+CK_LUN,410) IEVC,EVMin,EVCon
+c      WRITE(16+CK_LUN,410) IEVC,EVMin,EVCon
  410  FORMAT(/,5X,'IEVC = ',I3,2X,'EVMin = ',E15.8,2X,'EVCon = ',E15.8)
       IF((IEVC.NE.0 ).and.(IEVC.NE.1 ).and.
      &   (IEVC.NE.10).and.(IEVC.NE.11).and.
@@ -4748,8 +4742,8 @@ C...  SPECIFY TYPE OF EDDY VISCOSITY PROFILE
           WRITE(screenunit+CK_LUN,350)
           WRITE(screenunit+CK_LUN,411)
         ENDIF
-        WRITE(16+CK_LUN,350)
-        WRITE(16+CK_LUN,411)
+c        WRITE(16+CK_LUN,350)
+c        WRITE(16+CK_LUN,411)
  411    FORMAT(/,2X,'    IEVC MUST BE 0,1,10,11,20,21,22,23,',
      &        '30,31,32,33,40,41,42,43,50,51')
         CALL ADCIRC_Terminate()
@@ -4758,7 +4752,7 @@ C...  SPECIFY TYPE OF EDDY VISCOSITY PROFILE
          READ(15+CK_LUN,*,err=99999,end=99998,iostat=ios) Theta1,Theta2
          WRITE(scratchMessage,'("theta1=",E15.8," theta2=",E15.8,".")')
      &      theta1, theta2   !tcm v50.85 20120829 changed E15.9 to E15.8 
-      CALL logMessage(ECHO,scratchMessage)
+c      CALL logMessage(ECHO,scratchMessage)
       ENDIF
 
 C...  FOR IEVC=0, CONSTANT EDDY VISCOSITY, READ IN PROFILE
@@ -4767,7 +4761,7 @@ C...  FOR IEVC=0, CONSTANT EDDY VISCOSITY, READ IN PROFILE
         DO N=1,NFEN
           READ(15+CK_LUN,*) EVTot(N)
         ENDDO
-        WRITE(16+CK_LUN,*) ' Vertical E.V. read in from UNIT 15'
+c        WRITE(16+CK_LUN,*) ' Vertical E.V. read in from UNIT 15'
       ENDIF
 
 C
@@ -4809,7 +4803,7 @@ C.....WRITE Density station output information to UNIT 16
      &                (TO3DSDS+NSpo3DSD*DTDP*Sec2Day),
      &                (NTO3DSDS+NSpo3DSD),TO3DSDF,NTO3DSDF,NSpo3DSD,
      &                NDSet3DSD
-         CALL logMessage(INFO,scratchMessage)
+c         CALL logMessage(INFO,scratchMessage)
  571     FORMAT(5X,A,' data output will start',I9,
      &              ' timesteps after day = ',F9.3,
      &         9X,'This = ',F9.3,' days = ',I9,' timesteps relative',
@@ -4824,7 +4818,7 @@ C.... REGARDLESS OF WHETHER I3DSD=0, READ IN THE NUMBER OF 3D DENSITY
 C.... RECORDING STATIONS
 
       READ(15+CK_LUN,*) NSta3DD
-      IF(I3DSD.NE.0) WRITE(16+CK_LUN,581) NSta3DD
+c      IF(I3DSD.NE.0) WRITE(16+CK_LUN,581) NSta3DD
  581  FORMAT(/,5X,' Output will be written at ',I7,' stations.')
 
       IF (NSta3DD.EQ.0) THEN
@@ -4863,13 +4857,13 @@ C.....WRITE Velocity station output information to UNIT 16
      &                (TO3DSVS+NSpo3DSV*DTDP*Sec2Day),
      &                (NTO3DSVS+NSpo3DSV),TO3DSVF,NTO3DSVF,NSpo3DSV,
      &                NDSet3DSV
-         CALL logMessage(INFO,scratchMessage)
+c         CALL logMessage(INFO,scratchMessage)
       ENDIF
 C
 C.... REGARDLESS OF WHETHER I3DSV=0, READ IN THE NUMBER OF 3D VELOCITY
 C.... RECORDING STATIONS
       READ(15+CK_LUN,*) NSta3DV
-      IF(I3DSV.NE.0) WRITE(16+CK_LUN,582) NSta3DV
+c      IF(I3DSV.NE.0) WRITE(16+CK_LUN,582) NSta3DV
  582  FORMAT(/,5X,' Output will be written at ',I7,' stations.')
 C
       IF (NSta3DV.EQ.0) THEN
@@ -4906,13 +4900,13 @@ C.....  Write turbulence station output information to UNIT 16
      &                (TO3DSTS+NSpo3DST*DTDP*Sec2Day),
      &                (NTO3DSTS+NSpo3DST),TO3DSTF,NTO3DSTF,NSpo3DST,
      &                NDSet3DST
-         CALL logMessage(INFO,scratchMessage)
+c         CALL logMessage(INFO,scratchMessage)
       ENDIF
 C
 C.... REGARDLESS OF WHETHER I3DST=0, READ IN THE NUMBER OF 3D Turbulence
 C.... STATIONS
       READ(15+CK_LUN,*) NSta3DT
-      IF(I3DST.NE.0) WRITE(16+CK_LUN,583) NSta3DT
+c      IF(I3DST.NE.0) WRITE(16+CK_LUN,583) NSta3DT
  583  FORMAT(/,5X,'Output will be written at ',I7,' stations')
 C
       IF (NSta3DT.EQ.0) THEN
@@ -4951,7 +4945,7 @@ C.....  Write global 3D Density output information to UNIT 16
      &                NSpo3DGD,TO3DGDS,(TO3DGDS+NSpo3DGD*DTDP*Sec2Day),
      &                (NTO3DGDS+NSpo3DGD),TO3DGDF,NTO3DGDF,NSpo3DGD,
      &                NDSet3DGD
-         CALL logMessage(INFO,scratchMessage)
+c         CALL logMessage(INFO,scratchMessage)
       ENDIF
 C
 C...3D Global Velocity Output  (fort.45)
@@ -4973,7 +4967,7 @@ C.....  Write global velocity output information to UNIT 16
      &                (TO3DGVS+NSpo3DGV*DTDP*Sec2Day),
      &                (NTO3DGVS+NSpo3DGV),TO3DGVF,NTO3DGVF,NSpo3DGV,
      &                NDSet3DGV
-         CALL logMessage(INFO,scratchMessage)
+c         CALL logMessage(INFO,scratchMessage)
       ENDIF
 C
 C...3D Global Turbulence Output  (fort.46)
@@ -4995,7 +4989,7 @@ C.....  Write global turbulence output information to UNIT 16
      &                (TO3DGTS+NSpo3DGT*DTDP*Sec2Day),
      &                (NTO3DGTS+NSpo3DGT),TO3DGTF,NTO3DGTF,NSpo3DGT,
      &                NDSet3DGT
-         CALL logMessage(INFO,scratchMessage)
+c         CALL logMessage(INFO,scratchMessage)
       ENDIF
 C
 C    kmd48.33bc - added in the information of the 3D boundary conditions
@@ -5003,7 +4997,7 @@ C                 these boundary conditions are the level of no motion,
 C                 salinity and temperature forcings.
       IF (CBAROCLINIC) THEN
          READ(15+CK_LUN,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP !bc flags for elevation and temperature
-         WRITE(16+CK_LUN,429) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP
+c         WRITE(16+CK_LUN,429) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP
  429     FORMAT(/,5x,'RES_BC_FLAG = ',I3,5X,'BCFLAG_LNM = ',I3,5X,
      &    'BCFLAG_TEMP = ',I3)
          !
@@ -5019,7 +5013,7 @@ C                 salinity and temperature forcings.
                IF (NOPE.GT.0) THEN
                   READ(15+CK_LUN,*) RBCTIMEINC
                   READ(15+CK_LUN,*) BCSTATIM
-                  WRITE(16+CK_LUN,430) RBCTIMEINC
+c                  WRITE(16+CK_LUN,430) RBCTIMEINC
                END IF
             END IF
          ELSE IF ((RES_BC_FLAG.GT.0)) THEN
@@ -5027,7 +5021,7 @@ C                 salinity and temperature forcings.
                IF (NOPE.GT.0) THEN
                   READ(15+CK_LUN,*) RBCTIMEINC
                   READ(15+CK_LUN,*) BCSTATIM
-                  WRITE(16+CK_LUN,430) RBCTIMEINC
+c                  WRITE(16+CK_LUN,430) RBCTIMEINC
  430             FORMAT(/,5X,'Read in elevation boundary conditions
      &                every', E9.2 ,'seconds')
                END IF
@@ -5035,7 +5029,7 @@ C                 salinity and temperature forcings.
                IF (NOPE.GT.0) THEN
                   READ(15+CK_LUN,*) RBCTIMEINC, SBCTIMEINC
                   READ(15+CK_LUN,*) BCSTATIM, SBCSTATIM
-                  WRITE(16+CK_LUN,431) RBCTIMEINC, SBCTIMEINC
+c                  WRITE(16+CK_LUN,431) RBCTIMEINC, SBCTIMEINC
  431              FORMAT(/,5X,'Read in elevation boundary conditions
      &                every', E9.2 ,'seconds and salinity
      &                boundary conditions every', E9.2,
@@ -5045,14 +5039,14 @@ C                 salinity and temperature forcings.
                IF (NOPE.GT.0) THEN
                   READ(15+CK_LUN,*) RBCTIMEINC, TBCTIMEINC
                   READ(15+CK_LUN,*) BCSTATIM, TBCSTATIM
-                  WRITE(16+CK_LUN,432) RBCTIMEINC, TBCTIMEINC
+c                  WRITE(16+CK_LUN,432) RBCTIMEINC, TBCTIMEINC
  432              FORMAT(/,5X,'Read in elevation boundary conditions
      &                every', E9.2 ,'seconds and temperature
      &                boundary conditions every', E9.2,
      &                'seconds')
                   IF (BCFLAG_TEMP.NE.0) THEN
                      READ(15+CK_LUN,*) TTBCTIMEINC, TTBCSTATIM
-                     WRITE(16+CK_LUN,434) TTBCTIMEINC
+c                     WRITE(16+CK_LUN,434) TTBCTIMEINC
  434                 FORMAT(/,5X,'Read in the top temperature
      &                   boundary condition every', E9.2 ,'
      &                   seconds.')
@@ -5062,7 +5056,7 @@ C                 salinity and temperature forcings.
                IF (NOPE.GT.0) THEN
                   READ(15+CK_LUN,*) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
                   READ(15+CK_LUN,*) BCSTATIM, SBCSTATIM, TBCSTATIM
-                  WRITE(16+CK_LUN,433) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
+c                  WRITE(16+CK_LUN,433) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
  433              FORMAT(/,5X,'Read in elevation boundary conditions
      &                every', E9.2 ,'seconds and salinity
      &                boundary conditions every', E9.2,
@@ -5070,13 +5064,13 @@ C                 salinity and temperature forcings.
      &                every', E9.2, 'seconds')
                   IF (BCFLAG_TEMP.NE.0) THEN
                      READ(15+CK_LUN,*) TTBCTIMEINC, TTBCSTATIM
-                     WRITE(16+CK_LUN,434) TTBCTIMEINC
+c                     WRITE(16+CK_LUN,434) TTBCTIMEINC
                  END IF
                END IF
             ELSE
-               WRITE(16+CK_LUN,350)
-               WRITE(16+CK_LUN,*) 'RES_BC_FLAG = ',RES_BC_FLAG
-               WRITE(16+CK_LUN,9722)
+c               WRITE(16+CK_LUN,350)
+c               WRITE(16+CK_LUN,*) 'RES_BC_FLAG = ',RES_BC_FLAG
+c               WRITE(16+CK_LUN,9722)
  9722         FORMAT(/,1X,'Your selection of RES_BC_FLAG (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
                CALL ADCIRC_Terminate()
@@ -5089,7 +5083,7 @@ C                 Note that this is only used in the wind and advective terms
 
       IF (CBAROCLINIC) THEN
         READ(15+CK_LUN,*) SPONGEDIST
-        WRITE(16+CK_LUN,435) SPONGEDIST
+c        WRITE(16+CK_LUN,435) SPONGEDIST
  435    FORMAT(/,5x,'SPONGEDIST = ',E9.2)
         IF (SPONGEDIST.GE.0.d0) THEN
            OUTPUTSPONGE=.TRUE.
@@ -5175,26 +5169,26 @@ C                 Note that this is only used in the wind and advective terms
          READ(15+CK_LUN,*) Eqnstate
          IF ((Eqnstate.EQ.2).OR.(Eqnstate.EQ.3)) THEN
             IF (ABS(IDEN).NE.4) THEN
-              WRITE(16+CK_LUN,424)
+c              WRITE(16+CK_LUN,424)
  424          FORMAT(/,1X,
      &        'Your selection of Eqnstate is not allowed with
      &               your choice of IDEN')
             END IF
          END IF
          IF (Eqnstate.eq.1) THEN
-           WRITE(16+CK_LUN,418)
+c           WRITE(16+CK_LUN,418)
  418       FORMAT(/,5X,
      &        'Equation of state uses the simple equation from Mellor')
          ELSE IF (Eqnstate.eq.2) THEN
-           WRITE(16+CK_LUN,419)
+c           WRITE(16+CK_LUN,419)
  419       FORMAT(/,5X,
      &'Equation of state uses the equation from McDougall et al(2003)')
          ELSE IF (Eqnstate.eq.3) THEN
-           WRITE(16+CK_LUN,420)
+c           WRITE(16+CK_LUN,420)
  420       FORMAT(/,5X,
      &'Equation of state uses the equation from UNESCO(1980)')
          ELSE
-           WRITE(16+CK_LUN,422)
+c           WRITE(16+CK_LUN,422)
  422       FORMAT(/,1X,'Your selection of Eqnstate (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
            CALL ADCIRC_Terminate()
@@ -5211,19 +5205,19 @@ C     jgf45.12: Made READs conditional on value of C3D_BTrans.
 C...  READ IN NLSD, NLTD, NVTD & NVSD: Lateral and vertical diffusion
 !     coefficients.
          READ(15+CK_LUN,*) NLSD, NVSD
-         WRITE(16+CK_LUN,416) NLSD, NVSD
+c         WRITE(16+CK_LUN,416) NLSD, NVSD
  416     FORMAT(/,5X,'Salinity Lateral Diffusion Coefficient = ',E9.2,
      &        'Salinity Vertical Diffusion Coefficient = ',E9.2)
 
          READ(15+CK_LUN,*) NLTD, NVTD
-         WRITE(16+CK_LUN,417) NLTD, NVTD
+c         WRITE(16+CK_LUN,417) NLTD, NVTD
  417     FORMAT(/,5X,'Temperature Lateral Diffusion Coefficient = ',
      &        E9.2,'Temperature Vertical Diffusion Coefficient = ',E9.2)
 
 !     Kendra45.12: Read in the time stepping coefficient associated with the
 !     transport equation terms.
          READ(15+CK_LUN,*) ALP4
-         WRITE(16+CK_LUN,445) ALP4
+c         WRITE(16+CK_LUN,445) ALP4
  445     FORMAT(/,5X,'3D TIME STEPPING COEFFS ALP4 = ',E9.2)
 
          DTAlp4 = DelT*Alp4
@@ -5308,29 +5302,29 @@ C
       recCounter = 0 ! init
 C
       WRITE(scratchMessage,501) trim(description), specifier
-      CALL logMessage(ECHO,scratchMessage)
+c      CALL logMessage(ECHO,scratchMessage)
  501  FORMAT(A,' output specifier = ',I2)
 C
 C     jgf49.48.01: Check to make sure that we can write in the
 C     specified format.
       SELECT CASE(ABS(specifier))
          CASE(0)
-            CALL logMessage(INFO,
-     &         'OUTPUT WILL NOT BE SPOOLED FOR THIS FILE TYPE.')
+c            CALL logMessage(INFO,
+c     &         'OUTPUT WILL NOT BE SPOOLED FOR THIS FILE TYPE.')
          CASE(1)
-            CALL logMessage(INFO,'OUTPUT FORMAT WILL BE ASCII.')
+c            CALL logMessage(INFO,'OUTPUT FORMAT WILL BE ASCII.')
          CASE(2)
-            CALL logMessage(INFO,'OUTPUT FORMAT WILL BE BINARY.')
+c            CALL logMessage(INFO,'OUTPUT FORMAT WILL BE BINARY.')
          CASE(3)
             useNetCDF = .true.
-            CALL logMessage(INFO,
-     &          'OUTPUT FORMAT WILL BE NETCDF CLASSIC MODEL'
-     &           //' / NETCDF3 FORMAT.')
+c            CALL logMessage(INFO,
+c     &          'OUTPUT FORMAT WILL BE NETCDF CLASSIC MODEL'
+c     &           //' / NETCDF3 FORMAT.')
          CASE(5)
             useNetCDF = .true.
-            CALL logMessage(INFO,
-     &         'OUTPUT FORMAT WILL BE NETCDF CLASSIC MODEL'
-     &         //' / NETCDF4 (HDF5) FORMAT.')
+c            CALL logMessage(INFO,
+c     &         'OUTPUT FORMAT WILL BE NETCDF CLASSIC MODEL'
+c     &         //' / NETCDF4 (HDF5) FORMAT.')
          CASE(4,6:)
             WRITE(scratchMessage,350)
             CALL allMessage(ERROR, scratchMessage)
@@ -5398,7 +5392,7 @@ C        jgf49.48.01: Check to see if the end time step for output
 C        is later than the end of the simulation.
          IF(endTS.GT.NT) THEN
             WRITE(scratchMessage,551) description, endTime
-            CALL logMessage(INFO,scratchMessage)
+c            CALL logMessage(INFO,scratchMessage)
  551        FORMAT('End time for output of ',A,' data = ',E14.6,
      &         ' is later than the end of the simulation (RNDAY). ',
      &  'It has been reset to coincide with the end of the simulation.')
@@ -5478,10 +5472,10 @@ C     &         NNV(I), I, Description)
      &         NNV(I), I, Description)
 
          IF(ICS.EQ.1) THEN
-            WRITE(16+CK_LUN,1880) I,NNV(I),xcoord(I),xcoord(I)
+c            WRITE(16+CK_LUN,1880) I,NNV(I),xcoord(I),xcoord(I)
          ELSE
-            WRITE(16+CK_LUN,1883) I,NNV(I),lat(I)*RAD2DEG,lon(I)*RAD2DEG,
-     &            xcoord(I),ycoord(I)
+c            WRITE(16+CK_LUN,1883) I,NNV(I),lat(I)*RAD2DEG,lon(I)*RAD2DEG,
+c     &            xcoord(I),ycoord(I)
          ENDIF
 
 C....PRE-COMPUTE INFORMATION REQUIRED TO INTERPOLATE AT VEL. RECORDING STATIONS
@@ -5606,18 +5600,18 @@ C...             the next element
          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
             WRITE(ScreenUnit+CK_LUN,9892) Description, StationNumber
          ENDIF
-         WRITE(16+CK_LUN,9892) Description, StationNumber
+c         WRITE(16+CK_LUN,9892) Description, StationNumber
          IF(NFOVER.EQ.1) THEN
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
                WRITE(ScreenUnit+CK_LUN,9890) sqrt(KDRESULTS(1)%dis)
             ENDIF
-            WRITE(16+CK_LUN,9890) sqrt(KDRESULTS(1)%dis)
+c            WRITE(16+CK_LUN,9890) sqrt(KDRESULTS(1)%dis)
             OutputElement = ClosestElement
          ELSE
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
                WRITE(ScreenUnit+CK_LUN,9891) sqrt(KDRESULTS(1)%dis)
             ENDIF
-            WRITE(16+CK_LUN,9891) sqrt(KDRESULTS(1)%dis)
+c            WRITE(16+CK_LUN,9891) sqrt(KDRESULTS(1)%dis)
             call ADCIRC_Terminate()
          ENDIF
       ENDIF
@@ -5716,18 +5710,18 @@ C
          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
             WRITE(ScreenUnit+CK_LUN,593) Description, StationNumber
          ENDIF
-         WRITE(16+CK_LUN,593) Description, StationNumber
+c         WRITE(16+CK_LUN,593) Description, StationNumber
          IF(NFOVER.EQ.1) THEN
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
                WRITE(ScreenUnit+CK_LUN,9790) AEMIN
             ENDIF
-            WRITE(16+CK_LUN,9790) AEMIN
+c            WRITE(16+CK_LUN,9790) AEMIN
             OutputElement = ClosestElement
          ELSE
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
                WRITE(ScreenUnit+CK_LUN,9791) AEMIN
             ENDIF
-            WRITE(16+CK_LUN,9791) AEMIN
+c            WRITE(16+CK_LUN,9791) AEMIN
             call ADCIRC_Terminate()
          ENDIF
       ENDIF

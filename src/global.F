@@ -1282,35 +1282,38 @@ C--------------------------------------------------------------------
       
       INTEGER:: errorIO
       LOGICAL:: fileFound, FileOpened  
-      CHARACTER (LEN=300):: filename       
+      CHARACTER (LEN=300):: filename  
+
+      ! DW
+      INTEGER:: IUNIT     
 C...  
 C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
 C...  
 C     cms51.06: moved fort.33 file from read_input.F to here
 #ifdef CMPI
       filename = trim(localdir)//'/'//'fort.16' ;
-      inquire(FILE=trim(filename),EXIST=fileFound)
+      inquire(FILE=trim(filename),EXIST=fileFound,OPENED=FileOpened,NUMBER=IUNIT)
       IF ( fileFound ) THEN 
-        inquire(UNIT=16+CK_LUN,OPENED=FileOpened) ; 
+        ! inquire(UNIT=16+CK_LUN,OPENED=FileOpened) ; 
         IF ( .NOT. FileOpened ) THEN
            OPEN(UNIT=16+CK_LUN,FILE=trim(filename),STATUS='OLD',
      &        ACTION='WRITE',POSITION='APPEND',IOSTAT=errorIO)
         END IF
       ELSE
-        OPEN(16+CK_LUN,FILE=trim(filename), 
+        OPEN(UNIT=16+CK_LUN,FILE=trim(filename), 
      &     ACTION='WRITE', STATUS='REPLACE' )
       ENDIF     
 
       filename = trim(localdir)//'/'//'fort.33' ;
-      inquire(FILE=trim(filename),EXIST=fileFound)
+      inquire(FILE=trim(filename),EXIST=fileFound,OPENED=FileOpened,NUMBER=IUNIT)
       IF ( fileFound ) THEN 
-        inquire(UNIT=33+CK_LUN,OPENED=FileOpened) ; 
+        ! inquire(UNIT=33+CK_LUN,OPENED=FileOpened) ; 
         IF ( .NOT. FileOpened ) THEN
            OPEN(UNIT=33+CK_LUN,FILE=trim(filename),STATUS='OLD',
      &        ACTION='WRITE',POSITION='APPEND',IOSTAT=errorIO)
         END IF 
       ELSE
-        OPEN(33+CK_LUN,FILE=trim(filename), 
+        OPEN(UNIT=33+CK_LUN,FILE=trim(filename), 
      &     ACTION='WRITE', STATUS='REPLACE' )
       ENDIF     
 #else
@@ -1347,6 +1350,8 @@ C.....................................
           IF ( fileOpenned ) THEN
             CLOSE( lun + CK_LUN ) ; 
           END IF
+       
+          RETURN 
         END SUBROUTINE CLOSEFUNIT           
 
       END SUBROUTINE closeLogFile
@@ -1408,7 +1413,7 @@ C     Open a new file
          else
             write(scratchMessage,26) trim(filename)
  26         format("The file '",A,"' was opened successfully.")
-            call logMessage(INFO,trim(scratchMessage))
+c            call logMessage(INFO,trim(scratchMessage))
          endif         
    
       else
@@ -1423,7 +1428,7 @@ C     Open an existing file
            OPEN(lun+CK_LUN,FILE=trim(filename),STATUS='OLD',
      &        ACTION='WRITE',POSITION='APPEND',IOSTAT=errorIO)
 
-           call logMessage(INFO,trim(scratchMessage))
+c           call logMessage(INFO,trim(scratchMessage))
 
            if (errorIO.ne.0) then
              write(scratchMessage,27) trim(filename)
@@ -1437,7 +1442,7 @@ C     Open an existing file
            else
              write(scratchMessage,28) trim(filename)
  28          format("The file '",A,"' was opened successfully.")
-             call logMessage(INFO,trim(scratchMessage))
+c             call logMessage(INFO,trim(scratchMessage))
            endif
          end if
          !
@@ -1529,15 +1534,15 @@ C--------------------------------------------------------------------
 C
       IF (level.ge.NABOUT) THEN
 #ifdef FULL_STACK
-         write(16+CK_LUN,331,advance="no") trim(logLevelNames(level+2)),
-     &       (trim(messageSources(j)),j=1,sourceNumber)
-         write(16+CK_LUN,332) trim(message)
+c         write(16+CK_LUN,331,advance="no") trim(logLevelNames(level+2)),
+c     &       (trim(messageSources(j)),j=1,sourceNumber)
+c         write(16+CK_LUN,332) trim(message)
 #else
-         write(16+CK_LUN,333) trim(logLevelNames(level+2)),
-     &       trim(messageSources(sourceNumber)), trim(message)
+c         write(16+CK_LUN,333) trim(logLevelNames(level+2)),
+c     &       trim(messageSources(sourceNumber)), trim(message)
 #endif
 !#ifdef FLUSH_MESSAGES
-               flush(16+CK_LUN)
+c               flush(16+CK_LUN)
 !#endif
       ENDIF
 331   FORMAT(A,": ",A,50(:,"->",A))
@@ -1559,7 +1564,7 @@ C--------------------------------------------------------------------
       CHARACTER(*), intent(in) :: message
 C
       call screenMessage(level, message)
-      call logMessage(level, message)
+c      call logMessage(level, message)
 
 C--------------------------------------------------------------------
       END SUBROUTINE allMessage
@@ -1620,7 +1625,7 @@ C
 C     Check to see if file exists
       write(scratchMessage,21) lun
   21  format("Searching for file to open on unit ",i0,"...")
-      call logMessage(INFO,trim(scratchMessage))
+c      call logMessage(INFO,trim(scratchMessage))
       inquire(FILE=trim(filename),EXIST=fileFound)
       if (fileFound.eqv..false.) then
          write(scratchMessage,23) trim(filename)
@@ -1635,7 +1640,7 @@ C     Check to see if file exists
       else
          write(scratchMessage,24) trim(filename)
   24     format("The file '",A,"' was found. The file will be opened.")
-         call logMessage(INFO,trim(scratchMessage))
+c         call logMessage(INFO,trim(scratchMessage))
       endif
 C
 C     Open existing file
@@ -1653,7 +1658,7 @@ C     Open existing file
       else
          write(scratchMessage,26) trim(filename)
   26     format("The file '",A,"' was opened successfully.")
-         call logMessage(INFO,trim(scratchMessage))
+c         call logMessage(INFO,trim(scratchMessage))
       endif
 
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)

@@ -214,7 +214,7 @@ C
       ENDIF
       call setampizedlun(myproc) ! initialze ck_lun
       CALL MAKE_DIRNAME()    ! Establish Working Directory Name
-      call openLogFile()     ! jgf50.65: open subdomain log files (fort.16)
+C      call openLogFile()     ! jgf50.65: open subdomain log files (fort.16)
       CALL WRITER_INIT()     ! Initialize WRITER module
       CALL HSWRITER_INIT()   ! Initialize HSWRITER module  !st3 for hstart  100711
       if(((mnwproh > 0).or.(mnwproc > 0)) .and. MYPROC >= MNPROC) then
@@ -383,8 +383,8 @@ Corbitt 1203022: Local Advection Flags
       GORho=G/RhoWat0
       GORhoOAMB=GORho/AMB
 
-      WRITE(16+CK_LUN,1112)
-      WRITE(16+CK_LUN,17931)
+c      WRITE(16+CK_LUN,1112)
+c      WRITE(16+CK_LUN,17931)
       IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,1112)
       IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit+CK_LUN,17931)
  1112 FORMAT(/,1X,79('_'))
@@ -442,7 +442,7 @@ C
 
 !      AMPI_LB_FREQ = 10 ! TODO: set this from the command line
 !      AMPI_LB_FREQ = (4*WTIMINC)/DTDP + 5 ! TODO: set this from the command line
-      AMPI_LB_FREQ = 300 ;
+      AMPI_LB_FREQ = 300 
 C
       call setMessageSource("ADCIRC_Run")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)

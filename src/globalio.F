@@ -1735,9 +1735,9 @@ C----------------------------------------------------------------------
             rdata => descript % array2_g
          endif
          read(descript%lun+CK_LUN,*,end=3990,err=3990) skipline   ! TIME and IT line
-         call logMessage(INFO,
-     &       'Max/min timestamps were found in '//trim(descript%file_name)//
-     &       ' and will be loaded and used.')
+c         call logMessage(INFO,
+c     &       'Max/min timestamps were found in '//trim(descript%file_name)//
+c     &       ' and will be loaded and used.')
          do i=1, descript % num_fd_records
             read(descript%lun+CK_LUN,*,end=3990,err=3990) rawNode, rawDatum
             if ((rawNode.ge.1).and.(rawNode.le.descript%num_fd_records)) then
@@ -1752,21 +1752,21 @@ C----------------------------------------------------------------------
       ! time stamps not found in file but asking for them anyway
       if ( (ndsetmax.eq.1).and.
      &   (descript % minmax_timestamp.eqv..true.) ) then
-         call logMessage(WARNING,'Max/min time stamps not present in '//
-     &      trim(descript % file_name)//
-     &     '. Max/min time stamps will be set to -99999.d0 to initalize.')
+c         call logMessage(WARNING,'Max/min time stamps not present in '//
+c     &      trim(descript % file_name)//
+c     &     '. Max/min time stamps will be set to -99999.d0 to initalize.')
       endif
       ! time stamps are found in file but not asking for them
       if ( (ndsetmax.gt.1).and.
      &      (descript % minmax_timestamp.eqv..false.) ) then  
-            call logMessage(INFO,'Max/min timestamps present in "'//
-     &      trim(descript % file_name)//' but not needed. ')
+c            call logMessage(INFO,'Max/min timestamps present in "'//
+c     &      trim(descript % file_name)//' but not needed. ')
       endif
 
  3990 CONTINUE ! jump to here if end of file is reached
       WRITE(scratchMessage,450) numLinesInMinMaxFile, 
      &   trim(descript % file_name)
-      CALL logMessage(INFO,scratchMessage)
+c      CALL logMessage(INFO,scratchMessage)
       IF (numLinesInMinMaxFile.lt.(descript % num_fd_records)) THEN
           call allMessage(ERROR,'Not enough data in "'
      &         //trim(descript % file_name)//'".')

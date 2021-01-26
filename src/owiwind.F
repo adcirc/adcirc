@@ -548,7 +548,7 @@ C     &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
      &         dxp.ne.owi(idx)%dlon.or.dyp.ne.owi(idx)%dlat.or.
      &         swlatp.ne.owi(idx)%swlat.or.swlongp.ne.owi(idx)%swlon) then
             write(scratchMessage,'(A,I0,A)') "Oceanweather domain ",idx," has changed."
-            call logMessage(INFO,TRIM(scratchMessage))
+c            call logMessage(INFO,TRIM(scratchMessage))
             owi(idx)%iupdate = 1
           else
             owi(idx)%iupdate = 0
@@ -568,7 +568,7 @@ C     &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
            owi(idx)%swlon = swlongp
            WRITE(errorVar,'(A,I0)') "Updating grid coordinate mapping"//
      &        "coefficients, domain ",idx
-           call logMessage(INFO,errorVar)
+c           call logMessage(INFO,errorVar)
            call nws12interp(idx,np)
         endif
 
@@ -945,7 +945,7 @@ C     &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
              do i = 1,numSkipSnaps
                 write(scratchMessage,41) i
   41            format("Skipping snap '",I6,"' in OWI wind data.")
-                call logMessage(DEBUG,trim(scratchMessage))
+c                call logMessage(DEBUG,trim(scratchMessage))
                 CALL NWS12GET(wx,wy,pr,np,prbk)
              enddo
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -1138,9 +1138,9 @@ C     &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
       call allMessage(DEBUG,"Enter.")
 #endif
 
-      WRITE(16+CK_LUN,'(A)') ''
-      WRITE(16+CK_LUN,'(A,I0)') 'WIND MAPPING UPDATED FOR REGION ',IDX
-      WRITE(16+CK_LUN,'(A)') ''
+c      WRITE(16+CK_LUN,'(A)') ''
+c      WRITE(16+CK_LUN,'(A,I0)') 'WIND MAPPING UPDATED FOR REGION ',IDX
+c      WRITE(16+CK_LUN,'(A)') ''
 
 
       CALL owi_allocate(owi(idx))

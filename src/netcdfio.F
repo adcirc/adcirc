@@ -3937,8 +3937,8 @@ C     now close the initialized netcdf file
       iret = nf90_close(dat%ncid)
       CALL check_err(iret)
       
-      call logMessage(INFO,'Initialized "'//trim(dat%myFile%filename)//
-     &   '" file.') 
+c      call logMessage(INFO,'Initialized "'//trim(dat%myFile%filename)//
+c     &   '" file.') 
 
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -7094,8 +7094,8 @@ C
       ! create file name
       write(fext,'(i0)') lun
       hs%myFile%filename = trim(globaldir)//'/fort.'//trim(fext)//'.nc'
-      call logMessage(INFO,'Opening hotstart file "'
-     &    //trim(hs%myFile%filename)//'" for writing.')
+c      call logMessage(INFO,'Opening hotstart file "'
+c     &    //trim(hs%myFile%filename)//'" for writing.')
 C
       iret = nf90_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)
@@ -8150,8 +8150,8 @@ C
       ! create file name
       write(fext,'(i0)') lun
       hs%myFile%filename = trim(globaldir)//'/fort.'//trim(fext)//'.nc'
-      call logMessage(INFO,'Opening hot start file "'
-     &               //trim(hs%myFile%filename)//'" for reading.')
+c      call logMessage(INFO,'Opening hot start file "'
+c     &               //trim(hs%myFile%filename)//'" for reading.')
 C
 C     Open fulldomain file
       INQUIRE(FILE=hs%myFile%FILENAME,EXIST=hs%myFile%fileFound)
@@ -8449,8 +8449,8 @@ C
       end select    
 
       dat%myFile%filename = trim(descript % file_name)//'.nc'
-      call logMessage(INFO,'Opening file "'
-     &               //trim(dat%myFile%filename)//'" for reading.')
+c      call logMessage(INFO,'Opening file "'
+c     &               //trim(dat%myFile%filename)//'" for reading.')
 C
 C     Open fulldomain file
       inquire(file=dat%myfile%filename,exist=dat%myfile%filefound)
@@ -8559,9 +8559,9 @@ C     nodes and elements
       timestampsFound = .true.
       iret=nf90_inq_varid(dat%ncid,trim(tvn),dat%time_max_nodal_data_id)
       if ( iret.ne.NF90_NOERR ) then
-         call logMessage(INFO,'The file "'//trim(dat%myFile%filename)//
-     &  '" does not contain time of occurrence for the min/max data. '//
-     &  'As a result, time of occurrence will be initialized to -99999.')
+c         call logMessage(INFO,'The file "'//trim(dat%myFile%filename)//
+c     &  '" does not contain time of occurrence for the min/max data. '//
+c     &  'As a result, time of occurrence will be initialized to -99999.')
          timestampsFound = .false.
       endif    
       !

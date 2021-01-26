@@ -690,9 +690,9 @@ C....... and Ray's Ice for low ice values and low winds
          ENDIF
 
       CASE DEFAULT
-         WRITE(16+CK_LUN,*) 'ERROR: Ice drag law not recognized:'
-         WRITE(16+CK_LUN,'(A10)') DragLawString
-         WRITE(16+CK_LUN,*) 'Execution will now be terminated.'
+c         WRITE(16+CK_LUN,*) 'ERROR: Ice drag law not recognized:'
+c         WRITE(16+CK_LUN,'(A10)') DragLawString
+c         WRITE(16+CK_LUN,*) 'Execution will now be terminated.'
 
 
 #ifdef CMPI
@@ -1390,7 +1390,7 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
             CALL NWS20GET(vortexWVNX2,vortexWVNY2,vortexPRN2,timeloc)
          case default
             ! should be unreachable
-            call logMessage(ERROR,'NWS must equal 29 or 30.') 
+c            call logMessage(ERROR,'NWS must equal 29 or 30.') 
          end select        
          DO I=1,NP
             ! compute wind stress due to background met at this node
@@ -4439,7 +4439,7 @@ C     Calculate Holland A parameter. (jgf46.32jgf4 commented out)
 C      A = (RMW*1000.d0)**B
 C
 #ifdef DEBUG_HOLLAND
-      WRITE(16+CK_LUN,4321) B
+c      WRITE(16+CK_LUN,4321) B
  4321 FORMAT(/,2x,'Holland B parameter is ',e16.8)
 #endif
 C     jgf46.28 If we are running storm 2 in the Lake Pontchartrain
@@ -4770,10 +4770,10 @@ C
 #ifdef DEBUG_HOLLAND
             WRITE(scratchMessage,1244) CastTime(i),Lat(i),Lon(i),
      &           Spd(i),CPress(i),RRP(i),RMW(i),WindRefTime
-            call logMessage(DEBUG,scratchMessage)
+c            call logMessage(DEBUG,scratchMessage)
             if ( i.gt.1 ) then
                write(scratchMessage,2355) FcstInc(i-1)
-               call logMessage(DEBUG, scratchMessage)
+c               call logMessage(DEBUG, scratchMessage)
             endif
  1244       FORMAT('CastTime ',e16.8,' Lat ',f6.2,' Lon ',f6.2,
      &           /,'Spd ',f8.2,' CPress ',f10.2,' RRP ',f12.2,
@@ -5453,7 +5453,7 @@ C
          ENDDO ! loop through entries (lines ) in input file
          write(scratchMessage,12) icyc
  12      format('There are ',i2,' cycles in the fort.22 input file')
-         CALL logMessage(INFO,scratchMessage)
+c         CALL logMessage(INFO,scratchMessage)
          num_cycles = icyc
          icyc=2
 
@@ -6115,7 +6115,7 @@ C***********************************************************************
          ENDDO ! loop through entries (lines ) in input file
          write(scratchMessage,13) icyc
  13      format('There are ',i2,' cycles in the fort.22 input file')
-         CALL logMessage(INFO,scratchMessage)
+c         CALL logMessage(INFO,scratchMessage)
          num_cycles = icyc
          icyc=2
          ! 
@@ -6443,18 +6443,18 @@ C
       rewind(22+CK_LUN)
       currentLine = 1
       read(22+CK_LUN,'(A)',end=246,err=248,iostat=errorio) metComment
-      call logMessage(ECHO,"metComment: "//trim(metComment))
+c      call logMessage(ECHO,"metComment: "//trim(metComment))
       currentLine = currentLine + 1
       read(22+CK_LUN,*,end=246,err=248,iostat=errorio) hWindMultiplier
       currentLine = currentLine + 1
       write(scratchMessage,'("hWindMultiplier=",E15.8)') hWindMultiplier
-      call logMessage(ECHO,scratchMessage)
+c      call logMessage(ECHO,scratchMessage)
       read(22+CK_LUN,'(A)',end=248,err=248,iostat=errorio) scratchMessage
       currentLine = currentLine + 1
       pressureWindRelationship
      &      = scratchMessage(1:index(adjustl(scratchMessage)," "))
-      call logMessage(ECHO,"pressureWindRelationship: "
-     &     //trim(pressureWindRelationship))
+c      call logMessage(ECHO,"pressureWindRelationship: "
+c     &     //trim(pressureWindRelationship))
       do i=1,numFiles
          read(22+CK_LUN,*,end=246,err=248,iostat=errorio)
      &     hWindFiles(i)%cycleTime,
@@ -6465,7 +6465,7 @@ C
      &   '("time=",E15.8," Pc=",E15.8," ramp=",E15.8," file_name=",A)')
      &       hWindFiles(i)%cycleTime, hWindFiles(i)%Pc,
      &       hWindFiles(i)%rampVal, trim(hwindFiles(i)%file_name)
-         call logMessage(ECHO,scratchMessage)
+c         call logMessage(ECHO,scratchMessage)
          currentLine = currentLine + 1
       end do
       close(22+CK_LUN)
@@ -6473,7 +6473,7 @@ C
       ! log the number of HWind files that were specified
       write(scratchMessage,
      &    '("There were ",i0," HWind files specified.")') numFiles
-      call logMessage(INFO,scratchMessage)
+c      call logMessage(INFO,scratchMessage)
       !
       ! need at least 2 files so we have something to interpolate between
       ! in time
@@ -6499,8 +6499,8 @@ C
       ! is supported by ADCIRC
       select case(trim(pressureWindRelationship))
       case("dvorak","knaffzehr","specifiedPc","background")
-         call logMessage(INFO,"ADCIRC will use the "//
-     &   trim(pressureWindRelationship)//" pressure-wind relationship.")
+c         call logMessage(INFO,"ADCIRC will use the "//
+c     &   trim(pressureWindRelationship)//" pressure-wind relationship.")
       case default
          call allMessage(ERROR,"The "//trim(pressureWindRelationship)//
      &      " pressure-wind relationship is not supported by ADCIRC.")
@@ -6520,7 +6520,7 @@ C
             call windTerminate()
          endif
       end do
-      call logMessage(INFO,"All specified HWind files were found.")
+c      call logMessage(INFO,"All specified HWind files were found.")
       hWindFiles(:)%loaded = .false.
       !
       ! allocate memory for mesh coordinates in mercator projection
@@ -6879,8 +6879,8 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
 C
-      call logMessage(INFO,"Loading the HWind file '"
-     &                     //trim(hWindFiles(cn)%file_name)//"'.")
+c      call logMessage(INFO,"Loading the HWind file '"
+c     &                     //trim(hWindFiles(cn)%file_name)//"'.")
       call openFileForRead(220,trim(hWindFiles(cn)%file_name), errorio)
       if (errorio.gt.0) then
          call windTerminate()
@@ -6890,7 +6890,7 @@ C
       !
       ! SURFACE WIND COMPONENTS FOR HURRICANE  name_0825_22_30
       read(220+CK_LUN,'(A)',end=246,err=248,iostat=errorio) scratchMessage
-      call logMessage(ECHO,"HWind comment line: "//trim(scratchMessage))
+c      call logMessage(ECHO,"HWind comment line: "//trim(scratchMessage))
       !
       ! DX=DY= 6.02280 KILOMETERS.
       currentLine = currentLine + 1
@@ -6898,7 +6898,7 @@ C
      &   hWindFiles(cn)%dh
       write(scratchMessage,'("Mercator grid spacing is ",F8.5," km.")')
      &    hWindFiles(cn)%dh
-      call logMessage(ECHO,scratchMessage)
+c      call logMessage(ECHO,scratchMessage)
       !
       ! STORM CENTER LOCALE IS -77.2730 EAST LONGITUDE and  27.2950 NORTH LATITUDE ... STORM CENTER IS AT (X,Y)=(0,0)
       currentLine = currentLine + 1
@@ -6906,17 +6906,17 @@ C
      &   hWindFiles(cn)%cLon, hWindFiles(cn)%cLat ! degrees
       write(scratchMessage,'("center lon=",E15.8," center lat=",E15.8)')
      &   hWindFiles(cn)%cLon, hWindFiles(cn)%cLat
-      call logMessage(ECHO,scratchMessage)
+c      call logMessage(ECHO,scratchMessage)
       ! dimensions
       do i=1,4
          currentLine = currentLine + 1
          read(220+CK_LUN,'(A)',end=246,err=248,iostat=errorio) scratchMessage
-         call logMessage(ECHO,"Coordinate: "//trim(scratchMessage))
+c         call logMessage(ECHO,"Coordinate: "//trim(scratchMessage))
          currentLine = currentLine + 1
          read(220+CK_LUN,*,end=246,err=248,iostat=errorio) hWindFiles(cn)%nh
          write(scratchMessage,'("HWind dimension read: ",i3,".")')
      &      hWindFiles(cn)%nh
-         call logMessage(ECHO,scratchMessage)
+c         call logMessage(ECHO,scratchMessage)
          ! we won't need the actual coordinates
          currentLine = currentLine + 1
          read(220+CK_LUN,'(6F13.4)',end=246,err=248,iostat=errorio)
@@ -6929,13 +6929,13 @@ C
       currentLine = currentLine + 1
       read(220+CK_LUN,'(A)',end=246,err=248,iostat=errorio) scratchMessage
       currentLine = currentLine + 1
-      call logMessage(ECHO,"HWind sfc wind line: "
-     &      //trim(scratchMessage))
+c      call logMessage(ECHO,"HWind sfc wind line: "
+c     &      //trim(scratchMessage))
       currentLine = currentLine + 1
       read(220+CK_LUN,'(A)',end=246,err=248,iostat=errorio) scratchMessage
       currentLine = currentLine + 1
-      call logMessage(ECHO,"HWind sfc wind dimensions line: "
-     &       //trim(scratchMessage))
+c      call logMessage(ECHO,"HWind sfc wind dimensions line: "
+c     &       //trim(scratchMessage))
       indexLimit = (hWindFiles(cn)%nh - 1) / 2
       allocate(hWindFiles(cn)
      &    %u(-indexLimit:indexLimit,-indexLimit:indexLimit))
@@ -6954,8 +6954,8 @@ C
          dataset = dataset + 1
       end do
       close(220+CK_LUN)
-      call logMessage(INFO,"Finished loading the HWind file '"
-     &                     //trim(hWindFiles(cn)%file_name)//"'.")
+c      call logMessage(INFO,"Finished loading the HWind file '"
+c     &                     //trim(hWindFiles(cn)%file_name)//"'.")
       !
       ! convert mercator mesh spacing dh from km to m
       hWindFiles(cn)%dh = hWindFiles(cn)%dh * 1000.d0
@@ -7176,17 +7176,17 @@ C
       rewind(22+CK_LUN)
       currentLine = 1
       read(22+CK_LUN,'(A)',end=246,err=248,iostat=errorio) metComment
-      call logMessage(ECHO,"metComment: "//trim(metComment))
+c      call logMessage(ECHO,"metComment: "//trim(metComment))
       currentLine = currentLine + 1
       read(22+CK_LUN,*,end=246,err=248,iostat=errorio) GFDL_WindMultiplier
       currentLine = currentLine + 1
       write(scratchMessage,'("WindMultiplier=",E15.8)') GFDL_WindMultiplier
-      call logMessage(ECHO,scratchMessage)
+c      call logMessage(ECHO,scratchMessage)
       read(22+CK_LUN,*,end=246,err=248,iostat=errorio) GFDL_max_extrap_dist
       currentLine = currentLine + 1
       write(scratchMessage,
      &  '("GFDL Maximum Extrapolation Distance=",E15.8)') GFDL_max_extrap_dist
-      call logMessage(ECHO,scratchMessage)
+c      call logMessage(ECHO,scratchMessage)
 
       do i=1,numFiles
          read(22+CK_LUN,*,end=246,err=248,iostat=errorio)
@@ -7200,7 +7200,7 @@ C
      &   '("time=",E15.8," ramp=",E15.8," file_name=",A)')
      &       GFDL_Files(i)%cycleTime, 
      &       GFDL_Files(i)%rampVal, trim(GFDL_Files(i)%file_name)
-         call logMessage(ECHO,scratchMessage)
+c         call logMessage(ECHO,scratchMessage)
          currentLine = currentLine + 1
       end do
       close(22+CK_LUN)
@@ -7208,7 +7208,7 @@ C
       ! log the number of GFDL Met files that were specified
       write(scratchMessage,
      &    '("There were ",i0," GFDL Met files specified.")') numFiles
-      call logMessage(INFO,scratchMessage)
+c      call logMessage(INFO,scratchMessage)
       !
       ! need at least 2 files so we have something to interpolate between
       ! in time
@@ -7247,7 +7247,7 @@ C
       end do
 
       write(scratchMessage,'("All specified GFDL Met Files were found.")')
-      call logMessage(INFO,scratchMessage)
+c      call logMessage(INFO,scratchMessage)
       GFDL_Files(:)%loaded = .false.
 
       !
@@ -7282,7 +7282,7 @@ C
      &        " (days) is earlier than the first GFDL Met file time: ",
      &        E15.8, " (days). Inserting a blank wind snap.")')
      &        timeloc/86400.d0,GFDL_Files(1)%cycleTime/86400.d0
-            call logMessage(WARNING,scratchMessage)
+c            call logMessage(WARNING,scratchMessage)
             currentCycle = 1
          endif
 
@@ -7292,7 +7292,7 @@ C
      &        E15.8," (days) is later than the last GFDL Met file time: ",
      &        E15.8, " (days). Inserting a blank wind snap.")')
      &         timeloc/86400.d0,GFDL_Files(numFiles)%cycleTime/86400.d0
-            call logMessage(WARNING,scratchMessage)
+c            call logMessage(WARNING,scratchMessage)
             currentCycle = numFiles-1
          endif
 
@@ -7425,8 +7425,8 @@ C   P_J IS THE VALUE AT LOCATION J
 C   D_I_J - DISTANCE BETWEEN POINT I AND POINT J
 C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS HAVE)
 
-       call logMessage(INFO,"Loading the GFDL Met file '"
-     &                     //trim(fname)//"'.")
+c       call logMessage(INFO,"Loading the GFDL Met file '"
+c     &                     //trim(fname)//"'.")
        call openFileForRead(lun,trim(fname), errorio)
        if (errorio.gt.0) then
           call windTerminate()
@@ -7472,7 +7472,7 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
 
        write(scratchMessage,'("Read ",i0," GFDL Met Points.")')
      &    NPTS_GFDL
-      call logMessage(ECHO,scratchMessage)
+c      call logMessage(ECHO,scratchMessage)
 
 !     IF A MAXIMUM DISTANCE ISN'T SPECIFIED, THEN DETERMINE AN ESTIMATE
 !     TO GFDL GRID SPACING IN ORDER TO USE FOR MAXIMUM DISTANCE (maxdist = 6*cell spacing)
@@ -7495,7 +7495,7 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
        
        write(scratchMessage,'("Maximum GFDL Interpolation Distance = ",
      &                e24.16)') maxdist
-       call logMessage(ECHO,scratchMessage)
+c       call logMessage(ECHO,scratchMessage)
 
        
 C... ALLOCATE SPACE FOR KDTREE SEARCH
@@ -7656,7 +7656,7 @@ C
      &        E15.8," (days) is earlier than the first GFDL Met file time: ",
      &        E15.8, " (days). Inserting a blank wind snap.")')
      &        timeloc/86400.d0,GFDL_Files(1)%cycleTime/86400.d0
-            call logMessage(WARNING,scratchMessage)
+c            call logMessage(WARNING,scratchMessage)
             currentCycle = 1
          endif
 
@@ -7666,7 +7666,7 @@ C
      &        E15.8, " (days) is later than the last GFDL Met file time: ",
      &        E15.8, " (days). Inserting a blank wind snap.")')
      &         timeloc/86400.d0,GFDL_Files(numFiles)%cycleTime/86400.d0
-            call logMessage(WARNING,scratchMessage)
+c            call logMessage(WARNING,scratchMessage)
             currentCycle = numFiles-1
          endif
 
@@ -7681,7 +7681,7 @@ C
      &      E15.8," (days).")') timeloc/86400.d0,
      &         GFDL_Files(currentCycle)%cycleTime/86400.d0
 
-         call logMessage(INFO,scratchMessage)
+c         call logMessage(INFO,scratchMessage)
 
          call GET_GFDL(NP,WVNX,WVNY,PRess,x,y,
      &                GFDL_Files(currentCycle)%file_name,
@@ -7862,13 +7862,13 @@ C----------------------------------------------------------------------
       dynamicWaterLevelCorrectionCurrentLine = 1
       ! first line is a comment line
       read(dynamicWaterLevelCorrectionUn+CK_LUN,'(A)',end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionComment
-      call logMessage(ECHO,"dynamicWaterLevelCorrectionComment: "//trim(dynamicWaterLevelCorrectionComment))
+c      call logMessage(ECHO,"dynamicWaterLevelCorrectionComment: "//trim(dynamicWaterLevelCorrectionComment))
       dynamicWaterLevelCorrectionCurrentLine = dynamicWaterLevelCorrectionCurrentLine + 1
       ! 2nd line is time increment between datasets 
       read(dynamicWaterLevelCorrectionUn+CK_LUN,fmt=*,end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionTimeIncrement
       write(scratchMessage,'(a,f15.7)') "dynamicWaterLevelCorrectionTimeIncrement: ",
      &    dynamicWaterLevelCorrectionTimeIncrement 
-      call logMessage(ECHO,scratchMessage)
+c      call logMessage(ECHO,scratchMessage)
       dynamicWaterLevelCorrectionCurrentLine = dynamicWaterLevelCorrectionCurrentLine + 1
       ! tga20190628: this "if" is needed because it could lead to NaNs 
       ! if dynamicWaterLevelCorrectionTimeIncrement is zero, plus no reason for negative.
@@ -7881,7 +7881,7 @@ C----------------------------------------------------------------------
       read(dynamicWaterLevelCorrectionUn+CK_LUN,fmt=*,end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionDefaultValue
       write(scratchMessage,'(a,f15.7)') "dynamicWaterLevelCorrectionDefaultValue: ",
      &    dynamicWaterLevelCorrectionDefaultValue 
-      call logMessage(ECHO,scratchMessage)
+c      call logMessage(ECHO,scratchMessage)
       dynamicWaterLevelCorrectionCurrentLine = dynamicWaterLevelCorrectionCurrentLine + 1            
       ! initialize array values to zero -- can be used as blank snaps
       dynamicWaterLevelCorrectionsOld_m(:) = 0.d0
@@ -8125,16 +8125,16 @@ C----------------------------------------------------------------------
       ! write log messages if that was the last dataset
       if (nextCorrectionDataSetFound.eqv..false.) then
          dynamicWaterLevelCorrectionFileEnded = .true.
-         call logMessage(INFO,
-     &    'Finished reading the final water level correction dataset 
-     &     from "'
-     &      //trim(dynamicWaterLevelCorrectionFileName)//'".')
+c         call logMessage(INFO,
+c     &    'Finished reading the final water level correction dataset 
+c     &     from "'
+c     &      //trim(dynamicWaterLevelCorrectionFileName)//'".')
          if ( dynamicWaterLevelCorrectionDataSetCounter.eq.1 ) then
             dynamicWaterLevelCorrectionIsConstant = .true.
-            call logMessage(INFO,
-     &      'Only one water level correction dataset was found. '//
-     &      'The water level correction will therefore be constant in 
-     &       time.')
+c            call logMessage(INFO,
+c     &      'Only one water level correction dataset was found. '//
+c     &      'The water level correction will therefore be constant in 
+c     &       time.')
          endif
       endif
 

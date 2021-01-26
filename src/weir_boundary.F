@@ -571,7 +571,7 @@ C...............WRITE SCREEN/UNIT 16 INFORMATION AT START/END
      &                      TIMELOC,NBV(MYIDX)
 #endif
                         WRITE(ScreenUnit+CK_LUN,'(A)') TRIM(ScratchMessage)
-                        WRITE(16+CK_LUN,'(A)') TRIM(ScratchMessage)
+c                        WRITE(16+CK_LUN,'(A)') TRIM(ScratchMessage)
                     ENDIF
                     IF(BAR_DEG_END(MYIDX).EQ.TIMELOC)THEN
                         IF(BAR_VARYTYPE(MYIDX).EQ.1)THEN
@@ -587,7 +587,7 @@ C...............WRITE SCREEN/UNIT 16 INFORMATION AT START/END
      &                      TIMELOC,NBV(MYIDX)
 #endif
                         WRITE(ScreenUnit+CK_LUN,'(A)') TRIM(ScratchMessage)
-                        WRITE(16+CK_LUN,'(A)') TRIM(ScratchMessage)
+c                        WRITE(16+CK_LUN,'(A)') TRIM(ScratchMessage)
                     ENDIF
                 END SELECT
  1900           FORMAT('INFO: ',A,' TIME VARYING BOUNDARY ',A,
@@ -712,10 +712,10 @@ C               PREVAILING GROUND. CHECK NODE ACROSS BOUNDARY AS WELL AS LOCAL N
 #ifdef CMPI
                             WRITE(ScreenUnit+CK_LUN,1904) TIMELOC,NBV(MYIDX),
      &                          MYPROC
-                            WRITE(16+CK_LUN,1904) TIMELOC,NBV(MYIDX),MYPROC
+c                            WRITE(16+CK_LUN,1904) TIMELOC,NBV(MYIDX),MYPROC
 #else
                             WRITE(ScreenUnit+CK_LUN,1905) TIMELOC,NBV(MYIDX)
-                            WRITE(16+CK_LUN,1905) TIMELOC,NBV(MYIDX)
+c                            WRITE(16+CK_LUN,1905) TIMELOC,NBV(MYIDX)
 #endif
                             BAR_HEIGHT = DEPTH
                         ENDIF   
@@ -884,7 +884,7 @@ C...................INFORM SCREEN AND UNIT 16 WE ARE HERE
 #else
                     WRITE(ScratchMessage,102)MYSEC,NNBB1,TIMELOC
 #endif
-                    WRITE(16+CK_LUN,'(A)') TRIM(ScratchMessage)
+c                    WRITE(16+CK_LUN,'(A)') TRIM(ScratchMessage)
                     WRITE(ScreenUnit+CK_LUN,'(A)') TRIM(ScratchMessage)
 
 C...................ALTER THE VARIABLES USED IN COMPUTE_BARRIER_HEIGHT_LINEAR
@@ -974,7 +974,7 @@ C...................GET NODE NUMBER AND INFORM SCREEN AND UNIT 16
 #else
                     WRITE(ScratchMessage,104)MYSEC,NNBB1,TIMELOC
 #endif
-                    WRITE(16+CK_LUN,'(A)') TRIM(ScratchMessage)
+c                    WRITE(16+CK_LUN,'(A)') TRIM(ScratchMessage)
                     WRITE(ScreenUnit+CK_LUN,'(A)') TRIM(ScratchMessage)
 
 C...................CALL THE LAST LINEAR INTERPOLATION                 

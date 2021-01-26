@@ -466,8 +466,8 @@ C
       IF(MNWPROC > 0) THEN
         IF(MYPROC.eq.0) THEN
           DO I=1,MNWPROC
-            WRITE(16+CK_LUN,*)'PROC ',MYPROC,' IS SENDING SIG_TERM TO WRITER ',
-     &           I
+c            WRITE(16+CK_LUN,*)'PROC ',MYPROC,' IS SENDING SIG_TERM TO WRITER ',
+c     &           I
             CALL MPI_SEND(SIG_TERM,1,MPI_INTEGER,MNPROC,
      &           TAG,COMM_WRITER(I),IERR)
           ENDDO
@@ -477,8 +477,8 @@ C
       IF(MNWPROH > 0) THEN             !st3 100711 for hsfile
         IF(MYPROC.eq.0) THEN
           DO I=1,MNWPROH
-            WRITE(16+CK_LUN,*)'PROC ',MYPROC,' IS SENDING SIG_TERM TO HSWRITER',
-     &           I
+c            WRITE(16+CK_LUN,*)'PROC ',MYPROC,' IS SENDING SIG_TERM TO HSWRITER',
+c     &           I
             CALL MPI_BARRIER(COMM_HSLEEP(I),IERR)
             CALL MPI_SEND(SIG_TERM,1,MPI_INTEGER,MNPROC,
      &           TAG,COMM_WRITEH(I),IERR)
@@ -574,7 +574,7 @@ C
       READ(18+CK_LUN,3020) BlkName, inputFileFmtVn
       if (Trim(BlkName) /= 'FileFmt' .and.
      $  .not. CMP_VERSION_NUMBERS(FileFmtVersion, inputFileFmtVn)) then
-        write(16+CK_LUN,*) 'File Format of Fort.18 does not match aborting'
+c        write(16+CK_LUN,*) 'File Format of Fort.18 does not match aborting'
         stop
       end if
 

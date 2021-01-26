@@ -191,27 +191,27 @@ C
          case(sig_val) 
             write(scratchMessage,
      &       '("Writer processor ",i0," received sig_val.")') writer_id
-            call logMessage(INFO,scratchMessage)
+C            call logMessage(INFO,scratchMessage)
             call writer_recv_values()
          case(sig_write)
             write(scratchMessage,
      &       '("Writer processor ",i0," received sig_write.")') writer_id
-            call logMessage(INFO,scratchMessage)
+C            call logMessage(INFO,scratchMessage)
             call writer_write()
          case(sig_mesh)
             write(scratchMessage,
      &       '("Writer processor ",i0," received sig_mesh.")') writer_id
-            call logMessage(INFO,scratchMessage)
+C            call logMessage(INFO,scratchMessage)
             call writerReadMesh()   
          case(sig_pause)   ! tcm addeded v49.52.01 SIG_PAUSE
             write(scratchMessage,
      &       '("Writer processor ",i0," received sig_pause.")') writer_id
-            call logMessage(INFO,scratchMessage)
+C            call logMessage(INFO,scratchMessage)
             exit
          case(sig_term) 
             write(scratchMessage,
      &       '("Writer processor ",i0," received sig_term.")') writer_id
-            call logMessage(INFO,scratchMessage)
+C            call logMessage(INFO,scratchMessage)
             exit
          case default
             write(scratchMessage,
@@ -271,7 +271,7 @@ C
       if (myproc.eq.0) then
          write(scratchMessage,'(a,i0,a)') 
      &    'Processor 0 is sending sig_val to writer ',wcommID,'.'
-         call logMessage(DEBUG,scratchMessage)
+C         call logMessage(DEBUG,scratchMessage)
          !
          ! Send SIG_VAL to a writer to get it ready to receive values.
          call mpi_send(SIG_VAL, 1, mpi_integer, mnproc, tag,
@@ -302,7 +302,7 @@ Cobell - Allow writer processors to output netcdf data
          write(scratchMessage,'(a,i0,a,a,a,i0,a)') 
      &     'Processor ',myproc,' is sending file name ',
      &     trim(descript%file_name),' to writer ',wcommID,'.'
-         call logMessage(DEBUG,scratchMessage)
+C         call logMessage(DEBUG,scratchMessage)
       endif
 
 C...  Compute the buffer size
@@ -320,7 +320,7 @@ C...  Compute the buffer size
 
          write(scratchMessage,'(a,i0,a,a,a)') 'proc ',myproc,
      &    ' is sending for ',trim(descript % file_name),'.'
-         call logMessage(DEBUG,scratchMessage)
+C         call logMessage(DEBUG,scratchMessage)
 
 C...     The following mpi_reduce sends array values to rank MNPROC,
 C...     which is the writer proc in the group.
@@ -423,7 +423,7 @@ C-----------------------------------------------------------------------
       write(scratchMessage,'(a,i0,a,i0,a,a,a)') 'Writer ',writer_id,
      &   ' buffer ', bufID,' received file name ',
      &   trim(writer_descripts(bufID)%file_name)
-      call logMessage(DEBUG,scratchMessage)
+C      call logMessage(DEBUG,scratchMessage)
       !
       !st3 100708: split file
       if (isplit.eqv..true.) then                             
@@ -539,7 +539,7 @@ C-----------------------------------------------------------------------
             if (nwloaded(i).eqv..true.) then   !st3 nwloaded()=false:unloaded, true:loaded
                write(scratchMessage,'(a,i0,a,i0,a)') 'Proc ',myproc,
      &           ' is sending sig_write to writer ',i,'.'
-               call logMessage(DEBUG, scratchMessage)
+C               call logMessage(DEBUG, scratchMessage)
                call mpi_send(sig_write,1,mpi_integer,mnproc,
      &              tag,comm_writer(i),ierr)
                nwloaded(i) = .false.
@@ -596,7 +596,7 @@ C-----------------------------------------------------------------------
 #endif
       write(scratchMessage,'(a,i0,a)') 
      &    'Writer ',writer_id,' is writing...'
-      call logMessage(INFO, scratchMessage)      
+C      call logMessage(INFO, scratchMessage)      
       !
       ! Loop over the buffers on this writer processor and write out
       ! the data that are stored in them 
@@ -609,7 +609,7 @@ C-----------------------------------------------------------------------
      &       ' buffer ',ibuf,
      &       ' is full and will be written to the file "',
      &        trim(writer_descripts(ibuf) % file_name),'"'
-         call logMessage(DEBUG, scratchMessage)
+C         call logMessage(DEBUG, scratchMessage)
          !
          ! for ascii and sparse ascii, open the file appropriately
          if ( (abs(writer_descripts(ibuf) % specifier).eq.ASCII).or.
@@ -752,7 +752,7 @@ C          required extra message passing steps.
                write(scratchMessage,'(a,i0,a,a)') ' Writer ',writer_id,
      &          ' is calling initOutputXDMF for file ',
      &          trim(writer_descripts(ibuf) % file_name)
-               call logMessage(DEBUG, scratchMessage)
+C               call logMessage(DEBUG, scratchMessage)
                call initOutputXDMF(writer_descripts(ibuf))
                call writeControlXDMF(
      &             writer_descripts(ibuf) % xdmfMD % xdmfFortranObj)
@@ -761,7 +761,7 @@ C          required extra message passing steps.
             write(scratchMessage,'(a,i0,a,a)') 'Writer ',writer_id,
      &          ' is calling writeOutArrayXDMF for file ',
      &          trim(writer_descripts(ibuf) % file_name)
-            call logMessage(DEBUG, scratchMessage)
+C            call logMessage(DEBUG, scratchMessage)
             call writeOutArrayXDMF(
      &         writer_descripts(ibuf) % wMD % myTime,
      &         writer_descripts(ibuf) % wMD % myTimeStep,
@@ -843,7 +843,7 @@ C
       if (myproc.eq.0) then
          write(scratchMessage,'(a,i0,a,i0,a)') 
      &  'Processor ',myproc,' is sending sig_mesh to writer ',wcommID,'.'
-         call logMessage(INFO, scratchMessage)
+C         call logMessage(INFO, scratchMessage)
          !
          ! Send sig_mesh to a writer to get it ready to receive metadata.
          call mpi_send(sig_mesh, 1, mpi_integer, mnproc, tag,
@@ -941,10 +941,10 @@ C-----------------------------------------------------------------------
 
       write(scratchMessage,'(a,i0,a,a)') 'Writer ',writer_id,
      &   ' received mesh file name ',trim(meshFileName)
-      call logMessage(INFO, scratchMessage)
+C      call logMessage(INFO, scratchMessage)
       write(scratchMessage,'(a,a,a)') 'Writer GLOBALDIR is ',
      &  trim(GLOBALDIR),'.'
-      call logMessage(INFO,scratchMessage)
+C      call logMessage(INFO,scratchMessage)
       ! ending time step
       call mpi_recv(nt, 1, mpi_integer, 0, tag,
      &      comm_writer(writer_id), mpistat, ierr)
@@ -1265,13 +1265,13 @@ C-----------------------------------------------------------------------
          STOP
       ENDIF
 !
-      WRITE(16+CK_LUN,*) "***********WRITE HOTSTART*********************"
-      WRITE(16+CK_LUN,*) "NHSTAR = ", NHSTAR
-      WRITE(16+CK_LUN,*) "FirstCall = ", FirstCall
+c      WRITE(16+CK_LUN,*) "***********WRITE HOTSTART*********************"
+c      WRITE(16+CK_LUN,*) "NHSTAR = ", NHSTAR
+c      WRITE(16+CK_LUN,*) "FirstCall = ", FirstCall
       IF (FirstCall) THEN
          IF ( WRITER_ID /= 0  ) THEN
             IF (.not.ALLOCATED(ETA1_g)) THEN
-              write(16+CK_LUN,*) 'Allocating Elev1Descript'
+c              write(16+CK_LUN,*) 'Allocating Elev1Descript'
               ALLOCATE(ETA1_g(NP_G))
             ENDIF
          ENDIF
@@ -1286,7 +1286,7 @@ C-----------------------------------------------------------------------
 
          IF ( WRITER_ID /= 0 ) THEN
             IF (.not.ALLOCATED(ETA2_g)) THEN
-               write(16+CK_LUN,*) 'Allocating Elev2Descript'
+c               write(16+CK_LUN,*) 'Allocating Elev2Descript'
                ALLOCATE(ETA2_g(NP_G))
             ENDIF
          ENDIF
@@ -1301,7 +1301,7 @@ C-----------------------------------------------------------------------
 
          IF ( WRITER_ID /= 0 ) THEN
             IF (.not.ALLOCATED(UU2_g)) THEN
-               write(16+CK_LUN,*) 'Allocating VelDescript'
+c               write(16+CK_LUN,*) 'Allocating VelDescript'
                ALLOCATE(UU2_g(NP_G))
                ALLOCATE(VV2_g(NP_G))
             ENDIF
@@ -1319,7 +1319,7 @@ C-----------------------------------------------------------------------
 
          IF (IM.eq.10) THEN
             IF ( WRITER_ID /= 0 ) THEN
-               write(16+CK_LUN,*) 'Allocating CH1Descript'
+c               write(16+CK_LUN,*) 'Allocating CH1Descript'
                ALLOCATE(CH1_g(NP_G))
             ENDIF
             CH1Descript % specifier            = NHSTAR
@@ -1333,7 +1333,7 @@ C-----------------------------------------------------------------------
          ENDIF
 
          IF ( WRITER_ID /= 0 ) THEN
-            write(16+CK_LUN,*) 'Allocating EtaDiscDescript'
+c            write(16+CK_LUN,*) 'Allocating EtaDiscDescript'
             ALLOCATE(EtaDisc_g(NP_G))
          ENDIF
          EtaDiscDescript % specifier            = NHSTAR
@@ -1346,7 +1346,7 @@ C-----------------------------------------------------------------------
          EtaDiscDescript % array_g              => EtaDisc_g
 
          IF ( WRITER_ID /= 0 ) THEN
-            write(16+CK_LUN,*) 'Allocating NodeCodeDescript'
+c            write(16+CK_LUN,*) 'Allocating NodeCodeDescript'
             ALLOCATE(NodeCode_g(NP_G))
          ENDIF
          NodeCodeDescript % specifier            = NHSTAR
@@ -1359,7 +1359,7 @@ C-----------------------------------------------------------------------
          NodeCodeDescript % iarray_g             => NODECODE_g
 
          IF ( WRITER_ID /= 0 ) THEN
-            write(16+CK_LUN,*) 'Allocating NOFFDescript'
+c            write(16+CK_LUN,*) 'Allocating NOFFDescript'
             ALLOCATE(NOFF_g(NE_G))
          ENDIF
          NOFFDescript % specifier            = NHSTAR
@@ -1388,7 +1388,7 @@ C     collect up the data from subdomains if running in parallel
 ! tcm v49.54 -- changed noff to noff_g to fix an allocation bug in hot start writer
          WHERE (NOFF_G.gt.1) NOFF_g = 1
 !
-         WRITE(16+CK_LUN,*) "FINISH collectFullDomainArray"
+c         WRITE(16+CK_LUN,*) "FINISH collectFullDomainArray"
       SELECT CASE (NHSTAR)
       !tcm v51.26 added nhstar=-1 for time-stamped hot starts
       CASE(-1,1) ! nonportable binary (1 for backwards compatibility)
@@ -1481,10 +1481,10 @@ C
             WRITE(hss % lun+CK_LUN,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
          ENDIF
       CASE(2) ! ascii?
-         write(16+CK_LUN,*) 'ASCII Hotstart file not implemented yet.'
+c         write(16+CK_LUN,*) 'ASCII Hotstart file not implemented yet.'
 
       CASE(3) ! netcdf
-         write(16+CK_LUN,*) 'NetCDF Hotstart undergoing testing.'
+c         write(16+CK_LUN,*) 'NetCDF Hotstart undergoing testing.'
 
       CASE DEFAULT
          write(ScreenUnit+CK_LUN,*) 'The value of NHSTAR=',NHSTAR
@@ -1500,9 +1500,9 @@ C...
 
       IF(NSCREEN.NE.0.AND. WRITER_ID /= 0 ) THEN
          WRITE(ScreenUnit+CK_LUN,24541) hss % lun, WRITER_ID, IIT, ttime  !tcm v51.26 changed IT to IIT and TimeLoc to ttime since
-         WRITE(16+CK_LUN,24541) hss % lun, WRITER_ID, IIT, ttime !IT and TimeLoc are not known by writer processor id /=0  (echoing to writer file)
+c         WRITE(16+CK_LUN,24541) hss % lun, WRITER_ID, IIT, ttime !IT and TimeLoc are not known by writer processor id /=0  (echoing to writer file)
       ELSE
-         WRITE(16+CK_LUN,24541) hss % lun,WRITER_ID,IT,TimeLoc
+c         WRITE(16+CK_LUN,24541) hss % lun,WRITER_ID,IT,TimeLoc
       ENDIF
 24541 FORMAT(1X,'HOT START OUTPUT WRITTEN TO UNIT ',I2,'  HSWriter:',i2
      &    ' AT TIME STEP = ',I9,' TIME = ',E15.8)
@@ -1510,7 +1510,7 @@ C...
 C        jgf45.07 added option to stop ADCIRC after writing hot start file.
          IF (NHSTAR.EQ.67) THEN
             WRITE(ScreenUnit+CK_LUN,*) 'NHSTAR.EQ.67; ADCIRC stopping.'
-            WRITE(16+CK_LUN,*) 'NHSTAR.EQ.67; ADCIRC stopping.'
+c            WRITE(16+CK_LUN,*) 'NHSTAR.EQ.67; ADCIRC stopping.'
          ENDIF
          hss % lun      = 68
          IF(NHSTAR.EQ.1) THEN
@@ -1529,7 +1529,7 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
       ELSE
          IF (NHSTAR.EQ.68) THEN
             WRITE(ScreenUnit+CK_LUN,*) 'NHSTAR.EQ.68; ADCIRC stopping.'
-            WRITE(16+CK_LUN,*) 'NHSTAR.EQ.68; ADCIRC stopping.'
+c            WRITE(16+CK_LUN,*) 'NHSTAR.EQ.68; ADCIRC stopping.'
          ENDIF
          hss % lun=67
          IF(NHSTAR.EQ.1) THEN

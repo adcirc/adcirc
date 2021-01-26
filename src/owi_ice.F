@@ -137,7 +137,7 @@ C***********************************************************************
 
       if(numSets.NE.1.AND.numSets.NE.2) then
         if (myproc == 0) write(screenunit+CK_LUN,1004)
-        write(16+CK_LUN,1004)\
+c        write(16+CK_LUN,1004)\
 
 ! DW
 #ifdef CMPI
@@ -272,7 +272,7 @@ C***********************************************************************
           if(MYPROC.EQ.0) then
             WRITE(screenunit+CK_LUN,16) cntSnaps
           endif
-          WRITE(16+CK_LUN,16) cntSnaps    !TCMv48.4629 (Changed format number from 15 to 16)
+c          WRITE(16+CK_LUN,16) cntSnaps    !TCMv48.4629 (Changed format number from 15 to 16)
         ENDIF
         return
       endif
@@ -349,10 +349,10 @@ C***********************************************************************
           WRITE(screenunit+CK_LUN,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
           WRITE(screenunit+CK_LUN,*) 'EXECUTION WILL BE TERMINATED'
         endif
-        WRITE(16+CK_LUN,*) 'SNAPSHOTS NOT SYNCRONIZED'
-        WRITE(16+CK_LUN,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
-        WRITE(16+CK_LUN,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
-        WRITE(16+CK_LUN,*) 'EXECUTION WILL BE TERMINATED'
+c        WRITE(16+CK_LUN,*) 'SNAPSHOTS NOT SYNCRONIZED'
+c        WRITE(16+CK_LUN,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
+c        WRITE(16+CK_LUN,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
+c        WRITE(16+CK_LUN,*) 'EXECUTION WILL BE TERMINATED'
 
 ! DW
 #ifdef CMPI
@@ -387,12 +387,12 @@ c      end if
           if(MYPROC.EQ.0) then
             WRITE(screenunit+CK_LUN,15) iCYMDHB,iMinB
           endif
-          WRITE(16+CK_LUN,15) iCYMDHB,iMinB
+c          WRITE(16+CK_LUN,15) iCYMDHB,iMinB
         else
           if(MYPROC.EQ.0) then
             WRITE(screenunit+CK_LUN,14) iCYMDHB,iMinB
           endif
-          WRITE(16+CK_LUN,14) iCYMDHB,iMinB
+c          WRITE(16+CK_LUN,14) iCYMDHB,iMinB
         endif
       ENDIF
 
@@ -497,11 +497,11 @@ c      end if
       WRITE(screenunit+CK_LUN,*)''
       endif
 
-      WRITE(16+CK_LUN,*) ''
-      WRITE(16+CK_LUN,*) ' !!!!!FATAL ERROR!!!!!'
-      WRITE(16+CK_LUN,*) ' EITHER UNIT 225 or 227 COULD NOT BE READ'
-      WRITE(16+CK_LUN,*) ' EXECUTION WILL BE TERMINATED'
-      WRITE(16+CK_LUN,*) ''
+c      WRITE(16+CK_LUN,*) ''
+c      WRITE(16+CK_LUN,*) ' !!!!!FATAL ERROR!!!!!'
+c      WRITE(16+CK_LUN,*) ' EITHER UNIT 225 or 227 COULD NOT BE READ'
+c      WRITE(16+CK_LUN,*) ' EXECUTION WILL BE TERMINATED'
+c      WRITE(16+CK_LUN,*) ''
 !  DW
 !#ifdef CMPI
 !      call msg_fini()
@@ -519,11 +519,11 @@ c      end if
         WRITE(screenunit+CK_LUN,*) ''
       ENDIF
 
-      WRITE(16+CK_LUN,*) ''
-      WRITE(16+CK_LUN,*) ' !!! WARNING !!!'
-      WRITE(16+CK_LUN,*) ' EITHER UNIT 225 or 227 RAN OUT'
-      WRITE(16+CK_LUN,*) ' EXECUTION WILL CONTINUE'
-      WRITE(16+CK_LUN,*) ''
+c      WRITE(16+CK_LUN,*) ''
+c      WRITE(16+CK_LUN,*) ' !!! WARNING !!!'
+c      WRITE(16+CK_LUN,*) ' EITHER UNIT 225 or 227 RAN OUT'
+c      WRITE(16+CK_LUN,*) ' EXECUTION WILL CONTINUE'
+c      WRITE(16+CK_LUN,*) ''
 
       do i=1,NP
         Ciceval(I)=0.d0
@@ -568,9 +568,9 @@ C***********************************************************************
       INTEGER   NP,I,J,K,XI,YI
       REAL(SZ)  adcLat,adcLong
 
-      WRITE(16+CK_LUN,*) ''
-      WRITE(16+CK_LUN,*) 'BASIN-SCALE ICE MAPPING UPDATED'
-      WRITE(16+CK_LUN,*) ''
+c      WRITE(16+CK_LUN,*) ''
+c      WRITE(16+CK_LUN,*) 'BASIN-SCALE ICE MAPPING UPDATED'
+c      WRITE(16+CK_LUN,*) ''
         
       iLatB = iLatc
       iLongB = iLongc
@@ -659,9 +659,9 @@ C***********************************************************************
       INTEGER   NP,I,J,K,XI,YI
       REAL(SZ)  adcLat,adcLong
 
-      WRITE(16+CK_LUN,*) ''
-      WRITE(16+CK_LUN,*) 'REGION-SCALE ICE MAPPING UPDATED'
-      WRITE(16+CK_LUN,*) ''
+c      WRITE(16+CK_LUN,*) ''
+c      WRITE(16+CK_LUN,*) 'REGION-SCALE ICE MAPPING UPDATED'
+c      WRITE(16+CK_LUN,*) ''
         
       iLatR = iLatc
       iLongR = iLongc

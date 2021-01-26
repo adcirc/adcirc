@@ -60,7 +60,7 @@ C----------------------------------------------------------------------
           PRINT *,"Rank ",RANK," about to migrate from PE ",OLD_PE
 
 C     TODO: close files temporarily during migration
-          CALL closeLogFile() 
+C          CALL closeLogFile() 
 
           ! close a metfile
           CALL close_met_files() 
@@ -99,14 +99,14 @@ C----------------------------------------------------------------------
           CALL MPI_COMM_RANK(MPI_COMM_ADCIRC, RANK, IERR)
           CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, NEW_PE, FLAG, IERR)
 
-          PRINT *,"Rank ",RANK," just migrated to PE ",NEW_PE
+C          PRINT *,"Rank ",RANK," just migrated to PE ",NEW_PE
 
 C     TODO: re-open files closed temporarily during migration
 C          CALL openLogFile() 
-          CALL reopenLogFile() 
+C          CALL reopenLogFile() 
 
 
-          PRINT*, "reopen met file "   
+C          PRINT*, "reopen met file "   
           ! open and fast forward to location where the metfile
           ! was closed 
           CALL reopenffwd_met_files( ) 

@@ -510,7 +510,7 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
                IF(COEF(I,1).LT.0.d0) THEN                  
                   IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
      &              WRITE(ScreenUnit+CK_LUN,1019) I,COEF(I,1)
-                  WRITE(16+CK_LUN,1019) I,COEF(I,1)
+c                  WRITE(16+CK_LUN,1019) I,COEF(I,1)
                   DIE = .TRUE.
                ENDIF
             ENDDO
@@ -560,7 +560,7 @@ C.....      Check that all the diagonal elements in "COEFD" are > 0.
                IF(COEFD(I).LT.0.d0) THEN
                   IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
      &              WRITE(ScreenUnit+CK_LUN,1019) I,COEFD(I)
-                  WRITE(16+CK_LUN,1019) I,COEFD(I)
+c                  WRITE(16+CK_LUN,1019) I,COEFD(I)
  1019             FORMAT(/,1X,'!!!!!!!!  ERROR  !!!!!!!',
      &              /,1X,'THE DIAGONAL TERM IN THE EQUATION FOR NODE ',I10,
      &                '= ',E15.6,' AND IS <= 0',/)
