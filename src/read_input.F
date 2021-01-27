@@ -516,7 +516,7 @@ c         WRITE(16+CK_LUN,1952) NFOVER
       ENDIF
 #ifdef DEBUG_WARN_ELEV
       IF (iWarnElevDump .ne. 0) WarnElevDump = .True.
- c     WRITE(16+CK_LUN,1953) WarnElev,WarnElevDump,WarnElevDumpLimit,ErrorElev
+c      WRITE(16+CK_LUN,1953) WarnElev,WarnElevDump,WarnElevDumpLimit,ErrorElev
  1953 FORMAT(//,5X,
      &     'A warning will be issued if elevation exceeds WarnElev = ',
      &     e16.8,
