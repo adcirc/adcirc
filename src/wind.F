@@ -2847,8 +2847,8 @@ C     from NAM data
 !     WJP Feb27-2019: Added for NWS=14 for grib2
       IF (ABS(NWS).eq.14) THEN
          ! TimeLoc should be rounded down to nearest WTIMINC
-         TimeLoc_NM = nint(TimeLoc/60) ! first round to nearest minute
-         WTIME1 = WTIMINC*floor(TimeLoc_NM*60/WTIMINC)
+         TimeLoc_NM = nint(TimeLoc/60d0) ! first round to nearest minute
+         WTIME1 = WTIMINC*floor(TimeLoc_NM*60d0/WTIMINC)
          WTIME2 = WTIME1 + WTIMINC
          WTRATIO = (TimeLoc-WTIME1)/WTIMINC
          IF(NCICE.NE.0)THEN
@@ -2859,7 +2859,7 @@ C     from NAM data
          ! Initialising winds (pressure is already initialized)
          ! Get the first wind snap
          if (NCICE.eq.14) then
-            CICE_TIME1 = CICE_TIMINC*floor(TimeLoc_NM*60/CICE_TIMINC)
+            CICE_TIME1 = CICE_TIMINC*floor(TimeLoc_NM*60d0/CICE_TIMINC)
             CICE_TIME2 = CICE_TIME1 + CICE_TIMINC
             CALL NWS14GET(WVNX1,WVNY1,PRN1,CICE1)
          else
@@ -5660,7 +5660,7 @@ C
             xcoor(i) = slam(i) * rad2deg
             ycoor(i) = sfea(i) * rad2deg
          END DO
-         timeOffset=TIMELOC
+         timeOffset = nint(TIMELOC/60d0)*60d0 ! round to nearest minute
       END IF   ! end of first Time data allocations and such
       !
       ! the mesh changes at each time step if we are writing out
@@ -5819,9 +5819,9 @@ C
                cycle_num(icyc) = cycle_num1(ient)
                HollB(icyc) = HollB1(ient)
 
-              ! switch sin and cos b/c these are compass directions
-              uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
-              vTrans(icyc)=cos(dir1(ient)*deg2rad)*speed1(ient)
+               ! switch sin and cos b/c these are compass directions
+               uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
+               vTrans(icyc)=cos(dir1(ient)*deg2rad)*speed1(ient)
 
                CycleTime(icyc) =  iFcstInc(icyc) * 3600.d0 + timeOffset
 
@@ -6239,7 +6239,8 @@ C***********************************************************************
             xcoor(i) = slam(i) * rad2deg
             ycoor(i) = sfea(i) * rad2deg
          END DO
-         timeOffset=TIMELOC
+         
+         timeOffset = nint(TIMELOC/60d0)*60d0 ! round initial time to nearest minute
          rndaySeconds = RNDAY * 86400.d0
 
       END IF   ! end of first Time data allocations and such
@@ -6459,6 +6460,9 @@ C***********************************************************************
          !
          ! @jasonfleming: If there isn't enough data in the fort.22 to
          ! cover the whole run, bomb out immediately.
+         write(scratchMessage,*) 'The last cycle in the fort.22 '//
+     &      'file is at at ', cycleTime(num_cycles), ' [sec]'
+         CALL logMessage(INFO,scratchMessage)
          if (cycleTime(num_cycles).lt.rndaySeconds) then
             call allMessage(ERROR,"There aren't enough data in the "//
      &      'fort.22 file to cover the entire run time.')
