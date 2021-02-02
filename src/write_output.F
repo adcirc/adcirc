@@ -624,7 +624,7 @@ C
       rainfalltotalDescript % startTimestep = NTCYSGE
       rainfalltotalDescript % endTimestep   = NTCYFGE
       rainfalltotalDescript % outputTimeStepIncrement = NSPOOLGE
-      rainfalltotalDescript % spoolCounter  => NSCOUGE
+      rainfalltotalDescript % spoolCounter  => NSCOURT
       rainfalltotalDescript % filepos       => IGRT
       rainfalltotalDescript % array         => rainfallTotal
       rainfalltotalDescript % array_g       => rainfallTotal_g

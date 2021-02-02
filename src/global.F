@@ -566,7 +566,7 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER, TARGET :: NSCOUC, NSCOUE, NSCOUGC, NSCOUGE, NSCOUGV ! output spool counters
       INTEGER, TARGET :: NSCOUGW, NSCOURS, NSCOUGP, NSCOUM, NSCOUV ! output spool counters
       INTEGER, TARGET :: NSCOUGI, NSCOUGT, NSCOUGS  ! output spool counters
-      INTEGER, TARGET :: NSCOURT, NSCOURR, NSCOURA, NSCOURU ! output spool paramters
+      INTEGER, TARGET :: NSCOURT, NSCOURR, NSCOURA, NSCOURU ! output spool counters
       INTEGER, TARGET :: NSCOU_TVW ! output spool counters
       INTEGER, TARGET :: NSCOUP ! output spool counter for fort.71 (bar. press. sta.)
       INTEGER, TARGET :: NSCOUI ! output spool counter for fort.91 (ice sta.)     
@@ -579,6 +579,7 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       
       INTEGER :: NSPOOLC, NSPOOLGC, NSPOOLGE ! output increments
       INTEGER :: NSPOOLGV, NSPOOLGW, NSPOOLM, NSPOOL_TVW ! output increments
+      INTEGER :: NSPOOLGRR, NSPOOLGRT, NSPOOLGRA, NSPOOLGRU ! output increments
       INTEGER  NSTAC, NSTAM, NTCYFC, NTCYFGC, NTCYFGE
       INTEGER  NTCYFGV, NTCYFGW
       INTEGER  NTCYFM, NTCYSC, NTCYSGC, NTCYSGE
