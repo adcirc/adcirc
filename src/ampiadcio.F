@@ -49,18 +49,18 @@ C----------------------------------------------------------------------
 #ifdef AMPI_COMP
           include 'mpif.h'
 #endif
-          INTEGER :: RANK = 999999
-!$omp threadprivate(RANK)
-          INTEGER :: IERR, FLAG, OLD_PE
+c          INTEGER :: RANK = 999999
+c!$omp threadprivate(RANK)
+c          INTEGER :: IERR, FLAG, OLD_PE
 
 #ifdef AMPI_COMP
-          CALL MPI_COMM_RANK(MPI_COMM_ADCIRC, RANK, IERR)
-          CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, OLD_PE, FLAG, IERR)
+c          CALL MPI_COMM_RANK(MPI_COMM_ADCIRC, RANK, IERR)
+c          CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, OLD_PE, FLAG, IERR)
 
 C          PRINT *,"Rank ",RANK," about to migrate from PE ",OLD_PE
 
 C     TODO: close files temporarily during migration
-C          CALL closeLogFile() 
+          CALL closeLogFile() 
 
           ! close a metfile
           CALL close_met_files() 
@@ -91,19 +91,19 @@ C----------------------------------------------------------------------
 #ifdef AMPI_COMP
           include 'mpif.h'
 #endif
-          INTEGER :: RANK = 999999
-!$omp threadprivate(RANK)
-          INTEGER :: IERR, FLAG, NEW_PE
+c          INTEGER :: RANK = 999999
+c!$omp threadprivate(RANK)
+c          INTEGER :: IERR, FLAG, NEW_PE
 
 #ifdef AMPI_COMP
-          CALL MPI_COMM_RANK(MPI_COMM_ADCIRC, RANK, IERR)
-          CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, NEW_PE, FLAG, IERR)
+c          CALL MPI_COMM_RANK(MPI_COMM_ADCIRC, RANK, IERR)
+c          CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, NEW_PE, FLAG, IERR)
 
 C          PRINT *,"Rank ",RANK," just migrated to PE ",NEW_PE
 
 C     TODO: re-open files closed temporarily during migration
 C          CALL openLogFile() 
-C          CALL reopenLogFile() 
+          CALL reopenLogFile() 
 
 
 C          PRINT*, "reopen met file "   

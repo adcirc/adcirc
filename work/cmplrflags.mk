@@ -120,7 +120,7 @@ ifeq ($(compiler),ampi)
   FC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP
 #  PFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
   PFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP
-  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none 
+  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none -fallow-argument-mismatch
   ifeq ($(PROFILE),enable)
     FFLAGS1	:=  $(INCDIRS) -pg -Og -fprofile-arcs -ftest-coverage -ffixed-line-length-none 
   endif
@@ -214,7 +214,7 @@ ifeq ($(compiler),gfortran)
   PPFC		:=  gfortran
   FC		:=  gfortran
   PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none 
+  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none -fallow-argument-mismatch
   ifeq ($(PROFILE),enable)
     FFLAGS1	:=  $(INCDIRS) -pg -O0 -fprofile-arcs -ftest-coverage -ffixed-line-length-none 
   endif
