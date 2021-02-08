@@ -4590,7 +4590,7 @@ C
       type(OutputDataDescript_t), intent(in), optional :: descript4
       REAL(8), intent(in) :: timesec
 C
-      INTEGER i,j
+      INTEGER i,j, ii
       INTEGER counti(1), starti(1), n
       INTEGER kount(2), start(2)
       INTEGER kount3D(3), start3D(3)
@@ -5020,7 +5020,8 @@ C     Write the array values
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
                allocate(tempArray(1:dat%myMesh%num_nodes))
                tempArray = merge(descript1%array,
-     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0) 
+
                iret = nf90_put_var(dat%ncid, dat%nodal_data_id,tempArray,start,kount)
             ELSE
                iret = nf90_put_var(dat%ncid, dat%nodal_data_id,
@@ -5028,8 +5029,25 @@ C     Write the array values
             ENDIF
             CALL check_err(iret)
          ELSE
+
+!c------------------------------
+!            print*, "check ......", descript1%alternate_value, kount(1),
+!     &               trim(descript1%file_name) ; 
+!            DO ii = 1, kount(1)
+!                  ! if ( isnan(descript1%array_g(ii))  ) then
+!                  if ( ii == 2557 .OR. ii == 2573 ) then 
+!                     print*, "check ..........", ii, descript1%array_g(ii), nodecode(ii) ; 
+!                  endif
+!            ENDDO
+!            descript1%array_g(100) = (0.0/0.0);  ! Should get NaN
+!            ! descript1%array_g(100) = descript1%array_g(100)*0 ; 
+!            print*, "check ..........", 100, descript1%array_g(100), nodecode(100) ; 
+!c------------------------------            
+
             iret = nf90_put_var(dat%ncid, dat%nodal_data_id,
      &            descript1%array_g, start, kount)
+
+
             CALL check_err(iret)
          ENDIF
       CASE(64,74,164,305)
