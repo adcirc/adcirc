@@ -186,7 +186,7 @@ C
          real(sz)          :: rampVal          ! ramping multiplier for this dataset
          real(sz)          :: max_extrap_dist  ! maximum distance for extrapolating values (meters)
          integer           :: numFiles         !total number of GFDL met Files to be read
-         ! input data from gfdl met files themselves
+
          integer           :: nh           ! number of grid points
          ! derived data
          logical           :: loaded       ! .true. if we have loaded the data from file
@@ -1740,10 +1740,11 @@ C  tcm v49.16 20100617
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                           -PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            !WVNXOUT(I)=RampMete*WindX
-            !WVNYOUT(I)=RampMete*WindY
-            WVNXOUT(I)=WSX2(I)
-            WVNYOUT(I)=WSY2(I)
+            WVNXOUT(I)=RampMete*WindX
+            WVNYOUT(I)=RampMete*WindY
+
+!            WVNXOUT(I)=WSX2(I)
+!            WVNYOUT(I)=WSY2(I)
 
           !if (abs(WSX2(I)) .gt. 1e2) then
           !    print *, 'in1in1in1in1in1in1in1in1in1in1in1in1in1in1in1in1'

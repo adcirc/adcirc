@@ -461,27 +461,74 @@ module adc_cap
 
     !--------- import fields to Sea Adc -------------
     !TODO: Consider moving these lines to driver to avoid doing it in both CAPS
-    call NUOPC_FieldDictionaryAddEntry("eastward_radiation_stress",  "mx", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+!    call NUOPC_FieldDictionaryAddEntry("eastward_radiation_stress",  "mx", rc=rc)
+!    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+!        line=__LINE__, &
+!        file=__FILE__)) &
+!        return  ! bail out
 
-    call NUOPC_FieldDictionaryAddEntry("northward_radiation_stress", "mx", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+!    call NUOPC_FieldDictionaryAddEntry("northward_radiation_stress", "mx", rc=rc)
+!    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+!        line=__LINE__, &
+!        file=__FILE__)) &
+!        return  ! bail out
 
-    call NUOPC_FieldDictionaryAddEntry("cross_radiation_stress",    "mx", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+!    call NUOPC_FieldDictionaryAddEntry("cross_radiation_stress",    "mx", rc=rc)
+!    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+!        line=__LINE__, &
+!        file=__FILE__)) &
+!        return  ! bail out
 
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_radiation_stress", shortname= "sxx")
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="northward_radiation_stress",shortname= "syy")
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="cross_radiation_stress",    shortname= "sxy")
+
+     !--- kf fixes
+     ! sxx
+     if (.not.NUOPC_FieldDictionaryHasEntry( &
+                  "eastward_wave_radiation_stress")) then
+        call NUOPC_FieldDictionaryAddEntry( &
+          standardName="eastward_wave_radiation_stress", &
+          canonicalUnits="N m-1", &
+          rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+      endif
+
+      ! sxy
+      if (.not.NUOPC_FieldDictionaryHasEntry( &
+                  "eastward_northward_wave_radiation_stress")) then
+        call NUOPC_FieldDictionaryAddEntry( &
+          standardName="eastward_northward_wave_radiation_stress", &
+          canonicalUnits="N m-1", &
+          rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+      endif
+
+      ! syy
+      if (.not.NUOPC_FieldDictionaryHasEntry( &
+                   "northward_wave_radiation_stress")) then
+        call NUOPC_FieldDictionaryAddEntry( &
+          standardName="northward_wave_radiation_stress", &
+          canonicalUnits="N m-1", &
+          rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+      endif
+
+!   !------ immport field from ww3 to adc
+!    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_radiation_stress", shortname= "sxx")
+!    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="northward_radiation_stress",shortname= "syy")
+!    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="cross_radiation_stress",    shortname= "sxy")
+    !c- kf fixes
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_wave_radiation_stress", shortname= "sxx")
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="northward_wave_radiation_stress",shortname= "syy")
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_northward_wave_radiation_stress",shortname= "sxy")
+
     !--------- import fields from atm to Adc -------------
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "air_pressure_at_sea_level", shortname= "pmsl" )
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "inst_merid_wind_height10m", shortname= "imwh10m" )
@@ -923,7 +970,7 @@ module adc_cap
         return  ! bail out
 
     write(info, *)  "ADC currTime = ", YY, "/", MM, "/", DD," ", H, ":", M, ":", S
-    call allMessage(1,info)
+!   call allMessage(1,info)  ! Dec 2020
 
     call ESMF_TimeGet(currTime, timeStringISOFrac=timeStr , rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
