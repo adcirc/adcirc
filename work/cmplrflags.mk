@@ -54,7 +54,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=g95
 #compiler=gfortran
 #compiler=intel
-compiler=intel-ND
+compiler?=intel-ND
 #compiler=intel-lonestar
 #compiler=intel-sgi
 #compiler=cray_xt3
@@ -429,7 +429,15 @@ ifeq ($(compiler),intel-ND)
      HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
      #HDF5HOME=/opt/crc/h/hdf5/intel/18.0/build/lib/      
      FLIBS      := $(FLIBS) -lnetcdff -L$(HDF5HOME) 
-  endif   
+  endif
+# ------------
+  ifeq ($(NETCDF),enable)
+    ifeq ($(WDALTVAL),enable)
+       DP  := $(DP) -DWDVAL_NETCDF 
+    endif
+  endif
+# -----------
+
   CLIBS         :=
   MSGLIBS       :=
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
