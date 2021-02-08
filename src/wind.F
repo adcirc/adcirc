@@ -186,7 +186,7 @@ C
          real(sz)          :: rampVal          ! ramping multiplier for this dataset
          real(sz)          :: max_extrap_dist  ! maximum distance for extrapolating values (meters)
          integer           :: numFiles         !total number of GFDL met Files to be read
-         ! input data from gfdl met files themselves
+
          integer           :: nh           ! number of grid points
          ! derived data
          logical           :: loaded       ! .true. if we have loaded the data from file

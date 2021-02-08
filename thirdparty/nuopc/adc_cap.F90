@@ -489,9 +489,14 @@ module adc_cap
     !    return  ! bail out
     !PV END:: Wave radiation stresses
 
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_wave_radiation_stress",           shortname= "sxx")
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="northward_wave_radiation_stress",          shortname= "syy")
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_northward_wave_radiation_stress", shortname= "sxy")
+!   !------ immport field from ww3 to adc
+!    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_wave_radiation_stress",           shortname= "sxx")
+!    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="northward_wave_radiation_stress",          shortname= "syy")
+!    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_northward_wave_radiation_stress", shortname= "sxy")
+    !c- kf fixes
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_wave_radiation_stress", shortname= "sxx")
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="northward_wave_radiation_stress",shortname= "syy")
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_northward_wave_radiation_stress",shortname= "sxy")
     !--------- import fields from atm to Adc -------------
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="air_pressure_at_sea_level", shortname= "pmsl" )
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="inst_merid_wind_height10m", shortname= "imwh10m" )
@@ -1006,7 +1011,7 @@ module adc_cap
         return  ! bail out
 
     write(info, *)  "ADC currTime = ", YY, "/", MM, "/", DD," ", H, ":", M, ":", S
-    call allMessage(1,info)
+!   call allMessage(1,info)  ! Dec 2020
 
     call ESMF_TimeGet(currTime, timeStringISOFrac=timeStr , rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -1335,7 +1340,7 @@ module adc_cap
 !          PRN1 = PRN2
 !          first_exchange = .false.
 !        end if
-    
+
         !if (sum(PRN1) .eq. 0.0 ) then
         !  PRN1 = 10000.0
         !end if  

@@ -696,7 +696,7 @@ C... v50.xx sm -- nrs=5 for NUOPC coupling wave data from coupler
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef CSWAN
 Casey 090302: Added these lines for output to the rads.64 file.
-               IF(ABS(NRS).EQ.3) then
+               IF(ABS(NRS).EQ.3 .OR. ABS(NRS).EQ.5) then ! dw added NRS==5
                   RSNXOUT(I) = RSX
                   RSNYOUT(I) = RSY
                ENDIF
