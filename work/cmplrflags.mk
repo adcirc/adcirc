@@ -372,6 +372,15 @@ ifeq ($(compiler),intel)
         FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
      endif
   endif
+
+# ------------
+  ifeq ($(NETCDF),enable)
+    ifeq ($(WDALTVAL),enable)
+       DP  := $(DP) -DWDVAL_NETCDF 
+    endif
+  endif
+# -----------
+
   #jgf20110519: For netcdf on topsail at UNC, use
   #NETCDFHOME=/ifs1/apps/netcdf/
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)

@@ -336,6 +336,7 @@ C.... convert background pressure from millibars to meters of water
       SELECT CASE(TRIM(DragLawString))
          CASE("Garratt","GARRATT","garratt","default")
              garatt = .true.
+
              write(16,*) 'Garratt drag law used'
 #ifdef CSWAN
          CASE("Swell","SWELL","swell")
@@ -927,6 +928,9 @@ C----------------------------------------------------------------------
       call allMessage(DEBUG,"Enter.")
 #endif
 
+
+!      WRITE(*,'(A,3E)'), "BEFORE: MAX(WVNX) = ", TimeLoc, MAXVAL(ABS(WVNX1)),
+!     &             MAXVAL(ABS(WVNX2)) ;
 
 C------------------------MET FORCING---------------------------------------
 C
@@ -2140,6 +2144,14 @@ C......RESTART WIND AND PRESSURE INFORMATION
       CASE (0,17)
 !         WSX1(:) = 0.d0 ;
 !         WSY1(:) = 0.d0 ;
+
+         WVNX1(:) = 0.d0 ;
+         WVNY1(:) = 0.d0 ;
+         WVNX2(:) = 0.d0 ;
+         WVNY2(:) = 0.d0 ;
+         PRN1(:)=PRBCKGRND_MH2O ;
+         PRN2(:)=PRBCKGRND_MH2O ;
+!         PRINT*, "SHIT........", MAXVAL(ABS(WVNX1)), MAXVAL(ABS(WVNY2)) ;
 
          WSX2(:) = 0.d0
          WSY2(:) = 0.D0

@@ -37,9 +37,8 @@ export ADCDIR=$(pwd)
 
 # #make padcirc -d compiler=$compiler NETCDFLAG=enable NETCDF4FLAG=enable NETCDF4_COMPRESSION=enable
 export MAKELEVEL=0
-#make NETCDF=enable NETCDF4=enable libadc.a 
-make NETCDF=enable NETCDF4=enable WDALTVAL=enable libadc.a 
-
+make NETCDF=enable NETCDF4=enable libadc.a 
+#make NETCDF=enable NETCDF4=enable WDALTVAL=enable libadc.a 
 
 
 # build adcric nuopc
