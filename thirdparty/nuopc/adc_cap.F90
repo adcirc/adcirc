@@ -925,6 +925,9 @@ module adc_cap
 
     type(ESMF_Time) :: BeforeCaribbeanTime,AfterCaribbeanTime
 
+    ! DW
+    INTEGER, save:: ienter = 0 ;
+
     rc = ESMF_SUCCESS
     dbrc = ESMF_SUCCESS
     ! query the Component for its clock, importState and exportState
@@ -1246,10 +1249,17 @@ module adc_cap
         IF(.NOT.ALLOCATED(PRN2) ) ALLOCATE(PRN2 (1:NP))
 
         !print *, 'maxval(WVNX2)', maxval(WVNX2)
+!        PRINT*, "Enter ModelAdvance() : ", ienter ; 
+!        ienter = ienter + 1 ;
+!        PRINT*, " " ; 
 
         WVNX1 = WVNX2   
         WVNY1 = WVNY2  
         PRN1  = PRN2
+
+
+!        WRITE(*,'(A,4E)') "  In ModelAdvance() 1:" , MAXVAL(WVNX1), MAXVAL(WVNX2), & 
+!            MAXVAL(WVNY1), MAXVAL(WVNY2) ; 
 
         !call UPDATER( dataPtr_izwh10m(:), dataPtr_imwh10m(:), dataPtr_pmsl(:),3)
        
@@ -1271,11 +1281,15 @@ module adc_cap
           !end if
         end do
          
-        ! Ghost nodes update 
-        call UPDATER( WVNX1(:), WVNY1(:), PRN1(:),3)
         call UPDATER( WVNX2(:), WVNY2(:), PRN2(:),3)
 
-        if (first_exchange .and. sum(PRN1) .le. 1.0) then
+ !       WRITE(*,'(A,4E)') "  In ModelAdvance() 2:" , MAXVAL(WVNX1), MAXVAL(WVNX2), & 
+ !           MAXVAL(WVNY1), MAXVAL(WVNY2) ; 
+
+ !       if (first_exchange .and. sum(PRN1) .le. 1.0) then
+ !      ! DW:  band-aid fix by zeroing out wind velocity and atm pressure.
+ !      !      Todo: look at atmesh code to see if there could be a better fix.  
+        if ( first_exchange .or. sum(PRN1)  .le. 1.0) then
           WVNX2 = 1e-10
           WVNY2 = 1e-10
           WVNX1 = 1e-10
@@ -1286,6 +1300,10 @@ module adc_cap
           first_exchange = .false.
         end if  
     
+ !       WRITE(*,'(A,4E)') "  In ModelAdvance() 3:" , MAXVAL(WVNX1), MAXVAL(WVNX2), & 
+ !           MAXVAL(WVNY1), MAXVAL(WVNY2) ; 
+
+
         !if (sum(PRN1) .eq. 0.0 ) then
         !  PRN1 = 10000.0
         !end if  
@@ -1319,14 +1337,13 @@ module adc_cap
         !where(abs(WVNY2).gt. 1e6)  WVNY2 =  -8.0
 
             
-          !PRN2 = 10000.0
-          !PRN1 = 10000.0
-          !WVNX2 =  8.0
-          !WVNX1 =  8.0
-          !WVNY2 = -8.0
-          !WVNY1 = -8.0       
-            
-    
+        !PRN2 = 10000.0
+        !PRN1 = 10000.0
+        !WVNX2 =  8.0
+        !WVNX1 =  8.0
+        !WVNY2 = -8.0
+        !WVNY1 = -8.0       
+           
         !where(dataPtr_pmsl .gt. 1e20)  dataPtr_pmsl =  10e4
         !where(dataPtr_pmsl .lt. 8e4 )  dataPtr_pmsl =  10e4        
         
