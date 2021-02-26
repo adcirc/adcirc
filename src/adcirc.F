@@ -214,7 +214,7 @@ C
       ENDIF
       call setampizedlun(myproc) ! initialze ck_lun
       CALL MAKE_DIRNAME()    ! Establish Working Directory Name
-      call openLogFile()     ! jgf50.65: open subdomain log files (fort.16)
+C      call openLogFile()     ! jgf50.65: open subdomain log files (fort.16)
       CALL WRITER_INIT()     ! Initialize WRITER module
       CALL HSWRITER_INIT()   ! Initialize HSWRITER module  !st3 for hstart  100711
       if(((mnwproh > 0).or.(mnwproc > 0)) .and. MYPROC >= MNPROC) then

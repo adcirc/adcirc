@@ -60,7 +60,7 @@ c          CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, OLD_PE, FLAG, IER
 C          PRINT *,"Rank ",RANK," about to migrate from PE ",OLD_PE
 
 C     TODO: close files temporarily during migration
-          CALL closeLogFile() 
+C          CALL closeLogFile() 
 
           ! close a metfile
           CALL close_met_files() 
@@ -103,7 +103,7 @@ C          PRINT *,"Rank ",RANK," just migrated to PE ",NEW_PE
 
 C     TODO: re-open files closed temporarily during migration
 C          CALL openLogFile() 
-          CALL reopenLogFile() 
+C          CALL reopenLogFile() 
 
 
 C          PRINT*, "reopen met file "   
