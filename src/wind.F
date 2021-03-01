@@ -6461,7 +6461,7 @@ C***********************************************************************
          ! @jasonfleming: If there isn't enough data in the fort.22 to
          ! cover the whole run, bomb out immediately.
          write(scratchMessage,*) 'The last cycle in the fort.22 '//
-     &      'file is at at ', cycleTime(num_cycles), ' [sec]'
+     &      'file is at ', cycleTime(num_cycles), ' [sec]'
          CALL logMessage(INFO,scratchMessage)
          if (cycleTime(num_cycles).lt.rndaySeconds) then
             call allMessage(ERROR,"There aren't enough data in the "//
