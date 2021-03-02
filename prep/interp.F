@@ -51,7 +51,7 @@ C
       IF(IMO.GT.12) THEN
         WRITE(6,*) 'FATAL ERROR IN SUBROUTINE TIMECONV - MONTH > 12 '
         WRITE(16,*) 'FATAL ERROR IN SUBROUTINE TIMECONV - MONTH > 12 '
-        STOP
+        CALL EXIT(1)
         ENDIF
       RETURN
       END
@@ -152,7 +152,7 @@ C
         END DO
 
       DO I=1,NP                                !INTERPOLATE TO ADCIRC GRID
-        IF(ICS.EQ.2) THEN
+        IF(ICS.NE.1) THEN
 cvjp      YCOOR=SFEA(I)*RAD2DEG
 cvjp      XCOOR=SLAM(I)*RAD2DEG
           YCOOR=SFEA(I)
@@ -675,7 +675,7 @@ C.......Check that this value is reasonable.
             PRINT *,' LON ',LON
             PRINT *,' DLON ',DLON
             PRINT *,' FLON ',FLON(I)
-            STOP
+            CALL EXIT(1)
             endif
 
 C.....Compute initial guess of which lat value FLAT(I) is in the Gaussian file
@@ -691,7 +691,7 @@ C.......Check that this value is reasonable.
             PRINT *,' LAT ',LAT
             PRINT *,' DLAT ',DLAT
             PRINT *,' FLAT ',FLAT(I)
-            STOP
+            CALL EXIT(1)
           ENDIF
 
  5        CONTINUE

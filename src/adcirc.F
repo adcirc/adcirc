@@ -103,7 +103,7 @@ C******************************************************************************
      &   nolica, nolicat, nolifa, nscreen, nstae, nt, rhowat0, screenunit,
      &   version_number, initLogging, setMessageSource, screenMessage,
      &   openLogFile, unsetMessageSource, np_global, rnp_global,
-     &   scratchMessage, CTIP, L_N
+     &   scratchMessage, CTIP, L_N, writer_id
       USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB 
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np, SFEA
       USE GWCE, ONLY : initGWCE
@@ -117,7 +117,7 @@ C******************************************************************************
 #ifdef CMPI
       USE MESSENGER, ONLY : mnwproh, msg_init, msg_table, msg_start,
      &   allnodes
-      USE WRITER, ONLY : writer_init
+      USE WRITER, ONLY : writer_init, sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_init
 #endif
       IMPLICIT NONE
@@ -148,7 +148,7 @@ C
                ! a series of two or three numbers with two digits 
                ! separated by dots, e.g., 51.02 or 51.52.07
                write(6,'(a)') trim(adc_version)                 
-               stop
+               CALL EXIT(0) 
             case default
                ! do nothing, this is some other command line argument
             end select
@@ -181,7 +181,7 @@ C
       call openLogFile()     ! jgf50.65: open subdomain log files (fort.16)
       CALL WRITER_INIT()     ! Initialize WRITER module
       CALL HSWRITER_INIT()   ! Initialize HSWRITER module  !st3 for hstart  100711
-      if(((mnwproh > 0).or.(mnwproc > 0)) .and. MYPROC >= MNPROC) then
+      if ( (mnwproh > 0.or.mnwproc > 0) .and. myProc >= mnproc) then
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Return.")
 #endif
@@ -247,7 +247,24 @@ C     jgf45.08 put this here so it can be used in hot start
       ELSE
          IFNLFA=1
       ENDIF
-C     kmd 48.33bc - include a new initial condition file for baroclinic
+
+C...************* Make the L_N Tidal potential multiple function *************
+C... WJP: Feb 21 2018; moved here before hstart Feb 27 2019
+C..  Corrected long term species (unfortunately there is a mistake in old ADCIRC 
+C..  theory report that also propagated into some subsequent publications)
+      IF (CTIP) THEN
+
+         DO I = 1,NP
+C           LONG-TERM SPECIES
+            L_N(0,I) = 1.5d0*COS(SFEA(I))*COS(SFEA(I)) - 1d0
+C           DIURNAL SPECIES
+            L_N(1,I) = SIN(2d0*SFEA(I))
+C           SEMIDIURNAL SPECIES
+            L_N(2,I) = COS(SFEA(I))*COS(SFEA(I))
+         END DO
+
+      ENDIF
+
 C...
 C...******************** PROGRAM SETUP SECTION ************************
 C...
@@ -303,22 +320,6 @@ C
 C     jgf51.21.24: Initialize output.
       call initOutput2D(timeloc)
 
-C...************* Make the L_N Tidal potential multiple function *************
-C... WJP: Feb 21 2018
-C...
-      IF (CTIP) THEN
-
-         DO I = 1,NP
-C           LONG-TERM SPECIES
-            L_N(0,I) = 3d0*SIN(SFEA(I))*SIN(SFEA(I)) - 1d0 
-C           DIURNAL SPECIES
-            L_N(1,I) = SIN(2d0*SFEA(I))
-C           SEMIDIURNAL SPECIES
-            L_N(2,I) = COS(SFEA(I))*COS(SFEA(I))
-         END DO
-
-      ENDIF
-
 C...
 C...************* SET FLAGS AND COEFFICIENTS USED IN TIME STEPPING ***********
 C...
@@ -372,7 +373,7 @@ C******************************************************************************
       SUBROUTINE ADCIRC_Run(NTIME_STP)
       USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
       USE GLOBAL, ONLY : iTime, DEBUG, INFO, setMessageSource, allMessage,
-     &   unsetMessageSource, statim, dtdp
+     &   unsetMessageSource, statim, dtdp, screenunit, logMessage
 #ifdef CMPI
       USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_main, hswriter_pause
@@ -387,6 +388,7 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
       IMPLICIT NONE
 C
       INTEGER, OPTIONAL :: NTIME_STP
+      REAL(8) :: TimeLoc
 C
       call setMessageSource("ADCIRC_Run")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
@@ -395,8 +397,9 @@ C
 !TCM v49.52.01 added this ifdef (brought in from adcirc_init()
 #ifdef CMPI
       if (((mnwproh > 0).or.(mnwproc > 0)) .and. myproc >= mnproc) then
-         if( myproc < mnproc+mnwproc ) then   !st3
-            call sendLabelInfoToWriters()
+         if ( myproc < mnproc+mnwproc ) then   !st3
+            !call sendLabelInfoToWriters()
+            call logMessage(INFO,"Enter writer main.")
             call writer_main()
             call unsetMessageSource()  !tcm 20150924 -- added
             return
@@ -405,7 +408,7 @@ C
             call unsetMessageSource()  !tcm 20150924 -- added
             return
          endif
-      elseif(mnwproc.gt.0.and.myproc.eq.0)then
+      elseif ( mnwproc > 0 .and. myproc == 0 ) then
          call sendLabelInfoToWriters()
       endif
 #endif
@@ -416,7 +419,7 @@ C
 C
       call allMessage(INFO,"Begin timestepping.")
       DO 100 ITIME=ITIME_BGN,ITIME_END
-        CALL TIMESTEP(ITIME)
+        CALL TIMESTEP(ITIME,TimeLoc)
 C
 #ifdef CSWAN
 Casey 090302: If it is time, then call the following subroutine
@@ -428,7 +431,7 @@ C             to then call the SWAN time-stepping subroutine.
         !...WRITE OUTPUT
         !   zc - moved this here so that output occurs after
         !        the SWAN time step has been completed.
-        CALL writeOutput2D(ITIME,ITIME*DTDP+StaTim*86400D0) ! =>see write_output.F
+        CALL writeOutput2D(ITIME,TimeLoc) ! =>see write_output.F
 100   CONTINUE
 C
       IF (PRESENT(NTIME_STP)) THEN
@@ -529,7 +532,7 @@ C
         CALL MSG_FINI()
       ENDIF
 #endif
-      STOP 
+      CALL EXIT(1) 
 C
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable

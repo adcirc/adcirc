@@ -1,17 +1,67 @@
-SET( METIS_SOURCES metis/Lib/coarsen.c metis/Lib/fm.c metis/Lib/initpart.c metis/Lib/match.c 
-                  metis/Lib/ccgraph.c metis/Lib/memory.c metis/Lib/pmetis.c metis/Lib/pqueue.c 
-                  metis/Lib/refine.c metis/Lib/util.c metis/Lib/timing.c metis/Lib/debug.c 
-                  metis/Lib/bucketsort.c metis/Lib/graph.c metis/Lib/stat.c metis/Lib/kmetis.c 
-                  metis/Lib/kwayrefine.c metis/Lib/kwayfm.c metis/Lib/balance.c metis/Lib/ometis.c 
-                  metis/Lib/srefine.c metis/Lib/sfm.c metis/Lib/separator.c metis/Lib/mincover.c 
-                  metis/Lib/mmd.c metis/Lib/mesh.c metis/Lib/meshpart.c metis/Lib/frename.c 
-                  metis/Lib/fortran.c metis/Lib/myqsort.c metis/Lib/compress.c metis/Lib/parmetis.c 
-                  metis/Lib/estmem.c metis/Lib/mpmetis.c metis/Lib/mcoarsen.c metis/Lib/mmatch.c 
-                  metis/Lib/minitpart.c metis/Lib/mbalance.c metis/Lib/mrefine.c metis/Lib/mutil.c 
-                  metis/Lib/mfm.c metis/Lib/mkmetis.c metis/Lib/mkwayrefine.c metis/Lib/mkwayfmh.c 
-                  metis/Lib/mrefine2.c metis/Lib/minitpart2.c metis/Lib/mbalance2.c metis/Lib/mfm2.c 
-                  metis/Lib/kvmetis.c metis/Lib/kwayvolrefine.c metis/Lib/kwayvolfm.c 
-                  metis/Lib/subdomains.c )
-ADD_LIBRARY(metis STATIC ${METIS_SOURCES})
-TARGET_INCLUDE_DIRECTORIES(metis PRIVATE ${CMAKE_SOURCE_DIR}/metis/Lib)
-SET_TARGET_PROPERTIES(metis PROPERTIES EXCLUDE_FROM_ALL TRUE)
+set(METIS_SOURCES
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/coarsen.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/fm.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/initpart.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/match.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/ccgraph.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/memory.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/pmetis.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/pqueue.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/refine.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/util.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/timing.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/debug.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/bucketsort.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/graph.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/stat.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/kmetis.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/kwayrefine.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/kwayfm.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/balance.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/ometis.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/srefine.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/sfm.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/separator.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/mincover.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/mmd.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/mesh.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/meshpart.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/frename.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/fortran.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/myqsort.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/compress.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/parmetis.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/estmem.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/mpmetis.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/mcoarsen.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/mmatch.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/minitpart.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/mbalance.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/mrefine.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/mutil.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/mfm.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/mkmetis.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/mkwayrefine.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/mkwayfmh.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/mrefine2.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/minitpart2.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/mbalance2.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/mfm2.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/kvmetis.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/kwayvolrefine.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/kwayvolfm.c
+    ${CMAKE_SOURCE_DIR}/thirdparty/metis/Lib/subdomains.c)
+add_library(metis STATIC ${METIS_SOURCES})
+target_include_directories(metis PRIVATE ${CMAKE_SOURCE_DIR}/metis/Lib)
+set_target_properties(metis PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+# ...In gcc-10+, we need to ignore some things that were elevated to errors.
+# This is a thirdparty library, so adcirc devs are in nofix mode
+get_filename_component(C_COMPILER_NAME ${CMAKE_C_COMPILER} NAME)
+if(${C_COMPILER_NAME} MATCHES "gcc.*" OR ${C_COMPILER_NAME} MATCHES "cc")
+  if(${CMAKE_C_COMPILER_VERSION} VERSION_GREATER 10
+     OR ${CMAKE_C_COMPILER_VERSION} VERSION_EQUAL 10)
+    set_target_properties(metis PROPERTIES COMPILE_FLAGS
+                                           "-Wno-implicit-function-declaration")
+  endif()
+endif()

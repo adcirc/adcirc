@@ -92,7 +92,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       real(sz), allocatable, target :: wvnoutmax_g(:)
       real(sz), allocatable, target :: rsnmax_g(:)
       real(sz), allocatable, target :: sponge_g(:)
-      real(sz), allocatable, target :: eslonoff_g(:) !zc added for esl on/off output
+      real(sz), allocatable, target :: eslcount_g(:) !zc added for esl on/off output
       real(sz), allocatable, target :: dpout_g(:)    !tcm v50.66.01 added time varying bathy
       real(sz), allocatable, target :: dp00_g(:)  !tcm v50.66.01 added time varying bathy
       ! Casey 090302: Added these arrays for output of radiation stress gradients.
@@ -332,7 +332,7 @@ C----------------------------------------------------------------------
      &   nscougc, igcp, ch1, ch1_g, etamax_time_g, etamax,
      &   etamax_time, umax_time_g, umax, umax_time, prmin_time_g,
      &   prmin, wvnoutmax_time_g, wvnoutmax_time, rsnmax_time_g,
-     &   rsnmax_time, eslonoff, prmin_time, wvnoutmax, rsnmax,
+     &   rsnmax_time, eslcount, prmin_time, wvnoutmax, rsnmax,
      &   nstae_g, noute, nstae, wvnxout, wvnyout,
      &   ntcyse, ntcyfe, nspoole, nstav_g, noutv, nstav, ntcysv,
      &   ntcyfv, nspoolv, noutge, ntcysge, ntcyfge, nspoolge,
@@ -377,7 +377,6 @@ C
       real(8), intent(in) :: timeloc
       character(len=20) :: extString ! string version of integer file extension
       logical :: fileFound = .false. ! .true. if the file exists
-      logical :: fileFoundNC = .false.
       logical :: nerr
       integer :: i
 C
@@ -876,7 +875,7 @@ C
       BathyStaDescript % interp_fac1             => STAIE1
       BathyStaDescript % interp_fac2             => STAIE2
       BathyStaDescript % interp_fac3             => STAIE3
-      IF (ICS.eq.2) THEN
+      IF (ICS.ne.1) THEN
          BathyStaDescript % x_coord           => SLEL
          BathyStaDescript % y_coord           => SFEL
       ELSE
@@ -950,7 +949,7 @@ C         write(16,*) 'Allocating IceDescript' !tcm v49.64.01 added for ice
       IceDescript % array                => CICEOUT
       IceDescript % array_g              => CICEOUT_g
       IceDescript % field_name           = 'Ice'
-      if (ncice.eq.0) then
+      if (ncice.eq.0.or.ncice.eq.14) then
          IceDescript % writeFlag         = .false.
       endif
 
@@ -1106,7 +1105,7 @@ C     maxvel.63
       IF (mnproc.gt.1)  THEN
          ALLOCATE(UMAX_g(NP_G))
          ALLOCATE (UMAX_Time_G(NP_G))
-         UMAX_g(:) = 0.d0
+         UMAX_g(:) = -99999.d0
          UMAX_Time_G(:) = -99999.d0
       ENDIF
       UMaxDescript % lun                    = 312
@@ -1125,7 +1124,7 @@ C     maxvel.63
       if ( UMaxDescript % specifier .eq. XDMF ) then
          UMaxDescript % specifier = ASCII
       endif
-      UMAX(:) = 0.d0
+      UMAX(:) = -99999.d0
       UMAX_Time(:) = -99999.d0
 
 C     prmin.63
@@ -1188,7 +1187,7 @@ C     maxrs.63
       IF (mnproc.gt.1) THEN
          ALLOCATE(RSNMAX_g(NP_G))
          ALLOCATE (RSNMAX_Time_G(NP_G))
-         RSNMAX_g(:) = 0.d0
+         RSNMAX_g(:) = -99999.d0
          RSNMAX_Time_G(:) = -99999.d0
       ENDIF
       RSMaxDescript % lun                   = 315
@@ -1209,23 +1208,23 @@ C     maxrs.63
       if ( RSMaxDescript % specifier .eq. XDMF ) then
          RSMaxDescript % specifier = ASCII
       endif
-      RSNMAX(:) = 0.d0
+      RSNMAX(:) = -99999.d0
       RSNMAX_Time(:) = -99999.d0
 
 !     ESLNodes.63
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(ESLONOFF_g(NP_G))
-         ESLONOFF_g(:) = 0.d0
+         ALLOCATE(ESLCOUNT_g(NP_G))
+         ESLCOUNT_g(:) = 0.d0
       ENDIF
       ESLDescript % lun                  = 323
       ESLDescript % specifier            = ASCII
-      ESLDescript % array                => ESLONOFF
-      ESLDescript % array_g              => ESLONOFF_G
+      ESLDescript % array                => ESLCOUNT
+      ESLDescript % array_g              => ESLCOUNT_G
       ESLDescript % field_name           = 'ESLActive'
       ESLDescript % file_basename        = 'ESLNodes'
       ESLDescript % file_extension       = 63
       ESLDescript % writeFlag            = .false.
-      ESLONOFF(:) = 0.d0
+      ESLCOUNT(:) = 0.d0
       !
       !  D E T A I L E D    I N U N D A T I O N    O U T P U T
       !
@@ -1459,22 +1458,15 @@ C     maxrs.63
       ! current adcirc time.
       if (ihot.ne.0) then
          do i=1, numOutputDescript2D
-            fileFoundnc = .false.
-            fileFound   = .false.
+            fileFound = .false.
             if ( ptr(i) % descript2D % readMaxMin.eqv..true.) then
                call logMessage(INFO,'Attempting to read ' //
      &            trim(ptr(i) % descript2D % file_name) //
      &            ' to continue the min/max record.')
-               
-               !...Check for the netcdf file up front to prevent warning
-               !   about a missing ascii file
-               inquire(file=trim(ptr(i)%descript2D%file_name)//".nc",exist=fileFoundnc)
-               if(fileFoundnc.eqv..false.)then
-                   call readAndMapToSubdomainMaxMin(ptr(i) % descript2D,
-     &                  timeloc, fileFound)
-               endif
+               call readAndMapToSubdomainMaxMin(ptr(i) % descript2D,
+     &            timeloc, fileFound)
 #ifdef ADCNETCDF
-               if ((fileFoundnc.eqv..true.).and.
+               if ((fileFound.eqv..false.).and.
      &              (netcdf_avail.eqv..true.) ) then
                   ! check to see if the file exists before trying to
                   ! initialize it
@@ -1508,32 +1500,6 @@ C                      ! initialize it if it wasn't initialized above
 #endif
             endif
          enddo
-         IF (LoadEleSlopeLim) THEN
-            CALL readAndMapToSubdomainMaxMin(ESLDescript,timeloc,fileFound)
-            ! must set the elemental slope limiter active values as well
-            !
-            ! jgf51.46: Really should only turn on the slope limiter if
-            ! the slope limiter was turned on in the run that produced
-            ! these values (as opposed to just recording the places
-            ! where the slope was exceeded). However, this isn't really
-            ! practical because it would require knowledge of the
-            ! elemental_slope_limiter nodal attribute from the
-            ! previous simulation. We don't have access to that.
-            !
-            ! Also, we don't want to turn the slope limiter on in places
-            ! where the analyst does not want it to be turned on, and only
-            ! wants to record the places where the slope is exceeded. So
-            ! I am adding a check for positive values of the nodal
-            ! attribute, and only turning on the slope limiter there.
-            DO I = 1,NP
-               if ( (ESLONOFF(I).eq.1.d0).and.
-     &         (elemental_slope_limiter_grad_max(i).ge.0.d0) ) then
-                  elemental_slope_limiter_active(I) = .true.
-               else
-                  elemental_slope_limiter_active(I) = .false.
-               endif
-            ENDDO
-         ENDIF
       endif ! ihot.ne.0
       !
       ! End  TCM v51.20.01 Mods for MaxMin Files to Local Variables
@@ -1558,7 +1524,12 @@ C----------------------------------------------------------------------
       SUBROUTINE writeOutput2D(IT,TimeLoc)
       USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
      &                  GLOBALDIR, OFF
-      USE GLOBAL
+      USE GLOBAL, only: nt, noutge, noutgv, noutgw, nws, nrs,
+     &   inundationOutput
+#ifdef CSWAN
+     &   ,SWAN_OutputHS, SWAN_OutputDIR, SWAN_OutputTM01,
+     &   SWAN_OutputTPS, SWAN_OutputTM02, SWAN_OutputTMM10, SWAN_OutputWind
+#endif
       USE MESH, ONLY : NP, NE, DP, NM, ICS
       USE GLOBAL_IO, ONLY: storeOne, storeTwo,
      &    packOne, unpackOne, packTwo, unpackTwo
@@ -2001,7 +1972,7 @@ C     scenario.
                ENDIF
                HAElevStaMagDescript % array2D_g         => EMAG_g
             ENDIF
-            IF (ICS.eq.2) THEN
+            IF (ICS.ne.1) THEN
                HAElevStaMagDescript % x_coord           => SLEL
                HAElevStaMagDescript % y_coord           => SFEL
             ELSE
@@ -2025,7 +1996,7 @@ C     scenario.
                ENDIF
                HAElevStaPhaseDescript % array2D_g         => PHASEDE_g
             ENDIF
-            IF (ICS.eq.2) THEN
+            IF (ICS.ne.1) THEN
                HAElevStaPhaseDescript % x_coord           => SLEL
                HAElevStaPhaseDescript % y_coord           => SFEL
             ELSE
@@ -2056,7 +2027,7 @@ C
                ENDIF
                HAVelStaUMagDescript % array2D_g            => UMAG_g
             ENDIF
-            IF (ICS.eq.2) THEN
+            IF (ICS.ne.1) THEN
                HAVelStaUMagDescript % x_coord           => SLEV
                HAVelStaUMagDescript % y_coord           => SFEV
             ELSE
@@ -2081,7 +2052,7 @@ C
                ENDIF
                HAVelStaVMagDescript % array2D_g            => VMAG_g
             ENDIF
-            IF (ICS.eq.2) THEN
+            IF (ICS.ne.1) THEN
                HAVelStaVMagDescript % x_coord           => SLEV
                HAVelStaVMagDescript % y_coord           => SFEV
             ELSE
@@ -2106,7 +2077,7 @@ C
                ENDIF
                HAVelStaUPhaseDescript % array2D_g            => PHASEDU_g
             ENDIF
-            IF (ICS.eq.2) THEN
+            IF (ICS.ne.1) THEN
                HAVelStaUPhaseDescript % x_coord           => SLEV
                HAVelStaUPhaseDescript % y_coord           => SFEV
             ELSE
@@ -2131,7 +2102,7 @@ C
                ENDIF
                HAVelStaVPhaseDescript % array2D_g            => PHASEDV_g
             ENDIF
-            IF (ICS.eq.2) THEN
+            IF (ICS.ne.1) THEN
                HAVelStaVPhaseDescript % x_coord           => SLEV
                HAVelStaVPhaseDescript % y_coord           => SFEV
             ELSE
@@ -2309,7 +2280,7 @@ C        ! as the full domain elevation harmonic analysis file (fort.53)
 #ifdef CMPI
                CALL MSG_FINI()
 #endif
-               STOP
+               CALL EXIT(1)
             ENDIF
          ENDDO
 #endif
@@ -3193,7 +3164,7 @@ C
          DO i=1,7
             IF (netcdf_error(i).eqv..true.) THEN
                CALL msg_fini()
-               STOP
+               CALL EXIT(1)
             ENDIF
          ENDDO
 #endif
@@ -5307,7 +5278,7 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
 #ifdef CMPI
           CALL MSG_FINI()
 #endif
-         STOP
+         CALL EXIT(1)
       ENDIF
 
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -5425,7 +5396,7 @@ C     If we have exceeded the user's limit, terminate the run.
 #ifdef CMPI
          CALL MSG_FINI()
 #endif
-         STOP
+         CALL EXIT(1)
       ENDIF
 C
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -5462,7 +5433,7 @@ C
         CALL MSG_FINI()
       ENDIF
 #endif
-      STOP
+      CALL EXIT(1)
 C
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable
@@ -6153,6 +6124,7 @@ C-----------------------------------------------------------------------
       implicit none
       real(8), intent(in) :: timeloc ! time in s since cold start
       integer :: i
+      real(8) :: u_tmp
 
       call setMessageSource("collectMinMaxData")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -6172,9 +6144,12 @@ C...  jgf50.44: Collect time that min/max occurs as well.
       endif
       if (noutgv.ne.0) then
          do i=1,np
-            if ( (uu2(i)**2+vv2(i)**2).gt.umax(i)**2 ) then 
-               umax(i) = sqrt(uu2(i)**2+vv2(i)**2)
-               umax_time(i) = timeLoc   !tcm v51.20.01
+            if(nodecode(i).eq.1)then
+                u_tmp = sqrt(uu2(i)**2d0+vv2(i)**2d0)
+                if ( u_tmp.gt.umax(i) ) then 
+                   umax(i) = u_tmp 
+                   umax_time(i) = timeLoc   !tcm v51.20.01
+                endif
             endif
          end do 
       endif
@@ -6194,9 +6169,12 @@ C...  jgf50.44: Collect time that min/max occurs as well.
       endif
       if ((nrs.ne.0).and.(noutgw.ne.0)) then
          do i=1,np
-            if ((rsnx2(i)**2+rsny2(i)**2).gt.rsnmax(i)**2) then
-               rsnmax(i) = sqrt(rsnx2(i)**2+rsny2(i)**2)
-               rsnmax_time(i) = timeLoc
+            if(nodecode(i).eq.1)then
+                u_tmp = sqrt(rsnx2(i)**2+rsny2(i)**2)
+                if (u_tmp.gt.rsnmax(i)) then
+                   rsnmax(i) = u_tmp 
+                   rsnmax_time(i) = timeLoc
+                endif
             endif
          end do
       endif
@@ -6207,125 +6185,6 @@ C...  jgf50.44: Collect time that min/max occurs as well.
       call unsetMessageSource()
 C-----------------------------------------------------------------------
       end subroutine collectMinMaxData
-C-----------------------------------------------------------------------
-
-
-C-----------------------------------------------------------------------
-C                      S U B R O U T I N E
-C      W R I T E   B I N A R Y   O U T P U T   F I L E   H E A D E R
-C-----------------------------------------------------------------------
-C     @jasonfleming v53.dev : Clean up repeated code for binary file
-C     headers in cstart.F and hstart.F as part of hotstart appending
-C     to files.
-C-----------------------------------------------------------------------
-      subroutine writeBinaryOutputFileHeader(lun, numComponents, 
-     &   filePos, numDataSets, numRecordsPerSet, numSpool)
-      use sizes, only : nbyte
-      use global, only : dt, rdes4, rid4, rdes8, rid8
-      use mesh, only : aid4, aid8
-      implicit none
-      integer, intent(in) :: lun
-      integer, intent(in) :: numComponents ! 1=scalar, 2=2Dvector etc
-      integer, intent(inout) :: filePos ! binary record number
-      integer, intent(in) :: numDataSets ! number of datasets that have been written
-      integer, intent(in) :: numRecordsPerSet ! np or num stations
-      integer, intent(in) :: numSpool ! number of time steps between writes
-      integer :: i
-      !
-      if(nbyte.eq.4) then
-         do i=1,8
-            write(lun,rec=filePos+i) rdes4(i)
-         enddo
-         filePos=filePos+8
-         do i=1,6
-            write(lun,rec=filePos+i) rid4(i)
-         enddo
-         filePos=filePos+6
-         do i=1,6
-            write(lun,rec=filePos+i) aid4(i)
-         enddo
-         filePos=filePos+6
-      endif
-      if(nbyte.eq.8) then
-         do i=1,4
-            write(lun,rec=filePos+i) rdes8(i)
-         enddo
-         filePos=filePos+4
-         do i=1,3
-            write(lun,rec=filePos+i) rid8(i)
-         enddo
-         filePos=filePos+3
-         do i=1,3
-            write(lun,rec=filePos+i) aid8(i)
-         enddo
-         filePos=filePos+3
-      endif
-      WRITE(lun,REC=filePos+1) numDataSets
-      WRITE(lun,REC=filePos+2) numRecordsPerSet
-      WRITE(lun,REC=filePos+3) DT*numSpool
-      WRITE(lun,REC=filePos+4) numSpool
-      WRITE(lun,REC=filePos+5) numComponents
-      filePos=filePos+5
-        
-C-----------------------------------------------------------------------
-      end subroutine writeBinaryOutputFileHeader
-C-----------------------------------------------------------------------
-
-C-----------------------------------------------------------------------
-C                      S U B R O U T I N E
-C     S K I P   D O W N   T O   A P P E N D   O U T P U T   F I L E 
-C-----------------------------------------------------------------------
-C     @jasonfleming v53.dev : Skip down through existing ascii output
-C     file to reach the right location where output should be appended.
-C-----------------------------------------------------------------------
-      subroutine skipDownToAppendOutputFile(lun, timeloc, 
-     &   numRecordsPerSnap, outputSpecifier)
-      use sizes, only : myproc, write_local_files
-      use global, only : logMessage, INFO
-      implicit none
-      integer, intent(in) :: lun
-      real(sz), intent(in) :: timeloc ! time in seconds, read from hotstart file
-      integer, intent(inout) :: numRecordsPerSnap ! num nodes or num stations
-      integer, intent(in) :: outputSpecifier
-      character(2048) :: skipline
-      character(2048) :: skipdata
-      !
-      real(sz) :: existingTime ! time from the file
-      integer :: existingIT    ! time step from the file
-      integer :: i
-      !
-      read(lun,'(a)') skipline ! header line 1
-      read(lun,'(a)') skipline ! header line 2
-      !
-      if (myproc == 0 .or. WRITE_LOCAL_FILES) then
-         do  ! loop until reaching the place to append or the end of file
-            read(unit=lun,fmt='(a)',end=999,err=999) skipline
-            select case(outputSpecifier)
-            case(1)
-               read(skipline,fmt=*,end=999,err=999) existingTime, existingIT
-            case(4)
-               read(skipline,fmt=*,end=999,err=999) existingTime, 
-     &            existingIT, numRecordsPerSnap
-            case default
-               call logMessage(ERROR,"Output specifier not recognized.")
-            end select
-            if ( existingTime.gt.timeloc ) then
-               backspace(lun)
-               backspace(lun)
-               write(unit=lun,fmt='(a)') trim(skipdata) ! this will truncate the file
-               return
-            else
-               do i=1, numRecordsPerSnap
-                  read(unit=lun,fmt='(a)',end=999,err=999) skipdata
-               end do
-            endif
-         end do
-      endif
-
-999   return
-
-C-----------------------------------------------------------------------
-      end subroutine skipDownToAppendOutputFile
 C-----------------------------------------------------------------------
 
 

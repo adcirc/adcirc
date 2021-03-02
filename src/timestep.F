@@ -32,7 +32,7 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
 C
-      SUBROUTINE TIMESTEP(IT)
+      SUBROUTINE TIMESTEP(IT,TimeLoc)
 C
 #ifdef IEEE_DEBUG
       USE, INTRINSIC :: IEEE_ARITHMETIC
@@ -42,8 +42,8 @@ C
      &    MOM_LV_Y, WSX2, WSY2, PR1, PR2, TiP1, TiP2, UU0, VV0, QY0, 
      &    GWCE_LV, TRANS_LV_B, TRANS_LV_A, WSX1, WSY1, dp1, dp2, QN0, 
      &    EN0, EN1, EN2, CICE1, CICE2, CICEOUT, RSNX1, RSNX2, RSNY1, RSNY2,
-     &    QX0, QN1, QN2, RSNXOUT, RSNYOUT, LNM_BC1, LNM_BC2, VIDBCPDXOH,
-     &    VIDBCPDYOH, QNIN1, QNIN2, ENIN1, ENIN2, EtaDisc, NIBNODECODE,
+     &    QX0, QN1, QN2, RSNXOUT, RSNYOUT, LNM_BC1, LNM_BC2, 
+     &    QNIN1, QNIN2, ENIN1, ENIN2, EtaDisc, NIBNODECODE,
      &    BCHGTIMINC, ETA2,ElevDisc, BTIME1, BTIME2, BTIME_END, C2D_PTrans,
      &    C2DDI, C3D, C3DVS, CBAROCLINIC, CGWCE_New, CHOTHS, CICE_TIME1,
      &    CICE_TIME2, CICE_TIMINC, BTIMINC, CME_New_C1, CME_New_C2, 
@@ -62,7 +62,7 @@ C
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
      &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
-     &    WarnElevDump, nodes_lg,NT
+     &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE
 #ifdef CSWAN
      &  , waveWindMultiplier
 #endif
@@ -71,7 +71,7 @@ C
       USE WETDRY, ONLY : computeWettingAndDrying
       USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart, 
      &    writeWarnElev, collectInundationData, collectMinMaxData
-      USE MESH, ONLY : NE, NP, DP, NM, X, Y, SLAM, SFEA, ICS, TotalArea,
+      USE MESH, ONLY : NE, NP, DP, SLAM, SFEA, ICS, TotalArea,
      &                  MJU, Areas, SFAC
       USE BOUNDARIES, ONLY : NOPE, NETA, NBOU, NVEL, LBCODEI, NBV, SIII,
      &    NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, NFLUXIBP, NFLUXRBC, CSII,
@@ -118,6 +118,8 @@ Casey 100205: Add a variable for writing of SWAN hot-start files.
      &                      ,WriteSwanHotStart
 #endif
       USE WEIR_FLUX
+      USE SPONGELAYER, ONLY: LoadAbsLayerSigma, sponge_dis_mthd, sponge_opsplit0,
+     &     adjust_sponge_sigma, getabslayerext, sponge_shift_soln
 
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
@@ -147,21 +149,15 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(SZ) QTRatio
       REAL(SZ) RStRatio, RSX, RSY
       REAL(SZ) SAltMul, S2SFEA
-      REAL(SZ) SFacAvg
       REAL(SZ) H1
       REAL(SZ) TPMul
-      REAL(SZ) DARhoMRho0N1,DARhoMRho0N2,DARhoMRho0N3
-
       REAL(SZ) UN1
-      REAL(SZ) VIDBCPDXOHN1,VIDBCPDXOHN2,VIDBCPDXOHN3,VIDBCPDXOHAvgArea
-      REAL(SZ) VIDBCPDYOHN1,VIDBCPDYOHN2,VIDBCPDYOHN3,VIDBCPDYOHAvgArea
-      REAL(SZ) DEta2DX,DEta2DY
-      REAL(SZ) DRhoDX,DRhoDY
 
       REAL(8) AreaIE2,AreaEle
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       REAL(8) FDX1O2A, FDX2O2A, FDX3O2A, FDY1O2A, FDY2O2A, FDY3O2A
-      REAL(8) TimeLoc, TimeH
+      REAL(8),intent(out) :: TimeLoc
+      REAL(8) TimeH
       REAL(8) runperccomplete
 C   kmd48.33bc - added in the heat flux variables
       CHARACTER(80) :: CDUM80
@@ -177,6 +173,12 @@ C   TCM v50.66.02 -- Added for Time Varying Bathymetry
       REAL(SZ) ETA2TMP,DPTMP,DPTMP2,BTRATIO  !tcm v50.66.01 bathymetry changes
 
       REAL(SZ) :: ARG, ARGJ, RFF
+C....... DW
+      REAL(SZ):: RAMPTMP
+      LOGICAL, SAVE:: FIRST_ADJ_ABS_LAYER = .TRUE. 
+      LOGICAL, SAVE:: FIRST_ENTER = .TRUE. 
+      INTEGER:: NBDI, istep
+C.......
 
       call setMessageSource("timestep")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -226,6 +228,109 @@ C...
          END IF
          TimeH=IT*DTDP + ((StaTimHS - StaTim) - RefTim)*86400.D0
       END IF
+
+C-------------------TEMPORAL RAMP-------------------------------------
+C...  NOTE: MOVED HERE BY DW/WJP : May 3rd 2018
+C...  DEFINE Ramp FUNCTION FOR BOUNDARY ELEVATION FORCING, WIND AND PRESSURE
+C.... FORCING AND TIDAL POTENTIAL FORCING
+C...
+C
+C     jgf46.08 Calculate ramp functions.
+C     jgf46.21 Modify to match behavior of 46.02
+      SELECT CASE(NRamp)
+      CASE(0)
+         Ramp=1.0D0
+         RampExtFlux=1.0D0
+         RampIntFlux=1.0D0
+         RampElev=1.0D0
+         RampTip=1.0D0
+         RampMete=1.0D0
+         RampWRad=1.0D0
+Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
+C    kmd48.33bc - ramp changes with baroclinic when timestep is changed
+      CASE(1)
+         !jgf51.51.21: Fixed the case where nramp=1 but dramp=0.0d0.
+         if (dramp.lt.1.0e-6) then
+            Ramp=1.0d0
+            RampExtFlux=1.0D0
+            RampIntFlux=1.0D0
+            RampElev=1.0D0
+            RampTip=1.0D0
+            RampMete=1.0D0
+            RampWRad=1.0D0
+         else
+            ramp=tanh((2.d0*timeloc/86400.d0)/dramp)
+            RampExtFlux=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+            RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+            RampElev=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+            RampTip=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+            RampMete=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+            RampWRad=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+         endif
+      CASE(2,3,4,5,6,7,8)
+         Ramp=TANH((2.D0*TimeLoc/86400.D0)/DRamp)
+         RampExtFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampExtFlux)
+         RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampIntFlux)
+         RampElev=TANH((2.D0*TimeLoc/86400.D0)/DRampElev)
+         RampTip=TANH((2.D0*TimeLoc/86400.D0)/DRampTip)
+Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
+         RampMete=TANH((2.D0*(TimeLoc/86400.D0-DUnRampMete))/DRampMete)
+         RampWRad=TANH((2.D0*TimeLoc/86400.D0)/DRampWRad)
+      END SELECT
+C
+C     jgf46.21 If there is an external flux (i.e. river) boundary, turn
+C     off all forcings except the river flux forcing for the duration of
+C     the FluxSettlingTime. When the FluxSettlingTime has ended, turn
+C     all forcings back on.
+      IF (NRamp.gt.1) THEN
+         IF(IT.LT.(FluxSettlingIT+10)) THEN
+            Ramp=0.0
+            RampIntFlux=0.0
+            RampElev=0.0
+            RampTip=0.0
+            RampMete=0.0
+            RampWRad=0.0
+         ELSE
+            Ramp=TANH((2.D0*(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRamp)
+            RampIntFlux=TANH((2.D0
+     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampIntFlux)
+            RampElev=TANH((2.D0
+     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampElev)
+            RampTip=TANH((2.D0
+     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampTip)
+            RampMete=TANH((2.D0
+     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampMete)
+            RampWRad=TANH((2.D0
+     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampWRad)
+Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
+            IF(NRamp.eq.8) then
+               RampMete=TANH((2.D0*((((IT)*DTDP)/86400.D0)-DUnRampMete))/DRampMete)
+            endif
+         ENDIF
+         !jgf49.44: Cover the case where the ramp length is zero.
+         IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
+         IF (DRampExtFlux.lt.1.0e-6) RampExtFlux = 1.0d0
+         IF (DRampIntFlux.lt.1.0e-6) RampIntFlux = 1.0d0
+         IF (DRampElev.lt.1.0e-6) RampElev = 1.0d0
+         IF (DRampTip.lt.1.0e-6) RampTip = 1.0d0
+         IF (DRampMete.lt.1.0e-6) RampMete = 1.0d0
+         IF (DRampWRad.lt.1.0e-6) RampWRad = 1.0d0
+      ELSE
+         !jgf49.44: Cover the case where the ramp length is zero.
+         IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
+      ENDIF
+C     
+C------DW
+      IF ( LoadAbsLayerSigma ) THEN
+         IF (  FIRST_ADJ_ABS_LAYER ) THEN
+            CALL Adjust_Sponge_Sigma( abs(DTDP) ) ;
+
+            FIRST_ADJ_ABS_LAYER = .FALSE. ;
+         END IF
+      END IF   
+C-----END DW
+
+C-------------------TEMPORAL RAMP-------------------------------------
 
 
 C...  SHIFT THE FLUX PER UNIT WIDTH, DEPTH AVERAGED VELOCITIES, BOTTOM STRESS,
@@ -283,6 +388,38 @@ C     TIP..Tidal potential forcing
          dynamicWaterLevelCorrection1(:) = dynamicWaterLevelCorrection2(:)
          dynamicWaterLevelCorrection2(:) = 0.d0
       endif
+C
+C.............................DW, sponge layer ..................
+      ! Get 
+      !   Eta2_AbsLayer, uu2_AbsLayer, vv2_AbsLayer
+      IF ( LoadAbsLayerSigma ) THEN
+         !
+         IF ( .NOT. FIRST_ENTER ) THEN
+            !c u_{ext}^{n + 1} -- > eta2, 
+            CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev ) ;
+         ELSE
+
+            RampTMP = RampElev ;
+            DO istep = 2, 1, -1
+               IF ( NRamp > 0 ) THEN
+                  RampTMP=TANH((2.D0*(TimeLoc - istep*DTDP)/86400.D0)/DRampElev)
+               END IF
+               RampTMP = max(0.D0,RampTMP) ;                   
+               
+               !  u_{ext}^{n + 1 - istep} --> uu2
+               CALL GETABSLAYEREXT( IT - istep, TimeLoc - istep*DTDP,
+     &              TimeH - istep*DTDP, RampTMP ) ;
+
+               CALL SPONGE_SHIFT_SOLN( ) ; 
+               ! eta1 --> eta0, eta2 --> eta1, u2 --> u1          
+            END DO
+            !c u_{ext}^{n + 1} -- > eta2, 
+            CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev ) ;
+            FIRST_ENTER = .FALSE. ;
+         END IF
+         !
+      END IF
+C.... END DW..........................................................
       
 C...TCM V50.66.01 -- ADDING TIME DEPENDENT BATHYMETRY
 C... so that total water column height is unchanged
@@ -404,20 +541,21 @@ C
 C-------------------BOTTOM FRICTION-------------------------------------
 C
 C     2DDI.Set up the 2D friction coefficient
-      if(C2DDI) then
+      if (C2DDI) then
          CALL Apply2DBottomFriction(UU1, VV1, DP, ETA2, G, IFNLFA, NP, TK)
          ! WJP 02.24.2018 Get the wave drag coefficients
          ! that are put into TKM (which include TK from bottom friction)
-         CALL Apply2DInternalWaveDrag(NP, TK, UU1, VV1, DP, TKM)
+         IF (CBaroclinic) THEN
+            CALL Apply2DInternalWaveDrag(NP, TK, TKM, UU1, VV1, DP, IT)
+         ELSE
+            CALL Apply2DInternalWaveDrag(NP, TK, TKM)
+         ENDIF 
       endif
 C..RJW Set up the 3D friction coefficient
-      if(C3D) then
+      if (C3D) then
          CALL Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G, IFNLFA, NP, TK, NFEN, Z0B)
       endif
       
-      
-
-
 C-------------------BOTTOM FRICTION-------------------------------------
 C
 C
@@ -434,99 +572,6 @@ C...
          EN2(I)=0.D0
       END DO
 
-
-C-------------------TEMPORAL RAMP-------------------------------------
-C...
-C...  DEFINE Ramp FUNCTION FOR BOUNDARY ELEVATION FORCING, WIND AND PRESSURE
-C.... FORCING AND TIDAL POTENTIAL FORCING
-C...
-C
-C     jgf46.08 Calculate ramp functions.
-C     jgf46.21 Modify to match behavior of 46.02
-      SELECT CASE(NRamp)
-      CASE(0)
-         Ramp=1.0D0
-         RampExtFlux=1.0D0
-         RampIntFlux=1.0D0
-         RampElev=1.0D0
-         RampTip=1.0D0
-         RampMete=1.0D0
-         RampWRad=1.0D0
-Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
-C    kmd48.33bc - ramp changes with baroclinic when timestep is changed
-      CASE(1)
-         !jgf51.51.21: Fixed the case where nramp=1 but dramp=0.0d0.
-         if (dramp.lt.1.0e-6) then
-            Ramp=1.0d0
-            RampExtFlux=1.0D0
-            RampIntFlux=1.0D0
-            RampElev=1.0D0
-            RampTip=1.0D0
-            RampMete=1.0D0
-            RampWRad=1.0D0
-         else
-            ramp=tanh((2.d0*timeloc/86400.d0)/dramp)
-            RampExtFlux=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-            RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-            RampElev=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-            RampTip=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-            RampMete=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-            RampWRad=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-         endif
-      CASE(2,3,4,5,6,7,8)
-         Ramp=TANH((2.D0*TimeLoc/86400.D0)/DRamp)
-         RampExtFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampExtFlux)
-         RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampIntFlux)
-         RampElev=TANH((2.D0*TimeLoc/86400.D0)/DRampElev)
-         RampTip=TANH((2.D0*TimeLoc/86400.D0)/DRampTip)
-Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
-         RampMete=TANH((2.D0*(TimeLoc/86400.D0-DUnRampMete))/DRampMete)
-         RampWRad=TANH((2.D0*TimeLoc/86400.D0)/DRampWRad)
-      END SELECT
-C
-C     jgf46.21 If there is an external flux (i.e. river) boundary, turn
-C     off all forcings except the river flux forcing for the duration of
-C     the FluxSettlingTime. When the FluxSettlingTime has ended, turn
-C     all forcings back on.
-      IF (NRamp.gt.1) THEN
-         IF(IT.LT.(FluxSettlingIT+10)) THEN
-            Ramp=0.0
-            RampIntFlux=0.0
-            RampElev=0.0
-            RampTip=0.0
-            RampMete=0.0
-            RampWRad=0.0
-         ELSE
-            Ramp=TANH((2.D0*(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRamp)
-            RampIntFlux=TANH((2.D0
-     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampIntFlux)
-            RampElev=TANH((2.D0
-     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampElev)
-            RampTip=TANH((2.D0
-     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampTip)
-            RampMete=TANH((2.D0
-     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampMete)
-            RampWRad=TANH((2.D0
-     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampWRad)
-Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
-            IF(NRamp.eq.8) then
-               RampMete=TANH((2.D0*((((IT)*DTDP)/86400.D0)-DUnRampMete))/DRampMete)
-            endif
-         ENDIF
-         !jgf49.44: Cover the case where the ramp length is zero.
-         IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
-         IF (DRampExtFlux.lt.1.0e-6) RampExtFlux = 1.0d0
-         IF (DRampIntFlux.lt.1.0e-6) RampIntFlux = 1.0d0
-         IF (DRampElev.lt.1.0e-6) RampElev = 1.0d0
-         IF (DRampTip.lt.1.0e-6) RampTip = 1.0d0
-         IF (DRampMete.lt.1.0e-6) RampMete = 1.0d0
-         IF (DRampWRad.lt.1.0e-6) RampWRad = 1.0d0
-      ELSE
-         !jgf49.44: Cover the case where the ramp length is zero.
-         IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
-      ENDIF
-C-------------------TEMPORAL RAMP-------------------------------------
-
 C
 C---------------------BEGIN ICE FIELDS----------------------------------------
 C...  UPDATE THE ICE CONCENTRATION FIELDS FROM UNIT 25,225,227
@@ -537,14 +582,14 @@ C
             CICE_TIME1 = CICE_TIME2
             CICE_TIME2 = CICE_TIME2 + CICE_TIMINC
             DO I=1,NP
-              CICE1(I)=CICE2(I)
+              CICE1(I) = CICE2(I)
             END DO
             CALL NCICE1_GET(CICE2,NP)
           ENDIF
       ENDIF
 
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-      if (ncice.ne.0) then
+      if (ncice.ne.0.and.ncice.ne.14) then
          CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
          do i=1,np
             CICEOUT(I) = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
@@ -713,7 +758,7 @@ C...  WJP 02.21.2018 Rewriting for general formula for all species,
 C     cleaner code, and correct identification of 0,1,2 or higher species
       IF(CTIP) THEN
          TIPLOOP: DO J=1,NTIF
-            IF(PERT(J).EQ.0.) THEN
+            IF (PERT(J).EQ.0.) THEN
                NCYC=0
             ELSE
 #ifdef IBM
@@ -749,101 +794,16 @@ C...  Depth Averaged Baroclinic Forcing needed by GWCE and 2DDI Momentum
 C...  Compute this (divided by H, i.e., Bx/H, By/H) as a nodally averaged
 C...  quantity for smoothing
 C...
-      DO J=1,NP
-         VIDBCPDXOH(J)=0.D0
-         VIDBCPDYOH(J)=0.D0
-cjgf45.06 TotalArea(J)=0.D0 ! What if CBaroclinic=F and nolifa=0?
-      ENDDO
-
-      IF(CBaroclinic) Then
-
-         DO J=1,NP              !jgf45.06 try this instead
-            TotalArea(J)=0.D0   !jgf45.06
-         ENDDO                  !jgf45.06
+      IF (CBaroclinic) THEN
 
 !     Kendra45.12 - Test placement of BPG
-         if (C3DVS) CALL BPG3D(IT)
+         IF (C3DVS) CALL BPG3D(IT)
 ! arash 01/20/2016
-!         if (C3DVS) Call Gaussian_filter_complex_BPG ( X, Y, NeiTab, NNeigh, BPG, NP, NFEN, MNEI )
 
-c     jgf45.12 this algorithm only works in 2D
-         if (C2DDI) then
-            DO IE=1,NE
-               NM1=NM(IE,1)
-               NM2=NM(IE,2)
-               NM3=NM(IE,3)
-               NC1=NODECODE(NM1)
-               NC2=NODECODE(NM2)
-               NC3=NODECODE(NM3)
-               NCEle=NC1*NC2*NC3*NOFF(IE)
-               H2N1=DP(NM1)+IFNLFA*ETA2(NM1) !jgf45.11 add IFNLFA (kd bug fix)
-               H2N2=DP(NM2)+IFNLFA*ETA2(NM2) ! "
-               H2N3=DP(NM3)+IFNLFA*ETA2(NM3) ! "
-               EtaN1=IFNLFA*Eta2(NM1)
-               EtaN2=IFNLFA*Eta2(NM2)
-               EtaN3=IFNLFA*Eta2(NM3)
-               SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
+c     WJP 03.23.18 adding in the 2D baroclinic option
+         IF (C2DDI) CALL BPG2D(IT,TimeLoc)
 
-               AreaIE2=Areas(IE)
-               AreaEle=NCEle*AreaIE2/2.D0
-               FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-               FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-               FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-               FDY1=X(NM3)-X(NM2) !a1
-               FDY2=X(NM1)-X(NM3) !a2
-               FDY3=X(NM2)-X(NM1) !a3
-               FDX1O2A=FDX1/AreaIE2 !dphi1/dx
-               FDY1O2A=FDY1/AreaIE2 !dphi1/dy
-               FDX2O2A=FDX2/AreaIE2 !dphi2/dx
-               FDY2O2A=FDY2/AreaIE2 !dphi2/dy
-               FDX3O2A=FDX3/AreaIE2 !dphi3/dx
-               FDY3O2A=FDY3/AreaIE2 !dphi3/dy
-
-               DARhoMRho0N1=(DASigT(NM1)-SigT0)/RhoWat0
-               DARhoMRho0N2=(DASigT(NM2)-SigT0)/RhoWat0
-               DARhoMRho0N3=(DASigT(NM3)-SigT0)/RhoWat0
-               DEta2DX=EtaN1*FDX1O2A+EtaN2*FDX2O2A+EtaN3*FDX3O2A
-               DEta2DY=EtaN1*FDY1O2A+EtaN2*FDY2O2A+EtaN3*FDY3O2A
-               DRhoDX=DARhoMRho0N1*FDX1O2A+DARhoMRho0N2*FDX2O2A
-     &              +DARhoMRho0N3*FDX3O2A
-               DRhoDY=DARhoMRho0N1*FDY1O2A+DARhoMRho0N2*FDY2O2A
-     &              +DARhoMRho0N3*FDY3O2A
-               VIDBCPDXOHN1=Ramp*G*
-     &              (DARhoMRho0N1*DEta2DX+0.5d0*H2N1*DRhoDX)
-               VIDBCPDXOHN2=Ramp*G*
-     &              (DARhoMRho0N2*DEta2DX+0.5d0*H2N2*DRhoDX)
-               VIDBCPDXOHN3=Ramp*G*
-     &              (DARhoMRho0N3*DEta2DX+0.5d0*H2N3*DRhoDX)
-               VIDBCPDYOHN1=Ramp*G*
-     &              (DARhoMRho0N1*DEta2DY+0.5d0*H2N1*DRhoDY)
-               VIDBCPDYOHN2=Ramp*G*
-     &              (DARhoMRho0N2*DEta2DY+0.5d0*H2N2*DRhoDY)
-               VIDBCPDYOHN3=Ramp*G*
-     &              (DARhoMRho0N3*DEta2DY+0.5d0*H2N3*DRhoDY)
-               VIDBCPDXOHAvgArea=AreaEle*(VIDBCPDXOHN1+VIDBCPDXOHN2
-     &              +VIDBCPDXOHN3)/3.D0
-               VIDBCPDYOHAvgArea=AreaEle*(VIDBCPDYOHN1+VIDBCPDYOHN2
-     &              +VIDBCPDYOHN3)/3.D0
-               VIDBCPDXOH(NM1)=VIDBCPDXOH(NM1)+VIDBCPDXOHAvgArea
-               VIDBCPDXOH(NM2)=VIDBCPDXOH(NM2)+VIDBCPDXOHAvgArea
-               VIDBCPDXOH(NM3)=VIDBCPDXOH(NM3)+VIDBCPDXOHAvgArea
-               VIDBCPDYOH(NM1)=VIDBCPDYOH(NM1)+VIDBCPDYOHAvgArea
-               VIDBCPDYOH(NM2)=VIDBCPDYOH(NM2)+VIDBCPDYOHAvgArea
-               VIDBCPDYOH(NM3)=VIDBCPDYOH(NM3)+VIDBCPDYOHAvgArea
-               TotalArea(NM1)=TotalArea(NM1)+AreaEle
-               TotalArea(NM2)=TotalArea(NM2)+AreaEle
-               TotalArea(NM3)=TotalArea(NM3)+AreaEle
-            ENDDO
-
-            DO J=1,NP
-               IF(TotalArea(J).NE.0.) THEN
-                  VIDBCPDXOH(J)=VIDBCPDXOH(J)/TotalArea(J)
-                  VIDBCPDYOH(J)=VIDBCPDYOH(J)/TotalArea(J)
-               ENDIF
-            ENDDO
-         ENDIF
       ENDIF
-
 C...
 C...  COMPUTE SPECIFIED NORMAL FLOW BOUNDARY CONDITION
 C...
@@ -864,7 +824,7 @@ C...
             DO I=1,NVEL
                ARG=ARGJ-QNPH(J,I)
                QN2(I)=QN2(I)+QNAM(J,I)*RFF*COS(ARG)
-               IF(LBCODEI(I).EQ.32) THEN
+               IF (LBCODEI(I).EQ.32) THEN
                   ARG=ARGJ-ENPH(J,I)
                   EN2(I)=EN2(I)+ENAM(J,I)*RFF*COS(ARG)
                ENDIF
@@ -1068,6 +1028,18 @@ C...
 C-------------END OF 2DDI MOMENTUM EQUATION SOLUTION--------------------
 C...
 
+C.....DW - ABS SPONGE LAYER     
+      IF ( C2DDI .AND. LoadAbsLayerSigma .AND. (sponge_dis_mthd == 0) ) THEN
+         CALL SPONGE_OPSPLIT0( IT, DTDP/2, TimeLoc, TimeH)  
+      END IF
+
+      IF ( LoadAbsLayerSigma ) THEN
+         CALL SPONGE_SHIFT_SOLN( ) 
+      END IF
+C     
+C.....END DW
+C     
+
 C...
 C...  3DVS Momentum Equation Solution
 C...
@@ -1154,6 +1126,10 @@ C...
                write(6,*) 'HS writer does not support C3D'
             endif
          else
+            if (NHOUTONCE) then
+               ! Make sure never enters again
+               NHSINC = huge(NHSINC)
+            endif
 !     IF(myproc.eq.0) PRINT *, " writeHotstart **********"
             CALL writeHotstart(TimeLoc, IT)
          endif
@@ -1276,7 +1252,7 @@ C     output the global node number to debug the local PE fort.14s
          IF( ErrorElevExceeded /= 0 ) THEN    !  Finalize MPI Environment,
            Flag_ElevError = .true. 
            CALL MSG_FINI()                    !  if there are Error Elvation nodes.
-           STOP                               !
+           CALL EXIT(1)                             !
          ENDIF                                !st3
 #else
          IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
@@ -1351,12 +1327,13 @@ C*******************************************************************************
 C
       SUBROUTINE SCALAR_TRANS_2D (IT,TimeLoc)
 
-      USE GLOBAL
+      USE GLOBAL, only: ch1, trans_lv_b, nodecode, noff, lumpt, dtdp,
+     &    trans_lv_a, soursin, uu1, vv1, ifnlfa, eta1, bedstr, tk,
+     &    rhowat0, setmessagesource, unsetmessagesource, DEBUG,
+     &    allMessage
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, SFAC
       USE NodalAttributes, ONLY: EVC
-#ifdef CMPI
-      USE MESSENGER
-#endif
+      use sizes, only: sz
 
       IMPLICIT NONE
 
@@ -1690,8 +1667,147 @@ c*********************************************************************
       END SUBROUTINE CALC_SIGMAT_2D
 c*********************************************************************
 
+c******************************************************************************
+c  SUBROUTINE BPG2D                                                           *
+c                                                                             *
+c  WJP: FINDING VIDBCPDX(DY) FROM EITHER THE DEPTH-AVERAGED EQUATION OR       *
+C  FROM THE FULL 3D INTEGRAL USING INFORMATION FROM A 3D BAROCLINIC MODEL.    *
+C  IN THE LATTER CASE MOMENTUM DISPERSION IS ALSO ESTIMATED                   *
+c                                                                             *
+c******************************************************************************
+      
+      SUBROUTINE BPG2D(IT,TimeLoc)
 
+      USE SIZES, ONLY : SZ, myproc
+      USE GLOBAL, ONLY: G, IFNLFA, IFNLCT, IDEN, RAMP, NODECODE, NOFF, 
+     &    VIDBCPDXOH, VIDBCPDYOH, ETA2, SigT0, DTDP, DASigT, RhoWat0,
+     &    IFSFM
+      USE MESH, ONLY : NE, NM, FDXE, FDYE, NP, DP, AREAS, NODELE, 
+     &      NEITABELE, NEITAB, NNEIGH, TOTALAREA,
+     &      SFacEle, SFMYEle, SFMXEle
+      USE Couple2BC3D, ONLY : Update_BC3D_Info, FBPG_Disp_from_BC3D
+      IMPLICIT NONE
+    
+      INTEGER,INTENT(IN) :: IT 
+      REAL(8),INTENT(IN) :: TimeLoc 
+      INTEGER :: IE             !element loop counter
+      INTEGER :: J              !node loop counter
+      INTEGER :: K              !vertical node loop counter (1-top, BCK-last z contour)
+      INTEGER :: NCELE          !element code
+      INTEGER :: NEle           !local value of NetTabEle
+      INTEGER :: NM1,NM2,NM3    !local node numbers used to compute gradients
+      INTEGER :: NC1,NC2,NC3    !local node codes
 
+      REAL(SZ) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
+      REAL(SZ) :: AreaIE2, AreaEle
+      REAL(SZ) :: H2N1, H2N2, H2N3
+      REAL(SZ) :: FDX1, FDX2, FDX3
+      REAL(SZ) :: FDY1, FDY2, FDY3
+      REAL(SZ) :: FDX1O2A, FDX2O2A, FDX3O2A
+      REAL(SZ) :: FDY1O2A, FDY2O2A, FDY3O2A
+      REAL(SZ) :: EtaN1, EtaN2, EtaN3
+      REAL(SZ) :: DEta2DX, DEta2DY
+      REAL(SZ) :: DRhoDX, DRhoDY
+      REAL(SZ) :: DARhoMRho0N1,DARhoMRho0N2,DARhoMRho0N3
+      REAL(SZ) :: VIDBCPDXOHN1,VIDBCPDXOHN2,VIDBCPDXOHN3
+      REAL(SZ) :: VIDBCPDYOHN1,VIDBCPDYOHN2,VIDBCPDYOHN3
+      REAL(SZ) :: VIDBCPDXOHAvgArea,VIDBCPDYOHAvgArea
+
+      ! For the Coupling to 3D Baroclinic mode 
+      IF (abs(IDEN).ge.5) THEN
+         ! Update the 3D BC Information for the current timestep 
+         call Update_BC3D_Info(IDEN,TimeLoc) 
+
+         if (abs(IDEN).ne.7) then         
+            ! Calculating the full Baroclinic pressure gradient and
+            ! momentum dispersion terms required at every timestep
+            ! from the 3D BC information that is on a longer time scale 
+            call FBPG_Disp_from_BC3D()
+         endif 
+         RETURN
+      ENDIF  
+     
+      ! For the depth-averaged baroclinic mode without coupling
+      DO IE=1,NE
+         NM1=NM(IE,1)
+         NM2=NM(IE,2)
+         NM3=NM(IE,3)
+         NC1=NODECODE(NM1)
+         NC2=NODECODE(NM2)
+         NC3=NODECODE(NM3)
+         NCEle=NC1*NC2*NC3*NOFF(IE)
+         H2N1=DP(NM1)+IFNLFA*ETA2(NM1) !jgf45.11 add IFNLFA (kd bug fix)
+         H2N2=DP(NM2)+IFNLFA*ETA2(NM2) ! "
+         H2N3=DP(NM3)+IFNLFA*ETA2(NM3) ! "
+         EtaN1=IFNLFA*Eta2(NM1)
+         EtaN2=IFNLFA*Eta2(NM2)
+         EtaN3=IFNLFA*Eta2(NM3)
+         SFacAvg= SFacEle(IE)
+C..... BEG DW/WJP
+         SFmxAvg= SFMXEle(IE) ; 
+         SFmyAvg= SFMYEle(IE) ; 
+         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
+         sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+C..... END DW/WJP
+
+         AreaIE2=Areas(IE)
+         AreaEle=NCEle*AreaIE2*0.5d0
+         FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
+         FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
+         FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
+         FDY1 = FDYE(1,IE)*sfdyfac ; !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
+         FDY2 = FDYE(2,IE)*sfdyfac ; !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
+         FDY3 = FDYE(3,IE)*sfdyfac ; !c FDY3=(X(NM2)-X(NM1))*MY !a3*my         
+         FDX1O2A=FDX1/AreaIE2 !dphi1/dx
+         FDY1O2A=FDY1/AreaIE2 !dphi1/dy
+         FDX2O2A=FDX2/AreaIE2 !dphi2/dx
+         FDY2O2A=FDY2/AreaIE2 !dphi2/dy
+         FDX3O2A=FDX3/AreaIE2 !dphi3/dx
+         FDY3O2A=FDY3/AreaIE2 !dphi3/dy
+
+         DARhoMRho0N1=(DASigT(NM1)-SigT0)/RhoWat0
+         DARhoMRho0N2=(DASigT(NM2)-SigT0)/RhoWat0
+         DARhoMRho0N3=(DASigT(NM3)-SigT0)/RhoWat0
+         DEta2DX=EtaN1*FDX1O2A+EtaN2*FDX2O2A+EtaN3*FDX3O2A
+         DEta2DY=EtaN1*FDY1O2A+EtaN2*FDY2O2A+EtaN3*FDY3O2A
+         DRhoDX=DARhoMRho0N1*FDX1O2A+DARhoMRho0N2*FDX2O2A
+     &         +DARhoMRho0N3*FDX3O2A
+         DRhoDY=DARhoMRho0N1*FDY1O2A+DARhoMRho0N2*FDY2O2A
+     &         +DARhoMRho0N3*FDY3O2A
+         VIDBCPDXOHN1=Ramp*G*
+     &        (DARhoMRho0N1*DEta2DX+0.5d0*H2N1*DRhoDX)
+         VIDBCPDXOHN2=Ramp*G*
+     &        (DARhoMRho0N2*DEta2DX+0.5d0*H2N2*DRhoDX)
+         VIDBCPDXOHN3=Ramp*G*
+     &        (DARhoMRho0N3*DEta2DX+0.5d0*H2N3*DRhoDX)
+         VIDBCPDYOHN1=Ramp*G*
+     &        (DARhoMRho0N1*DEta2DY+0.5d0*H2N1*DRhoDY)
+         VIDBCPDYOHN2=Ramp*G*
+     &        (DARhoMRho0N2*DEta2DY+0.5d0*H2N2*DRhoDY)
+         VIDBCPDYOHN3=Ramp*G*
+     &        (DARhoMRho0N3*DEta2DY+0.5d0*H2N3*DRhoDY)
+         VIDBCPDXOHAvgArea=AreaEle*(VIDBCPDXOHN1+VIDBCPDXOHN2
+     &        +VIDBCPDXOHN3)/3.D0
+         VIDBCPDYOHAvgArea=AreaEle*(VIDBCPDYOHN1+VIDBCPDYOHN2
+     &        +VIDBCPDYOHN3)/3.D0
+         VIDBCPDXOH(NM1)=VIDBCPDXOH(NM1)+VIDBCPDXOHAvgArea
+         VIDBCPDXOH(NM2)=VIDBCPDXOH(NM2)+VIDBCPDXOHAvgArea
+         VIDBCPDXOH(NM3)=VIDBCPDXOH(NM3)+VIDBCPDXOHAvgArea
+         VIDBCPDYOH(NM1)=VIDBCPDYOH(NM1)+VIDBCPDYOHAvgArea
+         VIDBCPDYOH(NM2)=VIDBCPDYOH(NM2)+VIDBCPDYOHAvgArea
+         VIDBCPDYOH(NM3)=VIDBCPDYOH(NM3)+VIDBCPDYOHAvgArea
+      ENDDO
+
+      DO J = 1,NP
+         IF (TotalArea(J).NE.0.d0) THEN
+            VIDBCPDXOH(J) = VIDBCPDXOH(J)/TotalArea(J)
+            VIDBCPDYOH(J) = VIDBCPDYOH(J)/TotalArea(J)
+         ENDIF
+      ENDDO
+
+C***********************************************************************
+      END SUBROUTINE BPG2D
+C***********************************************************************
 
 c******************************************************************************
 !Kendra: Eliminated the bpg calculation in the vsmy subroutine and added a
@@ -2627,7 +2743,7 @@ C**********************************************************************
           End Do
           If ( sum_Weights < 1.0d-6 ) Then
              Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-             Stop
+             CALL EXIT(1)
           End If
          Weights (:) = Weights (:) / sum_Weights
          ! 2.3 debug

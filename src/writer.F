@@ -10,19 +10,17 @@ C
      &     NETCDF3, NETCDF4, XDMF, iSplit, globalDir, meshType, 
      &     controlType, meshFileName_g, controlFileName_g
       use global, only: c3d, comm,
-     &     bufsize_max, buf, resultbuf, outputdatadescript_t, float_type,
+     &    bufsize_max, buf, resultbuf, outputdatadescript_t, float_type,
      &     debug, echo, info, warning, error, logmessage, allmessage,
      &     setmessagesource, unsetmessagesource, initLogging, nabout,
-     &     scratchMessage, 
-     &     sig_val, sig_write, sig_pause, comm_writer, writer_id,
-     &     sig_term, realtype, dbletype, sig_mesh
+     &     scratchMessage, dbletype, realtype, 
+     &     sig_val, sig_write, sig_ini, sig_pause, comm_writer, 
+     &     sig_term, sig_mesh, writer_id
       use messenger, only: tag, msg_fini
 #ifdef HAVE_MPI_MOD
       use mpi
-      implicit none
-#else
-      implicit none
 #endif
+      implicit none
       ! tcm v50.27 increased size from 3 to 4, cobell increase to 6,
       ! jgf51.21.27 decreased size of intbuf to 5
       ! jgf51.21.29 increased size of intbuf to 6 for XDMF
@@ -120,9 +118,9 @@ C-----------------------------------------------------------------------
       SUBROUTINE sendLabelInfoToWriters()
 C-----------------------------------------------------------------------
           use mpi
-          use sizes,only: myproc,mnwproc,mnproc
+          use sizes,only: myproc, mnwproc, mnproc
           use messenger,only: mpi_comm_adcirc
-          use global,only: labels_g,np_g
+          use global,only: labels_g, np_g
           implicit none
           INTEGER :: ierr
           INTEGER :: I,N
@@ -130,8 +128,12 @@ C-----------------------------------------------------------------------
 
           IF(myproc.EQ.0)THEN
               DO I = 0,MNWPROC-1
-                 CALL mpi_send(np_g,1,mpi_integer,mnproc+i,0,mpi_comm_adcirc,ierr)
-                 CALL mpi_send(labels_g,np_g,mpi_integer,mnproc+i,0,mpi_comm_adcirc,ierr)
+                 CALL mpi_send(sig_ini,1,mpi_integer,mnproc,tag,
+     &                         comm_writer(i+1),ierr)
+                 CALL mpi_send(np_g,1,mpi_integer,mnproc+i,0,
+     &                         mpi_comm_adcirc,ierr)
+                 CALL mpi_send(labels_g,np_g,mpi_integer,mnproc+i,0,
+     &                         mpi_comm_adcirc,ierr)
               ENDDO
           ELSEIF(myproc.GT.mnproc-1.and.myproc.LT.mnproc+mnwproc)THEN
               CALL mpi_recv(n,1,mpi_integer,0,0,mpi_comm_adcirc,mpistat,ierr)
@@ -157,13 +159,15 @@ C     When it receives a signal, it performs the specified action,
 C     then goes back to waiting for another signal.
 C-----------------------------------------------------------------------
       subroutine writer_main ()
-      USE GLOBAL,ONLY : ScreenUnit
+      use global, only : ScreenUnit
+      use messenger, only: msg_barrier, mpi_comm_adcirc
       IMPLICIT NONE
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
-      integer :: sig,ierr
+      integer :: sig, ierr, waittime, nextProc, prevProc, sig_dummy
       integer :: mpistat(mpi_status_size)
+      character(len=16) :: TimeIni
 C
       call setMessageSource("writer_main")
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)
@@ -171,11 +175,17 @@ C
 #endif
       !
       ! infinite loop
+
       do 
          call mpi_recv(sig, 1, mpi_integer, 0, tag,
      &       comm_writer(writer_id), mpistat, ierr)
 
          select case(sig)
+         case(sig_ini) 
+            write(scratchMessage,
+     &       '("Writer processor ",i0," received sig_ini.")') writer_id
+            call logMessage(INFO,scratchMessage)
+            call sendLabelInfoToWriters()
          case(sig_val) 
             write(scratchMessage,
      &       '("Writer processor ",i0," received sig_val.")') writer_id
@@ -183,7 +193,7 @@ C
             call writer_recv_values()
          case(sig_write)
             write(scratchMessage,
-     &       '("Writer processor ",i0," received sig_write.")') writer_id
+     &      '("Writer processor ",i0," received sig_write.")') writer_id
             call logMessage(INFO,scratchMessage)
             call writer_write()
          case(sig_mesh)
@@ -247,9 +257,7 @@ C
       !
       ! jgf51.21.27: Figure out which mpi communicator to use with this
       ! writer processor.
-      if (wcommID.ge.mnwproc) then
-         wcommID = 0
-      endif
+      if (wcommID.ge.mnwproc) wcommID = 0
       wcommID = wcommID + 1  
       ! st3 100708: load the bullet to round robin chamber
       nwloaded(wcommID) = .true.  
@@ -277,7 +285,7 @@ Cobell - Allow writer processors to output netcdf data
          INTBUF(5) = descript % outputTimeStepIncrement
          INTBUF(6) = it
          INTBUF(7) = nabout ! jgf52.08.25: need logging level
-         call mpi_send(intbuf, numIntMetaData, mpi_integer, mnproc, tag, 
+         call mpi_send(intbuf, numIntMetaData, mpi_integer, mnproc, tag,
      &      comm_writer(wcommID),ierr)
          REBUF(1) = descript % alternate_value
          REBUF(2) = timeLoc
@@ -523,7 +531,7 @@ C-----------------------------------------------------------------------
       ! need to write it all now
       if(myproc.eq.0) then
          do i=1,mnwproc
-            !st3 100708: flash only loaded chamber
+            !st3 100708: flush only loaded chamber
             if (nwloaded(i).eqv..true.) then   !st3 nwloaded()=false:unloaded, true:loaded
                write(scratchMessage,'(a,i0,a,i0,a)') 'Proc ',myproc,
      &           ' is sending sig_write to writer ',i,'.'
@@ -1069,7 +1077,7 @@ C...  Main loop
       ENDDO
 !tcm v49.52.01 commented out next two lines
 !      CALL MSG_FINI()
-!      STOP
+!      CALL EXIT(1)
 
       call  unsetMessageSource()
       
@@ -1240,7 +1248,7 @@ C-----------------------------------------------------------------------
 
       IF (WRITE_LOCAL_HOT_START_FILES) THEN
          write(6,*) 'HSWriter can not treat Local HOT START FILES'
-         STOP
+         CALL EXIT(1)
       ENDIF
 !
       WRITE(16,*) "***********WRITE HOTSTART*********************"

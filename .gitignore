@@ -23,3 +23,9 @@ version.F
 *.sw*
 swan/*.f
 swan/*.f90
+adcircResultsComparison
+lib/
+swan/*.f90
+swan/*.f
+build/
+config.h

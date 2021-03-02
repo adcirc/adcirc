@@ -268,9 +268,56 @@ C     The following attribute contains BK(I),BALPHA(I),BDELX(I), and POAN(I)
       REAL(SZ), ALLOCATABLE :: IT_Fric(:,:)  ! WJP: Linear friction coefficient for internal tides
       REAL(SZ), ALLOCATABLE :: OverlandReductionFactor(:)
 C
-      INTEGER i        ! node loop counter
-      INTEGER j        ! attribute values loop counter
-      INTEGER k        ! attribute loop counter
+C------------------ For absorbing layer, DW
+      REAL(SZ), pointer:: absorblayer_sigma(:,:), absorblayer_zero(:,:)
+
+      REAL(SZ), pointer:: absorblayer_sigma_eta(:,:)
+      REAL(SZ), pointer:: absorblayer_sigma_mnx(:,:)
+      REAL(SZ), pointer:: absorblayer_sigma_mny(:,:)
+
+
+      LOGICAL LoadAbsLayerSigma
+      LOGICAL FoundAbsLayerSigma
+
+      INTEGER AbsLayerSigmaNoOfVals  
+      REAL(SZ) AbsLayerSigmaDefVal(2)
+      
+      CHARACTER (LEN=80):: AbsLayerSigmaUnits
+
+      INTEGER:: NumNodesAbsLayer(3)
+      INTEGER, pointer:: AbsLayerNodesID(:)
+
+      INTEGER, pointer:: AbsLayer_Eta_NodesID(:)
+      INTEGER, pointer:: AbsLayer_MnX_NodesID(:)
+      INTEGER, pointer:: AbsLayer_MnY_NodesID(:)
+
+      INTEGER:: AbsLayerType !  0 - Absorbing BCs,  1 - Harmonic forcing (Tides)  !
+                             ! -1 - Read from file                                !
+
+! For wave generator layer of type 1
+      INTEGER:: AbsLayerNBF
+
+      ! Water elevation
+      REAL(SZ), ALLOCATABLE:: AbsLayerEtaAMIG(:), 
+     &                AbsLayerEtaFF(:), AbsLayerEtaFACE(:)
+      REAL(SZ), ALLOCATABLE:: AbsLayerEtaEMO(:,:), AbsLayerEtaEFA(:,:)
+
+      ! Tentatively for Velocity or Dischage
+      REAL(SZ), ALLOCATABLE:: AbsLayerQAMIG(:), 
+     &                AbsLayerQFF(:), AbsLayerQFACE(:)
+      REAL(SZ), ALLOCATABLE:: AbsLayerQxEMO(:,:), AbsLayerQxEFA(:,:)
+      REAL(SZ), ALLOCATABLE:: AbsLayerQyEMO(:,:), AbsLayerQyEFA(:,:)
+
+      integer :: filtL = 25 ! Length of moving-mean filter [hrs]
+      REAL(SZ), ALLOCATABLE:: UAV(:,:), VAV(:,:) 
+
+
+C------------------
+C     Make i,j,k private DW
+      INTEGER,private :: i        ! node loop counter
+      INTEGER,private :: j        ! attribute values loop counter
+      INTEGER,private :: k        ! attribute loop counter
+C END DW
       !
       !  X D M F
       !
@@ -410,6 +457,27 @@ C              the read_input call but now it appears after the read_input
 C              call.
 !      ESLM=0.0
       ESLC=0.0
+
+C---------------- DW ------------------
+      LoadAbsLayerSigma = .FALSE. ;
+      FoundAbsLayerSigma = .FALSE. ;
+
+      NumNodesAbsLayer = 0 ;
+      AbsLayerSigmaNoOfVals = 2 ;
+      AbsLayerSigmaDefVal = 0.D0 ;
+
+      AbsLayerType = 0 ;
+      AbsLayerNBF = 0 ;
+
+      NULLIFY(absorblayer_sigma) ; 
+      NULLIFY(absorblayer_sigma_eta) ; 
+      NULLIFY(absorblayer_sigma_mnx) ; 
+      NULLIFY(absorblayer_sigma_mny) ;
+ 
+      NULLIFY(AbsLayer_Eta_NodesID) ;
+      NULLIFY(AbsLayer_MnX_NodesID) ;
+      NULLIFY(AbsLayer_MnY_NodesID) ;
+C--------------------------------------
 C
       RETURN
 C     ----------------------------------------------------------------
@@ -718,6 +786,12 @@ C 02.24.2018 WJP: Add spatially varying linear internal tide friction coefficien
             IF(LoadOverlandReductionFactor)THEN
                 OverlandReductionFactor = na(i)%xdmfArray
             ENDIF
+! DW---- for sponge layers ---
+         CASE ("sponge_generator_layer") 
+            IF (LoadAbsLayerSigma) THEN
+               !WJP: need to add
+            ENDIF
+! DW-------------------------
          CASE DEFAULT
             scratchMessage = "Unrecognized nodal attribute : " //
      &         trim(na(i) % attrName)
@@ -768,9 +842,11 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
      &   ((LoadEleSlopeLim).and.(.not.FoundEleSlopeLim)).or.
      &   ((LoadRiver_et_WSE).and.(.not.FoundRiver_et_WSE)).or.     
      &   ((LoadIT_Fric).and.(.not.FoundIT_Fric)).or. 
-     &   ((LoadTau0MinMax).and.(.not.FoundTau0MinMax)).or.
      &   ((LoadOverlandReductionFactor).and.
-     &    (.not.FoundOverlandReductionFactor))) THEN
+     &    (.not.FoundOverlandReductionFactor)).or.
+!-- DW for sponge
+     &   ((LoadAbsLayerSigma).and.(.not.FoundAbsLayerSigma)).or. 
+     &   ((LoadTau0MinMax).and.(.not.FoundTau0MinMax))) THEN
          WRITE(scratchMessage,1111)
  1111   FORMAT('Nodal Attributes file (unit 13) does '
      &        'not contain all the attributes listed in the '
@@ -816,8 +892,12 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
       elemental_slope_limiter_max_exceeded(:) = .FALSE.
       IF ( LoadIT_Fric ) THEN
          ALLOCATE(IT_Fric(NumOfNodes,IT_FricNoOfVals))
+         ALLOCATE(UAV(filtL,NumOfNodes),VAV(filtL,NumOfNodes))
       END IF   
       OverlandReductionFactor(:) = 1D0/30D0
+      IF ( LoadAbsLayerSigma ) THEN
+         ALLOCATE( absorblayer_sigma(NumOfNodes,AbsLayerSigmaNoOfVals) )
+      END IF
 C     ----------------------------------------------------------------
       end subroutine allocateNodalAttributes
 C     ----------------------------------------------------------------
@@ -867,7 +947,7 @@ C     Check to make sure that NWP is a valid number.
          WRITE(16,9973)
  9728    FORMAT(/,1X,'Your selection of NWP (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-         STOP            ! We're toast.
+         CALL EXIT(1)          ! We're toast.
       ENDIF
 C
 C     Check to see if there are nodal attributes to be read in. If not,
@@ -932,6 +1012,9 @@ C 09232016 WP: Add spatially varying linear internal tide friction coefficient
             LoadIT_Fric = .True.
          CASE("overland_reduction_factor")
             LoadOverlandReductionFactor = .True.
+! DW---- for sponge layers ---
+         CASE ("sponge_generator_layer") 
+            LoadAbsLayerSigma = .TRUE.
          CASE DEFAULT
             WRITE(16,1000)          ! unit 15 Model Parameter file
             WRITE(16,1021) AttrName ! contains invalid name
@@ -967,7 +1050,7 @@ C
             WRITE(ScreenUnit,1011)
             WRITE(ScreenUnit,9973)      ! execution terminated
          ENDIF
-         STOP
+         CALL EXIT(1)
       ENDIF
 C
 C     Now open the nodal attributes (unit 13) file.
@@ -985,7 +1068,7 @@ C     Now open the nodal attributes (unit 13) file.
             WRITE(ScreenUnit,1005)
             WRITE(ScreenUnit,9973)
          ENDIF
-         STOP                   ! We're toast.
+         CALL EXIT(1)                 ! We're toast.
       ENDIF
 C
 C     Read each attribute name, units, number of values, and default value
@@ -1121,6 +1204,13 @@ C 09232016 WP: Add spatially varying linear internal tide friction
             READ(13,'(A80)') OverlandReductionFactorUnits
             READ(13,*) OverlandReductionFactorNoOfVals
             READ(13,*) OverlandReductionFactorDefaultValue
+C---- DW ----- for sponge layer ----------
+         CASE ("sponge_generator_layer")  
+            FoundAbsLayerSigma = .TRUE.
+            READ(13,'(A80)') AbsLayerSigmaUnits 
+            READ(13,*) AbsLayerSigmaNoOfVals
+            READ(13,*) 
+     &           (AbsLayerSigmaDefVal(j),j=1,AbsLayerSigmaNoOfVals)
          CASE DEFAULT
             WRITE(16,1001)          ! Nodal Attributes file
             WRITE(16,1021) AttrName ! contains invalid name
@@ -1297,6 +1387,44 @@ C 09232016 WP : Spatially varying linear internal tide friction
      &              NumNodesNotDefault,nScreen,MyProc,
      &              NAbOut)
             ENDIF
+C          WP
+!------- DW ---- Absorbing layer -----------
+         CASE ("sponge_generator_layer") 
+            IF (  LoadAbsLayerSigma ) THEN
+               !
+               NumNodesAbsLayer(:) = NumNodesNotDefault ;
+               IF ( .NOT. ASSOCIATED(AbsLayerNodesID) ) THEN
+                  ALLOCATE( AbsLayerNodesID(NumNodesAbsLayer(1)) ) ;
+               END IF
+
+               CALL LoadAttrMat(absorblayer_sigma, 
+     &              AbsLayerSigmaNoOfVals, AbsLayerSigmaDefVal,
+     &              NumNodesNotDefault, NScreen, MyProc, NAbOut, 
+     &              NodesNotDef = AbsLayerNodesID ) ;
+               !
+               absorblayer_sigma_eta => absorblayer_sigma ;
+               absorblayer_sigma_mnx => absorblayer_sigma ;
+               absorblayer_sigma_mny => absorblayer_sigma ;
+               
+               ! WJP: for only eta sponge shit 
+               !ALLOCATE( absorblayer_zero(NumOfNodes,AbsLayerSigmaNoOfVals))
+               !absorblayer_zero = absorblayer_sigma; 
+               !absorblayer_zero(:,1) = 0d0
+               !absorblayer_sigma_mnx => absorblayer_zero;
+               !absorblayer_sigma_mny => absorblayer_zero;
+               !if (NumNodesNotDefault > 0) then
+               !   write(16,*) 'Set absorblayer sigma flux to zero:'
+               !   write(16,*) absorblayer_sigma_eta(1,1),
+     &         !               absorblayer_sigma_mnx(1,1), 
+     &         !               absorblayer_sigma_mny(1,1) 
+               !endif
+               AbsLayer_Eta_NodesID => AbsLayerNodesID ;
+               AbsLayer_MnX_NodesID => AbsLayerNodesID ;
+               AbsLayer_MnY_NodesID => AbsLayerNodesID ;
+            ELSE
+                SkipDataSet = .TRUE. 
+            END IF
+!--------DW -----------------------------------
          CASE DEFAULT
             SkipDataSet = .True.
             WRITE(16,1001)      ! Nodal Attributes file
@@ -1395,7 +1523,7 @@ C     value per node.
 C
 C     ----------------------------------------------------------------
       SUBROUTINE LoadAttrMat(AttributeData, NumCol, Default,
-     &     NumNodesNotDef, NScreen, MyProc, NAbOut)
+     &     NumNodesNotDef, NScreen, MyProc, NAbOut, NodesNotDef )
       USE MESH,ONLY:node_dict,find
       IMPLICIT NONE
       INTEGER, intent(in) :: NumCol  ! number of columns in the matrix
@@ -1409,6 +1537,9 @@ C     ----------------------------------------------------------------
       REAL(SZ)            :: TempAttData(NumCol) 
       INTEGER             :: NodeNum ! node label listed in the file
       INTEGER             :: DictNode ! node position in array
+C------ DW
+      INTEGER, optional::  NodesNotDef(:)
+C------
 C
 C     Set all nodes to user-specified default values.
       IF (NABOUT.EQ.0) WRITE(16,1001)
@@ -1419,9 +1550,13 @@ C     Set all nodes to user-specified default values.
       END DO
 C
       IF (NABOUT.EQ.0) WRITE(16,1005)
+      IF (NABOUT.EQ.0) WRITE(16,*) NumCol,ubound(AttributeData),NumNodesNotDef
       DO i=1, NumNodesNotDef
          READ(13,*) NodeNum, (TempAttData(j),j=1,NumCol)
          DictNode = find(node_dict,NodeNum)
+         IF ( present(NodesNotDef) ) THEN
+            NodesNotDef(i) = DictNode 
+         END IF
          AttributeData(DictNode,:) = TempAttData(:)
          IF (NABOUT.EQ.0) WRITE(16,1010) NodeNum,
      &        (AttributeData(DictNode,j),j=1,NumCol)
@@ -1431,7 +1566,7 @@ C
      &     99E16.8,/)
  1005 FORMAT(/,10X,'Now setting the following nodes to these values:',
      &     /,10X,'NODE',5X,'DATA',5X/)
- 1010 FORMAT(7X,I6,6X,12(1X,E16.8))
+ 1010 FORMAT(7X,I8,6X,12(1X,E16.8))
 C
       RETURN
 C     ----------------------------------------------------------------
@@ -1450,7 +1585,7 @@ C
 C     ----------------------------------------------------------------
       SUBROUTINE InitNodalAttr(DP, NP, G, NScreen, ScreenUnit,
      &     MyProc, NAbOut, Z0B)
-      USE GLOBAL, ONLY : C3D, C2DDI
+      USE GLOBAL, ONLY : C3D, C2DDI, CBaroclinic
       IMPLICIT NONE
       INTEGER, intent(in) :: NP ! number of nodes in the grid file
       REAL(SZ), intent(in), dimension(NP) :: DP ! array of bathymetric depths
@@ -1483,7 +1618,7 @@ C     same as the number of nodes in the grid file.
      &        //,1X,'The number of nodes in the grid file (unit 14) and'
      &        /,1X,'the nodal attributes file (unit 13) must match.',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         STOP                   ! We're toast.
+         CALL EXIT(1)                 ! We're toast.
       ENDIF
 C
 C     ERROR CHECK: If Chezy, Manning's or Quadratic friction was loaded
@@ -1498,7 +1633,7 @@ C     from the nodal attributes file, NOLIBF must be 1.
      &        /,1X,'NoLiBF must be set to 1. It is set to ',i2,' in',
      &        /,1X,'the model parameter (unit 15) file.',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         STOP                   ! We're toast.
+         CALL EXIT(1)                 ! We're toast.
       ENDIF
 C
 C     ERROR CHECK: If Tau0=-3.x or -6.x in fort.15, then tau0 MUST be loaded
@@ -1515,7 +1650,7 @@ C     from nodal attributes file.
      &        /,1X,'load the base value using',
      &        /,1X,'primitive_weighting_in_continuity_equation.',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         STOP                   ! We're toast.
+         CALL EXIT(1)                 ! We're toast.
       ENDIF
 C
 C     ERROR CHECK: The canopy coefficient value should be either 0 or 1;
@@ -1576,7 +1711,8 @@ C           based on depth
  62            FORMAT(/,5X,'IF DEPTH > 200           Tau0 = 0.005',
      &              /,5X,'IF 200   > DEPTH > 1     Tau0 = 1/DEPTH  ',
      &              /,5X,'IF 1     > DEPTH         Tau0 = 1.0 ')
-            ELSE 
+            ENDIF
+            IF (.not.( (Tau0Dig1.eq.-3) .or. (Tau0Dig1.eq.-5) ) ) THEN
                WRITE(16,6) ! spatially vary tau0 according to hard coded scheme
                WRITE(16,61) ! description of scheme
  61            FORMAT(/,5X,' IF DEPTH GE 10           -> TAU0 = 0.005',
@@ -1670,7 +1806,7 @@ C     I N I T   B O T T O M   F R I C T I O N
          IFLINBF=1
          IFHYBF=0
       ENDIF
-      IF(NOLIBF.EQ.1) THEN
+      IF(NOLIBF.EQ.1.or.NOLIBF.EQ.3) THEN
          IFNLBF=1
          IFLINBF=0
          IFHYBF=0
@@ -1752,6 +1888,10 @@ C     I N I T   E D D Y   V I S C O S I T Y  &  D I F F U S I V I T Y
             EVC(I)=ESLC
          END DO
       ENDIF
+C...  DW 
+      IF ( NWP .eq. 0 ) THEN
+         NumNodesAbsLayer = 0
+      END IF
 C
       RETURN
 C     ----------------------------------------------------------------
@@ -1881,7 +2021,8 @@ C
 C     ----------------------------------------------------------------
       SUBROUTINE Apply2DBottomFriction(UU1, VV1, DP, ETA2, G,
      &     IFNLFA, NP, TK)
-      USE SIZES
+      USE GLOBAL, ONLY: MLD
+C      USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
       REAL(SZ), intent(in), dimension(NP) :: UU1  ! x-dir velocities
@@ -1899,10 +2040,12 @@ C
       REAL(SZ) BK    ! BK(1) is pier shape factor
       REAL(SZ) BALPHA! BALPHA(2) is constriction fraction
       REAL(SZ) BDELX ! BDELX(3) is effective delx
+      REAL(SZ) MLDrat ! MLD ratio to depth
 C
 C     Step 0. Convert Manning's N to Cd, if necessary.
       IF (LoadManningsN) THEN
          DO I=1, NP
+            IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
             FRIC(I)=g*ManningsN(I)**2.d0
      &           /( ( DP(I)+IFNLFA*ETA2(I) )**(1.d0/3.d0) ) ! sb46.28sb02
             !sb46.28sb02  Lower limit is applied here.
@@ -1915,24 +2058,43 @@ C
 C     ... Convert Chezy to Cd, if necessary.
       IF (LoadChezy) THEN
          DO I=1,NP
-            FRIC(I)=G/(Chezy(I)**2)
+            FRIC(I) = G/(Chezy(I)**2)
          END DO
       ENDIF
 C
-C     Step 1. Apply friction arising from turbulent viscous interaction
-C     with the sea floor.
-      DO I=1, NP
-         UV1=SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
-         H1=DP(I)+IFNLFA*ETA2(I)
-         TK(I)= FRIC(I)*
-     &        ( IFLINBF +       ! linear
-     &        (UV1/H1) * (IFNLBF ! nonlinear
-     &        + IFHYBF*(1+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))) ! hybrid
-      END DO
+      NOLIBFRIC: IF (NOLIBF.eq.3) THEN
+C     ... Combined Cd for bottom friction and momentum dispersion
+         DO I = 1,NP
+            UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
+            H1  = DP(I) + IFNLFA*ETA2(I)
+            IF (HBREAK.gt.0d0) then
+C              ... Cd as a power function [a(x^b-1)] of x = MLD
+               FRIC(I) = CF + HBREAK*(max(4d-3,MLD(I))**FTHETA - 1d0)
+            ELSE
+C              ... Cd directly from the 3D model (MLD here)
+               FRIC(I) = CF + MLD(I)
+            ENDIF
+            TK(I)   = FRIC(I) * UV1 / H1 !nonlinear
+         ENDDO
+C
+      ELSE
+C
+C     .. Step 1. Apply friction arising from turbulent viscous interaction
+C        with the sea floor.
+         DO I=1, NP
+            UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
+            H1  = DP(I) + IFNLFA*ETA2(I)
+            TK(I)= FRIC(I)*
+     &            (IFLINBF +                                         ! linear
+     &            (UV1/H1) * (IFNLBF +                               ! nonlinear
+     &            IFHYBF*(1+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)) ) ! hybrid
+         END DO
+C
+      ENDIF NOLIBFRIC
 C
 C     Step 2. Apply friction arising from flow interaction with bridge
 C     pilings, if required.
-      IF (LoadBridgePilings) THEN
+      IF (LoadBridgePilings) THEN 
          DO I=1, NP
             UV1=SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
             H1=DP(I)+IFNLFA*ETA2(I)
@@ -1962,7 +2124,6 @@ C     ----------------------------------------------------------------
 C     ----------------------------------------------------------------
       SUBROUTINE Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G,
      &     IFNLFA, NP, TK, NFEN, Z0B)
-      USE SIZES
       IMPLICIT NONE
       INTEGER, intent(in) :: NP, NFEN             ! number of nodes in grid Horizontal and Vertical
       COMPLEX(SZ), intent(in), dimension(NP,NFEN) :: Q  ! x-dir velocities
@@ -1999,7 +2160,7 @@ C or as read in from nodal attributes
          ENDIF
 
          FRIC(NH)= (1.D0 / ( (1.D0/0.41D0) *
-     &   LOG((ABS( ( ( SIGMA(2)-SIGMA(1) )/2.d0 ) *(H1) ) + Z0B1 )/Z0B1) 
+     &   LOG((ABS( ( ( SIGMA(2)-SIGMA(1) )/2.d0 ) *(H1) ) + Z0B1 )/Z0B1)
      &       ) )**2.D0
 
          TK(NH)= FRIC(NH) * ABS(Q(NH,1))
@@ -2028,41 +2189,188 @@ C
 C     WJP March 30 2016: Adjusted for TKM input matrix and inserting
 C     the scalar version in here too
 C     WJP 02.24.2018 put into v53.dev
+C     WJP 07.24.2018 updated for baroclinic coupling type 
 C     ----------------------------------------------------------------
-      SUBROUTINE Apply2DInternalWaveDrag(NP, TK, U, V, DP, TKM)
+      SUBROUTINE Apply2DInternalWaveDrag(NP, TK, TKM, U, V, DP, IT)
+      USE GLOBAL, ONLY: CBaroclinic, CORIF, DTDP, NB, NM, IDEN, IFSPROTS
+      USE MESH, ONLY: DRVMAP2DSPVEC, UVECTMP, VVECTMP, RVELF
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
-      REAL(SZ), intent(in), dimension(NP) :: U    ! x-dir velocities
-      REAL(SZ), intent(in), dimension(NP) :: V    ! y-dir velocities
-      REAL(SZ), intent(in), dimension(NP) :: DP   ! depth
       REAL(SZ), intent(in), dimension(NP) :: TK   ! scalar friction
       REAL(SZ), intent(inout), dimension(3,NP) :: TKM
-      INTEGER :: I 
+      INTEGER,  intent(in), optional :: IT          ! temporal interations
+      REAL(SZ), intent(in), dimension(NP),optional :: U    ! x-dir velocities
+      REAL(SZ), intent(in), dimension(NP),optional :: V    ! y-dir velocities
+      REAL(SZ), intent(in), dimension(NP),optional :: DP   ! depth
+      REAL(SZ), allocatable :: Hx(:), Hy(:)
+      INTEGER  :: I, L, Lm, Lind 
+      REAL(SZ) :: omega = 1.4052d-4 ![rad/s] M2 tidal frequency
+      REAL(SZ) :: hr = 3600.0_SZ ! means one hour in seconds
+      REAL(SZ) :: SmallV = 1d-10 ! A small value
+      REAL(SZ) :: Fit, alpha2, gamma2, slope2, uavnow, vavnow 
+      REAL(SZ) :: Nmdiff, Nbdiff, Fdiff, adju, adjv, adjuv
+      logical, save ::  first_entry = .TRUE.
 C     Compute TKM by adding wave drag contribution to 
 C     current value of the bottom friction, TK
-      IF (LoadIT_Fric) THEN
-         IF (IT_FricNoOfVals == 3) THEN
-C        Use the Nycander (2005) or Lyard et al. (2004) type tensor wave drag
-C        Using three columns of data for the different segments of the matrix
-            DO I=1,NP 
-               TKM(1,I) = TK(I) + IT_Fric(I,1)
-               TKM(2,I) = TK(I) + IT_Fric(I,2)
-               TKM(3,I) = IT_Fric(I,3) 
-            END DO
-         ELSEIF (IT_FricNoOfVals == 1) THEN
-C           For the scalar version (like Zaron & Egbert (2006) type)
-            DO I=1,NP 
-               TKM(1,I) = TK(I) + IT_Fric(I,1) 
-               TKM(2,I) = TKM(1,I)
-               TKM(3,I) = 0.0d0
-            END DO
+      LoadITFric: IF (LoadIT_Fric) THEN
+         IF ( FIRST_ENTRY ) THEN
+            FIRST_ENTRY = .FALSE.
+            IF ( IFSPROTS.eq.1 ) THEN
+C              Rotate the IT_Fric first time step if mesh rotation used
+C              (unnecessary for IT_FricNoOfVals == 1)
+               IF ( IT_FricNoOfVals.eq.3 ) THEN
+                  allocate(Hx(NP),Hy(NP))
+                  DO I = 1,NP
+                     if (CBaroclinic.and.abs(IDEN).ge.5) then
+                        Hx(I) = IT_Fric(I,2)
+                        Hy(I) = IT_Fric(I,3)
+                     else
+                        Hx(I) = sqrt(IT_Fric(I,1))
+                        Hy(I) = sign(sqrt(IT_Fric(I,2)),IT_Fric(I,3))
+                     endif
+                     UVECTMP(I) = Hx(I); 
+                     VVECTMP(I) = Hy(I);
+                  ENDDO
+                  CALL DRVMAP2DSPVEC( Hx, Hy,
+     &                UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
+                  DO I = 1,NP
+                     if (CBaroclinic.and.abs(IDEN).ge.5) then
+                        IT_Fric(I,2) = Hx(I)
+                        IT_Fric(I,3) = Hy(I)
+                     else
+                        IT_Fric(I,1) = Hx(I)*Hx(I)
+                        IT_Fric(I,2) = Hy(I)*Hy(I)
+                        IT_Fric(I,3) = Hx(I)*Hy(I)
+                     endif
+                  ENDDO           
+                  deallocate(Hx,Hy)
+               ELSEIF ( IT_FricNoOfVals.eq.5 ) THEN
+                  ! need do something else
+               ENDIF
+            ENDIF
          ENDIF
+         Baroc: IF (CBaroclinic.and.abs(IDEN).ge.5) THEN
+C           2DDI ADCIRC with baroclinic coupling
+            if (abs(IDEN).ne.7) then
+C              Filtering lengths if have baroclinic ocean currents
+               L  = floor((IT-1)*DTDP/hr) ! Get the current hour number
+               Lm = floor((IT-2)*DTDP/hr) ! Get the previous hour number
+               if (L > Lm) then
+                  ! Store new hour velocities
+                  ! Get actual index (wrap around)
+                  Lind = L - filtL*floor((IT-1)*DTDP/filtL/hr) + 1
+                  DO I = 1,NP
+                     UAV(Lind,I) = U(I)   
+                     VAV(Lind,I) = V(I)   
+                  ENDDO
+                  L = min(L,filtL)  
+               endif
+            endif
+            IF (IT_FricNoOfVals == 5) THEN
+C           Use the "Nonlocal" Nycander (2005) type tensor wave drag
+C           1st column is coefficient, 2nd and 3rd columns are the Hx and Hy slopes,
+C           4th and 5th columns are the Jx and Jy slopes
+               DO I = 1,NP
+                  IF (omega > NB(I).or.omega < CORIF(I)) THEN
+                     ! No freely propagating internal tides
+                     TKM(1:2,I) = TK(I)
+                     TKM(3,I)   = 0.0d0
+                  ELSE 
+                     ! Have freely propagating internal tides
+                     ! Get coefficient
+                     Fit = IT_Fric(I,1)*NB(I)/DP(I)*
+     &                     sqrt(1d0 - CORIF(I)**2/omega**2)
+                     ! Check criticality of slope
+                     alpha2 = (omega**2 - CORIF(I)**2) / 
+     &                        (NB(I)**2 - omega**2)
+                     gamma2 = (IT_Fric(I,2)**2 + IT_Fric(I,3)**2)/alpha2
+                     ! Divide by criticality if > 1 
+                     Fit = Fit/max(1d0,gamma2)                   
+                     TKM(1,I) = TK(I) + 2*Fit*IT_Fric(I,2)*IT_Fric(I,4)
+                     TKM(2,I) = TK(I) + 2*Fit*IT_Fric(I,3)*IT_Fric(I,5)
+                     TKM(3,I) = Fit*(IT_Fric(I,2)*IT_Fric(I,5) +  
+     &                               IT_Fric(I,3)*IT_Fric(I,4))
+                  ENDIF 
+               ENDDO
+            ELSEIF (IT_FricNoOfVals == 3.or.IT_FricNoOfVals == 1) THEN
+C           For the "Local" Lyard et al. (2004) type tensor wave drag
+C           1st column is coefficient, 2nd and 3rd columns are the Hx and Hy slopes
+C           For the scalar Zaron & Egbert (2006) type
+C           1st column is coefficient, 2nd column is the squared hypotenuse slope
+               adjuv = 1d0; adju = 1d0; adjv = 1d0;
+               DO I = 1,NP
+                  NBdiff = (NB(I)**2 - omega**2)
+                  NMdiff = (NM(I)**2 - omega**2)
+                  Fdiff  = (omega**2 - CORIF(I)**2)
+                  IF (NBdiff.le.SmallV.or.Nmdiff.le.SmallV.or.
+     &                Fdiff.le.SmallV) THEN
+                     ! No freely propagating internal tides
+                     TKM(1:2,I) = TK(I)
+                     TKM(3,I)   = 0.0d0
+                  ELSE 
+                     ! Have freely propagating internal tides
+                     ! Get the full coefficient
+                     Fit = IT_Fric(I,1)*sqrt(NBdiff*Nmdiff)/omega
+                     ! Check criticality of slope
+                     alpha2 = Fdiff / NBdiff
+                     if (IT_FricNoOfVals == 3) then
+                        slope2 = IT_Fric(I,2)**2 + IT_Fric(I,3)**2
+                     else
+                        slope2 = IT_Fric(I,2)
+                     endif
+                     gamma2 = slope2 / alpha2
+                     ! Divide coefficient by criticality if > 1
+                     ! (saturates out at high criticalities) 
+                     Fit = Fit / max(1d0,gamma2)                   
+                     ! Calculate adjustment based on tidal residual
+                     if (abs(IDEN).ne.7) then
+                        ! Calculate the adjustment factors based on the delayed moving mean
+                        if (L.ge.1) then
+                           uavnow = sum(UAV(1:L,I)) / L
+                           vavnow = sum(VAV(1:L,I)) / L
+                           if (abs(U(I)) > 1d-3) adju = 1d0-uavnow/U(I)
+                           if (abs(V(I)) > 1d-3) adjv = 1d0-vavnow/V(I)
+                        endif
+                        adjuv = 0.5d0*(adju + adjv)
+                     endif
+                     ! Implement the friction with possible adjustment
+                     if (IT_FricNoOfVals == 3) then
+                        TKM(1,I) = TK(I) + adju*Fit*IT_Fric(I,2)**2
+                        TKM(2,I) = TK(I) + adjv*Fit*IT_Fric(I,3)**2
+                        TKM(3,I) = adjuv*Fit*IT_Fric(I,2)*IT_Fric(I,3)
+                     else
+                        TKM(1:2,I) = TK(I) + adjuv*Fit*IT_Fric(I,2)
+                        TKM(3,I)   = 0.0d0
+                     endif
+                  ENDIF 
+               ENDDO
+            endif
+         ELSE
+C           Normal 2DDI ADCIRC without baroclinic coupling
+            IF (IT_FricNoOfVals == 3) THEN
+C              Use the "Nonlocal" Nycander (2005) or "Local" Lyard et al. (2004) 
+C              type tensor wave drag
+C              Using three columns of data for the different segments of the matrix
+               DO I=1,NP 
+                  TKM(1,I) = TK(I) + IT_Fric(I,1)
+                  TKM(2,I) = TK(I) + IT_Fric(I,2)
+                  TKM(3,I) = IT_Fric(I,3) 
+               END DO
+            ELSEIF (IT_FricNoOfVals == 1) THEN
+C              For the scalar type Zaron & Egbert (2006) type
+               DO I=1,NP 
+                  TKM(1,I) = TK(I) + IT_Fric(I,1) 
+                  TKM(2,I) = TKM(1,I)
+                  TKM(3,I) = 0.0d0
+               ENDDO
+            ENDIF
+         ENDIF Baroc
       ELSE 
 C       In case we did not load ITFric
         TKM(1,:) = TK
         TKM(2,:) = TK
         TKM(3,:) = 0.0d0
-      ENDIF
+      ENDIF LoadITFric
 
       RETURN
 C     ----------------------------------------------------------------
@@ -2080,14 +2388,17 @@ C     ----------------------------------------------------------------
 !>
 !>    Additionally, the z0 coefficient supplied by the user is modified
 !>    by subtracting a factor of depth/30 to account for inundation
+!>    
+!>    Values are linearly interpolated between heading bins to the actual 
+!>    wind direction.  
 !>
 !>    @param[in] NodeNumber index of node under consideration
 !>    @param[in] WindDragCo current wind drag coefficient being applied
 !>    @param[in] WindMag    current wind speed magnitude at the specified node
 !>    @param[in] BathymetricDepth bathymetric depth used to calculate total depth
 !>    @param[in] Elevation water surface elevation above datum (eta2)
-!>    @param[in] WindX wind velocity, x-component
-!>    @param[in] WindY wind velocity, y-component
+!>    @param[in,out] WindX wind velocity, x-component
+!>    @param[in,out] WindY wind velocity, y-component
 !     ----------------------------------------------------------------
       SUBROUTINE ApplyDirectionalWindReduction(NodeNumber, WindDragCo,
      &     WindMag, BathymetricDepth, Elevation, WindX, WindY)
@@ -2103,8 +2414,10 @@ C     ----------------------------------------------------------------
         real(SZ), intent(inout) :: WindY  
         
         real(SZ),parameter      :: CutoffDepth = 999999.d0          !< Depth above which reduction is not applied
+        real(SZ),parameter,dimension(12) :: z0Angles=(/(i*30,i=0,5),(i*30-180,i=0,5)/)  !< centers of directional bins
         
-        integer                 :: idir        !< code for wind direction
+        integer                 :: idir        !< code for wind direction bins to interpolate between
+        integer                 :: idir2       !< code for wind direction bins to interpolate between
         real(SZ)                :: z0m         !< marine roughness coefficient based on Garratt's formula
         real(SZ)                :: angle       !< direction wind is coming from
         real(SZ)                :: z0l         !< drag for a particular node, for particular direction
@@ -2114,42 +2427,60 @@ C     ----------------------------------------------------------------
 !       if windspeed is zero, exit now
         if((WindX.eq.0d0).and.(WindY.eq.0d0))return
 
-!       compute direction  that the wind is coming from
+!       compute direction  that the wind is going to
         angle=atan2(WindY,WindX)*RAD2DEG
         idir=0
-        if((angle.gt.-15d0).and.(angle.le.15d0))then
-            idir=1
-        elseif((angle.gt.15d0).and.(angle.le.45d0))then
-            idir=2
-        elseif((angle.gt.45d0).and.(angle.le.75d0))then 
-            idir=3
-        elseif((angle.gt.75d0).and.(angle.le.105d0))then 
-            idir=4
-        elseif((angle.gt.105d0).and.(angle.le.135d0))then 
-            idir=5
-        elseif((angle.gt.135d0).and.(angle.le.165d0))then 
-            idir=6
-        elseif((angle.gt.165d0).and.(angle.le.180d0))then 
+        idir2=0
+        if(angle.lt.-150d0)then
             idir=7
-        elseif((angle.gt.-45d0).and.(angle.le.-15d0))then 
-            idir=12
-        elseif((angle.gt.-75d0).and.(angle.le.-45d0))then 
-            idir=11
-        elseif((angle.gt.-105d0).and.(angle.le.-75d0))then 
-            idir=10
-        elseif((angle.gt.-135d0).and.(angle.le.-105d0))then 
-            idir=9
-        elseif((angle.gt.-165d0).and.(angle.le.-135d0))then 
+            idir2=8
+        elseif(angle.lt.-120d0)then
             idir=8
-        elseif((angle.ge.-180d0).and.(angle.le.-165d0))then 
-            idir=7
+            idir2=9
+        elseif(angle.lt. -90d0)then
+            idir=9
+            idir2=10
+        elseif(angle.lt. -60d0)then
+            idir=10
+            idir2=11
+        elseif(angle.lt. -30d0)then
+            idir=11
+            idir2=12
+        elseif(angle.lt.   0d0)then
+            idir=12
+            idir2=1
+        elseif(angle.lt.  30d0)then
+            idir=1
+            idir2=2
+        elseif(angle.lt.  60d0)then
+            idir=2
+            idir2=3
+        elseif(angle.lt.  90d0)then
+            idir=3
+            idir2=4
+        elseif(angle.lt. 120d0)then
+            idir=4
+            idir2=5
+        elseif(angle.lt. 150d0)then
+            idir=5
+            idir2=6
+        elseif(angle.le. 180d0)then
+            idir=6
+            idir2=7
         endif
+
 
 !       compute marine roughness coefficient based on Garratt's formula
         z0m=(0.018d0/G)*WindDragCo*WindMag**2.d0
 
-!       define land roughness from mesh values
-        z0l=z0land(NodeNumber,idir)
+        !tga 2020-04 updated code to linearly interpolate z0 values, 
+        !code previously did nearest neighbor (i.e. binned) z0 values.  
+        !Define roughness by linearly (in angle-z0 space) interpolating
+        !between binned values.  
+        !The 30d0 here comes from assuming the directional bins are 30 
+        !degrees apiece. 
+        z0l=(z0land(NodeNumber,idir2)-z0land(NodeNumber,idir))/30d0
+     &      *(angle-z0Angles(idir))+z0land(NodeNumber,idir)
 
 !       apply overland flooding correction
         TotalDepth = BathymetricDepth + Elevation
@@ -2159,7 +2490,9 @@ C     ----------------------------------------------------------------
         endif
 
 !       compute land wind reduction factor
-        if(z0l.gt.0.0001D0) then
+!       Reduction factor is bounded to not exceed 1, i.e. assumes the 
+!       land roughness is never less than the water.  
+        if(z0l.gt.z0m) then
            fr=min(1.0D0,(z0l/z0m)**0.0706d0 * log(10.d0/z0l) / log(10.d0/z0m))
         else
            fr=1.000d0
@@ -2272,7 +2605,7 @@ C      IF((NE2.NE.NE).OR.(NP2.NE.NP)) THEN
      &        //,1X,'THE PARAMETER NE2 AND NP2 MUST MATCH NE AND NP ',
      &        /,1X,'USER MUST CHECK FORT.12 INPUT FILE ',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         STOP
+         CALL EXIT(1)
       ENDIF
 C
 C...  READ IN STARTDRY CODE VALUES
@@ -2333,7 +2666,7 @@ C     ----------------------------------------------------------------
      &           'YOUR NODAL FRICTION NUMBERING IS NOT SEQUENTIAL ',
      &           /,1X,'CHECK YOUR UNIT 21 INPUT FILE CAREFULLY',//,1X,
      &           '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-            STOP
+            CALL EXIT(1)
          ENDIF
       END DO
       WRITE(16,3601) AFRIC
@@ -2386,7 +2719,7 @@ C
         CALL MSG_FINI()
       ENDIF
 #endif
-      STOP 
+      CALL EXIT(1) 
 C
 #if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable

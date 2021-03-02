@@ -319,7 +319,7 @@ C
      &      TRIM(INPUTDIR)//'/'//'fort.18 was not found.'
          WRITE(*,9973)      ! execution terminated
          CALL MSG_FINI()
-         STOP
+         CALL EXIT(1)
       ENDIF
 C
       OPEN(18,FILE=TRIM(INPUTDIR)//'/'//'fort.18',STATUS='OLD')
@@ -328,7 +328,7 @@ C
       if (Trim(BlkName) /= 'FileFmt' .and.
      $  .not. CMP_VERSION_NUMBERS(FileFmtVersion, inputFileFmtVn)) then
         write(16,*) 'File Format of Fort.18 does not match aborting'
-        stop
+        call exit(1)
       end if
 
 C Read Global number of elements and Local-to_Global element map ( used by module global_io )
@@ -359,7 +359,7 @@ C Read Global indexes of Elevation Station nodes ( used by module global_io )
       IF (NSTAE .ne. jdumy_loc ) then
          call allMessage(ERROR,"Elevation Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
-         STOP
+         CALL EXIT(1)
       ENDIF
       IF (NSTAE > 0) THEN
         ALLOCATE ( IMAP_STAE_LG(NSTAE) )
@@ -373,7 +373,7 @@ C Read Global indexes of Velocity  Station nodes ( used by module global_io )
       IF (NSTAV .ne. jdumy_loc ) then
          call allMessage(ERROR,"Velocity Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
-         STOP
+         CALL EXIT(1)
       ENDIF
       IF (NSTAV > 0) THEN
         ALLOCATE ( IMAP_STAV_LG(NSTAV) )
@@ -387,7 +387,7 @@ C Read Global indexes of Meteorlogical Station nodes ( used by module global_io 
       IF (NSTAM .ne. jdumy_loc ) then
          call allMessage(ERROR,"Met. Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
-         STOP
+         CALL EXIT(1)
       ENDIF
       IF (NSTAM > 0) THEN
         ALLOCATE ( IMAP_STAM_LG(NSTAM) )
@@ -401,7 +401,7 @@ C Read Global indexes of Concentration Station nodes ( used by module global_io 
       IF (NSTAC .ne. jdumy_loc ) then
          call allMessage(ERROR,"Conc. Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
-         STOP
+         CALL EXIT(1)
       ENDIF
       IF (NSTAC > 0) THEN
         ALLOCATE ( IMAP_STAC_LG(NSTAC) )
@@ -826,6 +826,59 @@ C---------------------------------------------------------------------
       END SUBROUTINE UPDATER
 C---------------------------------------------------------------------
 
+C..... DW:, for periodic bcs (this subroutine looks a bit ugly and probably does belongs here)
+C        - experiment periodic boundary conditions 
+C        - use in updating the pseudo residual of slave nodes when they are ghost nodes
+C          0. Assign  the residual of slave nodes to a temporay vector
+C          1. Owner PE assigns the residual of the periodic-primary nodes to theirs slave nodes
+C          2. Update ghost nodes through CALL UPDATER()
+C          3. Restore the residual of slave nodes
+      SUBROUTINE UPDATER_W_PERBC( VEC1, VEC2, VEC3, NMSG )
+      USE global, only: NPERSEG, NNPERBC, IPERCONN  
+
+      IMPLICIT NONE
+
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+
+      INTEGER,  INTENT(IN) ::  NMSG
+      REAL(SZ), INTENT(INOUT) ::  VEC1(*),VEC2(*),VEC3(*)
+
+      REAL(SZ):: VECTMP(NNPERBC,NMSG) ;
+
+      IF ( NPERSEG > 0 ) THEN
+         VECTMP(:,1) = VEC1(IPERCONN(1:NNPERBC,2)) ;
+         VEC1(IPERCONN(1:NNPERBC,2)) = VEC1(IPERCONN(1:NNPERBC,1)) ;
+         
+         IF ( NMSG == 2 ) THEN
+            VECTMP(:,2) = VEC2(IPERCONN(1:NNPERBC,2)) ;
+            VEC2(IPERCONN(1:NNPERBC,2)) = VEC2(IPERCONN(1:NNPERBC,1)) ;
+         ELSEIF ( NMSG == 3 ) THEN
+            VECTMP(:,2) = VEC2(IPERCONN(1:NNPERBC,2)) ;
+            VEC2(IPERCONN(1:NNPERBC,2)) = VEC2(IPERCONN(1:NNPERBC,1)) ;
+            
+            VECTMP(:,3) = VEC3(IPERCONN(1:NNPERBC,2)) ;
+            VEC3(IPERCONN(1:NNPERBC,2)) = VEC3(IPERCONN(1:NNPERBC,1)) ;
+         ENDIF
+      END IF
+
+      CALL UPDATER( VEC1, VEC2, VEC3, NMSG ) ; 
+
+      IF ( NPERSEG > 0 ) THEN
+         VEC1(IPERCONN(1:NNPERBC,2)) = VECTMP(:,1)
+         IF ( NMSG == 2 ) THEN
+            VEC2(IPERCONN(1:NNPERBC,2)) = VECTMP(:,2)  ;
+         ELSEIF ( NMSG == 3 ) THEN
+            VEC2(IPERCONN(1:NNPERBC,2)) = VECTMP(:,2)  ;
+            VEC3(IPERCONN(1:NNPERBC,2)) = VECTMP(:,3)  ;
+         END IF
+      END IF
+
+      RETURN ;
+      END SUBROUTINE UPDATER_W_PERBC
+C..... DW
+C
 C---------------------------------------------------------------------
 C     S U B R O U T I N E   U P D A T E R 3 D 
 C---------------------------------------------------------------------

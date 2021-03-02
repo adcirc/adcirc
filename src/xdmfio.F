@@ -87,8 +87,9 @@ C-----------------------------------------------------------------------
       ! Writes an array to an existing XDMF file. 
       !----------------------------------------------------------------
       subroutine writeOutArrayXDMF(timeLoc, it, descript)
-      use global
-      use mesh
+      use global, only: OutputDataDescript_t, scratchmessage, error, nt,
+     &            allMessage
+      use mesh, only: NM, NE, agrid, dp, ics, np, x, y, terminate
       use sizes,only: mnproc
       implicit none
 #ifdef ADCXDMF
@@ -197,16 +198,6 @@ C-----------------------------------------------------------------------
          call xdmfAddPreviousAttribute(descript % xdmfMD % xdmfFortranObj,
      &                                  descript % xdmfMD % depthID)
       endif
-      !
-      ! modify projection string if indicated by the fort.15
-      select case(ics)
-      case(1)
-         projection = 'cartesian' ! most likely CPP
-      case(2)
-         projection = 'geographic'
-      case default
-         projection = 'unknown'
-      end select
       !
       ! set up metadata for each data type
       descript % xdmfMD % createdIDs = .false.
@@ -483,7 +474,7 @@ C-----------------------------------------------------------------------
       do i=1, nbou 
          write(fluxBoundaryType,'(i0)') ibtype_orig(i) 
          select case(ibtype_orig(i))
-         case(0,1,2,10,11,12,20,21,22,30,52)
+         case(0,1,2,10,11,12,20,21,22,30,32,52)
             simpleFluxBoundaries(sfCount)%informationID = 
      &         XdmfAddInformation(descript % xdmfMD % xdmfFortranObj, 
      &         'IBTYPE'//CHAR(0), 
@@ -836,7 +827,7 @@ C-----------------------------------------------------------------------
       case default
          write(info,'(a,i0,a)') 'ERROR: The value of nws is ',nws,
      &     ' but this is not a valid value.'
-         stop
+         call exit(1)
       end select
       if (nrs.gt.0) then
           wtimincComment = trim(wtimincComment) // ',rstiminc'
@@ -897,7 +888,7 @@ C-----------------------------------------------------------------------
      &              'drampelev,dramptip,drampmete,drampwrad,dunrampmete'
       case default
          write(info,'("ERROR: The value of nramp is ",i2," but this is not a valid value.")') nramp
-         stop
+         call exit(1)
       end select
       informationID = XdmfAddInformation(xdmfFortranObj,trim(drampComment)//char(0),  
      &    trim(adjustl(info))//char(0))
@@ -936,7 +927,7 @@ C-----------------------------------------------------------------------
       case default
          write(info,'(a,i0,a)') 'ERROR: The value of nolibf is ',nolibf,
      &     ' but this is not a valid value.'
-         stop
+         call exit(1)
       end select
       if (im.eq.10) then
          write(info,fmt='(2f15.7)') eslm,eslc

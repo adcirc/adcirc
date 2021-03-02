@@ -100,7 +100,7 @@ C
      &         trim(cmdlinearg),'" is not valid and will be ignored.'
             end select
          end do
-         stop
+         CALL EXIT(1)
       endif
 C
 C--Say Hello Gracie
@@ -425,7 +425,7 @@ C
 C     
       ELSEIF (PHASE(1:4).EQ.'quit') THEN
 C     
-         stop
+         CALL EXIT(1)
 C     
       ELSE
 C     

@@ -47,7 +47,8 @@ C.....for internal barrier boundaries with flowthrough pipes
       INTEGER,ALLOCATABLE ::    BCRNVELL(:)
       INTEGER  totalbcrivernodes  ! nodes for the river boundary conditions for baroclinic
       INTEGER  bcriversec  ! river boundary information
-      LOGICAL :: BndBCRiver          = .FALSE.
+      LOGICAL :: BndBCRiver     = .FALSE.
+      LOGICAL :: NPEBC          = .FALSE. !WJP 03.272018 Non-periodic elevation boundary condition flag
 
       INTEGER  NBOU
       INTEGER  NETA
@@ -320,7 +321,7 @@ C     ---------
             !write(6,'("i=",i0)') i !jgfdebug
          endif
          select case(ibtype_orig(i))
-         case(0,1,2,10,11,12,20,21,22,30,52)
+         case(0,1,2,10,11,12,20,21,22,30,32,52,94)
             allocate(simpleFluxBoundaries(sfCount)%nodes(nvell(i)))
             allocate(simpleFluxBoundaries(sfCount)%xdmf_nodes(nvell(i)))
             sfCount = sfCount + 1
@@ -355,7 +356,7 @@ C     ---------
          case default
              write(6,'(a,i0,a)') "ERROR: The boundary type ",ibtype_orig(i),
      &        " was found in the file but is not valid."
-             stop
+             CALL EXIT(1)
          end select
       end do
       ! initialize to something troublesome to make it easy to spot issues
@@ -492,7 +493,7 @@ C     ------------------------------------------------------------------
             nweir = nweir + nvell(k)
          case(5,25)
             print *, 'error: ibtype 5 and 25 not supported by adcprep.'
-            stop
+            CALL EXIT(1)
          case default
             ! no action required for other boundary types
          end select
@@ -583,7 +584,7 @@ C     ------------------------------------------------------------------
             enddo
          case(5,25)
             print *, 'error: ibtype 5 and 25 not supported by adcprep.'
-            stop
+            CALL EXIT(1)
          case default
             write(6,'(a,i0,a)') 'ERROR: ibtype ',ibtype(k),
      &          ' not supported by adcprep.'

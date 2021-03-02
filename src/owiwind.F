@@ -251,11 +251,12 @@
 !> @param[inout] prn     atmospheric pressure
 !> @param[in]    np      number of nodes in the adcirc mesh for this processor
 !> @param[in]    prdeflt background atmospheric pressure
+!> @param[out]   hasdata (otional), index of where OWI data is assigned
 !-----------------------------------------------------------------------
-      SUBROUTINE NWS12GET(WVNX,WVNY,PRN,NP,PRdeflt)
+      SUBROUTINE NWS12GET(WVNX,WVNY,PRN,NP,PRdeflt,HasData)
 !-----------------------------------------------------------------------
         USE SIZES,ONLY: MYPROC,MNPROC,GBLINPUTDIR
-        USE GLOBAL,ONLY: RHOWAT0, G
+        USE GLOBAL,ONLY: RHOWAT0, G, NWS
         IMPLICIT NONE
         INTEGER,intent(in)     :: NP
         REAL(SZ),intent(out)   :: WVNX(:),WVNY(:),PRN(:)
@@ -268,6 +269,7 @@
         REAL(SZ)               :: w1,w2,w3,w4
         INTEGER                :: errorIO
         LOGICAL                :: uvpHasBeenSet
+        LOGICAL,intent(out),optional :: HasData(:)
 
         call setMessageSource("nws12get")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -281,10 +283,14 @@
 
         ! Put a blank snap for the first 'numBlankSnaps' snaps and then return
         if (cntSnaps.LE.numBlankSnaps) then
-           WVNX(:) = 0D0
-           WVNY(:) = 0D0
-           PRN(:) = Prdeflt*100D0/RHOWATG
-
+           if (abs(NWS).ne.14) then ! WJP: Don't overwrite if NWS = 14
+              WVNX(:) = 0D0
+              WVNY(:) = 0D0
+              PRN(:) = Prdeflt*100D0/RHOWATG
+           endif
+           if (present(HasData)) then 
+              HasData(:) = .false.
+           endif
            write(scratchMessage,16) cntSnaps
  16        format('INSERTING A BLANK WIND SNAP, COUNT=',i4)
            call allMessage(INFO,trim(scratchMessage))
@@ -327,9 +333,11 @@
            call owi_interpolateToMesh(i,uu,vv,pp,uvpHasBeenSet)
 
            if (.not.uvpHasBeenSet) then
-              WVNX(I)=0.d0
-              WVNY(I)=0.d0
-              PRN(I)=PRdeflt*100.d0/RHOWATG
+              if (abs(NWS).ne.14) then ! WJP: Don't overwrite if NWS = 14
+                 WVNX(I)=0.d0
+                 WVNY(I)=0.d0
+                 PRN(I)=PRdeflt*100.d0/RHOWATG
+              endif
            else
               !Convert millibars to m of water
               PRN(i)  = 100.d0*PP/RHOWATG
@@ -339,6 +347,10 @@
               WVNX(i) = uu * windMultiplier
               WVNY(i) = vv * windMultiplier
 
+           endif
+              
+           if (present(HasData)) then 
+              HasData(i) = uvpHasBeenSet
            endif
 
         enddo
@@ -437,7 +449,6 @@
 !-----------------------------------------------------------------------
       end subroutine findStormCenter
 !-----------------------------------------------------------------------
-
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
@@ -613,7 +624,6 @@
       end subroutine owi_readNextSnap
 !-----------------------------------------------------------------------
       
-
 !-----------------------------------------------------------------------
 !> @brief Sets the blank snaps at the end of the file when data has run
 !>        out
@@ -844,7 +854,6 @@
 !-----------------------------------------------------------------------
       end subroutine owi_setFilenames
 !-----------------------------------------------------------------------
-
 
 !-----------------------------------------------------------------------
 !> @brief Sets the dynamic filenames read from the fort.22 file
@@ -1220,6 +1229,7 @@
  888        format("Failed to '",A,"' from '",A,
      &         "' (unit number ",I3,").")
             call allMessage(ERROR,trim(scratchMessage))
+            write(6,*) 'iostat =',iret
          endif
          call allMessage(ERROR,"ADCIRC execution terminated.")
 #ifdef CMPI

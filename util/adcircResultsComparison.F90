@@ -46,12 +46,12 @@
                         ELSE
                             WRITE(*,'(3A)') "Specified file ",TRIM(filename),&
                                 " does not exist."
-                            STOP 1
+                            CALL EXIT(1)
                         ENDIF
                     ELSE
                         WRITE(*,'(3A)') "Specified file ",TRIM(filename),&
                             " does not exist."
-                        STOP 1
+                        CALL EXIT(1)
                     ENDIF
                 ENDIF
             END FUNCTION findFile
@@ -93,7 +93,7 @@
                         !...Intentional segfault to trigger stack trace
                         Dmy(1) = 1.0D0
 #endif
-                        STOP 1
+                        CALL EXIT(1)
                     ELSE
                         IF(PRESENT(error))error = .FALSE.
                     ENDIF
@@ -264,7 +264,7 @@
                     IF(I.EQ.NVAR)THEN
                         WRITE(*,'(A)') &
                             "ADCIRC NetCDF Variable not found in file."
-                        STOP 1
+                        CALL EXIT(1)
                     ENDIF
                 ENDDO
 
@@ -311,7 +311,7 @@
                         ENDIF
                     ENDDO
                 ENDDO
-                STOP 1
+                CALL EXIT(1)
             END SUBROUTINE getNetCDFVarId
 
             SUBROUTINE showHelp()
@@ -355,7 +355,7 @@
                 IF(iargc().EQ.0)THEN
                     WRITE(*,'(A)') "ERROR: No command line arguments specified."
                     CALL showHelp()
-                    STOP 1
+                    CALL EXIT(1)
                 ENDIF
 
                 I = 0
@@ -383,7 +383,7 @@
                             minmax = .TRUE.                            
                         CASE("-h","--help")
                             CALL showHelp()
-                            STOP 0
+                            CALL EXIT(0)
                         CASE("-v","--verbose")
                             verbose = .TRUE.
                         CASE("-c","--continue")
@@ -391,20 +391,20 @@
                         CASE DEFAULT
                             WRITE(*,'(2A)') "ERROR: Unrecognized argument ",TRIM(CMD)
                             CALL showHelp()
-                            STOP 1
+                            CALL EXIT(1)
                     END SELECT
                 ENDDO
 
                 IF(.NOT.foundFile1)THEN
                     WRITE(*,'(A)') "ERROR: File 1 not specified."
                     CALL showHelp()
-                    STOP 1
+                    CALL EXIT(1)
                 ENDIF
 
                 IF(.NOT.foundFile2)THEN
                     WRITE(*,'(A)') "ERROR: File 2 not specified."
                     CALL showHelp()
-                    STOP 1
+                    CALL EXIT(1)
                 ENDIF
 
                 exists = FindFile(file1)
@@ -621,7 +621,7 @@
                 ELSEIF(filetype.EQ.3)THEN
                     !CALL CHECK(NF90_CLOSE(fileunit))
                 ELSE
-                    STOP 1
+                    CALL EXIT(1)
                 ENDIF
 
                 RETURN
@@ -810,13 +810,13 @@
             !...Check for the number of snaps in each file
             IF(nsnapfile1.NE.nsnapfile2)THEN
                 WRITE(*,'(A)') "ERROR: There are different numbers of output snaps in the files."
-                STOP 1
+                CALL EXIT(1)
             ENDIF
 
             !...Check for the number of nodes in each file
             IF(nnodefile1.NE.nnodefile2)THEN
                 WRITE(*,'(A)') "ERROR: There are different numbers of nodes in the files."
-                STOP 1
+                CALL EXIT(1)
             ENDIF
             
             !...If this is an ascii minmax file, the 2nd dataset is the
@@ -848,7 +848,7 @@
             !...Check if comparing like files
             IF(ncol1.NE.ncol2)THEN
                 WRITE(*,'(A)') "ERROR: The number of values in the files is different."
-                STOP 1
+                CALL EXIT(1)
             ENDIF
 
             ALLOCATE(nodaldata1(1:nnodefile1,1:ncol1))
@@ -873,7 +873,7 @@
                 ELSEIF(noutfile1.EQ.3)THEN
                     CALL readNextSnapNetCDF(io_unit1,I,nnodefile1,ncol1,varid11,varid12,nodaldata1)
                 ELSE
-                    STOP 1
+                    CALL EXIT(1)
                 ENDIF
                 
                 !...Read data from file 2
@@ -884,7 +884,7 @@
                 ELSEIF(noutfile1.EQ.3)THEN
                     CALL readNextSnapNetCDF(io_unit2,I,nnodefile2,ncol2,varid21,varid22,nodaldata2)
                 ELSE
-                    STOP 1
+                    CALL EXIT(1)
                 ENDIF
 
                 !...Perform comparison
@@ -904,7 +904,7 @@
                             CALL closeFile(io_unit1,noutfile1)
                             CALL closeFile(io_unit2,noutfile2)
                             WRITE(*,'(A)') "Results do not match within specified tolerance."
-                            STOP 1
+                            CALL EXIT(1)
                         ENDIF
                     ELSE
                         IF(nerror(I,1).GT.0)THEN
@@ -913,7 +913,7 @@
                             CALL closeFile(io_unit1,noutfile1)
                             CALL closeFile(io_unit2,noutfile2)
                             WRITE(*,'(A)') "Results do not match within specified tolerance."
-                            STOP 1
+                            CALL EXIT(1)
                         ENDIF
                     ENDIF
                 ENDIF
@@ -927,15 +927,22 @@
             DO I = 1,nsnapfile1
                 IF(nerror(I,1).GT.0)THEN
                     WRITE(*,'(A)') "Results do not match within specified tolerance."
-                    STOP 1
+                    CALL EXIT(1)
                 ENDIF
                 IF(ncol1.EQ.2)THEN
                     IF(nerror(I,2).GT.0)THEN
                         WRITE(*,'(A)') "Results do not match within specified tolerance."
-                        STOP 1
+                        CALL EXIT(1)
                     ENDIF
                 ENDIF
             ENDDO
             WRITE(*,'(A)') "Results match within specified tolerance."
+            
+            DEALLOCATE(nodaldata1)
+            DEALLOCATE(nodaldata2)
+            DEALLOCATE(ndiff)
+            DEALLOCATE(nerror)
+            DEALLOCATE(avgdiff)
+            DEALLOCATE(maxdiff)
 
         END PROGRAM adcircResultCompare

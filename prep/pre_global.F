@@ -41,6 +41,11 @@ C                                    ! I-th Node on Land Boundary Segment K
       INTEGER,ALLOCATABLE::WEIR(:)
       INTEGER,ALLOCATABLE::WEIRD(:)
 
+C.... DW, periodic bc
+      INTEGER:: NPERBC 
+      INTEGER, ALLOCATABLE:: IPERCONN(:,:), IPERPTR(:) ! a simple sparse CRS format 
+C.... DW
+
       TYPE(ipair),ALLOCATABLE, TARGET :: node_dict(:)
       INTEGER,ALLOCATABLE             :: labels(:)
 
@@ -270,6 +275,10 @@ c.... !tcm v52.30.01 added for forced use of Smagorinski Eddy Viscosity
 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       LOGICAL :: FOUND_WC_NML
+#ifdef ADCNETCDF
+Casey 180318: Added NWS=13
+      LOGICAL :: FOUND_OWINC_NML
+#endif
 
       logical :: foundWetDryControlNamelist = .false. ! for namelist 
       logical :: outputNodeCode = .false.
@@ -394,6 +403,10 @@ C
       INTEGER :: SRCHDP=100
       REAL(sz), ALLOCATABLE ::  RMAX(:),BCXY(:,:)
 
+CCCCCCCCCCCCCCCCCC DW
+      LOGICAL:: prep5354flag = .FALSE.
+      LOGICAL:: prep2001flag = .FALSE.
+      INTEGER,ALLOCATABLE :: nodeNumSP(:)
 C-------------------end of data declarations------------------------C
 
 

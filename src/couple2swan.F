@@ -95,7 +95,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL, ONLY        : ETA2
       USE M_GENARR, ONLY      : DEPTH
       USE SwanGridData, ONLY  : nverts
-      USE SWCOMM3, ONLY       : DDIR, DEPMIN, FRINTF, GRAV, MDC, MSC, RHO
+      USE SWCOMM3, ONLY       : DDIR, DEPMIN, FRINTF, GRAV, MDC, MSC
 
       IMPLICIT NONE
 
@@ -169,16 +169,14 @@ C-----------------------------------------------------------------------
             ENDDO
          ENDDO
 !... Multiply summed radiation stresses by the stuff outside of the sums.
-         ADCIRC_SXX(I,2) = RHO * GRAV * ADCIRC_SXX(I,2) * DDIR * FRINTF
-         ADCIRC_SXY(I,2) = RHO * GRAV * ADCIRC_SXY(I,2) * DDIR * FRINTF
-         ADCIRC_SYY(I,2) = RHO * GRAV * ADCIRC_SYY(I,2) * DDIR * FRINTF
 !Casey 080602: ADCIRC accepts wave-driven stresses "in units of velocity squared
 !    (consistent with the units of gravity).  Stress in these units is obtained
 !    by dividing stress in units of force/area by the reference density of water."
-!    SO WE MUST DIVIDE BY RHO!
-         ADCIRC_SXX(I,2) = ADCIRC_SXX(I,2) / RHO
-         ADCIRC_SXY(I,2) = ADCIRC_SXY(I,2) / RHO
-         ADCIRC_SYY(I,2) = ADCIRC_SYY(I,2) / RHO
+!    SO WE MUST DIVIDE BY RHO! (WJP: just ommitted RHO multiple in this
+!    line to avoid the division by RHO below)
+         ADCIRC_SXX(I,2) = GRAV * ADCIRC_SXX(I,2) * DDIR * FRINTF
+         ADCIRC_SXY(I,2) = GRAV * ADCIRC_SXY(I,2) * DDIR * FRINTF
+         ADCIRC_SYY(I,2) = GRAV * ADCIRC_SYY(I,2) * DDIR * FRINTF
 !... End loop over wet nodes.  The radiation stresses are ready for ADCIRC.
       ENDDO
 
@@ -198,9 +196,10 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE ComputeWaveDrivenForces
 
-      USE GLOBAL, ONLY: NODECODE, NOFF, RSNX2, RSNY2
+      USE GLOBAL, ONLY: NODECODE, NOFF, RSNX2, RSNY2, IFSFM
       USE SIZES, ONLY: SZ
-      USE MESH, ONLY : NE, NM, NP, X, Y, AREAS, NODELE, NEITABELE
+      USE MESH, ONLY : NE, NM, NP, AREAS, NODELE, NEITABELE,
+     &    FDXE, FDYE, SFacEle, SFMYEle, SFMXEle
       USE BOUNDARIES, ONLY : NBDV, NBOU, NBVV, NOPE, NVDLL, NVELL
 
       IMPLICIT NONE
@@ -214,8 +213,12 @@ C-----------------------------------------------------------------------
       INTEGER :: Node3
       INTEGER :: NUMFOUND
 
-      LOGICAL :: Marcel = .FALSE.
-
+!...  To zero out forces on boundary/dry nodes
+#ifdef MARCELSWAN 
+      LOGICAL :: Marcel = .true.
+#else
+      LOGICAL :: Marcel = .false.
+#endif
       REAL(SZ),ALLOCATABLE :: DSXXDX(:)
       REAL(SZ),ALLOCATABLE :: DSXYDY(:)
       REAL(SZ),ALLOCATABLE :: DSXYDX(:)
@@ -228,6 +231,14 @@ C-----------------------------------------------------------------------
       REAL(SZ),ALLOCATABLE :: TEMP_SYY(:)
 
       REAL(SZ) :: TOTALAREA
+      REAL(SZ) :: FDX1, FDX2, FDX3
+      REAL(SZ) :: FDY1, FDY2, FDY3
+      REAL(SZ) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
+
+!     Upper limit on Radiation stresses
+!     Default - don't limit (set to high value) but may want to use: UL = 0.1_SZ     
+!     (0.1 m^2/s^2 is equivalent to 175 m/s wind speeds!)
+      REAL(SZ),parameter :: UL = 999_SZ 
 
       call setMessageSource("ComputeWaveDrivenForces")
 #if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
@@ -286,26 +297,41 @@ C-----------------------------------------------------------------------
            Node1 = NM(IE,1)
            Node2 = NM(IE,2)
            Node3 = NM(IE,3)
+C     WJP: tke into account correction factors
+           SFacAvg = SFacEle(IE)
+C..... BEG DW/WJP
+           SFmxAvg= SFMXEle(IE) ; 
+           SFmyAvg= SFMYEle(IE) ; 
+           sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
+           sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+
+           FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
+           FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
+           FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
+           FDY1 = FDYE(1,IE)*sfdyfac ; !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
+           FDY2 = FDYE(2,IE)*sfdyfac ; !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
+           FDY3 = FDYE(3,IE)*sfdyfac ; !c FDY3=(X(NM2)-X(NM1))*MY !a3*my         
+C..... END DW/WJP
 
            DSXXDX(IE) = (1.D0/AREAS(IE)) *
-     &                ( TEMP_SXX(Node1) * (Y(Node2) - Y(Node3))
-     &                + TEMP_SXX(Node2) * (Y(Node3) - Y(Node1))
-     &                + TEMP_SXX(Node3) * (Y(Node1) - Y(Node2)) )
+     &                ( TEMP_SXX(Node1) * FDX1   !(Y(Node2) - Y(Node3))
+     &                + TEMP_SXX(Node2) * FDX2   !(Y(Node3) - Y(Node1))
+     &                + TEMP_SXX(Node3) * FDX3 ) !(Y(Node1) - Y(Node2)) )
 
            DSXYDY(IE) = (1.D0/AREAS(IE)) *
-     &                ( TEMP_SXY(Node1) * (X(Node3) - X(Node2))
-     &                + TEMP_SXY(Node2) * (X(Node1) - X(Node3))
-     &                + TEMP_SXY(Node3) * (X(Node2) - X(Node1)) )
+     &                ( TEMP_SXY(Node1) * FDY1   !(X(Node3) - X(Node2))
+     &                + TEMP_SXY(Node2) * FDY2   !(X(Node1) - X(Node3))
+     &                + TEMP_SXY(Node3) * FDY3 ) !(X(Node2) - X(Node1)) )
 
            DSXYDX(IE) = (1.D0/AREAS(IE)) *
-     &                ( TEMP_SXY(Node1) * (Y(Node2) - Y(Node3))
-     &                + TEMP_SXY(Node2) * (Y(Node3) - Y(Node1))
-     &                + TEMP_SXY(Node3) * (Y(Node1) - Y(Node2)) )
+     &                ( TEMP_SXY(Node1) * FDX1   !(Y(Node2) - Y(Node3))
+     &                + TEMP_SXY(Node2) * FDX2   !(Y(Node3) - Y(Node1))
+     &                + TEMP_SXY(Node3) * FDX3 ) !(Y(Node1) - Y(Node2)) )
 
            DSYYDY(IE) = (1.D0/AREAS(IE)) *
-     &                ( TEMP_SYY(Node1) * (X(Node3) - X(Node2))
-     &                + TEMP_SYY(Node2) * (X(Node1) - X(Node3))
-     &                + TEMP_SYY(Node3) * (X(Node2) - X(Node1)) )
+     &                ( TEMP_SYY(Node1) * FDY1   !(X(Node3) - X(Node2))
+     &                + TEMP_SYY(Node2) * FDY2   !(X(Node1) - X(Node3))
+     &                + TEMP_SYY(Node3) * FDY3 ) !(X(Node2) - X(Node1)) )
 
          ENDDO
 
@@ -351,22 +377,22 @@ C-----------------------------------------------------------------------
 
                IF(Marcel.AND.(NCELE.EQ.0))THEN
 
-                 RSNX2(IP) = 0.0
-                 RSNY2(IP) = 0.0
+                 RSNX2(IP) = 0.0d0
+                 RSNY2(IP) = 0.0d0
                  CYCLE outer
 
                ELSE
 
                  NUMFOUND = NUMFOUND + 1
 
-                 RSNX2(IP) = RSNX2(IP) + 0.5*AREAS(NEITABELE(IP,IE))
+                 RSNX2(IP) = RSNX2(IP) + 0.5d0*AREAS(NEITABELE(IP,IE))
      &                     * ( - DSXXDX(NEITABELE(IP,IE))
      &                         - DSXYDY(NEITABELE(IP,IE)) )
-                 RSNY2(IP) = RSNY2(IP) + 0.5*AREAS(NEITABELE(IP,IE))
+                 RSNY2(IP) = RSNY2(IP) + 0.5d0*AREAS(NEITABELE(IP,IE))
      &                     * ( - DSXYDX(NEITABELE(IP,IE))
      &                         - DSYYDY(NEITABELE(IP,IE)) )
 
-                 TOTALAREA = TOTALAREA + 0.5*AREAS(NEITABELE(IP,IE))
+                 TOTALAREA = TOTALAREA + 0.5d0*AREAS(NEITABELE(IP,IE))
 
                ENDIF
 
@@ -380,8 +406,14 @@ C-----------------------------------------------------------------------
 
            ENDDO inner
 
+
            RSNX2(IP) = RSNX2(IP) / TOTALAREA
            RSNY2(IP) = RSNY2(IP) / TOTALAREA
+
+C    WJPs artifical limiter; UL is to a really large by default, user
+C    can change UL to be a strict value if they please
+           RSNX2(IP) = min(UL,max(-UL,RSNX2(IP)))
+           RSNY2(IP) = min(UL,max(-UL,RSNY2(IP)))
 
          ENDDO outer
 
@@ -389,14 +421,14 @@ C-----------------------------------------------------------------------
          IF(Marcel)THEN
            DO K=1,NOPE
              DO I=1,NVDLL(K)
-               RSNX2(NBDV(K,I)) = 0.0
-               RSNY2(NBDV(K,I)) = 0.0
+               RSNX2(NBDV(K,I)) = 0.0d0
+               RSNY2(NBDV(K,I)) = 0.0d0
              ENDDO
            ENDDO
            DO K=1,NBOU
              DO I=1,NVELL(K)
-               RSNX2(NBVV(K,I)) = 0.0
-               RSNY2(NBVV(K,I)) = 0.0
+               RSNX2(NBVV(K,I)) = 0.0d0
+               RSNY2(NBVV(K,I)) = 0.0d0
              ENDDO
            ENDDO
          ENDIF

@@ -2250,7 +2250,7 @@ C
             write(screenunit,*) '*********** Fatal error *************'
             write(1,*) 'Diagonal term in the VS matrix is zero'
             write(1,*) '*********** Fatal error *************'
-            stop
+            CALL EXIT(1)
          endif
          P1=C(J)/B(J+1)
          B(J)=B(J)-A(J+1)*P1
@@ -2262,7 +2262,7 @@ C
          write(screenunit,*) '*********** Fatal error *************'
          write(1,*) 'B1 term in the VS matrix is zero'
          write(1,*) '*********** Fatal error *************'
-         stop
+         CALL EXIT(1)
       endif
 
       U(1)=R(1)/B(1)
@@ -3281,7 +3281,7 @@ c
          if(B(j).EQ.0.) then
             write(screenunit,*) 'Problem in Tridag Solver.  ',
      +           'B array value in row ',j,' = 0'
-            stop
+            CALL EXIT(1)
          endif
       end do
       BET = B(1)
@@ -3292,7 +3292,7 @@ c
          if (BET.EQ.0) then
             write(screenunit,*) ' Problem in Tridag Solver.  ',
      +           ' BET  = 0.  Solver failed.'
-            stop
+            CALL EXIT(1)
          endif
          U(J)=(R(J)-A(J)*U(J-1))/BET
       END DO
@@ -3403,10 +3403,10 @@ C  kmd48.33bc changed to follow the global IO format
       USE SIZES
       USE GLOBAL
       USE GLOBAL_3DVS
-      USE GLOBAL_IO
 #ifdef CMPI
       USE MESSENGER
 #endif
+      USE GLOBAL_IO
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY : initNetCDFHotstart3D, writeNetCDFHotstart3D,
      &   writeNetCDFHotstart3DVar
@@ -4463,7 +4463,7 @@ C*****************************************************************************
           End Do
           If ( sum_Weights < 1.0d-6 ) Then
              Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-             Stop
+             call exit(1)
           End If
          Weights (:) = Weights (:) / sum_Weights
          ! 2.3 debug
@@ -4612,7 +4612,7 @@ C*****************************************************************************
              End Do
              If ( sum_Weights(K) < 1.0d-6 ) Then
                 Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-                Stop
+                call exit(1)
              End If
             Weights (:,K) = Weights (:,K) / sum_Weights(K)
          End Do
@@ -4941,7 +4941,7 @@ C**********************************************************************
           End Do
           If ( sum_Weights < 1.0d-6 ) Then
              Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-             Stop
+             call exit(1)
           End If
          Weights (:) = Weights (:) / sum_Weights
          ! 2.3 debug
