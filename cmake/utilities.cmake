@@ -1,31 +1,38 @@
+if(BUILD_UTILITIES)
 
-IF(BUILD_UTILITIES)
-    
-    ADD_EXECUTABLE(adccmp util/adccmp.F)
-    ADD_EXECUTABLE(p15 wind/p15.F)
-    ADD_EXECUTABLE(owi22 wind/owi22.F)
-    ADD_EXECUTABLE(build13 util/build13.F)
-    ADD_EXECUTABLE(buildstwave23 util/buildstwave23.F)
-    ADD_EXECUTABLE(hot2asc util/hot2asc.F)
-    ADD_EXECUTABLE(inflate util/inflate.F)
-    ADD_EXECUTABLE(hstime util/hstime.F)
+  add_executable(adccmp util/adccmp.F)
+  add_executable(p15 wind/p15.F)
+  add_executable(owi22 wind/owi22.F)
+  add_executable(build13 util/build13.F)
+  add_executable(buildstwave23 util/buildstwave23.F)
+  add_executable(hot2asc util/hot2asc.F)
+  add_executable(inflate util/inflate.F)
+  add_executable(hstime util/hstime.F)
 
-    IF(NETCDF_WORKING)
-        ADD_EXECUTABLE(adcircResultsComparison util/adcircResultsComparison.F90)
-        addCompilerFlags(adcircResultsComparison)
-        addNetCDF(adcircResultsComparison)
-    ENDIF(NETCDF_WORKING)
+  if(NETCDF_WORKING)
+    add_executable(adcircResultsComparison util/adcircResultsComparison.F90)
+    addcompilerflags(adcircResultsComparison)
+    addnetcdf(adcircResultsComparison)
+  endif(NETCDF_WORKING)
 
-    addCompilerFlags(adccmp)
-    addCompilerFlags(p15)
-    addCompilerFlags(owi22)
-    addCompilerFlags(build13)
-    addCompilerFlags(buildstwave23)
-    addCompilerFlags(hot2asc)
-    addCompilerFlags(inflate)
-    addCompilerFlags(hstime)
-    
-    INSTALL(TARGETS adccmp p15 owi22 build13 buildstwave23 hot2asc inflate hstime 
-	    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  addcompilerflags(adccmp)
+  addcompilerflags(p15)
+  addcompilerflags(owi22)
+  addcompilerflags(build13)
+  addcompilerflags(buildstwave23)
+  addcompilerflags(hot2asc)
+  addcompilerflags(inflate)
+  addcompilerflags(hstime)
 
-ENDIF(BUILD_UTILITIES)
+  install(
+    TARGETS adccmp
+            p15
+            owi22
+            build13
+            buildstwave23
+            hot2asc
+            inflate
+            hstime
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+endif(BUILD_UTILITIES)
