@@ -39,5 +39,5 @@ Casey 110518: Added this IF statement.
 C
       CALL ADCIRC_Final
 C
-      STOP
+      CALL EXIT(0)
       END PROGRAM ADCIRC

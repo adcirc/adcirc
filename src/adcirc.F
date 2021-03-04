@@ -75,17 +75,7 @@ C******************************************************************************
       MODULE ADCIRC_Mod
 C******************************************************************************
 C******************************************************************************
-C
-      USE GLOBAL
-      USE MESH, ONLY : NE, NP, NM
-      USE GLOBAL_3DVS, ONLY : GORho, GORhoOAMB, AMB
-      USE VERSION
-#ifdef CMPI
-      USE MESSENGER
-      USE WRITER, ONLY: WRITER_MAIN, WRITER_INIT, WRITER_PAUSE !tcm added pause
-      USE HSWRITER, ONLY: HSWRITER_MAIN, HSWRITER_INIT,!st3 for hstart
-     &                    HSWRITER_PAUSE !tcm v49.52.01 added pause
-#endif
+
       IMPLICIT NONE
       PUBLIC
 
@@ -100,13 +90,36 @@ C*    ADCIRC initialize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Init(COMM, ROOTD)
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
-      USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc,
-     &  read_local_hot_start_files, make_dirname, write_local_harm_files
-      USE MESH, ONLY : Areas, TotalArea, totalAreaCalc
+      USE VERSION, ONLY : adc_version, fileFmtMajor, fileFmtMinor, 
+     &   FileFmtRev
+      USE SIZES, ONLY : sz, rootDir, mnproc, mnwproc, mnallproc, myproc,
+     &   read_local_hot_start_files, make_dirname, write_local_harm_files,
+     &   get_numwriters, mnstae
+      USE GLOBAL, ONLY : usingDynamicWaterLevelCorrection,
+     &   dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, 
+     &   dynamicWaterLevelCorrectionSta, DEBUG, INFO, allMessage, itime, dtdp, statim,
+     &   CHotHS, dtdpHS, g, FileFmtVersion, ifnlcat, nabout, ncchange,
+     &   ifnlcate, ifnlct, ifnlcte, ifnlfa, ifwind, ihot, im, iths,
+     &   nolica, nolicat, nolifa, nscreen, nstae, nt, rhowat0, screenunit,
+     &   version_number, initLogging, setMessageSource, screenMessage,
+     &   openLogFile, unsetMessageSource, np_global, rnp_global,
+     &   scratchMessage, CTIP, L_N, writer_id
+      USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB 
+      USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np, SFEA
+      USE GWCE, ONLY : initGWCE
+      USE MOMENTUM, ONLY : initMomentumEq
       USE HARM, ONLY : allocateFullDomainHAIOArrays,
      &                 initHarmonicParameters
       USE GLOBAL_IO, ONLY : allocateFullDomainIOArrays
       USE WRITE_OUTPUT, ONLY : initOutput2D
+      USE WIND, ONLY : initWindModule, initDynamicWaterLevelCorrection,
+     &                 getDynamicWaterLevelCorrections
+#ifdef CMPI
+      USE MESSENGER, ONLY : mnwproh, msg_init, msg_table, msg_start,
+     &   allnodes
+      USE WRITER, ONLY : writer_init, sendLabelInfoToWriters
+      USE HSWRITER, ONLY : hswriter_init
+#endif
       IMPLICIT NONE
 C
       INTEGER, OPTIONAL :: COMM
@@ -135,7 +148,7 @@ C
                ! a series of two or three numbers with two digits 
                ! separated by dots, e.g., 51.02 or 51.52.07
                write(6,'(a)') trim(adc_version)                 
-               stop
+               CALL EXIT(0) 
             case default
                ! do nothing, this is some other command line argument
             end select
@@ -144,7 +157,7 @@ C
       !
       call initLogging()
       nabout = 0 !jgf52.08.01: Initialize log level to ECHO.
-#ifdef DEBUG
+#ifdef EBUG
       nabout = -1 !jgf52.08.01: Initialize log level to DEBUG if so compiled
 #endif
       call setMessageSource("ADCIRC_Init")
@@ -168,7 +181,7 @@ C
       call openLogFile()     ! jgf50.65: open subdomain log files (fort.16)
       CALL WRITER_INIT()     ! Initialize WRITER module
       CALL HSWRITER_INIT()   ! Initialize HSWRITER module  !st3 for hstart  100711
-      if(((mnwproh > 0).or.(mnwproc > 0)) .and. MYPROC >= MNPROC) then
+      if ( (mnwproh > 0.or.mnwproc > 0) .and. myProc >= mnproc) then
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Return.")
 #endif
@@ -208,6 +221,14 @@ C
 
       !jgf49.44: Initialize harmonic analysis parameters.
       CALL initHarmonicParameters()
+C
+C     jgf: Initialize default values in wind module and allocate
+C     memory for internal use.
+      call initWindModule()
+
+      !jgf53.dev: allocate memory for continuity and momentum eqns
+      call initGWCE()
+      call initMomentumEq()
 
 #ifdef CMACHSUN
       CALL ABRUPT_UNDERFLOW() ! Abrupt underflow for Sun computers
@@ -226,7 +247,24 @@ C     jgf45.08 put this here so it can be used in hot start
       ELSE
          IFNLFA=1
       ENDIF
-C     kmd 48.33bc - include a new initial condition file for baroclinic
+
+C...************* Make the L_N Tidal potential multiple function *************
+C... WJP: Feb 21 2018; moved here before hstart Feb 27 2019
+C..  Corrected long term species (unfortunately there is a mistake in old ADCIRC 
+C..  theory report that also propagated into some subsequent publications)
+      IF (CTIP) THEN
+
+         DO I = 1,NP
+C           LONG-TERM SPECIES
+            L_N(0,I) = 1.5d0*COS(SFEA(I))*COS(SFEA(I)) - 1d0
+C           DIURNAL SPECIES
+            L_N(1,I) = SIN(2d0*SFEA(I))
+C           SEMIDIURNAL SPECIES
+            L_N(2,I) = COS(SFEA(I))*COS(SFEA(I))
+         END DO
+
+      ENDIF
+
 C...
 C...******************** PROGRAM SETUP SECTION ************************
 C...
@@ -269,9 +307,19 @@ C...  attached to each node
          RefTimHS=((ITIME_BGN-1)*DTDP)/86400.D0
          TimeLoc=ITIME_BGN*DTDP + (StaTimHS - RefTimHS)*86400.D0
       END IF
+
+      !jgf: Initialize water level offset if needed
+      if (usingDynamicWaterLevelCorrection.eqv..true.) then
+         allocate(dynamicWaterLevelCorrection1(np))
+         allocate(dynamicWaterLevelCorrection2(np)) ! used in timestepping
+         allocate(dynamicWaterLevelCorrectionSta(mnstae))
+         call initDynamicWaterLevelCorrection(timeloc) ! initializes the i/o 
+         call getDynamicWaterLevelCorrections(dynamicWaterLevelCorrection2, timeloc) ! populate 
+      endif
 C
 C     jgf51.21.24: Initialize output.
       call initOutput2D(timeloc)
+
 C...
 C...************* SET FLAGS AND COEFFICIENTS USED IN TIME STEPPING ***********
 C...
@@ -296,29 +344,8 @@ Corbitt 1203022: Local Advection Flags
       IFWIND=1
       IF(IM.EQ.1) IFWIND=0
 
-C...Compute several constant coefficients
-
-      GA00=G*A00
-      GC00=G*C00
-Corbitt 120322: Handled in Timestep.F elementally
-C      TADVODT=IFNLCAT/Dt
-      GB00A00=G*(B00+A00)
-      GFAO2=G*IFNLFA/2.D0
-      GO3=G/3.D0
-      GO2=G/2.D0
-      DTO2=DT/2.D0
-      DT2=DT*2.D0
-      GDTO2=G*DT/2.D0
-Corbitt 120322: Handled in Timestep.F elementally
-C      SADVDTO3=IFNLCT*DT/3.D0
       GORho=G/RhoWat0
       GORhoOAMB=GORho/AMB
-
-C...
-C.....Compute necesary wet/dry coefficients
-C...
-      HABSMIN=0.8d0*H0
-      HOFF=1.2d0*H0
 
       WRITE(16,1112)
       WRITE(16,17931)
@@ -344,6 +371,13 @@ C******************************************************************************
 C*    ADCIRC run routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Run(NTIME_STP)
+      USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
+      USE GLOBAL, ONLY : iTime, DEBUG, INFO, setMessageSource, allMessage,
+     &   unsetMessageSource, statim, dtdp, screenunit, logMessage
+#ifdef CMPI
+      USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
+      USE HSWRITER, ONLY : hswriter_main, hswriter_pause
+#endif
 C
 #ifdef CSWAN
 Casey 090302: We need the following information to couple to unstructured SWAN.
@@ -354,6 +388,7 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
       IMPLICIT NONE
 C
       INTEGER, OPTIONAL :: NTIME_STP
+      REAL(8) :: TimeLoc
 C
       call setMessageSource("ADCIRC_Run")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
@@ -362,7 +397,9 @@ C
 !TCM v49.52.01 added this ifdef (brought in from adcirc_init()
 #ifdef CMPI
       if (((mnwproh > 0).or.(mnwproc > 0)) .and. myproc >= mnproc) then
-         if( myproc < mnproc+mnwproc ) then   !st3
+         if ( myproc < mnproc+mnwproc ) then   !st3
+            !call sendLabelInfoToWriters()
+            call logMessage(INFO,"Enter writer main.")
             call writer_main()
             call unsetMessageSource()  !tcm 20150924 -- added
             return
@@ -371,6 +408,8 @@ C
             call unsetMessageSource()  !tcm 20150924 -- added
             return
          endif
+      elseif ( mnwproc > 0 .and. myproc == 0 ) then
+         call sendLabelInfoToWriters()
       endif
 #endif
 
@@ -379,10 +418,8 @@ C
       ENDIF
 C
       call allMessage(INFO,"Begin timestepping.")
-      ! print *, ' In adcirc.F  ...  line 383', 'ITIME_BGN,ITIME_END > ',ITIME_BGN,ITIME_END
       DO 100 ITIME=ITIME_BGN,ITIME_END
-      ! print *, ' In adcirc.F  ...  line 384', 'ITIME_BGN,ITIME_END > ',ITIME_BGN,ITIME_END
-        CALL TIMESTEP(ITIME)
+        CALL TIMESTEP(ITIME,TimeLoc)
 C
 #ifdef CSWAN
 Casey 090302: If it is time, then call the following subroutine
@@ -394,7 +431,7 @@ C             to then call the SWAN time-stepping subroutine.
         !...WRITE OUTPUT
         !   zc - moved this here so that output occurs after
         !        the SWAN time step has been completed.
-        CALL writeOutput2D(ITIME,ITIME*DTDP+StaTim*86400D0) ! =>see write_output.F
+        CALL writeOutput2D(ITIME,TimeLoc) ! =>see write_output.F
 100   CONTINUE
 C
       IF (PRESENT(NTIME_STP)) THEN
@@ -423,8 +460,13 @@ C******************************************************************************
 C*    ADCIRC finalize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Final(NO_MPI_FINALIZE)
+      USE GLOBAL, ONLY : iTime, DEBUG, setMessageSource, allMessage,
+     &   unsetMessageSource
       USE HARM, ONLY : solveHarmonicAnalysis
       USE WRITE_OUTPUT, ONLY : writeHarmonicAnalysisOutput
+#ifdef CMPI
+      USE MESSENGER, ONLY : msg_fini
+#endif
       IMPLICIT NONE
 C
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
@@ -455,8 +497,9 @@ C
 #endif
       call unsetMessageSource()
       RETURN
+C-----------------------------------------------------------------------
       END SUBROUTINE ADCIRC_Final
-
+C-----------------------------------------------------------------------
 
 C******************************************************************************
 C*    ADCIRC terminate routine
@@ -464,6 +507,12 @@ C*    jgf50.44: Mostly just needed so that we can clean up mpi when
 C*    bombing out.
 C******************************************************************************
       SUBROUTINE ADCIRC_Terminate(NO_MPI_FINALIZE)
+      USE GLOBAL, ONLY : DEBUG, INFO, setMessageSource, allMessage, 
+     &   unsetMessageSource
+#ifdef CMPI
+      USE MESSENGER, ONLY : subdomainFatalError, msg_fini
+#endif
+
       IMPLICIT NONE
 C
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
@@ -483,13 +532,15 @@ C
         CALL MSG_FINI()
       ENDIF
 #endif
-      STOP 
+      CALL EXIT(1) 
 C
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable
 #endif
       call unsetMessageSource()
+C-----------------------------------------------------------------------
       END SUBROUTINE ADCIRC_Terminate
+C-----------------------------------------------------------------------
 
 C*****************************************************************************
 C  ADCIRC Local Terminate Routine and corresponding collection routine
@@ -501,18 +552,25 @@ C          cases where not all compute processors pass through the same call
 C          to this routine.
 C*****************************************************************************
 #ifdef CMPI
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       SUBROUTINE ADCIRC_LocalTerminate()
-        USE GLOBAL,ONLY:TERMINATE_LOCALPROC
+        USE GLOBAL,ONLY: terminate_localproc, screenUnit
         IMPLICIT NONE
         !...Set the local terminator and then go wait for the rest of
         !   the compute processors to check in
         TERMINATE_LOCALPROC = 1
         CALL ADCIRC_CheckLocalTerminate()
-      END SUBROUTINE
+C-----------------------------------------------------------------------
+      END SUBROUTINE ADCIRC_LocalTerminate
+C-----------------------------------------------------------------------
 
+
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       SUBROUTINE ADCIRC_CheckLocalTerminate()
         USE MESSENGER
-        USE GLOBAL,ONLY:TERMINATE_LOCALPROC
+        USE GLOBAL,ONLY: terminate_localproc, screenUnit
 #ifdef HAVE_MPI_MOD
         USE MPI
 #endif        
@@ -535,7 +593,9 @@ C*****************************************************************************
             ENDIF
             CALL ADCIRC_TERMINATE()
         ENDIF
-      END SUBROUTINE   
+C-----------------------------------------------------------------------
+      END SUBROUTINE ADCIRC_CheckLocalTerminate
+C-----------------------------------------------------------------------
 #endif
 
 C******************************************************************************

@@ -1,88 +1,56 @@
 
 IF(BUILD_PADCIRC)
     
-    #...Note that we need to build PADCIRC in steps to correctly generate
-    #   the objects in the correct order of dependencies. CMAKE tries to
-    #   generate this order automatically, however, seems to get confused
-    #   by heavy use of compiler flags
-    
-    SET( PADCIRC1_SOURCES  src/sizes.F KDTREE2/kdtree2.F 
-                           src/global.F src/boundaries.F src/global_3dvs.F
-                           src/messenger.F )
+    SET( PADCIRC_SOURCES  ${CMAKE_SOURCE_DIR}/src/sizes.F 
+                          ${CMAKE_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F 
+                          ${CMAKE_SOURCE_DIR}/src/global.F 
+                          ${CMAKE_SOURCE_DIR}/src/boundaries.F 
+                          ${CMAKE_SOURCE_DIR}/src/global_3dvs.F
+                          ${CMAKE_SOURCE_DIR}/src/messenger.F 
+                          ${CMAKE_SOURCE_DIR}/src/mesh.F 
+                          ${CMAKE_SOURCE_DIR}/src/harm.F 
+                          ${CMAKE_SOURCE_DIR}/wind/vortex.F 
+                          ${CMAKE_SOURCE_DIR}/src/wind.F 
+                          ${CMAKE_SOURCE_DIR}/src/hashtable.F 
+                          ${CMAKE_SOURCE_DIR}/src/owiwind.F 
+                          ${CMAKE_SOURCE_DIR}/src/owiwind_netcdf.F 
+                          ${CMAKE_SOURCE_DIR}/src/rs2.F 
+                          ${CMAKE_SOURCE_DIR}/src/owi_ice.F 
+                          ${CMAKE_SOURCE_DIR}/src/itpackv.F 
+                          ${CMAKE_SOURCE_DIR}/src/nodalattr.F 
+                          ${CMAKE_SOURCE_DIR}/src/globalio.F 
+                          ${CMAKE_SOURCE_DIR}/src/subdomain.F 
+                          ${CMAKE_SOURCE_DIR}/src/gwce.F 
+                          ${CMAKE_SOURCE_DIR}/src/wetdry.F 
+                          ${CMAKE_SOURCE_DIR}/src/momentum.F
+                          ${CMAKE_SOURCE_DIR}/src/netcdfio.F 
+                          ${CMAKE_SOURCE_DIR}/src/control.F 
+                          ${CMAKE_SOURCE_DIR}/src/xdmfio.F 
+                          ${CMAKE_SOURCE_DIR}/src/writer.F 
+                          ${CMAKE_SOURCE_DIR}/src/write_output.F 
+                          ${CMAKE_SOURCE_DIR}/src/couple2swan.F 
+                          ${CMAKE_SOURCE_DIR}/src/adcirc.F
+                          ${CMAKE_SOURCE_DIR}/src/weir_boundary.F 
+                          ${CMAKE_SOURCE_DIR}/src/read_input.F 
+                          ${CMAKE_SOURCE_DIR}/src/cstart.F 
+                          ${CMAKE_SOURCE_DIR}/src/hstart.F 
+                          ${CMAKE_SOURCE_DIR}/src/timestep.F 
+                          ${CMAKE_SOURCE_DIR}/src/vsmy.F 
+                          ${CMAKE_SOURCE_DIR}/src/transport.F 
+                          ${CMAKE_SOURCE_DIR}/src/driver.F 
+                          ${CMAKE_SOURCE_DIR}/src/sponge_layer.F 
+                          ${CMAKE_SOURCE_DIR}/src/quadtrature.F 
+                          ${CMAKE_SOURCE_DIR}/src/couple2baroclinic3D.F )
 
-    SET( PADCIRC2_SOURCES  src/mesh.F src/harm.F wind/vortex.F src/wind.F 
-                           src/owiwind.F src/rs2.F src/owi_ice.F 
-                           src/itpackv.F src/nodalattr.F src/globalio.F 
-                           src/netcdfio.F src/control.F src/xdmfio.F )
+    ADD_EXECUTABLE(padcirc ${PADCIRC_SOURCES})
 
-    SET( PADCIRC3_SOURCES  src/writer.F )
+    addCompilerFlags(padcirc)
+    addMPI(padcirc)
+    addLibMkdir(padcirc)
+    addLibVersion(padcirc)
 
-    SET( PADCIRC4_SOURCES  src/write_output.F src/couple2swan.F src/adcirc.F src/subdomain.F 
-                           src/weir_boundary.F src/read_input.F src/cstart.F 
-                           src/hstart.F src/timestep.F src/vsmy.F 
-                           src/transport.F src/driver.F )
+    ADD_DEPENDENCIES(padcirc version mkdir)
 
-    ADD_LIBRARY(templib_padcirc1 ${PADCIRC1_SOURCES})
-    ADD_LIBRARY(templib_padcirc2 ${PADCIRC2_SOURCES})
-    ADD_LIBRARY(templib_padcirc3 ${PADCIRC3_SOURCES})
-    
-    ADD_EXECUTABLE(padcirc ${PADCIRC4_SOURCES})
-
-    TARGET_INCLUDE_DIRECTORIES(templib_padcirc1 PRIVATE prep)
-    TARGET_INCLUDE_DIRECTORIES(padcirc          PRIVATE prep)
-    
-    SET(PADCIRC_COMPILER_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG} ${PRECISION_FLAG} ${ADCIRC_MPI_FLAG} ${ADCIRC_OPTION_FLAGS} ${ADDITIONAL_FLAGS_ADCIRC}")
-    
-    IF(NETCDF_WORKING AND NOT XDMF_WORKING)
-        SET(PADCIRC_COMPILER_FLAGS "${PADCIRC_COMPILER_FLAGS} ${NETCDF_FLAG} ${NETCDF_COMPRESSION_FLAG}")
-        SET_TARGET_PROPERTIES(padcirc PROPERTIES LINK_FLAGS ${NETCDF_LINKER_FLAG})
-    ELSEIF(NETCDF_WORKING AND XDMF_WORKING)
-        SET(PADCIRC_COMPILER_FLAGS "${PADCIRC_COMPILER_FLAGS} ${NETCDF_FLAG} ${NETCDF_COMPRESSION_FLAG} ${XDMF_FLAG}")
-        SET(PADCIRC_LINKER_FLAGS "${NETCDF_LINKER_FLAG} ${XDMF_LINKER_FLAG}")
-        SET_TARGET_PROPERTIES(padcirc PROPERTIES LINK_FLAGS ${PADCIRC_LINKER_FLAGS} )
-        TARGET_INCLUDE_DIRECTORIES(padcirc PRIVATE ${CMAKE_SOURCE_DIR}/src)
-    ENDIF(NETCDF_WORKING AND NOT XDMF_WORKING)
-    
-    SET_TARGET_PROPERTIES(templib_padcirc1 PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/padcirc_mod)
-    SET_TARGET_PROPERTIES(templib_padcirc1 PROPERTIES COMPILE_FLAGS ${PADCIRC_COMPILER_FLAGS})
-
-    SET_TARGET_PROPERTIES(templib_padcirc2 PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/padcirc_mod)
-    SET_TARGET_PROPERTIES(templib_padcirc2 PROPERTIES COMPILE_FLAGS ${PADCIRC_COMPILER_FLAGS})
-    
-    SET_TARGET_PROPERTIES(templib_padcirc3 PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/padcirc_mod)
-    SET_TARGET_PROPERTIES(templib_padcirc3 PROPERTIES COMPILE_FLAGS ${PADCIRC_COMPILER_FLAGS})
-
-    SET_TARGET_PROPERTIES(padcirc PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/padcirc_mod)
-    SET_TARGET_PROPERTIES(padcirc PROPERTIES COMPILE_FLAGS ${PADCIRC_COMPILER_FLAGS})
-    
-    TARGET_INCLUDE_DIRECTORIES(templib_padcirc1  PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_padcirc2  PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_padcirc3  PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(padcirc           PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
-    
-    TARGET_INCLUDE_DIRECTORIES(templib_padcirc1  PRIVATE ${MPI_Fortran_INCLUDE_PATH})
-    TARGET_INCLUDE_DIRECTORIES(templib_padcirc2  PRIVATE ${MPI_Fortran_INCLUDE_PATH})
-    TARGET_INCLUDE_DIRECTORIES(templib_padcirc3  PRIVATE ${MPI_Fortran_INCLUDE_PATH})
-    TARGET_INCLUDE_DIRECTORIES(padcirc           PRIVATE ${MPI_Fortran_INCLUDE_PATH})
-
-    IF(NETCDF_WORKING AND NOT XDMF_WORKING)
-        TARGET_LINK_LIBRARIES(padcirc templib_padcirc3 templib_padcirc2 templib_padcirc1 
-                                      version mkdir netcdf netcdff ${MPI_Fortran_LIBRARIES})
-    ELSEIF(NETCDF_WORKING AND XDMF_WORKING)
-        TARGET_LINK_LIBRARIES(padcirc templib_padcirc3 templib_padcirc2 templib_padcirc1 
-                                      version mkdir netcdf netcdff XdmfCore XdmfUtils Xdmf
-                                      ${MPI_Fortran_LIBRARIES})
-    ELSE(NETCDF_WORKING AND NOT XDMF_WORKING)
-        TARGET_LINK_LIBRARIES(padcirc templib_padcirc3 templib_padcirc2 templib_padcirc1 
-                                      version mkdir ${MPI_Fortran_LIBRARIES})
-    ENDIF(NETCDF_WORKING AND NOT XDMF_WORKING)
-   
-    ADD_DEPENDENCIES(padcirc          templib_padcirc3)
-    ADD_DEPENDENCIES(templib_padcirc2 templib_padcirc1)
-    ADD_DEPENDENCIES(templib_padcirc3 templib_padcirc2)
-    ADD_DEPENDENCIES(templib_padcirc1 version)
-    ADD_DEPENDENCIES(templib_padcirc1 mkdir)
-    
-    INSTALL(TARGETS padcirc RUNTIME DESTINATION bin)
+    INSTALL(TARGETS padcirc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 ENDIF(BUILD_PADCIRC)

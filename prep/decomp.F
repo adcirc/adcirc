@@ -9,8 +9,7 @@ C
 C                     current for ADCIRC v43.03   5/20/2003
 C----------------------------------------------------------------------------
 C
-      SUBROUTINE DECOMP()
-      USE pre_global
+
 C
 C---------------------------------------------------------------------------C
 C                     (  Serial Version 1.1  5/04/99  )                     C
@@ -25,6 +24,9 @@ C   4/05/99 vjp  Fixed bugs in metis interface routine                      C
 C                                                                           C
 C---------------------------------------------------------------------------C
 C
+      SUBROUTINE DECOMP()
+      USE pre_global
+
       INTEGER N1, N2, N3, KMIN, VTMAX
       INTEGER I,J,JD,JG,JP,K,M,ITEMP,ITEMP2,IPR,IPR1,ICNT
       INTEGER ITOT,IEL,IELG,ILNODE,ILNODE2,IPROC,IPROC2
@@ -76,7 +78,10 @@ C  Add an element to the map if it has an resident node
               IMAP_EL_LG(NELP(I),I) = K
             ENDIF
          ENDDO
-         IF (NELP(I).GT.MNEP) STOP 'NELP(I) > MNEP'
+         IF (NELP(I).GT.MNEP) THEN
+             WRITE(*,'(A)') 'ERROR: NELP(I) > MNEP'
+             CALL EXIT(1)
+         ENDIF
       ENDDO
 
 C STEP 3:
@@ -94,7 +99,10 @@ C
             ENDDO
          ENDDO
          ITEMP = ITOT
-         IF (ITOT.GT.VTMAX) stop 'step3 decomp'
+         IF (ITOT.GT.VTMAX) THEN
+             WRITE(*,'(A)') "Error during step3 decomp"
+             CALL EXIT(1)
+         ENDIF
          CALL SORT(ITEMP,ITVECT) ! Sort and remove multiple occurrences
          ITOT = 1
          IMAP_NOD_LG(1,I) = ITVECT(1)
@@ -111,7 +119,10 @@ C
            ENDIF
          ENDDO
          NNODP(I) = ITOT
-         IF (NNODP(I).GT.MNPP) STOP 'NNODP > MNPP'
+         IF (NNODP(I).GT.MNPP) THEN
+             WRITE(*,'(A)') "ERROR:  NNODP > MNPP"
+             CALL EXIT(1)
+         ENDIF
       ENDDO
 c     print *, "Number of Nodes Assigned to PEs"
 c     DO I=1, NPROC
@@ -159,7 +170,10 @@ C        then make it and its dual a local Weir-node pair
 !Seizo 2008.07.14          ENDDO
            NWEIRP(I) = 0
            ITEMP = ITOT
-           IF (ITOT.GT.VTMAX) stop 'step4 decomp'
+           IF (ITOT.GT.VTMAX) THEN
+               WRITE(*,'(A)') 'Error during step4 decomp'
+               CALL EXIT(1)
+           ENDIF
            IF (ITEMP.GT.1) THEN
              CALL SORT(ITEMP,ITVECT)
              ITOT=1
@@ -236,7 +250,10 @@ c                 print *, K, PE1,PE2,PE3,INDX,INDX2
                   EL_SHARE(K) = I
                ENDIF
             ENDDO
-         IF (NELP(I).GT.MNEP) STOP 'NELP(I) > MNEP'
+         IF (NELP(I).GT.MNEP) THEN
+             WRITE(*,'(A)') "ERROR: NELP(I) > MNEP"
+             CALL EXIT(1)
+         ENDIF
 c           print *, "Number of elements on PE",I-1," = ",NELP(I)
 c           DO J = 1, NELP(I)
 c              print *, J, IMAP_EL_LG(J,I)
@@ -275,7 +292,10 @@ C
             ENDDO
          ENDDO
          ITEMP = ITOT
-         IF (ITOT.GT.VTMAX) stop 'step6 decomp'
+         IF (ITOT.GT.VTMAX) THEN
+             WRITE(*,'(A)') "Error during step6 decomp"
+             CALL EXIT(1)
+         ENDIF
          CALL SORT(ITEMP,ITVECT) ! Sort and remove multiple occurrences
          ITOT = 1
          IMAP_NOD_LG(1,I) = ITVECT(1)
@@ -292,7 +312,10 @@ C
            ENDIF
          ENDDO
          NNODP(I) = ITOT
-         IF (NNODP(I).GT.MNPP) STOP 'NNODP > MNPP'
+         IF (NNODP(I).GT.MNPP) THEN
+             WRITE(*,'(A)') "ERROR: NNODP > MNPP"
+             CALL EXIT(1)
+         ENDIF
       ENDDO
 c     print *, "Number of Nodes Assigned to PEs"
 c     DO I=1, NPROC
@@ -334,13 +357,15 @@ C
                      ! connectivity table
                      NNEP(M,J,I) = K+1
                   ELSE
-                     STOP 'ERROR IN IMAP_NOD_LG'
+                     WRITE(*,'(A)') 'ERROR IN IMAP_NOD_LG'
+                     CALL EXIT(1) 
                   ENDIF
                ELSEIF (K.GE.NNODP(I))THEN
                   IF (IMAP_NOD_LG(K,I).EQ.IG1) THEN
                      NNEP(M,J,I) = K
                   ELSE
-                     STOP 'ERROR IN IMAP_NOD_LG'
+                     WRITE(*,'(A)') 'ERROR IN IMAP_NOD_LG'
+                     CALL EXIT(1)
                   ENDIF
                ELSE
                   IF (IMAP_NOD_LG(K,I).EQ.IG1) THEN
@@ -348,7 +373,8 @@ C
                   ELSEIF (IMAP_NOD_LG(K+1,I).EQ.IG1) THEN
                      NNEP(M,J,I) = K+1
                   ELSE
-                     STOP 'ERROR IN IMAP_NOD_LG'
+                     WRITE(*,'(A)') 'ERROR IN IMAP_NOD_LG'
+                     CALL EXIT(1) 
                   ENDIF
                ENDIF
             ENDDO
@@ -386,7 +412,10 @@ C
          IF (ITEMP.EQ.0) THEN
             NUM_COMM_PE(I) = 0
          ELSE
-            IF (ITEMP.GT.VTMAX) stop 'step8 decomp'
+            IF (ITEMP.GT.VTMAX) THEN
+                WRITE(*,'(A)') "Error during step 8, decomp"
+                CALL EXIT(1) 
+            ENDIF
             ! sort the list of neighboring subdomains numbers in ascending order
             CALL SORT(ITEMP,ITVECT)
             ! set the first neighboring subdomain
@@ -407,7 +436,10 @@ C
             ! set the total number of neighbor subdomains for this
             ! subdomain
             NUM_COMM_PE(I) = ITOT
-            IF (NUM_COMM_PE(I).GT.MNPROC) STOP 'NUM_COMM_PE>MNPROC'
+            IF (NUM_COMM_PE(I).GT.MNPROC) THEN
+                WRITE(*,'(A)') "ERROR: NUM_COMM_PE>MNPROC"
+                CALL EXIT(1)
+            ENDIF
          ENDIF
       ENDDO
 
@@ -462,7 +494,7 @@ C  It works for both resident and ghost nodes
             IF (ITOTPROC(INDX).GT.MNPROC)THEN
               WRITE(6,*)'Some nodes belong to more processors',
      $                  ' than MNPROC'
-              STOP
+              CALL EXIT(1)
             ENDIF
             ITEMP = (ITOTPROC(INDX)-1)*2 + 1
             IMAP_NOD_GL2(ITEMP,INDX) = I
@@ -491,11 +523,147 @@ C
  92   FORMAT(1X,A6,1X,I9,2X,I9,4X,I9,2X,I9)
 C
       RETURN
-      END
+C----------------------------------------------------------------------
+      END SUBROUTINE DECOMP
+C----------------------------------------------------------------------
 
+C----------------------------------------------------------------------
+C----------------------------------------------------------------------
+      subroutine checkMappings(partitionOK,numPartitionAttempts)
+      use pre_global
+      implicit none
+      logical, intent(out) :: partitionOK 
+      integer, intent(in) :: numPartitionAttempts
+      integer i, ilnode, ilnode2, ilnode3, index2, indx, iproc, iproc2
+      integer iproc3, itemp, itemp2, j, jd, k
+      integer :: hbn ! hanging boundary node
+      !
+      ! NVELLP(K,PE) Number of Land Boundary Nodes of Segment K on PE
+      ! IMAP_NOD_GL2(2(PE-1)+1,I)  = PE assigned to Global Node I
+      ! IMAP_NOD_GL2(2(PE-1)+2,I)  = Local Node Number of Global Node I on PE
+      ! vjp modified array to drop last dimension to save memory space
+      ! LBINDEX_LG(K,I,PE) = Global Index of I-th Node on Land Boundary Segment K on PE
+      partitionOK = .true.
+      ! 
+      ! loop over subdomains
+      do iproc = 1,nproc
+         nvelp(iproc) = 0
+         nvellp(:) = 0   ! initialize number of nodes on each fulldomain boundary
+                         ! to zero for this subdomain
+         !
+         ! loop over full domain boundaries
+         do k = 1,nbou
+            select case(ibtype(k))
+            ! weir boundaries
+            case(4,24,5,25)
+               do i = 1,nvell(k)
+                  indx = nbvv(k,i)
+                  index2 = ibconnr(k,i)
+                  do j = 1,itotproc(indx)
+                     itemp = (j-1)*2 + 1
+                     iproc2  =  imap_nod_gl2(itemp,indx)
+                     ilnode2 =  imap_nod_gl2(itemp+1,indx)
+                     if (iproc.eq.iproc2) then
+                        do jd = 1, itotproc(index2)
+                           itemp2 = (jd-1)*2 + 1
+                           iproc3  = imap_nod_gl2(itemp2,index2)
+                           ilnode3 = imap_nod_gl2(itemp2+1,index2)
+                           if (iproc.eq.iproc3) then
+                              nvelp(iproc) = nvelp(iproc) + 1
+                              nvellp(k) = nvellp(k) + 1
+                              lbindex_lg(k,nvellp(k)) = i
+                              nbvvp(k,nvellp(k))   = ilnode2
+                              ibconnrp(k,nvellp(k)) = ilnode3
+                           endif
+                        enddo
+                     endif
+                  enddo
+               enddo
+            case default
+               ! for each node in this non-weir flux boundary 
+               do i = 1,nvell(k)
+                  ! find full domain node number
+                  indx = nbvv(k,i)
+                  ! iterate over the subdomains where this boundary
+                  ! node is found
+                  do j = 1,itotproc(indx)
+                     itemp = (j-1)*2 + 1
+                     ! look up subdomain number 
+                     iproc2 =  imap_nod_gl2(itemp,indx)
+                     ! look up node number in this subdomain                    
+                     ilnode =  imap_nod_gl2(itemp+1,indx)
+                     ! if the current subdomain matches this one
+                     if (iproc.eq.iproc2) then
+                        ! increment the total number of flux boundary nodes
+                        ! on this subdomain
+                        nvelp(iproc) = nvelp(iproc) + 1
+                        ! increment number of nodes from this boundary
+                        ! that occur in this subdomain
+                        nvellp(k) = nvellp(k) + 1
+                        ! add fulldomain node number for this boundary 
+                        ! and subdomain node array position on this boundary
+                        ! to mapping
+                        lbindex_lg(k,nvellp(k)) = i
+                        ! record subdomain node number for this boundary
+                        ! and subdomain boundary position  
+                        nbvvp(k,nvellp(k)) = ilnode
+                     endif
+                  enddo
+               enddo
+               !
+               ! @jasonfleming: it is possible for a single node of an 
+               ! island boundary to appear as a ghost node in a nearby
+               ! subdomain, and if this single node is the first node
+               ! on the fulldomain island boundary, it will also be the 
+               ! last node on the fulldomain boundary (because adcirc
+               ! requires island boundaries to be closed). As a result,
+               ! it can be erroneously translated as a two node subdomain
+               ! boundary with the same node number listed twice. 
+               if ( nvellp(k).eq.2 ) then
+                  if ( nbvvp(k,1).eq.nbvvp(k,2) ) then
+                     write(*,'(a)') 
+     &           'ERROR: Two node boundary with identical node numbers.'
+                     hbn = imap_nod_lg(nbvvp(k,1),iproc)
+                     boundaryWeights(hbn) = boundaryWeights(hbn) 
+     &                  + 1
+                     partitionOK = .false.
+                  endif
+               endif
+C
+            end select
+C
+         enddo  ! end loop over flux specified boundaries
+         !
+         ! @jasonfleming: it is possible for a single node of an 
+         ! land boundary to appear as a ghost node in a nearby
+         ! subdomain. 
+         do k=1, nbou
+            if (nvellp(k).eq.1) then
+               write(*,'(a,i0,a,i0,a)') 
+     &           'WARNING: The land boundary number ',k,
+     &           ' is only one node long in subdomain ',iproc,'.'
+               !hbn = imap_nod_lg(nbvvp(k,1),iproc)
+               !boundaryWeights(hbn) = boundaryWeights(hbn) + 1
+               ! @jasonfleming: large meshes decomposed on many
+               ! subdomains may never be able to avoid this without
+               ! smarter adjustments of the partition weights, so
+               ! the rejection of the partitioning as a result of
+               ! this condition is disabled for now. 
+               !select case (ibtype(k))
+               !case(0,20,30) ! zero flux land boundaries
+               !   partitionOK = .false. ! allow discrepancies here ?
+               !case default
+               !   partitionOK = .false.
+               !end select 
+            endif
+         enddo
 
-      SUBROUTINE DOMSIZE()
-      USE pre_global
+      end do ! end loop over subdomains
+
+C----------------------------------------------------------------------
+      end subroutine checkMappings
+C----------------------------------------------------------------------
+
 C
 C---------------------------------------------------------------------------C
 C                   (  Serial Version 1.0  12/20/99 vjp )                   C
@@ -505,6 +673,9 @@ C  nodes and elements assigned to any subdomain to determine MNPP and MNEP. C
 C                                                                           C
 C---------------------------------------------------------------------------C
 C
+      SUBROUTINE DOMSIZE()
+      USE pre_global
+
       INTEGER N1,N2,N3,VTMAX
       INTEGER I,J,K,M,ITEMP
       INTEGER ITOT,IEL,IELG,ILNODE,ILNODE2,IPROC
@@ -531,7 +702,7 @@ C
       MNEP = 0
 C
       DO 1000 IPROC=1, NPROC
-C
+
 C   STEP 1:
 C-- Use Partition of nodes to compute the number of Resident Nodes
 C   to be assigned to each processor.
@@ -596,7 +767,10 @@ C
          ENDDO
       ENDDO
       ITEMP = ITOT
-      IF (ITOT.GT.VTMAX) stop 'step3 decomp'
+      IF (ITOT.GT.VTMAX) THEN
+          WRITE(*,'(A)') "Error during step3 decomp"
+          CALL EXIT(1)
+      ENDIF
       CALL SORT(ITEMP,ITVECT) ! Sort and remove multiple occurrences
       ITOT = 1
       NODE_LG(1) = ITVECT(1)
@@ -650,7 +824,10 @@ C        then make it and its dual a local Weir-node pair
 !Seizo 2008.07.14       ENDDO
         NLWEIR  = 0
         ITEMP = ITOT
-        IF (ITOT.GT.VTMAX) stop 'step4 decomp'
+        IF (ITOT.GT.VTMAX) THEN
+            WRITE(*,'(A)') "Error during step 4 decomp"
+            CALL EXIT(1)  
+        ENDIF
         IF (ITEMP.GT.1) THEN
           CALL SORT(ITEMP,ITVECT)
           ITOT=1
@@ -675,7 +852,7 @@ c    &         " = ",NLWEIR
       IF (NLWEIR.GT.NWEIR) THEN
         print *, "error in domsize: "
         print *, "local number of weir-pairs exceeds total"
-        stop
+        CALL EXIT(1)
       ENDIF
 
 C STEP 5:
@@ -718,7 +895,10 @@ C
          ENDDO
       ENDDO
       ITEMP = ITOT
-      IF (ITOT.GT.VTMAX) stop 'step6 decomp'
+      IF (ITOT.GT.VTMAX) THEN
+          WRITE(*,'(A)') "Error during step6 decomp"
+          CALL EXIT(1)
+      ENDIF
       CALL SORT(ITEMP,ITVECT) ! Sort and remove multiple occurrences
       ITOT = 1
       NODE_LG(1) = ITVECT(1)
@@ -744,17 +924,9 @@ C
       print *, " Setting MNEP = ",MNEP
 C
       RETURN
-      END
-
-
-
-
-
-
-      SUBROUTINE SORT(N,RA)
-      IMPLICIT NONE
-      INTEGER N, L, IR, RRA, I, J
-      INTEGER RA(N)
+C----------------------------------------------------------------------
+      END SUBROUTINE DOMSIZE
+C----------------------------------------------------------------------
 C
 C---------------------------------------------------------------------------
 C  Sorts array RA of length N into ascending order using Heapsort algorithm.
@@ -762,6 +934,11 @@ C  N is input; RA is replaced on its output by its sorted rearrangement.
 C  Ref: Numerical Recipes
 C---------------------------------------------------------------------------
 C
+      SUBROUTINE SORT(N,RA)
+      IMPLICIT NONE
+      INTEGER N, L, IR, RRA, I, J
+      INTEGER RA(N)
+
       L = N/2 + 1
       IR = N
 10    CONTINUE
@@ -794,18 +971,22 @@ C
       ENDIF
       RA(I)=RRA
       GO TO 10
-      END
+C----------------------------------------------------------------------
+      END SUBROUTINE SORT
+C----------------------------------------------------------------------
 
-      SUBROUTINE LOCATE(XX,N,X,J)
-      IMPLICIT NONE
-      INTEGER JM,JL,JU,J,N,X,XX(N)
-C
+C----------------------------------------------------------------------
 C--Given an array XX of length N, and given a value X, returns a value J
 C--such that X is between XX(J) and XX(J+1). XX must be monotonic, either
 C--increasing or decreasing. J=0 or J=N is returned to indicate that X is out
 C--of range.
 C--
 C--NUMERICAL RECIPES - The Art of Scientific Computing [FORTRAN Version]
+C----------------------------------------------------------------------
+      SUBROUTINE LOCATE(XX,N,X,J)
+      IMPLICIT NONE
+      INTEGER JM,JL,JU,J,N,X,XX(N)
+C
 
 C--Initialize lower and upper limits
          JL = 0
@@ -827,8 +1008,13 @@ C--Repeat until the test condition 10 is satisfied.
 C--Then set the output and return.
          J = JL
          RETURN
-         END
+C----------------------------------------------------------------------
+         END SUBROUTINE LOCATE
+C----------------------------------------------------------------------
 
+
+C----------------------------------------------------------------------
+C----------------------------------------------------------------------
       SUBROUTINE SEARCH3(MAP,LENG,N1,N2,N3,INDX)
       INTEGER MAP(*),LENG,N1,N2,N3,INDX,IP
 cvjp  rewritten 5/3/99
@@ -841,8 +1027,13 @@ cvjp  rewritten 5/3/99
          ENDIF
       ENDDO
  99   RETURN
-      END
+C----------------------------------------------------------------------
+      END SUBROUTINE SEARCH3
+C----------------------------------------------------------------------
 
+
+C----------------------------------------------------------------------
+C----------------------------------------------------------------------
       SUBROUTINE SEARCH(MAP,N,TARGET,INDX)
       INTEGER MAP(*),N,TARGET,INDX,I
 C
@@ -855,4 +1046,6 @@ C
          ENDIF
       ENDDO
 99    RETURN
-      END
+C----------------------------------------------------------------------
+      END SUBROUTINE SEARCH
+C----------------------------------------------------------------------

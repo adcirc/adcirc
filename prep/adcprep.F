@@ -92,11 +92,10 @@ C
 C----------------------------------------------------------------------------
 C
       PROGRAM ADCPREP
-      USE GLOBAL, ONLY : screenUnit, myProc, initLogging, Rearth, deg2rad,
-     &   rad2deg
-      USE SIZES, ONLY : meshFileName, meshFileNameSpecified, meshType, 
+      USE GLOBAL, ONLY : screenUnit, initLogging, Rearth, deg2rad, rad2deg
+      USE SIZES, ONLY : meshFileName, meshFileNameSpecified, meshType,
      &  ASCII, XDMF, naFileNameSpecified, naFileName, naType, controlFileName,
-     &  controlType, controlFileNameSpecified, globaldir
+     &  controlType, controlFileNameSpecified, globaldir, myproc
       USE SUBPREP, ONLY : readFort015prep
       USE PRE_GLOBAL
       USE VERSION
@@ -111,7 +110,7 @@ C
 C
       ! set the names of the log levels for use in log messages
       call initLogging()
-      ! set the present working directory as the directory containing 
+      ! set the present working directory as the directory containing
       ! the fulldomain input files as the
       globaldir = '.'
 
@@ -136,19 +135,20 @@ C
       HOT_LOCAL   = .FALSE.
       HOT_GLOBAL  = .FALSE.
       PREP_20 = .FALSE.
+      strictBoundaries = .false.
       !PREP_88 = .FALSE.
       MNPROC = 0
 C
       ! jgf51.21.27: Add defaults for file types now that we support the
       ! loading of different file types.
       naType = ASCII
-      naFileNameSpecified = .false. 
+      naFileNameSpecified = .false.
       naFileName = 'fort.13'
       meshType = ASCII
       meshFileNameSpecified = .false.
       meshFileName = 'fort.14'
       controlType = ASCII
-      controlFileNameSpecified = .false. 
+      controlFileNameSpecified = .false.
       controlFileName = 'fort.15'
 C
 C--Init Memory Usage
@@ -178,12 +178,14 @@ C     having to do a prep all and without having to add menu items).
                PREP_20 = .TRUE.
 !            CASE("--prep88")
 !               PREP_88 = .TRUE.
+            CASE("--strict-boundaries")
+               strictBoundaries = .true.
             CASE("--np")
                I = I + 1
                CALL GETARG(I,CMDLINEARG)
                READ(CMDLINEARG,*) MNPROC
-            ! jgf51.21.27: Added options related to the mesh file 
-            case("-MFT","-mft","--MFT","--mft") ! mesh file type 
+            ! jgf51.21.27: Added options related to the mesh file
+            case("-MFT","-mft","--MFT","--mft") ! mesh file type
                   i = i + 1
                   call getarg(i, CMDLINEARG)
                   select case(trim(cmdlinearg))
@@ -199,9 +201,9 @@ C     having to do a prep all and without having to add menu items).
             case("-MFN","-mfn","--MFN","--mfn") ! mesh file name
                meshFileNameSpecified = .true.
                i = i + 1
-               call getarg(i,meshFileName)                                 
+               call getarg(i,meshFileName)
             ! jgf51.21.27: Added options related to the nodal attributes file
-            case("-NFT","-nft","--NFT","--nft") ! nodal attributes file type 
+            case("-NFT","-nft","--NFT","--nft") ! nodal attributes file type
                   i = i + 1
                   call getarg(i, CMDLINEARG)
                   select case(trim(cmdlinearg))
@@ -210,7 +212,7 @@ C     having to do a prep all and without having to add menu items).
                   case("XDMF","Xdmf","xdmf")
                      naType = XDMF
                   case default
-                     write(*,*) 
+                     write(*,*)
      &                   "WARNING: The nodal attributes file type '",
      &                   trim(cmdlinearg),
      &               "' is not valid. Valid types are ascii and xdmf."
@@ -218,7 +220,7 @@ C     having to do a prep all and without having to add menu items).
             case("--NFN","--nfn") ! nodal attributes file name
                   naFileNameSpecified = .true.
                   i = i + 1
-                  call getarg(i,naFileName)                                 
+                  call getarg(i,naFileName)
             case default
                   write(*,*) "WARNING: The command line option '",
      &                  trim(cmdlinearg),"' is not valid and will be ignored."
@@ -227,7 +229,7 @@ C     having to do a prep all and without having to add menu items).
          ! Conk out if MNPROC was not specified
          IF (MNPROC.EQ.0) THEN
             WRITE(*,*) "ERROR: MNPROC was not specified."
-            STOP
+            CALL EXIT(1)
          ELSE
             NPROC=MNPROC
          ENDIF
@@ -236,7 +238,7 @@ C     having to do a prep all and without having to add menu items).
          USE_DEFAULT = .TRUE.
          CALL PREPINPUT()
          call memory_status()
-         STOP
+         CALL EXIT(0)
       ENDIF
 
 C
@@ -334,7 +336,9 @@ C
       print *, " "
       call memory_status()
 
-      STOP
+      print *, "ADCPREP COMPLETED"
+
+      CALL EXIT(1)
 C---------------------------------------------------------------------------
       END PROGRAM ADCPREP
 C---------------------------------------------------------------------------
@@ -354,13 +358,15 @@ C
       USE PRE_GLOBAL
       use sizes, only : naType, meshType, controlType, ASCII, XDMF,
      &   naFileName, meshFileName, controlFileName, formatString
+      use global, only : logMessage, INFO, setMessageSource,
+     &   unsetMessageSource, DEBUG, allMessage
       use mesh, only : readMeshXDMF
       use subprep, only : subdomainOn, enforceBN, subPrep020, subPrep021,
      &   subPrep019
 !tcm v50.85
 #ifdef WINDOWS
       USE IFPORT
-#endif            
+#endif
       IMPLICIT NONE
 
       INTEGER I           ! loop counter for nodes, elements
@@ -368,10 +374,27 @@ C
       CHARACTER CMD*6     ! string to hold shell command
       CHARACTER PENUM*6   ! string to hold directory name
       CHARACTER DIRCMD*72 ! string to hold complete shell command line
-#ifdef WINDOWS      
+#ifdef WINDOWS
       logical(4) :: dir_result  !tcm v50.85
-      INTEGER :: dir_error   !tcm v50.85 
+      INTEGER :: dir_error   !tcm v50.85
 #endif
+      integer, parameter :: repartitionLimit = 100 ! give up after this
+      integer :: numPartitionAttempts ! number of attempts to partition mesh
+      logical :: partitionOK  ! true if partitioning has no issues
+      logical :: NPEBC  ! true if fort.19 exists and NOPE > 0
+C     DW
+      INTEGER:: JJ
+      LOGICAL:: F5354R
+C
+      call setMessageSource("prepinput")
+#if defined (PREPINPUT_TRACE) || defined (ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      CALL setMessageSource("prepinput")
+#if defined(ALL_TRACE)
+      CALL allMessage(DEBUG,"Enter")
+#endif      
 
 C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
       if (PREP_13) then
@@ -380,6 +403,15 @@ C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
         write(*,*) 'file for each PE.'
         CALL RELOCALIZE()
         CALL PREP13()
+C================= DW, for sponge layer
+        IF ( prep5354flag ) THEN
+           CALL PREP5354( 53001 ) 
+           CALL PREP5354( 54001 ) 
+        END IF
+        IF ( prep2001flag ) THEN
+           CALL PREP20( .true. ) 
+        END IF
+C=================
         GO TO 9999
       endif
 
@@ -398,8 +430,8 @@ C
       select case(meshType)
       case(ASCII)
          call sizeup14()
-         if ( (partition.eqv..false.) .and. 
-     &        (hot_local.eqv..false.) .and. 
+         if ( (partition.eqv..false.) .and.
+     &        (hot_local.eqv..false.) .and.
      &        (hot_global.eqv..false.) ) then
             call sizeup15()
          endif
@@ -413,7 +445,7 @@ C
       case default
          write(6,'(a,i0,a)') 'ERROR: The mesh type ',meshType,
      &     ' is invalid'
-         stop
+         CALL EXIT(1)
       end select
       print *, 'Global Grid file read successfully.'
       !
@@ -435,7 +467,7 @@ C
          write(30,'(a)') trim(formatString(controlType))
          write(30,'(a)') 'controlFileName'
          write(30,'(a)') trim(controlFileName)
-         close(30)      
+         close(30)
       endif
 
 C--   If ONLY localizing Run Info File ( fort.15 )
@@ -465,18 +497,60 @@ C   -- initially read in within the READ14() subroutine.
             WRITE(*,*)
      &         "INFO: Decomposing fort.20 (variable flux) file."
             CALL RELOCALIZE()
-            CALL PREP20()
+            CALL PREP20( .false. )
             GOTO 9999
          endif
       ENDIF
 C
 C-- Partition Nodes with METIS 4.0 Graph Partition Library
 C
-      IF (PARTITION) THEN
-        CALL METIS()
-        print *, " "
-        print *, 'INFO: METIS has partitioned nodes'
-        GO TO 9999
+      if (partition) then
+         numPartitionAttempts = 0
+         allocate(boundaryWeights(mnp))
+         boundaryWeights(:) = 0
+         call metis()
+         if (strictBoundaries.eqv..true.) then
+            ! check for issues with subdomain boundaries
+            partitionOK = .false.
+            ! loop ends when the partitioning is successful or
+            ! the limit on the number of attempts has been reached
+            do
+               write(*,'(a,a)') 'INFO: Determining max number of nodes ',
+     &             'and elements on any subdomain.'
+               call domsize()
+               write(*,'(a)')
+     &            'INFO: Allocating subdomain mesh mapping arrays.'
+               call alloc_main2()
+               write(*,'(a)')
+     &            'INFO: Constructing subdomain mesh mapping arrays.'
+               call decomp()
+               write(*,'(a)')
+     &            'INFO: Checking subdomain mesh mapping arrays.'
+               call checkMappings(partitionOK,numPartitionAttempts)
+               if (partitionOK.eqv..true.) then
+                  exit
+               else
+                  numPartitionAttempts = numPartitionAttempts + 1
+                  write(*,'(a,i0,a)') 'INFO: Partitioning attempt ',
+     &            numPartitionAttempts,' contains mapping array issues.'
+                  write(*,'(a,i0,a)')
+     &            'INFO: The limit on partitioning attempts is ',
+     &            repartitionLimit,'.'
+                  write(*,'(a)')
+     &            'INFO: Modifying partition weights and trying again.'
+                  call dealloc_main2()
+               endif
+               if ( numPartitionAttempts.gt.repartitionLimit ) then
+                  write(*,'(a,i0,a)')
+     &              'ERROR: Mesh partitioning has failed after ',
+     &               repartitionLimit,' attempts.'
+                  CALL EXIT(1)
+               endif
+               call metis()
+            end do
+         endif
+         print *, 'INFO: METIS has partitioned nodes successfully.'
+         return
       ELSE
         print *, 'INFO: Opening file partmesh.txt'
         OPEN(990,FILE='partmesh.txt')
@@ -486,6 +560,12 @@ C           print *," PROC for ",I," = ", PROC(I)
         ENDDO
         CLOSE(990)
         print *, 'INFO: Closed partmesh.txt file.'
+        IF (minval(PROC).eq.0) then
+           write(6,*) 'Adding 1 to the PEs'
+           DO I = 1, MNP
+              PROC(I) = PROC(I) + 1
+           ENDDO
+        ENDIF
       ENDIF
 C
 C-- Read the Global Input File ( Unit 15 )
@@ -558,11 +638,11 @@ C
             CASE(2)
                print *, "Error Creating ",PENUM,
      &               ". The file or path specified was not found."
-               stop
+               CALL EXIT(1)
             CASE(13)
                print *, "Error Creating ",PENUM,".  Access Denied."
-               stop
-            CASE(17) 
+               CALL EXIT(1)
+            CASE(17)
                print *, PENUM," already exists."
             CASE DEFAULT
             END SELECT
@@ -635,6 +715,42 @@ C
         write(*,*) 'Writing subdomain Nodal Attributes (unit 13)'
         write(*,*) 'file for each PE.'
         CALL PREP13()
+C================= DW, for sponge layer
+        IF ( prep5354flag ) THEN
+           F5354R = .FALSE.
+           DO JJ = 1, NWP
+              IF ( (TRIM(useNodalAttrNames(JJ)) .eq. 
+     &             "sponge_generator_layer" ) ) THEN
+                 F5354R = .TRUE.
+                 PRINT*, "Prepping 5354" 
+                 EXIT 
+              END IF
+           END DO       
+           IF ( F5354R ) THEN
+              CALL PREP5354( 53001 ) 
+              CALL PREP5354( 54001 ) 
+           END IF
+        END IF
+        IF ( prep2001flag ) THEN
+           F5354R = .FALSE.
+           DO JJ = 1, NWP
+              IF ( (TRIM(useNodalAttrNames(JJ)) .eq. 
+     &             "sponge_generator_layer" ) ) THEN
+                 F5354R = .TRUE.
+                 PRINT*, "Prepping 2001" 
+                 EXIT 
+              END IF
+           END DO       
+           IF ( F5354R ) THEN
+              CALL PREP20( .true. ) 
+           END IF
+        END IF
+        IF ( prep5354flag .or. prep2001flag ) THEN
+           if (allocated(useNodalAttrNames)) then
+              DEALLOCATE(useNodalAttrNames)
+           endif
+        ENDIF 
+C=================
       endif
 C
 C-- If required write a Local fort.19 file for each PE
@@ -646,9 +762,13 @@ C
           if (enforceBN.eq.2) call subprep021() ! NCSU Subdomain
       else                                       ! NCSU Subdomain
          IF (PREP_ALL) THEN
-            IF ((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN
-               print *, "Ready to Write Local UNIT 19 File for each PE"
-               CALL PREP19()
+            IF (NOPE.GT.0) THEN
+               ! WJP 03.27.2018 checking if fort.19 exists or not
+               INQUIRE(FILE='fort.19',exist=NPEBC)
+               IF (NPEBC) THEN
+                 print *, "Write Local UNIT 19 File for each PE"
+                 CALL PREP19()
+               ENDIF
             ENDIF
          ENDIF
       endif ! NCSU Subdomain
@@ -659,7 +779,7 @@ C   -- initially read in within the READ14() subroutine.
 C
       IF (PREP_ALL) THEN
          if (EXIST_FLUX .ne. 0 .and. APERIODIC_FLOW_BC) then
-            CALL PREP20()
+            CALL PREP20( .false. )
          endif
       ENDIF
 C
@@ -669,13 +789,16 @@ C
 C     sb46.28sb01 NWS=12 doesn't need fort.22 decomposition
 C     tcm_v49.04 NWS=3 and NWS=6 no longer need fort.22 decomposition
 C     jgf49.0804 NWS=29 does not need fort.22 decomposition.
+C     jgf: Added NWS=30 and changed to select/case.
 C     tcm v51.06.02 added NWS=16 GFDL Met Data
-!         IF (NWS.NE.0.AND.ABS(NWS).NE.12)  THEN
-         IF ((NWS.NE.0).AND.(ABS(NWS).NE.3).AND.
-     &      (ABS(NWS).NE.6).AND.(ABS(NWS).NE.12)
-     &      .AND.(ABS(NWS).NE.16).AND.(ABS(NWS).NE.17)    !saeed added for 17 
-     &      .AND.(ABS(NWS).NE.29))  THEN
-            print *, "Ready to Write Local UNIT 22 File for each PE"
+c     arc added nws13 190110
+         select case(ABS(NWS))
+         case(3,6,12,13,16,29,30)
+            call logMessage(INFO,
+     & 'The meteorological data does not require domain decomposition.')
+         case(1,2,4,5,45,7)
+            call logMessage(INFO,
+     &   'Ready to write subdomain fort.22 files.')
 C     jgf46.00 Added NWS=7
 C     jgfdebug46.02 Added NWS=45
 C     jgf46.02 Added NWS=8
@@ -684,14 +807,11 @@ C     cf & cm added NWS=9: asymmetric hurricane wind model
 C     rjw added NWS=19: asymmetric hurricane wind model v2.0
 C     jie added NWS=20: generalized asymmetric vortex model
 c     tcm_v49.04 NWS=3 and NWS=6 no longer need fort.22 decomposition
-            IF((NWS.EQ.1).OR.(ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.
-     &           (ABS(NWS).EQ.5).OR.(NWS.EQ.7).OR.
-     &           (ABS(NWS).EQ.45).and.(NWS.ne.17)  ) THEN   !saeed added for 17 
-               CALL PREP22()
-c           ELSEIF (NWS.EQ.10.OR.NWS.EQ.11) THEN
-c              CALL PREP200()
-            ENDIF
-         ENDIF
+            CALL PREP22()
+         case default
+            call logMessage(INFO,
+     &         'Subdomain fort.22 files will not be created.')
+         end select
       ENDIF
 C
 C-- If required write a Local Wave Stress file for each PE
@@ -759,9 +879,12 @@ C  kmd48.33bc add information for 3D baroclinic simulations
          END IF
       END IF
 
+C     WP 02.23.2018 Added to process the fort.24 SAL term file
+      IF (PREP_ALL) THEN
+         IF (NTIP.eq.2) CALL PREP24()
+      END IF
 C
 C-- Save domain-decomposition information for post-processor
-C
 CC -- Start Addition by CF  8/2007
       IF (PREP_ALL) THEN
          print *, "Writing domain-decomposition file for post-processor"
@@ -772,6 +895,10 @@ CC -- Finish Addition by CF
 9999  CONTINUE
       print *, ""
       print *, "INFO: Finished pre-processing input files."
+#if defined(PREPINPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
       END SUBROUTINE
 C---------------------------------------------------------------------------

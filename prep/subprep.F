@@ -55,7 +55,7 @@ C   NCSU Subdomain Modeling variables:
          call openFileForRead(15,'fort.15',ioerror)
          if (ioerror.ne.0) then
             call allMessage(ERROR,'Failed to open fort.15 file.')
-            stop
+            CALL EXIT(1)
          endif
          !
          ! jgf51.42: Add a namelist for the user to control subdomain
@@ -86,7 +86,7 @@ C   NCSU Subdomain Modeling variables:
                close(1015)
             else
                call allMessage(ERROR,'The fort.015 file was not found.')
-               stop
+               CALL EXIT(1)
             endif
          endif
 
@@ -148,7 +148,7 @@ C   NCSU Subdomain Modeling variables:
          logical success
 
          call openFort019prep()
-         call subOpenPrep(19,'subdomain boundary conditions ',
+         call subOpenPrep(1019,'subdomain boundary conditions ',
      &        1,nproc, SDU, Success)
 
 
@@ -256,7 +256,7 @@ C   NCSU Subdomain Modeling variables:
          logical success
 
          call openFort020prep()
-         call subOpenPrep(20,'subdomain boundary conditions ',
+         call subOpenPrep(1020,'subdomain boundary conditions ',
      &        1,nproc, SDU, Success)
 
 
@@ -372,7 +372,7 @@ C   NCSU Subdomain Modeling variables:
          logical success
 
          call openFort021prep()
-         call subOpenPrep(21,'subdomain boundary conditions ',
+         call subOpenPrep(1021,'subdomain boundary conditions ',
      &        1,nproc, SDU, Success)
 
 
@@ -444,36 +444,36 @@ C     NCSU SUBDOMAIN: modified to handle "fort.019"
 C---------------------------------------------------------------------------
       USE PRE_GLOBAL, only : nproc
       IMPLICIT NONE
-      INTEGER :: UnitNumber     ! i/o unit number to open 
+      INTEGER, intent(in) :: UnitNumber     ! i/o unit number to open
       CHARACTER(len=30), intent(in) :: Description ! description of file
       INTEGER, intent(in) :: startProc        ! subdomains to start with
       INTEGER, intent(in) :: endProc          ! subdomain to end on
       INTEGER, intent(out), dimension(nproc) :: SDU ! Subdomain unit numbers
       LOGICAL, intent(out):: Success     ! .true. if files opened w/o errors
+
       LOGICAL Found               !.true. if the full domain file exists
-      CHARACTER(len=80) FileName   ! name of full domain file
+      CHARACTER(len=80) FileName  ! name of full domain file
       CHARACTER(len=8) DefaultName! default name of full domain file  !NCSU SUBDOMAIN
       INTEGER ErrorIO             ! zero if file opened successfully
       INTEGER iproc               ! subdomain index
+      INTEGER UnitNumberIn
       CHARACTER(len=15) sdFileName     ! subdomain file name  !NCSU SUBDOMAIN
 
       Found = .false.
       Success = .false.
       ErrorIO = 1
+      UnitNumberIn = UnitNumber
 
       ! NCSU Subdomain: 
-      if (UnitNumber.eq.19) then     
+      if (UnitNumberIn.eq.1019) then
           DefaultName= 'fort.019'    
           FileName = 'fort.019'      
-          UnitNumber = 1019
-      else if (UnitNumber.eq.20) then
+      else if (UnitNumberIn.eq.1020) then
           DefaultName= 'fort.020'    
           FileName = 'fort.020' 
-          UnitNumber = 1020
-      else if (UnitNumber.eq.21) then
+      else if (UnitNumberIn.eq.1021) then
           DefaultName= 'fort.021'
           FileName = 'fort.021'
-          UnitNumber = 1021
       endif
 
 C
@@ -483,7 +483,7 @@ C
 C     If it does exist, open it
       IF ( FOUND ) THEN
          WRITE(*,1011) FileName !found
-         OPEN(UNIT=UnitNumber, FILE=FileName, IOSTAT=ErrorIO)
+         OPEN(UNIT=UnitNumberIn, FILE=FileName, IOSTAT=ErrorIO)
          Success = .true.
          IF ( ErrorIO .GT. 0 ) THEN
             WRITE(*,*) "ERROR: Full domain file exists but"

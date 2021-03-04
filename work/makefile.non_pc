@@ -33,7 +33,7 @@ ifeq ($(BUILDTYPE),adcprep)
   O_DIR:=odir1/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
   VPATH :=  ../prep 
-  LIBS  :=  -L odir_metis -lmetis
+  LIBS  :=  -Lodir_metis -lmetis
   PMSG_OBJ:=
 endif
 #                                      adcprep_be
@@ -42,7 +42,7 @@ ifeq ($(BUILDTYPE),adcprep_be)
   O_DIR:=odir2/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
   VPATH :=  ../prep 
-  LIBS  := -L odir_metis_be -lmetis_be
+  LIBS  := -Lodir_metis_be -lmetis_be
   PMSG_OBJ:=
 endif
 #                                      adcirc   

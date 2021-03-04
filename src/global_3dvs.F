@@ -23,42 +23,59 @@ C...
      &     MYProc,
      &     INPUTDIR,
      &     LOCALDIR
-
+     
       USE GLOBAL,
      &     ONLY :
-     &       WSX1, WSY1,                   !WSX1(MNP),WSY1(MNP) = Wind stress components at time level s
-     &       WSX2, WSY2,                   !WSX2(MNP),WSY2(MNP) = Wind stress components at time level s+1
-     &       BSX => BSX1, BSY => BSY1,     !BSX(MNP),BSY(MNP) = bottom stress computed after velocity solution
-     &       UU => UU2, VV => VV2,         !UU(MNP),VV(MNP) = vertically averaged velocity components
-     &       DAFluxX => QX2, DAFluxY => QY2,
-     &       DUU => DUU1, DUV => DUV1, DVV => DVV1,   !DUU(MNP),DVV(MNP),DUV(MNP) = velocity dispersion terms
+     &       WSX1, WSY1,     !WSX1(MNP),WSY1(MNP) = Wind stress components at time level s
+     &       WSX2, WSY2,     !WSX2(MNP),WSY2(MNP) = Wind stress components at time level s+1
      &       DASigT,
-     &       ETA1, ETA2,                   !ETA1(MNP),ETA2(MNP) = water surf elev at time levels s, s+1
-     &       CORIF,                        !CORIF(MNP) = nodal values of Coriolis parameter
-     &       BTP => MOM_LV_X,              !BTP(MNP) = barotropic pressure (incl TP & wl) at time levels s+1/2
-     &       QNORMSP1 => QN2,              !QNORMSP1(MNVel) = specified normal flux boundary condition at time level s+1
+     &       ETA1, ETA2,     !ETA1(MNP),ETA2(MNP) = water surf elev at time levels s, s+1
+     &       CORIF,          !CORIF(MNP) = nodal values of Coriolis parameter
      &       IFNLCT,                       !nonlinear advection flag (1=yes, 0=no) (jgf45.11)
 Corbitt 120328: Apply Advection Locally
-     &       IFNLCTE,                      !Global nonlinear advection flag (1=yes, 0=no)
-     &       IFNLFA,                       !nonlinear finite amplitude flag (1=yes,0=no) (jgf45.11)
-     &       NScreen,                      !flag to suppress or allow screen output
-     &       ScreenUnit,                   !i/o for screen output
-     &       IHOT,                         !flag to specify if coldstart (=0) or hotstart file to read from (63 or 64)
-     &       IHOTSTP,                      !hotstart file record counter
+     &       IFNLCTE,        !Global nonlinear advection flag (1=yes, 0=no)
+     &       IFNLFA,         !nonlinear finite amplitude flag (1=yes,0=no) (jgf45.11)
+     &       NScreen,        !flag to suppress or allow screen output
+     &       ScreenUnit,     !i/o for screen output
+     &       IHOT,           !flag to specify if coldstart (=0) or hotstart file to read from (63 or 64)
+     &       IHOTSTP,        !hotstart file record counter
      &       NWS,
-     &       IDen,                         !flag telling whether salinity, temperature and/or sigmaT are being used
+     &       IDen,           !flag telling whether salinity, temperature and/or sigmaT are being used
      &       RhoWat0, SigT0, G,
      &       RUNDES, RDES4, RDES8,
      &       RUNID, RID4, RID8,
      &       CBaroclinic,
      &       C3DVS,
-     &       DelT => DTDP,                 !DelT = altername for timestep real(8)
-     &       DTDP,                         !DTDP = timestep declared as real(8)
+     &       DTDP,           !DTDP = timestep declared as real(8)
      &       allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
-     &       setMessageSource, unsetMessageSource
+     &       setMessageSource, unsetMessageSource, mom_lv_x
+
+      USE BOUNDARIES,ONLY:NETA,NVEL
+      IMPLICIT NONE
+
       SAVE
 
 C...DECLARE 3D GLOBAL ARRAYS
+
+      ! jgf: Explicitly declare pointer variables instead of assigning
+      ! them in the USE GLOBAL, ONLY statement above.
+      ! BSX(MNP),BSY(MNP) = bottom stress computed after velocity solution
+      REAL(SZ), POINTER :: BSX(:)  ! => BSX1
+      REAL(SZ), POINTER :: BSY(:)  ! => BSY1
+      ! UU(MNP),VV(MNP) = vertically averaged velocity components
+      REAL(SZ), POINTER :: UU(:)   ! => UU2
+      REAL(SZ), POINTER :: VV(:)   ! => VV2
+      REAL(SZ), POINTER :: DAFluxX(:)   ! => QX2
+      REAL(SZ), POINTER :: DAFluxY(:)   ! => QY2
+      ! DUU(MNP),DVV(MNP),DUV(MNP) = velocity dispersion terms
+      REAL(SZ), POINTER :: DUU(:)       ! => DUU1
+      REAL(SZ), POINTER :: DUV(:)       ! => DUV1
+      REAL(SZ), POINTER :: DVV(:)       ! => DVV1
+      ! BTP(MNP) = barotropic pressure (incl TP & wl) at time levels s+1/2
+      REAL(SZ), POINTER :: BTP(:)       ! => MOM_LV_X
+      ! QNORMSP1(MNVel) = specified normal flux boundary condition at time level s+1
+      REAL(SZ), POINTER :: QNORMSP1(:)  ! => QN2
+      REAL(SZ), POINTER :: DelT    !DelT = altername for timestep real(8)                
 
 c.RJW merged 9/02/2008 Casey 071219: Added the following variable for cumulative mass balance.
       REAL(SZ) :: MASSCUM
@@ -78,6 +95,15 @@ c.RJW merged 9/02/2008 Casey 071219: Added the following variable for cumulative
       REAL(SZ),ALLOCATABLE,TARGET :: L(:,:)         !  L(MNP,NFEN): turbulent length scale computed by Mellor-Yamada L2.5 closure, all nodes
       REAL(SZ),ALLOCATABLE,TARGET :: EV(:,:)        !  EV(MNP,NFEN): Vertical eddy viscosity, all nodes
 
+! arash 12/08/2015: variables for biharmonic viscosity operator
+      COMPLEX(SZ),ALLOCATABLE  :: Biharmonic_auxiliary_var(:,:)         ! since we need to compute the Laplacian twice, we need an auxiliary variable to store the first Laplacian for U and V.
+! arash 12/21/2015: variables for modified Leith viscosity
+      COMPLEX(SZ),ALLOCATABLE  :: d_dx_q_nodes (:,:), d_dy_q_nodes (:,:)
+! arash 01/04/2016: biharmonic for transport equation
+      Real(SZ),Allocatable  :: Biharmonic_viscosity_modified_Leith (:,:)
+      Real(SZ),ALLOCATABLE  :: Biharmonic_auxiliary_var_SalOrTemp (:,:)
+      Real(SZ),ALLOCATABLE  :: d_dx_SalOrTemp_nodes (:,:), d_dy_SalOrTemp_nodes (:,:)
+
 C     kmd45.12 Added in variables for transport
 
       REAL(SZ),ALLOCATABLE :: Gammatrans(:)  !  Gammatrans(NFEN): horizontal transport soln for a specific node
@@ -94,11 +120,16 @@ C     kmd45.12 Added in the variables for saving 3D velocities for two
 C     time levels
 
       COMPLEX(SZ),ALLOCATABLE  :: Qkp1(:,:) !  Qkp1(MNP,NFEN): horiz vel in the complex form u+iv for all nodes at the future time level
+!arash 2016 Mar 22
+      COMPLEX(SZ),ALLOCATABLE  :: Qkm1(:,:) !  Qkm1(MNP,NFEN): horiz vel in the complex form u+iv for all nodes at the previous time level
+      REAL(SZ),ALLOCATABLE :: WZkm1(:,:)    !  WZkm1(MNP,NFEN): "z" vertical velocity at all nodes for the previous time level
+
       REAL(SZ),ALLOCATABLE :: WZkp1(:,:)    !  WZkp1(MNP,NFEN): "z" vertical velocity at all nodes for the future time level
 
 !     kmd45.12 added in for baroclinic changes
 
       COMPLEX(SZ), ALLOCATABLE :: BPG(:,:)
+      COMPLEX(SZ), ALLOCATABLE :: BPG_nodes(:,:)
 
 C     kmd48.33bc - added these variables for the vertical diffusion terms in the transport equation
 C              Note: terms used when vertical eddy viscosity is defined from Mellor-Yamada
@@ -310,6 +341,14 @@ C
 C     Allocate space for arrays used in 3D VS routines
 C
       SUBROUTINE ALLOC_3DVS()
+      USE GLOBAL, ONLY : DUU1, DUV1, DVV1, BSX1, BSY1, UU2, VV2,
+     &   QX2, QY2, QN2
+      USE BOUNDARIES, ONLY : NETA, NVEL
+      IMPLICIT NONE
+      ! jgf: Moved the following line from alloc_main1a since it only 
+      ! applies to 3D.
+      ALLOCATE(DUU1(MNP),DUV1(MNP),DVV1(MNP),
+     &        BSX1(MNP),BSY1(MNP))
       ALLOCATE( SIGMA(NFEN), EVTOT(NFEN) )
       ALLOCATE( GAMMA(NFEN), INM(NFEN,3), LVN(NFEN) )
       ALLOCATE( Q(MNP,NFEN), WZ(MNP,NFEN) )
@@ -318,9 +357,21 @@ C
       ALLOCATE( Q20(MNP,NFEN), L(MNP,NFEN), EV(MNP,NFEN) )
       ALLOCATE( Gammatrans(NFEN) )
       ALLOCATE( Qkp1(MNP,NFEN), WZkp1(MNP,NFEN) )
+! arash 2016 Mar 22
+      ALLOCATE( Qkm1(MNP,NFEN), WZkm1(MNP,NFEN) )
+
       ALLOCATE( SALkp1(MNP,NFEN), TEMPkp1(MNP,NFEN) )
       ALLOCATE( qsurfkp1(MNP), qsurf(MNP) )
       ALLOCATE( BPG(MNP,NFEN) )
+! arash
+      ALLOCATE( Biharmonic_auxiliary_var(MNP,NFEN) )
+      ALLOCATE( d_dx_q_nodes(MNP,NFEN), d_dy_q_nodes(MNP,NFEN) )
+! arash 01/04/2016
+      Allocate( Biharmonic_viscosity_modified_Leith (MNP,NFEN) ) 
+      ALLOCATE( Biharmonic_auxiliary_var_SalOrTemp (MNP,NFEN) )
+!      ALLOCATE( d_dx_SalOrTemp_nodes (MNP,NFEN), d_dy_SalOrTemp_nodes (MNP,NFEN) )
+
+!      ALLOCATE( BPG_nodes(MNP,NFEN) )
 C   kmd48.33bc - allocate arrays
       ALLOCATE( NTVTot(NFEN), DV(MNP,NFEN) )
       ALLOCATE( RESSAL(NETA,NFEN), RESSAL1(NETA,NFEN) )
@@ -333,6 +384,22 @@ C   kmd - add arrays for river boundary condition in baroclinic simulation
       ALLOCATE( BCRivSal(NVEL,NFEN), BCRivSalN1(NVEL,NFEN) )
       ALLOCATE( BCRivSalN2(NVEL,NFEN), BCRivTemp(NVEL,NFEN) )
       ALLOCATE( BCRivTempN1(NVEL,NFEN), BCRivTempN2(NVEL,NFEN) )
+      !
+      ! jgf: Assign pointers explicitly here after memory allocation 
+      ! for targets in 2DDI code instead of assigning them in the 
+      ! USE GLOBAL, ONLY statement above.  
+      BSX => BSX1
+      BSY => BSY1
+      UU => UU2
+      VV => VV2
+      DAFluxX => QX2
+      DAFluxY => QY2
+      DUU => DUU1
+      DUV => DUV1
+      DVV => DVV1
+      BTP => MOM_LV_X  
+      QNORMSP1 => QN2   
+
       RETURN
       END SUBROUTINE ALLOC_3DVS
 
@@ -340,6 +407,7 @@ C
 C     Allocate space for arrays used in 3D Density station output
 C
       SUBROUTINE ALLOC_3DSD()
+      IMPLICIT NONE
       ALLOCATE( NE3DD(MNSta3DD) )
       ALLOCATE( StaI3DD1(MNSta3DD), StaI3DD2(MNSta3DD),
      &                              StaI3DD3(MNSta3DD) )
@@ -355,6 +423,7 @@ C
 C     Allocate space for arrays used in 3D Velocity station output
 C
       SUBROUTINE ALLOC_3DSV()
+      IMPLICIT NONE
       ALLOCATE( NE3DV(MNSta3DV) )
       ALLOCATE( StaI3DV1(MNSta3DV), StaI3DV2(MNSta3DV),
      &                              StaI3DV3(MNSta3DV) )
@@ -369,6 +438,7 @@ C
 C     Allocate space for arrays used in 3D Turbulence station output
 C
       SUBROUTINE ALLOC_3DST()
+      IMPLICIT NONE
       ALLOCATE( NE3DT(MNSta3DT) )
       ALLOCATE( StaI3DT1(MNSta3DT), StaI3DT2(MNSta3DT),
      &                              StaI3DT3(MNSta3DT) )
@@ -503,7 +573,7 @@ c
      &           '  0=Terminate/1=continue. ****'
             write(screenunit,*) '  '
             read(*,*) ians
-            if(ians.ne.1) stop
+            if(ians.ne.1) CALL EXIT(1)
             num = nfen/2
          else
             num=(nfen-1)/2
@@ -557,7 +627,7 @@ c
      &   /,'choices for specifying the vertical grid spacing in 3D.',
      &   /,'Please specify a value for igc from 0 to 6.',
      &   /,'**ADCIRC run terminated due to bad value for igc.**')
-         stop
+         CALL EXIT(1)
 
       end select
 

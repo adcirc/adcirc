@@ -25,6 +25,8 @@ ENDIF(PERL_FOUND)
 IF(MPI_FOUND)
     OPTION(BUILD_ADCPREP  "Build the MPI parallel ADCIRC preprocessor" OFF)
     OPTION(BUILD_PADCIRC  "Build the MPI parallel ADCIRC executable" OFF)
+    OPTION(BUILD_LIBADCIRC_STATIC   "Build the static library version of ADCIRC" OFF)
+    OPTION(BUILD_LIBADCIRC_SHARED   "Build the shared library version of ADCIRC" OFF)
     IF(PERL_FOUND)
         OPTION(BUILD_PADCSWAN "Build the MPI parallel SWAN+ADCIRC executable" OFF)
         OPTION(BUILD_PUNSWAN  "Build the MPI parallel unstructured SWAN executable" OFF)
@@ -33,6 +35,8 @@ ENDIF(MPI_FOUND)
 
 OPTION(BUILD_ASWIP "Build ASWIP (ASymmetric Wind Input Preprocessor)")
 OPTION(BUILD_UTILITIES "Build the ADCIRC utility programs" OFF)
+OPTION(ENABLE_GRIB2 "Use GRIB2API static libraries." OFF)
+OPTION(ENABLE_DATETIME "Use DATETIME static libraries." OFF)
 ###########################################################################
 
 
@@ -46,22 +50,14 @@ MARK_AS_ADVANCED(CLEAR CMAKE_CXX_FLAGS_DEBUG CMAKE_C_FLAGS_DEBUG CMAKE_Fortran_F
 
 ###########################################################################
 #...Library paths
-IF(ENABLE_OUTPUT_NETCDF)
-    IF(NOT "$ENV{NETCDFHOME}" STREQUAL "") 
-        SET(NETCDFHOME "$ENV{NETCDFHOME}" CACHE STRING "netCDF home path containing lib and include")
-    ELSE(NOT "$ENV{NETCDFHOME}" STREQUAL "")
-        SET(NETCDFHOME "NETCDF-NOTFOUND" CACHE STRING "netCDF home path containing lib and include")
-    ENDIF(NOT "$ENV{NETCDFHOME}" STREQUAL "")
-ELSE(ENABLE_OUTPUT_NETCDF)
-    UNSET(NETCDFHOME CACHE)
-ENDIF(ENABLE_OUTPUT_NETCDF)
-
 IF(ENABLE_OUTPUT_XDMF)
-    IF(NOT "$ENV{XDMFHOME}" STREQUAL "") 
-        SET(XDMFHOME "$ENV{XDMFHOME}" CACHE STRING "XDMF home path containing lib and include")
-    ELSE(NOT "$ENV{XDMFHOME}" STREQUAL "")
+    IF(NOT ${XDMFHOME} STREQUAL "")
+        SET(XDMFHOME ${XDMFHOME} CACHE STRING "XDMF home path containing lib and include")
+    ELSEIF(NOT $ENV{XDMFHOME} STREQUAL "") 
+        SET(XDMFHOME $ENV{XDMFHOME} CACHE STRING "XDMF home path containing lib and include")
+    ELSE(NOT ${XDMFHOME} STREQUAL "")
         SET(XDMFHOME "XDMF-NOTFOUND" CACHE STRING "XDMF home path containing lib and include")
-    ENDIF(NOT "$ENV{XDMFHOME}" STREQUAL "")
+    ENDIF(NOT ${XDMFHOME} STREQUAL "")
 ELSE(ENABLE_OUTPUT_XDMF)
     UNSET(XDMFHOME CACHE)
 ENDIF(ENABLE_OUTPUT_XDMF)
@@ -85,16 +81,13 @@ SET(ADDITIONAL_FLAGS_UTLIITIES "" CACHE STRING "Additional flags for utility pro
 #...Options enabled via compiler flags within the code
 OPTION(ENABLE_WARN_ELEV_DEBUG "Enable writing of the fort.69 debug file" OFF)
 
-IF(BUILD_ADCSWAN OR BUILD_PADCSWAN)
-    OPTION(ENABLE_SWAN_MODIFIED_FRICTION "Enable Ethan/Joannes' modified friction" OFF)
-ENDIF(BUILD_ADCSWAN OR BUILD_PADCSWAN)
-
 OPTION(IBM    "Format code for IBM based architectures"    OFF)
 OPTION(SGI    "Format code for SGI based architectures"    OFF)
 OPTION(SUN    "Format code for SUN based architectures"    OFF)
 OPTION(CRAY   "Format code for CRAY based architectures"   OFF)
 OPTION(CRAYX1 "Format code for CRAYX1 based architectures" OFF)
 MARK_AS_ADVANCED(IBM SGI SUN CRAY CRAYX1)
+
 
 OPTION(DEBUG_FULL_STACK "Write the detailed stack trace during debugging" OFF)
 OPTION(DEBUG_FLUSH_MESSAGES "Do not allow caching of screen printed messages" OFF)
@@ -133,3 +126,6 @@ MARK_AS_ADVANCED(ENABLE_POWELL)
 
 OPTION(VECTOR_COMPUTER "Assume the system is a vector computer" OFF)
 MARK_AS_ADVANCED(VECTOR_COMPUTER)
+
+OPTION(ADCIRC_NOF2008 "The fortran compiler being used does not have F2008 intrinsics" OFF )
+MARK_AS_ADVANCED(ADCIRC_NOF2008)

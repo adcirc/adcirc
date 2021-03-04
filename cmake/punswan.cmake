@@ -36,58 +36,39 @@ IF(BUILD_PUNSWAN AND PERL_FOUND)
                                ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SwanPunCollect.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SwanSumOverNodes.f90 
                                ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SwanMinOverNodes.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SwanMaxOverNodes.f90 
                                ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/ocpids.f ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/ocpcre.f 
-                               ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/ocpmix.f )
+                               ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/ocpmix.f ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SdsBabanin.f90  
+                               ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SwanGradVel.f90 )
 
-    SET( MSGLIB_SOURCES  src/sizes.F KDTREE2/kdtree2.F 
-                         src/global.F src/boundaries.F src/global_3dvs.F
-                           src/messenger.F )
+    SET( MSGLIB_SOURCES  ${CMAKE_SOURCE_DIR}/src/sizes.F 
+                         ${CMAKE_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F 
+                         ${CMAKE_SOURCE_DIR}/src/global.F 
+                         ${CMAKE_SOURCE_DIR}/src/boundaries.F 
+                         ${CMAKE_SOURCE_DIR}/src/global_3dvs.F
+                         ${CMAKE_SOURCE_DIR}/src/messenger.F )
     
     ADD_LIBRARY(templib_punmsglib ${MSGLIB_SOURCES})
     ADD_LIBRARY(templib_punswan1  ${SWANONLY1_PARALLEL_SOURCES})
     ADD_EXECUTABLE(punswan        ${SWANONLY2_PARALLEL_SOURCES})
 
     #...SWAN Configuration
-    IF(WIN32)
-        ADD_CUSTOM_COMMAND( OUTPUT ${SWANONLY1_PARALLEL_SOURCES} ${SWANONLY2_PARALLEL_SOURCES}
-            COMMAND ${PERL} switch.pl -pun -unix *.ftn *.ftn90
-            COMMAND if not exist \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source\" mkdir \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source\"
-            COMMAND move /y *.f \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/.\"
-            COMMAND move /y *.f90 \"${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/.\"
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
-            COMMENT "Generating Serial SWAN Sources..."
-        )  
-    ELSE(WIN32)
-        ADD_CUSTOM_COMMAND( OUTPUT ${SWANONLY1_PARALLEL_SOURCES} ${SWANONLY2_PARALLEL_SOURCES}
-            COMMAND ${PERL} switch.pl -pun -unix *.ftn *.ftn90
-            COMMAND mkdir -p ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source
-            COMMAND mv *.f *.f90 ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/.
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/swan
-            COMMENT "Generating Parallel unSWAN Sources..."
-        )
-    ENDIF(WIN32)
+    swanConfigureParallel()
+
+    addCompilerFlags(templib_punmsglib)
+    addCompilerFlagsSwan(templib_punswan1 ${ADDITIONAL_FLAGS_SWAN})
+    addCompilerFlagsSwan(punswan ${ADDITIONAL_FLAGS_SWAN})
+
+    addLibVersion(templib_punmsglib)
+    addLibVersion(punswan)
+    addMPI(templib_punmsglib)
+    addMPI(templib_punswan1)
+    addMPI(punswan)
 
     SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source)
-    
-    IF( NOT ${ADDITIONAL_FLAGS_SWAN} STREQUAL "" )
-        SET_TARGET_PROPERTIES(punswan1       PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_SWAN})
-        SET_TARGET_PROPERTIES(punswan        PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_SWAN})
-    ENDIF()
-    
-    SET_TARGET_PROPERTIES(templib_punswan1  PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/punswan_mod)
-    SET_TARGET_PROPERTIES(templib_punmsglib PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/punswan_mod)
-    SET_TARGET_PROPERTIES(punswan           PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/punswan_mod)
-    
-    SET(MSGLIB_COMPILER_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG} ${PRECISION_FLAG} ${SWAN_FLAG} ${ADCIRC_MPI_FLAG} ${ADCIRC_OPTION_FLAGS}")
-    SET_TARGET_PROPERTIES(templib_punmsglib PROPERTIES COMPILE_FLAGS ${MSGLIB_COMPILER_FLAGS})
-    
-    TARGET_INCLUDE_DIRECTORIES(punswan           PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/punswan_mod)
-    TARGET_INCLUDE_DIRECTORIES(punswan           PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(punswan           PRIVATE ${MPI_Fortran_INCLUDE_PATH})
-    TARGET_INCLUDE_DIRECTORIES(templib_punswan1  PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_punswan1  PRIVATE ${MPI_Fortran_INCLUDE_PATH})
-    TARGET_INCLUDE_DIRECTORIES(templib_punmsglib PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/version_mod)
-    TARGET_INCLUDE_DIRECTORIES(templib_punmsglib PRIVATE ${MPI_Fortran_INCLUDE_PATH})
 
+    TARGET_INCLUDE_DIRECTORIES(templib_punswan1 PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_punmsglib)
+    TARGET_INCLUDE_DIRECTORIES(punswan          PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_punswan1)
+    TARGET_INCLUDE_DIRECTORIES(punswan          PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_punmsglib)
+    
     TARGET_LINK_LIBRARIES(punswan templib_punmsglib templib_punswan1 mkdir ${MPI_Fortran_LIBRARIES})
 
     ADD_DEPENDENCIES(templib_punmsglib templib_punswan1)
@@ -96,6 +77,6 @@ IF(BUILD_PUNSWAN AND PERL_FOUND)
     ADD_DEPENDENCIES(templib_punmsglib version)
     ADD_DEPENDENCIES(templib_punmsglib mkdir)
     
-    INSTALL(TARGETS punswan RUNTIME DESTINATION bin)
+    INSTALL(TARGETS punswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 ENDIF(BUILD_PUNSWAN AND PERL_FOUND)

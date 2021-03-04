@@ -42,6 +42,7 @@ C
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
+      ALLOCATE(labels_g(NP_G))
       ALLOCATE(ETA1_g(NP_G))
       ALLOCATE(ETA2_g(NP_G))
       ALLOCATE(UU2_g(NP_G))
@@ -308,8 +309,13 @@ C! CMPI
         iglobal = descript % imap(i)
         if (istart <= iglobal .and. iglobal <= iend) then
           j = 2*(iglobal - ioffset) - 1
-          buf(j)     = descript % array(i)
-          buf(j + 1) = descript % array2(i)
+          if(descript%considerWetDry.and.nodecode(i).eq.0)then
+            buf(j)     = descript % alternate_value
+            buf(j + 1) = descript % alternate_value
+          else
+            buf(j)     = descript % array(i)
+            buf(j + 1) = descript % array2(i)
+          endif
         end if
       end do
 
@@ -595,6 +601,206 @@ C
       !--------------------------------------------------------------
       end subroutine open_minmax_file
       !--------------------------------------------------------------
+      
+      
+      !--------------------------------------------------------------
+      !      S U B R O U T I N E  W R I T E   F U L L  F O R M A T
+      !--------------------------------------------------------------
+      ! Subroutine to write full format ASCII output files
+      !--------------------------------------------------------------
+      subroutine writeFullFormat(descript, TimeLoc, it, write_cmd)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      type (OutputDataDescript_t) :: descript
+      real(8), intent(in) :: TimeLoc
+      integer, intent(in) :: it
+      external write_cmd   
+#ifdef CMPI
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+      integer      :: ierr, status(MPI_STATUS_SIZE), request
+      integer      :: nGWetNodes
+      integer      :: iglobal
+#endif
+      integer      :: nLWetNodes
+      integer      :: num, i, j, k
+      integer, save:: tagbase = 6000
+      integer      :: iproc
+      integer      :: bufsize, ibucket
+      integer      :: istart, iend, tag
+
+      call setMessageSource("writeFullFormat")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
+
+      ! serial or writing local files
+      if ((mnproc.eq.1).or.(WRITE_LOCAL_FILES)) then
+         open(descript%lun, file=trim(descript%file_name), 
+     &       access='SEQUENTIAL', position='APPEND')
+         write(descript%lun, 1101) TimeLoc, it
+         call write_cmd(descript % lun, descript, 1, descript % num_records_this)
+         close(descript % lun)
+#ifdef GLOBALIO_TRACE
+         call allMessage(DEBUG,"Return")
+#endif
+         call unsetMessageSource()
+         return
+      else
+#ifdef CMPI
+   
+         if (myproc == 0) then
+           open(descript%lun, file=trim(descript%file_name), 
+     &         access='SEQUENTIAL', position='APPEND')
+           write(descript%lun, 1101) TimeLoc, it
+         endif
+   
+         bufsize = min(BUFSIZE_MAX,
+     &       descript % num_items_per_record * descript % num_fd_records)
+         num     = bufsize / descript % num_items_per_record
+         iend    = num
+         istart  = 1
+   
+         if (tagbase == 5000) then
+           tagbase = 6000
+         else
+           tagbase = 5000
+         endif
+         ibucket = 0
+   
+         do while (istart < iend)
+   
+           !------------------------------------------------------------
+           ! Initialize
+           !------------------------------------------------------------
+           buf(:)  = descript % initial_value
+           ibucket = ibucket + 1
+           tag     = tagbase + mod(ibucket, 8)
+   
+           call write_cmd(descript%lun, descript, istart, iend)
+           if(descript%isInteger)then
+               call mpi_reduce(integerbuffer, integerresultBuffer, bufsize, mpi_int, MPI_SUM, 0,
+     &       COMM, ierr)
+           else
+               call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM, 0,
+     &       COMM, ierr)
+           endif
+           if (myproc == 0) then
+             do i = istart, iend
+               j = 1 + (i-istart)*descript % num_items_per_record
+   
+               if(descript%isInteger)then
+                 write(descript % lun, 1001) labels_g(i), (integerResultBuffer(k), k = j, j +
+     &              descript % num_items_per_record - 1)
+               else
+                 write(descript % lun, 1000) labels_g(i), (resultBuf(k), k = j, j +
+     &              descript % num_items_per_record - 1)
+               endif
+             end do
+           end if
+   
+           istart = iend + 1
+           iend   = min(istart + num - 1, descript % num_fd_records)
+           num    = iend - istart + 1
+         end do
+         if (myproc == 0) then
+           close(descript%lun)
+         endif
+#endif
+      endif
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
+ 1000 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
+ 1001 FORMAT(2x, i8, 2x, i8, 2X, i8, 2X, i8, 2X, i8) 
+ 1100 FORMAT(2x,1pE20.10E3,5X,I10)
+ 1101 FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)
+      !--------------------------------------------------------------
+      end subroutine writeFullFormat
+      !--------------------------------------------------------------
+
+
+      !--------------------------------------------------------------
+      !      S U B R O U T I N E  W R I T E   B I N A R Y F O R M A T 
+      !--------------------------------------------------------------
+      ! Subroutine to write binary format output files
+      !--------------------------------------------------------------
+      subroutine writeBinaryFormat(descript,timeloc,it)
+         use global
+         use sizes
+         implicit none
+         type(outputdatadescript_t),intent(in) :: descript
+         integer,intent(in)                    :: it
+         real(sz)                              :: timeloc
+         integer                               :: i
+
+         IF ( (MNPROC.gt.1).and.(MyProc.eq.0)
+     &         .and.(.not.WRITE_LOCAL_FILES)) THEN
+            OPEN(descript%lun,FILE=trim(descript%file_name),
+     &           ACCESS='DIRECT',RECL=NBYTE)
+            WRITE(descript % lun,REC=descript % filepos+1) TimeLoc
+            WRITE(descript % lun,REC=descript % filepos+2) IT
+            descript%filepos = descript%filepos + 2
+            IF ( descript % num_items_per_record .eq. 1 ) THEN
+               DO I=1, descript % num_fd_records
+                  WRITE(descript % lun,REC=descript % filepos+I)
+     &               descript % array_g(I)
+               END DO
+            ENDIF
+            IF ( descript % num_items_per_record .eq. 2 ) THEN
+               DO I=1, descript % num_fd_records
+                  WRITE(descript % lun,REC=descript % filepos+2*I-1)
+     &                descript % array_g(I)
+                  WRITE(descript % lun,REC=descript % filepos+2*I)
+     &                descript % array2_g(I)
+               END DO
+            ENDIF
+            CLOSE(descript%lun)
+         ENDIF
+
+         IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES)) THEN
+            OPEN(descript % lun,FILE=TRIM(descript % file_name),
+     &           ACCESS='DIRECT',RECL=NBYTE)
+            WRITE(descript % lun,REC=descript % filepos+1) TimeLoc
+            WRITE(descript % lun,REC=descript % filepos+2) IT
+            descript % filepos = descript % filepos + 2
+            IF ( descript % num_items_per_record .eq. 1 ) THEN
+               IF ((trim(descript % field_name) .eq. 'Elev').and.
+     &             (descript % ConsiderWetDry .EQV. .TRUE.)) THEN
+                  DO I=1, descript % num_records_this
+                     if(NODECODE(I).EQ.1) THEN
+                        WRITE(descript % lun,REC=descript % filepos+I) descript % array(I)
+                     ELSE
+                        WRITE(descript % lun,REC=descript % filepos+I)
+     &                    descript % alternate_value !-99999.0 for dry nodes
+                     ENDIF
+                  END DO
+               ELSE
+                  DO I=1, descript % num_records_this
+                     WRITE(descript % lun,REC=descript % filepos+I) descript % array(I)
+                  END DO
+               ENDIF
+            ENDIF
+            IF ( descript % num_items_per_record .eq. 2 ) THEN
+               DO I=1, descript % num_records_this
+                  !tcmv48.4618 -- changed from array_g to array
+                  WRITE(descript % lun,REC=descript % filepos+2*I-1) descript % array(I)
+                  !tcmv48.4618 -- changed from array2_g to array2
+                  WRITE(descript % lun,REC=descript % filepos+2*I)   descript % array2(I)
+               END DO
+            ENDIF
+            CLOSE(descript % lun)
+         ENDIF
+         descript % filepos = descript % filepos + descript % num_records_this
+         return
+      !--------------------------------------------------------------
+      end subroutine writeBinaryFormat 
+      !--------------------------------------------------------------
 
 
       !--------------------------------------------------------------
@@ -615,9 +821,10 @@ C
       include 'mpif.h'
 #endif
       integer      :: ierr, status(MPI_STATUS_SIZE), request
-      integer      :: nLWetNodes, nGWetNodes
+      integer      :: nGWetNodes
       integer      :: iglobal
 #endif
+      integer      :: nLWetNodes
       integer      :: num, i, j, k
       integer, save:: tagbase = 6000
       integer      :: iproc
@@ -633,7 +840,26 @@ C
       if ((mnproc.eq.1).or.(WRITE_LOCAL_FILES)) then
          open(descript%lun, file=trim(descript%file_name), 
      &       access='SEQUENTIAL', position='APPEND')
-         write(descript%lun, 1100) TimeLoc, it
+         nLWetNodes=0
+         do i=1,np
+            if(descript%considerWetDry)then
+                if(nodecode(i) == 0)cycle
+                nLWetNodes=nLWetNodes+1
+            else
+                if(descript%num_items_per_record==1)then
+                    if(descript%isInteger)then
+                        if(descript%iarray(i)==int(descript%alternate_value))cycle
+                    else
+                        if(descript%array(i)==descript%alternate_value)cycle
+                    endif
+                elseif(descript%num_items_per_record==2)then
+                    if(descript%array(i)==descript%alternate_value .and.
+     &                 descript%array2(i)==descript%alternate_value)cycle
+                endif
+                nLWetNodes=nLWetNodes+1
+            endif
+         enddo
+         write(descript%lun, 1101) TimeLoc, it, nLWetNodes, descript%alternate_value
          call write_cmd(descript % lun, descript, 1, descript % num_records_this)
          close(descript % lun)
 #ifdef GLOBALIO_TRACE
@@ -648,7 +874,20 @@ C
          do i=1,np
             iglobal = descript%imap(i)
             if(iglobal.le.0) cycle ! cycle if node i is ghost
-            if(nodecode(i) == 0) cycle ! cycle if node i is dry
+            if(descript%considerWetDry)then
+                if(nodecode(i) == 0) cycle ! cycle if node i is dry
+            else
+                if(descript%num_items_per_record==1)then
+                    if(descript%isInteger)then
+                        if(descript%iarray(i)==int(descript%alternate_value))cycle
+                    else
+                        if(descript%array(i)==descript%alternate_value)cycle
+                    endif
+                elseif(descript%num_items_per_record==2)then
+                    if(descript%array(i)==descript%alternate_value .AND.
+     &                 descript%array2(i)==descript%alternate_value)cycle
+                endif
+            endif
             nLWetNodes=nLWetNodes+1
          enddo
          call mpi_reduce(nLWetNodes, nGWetNodes, 1, MPI_INTEGER,
@@ -690,9 +929,14 @@ C
                j = 1 + (i-istart)*descript % num_items_per_record
    
                !If values are eqaul to the default value, skip this node
-               if(resultBuf(j).eq.descript % alternate_value) cycle
+               if(descript%num_items_per_record.eq.2)then
+                   if(resultBuf(j  ).eq.descript % alternate_value .and.
+     &                resultBuf(j+1).eq.descript % alternate_value) cycle
+               else
+                   if(resultBuf(j).eq.descript % alternate_value) cycle
+               endif
    
-               write(descript % lun, 1000) i, (resultBuf(k), k = j, j +
+               write(descript % lun, 1000) labels_g(i), (resultBuf(k), k = j, j +
      &           descript % num_items_per_record - 1)
              end do
            end if
@@ -719,14 +963,6 @@ C
       end subroutine writeSparse
       !--------------------------------------------------------------
 
-      !--------------------------------------------------------------
-      ! These are the store, header routines. For each file (fort.61, ...)
-      ! that is being globalize, there is a pair of routines : header61 and
-      ! store61 etc.  The header routine writes out the header once
-      ! and the store routine copies the data (heights, velocities, etc)
-      ! to the buffer in parallel mode or in serial mode it just write out
-      ! the data to file.
-      !--------------------------------------------------------------
 
 
       !--------------------------------------------------------------
@@ -739,15 +975,55 @@ C
       subroutine storeOne(lun, descript, istart, iend)
       USE SIZES
       USE GLOBAL
+      USE MESH,ONLY:labels
       implicit none
 
       type (OutputDataDescript_t) :: descript
       integer :: i, istart, iend, iglobal, lun
       integer :: ioffset
 
-      if (WRITE_LOCAL_FILES) then
+      if (mnproc.eq.1.or.WRITE_LOCAL_FILES) then
          do i = 1, descript % num_records_this
-            write(lun , 1000) i, descript % array(i)
+            if(ABS(descript % specifier)==SPARSE_ASCII)then
+                if(descript%considerWetDry)then
+                    if(nodecode(i)==0)cycle
+                    if(descript%isInteger)then
+                        write(lun , 1001) labels(i), descript % iarray(i)
+                    else
+                        write(lun , 1000) labels(i), descript % array(i)
+                    endif
+                else
+                    if(descript%isInteger)then
+                        if(descript%iarray(i)==int(descript%alternate_value))cycle
+                        write(lun , 1001) labels(i), descript % iarray(i)
+                    else
+                        if(descript%array(i)==descript%alternate_value)cycle
+                        write(lun , 1000) labels(i), descript % array(i)
+                    endif
+                endif
+            else
+                if((.not.descript%isStation).and.descript%considerWetDry)then
+                    if(nodecode(i)==0)then
+                        if(descript%isInteger)then
+                            write(lun, 1001) labels(i), int(descript % alternate_value)
+                        else
+                            write(lun, 1000) labels(i), descript % alternate_value
+                        endif
+                    else
+                        if(descript%isInteger)then
+                            write(lun, 1001) labels(i), descript % iarray(i)
+                        else
+                            write(lun, 1000) labels(i), descript % array(i)
+                        endif
+                    endif
+                else
+                    if(descript%isInteger)then
+                        write(lun , 1001) labels(i), descript % iarray(i)
+                    else
+                        write(lun , 1000) labels(i), descript % array(i)
+                    endif
+                endif
+            endif
          end do
          return
       end if
@@ -757,13 +1033,26 @@ C
       do i = 1, descript % num_records_this
          iglobal = descript % imap(i)
          if (istart <= iglobal .and. iglobal <= iend) then
-            buf(iglobal-ioffset) = descript % array(i)
+            if(descript%isInteger)then
+                if((.not.descript%isStation).and.descript%considerWetDry.AND.nodecode(i)==0)then
+                    integerbuffer(iglobal-ioffset) = int(descript % alternate_value)
+                else
+                    integerbuffer(iglobal-ioffset) = descript % iarray(i)
+                endif
+            else
+                if((.not.descript%isStation).and.descript%considerWetDry.AND.nodecode(i)==0)then
+                    buf(iglobal-ioffset) = descript % alternate_value
+                else
+                    buf(iglobal-ioffset) = descript % array(i)
+                endif
+            endif
          end if
       end do
 #endif
 
       return
  1000 format(2x, i8, 2x, 1pE20.10E3)
+ 1001 format(2x, i8, 2x, i10)
       !--------------------------------------------------------------
       end subroutine storeOne
       !--------------------------------------------------------------
@@ -780,16 +1069,28 @@ C
       subroutine storeTwo(lun, descript, istart, iend)
       USE SIZES
       USE GLOBAL
+      USE MESH,ONLY:labels
       implicit none
 
       type (OutputDataDescript_t) :: descript
       integer :: i, istart, iend, iglobal, lun
       integer :: ioffset, j
 
-      if (WRITE_LOCAL_FILES) then
+      if (mnproc.eq.1.or.WRITE_LOCAL_FILES) then
         do i = 1, descript % num_records_this
-          write(lun , 1000) i, descript % array(i),
-     $      descript % array2(i)
+            if(abs(descript%specifier)==SPARSE_ASCII) then
+               if((.not.descript%isStation).and.descript%considerWetDry.AND.nodecode(i)==0) cycle
+               write(lun , 1000) labels(i), descript % array(i),
+     &              descript % array2(i)
+            else
+               if((.not.descript%isStation).and.descript%considerWetDry.AND.nodecode(i)==0) then
+                 write(lun, 1000) labels(i), descript % alternate_value,
+     &              descript % alternate_value
+               else
+                 write(lun, 1000) labels(i), descript % array(i),
+     &              descript % array2(i)
+               endif
+            endif
         end do
         return
       end if
@@ -800,8 +1101,13 @@ C
         iglobal = descript % imap(i)
         if (istart <= iglobal .and. iglobal <= iend) then
           j = 2*(iglobal - ioffset) - 1
-          buf(j)     = descript % array(i)
-          buf(j + 1) = descript % array2(i)
+          if((.not.descript%isStation).and.descript%considerWetDry.AND.nodecode(i)==0)then
+              buf(j)     = descript % alternate_value
+              buf(j + 1) = descript % alternate_value
+          else
+              buf(j)     = descript % array(i)
+              buf(j + 1) = descript % array2(i)
+          endif
         end if
       end do
 #endif
@@ -809,6 +1115,15 @@ C
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3)
       !--------------------------------------------------------------
       end subroutine storeTwo
+      !--------------------------------------------------------------
+      
+      !--------------------------------------------------------------
+      ! These are the store, header routines. For each file (fort.61, ...)
+      ! that is being globalize, there is a pair of routines : header61 and
+      ! store61 etc.  The header routine writes out the header once
+      ! and the store routine copies the data (heights, velocities, etc)
+      ! to the buffer in parallel mode or in serial mode it just write out
+      ! the data to file.
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
@@ -1109,54 +1424,74 @@ C
       ! eventually replace the header subroutines "headerXX" for
       ! station files.
       !--------------------------------------------------------------
-      subroutine writeStationHeader(lun, numSta, typeStr)
-      USE SIZES
-      USE GLOBAL
+      subroutine writeStationHeader(lun, filename, numSta_g, numSta, typeStr)
+      USE SIZES, only : globaldir, localdir, write_local_files, myproc
+      USE GLOBAL, only : rundes, runid
+      use mesh, only : agrid
       use global_3dvs, only:
      &     ndset3dsv, nspo3dsv, nfen,
      &     ndset3dst, nspo3dst,
      &     ndset3dsd, nspo3dsd
       implicit none
-      integer lun               ! logical unit number to write to
-      integer numSta            ! number of stations to write
-      character(len=10) typeStr ! the type of header to write
+      integer, intent(in) :: lun               ! logical unit number to write to
+      character(*), intent(in) :: filename     ! name of file to create
+      integer, intent(in) :: numSta    ! number of stations in subdomain in parallel
+      integer, intent(in) :: numSta_g  ! number of fulldomain stations in parallel 
+      character(len=*), intent(in) :: typeStr ! the type of header to write
+      integer :: nstations
 
+C     Open the file
+      open(lun, file=filename, status='UNKNOWN')
       write(lun, 1000) rundes, runid, agrid
-
+      
+C     Unless we are processor 0 or we are supposed to write local
+C     files, there is nothing to do but *** RETURN EARLY ***
+      if ( (myproc.ne.0).and.(.not.WRITE_LOCAL_FILES) ) return
+C
+C     Set the appropriate number of nodes
+      if ( (myproc.eq.1).or.(WRITE_LOCAL_FILES) ) then
+         nstations = numSta
+      else
+         nstations = numSta_g
+      endif
+C    
       select case(trim(typeStr))
       case("Elev")
-          write(lun, 1010) ntrspe, numSta, dtdp*nspoole, nspoole, 1,
+          write(lun, 1010) ntrspe, nstations, dtdp*nspoole, nspoole, 1,
+     &         FileFmtVersion
+      case("offset")
+          write(lun, 1010) ntrspe, nstations, dtdp*nspoole, nspoole, 1,
      &         FileFmtVersion
       case("Vel2D")
-          write(lun, 1010) ntrspv, numSta, dtdp*nspoolv, nspoolv, 2,
+          write(lun, 1010) ntrspv, nstations, dtdp*nspoolv, nspoolv, 2,
      &         FileFmtVersion
       case("Vel3D")
-          write(lun, 1020) ndset3dsv, numSta, dtdp*nspo3dsv,
+          write(lun, 1020) ndset3dsv, nstations, dtdp*nspo3dsv,
      &         nspo3dsv, nfen, 3, FileFmtVersion
       case("Turb3D")
-          write(lun, 1020) ndset3dst, numSta, dtdp*nspo3dst,
+          write(lun, 1020) ndset3dst, nstations, dtdp*nspo3dst,
      &         nspo3dst, nfen, 3, FileFmtVersion
       case("Dens2D")
           write(ScreenUnit,*)
      &         'ERROR: 2D density station output not implemented.'
-          stop
+          CALL EXIT(1)
       case("Dens3D")
-          write(lun, 1020) ndset3dsd, numSta, dtdp*nspo3dsd,
+          write(lun, 1020) ndset3dsd, nstations, dtdp*nspo3dsd,
      &         nspo3dsd, nfen, 3, FileFmtVersion
       case("Press","Wind")
-          write(lun, 1010) ntrspm, numSta, dtdp*nspoolm, nspoolm, 1,
+          write(lun, 1010) ntrspm, nstations, dtdp*nspoolm, nspoolm, 1,
      &                 FileFmtVersion
       case("Conc2D")
-          write(lun, 1010) ntrspc, numSta, dtdp*nspoolc, nspoolc, 1,
+          write(lun, 1010) ntrspc, nstations, dtdp*nspoolc, nspoolc, 1,
      &                  FileFmtVersion
       case("Conc3D")
           write(ScreenUnit,*)
      &         'ERROR: 3D conc. station output not implemented.'
-          stop
+          CALL EXIT(1)
       case default
           write(ScreenUnit,*)
      &         'ERROR: Station header type unrecongnized.'
-          stop
+          CALL EXIT(1)
       end select
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1190,7 +1525,7 @@ C
       character(*) filename     ! name of file to create
       integer numNodes          ! number of nodes in this domain
       integer numNodes_g        ! number of nodes in the full domain
-      character(len=10) typeStr ! the type of header to write
+      character(len=*) typeStr ! the type of header to write
       integer nodes             ! number of nodes to write into header
 C
 C     Unless we are processor 0 or we are supposed to write local
@@ -1226,7 +1561,7 @@ C     Open the file
       case("Dens2D")
           write(ScreenUnit,*)
      &         'ERROR: 2D density output not implemented.'
-          stop
+          CALL EXIT(1)
       case("Dens3D")
           write(lun, 1020) ndset3dgd, nodes, dtdp*nspo3dgd,
      &                     nspo3dgd, nfen, 3, FileFmtVersion
@@ -1236,11 +1571,11 @@ C     Open the file
       case("Conc2D")
           write(ScreenUnit,*)
      &         'ERROR: 2D conc. output not implemented.'
-          stop
+          CALL EXIT(1)
       case("Conc3D")
           write(ScreenUnit,*)
      &         'ERROR: 3D conc. output not implemented.'
-          stop
+          CALL EXIT(1)
       case("Tau0")
           write(lun, 1010) ndsetse, nodes, dtdp*nspoolge,
      &                 nspoolge, 1, FileFmtVersion
@@ -1255,6 +1590,9 @@ C     Open the file
      &                 nspoolge, 1, FileFmtVersion
       case("initDry")
           write(lun, 1010) 1, nodes, 0.d0, 0, 1, FileFmtVersion
+      case("dynamicWaterlevelCorrection")
+          write(lun, 1010) 1, nodes, dtdp*nspoolge, nspoolge, 1, 
+     &    FileFmtVersion
       case default
           write(ScreenUnit,*)
      &         'ERROR: Full domain header type unrecongnized.'
@@ -1515,7 +1853,7 @@ C
       if ( ios.ne.0 ) then
          fileFound = .false.
          write(scratchMessage,3333) trim(descript % file_name)
-3333    format('Values from ',(a),
+3333     format('Values from ',(a),
      &       ' will not reflect the solution prior to this hotstart.')
          call allMessage(INFO,scratchMessage)
          if (descript % minmax_timestamp.eqv..true.) then 
@@ -1529,6 +1867,10 @@ C
          return  ! early return
       else
          fileFound = .true.
+         write(scratchMessage,3334) trim(descript % file_name)
+3334     format('Values from ',(a),
+     &       ' will be reflected from the solution prior to this hotstart.')
+         call allMessage(INFO,scratchMessage)
       endif
       !
       ! serial 
@@ -1589,7 +1931,7 @@ C
         CALL MSG_FINI()
       ENDIF
 #endif
-      STOP 
+      CALL EXIT(1) 
 C
 #if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable
@@ -1598,7 +1940,6 @@ C
 !-----------------------------------------------------------------------
       END SUBROUTINE globalioTerminate
 !-----------------------------------------------------------------------
-
 
 !-----------------------------------------------------------------------
       end module global_io

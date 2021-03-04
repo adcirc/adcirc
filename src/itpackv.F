@@ -436,6 +436,7 @@ c
 
 
       subroutine itjcg (n,ndim,maxnz,jcoef,coef,u,u1,d,d1,dtwd,tri)
+      use global,only:nperseg
       implicit none
 C
       integer n,ndim,maxnz,i,j
@@ -511,7 +512,11 @@ C
 #ifdef CMPI
       dumy1(1) = 0.0d0 !jgf46.00 added
       dumy2(1) = 0.0d0 !jgf46.00 added
-      CALL UPDATER(d,dumy1,dumy2,1)         !  MPI Message-Passing
+      if(nperseg.gt.0)then
+          CALL UPDATER_W_PERBC(d,dumy1,dumy2,1) ;
+      else
+          CALL UPDATER(d,dumy1,dumy2,1)
+      endif
 #endif
  
       do 10 i = 1,n

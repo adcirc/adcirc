@@ -43,12 +43,28 @@ IF(Fortran_COMPILER_NAME MATCHES "gfortran.*")
 
 ELSEIF(Fortran_COMPILER_NAME MATCHES "ifort.*")
   # ifort
-  SET(Fortran_LINELENGTH_FLAG "-132 -assume byterecl" CACHE STRING "Compiler specific flag to enable extended Fortran line length")
+  SET(Fortran_LINELENGTH_FLAG "-132" CACHE STRING "Compiler specific flag to enable extended Fortran line length")
+
+  # Heap array allocation
+  EXECUTE_PROCESS(COMMAND sh -c "ulimit -s" OUTPUT_VARIABLE STACKSIZE)
+  STRING(STRIP "${STACKSIZE}" STACKSIZE_TRIMMED)
+  IF("${STACKSIZE_TRIMMED}" STREQUAL "unlimited")
+      MESSAGE(STATUS "Unlimited stack size detected. No heap array flag added.")    
+      SET(heaparray_FLAG " ")
+  ELSE("${STACKSIZE_TRIMMED}" STREQUAL "unlimited")
+      MESSAGE(STATUS "The compiler flag -heap-arrays ${STACKSIZE_TRIMMED} is being added. This should also be used to compile netcdf-fortran.")
+      SET(heaparray_FLAG "-heap-arrays ${STACKSIZE_TRIMMED}")  
+  ENDIF("${STACKSIZE_TRIMMED}" STREQUAL "unlimited")
   
   # 64 bit array sizing
   IF(ARCH EQUAL 64)
-    SET(Fortran_COMPILER_SPECIFIC_FLAG "-mcmodel=medium" CACHE STRING "Compiler specific flags")  
+    SET(ifort_FLAG "${heaparray_FLAG} -assume byterecl -mcmodel=medium")  
+  ELSE(ARCH EQUAL 64)
+    SET(ifort_FLAG "${heaparray_FLAG} -assume byterecl")
   ENDIF(ARCH EQUAL 64)
+
+  STRING(STRIP ${ifort_FLAG} ifort_FLAG_TRIMMED)
+  SET(Fortran_COMPILER_SPECIFIC_FLAG ${ifort_FLAG_TRIMMED} CACHE STRING "Compiler specific flags")
 
 ELSEIF(Fortran_COMPILER_NAME MATCHES "pgf90.*")
   # pgf90
