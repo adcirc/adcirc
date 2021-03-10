@@ -1,5 +1,5 @@
 # SRCDIR is set in makefile or on the compile line
-INCDIRS := -I . -I $(SRCDIR)/prep
+INCDIRS := -I. -I$(SRCDIR)/prep
 
 ########################################################################
 # Compiler flags for Linux operating system on 64bit x86 CPU
@@ -324,7 +324,7 @@ ifeq ($(compiler),intel)
         NETCDFHOME    :=/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0
      endif
      ifeq ($(MACHINENAME),supermic)
-        FLIBS      := $(FLIBS) -L /usr/local/packages/netcdf_fortran/4.2/INTEL-140-MVAPICH2-2.0/lib -lnetcdff -L/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0/lib -lnetcdf -lnetcdf -liomp5 -lpthread
+        FLIBS      := $(FLIBS) -L/usr/local/packages/netcdf_fortran/4.2/INTEL-140-MVAPICH2-2.0/lib -lnetcdff -L/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0/lib -lnetcdf -lnetcdf -liomp5 -lpthread
         NETCDFHOME :=/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0/include
         FFLAGS1    :=$(FFLAGS1) -I/usr/local/packages/hdf5/1.8.12/INTEL-140-MVAPICH2-2.0/include
      endif
@@ -1420,7 +1420,7 @@ ifneq (,$(findstring sv1-unicos,$(MACHINE)-$(OS)))
   DP  	        :=  -DREAL8 -DCRAY -DCSCA -DCMPI
   DPRE	        :=  -DREAL8 -DCRAY
   IMODS		:=  -p
-  CFLAGS	:=  $(INCDIRS) -I ../Lib -O2 -DCRAY
+  CFLAGS	:=  $(INCDIRS) -I../Lib -O2 -DCRAY
   FLIBS  	:=
   MSGLIBS	:=  -lmpi
   C_LDFLAGS     :=
@@ -1451,7 +1451,7 @@ ifneq (,$(findstring x1-unicos,$(MACHINE)-$(OS)))
   IMODS		:=  -p
   CC            :=  cc
   CCBE          :=  $(CC)
-  CFLAGS	:=  $(INCDIRS) -I ../Lib -O2 -DCRAYX1 -UCRAY
+  CFLAGS	:=  $(INCDIRS) -I../Lib -O2 -DCRAYX1 -UCRAY
   FLIBS  	:=
   MSGLIBS	:=  -lmpi
   C_LDFLAGS     :=
@@ -1498,9 +1498,9 @@ ifneq (,$(findstring powerpc-darwin,$(MACHINE)-$(OS)))
   PPFC	        := f90
   FC	        := f90
   PFC	        := mpif77
-  FFLAGS1	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -f fixed -W132 -I . -DLINUX
-  FFLAGS2	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -N11 -f fixed -W132 -I .
-  FFLAGS3	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -N11 -f fixed -W132 -I .
+  FFLAGS1	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -f fixed -W132 -I. -DLINUX
+  FFLAGS2	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -N11 -f fixed -W132 -I.
+  FFLAGS3	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -N11 -f fixed -W132 -I.
   DA  	   	:=  -DREAL8 -DCSCA -DLINUX
   DP  	   	:=  -DREAL8 -DCSCA -DCMPI -DLINUX
   DPRE	   	:=  -DREAL8 -DLINUX
@@ -1528,10 +1528,10 @@ ifneq (,$(findstring i386-darwin,$(MACHINE)-$(OS)))
   PPFC	        := ifort
   FC	        := ifort
   PFC	        := mpif77
-  FFLAGS1       :=  $(INCDIRS) -nowarn -O3    -fixed -132 -check all -traceback -DLINUX -DNETCDF_DEBUG -I .
-# FFLAGS1	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -DIBM -I .
-  FFLAGS2	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -I .
-  FFLAGS3	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -I .
+  FFLAGS1       :=  $(INCDIRS) -nowarn -O3    -fixed -132 -check all -traceback -DLINUX -DNETCDF_DEBUG -I.
+# FFLAGS1	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -DIBM -I.
+  FFLAGS2	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -I.
+  FFLAGS3	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -I.
   DA  	   	:=  -DREAL8 -DCSCA -DLINUX
   DP  	   	:=  -DREAL8 -DCSCA -DLINUX -DCMPI -DNETCDF_DEBUG
   DPRE	   	:=  -DREAL8 -DLINUX
