@@ -229,7 +229,7 @@ ifeq ($(compiler),intel)
   PPFC            :=  ifort
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+  FFLAGS1       := $(INCDIRS) -O2 -g -traceback -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
   CFLAGS        := $(INCDIRS) -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
   FLIBS         :=
   ifeq ($(DEBUG),full)
@@ -280,6 +280,7 @@ ifeq ($(compiler),intel)
         CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX -xSSE4.2
         FLIBS   := $(INCDIRS) -xSSE4.2
      endif
+  endif
   ifeq ($(MACHINENAME),supermic) 
      FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xAVX -assume buffered_io
      CFLAGS  := $(INCDIRS) -O3 -DLINUX -xAVX
@@ -289,7 +290,6 @@ ifeq ($(compiler),intel)
         CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX  -xAVX 
         FLIBS   := $(INCDIRS) -xAVX
      endif
-  endif
   endif
   #
   #@jasonfleming Added to fix bus error on hatteras@renci
@@ -381,13 +381,23 @@ ifeq ($(compiler),intel)
      MULTIPLE := TRUE
   endif
 endif
+
 #
 # Corbitt 120322:  These flags work on the Notre Dame Athos & Zas
 ifeq ($(compiler),intel-ND)
   PPFC          :=  ifort
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -w -O3 -assume byterecl -132 -assume buffered_io #-i-dynamic
+#  FFLAGS1       :=  $(INCDIRS) -w -O3 -assume byterecl -132 -assume buffered_io #-i-dynamic
+
+  ifeq ($(AMD),yes)
+     FFLAGS1     :=  $(INCDIRS) -g -traceback -O2 -assume byterecl -132 -mcmodel=medium -shared-intel -assume buffered_io
+  else
+     FFLAGS1     :=  $(INCDIRS) -O3 -g -traceback -xSSE4.2 -assume byterecl -132 -mcmodel=medium -shared-intel -assume buffered_io
+#      FFLAGS1     :=  $(INCDIRS) -O2 -g -traceback -xSSE4.2 -assume byterecl -132 -mcmodel=medium -shared-intel -assume buffered_io
+#      FFLAGS1     :=  $(INCDIRS) -O0 -g -traceback -check bounds -xSSE4.2 -assume byterecl -132 -mcmodel=medium -shared-intel -assume buffered_io
+  endif
+
   ifeq ($(DEBUG),full)
      FFLAGS1    :=  $(INCDIRS) -g -O0 -traceback -debug -check all -FI -assume byterecl -132 -DEBUG -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
@@ -430,6 +440,7 @@ ifeq ($(compiler),intel-ND)
   endif
   NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/n/netcdf/4.7.0/intel/18.0/
 endif
+
 # SGI ICE X (e.g. topaz@ERDC) using Intel compilers, added by TCM
 # jgf: Added flags for Thunder@AFRL.
 ifeq ($(compiler),intel-sgi)
