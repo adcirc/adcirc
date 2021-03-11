@@ -94,7 +94,7 @@ clean:
 	rm -f  atmesh.o atmesh_mod.o  atmesh.mod atmesh_mod.mod libatmesh_cap.a atmesh.mk.install
 
 edit:
-	gedit Makefile esmApp.F90 esm.F90 wav.F90 adc_cap.F90 adc_mod.F90 couple2swan_modif.F  hwrf_mod.F90 hwrf_cap.F90 wav_mod.F90 atmesh.F90 atmesh_mod.F90 &
+	gedit Makefile esmApp.F90 esm.F90 wav.F90 adc_cap.F90 adc_mod.F90 couple2swan_modif.F wav_mod.F90 atmesh.F90 atmesh_mod.F90 &
 
 
 
