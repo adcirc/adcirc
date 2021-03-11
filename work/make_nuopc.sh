@@ -79,7 +79,7 @@ export ADCDIR=${scrDIR}
 
 #make padcirc -d compiler=$compiler NETCDFLAG=enable NETCDF4FLAG=enable NETCDF4_COMPRESSION=enable
 export MAKELEVEL=0
-make NETCDF=enable NETCDF4=enable libadc.a 
+make NETCDF=enable NETCDF4=enable libadc.a
 
 ### Build adcric nuopc
 pushd ${ADCDIR}/../thirdparty/nuopc >/dev/null 2>&1
