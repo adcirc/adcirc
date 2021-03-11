@@ -56,7 +56,6 @@ endif
 
 # Specify NETCDF=enable to gmake on the command line to activate netcdf i/o
 ifeq ($(NETCDF),enable)
-#ifeq ($(NETCDFLAG),enable)
 # jgf49.61: Don't add the -DADCNETCDF for the IBM compilers (see cmplrflags.mk)
 ifeq ($(IBM),)
      PPFC    := $(PPFC) -DADCNETCDF -I$(NETCDFHOME)/include
