@@ -73,7 +73,7 @@ else
 fi
 
 export compiler=${compiler}
-export ADCDIR=${scrDIR}
+export ADCDIR=$(dirname $(dirname ${scrDIR}))
 ###====================
 
 
@@ -82,21 +82,21 @@ export MAKELEVEL=0
 make NETCDF=enable NETCDF4=enable libadc.a
 
 ### Build adcric nuopc
-pushd ${ADCDIR}/../thirdparty/nuopc >/dev/null 2>&1
-  make -f makefile.adc_cap.nuopc nuopc
-popd >/dev/null 2>&1
+make -f makefile.adc_cap.nuopc nuopc
 
 ### Build adcprep
 make NETCDF=enable NETCDF4=enable adcprep
 
 ### Build tide_fac exe
-if [ ! -d util ]; then
-  mkdir -p util
-else
-  [ -f util/tidefac ] && rm -f util/tidefac
-fi
+pushd ${ADCDIR}/work >/dev/null 2>&1
+  if [ ! -d util ]; then
+    mkdir -p util
+  else
+    [ -f util/tidefac ] && rm -f util/tidefac
+  fi
+popd >/dev/null 2>&1
 
-pushd ${ADCDIR}/../util/estofs_tide_fac >/dev/null 2>&1
+pushd ${ADCDIR}/util/estofs_tide_fac >/dev/null 2>&1
   make
-  cp -f estofs_tide_fac ${ADCDIR}/util/tidefac
+  cp -f estofs_tide_fac ${ADCDIR}/work/util/tidefac
 popd >/dev/null 2>&1
