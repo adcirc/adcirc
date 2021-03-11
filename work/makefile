@@ -689,7 +689,7 @@ endif
 clean:
 	rm -f *.o odir*/*.o  *.mod odir*/*.mod actualflags.txt
 	rm -f  ../thirdparty/swan/*.f ../thirdparty/swan/*.for ../thirdparty/swan/*.f90 .swanlastcompile
-	rm -f ../thirdparty/nuopc/*.o ../thirdparty/nuopc/*.mod 
+	rm -f ../thirdparty/nuopc/*.o ../thirdparty/nuopc/*.mod ../util/estofs_tide_fac/estofs_tide_fac
 
 clobber: clean
 	rm -r -f odir* util/*
