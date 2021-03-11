@@ -64,7 +64,7 @@ vars:
 
 
 # -----------------------------------------------------------------------------
-esm1.x: esmApp.o esm.o wav.o adc_cap.o adc_mod.o wav_mod.o couple2swan_modif.o hwrf_mod.o hwrf_cap.o  atmesh_mod.o atmesh.o
+esm1.x: esmApp.o esm.o wav.o adc_cap.o adc_mod.o wav_mod.o couple2swan_modif.o atmesh_mod.o atmesh.o
 	$(ESMF_F90LINKER) $(ESMF_F90LINKOPTS) $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(INCDIRS) $(LIBDIRS) -o $@ $^ $(ESMF_F90ESMFLINKLIBS) $(LIBSS) 
 	echo " CP EXE FILE ..... "
 	cp esm1.x  $(ADCDIR)/work/adc_esmf
@@ -93,14 +93,12 @@ install: $(LIBRARY)
 esmApp.o:   esm.o
 esm.o:      adc_cap.o
 esm.o:      wav.o
-esm.o:      hwrf_cap.o
 esm.o:      atmesh.o
 wav.o:      adc_cap.o
 adc_cap.o:  couple2swan_modif.o
 adc_cap.o:  adc_mod.o
 wav.o:      wav_mod.o
 atmesh.o:   atmesh_mod.o 
-hwrf_cap.o: hwrf_mod.o
 
 
 # -----------------------------------------------------------------------------
@@ -113,6 +111,6 @@ clean:
 distclean: dust clean
 
 edit:
-	gedit Makefile esmApp.F90 esm.F90 wav.F90 adc_cap.F90 adc_mod.F90 couple2swan_modif.F  hwrf_mod.F90 hwrf_cap.F90 wav_mod.F90 atmesh.F90 atmesh_mod.F90 &
+	gedit Makefile esmApp.F90 esm.F90 wav.F90 adc_cap.F90 adc_mod.F90 couple2swan_modif.F wav_mod.F90 atmesh.F90 atmesh_mod.F90 &
 
 
