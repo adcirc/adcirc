@@ -52,8 +52,6 @@ ifneq ($(shell ulimit -s),unlimited)
 endif
 endif
 
-
-
 # Specify NETCDF=enable to gmake on the command line to activate netcdf i/o
 ifeq ($(NETCDF),enable)
 # jgf49.61: Don't add the -DADCNETCDF for the IBM compilers (see cmplrflags.mk)
@@ -65,10 +63,8 @@ ifeq ($(IBM),)
      FFLAGS3 := $(FFLAGS3) -DADCNETCDF -I$(NETCDFHOME)/include
      FFLAGS4 := $(FFLAGS4) -DADCNETCDF -I$(NETCDFHOME)/include
 endif
-#NETCDF=enable
 endif
 ifeq ($(NETCDF4),enable)
-#ifeq ($(NETCDF4FLAG),enable)
      PPFC    := $(PPFC) -DHAVE_NETCDF4
      PFC     := $(PFC) -DHAVE_NETCDF4
      FFLAGS1 := $(FFLAGS1) -DHAVE_NETCDF4
@@ -239,10 +235,7 @@ ifeq ($(BUILDTYPE),$(LIBADC))
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff $(FLIBS)
   endif
-#  MSG_MOBJ:=  
-#  Added by DW
-#  MSG_MOBJ:= $(O_DIR)messenger.o $(O_DIR)writer.o
-  MSG_MOBJ:= $(O_DIR)messenger.o  
+  MSG_MOBJ:= $(O_DIR)messenger.o
 endif
 #                                      p15
 ifeq ($(BUILDTYPE),p15)
@@ -599,36 +592,11 @@ endif
    $(PARALLEL_ADCIRC) :: $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
 
-#
-#
-#   $(LIBADC) :: $(O_DIR) $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
-#	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ)
-#	ar -ts $@
-#
-#
-
-#
-#  v55 -- DW: include all object files except the driver
-#         for ESMF/NUOPC
-#
-
-#   $(LIBADC) :: $(O_DIR) $(ADC_MOBJ) $(MSG_MOBJ) $(NA_MOBJ)  $(SPG_MOBJ)  $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ) $(HASH_MOBJ) \
-#                $(MESH_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
-#               $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) 
-#
-#
-#
-
-   $(LIBADC) :: $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ) 
+   $(LIBADC) :: $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ)
 	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
                  $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
                  $(WRITER_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ) 
 	ar -ts $@
-
-#   $(LIBADC) :: $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(NC_MOBJ) 
-#	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(NC_MOBJ) 
-#	ar -ts $@
-
 
 #Casey 080106: Added the following lines.
    adcswan :: $(O_DIR)
@@ -801,8 +769,6 @@ else
 $(O_DIR)itpackv.o     :  itpackv.F $(O_DIR)sizes.o
 endif
 $(O_DIR)netcdfio.o    :  netcdfio.F  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(GWCE_MOBJ) $(O_DIR)global_3dvs.o
-#$(O_DIR)netcdfio.o    :  netcdfio.F  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(O_DIR)global_3dvs.o
-
 
 #Casey 090302: Added the next line.
 $(O_DIR)couple2swan.o :  couple2swan.F $(O_DIR)write_output.o
@@ -838,7 +804,6 @@ $(O_DIR)subdomain.o   : subdomain.F $(O_DIR)mesh.o
 endif
 $(O_DIR)global_3dvs.o : global_3dvs.F $(O_DIR)global.o $(O_DIR)boundaries.o
 # DW
-#$(O_DIR)sponge_layer.o : sponge_layer.F $(ADC_MOBJ) $(SOLV_MOBJ)
 $(O_DIR)sponge_layer.o : sponge_layer.F $(O_DIR)quadrature.o $(ADC_MOBJ)
 $(O_DIR)quadrature.o : quadrature.F
 # WJP
