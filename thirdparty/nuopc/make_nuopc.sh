@@ -10,16 +10,14 @@
 # Note: some-env-module-file will be sourced from this bash script
 #       so it should be bash compatible file.
 
-
 # Get the directory where the script is located
 if [[ $(uname -s) == Darwin ]]; then
-  readonly scrNAME="$( basename "$(grealpath -s "${BASH_SOURCE[0]}")" )"
-  readonly scrDIR="$(cd "$(dirname "$(grealpath -s "${BASH_SOURCE[0]}")" )" && pwd -P)"
+  readonly scrNAME="$(basename "$(grealpath -s "${BASH_SOURCE[0]}")")"
+  readonly scrDIR="$(cd "$(dirname "$(grealpath -s "${BASH_SOURCE[0]}")")" && pwd -P)"
 else
-  readonly scrNAME="$( basename "$(realpath -s "${BASH_SOURCE[0]}")" )"
-  readonly scrDIR="$(cd "$(dirname "$(realpath -s "${BASH_SOURCE[0]}")" )" && pwd -P)"
+  readonly scrNAME="$(basename "$(realpath -s "${BASH_SOURCE[0]}")")"
+  readonly scrDIR="$(cd "$(dirname "$(realpath -s "${BASH_SOURCE[0]}")")" && pwd -P)"
 fi
-
 
 ###====================
 ### Get the script arguments: env. file and compiler
@@ -27,12 +25,12 @@ fi
 num_opt=${#}
 if [ ${num_opt} -ge 2 ]; then
   esmf_env="${1}"
-  comp_opt="$( echo "${2}" | tr '[:upper:]' '[:lower:]' )"
+  comp_opt="$(echo "${2}" | tr '[:upper:]' '[:lower:]')"
 elif [ ${num_opt} -eq 1 ]; then
-  comp_opt="$( echo "${1}" | tr '[:upper:]' '[:lower:]' )"
+  comp_opt="$(echo "${1}" | tr '[:upper:]' '[:lower:]')"
 else
   if [ -n ${NEMS_COMPILER:+1} ]; then
-    comp_opt="$( echo "${NEMS_COMPILER}" | tr '[:upper:]' '[:lower:]' )"
+    comp_opt="$(echo "${NEMS_COMPILER}" | tr '[:upper:]' '[:lower:]')"
   fi
 fi
 
@@ -48,10 +46,10 @@ fi
 
 # Compiler to use (REQUIRED)
 case "${comp_opt}" in
-    gnu ) ;; #Do nothing
+  gnu   ) ;; #Do nothing
   intel ) ;; #Do nothing
-    pgi ) ;; #Do nothing
-      * ) echo "${scrNAME} :: Compiler \"${comp_opt}\" is not supported"
+  pgi   ) ;; #Do nothing
+  *     ) echo "${scrNAME} :: Compiler \"${comp_opt}\" is not supported"
           echo "   Exiting ..."
           exit 1
           ;;
