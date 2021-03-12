@@ -29,7 +29,7 @@ if [ ${num_opt} -ge 2 ]; then
 elif [ ${num_opt} -eq 1 ]; then
   comp_opt="$(echo "${1}" | tr '[:upper:]' '[:lower:]')"
 else
-  if [ -n ${NEMS_COMPILER:+1} ]; then
+  if [ -n "${NEMS_COMPILER:+1}" ]; then
     comp_opt="$(echo "${NEMS_COMPILER}" | tr '[:upper:]' '[:lower:]')"
   fi
 fi
@@ -72,7 +72,6 @@ fi
 export compiler=${compiler}
 export ADCDIR=$(dirname $(dirname ${scrDIR}))
 ###====================
-
 
 # move to the `work/` directory to build main ADCIRC executables
 pushd ${ADCDIR}/work >/dev/null 2>&1
