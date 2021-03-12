@@ -58,7 +58,6 @@ case "${comp_opt}" in
 esac
 ###====================
 
-
 ###====================
 ### Set/Export the important environment variables
 ###====================
@@ -77,17 +76,18 @@ export ADCDIR=$(dirname $(dirname ${scrDIR}))
 ###====================
 
 
-#make padcirc -d compiler=$compiler NETCDFLAG=enable NETCDF4FLAG=enable NETCDF4_COMPRESSION=enable
-export MAKELEVEL=0
-make NETCDF=enable NETCDF4=enable libadc.a
+# move to the `work/` directory to build main ADCIRC executables
+pushd ${ADCDIR}/work >/dev/null 2>&1
+  export MAKELEVEL=0
+  make NETCDF=enable NETCDF4=enable libadc.a
+  make NETCDF=enable NETCDF4=enable adcprep
+  #make padcirc -d compiler=$compiler NETCDFLAG=enable NETCDF4FLAG=enable NETCDF4_COMPRESSION=enable
+popd >/dev/null 2>&1
 
-### Build adcric nuopc
+# build ADCIRC NUOPC
 make -f makefile.adc_cap.nuopc nuopc
 
-### Build adcprep
-make NETCDF=enable NETCDF4=enable adcprep
-
-### Build tide_fac exe
+# build ESTOFS `tidefac` executable
 pushd ${ADCDIR}/work >/dev/null 2>&1
   if [ ! -d util ]; then
     mkdir -p util
@@ -95,7 +95,6 @@ pushd ${ADCDIR}/work >/dev/null 2>&1
     [ -f util/tidefac ] && rm -f util/tidefac
   fi
 popd >/dev/null 2>&1
-
 pushd ${ADCDIR}/util/estofs_tide_fac >/dev/null 2>&1
   make
   cp -f estofs_tide_fac ${ADCDIR}/work/util/tidefac
