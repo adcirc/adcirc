@@ -111,11 +111,11 @@ wav.o:      wav_mod.o
 nuopcclean:
 	rm -f  adc_cap.o adc_mod.o couple2swan_modif.o  adc_cap.mod adc_mod.mod couple2swan_modif.mod libadc_cap.a adcirc.mk
 
-nuopcdistclean: nuopcclean
+nuopcdistclean: nuopcclean dust
 	@echo ""
 	@echo "Cleaning Model build..."
 	@echo ""
-	#make -C $(ADCDIR) -f $(MODEL_MK) clean PET*.ESMF_LogFile *.nc
+	make -C $(ADCDIR) -f $(MODEL_MK) clean
 
 dust:
 	@echo ""
