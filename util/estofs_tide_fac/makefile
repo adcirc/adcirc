@@ -46,5 +46,5 @@ clobber:	clean
 	rm -f $(CMD) $(CMD).prof
 
 void:	clobber
-	rm -f $(SRCS) makefile
+	rm -f $(SRCS)
 

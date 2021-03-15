@@ -657,14 +657,13 @@ endif
 clean:
 	rm -f *.o odir*/*.o  *.mod odir*/*.mod actualflags.txt
 	rm -f  ../thirdparty/swan/*.f ../thirdparty/swan/*.for ../thirdparty/swan/*.f90 .swanlastcompile
-	rm -f ../thirdparty/nuopc/*.o ../thirdparty/nuopc/*.mod ../util/estofs_tide_fac/estofs_tide_fac
+	rm -f ../thirdparty/nuopc/*.o ../thirdparty/nuopc/*.mod
+	rm -f ../util/estofs_tide_fac/estofs_tide_fac
 
 clobber: clean
 	rm -r -f odir* util/*
 	rm -f adcprep adcprep_be adcirc $(PARALLEL_ADCIRC) adcswan padcswan p15 owi22 build13 aswip \
 	      build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost adccmp libadc.a
-
-#	(cd ../thirdparty/nuopc && make distclean)
 
 help:
 	@echo "This makefile supports the following:"
