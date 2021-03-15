@@ -193,7 +193,7 @@ module adc_cap
  ! USE GLOBAL,  ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
   USE WIND,  ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
   USE GLOBAL,  ONLY: RSTIMINC            ! wave time interval
-  use GLOBAL,  ONLY: RhoWat0, NUOPC4MET, NUOPC4WAV, NWS, g
+  use GLOBAL,  ONLY: RhoWat0, NWS, g
   use GLOBAL,  only: ITHS, NT, DTDP, ITIME
   use GLOBAL,  only: allMessage
 
@@ -208,6 +208,10 @@ module adc_cap
   !use adc_mod, only: read_config
   
   implicit none
+
+!C... v50.xx sm -- added for coupling with NOUPC Cap
+  LOGICAL   ::  NUOPC4MET = .FALSE.  ! assign in CAP
+  LOGICAL   ::  NUOPC4WAV = .FALSE.  ! assign in CAP
 
   private
   public SetServices
