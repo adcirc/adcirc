@@ -25,8 +25,6 @@ module adc_mod
 
   ! DW
   USE GLOBAL, only: CMP_VERSION_NUMBERS, FileFmtVersion
-  USE MESH, only: read14femesh ! read fort.14
-
 
   implicit none
     !> \author Ali Samii - 2016
