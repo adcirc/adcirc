@@ -641,13 +641,16 @@ module adc_mod
     !      (optional) nodeLael - node label
     !-----+---------+---------+---------+---------+---------+---------+
     subroutine read14femesh(meshfileName, nn, vx, etov, bxy, nodeLabel)
-        use global, only : openFileForRead, nabout
+        use global, only : openFileForRead, nabout, scratchMessage, ERROR
+        use hashtable, only : ipair, dict, add_ipair, find, close_dict
+        use mesh, only : terminate
 
         implicit none
 
         ! dummy
         CHARACTER (LEN = *) :: meshfileName
         INTEGER :: nn(:)
+        integer :: n1, n2, n3
 
         REAL (SZ), allocatable :: vx(:, :), bxy(:) ! node, bathymetry
         INTEGER, allocatable :: etov(:, :) ! element connectity table
