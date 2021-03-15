@@ -641,7 +641,7 @@ module adc_mod
     !      (optional) nodeLael - node label
     !-----+---------+---------+---------+---------+---------+---------+
     subroutine read14femesh(meshfileName, nn, vx, etov, bxy, nodeLabel)
-        use global, only : openFileForRead, nabout, scratchMessage, ERROR
+        use global, only : openFileForRead, nabout, scratchMessage, ERROR, setMessageSource, unsetMessageSource, allMessage
         use hashtable, only : ipair, dict, add_ipair, find, close_dict
         use mesh, only : terminate
 
