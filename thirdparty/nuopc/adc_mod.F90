@@ -5,8 +5,6 @@
 !------------------------------------------------------
 !LOG-----------------
 !
-!
-!
 
 module adc_mod
 
@@ -27,6 +25,11 @@ module adc_mod
   USE GLOBAL, only: CMP_VERSION_NUMBERS, FileFmtVersion
 
   implicit none
+
+  INTERFACE Read14MeshOnly
+    MODULE PROCEDURE read14femesh
+  END INTERFACE Read14MeshOnly
+
     !> \author Ali Samii - 2016
     !! See: https://github.com/samiiali
     !! \brief This object stores the data required for construction of a parallel or serial
@@ -96,7 +99,6 @@ module adc_mod
 
     ! reading data time management info WW3 <-----> ADC exchange
     integer                       :: adc_cpl_int,adc_cpl_num,adc_cpl_den
-
 
     PRIVATE::  EXTRACT_MSG_TABLE_FORT18
   !-----------------------------------------------------------------------------
@@ -318,7 +320,7 @@ module adc_mod
 !
 
         close( 23514 ) ; 
-        CALL read14femesh( meshfileName=fort14_filename, nn=nn, vx=vx, etov=etov, bxy=bxy  ) ;
+        CALL Read14MeshOnly( meshfileName=fort14_filename, nn=nn, vx=vx, etov=etov, bxy=bxy  ) ;
         
         the_data%NdCoords = reshape( vx, (/ 2*the_data%NumNd /) ) ;
         the_data%ElConnect = reshape( etov, (/ NumND_per_El*the_data%NumEl /) ) ;  
@@ -641,7 +643,8 @@ module adc_mod
     !      (optional) nodeLael - node label
     !-----+---------+---------+---------+---------+---------+---------+
     subroutine read14femesh(meshfileName, nn, vx, etov, bxy, nodeLabel)
-        use global, only : openFileForRead, nabout, scratchMessage, ERROR, setMessageSource, unsetMessageSource, allMessage
+        use global, only : openFileForRead, nabout, &
+                           scratchMessage, ERROR, setMessageSource, unsetMessageSource, allMessage
         use hashtable, only : ipair, dict, add_ipair, find, close_dict
         use mesh, only : terminate
 
