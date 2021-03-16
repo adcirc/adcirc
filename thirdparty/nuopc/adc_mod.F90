@@ -630,7 +630,8 @@ module adc_mod
         
     end subroutine read_config
 
-    ! P.Velissariou (temporary fix): Moved this subroutine from Guoming modified ADCIRC/src/mesh.F file
+    ! P.Velissariou (temporary fix): Moved this subroutine from
+    ! `ADCIRC/src/mesh.F` modified by Guoming
     !-----+---------+---------+---------+---------+---------+---------+
     ! READ14FEMESH() : Read just mesh
     !  input:
@@ -643,8 +644,8 @@ module adc_mod
     !      (optional) nodeLael - node label
     !-----+---------+---------+---------+---------+---------+---------+
     subroutine read14femesh(meshfileName, nn, vx, etov, bxy, nodeLabel)
-        use global, only : openFileForRead, nabout, &
-                           scratchMessage, ERROR, setMessageSource, unsetMessageSource, allMessage
+        use global, only : openFileForRead, nabout, scratchMessage, &
+                ERROR, setMessageSource, unsetMessageSource, allMessage
         use hashtable, only : ipair, dict, add_ipair, find, close_dict
         use mesh, only : terminate
 
@@ -670,7 +671,8 @@ module adc_mod
         INTEGER, allocatable :: labelstmp(:)
 
         ! hash table
-        type(ipair), allocatable, target :: node_dict_tmp(:) ! map node labels to numbers
+        ! map node labels to numbers
+        type(ipair), allocatable, target :: node_dict_tmp(:)
 
         call setMessageSource(trim(meshfileName))
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -684,10 +686,14 @@ module adc_mod
 
         ! Get dimension
         !  - reading the file
-        read(iunit, '(A80)', err = 110, end = 120, iostat = ios) agridtmp ! header
+        ! header
+        read(iunit, '(A80)', err = 110, end = 120, iostat = ios) &
+                agridtmp
         lineNum = lineNum + 1
 
-        read(unit = iunit, fmt = *, err = 110, end = 120, iostat = ios) ne, np ! no. elements, nodes
+        ! no. elements, nodes
+        read(unit = iunit, fmt = *, err = 110, end = 120, &
+                iostat = ios) ne, np
         lineNum = lineNum + 1 ;
 
         nn(1) = np
@@ -718,8 +724,9 @@ module adc_mod
         !  N O D E   T A B L E
         ALLOCATE(labelstmp(np)) ;
         do k = 1, np
-            read(unit = iunit, fmt = *, err = 110, end = 120, iostat = ios) labelstmp(k), vx(1, k), &
-                    vx(2, k), bxy(k)
+            read(unit = iunit, fmt = *, err = 110, end = 120, &
+                    iostat = ios) labelstmp(k), vx(1, k), vx(2, k), &
+                    bxy(k)
             lineNum = lineNum + 1
             call add_ipair(node_dict_tmp, labelstmp(k), k)
         enddo
@@ -731,8 +738,8 @@ module adc_mod
 
         !  E L E M E N T   T A B L E
         do k = 1, ne
-            read(unit = iunit, fmt = *, err = 110, end = 120, iostat = ios) &
-                    je, nhy, n1, n2, n3
+            read(unit = iunit, fmt = *, err = 110, end = 120, &
+                    iostat = ios) je, nhy, n1, n2, n3
             etov(1, k) = find(node_dict_tmp, n1)
             etov(2, k) = find(node_dict_tmp, n2)
             etov(3, k) = find(node_dict_tmp, n3)
@@ -746,11 +753,11 @@ module adc_mod
         ! free memory
         deallocate(labelstmp) ;
 
-!        ! populate the adcirc arrays that are used during execution
-!        call populateADCIRCNativeArrays()
-!
-!        call logMessage(INFO,'Finished reading mesh file coordinates, ' &
-!                // 'connectivity, and boundary data.')
+        !! populate the adcirc arrays that are used during execution
+        !call populateADCIRCNativeArrays()
+        !
+        !call logMessage(INFO,'Finished reading mesh file coordinates, ' &
+        !        // 'connectivity, and boundary data.')
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG, "Return.")
@@ -761,7 +768,8 @@ module adc_mod
 
         ! jump to here on error condition during read
 110     write(scratchMessage, 140) lineNum, ios
-140     format('Reading line ', i0, ' gave the following error code: ', i0, '.')
+140     format('Reading line ', i0, ' gave the following error code: ', &
+            i0, '.')
         call allMessage(ERROR, scratchMessage)
         close(iunit)
         call terminate()
