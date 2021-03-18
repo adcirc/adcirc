@@ -680,6 +680,7 @@ module adc_mod
 #endif
 
         ! initialization
+        lineNum = 1
         nfluxftmp = 0
 
         call openFileForRead(iunit, trim(meshFileName), ios)
