@@ -3969,11 +3969,13 @@
 
       END SUBROUTINE bl_interp
 !-----------------------------------------------------------------------
-      SUBROUTINE bl_interp2(xp, yp, x_mat, y_mat, x, y, ii, w)
+      SUBROUTINE bl_interp2(xp, yp, x_mat, y_mat, x, y, ii, w, tree)
           ! This function uses bilinear interpolation to get the
           ! interpolation weights, w and the indices for interpolation
           ! Assumed to be sampled on a structured unregular grid x values
           ! specified by x_mat and the grid y values specified by y_mat
+          use kdtree2_module, only: kdtree2, kdtree2_result, 
+     &                              kdtree2_n_nearest
           implicit none
           integer, intent(in) :: xp, yp           
           real, dimension(xp,yp), intent(in) :: x_mat, y_mat
@@ -3986,25 +3988,26 @@
           real(sz) :: y11, y21, y12, y22, y_vec(yp)
           real(sz) :: d11, d12, d21, d22, denom
           real(sz) :: p(2), a(2), b(2), c(2), d(2)
-          integer  :: i, j, jj, ir, jr, ia
+          integer  :: i, j, jj, ir, jr, ia, xi, yi, ind
+          type(kdtree2), pointer :: tree
+          type(kdtree2_result) :: kdresult(1)
 
-          ! Check if structured regular..
-          if (abs(x_mat(1,1) - x_mat(1,yp)) < 1d-6) then
-             x_array = x_mat(:,1)
-             y_array = y_mat(1,:)
-             ! This is much faster..
-             call bl_interp(xp, x_array, yp, y_array, x, y, ii, w)
-             !write(16,*) 'blout',x, y
-             !write(16,*) x_array(ii(1)), y_array(ii(2))
-             !write(16,*) x_array(ii(3)), y_array(ii(4))
-             !write(16,*) ii
-             !write(16,*) w
-             return;
-          endif       
+          ! find the closest point to this node and convert to subscript
+          call kdtree2_n_nearest(tp=tree,qv=[x,y],
+     &                           nn=1,results=kdresult)
+          ind = kdresult(1)%idx  ! location of closest point
+          xi  = ind/yp           ! ind2sub
+          yi  = mod(ind,yp)      ! ind2sub
+          if (yi == 0) then 
+             yi = yp
+          else
+             xi = xi + 1 
+          endif
  
           ii   = [-1, 0, 0, 0]; ! Default indices
           ia = 0
-          do i = 1,xp
+          ! loop over points close to the nearest one  
+          do i = max(1,xi-1),min(xi+1,xp) !1,xp
              ir = i + 1
              if (ir > xp) then
                 ! If wrapping around
@@ -4015,7 +4018,7 @@
                    exit
                 endif
              endif
-             do j = 1,yp-1
+             do j = max(1,yi-1),min(yi+1,yp-1) !1,yp-1
                 jr = j + 1
                 x11 = x_mat(i,j);  x21 = x_mat(ir,j) + ia*360d0
                 x12 = x_mat(i,jr); x22 = x_mat(ir,jr) + ia*360d0
