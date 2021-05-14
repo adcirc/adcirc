@@ -4920,18 +4920,16 @@ C     Calculate wind velocity and pressure at each node.
          DX(I)=(XCOOR(I)-lon)*DEG2RAD
          DY(I)=(YCOOR(I)-lat)*DEG2RAD
          THETA(I)=ATAN2(DY(I),DX(I))
-C   RJW v48.45
-C     compute the distances based on haversine formula for distance along a sphere
-        rad(i) = sphericalDistance(DX(I),DY(I),lat, ycoor(i))
-C       Rad(i)=Rearth*(2.0d0*ASIN(sqrt(sin(DY(I)/2.0d0)**2.0d0+
-C     & cos(lat*DEG2RAD)*cos(YCOOR(i)*DEG2RAD)*sin(DX(I)/2.0d0)**2.0d0)))
-C compute coriolis
-        coriolis = 2.0d0 * omega * sin(YCOOR(I)*DEG2RAD)
-
-        PRESS(I)=(cpress+(centralPressureDeficit)*
+C     RJW v48.45
+C     Compute the distances based on haversine formula for distance along a sphere
+         rad(i) = sphericalDistance(DX(I),DY(I),lat, ycoor(i))
+C     Compute coriolis
+         coriolis = 2.0d0 * omega * sin(YCOOR(I)*DEG2RAD)
+C     Compute pressure field
+         PRESS(I)=(cpress+(centralPressureDeficit)*
      &        EXP(-(RMW*1000.d0/RAD(I))**B)) / (RHOWAT0*G)
-C
-C       WJP: added absolute around CORIOLIS for Southern Hempisphere
+C     Compute velocity field with absolute around 
+C     CORIOLIS for the Southern Hempisphere
          V_r(I) = sqrt(
      &        (RMW*1000.d0/RAD(I))**B *
      &        EXP(1.d0-(RMW*1000.d0/RAD(I))**B)*spd**2.d0
@@ -8731,14 +8729,18 @@ C----------------------------------------------------------------------
       END SUBROUTINE NWS14INIT
 C----------------------------------------------------------------------
       SUBROUTINE NWS14GET(WVNX2,WVNY2,PRN2,CICE2)
-      use mesh, only: NP, SLAM, SFEA, bl_interp2
+      use mesh, only: NP, SLAM, SFEA, bl_interp, bl_interp2
+      use kdtree2_module, only: kdtree2, kdtree2_create
       implicit none
 
       real(sz),intent(out) :: PRN2(NP), WVNX2(NP), WVNY2(NP)
       real(sz),intent(out),optional :: CICE2(NP)
-      integer :: i, ii, nxp, nyp, indt(4), NTkeep
+      integer :: i, ii, nxp, nyp, indt(4), NTkeep, xi, yi, cc
       real,allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice, lat, lon
+      real(sz), allocatable ::  lonv(:), latv(:), XY(:,:)
       real(sz) :: xx, yy, wt(4) 
+      logical :: regular_grid
+      type(kdtree2), pointer :: tree
 
       ! Show the date in str_date format
       call logMessage(ECHO,'CurDT strng: '//
@@ -8775,12 +8777,38 @@ C----------------------------------------------------------------------
                call READNWS14(Wfile,Winv,Uvar,lon,lat)
             endif
             nxp = ubound(lon,1); nyp = ubound(lat,2)
+            ! Check if structured regular..
+            if (abs(lon(1,1) - lon(1,nyp)) < 1d-6) then
+               regular_grid = .true. 
+               allocate(lonv(nxp),latv(nyp))
+               lonv = lon(:,1)
+               latv = lat(1,:)
+            else       
+               regular_grid = .false. 
+               ! Convert point matrices to 2 X (NXP*NYP) point vector
+               allocate(XY(2,nxp*nyp))
+               cc = 0
+               do xi = 1,nxp
+                  do yi = 1,nyp
+                     cc = cc + 1
+                     XY(1,cc) = lon(xi,yi)
+                     XY(2,cc) = lat(xi,yi)
+                  enddo
+               enddo
+               ! Create the search tree
+               tree => kdtree2_create(XY) 
+            endif
+            ! Loop over each node and interpolate
             do i = 1,np
                xx = rad2deg*slam(i)
                ! Convert our numbers if grids are 0 to 360
                if (maxval(lon).gt.180d0.and.xx < 0d0) xx = xx + 360d0
                yy = rad2deg*sfea(i)
-               call bl_interp2(nxp,nyp,lon,lat,xx,yy,indt,wt)
+               if (regular_grid) then
+                  call bl_interp(nxp,lonv,nyp,latv,xx,yy,indt,wt)
+               else
+                  call bl_interp2(nxp,nyp,lon,lat,xx,yy,indt,wt,tree)
+               endif
                indp(ii,:,i) = indt
                weightsp(ii,:,i) = wt
 #ifdef DEBUG_NWS14
@@ -8798,7 +8826,11 @@ C----------------------------------------------------------------------
                write(16,*) 'Indices',indt
 #endif
             enddo
-            deallocate(lon,lat)
+            if (regular_grid) then
+               deallocate(lon,lat,latv,lonv)
+            else
+               deallocate(lon,lat,XY)
+            endif
          enddo
       endif
       
