@@ -1,18 +1,19 @@
-adcirc
-padcirc
-adcprep
-adcpost
-adccmp
-inflate
-hot2asc
-hstime
-aswip
-p15
-adcswan
-padcswan
-build13
-build12
-libadc.a
+##sb removes executables
+#adcirc
+#padcirc
+#adcprep
+#adcpost
+#adccmp
+#inflate
+#hot2asc
+#hstime
+#aswip
+#p15
+#adcswan
+#padcswan
+#build13
+#build12
+#libadc.a
 *.o
 *.mod
 odir*
@@ -27,5 +28,15 @@ adcircResultsComparison
 lib/
 swan/*.f90
 swan/*.f
-build/
+##sb removes build
+#build/
 config.h
+thirdparty
+##sb adds CMakeFiles
+CMakeFiles
+Makefile
+CMakeCache.txt
+cmake_install.cmake
+##sb adds emacs backup file
+*~
+
