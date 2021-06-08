@@ -1,19 +1,19 @@
 ##sb removes executables
-#adcirc
-#padcirc
-#adcprep
-#adcpost
-#adccmp
-#inflate
-#hot2asc
-#hstime
-#aswip
-#p15
-#adcswan
-#padcswan
-#build13
-#build12
-#libadc.a
+adcirc
+padcirc
+adcprep
+adcpost
+adccmp
+inflate
+hot2asc
+hstime
+aswip
+p15
+adcswan
+padcswan
+build13
+build12
+libadc.a
 *.o
 *.mod
 odir*
@@ -39,4 +39,5 @@ CMakeCache.txt
 cmake_install.cmake
 ##sb adds emacs backup file
 *~
+.vscode
 
