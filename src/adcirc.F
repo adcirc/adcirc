@@ -157,7 +157,7 @@ C
       !
       call initLogging()
       nabout = 0 !jgf52.08.01: Initialize log level to ECHO.
-#ifdef EBUG
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       nabout = -1 !jgf52.08.01: Initialize log level to DEBUG if so compiled
 #endif
       call setMessageSource("ADCIRC_Init")
