@@ -396,7 +396,7 @@ endif
 ifeq ($(compiler),intel-ND)
   PPFC          :=  ifort
   FC            :=  ifort
-  PFC           :=  mpif90
+  PFC           ?=  mpif90
 #  FFLAGS1       :=  $(INCDIRS) -w -O3 -assume byterecl -132 -assume buffered_io #-i-dynamic
 
   ifeq ($(AMD),yes)
