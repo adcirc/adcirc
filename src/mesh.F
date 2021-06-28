@@ -168,6 +168,7 @@
       numExternalFluxBoundaries = 0
       numInternalFluxBoundaries = 0
       numInternalFluxBoundariesWithPipes = 0
+      numInternalFluxBoundariesWithPumps = 0  
       !
       ! reading the file
       read(iunit,'(A80)',err=10,end=20,iostat=ios) agrid
@@ -245,6 +246,9 @@
              nvel_count = nvel_count + nvell(k)
          case(5,25)
              numInternalFluxBoundariesWithPipes = numInternalFluxBoundariesWithPipes + 1
+             nvel_count = nvel_count + nvell(k)
+         case(6,26)
+             numInternalFluxBoundariesWithPumps = numInternalFluxBoundariesWithPumps + 1
              nvel_count = nvel_count + nvell(k)
          case default
              write(scratchMessage, 1030) ibtype_orig(k)
@@ -359,6 +363,11 @@
      &      // 'pipes (5,etc): ",i0,".")'
          write(scratchMessage,scratchFormat) numInternalFluxBoundariesWithPipes
          call logMessage(DEBUG,trim(scratchMessage))
+         ! levee boundaries with pumps
+         scratchFormat = '("Number of internal flux boundaries with '
+     &      // 'pumps (6,etc): ",i0,".")'
+         write(scratchMessage,scratchFormat) numInternalFluxBoundariesWithPumps
+         call logMessage(DEBUG,trim(scratchMessage))
       endif
       !
       call allocateNodalAndElementalArrays()
@@ -420,8 +429,10 @@
       efCount = 1
       ifCount = 1
       ifwpCount = 1
+
       NPERSEG = 0  ;
       NNPERBC = 0  ;
+      ifwpumpCount = 1
 
       do k = 1, nbou
          read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nvell(k), ibtype_orig(k)
@@ -535,6 +546,38 @@
                lineNum = lineNum + 1
             end do
             sfCount = sfCount + 1
+
+         ! For INTERNAL BARRIER WITH CROSS BARRIER PUMPS type boundaries,
+         ! read the node number, the paired node number, the barrier
+         ! elevation above the Geoid, the coefficients of supercritical and
+         ! subcritical flow, the cross barrier pump flow per unit width, the
+         ! upstream water level at which to turn on the pumps, and the upstream
+	     ! water level at which to turn off the pumps for the nodes
+         ! in the Kth boundary segment.
+         case(6,26)
+            internalFluxBoundariesWithPumps(ifwpumpCount)%indexNum = k
+            do j = 1, nvell(k)
+               read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
+     &                        n1,
+     &                        n2,
+     &                        internalFluxBoundariesWithPumps(ifwpumpCount)%barinht(j),
+     &                        internalFluxBoundariesWithPumps(ifwpumpCount)%barincfsb(j),
+     &                        internalFluxBoundariesWithPumps(ifwpumpCount)%barincfsp(j),
+     &                        internalFluxBoundariesWithPumps(ifwpumpCount)%pumpq(j),
+     &                        internalFluxBoundariesWithPumps(ifwpumpCount)%pumponwl(j),
+     &                        internalFluxBoundariesWithPumps(ifwpumpCount)%pumpoffwl(j)
+               internalFluxBoundariesWithPumps(ifwpumpCount)%nodes(j) =
+     &                        find(node_dict, n1)
+               internalFluxBoundariesWithPumps(ifwpumpCount)%ibconn(j) = 
+     &                        find(node_dict, n2)          
+               internalFluxBoundariesWithPumps(ifwpumpCount)%xdmf_nodes(j) =
+     &                        internalFluxBoundariesWithPumps(ifwpumpCount)%nodes(j) - 1
+               internalFluxBoundariesWithPumps(ifwpumpCount)%xdmf_ibconn(j) =
+     &                        internalFluxBoundariesWithPumps(ifwpumpCount)%ibconn(j) - 1
+               lineNum = lineNum + 1
+            end do
+            ifwpumpCount = ifwpumpCount + 1
+
          case default
             scratchFormat = '("IBTYPE ",i0," is not allowed.")'
             write(scratchMessage, scratchFormat) ibtype_orig(k)
@@ -986,6 +1029,7 @@
       numExternalFluxBoundaries = 0
       numInternalFluxBoundaries = 0
       numInternalFluxBoundariesWithPipes = 0
+      numInternalFluxBoundariesWithPumps = 0     
       nope = 0
       neta = 0
       nbou = 0
@@ -1045,6 +1089,8 @@
                   numInternalFluxBoundaries = numInternalFluxBoundaries + 1
                case(5,25)
                   numInternalFluxBoundariesWithPipes = numInternalFluxBoundariesWithPipes + 1
+               case(6,26)
+                  numInternalFluxBoundariesWithPumps = numInternalFluxBoundariesWithPumps + 1
                case default
                   scratchFormat = 'Mesh file contains IBTYPE=",i0," '
      &               // 'which is not a valid flux boundary type.")'
@@ -1092,6 +1138,10 @@
      &                 // ' : ",i0,".")'
       write(scratchMessage,scratchFormat) numInternalFluxBoundariesWithPipes
       call logMessage(INFO,scratchMessage)
+      scratchFormat = '("Num. int. flux bnd. with cross barrier pumps '
+     &                 // ' : ",i0,".")'
+      write(scratchMessage,scratchFormat) numInternalFluxBoundariesWithPumps
+      call logMessage(INFO,scratchMessage)
       !
       ! populate nvdll (adcirc array representing number of nodes on each
       ! elevation boundary segment) and nvell (adcirc array representing
@@ -1134,6 +1184,7 @@
       efCount = 1
       ifCount = 1
       ifwpCount = 1
+      ifwpumpCount=1    
       do setIndex=0,numSets-1
          attStart = firstSetAttributeIndex(setIndex)
          call xdmfRetrieveSetValueType(xdmfFortranObj, setIndex, setDataType)
@@ -1303,6 +1354,66 @@
                internalFluxBoundariesWithPipes(ifwpCount)%ibconn =
      &             internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn + 1
                ifwpCount = ifwpCount + 1
+            case(6,26)  ! internal barrier boundary with cross barrier pumps
+               internalFluxBoundariesWithPumps(ifwpumpCount)%indexNum = fluxCount
+               ! get the node numbers on the boundary
+               call xdmfRetrieveSetValues(xdmfFortranObj, setIndex,
+     &             internalFluxBoundariesWithPumps(ifwpCount)%xdmf_nodes,
+     &             setDataType, setSize(setIndex),
+     &             startIndex, arrayStride, valueStride)
+               ! convert node numbers from 0 starting index (xdmf-style) to
+               ! 1 starting index (fortran-style)
+               internalFluxBoundariesWithPumps(ifwpumpCount)%nodes =
+     &             internalFluxBoundaries(ifwpumpCount)%xdmf_nodes + 1
+               do i=attStart,attStart+6
+                  call xdmfRetrieveAttributeName(xdmfFortranObj, i, itemName, nameLength)
+                  call replaceNullsWithSpaces(itemName)
+                  select case(trim(itemName))
+                  case("IBCONN")  ! paired (i.e., back face) nodes
+                     call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
+     &                  internalFluxBoundariesWithPumps(ifwpumpCount)%xdmf_ibconn,
+     &                  XDMF_ARRAY_TYPE_INT32,
+     &                   nvell(fluxCount), startIndex, arrayStride, valueStride)
+                  case("BARINHT") ! barrier height at each node and its paired node
+                     call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
+     &                   internalFluxBoundariesWithPumps(ifwpumpCount)%barinht,
+     &                  XDMF_ARRAY_TYPE_FLOAT64,
+     &                   nvell(fluxCount), startIndex, arrayStride, valueStride)
+                  case("BARINCFSB") ! coefficient of free surface sub critical flow
+                     call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
+     &                   internalFluxBoundariesWithPumps(ifwpumpCount)%barincfsb,
+     &                   XDMF_ARRAY_TYPE_FLOAT64,
+     &                   nvell(fluxCount), startIndex, arrayStride, valueStride)
+                  case("BARINCFSP") ! coefficient of free surface super critical flow
+                     call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
+     &                   internalFluxBoundariesWithPumps(ifwpumpCount)%barincfsp,
+     &                   XDMF_ARRAY_TYPE_FLOAT64,
+     &                   nvell(fluxCount), startIndex, arrayStride, valueStride)
+                  case("PUMPQ")    ! pump Q per unit width
+                     call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
+     &                   internalFluxBoundariesWithPumps(ifwpumpCount)%pumpq,
+     &                    XDMF_ARRAY_TYPE_FLOAT64,
+     &                    nvell(fluxCount), startIndex, arrayStride, valueStride)
+                  case("PUMPONWL")   ! upstream water level for pump turn-on
+                     call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
+     &                   internalFluxBoundariesWithPumps(ifwpumpCount)%pumponwl,
+     &                   XDMF_ARRAY_TYPE_FLOAT64,
+     &                   nvell(fluxCount), startIndex, arrayStride, valueStride)
+                  case("PUMPOFFWL")   ! upstream water level for pump turn-off
+                     call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
+     &                   internalFluxBoundariesWithPumps(ifwpumpCount)%pumpoffwl,
+     &                   XDMF_ARRAY_TYPE_FLOAT64,
+     &                   nvell(fluxCount), startIndex, arrayStride, valueStride)
+                  case default
+                     scratchFormat =
+     &                '("Unrecognized boundary attribute : ",a,".")'
+                     write(scratchMessage,scratchFormat) trim(itemName)
+                     call allMessage(ERROR,scratchMessage)
+                  end select
+               end do
+               internalFluxBoundariesWithPumps(ifwpumpCount)%ibconn =
+     &             internalFluxBoundariesWithPumps(ifwpumpCount)%xdmf_ibconn + 1
+               ifwpumpCount = ifwpumpCount + 1
             case default
                 scratchFormat = '("The boundary type ",i0," '
      &                 // 'was found in the files but is not valid.")'
@@ -1353,6 +1464,7 @@
       efCount = 1
       ifCount = 1
       ifwpCount = 1
+      ifwpumpCount = 1  
       ! populate adcirc-native arrays
       do fluxCount=1,nbou
          select case(ibtype_orig(fluxCount))  
@@ -1399,6 +1511,25 @@
             pipediamr(fluxCount,1:nvell(fluxCount))
      &             = internalFluxBoundariesWithPipes(ifwpCount)%pipediam
             ifwpCount = ifwpCount + 1
+         case(6,26)  ! internal barrier boundary with pumps
+            ! populate adcirc-native arrays
+            nbvv(fluxCount,1:nvell(fluxCount))
+     &             = internalFluxBoundariesWithPumps(ifwpumpCount)%nodes
+            ibconnr(fluxCount,1:nvell(fluxCount))
+     &             = internalFluxBoundariesWithPumps(ifwpumpCount)%ibconn
+            barinhtr(fluxCount,1:nvell(fluxCount))
+     &            = internalFluxBoundariesWithPumps(ifwpumpCount)%barinht
+            barincfsbr(fluxCount,1:nvell(fluxCount))
+     &             = internalFluxBoundariesWithPumps(ifwpumpCount)%barincfsb
+            barincfspr(fluxCount,1:nvell(fluxCount))
+     &             = internalFluxBoundariesWithPumps(ifwpumpCount)%barincfsp
+            pumpqr(fluxCount,1:nvell(fluxCount))
+     &             = internalFluxBoundariesWithPumps(ifwpumpCount)%pumpq
+            pumponwlr(fluxCount,1:nvell(fluxCount))
+     &             = internalFluxBoundariesWithPumps(ifwpumpCount)%pumponwl
+            pumpoffwlr(fluxCount,1:nvell(fluxCount))
+     &             = internalFluxBoundariesWithPumps(ifwpumpCount)%pumpoffwl
+            ifwpumpCount = ifwpumpCount + 1
          case default
             write(6,*) "Unrecognized boundary type ",ibtype_orig(fluxCount)
          end select
@@ -1879,6 +2010,7 @@
       NFLUXIB=0
       NFLUXIBP=0
       NFLUXIB64=0
+      NFLUXIBPUMP=0
       NFLUXRBC=0
       NFLUXGBC=0
       NVELEXT=0
@@ -1886,9 +2018,11 @@
       ! loop over the flux boundary segments, logging information about
       ! each segment and setting up boundary arrays
       NBOULOOP: DO K=1,NBOU
-!        write out flow boundary information to unit 16
-         IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24).OR.
-     &      (IBTYPE(K).EQ.64)) THEN
+C        write out flow boundary information to unit 16
+         IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)
+     &      .OR.(IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)
+     &      .OR.(IBTYPE(K).EQ.6).OR.(IBTYPE(K).EQ.26))
+     &      .OR.(IBTYPE(K).EQ.64)) THEN
             WRITE(16,28) K,NVELL(K),K,2*NVELL(K)
  28         FORMAT(///,5X,'TOTAL NUMBER OF PAIRS FOR FLOW BOUNDARY',
      &           ' SEGMENT',2X,i0,2X,'=',2X,i0,
@@ -1952,15 +2086,21 @@
      &            7X,'WHICH LEAVES/ENTERS THE DOMAIN ON ONE SIDE OF ',
      &               ' THE BARRIER AND ENTERS/LEAVES THE DOMAIN ON THE',
      &          /,7X,'CORRESPONDING OPPOSITE SIDE OF THE BARRIER ',/,
-     &            7X,'FLOW RATE AND DIRECTION ARE BASED ON BARRIER ',
-     &               ' HEIGHT, SURFACE WATER ELEVATION',/,
-     &            7X,'ON BOTH SIDES OF THE BARRIER, BARRIER COEFFICIEN',
-     &               'T AND THE APPROPRIATE BARRIER FLOW FORMULA',/,
-     &            7X,'IN ADDITION CROSS BARRIER PIPE FLOW RATE AND ',
-     &               ' DIRECTION ARE BASED ON PIPE CROWN HEIGHT, ',/,
-     &            7X,'SURFACE WATER ELEVATION ON BOTH SIDES OF THE B',
-     &               'ARRIER, PIPE FRICTION COEFFICIENT, PIPE DIAMETER',
-     &          /,7X,' AND THE APPROPRIATE PIPE FLOW FORMULA',/,
+     &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
+         CASE(6)
+           NFLUXIB=1
+           NFLUXIBPUMP=1
+           WRITE(16,2348)
+ 2348      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
+     &            7X,'WITH ADDITIONAL CROSS BARRIER PUMPS ',
+     &               'LOCATED UNDER THE CROWN ',/,
+     &            7X,'CROSS BARRIER FLOW IS TREATED AS AN ESSENTIAL',
+     &               ' NORMAL FLOW BOUNDARY CONDITION',/,
+     &            7X,'WHICH LEAVES/ENTERS THE DOMAIN ON ONE SIDE OF ',
+     &               ' THE BARRIER AND ENTERS/LEAVES THE DOMAIN ON THE',
+     &          /,7X,'CORRESPONDING OPPOSITE SIDE OF THE BARRIER ',/,
+     &            7X,'FLOW RATE IS BASED ON SPECIFIED PUMPQ AND DIRECTION ',
+     &               'IS FROM UPSTREAM TO DOWNSTREAM.',/,
      &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
          CASE(10)
            WRITE(16,2350)
@@ -2024,8 +2164,6 @@
      &          /,7X,'CORRESPONDING OPPOSITE SIDE OF THE BARRIER ',/,
      &            7X,'FLOW RATE AND DIRECTION ARE BASED ON BARRIER ',
      &               ' HEIGHT, SURFACE WATER ELEVATION',/,
-     &            7X,'ON BOTH SIDES OF THE BARRIER, BARRIER COEFFICIEN',
-     &               'T AND THE APPROPRIATE BARRIER FLOW FORMULA',/,
      &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
          CASE(25)
            NFLUXIB=1
@@ -2040,7 +2178,7 @@
      &               ' THE BARRIER AND ENTERS/LEAVES THE DOMAIN ON THE',
      &          /,7X,'CORRESPONDING OPPOSITE SIDE OF THE BARRIER ',/,
      &            7X,'FLOW RATE AND DIRECTION ARE BASED ON BARRIER ',
-     &               ' HEIGHT, SURFACE WATER ELEVATION',/,
+     &               '  SURFACE WATER ELEVATION',/,
      &            7X,'ON BOTH SIDES OF THE BARRIER, BARRIER COEFFICIEN',
      &               'T AND THE APPROPRIATE BARRIER FLOW FORMULA',/,
      &            7X,'IN ADDITION CROSS BARRIER PIPE FLOW RATE AND ',
@@ -2048,6 +2186,23 @@
      &            7X,'SURFACE WATER ELEVATION ON BOTH SIDES OF THE B',
      &               'ARRIER, PIPE FRICTION COEFFICIENT, PIPE DIAMETER',
      &          /,7X,'AND THE APPROPRIATE PIPE FLOW FORMULA',/,
+     &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
+         CASE(26)
+           NFLUXIB=1
+           NFLUXIBPUMP=1
+           WRITE(16,2361)
+ 2361      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
+     &            7X,'WITH ADDITIONAL CROSS BARRIER PUMPS ',
+     &               'LOCATED UNDER THE CROWN ',/,
+     &            7X,'CROSS BARRIER FLOW IS TREATED AS A NATURAL',
+     &               ' NORMAL FLOW BOUNDARY CONDITION',/,
+     &            7X,'WHICH LEAVES/ENTERS THE DOMAIN ON ONE SIDE OF ',
+     &               ' THE BARRIER AND ENTERS/LEAVES THE DOMAIN ON THE',
+     &          /,7X,'CORRESPONDING OPPOSITE SIDE OF THE BARRIER ',/,
+     &            7X,'FLOW RATE IS BASED ON SPECIFIED PUMPQ AND DIRECTION ',
+     &               'IS FROM UPSTREAM TO DOWNSTREAM.',/,
+     &            7X,'ON BOTH SIDES OF THE BARRIER, BARRIER COEFFICIEN',
+     &               'T AND THE APPROPRIATE BARRIER FLOW FORMULA',/,
      &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
          CASE(30)
            NFluxRBC=1
@@ -2152,9 +2307,14 @@
          case(5,25)
             nprbi = 2
             npipe = 1
+         case(6,26)
+            nprbi = 2
+            npipe = 0
+            npump = 1
          case default
             nprbi = 1
             npipe = 0
+            npump = 0
          end select
 
 !...  PROCESS INFORMATION FOR VARIOUS TYPES OF FLOW BOUNDARY SEGMENTS
@@ -2181,6 +2341,11 @@
                      BTRAN7(I)=PIPECOEFR(K,I)
                      BTRAN8(I)=PIPEDIAMR(K,I)
                   ENDIF
+                  IF(NPUMP.EQ.1) THEN
+                     BTRAN6(I)=PUMPQR(K,I)
+                     BTRAN7(I)=PUMPONWLR(K,I)
+                     BTRAN8(I)=PUMPOFFWLR(K,I)
+                  ENDIF
                END DO  !I=1,NVELL(K)
 
                DO I=1,NVELL(K)
@@ -2193,6 +2358,11 @@
                      PIPEHTR(K,I)=BTRAN6(NVELL(K)+1-I)
                      PIPECOEFR(K,I)=BTRAN7(NVELL(K)+1-I)
                      PIPEDIAMR(K,I)=BTRAN8(NVELL(K)+1-I)
+                  ENDIF
+                  IF(NPUMP.EQ.1) THEN
+                     PUMPQR(K,I)=BTRAN6(NVELL(K)+1-I)
+                     PUMPONWLR(K,I)=BTRAN7(NVELL(K)+1-I)
+                     PUMPOFFWLR(K,I)=BTRAN8(NVELL(K)+1-I)
                   ENDIF
                END DO  !I=1,NVELL(K)
             ENDIF
@@ -2220,6 +2390,20 @@
                   WRITE(16,1845)
  1845             FORMAT(/,5X,'BACK FACE OF INTERNAL BARRIER BOUNDARY',
      &                 ' WITH CROSS BARRIER PIPES',/)
+               ENDIF
+            ENDIF
+
+C...        WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES WITH
+C...        CROSS BARRIER PUMPS
+            IF((IBTYPE(K).EQ.6).OR.(IBTYPE(K).EQ.26)) THEN
+               IF(IPRBI.EQ.1) THEN
+                  WRITE(16,1846)
+ 1846             FORMAT(/,5X,'FRONT FACE OF INTERNAL BARRIER BOUNDARY',
+     &                 ' WITH CROSS BARRIER PUMPS',/)
+               ELSE
+                  WRITE(16,1847)
+ 1847             FORMAT(/,5X,'BACK FACE OF INTERNAL BARRIER BOUNDARY',
+     &                 ' WITH CROSS BARRIER PUMPS',/)
                ENDIF
             ENDIF
 
@@ -2584,6 +2768,18 @@
                   PIPEDIAM(JGW)=PIPEDIAMR(K,I)
                ENDIF
 
+C...........   LOAD INTERNAL BARRIER WITH PUMPS BOUNDARY INFORMATION INTO
+C...........   THE CORRECT VECTORS
+               IF((IBTYPE(K).EQ.6).OR.(IBTYPE(K).EQ.26)) THEN
+                  IBCONN(JGW)=IBCONNR(K,I)
+                  BARINHT(JGW)=BARINHTR(K,I)
+                  BARINCFSB(JGW)=BARINCFSBR(K,I)
+                  BARINCFSP(JGW)=BARINCFSPR(K,I)
+                  PUMPQ(JGW)=PUMPQR(K,I)
+                  PUMPONWL(JGW)=PUMPONWLR(K,I)
+                  PUMPOFFWL(JGW)=PUMPOFFWLR(K,I)
+               ENDIF
+
 !...........   WRITE OUT BOUNDARY CONDITION ARRAY INFORMATION
 
                WRITE(16,1857) JGW,JME,ME2GW(JME),NBV(JGW),LBCODEI(JGW),
@@ -2671,12 +2867,25 @@
                   ENDIF
                ENDIF
 
-!...  CHECK FOR OVERLAPPING OF AN INTERNAL BARRIER BOUNDARY WITH
-!...  ANY EXTERNAL BARRIER BOUNDARY. IF THIS DOES OCCUR, TAKE
-!...  APPROPRIATE ACTION
+C...........   CHECK INTERNAL BARRIER WITH PUMPS BARRIER HEIGHTS AGAINST DEPTHS
+               IF((IBTYPE(K).EQ.6).OR.(IBTYPE(K).EQ.26)) THEN
+                  IF(BARINHT(JGW).LT.-DP(NBV(JGW))) THEN
+                     write(scratchMessage,8370)
+     &                    JGW,NBV(JGW),BARINHT(JGW),DP(NBV(JGW))
+                     call allMessage(ERROR, scratchMessage)
+                     call allMessage(ERROR, trim(exeTerm9973))
+                     CALL terminate()
+                  ENDIF
+               ENDIF
+
+C...  CHECK FOR OVERLAPPING OF AN INTERNAL BARRIER BOUNDARY WITH
+C...  ANY EXTERNAL BARRIER BOUNDARY. IF THIS DOES OCCUR, TAKE
+C...  APPROPRIATE ACTION
                IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24).OR.
      &              (IBTYPE(K).EQ.64).OR.(IBTYPE(K).EQ.5)
-     &              .OR.(IBTYPE(K).EQ.25)) THEN
+     &              .OR.(IBTYPE(K).EQ.25)
+     &              .OR.(IBTYPE(K).EQ.6)
+     &              .OR.(IBTYPE(K).EQ.26)) THEN
                   DO ICK=1,NVELEXT
 !...  CHECK IF OVERLAP EXISTS
                      IF(NBV(ICK).EQ.NBV(JGW)) THEN
@@ -2909,6 +3118,43 @@ Csb...
 !sb...
 
 !jjwm001 - end add
+
+C...  IF ANY INTERNAL BARRIER BOUNDARIES WITH CROSS BARRIER PUMPS
+C.....WERE SPECIFIED, (NFLUXIBPUMP=1)
+C.....WRITE INTERNAL BARRIER BOUNDARY INFORMATION WITH CROSS
+C.....BARRIER PUMP INFORMATION TO UNIT 16 FILE
+      IF(NFLUXIBPUMP.EQ.1) THEN
+C.....   WRITE OUT INFO ON SPECIFIED INTERNAL BARRIER BOUNDARIES
+         WRITE(16,1112)
+         WRITE(16,2329)
+ 2329   FORMAT(//,1X,'INTERNAL BARRIER BOUNDARY WITH CROSS BARRIER',
+     &   ' PUMP INFORMATION ',/)
+
+C....... WRITE CONNECTION NODE NUMBER AND ELEVATION OF THE INTERNAL BARRIER
+C........NODES ABOVE THE GEOID AND THE COEFFICIENTS OF FREE SURFACE SUPERCRITICAL
+C........AND SUBCRITICAL FLOW AT DESIGNATED INTERNAL BARRIER BOUNDARY NODES
+C........IN ADDITION TO CROSS BARRIER PUMP Q, PUMP TURN-ON WATER LEVEL,
+C........AND PUMP TURN-OFF WATER LEVEL TO UNIT 16
+C........(NOTE THAT THIS INFORMATION WAS INPUT FROM THE UNIT 14 FILE WITH
+C........BOUNDARY NODE INFORMATION)
+         WRITE(16,2330)
+ 2330    FORMAT(//,7X,'NODE',4X,'CONNECTED NODE',4X,'BARRIER HEIGHT',
+     &                4X,'SUB-CRIT INT BAR COEF',
+     &                4X,'SUPER-CRIT INT BAR COEF',
+     &                4X,'PUMPQ  ',
+     &                4X,'PUMPONWL',
+     &                4X,'PUMPOFFWL',/)
+         DO J=1,NVEL
+            IF((LBCODEI(J).EQ.6).OR.(LBCODEI(J).EQ.26)) THEN
+               WRITE(16,2331) NBV(J),IBCONN(J),BARINHT(J),
+     &                     BARINCFSB(J),BARINCFSP(J),
+     &                     PUMPQ(J),PUMPONWL(J),PUMPOFFWL(J)
+ 2331         FORMAT(3X,i0,5X,i0,4X,F14.5,8X,F12.3,12X,F12.3,
+     &              2X,F10.5,2X,F10.5,2X,F10.5)
+            ENDIF
+         END DO
+      ENDIF
+
       ! jgf51.11.18: Free memory associated with the reading of the
       ! levee and culvert parameters since it is no longer needed
       call freeFluxBoundaryArrayTemporaries()

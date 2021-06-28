@@ -113,6 +113,7 @@ C     PARM15  section
       INTEGER  NHSTAR
       INTEGER  IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN
       INTEGER  NWLAT,NWLON,NFLUXF,NFLUXIB,NFLUXIBP,NFLUXB
+      INTEGER  NFLUXIBPUMP   ! dsu add
       INTEGER,ALLOCATABLE ::   NNSEG(:),NNSVG(:),NNSCG(:),NNSMG(:)
 C
 C     jgf46.00 Nodal attributes section.
@@ -457,11 +458,17 @@ C
       ALLOCATE ( WEIR(MNVEL),WEIRD(MNVEL) )
       nbytes = nbytes + 8*mnvel
       ALLOCATE ( BAR1(MNBOU,MNVEL),BAR2(MNBOU,MNVEL),BAR3(MNBOU,MNVEL) )
-      nbytes = nbytes + 12*mnbou*mnvel
+      nbytes = nbytes + 12*mnbou*mnvel  
       if (meshHasWeirWithPipes.eqv..true.) then
          ALLOCATE ( BAR4(MNBOU,MNVEL),BAR5(MNBOU,MNVEL),BAR6(MNBOU,MNVEL) )
          nbytes = nbytes + 12*mnbou*mnvel
       endif
+c dsu - add start
+      if (meshHasWeirWithPumps.eqv..true.) then
+         ALLOCATE ( BAR4(MNBOU,MNVEL),BAR5(MNBOU,MNVEL),BAR6(MNBOU,MNVEL) )
+         nbytes = nbytes + 12*mnbou*mnvel
+      endif
+c dsu -add end
       ALLOCATE ( FLBN(MNVEL),FLBNX(MNVEL),FLBNXP(MNVEL) )
       nbytes = nbytes + 12*mnvel
       ALLOCATE ( NVDLLMSG(MNOPE),NVELLMSG(MNBOU+1) )

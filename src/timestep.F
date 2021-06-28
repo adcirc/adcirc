@@ -74,7 +74,8 @@ C
       USE BOUNDARIES, ONLY : NOPE, NETA, NBOU, NVEL, LBCODEI, NBV, SIII,
      &    NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, NFLUXIBP, NFLUXRBC, CSII,
      &    BARLANHT, BARLANCFSP, NVELL, IBCONN, BARINHT, BARINCFSP,
-     &    BARINCFSB, PIPEHT, PIPECOEF, PIPEDIAM
+     &    BARINCFSB, PIPEHT, PIPECOEF, PIPEDIAM,
+     &    PUMPQ, PUMPONWL, PUMPOFFWL, NFLUXIBPUMP 
       USE GLOBAL_IO, ONLY : nddt2get
       USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
@@ -143,6 +144,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(SZ) CCSFEA
       REAL(SZ) ElMax
       REAL(SZ) PIPE_FLUX
+      REAL(SZ) PUMP_FLUX     
       REAL(SZ) H2N1, H2N2, H2N3
       REAL(SZ) EtaN1,EtaN2,EtaN3
       REAL(SZ) QTRatio
@@ -201,7 +203,7 @@ C     jgf46.21 Combined flux/radiation b.c. for rivers
       ELSE
         FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDP)
       END IF
-#endif
+#endif     
 
 C...  COMPUTE MASTER TIME WHICH IS REFERENCED TO THE BEGINNING TIME OF
 C...  THE MODEL RUN
@@ -963,7 +965,7 @@ C                     ACROSS A WEIR
          I = 0                         
          DO K = 1, NBOU  
             SELECT CASE(LBCODEI(I+1))
-                CASE(4,24,5,25)
+                CASE(4,24,5,25,6,26)  
                     DO J = 1,NVELL(K)*2
                         I = I + 1
                         CALL COMPUTE_INTERNAL_BOUNDARY_FLUX(I,J,K,
@@ -999,6 +1001,32 @@ C...
                 QN2(I) = QN2(I) + PIPE_FLUX
             ENDIF
          ENDDO
+      ENDIF 
+
+C...  COMPUTE INWARD/OUTWARD NORMAL FLOW FOR INTERNAL BARRIER
+C.... BOUNDARY NODES THROUGH CROSS BARRIER PUMPS
+C.... NOTE THAT THIS ADDS AN ADDITIONAL FLOW COMPONENT INTO QN2
+C...
+      IF(NFLUXIBPUMP.EQ.1) THEN
+c         write(16,*)'NFLUXIBPUMP=',NFLUXIBPUMP
+         I = 0                         
+         DO K = 1, NBOU  
+c          write(16,*)'K=',K,'I+1=',I+1,'LBCODEI(I+1)=',LBCODEI(I+1)
+            SELECT CASE(LBCODEI(I+1))
+                CASE(6,26)
+                    DO J = 1,NVELL(K)*2
+                        I = I + 1
+                        PUMP_FLUX = 0D0
+                        CALL COMPUTE_CROSS_BARRIER_PUMP_FLUX(I,J,K,
+     &                      TIMELOC,PUMP_FLUX)
+                        QN2(I) = QN2(I) + PUMP_FLUX
+                    ENDDO
+                CASE(4,24,5,25)
+                    I = I + 2*NVELL(K)
+                CASE DEFAULT
+                    I = I + NVELL(K)
+            END SELECT    
+         ENDDO 
       ENDIF 
 
       if(subdomainOn.and.enforceBN.eq.1) call readFort019(it)  ! NCSU Subdomain

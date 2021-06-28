@@ -240,6 +240,7 @@ Casey 180318: Added NWS=13
       ! @jasonfleming: reduce memory usage if there are no weir boundaries
       ! with cross barrier pipes
       logical :: meshHasWeirWithPipes
+
       ! Warn Elev control namelist
 c.... !wjp added for warnElev namelist
       REAL(SZ) :: WarnElev = 20.0  !
@@ -265,6 +266,8 @@ c.... !wjp added for warnElev namelist
       integer :: densityTimeIterator = 1 ! BC3D time step iteration skipper
       NAMELIST /densityControl/ densityRunType, densityFileName, 
      &  densityTimeIterator, densityForcingType
+
+      logical :: meshHasWeirWithPumps 
 
 C---------------------end of data declarations--------------------------------C
 
@@ -292,6 +295,7 @@ C     the reading of the fort.15 file.
       INTEGER, ALLOCATABLE :: NNEIGH(:)
       INTEGER  I,IL,IDUM,N,N1,N2,N3,NDIF1,NDIF2,NDIF3,NBN,NVEL,
      &  IK,IBN,NBBN,NFLUXB,NFLUXI,NFLUXIPipe,NIBP,NIBPPipe,IBTYPE,IBN1,NETA
+      INTEGER NFLUXIPump,NIBPPump 
       CHARACTER*95 LINEI
       CHARACTER*1 CHARI(95)
       EQUIVALENCE (LINEI,CHARI(1))
@@ -312,6 +316,7 @@ C.... tcm v51.20.04 additions for station location file
       NETCDF_AVAIL = .false.
 #endif
       meshHasWeirWithPipes = .false.
+      meshHasWeirWithPumps = .false. 
 C
 C...OPEN AND PROCESS THE UNIT 14 ADCIRC GRID FILE TO DETERMINE SIZES
 C
@@ -394,8 +399,10 @@ C
       NFLUXB=0                          !SPECIFIED MAINLAND BARRIER BC
       NIBP=0                            !NO. OF INTERNAL BARRIER BOUNDARY PAIRS
       NIBPPipe=0                        !number of internal barrier bounary (with pipes) pairs
+      NIBPPump=0                        !number of internal barrier boundary (with pumps) pairs
       NFLUXI=0                          !SPECIFIED INTERNAL BARRIER BC
       NFLUXIPipe=0                      !internal barrier boundary bc with pipes
+      NFLUXIPump=0                      !internal barrier boundary bc with pumps
       fluxBoundary=.false.             !SPECIFIED FLUX BC
 C
       READ(14,*) MNBOU                  !Land Boundary Segments
@@ -425,6 +432,10 @@ C     jgf46.21 Added support for IBTYPE=52.
             meshHasWeirWithPipes = .false.
             NFLUXIPipe=1
             NIBPPipe=NIBPPipe+NBN
+         case(6,26)
+            meshHasWeirWithPumps = .true.
+            NFLUXIPump=1
+            NIBPPump=NIBPPump+NBN
          case default  ! mainland and island
             NVEL=NVEL+NBN
          end select
@@ -443,7 +454,7 @@ C     jgf46.21 Added support for IBTYPE=52.
          ENDDO
       ENDDO
 C
-      MNVEL=NVEL+NDISC+NBBN+2*NIBP+2*NIBPPipe
+      MNVEL=NVEL+NDISC+NBBN+2*NIBP+2*NIBPPipe+2*NIBPPump  
       IF(MNBOU.EQ.0) MNBOU=1
       MNVEL=MNVEL+1
 C

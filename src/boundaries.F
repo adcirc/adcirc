@@ -36,11 +36,17 @@ C.....for internal barrier boundaries with flowthrough pipes
       REAL(SZ),ALLOCATABLE ::   PIPEHT(:),PIPECOEF(:),PIPEDIAM(:)
       INTEGER, ALLOCATABLE ::   IBCONN(:)
       INTEGER, ALLOCATABLE ::   ISSUBMERGED64(:) ! used to identify submerged ibtype=64 weir  SB
+C.....for internal barrier boundaries with pumps 
+      REAL(SZ),ALLOCATABLE ::   PUMPQ(:),PUMPONWL(:),PUMPOFFWL(:)
+      INTEGER,ALLOCATABLE ::    ISPUMPING(:)
+      INTEGER                   NPUMP,NFLUXIBPUMP
+C......end internal barrier boundaries with pumps
       ! these arrays will only be needed temporarily, between reading 
       ! the ascii mesh file and initializing the boundaries
       REAL(SZ),ALLOCATABLE ::   BARLANHTR(:,:),BARLANCFSPR(:,:)
       REAL(SZ),ALLOCATABLE ::   BARINHTR(:,:),BARINCFSBR(:,:),BARINCFSPR(:,:)
       REAL(SZ),ALLOCATABLE ::   PIPEHTR(:,:),PIPECOEFR(:,:),PIPEDIAMR(:,:)
+      REAL(SZ),ALLOCATABLE ::   PUMPQR(:,:),PUMPONWLR(:,:),PUMPOFFWLR(:,:) 
       INTEGER, ALLOCATABLE ::  IBCONNR(:,:)
       !      
       INTEGER  NOPE
@@ -154,7 +160,31 @@ C.....for internal barrier boundaries with flowthrough pipes
       type(internalFluxBoundaryWithPipes_t), allocatable :: internalFluxBoundariesWithPipes(:)
       integer :: numInternalFluxBoundariesWithPipes
       integer :: ifwpCount ! index into the internalFluxBoundariesWithPipes array
-      
+
+      ! flux boundaries where ibtype = 6, 26
+      type internalFluxBoundaryWithPumps_t
+         integer :: indexNum               ! order within the fort.14 file
+         integer :: informationID              ! xdmf ID for IBTYPE info
+         integer :: setID                      ! xdmf ID for node numbers
+         integer :: numAttributes = 7
+         integer :: attributeIDs(7) ! xdmf IDs for parameters
+         integer, allocatable :: nodes(:)
+         integer, allocatable :: ibconn(:)
+         real(8), allocatable :: barinht(:)
+         real(8), allocatable :: barincfsb(:)
+         real(8), allocatable :: barincfsp(:)
+         real(8), allocatable :: pumpq(:)
+         real(8), allocatable :: pumponwl(:)
+         real(8), allocatable :: pumpoffwl(:)
+         integer, allocatable :: ispumping(:)
+         real(8), allocatable :: leveeGeom(:)
+         integer, allocatable :: xdmf_nodes(:)
+         integer, allocatable :: xdmf_ibconn(:)
+      end type internalFluxBoundaryWithPumps_t
+      type(internalFluxBoundaryWithPumps_t), allocatable :: internalFluxBoundariesWithPumps(:)
+      integer :: numInternalFluxBoundariesWithPumps
+      integer :: ifwpumpCount ! index into the internalFluxBoundariesWithPumps array
+
       integer, parameter :: specifiedFluxBoundaryTypes(5) = (/ 2, 12, 22, 32, 52 /)
       ! 
       ! all info needed for self describing dataset in XDMF
@@ -261,6 +291,8 @@ C     ---------
       allocate ( barlanht(mnvel),barlancfsp(mnvel))
       allocate ( barinht(mnvel),barincfsb(mnvel),barincfsp(mnvel))
       allocate ( pipeht(mnvel),pipecoef(mnvel),pipediam(mnvel))
+      allocate ( pumpq(mnvel),pumponwl(mnvel),pumpoffwl(mnvel)) 
+      allocate ( ispumping(mnvel))                              
       allocate ( ibconn(mnvel))
       allocate ( nbvv(mnbou,0:mnvel))
       allocate ( issubmerged64(mnvel))
@@ -286,6 +318,9 @@ C     ---------
       pipeht = -99999.d0
       pipecoef = -99999.d0
       pipediam = -99999.d0
+      pumpq = -99999.d0
+      pumponwl = -99999.d0
+      pumpoffwl = -99999.d0
       ibconn = -99999
       nbvv = -99999
       bndlen2o3 = -99999.0
@@ -316,10 +351,12 @@ C     ---------
       allocate(externalFluxBoundaries(numExternalFluxBoundaries))
       allocate(internalFluxBoundaries(numInternalFluxBoundaries))
       allocate(internalFluxBoundariesWithPipes(numInternalFluxBoundariesWithPipes))
+      allocate(internalFluxBoundariesWithPumps(numInternalFluxBoundariesWithPumps))
       sfCount = 1
       efCount = 1
       ifCount = 1
-      ifwpCount = 1      
+      ifwpCount = 1 
+      ifwpumpCount = 1 
       do i=1,nbou
          if (nabout.eq.-1) then
             !write(6,'("i=",i0)') i !jgfdebug
@@ -356,7 +393,21 @@ C     ---------
             allocate(internalFluxBoundariesWithPipes(ifwpCount)%xdmf_nodes(nvell(i)))
             allocate(
      &         internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn(nvell(i)))            
-            ifwpCount = ifwpCount + 1            
+            ifwpCount = ifwpCount + 1  
+         case(6,26)
+            allocate(internalFluxBoundariesWithPumps(ifwpumpCount)%nodes(nvell(i)))
+            allocate(internalFluxBoundariesWithPumps(ifwpumpCount)%ibconn(nvell(i)))
+            allocate(internalFluxBoundariesWithPumps(ifwpumpCount)%barinht(nvell(i)))
+            allocate(internalFluxBoundariesWithPumps(ifwpumpCount)%barincfsb(nvell(i)))
+            allocate(internalFluxBoundariesWithPumps(ifwpumpCount)%barincfsp(nvell(i)))
+            allocate(internalFluxBoundariesWithPumps(ifwpumpCount)%pumpq(nvell(i)))
+            allocate(internalFluxBoundariesWithPumps(ifwpumpCount)%pumponwl(nvell(i)))
+            allocate(internalFluxBoundariesWithPumps(ifwpumpCount)%pumpoffwl(nvell(i)))
+            allocate(internalFluxBoundariesWithPumps(ifwpumpCount)%ispumping(nvell(i)))
+            allocate(internalFluxBoundariesWithPumps(ifwpumpCount)%xdmf_nodes(nvell(i)))
+            allocate(
+     &         internalFluxBoundariesWithPumps(ifwpumpCount)%xdmf_ibconn(nvell(i)))            
+            ifwpumpCount = ifwpumpCount + 1            
          case default
              write(6,'(a,i0,a)') "ERROR: The boundary type ",ibtype_orig(i),
      &        " was found in the file but is not valid."
@@ -399,7 +450,19 @@ C     ---------
          internalFluxBoundariesWithPipes(i)%xdmf_nodes(:) = -99999
          internalFluxBoundariesWithPipes(i)%xdmf_ibconn(:) = -99999
       end do
-      
+      do i=1,numInternalFluxBoundariesWithPumps
+         internalFluxBoundariesWithPumps(i)%nodes(:) = -99999
+         internalFluxBoundariesWithPumps(i)%ibconn(:) = -99999
+         internalFluxBoundariesWithPumps(i)%barinht(:) = -99999.d0
+         internalFluxBoundariesWithPumps(i)%barincfsb(:) = -99999.d0
+         internalFluxBoundariesWithPumps(i)%barincfsp(:) = -99999.d0
+         internalFluxBoundariesWithPumps(i)%pumpq(:) = -99999.d0
+         internalFluxBoundariesWithPumps(i)%pumponwl(:) = -99999.d0
+         internalFluxBoundariesWithPumps(i)%pumpoffwl(:) = -99999.d0
+         internalFluxBoundariesWithPumps(i)%ispumping(:) = 0
+         internalFluxBoundariesWithPumps(i)%xdmf_nodes(:) = -99999
+         internalFluxBoundariesWithPumps(i)%xdmf_ibconn(:) = -99999
+      end do
       !------------------------------------------------------------------
       end subroutine allocateBoundaryArrays
       !------------------------------------------------------------------
@@ -438,6 +501,7 @@ C     ------------------------------------------------------------------
       allocate ( barlanht(mnvel),barlancfsp(mnvel))
       allocate ( barinht(mnvel),barincfsb(mnvel),barincfsp(mnvel))
       allocate ( pipeht(mnvel),pipecoef(mnvel),pipediam(mnvel))
+      allocate ( pumpq(mnvel),pumponwl(mnvel),pumpoffwl(mnvel)) 
       allocate ( ibconn(mnvel))  
       allocate ( issubmerged64(mnvel))
 
@@ -494,11 +558,12 @@ C     ------------------------------------------------------------------
       nweir = 0
       do k = 1,nbou
          select case(ibtype(k))
-         case(4,24,64)
+         case(4,24,64,5,25,6,26) ! dsu add 5,25,6,26
             nweir = nweir + nvell(k)
-         case(5,25)
-            print *, 'error: ibtype 5 and 25 not supported by adcprep.'
-            CALL EXIT(1)
+c dsu removed:
+c         case(5,25)
+c            print *, 'error: ibtype 5 and 25 not supported by adcprep.'
+c            stop
          case default
             ! no action required for other boundary types
          end select
@@ -617,6 +682,8 @@ C     ------------------------------------------------------------------
       allocate ( barincfspr(mnbou,mnvel) )
       allocate ( pipehtr(mnbou,mnvel),pipecoefr(mnbou,mnvel) )
       allocate ( pipediamr(mnbou,mnvel) )
+      allocate ( pumpqr(mnbou,mnvel),pumponwlr(mnbou,mnvel) )
+      allocate ( pumpoffwlr(mnbou,mnvel) )
       allocate ( ibconnr(mnbou,mnvel) )
 C     ------------------------------------------------------------------
       end subroutine allocateFluxBoundaryArrayTemporaries
@@ -640,6 +707,8 @@ C     ------------------------------------------------------------------
       deallocate ( barincfspr )
       deallocate ( pipehtr,pipecoefr )
       deallocate ( pipediamr )
+      deallocate ( pumpqr,pumponwlr )
+      deallocate ( pumpoffwlr )
       deallocate ( ibconnr )
 C     ------------------------------------------------------------------
       end subroutine freeFluxBoundaryArrayTemporaries

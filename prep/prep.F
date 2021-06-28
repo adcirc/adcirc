@@ -1212,6 +1212,7 @@ C
       IMPLICIT NONE
       INTEGER I,I1,J,K,M,ETYPE,ITEMP,ITEMP2,ILNODE,ILNODE2,ILNODE3
       INTEGER JD,JG,JP,IPROC,IPROC2,IPROC3,DISC,BBN,IBP,IBPPipe
+      INTEGER IBPPump 
       INTEGER INDX,INDEX2,ITOT,ITYPE,NUMS(10)
       CHARACTER LOCFN*14,PE*6
       CHARACTER*80 OUTMSG
@@ -1303,7 +1304,7 @@ C
             select case(IBTYPE(K))
             !
             ! weir boundaries
-            case(4,24,64,5,25)
+            case(4,24,64,5,25,6,26) 
                DO I = 1,NVELL(K)
                   INDX = NBVV(K,I)
                   INDEX2 = IBCONNR(K,I)
@@ -1492,6 +1493,7 @@ C
          BBN=0   ! Mainland Barrier Boundary Nodes (external overflow)
          IBP=0   ! Internal Barrier Boundary Pairs (levee)
          IBPPipe=0 ! internal barrier boundary pairs (levee with cross barrier pipes)
+         IBPPump=0 ! internal barrier boundary pairs (levee with cross barrier pumps)
          ITEMP = 0 ! mainland and island
          IPER = 0
 C
@@ -1519,6 +1521,8 @@ C     jgf46.21 Added support for IBTYPE=52.
             case(94)
 !           DW/WP periodic boundary
                IPER = IPER + NVELLP(K)
+            case(6,26)
+               IBPPump = IBPPump + NVELLP(K)
             case default
                ITEMP = ITEMP + NVELLP(K)
             end select
@@ -1544,7 +1548,7 @@ C     jgf46.21 Added support for IBTYPE=52.
          END DO
 C
 c        print *, IPROC-1,ITEMP,DISC,BBN,2*IBP
-         ITEMP  = ITEMP + DISC + BBN + 2*IBP + 2*IBPPipe + IPER;
+         ITEMP  = ITEMP + DISC + BBN + 2*IBP + 2*IBPPipe + 2*IBPPump + IPER
          IF (ITEMP.NE.NVELP(IPROC)) THEN
 c          print *, "changed value from ",NVELP(IPROC)," to ",ITEMP
            NVELP(IPROC) = ITEMP
@@ -1687,7 +1691,7 @@ C
      &                        LABELS(IMAP_NOD_LG(IBCONNRP(K,I),IPROC)),
      &                        BAR1(K,INDX),BAR2(K,INDX),BAR3(K,INDX)
                   ENDDO
-               case(5,25)
+               case(5,25,6,26) 
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
                      WRITE(14,83) LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC)),

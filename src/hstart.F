@@ -41,6 +41,8 @@ C
      &    NOPE, NVEL, BndBCRiver, LBCODEI, NBV, BARLANHT, BARLANCFSP,
      &    IBCONN, BARINHT, BARINCFSP, BARINCFSB, PIPEHT, PIPECOEF,
      &    PIPEDIAM, NPEBC
+     &    NFLUXIBPUMP,PUMPQ,PUMPONWL,PUMPOFFWL,ISPUMPING,
+     &    NBOU,NVELL,IBCONN                              
       USE GLOBAL_IO
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT,
      &    qsurf, NFEN, DUU, DUV, DVV, UU, VV, BSX, BSY, Q, WZ, q20, l,
@@ -93,7 +95,7 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
          end subroutine
       end interface
       INTEGER IT
-      INTEGER I, J, NH, N              !local loop counters
+      INTEGER I, J, NH, N, K              !local loop counters
       INTEGER NCyc, NA, InputFileFmtVn
       INTEGER sd_node_number,fd_node_number
       INTEGER :: NNBB, NNBB1, NNBB2
@@ -1074,7 +1076,7 @@ C...
 C...  RESTART INWARD/OUTWARD NORMAL FLOW OVER SPECIFIED
 cjj   wm001 - modified/added the following 3 lines
 C.... INTERNAL BARRIERS AND FOR INTERNAL BARRIER BOUNDARIES
-C.... WITH CROSS BARRIER PIPES
+C.... WITH CROSS BARRIER S
 C.... THIS SECTION ONLY RESTARTS THE OVER BARRIER FLOW COMPONENT
 C...
 cjj   wm001 - modified following line
@@ -1082,7 +1084,8 @@ cjj   wm001 - modified following line
          DO I=1,NVEL
 cjj   wm001 - modified following 2 lines
             IF((LBCODEI(I).EQ.4).OR.(LBCODEI(I).EQ.24)
-     &           .OR.(LBCODEI(I).EQ.5).OR.(LBCODEI(I).EQ.25)) THEN
+     &           .OR.(LBCODEI(I).EQ.5).OR.(LBCODEI(I).EQ.25)
+     &           .OR.(LBCODEI(I).EQ.6).OR.(LBCODEI(I).EQ.26)) THEN
                NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
                NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
 C.............RESET INFORMATION FOR K-1 TIME LEVEL
@@ -1222,6 +1225,68 @@ C.............RESET INFORMATION FOR K TIME LEVEL
          END DO
       ENDIF
 cjjwm001 - end add
+
+C...  RESTART INWARD/OUTWARD NORMAL FLOW OVER SPECIFIED
+C.... INTERNAL BARRIERS WITH CROSS BARRIER PUMPS
+C.... THIS SECTION RESTARTS THE PUMP COMPONENT
+C.... NOTE THAT PUMP FLOW COMPONENT IS ADDED INTO BARRIER FLOW COMPONENT
+C.... THAT WAS PREVIOUSLY SET
+C.... ALSO NOTE THAT IF ETA IS BETWEEN PUMPOFFWL AND PUMPONWL, THERE IS NO
+C.... WAY TO KNOW THE PUMPING STATUS WITHOUT THE TIME HISTORY OF ETA (IF
+C.... PUMPOFFWL < ETA < PUMPONWL, THE PUMP COULD BE ON OR OFF DEPENDING UPON
+C.... THE PRIOR HISTORY OF ETA).
+C.... HERE, ISPUMPING IS SET TO 1 IF ETA > PUMPONWL.
+C...
+      IF(NFLUXIBPUMP.EQ.1) THEN
+         I = 0                         
+         DO K = 1, NBOU  
+c          write(16,*)'K=',K,'I+1=',I+1,'LBCODEI(I+1)=',LBCODEI(I+1)
+            SELECT CASE(LBCODEI(I+1))
+                CASE(6,26)
+                    DO J = 1,NVELL(K)*2
+                        I = I + 1
+                        NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
+                        NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
+                        ISPUMPING(I)=0
+                        IF (J.LE.NVELL(K)) THEN  ! we're on the upstream side 
+C.............RESET INFORMATION FOR K-1 TIME LEVEL
+                           IF (ETA1(NNBB1).GT.PUMPONWL(I)) ISPUMPING(I)=1
+                           IF (ISPUMPING(I).EQ.1) THEN
+                               QN1(I)=QN1(I)-PUMPQ(I)
+                               write(16,*)'HSTART: NODE NNBB1=',NNBB1,
+     &                                    'QN1=',-PUMPQ
+                           ENDIF
+C.............RESET INFORMATION FOR K TIME LEVEL
+                           IF (ETA2(NNBB1).GT.PUMPONWL(I)) ISPUMPING(I)=1
+                           IF (ISPUMPING(I).EQ.1) THEN
+                               QN2(I)=QN2(I)-PUMPQ(I)
+                               write(16,*)'HSTART: NODE NNBB1=',NNBB1,
+     &                                    'QN2=',-PUMPQ
+                           ENDIF
+                        ELSE   ! we're on the downstream side, look at NNBB2 
+C.............RESET INFORMATION FOR K-1 TIME LEVEL
+                           IF (ETA1(NNBB2).GT.PUMPONWL(I)) ISPUMPING(I)=1
+                           IF (ISPUMPING(I).EQ.1) THEN
+                               QN1(I)=QN1(I)+PUMPQ(I)
+                               write(16,*)'HSTART: NODE NNBB2=',NNBB2,
+     &                                    'QN1=',PUMPQ
+                           ENDIF
+C.............RESET INFORMATION FOR K TIME LEVEL
+                           IF (ETA2(NNBB2).GT.PUMPONWL(I)) ISPUMPING(I)=1
+                           IF (ISPUMPING(I).EQ.1) THEN
+                               QN2(I)=QN2(I)+PUMPQ(I)
+                               write(16,*)'HSTART: NODE NNBB2=',NNBB2,
+     &                                    'QN2=',PUMPQ
+                           ENDIF
+                        ENDIF
+                    ENDDO
+                CASE(4,24,5,25)
+                    I = I + 2*NVELL(K)
+                CASE DEFAULT
+                    I = I + NVELL(K)
+            END SELECT    
+         ENDDO 
+      ENDIF
 
 C-------------------TIME VARYING BATHYMETRY FIELDS-------------------------
 C... update the time varying bathymetry if used

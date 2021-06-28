@@ -293,7 +293,7 @@ C-----------------------------------------------------------------------
                 ALLOCATE(BAR_FAILURE_DURATION(NVEL))
                 ALLOCATE(BAR_VARYTYPE(NVEL))
                 ALLOCATE(BAR_SCHEDULE(NVEL))
-
+    
                 BARHT_FINAL(1:NVEL) = 0D0
                 BAR_DEG_START(1:NVEL) = 0D0
                 BAR_DEG_END(1:NVEL) = 0D0
@@ -306,7 +306,7 @@ C...............COUNT THE NUMBER OF WEIR STYLE BOUNDARIES
                 NWEIR = 0
                 DO I = 1,NVEL
                     SELECT CASE(LBCODEI(I))
-                        CASE(3,13,23,4,24,64,5,25)
+                        CASE(3,13,23,4,24,64,5,25,6,26) 
                             NWEIR = NWEIR + 1
                     END SELECT
                 ENDDO
@@ -316,7 +316,7 @@ C...............CONSTRUCT ARRAYS OF X,Y FOR BOUNDARY NODE LOCATIONS
                 IDX = 0
                 DO I = 1,NVEL
                     SELECT CASE(LBCODEI(I))
-                        CASE(3,13,23,4,24,64,5,25)
+                        CASE(3,13,23,4,24,64,5,25,6,26) 
                             IDX = IDX + 1
                             BAR_LOCATIONS(1,IDX) = X(NBV(I))
                             BAR_LOCATIONS(2,IDX) = Y(NBV(I))
@@ -640,7 +640,7 @@ C...............COMPUTE THE NEW BOUNDARY HEIGHT
                             BAR_DZ = BARLANHT(MYIDX) - 
      &                               BARHT_FINAL(MYIDX)
                             BAR_START = BARLANHT(MYIDX)
-                        CASE(4,24,64,5,25)
+                        CASE(4,24,64,5,25,6,26)    
                             BAR_DZ = BARINHT(MYIDX) - BARHT_FINAL(MYIDX)
                             BAR_START = BARINHT(MYIDX)
                         CASE DEFAULT
@@ -874,7 +874,7 @@ C                   VALUES BASED UPON MESH GEOMETRY.
                             SELECT CASE(LBCODEI(MYIDX))
                                 CASE(3,13,23)
                                     BARHT_FINAL(MYIDX) = -DP(NNBB1)
-                                CASE(4,14,24,64,5,25)
+                                CASE(4,14,24,64,5,25,6,26) 
                                     NNBB2 = IBCONN(MYIDX)
                                     BARHT_FINAL(MYIDX) = 
      &                                 MIN(-DP(NNBB1),-DP(NNBB2))
@@ -887,7 +887,7 @@ C                   VALUES BASED UPON MESH GEOMETRY.
      &                                  BARLANHT2(MYIDX) + 
      &                                  BAR_SCHEDULE(MYIDX)%
      &                                  SECTION(MYSEC)%BARHT_DELTA
-                                CASE(4,14,24,64,5,25)
+                                CASE(4,14,24,64,5,25,6,26) 
                                     BARHT_FINAL(MYIDX) = 
      &                                  BARINHT2(MYIDX) + 
      &                                  BAR_SCHEDULE(MYIDX)%
@@ -902,7 +902,7 @@ C                   VALUES BASED UPON MESH GEOMETRY.
      &                                  BARLANHT2(MYIDX) - 
      &                                  BAR_SCHEDULE(MYIDX)%
      &                                  SECTION(MYSEC)%BARHT_DELTA
-                                CASE(4,14,24,64,5,25)
+                                CASE(4,14,24,64,5,25,6,26) 
                                     BARHT_FINAL(MYIDX) = 
      &                                  BARINHT2(MYIDX) - 
      &                                  BAR_SCHEDULE(MYIDX)%
@@ -914,7 +914,7 @@ C                   VALUES BASED UPON MESH GEOMETRY.
                             SELECT CASE(LBCODEI(MYIDX))
                                 CASE(3,13,23)
                                     BARHT_FINAL(MYIDX) = BARLANHT(MYIDX)
-                                CASE(4,14,24,64,5,25)
+                                CASE(4,14,24,64,5,25,6,26) 
                                     BARHT_FINAL(MYIDX) = BARINHT(MYIDX)
                             END SELECT
                         CASE DEFAULT
@@ -1302,7 +1302,7 @@ C...........................A ONE SIDED STYLE WEIR, WE DONT NEED X2 AND Y2
                                 BAR_SCHEDULE(IDX)%OFFSET = OFFSET   
                             ENDIF
 
-                        CASE(4,24,64,5,25)
+                        CASE(4,24,64,5,25,6,26)  
 C...........................A TWO SIDED STYLE WEIR, WE NEED X2 AND Y2
                             CALL FIND_BOUNDARY_NODES(X2,Y2,IDX2)
                             IF(IDX2.EQ.-1)THEN
@@ -2444,12 +2444,107 @@ C..................INWARD SUBMERGED DISCHARGE -> CASE 6
                   RETURN
                ENDIF
 
+            END SUBROUTINE
+
+            SUBROUTINE COMPUTE_CROSS_BARRIER_PUMP_FLUX(
+     &          BARRIER_INDEX,BOUNDARYNODE,BOUNDARY,TIMELOC,FLUX)
+
+                USE BOUNDARIES,ONLY:BARINCFSB,BARINCFSP,ISPUMPING,
+     &              NVELL,IBCONN,BARINHT,PUMPQ,PUMPONWL,PUMPOFFWL
+                USE GLOBAL,ONLY:NIBNODECODE,TVW,USE_TVW,NODECODE,ETA2
+                IMPLICIT NONE
+                INTEGER,INTENT(IN),TARGET   :: BARRIER_INDEX
+                INTEGER,INTENT(IN),TARGET   :: BOUNDARY
+                INTEGER,INTENT(IN),TARGET   :: BOUNDARYNODE
+                REAL(SZ),INTENT(IN)         :: TIMELOC
+                REAL(SZ),INTENT(OUT)        :: FLUX
+
+                INTEGER                     :: NNBB1,NNBB2
+                INTEGER                     :: NNBB1WN,NNBB2WN
+                INTEGER                     :: FLOWDIR
+                INTEGER,POINTER             :: I,J,K
+                REAL(SZ)                    :: RBARWL1,RBARWL2
+                REAL(SZ)                    :: RBARWL1F,RBARWL2F
+
+                CALL setMessageSource("COMPUTE_CROSS_BARRIER_PUMP_FLUX")
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
+                CALL allMessage(DEBUG,"Enter")
+#endif                
+
+C...............SIMPLIFY VARIABLES
+                I => BARRIER_INDEX
+                J => BOUNDARYNODE
+                K => BOUNDARY
+
+                NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
+                NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
+
+c           write(*,*)'I=',I,'J=',J,'K=',K,'NVELL(K)=',NVELL(K),
+c     &      'ISPUMPING(I)=',ISPUMPING(I)
+c           write(*,*)'NNBB1=',NNBB1,'NNBB2=',NNBB2,'ETA2(NNBB1)=',
+c     &      ETA2(NNBB1),'ETA2(NNBB2)=',ETA2(NNBB2)
+                
+                IF (J.LE.NVELL(K)) THEN  ! we're on the upstream side 
+                     IF (ISPUMPING(I).eq.1) THEN 
+                        IF (ETA2(NNBB1).LT.PUMPOFFWL(I)) THEN
+                           ISPUMPING(I)=0
+                           write(16,*)'TIMELOC=',TIMELOC
+                           write(16,*)'NNBB1=',NNBB1,'NNBB2=',NNBB2,'ETA2(NNBB1)=',
+     &                          ETA2(NNBB1),'ETA2(NNBB2)=',ETA2(NNBB2)
+                           write(16,*)'I=',I,'J=',J,'ETA2=',ETA2(NNBB1),
+     &                      ' PUMPING OFF'
+                           write(78,*)TIMELOC,I,J,NNBB1,NNBB2,ETA2(NNBB1),
+     &                                 ISPUMPING(I)
+                        ENDIF
+                     ELSE ! not pumping
+                        IF (ETA2(NNBB1).GT.PUMPONWL(I)) THEN
+                           ISPUMPING(I)=1
+                           write(16,*)'TIMELOC=',TIMELOC
+                           write(16,*)'NNBB1=',NNBB1,'NNBB2=',NNBB2,'ETA2(NNBB1)=',
+     &                          ETA2(NNBB1),'ETA2(NNBB2)=',ETA2(NNBB2)
+                           write(16,*)'I=',I,'J=',J,'ETA2=',ETA2(NNBB1),
+     &                      ' PUMPING ON'
+                           write(78,*)TIMELOC,I,J,NNBB1,NNBB2,ETA2(NNBB1),
+     &                                 ISPUMPING(I)
+                        ENDIF
+                     ENDIF
+                     IF (ISPUMPING(I).eq.1) THEN   
+                         FLUX=-PUMPQ(I)
+C                         write(16,*)'NODE NNBB1=',NNBB1,'Flux=',FLUX
+                     ENDIF
+                ELSE   ! we're on the downstream side, look at NNBB2
+                     IF (ISPUMPING(I).eq.1) THEN 
+                        IF (ETA2(NNBB2).LT.PUMPOFFWL(I)) THEN
+                           ISPUMPING(I)=0
+                           write(16,*)'TIMELOC=',TIMELOC
+                           write(16,*)'NNBB1=',NNBB1,'NNBB2=',NNBB2,'ETA2(NNBB1)=',
+     &                          ETA2(NNBB1),'ETA2(NNBB2)=',ETA2(NNBB2)
+                           write(16,*)'I=',I,'J=',J,'ETA2=',ETA2(NNBB2),
+     &                      ' PUMPING OFF'
+                        ENDIF
+                     ELSE ! not pumping
+                        IF (ETA2(NNBB2).GT.PUMPONWL(I)) THEN
+                           ISPUMPING(I)=1
+                           write(16,*)'TIMELOC=',TIMELOC
+                           write(16,*)'NNBB1=',NNBB1,'NNBB2=',NNBB2,'ETA2(NNBB1)=',
+     &                          ETA2(NNBB1),'ETA2(NNBB2)=',ETA2(NNBB2)
+                           write(16,*)'I=',I,'J=',J,'ETA2=',ETA2(NNBB1),
+     &                      ' PUMPING ON'
+                        ENDIF
+                     ENDIF
+                     IF (ISPUMPING(I).eq.1) THEN
+                         FLUX=PUMPQ(I)
+C                         write(16,*)'NODE NNBB2=',NNBB2,'Flux=',FLUX
+                     ENDIF  
+                ENDIF
 #if defined(WEIR_TRACE) || defined(ALL_TRACE) 
                CALL allMessage(DEBUG,"Return")
 #endif
                CALL unsetMessageSource()
 
-            END SUBROUTINE
+               RETURN
+C-----------------------------------------------------------------------
+            END SUBROUTINE COMPUTE_CROSS_BARRIER_PUMP_FLUX
 
 
 #ifdef ORIGWEIR

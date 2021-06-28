@@ -230,7 +230,18 @@ C
                NWEIR = NWEIR+1
                WEIR(NWEIR) = NBVV(K,I)
                WEIRD(NWEIR) = IBCONNR(K,I)
-            ENDDO
+         case(6,26)
+            DO I =1,NVELL(K)
+               READ(14,*) n1,n2, 
+     &                   BAR1(K,I),BAR2(K,I),BAR3(K,I),
+     &                   BAR4(K,I),BAR5(K,I),BAR6(K,I)
+               NBVV(K,I) = find(node_dict,n1)
+               IBCONNR(K,I) = find(node_dict,n2)
+               !--Construct List of WEIR nodes and their duals
+               NWEIR = NWEIR+1
+               WEIR(NWEIR) = NBVV(K,I)
+               WEIRD(NWEIR) = IBCONNR(K,I)
+            ENDDO    
          case(2,12,22,32,52)
            NFLUXF=1 !jgf51.52.23
            DO I=1,NVELL(K)
@@ -1314,6 +1325,7 @@ C........CHECK FOR WEIR FLUX BOUNDARIES
       NFLUXB = 0
       NFLUXIB = 0
       NFLUXIBP = 0
+      NFLUXIBPUMP = 0 
       DO I = 1,NVEL
         SELECT CASE(LBCODE(I))
             CASE(3,13,23)
@@ -1322,9 +1334,12 @@ C........CHECK FOR WEIR FLUX BOUNDARIES
                 NFLUXIB = 1
             CASE(5,25)
                 NFLUXIBP = 1
+            CASE(6,26)
+                NFLUXIBPUMP=1
         END SELECT
       ENDDO
-      IF((NFLUXIB.EQ.1) .OR. (NFLUXIBP.EQ.1) .OR. (NFLUXB.EQ.1) )THEN
+      IF((NFLUXIB.EQ.1) .OR. (NFLUXIBP.EQ.1) .OR. (NFLUXB.EQ.1) 
+     &     .OR. (NFLUXIBPUMP.EQ.1) )THEN 
         IF(USE_TVW)CALL PARSE_TIME_VARYING_WEIR_INFO()
       ENDIF
 
