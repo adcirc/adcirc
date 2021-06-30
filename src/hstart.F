@@ -1533,8 +1533,8 @@ Cjromo 11-01-00  Initialize TIP2 for HOTSTART
             ENDIF
 
             ARGT    = AMIGT(J)*(TimeLoc-NCYC*PERT(J))+FACET(J)
-            TPMUL   = RampTip*ETRF(J)*TPK(J)*FFT(J)
-            SALTMUL = RampTip*FFT(J)
+            TPMUL   = RampTip2*ETRF(J)*TPK(J)*FFT(J)
+            SALTMUL = RampTip2*FFT(J)
 C           WJP: We actually want to compare against diurnal and get 0,1,2
 C           or higher species (was opposite beforehand)
 #ifdef IBM
