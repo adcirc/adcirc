@@ -49,7 +49,7 @@ case "${comp_opt}" in
   gnu   ) ;; #Do nothing
   intel ) ;; #Do nothing
   pgi   ) ;; #Do nothing
-  *     ) echo "${scrNAME} :: Compiler \"${comp_opt}\" is not supported"
+  *     ) echo "${scrNAME} :: Compiler \"${comp_opt:-UNDEF}\" is not supported"
           echo "   Exiting ..."
           exit 1
           ;;
@@ -69,16 +69,15 @@ else
   exit 1
 fi
 
-export compiler=${compiler}
 export ADCDIR=$(dirname $(dirname ${scrDIR}))
 ###====================
 
 # move to the `work/` directory to build main ADCIRC executables
 pushd ${ADCDIR}/work >/dev/null 2>&1
   export MAKELEVEL=0
-  make NETCDF=enable NETCDF4=enable libadc.a
-  make NETCDF=enable NETCDF4=enable adcprep
-  #make padcirc -d compiler=$compiler NETCDFLAG=enable NETCDF4FLAG=enable NETCDF4_COMPRESSION=enable
+  make compiler=${comp_opt} NETCDF=enable NETCDF4=enable libadc.a
+  make compiler=${comp_opt} NETCDF=enable NETCDF4=enable adcprep
+  #make padcirc -d compiler=${comp_opt} NETCDFLAG=enable NETCDF4FLAG=enable NETCDF4_COMPRESSION=enable
 popd >/dev/null 2>&1
 
 # build ADCIRC NUOPC

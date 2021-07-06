@@ -1565,7 +1565,15 @@ module adc_cap
             file=__FILE__)) &
             return  ! bail out
 
-        CALL ADCIRC_Final()
+! Need to fix this
+! Modified by Panagiotis Velissariou to eliminate the error with MPI_FINALIZE:
+!Error: *** The MPI_Comm_free() function was called after MPI_FINALIZE was invoked.
+!       *** This is disallowed by the MPI standard.
+!       *** Your MPI job will now abort.
+! Reason: ESMF_Finalize() is called in MAIN_NEMS, so we don't need to all MPI_Finalize() from
+!         ADCIRC_Final so we set NO_MPI_FINALIZE=.TRUE. in ADCIRC_Final
+!        CALL ADCIRC_Final()
+        CALL ADCIRC_Final(.TRUE.)
 
         write(info,*) subname,' --- finalize completed --- '
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
