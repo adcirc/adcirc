@@ -226,9 +226,9 @@ endif
 # feupdateenv until run time, thus avoiding the error message:
 # "feupdateenv is not implemented and will always fail"
 ifeq ($(compiler),intel)
-  PPFC            :=  ifort
+  PPFC          :=  ifort
   FC            :=  ifort
-  PFC           :=  mpif90
+  PFC           ?=  mpif90
   FFLAGS1       := $(INCDIRS) -O2 -g -traceback -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
   CFLAGS        := $(INCDIRS) -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
   FLIBS         :=
@@ -387,7 +387,7 @@ endif
 ifeq ($(compiler),intel-ND)
   PPFC          :=  ifort
   FC            :=  ifort
-  PFC           :=  mpif90
+  PFC           ?=  mpif90
 #  FFLAGS1       :=  $(INCDIRS) -w -O3 -assume byterecl -132 -assume buffered_io #-i-dynamic
 
   ifeq ($(AMD),yes)
@@ -446,7 +446,7 @@ endif
 ifeq ($(compiler),intel-sgi)
   PPFC          :=  ifort
   FC            :=  ifort
-  PFC           :=  mpif90
+  PFC           ?=  mpif90
   CC            :=  icc -O2 -no-ipo
   CCBE          :=  icc -O2 -no-ipo
   FFLAGS1       :=  $(INCDIRS) -fixed -extend-source 132 -O2 -finline-limit=1000 -real-size 64 -no-ipo -assume buffered_io
@@ -928,7 +928,7 @@ endif
 ifeq ($(compiler),intel)
   PPFC	        :=  ifort -w
   FC	        :=  ifort -w
-  PFC	        :=  mpif90
+  PFC	        ?=  mpif90
   OPTLVL        := -O2
   ifeq ($(ADC_DEBUG),yes)
     OPTLVL        := -g
