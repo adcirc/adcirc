@@ -661,7 +661,7 @@ clean:
 	rm -f ../util/estofs_tide_fac/estofs_tide_fac
 
 clobber: clean
-	rm -r -f odir* util/*
+	rm -r -f odir* util*
 	rm -f adcprep adcprep_be adcirc $(PARALLEL_ADCIRC) adcswan padcswan p15 owi22 build13 aswip \
 	      build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost adccmp libadc.a
 
