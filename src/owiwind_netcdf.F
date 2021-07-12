@@ -274,12 +274,8 @@
       IF(ALLOCATED(NWS13)) DEALLOCATE(NWS13)
       ALLOCATE(NWS13(1:NumGroup))
 
-#ifdef HAVE_NETCDF4
       ! Connect to the first group.
       NC_ERR = NF90_INQ_NCID(NC_ID,TRIM(ADJUSTL(GroupNames(1))),NC_IDG)
-#else
-      NC_IDG = 1
-#endif
 
       ! Find the starting date/time in YYYY-MM-DDTHH:MM:SS format,
       ! and convert it into Julian format.
@@ -304,12 +300,8 @@
       ! group.  We will use these to build the first time snap.
       DO IG=1,NumGroup
         ! Connect to the group and its time variable.
-#ifdef HAVE_NETCDF4
         NC_ERR = NF90_INQ_NCID(NC_ID,TRIM(ADJUSTL(GroupNames(IG))),
      &      NC_IDG)
-#else
-        NC_IDG = IG
-#endif
         NC_ERR = NF90_INQ_DIMID(NC_IDG,"time",NC_DIM)
         NC_ERR = NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,
      &      LEN=NWS13(IG)%NumSnap)
@@ -502,13 +494,9 @@
           ENDIF
           CYCLE
         ENDIF
-#ifdef HAVE_NETCDF4
         ! Find the current group and time variable in the file.
         NC_ERR = NF90_INQ_NCID(NC_ID,
      &      TRIM(ADJUSTL(GroupNames(IG))),NC_IDG)
-#else
-        NC_IDG = IG
-#endif
         NC_ERR = NF90_INQ_VARID(NC_IDG,"time",NC_VAR)
         ! Check whether we have progressed past the end of the current
         ! wind snap, and if so, then shift to the next wind snap.
@@ -587,13 +575,10 @@
         IF(NWS13(IG)%InclSnap.EQ.0)THEN
           CYCLE
         ENDIF
-#ifdef HAVE_NETCDF4
+
         ! Connect to this group.
         NC_ERR = NF90_INQ_NCID(NC_ID,TRIM(ADJUSTL(GroupNames(IG))),
      &      NC_IDG)
-#else
-        NC_IDG = IG
-#endif
         ! Read number of cells in longitude, latitude.
         NC_ERR = NF90_INQ_DIMID(NC_IDG,"xi",NC_DIM)
         NC_ERR = NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,LEN=NumLon)

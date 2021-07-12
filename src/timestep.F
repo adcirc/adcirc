@@ -359,7 +359,7 @@ C...  Transport
          IF(IM.EQ.10) THEN
            TRANS_LV_B(I)=0.D0
            TRANS_LV_A(I)=0.D0
-           ENDIF
+         ENDIF
 
 C...  Wind (& wave radiation stress if used)
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
@@ -640,8 +640,9 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 #endif
       IF(NRS.NE.0) THEN
 
-         if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3)) then
-            IF(TimeLoc.GT.RSTIME2) THEN
+        if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3) .or. (nrs.eq.5)) then  !saeed added 5
+!          if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3)) then
+            IF (TimeLoc.GT.RSTIME2) THEN
                RSTIME1=RSTIME2
                RSTIME2=RSTIME2+RSTIMINC
                DO I=1,NP
@@ -671,8 +672,21 @@ C             into RSNX1/RSNY1, and then load the future forces into RSNX2/RSNY2
                  ENDDO
                ENDIF
 #endif
+C... v50.xx sm -- nrs=5 for NUOPC coupling wave data from coupler
+               NRS5: IF (NRS == 5) THEN    ! saeed
+
+                  DO I=1,NP
+                   RSX = RSNX1(I)
+                   RSY = RSNY1(I)
+                   RSNX1(I) = RSNX2(I)
+                   RSNY1(I) = RSNY2(I)
+                   RSNX2(I) = RSNX2(I) + (RSNX2(I)-RSX) ! extrapolate: 2*Rc - Rp
+                   RSNY2(I) = RSNY2(I) + (RSNY2(I)-RSY)
+                 ENDDO
+               ENDIF NRS5 !(NRS = 5)
 
             ENDIF
+
             RStRatio=(TimeLoc-RSTIME1)/RSTIMINC
             DO I=1,NP
                RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
@@ -688,6 +702,7 @@ Casey 090302: Added these lines for output to the rads.64 file.
                ENDIF
 !#endif
             ENDDO
+
          ENDIF  !nrs = 1,2,or 3
 
          ! Tightly Coupled Code with STWAVE

@@ -65,7 +65,15 @@ C... v49.48 tcm -- added for coupling with STWAVE (NRS=4)
       REAL(8)  :: STARTWAVE   ! Start of Wave Service
       REAL(8)  :: ENDWAVE     ! End of Wave Service
       LOGICAL  :: CPL2STWAVE = .FALSE.  !Coupled to STWAVE (NRS=4)
-      LOGICAL  :: Flag_ElevError = .FALSE.  
+      LOGICAL  :: Flag_ElevError = .FALSE.
+
+C  
+C... v50.xx sm -- added for coupling with NOUPC Cap 
+      LOGICAL   ::  NUOPC4MET = .FALSE.  ! assign in CAP
+      LOGICAL   ::  NUOPC4WAV = .FALSE.  ! assign in CAP     
+C
+C
+
 C      real(sz) rampriver,drampriver,rampriver1,rampriver2
 C     jgf46.08 Fine grained ramp functions (jgf46.21 split flux b.c.s)
       REAL(SZ) RampExtFlux,DRampExtFlux ! Ramp for external flux b.c.s
@@ -298,7 +306,7 @@ Cobell - Added for Time Varying Weirs, Set to default values
 
 
 Cobell -  Added the following for output of ESL at end of run
-      REAL(SZ),ALLOCATABLE, TARGET :: ESLCOUNT(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: ESLONOFF(:)
 
       REAL(SZ),ALLOCATABLE, TARGET ::  CC00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  EtaDisc(:) ! vjp 9/2006 added for hotstart file
@@ -1184,8 +1192,8 @@ C    kmd48.33bc - arrays for baroclinic
 
 C    Allocate array for ESL i/o - only needed if
 C    loadEleSlopeLim.eqv..true
-      ALLOCATE (ESLCOUNT(MNP))
-      ESLCOUNT = 0.d0
+      ALLOCATE (ESLONOFF(MNP))
+      ESLONOFF = 0.d0
 
 #ifdef CMPI
       ALLOCATE ( IDUMY(1), DUMY1(1), DUMY2(1) )
@@ -1455,7 +1463,8 @@ C
       windDragOut(:) = 0.d0
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-      IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4)) then
+!   nrs = 5 -- Saeed's nuopc implementation
+      IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4).or.(ABS(NRS).EQ.5)) then
 !#ifdef CSWAN
 Casey 090302: Added the next line for output of radiation stress gradients.
          ALLOCATE ( RSNXOUT(MNP),RSNYOUT(MNP) )

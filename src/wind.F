@@ -9,6 +9,7 @@ C
        USE GLOBAL, ONLY : ScreenUnit, setMessageSource, allMessage,
      &    screenMessage, logMessage, unsetMessageSource,
      &    DEBUG, ECHO, INFO, WARNING, ERROR, scratchMessage,
+C PADCIRC VERSION 45.12 03/17/2006                                            *
      &    Rearth, pi, deg2rad, rad2deg, e, PRBCKGRND, g, rhoWat0,
      &    sphericalDistance, rhoAir, one2ten, windReduction,
      &    openFileForRead, RNDAY, cice_timinc, cice_time1, cice_time2
@@ -22,14 +23,15 @@ C
       use datetime_module, only: datetime, timedelta
 #endif
 #if defined(DATETIME) && (defined(GRIB2API) || defined(ADCNETCDF))
-      integer, parameter :: allowable_nws(20)
-     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,19,20,29,30/)
+      integer, parameter :: allowable_nws(21)
+     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,19,20,29,30/)
 #elif defined(ADCNETCDF)
-      integer, parameter :: allowable_nws(19)
-     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,13,15,16,19,20,29,30/)
+      integer, parameter :: allowable_nws(20)
+     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,13,15,16,17,19,20,29,30/)
 #else
-      integer, parameter :: allowable_nws(18)
-     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,19,20,29,30/)
+C... v50.xx sm -- nws=17 for NUOPC coupling hwrf data
+      integer, parameter :: allowable_nws(19)
+     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,17,19,20,29,30/)
 #endif
       logical nwsOK     ! true if NWS value in fort.15 is allowed
 
@@ -317,7 +319,13 @@ C.... convert background pressure from millibars to meters of water
       PRBCKGRND_MH2O = 100.0D0 * PRBCKGRND / rhoWat0g
       prn1 = PRBCKGRND_MH2O
       prn2 = PRBCKGRND_MH2O
-
+     
+      ! dw
+      wvnx1 = 0.0 ;
+      wvny1 = 0.0 ;
+      wvnx2 = 0.0 ;
+      wvny2 = 0.0 ;
+ 
       CALL checkWindDragType()
       CALL mapWindDragFunctionPointer()
 
@@ -407,7 +415,8 @@ C----------------------------------------------------------------------
               f_computeWindDrag => PowellWindDrag
           CASE(DRAGLAW_SWELL)
 #ifndef CSWAN
-              call allMessage(WARNING,"SWAN Model not enabled. Drag formulation will be Garratt.")
+              call allMessage(WARNING,"SWAN Model not enabled."//
+     &              "Drag formulation will be Garratt.")
               f_computeWindDrag => CappedGarrattWindDrag
 #else
               f_computeWindDrag => SwanWindDrag
@@ -1622,11 +1631,11 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
                 WindMag = SQRT(windx**2+windy**2)
                 WDragCo = WindDrag(WindMag, i)
              ENDIF
-            IF (LoadCanopyCoef)
+             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(i,windx,windy)
-            IF(NCICE.NE.0) THEN
+             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
-            ENDIF
+             ENDIF
              WSX2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
              WSY2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
              PR2(I) = PRBCKGRND_MH2O + RampMete*(PRN2(I)-PRBCKGRND_MH2O)
@@ -1683,7 +1692,58 @@ C    kmd48.33bc - added in information for the sponge layer
             WSY2(I)=sponge(I)*WSY2(I)
          END DO
        END IF
-         
+
+!PV BEG:: NWS=17
+!... v50.xx sm, v55.xx PV, -- NWS=17 for NUOPC coupling
+      IF(NWS.eq.17) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
+            WTIME1=WTIME2
+            WTIME2=WTIME2+WTIMINC
+            DO I=1,NP
+              WVNX1(I)=WVNX2(I)
+              WVNY1(I)=WVNY2(I)
+              PRN1(I)=PRN2(I)
+            END DO 
+         ENDIF
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
+
+         if (WTRatio .GT. 1.0) then
+             WTRatio = 1.0
+             print *, '[Warning:] WTRatio is .GE. 1.0 and Set to 1.0'
+         endif     
+
+         DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+           IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete*airwaterdensityrat*WDragCo*WindX*WindMag   !P.V units: m^2/s^2 aka
+            WSY2(I) = RampMete*airwaterdensityrat*WDragCo*WindY*WindMag   !    per water unit mass (1/RhoWat0)
+C  tcm v49.16 20100617
+            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            !PV Do we need to output the real wind velocities or the ramped ones?
+            WVNXOUT(I)=RampMete*WindX
+            WVNYOUT(I)=RampMete*WindY
+         END DO
+      ENDIF
+!PV END:: NWS=17
+
+
 C      DW/WJP: rotate wind stresses if coordinate transform
        IF ( IFSPROTS .eq. 1 ) THEN
           UVECTMP(1:NP) = WSX2(1:NP); 
@@ -1713,7 +1773,7 @@ C----------------------------------------------------------------------
       subroutine coldstartMeteorologicalForcing(nws)
       use sizes, only : gblinputdir, inputdir
       use global, only : ciceout, h0, g, eta2, ncice, rampmete, mb2pa, 
-     &   sponge, res_bc_flag, statim, wsx1, wsy1, wsx2, wsy2, pr2,
+     &   sponge, res_bc_flag, statim, wsx1, wsy1, wsx2, wsy2, pr2, pr1,
      &   cice1, cice2
       use owiwind,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006          
       use nodalAttributes, only : applyDirectionalWindReduction,
@@ -1738,10 +1798,15 @@ Casey 180318: Added for NWS=13
 #endif
 
 
+      
       WSX2(:) = 0.d0
       WSY2(:) = 0.D0
       PR2(:) = PRBCKGRND_MH2O
 
+      WSX1(:) = 0.d0 ;
+      WSY1(:) = 0.d0 ;
+!      PR1(:) = PRBCKGRND_MH2O ! -- DW for 517  
+ 
       IF(NWS.EQ.1) THEN
          OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
       ENDIF
@@ -1818,17 +1883,10 @@ C....                           to correspond with having only a global wind fil
 
 C     jgf46.00 Added option to directly apply surface stress without any
 C     other correction factors.
-C     xyc52.30 corrected NWS=7 (wind stress input provided on a
-C     rectangular grid, same as NWS=6) 
       IF(ABS(NWS).EQ.7) THEN
-C         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-C         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-C         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
-         CALL NWS7GET()
-         wvnx1 = wvnx2
-         wvny1 = wvny2
-         CALL NWS7GET()
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
       ENDIF
@@ -2050,7 +2108,6 @@ C----------------------------------------------------------------------
       integer :: i ! node loop counter
       integer :: j
       real(sz) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
-      integer :: TimeLoc_NM ! timeloc to the nearest minute
 
       call setMessageSource("hotStartMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -2059,6 +2116,17 @@ C----------------------------------------------------------------------
 
 C
 C......RESTART WIND AND PRESSURE INFORMATION
+
+      !c DW, for nonwind and NEM
+      SELECT CASE(NWS)
+      CASE (0,17)
+!         WSX1(:) = 0.d0 ;
+!         WSY1(:) = 0.d0 ;
+   
+         WSX2(:) = 0.d0
+         WSY2(:) = 0.D0
+         PR2(:) = PRBCKGRND_MH2O
+      END SELECT
 
 C     No wind, radiation stress or atmospheric pressure forcings are used.
       IF(NWS.EQ.1) THEN
@@ -2847,9 +2915,8 @@ C     from NAM data
 !     WJP Feb27-2019: Added for NWS=14 for grib2
       IF (ABS(NWS).eq.14) THEN
          ! TimeLoc should be rounded down to nearest WTIMINC
-         TimeLoc_NM = nint(TimeLoc/60d0) ! first round to nearest minute
-         WTIME1 = WTIMINC*floor(TimeLoc_NM*60d0/WTIMINC)
-         WTIME2 = WTIME1 + WTIMINC
+         WTIME1 = WTIMINC*floor(TimeLoc/WTIMINC)
+         WTIME2 = TimeLoc + WTIMINC
          WTRATIO = (TimeLoc-WTIME1)/WTIMINC
          IF(NCICE.NE.0)THEN
              CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
@@ -2859,8 +2926,8 @@ C     from NAM data
          ! Initialising winds (pressure is already initialized)
          ! Get the first wind snap
          if (NCICE.eq.14) then
-            CICE_TIME1 = CICE_TIMINC*floor(TimeLoc_NM*60d0/CICE_TIMINC)
-            CICE_TIME2 = CICE_TIME1 + CICE_TIMINC
+            CICE_TIME1 = CICE_TIMINC*floor(TimeLoc/CICE_TIMINC)
+            CICE_TIME2 = TimeLoc + CICE_TIMINC
             CALL NWS14GET(WVNX1,WVNY1,PRN1,CICE1)
          else
             CALL NWS14GET(WVNX1,WVNY1,PRN1)
@@ -2870,7 +2937,7 @@ C     from NAM data
             CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
             CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,PRBCKGRND,HasData)
             WTIME1_12 = WTIME1
-            WTIME2_12 = WTIME1_12 + WTIMINC_12
+            WTIME2_12 = TimeLoc + WTIMINC_12
             WTRATIO_12 = (TimeLoc-WTIME1_12)/WTIMINC_12
             WTRATIO_14 = WTRATIO
          endif
@@ -3081,6 +3148,63 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
              WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
           END DO
        ENDIF
+
+!PV BEG:: NWS=17
+!... v55.xx PV -- NWS=17 for NUOPC coupling
+      IF(NWS.EQ.17) THEN
+         WTIME1 = TimeLoc
+         WTIME2 = WTIME1 + WTIMINC
+         DO IT=1,ITHS
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0
+            IF(TIMEIT.GT.WTIME2) THEN
+               WTIME1=WTIME2
+               WTIME2=WTIME2+WTIMINC
+               DO I=1,NP
+                  WVNX1(I)=WVNX2(I)
+                  WVNY1(I)=WVNY2(I)
+                  PRN1(I)=PRN2(I)
+                END DO
+             ENDIF
+         END DO
+
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
+
+         if (WTRatio .GT. 1.0) then
+             WTRatio = 1.0
+             print *, '[Warning:] WTRatio is .GE. 1.0 and Set to 1.0'
+         endif     
+
+         DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+
+C     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+           IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete2*airwaterdensityrat*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete2*airwaterdensityrat*WDragCo*WindY*WindMag
+C  tcm v49.16 20100617
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WindX
+            WVNYOUT(I)=RampMete2*WindY
+         END DO
+      ENDIF
+!PV END:: NWS=17
+
        !
        ! jgf52.14: Implementing Casey's fix for uninitialized
        ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
@@ -4836,8 +4960,7 @@ C     The subroutine only works for ICS=2 (spherical coordinates)
       ENDIF
 C
 C     Get data for this time step.
-      CALL GetHollandStormData(lat,lon,cpress,spd,rrp,rmw,
-     &                         tvx,tvy,TIMELOC)
+      CALL GetHollandStormData(lat,lon,cpress,spd,rrp,rmw,tvx,tvy,TIMELOC)
       !
       ! @jasonfleming: If this is a "CALM" period, set winds to zero
       ! velocity and pressure equal to the background pressure and return.
@@ -5215,14 +5338,14 @@ C     Convert units.
             Spd(i) = Spd(i) * 0.51444444d0 ! convert kts to m/s
 C
 #ifdef DEBUG_HOLLAND
-            WRITE(16,1244) CastTime(i),Lat(i),Lon(i),
+            WRITE(scratchMessage,1244) CastTime(i),Lat(i),Lon(i),
      &           Spd(i),CPress(i),RRP(i),RMW(i),WindRefTime
+            call logMessage(DEBUG,scratchMessage)
             if ( i.gt.1 ) then
                write(scratchMessage,2355) FcstInc(i-1)
                call logMessage(DEBUG, scratchMessage)
             endif
- 1244       FORMAT('DEBUG HOLLAND: CastTime ',
-     &           e16.8,' Lat ',f6.2,' Lon ',f6.2,
+ 1244       FORMAT('CastTime ',e16.8,' Lat ',f6.2,' Lon ',f6.2,
      &           /,'Spd ',f8.2,' CPress ',f10.2,' RRP ',f12.2,
      &           ' RMW ',f8.2, ' WindRefTime ',e16.8)
  2355       format('FcstInc(i-1) ',e16.8)
@@ -5263,8 +5386,7 @@ C     Determine the correspondence between the current simulation time and
 C     the fort.22 file.
          i=2
          DO
-            IF (ceiling(TIMELOC).ge.CastTime(i-1).and.
-     &          floor(TIMELOC).lt.CastTime(i)) THEN
+            IF (TIMELOC.ge.CastTime(i-1).and.TIMELOC.lt.CastTime(i)) THEN
                EXIT
             ELSE
                i=i+1
@@ -5301,8 +5423,8 @@ C     If time exceeds the next hindcast/nowcast/forecast time, increment the
 C     array counter.
       IF (TIMELOC.gt.CastTime(i)) THEN
          i=i+1
-C        jgf51.14: Check to see that we haven't gone off the end of
-C        meteorological data.
+C         jgf51.14: Check to see that we haven't gone off the end of
+C         meteorological data.
           IF (i.gt.pl) THEN
              call allMessage(ERROR,'The simulation time has extended '//
      &          'beyond the end of the meteorological dataset.')
@@ -5660,7 +5782,7 @@ C
             xcoor(i) = slam(i) * rad2deg
             ycoor(i) = sfea(i) * rad2deg
          END DO
-         timeOffset = nint(TIMELOC/60d0)*60d0 ! round to nearest minute
+         timeOffset=TIMELOC
       END IF   ! end of first Time data allocations and such
       !
       ! the mesh changes at each time step if we are writing out
@@ -5819,9 +5941,9 @@ C
                cycle_num(icyc) = cycle_num1(ient)
                HollB(icyc) = HollB1(ient)
 
-               ! switch sin and cos b/c these are compass directions
-               uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
-               vTrans(icyc)=cos(dir1(ient)*deg2rad)*speed1(ient)
+              ! switch sin and cos b/c these are compass directions
+              uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
+              vTrans(icyc)=cos(dir1(ient)*deg2rad)*speed1(ient)
 
                CycleTime(icyc) =  iFcstInc(icyc) * 3600.d0 + timeOffset
 
@@ -6239,8 +6361,7 @@ C***********************************************************************
             xcoor(i) = slam(i) * rad2deg
             ycoor(i) = sfea(i) * rad2deg
          END DO
-         
-         timeOffset = nint(TIMELOC/60d0)*60d0 ! round initial time to nearest minute
+         timeOffset=TIMELOC
          rndaySeconds = RNDAY * 86400.d0
 
       END IF   ! end of first Time data allocations and such
@@ -6384,16 +6505,16 @@ C***********************************************************************
      &    (HollBs1(ient,i),i=1,4),(VmaxesBL1(ient,i),i=1,4)
 
             if ( cycle_num1(ient) == cycle_num1(ient-1)) then
-               isot=isot+1 ! same icyc, next isotach
-               if (isot.gt.4) then
-                  write(scratchMessage,'(a,a,i0,a)')
-     &             'The GAHM fort.22 input file has more than 4 ',
-     &             'isotachs in cycle ',cycle_num1(ient),'.'
-                  call allMessage(ERROR,scratchMessage)
-                  call windTerminate()
-               endif
+                isot=isot+1 ! same icyc, next isotach
+                if (isot.gt.4) then
+            write(scratchMessage,'(a,a,i0,a)')
+     &      'The GAHM fort.22 input file has more than 4 isotachs ',
+     &      ' in cycle ',cycle_num1(ient),'.'
+                   call allMessage(ERROR,scratchMessage)
+                   call windTerminate()
+                endif
             else
-               isot=1 ! initialize isotach #
+                isot=1 ! initialize isotach #
                IF ( iFcstInc1(ient) == 0 .AND. iFcstInc(icyc) == 0) then
                   icyc = icyc
                ELSE
@@ -6421,9 +6542,9 @@ C***********************************************************************
                cycle_num(icyc) = cycle_num1(ient)
                HollB(icyc) = HollB1(ient)
 
-               ! switch sin and cos b/c these are compass directions
-               uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
-               vTrans(icyc)=cos(dir1(ient)*deg2rad)*speed1(ient)
+              ! switch sin and cos b/c these are compass directions
+              uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
+              vTrans(icyc)=cos(dir1(ient)*deg2rad)*speed1(ient)
 
                CycleTime(icyc) =  iFcstInc(icyc) * 3600.d0 + timeOffset
 
@@ -6460,9 +6581,6 @@ C***********************************************************************
          !
          ! @jasonfleming: If there isn't enough data in the fort.22 to
          ! cover the whole run, bomb out immediately.
-         write(scratchMessage,*) 'The last cycle in the fort.22 '//
-     &      'file is at ', cycleTime(num_cycles), ' [sec]'
-         CALL logMessage(INFO,scratchMessage)
          if (cycleTime(num_cycles).lt.rndaySeconds) then
             call allMessage(ERROR,"There aren't enough data in the "//
      &      'fort.22 file to cover the entire run time.')
@@ -6557,6 +6675,7 @@ C     we are running off the end of the data.
       call fitRmaxes4()
 !699      FORMAT(5(f8.4,2x))
 !700      FORMAT(a25, 2x, 3(f12.2,2x))
+
  !Jie debug GAHM
  !        WRITE(16,*) 'Previous: Spatially-interpolated storm parameters',
  !    &                   ' at icyc-1= ', icyc-1,
@@ -6568,6 +6687,7 @@ C     we are running off the end of the data.
          !rmax from the highest isotach is picked
          cHollBs1(i)= spInterp(aziangle(i),dist(i),2)
          cVmwBL1(i) = spInterp(aziangle(i),dist(i),3)
+
  !Jie debug GAHM
  !            WRITE(16,699) crmaxw1(i),  crmaxwTrue1(i),
  !    &                   cHollBs1(i) ,cVmwBL1(i)
@@ -8782,23 +8902,11 @@ C----------------------------------------------------------------------
                yy = rad2deg*sfea(i)
                call bl_interp2(nxp,nyp,lon,lat,xx,yy,indt,wt)
                indp(ii,:,i) = indt
-               weightsp(ii,:,i) = wt
-#ifdef DEBUG_NWS14
-               if (i.gt.1) cycle 
-               write(16,*) 'NWS=14 Interpolating check: xx',xx,'yy',yy
-               write(16,*) 'Lon',lon(indt(1),indt(2)),
-     &                           lon(indt(3),indt(2)),
-     &                           lon(indt(1),indt(4)),
-     &                           lon(indt(3),indt(4))
-               write(16,*) 'Lat',lat(indt(1),indt(2)),
-     &                           lat(indt(3),indt(2)),
-     &                           lat(indt(1),indt(4)),
-     &                           lat(indt(3),indt(4))
-               write(16,*) 'Weights',wt
-               write(16,*) 'Indices',indt
-#endif
+               weightsp(ii,:,i) = wt 
             enddo
             deallocate(lon,lat)
+!            srtI(ii,:) = [minval(indp(ii,1,:)),minval(indp(ii,2,:))]
+!            endI(ii,:) = [maxval(indp(ii,3,:)),maxval(indp(ii,4,:))]
          enddo
       endif
       
@@ -8842,12 +8950,6 @@ C----------------------------------------------------------------------
      &              V10(indp(ub,1,i),indp(ub,4,i))*weightsp(ub,3,i)    +
      &              V10(indp(ub,3,i),indp(ub,4,i))*weightsp(ub,4,i)
          endif
-#ifdef DEBUG_NWS14
-         if (i.gt.1) cycle 
-         write(16,*) 'NWS=14 Values check for i = 1'
-         write(16,*) 'Pressure: ',PRN2(i)
-         write(16,*) 'Winds, U10: ',WVNX2(i),'V10: ',WVNY2(i)
-#endif
       enddo 
       deallocate(Pmsl,U10,V10)
       
@@ -8952,7 +9054,6 @@ C----------------------------------------------------------------------
             call Check_err(nf90_inquire_variable(NC_ID,Lat_ID,
      &                     ndims=ndims))
             call Check_err(NF90_INQ_VARID(NC_ID,Lonvar,Lon_ID))
-            write(16,*) 'Lon/Lat dimensions = ',ndims
             if (ndims.eq.3) then
                call Check_err(NF90_GET_VAR(NC_ID,Lat_ID,data22,
      &                        start=[1, 1, NT],count=[NX, NY, 1]))

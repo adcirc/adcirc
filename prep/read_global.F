@@ -911,17 +911,18 @@ C     sb46.28sb01 added NWS=12: OWI format
 C     jgf49.0804 Added NWS29 VortexOWI format.
 C     jgf: Added NWS30.
 Casey 180318: Added NWS=13
-        IF((NWS.NE.0).AND.    (NWS.NE.1 ) .AND.(ABS(NWS).NE.2).AND.
-     &       (NWS.NE.3).AND.(ABS(NWS).NE.4) .AND.(ABS(NWS).NE.5).AND.
-     &       (ABS(NWS).NE.45).AND.(ABS(NWS).NE.6).AND.
-     &       (ABS(NWS).NE.7).AND.   ! xyc52.30
-     &       (ABS(NWS).NE.8).AND.(ABS(NWS).NE.15).AND. !jgf50.38.05 Added NWS=15
-     &       (ABS(NWS).NE.12).AND.(ABS(NWS).NE.13).AND.
-     &       (ABS(NWS).NE.14).AND.(ABS(NWS).NE.19).AND.
-     &       (ABS(NWS).NE.20) .AND.(abs(NWS).ne.30).and.(NWS.NE.10).and.
-     &       (ABS(NWS).NE.29).and. (abs(NWS).ne.16))  THEN
-           print *,"ERROR: Value for NWS not supported by parallel code"
-           CALL EXIT(1)
+        IF((NWS.NE.0) .AND. (NWS.NE.1) .AND. (ABS(NWS).NE.2) .AND.
+     &     (NWS.NE.3) .AND. (ABS(NWS).NE.4) .AND. (ABS(NWS).NE.5) .AND.
+     &     (ABS(NWS).NE.45) .AND. (ABS(NWS).NE.6) .AND.
+     &     (ABS(NWS).NE.7)  .AND.                            ! xyc52.30
+     &     (ABS(NWS).NE.8)  .AND. (ABS(NWS).NE.15) .AND.     !jgf50.38.05 Added NWS=15
+     &     (ABS(NWS).NE.12) .AND. (ABS(NWS).NE.13) .AND.
+     &     (ABS(NWS).NE.14) .AND. (ABS(NWS).NE.19) .AND.
+     &     (ABS(NWS).NE.20) .AND. (ABS(NWS).ne.30) .AND. (NWS.NE.10) .AND.
+     &     (ABS(NWS).NE.29) .AND. (ABS(NWS).ne.16) .AND.
+     &     (ABS(NWS).NE.17))THEN                             !PV added NWS=17 for NUOPC atm. forcing
+          print *,"ERROR: Value for NWS not supported by parallel code"
+          CALL EXIT(1)
         ENDIF
 C
 C... TCM v49.64.02 -- added
@@ -1080,6 +1081,21 @@ C     parse out the WTIMINC or other parameters.
       ! jgf: Added NWS30.
       IF (((ABS(NWS)).EQ.29).or.(abs(NWS).eq.30)) THEN
          READ(15,80) WSMSG1
+      ENDIF
+C
+C saeed added  TODO: I should remove this partialy: cap should provide the time of data exchanges
+      IF (ABS(NWS).EQ.17) THEN
+         READ(15,80) WSMSG1
+         print *, 'WSMSG1 ' , WSMSG1
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) THEN
+             READ(WSMSG1,*) WTIMINC
+         ELSEIF ((NCICE.EQ.0).AND.(NRS.GE.1)) THEN
+             READ(WSMSG1,*) WTIMINC , RSTIMINC
+         ELSEIF ((NCICE.GE.1).AND.(NRS.EQ.0)) THEN
+             READ(WSMSG1,*) WTIMINC , CICE_TIMINC
+         ELSEIF ((NCICE.GE.1).AND.(NRS.GE.1)) THEN
+             READ(WSMSG1,*) WTIMINC , RSTIMINC, CICE_TIMINC
+         END IF
       ENDIF
 C
 C...  xyc52.30 added NWS=7 to follow NWS=6

@@ -1,50 +1,50 @@
-C>
-C! @mainpage ADCIRC NUOPC Cap
-C! @author Saeed Moghimi (moghimis@gmail.com)
-C! @date 15/1/17 Original documentation
+!>
+!! @mainpage ADCIRC NUOPC Cap
+!! @author Saeed Moghimi (moghimis@gmail.com)
+!! @date 15/1/17 Original documentation
 !------------------------------------------------------
 !LOG-----------------
 !
 !
 !
-C-----------------------------------------------------------------------
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       MODULE Couple2Swan_modif
 
 #define ONLY_COMP_FORCES
-C-----------------------------------------------------------------------
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       USE SIZES,  ONLY: SZ
       USE WRITE_OUTPUT, ONLY : terminate
-      USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
-     &          setMessageSource, unsetMessageSource, allMessage,
-     &          scratchMessage
+      USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR, &
+                setMessageSource, unsetMessageSource, allMessage, &
+                scratchMessage
 
       IMPLICIT NONE
 
-Casey 090302: These arrays contain the radiation stresses.
-Casey 090820: Be explicit about the size of these REAL variables.
+!asey 090302: These arrays contain the radiation stresses.
+!asey 090820: Be explicit about the size of these REAL variables.
       REAL(SZ) ,ALLOCATABLE :: ADCIRC_SXX(:,:)
       REAL(SZ) ,ALLOCATABLE :: ADCIRC_SXY(:,:)
       REAL(SZ) ,ALLOCATABLE :: ADCIRC_SYY(:,:)
 
-Casey 090302: The interpolation weight controls which value
-C             is taken when information is passed between ADCIRC
-C             and SWAN.  If InterpoWeight = 0, then the value
-C             is taken from the beginning of the coupling interval.
-C             If InterpoWeight = 1, then the value is taken from
-C             the end of the coupling interval.
+!asey 090302: The interpolation weight controls which value
+!             is taken when information is passed between ADCIRC
+!             and SWAN.  If InterpoWeight = 0, then the value
+!             is taken from the beginning of the coupling interval.
+!             If InterpoWeight = 1, then the value is taken from
+!             the end of the coupling interval.
       REAL(SZ) :: InterpoWeight
 
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       CONTAINS
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
 
-C-----------------------------------------------------------------------
-C     S U B R O U T I N E
-C       C O M P U T E  W A V E  D R I V E N  F O R C E S
-C-----------------------------------------------------------------------
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!     S U B R O U T I N E
+!       C O M P U T E  W A V E  D R I V E N  F O R C E S
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       SUBROUTINE ComputeWaveDrivenForces
 
       USE GLOBAL, ONLY: NODECODE, NOFF, RSNX2, RSNY2
@@ -110,12 +110,12 @@ C-----------------------------------------------------------------------
 
 !... Loop over all nodes and interpolate the radiation stress for this time step.
          DO IP=1,NP
-           TEMP_SXX(IP) = (1.0 - InterpoWeight) * DBLE(ADCIRC_SXX(IP,1))
-     &                 + InterpoWeight * DBLE(ADCIRC_SXX(IP,2))
-           TEMP_SXY(IP) = (1.0 - InterpoWeight) * DBLE(ADCIRC_SXY(IP,1))
-     &                 + InterpoWeight * DBLE(ADCIRC_SXY(IP,2))
-           TEMP_SYY(IP) = (1.0 - InterpoWeight) * DBLE(ADCIRC_SYY(IP,1))
-     &                 + InterpoWeight * DBLE(ADCIRC_SYY(IP,2))
+           TEMP_SXX(IP) = (1.0 - InterpoWeight) * DBLE(ADCIRC_SXX(IP,1)) &
+                       + InterpoWeight * DBLE(ADCIRC_SXX(IP,2))
+           TEMP_SXY(IP) = (1.0 - InterpoWeight) * DBLE(ADCIRC_SXY(IP,1)) &
+                       + InterpoWeight * DBLE(ADCIRC_SXY(IP,2))
+           TEMP_SYY(IP) = (1.0 - InterpoWeight) * DBLE(ADCIRC_SYY(IP,1)) &
+                       + InterpoWeight * DBLE(ADCIRC_SYY(IP,2))
          ENDDO
 
 !... Allocate arrays for radiation stress gradients.
@@ -136,25 +136,25 @@ C-----------------------------------------------------------------------
            Node2 = NM(IE,2)
            Node3 = NM(IE,3)
 
-           DSXXDX(IE) = (1.D0/AREAS(IE)) *
-     &                ( TEMP_SXX(Node1) * (Y(Node2) - Y(Node3))
-     &                + TEMP_SXX(Node2) * (Y(Node3) - Y(Node1))
-     &                + TEMP_SXX(Node3) * (Y(Node1) - Y(Node2)) )
+           DSXXDX(IE) = (1.D0/AREAS(IE)) *                         &
+                      ( TEMP_SXX(Node1) * (Y(Node2) - Y(Node3))    &
+                      + TEMP_SXX(Node2) * (Y(Node3) - Y(Node1))    &
+                      + TEMP_SXX(Node3) * (Y(Node1) - Y(Node2)) )
 
-           DSXYDY(IE) = (1.D0/AREAS(IE)) *
-     &                ( TEMP_SXY(Node1) * (X(Node3) - X(Node2))
-     &                + TEMP_SXY(Node2) * (X(Node1) - X(Node3))
-     &                + TEMP_SXY(Node3) * (X(Node2) - X(Node1)) )
+           DSXYDY(IE) = (1.D0/AREAS(IE)) *                         &
+                      ( TEMP_SXY(Node1) * (X(Node3) - X(Node2))    &
+                      + TEMP_SXY(Node2) * (X(Node1) - X(Node3))    &
+                      + TEMP_SXY(Node3) * (X(Node2) - X(Node1)) )
 
-           DSXYDX(IE) = (1.D0/AREAS(IE)) *
-     &                ( TEMP_SXY(Node1) * (Y(Node2) - Y(Node3))
-     &                + TEMP_SXY(Node2) * (Y(Node3) - Y(Node1))
-     &                + TEMP_SXY(Node3) * (Y(Node1) - Y(Node2)) )
+           DSXYDX(IE) = (1.D0/AREAS(IE)) *                         &
+                      ( TEMP_SXY(Node1) * (Y(Node2) - Y(Node3))    &
+                      + TEMP_SXY(Node2) * (Y(Node3) - Y(Node1))    &
+                      + TEMP_SXY(Node3) * (Y(Node1) - Y(Node2)) )
 
-           DSYYDY(IE) = (1.D0/AREAS(IE)) *
-     &                ( TEMP_SYY(Node1) * (X(Node3) - X(Node2))
-     &                + TEMP_SYY(Node2) * (X(Node1) - X(Node3))
-     &                + TEMP_SYY(Node3) * (X(Node2) - X(Node1)) )
+           DSYYDY(IE) = (1.D0/AREAS(IE)) *                         &
+                      ( TEMP_SYY(Node1) * (X(Node3) - X(Node2))    &
+                      + TEMP_SYY(Node2) * (X(Node1) - X(Node3))    &
+                      + TEMP_SYY(Node3) * (X(Node2) - X(Node1)) )
 
          ENDDO
 
@@ -193,10 +193,10 @@ C-----------------------------------------------------------------------
 
 !... Try Marcel's method of zero-ing out the forces at nodes connected to dry nodes/elements.
 
-               NCELE = NODECODE(NM(NEITABELE(IP,IE),1))
-     &               * NODECODE(NM(NEITABELE(IP,IE),2))
-     &               * NODECODE(NM(NEITABELE(IP,IE),3))
-     &               * NOFF(       NEITABELE(IP,IE)   )
+               NCELE = NODECODE(NM(NEITABELE(IP,IE),1)) &
+                     * NODECODE(NM(NEITABELE(IP,IE),2)) &
+                     * NODECODE(NM(NEITABELE(IP,IE),3)) &
+                     * NOFF(       NEITABELE(IP,IE)   )
 
                IF(Marcel.AND.(NCELE.EQ.0))THEN
 
@@ -208,12 +208,12 @@ C-----------------------------------------------------------------------
 
                  NUMFOUND = NUMFOUND + 1
 
-                 RSNX2(IP) = RSNX2(IP) + 0.5*AREAS(NEITABELE(IP,IE))
-     &                     * ( - DSXXDX(NEITABELE(IP,IE))
-     &                         - DSXYDY(NEITABELE(IP,IE)) )
-                 RSNY2(IP) = RSNY2(IP) + 0.5*AREAS(NEITABELE(IP,IE))
-     &                     * ( - DSXYDX(NEITABELE(IP,IE))
-     &                         - DSYYDY(NEITABELE(IP,IE)) )
+                 RSNX2(IP) = RSNX2(IP) + 0.5*AREAS(NEITABELE(IP,IE)) &
+                           * ( - DSXXDX(NEITABELE(IP,IE))            &
+                               - DSXYDY(NEITABELE(IP,IE)) )
+                 RSNY2(IP) = RSNY2(IP) + 0.5*AREAS(NEITABELE(IP,IE)) &
+                           * ( - DSXYDX(NEITABELE(IP,IE))            &
+                               - DSYYDY(NEITABELE(IP,IE)) )
 
                  TOTALAREA = TOTALAREA + 0.5*AREAS(NEITABELE(IP,IE))
 
@@ -266,11 +266,11 @@ C-----------------------------------------------------------------------
 #endif
       call unsetMessageSource()
       RETURN
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       END SUBROUTINE ComputeWaveDrivenForces
-C-----------------------------------------------------------------------
-C-----------------------------------------------------------------------
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       END MODULE Couple2Swan_modif
-C-----------------------------------------------------------------------
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------

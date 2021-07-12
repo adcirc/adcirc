@@ -541,7 +541,7 @@
          end select
       end do
       close(14)
-      !
+     !
       ! populate the adcirc arrays that are used during execution
       call populateADCIRCNativeArrays()
       !
@@ -556,7 +556,7 @@
        !
       ! jump to here on error condition during read
 10    write(scratchMessage,140) lineNum, ios
-140   format('Reading line ',i0,' gave the following error code: ',i0,'.')
+140   format('Reading line ',i0,' gave the following error code: ', i0, '.')
       call allMessage(ERROR,scratchMessage)
       close(iunit)
       call terminate()
@@ -571,6 +571,160 @@
 
       !----------------------------------------------------------------
       end subroutine read14
+      !----------------------------------------------------------------
+
+
+
+      !-----+---------+---------+---------+---------+---------+---------+
+      ! READ14MESH() : Read just mesh 
+      !  input: 
+      !      meshfileName = file name
+      !  output:
+      !      nn = (/ np, ne /) 
+      !      vx(2,np)   - coordinates of FE nodes
+      !      bxy(np)    - bathymetry 
+      !      etov(3,ne) - Element conectivity table
+      !      (optional) nodeLael - node label     
+      !-----+---------+---------+---------+---------+---------+---------+
+      subroutine read14femesh( meshfileName, nn, vx, etov, bxy, nodeLabel )
+      use global, only : openFileForRead, nabout
+
+      implicit none
+
+      ! dummy 
+      CHARACTER (LEN=*):: meshfileName
+      INTEGER:: nn(:)
+
+      REAL (SZ), allocatable:: vx(:,:), bxy(:) ! node, bathymetry
+      INTEGER, allocatable:: etov(:,:) ! element connectity table
+      INTEGER, allocatable, optional:: nodeLabel(:)
+
+      ! local 
+      integer :: i, j, k, jn, je, nhy
+      integer, parameter :: iunit = 714
+      integer :: ios     ! i/o status
+      integer :: lineNum ! line number currently being read
+      CHARACTER (LEN=80):: agridtmp
+
+      INTEGER:: ne, np, nfluxftmp
+      INTEGER, allocatable:: labelstmp(:)
+
+      ! hash table
+      type(ipair), allocatable, target :: node_dict_tmp(:) ! map node labels to numbers
+ 
+      call setMessageSource( trim(meshfileName) ) 
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      !
+      ! initialization
+      nfluxftmp = 0
+      !
+      call openFileForRead(iunit,trim(meshFileName),ios)
+
+      ! Get dimension
+      !  - reading the file
+      read(iunit,'(A80)',err=110,end=120,iostat=ios) agridtmp ! header
+      lineNum = lineNum + 1
+
+      read(unit=iunit,fmt=*,err=110,end=120,iostat=ios) ne, np ! no. elements, nodes
+      lineNum = lineNum + 1 ;
+
+      nn(1) = np
+      nn(2) = ne
+ 
+      ! Allocate memory for the 
+      IF ( allocated( vx ) ) THEN 
+         DEALLOCATE( vx )  ;
+      END IF
+      IF ( allocated( etov ) ) THEN
+         DEALLOCATE( etov ) ;
+      END IF
+      IF ( allocated( bxy ) ) THEN
+         DEALLOCATE( bxy )  ;
+      END IF
+      ALLOCATE( vx( 2, np ), bxy(np), etov(3, ne) ) ; 
+      
+      IF ( present( nodeLabel ) ) THEN
+         IF ( allocated( nodeLabel ) ) THEN
+            DEALLOCATE( nodeLabel )  ;
+         END IF
+         ALLOCATE( nodeLabel( np ) )  ;
+      END IF     
+      ! Intialize a hash table
+      call dict( node_dict_tmp, np ) ;
+ 
+      !  N O D E   T A B L E
+      !
+      !
+      ALLOCATE( labelstmp(np) ) ; 
+      do k = 1, np
+         read(unit=iunit,fmt=*,err=110,end=120,iostat=ios) labelstmp(k), vx(1,k),
+     &     vx(2,k), bxy(k)
+         lineNum = lineNum + 1
+         call add_ipair( node_dict_tmp, labelstmp(k), k)
+      enddo
+      IF ( present( nodeLabel ) ) THEN
+         DO k = 1, np
+            nodeLabel(k) = labelstmp(k)  ;
+         END DO
+      END IF
+
+      !
+      !  E L E M E N T   T A B L E
+      !
+      do k = 1, ne
+         read(unit=iunit,fmt=*,err=110,end=120,iostat=ios)
+     &      je, nhy, n1, n2, n3
+         etov(1,k) = find(node_dict_tmp, n1)
+         etov(2,k) = find(node_dict_tmp, n2)
+         etov(3,k) = find(node_dict_tmp, n3)
+         lineNum = lineNum + 1
+      enddo
+
+      ! close file 
+      close(iunit) ;
+      call close_dict( node_dict_tmp ) ! 
+      
+      ! free memory
+      deallocate( labelstmp ) ;
+
+!      !
+!      ! populate the adcirc arrays that are used during execution
+!     call populateADCIRCNativeArrays()
+!      !
+!      call logMessage(INFO,'Finished reading mesh file coordinates, '
+!     & // 'connectivity, and boundary data.')
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage( DEBUG, "Return.")
+#endif
+      call unsetMessageSource() ;
+
+      return
+      !
+      ! jump to here on error condition during read
+110    write(scratchMessage,140) lineNum, ios
+140   format('Reading line ',i0,' gave the following error code: ', i0, '.')
+      call allMessage(ERROR,scratchMessage)
+      close(iunit)
+      call terminate()
+      !
+      ! jump to here on end condition during read
+120    write(scratchMessage,150) lineNum
+150   format('Reached premature end of file on line ',i0,'.')
+      call allMessage(ERROR,scratchMessage)
+      close(iunit)
+
+      ! free memory
+      deallocate( labelstmp ) ;
+
+      call close_dict( node_dict_tmp )
+      call terminate()
+
+      !----------------------------------------------------------------
+      end subroutine read14femesh
       !----------------------------------------------------------------
 
 
@@ -3846,7 +4000,7 @@
 
           integer :: binarysearch
 
-          integer :: left, middle, right, orientation
+          integer :: left, middle, right
           real(sz) :: d
 
           if (present(delta) .eqv. .true.) then
@@ -3854,10 +4008,7 @@
           else
              d = 1d-9
           endif
-
-          orientation = 1
-          if (array(2) < array(1)) orientation = -1
-       
+        
           left = 1
           right = length
           do
@@ -3866,21 +4017,11 @@
              if ( abs(array(middle) - value) <= d) then
                 binarySearch = middle
                 return
-             endif
-             select case(orientation)
-             case(1) 
-                if (array(middle) > value) then
-                   right = middle - 1
-                else
-                   left = middle + 1
-                end if
-             case(-1)
-                if (array(middle) < value) then
-                   right = middle - 1
-                else
-                   left = middle + 1
-                end if
-             end select
+             elseif (array(middle) > value) then
+                right = middle - 1
+             else
+                left = middle + 1
+             end if
           end do
           binarysearch = right
 
