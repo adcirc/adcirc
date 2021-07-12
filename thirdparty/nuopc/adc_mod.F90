@@ -630,8 +630,8 @@ module adc_mod
         
     end subroutine read_config
 
-    ! P.Velissariou (temporary fix): Moved this subroutine from
-    ! `ADCIRC/src/mesh.F` modified by Guoming
+    ! P.Velissariou: Copied this subroutine from
+    ! `ADCIRC/src/mesh.F` as modified by Guoming
     !-----+---------+---------+---------+---------+---------+---------+
     ! READ14FEMESH() : Read just mesh
     !  input:

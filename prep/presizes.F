@@ -1030,6 +1030,14 @@ C.... xyc v52.30 NWS=7 follow the same format as NWS=6
         MNWP=MNP
       ENDIF
 
+C..... saeed added,
+      IF(ABS(NWS).EQ.17)  THEN
+        IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC                        !SKIP OVER WTIMINC
+        IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC
+        IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,CICE_TIMINC            !SKIP OVER WTIMINC
+        IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC,CICE_TIMINC
+      ENDIF
+
       DO IL=1,2                                    !SKIP OVER RNDAY,DRAMP
          READ(15,*) RDUM
       ENDDO
