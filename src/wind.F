@@ -1695,7 +1695,7 @@ C    kmd48.33bc - added in information for the sponge layer
 
 !PV BEG:: NWS=17
 !... v50.xx sm, v55.xx PV, -- NWS=17 for NUOPC coupling
-      IF(NWS.eq.17) THEN
+      IF(ABS(NWS).EQ.17) THEN
          IF(TimeLoc.GT.WTIME2) THEN
             WTIME1=WTIME2
             WTIME2=WTIME2+WTIMINC
@@ -3149,9 +3149,9 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
           END DO
        ENDIF
 
-!PV BEG:: NWS=17
+!PV BEG:: NWS=17, there is no NWS=-17 option
 !... v55.xx PV -- NWS=17 for NUOPC coupling
-      IF(NWS.EQ.17) THEN
+      IF(ABS(NWS).EQ.17) THEN ! using ABS(NWS) to make sure that this block is always executed for NWS=17/-17
          WTIME1 = TimeLoc
          WTIME2 = WTIME1 + WTIMINC
          DO IT=1,ITHS
