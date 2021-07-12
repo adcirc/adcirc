@@ -1712,6 +1712,32 @@ C                      ! initialize it if it wasn't initialized above
 #endif
             endif
          enddo
+         IF (LoadEleSlopeLim) THEN
+            CALL readAndMapToSubdomainMaxMin(ESLDescript,timeloc,fileFound)
+            ! must set the elemental slope limiter active values as well
+            !
+            ! jgf51.46: Really should only turn on the slope limiter if
+            ! the slope limiter was turned on in the run that produced
+            ! these values (as opposed to just recording the places
+            ! where the slope was exceeded). However, this isn't really
+            ! practical because it would require knowledge of the
+            ! elemental_slope_limiter nodal attribute from the
+            ! previous simulation. We don't have access to that.
+            !
+            ! Also, we don't want to turn the slope limiter on in places
+            ! where the analyst does not want it to be turned on, and only
+            ! wants to record the places where the slope is exceeded. So
+            ! I am adding a check for positive values of the nodal
+            ! attribute, and only turning on the slope limiter there.
+            DO I = 1,NP
+               if ( (ESLCOUNT(I).eq.1.d0).and.
+     &         (elemental_slope_limiter_grad_max(i).ge.0.d0) ) then
+                  elemental_slope_limiter_active(I) = .true.
+               else
+                  elemental_slope_limiter_active(I) = .false.
+               endif
+            ENDDO
+         ENDIF
       endif ! ihot.ne.0
       !
       ! End  TCM v51.20.01 Mods for MaxMin Files to Local Variables
