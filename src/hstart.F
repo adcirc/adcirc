@@ -781,7 +781,7 @@ C     for IBTYPE=52.
          RampIntFlux1=TANH((2.D0*(ITHS-1)*DTDPHS/86400.D0)/DRampIntFlux)
          RampIntFlux2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampIntFlux)
          RampTip2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampTip)
-Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
+Corbitt 1203022: Added Zach''s Fix for Assigning a Start Time to Mete Ramping
          RampMete2=TANH((2.D0*((ITHS)*DTDPHS/86400.D0-DUnRampMete))/DRampMete)
          RampWRad2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampWRad)
          write(16,*) 'Initial RampMete2 is =',RampMete2 
@@ -1073,35 +1073,27 @@ C.............RESET INFORMATION FOR K-1 TIME LEVEL
                RBARWL2F=2.0D0*RBARWL2/3.0D0
                IF((RBARWL1.LT.0.0).AND.(RBARWL2.LT.0.0)) THEN ! WATER LEVEL BELOW BARRIER
                   QN1(I)=0.0D0  ! NO FLOW
-                  GOTO 1998
-               ENDIF
-               IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
+
+               ELSE IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
                   QN1(I)=0.0D0  ! NO FLOW
-                  GOTO 1998
-               ENDIF
-               IF(RBARWL1.GT.RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF BARRIER
+
+               ELSE IF(RBARWL1.GT.RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF BARRIER
                   IF(RBARWL2.GT.RBARWL1F) THEN ! OUTWARD SUBCRITICAL FLOW
                      QN1(I)=-RampIntFlux1*BARINCFSB(I)*RBARWL2*
      &                    (2.d0*G*(RBARWL1-RBARWL2))**0.5D0
-                     GOTO 1998
                   ELSE          ! OUTWARD SUPERCRITICAL FLOW
                      QN1(I)=-RampIntFlux1
      &                    *BARINCFSP(I)*RBARWL1F*(RBARWL1F*G)**0.5D0
-                     GOTO 1998
                   ENDIF
-               ENDIF
-               IF(RBARWL2.GT.RBARWL1) THEN ! WATER LEVEL LOWER ON THIS SIDE OF BARRIER
+               ELSE IF(RBARWL2.GT.RBARWL1) THEN ! WATER LEVEL LOWER ON THIS SIDE OF BARRIER
                   IF(RBARWL1.GT.RBARWL2F) THEN ! INWARD SUBCRITICAL FLOW
                      QN1(I)=RampIntFlux1*BARINCFSB(I)*RBARWL1*
      &                    (2.d0*G*(RBARWL2-RBARWL1))**0.5D0
-                     GOTO 1998
                   ELSE          ! INWARD SUPERCRITICAL FLOW
                      QN1(I)=RampIntFlux1
      &                    *BARINCFSP(I)*RBARWL2F*(RBARWL2F*G)**0.5D0
-                     GOTO 1998
                   ENDIF
                ENDIF
- 1998          CONTINUE
 C.............RESET INFORMATION FOR K TIME LEVEL
                RBARWL1=ETA2(NNBB1)-BARINHT(I)
                RBARWL2=ETA2(NNBB2)-BARINHT(I)
@@ -1109,35 +1101,27 @@ C.............RESET INFORMATION FOR K TIME LEVEL
                RBARWL2F=2.0D0*RBARWL2/3.0D0
                IF((RBARWL1.LT.0.0).AND.(RBARWL2.LT.0.0)) THEN ! WATER LEVEL BELOW BARRIER
                   QN2(I)=0.0D0  ! NO FLOW
-                  GOTO 1999
-               ENDIF
-               IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
+
+               ELSE IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
                   QN2(I)=0.0D0  ! NO FLOW
-                  GOTO 1999
-               ENDIF
-               IF(RBARWL1.GT.RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF BARRIER
+
+               ELSE IF(RBARWL1.GT.RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF BARRIER
                   IF(RBARWL2.GT.RBARWL1F) THEN ! OUTWARD SUBCRITICAL FLOW
                      QN2(I)=-RampIntFlux2*BARINCFSB(I)*RBARWL2*
      &                    (2.d0*G*(RBARWL1-RBARWL2))**0.5D0
-                     GOTO 1999
                   ELSE          ! OUTWARD SUPERCRITICAL FLOW
                      QN2(I)=-RampIntFlux2
      &                    *BARINCFSP(I)*RBARWL1F*(RBARWL1F*G)**0.5D0
-                     GOTO 1999
                   ENDIF
-               ENDIF
-               IF(RBARWL2.GT.RBARWL1) THEN !WATER LEVEL LOWER ON THIS SIDE OF BARRIER
+               ELSE IF(RBARWL2.GT.RBARWL1) THEN !WATER LEVEL LOWER ON THIS SIDE OF BARRIER
                   IF(RBARWL1.GT.RBARWL2F) THEN ! INWARD SUBCRITICAL FLOW
                      QN2(I)=RampIntFlux2*BARINCFSB(I)*RBARWL1*
      &                    (2.d0*G*(RBARWL2-RBARWL1))**0.5D0
-                     GOTO 1999
                   ELSE          ! INWARD SUPERCRITICAL FLOW
                      QN2(I)=RampIntFlux2
      &                    *BARINCFSP(I)*RBARWL2F*(RBARWL2F*G)**0.5D0
-                     GOTO 1999
                   ENDIF
                ENDIF
- 1999          CONTINUE
             ENDIF
          END DO
       ENDIF
@@ -1160,77 +1144,61 @@ C.............RESET INFORMATION FOR K-1 TIME LEVEL
                RBARWL2=ETA1(NNBB2)-PIPEHT(I)
                IF((RBARWL1.LT.0.0).AND.(RBARWL2.LT.0.0)) THEN ! WATER LEVEL BELOW PIPE
                   QN1(I)=QN1(I)+0.0D0 ! NO FLOW
-                  GOTO 2002
-               ENDIF
-               IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF PIPE
+
+               ELSE IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF PIPE
                   QN1(I)=QN1(I)+0.0D0 ! NO FLOW
-                  GOTO 2002
-               ENDIF
-               IF(RBARWL1.GT.RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF PIPE
+
+               ELSE IF(RBARWL1.GT.RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF PIPE
                   IF(RBARWL2.LE.0) THEN ! OUTWARD FREE DISCHARGE
                      QN1(I)=QN1(I)-RampIntFlux1
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*RBARWL1/(1+PIPECOEF(I)))**0.5D0
-                     GOTO 2002
                   ELSE          ! OUTWARD SUBMERGED DISCHARGE
                      QN1(I)=QN1(I)-RampIntFlux1
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*(RBARWL1-RBARWL2)/PIPECOEF(I))**0.5D0
-                     GOTO 2002
                   ENDIF
-               ENDIF
-               IF(RBARWL2.GT.RBARWL1) THEN ! WATER LEVEL LOWER ON THIS SIDE OF PIPE
+               ELSE IF(RBARWL2.GT.RBARWL1) THEN ! WATER LEVEL LOWER ON THIS SIDE OF PIPE
                   IF(RBARWL1.LE.0) THEN ! INWARD FREE DISCHARGE
                      QN1(I)=QN1(I)+RampIntFlux1
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*RBARWL2/(1+PIPECOEF(I)))**0.5D0
-                     GOTO 2002
                   ELSE          ! INWARD SUBMERGED DISCHARGE
                      QN1(I)=QN1(I)+RampIntFlux1
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*(RBARWL2-RBARWL1)/PIPECOEF(I))**0.5D0
-                     GOTO 2002
                   ENDIF
                ENDIF
- 2002          CONTINUE
 C.............RESET INFORMATION FOR K TIME LEVEL
                RBARWL1=ETA2(NNBB1)-PIPEHT(I)
                RBARWL2=ETA2(NNBB2)-PIPEHT(I)
                IF((RBARWL1.LT.0.0).AND.(RBARWL2.LT.0.0)) THEN ! WATER LEVEL BELOW PIPE
                   QN2(I)=QN2(I)+0.0D0 ! NO FLOW
-                  GOTO 2003
-               ENDIF
-               IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF PIPE
+
+               ELSE IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF PIPE
                   QN2(I)=QN2(I)+0.0D0 ! NO FLOW
-                  GOTO 2003
-               ENDIF
-               IF(RBARWL1.GT.RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF PIPE
+
+               ELSE IF(RBARWL1.GT.RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF PIPE
                   IF(RBARWL2.LE.0) THEN ! OUTWARD FREE DISCHARGE
                      QN2(I)=QN2(I)-RampIntFlux2
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*RBARWL1/(1+PIPECOEF(I)))**0.5D0
-                     GOTO 2003
                   ELSE          ! OUTWARD SUBMERGED DISCHARGE
                      QN2(I)=QN2(I)-RampIntFlux2
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*(RBARWL1-RBARWL2)/PIPECOEF(I))**0.5D0
-                     GOTO 2003
                   ENDIF
-               ENDIF
-               IF(RBARWL2.GT.RBARWL1) THEN !WATER LEVEL LOWER ON THIS SIDE OF PIPE
+               ELSE IF(RBARWL2.GT.RBARWL1) THEN !WATER LEVEL LOWER ON THIS SIDE OF PIPE
                   IF(RBARWL1.LE.0) THEN ! INWARD FREE DISCHARGE
                      QN2(I)=QN2(I)+RampIntFlux2
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*RBARWL2/(1+PIPECOEF(I)))**0.5D0
-                     GOTO 2003
                   ELSE          ! INWARD SUBMERGED DISCHARGE
                      QN2(I)=QN2(I)+RampIntFlux2
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*(RBARWL2-RBARWL1)/PIPECOEF(I))**0.5D0
-                     GOTO 2003
                   ENDIF
                ENDIF
- 2003          CONTINUE
             ENDIF
          END DO
       ENDIF

@@ -1092,19 +1092,17 @@
             if (adcLong>=lon(j) .and.
      &           adcLong<lon(j+1)) then
               xi=j
-              goto 200
+              exit
             endif
           enddo
- 200      continue
 
           do k=1,owi(idx)%iLat-1
             if (adcLat>=lat(k) .and.
      &           adcLat<lat(k+1)) then
               yi=k
-              goto 300
+              exit
             endif
           enddo
- 300      continue
 
           owi(idx)%interpPoints(i,1) = xi
           owi(idx)%interpPoints(i,2) = yi

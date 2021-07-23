@@ -45,17 +45,15 @@ C
       DO I=1, LEN(DIR1)
          IF (DIR1(I:I).EQ.' ') THEN
            LEN1 = I-1
-           GO TO 100
+           EXIT
          ENDIF
       ENDDO
-100   CONTINUE
       DO I=1, LEN(DIR2)
          IF (DIR2(I:I).EQ.' ') THEN
            LEN2 = I-1
-           GO TO 200
+           EXIT
          ENDIF
       ENDDO
-200   CONTINUE
 C
       FNAME1 = DIR1(1:LEN1)//'/fort.61'
       FNAME2 = DIR2(1:LEN2)//'/fort.61'
@@ -336,17 +334,15 @@ C
       DO I=1, LEN(DIR1)
          IF (DIR1(I:I).EQ.' ') THEN
            LEN1 = I-1
-           GO TO 100
+           EXIT
          ENDIF
       ENDDO
-100   CONTINUE
       DO I=1, LEN(DIR2)
          IF (DIR2(I:I).EQ.' ') THEN
            LEN2 = I-1
-           GO TO 200
+           EXIT
          ENDIF
       ENDDO
-200   CONTINUE
 C
       FNAME1 = DIR1(1:LEN1)//'/fort.62'
       FNAME2 = DIR2(1:LEN2)//'/fort.62'
@@ -628,17 +624,15 @@ C
       DO I=1, LEN(DIR1)
          IF (DIR1(I:I).EQ.' ') THEN
            LEN1 = I-1
-           GO TO 100
+           EXIT
          ENDIF
       ENDDO
-100   CONTINUE
       DO I=1, LEN(DIR2)
          IF (DIR2(I:I).EQ.' ') THEN
            LEN2 = I-1
-           GO TO 200
+           EXIT
          ENDIF
       ENDDO
-200   CONTINUE
 C
       FNAME1 = DIR1(1:LEN1)//'/fort.63'
       FNAME2 = DIR2(1:LEN2)//'/fort.63'
@@ -919,17 +913,15 @@ C
       DO I=1, LEN(DIR1)
          IF (DIR1(I:I).EQ.' ') THEN
            LEN1 = I-1
-           GO TO 100
+           EXIT
          ENDIF
       ENDDO
-100   CONTINUE
       DO I=1, LEN(DIR2)
          IF (DIR2(I:I).EQ.' ') THEN
            LEN2 = I-1
-           GO TO 200
+           EXIT
          ENDIF
       ENDDO
-200   CONTINUE
 C
       FNAME1 = DIR1(1:LEN1)//'/fort.64'
       FNAME2 = DIR2(1:LEN2)//'/fort.64'
@@ -1203,17 +1195,15 @@ C
       DO I=1, LEN(DIR1)
          IF (DIR1(I:I).EQ.' ') THEN
            LEN1 = I-1
-           GO TO 100
+           EXIT
          ENDIF
       ENDDO
-100   CONTINUE
       DO I=1, LEN(DIR2)
          IF (DIR2(I:I).EQ.' ') THEN
            LEN2 = I-1
-           GO TO 200
+           EXIT
          ENDIF
       ENDDO
-200   CONTINUE
 C
       FNAME1 = DIR1(1:LEN1)//'/fort.51'
       FNAME2 = DIR2(1:LEN2)//'/fort.51'
@@ -1316,17 +1306,15 @@ C
       DO I=1, LEN(DIR1)
          IF (DIR1(I:I).EQ.' ') THEN
            LEN1 = I-1
-           GO TO 100
+           EXIT
          ENDIF
       ENDDO
-100   CONTINUE
       DO I=1, LEN(DIR2)
          IF (DIR2(I:I).EQ.' ') THEN
            LEN2 = I-1
-           GO TO 200
+           EXIT
          ENDIF
       ENDDO
-200   CONTINUE
 C
       FNAME1 = DIR1(1:LEN1)//'/fort.52'
       FNAME2 = DIR2(1:LEN2)//'/fort.52'
@@ -1431,17 +1419,15 @@ C
       DO I=1, LEN(DIR1)
          IF (DIR1(I:I).EQ.' ') THEN
            LEN1 = I-1
-           GO TO 100
+           EXIT
          ENDIF
       ENDDO
-100   CONTINUE
       DO I=1, LEN(DIR2)
          IF (DIR2(I:I).EQ.' ') THEN
            LEN2 = I-1
-           GO TO 200
+           EXIT
          ENDIF
       ENDDO
-200   CONTINUE
 C
       FNAME1 = DIR1(1:LEN1)//'/fort.53'
       FNAME2 = DIR2(1:LEN2)//'/fort.53'
@@ -1544,17 +1530,15 @@ C
       DO I=1, LEN(DIR1)
          IF (DIR1(I:I).EQ.' ') THEN
            LEN1 = I-1
-           GO TO 100
+           EXIT
          ENDIF
       ENDDO
-100   CONTINUE
       DO I=1, LEN(DIR2)
          IF (DIR2(I:I).EQ.' ') THEN
            LEN2 = I-1
-           GO TO 200
+           EXIT
          ENDIF
       ENDDO
-200   CONTINUE
 C
       FNAME1 = DIR1(1:LEN1)//'/fort.54'
       FNAME2 = DIR2(1:LEN2)//'/fort.54'
@@ -1670,17 +1654,15 @@ C
       DO I=1, LEN(DIR1)
          IF (DIR1(I:I).EQ.' ') THEN
            LEN1 = I-1
-           GO TO 100
+           EXIT
          ENDIF
       ENDDO
-100   CONTINUE
       DO I=1, LEN(DIR2)
          IF (DIR2(I:I).EQ.' ') THEN
            LEN2 = I-1
-           GO TO 200
+           EXIT
          ENDIF
       ENDDO
-200   CONTINUE
 C
       FNAME1 = DIR1(1:LEN1)//'/fort.55'
       FNAME2 = DIR2(1:LEN2)//'/fort.55'
@@ -1813,17 +1795,15 @@ C
       DO I=1, LEN(DIR1)
          IF (DIR1(I:I).EQ.' ') THEN
            LEN1 = I-1
-           GO TO 100
+           EXIT
          ENDIF
       ENDDO
-100   CONTINUE
       DO I=1, LEN(DIR2)
          IF (DIR2(I:I).EQ.' ') THEN
            LEN2 = I-1
-           GO TO 200
+           EXIT
          ENDIF
       ENDDO
-200   CONTINUE
 C
       FNAME1 = DIR1(1:LEN1)//'/fort.74'
       FNAME2 = DIR2(1:LEN2)//'/fort.74'

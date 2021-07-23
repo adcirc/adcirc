@@ -717,9 +717,7 @@ Casey 090302: Added these lines for output to the rads.64 file.
 
 C     jgf48.4627 Skip past GWCE and momentum calculations if only
 C     meteorological output was requested.
-      IF (METONLY) THEN
-         goto 9999
-      ENDIF
+      IF (.NOT.METONLY) THEN
 
 C   kmd48.33 - added in information for the elevation boundary conditions
 C              used in prognostic runs. The diagnostic information is read
@@ -1079,7 +1077,7 @@ C...  End of 2D Scalar Transport Solution
 C...
 C     jgf48.4627 Jump to here if METONLY is .TRUE., i.e., if only
 C     meteorological output is requested.
-9999  CONTINUE
+      ENDIF
 C...
 C...  Collect maximum values of variables   v46.50 sb 11/11/2006
       call collectMinMaxData(timeloc)

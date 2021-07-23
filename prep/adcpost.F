@@ -449,11 +449,9 @@ c
       DO I=1, 80
          IF (STRING(I:I).EQ.TARGET) THEN
             I1 = I
-            GOTO 100
+            EXIT
          ENDIF
       ENDDO
-c     
- 100  CONTINUE
 c     
 c--   Copy message to ouput string
 c     
@@ -482,21 +480,18 @@ c
       DO I=1, 80
          IF (ISTRING(I:I).NE.TARGET) THEN
             I1 = I
-            GOTO 100
+            EXIT
          ENDIF
       ENDDO
 c     
 c--   Find next blank character of String
 c     
- 100  CONTINUE
       DO I=I1+1,80
          IF (ISTRING(I:I).EQ.TARGET) THEN
             I2 = I
-            GOTO 200
+            EXIT
          ENDIF
       ENDDO
-c     
- 200  CONTINUE
 c     
 c--   Create a temporary string containing new index
 c     
@@ -507,21 +502,18 @@ c
       DO I=1, 80
          IF (TEMP1(I:I).NE.TARGET) THEN
             I3 = I
-            GOTO 300
+            EXIT
          ENDIF
       ENDDO
 c     
 c--   Find next blank character of String
 c     
- 300  CONTINUE
       DO I=I3+1,80
          IF (TEMP1(I:I).EQ.TARGET) THEN
             I4 = I
-            GOTO 400
+            EXIT
          ENDIF
       ENDDO
-c     
- 400  CONTINUE
 c     
 Cdebug print *, "i1 i2 i3 i4 ",I1, I2, I3 , I4
       TEMP2(1:100) = TEMP1(I3-1:I4-1)//ISTRING(I2:80)
@@ -550,10 +542,9 @@ c
       DO I=80,1,-1
          IF (TEMP1(I:I).NE.BLANK) THEN
            LEN1 = I
-           GOTO 10
+           EXIT
          ENDIF
       ENDDO
- 10   CONTINUE  
 c
 c--Scan input string for character after old number list
 c
@@ -562,17 +553,15 @@ c
          DO J=I,80
             IF (ISTRING(J:J).NE.BLANK) THEN
               I = J
-              GOTO 100
+              EXIT
             ENDIF
          ENDDO
- 100     CONTINUE
          DO J=I,80
            IF (ISTRING(J:J).EQ.BLANK) THEN
              I = J
-             GOTO 200
+             EXIT
            ENDIF
          ENDDO
- 200     CONTINUE
       ENDDO
       I1 = MAX(0,I)
 c
