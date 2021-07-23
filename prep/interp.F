@@ -185,12 +185,12 @@ c       print *, LATIND1,LATIND2,LONIND1,LONIND2,XCOOR,YCOOR
 c       print *, I,WVNX(I),WVNY(I)
       END DO
 C
-      GOTO 99
+      RETURN
 C
 9999  CONTINUE
       ISTAT = 1
 C
-  99  RETURN
+      RETURN
       END
 
 C***********************************************************************
@@ -234,29 +234,29 @@ C
         PRN(I)=101300.d0/RHOWATG
       END DO
 C
-  170 READ(22,'(A80)',END=9999) PBLJAGF
-      IF(PBLJAGF(2:2).EQ.'#') GOTO 170
-  171 READ(PBLJAGF,'(I8,3E13.5)',END=9999) NHG,WVNX(NHG),WVNY(NHG),
-     &                                     PRN(NHG)
+      DO WHILE(.TRUE.)
+        READ(22,'(A80)',END=9999) PBLJAGF
+        IF(PBLJAGF(2:2).NE.'#') EXIT
+      ENDDO
+      DO WHILE(.TRUE.)
+        READ(PBLJAGF,'(I8,3E13.5)',END=9999) NHG,WVNX(NHG),WVNY(NHG),
+     &                                       PRN(NHG)
 
-C     jgf46.02 From now on, wind files must contain data which are
-C     appropriate for the time span specified in the file: commented out
-C     the following two lines.
-C     WVNX(NHG)=WVNX(NHG)*1.04d0*0.5144d0  !CONVERT 30-MIN WINDS IN
-C     WVNY(NHG)=WVNY(NHG)*1.04d0*0.5144d0  !KNOTS TO 10-MIN WIND IN M/S
-C     jgf46.02 Added the following two lines.
-      WVNX(NHG)=WVNX(NHG)*0.5144d0         !CONVERT KNOTS TO M/S
-      WVNY(NHG)=WVNY(NHG)*0.5144d0
-      PRN(NHG)=100.d0*PRN(NHG)/RHOWATG   !CONVERT MILLIBARS TO M OF WATER
-      READ(22,'(A80)',END=9999) PBLJAGF
+C       jgf46.02 From now on, wind files must contain data which are
+C       appropriate for the time span specified in the file: commented out
+C       the following two lines.
+C       WVNX(NHG)=WVNX(NHG)*1.04d0*0.5144d0  !CONVERT 30-MIN WINDS IN
+C       WVNY(NHG)=WVNY(NHG)*1.04d0*0.5144d0  !KNOTS TO 10-MIN WIND IN M/S
+C       jgf46.02 Added the following two lines.
+        WVNX(NHG)=WVNX(NHG)*0.5144d0         !CONVERT KNOTS TO M/S
+        WVNY(NHG)=WVNY(NHG)*0.5144d0
+        PRN(NHG)=100.d0*PRN(NHG)/RHOWATG   !CONVERT MILLIBARS TO M OF WATER
+        READ(22,'(A80)',END=9999) PBLJAGF
 C
-      IF(PBLJAGF(2:2).NE.'#') THEN
-         GOTO 171
-      ELSE
-         GO TO 8888
-      ENDIF
+        IF(PBLJAGF(2:2).EQ.'#') RETURN
+      ENDDO
 9999  DONE = .TRUE.
-8888  RETURN
+      RETURN
       END
 
 
@@ -397,15 +397,15 @@ C...Enter, locate and open the GRIB format data file
  1011 FORMAT(' File ',A8,' WAS FOUND!  Opening & Processing file')
 
       INQUIRE(FILE=FNAME1,EXIST=FOUND)
-      IF(FOUND) GOTO 32
-      GBL(1:8) = FNAME1
+      IF(.NOT.FOUND) THEN
 C
 C--if file not found return logical FOUND to caller
 C
-      GBL(1:8) = FNAME1
-      RETURN
+        GBL(1:8) = FNAME1
+        RETURN
+      ENDIF
 C
-  32  WRITE(*,1011) FNAME1
+      WRITE(*,1011) FNAME1
       GBL(1:8) = FNAME1
       OPEN(IEXT,FILE=FNAME1,status='old',access='sequential',
      &     form='unformatted',iostat=kerr)
@@ -513,17 +513,19 @@ CCCC 1 10X, 'ITER  RES')
       DO 1000 K=1,LGGHAF
       ITER=0
       DRAD=DRADZ
-1     CALL POLY(L2,RAD,P2)
-2     P1 =P2
-      ITER=ITER+1
-      RAD=RAD+DRAD
-      CALL POLY(L2,RAD,P2)
-      IF(SIGN(SI,P1).EQ.SIGN(SI,P2)) GO TO 2
-      IF(DRAD.LT.EPS)GO TO 3
-      RAD=RAD-DRAD
-      DRAD = DRAD * 0.25
-      GO TO 1
-3     CONTINUE
+      DO WHILE(.TRUE.)
+        CALL POLY(L2,RAD,P2)
+        DO WHILE(.TRUE.)
+          P1 =P2
+          ITER=ITER+1
+          RAD=RAD+DRAD
+          CALL POLY(L2,RAD,P2)
+          IF(SIGN(SI,P1).NE.SIGN(SI,P2)) EXIT
+        ENDDO
+        IF(DRAD.LT.EPS) EXIT
+        RAD=RAD-DRAD
+        DRAD = DRAD * 0.25
+      ENDDO
       COLRAD(K)=RAD
       PHI = RAD * 180 / PI
       CALL POLY(K1,RAD,P1)
@@ -694,30 +696,29 @@ C.......Check that this value is reasonable.
             CALL EXIT(1)
           ENDIF
 
- 5        CONTINUE
-          IF((COLAT.GE.GCLAT(LAT)).AND.(COLAT.LE.GCLAT(LATP1))) GO TO 9
-          IF(COLAT.LT.GCLAT(LAT)) THEN
-            LATP1=LAT
-            LAT=LAT-1
-            IF(LAT.LE.0) THEN
-              LAT=1
-              LATP1=2
-              GOTO 9
+          DO WHILE(.TRUE.)
+            IF((COLAT.GE.GCLAT(LAT)).AND.(COLAT.LE.GCLAT(LATP1))) EXIT
+            IF(COLAT.LT.GCLAT(LAT)) THEN
+              LATP1=LAT
+              LAT=LAT-1
+              IF(LAT.LE.0) THEN
+                LAT=1
+                LATP1=2
+                EXIT
               ENDIF
-            GOTO 5
+              CYCLE
             ENDIF
-          IF(COLAT.GT.GCLAT(LATP1)) THEN
-            LAT=LAT+1
-            LATP1=LAT+1
-            IF(LAT.GE.NLAT ) THEN
-              LAT=NLAT-1
-              LATP1=NLAT
-              GOTO 9
+            IF(COLAT.GT.GCLAT(LATP1)) THEN
+              LAT=LAT+1
+              LATP1=LAT+1
+              IF(LAT.GE.NLAT ) THEN
+                LAT=NLAT-1
+                LATP1=NLAT
+                EXIT
               ENDIF
-            GOTO 5
+              CYCLE
             ENDIF
-
- 9        CONTINUE
+          ENDDO
           DDLAT=GCLAT(LATP1)-GCLAT(LAT)
           XLAT=GCLAT(LAT)
           DFLAT1=(COLAT-XLAT)/DDLAT
@@ -876,14 +877,14 @@ C...If appropriate, enter, locate and open the met data file
  1011 FORMAT(' File ',A8,' WAS FOUND!  Opening & Processing file')
 
       INQUIRE(FILE=FNAME1,EXIST=FOUND)
-      IF(FOUND) GOTO 32
+      IF(.NOT.FOUND) THEN
 C
 C--if not found return logical FOUND to caller
 C
-      GBL(1:8) = FNAME1
-      RETURN
+        GBL(1:8) = FNAME1
+        RETURN
+      ENDIF
 c
-  32  CONTINUE
       GBL(1:8) = FNAME1
       IF ((NWSEGWI.EQ.0).OR.(IDSETFLG.EQ.1)) THEN
         WRITE(*,1011) FNAME1

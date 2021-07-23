@@ -315,33 +315,30 @@ C...OPEN AND PROCESS THE UNIT 14 ADCIRC GRID FILE TO DETERMINE SIZES
 C
       FOUND = .FALSE.
       IF (USE_DEFAULT) THEN
-        GRID='fort.14'
-        INQUIRE(FILE=GRID,EXIST=FOUND)
-        IF(FOUND) THEN
-           GOTO 32
-        ELSE
-           print *, GRID, " not found"
-           CALL EXIT(1)
-        ENDIF
+         GRID='fort.14'
+         INQUIRE(FILE=GRID,EXIST=FOUND)
+         IF(.NOT.FOUND) THEN
+            print *, GRID, " not found"
+            CALL EXIT(1)
+         ENDIF
       ELSE
-  31    WRITE(*,*) 'Enter the name of the ADCIRC UNIT 14 (Grid) file:'
-        READ(*,'(a60)') GRID
-        INQUIRE(FILE=trim(GRID),EXIST=FOUND)
-        IF(FOUND) THEN
-          GOTO 32
-        ELSE
-          GOTO 31
-        ENDIF
+         DO WHILE(.NOT.FOUND)
+            WRITE(*,*) 
+     &        'Enter the name of the ADCIRC UNIT 14 (Grid) file:'
+            READ(*,'(a60)') GRID
+            INQUIRE(FILE=trim(GRID),EXIST=FOUND)
+         ENDDO
       ENDIF
-  32  WRITE(*,1011) trim(GRID)
+      WRITE(*,1011) trim(GRID)
       OPEN(14,FILE=trim(GRID))
 
- 33   READ(14,'(a80)') LINEI                       !SKIP OVER AGRID
-      DO I=1,95
-         IF(CHARI(I).NE.' ') GOTO 34
-      END DO
-      GOTO 33
- 34   READ(14,*) MNE,MNP                            !PROCESS MNE,MNP
+      L14: DO WHILE(.TRUE.)
+         READ(14,'(a80)') LINEI                       !SKIP OVER AGRID
+         DO I=1,95
+            IF(CHARI(I).NE.' ') EXIT L14
+         END DO
+      ENDDO L14
+      READ(14,*) MNE,MNP                            !PROCESS MNE,MNP
 C
       ALLOCATE (NNEIGH(MNP))                        !Allocate Neighbor Table
       nbytes = 4*mnp
@@ -576,25 +573,21 @@ C--Enter, Locate, Open, and Read the ADCIRC UNIT 15 (Run Info) File
 C
       FOUND = .FALSE.
       IF (USE_DEFAULT) THEN
-        RUNINFO='fort.15'
-        INQUIRE(FILE=RUNINFO,EXIST=FOUND)
-        IF(FOUND) THEN
-           GOTO 132
-        ELSE
-           print *, RUNINFO, " not found"
-           CALL EXIT(1)
-        ENDIF
+         RUNINFO='fort.15'
+         INQUIRE(FILE=RUNINFO,EXIST=FOUND)
+         IF(.NOT.FOUND) THEN
+            print *, RUNINFO, " not found"
+            CALL EXIT(1)
+         ENDIF
       ELSE
- 131    WRITE(*,*) 'Enter the name of ADCIRC UNIT 15 (Run Info) file:'
-        READ(*,'(A)') RUNINFO
-        INQUIRE(FILE=trim(RUNINFO),EXIST=FOUND)
-        IF(FOUND) THEN
-          GOTO 132
-        ELSE
-          GOTO 131
-        ENDIF
+         DO WHILE(.NOT.FOUND)
+            WRITE(*,*) 
+     &        'Enter the name of ADCIRC UNIT 15 (Run Info) file:'
+            READ(*,'(A)') RUNINFO
+            INQUIRE(FILE=trim(RUNINFO),EXIST=FOUND)
+         ENDDO
       ENDIF
- 132  WRITE(*,1011) RUNINFO
+      WRITE(*,1011) RUNINFO
       OPEN(15,FILE=RUNINFO)
 
 c...  tcm v50.66.02 Addtions for Time Varying Bathymetry
@@ -776,16 +769,18 @@ C
       CTIP   = .FALSE.
       CSOLIT = .FALSE.
 C
- 23   READ(15,80) LINEI                             !SKIP OVER RUNDES
-      DO I=1,95
-         IF(CHARI(I).NE.' ') GOTO 24
-      END DO
-      GOTO 23
- 24   READ(15,80) LINEI                             !SKIP OVER RUNID
-      DO I=1,95
-         IF(CHARI(I).NE.' ') GOTO 25
-      ENDDO
-      GOTO 24
+      L15A: DO WHILE(.TRUE.)
+         READ(15,80) LINEI                             !SKIP OVER RUNDES
+         DO I=1,95
+            IF(CHARI(I).NE.' ') EXIT L15A
+         END DO
+      ENDDO L15A
+      L15B: DO WHILE(.TRUE.)
+         READ(15,80) LINEI                             !SKIP OVER RUNID
+         DO I=1,95
+            IF(CHARI(I).NE.' ') EXIT L15B
+         ENDDO
+      ENDDO L15B
 C
  25   READ(15,*) IDUM  ! SKIP NFOVER
       READ(15,*) IDUM  ! SKIP NABOUT
@@ -1039,32 +1034,34 @@ C.... xyc v52.30 NWS=7 follow the same format as NWS=6
       ENDDO
       READ(15,*) NTIF                              !PROCESS NTIF
       DO IL=1,NTIF                                 !SKIP OVER TIPOTAG & TPK, AMIGT,etc.
- 26      READ(15,80) LINEI
-         DO I=1,95
-            IF(CHARI(I).NE.' ') GOTO 27
-         ENDDO
-         GOTO 26
- 27     READ(15,*) RDUM
+         L15C: DO WHILE(.TRUE.)
+            READ(15,80) LINEI
+            DO I=1,95
+               IF(CHARI(I).NE.' ') EXIT L15C
+            ENDDO
+         ENDDO L15C
+         READ(15,*) RDUM
       ENDDO
       MNTIF=NTIF
       IF(NTIF.EQ.0) MNTIF=1
       READ(15,*) MNBFR                             !PROCESS MNBFR
       DO IL=1,MNBFR                                !SKIP OVER BOUNTAG, & AMIG, FF,etc.
- 28      READ(15,80) LINEI
-         DO I=1,95
-            IF(CHARI(I).NE.' ') GOTO 29
-         ENDDO
-         GOTO 28
- 29      READ(15,*) RDUM
-
+         L15D: DO WHILE(.TRUE.)
+            READ(15,80) LINEI
+            DO I=1,95
+               IF(CHARI(I).NE.' ') EXIT L15D
+            ENDDO
+         ENDDO L15D
+         READ(15,*) RDUM
       ENDDO
       DO IL1=1,MNBFR
- 40      READ(15,80) LINEI                          !SKIP OVER ALPHA
-         DO I=1,95
-            IF(CHARI(I).NE.' ') GOTO 41
-         END DO
-         GOTO 40
- 41      DO IL2=1,skipNETA
+         L15E: DO WHILE(.TRUE.)
+            READ(15,80) LINEI                          !SKIP OVER ALPHA
+            DO I=1,95
+               IF(CHARI(I).NE.' ') EXIT L15E
+            END DO
+         ENDDO L15E
+         DO IL2=1,skipNETA
             READ(15,*) RDUM                          !SKIP OVER BOUNDARY FORCINGS
          ENDDO
       ENDDO
@@ -1074,20 +1071,22 @@ C.... xyc v52.30 NWS=7 follow the same format as NWS=6
       IF (fluxBoundary.eqv..true.) READ(15,*) MNFFR   !# FREQ IN NORMAL FLUX B.C.
 
       DO IL=1,MNFFR                                !SKIP OVER BOUNTAG, & AMIG, FF,etc.
- 42      READ(15,80) LINEI
-         DO I=1,95
-            IF(CHARI(I).NE.' ') GOTO 43
-         ENDDO
-         GOTO 42
- 43      READ(15,*) RDUM
+         L15F: DO WHILE(.TRUE.)
+            READ(15,80) LINEI
+            DO I=1,95
+               IF(CHARI(I).NE.' ') EXIT L15F
+            ENDDO
+         ENDDO L15F
+         READ(15,*) RDUM
       ENDDO
       DO IL1=1,MNFFR
- 44      READ(15,80) LINEI                          !SKIP OVER ALPHA
-         DO I=1,95
-            IF(CHARI(I).NE.' ') GOTO 45
-         ENDDO
-         GOTO 44
- 45      DO IL2=1,NDISC
+         L15G: DO WHILE(.TRUE.)
+            READ(15,80) LINEI                          !SKIP OVER ALPHA
+            DO I=1,95
+               IF(CHARI(I).NE.' ') EXIT L15G
+            ENDDO
+         ENDDO L15G
+         DO IL2=1,NDISC
             READ(15,*) RDUM                          !SKIP OVER BOUNDARY FORCINGS
          ENDDO
       ENDDO
@@ -1246,12 +1245,13 @@ C
       ENDIF
       READ(15,*) NHARF                           !PROCESS MNHARF
       DO IL1=1,NHARF
- 47      READ(15,80) LINEI                       !SKIP OVER HAFNAM
-         DO I=1,95
-            IF(CHARI(I).NE.' ') GOTO 48
-         ENDDO
-         GOTO 47
- 48      READ(15,*) RDUM,RDUM,RDUM             !SKIP OVER HAFREQ,HAFF,HAFACE
+         L15H: DO WHILE(.TRUE.)
+            READ(15,80) LINEI                       !SKIP OVER HAFNAM
+            DO I=1,95
+               IF(CHARI(I).NE.' ') EXIT L15H
+            ENDDO
+         ENDDO L15H
+         READ(15,*) RDUM,RDUM,RDUM             !SKIP OVER HAFREQ,HAFF,HAFACE
       ENDDO
 C
       READ(15,*) THAS,THAF,NHAINC,FMV               !READ THAS,...FMV

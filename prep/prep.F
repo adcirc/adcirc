@@ -2951,25 +2951,26 @@ C     subdomains that that full domain node maps to. The full domain
 C     node may map to more than one subdomain node if it falls on a
 C     boundary between subdomains (ghost nodes).
 C
- 33   DO I = 1, FLUX_NUM             ! loop through full domain flow nodes
-!         READ(20,*,END=40) FLUX_VAL ! get a flo val for this f.d. flow node
-         READ(proc_no,'(A80)',END=40) FLUX_MSG ! get a flo val for this f.d. flow node
-         if (sponge) then
-             INDX = nodeNumSP(I) 
-         else
-             INDX = FLUX14_ARY(I)      ! get full domain flow node number
-         endif
-         DO J=1, ITOTPROC(INDX)    ! loop over subdomains for 1 f.d. node
-            IPROC2 = IMAP_NOD_GL2(2*(J-1)+1,INDX) ! find next subdomain
-            DO IPROC=1, NPROC
-               IF (IPROC.EQ.IPROC2) THEN ! full domain node maps to this s.d.
-                  !WRITE(SDU(IPROC),50) FLUX_VAL
-                  WRITE(SDU(IPROC),*) TRIM(FLUX_MSG)
-               ENDIF
+      DO WHILE(.TRUE.)
+         DO I = 1, FLUX_NUM             ! loop through full domain flow nodes
+!            READ(20,*,END=40) FLUX_VAL ! get a flo val for this f.d. flow node
+            READ(proc_no,'(A80)',END=40) FLUX_MSG ! get a flo val for this f.d. flow node
+            if (sponge) then
+               INDX = nodeNumSP(I) 
+            else
+               INDX = FLUX14_ARY(I)      ! get full domain flow node number
+            endif
+            DO J=1, ITOTPROC(INDX)    ! loop over subdomains for 1 f.d. node
+               IPROC2 = IMAP_NOD_GL2(2*(J-1)+1,INDX) ! find next subdomain
+               DO IPROC=1, NPROC
+                  IF (IPROC.EQ.IPROC2) THEN ! full domain node maps to this s.d.
+                     !WRITE(SDU(IPROC),50) FLUX_VAL
+                     WRITE(SDU(IPROC),*) TRIM(FLUX_MSG)
+                  ENDIF
+               END DO
             END DO
          END DO
-      END DO
-      GOTO 33
+      ENDDO
  40   CLOSE (proc_no)
       DO IPROC=1, NPROC
          CLOSE (SDU(IPROC))
@@ -3316,27 +3317,27 @@ C
 C--Read a wave field record from the global input file
 C--and write out to respective local fort.23 file.
 C
- 170  READ(23,'(A80)',END=9999) PBLJAGF
-      IF(PBLJAGF(2:2).EQ.'#') THEN
-         DO IPROC = 1,NPROC
-            WRITE(SDU(IPROC),1101)
-            WRITE(SDU(IPROC),1100) 1,0.0,0.0 !victor didn't like this line 27/11/03
-         ENDDO
-      ELSE
+      DO WHILE(.TRUE.)
+170      READ(23,'(A80)',END=9999) PBLJAGF
+         IF(PBLJAGF(2:2).EQ.'#') THEN
+            DO IPROC = 1,NPROC
+               WRITE(SDU(IPROC),1101)
+               WRITE(SDU(IPROC),1100) 1,0.0,0.0 !victor didn't like this line 27/11/03
+            ENDDO
+         ELSE
 ! vjp 27/11/03
 ! rewrote this section to handle ghost-nodes
 ! and changed if test from "and" to "or"
-         READ(PBLJAGF,'(I8,2E13.5)',END=9999) NHG,U,V
-         IF ((U.NE.0.).OR.(V.NE.0.)) THEN
-            DO J=1, ITOTPROC(NHG)
-               IPROC  = IMAP_NOD_GL2(2*(J-1)+1,NHG)
-               LINDEX = IMAP_NOD_GL2(2*(J-1)+2,NHG)
-               WRITE(SDU(IPROC),1100) LINDEX,U,V
-            ENDDO
+            READ(PBLJAGF,'(I8,2E13.5)',END=9999) NHG,U,V
+            IF ((U.NE.0.).OR.(V.NE.0.)) THEN
+               DO J=1, ITOTPROC(NHG)
+                  IPROC  = IMAP_NOD_GL2(2*(J-1)+1,NHG)
+                  LINDEX = IMAP_NOD_GL2(2*(J-1)+2,NHG)
+                  WRITE(SDU(IPROC),1100) LINDEX,U,V
+               ENDDO
+            ENDIF
          ENDIF
-      ENDIF
-
-      GOTO 170
+      ENDDO
 
  9999 CLOSE(23)
       DO IPROC=1,NPROC
@@ -6835,38 +6836,40 @@ C---------------------------------------------------------------------------
       DefaultName(1:5) = 'fort.'
       WRITE(DefaultName(6:7),2) UnitNumber
 C
+      DO WHILE(.not.Found)
+C
 C     Determine the name of the file; if found, open it
- 31   IF (USE_DEFAULT) THEN
-         FileName = DefaultName
-      ELSE
-         WRITE(*,850) ! type skip to bypass
-         WRITE(*,900) Description
-         WRITE(*,910) UnitNumber
-         READ(*,'(A)') FileName
-         FileName = trim(FILENAME)
-      ENDIF
+         IF (USE_DEFAULT) THEN
+            FileName = DefaultName
+         ELSE
+            WRITE(*,850) ! type skip to bypass
+            WRITE(*,900) Description
+            WRITE(*,910) UnitNumber
+            READ(*,'(A)') FileName
+            FileName = trim(FILENAME)
+         ENDIF
 C
 C     Determine if full domain file exists
-      INQUIRE(FILE=FileName,EXIST=FOUND)
+         INQUIRE(FILE=FileName,EXIST=FOUND)
 C
 C     If it does exist, open it
-      IF ( FOUND ) THEN
-         WRITE(*,1011) trim(FileName) !found
-         OPEN(UNIT=UnitNumber, FILE=FileName, IOSTAT=ErrorIO)
-         Success = .true.
-         IF ( ErrorIO .GT. 0 ) THEN
-            WRITE(*,*) "ERROR: Full domain file exists but"
-            WRITE(*,*) "cannot be opened."
-            Success = .false.
+         IF ( FOUND ) THEN
+            WRITE(*,1011) trim(FileName) !found
+            OPEN(UNIT=UnitNumber, FILE=FileName, IOSTAT=ErrorIO)
+            Success = .true.
+            IF ( ErrorIO .GT. 0 ) THEN
+               WRITE(*,*) "ERROR: Full domain file exists but"
+               WRITE(*,*) "cannot be opened."
+               Success = .false.
+            ELSE
+               WRITE(*,*) "Successfully opened full domain file."
+            ENDIF
          ELSE
-            WRITE(*,*) "Successfully opened full domain file."
-         ENDIF
-      ELSE
 C     Give the user a chance to opt out of prepping this file.
-         IF (FileName .eq. skipstring) RETURN ! note the early RETURN
-         WRITE(*,1010) trim(FileName) !not found
-         GOTO 31
-      ENDIF
+            IF (FileName .eq. skipstring) RETURN ! note the early RETURN
+            WRITE(*,1010) trim(FileName) !not found
+         ENDIF
+      ENDDO
 
  2    FORMAT(I2)
  30   FORMAT(A30)
