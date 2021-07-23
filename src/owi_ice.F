@@ -137,30 +137,30 @@ C***********************************************************************
 
 ! Check if region scale data exist
 
-      IF(numSets.eq.1) GOTO 100
+      if (numSets.ne.1) then
 
 ! Read region ice file header -----------------------------------------------
 
-      OPEN(227,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.227',STATUS='OLD')
+        OPEN(227,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.227',STATUS='OLD')
 
-      ! Read begining/ending dates of ice file
-!      tcm v48.4645 changed the way the header is read
-!      read(227,'(a,1x,a,1x,a)',err=99999,ADVANCE="NO")part1,part2,part3
-!      read(227,*)date1ice,date2ice
-      owiheader(:) = ' '  !set owiheader to blanks before read
-      read(227,fmt='(a80)',err=99999) owiheader
-      read(owiheader(56:65),'(I10)') date1ice
-      read(owiheader(71:80),'(I10)') date2ice
+        ! Read begining/ending dates of ice file
+!       tcm v48.4645 changed the way the header is read
+!       read(227,'(a,1x,a,1x,a)',err=99999,ADVANCE="NO")part1,part2,part3
+!       read(227,*)date1ice,date2ice
+        owiheader(:) = ' '  !set owiheader to blanks before read
+        read(227,fmt='(a80)',err=99999) owiheader
+        read(owiheader(56:65),'(I10)') date1ice
+        read(owiheader(71:80),'(I10)') date2ice
 
-      if (myproc == 0)then
-         write(screenunit,*)'date1 in region ice file = ',date1ice
-         write(screenunit,*)'date2 in region ice file = ',date2ice
+        if (myproc == 0) then
+          write(screenunit,*)'date1 in region ice file = ',date1ice
+          write(screenunit,*)'date2 in region ice file = ',date2ice
+        endif
+
+        date1R = date1ice
+        date2R = date2ice
+
       endif
-
-      date1R = date1ice
-      date2R = date2ice
-
- 100  CONTINUE
 
 
 ! Initialize flags ----------------------------------------------------------
@@ -261,64 +261,65 @@ C***********************************************************************
 
 ! Read region data  --------------------------------------------------------
 
-      regionExists = .FALSE.
-
-      IF(numSets.EQ.1) GOTO 100
-      if(iCYMDHB.lt.date1R) goto 100
-      if(iCYMDHB.eq.date2R.and.iMinR.ne.0) goto 100
-      if(iCYMDHB.gt.date2R) goto 100
-
       regionExists = .TRUE.
 
-      ! Increment counter
-      isnapR = isnapR+1
+      IF(numSets.EQ.1) regionExists = .FALSE.
+      if(iCYMDHB.lt.date1R) regionExists = .FALSE.
+      if(iCYMDHB.eq.date2R.and.iMinR.ne.0) regionExists = .FALSE.
+      if(iCYMDHB.gt.date2R) regionExists = .FALSE.
 
-      ! Read grid specifications/date in ice file
-      read (227,11,end=10000,err=99999) 
-     &     iLatc,iLongc,dxc,dyc,swlatc,swlongc,iCYMDHc,iMinc
+      if ( regionExists ) then
 
-      ! Check if header info has changed from the previous snapshot
-      if(isnapR.gt.1) then
-        if(iLatc.ne.iLatR.or.iLongc.ne.iLongR.or.dxc.ne.dxR.or. 
-     &       dyc.ne.dyR.or.swlatc.ne.swlatR.or.
-     &       swlongc.ne.swlongR) then
-          updateR = 1
-        else
-          updateR = 0
+        ! Increment counter
+        isnapR = isnapR+1
+
+        ! Read grid specifications/date in ice file
+        read (227,11,end=10000,err=99999) 
+     &       iLatc,iLongc,dxc,dyc,swlatc,swlongc,iCYMDHc,iMinc
+
+        ! Check if header info has changed from the previous snapshot
+        if(isnapR.gt.1) then
+          if(iLatc.ne.iLatR.or.iLongc.ne.iLongR.or.dxc.ne.dxR.or. 
+     &         dyc.ne.dyR.or.swlatc.ne.swlatR.or.
+     &         swlongc.ne.swlongR) then
+            updateR = 1
+          else
+            updateR = 0
+          endif
+
         endif
 
-      endif
 
+        iCYMDHR = iCYMDHc
+        iMinR = iMinc
 
-      iCYMDHR = iCYMDHc
-      iMinR = iMinc
-
-      if(iCYMDHB.ne.iCYMDHR.or.iMinB.ne.iMinR) then
-        if (myproc == 0) then
-          WRITE(screenunit,*) 'SNAPSHOTS NOT SYNCRONIZED'
-          WRITE(screenunit,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
-          WRITE(screenunit,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
-          WRITE(screenunit,*) 'EXECUTION WILL BE TERMINATED'
-        endif
-        WRITE(16,*) 'SNAPSHOTS NOT SYNCRONIZED'
-        WRITE(16,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
-        WRITE(16,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
-        WRITE(16,*) 'EXECUTION WILL BE TERMINATED'
+        if(iCYMDHB.ne.iCYMDHR.or.iMinB.ne.iMinR) then
+          if (myproc == 0) then
+            WRITE(screenunit,*) 'SNAPSHOTS NOT SYNCRONIZED'
+            WRITE(screenunit,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
+            WRITE(screenunit,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
+            WRITE(screenunit,*) 'EXECUTION WILL BE TERMINATED'
+          endif
+          WRITE(16,*) 'SNAPSHOTS NOT SYNCRONIZED'
+          WRITE(16,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
+          WRITE(16,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
+          WRITE(16,*) 'EXECUTION WILL BE TERMINATED'
 #ifdef CMPI
-        call msg_fini()
+          call msg_fini()
 #endif
-        CALL EXIT(1)
+          CALL EXIT(1)
+        endif
+
+        ! Update coordinate mapping coefficients if necessary
+        if(updateR.eq.1) then
+          call ncice1_interp_region(np)
+        endif
+
+        ! Read ice concentrations
+        read(227,22,end=9999,err=99999) 
+     &    ((CiceR(i,j),i=1,iLongR),j=1,iLatR)
+
       endif
-
-      ! Update coordinate mapping coefficients if necessary
-      if(updateR.eq.1) then
-        call ncice1_interp_region(np)
-      endif
-
-      ! Read ice concentrations
-      read(227,22,end=9999,err=99999) ((CiceR(i,j),i=1,iLongR),j=1,iLatR)
-
- 100  CONTINUE
 
 ! Interpolate onto ADCIRC grid and write to file -------------------------
       
@@ -550,19 +551,17 @@ C***********************************************************************
             if (adcLong>=longB(j) .and.  
      &           adcLong<longB(j+1)) then
               xi=j
-              goto 200
+              exit
             endif
           enddo
- 200      continue
             
           do k=1,iLatB-1
             if (adcLat>=latB(k) .and. 
      &           adcLat<latB(k+1)) then
               yi=k
-              goto 300
+              exit
             endif
           enddo
- 300      continue
             
           swpointsB(i,1) = xi
           swpointsB(i,2) = yi
@@ -640,18 +639,16 @@ C***********************************************************************
           do j=1,iLongR-1
             if (adcLong>=longR(j).and.adcLong<longR(j+1)) then
               xi=j
-              goto 201
+              exit
             endif
           enddo
- 201      continue
 
           do k=1,iLatR-1
             if (adcLat>=latR(k).and.adcLat<latR(k+1)) then
               yi=k
-              goto 301
+              exit
             endif
           enddo
- 301      continue
 
           swpointsR(i,1) = xi
           swpointsR(i,2) = yi
