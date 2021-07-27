@@ -186,7 +186,7 @@ C
          real(sz)          :: rampVal          ! ramping multiplier for this dataset
          real(sz)          :: max_extrap_dist  ! maximum distance for extrapolating values (meters)
          integer           :: numFiles         !total number of GFDL met Files to be read
-         ! input data from gfdl met files themselves
+
          integer           :: nh           ! number of grid points
          ! derived data
          logical           :: loaded       ! .true. if we have loaded the data from file
@@ -1743,7 +1743,6 @@ C  tcm v49.16 20100617
       ENDIF
 !PV END:: NWS=17
 
-
 C      DW/WJP: rotate wind stresses if coordinate transform
        IF ( IFSPROTS .eq. 1 ) THEN
           UVECTMP(1:NP) = WSX2(1:NP); 
@@ -2120,9 +2119,12 @@ C......RESTART WIND AND PRESSURE INFORMATION
       !c DW, for nonwind and NEM
       SELECT CASE(NWS)
       CASE (0,17)
-!         WSX1(:) = 0.d0 ;
-!         WSY1(:) = 0.d0 ;
-   
+         WVNX1(:) = 0.d0 ;
+         WVNY1(:) = 0.d0 ;
+         WVNX2(:) = 0.d0 ;
+         WVNY2(:) = 0.d0 ;    
+         PRN1(:)=PRBCKGRND_MH2O ;
+         PRN2(:)=PRBCKGRND_MH2O ;
          WSX2(:) = 0.d0
          WSY2(:) = 0.D0
          PR2(:) = PRBCKGRND_MH2O
@@ -3216,7 +3218,6 @@ C  tcm v49.16 20100617
           WVNX1 = WVNX2
           WVNY1 = WVNY2
        endif
-
 C      DW/WJP: rotate wind stresses if coordinate transform
        IF ( IFSPROTS .eq. 1 ) THEN
           UVECTMP(1:NP) = WSX2(1:NP); 

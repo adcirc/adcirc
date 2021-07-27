@@ -12,7 +12,10 @@ p15
 adcswan
 padcswan
 
-# compiled module and object files
+build13
+build12
+libadc.a
+*.a
 *.o
 *.mod
 *.smod

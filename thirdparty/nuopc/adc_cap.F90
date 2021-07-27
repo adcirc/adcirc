@@ -465,27 +465,51 @@ module adc_cap
 
     !--------- import fields to Sea Adc -------------
     !TODO: Consider moving these lines to driver to avoid doing it in both CAPS
-    call NUOPC_FieldDictionaryAddEntry("eastward_radiation_stress",  "mx", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+     !--- kf fixed
+     ! sxx
+     if (.not.NUOPC_FieldDictionaryHasEntry( &
+                  "eastward_wave_radiation_stress")) then
+        call NUOPC_FieldDictionaryAddEntry( &
+          standardName="eastward_wave_radiation_stress", &
+          canonicalUnits="N m-1", &
+          rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+      endif
 
-    call NUOPC_FieldDictionaryAddEntry("northward_radiation_stress", "mx", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+      ! sxy
+      if (.not.NUOPC_FieldDictionaryHasEntry( &
+                  "eastward_northward_wave_radiation_stress")) then
+        call NUOPC_FieldDictionaryAddEntry( &
+          standardName="eastward_northward_wave_radiation_stress", &
+          canonicalUnits="N m-1", &
+          rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+      endif
 
-    call NUOPC_FieldDictionaryAddEntry("cross_radiation_stress",    "mx", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+      ! syy
+      if (.not.NUOPC_FieldDictionaryHasEntry( &
+                   "northward_wave_radiation_stress")) then
+        call NUOPC_FieldDictionaryAddEntry( &
+          standardName="northward_wave_radiation_stress", &
+          canonicalUnits="N m-1", &
+          rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+      endif
 
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_radiation_stress", shortname= "sxx")
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="northward_radiation_stress",shortname= "syy")
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="cross_radiation_stress",    shortname= "sxy")
+!   !------ immport field from ww3 to adc
+    !c- kf fixed
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_wave_radiation_stress", shortname= "sxx")
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="northward_wave_radiation_stress",shortname= "syy")
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_northward_wave_radiation_stress",shortname= "sxy")
     !--------- import fields from atm to Adc -------------
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "air_pressure_at_sea_level", shortname= "pmsl" )
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "inst_merid_wind_height10m", shortname= "imwh10m" )
@@ -882,6 +906,8 @@ module adc_cap
 
     type(ESMF_Time) :: BeforeCaribbeanTime,AfterCaribbeanTime
 
+    ! DW
+    INTEGER, save:: ienter = 0 ;
     rc = ESMF_SUCCESS
     dbrc = ESMF_SUCCESS
     ! query the Component for its clock, importState and exportState
@@ -1097,24 +1123,8 @@ module adc_cap
         ! Calculate wave forces
         call ComputeWaveDrivenForces
 
-        !iunit_log = iunit_log + 1
-        !open(unit = iunit_log, ACTION = "write", STATUS ="replace" )
-        !write(iunit_log, *) RSNX2, RSNY2
-        !close(iunit_log)
-
         write(info,*) subname,' --- wave data exchange OK / wave feilds are all connected --- / Model advances '
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
-        !print *, info
-
-        !RSNX2 = 0.0001
-        !RSNY2 = 0.0001
-    
-        !RSNX2 = 0.0
-        !RSNY2 = 0.0
-
-        ! initialize time reach to Caribean Islands
-        !call ESMF_TimeSet(BeforeCaribbeanTime, yy=2008, mm=9, dd=6 , h=12, m=0, s=0, rc=rc)
-        !call ESMF_TimeSet(AfterCaribbeanTime , yy=2008, mm=9, dd=12, h=12, m=0, s=0, rc=rc)
 
 !!!!#ifdef NO_COMPILE00000
         !-----------------------
@@ -1125,26 +1135,10 @@ module adc_cap
             write(info,*) subname, 'in cap after maxval(RSNY2)', maxval(RSNY2)
             call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
 
-            !print *, 'Hard Coded >>>>>>>>>>>  where(abs(RSNX2).gt. wave_force_limmit) RSNX2 =  wave_force_limmit'
-            !write(info,*) subname,'Hard Coded >>>>>>>>>>>  where(abs(RSNX2).gt. wave_force_limmit) RSNX2 =  wave_force_limmit'
-            !call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
-
-            !where(RSNX2.gt. wave_force_limmit) RSNX2 =  wave_force_limmit
-            !where(RSNY2.gt. wave_force_limmit) RSNY2 =  wave_force_limmit
-
-            !where(RSNX2.le. (-1.0 * wave_force_limmit)) RSNX2 =  -1.0 * wave_force_limmit
-            !where(RSNY2.le. (-1.0 * wave_force_limmit)) RSNY2 =  -1.0 * wave_force_limmit
-
-!!!!#endif
-
-    !        endif
-
     else
         NUOPC4WAV = .false.
         write(info,*) subname,' --- no wave forcing exchange / waves are not all connected --- '
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
-        !print *, info
-        !stop
     endif        
     !-----------------------------------------
     !   IMPORT from ATM
@@ -1202,13 +1196,9 @@ module adc_cap
         IF(.NOT.ALLOCATED(WVNY2)) ALLOCATE(WVNY2(1:NP))
         IF(.NOT.ALLOCATED(PRN2) ) ALLOCATE(PRN2 (1:NP))
 
-        !print *, 'maxval(WVNX2)', maxval(WVNX2)
-
         WVNX1 = WVNX2   
         WVNY1 = WVNY2  
         PRN1  = PRN2
-
-        !call UPDATER( dataPtr_izwh10m(:), dataPtr_imwh10m(:), dataPtr_pmsl(:),3)
        
         ! Fill owned nodes from imported data to model variable
         !TODO: unit check
@@ -1221,18 +1211,24 @@ module adc_cap
         end do
         
         do i1 = 1, mdataOut%NumOwnedNd, 1
-            PRN2(mdataOut%owned_to_present_nodes(i1) ) = dataPtr_pmsl(i1) / (1025 * 9.81)    !convert Pascal to mH2O
-        
+!            PRN2(mdataOut%owned_to_present_nodes(i1) ) = dataPtr_pmsl(i1) / (1025 * 9.81)    !convert Pascal to mH2O
+!++ GML  in ADCIRC global.F RhoWat0=1000.D0; g = 9.80665
+            PRN2(mdataOut%owned_to_present_nodes(i1) ) = dataPtr_pmsl(i1) / (1000 * 9.80665)    !convert Pascal to mH2O
+!++        
           !if ( abs(dataPtr_pmsl(i1) ).gt. 1e11)  then
           !  STOP '  dataPtr_pmsl > mask '     
           !end if
         end do
          
+
         ! Ghost nodes update 
         call UPDATER( WVNX1(:), WVNY1(:), PRN1(:),3)
         call UPDATER( WVNX2(:), WVNY2(:), PRN2(:),3)
+ !       if (first_exchange .and. sum(PRN1) .le. 1.0) then
+ !      ! DW:  band-aid fix by zeroing out wind velocity and atm pressure.
+ !      !      Todo: look at atmesh code to see if there could be a better fix.  
+        if ( first_exchange .or. sum(PRN1)  .le. 1.0) then
 
-        if (first_exchange .and. sum(PRN1) .le. 1.0) then
           WVNX2 = 1e-10
           WVNY2 = 1e-10
           WVNX1 = 1e-10
@@ -1240,9 +1236,18 @@ module adc_cap
 
           PRN2 = 10.0  !hard coded to handel the 1st exchange zeros problem :TODO! Need to resolve this!
           PRN1 = PRN2
+!++ GML 20210308
+          RSNX2 = 0.0d0
+          RSNY2 = 0.0d0
+!++
           first_exchange = .false.
         end if  
+
+
     
+ !       WRITE(*,'(A,4E)') "  In ModelAdvance() 3:" , MAXVAL(WVNX1), MAXVAL(WVNX2), & 
+ !           MAXVAL(WVNY1), MAXVAL(WVNY2) ; 
+
         !if (sum(PRN1) .eq. 0.0 ) then
         !  PRN1 = 10000.0
         !end if  
@@ -1275,15 +1280,13 @@ module adc_cap
         !where(abs(WVNY1).gt. 1e6)  WVNY1 =  -8.0
         !where(abs(WVNY2).gt. 1e6)  WVNY2 =  -8.0
 
-            
-          !PRN2 = 10000.0
-          !PRN1 = 10000.0
-          !WVNX2 =  8.0
-          !WVNX1 =  8.0
-          !WVNY2 = -8.0
-          !WVNY1 = -8.0       
-            
-    
+        !PRN2 = 10000.0
+        !PRN1 = 10000.0
+        !WVNX2 =  8.0
+        !WVNX1 =  8.0
+        !WVNY2 = -8.0
+        !WVNY1 = -8.0
+
         !where(dataPtr_pmsl .gt. 1e20)  dataPtr_pmsl =  10e4
         !where(dataPtr_pmsl .lt. 8e4 )  dataPtr_pmsl =  10e4        
         
@@ -1327,8 +1330,6 @@ module adc_cap
         !print *, info
         !stop
     endif
-
-
    surge_forcing= .true.
    do num = 1,fldsFrAdc_num
       if (fldsFrAdc(num)%shortname == 'zeta') surge_forcing = surge_forcing .and. fldsFrAdc(num)%connected

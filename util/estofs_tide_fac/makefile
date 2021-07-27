@@ -28,6 +28,14 @@ ifeq ($(compiler),intel)
   PROFLIB =  -lprof
 endif
 
+ifeq ($(compiler),intel-ND)
+  FC ?=      ifort
+  #use for extensive compilation error reporting
+  LDFLAGS = -mkl  # ifort mkl library
+  FFLAGS = -O3 -i4 $(INCS)
+  PROFLIB =  -lprof
+endif
+
 ifeq ($(compiler),pgi)
   FC ?=      pgfortan
   #LDFLAGS = -mkl
@@ -37,6 +45,7 @@ endif
 
 CMD =           estofs_tide_fac
 #PROFLIB =       -lprof
+
 
 # To perform the default compilation, use the first line
 # To compile with flowtracing turned on, use the second line
@@ -65,4 +74,3 @@ clobber:	clean
 
 void:	clobber
 	rm -f $(SRCS)
-

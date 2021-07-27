@@ -102,7 +102,7 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_SOURCE_DIR}/src/write_output.F
       ${CMAKE_SOURCE_DIR}/src/couple2swan.F
       ${CMAKE_SOURCE_DIR}/src/sponge_layer.F
-      ${CMAKE_SOURCE_DIR}/src/quadrature.F
+      ${CMAKE_SOURCE_DIR}/src/quadtrature.F
       ${CMAKE_SOURCE_DIR}/src/couple2baroclinic3D.F)
 
   set(ADCSWAN_SOURCES
@@ -135,6 +135,7 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
 
   target_compile_definitions(templib_adcswan1 PRIVATE CSWAN)
   target_compile_definitions(adcswan PRIVATE CSWAN)
+
 
   target_include_directories(
     templib_adcswan1

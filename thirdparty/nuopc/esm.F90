@@ -25,6 +25,7 @@ module ESM
   use WAV,      only: wavSS  => SetServices
   
   !TODO: Use #ifdef to select only on atm cap at a time >>>>
+  use hwrf_cap, only: hwrfSS => SetServices
   use atmesh  , only: atmeshSS => SetServices
   
   implicit none
@@ -236,6 +237,9 @@ module ESM
     allocate(petList(1))
     petList(1) = petCount-1        ! PET labeling goes from 0 to petCount-1
     Print *, 'WRF>>>>', petCount, petList(1)
+
+    ! SetServices for HWRF
+    call NUOPC_DriverAddComp(driver, "HWRF", hwrfSS, &
 #ifdef WITHPETLISTS_on
       petList=petList, &
 #endif
@@ -284,6 +288,34 @@ module ESM
       file=__FILE__)) &
       return  ! bail out
     call NUOPC_CompAttributeSet(connector, name="Verbosity", value="max", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+   ! SetServices for hwrf2wav
+    call NUOPC_DriverAddComp(driver, srcCompLabel="HWRF", dstCompLabel="WAV", &
+      compSetServicesRoutine=cplSS, comp=connector, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    call NUOPC_CompAttributeSet(connector, name="Verbosity", value="max", &
+      rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! SetServices for hwrf2adc
+    call NUOPC_DriverAddComp(driver, srcCompLabel="HWRF", dstCompLabel="ADC", &
+      compSetServicesRoutine=cplSS, comp=connector, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    call NUOPC_CompAttributeSet(connector, name="Verbosity", value="max", &
+      rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &

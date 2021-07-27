@@ -37,7 +37,7 @@ if(BUILD_ADCIRC)
       ${CMAKE_SOURCE_DIR}/src/transport.F
       ${CMAKE_SOURCE_DIR}/src/driver.F
       ${CMAKE_SOURCE_DIR}/src/sponge_layer.F
-      ${CMAKE_SOURCE_DIR}/src/quadrature.F
+      ${CMAKE_SOURCE_DIR}/src/quadtrature.F
       ${CMAKE_SOURCE_DIR}/src/couple2baroclinic3D.F)
 
   add_executable(adcirc ${ADCIRC_SOURCES})

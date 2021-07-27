@@ -52,8 +52,11 @@ ifneq ($(shell ulimit -s),unlimited)
 endif
 endif
 
+
+
 # Specify NETCDF=enable to gmake on the command line to activate netcdf i/o
 ifeq ($(NETCDF),enable)
+#ifeq ($(NETCDFLAG),enable)
 # jgf49.61: Don't add the -DADCNETCDF for the IBM compilers (see cmplrflags.mk)
 ifeq ($(IBM),)
      PPFC    := $(PPFC) -DADCNETCDF -I$(NETCDFHOME)/include
@@ -63,8 +66,10 @@ ifeq ($(IBM),)
      FFLAGS3 := $(FFLAGS3) -DADCNETCDF -I$(NETCDFHOME)/include
      FFLAGS4 := $(FFLAGS4) -DADCNETCDF -I$(NETCDFHOME)/include
 endif
+#NETCDF=enable
 endif
 ifeq ($(NETCDF4),enable)
+#ifeq ($(NETCDF4FLAG),enable)
      PPFC    := $(PPFC) -DHAVE_NETCDF4
      PFC     := $(PFC) -DHAVE_NETCDF4
      FFLAGS1 := $(FFLAGS1) -DHAVE_NETCDF4
@@ -369,7 +374,7 @@ COUP_MSRC  =  couple2swan.F
 KDTREE_MSRC = kdtree2.F
 XDMF_MSRC = xdmfio.F
 # DW sponge layer
-SPG_MSRC = quadrature.F sponge_layer.F
+SPG_MSRC = quadtrature.F sponge_layer.F
 # WJP 3D baroclinic coupling
 BC3D_MSRC = couple2baroclinic3D.F
 
@@ -598,6 +603,11 @@ endif
                  $(WRITER_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ) 
 	ar -ts $@
 
+#   $(LIBADC) :: $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(NC_MOBJ) 
+#	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(NC_MOBJ) 
+#	ar -ts $@
+
+
 #Casey 080106: Added the following lines.
    adcswan :: $(O_DIR)
    adcswan :: $(ADCSWAN_DEP)
@@ -803,8 +813,8 @@ $(O_DIR)subdomain.o   : subdomain.F $(O_DIR)mesh.o
 endif
 $(O_DIR)global_3dvs.o : global_3dvs.F $(O_DIR)global.o $(O_DIR)boundaries.o
 # DW
-$(O_DIR)sponge_layer.o : sponge_layer.F $(O_DIR)quadrature.o $(ADC_MOBJ)
-$(O_DIR)quadrature.o : quadrature.F
+$(O_DIR)sponge_layer.o : sponge_layer.F $(O_DIR)quadtrature.o $(ADC_MOBJ)
+$(O_DIR)quadrature.o : quadtrature.F 
 # WJP
 $(O_DIR)couple2baroclinic3D.o : couple2baroclinic3D.F $(ADC_MOBJ) $(SPG_MOBJ)
 

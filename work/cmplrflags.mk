@@ -53,8 +53,8 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=gnu
 #compiler=g95
 #compiler=gfortran
-compiler=intel
-#compiler=intel-ND
+#compiler=intel
+compiler=intel-ND
 #compiler=intel-lonestar
 #compiler=intel-sgi
 #compiler=cray_xt3
@@ -372,6 +372,15 @@ ifeq ($(compiler),intel)
         FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
      endif
   endif
+
+# ------------
+  ifeq ($(NETCDF),enable)
+    ifeq ($(WDALTVAL),enable)
+       DP  := $(DP) -DWDVAL_NETCDF 
+    endif
+  endif
+# -----------
+
   #jgf20110519: For netcdf on topsail at UNC, use
   #NETCDFHOME=/ifs1/apps/netcdf/
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
@@ -397,7 +406,6 @@ ifeq ($(compiler),intel-ND)
 #      FFLAGS1     :=  $(INCDIRS) -O2 -g -traceback -xSSE4.2 -assume byterecl -132 -mcmodel=medium -shared-intel -assume buffered_io
 #      FFLAGS1     :=  $(INCDIRS) -O0 -g -traceback -check bounds -xSSE4.2 -assume byterecl -132 -mcmodel=medium -shared-intel -assume buffered_io
   endif
-
   ifeq ($(DEBUG),full)
      FFLAGS1    :=  $(INCDIRS) -g -O0 -traceback -debug -check all -FI -assume byterecl -132 -DEBUG -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
@@ -429,7 +437,15 @@ ifeq ($(compiler),intel-ND)
      HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
      #HDF5HOME=/opt/crc/h/hdf5/intel/18.0/build/lib/      
      FLIBS      := $(FLIBS) -lnetcdff -L$(HDF5HOME) 
-  endif   
+  endif
+# ------------
+  ifeq ($(NETCDF),enable)
+    ifeq ($(WDALTVAL),enable)
+       DP  := $(DP) -DWDVAL_NETCDF 
+    endif
+  endif
+# -----------
+
   CLIBS         :=
   MSGLIBS       :=
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)

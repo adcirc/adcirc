@@ -21,6 +21,7 @@ if(BUILD_ASWIP)
   addcompilerflags(aswip ${ADDITIONAL_FLAGS_ASWIP})
   addlibversion(aswip)
 
+
   install(TARGETS aswip RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 endif(BUILD_ASWIP)

@@ -34,7 +34,7 @@ if(BUILD_ADCPREP)
       ${CMAKE_SOURCE_DIR}/prep/interp.F
       ${CMAKE_SOURCE_DIR}/prep/machdep.F
       ${CMAKE_SOURCE_DIR}/src/sponge_layer.F
-      ${CMAKE_SOURCE_DIR}/src/quadrature.F
+      ${CMAKE_SOURCE_DIR}/src/quadtrature.F
       ${CMAKE_SOURCE_DIR}/src/couple2baroclinic3D.F)
 
   add_executable(adcprep ${ADCPREP_SOURCES})
