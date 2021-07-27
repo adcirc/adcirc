@@ -191,6 +191,7 @@ module adc_cap
  ! USE GLOBAL,  ONLY: WVNX1, WVNY1, PRN1
   USE WIND,  ONLY: WVNX2, WVNY2, PRN2  ! Import wind and pressure variables
   USE WIND,  ONLY: WVNX1, WVNY1, PRN1
+  use GLOBAL,  ONLY: NCICE,CICE1,CICE2 ! Import ice variables  ++ GML 20210727
  ! USE GLOBAL,  ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
   USE WIND,  ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
   USE GLOBAL,  ONLY: RSTIMINC            ! wave time interval
@@ -504,6 +505,10 @@ module adc_cap
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="air_pressure_at_sea_level", shortname= "pmsl" )
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="inst_merid_wind_height10m", shortname= "imwh10m" )
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="inst_zonal_wind_height10m" , shortname= "izwh10m" )
+! GML added ice concentration 20210727 if NWS=17517 NCICE=17
+    if (NCICE .NE.0) then
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "sea_ice_concentration", shortname= "seaice" )
+    endif
     !--------- export fields from Sea Adc -------------
     call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="sea_surface_height_above_sea_level",  shortname= "zeta" )
     call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="surface_eastward_sea_water_velocity", shortname= "velx" )
@@ -938,6 +943,9 @@ module adc_cap
     type(ESMF_Time)            :: currTime
     type(ESMF_TimeInterval)    :: timeStep
     character(len=*),parameter :: subname='(adc_cap:ModelAdvance)'
+    !tmp vector
+    real(ESMF_KIND_R8), pointer:: dumy1(:)
+    real(ESMF_KIND_R8), pointer:: dumy2(:)
 
     ! exports
     real(ESMF_KIND_R8), pointer:: dataPtr_zeta(:)
@@ -952,6 +960,8 @@ module adc_cap
     real(ESMF_KIND_R8), pointer:: dataPtr_pmsl(:)
     real(ESMF_KIND_R8), pointer:: dataPtr_imwh10m(:)
     real(ESMF_KIND_R8), pointer:: dataPtr_izwh10m(:)
+    ! GML added dataPtr_icec 20210727
+    real(ESMF_KIND_R8), pointer:: dataPtr_icec(:)
 
 
     type(ESMF_StateItem_Flag)  :: itemType
@@ -1291,7 +1301,7 @@ module adc_cap
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
         !print *, info
         !stop
-    endif        
+    endif
     !-----------------------------------------
     !   IMPORT from ATM
     !-----------------------------------------
@@ -1334,7 +1344,16 @@ module adc_cap
           line=__LINE__, &
           file=__FILE__)) &
           return  ! bail out
-        
+
+        ! <<<<< RECEIVE and UN-PACK icecon    ++ GML 20210727
+        if (NCICE .ne. 0)then
+        call State_getFldPtr_(ST=importState,fldname='seaice',fldptr=dataPtr_icec,rc=rc,dump=.false.,timeStr=timeStr)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+        endif
+
         write(info,*) subname,' --- meteo forcing exchange OK / atm feilds are all connected --- / Model advances '
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
         !print *, info
@@ -1343,26 +1362,31 @@ module adc_cap
         IF(.NOT.ALLOCATED(WVNX1)) ALLOCATE(WVNX1(1:NP))
         IF(.NOT.ALLOCATED(WVNY1)) ALLOCATE(WVNY1(1:NP))
         IF(.NOT.ALLOCATED(PRN1) ) ALLOCATE(PRN1 (1:NP))
+        IF(.NOT.ALLOCATED(CICE1)) ALLOCATE(CICE1(1:NP)) ! GML added
 
         IF(.NOT.ALLOCATED(WVNX2)) ALLOCATE(WVNX2(1:NP))
         IF(.NOT.ALLOCATED(WVNY2)) ALLOCATE(WVNY2(1:NP))
         IF(.NOT.ALLOCATED(PRN2) ) ALLOCATE(PRN2 (1:NP))
+        IF(.NOT.ALLOCATED(CICE2)) ALLOCATE(CICE2(1:NP)) ! GML added
+
+        allocate (dumy1(1:NP),dumy2(1:NP)) ! GML added
 
         !print *, 'maxval(WVNX2)', maxval(WVNX2)
 !        PRINT*, "Enter ModelAdvance() : ", ienter ;
 !        ienter = ienter + 1 ;
 !        PRINT*, " " ;
 
-        WVNX1 = WVNX2   
+        WVNX1 = WVNX2
         WVNY1 = WVNY2  
         PRN1  = PRN2
+        CICE1  = CICE2  ! GML added
 
 
 !        WRITE(*,'(A,4E)') "  In ModelAdvance() 1:" , MAXVAL(WVNX1), MAXVAL(WVNX2), &
 !            MAXVAL(WVNY1), MAXVAL(WVNY2) ;
 
         !call UPDATER( dataPtr_izwh10m(:), dataPtr_imwh10m(:), dataPtr_pmsl(:),3)
-       
+
         ! Fill owned nodes from imported data to model variable
         !TODO: unit check
         do i1 = 1, mdataOut%NumOwnedNd, 1
@@ -1446,7 +1470,7 @@ module adc_cap
         !where(abs(WVNY1).gt. 1e6)  WVNY1 =  -8.0
         !where(abs(WVNY2).gt. 1e6)  WVNY2 =  -8.0
 
-            
+
         !PRN2 = 10000.0
         !PRN1 = 10000.0
         !WVNX2 =  8.0
