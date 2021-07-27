@@ -190,6 +190,7 @@ module adc_cap
  ! USE GLOBAL,  ONLY: WVNX1, WVNY1, PRN1
   USE WIND,  ONLY: WVNX2, WVNY2, PRN2  ! Import wind and pressure variables
   USE WIND,  ONLY: WVNX1, WVNY1, PRN1
+  use GLOBAL,  ONLY: NCICE,CICE1,CICE2 ! Import ice variables  ++ GML 20210727
  ! USE GLOBAL,  ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
   USE WIND,  ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
   USE GLOBAL,  ONLY: RSTIMINC            ! wave time interval
@@ -514,6 +515,10 @@ module adc_cap
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "air_pressure_at_sea_level", shortname= "pmsl" )
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "inst_merid_wind_height10m", shortname= "imwh10m" )
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="inst_zonal_wind_height10m" , shortname= "izwh10m" )
+! GML added ice concentration 20210727 if NWS=17517 NCICE=17
+    if (NCICE .NE.0) then
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "sea_ice_concentration", shortname= "seaice" )
+    endif
     !--------- export fields from Sea Adc -------------
     call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="sea_surface_height_above_sea_level",  shortname= "zeta" )
     call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="surface_eastward_sea_water_velocity", shortname= "velx" )
@@ -875,6 +880,8 @@ module adc_cap
     character(len=*),parameter :: subname='(adc_cap:ModelAdvance)'
     !tmp vector
     real(ESMF_KIND_R8), pointer:: tmp(:)
+    real(ESMF_KIND_R8), pointer:: dumy1(:)
+    real(ESMF_KIND_R8), pointer:: dumy2(:)
 
     ! exports
     real(ESMF_KIND_R8), pointer:: dataPtr_zeta(:)
@@ -889,6 +896,8 @@ module adc_cap
     real(ESMF_KIND_R8), pointer:: dataPtr_pmsl(:)
     real(ESMF_KIND_R8), pointer:: dataPtr_imwh10m(:)
     real(ESMF_KIND_R8), pointer:: dataPtr_izwh10m(:)
+    ! GML added dataPtr_icec 20210727
+    real(ESMF_KIND_R8), pointer:: dataPtr_icec(:)
 
 
     type(ESMF_StateItem_Flag)  :: itemType
@@ -1182,6 +1191,15 @@ module adc_cap
           line=__LINE__, &
           file=__FILE__)) &
           return  ! bail out
+
+        ! <<<<< RECEIVE and UN-PACK icecon    ++ GML 20210727
+        if (NCICE .ne. 0)then
+        call State_getFldPtr_(ST=importState,fldname='seaice',fldptr=dataPtr_icec,rc=rc,dump=.false.,timeStr=timeStr)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+        endif
         
         write(info,*) subname,' --- meteo forcing exchange OK / atm feilds are all connected --- / Model advances '
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
@@ -1191,14 +1209,19 @@ module adc_cap
         IF(.NOT.ALLOCATED(WVNX1)) ALLOCATE(WVNX1(1:NP))
         IF(.NOT.ALLOCATED(WVNY1)) ALLOCATE(WVNY1(1:NP))
         IF(.NOT.ALLOCATED(PRN1) ) ALLOCATE(PRN1 (1:NP))
+        IF(.NOT.ALLOCATED(CICE1)) ALLOCATE(CICE1(1:NP)) ! GML added
 
         IF(.NOT.ALLOCATED(WVNX2)) ALLOCATE(WVNX2(1:NP))
         IF(.NOT.ALLOCATED(WVNY2)) ALLOCATE(WVNY2(1:NP))
         IF(.NOT.ALLOCATED(PRN2) ) ALLOCATE(PRN2 (1:NP))
+        IF(.NOT.ALLOCATED(CICE2)) ALLOCATE(CICE2(1:NP)) ! GML added
+
+        allocate (dumy1(1:NP),dumy2(1:NP)) ! GML added
 
         WVNX1 = WVNX2   
         WVNY1 = WVNY2  
         PRN1  = PRN2
+        CICE1  = CICE2  ! GML added
        
         ! Fill owned nodes from imported data to model variable
         !TODO: unit check
@@ -1214,16 +1237,23 @@ module adc_cap
 !            PRN2(mdataOut%owned_to_present_nodes(i1) ) = dataPtr_pmsl(i1) / (1025 * 9.81)    !convert Pascal to mH2O
 !++ GML  in ADCIRC global.F RhoWat0=1000.D0; g = 9.80665
             PRN2(mdataOut%owned_to_present_nodes(i1) ) = dataPtr_pmsl(i1) / (1000 * 9.80665)    !convert Pascal to mH2O
-!++        
-          !if ( abs(dataPtr_pmsl(i1) ).gt. 1e11)  then
-          !  STOP '  dataPtr_pmsl > mask '     
-          !end if
         end do
-         
+!++ GML
+        if (NCICE .ne. 0)then
+        do i1 = 1, mdataOut%NumOwnedNd, 1
+            CICE2(mdataOut%owned_to_present_nodes(i1)) =  dataPtr_icec(i1) !
+        end do
+        endif
+!++ 
 
         ! Ghost nodes update 
         call UPDATER( WVNX1(:), WVNY1(:), PRN1(:),3)
         call UPDATER( WVNX2(:), WVNY2(:), PRN2(:),3)
+! GML added 20210727
+        if (NCICE .ne. 0) then
+        call UPDATER( CICE1(:), dumy1(:), dumy1(:),3)
+        call UPDATER( CICE2(:), dumy1(:), dumy1(:),3)
+        endif
  !       if (first_exchange .and. sum(PRN1) .le. 1.0) then
  !      ! DW:  band-aid fix by zeroing out wind velocity and atm pressure.
  !      !      Todo: look at atmesh code to see if there could be a better fix.  
@@ -1237,8 +1267,12 @@ module adc_cap
           PRN2 = 10.0  !hard coded to handel the 1st exchange zeros problem :TODO! Need to resolve this!
           PRN1 = PRN2
 !++ GML 20210308
+          RSNX1 = 0.0d0
+          RSNY1 = 0.0d0
           RSNX2 = 0.0d0
           RSNY2 = 0.0d0
+          CICE1 = 0.0d0
+          CICE2 = 0.0d0
 !++
           first_exchange = .false.
         end if  
