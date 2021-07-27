@@ -179,7 +179,8 @@ module adc_cap
   USE ADCIRC_Mod, ONLY : ADCIRC_Init
   USE ADCIRC_Mod, ONLY : ADCIRC_Run
   USE ADCIRC_Mod, ONLY : ADCIRC_Final
-  use MESH   , only: np,ne,nm,slam,sfea
+!++GML added dp(bathymetric depth) 20210512
+  use MESH   , only: np,ne,nm,slam,sfea,dp
   use GLOBAL , only: IMAP_EL_LG,NODES_LG
 
   !TODO::  Need to carefully check units in particular pressure
@@ -239,12 +240,14 @@ module adc_cap
   !type(ESMF_TimeInterval) :: WaveCouplingInterval, WindCouplingInterval
 
   logical, save            :: first_exchange = .true.
+  logical, save            :: first_exchange1 = .true.
   integer, save            :: iunit_log = 10000
 
 
-  real,parameter :: wave_force_limmit = 0.05
-
-
+!  real,parameter :: wave_force_limmit = 0.05
+!++ GML  0.01 work for AKUT mesh
+  real,parameter :: wave_force_limmit = 0.001
+!++
   !-----------------------------------------------------------------------------
   contains
   !-----------------------------------------------------------------------------
@@ -927,7 +930,13 @@ module adc_cap
 
     ! DW
     INTEGER, save:: ienter = 0 ;
+!++ GML
+    double precision :: xiplus, xineg, xi
 
+    xi = HUGE(xi)
+    xiplus  = 2 * xi     ! yields +Infinity
+    xineg   =-2 * xi     ! yields -Infinity
+!++
     rc = ESMF_SUCCESS
     dbrc = ESMF_SUCCESS
     ! query the Component for its clock, importState and exportState
@@ -1147,17 +1156,60 @@ module adc_cap
         !open(unit = iunit_log, ACTION = "write", STATUS ="replace" )
         !write(iunit_log, *) RSNX2, RSNY2
         !close(iunit_log)
-
+!++ GML 20210308 exclude infinity doesn't work yet
+!        if ( first_exchange1 ) then
+!          RSNX2 = 0.0d0
+!          RSNY2 = 0.0d0
+!          first_exchange1 = .false.
+!        end if  
+!        where(RSNX2 .eq. xiplus) RSNX2 = 0.0d0
+!        where(RSNX2 .eq. xineg) RSNX2 = 0.0d0
+!        where(RSNY2 .eq. xiplus) RSNY2 = 0.0d0
+!        where(RSNY2 .eq. xineg) RSNY2 = 0.0d0
+!!
+!        do i1 = 1,  NP
+!           if(RSNX2(i1) == xineg)then
+!           write(*,*) 'check -infinity'
+!           write(*,*) i1, RSNX2(i1), xineg
+!           RSNX2(i1) = 0.0d0
+!           endif
+!           if(RSNY2(i1) == xineg)then
+!           RSNY2(i1) = 0.0d0
+!           endif
+!           if(RSNX2(i1) == xiplus)then
+!           write(*,*) 'check infinity'
+!           write(*,*) i1, RSNX2(i1), xiplus
+!           RSNX2(i1) = 0.0d0
+!           endif
+!           if(RSNY2(i1) == xiplus)then
+!           RSNY2(i1) = 0.0d0
+!           endif
+!        enddo
+!++
         write(info,*) subname,' --- wave data exchange OK / wave feilds are all connected --- / Model advances '
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
         !print *, info
-
+!++ GML 20210308
         !RSNX2 = 0.0001
         !RSNY2 = 0.0001
-    
-        !RSNX2 = 0.0
-        !RSNY2 = 0.0
-
+!        if(RSNX2 - 1 == RSNX2)then
+!        write(*,*) 'check RSNX2=', RSNX2
+!        RSNX2 = 0.0
+!        endif
+!        if(RSNY2 - 1 == RSNY2)then
+!        write(*,*) 'check RSNY2=', RSNY2
+!        RSNY2 = 0.0
+!        endif
+!        where(abs(RSNX2).gt. wave_force_limmit) RSNX2 = 0.0d0
+!        where(abs(RSNY2).gt. wave_force_limmit) RSNY2 = 0.0d0
+!        RSNX2 = 0.0
+!        RSNY2 = 0.0
+!            where(RSNX2.gt. wave_force_limmit) RSNX2 =  wave_force_limmit
+!            where(RSNY2.gt. wave_force_limmit) RSNY2 =  wave_force_limmit
+!
+!            where(RSNX2.le. (-1.0 * wave_force_limmit)) RSNX2 =  wave_force_limmit
+!            where(RSNY2.le. (-1.0 * wave_force_limmit)) RSNY2 =  wave_force_limmit
+!++
         ! initialize time reach to Caribean Islands
         !call ESMF_TimeSet(BeforeCaribbeanTime, yy=2008, mm=9, dd=6 , h=12, m=0, s=0, rc=rc)
         !call ESMF_TimeSet(AfterCaribbeanTime , yy=2008, mm=9, dd=12, h=12, m=0, s=0, rc=rc)
@@ -1170,7 +1222,7 @@ module adc_cap
 
             write(info,*) subname, 'in cap after maxval(RSNY2)', maxval(RSNY2)
             call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
-
+! GML
             !print *, 'Hard Coded >>>>>>>>>>>  where(abs(RSNX2).gt. wave_force_limmit) RSNX2 =  wave_force_limmit'
             !write(info,*) subname,'Hard Coded >>>>>>>>>>>  where(abs(RSNX2).gt. wave_force_limmit) RSNX2 =  wave_force_limmit'
             !call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
@@ -1181,6 +1233,13 @@ module adc_cap
             !where(RSNX2.le. (-1.0 * wave_force_limmit)) RSNX2 =  -1.0 * wave_force_limmit
             !where(RSNY2.le. (-1.0 * wave_force_limmit)) RSNY2 =  -1.0 * wave_force_limmit
 
+!            where(RSNX2.gt. wave_force_limmit) RSNX2 =  0.0d0
+!            where(RSNY2.gt. wave_force_limmit) RSNY2 =  0.0d0
+!
+!            where(RSNX2.le. (-1.0 * wave_force_limmit)) RSNX2 =  0.0d0
+!            where(RSNY2.le. (-1.0 * wave_force_limmit)) RSNY2 =  0.0d0
+!stop
+!++
 !!!!#endif
 
     !        endif
@@ -1274,8 +1333,10 @@ module adc_cap
         end do
         
         do i1 = 1, mdataOut%NumOwnedNd, 1
-            PRN2(mdataOut%owned_to_present_nodes(i1) ) = dataPtr_pmsl(i1) / (1025 * 9.81)    !convert Pascal to mH2O
-        
+!            PRN2(mdataOut%owned_to_present_nodes(i1) ) = dataPtr_pmsl(i1) / (1025 * 9.81)    !convert Pascal to mH2O
+!++ GML  in ADCIRC global.F RhoWat0=1000.D0; g = 9.80665
+            PRN2(mdataOut%owned_to_present_nodes(i1) ) = dataPtr_pmsl(i1) / (1000 * 9.80665)    !convert Pascal to mH2O
+!++        
           !if ( abs(dataPtr_pmsl(i1) ).gt. 1e11)  then
           !  STOP '  dataPtr_pmsl > mask '     
           !end if
@@ -1297,8 +1358,14 @@ module adc_cap
 
           PRN2 = 10.0  !hard coded to handel the 1st exchange zeros problem :TODO! Need to resolve this!
           PRN1 = PRN2
+!++ GML 20210308
+          RSNX2 = 0.0d0
+          RSNY2 = 0.0d0
+!++
           first_exchange = .false.
         end if  
+
+
     
  !       WRITE(*,'(A,4E)') "  In ModelAdvance() 3:" , MAXVAL(WVNX1), MAXVAL(WVNX2), & 
  !           MAXVAL(WVNY1), MAXVAL(WVNY2) ; 
@@ -1387,8 +1454,9 @@ module adc_cap
         !print *, info
         !stop
     endif
-
-
+! GML 
+!   surge_forcing= .false.
+!++
    surge_forcing= .true.
    do num = 1,fldsFrAdc_num
       if (fldsFrAdc(num)%shortname == 'zeta') surge_forcing = surge_forcing .and. fldsFrAdc(num)%connected
@@ -1431,7 +1499,12 @@ module adc_cap
       !fill only owned nodes for tmp vector
       do i1 = 1, mdataOut%NumOwnedNd, 1
           tmp(i1) = ETA2(mdataOut%owned_to_present_nodes(i1))
+!++ GML
+!          tmp(i1) = 0.0d0
       end do
+!++ GML
+!      where(abs(tmp).gt. 10.d0)  tmp =  0.0d0
+!++
       !assign to field
       dataPtr_zeta = tmp
       !----------------------------------------
@@ -1445,7 +1518,14 @@ module adc_cap
       !fill only owned nodes for tmp vector
       do i1 = 1, mdataOut%NumOwnedNd, 1
           tmp(i1) = UU2(mdataOut%owned_to_present_nodes(i1))
+!++ GML
+!          if(dp(i1)<0.5)then
+!          tmp(i1) = 0.0d0
+!          endif
       end do
+!++ GML
+!      where(abs(tmp).gt. 10.d0)  tmp =  0.0d0
+!++
       !assign to field
       dataPtr_velx = tmp
       !----------------------------------------
@@ -1459,7 +1539,14 @@ module adc_cap
       !fill only owned nodes for tmp vector
       do i1 = 1, mdataOut%NumOwnedNd, 1
           tmp(i1) = VV2(mdataOut%owned_to_present_nodes(i1))
+!++ GML
+!          if(dp(i1)<0.5)then
+!          tmp(i1) = 0.0d0
+!          endif
       end do
+!++ GML
+!      where(abs(tmp).gt. 10.d0)  tmp =  0.0d0
+!++
       !assign to field
       dataPtr_vely = tmp
     else
