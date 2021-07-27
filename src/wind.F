@@ -1725,8 +1725,8 @@ C    kmd48.33bc - added in information for the sponge layer
               PRN1(I)=PRN2(I)
             END DO
          ENDIF
-C++ GML added 20210727
-         if ((NCICE.eq.17).and.
+C++ GML added 20210727 ncice=17
+         if ((NCICE.ne. 0).and.
      &       TimeLoc.GT.CICE_TIME2) THEN
              CICE_TIME1 = CICE_TIME2
              CICE_TIME2 = CICE_TIME2 + CICE_TIMINC
