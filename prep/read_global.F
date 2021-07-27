@@ -1098,14 +1098,9 @@ C saeed added  TODO: I should remove this partialy: cap should provide the time 
              READ(WSMSG1,*) WTIMINC , RSTIMINC, CICE_TIMINC
          END IF
       ENDIF
-<<<<<<< HEAD
 C
 C...  xyc52.30 added NWS=7 to follow NWS=6
       IF((ABS(NWS).EQ.6) .OR. (ABS(NWS).EQ.7)) THEN
-=======
-
-      IF(ABS(NWS).EQ.6) THEN
->>>>>>> devcurrent_Feb2020
          READ(15,80) WSMSG1
 C..... tcm v49.64.01 additions for ICE
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) THEN
