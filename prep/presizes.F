@@ -239,8 +239,6 @@ Casey 180318: Added NWS=13
       ! with cross barrier pipes
       logical :: meshHasWeirWithPipes
       ! Warn Elev control namelist
-      NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
-     &  WarnElevDumpLimit, ErrorElev
 c.... !wjp added for warnElev namelist
       REAL(SZ) :: WarnElev = 20.0  !
       REAL(SZ) :: ErrorElev = 1000.0  !
@@ -248,21 +246,23 @@ c.... !wjp added for warnElev namelist
       INTEGER :: WarnElevDumpLimit = 50  !
       LOGICAL :: WARN_ELEV_FLAG = .FALSE.   
       LOGICAL :: FOUND_WARNELEV_NML = .false.  !
+      NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
+     &  WarnElevDumpLimit, ErrorElev
       ! Ali Dispersion control namelist
-      NAMELIST /AliDispersionControl/ CAliDisp, Cs, Ad, Bd
       REAL(SZ) :: Bd = 0.23394_SZ  ! exponent of depth (default)
       REAL(SZ) :: Ad = 0.0050189_SZ ! coefficient of depth (default)
       REAL(SZ) :: Cs = 1500.0_SZ ! Speed of sound in water
       LOGICAL :: CAliDisp= .false.  !
       LOGICAL :: FOUND_ALIDISP_NML = .false.  !
+      NAMELIST /AliDispersionControl/ CAliDisp, Cs, Ad, Bd
       ! density control namelist
-      NAMELIST /densityControl/ densityRunType, densityFileName, 
-     &  densityTimeIterator, densityForcingType
       LOGICAL :: FOUND_DENSITY_NML = .false.  !
       character(len=100) :: densityRunType = 'none' ! diagnostic or prognostic
       character(len=100) :: densityForcingType = 'SigmaT' ! sigmaT, salinity, etc
       character(len=100) :: densityFileName = 'fort.11.nc' ! filename
       integer :: densityTimeIterator = 1 ! BC3D time step iteration skipper
+      NAMELIST /densityControl/ densityRunType, densityFileName, 
+     &  densityTimeIterator, densityForcingType
 
 C---------------------end of data declarations--------------------------------C
 
