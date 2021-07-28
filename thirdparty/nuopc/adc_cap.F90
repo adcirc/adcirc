@@ -462,8 +462,15 @@ module adc_cap
   !----------------------------------------------------------------------------------
   subroutine ADCIRC_FieldsSetup
     integer                     :: rc
+    integer                     :: atmice ! GML
+    integer                     :: NCICE  ! GML
     character(len=*),parameter  :: subname='(adc_cap:ADCIRC_FieldsSetup)'
 
+
+    open(17517,file='Atmice.inp',status='old',action='read')
+    read(17517,*,err=99999) atmice
+    read(17517,*,err=99999) NCICE
+    close(17517)
     !--------- import fields to Sea Adc -------------
     !TODO: Consider moving these lines to driver to avoid doing it in both CAPS
      !--- kf fixed
@@ -533,9 +540,12 @@ module adc_cap
 !ocncm
 !m s-1	Ocean current Y component.	 	
 
+99999 CONTINUE
 
-
-   !
+!++ GML
+    write(info,*) subname,' NCICE= ', NCICE
+    call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
+!++
     write(info,*) subname,' --- Passed--- '
     !print *,      subname,' --- Passed --- '
   end subroutine ADCIRC_FieldsSetup
@@ -898,7 +908,8 @@ module adc_cap
     real(ESMF_KIND_R8), pointer:: dataPtr_izwh10m(:)
     ! GML added dataPtr_icec 20210727
     real(ESMF_KIND_R8), pointer:: dataPtr_icec(:)
-
+    integer                    :: atmice
+    integer                    :: NCICE !GML
 
     type(ESMF_StateItem_Flag)  :: itemType
     type(ESMF_Mesh)            :: mesh
@@ -919,6 +930,17 @@ module adc_cap
     INTEGER, save:: ienter = 0 ;
     rc = ESMF_SUCCESS
     dbrc = ESMF_SUCCESS
+! ++ GML added 20210727 this one need to be changed input from ADCIRC, when using NWS=17517
+!    NCICE = 17  
+    open(17517,file='Atmice.inp',status='old',action='read')
+    read(17517,*,err=99999) atmice
+    read(17517,*,err=99999) NCICE
+    close(17517)
+!++ GML
+    write(info,*) subname,' NCICE= ', NCICE
+    call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
+!++
+!
     ! query the Component for its clock, importState and exportState
     call NUOPC_ModelGet(model, modelClock=clock, importState=importState, &
       exportState=exportState, rc=rc)
@@ -1157,7 +1179,14 @@ module adc_cap
       if (fldsToAdc(num)%shortname == 'pmsl')    meteo_forcing = meteo_forcing .and. fldsToAdc(num)%connected
       if (fldsToAdc(num)%shortname == 'imwh10m') meteo_forcing = meteo_forcing .and. fldsToAdc(num)%connected
       if (fldsToAdc(num)%shortname == 'izwh10m') meteo_forcing = meteo_forcing .and. fldsToAdc(num)%connected
+!++ GML added NCICE .ne. 0  20210727
+   if (NCICE .ne. 0)then
+      if (fldsToAdc(num)%shortname == 'seaice') meteo_forcing = meteo_forcing .and. fldsToAdc(num)%connected
+   endif
+!++
    end do
+
+99999 CONTINUE
     
     if ( meteo_forcing) then
         !NWS = 39   ! over write NWS option to be sure we incldue wind forcing
