@@ -589,7 +589,8 @@ C
       ENDIF
 
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-      if (ncice.ne.0.and.ncice.ne.14) then
+C++ GML added ncice .ne. 17
+      if (ncice.ne.0.and.(ncice.ne.14) .and. (ncice.ne.17)) then
          CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
          do i=1,np
             CICEOUT(I) = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
