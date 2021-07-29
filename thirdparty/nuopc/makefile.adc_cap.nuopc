@@ -26,7 +26,7 @@ ifneq ($(origin ADCDIR), environment)
 endif
 
 #INCDIRS := -I. -I$(ADCDIR)/work -I$(ADCDIR)/prep
-INCDIRS := -I. -I$(ADCDIR)/work/odircp -I$(ADCDIR)/prep
+INCDIRS := -I. -I$(ADCDIR)/odircp -I$(ADCDIR)/prep
 LIBDIRS := -L. -L$(ADCDIR) 
 
 LIBSS   := -ladc  -lnetcdf  -lnetcdff -lhdf5 -lhdf5_fortran
@@ -51,7 +51,7 @@ endif
 ifeq ($(compiler),intel-ND)
   LIBDIRS += -g -traceback 
 endif
-LIBDIRS +=  -g  -traceback 
+#LIBDIRS +=  -g  -traceback 
 ################################################################################ $(INCDIRS) $(LIBDIRS)
 ################################################################################
 
