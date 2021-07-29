@@ -523,6 +523,10 @@ module adc_cap
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "inst_merid_wind_height10m", shortname= "imwh10m" )
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="inst_zonal_wind_height10m" , shortname= "izwh10m" )
 ! GML added ice concentration 20210727 if NWS=17517 NCICE=17
+!++ GML
+    write(info,*) subname,' NCICE= ', NCICE
+    call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
+!++
     if (NCICE .NE.0) then
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "sea_ice_concentration", shortname= "seaice" )
     endif
@@ -542,11 +546,9 @@ module adc_cap
 
 99999 CONTINUE
 
-!++ GML
-    write(info,*) subname,' NCICE= ', NCICE
-    call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
-!++
+
     write(info,*) subname,' --- Passed--- '
+    call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
     !print *,      subname,' --- Passed --- '
   end subroutine ADCIRC_FieldsSetup
 
@@ -909,7 +911,7 @@ module adc_cap
     ! GML added dataPtr_icec 20210727
     real(ESMF_KIND_R8), pointer:: dataPtr_icec(:)
     integer                    :: atmice
-    integer                    :: NCICE !GML
+!    integer                    :: NCICE !GML
 
     type(ESMF_StateItem_Flag)  :: itemType
     type(ESMF_Mesh)            :: mesh
@@ -932,10 +934,10 @@ module adc_cap
     dbrc = ESMF_SUCCESS
 ! ++ GML added 20210727 this one need to be changed input from ADCIRC, when using NWS=17517
 !    NCICE = 17  
-    open(17517,file='Atmice.inp',status='old',action='read')
-    read(17517,*,err=99999) atmice
-    read(17517,*,err=99999) NCICE
-    close(17517)
+!    open(17517,file='Atmice.inp',status='old',action='read')
+!    read(17517,*,err=99999) atmice
+!    read(17517,*,err=99999) NCICE
+!    close(17517)
 !++ GML
     write(info,*) subname,' NCICE= ', NCICE
     call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
@@ -1186,7 +1188,7 @@ module adc_cap
 !++
    end do
 
-99999 CONTINUE
+!99999 CONTINUE
     
     if ( meteo_forcing) then
         !NWS = 39   ! over write NWS option to be sure we incldue wind forcing
