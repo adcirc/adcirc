@@ -396,7 +396,7 @@ endif
 ifeq ($(compiler),intel-ND)
   PPFC          :=  ifort
   FC            :=  ifort
-  PFC           ?=  mpif90
+  PFC           :=  mpif90
 #  FFLAGS1       :=  $(INCDIRS) -w -O3 -assume byterecl -132 -assume buffered_io #-i-dynamic
 
   ifeq ($(AMD),yes)
@@ -1447,7 +1447,7 @@ ifneq (,$(findstring sv1-unicos,$(MACHINE)-$(OS)))
   DP  	        :=  -DREAL8 -DCRAY -DCSCA -DCMPI
   DPRE	        :=  -DREAL8 -DCRAY
   IMODS		:=  -p
-  CFLAGS	:=  $(INCDIRS) -I../Lib -O2 -DCRAY
+  CFLAGS	:=  $(INCDIRS) -I ../Lib -O2 -DCRAY
   FLIBS  	:=
   MSGLIBS	:=  -lmpi
   C_LDFLAGS     :=
@@ -1478,7 +1478,7 @@ ifneq (,$(findstring x1-unicos,$(MACHINE)-$(OS)))
   IMODS		:=  -p
   CC            :=  cc
   CCBE          :=  $(CC)
-  CFLAGS	:=  $(INCDIRS) -I../Lib -O2 -DCRAYX1 -UCRAY
+  CFLAGS	:=  $(INCDIRS) -I ../Lib -O2 -DCRAYX1 -UCRAY
   FLIBS  	:=
   MSGLIBS	:=  -lmpi
   C_LDFLAGS     :=
