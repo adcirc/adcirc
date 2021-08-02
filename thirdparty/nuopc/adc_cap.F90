@@ -470,13 +470,20 @@ module adc_cap
     integer                     :: rc
     integer                     :: atmice ! GML
     integer                     :: NCICE  ! GML
+    logical :: file_exists
     character(len=*),parameter  :: subname='(adc_cap:ADCIRC_FieldsSetup)'
 
-
+    inquire(file="Atmice.inp", exist=file_exists)
+    if(file_exists)then
     open(17517,file='Atmice.inp',status='old',action='read')
     read(17517,*,err=99999) atmice
     read(17517,*,err=99999) NCICE
     close(17517)
+    else
+    NCICE=0
+    write(info,*) subname,' Did not find Atmice.inp'
+    call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
+    endif
     !--------- import fields to Sea Adc -------------
     !TODO: Consider moving these lines to driver to avoid doing it in both CAPS
     !PV BEG:: Wave radiation stresses
