@@ -191,7 +191,7 @@ module adc_cap
  ! USE GLOBAL,  ONLY: WVNX1, WVNY1, PRN1
   USE WIND,  ONLY: WVNX2, WVNY2, PRN2  ! Import wind and pressure variables
   USE WIND,  ONLY: WVNX1, WVNY1, PRN1
-  use GLOBAL,  ONLY: NCICE,CICE1,CICE2 ! Import ice variables  ++ GML 20210727
+  use GLOBAL,  ONLY: CICE1,CICE2 ! Import ice variables  ++ GML 20210727
  ! USE GLOBAL,  ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
   USE WIND,  ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
   USE GLOBAL,  ONLY: RSTIMINC            ! wave time interval
@@ -468,23 +468,8 @@ module adc_cap
   !----------------------------------------------------------------------------------
   subroutine ADCIRC_FieldsSetup
     integer                     :: rc
-    integer                     :: atmice ! GML
-    integer                     :: NCICE  ! GML
     logical :: file_exists
     character(len=*),parameter  :: subname='(adc_cap:ADCIRC_FieldsSetup)'
-
-! DW
-!    inquire(file="Atmice.inp", exist=file_exists)
-!    if(file_exists)then
-!    open(17517,file='Atmice.inp',status='old',action='read')
-!    read(17517,*,err=99999) atmice
-!    read(17517,*,err=99999) NCICE
-!    close(17517)
-!    else
-!    NCICE=0
-!    write(info,*) subname,' Did not find Atmice.inp'
-!    call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
-!    endif
 
     !--------- import fields to Sea Adc -------------
     !TODO: Consider moving these lines to driver to avoid doing it in both CAPS
@@ -521,15 +506,6 @@ module adc_cap
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="air_pressure_at_sea_level", shortname= "pmsl" )
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="inst_merid_wind_height10m", shortname= "imwh10m" )
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="inst_zonal_wind_height10m" , shortname= "izwh10m" )
-! GML added ice concentration 20210727 if NWS=17517 NCICE=17
-!++ GML
-!    write(info,*) subname,' NCICE= ', NCICE
-!    call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
-!++
-!    if (NCICE .NE.0) then
-!    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "sea_ice_concentration", shortname= "seaice" )
-!    endif
-
     !--------- export fields from Sea Adc -------------
     call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="sea_surface_height_above_sea_level",  shortname= "zeta" )
     call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="surface_eastward_sea_water_velocity", shortname= "velx" )
@@ -552,8 +528,6 @@ module adc_cap
 !ocncm
 !m s-1	Ocean current Y component.	 	
 
-! DW: commented out
-!99999 CONTINUE
 
 
     write(info,*) subname,' --- Passed--- '
@@ -993,8 +967,6 @@ module adc_cap
     real(ESMF_KIND_R8), pointer:: dataPtr_izwh10m(:)
     ! GML added dataPtr_icec 20210727
     real(ESMF_KIND_R8), pointer:: dataPtr_icec(:)
-    integer                    :: atmice
-!    integer                    :: NCICE !GML
 
     type(ESMF_StateItem_Flag)  :: itemType
     type(ESMF_Mesh)            :: mesh
@@ -1024,16 +996,6 @@ module adc_cap
 !++
     rc = ESMF_SUCCESS
     dbrc = ESMF_SUCCESS
-! ++ GML added 20210727 this one need to be changed input from ADCIRC, when using NWS=17517
-!    NCICE = 17  
-!    open(17517,file='Atmice.inp',status='old',action='read')
-!    read(17517,*,err=99999) atmice
-!    read(17517,*,err=99999) NCICE
-!    close(17517)
-!++ GML
-    write(info,*) subname,' NCICE= ', NCICE
-    call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
-!++
 !
     ! query the Component for its clock, importState and exportState
     call NUOPC_ModelGet(model, modelClock=clock, importState=importState, &
@@ -1357,9 +1319,6 @@ module adc_cap
       if (fldsToAdc(num)%shortname == 'imwh10m') meteo_forcing = meteo_forcing .and. fldsToAdc(num)%connected
       if (fldsToAdc(num)%shortname == 'izwh10m') meteo_forcing = meteo_forcing .and. fldsToAdc(num)%connected
 !++ GML added NCICE .ne. 0  20210727
-!    if (NCICE .ne. 0)then
-!       if (fldsToAdc(num)%shortname == 'seaice') meteo_forcing = meteo_forcing .and. fldsToAdc(num)%connected
-!    endif
 ! DW
       if (fldsToAdc(num)%shortname == 'seaice') ice_forcing = ice_forcing .and. fldsToAdc(num)%connected
 !++
@@ -1403,7 +1362,6 @@ module adc_cap
 
         ! <<<<< RECEIVE and UN-PACK icecon    ++ GML 20210728
 ! DW
-!        if (NCICE .ne. 0)then
         if ( ice_forcing ) then
           call State_getFldPtr_(ST=importState,fldname='seaice',fldptr=dataPtr_icec,rc=rc,dump=.false.,timeStr=timeStr)
           if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
