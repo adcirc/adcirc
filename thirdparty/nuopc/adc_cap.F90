@@ -467,17 +467,19 @@ module adc_cap
     logical :: file_exists
     character(len=*),parameter  :: subname='(adc_cap:ADCIRC_FieldsSetup)'
 
-    inquire(file="Atmice.inp", exist=file_exists)
-    if(file_exists)then
-    open(17517,file='Atmice.inp',status='old',action='read')
-    read(17517,*,err=99999) atmice
-    read(17517,*,err=99999) NCICE
-    close(17517)
-    else
-    NCICE=0
-    write(info,*) subname,' Did not find Atmice.inp'
-    call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
+! DW
+!    inquire(file="Atmice.inp", exist=file_exists)
+!    if(file_exists)then
+!    open(17517,file='Atmice.inp',status='old',action='read')
+!    read(17517,*,err=99999) atmice
+!    read(17517,*,err=99999) NCICE
+!    close(17517)
+!    else
+!    NCICE=0
+!    write(info,*) subname,' Did not find Atmice.inp'
+!    call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
+!    endif
+
     !--------- import fields to Sea Adc -------------
     !TODO: Consider moving these lines to driver to avoid doing it in both CAPS
      !--- kf fixed
@@ -531,16 +533,25 @@ module adc_cap
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="inst_zonal_wind_height10m" , shortname= "izwh10m" )
 ! GML added ice concentration 20210727 if NWS=17517 NCICE=17
 !++ GML
-    write(info,*) subname,' NCICE= ', NCICE
-    call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
+!    write(info,*) subname,' NCICE= ', NCICE
+!    call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
 !++
-    if (NCICE .NE.0) then
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "sea_ice_concentration", shortname= "seaice" )
-    endif
+!    if (NCICE .NE.0) then
+!    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "sea_ice_concentration", shortname= "seaice" )
+!    endif
+
     !--------- export fields from Sea Adc -------------
     call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="sea_surface_height_above_sea_level",  shortname= "zeta" )
     call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="surface_eastward_sea_water_velocity", shortname= "velx" )
     call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="surface_northward_sea_water_velocity",shortname= "vely" )
+
+! GML added ice concentration 20210727 if NWS=17517 NCICE=17
+!++ GML
+! DW: Move here
+!    if (NCICE .NE.0) then
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "sea_ice_concentration", shortname= "seaice" )
+!    endif
+
 
 !NEMS hycod standard names>>>
 !https://esgf.esrl.noaa.gov/projects/couplednems/coupling_fields
@@ -551,7 +562,8 @@ module adc_cap
 !ocncm
 !m s-1	Ocean current Y component.	 	
 
-99999 CONTINUE
+! DW: commented out
+!99999 CONTINUE
 
 
     write(info,*) subname,' --- Passed--- '
@@ -932,6 +944,8 @@ module adc_cap
     integer :: YY, MM, DD, H, M, S
     integer :: ss,ssN,ssD
     logical :: wave_forcing, meteo_forcing, surge_forcing
+! DW 
+    logical :: ice_forcing
 
     type(ESMF_Time) :: BeforeCaribbeanTime,AfterCaribbeanTime
 
@@ -1017,9 +1031,8 @@ module adc_cap
       nCplADC = nint(timeStepAbs/DTDP)+1
     endif
 
-
-     !print *, '  nCplADC = ', nCplADC
-     !print *, '  ADCCouplingTimeInterval = ', timeStepAbs
+    ! print *, '  nCplADC = ', nCplADC
+    ! print *, '  ADCCouplingTimeInterval = ', timeStepAbs
     !-----------------------------------------
     !   IMPORT
     !-----------------------------------------
@@ -1184,16 +1197,21 @@ module adc_cap
     !   IMPORT from ATM
     !-----------------------------------------
    meteo_forcing= .true.
+! DW
+   ice_forcing=.true. 
    do num = 1,fldsToAdc_num
       if (fldsToAdc(num)%shortname == 'pmsl')    meteo_forcing = meteo_forcing .and. fldsToAdc(num)%connected
       if (fldsToAdc(num)%shortname == 'imwh10m') meteo_forcing = meteo_forcing .and. fldsToAdc(num)%connected
       if (fldsToAdc(num)%shortname == 'izwh10m') meteo_forcing = meteo_forcing .and. fldsToAdc(num)%connected
 !++ GML added NCICE .ne. 0  20210727
-   if (NCICE .ne. 0)then
-      if (fldsToAdc(num)%shortname == 'seaice') meteo_forcing = meteo_forcing .and. fldsToAdc(num)%connected
-   endif
+!    if (NCICE .ne. 0)then
+!       if (fldsToAdc(num)%shortname == 'seaice') meteo_forcing = meteo_forcing .and. fldsToAdc(num)%connected
+!    endif
+! DW
+      if (fldsToAdc(num)%shortname == 'seaice') ice_forcing = ice_forcing .and. fldsToAdc(num)%connected
 !++
    end do
+
 
 !99999 CONTINUE
     
@@ -1230,13 +1248,15 @@ module adc_cap
           file=__FILE__)) &
           return  ! bail out
 
-        ! <<<<< RECEIVE and UN-PACK icecon    ++ GML 20210727
-        if (NCICE .ne. 0)then
-        call State_getFldPtr_(ST=importState,fldname='seaice',fldptr=dataPtr_icec,rc=rc,dump=.false.,timeStr=timeStr)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, &
-          file=__FILE__)) &
-          return  ! bail out
+        ! <<<<< RECEIVE and UN-PACK icecon    ++ GML 20210728
+! DW
+!        if (NCICE .ne. 0)then
+        if ( ice_forcing ) then
+          call State_getFldPtr_(ST=importState,fldname='seaice',fldptr=dataPtr_icec,rc=rc,dump=.false.,timeStr=timeStr)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
         endif
         
         write(info,*) subname,' --- meteo forcing exchange OK / atm feilds are all connected --- / Model advances '
@@ -1277,10 +1297,12 @@ module adc_cap
             PRN2(mdataOut%owned_to_present_nodes(i1) ) = dataPtr_pmsl(i1) / (1000 * 9.80665)    !convert Pascal to mH2O
         end do
 !++ GML
-        if (NCICE .ne. 0)then
-        do i1 = 1, mdataOut%NumOwnedNd, 1
-            CICE2(mdataOut%owned_to_present_nodes(i1)) =  dataPtr_icec(i1) !
-        end do
+!        if (NCICE .ne. 0)then
+! DW
+        if ( ice_forcing ) then
+           do i1 = 1, mdataOut%NumOwnedNd, 1
+              CICE2(mdataOut%owned_to_present_nodes(i1)) =  dataPtr_icec(i1) !
+           end do
         endif
 !++ 
 
@@ -1288,9 +1310,11 @@ module adc_cap
         call UPDATER( WVNX1(:), WVNY1(:), PRN1(:),3)
         call UPDATER( WVNX2(:), WVNY2(:), PRN2(:),3)
 ! GML added 20210727
-        if (NCICE .ne. 0) then
-        call UPDATER( CICE1(:), dumy1(:), dumy1(:),3)
-        call UPDATER( CICE2(:), dumy1(:), dumy1(:),3)
+!        if (NCICE .ne. 0) then
+!  DW
+        if ( ice_forcing ) then
+          call UPDATER( CICE1(:), dumy1(:), dumy1(:),3)
+          call UPDATER( CICE2(:), dumy1(:), dumy1(:),3)
         endif
  !       if (first_exchange .and. sum(PRN1) .le. 1.0) then
  !      ! DW:  band-aid fix by zeroing out wind velocity and atm pressure.
