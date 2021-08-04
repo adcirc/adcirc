@@ -374,7 +374,7 @@ COUP_MSRC  =  couple2swan.F
 KDTREE_MSRC = kdtree2.F
 XDMF_MSRC = xdmfio.F
 # DW sponge layer
-SPG_MSRC = quadtrature.F sponge_layer.F
+SPG_MSRC = quadrature.F sponge_layer.F
 # WJP 3D baroclinic coupling
 BC3D_MSRC = couple2baroclinic3D.F
 
@@ -813,8 +813,8 @@ $(O_DIR)subdomain.o   : subdomain.F $(O_DIR)mesh.o
 endif
 $(O_DIR)global_3dvs.o : global_3dvs.F $(O_DIR)global.o $(O_DIR)boundaries.o
 # DW
-$(O_DIR)sponge_layer.o : sponge_layer.F $(O_DIR)quadtrature.o $(ADC_MOBJ)
-$(O_DIR)quadrature.o : quadtrature.F 
+$(O_DIR)sponge_layer.o : sponge_layer.F $(O_DIR)quadrature.o $(ADC_MOBJ)
+$(O_DIR)quadrature.o : quadrature.F 
 # WJP
 $(O_DIR)couple2baroclinic3D.o : couple2baroclinic3D.F $(ADC_MOBJ) $(SPG_MOBJ)
 
