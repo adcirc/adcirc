@@ -5,11 +5,12 @@
      &   METIS_OPTION_NUMBERING, idx_t, METIS_OK
       IMPLICIT NONE
 C----------------------------------------------------------------------
-C  INTERFACE ROUTINE FOR PADCIRC TO USE THE METIS 4.0 LIBRARY
+C  INTERFACE ROUTINE FOR PADCIRC TO USE THE METIS LIBRARY
 C  A GRAPH PARTITION TOOL, FOR DOMAIN DECOMPOSITION
 C  Version 2.1  vjp  6/7/2006
 C  Redimensioned CO_NODES and IDUALS and added bounds test
 C  Added check that adjacency matrix is symmetric
+C  KJR, August 25, 2021 - support for metis 5.1.0
 C----------------------------------------------------------------------
 C
         LOGICAL FOUND, SYMMETRIC
@@ -34,8 +35,6 @@ C...... DW
         integer :: contiguous ! number of nodes on a boundary within a particular subdomain
         integer :: subdomainNumber ! subdomain that a boundary node falls within
 
-        !EXTERNAL metis_partgraphkway,metis_estimatememory
-C
         ALLOCATE ( ITVECT(MNP),ITVECT2(MNP) )
         ALLOCATE ( NUMDUALS(MNP) )
         ALLOCATE ( XADJ(MNP+1), VWGTS(MNP), NEDGES(MNP) )
@@ -308,7 +307,7 @@ C
       ENDIF
 
 C
-C--CALL K-WAY METIS FOR PARTITIONING (5.1.2)
+C--CALL K-WAY METIS FOR PARTITIONING (5.1.0)
 C
       NCON     = 1 ! number of constraints
       NPARTS = MNPROC
