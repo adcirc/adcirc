@@ -215,6 +215,32 @@ C Logicals added for adcprep paths
       INTEGER, ALLOCATABLE :: NM(:,:) !jgf48.08
 
 
+      LOGICAL :: NETCDF_AVAIL ! true if netCDF was compiled in
+      LOGICAL :: XDMF_AVAIL ! true if XDMF was compiled in
+
+      !
+      ! @jasonfleming: reduce memory usage if there are no weir boundaries
+      ! with cross barrier pipes
+      logical :: meshHasWeirWithPipes
+
+c.... !wjp added for warnElev namelist
+      REAL(SZ) :: WarnElev = 20.0  !
+      REAL(SZ) :: ErrorElev = 1000.0  !
+      LOGICAL :: WarnElevDump = .FALSE.
+      INTEGER :: WarnElevDumpLimit = 50  !
+      LOGICAL :: WARN_ELEV_FLAG = .FALSE.
+      LOGICAL :: FOUND_WARNELEV_NML = .false.  !
+      REAL(SZ) :: Bd = 0.23394_SZ  ! exponent of depth (default)
+      REAL(SZ) :: Ad = 0.0050189_SZ ! coefficient of depth (default)
+      REAL(SZ) :: Cs = 1500.0_SZ ! Speed of sound in water
+      LOGICAL :: CAliDisp= .false.  !
+      LOGICAL :: FOUND_ALIDISP_NML = .false.  !
+      LOGICAL :: FOUND_DENSITY_NML = .false.  !
+      character(len=100) :: densityRunType = 'none' ! diagnostic or prognostic
+      character(len=100) :: densityForcingType = 'SigmaT' ! sigmaT, salinity, etc
+      character(len=100) :: densityFileName = 'fort.11.nc' ! filename
+      integer :: densityTimeIterator = 1 ! BC3D time step iteration skipper
+
 #if defined CSWAN || defined ADCSWAN
       ! jgf50.60.09: Namelist for turning SWAN output files on or off
       NAMELIST /SWANOutputControl/ SWAN_OutputHS, SWAN_OutputDIR,
@@ -225,8 +251,6 @@ C Logicals added for adcprep paths
      &                       invertedBarometerOnElevationBoundary,nPowellSearchDomains
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &    TOUTF_TVW,NSPOOL_TVW
-      LOGICAL :: NETCDF_AVAIL ! true if netCDF was compiled in
-      LOGICAL :: XDMF_AVAIL ! true if XDMF was compiled in
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       NAMELIST /waveCoupling/ WaveWindMultiplier
 #ifdef ADCNETCDF
@@ -234,35 +258,15 @@ Casey 180318: Added NWS=13
       NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,
      &    NWS13WindMultiplier,NWS13GroupForPowell
 #endif
-      !
-      ! @jasonfleming: reduce memory usage if there are no weir boundaries
-      ! with cross barrier pipes
-      logical :: meshHasWeirWithPipes
       ! Warn Elev control namelist
       NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
      &  WarnElevDumpLimit, ErrorElev
-c.... !wjp added for warnElev namelist
-      REAL(SZ) :: WarnElev = 20.0  !
-      REAL(SZ) :: ErrorElev = 1000.0  !
-      LOGICAL :: WarnElevDump = .FALSE.  
-      INTEGER :: WarnElevDumpLimit = 50  !
-      LOGICAL :: WARN_ELEV_FLAG = .FALSE.   
-      LOGICAL :: FOUND_WARNELEV_NML = .false.  !
       ! Ali Dispersion control namelist
       NAMELIST /AliDispersionControl/ CAliDisp, Cs, Ad, Bd
-      REAL(SZ) :: Bd = 0.23394_SZ  ! exponent of depth (default)
-      REAL(SZ) :: Ad = 0.0050189_SZ ! coefficient of depth (default)
-      REAL(SZ) :: Cs = 1500.0_SZ ! Speed of sound in water
-      LOGICAL :: CAliDisp= .false.  !
-      LOGICAL :: FOUND_ALIDISP_NML = .false.  !
       ! density control namelist
-      NAMELIST /densityControl/ densityRunType, densityFileName, 
+      NAMELIST /densityControl/ densityRunType, densityFileName,
      &  densityTimeIterator, densityForcingType
-      LOGICAL :: FOUND_DENSITY_NML = .false.  !
-      character(len=100) :: densityRunType = 'none' ! diagnostic or prognostic
-      character(len=100) :: densityForcingType = 'SigmaT' ! sigmaT, salinity, etc
-      character(len=100) :: densityFileName = 'fort.11.nc' ! filename
-      integer :: densityTimeIterator = 1 ! BC3D time step iteration skipper
+
 
 C---------------------end of data declarations--------------------------------C
 
@@ -740,23 +744,23 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The WarnElevControl namelist was not found."
       ELSE
-         found_WarnElev_nml = .true.  
+         found_WarnElev_nml = .true.
       ENDIF
       REWIND(15)
-      
+
       READ(UNIT=15,NML=AliDispersionControl,IOSTAT=IOS)
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The AliDisp Control namelist was not found."
       ELSE
-         found_AliDisp_nml = .true.  
+         found_AliDisp_nml = .true.
       ENDIF
       REWIND(15)
-      
+
       READ(UNIT=15,NML=densityControl,IOSTAT=IOS)
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The density Control namelist was not found."
       ELSE
-         found_density_nml = .true.  
+         found_density_nml = .true.
       ENDIF
       REWIND(15)
 C
@@ -837,7 +841,7 @@ c        C3DDSS = .TRUE.
          IF ((IM.GE.111111).AND.(IM.LE.534328)) THEN
             C2DDI = .TRUE.
             IF (IM-int(IM*0.1)*10 > 4) THEN
-                ! Setting Baroclinic true 
+                ! Setting Baroclinic true
                 CBaroclinic = .TRUE.
             ENDIF
          ELSEIF ((IM.GE.611111).AND.(IM.LE.634322)) THEN
@@ -1397,7 +1401,7 @@ C
       IF(NRS.GE.1) WRITE(*,3018) ! sb46.28sb03
       IF(NWS.EQ.10) WRITE(*,3019)
       IF(NWS.EQ.11) WRITE(*,3020)
-C     sb46.28sb01 added NWS=12: OWI format 
+C     sb46.28sb01 added NWS=12: OWI format
       IF(ABS(NWS).EQ.12) WRITE(*,3023)
       IF(ABS(NWS).EQ.19) WRITE(*,3219)
       IF(ABS(NWS).EQ.20) WRITE(*,3220)

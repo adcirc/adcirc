@@ -8,127 +8,154 @@
  * Started 8/28/94
  * George
  *
- * $Id: io.c,v 1.1.1.1 2003/01/23 17:21:07 estrade Exp $
+ * $Id: io.c 11932 2012-05-10 18:18:23Z dominique $
  *
  */
 
-#include <metis.h>
+#include "metisbin.h"
 
 
 
-/*************************************************************************
-* This function reads the spd matrix
-**************************************************************************/
-void ReadGraph(GraphType *graph, char *filename, int *wgtflag)
+/*************************************************************************/
+/*! This function reads in a sparse graph */
+/*************************************************************************/
+graph_t *ReadGraph(params_t *params)
 {
-  int i, j, k, l, fmt, readew, readvw, ncon, edge, ewgt;
-  idxtype *xadj, *adjncy, *vwgt, *adjwgt;
-  char *line, *oldstr, *newstr;
+  idx_t i, j, k, l, fmt, ncon, nfields, readew, readvw, readvs, edge, ewgt;
+  idx_t *xadj, *adjncy, *vwgt, *adjwgt, *vsize;
+  char *line=NULL, fmtstr[256], *curstr, *newstr;
+  size_t lnlen=0;
   FILE *fpin;
+  graph_t *graph;
 
-  InitGraph(graph);
+  if (!gk_fexists(params->filename)) 
+    errexit("File %s does not exist!\n", params->filename);
 
-  line = (char *)malloc(sizeof(char)*(MAXLINE+1));
+  graph = CreateGraph();
 
-  if ((fpin = fopen(filename, "r")) == NULL) {
-    printf("Failed to open file %s\n", filename);
-    exit(0);
-  }
+  fpin = gk_fopen(params->filename, "r", "ReadGRaph: Graph");
 
+  /* Skip comment lines until you get to the first valid line */
   do {
-    fgets(line, MAXLINE, fpin);
-  } while (line[0] == '%' && !feof(fpin));
+    if (gk_getline(&line, &lnlen, fpin) == -1) 
+      errexit("Premature end of input file: file: %s\n", params->filename);
+  } while (line[0] == '%');
 
-  if (feof(fpin)) {
-    graph->nvtxs = 0;
-    free(line);
-    return;
-  }
 
   fmt = ncon = 0;
-  sscanf(line, "%d %d %d %d", &(graph->nvtxs), &(graph->nedges), &fmt, &ncon);
+  nfields = sscanf(line, "%"SCIDX" %"SCIDX" %"SCIDX" %"SCIDX, 
+                &(graph->nvtxs), &(graph->nedges), &fmt, &ncon);
 
-  readew = (fmt%10 > 0);
-  readvw = ((fmt/10)%10 > 0);
-  if (fmt >= 100) {
-    printf("Cannot read this type of file format!");
-    exit(0);
-  }
+  if (nfields < 2) 
+    errexit("The input file does not specify the number of vertices and edges.\n");
+
+  if (graph->nvtxs <= 0 || graph->nedges <= 0) 
+    errexit("The supplied nvtxs:%"PRIDX" and nedges:%"PRIDX" must be positive.\n", 
+        graph->nvtxs, graph->nedges);
+        
+  if (fmt > 111) 
+    errexit("Cannot read this type of file format [fmt=%"PRIDX"]!\n", fmt);
+
+  sprintf(fmtstr, "%03"PRIDX, fmt%1000);
+  readvs = (fmtstr[0] == '1');
+  readvw = (fmtstr[1] == '1');
+  readew = (fmtstr[2] == '1');
+    
+  /*printf("%s %"PRIDX" %"PRIDX" %"PRIDX"\n", fmtstr, readvs, readvw, readew); */
 
 
-  *wgtflag = 0;
-  if (readew)
-    *wgtflag += 1;
-  if (readvw)
-    *wgtflag += 2;
-
-  if (ncon > 0 && !readvw) {
-    printf("------------------------------------------------------------------------------\n");
-    printf("***  I detected an error in your input file  ***\n\n");
-    printf("You specified ncon=%d, but the fmt parameter does not specify vertex weights\n", ncon);
-    printf("Make sure that the fmt parameter is set to either 10 or 11.\n");
-    printf("------------------------------------------------------------------------------\n");
-    exit(0);
-  }
+  if (ncon > 0 && !readvw) 
+    errexit(
+      "------------------------------------------------------------------------------\n"
+      "***  I detected an error in your input file  ***\n\n"
+      "You specified ncon=%"PRIDX", but the fmt parameter does not specify vertex weights\n" 
+      "Make sure that the fmt parameter is set to either 10 or 11.\n"
+      "------------------------------------------------------------------------------\n", ncon);
 
   graph->nedges *=2;
   ncon = graph->ncon = (ncon == 0 ? 1 : ncon);
 
-  /*printf("%d %d %d %d %d [%d %d]\n", fmt, fmt%10, (fmt/10)%10, ncon, graph->ncon, readew, readvw);*/
+  xadj   = graph->xadj   = ismalloc(graph->nvtxs+1, 0, "ReadGraph: xadj");
+  adjncy = graph->adjncy = imalloc(graph->nedges, "ReadGraph: adjncy");
+  vwgt   = graph->vwgt   = ismalloc(ncon*graph->nvtxs, 1, "ReadGraph: vwgt");
+  adjwgt = graph->adjwgt = ismalloc(graph->nedges, 1, "ReadGraph: adjwgt");
+  vsize  = graph->vsize  = ismalloc(graph->nvtxs, 1, "ReadGraph: vsize");
 
-  if (graph->nvtxs > MAXIDX) 
-    errexit("\nThe matrix is too big: %d [%d %d]\n", graph->nvtxs, MAXIDX, sizeof(idxtype));
 
-  xadj = graph->xadj = idxsmalloc(graph->nvtxs+1, 0, "ReadGraph: xadj");
-  adjncy = graph->adjncy = idxmalloc(graph->nedges, "ReadGraph: adjncy");
-
-  vwgt = graph->vwgt = (readvw ? idxmalloc(ncon*graph->nvtxs, "ReadGraph: vwgt") : NULL);
-  adjwgt = graph->adjwgt = (readew ? idxmalloc(graph->nedges, "ReadGraph: adjwgt") : NULL);
-
-  /* Start reading the graph file */
+  /*----------------------------------------------------------------------
+   * Read the sparse graph file
+   *---------------------------------------------------------------------*/
   for (xadj[0]=0, k=0, i=0; i<graph->nvtxs; i++) {
     do {
-      fgets(line, MAXLINE, fpin);
-    } while (line[0] == '%' && !feof(fpin));
-    oldstr = line;
+      if (gk_getline(&line, &lnlen, fpin) == -1) 
+        errexit("Premature end of input file while reading vertex %"PRIDX".\n", i+1);
+    } while (line[0] == '%');
+
+    curstr = line;
     newstr = NULL;
 
-    if (strlen(line) == MAXLINE) 
-      errexit("\nBuffer for fgets not big enough!\n");
+    /* Read vertex sizes */
+    if (readvs) {
+      vsize[i] = strtoidx(curstr, &newstr, 10);
+      if (newstr == curstr)
+        errexit("The line for vertex %"PRIDX" does not have vsize information\n", i+1);
+      if (vsize[i] < 0)
+        errexit("The size for vertex %"PRIDX" must be >= 0\n", i+1);
+      curstr = newstr;
+    }
 
+
+    /* Read vertex weights */
     if (readvw) {
       for (l=0; l<ncon; l++) {
-        vwgt[i*ncon+l] = (int)strtol(oldstr, &newstr, 10);
-        oldstr = newstr;
+        vwgt[i*ncon+l] = strtoidx(curstr, &newstr, 10);
+        if (newstr == curstr)
+          errexit("The line for vertex %"PRIDX" does not have enough weights "
+                  "for the %"PRIDX" constraints.\n", i+1, ncon);
+        if (vwgt[i*ncon+l] < 0)
+          errexit("The weight vertex %"PRIDX" and constraint %"PRIDX" must be >= 0\n", i+1, l);
+        curstr = newstr;
       }
     }
 
-    for (;;) {
-      edge = (int)strtol(oldstr, &newstr, 10) -1;
-      oldstr = newstr;
+    while (1) {
+      edge = strtoidx(curstr, &newstr, 10);
+      if (newstr == curstr)
+        break; /* End of line */
+      curstr = newstr;
 
+      if (edge < 1 || edge > graph->nvtxs)
+        errexit("Edge %"PRIDX" for vertex %"PRIDX" is out of bounds\n", edge, i+1);
+
+      ewgt = 1;
       if (readew) {
-        ewgt = (int)strtol(oldstr, &newstr, 10);
-        oldstr = newstr;
+        ewgt = strtoidx(curstr, &newstr, 10);
+        if (newstr == curstr)
+          errexit("Premature end of line for vertex %"PRIDX"\n", i+1);
+        if (ewgt <= 0)
+          errexit("The weight (%"PRIDX") for edge (%"PRIDX", %"PRIDX") must be positive.\n", 
+              ewgt, i+1, edge);
+        curstr = newstr;
       }
 
-      if (edge < 0)
-        break;
+      if (k == graph->nedges)
+        errexit("There are more edges in the file than the %"PRIDX" specified.\n", 
+            graph->nedges/2);
 
-      adjncy[k] = edge;
-      if (readew) 
-        adjwgt[k] = ewgt;
+      adjncy[k] = edge-1;
+      adjwgt[k] = ewgt;
       k++;
     } 
     xadj[i+1] = k;
   }
-
-  fclose(fpin);
+  gk_fclose(fpin);
 
   if (k != graph->nedges) {
     printf("------------------------------------------------------------------------------\n");
     printf("***  I detected an error in your input file  ***\n\n");
-    printf("In the first line of the file, you specified that the graph contained\n%d edges. However, I only found %d edges in the file.\n", graph->nedges/2, k/2);
+    printf("In the first line of the file, you specified that the graph contained\n"
+           "%"PRIDX" edges. However, I only found %"PRIDX" edges in the file.\n", 
+           graph->nedges/2, k/2);
     if (2*k == graph->nedges) {
       printf("\n *> I detected that you specified twice the number of edges that you have in\n");
       printf("    the file. Remember that the number of edges specified in the first line\n");
@@ -139,244 +166,403 @@ void ReadGraph(GraphType *graph, char *filename, int *wgtflag)
     exit(0);
   }
 
-  free(line);
+  gk_free((void *)&line, LTERM);
+
+  return graph;
 }
 
 
-
-/*************************************************************************
-* This function writes out the partition vector
-**************************************************************************/
-void WritePartition(char *fname, idxtype *part, int n, int nparts)
+/*************************************************************************/
+/*! This function reads in a mesh */
+/*************************************************************************/
+mesh_t *ReadMesh(params_t *params)
 {
-  FILE *fpout;
-  int i;
-  char filename[256];
+  idx_t i, j, k, l, nfields, ncon, node;
+  idx_t *eptr, *eind, *ewgt;
+  size_t nlines, ntokens;
+  char *line=NULL, *curstr, *newstr;
+  size_t lnlen=0;
+  FILE *fpin;
+  mesh_t *mesh;
 
-  sprintf(filename,"%s.part.%d",fname, nparts);
+  if (!gk_fexists(params->filename)) 
+    errexit("File %s does not exist!\n", params->filename);
 
-  if ((fpout = fopen(filename, "w")) == NULL) 
-    errexit("Problems in opening the partition file: %s", filename);
+  mesh = CreateMesh();
 
-  for (i=0; i<n; i++)
-    fprintf(fpout,"%d\n",part[i]);
+  /* get some file stats */
+  gk_getfilestats(params->filename, &nlines, &ntokens, NULL, NULL);
 
-  fclose(fpout);
+  fpin = gk_fopen(params->filename, "r", __func__);
 
+  /* Skip comment lines until you get to the first valid line */
+  do {
+    if (gk_getline(&line, &lnlen, fpin) == -1) 
+      errexit("Premature end of input file: file: %s\n", params->filename);
+  } while (line[0] == '%');
+
+
+  mesh->ncon = 0;
+  nfields = sscanf(line, "%"SCIDX" %"SCIDX, &(mesh->ne), &(mesh->ncon));
+
+  if (nfields < 1) 
+    errexit("The input file does not specify the number of elements.\n");
+
+  if (mesh->ne <= 0) 
+    errexit("The supplied number of elements:%"PRIDX" must be positive.\n", mesh->ne);
+        
+  if (mesh->ne > nlines)
+    errexit("The file has %zu lines which smaller than the number of "
+            "elements of %"PRIDX" specified in the header line.\n", nlines, mesh->ne);
+
+  ncon = mesh->ncon;
+  eptr = mesh->eptr = ismalloc(mesh->ne+1, 0, "ReadMesh: eptr");
+  eind = mesh->eind = imalloc(ntokens, "ReadMesh: eind");
+  ewgt = mesh->ewgt = ismalloc((ncon == 0 ? 1 : ncon)*mesh->ne, 1, "ReadMesh: ewgt");
+
+
+  /*----------------------------------------------------------------------
+   * Read the mesh file
+   *---------------------------------------------------------------------*/
+  for (eptr[0]=0, k=0, i=0; i<mesh->ne; i++) {
+    do {
+      if (gk_getline(&line, &lnlen, fpin) == -1) 
+        errexit("Premature end of input file while reading element %"PRIDX".\n", i+1);
+    } while (line[0] == '%');
+
+    curstr = line;
+    newstr = NULL;
+
+    /* Read element weights */
+    for (l=0; l<ncon; l++) {
+      ewgt[i*ncon+l] = strtoidx(curstr, &newstr, 10);
+      if (newstr == curstr)
+        errexit("The line for vertex %"PRIDX" does not have enough weights "
+                "for the %"PRIDX" constraints.\n", i+1, ncon);
+      if (ewgt[i*ncon+l] < 0)
+        errexit("The weight for element %"PRIDX" and constraint %"PRIDX" must be >= 0\n", i+1, l);
+      curstr = newstr;
+    }
+
+    while (1) {
+      node = strtoidx(curstr, &newstr, 10);
+      if (newstr == curstr)
+        break; /* End of line */
+      curstr = newstr;
+
+      if (node < 1)
+        errexit("Node %"PRIDX" for element %"PRIDX" is out of bounds\n", node, i+1);
+
+      eind[k++] = node-1;
+    } 
+    eptr[i+1] = k;
+  }
+  gk_fclose(fpin);
+
+  mesh->ncon = (ncon == 0 ? 1 : ncon);
+  mesh->nn   = imax(eptr[mesh->ne], eind)+1;
+
+  gk_free((void *)&line, LTERM);
+
+  return mesh;
 }
 
 
-/*************************************************************************
-* This function writes out the partition vectors for a mesh
-**************************************************************************/
-void WriteMeshPartition(char *fname, int nparts, int ne, idxtype *epart, int nn, idxtype *npart)
+/*************************************************************************/
+/*! This function reads in the target partition weights. If no file is 
+    specified the weights are set to 1/nparts */
+/*************************************************************************/
+void ReadTPwgts(params_t *params, idx_t ncon)
 {
-  FILE *fpout;
-  int i;
-  char filename[256];
+  idx_t i, j, from, to, fromcnum, tocnum, nleft;
+  real_t awgt=0.0, twgt;
+  char *line=NULL, *curstr, *newstr;
+  size_t lnlen=0;
+  FILE *fpin;
 
-  sprintf(filename,"%s.epart.%d",fname, nparts);
+  params->tpwgts = rsmalloc(params->nparts*ncon, -1.0, "ReadTPwgts: tpwgts");
 
-  if ((fpout = fopen(filename, "w")) == NULL) 
-    errexit("Problems in opening the partition file: %s", filename);
+  if (params->tpwgtsfile == NULL) {
+    for (i=0; i<params->nparts; i++) {
+      for (j=0; j<ncon; j++)
+        params->tpwgts[i*ncon+j] = 1.0/params->nparts;
+    }
+    return;
+  }
 
-  for (i=0; i<ne; i++)
-    fprintf(fpout,"%d\n", epart[i]);
+  if (!gk_fexists(params->tpwgtsfile)) 
+    errexit("Graph file %s does not exist!\n", params->tpwgtsfile);
 
-  fclose(fpout);
+  fpin = gk_fopen(params->tpwgtsfile, "r", "ReadTPwgts: tpwgtsfile");
 
-  sprintf(filename,"%s.npart.%d",fname, nparts);
+  while (gk_getline(&line, &lnlen, fpin) != -1) {
+    gk_strchr_replace(line, " ", "");
+    /* start extracting the fields */
 
-  if ((fpout = fopen(filename, "w")) == NULL) 
-    errexit("Problems in opening the partition file: %s", filename);
+    curstr = line;
+    newstr = NULL;
 
-  for (i=0; i<nn; i++)
-    fprintf(fpout,"%d\n", npart[i]);
+    from = strtoidx(curstr, &newstr, 10);
+    if (newstr == curstr)
+      errexit("The 'from' component of line <%s> in the tpwgts file is incorrect.\n", line);
+    curstr = newstr;
 
-  fclose(fpout);
+    if (curstr[0] == '-') {
+      to = strtoidx(curstr+1, &newstr, 10);
+      if (newstr == curstr)
+        errexit("The 'to' component of line <%s> in the tpwgts file is incorrect.\n", line);
+      curstr = newstr;
+    }
+    else {
+      to = from;
+    }
 
+    if (curstr[0] == ':') {
+      fromcnum = strtoidx(curstr+1, &newstr, 10);
+      if (newstr == curstr)
+        errexit("The 'fromcnum' component of line <%s> in the tpwgts file is incorrect.\n", line);
+      curstr = newstr;
 
-}
-
-
-
-/*************************************************************************
-* This function writes out the partition vector
-**************************************************************************/
-void WritePermutation(char *fname, idxtype *iperm, int n)
-{
-  FILE *fpout;
-  int i;
-  char filename[256];
-
-  sprintf(filename,"%s.iperm",fname);
-
-  if ((fpout = fopen(filename, "w")) == NULL) 
-    errexit("Problems in opening the permutation file: %s", filename);
-
-  for (i=0; i<n; i++)
-    fprintf(fpout,"%d\n", iperm[i]);
-
-  fclose(fpout);
-
-}
-
-
-
-/*************************************************************************
-* This function checks if a graph is valid
-**************************************************************************/
-int CheckGraph(GraphType *graph)
-{
-  int i, j, k, l, nvtxs, err=0;
-  idxtype *xadj, *adjncy, *adjwgt;
-
-  nvtxs = graph->nvtxs;
-  xadj = graph->xadj;
-  adjncy = graph->adjncy;
-  adjwgt = graph->adjwgt;
-
-
-  for (i=0; i<nvtxs; i++) {
-    for (j=xadj[i]; j<xadj[i+1]; j++) {
-      k = adjncy[j];
-
-      if (i == k) {
-        printf("Vertex %d contains a self-loop (i.e., diagonal entry in the matrix)!\n", i);
-        err++;
+      if (curstr[0] == '-') {
+        tocnum = strtoidx(curstr+1, &newstr, 10);
+        if (newstr == curstr)
+          errexit("The 'tocnum' component of line <%s> in the tpwgts file is incorrect.\n", line);
+        curstr = newstr;
       }
       else {
-        for (l=xadj[k]; l<xadj[k+1]; l++) {
-          if (adjncy[l] == i) {
-            if (adjwgt != NULL && adjwgt[l] != adjwgt[j]) {
-              printf("Edges (%d %d) and (%d %d) do not have the same weight! %d %d\n", i,k,k,i, adjwgt[l], adjwgt[adjncy[j]]);
-              err++;
-            }
-            break;
-          }
-        }
-        if (l == xadj[k+1]) {
-          printf("Missing edge: (%d %d)!\n", k, i);
-          err++;
-        }
+        tocnum = fromcnum;
+      }
+    }
+    else {
+      fromcnum = 0;
+      tocnum   = ncon-1;
+    }
+
+    if (curstr[0] == '=') {
+      awgt = strtoreal(curstr+1, &newstr);
+      if (newstr == curstr)
+        errexit("The 'wgt' component of line <%s> in the tpwgts file is incorrect.\n", line);
+      curstr = newstr;
+    }
+    else {
+      errexit("The 'wgt' component of line <%s> in the tpwgts file is missing.\n", line);
+    }
+
+    /*printf("Read: %"PRIDX"-%"PRIDX":%"PRIDX"-%"PRIDX"=%"PRREAL"\n",
+        from, to, fromcnum, tocnum, awgt);*/
+
+    if (from < 0 || to < 0 || from >= params->nparts || to >= params->nparts)
+      errexit("Invalid partition range for %"PRIDX":%"PRIDX"\n", from, to);
+    if (fromcnum < 0 || tocnum < 0 || fromcnum >= ncon || tocnum >= ncon)
+      errexit("Invalid constraint number range for %"PRIDX":%"PRIDX"\n", 
+          fromcnum, tocnum);
+    if (awgt <= 0.0 || awgt >= 1.0)
+      errexit("Invalid partition weight of %"PRREAL"\n", awgt);
+    for (i=from; i<=to; i++) {
+      for (j=fromcnum; j<=tocnum; j++)
+        params->tpwgts[i*ncon+j] = awgt;
+    }
+  } 
+
+  gk_fclose(fpin);
+
+  /* Assign weight to the unspecified constraints x partitions */
+  for (j=0; j<ncon; j++) {
+    /* Sum up the specified weights for the jth constraint */
+    for (twgt=0.0, nleft=params->nparts, i=0; i<params->nparts; i++) {
+      if (params->tpwgts[i*ncon+j] > 0) {
+        twgt += params->tpwgts[i*ncon+j];
+        nleft--;
+      }
+    }
+
+    /* Rescale the weights to be on the safe side */
+    if (nleft == 0) 
+      rscale(params->nparts, 1.0/twgt, params->tpwgts+j, ncon);
+  
+    /* Assign the left-over weight to the remaining partitions */
+    if (nleft > 0) {
+      if (twgt > 1)
+        errexit("The total specified target partition weights for constraint #%"PRIDX
+                " of %"PRREAL" exceeds 1.0.\n", j, twgt);
+  
+      awgt = (1.0 - twgt)/nleft;
+      for (i=0; i<params->nparts; i++)
+        params->tpwgts[i*ncon+j] = 
+            (params->tpwgts[i*ncon+j] < 0 ? awgt : params->tpwgts[i*ncon+j]);
+    }
+  }
+  #ifdef HAVE_GETLINE
+  free(line);
+  line = NULL; /* set to null to match behavior of gk_free() */
+  #else
+  gk_free((void *)&line, LTERM);
+  #endif
+}
+
+
+/*************************************************************************/
+/*! This function reads in a partition/ordering vector  */
+/**************************************************************************/
+void ReadPOVector(graph_t *graph, char *filename, idx_t *vector)
+{
+  idx_t i;
+  FILE *fpin;
+
+  fpin = gk_fopen(filename, "r", __func__);
+  for (i=0; i<graph->nvtxs; i++) {
+    if (fscanf(fpin, "%"SCIDX"\n", vector+i) != 1)
+      errexit("[%s] Premature end of file %s at line %d [nvtxs: %d]\n",
+          __func__, filename, i, graph->nvtxs);
+  }
+  gk_fclose(fpin);
+}
+
+
+/*************************************************************************/
+/*! This function writes out the partition vector */
+/*************************************************************************/
+void WritePartition(char *fname, idx_t *part, idx_t n, idx_t nparts)
+{
+  FILE *fpout;
+  idx_t i;
+  char filename[MAXLINE];
+
+  sprintf(filename, "%s.part.%"PRIDX, fname, nparts);
+
+  fpout = gk_fopen(filename, "w", __func__);
+
+  for (i=0; i<n; i++)
+    fprintf(fpout,"%" PRIDX "\n", part[i]);
+
+  gk_fclose(fpout);
+}
+
+
+/*************************************************************************/
+/*! This function writes out the partition vectors for a mesh */
+/*************************************************************************/
+void WriteMeshPartition(char *fname, idx_t nparts, idx_t ne, idx_t *epart, 
+       idx_t nn, idx_t *npart)
+{
+  FILE *fpout;
+  idx_t i;
+  char filename[256];
+
+  sprintf(filename,"%s.epart.%"PRIDX,fname, nparts);
+
+  fpout = gk_fopen(filename, "w", __func__);
+
+  for (i=0; i<ne; i++)
+    fprintf(fpout,"%" PRIDX "\n", epart[i]);
+
+  gk_fclose(fpout);
+
+
+  sprintf(filename,"%s.npart.%"PRIDX,fname, nparts);
+
+  fpout = gk_fopen(filename, "w", __func__);
+
+  for (i=0; i<nn; i++)
+    fprintf(fpout, "%" PRIDX "\n", npart[i]);
+
+  gk_fclose(fpout);
+
+}
+
+
+/*************************************************************************/
+/*! This function writes out the permutation vector */
+/*************************************************************************/
+void WritePermutation(char *fname, idx_t *iperm, idx_t n)
+{
+  FILE *fpout;
+  idx_t i;
+  char filename[MAXLINE];
+
+  sprintf(filename, "%s.iperm", fname);
+
+  fpout = gk_fopen(filename, "w", __func__);
+
+  for (i=0; i<n; i++)
+    fprintf(fpout, "%" PRIDX "\n", iperm[i]);
+
+  gk_fclose(fpout);
+}
+
+
+/*************************************************************************/
+/*! This function writes a graph into a file  */
+/*************************************************************************/
+void WriteGraph(graph_t *graph, char *filename)
+{
+  idx_t i, j, nvtxs, ncon;
+  idx_t *xadj, *adjncy, *adjwgt, *vwgt, *vsize;
+  int hasvwgt=0, hasewgt=0, hasvsize=0;
+  FILE *fpout;
+
+  nvtxs  = graph->nvtxs;
+  ncon   = graph->ncon;
+  xadj   = graph->xadj;
+  adjncy = graph->adjncy;
+  vwgt   = graph->vwgt;
+  vsize  = graph->vsize;
+  adjwgt = graph->adjwgt;
+
+  /* determine if the graph has non-unity vwgt, vsize, or adjwgt */
+  if (vwgt) {
+    for (i=0; i<nvtxs*ncon; i++) {
+      if (vwgt[i] != 1) {
+        hasvwgt = 1;
+        break;
+      }
+    }
+  }
+  if (vsize) {
+    for (i=0; i<nvtxs; i++) {
+      if (vsize[i] != 1) {
+        hasvsize = 1;
+        break;
+      }
+    }
+  }
+  if (adjwgt) { 
+    for (i=0; i<xadj[nvtxs]; i++) {
+      if (adjwgt[i] != 1) {
+        hasewgt = 1;
+        break;
       }
     }
   }
 
-  if (err > 0) 
-    printf("A total of %d errors exist in the input file. Correct them, and run again!\n", err);
+  fpout = gk_fopen(filename, "w", __func__);
 
-  return (err == 0 ? 1 : 0);
-}
-
-
-/*************************************************************************
-* This function reads the element node array of a mesh
-**************************************************************************/
-idxtype *ReadMesh(char *filename, int *ne, int *nn, int *etype)
-{
-  int i, j, k, esize;
-  idxtype *elmnts;
-  FILE *fpin;
-
-  if ((fpin = fopen(filename, "r")) == NULL) {
-    printf("Failed to open file %s\n", filename);
-    exit(0);
+  /* write the header line */
+  fprintf(fpout, "%"PRIDX" %"PRIDX, nvtxs, xadj[nvtxs]/2);
+  if (hasvwgt || hasvsize || hasewgt) {
+    fprintf(fpout, " %d%d%d", hasvsize, hasvwgt, hasewgt);
+    if (hasvwgt)
+      fprintf(fpout, " %d", (int)graph->ncon);
   }
 
-  fscanf(fpin, "%d %d", ne, etype);
 
-  switch (*etype) {
-    case 1:
-      esize = 3;
-      break;
-    case 2:
-      esize = 4;
-      break;
-    case 3:
-      esize = 8;
-      break;
-    case 4:
-      esize = 4;
-      break;
-    default:
-      errexit("Unknown mesh-element type: %d\n", *etype);
-  }
-
-  elmnts = idxmalloc(esize*(*ne), "ReadMesh: elmnts");
-
-  for (j=esize*(*ne), i=0; i<j; i++) {
-    fscanf(fpin, "%d", elmnts+i);
-    elmnts[i]--;
-  }
-
-  fclose(fpin);
-
-  *nn = elmnts[idxamax(j, elmnts)]+1;
-
-  return elmnts;
-}
-
-
-/*************************************************************************
-* This function writes a graphs into a file 
-**************************************************************************/
-void WriteGraph(char *filename, int nvtxs, idxtype *xadj, idxtype *adjncy)
-{
-  int i, j;
-  FILE *fpout;
-
-  if ((fpout = fopen(filename, "w")) == NULL) {
-    printf("Failed to open file %s\n", filename);
-    exit(0);
-  }
-
-  fprintf(fpout, "%d %d", nvtxs, xadj[nvtxs]/2);
-
+  /* write the rest of the graph */
   for (i=0; i<nvtxs; i++) {
     fprintf(fpout, "\n");
-    for (j=xadj[i]; j<xadj[i+1]; j++)
-      fprintf(fpout, " %d", adjncy[j]+1);
+    if (hasvsize) 
+      fprintf(fpout, " %"PRIDX, vsize[i]);
+
+    if (hasvwgt) {
+      for (j=0; j<ncon; j++)
+        fprintf(fpout, " %"PRIDX, vwgt[i*ncon+j]);
+    }
+
+    for (j=xadj[i]; j<xadj[i+1]; j++) {
+      fprintf(fpout, " %"PRIDX, adjncy[j]+1);
+      if (hasewgt)
+        fprintf(fpout, " %"PRIDX, adjwgt[j]);
+    }
   }
 
-  fclose(fpout);
-}
-
-
-/*************************************************************************
-* This function writes a graphs into a file 
-**************************************************************************/
-void WriteMocGraph(GraphType *graph)
-{
-  int i, j, nvtxs, ncon;
-  idxtype *xadj, *adjncy;
-  float *nvwgt;
-  char filename[256];
-  FILE *fpout;
-
-  nvtxs = graph->nvtxs;
-  ncon = graph->ncon;
-  xadj = graph->xadj;
-  adjncy = graph->adjncy;
-  nvwgt = graph->nvwgt;
-
-  sprintf(filename, "moc.graph.%d.%d", nvtxs, ncon);
-
-  if ((fpout = fopen(filename, "w")) == NULL) {
-    printf("Failed to open file %s\n", filename);
-    exit(0);
-  }
-
-  fprintf(fpout, "%d %d 10 1 %d", nvtxs, xadj[nvtxs]/2, ncon);
-
-  for (i=0; i<nvtxs; i++) {
-    fprintf(fpout, "\n");
-    for (j=0; j<ncon; j++)
-      fprintf(fpout, "%d ", (int)((float)10e6*nvwgt[i*ncon+j]));
-
-    for (j=xadj[i]; j<xadj[i+1]; j++)
-      fprintf(fpout, " %d", adjncy[j]+1);
-  }
-
-  fclose(fpout);
+  gk_fclose(fpout);
 }

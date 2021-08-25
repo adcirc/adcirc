@@ -38,16 +38,17 @@ if(BUILD_ADCPREP)
       ${CMAKE_SOURCE_DIR}/src/couple2baroclinic3D.F)
 
   add_executable(adcprep ${ADCPREP_SOURCES})
-
+  target_link_libraries( adcprep fmetis)
   addcompilerflags(adcprep ${ADDITIONAL_FLAGS_ADCPREP})
   addlibmkdir(adcprep)
   addlibmetis(adcprep)
-
   if(BUILD_PADCSWAN OR BUILD_PUNSWAN)
     target_compile_definitions(adcprep PRIVATE ${PREP_SWAN_FLAG})
   endif(BUILD_PADCSWAN OR BUILD_PUNSWAN)
 
   target_include_directories(adcprep PRIVATE prep)
+  target_include_directories(adcprep PRIVATE ${CMAKE_SOURCE_DIR}/build/thirdparty/fmetis/include)
+
 
   install(TARGETS adcprep RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
