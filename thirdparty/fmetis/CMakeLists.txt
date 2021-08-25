@@ -53,6 +53,8 @@ if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
 endif ()
 
 # Find METIS library
+# Default to the thirdparty folder...
+set(METIS_LIB, ${CMAKE_SOURCE_DIR}/build/thirdparty/metis/libmetis/)
 if (NOT METIS_LIB)
     find_library(METIS_LIB metis)
 endif ()
