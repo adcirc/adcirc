@@ -92,7 +92,7 @@ pushd ${ADCDIR}/work >/dev/null 2>&1
   export MAKELEVEL=0
 
   # Mandatory components
-  make compiler=${comp_opt} NETCDF=enable NETCDF4=enable libadc.a
+  make compiler=${comp_opt} libadc.a
   make compiler=${comp_opt} adcprep
 
   # Optional components
@@ -100,10 +100,10 @@ pushd ${ADCDIR}/work >/dev/null 2>&1
   do
     case "${iexe}" in
       adcirc)
-        make compiler=${comp_opt} NETCDF=enable NETCDF4=enable adcirc
+        make compiler=${comp_opt} adcirc
         ;;
       padcirc)
-        make compiler=${comp_opt} NETCDF=enable NETCDF4=enable padcirc
+        make compiler=${comp_opt} padcirc
         ;;
       aswip)
         make compiler=${comp_opt} aswip
