@@ -113,12 +113,12 @@ include(${CMAKE_SOURCE_DIR}/cmake/mkdir.cmake)
 # ...Build ADCIRC
 include(${CMAKE_SOURCE_DIR}/cmake/adcirc.cmake)
 
-# ...Build METIS interface
-add_subdirectory(${CMAKE_SOURCE_DIR}/thirdparty/fmetis EXCLUDE_FROM_ALL)
-
 # ...Build METIS 5.1.2
 set(GKLIB_PATH ${CMAKE_SOURCE_DIR}/thirdparty/metis/GKlib)
 add_subdirectory(${CMAKE_SOURCE_DIR}/thirdparty/metis EXCLUDE_FROM_ALL)
+
+# ...Build METIS interface (used by ADCPREP)
+add_subdirectory(${CMAKE_SOURCE_DIR}/thirdparty/fmetis EXCLUDE_FROM_ALL)
 
 # ...Build ADCPREP
 include(${CMAKE_SOURCE_DIR}/cmake/adcprep.cmake)

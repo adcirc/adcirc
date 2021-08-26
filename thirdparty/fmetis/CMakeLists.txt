@@ -54,10 +54,7 @@ endif ()
 
 # Find METIS library
 # Default to the thirdparty folder...
-set(METIS_LIB, ${CMAKE_SOURCE_DIR}/build/thirdparty/metis/libmetis/)
-if (NOT METIS_LIB)
-    find_library(METIS_LIB metis)
-endif ()
+set(ENV{METIS_LIB}, ${CMAKE_SOURCE_DIR}/build/thirdparty/lib)
 
 # Output messages
 message("\n")
