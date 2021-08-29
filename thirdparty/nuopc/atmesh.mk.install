@@ -1,6 +1,0 @@
-# ESMF self-describing build dependency makefile fragment
-
-ESMF_DEP_FRONT     = ATMESH    
-ESMF_DEP_INCPATH   = /scratch4/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/tests/NSEModel_try_err_branches/HWRF2ADC_test02/ADCIRC/cpl/nuopc /scratch4/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/tests/NSEModel_try_err_branches/HWRF2ADC_test02/ATMESH-INSTALL 
-ESMF_DEP_CMPL_OBJS = 
-ESMF_DEP_LINK_OBJS =  -L/scratch4/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/tests/NSEModel_try_err_branches/HWRF2ADC_test02/ATMESH-INSTALL /scratch4/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/tests/NSEModel_try_err_branches/HWRF2ADC_test02/ATMESH-INSTALL/libatmesh_cap.a  
