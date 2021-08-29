@@ -136,7 +136,6 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   target_compile_definitions(templib_adcswan1 PRIVATE CSWAN)
   target_compile_definitions(adcswan PRIVATE CSWAN)
 
-
   target_include_directories(
     templib_adcswan1
     PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
