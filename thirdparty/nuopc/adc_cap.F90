@@ -849,8 +849,6 @@ module adc_cap
     type(ESMF_Time)            :: currTime
     type(ESMF_TimeInterval)    :: timeStep
     character(len=*),parameter :: subname='(adc_cap:ModelAdvance)'
-    !tmp vector
-    real(ESMF_KIND_R8), pointer:: tmp(:)
 
     ! exports
     real(ESMF_KIND_R8), pointer:: dataPtr_zeta(:)
@@ -1350,63 +1348,59 @@ module adc_cap
     !-------------------------------------------
 
 
-    if (surge_forcing) then
-      !-----------------------------------------
-      !   EXPORT
-      !-----------------------------------------
-      !pack and send exported fields
-      allocate (tmp(mdataOut%NumOwnedNd))
+    IF (surge_forcing) THEN
+      !------------------------------------------------------------
+      ! Exported fields from ADCIRC: pack and send exported fields
+      !------------------------------------------------------------
+      !--- (FIELD 1): PACK and send zeta
+      ALLOCATE(dataPtr_zeta(mdataOut%NumOwnedNd))
 
-      ! >>>>> PACK and send ZETA
-      call State_getFldPtr_(ST=exportState,fldname='zeta',fldptr=dataPtr_zeta, &
-        rc=rc,dump=.true.,timeStr=timeStr)
-      !call State_getFldPtr(ST=exportState,fldname='zeta',fldptr=dataPtr_zeta, &
-      !  rc=rc)
+      CALL State_GetFldPtr_(ST = exportState, fldName = 'zeta', fldPtr = dataPtr_zeta, &
+                            rc = rc, dump = .FALSE., timeStr = timeStr)
+      IF (ESMF_LogFoundError(rcToCheck = rc, msg = ESMF_LOGERR_PASSTHRU, &
+          line = __LINE__,  &
+          file = __FILE__)) &
+        RETURN  ! bail out
 
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+      ! Fill only owned nodes for dataPtr_zeta vector
+      DO i1 = 1, mdataOut%NumOwnedNd, 1
+        dataPtr_zeta(i1) = ETA2(mdataOut%owned_to_present_nodes(i1))
+      END DO
 
-      !fill only owned nodes for tmp vector
-      do i1 = 1, mdataOut%NumOwnedNd, 1
-          tmp(i1) = ETA2(mdataOut%owned_to_present_nodes(i1))
-      end do
-      !assign to field
-      dataPtr_zeta = tmp
-      !----------------------------------------
-      ! >>>>> PACK and send VELX
-      call State_getFldPtr(ST=exportState,fldname='velx',fldptr=dataPtr_velx,rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+      !--- (FIELD 2): PACK and send velx
+      ALLOCATE(dataPtr_velx(mdataOut%NumOwnedNd))
 
-      !fill only owned nodes for tmp vector
-      do i1 = 1, mdataOut%NumOwnedNd, 1
-          tmp(i1) = UU2(mdataOut%owned_to_present_nodes(i1))
-      end do
-      !assign to field
-      dataPtr_velx = tmp
-      !----------------------------------------
-      ! >>>>> PACK and send VELY
-      call State_getFldPtr(ST=exportState,fldname='vely',fldptr=dataPtr_vely,rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+      CALL State_GetFldPtr_(ST = exportState, fldName = 'velx', fldPtr = dataPtr_velx, &
+                            rc = rc, dump = .FALSE., timeStr = timeStr)
+      IF (ESMF_LogFoundError(rcToCheck = rc, msg = ESMF_LOGERR_PASSTHRU, &
+          line = __LINE__,  &
+          file = __FILE__)) &
+        RETURN  ! bail out
 
-      !fill only owned nodes for tmp vector
-      do i1 = 1, mdataOut%NumOwnedNd, 1
-          tmp(i1) = VV2(mdataOut%owned_to_present_nodes(i1))
-      end do
-      !assign to field
-      dataPtr_vely = tmp
-    else
+      ! Fill only owned nodes for dataPtr_velx vector
+      DO i1 = 1, mdataOut%NumOwnedNd, 1
+        dataPtr_velx(i1) = UU2(mdataOut%owned_to_present_nodes(i1))
+      END DO
+
+      !--- (FIELD 3): PACK and send velx
+      ALLOCATE(dataPtr_vely(mdataOut%NumOwnedNd))
+
+      CALL State_GetFldPtr_(ST = exportState, fldName = 'vely', fldPtr = dataPtr_vely, &
+                            rc = rc, dump = .FALSE., timeStr = timeStr)
+      IF (ESMF_LogFoundError(rcToCheck = rc, msg = ESMF_LOGERR_PASSTHRU, &
+          line = __LINE__,  &
+          file = __FILE__)) &
+        RETURN  ! bail out
+
+      ! Fill only owned nodes for dataPtr_vely vector
+      DO i1 = 1, mdataOut%NumOwnedNd, 1
+        dataPtr_vely(i1) = VV2(mdataOut%owned_to_present_nodes(i1))
+      END DO
+    ELSE
       write(info,*) subname,' --- no surge forcing for wave. 1way coupled WW3 -> ADC  ---'
       call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
       !print *, info
-    endif
+    END IF
 
     !----------------------------------------
 !
