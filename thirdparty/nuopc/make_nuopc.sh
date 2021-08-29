@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Panagiotis Velissariou <panagiotis.velissariou@noaa.gov> - 07/20/2021
 # Panagiotis Velissariou <panagiotis.velissariou@noaa.gov> - 12/05/2020
 # Original by: moghimis@gmail.com - 01/31/2020
 # This script compiles ADCIRC model with a pre-selected sets of
@@ -40,7 +41,19 @@ if [ -n "${esmf_env:+1}" ]; then
     echo "${scrNAME} :: Sourcing the environment file: \"${esmf_env}\""
     source ${esmf_env}
   else
-    echo "${scrNAME} :: Using the the environment variable ESMFMKFILE"
+    echo "${scrNAME} :: The environment file: \"${esmf_env}\" does not exist"
+    echo "${scrNAME} :: Trying the environment variable ESMFMKFILE ..."
+    if [ -n "${ESMFMKFILE:+1}" ]; then
+      echo "${scrNAME} :: Using the environment variable ESMFMKFILE"
+    else
+      echo "${scrNAME} :: WARNING: The environment variable ESMFMKFILE is not defined"
+    fi
+  fi
+else
+  if [ -n "${ESMFMKFILE:+1}" ]; then
+    echo "${scrNAME} :: Using the environment variable ESMFMKFILE"
+  else
+    echo "${scrNAME} :: WARNING: The environment variable ESMFMKFILE is not defined"
   fi
 fi
 
@@ -54,14 +67,16 @@ case "${comp_opt}" in
           exit 1
           ;;
 esac
+
+adc_exe="$(echo "${BUILD_EXECS:-UNDEF}" | tr '[:upper:]' '[:lower:]')"
 ###====================
 
 ###====================
 ### Set/Export the important environment variables
 ###====================
 if [[ -n ${NETCDFHOME:+1} ]]; then
-  export NETCDFLAG=enable
-  export NETCDF4FLAG=enable
+  export NETCDF=enable
+  export NETCDF4=enable
   export NETCDF4_COMPRESSION=enable
 else
   echo "${scrNAME} :: NETCDFHOME is not defined. Define this environment variable before running this script."
@@ -75,9 +90,28 @@ export ADCDIR=$(dirname $(dirname ${scrDIR}))
 # move to the `work/` directory to build main ADCIRC executables
 pushd ${ADCDIR}/work >/dev/null 2>&1
   export MAKELEVEL=0
-  make compiler=${comp_opt} NETCDF=enable NETCDF4=enable libadc.a
-  make compiler=${comp_opt} NETCDF=enable NETCDF4=enable adcprep
-  #make padcirc -d compiler=${comp_opt} NETCDFLAG=enable NETCDF4FLAG=enable NETCDF4_COMPRESSION=enable
+
+  # Mandatory components
+  make compiler=${comp_opt} libadc.a
+  make compiler=${comp_opt} adcprep
+
+  # Optional components
+  for iexe in ${adc_exe}
+  do
+    case "${iexe}" in
+      adcirc)
+        make compiler=${comp_opt} adcirc
+        ;;
+      padcirc)
+        make compiler=${comp_opt} padcirc
+        ;;
+      aswip)
+        make compiler=${comp_opt} aswip
+        ;;
+      *) ;; #Do nothing
+    esac
+  done
+
 popd >/dev/null 2>&1
 
 # build ADCIRC NUOPC
