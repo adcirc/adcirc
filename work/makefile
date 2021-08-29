@@ -52,11 +52,8 @@ ifneq ($(shell ulimit -s),unlimited)
 endif
 endif
 
-
-
 # Specify NETCDF=enable to gmake on the command line to activate netcdf i/o
 ifeq ($(NETCDF),enable)
-#ifeq ($(NETCDFLAG),enable)
 # jgf49.61: Don't add the -DADCNETCDF for the IBM compilers (see cmplrflags.mk)
 ifeq ($(IBM),)
      PPFC    := $(PPFC) -DADCNETCDF -I$(NETCDFHOME)/include
@@ -66,10 +63,8 @@ ifeq ($(IBM),)
      FFLAGS3 := $(FFLAGS3) -DADCNETCDF -I$(NETCDFHOME)/include
      FFLAGS4 := $(FFLAGS4) -DADCNETCDF -I$(NETCDFHOME)/include
 endif
-#NETCDF=enable
 endif
 ifeq ($(NETCDF4),enable)
-#ifeq ($(NETCDF4FLAG),enable)
      PPFC    := $(PPFC) -DHAVE_NETCDF4
      PFC     := $(PFC) -DHAVE_NETCDF4
      FFLAGS1 := $(FFLAGS1) -DHAVE_NETCDF4
@@ -602,11 +597,6 @@ endif
                  $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
                  $(WRITER_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ) 
 	ar -ts $@
-
-#   $(LIBADC) :: $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(NC_MOBJ) 
-#	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(NC_MOBJ) 
-#	ar -ts $@
-
 
 #Casey 080106: Added the following lines.
    adcswan :: $(O_DIR)
