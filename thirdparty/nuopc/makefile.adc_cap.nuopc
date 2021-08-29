@@ -33,7 +33,6 @@ endif
 
 INCDIRS := -I. -I$(ADCDIR)/work/odircp -I$(ADCDIR)/prep
 LIBDIRS := -L. -L$(ADCDIR) 
-
 LIBSS   := -ladc  -lnetcdf  -lnetcdff -lhdf5 -lhdf5_fortran
 
 INCDIRS += -I${NETCDFHOME}/include   
@@ -54,7 +53,6 @@ endif
 ifeq ($(compiler),intel)
   LIBDIRS += -g -traceback 
 endif
-
 ################################################################################
 
 .SUFFIXES: .f90 .F90 .c .C
@@ -116,8 +114,6 @@ wav.o:      adc_cap.o
 adc_cap.o:  couple2swan_modif.o
 adc_cap.o:  adc_mod.o
 wav.o:      wav_mod.o
-hwrf_cap.o: hwrf_mod.o
-
 
 
 # -----------------------------------------------------------------------------
@@ -140,4 +136,4 @@ dust:
 	rm -f PET*.ESMF_LogFile *.nc
 
 edit:
-	gedit Makefile esmApp.F90 esm.F90 wav.F90 adc_cap.F90 adc_mod.F90 couple2swan_modif.F  hwrf_mod.F90 hwrf_cap.F90 wav_mod.F90 &
+	gedit Makefile esmApp.F90 esm.F90 wav.F90 adc_cap.F90 adc_mod.F90 couple2swan_modif.F wav_mod.F90 &
