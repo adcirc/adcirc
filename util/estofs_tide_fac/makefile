@@ -28,14 +28,6 @@ ifeq ($(compiler),intel)
   PROFLIB =  -lprof
 endif
 
-ifeq ($(compiler),intel-ND)
-  FC =      ifort
-  #use for extensive compilation error reporting
-  LDFLAGS = -mkl  # ifort mkl library
-  FFLAGS = -O3 -i4 $(INCS)
-  PROFLIB =  -lprof
-endif
-
 ifeq ($(compiler),pgi)
   FC ?=      pgfortan
   #LDFLAGS = -mkl
@@ -43,19 +35,14 @@ ifeq ($(compiler),pgi)
   PROFLIB =
 endif
 
-FC =            ifort
-#use for extensive compilation error reporting
-LDFLAGS =	-mkl  # ifort mkl library
-
 CMD =           estofs_tide_fac
-PROFLIB =       -lprof
-
+#PROFLIB =       -lprof
 
 # To perform the default compilation, use the first line
 # To compile with flowtracing turned on, use the second line
 # To compile giving profile additonal information, use the third line
 # WARNING:  SIMULTANEOUSLY PROFILING AND FLOWTRACING IS NOT RECOMMENDED
-FFLAGS =        -O3 -i4 $(INCS)
+#FFLAGS =        -O3 -i4 $(INCS)
 
 # Lines from here on down should not need to be changed.  They are the
 # actual rules which make uses to build a.out.
