@@ -111,15 +111,13 @@ nuopcinstall: $(LIBRARY)
 
 
 # module dependencies:
-wav.o:      adc_cap.o
 adc_cap.o:  couple2swan_modif.o
 adc_cap.o:  adc_mod.o
-wav.o:      wav_mod.o
 
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
-.PHONY: nuopc nuopcclean nuopcinstall vars dust nuopcdistclean info edit
+.PHONY: nuopc nuopcclean nuopcinstall vars dust nuopcdistclean
 
 nuopcclean:
 	rm -f  adc_cap.o adc_mod.o couple2swan_modif.o  adc_cap.mod adc_mod.mod couple2swan_modif.mod libadc_cap.a adcirc.mk
@@ -135,6 +133,3 @@ dust:
 	@echo "Dusting ..."
 	@echo
 	rm -f PET*.ESMF_LogFile *.nc
-
-edit:
-	gedit Makefile esmApp.F90 esm.F90 wav.F90 adc_cap.F90 adc_mod.F90 couple2swan_modif.F wav_mod.F90 &
