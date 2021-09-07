@@ -4816,7 +4816,7 @@ C     ----------------------------------------------------------------
       REAL(SZ),SAVE,ALLOCATABLE :: THETA(:)
       REAL(SZ) :: TVX,TVY,RRP,RMW,A,B,WTRATIO
       REAL(SZ) :: TransSpdX, TransSpdY
-      REAL(SZ) :: TM, cpress, lon, lat, spd
+      REAL(SZ) :: TM, cpress, lon, lat, spd, gamma_r
       REAL(SZ) :: ts        ! storm translation speed, m/s
       REAL(SZ) :: WindMultiplier         ! for storm 2 in LPFS ensemble
       REAL(SZ) :: centralPressureDeficit ! difference btw ambient and cpress
@@ -4937,17 +4937,18 @@ C     Compute the distances based on haversine formula for distance along a sphe
          rad(i) = sphericalDistance(DX(I),DY(I),lat, ycoor(i))
 C     Compute coriolis
          coriolis = 2.0d0 * omega * sin(YCOOR(I)*DEG2RAD)
+C     Compute (R/r)^B factor         
+         gamma_r = (RMW*1000.d0/RAD(I))**B
 C     Compute pressure field
          PRESS(I)=(cpress+(centralPressureDeficit)*
-     &        EXP(-(RMW*1000.d0/RAD(I))**B)) / (RHOWAT0*G)
+     &        EXP(-gamma_r)) / (RHOWAT0*G)
 C     Compute velocity field with absolute around 
 C     CORIOLIS for the Southern Hempisphere
          V_r(I) = sqrt(
-     &        (RMW*1000.d0/RAD(I))**B *
-     &        EXP(1.d0-(RMW*1000.d0/RAD(I))**B)*spd**2.d0
-     &        + (RAD(I)**2.d0)*(CORIOLIS**2.d0)/4.d0
+     &        gamma_r * EXP(1.d0-gamma_r) * spd**2.d0
+     &        + 0.25d0*(RAD(I)**2.d0)*(CORIOLIS**2.d0)
      &        )
-     &        - RAD(I)*ABS(CORIOLIS)/2.d0
+     &        - 0.5d0*RAD(I)*ABS(CORIOLIS)
 C
 C     jgf46.31 Determine translation speed that should be added to final
 C     storm wind speed. This is tapered to zero as the storm wind tapers
