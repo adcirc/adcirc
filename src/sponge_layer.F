@@ -609,12 +609,14 @@ C     update QX
         RETURN ;
       END SUBROUTINE READFORT2001
 
-      SUBROUTINE GETABSLAYEREXT(IT, TimeLoc, TimeH, RampVal )
+      SUBROUTINE GETABSLAYEREXT(IT, TimeLoc, TimeH, RampVal,
+     &                          GeoidOffset) !sb20210820
         IMPLICIT NONE
 
         INTEGER:: IT
         REAL(SZ):: TimeLoc, TimeH
         REAL(SZ):: RampVal
+        REAL(SZ) :: GeoidOffset(:) !sb20210820
 
         INTEGER:: I, J
         REAL(SZ):: ARG, ARGT, RFF, NCYC, DTRATIO
@@ -731,6 +733,12 @@ C.............................DW, generating layer ..............
      &                       RampVal*(ArbVV0 + DTRATIO*(ArbVV - ArbVV0))
           ENDIF
 
+Csb<<20210820
+          ! Consider GeoidOffset in sponge layer
+          eta2_AbsLayer(AbsLayer_Eta_NodesID) =
+     &      eta2_AbsLayer(AbsLayer_Eta_NodesID) +
+     &        GeoidOffset(AbsLayer_Eta_NodesID)
+Csb>>
         END IF
 C...............................................................
 

@@ -90,6 +90,9 @@ C.....sb46.28sb03 added 09/xx/2006
      &     Apply2DBottomFriction,
      &     Apply2DInternalWaveDrag,
      &     Apply3DBottomFriction
+CSB<< 20210820 Consider GeoidOffset in sponge layer
+     &    ,GeoidOffset
+CSB>>
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS, 
      &    writeFort066, writeFort067, writeFort065, 
      &    readFort020, readFort021, readFort019 
@@ -396,7 +399,8 @@ C.............................DW, sponge layer ..................
          !
          IF ( .NOT. FIRST_ENTER ) THEN
             !c u_{ext}^{n + 1} -- > eta2, 
-            CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev ) ;
+            CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev,
+     &           GeoidOffset ) ; !sb20210820 GeoidOffset is added.
          ELSE
 
             RampTMP = RampElev ;
@@ -408,13 +412,15 @@ C.............................DW, sponge layer ..................
                
                !  u_{ext}^{n + 1 - istep} --> uu2
                CALL GETABSLAYEREXT( IT - istep, TimeLoc - istep*DTDP,
-     &              TimeH - istep*DTDP, RampTMP ) ;
+     &              TimeH - istep*DTDP, RampTMP,
+     &              GeoidOffset ) ; !sb20210820 GeoidOffset is added.
 
                CALL SPONGE_SHIFT_SOLN( ) ; 
                ! eta1 --> eta0, eta2 --> eta1, u2 --> u1          
             END DO
             !c u_{ext}^{n + 1} -- > eta2, 
-            CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev ) ;
+            CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev,
+     &           GeoidOffset ) ; !sb20210820 GeoidOffset is added.
             FIRST_ENTER = .FALSE. ;
          END IF
          !
