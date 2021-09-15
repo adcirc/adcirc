@@ -727,7 +727,6 @@ C        WJP 02.24.2018 Get the righthand side momentum
 
 C...     DW, absorbing layers
          IF (MOM_SPONGE) THEN
-CSB 2021-09-08 Multiply DTO2 to balance with the terms of UU1 and UU2
            MOM_LV_X(I) = NCI*(MOM_LV_X(I) + 
      &          DTO2*SPNGCOEF_X*(uu2_AbsLayer(I) + uu1_AbsLayer(I)))
 
