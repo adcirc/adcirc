@@ -252,6 +252,8 @@ module adc_cap
   logical, save:: first_import_atm = .true. ;
   logical, save:: first_import_wav = .true. ;
 
+  real,parameter :: wave_force_limmit = 0.05
+
 !  real,parameter :: wave_force_limmit = 0.05
 !++ GML  0.01 work for AKUT mesh
   real,parameter :: wave_force_limmit = 0.001
@@ -1424,6 +1426,13 @@ module adc_cap
 
         call UPDATER( WVNX2(:), WVNY2(:), PRN2(:),3)
 
+        call UPDATER( WVNX2(:), WVNY2(:), PRN2(:),3)
+!  DW
+        if ( ice_forcing ) then
+          call UPDATER( CICE1(:), dumy1(:), dumy1(:),3)
+          call UPDATER( CICE2(:), dumy1(:), dumy1(:),3)
+        endif
+
 !c  DW, Sep 2021
 !c   -- Nearest extrapolation in time for the first imported step
         if ( first_import_atm  ) then
@@ -1431,23 +1440,36 @@ module adc_cap
             WVNY1 = WVNY2 ;
             PRN1 = PRN2   ;
 
+            if ( ice_forcing ) then
+              CICE1 = CICE2 ;
+            endif
+
             first_import_atm = .false. ;
         end if
-!c
  !       if (first_exchange .and. sum(PRN1) .le. 1.0) then
+!c
  !      ! DW:  band-aid fix by zeroing out wind velocity and atm pressure.
  !      !      Todo: look at atmesh code to see if there could be a better fix.
 !        if ( first_exchange .or. sum(PRN1)  .le. 1.0) then
+!
 !          WVNX2 = 1e-10
 !          WVNY2 = 1e-10
 !          WVNX1 = 1e-10
 !          WVNY1 = 1e-10
-
+!
 !          PRN2 = 10.0  !hard coded to handel the 1st exchange zeros problem :TODO! Need to resolve this!
 !          PRN1 = PRN2
+!!++ GML 20210308
+!          RSNX1 = 0.0d0
+!          RSNY1 = 0.0d0
+!          RSNX2 = 0.0d0
+!          RSNY2 = 0.0d0
+!          CICE1 = 0.0d0
+!          CICE2 = 0.0d0
+!!++
 !          first_exchange = .false.
 !        end if
-
+!
 
 
  !       WRITE(*,'(A,4E)') "  In ModelAdvance() 3:" , MAXVAL(WVNX1), MAXVAL(WVNX2), &
@@ -1561,59 +1583,66 @@ module adc_cap
     !-------------------------------------------
 
 
-    IF (surge_forcing) THEN
-      !------------------------------------------------------------
-      ! Exported fields from ADCIRC: pack and send exported fields
-      !------------------------------------------------------------
-      !--- (FIELD 1): PACK and send zeta
-      ALLOCATE(dataPtr_zeta(mdataOut%NumOwnedNd))
+    if (surge_forcing) then
+      !-----------------------------------------
+      !   EXPORT
+      !-----------------------------------------
+      !pack and send exported fields
+      !allocate (tmp(mdataOut%NumOwnedNd))
 
-      CALL State_GetFldPtr_(ST = exportState, fldName = 'zeta', fldPtr = dataPtr_zeta, &
-                            rc = rc, dump = .FALSE., timeStr = timeStr)
-      IF (ESMF_LogFoundError(rcToCheck = rc, msg = ESMF_LOGERR_PASSTHRU, &
-          line = __LINE__,  &
-          file = __FILE__)) &
-        RETURN  ! bail out
+      ! >>>>> PACK and send ZETA
+      call State_getFldPtr_(ST=exportState,fldname='zeta',fldptr=dataPtr_zeta, &
+        rc=rc,dump=.true.,timeStr=timeStr)
+      !call State_getFldPtr(ST=exportState,fldname='zeta',fldptr=dataPtr_zeta, &
+      !  rc=rc)
 
-      ! Fill only owned nodes for dataPtr_zeta vector
-      DO i1 = 1, mdataOut%NumOwnedNd, 1
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+
+      !fill only owned nodes for tmp vector
+      do i1 = 1, mdataOut%NumOwnedNd, 1
+          !tmp(i1) = ETA2(mdataOut%owned_to_present_nodes(i1))
         dataPtr_zeta(i1) = ETA2(mdataOut%owned_to_present_nodes(i1))
-      END DO
+      end do
+      !assign to field
+      !dataPtr_zeta = tmp
+      !----------------------------------------
+      ! >>>>> PACK and send VELX
+      call State_getFldPtr(ST=exportState,fldname='velx',fldptr=dataPtr_velx,rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
 
-      !--- (FIELD 2): PACK and send velx
-      ALLOCATE(dataPtr_velx(mdataOut%NumOwnedNd))
+      !fill only owned nodes for tmp vector
+      do i1 = 1, mdataOut%NumOwnedNd, 1
+          !tmp(i1) = UU2(mdataOut%owned_to_present_nodes(i1))
+         dataPtr_velx(i1) = UU2(mdataOut%owned_to_present_nodes(i1))
+      end do
+      !assign to field
+      !dataPtr_velx = tmp
+      !----------------------------------------
+      ! >>>>> PACK and send VELY
+      call State_getFldPtr(ST=exportState,fldname='vely',fldptr=dataPtr_vely,rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
 
-      CALL State_GetFldPtr_(ST = exportState, fldName = 'velx', fldPtr = dataPtr_velx, &
-                            rc = rc, dump = .FALSE., timeStr = timeStr)
-      IF (ESMF_LogFoundError(rcToCheck = rc, msg = ESMF_LOGERR_PASSTHRU, &
-          line = __LINE__,  &
-          file = __FILE__)) &
-        RETURN  ! bail out
-
-      ! Fill only owned nodes for dataPtr_velx vector
-      DO i1 = 1, mdataOut%NumOwnedNd, 1
-        dataPtr_velx(i1) = UU2(mdataOut%owned_to_present_nodes(i1))
-      END DO
-
-      !--- (FIELD 3): PACK and send velx
-      ALLOCATE(dataPtr_vely(mdataOut%NumOwnedNd))
-
-      CALL State_GetFldPtr_(ST = exportState, fldName = 'vely', fldPtr = dataPtr_vely, &
-                            rc = rc, dump = .FALSE., timeStr = timeStr)
-      IF (ESMF_LogFoundError(rcToCheck = rc, msg = ESMF_LOGERR_PASSTHRU, &
-          line = __LINE__,  &
-          file = __FILE__)) &
-        RETURN  ! bail out
-
-      ! Fill only owned nodes for dataPtr_vely vector
-      DO i1 = 1, mdataOut%NumOwnedNd, 1
+      !fill only owned nodes for tmp vector
+      do i1 = 1, mdataOut%NumOwnedNd, 1
+          !tmp(i1) = VV2(mdataOut%owned_to_present_nodes(i1))
         dataPtr_vely(i1) = VV2(mdataOut%owned_to_present_nodes(i1))
-      END DO
-    ELSE
+      end do
+      !assign to field
+      !dataPtr_vely = tmp
+    else
       write(info,*) subname,' --- no surge forcing for wave. 1way coupled WW3 -> ADC  ---'
       call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
       !print *, info
-    END IF
+    endif
 
     !----------------------------------------
 !
