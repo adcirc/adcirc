@@ -423,19 +423,19 @@ ifeq ($(compiler),intel-ND)
   CFLAGS        := $(INCDIRS) -O3 -m64 -mcmodel=medium -DLINUX
   FLIBS         := 
   ifeq ($(DATETIME),enable)
-     DATETIMEHOME  := $(SRCDIR)/lib/datetime-fortran-master/build/
+     DATETIMEHOME  := /pontus/gling/ADCIRC_Codes/adcirc-cg-GLOBAL_WP_20200513/lib/datetime-fortran/
      FLIBS         := -ldatetime -L$(DATETIMEHOME)lib/
   endif
   ifeq ($(GRIB2),enable)
-     WGRIB2HOME    := $(SRCDIR)/lib/grib2/lib/
+     WGRIB2HOME    := /pontus/gling/ADCIRC_Codes/adcirc-cg-GLOBAL_WP_20200513/lib/grib2/lib/
      FLIBS         := $(FLIBS) -lwgrib2_api -lwgrib2 -ljasper -L$(WGRIB2HOME)
   endif
   ifeq ($(DEBUG),full)
      CFLAGS     := $(INCDIRS) -g -O0 -m64 -march=k8 -mcmodel=medium -DLINUX
   endif
   ifeq ($(NETCDF),enable)
-     HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
-     #HDF5HOME=/opt/crc/h/hdf5/intel/18.0/build/lib/      
+     #HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
+     HDF5HOME=/opt/crc/n/netcdf/4.7.0/intel/18.0      
      FLIBS      := $(FLIBS) -lnetcdff -L$(HDF5HOME) 
   endif
 # ------------
