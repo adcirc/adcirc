@@ -529,12 +529,15 @@ c
          sigma(1) = b
          do n=2,nfen-1
             sig0 = b + (a-b)*deta*(n-1)
- 10         sigma(n)= b - (a-b)*Sstar/H*(log(1.d0+H/Sb*(sig0-b)/(a-b))
-     +           -denom*deta*(n-1))
-            if(abs(sigma(n)-sig0).ge.1.d-8)then
-               sig0 = sigma(n)
-               goto 10
-            endif
+            do while(.true.)
+               sigma(n)= b - (a-b)*Sstar/H*(log(1.d0+H/Sb*(sig0-b)/(a-b))
+     +              -denom*deta*(n-1))
+               if(abs(sigma(n)-sig0).ge.1.d-8)then
+                  sig0 = sigma(n)
+                  cycle
+               endif
+               exit
+            enddo
          enddo
          sigma(nfen) = a
 c

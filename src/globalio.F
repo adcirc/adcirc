@@ -1808,12 +1808,16 @@ C
 
 C...  go get new record for only some nodes, all
 C...  other nodes keep their current value
- 170  READ(lun,'(A80)') CDUM80
-      IF(CDUM80(2:2).EQ.'#') GOTO 170
- 171  READ(CDUM80,'(I8,E13.5)') IJK,tmpval    
-      if (tmpval.ne.defval) RVAL(IJK) = tmpval  !this allows us to exclude values included for record separation purposes in the parallel version
-      READ(lun,'(A80)',end=172) CDUM80
-      IF(CDUM80(2:2).NE.'#') GOTO 171
+      DO WHILE (.TRUE.)
+         READ(lun,'(A80)') CDUM80
+         IF(CDUM80(2:2).NE.'#') EXIT
+      ENDDO
+      DO WHILE (.TRUE.)
+         READ(CDUM80,'(I8,E13.5)') IJK,tmpval    
+         if (tmpval.ne.defval) RVAL(IJK) = tmpval  !this allows us to exclude values included for record separation purposes in the parallel version
+         READ(lun,'(A80)',end=172) CDUM80
+         IF(CDUM80(2:2).EQ.'#') EXIT
+      ENDDO
  172  CONTINUE
  
 #if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
