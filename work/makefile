@@ -368,11 +368,7 @@ COUP_MSRC  =  couple2swan.F
 KDTREE_MSRC = kdtree2.F
 XDMF_MSRC = xdmfio.F
 # DW sponge layer
-<<<<<<< HEAD
-SPG_MSRC = quadtrature.F sponge_layer.F
-=======
 SPG_MSRC = quadrature.F sponge_layer.F
->>>>>>> upstream/master
 # WJP 3D baroclinic coupling
 BC3D_MSRC = couple2baroclinic3D.F
 

@@ -1480,17 +1480,7 @@ C...
 C...
 C...  READ AND PROCESS NTIP - TIDAL POTENTIAL FORCING
 C...
-      if (mod(IMDig6,4).eq.0) then
-         ! WJP: read speed of sound and Ali's dispersion relation coefficients
-         READ(15,*) NTIP, Cs, Ad, Bd
-         if (Cs.le.0.0_SZ) then
-             Cs2 = huge(0.0_SZ)
-         else
-             Cs2 = Cs*Cs
-         endif
-      else
-         READ(15,*) NTIP
-      endif
+      READ(15,*) NTIP
       IF((NTIP.LT.0).OR.(NTIP.GT.2)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
@@ -1540,12 +1530,6 @@ C...
          WRITE(16,239)
  239     FORMAT(9X,'SELF ATTRACTION/LOAD TIDE FORCING IS ALSO USED ',
      &        'IN THE COMPUTATION')
-      ENDIF
-      if (mod(IMDig6,4).eq.0) then
-         ! WJP: read Ali's dispersion relation coefficients
-         WRITE(16,*) '     Speed of sound squared = ',Cs2
-         WRITE(16,2399) Ad, Bd
- 2399    FORMAT(/,5X,'Ali Disp coefs: Ad = ',F13.10,', Bd = ',F10.7)
       ENDIF
 C...
 C...  READ AND PROCESS NWS - WIND AND PRESSURE FORCING & WAVE RADIATION
