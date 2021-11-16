@@ -43,17 +43,15 @@ C
       DO I=1, LEN(DIR1)
          IF (DIR1(I:I).EQ.' ') THEN
            LEN1 = I-1
-           GO TO 100
+           EXIT
          ENDIF
       ENDDO
-100   CONTINUE
       DO I=1, LEN(DIR2)
          IF (DIR2(I:I).EQ.' ') THEN
            LEN2 = I-1
-           GO TO 200
+           EXIT
          ENDIF
       ENDDO
-200   CONTINUE
 C
       FNAME1 = DIR1(1:LEN1)//'/fort.63'
       FNAME2 = DIR2(1:LEN2)//'/fort.63'
@@ -337,17 +335,15 @@ C
       DO I=1, LEN(DIR1)
          IF (DIR1(I:I).EQ.' ') THEN
            LEN1 = I-1
-           GO TO 100
+           EXIT
          ENDIF
       ENDDO
-100   CONTINUE
       DO I=1, LEN(DIR2)
          IF (DIR2(I:I).EQ.' ') THEN
            LEN2 = I-1
-           GO TO 200
+           EXIT
          ENDIF
       ENDDO
-200   CONTINUE
 C
       FNAME1 = DIR1(1:LEN1)//'/fort.64'
       FNAME2 = DIR2(1:LEN2)//'/fort.64'

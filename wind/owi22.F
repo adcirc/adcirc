@@ -56,14 +56,14 @@ c
       Penv=1013d0         !mb
 
 ! Open Atlantic grid file ----------------------------------------------
-
-  31  WRITE(*,*) 'Enter the name of the ADCIRC UNIT 14 file:'
-      READ(*,'(A60)') FNAME
-      INQUIRE(FILE=FNAME,EXIST=FOUND)
-      IF(FOUND) GOTO 32
-      WRITE(*,1010) FNAME
-      GOTO 31
-  32  WRITE(*,1011) FNAME
+      FOUND = .FALSE.
+      DO WHILE(.NOT.FOUND)
+         WRITE(*,*) 'Enter the name of the ADCIRC UNIT 14 file:'
+         READ(*,'(A60)') FNAME
+         INQUIRE(FILE=FNAME,EXIST=FOUND)
+         IF(.NOT.FOUND) WRITE(*,1010) FNAME
+      ENDDO
+      WRITE(*,1011) FNAME
 1010  FORMAT(' File ',A60,/,' WAS NOT FOUND!  Try again',/)
 1011  FORMAT(' File ',A60,/,' WAS FOUND!  Opening & Processing file',/)
 
@@ -96,27 +96,30 @@ c
 
 ! Ask if there is region-scale files  ----------------------------------
 
-  46  WRITE(*,*) 'Do you have region-scale files?  (YES:1,NO:0)'
-      READ(*,*) idummy
+      DO WHILE(.TRUE.)
+         WRITE(*,*) 'Do you have region-scale files?  (YES:1,NO:0)'
+         READ(*,*) idummy
 
-      IF(idummy.eq.1) THEN
-         SkipRegion = .FALSE.
-      ELSE IF(idummy.eq.0) THEN
-         SkipRegion = .TRUE.
-      ELSE
-         GOTO 46
-      ENDIF
+         IF(idummy.eq.1) THEN
+            SkipRegion = .FALSE.
+            EXIT
+         ELSE IF(idummy.eq.0) THEN
+            SkipRegion = .TRUE.
+            EXIT
+         ENDIF
+      ENDDO
 
 
 ! Oceanweather basin win file -------------------------------------------------
 
-  51  WRITE(*,*) 'Enter the name of the OWI Basin .win file:'
-      READ(*,'(A60)') FNAME
-      INQUIRE(FILE=FNAME,EXIST=FOUND)
-      IF(FOUND) GOTO 52
-      WRITE(*,1010) FNAME
-      GOTO 51
-  52  WRITE(*,1011) FNAME
+      FOUND = .FALSE.
+      DO WHILE(.NOT.FOUND)
+         WRITE(*,*) 'Enter the name of the OWI Basin .win file:'
+         READ(*,'(A60)') FNAME
+         INQUIRE(FILE=FNAME,EXIST=FOUND)
+         IF(.NOT.FOUND) WRITE(*,1010) FNAME
+      ENDDO
+      WRITE(*,1011) FNAME
 
       open(31,file=fname)
 
@@ -128,13 +131,14 @@ c
 
 ! Oceanweather basin pre file ------------------------------------------------
 
-  61  WRITE(*,*) 'Enter the name of the OWI Basin .pre file:'
-      READ(*,'(A60)') FNAME
-      INQUIRE(FILE=FNAME,EXIST=FOUND)
-      IF(FOUND) GOTO 62
-      WRITE(*,1010) FNAME
-      GOTO 61
-  62  WRITE(*,1011) FNAME
+      FOUND = .FALSE.
+      DO WHILE(.NOT.FOUND)
+         WRITE(*,*) 'Enter the name of the OWI Basin .pre file:'
+         READ(*,'(A60)') FNAME
+         INQUIRE(FILE=FNAME,EXIST=FOUND)
+         IF(.NOT.FOUND) WRITE(*,1010) FNAME
+      ENDDO
+      WRITE(*,1011) FNAME
 
       open(41,file=fname)
 
@@ -153,47 +157,49 @@ c
 
 ! Oceanweather region win file -----------------------------------------------
 
-      IF(SkipRegion) GOTO 83
+      IF(.NOT.SkipRegion) THEN
 
-  71  WRITE(*,*) 'Enter the name of the OWI Region .win file:'
-      READ(*,'(A60)') FNAME
-      INQUIRE(FILE=FNAME,EXIST=FOUND)
-      IF(FOUND) GOTO 72
-      WRITE(*,1010) FNAME
-      GOTO 71
-  72  WRITE(*,1011) FNAME
+         FOUND = .FALSE.
+         DO WHILE(.NOT.FOUND)
+            WRITE(*,*) 'Enter the name of the OWI Region .win file:'
+            READ(*,'(A60)') FNAME
+            INQUIRE(FILE=FNAME,EXIST=FOUND)
+            IF(.NOT.FOUND) WRITE(*,1010) FNAME
+         ENDDO
+         WRITE(*,1011) FNAME
 
-      open(32,file=fname)
+         open(32,file=fname)
 
-      ! Read in begining/ending dates of .win file
-      read(32,10) title,date1w,title,date2w
+         ! Read in begining/ending dates of .win file
+         read(32,10) title,date1w,title,date2w
 
 
 ! Oceanweather region pre file -----------------------------------------------
 
-  81  WRITE(*,*) 'Enter the name of the OWI Region .pre file:'
-      READ(*,'(A60)') FNAME
-      INQUIRE(FILE=FNAME,EXIST=FOUND)
-      IF(FOUND) GOTO 82
-      WRITE(*,1010) FNAME
-      GOTO 81
-  82  WRITE(*,1011) FNAME
+         FOUND = .FALSE.
+         DO WHILE(.NOT.FOUND)
+            WRITE(*,*) 'Enter the name of the OWI Region .pre file:'
+            READ(*,'(A60)') FNAME
+            INQUIRE(FILE=FNAME,EXIST=FOUND)
+            IF(.NOT.FOUND) WRITE(*,1010) FNAME
+         ENDDO
+         WRITE(*,1011) FNAME
 
-      open(42,file=fname)
+         open(42,file=fname)
 
-      ! Read in begining/ending dates of .pre file
-      read(42,10) title,date1p,title,date2p
+         ! Read in begining/ending dates of .pre file
+         read(42,10) title,date1p,title,date2p
 
-      if(date1w.ne.date1p.or.date2w.ne.date2p) then
-         print *, 'HEADER INFO IN WIN AND PRE FILES DO NOT MATCH'
-         print *, 'EXECUTION WILL BE TERMINATED'
-         stop
-      endif
+         if(date1w.ne.date1p.or.date2w.ne.date2p) then
+            print *, 'HEADER INFO IN WIN AND PRE FILES DO NOT MATCH'
+            print *, 'EXECUTION WILL BE TERMINATED'
+            stop
+         endif
 
-      date1R = date1w
-      date2R = date2w
+         date1R = date1w
+         date2R = date2w
 
-  83  CONTINUE
+      ENDIF ! SkipRegion
 
 
 ! Open first file ------------------------------------------------------------
@@ -282,19 +288,17 @@ c
                      if (Atlonglat(i,1)>=longB(j) .and.  
      &                      Atlonglat(i,1)<longB(j+1)) then
                         xi=j
-                        goto 200
+                        exit
                      endif
                   enddo
-200               continue
                   
                   do k=1,iLatB-1
                      if (Atlonglat(i,2)>=latB(k) .and. 
      &                      Atlonglat(i,2)<latB(k+1)) then
                         yi=k
-                        goto 300
+                        exit
                      endif
                   enddo
-300               continue
 
                   swpointsB(i,1) = xi
                   swpointsB(i,2) = yi
@@ -337,155 +341,151 @@ c
 
 !Process Region Info  --------------------------------------------------------
          
-         regionExists = 0
+         regionExists = 1
 
 !         print *, iCYMDHB, date1R
 !         print *, iCYMDHB, date2R
-         if(SkipRegion) goto 10000
-         if(iCYMDHB.lt.date1R) goto 10000
-         if(iCYMDHB.eq.date2R.and.iMinR.ne.0) goto 10000
-         if(iCYMDHB.gt.date2R) goto 10000
+         if(SkipRegion) regionExists = 0
+         if(iCYMDHB.lt.date1R) regionExists = 0
+         if(iCYMDHB.eq.date2R.and.iMinR.ne.0) regionExists = 0
+         if(iCYMDHB.gt.date2R) regionExists = 0
 
-         regionExists = 1
+         if (regionExists .eq. 1) then
+            ! Increment counter         
+            isnapR = isnapR+1
 
-         ! Increment counter         
-         isnapR = isnapR+1
-
-         ! Read Grid Specifications/Date
-         read (32,11,end=9999) 
+            ! Read Grid Specifications/Date
+            read (32,11,end=9999) 
      &        iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
 
-         ! Read Grid Specifications/Date
-         read (42,11,end=9999) 
+            ! Read Grid Specifications/Date
+            read (42,11,end=9999) 
      &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
 
-         if(iLatw.ne.iLatp.or.iLongw.ne.iLongp.or.dxw.ne.dxp.or.
+            if(iLatw.ne.iLatp.or.iLongw.ne.iLongp.or.dxw.ne.dxp.or.
      &         dyw.ne.dyp.or.swlatw.ne.swlatp.or.swlongw.ne.swlongp.or.
      &         iCYMDHw.ne.iCYMDHp.or.iMinw.ne.iMinp) then
-            print *, 'SNAPSHOT HEADER IN WIN AND PRE FILES DO NOT MATCH'
-            print *, 'EXECUTION WILL BE TERMINATED'
-            stop
+               print *, 'SNAPSHOT HEADER IN WIN AND PRE FILES DO NOT MATCH'
+               print *, 'EXECUTION WILL BE TERMINATED'
+               stop
 
-         endif
+            endif
 
-         ! Check if header info has changed from the previous snapshot
-         if(isnapR.gt.1) then
-            if(iLatw.ne.iLatR.or.iLongw.ne.iLongR.or.dxw.ne.dxR.or. 
+            ! Check if header info has changed from the previous snapshot
+            if(isnapR.gt.1) then
+               if(iLatw.ne.iLatR.or.iLongw.ne.iLongR.or.dxw.ne.dxR.or. 
      &            dyw.ne.dyR.or.swlatw.ne.swlatR.or.
      &            swlongw.ne.swlongR) then
-               updateR = 1
-            else
-               updateR = 0
+                  updateR = 1
+               else
+                  updateR = 0
+               endif
+
             endif
 
-         endif
 
+            iCYMDHR = iCYMDHw
+            iMinR = iMinw
 
-         iCYMDHR = iCYMDHw
-         iMinR = iMinw
-
-         if(iCYMDHB.ne.iCYMDHR.or.iMinB.ne.iMinR) then
-            print *, 'SNAPSHOTS NOT SYNCRONIZED'
-            print *, '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
-            print *, '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
-            print *, 'EXECUTION WILL BE TERMINATED'
-            stop
+            if(iCYMDHB.ne.iCYMDHR.or.iMinB.ne.iMinR) then
+               print *, 'SNAPSHOTS NOT SYNCRONIZED'
+               print *, '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
+               print *, '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
+               print *, 'EXECUTION WILL BE TERMINATED'
+               stop
             
-         endif
-
-         if(updateR.eq.1) then
-            print *, 'REGION COORDINATE UPDATED'
-
-            iLatR = iLatw
-            iLongR = iLongw
-            dxR = dxw
-            dyR = dyw
-            swlatR = swlatw
-            swlongR = swlongw
- 
-            ! Number of grid points
-            nnR=iLatR*iLongR
-
-
-            ! Allocate and create matrices
-            if(isnapR.ne.1) then
-               deallocate(uR,vR,pR,longR,latR,swpointsR,wR)
             endif
 
-            allocate(uR(iLongR,iLatR),vR(iLongR,iLatR),pR(iLongR,iLatR))
-            allocate(longR(iLongR),latR(iLatR))
+            if(updateR.eq.1) then
+               print *, 'REGION COORDINATE UPDATED'
 
-            ! Generate long&lat on each grid point
-            do i=1,iLatR
-               latR(i) = swlatR+(i-1)*dyR
-            enddo
-            do i=1,iLongR
-               longR(i) = swlongR+(i-1)*dxR
-            enddo
+               iLatR = iLatw
+               iLongR = iLongw
+               dxR = dxw
+               dyR = dyw
+               swlatR = swlatw
+               swlongR = swlongw
+ 
+               ! Number of grid points
+               nnR=iLatR*iLongR
 
-            ! Generate interpolation info (south west point and weights)
-            do i=1,nnAtl
-               if (Atlonglat(i,1)>=longR(1) .and. 
+
+               ! Allocate and create matrices
+               if(isnapR.ne.1) then
+                  deallocate(uR,vR,pR,longR,latR,swpointsR,wR)
+               endif
+
+               allocate(uR(iLongR,iLatR),vR(iLongR,iLatR),pR(iLongR,iLatR))
+               allocate(longR(iLongR),latR(iLatR))
+
+               ! Generate long&lat on each grid point
+               do i=1,iLatR
+                  latR(i) = swlatR+(i-1)*dyR
+               enddo
+               do i=1,iLongR
+                  longR(i) = swlongR+(i-1)*dxR
+               enddo
+
+               ! Generate interpolation info (south west point and weights)
+               do i=1,nnAtl
+                  if (Atlonglat(i,1)>=longR(1) .and. 
      &                Atlonglat(i,1)<longR(iLongR) .and. 
      &                Atlonglat(i,2)>=latR(1) .and. 
      &                Atlonglat(i,2)<latR(iLatR)) then
-                  do j=1,iLongR-1
-                     if (Atlonglat(i,1)>=longR(j) .and. 
+                     do j=1,iLongR-1
+                        if (Atlonglat(i,1)>=longR(j) .and. 
      &                      Atlonglat(i,1)<longR(j+1)) then
-                        xi=j
-                        goto 201
-                     endif
-                  enddo
-201               continue
+                           xi=j
+                           exit
+                        endif
+                     enddo
                   
-                  do k=1,iLatR-1
-                     if (Atlonglat(i,2)>=latR(k) .and. 
+                     do k=1,iLatR-1
+                        if (Atlonglat(i,2)>=latR(k) .and. 
      &                      Atlonglat(i,2)<latR(k+1)) then
-                        yi=k
-                        goto 301
-                     endif
-                  enddo
-301               continue
+                           yi=k
+                           exit
+                        endif
+                     enddo
 
-                  swpointsR(i,1) = xi
-                  swpointsR(i,2) = yi
+                     swpointsR(i,1) = xi
+                     swpointsR(i,2) = yi
 
-                  w=(longR(xi+1)-longR(xi))*
+                     w=(longR(xi+1)-longR(xi))*
      &                 (latR(yi+1)-latR(yi))
-                  w1=(longR(xi+1)-Atlonglat(i,1))*
+                     w1=(longR(xi+1)-Atlonglat(i,1))*
      &                 (latR(yi+1)-Atlonglat(i,2))
-                  w2=(Atlonglat(i,1)-longR(xi))*
+                     w2=(Atlonglat(i,1)-longR(xi))*
      &                 (latR(yi+1)-Atlonglat(i,2))
-                  w3=(Atlonglat(i,1)-longR(xi))*
+                     w3=(Atlonglat(i,1)-longR(xi))*
      &                 (Atlonglat(i,2)-latR(yi))
-                  w4=(longR(xi+1)-Atlonglat(i,1))*
+                     w4=(longR(xi+1)-Atlonglat(i,1))*
      &                 (Atlonglat(i,2)-latR(yi))
 
-                  wR(i,1)=w1/w
-                  wR(i,2)=w2/w
-                  wR(i,3)=w3/w
-                  wR(i,4)=w4/w
-               else
-                  swpointsR(i,1) = 0
-                  swpointsR(i,2) = 0
+                     wR(i,1)=w1/w
+                     wR(i,2)=w2/w
+                     wR(i,3)=w3/w
+                     wR(i,4)=w4/w
+                  else
+                     swpointsR(i,1) = 0
+                     swpointsR(i,2) = 0
 
-               endif
-            enddo
-         endif
+                  endif
+               enddo
+            endif
 
       
-         ! Read u/v components of the wind
-         read(32,12) ((uR(i,j),i=1,iLongR),j=1,iLatR)
-         read(32,12) ((vR(i,j),i=1,iLongR),j=1,iLatR)
+            ! Read u/v components of the wind
+            read(32,12) ((uR(i,j),i=1,iLongR),j=1,iLatR) 
+            read(32,12) ((vR(i,j),i=1,iLongR),j=1,iLatR)
 
-         uR(:,:) = 1.943844492d0*uR(:,:)
-         vR(:,:) = 1.943844492d0*vR(:,:)
+            uR(:,:) = 1.943844492d0*uR(:,:)
+            vR(:,:) = 1.943844492d0*vR(:,:)
 
-         ! Read pressure
-         read(42,12) ((pR(i,j),i=1,iLongR),j=1,iLatR)
+            ! Read pressure
+            read(42,12) ((pR(i,j),i=1,iLongR),j=1,iLatR)
 
-
-10000    continue
+         endif ! regionExists .eq. 1
          
 
 !Interpolate onto ADCIRC grid and write to file -------------------------

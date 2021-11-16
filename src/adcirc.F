@@ -148,7 +148,7 @@ C
                ! a series of two or three numbers with two digits 
                ! separated by dots, e.g., 51.02 or 51.52.07
                write(6,'(a)') trim(adc_version)                 
-               stop
+               CALL EXIT(0) 
             case default
                ! do nothing, this is some other command line argument
             end select
@@ -532,7 +532,7 @@ C
         CALL MSG_FINI()
       ENDIF
 #endif
-      STOP 1 
+      CALL EXIT(1) 
 C
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable

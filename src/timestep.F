@@ -90,6 +90,7 @@ C.....sb46.28sb03 added 09/xx/2006
      &     Apply2DBottomFriction,
      &     Apply2DInternalWaveDrag,
      &     Apply3DBottomFriction
+     &    ,GeoidOffset
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS, 
      &    writeFort066, writeFort067, writeFort065, 
      &    readFort020, readFort021, readFort019 
@@ -396,7 +397,8 @@ C.............................DW, sponge layer ..................
          !
          IF ( .NOT. FIRST_ENTER ) THEN
             !c u_{ext}^{n + 1} -- > eta2, 
-            CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev ) ;
+            CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev,
+     &           GeoidOffset ) 
          ELSE
 
             RampTMP = RampElev ;
@@ -408,13 +410,15 @@ C.............................DW, sponge layer ..................
                
                !  u_{ext}^{n + 1 - istep} --> uu2
                CALL GETABSLAYEREXT( IT - istep, TimeLoc - istep*DTDP,
-     &              TimeH - istep*DTDP, RampTMP ) ;
+     &              TimeH - istep*DTDP, RampTMP,
+     &              GeoidOffset ) 
 
                CALL SPONGE_SHIFT_SOLN( ) ; 
                ! eta1 --> eta0, eta2 --> eta1, u2 --> u1          
             END DO
             !c u_{ext}^{n + 1} -- > eta2, 
-            CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev ) ;
+            CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev,
+     &           GeoidOffset ) 
             FIRST_ENTER = .FALSE. ;
          END IF
          !
@@ -717,9 +721,7 @@ Casey 090302: Added these lines for output to the rads.64 file.
 
 C     jgf48.4627 Skip past GWCE and momentum calculations if only
 C     meteorological output was requested.
-      IF (METONLY) THEN
-         goto 9999
-      ENDIF
+      IF (.NOT.METONLY) THEN
 
 C   kmd48.33 - added in information for the elevation boundary conditions
 C              used in prognostic runs. The diagnostic information is read
@@ -1079,7 +1081,7 @@ C...  End of 2D Scalar Transport Solution
 C...
 C     jgf48.4627 Jump to here if METONLY is .TRUE., i.e., if only
 C     meteorological output is requested.
-9999  CONTINUE
+      ENDIF
 C...
 C...  Collect maximum values of variables   v46.50 sb 11/11/2006
       call collectMinMaxData(timeloc)
@@ -1252,7 +1254,7 @@ C     output the global node number to debug the local PE fort.14s
          IF( ErrorElevExceeded /= 0 ) THEN    !  Finalize MPI Environment,
            Flag_ElevError = .true. 
            CALL MSG_FINI()                    !  if there are Error Elvation nodes.
-           STOP 1                             !
+           CALL EXIT(1)                             !
          ENDIF                                !st3
 #else
          IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
@@ -1685,8 +1687,7 @@ c******************************************************************************
       USE MESH, ONLY : NE, NM, FDXE, FDYE, NP, DP, AREAS, NODELE, 
      &      NEITABELE, NEITAB, NNEIGH, TOTALAREA,
      &      SFacEle, SFMYEle, SFMXEle
-      USE Couple2BC3D, ONLY : Update_BC3D_Info, FBPG_Disp_from_BC3D,
-     &                        Put_BC3D_on_ADCIRC_Grid
+      USE Couple2BC3D, ONLY : Update_BC3D_Info, FBPG_Disp_from_BC3D
       IMPLICIT NONE
     
       INTEGER,INTENT(IN) :: IT 
@@ -1715,7 +1716,7 @@ c******************************************************************************
       REAL(SZ) :: VIDBCPDXOHAvgArea,VIDBCPDYOHAvgArea
 
       ! For the Coupling to 3D Baroclinic mode 
-      IF (ABS(IDEN).ge.5) THEN
+      IF (abs(IDEN).ge.5) THEN
          ! Update the 3D BC Information for the current timestep 
          call Update_BC3D_Info(IDEN,TimeLoc) 
 
@@ -1724,8 +1725,7 @@ c******************************************************************************
             ! momentum dispersion terms required at every timestep
             ! from the 3D BC information that is on a longer time scale 
             call FBPG_Disp_from_BC3D()
-         endif
-        
+         endif 
          RETURN
       ENDIF  
      
@@ -2745,7 +2745,7 @@ C**********************************************************************
           End Do
           If ( sum_Weights < 1.0d-6 ) Then
              Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-             Stop
+             CALL EXIT(1)
           End If
          Weights (:) = Weights (:) / sum_Weights
          ! 2.3 debug

@@ -212,6 +212,7 @@ C
             QNIN1(J)=0.D0
             IF ((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &          .OR.(LBCODEI(J).EQ.22)) THEN
+               READ(20,*) QNIN1(J)
             ELSEIF (LBCODEI(J).EQ.32) THEN
                READ(20,*) QNIN1(J),ENIN1(J)
             ENDIF
@@ -320,7 +321,7 @@ C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
 
 #ifdef ADCNETCDF     
       ! For the Coupling to 3D Baroclinic mode 
-      IF (C2DDI.and.CBaroclinic.and.IDEN.ge.5) THEN
+      IF (C2DDI.and.CBaroclinic.and.abs(IDEN).ge.5) THEN
          call Initial_BC3D_NetCDF(STATIM*86400.d0)
       endif
 #endif       

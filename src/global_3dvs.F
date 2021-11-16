@@ -529,12 +529,15 @@ c
          sigma(1) = b
          do n=2,nfen-1
             sig0 = b + (a-b)*deta*(n-1)
- 10         sigma(n)= b - (a-b)*Sstar/H*(log(1.d0+H/Sb*(sig0-b)/(a-b))
-     +           -denom*deta*(n-1))
-            if(abs(sigma(n)-sig0).ge.1.d-8)then
-               sig0 = sigma(n)
-               goto 10
-            endif
+            do while(.true.)
+               sigma(n)= b - (a-b)*Sstar/H*(log(1.d0+H/Sb*(sig0-b)/(a-b))
+     +              -denom*deta*(n-1))
+               if(abs(sigma(n)-sig0).ge.1.d-8)then
+                  sig0 = sigma(n)
+                  cycle
+               endif
+               exit
+            enddo
          enddo
          sigma(nfen) = a
 c
@@ -573,7 +576,7 @@ c
      &           '  0=Terminate/1=continue. ****'
             write(screenunit,*) '  '
             read(*,*) ians
-            if(ians.ne.1) stop
+            if(ians.ne.1) CALL EXIT(1)
             num = nfen/2
          else
             num=(nfen-1)/2
@@ -627,7 +630,7 @@ c
      &   /,'choices for specifying the vertical grid spacing in 3D.',
      &   /,'Please specify a value for igc from 0 to 6.',
      &   /,'**ADCIRC run terminated due to bad value for igc.**')
-         stop
+         CALL EXIT(1)
 
       end select
 

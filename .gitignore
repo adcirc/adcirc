@@ -1,3 +1,4 @@
+# executables
 adcirc
 padcirc
 adcprep
@@ -10,22 +11,36 @@ aswip
 p15
 adcswan
 padcswan
-build13
-build12
-libadc.a
+
+# compiled module and object files
 *.o
 *.mod
+*.smod
+
+# intermediate build files
 odir*
 actualflags.txt
 .swanlastcompile
 changelog
 version.F
+adcircResultsComparison
+lib/
+work/libadc.a
+build/
+build13
+build12
+config.h
+
+# thirdparty files
 *.sw*
 swan/*.f
 swan/*.f90
-adcircResultsComparison
-lib/
-swan/*.f90
-swan/*.f
-build/
-config.h
+thirdparty/nuopc/libadc_cap.a
+thirdparty/nuopc/adcirc.mk
+util/estofs_tide_fac/estofs_tide_fac
+work/util/*
+
+# editor files
+.idea/
+.vscode/
+.project

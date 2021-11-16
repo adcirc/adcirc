@@ -274,7 +274,7 @@ C        start reading ascii initial conditions file
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
-            STOP 1                 ! We're toast.
+            CALL EXIT(1)                 ! We're toast.
          ENDIF
 C
  1701    FORMAT('ERROR: The initial condition or ascii hot start file')
@@ -457,7 +457,7 @@ C
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
-            STOP 1
+            CALL EXIT(1)
          ENDIF
 C        start reading binary hot start file
          WRITE(16,240)
@@ -486,7 +486,7 @@ C        start reading binary hot start file
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
-            STOP 1                 ! We're toast.
+            CALL EXIT(1)                 ! We're toast.
          ENDIF
 C
  1001    FORMAT('ERROR: The hot start file')
@@ -512,7 +512,7 @@ C        Now read the non-portable binary hot start file.
 #ifdef CMPI
             call msg_fini()
 #endif
-            stop 1
+            CALL EXIT(1)
          endif
          READ(IHOT,REC=IHOTSTP) IMHS         ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) TimeLoc         ; IHOTSTP = IHOTSTP + 1
@@ -781,7 +781,7 @@ C     for IBTYPE=52.
          RampIntFlux1=TANH((2.D0*(ITHS-1)*DTDPHS/86400.D0)/DRampIntFlux)
          RampIntFlux2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampIntFlux)
          RampTip2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampTip)
-Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
+Corbitt 1203022: Added Zach''s Fix for Assigning a Start Time to Mete Ramping
          RampMete2=TANH((2.D0*((ITHS)*DTDPHS/86400.D0-DUnRampMete))/DRampMete)
          RampWRad2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampWRad)
          write(16,*) 'Initial RampMete2 is =',RampMete2 
@@ -1073,35 +1073,27 @@ C.............RESET INFORMATION FOR K-1 TIME LEVEL
                RBARWL2F=2.0D0*RBARWL2/3.0D0
                IF((RBARWL1.LT.0.0).AND.(RBARWL2.LT.0.0)) THEN ! WATER LEVEL BELOW BARRIER
                   QN1(I)=0.0D0  ! NO FLOW
-                  GOTO 1998
-               ENDIF
-               IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
+
+               ELSE IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
                   QN1(I)=0.0D0  ! NO FLOW
-                  GOTO 1998
-               ENDIF
-               IF(RBARWL1.GT.RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF BARRIER
+
+               ELSE IF(RBARWL1.GT.RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF BARRIER
                   IF(RBARWL2.GT.RBARWL1F) THEN ! OUTWARD SUBCRITICAL FLOW
                      QN1(I)=-RampIntFlux1*BARINCFSB(I)*RBARWL2*
      &                    (2.d0*G*(RBARWL1-RBARWL2))**0.5D0
-                     GOTO 1998
                   ELSE          ! OUTWARD SUPERCRITICAL FLOW
                      QN1(I)=-RampIntFlux1
      &                    *BARINCFSP(I)*RBARWL1F*(RBARWL1F*G)**0.5D0
-                     GOTO 1998
                   ENDIF
-               ENDIF
-               IF(RBARWL2.GT.RBARWL1) THEN ! WATER LEVEL LOWER ON THIS SIDE OF BARRIER
+               ELSE IF(RBARWL2.GT.RBARWL1) THEN ! WATER LEVEL LOWER ON THIS SIDE OF BARRIER
                   IF(RBARWL1.GT.RBARWL2F) THEN ! INWARD SUBCRITICAL FLOW
                      QN1(I)=RampIntFlux1*BARINCFSB(I)*RBARWL1*
      &                    (2.d0*G*(RBARWL2-RBARWL1))**0.5D0
-                     GOTO 1998
                   ELSE          ! INWARD SUPERCRITICAL FLOW
                      QN1(I)=RampIntFlux1
      &                    *BARINCFSP(I)*RBARWL2F*(RBARWL2F*G)**0.5D0
-                     GOTO 1998
                   ENDIF
                ENDIF
- 1998          CONTINUE
 C.............RESET INFORMATION FOR K TIME LEVEL
                RBARWL1=ETA2(NNBB1)-BARINHT(I)
                RBARWL2=ETA2(NNBB2)-BARINHT(I)
@@ -1109,35 +1101,27 @@ C.............RESET INFORMATION FOR K TIME LEVEL
                RBARWL2F=2.0D0*RBARWL2/3.0D0
                IF((RBARWL1.LT.0.0).AND.(RBARWL2.LT.0.0)) THEN ! WATER LEVEL BELOW BARRIER
                   QN2(I)=0.0D0  ! NO FLOW
-                  GOTO 1999
-               ENDIF
-               IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
+
+               ELSE IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
                   QN2(I)=0.0D0  ! NO FLOW
-                  GOTO 1999
-               ENDIF
-               IF(RBARWL1.GT.RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF BARRIER
+
+               ELSE IF(RBARWL1.GT.RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF BARRIER
                   IF(RBARWL2.GT.RBARWL1F) THEN ! OUTWARD SUBCRITICAL FLOW
                      QN2(I)=-RampIntFlux2*BARINCFSB(I)*RBARWL2*
      &                    (2.d0*G*(RBARWL1-RBARWL2))**0.5D0
-                     GOTO 1999
                   ELSE          ! OUTWARD SUPERCRITICAL FLOW
                      QN2(I)=-RampIntFlux2
      &                    *BARINCFSP(I)*RBARWL1F*(RBARWL1F*G)**0.5D0
-                     GOTO 1999
                   ENDIF
-               ENDIF
-               IF(RBARWL2.GT.RBARWL1) THEN !WATER LEVEL LOWER ON THIS SIDE OF BARRIER
+               ELSE IF(RBARWL2.GT.RBARWL1) THEN !WATER LEVEL LOWER ON THIS SIDE OF BARRIER
                   IF(RBARWL1.GT.RBARWL2F) THEN ! INWARD SUBCRITICAL FLOW
                      QN2(I)=RampIntFlux2*BARINCFSB(I)*RBARWL1*
      &                    (2.d0*G*(RBARWL2-RBARWL1))**0.5D0
-                     GOTO 1999
                   ELSE          ! INWARD SUPERCRITICAL FLOW
                      QN2(I)=RampIntFlux2
      &                    *BARINCFSP(I)*RBARWL2F*(RBARWL2F*G)**0.5D0
-                     GOTO 1999
                   ENDIF
                ENDIF
- 1999          CONTINUE
             ENDIF
          END DO
       ENDIF
@@ -1160,77 +1144,61 @@ C.............RESET INFORMATION FOR K-1 TIME LEVEL
                RBARWL2=ETA1(NNBB2)-PIPEHT(I)
                IF((RBARWL1.LT.0.0).AND.(RBARWL2.LT.0.0)) THEN ! WATER LEVEL BELOW PIPE
                   QN1(I)=QN1(I)+0.0D0 ! NO FLOW
-                  GOTO 2002
-               ENDIF
-               IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF PIPE
+
+               ELSE IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF PIPE
                   QN1(I)=QN1(I)+0.0D0 ! NO FLOW
-                  GOTO 2002
-               ENDIF
-               IF(RBARWL1.GT.RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF PIPE
+
+               ELSE IF(RBARWL1.GT.RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF PIPE
                   IF(RBARWL2.LE.0) THEN ! OUTWARD FREE DISCHARGE
                      QN1(I)=QN1(I)-RampIntFlux1
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*RBARWL1/(1+PIPECOEF(I)))**0.5D0
-                     GOTO 2002
                   ELSE          ! OUTWARD SUBMERGED DISCHARGE
                      QN1(I)=QN1(I)-RampIntFlux1
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*(RBARWL1-RBARWL2)/PIPECOEF(I))**0.5D0
-                     GOTO 2002
                   ENDIF
-               ENDIF
-               IF(RBARWL2.GT.RBARWL1) THEN ! WATER LEVEL LOWER ON THIS SIDE OF PIPE
+               ELSE IF(RBARWL2.GT.RBARWL1) THEN ! WATER LEVEL LOWER ON THIS SIDE OF PIPE
                   IF(RBARWL1.LE.0) THEN ! INWARD FREE DISCHARGE
                      QN1(I)=QN1(I)+RampIntFlux1
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*RBARWL2/(1+PIPECOEF(I)))**0.5D0
-                     GOTO 2002
                   ELSE          ! INWARD SUBMERGED DISCHARGE
                      QN1(I)=QN1(I)+RampIntFlux1
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*(RBARWL2-RBARWL1)/PIPECOEF(I))**0.5D0
-                     GOTO 2002
                   ENDIF
                ENDIF
- 2002          CONTINUE
 C.............RESET INFORMATION FOR K TIME LEVEL
                RBARWL1=ETA2(NNBB1)-PIPEHT(I)
                RBARWL2=ETA2(NNBB2)-PIPEHT(I)
                IF((RBARWL1.LT.0.0).AND.(RBARWL2.LT.0.0)) THEN ! WATER LEVEL BELOW PIPE
                   QN2(I)=QN2(I)+0.0D0 ! NO FLOW
-                  GOTO 2003
-               ENDIF
-               IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF PIPE
+
+               ELSE IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF PIPE
                   QN2(I)=QN2(I)+0.0D0 ! NO FLOW
-                  GOTO 2003
-               ENDIF
-               IF(RBARWL1.GT.RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF PIPE
+
+               ELSE IF(RBARWL1.GT.RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF PIPE
                   IF(RBARWL2.LE.0) THEN ! OUTWARD FREE DISCHARGE
                      QN2(I)=QN2(I)-RampIntFlux2
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*RBARWL1/(1+PIPECOEF(I)))**0.5D0
-                     GOTO 2003
                   ELSE          ! OUTWARD SUBMERGED DISCHARGE
                      QN2(I)=QN2(I)-RampIntFlux2
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*(RBARWL1-RBARWL2)/PIPECOEF(I))**0.5D0
-                     GOTO 2003
                   ENDIF
-               ENDIF
-               IF(RBARWL2.GT.RBARWL1) THEN !WATER LEVEL LOWER ON THIS SIDE OF PIPE
+               ELSE IF(RBARWL2.GT.RBARWL1) THEN !WATER LEVEL LOWER ON THIS SIDE OF PIPE
                   IF(RBARWL1.LE.0) THEN ! INWARD FREE DISCHARGE
                      QN2(I)=QN2(I)+RampIntFlux2
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*RBARWL2/(1+PIPECOEF(I)))**0.5D0
-                     GOTO 2003
                   ELSE          ! INWARD SUBMERGED DISCHARGE
                      QN2(I)=QN2(I)+RampIntFlux2
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*(RBARWL2-RBARWL1)/PIPECOEF(I))**0.5D0
-                     GOTO 2003
                   ENDIF
                ENDIF
- 2003          CONTINUE
             ENDIF
          END DO
       ENDIF
@@ -1511,7 +1479,7 @@ C......RESTART THE WAVE RADIATION STRESS
 
 #ifdef ADCNETCDF     
       ! For the Coupling to 3D Baroclinic mode 
-      IF (C2DDI.and.CBaroclinic.and.IDEN.ge.5) THEN
+      IF (C2DDI.and.CBaroclinic.and.abs(IDEN).ge.5) THEN
          call Initial_BC3D_NetCDF(TimeLoc)
       endif
 #endif       
@@ -1533,8 +1501,8 @@ Cjromo 11-01-00  Initialize TIP2 for HOTSTART
             ENDIF
 
             ARGT    = AMIGT(J)*(TimeLoc-NCYC*PERT(J))+FACET(J)
-            TPMUL   = RampTip*ETRF(J)*TPK(J)*FFT(J)
-            SALTMUL = RampTip*FFT(J)
+            TPMUL   = RampTip2*ETRF(J)*TPK(J)*FFT(J)
+            SALTMUL = RampTip2*FFT(J)
 C           WJP: We actually want to compare against diurnal and get 0,1,2
 C           or higher species (was opposite beforehand)
 #ifdef IBM
@@ -1572,6 +1540,7 @@ C...
 C....IF RESTARTING THE ELEVATION STATION OUTPUT FILE, GO TO THE PROPER PLACE
 C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
 C...
+      IF(NTCYSE.LT.ITHS.AND.NOUTE.GT.0) NTCYSE = ITHS + NSPOOLE - 1 
       WRITE(16,1040) IESTP,NSCOUE
  1040 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN ELEVATION ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
@@ -1654,6 +1623,7 @@ C...
      &                'STATION FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER =',I6)
 
+      IF(NTCYSV.LT.ITHS.AND.NOUTV.GT.0) NTCYSV = ITHS + NSPOOLV - 1 
       IF(NOUTV.LT.0) THEN
         IVSTP=0
         NSCOUV=0
@@ -1743,6 +1713,7 @@ C...
  1045   FORMAT(//,' A NEW CONCENTRATION STATION FILE WILL BE STARTED')
       ENDIF
 
+      IF(NTCYSC.LT.ITHS.AND.NOUTC.GT.0) NTCYSC = ITHS + NSPOOLC - 1 
       IF(NOUTC.EQ.-2) THEN
         OPEN(81,FILE=TRIM(LOCALDIR)//'/'//'fort.81',
      &                      ACCESS='DIRECT',RECL=NBYTE)
@@ -1804,6 +1775,7 @@ C...
 C....GO TO THE PROPER PLACE IN THE METEOROLOGICAL STATION OUTPUT FILE
 C...
 c... v49.64.01 tcm -added support for ice stations
+      IF(NTCYSM.LT.ITHS.AND.NOUTM.GT.0) NTCYSM = ITHS + NSPOOLM - 1 
       IF(NCICE.EQ.0)  THEN
          WRITE(16,1038) IWSTP,IPSTP,NSCOUM
       ELSE
@@ -1983,6 +1955,7 @@ C....IF RESTARTING THE BATHYMETRY STATION OUTPUT FILE, GO TO THE PROPER PLACE
 C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
 C...
 
+      IF(NTCYSB.LT.ITHS.AND.NOUTE.GT.0) NTCYSB = ITHS + NSPOOLE - 1 
       IF (NDDT.NE.0) WRITE(16,1035) IBSTP,NSCOUB
  1035 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN BATHYMETRY ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
@@ -2060,6 +2033,8 @@ c       WRITE(75,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO BE W
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL ELEVATION OUTPUT FILE
 C...
+        IF(NTCYSGE.LT.ITHS.AND.NOUTGE.GT.0) NTCYSGE = ITHS + NSPOOLGE - 1 
+
         WRITE(16,1046) IGEP,NSCOUGE
  1046   FORMAT(//,1X,I8,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'ELEVATION FILE BY THE TIME OF THE HOT START',
@@ -2077,7 +2052,7 @@ C....   SET THESE VARIABLES FOR USE LATER
           NSCOUGE=0
           IF((NTCYSGE.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
             NTCYSGE=NTCYSGE+((REAL(ITHS)-REAL(NTCYSGE))/
-     &              REAL(NSPOOLGE))*REAL(NSPOOLGE)
+     &              REAL(NSPOOLGE))*REAL(NSPOOLGE) 
             IF(NTCYSGE.LT.ITHS) NTCYSGE=NTCYSGE+NSPOOLGE
 C     kmd48.33bc - changed NDSETSE for use of new DTDPHS
             IF(DTDP.NE.DTDPHS) THEN
@@ -2089,7 +2064,7 @@ C     kmd48.33bc - changed NDSETSE for use of new DTDPHS
             ENDIF
           WRITE(16,1047)
  1047     FORMAT(//,' A NEW GLOBAL ELEVATION FILE WILL BE STARTED')
-          ENDIF
+        ENDIF
 
         IF(NOUTGE.EQ.-2) THEN
           OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
@@ -2185,6 +2160,8 @@ c         WRITE(63,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL VELOCITY OUTPUT FILE
 C...
+        IF(NTCYSGV.LT.ITHS.AND.NOUTGV.GT.0) NTCYSGV = ITHS + NSPOOLGV - 1 
+
         WRITE(16,1048) IGVP,NSCOUGV
  1048   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'VELOCITY FILE BY THE TIME OF THE HOT START',
@@ -2267,6 +2244,7 @@ c         WRITE(64,REC=ITEMPSTP+1) NDSETSV  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
 
 
 Cobell - Open the fort.77 (weir elevation change) if necessary
+        IF(NTCYS_TVW.LT.ITHS.AND.NOUT_TVW.GT.0) NTCYS_TVW = ITHS + NSPOOL_TVW - 1 
         IF(NOUT_TVW.LT.0.AND.USE_TVW) THEN
           IG_TVW=0
           NSCOU_TVW=0
@@ -2339,6 +2317,7 @@ c         WRITE(77,REC=ITEMPSTP+1) NDSETS_TVW  ! ALLOW ADDITIONAL OUTPUT DATA TO
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL CONCENTRATION OUTPUT FILE
 C...
+        IF(NTCYSGC.LT.ITHS.AND.NOUTGC.GT.0) NTCYSGC = ITHS + NSPOOLGC - 1 
         WRITE(16,1053) IGCP,NSCOUGC
  1053   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                'CONCENTRATION FILE BY THE TIME OF THE HOT START',
@@ -2429,6 +2408,7 @@ C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL METEOROLOGICAL OUTPUT FILES
 C...
 !       V49.64.01 TCM ADDED GLOBAL ICE CONCENTRATION FILES
+        IF(NTCYSGW.LT.ITHS.AND.NOUTGW.GT.0) NTCYSGW = ITHS + NSPOOLGW - 1 
         IF(NCICE.NE.0) THEN
            WRITE(16,2055) IGWP,IGPP,IGIP,NSCOUGW
         ELSE
@@ -2685,6 +2665,7 @@ C...
         IF ((NDDT.NE.0).AND.(NOUTGE.LT.0)) THEN
            IGBP=0
            NSCOUGB=0
+           IF(NTCYSGB.LT.ITHS.AND.NOUTGE.GT.0) NTCYSGB = ITHS + NSPOOLGE - 1 
            IF((NTCYSGB.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
               NTCYSGB=NTCYSGB+((REAL(ITHS)-REAL(NTCYSGB))/
      &               REAL(NSPOOLGE))*REAL(NSPOOLGE)
@@ -3694,7 +3675,7 @@ C
          ELSE
             call allMessage(ERROR,
      &          "Passing of binary or real information incorrect")
-            STOP 1
+            CALL EXIT(1)
          END IF
       ! parallel
       ELSE
@@ -3725,7 +3706,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            STOP 1
+            CALL EXIT(1)
          END IF
       ENDIF
 C
@@ -3774,7 +3755,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            STOP 1
+            CALL EXIT(1)
          END IF
       ! parallel
       ELSE
@@ -3805,7 +3786,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            STOP 1
+            CALL EXIT(1)
          END IF
       ENDIF
 C
@@ -3856,7 +3837,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            STOP 1
+            CALL EXIT(1)
          END IF
       ! parallel
       ELSE
@@ -3887,7 +3868,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            STOP 1
+            CALL EXIT(1)
          END IF
       ENDIF
 C
@@ -3939,7 +3920,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            STOP 1
+            CALL EXIT(1)
          END IF
       ! parallel
       ELSE
@@ -3970,7 +3951,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            STOP 1
+            CALL EXIT(1)
          END IF
       ENDIF
 C

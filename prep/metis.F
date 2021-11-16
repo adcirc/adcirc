@@ -214,14 +214,14 @@ C
            ELSE
               IF ( NPERBC < 0 ) THEN            
                  print *, "node = ",INODE," is isolated"
-                 stop 'vic'
+                 CALL EXIT(1) 
               ELSE
 C.....DW, periodic bcs allow isolated nodes if they are a periodic slave node
                  CO_NODES(1,INODE) = INODE ;
                  NCOUNT = 1 ; 
                  IF ( COUNT((IPERCONN(:,2) - INODE) == 0) == 0) THEN  
                     print *, "node = ",INODE," is isolated"
-                    stop 'vic'
+                    CALL EXIT(1) 
                  END IF
 C.....DW
               END IF
@@ -230,7 +230,7 @@ C.....DW
            NEDGETOT = NEDGETOT + NCOUNT
            if (nedges(inode) == 0) then
              print *, "inode = ", inode, " belongs to no edges"
-             stop 'vic'
+             CALL EXIT(1) 
            endif
         ENDDO
         NEDGETOT = NEDGETOT/2
@@ -256,7 +256,8 @@ C
       ENDDO
       ENDDO
       IF (.not. SYMMETRIC) THEN
-         stop 'bad adjacency matrix: not symmetric!'
+         WRITE(*,'(A)') 'bad adjacency matrix: not symmetric!'
+         CALL EXIT(1) 
       ENDIF
 C
 C  COMPUTE WEIGHTS OF THE GRAPH VERTICES

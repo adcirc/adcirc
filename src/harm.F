@@ -1154,17 +1154,21 @@ c     Set up the lower triangular part of the LHS a matrix
 
 c     Decomposition of matrix a
 
-         do 100 ir=1,mm
+         outer: do ir=1,mm
             ire=ir+1
-            do 20 j=ire,mm
- 20            ha(ir,j)=ha(ir,j)/ha(ir,ir)
-            if (ire.gt.mm) goto 100
-            do 40 j=ire,mm
-              do 40 k=ire,mm
- 40              ha(k,j)=ha(k,j)-ha(k,ir)*ha(ir,j)
-            do 50 j=ire,mm
- 50           ha(j,ir)=0.0d0
- 100     continue
+            do j=ire,mm
+               ha(ir,j)=ha(ir,j)/ha(ir,ir)
+            enddo
+            if (ire.gt.mm) exit outer
+            do j=ire,mm
+              do k=ire,mm
+                 ha(k,j)=ha(k,j)-ha(k,ir)*ha(ir,j)
+              enddo
+            enddo
+            do j=ire,mm
+              ha(j,ir)=0.0d0
+            enddo
+         enddo outer
 
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Return.")
@@ -1177,26 +1181,31 @@ c...  solve for y by forward substitution for l*y=p
 
       allocate ( c(2*MNHARF),y(2*MNHARF) )
 c
-      do 120 ir=1,mm
+      do ir=1,mm
          y(ir)=hap(ir)
-         do 110 jr=1,ir-1
- 110        y(ir)=y(ir)-ha(jr,ir)*y(jr)
- 120  continue
+         do jr=1,ir-1
+            y(ir)=y(ir)-ha(jr,ir)*y(jr)
+         enddo
+      enddo
 
 c...  calculate c=d**(-1)*y
 
-      do 130 ir=1,mm
- 130     c(ir)=y(ir)/ha(ir,ir)
+      do ir=1,mm
+         c(ir)=y(ir)/ha(ir,ir)
+      enddo
 
 c...  solve for x by back-substituting for l(tr)*x=c
 
       ir=mm
- 140  continue
-      hax(ir)=c(ir)
-      do 150 jr=ir+1,mm
- 150     hax(ir)=hax(ir)-ha(ir,jr)*hax(jr)
-      ir=ir-1
-      if(ir.ge.1) goto 140
+      do while(.true.)
+         hax(ir)=c(ir)
+         do jr=ir+1,mm
+            hax(ir)=hax(ir)-ha(ir,jr)*hax(jr)
+         enddo
+         ir=ir-1
+         if(ir.ge.1) cycle
+         exit
+      enddo
 
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -2164,7 +2173,7 @@ C
 #ifdef CMPI
       call msg_fini()
 #endif
-      stop
+      CALL EXIT(1)
 C
 
 #if defined(HARM_TRACE) || defined(ALL_TRACE)

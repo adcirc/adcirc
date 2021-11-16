@@ -92,7 +92,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       real(sz), allocatable, target :: wvnoutmax_g(:)
       real(sz), allocatable, target :: rsnmax_g(:)
       real(sz), allocatable, target :: sponge_g(:)
-      real(sz), allocatable, target :: eslonoff_g(:) !zc added for esl on/off output
+      real(sz), allocatable, target :: eslcount_g(:) !zc added for esl on/off output
       real(sz), allocatable, target :: dpout_g(:)    !tcm v50.66.01 added time varying bathy
       real(sz), allocatable, target :: dp00_g(:)  !tcm v50.66.01 added time varying bathy
       ! Casey 090302: Added these arrays for output of radiation stress gradients.
@@ -332,7 +332,7 @@ C----------------------------------------------------------------------
      &   nscougc, igcp, ch1, ch1_g, etamax_time_g, etamax,
      &   etamax_time, umax_time_g, umax, umax_time, prmin_time_g,
      &   prmin, wvnoutmax_time_g, wvnoutmax_time, rsnmax_time_g,
-     &   rsnmax_time, eslonoff, prmin_time, wvnoutmax, rsnmax,
+     &   rsnmax_time, eslcount, prmin_time, wvnoutmax, rsnmax,
      &   nstae_g, noute, nstae, wvnxout, wvnyout,
      &   ntcyse, ntcyfe, nspoole, nstav_g, noutv, nstav, ntcysv,
      &   ntcyfv, nspoolv, noutge, ntcysge, ntcyfge, nspoolge,
@@ -1105,7 +1105,7 @@ C     maxvel.63
       IF (mnproc.gt.1)  THEN
          ALLOCATE(UMAX_g(NP_G))
          ALLOCATE (UMAX_Time_G(NP_G))
-         UMAX_g(:) = 0.d0
+         UMAX_g(:) = -99999.d0
          UMAX_Time_G(:) = -99999.d0
       ENDIF
       UMaxDescript % lun                    = 312
@@ -1124,7 +1124,7 @@ C     maxvel.63
       if ( UMaxDescript % specifier .eq. XDMF ) then
          UMaxDescript % specifier = ASCII
       endif
-      UMAX(:) = 0.d0
+      UMAX(:) = -99999.d0
       UMAX_Time(:) = -99999.d0
 
 C     prmin.63
@@ -1187,7 +1187,7 @@ C     maxrs.63
       IF (mnproc.gt.1) THEN
          ALLOCATE(RSNMAX_g(NP_G))
          ALLOCATE (RSNMAX_Time_G(NP_G))
-         RSNMAX_g(:) = 0.d0
+         RSNMAX_g(:) = -99999.d0
          RSNMAX_Time_G(:) = -99999.d0
       ENDIF
       RSMaxDescript % lun                   = 315
@@ -1208,23 +1208,23 @@ C     maxrs.63
       if ( RSMaxDescript % specifier .eq. XDMF ) then
          RSMaxDescript % specifier = ASCII
       endif
-      RSNMAX(:) = 0.d0
+      RSNMAX(:) = -99999.d0
       RSNMAX_Time(:) = -99999.d0
 
 !     ESLNodes.63
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(ESLONOFF_g(NP_G))
-         ESLONOFF_g(:) = 0.d0
+         ALLOCATE(ESLCOUNT_g(NP_G))
+         ESLCOUNT_g(:) = 0.d0
       ENDIF
       ESLDescript % lun                  = 323
       ESLDescript % specifier            = ASCII
-      ESLDescript % array                => ESLONOFF
-      ESLDescript % array_g              => ESLONOFF_G
+      ESLDescript % array                => ESLCOUNT
+      ESLDescript % array_g              => ESLCOUNT_G
       ESLDescript % field_name           = 'ESLActive'
       ESLDescript % file_basename        = 'ESLNodes'
       ESLDescript % file_extension       = 63
       ESLDescript % writeFlag            = .false.
-      ESLONOFF(:) = 0.d0
+      ESLCOUNT(:) = 0.d0
       !
       !  D E T A I L E D    I N U N D A T I O N    O U T P U T
       !
@@ -1500,32 +1500,6 @@ C                      ! initialize it if it wasn't initialized above
 #endif
             endif
          enddo
-         IF (LoadEleSlopeLim) THEN
-            CALL readAndMapToSubdomainMaxMin(ESLDescript,timeloc,fileFound)
-            ! must set the elemental slope limiter active values as well
-            !
-            ! jgf51.46: Really should only turn on the slope limiter if
-            ! the slope limiter was turned on in the run that produced
-            ! these values (as opposed to just recording the places
-            ! where the slope was exceeded). However, this isn't really
-            ! practical because it would require knowledge of the
-            ! elemental_slope_limiter nodal attribute from the
-            ! previous simulation. We don't have access to that.
-            !
-            ! Also, we don't want to turn the slope limiter on in places
-            ! where the analyst does not want it to be turned on, and only
-            ! wants to record the places where the slope is exceeded. So
-            ! I am adding a check for positive values of the nodal
-            ! attribute, and only turning on the slope limiter there.
-            DO I = 1,NP
-               if ( (ESLONOFF(I).eq.1.d0).and.
-     &         (elemental_slope_limiter_grad_max(i).ge.0.d0) ) then
-                  elemental_slope_limiter_active(I) = .true.
-               else
-                  elemental_slope_limiter_active(I) = .false.
-               endif
-            ENDDO
-         ENDIF
       endif ! ihot.ne.0
       !
       ! End  TCM v51.20.01 Mods for MaxMin Files to Local Variables
@@ -2306,7 +2280,7 @@ C        ! as the full domain elevation harmonic analysis file (fort.53)
 #ifdef CMPI
                CALL MSG_FINI()
 #endif
-               STOP 1
+               CALL EXIT(1)
             ENDIF
          ENDDO
 #endif
@@ -3190,7 +3164,7 @@ C
          DO i=1,7
             IF (netcdf_error(i).eqv..true.) THEN
                CALL msg_fini()
-               STOP 1
+               CALL EXIT(1)
             ENDIF
          ENDDO
 #endif
@@ -5304,7 +5278,7 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
 #ifdef CMPI
           CALL MSG_FINI()
 #endif
-         STOP 1
+         CALL EXIT(1)
       ENDIF
 
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -5422,7 +5396,7 @@ C     If we have exceeded the user's limit, terminate the run.
 #ifdef CMPI
          CALL MSG_FINI()
 #endif
-         STOP 1
+         CALL EXIT(1)
       ENDIF
 C
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -5459,7 +5433,7 @@ C
         CALL MSG_FINI()
       ENDIF
 #endif
-      STOP 1
+      CALL EXIT(1)
 C
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable
@@ -6150,6 +6124,7 @@ C-----------------------------------------------------------------------
       implicit none
       real(8), intent(in) :: timeloc ! time in s since cold start
       integer :: i
+      real(8) :: u_tmp
 
       call setMessageSource("collectMinMaxData")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -6169,9 +6144,12 @@ C...  jgf50.44: Collect time that min/max occurs as well.
       endif
       if (noutgv.ne.0) then
          do i=1,np
-            if ( (uu2(i)**2+vv2(i)**2).gt.umax(i)**2 ) then 
-               umax(i) = sqrt(uu2(i)**2+vv2(i)**2)
-               umax_time(i) = timeLoc   !tcm v51.20.01
+            if(nodecode(i).eq.1)then
+                u_tmp = sqrt(uu2(i)**2d0+vv2(i)**2d0)
+                if ( u_tmp.gt.umax(i) ) then 
+                   umax(i) = u_tmp 
+                   umax_time(i) = timeLoc   !tcm v51.20.01
+                endif
             endif
          end do 
       endif
@@ -6191,9 +6169,12 @@ C...  jgf50.44: Collect time that min/max occurs as well.
       endif
       if ((nrs.ne.0).and.(noutgw.ne.0)) then
          do i=1,np
-            if ((rsnx2(i)**2+rsny2(i)**2).gt.rsnmax(i)**2) then
-               rsnmax(i) = sqrt(rsnx2(i)**2+rsny2(i)**2)
-               rsnmax_time(i) = timeLoc
+            if(nodecode(i).eq.1)then
+                u_tmp = sqrt(rsnx2(i)**2+rsny2(i)**2)
+                if (u_tmp.gt.rsnmax(i)) then
+                   rsnmax(i) = u_tmp 
+                   rsnmax_time(i) = timeLoc
+                endif
             endif
          end do
       endif

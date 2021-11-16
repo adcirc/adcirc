@@ -356,7 +356,7 @@ ADC_MSRC   =  version.F sizes.F global.F
 POST_MSRC  =  post_global.F
 HARM_MSRC  =  harm.F
 VORT_MSRC  =  vortex.F
-WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F
+WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F owiwind_netcdf.F
 SOLV_MSRC  =  itpackv.F
 NA_MSRC    =  nodalattr.F
 NC_MSRC    =  netcdfio.F
@@ -368,7 +368,11 @@ COUP_MSRC  =  couple2swan.F
 KDTREE_MSRC = kdtree2.F
 XDMF_MSRC = xdmfio.F
 # DW sponge layer
+<<<<<<< HEAD
 SPG_MSRC = quadtrature.F sponge_layer.F
+=======
+SPG_MSRC = quadrature.F sponge_layer.F
+>>>>>>> upstream/master
 # WJP 3D baroclinic coupling
 BC3D_MSRC = couple2baroclinic3D.F
 
@@ -752,6 +756,7 @@ $(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ) $(O_DIR)mesh.o $(O_DIR)global_3
 $(O_DIR)harm.o        :  harm.F $(O_DIR)mesh.o
 $(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(NA_MOBJ) $(WIND_MOBJ)
 $(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ)
+$(O_DIR)owiwind_netcdf.o : owiwind_netcdf.F
 $(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ)
 $(O_DIR)rs2.o         :  rs2.F  $(VORT_MOBJ)
 ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(PARALLEL_ADCIRC) padcswan))

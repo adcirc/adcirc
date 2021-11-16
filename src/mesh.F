@@ -1436,116 +1436,119 @@
 !     if there is not enough machine precision
       PROCELM: DO I=1,NE
 
-  133   SELECT CASE( ICS )
-        CASE (1)
+        INNER: DO
+          SELECT CASE( ICS )
+          CASE (1)
 !     c Cartesian coordinate
-           EXV(1,I) = X(NM(I,1))
-           EXV(2,I) = X(NM(I,2))
-           EXV(3,I) = X(NM(I,3))
-           EYV(1,I) = Y(NM(I,1))
-           EYV(2,I) = Y(NM(I,2))
-           EYV(3,I) = Y(NM(I,3)) 
+             EXV(1,I) = X(NM(I,1))
+             EXV(2,I) = X(NM(I,2))
+             EXV(3,I) = X(NM(I,3))
+             EYV(1,I) = Y(NM(I,1))
+             EYV(2,I) = Y(NM(I,2))
+             EYV(3,I) = Y(NM(I,3)) 
 
-        CASE (2,20:24)
+          CASE (2,20:24)
 !     c Spherical coordinates c!
            
 !     lon (in rad)
-           LONVE(1) = SLAM( NM(I,1) ) ;
-           LONVE(2) = SLAM( NM(I,2) ) ;
-           LONVE(3) = SLAM( NM(I,3) ) ;
+             LONVE(1) = SLAM( NM(I,1) ) ;
+             LONVE(2) = SLAM( NM(I,2) ) ;
+             LONVE(3) = SLAM( NM(I,3) ) ;
            
 !     lat (in rad)
-           LATVE(1) = SFEA( NM(I,1) ) ;
-           LATVE(2) = SFEA( NM(I,2) ) ;
-           LATVE(3) = SFEA( NM(I,3) ) ;           
+              LATVE(1) = SFEA( NM(I,1) ) ;
+              LATVE(2) = SFEA( NM(I,2) ) ;
+              LATVE(3) = SFEA( NM(I,3) ) ;           
            
-           EXV => EXVO ; 
-           EYV => EYVO ;           
-           CALL CAL_ELXV_SPCOOR( EXV(:,I), 
-     &          EYV(:,I), LONVE, LATVE, ICS, SFLAG ) ;
-           
-           IF ( IFSPROTS .EQ. 1 ) THEN
+              EXV => EXVO ; 
+              EYV => EYVO ;           
+              CALL CAL_ELXV_SPCOOR( EXV(:,I), 
+     &             EYV(:,I), LONVE, LATVE, ICS, SFLAG ) ;
+              
+              IF ( IFSPROTS .EQ. 1 ) THEN
 !     lon in rotated coordinates (in rad)
-              LONVE(1) = SLAMR( NM(I,1) ) ;
-              LONVE(2) = SLAMR( NM(I,2) ) ;
-              LONVE(3) = SLAMR( NM(I,3) ) ;
-              
+                 LONVE(1) = SLAMR( NM(I,1) ) ;
+                 LONVE(2) = SLAMR( NM(I,2) ) ;
+                 LONVE(3) = SLAMR( NM(I,3) ) ;
+                 
 !     lat in rotated coordinates (in rad)
-              LATVE(1) = SFEAR( NM(I,1) ) ;
-              LATVE(2) = SFEAR( NM(I,2) ) ;
-              LATVE(3) = SFEAR( NM(I,3) ) ;
-              
+                 LATVE(1) = SFEAR( NM(I,1) ) ;
+                 LATVE(2) = SFEAR( NM(I,2) ) ;
+                 LATVE(3) = SFEAR( NM(I,3) ) ;
+                 
+                 EXV => EXVR ; 
+                 EYV => EYVR ;              
+                 CALL CAL_ELXV_SPCOOR( EXV(:,I), 
+     &                EYV(:,I), LONVE, LATVE, ICS, SFLAG ) ;             
+              END IF 
+
+           END SELECT
+        
+           IF ( IFSPROTS .EQ. 1 ) THEN        
               EXV => EXVR ; 
               EYV => EYVR ;              
-              CALL CAL_ELXV_SPCOOR( EXV(:,I), 
-     &             EYV(:,I), LONVE, LATVE, ICS, SFLAG ) ;             
-           END IF 
-
-        END SELECT
+           END IF
         
-        IF ( IFSPROTS .EQ. 1 ) THEN        
-           EXV => EXVR ; 
-           EYV => EYVR ;              
-        END IF
-        
-        X1 = EXV(1,I) ; 
-        X2 = EXV(2,I) ;
-        X3 = EXV(3,I) ;
-        Y1 = EYV(1,I) ;
-        Y2 = EYV(2,I) ;
-        Y3 = EYV(3,I) ;        
+           X1 = EXV(1,I) ; 
+           X2 = EXV(2,I) ;
+           X3 = EXV(3,I) ;
+           Y1 = EYV(1,I) ;
+           Y2 = EYV(2,I) ;
+           Y3 = EYV(3,I) ;        
 
 !...v49.48.02 tcm added these to reuse the computed values
-         X2mX1 = (X2 - X1);
-         X3mX2 = (X3 - X2);
-         X1mX3 = (X1 - X3);
-         Y2mY1 = (Y2 - Y1);
-         Y3mY2 = (Y3 - Y2);
-         Y1mY3 = (Y1 - Y3);
+           X2mX1 = (X2 - X1);
+           X3mX2 = (X3 - X2);
+           X1mX3 = (X1 - X3);
+           Y2mY1 = (Y2 - Y1);
+           Y3mY2 = (Y3 - Y2);
+           Y1mY3 = (Y1 - Y3);
 
-!.....   For later use for FDX1, FDY1 in gwce, momentum 
-         FDXE(1,I) = -Y3mY2 ; !c (Y(NM2)-Y(NM3))*SFacAvg !b1
-         FDXE(2,I) = -Y1mY3 ; !c (Y(NM3)-Y(NM1))*SFacAvg !b2
-         FDXE(3,I) = -Y2mY1 ; !c (Y(NM1)-Y(NM2))*SFacAvg !b3
-         FDYE(1,I) =  X3mX2 ; !c  X(NM3)-X(NM2) !a1
-         FDYE(2,I) =  X1mX3 ; !c  X(NM1)-X(NM3) !a2
-         FDYE(3,I) =  X2mX1 ; !c  X(NM2)-X(NM1) !a3
+!.....     For later use for FDX1, FDY1 in gwce, momentum 
+           FDXE(1,I) = -Y3mY2 ; !c (Y(NM2)-Y(NM3))*SFacAvg !b1
+           FDXE(2,I) = -Y1mY3 ; !c (Y(NM3)-Y(NM1))*SFacAvg !b2
+           FDXE(3,I) = -Y2mY1 ; !c (Y(NM1)-Y(NM2))*SFacAvg !b3
+           FDYE(1,I) =  X3mX2 ; !c  X(NM3)-X(NM2) !a1
+           FDYE(2,I) =  X1mX3 ; !c  X(NM1)-X(NM3) !a2
+           FDYE(3,I) =  X2mX1 ; !c  X(NM2)-X(NM1) !a3
 
-         AVGXY=(ABS(X1)+ABS(X2)+ABS(X3)+ABS(Y1)+ABS(Y2)+ABS(Y3))/6.d0
+           AVGXY=(ABS(X1)+ABS(X2)+ABS(X3)+ABS(Y1)+ABS(Y2)+ABS(Y3))/6.d0
 ! v49.48.02 tcm -- These are the lengths of each element edge
-         LENED1=((X2mX1)**2+(Y2mY1)**2)**0.5d0
-         LENED2=((X3mX2)**2+(Y3mY2)**2)**0.5d0
-         LENED3=((X1mX3)**2+(Y1mY3)**2)**0.5d0
+           LENED1=((X2mX1)**2+(Y2mY1)**2)**0.5d0
+           LENED2=((X3mX2)**2+(Y3mY2)**2)**0.5d0
+           LENED3=((X1mX3)**2+(Y1mY3)**2)**0.5d0
 ! v49.48.02 rewrote to use the edge lengths which get used below also
-         DIF1R=AVGXY/LENED1
-         DIF2R=AVGXY/LENED2
-         DIF3R=AVGXY/LENED3
-         DIF1R=LOG10(DIF1R)
-         DIF2R=LOG10(DIF2R)
-         DIF3R=LOG10(DIF3R)
+           DIF1R=AVGXY/LENED1
+           DIF2R=AVGXY/LENED2
+           DIF3R=AVGXY/LENED3
+           DIF1R=LOG10(DIF1R)
+           DIF2R=LOG10(DIF2R)
+           DIF3R=LOG10(DIF3R)
 
-         IF((DIF1R.GT.NPREC).OR.(DIF2R.GT.NPREC).OR.(DIF3R.GT.NPREC)) THEN
-            write(scratchMessage,9898) I
-            call allMessage(WARNING, scratchMessage)
-            WRITE(16,9898) I
- 9898       FORMAT('!!!!!!!!!!  WARNING  !!!!!!!!!' ,
-     &              'IF THE GRID COORDINATES HAVE 32 BITS ',
-     &              '(APPROX 7 DIGITS) OF PRECISION ',
-     &              'A ROBUST MODEL SOLUTION CAN NOT BE ',
-     &              'GUARANTEED AT ELEMENT NO. ',I0,
-     &              'MORE PRECISION MUST BE USED IN THE GRID.')
-         ENDIF
+           IF((DIF1R.GT.NPREC).OR.(DIF2R.GT.NPREC).OR.(DIF3R.GT.NPREC)) THEN
+              write(scratchMessage,9898) I
+              call allMessage(WARNING, scratchMessage)
+              WRITE(16,9898) I
+ 9898         FORMAT('!!!!!!!!!!  WARNING  !!!!!!!!!' ,
+     &                'IF THE GRID COORDINATES HAVE 32 BITS ',
+     &                '(APPROX 7 DIGITS) OF PRECISION ',
+     &                'A ROBUST MODEL SOLUTION CAN NOT BE ',
+     &                'GUARANTEED AT ELEMENT NO. ',I0,
+     &                'MORE PRECISION MUST BE USED IN THE GRID.')
+           ENDIF
 
-!        compute and store 2 x element areas
-!        v49.48.02 tcm rewrote 2 x area to reuse values already being used
-         AREAS(I)=(X1mX3)*(-Y3mY2)+(X3mX2)*(Y1mY3)
+!          compute and store 2 x element areas
+!          v49.48.02 tcm rewrote 2 x area to reuse values already being used
+           AREAS(I)=(X1mX3)*(-Y3mY2)+(X3mX2)*(Y1mY3)
   
-         IF ( IFSPROTS.EQ.1 .and. AREAS(I).lt.0d0 ) THEN
-!           reorder and start loop again
-            NMM = NM(I,:)
-            NM(I,2) = NMM(3); NM(I,3) = NMM(2);
-            goto 133
-         ENDIF
+           IF ( IFSPROTS.EQ.1 .and. AREAS(I).lt.0d0 ) THEN
+!             reorder and start loop again
+              NMM = NM(I,:)
+              NM(I,2) = NMM(3); NM(I,3) = NMM(2);
+           ELSE 
+              EXIT INNER
+           ENDIF
+         ENDDO INNER
     
 !...     v49.48.02 tcm -- compute element barycenters and element radius
          x1 = X( NM(I,1) )  ; 
@@ -2901,6 +2904,7 @@
       REAL(8) :: ANGLELOW,ANGLEMORE
       REAL(8), ALLOCATABLE :: ANGLE(:)
       INTEGER, ALLOCATABLE :: NEITEM(:)
+      LOGICAL :: FOUND
 
       call setMessageSource("neighb")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -2920,7 +2924,7 @@
          END DO
       END DO
 
-      DO 10 N=1,NE
+      DO N=1,NE
          NN1 = NM(N,1)
          NN2 = NM(N,2)
          NN3 = NM(N,3)
@@ -2932,36 +2936,57 @@
          NeiTabEle(NN2,NNeighEle(NN2))=N
          NeiTabEle(NN3,NNeighEle(NN3))=N
 
+         FOUND = .FALSE.
          DO J=1,NNeigh(NN1)
-            IF(NN2.EQ.NeiTab(NN1,J)) GOTO 25
+            IF(NN2.EQ.NeiTab(NN1,J)) THEN
+               FOUND = .TRUE.
+               EXIT
+            ENDIF
          END DO
-         NNeigh(NN1)=NNeigh(NN1)+1
-         NNeigh(NN2)=NNeigh(NN2)+1
-         IF((NNeigh(NN1).GT.MNEI-1).OR.(NNeigh(NN2).GT.MNEI-1)) GOTO 999
-         NeiTab(NN1,NNeigh(NN1))=NN2
-         NeiTab(NN2,NNeigh(NN2))=NN1
+         IF (.NOT.FOUND) THEN
+            NNeigh(NN1)=NNeigh(NN1)+1
+            NNeigh(NN2)=NNeigh(NN2)+1
+            IF((NNeigh(NN1).GT.MNEI-1).OR.(NNeigh(NN2).GT.MNEI-1))THEN
+                call neighb_terminateDimensioning()
+            ENDIF
+            NeiTab(NN1,NNeigh(NN1))=NN2
+            NeiTab(NN2,NNeigh(NN2))=NN1
+         ENDIF
 
- 25      CONTINUE
+         FOUND = .FALSE.
          DO J=1,NNeigh(NN1)
-            IF(NN3.EQ.NeiTab(NN1,J)) GOTO 35
+            IF(NN3.EQ.NeiTab(NN1,J)) THEN
+               FOUND = .TRUE.
+               EXIT
+            ENDIF
          END DO
-         NNeigh(NN1)=NNeigh(NN1)+1
-         NNeigh(NN3)=NNeigh(NN3)+1
-         IF((NNeigh(NN1).GT.MNEI-1).OR.(NNeigh(NN3).GT.MNEI-1)) GOTO 999
-         NeiTab(NN1,NNeigh(NN1))=NN3
-         NeiTab(NN3,NNeigh(NN3))=NN1
+         IF (.NOT.FOUND) THEN
+            NNeigh(NN1)=NNeigh(NN1)+1
+            NNeigh(NN3)=NNeigh(NN3)+1
+            IF((NNeigh(NN1).GT.MNEI-1).OR.(NNeigh(NN3).GT.MNEI-1))THEN
+                call neighb_terminateDimensioning()
+            ENDIF
+            NeiTab(NN1,NNeigh(NN1))=NN3
+            NeiTab(NN3,NNeigh(NN3))=NN1
+         ENDIF
 
- 35      CONTINUE
+         FOUND = .FALSE.
          DO J=1,NNeigh(NN2)
-            IF(NN3.EQ.NeiTab(NN2,J)) GOTO 10
+            IF(NN3.EQ.NeiTab(NN2,J)) THEN
+               FOUND = .TRUE.
+               EXIT
+            ENDIF
          END DO
-         NNeigh(NN2)=NNeigh(NN2)+1
-         NNeigh(NN3)=NNeigh(NN3)+1
-         IF((NNeigh(NN2).GT.MNEI-1).OR.(NNeigh(NN3).GT.MNEI-1)) GOTO 999
-         NeiTab(NN2,NNeigh(NN2))=NN3
-         NeiTab(NN3,NNeigh(NN3))=NN2
-
- 10   CONTINUE
+         IF (.NOT.FOUND) THEN
+            NNeigh(NN2)=NNeigh(NN2)+1
+            NNeigh(NN3)=NNeigh(NN3)+1
+            IF((NNeigh(NN2).GT.MNEI-1).OR.(NNeigh(NN3).GT.MNEI-1))THEN
+                call neighb_terminateDimensioning()
+            ENDIF
+            NeiTab(NN2,NNeigh(NN2))=NN3
+            NeiTab(NN3,NNeigh(NN3))=NN2
+         ENDIF
+      END DO
 
 !
 !     INSERT NODE ITSELF IN PLACE #1 and SORT other NEIGHBORS by
@@ -2973,7 +2998,9 @@
             DELX=X(NEITEM(J))-X(I)
             DELY=Y(NEITEM(J))-Y(I)
             DIST=SQRT(DELX*DELX+DELY*DELY)
-            IF(DIST.EQ.0.0d0) GOTO 998
+            IF(DIST.EQ.0.0d0) THEN
+                call neighb_terminateDuplicateNode(I,NEITEM(J))
+            ENDIF
             IF(DELY.NE.0.0d0) THEN
                ANGLE(J)=RAD2DEG*ACOS(DELX/DIST)
                IF(DELY.GT.0.0) ANGLE(J)=360.0d0-ANGLE(J)
@@ -3073,26 +3100,33 @@
       call unsetMessageSource()
 
       RETURN
-!
-!     TERMINATE PROGRAM IF MAXIMUM NUMBER OF NEIGHBORS SET TOO SMALL
-!
- 999  write(scratchMessage,99311)
-      call allMessage(ERROR,scratchMessage)
-99311 FORMAT('!!!!!!!!!!  FATAL ERROR !!!!!!!!! ',
-     &      'THE DIMENSIONING PARAMETER MNEI IS TOO SMALL. ',
-     &      'THERE IS A PROBLEM WITH THE DYNAMIC MEMORY ALLOCATION. ',
-     &      '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
-      call terminate()
 
- 998  write(scratchMessage,99312) I,NEITEM(J)
-      call allMessage(ERROR,scratchMessage)
-99312 FORMAT('!!!!!!!!!!  FATAL ERROR !!!!!!!!! ',
-     &     'NODES ',i0,' AND ',i0,' HAVE THE SAME COORDINATES.'
-     &     '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
-      call terminate()
 !     ------------------------------------------------------------------
       end subroutine neighb
 !     ------------------------------------------------------------------
+
+      subroutine neighb_terminateDimensioning()
+          implicit none
+        ! TERMINATE PROGRAM IF MAXIMUM NUMBER OF NEIGHBORS SET TOO SMALL
+          write(scratchMessage,99311)
+          call allMessage(ERROR,scratchMessage)
+99311     FORMAT('!!!!!!!!!!  FATAL ERROR !!!!!!!!! ',
+     &        'THE DIMENSIONING PARAMETER MNEI IS TOO SMALL. ',
+     &        'THERE IS A PROBLEM WITH THE DYNAMIC MEMORY ALLOCATION. ',
+     &        '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
+        call terminate()
+      end subroutine neighb_terminateDimensioning
+ 
+      subroutine neighb_terminateDuplicateNode(i,j)
+        implicit none
+        integer,intent(in) :: i, j
+        write(scratchMessage,99312) I,J
+        call allMessage(ERROR,scratchMessage)
+99312   FORMAT('!!!!!!!!!!  FATAL ERROR !!!!!!!!! ',
+     &       'NODES ',i0,' AND ',i0,' HAVE THE SAME COORDINATES.'
+     &       '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
+        call terminate()
+      end subroutine neighb_terminateDuplicateNode
 
 !     ------------------------------------------------------------------
 !           S U B R O U T I N E   T O T A L   A R E A   C A L C
@@ -3719,7 +3753,7 @@
                IF ( ia1 == N1 ) THEN
                   WRITE(16,*) "Fatal error in PREBCSETUP(): the primary 
      &            and slave node label are identical for the node ", ID1
-                  STOP 'dw' ;
+                  CALL EXIT(1)
                END IF
             ELSE                              
                WRITE(16,*) "Error in PREBCSETUP(): No. neighbors = ", 
@@ -3846,7 +3880,7 @@
 
           integer :: binarysearch
 
-          integer :: left, middle, right
+          integer :: left, middle, right, orientation
           real(sz) :: d
 
           if (present(delta) .eqv. .true.) then
@@ -3854,7 +3888,10 @@
           else
              d = 1d-9
           endif
-        
+
+          orientation = 1
+          if (array(2) < array(1)) orientation = -1
+       
           left = 1
           right = length
           do
@@ -3863,11 +3900,21 @@
              if ( abs(array(middle) - value) <= d) then
                 binarySearch = middle
                 return
-             elseif (array(middle) > value) then
-                right = middle - 1
-             else
-                left = middle + 1
-             end if
+             endif
+             select case(orientation)
+             case(1) 
+                if (array(middle) > value) then
+                   right = middle - 1
+                else
+                   left = middle + 1
+                end if
+             case(-1)
+                if (array(middle) < value) then
+                   right = middle - 1
+                else
+                   left = middle + 1
+                end if
+             end select
           end do
           binarysearch = right
 
@@ -3956,11 +4003,13 @@
 
       END SUBROUTINE bl_interp
 !-----------------------------------------------------------------------
-      SUBROUTINE bl_interp2(xp, yp, x_mat, y_mat, x, y, ii, w)
+      SUBROUTINE bl_interp2(xp, yp, x_mat, y_mat, x, y, ii, w, tree)
           ! This function uses bilinear interpolation to get the
           ! interpolation weights, w and the indices for interpolation
           ! Assumed to be sampled on a structured unregular grid x values
           ! specified by x_mat and the grid y values specified by y_mat
+          use kdtree2_module, only: kdtree2, kdtree2_result, 
+     &                              kdtree2_n_nearest
           implicit none
           integer, intent(in) :: xp, yp           
           real, dimension(xp,yp), intent(in) :: x_mat, y_mat
@@ -3973,25 +4022,26 @@
           real(sz) :: y11, y21, y12, y22, y_vec(yp)
           real(sz) :: d11, d12, d21, d22, denom
           real(sz) :: p(2), a(2), b(2), c(2), d(2)
-          integer  :: i, j, jj, ir, jr, ia
+          integer  :: i, j, jj, ir, jr, ia, xi, yi, ind
+          type(kdtree2), pointer :: tree
+          type(kdtree2_result) :: kdresult(1)
 
-          ! Check if structured regular..
-          if (abs(x_mat(1,1) - x_mat(1,yp)) < 1d-6) then
-             x_array = x_mat(:,1)
-             y_array = y_mat(1,:)
-             ! This is much faster..
-             call bl_interp(xp, x_array, yp, y_array, x, y, ii, w)
-             !write(16,*) 'blout',x, y
-             !write(16,*) x_array(ii(1)), y_array(ii(2))
-             !write(16,*) x_array(ii(3)), y_array(ii(4))
-             !write(16,*) ii
-             !write(16,*) w
-             return;
-          endif       
+          ! find the closest point to this node and convert to subscript
+          call kdtree2_n_nearest(tp=tree,qv=[x,y],
+     &                           nn=1,results=kdresult)
+          ind = kdresult(1)%idx  ! location of closest point
+          xi  = ind/yp           ! ind2sub
+          yi  = mod(ind,yp)      ! ind2sub
+          if (yi == 0) then 
+             yi = yp
+          else
+             xi = xi + 1 
+          endif
  
           ii   = [-1, 0, 0, 0]; ! Default indices
           ia = 0
-          do i = 1,xp
+          ! loop over points close to the nearest one  
+          do i = max(1,xi-1),min(xi+1,xp) !1,xp
              ir = i + 1
              if (ir > xp) then
                 ! If wrapping around
@@ -4002,7 +4052,7 @@
                    exit
                 endif
              endif
-             do j = 1,yp-1
+             do j = max(1,yi-1),min(yi+1,yp-1) !1,yp-1
                 jr = j + 1
                 x11 = x_mat(i,j);  x21 = x_mat(ir,j) + ia*360d0
                 x12 = x_mat(i,jr); x22 = x_mat(ir,jr) + ia*360d0
@@ -4157,7 +4207,7 @@ C
         CALL MSG_FINI()
       ENDIF
 #endif
-      STOP
+      CALL EXIT(1)
 C
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable
@@ -4263,7 +4313,7 @@ C
            call allMessage(DEBUG,"Return.") 
 #endif
            call unsetMessageSource()
-           STOP                  
+           CALL EXIT(1)          
         END SELECT
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)

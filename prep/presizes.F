@@ -104,6 +104,13 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
      &                  initWindModule
       USE OWIWIND, ONLY: nPowellSearchDomains
+#ifdef ADCNETCDF
+Casey 180318: Added NWS=13
+      USE OWIWIND_NETCDF, ONLY: NWS13ColdStartString,
+     &                          NWS13File,
+     &                          NWS13GroupForPowell,
+     &                          NWS13WindMultiplier
+#endif
 C
       IMPLICIT NONE
 C
@@ -222,13 +229,16 @@ C Logicals added for adcprep paths
       LOGICAL :: XDMF_AVAIL ! true if XDMF was compiled in
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       NAMELIST /waveCoupling/ WaveWindMultiplier
+#ifdef ADCNETCDF
+Casey 180318: Added NWS=13
+      NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,
+     &    NWS13WindMultiplier,NWS13GroupForPowell
+#endif
       !
       ! @jasonfleming: reduce memory usage if there are no weir boundaries
       ! with cross barrier pipes
       logical :: meshHasWeirWithPipes
       ! Warn Elev control namelist
-      NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
-     &  WarnElevDumpLimit, ErrorElev
 c.... !wjp added for warnElev namelist
       REAL(SZ) :: WarnElev = 20.0  !
       REAL(SZ) :: ErrorElev = 1000.0  !
@@ -236,6 +246,23 @@ c.... !wjp added for warnElev namelist
       INTEGER :: WarnElevDumpLimit = 50  !
       LOGICAL :: WARN_ELEV_FLAG = .FALSE.   
       LOGICAL :: FOUND_WARNELEV_NML = .false.  !
+      NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
+     &  WarnElevDumpLimit, ErrorElev
+      ! Ali Dispersion control namelist
+      REAL(SZ) :: Bd = 0.23394_SZ  ! exponent of depth (default)
+      REAL(SZ) :: Ad = 0.0050189_SZ ! coefficient of depth (default)
+      REAL(SZ) :: Cs = 1500.0_SZ ! Speed of sound in water
+      LOGICAL :: CAliDisp= .false.  !
+      LOGICAL :: FOUND_ALIDISP_NML = .false.  !
+      NAMELIST /AliDispersionControl/ CAliDisp, Cs, Ad, Bd
+      ! density control namelist
+      LOGICAL :: FOUND_DENSITY_NML = .false.  !
+      character(len=100) :: densityRunType = 'none' ! diagnostic or prognostic
+      character(len=100) :: densityForcingType = 'SigmaT' ! sigmaT, salinity, etc
+      character(len=100) :: densityFileName = 'fort.11.nc' ! filename
+      integer :: densityTimeIterator = 1 ! BC3D time step iteration skipper
+      NAMELIST /densityControl/ densityRunType, densityFileName, 
+     &  densityTimeIterator, densityForcingType
 
 C---------------------end of data declarations--------------------------------C
 
@@ -252,10 +279,10 @@ C rl  10/10/01                                                                C
 C
 C-----------------------------------------------------------------------------C
 C
-C     jgf51.21.27: Broke the sizeup routine into two pieces, one for 
+C     jgf51.21.27: Broke the sizeup routine into two pieces, one for
 C     reading the fort.14 and one for reading the fort.15. This enables
 C     the reading of mesh files in different formats without affecting
-C     the reading of the fort.15 file. 
+C     the reading of the fort.15 file.
       SUBROUTINE SIZEUP14()
       use memory_usage
       IMPLICIT NONE
@@ -288,33 +315,30 @@ C...OPEN AND PROCESS THE UNIT 14 ADCIRC GRID FILE TO DETERMINE SIZES
 C
       FOUND = .FALSE.
       IF (USE_DEFAULT) THEN
-        GRID='fort.14'
-        INQUIRE(FILE=GRID,EXIST=FOUND)
-        IF(FOUND) THEN
-           GOTO 32
-        ELSE
-           print *, GRID, " not found"
-           STOP
-        ENDIF
+         GRID='fort.14'
+         INQUIRE(FILE=GRID,EXIST=FOUND)
+         IF(.NOT.FOUND) THEN
+            print *, GRID, " not found"
+            CALL EXIT(1)
+         ENDIF
       ELSE
-  31    WRITE(*,*) 'Enter the name of the ADCIRC UNIT 14 (Grid) file:'
-        READ(*,'(a60)') GRID
-        INQUIRE(FILE=trim(GRID),EXIST=FOUND)
-        IF(FOUND) THEN
-          GOTO 32
-        ELSE
-          GOTO 31
-        ENDIF
+         DO WHILE(.NOT.FOUND)
+            WRITE(*,*) 
+     &        'Enter the name of the ADCIRC UNIT 14 (Grid) file:'
+            READ(*,'(a60)') GRID
+            INQUIRE(FILE=trim(GRID),EXIST=FOUND)
+         ENDDO
       ENDIF
-  32  WRITE(*,1011) trim(GRID)
+      WRITE(*,1011) trim(GRID)
       OPEN(14,FILE=trim(GRID))
 
- 33   READ(14,'(a80)') LINEI                       !SKIP OVER AGRID
-      DO I=1,95
-         IF(CHARI(I).NE.' ') GOTO 34
-      END DO
-      GOTO 33
- 34   READ(14,*) MNE,MNP                            !PROCESS MNE,MNP
+      L14: DO WHILE(.TRUE.)
+         READ(14,'(a80)') LINEI                       !SKIP OVER AGRID
+         DO I=1,95
+            IF(CHARI(I).NE.' ') EXIT L14
+         END DO
+      ENDDO L14
+      READ(14,*) MNE,MNP                            !PROCESS MNE,MNP
 C
       ALLOCATE (NNEIGH(MNP))                        !Allocate Neighbor Table
       nbytes = 4*mnp
@@ -435,13 +459,13 @@ C if ONLY partitioning mesh using metis or a prephot
       ENDIF
       !
       ! jgf51.21.27: This subroutine rewinds unit 14 but leaves the
-      ! file open as it will be read again in read_global.F 
+      ! file open as it will be read again in read_global.F
       ! (subroutine read14)
       return
 1011  FORMAT(' File ',A60,/,' WAS FOUND!  Opening & Processing file',/)
-C-----------------------------------------------------------------------------C      
+C-----------------------------------------------------------------------------C
       end subroutine sizeup14
-C-----------------------------------------------------------------------------C      
+C-----------------------------------------------------------------------------C
 
 
 
@@ -459,9 +483,9 @@ C-----------------------------------------------------------------------------C
 C
       ! jgf51.21.27: This subroutine was created out of the second half
       ! of the original sizeup() subroutine to separate the reading of
-      ! the control file from the reading of the mesh file. This 
+      ! the control file from the reading of the mesh file. This
       ! enables different subroutines to be called for reading the mesh
-      ! file, depending on the format. 
+      ! file, depending on the format.
       SUBROUTINE SIZEUP15()
       use memory_usage
 
@@ -499,8 +523,14 @@ c... tcm v50.79 addition for metControl namelist
       logical :: found_metCon_nml  !flag to determine if the metControl namelist was present
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       LOGICAL :: FOUND_WC_NML
+#ifdef ADCNETCDF
+Casey 180318: Added NWS=13
+      LOGICAL :: FOUND_OWINC_NML
+#endif
       LOGICAL :: found_tvw_nml
       LOGICAL :: found_WarnElev_nml = .false.
+      LOGICAL :: found_AliDisp_nml = .false.
+      LOGICAL :: found_density_nml = .false.
 C.... tcm v51.20.04 additions for station location file
       integer ::  ios_stations
       integer :: MNSTAE2,MNSTAV2,MNSTAC2,MNSTAM2
@@ -531,6 +561,10 @@ C     tcm v50.66.02 -- additions for time varying bathymetry
 C
 C     tcm v50.79 -- addition for metControl namelist
       FOUND_metCon_NML = .FALSE.
+#ifdef ADCNETCDF
+Casey 180318: Added NWS=13
+      FOUND_OWINC_NML = .FALSE.
+#endif
 C
 C...OPEN AND PROCESS THE UNIT 15 ADCIRC EXTERNAL MODE (2DDI)
 C...HORIZONTAL RUN INFORMATION FILE
@@ -539,25 +573,21 @@ C--Enter, Locate, Open, and Read the ADCIRC UNIT 15 (Run Info) File
 C
       FOUND = .FALSE.
       IF (USE_DEFAULT) THEN
-        RUNINFO='fort.15'
-        INQUIRE(FILE=RUNINFO,EXIST=FOUND)
-        IF(FOUND) THEN
-           GOTO 132
-        ELSE
-           print *, RUNINFO, " not found"
-           STOP
-        ENDIF
+         RUNINFO='fort.15'
+         INQUIRE(FILE=RUNINFO,EXIST=FOUND)
+         IF(.NOT.FOUND) THEN
+            print *, RUNINFO, " not found"
+            CALL EXIT(1)
+         ENDIF
       ELSE
- 131    WRITE(*,*) 'Enter the name of ADCIRC UNIT 15 (Run Info) file:'
-        READ(*,'(A)') RUNINFO
-        INQUIRE(FILE=trim(RUNINFO),EXIST=FOUND)
-        IF(FOUND) THEN
-          GOTO 132
-        ELSE
-          GOTO 131
-        ENDIF
+         DO WHILE(.NOT.FOUND)
+            WRITE(*,*) 
+     &        'Enter the name of ADCIRC UNIT 15 (Run Info) file:'
+            READ(*,'(A)') RUNINFO
+            INQUIRE(FILE=trim(RUNINFO),EXIST=FOUND)
+         ENDDO
       ENDIF
- 132  WRITE(*,1011) RUNINFO
+      WRITE(*,1011) RUNINFO
       OPEN(15,FILE=RUNINFO)
 
 c...  tcm v50.66.02 Addtions for Time Varying Bathymetry
@@ -565,16 +595,16 @@ c...  read through the fort.15 file for the namelist (TimeBathyControl) for
 c...  the time varying bathymetry.  This namelist must be at the bottom of the
 c...  fort.15 file. If found, then set the appropriate values (btiminc,bchgtiminc,
 c...  and nddt).  If the namelist is not there, then the time varying bathymetry
-c...  will not be used. 
+c...  will not be used.
 C...
 C...  After this search and read, we will close the file and then reopen it
 c...  for further processing the traditional non-namelist components.
 C...
-      READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT) 
+      READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT)
 
       IF (IOS_NDDT < 0) THEN
-c.....   it is possible for the namelist to be present in the file and occuring at the end 
-c.....   of the file with no line breaks after the ending "\" which causes the iostat to 
+c.....   it is possible for the namelist to be present in the file and occuring at the end
+c.....   of the file with no line breaks after the ending "\" which causes the iostat to
 c.....   return a negative value.  By checking to be sure a namelist variable was set to
 c....    a non-default value we can determine this was the case.
          IF (NDDT.NE.0) THEN
@@ -591,7 +621,7 @@ c....    a non-default value we can determine this was the case.
          found_tbc_nml = .true.
 !         WRITE(*,*) 'THERE WAS A PROBLEM PROCESSING THE TimeBathyControl NAMELIST'
 !         WRITE(*,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.'
-         stop
+         CALL EXIT(1)
       ENDIF
 C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       REWIND(15)
@@ -619,7 +649,7 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          found_metCon_nml = .true.  !tcm v50.79 added
       ENDIF
       REWIND(15)
-      
+
       ! zc: Add namelist for user to control time varying weirs
       IOS = 0
       READ(UNIT=15,NML=TVWControl,IOSTAT=IOS)
@@ -649,11 +679,23 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       ENDIF
       REWIND(15)
 
+#ifdef ADCNETCDF
+Casey 180318: Added NWS=13
+      READ(UNIT=15,NML=owiWindNetcdf,IOSTAT=IOS)
+      IF(IOS.GT.0)THEN
+         WRITE(*,*) "INFO: The owiWindNetcdf namelist was not found."
+         FOUND_OWINC_NML = .FALSE.
+      ELSE
+         FOUND_OWINC_NML = .TRUE.
+      ENDIF
+      REWIND(15)
+#endif
+
 c...  tcm v52.30.01 Addtions for using the Smagorinski Control Namelist
 c...  read through the fort.15 file for the namelist (Smag_Control) for
 c...  using upper and lower limits on Smagorinski.  This namelist must be at the bottom
 c...  of the fort.15 file. If found, then set the appropriate values (Smag_Comp_Flag,
-c...  SMAG_UPPER_LIM, and Smag_Lower_Lim).  If the namelist is not there, then the 
+c...  SMAG_UPPER_LIM, and Smag_Lower_Lim).  If the namelist is not there, then the
 c...  Smagorinski limit adjustments will not be used.
 C...
 C...  After this search and read, we will close the file and then reopen it
@@ -682,7 +724,7 @@ c....    a non-default value we can determine this was the case.
          found_smag_nml = .true.
 !         WRITE(*,*) 'THERE WAS A PROBLEM PROCESSING THE Smag_Control NAMELIST'
 !         WRITE(*,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCPREP NOW.'
-         stop
+         CALL EXIT(1)
       ENDIF
 C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       REWIND(15)
@@ -692,6 +734,22 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          write(*,*) "INFO: The WarnElevControl namelist was not found."
       ELSE
          found_WarnElev_nml = .true.  
+      ENDIF
+      REWIND(15)
+      
+      READ(UNIT=15,NML=AliDispersionControl,IOSTAT=IOS)
+      IF (IOS.gt.0) THEN
+         write(*,*) "INFO: The AliDisp Control namelist was not found."
+      ELSE
+         found_AliDisp_nml = .true.  
+      ENDIF
+      REWIND(15)
+      
+      READ(UNIT=15,NML=densityControl,IOSTAT=IOS)
+      IF (IOS.gt.0) THEN
+         write(*,*) "INFO: The density Control namelist was not found."
+      ELSE
+         found_density_nml = .true.  
       ENDIF
       REWIND(15)
 C
@@ -711,16 +769,18 @@ C
       CTIP   = .FALSE.
       CSOLIT = .FALSE.
 C
- 23   READ(15,80) LINEI                             !SKIP OVER RUNDES
-      DO I=1,95
-         IF(CHARI(I).NE.' ') GOTO 24
-      END DO
-      GOTO 23
- 24   READ(15,80) LINEI                             !SKIP OVER RUNID
-      DO I=1,95
-         IF(CHARI(I).NE.' ') GOTO 25
-      ENDDO
-      GOTO 24
+      L15A: DO WHILE(.TRUE.)
+         READ(15,80) LINEI                             !SKIP OVER RUNDES
+         DO I=1,95
+            IF(CHARI(I).NE.' ') EXIT L15A
+         END DO
+      ENDDO L15A
+      L15B: DO WHILE(.TRUE.)
+         READ(15,80) LINEI                             !SKIP OVER RUNID
+         DO I=1,95
+            IF(CHARI(I).NE.' ') EXIT L15B
+         ENDDO
+      ENDDO L15B
 C
  25   READ(15,*) IDUM  ! SKIP NFOVER
       READ(15,*) IDUM  ! SKIP NABOUT
@@ -744,7 +804,7 @@ C
 c        C3D  = .TRUE.
 c        C3DDSS = .TRUE.
          print *, "DSS model type not presently supported"
-         stop
+         CALL EXIT(1)
       CASE(10)
          C2DDI = .TRUE.
          C2D_PTrans    = .TRUE.
@@ -780,7 +840,7 @@ c        C3DDSS = .TRUE.
            C3DVS  = .TRUE.
          ELSE
             print *, "model type not supported"
-            stop
+            CALL EXIT(1)
          ENDIF
       END SELECT
 C
@@ -817,7 +877,7 @@ C               with pre-computed momnetum dispersion and BPG
 C             ! with pre-computed momentum dispersion and BPG on structured grid
       CASE DEFAULT
          print *, "IDEN=",IDEN," not supported"
-         stop
+         CALL EXIT(1)
       END SELECT
 C
       DO IL=1,4                                     !SKIP OVER NOLIBF-NOLICAT
@@ -896,7 +956,8 @@ C.... tcm v48.4641 additions for ice
      &     .OR.(ABS(NWS).EQ.20)  !jie NWS=20
      &     .OR.(ABS(NWS).EQ.16)  !tcm v51.06.02 added for nws=16 GFDL Met
      &     .OR.(NWS.EQ.10)       !yf added for nws=10 GFS Met
-     &     .OR.(ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.14).OR.(NWS.EQ.19)) THEN
+     &     .OR.(ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.13).OR.(ABS(NWS).EQ.14)
+     &     .OR.(NWS.EQ.19))THEN
         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
         IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4)))
      &         READ(15,*) WTIMINC,RSTIMINC
@@ -938,9 +999,9 @@ C.... tcm v48.4641 additions for ice
       IF ((ABS(NWS)).EQ.30) THEN
          SELECT CASE(NRS)
          CASE(0) ! no wave radiation stress
-                      ! YYYY  MM   DD HH24  StNum BLAdj GEOFACTOR 
+                      ! YYYY  MM   DD HH24  StNum BLAdj GEOFACTOR
                       ! WTIMINC pureVortex pureBackgrnd
-            READ(15,*) IDUM,IDUM,IDUM,IDUM, IDUM, RDUM,   IDUM,  
+            READ(15,*) IDUM,IDUM,IDUM,IDUM, IDUM, RDUM,   IDUM,
      &                  WTIMINC,   RDUM,      RDUM
          CASE DEFAULT ! some kind of wave radiation stress
                       ! YYYY MM DD HH24 StNum BLAdj GEOFACTOR WTIMINC RSTIMINC pureVortex pureBack
@@ -955,7 +1016,8 @@ C.... tcm v48.4641 additions for ice
         MNWP=MNP
       ENDIF
 C.... tcm v49.64.01 additions for ice
-      IF(ABS(NWS).EQ.6) THEN
+C.... xyc v52.30 NWS=7 follow the same format as NWS=6
+      IF((ABS(NWS).EQ.6).OR.(ABS(NWS).EQ.7)) THEN
         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC            !SKIP OVER WTIMINC
         IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC
         IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,CICE_TIMINC            !SKIP OVER WTIMINC
@@ -972,32 +1034,34 @@ C.... tcm v49.64.01 additions for ice
       ENDDO
       READ(15,*) NTIF                              !PROCESS NTIF
       DO IL=1,NTIF                                 !SKIP OVER TIPOTAG & TPK, AMIGT,etc.
- 26      READ(15,80) LINEI
-         DO I=1,95
-            IF(CHARI(I).NE.' ') GOTO 27
-         ENDDO
-         GOTO 26
- 27     READ(15,*) RDUM
+         L15C: DO WHILE(.TRUE.)
+            READ(15,80) LINEI
+            DO I=1,95
+               IF(CHARI(I).NE.' ') EXIT L15C
+            ENDDO
+         ENDDO L15C
+         READ(15,*) RDUM
       ENDDO
       MNTIF=NTIF
       IF(NTIF.EQ.0) MNTIF=1
       READ(15,*) MNBFR                             !PROCESS MNBFR
       DO IL=1,MNBFR                                !SKIP OVER BOUNTAG, & AMIG, FF,etc.
- 28      READ(15,80) LINEI
-         DO I=1,95
-            IF(CHARI(I).NE.' ') GOTO 29
-         ENDDO
-         GOTO 28
- 29      READ(15,*) RDUM
-
+         L15D: DO WHILE(.TRUE.)
+            READ(15,80) LINEI
+            DO I=1,95
+               IF(CHARI(I).NE.' ') EXIT L15D
+            ENDDO
+         ENDDO L15D
+         READ(15,*) RDUM
       ENDDO
       DO IL1=1,MNBFR
- 40      READ(15,80) LINEI                          !SKIP OVER ALPHA
-         DO I=1,95
-            IF(CHARI(I).NE.' ') GOTO 41
-         END DO
-         GOTO 40
- 41      DO IL2=1,skipNETA
+         L15E: DO WHILE(.TRUE.)
+            READ(15,80) LINEI                          !SKIP OVER ALPHA
+            DO I=1,95
+               IF(CHARI(I).NE.' ') EXIT L15E
+            END DO
+         ENDDO L15E
+         DO IL2=1,skipNETA
             READ(15,*) RDUM                          !SKIP OVER BOUNDARY FORCINGS
          ENDDO
       ENDDO
@@ -1007,20 +1071,22 @@ C.... tcm v49.64.01 additions for ice
       IF (fluxBoundary.eqv..true.) READ(15,*) MNFFR   !# FREQ IN NORMAL FLUX B.C.
 
       DO IL=1,MNFFR                                !SKIP OVER BOUNTAG, & AMIG, FF,etc.
- 42      READ(15,80) LINEI
-         DO I=1,95
-            IF(CHARI(I).NE.' ') GOTO 43
-         ENDDO
-         GOTO 42
- 43      READ(15,*) RDUM
+         L15F: DO WHILE(.TRUE.)
+            READ(15,80) LINEI
+            DO I=1,95
+               IF(CHARI(I).NE.' ') EXIT L15F
+            ENDDO
+         ENDDO L15F
+         READ(15,*) RDUM
       ENDDO
       DO IL1=1,MNFFR
- 44      READ(15,80) LINEI                          !SKIP OVER ALPHA
-         DO I=1,95
-            IF(CHARI(I).NE.' ') GOTO 45
-         ENDDO
-         GOTO 44
- 45      DO IL2=1,NDISC
+         L15G: DO WHILE(.TRUE.)
+            READ(15,80) LINEI                          !SKIP OVER ALPHA
+            DO I=1,95
+               IF(CHARI(I).NE.' ') EXIT L15G
+            ENDDO
+         ENDDO L15G
+         DO IL2=1,NDISC
             READ(15,*) RDUM                          !SKIP OVER BOUNDARY FORCINGS
          ENDDO
       ENDDO
@@ -1034,7 +1100,7 @@ C
       call setFormatUsage(idum)
 
       READ(15,*) MNSTAE                             !PROCESS MNSTAE
-      ! tcm v51.20.03 -- added negative mnstae to signal use of external station file elev_stat.151 
+      ! tcm v51.20.03 -- added negative mnstae to signal use of external station file elev_stat.151
       if (MNSTAE < 0) then
          write(*,*) "External File Used for Elevation Station Locations"
          USE_ELEV_STAT_FILE = .TRUE.
@@ -1047,9 +1113,9 @@ C
          endif
 7690     if (ios_stations .ne. 0) then
             write(*,*) "Error in Reading Elevation Station File: elev_stat.151"
-            stop  ! there is a stop here
-         endif 
-         close(151)                 
+            CALL EXIT(1)  ! there is a stop here
+         endif
+         close(151)
       ELSE
          write(*,*) "Elevation Station Locations contained in fort.15"
          USE_ELEV_STAT_FILE = .FALSE.
@@ -1080,10 +1146,10 @@ C
          endif
 7691     if (ios_stations .ne. 0) then
             write(*,*) "Error in Reading Velocity Station File: vel_stat.151"
-            stop  ! there is a stop here
+            CALL EXIT(1)  ! there is a stop here
          endif
-         close(151)                  
-      else 
+         close(151)
+      else
          write(*,*) "Velocity Station Locations Contained in fort.15"
          USE_VEL_STAT_FILE = .false.
          DO IL=1,MNSTAV
@@ -1114,10 +1180,10 @@ C
             endif
 7692        if (ios_stations .ne. 0) then
                write(*,*) "Error in Reading Concentration Station File: conc_stat.151"
-               stop  ! there is a stop here
+               CALL EXIT(1)  ! there is a stop here
             endif
-            close(151)                  
-         else 
+            close(151)
+         else
             write(*,*) "Concentration Station Locations Contained in fort.15"
             USE_CONC_STAT_FILE = .false.
             DO IL=1,MNSTAC
@@ -1150,10 +1216,10 @@ C
            endif
 7693       if (ios_stations .ne. 0) then
               write(*,*) "Error in Reading MET Station File: met_stat.151"
-              stop  ! there is a stop here
+              CALL EXIT(1)  ! there is a stop here
            endif
            close(151)
-        else 
+        else
            write(*,*) "MET Station Locations Contained in fort.15"
            USE_MET_STAT_FILE = .false.
            DO IL=1,MNSTAM
@@ -1168,8 +1234,8 @@ C
 
       READ(15,*) IDUM                            !SKIP OVER NOUTGV, TOUTSGV...
       call setFormatUsage(idum)
-      
-      IF (IM.EQ.10) THEN 
+
+      IF (IM.EQ.10) THEN
          READ(15,*) IDUM               !SKIP OVER NOUTGC, TOUTSGC...
          call setFormatUsage(idum)
       ENDIF
@@ -1179,12 +1245,13 @@ C
       ENDIF
       READ(15,*) NHARF                           !PROCESS MNHARF
       DO IL1=1,NHARF
- 47      READ(15,80) LINEI                       !SKIP OVER HAFNAM
-         DO I=1,95
-            IF(CHARI(I).NE.' ') GOTO 48
-         ENDDO
-         GOTO 47
- 48      READ(15,*) RDUM,RDUM,RDUM             !SKIP OVER HAFREQ,HAFF,HAFACE
+         L15H: DO WHILE(.TRUE.)
+            READ(15,80) LINEI                       !SKIP OVER HAFNAM
+            DO I=1,95
+               IF(CHARI(I).NE.' ') EXIT L15H
+            ENDDO
+         ENDDO L15H
+         READ(15,*) RDUM,RDUM,RDUM             !SKIP OVER HAFREQ,HAFF,HAFACE
       ENDDO
 C
       READ(15,*) THAS,THAF,NHAINC,FMV               !READ THAS,...FMV
@@ -1205,13 +1272,13 @@ C
          WRITE(*,*)'ERROR: NetCDF input or output files were specified.'
          WRITE(*,*) 'but adcprep was not compiled with NetCDF support.'
          WRITE(*,*) 'Please recompile adcprep with NetCDF libraries.'
-         STOP
+         CALL EXIT(1)
       ENDIF
       IF ( (useXDMF.eqv..true.).AND.(XDMF_AVAIL.eqv..false.) ) THEN
          WRITE(*,*)'ERROR: XDMF output files were specified.'
          WRITE(*,*) 'but adcprep was not compiled with XDMF support.'
          WRITE(*,*) 'Please recompile adcprep with XDMF libraries.'
-         STOP
+         CALL EXIT(1)
       ENDIF
 C
 C...THIS SECTION TO LUMP THE GWCE MATRIX
@@ -1325,11 +1392,12 @@ C
       IF(ABS(NWS).EQ.45) WRITE(*,3015) !jgfdebug46.02
       IF(ABS(NWS).EQ.5) WRITE(*,3016)
       IF(ABS(NWS).EQ.6) WRITE(*,3017)
+      IF(ABS(NWS).EQ.7) WRITE(*,3033)  !xyc52.30 added
       IF(ABS(NWS).EQ.8) WRITE(*,3217)
       IF(NRS.GE.1) WRITE(*,3018) ! sb46.28sb03
       IF(NWS.EQ.10) WRITE(*,3019)
       IF(NWS.EQ.11) WRITE(*,3020)
-C     sb46.28sb01 added NWS=12: OWI format
+C     sb46.28sb01 added NWS=12: OWI format 
       IF(ABS(NWS).EQ.12) WRITE(*,3023)
       IF(ABS(NWS).EQ.19) WRITE(*,3219)
       IF(ABS(NWS).EQ.20) WRITE(*,3220)
@@ -1348,10 +1416,10 @@ C     sb46.28sb01 added NWS=12: OWI format
       IF(ITITER.EQ.0) WRITE(*,3104)
       IF(ITITER.GT.0) WRITE(*,3105)
       IF(ITITER.LT.0) WRITE(*,3106)
-      IF(USE_ELEV_STAT_FILE) WRITE(*,3180)  !tcm v51.20.03 
-      IF(USE_VEL_STAT_FILE) WRITE(*,3181)   !tcm v51.20.03 
-      IF(USE_MET_STAT_FILE) WRITE(*,3182)   !tcm v51.20.03 
-      IF(USE_CONC_STAT_FILE) WRITE(*,3183)  !tcm v51.20.03 
+      IF(USE_ELEV_STAT_FILE) WRITE(*,3180)  !tcm v51.20.03
+      IF(USE_VEL_STAT_FILE) WRITE(*,3181)   !tcm v51.20.03
+      IF(USE_MET_STAT_FILE) WRITE(*,3182)   !tcm v51.20.03
+      IF(USE_CONC_STAT_FILE) WRITE(*,3183)  !tcm v51.20.03
       WRITE(*,3108)
 C
  3000 FORMAT(' *****************************************************',/,
@@ -1379,10 +1447,11 @@ C
  3015 FORMAT(' *   Also, NWS=+-4 meteorological forcing is used,   *')
  3016 FORMAT(' *   Also, NWS=+-5 meteorological forcing is used,   *')
  3017 FORMAT(' *   Also, NWS=+-6 meteorological forcing is used,   *')
+ 3033 FORMAT(' *   Also, NWS=+-7 meteorological forcing is used,   *')
  3217 FORMAT(' *   Also, NWS=+-8 Holland wind forcing is used,     *')
  3219 FORMAT(' *   Also, NWS=+-19 Asymmetric Holland wind v2.0     *',/,
      &       ' *                 forcing is used,                  *')
- 3220 FORMAT(' *   Also, NWS=+-20 Generalized Asym. Model is used  *') 
+ 3220 FORMAT(' *   Also, NWS=+-20 Generalized Asym. Model is used  *')
  3026 FORMAT(' *   Also, NWS=+-16 GFDL Met Data is used            *')
  3221 FORMAT(' *   Also, ABS(NWS)>=1000 ice concentration are used,*')
  3223 FORMAT(' *   Also, NWS=+-29 VortexOWI met forcing is used,   *')
@@ -1425,13 +1494,13 @@ C
       !  S U B R O U T I N E   S E T   F O R M A T   U S A G E
       !-----------------------------------------------------------------
       ! If netCDF or XDMF file formats are used, the reading of extra
-      ! metadata from the fort.15 file is triggered. 
+      ! metadata from the fort.15 file is triggered.
       !-----------------------------------------------------------------
       subroutine setFormatUsage(idum)
       use sizes, only : NETCDF3, NETCDF4, XDMF
       implicit none
       integer, intent(in) :: idum
-      
+
          select case(abs(idum))
          case(NETCDF3,NETCDF4)
             useNetCDF = .true.

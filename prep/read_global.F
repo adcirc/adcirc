@@ -76,9 +76,9 @@ C
 c     READ(14,80) NSIZES
 c     READ(NSIZES,*) NELG,NNODG
 c     CALL GETMSG(NSIZES,SIZEMSG)
-     
+
 C--Initialize hashtable
-      ALLOCATE ( labels(1:NNODG) ) 
+      ALLOCATE ( labels(1:NNODG) )
       CALL dict(node_dict,NNODG)
 C
 C--Read Nodal Coordinates and Bathymetry
@@ -89,7 +89,8 @@ C
          READ(14,*) labels(I),X(I),Y(I),DP(I)
          IF (labels(I).NE.I) THEN
             print *, I,J
-            STOP 'Node Numbering not in Sequential Order'
+            WRITE(*,'(A)') 'Error: Node Numbering not in Sequential Order'
+            CALL EXIT(1) 
          ENDIF
          call add_ipair(node_dict,labels(I),I)
       ENDDO
@@ -100,8 +101,9 @@ C
           READ(14,*) J,ITEMP,n1,n2,n3
           IF (J.NE.I) THEN
             print *, I,J
-            STOP 'Element Numbering not Sequential'
-          ENDIF 
+            WRITE(*,'(A)') 'Error: Element Numbering not in Sequential Order'
+            CALL EXIT(1) 
+          ENDIF
           NNEG(1,I) = find(node_dict,n1)
           NNEG(2,I) = find(node_dict,n2)
           NNEG(3,I) = find(node_dict,n3)
@@ -130,7 +132,7 @@ C...
          NUMLINES=NUMLINES+1
          READ(NVDLLMSG(K),*) NVDLL(K)
          DO I=1,NVDLL(K)
-            READ(14,*) n1 
+            READ(14,*) n1
             NBDV(K,I) = find(node_dict,n1)
             NUMLINES=NUMLINES+1
          ENDDO
@@ -144,7 +146,7 @@ C
             NETA = J
             print *, "ADCPP corrected this error"
          ELSE
-            stop
+            CALL EXIT(1)
          ENDIF
       ENDIF
 C
@@ -168,7 +170,7 @@ C.... DW
 C.... DW
       ! jgf51.52.23: The LBCODE array is dimensioned by MNVEL which is 
       ! larger than the number of values in the LBCODE array. So we
-      ! need to initialize to a value that will hopefully cause obvious 
+      ! need to initialize to a value that will hopefully cause obvious
       ! isses if an initialized value is accidentally used.
       LBCODE(:) = -99
       DO K = 1,NBOU
@@ -197,7 +199,7 @@ C
          select case(ITYPE)
          case(0,10,20,30,40,1,11,21,41)
             DO I=1,NVELL(K)
-               READ(14,*) n1 
+               READ(14,*) n1
                NBVV(K,I) = find(node_dict,n1)
               IBCONNR(K,I) = 0
             ENDDO
@@ -219,7 +221,7 @@ C
             ENDDO
          case(5,25)
             DO I =1,NVELL(K)
-               READ(14,*) n1,n2, 
+               READ(14,*) n1,n2,
      &                   BAR1(K,I),BAR2(K,I),BAR3(K,I),
      &                   BAR4(K,I),BAR5(K,I),BAR6(K,I)
                NBVV(K,I) = find(node_dict,n1)
@@ -228,7 +230,7 @@ C
                NWEIR = NWEIR+1
                WEIR(NWEIR) = NBVV(K,I)
                WEIRD(NWEIR) = IBCONNR(K,I)
-            ENDDO    
+            ENDDO
          case(2,12,22,32,52)
            NFLUXF=1 !jgf51.52.23
            DO I=1,NVELL(K)
@@ -265,7 +267,7 @@ C..... DW
 
          case default
             print *, "IBTYPE not set correctly for segment ",K
-            stop
+            CALL EXIT(1)
          end select
       ENDDO
       !jgf51.52.23: Record the actual number of values stored in the
@@ -361,14 +363,14 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
-C                        S U B R O U T I N E   
+C                        S U B R O U T I N E
 C            G E T   M E S H   P A R A M E T E R S   X D M F
 C----------------------------------------------------------------------
 C     jgf51.21.29: If the mesh file is in XDMF format, the adcirc module
 C     mesh.F is used to read the data. In order to get the data into the
-C     pre_global module, this subroutine is required. Someday, adcprep 
-C     will no longer use pre_global, and will just rely on the adcirc 
-C     global module, and we will be able to remove this subroutine.  
+C     pre_global module, this subroutine is required. Someday, adcprep
+C     will no longer use pre_global, and will just rely on the adcirc
+C     global module, and we will be able to remove this subroutine.
 C----------------------------------------------------------------------
       subroutine getMeshParametersXDMF()
       use memory_usage
@@ -378,19 +380,19 @@ C----------------------------------------------------------------------
      &   nbdv, nvellmsg, nvell, lbcode, ibtype, nbvv, ibconnr,
      &   bar1, bar2, bar3, weir, weird, flux14_ary, bcts14_ary, agrid,
      &   aperiodic_bc_ts, bndbcriver, exist_bc_ts, exist_flux, iden,
-     &   mnbou, mnvel, nbou, nboumsg, nelg, neta, netamsg, nfover, 
+     &   mnbou, mnvel, nbou, nboumsg, nelg, neta, netamsg, nfover,
      &   nnodg, nope, nopemsg, nvel, nvelmsg, nweir, river_above_msl,
      &   alloc_main1
       use mesh, only : getMeshSizesForPrep, getMeshForPrep, nm
-      use boundaries, only : getBoundarySizesForPrep, 
+      use boundaries, only : getBoundarySizesForPrep,
      &    getBoundariesForPrep
       implicit none
       integer, allocatable :: nneigh(:)
       integer :: i, j, k, nbytes
       !
-      ! 
+      !
       call getMeshSizesForPrep(nnodg, nelg)
-      call getBoundarySizesForPrep(nbou, nvel, neta, nope, 
+      call getBoundarySizesForPrep(nbou, nvel, neta, nope,
      &   nweir, exist_flux)
       write(netamsg,'(i0)') neta
       write(nopemsg,'(i0)') nope
@@ -406,7 +408,7 @@ C----------------------------------------------------------------------
       if (exist_flux.ne.0) then
          fluxBoundary = .true.
       endif
-      write(*,'(a,i0)') "neta =", neta      
+      write(*,'(a,i0)') "neta =", neta
       call alloc_main1()
       !
       ! get the element table
@@ -415,10 +417,10 @@ C----------------------------------------------------------------------
       end do
       !
       ! get mesh parameters
-      call getMeshForPrep(agrid, x, y, dp) 
-      call getBoundariesForPrep(nvdll, nvell, ibtypee, nbdv, lbcode, ibtype, nbvv, 
-     &   ibconnr, bar1, bar2, bar3, weir, weird, iden, nfover,  
-     &   exist_flux, flux14_ary)     
+      call getMeshForPrep(agrid, x, y, dp)
+      call getBoundariesForPrep(nvdll, nvell, ibtypee, nbdv, lbcode, ibtype, nbvv,
+     &   ibconnr, bar1, bar2, bar3, weir, weird, iden, nfover,
+     &   exist_flux, flux14_ary)
       do k=1,nope
          write(nvdllmsg(k),'(i0)') nvdll(k)
       end do
@@ -427,7 +429,7 @@ C----------------------------------------------------------------------
       end do
       !
       ! compute number of neighbors of each node
-      allocate (nneigh(mnp))                      
+      allocate (nneigh(mnp))
       nbytes = 4*mnp
       call memory_alloc(nbytes)
       NNeigh(:) = 0
@@ -498,25 +500,29 @@ C
       INTEGER :: ios_tvw
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       INTEGER :: IOS_WC
+#ifdef ADCNETCDF
+Casey 180318: Added NWS=13
+      INTEGER :: IOS_OWINC
+#endif
 C...tcm v51.20.03 Local variables for external station location files
       INTEGER :: NSTAE2,NSTAV2,NSTAC2,NSTAM2
       INTEGER :: IOS_STATIONS
       INTEGER :: ios_wetDry
       namelist /wetDryControl/ outputNodeCode, outputNOFF,
      &          noffActive, StatPartWetFix, How2FixStatPartWet
-      ! jgf52.08.02 : For inundation output files. 
+      ! jgf52.08.02 : For inundation output files.
       namelist /inundationOutputControl/ inundationOutput, inunThresh
 C
 C.....tcm v52.30.01 added for Smag_Control
       INTEGER :: IOS_Smag = 0
       ! jgf: Added support for water level correction
-      NAMELIST /dynamicWaterLevelCorrectionControl/ dynamicWaterLevelCorrectionFileName, 
-     &  dynamicWaterLevelCorrectionSkipSnaps, dynamicWaterlevelCorrectionMultiplier, 
+      NAMELIST /dynamicWaterLevelCorrectionControl/ dynamicWaterLevelCorrectionFileName,
+     &  dynamicWaterLevelCorrectionSkipSnaps, dynamicWaterlevelCorrectionMultiplier,
      &  dynamicWaterLevelCorrectionRampStart, dynamicWaterLevelCorrectionRampEnd,
      &  dynamicWaterLevelCorrectionRampReferenceTime
-      
+
 c.....tcm v51.20.03 initialize external station location specifications
-C..... to false, meaning if locations are supplied they are in the fort.15 
+C..... to false, meaning if locations are supplied they are in the fort.15
 C..... file.
       USE_ELEV_STAT_FILE = .FALSE.
       USE_VEL_STAT_FILE = .FALSE.
@@ -529,7 +535,9 @@ C
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       FOUND_WC_NML = .FALSE.
       foundCorrectionControlNamelist = .false.
-C
+#ifdef ADCNETCDF
+      FOUND_OWINC_NML = .FALSE.
+#endif
       call setMessageSource("read15")
 #ifdef READ_GLOBAL_TRACE
       call screenMessage(DEBUG,"Enter.")
@@ -545,17 +553,17 @@ c...  read through the fort.15 file for the namelist (TimeBathyControl) for
 c...  the time varying bathymetry.  This namelist must be at the bottom of the
 c...  fort.15 file. If found, then set the appropriate values (btiminc,bchgtiminc,
 c...  and nddt).  If the namelist is not there, then the time varying bathymetry
-c...  will not be used. 
+c...  will not be used.
 C...
 C...  After this search and read, we will close the file and then reopen it
 c...  for further processing the traditional non-namelist components.
 C...
       NDDT = 0  !Set default value to be no time varying bathymetry
-      READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT) 
+      READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT)
 
       IF (IOS_NDDT < 0) THEN
-c.....   it is possible for the namelist to be present in the file and occuring at the end 
-c.....   of the file with no line breaks after the ending "\" which causes the iostat to 
+c.....   it is possible for the namelist to be present in the file and occuring at the end
+c.....   of the file with no line breaks after the ending "\" which causes the iostat to
 c.....   return a negative value.  By checking to be sure a namelist variable was set to
 c....    a non-default value we can determine this was the case.
          IF (NDDT.NE.0) THEN
@@ -571,14 +579,14 @@ c....    a non-default value we can determine this was the case.
          found_tbc_nml = .true.
       ELSE
          found_tbc_nml = .true.
-         WRITE(*,*) 
+         WRITE(*,*)
      & 'THERE WAS A PROBLEM PROCESSING THE TimeBathyControl NAMELIST'
          WRITE(*,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.'
-         STOP   !THERE IS a STOP HERE
+         CALL EXIT(1)   !THERE IS a STOP HERE
       ENDIF
 
       REWIND(15)  !Return to the top of the fort.15 file (instead of closing then opening)
-c..        
+c..
 
 c... tcm v50.79 added
       READ(UNIT = 15, NML = metControl,IOSTAT = ios_metCon)
@@ -612,7 +620,20 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
      &         'The waveCoupling namelist was not found.')
       ENDIF
       REWIND(15)
- 
+#ifdef ADCNETCDF
+Casey 180318: Added NWS=13
+      READ(UNIT=15,NML=owiWindNetcdf,IOSTAT=IOS_OWINC)
+      IF(IOS_OWINC.EQ.0)THEN
+         FOUND_OWINC_NML = .TRUE.
+         call logMessage(INFO,
+     &         'The owiWindNetcdf namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The owiWindNetcdf namelist was not found.')
+      ENDIF
+      REWIND(15)
+#endif
+
       READ(UNIT = 15, NML = wetDryControl,IOSTAT = ios_wetDry)
       if ( ios_wetDry.ge.0) then
          foundWetDryControlNameList = .true.
@@ -647,19 +668,19 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
      &      'Could not read dynamicWaterLevelCorrectionControl'//
      &     ' namelist. The Fortran i/o error code was ',ios,'.'
          call allMessage(ERROR,scratchMessage)
-         stop
+         CALL EXIT(1)
       case default
          call logMessage(INFO,
      &      'End-of-file when searching for dynamicWaterLevelCorrectionControl namelist.')
-      end select    
+      end select
       rewind(15)  !Return to the top of the fort.15 file
 
 c...  tcm v52.30.01 Addtions for Smagorinski Limits
 c...  read through the fort.15 file for the namelist (Smag_Control) for
-c...  the inputs for Smagorinski eddy viscosity limits.  This namelist must be 
+c...  the inputs for Smagorinski eddy viscosity limits.  This namelist must be
 c...  at the bottom of the fort.15 file. If found, then set the appropriate
-c...  values (SMAG_COMP_FLAG,SMAG_UPPER_LIM,SMAG_LOWER_LIM) 
-c...  If the namelist is not there, then the Smagorinski Limits 
+c...  values (SMAG_COMP_FLAG,SMAG_UPPER_LIM,SMAG_LOWER_LIM)
+c...  If the namelist is not there, then the Smagorinski Limits
 c...  will not be used.
 C...
 C...  After this search and read, we will close the file and then reopen it
@@ -688,7 +709,7 @@ c....    a non-default value we can determine this was the case.
          WRITE(*,*)
      & 'THERE WAS A PROBLEM PROCESSING THE Smag_Control NAMELIST'
          WRITE(*,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCPREP NOW.'
-         STOP   !THERE IS a STOP HERE
+         CALL EXIT(1)   !THERE IS a STOP HERE
       ENDIF
 
       REWIND(15)  !Return to the top of the fort.15 file (instead of closing then opening)
@@ -701,6 +722,28 @@ c..
       else
          call logMessage(INFO,
      &         'The WarnElev namelist was not found.')
+      endif
+      rewind(15)  !Return to the top of the fort.15 file
+      
+      read(unit=15,nml=AliDispersionControl,iostat=ios)
+      if ( ios.ge.0) then
+         FOUND_ALIDISP_NML = .true.
+         call logMessage(INFO,
+     &         'The AliDispersion namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The AliDispersion namelist was not found.')
+      endif
+      rewind(15)  !Return to the top of the fort.15 file
+      
+      read(unit=15,nml=densityControl,iostat=ios)
+      if ( ios.ge.0) then
+         FOUND_DENSITY_NML = .true.
+         call logMessage(INFO,
+     &         'The density control namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The density control namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
 
@@ -735,14 +778,14 @@ C
         ! ICS is set correctly
       CASE DEFAULT
         print *, "ICS set incorrectly"
-        STOP
+        CALL EXIT(1)
       END SELECT
 C
       READ(15,80) IMMSG
       READ(IMMSG,*) IM
       IF(IM.EQ.2) THEN
         PRINT *, "DSS Model type not presently supported"
-        STOP
+        CALL EXIT(1)
       ENDIF
 C     jgf46.28 Read IDENMSG if necessary
       IF (CBaroclinic) READ(15,80) IDENMSG
@@ -751,39 +794,39 @@ C
       READ(IBFMSG,*) NOLIBF
       IF((NOLIBF.LT.0).OR.(NOLIBF.GT.3)) THEN
          print *, "Value for NOLIBF not allowed"
-         stop
+         CALL EXIT(1)
       ENDIF
 C
       READ(15,80) IFAMSG
       READ(IFAMSG,*) NOLIFA
       IF ((NOLIFA.LT.0).OR.(NOLIFA.GT.3)) THEN
          print *, "Value for NOLIFA not allowed"
-         stop
+         CALL EXIT(1)
       ENDIF
 C
       READ(15,80) ICAMSG
       READ(ICAMSG,*) NOLICA
       IF ((NOLICA.LT.0).OR.(NOLICA.GT.1)) THEN
          print *, "Value for NOLICA not allowed"
-         stop
+         CALL EXIT(1)
       ENDIF
 C
       READ(15,80) ICATMSG
       READ(ICATMSG,*) NOLICAT
       IF ((NOLICAT.LT.0).OR.(NOLICAT.GT.1)) THEN
          print *, "Value for NOLICAT not allowed"
-         stop
+         CALL EXIT(1)
       ENDIF
-      ! 
+      !
       ! jgf52.05: Removed this error message because it is alarming
-      ! and because it contradicts common practice. 
+      ! and because it contradicts common practice.
 C      IF ((NOLIFA.GE.1).AND.(NOLICAT.EQ.0)) THEN
 C         print *, "NOLIFA and NOLICAT are inconsistent"
 C         print *, "May lead to mass balance problems"
 C         IF(NFOVER.EQ.1) THEN
 C            print *, "Since NFOVER=1, Program will continue"
 C        ELSE
-C            stop
+C            CALL EXIT(1)
 C         ENDIF
 C      ENDIF
 C
@@ -806,7 +849,7 @@ C
            NCOR = 0
            print *, "NCOR has been reset to 0"
          ELSE
-           stop
+           CALL EXIT(1)
          ENDIF
       ENDIF
 C
@@ -816,7 +859,7 @@ C
            print *, "Program will continue with these input values"
            print *, "for large domains it is recommended to use ICS=2"
          ELSE
-           stop
+           CALL EXIT(1)
          ENDIF
       ENDIF
 C
@@ -828,7 +871,7 @@ C
            NTIP = 0
            print *, "NTIP has been reset to 0"
          ELSE
-           stop
+           CALL EXIT(1)
          ENDIF
       ENDIF
 C
@@ -838,7 +881,7 @@ C
          IF (NFOVER.EQ.1) THEN
             print *, "Program will continue with these input values"
          ELSE
-            stop
+            CALL EXIT(1)
          ENDIF
       ENDIF
 C
@@ -867,20 +910,23 @@ C     jie added NWS=20: generalized asymmetric vortex model
 C     sb46.28sb01 added NWS=12: OWI format
 C     jgf49.0804 Added NWS29 VortexOWI format.
 C     jgf: Added NWS30.
+Casey 180318: Added NWS=13
         IF((NWS.NE.0).AND.    (NWS.NE.1 ) .AND.(ABS(NWS).NE.2).AND.
      &       (NWS.NE.3).AND.(ABS(NWS).NE.4) .AND.(ABS(NWS).NE.5).AND.
      &       (ABS(NWS).NE.45).AND.(ABS(NWS).NE.6).AND.
+     &       (ABS(NWS).NE.7).AND.   ! xyc52.30
      &       (ABS(NWS).NE.8).AND.(ABS(NWS).NE.15).AND. !jgf50.38.05 Added NWS=15
-     &       (ABS(NWS).NE.12).AND.
-     &       (ABS(NWS).NE.19).AND.(ABS(NWS).NE.14).AND.
-     &       (ABS(NWS).NE.20).AND.(abs(NWS).ne.30).and.(NWS.NE.10).and.
+     &       (ABS(NWS).NE.12).AND.(ABS(NWS).NE.13).AND.
+     &       (ABS(NWS).NE.14).AND.(ABS(NWS).NE.19).AND.
+     &       (ABS(NWS).NE.20) .AND.(abs(NWS).ne.30).and.(NWS.NE.10).and.
      &       (ABS(NWS).NE.29).and. (abs(NWS).ne.16))  THEN
            print *,"ERROR: Value for NWS not supported by parallel code"
-           stop
+           CALL EXIT(1)
         ENDIF
 C
 C... TCM v49.64.02 -- added
 C...  BE SURE NWS AND NCICE ARE COMPATABLE
+C...  xyc v52.30: note:Not sure if NWS.EQ.7 here should be removed 
       IF((NCICE.GT.0).AND.
      &       ((NWS.EQ.1).OR.(NWS.EQ.2).OR.(NWS.EQ.7))) THEN
          PRINT*,'NCICE = ',NCICE
@@ -889,7 +935,7 @@ C...  BE SURE NWS AND NCICE ARE COMPATABLE
      &        "parameter) is not compatable"
          PRINT*,"with your NWS value.  NCICE is not allowed for",
      &         " abs(NWS)=1,2, or 7."
-         STOP
+         CALL EXIT(1)
       ENDIF
 
 C     jgf46.08 Modified to accomodate fine grained ramp functions.
@@ -902,7 +948,7 @@ Corbitt 120322: Includes Zach's Wind Ramping
             print *, "Program will override and use NRAMP = 0"
             NRAMP = 0
          ELSE
-            stop
+            CALL EXIT(1)
          ENDIF
       ENDIF
 C
@@ -917,7 +963,7 @@ C
                print *, "check to see that all input has SI units"
                G = 9.81d0
             ELSE
-               stop
+               CALL EXIT(1)
             ENDIF
          ENDIF
       ENDIF
@@ -930,7 +976,7 @@ C
             print *, "execution will continue"
             G = 9.81d0
          ELSE
-            stop
+            CALL EXIT(1)
          ENDIF
       ENDIF
 C
@@ -996,13 +1042,14 @@ C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
          IF(NRS.EQ.0) READ(WSMSG1,*) WTIMINC
          IF(NRS.GE.1) READ(WSMSG1,*) WTIMINC,RSTIMINC ! sb46.28sb03
       ENDIF
-     
+
       IF((ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.5)
      &     .OR.(ABS(NWS).EQ.45).OR.(ABS(NWS).EQ.8).OR.
      &   (ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.14)
      &     .OR.(NWS.EQ.10) !yf: Added NWS=10 for GFS Met
      &     .OR.(ABS(NWS).EQ.15) !jgf50.38.05: Added NWS=15 for HWind.
      &     .OR.(ABS(NWS).EQ.20) !jie: Added NWS=20 for GAHM
+     &     .OR.(ABS(NWS).EQ.13) ! arc added nws13 190110
      &     .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.16)) THEN
          READ(15,80) WSMSG1
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(WSMSG1,*) WTIMINC
@@ -1035,7 +1082,8 @@ C     parse out the WTIMINC or other parameters.
          READ(15,80) WSMSG1
       ENDIF
 C
-      IF(ABS(NWS).EQ.6) THEN
+C...  xyc52.30 added NWS=7 to follow NWS=6
+      IF((ABS(NWS).EQ.6) .OR. (ABS(NWS).EQ.7)) THEN
          READ(15,80) WSMSG1
 C..... tcm v49.64.01 additions for ICE
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) THEN
@@ -1093,7 +1141,7 @@ C
       ELSE
          ! jgf: Need these to be populated for ICS=1 for NetCDF file
          SL1 = SLAM
-         SF1 = SFEA 
+         SF1 = SFEA
       ENDIF
 C
       READ(15,80) TAUMSG
@@ -1119,7 +1167,7 @@ C
       READ(NTIFMSG,*) NTIF
       IF (NTIF.GT.MNTIF) THEN
          print *, "NTIF = ",NTIF, " exceeds parameter MNTIF = ",MNTIF
-         stop
+         CALL EXIT(1)
       ENDIF
 C
       DO I=1,NTIF
@@ -1136,7 +1184,7 @@ C
           print *, "Program will reset NTIP = 0 and continue"
           NTIP = 0
         ELSE
-          stop
+          CALL EXIT(1)
         ENDIF
       ENDIF
 C
@@ -1144,7 +1192,7 @@ C
       READ(NBFRMSG,*) NBFR
       IF (NBFR.GT.MNBFR) THEN
         print *, "NBFR = ",NBFR, " exceeds parameter MNBFR = ",MNBFR
-        stop
+        CALL EXIT(1)
       ENDIF
 C
       DO I=1,NBFR
@@ -1172,8 +1220,8 @@ C
       ! determined in read14() above, so the loop through the LBCODE
       ! array was not necessary. Also, the loop that was removed was
       ! bounded by NVEL, which is larger than the number of values
-      ! in the LBCODE array, causing uninitialized values to be 
-      ! examined in the loop. 
+      ! in the LBCODE array, causing uninitialized values to be
+      ! examined in the loop.
 C
 Ckmd Added NFFR=-1 so the river information does not have to start at
 C    time=0.
@@ -1182,7 +1230,7 @@ C    time=0.
          READ(NFFRMSG,*) NFFR
          IF (NFFR.GT.MNFFR) THEN
             print *, "NFFR = ",NFFR, " exceeds parameter MNFFR = ",MNFFR
-            stop
+            CALL EXIT(1)
          ENDIF
 C
          IF ((NFFR.NE.0).AND.(NFFR.NE.-1)) THEN
@@ -1193,7 +1241,7 @@ C
             ENDDO
             DO I=1,NFFR
                READ(15,80) ALPHA2(I)
-               ! jgf51.52.23: Changed the loop extent from NVEL to 
+               ! jgf51.52.23: Changed the loop extent from NVEL to
                ! numLBCodeValues
                DO J=1,numLBCodeValues
                   IF ((LBCODE(J).EQ.2).OR.(LBCODE(J).EQ.12)
@@ -1222,7 +1270,7 @@ C
             ENDDO
 C
             NFLBN = 0
-            ! jgf51.52.23: Changed the loop extent from NVEL to 
+            ! jgf51.52.23: Changed the loop extent from NVEL to
             ! numLBCodeValues.
             DO J=1,numLBCodeValues
                IF ((LBCODE(J).EQ.2).OR.(LBCODE(J).EQ.12)
@@ -1266,7 +1314,7 @@ C...
       READ(STAEMSG,*) NOUTE,TOUTSE,TOUTFE,NSPOOLE
       IF (ABS(NOUTE).GT.5) THEN
         print *, "The value of NOUTE is not allowed"
-        stop
+        CALL EXIT(1)
       ENDIF
 C
       READ(15,80) NSTAEMSG
@@ -1286,15 +1334,15 @@ C
          ENDIF
 7690     IF (IOS_STATIONS .NE. 0) THEN
             WRITE(*,*) "Error in Reading Elevation Station File: elev_stat.151"
-            stop  ! there is a stop here
-         ENDIF                  
-      ELSE 
+            CALL EXIT(1)  ! there is a stop here
+         ENDIF
+      ELSE
          WRITE(*,*) "Elevation Station Locations contained in fort.15"
       ENDIF
       IF (ABS(NSTAE).GT.MNSTAE) THEN
          print *, "NSTAE = ",abs(NSTAE), " exceeds parameter MNSTAE = ",
      &              MNSTAE
-          stop
+          CALL EXIT(1)
       ENDIF
 #ifdef ADCNETCDF
 C
@@ -1375,7 +1423,7 @@ C
       READ(STAVMSG,*) NOUTV,TOUTSV,TOUTFV,NSPOOLV
       IF (ABS(NOUTV).GT.5) THEN
         print *, "Value for NOUTV is not allowable"
-        stop
+        CALL EXIT(1)
       ENDIF
 C
       READ(15,80) NSTAVMSG
@@ -1394,16 +1442,16 @@ C
          ENDIF
 7691     IF (IOS_STATIONS .NE. 0) THEN
             WRITE(*,*) "Error in Reading Velocity Station File: vel_stat.151"
-            stop  ! there is a stop here
-         ENDIF                  
-      ELSE 
+            CALL EXIT(1)  ! there is a stop here
+         ENDIF
+      ELSE
          WRITE(*,*) "Velocity Station Locations Contained in fort.15"
       ENDIF
-      
+
       IF (ABS(NSTAV).GT.MNSTAV) THEN
         print *, "NSTAV = ",abs(NSTAV), " exceeds parameter MNSTAV = ",
      &             MNSTAV
-        stop
+        CALL EXIT(1)
       ENDIF
 #ifdef ADCNETCDF
 C     ==================================================================
@@ -1440,7 +1488,7 @@ C              WRITE(6,9911) XEV(I), YEV(I), STATNAMEV(I)
             ENDIF
 
          ELSE
-         
+
             IF((abs(NOUTV).NE.3).AND.(abs(NOUTV).NE.5)) THEN
                READ(STAVLOC(I),*) SLEV(I),SFEV(I)
 
@@ -1486,7 +1534,7 @@ C
         READ(STACMSG,*) NOUTC,TOUTSC,TOUTFC,NSPOOLC
         IF (ABS(NOUTC).GT.2) THEN
           print *, "Value of NOUTC is not allowable"
-          stop
+          CALL EXIT(1)
         ENDIF
 C
         READ(15,80) NSTACMSG
@@ -1505,16 +1553,16 @@ C
            ENDIF
 7692       IF (IOS_STATIONS .NE. 0) THEN
               WRITE(*,*) "Error in Reading Concentration Station File: conc_stat.151"
-              STOP  ! THERE IS A STOP HERE
-           ENDIF                  
-        ELSE 
+              CALL EXIT(1)  ! THERE IS A STOP HERE
+           ENDIF
+        ELSE
            WRITE(*,*) "Concentration Station Locations Contained in fort.15"
         ENDIF
-        
+
         IF (ABS(NSTAC).GT.MNSTAC) THEN
           print *, "NSTAC = ",abs(NSTAC), " exceeds parameter MNSTAC = ",
      &              MNSTAC
-          stop
+          CALL EXIT(1)
         ENDIF
 C
         DO I=1,ABS(NSTAC)
@@ -1554,7 +1602,7 @@ C
          READ(STAMMSG,*) NOUTM,TOUTSM,TOUTFM,NSPOOLM
          IF (ABS(NOUTM).GT.5) THEN
             print *, "Value of NOUTM is not allowable"
-            stop
+            CALL EXIT(1)
          ENDIF
 C
          READ(15,80) NSTAMMSG
@@ -1574,16 +1622,16 @@ C
             ENDIF
 7693        IF (IOS_STATIONS .NE. 0) THEN
                WRITE(*,*) "Error in Reading MET Station File: met_stat.151"
-               STOP  ! THERE IS A STOP HERE
-            ENDIF                  
-         ELSE 
+               CALL EXIT(1)  ! THERE IS A STOP HERE
+            ENDIF
+         ELSE
             WRITE(*,*) "MET Station Locations Contained in fort.15"
          ENDIF
 
          IF (ABS(NSTAM).GT.MNSTAM) THEN
             print *, "NSTAM = ",abs(NSTAM), " exceeds parameter MNSTAM = ",
      &           MNSTAM
-            stop
+            CALL EXIT(1)
          ENDIF
 #ifdef ADCNETCDF
 C     ==================================================================
@@ -1646,7 +1694,7 @@ C     ==================================================================
                CALL CYLINDERMAP(XEM(I),YEM(I),SLEM(i),SFEM(i),SL0,SF0,ICS)
             ENDIF  !test for ICS
          ENDDO  !loop over stations
-         IF (USE_MET_STAT_FILE) CLOSE(151) !CLOSE EXTERNAL FILE IF ONE WAS USED        
+         IF (USE_MET_STAT_FILE) CLOSE(151) !CLOSE EXTERNAL FILE IF ONE WAS USED
 
 C
 C--For Each Meterological Recording Station:
@@ -1667,7 +1715,7 @@ C
       READ(OUTGEMSG,*) NOUTGE,TOUTSGE,TOUTFGE,NSPOOLGE
       IF (ABS(NOUTGE).GT.7) THEN
          print *, "NOUTGE does not have an allowable value"
-         stop
+         CALL EXIT(1)
       ENDIF
 C
 C--Read Global Velocity Data Output
@@ -1676,7 +1724,7 @@ C
       READ(OUTGVMSG,*) NOUTGV,TOUTSGV,TOUTFGV,NSPOOLGV
       IF (ABS(NOUTGV).GT.7) THEN
         print *, "NOUTGV does not have an allowable value"
-        stop
+        CALL EXIT(1)
       ENDIF
 C
 C     If Passive Transport is indicated, read Global Concentration Data Output
@@ -1686,7 +1734,7 @@ C
         READ(OUTGCMSG,*) NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC
         IF (ABS(NOUTGC).GT.2) THEN
           print *, "NOUTGC does not have an allowable value"
-          stop
+          CALL EXIT(1)
         ENDIF
       ENDIF
 C
@@ -1696,7 +1744,7 @@ C
 Casey 090302: Changed the following line for ABS(NOUTGW).EQ.4
         IF (ABS(NOUTGW).GT.7) THEN
           print *, "NOUTGW does not have an allowable value"
-          stop
+          CALL EXIT(1)
         ENDIF
       ENDIF
 C
@@ -1726,7 +1774,7 @@ C
           print *, "Program will override an reset NHASE=0 "
           NHASE = 0
         ELSE
-          stop
+          CALL EXIT(1)
         ENDIF
       ENDIF
 C
@@ -1736,7 +1784,7 @@ C
            print *, "Program will override an reset NHASV=0 "
            NHASV = 0
          ELSE
-           stop
+           CALL EXIT(1)
          ENDIF
       ENDIF
 C
@@ -1746,7 +1794,7 @@ C
           print *, "Program will override an reset NHAGE=0 "
           NHAGE = 0
         ELSE
-          stop
+          CALL EXIT(1)
         ENDIF
       ENDIF
 C
@@ -1756,7 +1804,7 @@ C
           print *, "Program will override an reset NHAGV=0 "
           NHAGV = 0
         ELSE
-          stop
+          CALL EXIT(1)
         ENDIF
       ENDIF
       IHARIND=NHARFR*(NHASE+NHASV+NHAGE+NHAGV)
@@ -1782,7 +1830,7 @@ C     adcprep though.      !wjp allows for single output hotstart (negative valu
            NHSTAR = 0
         ELSE
            print *,"ERROR: Halting adcprep due to invalid NHSTAR value."
-           stop
+           CALL EXIT(1)
         ENDIF
       END SELECT
 C
@@ -1807,7 +1855,7 @@ c       CALL READ15_3DDSS()
      &      "NetCDF was selected in the fort.15 file.")
          CALL allMessage(ERROR,
      &      "NetCDF was not compiled into this executable program.")
-         stop
+         CALL EXIT(1)
       ENDIF
 #ifdef ADCNETCDF
 C     ==================================================================
@@ -1822,7 +1870,7 @@ C
      &       NOUTC.eq.3) then                                 ! fort.91
             CALL allMessage(ERROR,
      &         "NetCDF output not available for concentration output.")
-            STOP
+            CALL EXIT(1)
          ENDIF
 C
          READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) title
@@ -1839,7 +1887,7 @@ C
 999      IF (ios.ne.0) THEN
             CALL allMessage(ERROR,
      &         "Could not read metadata for NetCDF at end of fort.15.")
-            STOP
+            CALL EXIT(1)
          ENDIF
 
       ENDIF
@@ -1912,7 +1960,7 @@ C... SPECIFY WHETHER A BAROTROPIC OR BAROCLINIC RUN
          WRITE(*,423)
          WRITE(*,350)
  423     FORMAT(/,2X,' IDEN must be an integer between -4 and 4.')
-         STOP
+         CALL EXIT(1)
       ENDIF
 
 C     jgf45.12 Set flag to read in unit 11 file (initial density) if
@@ -1935,7 +1983,7 @@ C... READ IN THE TYPE OF BOTTOM BOUNDARY CONDITION AND THE SLIP COEFFICIENTS
          WRITE(6,350)
          WRITE(6,360)
  360     FORMAT(/,2X,'    THE SLIP CODE MUST = 0,1,2,OR 3.')
-         STOP
+         CALL EXIT(1)
       ENDIF
 
 C... READ IN THE SURFACE AND BOTTOM ROUGHNESSES
@@ -1989,7 +2037,7 @@ C... SPECIFY TYPE OF EDDY VISCOSITY PROFILE
          WRITE(*,411)
  411     FORMAT(/,2X,'    IEVC MUST BE 0,1,10,11,20,21,22,23,',
      &              '30,31,32,33,40,41,42,43,50,51')
-         STOP
+         CALL EXIT(1)
       ENDIF
       IF((IEVC.EQ.50).OR.(IEVC.EQ.51)) THEN
          READ(15,80) THETAMSG
@@ -2036,7 +2084,7 @@ C  kmd48.33bc changed to -2 and I3DSD not equal to 0
          WRITE(*,350)
          WRITE(*,511)
  511     FORMAT(/,2X,'    I3DSD MUST BE -5,-3,-2,-1,0,1,2, 3, or 5')
-         STOP
+         CALL EXIT(1)
       ENDIF
       IF(NSTA3DD.NE.0) THEN  ! kmd : changed to match 2D option
          DO I=1,NSTA3DD
@@ -2048,7 +2096,7 @@ C  kmd48.33bc changed to -2 and I3DSD not equal to 0
                Y3DD(I)=a2f(LVAR(2))
             ELSE
                SL3DD(I)=a2f(LVAR(1))
-               SF3DD(I)=a2f(LVAR(2))              
+               SF3DD(I)=a2f(LVAR(2))
                SL3DD(I)=DEG2RAD*SL3DD(I)
                SF3DD(I)=DEG2RAD*SF3DD(I)
                call CYLINDERMAP(x3dd(i),y3dd(i),sl3dd(i),sf3dd(i),
@@ -2098,7 +2146,7 @@ C  kmd48.33 changed to -2
          WRITE(*,350)
          WRITE(*,512)
  512     FORMAT(/,2X,'    I3DSV MUST BE -5,-3,-2,-1,0,1,2,3 or 5')
-         STOP
+         CALL EXIT(1)
       ENDIF
       IF(NSTA3DV.NE.0) THEN ! kmd : Changed to match 2D option
          DO I=1,NSTA3DV
@@ -2153,7 +2201,7 @@ C  kmd48.33 changed to -2
          WRITE(*,350)
          WRITE(*,513)
  513     FORMAT(/,2X,'    I3DST MUST BE -5,-3,-2,-1,0,1,2,3 or 5')
-         STOP
+         CALL EXIT(1)
       ENDIF
       IF(NSTA3DT.NE.0) THEN ! kmd - Changed to match 2D option
          DO I=1,NSTA3DT
@@ -2195,7 +2243,7 @@ C   kmd48.33bc changed to -2
          WRITE(*,350)
          WRITE(*,514)
  514     FORMAT(/,2X,'    I3DGD MUST BE -3,-2,-1,0,1,2, or 3')
-         STOP
+         CALL EXIT(1)
       ENDIF
 
 C....  GLOBAL 3D VELOCITY OUTPUT
@@ -2207,7 +2255,7 @@ C   kmd48.33bc changed to -2
          WRITE(*,350)
          WRITE(*,515)
  515     FORMAT(/,2X,'    I3DGV MUST BE -3,-2,-1,0,1,2 or 3')
-         STOP
+         CALL EXIT(1)
       ENDIF
 
 C....  GLOBAL 3D TURBULENCE OUTPUT
@@ -2219,7 +2267,7 @@ C   kmd48.33bc changed to -2
          WRITE(*,350)
          WRITE(16,516)
  516     FORMAT(/,2X,'    I3DGT MUST BE -3,-2,-1,0,1,2, or 3')
-         STOP
+         CALL EXIT(1)
       ENDIF
 
 C   kmd48.33bc add in information for 3D boundary condition
@@ -2289,9 +2337,9 @@ C     Temperature boundary condition file type, if necessary
       RETURN
 C
  80   FORMAT(A80)
-C---------------------------------------------------------------------- 
+C----------------------------------------------------------------------
       END SUBROUTINE READ15_3DVS
-C----------------------------------------------------------------------      
+C----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
 C         S U B R O U T I N E    S E T U P K D T S E A R C H
@@ -2455,7 +2503,7 @@ C----------------------------------------------------------------------
             ELSE
                print *, "ERROR. Distance to nearest element is ",
      &                   sqrt(KDRESULTS(1)%dis)
-               stop
+               CALL EXIT(1)
             ENDIF
          ENDIF
       enddo !loop over station points
@@ -2534,7 +2582,7 @@ C-----------------------------------------------------------------------
                FDEle(I) = KMIN
             ELSE
                print *, "ERROR. Proximity index is ",AEMIN
-               stop
+               CALL EXIT(1)
             ENDIF
          ENDIF
       ENDDO
@@ -2545,6 +2593,3 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       END SUBROUTINE CoordToEle
 C-----------------------------------------------------------------------
-
-
-

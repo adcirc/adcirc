@@ -947,7 +947,7 @@ C     Check to make sure that NWP is a valid number.
          WRITE(16,9973)
  9728    FORMAT(/,1X,'Your selection of NWP (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-         STOP 1          ! We're toast.
+         CALL EXIT(1)          ! We're toast.
       ENDIF
 C
 C     Check to see if there are nodal attributes to be read in. If not,
@@ -1050,7 +1050,7 @@ C
             WRITE(ScreenUnit,1011)
             WRITE(ScreenUnit,9973)      ! execution terminated
          ENDIF
-         STOP 1
+         CALL EXIT(1)
       ENDIF
 C
 C     Now open the nodal attributes (unit 13) file.
@@ -1068,7 +1068,7 @@ C     Now open the nodal attributes (unit 13) file.
             WRITE(ScreenUnit,1005)
             WRITE(ScreenUnit,9973)
          ENDIF
-         STOP 1                 ! We're toast.
+         CALL EXIT(1)                 ! We're toast.
       ENDIF
 C
 C     Read each attribute name, units, number of values, and default value
@@ -1618,7 +1618,7 @@ C     same as the number of nodes in the grid file.
      &        //,1X,'The number of nodes in the grid file (unit 14) and'
      &        /,1X,'the nodal attributes file (unit 13) must match.',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         STOP 1                 ! We're toast.
+         CALL EXIT(1)                 ! We're toast.
       ENDIF
 C
 C     ERROR CHECK: If Chezy, Manning's or Quadratic friction was loaded
@@ -1633,7 +1633,7 @@ C     from the nodal attributes file, NOLIBF must be 1.
      &        /,1X,'NoLiBF must be set to 1. It is set to ',i2,' in',
      &        /,1X,'the model parameter (unit 15) file.',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         STOP 1                 ! We're toast.
+         CALL EXIT(1)                 ! We're toast.
       ENDIF
 C
 C     ERROR CHECK: If Tau0=-3.x or -6.x in fort.15, then tau0 MUST be loaded
@@ -1650,7 +1650,7 @@ C     from nodal attributes file.
      &        /,1X,'load the base value using',
      &        /,1X,'primitive_weighting_in_continuity_equation.',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         STOP 1                 ! We're toast.
+         CALL EXIT(1)                 ! We're toast.
       ENDIF
 C
 C     ERROR CHECK: The canopy coefficient value should be either 0 or 1;
@@ -2205,7 +2205,8 @@ C     ----------------------------------------------------------------
       REAL(SZ), allocatable :: Hx(:), Hy(:)
       INTEGER  :: I, L, Lm, Lind 
       REAL(SZ) :: omega = 1.4052d-4 ![rad/s] M2 tidal frequency
-      REAL(SZ) :: hr = 3600d0 ! means one hour in seconds
+      REAL(SZ) :: hr = 3600.0_SZ ! means one hour in seconds
+      REAL(SZ) :: SmallV = 1d-10 ! A small value
       REAL(SZ) :: Fit, alpha2, gamma2, slope2, uavnow, vavnow 
       REAL(SZ) :: Nmdiff, Nbdiff, Fdiff, adju, adjv, adjuv
       logical, save ::  first_entry = .TRUE.
@@ -2215,21 +2216,32 @@ C     current value of the bottom friction, TK
          IF ( FIRST_ENTRY ) THEN
             FIRST_ENTRY = .FALSE.
             IF ( IFSPROTS.eq.1 ) THEN
-C              Rotate the IT_Fric first time step if necessary
+C              Rotate the IT_Fric first time step if mesh rotation used
+C              (unnecessary for IT_FricNoOfVals == 1)
                IF ( IT_FricNoOfVals.eq.3 ) THEN
                   allocate(Hx(NP),Hy(NP))
                   DO I = 1,NP
-                     Hx(I) = sqrt(IT_Fric(I,1))
-                     Hy(I) = sign(sqrt(IT_Fric(I,2)),IT_Fric(I,3))
+                     if (CBaroclinic.and.abs(IDEN).ge.5) then
+                        Hx(I) = IT_Fric(I,2)
+                        Hy(I) = IT_Fric(I,3)
+                     else
+                        Hx(I) = sqrt(IT_Fric(I,1))
+                        Hy(I) = sign(sqrt(IT_Fric(I,2)),IT_Fric(I,3))
+                     endif
                      UVECTMP(I) = Hx(I); 
                      VVECTMP(I) = Hy(I);
                   ENDDO
                   CALL DRVMAP2DSPVEC( Hx, Hy,
      &                UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
                   DO I = 1,NP
-                     IT_Fric(I,1) = Hx(I)*Hx(I)
-                     IT_Fric(I,2) = Hy(I)*Hy(I)
-                     IT_Fric(I,3) = Hx(I)*Hy(I)
+                     if (CBaroclinic.and.abs(IDEN).ge.5) then
+                        IT_Fric(I,2) = Hx(I)
+                        IT_Fric(I,3) = Hy(I)
+                     else
+                        IT_Fric(I,1) = Hx(I)*Hx(I)
+                        IT_Fric(I,2) = Hy(I)*Hy(I)
+                        IT_Fric(I,3) = Hx(I)*Hy(I)
+                     endif
                   ENDDO           
                   deallocate(Hx,Hy)
                ELSEIF ( IT_FricNoOfVals.eq.5 ) THEN
@@ -2238,19 +2250,22 @@ C              Rotate the IT_Fric first time step if necessary
             ENDIF
          ENDIF
          Baroc: IF (CBaroclinic.and.abs(IDEN).ge.5) THEN
-            L  = floor((IT-1)*DTDP/hr) ! Get the current hour number
-            Lm = floor((IT-2)*DTDP/hr) ! Get the previous hour number
-            if (abs(IDEN).ne.7.and.L > Lm) then
-               ! Store new hour velocities
-               ! Get actual index (wrap around)
-               Lind = L - filtL*floor((IT-1)*DTDP/filtL/hr) + 1
-               DO I = 1,NP
-                  UAV(Lind,I) = U(I)   
-                  VAV(Lind,I) = V(I)   
-               ENDDO
-               L = min(L,filtL)  
-            endif
 C           2DDI ADCIRC with baroclinic coupling
+            if (abs(IDEN).ne.7) then
+C              Filtering lengths if have baroclinic ocean currents
+               L  = floor((IT-1)*DTDP/hr) ! Get the current hour number
+               Lm = floor((IT-2)*DTDP/hr) ! Get the previous hour number
+               if (L > Lm) then
+                  ! Store new hour velocities
+                  ! Get actual index (wrap around)
+                  Lind = L - filtL*floor((IT-1)*DTDP/filtL/hr) + 1
+                  DO I = 1,NP
+                     UAV(Lind,I) = U(I)   
+                     VAV(Lind,I) = V(I)   
+                  ENDDO
+                  L = min(L,filtL)  
+               endif
+            endif
             IF (IT_FricNoOfVals == 5) THEN
 C           Use the "Nonlocal" Nycander (2005) type tensor wave drag
 C           1st column is coefficient, 2nd and 3rd columns are the Hx and Hy slopes,
@@ -2266,7 +2281,8 @@ C           4th and 5th columns are the Jx and Jy slopes
                      Fit = IT_Fric(I,1)*NB(I)/DP(I)*
      &                     sqrt(1d0 - CORIF(I)**2/omega**2)
                      ! Check criticality of slope
-                     alpha2 =(omega**2 - CORIF(I)**2)/(NB(I)**2 - omega**2)
+                     alpha2 = (omega**2 - CORIF(I)**2) / 
+     &                        (NB(I)**2 - omega**2)
                      gamma2 = (IT_Fric(I,2)**2 + IT_Fric(I,3)**2)/alpha2
                      ! Divide by criticality if > 1 
                      Fit = Fit/max(1d0,gamma2)                   
@@ -2280,35 +2296,35 @@ C           4th and 5th columns are the Jx and Jy slopes
 C           For the "Local" Lyard et al. (2004) type tensor wave drag
 C           1st column is coefficient, 2nd and 3rd columns are the Hx and Hy slopes
 C           For the scalar Zaron & Egbert (2006) type
-C           1st column is coefficient, 2nd column is the hypotenuse slope
+C           1st column is coefficient, 2nd column is the squared hypotenuse slope
                adjuv = 1d0; adju = 1d0; adjv = 1d0;
                DO I = 1,NP
                   NBdiff = (NB(I)**2 - omega**2)
                   NMdiff = (NM(I)**2 - omega**2)
                   Fdiff  = (omega**2 - CORIF(I)**2)
-                  IF (NBdiff.le.1d-10.or.Nmdiff.le.1d-10.or.
-     &                Fdiff.le.1d-10) THEN
+                  IF (NBdiff.le.SmallV.or.Nmdiff.le.SmallV.or.
+     &                Fdiff.le.SmallV) THEN
                      ! No freely propagating internal tides
                      TKM(1:2,I) = TK(I)
                      TKM(3,I)   = 0.0d0
                   ELSE 
                      ! Have freely propagating internal tides
-                     ! Get coefficient
+                     ! Get the full coefficient
                      Fit = IT_Fric(I,1)*sqrt(NBdiff*Nmdiff)/omega
                      ! Check criticality of slope
-                     alpha2 = Fdiff/NBdiff
+                     alpha2 = Fdiff / NBdiff
                      if (IT_FricNoOfVals == 3) then
                         slope2 = IT_Fric(I,2)**2 + IT_Fric(I,3)**2
                      else
                         slope2 = IT_Fric(I,2)
                      endif
                      gamma2 = slope2 / alpha2
-                     ! Divide by criticality if > 1 
+                     ! Divide coefficient by criticality if > 1
+                     ! (saturates out at high criticalities) 
                      Fit = Fit / max(1d0,gamma2)                   
                      ! Calculate adjustment based on tidal residual
                      if (abs(IDEN).ne.7) then
-                        ! Calculate the moving mean
-                        adju = 1d0; adjv = 1d0;
+                        ! Calculate the adjustment factors based on the delayed moving mean
                         if (L.ge.1) then
                            uavnow = sum(UAV(1:L,I)) / L
                            vavnow = sum(VAV(1:L,I)) / L
@@ -2372,14 +2388,17 @@ C     ----------------------------------------------------------------
 !>
 !>    Additionally, the z0 coefficient supplied by the user is modified
 !>    by subtracting a factor of depth/30 to account for inundation
+!>    
+!>    Values are linearly interpolated between heading bins to the actual 
+!>    wind direction.  
 !>
 !>    @param[in] NodeNumber index of node under consideration
 !>    @param[in] WindDragCo current wind drag coefficient being applied
 !>    @param[in] WindMag    current wind speed magnitude at the specified node
 !>    @param[in] BathymetricDepth bathymetric depth used to calculate total depth
 !>    @param[in] Elevation water surface elevation above datum (eta2)
-!>    @param[in] WindX wind velocity, x-component
-!>    @param[in] WindY wind velocity, y-component
+!>    @param[in,out] WindX wind velocity, x-component
+!>    @param[in,out] WindY wind velocity, y-component
 !     ----------------------------------------------------------------
       SUBROUTINE ApplyDirectionalWindReduction(NodeNumber, WindDragCo,
      &     WindMag, BathymetricDepth, Elevation, WindX, WindY)
@@ -2395,8 +2414,10 @@ C     ----------------------------------------------------------------
         real(SZ), intent(inout) :: WindY  
         
         real(SZ),parameter      :: CutoffDepth = 999999.d0          !< Depth above which reduction is not applied
+        real(SZ),parameter,dimension(12) :: z0Angles=(/(i*30,i=0,5),(i*30-180,i=0,5)/)  !< centers of directional bins
         
-        integer                 :: idir        !< code for wind direction
+        integer                 :: idir        !< code for wind direction bins to interpolate between
+        integer                 :: idir2       !< code for wind direction bins to interpolate between
         real(SZ)                :: z0m         !< marine roughness coefficient based on Garratt's formula
         real(SZ)                :: angle       !< direction wind is coming from
         real(SZ)                :: z0l         !< drag for a particular node, for particular direction
@@ -2406,42 +2427,60 @@ C     ----------------------------------------------------------------
 !       if windspeed is zero, exit now
         if((WindX.eq.0d0).and.(WindY.eq.0d0))return
 
-!       compute direction  that the wind is coming from
+!       compute direction  that the wind is going to
         angle=atan2(WindY,WindX)*RAD2DEG
         idir=0
-        if((angle.gt.-15d0).and.(angle.le.15d0))then
-            idir=1
-        elseif((angle.gt.15d0).and.(angle.le.45d0))then
-            idir=2
-        elseif((angle.gt.45d0).and.(angle.le.75d0))then 
-            idir=3
-        elseif((angle.gt.75d0).and.(angle.le.105d0))then 
-            idir=4
-        elseif((angle.gt.105d0).and.(angle.le.135d0))then 
-            idir=5
-        elseif((angle.gt.135d0).and.(angle.le.165d0))then 
-            idir=6
-        elseif((angle.gt.165d0).and.(angle.le.180d0))then 
+        idir2=0
+        if(angle.lt.-150d0)then
             idir=7
-        elseif((angle.gt.-45d0).and.(angle.le.-15d0))then 
-            idir=12
-        elseif((angle.gt.-75d0).and.(angle.le.-45d0))then 
-            idir=11
-        elseif((angle.gt.-105d0).and.(angle.le.-75d0))then 
-            idir=10
-        elseif((angle.gt.-135d0).and.(angle.le.-105d0))then 
-            idir=9
-        elseif((angle.gt.-165d0).and.(angle.le.-135d0))then 
+            idir2=8
+        elseif(angle.lt.-120d0)then
             idir=8
-        elseif((angle.ge.-180d0).and.(angle.le.-165d0))then 
-            idir=7
+            idir2=9
+        elseif(angle.lt. -90d0)then
+            idir=9
+            idir2=10
+        elseif(angle.lt. -60d0)then
+            idir=10
+            idir2=11
+        elseif(angle.lt. -30d0)then
+            idir=11
+            idir2=12
+        elseif(angle.lt.   0d0)then
+            idir=12
+            idir2=1
+        elseif(angle.lt.  30d0)then
+            idir=1
+            idir2=2
+        elseif(angle.lt.  60d0)then
+            idir=2
+            idir2=3
+        elseif(angle.lt.  90d0)then
+            idir=3
+            idir2=4
+        elseif(angle.lt. 120d0)then
+            idir=4
+            idir2=5
+        elseif(angle.lt. 150d0)then
+            idir=5
+            idir2=6
+        elseif(angle.le. 180d0)then
+            idir=6
+            idir2=7
         endif
+
 
 !       compute marine roughness coefficient based on Garratt's formula
         z0m=(0.018d0/G)*WindDragCo*WindMag**2.d0
 
-!       define land roughness from mesh values
-        z0l=z0land(NodeNumber,idir)
+        !tga 2020-04 updated code to linearly interpolate z0 values, 
+        !code previously did nearest neighbor (i.e. binned) z0 values.  
+        !Define roughness by linearly (in angle-z0 space) interpolating
+        !between binned values.  
+        !The 30d0 here comes from assuming the directional bins are 30 
+        !degrees apiece. 
+        z0l=(z0land(NodeNumber,idir2)-z0land(NodeNumber,idir))/30d0
+     &      *(angle-z0Angles(idir))+z0land(NodeNumber,idir)
 
 !       apply overland flooding correction
         TotalDepth = BathymetricDepth + Elevation
@@ -2451,7 +2490,9 @@ C     ----------------------------------------------------------------
         endif
 
 !       compute land wind reduction factor
-        if(z0l.gt.0.0001D0) then
+!       Reduction factor is bounded to not exceed 1, i.e. assumes the 
+!       land roughness is never less than the water.  
+        if(z0l.gt.z0m) then
            fr=min(1.0D0,(z0l/z0m)**0.0706d0 * log(10.d0/z0l) / log(10.d0/z0m))
         else
            fr=1.000d0
@@ -2564,7 +2605,7 @@ C      IF((NE2.NE.NE).OR.(NP2.NE.NP)) THEN
      &        //,1X,'THE PARAMETER NE2 AND NP2 MUST MATCH NE AND NP ',
      &        /,1X,'USER MUST CHECK FORT.12 INPUT FILE ',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         STOP 1
+         CALL EXIT(1)
       ENDIF
 C
 C...  READ IN STARTDRY CODE VALUES
@@ -2625,7 +2666,7 @@ C     ----------------------------------------------------------------
      &           'YOUR NODAL FRICTION NUMBERING IS NOT SEQUENTIAL ',
      &           /,1X,'CHECK YOUR UNIT 21 INPUT FILE CAREFULLY',//,1X,
      &           '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-            STOP 1
+            CALL EXIT(1)
          ENDIF
       END DO
       WRITE(16,3601) AFRIC
@@ -2678,7 +2719,7 @@ C
         CALL MSG_FINI()
       ENDIF
 #endif
-      STOP 1 
+      CALL EXIT(1) 
 C
 #if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable

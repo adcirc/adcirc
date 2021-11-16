@@ -1315,7 +1315,7 @@ c
          if(B(j).EQ.0.) then
             write(screenunit,*) 'Problem in Tridag Solver.  ',
      +           'B array value in row ',j,' = 0'
-            stop
+            CALL EXIT(1)
          endif
       end do
       BET = B(1)
@@ -1326,7 +1326,7 @@ c
          if (BET.EQ.0) then
             write(screenunit,*) ' Problem in Tridag Solver.  ',
      +           ' BET  = 0.  Solver failed.'
-            stop
+            CALL EXIT(1)
          endif
          U(J)=(R(J)-A(J)*U(J-1))/BET
       END DO

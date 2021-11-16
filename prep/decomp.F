@@ -78,7 +78,10 @@ C  Add an element to the map if it has an resident node
               IMAP_EL_LG(NELP(I),I) = K
             ENDIF
          ENDDO
-         IF (NELP(I).GT.MNEP) STOP 'NELP(I) > MNEP'
+         IF (NELP(I).GT.MNEP) THEN
+             WRITE(*,'(A)') 'ERROR: NELP(I) > MNEP'
+             CALL EXIT(1)
+         ENDIF
       ENDDO
 
 C STEP 3:
@@ -96,7 +99,10 @@ C
             ENDDO
          ENDDO
          ITEMP = ITOT
-         IF (ITOT.GT.VTMAX) stop 'step3 decomp'
+         IF (ITOT.GT.VTMAX) THEN
+             WRITE(*,'(A)') "Error during step3 decomp"
+             CALL EXIT(1)
+         ENDIF
          CALL SORT(ITEMP,ITVECT) ! Sort and remove multiple occurrences
          ITOT = 1
          IMAP_NOD_LG(1,I) = ITVECT(1)
@@ -113,7 +119,10 @@ C
            ENDIF
          ENDDO
          NNODP(I) = ITOT
-         IF (NNODP(I).GT.MNPP) STOP 'NNODP > MNPP'
+         IF (NNODP(I).GT.MNPP) THEN
+             WRITE(*,'(A)') "ERROR:  NNODP > MNPP"
+             CALL EXIT(1)
+         ENDIF
       ENDDO
 c     print *, "Number of Nodes Assigned to PEs"
 c     DO I=1, NPROC
@@ -161,7 +170,10 @@ C        then make it and its dual a local Weir-node pair
 !Seizo 2008.07.14          ENDDO
            NWEIRP(I) = 0
            ITEMP = ITOT
-           IF (ITOT.GT.VTMAX) stop 'step4 decomp'
+           IF (ITOT.GT.VTMAX) THEN
+               WRITE(*,'(A)') 'Error during step4 decomp'
+               CALL EXIT(1)
+           ENDIF
            IF (ITEMP.GT.1) THEN
              CALL SORT(ITEMP,ITVECT)
              ITOT=1
@@ -238,7 +250,10 @@ c                 print *, K, PE1,PE2,PE3,INDX,INDX2
                   EL_SHARE(K) = I
                ENDIF
             ENDDO
-         IF (NELP(I).GT.MNEP) STOP 'NELP(I) > MNEP'
+         IF (NELP(I).GT.MNEP) THEN
+             WRITE(*,'(A)') "ERROR: NELP(I) > MNEP"
+             CALL EXIT(1)
+         ENDIF
 c           print *, "Number of elements on PE",I-1," = ",NELP(I)
 c           DO J = 1, NELP(I)
 c              print *, J, IMAP_EL_LG(J,I)
@@ -277,7 +292,10 @@ C
             ENDDO
          ENDDO
          ITEMP = ITOT
-         IF (ITOT.GT.VTMAX) stop 'step6 decomp'
+         IF (ITOT.GT.VTMAX) THEN
+             WRITE(*,'(A)') "Error during step6 decomp"
+             CALL EXIT(1)
+         ENDIF
          CALL SORT(ITEMP,ITVECT) ! Sort and remove multiple occurrences
          ITOT = 1
          IMAP_NOD_LG(1,I) = ITVECT(1)
@@ -294,7 +312,10 @@ C
            ENDIF
          ENDDO
          NNODP(I) = ITOT
-         IF (NNODP(I).GT.MNPP) STOP 'NNODP > MNPP'
+         IF (NNODP(I).GT.MNPP) THEN
+             WRITE(*,'(A)') "ERROR: NNODP > MNPP"
+             CALL EXIT(1)
+         ENDIF
       ENDDO
 c     print *, "Number of Nodes Assigned to PEs"
 c     DO I=1, NPROC
@@ -336,13 +357,15 @@ C
                      ! connectivity table
                      NNEP(M,J,I) = K+1
                   ELSE
-                     STOP 'ERROR IN IMAP_NOD_LG'
+                     WRITE(*,'(A)') 'ERROR IN IMAP_NOD_LG'
+                     CALL EXIT(1) 
                   ENDIF
                ELSEIF (K.GE.NNODP(I))THEN
                   IF (IMAP_NOD_LG(K,I).EQ.IG1) THEN
                      NNEP(M,J,I) = K
                   ELSE
-                     STOP 'ERROR IN IMAP_NOD_LG'
+                     WRITE(*,'(A)') 'ERROR IN IMAP_NOD_LG'
+                     CALL EXIT(1)
                   ENDIF
                ELSE
                   IF (IMAP_NOD_LG(K,I).EQ.IG1) THEN
@@ -350,7 +373,8 @@ C
                   ELSEIF (IMAP_NOD_LG(K+1,I).EQ.IG1) THEN
                      NNEP(M,J,I) = K+1
                   ELSE
-                     STOP 'ERROR IN IMAP_NOD_LG'
+                     WRITE(*,'(A)') 'ERROR IN IMAP_NOD_LG'
+                     CALL EXIT(1) 
                   ENDIF
                ENDIF
             ENDDO
@@ -388,7 +412,10 @@ C
          IF (ITEMP.EQ.0) THEN
             NUM_COMM_PE(I) = 0
          ELSE
-            IF (ITEMP.GT.VTMAX) stop 'step8 decomp'
+            IF (ITEMP.GT.VTMAX) THEN
+                WRITE(*,'(A)') "Error during step 8, decomp"
+                CALL EXIT(1) 
+            ENDIF
             ! sort the list of neighboring subdomains numbers in ascending order
             CALL SORT(ITEMP,ITVECT)
             ! set the first neighboring subdomain
@@ -409,7 +436,10 @@ C
             ! set the total number of neighbor subdomains for this
             ! subdomain
             NUM_COMM_PE(I) = ITOT
-            IF (NUM_COMM_PE(I).GT.MNPROC) STOP 'NUM_COMM_PE>MNPROC'
+            IF (NUM_COMM_PE(I).GT.MNPROC) THEN
+                WRITE(*,'(A)') "ERROR: NUM_COMM_PE>MNPROC"
+                CALL EXIT(1)
+            ENDIF
          ENDIF
       ENDDO
 
@@ -464,7 +494,7 @@ C  It works for both resident and ghost nodes
             IF (ITOTPROC(INDX).GT.MNPROC)THEN
               WRITE(6,*)'Some nodes belong to more processors',
      $                  ' than MNPROC'
-              STOP
+              CALL EXIT(1)
             ENDIF
             ITEMP = (ITOTPROC(INDX)-1)*2 + 1
             IMAP_NOD_GL2(ITEMP,INDX) = I
@@ -737,7 +767,10 @@ C
          ENDDO
       ENDDO
       ITEMP = ITOT
-      IF (ITOT.GT.VTMAX) stop 'step3 decomp'
+      IF (ITOT.GT.VTMAX) THEN
+          WRITE(*,'(A)') "Error during step3 decomp"
+          CALL EXIT(1)
+      ENDIF
       CALL SORT(ITEMP,ITVECT) ! Sort and remove multiple occurrences
       ITOT = 1
       NODE_LG(1) = ITVECT(1)
@@ -791,7 +824,10 @@ C        then make it and its dual a local Weir-node pair
 !Seizo 2008.07.14       ENDDO
         NLWEIR  = 0
         ITEMP = ITOT
-        IF (ITOT.GT.VTMAX) stop 'step4 decomp'
+        IF (ITOT.GT.VTMAX) THEN
+            WRITE(*,'(A)') "Error during step 4 decomp"
+            CALL EXIT(1)  
+        ENDIF
         IF (ITEMP.GT.1) THEN
           CALL SORT(ITEMP,ITVECT)
           ITOT=1
@@ -816,7 +852,7 @@ c    &         " = ",NLWEIR
       IF (NLWEIR.GT.NWEIR) THEN
         print *, "error in domsize: "
         print *, "local number of weir-pairs exceeds total"
-        stop
+        CALL EXIT(1)
       ENDIF
 
 C STEP 5:
@@ -859,7 +895,10 @@ C
          ENDDO
       ENDDO
       ITEMP = ITOT
-      IF (ITOT.GT.VTMAX) stop 'step6 decomp'
+      IF (ITOT.GT.VTMAX) THEN
+          WRITE(*,'(A)') "Error during step6 decomp"
+          CALL EXIT(1)
+      ENDIF
       CALL SORT(ITEMP,ITVECT) ! Sort and remove multiple occurrences
       ITOT = 1
       NODE_LG(1) = ITVECT(1)
@@ -902,36 +941,35 @@ C
 
       L = N/2 + 1
       IR = N
-10    CONTINUE
-      IF (L.GT.1)THEN
-        L=L-1
-        RRA = RA(L)
-      ELSE
-        RRA=RA(IR)
-        RA(IR)=RA(1)
-        IR=IR-1
-        IF (IR.EQ.1) THEN
-          RA(1)=RRA
-          RETURN
-        ENDIF
-      ENDIF
-      I=L
-      J=L+L
-20    IF (J.LE.IR) THEN
-        IF (J.LT.IR) THEN
-          IF(RA(J).LT.RA(J+1)) J=J+1
-        ENDIF
-        IF (RRA.LT.RA(J)) THEN
-          RA(I)=RA(J)
-          I=J
-          J=J+J
+      DO WHILE(.TRUE.)
+        IF (L.GT.1)THEN
+          L=L-1
+          RRA = RA(L)
         ELSE
-          J=IR+1
+          RRA=RA(IR)
+          RA(IR)=RA(1)
+          IR=IR-1
+          IF (IR.EQ.1) THEN
+            RA(1)=RRA
+            RETURN
+          ENDIF
         ENDIF
-        GO TO 20
-      ENDIF
-      RA(I)=RRA
-      GO TO 10
+        I=L
+        J=L+L
+        DO WHILE (J.LE.IR)
+          IF (J.LT.IR) THEN
+            IF(RA(J).LT.RA(J+1)) J=J+1
+          ENDIF
+          IF (RRA.LT.RA(J)) THEN
+            RA(I)=RA(J)
+            I=J
+            J=J+J
+          ELSE
+            J=IR+1
+          ENDIF
+        ENDDO
+        RA(I)=RRA
+      ENDDO
 C----------------------------------------------------------------------
       END SUBROUTINE SORT
 C----------------------------------------------------------------------
@@ -956,16 +994,14 @@ C
 C--If we are not done yet, compute a mid-point, and replace either the lower
 C--limit or the upper limit, as appropriate.
 C
-10       IF(JU-JL.GT.1)THEN
+         DO WHILE (JU-JL.GT.1)
             JM = (JU+JL)/2
             IF((XX(N).GT.XX(1)).EQV.(X.GT.XX(JM)))THEN
               JL = JM
             ELSE
               JU = JM
             ENDIF
-C--Repeat until the test condition 10 is satisfied.
-         GO TO 10
-         ENDIF
+         ENDDO
 C--Then set the output and return.
          J = JL
          RETURN
@@ -984,10 +1020,10 @@ cvjp  rewritten 5/3/99
          IP = MAP(I)
          IF (IP.EQ.N1.OR.IP.EQ.N2.OR.IP.EQ.N3) THEN
            INDX = I
-           GOTO 99
+           EXIT
          ENDIF
       ENDDO
- 99   RETURN
+      RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE SEARCH3
 C----------------------------------------------------------------------
@@ -999,14 +1035,14 @@ C----------------------------------------------------------------------
       INTEGER MAP(*),N,TARGET,INDX,I
 C
       INDX = 0
-      IF (N.EQ.0) GOTO 99
+      IF (N.EQ.0) RETURN
       DO I=1,N
          IF (MAP(I).EQ.TARGET) THEN
             INDX = I
-            GOTO 99
+            EXIT
          ENDIF
       ENDDO
-99    RETURN
+      RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE SEARCH
 C----------------------------------------------------------------------

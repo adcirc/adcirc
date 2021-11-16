@@ -76,7 +76,7 @@ C
                     WRITE(*,'(A,F0.9,A,F0.9)') "FATAL ERROR: "//
      &                  "GLOBAL NODE NOT FOUND FOR "//
      &                  "X=",X," Y=",Y
-                    STOP
+                    CALL EXIT(1)
                 ENDIF    
 
                 IDX = KDRESULTS(1)%IDX 
@@ -146,7 +146,7 @@ C...............WRITE NAMELIST INPUT TO SCRATCH FILE
                 RETURN
 200             WRITE(SCREENUNIT,'(A)') "FATAL ERROR: ERROR WHILE "//
      &              "READING TIME VARYING BOUNDARY INFORMATION!"
-                STOP
+                CALL EXIT(1)
 
             
             END SUBROUTINE PARSE_TIME_VARYING_WEIR_INFO

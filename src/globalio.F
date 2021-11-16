@@ -309,7 +309,8 @@ C! CMPI
         iglobal = descript % imap(i)
         if (istart <= iglobal .and. iglobal <= iend) then
           j = 2*(iglobal - ioffset) - 1
-          if(descript%considerWetDry.and.nodecode(i).eq.0)then
+          if(descript%considerWetDry.and.nodecode(i).eq.0.and.
+     &       (.not.descript%isStation))then              
             buf(j)     = descript % alternate_value
             buf(j + 1) = descript % alternate_value
           else
@@ -1474,7 +1475,7 @@ C
       case("Dens2D")
           write(ScreenUnit,*)
      &         'ERROR: 2D density station output not implemented.'
-          stop
+          CALL EXIT(1)
       case("Dens3D")
           write(lun, 1020) ndset3dsd, nstations, dtdp*nspo3dsd,
      &         nspo3dsd, nfen, 3, FileFmtVersion
@@ -1487,11 +1488,11 @@ C
       case("Conc3D")
           write(ScreenUnit,*)
      &         'ERROR: 3D conc. station output not implemented.'
-          stop
+          CALL EXIT(1)
       case default
           write(ScreenUnit,*)
      &         'ERROR: Station header type unrecongnized.'
-          stop
+          CALL EXIT(1)
       end select
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1561,7 +1562,7 @@ C     Open the file
       case("Dens2D")
           write(ScreenUnit,*)
      &         'ERROR: 2D density output not implemented.'
-          stop
+          CALL EXIT(1)
       case("Dens3D")
           write(lun, 1020) ndset3dgd, nodes, dtdp*nspo3dgd,
      &                     nspo3dgd, nfen, 3, FileFmtVersion
@@ -1571,11 +1572,11 @@ C     Open the file
       case("Conc2D")
           write(ScreenUnit,*)
      &         'ERROR: 2D conc. output not implemented.'
-          stop
+          CALL EXIT(1)
       case("Conc3D")
           write(ScreenUnit,*)
      &         'ERROR: 3D conc. output not implemented.'
-          stop
+          CALL EXIT(1)
       case("Tau0")
           write(lun, 1010) ndsetse, nodes, dtdp*nspoolge,
      &                 nspoolge, 1, FileFmtVersion
@@ -1807,12 +1808,16 @@ C
 
 C...  go get new record for only some nodes, all
 C...  other nodes keep their current value
- 170  READ(lun,'(A80)') CDUM80
-      IF(CDUM80(2:2).EQ.'#') GOTO 170
- 171  READ(CDUM80,'(I8,E13.5)') IJK,tmpval    
-      if (tmpval.ne.defval) RVAL(IJK) = tmpval  !this allows us to exclude values included for record separation purposes in the parallel version
-      READ(lun,'(A80)',end=172) CDUM80
-      IF(CDUM80(2:2).NE.'#') GOTO 171
+      DO WHILE (.TRUE.)
+         READ(lun,'(A80)') CDUM80
+         IF(CDUM80(2:2).NE.'#') EXIT
+      ENDDO
+      DO WHILE (.TRUE.)
+         READ(CDUM80,'(I8,E13.5)') IJK,tmpval    
+         if (tmpval.ne.defval) RVAL(IJK) = tmpval  !this allows us to exclude values included for record separation purposes in the parallel version
+         READ(lun,'(A80)',end=172) CDUM80
+         IF(CDUM80(2:2).EQ.'#') EXIT
+      ENDDO
  172  CONTINUE
  
 #if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
@@ -1931,7 +1936,7 @@ C
         CALL MSG_FINI()
       ENDIF
 #endif
-      STOP 1 
+      CALL EXIT(1) 
 C
 #if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable

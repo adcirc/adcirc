@@ -319,7 +319,7 @@ C
      &      TRIM(INPUTDIR)//'/'//'fort.18 was not found.'
          WRITE(*,9973)      ! execution terminated
          CALL MSG_FINI()
-         STOP
+         CALL EXIT(1)
       ENDIF
 C
       OPEN(18,FILE=TRIM(INPUTDIR)//'/'//'fort.18',STATUS='OLD')
@@ -328,7 +328,7 @@ C
       if (Trim(BlkName) /= 'FileFmt' .and.
      $  .not. CMP_VERSION_NUMBERS(FileFmtVersion, inputFileFmtVn)) then
         write(16,*) 'File Format of Fort.18 does not match aborting'
-        stop
+        call exit(1)
       end if
 
 C Read Global number of elements and Local-to_Global element map ( used by module global_io )
@@ -359,7 +359,7 @@ C Read Global indexes of Elevation Station nodes ( used by module global_io )
       IF (NSTAE .ne. jdumy_loc ) then
          call allMessage(ERROR,"Elevation Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
-         STOP
+         CALL EXIT(1)
       ENDIF
       IF (NSTAE > 0) THEN
         ALLOCATE ( IMAP_STAE_LG(NSTAE) )
@@ -373,7 +373,7 @@ C Read Global indexes of Velocity  Station nodes ( used by module global_io )
       IF (NSTAV .ne. jdumy_loc ) then
          call allMessage(ERROR,"Velocity Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
-         STOP
+         CALL EXIT(1)
       ENDIF
       IF (NSTAV > 0) THEN
         ALLOCATE ( IMAP_STAV_LG(NSTAV) )
@@ -387,7 +387,7 @@ C Read Global indexes of Meteorlogical Station nodes ( used by module global_io 
       IF (NSTAM .ne. jdumy_loc ) then
          call allMessage(ERROR,"Met. Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
-         STOP
+         CALL EXIT(1)
       ENDIF
       IF (NSTAM > 0) THEN
         ALLOCATE ( IMAP_STAM_LG(NSTAM) )
@@ -401,7 +401,7 @@ C Read Global indexes of Concentration Station nodes ( used by module global_io 
       IF (NSTAC .ne. jdumy_loc ) then
          call allMessage(ERROR,"Conc. Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
-         STOP
+         CALL EXIT(1)
       ENDIF
       IF (NSTAC > 0) THEN
         ALLOCATE ( IMAP_STAC_LG(NSTAC) )

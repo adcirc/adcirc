@@ -1691,7 +1691,11 @@ C...  UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
 C...UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
       IF (ILump.eq.0) THEN ! default, fully consistent LHS
 C... DW, periodic bcs
-         CALL UPDATER_W_PERBC(GWCE_LV,COEF(1,1),DUMY1,2)
+         IF(NPERSEG.GT.0)THEN
+             CALL UPDATER_W_PERBC(GWCE_LV,COEF(1,1),DUMY1,2)
+         ELSE
+             CALL UPDATER(GWCE_LV,COEF(1,1),DUMY1,2)
+         ENDIF
       ELSE  ! lumped LHS
          CALL UPDATER(GWCE_LV,COEFD,DUMY1,2)
       ENDIF
@@ -2821,7 +2825,7 @@ C     jgf53.dev: Moved to GWCE module.
 C*************************************************************************
       subroutine check_slopes(it,TimeLoc)
       USE SIZES, ONLY : SZ, mnproc, myproc
-      use global, only : eta2,nodecode,NOFF,ESLONOFF,screenUnit,
+      use global, only : eta2,nodecode,NOFF,ESLCOUNT,screenUnit,
      &      setMessageSource, unsetMessageSource, scratchMessage,
      &      allMessage,logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
      &      nodes_lg, IFSFM
@@ -2914,12 +2918,12 @@ C.... end WP
                   ! If it is the first time that the slope limiter
                   ! has been activated at this node, write a log 
                   ! message. 
-                  if (eslonoff(nm(ie,i)).eq.0) then
+                  eslcount(nm(ie,i)) = eslcount(nm(ie,i))+1 ! for output file
+                  if (eslcount(nm(ie,i)).eq.1) then
                      write(scratchMessage,1983) nodeNumber,dEta2Mag, 
      &                     elemental_slope_limiter_grad_max(NM(IE,I)),
      &                     it, timeLoc
                      call allMessage(INFO,scratchMessage)
-                     eslonoff(nm(ie,i)) = 1 ! for output file
                   endif
                   elemental_slope_limiter_active(NM(IE,I)) = .true.
                else
@@ -3083,7 +3087,7 @@ C
         call msg_fini()
       endif
 #endif
-      stop 
+      CALL EXIT(1)
 C
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable
