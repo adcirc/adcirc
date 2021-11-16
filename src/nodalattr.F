@@ -76,6 +76,7 @@ C      Tao0MinMax            "min_and_max_primitive_weighting_in_continuity_equa
 C      River_et_WSE          "initial_river_elevation"
 C      IT_Fric               "internal_tide_friction"
 C      OverlandReductionFactor  "overland_reduction_factor"
+C      subgridBarrier        "subgrid_barrier"
 C
 C-----------------------------------------------------------------------
       MODULE NodalAttributes
@@ -122,7 +123,8 @@ C     required for the run, according to the unit 15 control file
       LOGICAL LoadEleSlopeLim ! zc: elemental slope limiter
       LOGICAL LoadRiver_et_WSE  ! tcm 20140502 v51.27
       LOGICAL LoadIT_Fric       ! wjp: Internal tides
-      LOGICAL LoadOverlandReductionFactor
+      LOGICAL LoadOverlandReductionFactor 
+      LOGICAL LoadSubgridBarrier
 C
 C     The following flags are .true. if there are data with the
 C     corresponding label in the unit 13 file.
@@ -143,6 +145,7 @@ C     corresponding label in the unit 13 file.
       LOGICAL FoundRiver_et_WSE ! tcm 20140502 v51.27      
       LOGICAL FoundIT_Fric  ! wjp internal tides
       LOGICAL FoundOverlandReductionFactor
+      LOGICAL FoundSubgridBarrier
 C
 C     These variables hold the strings which describe the attribute's
 C     units. These data are loaded from the file, but not used as of
@@ -164,6 +167,7 @@ C     v46.00.
       CHARACTER(len=80) River_et_WSEUnits ! tcm 20140502 v51.27
       CHARACTER(len=80) IT_FricUnits  ! wjp internal tides
       CHARACTER(len=80) OverlandReductionFactorUnits
+      CHARACTER(len=80) subgridBarrierUnits
 C
 C     These variables hold the number of values per node for each
 C     attribute.
@@ -184,6 +188,7 @@ C     attribute.
       INTEGER River_et_WSENoOfVals  ! tcm 20140502 v51.27      
       INTEGER IT_FricNoOfVals ! wjp internal tides
       INTEGER OverlandReductionFactorNoOfVals
+      INTEGER subgridBarrierNoOfVals
 C
 C     These variables hold the default values for each attribute.
       REAL(SZ) Tau0DefVal
@@ -203,6 +208,7 @@ C     These variables hold the default values for each attribute.
       REAL(SZ) River_et_WSEDefVal ! tcm 20140502 v51.27
       REAL(SZ) IT_FricDefVal(3)  ! wjp internal tides
       REAL(SZ) OverlandReductionFactorDefaultValue
+      REAL(SZ) SubgridBarrierDefaultValue(2)
 C
       INTEGER NumOfNodes    ! number of nodes listed in unit 13 file, cf. NP
       INTEGER NAttr         ! number of nodal attributes in the unit 13 file
@@ -230,6 +236,7 @@ C
 C     Nodal attributes.
       REAL(SZ), ALLOCATABLE :: STARTDRY(:) ! 1=nodes below geoid initially dry
       REAL(SZ), ALLOCATABLE :: FRIC(:)     ! bottom friction coefficient
+      REAL(SZ), ALLOCATABLE :: FRIC_ORIG(:)
       REAL(SZ), ALLOCATABLE, TARGET :: TAU0VAR(:)! primitive equation weighting
       REAL(SZ), ALLOCATABLE :: Tau0Temp(:) ! used in time varying tau0
 C     jjw&sb46.39.sb01: Base (original) primitive equation weighting.
@@ -267,6 +274,9 @@ C     The following attribute contains BK(I),BALPHA(I),BDELX(I), and POAN(I)
       REAL(SZ), ALLOCATABLE :: River_et_WSE(:)  ! tcm 20140502 v51.27
       REAL(SZ), ALLOCATABLE :: IT_Fric(:,:)  ! WJP: Linear friction coefficient for internal tides
       REAL(SZ), ALLOCATABLE :: OverlandReductionFactor(:)
+      REAL(SZ), ALLOCATABLE :: subgridBarrier(:,:)
+      REAL(SZ), ALLOCATABLE :: subgridBarrierFriction(:)
+      LOGICAL,ALLOCATABLE   :: subgridBarrierOvertopping(:)
 C
 C------------------ For absorbing layer, DW
       REAL(SZ), pointer:: absorblayer_sigma(:,:), absorblayer_zero(:,:)
@@ -379,6 +389,7 @@ C
       LoadRiver_et_WSE   = .False.
       LoadIT_Fric        = .False.  ! WJP
       LoadOverlandReductionFactor = .False.
+      LoadSubgridBarrier = .False.
 C
       FoundTau0           = .False.
       FoundStartDry       = .False.
@@ -397,6 +408,7 @@ C
       FoundRiver_et_WSE   = .False.      
       FoundIT_Fric        = .False. ! WJP
       FoundOverlandReductionFactor = .False.
+      FoundSubgridBarrier = .False.
 C
 C
       Tau0NoOfVals          = 1
@@ -416,6 +428,7 @@ C
       River_et_WSENoOfVals  = 1
       IT_FricNoOfVals       = 1  ! WJP, could be 3 also, so may change
       OverlandReductionFactorNoOfVals = 1
+      SubgridBarrierNoOfVals = 1 ! 1 or 2 
 C
       Tau0DefVal             = 0.0
       StartDryDefVal         = 0.0
@@ -439,6 +452,7 @@ C
       EleSlopeLimDefVal      = 0D0
       River_et_WSEDefVal     = 0.d0      
       IT_FricDefVal          = 0.0 ! WP
+      SubgridBarrierDefaultValue = 999999D0
 C
       HighResTimeVaryingTau0     = .False.
       FullDomainTimeVaryingTau0  = .False.
@@ -786,6 +800,10 @@ C 02.24.2018 WJP: Add spatially varying linear internal tide friction coefficien
             IF(LoadOverlandReductionFactor)THEN
                 OverlandReductionFactor = na(i)%xdmfArray
             ENDIF
+         CASE("subgrid_barrier")
+             IF(LoadSubgridBarrier)THEN
+                SubgridBarrier = na(i)%xdmfMatrix
+             ENDIF
 ! DW---- for sponge layers ---
          CASE ("sponge_generator_layer") 
             IF (LoadAbsLayerSigma) THEN
@@ -864,6 +882,7 @@ C          A L L O C A T E   N O D A L   A T T R I B U T E S
 C     ----------------------------------------------------------------
 C     Allocate memory to hold our data.
       subroutine allocateNodalAttributes()
+      use mesh,only:ne
       implicit none
       ALLOCATE(TAU0VAR(NumOfNodes),TAU0BASE(NumOfNodes)) ! jjw&sb46.39sb01
       ALLOCATE(STARTDRY(NumOfNodes))
@@ -897,7 +916,11 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
       OverlandReductionFactor(:) = 1D0/30D0
       IF ( LoadAbsLayerSigma ) THEN
          ALLOCATE( absorblayer_sigma(NumOfNodes,AbsLayerSigmaNoOfVals) )
-      END IF
+      ENDIF
+      IF( LoadSubgridBarrier )THEN 
+          ALLOCATE(subgridBarrier(NumOfNodes,SubgridBarrierNoOfVals))
+          ALLOCATE(subgridBarrierOvertopping(NumOfNodes))
+      ENDIF
 C     ----------------------------------------------------------------
       end subroutine allocateNodalAttributes
 C     ----------------------------------------------------------------
@@ -1010,6 +1033,8 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
 C 09232016 WP: Add spatially varying linear internal tide friction coefficient
          CASE("internal_tide_friction")
             LoadIT_Fric = .True.
+         CASE("subgrid_barrier")
+            LoadSubgridBarrier = .True.
          CASE("overland_reduction_factor")
             LoadOverlandReductionFactor = .True.
 ! DW---- for sponge layers ---
@@ -1204,6 +1229,11 @@ C 09232016 WP: Add spatially varying linear internal tide friction
             READ(13,'(A80)') OverlandReductionFactorUnits
             READ(13,*) OverlandReductionFactorNoOfVals
             READ(13,*) OverlandReductionFactorDefaultValue
+         CASE("subgrid_barrier")
+            FoundSubgridBarrier = .TRUE.
+            READ(13,'(A80)') SubgridBarrierUnits
+            READ(13,*) SubgridBarrierNoOfVals
+            READ(13,*) (SubgridBarrierDefaultValue(j),j=1,SubgridBarrierNoOfVals)
 C---- DW ----- for sponge layer ----------
          CASE ("sponge_generator_layer")  
             FoundAbsLayerSigma = .TRUE.
@@ -1260,6 +1290,7 @@ C     (unit 15) file and skip past the others.
             IF (LoadQuadraticFric) THEN
                CALL LoadAttrVec(FRIC, QuadraticFricDefVal,
      &              NumNodesNotDefault, NScreen, MyProc, NAbOut)
+               FRIC_ORIG = FRIC
             ELSE
                SkipDataSet = .True.
             ENDIF
@@ -1387,6 +1418,12 @@ C 09232016 WP : Spatially varying linear internal tide friction
      &              NumNodesNotDefault,nScreen,MyProc,
      &              NAbOut)
             ENDIF
+         CASE("subgrid_barrier")
+             IF(LoadSubgridBarrier)THEN
+                 CALL LoadAttrMat(SubgridBarrier,SubgridBarrierNoOfVals,
+     &              subgridBarrierDefaultValue,NumNodesNotDefault,
+     &              nScreen,MyProc,NAbOut)
+             ENDIF
 C          WP
 !------- DW ---- Absorbing layer -----------
          CASE ("sponge_generator_layer") 
@@ -1825,10 +1862,12 @@ C     Initialize bottom friction if it was not loaded from unit 13.
 C     If a nodal attributes file was read, FRIC was allocated there.
             IF (NWP.eq.0) THEN
                ALLOCATE(FRIC(NP))
+               ALLOCATE(FRIC_ORIG(NP))
             ENDIF
             DO I=1,NP
                FRIC(I)=CF
             END DO
+            FRIC_ORIG = FRIC
          ENDIF
 C
 C        jgf47.04 If a depth-dependent friction parameterization is used,
@@ -1846,11 +1885,13 @@ C     If a nodal attributes file was read, Z0b_var was allocated there.
           IF (NWP.eq.0) THEN
              ALLOCATE(Z0b_var(NP))
              ALLOCATE(FRIC(NP))
+             ALLOCATE(FRIC_ORIG(NP))
           ENDIF
           DO I=1,NP
              Z0b_var(I)=Z0B
              FRIC(I)=CF
           END DO
+          FRIC_ORIG = FRIC
         ENDIF
 C     jgf47.04 If a depth-dependent friction parameterization is used,
 C     the value from the fort.15 file is used as a floor for the
@@ -2041,26 +2082,58 @@ C
       REAL(SZ) BALPHA! BALPHA(2) is constriction fraction
       REAL(SZ) BDELX ! BDELX(3) is effective delx
       REAL(SZ) MLDrat ! MLD ratio to depth
+
+
+      !...Reset the friction to original values
+      !   when subgrid barriers might be used
+      IF(LoadSubgridBarrier)THEN
+        DO I=1,NP
+            IF(subgridBarrierNoOfVals.EQ.1)CYCLE
+            IF(LoadManningsN.AND.ManningsN(I).GT.0D0)CYCLE
+            IF(subgridbarrierOvertopping(I))THEN
+                FRIC(I) = subgridBarrier(I,2)
+            ELSE
+                FRIC(I) = FRIC_orig(I)
+            ENDIF
+        ENDDO
+      ENDIF
+
 C
 C     Step 0. Convert Manning's N to Cd, if necessary.
       IF (LoadManningsN) THEN
          DO I=1, NP
-            IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
-            FRIC(I)=g*ManningsN(I)**2.d0
-     &           /( ( DP(I)+IFNLFA*ETA2(I) )**(1.d0/3.d0) ) ! sb46.28sb02
-            !sb46.28sb02  Lower limit is applied here.
-            IF(FRIC(I).LT.BFCdLLimit) THEN
-               FRIC(I) = BFCdLLimit
+            IF(LoadSubgridBarrier)THEN
+                IF(subgridBarrierOvertopping(I).AND.
+     &             SubgridBarrierNoOfVals.EQ.2)THEN
+                    FRIC(I)=g*subgridBarrier(I,2)**2.d0
+     &                   /( ( DP(I)+IFNLFA*ETA2(I) )**(1.d0/3.d0) ) 
+                    IF(FRIC(I).LT.BFCdLLimit) THEN
+                       FRIC(I) = BFCdLLimit
+                    ENDIF
+                ELSE
+                    IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
+                    FRIC(I)=g*ManningsN(I)**2.d0
+     &                   /( ( DP(I)+IFNLFA*ETA2(I) )**(1.d0/3.d0) ) ! sb46.28sb02
+                    IF(FRIC(I).LT.BFCdLLimit) THEN
+                       FRIC(I) = BFCdLLimit
+                    ENDIF
+                ENDIF
+            ELSE
+                IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
+                FRIC(I)=g*ManningsN(I)**2.d0
+     &               /( ( DP(I)+IFNLFA*ETA2(I) )**(1.d0/3.d0) ) ! sb46.28sb02
+                !sb46.28sb02  Lower limit is applied here.
+                IF(FRIC(I).LT.BFCdLLimit) THEN
+                   FRIC(I) = BFCdLLimit
+                ENDIF
             ENDIF
          ENDDO
-      ENDIF
-C
-C     ... Convert Chezy to Cd, if necessary.
-      IF (LoadChezy) THEN
+      ELSEIF (LoadChezy) THEN
          DO I=1,NP
             FRIC(I) = G/(Chezy(I)**2)
          END DO
       ENDIF
+
 C
       NOLIBFRIC: IF (NOLIBF.eq.3) THEN
 C     ... Combined Cd for bottom friction and momentum dispersion

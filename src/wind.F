@@ -4937,11 +4937,17 @@ C     Compute the distances based on haversine formula for distance along a sphe
          rad(i) = sphericalDistance(DX(I),DY(I),lat, ycoor(i))
 C     Compute coriolis
          coriolis = 2.0d0 * omega * sin(YCOOR(I)*DEG2RAD)
+<<<<<<< HEAD
 C     Compute (R/r)^B factor         
          gamma_r = (RMW*1000.d0/RAD(I))**B
 C     Compute pressure field
          PRESS(I)=(cpress+(centralPressureDeficit)*
      &        EXP(-gamma_r)) / (RHOWAT0*G)
+=======
+C     Compute pressure field
+         PRESS(I)=(cpress+(centralPressureDeficit)*
+     &        EXP(-(RMW*1000.d0/RAD(I))**B)) / (RHOWAT0*G)
+>>>>>>> zcobell/subgrid_barriers
 C     Compute velocity field with absolute around 
 C     CORIOLIS for the Southern Hempisphere
          V_r(I) = sqrt(
