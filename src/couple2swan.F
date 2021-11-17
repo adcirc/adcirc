@@ -201,7 +201,9 @@ C-----------------------------------------------------------------------
       USE MESH, ONLY : NE, NM, NP, AREAS, NODELE, NEITABELE,
      &    FDXE, FDYE, SFacEle, SFMYEle, SFMXEle
       USE BOUNDARIES, ONLY : NBDV, NBOU, NBVV, NOPE, NVDLL, NVELL
+#ifdef CMPI      
       USE MESSENGER,ONLY:MYPROC
+#endif      
 
       IMPLICIT NONE
 
