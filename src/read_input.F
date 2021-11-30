@@ -2638,14 +2638,23 @@ C     an OWI basin scale met field derived from NAM winds.
 
 C     jgf: Added NWS30 format for embedding a GAHM (NWS=20) vortex inside
 C     an OWI basin scale met field derived from NAM winds.
+C     tga20211130: Added ability to use this with ice.
       IF(ABS(NWS).EQ.30) THEN
-         IF(NRS.EQ.0) THEN
-            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) THEN
+             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
      &          GEOFACTOR, WTIMINC, pureVortex, pureBackground
-         ENDIF
-         IF(NRS.GE.1) THEN
+         ELSEIF((NCICE.EQ.0).AND.(NRS.GE.1)) THEN
              READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
      &          GEOFACTOR, WTIMINC, RSTIMINC, pureVortex, pureBackground
+         ELSEIF((NCICE.GE.1).AND.(NRS.EQ.0)) THEN
+             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &          GEOFACTOR, WTIMINC, CICE_TIMINC, 
+     &          pureVortex, pureBackground
+         ELSEIF((NCICE.GE.1).AND.(NRS.GE.1)) THEN
+             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &          GEOFACTOR, WTIMINC, RSTIMINC, CICE_TIMINC, 
+     &          pureVortex, pureBackground
+         ELSE
          ENDIF
       ENDIF
 
