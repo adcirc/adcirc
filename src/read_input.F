@@ -63,7 +63,7 @@ C-----------------------------------------------------------------------
      &   alloc_main10, alloc_main12, alloc_main13, alloc_main9,
      &   alloc_main6, openfileforread, nhoutonce, omega, IFSPROTS,
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp,
-     &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection
+     &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection, PRBCKGRND
 #if defined CSWAN || defined ADCSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
@@ -161,7 +161,8 @@ C
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
       NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,
-     &  rhoAir, invertedBarometerOnElevationBoundary, nPowellSearchDomains
+     &  rhoAir, PRBCKGRND, 
+     &  invertedBarometerOnElevationBoundary, nPowellSearchDomains
       NAMELIST /subdomainModeling/ subdomainOn
       NAMELIST /wetDryControl/ outputNodeCode, outputNOFF,
      &  noffActive, StatPartWetFix, How2FixStatPartWet
@@ -390,8 +391,10 @@ c     a non-default value we can determine this was the case.
       namelistSpecifier = 'metControl'
       read(unit=15,nml=metControl,iostat=ios)
       call logNamelistReadStatus(namelistSpecifier, ios)
-      write(scratchMessage,*) "WindDragLimit=",WindDragLimit,
-     & " DragLawString=",DragLawString, " rhoAir=",rhoAir,
+      write(scratchMessage,*) 'WindDragLimit=',WindDragLimit,
+     & ' DragLawString=',DragLawString, 
+     & ' rhoAir=',rhoAir,
+     & ' PRBCKGRND=',PRBCKGRND,
      & ' invertedBarometerOnElevationBoundary=',
      &   invertedBarometerOnElevationBoundary,
      & ' outputWindDrag=',outputWindDrag,

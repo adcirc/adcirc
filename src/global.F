@@ -26,9 +26,9 @@ C.....nominal density of water RHOWAT0
 C.....Sigma T value of reference density
       REAL(SZ), PARAMETER ::  SigT0=RHOWAT0-1000.D0
 C.....Background Atmospheric Pressure in mb
-      REAL(SZ), PARAMETER :: PRBCKGRND = 1013.0d0   !tcm 20100617 v49.16 Added
-      REAL(SZ), PARAMETER :: TBCKGRND = 288.15d0    !wjp degrees kelvin 
       REAL(SZ), PARAMETER :: RAir = 287.058d0        !wjp specific gas
+      REAL(SZ), PARAMETER :: TBCKGRND = 288.15d0    !wjp degrees kelvin 
+      REAL(sz) :: PRBCKGRND = 1013.0d0   !tcm 20100617 v49.16 Added
 constant 
       REAL(sz) :: rhoAir = 1.293d0 !PRBCKGRND*100d0/(RAir*TBCKGRND)  !wjp Ideal Gas Law kg/m^3
       REAL(8) :: windReduction = 0.9d0

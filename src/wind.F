@@ -3262,7 +3262,7 @@ C
       DO I=1,NP
         WVNX2(I)=0.d0
         WVNY2(I)=0.d0
-        PRN2(I)=101300.d0/RHOWATG
+        PRN2(I)=PRBCKGRND_MH2O
       END DO
       DO WHILE(.TRUE.)
          READ(22,'(A80)') PBLJAGF
@@ -3281,7 +3281,7 @@ C        jgf46.02 Added the following two lines.
          WVNX2(NHG)=WVNX2(NHG)*0.5144d0 !CONVERT KNOTS TO  M/S
          WVNY2(NHG)=WVNY2(NHG)*0.5144d0
          PRN2(NHG)=100.d0*PRN2(NHG)/RHOWATG !CONVERT MILLIBARS TO M OF WATER
-         IF(PRN2(NHG).EQ.0.) PRN2(NHG)=101300.d0/RHOWATG                       !RAL0315+ OK
+         IF(PRN2(NHG).EQ.0.) PRN2(NHG)=PRBCKGRND_MH2O                       !RAL0315+ OK
          READ(22,'(A80)') PBLJAGF
          IF(PBLJAGF(2:2).EQ.'#') EXIT
       ENDDO
