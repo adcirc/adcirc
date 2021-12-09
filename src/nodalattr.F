@@ -83,6 +83,7 @@ C-----------------------------------------------------------------------
       USE SIZES
       USE GLOBAL, ONLY : scratchMessage, allMessage, logMessage,
      &                    DEBUG, ECHO, INFO, WARNING, ERROR
+C     &                    ,NWETP, ANODES
 
 Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
 C             I've placed these changes outside the #ifdef CSWAN flags
@@ -2050,10 +2051,16 @@ C
       REAL(SZ) BK    ! BK(1) is pier shape factor
       REAL(SZ) BALPHA! BALPHA(2) is constriction fraction
       REAL(SZ) BDELX ! BDELX(3) is effective delx
+      INTEGER :: II
 C
 C     Step 0. Convert Manning's N to Cd, if necessary.
       IF (LoadManningsN) THEN
-         DO I=1, NP
+C#ifndef SKIP_DRY        
+         DO I=1,NP
+C#else
+C         DO II=1,NWETP
+C            I = ANODES(II)
+C#endif
             FRIC(I)=g*ManningsN(I)**2.d0
      &           /( ( DP(I)+IFNLFA*ETA2(I) )**(1.d0/3.d0) ) ! sb46.28sb02
             !sb46.28sb02  Lower limit is applied here.
@@ -2065,14 +2072,24 @@ C     Step 0. Convert Manning's N to Cd, if necessary.
 C
 C     ... Convert Chezy to Cd, if necessary.
       IF (LoadChezy) THEN
+C#ifndef SKIP_DRY        
          DO I=1,NP
+C#else
+C         DO II=1,NWETP
+C            I = ANODES(II)
+C#endif
             FRIC(I)=G/(Chezy(I)**2)
          END DO
       ENDIF
 C
 C     Step 1. Apply friction arising from turbulent viscous interaction
 C     with the sea floor.
-      DO I=1, NP
+C#ifndef SKIP_DRY        
+      DO I=1,NP
+C#else
+C      DO II=1,NWETP
+C         I = ANODES(II)
+C#endif
          UV1=SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
          H1=DP(I)+IFNLFA*ETA2(I)
          TK(I)= FRIC(I)*
@@ -2084,7 +2101,12 @@ C
 C     Step 2. Apply friction arising from flow interaction with bridge
 C     pilings, if required.
       IF (LoadBridgePilings) THEN
-         DO I=1, NP
+C#ifndef SKIP_DRY        
+         DO I=1,NP
+C#else
+C         DO II=1,NWETP
+C            I = ANODES(II)
+C#endif
             UV1=SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
             H1=DP(I)+IFNLFA*ETA2(I)
             Fr=UV1*UV1/(G*H1)
@@ -2188,21 +2210,31 @@ C     ----------------------------------------------------------------
       REAL(SZ), intent(in), dimension(NP) :: DP   ! depth
       REAL(SZ), intent(in), dimension(NP) :: TK   ! scalar friction
       REAL(SZ), intent(inout), dimension(3,NP) :: TKM
-      INTEGER :: I 
+      INTEGER :: I,II 
 C     Compute TKM by adding wave drag contribution to 
 C     current value of the bottom friction, TK
       IF (LoadIT_Fric) THEN
          IF (IT_FricNoOfVals == 3) THEN
 C        Use the Nycander (2005) or Lyard et al. (2004) type tensor wave drag
 C        Using three columns of data for the different segments of the matrix
-            DO I=1,NP 
+C#ifndef SKIP_DRY        
+            DO I=1,NP
+C#else
+C            DO II=1,NWETP
+C               I = ANODES(II)
+C#endif 
                TKM(1,I) = TK(I) + IT_Fric(I,1)
                TKM(2,I) = TK(I) + IT_Fric(I,2)
                TKM(3,I) = IT_Fric(I,3) 
             END DO
          ELSEIF (IT_FricNoOfVals == 1) THEN
 C           For the scalar version (like Zaron & Egbert (2006) type)
-            DO I=1,NP 
+C#ifndef SKIP_DRY        
+            DO I=1,NP
+C#else
+C            DO II=1,NWETP
+C               I = ANODES(II)
+C#endif 
                TKM(1,I) = TK(I) + IT_Fric(I,1) 
                TKM(2,I) = TKM(1,I)
                TKM(3,I) = 0.0d0

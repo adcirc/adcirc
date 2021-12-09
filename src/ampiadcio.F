@@ -49,13 +49,13 @@ C----------------------------------------------------------------------
 #ifdef AMPI_COMP
           include 'mpif.h'
 #endif
-c          INTEGER :: RANK = 999999
-c!$omp threadprivate(RANK)
-c          INTEGER :: IERR, FLAG, OLD_PE
+C          INTEGER :: RANK = 999999
+C!$omp threadprivate(RANK)
+C         INTEGER :: IERR, FLAG, OLD_PE
 
 #ifdef AMPI_COMP
-c          CALL MPI_COMM_RANK(MPI_COMM_ADCIRC, RANK, IERR)
-c          CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, OLD_PE, FLAG, IERR)
+C          CALL MPI_COMM_RANK(MPI_COMM_ADCIRC, RANK, IERR)
+C          CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, OLD_PE, FLAG, IERR)
 
 C          PRINT *,"Rank ",RANK," about to migrate from PE ",OLD_PE
 
@@ -91,13 +91,13 @@ C----------------------------------------------------------------------
 #ifdef AMPI_COMP
           include 'mpif.h'
 #endif
-c          INTEGER :: RANK = 999999
-c!$omp threadprivate(RANK)
-c          INTEGER :: IERR, FLAG, NEW_PE
+C          INTEGER :: RANK = 999999
+C!$omp threadprivate(RANK)
+C          INTEGER :: IERR, FLAG, NEW_PE
 
 #ifdef AMPI_COMP
-c          CALL MPI_COMM_RANK(MPI_COMM_ADCIRC, RANK, IERR)
-c          CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, NEW_PE, FLAG, IERR)
+C          CALL MPI_COMM_RANK(MPI_COMM_ADCIRC, RANK, IERR)
+C          CALL MPI_COMM_GET_ATTR(MPI_COMM_WORLD, AMPI_MY_WTH, NEW_PE, FLAG, IERR)
 
 C          PRINT *,"Rank ",RANK," just migrated to PE ",NEW_PE
 

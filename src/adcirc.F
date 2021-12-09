@@ -127,7 +127,6 @@ C******************************************************************************
       USE AMPIIOSUBS, ONLY: ABOUT_TO_MIGRATE, JUST_MIGRATED
 
       IMPLICIT NONE
-C
       INTEGER, OPTIONAL :: COMM
       CHARACTER(*), OPTIONAL :: ROOTD
       REAL(SZ) :: StaTimHS
@@ -187,7 +186,7 @@ C
       ELSE
         ROOTDIR = '.'
       ENDIF
-C
+
 #ifdef CMPI
       CALL GET_NUMWRITERS()  ! Get number of writer processors from command line arguments
       IF (PRESENT(COMM)) THEN
@@ -407,15 +406,16 @@ C******************************************************************************
 C*    ADCIRC run routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Run(NTIME_STP)
-      USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
+      USE SIZES, ONLY : sz, mnproc, mnwproc, mnwproh, myproc
       USE GLOBAL, ONLY : iTime, DEBUG, INFO, setMessageSource, allMessage,
-     &   unsetMessageSource, statim, dtdp
+     &   unsetMessageSource, statim, dtdp, nodecode, comm
 
       USE wind, ONLY: wtiminc ! wtiminc - to test
                                                    ! ampi
 #ifdef CMPI
       USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_main, hswriter_pause
+      USE MESH, ONLY : np
 #endif
 C
 #ifdef CSWAN
@@ -437,9 +437,25 @@ C..............
       implicit none
 #endif
 C
+      REAL(SZ) :: START = 0.d0, FINISH = 0.d0
+!$omp threadprivate(START, FINISH)
       INTEGER, OPTIONAL :: NTIME_STP
-      INTEGER :: AMPI_LB_FREQ, IERR
+      INTEGER :: AMPI_LB_FREQ, IERR, I 
+      INTEGER :: TotCycled = 0
+!$omp threadprivate(ToTCycled)
+      INTEGER :: TotCycled0 = 0
+!$omp threadprivate(TotCycled0)
+      INTEGER :: NoCycled = 0
+!$omp threadprivate(NoCycled)
 
+      
+#ifdef CMPI
+      IF (MYPROC.EQ.0) THEN
+         CALL CPU_TIME(START)
+         print*, 'Recording Runtime.'
+         print*, 'Start: ',START
+      ENDIF
+#endif
 !      AMPI_LB_FREQ = 10 ! TODO: set this from the command line
 !      AMPI_LB_FREQ = (4*WTIMINC)/DTDP + 5 ! TODO: set this from the command line
       AMPI_LB_FREQ = 300 
@@ -473,15 +489,6 @@ C
       call allMessage(INFO,"Begin timestepping.")
       DO 100 ITIME=ITIME_BGN,ITIME_END
 
-
-!c ----- 
-!        IF ( MOD(ITIME,AMPI_LB_FREQ) == 0 ) THEN
-!          CALL ABOUT_TO_MIGRATE_TEST( ) ; 
-!          CALL JUST_MIGRATED_TEST( ) ;
-!        END IF
-!
-
-
         CALL TIMESTEP(ITIME)
 
 C
@@ -495,17 +502,25 @@ C             to then call the SWAN time-stepping subroutine.
         !...WRITE OUTPUT
         !   zc - moved this here so that output occurs after
         !        the SWAN time step has been completed.
-        CALL writeOutput2D(ITIME,ITIME*DTDP+StaTim*86400D0) ! =>see write_output.F
+C        CALL writeOutput2D(ITIME,ITIME*DTDP+StaTim*86400D0) ! =>see write_output.F
 
 #ifdef AMPI_COMP
-        IF(MOD(ITIME,AMPI_LB_FREQ).EQ.0)THEN
-C          TODO: uncomment below for load balancing:
+C        IF(MOD(ITIME,AMPI_LB_FREQ).EQ.0)THEN
+        IF(ITIME .EQ. 600)THEN
+C          CALL AMPI_MIGRATE(AMPI_INFO_CHKPT_IN_MEMORY, IERR)
           CALL AMPI_MIGRATE(AMPI_INFO_LB_SYNC, IERR)
         ENDIF
 #endif
 
 100   CONTINUE
 C
+#ifdef CMPI
+      IF (MYPROC.EQ.0) THEN
+         CALL CPU_TIME(FINISH)
+         print*, 'Elapsed time: ',FINISH-START
+      ENDIF
+#endif
+
       IF (PRESENT(NTIME_STP)) THEN
         ITIME_BGN = ITIME_END+1
       ENDIF
@@ -523,7 +538,7 @@ C
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-      
+
       RETURN
       END SUBROUTINE ADCIRC_Run
 

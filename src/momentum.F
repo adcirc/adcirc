@@ -162,6 +162,9 @@ C*******************************************************************************
      &  TiP1, TiP2, WSX2, WSY2, TK, CORIF, WSX1, WSY1, VIDBCPDXOH,
      &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y, usingDynamicWaterLevelCorrection,
      &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, TKM, adcirc_norm2
+#ifdef SKIP_DRY
+     &  ,NWETE, AELEMS, NWETP, ANODES
+#endif
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, Areas, TotalArea, 
      &                  NNeigh, NeiTab, NeiTabEle, MJU, SFAC
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
@@ -172,7 +175,7 @@ C*******************************************************************************
 
       IMPLICIT NONE
 
-      INTEGER IE, I, J, N                           !local loop counters
+      INTEGER IE, I, J, N, II                        !local loop counters
       INTEGER  NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCEle, NCI
       INTEGER NBDI
@@ -221,14 +224,18 @@ C...        THE TIME STEPPING LOOP.
 
 C.....FIRST TREAT THE NON-LUMPED PART OF THE EQUATIONS.
 
+#ifndef SKIP_DRY        
       DO IE=1,NE
+#else
+      DO I=1,NWETE
+         IE = AELEMS(I)
+#endif
 
 C...  SET NODAL VALUES FOR EACH ELEMENT
 
-#ifndef SKIP_DRY
 Corbitt 120322: Localized Advection
          IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
-#endif
+         
          NM1=NM(IE,1)
          NM2=NM(IE,2)
          NM3=NM(IE,3)
@@ -236,10 +243,7 @@ Corbitt 120322: Localized Advection
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
          NCELE=NC1*NC2*NC3*NOFF(IE)
-#ifdef SKIP_DRY
-         IF(NCELE.EQ.0) CYCLE
-         IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
-#endif
+
          U1N1=UU1(NM1)
          U1N2=UU1(NM2)
          U1N3=UU1(NM3)
@@ -559,17 +563,20 @@ C     LINES TO RUN ON A VECTOR COMPUTER
 C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR MOM_LV_X, MOM_LV_Y
 C           AND AUV
 #ifdef CVEC
+#ifndef SKIP_DRY        
       DO IE=1,NE
+#else
+      DO I=1,NWETE
+         IE = AELEMS(I)
+#endif
          NM1=NM(IE,1)
          NM2=NM(IE,2)
          NM3=NM(IE,3)
-         NC1=NODECODE(NM1)
-         NC2=NODECODE(NM2)
-         NC3=NODECODE(NM3)
-         NCEle=NC1*NC2*NC3*NOFF(IE)
-#ifdef SKIP_DRY
-         IF(NCEle.EQ.0) CYCLE
-#endif
+C         NC1=NODECODE(NM1)
+C         NC2=NODECODE(NM2)
+C         NC3=NODECODE(NM3)
+C         NCEle=NC1*NC2*NC3*NOFF(IE)
+
          MOM_LV_X(NM1)=MOM_LV_X(NM1)+TEMP_LV_A(IE,1)
          MOM_LV_X(NM2)=MOM_LV_X(NM2)+TEMP_LV_A(IE,2)
          MOM_LV_X(NM3)=MOM_LV_X(NM3)+TEMP_LV_A(IE,3)
@@ -587,11 +594,14 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
       WSY=0.D0
       VIDBCPDX=0.D0
       VIDBCPDY=0.D0
+C#ifndef SKIP_DRY        
       DO I=1,NP
+C#else
+C      DO II=1,NWETP
+C         I = ANODES(II)
+C#endif
          NCI=NODECODE(I)
-#ifdef SKIP_DRY
-         IF(NCI.EQ.0) CYCLE
-#endif
+
          IF(TotalArea(I).ne.0.d0) THEN
             IF (CME_AreaInt_Corr) THEN       !Correct area integration
                MOM_LV_X(I)=MOM_LV_X(I)/TotalArea(I)
@@ -641,9 +651,9 @@ C...  AUV12=-AUV21)
          NBDI=NBV(I)
          H2=DP(NBDI)+IFNLFA*ETA2(NBDI)
          NCI=NODECODE(NBDI)
-#ifdef SKIP_DRY
-         IF(NCI.EQ.0) CYCLE
-#endif
+C#ifdef SKIP_DRY
+C         IF(NCI.EQ.0) CYCLE
+C#endif
 
 C      Specified essential normal flow and free tangential slip
 
@@ -766,10 +776,12 @@ C.....determine if the node is an interface node.  If MJU < NODELE the
 C.....velocity can be zeroed out to obtain an essential zero velocity at
 C.....interface nodes.
 
+C#ifndef SKIP_DRY        
       DO I=1,NP
-#ifdef SKIP_DRY
-         IF(NODECODE(I).EQ.0) CYCLE
-#endif
+C#else
+C      DO II=1,NWETP
+C         I = ANODES(II)
+C#endif
          ! WJP 02.24.2018 Performing the final solve
          DDU    = AUV(1,I)*AUV(2,I)-AUV(3,I)*AUV(4,I)
          UU2(I) = (MOM_LV_X(I)*AUV(2,I)-MOM_LV_Y(I)*AUV(3,I))/DDU
@@ -817,9 +829,11 @@ C...
 
 C...  Compute fluxes
 
+#ifndef SKIP_DRY        
       DO I=1,NP
-#ifdef SKIP_DRY
-         IF(NODECODE(I).EQ.0) CYCLE
+#else
+      DO II=1,NWETP
+         I = ANODES(II)
 #endif
          H2=DP(I)+IFNLFA*ETA2(I)
          QX2(I)=UU2(I)*H2

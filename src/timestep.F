@@ -64,6 +64,10 @@ C
      &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
      &    WarnElevDump, nodes_lg,NT
+#ifdef SKIP_DRY
+     &    ,NSHALLOWE, ASHALLOWE, ANODES, NANODES, AELEMS, NAELEMS, 
+     &     NWETP, NWETE, NDRYP, NDRYE, NCCHANGE                
+#endif
 #ifdef CSWAN
      &  , waveWindMultiplier
 #endif
@@ -82,7 +86,7 @@ C
       USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
      &    getdynamicWaterLevelCorrections
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate, ITIME_BGN
 C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET
 C.....sb46.28sb03 added 09/xx/2006
@@ -124,12 +128,13 @@ Casey 100205: Add a variable for writing of SWAN hot-start files.
       INTEGER, intent(in) :: IT
 C
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
-      INTEGER IE, I, J, K                  !local loop counters
+      INTEGER IE, I, J, K, II                !local loop counters
       INTEGER NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCEle
       INTEGER NCyc, NA
       INTEGER :: itest
-      INTEGER :: kemax
+      INTEGER :: kemax = 0
+!$omp threadprivate(kemax)
       INTEGER :: kvmax
       INTEGER :: nnbb
       REAL(SZ) :: velabs
@@ -180,6 +185,9 @@ C   TCM v50.66.02 -- Added for Time Varying Bathymetry
       REAL(SZ) ETA2TMP,DPTMP,DPTMP2,BTRATIO  !tcm v50.66.01 bathymetry changes
 
       REAL(SZ) :: ARG, ARGJ, RFF
+#ifdef SKIP_DRY
+      real(sz) :: hTotN1,hTotN2,hTotN3
+#endif
 
       call setMessageSource("timestep")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -229,16 +237,57 @@ C...
          END IF
          TimeH=IT*DTDP + ((StaTimHS - StaTim) - RefTim)*86400.D0
       END IF
+#ifdef SKIP_DRY       
+C.....IF ON FIRST TIMESTEP, FIND ACTIVE NODES AND ELEMS.
+C.....AFTER FIRST STEP THESE LISTS ARE UPDATED IN computeWettingAndDrying
+      IF (IT.eq.ITIME_BGN) THEN
+C.....LOOP OVER NODES TO FIND ALL ACTIVE (I.E., NOT DRY) NODES. CREATE A LIST 
+C.....OF THESE (ANODES), AND INDEX THEM FOR LOOPING.
 
+         NWETP = 0
+         ANODES(:) = 0 
+         DO I=1,NP
+            IF(NODECODE(I).EQ.1) THEN
+               NWETP = NWETP + 1
+               ANODES(NWETP) = I
+            ENDIF
+         ENDDO         
 
+C.....LOOP OVER ELEMS TO FIND ALL ACTIVE (I.E., NOT DRY) ELEMS. CREATE A LIST 
+C.....OF THESE (AELEMS), AND INDEX THEM FOR LOOPING.      
+         NWETE = 0
+         AELEMS(:) = 0
+         NDRYE = 0
+         NAELEMS(:) = 0
+         DO IE=1,NE
+            NM1=NM(IE,1)
+            NM2=NM(IE,2)
+            NM3=NM(IE,3)
+            NC1=NODECODE(NM1)
+            NC2=NODECODE(NM2)
+            NC3=NODECODE(NM3)
+            NCEle=NC1*NC2*NC3*NOFF(IE)
+            IF(NCEle.EQ.1) THEN
+               NWETE = NWETE + 1
+               AELEMS(NWETE) = IE
+            ELSEIF(NCEle.EQ.0)THEN
+               NDRYE = NDRYE + 1
+               NAELEMS(NDRYE) = IE
+            ENDIF
+         ENDDO
+      ENDIF
+
+#endif
 C...  SHIFT THE FLUX PER UNIT WIDTH, DEPTH AVERAGED VELOCITIES, BOTTOM STRESS,
-C...  WIND STRESS, SURFACE PRESSURE AND TIDAL POTENTIALS TO PREVIOUS TIME STEP.
+C...  WIND STRESS, SURFACE PRESSURE AND sTIDAL POTENTIALS TO PREVIOUS TIME STEP.
 C...  ZERO OUT THE NEW FORCING TERMS AND LOAD VECTORS
 C...  COMPUTE A NEW BOTTOM FRICTION COEFFICIENT
 C...
 ckmd  Shift values in time for predictor-corrector algorithm
 
+      
       DO I=1,NP
+
          if(CPRECOR) THEN
             UU0(I)=UU1(I)
             VV0(I)=VV1(I)
@@ -756,6 +805,7 @@ C...  Depth Averaged Baroclinic Forcing needed by GWCE and 2DDI Momentum
 C...  Compute this (divided by H, i.e., Bx/H, By/H) as a nodally averaged
 C...  quantity for smoothing
 C...
+    
       DO J=1,NP
          VIDBCPDXOH(J)=0.D0
          VIDBCPDYOH(J)=0.D0
@@ -763,8 +813,8 @@ cjgf45.06 TotalArea(J)=0.D0 ! What if CBaroclinic=F and nolifa=0?
       ENDDO
 
       IF(CBaroclinic) Then
-
-         DO J=1,NP              !jgf45.06 try this instead
+  
+         DO J=1,NP !jgf45.06 try this instead            
             TotalArea(J)=0.D0   !jgf45.06
          ENDDO                  !jgf45.06
 
@@ -775,7 +825,12 @@ cjgf45.06 TotalArea(J)=0.D0 ! What if CBaroclinic=F and nolifa=0?
 
 c     jgf45.12 this algorithm only works in 2D
          if (C2DDI) then
+#ifndef SKIP_DRY        
             DO IE=1,NE
+#else
+            DO I=1,NWETE
+               IE = AELEMS(I)
+#endif
                NM1=NM(IE,1)
                NM2=NM(IE,2)
                NM3=NM(IE,3)
@@ -842,7 +897,12 @@ c     jgf45.12 this algorithm only works in 2D
                TotalArea(NM3)=TotalArea(NM3)+AreaEle
             ENDDO
 
+#ifndef SKIP_DRY        
             DO J=1,NP
+#else
+            DO I=1,NWETP
+               J = ANODES(I)
+#endif
                IF(TotalArea(J).NE.0.) THEN
                   VIDBCPDXOH(J)=VIDBCPDXOH(J)/TotalArea(J)
                   VIDBCPDYOH(J)=VIDBCPDYOH(J)/TotalArea(J)

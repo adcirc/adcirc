@@ -104,6 +104,12 @@ C     jgf46.10 user-controlled warning, dump and error levels on elevations
 !$omp threadprivate(screenUnit)
       INTEGER :: Terminate_LocalProc = 0 ! zc - allow a single processor to initiate code shutdown
 !$omp threadprivate(Terminate_LocalProc)
+#ifdef SKIP_DRY
+      INTEGER :: NWETP = 0, NDRYP = 0
+!$omp threadprivate(NWETP,NDRYP)
+      INTEGER :: NWETE = 0, NDRYE = 0, NSHALLOWE = 0
+!$omp threadprivate(NWETE,NDRYE,NSHALLOWE)
+#endif
 C
 C     Variables related to hotstarting.
       type HOTSTART_t
@@ -577,6 +583,12 @@ C    kmd48.33bc - added variables for the levels of no motion and top temperatur
 
       INTEGER,ALLOCATABLE, TARGET ::    NOFF(:), NODECODE(:)
 !$omp threadprivate(NOFF,NODECODE)
+#ifdef SKIP_DRY
+      INTEGER,ALLOCATABLE ::    ANODES(:), NANODES(:)
+!$omp threadprivate(ANODES,NANODES)
+      INTEGER,ALLOCATABLE ::    AELEMS(:), NAELEMS(:), ASHALLOWE(:)
+!$omp threadprivate(AELEMS,NAELEMS,ASHALLOWE)
+#endif
       INTEGER,ALLOCATABLE ::    NNODECODE(:)
 !$omp threadprivate(NNODECODE)
       INTEGER,ALLOCATABLE ::    NIBNODECODE(:)
@@ -1720,6 +1732,18 @@ C
       qy1(:) = -99999.d0
       ALLOCATE ( NNODECODE(MNP))
       nnodecode(:) = -99999
+#ifdef SKIP_DRY
+      ALLOCATE ( ANODES(MNP))
+      ALLOCATE ( NANODES(MNP))
+      ANODES(:) = 0
+      NANODES(:) = 0
+      ALLOCATE ( AELEMS(MNE))
+      ALLOCATE ( NAELEMS(MNE))
+      ALLOCATE ( ASHALLOWE(MNE))
+      AELEMS(:) = 0
+      NAELEMS(:) = 0
+      ASHALLOWE(:) = 0
+#endif
       ALLOCATE ( NOFF(MNE) )
       noff(:) = -99999
       ALLOCATE ( NIBNODECODE(MNP))

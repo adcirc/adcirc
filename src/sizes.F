@@ -5,7 +5,9 @@ C                                                                             *
 C******************************************************************************
 C
       MODULE SIZES
+#ifdef AMPI_COMP
       use CkLunMod, only : CK_LUN
+#endif
       IMPLICIT NONE
 C
 C...SET NUMBER OF BYTES "SZ" IN REAL(SZ) DECLARATIONS

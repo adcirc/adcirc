@@ -127,6 +127,10 @@ CWET...
       use global, only : noff, nodecode, nnodecode, eta2, tk, nolifa,
      &    bsx1, bsy1, btime_end, C2DDI, C3D, g, h0, ifnlfa, nddt,
      &    nibnodecode, ilump, ncchange, tkm
+#ifdef SKIP_DRY
+     &    ,NSHALLOWE, ASHALLOWE, ANODES, NANODES, AELEMS, NAELEMS, 
+     &     NWETP, NWETE, NDRYP, NDRYE 
+#endif
 #ifdef CMPI
      &    ,idumy
       use messenger
@@ -156,8 +160,12 @@ CWET...
       real(sz) :: htot
       real(sz) :: h1
       integer :: nbnctot
-      integer :: i
+      integer :: i,ii
       integer :: ie
+#ifdef SKIP_DRY
+      integer :: NNWETE, NNWETP, NNDRYE, NNDRYP
+      !logical :: elemfound, elemlisted
+#endif
 
       if (nolifa.ne.2) then
          return ! wetting and drying is not active 
@@ -169,14 +177,13 @@ CWET...
          DO I=1,NP
             NIBCNT(I) = 0
          ENDDO
-         DO I=1,NE
-            NOFFOLD(I)=NOFF(I)
-            NOFF(I)=1
-         ENDDO
+         NOFFOLD(:)=NOFF(:)
+         NOFF(:)=1
 CWET...
 CWET...WET/DRY - PART 1 - NODAL DRYING CRITERIA D1
 CWET....Drying Criteria D1: this depends on NODECODE and updates NODECODE
 CWET...
+#ifndef SKIP_DRY        
          DO I=1,NP
             IF(NODECODE(I).EQ.1) THEN
                HTOT=DP(I)+ETA2(I)
@@ -185,10 +192,79 @@ CWET...
                   NNODECODE(I)=0
                   NODECODE(I)=0
                   NCCHANGE=NCCHANGE+1 !NCCHANGE=0 set near beginning of GWCE
-C                  ENDIF
                ENDIF
             ENDIF
+#else
+
+         NNWETP = NWETP
+         DO II=1,NWETP
+            IF (II.GT.NNWETP) CYCLE
+            I = ANODES(II)
+            HTOT=DP(I)+ETA2(I)
+            DO WHILE(HTOT.LE.H0)
+               IF(HTOT.LT.HABSMIN) ETA2(I)=HABSMIN-DP(I)
+               NNODECODE(I)=0
+               NODECODE(I)=0
+               NCCHANGE=NCCHANGE+1 !NCCHANGE=0 set near beginning of GWCE
+               NNWETP = NNWETP-1 ! Track change in number of active nodes
+               IF (II.LE.NNWETP) THEN
+                  ANODES(II:NNWETP) = ANODES(II+1:NNWETP+1) ! Shift array of 
+                  ANODES(NNWETP+1) = 0                        ! active nodes
+                  I = ANODES(II)
+                  HTOT=DP(I)+ETA2(I)
+               ELSE
+                  ANODES(NNWETP+1) = 0
+                  EXIT
+               ENDIF
+            ENDDO     
+#endif
          ENDDO
+#ifdef SKIP_DRY 
+         IF (NCCHANGE.GT.0) THEN
+            NWETP = NNWETP ! Update the number of active nodes
+            ! Update the list of active/inactive elements if needed.
+            NNWETE = NWETE
+            DO I=1,NWETE
+               IF (I.GT.NNWETE) CYCLE
+               IE = AELEMS(I)
+               NM1=NM(IE,1)
+               NM2=NM(IE,2)
+               NM3=NM(IE,3)
+               NC1=NODECODE(NM1)
+               NC2=NODECODE(NM2)
+               NC3=NODECODE(NM3)
+               NCEle=NC1*NC2*NC3*NOFF(IE)
+              
+               ! Remove elem from list of active elems if NCEle changes
+               DO WHILE(NCEle.EQ.0)
+                  NNWETE = NNWETE-1 ! Track change in no. of active elems
+                  IF (I.LE.NNWETE) THEN
+                     AELEMS(I:NNWETE) = AELEMS(I+1:NNWETE+1) ! Shift array of 
+                     AELEMS(NNWETE+1) = 0                        ! active elems
+                     ! Add the newly dried elem to the list of inactive elems.
+                     NDRYE = NDRYE + 1
+                     NAELEMS(NDRYE) = IE
+                     ! Check NCEle for the next element on the list of active elements.
+                     IE = AELEMS(I)
+                     NM1=NM(IE,1)
+                     NM2=NM(IE,2)
+                     NM3=NM(IE,3)
+                     NC1=NODECODE(NM1)
+                     NC2=NODECODE(NM2)
+                     NC3=NODECODE(NM3)
+                     NCEle=NC1*NC2*NC3*NOFF(IE)
+                  ELSE
+                     AELEMS(NNWETE+1) = 0
+                     ! Add the newly dried elem to the list of inactive elems.
+                     NDRYE = NDRYE + 1
+                     NAELEMS(NDRYE) = IE
+                     EXIT
+                  ENDIF
+               ENDDO
+            ENDDO
+            NWETE = NNWETE ! Update the number of active elems
+         ENDIF
+#endif
 CWET...
 CWET...END WET/DRY SECTION - PART 1
 CWET...
@@ -201,7 +277,12 @@ cjjw#endif
 CWET...
 CWET...WET/DRY SECTION PART 2 - NODAL WETTING LOOPS W1 AND W2
 CWET...
+#ifndef SKIP_DRY
          DO I=1,NE
+#else
+         DO II=1,NDRYE
+            I = NAELEMS(II)
+#endif
             NM1=NM(I,1)
             NM2=NM(I,2)
             NM3=NM(I,3)
@@ -501,6 +582,13 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
                   ENDIF
                ENDIF
             ENDIF
+#ifdef SKIP_DRY 
+         ENDDO
+         DO I=1,NE
+            NM1=NM(I,1)
+            NM2=NM(I,2)
+            NM3=NM(I,3)
+#endif
 CWET...
 CWET...Nodal Wetting Criteria W2a
 CWET...
@@ -528,13 +616,20 @@ C                  bathymetry is used and is only performed during the period of
 C                  bathymetry evolution.
 C
          IF ((NDDT.NE.0).AND.(IT.LE.BTIME_END+1) ) THEN
+#ifndef SKIP_DRY         
             DO I=1,NE
+#else
+            DO II=1,NDRYE
+               I = NAELEMS(II)
+#endif
                NM1=NM(I,1)
                NM2=NM(I,2)
                NM3=NM(I,3)
                NCTOT=NODECODE(NM1)+NODECODE(NM2)+NODECODE(NM3)
+
                IF(NCTOT.lt.3) THEN   !If not wet from previous time step
                   NCTOT=NNODECODE(NM1)+NNODECODE(NM2)+NNODECODE(NM3)
+
                   if(NCTOT.lt.3) then !if not alreay made wet for this time step
                      ETAN1=ETA2(NM1)
                      ETAN2=ETA2(NM2)
@@ -771,10 +866,16 @@ CWET...All elements where downhill flow originates from a barely wet node
 CWET....into wet nodes are forced inactive; the only exception is receiving
 CWET....overtopped barrier nodes
 CWET...
-         DO I=1,NE
-            NM1=NM(I,1)
-            NM2=NM(I,2)
-            NM3=NM(I,3)
+C#ifndef SKIP_DRY        
+         DO IE=1,NE
+C#else
+C         DO I=1,NWETE
+C            IE = AELEMS(I)
+C#endif
+            NM1=NM(IE,1)
+            NM2=NM(IE,2)
+            NM3=NM(IE,3)
+
             NBNCTOT=NIBCNT(NM1)*NIBCNT(NM2)*NIBCNT(NM3)
             IF(NBNCTOT.EQ.0) THEN   !No barrier/pipe receiving nodes in this elem
                ETAN1=ETA2(NM1)
@@ -799,23 +900,23 @@ C...Find the heighest point on the bed in the element.  sb v46.28.sb05.06 11/01/
                if (noffActive.eqv..true.) then
 C...ABC pattern
                   IF((ETAN1.GE.ETAN2).AND.(ETAN2.GT.ETAN3)) THEN
-                    IF((HTOTN1.LT.HOFF).OR.(HTOTN2.LT.HOFF)) NOFF(I)=0
+                    IF((HTOTN1.LT.HOFF).OR.(HTOTN2.LT.HOFF)) NOFF(IE)=0
                   ENDIF
                   IF((ETAN2.GE.ETAN3).AND.(ETAN3.GT.ETAN1)) THEN
-                    IF((HTOTN2.LT.HOFF).OR.(HTOTN3.LT.HOFF)) NOFF(I)=0
+                    IF((HTOTN2.LT.HOFF).OR.(HTOTN3.LT.HOFF)) NOFF(IE)=0
                   ENDIF
                   IF((ETAN3.GE.ETAN1).AND.(ETAN1.GT.ETAN2)) THEN
-                     IF((HTOTN3.LT.HOFF).OR.(HTOTN1.LT.HOFF)) NOFF(I)=0
+                     IF((HTOTN3.LT.HOFF).OR.(HTOTN1.LT.HOFF)) NOFF(IE)=0
                   ENDIF
 C...ACB pattern
                   IF((ETAN1.GE.ETAN3).AND.(ETAN3.GT.ETAN2)) THEN
-                    IF((HTOTN1.LT.HOFF).OR.(HTOTN3.LT.HOFF)) NOFF(I)=0
+                    IF((HTOTN1.LT.HOFF).OR.(HTOTN3.LT.HOFF)) NOFF(IE)=0
                   ENDIF
                   IF((ETAN2.GE.ETAN1).AND.(ETAN1.GT.ETAN3)) THEN
-                    IF((HTOTN2.LT.HOFF).OR.(HTOTN1.LT.HOFF)) NOFF(I)=0
+                    IF((HTOTN2.LT.HOFF).OR.(HTOTN1.LT.HOFF)) NOFF(IE)=0
                   ENDIF
                   IF((ETAN3.GE.ETAN2).AND.(ETAN2.GT.ETAN1)) THEN
-                    IF((HTOTN3.LT.HOFF).OR.(HTOTN2.LT.HOFF)) NOFF(I)=0
+                    IF((HTOTN3.LT.HOFF).OR.(HTOTN2.LT.HOFF)) NOFF(IE)=0
                   ENDIF
                endif
 #else
@@ -824,40 +925,40 @@ C...ACB pattern
                if (noffActive.eqv..true.) then
 C...ABC pattern
                   IF((ETAN1.GE.ETAN2).AND.(ETAN2.GT.ETAN3)) THEN
-                     IF((HTOTN1.LT.HOFF)) NOFF(I)=0
+                     IF((HTOTN1.LT.HOFF)) NOFF(IE)=0
                      IF((ETAN1-ETAN2).LT.(ETAN2-ETAN3)) THEN
-                        IF(HTOTN2.LT.HOFF) NOFF(I)=0
+                        IF(HTOTN2.LT.HOFF) NOFF(IE)=0
                      ENDIF
                   ENDIF
                   IF((ETAN2.GE.ETAN3).AND.(ETAN3.GT.ETAN1)) THEN
-                     IF((HTOTN2.LT.HOFF)) NOFF(I)=0
+                     IF((HTOTN2.LT.HOFF)) NOFF(IE)=0
                      IF((ETAN2-ETAN3).LT.(ETAN3-ETAN1)) THEN
-                        IF(HTOTN3.LT.HOFF) NOFF(I)=0
+                        IF(HTOTN3.LT.HOFF) NOFF(IE)=0
                      ENDIF
                   ENDIF
                   IF((ETAN3.GE.ETAN1).AND.(ETAN1.GT.ETAN2)) THEN
-                     IF((HTOTN3.LT.HOFF)) NOFF(I)=0
+                     IF((HTOTN3.LT.HOFF)) NOFF(IE)=0
                      IF((ETAN3-ETAN1).LT.(ETAN1-ETAN2)) THEN
-                        IF(HTOTN1.LT.HOFF) NOFF(I)=0
+                        IF(HTOTN1.LT.HOFF) NOFF(IE)=0
                      ENDIF
                   ENDIF
 C...ACB pattern
                   IF((ETAN1.GE.ETAN3).AND.(ETAN3.GT.ETAN2)) THEN
-                     IF((HTOTN1.LT.HOFF)) NOFF(I)=0
+                     IF((HTOTN1.LT.HOFF)) NOFF(IE)=0
                      IF((ETAN1-ETAN3).LT.(ETAN3-ETAN2)) THEN
-                        IF(HTOTN3.LT.HOFF) NOFF(I)=0
+                        IF(HTOTN3.LT.HOFF) NOFF(IE)=0
                      ENDIF
                   ENDIF
                   IF((ETAN2.GE.ETAN1).AND.(ETAN1.GT.ETAN3)) THEN
-                     IF((HTOTN2.LT.HOFF)) NOFF(I)=0
+                     IF((HTOTN2.LT.HOFF)) NOFF(IE)=0
                      IF((ETAN2-ETAN1).LT.(ETAN1-ETAN3)) THEN
-                        IF(HTOTN1.LT.HOFF) NOFF(I)=0
+                        IF(HTOTN1.LT.HOFF) NOFF(IE)=0
                      ENDIF
                   ENDIF
                   IF((ETAN3.GE.ETAN2).AND.(ETAN2.GT.ETAN1)) THEN
-                     IF((HTOTN3.LT.HOFF)) NOFF(I)=0
+                     IF((HTOTN3.LT.HOFF)) NOFF(IE)=0
                      IF((ETAN3-ETAN2).LT.(ETAN2-ETAN1)) THEN
-                        IF(HTOTN2.LT.HOFF) NOFF(I)=0
+                        IF(HTOTN2.LT.HOFF) NOFF(IE)=0
                      ENDIF
                   ENDIF
                endif !noffActive.eqv..true.
@@ -874,15 +975,15 @@ C...is 0, which means that this logic works to prevent an element from
 C...re-wetting.
 C...sb v46.52.03
                if (noffActive.eqv..true.) then 
-                  IF(NOFFOLD(I).EQ.0) THEN
+                  IF(NOFFOLD(IE).EQ.0) THEN
                      IF(HTOTN1.GE.HTOTN2.AND.HTOTN1.GE.HTOTN3) THEN
-                        IF(ETAN1.LT.(-DPMIN+H0)) NOFF(I) = 0
+                        IF(ETAN1.LT.(-DPMIN+H0)) NOFF(IE) = 0
                      ENDIF
                      IF(HTOTN2.GE.HTOTN3.AND.HTOTN2.GE.HTOTN1) THEN
-                        IF(ETAN2.LT.(-DPMIN+H0)) NOFF(I) = 0
+                        IF(ETAN2.LT.(-DPMIN+H0)) NOFF(IE) = 0
                      ENDIF
                      IF(HTOTN3.GE.HTOTN1.AND.HTOTN3.GE.HTOTN2) THEN
-                        IF(ETAN3.LT.(-DPMIN+H0)) NOFF(I) = 0
+                        IF(ETAN3.LT.(-DPMIN+H0)) NOFF(IE) = 0
                      ENDIF
                  ENDIF
               endif
@@ -955,16 +1056,29 @@ CWET...END WET/DRY SECTION  - PART 3
 CWET...
 
 CWET...
-CWET...START WET/DRY SECTION PART 4 - NODAL DRYING LOOP D2
+CWET...WET/DRY SECTION - PART 4
+CWET...Check to see if any NOFF changed requiring the matrix to be reset
+CWET...Note, NCCHANGE=0 set near the beginning of GWCE subroutine
+
+         DO IE=1,NE
+            IF(NOFF(IE).NE.NOFFOLD(IE)) NCCHANGE=NCCHANGE+1
+         ENDDO
+
+          
+CWET...
+CWET...START WET/DRY SECTION PART 5 - NODAL DRYING LOOP D2
 CWET...Update number of active elements (MJU) and the total area (TotalArea) connected
 CWET...to a node. If these are zero, the node is landlocked and should be dried.
 CWET...These depend on NNODECODE which varies during the time step
 CWET...
-         DO I=1,NP
-            MJU(I)=0
-            TotalArea(I)=0.d0
-         ENDDO
+         MJU(:) = 0
+         TotalArea(:)=0.d0
+C#ifndef SKIP_DRY        
          DO IE=1,NE
+C#else
+C         DO I=1,NWETE
+C            IE = AELEMS(I)
+C#endif
             NM1=NM(IE,1)
             NM2=NM(IE,2)
             NM3=NM(IE,3)
@@ -993,7 +1107,7 @@ cjjwnote - this has implications on making this into a subroutine
          ENDDO
 
 C     WET...
-C     WET...END WET/DRY SECTION - PART 4
+C     WET...END WET/DRY SECTION - PART 5
 C     WET...
 
 cjjwnote - may have to pass TotalArea and mju as well
@@ -1007,28 +1121,134 @@ C     Use Message-Passing to update nnodecode at ghost nodes
          CALL UPDATEI(NNODECODE,IDUMY,1)
 #endif
 CWET...
-CWET...WET/DRY SECTION - PART 5 - RESET NODECODE USING NNODECODE
+CWET...WET/DRY SECTION - PART 6 - RESET NODECODE USING NNODECODE
 CWET...Check to see if any wetting occurred & update NODECODE
 CWET...Note, NCCHANGE=0 set near the beginning of GWCE subroutine
 CWET...
+C.....UPDATE LIST OF ACTIVE NODES BASED ON UPDATED NODECODE
+#ifdef SKIP_DRY
+         NNWETP = NWETP
+         DO II=1,NWETP
+            IF (II.GT.NNWETP) CYCLE
+            I = ANODES(II)
+            ! Remove node from list of active nodes if nodecode changes
+            DO WHILE(NNODECODE(I).EQ.0)
+               NNWETP = NNWETP-1 ! Track change in no. of active nodes
+               IF (II.LE.NNWETP) THEN
+                  ANODES(II:NNWETP) = ANODES(II+1:NNWETP+1) ! Shift array of 
+                  ANODES(NNWETP+1) = 0                        ! active nodes
+                  I = ANODES(II)
+               ELSE
+                  ANODES(NNWETP+1) = 0
+                  EXIT
+               ENDIF
+            ENDDO
+         ENDDO
+         NWETP = NNWETP ! Update the number of active nodes 
+#endif
          DO I=1,NP
             IF(NNODECODE(I).NE.NODECODE(I)) THEN
                NODECODE(I)=NNODECODE(I)
                NCCHANGE=NCCHANGE+1
+#ifdef SKIP_DRY 
+               IF(NODECODE(I).EQ.1) THEN
+                  NWETP = NWETP + 1
+                  ANODES(NWETP) = I
+               ENDIF
+#endif
             ENDIF
          ENDDO
+#ifdef SKIP_DRY       
+         IF (NCCHANGE .GT. 0) THEN
+            NNWETE = NWETE
+            DO I=1,NWETE
+               IF (I.GT.NNWETE) CYCLE
+               IE = AELEMS(I)
+               NM1=NM(IE,1)
+               NM2=NM(IE,2)
+               NM3=NM(IE,3)
+               NC1=NODECODE(NM1)
+               NC2=NODECODE(NM2)
+               NC3=NODECODE(NM3)
+               NCEle=NC1*NC2*NC3*NOFF(IE)
+              
+               ! Remove elem from list of active elems if NCEle changes
+               DO WHILE(NCEle.EQ.0)
+                  NNWETE = NNWETE-1 ! Track change in no. of active elems
+                  IF (I.LE.NNWETE) THEN
+                     AELEMS(I:NNWETE) = AELEMS(I+1:NNWETE+1) ! Shift array of 
+                     AELEMS(NNWETE+1) = 0                        ! active elems
+                     ! Add the newly dried elem to the list of inactive elems.
+                     NDRYE = NDRYE + 1
+                     NAELEMS(NDRYE) = IE
+                     ! Check NCEle for the next element on the list of active elements.
+                     IE = AELEMS(I)
+                     NM1=NM(IE,1)
+                     NM2=NM(IE,2)
+                     NM3=NM(IE,3)
+                     NC1=NODECODE(NM1)
+                     NC2=NODECODE(NM2)
+                     NC3=NODECODE(NM3)
+                     NCEle=NC1*NC2*NC3*NOFF(IE)
+                  ELSE
+                     AELEMS(NNWETE+1) = 0
+                     ! Add the newly dried elem to the list of inactive elems.
+                     NDRYE = NDRYE + 1
+                     NAELEMS(NDRYE) = IE
+                     EXIT
+                  ENDIF
+               ENDDO
+            ENDDO
+            NWETE = NNWETE ! Update the number of active elems   
+
+            NNDRYE = NDRYE
+            DO I=1,NDRYE
+               IF (I.GT.NNDRYE) CYCLE
+               IE = NAELEMS(I)
+               NM1=NM(IE,1)
+               NM2=NM(IE,2)
+               NM3=NM(IE,3)
+               NC1=NODECODE(NM1)
+               NC2=NODECODE(NM2)
+               NC3=NODECODE(NM3)
+               NCEle=NC1*NC2*NC3*NOFF(IE)
+              
+               ! Remove elem from list of inactive elems if NCEle changes
+               DO WHILE(NCEle.EQ.1)
+                  NNDRYE = NNDRYE-1 ! Track change in no. of inactive elems
+                  IF (I.LE.NNDRYE) THEN
+                     NAELEMS(I:NNDRYE) = NAELEMS(I+1:NNDRYE+1) ! Shift array of 
+                     NAELEMS(NNDRYE+1) = 0                     ! inactive elems
+                     ! Add the newly wetted elem to the list of active elems.
+                     NWETE = NWETE + 1
+                     AELEMS(NWETE) = IE
+                     ! Check NCEle for the next element on the list of inactive elements.
+                     IE = NAELEMS(I)
+                     NM1=NM(IE,1)
+                     NM2=NM(IE,2)
+                     NM3=NM(IE,3)
+                     NC1=NODECODE(NM1)
+                     NC2=NODECODE(NM2)
+                     NC3=NODECODE(NM3)
+                     NCEle=NC1*NC2*NC3*NOFF(IE)
+            
+                  ELSE
+                     NAELEMS(NNDRYE+1) = 0
+                     ! Add the newly wetted elem to the list of active elems.
+                     NWETE = NWETE + 1
+                     AELEMS(NWETE) = IE
+                     EXIT
+                  ENDIF
+               ENDDO
+            ENDDO
+            NDRYE = NNDRYE ! Update the number of inactive elems
+         ENDIF
+#endif
 CWET...
-CWET...END WET/DRY SECTION - PART 5
+CWET...END WET/DRY SECTION - PART 6
 CWET...
 
-CWET...
-CWET...WET/DRY SECTION - PART 6
-CWET...Check to see if any NOFF changed requiring the matrix to be reset
-CWET...Note, NCCHANGE=0 set near the beginning of GWCE subroutine
-CWET...
-         DO I=1,NE
-            IF(NOFF(I).NE.NOFFOLD(I)) NCCHANGE=NCCHANGE+1
-         ENDDO
+
 CWET...
 CWET... jgf45.06 If there has been any wetting or drying in any
 CWET... of the subdomains, the NCCHANGE flag will be activated on all
@@ -1062,4 +1282,3 @@ c.....
       end module wetDry
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-
