@@ -114,15 +114,16 @@ ifeq ($(compiler),ampi)
      XDMFPATH    := /home/jason/projects/XDMF/Code/latestCode
      XDMFLIBPATH := /home/jason/projects/XDMF/Code/testLatest
   endif
-#  PPFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
-  PPFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP
-#  FC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
-  FC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP
-#  PFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
-  PFC		:=  ampif90 -tlsglobals -module CommonLBs -fopenmp -DAMPI_COMP
-  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none -fallow-argument-mismatch
+  PPFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
+#  PPFC		:=  ampif90 -tlsglobals -fopenmp -DAMPI_COMP -module CommonLBs 
+  FC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
+#  FC		:=  ampif90 -tlsglobals -fopenmp -DAMPI_COMP -module CommonLBs 
+  PFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
+#  PFC		:=  ampif90 -tlsglobals -fopenmp -DAMPI_COMP -module CommonLBs 
+  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none #-fallow-argument-mismatch
+#  FFLAGS1	:=  $(INCDIRS) -g3  -O2 -ffixed-line-length-none -fbacktrace -fallow-argument-mismatch
   ifeq ($(PROFILE),enable)
-    FFLAGS1	:=  $(INCDIRS) -pg -Og -fprofile-arcs -ftest-coverage -ffixed-line-length-none 
+    FFLAGS1	:=  $(INCDIRS) -g -pg -Og -fprofile-arcs -ftest-coverage -ffixed-line-length-none 
   endif
   ifeq ($(DEBUG),asan)
     FFLAGS1	:=  $(INCDIRS) -g3 -Og -ffixed-line-length-none -fbacktrace -fsanitize=address -fno-omit-frame-pointer
@@ -192,7 +193,7 @@ ifeq ($(compiler),ampi)
   IMODS 	:=  -I
   CC		:= gcc
   CCBE		:= $(CC)
-  CFLAGS	:= $(INCDIRS) -O2 -DLINUX 
+  CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX 
   ifeq ($(DEBUG),full)
      CFLAGS     := $(INCDIRS) -g -O0 -DLINUX
   endif
@@ -206,6 +207,106 @@ ifeq ($(compiler),ampi)
   endif
 endif
 
+ifeq ($(compiler),ampi-intel)
+  ifeq ($(MACHINENAME),jason-desktop)
+     XDMFPATH    := /home/jason/projects/XDMF/Code/latestCode
+     XDMFLIBPATH := /home/jason/projects/XDMF/Code/testLatest
+  endif
+#  PPFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
+  PPFC		:=  ampif90 -tlsglobals -fopenmp -DAMPI_COMP -module CommonLBs 
+#  FC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
+  FC		:=  ampif90 -tlsglobals -fopenmp -DAMPI_COMP -module CommonLBs 
+#  PFC		:=  ampif90 -tlsglobals -memory isomalloc -module CommonLBs -fopenmp -DAMPI_COMP
+  PFC		:=  ampif90 -tlsglobals -fopenmp -DAMPI_COMP -module CommonLBs 
+  FFLAGS1	:=  $(INCDIRS) -w -O3 -assume byterecl -132 -assume buffered_io #-i-dynamic
+#  FFLAGS1	:=  $(INCDIRS) -g3  -O2 -ffixed-line-length-none -fbacktrace -fallow-argument-mismatch
+  ifeq ($(PROFILE),enable)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -traceback -debug -check all -FI -assume byterecl -132 -DEBUG -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES -fprofile-arcs -ftest-coverage
+  endif
+  ifeq ($(DEBUG),asan)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -traceback -debug -check all -FI -assume byterecl -132 -DEBUG -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES -fsanitize=address -fno-omit-frame-pointer
+  endif
+  ifeq ($(DEBUG),full)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -traceback -debug -check all -FI -assume byterecl -132 -DEBUG -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+  endif
+  ifeq ($(DEBUG),compiler-warnings)
+    FFLAGS1	:=  $(INCDIRS) -g3 -Og -Wall -Wextra -ffixed-line-length-none -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+  endif
+  ifeq ($(DEBUG),full-not-warnelev)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -traceback -debug -check all -FI -assume byterecl -132 -DEBUG -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND 
+  endif
+  ifeq ($(DEBUG),full-not-fpe)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -traceback -debug -check all -FI -assume byterecl -132 -DEBUG -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
+  endif
+  ifeq ($(DEBUG),trace)
+    FFLAGS1	:=  $(INCDIRS) --g -O0 -traceback -debug -check all -FI -assume byterecl -132 -DEBUG -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+  endif
+  ifeq ($(DEBUG),proj)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -traceback -debug -check all -FI -assume byterecl -132 -DEBUG -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES -tracemode projections 
+  endif
+
+#  ifneq ($(MACHINENAME),jason-desktop)
+#     FFLAGS1 := $(FFLAGS1) -fno-underscoring
+#  endif
+  FFLAGS2	:=  $(FFLAGS1)
+  FFLAGS3	:=  $(FFLAGS1)
+  DA		:=  -DREAL8 -DLINUX -DCSCA -DSKIP_DRY
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DSKIP_DRY
+  DPRE		:=  -DREAL8 -DLINUX
+  ifeq ($(SWAN),enable)
+     DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
+  endif
+  FLIBS         := 
+  ifeq ($(NETCDF),enable)
+     ifeq ($(MACHINENAME),penguin)    
+        # module purge
+        # module load gcc/6.2.0 openmpi/2.1.2/gcc.6.2.0 
+        # curl -O ftp://ftp.unidata.ucar.edu/pub/netcdf/old/netcdf-4.2.1.1.tar.gz
+        # curl -O ftp://ftp.unidata.ucar.edu/pub/netcdf/old/netcdf-fortran-4.2.tar.gz
+        # curl -O https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.12/src/hdf5-1.8.12.tar.gz
+        # CPPFLAGS=-I/home/jgflemin/local/include LDFLAGS=-L/home/jgflemin/local/lib ./configure --prefix=/home/jgflemin/local
+        # 
+        # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/local/lib
+        # export PATH=${PATH}:${HOME}/local/bin
+        NETCDFHOME := ${HOME}/local
+        FFLAGS1 := $(FFLAGS1) -I${HOME}/local/include
+        FFLAGS2 := $(FFLAGS2) -I${HOME}/local/include
+        FFLAGS3 := $(FFLAGS3) -I${HOME}/local/include
+        FLIBS := $(FLIBS) -L${HOME}/local/lib -lnetcdff -lnetcdf
+     endif 
+     ifeq ($(MACHINENAME),jason-desktop)
+        NETCDFHOME := /usr
+        FFLAGS1 := $(FFLAGS1) -L/usr/lib/x86_64-linux-gnu
+        FFLAGS2 := $(FFLAGS2) -L/usr/lib/x86_64-linux-gnu
+        FFLAGS3 := $(FFLAGS3) -L/usr/lib/x86_64-linux-gnu
+     endif
+     ifeq ($(MACHINENAME),rostam)    
+        NETCDFHOME := /usr
+        FFLAGS1 := $(FFLAGS1) -I/usr/lib64/gfortran/modules
+        FFLAGS2 := $(FFLAGS2) -I/usr/lib64/gfortran/modules
+        FFLAGS3 := $(FFLAGS3) -I/usr/lib64/gfortran/modules
+     endif
+     HDF5HOME=/opt/crc/h/hdf5/intel/18.0/build/lib/      
+     FLIBS      := $(FLIBS) -lnetcdff -L$(HDF5HOME) 
+  endif
+  IMODS 	:=  -I
+  CC		:= icc
+  CCBE		:= $(CC)
+  CFLAGS	:= $(INCDIRS) -O3 -m64 -mcmodel=medium -DLINUX
+  ifeq ($(DEBUG),full)
+     CFLAGS     := $(INCDIRS) -g -O0 -DLINUX
+  endif
+  CLIBS	:=
+  MSGLIBS	:=
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else
+     MULTIPLE := TRUE
+  endif
+  NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/n/netcdf/4.7.0/intel/18.0/
+endif
+
 ifeq ($(compiler),gfortran)
   ifeq ($(MACHINENAME),jason-desktop)
      XDMFPATH    := /home/jason/projects/XDMF/Code/latestCode
@@ -214,9 +315,9 @@ ifeq ($(compiler),gfortran)
   PPFC		:=  gfortran
   FC		:=  gfortran
   PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none -fallow-argument-mismatch
+  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none #-fallow-argument-mismatch 
   ifeq ($(PROFILE),enable)
-    FFLAGS1	:=  $(INCDIRS) -pg -O0 -fprofile-arcs -ftest-coverage -ffixed-line-length-none 
+    FFLAGS1	:=  $(INCDIRS) -g -pg -Og -fprofile-arcs -ftest-coverage -ffixed-line-length-none 
   endif
   ifeq ($(DEBUG),full)
     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND -DDEBUG_WARN_ELEV
@@ -238,8 +339,8 @@ ifeq ($(compiler),gfortran)
 #  endif
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
-  DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DA		:=  -DREAL8 -DLINUX -DCSCA -DSKIP_DRY
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DSKIP_DRY
   DPRE		:=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
      DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
@@ -452,31 +553,41 @@ endif
 #
 # Corbitt 120322:  These flags work on the Notre Dame Athos & Zas
 ifeq ($(compiler),intel-ND)
-  PPFC            :=  ifort
+  PPFC          :=  ifort
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -w -O2 -traceback -assume byterecl -132 -i-dynamic -assume buffered_io
+  FFLAGS1       :=  $(INCDIRS) -w -O3 -assume byterecl -132 -assume buffered_io #-i-dynamic
+  #FFLAGS1       :=  $(INCDIRS) -w -O2 -xCORE-AVX2 -assume byterecl -132 -assume buffered_io #-g -pg #-i-dynamic
   ifeq ($(DEBUG),full)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug -check all -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+     FFLAGS1    :=  $(INCDIRS) -g -O0 -traceback -debug -check all -FI -assume byterecl -132 -DEBUG -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
-  DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DPOWELL
+  DA            :=  -DREAL8 -DLINUX -DCSCA -DSKIP_DRY
+  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DSKIP_DRY #-DNOFSBPG #-DNOIVB -DPOWELL
   DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
   ifeq ($(SWAN),enable)
-     DPRE          := $(DPRE) -DADCSWAN
+     DPRE       := $(DPRE) -DADCSWAN
   endif
   IMODS         :=  -I
   CC            := icc
   CCBE          := $(CC)
   CFLAGS        := $(INCDIRS) -O3 -m64 -mcmodel=medium -DLINUX
-  FLIBS          :=
+  FLIBS         := 
+  ifeq ($(DATETIME),enable)
+     DATETIMEHOME=/pontus/gling/ADCIRC_Codes/adcirc-cg-GLOBAL_WP_20200513/lib/datetime-fortran/
+     FLIBS         := -ldatetime -L$(DATETIMEHOME)lib/
+  endif
+  ifeq ($(GRIB2),enable)
+     WGRIB2HOME=/pontus/gling/ADCIRC_Codes/adcirc-cg-GLOBAL_WP_20200513/lib/grib2/lib/
+     FLIBS         := $(FLIBS) -lwgrib2_api -lwgrib2 -ljasper -L$(WGRIB2HOME)
+  endif
   ifeq ($(DEBUG),full)
-     CFLAGS        := $(INCDIRS) -g -O0 -march=k8 -m64 -mcmodel=medium -DLINUX
+     CFLAGS     := $(INCDIRS) -g -O0 -m64 -march=k8 -mcmodel=medium -DLINUX
   endif
   ifeq ($(NETCDF),enable)
      HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
+     #HDF5HOME=/opt/crc/h/hdf5/intel/18.0/build/lib/      
      FLIBS      := $(FLIBS) -lnetcdff -L$(HDF5HOME) 
   endif   
   CLIBS         :=
@@ -487,9 +598,7 @@ ifeq ($(compiler),intel-ND)
   else
      MULTIPLE := TRUE
   endif
-  #NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/netcdf/rhel6/4.1.3/intel-12.0/
-  #NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/scilib/netcdf/4.1.2/intel-12.0/inst
-  NETCDFHOME=/opt/crc/n/netcdf/4.7.0/intel/18.0
+  NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/n/netcdf/4.7.0/intel/18.0/
 endif
 #
 # SGI ICE X (e.g. topaz@ERDC) using Intel compilers, added by TCM
