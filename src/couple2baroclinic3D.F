@@ -387,13 +387,15 @@ C-----------------------------------------------------------------------
                    endif
                 enddo  
                 ! For x-gradient variable (BC3D_BX)
-                call conserve_interp(NXc,Lonc,NY,Lat,
-     &                               xx,yy,xl,yl,xu,yu,indt,wt) 
+				! CPB 12/08/2021 switch from conserve_interp to bl_interp for proper 
+				! wrapping around the prime meridian
+				call bl_interp(NXc,Lonc,NY,Lat,xx,yy,indt,wt)
                 indx(:,i) = indt
                 weightsx(:,i) = wt
                 ! For y-gradient variable (BC3D_BY)
-                call conserve_interp(NX,Lon,NYc,Latc,
-     &                               xx,yy,xl,yl,xu,yu,indt,wt) 
+				! CPB 12/08/2021 switch from conserve_interp to bl_interp for proper 
+				! wrapping around the prime meridian
+                call bl_interp(NX,Lon,NYc,Latc,xx,yy,indt,wt) 
                 indy(:,i) = indt
                 weightsy(:,i) = wt
                 if (abs(iden).eq.6) then
