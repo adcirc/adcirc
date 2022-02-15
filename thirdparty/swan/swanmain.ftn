@@ -8088,7 +8088,9 @@
 !ADC     &                       COUPCUR, COUPWIND, COUPWLV,
 !ADC     &                       InterpoWeight
 !ADC     &                      ,ADCIRC_Z0 => SWAN_Z0,
-!ADC     &                       COUPFRIC
+!ADC     &                       COUPFRIC,
+!ADC     &                       ADCIRC_CICE2 => SWAN_CICE2,
+!ADC     &                       COUPICE
 
       IMPLICIT NONE
 !
@@ -8324,6 +8326,13 @@
 !ADC     &                  * REAL(ADCIRC_Z0(INDX,1))
 !ADC     &                  + REAL(InterpoWeight)
 !ADC     &                  * REAL(ADCIRC_Z0(INDX,2))
+!ADC              ENDDO
+!ADC           ELSEIF ( (IGR1.EQ.14).AND.COUPICE ) THEN
+!ADC              DO INDX = 1, nverts
+!ADC                 ARR(INDX) = (1.0 - REAL(InterpoWeight))
+!ADC     &                  * REAL(ADCIRC_CICE2(INDX,1))
+!ADC     &                  + REAL(InterpoWeight)
+!ADC     &                  * REAL(ADCIRC_CICE2(INDX,2))
 !ADC              ENDDO
 !ADC           ELSE
            CALL INAR2D( ARR, MXG(IGR1), MYG(IGR1),                        40.31 40.02

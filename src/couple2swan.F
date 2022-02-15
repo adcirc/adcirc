@@ -29,6 +29,9 @@ C             if the water levels in SWAN are coupled to ADCIRC.
 Casey 091216: Added another coupling variable.
       LOGICAL :: COUPFRIC
 
+C GML 2020-08-20: Added ADCIRC ICE coupling variable.
+      LOGICAL :: COUPICE
+
 Casey 090302: These arrays contain the radiation stresses.
 Casey 090820: Be explicit about the size of these REAL variables.
       REAL(4) ,ALLOCATABLE :: ADCIRC_SXX(:,:)
@@ -201,9 +204,6 @@ C-----------------------------------------------------------------------
       USE MESH, ONLY : NE, NM, NP, AREAS, NODELE, NEITABELE,
      &    FDXE, FDYE, SFacEle, SFMYEle, SFMXEle
       USE BOUNDARIES, ONLY : NBDV, NBOU, NBVV, NOPE, NVDLL, NVELL
-#ifdef CMPI      
-      USE MESSENGER,ONLY:MYPROC
-#endif      
 
       IMPLICIT NONE
 
@@ -365,8 +365,6 @@ C..... END DW/WJP
 
              IE = IE + 1
 
-             IF(IE.GT.SIZE(NEITABELE,2))EXIT
-
              IF(NEITABELE(IP,IE).EQ.0)THEN
 
                CONTINUE
@@ -402,7 +400,6 @@ C..... END DW/WJP
                ENDIF
 
              ENDIF
-
 
              IF(NUMFOUND.EQ.NODELE(IP))THEN
 
@@ -1067,7 +1064,20 @@ CTGA110915               SWAN_VV2 (IN,2) = 0.D0
             ENDIF
          ENDDO
       ENDIF
-
+C GML 2020-08-21 enable pass ACIRC ice concentration to SWAN
+      IF((NCICE.NE.0).AND.(SWAN_IICE.EQ.3)) THEN
+C         ICY=0
+         DO IN=1,NP
+            SWAN_CICE2(IN,1) = CICE1(IN)
+            SWAN_CICE2(IN,2) = CICE2(IN)
+C            IF (SWAN_CICE2(IN,1).GE.70) ICY(IN) = 1
+C            IF(ICY(IN).EQ.1) THEN
+C               SWAN_ETA2(IN,:) = - DP(IN)
+C               SWAN_UU2 (IN,:) = 0.D0
+C               SWAN_VV2 (IN,:) = 0.D0
+C            ENDIF
+         ENDDO
+      ENDIF
 Casey 090302: Allow SWAN to initialize.
       CALL SWINITMPI
       CALL SWMAIN(0,0)
@@ -1187,6 +1197,23 @@ CTGA110915               SWAN_ETA2(IN,2) = - DP(IN)
 CTGA110915               SWAN_UU2 (IN,2) = 0.D0
 CTGA110915               SWAN_VV2 (IN,2) = 0.D0
             ENDIF
+         ENDDO
+      ENDIF
+C GML 2020-08-21 enable pass ACIRC ice concentration to SWAN
+      IF((NCICE.NE.0).AND.(SWAN_IICE.EQ.3)) THEN
+C         ICY=0
+         ICETIMEFRAC = ((STATIM*86400+ITIME*DT)-CICE_TIME1)/CICE_TIMINC
+         DO IN=1,NP
+            SWAN_CICE2(IN,1) = CICE1(IN)
+            SWAN_CICE2(IN,2) = CICE2(IN)
+            SWAN_PIC = ICETIMEFRAC*(SWAN_CICE2(IN,2) - SWAN_CICE2(IN,1))
+     &               + SWAN_CICE2(IN,1)
+C            IF (SWAN_PIC.GE.70) ICY(IN) = 1
+C            IF(ICY(IN).EQ.1) THEN
+C               SWAN_ETA2(IN,:) = - DP(IN)
+C               SWAN_UU2 (IN,:) = 0.D0
+C               SWAN_VV2 (IN,:) = 0.D0
+C            ENDIF
          ENDDO
       ENDIF
 
