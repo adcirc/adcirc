@@ -3603,7 +3603,9 @@
 !ADC     &                       ADCIRC_WY2 => SWAN_WY2,                      41.20
 !ADC     &                       COUPCUR, COUPWIND, COUPWLV                   41.20
 !ADC     &                      ,ADCIRC_Z0 => SWAN_Z0,                        41.20
-!ADC     &                       COUPFRIC                                     41.20
+!ADC     &                       COUPFRIC,                                     41.20
+!ADC     &                       ADCIRC_CICE2 => SWAN_CICE2,
+!ADC     &                       COUPICE
 !
 !
 !
@@ -3972,6 +3974,34 @@
           JAICE3 = MCMVAR                                                 41.75
           ALOCMP = .TRUE.                                                 41.75
         ENDIF                                                             41.75
+!ADC      ELSE IF (KEYWIS ('ADCICE')) THEN                                   41.20
+!ADC!       added this possibility for coupling ICE concentration from ADCIRC
+!ADC        IGR1 = 14
+!ADC        VARAICE = .TRUE.
+!ADC        COUPICE = .TRUE.
+!ADC        MCMVAR = MCMVAR + 2
+!ADC        JAICE2 = MCMVAR - 1
+!ADC        JAICE3 = MCMVAR
+!ADC        ALOCMP = .TRUE.
+!ADC        IFLFAC(IGR1) = 1.0
+!ADC        IFLNDF(IGR1) = 0
+!ADC        IFLNDS(IGR1) = 23
+!ADC        IFLIDL(IGR1) = 1
+!ADC        IFLIFM(IGR1) = 2
+!ADC        IFLFRM(IGR1) = '(12X,E20.10)'
+!ADC        IFLNHF(IGR1) = 2
+!ADC        IFLDYN(IGR1) = 1
+!ADC        IFLNHD(IGR1) = 1
+!ADC        VECTOR = .FALSE.
+!ADC        NHEDC = 0
+!ADC        IF (.NOT.ALLOCATED(TARR)) THEN
+!ADC           ALLOCATE( TARR(1:nverts) )
+!ADC           TARR = 0.
+!ADC        ENDIF
+!ADC        DO I=1,nverts
+!ADC           TARR(I) = REAL(ADCIRC_CICE2(I,1))
+!ADC        ENDDO
+!ADC        GOTO 55
 
       ELSE IF (KEYWIS ('HICE')) THEN                                      41.75
 !       ice thickness (in meters)                                         41.75
