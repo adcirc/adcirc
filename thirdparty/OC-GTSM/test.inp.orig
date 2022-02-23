@@ -1,0 +1,7 @@
+# 1st Line is Comment: Control File Template
+2017-05-01 12:00                        ! Start datetime (YYYY-MM-DD HH:mm)
+2018-11-30 12:00                        ! End datetime (YYYY-MM-DD HH:mm)
+8                                       ! DT multiplier: DT is 3 hrs for GOFS 3.1 so 8 indicates 24 hr output
+ftp                                     ! The server to download from (ftp -or- ncs -or- opd)
+1                                       ! Output type, = 1 for T & S attributes only, = 2 for T,S,U,V attributes
+Output.nc                               ! Output netcdf filename (40 characters)
