@@ -4039,7 +4039,7 @@
 
           integer :: binarysearch
 
-          integer :: left, middle, right
+          integer :: left, middle, right, orientation
           real(sz) :: d
 
           if (present(delta) .eqv. .true.) then
@@ -4047,7 +4047,10 @@
           else
              d = 1d-9
           endif
-        
+
+          orientation = 1
+          if (array(2) < array(1)) orientation = -1
+       
           left = 1
           right = length
           do
@@ -4056,11 +4059,21 @@
              if ( abs(array(middle) - value) <= d) then
                 binarySearch = middle
                 return
-             elseif (array(middle) > value) then
-                right = middle - 1
-             else
-                left = middle + 1
-             end if
+             endif
+             select case(orientation)
+             case(1) 
+                if (array(middle) > value) then
+                   right = middle - 1
+                else
+                   left = middle + 1
+                end if
+             case(-1)
+                if (array(middle) < value) then
+                   right = middle - 1
+                else
+                   left = middle + 1
+                end if
+             end select
           end do
           binarysearch = right
 
