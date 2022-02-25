@@ -7658,7 +7658,7 @@ C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: dynamicWaterlevelCorrectionStaDescript ! dynamicWaterlevelCorrection.61
 
 !      tcm v50.75 moved RSDescript outside of the ifdef adcswan for use with
-!      nrs = 3 or nrs= 4
+!      nrs = 3 or nrs= 4 or nrs = 5
       type(OutputDataDescript_t), SAVE :: RSDescript
 
 #ifdef ADCSWAN
@@ -8076,7 +8076,7 @@ C     maxwvel.63
       RSMaxDescript % readMaxMin           = .true.
       call makeFileName(RSMaxDescript)
 
-!  tcm v50.75 removed ifdef adcswan to allow for use whenever nrs=3 or nrs=4
+!  tcm v50.75 removed ifdef adcswan to allow for use whenever nrs=3 or nrs=4 or nrs=5
 !#ifdef ADCSWAN
 Cobell 20120510: SWAN Output Data
 C........Radiation Stress
@@ -8843,9 +8843,9 @@ C     was specified.
       endif
       !
       ! tcm v50.75 moved ifdef adcswan below RSDescript only to allow
-      ! for use whenever nrs=3 or nrs=4
+      ! for use whenever nrs=3 or nrs=4 or nrs=5
       ! Cobell 20120510: Added for SWAN NetCDF
-      IF ((NRS.EQ.3).OR.(NRS.EQ.4)) THEN
+      IF ((NRS.EQ.3).OR.(NRS.EQ.4).OR.(NRS.EQ.5)) THEN
         CALL initNetCDFOutputFile(RSDescript,reterr)
       ENDIF
       ! tcm v50.75 moved ifdef adcswan to here

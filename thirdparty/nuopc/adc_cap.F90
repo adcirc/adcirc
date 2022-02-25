@@ -123,14 +123,14 @@
 !!
 !! Standard Name               |Short Name | Units                | Model Variable  | File         | Description                | Notes
 !! ----------------------------|-----------|----------------------|-----------------|--------------|----------------------------|-----------------
-!! eastward_radiation_stress   |sxx        | N.m^-2/rho ->  m2s-2 | ADCIRC_SXX      | global.F     |                            |
-!! northward_radiation_stress  |syy        | N.m^-2/rho ->  m2s-2 | ADCIRC_SXY      | global.F     |                            |
-!! cross_radiation_stress      |sxy        | N.m^-2/rho ->  m2s-2 | ADCIRC_SXY      | global.F     |                            |
+!! eastward_wave_radiation_stress           |sxx        | N.m^-2/rho ->  m2s-2 | ADCIRC_SXX      | global.F     |                            |
+!! northward_wave_radiation_stress          |syy        | N.m^-2/rho ->  m2s-2 | ADCIRC_SXY      | global.F     |                            |
+!! eastward_northward_wave_radiation_stress |sxy        | N.m^-2/rho ->  m2s-2 | ADCIRC_SXY      | global.F     |                            |
 !!
 !!expFieldName         expFieldStdName
-!!sxx                           eastward_radiation_stress
-!!syy                           northward_radiation_stress
-!!sxy                           cross_radiation_stress
+!!sxx                           eastward_wave_radiation_stress
+!!syy                           northward_wave_radiation_stress
+!!sxy                           eastward_northward_wave_radiation_stress
 !!ADCIRC accepts wave-driven stresses "in units of velocity squared
 !!    (consistent with the units of gravity).  Stress in these units is obtained
 !!    by dividing stress in units of force/area by the reference density of water."
@@ -465,30 +465,30 @@ module adc_cap
 
     !--------- import fields to Sea Adc -------------
     !TODO: Consider moving these lines to driver to avoid doing it in both CAPS
-    call NUOPC_FieldDictionaryAddEntry("eastward_radiation_stress",  "mx", rc=rc)
+    call NUOPC_FieldDictionaryAddEntry("eastward_wave_radiation_stress", "mx", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, &
         file=__FILE__)) &
         return  ! bail out
 
-    call NUOPC_FieldDictionaryAddEntry("northward_radiation_stress", "mx", rc=rc)
+    call NUOPC_FieldDictionaryAddEntry("northward_wave_radiation_stress", "mx", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, &
         file=__FILE__)) &
         return  ! bail out
 
-    call NUOPC_FieldDictionaryAddEntry("cross_radiation_stress",    "mx", rc=rc)
+    call NUOPC_FieldDictionaryAddEntry("eastward_northward_wave_radiation_stress", "mx", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, &
         file=__FILE__)) &
         return  ! bail out
 
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_radiation_stress", shortname= "sxx")
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="northward_radiation_stress",shortname= "syy")
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="cross_radiation_stress",    shortname= "sxy")
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_wave_radiation_stress",           shortname= "sxx")
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="northward_wave_radiation_stress",          shortname= "syy")
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_northward_wave_radiation_stress", shortname= "sxy")
     !--------- import fields from atm to Adc -------------
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "air_pressure_at_sea_level", shortname= "pmsl" )
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "inst_merid_wind_height10m", shortname= "imwh10m" )
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="air_pressure_at_sea_level", shortname= "pmsl" )
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="inst_merid_wind_height10m", shortname= "imwh10m" )
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="inst_zonal_wind_height10m" , shortname= "izwh10m" )
     !--------- export fields from Sea Adc -------------
     call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="sea_surface_height_above_sea_level",  shortname= "zeta" )
