@@ -123,14 +123,14 @@
 !!
 !! Standard Name               |Short Name | Units                | Model Variable  | File         | Description                | Notes
 !! ----------------------------|-----------|----------------------|-----------------|--------------|----------------------------|-----------------
-!! eastward_radiation_stress   |sxx        | N.m^-2/rho ->  m2s-2 | ADCIRC_SXX      | global.F     |                            |
-!! northward_radiation_stress  |syy        | N.m^-2/rho ->  m2s-2 | ADCIRC_SXY      | global.F     |                            |
-!! cross_radiation_stress      |sxy        | N.m^-2/rho ->  m2s-2 | ADCIRC_SXY      | global.F     |                            |
+!! eastward_wave_radiation_stress           |sxx        | N.m^-2/rho ->  m2s-2 | ADCIRC_SXX      | global.F     |                            |
+!! northward_wave_radiation_stress          |syy        | N.m^-2/rho ->  m2s-2 | ADCIRC_SXY      | global.F     |                            |
+!! eastward_northward_wave_radiation_stress |sxy        | N.m^-2/rho ->  m2s-2 | ADCIRC_SXY      | global.F     |                            |
 !!
 !!expFieldName         expFieldStdName
-!!sxx                           eastward_radiation_stress
-!!syy                           northward_radiation_stress
-!!sxy                           cross_radiation_stress
+!!sxx                           eastward_wave_radiation_stress
+!!syy                           northward_wave_radiation_stress
+!!sxy                           eastward_northward_wave_radiation_stress
 !!ADCIRC accepts wave-driven stresses "in units of velocity squared
 !!    (consistent with the units of gravity).  Stress in these units is obtained
 !!    by dividing stress in units of force/area by the reference density of water."
@@ -470,54 +470,31 @@ module adc_cap
 
     !--------- import fields to Sea Adc -------------
     !TODO: Consider moving these lines to driver to avoid doing it in both CAPS
-     !--- kf fixed
-     ! sxx
-     if (.not.NUOPC_FieldDictionaryHasEntry( &
-                  "eastward_wave_radiation_stress")) then
-        call NUOPC_FieldDictionaryAddEntry( &
-          standardName="eastward_wave_radiation_stress", &
-          canonicalUnits="N m-1", &
-          rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, &
-          file=__FILE__)) &
-          return  ! bail out
-      endif
+    call NUOPC_FieldDictionaryAddEntry("eastward_wave_radiation_stress", "mx", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
 
-      ! sxy
-      if (.not.NUOPC_FieldDictionaryHasEntry( &
-                  "eastward_northward_wave_radiation_stress")) then
-        call NUOPC_FieldDictionaryAddEntry( &
-          standardName="eastward_northward_wave_radiation_stress", &
-          canonicalUnits="N m-1", &
-          rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, &
-          file=__FILE__)) &
-          return  ! bail out
-      endif
+    call NUOPC_FieldDictionaryAddEntry("northward_wave_radiation_stress", "mx", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
 
-      ! syy
-      if (.not.NUOPC_FieldDictionaryHasEntry( &
-                   "northward_wave_radiation_stress")) then
-        call NUOPC_FieldDictionaryAddEntry( &
-          standardName="northward_wave_radiation_stress", &
-          canonicalUnits="N m-1", &
-          rc=rc)
-        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-          line=__LINE__, &
-          file=__FILE__)) &
-          return  ! bail out
-      endif
+    call NUOPC_FieldDictionaryAddEntry("eastward_northward_wave_radiation_stress", "mx", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
 
-!   !------ immport field from ww3 to adc
-    !c- kf fixed
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_wave_radiation_stress", shortname= "sxx")
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="northward_wave_radiation_stress",shortname= "syy")
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_northward_wave_radiation_stress",shortname= "sxy")
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_wave_radiation_stress",           shortname= "sxx")
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="northward_wave_radiation_stress",          shortname= "syy")
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_northward_wave_radiation_stress", shortname= "sxy")
+
     !--------- import fields from atm to Adc -------------
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "air_pressure_at_sea_level", shortname= "pmsl" )
-    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "inst_merid_wind_height10m", shortname= "imwh10m" )
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="air_pressure_at_sea_level", shortname= "pmsl" )
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="inst_merid_wind_height10m", shortname= "imwh10m" )
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="inst_zonal_wind_height10m" , shortname= "izwh10m" )
     !--------- export fields from Sea Adc -------------
     call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="sea_surface_height_above_sea_level",  shortname= "zeta" )
@@ -761,7 +738,8 @@ module adc_cap
 ! DW
 !
 
-    write(info,*) subname,' --- new initialization phase 2 completed --- '
+    write(info,*) subname,' --- initialization phase 2 completed --- '
+
     !print *,      subname,' --- initialization phase 2 completed --- '
     call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
   end subroutine InitializeP2
@@ -1095,7 +1073,7 @@ module adc_cap
         !RSTIMINC = adc_cpl_int +  adc_cpl_num / adc_cpl_den
         !print *, ' in cap   ....> RSTIMINC > ', RSTIMINC
         call State_getFldPtr_(ST=importState,fldname='sxx',fldptr=dataPtr_sxx, &
-          rc=rc,dump=.true.,timeStr=timeStr)
+          rc=rc,dump=.false.,timeStr=timeStr)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, &
           file=__FILE__)) &
@@ -1331,6 +1309,9 @@ module adc_cap
 !            PRN2(mdataOut%owned_to_present_nodes(i1) ) = dataPtr_pmsl(i1) / (1025 * 9.81)    !convert Pascal to mH2O
 !++ GML  in ADCIRC global.F RhoWat0=1000.D0; g = 9.80665
             PRN2(mdataOut%owned_to_present_nodes(i1) ) = dataPtr_pmsl(i1) / (1000 * 9.80665)    !convert Pascal to mH2O
+          !if ( abs(dataPtr_pmsl(i1) ).gt. 1e11)  then
+          !  STOP '  dataPtr_pmsl > mask '     
+          !end if
         end do
 !++ GML
 ! DW
@@ -1360,7 +1341,6 @@ module adc_cap
             if ( ice_forcing ) then
               CICE1 = CICE2 ; 
             endif
-
             first_import_atm = .false. ;
         end if
 !c 
@@ -1387,7 +1367,6 @@ module adc_cap
 !          first_exchange = .false.
 !        end if  
 !
-
     
  !       WRITE(*,'(A,4E)') "  In ModelAdvance() 3:" , MAXVAL(WVNX1), MAXVAL(WVNX2), & 
  !           MAXVAL(WVNY1), MAXVAL(WVNY2) ; 

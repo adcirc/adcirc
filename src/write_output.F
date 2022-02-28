@@ -1592,7 +1592,7 @@ C----------------------------------------------------------------------
          !
          ! if we are in the time step window where output should be produced,
          ! increment the spool counter for this output type
-         if ( (it.gt.ptr(i) % descript2D % startTimeStep).and.
+         if ( (it.ge.ptr(i) % descript2D % startTimeStep).and.
      &        (it.le.ptr(i) % descript2D % endTimeStep) ) then
 
 !           if ( MyProc .EQ. 0 ) THEN
