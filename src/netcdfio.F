@@ -189,6 +189,9 @@ C
 C
       type(stationData), private, save :: elevSta ! elev stations (fort.61)
       type(stationData), private, save :: prSta   ! pressure stations (fort.71)
+C---GML 20200712
+      type(stationData), private, save :: IceSta   ! ice stations (fort.91)
+C
       type(stationData), private, save :: velSta  ! velocity stations (fort.62)
       type(stationData), private, save :: wVelSta ! wind vel stations (fort.72)
       type(stationData), private, save :: densityStations3D    ! for fort.41
@@ -239,6 +242,9 @@ C
       type(nodalData), private, save, target :: WVMax      ! for maxwvel.63
       type(nodalData), private, save, target :: RSMax      ! for rads_max.63
       type(nodalData), private, save :: rads       ! for rads.64
+C++ GML 20200528
+      type(nodalData), private, save :: CICEAF     ! for fort.93
+C++
 #if defined CSWAN || defined ADCSWAN
       type(nodalData), private, save :: sw_hs      ! for swan_HS.63
       type(nodalData), private, save :: sw_dir     ! for swan_DIR.63
@@ -458,6 +464,12 @@ C
             CALL initNodalDataFile(pr, descript1, reterr)
          CASE(74)
             CALL initNodalDataFile(windVel, descript1, reterr)
+C++ GML 20200528
+         CASE (91)
+            CALL initStationFile(IceSta, descript1, reterr)
+         CASE (93)
+            CALL initNodalDataFile(CICEAF, descript1, reterr)
+C++
          CASE(173)
             CALL initNodalDataFile(wDrag, descript1, reterr)
          CASE(90)
@@ -1289,7 +1301,32 @@ C
             CALL check_err(iret)
             sta%statnames => STATNAMEM
 
+C++ GML 20200605 
+         CASE(91) !         F  O R T . 9 1
 
+            sta%station_data_dims(1) = sta%num_sta_dim_id
+            sta%station_data_dims(2) = sta%myTime%timenc_dim_id
+
+            iret = nf90_def_var(sta%ncid, 'iceaf', NF90_DOUBLE,
+     &         sta%station_data_dims, sta%station_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(sta%ncid, sta%station_data_id,
+     &         'long_name', 'station sea-ice af')
+            CALL check_err(iret)
+            iret = nf90_put_att(sta%ncid, sta%station_data_id,
+     &         'standard_name', 'station_sea-ice area fraction')
+            CALL check_err(iret)
+            iret = nf90_put_att(sta%ncid, sta%station_data_id,
+     &         'units', 'unitless')
+            CALL check_err(iret)
+            iret = nf90_put_att(sta%ncid, sta%station_data_id,
+     &         '_FillValue', doubleval)
+            CALL check_err(iret)
+            iret = nf90_put_att(sta%ncid, sta%station_data_id,
+     &         'positive', 'up')
+            CALL check_err(iret)
+            sta%statnames => STATNAMEM
+c ++ GML
 
          CASE(109) !       O F F S E T . 6 1
 
@@ -1382,7 +1419,7 @@ C     netcdf4 file format.
      &             1, 1, 2))
             CALL check_err(nf90_def_var_deflate(sta%ncid, sta%hg_v_station_data_id,
      &             1, 1, 2))
-         CASE(61,71,109)
+         CASE(61,71,91,109) ! GML added 91 20210727
             iret = nf90_def_var_deflate(sta%ncid, sta%station_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
@@ -2682,6 +2719,46 @@ C
      &             'mesh', 'adcirc_mesh')
             CALL check_err(iret)
 
+C++ GML 20200528
+         CASE(93)
+            dat%varnames(1) = 'iceaf' ;
+            dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
+
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &             NF90_DOUBLE, dat%nodal_data_dims, dat%nodal_data_id)
+            CALL check_err(iret)
+
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &           'long_name', 'sea-ice af')
+            CALL check_err(iret)
+
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &           'standard_name', 'sea-ice area fraction')
+            CALL check_err(iret)
+
+            !
+            call putUnitsAttribute(dat%ncid, dat%nodal_data_id,
+     &                 'unitless', 'unitless')
+      
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             '_FillValue', doubleval)
+            CALL check_err(iret)
+
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'coordinates', 'time y x')
+            CALL check_err(iret)
+
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)
+
+
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)
+C++
+
          CASE(164)
 C
             dat%varnames(1) = 'radstress_x'
@@ -3608,7 +3685,7 @@ C     netcdf4 file format.
             iret = nf_def_var_deflate(dat%ncid, dat%w_nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
-         CASE(47,63,73,77,90,173,301:304,306,307,402,403,108)
+         CASE(47,63,73,77,90,93,173,301:304,306,307,402,403,108) ! GML added 93 20210727
             iret = nf_def_var_deflate(dat%ncid, dat%nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
@@ -4164,6 +4241,12 @@ C
             CALL writeNodalData(pr, lun, descript1, timesec)
          CASE(74)
             CALL writeNodalData(windVel, lun, descript1, timesec)
+C++ GML 20200528 
+         CASE(91)
+            CALL writeStationData(IceSta, lun, descript1, timesec)
+         CASE(93)
+            CALL writeNodalData(CICEAF, lun, descript1, timesec)
+C++
          CASE(173)
             CALL writeNodalData(wDrag, lun, descript1, timesec)
          CASE(77)
@@ -4538,6 +4621,20 @@ C
      &          descript1%array2_g, start, kount)
          ENDIF
 
+C++ GML 20200605
+      CASE(91)
+         iret=nf90_inq_varid(sta%ncid, "iceaf", sta%station_data_id)
+         CALL check_err(iret)
+         IF (MNPROC.eq.1) THEN
+            iret = nf90_put_var(sta%ncid, sta%station_data_id,
+     &          descript1%array, start, kount)
+         ELSE
+            iret = nf90_put_var(sta%ncid, sta%station_data_id,
+     &          descript1%array_g, start, kount)
+         ENDIF
+         CALL check_err(iret)
+C++
+
       CASE(109)
          iret=nf90_inq_varid(sta%ncid, "dynamicWaterlevelCorrection", sta%station_data_id)
          CALL check_err(iret)
@@ -4590,7 +4687,7 @@ C
       type(OutputDataDescript_t), intent(in), optional :: descript4
       REAL(8), intent(in) :: timesec
 C
-      INTEGER i,j
+      INTEGER i,j, ii
       INTEGER counti(1), starti(1), n
       INTEGER kount(2), start(2)
       INTEGER kount3D(3), start3D(3)
@@ -4719,6 +4816,11 @@ C
          CALL check_err(iret)
          iret=nf90_inq_varid(dat%ncid,"windy",dat%v_nodal_data_id)
          CALL check_err(iret)
+C++ GML 20200528
+      CASE(93)
+         iret=nf90_inq_varid(dat%ncid,"iceaf",dat%nodal_data_id)
+         CALL check_err(iret)
+C++
       CASE(173)
          iret=nf90_inq_varid(dat%ncid, "winddrag", dat%nodal_data_id)
          CALL check_err(iret)
@@ -5015,12 +5117,13 @@ C     Write the array values
      &            descript1%array_g)
             CALL check_err(iret)
          ENDIF
-      CASE(47,63,73,77,90,173,301,302,303,304,306,307,108)
+      CASE(47,63,73,77,90,93,173,301,302,303,304,306,307,108) ! GML added 93 20210727
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
                allocate(tempArray(1:dat%myMesh%num_nodes))
                tempArray = merge(descript1%array,
-     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0) 
+
                iret = nf90_put_var(dat%ncid, dat%nodal_data_id,tempArray,start,kount)
             ELSE
                iret = nf90_put_var(dat%ncid, dat%nodal_data_id,
@@ -5028,8 +5131,25 @@ C     Write the array values
             ENDIF
             CALL check_err(iret)
          ELSE
+
+!c------------------------------
+!            print*, "check ......", descript1%alternate_value, kount(1),
+!     &               trim(descript1%file_name) ; 
+!            DO ii = 1, kount(1)
+!                  ! if ( isnan(descript1%array_g(ii))  ) then
+!                  if ( ii == 2557 .OR. ii == 2573 ) then 
+!                     print*, "check ..........", ii, descript1%array_g(ii), nodecode(ii) ; 
+!                  endif
+!            ENDDO
+!            descript1%array_g(100) = (0.0/0.0);  ! Should get NaN
+!            ! descript1%array_g(100) = descript1%array_g(100)*0 ; 
+!            print*, "check ..........", 100, descript1%array_g(100), nodecode(100) ; 
+!c------------------------------            
+
             iret = nf90_put_var(dat%ncid, dat%nodal_data_id,
      &            descript1%array_g, start, kount)
+
+
             CALL check_err(iret)
          ENDIF
       CASE(64,74,164,305)

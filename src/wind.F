@@ -186,7 +186,7 @@ C
          real(sz)          :: rampVal          ! ramping multiplier for this dataset
          real(sz)          :: max_extrap_dist  ! maximum distance for extrapolating values (meters)
          integer           :: numFiles         !total number of GFDL met Files to be read
-         ! input data from gfdl met files themselves
+
          integer           :: nh           ! number of grid points
          ! derived data
          logical           :: loaded       ! .true. if we have loaded the data from file
@@ -1413,6 +1413,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
                Cicenow = 100d0*(CICE1(I) + 
      &                          CTRATIO*(CICE2(I)-CICE1(I)))
                WDragCo = WindIceDrag(WDragCo,Cicenow)
+               ciceout(i) = Cicenow ! GML added 20210727
             elseif (NCICE.ne.0.and.NCICE.ne.13) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             endif
@@ -1705,8 +1706,20 @@ C    kmd48.33bc - added in information for the sponge layer
               PRN1(I)=PRN2(I)
             END DO 
          ENDIF
+C++ GML added 20210727 ncice=17
+         if ((NCICE.ne. 0).and.
+     &       TimeLoc.GT.CICE_TIME2) THEN
+             CICE_TIME1 = CICE_TIME2
+             CICE_TIME2 = CICE_TIME2 + CICE_TIMINC
+             CICE1 = CICE2
+         endif
+C++
          WTRatio=(TimeLoc-WTIME1)/WTIMINC
-
+C++ GML added 20210727
+         IF(NCICE.NE.0)THEN
+             CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+         ENDIF
+C++
          if (WTRatio .GT. 1.0) then
              WTRatio = 1.0
              print *, '[Warning:] WTRatio is .GE. 1.0 and Set to 1.0'
@@ -1728,7 +1741,10 @@ C     jgf46.00 Add directional wind reduction.
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
            IF(NCICE.NE.0) THEN
-               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+               Cicenow = 100d0*(CICE1(I) + CTRATIO*(CICE2(I)-CICE1(I)))   ! GML added 20210727
+               WDragCo = WindIceDrag(WDragCo,Cicenow)                     ! GML added 20210727
+               ciceout(i) = Cicenow                                       ! GML added 20210727
+C               WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
             WSX2(I) = RampMete*airwaterdensityrat*WDragCo*WindX*WindMag   !P.V units: m^2/s^2 aka
             WSY2(I) = RampMete*airwaterdensityrat*WDragCo*WindY*WindMag   !    per water unit mass (1/RhoWat0)
@@ -1742,7 +1758,6 @@ C  tcm v49.16 20100617
          END DO
       ENDIF
 !PV END:: NWS=17
-
 
 C      DW/WJP: rotate wind stresses if coordinate transform
        IF ( IFSPROTS .eq. 1 ) THEN
@@ -1806,6 +1821,12 @@ Casey 180318: Added for NWS=13
       WSX1(:) = 0.d0 ;
       WSY1(:) = 0.d0 ;
 !      PR1(:) = PRBCKGRND_MH2O ! -- DW for 517  
+!++ GML
+      if (NCICE.ne. 0) then
+      cice1(:) = 0.d0
+      cice2(:) = 0.D0
+      endif
+!++ 
  
       IF(NWS.EQ.1) THEN
          OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
@@ -2120,9 +2141,12 @@ C......RESTART WIND AND PRESSURE INFORMATION
       !c DW, for nonwind and NEM
       SELECT CASE(NWS)
       CASE (0,17)
-!         WSX1(:) = 0.d0 ;
-!         WSY1(:) = 0.d0 ;
-   
+         WVNX1(:) = 0.d0 ;
+         WVNY1(:) = 0.d0 ;
+         WVNX2(:) = 0.d0 ;
+         WVNY2(:) = 0.d0 ;    
+         PRN1(:)=PRBCKGRND_MH2O ;
+         PRN2(:)=PRBCKGRND_MH2O ;
          WSX2(:) = 0.d0
          WSY2(:) = 0.D0
          PR2(:) = PRBCKGRND_MH2O
@@ -3216,7 +3240,6 @@ C  tcm v49.16 20100617
           WVNX1 = WVNX2
           WVNY1 = WVNY2
        endif
-
 C      DW/WJP: rotate wind stresses if coordinate transform
        IF ( IFSPROTS .eq. 1 ) THEN
           UVECTMP(1:NP) = WSX2(1:NP); 

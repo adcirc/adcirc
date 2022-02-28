@@ -53,8 +53,8 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=gnu
 #compiler=g95
 #compiler=gfortran
-compiler=intel
-#compiler=intel-ND
+#compiler=intel
+compiler=intel-ND
 #compiler=intel-lonestar
 #compiler=intel-sgi
 #compiler=cray_xt3
@@ -372,6 +372,15 @@ ifeq ($(compiler),intel)
         FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
      endif
   endif
+
+# ------------
+  ifeq ($(NETCDF),enable)
+    ifeq ($(WDALTVAL),enable)
+       DP  := $(DP) -DWDVAL_NETCDF 
+    endif
+  endif
+# -----------
+
   #jgf20110519: For netcdf on topsail at UNC, use
   #NETCDFHOME=/ifs1/apps/netcdf/
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
@@ -387,7 +396,7 @@ endif
 ifeq ($(compiler),intel-ND)
   PPFC          :=  ifort
   FC            :=  ifort
-  PFC           ?=  mpif90
+  PFC           :=  mpif90
 #  FFLAGS1       :=  $(INCDIRS) -w -O3 -assume byterecl -132 -assume buffered_io #-i-dynamic
 
   ifeq ($(AMD),yes)
@@ -397,7 +406,6 @@ ifeq ($(compiler),intel-ND)
 #      FFLAGS1     :=  $(INCDIRS) -O2 -g -traceback -xSSE4.2 -assume byterecl -132 -mcmodel=medium -shared-intel -assume buffered_io
 #      FFLAGS1     :=  $(INCDIRS) -O0 -g -traceback -check bounds -xSSE4.2 -assume byterecl -132 -mcmodel=medium -shared-intel -assume buffered_io
   endif
-
   ifeq ($(DEBUG),full)
      FFLAGS1    :=  $(INCDIRS) -g -O0 -traceback -debug -check all -FI -assume byterecl -132 -DEBUG -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
@@ -415,21 +423,29 @@ ifeq ($(compiler),intel-ND)
   CFLAGS        := $(INCDIRS) -O3 -m64 -mcmodel=medium -DLINUX
   FLIBS         := 
   ifeq ($(DATETIME),enable)
-     DATETIMEHOME  := $(SRCDIR)/lib/datetime-fortran-master/build/
+     DATETIMEHOME  := /pontus/gling/ADCIRC_Codes/adcirc-cg-GLOBAL_WP_20200513/lib/datetime-fortran/
      FLIBS         := -ldatetime -L$(DATETIMEHOME)lib/
   endif
   ifeq ($(GRIB2),enable)
-     WGRIB2HOME    := $(SRCDIR)/lib/grib2/lib/
+     WGRIB2HOME    := /pontus/gling/ADCIRC_Codes/adcirc-cg-GLOBAL_WP_20200513/lib/grib2/lib/
      FLIBS         := $(FLIBS) -lwgrib2_api -lwgrib2 -ljasper -L$(WGRIB2HOME)
   endif
   ifeq ($(DEBUG),full)
      CFLAGS     := $(INCDIRS) -g -O0 -m64 -march=k8 -mcmodel=medium -DLINUX
   endif
   ifeq ($(NETCDF),enable)
-     HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
-     #HDF5HOME=/opt/crc/h/hdf5/intel/18.0/build/lib/      
+     #HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
+     HDF5HOME=/opt/crc/n/netcdf/4.7.0/intel/18.0      
      FLIBS      := $(FLIBS) -lnetcdff -L$(HDF5HOME) 
-  endif   
+  endif
+# ------------
+  ifeq ($(NETCDF),enable)
+    ifeq ($(WDALTVAL),enable)
+       DP  := $(DP) -DWDVAL_NETCDF 
+    endif
+  endif
+# -----------
+
   CLIBS         :=
   MSGLIBS       :=
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
@@ -1431,7 +1447,7 @@ ifneq (,$(findstring sv1-unicos,$(MACHINE)-$(OS)))
   DP  	        :=  -DREAL8 -DCRAY -DCSCA -DCMPI
   DPRE	        :=  -DREAL8 -DCRAY
   IMODS		:=  -p
-  CFLAGS	:=  $(INCDIRS) -I../Lib -O2 -DCRAY
+  CFLAGS	:=  $(INCDIRS) -I ../Lib -O2 -DCRAY
   FLIBS  	:=
   MSGLIBS	:=  -lmpi
   C_LDFLAGS     :=
@@ -1462,7 +1478,7 @@ ifneq (,$(findstring x1-unicos,$(MACHINE)-$(OS)))
   IMODS		:=  -p
   CC            :=  cc
   CCBE          :=  $(CC)
-  CFLAGS	:=  $(INCDIRS) -I../Lib -O2 -DCRAYX1 -UCRAY
+  CFLAGS	:=  $(INCDIRS) -I ../Lib -O2 -DCRAYX1 -UCRAY
   FLIBS  	:=
   MSGLIBS	:=  -lmpi
   C_LDFLAGS     :=

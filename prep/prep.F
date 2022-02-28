@@ -7603,7 +7603,7 @@ C---------------------------------------------------------------------------
      &    theta2, ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd,
      &    nvsd, nltd, nvtd, alp4, C3D, X3DD, Y3DD, SL3DD, SF3DD,
      &    X3DV, Y3DV, SL3DV, SF3DV, X3DT, Y3DT, SL3DT, SF3DT, C3D,
-     &    foundCorrectionControlNamelist
+     &    foundCorrectionControlNamelist, NCICE !GML added NCICE 20210727
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE NETCDFIO, ONLY : setADCIRCParameters, initNetCDFOutputFile,
      &    initNetCDFHotstart3D, initNetCDFHotstart,
@@ -7642,6 +7642,10 @@ C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: PrDescript         ! fort.73
       type(OutputDataDescript_t), SAVE :: windDragDescript   ! winddrag.173
       type(OutputDataDescript_t), SAVE :: WindVelDescript    ! fort.74
+C++ GML 20200605
+      type(OutputDataDescript_t), SAVE :: IceStaDescript     ! fort.91
+      type(OutputDataDescript_t), SAVE :: IceAFDescript      ! fort.93
+C++
       type(OutputDataDescript_t), SAVE :: weirElevDescript   ! fort.77
       type(OutputDataDescript_t), SAVE :: EtaMaxDescript     ! maxele.63
       type(OutputDataDescript_t), SAVE :: UMaxDescript       ! maxvel.63
@@ -8030,6 +8034,43 @@ C     fort.77
       WeirElevDescript % file_basename        = 'fort'
       call makeFileName(weirElevDescript)
 
+C++ GML 20200605
+C     fort.91
+      IceStaDescript % specifier            = MERGE(NOUTM,0,NCICE > 0) 
+      IceStaDescript % lun                  = 91
+      IceStaDescript % initial_value        = 0.0
+      IceStaDescript % num_items_per_record = 1
+      IceStaDescript % num_fd_records       = abs(NSTAM)
+      IceStaDescript % num_records_this     = abs(NSTAM)
+      IceStaDescript % ConsiderWetDry       = .FALSE.
+      IceStaDescript % alternate_value      = 0.0
+      IceStaDescript % field_name           = 'IceSta'
+      IF (ICS.eq.2) THEN
+         IceStaDescript % x_coord           => SLEM
+         IceStaDescript % y_coord           => SFEM
+      ELSE
+         IceStaDescript % x_coord           => XEM
+         IceStaDescript % y_coord           => YEM
+      ENDIF
+      IceStaDescript % file_extension       = 91
+      IceStaDescript % file_basename        = 'fort'
+      IceStaDescript % readMaxMin           = .false.
+      call makeFileName(IceStaDescript)
+C     fort.93
+      IceAFDescript % specifier            = MERGE(NOUTGW,0,NCICE > 0) 
+      IceAFDescript % lun                  = 93
+      IceAFDescript % initial_value        = 0.0
+      IceAFDescript % num_items_per_record = 1
+      IceAFDescript % num_fd_records       = MNP
+      IceAFDescript % num_records_this     = MNP
+      IceAFDescript % ConsiderWetDry       = .FALSE.
+      IceAFDescript % alternate_value      = 0.0
+      IceAFDescript % field_name           = 'seaice_af'
+      IceAFDescript % file_extension       = 93
+      IceAFDescript % file_basename        = 'fort'
+      WeirElevDescript % readMaxMin           = .false.
+      call makeFileName(IceAFDescript)
+C++
 C
 C     minpr.63
       PrMinDescript % specifier            = abs(NOUTGW)
@@ -8817,6 +8858,10 @@ C     was specified.
       CALL initNetCDFOutputFile(WindVelStaDescript, reterr)
       CALL initNetCDFOutputFile(PrDescript, reterr)
       CALL initNetCDFOutputFile(WindVelDescript, reterr)
+C ++ GML 20200605
+      CALL initNetCDFOutputFile(IceStaDescript, reterr)
+      CALL initNetCDFOutputFile(IceAFDescript, reterr)
+C++
       CALL initNetCDFOutputFile(WeirElevDescript, reterr)
       CALL initNetCDFOutputFile(EtaMaxDescript, reterr)
       CALL initNetCDFOutputFile(UMaxDescript, reterr)
@@ -8845,7 +8890,8 @@ C     was specified.
       ! tcm v50.75 moved ifdef adcswan below RSDescript only to allow
       ! for use whenever nrs=3 or nrs=4 or nrs=5
       ! Cobell 20120510: Added for SWAN NetCDF
-      IF ((NRS.EQ.3).OR.(NRS.EQ.4).OR.(NRS.EQ.5)) THEN
+      ! dw: added NRS == 5 for NEMS support
+      IF ((NRS.EQ.3).OR.(NRS.EQ.4).OR.(NRS.EQ.5)) THEN 
         CALL initNetCDFOutputFile(RSDescript,reterr)
       ENDIF
       ! tcm v50.75 moved ifdef adcswan to here
