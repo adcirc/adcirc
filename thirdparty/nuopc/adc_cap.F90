@@ -245,6 +245,9 @@ module adc_cap
   logical, save            :: first_exchange = .true.
   integer, save            :: iunit_log = 10000
 
+! DW
+  logical, save:: first_import_atm = .true. ;
+  logical, save:: first_import_wav = .true. ; 
 
   real,parameter :: wave_force_limmit = 0.05
 
@@ -591,6 +594,19 @@ module adc_cap
     integer                      :: localPet, petCount
     character(len=*),parameter   :: subname='(adc_cap:RealizeFieldsProvidingGrid)'
 
+    !
+    ! DW
+    !
+    ! exports
+    real(ESMF_KIND_R8), pointer:: dataPtr_zeta(:)
+    real(ESMF_KIND_R8), pointer:: dataPtr_velx(:)
+    real(ESMF_KIND_R8), pointer:: dataPtr_vely(:)
+   
+    character(len=128)         :: fldname, timeStr
+    integer                    :: i1,num
+    logical :: surge_forcing = .false. ; 
+    ! DW
+
     rc = ESMF_SUCCESS
 
     !> \details Get current ESMF VM.
@@ -649,10 +665,72 @@ module adc_cap
       file=__FILE__)) &
       return  ! bail out
 
+! Sep 2021
+! DW ! Initialized an export fileds, zeta, velx, vely
+    surge_forcing= .true.
+    do num = 1, fldsFrAdc_num
+       if ( fldsFrAdc(num)%shortname == 'zeta' ) surge_forcing = surge_forcing .and. fldsFrAdc(num)%connected
+       if ( fldsFrAdc(num)%shortname == 'velx' ) surge_forcing = surge_forcing .and. fldsFrAdc(num)%connected
+       if ( fldsFrAdc(num)%shortname == 'vely' ) surge_forcing = surge_forcing .and. fldsFrAdc(num)%connected
+    end do
+
+    if (surge_forcing) then
+      !-----------------------------------------
+      !   EXPORT
+      !-----------------------------------------
+      !pack and send exported fields: zeta, velx, vely
+     
+      ! >>>>> PACK and send ZETA
+      call State_getFldPtr_(ST=exportState,fldname='zeta',fldptr=dataPtr_zeta, &
+        rc=rc,dump=.false.,timeStr=timeStr)
+!        rc=rc,dump=.true.,timeStr=timeStr)
+
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+
+      !fill only owned nodes for tmp vector
+      do i1 = 1, mdataOut%NumOwnedNd, 1  
+        dataPtr_zeta(i1) = ETA2(mdataOut%owned_to_present_nodes(i1)) ;
+      end do
+     
+      ! >>>>> PACK and send VELX
+      call State_getFldPtr(ST=exportState,fldname='velx',fldptr=dataPtr_velx,rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+
+      !fill only owned nodes for tmp vector
+      do i1 = 1, mdataOut%NumOwnedNd, 1
+         dataPtr_velx(i1) = UU2(mdataOut%owned_to_present_nodes(i1)) ;
+      end do
+      
+      ! >>>>> PACK and send VELY
+      call State_getFldPtr(ST=exportState,fldname='vely',fldptr=dataPtr_vely,rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+
+      !fill only owned nodes for tmp vector
+      do i1 = 1, mdataOut%NumOwnedNd, 1
+        dataPtr_vely(i1) = VV2(mdataOut%owned_to_present_nodes(i1)) ;
+      end do
+      
+    else
+      write(info,*) subname,' --- no surge forcing for wave. 1way coupled WW3 -> ADC  ---'
+      call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
+    endif
+!
+! DW
+!
+
     write(info,*) subname,' --- initialization phase 2 completed --- '
     !print *,      subname,' --- initialization phase 2 completed --- '
     call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
-  end subroutine
+  end subroutine InitializeP2
   
 
  !> Adds a set of fields to an ESMF_State object.  Each field is wrapped
@@ -974,7 +1052,7 @@ module adc_cap
         !RSTIMINC = adc_cpl_int +  adc_cpl_num / adc_cpl_den
         !print *, ' in cap   ....> RSTIMINC > ', RSTIMINC
         call State_getFldPtr_(ST=importState,fldname='sxx',fldptr=dataPtr_sxx, &
-          rc=rc,dump=.true.,timeStr=timeStr)
+          rc=rc,dump=.false.,timeStr=timeStr)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, &
           file=__FILE__)) &
@@ -1219,8 +1297,9 @@ module adc_cap
         end do
         
         do i1 = 1, mdataOut%NumOwnedNd, 1
-            PRN2(mdataOut%owned_to_present_nodes(i1) ) = dataPtr_pmsl(i1) / (1025 * 9.81)    !convert Pascal to mH2O
-        
+!            PRN2(mdataOut%owned_to_present_nodes(i1) ) = dataPtr_pmsl(i1) / (1025 * 9.81)    !convert Pascal to mH2O
+!++ GML  in ADCIRC global.F RhoWat0=1000.D0; g = 9.80665
+            PRN2(mdataOut%owned_to_present_nodes(i1) ) = dataPtr_pmsl(i1) / (1000 * 9.80665)    !convert Pascal to mH2O
           !if ( abs(dataPtr_pmsl(i1) ).gt. 1e11)  then
           !  STOP '  dataPtr_pmsl > mask '     
           !end if
@@ -1230,16 +1309,29 @@ module adc_cap
         call UPDATER( WVNX1(:), WVNY1(:), PRN1(:),3)
         call UPDATER( WVNX2(:), WVNY2(:), PRN2(:),3)
 
-        if (first_exchange .and. sum(PRN1) .le. 1.0) then
-          WVNX2 = 1e-10
-          WVNY2 = 1e-10
-          WVNX1 = 1e-10
-          WVNY1 = 1e-10
+!c  DW, Sep 2021 
+!c   -- Nearest extrapolation in time for the first imported step
+        if ( first_import_atm  ) then
+            WVNX1 = WVNX2 ; 
+            WVNY1 = WVNY2 ; 
+            PRN1 = PRN2   ;
 
-          PRN2 = 10.0  !hard coded to handel the 1st exchange zeros problem :TODO! Need to resolve this!
-          PRN1 = PRN2
-          first_exchange = .false.
-        end if  
+            first_import_atm = .false. ;
+        end if
+!c 
+ !       if (first_exchange .and. sum(PRN1) .le. 1.0) then
+ !      ! DW:  band-aid fix by zeroing out wind velocity and atm pressure.
+ !      !      Todo: look at atmesh code to see if there could be a better fix.  
+!        if ( first_exchange .or. sum(PRN1)  .le. 1.0) then
+!          WVNX2 = 1e-10
+!          WVNY2 = 1e-10
+!          WVNX1 = 1e-10
+!          WVNY1 = 1e-10
+
+!          PRN2 = 10.0  !hard coded to handel the 1st exchange zeros problem :TODO! Need to resolve this!
+!          PRN1 = PRN2
+!          first_exchange = .false.
+!        end if  
     
         !if (sum(PRN1) .eq. 0.0 ) then
         !  PRN1 = 10000.0
