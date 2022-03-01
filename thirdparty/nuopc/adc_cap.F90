@@ -468,23 +468,26 @@ module adc_cap
 
     !--------- import fields to Sea Adc -------------
     !TODO: Consider moving these lines to driver to avoid doing it in both CAPS
-    call NUOPC_FieldDictionaryAddEntry("eastward_wave_radiation_stress", "mx", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+    !PV BEG:: Wave radiation stresses
+    !         The following fields are already defined in the field dictionary.
+    !call NUOPC_FieldDictionaryAddEntry("eastward_wave_radiation_stress", "mx", rc=rc)
+    !if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+    !    line=__LINE__, &
+    !    file=__FILE__)) &
+    !    return  ! bail out
 
-    call NUOPC_FieldDictionaryAddEntry("northward_wave_radiation_stress", "mx", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+    !call NUOPC_FieldDictionaryAddEntry("northward_wave_radiation_stress", "mx", rc=rc)
+    !if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+    !    line=__LINE__, &
+    !    file=__FILE__)) &
+    !    return  ! bail out
 
-    call NUOPC_FieldDictionaryAddEntry("eastward_northward_wave_radiation_stress", "mx", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
+    !call NUOPC_FieldDictionaryAddEntry("eastward_northward_wave_radiation_stress", "mx", rc=rc)
+    !if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+    !    line=__LINE__, &
+    !    file=__FILE__)) &
+    !    return  ! bail out
+    !PV END:: Wave radiation stresses
 
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_wave_radiation_stress",           shortname= "sxx")
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="northward_wave_radiation_stress",          shortname= "syy")
