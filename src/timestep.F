@@ -589,7 +589,8 @@ C
       ENDIF
 
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-      if (ncice.ne.0.and.ncice.ne.14) then
+C++ GML added ncice .ne. 17
+      if (ncice.ne.0.and.(ncice.ne.14) .and. (ncice.ne.17)) then
          CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
          do i=1,np
             CICEOUT(I) = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
@@ -696,7 +697,7 @@ C... v50.xx sm -- nrs=5 for NUOPC coupling wave data from coupler
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef CSWAN
 Casey 090302: Added these lines for output to the rads.64 file.
-               IF(ABS(NRS).EQ.3) then
+               IF(ABS(NRS).EQ.3 .OR. ABS(NRS).EQ.5) then ! dw added NRS==5
                   RSNXOUT(I) = RSX
                   RSNYOUT(I) = RSY
                ENDIF

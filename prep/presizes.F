@@ -964,7 +964,8 @@ C.... tcm v48.4641 additions for ice
      &     .OR.(ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.13).OR.(ABS(NWS).EQ.14)
      &     .OR.(NWS.EQ.19))THEN
         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
-        IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4)))
+C++! GML added 5
+        IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4).OR.(NRS.EQ.5))) 
      &         READ(15,*) WTIMINC,RSTIMINC
         IF((NCICE.EQ.0).AND.(NRS.EQ.3)) THEN  !Casey 090825: Fix for NRS = 3.
           IF(ABS(NWS).EQ.8) THEN
@@ -974,7 +975,8 @@ C.... tcm v48.4641 additions for ice
            ENDIF
         ENDIF
         IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,CICE_TIMINC
-        IF((NCICE.GE.1).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4)))
+C++! GML added 5
+        IF((NCICE.GE.1).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4).OR.(NRS.EQ.5)))
      &                READ(15,*) WTIMINC,RSTIMINC,CICE_TIMINC
         IF((NCICE.GE.1).AND.(NRS.EQ.3)) THEN  !Casey 090825: Fix for NRS = 3.
           IF(ABS(NWS).EQ.8) THEN

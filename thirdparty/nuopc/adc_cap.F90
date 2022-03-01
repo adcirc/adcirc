@@ -190,6 +190,7 @@ module adc_cap
  ! USE GLOBAL,  ONLY: WVNX1, WVNY1, PRN1
   USE WIND,  ONLY: WVNX2, WVNY2, PRN2  ! Import wind and pressure variables
   USE WIND,  ONLY: WVNX1, WVNY1, PRN1
+  use GLOBAL,  ONLY: CICE1,CICE2 ! Import ice variables  ++ GML 20210727
  ! USE GLOBAL,  ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
   USE WIND,  ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
   USE GLOBAL,  ONLY: RSTIMINC            ! wave time interval
@@ -464,6 +465,7 @@ module adc_cap
   !----------------------------------------------------------------------------------
   subroutine ADCIRC_FieldsSetup
     integer                     :: rc
+    logical :: file_exists
     character(len=*),parameter  :: subname='(adc_cap:ADCIRC_FieldsSetup)'
 
     !--------- import fields to Sea Adc -------------
@@ -492,6 +494,7 @@ module adc_cap
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_wave_radiation_stress",           shortname= "sxx")
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="northward_wave_radiation_stress",          shortname= "syy")
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="eastward_northward_wave_radiation_stress", shortname= "sxy")
+
     !--------- import fields from atm to Adc -------------
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="air_pressure_at_sea_level", shortname= "pmsl" )
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="inst_merid_wind_height10m", shortname= "imwh10m" )
@@ -500,6 +503,14 @@ module adc_cap
     call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="sea_surface_height_above_sea_level",  shortname= "zeta" )
     call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="surface_eastward_sea_water_velocity", shortname= "velx" )
     call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="surface_northward_sea_water_velocity",shortname= "vely" )
+
+! GML added ice concentration 20210727 if NWS=17517 NCICE=17
+!++ GML
+! DW: Move here
+!    if (NCICE .NE.0) then
+    call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname= "sea_ice_concentration", shortname= "seaice" )
+!    endif
+
 
 !NEMS hycod standard names>>>
 !https://esgf.esrl.noaa.gov/projects/couplednems/coupling_fields
@@ -512,8 +523,8 @@ module adc_cap
 
 
 
-   !
     write(info,*) subname,' --- Passed--- '
+    call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
     !print *,      subname,' --- Passed --- '
   end subroutine ADCIRC_FieldsSetup
 
@@ -731,6 +742,7 @@ module adc_cap
 !
 
     write(info,*) subname,' --- initialization phase 2 completed --- '
+
     !print *,      subname,' --- initialization phase 2 completed --- '
     call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, line=__LINE__, file=__FILE__, rc=dbrc)
   end subroutine InitializeP2
@@ -930,6 +942,10 @@ module adc_cap
     type(ESMF_Time)            :: currTime
     type(ESMF_TimeInterval)    :: timeStep
     character(len=*),parameter :: subname='(adc_cap:ModelAdvance)'
+    !tmp vector
+    real(ESMF_KIND_R8), pointer:: tmp(:)
+    real(ESMF_KIND_R8), pointer:: dumy1(:)
+    real(ESMF_KIND_R8), pointer:: dumy2(:)
 
     ! exports
     real(ESMF_KIND_R8), pointer:: dataPtr_zeta(:)
@@ -944,7 +960,8 @@ module adc_cap
     real(ESMF_KIND_R8), pointer:: dataPtr_pmsl(:)
     real(ESMF_KIND_R8), pointer:: dataPtr_imwh10m(:)
     real(ESMF_KIND_R8), pointer:: dataPtr_izwh10m(:)
-
+    ! GML added dataPtr_icec 20210727
+    real(ESMF_KIND_R8), pointer:: dataPtr_icec(:)
 
     type(ESMF_StateItem_Flag)  :: itemType
     type(ESMF_Mesh)            :: mesh
@@ -958,11 +975,16 @@ module adc_cap
     integer :: YY, MM, DD, H, M, S
     integer :: ss,ssN,ssD
     logical :: wave_forcing, meteo_forcing, surge_forcing
+! DW 
+    logical :: ice_forcing
 
     type(ESMF_Time) :: BeforeCaribbeanTime,AfterCaribbeanTime
 
+    ! DW
+    INTEGER, save:: ienter = 0 ;
     rc = ESMF_SUCCESS
     dbrc = ESMF_SUCCESS
+!
     ! query the Component for its clock, importState and exportState
     call NUOPC_ModelGet(model, modelClock=clock, importState=importState, &
       exportState=exportState, rc=rc)
@@ -1030,9 +1052,8 @@ module adc_cap
       nCplADC = nint(timeStepAbs/DTDP)+1
     endif
 
-
-     !print *, '  nCplADC = ', nCplADC
-     !print *, '  ADCCouplingTimeInterval = ', timeStepAbs
+    ! print *, '  nCplADC = ', nCplADC
+    ! print *, '  ADCCouplingTimeInterval = ', timeStepAbs
     !-----------------------------------------
     !   IMPORT
     !-----------------------------------------
@@ -1176,24 +1197,8 @@ module adc_cap
         ! Calculate wave forces
         call ComputeWaveDrivenForces
 
-        !iunit_log = iunit_log + 1
-        !open(unit = iunit_log, ACTION = "write", STATUS ="replace" )
-        !write(iunit_log, *) RSNX2, RSNY2
-        !close(iunit_log)
-
         write(info,*) subname,' --- wave data exchange OK / wave feilds are all connected --- / Model advances '
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
-        !print *, info
-
-        !RSNX2 = 0.0001
-        !RSNY2 = 0.0001
-    
-        !RSNX2 = 0.0
-        !RSNY2 = 0.0
-
-        ! initialize time reach to Caribean Islands
-        !call ESMF_TimeSet(BeforeCaribbeanTime, yy=2008, mm=9, dd=6 , h=12, m=0, s=0, rc=rc)
-        !call ESMF_TimeSet(AfterCaribbeanTime , yy=2008, mm=9, dd=12, h=12, m=0, s=0, rc=rc)
 
 !!!!#ifdef NO_COMPILE00000
         !-----------------------
@@ -1204,36 +1209,29 @@ module adc_cap
             write(info,*) subname, 'in cap after maxval(RSNY2)', maxval(RSNY2)
             call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
 
-            !print *, 'Hard Coded >>>>>>>>>>>  where(abs(RSNX2).gt. wave_force_limmit) RSNX2 =  wave_force_limmit'
-            !write(info,*) subname,'Hard Coded >>>>>>>>>>>  where(abs(RSNX2).gt. wave_force_limmit) RSNX2 =  wave_force_limmit'
-            !call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
-
-            !where(RSNX2.gt. wave_force_limmit) RSNX2 =  wave_force_limmit
-            !where(RSNY2.gt. wave_force_limmit) RSNY2 =  wave_force_limmit
-
-            !where(RSNX2.le. (-1.0 * wave_force_limmit)) RSNX2 =  -1.0 * wave_force_limmit
-            !where(RSNY2.le. (-1.0 * wave_force_limmit)) RSNY2 =  -1.0 * wave_force_limmit
-
-!!!!#endif
-
-    !        endif
-
     else
         NUOPC4WAV = .false.
         write(info,*) subname,' --- no wave forcing exchange / waves are not all connected --- '
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
-        !print *, info
-        !stop
     endif        
     !-----------------------------------------
     !   IMPORT from ATM
     !-----------------------------------------
    meteo_forcing= .true.
+! DW
+   ice_forcing=.true. 
    do num = 1,fldsToAdc_num
       if (fldsToAdc(num)%shortname == 'pmsl')    meteo_forcing = meteo_forcing .and. fldsToAdc(num)%connected
       if (fldsToAdc(num)%shortname == 'imwh10m') meteo_forcing = meteo_forcing .and. fldsToAdc(num)%connected
       if (fldsToAdc(num)%shortname == 'izwh10m') meteo_forcing = meteo_forcing .and. fldsToAdc(num)%connected
+!++ GML added NCICE .ne. 0  20210727
+! DW
+      if (fldsToAdc(num)%shortname == 'seaice') ice_forcing = ice_forcing .and. fldsToAdc(num)%connected
+!++
    end do
+
+
+!99999 CONTINUE
     
     if ( meteo_forcing) then
         !NWS = 39   ! over write NWS option to be sure we incldue wind forcing
@@ -1267,6 +1265,16 @@ module adc_cap
           line=__LINE__, &
           file=__FILE__)) &
           return  ! bail out
+
+        ! <<<<< RECEIVE and UN-PACK icecon    ++ GML 20210728
+! DW
+        if ( ice_forcing ) then
+          call State_getFldPtr_(ST=importState,fldname='seaice',fldptr=dataPtr_icec,rc=rc,dump=.false.,timeStr=timeStr)
+          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+            line=__LINE__, &
+            file=__FILE__)) &
+            return  ! bail out
+        endif
         
         write(info,*) subname,' --- meteo forcing exchange OK / atm feilds are all connected --- / Model advances '
         call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
@@ -1276,18 +1284,19 @@ module adc_cap
         IF(.NOT.ALLOCATED(WVNX1)) ALLOCATE(WVNX1(1:NP))
         IF(.NOT.ALLOCATED(WVNY1)) ALLOCATE(WVNY1(1:NP))
         IF(.NOT.ALLOCATED(PRN1) ) ALLOCATE(PRN1 (1:NP))
+        IF(.NOT.ALLOCATED(CICE1)) ALLOCATE(CICE1(1:NP)) ! GML added
 
         IF(.NOT.ALLOCATED(WVNX2)) ALLOCATE(WVNX2(1:NP))
         IF(.NOT.ALLOCATED(WVNY2)) ALLOCATE(WVNY2(1:NP))
         IF(.NOT.ALLOCATED(PRN2) ) ALLOCATE(PRN2 (1:NP))
+        IF(.NOT.ALLOCATED(CICE2)) ALLOCATE(CICE2(1:NP)) ! GML added
 
-        !print *, 'maxval(WVNX2)', maxval(WVNX2)
+        allocate (dumy1(1:NP),dumy2(1:NP)) ! GML added
 
         WVNX1 = WVNX2   
         WVNY1 = WVNY2  
         PRN1  = PRN2
-
-        !call UPDATER( dataPtr_izwh10m(:), dataPtr_imwh10m(:), dataPtr_pmsl(:),3)
+        CICE1  = CICE2  ! GML added
        
         ! Fill owned nodes from imported data to model variable
         !TODO: unit check
@@ -1307,10 +1316,23 @@ module adc_cap
           !  STOP '  dataPtr_pmsl > mask '     
           !end if
         end do
-         
+!++ GML
+! DW
+        if ( ice_forcing ) then
+           do i1 = 1, mdataOut%NumOwnedNd, 1
+              CICE2(mdataOut%owned_to_present_nodes(i1)) =  dataPtr_icec(i1) !
+           end do
+        endif
+!++ 
+
         ! Ghost nodes update 
         call UPDATER( WVNX1(:), WVNY1(:), PRN1(:),3)
         call UPDATER( WVNX2(:), WVNY2(:), PRN2(:),3)
+!  DW
+        if ( ice_forcing ) then
+          call UPDATER( CICE1(:), dumy1(:), dumy1(:),3)
+          call UPDATER( CICE2(:), dumy1(:), dumy1(:),3)
+        endif
 
 !c  DW, Sep 2021 
 !c   -- Nearest extrapolation in time for the first imported step
@@ -1319,6 +1341,9 @@ module adc_cap
             WVNY1 = WVNY2 ; 
             PRN1 = PRN2   ;
 
+            if ( ice_forcing ) then
+              CICE1 = CICE2 ; 
+            endif
             first_import_atm = .false. ;
         end if
 !c 
@@ -1326,16 +1351,29 @@ module adc_cap
  !      ! DW:  band-aid fix by zeroing out wind velocity and atm pressure.
  !      !      Todo: look at atmesh code to see if there could be a better fix.  
 !        if ( first_exchange .or. sum(PRN1)  .le. 1.0) then
+!
 !          WVNX2 = 1e-10
 !          WVNY2 = 1e-10
 !          WVNX1 = 1e-10
 !          WVNY1 = 1e-10
-
+!
 !          PRN2 = 10.0  !hard coded to handel the 1st exchange zeros problem :TODO! Need to resolve this!
 !          PRN1 = PRN2
+!!++ GML 20210308
+!          RSNX1 = 0.0d0
+!          RSNY1 = 0.0d0
+!          RSNX2 = 0.0d0
+!          RSNY2 = 0.0d0
+!          CICE1 = 0.0d0
+!          CICE2 = 0.0d0
+!!++
 !          first_exchange = .false.
 !        end if  
+!
     
+ !       WRITE(*,'(A,4E)') "  In ModelAdvance() 3:" , MAXVAL(WVNX1), MAXVAL(WVNX2), & 
+ !           MAXVAL(WVNY1), MAXVAL(WVNY2) ; 
+
         !if (sum(PRN1) .eq. 0.0 ) then
         !  PRN1 = 10000.0
         !end if  
@@ -1368,15 +1406,13 @@ module adc_cap
         !where(abs(WVNY1).gt. 1e6)  WVNY1 =  -8.0
         !where(abs(WVNY2).gt. 1e6)  WVNY2 =  -8.0
 
-            
-          !PRN2 = 10000.0
-          !PRN1 = 10000.0
-          !WVNX2 =  8.0
-          !WVNX1 =  8.0
-          !WVNY2 = -8.0
-          !WVNY1 = -8.0       
-            
-    
+        !PRN2 = 10000.0
+        !PRN1 = 10000.0
+        !WVNX2 =  8.0
+        !WVNX1 =  8.0
+        !WVNY2 = -8.0
+        !WVNY1 = -8.0
+
         !where(dataPtr_pmsl .gt. 1e20)  dataPtr_pmsl =  10e4
         !where(dataPtr_pmsl .lt. 8e4 )  dataPtr_pmsl =  10e4        
         
@@ -1420,8 +1456,6 @@ module adc_cap
         !print *, info
         !stop
     endif
-
-
    surge_forcing= .true.
    do num = 1,fldsFrAdc_num
       if (fldsFrAdc(num)%shortname == 'zeta') surge_forcing = surge_forcing .and. fldsFrAdc(num)%connected
@@ -1443,59 +1477,66 @@ module adc_cap
     !-------------------------------------------
 
 
-    IF (surge_forcing) THEN
-      !------------------------------------------------------------
-      ! Exported fields from ADCIRC: pack and send exported fields
-      !------------------------------------------------------------
-      !--- (FIELD 1): PACK and send zeta
-      ALLOCATE(dataPtr_zeta(mdataOut%NumOwnedNd))
+    if (surge_forcing) then
+      !-----------------------------------------
+      !   EXPORT
+      !-----------------------------------------
+      !pack and send exported fields
+      !allocate (tmp(mdataOut%NumOwnedNd))
 
-      CALL State_GetFldPtr_(ST = exportState, fldName = 'zeta', fldPtr = dataPtr_zeta, &
-                            rc = rc, dump = .FALSE., timeStr = timeStr)
-      IF (ESMF_LogFoundError(rcToCheck = rc, msg = ESMF_LOGERR_PASSTHRU, &
-          line = __LINE__,  &
-          file = __FILE__)) &
-        RETURN  ! bail out
+      ! >>>>> PACK and send ZETA
+      call State_getFldPtr_(ST=exportState,fldname='zeta',fldptr=dataPtr_zeta, &
+        rc=rc,dump=.true.,timeStr=timeStr)
+      !call State_getFldPtr(ST=exportState,fldname='zeta',fldptr=dataPtr_zeta, &
+      !  rc=rc)
 
-      ! Fill only owned nodes for dataPtr_zeta vector
-      DO i1 = 1, mdataOut%NumOwnedNd, 1
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+
+      !fill only owned nodes for tmp vector
+      do i1 = 1, mdataOut%NumOwnedNd, 1
+          !tmp(i1) = ETA2(mdataOut%owned_to_present_nodes(i1))
         dataPtr_zeta(i1) = ETA2(mdataOut%owned_to_present_nodes(i1))
-      END DO
+      end do
+      !assign to field
+      !dataPtr_zeta = tmp
+      !----------------------------------------
+      ! >>>>> PACK and send VELX
+      call State_getFldPtr(ST=exportState,fldname='velx',fldptr=dataPtr_velx,rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
 
-      !--- (FIELD 2): PACK and send velx
-      ALLOCATE(dataPtr_velx(mdataOut%NumOwnedNd))
+      !fill only owned nodes for tmp vector
+      do i1 = 1, mdataOut%NumOwnedNd, 1
+          !tmp(i1) = UU2(mdataOut%owned_to_present_nodes(i1))
+         dataPtr_velx(i1) = UU2(mdataOut%owned_to_present_nodes(i1))
+      end do
+      !assign to field
+      !dataPtr_velx = tmp
+      !----------------------------------------
+      ! >>>>> PACK and send VELY
+      call State_getFldPtr(ST=exportState,fldname='vely',fldptr=dataPtr_vely,rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
 
-      CALL State_GetFldPtr_(ST = exportState, fldName = 'velx', fldPtr = dataPtr_velx, &
-                            rc = rc, dump = .FALSE., timeStr = timeStr)
-      IF (ESMF_LogFoundError(rcToCheck = rc, msg = ESMF_LOGERR_PASSTHRU, &
-          line = __LINE__,  &
-          file = __FILE__)) &
-        RETURN  ! bail out
-
-      ! Fill only owned nodes for dataPtr_velx vector
-      DO i1 = 1, mdataOut%NumOwnedNd, 1
-        dataPtr_velx(i1) = UU2(mdataOut%owned_to_present_nodes(i1))
-      END DO
-
-      !--- (FIELD 3): PACK and send velx
-      ALLOCATE(dataPtr_vely(mdataOut%NumOwnedNd))
-
-      CALL State_GetFldPtr_(ST = exportState, fldName = 'vely', fldPtr = dataPtr_vely, &
-                            rc = rc, dump = .FALSE., timeStr = timeStr)
-      IF (ESMF_LogFoundError(rcToCheck = rc, msg = ESMF_LOGERR_PASSTHRU, &
-          line = __LINE__,  &
-          file = __FILE__)) &
-        RETURN  ! bail out
-
-      ! Fill only owned nodes for dataPtr_vely vector
-      DO i1 = 1, mdataOut%NumOwnedNd, 1
+      !fill only owned nodes for tmp vector
+      do i1 = 1, mdataOut%NumOwnedNd, 1
+          !tmp(i1) = VV2(mdataOut%owned_to_present_nodes(i1))
         dataPtr_vely(i1) = VV2(mdataOut%owned_to_present_nodes(i1))
-      END DO
-    ELSE
+      end do
+      !assign to field
+      !dataPtr_vely = tmp
+    else
       write(info,*) subname,' --- no surge forcing for wave. 1way coupled WW3 -> ADC  ---'
       call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
       !print *, info
-    END IF
+    endif
 
     !----------------------------------------
 !
