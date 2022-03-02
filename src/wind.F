@@ -1404,10 +1404,10 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
                Cicenow = 100d0*(CICE1(I) + 
      &                          CTRATIO*(CICE2(I)-CICE1(I)))
                WDragCo = WindIceDrag(WDragCo,Cicenow)
-            elseif (NCICE.ne.0.and.NCICE.ne.13) THEN
-               WDragCo = WindIceDrag(WDragCo,ciceout(i))
 C GML 20200803
                ciceout(i) = Cicenow
+            elseif (NCICE.ne.0.and.NCICE.ne.13) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
             endif
             ! WJP: added varying sea surface density
             if (abs(IDEN).ge.5) then
