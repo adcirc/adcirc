@@ -1231,6 +1231,87 @@ C---------------------------------------------------------------------
       END SUBROUTINE ALLNODES
 C---------------------------------------------------------------------
 
+!---------------------------------------------------------------------
+      subroutine mapToSubdomainRealMPI(np_global, np_local, local_array, mapping, global_array)
+!---------------------------------------------------------------------
+! Mapping to a subdomain for parallel code to avoid all processors
+! reading the same file at the same time
+!---------------------------------------------------------------------
+        use sizes,only:sz
+        implicit none
+        real(sz),intent(in)  :: global_array(:)
+        integer,intent(in)   :: mapping(:) 
+        integer,intent(in)   :: np_global
+        integer,intent(in)   :: np_local
+        real(sz)             :: global_array_local(np_global)
+        real(sz),intent(out) :: local_array(:)
+        integer              :: sd_node_number
+        integer              :: ierr
+
+        call setMessageSource("mapToSubdomainRealMPI")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG, "Enter.")
+#endif        
+
+        if(myproc.eq.0)then
+            global_array_local(1:np_global) = global_array(1:np_global)
+        endif
+
+        call mpi_bcast(global_array_local,np_global,realtype,0,GROUP_COMP,ierr)
+
+        do sd_node_number=1,np_local
+           local_array(sd_node_number) = global_array(abs(mapping(sd_node_number)))
+        end do
+
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG, "Return.")
+#endif        
+        call unsetMessageSource()
+
+!---------------------------------------------------------------------
+      end subroutine mapToSubdomainRealMPI
+!---------------------------------------------------------------------
+
+!---------------------------------------------------------------------
+      subroutine mapToSubdomainIntMPI(np_global, np_local, local_array, global_array, mapping)
+!---------------------------------------------------------------------
+! Mapping to a subdomain for parallel code to avoid all processors
+! reading the same file at the same time
+!---------------------------------------------------------------------
+        implicit none
+        integer,intent(in)  :: global_array(*)
+        integer,intent(in)  :: mapping(*) 
+        integer,intent(in)  :: np_global
+        integer,intent(in)  :: np_local
+        integer             :: global_array_local(np_global)
+        integer,intent(out) :: local_array(*)
+        integer             :: sd_node_number
+        integer             :: ierr
+
+        call setMessageSource("mapToSubdomainIntMPI")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG, "Enter.")
+#endif        
+
+        if(myproc.eq.0)then
+            global_array_local(1:np_global) = global_array(1:np_global)
+        endif
+
+        call mpi_bcast(global_array_local,np_global,mpi_integer,0,GROUP_COMP,ierr)
+
+        do sd_node_number=1,np_local
+           local_array(sd_node_number) = global_array(abs(mapping(sd_node_number)))
+        end do
+
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG, "Return.")
+#endif        
+        call unsetMessageSource()
+
+!---------------------------------------------------------------------
+      end subroutine mapToSubdomainIntMPI
+!---------------------------------------------------------------------
+
 C------------------------------------------------------------------------------
 C               S U B R O U T I N E   W E T D R Y S U M
 C------------------------------------------------------------------------------
