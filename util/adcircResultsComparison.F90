@@ -18,12 +18,14 @@
 !-----------------------------------------------------------------------
 
         MODULE adcircCompare_module
+#ifdef ADCNETCDF            
             USE NETCDF
-
+#endif           
             INTEGER,PARAMETER   :: nNetCDFVariables = 40
             CHARACTER(200),SAVE :: netcdf_types(nNetCDFVariables)
             CHARACTER(200),SAVE :: nc_longname(nNetCDFVariables)
             CHARACTER(200),SAVE :: nc_stdname(nNetCDFVariables)
+            
             REAL(8),PARAMETER   :: eps = EPSILON(1D0)
 
             PRIVATE nNetCDFVariables,netcdf_types,nc_longname,initializeNetcdf
@@ -72,13 +74,15 @@
             END FUNCTION getFreeUnit
            
             SUBROUTINE CHECK(stat,error,fatal)
-                USE NETCDF
                 IMPLICIT NONE
                 INTEGER,INTENT(IN)             :: stat
                 LOGICAL,INTENT(OUT),OPTIONAL   :: error
                 LOGICAL,INTENT(IN),OPTIONAL    :: fatal
                 LOGICAL                        :: fatal_local
                 INTEGER,ALLOCATABLE            :: Dmy(:)
+#ifndef ADCNETCDF                
+                STOP 1
+#else                
 
                 IF(.NOT.PRESENT(FATAL))THEN
                     FATAL_LOCAL = .TRUE.
@@ -104,9 +108,10 @@
                         IF(PRESENT(error))error = .FALSE.
                     ENDIF
                 ENDIF
+#endif                
             END SUBROUTINE CHECK
            
-
+           
             SUBROUTINE initializeNetcdf()
                 IMPLICIT NONE
 
@@ -248,7 +253,7 @@
                 INTEGER :: J
                 INTEGER :: NVAR
                 CHARACTER(200) :: NC_NAME
-
+#ifdef ADCNETCDF
                 CALL CHECK(NF90_INQUIRE(NCID,NVARIABLES=NVAR))
 
                 CALL initializeNetcdf()
@@ -267,12 +272,11 @@
                         CALL EXIT(1)
                     ENDIF
                 ENDDO
-
+#endif
             END SUBROUTINE findMyNetCDFVariable
 
 
             SUBROUTINE getNetCDFVarId(NCID,VARID1,VARID2,NCOLS,VarName1,VarName2)
-                USE netcdf
                 IMPLICIT NONE
                 INTEGER,INTENT(IN)  :: NCID
                 INTEGER,INTENT(OUT) :: VARID1
@@ -283,6 +287,7 @@
                 INTEGER             :: J
                 INTEGER             :: NVAR
                 CHARACTER(200)      :: NC_NAME
+#ifdef ADCNETCDF                
 
                 CALL CHECK(NF90_INQUIRE(NCID,NVARIABLES=NVAR))
 
@@ -312,6 +317,7 @@
                     ENDDO
                 ENDDO
                 CALL EXIT(1)
+#endif                
             END SUBROUTINE getNetCDFVarId
 
             SUBROUTINE showHelp()
@@ -421,7 +427,7 @@
 
                 !...Check the various output formats to determine 
                 !   the type of file that is specified
-
+#ifdef ADCNETCDF
                 !...Check 1: netcdf
                 IF(checkFormat_netcdf(filename))THEN
                     determineFileType = 3
@@ -433,7 +439,7 @@
                     determineFileType = 7
                     RETURN
                 ENDIF
-                
+#endif                
                 !...Check 3: full format ascii
                 IF(checkFormat_fullFormatAscii(filename))THEN
                     determineFileType = 1
@@ -451,6 +457,7 @@
 
             END FUNCTION determineFiletype
 
+#ifdef ADCNETCDF
             LOGICAL FUNCTION checkFormat_netcdf(filename)
                 IMPLICIT NONE
                 CHARACTER(*),INTENT(IN) :: filename
@@ -475,6 +482,7 @@
                 checkFormat_xdmf = .FALSE.
 
             END FUNCTION checkFormat_xdmf
+#endif            
 
             LOGICAL FUNCTION checkFormat_fullFormatAscii(filename)
                 IMPLICIT NONE
@@ -574,7 +582,7 @@
                 INTEGER                 :: dimid_time
                 INTEGER                 :: dimid_node
                 INTEGER                 :: ierr
-
+#ifdef ADCNETCDF
                 CALL CHECK(NF90_OPEN(TRIM(filename),NF90_NOWRITE,ncid))
                 CALL CHECK(NF90_INQ_DIMID(ncid,"time",dimid_time))
 
@@ -586,7 +594,7 @@
                 CALL CHECK(NF90_INQUIRE_DIMENSION(ncid,dimid_node,LEN=numnodes))
                 CALL FindMyNetCDFVariable(ncid)
                 CALL CHECK(NF90_CLOSE(ncid))
-
+#endif
                 RETURN
             END SUBROUTINE getMetadataNetCDF
 
@@ -603,7 +611,9 @@
                     READ(fileunit,*) header
                     READ(fileunit,*) header
                 ELSEIF(filetype.EQ.3)THEN
+#ifdef ADCNETCDF                    
                     CALL CHECK(NF90_OPEN(TRIM(filename),NF90_NOWRITE,fileunit))
+#endif                    
                 ELSE
                     fileunit = -9999
                 ENDIF
@@ -676,11 +686,12 @@
                 INTEGER,INTENT(IN)    :: varid1,varid2
                 INTEGER,INTENT(IN)    :: snap
                 REAL(8),INTENT(INOUT) :: nodaldata(:,:)
-
+#ifdef ADCNETCDF
                 CALL CHECK(NF90_GET_VAR(io_unit,varid1,nodaldata(:,1),START=(/1,snap/),COUNT=(/nnodes,1/)))
                 IF(nvalues.EQ.2)THEN
                     CALL CHECK(NF90_GET_VAR(io_unit,varid2,nodaldata(:,2),START=(/1,snap/),COUNT=(/nnodes,1/)))
                 ENDIF
+#endif                
                 
                 RETURN
             END SUBROUTINE readNextSnapNetCDF
