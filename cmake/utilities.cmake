@@ -9,10 +9,10 @@ if(BUILD_UTILITIES)
   add_executable(inflate util/inflate.F)
   add_executable(hstime util/hstime.F)
 
+  add_executable(adcircResultsComparison util/adcircResultsComparison.F90)
+  addCompilerFlags(adcircResultsComparison)
   if(NETCDF_WORKING)
-    add_executable(adcircResultsComparison util/adcircResultsComparison.F90)
-    addcompilerflags(adcircResultsComparison)
-    addnetcdf(adcircResultsComparison)
+      addNetCDF(adcircResultsComparison)
   endif(NETCDF_WORKING)
 
   addcompilerflags(adccmp)
