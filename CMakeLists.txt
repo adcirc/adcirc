@@ -64,8 +64,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/CMakeFiles)
 # ##############################################################################
 
 # ...Set the version string (used for libraries)
-set(ADCIRC_VERSION_MAJOR 56)
-set(ADCIRC_VERSION_MINOR 0)
+set(ADCIRC_VERSION_MAJOR 55)
+set(ADCIRC_VERSION_MINOR 1)
 set(ADCIRC_VERSION_PATCH 0)
 set(ADCIRC_VERSION_STRING
     ${ADCIRC_VERSION_MAJOR}.${ADCIRC_VERSION_MINOR}.${ADCIRC_VERSION_PATCH})
