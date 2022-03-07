@@ -186,7 +186,7 @@ C
          real(sz)          :: rampVal          ! ramping multiplier for this dataset
          real(sz)          :: max_extrap_dist  ! maximum distance for extrapolating values (meters)
          integer           :: numFiles         !total number of GFDL met Files to be read
-
+         ! input data from gfdl met files themselves
          integer           :: nh           ! number of grid points
          ! derived data
          logical           :: loaded       ! .true. if we have loaded the data from file
@@ -319,13 +319,13 @@ C.... convert background pressure from millibars to meters of water
       PRBCKGRND_MH2O = 100.0D0 * PRBCKGRND / rhoWat0g
       prn1 = PRBCKGRND_MH2O
       prn2 = PRBCKGRND_MH2O
-     
+
       ! dw
       wvnx1 = 0.0 ;
       wvny1 = 0.0 ;
       wvnx2 = 0.0 ;
       wvny2 = 0.0 ;
- 
+
       CALL checkWindDragType()
       CALL mapWindDragFunctionPointer()
 
@@ -1704,7 +1704,7 @@ C    kmd48.33bc - added in information for the sponge layer
               WVNX1(I)=WVNX2(I)
               WVNY1(I)=WVNY2(I)
               PRN1(I)=PRN2(I)
-            END DO 
+            END DO
          ENDIF
 C++ GML added 20210727 ncice=17
          if ((NCICE.ne. 0).and.
@@ -1723,7 +1723,7 @@ C++
          if (WTRatio .GT. 1.0) then
              WTRatio = 1.0
              print *, '[Warning:] WTRatio is .GE. 1.0 and Set to 1.0'
-         endif     
+         endif
 
          DO I=1,NP
             WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
@@ -1813,21 +1813,20 @@ Casey 180318: Added for NWS=13
 #endif
 
 
-      
       WSX2(:) = 0.d0
       WSY2(:) = 0.D0
       PR2(:) = PRBCKGRND_MH2O
 
       WSX1(:) = 0.d0 ;
       WSY1(:) = 0.d0 ;
-!      PR1(:) = PRBCKGRND_MH2O ! -- DW for 517  
+!      PR1(:) = PRBCKGRND_MH2O ! -- DW for 517
 !++ GML
       if (NCICE.ne. 0) then
       cice1(:) = 0.d0
       cice2(:) = 0.D0
       endif
-!++ 
- 
+!++
+
       IF(NWS.EQ.1) THEN
          OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
       ENDIF
@@ -1846,23 +1845,26 @@ C....                           to correspond with having only a global wind fil
 !         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
 
- 2222    CALL NWS3GET()
-         IF(IWYR.NE.IREFYR) THEN
-            IWTIMEP=IWTIME
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-            END DO
-            GOTO 2222
-         ENDIF
-         IF(WTIMED.LE.WREFTIM) THEN
-            IWTIMEP=IWTIME
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-            END DO
-            GOTO 2222
-         ENDIF
+         DO WHILE(.TRUE.)
+            CALL NWS3GET()
+            IF(IWYR.NE.IREFYR) THEN
+               IWTIMEP=IWTIME
+               DO I=1,NP
+                  WVNX1(I)=WVNX2(I)
+                  WVNY1(I)=WVNY2(I)
+               END DO
+               CYCLE
+            ENDIF
+            IF(WTIMED.LE.WREFTIM) THEN
+               IWTIMEP=IWTIME
+               DO I=1,NP
+                  WVNX1(I)=WVNX2(I)
+                  WVNY1(I)=WVNY2(I)
+               END DO
+               CYCLE
+            ENDIF
+            EXIT
+         ENDDO
          write(scratchMessage,'(a,i15)') 'FOUND WIND DATA AT TIME= ',IWTIMEP
          call allMessage(INFO,scratchMessage)
          write(scratchMessage,'(a,i15)') 'FOUND WIND DATA AT TIME= ',IWTIME
@@ -1904,10 +1906,17 @@ C....                           to correspond with having only a global wind fil
 
 C     jgf46.00 Added option to directly apply surface stress without any
 C     other correction factors.
+C     xyc52.30 corrected NWS=7 (wind stress input provided on a
+C     rectangular grid, same as NWS=6) 
       IF(ABS(NWS).EQ.7) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+C         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+C         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+C         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         CALL NWS7GET()
+         wvnx1 = wvnx2
+         wvny1 = wvny2
+         CALL NWS7GET()
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
       ENDIF
@@ -2129,6 +2138,7 @@ C----------------------------------------------------------------------
       integer :: i ! node loop counter
       integer :: j
       real(sz) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
+      integer :: TimeLoc_NM ! timeloc to the nearest minute
 
       call setMessageSource("hotStartMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -2144,7 +2154,7 @@ C......RESTART WIND AND PRESSURE INFORMATION
          WVNX1(:) = 0.d0 ;
          WVNY1(:) = 0.d0 ;
          WVNX2(:) = 0.d0 ;
-         WVNY2(:) = 0.d0 ;    
+         WVNY2(:) = 0.d0 ;
          PRN1(:)=PRBCKGRND_MH2O ;
          PRN2(:)=PRBCKGRND_MH2O ;
          WSX2(:) = 0.d0
@@ -2232,23 +2242,26 @@ C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
 C....                           to correspond with having only a global wind file.
 !         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
- 2223    CALL NWS3GET()
-         IF(IWYR.NE.IREFYR) THEN
-            IWTIMEP=IWTIME
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-            END DO
-            GOTO 2223
-         ENDIF
-         IF(WTIMED.LE.WREFTIM) THEN
-            IWTIMEP=IWTIME
-            DO I=1,NP
-               WVNX1(I)=WVNX2(I)
-               WVNY1(I)=WVNY2(I)
-            END DO
-            GOTO 2223
-         ENDIF
+         DO WHILE(.TRUE.)
+            CALL NWS3GET()
+            IF(IWYR.NE.IREFYR) THEN
+               IWTIMEP=IWTIME
+               DO I=1,NP
+                  WVNX1(I)=WVNX2(I)
+                  WVNY1(I)=WVNY2(I)
+               END DO
+               CYCLE
+            ENDIF
+            IF(WTIMED.LE.WREFTIM) THEN
+               IWTIMEP=IWTIME
+               DO I=1,NP
+                  WVNX1(I)=WVNX2(I)
+                  WVNY1(I)=WVNY2(I)
+               END DO
+               CYCLE
+            ENDIF
+            EXIT
+         ENDDO
          write(scratchMessage,'(a,f15.7)') 'FOUND WIND DATA AT TIME= ',IWTIMEP
          call allMessage(INFO,scratchMessage)
          write(scratchMessage,'(a,f15.7)') 'FOUND WIND DATA AT TIME= ',IWTIME
@@ -2939,8 +2952,9 @@ C     from NAM data
 !     WJP Feb27-2019: Added for NWS=14 for grib2
       IF (ABS(NWS).eq.14) THEN
          ! TimeLoc should be rounded down to nearest WTIMINC
-         WTIME1 = WTIMINC*floor(TimeLoc/WTIMINC)
-         WTIME2 = TimeLoc + WTIMINC
+         TimeLoc_NM = nint(TimeLoc/60d0) ! first round to nearest minute
+         WTIME1 = WTIMINC*floor(TimeLoc_NM*60d0/WTIMINC)
+         WTIME2 = WTIME1 + WTIMINC
          WTRATIO = (TimeLoc-WTIME1)/WTIMINC
          IF(NCICE.NE.0)THEN
              CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
@@ -2950,8 +2964,8 @@ C     from NAM data
          ! Initialising winds (pressure is already initialized)
          ! Get the first wind snap
          if (NCICE.eq.14) then
-            CICE_TIME1 = CICE_TIMINC*floor(TimeLoc/CICE_TIMINC)
-            CICE_TIME2 = TimeLoc + CICE_TIMINC
+            CICE_TIME1 = CICE_TIMINC*floor(TimeLoc_NM*60d0/CICE_TIMINC)
+            CICE_TIME2 = CICE_TIME1 + CICE_TIMINC
             CALL NWS14GET(WVNX1,WVNY1,PRN1,CICE1)
          else
             CALL NWS14GET(WVNX1,WVNY1,PRN1)
@@ -2961,7 +2975,7 @@ C     from NAM data
             CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
             CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,PRBCKGRND,HasData)
             WTIME1_12 = WTIME1
-            WTIME2_12 = TimeLoc + WTIMINC_12
+            WTIME2_12 = WTIME1_12 + WTIMINC_12
             WTRATIO_12 = (TimeLoc-WTIME1_12)/WTIMINC_12
             WTRATIO_14 = WTRATIO
          endif
@@ -3196,7 +3210,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
          if (WTRatio .GT. 1.0) then
              WTRatio = 1.0
              print *, '[Warning:] WTRatio is .GE. 1.0 and Set to 1.0'
-         endif     
+         endif
 
          DO I=1,NP
             WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
@@ -3240,6 +3254,7 @@ C  tcm v49.16 20100617
           WVNX1 = WVNX2
           WVNY1 = WVNY2
        endif
+
 C      DW/WJP: rotate wind stresses if coordinate transform
        IF ( IFSPROTS .eq. 1 ) THEN
           UVECTMP(1:NP) = WSX2(1:NP); 
@@ -3405,24 +3420,27 @@ C
         WVNY2(I)=0.d0
         PRN2(I)=101300.d0/RHOWATG
       END DO
- 170  READ(22,'(A80)') PBLJAGF
-      IF(PBLJAGF(2:2).EQ.'#') GOTO 170
- 171  READ(PBLJAGF,'(I8,5E13.5)') NHG,WVNX2(NHG),WVNY2(NHG),
-     &                            PRN2(NHG)
+      DO WHILE(.TRUE.)
+         READ(22,'(A80)') PBLJAGF
+         IF(PBLJAGF(2:2).NE.'#') EXIT
+      ENDDO
+      DO WHILE(.TRUE.)
+ 171     READ(PBLJAGF,'(I8,5E13.5)') NHG,WVNX2(NHG),WVNY2(NHG),
+     &                               PRN2(NHG)
 C
-C     jgf46.02 From now on, wind files must contain data that are
-C     appropriate for the time increment listed within the
-C     file. Therefore, the following two lines were commented out.
-C     WVNX(NHG)=WVNX(NHG)*1.04d0*0.5144d0 !CONVERT 30-MIN WINDS IN
-C     WVNY(NHG)=WVNY(NHG)*1.04d0*0.5144d0 !KNOTS TO 10-MIN WIND IN M/S
-C     jgf46.02 Added the following two lines.
-      WVNX2(NHG)=WVNX2(NHG)*0.5144d0 !CONVERT KNOTS TO  M/S
-      WVNY2(NHG)=WVNY2(NHG)*0.5144d0
-      PRN2(NHG)=100.d0*PRN2(NHG)/RHOWATG !CONVERT MILLIBARS TO M OF WATER
-      IF(PRN2(NHG).EQ.0.) PRN2(NHG)=101300.d0/RHOWATG                       !RAL0315+ OK
-      READ(22,'(A80)') PBLJAGF
-      IF(PBLJAGF(2:2).NE.'#') GOTO 171
-
+C        jgf46.02 From now on, wind files must contain data that are
+C        appropriate for the time increment listed within the
+C        file. Therefore, the following two lines were commented out.
+C        WVNX(NHG)=WVNX(NHG)*1.04d0*0.5144d0 !CONVERT 30-MIN WINDS IN
+C        WVNY(NHG)=WVNY(NHG)*1.04d0*0.5144d0 !KNOTS TO 10-MIN WIND IN M/S
+C        jgf46.02 Added the following two lines.
+         WVNX2(NHG)=WVNX2(NHG)*0.5144d0 !CONVERT KNOTS TO  M/S
+         WVNY2(NHG)=WVNY2(NHG)*0.5144d0
+         PRN2(NHG)=100.d0*PRN2(NHG)/RHOWATG !CONVERT MILLIBARS TO M OF WATER
+         IF(PRN2(NHG).EQ.0.) PRN2(NHG)=101300.d0/RHOWATG                       !RAL0315+ OK
+         READ(22,'(A80)') PBLJAGF
+         IF(PBLJAGF(2:2).EQ.'#') EXIT
+      ENDDO
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -3853,30 +3871,30 @@ C....... Check that this value is reasonable.
             call windTerminate()
          endif
 
-5        CONTINUE
-         IF((COLAT.GE.GCLAT(LAT)).AND.(COLAT.LE.GCLAT(LATP1))) GO TO 9
-         IF(COLAT.LT.GCLAT(LAT)) THEN
-            LATP1=LAT
-            LAT=LAT-1
-            IF(LAT.LE.0) THEN
-               LAT=1
-               LATP1=2
-               GOTO 9
+         DO WHILE(.TRUE.)
+            IF((COLAT.GE.GCLAT(LAT)).AND.(COLAT.LE.GCLAT(LATP1))) EXIT
+            IF(COLAT.LT.GCLAT(LAT)) THEN
+               LATP1=LAT
+               LAT=LAT-1
+               IF(LAT.LE.0) THEN
+                  LAT=1
+                  LATP1=2
+                  EXIT
+               ENDIF
+               CYCLE
             ENDIF
-            GOTO 5
-         ENDIF
-         IF(COLAT.GT.GCLAT(LATP1)) THEN
-            LAT=LAT+1
-            LATP1=LAT+1
-            IF(LAT.GE.LATB ) THEN
-               LAT=LATB-1
-               LATP1=LATB
-               GOTO 9
+            IF(COLAT.GT.GCLAT(LATP1)) THEN
+               LAT=LAT+1
+               LATP1=LAT+1
+               IF(LAT.GE.LATB ) THEN
+                  LAT=LATB-1
+                  LATP1=LATB
+                  EXIT
+               ENDIF
+               CYCLE
             ENDIF
-            GOTO 5
-         ENDIF
-
- 9       CONTINUE
+            EXIT
+         ENDDO
          DDLAT=GCLAT(LATP1)-GCLAT(LAT)
          XLAT=GCLAT(LAT)
          DFLAT1=(COLAT-XLAT)/DDLAT
@@ -4092,17 +4110,20 @@ C
       DO 1000 K=1,LGGHAF
          ITER=0
          DRAD=DRADZ
- 1       CALL POLY(L2,RAD,P2)
- 2       P1 =P2
-         ITER=ITER+1
-         RAD=RAD+DRAD
-         CALL POLY(L2,RAD,P2)
-         IF(SIGN(SI,P1).EQ.SIGN(SI,P2)) GO TO 2
-         IF(DRAD.LT.EPS)GO TO 3
-         RAD=RAD-DRAD
-         DRAD = DRAD * 0.25d0
-         GO TO 1
- 3       CONTINUE
+         DO WHILE(.TRUE.)
+            CALL POLY(L2,RAD,P2)
+            DO WHILE(.TRUE.)
+               P1 =P2
+               ITER=ITER+1
+               RAD=RAD+DRAD
+               CALL POLY(L2,RAD,P2)
+               IF(SIGN(SI,P1).EQ.SIGN(SI,P2)) CYCLE
+               EXIT
+            ENDDO
+            IF(DRAD.LT.EPS) EXIT
+            RAD=RAD-DRAD
+            DRAD = DRAD * 0.25d0
+         ENDDO
          COLRAD(K)=RAD
          PHI = RAD * 180.d0 / PI
          CALL POLY(K1,RAD,P1)
@@ -4983,7 +5004,8 @@ C     The subroutine only works for ICS=2 (spherical coordinates)
       ENDIF
 C
 C     Get data for this time step.
-      CALL GetHollandStormData(lat,lon,cpress,spd,rrp,rmw,tvx,tvy,TIMELOC)
+      CALL GetHollandStormData(lat,lon,cpress,spd,rrp,rmw,
+     &                         tvx,tvy,TIMELOC)
       !
       ! @jasonfleming: If this is a "CALM" period, set winds to zero
       ! velocity and pressure equal to the background pressure and return.
@@ -5066,18 +5088,16 @@ C     Calculate wind velocity and pressure at each node.
          DX(I)=(XCOOR(I)-lon)*DEG2RAD
          DY(I)=(YCOOR(I)-lat)*DEG2RAD
          THETA(I)=ATAN2(DY(I),DX(I))
-C   RJW v48.45
-C     compute the distances based on haversine formula for distance along a sphere
-        rad(i) = sphericalDistance(DX(I),DY(I),lat, ycoor(i))
-C       Rad(i)=Rearth*(2.0d0*ASIN(sqrt(sin(DY(I)/2.0d0)**2.0d0+
-C     & cos(lat*DEG2RAD)*cos(YCOOR(i)*DEG2RAD)*sin(DX(I)/2.0d0)**2.0d0)))
-C compute coriolis
-        coriolis = 2.0d0 * omega * sin(YCOOR(I)*DEG2RAD)
-
-        PRESS(I)=(cpress+(centralPressureDeficit)*
+C     RJW v48.45
+C     Compute the distances based on haversine formula for distance along a sphere
+         rad(i) = sphericalDistance(DX(I),DY(I),lat, ycoor(i))
+C     Compute coriolis
+         coriolis = 2.0d0 * omega * sin(YCOOR(I)*DEG2RAD)
+C     Compute pressure field
+         PRESS(I)=(cpress+(centralPressureDeficit)*
      &        EXP(-(RMW*1000.d0/RAD(I))**B)) / (RHOWAT0*G)
-C
-C       WJP: added absolute around CORIOLIS for Southern Hempisphere
+C     Compute velocity field with absolute around
+C     CORIOLIS for the Southern Hempisphere
          V_r(I) = sqrt(
      &        (RMW*1000.d0/RAD(I))**B *
      &        EXP(1.d0-(RMW*1000.d0/RAD(I))**B)*spd**2.d0
@@ -5361,14 +5381,14 @@ C     Convert units.
             Spd(i) = Spd(i) * 0.51444444d0 ! convert kts to m/s
 C
 #ifdef DEBUG_HOLLAND
-            WRITE(scratchMessage,1244) CastTime(i),Lat(i),Lon(i),
+            WRITE(16,1244) CastTime(i),Lat(i),Lon(i),
      &           Spd(i),CPress(i),RRP(i),RMW(i),WindRefTime
-            call logMessage(DEBUG,scratchMessage)
             if ( i.gt.1 ) then
                write(scratchMessage,2355) FcstInc(i-1)
                call logMessage(DEBUG, scratchMessage)
             endif
- 1244       FORMAT('CastTime ',e16.8,' Lat ',f6.2,' Lon ',f6.2,
+ 1244       FORMAT('DEBUG HOLLAND: CastTime ',
+     &           e16.8,' Lat ',f6.2,' Lon ',f6.2,
      &           /,'Spd ',f8.2,' CPress ',f10.2,' RRP ',f12.2,
      &           ' RMW ',f8.2, ' WindRefTime ',e16.8)
  2355       format('FcstInc(i-1) ',e16.8)
@@ -5409,7 +5429,8 @@ C     Determine the correspondence between the current simulation time and
 C     the fort.22 file.
          i=2
          DO
-            IF (TIMELOC.ge.CastTime(i-1).and.TIMELOC.lt.CastTime(i)) THEN
+            IF (ceiling(TIMELOC).ge.CastTime(i-1).and.
+     &          floor(TIMELOC).lt.CastTime(i)) THEN
                EXIT
             ELSE
                i=i+1
@@ -5446,8 +5467,8 @@ C     If time exceeds the next hindcast/nowcast/forecast time, increment the
 C     array counter.
       IF (TIMELOC.gt.CastTime(i)) THEN
          i=i+1
-C         jgf51.14: Check to see that we haven't gone off the end of
-C         meteorological data.
+C        jgf51.14: Check to see that we haven't gone off the end of
+C        meteorological data.
           IF (i.gt.pl) THEN
              call allMessage(ERROR,'The simulation time has extended '//
      &          'beyond the end of the meteorological dataset.')
@@ -5805,7 +5826,7 @@ C
             xcoor(i) = slam(i) * rad2deg
             ycoor(i) = sfea(i) * rad2deg
          END DO
-         timeOffset=TIMELOC
+         timeOffset = nint(TIMELOC/60d0)*60d0 ! round to nearest minute
       END IF   ! end of first Time data allocations and such
       !
       ! the mesh changes at each time step if we are writing out
@@ -5964,9 +5985,9 @@ C
                cycle_num(icyc) = cycle_num1(ient)
                HollB(icyc) = HollB1(ient)
 
-              ! switch sin and cos b/c these are compass directions
-              uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
-              vTrans(icyc)=cos(dir1(ient)*deg2rad)*speed1(ient)
+               ! switch sin and cos b/c these are compass directions
+               uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
+               vTrans(icyc)=cos(dir1(ient)*deg2rad)*speed1(ient)
 
                CycleTime(icyc) =  iFcstInc(icyc) * 3600.d0 + timeOffset
 
@@ -6384,7 +6405,8 @@ C***********************************************************************
             xcoor(i) = slam(i) * rad2deg
             ycoor(i) = sfea(i) * rad2deg
          END DO
-         timeOffset=TIMELOC
+         
+         timeOffset = nint(TIMELOC/60d0)*60d0 ! round initial time to nearest minute
          rndaySeconds = RNDAY * 86400.d0
 
       END IF   ! end of first Time data allocations and such
@@ -6528,16 +6550,16 @@ C***********************************************************************
      &    (HollBs1(ient,i),i=1,4),(VmaxesBL1(ient,i),i=1,4)
 
             if ( cycle_num1(ient) == cycle_num1(ient-1)) then
-                isot=isot+1 ! same icyc, next isotach
-                if (isot.gt.4) then
-            write(scratchMessage,'(a,a,i0,a)')
-     &      'The GAHM fort.22 input file has more than 4 isotachs ',
-     &      ' in cycle ',cycle_num1(ient),'.'
-                   call allMessage(ERROR,scratchMessage)
-                   call windTerminate()
-                endif
+               isot=isot+1 ! same icyc, next isotach
+               if (isot.gt.4) then
+                  write(scratchMessage,'(a,a,i0,a)')
+     &             'The GAHM fort.22 input file has more than 4 ',
+     &             'isotachs in cycle ',cycle_num1(ient),'.'
+                  call allMessage(ERROR,scratchMessage)
+                  call windTerminate()
+               endif
             else
-                isot=1 ! initialize isotach #
+               isot=1 ! initialize isotach #
                IF ( iFcstInc1(ient) == 0 .AND. iFcstInc(icyc) == 0) then
                   icyc = icyc
                ELSE
@@ -6565,9 +6587,9 @@ C***********************************************************************
                cycle_num(icyc) = cycle_num1(ient)
                HollB(icyc) = HollB1(ient)
 
-              ! switch sin and cos b/c these are compass directions
-              uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
-              vTrans(icyc)=cos(dir1(ient)*deg2rad)*speed1(ient)
+               ! switch sin and cos b/c these are compass directions
+               uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
+               vTrans(icyc)=cos(dir1(ient)*deg2rad)*speed1(ient)
 
                CycleTime(icyc) =  iFcstInc(icyc) * 3600.d0 + timeOffset
 
@@ -6604,6 +6626,9 @@ C***********************************************************************
          !
          ! @jasonfleming: If there isn't enough data in the fort.22 to
          ! cover the whole run, bomb out immediately.
+         write(scratchMessage,*) 'The last cycle in the fort.22 '//
+     &      'file is at ', cycleTime(num_cycles), ' [sec]'
+         CALL logMessage(INFO,scratchMessage)
          if (cycleTime(num_cycles).lt.rndaySeconds) then
             call allMessage(ERROR,"There aren't enough data in the "//
      &      'fort.22 file to cover the entire run time.')
@@ -8229,26 +8254,29 @@ C
       rsny(1:np) = 0.d0
 C
       lineNum = lineNum + 1
- 170  read(23,'(a80)',end=500,err=600,iostat=errorio) pbljagf
-      if (pbljagf(1:1).eq.'#') then
-         call allMessage(ERROR,'Found "#" in column 1 of fort.23.')
-         call windTerminate()
-      endif
-      if(pbljagf(2:2).eq.'#') goto 170
-
+      do while(.true.)
+         read(23,'(a80)',end=500,err=600,iostat=errorio) pbljagf
+         if (pbljagf(1:1).eq.'#') then
+            call allMessage(ERROR,'Found "#" in column 1 of fort.23.')
+            call windTerminate()
+         endif
+         if(pbljagf(2:2).ne.'#') exit
+      enddo
       lineNum = lineNum + 1
- 171  read(pbljagf,'(i8,5e13.5)',end=500,err=600,iostat=errorio)
-     &      nhg, rsnxRaw, rsnyRaw
-      rsnx(nhg) = rsnxRaw
-      rsny(nhg) = rsnyRaw
-      lineNum = lineNum + 1
-      read(23,'(a80)') pbljagf
-      if (pbljagf(1:1).eq.'#') then
-         call allMessage(ERROR,'Found "#" in column 1 of fort.23; '//
-     &      ' this character should only appear in column 2.')
-         call windTerminate()
-      endif
-      if(pbljagf(2:2).ne.'#') goto 171
+      do while(.true.)
+         read(pbljagf,'(i8,5e13.5)',end=500,err=600,iostat=errorio)
+     &         nhg, rsnxRaw, rsnyRaw
+         rsnx(nhg) = rsnxRaw
+         rsny(nhg) = rsnyRaw
+         lineNum = lineNum + 1
+         read(23,'(a80)') pbljagf
+         if (pbljagf(1:1).eq.'#') then
+            call allMessage(ERROR,'Found "#" in column 1 of fort.23; '//
+     &         ' this character should only appear in column 2.')
+            call windTerminate()
+         endif
+         if(pbljagf(2:2).eq.'#') exit
+      enddo
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -8874,14 +8902,18 @@ C----------------------------------------------------------------------
       END SUBROUTINE NWS14INIT
 C----------------------------------------------------------------------
       SUBROUTINE NWS14GET(WVNX2,WVNY2,PRN2,CICE2)
-      use mesh, only: NP, SLAM, SFEA, bl_interp2
+      use mesh, only: NP, SLAM, SFEA, bl_interp, bl_interp2
+      use kdtree2_module, only: kdtree2, kdtree2_create
       implicit none
 
       real(sz),intent(out) :: PRN2(NP), WVNX2(NP), WVNY2(NP)
       real(sz),intent(out),optional :: CICE2(NP)
-      integer :: i, ii, nxp, nyp, indt(4), NTkeep
+      integer :: i, ii, nxp, nyp, indt(4), NTkeep, xi, yi, cc
       real,allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice, lat, lon
-      real(sz) :: xx, yy, wt(4) 
+      real(sz), allocatable ::  lonv(:), latv(:), XY(:,:)
+      real(sz) :: xx, yy, wt(4)
+      logical :: regular_grid
+      type(kdtree2), pointer :: tree
 
       ! Show the date in str_date format
       call logMessage(ECHO,'CurDT strng: '//
@@ -8918,18 +8950,60 @@ C----------------------------------------------------------------------
                call READNWS14(Wfile,Winv,Uvar,lon,lat)
             endif
             nxp = ubound(lon,1); nyp = ubound(lat,2)
+            ! Check if structured regular..
+            if (abs(lon(1,1) - lon(1,nyp)) < 1d-6) then
+               regular_grid = .true.
+               allocate(lonv(nxp),latv(nyp))
+               lonv = lon(:,1)
+               latv = lat(1,:)
+            else
+               regular_grid = .false.
+               ! Convert point matrices to 2 X (NXP*NYP) point vector
+               allocate(XY(2,nxp*nyp))
+               cc = 0
+               do xi = 1,nxp
+                  do yi = 1,nyp
+                     cc = cc + 1
+                     XY(1,cc) = lon(xi,yi)
+                     XY(2,cc) = lat(xi,yi)
+                  enddo
+               enddo
+               ! Create the search tree
+               tree => kdtree2_create(XY)
+            endif
+            ! Loop over each node and interpolate
             do i = 1,np
                xx = rad2deg*slam(i)
                ! Convert our numbers if grids are 0 to 360
                if (maxval(lon).gt.180d0.and.xx < 0d0) xx = xx + 360d0
                yy = rad2deg*sfea(i)
-               call bl_interp2(nxp,nyp,lon,lat,xx,yy,indt,wt)
+               if (regular_grid) then
+                  call bl_interp(nxp,lonv,nyp,latv,xx,yy,indt,wt)
+               else
+                  call bl_interp2(nxp,nyp,lon,lat,xx,yy,indt,wt,tree)
+               endif
                indp(ii,:,i) = indt
-               weightsp(ii,:,i) = wt 
+               weightsp(ii,:,i) = wt
+#ifdef DEBUG_NWS14
+               if (i.gt.1) cycle 
+               write(16,*) 'NWS=14 Interpolating check: xx',xx,'yy',yy
+               write(16,*) 'Lon',lon(indt(1),indt(2)),
+     &                           lon(indt(3),indt(2)),
+     &                           lon(indt(1),indt(4)),
+     &                           lon(indt(3),indt(4))
+               write(16,*) 'Lat',lat(indt(1),indt(2)),
+     &                           lat(indt(3),indt(2)),
+     &                           lat(indt(1),indt(4)),
+     &                           lat(indt(3),indt(4))
+               write(16,*) 'Weights',wt
+               write(16,*) 'Indices',indt
+#endif
             enddo
-            deallocate(lon,lat)
-!            srtI(ii,:) = [minval(indp(ii,1,:)),minval(indp(ii,2,:))]
-!            endI(ii,:) = [maxval(indp(ii,3,:)),maxval(indp(ii,4,:))]
+            if (regular_grid) then
+               deallocate(lon,lat,latv,lonv)
+            else
+               deallocate(lon,lat,XY)
+            endif
          enddo
       endif
       
@@ -8973,6 +9047,12 @@ C----------------------------------------------------------------------
      &              V10(indp(ub,1,i),indp(ub,4,i))*weightsp(ub,3,i)    +
      &              V10(indp(ub,3,i),indp(ub,4,i))*weightsp(ub,4,i)
          endif
+#ifdef DEBUG_NWS14
+         if (i.gt.1) cycle 
+         write(16,*) 'NWS=14 Values check for i = 1'
+         write(16,*) 'Pressure: ',PRN2(i)
+         write(16,*) 'Winds, U10: ',WVNX2(i),'V10: ',WVNY2(i)
+#endif
       enddo 
       deallocate(Pmsl,U10,V10)
       
@@ -9077,6 +9157,7 @@ C----------------------------------------------------------------------
             call Check_err(nf90_inquire_variable(NC_ID,Lat_ID,
      &                     ndims=ndims))
             call Check_err(NF90_INQ_VARID(NC_ID,Lonvar,Lon_ID))
+            write(16,*) 'Lon/Lat dimensions = ',ndims
             if (ndims.eq.3) then
                call Check_err(NF90_GET_VAR(NC_ID,Lat_ID,data22,
      &                        start=[1, 1, NT],count=[NX, NY, 1]))

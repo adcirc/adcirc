@@ -8251,37 +8251,44 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 
-C-----------------------------------------------------------------------
-C                    S U B R O U T I N E
-C                 R E A D   A N D   M A P   T O
-C         S U B D O M A I N   M I N   M A X   N E T C D F
-C-----------------------------------------------------------------------
-C     jgf52.08.03: Read in the min/max values from a previous run
-C     at hotstart. In order to read min/max data from netCDF, we also
-C     have to be writing that min/max data in netCDF. TODO: relax this
-C     limitation.
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!                    S U B R O U T I N E
+!                 R E A D   A N D   M A P   T O
+!         S U B D O M A I N   M I N   M A X   N E T C D F
+!-----------------------------------------------------------------------
+!     jgf52.08.03: Read in the min/max values from a previous run
+!     at hotstart. In order to read min/max data from netCDF, we also
+!     have to be writing that min/max data in netCDF. TODO: relax this
+!     limitation.
+!-----------------------------------------------------------------------
       subroutine readAndMapToSubdomainMaxMinNetCDF(descript, timeloc)
-      use sizes, only : mnproc
-      use global, only : OutputDataDescript_t, allMessage, logMessage, nfover
+      use sizes, only : mnproc,myproc
+      use mesh, only: np
+      use global, only : OutputDataDescript_t, allMessage, logMessage, nfover,np_g
+#ifdef CMPI
+      use messenger, only: mapToSubdomainRealMPI,mapToSubdomainIntMPI,msg_lbcast
+#endif      
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
       real(8), intent(in) :: timeloc ! adcirc time in seconds since cold start
-C
+
       type(nodalData), pointer :: dat
       integer :: i,j
       integer :: counti(1), starti(1)
       integer :: kount(2), start(2)
       integer :: iret ! success or failure of the netcdf call
       logical :: timestampsFound   !.true. if file contains time of occurrence dataset
+      logical :: no_early_return
+      logical :: ldmy(1)
       character(len=1024) :: vn    ! min/max variable name in netcdf file
       character(len=1025) :: tvn   ! time of min/max occurrence variable name in netcdf
+      real(sz),allocatable :: tmp0(:),tmp1(:)
 
       call setMessageSource("readAndMapToSubdomainMaxMinNetCDF")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-C
+
       select case(descript % lun)
       case(311) ! maxele
          dat => EtaMax
@@ -8321,127 +8328,157 @@ C
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Return.")
 #endif
+         no_early_return = .false.
+         call communicateMapToSubdomainMaxMinNetcdfStatus(no_early_return)
          call unsetMessageSource()
          RETURN ! RETURN RETURN
       end select
 
-      dat%myFile%filename = trim(descript % file_name)//'.nc'
-      call logMessage(INFO,'Opening file "'
-     &               //trim(dat%myFile%filename)//'" for reading.')
-C
-C     Open fulldomain file
-      inquire(file=dat%myfile%filename,exist=dat%myfile%filefound)
-      if (dat%myFile%fileFound.eqv..false.) then
-         call allMessage(INFO,'The file "'//trim(dat%myFile%FILENAME)//
-     &       '" was not found.')
+
+      if(myproc.eq.0)then
+        dat%myFile%filename = trim(descript % file_name)//'.nc'
+        call logMessage(INFO,'Opening file "'
+     &                 //trim(dat%myFile%filename)//'" for reading.')
+ 
+!       Open fulldomain file
+        inquire(file=dat%myfile%filename,exist=dat%myfile%filefound)
+        if (dat%myFile%fileFound.eqv..false.) then
+           call allMessage(INFO,'The file "'//trim(dat%myFile%FILENAME)//
+     &         '" was not found.')
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG,"Return.")
-#endif
-         call unsetMessageSource()
-         RETURN ! RETURN RETURN
+           call allMessage(DEBUG,"Return.")
+#endif  
+           no_early_return = .false.
+           call communicateMapToSubdomainMaxMinNetcdfStatus(no_early_return)
+           call unsetMessageSource()
+           RETURN ! RETURN RETURN
+        else
+           ! the file was found, let's open it
+           iret = nf90_open(dat%myFile%FILENAME, NF90_NOWRITE, dat%ncid)
+           call check_err(iret)
+        endif
+ 
+!       nodes and elements
+        dat%myMesh => adcircMesh
+
+!       Inquire variables
+        call getDimensions(dat%ncid, dat%myTime, dat%myMesh, dat%myFile)
+        !
+        ! jgf52.08.21: If the netcdf min/max file contains no time records,
+        ! it was just created by adcprep, and there are no data to load.
+        if ( dat%myFile%record_counter.eq.0 ) then
+           call allMessage(INFO,'The file '//trim(dat%myFile%filename)//
+     &        'contains no data, '//
+     &        'so the min/max record will be started anew.')
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+           call allMessage(DEBUG,"Return.")
+#endif  
+           call unsetMessageSource()
+           !
+           ! now close the netcdf file
+           iret = nf90_close(dat%ncid)
+           CALL check_err(iret)
+           no_early_return = .false.
+           call communicateMapToSubdomainMaxMinNetcdfStatus(no_early_return)
+           return ! EARLY RETURN
+        else
+           write(scratchMessage,3333) trim(descript % file_name)
+3333      format('Values from ',(a),
+     &         ' will be reflected from the solution prior to this hotstart.')
+           call allMessage(INFO,scratchMessage)
+        endif
+        IF (dat%myTime%initialized.eqv..false.) THEN
+           ALLOCATE(dat%myTime%timenc(dat%myTime%timenc_len))
+           dat%myTime%initialized = .true.
+        ENDIF
+        !
+        ! jgf52.08.20: Read time and reject min/max data that correspond
+        ! to a future time. This can happen when an analyst hotstarts a run,
+        ! allows it to complete, then makes some adjustments to the input and
+        ! then tries to re-run it while forgetting to remove or replace the
+        ! min/max file from the previous attempt.
+        !
+        ! It is hard to imagine a scenario where someone would want to keep
+        ! the min/max record from the previous attempt under these circumstances.
+        ! As a result, I am logging it as an error but allowing the run to
+        ! continue if non-fatal override is enabled, since it would be
+        ! annoying to have ADCIRC bomb out every time the analyst mistakenly
+        ! leaves a min/max file in place.
+        iret=nf90_inq_varid(dat%ncid, "time", dat%myTime%timenc_id)
+        CALL check_err(iret)
+        starti(1)=1  ! min/max files have one element in the time array
+        counti(1)=1
+        iret = nf90_get_var(dat%ncid, dat%myTime%timenc_id,
+     &      dat%myTime%timenc, starti, counti)
+        CALL check_err(iret)
+        if (  dat%myTime%timenc(1) .gt. timeloc ) then
+           call allMessage(ERROR,'Max/min file '//trim(dat%myFile%filename)//
+     &       ' contains data written after the hotstart time. '//
+     &     ' It may have been produced using different input parameters, '//
+     &       'perhaps during a previously attempted hot start run. '//
+     &       ' Its values will not be read.')
+           if (nfover.eq.0) then
+              call allMessage(ERROR,
+     &         'Execution terminated due to invalid '//
+     &          trim(dat%myFile%filename)//' file.')
+               call netcdfTerminate()
+           else
+              call allMessage(INFO,'The record for '//
+     &          trim(dat%myFile%filename)//
+     &          ' will be started anew and exection will continue.')
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+               call allMessage(DEBUG,"Return.")
+#endif  
+               call unsetMessageSource()
+               !
+               ! now close the netcdf file
+               iret = nf90_close(dat%ncid)
+               CALL check_err(iret)
+
+               no_early_return = .false.
+               call communicateMapToSubdomainMaxMinNetcdfStatus(no_early_return)
+               return ! EARLY RETURN
+           endif
+        endif
+        
+        dat%myFile%record_counter = 1
+        kount(1)=dat%myMesh%num_nodes
+        kount(2)=dat%myTime%timenc_len
+        start(1)=1
+        start(2)=dat%myFile%record_counter
+        !
+        ! get array variable ids
+        !call logMessage(DEBUG,'netcdf var is '//trim(vn))
+        iret=nf90_inq_varid(dat%ncid,trim(vn),dat%max_nodal_data_id)
+        CALL check_err(iret)
+        timestampsFound = .true.
+        iret=nf90_inq_varid(dat%ncid,trim(tvn),dat%time_max_nodal_data_id)
+        if ( iret.ne.NF90_NOERR ) then
+           call logMessage(INFO,'The file "'//trim(dat%myFile%filename)//
+     &    '" does not contain time of occurrence for the min/max data. '//
+     &    'As a result, time of occurrence will be initialized to -99999.')
+           timestampsFound = .false.
+        endif
+
+#ifdef CMPI
+        if(mnproc.gt.1)then
+            no_early_return = .true.
+            call communicateMapToSubdomainMaxMinNetcdfStatus(no_early_return)
+            ldmy(1) = timestampsFound
+            call msg_lbcast(ldmy,1)
+        endif
+#endif        
       else
-         ! the file was found, let's open it
-         iret = nf90_open(dat%myFile%FILENAME, NF90_NOWRITE, dat%ncid)
-         call check_err(iret)
-      endif
-C
-C     nodes and elements
-      dat%myMesh => adcircMesh
-!
-!     Inquire variables
-      call getDimensions(dat%ncid, dat%myTime, dat%myMesh, dat%myFile)
-      !
-      ! jgf52.08.21: If the netcdf min/max file contains no time records,
-      ! it was just created by adcprep, and there are no data to load.
-      if ( dat%myFile%record_counter.eq.0 ) then
-         call allMessage(INFO,'The file '//trim(dat%myFile%filename)//
-     &      'contains no data, '//
-     &      'so the min/max record will be started anew.')
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG,"Return.")
-#endif
-         call unsetMessageSource()
-         !
-         ! now close the netcdf file
-         iret = nf90_close(dat%ncid)
-         CALL check_err(iret)
-         return ! EARLY RETURN
-      else
-         write(scratchMessage,3333) trim(descript % file_name)
-3333    format('Values from ',(a),
-     &       ' will be reflected from the solution prior to this hotstart.')
-         call allMessage(INFO,scratchMessage)
-      endif
-      IF (dat%myTime%initialized.eqv..false.) THEN
-         ALLOCATE(dat%myTime%timenc(dat%myTime%timenc_len))
-         dat%myTime%initialized = .true.
-      ENDIF
-      !
-      ! jgf52.08.20: Read time and reject min/max data that correspond
-      ! to a future time. This can happen when an analyst hotstarts a run,
-      ! allows it to complete, then makes some adjustments to the input and
-      ! then tries to re-run it while forgetting to remove or replace the
-      ! min/max file from the previous attempt.
-      !
-      ! It is hard to imagine a scenario where someone would want to keep
-      ! the min/max record from the previous attempt under these circumstances.
-      ! As a result, I am logging it as an error but allowing the run to
-      ! continue if non-fatal override is enabled, since it would be
-      ! annoying to have ADCIRC bomb out every time the analyst mistakenly
-      ! leaves a min/max file in place.
-      iret=nf90_inq_varid(dat%ncid, "time", dat%myTime%timenc_id)
-      CALL check_err(iret)
-      starti(1)=1  ! min/max files have one element in the time array
-      counti(1)=1
-      iret = nf90_get_var(dat%ncid, dat%myTime%timenc_id,
-     &    dat%myTime%timenc, starti, counti)
-      CALL check_err(iret)
-      if (  dat%myTime%timenc(1) .gt. timeloc ) then
-         call allMessage(ERROR,'Max/min file '//trim(dat%myFile%filename)//
-     &     ' contains data written after the hotstart time. '//
-     &   ' It may have been produced using different input parameters, '//
-     &     'perhaps during a previously attempted hot start run. '//
-     &     ' Its values will not be read.')
-         if (nfover.eq.0) then
-            call allMessage(ERROR,
-     &       'Execution terminated due to invalid '//
-     &        trim(dat%myFile%filename)//' file.')
-             call netcdfTerminate()
-         else
-            call allMessage(INFO,'The record for '//
-     &        trim(dat%myFile%filename)//
-     &        ' will be started anew and exection will continue.')
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-             call allMessage(DEBUG,"Return.")
-#endif
-             call unsetMessageSource()
-             !
-             ! now close the netcdf file
-             iret = nf90_close(dat%ncid)
-             CALL check_err(iret)
-             return ! EARLY RETURN
-         endif
+#ifdef CMPI          
+        no_early_return = .false.
+        call communicateMapToSubdomainMaxMinNetcdfStatus(no_early_return)
+        if(.not.no_early_return)return
+
+        call msg_lbcast(ldmy,1)
+        timestampsFound = ldmy(1)
+#endif        
       endif
 
-      dat%myFile%record_counter = 1
-      kount(1)=dat%myMesh%num_nodes
-      kount(2)=dat%myTime%timenc_len
-      start(1)=1
-      start(2)=dat%myFile%record_counter
-      !
-      ! get array variable ids
-      !call logMessage(DEBUG,'netcdf var is '//trim(vn))
-      iret=nf90_inq_varid(dat%ncid,trim(vn),dat%max_nodal_data_id)
-      CALL check_err(iret)
-      timestampsFound = .true.
-      iret=nf90_inq_varid(dat%ncid,trim(tvn),dat%time_max_nodal_data_id)
-      if ( iret.ne.NF90_NOERR ) then
-         call logMessage(INFO,'The file "'//trim(dat%myFile%filename)//
-     &  '" does not contain time of occurrence for the min/max data. '//
-     &  'As a result, time of occurrence will be initialized to -99999.')
-         timestampsFound = .false.
-      endif
-      !
       ! serial
       if (mnproc.eq.1) then
 
@@ -8462,9 +8499,9 @@ C     nodes and elements
      &             descript % array2, start, kount)
             call check_err(iret)
          endif
-C
+ 
       else       ! parallel
-C
+#ifdef CMPI 
          ! Create the fulldomain node and element index lists for this subdomain
          ! if it has not already happened for the reading of the netcdf
          ! hotstart file.
@@ -8476,31 +8513,82 @@ C
          fullDomainIndexList => fullDomainNodeList
          if ( descript % isInteger.eqv..true.) then
             ! integer
-            call mapFullDomainToSubdomain(dat%ncid, dat%myMesh%num_nodes,
-     &          dat%max_nodal_data_id, subdomain_ints=descript%iarray)
+            if(myproc.eq.0)then
+              iret = nf90_get_var(dat%ncid, dat%max_nodal_data_id, descript%iarray_g)
+              call check_err(iret)
+            endif
+            call mapToSubdomainIntMPI(dat%myMesh%num_nodes,np,descript%iarray,descript%imap,descript%iarray_g)
          else
             ! float
-            call mapFullDomainToSubdomain(dat%ncid, dat%myMesh%num_nodes,
-     &          dat%max_nodal_data_id, subdomain_reals=descript%array)
+            if(myproc.eq.0)then
+              iret = nf90_get_var(dat%ncid, dat%max_nodal_data_id, descript%array_g)
+              call check_err(iret)
+            endif
+
+            if(allocated(tmp0))deallocate(tmp0)
+            if(allocated(tmp1))deallocate(tmp1)
+            allocate(tmp0(1:np_g))
+            allocate(tmp1(1:np))
+            if(myproc.eq.0)then
+              tmp0(:) = descript%array_g(:)
+            endif
+            call mapToSubdomainRealMPI(np_g,np,tmp1,descript%imap,tmp0)
+            descript%array(:) = tmp1(:)
          endif
          ! time of occurrence
-         if (timestampsFound.eqv..true.) then
-            call mapFullDomainToSubdomain(dat%ncid, dat%myMesh%num_nodes,
-     &       dat%time_max_nodal_data_id, subdomain_reals=descript%array2)
+         if (timestampsFound) then
+            if(myproc.eq.0)then
+              iret = nf90_get_var(dat%ncid,dat%time_max_nodal_data_id,descript%array2_g)
+              call check_err(iret)
+            endif
+            if(allocated(tmp0))deallocate(tmp0)
+            if(allocated(tmp1))deallocate(tmp1)
+            allocate(tmp0(1:np_g))
+            allocate(tmp1(1:np))
+            if(myproc.eq.0)then
+              tmp0(:) = descript%array2_g(:)
+            endif
+            call mapToSubdomainRealMPI(np_g,np,tmp1,descript%imap,tmp0)
+            descript%array2(:) = tmp1(:)
          endif
+#endif         
       endif
-C
-C     now close the netcdf file
-      iret = nf90_close(dat%ncid)
-      CALL check_err(iret)
+
+      if(myproc.eq.0)then
+!       now close the netcdf file
+        iret = nf90_close(dat%ncid)
+        CALL check_err(iret)
+      endif
 
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       end subroutine readAndMapToSubdomainMaxMinNetCDF
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+! Alert the other processors if processor 0 tries to duck out of the
+! read early
+!-----------------------------------------------------------------------
+      subroutine communicateMapToSubdomainMaxMinNetcdfStatus(communicateStatus)
+!-----------------------------------------------------------------------
+#ifdef CMPI
+          use messenger,only: msg_lbcast
+#endif          
+          implicit none
+          logical,intent(inout) :: communicateStatus
+          logical :: tmp(1)
+#ifdef CMPI          
+          tmp(1) = communicateStatus
+          call msg_lbcast(tmp,1)
+          communicateStatus = tmp(1)
+#endif          
+!-----------------------------------------------------------------------
+      end subroutine communicateMapToSubdomainMaxMinNetcdfStatus
+!-----------------------------------------------------------------------
+
 
 
 C-----------------------------------------------------------------------

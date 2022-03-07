@@ -728,10 +728,10 @@ C        WJP 02.24.2018 Get the righthand side momentum
 C...     DW, absorbing layers
          IF (MOM_SPONGE) THEN
            MOM_LV_X(I) = NCI*(MOM_LV_X(I) + 
-     &          SPNGCOEF_X*(uu2_AbsLayer(I) + uu1_AbsLayer(I)))
+     &          DTO2*SPNGCOEF_X*(uu2_AbsLayer(I) + uu1_AbsLayer(I)))
 
            MOM_LV_Y(I) = NCI*(MOM_LV_Y(I) +  
-     &          SPNGCOEF_Y*(vv2_AbsLayer(I) + vv1_AbsLayer(I)))
+     &          DTO2*SPNGCOEF_Y*(vv2_AbsLayer(I) + vv1_AbsLayer(I)))
          END IF
 C...     DW
 

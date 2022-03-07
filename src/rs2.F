@@ -874,7 +874,7 @@ c$$$        if (myproc.eq.0) read(fid,*,iostat=ios(1)) ! skip a line
 c$$$#ifdef CMPI     
 c$$$        call msg_ibcast(ios,1)
 c$$$#endif
-c$$$        if (ios(1) > 0) goto 9999
+c$$$        if (ios(1) > 0) g.oto 9999
 c$$$
 c$$$        if(myproc.eq.0) read(fid,*,iostat=ios(1)) isActive(1) ! active flag
 c$$$
@@ -883,8 +883,8 @@ c$$$        call msg_ibcast(ios,1)
 c$$$        call msg_ibcast(isActive,1)
 c$$$#endif
 c$$$
-c$$$        if(ios(1) > 0)       goto 9999
-c$$$        if(isActive(1).eq.0) goto 100
+c$$$        if(ios(1) > 0)       g.oto 9999
+c$$$        if(isActive(1).eq.0) g.oto 100
 c$$$
 c$$$        if(myproc.eq.0) then
 c$$$          do j = nj, 1, -1
@@ -897,7 +897,7 @@ c$$$#ifdef CMPI
 c$$$        call msg_ibcast(ios,1)
 c$$$        call msg_rbcast(rsxy,2*ni*nj)
 c$$$#endif
-c$$$        if(ios(1) > 0)       goto 9999
+c$$$        if(ios(1) > 0)       g.oto 9999
 c$$$
 c$$$C--------------------------------------------------------------------------
 c$$$C   Interpolate RS Snap onto local ADCIRC mesh
@@ -1045,8 +1045,6 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
         ni = nis(s)
         nj = njs(s)
 
-        allocate(rsxy(2,nis(s),njs(s)))
-
         fid = rfids(s)
 
         if (endoffile(s) .eq. 0) then
@@ -1064,7 +1062,7 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
               write(screenunit,'(A25,I6,A9,I6)') 
      &           " BLANK RS SNAP, REGION = ",s, " COUNT = ", cntsnaps
             endif
-            goto 100
+            cycle
           else
             if (myproc.eq.0) then
         write(screenunit,'(A)') " spectrum_id = "//trim(spectrum_id(1))
@@ -1074,23 +1072,27 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
           endif
         endif
          
+        allocate(rsxy(2,nis(s),njs(s)))
+
 #ifdef CMPI     
         if(myproc.eq.0) then
           ios(1) = 0
-          do j = nj, 1, -1
-            read (fid,*,err=511) 
+          do while(.true.)
+            do j = nj, 1, -1
+              read (fid,*,err=511) 
      &           ((rsxy(k,i,j),k=1,2),i=1,ni)
+            enddo
+            exit
+511         ios(1) = 1
+            exit
           enddo
-          go to 512
- 511      ios(1) = 1
- 512      continue
         endif
         call msg_ibcast(ios,1)
         if(ios(1) == 0) then        
 Casey 090327: Implement Seizo's changes for buffering the radiation stress gradients.
           call msg_rbcastd(rsxy,2,ni,nj)
         else
-          goto 9999      !  read error because of missing snap data
+          call rs2get_type2_terminate(radfiles(s))
         endif
 #else
         do j = nj, 1, -1
@@ -1137,7 +1139,6 @@ C--------------------------------------------------------------------------
           endif
         enddo
 
- 100    continue
         deallocate(rsxy)
 
       enddo       ! end s-loop
@@ -1151,22 +1152,27 @@ C--------------------------------------------------------------------------
 
       return
 
- 9999 continue
-      if(myproc.eq.0) then
-        write(screenunit,*) trim(radfiles(s)),' IS NOT COMPLETE.'
-        write(screenunit,*) 'PROGRAM WILL BE TERMINATED.'
-      endif
-      write(16,*) trim(radfiles(s)),' IS NOT COMPLETE.'
-      write(16,*) 'PROGRAM WILL BE TERMINATED.'
-      close(16)
+ 9999 call rs2get_type2_terminate(radfiles(s))
 
+      end subroutine rs2get_type2
+
+      subroutine rs2get_type2_terminate(filename)
+        implicit none
+        character(*),intent(in) :: filename
+        if(myproc.eq.0) then
+          write(screenunit,*) trim(filename),' IS NOT COMPLETE.'
+          write(screenunit,*) 'PROGRAM WILL BE TERMINATED.'
+        endif
+        write(16,*) trim(filename),' IS NOT COMPLETE.'
+        write(16,*) 'PROGRAM WILL BE TERMINATED.'
+        close(16)
 #ifdef CMPI
-      call msg_fini()
+        call msg_fini()
 #endif
-      CALL EXIT(1)
+        CALL EXIT(1)
+      end subroutine rs2get_type2_terminate
 
-      end subroutine
-
+    
       END MODULE RS2
       
       

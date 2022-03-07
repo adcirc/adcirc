@@ -168,28 +168,28 @@ C   NCSU Subdomain Modeling variables:
             enddo
         enddo                
 
-1000   CONTINUE
+        do while(.true.)
 
-        read(1019,*,end=1905) tstep
-        do iproc=1,nproc
-            write(sdu(iproc),*) tstep
-        enddo
-   
-
-        do i=1,pncbn
-            read(1019,*) gnode,pebn,pubn
-            read(1019,*) pvbn,pwdbn
-            totalProc = itotproc(gnode)
-            do p=1,totalProc
-                 itemp = (p-1)*2+1
-                 procTemp = IMAP_NOD_GL2(itemp,gnode)
-                 lnTemp = IMAP_NOD_GL2(itemp+1,gnode)
-                 write(sdu(procTemp),*) lnTemp,pebn,pubn
-                 write(sdu(procTemp),*) pvbn,pwdbn
+            read(1019,*,end=1905) tstep
+            do iproc=1,nproc
+                write(sdu(iproc),*) tstep
             enddo
-        enddo
+    
+
+            do i=1,pncbn
+                read(1019,*) gnode,pebn,pubn
+                read(1019,*) pvbn,pwdbn
+                totalProc = itotproc(gnode)
+                do p=1,totalProc
+                    itemp = (p-1)*2+1
+                    procTemp = IMAP_NOD_GL2(itemp,gnode)
+                    lnTemp = IMAP_NOD_GL2(itemp+1,gnode)
+                    write(sdu(procTemp),*) lnTemp,pebn,pubn
+                    write(sdu(procTemp),*) pvbn,pwdbn
+                enddo
+            enddo
             
-       go to 1000
+        enddo
 
 1905   close(1019)
        do iproc=1,nproc
@@ -276,38 +276,27 @@ C   NCSU Subdomain Modeling variables:
              enddo
          enddo
 
-1000   CONTINUE
+        do while(.true.)
 
-        read(1020,*,end=1905) tstep
-        do iproc=1,nproc
-            write(sdu(iproc),*) tstep
-        enddo
-
-!        do i=1,pnobn
-!            read(1020,*) gnode,pebn,pubn
-!            read(1020,*) pvbn,pwdbn
-!            iproc = IMAP_NOD_GL(1,gnode)
-!            lnode = IMAP_NOD_GL(2,gnode)
-!            write(sdu(iproc),*) lnode,pebn,pubn
-!            write(sdu(iproc),*) pvbn,pwdbn
-!        enddo
-
-
-        do i=1,pnobn
-            read(1020,*) gnode,pebn,pubn
-            read(1020,*) pvbn,pwdbn
-            totalProc = itotproc(gnode)
-            do p=1,totalProc
-                 itemp = (p-1)*2+1
-                 procTemp = IMAP_NOD_GL2(itemp,gnode)
-                 lnTemp = IMAP_NOD_GL2(itemp+1,gnode)
-                 write(sdu(procTemp),*) lnTemp,pebn,pubn
-                 write(sdu(procTemp),*) pvbn,pwdbn
+            read(1020,*,end=1905) tstep
+            do iproc=1,nproc
+                write(sdu(iproc),*) tstep
             enddo
+
+            do i=1,pnobn
+                read(1020,*) gnode,pebn,pubn
+                read(1020,*) pvbn,pwdbn
+                totalProc = itotproc(gnode)
+                do p=1,totalProc
+                    itemp = (p-1)*2+1
+                    procTemp = IMAP_NOD_GL2(itemp,gnode)
+                    lnTemp = IMAP_NOD_GL2(itemp+1,gnode)
+                    write(sdu(procTemp),*) lnTemp,pebn,pubn
+                    write(sdu(procTemp),*) pvbn,pwdbn
+                enddo
+            enddo
+
         enddo
-
-
-       go to 1000
 
 1905   close(1020)
        do iproc=1,nproc
@@ -393,33 +382,25 @@ C   NCSU Subdomain Modeling variables:
          enddo
 
 
-1000   CONTINUE
+        do while(.true.)
 
-        read(1021,*,end=1905) tstep
-        do iproc=1,nproc
-            write(sdu(iproc),*) tstep
-        enddo
-
-!        do i=1,pnibn
-!            read(1021,*) gnode,pebn
-!            iproc = IMAP_NOD_GL(1,gnode)
-!            lnode = IMAP_NOD_GL(2,gnode)
-!            write(sdu(iproc),*) lnode,pebn
-!        enddo
-
-
-        do i=1,pnibn
-            read(1021,*) gnode,pebn
-            totalProc = itotproc(gnode)
-            do p=1,totalProc
-                 itemp = (p-1)*2+1
-                 procTemp = IMAP_NOD_GL2(itemp,gnode)
-                 lnTemp = IMAP_NOD_GL2(itemp+1,gnode)
-                 write(sdu(procTemp),*) lnTemp,pebn
+            read(1021,*,end=1905) tstep
+            do iproc=1,nproc
+                write(sdu(iproc),*) tstep
             enddo
-        enddo
 
-       go to 1000
+            do i=1,pnibn
+                read(1021,*) gnode,pebn
+                totalProc = itotproc(gnode)
+                do p=1,totalProc
+                    itemp = (p-1)*2+1
+                    procTemp = IMAP_NOD_GL2(itemp,gnode)
+                    lnTemp = IMAP_NOD_GL2(itemp+1,gnode)
+                    write(sdu(procTemp),*) lnTemp,pebn
+                enddo
+            enddo
+
+        enddo
 
 1905   close(1021)
        do iproc=1,nproc

@@ -274,8 +274,12 @@
       IF(ALLOCATED(NWS13)) DEALLOCATE(NWS13)
       ALLOCATE(NWS13(1:NumGroup))
 
+#ifdef HAVE_NETCDF4
       ! Connect to the first group.
       NC_ERR = NF90_INQ_NCID(NC_ID,TRIM(ADJUSTL(GroupNames(1))),NC_IDG)
+#else
+      NC_IDG = 1
+#endif
 
       ! Find the starting date/time in YYYY-MM-DDTHH:MM:SS format,
       ! and convert it into Julian format.
@@ -300,8 +304,12 @@
       ! group.  We will use these to build the first time snap.
       DO IG=1,NumGroup
         ! Connect to the group and its time variable.
+#ifdef HAVE_NETCDF4
         NC_ERR = NF90_INQ_NCID(NC_ID,TRIM(ADJUSTL(GroupNames(IG))),
      &      NC_IDG)
+#else
+        NC_IDG = IG
+#endif
         NC_ERR = NF90_INQ_DIMID(NC_IDG,"time",NC_DIM)
         NC_ERR = NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,
      &      LEN=NWS13(IG)%NumSnap)
@@ -494,9 +502,13 @@
           ENDIF
           CYCLE
         ENDIF
+#ifdef HAVE_NETCDF4
         ! Find the current group and time variable in the file.
         NC_ERR = NF90_INQ_NCID(NC_ID,
      &      TRIM(ADJUSTL(GroupNames(IG))),NC_IDG)
+#else
+        NC_IDG = IG
+#endif
         NC_ERR = NF90_INQ_VARID(NC_IDG,"time",NC_VAR)
         ! Check whether we have progressed past the end of the current
         ! wind snap, and if so, then shift to the next wind snap.
@@ -540,313 +552,314 @@
       ! If we don't need to include winds from any group (because the
       ! simulation has started before or extended after the information
       ! in the wind file), then we can return.
-      IF(SUM(NWS13(:)%InclSnap).EQ.0)THEN
-        GOTO 9999
-      ENDIF
+      IF(SUM(NWS13(:)%InclSnap).GT.0)THEN
 
-      IF(MYPROC.EQ.0)THEN
-        do ig=1,NumGroup
+        IF(MYPROC.EQ.0)THEN
+          do ig=1,NumGroup
+            IF(NWS13(IG)%InclSnap.EQ.0)THEN
+              CYCLE
+            ENDIF
+            WRITE(Line,'(A,I1,A,A)')
+     &          "Using group",ig," to ",
+     &          "interpolate pressure and wind fields from time"
+            WRITE(JunkC,'(F20.2)') nws13(ig)%PrevTime
+            WRITE(Line,'(A,A,A,A)') TRIM(Line)," ",TRIM(ADJUSTL(JunkC)),
+     &          " to time"
+            WRITE(JunkC,'(F20.2)') nws13(ig)%NextTime
+            WRITE(Line,'(A,A,A,A)') TRIM(Line)," ",TRIM(ADJUSTL(JunkC)),"."
+            WRITE(*,'(A)') TRIM(Line)
+          enddo
+        ENDIF
+
+        ! Increment the storm centers.
+        EyeLonR(1) = EyeLonR(2)
+        EyeLatR(1) = EyeLatR(2)
+        EyeLonR(2) = EyeLonR(3)
+        EyeLatR(2) = EyeLatR(3)
+        EyeLonR(3) = 0.D0
+        EyeLatR(3) = 0.D0
+        FoundEye   = .FALSE.
+
+        ! Loop over the groups.
+        DO IG=1,NumGroup
           IF(NWS13(IG)%InclSnap.EQ.0)THEN
             CYCLE
           ENDIF
-          WRITE(Line,'(A,I1,A,A)')
-     &        "Using group",ig," to ",
-     &        "interpolate pressure and wind fields from time"
-          WRITE(JunkC,'(F20.2)') nws13(ig)%PrevTime
-          WRITE(Line,'(A,A,A,A)') TRIM(Line)," ",TRIM(ADJUSTL(JunkC)),
-     &        " to time"
-          WRITE(JunkC,'(F20.2)') nws13(ig)%NextTime
-          WRITE(Line,'(A,A,A,A)') TRIM(Line)," ",TRIM(ADJUSTL(JunkC)),"."
-          WRITE(*,'(A)') TRIM(Line)
-        enddo
+#ifdef   HAVE_NETCDF4
+          ! Connect to this group.
+          NC_ERR = NF90_INQ_NCID(NC_ID,TRIM(ADJUSTL(GroupNames(IG))),
+     &        NC_IDG)
+#else
+          NC_IDG = IG
+#endif
+          ! Read number of cells in longitude, latitude.
+          NC_ERR = NF90_INQ_DIMID(NC_IDG,"xi",NC_DIM)
+          NC_ERR = NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,LEN=NumLon)
+          NC_ERR = NF90_INQ_DIMID(NC_IDG,"yi",NC_DIM)
+          NC_ERR = NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,LEN=NumLat)
+
+          ! Initialize arrays.
+
+          ! These are temporary.
+          IF(ALLOCATED(Lon)) DEALLOCATE(Lon)
+          ALLOCATE(Lon(1:NumLon,1:NumLat))
+          IF(ALLOCATED(Lat)) DEALLOCATE(Lat)
+          ALLOCATE(Lat(1:NumLon,1:NumLat))
+          IF(ALLOCATED(U)) DEALLOCATE(U)
+          ALLOCATE(U(1:NumLon,1:NumLat))
+          IF(ALLOCATED(V)) DEALLOCATE(V)
+          ALLOCATE(V(1:NumLon,1:NumLat))
+          IF(ALLOCATED(P)) DEALLOCATE(P)
+          ALLOCATE(P(1:NumLon,1:NumLat))
+
+          ! These have information from the previous snap.
+          IF(ALLOCATED(PrevLon)) DEALLOCATE(PrevLon)
+          ALLOCATE(PrevLon(1:NumLon,1:NumLat))
+          IF(ALLOCATED(PrevLat)) DEALLOCATE(PrevLat)
+          ALLOCATE(PrevLat(1:NumLon,1:NumLat))
+          IF(ALLOCATED(PrevU)) DEALLOCATE(PrevU)
+          ALLOCATE(PrevU(1:NumLon,1:NumLat))
+          IF(ALLOCATED(PrevV)) DEALLOCATE(PrevV)
+          ALLOCATE(PrevV(1:NumLon,1:NumLat))
+          IF(ALLOCATED(PrevP)) DEALLOCATE(PrevP)
+          ALLOCATE(PrevP(1:NumLon,1:NumLat))
+
+          ! These have information from the next snap.
+          IF(ALLOCATED(NextLon)) DEALLOCATE(NextLon)
+          ALLOCATE(NextLon(1:NumLon,1:NumLat))
+          IF(ALLOCATED(NextLat)) DEALLOCATE(NextLat)
+          ALLOCATE(NextLat(1:NumLon,1:NumLat))
+          IF(ALLOCATED(NextU)) DEALLOCATE(NextU)
+          ALLOCATE(NextU(1:NumLon,1:NumLat))
+          IF(ALLOCATED(NextV)) DEALLOCATE(NextV)
+          ALLOCATE(NextV(1:NumLon,1:NumLat))
+          IF(ALLOCATED(NextP)) DEALLOCATE(NextP)
+          ALLOCATE(NextP(1:NumLon,1:NumLat))
+
+          ! Loop over the snaps.
+          DO IS=1,2
+            IF(IS.EQ.1)THEN
+              CurrSnap = NWS13(IG)%PrevSnap
+            ELSEIF(IS.EQ.2)THEN
+              CurrSnap = NWS13(IG)%NextSnap
+            ENDIF
+
+            ! 1. Read this snap from the wind file.
+
+            ! Read mesh.
+            NC_ERR = NF90_INQ_VARID(NC_IDG,"lon",NC_VAR)
+            NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,Lon(:,:),
+     &          START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/))
+            NC_ERR = NF90_INQ_VARID(NC_IDG,"lat",NC_VAR)
+            NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,Lat(:,:),
+     &          START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/))
+
+            ! Read winds and pressures.
+            ! U-wind component
+            NC_ERR = NF90_INQ_VARID(NC_IDG,"U10",NC_VAR)
+            NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,U(:,:),
+     &          START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/))
+            ! Apply scale/offset if attributes are present
+            NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "_FillValue", var_scale_attr)
+            IF (NC_ERR .EQ. 0) THEN
+              DO ILN=1,NumLon
+                DO ILT=1,NumLat
+                  IF (U(ILN,ILT).EQ.var_scale_attr) THEN
+                    U(ILN,ILT) = D_QNAN
+                  ENDIF
+                ENDDO
+              ENDDO
+            ENDIF
+            NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "scale_factor", var_scale_attr)
+            IF (NC_ERR .EQ. 0) U = U * var_scale_attr
+            NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "add_offset", var_offset_attr)
+            IF (NC_ERR .EQ. 0) U = U + var_offset_attr
+            ! V-wind component
+            NC_ERR = NF90_INQ_VARID(NC_IDG,"V10",NC_VAR)
+            NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,V(:,:),
+     &          START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/))
+            ! Apply scale/offset if attributes are present
+            NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "_FillValue", var_scale_attr)
+            IF (NC_ERR .EQ. 0) THEN
+              DO ILN=1,NumLon
+                DO ILT=1,NumLat
+                  IF (V(ILN,ILT).EQ.var_scale_attr) THEN
+                    V(ILN,ILT) = D_QNAN
+                  ENDIF
+                ENDDO
+              ENDDO
+            ENDIF
+            NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "scale_factor", var_scale_attr)
+            IF (NC_ERR .EQ. 0) V = V * var_scale_attr
+            NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "add_offset", var_offset_attr)
+            IF (NC_ERR .EQ. 0) V = V + var_offset_attr
+            ! Pressure
+            NC_ERR = NF90_INQ_VARID(NC_IDG,"PSFC",NC_VAR)
+            NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,P(:,:),
+     &          START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/))
+            ! Apply scale/offset if attributes are present
+            NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "_FillValue", var_scale_attr)
+            IF (NC_ERR .EQ. 0) THEN
+              DO ILN=1,NumLon
+                DO ILT=1,NumLat
+                  IF (P(ILN,ILT).EQ.var_scale_attr) THEN
+                    P(ILN,ILT) = D_QNAN
+                  ENDIF
+                ENDDO
+              ENDDO
+            ENDIF
+            NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "scale_factor", var_scale_attr)
+            IF (NC_ERR .EQ. 0) P = P * var_scale_attr
+            NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "add_offset", var_offset_attr)
+            IF (NC_ERR .EQ. 0) P = P + var_offset_attr
+
+            ! Adjust the wind velocity.
+            U = U * NWS13WindMultiplierReal
+            V = V * NWS13WindMultiplierReal
+
+            ! Convert the pressures into meters of water.
+            P = P*100.D0/RHOWAT0/G
+
+            ! Try to read the storm center.
+            NC_ERR = NF90_INQ_VARID(NC_IDG,"clon",NC_VAR)
+            IF(NC_ERR.EQ.NF90_NOERR)THEN
+              NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,CLon(:),
+     &            START=(/CurrSnap/),COUNT=(/1/))
+              FoundEye = .TRUE.
+            ENDIF
+            NC_ERR = NF90_INQ_VARID(NC_IDG,"clat",NC_VAR)
+            IF(NC_ERR.EQ.NF90_NOERR)THEN
+              NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,CLat(:),
+     &            START=(/CurrSnap/),COUNT=(/1/))
+              FoundEye = .TRUE.
+            ENDIF
+
+            ! Save the snaps.
+            IF(IS.EQ.1)THEN
+              PrevLon = Lon
+              PrevLat = Lat
+              PrevU = U
+              PrevV = V
+              PrevP = P
+              IF(FoundEye)THEN
+                PrevCLon = CLon
+                PrevCLat = CLat
+              ENDIF
+            ELSEIF(IS.EQ.2)THEN
+              NextLon = Lon
+              NextLat = Lat
+              NextU = U
+              NextV = V
+              NextP = P
+              IF(FoundEye)THEN
+                NextCLon = CLon
+                NextCLat = CLat
+              ENDIF
+            ENDIF
+          ENDDO
+
+          ! 2. Interpolate the wind snaps to start/end of current interval.
+
+          TimeInterpFactor = ( TimeLoc - NWS13(IG)%PrevTime )
+     &             / ( NWS13(IG)%NextTime - NWS13(IG)%PrevTime )
+!          IF(MYPROC.EQ.0)THEN
+!            write(6,*) TimeInterpFactor,TimeLoc,NWS13(IG)%PrevTime,
+!       &               NWS13(IG)%NextTime
+!          ENDIF
+          Lon  = PrevLon  + ( NextLon  - PrevLon  ) * TimeInterpFactor
+          Lat  = PrevLat  + ( NextLat  - PrevLat  ) * TimeInterpFactor
+          U    = PrevU    + ( NextU    - PrevU    ) * TimeInterpFactor
+          V    = PrevV    + ( NextV    - PrevV    ) * TimeInterpFactor
+          P    = PrevP    + ( NextP    - PrevP    ) * TimeInterpFactor
+          ! Time Interpolate scalar wind
+          PrevWs   = SQRT(PrevU**2+PrevV**2)
+          NextWs   = SQRT(NextU**2+NextV**2)
+          Ws    = PrevWs    + ( NextWs    - PrevWs    ) * TimeInterpFactor
+          IF(FoundEye)THEN
+              CLon = PrevCLon + ( NextCLon - PrevCLon ) * TimeInterpFactor
+              CLat = PrevCLat + ( NextCLat - PrevCLat ) * TimeInterpFactor
+          ENDIF
+
+          ! 3. Interpolate the wind snaps onto the ADCIRC mesh.
+          if (IG.GT.1) then
+            CALL NWS13INTERP(IG,NumLon,NumLat,Lon,Lat,ILon,ILat,W2)
+          else
+            W2 = W(:, 1:4)
+            ILon = W(:, 5)
+            ILat = W(:, 6)
+          endif
+          DO IV=1,NP
+            IF(ILon(IV).GT.0)THEN
+              ! do not apply if we pick up a nan
+              IF((Ws(ILon(IV)  ,ILat(IV)  )
+     &          +  Ws(ILon(IV)+1,ILat(IV)  )
+     &          +  Ws(ILon(IV)+1,ILat(IV)+1)
+     &          +  Ws(ILon(IV)  ,ILat(IV)+1)).EQ.
+     &            (Ws(ILon(IV)  ,ILat(IV)  )
+     &          +  Ws(ILon(IV)+1,ILat(IV)  )
+     &          +  Ws(ILon(IV)+1,ILat(IV)+1)
+     &          +  Ws(ILon(IV)  ,ILat(IV)+1)))THEN
+                 UU(IV) = W2(IV,1)*U(ILon(IV)  ,ILat(IV)  )
+     &                  + W2(IV,2)*U(ILon(IV)+1,ILat(IV)  )
+     &                  + W2(IV,3)*U(ILon(IV)+1,ILat(IV)+1)
+     &                  + W2(IV,4)*U(ILon(IV)  ,ILat(IV)+1)
+                 VV(IV) = W2(IV,1)*V(ILon(IV)  ,ILat(IV)  )
+     &                  + W2(IV,2)*V(ILon(IV)+1,ILat(IV)  )
+     &                  + W2(IV,3)*V(ILon(IV)+1,ILat(IV)+1)
+     &                  + W2(IV,4)*V(ILon(IV)  ,ILat(IV)+1)
+                 Wind(IV) = W2(IV,1)*Ws(ILon(IV)  ,ILat(IV)  )
+     &                    + W2(IV,2)*Ws(ILon(IV)+1,ILat(IV)  )
+     &                    + W2(IV,3)*Ws(ILon(IV)+1,ILat(IV)+1)
+     &                    + W2(IV,4)*Ws(ILon(IV)  ,ILat(IV)+1)
+              ENDIF
+              ! do not apply if we pick up a nan
+              IF((P(ILon(IV)  ,ILat(IV)  )
+     &          + P(ILon(IV)+1,ILat(IV)  )
+     &          + P(ILon(IV)+1,ILat(IV)+1)
+     &          + P(ILon(IV)  ,ILat(IV)+1)).EQ.
+     &           (P(ILon(IV)  ,ILat(IV)  )
+     &          + P(ILon(IV)+1,ILat(IV)  )
+     &          + P(ILon(IV)+1,ILat(IV)+1)
+     &          + P(ILon(IV)  ,ILat(IV)+1)))THEN
+                 PP(IV) = W2(IV,1)*P(ILon(IV)  ,ILat(IV)  )
+     &                  + W2(IV,2)*P(ILon(IV)+1,ILat(IV)  )
+     &                  + W2(IV,3)*P(ILon(IV)+1,ILat(IV)+1)
+     &                  + W2(IV,4)*P(ILon(IV)  ,ILat(IV)+1)
+              ENDIF
+	      ! Adjust U/V Based on scalar wind magnitude
+              IF ((UU(iV) .eq. 0.) .and.
+     &            (VV(iV) .eq. 0.)) then
+                sWdir = 0.
+              ELSE
+                sWdir = ATAN2(UU(iV),VV(iV))
+                UU(IV) = -Wind(IV)*SIN(sWDir)
+                VV(IV) = -Wind(IV)*COS(sWDir)
+              ENDIF
+              ! Casey 200528
+              PRN2(IV) = PP(IV)
+              WVNX2(IV) = UU(IV)
+              WVNY2(IV) = VV(IV)
+            ENDIF
+          ENDDO
+
+          ! Casey 200528
+          !       PRN2 = PP
+          !       WVNX2 = UU
+          !       WVNY2 = VV
+
+          IF(FoundEye)THEN
+            IF(      ( NWS13GroupForPowellInt.EQ. 0 )
+     &          .OR. ( NWS13GroupForPowellInt.EQ.IG ) )THEN
+              ! Assign the storm center to the next spot in the array.
+              EyeLonR(3) = CLon(1)
+              EyeLatR(3) = CLat(1)
+              PowellGroupTemp = IG
+            ENDIF
+          ENDIF
+
+        ENDDO ! IG=1,NumGroup
+
       ENDIF
-
-      ! Increment the storm centers.
-      EyeLonR(1) = EyeLonR(2)
-      EyeLatR(1) = EyeLatR(2)
-      EyeLonR(2) = EyeLonR(3)
-      EyeLatR(2) = EyeLatR(3)
-      EyeLonR(3) = 0.D0
-      EyeLatR(3) = 0.D0
-      FoundEye   = .FALSE.
-
-      ! Loop over the groups.
-      DO IG=1,NumGroup
-        IF(NWS13(IG)%InclSnap.EQ.0)THEN
-          CYCLE
-        ENDIF
-
-        ! Connect to this group.
-        NC_ERR = NF90_INQ_NCID(NC_ID,TRIM(ADJUSTL(GroupNames(IG))),
-     &      NC_IDG)
-        ! Read number of cells in longitude, latitude.
-        NC_ERR = NF90_INQ_DIMID(NC_IDG,"xi",NC_DIM)
-        NC_ERR = NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,LEN=NumLon)
-        NC_ERR = NF90_INQ_DIMID(NC_IDG,"yi",NC_DIM)
-        NC_ERR = NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,LEN=NumLat)
-
-        ! Initialize arrays.
-
-        ! These are temporary.
-        IF(ALLOCATED(Lon)) DEALLOCATE(Lon)
-        ALLOCATE(Lon(1:NumLon,1:NumLat))
-        IF(ALLOCATED(Lat)) DEALLOCATE(Lat)
-        ALLOCATE(Lat(1:NumLon,1:NumLat))
-        IF(ALLOCATED(U)) DEALLOCATE(U)
-        ALLOCATE(U(1:NumLon,1:NumLat))
-        IF(ALLOCATED(V)) DEALLOCATE(V)
-        ALLOCATE(V(1:NumLon,1:NumLat))
-        IF(ALLOCATED(P)) DEALLOCATE(P)
-        ALLOCATE(P(1:NumLon,1:NumLat))
-
-        ! These have information from the previous snap.
-        IF(ALLOCATED(PrevLon)) DEALLOCATE(PrevLon)
-        ALLOCATE(PrevLon(1:NumLon,1:NumLat))
-        IF(ALLOCATED(PrevLat)) DEALLOCATE(PrevLat)
-        ALLOCATE(PrevLat(1:NumLon,1:NumLat))
-        IF(ALLOCATED(PrevU)) DEALLOCATE(PrevU)
-        ALLOCATE(PrevU(1:NumLon,1:NumLat))
-        IF(ALLOCATED(PrevV)) DEALLOCATE(PrevV)
-        ALLOCATE(PrevV(1:NumLon,1:NumLat))
-        IF(ALLOCATED(PrevP)) DEALLOCATE(PrevP)
-        ALLOCATE(PrevP(1:NumLon,1:NumLat))
-
-        ! These have information from the next snap.
-        IF(ALLOCATED(NextLon)) DEALLOCATE(NextLon)
-        ALLOCATE(NextLon(1:NumLon,1:NumLat))
-        IF(ALLOCATED(NextLat)) DEALLOCATE(NextLat)
-        ALLOCATE(NextLat(1:NumLon,1:NumLat))
-        IF(ALLOCATED(NextU)) DEALLOCATE(NextU)
-        ALLOCATE(NextU(1:NumLon,1:NumLat))
-        IF(ALLOCATED(NextV)) DEALLOCATE(NextV)
-        ALLOCATE(NextV(1:NumLon,1:NumLat))
-        IF(ALLOCATED(NextP)) DEALLOCATE(NextP)
-        ALLOCATE(NextP(1:NumLon,1:NumLat))
-
-        ! Loop over the snaps.
-        DO IS=1,2
-          IF(IS.EQ.1)THEN
-            CurrSnap = NWS13(IG)%PrevSnap
-          ELSEIF(IS.EQ.2)THEN
-            CurrSnap = NWS13(IG)%NextSnap
-          ENDIF
-
-          ! 1. Read this snap from the wind file.
-
-          ! Read mesh.
-          NC_ERR = NF90_INQ_VARID(NC_IDG,"lon",NC_VAR)
-          NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,Lon(:,:),
-     &        START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/))
-          NC_ERR = NF90_INQ_VARID(NC_IDG,"lat",NC_VAR)
-          NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,Lat(:,:),
-     &        START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/))
-
-          ! Read winds and pressures.
-          ! U-wind component
-          NC_ERR = NF90_INQ_VARID(NC_IDG,"U10",NC_VAR)
-          NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,U(:,:),
-     &        START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/))
-          ! Apply scale/offset if attributes are present
-          NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "_FillValue", var_scale_attr)
-          IF (NC_ERR .EQ. 0) THEN
-            DO ILN=1,NumLon
-              DO ILT=1,NumLat
-                IF (U(ILN,ILT).EQ.var_scale_attr) THEN
-                  U(ILN,ILT) = D_QNAN
-                ENDIF
-              ENDDO
-            ENDDO
-          ENDIF
-          NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "scale_factor", var_scale_attr)
-          IF (NC_ERR .EQ. 0) U = U * var_scale_attr
-          NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "add_offset", var_offset_attr)
-          IF (NC_ERR .EQ. 0) U = U + var_offset_attr
-          ! V-wind component
-          NC_ERR = NF90_INQ_VARID(NC_IDG,"V10",NC_VAR)
-          NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,V(:,:),
-     &        START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/))
-          ! Apply scale/offset if attributes are present
-          NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "_FillValue", var_scale_attr)
-          IF (NC_ERR .EQ. 0) THEN
-            DO ILN=1,NumLon
-              DO ILT=1,NumLat
-                IF (V(ILN,ILT).EQ.var_scale_attr) THEN
-                  V(ILN,ILT) = D_QNAN
-                ENDIF
-              ENDDO
-            ENDDO
-          ENDIF
-          NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "scale_factor", var_scale_attr)
-          IF (NC_ERR .EQ. 0) V = V * var_scale_attr
-          NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "add_offset", var_offset_attr)
-          IF (NC_ERR .EQ. 0) V = V + var_offset_attr
-          ! Pressure
-          NC_ERR = NF90_INQ_VARID(NC_IDG,"PSFC",NC_VAR)
-          NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,P(:,:),
-     &        START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/))
-          ! Apply scale/offset if attributes are present
-          NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "_FillValue", var_scale_attr)
-          IF (NC_ERR .EQ. 0) THEN
-            DO ILN=1,NumLon
-              DO ILT=1,NumLat
-                IF (P(ILN,ILT).EQ.var_scale_attr) THEN
-                  P(ILN,ILT) = D_QNAN
-                ENDIF
-              ENDDO
-            ENDDO
-          ENDIF
-          NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "scale_factor", var_scale_attr)
-          IF (NC_ERR .EQ. 0) P = P * var_scale_attr
-          NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "add_offset", var_offset_attr)
-          IF (NC_ERR .EQ. 0) P = P + var_offset_attr
-
-          ! Adjust the wind velocity.
-          U = U * NWS13WindMultiplierReal
-          V = V * NWS13WindMultiplierReal
-
-          ! Convert the pressures into meters of water.
-          P = P*100.D0/RHOWAT0/G
-
-          ! Try to read the storm center.
-          NC_ERR = NF90_INQ_VARID(NC_IDG,"clon",NC_VAR)
-          IF(NC_ERR.EQ.NF90_NOERR)THEN
-            NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,CLon(:),
-     &          START=(/CurrSnap/),COUNT=(/1/))
-            FoundEye = .TRUE.
-          ENDIF
-          NC_ERR = NF90_INQ_VARID(NC_IDG,"clat",NC_VAR)
-          IF(NC_ERR.EQ.NF90_NOERR)THEN
-            NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,CLat(:),
-     &          START=(/CurrSnap/),COUNT=(/1/))
-            FoundEye = .TRUE.
-          ENDIF
-
-          ! Save the snaps.
-          IF(IS.EQ.1)THEN
-            PrevLon = Lon
-            PrevLat = Lat
-            PrevU = U
-            PrevV = V
-            PrevP = P
-            IF(FoundEye)THEN
-              PrevCLon = CLon
-              PrevCLat = CLat
-            ENDIF
-          ELSEIF(IS.EQ.2)THEN
-            NextLon = Lon
-            NextLat = Lat
-            NextU = U
-            NextV = V
-            NextP = P
-            IF(FoundEye)THEN
-              NextCLon = CLon
-              NextCLat = CLat
-            ENDIF
-          ENDIF
-        ENDDO
-
-        ! 2. Interpolate the wind snaps to start/end of current interval.
-
-        TimeInterpFactor = ( TimeLoc - NWS13(IG)%PrevTime )
-     &           / ( NWS13(IG)%NextTime - NWS13(IG)%PrevTime )
-!        IF(MYPROC.EQ.0)THEN
-!          write(6,*) TimeInterpFactor,TimeLoc,NWS13(IG)%PrevTime,
-!     &               NWS13(IG)%NextTime
-!        ENDIF
-        Lon  = PrevLon  + ( NextLon  - PrevLon  ) * TimeInterpFactor
-        Lat  = PrevLat  + ( NextLat  - PrevLat  ) * TimeInterpFactor
-        U    = PrevU    + ( NextU    - PrevU    ) * TimeInterpFactor
-        V    = PrevV    + ( NextV    - PrevV    ) * TimeInterpFactor
-        P    = PrevP    + ( NextP    - PrevP    ) * TimeInterpFactor
-        ! Time Interpolate scalar wind
-        PrevWs   = SQRT(PrevU**2+PrevV**2)
-        NextWs   = SQRT(NextU**2+NextV**2)
-        Ws    = PrevWs    + ( NextWs    - PrevWs    ) * TimeInterpFactor
-        IF(FoundEye)THEN
-            CLon = PrevCLon + ( NextCLon - PrevCLon ) * TimeInterpFactor
-            CLat = PrevCLat + ( NextCLat - PrevCLat ) * TimeInterpFactor
-        ENDIF
-
-        ! 3. Interpolate the wind snaps onto the ADCIRC mesh.
-        if (IG.GT.1) then
-          CALL NWS13INTERP(IG,NumLon,NumLat,Lon,Lat,ILon,ILat,W2)
-        else
-          W2 = W(:, 1:4)
-          ILon = W(:, 5)
-          ILat = W(:, 6)
-        endif
-        DO IV=1,NP
-          IF(ILon(IV).GT.0)THEN
-            ! do not apply if we pick up a nan
-            IF((Ws(ILon(IV)  ,ILat(IV)  )
-     &        +  Ws(ILon(IV)+1,ILat(IV)  )
-     &        +  Ws(ILon(IV)+1,ILat(IV)+1)
-     &        +  Ws(ILon(IV)  ,ILat(IV)+1)).EQ.
-     &          (Ws(ILon(IV)  ,ILat(IV)  )
-     &        +  Ws(ILon(IV)+1,ILat(IV)  )
-     &        +  Ws(ILon(IV)+1,ILat(IV)+1)
-     &        +  Ws(ILon(IV)  ,ILat(IV)+1)))THEN
-               UU(IV) = W2(IV,1)*U(ILon(IV)  ,ILat(IV)  )
-     &                + W2(IV,2)*U(ILon(IV)+1,ILat(IV)  )
-     &                + W2(IV,3)*U(ILon(IV)+1,ILat(IV)+1)
-     &                + W2(IV,4)*U(ILon(IV)  ,ILat(IV)+1)
-               VV(IV) = W2(IV,1)*V(ILon(IV)  ,ILat(IV)  )
-     &                + W2(IV,2)*V(ILon(IV)+1,ILat(IV)  )
-     &                + W2(IV,3)*V(ILon(IV)+1,ILat(IV)+1)
-     &                + W2(IV,4)*V(ILon(IV)  ,ILat(IV)+1)
-               Wind(IV) = W2(IV,1)*Ws(ILon(IV)  ,ILat(IV)  )
-     &                  + W2(IV,2)*Ws(ILon(IV)+1,ILat(IV)  )
-     &                  + W2(IV,3)*Ws(ILon(IV)+1,ILat(IV)+1)
-     &                  + W2(IV,4)*Ws(ILon(IV)  ,ILat(IV)+1)
-            ENDIF
-            ! do not apply if we pick up a nan
-            IF((P(ILon(IV)  ,ILat(IV)  )
-     &        + P(ILon(IV)+1,ILat(IV)  )
-     &        + P(ILon(IV)+1,ILat(IV)+1)
-     &        + P(ILon(IV)  ,ILat(IV)+1)).EQ.
-     &         (P(ILon(IV)  ,ILat(IV)  )
-     &        + P(ILon(IV)+1,ILat(IV)  )
-     &        + P(ILon(IV)+1,ILat(IV)+1)
-     &        + P(ILon(IV)  ,ILat(IV)+1)))THEN
-               PP(IV) = W2(IV,1)*P(ILon(IV)  ,ILat(IV)  )
-     &                + W2(IV,2)*P(ILon(IV)+1,ILat(IV)  )
-     &                + W2(IV,3)*P(ILon(IV)+1,ILat(IV)+1)
-     &                + W2(IV,4)*P(ILon(IV)  ,ILat(IV)+1)
-            ENDIF
-	    ! Adjust U/V Based on scalar wind magnitude
-            IF ((UU(iV) .eq. 0.) .and.
-     &          (VV(iV) .eq. 0.)) then
-              sWdir = 0.
-            ELSE
-              sWdir = ATAN2(UU(iV),VV(iV))
-              UU(IV) = -Wind(IV)*SIN(sWDir)
-              VV(IV) = -Wind(IV)*COS(sWDir)
-            ENDIF
-            ! Casey 200528
-            PRN2(IV) = PP(IV)
-            WVNX2(IV) = UU(IV)
-            WVNY2(IV) = VV(IV)
-          ENDIF
-        ENDDO
-
-        ! Casey 200528
-        !       PRN2 = PP
-        !       WVNX2 = UU
-        !       WVNY2 = VV
-
-        IF(FoundEye)THEN
-          IF(      ( NWS13GroupForPowellInt.EQ. 0 )
-     &        .OR. ( NWS13GroupForPowellInt.EQ.IG ) )THEN
-            ! Assign the storm center to the next spot in the array.
-            EyeLonR(3) = CLon(1)
-            EyeLatR(3) = CLat(1)
-            PowellGroupTemp = IG
-          ENDIF
-        ENDIF
-
-      ENDDO ! IG=1,NumGroup
-
- 9999 CONTINUE
 
       ! Close the file.
       NC_ERR = NF90_CLOSE(NC_ID)

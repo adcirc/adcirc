@@ -1825,12 +1825,16 @@ C
 
 C...  go get new record for only some nodes, all
 C...  other nodes keep their current value
- 170  READ(lun,'(A80)') CDUM80
-      IF(CDUM80(2:2).EQ.'#') GOTO 170
- 171  READ(CDUM80,'(I8,E13.5)') IJK,tmpval    
-      if (tmpval.ne.defval) RVAL(IJK) = tmpval  !this allows us to exclude values included for record separation purposes in the parallel version
-      READ(lun,'(A80)',end=172) CDUM80
-      IF(CDUM80(2:2).NE.'#') GOTO 171
+      DO WHILE (.TRUE.)
+         READ(lun,'(A80)') CDUM80
+         IF(CDUM80(2:2).NE.'#') EXIT
+      ENDDO
+      DO WHILE (.TRUE.)
+         READ(CDUM80,'(I8,E13.5)') IJK,tmpval    
+         if (tmpval.ne.defval) RVAL(IJK) = tmpval  !this allows us to exclude values included for record separation purposes in the parallel version
+         READ(lun,'(A80)',end=172) CDUM80
+         IF(CDUM80(2:2).EQ.'#') EXIT
+      ENDDO
  172  CONTINUE
  
 #if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
@@ -1855,13 +1859,16 @@ C     and an indicator of whether the file was found; removed hardwired
 C     variables. 
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomainMaxMin(descript, timeloc, fileFound)     
+#ifdef CMPI      
+      use messenger,only:mapToSubdomainIntMPI,mapToSubdomainRealMPI
+#endif      
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
       real(8), intent(in) :: timeloc ! adcirc time in seconds since cold start
       logical, intent(out) :: fileFound ! .true. if file found and opened
-      integer :: fd_node_number
-      integer :: sd_node_number
       integer :: ios  ! i/o status
+      integer,allocatable :: itmp0(:),itmp1(:)
+      real(sz),allocatable :: tmp0(:),tmp1(:)
 C
       call setMessageSource("readAndMapToSubdomainMaxMin")
 #if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
@@ -1890,30 +1897,33 @@ C
      &       ' will be reflected from the solution prior to this hotstart.')
          call allMessage(INFO,scratchMessage)
       endif
-      !
+       
       ! serial 
-      call readMinMax(descript, timeloc)      
-      if (mnproc.gt.1) then
-         ! loop over subdomain nodes
-         do sd_node_number=1,np
-            ! get the corresponding fulldomain node number
-            fd_node_number = ABS(descript % imap(sd_node_number))
-            ! fill in the subdomain arrays with the corresponding
-            ! fulldomain values
-            if (descript % isInteger.eqv..true.) then
-               descript % iarray(sd_node_number) = 
-     &                descript % iarray_g(fd_node_number)
-            else
-               descript % array(sd_node_number) = 
-     &                descript % array_g(fd_node_number)
-            endif                
-            if (descript % minmax_timestamp.eqv..true.) then
-               descript % array2(sd_node_number) = 
-     &             descript % array2_g(fd_node_number)          
-            endif
-         end do
+      if(myproc.eq.0)then
+        call readMinMax(descript, timeloc)      
       endif
-C
+
+      ! parallel
+#ifdef CMPI      
+      if (mnproc.gt.1) then
+        if(descript%isInteger)then
+          allocate(itmp0(1:np_g))
+          allocate(itmp1(1:np))
+          if(myproc.eq.0)then
+            itmp0(:) = descript%iarray_g(:)
+          endif
+          call mapToSubdomainIntMPI(np_g,np,itmp1,descript%imap,itmp0)
+          descript%iarray(:) = itmp1
+        else
+          allocate(tmp0(1:np_g))
+          allocate(tmp1(1:np))
+          if(myproc.eq.0)then
+            tmp0(:) = descript%array_g(:)
+          endif
+          call mapToSubdomainRealMPI(np_g,np,tmp1,descript%imap,tmp0) 
+        endif
+      endif
+#endif      
 #if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif

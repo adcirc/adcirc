@@ -941,36 +941,35 @@ C
 
       L = N/2 + 1
       IR = N
-10    CONTINUE
-      IF (L.GT.1)THEN
-        L=L-1
-        RRA = RA(L)
-      ELSE
-        RRA=RA(IR)
-        RA(IR)=RA(1)
-        IR=IR-1
-        IF (IR.EQ.1) THEN
-          RA(1)=RRA
-          RETURN
-        ENDIF
-      ENDIF
-      I=L
-      J=L+L
-20    IF (J.LE.IR) THEN
-        IF (J.LT.IR) THEN
-          IF(RA(J).LT.RA(J+1)) J=J+1
-        ENDIF
-        IF (RRA.LT.RA(J)) THEN
-          RA(I)=RA(J)
-          I=J
-          J=J+J
+      DO WHILE(.TRUE.)
+        IF (L.GT.1)THEN
+          L=L-1
+          RRA = RA(L)
         ELSE
-          J=IR+1
+          RRA=RA(IR)
+          RA(IR)=RA(1)
+          IR=IR-1
+          IF (IR.EQ.1) THEN
+            RA(1)=RRA
+            RETURN
+          ENDIF
         ENDIF
-        GO TO 20
-      ENDIF
-      RA(I)=RRA
-      GO TO 10
+        I=L
+        J=L+L
+        DO WHILE (J.LE.IR)
+          IF (J.LT.IR) THEN
+            IF(RA(J).LT.RA(J+1)) J=J+1
+          ENDIF
+          IF (RRA.LT.RA(J)) THEN
+            RA(I)=RA(J)
+            I=J
+            J=J+J
+          ELSE
+            J=IR+1
+          ENDIF
+        ENDDO
+        RA(I)=RRA
+      ENDDO
 C----------------------------------------------------------------------
       END SUBROUTINE SORT
 C----------------------------------------------------------------------
@@ -995,16 +994,14 @@ C
 C--If we are not done yet, compute a mid-point, and replace either the lower
 C--limit or the upper limit, as appropriate.
 C
-10       IF(JU-JL.GT.1)THEN
+         DO WHILE (JU-JL.GT.1)
             JM = (JU+JL)/2
             IF((XX(N).GT.XX(1)).EQV.(X.GT.XX(JM)))THEN
               JL = JM
             ELSE
               JU = JM
             ENDIF
-C--Repeat until the test condition 10 is satisfied.
-         GO TO 10
-         ENDIF
+         ENDDO
 C--Then set the output and return.
          J = JL
          RETURN
@@ -1023,10 +1020,10 @@ cvjp  rewritten 5/3/99
          IP = MAP(I)
          IF (IP.EQ.N1.OR.IP.EQ.N2.OR.IP.EQ.N3) THEN
            INDX = I
-           GOTO 99
+           EXIT
          ENDIF
       ENDDO
- 99   RETURN
+      RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE SEARCH3
 C----------------------------------------------------------------------
@@ -1038,14 +1035,14 @@ C----------------------------------------------------------------------
       INTEGER MAP(*),N,TARGET,INDX,I
 C
       INDX = 0
-      IF (N.EQ.0) GOTO 99
+      IF (N.EQ.0) RETURN
       DO I=1,N
          IF (MAP(I).EQ.TARGET) THEN
             INDX = I
-            GOTO 99
+            EXIT
          ENDIF
       ENDDO
-99    RETURN
+      RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE SEARCH
 C----------------------------------------------------------------------

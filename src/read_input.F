@@ -2737,7 +2737,7 @@ C     MS river during Katrina, split ramps for flux b.c.s into internal
 C     and external.
       FluxSettlingTime = 0.0d0
       DRamp = 1.0d0
-Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
+Corbitt 1203022: Added Zach''s Fix for Assigning a Start Time to Mete Ramping
       DUnRampMete=0.D0
       SELECT CASE(NRamp)
 C     ---------
@@ -2833,11 +2833,13 @@ C
  5841       FORMAT(11X,' DAYS OF SIMULATION',2X,' TIME  ',6X,
      &         '  RAMP VALUE',/)
             Day=0.0d0
- 999        RampVal=TANH(Day*2.d0/DRAMP)
-            WRITE(16,5845) Day,Day+StaTim,RampVal
- 5845       FORMAT(15X,F8.2,6X,F8.2,2X,F15.7)
-            DAY=DAY+0.5d0
-            IF(Day.LT.DRAMP*1.25) GOTO 999
+            DO WHILE(.TRUE.)
+ 999           RampVal=TANH(Day*2.d0/DRAMP)
+               WRITE(16,5845) Day,Day+StaTim,RampVal
+ 5845          FORMAT(15X,F8.2,6X,F8.2,2X,F15.7)
+               DAY=DAY+0.5d0
+               IF(Day.GE.DRAMP*1.25) EXIT
+            ENDDO
          ENDIF
       ENDIF
       WRITE(16,8764) DRampExtFlux,FluxSettlingTime,DRampIntFlux,
@@ -3321,14 +3323,13 @@ C...
             WRITE(16,9973)
             CALL ADCIRC_Terminate()
          ENDIF
-         GOTO 1893
-      ENDIF
+
+      ELSE IF(NTIP.GE.1) THEN
 C...
 C...  PRINT OUT LAT/LON VALUES TO BE USED IN COMPUTING TIDAL POTENTIAL
 C...  IF NOT ALREADY DONE SO IN CORIOLIS SECTION AND TIDAL POTENTIAL IS
 C...  ACTIVATED WITH NTIP=1
 C...
-      IF(NTIP.GE.1) THEN
          IF(ICS.EQ.1) THEN
             WRITE(16,3605)
  3605      FORMAT(/,5X,'LONGITUDES AND LATITUDES ARE USED TO',
