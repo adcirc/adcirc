@@ -1,3 +1,0 @@
-module gsw_mod_version
-   character(len=*), parameter :: gsw_version = "@PROJECT_VERSION@"
-end module
