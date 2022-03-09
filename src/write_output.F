@@ -5659,7 +5659,55 @@ C
 C-----------------------------------------------------------------------
       END SUBROUTINE WriteWarnElev
 C-----------------------------------------------------------------------
-
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   W R I T E  BC 
+C-----------------------------------------------------------------------
+C CPB added to write out baroclinic coupling values
+C fort.111
+C n, NB, NM, BPGFS_X, BPGFS_Y, VIDBCPDXOH-BPGFS_X, VIDBCPDYOH-BPGFS_Y
+C-----------------------------------------------------------------------
+      SUBROUTINE WriteBC(TimeLoc)
+      USE SIZES
+      USE GLOBAL
+      USE GLOBAL_IO, ONLY: collectFullDomainArray, unpackOne
+      USE MESH, ONLY : NP
+      USE GLOBAL_IO, ONLY: packOne, unpackOne
+#ifdef CMPI
+      USE MESSENGER
+#endif
+      IMPLICIT NONE
+      REAL(8), intent(in) :: TimeLoc
+	  ! BPFRL_X BPGRL_Y
+	  REAL(8)			  :: BPGRL_X, BPGRL_Y
+	  LOGICAL :: existf111
+      INTEGER I, n ! node loop counter
+	  call setMessageSource("WriteBC")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      INQUIRE(FILE=TRIM(LOCALDIR)//'/'//'fort.111', exist=existf111)
+	  IF (existf111)THEN
+		OPEN(111,FILE=TRIM(LOCALDIR)//'/'//'fort.111',STATUS='OLD',ACCESS='APPEND',ACTION='WRITE')
+	  ELSE
+		OPEN(111,FILE=TRIM(LOCALDIR)//'/'//'fort.111',STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
+	  ENDIF
+      WRITE(111,*) NP, ITIME*DTDP
+      DO n=1,NP
+	    BPGRL_X = VIDBCPDXOH(n)-BPGFS_X(n)
+		BPGRL_Y = VIDBCPDYOH(n)-BPGFS_Y(n)
+!		write(111,'(I5.5,2x,ES7.6,2x,ES7.6,2x,ES7.6,2x,ES7.6,2x,ES7.6,2x,ES7.6)') n, NB(n), NM(n), BPGFS_X(n), BPGFS_Y(n), BPGRL_X, BPGRL_Y
+        write(111,7638) n, NB(n), NM(n), BPGFS_X(n), BPGFS_Y(n), BPGRL_X, BPGRL_Y
+      END DO
+ 7638 format(2x, i8, 2x, e10.3, 2x, e10.3, 2x, e10.3, 2x, e10.3, 2x, e10.3, 2x, e10.3)
+	  CLOSE(111)
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      RETURN
+C-----------------------------------------------------------------------
+      END SUBROUTINE WriteBC
+C-----------------------------------------------------------------------
       SUBROUTINE terminate(NO_MPI_FINALIZE)
 #ifdef CMPI
       USE MESSENGER

@@ -403,6 +403,8 @@ C
 C.....for buoyancy forcing
       REAL(SZ),ALLOCATABLE ::   DASigT(:), DASalt(:), DATemp(:)
       REAL(SZ),ALLOCATABLE ::   VIDBCPDXOH(:), VIDBCPDYOH(:)
+C.....CPB added free surface bpg to write out
+	  REAL(SZ),ALLOCATABLE ::   BPGFS_X(:), BPGFS_Y(:)
       REAL(SZ),ALLOCATABLE ::   SigTS(:), NM(:), NB(:), MLD(:)
 C.....for scalar transport
       REAL(SZ),ALLOCATABLE ::   DAConc(:)
@@ -1168,9 +1170,11 @@ C
       DASigT = -99999.d0
       DATemp = -99999.d0
       DASalt = -99999.d0
-      ALLOCATE ( VIDBCPDXOH(MNP), VIDBCPDYOH(MNP))
+      ALLOCATE ( VIDBCPDXOH(MNP), VIDBCPDYOH(MNP), BPGFS_X(MNP), BPGFS_Y(MNP))
       VIDBCPDXOH = -99999.d0
       VIDBCPDYOH = -99999.d0
+	  BPGFS_X    = -99999.d0
+	  BPGFS_Y    = -99999.d0
       ALLOCATE ( NB(MNP), NM(MNP), SigTS(MNP), MLD(MNP) )
       NB    = -99999.d0
       NM    = -99999.d0

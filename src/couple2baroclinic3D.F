@@ -8,7 +8,8 @@ C-----------------------------------------------------------------------
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
      &          setMessageSource, unsetMessageSource, allMessage,
      &          scratchMessage, logMessage, SigT0, SigTS, NB, NM, MLD,
-     &          VIDBCPDXOH, VIDBCPDYOH, VIDISPDXOH, VIDISPDYOH, IDEN
+     &          VIDBCPDXOH, VIDBCPDYOH, VIDISPDXOH, VIDISPDYOH, IDEN,
+     &          BPGFS_X, BPGFS_Y
 #ifdef DATETIME
       use datetime_module, only: datetime, timedelta, strptime
 #endif
@@ -44,7 +45,7 @@ C-----------------------------------------------------------------------
 #ifdef DATETIME
       type(datetime) :: CurDT
 #endif
-!     Variables for temporal integration
+!     Variables for temporal integration.
       real(sz) :: DTIME1, DTIME2 
       real(sz),allocatable,dimension(:,:) :: VIDBCPDXOH_F, VIDBCPDYOH_F,
      &      SigTS_F, NB_F, NM_F, MLD_F, CD_F, VIDISPDXOH_F, VIDISPDYOH_F
@@ -974,6 +975,9 @@ C
       DO J = 1,NP
          IF (TotalArea(J).NE.0.d0) THEN
             ! Divide BPG by element area
+			! CPB added BPGFS_X and Y to write out
+			BPGFS_X(J)	  = Ramp*(VIDBCPDXOH(J)/TotalArea(J))
+			BPGFS_Y(J)    = Ramp*(VIDBCPDYOH(J)/TotalArea(J))
             VIDBCPDXOH(J) = Ramp*(VIDBCPDXOH(J)/TotalArea(J) + BXE(J))
             VIDBCPDYOH(J) = Ramp*(VIDBCPDYOH(J)/TotalArea(J) + BYE(J))
             VIDISPDXOH(J) = Ramp*DXE(J)
