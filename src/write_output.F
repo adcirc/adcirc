@@ -5708,6 +5708,50 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       END SUBROUTINE WriteBC
 C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   W R I T E  BC ELEMENTAL 
+C-----------------------------------------------------------------------
+C CPB added to write out elemental baroclinic coupling values
+C fort.112
+C n, NB, NM, BPGFS_X, BPGFS_Y, VIDBCPDXOH-BPGFS_X, VIDBCPDYOH-BPGFS_Y
+C-----------------------------------------------------------------------
+      SUBROUTINE WriteBCEL(TimeLoc)
+      USE SIZES
+      USE GLOBAL
+      USE GLOBAL_IO, ONLY: collectFullDomainArray, unpackOne
+      USE MESH, ONLY : NE
+      USE GLOBAL_IO, ONLY: packOne, unpackOne
+#ifdef CMPI
+      USE MESSENGER
+#endif
+      IMPLICIT NONE
+      REAL(8), intent(in) :: TimeLoc
+	  LOGICAL :: existf112
+      INTEGER I, n ! node loop counter
+	  call setMessageSource("WriteBCEL")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      INQUIRE(FILE=TRIM(LOCALDIR)//'/'//'fort.112', exist=existf112)
+	  IF (existf112)THEN
+		OPEN(112,FILE=TRIM(LOCALDIR)//'/'//'fort.112',STATUS='OLD',ACCESS='APPEND',ACTION='WRITE')
+	  ELSE
+		OPEN(112,FILE=TRIM(LOCALDIR)//'/'//'fort.112',STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
+	  ENDIF
+      WRITE(112,*) NE, ITIME*DTDP
+      DO n=1,NE
+        write(112,7639) n, FSBPGELx(n), FSBPGELy(n) 
+      END DO
+ 7639 format(2x, i8, 2x, e10.3, 2x, e10.3)
+	  CLOSE(112)
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      RETURN
+C-----------------------------------------------------------------------
+      END SUBROUTINE WriteBCEL
+C-----------------------------------------------------------------------
       SUBROUTINE terminate(NO_MPI_FINALIZE)
 #ifdef CMPI
       USE MESSENGER

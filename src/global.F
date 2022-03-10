@@ -406,6 +406,8 @@ C.....for buoyancy forcing
 C.....CPB added free surface bpg to write out
 	  REAL(SZ),ALLOCATABLE ::   BPGFS_X(:), BPGFS_Y(:)
       REAL(SZ),ALLOCATABLE ::   SigTS(:), NM(:), NB(:), MLD(:)
+C.....CPB added elemental fs bpg to write out
+	  REAL(SZ),ALLOCATABLE :: FSBPGELx(:), FSBPGELy(:)
 C.....for scalar transport
       REAL(SZ),ALLOCATABLE ::   DAConc(:)
       
@@ -1170,11 +1172,15 @@ C
       DASigT = -99999.d0
       DATemp = -99999.d0
       DASalt = -99999.d0
+C.....CPB added BPGFS_X and Y as well as elemental things	  
       ALLOCATE ( VIDBCPDXOH(MNP), VIDBCPDYOH(MNP), BPGFS_X(MNP), BPGFS_Y(MNP))
       VIDBCPDXOH = -99999.d0
       VIDBCPDYOH = -99999.d0
 	  BPGFS_X    = -99999.d0
 	  BPGFS_Y    = -99999.d0
+	  ALLOCATE (FSBPGELx(MNE), FSBPGELy(MNE))
+	  FSBPGELx	 = -99999.d0
+	  FSBPGELy	 = -99999.d0
       ALLOCATE ( NB(MNP), NM(MNP), SigTS(MNP), MLD(MNP) )
       NB    = -99999.d0
       NM    = -99999.d0

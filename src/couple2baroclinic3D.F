@@ -9,7 +9,7 @@ C-----------------------------------------------------------------------
      &          setMessageSource, unsetMessageSource, allMessage,
      &          scratchMessage, logMessage, SigT0, SigTS, NB, NM, MLD,
      &          VIDBCPDXOH, VIDBCPDYOH, VIDISPDXOH, VIDISPDYOH, IDEN,
-     &          BPGFS_X, BPGFS_Y
+     &          BPGFS_X, BPGFS_Y, FSBPGELx, FSBPGELy
 #ifdef DATETIME
       use datetime_module, only: datetime, timedelta, strptime
 #endif
@@ -955,7 +955,9 @@ C
          VIDBCPDYOHN1 = G/RhoWat0*(DARhoMRho0N1*EtaN1*FDY1O2A 
      &                + DARhoMRho0N2*EtaN2*FDY2O2A
      &                + DARhoMRho0N3*EtaN3*FDY3O2A)
-
+		 ! CPB added FSBPGELx to write out
+		 FSBPGELx(IE) = VIDBCPDXOHN1
+		 FSBPGELy(IE) = VIDBCPDyOHN1
          ! Get the element-area weighted contributions
          VIDBCPDXOHAvgArea = AreaEle*VIDBCPDXOHN1
          VIDBCPDYOHAvgArea = AreaEle*VIDBCPDYOHN1
@@ -978,8 +980,11 @@ C
 			! CPB added BPGFS_X and Y to write out
 			BPGFS_X(J)	  = Ramp*(VIDBCPDXOH(J)/TotalArea(J))
 			BPGFS_Y(J)    = Ramp*(VIDBCPDYOH(J)/TotalArea(J))
-            VIDBCPDXOH(J) = Ramp*(VIDBCPDXOH(J)/TotalArea(J) + BXE(J))
-            VIDBCPDYOH(J) = Ramp*(VIDBCPDYOH(J)/TotalArea(J) + BYE(J))
+			! CPB: try zeroing out the free surface component
+            ! VIDBCPDXOH(J) = Ramp*(VIDBCPDXOH(J)/TotalArea(J) + BXE(J))
+            ! VIDBCPDYOH(J) = Ramp*(VIDBCPDYOH(J)/TotalArea(J) + BYE(J))
+			VIDBCPDXOH(J) = Ramp*BXE(J)
+            VIDBCPDYOH(J) = Ramp*BYE(J)
             VIDISPDXOH(J) = Ramp*DXE(J)
             VIDISPDYOH(J) = Ramp*DYE(J)
          ENDIF

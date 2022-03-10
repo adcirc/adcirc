@@ -384,7 +384,7 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
       USE Couple2Swan, ONLY: CouplingInterval,
      &                       PADCSWAN_RUN
 #endif
-      USE WRITE_OUTPUT,ONLY: writeOutput2D, WriteBC
+      USE WRITE_OUTPUT,ONLY: writeOutput2D, WriteBC, WriteBCEL
       IMPLICIT NONE
 C
       INTEGER, OPTIONAL :: NTIME_STP
@@ -435,6 +435,7 @@ C             to then call the SWAN time-stepping subroutine.
 		! CPB: hard code to write out the BC info every hour
 		IF(MOD(ITIME*DTDP,3600.d0).EQ.0.d0)THEN
 		   CALL WriteBC(TimeLoc)
+		   CALL WriteBCEL(TimeLoc)
 		ENDIF
 100   CONTINUE
 C
