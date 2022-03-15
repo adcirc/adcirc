@@ -758,7 +758,8 @@ C      Specified essential normal flow and free tangential slip
 
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
             VelNorm=-QN2(I)/H2
-            IF (abs(adcirc_norm2(TKM(:,I))-sqrt(2d0)*TK(I)).lt.epsilon(H2)) THEN
+            IF (abs(adcirc_norm2(TKM(:,NBDI))-sqrt(2d0)*TK(NBDI))
+     &          .lt.epsilon(H2)) THEN
             ! WJP 03.6.2018 In the case of the symmetric matrix..
             ! Should be equivalent to the non-symmetric formula below
             ! but for consistency when testing using this formula helps
