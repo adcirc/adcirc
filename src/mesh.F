@@ -2735,7 +2735,6 @@
 #endif
 
       allocate ( slam(mnp),sfea(mnp),x(mnp),y(mnp),labels(mnp))
-      allocate ( csfea(mnp) )
       call dict(node_dict, mnp)
       allocate ( dp(mnp) )
       allocate ( dp_orig(mnp) )
@@ -2790,7 +2789,6 @@
       ! initialize to something troublesome to make it easy to spot issues
       slam = -99999.d0
       sfea = -99999.d0
-      csfea = -99999.d0
       x = -99999.d0
       y = -99999.d0
       dp = -99999.d0
