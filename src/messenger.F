@@ -1279,6 +1279,9 @@ C---------------------------------------------------------------------
 ! reading the same file at the same time
 !---------------------------------------------------------------------
         implicit none
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
         integer,intent(in)  :: global_array(*)
         integer,intent(in)  :: mapping(*) 
         integer,intent(in)  :: np_global
