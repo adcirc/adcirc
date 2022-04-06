@@ -204,7 +204,9 @@ C-----------------------------------------------------------------------
       USE MESH, ONLY : NE, NM, NP, AREAS, NODELE, NEITABELE,
      &    FDXE, FDYE, SFacEle, SFMYEle, SFMXEle
       USE BOUNDARIES, ONLY : NBDV, NBOU, NBVV, NOPE, NVDLL, NVELL
-
+#ifdef CMPI      
+      USE MESSENGER,ONLY:MYPROC
+#endif 
       IMPLICIT NONE
 
       INTEGER :: I
@@ -364,6 +366,8 @@ C..... END DW/WJP
            inner: DO
 
              IE = IE + 1
+
+             IF(IE.GT.SIZE(NEITABELE,2))EXIT
 
              IF(NEITABELE(IP,IE).EQ.0)THEN
 
