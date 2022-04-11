@@ -9000,8 +9000,6 @@ C----------------------------------------------------------------------
             if (NT.eq.0) then
                if (Tformat(1:1).eq.'%') then
                   call Check_err(NF90_INQ_VARID(NC_ID,Tvar,Temp_ID))
-               if (Tformat(1:1).eq.'%') then
-                  call Check_err(NF90_INQ_VARID(NC_ID,Tvar,Temp_ID))
                   call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
                   ! Determine the first timestep index
                   str_date = CurDT%strftime(trim(Tformat))
