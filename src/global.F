@@ -308,7 +308,7 @@ Cobell - Added for Time Varying Weirs, Set to default values
 
 
 Cobell -  Added the following for output of ESL at end of run
-      REAL(SZ),ALLOCATABLE, TARGET :: ESLONOFF(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: ESLCOUNT(:)
 
       REAL(SZ),ALLOCATABLE, TARGET ::  CC00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  EtaDisc(:) ! vjp 9/2006 added for hotstart file
@@ -1194,8 +1194,8 @@ C    kmd48.33bc - arrays for baroclinic
 
 C    Allocate array for ESL i/o - only needed if
 C    loadEleSlopeLim.eqv..true
-      ALLOCATE (ESLONOFF(MNP))
-      ESLONOFF = 0.d0
+      ALLOCATE (ESLCOUNT(MNP))
+      ESLCOUNT = 0.d0
 
 #ifdef CMPI
       ALLOCATE ( IDUMY(1), DUMY1(1), DUMY2(1) )

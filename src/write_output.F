@@ -1383,11 +1383,11 @@ C      IF (mnproc.gt.1) THEN
 !C------------ DW
 !          if ( writeESLNodes ) then
 !             CALL REAL_FIELD_ALLOCATE( OFF,
-!    &            ESLONOFF_g, NP_G, 0.d0 ) ;
+!    &            ESLCOUNT_g, NP_G, 0.d0 ) ;
 !          endif
 !C------------
-         ! ALLOCATE(ESLONOFF_g(NP_G))
-         ! ESLONOFF_g(:) = 0.d0
+         ! ALLOCATE(ESLCOUNT_g(NP_G))
+         ! ESLCOUNT_g(:) = 0.d0
       ENDIF
       ESLDescript % lun                  = 323
       ESLDescript % specifier            = ASCII
