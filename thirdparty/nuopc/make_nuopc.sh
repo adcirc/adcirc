@@ -115,7 +115,7 @@ pushd ${ADCDIR}/work >/dev/null 2>&1
 popd >/dev/null 2>&1
 
 # build ADCIRC NUOPC
-make -f makefile.adc_cap.nuopc nuopc
+make nuopc
 
 # build `tide_fac` executable from ESTOFS
 pushd ${ADCDIR}/work >/dev/null 2>&1
