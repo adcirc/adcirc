@@ -356,7 +356,13 @@ ADC_MSRC   =  version.F sizes.F global.F
 POST_MSRC  =  post_global.F
 HARM_MSRC  =  harm.F
 VORT_MSRC  =  vortex.F
+
+ifeq ($(NETCDF),enable)
 WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F owiwind_netcdf.F
+else
+WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F
+endif
+
 SOLV_MSRC  =  itpackv.F
 NA_MSRC    =  nodalattr.F
 NC_MSRC    =  netcdfio.F
@@ -592,11 +598,19 @@ endif
    $(PARALLEL_ADCIRC) :: $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
 
-   $(LIBADC) :: $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ)
+ifeq ($(NETCDF),enable)
+   $(LIBADC) :: $(O_DIR) $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
 	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
                  $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
                  $(WRITER_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ) 
 	ar -ts $@
+else
+   $(LIBADC) :: $(O_DIR) $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
+	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
+                     $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
+                     $(WRITER_MOBJ) $(SUBD_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ)
+	ar -ts $@
+endif
 
 #Casey 080106: Added the following lines.
    adcswan :: $(O_DIR)
