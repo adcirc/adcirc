@@ -62,7 +62,7 @@ jobs:
             command: cd work ; cp ../thirdparty/swan/macros.inc.gfortran ../thirdparty/swan/macros.inc
         - run: 
             name: Build ADCIRC without external libraries using legacy makefile
-            command: cd work ; make compiler=circleci libadc
+            command: cd work ; make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan
   build_legacy_with_netcdf:
       <<: *default_env
       steps:
