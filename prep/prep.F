@@ -8860,7 +8860,6 @@ C     was specified.
       CALL initNetCDFOutputFile(PrStaDescript, reterr)
       CALL initNetCDFOutputFile(WindVelStaDescript, reterr)
       CALL initNetCDFOutputFile(PrDescript, reterr)
-      CALL initNetCDFOutputFile(WindDragDescript, reterr)
       CALL initNetCDFOutputFile(WindVelDescript, reterr)
 C ++ GML 20200605
       CALL initNetCDFOutputFile(IceStaDescript, reterr)
