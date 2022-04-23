@@ -8818,7 +8818,6 @@ C     was specified.
       CALL initNetCDFOutputFile(PrStaDescript, reterr)
       CALL initNetCDFOutputFile(WindVelStaDescript, reterr)
       CALL initNetCDFOutputFile(PrDescript, reterr)
-      CALL initNetCDFOutputFile(WindDragDescript, reterr)
       CALL initNetCDFOutputFile(WindVelDescript, reterr)
       CALL initNetCDFOutputFile(WeirElevDescript, reterr)
       CALL initNetCDFOutputFile(EtaMaxDescript, reterr)
