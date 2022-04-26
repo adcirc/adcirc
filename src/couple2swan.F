@@ -60,7 +60,7 @@ Casey 090302: These variables control SWAN output.
       ! jgf51.21.25: Added target attribute to file position counters
       ! so that they could be pointed to from the OutputDataDescript_t
       ! for each output type and updated in subroutine writeOutArray in
-      ! the write_output module. 
+      ! the write_output module.
       INTEGER, ALLOCATABLE, TARGET :: IGSW(:) ! file position counters
       INTEGER              :: NumSwanOutput
       LOGICAL              :: Processed26 = .FALSE.
@@ -204,9 +204,9 @@ C-----------------------------------------------------------------------
       USE MESH, ONLY : NE, NM, NP, AREAS, NODELE, NEITABELE,
      &    FDXE, FDYE, SFacEle, SFMYEle, SFMXEle
       USE BOUNDARIES, ONLY : NBDV, NBOU, NBVV, NOPE, NVDLL, NVELL
-#ifdef CMPI      
+#ifdef CMPI
       USE MESSENGER,ONLY:MYPROC
-#endif 
+#endif
       IMPLICIT NONE
 
       INTEGER :: I
@@ -305,17 +305,17 @@ C-----------------------------------------------------------------------
 C     WJP: tke into account correction factors
            SFacAvg = SFacEle(IE)
 C..... BEG DW/WJP
-           SFmxAvg= SFMXEle(IE) ;
-           SFmyAvg= SFMYEle(IE) ;
-           sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-           sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+           SFmxAvg= SFMXEle(IE)
+           SFmyAvg= SFMYEle(IE)
+           sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
+           sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg
 
-           FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
-           FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
-           FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
-           FDY1 = FDYE(1,IE)*sfdyfac ; !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
-           FDY2 = FDYE(2,IE)*sfdyfac ; !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
-           FDY3 = FDYE(3,IE)*sfdyfac ; !c FDY3=(X(NM2)-X(NM1))*MY !a3*my
+           FDX1 = FDXE(1,IE)*sfdxfac !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
+           FDX2 = FDXE(2,IE)*sfdxfac !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
+           FDX3 = FDXE(3,IE)*sfdxfac !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
+           FDY1 = FDYE(1,IE)*sfdyfac !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
+           FDY2 = FDYE(2,IE)*sfdyfac !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
+           FDY3 = FDYE(3,IE)*sfdyfac !c FDY3=(X(NM2)-X(NM1))*MY !a3*my
 C..... END DW/WJP
 
            DSXXDX(IE) = (1.D0/AREAS(IE)) *
@@ -462,13 +462,13 @@ C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E
-C       C O M P U T E  S W A N  W I N D  D R A G        
+C       C O M P U T E  S W A N  W I N D  D R A G
 C-----------------------------------------------------------------------
 C     @mattbilskie
 C-----------------------------------------------------------------------
       SUBROUTINE ComputeSwanWindDrag(CDRAG,NodeNumber)
       USE GLOBAL, ONLY: NP_G, SWAN_WDragCo
-      IMPLICIT NONE 
+      IMPLICIT NONE
       REAL(4) :: CDRAG
       INTEGER :: NodeNumber
       IF(.NOT.ALLOCATED(SWAN_WDragCo))  ALLOCATE(SWAN_WDragCo(NP_G))
@@ -544,7 +544,7 @@ C-----------------------------------------------------------------------
       USE MESH, ONLY : DP, NP, AID4
       USE GLOBAL,       ONLY:
      &                        NT,
-     &                        NP_G, 
+     &                        NP_G,
      &                        NODES_LG,
      &                        DT,
      &                        ETA2,
@@ -631,7 +631,7 @@ C-----------------------------------------------------------------------
      &                         SwanTPSMaxDescript,SwanWindMaxDescript,
      &                         SwanTM02MaxDescript,SwanTMM10MaxDescript,
      &                         OutputDataDescript_t,writeOutArrayMinMax
-      
+
       IMPLICIT NONE
 
 
@@ -831,9 +831,9 @@ C.....Arrange on/off for output into array
          SWAN_VOQR(4) = 5
          SWAN_VOQ(IP,SWAN_VOQR(4)) = REAL(DP(IP)) + REAL(ETA2(IP))
          !
-         ! jgf51.46: Fix from Casey to eliminate floating point 
-         ! exception in SWAN (swanser.F lines 703 and 726) when depths 
-         ! are negative. 
+         ! jgf51.46: Fix from Casey to eliminate floating point
+         ! exception in SWAN (swanser.F lines 703 and 726) when depths
+         ! are negative.
          IF (SWAN_VOQ(IP,SWAN_VOQR(4)).LT.REAL(H0)) THEN
             SWAN_VOQ(IP,SWAN_VOQR(4)) = REAL(H0)
          ENDIF
@@ -916,7 +916,7 @@ C.....Arrange on/off for output into array
                     !...Huh? I shouldn't be here...
             END SELECT
             ! jgf51.21.27: Move this here so it can be used to write
-            ! data in various formats below. 
+            ! data in various formats below.
             ! SwanDescript % alternate_value =  DBLE(OVEXCV(IVTYPE))
 
             IF(IW.NE.5)THEN
@@ -1138,7 +1138,7 @@ CTGA 111003:  Adding ability to read in ice info from fort.26 file
       INTEGER      :: IN           ! Node counter.
       INTEGER      :: IT           ! Time step counter.
       INTEGER      :: ITIME        ! Time step from ADCIRC.
-C      INTEGER,SAVE :: SwanTimeStep ! Counter for SWAN time steps. 
+C      INTEGER,SAVE :: SwanTimeStep ! Counter for SWAN time steps.
 
 Casey 120302: Merging ice changes from Taylor Asher.
 CTGA 110912:  Full SWAN ice implementation.  Adding variables.

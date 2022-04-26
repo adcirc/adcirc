@@ -1,11 +1,11 @@
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
-C 
+C
 C                       M O D U L E   G W C E
 C
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C
-C Generalized Wave Continuity Equation (GWCE) sets up and solves the 
-C continuity (conservation of mass) equation. 
+C Generalized Wave Continuity Equation (GWCE) sets up and solves the
+C continuity (conservation of mass) equation.
 C
 C******************************************************************************
 C Logical Variable List (default value .FALSE., set in global.f)              *
@@ -58,19 +58,19 @@ C******************************************************************************
 
       module gwce
       use sizes, only : sz
-      use global, only : DEBUG, INFO, WARNING, ERROR, logMessage, 
+      use global, only : DEBUG, INFO, WARNING, ERROR, logMessage,
      &   setMessageSource, unsetMessageSource, allMessage
       implicit none
 
       real(sz),allocatable :: lsxx(:),lsxy(:),lsyx(:),lsyy(:)
-      real(sz),allocatable :: etas0(:)      
+      real(sz),allocatable :: etas0(:)
       real(sz),allocatable :: eta0(:)
       real(sz) :: convcr
       integer :: isldia
       integer :: itmax
       real(sz) :: a00,b00,c00
       real(sz) :: dt2
-      real(sz) :: ga00 
+      real(sz) :: ga00
 
 C     Arrays used by JCG iterative solver
       integer :: nw
@@ -78,20 +78,20 @@ C     Arrays used by JCG iterative solver
       real(sz), allocatable :: wksp(:)
       integer, allocatable :: iparm(:)
       real(sz), allocatable :: rparm(:)
-      integer :: numitr ! number of iterations per timestep 
+      integer :: numitr ! number of iterations per timestep
 
 cjjw...added 2 lines
 C.....for matrix conditioning,global to allow for reading in from hotstart file
       REAL(SZ) :: EP !jgf45.08 EP global for predictor-corrector
       !
       ! for managing datasets for aperiodic elevation specified boundaries (fort.19)
-      real(sz) :: etime1, etime2, etiminc 
+      real(sz) :: etime1, etime2, etiminc
 
-      ! jgf52.30.04: Allow the inverted barometer condition to be 
+      ! jgf52.30.04: Allow the inverted barometer condition to be
       ! activated on elevation-specified boundaries so that low pressure
       ! systems crossing the boundary won't trigger numerical instabilities.
       ! This is normally .false. but can be set to .true. in the fort.15
-      ! in the metControl namelist. 
+      ! in the metControl namelist.
       logical :: invertedBarometerOnElevationBoundary = .false.
 
       contains
@@ -152,7 +152,7 @@ C     the conventional GWCE or (2) the predictor-corrector GWCE.
       use momentum, only : mom_eqs_new_nc
       use nodalattributes, only : loadEleSlopeLim
       implicit none
-      integer, intent(in) :: it ! time step 
+      integer, intent(in) :: it ! time step
       real(8), intent(in) :: timeloc ! simulation time in seconds
       real(8), intent(in) :: timeh
 
@@ -160,14 +160,14 @@ C       -------------PREDICTOR-CORRECTOR-GWCE---------------------------
 ckmd    Changed to include the predictor-corrector algorithm
       IF(CPRECOR) THEN
          CALL GWCE_New(IT,TimeLoc,TimeH)
-c...tcm added call for slope limiting         
+c...tcm added call for slope limiting
          IF (LoadEleSlopeLim) THEN
             call check_slopes(it,TimeLoc)
             call apply_slope_limits(ETA2,MNP)
 #ifdef CMPI
             CALL UPDATER(ETA2,DUMY1,DUMY2,1)
 #endif
-         ENDIF         
+         ENDIF
          CALL Mom_Eqs_New_NC()
 C...  If running in parallel, update velocities & fluxes on all processors
 #ifdef CMPI
@@ -175,14 +175,14 @@ C...  If running in parallel, update velocities & fluxes on all processors
          CALL UPDATER(QX2,QY2,DUMY1,2)
 #endif
          CALL GWCE_New_pc(IT,TimeLoc,TimeH)
-c...tcm added call to slope limiter         
+c...tcm added call to slope limiter
          IF (LoadEleSlopeLim) THEN
             call check_slopes(it,TimeLoc)
             call apply_slope_limits(ETA2,MNP)
 #ifdef CMPI
             CALL UPDATER(ETA2,DUMY1,DUMY2,1)
 #endif
-         ENDIF         
+         ENDIF
       ENDIF
 C       -------------PREDICTOR-CORRECTOR-GWCE---------------------------
 
@@ -191,14 +191,14 @@ C                         -OR-
 C      -------------------GWCE------------------------------------------
       IF(CGWCE_New) THEN
          CALL GWCE_New(IT,TimeLoc,TimeH)
-c.... tcm added call to slope limiter         
+c.... tcm added call to slope limiter
          IF (LoadEleSlopeLim) THEN
             call check_slopes(it,TimeLoc)
             call apply_slope_limits(ETA2,MNP)
 #ifdef CMPI
             CALL UPDATER(ETA2,DUMY1,DUMY2,1)
 #endif
-         ENDIF         
+         ENDIF
       ENDIF
 C     -------------------GWCE------------------------------------------
 !----------------------------------------------------------------------
@@ -240,7 +240,7 @@ C
      &   Areas, NEIMAX, SFAC, nneighele, neitabele, FDYE,
      &   SWITCH_ELTAB_PERBC, SFacEle, SFMYEle, SFMXEle, SFCXEle,
      &   SFCYEle, YCSFacEle, TANPHI, SFCT, TANPHIEle
-      USE BOUNDARIES, ONLY : NETA, NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, 
+      USE BOUNDARIES, ONLY : NETA, NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB,
      &   NFLUXRBC, NOPE, NVEL, NBD, NBV, LBCODEI, BndLen2O3, NPEBC
       USE ITPACKV
       USE NodalAttributes, ONLY :
@@ -256,7 +256,7 @@ C... DW
 #ifdef CMPI
       USE MESSENGER
 #endif
-      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB, 
+      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB,
      &  checkChange, enforceEOB, enforceEIB, enforceGWCELVOB
       USE WIND, ONLY: PRBCKGRND_MH2O
 
@@ -355,7 +355,7 @@ C..... DW
 C
 C....... DW
 C     Switch to the element table to the primary node
-      CALL SWITCH_ELTAB_PERBC( IDIREC = 1 ) ;
+      CALL SWITCH_ELTAB_PERBC( IDIREC = 1 )
 C.....
 
       if (subdomainOn.and.enforceBN.eq.2) call checkChange()    ! NCSU Subdomain
@@ -416,21 +416,21 @@ C              WJP 02.24.2018 Get the infinity norm of the matrix
 
                SFacAvg = SFacEle(IE)
 C.... Beg DW/WJP:
-               SFmxAvg = SFMXEle(IE) ;
-               SFmyAvg = SFMYEle(IE) ;
-               sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-               sfdyfac = (1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ;
-               SFCXAvg = SFCXEle(IE) ;
-               SFCYAvg = SFCYEle(IE) ;
-               YCFACAvg = YCSFACEle(IE) ;
-               SFCXADJ = SFCXAvg/sfdxfac ;
-               SFCYADJ = YCFACAvg*SFCYAvg/sfdyfac ;
-               FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-               FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-               FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-               FDY1 = FDYE(1,IE)*sfdyfac ; !c  FDY1=X(NM3)-X(NM2) !a1
-               FDY2 = FDYE(2,IE)*sfdyfac ; !c  FDY2=X(NM1)-X(NM3) !a2
-               FDY3 = FDYE(3,IE)*sfdyfac ; !c  FDY3=X(NM2)-X(NM1) !a3
+               SFmxAvg = SFMXEle(IE)
+               SFmyAvg = SFMYEle(IE)
+               sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
+               sfdyfac = (1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg
+               SFCXAvg = SFCXEle(IE)
+               SFCYAvg = SFCYEle(IE)
+               YCFACAvg = YCSFACEle(IE)
+               SFCXADJ = SFCXAvg/sfdxfac
+               SFCYADJ = YCFACAvg*SFCYAvg/sfdyfac
+               FDX1 = FDXE(1,IE)*sfdxfac !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
+               FDX2 = FDXE(2,IE)*sfdxfac !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
+               FDX3 = FDXE(3,IE)*sfdxfac !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
+               FDY1 = FDYE(1,IE)*sfdyfac !c  FDY1=X(NM3)-X(NM2) !a1
+               FDY2 = FDYE(2,IE)*sfdyfac !c  FDY2=X(NM1)-X(NM3) !a2
+               FDY3 = FDYE(3,IE)*sfdyfac !c  FDY3=X(NM2)-X(NM1) !a3
 C.... End WJP/DW
                AreaIE2=Areas(IE)
                AreaIE =AreaIE2*0.5d0
@@ -439,7 +439,7 @@ C.... End WJP/DW
 C.... DW, Nov 2019 if IFNL_HDP = 1 use DP + ETA = H in the GWCE
                DPAvg = (DP(NMI1)+DP(NMI2)+DP(NMI3))/3.d0 +   ! BAVG if GWCE_NL_HDP = .FALSE.
      &              IFNLFA*IFNL_HDP*(ETA2(NMI1) + ! HAVG otherwise
-     &              ETA2(NMI2)+ETA2(NMI3))/3.d0 ;
+     &              ETA2(NMI2)+ETA2(NMI3))/3.d0
 
 C.....         WJP adjust the dispersion equation through
 C              Ali et al. formula
@@ -600,13 +600,13 @@ c...        boundary value and subtracted from the RHS
                ENDDO
             ENDDO
 C.....   DW
-            CALL UPDATE_COEF_PERBCSL_CONSISTENT() ;
+            CALL UPDATE_COEF_PERBCSL_CONSISTENT()
 C.....   DW
 C.....      Check that all the diagonal elements in "COEF" are > 0.
             DIE = .FALSE.
             DO I=1,NP
                IF(COEF(I,1).EQ.0.d0) COEF(I,1)=EP
-               IF(COEF(I,1).LT.0.d0) THEN                  
+               IF(COEF(I,1).LT.0.d0) THEN
                   IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
      &              WRITE(ScreenUnit,1019) I,COEF(I,1)
                   WRITE(16,1019) I,COEF(I,1)
@@ -621,7 +621,7 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
                         do j=2,nneighele(i)
                            if (neitabele(i,j).ne.0) then
                               write(6,
-     & '("Node ",i0," element ",i0," area=",f15.7)') i, j, 
+     & '("Node ",i0," element ",i0," area=",f15.7)') i, j,
      &  areas(neitabele(i,j))
                            endif
                         enddo
@@ -646,7 +646,7 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
                Coefd(NBD(I))=EP
             ENDDO
 C......  DW
-            CALL UPDATE_COEF_PERBCSL_LUMPED() ;
+            CALL UPDATE_COEF_PERBCSL_LUMPED()
 C......  DW
 C.....      Check that all the diagonal elements in "COEFD" are > 0.
             DIE = .FALSE.
@@ -733,17 +733,17 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
             NC3=NODECODE(NM3)
             NCEle=NC1*NC2*NC3*NOFF(IE)
             SFacAvg = SFacEle(IE)
-            SFmxAvg=SFMXEle(IE) ;
-            SFmyAvg=SFMYEle(IE) ;
-            sfdxfac=(1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-            sfdyfac=(1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ;
+            SFmxAvg=SFMXEle(IE)
+            SFmyAvg=SFMYEle(IE)
+            sfdxfac=(1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
+            sfdyfac=(1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg
 C........ BEG DW:
-            FDX1 = FDXE(1,IE)*sfdxfac ;
-            FDX2 = FDXE(2,IE)*sfdxfac ;
-            FDX3 = FDXE(3,IE)*sfdxfac ;
-            FDY1 = FDYE(1,IE)*sfdyfac ;
-            FDY2 = FDYE(2,IE)*sfdyfac ;
-            FDY3 = FDYE(3,IE)*sfdyfac ;
+            FDX1 = FDXE(1,IE)*sfdxfac
+            FDX2 = FDXE(2,IE)*sfdxfac
+            FDX3 = FDXE(3,IE)*sfdxfac
+            FDY1 = FDYE(1,IE)*sfdyfac
+            FDY2 = FDYE(2,IE)*sfdyfac
+            FDY3 = FDYE(3,IE)*sfdyfac
 C........ END DW:
             LSXXGradA=(UU1(NM1)*FDX1+UU1(NM2)*FDX2+UU1(NM3)*FDX3)/2.d0   !A*DUDX
             LSXYGradA=(UU1(NM1)*FDY1+UU1(NM2)*FDY2+UU1(NM3)*FDY3)/2.d0   !A*DUDY
@@ -752,7 +752,7 @@ C........ END DW:
             EVMEle=NCEle*(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
             !
             ! If using Smagorinski vertically-integrated lateral stress coefficient
-            IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN  
+            IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN
                EVMSmag=EVMEle*
      &             sqrt((LSXXGradA-LSYYGradA)*(LSXXGradA-LSYYGradA)
      &                 +(LSYXGradA+LSXYGradA)*(LSYXGradA+LSXYGradA))
@@ -828,17 +828,17 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
             NCEle=NC1*NC2*NC3*NOFF(IE)
             SFacAvg = SFacEle(IE)
 C..... Beg DW:
-            SFmxAvg=SFMXEle(IE) ;
-            SFmyAvg=SFMYEle(IE) ;
-            sfdxfac=(1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-            sfdyfac=(1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ;
+            SFmxAvg=SFMXEle(IE)
+            SFmyAvg=SFMYEle(IE)
+            sfdxfac=(1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
+            sfdyfac=(1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg
 
-            FDX1 = FDXE(1,IE)*sfdxfac ;
-            FDX2 = FDXE(2,IE)*sfdxfac ;
-            FDX3 = FDXE(3,IE)*sfdxfac ;
-            FDY1 = FDYE(1,IE)*sfdyfac ;
-            FDY2 = FDYE(2,IE)*sfdyfac ;
-            FDY3 = FDYE(3,IE)*sfdyfac ;
+            FDX1 = FDXE(1,IE)*sfdxfac
+            FDX2 = FDXE(2,IE)*sfdxfac
+            FDX3 = FDXE(3,IE)*sfdxfac
+            FDY1 = FDYE(1,IE)*sfdyfac
+            FDY2 = FDYE(2,IE)*sfdyfac
+            FDY3 = FDYE(3,IE)*sfdyfac
 C..... End DW
             EVMEle = NCEle*(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
             IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN  !If using Smagorinski vertically-integrated lateral stress coefficient
@@ -954,62 +954,62 @@ Corbitt 120322: Localized Advection
 C
 C.... DW: begin ! absorbing layer
 C
-         E0AN1 = 0.D0 ; E0AN2 = 0.D0 ; E0AN3 = 0.D0 ;
-         E1AN1 = 0.D0 ; E1AN2 = 0.D0 ; E1AN3 = 0.D0 ;
-         E2AN1 = 0.D0 ; E2AN2 = 0.D0 ; E2AN3 = 0.D0 ;
-         ESAN1 = 0.D0 ; ESAN2 = 0.D0 ; ESAN3 = 0.D0 ;
+         E0AN1 = 0.D0 ; E0AN2 = 0.D0 ; E0AN3 = 0.D0
+         E1AN1 = 0.D0 ; E1AN2 = 0.D0 ; E1AN3 = 0.D0
+         E2AN1 = 0.D0 ; E2AN2 = 0.D0 ; E2AN3 = 0.D0
+         ESAN1 = 0.D0 ; ESAN2 = 0.D0 ; ESAN3 = 0.D0
 
-         ABC00_EAN1 = 0.D0 ;
-         ABC00_EAN2 = 0.D0 ;
-         ABC00_EAN3 = 0.D0 ;
+         ABC00_EAN1 = 0.D0
+         ABC00_EAN2 = 0.D0
+         ABC00_EAN3 = 0.D0
 
-         U1AN1 = 0.D0 ; U1AN2 = 0.D0 ; U1AN3 = 0.D0 ;
-         V1AN1 = 0.D0 ; V1AN2 = 0.D0 ; V1AN3 = 0.D0 ;
+         U1AN1 = 0.D0 ; U1AN2 = 0.D0 ; U1AN3 = 0.D0
+         V1AN1 = 0.D0 ; V1AN2 = 0.D0 ; V1AN3 = 0.D0
 
-         SgN1_eta = 0.D0 ; SgN2_eta = 0.D0 ; SgN3_eta = 0.D0 ;
-         SgN1_mnx = 0.D0 ; SgN2_mnx = 0.D0 ; SgN3_mnx = 0.D0 ;
-         SgN1_mny = 0.D0 ; SgN2_mny = 0.D0 ; SgN3_mny = 0.D0 ;
+         SgN1_eta = 0.D0 ; SgN2_eta = 0.D0 ; SgN3_eta = 0.D0
+         SgN1_mnx = 0.D0 ; SgN2_mnx = 0.D0 ; SgN3_mnx = 0.D0
+         SgN1_mny = 0.D0 ; SgN2_mny = 0.D0 ; SgN3_mny = 0.D0
 
          IF ( GWCE_SPONGE ) THEN
-            SgN1_eta = absorblayer_sigma_eta(NM1,1) ;
-            SgN2_eta = absorblayer_sigma_eta(NM2,1) ;
-            SgN3_eta = absorblayer_sigma_eta(NM3,1) ;
+            SgN1_eta = absorblayer_sigma_eta(NM1,1)
+            SgN2_eta = absorblayer_sigma_eta(NM2,1)
+            SgN3_eta = absorblayer_sigma_eta(NM3,1)
 
-            SgN1_mnx = absorblayer_sigma_mnx(NM1,1) ;
-            SgN2_mnx = absorblayer_sigma_mnx(NM2,1) ;
-            SgN3_mnx = absorblayer_sigma_mnx(NM3,1) ;
+            SgN1_mnx = absorblayer_sigma_mnx(NM1,1)
+            SgN2_mnx = absorblayer_sigma_mnx(NM2,1)
+            SgN3_mnx = absorblayer_sigma_mnx(NM3,1)
 
-            SgN1_mny = absorblayer_sigma_mny(NM1,1) ;
-            SgN2_mny = absorblayer_sigma_mny(NM2,1) ;
-            SgN3_mny = absorblayer_sigma_mny(NM3,1) ;
+            SgN1_mny = absorblayer_sigma_mny(NM1,1)
+            SgN2_mny = absorblayer_sigma_mny(NM2,1)
+            SgN3_mny = absorblayer_sigma_mny(NM3,1)
 
-            E0AN1 = eta0_abslayer(NM1) ;
-            E0AN2 = eta0_abslayer(NM2) ;
-            E0AN3 = eta0_abslayer(NM3) ;
+            E0AN1 = eta0_abslayer(NM1)
+            E0AN2 = eta0_abslayer(NM2)
+            E0AN3 = eta0_abslayer(NM3)
 
-            E1AN1 = eta1_abslayer(NM1) ;
-            E1AN2 = eta1_abslayer(NM2) ;
-            E1AN3 = eta1_abslayer(NM3) ;
+            E1AN1 = eta1_abslayer(NM1)
+            E1AN2 = eta1_abslayer(NM2)
+            E1AN3 = eta1_abslayer(NM3)
 
-            E2AN1 = eta2_abslayer(NM1) ;
-            E2AN2 = eta2_abslayer(NM2) ;
-            E2AN3 = eta2_abslayer(NM3) ;
+            E2AN1 = eta2_abslayer(NM1)
+            E2AN2 = eta2_abslayer(NM2)
+            E2AN3 = eta2_abslayer(NM3)
 
-            ESAN1 = E2AN1 - E0AN1 ;
-            ESAN2 = E2AN2 - E0AN2 ;
-            ESAN3 = E2AN3 - E0AN3 ;
+            ESAN1 = E2AN1 - E0AN1
+            ESAN2 = E2AN2 - E0AN2
+            ESAN3 = E2AN3 - E0AN3
 
-            ABC00_EAN1 = A00*E2AN1 + B00*E1AN1 + C00*E0AN1 ;
-            ABC00_EAN2 = A00*E2AN2 + B00*E1AN2 + C00*E0AN2 ;
-            ABC00_EAN3 = A00*E2AN3 + B00*E1AN3 + C00*E0AN3 ;
+            ABC00_EAN1 = A00*E2AN1 + B00*E1AN1 + C00*E0AN1
+            ABC00_EAN2 = A00*E2AN2 + B00*E1AN2 + C00*E0AN2
+            ABC00_EAN3 = A00*E2AN3 + B00*E1AN3 + C00*E0AN3
 
-            U1AN1 = uu1_abslayer(NM1) ;
-            U1AN2 = uu1_abslayer(NM2) ;
-            U1AN3 = uu1_abslayer(NM3) ;
+            U1AN1 = uu1_abslayer(NM1)
+            U1AN2 = uu1_abslayer(NM2)
+            U1AN3 = uu1_abslayer(NM3)
 
-            V1AN1 = vv1_abslayer(NM1) ;
-            V1AN2 = vv1_abslayer(NM2) ;
-            V1AN3 = vv1_abslayer(NM3) ;
+            V1AN1 = vv1_abslayer(NM1)
+            V1AN2 = vv1_abslayer(NM2)
+            V1AN3 = vv1_abslayer(NM3)
          END IF
 C
          IF ((NWS.NE.0).OR.(NRS.NE.0)) THEN     !wind or radiation stress
@@ -1068,24 +1068,24 @@ C
          SFacAvg= SFacEle(IE)
 C..... DW
          ! derivative: accomodate corrected spherical coordinate
-         SFmxAvg=SFMXEle(IE)  ;
-         SFmyAvg=SFMYEle(IE) ;
-         sfdxfac=(1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-         sfdyfac=(1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ;
+         SFmxAvg=SFMXEle(IE)
+         SFmyAvg=SFMYEle(IE)
+         sfdxfac=(1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
+         sfdyfac=(1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg
          ! continuity
-         SFCXAvg=SFCXEle(IE) ;
-         SFCYAvg=SFCYEle(IE) ;
-         YCFACAvg=YCSFACEle(IE) ;
-         TANPHIAvg=TANPHIEle(IE) ;
-         SFCXADJ = SFCXAvg/sfdxfac ;
-         SFCYADJ = YCFACAvg*SFCYAvg/sfdyfac ;
+         SFCXAvg=SFCXEle(IE)
+         SFCYAvg=SFCYEle(IE)
+         YCFACAvg=YCSFACEle(IE)
+         TANPHIAvg=TANPHIEle(IE)
+         SFCXADJ = SFCXAvg/sfdxfac
+         SFCYADJ = YCFACAvg*SFCYAvg/sfdyfac
 
-         FDX1 = FDXE(1,IE)*sfdxfac ; !c dx/dlambda*b1*2A
-         FDX2 = FDXE(2,IE)*sfdxfac ; !c dx/dlambda*b2*2A
-         FDX3 = FDXE(3,IE)*sfdxfac ; !c dx/dlambda*b3*2A
-         FDY1 = FDYE(1,IE)*sfdyfac ; !c dy/dphi*a1*2A
-         FDY2 = FDYE(2,IE)*sfdyfac ; !c dy/dphi*a1*2A
-         FDY3 = FDYE(3,IE)*sfdyfac ; !c dy/dphi*a1*2A
+         FDX1 = FDXE(1,IE)*sfdxfac !c dx/dlambda*b1*2A
+         FDX2 = FDXE(2,IE)*sfdxfac !c dx/dlambda*b2*2A
+         FDX3 = FDXE(3,IE)*sfdxfac !c dx/dlambda*b3*2A
+         FDY1 = FDYE(1,IE)*sfdyfac !c dy/dphi*a1*2A
+         FDY2 = FDYE(2,IE)*sfdyfac !c dy/dphi*a1*2A
+         FDY3 = FDYE(3,IE)*sfdyfac !c dy/dphi*a1*2A
 C..... DW
 
 C...     Compute part of several spatial gradients for use below
@@ -1171,10 +1171,10 @@ C...     Compute elemental averages
 
 C.....   DW, Nov 2019
          DPAvg = (DP(NM1)+DP(NM2)+DP(NM3))/3.d0 + ! BAVG if GWCE_HDP = .FALSE.
-     &        IFNLFA*IFNL_HDP*(E1N1 + E1N2 + E1N3)/3.d0 ; ! H^{s}_{avg} otherwise
+     &        IFNLFA*IFNL_HDP*(E1N1 + E1N2 + E1N3)/3.d0 ! H^{s}_{avg} otherwise
 
          DPAvgS0 = (DP(NM1)+DP(NM2)+DP(NM3))/3.d0 + ! BAVG if GWCE_HDP = .FALSE.
-     &        IFNLFA*IFNL_HDP*(E0N1 + E0N2 + E0N3)/3.d0 ; ! H^{s-1}_{avg} otherwise
+     &        IFNLFA*IFNL_HDP*(E0N1 + E0N2 + E0N3)/3.d0 ! H^{s-1}_{avg} otherwise
 
 C.....   WJP adjust the dispersion equation through
 C        Ali et al. formula
@@ -1208,19 +1208,19 @@ C
 
          ! Use in the momentum equation parts
          SigmaQxAvg = (SgN1_mnx*QX1N1 +
-     &         SgN2_mnx*QX1N2 + SgN3_mnx*QX1N3)/3.d0 ;
+     &         SgN2_mnx*QX1N2 + SgN3_mnx*QX1N3)/3.d0
          SigmaQyAvg = (SgN1_mny*QY1N1 +
-     &         SgN2_mny*QY1N2 + SgN3_mny*QY1N3)/3.d0 ;
+     &         SgN2_mny*QY1N2 + SgN3_mny*QY1N3)/3.d0
 
          AvgSigmaHAbsU = (SgN1_mnx*H1N1*U1AN1 +
-     &        SgN2_mnx*H1N2*U1AN2 + SgN3_mnx*H1N3*U1AN3)/3.D0 ;
+     &        SgN2_mnx*H1N2*U1AN2 + SgN3_mnx*H1N3*U1AN3)/3.D0
 
          AvgSigmaHAbsV = (SgN1_mny*H1N1*V1AN1 +
-     &        SgN2_mny*H1N2*V1AN2 + SgN3_mny*H1N3*V1AN3)/3.D0 ;
+     &        SgN2_mny*H1N2*V1AN2 + SgN3_mny*H1N3*V1AN3)/3.D0
 
          IF ((NWS.NE.0).OR.(NRS.NE.0)) THEN     !wind or radiation stress
-            fwsx1 = 1.D0 ; fwsx2 = 1.D0 ; fwsx3 = 1.D0 ;
-            fwsy1 = 1.D0 ; fwsy2 = 1.D0 ; fwsy3 = 1.D0 ;
+            fwsx1 = 1.D0 ; fwsx2 = 1.D0 ; fwsx3 = 1.D0
+            fwsy1 = 1.D0 ; fwsy2 = 1.D0 ; fwsy3 = 1.D0
             IF ( NO_MET_IN_SPONGE ) THEN
                IF ( absorblayer_sigma_mnx(NM1,1) > 1e-9 ) fwsx1 = 0.D0
                IF ( absorblayer_sigma_mnx(NM2,1) > 1e-9 ) fwsx2 = 0.D0
@@ -1328,9 +1328,9 @@ C...     Complete the JX, JY terms depending on the advection formulation
 C...... BEG: DW, DEC 2019
 C...     Needs multiplying by cos(lat) in case of the correction
 C        Node by node
-         SPM1 = SFCT(NM1) ;
-         SPM2 = SFCT(NM2) ;
-         SPM3 = SFCT(NM3) ;
+         SPM1 = SFCT(NM1)
+         SPM2 = SFCT(NM2)
+         SPM3 = SFCT(NM3)
 C...... END DW
 
 C...     Assemble forcing for node NM1 (local index j=1)
@@ -1502,14 +1502,14 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
             END DO
          ENDIF
       endif                                   ! NCSU Subdomain
-      ! 
+      !
       ! jgf46.02 Added the ability to include geoid offset on the boundary.
       !
-      ! aaltuntas51.48: Deactivated geoidOffset for subdomain boundary 
+      ! aaltuntas51.48: Deactivated geoidOffset for subdomain boundary
       ! conditions.
       if (subdomainOn.and.enforceBN.eq.1) then  ! NCSU Subdomain
          continue                                ! NCSU Subdomain
-      else 
+      else
          IF (LoadGeoidOffset) THEN
             DO I=1,NETA
                ETA2(NBD(I))=ETA2(NBD(I))+GeoidOffset(NBD(I))
@@ -1521,8 +1521,8 @@ C
 C     jgf48.04 Added an inverted barometer boundary condition so that
 C     low pressure systems can cross the boundary without creating an
 C     elevation anomaly.
-C     jgf52.30.04: Included a parameter from fort.15 to turn this 
-C     on and off according to analyst preference. 
+C     jgf52.30.04: Included a parameter from fort.15 to turn this
+C     on and off according to analyst preference.
       IF (NO_MET_IN_SPONGE.eqv..false.) THEN
          if (invertedBarometerOnElevationBoundary.eqv..true.) then
             DO I=1,NETA
@@ -1535,7 +1535,7 @@ C     on and off according to analyst preference.
       !jgf: Added water level offset to elevation specified boundary
       if (usingDynamicWaterLevelCorrection.eqv..true.) then
          DO I=1,NETA
-            ETA2(NBD(I))=ETA2(NBD(I)) + dynamicWaterLevelCorrection1(nbd(i)) 
+            ETA2(NBD(I))=ETA2(NBD(I)) + dynamicWaterLevelCorrection1(nbd(i))
            END DO
       endif
 
@@ -1655,7 +1655,7 @@ C     jgf46.21 Added IBTYPE=52
         ENDIF
 
 C..... DW
-      CALL UPDATE_RHS_SLPERBC() ;
+      CALL UPDATE_RHS_SLPERBC()
 C..... DW
 C...
 C...  IMPOSE ELEVATION BOUNDARY CONDITIONS TO LOAD VECTOR GWCE_LV(I) NOTE; EP
@@ -1730,15 +1730,15 @@ C...  JCG ITERATIVE MATRIX SOLVER
       ENDIF
 
 C...... DW, periodic bcs
-      CALL UPDATE_PERSLNODES() ;
+      CALL UPDATE_PERSLNODES()
 C     Switch back to the original element table
-      CALL SWITCH_ELTAB_PERBC( IDIREC = 2 ) ;
+      CALL SWITCH_ELTAB_PERBC( IDIREC = 2 )
 C......
 
 #ifdef CMPI
       CALL UPDATER(ETA2,DUMY1,DUMY2,1)
-#endif      
-     
+#endif
+
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -1760,15 +1760,15 @@ C...  For each slave node, zero all off diagonal
 c......terms on the row and set diagnoal term to EP
         IF ( NPERSEG > 0 ) THEN
            DO I = 1, NNPERBC
-              I2 = IPERCONN(I,2) ;
-              Coef(I2,1)=EP ;
+              I2 = IPERCONN(I,2)
+              Coef(I2,1)=EP
               DO J = 2, NNEIGH(I2)
-                 Coef(I2,J) = 0.0D0 ;
+                 Coef(I2,J) = 0.0D0
               END DO
            END DO
         END IF
 
-        RETURN ;
+        RETURN
         END SUBROUTINE UPDATE_COEF_PERBCSL_CONSISTENT
 
         SUBROUTINE UPDATE_COEF_PERBCSL_LUMPED()
@@ -1778,12 +1778,12 @@ c......terms on the row and set diagnoal term to EP
 
         IF ( NPERSEG > 0 ) THEN
            DO I = 1, NNPERBC
-              I2 = IPERCONN(I,2) ;
-              Coefd(I2)=EP ;
+              I2 = IPERCONN(I,2)
+              Coefd(I2)=EP
            END DO
         END IF
 
-        RETURN ;
+        RETURN
         END SUBROUTINE  UPDATE_COEF_PERBCSL_LUMPED
 
         SUBROUTINE UPDATE_RHS_SLPERBC()
@@ -1793,13 +1793,13 @@ c......terms on the row and set diagnoal term to EP
 
         IF ( NPERSEG > 0 ) THEN
            DO I = 1, NNPERBC
-              I2 = IPERCONN(I,2) ;
-              ETAS(I2) = 0.0D0   ; !  ETA1 ==> ETA2
+              I2 = IPERCONN(I,2)
+              ETAS(I2) = 0.0D0   !  ETA1 ==> ETA2
               GWCE_LV(I2)=ETAS(I2)*NODECODE(I2)*EP
            END DO
         END IF
 
-        RETURN ;
+        RETURN
         END SUBROUTINE UPDATE_RHS_SLPERBC
 
         SUBROUTINE UPDATE_PERSLNODES()
@@ -1809,15 +1809,15 @@ c......terms on the row and set diagnoal term to EP
         IF ( NPERSEG > 0 ) THEN
 C     Update values of slave node !
            DO I = 1, NNPERBC
-              I1 = IPERCONN(I,1) ;
-              I2 = IPERCONN(I,2) ;
+              I1 = IPERCONN(I,1)
+              I2 = IPERCONN(I,2)
 
-              ETAS(I2)=ETAS(I1) ;
-              ETA2(I2)=ETA2(I1) ;
+              ETAS(I2)=ETAS(I1)
+              ETA2(I2)=ETA2(I1)
            END DO
         END IF
 
-        RETURN ;
+        RETURN
         END SUBROUTINE UPDATE_PERSLNODES
 C..... DW
 C.....
@@ -2030,7 +2030,7 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
             LSYYGradA=(VV1(NM1)*FDY1+VV1(NM2)*FDY2+VV1(NM3)*FDY3)/2.d0   !A*DVDY
             EVMEle=NCEle*(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
             ! If using Smagorinski vertically-integrated lateral stress coefficient
-            IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN  
+            IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN
                EVMSmag=EVMEle*
      &             sqrt((LSXXGradA-LSYYGradA)*(LSXXGradA-LSYYGradA)
      &                 +(LSYXGradA+LSXYGradA)*(LSYXGradA+LSXYGradA))
@@ -2821,7 +2821,7 @@ C   Subroutine to check if elemental slope limiting is needed
 C       Chris Massey, USACE-ERDC-CHL Dec. 8, 2014 -- Removed this
 C         section from timestep subroutine and put it in its own
 C         subroutine.
-C     jgf53.dev: Moved to GWCE module. 
+C     jgf53.dev: Moved to GWCE module.
 C*************************************************************************
       subroutine check_slopes(it,TimeLoc)
       USE SIZES, ONLY : SZ, mnproc, myproc
@@ -2846,7 +2846,7 @@ C*************************************************************************
       REAL(SZ) FDX1,FDX2,FDX3,FDY1,FDY2,FDY3
       REAL(8) :: AreaIE2
       integer nodeNumber ! fulldomain node number where wse slope is exceeded
-      
+
 
       call setMessageSource("check_slopes")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -2855,9 +2855,9 @@ C*************************************************************************
       ! jgf51.47: Per Rick's specification, start off by deactivating
       ! any slope limitation triggered in the previous time step;
       ! we have a fresh start each time step in determining whether
-      ! to activate slope limiting at each node. 
+      ! to activate slope limiting at each node.
       ! jgf51.50: Added this back to the subroutine version of the
-      ! slope limiter. 
+      ! slope limiter.
       elemental_slope_limiter_active(:) = .false.
 
 Cobell  CHECK IF THE LOCAL GRADIENT FOR ELEMENTS IS EXCEEDED AND TRIGGER THE
@@ -2878,17 +2878,17 @@ C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
 C.... Beg WP:
          SFacAvg = SFacEle(IE)
 C..... BEG DW/WJP
-         SFmxAvg = SFMXEle(IE) ;
-         SFmyAvg = SFMYEle(IE) ;
-         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-         sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+         SFmxAvg = SFMXEle(IE)
+         SFmyAvg = SFMYEle(IE)
+         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
+         sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg
 C..... END DW/WJP
-         FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
-         FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
-         FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
-         FDY1 = FDYE(1,IE)*sfdyfac ; !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
-         FDY2 = FDYE(2,IE)*sfdyfac ; !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
-         FDY3 = FDYE(3,IE)*sfdyfac ; !c FDY3=(X(NM2)-X(NM1))*MY !a3*my
+         FDX1 = FDXE(1,IE)*sfdxfac !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
+         FDX2 = FDXE(2,IE)*sfdxfac !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
+         FDX3 = FDXE(3,IE)*sfdxfac !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
+         FDY1 = FDYE(1,IE)*sfdyfac !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
+         FDY2 = FDYE(2,IE)*sfdyfac !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
+         FDY3 = FDYE(3,IE)*sfdyfac !c FDY3=(X(NM2)-X(NM1))*MY !a3*my
 C.... end WP
          dEta2Dx  = (Eta2(NM1)*FDX1+Eta2(NM2)*FDX2+Eta2(NM3)*FDX3)
      &                 /AreaIE2
@@ -2896,12 +2896,12 @@ C.... end WP
      &                 /AreaIE2
          dEta2Mag = sqrt(dEta2Dx*dEta2Dx + dEta2Dy*dEta2Dy)
          !
-         ! jgf51.51: Now that the slope limiter gets reset at 
+         ! jgf51.51: Now that the slope limiter gets reset at
          ! every time step, I had to rewrite the logging so that
          ! a log message is only written the first time the slope
          ! limiter is activated at a node during a particular run.
          DO I=1,3
-            ! If the limiter is on already, go to the next node. 
+            ! If the limiter is on already, go to the next node.
             IF (elemental_slope_limiter_active(NM(IE,I))) CYCLE
             ! Compare the elemental slope to the maximum elemental gradient.
             grad_check: IF (dEta2Mag.GE.
@@ -2912,14 +2912,14 @@ C.... end WP
                   nodeNumber = nodes_lg(nm(ie,i))
                endif
                ! zc - If gradmax is positive or zero, activate slope
-               ! limiting. 
+               ! limiting.
                grad_case: if (elemental_slope_limiter_grad_max(nm(ie,i))
      &               .ge.0.0d0) then
                   ! If it is the first time that the slope limiter
-                  ! has been activated at this node, write a log 
-                  ! message. 
+                  ! has been activated at this node, write a log
+                  ! message.
                   if (eslcount(nm(ie,i)).eq.0) then
-                     write(scratchMessage,1983) nodeNumber,dEta2Mag, 
+                     write(scratchMessage,1983) nodeNumber,dEta2Mag,
      &                     elemental_slope_limiter_grad_max(NM(IE,I)),
      &                     it, timeLoc
                      call allMessage(INFO,scratchMessage)
@@ -2927,11 +2927,11 @@ C.... end WP
                   endif
                   elemental_slope_limiter_active(NM(IE,I)) = .true.
                else
-                  ! Just print log message the first time the 
-                  ! gradient is exceeded. 
+                  ! Just print log message the first time the
+                  ! gradient is exceeded.
                   IF (elemental_slope_limiter_max_exceeded(NM(IE,I))
      &                  .eqv..false.) THEN
-                     write(scratchMessage,1984) nodeNumber,dEta2Mag, 
+                     write(scratchMessage,1984) nodeNumber,dEta2Mag,
      &                     elemental_slope_limiter_grad_max(NM(IE,I)),
      &                     it, timeLoc
                      call allMessage(INFO,scratchMessage)
@@ -2953,7 +2953,7 @@ C.... end WP
      &  ' where the elemental slope is ',1pE12.4E3,
      &  ' and the maximum elemental slope is ',1pE12.4E3,
      &  ' on time step ',i0,' and time = ',e15.8,'.')
-     
+
 C...  END CHECKING ELEMENT GRADIENTS
 
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -2962,15 +2962,15 @@ C...  END CHECKING ELEMENT GRADIENTS
       call unsetMessageSource()
       !-----------------------------------------------------------------
       END SUBROUTINE CHECK_SLOPES
-      !-----------------------------------------------------------------   
+      !-----------------------------------------------------------------
 C
 C***********************************************************************
 
 C***********************************************************************
-C  Apply Elemental Slope Limiter 
-C    Chris Massey, USACE-ERDC-CHL, Dec. 8, 2014 
+C  Apply Elemental Slope Limiter
+C    Chris Massey, USACE-ERDC-CHL, Dec. 8, 2014
 C       Made into a subroutine
-C     jgf53.dev: Moved to GWCE module. 
+C     jgf53.dev: Moved to GWCE module.
 C***********************************************************************
 C
       SUBROUTINE APPLY_SLOPE_LIMITS(ETA2Lim,LocNP)
@@ -3060,11 +3060,11 @@ C***********************************************************************
 
 
 !-----------------------------------------------------------------------
-!      S U B R O U T I N E   G  W  C  E   T E R M I N A T E 
+!      S U B R O U T I N E   G  W  C  E   T E R M I N A T E
 !-----------------------------------------------------------------------
 !     jgf: Placed this subroutine here to eliminate dependency of this
 !     module on adcirc_mod module. Bombs out of mpi gracefully when
-!     there is an issue. 
+!     there is an issue.
 !-----------------------------------------------------------------------
       subroutine gwceTerminate(NO_MPI_FINALIZE)
 #ifdef CMPI

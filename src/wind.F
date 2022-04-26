@@ -186,7 +186,7 @@ C
          real(sz)          :: rampVal          ! ramping multiplier for this dataset
          real(sz)          :: max_extrap_dist  ! maximum distance for extrapolating values (meters)
          integer           :: numFiles         !total number of GFDL met Files to be read
-
+         ! input data from gfdl met files themselves
          integer           :: nh           ! number of grid points
          ! derived data
          logical           :: loaded       ! .true. if we have loaded the data from file
@@ -321,10 +321,10 @@ C.... convert background pressure from millibars to meters of water
       prn2 = PRBCKGRND_MH2O
 
       ! dw
-      wvnx1 = 0.0 ;
-      wvny1 = 0.0 ;
-      wvnx2 = 0.0 ;
-      wvny2 = 0.0 ;
+      wvnx1 = 0.0
+      wvny1 = 0.0
+      wvnx2 = 0.0
+      wvny2 = 0.0
 
       CALL checkWindDragType()
       CALL mapWindDragFunctionPointer()
@@ -876,7 +876,7 @@ C     particular point in time.
 C----------------------------------------------------------------------
       subroutine getMeteorologicalForcing(nws, wsx2, wsy2, pr2,
      &   wvnxout, wvnyout, timeloc)
-      use owiwind,only : nws12get, findStormCenter    ! sb added 09/xx/2006     
+      use owiwind,only : nws12get, findStormCenter    ! sb added 09/xx/2006
       use global, only : ciceout, h0, g, eta2, ncice, rampmete,
      &   sponge, res_bc_flag, IDEN, SigTS, cice1, cice2, IFSPROTS
       use nodalAttributes, only : applyDirectionalWindReduction,
@@ -1761,10 +1761,10 @@ C  tcm v49.16 20100617
 
 C      DW/WJP: rotate wind stresses if coordinate transform
        IF ( IFSPROTS .eq. 1 ) THEN
-          UVECTMP(1:NP) = WSX2(1:NP);
-          VVECTMP(1:NP) = WSY2(1:NP);
+          UVECTMP(1:NP) = WSX2(1:NP)
+          VVECTMP(1:NP) = WSY2(1:NP)
           CALL DRVMAP2DSPVEC( WSX2, WSY2,
-     &              UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
+     &              UVECTMP, VVECTMP, NP, FWD = .TRUE. )
        ENDIF
 
 C--------------------END MET FORCING---------------------------------------
@@ -1787,10 +1787,10 @@ C     Sets up meteorological i/o for a coldstart.
 C----------------------------------------------------------------------
       subroutine coldstartMeteorologicalForcing(nws)
       use sizes, only : gblinputdir, inputdir
-      use global, only : ciceout, h0, g, eta2, ncice, rampmete, mb2pa, 
+      use global, only : ciceout, h0, g, eta2, ncice, rampmete, mb2pa,
      &   sponge, res_bc_flag, statim, wsx1, wsy1, wsx2, wsy2, pr2, pr1,
      &   cice1, cice2
-      use owiwind,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006          
+      use owiwind,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np
@@ -1820,8 +1820,8 @@ Casey 180318: Added for NWS=13
       WSY2(:) = 0.D0
       PR2(:) = PRBCKGRND_MH2O
 
-      WSX1(:) = 0.d0 ;
-      WSY1(:) = 0.d0 ;
+      WSX1(:) = 0.d0
+      WSY1(:) = 0.d0
 !      PR1(:) = PRBCKGRND_MH2O ! -- DW for 517
 !++ GML
       if (NCICE.ne. 0) then
@@ -2154,12 +2154,12 @@ C......RESTART WIND AND PRESSURE INFORMATION
       !c DW, for nonwind and NEM
       SELECT CASE(NWS)
       CASE (0,17)
-         WVNX1(:) = 0.d0 ;
-         WVNY1(:) = 0.d0 ;
-         WVNX2(:) = 0.d0 ;
-         WVNY2(:) = 0.d0 ;
-         PRN1(:)=PRBCKGRND_MH2O ;
-         PRN2(:)=PRBCKGRND_MH2O ;
+         WVNX1(:) = 0.d0
+         WVNY1(:) = 0.d0
+         WVNX2(:) = 0.d0
+         WVNY2(:) = 0.d0
+         PRN1(:)=PRBCKGRND_MH2O
+         PRN2(:)=PRBCKGRND_MH2O
          WSX2(:) = 0.d0
          WSY2(:) = 0.D0
          PR2(:) = PRBCKGRND_MH2O
@@ -3260,17 +3260,17 @@ C  tcm v49.16 20100617
 
 C      DW/WJP: rotate wind stresses if coordinate transform
        IF ( IFSPROTS .eq. 1 ) THEN
-          UVECTMP(1:NP) = WSX2(1:NP);
-          VVECTMP(1:NP) = WSY2(1:NP);
+          UVECTMP(1:NP) = WSX2(1:NP)
+          VVECTMP(1:NP) = WSY2(1:NP)
           CALL DRVMAP2DSPVEC( WSX2, WSY2,
-     &              UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
+     &              UVECTMP, VVECTMP, NP, FWD = .TRUE. )
        ENDIF
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
        call allMessage(DEBUG,"Return.")
 #endif
        call unsetMessageSource()
-      
+
 C--------------------END MET FORCING-----------------------------------
       end subroutine hotstartMeteorologicalForcing
 C--------------------END MET FORCING-----------------------------------
@@ -7298,9 +7298,9 @@ C
       ! using the specified pressure-wind relationship
       select case(trim(pressureWindRelationship))
          case("dvorak")
-            pc = 1015.d0 - (vmaxNow/3.92d0)**(1.0d0/0.644d0);
+            pc = 1015.d0 - (vmaxNow/3.92d0)**(1.0d0/0.644d0)
          case("knaffzehr")
-            pc = 1010.d0 - (vmaxNow/2.3d0)**(1.0d0/0.76d0);
+            pc = 1010.d0 - (vmaxNow/2.3d0)**(1.0d0/0.76d0)
          case("specifiedPc")
             ! time-interpolate the specified central pressure value
             pc = hWindFiles(currentCycle)%Pc +
@@ -7979,10 +7979,10 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
           IF ( IFSPROTS.eq. 1) THEN
              CALL DRVSPCOORSROTS( lonr, latr, LON_GFDL, LAT_GFDL )
           ELSE
-             latr = LAT_GFDL ;  lonr = LON_GFDL;
+             latr = LAT_GFDL ;  lonr = LON_GFDL
           END IF
           CALL CYLINDERMAP( XY_GFDL(1,I),XY_GFDL(2,I),
-     &           lonr, latr, SLAM0, SFEA0, ICS) ;
+     &           lonr, latr, SLAM0, SFEA0, ICS)
        ENDDO !I
 
        CLOSE(LUN)  !CLOSE THIS GFDL DATA FILE
@@ -8074,7 +8074,7 @@ C...  THIS SPACE WILL BE DEALLOCATED LATER IN THE SUBROUTINE
          VTMP = 0.D0
          PTMP = 0.D0
          TTMP = 0.D0
-         ITC = 1;
+         ITC = 1
          DO WHILE (ITC <= SRCHDP)
             ! IF POINT IS LOCATED AT AN ORIGINAL GFDL GRID THEN USE THAT VALUE ONLY
             IF (WTS(ITC) == -1.D0) THEN
@@ -8747,7 +8747,7 @@ C.... or netcdf (depending on what is present)
 
       ! Initialise the datetime
       CurDT = basedatetime + timedelta(minutes=floor(WTIME1/60d0))
-      NT = 0; NTC = 0;
+      NT = 0; NTC = 0
 
       ! Set the file names
       ! Trying to read from grib2
@@ -8924,7 +8924,7 @@ C----------------------------------------------------------------------
 
       ! Compute the interpolating factors and indices on the first step
       if (.not.allocated(indp)) then
-         ub = 2; ubc = 1;
+         ub = 2; ubc = 1
          if (present(CICE2)) ub = 3
          ! Check dimensions
          do ii = 1,ub
@@ -8940,7 +8940,7 @@ C----------------------------------------------------------------------
             else
                call READNWS14(Cfile,Cinv,Cvar,lon,lat)
                if (nxp.eq.ubound(lon,1).and.nyp.eq.ubound(lat,2)) then
-                  ubc = 2;
+                  ubc = 2
                endif
             endif
          enddo
@@ -9024,7 +9024,7 @@ C----------------------------------------------------------------------
       if (present(CICE2)) then
          NTkeep = NT; NT = NTC
          call READNWS14(Cfile,Cinv,Cvar,Cice)
-         NT = NTkeep;
+         NT = NTkeep
       endif
 
       ! Get the Pressure
@@ -9041,7 +9041,7 @@ C----------------------------------------------------------------------
       if (present(CICE2)) then
          NTkeep = NT; NT = NTC
          call READNWS14(Cfile,Cinv,Cvar,Cice)
-         NT = NTkeep;
+         NT = NTkeep
       endif
 
       ! Doing the interpolation from their grid to ours
@@ -9085,7 +9085,7 @@ C----------------------------------------------------------------------
       if (present(CICE2)) then
          do i = 1,np
             if (indp(ubc,1,i) < 0) then
-               CICE2(i) = 0d0;
+               CICE2(i) = 0d0
             else
                CICE2(i) =
      &             Cice(indp(ubc,1,i),indp(ubc,2,i))*weightsp(ubc,1,i) +

@@ -1,6 +1,6 @@
 C
 C                      ADCIRC - SUBDOMAIN MODELING MODULE
-C       
+C
 C    ========================================================================
 C    |                                                                      |
 C    |   This file contains the subroutines required by Subdomain Modeling, |
@@ -18,15 +18,15 @@ C    ========================================================================
       use sizes, only : sz, globaldir
       use global, only : DEBUG, ECHO, INFO, WARNING, ERROR, logMessage,
      &                    allMessage, scratchMessage, setMessageSource,
-     &                    unsetMessageSource 
+     &                    unsetMessageSource
 
-      logical subdomainOn                                         
-      integer :: NOUTGS, NSPOOLGS, enforceBN 
+      logical subdomainOn
+      integer :: NOUTGS, NSPOOLGS, enforceBN
       integer :: ncbnr, nobnr, nibnr, localncbnr, localnobnr, localnibnr
       integer,allocatable :: cbnr(:), obnr(:), ibnr(:)
-      integer,allocatable :: localcbnr(:), localobnr(:), localibnr(:) 
+      integer,allocatable :: localcbnr(:), localobnr(:), localibnr(:)
       integer :: sbtiminc, nobn, nibn, ncbn
-      real(sz),allocatable :: eobn1(:),uobn1(:),vobn1(:),eibn1(:) 
+      real(sz),allocatable :: eobn1(:),uobn1(:),vobn1(:),eibn1(:)
       real(sz),allocatable :: eobn2(:),uobn2(:),vobn2(:),eibn2(:)
       real(sz),allocatable :: ecbn1(:),ucbn1(:),vcbn1(:)
       real(sz),allocatable :: ecbn2(:),ucbn2(:),vcbn2(:)
@@ -34,7 +34,7 @@ C    ========================================================================
       real(sz),allocatable :: setVob(:), setVcb(:), setEib(:)
       integer,allocatable :: setWDob(:), setWDcb(:)
       integer,allocatable :: wdobn1(:),wdobn2(:),wdcbn1(:),wdcbn2(:)
-      integer,allocatable :: cbn(:),obn(:),ibn(:)  
+      integer,allocatable :: cbn(:),obn(:),ibn(:)
       integer :: nlines, bchange
 
       contains
@@ -43,7 +43,7 @@ C    ========================================================================
 C    ========================================================================
 C      This subroutine reads in additional modeling parameters from fort.015
 C      and initiates the Subdomain Modeling
-C     
+C
 C       - NOUTGS: Type of the run:
 C     NOUTGS=0 => full run
 C     NOUTGS=1 => subdomain run (old file formatting)
@@ -57,11 +57,11 @@ C     enforceBN = 2 => forcing (subdomain, new file formatting)
 C       - nobnr: The number of outer boundary nodes of subdomain grids to be
 C                recorded to fort.06* during a full run.
 C       - obnr(i): i.th outer boundary node to be recorded to fort.065 and
-C                  fort.066 
+C                  fort.066
 C       - NIBNR: The number of inner boundary nodes of subdomain grids to be
 C                recorded to fort.065 and fort.066 during a full run.
 C       - IBNR(i): i.th inner boundary node to be recorded to fort.065 and
-C                  fort.066 
+C                  fort.066
 C    ========================================================================
 
 
@@ -69,7 +69,7 @@ C    ========================================================================
 #ifdef CMPI
          use global, only : nodes_lg
          use mesh, only : np
-         Use MESSENGER 
+         Use MESSENGER
 #endif
          implicit none
          integer :: i,j
@@ -79,7 +79,7 @@ C    ========================================================================
 #if defined(SUBDOMAIN_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-        
+
          fileFound = .false.
          inquire(file=trim(globaldir)//'/'//'fort.015', Exist=fileFound)
          if (fileFound.eqv..false.) then
@@ -91,7 +91,7 @@ C    ========================================================================
 
          if (myproc.eq.0) print *, "Subdomain Active"
          open(1015, file=trim(globaldir)//'/'//'fort.015')
-         read(1015,*) NOUTGS 
+         read(1015,*) NOUTGS
          read(1015,*) NSPOOLGS
          read(1015,*) enforceBN
          select case(noutgs)
@@ -117,7 +117,7 @@ C    ========================================================================
             do i=1, nibnr
                read(1015,*) ibnr(i)
             enddo
-         case default        
+         case default
             call allMessage(ERROR,'The NOUTGS value is invalid.')
             call subdomainTerminate()
          end select
@@ -144,7 +144,7 @@ C    ========================================================================
             enddo
          case(2)
             ! outer boundary nodes:
-            localnobnr = 0 
+            localnobnr = 0
             do i=1,np
                if(any(obnr.eq.nodes_lg(i))) then
                   localnobnr = localnobnr+1
@@ -159,7 +159,7 @@ C    ========================================================================
                endif
             enddo
             ! inner boundary nodes:
-            localnibnr = 0 
+            localnibnr = 0
             do i=1,np
                if(any(ibnr.eq.nodes_lg(i))) then
                   localnibnr = localnibnr+1
@@ -183,7 +183,7 @@ C    ========================================================================
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-      
+
       END SUBROUTINE readFort015
 
 
@@ -215,9 +215,9 @@ C     | during a full run. This subroutine is called within timestep.F
 #else
              open(1065,file='fort.065',status='REPLACE')
              write(1065,*) 'Subdomain Modeling CBN output'
-             write(1065,*) nspoolgs,ncbnr,int(rnday*86400/(dt*nspoolgs)), 
+             write(1065,*) nspoolgs,ncbnr,int(rnday*86400/(dt*nspoolgs)),
      &                     " ! NSPOOLGS,ncbnr,tsteps"
-#endif 
+#endif
              close(1065)
          endif
 
@@ -263,7 +263,7 @@ C     | during a full run. This subroutine is called within timestep.F
          Use GLOBAL, only : dt, rnday, etas, uu2, vv2, nodecode
 #ifdef CMPI
      &                      , nodes_lg
-         Use MESSENGER 
+         Use MESSENGER
 #endif
          implicit none
          character(6) :: procLoc
@@ -283,7 +283,7 @@ C     | during a full run. This subroutine is called within timestep.F
              write(1066,*) 'Subdomain Modeling OBN output'
              write(1066,*) nspoolgs, nobnr,int(rnday*86400/(dt*nspoolgs)),
      &                     " ! NSPOOLGS,nobnr,tsteps"
-#endif 
+#endif
              close(1066)
          endif
 
@@ -321,7 +321,7 @@ C     | during a full run. This subroutine is called within timestep.F
 
       SUBROUTINE writeFort067(it)
 
-C     | This subroutine writes ETAS of inner boundary nodes of subdomain  
+C     | This subroutine writes ETAS of inner boundary nodes of subdomain
 C     | grids to fort.067 file during a full run. This subroutine is called
 C     | within timestep.F
 
@@ -329,7 +329,7 @@ C     | within timestep.F
          Use global, only : dt, rnday, etas
 #ifdef CMPI
      &                      , nodes_lg
-         Use MESSENGER 
+         Use MESSENGER
 #endif
          implicit none
          character(6) :: procLoc
@@ -349,7 +349,7 @@ C     | within timestep.F
              write(1067,*) 'Subdomain Modeling IBN output'
              write(1067,*) nspoolgs, nibnr, int(rnday*86400/(dt*nspoolgs)),
      &                     " ! NSPOOLGS,nibnr,tsteps"
-#endif 
+#endif
              close(1067)
          endif
 
@@ -381,7 +381,7 @@ C     | within timestep.F
 
 
       SUBROUTINE openFort019H(TimeLoc)
-C     | This subroutine opens fort.019 for a hot-started model and 
+C     | This subroutine opens fort.019 for a hot-started model and
 C     | finds the proper place in the b.c. file.
 
          Use SIZES, only : myproc
@@ -390,7 +390,7 @@ C     | finds the proper place in the b.c. file.
 #ifdef CMPI
          Use MESSENGER
 #endif
-         implicit none       
+         implicit none
          character(6) :: procLoc
          integer :: i,j,n,it,itread
          REAL(8), intent(in) :: TimeLoc
@@ -492,7 +492,7 @@ C     | This subroutine reads in ETA2, x/y velocities and wet/dry states of
 C     | outer boundary nodes of the subdomain grid from fort.019 file during
 C     | a subdomain run. This subroutine is called within timestep.F.
 
-         Use GLOBAL, only : ihot 
+         Use GLOBAL, only : ihot
 #ifdef CMPI
          Use MESSENGER
 #endif
@@ -503,7 +503,7 @@ C     | a subdomain run. This subroutine is called within timestep.F.
          integer :: i,n
 
          if (it.eq.1.and.ihot.eq.0) then  ! coldstart
-                 call openFort019C() 
+                 call openFort019C()
          endif
 
          if (mod(it,sbtiminc).eq.0) then
@@ -542,13 +542,13 @@ C     | a subdomain run. This subroutine is called within timestep.F.
 
          Use SIZES, only : myproc
 #ifdef CMPI
-         Use MESSENGER 
+         Use MESSENGER
 #endif
          implicit none
          integer,intent(in) :: it
          character(6) :: procLoc
          integer :: i,n
-        
+
          if (it.eq.1) then
 #ifdef CMPI
              write(procLoc,'(A2,I4.4)') "PE",myproc
@@ -583,7 +583,7 @@ C     | a subdomain run. This subroutine is called within timestep.F.
 
       END SUBROUTINE readFort020
 
-      
+
 
 
       SUBROUTINE readFort021(it)
@@ -594,13 +594,13 @@ C     | This subroutine is called within timestep.F.
 
          Use SIZES, only : myproc
 #ifdef CMPI
-         Use MESSENGER 
+         Use MESSENGER
 #endif
          implicit none
          integer,intent(in) :: it
          character(6) :: procLoc
          integer :: i,n
-        
+
          if (it.eq.1) then
 #ifdef CMPI
              write(procLoc,'(A2,I4.4)') "PE",myproc
@@ -632,7 +632,7 @@ C     | This subroutine is called within timestep.F.
 
       SUBROUTINE enforceEcb()
 
-C     | This subroutine enforces ETA2 of opean ocean boundary nodes 
+C     | This subroutine enforces ETA2 of opean ocean boundary nodes
 C     | using setEcb array. Called within timestep.F
 
          Use GLOBAL, only : eta2
@@ -651,13 +651,13 @@ C     | using setEcb array. Called within timestep.F
 
       SUBROUTINE enforceEob()
 
-C     | This subroutine enforces ETAS of outer boundary nodes 
+C     | This subroutine enforces ETAS of outer boundary nodes
 C     | using setEob array. Called within timestep.F
 
          Use GLOBAL, only : etas
          implicit none
          integer :: i,n
-       
+
          do i=1,nobn
              n = obn(i)
              ETAS(n) = setEob(i)
@@ -696,7 +696,7 @@ C     | nodes using setUob and setVob arrays. Called within timestep.F
          Use GLOBAL, only : uu2, vv2
          implicit none
          integer :: i,n
-       
+
          do i=1,nobn
              n = obn(i)
              UU2(n) = setUob(i)
@@ -709,7 +709,7 @@ C     | nodes using setUob and setVob arrays. Called within timestep.F
 
       SUBROUTINE enforceWDcb()
 
-C     | This subroutine enforces wet/dry flags of outer boundary 
+C     | This subroutine enforces wet/dry flags of outer boundary
 C     | nodes using setWDcb. Called within timestep.F
 
          Use GLOBAL, only : nnodecode
@@ -729,13 +729,13 @@ C     | nodes using setWDcb. Called within timestep.F
 
       SUBROUTINE enforceWDob()
 
-C     | This subroutine enforces wet/dry flags of outer boundary 
+C     | This subroutine enforces wet/dry flags of outer boundary
 C     | nodes using setWDob. Called within timestep.F
 
          Use GLOBAL, only : nnodecode
          implicit none
          integer :: i,n
-       
+
          do i=1,nobn
              n = obn(i)
              NNODECODE(n) = setWDob(i)
@@ -750,7 +750,7 @@ C     | nodes using setWDob. Called within timestep.F
 
       SUBROUTINE enforceEib()
 
-C     | This subroutine enforces ETAS of inner boundary nodes 
+C     | This subroutine enforces ETAS of inner boundary nodes
 C     | using setEib array. Called within timestep.F
 
          Use GLOBAL, only : etas
@@ -770,8 +770,8 @@ C     | using setEib array. Called within timestep.F
       SUBROUTINE enforceGWCELVob()
 
 C     | This subroutine changes the value of the GWCE_LV vector
-C     | elements of the outer boundary nodes of subdomains so 
-C     | that jcg solver leads to the enforced values of ETA for 
+C     | elements of the outer boundary nodes of subdomains so
+C     | that jcg solver leads to the enforced values of ETA for
 C     | the outer boundary nodes.
 
          use sizes, only : mnei
@@ -806,7 +806,7 @@ C     | to recalculate COEF of outer-inner boundary nodes
 
          Use GLOBAL, only : ilump
 #ifdef CMPI
-         Use MESSENGER         
+         Use MESSENGER
 #endif
          integer :: i
 
@@ -832,7 +832,7 @@ C     | to recalculate COEF of outer-inner boundary nodes
       ! module, which should be built last to simplify the build system.
       SUBROUTINE subdomainTerminate(NO_MPI_FINALIZE)
 #ifdef CMPI
-         Use MESSENGER         
+         Use MESSENGER
 #endif
       implicit none
 c

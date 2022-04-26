@@ -47,11 +47,11 @@ C
      &    I3DSTRec, N3DGD, I3DGDRec, N3DGV, I3DGVRec, N3DGT, I3DGTRec,
      &    DUU_g, DUV_g, DVV_g, UU_g, VV_g, BSX_g, BSY_g, Q_g, WZ_g,
      &    q20_g, l_g, SigT_g, Sal_g, Temp_g, iy
-      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, readFort015, 
+      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, readFort015,
      &                       openFort019h
 #ifdef CMPI
       USE MESSENGER,ONLY: COMM, IERR, UPDATER, MSG_FINI
-#endif      
+#endif
       USE HARM, ONLY : IHARIND, IHABEG, ITHAS, NHAINC, ICHA, CHARMV,
      &                 NHAGE, NHAGV, NHASE, NHASV, readBinaryHAHotstart,
      &                 checkHAHotstart
@@ -68,21 +68,21 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
      &                     readNetCDFHotstartHarmonicMeansVariances
 #endif
       USE NodalAttributes, ONLY :
-     &     nolibf, nwp, tau0, cf, eslm, GeoidOffset, 
+     &     nolibf, nwp, tau0, cf, eslm, GeoidOffset,
      &     LoadDirEffRLen, LoadCanopyCoef, LoadGeoidOffset,
      &     ApplyDirectionalWindReduction, ApplyCanopyCoefficient,
-     &     OutputTau0, 
+     &     OutputTau0,
      &     LoadRiver_et_WSE, River_et_WSE
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
       USE WRITE_OUTPUT, ONLY : initInundationOutput,
-     &   inundationTime, inundationTime_onset, maxInunDepth, 
+     &   inundationTime, inundationTime_onset, maxInunDepth,
      &   maxInunDepth_time, outputNodeCode, outputNOFF
       USE GWCE, ONLY : etime1, etime2, etiminc
 #ifdef ADCNETCDF
       use Couple2BC3D, only: Initial_BC3D_NetCDF
 #endif
       IMPLICIT NONE
-#ifdef CMPI       
+#ifdef CMPI
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
@@ -122,7 +122,7 @@ C     jgf46.08 Fine grained ramp functions
       REAL(SZ) RampIntFlux1   ! Ramp for internal flux b.c.s @ITHS-1
       REAL(SZ) RampIntFlux2   ! Ramp for internal flux b.c.s @ITHS
       REAL(SZ) RampTip2    ! Ramp for tidal potential @ITHS
-      real(sz) rampMete2   ! Ramp for wind and atmospheric pressure @ITHS     
+      real(sz) rampMete2   ! Ramp for wind and atmospheric pressure @ITHS
       REAL(SZ) RampWRad2   ! Ramp for wave radiation stress @ITHS
 C     jgf46.14 Check for file existence before attempting to open.
       LOGICAL fileFound    ! .True. if the the file exists
@@ -153,7 +153,7 @@ C     kmd48.33bc - add variables for heat flux
       REAL(SZ),ALLOCATABLE :: RealQ_Tmp(:,:)
       REAL(SZ),ALLOCATABLE :: ImQ_Tmp(:,:)
       INTEGER :: IDenHS
-      REAL(8) :: dtChange ! difference in time step size (sec) between 
+      REAL(8) :: dtChange ! difference in time step size (sec) between
                           ! current run and the one we're hotstarting from
 C
 C     jgf49.44: Add variables for reading fulldomain binary hotstart file
@@ -190,7 +190,7 @@ C     kmd -- Added variables for initial conditions
       call initializeWettingAndDrying()
       !
       ! In order to produce inundation output, we need to compute the
-      ! areas that were initially dry at cold start. 
+      ! areas that were initially dry at cold start.
       if (inundationOutput.eqv..true.) then
          call setColdWetDryStateAndWaterSurfaceElevation()
          !
@@ -202,7 +202,7 @@ C     kmd -- Added variables for initial conditions
       !
       ! NCSU Subdomain Modeling
       if (subdomainOn) then
-         call readFort015() 
+         call readFort015()
       endif
 C
 C     -----------------------------------
@@ -515,7 +515,7 @@ C        Now read the non-portable binary hot start file.
             CALL EXIT(1)
          endif
          READ(IHOT,REC=IHOTSTP) IMHS         ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) TimeLoc         ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) TimeLoc      ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) ITHS         ; IHOTSTP = IHOTSTP + 1
 
          READ(IHOT,REC=IHOTSTP) NP_G_IN      ; IHOTSTP = IHOTSTP + 1
@@ -705,10 +705,10 @@ C
 C     I N I T I A L I Z E   H O T S T A R T   R U N
 C
 C     ---------------------------------------------
-      !jgf51.01: Determine if there is a difference between the time 
+      !jgf51.01: Determine if there is a difference between the time
       ! step size in the hotstart file, and the time step size for this
-      ! run (i.e, in the fort.15 file) ... if so, this affects any 
-      ! calculation of time in seconds since cold start, and any 
+      ! run (i.e, in the fort.15 file) ... if so, this affects any
+      ! calculation of time in seconds since cold start, and any
       ! feature that counts time steps since cold start
       DTDPHS=TimeLoc/ITHS  ! Set up time step information for hotstart file.
       dtChange = DTDPHS - DTDP
@@ -733,7 +733,7 @@ C     ---------------------------------------------
 C           jgf51.14: Need to recalculate the starting and ending
 C           times for output if time step size has changed
             call recalculateStartingAndEndingTimestepsForOutput(
-     &         TOUTSE,TOUTFE,NTCYSE,NTCYFE) 
+     &         TOUTSE,TOUTFE,NTCYSE,NTCYFE)
             call recalculateStartingAndEndingTimestepsForOutput(
      &         TOUTSV,TOUTFV,NTCYSV,NTCYFV)
             call recalculateStartingAndEndingTimestepsForOutput(
@@ -815,7 +815,7 @@ C     momentum equations
          IF ( (NOUTM.NE.0) .OR. (NOUTGW.NE.0) ) THEN
             metOutputOn = .TRUE.
          ENDIF
-         IF ( (metOutputOn.eqv..true.) .AND. 
+         IF ( (metOutputOn.eqv..true.) .AND.
      &        (nonMetOutputOff.eqv..true.) ) THEN
             call allMessage(INFO,'Only meteorological output was '//
      &       'requested. ADCIRC will not solve the GWCE or '//
@@ -1211,7 +1211,7 @@ C
 
 C     time varying bathymetry values are read in at all grid nodes
 C     at a time interval that does not equal the model time
-C     step. Interpolation in time is used to synchronize the 
+C     step. Interpolation in time is used to synchronize the
 C     bathymetry information with the model time step.
       IF(Nddt.EQ.1) THEN
          OPEN(141,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
@@ -1278,7 +1278,7 @@ C...     DEPTHS ARE > OR = TO H0.
                IF (DP2(I).LT.H0) DP2(I) = H0
             ENDDO
          ENDIF
-C.......If time is during the bathymetry change interval, then update bathymetry 
+C.......If time is during the bathymetry change interval, then update bathymetry
          IF(TIMEloc.LE.BTIME_END) THEN
             bTRatio=(Timeloc-bTIME1)/BCHGTIMINC ! interpolate
             DO I=1,NP
@@ -1404,41 +1404,41 @@ C
                 CALL NCICE1_GET(CICE2,NP)
              ENDIF
           END DO
-      ENDIF     
+      ENDIF
       if (ncice.ne.0.and.ncice.ne.14) then
          CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
          do i=1,np
             CICEOUT(I) = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
          end do
       endif
-      
+
 C----------------------ICE FIELDS-------------------------------------
 C
 C
 C
 C----------------------MET FORCING------------------------------------
 
-      call hotstartMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
+      call hotstartMeteorologicalForcing(nws, wsx2, wsy2, pr2,
      &   wvnxout, wvnyout, timeloc, rampmete2)
 
 C----------------------MET FORCING------------------------------------
 C
 C
 C......RESTART THE WAVE RADIATION STRESS
-        
-        ! jgf51.46: Fixed initialization issue due to mishandling the 
+
+        ! jgf51.46: Fixed initialization issue due to mishandling the
         ! cases where NRS.eq.3 (SWAN coupling) or NRS.eq.4 (STWAVE
         ! coupling). The code was adding the wave radiation stresses
-        ! to wind stresses whenever NRS.gt.0, but in the case of 
-        ! NRS.eq.3 or NRS.eq.4, the wave radiation stresses were 
+        ! to wind stresses whenever NRS.gt.0, but in the case of
+        ! NRS.eq.3 or NRS.eq.4, the wave radiation stresses were
         ! uninitialized. This resulted in NaNs getting into the solution
         ! upon hotstarting. I fixed this by initializing RSNX1 and
-        ! RSNY1 to 0.0 immediately after the arrays are allocated. 
+        ! RSNY1 to 0.0 immediately after the arrays are allocated.
         IF(NRS.GE.1) THEN ! sb46.28sb03
            RSTIME1 = TimeLoc
            RSTIME2 = RSTIME1 + RSTIMINC
            SELECT CASE(NRS)
-           CASE(1)           
+           CASE(1)
               OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
               CALL RSGET(RSNX1,RSNY1)
               CALL RSGET(RSNX2,RSNY2)
@@ -1450,11 +1450,11 @@ C......RESTART THE WAVE RADIATION STRESS
            CASE(3,4,5)
               ! do nothing, initialization takes place in timestep.F
            CASE DEFAULT
-              write(scratchMessage,'(a,i0,a)') 
-     &        'The NRS parameter cannot have the value ',NRS,'.' 
-              call allMessage(ERROR,scratchMessage)           
+              write(scratchMessage,'(a,i0,a)')
+     &        'The NRS parameter cannot have the value ',NRS,'.'
+              call allMessage(ERROR,scratchMessage)
            END SELECT
-           ! 
+           !
            ! Add wave radiation stress to the wind stress. RSNX1 and
            ! RSNY1 were initialized to 0.0 for NRS.eq.3 and NRS.eq.4.
            WSX2(:) = WSX2(:) + RampWRad2 * RSNX1(:)
@@ -1540,6 +1540,7 @@ C...
 C....IF RESTARTING THE ELEVATION STATION OUTPUT FILE, GO TO THE PROPER PLACE
 C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
 C...
+      IF(NTCYSE.LT.ITHS.AND.NOUTE.GT.0) NTCYSE = ITHS + NSPOOLE - 1
       WRITE(16,1040) IESTP,NSCOUE
  1040 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN ELEVATION ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
@@ -1622,6 +1623,7 @@ C...
      &                'STATION FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER =',I6)
 
+      IF(NTCYSV.LT.ITHS.AND.NOUTV.GT.0) NTCYSV = ITHS + NSPOOLV - 1
       IF(NOUTV.LT.0) THEN
         IVSTP=0
         NSCOUV=0
@@ -1711,6 +1713,7 @@ C...
  1045   FORMAT(//,' A NEW CONCENTRATION STATION FILE WILL BE STARTED')
       ENDIF
 
+      IF(NTCYSC.LT.ITHS.AND.NOUTC.GT.0) NTCYSC = ITHS + NSPOOLC - 1
       IF(NOUTC.EQ.-2) THEN
         OPEN(81,FILE=TRIM(LOCALDIR)//'/'//'fort.81',
      &                      ACCESS='DIRECT',RECL=NBYTE)
@@ -1772,6 +1775,7 @@ C...
 C....GO TO THE PROPER PLACE IN THE METEOROLOGICAL STATION OUTPUT FILE
 C...
 c... v49.64.01 tcm -added support for ice stations
+      IF(NTCYSM.LT.ITHS.AND.NOUTM.GT.0) NTCYSM = ITHS + NSPOOLM - 1
       IF(NCICE.EQ.0)  THEN
          WRITE(16,1038) IWSTP,IPSTP,NSCOUM
       ELSE
@@ -1910,7 +1914,7 @@ C
             ENDIF
 
          else
-         
+
             CALL OPEN_GBL_FILE(71, TRIM(LOCALDIR)//'/'//'fort.71',
      $         NSTAM_G, NSTAM, HEADER71)
             IPSTP=2
@@ -1923,7 +1927,7 @@ C
      $            NSTAM_G, NSTAM, HEADER91)
                IICESTP=2
             ENDIF
-         
+
          endif
       ENDIF
       IF(NOUTM.EQ.2) THEN
@@ -1951,6 +1955,7 @@ C....IF RESTARTING THE BATHYMETRY STATION OUTPUT FILE, GO TO THE PROPER PLACE
 C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
 C...
 
+      IF(NTCYSB.LT.ITHS.AND.NOUTE.GT.0) NTCYSB = ITHS + NSPOOLE - 1
       IF (NDDT.NE.0) WRITE(16,1035) IBSTP,NSCOUB
  1035 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN BATHYMETRY ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
@@ -2028,6 +2033,8 @@ c       WRITE(75,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO BE W
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL ELEVATION OUTPUT FILE
 C...
+        IF(NTCYSGE.LT.ITHS.AND.NOUTGE.GT.0) NTCYSGE = ITHS + NSPOOLGE - 1
+
         WRITE(16,1046) IGEP,NSCOUGE
  1046   FORMAT(//,1X,I8,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'ELEVATION FILE BY THE TIME OF THE HOT START',
@@ -2101,7 +2108,7 @@ C     kmd48.33bc - changed NDSETSE for use of new DTDPHS
 
 Casey 090310: Added the possibility for NOUTGE = -4.
       IF((NOUTGE.EQ.-1).OR.(NOUTGE.EQ.-4)) THEN
-         if (write_local_files.eqv..false.) then      
+         if (write_local_files.eqv..false.) then
            CALL OPEN_GBL_FILE(63, TRIM(GLOBALDIR)//'/'//'fort.63',
      $         NP_G, NP, HEADER63)
 C
@@ -2120,9 +2127,9 @@ C kmd48.33bc - information for writing out the sponge layer
      &                TRIM(GLOBALDIR)//'/'//'fort.92',
      $                NP_G, NP, 'sponge      ')
             END IF
-          
+
          else
-          
+
             CALL OPEN_GBL_FILE(63, TRIM(LOCALDIR)//'/'//'fort.63',
      $            NP_G, NP, HEADER63)
 C             jgf47.06 Tau0 output is produced on the same schedule as
@@ -2153,6 +2160,8 @@ c         WRITE(63,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL VELOCITY OUTPUT FILE
 C...
+        IF(NTCYSGV.LT.ITHS.AND.NOUTGV.GT.0) NTCYSGV = ITHS + NSPOOLGV - 1
+
         WRITE(16,1048) IGVP,NSCOUGV
  1048   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'VELOCITY FILE BY THE TIME OF THE HOT START',
@@ -2216,7 +2225,7 @@ C  kmd48.33bc - change the NDSETSV for the change in the DTDP
           CLOSE(64)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
       IF((NOUTGV.EQ.-1).OR.(NOUTGV.EQ.-4)) THEN
-         if (write_local_files.eqv..false.) then 
+         if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
      $         NP_G, NP, HEADER64)
          else
@@ -2235,6 +2244,7 @@ c         WRITE(64,REC=ITEMPSTP+1) NDSETSV  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
 
 
 Cobell - Open the fort.77 (weir elevation change) if necessary
+        IF(NTCYS_TVW.LT.ITHS.AND.NOUT_TVW.GT.0) NTCYS_TVW = ITHS + NSPOOL_TVW - 1
         IF(NOUT_TVW.LT.0.AND.USE_TVW) THEN
           IG_TVW=0
           NSCOU_TVW=0
@@ -2307,6 +2317,7 @@ c         WRITE(77,REC=ITEMPSTP+1) NDSETS_TVW  ! ALLOW ADDITIONAL OUTPUT DATA TO
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL CONCENTRATION OUTPUT FILE
 C...
+        IF(NTCYSGC.LT.ITHS.AND.NOUTGC.GT.0) NTCYSGC = ITHS + NSPOOLGC - 1
         WRITE(16,1053) IGCP,NSCOUGC
  1053   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                'CONCENTRATION FILE BY THE TIME OF THE HOT START',
@@ -2397,6 +2408,7 @@ C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL METEOROLOGICAL OUTPUT FILES
 C...
 !       V49.64.01 TCM ADDED GLOBAL ICE CONCENTRATION FILES
+        IF(NTCYSGW.LT.ITHS.AND.NOUTGW.GT.0) NTCYSGW = ITHS + NSPOOLGW - 1
         IF(NCICE.NE.0) THEN
            WRITE(16,2055) IGWP,IGPP,IGIP,NSCOUGW
         ELSE
@@ -2533,7 +2545,7 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
 
 Casey 090310: Added the possibility for NOUTGW = -4.
       IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
-         if (write_local_files.eqv..false.) then  
+         if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
      $         NP_G, NP, HEADER73)
             IGPP=2
@@ -2546,7 +2558,7 @@ Casey 090310: Added the possibility for NOUTGW = -4.
      $           NP_G, NP, HEADER93)
                IGIP=2
             ENDIF
-            
+
          else
             CALL OPEN_GBL_FILE(73, TRIM(LOCALDIR)//'/'//'fort.73',
      $         NP_G, NP, HEADER73)
@@ -2561,7 +2573,7 @@ Casey 090310: Added the possibility for NOUTGW = -4.
                IGIP=2
             ENDIF
          endif
-            
+
       ENDIF
 
 ! tcm v50.75 removed ifdef cswan and added test for nrs=3 or 4
@@ -2653,6 +2665,7 @@ C...
         IF ((NDDT.NE.0).AND.(NOUTGE.LT.0)) THEN
            IGBP=0
            NSCOUGB=0
+           IF(NTCYSGB.LT.ITHS.AND.NOUTGE.GT.0) NTCYSGB = ITHS + NSPOOLGE - 1
            IF((NTCYSGB.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
               NTCYSGB=NTCYSGB+((REAL(ITHS)-REAL(NTCYSGB))/
      &               REAL(NSPOOLGE))*REAL(NSPOOLGE)
@@ -2727,8 +2740,8 @@ c          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO B
         ENDIF
 
 
-      ! jgf52.08.08: Create files for nodecode and noff output 
-      ! (wet/dry state of nodes and wet/dry state of elements)      
+      ! jgf52.08.08: Create files for nodecode and noff output
+      ! (wet/dry state of nodes and wet/dry state of elements)
       IF (ABS(NOUTGE).NE.0) then
          if (outputNodeCode.eqv..true.) then
             if (write_local_files.eqv..true.) then
@@ -2751,9 +2764,9 @@ c          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO B
       endif
 
       ! jgf52.08.03: Reading of min/max data moved to initOutput2D()
-      ! subroutine in write_output module. 
-         
-      ! jgf: Added init for water level offset output file 
+      ! subroutine in write_output module.
+
+      ! jgf: Added init for water level offset output file
       if ( (NOUTGE.eq.-1.or.NOUTGE.eq.-4).and.(usingDynamicWaterLevelCorrection.eqv..true.) ) then
          if (write_local_files.eqv..true.) then
             call writeDomainHeader(108,trim(localdir)//'/'//
@@ -2763,7 +2776,7 @@ c          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO B
      &           'dynamicWaterlevelCorrection.63',NP_G, NP, 'dynamicWaterlevelCorrection')
          endif
       endif
-      ! jgf: Added init for water level offset output file 
+      ! jgf: Added init for water level offset output file
       if ( (NOUTE.eq.-1).and.(usingDynamicWaterLevelCorrection.eqv..true.) ) then
          if (write_local_files.eqv..true.) then
             call writeStationHeader(109,trim(localdir)//'/'//
@@ -2808,8 +2821,8 @@ c******************************************************************************
       USE GLOBAL_3DVS
       USE MESH, ONLY : NP, AGRID
       USE WRITE_OUTPUT, ONLY : initOutput3D
-      USE BOUNDARIES, ONLY : NOPE, NETA, NBD, totalbcrivernodes, 
-     &   BndBCRiver 
+      USE BOUNDARIES, ONLY : NOPE, NETA, NBD, totalbcrivernodes,
+     &   BndBCRiver
 C   kmd48.33bc - variable information needed from the global.F file
 ! kmd - added variables for river information
       USE GLOBAL, ONLY : RES_BC_FLAG, RBCTIME1, RBCTIME2,
@@ -2823,10 +2836,10 @@ C   kmd48.33bc - variable information needed from the global.F file
      &                   TTBCTIME2, TTBCSTATIM, TTBCTIMEINC,
      &                   q_heat1, q_heat2, HFLUX, TTBCRATIO,
      &                   setMessageSource, unsetMessageSource,
-     &                   DEBUG, ECHO, INFO, WARNING, ERROR, 
+     &                   DEBUG, ECHO, INFO, WARNING, ERROR,
      &                   allMessage, screenMessage,
      &                   RIVBCTIMINC, RIVBCTIME1,RIVBCTIME2,
-     &                   BCRivRATIO, RIVBCSTATIM, NP_G     
+     &                   BCRivRATIO, RIVBCSTATIM, NP_G
       IMPLICIT NONE
       INTEGER :: IRType                  !number of fields in output file
       INTEGER :: NH, N                   !horizontal & vertical loop counters
@@ -3356,30 +3369,30 @@ C----------------------------------------------------------------------
 
 
 C-----------------------------------------------------------------------
-C                  S U B R O U T I N E   
-C       R E C A L C U L A T E   S T A R T I N G   A N D   E N D I N G 
+C                  S U B R O U T I N E
+C       R E C A L C U L A T E   S T A R T I N G   A N D   E N D I N G
 C                T I M E S T E P S   F O R   O U T P U T
 C-----------------------------------------------------------------------
-C     jgf51.14 For runs where the hotstarted run has a different 
-C     time step than the hotstarted run, we need to recalculate the 
+C     jgf51.14 For runs where the hotstarted run has a different
+C     time step than the hotstarted run, we need to recalculate the
 C     starting and ending timesteps for output that were originally
 C     calculated in read_input.F, taking into account the different time
 C     step sizes.
 C-----------------------------------------------------------------------
       SUBROUTINE recalculateStartingAndEndingTimestepsForOutput(
-     &   outputStartDay, outputEndDay, 
+     &   outputStartDay, outputEndDay,
      &   outputStartTimeStep, OutputEndTimeStep )
-      USE GLOBAL, ONLY : DTDPHS, ITHS, STATIM, setMessageSource, 
+      USE GLOBAL, ONLY : DTDPHS, ITHS, STATIM, setMessageSource,
      &    unsetMessageSource, screenMessage, DEBUG, allMessage, INFO,
      &    logMessage
       IMPLICIT NONE
-      REAL(8), intent(in) :: outputStartDay 
-      REAL(8), intent(in) :: outputEndDay 
+      REAL(8), intent(in) :: outputStartDay
+      REAL(8), intent(in) :: outputEndDay
       INTEGER, intent(out) :: outputStartTimeStep
       INTEGER, intent(out) :: outputEndTimeStep
 C
       REAL(8) secElapsed           ! prior to hotstart
-      REAL(8) outputStartSec       
+      REAL(8) outputStartSec
       REAL(8) outputEndSec
 C
       call setMessageSource(
@@ -3388,12 +3401,12 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
       secElapsed = DTDPHS * ITHS - STATIM * 86400.0d0
-      outputStartSec = (outputStartDay - STATIM) * 86400.0d0     
+      outputStartSec = (outputStartDay - STATIM) * 86400.0d0
       if (outputStartSec.gt.secElapsed) then
          call calcTS(secElapsed, outputStartSec, outputStartTimeStep)
       endif
       outputEndSec = (outputEndDay - STATIM) * 86400.0d0
-      if (outputEndSec.gt.secElapsed) then   
+      if (outputEndSec.gt.secElapsed) then
          call calcTS(secElapsed, outputEndSec, outputEndTimeStep)
       endif
 #if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
@@ -3405,11 +3418,11 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
 
 C     ----------------------------------------------------------------
-C      S U B R O U T I N E   C A L C   T S 
+C      S U B R O U T I N E   C A L C   T S
 C     ----------------------------------------------------------------
 C
 C     jgf51.14 Function to calculate the time step on which input
-C     or output should occur. 
+C     or output should occur.
 C
 C     ----------------------------------------------------------------
       SUBROUTINE calcTS(elapsed, outputtime, ts)
@@ -3417,19 +3430,19 @@ C     ----------------------------------------------------------------
      &   DEBUG, unsetMessageSource
 C
       REAL(8), intent(in) :: elapsed    ! time (sec) that has elapsed so far
-      REAL(8), intent(in) :: outputtime ! time (sec) at which output should start or end   
+      REAL(8), intent(in) :: outputtime ! time (sec) at which output should start or end
       INTEGER, intent(out) :: ts       ! new number of time steps
 C
-      INTEGER :: remainingTimeSteps ! number of steps to take at new 
+      INTEGER :: remainingTimeSteps ! number of steps to take at new
                                      ! time step size
 C
       call setMessageSource('calcTS')
 #if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif           
-      
+#endif
+
 #ifdef IBM
-      remainingTimeSteps = INT((outputtime - elapsed + 0.5d0) 
+      remainingTimeSteps = INT((outputtime - elapsed + 0.5d0)
      &                            / DTDP, KIND(0.0d0))
 #else
       remainingTimeSteps = INT((outputtime - elapsed + 0.5d0)
@@ -3458,7 +3471,7 @@ C     quantity in an unstructured mesh.
 C--------------------------------------------------------------------
       SUBROUTINE binaryRead2D(array, length, lun, counter)
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
      &                    allMessage, DEBUG
       IMPLICIT NONE
       INTEGER, intent(in) :: length
@@ -3495,7 +3508,7 @@ C     file counter.
 C--------------------------------------------------------------------
       SUBROUTINE realRead2D(array, length, lun )
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
      &                    allMessage, DEBUG
       IMPLICIT NONE
       REAL(SZ), intent(out), dimension(length) :: array ! the data to read from the hotstart file
@@ -3527,7 +3540,7 @@ C     jgf49.44: Same as binaryRead2D except it reads an integer.
 C--------------------------------------------------------------------
       SUBROUTINE binaryIntRead2D(array, length, lun, counter)
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
      &                    allMessage, DEBUG
       IMPLICIT NONE
       INTEGER, intent(out), dimension(length) :: array ! the data to read from the hotstart file
@@ -3562,7 +3575,7 @@ C     kmd: Same as realRead2D except it reads an integer.
 C--------------------------------------------------------------------
       SUBROUTINE realIntRead2D(array, length, lun)
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
      &                    allMessage, DEBUG
       IMPLICIT NONE
       INTEGER, intent(out), dimension(length) :: array ! the data to read from the hotstart file
@@ -3597,7 +3610,7 @@ C     both horizontal and vertical lengths.
 C--------------------------------------------------------------------
       SUBROUTINE realRead3D(array, iLength, jLength, lun)
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
      &                    allMessage, DEBUG
       IMPLICIT NONE
       REAL(SZ), intent(out), dimension(ilength,jlength) :: array ! data to read from the hotstart file
@@ -3715,7 +3728,7 @@ C     kmd: Updated to include real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomainInt2D(sd_array, lun, counter, method)
       USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
      &                    allMessage, DEBUG, NP_G, NODES_LG
       USE MESH, ONLY : NP
       IMPLICIT NONE
@@ -3797,7 +3810,7 @@ C     kmd : Updated to include a real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapEleToSubdomainInt2D(sd_array, lun, counter,method)
       USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
      &                    allMessage, DEBUG, NE_G, IMAP_EL_LG
       USE MESH, ONLY : NE
       IMPLICIT NONE
@@ -3878,7 +3891,7 @@ C     kmd : Updated to include a real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomain3D(sd_array, nfen, lun, counter,method)
       USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
      &                    allMessage, DEBUG, NP_G, NODES_LG
       USE MESH, ONLY : NP
       USE HARM, ONLY : binaryRead3D

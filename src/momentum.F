@@ -1,10 +1,10 @@
 
-C 
+C
 C                       M O D U L E   M O M E N T U M
 C
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C
-C Sets up and solves the momentum equations. 
+C Sets up and solves the momentum equations.
 C
 C******************************************************************************
 C Logical Variable List (default value .FALSE., set in global.f)              *
@@ -157,14 +157,14 @@ C*******************************************************************************
      &     NNeigh, NeiTab, NeiTabEle, MJU, FDXE, FDYE,
      &     SWITCH_ELTAB_PERBC, SFacEle, SFMYEle, SFMXEle, TANPHI
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
-     &    CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3                 
+     &    CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal,
      &     NOLIBF,
 C----- DW: begin !c absorbing layer
      &     LoadAbsLayerSigma, absorblayer_sigma_eta,
      &     absorblayer_sigma_mnx, absorblayer_sigma_mny
 C----- END DW
-      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceUVOB, 
+      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceUVOB,
      &                       enforceUVCB
       USE SPONGELAYER
       USE WIND, ONLY: PRBCKGRND_MH2O
@@ -235,12 +235,12 @@ C.....FIRST TREAT THE NON-LUMPED PART OF THE EQUATIONS.
       ENDIF
 C..... DW, periodic boundary condition
 C     Switch to the periodic node numbering
-      CALL SWITCH_ELTAB_PERBC( IDIREC = 1 ) ;
+      CALL SWITCH_ELTAB_PERBC( IDIREC = 1 )
 C..... DW
 
 C     WJP: initialize baroclinic pressure gradients to zero
-      DBCPDX1A = 0d0; DBCPDX2A = 0d0; DBCPDX3A = 0d0;
-      DBCPDY1A = 0d0; DBCPDY2A = 0d0; DBCPDY3A = 0d0;
+      DBCPDX1A = 0d0; DBCPDX2A = 0d0; DBCPDX3A = 0d0
+      DBCPDY1A = 0d0; DBCPDY2A = 0d0; DBCPDY3A = 0d0
 
       DO IE=1,NE
 
@@ -277,21 +277,21 @@ Corbitt 120322: Localized Advection
          QY1N3=QY1(NM3)
          SFacAvg = SFacEle(IE)
 C..... BEG DW/WJP
-         SFmxAvg= SFMXEle(IE) ;
-         SFmyAvg= SFMYEle(IE) ;
-         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-         sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+         SFmxAvg= SFMXEle(IE)
+         SFmyAvg= SFMYEle(IE)
+         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
+         sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg
 C..... END DW/WJP
 
          AreaIE2 = Areas(IE)
          AreaIE  = 0.5d0*AreaIE2
 C..... DW
-         FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
-         FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
-         FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
-         FDY1 = FDYE(1,IE)*sfdyfac ; !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
-         FDY2 = FDYE(2,IE)*sfdyfac ; !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
-         FDY3 = FDYE(3,IE)*sfdyfac ; !c FDY3=(X(NM2)-X(NM1))*MY !a3*my
+         FDX1 = FDXE(1,IE)*sfdxfac !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
+         FDX2 = FDXE(2,IE)*sfdxfac !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
+         FDX3 = FDXE(3,IE)*sfdxfac !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
+         FDY1 = FDYE(1,IE)*sfdyfac !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
+         FDY2 = FDYE(2,IE)*sfdyfac !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
+         FDY3 = FDYE(3,IE)*sfdyfac !c FDY3=(X(NM2)-X(NM1))*MY !a3*my
 C..... DW
 
 C...  Compute element averaged quantities
@@ -316,7 +316,7 @@ C...  Compute element averaged quantities
                IF (EVMSmag .lt. SMAG_LOWER_LIM) EVMSmag = SMAG_LOWER_LIM
             ENDIF
             EVMEle=EVMSmag
-         ENDIF         
+         ENDIF
 
 C...  Compute terms associated with the barotropic pressure
 
@@ -363,8 +363,8 @@ C....... DW
             BTP2N3=BTP2N3+PR2_NM3
          ENDIF
 C....    DW
- 
-         !jgf: Subtract dynamic water level offset from barotropic pressure 
+
+         !jgf: Subtract dynamic water level offset from barotropic pressure
          IF (usingDynamicWaterLevelCorrection.eqv..true.) THEN
             BTP1N1=BTP1N1-dynamicWaterLevelCorrection1(NM1)
             BTP2N1=BTP2N1-dynamicWaterLevelCorrection2(NM1)
@@ -720,7 +720,7 @@ C            DispY    = DT*VIDispDYOH(I)
 C         ENDIF
 
 C        WJP 02.24.2018 Get the righthand side momentum
-         MOM_LV_X(I) = NCI*(MOM_LV_X(I)+WSX+(1.D0-VCOEFXX)*UU1(I) 
+         MOM_LV_X(I) = NCI*(MOM_LV_X(I)+WSX+(1.D0-VCOEFXX)*UU1(I)
      &               - VCOEFXY*VV1(I)) !-VIDBCPDX) !-DispX)
          MOM_LV_Y(I) = NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCOEFYY)*VV1(I)
      &               - VCOEFYX*UU1(I)) !-VIDBCPDY) !-DispY)
@@ -735,12 +735,12 @@ C...     DW, absorbing layers
          END IF
 C...     DW
 
-C        WJP 02.24.2018 Get the lefthand side momentum 
+C        WJP 02.24.2018 Get the lefthand side momentum
          AUV(1,I) = 1d0 + VCOEFXX*NCI
          AUV(2,I) = 1d0 + VCOEFYY*NCI
          AUV(3,I) = VCOEFXY*NCI
          AUV(4,I) = VCOEFYX*NCI
-      
+
       END DO
 
 C...  Modify the momentum equations to impose velocity boundary
@@ -820,14 +820,14 @@ C.....DW
                   SFacAvg = SFacEle(NEle)
                   SFmxAvg = SFMXEle(NEle)
                   SFmyAvg = SFMYEle(NEle)
-                  sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-                  sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
-                  FDX1 = FDXE(1,NEle)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-                  FDX2 = FDXE(2,NEle)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-                  FDX3 = FDXE(3,NEle)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-                  FDY1 = FDYE(1,NEle)*sfdyfac ; !c  FDY1=X(NM3)-X(NM2) !a1
-                  FDY2 = FDYE(2,NEle)*sfdyfac ; !c  FDY2=X(NM1)-X(NM3) !a2
-                  FDY3 = FDYE(3,NEle)*sfdyfac ; !c  FDY3=X(NM2)-X(NM1) !a3
+                  sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
+                  sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg
+                  FDX1 = FDXE(1,NEle)*sfdxfac !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
+                  FDX2 = FDXE(2,NEle)*sfdxfac !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
+                  FDX3 = FDXE(3,NEle)*sfdxfac !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
+                  FDY1 = FDYE(1,NEle)*sfdyfac !c  FDY1=X(NM3)-X(NM2) !a1
+                  FDY2 = FDYE(2,NEle)*sfdyfac !c  FDY2=X(NM1)-X(NM3) !a2
+                  FDY3 = FDYE(3,NEle)*sfdyfac !c  FDY3=X(NM2)-X(NM1) !a3
 C.....DW
                   ZNGRHS1=ZNGRHS1-(CSII(I)*FDX2+SIII(I)*FDY2)*UU1(NM2)
      &                           -(CSII(I)*FDX3+SIII(I)*FDY3)*UU1(NM3)
@@ -845,14 +845,14 @@ C.....DW
                SFacAvg = SFacEle(NEle)
                SFmxAvg = SFMXEle(NEle)
                SFmyAvg = SFMYEle(NEle)
-               sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-               sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
-               FDX1 = FDXE(1,NEle)*sfdxfac ;
-               FDX2 = FDXE(2,NEle)*sfdxfac ;
-               FDX3 = FDXE(3,NEle)*sfdxfac ;
-               FDY1 = FDYE(1,NEle)*sfdyfac ;
-               FDY2 = FDYE(2,NEle)*sfdyfac ;
-               FDY3 = FDYE(3,NEle)*sfdyfac ;
+               sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
+               sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg
+               FDX1 = FDXE(1,NEle)*sfdxfac
+               FDX2 = FDXE(2,NEle)*sfdxfac
+               FDX3 = FDXE(3,NEle)*sfdxfac
+               FDY1 = FDYE(1,NEle)*sfdyfac
+               FDY2 = FDYE(2,NEle)*sfdyfac
+               FDY3 = FDYE(3,NEle)*sfdyfac
 C.....DW
                ZNGRHS1=ZNGRHS1-(CSII(I)*FDX2+SIII(I)*FDY2)*UU1(NM2)
      &                        -(CSII(I)*FDX3+SIII(I)*FDY3)*UU1(NM3)
@@ -899,8 +899,8 @@ c        ENDIF
       if (subdomainOn.and.enforceBN.eq.2) call enforceUVob() ! NCSU Subdomain
 
 C....... DW
-      CALL SWITCH_ELTAB_PERBC( IDIREC = 2 ) ;
-      CALL UPDATE_U_PERSLNODES() ;
+      CALL SWITCH_ELTAB_PERBC( IDIREC = 2 )
+      CALL UPDATE_U_PERSLNODES()
 C....... DW
 
 C...
@@ -957,15 +957,15 @@ C     DW
           IF ( NPERSEG > 0 ) THEN
 C     Update values of slave node !
              DO I = 1, NNPERBC
-                I1 = IPERCONN(I,1) ;
-                I2 = IPERCONN(I,2) ;
+                I1 = IPERCONN(I,1)
+                I2 = IPERCONN(I,2)
 
-                UU2(I2)=UU2(I1) ;
-                VV2(I2)=VV2(I1) ;
+                UU2(I2)=UU2(I1)
+                VV2(I2)=VV2(I1)
              END DO
           END IF
 
-          RETURN ;
+          RETURN
           END SUBROUTINE UPDATE_U_PERSLNODES
 C     END DW
 C*******************************************************************************
@@ -1004,7 +1004,7 @@ C
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &   NEITAB, NEITABELE, NNEIGH, FDXE, FDYE,
      &   SFacEle, SFMYEle, SFMXEle, TANPHI
-      USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI, 
+      USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
      &   CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
 
@@ -1097,21 +1097,21 @@ Corbitt 120322: Localized Advection
          QY1N3=QY1(NM3)
          SFacAvg= SFacEle(IE)
 C..... BEG DW/WJP
-         SFmxAvg= SFMXEle(IE) ;
-         SFmyAvg= SFMYEle(IE) ;
-         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-         sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+         SFmxAvg= SFMXEle(IE)
+         SFmyAvg= SFMYEle(IE)
+         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
+         sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg
 C..... END DW/WJP
 
          AreaIE2 = Areas(IE)
          AreaIE  = 0.5d0*AreaIE2
 C..... DW
-         FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
-         FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
-         FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
-         FDY1 = FDYE(1,IE)*sfdyfac ; !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
-         FDY2 = FDYE(2,IE)*sfdyfac ; !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
-         FDY3 = FDYE(3,IE)*sfdyfac ; !c FDY3=(X(NM2)-X(NM1))*MY !a3*my
+         FDX1 = FDXE(1,IE)*sfdxfac !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
+         FDX2 = FDXE(2,IE)*sfdxfac !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
+         FDX3 = FDXE(3,IE)*sfdxfac !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
+         FDY1 = FDYE(1,IE)*sfdyfac !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
+         FDY2 = FDYE(2,IE)*sfdyfac !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
+         FDY3 = FDYE(3,IE)*sfdyfac !c FDY3=(X(NM2)-X(NM1))*MY !a3*my
 
 C...  Compute element averaged quantities
 
@@ -1128,8 +1128,8 @@ C...  Compute element averaged quantities
          DV1DX2A=V1N1*FDX1+V1N2*FDX2+V1N3*FDX3
          DV1DY2A=V1N1*FDY1+V1N2*FDY2+V1N3*FDY3
 
-         EVMEle=(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0 
-         !If using Smagorinski vertically-integrated lateral stress coefficient         
+         EVMEle=(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
+         !If using Smagorinski vertically-integrated lateral stress coefficient
          IF (CSmag_Eh.or.Smag_Comp_Flag) THEN
             EVMSmag=0.5d0*EVMEle*
      &             sqrt((DU1DX2A-DV1DY2A)*(DU1DX2A-DV1DY2A)
@@ -1577,14 +1577,14 @@ C     fluxes at the previous time step.
                   SFacAvg = SFacEle(NEle)
                   SFmxAvg = SFMXEle(NEle)
                   SFmyAvg = SFMYEle(NEle)
-                  sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-                  sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
-                  FDX1 = FDXE(1,NEle)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-                  FDX2 = FDXE(2,NEle)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-                  FDX3 = FDXE(3,NEle)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-                  FDY1 = FDYE(1,NEle)*sfdyfac ; !c  FDY1=X(NM3)-X(NM2) !a1
-                  FDY2 = FDYE(2,NEle)*sfdyfac ; !c  FDY2=X(NM1)-X(NM3) !a2
-                  FDY3 = FDYE(3,NEle)*sfdyfac ; !c  FDY3=X(NM2)-X(NM1) !a3
+                  sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
+                  sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg
+                  FDX1 = FDXE(1,NEle)*sfdxfac !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
+                  FDX2 = FDXE(2,NEle)*sfdxfac !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
+                  FDX3 = FDXE(3,NEle)*sfdxfac !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
+                  FDY1 = FDYE(1,NEle)*sfdyfac !c  FDY1=X(NM3)-X(NM2) !a1
+                  FDY2 = FDYE(2,NEle)*sfdyfac !c  FDY2=X(NM1)-X(NM3) !a2
+                  FDY3 = FDYE(3,NEle)*sfdyfac !c  FDY3=X(NM2)-X(NM1) !a3
                   ZNGRHS1=ZNGRHS1-(CSII(I)*FDX2+SIII(I)*FDY2)*QX1(NM2)
      &                           -(CSII(I)*FDX3+SIII(I)*FDY3)*QX1(NM3)
                   ZNGRHS2=ZNGRHS2-(CSII(I)*FDX2+SIII(I)*FDY2)*QY1(NM2)
@@ -1601,14 +1601,14 @@ C     fluxes at the previous time step.
                SFacAvg = SFacEle(NEle)
                SFmxAvg = SFMXEle(NEle)
                SFmyAvg = SFMYEle(NEle)
-               sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-               sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
-               FDX1 = FDXE(1,NEle)*sfdxfac ;
-               FDX2 = FDXE(2,NEle)*sfdxfac ;
-               FDX3 = FDXE(3,NEle)*sfdxfac ;
-               FDY1 = FDYE(1,NEle)*sfdyfac ;
-               FDY2 = FDYE(2,NEle)*sfdyfac ;
-               FDY3 = FDYE(3,NEle)*sfdyfac ;
+               sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
+               sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg
+               FDX1 = FDXE(1,NEle)*sfdxfac
+               FDX2 = FDXE(2,NEle)*sfdxfac
+               FDX3 = FDXE(3,NEle)*sfdxfac
+               FDY1 = FDYE(1,NEle)*sfdyfac
+               FDY2 = FDYE(2,NEle)*sfdyfac
+               FDY3 = FDYE(3,NEle)*sfdyfac
 
                ZNGRHS1=ZNGRHS1-(CSII(I)*FDX2+SIII(I)*FDY2)*QX1(NM2)
      &                        -(CSII(I)*FDX3+SIII(I)*FDY3)*QX1(NM3)
@@ -1929,7 +1929,7 @@ C...  Compute element averaged quantities
 
          EVMEle=(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
          !If using Smagorinski vertically-integrated lateral stress coefficient
-         IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN  
+         IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN
             EVMSmag=EVMEle*
      &             sqrt((DU1DXA-DV1DYA)*(DU1DXA-DV1DYA)
      &                 +(DU1DYA+DV1DXA)*(DU1DYA+DV1DXA))

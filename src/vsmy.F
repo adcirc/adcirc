@@ -12,7 +12,7 @@ C******************************************************************************
 
       SUBROUTINE VSSTUP()
       USE GLOBAL_3DVS
-      USE MESH, ONLY : NP      
+      USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER :: NH, N
 C
@@ -87,7 +87,7 @@ c                                                                             *
 c  NP - number of nodes in horizontal grid                                    *
 c  NFEN - number of nodes in the vertical grid                                *
 c  BTP - total barotropic pressure (atmos press, water level, tidal potential)*
-c                 at time levels s+1/2            
+c                 at time levels s+1/2
 ! arash:
 ! Biharmonic_auxiliary_var(MNP,NFEN): since we need to compute the Laplacian twice, we need an auxiliary variable to store the first Laplacian for U and V.
 c******************************************************************************
@@ -112,9 +112,9 @@ Casey 140701: Prevent depths from becoming negative in bottom roughness calculat
      &                   H0
       USE GLOBAL_3DVS
       USE WRITE_OUTPUT, ONLY : writeOutput3D
-      USE MESH, ONLY : NP, DP, NM, X, Y, NODELE, AREAS, LBArray_Pointer,  
+      USE MESH, ONLY : NP, DP, NM, X, Y, NODELE, AREAS, LBArray_Pointer,
      &                  NEITABELE, NEITAB, NNEIGH, SFAC
-      USE BOUNDARIES, ONLY : NOPE, NETA, NBD, LBCODEI, 
+      USE BOUNDARIES, ONLY : NOPE, NETA, NBD, LBCODEI,
      &   BndBCRiver, totalbcrivernodes, SIII, CSII
       USE NodalAttributes, ONLY: EVM,
      &     ManningsN, LoadManningsN,
@@ -123,7 +123,7 @@ Corbitt 120328: Local Advection
      &     Z0b_var, LoadZ0B_var
 #ifdef CMPI
       USE MESSENGER
-#endif      
+#endif
       IMPLICIT NONE
 
 c.RJW merged 08282008 Casey 071219: Added the following local variable declarations.
@@ -254,7 +254,7 @@ Cjgfdebug      COMPLEX(SZ) :: UnDqDX,VnDqDY  !derivatives used in lateral advect
       COMPLEX(SZ) :: Biharmonic_qn_z, Biharmonic_qN1_z, Biharmonic_qN2_z, Biharmonic_qN3_z, Biharmonic_qNFirst_z
       COMPLEX(SZ) :: d_dx_qN1_z, d_dx_qN2_z, d_dx_qN3_z, d_dy_qN1_z, d_dy_qN2_z, d_dy_qN3_z
       COMPLEX(SZ) :: d_dx_qNFirst_z, d_dy_qNFirst_z
-      Complex(SZ) :: inarray_vertical(NFEN) 
+      Complex(SZ) :: inarray_vertical(NFEN)
 
       COMPLEX(SZ) :: DqDSigmakm1,DqDSigmakp1 !vertical deriv. of q from k-1,k and k,k+1
       COMPLEX(SZ) :: DqDX2A(MNFEN)  !horizontal derivatives of complex
@@ -561,7 +561,7 @@ c     to the solution
                   Fr(k)=VelTan+iy*VelNorm
 C                  EVTot(k)=0.D0 !f77diff??
                ENDDO
-               !write(6,*) 'lbp=',lbp,' lbcodei(lbp)=',lbcodei(lbp),' skip to 999 nh=',nh !jgfdebug               
+               !write(6,*) 'lbp=',lbp,' lbcodei(lbp)=',lbcodei(lbp),' skip to 999 nh=',nh !jgfdebug
                GOTO 999
             ENDIF
          ENDIF
@@ -1063,7 +1063,7 @@ C    kmd48.33bc added in spherical factors for 3D
                ! 3.1.1. minimum viscosity
                If ( Biharmonic_viscosity < 1.0d-2 ) Biharmonic_viscosity = 1.0d-2
 
-               ! 3.1.2. maximum viscosity 
+               ! 3.1.2. maximum viscosity
                element_peclet_number = velocity_magnitude * length / Biharmonic_viscosity
 !               If ( element_peclet_number > 2.0 ) Then
 !                  Biharmonic_viscosity = velocity_magnitude * length / 2.0d0
@@ -1154,13 +1154,13 @@ c     (Mkm1,Mk,Mkp1)
      &           + (CCR*q(NH,2)
      &           -DelT*(LAdvec(2)  +LStress(2)  +BPG(NH,2)))*Inm(1,3)
      &           - DelT*(VAdvec(1)+BTPG*LVn(1))-DT1MAlp3*VStress(1)
-! arash May 31 2016 did this based on Rosemary's work 
+! arash May 31 2016 did this based on Rosemary's work
 !     &           - q(NH,1)*DT1MAlp2*KSlip/HsOAMB
      &           - q(NH,1)*DT1MAlp2*TK(NH)/HsOAMB
 
             Mkm1(1) = (0.d0,0.d0)
             Mk(1)   = CCL*Inm(1,2) + RCL*KVnm(1,2)
-! arash May 31 2016 did this based on Rosemary's work 
+! arash May 31 2016 did this based on Rosemary's work
 !     &           + DTAlp2*KSlip/Hsp1OAMB
      &           + DTAlp2*TK(NH)/Hsp1OAMB
             Mkp1(1) = CCL*Inm(1,3) + RCL*KVnm(1,3)
@@ -1327,7 +1327,7 @@ C     velocity dispersion
             BSY(NH) = EV(NH,1)*AIMAG(DUDS)
          ENDIF
          IF(ISlip.NE.0) THEN
-! arash May 31 2016 did this based on Rosemary's work 
+! arash May 31 2016 did this based on Rosemary's work
 !            BSX(NH) = KSlip*REAL(Qkp1(NH,1))
 !            BSY(NH) = KSlip*AIMAG(Qkp1(NH,1))
             BSX(NH) = TK(NH)*REAL(Qkp1(NH,1))
@@ -1716,7 +1716,7 @@ C           CALL 3D_SIGMAT_TRANS()
               IF (SALkp1(NH,N) .LT. 0.0d0) THEN
                   SALkp1(NH,N) = 0.0d0
               END IF
-              IF (SALkp1(NH,N) .GT. 40.0d0) THEN  
+              IF (SALkp1(NH,N) .GT. 40.0d0) THEN
                   SALkp1(NH,N) = 40.0d0
               END IF
            END DO
@@ -1728,7 +1728,7 @@ C           CALL 3D_SIGMAT_TRANS()
               IF (TEMPkp1(NH,N) .LT. 0.0d0) THEN
                   TEMPkp1(NH,N) = 0.0d0
               END IF
-              IF (TEMPkp1(NH,N) .GT. 100.0d0) THEN  
+              IF (TEMPkp1(NH,N) .GT. 100.0d0) THEN
                   TEMPkp1(NH,N) = 100.0d0
               END IF
            END DO
@@ -2244,7 +2244,7 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
 C
-      DO 11 J=nfen-1,1,-1
+      DO J=nfen-1,1,-1
          IF(ABS(B(J+1)).EQ.0.) then
             write(screenunit,*) 'Diagonal term in the VS matrix is zero'
             write(screenunit,*) '*********** Fatal error *************'
@@ -2255,7 +2255,7 @@ C
          P1=C(J)/B(J+1)
          B(J)=B(J)-A(J+1)*P1
          R(J)=R(J)-R(J+1)*P1
- 11   CONTINUE
+      END DO
 
       IF(ABS(B(1)).EQ.0.) then
          write(screenunit,*) 'B1 term in the VS matrix is zero'
@@ -2267,8 +2267,9 @@ C
 
       U(1)=R(1)/B(1)
 
-      DO 12 J=2,nfen
- 12      U(J)=(R(J)-A(J)*U(J-1))/B(J)
+      DO J=2,nfen
+         U(J)=(R(J)-A(J)*U(J-1))/B(J)
+      END DO
 
 #if defined(VSMY_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -3885,7 +3886,7 @@ C     3 D  D E N S I T Y
       ENDIF
 C
       SELECT CASE(NHSTAR)
-         CASE(-1,1,67,68) ! non-portable binary  !tcm v51.26 mod for time-stamped 
+         CASE(-1,1,67,68) ! non-portable binary  !tcm v51.26 mod for time-stamped
             IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
                IF (ABS(IDEN).EQ.1) THEN
                   DO N=1,NFEN
@@ -4318,7 +4319,7 @@ C*****************************************************************************
        INTEGER :: NeiTab(NP,MNEI), NNeigh(NP)
        REAL(8), ALLOCATABLE :: Weights(:)
        ! velocities are stored as complex quantities: u+i*v
-       Complex(8), ALLOCATABLE :: quantity_smooth(:,:) 
+       Complex(8), ALLOCATABLE :: quantity_smooth(:,:)
        Complex(8), ALLOCATABLE :: inarray_vertical (:)
        Complex(8) :: quantity(NP,NFEN)
        Complex(8) :: interpolated_value
@@ -4345,7 +4346,7 @@ C*****************************************************************************
 
        ! loop on all nodes, and apply the Gaussian filter
        Do I = 1, NP
-          ! @jasonfleming : this loop does not take into account that a 
+          ! @jasonfleming : this loop does not take into account that a
           ! node may be dry so I've added a statement to skip dry nodes
           if (nodecode(i).eq.0) cycle
           !
@@ -4380,8 +4381,8 @@ C*****************************************************************************
           ! is dry, producing a division by zero error here. So I've added
           ! a statement to skip dry nodes at the top of this loop.
           element_peclet_number = length_max * velocity_magnitude_max_in_xy / average_viscosity !constant_diffusivity !average_viscosity
-          !average_element_peclet_number = length_max * average_velocity / average_viscosity 
-          average_element_peclet_number = length_max * velocity_magnitude_max_in_xy / average_viscosity 
+          !average_element_peclet_number = length_max * average_velocity / average_viscosity
+          average_element_peclet_number = length_max * velocity_magnitude_max_in_xy / average_viscosity
 
           ! 1.4. specify sigma - we want to do this adaptively.
           ! I tuned this parameter for the SL16 mesh based on trial and error, pain, and engineering judgment.
@@ -4391,10 +4392,10 @@ C*****************************************************************************
              Else If ( average_element_peclet_number > high_peclet_threshold ) Then
                 factor = high_factor
              Else
-                factor = low_factor + ( high_factor - low_factor ) * 
+                factor = low_factor + ( high_factor - low_factor ) *
      &           ( ( average_element_peclet_number - low_peclet_threshold ) / ( high_peclet_threshold - low_peclet_threshold ) )**0.5
              End If
-   
+
           If ( velocity_magnitude_max_in_xy > 1.80d0 ) factor = 0.19d0
 !----------------------------------------------------------------------------------------
 ! 43_SL16
@@ -4452,7 +4453,7 @@ C*****************************************************************************
           Weights = 0.0d0
           Do J = 1, NNeigh ( I ) ! also includes node I
              Neighbor_Node = NeiTab ( I , J )
-             numerator = ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2 
+             numerator = ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2
              denominator = 2.0d0 * sigma_Gauss**2
              Weights (J) = exp ( -1.0 * numerator / denominator )
           End Do
@@ -4528,7 +4529,7 @@ C*****************************************************************************
        REAL(8), ALLOCATABLE :: sum_Weights(:)
        REAL(8), ALLOCATABLE :: element_peclet_number(:)
        ! velocities are stored as complex quantities: u+i*v
-       Complex(8), ALLOCATABLE :: quantity_smooth(:,:) 
+       Complex(8), ALLOCATABLE :: quantity_smooth(:,:)
        Complex(8), ALLOCATABLE :: inarray_vertical (:)
        Complex(8) :: quantity(NP,NFEN)
        Complex(8) :: interpolated_value
@@ -4584,7 +4585,7 @@ C*****************************************************************************
              Else If ( element_peclet_number(K) > high_peclet_threshold ) Then
                 factor(K) = high_factor
              Else
-                factor(K) = low_factor + ( high_factor - low_factor ) * 
+                factor(K) = low_factor + ( high_factor - low_factor ) *
      &           ( ( element_peclet_number(K) - low_peclet_threshold ) / ( high_peclet_threshold - low_peclet_threshold ) )**0.5
 
              End If
@@ -4601,7 +4602,7 @@ C*****************************************************************************
           Do K = 1, NFEN
              Do J = 1, NNeigh ( I ) ! also includes node I
                 Neighbor_Node = NeiTab ( I , J )
-                numerator = ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2 
+                numerator = ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2
                 denominator(K) = 2.0d0 * sigma_Gauss(K)**2
                 Weights (J,K) = exp ( -1.0 * numerator / denominator(K) )
              End Do
@@ -4786,7 +4787,7 @@ C*************************************************************************
 !     &     / ((Sigma(k4)-Sigma(k1)) * (Sigma(k4)-Sigma(k2)) * (Sigma(k4)-Sigma(k3)))
 
 ! 3- interpolate
-!      interpolated_value = f1 * inarray_vertical(k1) + f2 * inarray_vertical(k2) 
+!      interpolated_value = f1 * inarray_vertical(k1) + f2 * inarray_vertical(k2)
 !     &          + f3 * inarray_vertical(k3) + f4 * inarray_vertical(k4)
 
 ! linear interpolation should be enough. the goal is to smooth the velocity
@@ -4835,7 +4836,7 @@ C**********************************************************************
        INTEGER :: NeiTab(NP,MNEI), NNeigh(NP)
        REAL(8), ALLOCATABLE :: Weights(:)
        ! velocities are stored as complex quantities: u+i*v
-       real(8), ALLOCATABLE :: quantity_smooth(:,:) 
+       real(8), ALLOCATABLE :: quantity_smooth(:,:)
        real(8), ALLOCATABLE :: inarray_vertical (:)
        real(8) :: quantity(NP,NFEN)
        real(8) :: interpolated_value
@@ -4888,7 +4889,7 @@ C**********************************************************************
 
           ! 1.3.1 compute the element Peclet number
                   element_peclet_number = length_max * velocity_magnitude_max_in_xy / average_viscosity !constant_diffusivity !average_viscosity
-          average_element_peclet_number = length_max * velocity_magnitude_max_in_xy / average_viscosity 
+          average_element_peclet_number = length_max * velocity_magnitude_max_in_xy / average_viscosity
           ! 1.4. specify sigma - we want to do this adaptively.
 
 
@@ -4897,10 +4898,10 @@ C**********************************************************************
              Else If ( average_element_peclet_number > high_peclet_threshold ) Then
                 factor = high_factor
              Else
-                factor = low_factor + ( high_factor - low_factor ) * 
+                factor = low_factor + ( high_factor - low_factor ) *
      &           ( ( average_element_peclet_number - low_peclet_threshold ) / ( high_peclet_threshold - low_peclet_threshold ) )**0.5
              End If
-   
+
           If ( velocity_magnitude_max_in_xy > 1.80d0 ) factor = 0.19d0
 
 !----------------------------------------------------------------------------------------
@@ -4930,7 +4931,7 @@ C**********************************************************************
           Weights = 0.0d0
           Do J = 1, NNeigh ( I ) ! also includes node I
              Neighbor_Node = NeiTab ( I , J )
-             numerator = ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2 
+             numerator = ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2
              denominator = 2.0d0 * sigma_Gauss**2
              Weights (J) = exp ( -1.0 * numerator / denominator )
           End Do
@@ -5112,7 +5113,7 @@ C*************************************************************************
 !     &     / ((Sigma(k4)-Sigma(k1)) * (Sigma(k4)-Sigma(k2)) * (Sigma(k4)-Sigma(k3)))
 
 ! 3- interpolate
-!      interpolated_value = f1 * inarray_vertical(k1) + f2 * inarray_vertical(k2) 
+!      interpolated_value = f1 * inarray_vertical(k1) + f2 * inarray_vertical(k2)
 !     &          + f3 * inarray_vertical(k3) + f4 * inarray_vertical(k4)
 
 ! linear interpolation should be enough. the goal is to smooth the velocity

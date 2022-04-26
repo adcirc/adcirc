@@ -170,8 +170,8 @@ C
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
-      NAMELIST /dynamicWaterLevelCorrectionControl/ dynamicWaterLevelCorrectionFileName, 
-     &  dynamicWaterLevelCorrectionSkipSnaps, dynamicWaterLevelCorrectionMultiplier, 
+      NAMELIST /dynamicWaterLevelCorrectionControl/ dynamicWaterLevelCorrectionFileName,
+     &  dynamicWaterLevelCorrectionSkipSnaps, dynamicWaterLevelCorrectionMultiplier,
      &  dynamicWaterLevelCorrectionRampStart, dynamicWaterLevelCorrectionRampEnd,
      &  dynamicWaterLevelCorrectionRampReferenceTime
       NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
@@ -324,10 +324,10 @@ C...  After this search and read, we will close the file and then reopen it
 c...  for further processing the traditional non-namelist components.
 C...
       namelistSpecifier = 'TimeBathyControl'
-      READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT) 
-      call logNamelistReadStatus(namelistSpecifier, ios_nddt)     
-c     it is possible for the namelist to be present in the file and 
-C     occuring at the end of the file with no line breaks after the 
+      READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT)
+      call logNamelistReadStatus(namelistSpecifier, ios_nddt)
+c     it is possible for the namelist to be present in the file and
+C     occuring at the end of the file with no line breaks after the
 C     ending "\" which causes the iostat to return a negative value.
 C     By checking to be sure a namelist variable was set to
 c     a non-default value we can determine this was the case.
@@ -364,7 +364,7 @@ c     a non-default value we can determine this was the case.
         SWAN_OutputTPS=.TRUE.
         SWAN_OutputDIR=.TRUE.
       ENDIF
-      call logNamelistReadStatus(namelistSpecifier, ios)     
+      call logNamelistReadStatus(namelistSpecifier, ios)
       call logMessage(ECHO,
      &    "The values of SWANOutputControl are as follows:")
       write(scratchMessage,*) "SWAN_OutputHS=",SWAN_OutputHS,
@@ -609,10 +609,10 @@ C     WJP add namelist
 
 !     WJP add densityControl namelist
 !     some defaults
-      densityRunType = 'none';
-      densityForcingType = 'SigmaT';
-      densityFileName = 'fort.11.nc';
-      densityTimeIterator = 1;
+      densityRunType = 'none'
+      densityForcingType = 'SigmaT'
+      densityFileName = 'fort.11.nc'
+      densityTimeIterator = 1
 !     read the namelist
       namelistSpecifier = 'densityControl'
       read(unit=15,nml=densityControl,iostat=IOS)
@@ -891,8 +891,8 @@ c     CME_Orig         = .TRUE. !uncomment for original momentum eqs
          CME_AreaInt_Corr = .TRUE.
 C     WJP: setting IMDig to default values for IM = 0 here
 C       refer: https://wiki.adcirc.org/wiki/IM
-         IMDig1 = 1; IMDig2 = 1; IMDig3 = 1;
-         IMDig4 = 1; IMDig5 = 1; IMDig6 = 1;
+         IMDig1 = 1; IMDig2 = 1; IMDig3 = 1
+         IMDig4 = 1; IMDig5 = 1; IMDig6 = 1
       ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
       IF (IM.EQ.0) THEN
@@ -1132,7 +1132,7 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
          else
             densityRunType = ' prognostic'
          endif
-         !        
+         !
          densityDimensions = ' 2DDI'
          if (C3D) densityDimensions = ' 3D'
          !
@@ -1747,6 +1747,8 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
      &    'DRAG LAW.')
       ENDIF
 C     jgf46.00 Added NWS=7 (direct surface stress).
+C     xyc52.30 corrected NWS=7 (direct surface stress on regular grid as
+C     in NWS=6)
       IF(NWS.EQ.7) THEN
          WRITE(16,1234) NWS
  1234    FORMAT(/,5X,'NWS = ',I3,
@@ -2458,7 +2460,8 @@ C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
          IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,CICE_TIMINC
          IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC,CICE_TIMINC
       ENDIF
-      IF(NWS.EQ.6) THEN
+C...  xyc v52.30: corrected NWS=7 to follow NWS=6 (structured grid input)
+      IF((NWS.EQ.6).OR.(ABS(NWS).EQ.7)) THEN
 C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) NWLAT,NWLON,WLATMAX,
      &        WLONMIN,WLATINC,WLONINC,WTIMINC
@@ -2470,10 +2473,10 @@ C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
      &        WLONMIN,WLATINC,WLONINC,WTIMINC,RSTIMINC,CICE_TIMINC
       ENDIF
 C     jgf46.00 Added NWS=7 (direct surface stress).
-      IF(ABS(NWS).EQ.7) THEN
-         IF(NRS.EQ.0) READ(15,*) WTIMINC
-         IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
-      ENDIF
+C      IF(ABS(NWS).EQ.7) THEN
+C         IF(NRS.EQ.0) READ(15,*) WTIMINC
+C         IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+C      ENDIF
 C     jgf46.05 Added NWS=8 (Holland Wind Model).
 C     jgf46.28 Changed WTIMINC to StormNumber for activating
 C     wind multiplier to final wind speeds from Holland model.
@@ -2742,7 +2745,9 @@ C...
 #ifdef IBM
       NT=INT(RNDAY*(86400.D0/DTDP)+0.5d0,KIND(0.0d0))
 #else
-      NT=INT(RNDAY*(86400.D0/DTDP)+0.5d0)
+C     WJP: Changed to use floor to make sure that
+C          met end time is not exceeded at end of simulation
+      NT = FLOOR(RNDAY*86400.D0/DTDP)
 #endif
       WRITE(16,1920) NT
  1920 FORMAT(5X,'NUMBER OF TIME STEPS  =',I8,/)
@@ -3215,7 +3220,7 @@ C...
       ELSEIF (NCOR.EQ.1) THEN
 C......DW, Dec 2019
          IF ( IFSPROTS .EQ. 1 ) THEN
-            CALL GET_ROTSPCOORD_CORIFVAL( CORIF ) ;
+            CALL GET_ROTSPCOORD_CORIFVAL( CORIF )
          ELSE
             DO I=1,NP
                CORIF(I)=2.0d0*omega*SIN(SFEA(I))
@@ -3665,8 +3670,8 @@ C       elevation station locations
             call msg_fini()
 #endif
             CALL EXIT(1)  ! there is a stop here
-         ENDIF                  
-      ELSE         
+         ENDIF
+      ELSE
          WRITE(16,3007) NSTAE
          IF (NSTAE.NE.0) THEN
             WRITE(16,*) "ELEVATION STATION LOCATIONS WILL BE READ FROM FORT.15"
@@ -3804,8 +3809,8 @@ C....RECORDING STATIONS
             call msg_fini()
 #endif
             CALL EXIT(1) ! there is a stop here
-         ENDIF                  
-      ELSE         
+         ENDIF
+      ELSE
          WRITE(16,3107) NSTAV
          IF (NSTAV.NE.0) THEN
             WRITE(16,*) "VELOCITY STATION LOCATIONS WILL BE READ FROM FORT.15"
@@ -3949,8 +3954,8 @@ C...  RECORDING STATIONS
                call msg_fini()
 #endif
                CALL EXIT(1) ! there is a stop here
-            ENDIF                  
-         ELSE         
+            ENDIF
+         ELSE
             WRITE(16,3207) NSTAC
             IF (NSTAC.NE.0) THEN
                WRITE(16,*) "CONC. STATION LOCATIONS WILL BE READ FROM FORT.15"
@@ -4100,8 +4105,8 @@ C...  RECORDING STATIONS
                call msg_fini()
 #endif
                CALL EXIT(1)  ! there is a stop here
-            ENDIF                  
-         ELSE         
+            ENDIF
+         ELSE
             WRITE(16,3217) NSTAM
             IF (NSTAM.NE.0) THEN
                WRITE(16,*) "MET STATION LOCATIONS WILL BE READ FROM FORT.15"
@@ -5918,10 +5923,10 @@ C
             IF ( IFSPROTS .EQ. 1 ) THEN
                CALL DRVSPCOORSROTS( lonr, latr,  lon(I), lat(I) )
             ELSE
-               latr = lat(I) ;  lonr = lon(I) ;
+               latr = lat(I) ;  lonr = lon(I)
             END IF
             CALL CYLINDERMAP( xcoord(I), ycoord(I),
-     &           lonr, latr, SLAM0, SFEA0, ICS) ;
+     &           lonr, latr, SLAM0, SFEA0, ICS)
          ENDIF
 C
 C... v49.48.02 -- tcm replaced with call to kdtsearch
