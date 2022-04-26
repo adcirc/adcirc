@@ -220,8 +220,6 @@ else
 endif
 
 ifeq ($(USE_IPOLATES),1)
-#   for HWRF iplib:=${lib}/libipolate_hwrf.a
-#   for HWRF wLDFLAGS+=-lipolate_hwrf
    ipdir:=${cwd}/iplib.v3.0.0
    iplib:=${lib}/libipolate.a
    wLDFLAGS+=-lipolate

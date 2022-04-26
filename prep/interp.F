@@ -464,7 +464,7 @@ C       modified from the original GLATS by R.L. 4/24/96               *
 C***********************************************************************
 
       SUBROUTINE GLATS(LGGHAF,COLRAD,WGT,WGTCS,RCS2)
-CCCC      %INCLUDE DBGLATS ;
+CCCC      %INCLUDE DBGLATS
 CCCC  HALF PRECISION COLRAD,WGT,WGTCS,RCS2
 C     DOUBLE PRECISION COLRAD,WGT,WGTCS,RCS2
       USE PRESIZES, ONLY : SZ
@@ -553,7 +553,7 @@ C***********************************************************************
 
 CFPP$ EXPAND(POLY)
       SUBROUTINE POLY(N,RAD,P)
-CCCC      %INCLUDE DBPOLY ;
+CCCC      %INCLUDE DBPOLY
       IMPLICIT NONE
 C     jgf46.00 Explicitly declared the following variables.
       REAL(8) X

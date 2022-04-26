@@ -10,7 +10,7 @@ C                                                                             *
 C******************************************************************************
 C
       MODULE GLOBAL
-      USE SIZES, ONLY : SZ 
+      USE SIZES, ONLY : SZ
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
 #ifdef DATETIME
       use datetime_module, only: datetime
@@ -68,6 +68,14 @@ C... v49.48 tcm -- added for coupling with STWAVE (NRS=4)
       REAL(8)  :: ENDWAVE     ! End of Wave Service
       LOGICAL  :: CPL2STWAVE = .FALSE.  !Coupled to STWAVE (NRS=4)
       LOGICAL  :: Flag_ElevError = .FALSE.
+
+C
+C... v50.xx sm -- added for coupling with NOUPC Cap
+      LOGICAL   ::  NUOPC4MET = .FALSE.  ! assign in CAP
+      LOGICAL   ::  NUOPC4WAV = .FALSE.  ! assign in CAP
+C
+C
+
 C      real(sz) rampriver,drampriver,rampriver1,rampriver2
 C     jgf46.08 Fine grained ramp functions (jgf46.21 split flux b.c.s)
       REAL(SZ) RampExtFlux,DRampExtFlux ! Ramp for external flux b.c.s
@@ -96,22 +104,22 @@ C     Variables related to hotstarting.
       end type HOTSTART_t
 
       type(HOTSTART_t):: hss
-      !       
+      !
       ! iLump=0 for consistent mass matrix
-      ! iLump=1 for lumped mass matrix 
-      integer :: ilump 
+      ! iLump=1 for lumped mass matrix
+      integer :: ilump
 
       real(sz),allocatable,target ::   mom_lv_x(:)
       real(sz),allocatable ::   mom_lv_y(:)
 
       !-----------------------------------------------------------------
-      !        F U L L   D O M A I N   V A R I A B L E S   
-      !                  O N L Y   U S E D   
+      !        F U L L   D O M A I N   V A R I A B L E S
+      !                  O N L Y   U S E D
       !        I N   P A R A L L E L   E X E C U T I O N
       !-----------------------------------------------------------------
       ! jgf51.21.25: The variables in this section are only used in
       ! parallel execution but they are declared here (rather than in
-      ! the messenger module) because they are used in many different 
+      ! the messenger module) because they are used in many different
       ! modules, including harm.F, write_output.F, globalio.F et al.
       !-----------------------------------------------------------------
       integer :: comm        ! MPI communicator.
@@ -121,7 +129,7 @@ C     jgf48.03 Arrays for mapping subdomain nodes and elements to full
 C     domain ... used in globalio module but allocated and populated
 C     in messenger module
       integer,allocatable,target :: nodes_lg(:)
-      integer,allocatable,target :: imap_el_lg(:) 
+      integer,allocatable,target :: imap_el_lg(:)
 C
 C     global number of elevation, velocity, and meteorological stations
       integer :: nstae_g, nstav_g, nstam_g
@@ -145,21 +153,21 @@ C     for writing fulldomain hotstart files.
       ! full domain min and max files in parallel
       !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_ETAMAX_G(:)
-      REAL(SZ),ALLOCATABLE, TARGET :: ETAMAX_Time(:) 
-      REAL(SZ),ALLOCATABLE, TARGET :: ETAMAX_Time_G(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: ETAMAX_Time(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: ETAMAX_Time_G(:)
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_UMAX_G(:)
-      REAL(SZ),ALLOCATABLE, TARGET :: UMAX_Time(:) 
-      REAL(SZ),ALLOCATABLE, TARGET :: UMAX_Time_G(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: UMAX_Time(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: UMAX_Time_G(:)
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_PrMin_G(:)
-      REAL(SZ),ALLOCATABLE, TARGET :: PrMin_Time(:) 
-      REAL(SZ),ALLOCATABLE, TARGET :: PrMin_Time_G(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: PrMin_Time(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: PrMin_Time_G(:)
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_WVNOutMax_G(:)
-      REAL(SZ),ALLOCATABLE, TARGET :: WVNOutMax_Time(:) 
-      REAL(SZ),ALLOCATABLE, TARGET :: WVNOutMax_Time_G(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: WVNOutMax_Time(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: WVNOutMax_Time_G(:)
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax_g(:)
-      REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time(:) 
-      REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time_G(:) 
-     
+      REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time_G(:)
+
 #if defined CSWAN || defined ADCSWAN
       !...Global SWAN Arrays
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSOut_g(:)
@@ -178,7 +186,7 @@ C     for writing fulldomain hotstart files.
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02MaxOut_g(:)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10MaxOut_g(:)
 #endif
-      
+
       ! mappings from subdomain to fulldomain for stations
       integer,allocatable,target :: imap_stae_lg(:)
       integer,allocatable,target :: imap_stav_lg(:)
@@ -198,7 +206,7 @@ C     jgf48.03 Variables shared between messenger and writer modules
       integer ::  realtype, dbletype
       !
       ! there is a separate mpi communicator for each dedicated
-      ! writer processor; their communicator ids are stored in the 
+      ! writer processor; their communicator ids are stored in the
       ! following array
       integer, allocatable ::  comm_writer(:)
       ! communicators for hotstart file writing !st3
@@ -219,7 +227,7 @@ C     jgf48.03 Variables shared between messenger and writer modules
       !----------------------------------------------------------------
 C     End of variables shared between messenger and other modules
       !----------------------------------------------------------------
-C     
+C
       INTEGER             :: FileFmtVersion      ! File format version.
 
 c..RJW merged 09/02/2008 Casey 071219: Added the following variable declaration for 3D mass balance.
@@ -243,19 +251,19 @@ c.
 #ifdef CSWAN
       REAL(SZ),ALLOCATABLE, TARGET ::  SWAN_WDragCo(:) !MVB
 #endif
-      REAL(SZ),ALLOCATABLE, TARGET ::  windDragOut(:) !MVB 
+      REAL(SZ),ALLOCATABLE, TARGET ::  windDragOut(:) !MVB
 
       REAL(SZ),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
-      
-      real(sz), allocatable, target :: wvnxout(:) ! output wind velocity in x-dir at each node 
-      real(sz), allocatable, target :: wvnyout(:) ! output wind velocity in y-dir at each node 
+
+      real(sz), allocatable, target :: wvnxout(:) ! output wind velocity in x-dir at each node
+      real(sz), allocatable, target :: wvnyout(:) ! output wind velocity in y-dir at each node
 
       real(sz),allocatable :: gwce_lv(:)
 
 
-      
-#if defined CSWAN || defined ADCSWAN     
+
+#if defined CSWAN || defined ADCSWAN
       !...Local SWAN Arrays
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSOut(:)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIROut(:)
@@ -272,7 +280,7 @@ c.
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDMaxOut(:)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02MaxOut(:)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10MaxOut(:)
-#endif      
+#endif
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef CSWAN
@@ -281,8 +289,8 @@ Casey 090302: Added the following arrays for output of radiation stress gradient
 !#endif
       LOGICAL :: outputWindDrag = .false. ! true if wind drag data should be written to output file
 
-#if defined CSWAN || defined ADCSWAN      
-Cobell 20120510: Added logicals for turning on/off swan output files   
+#if defined CSWAN || defined ADCSWAN
+Cobell 20120510: Added logicals for turning on/off swan output files
       LOGICAL                      :: SWAN_OutputHS = .FALSE.
       LOGICAL                      :: SWAN_OutputDIR = .FALSE.
       LOGICAL                      :: SWAN_OutputTM01 = .FALSE.
@@ -386,7 +394,7 @@ C    kmd48.33bc - added variables for the levels of no motion and top temperatur
       INTEGER,ALLOCATABLE ::    NNODECODE(:)
       INTEGER,ALLOCATABLE ::    NIBNODECODE(:)
       !
-      ! lists of elements containing each station 
+      ! lists of elements containing each station
       integer, allocatable, target :: nnc(:) ! concentration station elements
       integer, allocatable, target :: nne(:) ! elevation station elements
       integer, allocatable, target :: nnv(:) ! velocity station elements
@@ -414,7 +422,7 @@ C...
 
       REAL(8) STATIM,REFTIM
       REAL(8) QTIME1,QTIME2
-      REAL(8), TARGET :: DTDP      
+      REAL(8), TARGET :: DTDP
 
       REAL(8) FTIMINC,RSTIME1,RSTIME2,RSTIMINC
 
@@ -477,7 +485,7 @@ C     jgf45.07 The definitions of many of these are in timestep.F
 C    kmd48.33bc  - logical statement for hot start using different time step
       ! This is .true. if the time step size of the current run is
       ! different from the time step size in the hotstart file; also
-      ! true for IDEN=1, 3D baroclinic runs 
+      ! true for IDEN=1, 3D baroclinic runs
       LOGICAL :: CHOTHS              = .FALSE.
 
 ! kmd - Evan's updates for rivers above MSL
@@ -488,10 +496,10 @@ C     the GWCE and Momentum equations, so that ADCIRC runs faster and
 C     only calculates the requested quantities.
       LOGICAL :: METONLY             = .FALSE.
 C
-C     jgf51.14: Moved the parameters that control output timing 
+C     jgf51.14: Moved the parameters that control output timing
 C     from read_input.F to here so that they can be used to recalculate
 C     starting and ending time step for output when the time step
-C     size has changed after a hotstart. 
+C     size has changed after a hotstart.
       REAL(SZ) TOUTSC
       REAL(SZ) TOUTSE,TOUTFE
       REAL(SZ) TOUTSV,TOUTFV
@@ -531,7 +539,7 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       integer, target :: ivstp ! file position in velocity station file
       integer, target :: iwstp ! file position in wind velocity station file
       integer, target :: ipstp ! position in barometric pressure station file
-      integer, target :: iestp ! file position in station elevation file 
+      integer, target :: iestp ! file position in station elevation file
       integer, target :: ig_tvw ! file position in weir elevation file
       integer, target :: nodeCodeOutFilePos
       integer, target :: noffOutFilePos
@@ -539,17 +547,17 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       ! jgf52.08.03: Some files (e.g., initiallydry.63 and endrisinginun.63)
       ! are only written once, but are written using the same subroutines
       ! that write time varying output files; the output subroutine increments
-      ! the file position counter; so we have to have a fake file position 
+      ! the file position counter; so we have to have a fake file position
       ! counter even for output files that are only written once.
-      integer, target :: fauxFilePosition 
+      integer, target :: fauxFilePosition
       ! jgf: added support for water level offset
       integer, target :: dynamicWaterLevelCorrectionFilePos
       integer, target :: dynamicWaterLevelCorrectionStaFilePos
 
       INTEGER  IHOTSTP, IMHS
       INTEGER  ITIME, ITEMPSTP
-      INTEGER  ITHS, ITITER    
-      
+      INTEGER  ITHS, ITITER
+
       INTEGER  LUMPT ! =1/0; LUMP/DO NOT LUMP THE TRANSPORT EQN
       INTEGER  NDSETSC
       INTEGER  NCChange !jgf45.06 flag indicating wetting / drying has occurred
@@ -557,7 +565,7 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  NHSINC, NHSTAR
       LOGICAL :: NHOUTONCE = .false.
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-!#ifdef CSWAN 
+!#ifdef CSWAN
 Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER, TARGET :: IGRadS
 !#endif
@@ -567,14 +575,14 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER, TARGET :: NSCOUGI, NSCOUGT, NSCOUGS  ! output spool counters
       INTEGER, TARGET :: NSCOU_TVW ! output spool counters
       INTEGER, TARGET :: NSCOUP ! output spool counter for fort.71 (bar. press. sta.)
-      INTEGER, TARGET :: NSCOUI ! output spool counter for fort.91 (ice sta.)     
+      INTEGER, TARGET :: NSCOUI ! output spool counter for fort.91 (ice sta.)
       integer, target :: nodeCodeOutSpoolCounter
       integer, target :: noffOutSpoolCounter
       integer, target :: initiallyDrySpoolCounter
       integer, target :: windDragSpoolCounter
       integer, target :: dynamicWaterLevelCorrectionSpoolCounter
       integer, target :: dynamicWaterLevelCorrectionStaSpoolCounter
-      
+
       INTEGER :: NSPOOLC, NSPOOLGC, NSPOOLGE ! output increments
       INTEGER :: NSPOOLGV, NSPOOLGW, NSPOOLM, NSPOOL_TVW ! output increments
       INTEGER  NSTAC, NSTAM, NTCYFC, NTCYFGC, NTCYFGE
@@ -649,11 +657,11 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       INTEGER NCCOUGE,NCCOUGW,NCCOUGV
 
 #ifdef ADCNETCDF
-      LOGICAL, PARAMETER :: netcdf_avail = .true. 
+      LOGICAL, PARAMETER :: netcdf_avail = .true.
 #else
       LOGICAL, PARAMETER :: netcdf_avail = .false. ! .true. if NetCDF support was compiled in
 #endif
-      
+
 ! CF Finish addition for NETCDF I/O
 
 ! TCM v49.64.01 Addition for Ice Concentration Fields
@@ -665,7 +673,7 @@ C     kmd48.33bc - added variables for 3D boundary conditions
 ! TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
       INTEGER :: NDDT  !FLAG TO USE TIME VARYING BATHYMETRY
       REAL(8) :: BTIME1,BTIME2  !TIMES FOR TIME VARYING BATHYMETRY Records
-      REAL(8) :: BTIME_END  !time that 
+      REAL(8) :: BTIME_END  !time that
       !variables related to global bathymetry output file
       INTEGER, TARGET :: IGBP ! position in global bathy output file
       INTEGER :: NDSETSB,NTCYFGB,NTCYSGB,NTRSPB
@@ -673,7 +681,7 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       !variables related to station bathymetry output file
       INTEGER :: NTCYSB,NTCYFB
       INTEGER, TARGET :: NSCOUB
-      INTEGER, TARGET :: IBSTP  ! position in station bathy output file      
+      INTEGER, TARGET :: IBSTP  ! position in station bathy output file
       REAL(8) :: BTIMINC ! TIME INCREMENT (SECONDS) FOR BATHYMETRY CHANGES USED FOR TIME VARYING BATHYMETRY
       REAL(8) :: BCHGTIMINC ! time increment (seconds) over which bathymetry changes during a btimeinc interval
       REAL(SZ),ALLOCATABLE, TARGET ::  DP00(:)
@@ -690,7 +698,7 @@ C     kmd48.33bc - added variables for 3D boundary conditions
                                             ! 0 is use nearest neighbor if wet and H > 0.8H0
                                             ! 1 is use nearest neighbor if wet regardless if H > 0.8H0
 
-      ! 
+      !
       ! all info needed for self describing dataset in XDMF
       type xdmfMetaData_t
          integer*8 :: xdmfFortranObj  ! object associated with the file
@@ -699,10 +707,10 @@ C     kmd48.33bc - added variables for 3D boundary conditions
          real(8), allocatable :: tempCoord(:,:) ! holds Geometry data
          integer :: topologyID ! index of the Topology data in the output file
          integer, allocatable :: xdmf_nm(:,:)  ! 0-offset connectivity array
-         logical :: createdIDs        ! .true. if infoIDs have been created 
-         character(80) :: variable_name 
+         logical :: createdIDs        ! .true. if infoIDs have been created
+         character(80) :: variable_name
          integer :: variable_name_id
-         character(80) :: long_name 
+         character(80) :: long_name
          integer :: long_name_id
          character(80) :: standard_name
          integer :: standard_name_id
@@ -725,7 +733,7 @@ C     kmd48.33bc - added variables for 3D boundary conditions
 C
 C     jgf48.03 the following data structure is used to describe
 C     the size and shape of the output data.
-C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name 
+C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name
 C     elements to the structure
       type OutputDataDescript_t
         integer           :: lun
@@ -764,18 +772,18 @@ C     elements to the structure
         logical :: divideByDepth ! .true. if the solution must be divided by depth b/f output
         integer, allocatable :: writerFormats(:) ! formats that dedicated writers can write
         logical :: useWriter ! .true. if a dedicated writer should be used to write these data
-        integer :: file_extension  ! end of the file name       
+        integer :: file_extension  ! end of the file name
         character(len=32) :: file_basename  ! usually 'fort' but sometimes 'rads' etc
         real(sz), pointer :: interped_array(:) ! array that stations spatially interpolate
         real(sz), pointer :: interped_array2(:) ! array2 that stations spatially interpolate
         integer :: startTimeStep ! time step after which output should begin
-        integer :: endTimeStep   ! last time step when output should occur    
-        integer :: outputTimeStepIncrement ! num time steps between outputs          
+        integer :: endTimeStep   ! last time step when output should occur
+        integer :: outputTimeStepIncrement ! num time steps between outputs
         integer, pointer :: spoolCounter ! counts time steps between outputs
         integer, pointer :: filepos ! keeps track of position in output files
         integer, pointer :: elements(:) ! array of elements that contain the stations
         real(sz), pointer :: interp_fac1(:) ! array of interp. factors for stations
-        real(sz), pointer :: interp_fac2(:) ! array of interp. factors for stations        
+        real(sz), pointer :: interp_fac2(:) ! array of interp. factors for stations
         real(sz), pointer :: interp_fac3(:) ! array of interp. factors for stations
         logical :: initialized ! .true. if initialization has occurred (netcdf, xdmf)
         logical :: minmax_timestamp ! .true. if a time stamp will be written to a max file
@@ -784,12 +792,12 @@ C     elements to the structure
         type(writerData_t) :: wMD ! used if this data will be written by dedicated writer
       end type OutputDataDescript_t
       !
-      ! inunThresh is used to set a minimum inundation depth for 
+      ! inunThresh is used to set a minimum inundation depth for
       ! accumulating inundationTime for detailed inundation output
       real(sz) :: inunThresh = 0.6d0
       !
       ! inundationOutput can be set to .true. in read_input()
-      logical :: inundationOutput = .false. 
+      logical :: inundationOutput = .false.
 C
 C     jgf49.44: Log levels, in order from largest amount of log messages
 C     written (DEBUG) to fewest log messages written (ERROR). Compared
@@ -1114,7 +1122,7 @@ C...
       SUBROUTINE ALLOC_MAIN1a()
       USE SIZES, ONLY : MNP, MNE
       IMPLICIT NONE
-C  
+C
       !jgfdebug TODO: rationalize initialization of these variables
       ALLOCATE ( ETAS(MNP))
       etas = -99999.d0
@@ -1155,7 +1163,7 @@ C
       eta1(:) = -99999.d0
       eta2(:) = -99999.d0
       ALLOCATE ( CORIF(MNP))
-      corif(:) = -99999.d0      
+      corif(:) = -99999.d0
       ALLOCATE ( NODECODE(MNP))
       nodecode = -99999
       ALLOCATE ( DASigT(MNP),DATemp(MNP),DASalt(MNP))
@@ -1199,9 +1207,9 @@ C    loadEleSlopeLim.eqv..true
       ALLOCATE(EtaDisc(MNP))
       EtaDisc(:) = -99999.d0
       ALLOCATE ( ETAMAX(MNP)) ! v46.50 sb 11/11/2006
-      ALLOCATE ( ETAMAX_TIME(MNP)) ! tcm v51.20.01 
+      ALLOCATE ( ETAMAX_TIME(MNP)) ! tcm v51.20.01
       ALLOCATE ( UMAX(MNP)) ! v46.50 sb 11/11/2006
-      ALLOCATE ( UMAX_TIME(MNP)) ! tcm v51.20.01 
+      ALLOCATE ( UMAX_TIME(MNP)) ! tcm v51.20.01
       ETAMAX(:) = -99999.d0 ! v46.50 sb 11/11/2006
       EtaMax_Time(:) = 0.d0
       UMAX(:) = 0.d0 ! v46.50 sb 11/11/2006
@@ -1448,7 +1456,7 @@ C
          CICE2(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
          CICEOUT(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
       ENDIF
-      
+
 #ifdef CSWAN
       ALLOCATE ( SWAN_WDragCo(MNP) ) !MVB
       SWAN_WDragCo(:) = 0.0d0 !MVB
@@ -1457,7 +1465,8 @@ C
       windDragOut(:) = 0.d0
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-      IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4)) then
+!   nrs = 5 -- Saeed's nuopc implementation
+      IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4).or.(ABS(NRS).EQ.5)) then
 !#ifdef CSWAN
 Casey 090302: Added the next line for output of radiation stress gradients.
          ALLOCATE ( RSNXOUT(MNP),RSNYOUT(MNP) )
@@ -1489,7 +1498,7 @@ C...
       SUBROUTINE ALLOC_MAIN13()
       USE SIZES, ONLY : MNP
       IMPLICIT NONE
-      
+
       ALLOCATE ( DP1(MNP), DP2(MNP) )
       DP1(:) = 0.D0
       DP2(:) = 0.D0
@@ -1497,10 +1506,10 @@ C...
       END SUBROUTINE ALLOC_MAIN13
 
       !-----------------------------------------------------------------
-      !                      S U B R O U T I N E   
+      !                      S U B R O U T I N E
       !                G E T    F O R M A T    I N T E G E R
       !-----------------------------------------------------------------
-      ! Sets file format integer that corresponds to the file 
+      ! Sets file format integer that corresponds to the file
       ! format string.
       !-----------------------------------------------------------------
       subroutine getFormatInteger(typeString, typeHolder)
@@ -1510,17 +1519,17 @@ C...
       !
       select case(trim(typeString))
       case('OFF')
-         typeHolder = 0 
+         typeHolder = 0
       case('ASCII')
          typeHolder = 1
       case('BINARY')
-         typeHolder = 2 
+         typeHolder = 2
       case('NETCDF3')
-         typeHolder = 3 
+         typeHolder = 3
       case('SPARSE_ASCII')
-         typeHolder = 4 
+         typeHolder = 4
       case('NETCDF4')
-         typeHolder = 5 
+         typeHolder = 5
       case('XDMF')
          typeHolder = 7
       case default
@@ -1980,11 +1989,11 @@ C     available to different parts of ADCIRC.
 
 !-----------------------------------------------------------------------
 !     @brief Internal norm2 function
-!     If the compiler supports Fortran 2008 then the intrinsic is used. 
-!     Otherwise, the implementation is provided here. Use the compiler 
+!     If the compiler supports Fortran 2008 then the intrinsic is used.
+!     Otherwise, the implementation is provided here. Use the compiler
 !     flag -DNOF2008 to enable the internal implementation. norm2
 !     calculates the Euclidean vector norm (L2 norm) of an array
-!     @param[in] x array to calculate the L2 norm of 
+!     @param[in] x array to calculate the L2 norm of
 !     @result euclidean vector norm of x
 !-----------------------------------------------------------------------
       pure function adcirc_norm2(x)
@@ -1995,7 +2004,7 @@ C     available to different parts of ADCIRC.
 #ifdef NOF2008
         intrinsic            :: dot_product, sqrt
         adcirc_norm2 = sqrt(dot_product(x,x))
-#else 
+#else
         intrinsic            :: norm2
         adcirc_norm2 = norm2(x)
 #endif
@@ -2019,7 +2028,7 @@ C     available to different parts of ADCIRC.
             IF(idx.GT.0)lowercase(I:I)=low(IDX:IDX)
           ENDDO
       END FUNCTION toLowercase
-      
+
       FUNCTION toUppercase(string) RESULT(uppercase)
           IMPLICIT NONE
           CHARACTER(*),INTENT(IN)  :: string

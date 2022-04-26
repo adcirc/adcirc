@@ -3,22 +3,22 @@
 !-----------------------------------------------------------------------
 !> @author Zachary Cobell, The Water Institute, zcobell@thewaterinstitute.org
 !> @author Shintaro Bunya
-!> 
+!>
 !> @copyright Dr. R.A. Luettich and Dr. J.J. Westerink
 !>
 !> @brief This module handles the I/O and interpolation to the mesh for Oceanweather
-!> format wind and pressure fields. 
-!> 
-!> The module is initialized by calling nws12init and subsequently calling 
+!> format wind and pressure fields.
+!>
+!> The module is initialized by calling nws12init and subsequently calling
 !> nws12get. The code will place data into the WVNX, WVNY, and PRN arrays
-!> 
+!>
 !> The fort.22 file is used to control behavior. fort.22 must contain at least
 !> three lines as follows:
 !>     numSets        <-- Number of sets of wind fields
 !>     numBlankSnaps  <-- Number of snaps to add/skip at beginning of field
 !>     windMultiplier <-- Wind velocity multiplier to apply
 !>
-!> If numSets is negative, the code will attempt to read the filenames of 
+!> If numSets is negative, the code will attempt to read the filenames of
 !> the wind files from the fort.22. numSets may be positive 1, 2, or 3 which
 !> indicates use of the standard names:
 !>
@@ -28,7 +28,7 @@
 !>    Set 3: fort.217, fort.218 [ pressure field, wind field ]
 !> @endverbatim
 !>
-!> When negative, there is no enforced limit on the number of wind fields that 
+!> When negative, there is no enforced limit on the number of wind fields that
 !> may be used. The wind fields should be listed in comma separated format
 !> in the fort.22, 1:abs(numSets), one set of wind files per line as follows:
 !>
@@ -40,19 +40,19 @@
 !> @endverbatim
 !>
 !> Wind fields should always be listed from coarse to fine. The priority with
-!> which the wind fields are interpolated to the mesh is determined by the 
+!> which the wind fields are interpolated to the mesh is determined by the
 !> reverse order for which they are listed, meaning that the wind field that
 !> is listed last is considered highest priority.
 !>
 !> Wind fields are interpolated onto each node using a bilinear interpolation
-!> scheme. If a wind field lies outside of all wind fields, it is set to 
+!> scheme. If a wind field lies outside of all wind fields, it is set to
 !> PRDEFLT (usually 1013mb) and 0.0 m/s velocity.
 !>
 !> When using Powell wind drag with Oceanweather wind fields, the findStormCenter
 !> subroutine is used to search for the lowest central pressure under 1000mb. In
-!> some cases, the storm center may vary randomly enough within an area when using a 
-!> simple search like this on grids with high spatial and temporal resolution. If 
-!> this happens, it is possible that the storm direction will not be correctly 
+!> some cases, the storm center may vary randomly enough within an area when using a
+!> simple search like this on grids with high spatial and temporal resolution. If
+!> this happens, it is possible that the storm direction will not be correctly
 !> interpreted. In this case, it usually is best to search only the more coarse
 !> wind fields to find the storm center which will prevent these sorts of oscillations
 !> Using the &metControl namelist, you can specify the number of Powell drag
@@ -60,7 +60,7 @@
 !> @verbatim
 !> &metControl nPowellSearchDomains=[X] /
 !> @endverbatim
-!> where [X] is the number of domains to search through. If set to 1, only the 
+!> where [X] is the number of domains to search through. If set to 1, only the
 !> most coarse domain will participiate in the search.
 !
 !-----------------------------------------------------------------------
@@ -74,7 +74,7 @@
      &     openFileForRead, Flag_ElevError
 #ifdef CMPI
         USE MESSENGER,ONLY : MSG_FINI
-#endif  
+#endif
         IMPLICIT NONE
 
         integer  :: nPowellSearchDomains = -1 !< Number of search domains for Powell wind drag
@@ -84,7 +84,7 @@
         integer  :: cntSnaps !< Counter for number of snaps that have been processed so far
         real(SZ) :: windMultiplier !< Wind multiplier applied to Oceanweather wind velicities
         logical  :: moving_grid = .false. !< indicates the owi domains use a moving grid (for aswip.F)
-        
+
         TYPE OCEANWEATHER !< Container for Oceanweather domains. Represents a wind and pressure field
             CHARACTER(1024)      :: pressure_file !< filename used for the pressure field
             CHARACTER(1024)      :: wind_file !< filename used for the wind velocity field
@@ -96,7 +96,7 @@
             INTEGER              :: iLon !< number of points in longitude direction
             INTEGER              :: iounit_pressure !< fortran unit number for pressure file
             INTEGER              :: iounit_wind !< fortran unit number for wind file
-            INTEGER              :: iSnap !< current snap number 
+            INTEGER              :: iSnap !< current snap number
             INTEGER              :: iUpdate !< flag to update interpolation weights and indicies if wind field moves
             REAL(SZ)             :: dLat !< spacing in latitude direction
             REAL(SZ)             :: dLon !< spacing in longitude direction
@@ -162,7 +162,7 @@
         call setMessageSource("nws12init")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Enter.")
-#endif  
+#endif
 
         !...Begin reading fort.22
         fname = "fort.22"
@@ -170,7 +170,7 @@
         errorVar = "open"
         call openFileForRead(iounit, TRIM(GBLINPUTDIR)//"/fort.22", errorIO)
         call check_owi_err(errorIO,errorVar,fname,iounit)
-        
+
         errorVar = "reading number of wind sets" ! used in error msgs
         read(iounit,*,err=99999,end=99998,iostat=errorIO) numSets
         call check_owi_err(errorIO,errorVar,fname,iounit)
@@ -189,7 +189,7 @@
            numSkipSnaps = ABS(numBlankSnaps)
            numBlankSnaps = 0
         else
-           numSkipSnaps = 0 
+           numSkipSnaps = 0
         endif
 
         ! Read a wind velocity multiplier
@@ -225,13 +225,13 @@
 
         !...Set snap counter to zero
         cntSnaps = 0
-       
-        !...Skip specified snaps 
+
+        !...Skip specified snaps
         call owi_skipSnaps(numSkipSnaps,np,WVNX,WVNY,PRN,PRdeflt)
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-#endif  
+#endif
         call unsetMessageSource()
         RETURN
 
@@ -244,7 +244,7 @@
 
 
 !-----------------------------------------------------------------------
-!> @brief Reads a wind and pressure snap from the oceanweather file and 
+!> @brief Reads a wind and pressure snap from the oceanweather file and
 !>        interpolates it to the adcirc mesh
 !> @param[inout] wvnx    wind speed, x-direction
 !> @param[inout] wvny    wind speed, y-direction
@@ -274,7 +274,7 @@
         call setMessageSource("nws12get")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Enter.")
-#endif  
+#endif
         errorVar = ""
         RHOWATG=RHOWAT0*G
 
@@ -296,7 +296,7 @@
            call allMessage(INFO,trim(scratchMessage))
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
            call allMessage(DEBUG,"Return.")
-#endif  
+#endif
            call unsetMessageSource()
            RETURN
         endif
@@ -357,7 +357,7 @@
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-#endif  
+#endif
         call unsetMessageSource()
         RETURN
 
@@ -368,7 +368,7 @@
 
 !-----------------------------------------------------------------------
 !> @brief Called to find the lowest pressure in the met field below
-!>        the threshold pressure. Loops over all domains and finds 
+!>        the threshold pressure. Loops over all domains and finds
 !>        the lowest pressure across all domains
 !> @param[inout] eyeLat prior 3 locations (y) where the eye was found
 !> @param[inout] eyeLon prior 3 locations (x) where the eye was found
@@ -403,7 +403,7 @@
         EyeLatTemp = 0D0
         EyeLonTemp = 0D0
         EyePressure = PRBCKGRND
-        
+
         do S = 1,nPowellSearchDomains
             if(owi(s)%hasData)then
                 minidx = minloc(owi(s)%p)
@@ -443,7 +443,7 @@
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-#endif  
+#endif
         call unsetMessageSource()
 
 !-----------------------------------------------------------------------
@@ -457,10 +457,10 @@
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-          
+
 !-----------------------------------------------------------------------
 !> @brief reads the next data snapshot from the owi wind and pressure
-!> files 
+!> files
 !> @param[in] idx domain index for the owi data
 !> @param[in] np number of points in the adcirc mesh
 !> @param[in] prbk background pressure
@@ -470,7 +470,7 @@
         implicit none
         integer,intent(in)  :: idx
         integer,intent(in)  :: np
-        real(sz),intent(in) :: prbk 
+        real(sz),intent(in) :: prbk
         character(1024)     :: filename
         character(1024)     :: errorVar
         integer             :: i,j
@@ -480,12 +480,12 @@
         integer             :: iMinw,iMinp
         real(SZ)            :: dxw,dyw,swlatw,swlongw
         real(SZ)            :: dxp,dyp,swlatp,swlongp
-        
+
         call setMessageSource("owi_readNextSnap")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Enter.")
 #endif
-        
+
         owi(idx)%hasData = .false.
 
         ! Read grid specifications/date in pressure file
@@ -501,7 +501,7 @@
                 write(scratchMessage,'("Processing Oceanweather wind data for domain ",I0," through "'//
      &                               ',I0," for time stamp ",I12," ",I2)') idx,numSets,iCYMDHp,iMinp
             else
-                write(scratchMessage,'("Processing Oceanweather wind data for time stamp ",I12," ",I2)') 
+                write(scratchMessage,'("Processing Oceanweather wind data for time stamp ",I12," ",I2)')
      &              iCYMDHp,iMinp
             endif
             call allmessage(INFO,scratchMessage)
@@ -581,7 +581,7 @@
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-#endif  
+#endif
         call unsetMessageSource()
 
         return
@@ -596,7 +596,7 @@
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-#endif  
+#endif
         call unsetMessageSource()
         return
 
@@ -606,29 +606,29 @@
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-#endif  
+#endif
         call unsetMessageSource()
         return
 
 ! END during read of grid, u, v, p data jumps to here
-10000   continue  
+10000   continue
         call owi_setEndOfFileBlankSnap(filename,prbk,owi(idx))
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-#endif  
+#endif
         call unsetMessageSource()
         return
 
 !-----------------------------------------------------------------------
       end subroutine owi_readNextSnap
 !-----------------------------------------------------------------------
-      
+
 !-----------------------------------------------------------------------
 !> @brief Sets the blank snaps at the end of the file when data has run
 !>        out
 !> @param[in] filename name of file that is being read
-!> @param[in] prbk background pressure 
+!> @param[in] prbk background pressure
 !> @param[inout] owi oceanweather object array
 !-----------------------------------------------------------------------
       subroutine owi_setEndOfFileBlankSnap(filename,prbk,obj)
@@ -641,7 +641,7 @@
         call setMessageSource("owi_setEndOfFileBlankSnap")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Enter.")
-#endif        
+#endif
 
         write(scratchMessage,61) trim(filename)
   61    format("End-of-file reached while reading '",A,
@@ -658,7 +658,7 @@
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-#endif  
+#endif
         call unsetMessageSource()
 
         return
@@ -697,7 +697,7 @@
            if (owi(j)%interppoints(node,1).gt.0) then
               xi = owi(j)%interpPoints(node,1)
               yi = owi(j)%interpPoints(node,2)
-              
+
               w1=owi(j)%weight(node,1)
               w2=owi(j)%weight(node,2)
               w3=owi(j)%weight(node,3)
@@ -713,7 +713,7 @@
               isSet = .true.
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
               call allMessage(DEBUG,"Return.")
-#endif  
+#endif
               call unsetMessageSource()
               return
            endif
@@ -721,12 +721,12 @@
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-#endif  
+#endif
         call unsetMessageSource()
 !-----------------------------------------------------------------------
        end subroutine owi_interpolateToMesh
 !-----------------------------------------------------------------------
-          
+
 
 !-----------------------------------------------------------------------
 !> @brief  Allocates the u,v,p fields in an oceanweather object and
@@ -792,7 +792,7 @@
             REAL(SZ),ALLOCATABLE,INTENT(OUT)   :: lat(:)
             REAL(SZ),ALLOCATABLE,INTENT(OUT)   :: lon(:)
             INTEGER                            :: I
-      
+
             call setMessageSource("owi_generateCoordinates")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
             call allMessage(DEBUG,"Enter.")
@@ -816,10 +816,10 @@
 !-----------------------------------------------------------------------
       end subroutine owi_generateCoordinates
 !-----------------------------------------------------------------------
-        
+
 
 !-----------------------------------------------------------------------
-!> @brief Sets the filenames that will be used for the oceanweather wind 
+!> @brief Sets the filenames that will be used for the oceanweather wind
 !>        fields
 !> @param[inout] this array of oceanweather objects
 !> @param[in] iounit fortran unit number for fort.22
@@ -929,7 +929,7 @@
 
 !-----------------------------------------------------------------------
 !> @brief Sets the default names for the oceanweather files if numSets is
-!>        positive. fort.221, fort.222, fort.223, fort.224, fort.217, 
+!>        positive. fort.221, fort.222, fort.223, fort.224, fort.217,
 !>        fort.218
 !> @param[inout] this array of oceanweather objects
 !-----------------------------------------------------------------------
@@ -965,7 +965,7 @@
 !-----------------------------------------------------------------------
       end subroutine owi_setDefaultFilenames
 !-----------------------------------------------------------------------
-        
+
 
 !-----------------------------------------------------------------------
 !> @brief Initializes the data in the oceanweather data objects based on
@@ -1017,7 +1017,7 @@
 !-----------------------------------------------------------------------
       end subroutine owi_initializefileHeaders
 !-----------------------------------------------------------------------
-     
+
 !-----------------------------------------------------------------------
 !> @brief Allocates the arrays used to interpolate oceanweather grids to
 !>        the mesh
@@ -1030,7 +1030,7 @@
            type(oceanweather),intent(inout) :: this(*)
            integer,intent(in)               :: numNodes
            integer                          :: i
-           
+
            call setMessageSource("owi_initializeFileHeaders")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
            call allMessage(DEBUG,"Enter.")
@@ -1197,7 +1197,7 @@
 
 !-----------------------------------------------------------------------
 ! @brief Checks the return value from subroutine calls; if there
-!        was an error, it writes a termination message to the screen 
+!        was an error, it writes a termination message to the screen
 !        and to the fort.16 file and terminates ADCIRC.
 ! @param[in] iret return value to check. nonzero indicates error
 ! @param[in] errorVar process being executed when the error occured

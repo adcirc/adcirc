@@ -1,5 +1,5 @@
 C***********************************************************************
-C                     M O D U L E   W E T   D R Y      
+C                     M O D U L E   W E T   D R Y
 C***********************************************************************
 C     Executes wetting and drying algorithm.
 C***********************************************************************
@@ -71,18 +71,18 @@ CWET...further comments at the end of the momentum equation solution section.
 CWET...
       module wetdry
       use sizes, only : sz
-      
+
       real(sz) :: habsmin
       real(sz) :: hoff
       real(sz) :: velmin
-      
+
       integer,allocatable ::    nibcnt(:)
       integer,allocatable ::    noffold(:)
       integer,allocatable ::    noff_sg(:)
 
       ! jgf52.08.08: Enable analyst to remove NOFF from wetting and
       ! drying algorithm; .true. by default to conform with prior
-      ! ADCIRC versions. 
+      ! ADCIRC versions.
       LOGICAL :: noffActive = .true.
 
       contains
@@ -149,7 +149,7 @@ CWET...
       real(sz) :: areaEle
       real(sz) :: tkWet
       real(sz) :: etaN1,etaN2,etaN3
-      real(sz) :: hTotN1,hTotN2,hTotN3      
+      real(sz) :: hTotN1,hTotN2,hTotN3
       real(sz) :: deldist,deleta
       real(sz) :: htot
       real(sz) :: h1
@@ -158,7 +158,7 @@ CWET...
       integer :: ie
 
       if (nolifa.ne.2) then
-         return ! wetting and drying is not active 
+         return ! wetting and drying is not active
       endif
 
 CWET...
@@ -278,7 +278,7 @@ c                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
                            !WJP needed for internal_tide stuff
-                           TKM(1:2,NM123) = TK(NM123) 
+                           TKM(1:2,NM123) = TK(NM123)
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -371,7 +371,7 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
                            !WJP needed for internal_tide stuff
-                           TKM(1:2,NM123) = TK(NM123) 
+                           TKM(1:2,NM123) = TK(NM123)
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -464,7 +464,7 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
                            !WJP needed for internal_tide stuff
-                           TKM(1:2,NM123) = TK(NM123) 
+                           TKM(1:2,NM123) = TK(NM123)
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -524,8 +524,8 @@ C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
 Cwet...
 CWET... ELEMENTAL WETTING CRITERIA WETBATHYCHANGE
 C*******************************************************************************************
-C tcm v50.66.01 -- This is an additional test for wetting only when time varying 
-C                  bathymetry is used and is only performed during the period of 
+C tcm v50.66.01 -- This is an additional test for wetting only when time varying
+C                  bathymetry is used and is only performed during the period of
 C                  bathymetry evolution.
 C
          IF ((NDDT.NE.0).AND.(IT.LE.BTIME_END+1) ) THEN
@@ -544,7 +544,7 @@ C
                      HTOTN2=DP(NM2)+ETA2(NM2)
                      HTOTN3=DP(NM3)+ETA2(NM3)
 
-!                    if all nodes have a depth greater than or equal to 
+!                    if all nodes have a depth greater than or equal to
 !                    hoff = 1.2*H0, then make the element wet
                      IF( (HTOTN1.GE.HOFF).AND.(HTOTN2.GE.HOFF).AND.
      &                   (HTOTN3.GE.HOFF) ) THEN
@@ -572,7 +572,7 @@ C<<                           Convert Manning's N to Cd, if necessary.
      &                          (1.D0+(HBREAK/H1)**FTHETA)**
      &                          (FGAMMA/FTHETA)))
                               !WJP needed for internal_tide stuff
-                              TKM(1:2,NM123) = TK(NM123) 
+                              TKM(1:2,NM123) = TK(NM123)
                            ELSEIF(C3D)THEN
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -630,7 +630,7 @@ C<<                        Convert Manning's N to Cd, if necessary.
      &                          (1.D0+(HBREAK/H1)**FTHETA)**
      &                          (FGAMMA/FTHETA)))
                               !WJP needed for internal_tide stuff
-                              TKM(1:2,NM123) = TK(NM123) 
+                              TKM(1:2,NM123) = TK(NM123)
                            ELSEIF(C3D)THEN
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -688,7 +688,7 @@ C<<                         Convert Manning's N to Cd, if necessary.
      &                           (1.D0+(HBREAK/H1)**FTHETA)**
      &                           (FGAMMA/FTHETA)))
                               !WJP needed for internal_tide stuff
-                              TKM(1:2,NM123) = TK(NM123) 
+                              TKM(1:2,NM123) = TK(NM123)
                            ELSEIF(C3D)THEN
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -796,7 +796,7 @@ C...Find the heighest point on the bed in the element.  sb v46.28.sb05.06 11/01/
 #endif
 #ifndef SB_WETDRY
                ! jgf52.08.08: Analyst can eliminate noff from
-               ! consideration in fort.15 file. 
+               ! consideration in fort.15 file.
                if (noffActive.eqv..true.) then
 C...ABC pattern
                   IF((ETAN1.GE.ETAN2).AND.(ETAN2.GT.ETAN3)) THEN
@@ -821,7 +821,7 @@ C...ACB pattern
                endif
 #else
                ! jgf52.08.08: Analyst can eliminate noff from
-               ! consideration in fort.15 file. 
+               ! consideration in fort.15 file.
                if (noffActive.eqv..true.) then
 C...ABC pattern
                   IF((ETAN1.GE.ETAN2).AND.(ETAN2.GT.ETAN3)) THEN
@@ -874,7 +874,7 @@ C...This is applied only when NOFF flag of the element at the previous time step
 C...is 0, which means that this logic works to prevent an element from
 C...re-wetting.
 C...sb v46.52.03
-               if (noffActive.eqv..true.) then 
+               if (noffActive.eqv..true.) then
                   IF(NOFFOLD(I).EQ.0) THEN
                      IF(HTOTN1.GE.HTOTN2.AND.HTOTN1.GE.HTOTN3) THEN
                         IF(ETAN1.LT.(-DPMIN+H0)) NOFF(I) = 0
@@ -1074,13 +1074,13 @@ c.....
 !   Apply a subgrid barrier.
 !
 !   Assumptions: When the subgrid barrier is not being overtopped,
-!                the cross-barrier flow is disabled and the nodes 
-!                are placed at the elevation found in the mesh 
-!                geometry. When the barrier becomes overtopped, 
-!                the nodes are elevated temporarily during the 
+!                the cross-barrier flow is disabled and the nodes
+!                are placed at the elevation found in the mesh
+!                geometry. When the barrier becomes overtopped,
+!                the nodes are elevated temporarily during the
 !                overtopping process. When the overtopping
 !                concludes, the nodes are returned to their mesh
-!                specified elevations and the cross-barrier flow 
+!                specified elevations and the cross-barrier flow
 !                is turned off again
 !-----------------------------------------------------------------------
       subroutine applySubgridBarrier()
@@ -1092,7 +1092,7 @@ c.....
      &                              SubgridBarrierOvertopping
 #ifdef CMPI
           USE MESSENGER,ONLY:wetDrySum
-#endif          
+#endif
           IMPLICIT NONE
           INTEGER  :: I,NM1,NM2,NM3,NCELE
           REAL(SZ) :: SB1,SB2,SB3

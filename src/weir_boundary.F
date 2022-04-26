@@ -15,9 +15,9 @@ C-----------------------------------------------------------------------
 C
 C
 C-----------------------------------------------------------------------
-C     M O D U L E  G L O B A L _ W E I R _ V A R I A B L E S 
+C     M O D U L E  G L O B A L _ W E I R _ V A R I A B L E S
 C-----------------------------------------------------------------------
-C     THIS MODULE CONTAINS THE VARIABLES USED THROUGHOUT WEIR 
+C     THIS MODULE CONTAINS THE VARIABLES USED THROUGHOUT WEIR
 C     CALCULATIONS AND THE DIFFERENT TIME LEVELS ASSOCIATED WITH
 C     A TIME VARYING WEIR.
 C-----------------------------------------------------------------------
@@ -30,16 +30,16 @@ C-----------------------------------------------------------------------
             REAL(SZ),ALLOCATABLE     :: BARLANHT2(:)   !...External Barrier elevation at current timestep
             REAL(SZ), PARAMETER      :: BARMIN=0.04D0
 
-            !...Averaging information in time for boundaries. 
+            !...Averaging information in time for boundaries.
             !   This was previously zeroed out in the code, but the
             !   option is maintained.
-#ifdef AVERAGEWEIRFLOW 
+#ifdef AVERAGEWEIRFLOW
             REAL(SZ),ALLOCATABLE     :: RBARWL1AVG(:),RBARWL2AVG(:)
             REAL(SZ),ALLOCATABLE     :: RPIPEWL1AVG(:),RPIPEWL2AVG(:)
             REAL(SZ),PARAMETER       :: BARAVGWT = 0.0D0
-            INTEGER                  :: IBSTART 
-#endif            
-            
+            INTEGER                  :: IBSTART
+#endif
+
             LOGICAL                  :: EXT_TVW = .FALSE. !...If there are external barrier TVW present, avoids checking an unallocated array
             LOGICAL                  :: INT_TVW = .FALSE. !...If there are internal barrier TVW present, avoids checking an unallocated array
             LOGICAL                  :: FOUND_TVW_NML = .FALSE.    !...If the namelist in the fort.15 was found
@@ -64,7 +64,7 @@ C-----------------------------------------------------------------------
                 CALL setMessageSource("ALLOCATE_WEIRS")
 #if defined(WEIR_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif                
+#endif
 
                 ALLOCATE(BARINHT1(NVEL))
                 ALLOCATE(BARINHT2(NVEL))
@@ -76,7 +76,7 @@ C-----------------------------------------------------------------------
                 ALLOCATE(RBARWL2AVG(1:NVEL))
                 ALLOCATE(RPIPEWL1AVG(1:NVEL))
                 ALLOCATE(RPIPEWL2AVG(1:NVEL))
-#endif                
+#endif
 
                 BARINHT1(1:NVEL) = BARINHT(1:NVEL)
                 BARINHT2(1:NVEL) = BARINHT(1:NVEL)
@@ -85,7 +85,7 @@ C-----------------------------------------------------------------------
 
 #if defined(WEIR_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                 CALL unsetMessageSource()
 
                 RETURN
@@ -164,11 +164,11 @@ C           AND IS BASED UPON THE INDIVIDUAL BOUNDARY NODE
                 REAL(SZ)                 :: BARHT_START   !...Starting barrier height
                 REAL(SZ)                 :: OFFSET        !...Offset from starting time in schedule
                 TYPE(BSCHED),POINTER     :: SECTION(:)    !...A section of the schedule containing a variation
-            END TYPE    
+            END TYPE
             TYPE(BARRIER_SCHEDULE_T),ALLOCATABLE,TARGET   :: SCHEDULE(:)
             TYPE(BARRIER_SCHEDULE_P),ALLOCATABLE     :: BAR_SCHEDULE(:)
             CHARACTER(1024),ALLOCATABLE,TARGET  :: SCHEDULE_LIST(:)
-            
+
 C...........THESE VARIABLES ARE PART OF THE NAMELIST THAT IS READ IN
             CHARACTER(200)   :: ScheduleFile
             REAL(SZ) :: X1,X2,Y1,Y2
@@ -185,7 +185,7 @@ C...........THESE VARIABLES ARE PART OF THE NAMELIST THAT IS READ IN
             INTEGER  :: NSCHEDULES
 
 C...........THE TIME VARYING WEIR NAMELIST
-            NAMELIST /TimeVaryingWeir/ 
+            NAMELIST /TimeVaryingWeir/
      &          X1,Y1,X2,Y2,
      &          VaryType,ZF,
      &          ETA_MAX,
@@ -227,13 +227,13 @@ C-----------------------------------------------------------------------
             SUBROUTINE WEIR_SETUP()
                 USE BOUNDARIES,ONLY:NFLUXIB,NFLUXIBP,NFLUXB
                 IMPLICIT NONE
-                
+
                 CALL setMessageSource("WEIR_SETUP")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif                
+#endif
                 IF((NFLUXIB.EQ.1).OR.(NFLUXIBP.EQ.1).OR.(NFLUXB.EQ.1))THEN
-        
+
                     !...Allocate the new weir arrays at both time levels
                     CALL ALLOCATE_WEIRS()
 
@@ -246,16 +246,16 @@ C-----------------------------------------------------------------------
 
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                 CALL unsetMessageSource()
                 RETURN
 
 C-----------------------------------------------------------------------
-            END SUBROUTINE WEIR_SETUP   
+            END SUBROUTINE WEIR_SETUP
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E  
+C     S U B R O U T I N E
 C       A L L O C A T E _ T I M E V A R Y I N G W E I R S
 C-----------------------------------------------------------------------
 C  THIS SUBROUTINE SETS UP THE BOUNDARY ARRAYS USED THROUGHOUT THE
@@ -268,7 +268,7 @@ C-----------------------------------------------------------------------
                 USE BOUNDARIES, ONLY: NVEL,LBCODEI,NBV
 #ifdef CMPI
                 USE MESSENGER,ONLY: RESNODE
-#endif                
+#endif
 
                 IMPLICIT NONE
 
@@ -280,7 +280,7 @@ C-----------------------------------------------------------------------
                 CALL setMessageSource("ALLOCATE_TIMEVARYINGWEIRS")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif                
+#endif
 
                 ALLOCATE(BARHT_FINAL(NVEL))
                 ALLOCATE(BAR_DEG_START(NVEL))
@@ -346,12 +346,12 @@ C...............DO THE SAME PROCESS FOR THE GHOST NODES
 
                 GHOST_SEARCHTREE => KDTREE2_CREATE(
      &              GHOST_LOCATIONS(1:2,:),REARRANGE=.TRUE.,SORT=.TRUE.)
-#endif                
+#endif
 
 
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                 CALL unsetMessageSource()
                 RETURN
 
@@ -375,9 +375,9 @@ C-----------------------------------------------------------------------
      &              DRVSPCOORSROTS, CYLINDERMAP
                 USE BOUNDARIES, ONLY: NBV
                 USE GLOBAL, ONLY: DEG2RAD, IFSPROTS
-#ifdef CMPI                
+#ifdef CMPI
                 USE MESSENGER,ONLY: RESNODE
-#endif                
+#endif
                 IMPLICIT NONE
                 REAL(SZ),INTENT(IN)  :: LAT
                 REAL(SZ),INTENT(IN)  :: LON
@@ -388,11 +388,11 @@ C-----------------------------------------------------------------------
                 INTEGER,INTENT(OUT)  :: IDX
                 INTEGER,PARAMETER    :: SEARCHDEPTH = 2
                 TYPE(KDTREE2_RESULT) :: KDRESULTS(SEARCHDEPTH)
-                
+
                 CALL setMessageSource("FIND_BOUNDARY_NODES")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif                
+#endif
 
                 EPS = EPSILON(1.0D0)
 
@@ -423,15 +423,15 @@ C               THAT A NODE HAS TWO BOUNDARY CONDITIONS BESIDES MAKING IT A FATA
                 ENDIF
 
                 IF(ABS(KDRESULTS(1)%DIS).GT.EPS)THEN
-#ifdef CMPI                
+#ifdef CMPI
 C...................CHECK TO MAKE SURE IT IS NOT INVALID BECAUSE IT
 C                   IS A GHOST NODE
                     CALL KDTREE2_N_NEAREST(TP=GHOST_SEARCHTREE,QV=(/X,Y/),
      &                  NN=SEARCHDEPTH,RESULTS=KDRESULTS)
                     IF(ABS(KDRESULTS(1)%DIS).GT.EPS)THEN
-C.......................THIS IS NOT A GHOST NODE EITHER. 
+C.......................THIS IS NOT A GHOST NODE EITHER.
 
-                        WRITE(ScratchMessage,'(A,F0.9,A,F0.9,A)') 
+                        WRITE(ScratchMessage,'(A,F0.9,A,F0.9,A)')
      &                      "SPECIFIED NODE LOCATION X=",
      &                      LAT," Y=",LON,
      &                      " NOT FOUND IN LIST OF BOUNDARY NODES."
@@ -439,29 +439,29 @@ C.......................THIS IS NOT A GHOST NODE EITHER.
                         CALL ADCIRC_TERMINATE()
                     ELSE
                         IDX=-1
-#if defined(TVW_TRACE) || defined(ALL_TRACE) 
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                         CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                         CALL unsetMessageSource()
                         RETURN
-                    ENDIF    
+                    ENDIF
 
 #else
-                    WRITE(ScratchMessage,'(A,F0.9,A,F0.9,A)') 
+                    WRITE(ScratchMessage,'(A,F0.9,A,F0.9,A)')
      &                  "SPECIFIED NODE LOCATION X=",
      &                  LAT," Y=",LON,
      &                  " NOT FOUND IN LIST OF BOUNDARY NODES."
                     CALL allMessage(ERROR,ScratchMessage)
                     CALL ADCIRC_TERMINATE()
 
-#endif                    
+#endif
                 ENDIF
 
                 IDX = INT(BAR_LOCATIONS(3,KDRESULTS(1)%IDX))
 
-#if defined(TVW_TRACE) || defined(ALL_TRACE) 
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                 CALL unsetMessageSource()
 
                 RETURN
@@ -484,7 +484,7 @@ C-----------------------------------------------------------------------
      &           BAR_HEIGHT_CURRENT,BAR_HEIGHT)
 
                 USE BOUNDARIES,ONLY: NBV
-                
+
                 IMPLICIT NONE
 
                 INTEGER,INTENT(IN)   :: MYIDX
@@ -496,15 +496,15 @@ C-----------------------------------------------------------------------
                 CALL setMessageSource("COMPUTE_BARRIER_HEIGHT")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif                
+#endif
 
 C...............SET DEFAULT RETURN VALUE SO WE CAN DUCK OUT AT ANY TIME
                 BAR_HEIGHT = BAR_HEIGHT_CURRENT
 
 C...............SELECT THE APPROPRIATE TYPE OF CHANGE AND CALL THE ASSOCIATED
 C               ROUTINE. FUTURE DEVELOPMENT CAN TAKE PLACE HERE BY ADDING NEW
-C               SUBROUTINES THAT ARE CALLED IN A SIMLIAR WAY. FOR EXAMPLE, 
-C               A SUBROUTINE MIGHT BE WRITTEN THAT COMPUTES WAVE FORCES AND 
+C               SUBROUTINES THAT ARE CALLED IN A SIMLIAR WAY. FOR EXAMPLE,
+C               A SUBROUTINE MIGHT BE WRITTEN THAT COMPUTES WAVE FORCES AND
 C               ALTERS THE HEIGHT OF THE BARRIER BASED UPON THAT.
                 SELECT CASE(BAR_VARYTYPE(MYIDX))
                     CASE(1)
@@ -563,9 +563,9 @@ C...............WRITE SCREEN/UNIT 16 INFORMATION AT START/END
      &                      ' CHANGING AT TIME = ',E15.8,' AT NODE = ',
      &                      I7)
 
-#if defined(TVW_TRACE) || defined(ALL_TRACE) 
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                 CALL unsetMessageSource()
                 RETURN
 
@@ -574,7 +574,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E 
+C     S U B R O U T I N E
 C       C O M P U T E _ B A R R I E R _ H E I G H T _ L I N E A R
 C-----------------------------------------------------------------------
 C  THIS SUBROUTINE COMPUTES THE NEW BARRIER ELEVATION AT THE
@@ -607,7 +607,7 @@ C-----------------------------------------------------------------------
                 CALL setMessageSource("COMPUTE_BARRIER_HEIGHT_LINEAR")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif                
+#endif
 
 C...............SET DEFAULT RETURN VALUE
                 BAR_HEIGHT = BAR_HEIGHT_CURRENT
@@ -632,10 +632,10 @@ C...............COMPUTE THE NEW BOUNDARY HEIGHT
                     !   the elevation in the fort.14 weirs
                     BAR_DZ = BARHT_START - BARHT_FINAL(MYIDX)
                     BAR_START = BARHT_START
-                ELSE    
+                ELSE
                     SELECT CASE(LBCODEI(MYIDX))
                         CASE(3,13,23)
-                            BAR_DZ = BARLANHT(MYIDX) - 
+                            BAR_DZ = BARLANHT(MYIDX) -
      &                               BARHT_FINAL(MYIDX)
                             BAR_START = BARLANHT(MYIDX)
                         CASE(4,24,5,25)
@@ -646,12 +646,12 @@ C...............COMPUTE THE NEW BOUNDARY HEIGHT
      &                          "INVALID BOUNDARY CONDITION SPECIFIED")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                             CALL allMessage(DEBUG,"Return")
-#endif                        
+#endif
                             CALL unsetMessageSource()
                             RETURN
                     END SELECT
-                ENDIF    
-                
+                ENDIF
+
                 IF(BAR_DEG_END(MYIDX).EQ.TIMELOC)THEN
 
                     BAR_HEIGHT = BARHT_FINAL(MYIDX)
@@ -674,7 +674,7 @@ C               PREVAILING GROUND. CHECK NODE ACROSS BOUNDARY AS WELL AS LOCAL N
                         IF(BARHT_FINAL(MYIDX).GE.DEPTH)THEN
                             !...SET TO USER SPECIFIED MIN
                             BAR_HEIGHT = BARHT_FINAL(MYIDX)
-                        ELSE    
+                        ELSE
 #ifdef CMPI
                             WRITE(ScratchMessage,1904) TIMELOC,NBV(MYIDX),
      &                          MYPROC
@@ -684,10 +684,10 @@ C               PREVAILING GROUND. CHECK NODE ACROSS BOUNDARY AS WELL AS LOCAL N
 #endif
                             CALL allMessage(INFO,ScratchMessage)
                             BAR_HEIGHT = DEPTH
-                        ENDIF   
+                        ENDIF
                         BAR_DEG(MYIDX) = .FALSE.
                     ENDIF
-                ENDIF    
+                ENDIF
 
  1904           FORMAT('WARNING: BARRIER CANNOT DECREASE TO ',
      &                 'A VALUE BELOW PREVAILING GROUND.',/,
@@ -702,7 +702,7 @@ C               PREVAILING GROUND. CHECK NODE ACROSS BOUNDARY AS WELL AS LOCAL N
 
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                 CALL unsetMessageSource()
                 RETURN
 
@@ -738,9 +738,9 @@ C-----------------------------------------------------------------------
                 REAL(SZ)               :: DEPTH
 
                 CALL setMessageSource("COMPUTE_BARRIER_HEIGHT_ETAMAX")
-#if defined(TVW_TRACE) || defined(ALL_TRACE) 
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif               
+#endif
 
 C...............SET DEFAULT RETURN VALUE
                 BAR_HEIGHT = BAR_HEIGHT_CURRENT
@@ -762,7 +762,7 @@ C.......................WE NEED TO INITIALIZE OUR START TIME FOR THE FAILURE
                     ELSE
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                         CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                         CALL unsetMessageSource()
                         RETURN
                     ENDIF
@@ -774,7 +774,7 @@ C               IS DEGRADING AS PRESCRIBED
      &              TIMELOC,BAR_HEIGHT_CURRENT,BAR_HEIGHT)
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                 CALL unsetMessageSource()
                 RETURN
 
@@ -783,12 +783,12 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E  
+C     S U B R O U T I N E
 C       C O M P U T E _ B A R R I E R _ H E I G H T _ S C H E D U L E
 C-----------------------------------------------------------------------
-C  THIS SUBROUTINE COMPUTES THE VARYING WEIR ELEVATION BASED UPON A 
-C  INPUT FILE THAT CONTAINS A SCHEDULE. THIS SCHEDULE CAN BE USED TO 
-C  HELP REPRESENT THINGS LIKE GATE OPERATIONS AND OTHER DYNAMIC 
+C  THIS SUBROUTINE COMPUTES THE VARYING WEIR ELEVATION BASED UPON A
+C  INPUT FILE THAT CONTAINS A SCHEDULE. THIS SCHEDULE CAN BE USED TO
+C  HELP REPRESENT THINGS LIKE GATE OPERATIONS AND OTHER DYNAMIC
 C  PROCESSES IN THE MODEL THAT BEHAVE IN A KNOWN REPETITIVE WAY
 C-----------------------------------------------------------------------
             SUBROUTINE COMPUTE_BARRIER_HEIGHT_SCHEDULE(MYIDX,TIMELOC,
@@ -823,7 +823,7 @@ C               (Time added to beginning of a schedule)
 #endif
                     CALL unsetMessageSource()
                     RETURN
-                ENDIF    
+                ENDIF
 
 C...............SIMPLIFY THESE VARIABLES
                 MYSEC = BAR_SCHEDULE(MYIDX)%MYSEC
@@ -834,7 +834,7 @@ C...............IF THIS IS THE FIRST TIMESTEP IN THIS SECTINO OF THE
 C               SCHEDULE, THEN SET UP THE VARIABLES NEEDED
                 IF(BAR_SCHEDULE(MYIDX)%SECTION(MYSEC)%BAR_DEG_START.EQ.
      &              TIMELOC-PREVEND-OFFSET)THEN
-                    
+
 C...................THIS IS THE BARRIER HEIGHT AT THE START OF THIS
 C                   PORTION OF THE SCHEDULE. SAVE IT FOR LINEAR
 C                   INTERPOLATION
@@ -845,7 +845,7 @@ C...................GET THE NODE NUMBER
                     NNBB1 = NBV(MYIDX)
 
 C...................INFORM SCREEN AND UNIT 16 WE ARE HERE
-#ifdef CMPI     
+#ifdef CMPI
                     WRITE(ScratchMessage,101)MYSEC,NNBB1,TIMELOC,MYPROC
 #else
                     WRITE(ScratchMessage,102)MYSEC,NNBB1,TIMELOC
@@ -854,10 +854,10 @@ C...................INFORM SCREEN AND UNIT 16 WE ARE HERE
 
 C...................ALTER THE VARIABLES USED IN COMPUTE_BARRIER_HEIGHT_LINEAR
 C                   SO IT CAN CORRECTLY INTERPOLATE NEW BARRIER VALUES
-                    BAR_DEG_START(MYIDX) = 
+                    BAR_DEG_START(MYIDX) =
      &                  BAR_SCHEDULE(MYIDX)%SECTION(MYSEC)%BAR_DEG_START
      &                  + PREVEND + OFFSET
-                    BAR_DEG_END(MYIDX) = 
+                    BAR_DEG_END(MYIDX) =
      &                  BAR_SCHEDULE(MYIDX)%SECTION(MYSEC)%BAR_DEG_END
      &                  + PREVEND + OFFSET
 
@@ -868,26 +868,26 @@ C                   VALUES BASED UPON MESH GEOMETRY.
                     SELECT CASE(INT(BAR_SCHEDULE(MYIDX)%
      &                          SECTION(MYSEC)%BARHT_FINAL))
                         CASE(-99990)
-                            !...Set to fort.14 nodal elevation 
+                            !...Set to fort.14 nodal elevation
                             SELECT CASE(LBCODEI(MYIDX))
                                 CASE(3,13,23)
                                     BARHT_FINAL(MYIDX) = -DP(NNBB1)
                                 CASE(4,14,24,5,25)
                                     NNBB2 = IBCONN(MYIDX)
-                                    BARHT_FINAL(MYIDX) = 
+                                    BARHT_FINAL(MYIDX) =
      &                                 MIN(-DP(NNBB1),-DP(NNBB2))
-                            END SELECT        
+                            END SELECT
                         CASE(-99991)
                             !...Add BARHT_DELTA to present height
                             SELECT CASE(LBCODEI(MYIDX))
                                 CASE(3,13,23)
-                                    BARHT_FINAL(MYIDX) = 
-     &                                  BARLANHT2(MYIDX) + 
+                                    BARHT_FINAL(MYIDX) =
+     &                                  BARLANHT2(MYIDX) +
      &                                  BAR_SCHEDULE(MYIDX)%
      &                                  SECTION(MYSEC)%BARHT_DELTA
                                 CASE(4,14,24,5,25)
-                                    BARHT_FINAL(MYIDX) = 
-     &                                  BARINHT2(MYIDX) + 
+                                    BARHT_FINAL(MYIDX) =
+     &                                  BARINHT2(MYIDX) +
      &                                  BAR_SCHEDULE(MYIDX)%
      &                                  SECTION(MYSEC)%
      &                                  BARHT_DELTA
@@ -896,13 +896,13 @@ C                   VALUES BASED UPON MESH GEOMETRY.
                             !...Subtract BARHT_DELTA from present height
                             SELECT CASE(LBCODEI(MYIDX))
                                 CASE(3,13,23)
-                                    BARHT_FINAL(MYIDX) = 
-     &                                  BARLANHT2(MYIDX) - 
+                                    BARHT_FINAL(MYIDX) =
+     &                                  BARLANHT2(MYIDX) -
      &                                  BAR_SCHEDULE(MYIDX)%
      &                                  SECTION(MYSEC)%BARHT_DELTA
                                 CASE(4,14,24,5,25)
-                                    BARHT_FINAL(MYIDX) = 
-     &                                  BARINHT2(MYIDX) - 
+                                    BARHT_FINAL(MYIDX) =
+     &                                  BARINHT2(MYIDX) -
      &                                  BAR_SCHEDULE(MYIDX)%
      &                                  SECTION(MYSEC)%
      &                                  BARHT_DELTA
@@ -926,22 +926,22 @@ C                   GET THE NEW BARRIER ELEVATION
      &                  BAR_HEIGHT_CURRENT,BAR_HEIGHT,BARHT_START)
 
 
-C...................THIS IS THE END OF A SCHEDULE SECTION, WE NEED TO 
+C...................THIS IS THE END OF A SCHEDULE SECTION, WE NEED TO
 C                   INCREMENT COUNTERS AND PREPARE FOR THE NEXT SECTION
 C                   OF THE SCHEDULE
                 ELSEIF(BAR_SCHEDULE(MYIDX)%SECTION(MYSEC)%
-     &              BAR_DEG_END.EQ.TIMELOC-PREVEND-OFFSET)THEN       
+     &              BAR_DEG_END.EQ.TIMELOC-PREVEND-OFFSET)THEN
 
 C...................GET NODE NUMBER AND INFORM SCREEN AND UNIT 16
                     NNBB1 = NBV(MYIDX)
-#ifdef CMPI     
+#ifdef CMPI
                     WRITE(ScratchMessage,103)MYSEC,NNBB1,TIMELOC,MYPROC
 #else
                     WRITE(ScratchMessage,104)MYSEC,NNBB1,TIMELOC
 #endif
                     CALL allMessage(INFO,ScratchMessage)
 
-C...................CALL THE LAST LINEAR INTERPOLATION                 
+C...................CALL THE LAST LINEAR INTERPOLATION
                     BARHT_START = BAR_SCHEDULE(MYIDX)%BARHT_START
                     CALL COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX,TIMELOC,
      &                  BAR_HEIGHT_CURRENT,BAR_HEIGHT,BARHT_START)
@@ -951,33 +951,33 @@ C...................INCREMENT SCHEDULE SECTION
 
 C...................CHECK TO SEE IF THIS IS THE END OF THE SCHEDULE.
 C                   IF THE LOOP FLAG HAS BEEN SET TO -1, WE LOOP THE
-C                   SCHEDULE INFINITELY. IF LOOP SET TO 1, WE WILL 
+C                   SCHEDULE INFINITELY. IF LOOP SET TO 1, WE WILL
 C                   INCREMENT OUR LOOP COUNTER TO CHECK AND SEE IF WE
 C                   HAVE DONE THE CORRECT NUMBER OF SCHEDULE LOOPS
                     IF(BAR_SCHEDULE(MYIDX)%MYSEC.GT.
      &                  BAR_SCHEDULE(MYIDX)%NSECTIONS)THEN
-                            
+
                             IF(BAR_SCHEDULE(MYIDX)%LOOP.EQ.1)THEN
                                 IF(BAR_SCHEDULE(MYIDX)%LOOPSCOMPLETE.LT.
      &                              BAR_SCHEDULE(MYIDX)%NLOOPS)THEN
                                     BAR_SCHEDULE(MYIDX)%MYSEC = 1
-                                    BAR_SCHEDULE(MYIDX)%LOOPSCOMPLETE = 
+                                    BAR_SCHEDULE(MYIDX)%LOOPSCOMPLETE =
      &                                  BAR_SCHEDULE(MYIDX)%
      &                                  LOOPSCOMPLETE + 1
-                                    BAR_SCHEDULE(MYIDX)%PREVEND = TIMELOC 
+                                    BAR_SCHEDULE(MYIDX)%PREVEND = TIMELOC
      &                                  - OFFSET
                                 ELSE
                                     BAR_DEG(MYIDX) = .FALSE.
                                 ENDIF
                             ELSEIF(BAR_SCHEDULE(MYIDX)%LOOP.EQ.-1)THEN
                                 BAR_SCHEDULE(MYIDX)%MYSEC = 1
-                                BAR_SCHEDULE(MYIDX)%PREVEND = TIMELOC 
+                                BAR_SCHEDULE(MYIDX)%PREVEND = TIMELOC
      &                              - OFFSET
                             ELSE
 C...............................THIS NODE SHOULD NO LONGER CHANGE, SO
 C                               SET THE APPROPRIATE FLAG
                                 BAR_DEG(MYIDX) = .FALSE.
-                            ENDIF    
+                            ENDIF
                     ENDIF
 
 C...............THE CASE FOR THE MIDDLE OF THE SCHEDULE. CONTINUE WITH
@@ -989,8 +989,8 @@ C               THE INTERPOLATION
                     BARHT_START = BAR_SCHEDULE(MYIDX)%BARHT_START
                     CALL COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX,TIMELOC,
      &                  BAR_HEIGHT_CURRENT,BAR_HEIGHT,BARHT_START)
-                ENDIF 
-                
+                ENDIF
+
 
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
@@ -1007,7 +1007,7 @@ C               THE INTERPOLATION
      &                 E15.8," ON MYPROC = ",I4)
 104             FORMAT("INFO: SCHEDULE STYLE BOUNDARY CONDLUDED",
      &                 " SEGMENT ",I4," AT NODE = ",I9," AT TIME = ",
-     &                 E15.8)          
+     &                 E15.8)
 
 C-----------------------------------------------------------------------
             END SUBROUTINE COMPUTE_BARRIER_HEIGHT_SCHEDULE
@@ -1019,7 +1019,7 @@ C       P A R S E _ T I M E _ V A R Y I N G _ W E I R _ I N F O
 C-----------------------------------------------------------------------
 C  THIS SUBROUTINE READS THE NAMELIST STYLE INPUT FILE FROM THE USER AND
 C  SETS UP THE NECESSARY INFORMATION FOR USE DURING THE SIMLUATION
-C  AS WELL AS PERFORMING VARIOUS SANITY CHECKS ON THE INPUT TO AVOID 
+C  AS WELL AS PERFORMING VARIOUS SANITY CHECKS ON THE INPUT TO AVOID
 C  ERRORS DURING THE SIMULATION.
 C-----------------------------------------------------------------------
             SUBROUTINE PARSE_TIME_VARYING_WEIR_INFO()
@@ -1030,7 +1030,7 @@ C-----------------------------------------------------------------------
                 USE BOUNDARIES,ONLY: LBCODEI,NBV,IBCONN
 
                 IMPLICIT NONE
-                
+
                 CHARACTER(2000)  :: InputString,modifiedString
                 CHARACTER(1024),ALLOCATABLE :: SCHEDULE_LIST_RAW(:)
                 REAL(SZ) :: OFFSET
@@ -1043,21 +1043,21 @@ C-----------------------------------------------------------------------
                 CALL setMessageSource("PARSE_TIME_VARYING_WEIR_INFO")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif                
-                
+#endif
+
                 CALL openFileForRead(99,TRIM(INPUTDIR)//'/'//
      &              TRIM(tvw_file),IOS)
                 IF(IOS.NE.0)THEN
                     NTIMEVARYINGWEIRS = 0
-#ifdef CMPI         
+#ifdef CMPI
                     WRITE(ScratchMessage,101)MYPROC
 #else
                     WRITE(ScratchMessage,102)
-#endif              
+#endif
                     CALL allMessage(INFO,ScratchMessage)
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                     CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                     CALL unsetMessageSource()
                     RETURN
                 ENDIF
@@ -1071,22 +1071,22 @@ C-----------------------------------------------------------------------
 #endif
                     CALL allMessage(INFO,ScratchMessage)
                 ELSE
-#ifdef CMPI     
+#ifdef CMPI
                     WRITE(ScratchMessage,105)MYPROC
-#else               
+#else
                     WRITE(ScratchMessage,106)
 #endif
                     CALL allMessage(INFO,ScratchMessage)
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                     CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                     CALL unsetMessageSource()
                     RETURN
                 ENDIF
 
                 OPEN(UNIT=98,FILE=TRIM(LOCALDIR)//'/namelist.scratch',
      &             STATUS='REPLACE',ACTION='WRITE')
-                    
+
 C...............READ IN UNFORMATTED NAMELIST, WRITE TO FORMATTED NAMELIST
                 DO I = 1,NTIMEVARYINGWEIRS
 C...................MODIFY LINE FOR NAMELIST FORMATTING
@@ -1094,7 +1094,7 @@ C...................MODIFY LINE FOR NAMELIST FORMATTING
                     modifiedString = "&TimeVaryingWeir "//
      &                  TRIM(ADJUSTL(InputString))//" /"
                     WRITE(98,'(A)') TRIM(ADJUSTL(modifiedString))
-                ENDDO  
+                ENDDO
                 CLOSE(98)
 
 C...............OPEN FORMATTED NAMELIST FILE, READ IN NUMBER OF SCHEDULES
@@ -1131,11 +1131,11 @@ C...................FIND OUT HOW MANY UNIQUE SCHEDULES THERE ARE
                     DO I = 1,NSCHEDULES
                         CALL PARSE_SCHEDULE(SCHEDULE_LIST(I),
      &                      SCHEDULE(I))
-                    ENDDO    
-                ENDIF    
+                    ENDDO
+                ENDIF
 
                 CLOSE(98)
-C...............OPEN FORMATTED NAMELIST FILE, READ IN 
+C...............OPEN FORMATTED NAMELIST FILE, READ IN
                 OPEN(UNIT=98,FILE=TRIM(LOCALDIR)//'/namelist.scratch',
      &                  ACTION="READ")
                 DO I = 1,NTIMEVARYINGWEIRS
@@ -1151,9 +1151,9 @@ C...................READ IN NAMELIST LINE
                         IF(ISNULL(TimeStartSec))TimeStartSec=0D0
                         IF(ISNULL(I=LOOP))LOOP=0
                         IF(ISNULL(I=NLOOPS))NLOOPS=0
-                        OFFSET = TimeStartDay*86400D0 + 
-     &                           TimeStartHour*3600D0 + 
-     &                           TimeStartMin*60D0    + 
+                        OFFSET = TimeStartDay*86400D0 +
+     &                           TimeStartHour*3600D0 +
+     &                           TimeStartMin*60D0    +
      &                           TimeStartSec
                     ELSE
                         OFFSET = 0D0
@@ -1197,7 +1197,7 @@ C...................BEGIN SANITY CHECK ON WHAT HAS BEEN SPECIFIED IN NAMELIST
      &                              "YOU MUST SPECIFY X1=, Y1=, and "//
      &                              "ZF= ")
                                 CALL ADCIRC_TERMINATE()
-                            ENDIF    
+                            ENDIF
                             IF(ISNULL(TimeStartday).AND.
      &                          ISNULL(TimeStartHour).AND.
      &                          ISNULL(TimeStartSec))THEN
@@ -1229,7 +1229,7 @@ C...................BEGIN SANITY CHECK ON WHAT HAS BEEN SPECIFIED IN NAMELIST
      &                              "YOU MUST SPECIFY X1=, Y1=, "//
      &                              "and ZF= ")
                                 CALL ADCIRC_TERMINATE()
-                            ENDIF    
+                            ENDIF
                             IF((ISNULL(FAILUREDURATIONDAY).AND.
      &                          ISNULL(FAILUREDURATIONHOUR).AND.
      &                          ISNULL(FAILUREDURATIONMIN).AND.
@@ -1241,7 +1241,7 @@ C...................BEGIN SANITY CHECK ON WHAT HAS BEEN SPECIFIED IN NAMELIST
      &                              " SURFACE BEFORE ELEVATION"//
      &                              " CHANGE.")
                                 CALL ADCIRC_TERMINATE()
-                            ENDIF   
+                            ENDIF
                             IF(ISNULL(FAILUREDURATIONDAY))
      &                          FAILUREDURATIONDAY=0D0
                             IF(ISNULL(FAILUREDURATIONHOUR))
@@ -1255,7 +1255,7 @@ C...................BEGIN SANITY CHECK ON WHAT HAS BEEN SPECIFIED IN NAMELIST
                                 CALL allMessage(ERROR,
      &                          "YOU MUST SPECIFY X1= and Y1=")
                                 CALL ADCIRC_TERMINATE()
-                            ENDIF    
+                            ENDIF
                             IF(ISNULL(S=SCHEDULEFILE))THEN
                                 CALL allMessage(ERROR,
      &                              "YOU MUST SPECIFY SCHEDULEFILE= "//
@@ -1283,7 +1283,7 @@ C...........................A ONE SIDED STYLE WEIR, WE DONT NEED X2 AND Y2
                             EXT_TVW = .TRUE.
                             IF(VARYTYPE.EQ.1)THEN
                                 IF(BAR_DEG_END(IDX).LE.0D0)THEN
-                                   CALL allMessage(ERROR, 
+                                   CALL allMessage(ERROR,
      &                                  "TIME VARYING BOUNDARY END "//
      &                                  "TIME MUST BE GREATER THAN "//
      &                                  "ZERO.")
@@ -1291,13 +1291,13 @@ C...........................A ONE SIDED STYLE WEIR, WE DONT NEED X2 AND Y2
                                 ENDIF
                             ELSEIF(VARYTYPE.EQ.2)THEN
                                 IF(BAR_FAILURE_DURATION(IDX).LE.0D0)THEN
-                                    CALL allMessage(ERROR, 
+                                    CALL allMessage(ERROR,
      &                                  "FAILURE_DURATION MUST BE "//
      &                                  "GREATER THAN ZERO")
                                     CALL ADCIRC_TERMINATE()
                                 ENDIF
                             ELSEIF(VARYTYPE.EQ.3)THEN
-                                BAR_SCHEDULE(IDX)%OFFSET = OFFSET   
+                                BAR_SCHEDULE(IDX)%OFFSET = OFFSET
                             ENDIF
 
                         CASE(4,24,5,25)
@@ -1314,7 +1314,7 @@ C...........................WE NEED TO CHECK CONNECTIVITY ACCROSS WEIR TO
 C                           MAKE SURE THIS PAIR IS VALID
                             IF(NBV(IDX).NE.IBCONN(IDX2))THEN
 C...............................THIS IS NOT THE CONNECTIVITY WE EXPECTED, GOOD NIGHT
-                                WRITE(ScratchMessage,'(A)') 
+                                WRITE(ScratchMessage,'(A)')
      &                              "CONNECTIVITY ACROSS INTERNAL"//
      &                              " TIME VARYING BOUNDARY IS INVALID."
                                 CALL allMessage(ERROR,ScratchMessage)
@@ -1334,7 +1334,7 @@ C...............................THIS IS NOT THE CONNECTIVITY WE EXPECTED, GOOD N
                             IF(VARYTYPE.EQ.1)THEN
                                 IF(BAR_DEG_START(IDX).GT.
      &                              BAR_DEG_END(IDX))THEN
-                                    CALL allMessage(ERROR, 
+                                    CALL allMessage(ERROR,
      &                                  "INVALID BARRIER DEGREDATION"//
      &                                  "TIME.")
                                     CALL ADCIRC_TERMINATE()
@@ -1364,23 +1364,23 @@ C...........................WE SHOULD NOT BE HERE?
      &                      "SPECIFIED.")
                         CALL ADCIRC_TERMINATE()
                     END SELECT
-                
+
                 ENDDO
 
 C...............FREE THE MEMORY USED FOR THE KDTREE2
                 CALL KDTREE2_DESTROY(BARRIER_SEARCHTREE)
                 DEALLOCATE(BAR_LOCATIONS)
-#ifdef CMPI                
+#ifdef CMPI
                 CALL KDTREE2_DESTROY(GHOST_SEARCHTREE)
                 DEALLOCATE(GHOST_LOCATIONS)
 #endif
 
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                 CALL unsetMessageSource()
                 RETURN
-  200           CALL allMessage(ERROR,"PROBLEM READING TIME 
+  200           CALL allMessage(ERROR,"PROBLEM READING TIME
      &              VARYING WEIR FILE.")
                 CALL ADCIRC_TERMINATE()
 
@@ -1406,7 +1406,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E  P A R S E _ S C H E D U L E
 C-----------------------------------------------------------------------
-C  THIS SUBROUTINE READS A FILE THAT CONTAINS THE NAMELIST STYPE INPUT 
+C  THIS SUBROUTINE READS A FILE THAT CONTAINS THE NAMELIST STYPE INPUT
 C  FOR A WEIR THAT VARIES BASED UPON A SCHEDULE THAT IS SPECIFIED IN THE
 C  TIME VARYING WEIR INPUT FILE
 C-----------------------------------------------------------------------
@@ -1416,22 +1416,22 @@ C-----------------------------------------------------------------------
                 IMPLICIT NONE
                 CHARACTER(*),INTENT(IN) :: MYFILE
                 TYPE(BARRIER_SCHEDULE_T),INTENT(OUT) :: MYSCHED
-                
+
                 CHARACTER(500) :: origLine,modLine
                 REAL(SZ) :: BAR_DEG_START,BAR_DEG_END
                 REAL(SZ) :: DELTA,HOTSEC
                 INTEGER  :: I
                 LOGICAL  :: exists
 
-                NAMELIST /SCHEDULE/ 
+                NAMELIST /SCHEDULE/
      &              TimeStartDay,TimeStartHour,TimeStartMin,
      &              TimeStartSec,TimeEndDay,TimeEndHour,
      &              TimeEndMin,TimeEndSec,ZF,DELTA,HOT
-                
+
                 CALL setMessageSource("PARSE_SCHEDULE")
 #if defined(TVW_TRACE)|| defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif                
+#endif
 
                 INQUIRE(FILE=TRIM(GLOBALDIR)//"/"//TRIM(MYFILE),
      &              EXIST=EXISTS)
@@ -1471,14 +1471,14 @@ C-----------------------------------------------------------------------
                                     HOTSEC = DTDP*ITHS
                                 CASE DEFAULT
                                     HOTSEC = 0D0
-                            END SELECT        
+                            END SELECT
                         ELSE
                             HOTSEC = 0D0
-                        ENDIF    
-                        BAR_DEG_START = TimeStartDay*86400D0 + 
-     &                                  TimeStartHour*3600D0 + 
-     &                                  TimeStartMin*60D0    + 
-     &                                  TimeStartSec         + 
+                        ENDIF
+                        BAR_DEG_START = TimeStartDay*86400D0 +
+     &                                  TimeStartHour*3600D0 +
+     &                                  TimeStartMin*60D0    +
+     &                                  TimeStartSec         +
      &                                  HOTSEC
                         BAR_DEG_END  =  TimeEndDay*86400D0   +
      &                                  TimeEndHour*3600D0   +
@@ -1508,24 +1508,24 @@ C-----------------------------------------------------------------------
      &                              //"relative value for ZF, you must "
      &                              //"specify DELTA = ")
                                 CALL ADCIRC_Terminate()
-                            ENDIF    
-                        ENDIF    
+                            ENDIF
+                        ENDIF
                     ENDDO
                     CLOSE(97,STATUS="DELETE")
-                 ENDIF   
+                 ENDIF
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                 CALL unsetMessageSource()
                 RETURN
 C-----------------------------------------------------------------------
-            END SUBROUTINE PARSE_SCHEDULE    
+            END SUBROUTINE PARSE_SCHEDULE
 C-----------------------------------------------------------------------
-                
+
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E  A S S I G N _ T V W _ T I M I N G
 C-----------------------------------------------------------------------
-C  THIS SUBROUTINE ASSIGNS THE TIMING PRESENT IN THE JUST READ IN 
+C  THIS SUBROUTINE ASSIGNS THE TIMING PRESENT IN THE JUST READ IN
 C  NAMELIST TO THE CORRECT LOCATIONS IN THE BARRIER VARIATION
 C  ARRAYS
 C-----------------------------------------------------------------------
@@ -1534,19 +1534,19 @@ C-----------------------------------------------------------------------
                 INTEGER,INTENT(IN)          :: INDEX1
                 INTEGER,INTENT(IN),OPTIONAL :: INDEX2
                 INTEGER                     :: I
-                
+
                 CALL setMessageSource("ASSIGN_TVW_TIMING")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif                
+#endif
                 IF(VAR.EQ.1)THEN
-                    BAR_DEG_START(INDEX1) = 
+                    BAR_DEG_START(INDEX1) =
      &                  TimeStartDay*86400D0   +
      &                  TimeStartHour*3600D0   +
      &                  TimeStartMin*60D0      +
      &                  TimeStartSec           +
      &                  HOTADD
-                    BAR_DEG_END(INDEX1) =   
+                    BAR_DEG_END(INDEX1) =
      &                  TimeEndDay*86400D0     +
      &                  TimeEndHour*3600D0     +
      &                  TimeEndMin*60D0        +
@@ -1557,7 +1557,7 @@ C-----------------------------------------------------------------------
                     BARHT_FINAL(INDEX1) = ZF
                     IF(PRESENT(INDEX2))THEN
                         BAR_DEG_START(INDEX2) = BAR_DEG_START(INDEX1)
-                        BAR_DEG_END(INDEX2) =  BAR_DEG_END(INDEX1) 
+                        BAR_DEG_END(INDEX2) =  BAR_DEG_END(INDEX1)
                         BAR_DEG(INDEX2) = .TRUE.
                         BAR_VARYTYPE(INDEX2) = VARYTYPE
                         BARHT_FINAL(INDEX2) = ZF
@@ -1573,8 +1573,8 @@ C-----------------------------------------------------------------------
      &                  FAILUREDURATIONMIN*60D0    +
      &                  FAILUREDURATIONSEC
                     IF(PRESENT(INDEX2))THEN
-                        BAR_FAILURE_DURATION(INDEX2) = 
-     &                      BAR_FAILURE_DURATION(INDEX1)              
+                        BAR_FAILURE_DURATION(INDEX2) =
+     &                      BAR_FAILURE_DURATION(INDEX1)
                         BAR_DEG(INDEX2) = .TRUE.
                         BAR_VARYTYPE(INDEX2) = VARYTYPE
                         BAR_ETA_MAX(INDEX2) = ETA_MAX
@@ -1586,30 +1586,30 @@ C-----------------------------------------------------------------------
                     DO I = 1,NSCHEDULES
                         IF(TRIM(ADJUSTL(SCHEDULEFILE)).EQ.
      &                      TRIM(ADJUSTL(SCHEDULE_LIST(I))))THEN
-                            BAR_SCHEDULE(INDEX1)%MYFILE => 
+                            BAR_SCHEDULE(INDEX1)%MYFILE =>
      &                          SCHEDULE_LIST(I)
                             BAR_SCHEDULE(INDEX1)%SID = I
                             BAR_SCHEDULE(INDEX1)%MYSEC = 1
                             BAR_SCHEDULE(INDEX1)%LOOP = LOOP
                             BAR_SCHEDULE(INDEX1)%NLOOPS = NLOOPS
-                            BAR_SCHEDULE(INDEX1)%NSECTIONS => 
+                            BAR_SCHEDULE(INDEX1)%NSECTIONS =>
      &                          SCHEDULE(I)%NSECTIONS
                             BAR_SCHEDULE(INDEX1)%PREVEND = 0D0
-                            BAR_SCHEDULE(INDEX1)%SECTION => 
+                            BAR_SCHEDULE(INDEX1)%SECTION =>
      &                          SCHEDULE(I)%SECTION
                             IF(PRESENT(INDEX2))THEN
                                 BAR_DEG(INDEX2) = .TRUE.
                                 BAR_VARYTYPE(INDEX2) = VARYTYPE
-                                BAR_SCHEDULE(INDEX2)%MYFILE => 
+                                BAR_SCHEDULE(INDEX2)%MYFILE =>
      &                              SCHEDULE_LIST(I)
                                 BAR_SCHEDULE(INDEX2)%SID = I
                                 BAR_SCHEDULE(INDEX2)%MYSEC = 1
                                 BAR_SCHEDULE(INDEX2)%LOOP = LOOP
                                 BAR_SCHEDULE(INDEX2)%NLOOPS = NLOOPS
-                                BAR_SCHEDULE(INDEX2)%NSECTIONS => 
+                                BAR_SCHEDULE(INDEX2)%NSECTIONS =>
      &                              SCHEDULE(I)%NSECTIONS
                                 BAR_SCHEDULE(INDEX2)%PREVEND = 0D0
-                                BAR_SCHEDULE(INDEX2)%SECTION => 
+                                BAR_SCHEDULE(INDEX2)%SECTION =>
      &                              SCHEDULE(I)%SECTION
                             ENDIF
                             EXIT
@@ -1617,13 +1617,13 @@ C-----------------------------------------------------------------------
                         IF(I.EQ.NSCHEDULES)THEN
                             CALL allMessage(ERROR,"Schedule not found.")
                             CALL ADCIRC_Terminate()
-                        ENDIF    
+                        ENDIF
                     ENDDO
                 ENDIF
-                
+
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                 CALL unsetMessageSource()
                 RETURN
 
@@ -1636,7 +1636,7 @@ C     F U N C T I O N  I S N U L L
 C-----------------------------------------------------------------------
 C  THIS FUNCTION CHECKS TO SEE IF A NAMELIST INPUT VARIABLE WAS MODIFIED
 C  WHEN THE NAMELIST WAS READ, MEANING IT WAS PRESENT IN THE NAMELIST
-C  THAT WAS READ IN. RETURNS TRUE IF THE VARIABLE WAS NOT ALTERED NAD 
+C  THAT WAS READ IN. RETURNS TRUE IF THE VARIABLE WAS NOT ALTERED NAD
 C  FALSE IF IT WAS.
 C-----------------------------------------------------------------------
             LOGICAL FUNCTION ISNULL(R,I,S)
@@ -1645,11 +1645,11 @@ C-----------------------------------------------------------------------
                 INTEGER,INTENT(IN),OPTIONAL      :: I
                 CHARACTER(*),INTENT(IN),OPTIONAL :: S
                 REAL(SZ)            :: EPS
-                
+
                 CALL setMessageSource("ISNULL")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif                
+#endif
 
                 IF(PRESENT(R))THEN
                     EPS = EPSILON(1.0D0)
@@ -1666,20 +1666,20 @@ C-----------------------------------------------------------------------
                     ISNULL = .FALSE.
                     IF(TRIM(ADJUSTL(S)).EQ."NOFILE")THEN
                         ISNULL = .TRUE.
-                    ENDIF    
+                    ENDIF
                 ELSE
-                    CALL allMessage(ERROR,"No check specified for 
+                    CALL allMessage(ERROR,"No check specified for
      &                   null.")
                     CALL ADCIRC_TERMINATE()
                 ENDIF
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                 CALL unsetMessageSource()
 C-----------------------------------------------------------------------
             END FUNCTION ISNULL
 C-----------------------------------------------------------------------
-            
+
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E  N U L L I F Y _ T V W _ N M L
@@ -1693,7 +1693,7 @@ C-----------------------------------------------------------------------
                 CALL setMessageSource("NULLIFY_TVW_NML")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif                
+#endif
 
                 X1                         = -99999D0
                 X2                         = -99999D0
@@ -1721,7 +1721,7 @@ C-----------------------------------------------------------------------
 
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                 CALL unsetMessageSource()
                 RETURN
 C-----------------------------------------------------------------------
@@ -1731,7 +1731,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E  A L P H A B E T I Z E
 C-----------------------------------------------------------------------
-C  THIS IS AN ALPHABETICAL BUBBLE SORT TO PLACE THE NAMES IN THE INPUT 
+C  THIS IS AN ALPHABETICAL BUBBLE SORT TO PLACE THE NAMES IN THE INPUT
 C  ARRAY IN ALPHABETICAL ORDER SO THAT IT IS EASIER TO FIND THE TOTAL
 C  NUMBER OF UNIQUE STRINGS THAT HAVE BEEN INPUT TO THE CODE
 C-----------------------------------------------------------------------
@@ -1739,12 +1739,12 @@ C-----------------------------------------------------------------------
                 IMPLICIT NONE
                 CHARACTER(*),INTENT(INOUT) :: MYCHAR(:)
                 CHARACTER(1024) :: A,B
-                INTEGER :: I,J,K                       
+                INTEGER :: I,J,K
 
                 CALL setMessageSource("ALPHABETIZE")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif                
+#endif
                 DO I = 1,SIZE(MYCHAR)
                     DO J = I+1,SIZE(MYCHAR)
                         A = ADJUSTL(MYCHAR(I))
@@ -1771,7 +1771,7 @@ C-----------------------------------------------------------------------
                 ENDDO
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
-#endif               
+#endif
                 CALL unsetMessageSource()
                 RETURN
 C-----------------------------------------------------------------------
@@ -1782,7 +1782,7 @@ C-----------------------------------------------------------------------
 C     S U B R O U T I N E  U N I Q U E _ N A M E S
 C-----------------------------------------------------------------------
 C  THIS SUBROUTINE WILL TAKE AN ALPHABETICAL LIST OF CHARACTER STRINGS
-C  AS INPUT AND RETURN A LIST WITH ONLY UNIQUE STRINGS AND A COUNT OF 
+C  AS INPUT AND RETURN A LIST WITH ONLY UNIQUE STRINGS AND A COUNT OF
 C  THE NUMBER OF UNIQUE STRINGS
 C-----------------------------------------------------------------------
             SUBROUTINE UNIQUE_NAMES(RAW_LIST,NUNIQUE,UNIQUE_LIST)
@@ -1797,17 +1797,17 @@ C-----------------------------------------------------------------------
                 CALL setMessageSource("UNIQUE_NAMES")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif                
+#endif
                 IF(SIZE(RAW_LIST).LT.2)THEN
                     NUNIQUE = 1
                     ALLOCATE(UNIQUE_LIST(1:SIZE(RAW_LIST)))
                     UNIQUE_LIST = RAW_LIST
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                     CALL unsetMessageSource()
                     RETURN
-                ENDIF    
+                ENDIF
 
                 PREV = RAW_LIST(1)
                 NUNIQUE = 1
@@ -1829,13 +1829,13 @@ C-----------------------------------------------------------------------
                         PREV = CURR
                         UNIQUE_LIST(J) = CURR
                     ENDIF
-                ENDDO 
+                ENDDO
 
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                 CALL unsetMessageSource()
-                RETURN    
+                RETURN
 C-----------------------------------------------------------------------
             END SUBROUTINE UNIQUE_NAMES
 C-----------------------------------------------------------------------
@@ -1852,7 +1852,7 @@ C   CALCULATIONS FOR INTERNAL AND EXTERNAL WEIR TYPE BOUNDARIES.
 C-----------------------------------------------------------------------
         MODULE WEIR_FLUX
             USE GLOBAL,ONLY:G,ETA2,RAMPINTFLUX,
-     &          setMessageSource,unsetMessageSource,DEBUG,allMessage    
+     &          setMessageSource,unsetMessageSource,DEBUG,allMessage
             USE BOUNDARIES,ONLY: LBCODEI,NBV
             USE SIZES,ONLY:SZ
             USE TIME_VARYING_WEIR_BOUNDARY,ONLY:COMPUTE_BARRIER_HEIGHT,
@@ -1865,10 +1865,10 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E  
+C     S U B R O U T I N E
 C       C O M P U T E _ E X T E R N A L _ B O U N A R Y _ F L U X
 C-----------------------------------------------------------------------
-C  THIS SUBROUTINE COMPUTES THE OVERTOPPING FLUX OUT OF THE DOMAIN FOR 
+C  THIS SUBROUTINE COMPUTES THE OVERTOPPING FLUX OUT OF THE DOMAIN FOR
 C  TYPE 3,13,23 BOUNDARY CONDITIONS
 C-----------------------------------------------------------------------
             SUBROUTINE COMPUTE_EXTERNAL_BOUNDARY_FLUX(
@@ -1886,7 +1886,7 @@ C-----------------------------------------------------------------------
                 CALL setMessageSource("COMPUTE_EXTERNAL_BOUNDARY_FLUX")
 #if defined(WEIR_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif                
+#endif
 
                 NNBB=NBV(BARRIER_INDEX)
                 IF(EXT_TVW)THEN
@@ -1897,7 +1897,7 @@ C-----------------------------------------------------------------------
                     ENDIF
                     TVW(NNBB) = BARLANHT2(BARRIER_INDEX)-
      &                  BARLANHT(BARRIER_INDEX)
-                ENDIF    
+                ENDIF
                 RBARWL=2.D0*(ETA2(NNBB) -
      &              BARLANHT2(BARRIER_INDEX))/3.D0
                 IF(RBARWL.GT.BARMIN) THEN
@@ -1919,7 +1919,7 @@ C-----------------------------------------------------------------------
 
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E 
+C     S U B R O U T I N E
 C       C O M P U T E _ I N T E R N A L _ B O U N D A R Y _ F L U X
 C-----------------------------------------------------------------------
 C     THIS SUBROUTINE CONTAINS THE CALCULATIONS OF OVERTOPPING FLUX
@@ -1948,9 +1948,9 @@ C-----------------------------------------------------------------------
                 REAL(SZ)                    :: RBARWL1F,RBARWL2F
 
                 CALL setMessageSource("COMPUTE_INTERNAL_BOUNDARY_FLUX")
-#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif                
+#endif
 
 
 C...............SIMPLIFY VARIABLES
@@ -1961,12 +1961,12 @@ C...............SIMPLIFY VARIABLES
 C..............CALL THE ORIGINAL IMPLEMENTATION IF THE USER HAS REQUESTED
 C              IT VIA THE COMPILER FLAG -DORIGWEIR. IF NOT, PROCEED WITH
 C              THE DEFAULT FORMULATION
-#ifdef ORIGWEIR   
+#ifdef ORIGWEIR
                CALL COMPUTE_INTERNAL_BOUNDARY_FLUX_ORIG(I,J,K,
      &              TIMELOC,FLUX)
 #if defined(WEIR_TRACE) || defined(ALL_TRACE)
                CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                CALL unsetMessageSource()
                RETURN
 #endif
@@ -2005,7 +2005,7 @@ C..............CHECK TO SEE IF THE BARRIER ELEVATION NEEDS UPDATING
 C..............GET WATER LEVEL ABOVE WEIR ON EACH SIDE TO COMPUTE HEAD
 C              DEFINE COMPILER FLAG -DAVERAGEWEIRFLOW TO USE BARAVGWT,
 C              WHICH GENERALLY IS SET TO ZERO, AND IS HARD CODED
-C              TO ZERO HERE. READ_INPUT.F CONTAINS THE SPECIFICATION OF 
+C              TO ZERO HERE. READ_INPUT.F CONTAINS THE SPECIFICATION OF
 C              BARAVGWT. WITH BARAVGWT SET TO ZERO, THERE IS NO NEED FOR
 C              IBSTART EITHER.
 #if AVERAGEWEIRFLOW
@@ -2021,15 +2021,15 @@ C              IBSTART EITHER.
                ENDIF
                RBARWL1=RBARWL1AVG(I)
                RBARWL2=RBARWL2AVG(I)
-#else               
+#else
 C..............ZC - STREAMLINE THE PROCESS SINCE BARAVGWT IS ZERO BY DEFAULT
                RBARWL1=ETA2(NNBB1)-BARINHT2(I)
                RBARWL2=ETA2(NNBB2)-BARINHT2(I)
-#endif               
+#endif
                RBARWL1F=2.D0*RBARWL1/3.D0
                RBARWL2F=2.D0*RBARWL2/3.D0
                FLUX=0.D0
-   
+
                IF((RBARWL1.LT.0.D0).AND.(RBARWL2.LT.0.D0)) THEN
 C...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW BARRIER -> CASE 1
                   FLUX=0.D0
@@ -2099,8 +2099,8 @@ C..................INWARD SUPERCRITICAL FLOW -> CASE 6
                ELSE
                   FLUX=0
                ENDIF
-               
-#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
+
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
                CALL allMessage(DEBUG,"Return")
 #endif
                CALL unsetMessageSource()
@@ -2119,7 +2119,7 @@ C-----------------------------------------------------------------------
             SUBROUTINE COMPUTE_CROSS_BARRIER_PIPE_FLUX(IDX,TIMELOC,FLUX)
                 USE BOUNDARIES,ONLY:NBV,IBCONN,PIPEHT,PIPEDIAM,PIPECOEF
                 USE GLOBAL,ONLY: G,PI,NODECODE,NIBNODECODE,ETA2,
-     &                           RampIntFlux           
+     &                           RampIntFlux
 
                 IMPLICIT NONE
                 INTEGER,INTENT(IN)     :: IDX
@@ -2131,11 +2131,11 @@ C-----------------------------------------------------------------------
 
                 REAL(SZ)               :: RBARWL1
                 REAL(SZ)               :: RBARWL2
-                
+
                 CALL setMessageSource("COMPUTE_CROSS_BARRIER_PIPE_FLUX")
-#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif                
+#endif
 
                 NNBB1=NBV(IDX)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
                 NNBB2=IBCONN(IDX)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
@@ -2156,13 +2156,13 @@ C-----------------------------------------------------------------------
 #else
                 RBARWL1=ETA2(NNBB1)-PIPEHT(IDX)
                 RBARWL2=ETA2(NNBB2)-PIPEHT(IDX)
-#endif                
+#endif
                 IF((RBARWL1.LT.0.D0).AND.(RBARWL2.LT.0.D0)) THEN
 C...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW PIPE -> CASE 1
                   FLUX=0.D0
 #if defined(WEIR_TRACE) || defined(ALL_TRACE)
                   CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                   CALL unsetMessageSource()
                   RETURN
                 ENDIF
@@ -2171,9 +2171,9 @@ C...............WATER LEVEL EQUAL ON BOTH SIDES OF PIPE -> CASE 2
                   FLUX=0.D0
 #if defined(WEIR_TRACE) || defined(ALL_TRACE)
                   CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                   CALL unsetMessageSource()
-                  RETURN 
+                  RETURN
                 ENDIF
                 IF((RBARWL1.GT.RBARWL2).AND.(RBARWL1.GT.BARMIN)) THEN
 C...............WATER LEVEL GREATER ON THIS SIDE OF THE PIPE AND IS SUCH
@@ -2203,7 +2203,7 @@ C..................OUTWARD SUBMERGED DISCHARGE -> CASE 4
                      ENDIF
 #if defined(WEIR_TRACE) || defined(ALL_TRACE)
                      CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                      CALL unsetMessageSource()
                      RETURN
                   ENDIF
@@ -2240,12 +2240,12 @@ C..................INWARD SUBMERGED DISCHARGE -> CASE 6
                   ENDIF
 #if defined(WEIR_TRACE) || defined(ALL_TRACE)
                   CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                   CALL unsetMessageSource()
                   RETURN
                ENDIF
 
-#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
                CALL allMessage(DEBUG,"Return")
 #endif
                CALL unsetMessageSource()
@@ -2255,10 +2255,10 @@ C..................INWARD SUBMERGED DISCHARGE -> CASE 6
 
 #ifdef ORIGWEIR
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E 
+C     S U B R O U T I N E
 C       C O M P U T E _ I N T E R N A L _ B O U N D A R Y _ F L U X _ O R I G
 C-----------------------------------------------------------------------
-C  THIS IS THE ORIGINAL ADCIRC OVERTOPPING ROUTINE THAT ONLY CHECKS TO 
+C  THIS IS THE ORIGINAL ADCIRC OVERTOPPING ROUTINE THAT ONLY CHECKS TO
 C  SEE IF THE NODE IS WET BEFORE PASSING FLUX ACROSS THE WEIR
 C-----------------------------------------------------------------------
             SUBROUTINE COMPUTE_INTERNAL_BOUNDARY_FLUX_ORIG(
@@ -2280,12 +2280,12 @@ C-----------------------------------------------------------------------
                 INTEGER,POINTER             :: I,J,K
                 REAL(SZ)                    :: RBARWL1,RBARWL2
                 REAL(SZ)                    :: RBARWL1F,RBARWL2F
-                
-                
+
+
                 CALL setMessageSource("COMPUTE_INTERNAL_BOUNDARY_FLUX")
-#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
-#endif                
+#endif
 
 
 C...............SIMPLIFY VARIABLES
@@ -2321,7 +2321,7 @@ C...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW BARRIER -> CASE 1
                   FLUX=0.D0
 #if defined(WEIR_TRACE) || defined(ALL_TRACE)
                   CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                   CALL unsetMessageSource()
                   RETURN
                 ENDIF
@@ -2331,7 +2331,7 @@ C................TO WITHIN TOLERANCE BARMIN -> CASE 2
                   FLUX=0.D0
 #if defined(WEIR_TRACE) || defined(ALL_TRACE)
                   CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                   CALL unsetMessageSource()
                   RETURN
                 ENDIF
@@ -2362,7 +2362,7 @@ C..................OUTWARD SUPERCRITICAL FLOW -> CASE 4
                   ENDIF
 #if defined(WEIR_TRACE) || defined(ALL_TRACE)
                   CALL allMessage(DEBUG,"Return")
-#endif                
+#endif
                   CALL unsetMessageSource()
                   RETURN
                ENDIF
@@ -2396,7 +2396,7 @@ C..................INWARD SUPERCRITICAL FLOW -> CASE 6
                   ENDIF
                ENDIF
 
-#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
                CALL allMessage(DEBUG,"Return")
 #endif
                CALL unsetMessageSource()

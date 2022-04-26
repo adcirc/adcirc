@@ -9,6 +9,7 @@ C
        USE GLOBAL, ONLY : ScreenUnit, setMessageSource, allMessage,
      &    screenMessage, logMessage, unsetMessageSource,
      &    DEBUG, ECHO, INFO, WARNING, ERROR, scratchMessage,
+C PADCIRC VERSION 45.12 03/17/2006                                            *
      &    Rearth, pi, deg2rad, rad2deg, e, PRBCKGRND, g, rhoWat0,
      &    sphericalDistance, rhoAir, one2ten, windReduction,
      &    openFileForRead, RNDAY, cice_timinc, cice_time1, cice_time2
@@ -22,14 +23,15 @@ C
       use datetime_module, only: datetime, timedelta
 #endif
 #if defined(DATETIME) && (defined(GRIB2API) || defined(ADCNETCDF))
-      integer, parameter :: allowable_nws(20)
-     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,19,20,29,30/)
+      integer, parameter :: allowable_nws(21)
+     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,19,20,29,30/)
 #elif defined(ADCNETCDF)
-      integer, parameter :: allowable_nws(19)
-     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,13,15,16,19,20,29,30/)
+      integer, parameter :: allowable_nws(20)
+     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,13,15,16,17,19,20,29,30/)
 #else
-      integer, parameter :: allowable_nws(18)
-     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,19,20,29,30/)
+C... v50.xx sm -- nws=17 for NUOPC coupling hwrf data
+      integer, parameter :: allowable_nws(19)
+     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,17,19,20,29,30/)
 #endif
       logical nwsOK     ! true if NWS value in fort.15 is allowed
 
@@ -184,7 +186,7 @@ C
          real(sz)          :: rampVal          ! ramping multiplier for this dataset
          real(sz)          :: max_extrap_dist  ! maximum distance for extrapolating values (meters)
          integer           :: numFiles         !total number of GFDL met Files to be read
-
+         ! input data from gfdl met files themselves
          integer           :: nh           ! number of grid points
          ! derived data
          logical           :: loaded       ! .true. if we have loaded the data from file
@@ -318,6 +320,12 @@ C.... convert background pressure from millibars to meters of water
       prn1 = PRBCKGRND_MH2O
       prn2 = PRBCKGRND_MH2O
 
+      ! dw
+      wvnx1 = 0.0
+      wvny1 = 0.0
+      wvnx2 = 0.0
+      wvny2 = 0.0
+
       CALL checkWindDragType()
       CALL mapWindDragFunctionPointer()
 
@@ -407,7 +415,8 @@ C----------------------------------------------------------------------
               f_computeWindDrag => PowellWindDrag
           CASE(DRAGLAW_SWELL)
 #ifndef CSWAN
-              call allMessage(WARNING,"SWAN Model not enabled. Drag formulation will be Garratt.")
+              call allMessage(WARNING,"SWAN Model not enabled."//
+     &              "Drag formulation will be Garratt.")
               f_computeWindDrag => CappedGarrattWindDrag
 #else
               f_computeWindDrag => SwanWindDrag
@@ -867,7 +876,7 @@ C     particular point in time.
 C----------------------------------------------------------------------
       subroutine getMeteorologicalForcing(nws, wsx2, wsy2, pr2,
      &   wvnxout, wvnyout, timeloc)
-      use owiwind,only : nws12get, findStormCenter    ! sb added 09/xx/2006     
+      use owiwind,only : nws12get, findStormCenter    ! sb added 09/xx/2006
       use global, only : ciceout, h0, g, eta2, ncice, rampmete,
      &   sponge, res_bc_flag, IDEN, SigTS, cice1, cice2, IFSPROTS
       use nodalAttributes, only : applyDirectionalWindReduction,
@@ -1404,6 +1413,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
                Cicenow = 100d0*(CICE1(I) +
      &                          CTRATIO*(CICE2(I)-CICE1(I)))
                WDragCo = WindIceDrag(WDragCo,Cicenow)
+               ciceout(i) = Cicenow ! GML added 20210727
             elseif (NCICE.ne.0.and.NCICE.ne.13) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             endif
@@ -1622,11 +1632,11 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
                 WindMag = SQRT(windx**2+windy**2)
                 WDragCo = WindDrag(WindMag, i)
              ENDIF
-            IF (LoadCanopyCoef)
+             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(i,windx,windy)
-            IF(NCICE.NE.0) THEN
+             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
-            ENDIF
+             ENDIF
              WSX2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
              WSY2(I) = RampMete*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
              PR2(I) = PRBCKGRND_MH2O + RampMete*(PRN2(I)-PRBCKGRND_MH2O)
@@ -1683,13 +1693,78 @@ C    kmd48.33bc - added in information for the sponge layer
             WSY2(I)=sponge(I)*WSY2(I)
          END DO
        END IF
-         
+
+!PV BEG:: NWS=17
+!... v50.xx sm, v55.xx PV, -- NWS=17 for NUOPC coupling
+      IF(ABS(NWS).EQ.17) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
+            WTIME1=WTIME2
+            WTIME2=WTIME2+WTIMINC
+            DO I=1,NP
+              WVNX1(I)=WVNX2(I)
+              WVNY1(I)=WVNY2(I)
+              PRN1(I)=PRN2(I)
+            END DO
+         ENDIF
+C++ GML added 20210727 ncice=17
+         if ((NCICE.ne. 0).and.
+     &       TimeLoc.GT.CICE_TIME2) THEN
+             CICE_TIME1 = CICE_TIME2
+             CICE_TIME2 = CICE_TIME2 + CICE_TIMINC
+             CICE1 = CICE2
+         endif
+C++
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
+C++ GML added 20210727
+         IF(NCICE.NE.0)THEN
+             CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+         ENDIF
+C++
+         if (WTRatio .GT. 1.0) then
+             WTRatio = 1.0
+             print *, '[Warning:] WTRatio is .GE. 1.0 and Set to 1.0'
+         endif
+
+         DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+           IF(NCICE.NE.0) THEN
+               Cicenow = 100d0*(CICE1(I) + CTRATIO*(CICE2(I)-CICE1(I)))   ! GML added 20210727
+               WDragCo = WindIceDrag(WDragCo,Cicenow)                     ! GML added 20210727
+               ciceout(i) = Cicenow                                       ! GML added 20210727
+C               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete*airwaterdensityrat*WDragCo*WindX*WindMag   !P.V units: m^2/s^2 aka
+            WSY2(I) = RampMete*airwaterdensityrat*WDragCo*WindY*WindMag   !    per water unit mass (1/RhoWat0)
+C  tcm v49.16 20100617
+            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            !PV Do we need to output the real wind velocities or the ramped ones?
+            WVNXOUT(I)=RampMete*WindX
+            WVNYOUT(I)=RampMete*WindY
+         END DO
+      ENDIF
+!PV END:: NWS=17
+
 C      DW/WJP: rotate wind stresses if coordinate transform
        IF ( IFSPROTS .eq. 1 ) THEN
-          UVECTMP(1:NP) = WSX2(1:NP);
-          VVECTMP(1:NP) = WSY2(1:NP);
+          UVECTMP(1:NP) = WSX2(1:NP)
+          VVECTMP(1:NP) = WSY2(1:NP)
           CALL DRVMAP2DSPVEC( WSX2, WSY2,
-     &              UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
+     &              UVECTMP, VVECTMP, NP, FWD = .TRUE. )
        ENDIF
 
 C--------------------END MET FORCING---------------------------------------
@@ -1712,10 +1787,10 @@ C     Sets up meteorological i/o for a coldstart.
 C----------------------------------------------------------------------
       subroutine coldstartMeteorologicalForcing(nws)
       use sizes, only : gblinputdir, inputdir
-      use global, only : ciceout, h0, g, eta2, ncice, rampmete, mb2pa, 
-     &   sponge, res_bc_flag, statim, wsx1, wsy1, wsx2, wsy2, pr2,
+      use global, only : ciceout, h0, g, eta2, ncice, rampmete, mb2pa,
+     &   sponge, res_bc_flag, statim, wsx1, wsy1, wsx2, wsy2, pr2, pr1,
      &   cice1, cice2
-      use owiwind,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006          
+      use owiwind,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np
@@ -1744,6 +1819,16 @@ Casey 180318: Added for NWS=13
       WSX2(:) = 0.d0
       WSY2(:) = 0.D0
       PR2(:) = PRBCKGRND_MH2O
+
+      WSX1(:) = 0.d0
+      WSY1(:) = 0.d0
+!      PR1(:) = PRBCKGRND_MH2O ! -- DW for 517
+!++ GML
+      if (NCICE.ne. 0) then
+      cice1(:) = 0.d0
+      cice2(:) = 0.D0
+      endif
+!++
 
       IF(NWS.EQ.1) THEN
          OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
@@ -2065,6 +2150,20 @@ C----------------------------------------------------------------------
 
 C
 C......RESTART WIND AND PRESSURE INFORMATION
+
+      !c DW, for nonwind and NEM
+      SELECT CASE(NWS)
+      CASE (0,17)
+         WVNX1(:) = 0.d0
+         WVNY1(:) = 0.d0
+         WVNX2(:) = 0.d0
+         WVNY2(:) = 0.d0
+         PRN1(:)=PRBCKGRND_MH2O
+         PRN2(:)=PRBCKGRND_MH2O
+         WSX2(:) = 0.d0
+         WSY2(:) = 0.D0
+         PR2(:) = PRBCKGRND_MH2O
+      END SELECT
 
 C     No wind, radiation stress or atmospheric pressure forcings are used.
       IF(NWS.EQ.1) THEN
@@ -3090,6 +3189,63 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
              WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
           END DO
        ENDIF
+
+!PV BEG:: NWS=17, there is no NWS=-17 option
+!... v55.xx PV -- NWS=17 for NUOPC coupling
+      IF(ABS(NWS).EQ.17) THEN ! using ABS(NWS) to make sure that this block is always executed for NWS=17/-17
+         WTIME1 = TimeLoc
+         WTIME2 = WTIME1 + WTIMINC
+         DO IT=1,ITHS
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0
+            IF(TIMEIT.GT.WTIME2) THEN
+               WTIME1=WTIME2
+               WTIME2=WTIME2+WTIMINC
+               DO I=1,NP
+                  WVNX1(I)=WVNX2(I)
+                  WVNY1(I)=WVNY2(I)
+                  PRN1(I)=PRN2(I)
+                END DO
+             ENDIF
+         END DO
+
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
+
+         if (WTRatio .GT. 1.0) then
+             WTRatio = 1.0
+             print *, '[Warning:] WTRatio is .GE. 1.0 and Set to 1.0'
+         endif
+
+         DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+
+C     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+           IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete2*airwaterdensityrat*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete2*airwaterdensityrat*WDragCo*WindY*WindMag
+C  tcm v49.16 20100617
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WindX
+            WVNYOUT(I)=RampMete2*WindY
+         END DO
+      ENDIF
+!PV END:: NWS=17
+
        !
        ! jgf52.14: Implementing Casey's fix for uninitialized
        ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
@@ -3104,17 +3260,17 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
 
 C      DW/WJP: rotate wind stresses if coordinate transform
        IF ( IFSPROTS .eq. 1 ) THEN
-          UVECTMP(1:NP) = WSX2(1:NP);
-          VVECTMP(1:NP) = WSY2(1:NP);
+          UVECTMP(1:NP) = WSX2(1:NP)
+          VVECTMP(1:NP) = WSY2(1:NP)
           CALL DRVMAP2DSPVEC( WSX2, WSY2,
-     &              UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
+     &              UVECTMP, VVECTMP, NP, FWD = .TRUE. )
        ENDIF
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
        call allMessage(DEBUG,"Return.")
 #endif
        call unsetMessageSource()
-      
+
 C--------------------END MET FORCING-----------------------------------
       end subroutine hotstartMeteorologicalForcing
 C--------------------END MET FORCING-----------------------------------
@@ -4943,7 +5099,7 @@ C     Compute coriolis
 C     Compute pressure field
          PRESS(I)=(cpress+(centralPressureDeficit)*
      &        EXP(-(RMW*1000.d0/RAD(I))**B)) / (RHOWAT0*G)
-C     Compute velocity field with absolute around 
+C     Compute velocity field with absolute around
 C     CORIOLIS for the Southern Hempisphere
          V_r(I) = sqrt(
      &        (RMW*1000.d0/RAD(I))**B *
@@ -6570,6 +6726,7 @@ C     we are running off the end of the data.
       call fitRmaxes4()
 !699      FORMAT(5(f8.4,2x))
 !700      FORMAT(a25, 2x, 3(f12.2,2x))
+
  !Jie debug GAHM
  !        WRITE(16,*) 'Previous: Spatially-interpolated storm parameters',
  !    &                   ' at icyc-1= ', icyc-1,
@@ -6581,6 +6738,7 @@ C     we are running off the end of the data.
          !rmax from the highest isotach is picked
          cHollBs1(i)= spInterp(aziangle(i),dist(i),2)
          cVmwBL1(i) = spInterp(aziangle(i),dist(i),3)
+
  !Jie debug GAHM
  !            WRITE(16,699) crmaxw1(i),  crmaxwTrue1(i),
  !    &                   cHollBs1(i) ,cVmwBL1(i)
@@ -7140,9 +7298,9 @@ C
       ! using the specified pressure-wind relationship
       select case(trim(pressureWindRelationship))
          case("dvorak")
-            pc = 1015.d0 - (vmaxNow/3.92d0)**(1.0d0/0.644d0);
+            pc = 1015.d0 - (vmaxNow/3.92d0)**(1.0d0/0.644d0)
          case("knaffzehr")
-            pc = 1010.d0 - (vmaxNow/2.3d0)**(1.0d0/0.76d0);
+            pc = 1010.d0 - (vmaxNow/2.3d0)**(1.0d0/0.76d0)
          case("specifiedPc")
             ! time-interpolate the specified central pressure value
             pc = hWindFiles(currentCycle)%Pc +
@@ -7821,10 +7979,10 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
           IF ( IFSPROTS.eq. 1) THEN
              CALL DRVSPCOORSROTS( lonr, latr, LON_GFDL, LAT_GFDL )
           ELSE
-             latr = LAT_GFDL ;  lonr = LON_GFDL;
+             latr = LAT_GFDL ;  lonr = LON_GFDL
           END IF
           CALL CYLINDERMAP( XY_GFDL(1,I),XY_GFDL(2,I),
-     &           lonr, latr, SLAM0, SFEA0, ICS) ;
+     &           lonr, latr, SLAM0, SFEA0, ICS)
        ENDDO !I
 
        CLOSE(LUN)  !CLOSE THIS GFDL DATA FILE
@@ -7916,7 +8074,7 @@ C...  THIS SPACE WILL BE DEALLOCATED LATER IN THE SUBROUTINE
          VTMP = 0.D0
          PTMP = 0.D0
          TTMP = 0.D0
-         ITC = 1;
+         ITC = 1
          DO WHILE (ITC <= SRCHDP)
             ! IF POINT IS LOCATED AT AN ORIGINAL GFDL GRID THEN USE THAT VALUE ONLY
             IF (WTS(ITC) == -1.D0) THEN
@@ -8589,7 +8747,7 @@ C.... or netcdf (depending on what is present)
 
       ! Initialise the datetime
       CurDT = basedatetime + timedelta(minutes=floor(WTIME1/60d0))
-      NT = 0; NTC = 0;
+      NT = 0; NTC = 0
 
       ! Set the file names
       ! Trying to read from grib2
@@ -8756,7 +8914,7 @@ C----------------------------------------------------------------------
       integer :: i, ii, nxp, nyp, indt(4), NTkeep, xi, yi, cc
       real,allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice, lat, lon
       real(sz), allocatable ::  lonv(:), latv(:), XY(:,:)
-      real(sz) :: xx, yy, wt(4) 
+      real(sz) :: xx, yy, wt(4)
       logical :: regular_grid
       type(kdtree2), pointer :: tree
 
@@ -8766,7 +8924,7 @@ C----------------------------------------------------------------------
 
       ! Compute the interpolating factors and indices on the first step
       if (.not.allocated(indp)) then
-         ub = 2; ubc = 1;
+         ub = 2; ubc = 1
          if (present(CICE2)) ub = 3
          ! Check dimensions
          do ii = 1,ub
@@ -8782,7 +8940,7 @@ C----------------------------------------------------------------------
             else
                call READNWS14(Cfile,Cinv,Cvar,lon,lat)
                if (nxp.eq.ubound(lon,1).and.nyp.eq.ubound(lat,2)) then
-                  ubc = 2;
+                  ubc = 2
                endif
             endif
          enddo
@@ -8797,12 +8955,12 @@ C----------------------------------------------------------------------
             nxp = ubound(lon,1); nyp = ubound(lat,2)
             ! Check if structured regular..
             if (abs(lon(1,1) - lon(1,nyp)) < 1d-6) then
-               regular_grid = .true. 
+               regular_grid = .true.
                allocate(lonv(nxp),latv(nyp))
                lonv = lon(:,1)
                latv = lat(1,:)
-            else       
-               regular_grid = .false. 
+            else
+               regular_grid = .false.
                ! Convert point matrices to 2 X (NXP*NYP) point vector
                allocate(XY(2,nxp*nyp))
                cc = 0
@@ -8814,7 +8972,7 @@ C----------------------------------------------------------------------
                   enddo
                enddo
                ! Create the search tree
-               tree => kdtree2_create(XY) 
+               tree => kdtree2_create(XY)
             endif
             ! Loop over each node and interpolate
             do i = 1,np
@@ -8866,7 +9024,7 @@ C----------------------------------------------------------------------
       if (present(CICE2)) then
          NTkeep = NT; NT = NTC
          call READNWS14(Cfile,Cinv,Cvar,Cice)
-         NT = NTkeep;
+         NT = NTkeep
       endif
 
       ! Get the Pressure
@@ -8883,7 +9041,7 @@ C----------------------------------------------------------------------
       if (present(CICE2)) then
          NTkeep = NT; NT = NTC
          call READNWS14(Cfile,Cinv,Cvar,Cice)
-         NT = NTkeep;
+         NT = NTkeep
       endif
 
       ! Doing the interpolation from their grid to ours
@@ -8927,7 +9085,7 @@ C----------------------------------------------------------------------
       if (present(CICE2)) then
          do i = 1,np
             if (indp(ubc,1,i) < 0) then
-               CICE2(i) = 0d0;
+               CICE2(i) = 0d0
             else
                CICE2(i) =
      &             Cice(indp(ubc,1,i),indp(ubc,2,i))*weightsp(ubc,1,i) +

@@ -23,7 +23,7 @@ C...
      &     MYProc,
      &     INPUTDIR,
      &     LOCALDIR
-     
+
       USE GLOBAL,
      &     ONLY :
      &       WSX1, WSY1,     !WSX1(MNP),WSY1(MNP) = Wind stress components at time level s
@@ -75,7 +75,7 @@ C...DECLARE 3D GLOBAL ARRAYS
       REAL(SZ), POINTER :: BTP(:)       ! => MOM_LV_X
       ! QNORMSP1(MNVel) = specified normal flux boundary condition at time level s+1
       REAL(SZ), POINTER :: QNORMSP1(:)  ! => QN2
-      REAL(SZ), POINTER :: DelT    !DelT = altername for timestep real(8)                
+      REAL(SZ), POINTER :: DelT    !DelT = altername for timestep real(8)
 
 c.RJW merged 9/02/2008 Casey 071219: Added the following variable for cumulative mass balance.
       REAL(SZ) :: MASSCUM
@@ -158,7 +158,7 @@ C...  DECLARE 3D GLOBAL SCALARS
       INTEGER  :: IGC                  !vertical grid code
       REAL(SZ) :: KP                   !3D bottom friction coefficient
       REAL(SZ) :: EVMin, EVCon         !minimum vertical eddy viscosity and vertical eddy viscosity constant
-      REAL(SZ) :: Z0S, Z0B             !surface and bottom roughnesses 
+      REAL(SZ) :: Z0S, Z0B             !surface and bottom roughnesses
       REAL(SZ) :: Alp1,Alp2,Alp3       !time stepping coefficients
       REAL(SZ) :: DTALP2, DT1MALP2     !DelT*alpha2, DelT*(1-alpha2)
       REAL(SZ) :: DTALP3, DT1MALP3     !DelT*alpha3, DelT*(1-alpha3)
@@ -345,7 +345,7 @@ C
      &   QX2, QY2, QN2
       USE BOUNDARIES, ONLY : NETA, NVEL
       IMPLICIT NONE
-      ! jgf: Moved the following line from alloc_main1a since it only 
+      ! jgf: Moved the following line from alloc_main1a since it only
       ! applies to 3D.
       ALLOCATE(DUU1(MNP),DUV1(MNP),DVV1(MNP),
      &        BSX1(MNP),BSY1(MNP))
@@ -367,7 +367,7 @@ C
       ALLOCATE( Biharmonic_auxiliary_var(MNP,NFEN) )
       ALLOCATE( d_dx_q_nodes(MNP,NFEN), d_dy_q_nodes(MNP,NFEN) )
 ! arash 01/04/2016
-      Allocate( Biharmonic_viscosity_modified_Leith (MNP,NFEN) ) 
+      Allocate( Biharmonic_viscosity_modified_Leith (MNP,NFEN) )
       ALLOCATE( Biharmonic_auxiliary_var_SalOrTemp (MNP,NFEN) )
 !      ALLOCATE( d_dx_SalOrTemp_nodes (MNP,NFEN), d_dy_SalOrTemp_nodes (MNP,NFEN) )
 
@@ -385,9 +385,9 @@ C   kmd - add arrays for river boundary condition in baroclinic simulation
       ALLOCATE( BCRivSalN2(NVEL,NFEN), BCRivTemp(NVEL,NFEN) )
       ALLOCATE( BCRivTempN1(NVEL,NFEN), BCRivTempN2(NVEL,NFEN) )
       !
-      ! jgf: Assign pointers explicitly here after memory allocation 
-      ! for targets in 2DDI code instead of assigning them in the 
-      ! USE GLOBAL, ONLY statement above.  
+      ! jgf: Assign pointers explicitly here after memory allocation
+      ! for targets in 2DDI code instead of assigning them in the
+      ! USE GLOBAL, ONLY statement above.
       BSX => BSX1
       BSY => BSY1
       UU => UU2
@@ -397,8 +397,8 @@ C   kmd - add arrays for river boundary condition in baroclinic simulation
       DUU => DUU1
       DUV => DUV1
       DVV => DVV1
-      BTP => MOM_LV_X  
-      QNORMSP1 => QN2   
+      BTP => MOM_LV_X
+      QNORMSP1 => QN2
 
       RETURN
       END SUBROUTINE ALLOC_3DVS

@@ -1,15 +1,15 @@
 C     ------------------------------------------------------------------
 C     ------------------------------------------------------------------
-C                  M O D U L E   B O U N D A R I E S 
+C                  M O D U L E   B O U N D A R I E S
 C     ------------------------------------------------------------------
 !     jgf51.21.10: Created this boundaries module in order to modularize
-!     boundary definition data and related subroutines. This module also 
-!     introduces new data structures that facilitate the reading and 
-!     writing of boundaries in other formats, such as NetCDF and XDMF. 
+!     boundary definition data and related subroutines. This module also
+!     introduces new data structures that facilitate the reading and
+!     writing of boundaries in other formats, such as NetCDF and XDMF.
 !
 !     The variables and subroutines in this module were refactored
 !     out of the other parts of the code, particularly from the global
-!     module. 
+!     module.
 C     ------------------------------------------------------------------
       module boundaries
 C     ------------------------------------------------------------------
@@ -19,7 +19,7 @@ C     ------------------------------------------------------------------
       REAL(SZ),ALLOCATABLE ::   CSII(:),SIII(:)
       INTEGER,ALLOCATABLE ::    ME2GW(:)
       INTEGER,ALLOCATABLE ::    NBV(:),LBCODEI(:)
- 
+
       INTEGER,ALLOCATABLE ::    NVDLL(:),NBD(:)
       INTEGER,ALLOCATABLE ::    NBDV(:,:)
       INTEGER,ALLOCATABLE ::    NVELL(:)
@@ -34,13 +34,13 @@ C.....for internal barrier boundaries with flowthrough pipes
       REAL(SZ),ALLOCATABLE ::   BARINHT(:),BARINCFSB(:),BARINCFSP(:)
       REAL(SZ),ALLOCATABLE ::   PIPEHT(:),PIPECOEF(:),PIPEDIAM(:)
       INTEGER, ALLOCATABLE ::   IBCONN(:)
-      ! these arrays will only be needed temporarily, between reading 
+      ! these arrays will only be needed temporarily, between reading
       ! the ascii mesh file and initializing the boundaries
       REAL(SZ),ALLOCATABLE ::   BARLANHTR(:,:),BARLANCFSPR(:,:)
       REAL(SZ),ALLOCATABLE ::   BARINHTR(:,:),BARINCFSBR(:,:),BARINCFSPR(:,:)
       REAL(SZ),ALLOCATABLE ::   PIPEHTR(:,:),PIPECOEFR(:,:),PIPEDIAMR(:,:)
       INTEGER, ALLOCATABLE ::  IBCONNR(:,:)
-      !      
+      !
       INTEGER  NOPE
       ! kmd - added for rivers in baroclinic simulation
       INTEGER,ALLOCATABLE ::    BCRNBVV(:,:)
@@ -61,7 +61,7 @@ C.....for internal barrier boundaries with flowthrough pipes
       real(sz) :: costset
       real(sz) :: anginn
 
-  
+
       REAL(SZ),ALLOCATABLE ::   BTRAN3(:),BTRAN4(:),BTRAN5(:)
       REAL(SZ),ALLOCATABLE ::   BTRAN6(:),BTRAN7(:),BTRAN8(:)
       INTEGER, ALLOCATABLE ::   NTRAN1(:),NTRAN2(:)
@@ -84,8 +84,8 @@ C.....for internal barrier boundaries with flowthrough pipes
       end type simpleBoundary_t
       ! variable holding elevation boundaries
       type(simpleBoundary_t), allocatable :: elevationBoundaries(:)
-      
-      ! variable holding flux boundaries with 
+
+      ! variable holding flux boundaries with
       ! ibtype = 0, 1, 2, 10, 11, 12, 20, 21, 22, 30, 52, 102, 112, 122, 152
       type(simpleBoundary_t), allocatable :: simpleFluxBoundaries(:)
       integer :: numSimpleFluxBoundaries ! for memory allocation
@@ -105,7 +105,7 @@ C.....for internal barrier boundaries with flowthrough pipes
          integer, allocatable :: xdmf_nodes(:)
       end type externalFluxBoundary_t
       type(externalFluxBoundary_t), allocatable :: externalFluxBoundaries(:)
-      integer :: numExternalFluxBoundaries 
+      integer :: numExternalFluxBoundaries
       integer :: efCount   ! index into the externalFluxBoundaries array
       !
       ! flux boundaries where ibtype = 4, 24
@@ -122,13 +122,13 @@ C.....for internal barrier boundaries with flowthrough pipes
          real(8), allocatable :: barincfsp(:)
          real(8), allocatable :: leveeGeom(:)
          integer, allocatable :: xdmf_nodes(:)
-         integer, allocatable :: xdmf_ibconn(:)         
+         integer, allocatable :: xdmf_ibconn(:)
          integer, allocatable :: ibTypeAttribute(:) ! used for visualization
       end type internalFluxBoundary_t
       type(internalFluxBoundary_t), allocatable :: internalFluxBoundaries(:)
-      integer :: numInternalFluxBoundaries    
+      integer :: numInternalFluxBoundaries
       integer :: ifCount   ! index into the internalFluxBoundaries array
-      
+
       ! flux boundaries where ibtype = 5, 25
       type internalFluxBoundaryWithPipes_t
          integer :: indexNum               ! order within the fort.14 file
@@ -147,19 +147,19 @@ C.....for internal barrier boundaries with flowthrough pipes
          real(8), allocatable :: leveeGeom(:)
          integer, allocatable :: xdmf_nodes(:)
          integer, allocatable :: xdmf_ibconn(:)
-      end type internalFluxBoundaryWithPipes_t      
+      end type internalFluxBoundaryWithPipes_t
       type(internalFluxBoundaryWithPipes_t), allocatable :: internalFluxBoundariesWithPipes(:)
       integer :: numInternalFluxBoundariesWithPipes
       integer :: ifwpCount ! index into the internalFluxBoundariesWithPipes array
-      
+
       integer, parameter :: specifiedFluxBoundaryTypes(5) = (/ 2, 12, 22, 32, 52 /)
-      ! 
+      !
       ! all info needed for self describing dataset in XDMF
       type xdmfMetaData_t
-         logical :: createdIDs        ! .true. if infoIDs have been created 
-         character(80) :: variable_name 
+         logical :: createdIDs        ! .true. if infoIDs have been created
+         character(80) :: variable_name
          integer :: variable_name_id
-         character(80) :: long_name 
+         character(80) :: long_name
          integer :: long_name_id
          character(80) :: standard_name
          integer :: standard_name_id
@@ -177,9 +177,9 @@ C     ---------
 C     ---------
 
 
-      
+
       !------------------------------------------------------------------
-      !                   S U B R O U T I N E  
+      !                   S U B R O U T I N E
       ! A L L O C A T E   E L E V A T I O N   B O U N D A R Y   L E N G T H S
       !------------------------------------------------------------------
       ! Allocate the arrays that hold the number of nodes on each elevation
@@ -197,18 +197,18 @@ C     ---------
       !------------------------------------------------------------------
       end subroutine allocateElevationBoundaryLengths
       !------------------------------------------------------------------
-      
+
       !------------------------------------------------------------------
-      !                   S U B R O U T I N E  
+      !                   S U B R O U T I N E
       !      A L L O C A T E  F L U X  B O U N D A R Y   L E N G T H S
       !------------------------------------------------------------------
-      ! Allocate the arrays that hold the number of nodes (primary nodes 
+      ! Allocate the arrays that hold the number of nodes (primary nodes
       ! in the case of paired node boundaries like levees) on each flux
       ! boundary segment
       !------------------------------------------------------------------
       subroutine allocateFluxBoundaryLengths()
       use sizes, only : mnbou
-      implicit none     
+      implicit none
       allocate(nvell(mnbou)) ! number of nodes on each flux boundary segment
       allocate(ibtype_orig(mnbou))
       allocate(ibtype(mnbou))
@@ -220,10 +220,10 @@ C     ---------
       !------------------------------------------------------------------
       end subroutine allocateFluxBoundaryLengths
       !------------------------------------------------------------------
-      
+
       !------------------------------------------------------------------
-      !                   S U B R O U T I N E  
-      !      A L L O C A T E   A D C I R C  E L E V A T I O N  
+      !                   S U B R O U T I N E
+      !      A L L O C A T E   A D C I R C  E L E V A T I O N
       !               B O U N D A R Y  A R R A Y S
       !------------------------------------------------------------------
       ! Allocate space for elevation boundary-related variables
@@ -241,10 +241,10 @@ C     ---------
       end subroutine allocateAdcircElevationBoundaryArrays
       !------------------------------------------------------------------
 
-     
+
       !------------------------------------------------------------------
-      !                       S U B R O U T I N E  
-      !              A L L O C A T E  A D C I R C   F L U X  
+      !                       S U B R O U T I N E
+      !              A L L O C A T E  A D C I R C   F L U X
       !                   B O U N D A R Y  A R R A Y S
       !------------------------------------------------------------------
       !     jgf51.21.11 Allocate space for flux boundary-related variables
@@ -290,9 +290,9 @@ C     ---------
       !------------------------------------------------------------------
       end subroutine allocateAdcircFluxBoundaryArrays
       !------------------------------------------------------------------
-      
+
       !------------------------------------------------------------------
-      !                   S U B R O U T I N E  
+      !                   S U B R O U T I N E
       !        A L L O C A T E  B O U N D A R Y  A R R A Y S
       !------------------------------------------------------------------
       ! Allocate space for boundary-related variables
@@ -307,7 +307,7 @@ C     ---------
       do i=1,nope
          allocate(elevationBoundaries(i)%nodes(nvdll(i)))
          allocate(elevationBoundaries(i)%xdmf_nodes(nvdll(i)))
-      end do   
+      end do
       allocate(simpleFluxBoundaries(numSimpleFluxBoundaries))
       allocate(externalFluxBoundaries(numExternalFluxBoundaries))
       allocate(internalFluxBoundaries(numInternalFluxBoundaries))
@@ -315,7 +315,7 @@ C     ---------
       sfCount = 1
       efCount = 1
       ifCount = 1
-      ifwpCount = 1      
+      ifwpCount = 1
       do i=1,nbou
          if (nabout.eq.-1) then
             !write(6,'("i=",i0)') i !jgfdebug
@@ -331,7 +331,7 @@ C     ---------
             allocate(externalFluxBoundaries(efCount)%barlancfsp(nvell(i)))
             allocate(externalFluxBoundaries(efCount)%xdmf_nodes(nvell(i)))
             efCount = efCount + 1
-         case(4,24)        
+         case(4,24)
             allocate(internalFluxBoundaries(ifCount)%nodes(nvell(i)))
             allocate(internalFluxBoundaries(ifCount)%ibconn(nvell(i)))
             allocate(internalFluxBoundaries(ifCount)%barinht(nvell(i)))
@@ -351,8 +351,8 @@ C     ---------
             allocate(internalFluxBoundariesWithPipes(ifwpCount)%pipediam(nvell(i)))
             allocate(internalFluxBoundariesWithPipes(ifwpCount)%xdmf_nodes(nvell(i)))
             allocate(
-     &         internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn(nvell(i)))            
-            ifwpCount = ifwpCount + 1            
+     &         internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn(nvell(i)))
+            ifwpCount = ifwpCount + 1
          case default
              write(6,'(a,i0,a)') "ERROR: The boundary type ",ibtype_orig(i),
      &        " was found in the file but is not valid."
@@ -395,16 +395,16 @@ C     ---------
          internalFluxBoundariesWithPipes(i)%xdmf_nodes(:) = -99999
          internalFluxBoundariesWithPipes(i)%xdmf_ibconn(:) = -99999
       end do
-      
+
       !------------------------------------------------------------------
       end subroutine allocateBoundaryArrays
       !------------------------------------------------------------------
 
 
 C     ------------------------------------------------------------------
-C                     S U B R O U T I N E  
+C                     S U B R O U T I N E
 C     A L L O C A T E  E L E V A T I O N  B O U N D A R Y  A R R A Y S
-C     ------------------------------------------------------------------       
+C     ------------------------------------------------------------------
 C     jgf51.21.11 Allocate space for elevation boundary-related variables
 C     ------------------------------------------------------------------
       subroutine allocateElevationBoundaryArrays()
@@ -418,9 +418,9 @@ c     ------------------------------------------------------------------
 
 
 C     ------------------------------------------------------------------
-C                       S U B R O U T I N E  
+C                       S U B R O U T I N E
 C         A L L O C A T E  F L U X  B O U N D A R Y  A R R A Y S
-C     ------------------------------------------------------------------       
+C     ------------------------------------------------------------------
 C     jgf51.21.11 Allocate space for flux boundary-related variables
 C     ------------------------------------------------------------------
       subroutine allocateFluxBoundaryArrays()
@@ -430,11 +430,11 @@ C     ------------------------------------------------------------------
       allocate ( bndlen2o3(mnvel))
       allocate ( me2gw(mnvel))
       allocate ( csii(mnvel),siii(mnvel))
-      
+
       allocate ( barlanht(mnvel),barlancfsp(mnvel))
       allocate ( barinht(mnvel),barincfsb(mnvel),barincfsp(mnvel))
       allocate ( pipeht(mnvel),pipecoef(mnvel),pipediam(mnvel))
-      allocate ( ibconn(mnvel))  
+      allocate ( ibconn(mnvel))
 
       allocate ( nbvv(mnbou,0:mnvel))
       allocate ( nvell(mnbou), ibtype(mnbou), ibtype_orig(mnbou))
@@ -449,20 +449,20 @@ C     ------------------------------------------------------------------
 C     ------------------------------------------------------------------
       end subroutine allocateFluxBoundaryArrays
 C     ------------------------------------------------------------------
-          
-      
+
+
       !-----------------------------------------------------------------
       !                   S U B R O U T I N E
-      !       G E T   B O U N D A R Y  S I Z E S  F O R   P R E P 
+      !       G E T   B O U N D A R Y  S I Z E S  F O R   P R E P
       !-----------------------------------------------------------------
       ! jgf51.21.28: Called by adcprep, which uses this module to read
       ! boundary sizes in XDMF format.
       !-----------------------------------------------------------------
-      subroutine getBoundarySizesForPrep(p_nbou, p_nvel, 
+      subroutine getBoundarySizesForPrep(p_nbou, p_nvel,
      &   p_neta, p_nope, nweir, exist_flux)
       implicit none
 
-      integer, intent(out) :: p_nbou, p_nope, p_nvel, p_neta,  
+      integer, intent(out) :: p_nbou, p_nope, p_nvel, p_neta,
      &    nweir
       integer, intent(out) :: exist_flux
       integer :: i, j, k
@@ -471,7 +471,7 @@ C     ------------------------------------------------------------------
       p_nvel = nvel
       p_neta = neta
       p_nope = nope
-      ! 
+      !
       ! count the number of nodes on river flux boundaries and allocate
       ! memory for holding these node numbers so that adcprep can split
       ! up the fort.20 files across subdomains
@@ -484,7 +484,7 @@ C     ------------------------------------------------------------------
             ! other boundary types don't count
          end select
       end do
-  
+
       j=0
       nweir = 0
       do k = 1,nbou
@@ -497,16 +497,16 @@ C     ------------------------------------------------------------------
          case default
             ! no action required for other boundary types
          end select
-      end do    
+      end do
 
       !-----------------------------------------------------------------
       end subroutine getBoundarySizesForPrep
       !-----------------------------------------------------------------
-      
-     
+
+
       !-----------------------------------------------------------------
-      !                     S U B R O U T I N E   
-      !        G E T   B O U N D A R I E S   F O R   P R E P 
+      !                     S U B R O U T I N E
+      !        G E T   B O U N D A R I E S   F O R   P R E P
       !-----------------------------------------------------------------
       ! jgf51.21.28: Called by adcprep, which uses this module to read
       ! mesh files in XDMF format. Because of the duplication between
@@ -515,14 +515,14 @@ C     ------------------------------------------------------------------
       ! will be integrated with the rest of the code and this sub will
       ! no longer be necessary.
       !-----------------------------------------------------------------
-      subroutine getBoundariesForPrep(p_nvdll, p_nvell, p_ibtypee, p_nbdv, lbcode, 
-     &   p_ibtype, p_nbvv, p_ibconnr, bar1, bar2, bar3, weir, 
+      subroutine getBoundariesForPrep(p_nvdll, p_nvell, p_ibtypee, p_nbdv, lbcode,
+     &   p_ibtype, p_nbvv, p_ibconnr, bar1, bar2, bar3, weir,
      &   weird, iden, nfover, exist_flux, flux14_ary)
       implicit none
       integer, intent(out) :: p_nvdll(:)
       integer, intent(out) :: p_nvell(:)
       integer, intent(out) :: p_ibtypee(:)
-      integer, intent(out) :: p_nbdv(:,:), p_nbvv(:,:)      
+      integer, intent(out) :: p_nbdv(:,:), p_nbvv(:,:)
       integer, intent(out) :: p_ibtype(:)
       integer, intent(out) :: lbcode(:)
       integer, intent(out) :: p_ibconnr(:,:)
@@ -536,7 +536,7 @@ C     ------------------------------------------------------------------
       integer, intent(in) :: nfover
       integer, intent(inout) :: exist_flux
       integer :: i, j, k, nweir
-           
+
       if (nope.ne.0) then
          p_nvdll = nvdll
          p_nbdv = nbdv
@@ -545,7 +545,7 @@ C     ------------------------------------------------------------------
          p_nvell = nvell
          P_nbvv = nbvv
       endif
-      p_ibtypee = ibtypee    
+      p_ibtypee = ibtypee
       p_ibtype = ibtype
       p_ibconnr = ibconnr
       lbcode = lbcodei
@@ -589,7 +589,7 @@ C     ------------------------------------------------------------------
             write(6,'(a,i0,a)') 'ERROR: ibtype ',ibtype(k),
      &          ' not supported by adcprep.'
          end select
-      end do    
+      end do
 
       !-----------------------------------------------------------------
       end subroutine getBoundariesForPrep
@@ -597,10 +597,10 @@ C     ------------------------------------------------------------------
 
 
 C     ------------------------------------------------------------------
-C                       S U B R O U T I N E  
-C         A L L O C A T E  F L U X  B O U N D A R Y  A R R A Y  
+C                       S U B R O U T I N E
+C         A L L O C A T E  F L U X  B O U N D A R Y  A R R A Y
 C                      T E M P O R A R I E S
-C     ------------------------------------------------------------------       
+C     ------------------------------------------------------------------
 C     jgf51.21.17 Temporarily allocate space for flux boundary parameters
 C     that will not be needed after initialization.
 C     ------------------------------------------------------------------
@@ -620,10 +620,10 @@ C     ------------------------------------------------------------------
 
 
 C     ------------------------------------------------------------------
-C                       S U B R O U T I N E  
-C             F R E E  F L U X  B O U N D A R Y  A R R A Y  
+C                       S U B R O U T I N E
+C             F R E E  F L U X  B O U N D A R Y  A R R A Y
 C                      T E M P O R A R I E S
-C     ------------------------------------------------------------------       
+C     ------------------------------------------------------------------
 C     jgf51.21.17 Free space required for flux boundary parameters after
 C     boundaries are initialized.
 C     ------------------------------------------------------------------

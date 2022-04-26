@@ -78,7 +78,7 @@
       !c Matrix mapping two Cartesian frames
       REAL (SZ):: ROTMAT(3,3) = reshape( (/ 1.0, 0.0, 0.0,
      &                             0.0, 1.0, 0.0,
-     &                             0.0, 0.0, 1.0 /), (/3, 3/)) ;
+     &                             0.0, 0.0, 1.0 /), (/3, 3/))
       !c
       !c RVELF: V(\varphi,\theta)  -> V'(\varphi',\theta')
       !c RVELI: V'(\varphi,\theta) -> V(\varphi,\theta)
@@ -419,8 +419,8 @@
       efCount = 1
       ifCount = 1
       ifwpCount = 1
-      NPERSEG = 0  ;
-      NNPERBC = 0  ;
+      NPERSEG = 0
+      NNPERBC = 0
 
       do k = 1, nbou
          read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nvell(k), ibtype_orig(k)
@@ -473,7 +473,7 @@
      &                      internalFluxBoundaries(ifCount)%barincfsp(j)
                internalFluxBoundaries(ifCount)%nodes(j) =
      &             find(node_dict, n1)
-               internalFluxBoundaries(ifCount)%ibconn(j) = 
+               internalFluxBoundaries(ifCount)%ibconn(j) =
      &             find(node_dict, n2)
                internalFluxBoundaries(ifCount)%xdmf_nodes(j) =
      &             internalFluxBoundaries(ifCount)%nodes(j) - 1
@@ -503,8 +503,8 @@
      &                        internalFluxBoundariesWithPipes(ifwpCount)%pipediam(j)
                internalFluxBoundariesWithPipes(ifwpCount)%nodes(j) =
      &                        find(node_dict, n1)
-               internalFluxBoundariesWithPipes(ifwpCount)%ibconn(j) = 
-     &                        find(node_dict, n2)          
+               internalFluxBoundariesWithPipes(ifwpCount)%ibconn(j) =
+     &                        find(node_dict, n2)
                internalFluxBoundariesWithPipes(ifwpCount)%xdmf_nodes(j) =
      &                        internalFluxBoundariesWithPipes(ifwpCount)%nodes(j) - 1
                internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn(j) =
@@ -516,14 +516,14 @@
 !...        Periodic boundary, read in a pair of nodes
             !c Allocate memory, if there is a periodic bc segment c!
             IF ( .NOT. ALLOCATED(IPERCONN) ) THEN
-               ALLOCATE( IPERCONN(nvell(k),2) ) ;
-               IPERCONN = 0 ;
+               ALLOCATE( IPERCONN(nvell(k),2) )
+               IPERCONN = 0
             END IF
             !
-            NPERSEG = NPERSEG + 1 ;
+            NPERSEG = NPERSEG + 1
             simpleFluxBoundaries(sfCount)%indexNum = k
             do j = 1, nvell(k)
-               NNPERBC =  NNPERBC + 1 ;
+               NNPERBC =  NNPERBC + 1
                read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) n1, n2
                IPERCONN(NNPERBC,1) = find(node_dict, n1)
                IPERCONN(NNPERBC,2) = find(node_dict, n2)
@@ -542,7 +542,7 @@
          end select
       end do
       close(14)
-      !
+     !
       ! populate the adcirc arrays that are used during execution
       call populateADCIRCNativeArrays()
       !
@@ -557,7 +557,7 @@
        !
       ! jump to here on error condition during read
 10    write(scratchMessage,140) lineNum, ios
-140   format('Reading line ',i0,' gave the following error code: ',i0,'.')
+140   format('Reading line ',i0,' gave the following error code: ', i0, '.')
       call allMessage(ERROR,scratchMessage)
       close(iunit)
       call terminate()
@@ -572,6 +572,160 @@
 
       !----------------------------------------------------------------
       end subroutine read14
+      !----------------------------------------------------------------
+
+
+
+      !-----+---------+---------+---------+---------+---------+---------+
+      ! READ14MESH() : Read just mesh
+      !  input:
+      !      meshfileName = file name
+      !  output:
+      !      nn = (/ np, ne /)
+      !      vx(2,np)   - coordinates of FE nodes
+      !      bxy(np)    - bathymetry
+      !      etov(3,ne) - Element conectivity table
+      !      (optional) nodeLael - node label
+      !-----+---------+---------+---------+---------+---------+---------+
+      subroutine read14femesh( meshfileName, nn, vx, etov, bxy, nodeLabel )
+      use global, only : openFileForRead, nabout
+
+      implicit none
+
+      ! dummy
+      CHARACTER (LEN=*):: meshfileName
+      INTEGER:: nn(:)
+
+      REAL (SZ), allocatable:: vx(:,:), bxy(:) ! node, bathymetry
+      INTEGER, allocatable:: etov(:,:) ! element connectity table
+      INTEGER, allocatable, optional:: nodeLabel(:)
+
+      ! local
+      integer :: i, j, k, jn, je, nhy
+      integer, parameter :: iunit = 714
+      integer :: ios     ! i/o status
+      integer :: lineNum ! line number currently being read
+      CHARACTER (LEN=80):: agridtmp
+
+      INTEGER:: ne, np, nfluxftmp
+      INTEGER, allocatable:: labelstmp(:)
+
+      ! hash table
+      type(ipair), allocatable, target :: node_dict_tmp(:) ! map node labels to numbers
+
+      call setMessageSource( trim(meshfileName) )
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      !
+      ! initialization
+      nfluxftmp = 0
+      !
+      call openFileForRead(iunit,trim(meshFileName),ios)
+
+      ! Get dimension
+      !  - reading the file
+      read(iunit,'(A80)',err=110,end=120,iostat=ios) agridtmp ! header
+      lineNum = lineNum + 1
+
+      read(unit=iunit,fmt=*,err=110,end=120,iostat=ios) ne, np ! no. elements, nodes
+      lineNum = lineNum + 1
+
+      nn(1) = np
+      nn(2) = ne
+
+      ! Allocate memory for the
+      IF ( allocated( vx ) ) THEN
+         DEALLOCATE( vx )
+      END IF
+      IF ( allocated( etov ) ) THEN
+         DEALLOCATE( etov )
+      END IF
+      IF ( allocated( bxy ) ) THEN
+         DEALLOCATE( bxy )
+      END IF
+      ALLOCATE( vx( 2, np ), bxy(np), etov(3, ne) )
+
+      IF ( present( nodeLabel ) ) THEN
+         IF ( allocated( nodeLabel ) ) THEN
+            DEALLOCATE( nodeLabel )
+         END IF
+         ALLOCATE( nodeLabel( np ) )
+      END IF
+      ! Intialize a hash table
+      call dict( node_dict_tmp, np )
+
+      !  N O D E   T A B L E
+      !
+      !
+      ALLOCATE( labelstmp(np) )
+      do k = 1, np
+         read(unit=iunit,fmt=*,err=110,end=120,iostat=ios) labelstmp(k), vx(1,k),
+     &     vx(2,k), bxy(k)
+         lineNum = lineNum + 1
+         call add_ipair( node_dict_tmp, labelstmp(k), k)
+      enddo
+      IF ( present( nodeLabel ) ) THEN
+         DO k = 1, np
+            nodeLabel(k) = labelstmp(k)
+         END DO
+      END IF
+
+      !
+      !  E L E M E N T   T A B L E
+      !
+      do k = 1, ne
+         read(unit=iunit,fmt=*,err=110,end=120,iostat=ios)
+     &      je, nhy, n1, n2, n3
+         etov(1,k) = find(node_dict_tmp, n1)
+         etov(2,k) = find(node_dict_tmp, n2)
+         etov(3,k) = find(node_dict_tmp, n3)
+         lineNum = lineNum + 1
+      enddo
+
+      ! close file
+      close(iunit)
+      call close_dict( node_dict_tmp ) !
+
+      ! free memory
+      deallocate( labelstmp )
+
+!      !
+!      ! populate the adcirc arrays that are used during execution
+!     call populateADCIRCNativeArrays()
+!      !
+!      call logMessage(INFO,'Finished reading mesh file coordinates, '
+!     & // 'connectivity, and boundary data.')
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage( DEBUG, "Return.")
+#endif
+      call unsetMessageSource()
+
+      return
+      !
+      ! jump to here on error condition during read
+110    write(scratchMessage,140) lineNum, ios
+140   format('Reading line ',i0,' gave the following error code: ', i0, '.')
+      call allMessage(ERROR,scratchMessage)
+      close(iunit)
+      call terminate()
+      !
+      ! jump to here on end condition during read
+120    write(scratchMessage,150) lineNum
+150   format('Reached premature end of file on line ',i0,'.')
+      call allMessage(ERROR,scratchMessage)
+      close(iunit)
+
+      ! free memory
+      deallocate( labelstmp )
+
+      call close_dict( node_dict_tmp )
+      call terminate()
+
+      !----------------------------------------------------------------
+      end subroutine read14femesh
       !----------------------------------------------------------------
 
 
@@ -1380,14 +1534,14 @@
 
       IF ( IFSPROTS .EQ. 1 ) THEN
 !        Allocate arrays to be used in coordinate rotations
-         CALL ALLOC_SPROTCOORS_MEM( ) ;
+         CALL ALLOC_SPROTCOORS_MEM( )
 
 !        Read the rotation matrix
-         CALL READFORTROTS( ) ;
+         CALL READFORTROTS( )
 
 !        Get the variables assoicated with rotated coordinates
 !        The X and Y vectors are edited in this subroutine (rotated)
-         CALL COMP_ROTSPCOORD_VARS( ICS ) ;
+         CALL COMP_ROTSPCOORD_VARS( ICS )
 
       END IF
 !...
@@ -1455,66 +1609,66 @@
 !     c Spherical coordinates c!
 
 !     lon (in rad)
-             LONVE(1) = SLAM( NM(I,1) ) ;
-             LONVE(2) = SLAM( NM(I,2) ) ;
-             LONVE(3) = SLAM( NM(I,3) ) ;
+             LONVE(1) = SLAM( NM(I,1) )
+             LONVE(2) = SLAM( NM(I,2) )
+             LONVE(3) = SLAM( NM(I,3) )
 
 !     lat (in rad)
-              LATVE(1) = SFEA( NM(I,1) ) ;
-              LATVE(2) = SFEA( NM(I,2) ) ;
-              LATVE(3) = SFEA( NM(I,3) ) ;
+              LATVE(1) = SFEA( NM(I,1) )
+              LATVE(2) = SFEA( NM(I,2) )
+              LATVE(3) = SFEA( NM(I,3) )
 
-              EXV => EXVO ;
-              EYV => EYVO ;
+              EXV => EXVO
+              EYV => EYVO
               CALL CAL_ELXV_SPCOOR( EXV(:,I),
-     &             EYV(:,I), LONVE, LATVE, ICS, SFLAG ) ;
+     &             EYV(:,I), LONVE, LATVE, ICS, SFLAG )
 
               IF ( IFSPROTS .EQ. 1 ) THEN
 !     lon in rotated coordinates (in rad)
-                 LONVE(1) = SLAMR( NM(I,1) ) ;
-                 LONVE(2) = SLAMR( NM(I,2) ) ;
-                 LONVE(3) = SLAMR( NM(I,3) ) ;
+                 LONVE(1) = SLAMR( NM(I,1) )
+                 LONVE(2) = SLAMR( NM(I,2) )
+                 LONVE(3) = SLAMR( NM(I,3) )
 
 !     lat in rotated coordinates (in rad)
-                 LATVE(1) = SFEAR( NM(I,1) ) ;
-                 LATVE(2) = SFEAR( NM(I,2) ) ;
-                 LATVE(3) = SFEAR( NM(I,3) ) ;
+                 LATVE(1) = SFEAR( NM(I,1) )
+                 LATVE(2) = SFEAR( NM(I,2) )
+                 LATVE(3) = SFEAR( NM(I,3) )
 
-                 EXV => EXVR ;
-                 EYV => EYVR ;
+                 EXV => EXVR
+                 EYV => EYVR
                  CALL CAL_ELXV_SPCOOR( EXV(:,I),
-     &                EYV(:,I), LONVE, LATVE, ICS, SFLAG ) ;
+     &                EYV(:,I), LONVE, LATVE, ICS, SFLAG )
               END IF
 
            END SELECT
 
            IF ( IFSPROTS .EQ. 1 ) THEN
-              EXV => EXVR ;
-              EYV => EYVR ;
+              EXV => EXVR
+              EYV => EYVR
            END IF
 
-           X1 = EXV(1,I) ;
-           X2 = EXV(2,I) ;
-           X3 = EXV(3,I) ;
-           Y1 = EYV(1,I) ;
-           Y2 = EYV(2,I) ;
-           Y3 = EYV(3,I) ;
+           X1 = EXV(1,I)
+           X2 = EXV(2,I)
+           X3 = EXV(3,I)
+           Y1 = EYV(1,I)
+           Y2 = EYV(2,I)
+           Y3 = EYV(3,I)
 
 !...v49.48.02 tcm added these to reuse the computed values
-           X2mX1 = (X2 - X1);
-           X3mX2 = (X3 - X2);
-           X1mX3 = (X1 - X3);
-           Y2mY1 = (Y2 - Y1);
-           Y3mY2 = (Y3 - Y2);
-           Y1mY3 = (Y1 - Y3);
+           X2mX1 = (X2 - X1)
+           X3mX2 = (X3 - X2)
+           X1mX3 = (X1 - X3)
+           Y2mY1 = (Y2 - Y1)
+           Y3mY2 = (Y3 - Y2)
+           Y1mY3 = (Y1 - Y3)
 
 !.....     For later use for FDX1, FDY1 in gwce, momentum
-           FDXE(1,I) = -Y3mY2 ; !c (Y(NM2)-Y(NM3))*SFacAvg !b1
-           FDXE(2,I) = -Y1mY3 ; !c (Y(NM3)-Y(NM1))*SFacAvg !b2
-           FDXE(3,I) = -Y2mY1 ; !c (Y(NM1)-Y(NM2))*SFacAvg !b3
-           FDYE(1,I) =  X3mX2 ; !c  X(NM3)-X(NM2) !a1
-           FDYE(2,I) =  X1mX3 ; !c  X(NM1)-X(NM3) !a2
-           FDYE(3,I) =  X2mX1 ; !c  X(NM2)-X(NM1) !a3
+           FDXE(1,I) = -Y3mY2 !c (Y(NM2)-Y(NM3))*SFacAvg !b1
+           FDXE(2,I) = -Y1mY3 !c (Y(NM3)-Y(NM1))*SFacAvg !b2
+           FDXE(3,I) = -Y2mY1 !c (Y(NM1)-Y(NM2))*SFacAvg !b3
+           FDYE(1,I) =  X3mX2 !c  X(NM3)-X(NM2) !a1
+           FDYE(2,I) =  X1mX3 !c  X(NM1)-X(NM3) !a2
+           FDYE(3,I) =  X2mX1 !c  X(NM2)-X(NM1) !a3
 
            AVGXY=(ABS(X1)+ABS(X2)+ABS(X3)+ABS(Y1)+ABS(Y2)+ABS(Y3))/6.d0
 ! v49.48.02 tcm -- These are the lengths of each element edge
@@ -1548,19 +1702,19 @@
            IF ( IFSPROTS.EQ.1 .and. AREAS(I).lt.0d0 ) THEN
 !             reorder and start loop again
               NMM = NM(I,:)
-              NM(I,2) = NMM(3); NM(I,3) = NMM(2);
+              NM(I,2) = NMM(3); NM(I,3) = NMM(2)
            ELSE
               EXIT INNER
            ENDIF
          ENDDO INNER
 
 !...     v49.48.02 tcm -- compute element barycenters and element radius
-         x1 = X( NM(I,1) )  ;
-         x2 = X( NM(I,2) )  ;
-         x3 = X( NM(I,3) )  ;
-         y1 = Y( NM(I,1) )  ;
-         y2 = Y( NM(I,2) )  ;
-         y3 = Y( NM(I,3) )  ;
+         x1 = X( NM(I,1) )
+         x2 = X( NM(I,2) )
+         x3 = X( NM(I,3) )
+         y1 = Y( NM(I,1) )
+         y2 = Y( NM(I,2) )
+         y3 = Y( NM(I,3) )
 
          bcxy(1,i) = (x1+x2+x3)/3.d0
          bcxy(2,i) = (y1+y2+y3)/3.d0
@@ -2131,20 +2285,20 @@
                   IF ( IFSPROTS .EQ. 1 ) THEN
                      CALL CYLINDERMAP( XLI, YLI, SLAMR(NBVI),
      &                    SFEAR(NBVI), SLAMR(NBVI),
-     &                    SFEAR(NBVI), ICS ) ;
+     &                    SFEAR(NBVI), ICS )
                      CALL CYLINDERMAP(XLJ, YLJ, SLAMR(NBVJ),
      &                    SFEAR(NBVJ), SLAMR(NBVI),
-     &                    SFEAR(NBVI), ICS ) ;
+     &                    SFEAR(NBVI), ICS )
                      CALL CYLINDERMAP(XLK, YLK, SLAMR(NBVK),
      &                    SFEAR(NBVK), SLAMR(NBVK),
      &                    SFEAR(NBVI), ICS)
                   ELSE
                      CALL CYLINDERMAP( XLI, YLI, SLAM(NBVI),
      &                    SFEA(NBVI), SLAM(NBVI),
-     &                    SFEA(NBVI), ICS ) ;
+     &                    SFEA(NBVI), ICS )
                      CALL CYLINDERMAP(XLJ, YLJ, SLAM(NBVJ),
      &                    SFEA(NBVJ), SLAM(NBVI),
-     &                    SFEA(NBVI), ICS ) ;
+     &                    SFEA(NBVI), ICS )
                      CALL CYLINDERMAP(XLK, YLK, SLAM(NBVK),
      &                    SFEA(NBVK), SLAM(NBVI),
      &                    SFEA(NBVI), ICS)
@@ -2608,10 +2762,10 @@
       !   if (lbarray_pointer(i).gt.0) then
       !      write(6,*) 'i, lbcodei(lbarray_pointer(i))=',i,lbcodei(lbarray_pointer(i)) !jgfdebug
       !   endif
-      !end do    
+      !end do
       !stop !jgfdebug
 
-      CALL PERBCSETUP( NM(:,:) ) ;
+      CALL PERBCSETUP( NM(:,:) )
 
 !...  IF ANY EXTERNAL BARRIER BOUNDARIES WERE SPECIFIED, (NFLUXB=1)
 !.....WRITE OUT EXTERNAL BARRIER BOUNDARY INFORMATION TO UNIT 16 FILE
@@ -2748,43 +2902,43 @@
 !...  which are deallocated at the end of read_input.F
       allocate( bcxy(2,mne), rmax(mne) )
 
-      ALLOCATE ( FDXE(3,MNE), FDYE(3,MNE) ) ;
-      FDXE = 0.0_SZ ;
-      FDYE = 0.0_SZ ;
+      ALLOCATE ( FDXE(3,MNE), FDYE(3,MNE) )
+      FDXE = 0.0_SZ
+      FDYE = 0.0_SZ
 
-      ALLOCATE( EXVO(3,MNE), EYVO(3,MNE) ) ;
-      EXVO = 0.0_SZ ;
-      EYVO = 0.0_SZ ;
-      EXV => EXVO ;
-      EYV => EYVO ;
+      ALLOCATE( EXVO(3,MNE), EYVO(3,MNE) )
+      EXVO = 0.0_SZ
+      EYVO = 0.0_SZ
+      EXV => EXVO
+      EYV => EYVO
 
-      NULLIFY( EXVR ) ;
-      NULLIFY( EYVR ) ;
+      NULLIFY( EXVR )
+      NULLIFY( EYVR )
 
       ALLOCATE( SFAC(MNP), SFMX(MNP), SFMY(MNP),
      &          SFCX(MNP), SFCY(MNP), YCSFAC(MNP),
      &          SFCT(MNP), TANPHI(MNP) )
 
-      SFCT = 1.0_SZ ;
-      SFCX = 1.0_SZ ;
-      SFCY = 1.0_SZ ;
+      SFCT = 1.0_SZ
+      SFCX = 1.0_SZ
+      SFCY = 1.0_SZ
 
-      SFMX = 1.0_SZ ;
-      SFMY = 1.0_SZ ;
+      SFMX = 1.0_SZ
+      SFMY = 1.0_SZ
 
-      TANPHI = 0.0_SZ ;
-      YCSFAC = 1.0_SZ ;
+      TANPHI = 0.0_SZ
+      YCSFAC = 1.0_SZ
 
       ALLOCATE( SfacEle(MNE), SFCYEle(MNE), SFCXEle(MNE),
      &          SFMXEle(MNE), SFMYEle(MNE), YCSFacEle(MNE),
      &          TANPHIEle(MNE) )
-      SFacEle = 1.0_SZ ;
-      SFCYEle = 1.0_SZ ;
-      SFCXEle = 1.0_SZ ;
-      SFMYEle = 1.0_SZ ;
-      SFMXEle = 1.0_SZ ;
-      YCSFacEle = 1.0_SZ ;
-      TANPHIEle = 0.0_SZ ;
+      SFacEle = 1.0_SZ
+      SFCYEle = 1.0_SZ
+      SFCXEle = 1.0_SZ
+      SFMYEle = 1.0_SZ
+      SFMXEle = 1.0_SZ
+      YCSFacEle = 1.0_SZ
+      TANPHIEle = 0.0_SZ
       !
       ! initialize to something troublesome to make it easy to spot issues
       slam = -99999.d0
@@ -3041,7 +3195,7 @@
             NEITEM(K)=NeiTabEle(I,K)
             NeiTabEle(I,K)=0
          END DO
-         NN = 0;
+         NN = 0
          DO J=2,NNeigh(I)
             NN1=NeiTab(I,1)
             NN3=NeiTab(I,J)
@@ -3065,10 +3219,10 @@
                      NE3=NM(NEITEM(K),2)
                   ENDIF
                   IF((NE2.EQ.NN2).AND.(NE3.EQ.NN3)) THEN
-                     NN = NN + 1;
+                     NN = NN + 1
                      NeiTabEle(I,NN)=NEITEM(K)
                      NEITEM(K)=0
-                     CYCLE KLP1;
+                     CYCLE KLP1
                   ENDIF
                ENDIF
             END DO KLP1
@@ -3628,10 +3782,10 @@
 !                                   containing slave nodes
 !
 !        - Switch from the original node numbering to primary nodes of the node pairs
-!            ETAB( PERBC_ELNATAB(:,2), PERBC_ELNTAB(:,1) ) =   PERBC_ELNATAB(:,3) ;
+!            ETAB( PERBC_ELNATAB(:,2), PERBC_ELNTAB(:,1) ) =   PERBC_ELNATAB(:,3)
 !
 !        - Switch (back) to original node numbering
-!            ETAB( PERBC_ELNATAB(:,2), PERBC_ELNTAB(:,1) ) =   PERBC_ELNATAB(:,4) ;
+!            ETAB( PERBC_ELNATAB(:,2), PERBC_ELNTAB(:,1) ) =   PERBC_ELNATAB(:,4)
 !        (3)
 !
       SUBROUTINE PERBCSETUP( ETAB )
@@ -3652,80 +3806,80 @@
 
       IF ( NPERSEG > 0 ) THEN
          IF ( .NOT. ALLOCATED(PERBC_IDN_MAP)  ) THEN
-            ALLOCATE( PERBC_IDN_MAP(MNP) ) ;
+            ALLOCATE( PERBC_IDN_MAP(MNP) )
             DO I = 1,MNP
-               PERBC_IDN_MAP(I) = I;
+               PERBC_IDN_MAP(I) = I
             ENDDO
          END IF
 !     CALL NEIGHB(NE,NP,NM,NNeigh,NeiTab,NeiTabEle,NeiMin,NeiMax,
 !     &     X,Y,NScreen,ScreenUnit)
 !        - For maping original indices to primary periodic indices
-         PERBC_IDN_MAP(IPERCONN(1:NNPERBC,2)) = IPERCONN(1:NNPERBC,1) ;
+         PERBC_IDN_MAP(IPERCONN(1:NNPERBC,2)) = IPERCONN(1:NNPERBC,1)
 
 !        Create a table for mapping a original element table to periodic bc
-         NELNDTAB = SUM( NNeighEle(IPERCONN(1:NNPERBC,2)) )  ;
+         NELNDTAB = SUM( NNeighEle(IPERCONN(1:NNPERBC,2)) )
          IF ( .NOT. ALLOCATED(PERBC_ELNDTAB) ) THEN
-            ALLOCATE( PERBC_ELNDTAB(NELNDTAB,4) ) ;
+            ALLOCATE( PERBC_ELNDTAB(NELNDTAB,4) )
          END IF
 
 
-         IC = 0 ;
+         IC = 0
          DO I = 1, NNPERBC
-            ID1 = IPERCONN(I,2) ;
+            ID1 = IPERCONN(I,2)
             DO J = 1, NNeighEle(ID1)
-               IE = NeiTabEle(ID1,J) ;
+               IE = NeiTabEle(ID1,J)
 
-               IC = IC + 1 ;
-               PERBC_ELNDTAB(IC,1) = IE ; ! IE, VLOC, I_P, I_S
-               PERBC_ELNDTAB(IC,3:4) = IPERCONN(I,1:2) ;
+               IC = IC + 1
+               PERBC_ELNDTAB(IC,1) = IE ! IE, VLOC, I_P, I_S
+               PERBC_ELNDTAB(IC,3:4) = IPERCONN(I,1:2)
 
                KLOOP: DO K  = 1, 3
                  IF ( ETAB(IE,K) == ID1 ) THEN
-                    ILOC = K ;
-                    EXIT KLOOP ;
+                    ILOC = K
+                    EXIT KLOOP
                  END IF
                ENDDO KLOOP
 
-               PERBC_ELNDTAB(IC,2) = ILOC ;
+               PERBC_ELNDTAB(IC,2) = ILOC
             END DO
          END DO
 
-!!$         PRINT*, "Ic = ", IC ;
+!!$         PRINT*, "Ic = ", IC
 !!$         DO I = 1, IC
-!!$             PRINT*, PERBC_ELNDTAB(I,1:4) ;
+!!$             PRINT*, PERBC_ELNDTAB(I,1:4)
 !!$         END DO
 
 
 !        Modify NeiTab, NeiTabEle
          ALLOCATE( ptab(Mnei), stab(Mnei),
-     &             mneitab(Mnei*2), mneitabele(2*Mnei) ) ;
+     &             mneitab(Mnei*2), mneitabele(2*Mnei) )
          DO I = 1, NNPERBC
-            ptab = 0 ;
-            stab = 0 ;
-            mneitab = 0 ;
+            ptab = 0
+            stab = 0
+            mneitab = 0
 
-            ID1 = IPERCONN(I,1) ; ! primary node !
-            ID2 = IPERCONN(I,2) ; ! slave node   !
+            ID1 = IPERCONN(I,1) ! primary node !
+            ID2 = IPERCONN(I,2) ! slave node   !
 
 !     Modify the table of nodes sharing the primary nodes
-            N1 = NNeigh(ID1) ;
-            N2 = NNeigh(ID2) ;
+            N1 = NNeigh(ID1)
+            N2 = NNeigh(ID2)
 
-            ptab(1:N1) = NeiTab(ID1,1:N1) ;
-            stab(1:N2) = NeiTab(ID2,1:N2) ;
+            ptab(1:N1) = NeiTab(ID1,1:N1)
+            stab(1:N2) = NeiTab(ID2,1:N2)
 
 !           1. Loop through entries in the neighboring-node table associated
 !              with nodes having the slave node as their neigbor. Replace
 !              the slave node number by the primary node number.
             DO J = 2, N2
-               ID3 = NeiTab(ID2,J) ;
+               ID3 = NeiTab(ID2,J)
                IF ( COUNT( (IPERCONN(1:NNPERBC,2)
      &              - ID3) == 0) == 0) THEN ! interior nodes
-                  N3 = NNeigh(ID3) ;
+                  N3 = NNeigh(ID3)
                   KLP2: DO K = 2, N3
                     IF ( NeiTab(ID3,K) == ID2 ) THEN
-                       NeiTab(ID3,K) = ID1 ;
-                       EXIT KLP2 ;
+                       NeiTab(ID3,K) = ID1
+                       EXIT KLP2
                     END IF
                   END DO KLP2
                END IF
@@ -3733,28 +3887,28 @@
 
 !           2. Augment the neighbor tables of the primary nodes
 !           Switch to a primary node number
-            stab(1:N2) = PERBC_IDN_MAP(stab(1:N2)) ;
+            stab(1:N2) = PERBC_IDN_MAP(stab(1:N2))
 
-            ia1 = N1 ;
-            mneitab(1:mnei) = ptab;
+            ia1 = N1
+            mneitab(1:mnei) = ptab
             DO J = 1, N2
                IF ( COUNT(mneitab(1:ia1) - stab(J) == 0) == 0 ) THEN
-                  ia1 = ia1 + 1 ;
+                  ia1 = ia1 + 1
                   IF (ia1 > ubound(mneitab,1)) then
                       write(16,*) 'ia1 large ',ia1,mnei,
      &                ubound(mneitab,1),ubound(ptab,1)
                   endif
-                  mneitab(ia1) = stab(J) ;
+                  mneitab(ia1) = stab(J)
                END IF
             END DO
 
             IF ( ia1 <= Mnei .AND. ia1 >= N1 ) THEN
-               NNeigh(ID1) = ia1 ;
-               NeiTab(ID1,1:ia1) = mneitab(1:ia1) ;
+               NNeigh(ID1) = ia1
+               NeiTab(ID1,1:ia1) = mneitab(1:ia1)
                IF ( ia1 > NeiMax ) THEN
                   WRITE(16,*) "Warning in PREBCSETUP(): No. neighbors =",
-     &                 IA1, " > ", " NeiMax = ", NeiMax ;
-                  NeiMax = ia1 ;
+     &                 IA1, " > ", " NeiMax = ", NeiMax
+                  NeiMax = ia1
                END IF
 
                IF ( ia1 == N1 ) THEN
@@ -3764,34 +3918,34 @@
                END IF
             ELSE
                WRITE(16,*) "Error in PREBCSETUP(): No. neighbors = ",
-     &              IA1, " > ", " Mnei = ", Mnei ;
+     &              IA1, " > ", " Mnei = ", Mnei
                WRITE(16,*) " -- Fix: expand the size of NeiTab(:,:),
-     &                                 and NeiTabEle(:,:) tables"   ;
+     &                                 and NeiTabEle(:,:) tables"
 
-               CALL EXPAND_NeiTAB( ia1 ) ;
+               CALL EXPAND_NeiTAB( ia1 )
 
-               NeiMax = ia1 ;
-               NNeigh(ID1) = ia1 ;
-               NeiTab(ID1,1:ia1) = mneitab(1:ia1) ;
+               NeiMax = ia1
+               NNeigh(ID1) = ia1
+               NeiTab(ID1,1:ia1) = mneitab(1:ia1)
             END IF
             !
 
 !     Modify the table of elements sharing the primary nodes
-            N1 = NNeighEle(ID1) ;
-            N2 = NNeighEle(ID2) ;
+            N1 = NNeighEle(ID1)
+            N2 = NNeighEle(ID2)
 
             mneitabele(1:N1) = NeiTabEle(ID1,1:N1)
             mneitabele(N1+1:N1+N2) = NeiTabEle(ID2,1:N2)
 
-            NNeighEle(ID1) = N1 + N2 ;
-            NeiTabEle(ID1,1:N1+N2) = mneitabele(1:N1+N2) ;
+            NNeighEle(ID1) = N1 + N2
+            NeiTabEle(ID1,1:N1+N2) = mneitabele(1:N1+N2)
          END DO
          !
-         DEALLOCATE( ptab, stab, mneitab, mneitabele ) ;
+         DEALLOCATE( ptab, stab, mneitab, mneitabele )
       END IF
 
 
-      RETURN ;
+      RETURN
       CONTAINS
 
         SUBROUTINE EXPAND_NeiTAB( ia1 )
@@ -3801,23 +3955,23 @@
         INTEGER, ALLOCATABLE:: NeiTab_TMP(:,:), NeiTabEle_TMP(:,:) ! local variables
 
         !
-        allocate(NeiTab_TMP(MNP,ia1+4), NeiTabEle_TMP(MNP,ia1+4)) ;
+        allocate(NeiTab_TMP(MNP,ia1+4), NeiTabEle_TMP(MNP,ia1+4))
 
-        NeiTab_TMP(:,1:Mnei) = NeiTab(:,1:Mnei) ;
-        NeiTabEle_TMP(:,1:Mnei) = NeiTabEle(:,1:Mnei) ;
+        NeiTab_TMP(:,1:Mnei) = NeiTab(:,1:Mnei)
+        NeiTabEle_TMP(:,1:Mnei) = NeiTabEle(:,1:Mnei)
 
-        deallocate( NeiTab, NeiTabEle ) ;
+        deallocate( NeiTab, NeiTabEle )
 
-        Mnei = ia1 + 4 ;
-        allocate(NeiTab(MNP,Mnei), NeiTabEle(MNP,Mnei)) ;
+        Mnei = ia1 + 4
+        allocate(NeiTab(MNP,Mnei), NeiTabEle(MNP,Mnei))
 
-        NeiTab = NeiTab_TMP ;
-        NeiTabEle = NeiTabEle_TMP ;
+        NeiTab = NeiTab_TMP
+        NeiTabEle = NeiTabEle_TMP
 
 
-        deallocate( NeiTab_TMP, NeiTabEle_TMP) ;
+        deallocate( NeiTab_TMP, NeiTabEle_TMP)
 
-        RETURN ;
+        RETURN
         END SUBROUTINE EXPAND_NeiTAB
 
       END SUBROUTINE PERBCSETUP
@@ -3834,18 +3988,18 @@
           CASE (1)
 !     Switch to the element table to the primary node
              DO I = 1, NELNDTAB
-                I1 = PERBC_ELNDTAB(I,1) ;
-                I2 = PERBC_ELNDTAB(I,2) ;
+                I1 = PERBC_ELNDTAB(I,1)
+                I2 = PERBC_ELNDTAB(I,2)
 
-                NM(I1,I2) = PERBC_ELNDTAB(I,3) ;
+                NM(I1,I2) = PERBC_ELNDTAB(I,3)
              END DO
 
           CASE (2)
 !     Switch back to the original element table
              DO I = 1, NELNDTAB
-                I1 = PERBC_ELNDTAB(I,1) ;
-                I2 = PERBC_ELNDTAB(I,2) ;
-                NM(I1,I2) = PERBC_ELNDTAB(I,4) ;
+                I1 = PERBC_ELNDTAB(I,1)
+                I2 = PERBC_ELNDTAB(I,2)
+                NM(I1,I2) = PERBC_ELNDTAB(I,4)
              END DO
           END SELECT
        END IF
@@ -4045,7 +4199,7 @@
              xi = xi + 1
           endif
 
-          ii   = [-1, 0, 0, 0]; ! Default indices
+          ii   = [-1, 0, 0, 0] ! Default indices
           ia = 0
           ! loop over points close to the nearest one
           do i = max(1,xi-1),min(xi+1,xp) !1,xp
@@ -4071,9 +4225,9 @@
      &              y.lt.min(y11,y21).or.y.gt.max(y12,y22)) cycle
 
                 ! Confirm if in the quadrilateral or not
-                p = [x,y];
-                a = [x11, y11]; b = [x21, y21];
-                c = [x22, y22]; d = [x12, y12];
+                p = [x,y]
+                a = [x11, y11]; b = [x21, y21]
+                c = [x22, y22]; d = [x12, y12]
                 if (PtInTri(p,a,b,c).or.PtInTri(p,c,d,a)) then
                    ! Lon, lat to meters
                    d11 = 1d0/haversine(x11,x,y11,y)
@@ -4091,12 +4245,12 @@
                    w(3) = d12/denom
                    w(4) = d22/denom
 
-                   return;
+                   return
                 endif
              enddo
           enddo
 
-          return;
+          return
 
       END SUBROUTINE bl_interp2
 
@@ -4250,23 +4404,23 @@ C
         call allMessage(DEBUG,"Enter.")
 #endif
 
-        FUNIT = 1002 ;
-        FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.rotm' ;
+        FUNIT = 1002
+        FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.rotm'
         errorVar = ""
-        call openFileForRead( FUNIT, FNAME, errorIO) ;
+        call openFileForRead( FUNIT, FNAME, errorIO)
 
-        inputtype = "" ;
-        read( FUNIT, *) inputtype ;
+        inputtype = ""
+        read( FUNIT, *) inputtype
 
         WRITE(*,'(a)') ""
         scratchMessage =
-     &       "**** Solve SWE in the rotated coordinate frame ****" ;
+     &       "**** Solve SWE in the rotated coordinate frame ****"
         call allMessage(INFO,scratchMessage)
 
-        errorVar = "inputype" ;
+        errorVar = "inputype"
         SELECT CASE(adjustl(trim(inputtype)))
         CASE ("znorth_in_spherical_coors")
-           READ(FUNIT, *) PHIN, THETAN, IGNOREMSG ;
+           READ(FUNIT, *) PHIN, THETAN, IGNOREMSG
 
            WRITE(scratchMessage,'(A)') "A vector describing the"//
      &            " north-south axis in spherical coordinates "//
@@ -4276,36 +4430,36 @@ C
      &                                        PHIN, THETAN
            CALL allMessage(INFO,scratchMessage)
 
-           CALL DRV_ROTMAT_ZNVEC( PHIN, THETAN ) ;
+           CALL DRV_ROTMAT_ZNVEC( PHIN, THETAN )
         CASE ("z-x-z")
-           READ(FUNIT, *) AL, BE, GAM, IGNOREMSG ;
+           READ(FUNIT, *) AL, BE, GAM, IGNOREMSG
            scratchMessage = "Intrinsic rotation z-x-z (alpha,beta,"//
-     &             "gamma) is given." ;
+     &             "gamma) is given."
            CALL allMessage(INFO,scratchMessage)
            WRITE(scratchMessage,'(A,3F20.8)') " (alpha,beta,gamma) = ",
      &           AL, BE, GAM
            CALL allMessage(INFO,scratchMessage)
 
-           CALL DRV_ROTMAT_ZXZROT( AL, BE, GAM ) ;
+           CALL DRV_ROTMAT_ZXZROT( AL, BE, GAM )
         CASE ("rotation_matrix")
            DO II = 1, 3
-              READ(FUNIT,*) ROTMAT(II,3) ;
+              READ(FUNIT,*) ROTMAT(II,3)
            END DO
 
            scratchMessage = "ROTATION MATRIX: "
            call allMessage(INFO,scratchMessage)
            scratchMessage =
-     &       "****************************************" ;
+     &       "****************************************"
            call allMessage(INFO,scratchMessage)
            scratchMessage = "A rotation matrix R: x -> x' is given"
            call allMessage(INFO,scratchMessage)
            DO II = 1, 3
               WRITE(scratchMessage,'(A,3F12.4,A)') '| ',
-     &            ROTMAT(II,:), ' |' ;
+     &            ROTMAT(II,:), ' |'
               call allMessage(INFO,scratchMessage)
            END DO
            scratchMessage =
-     &       "****************************************" ;
+     &       "****************************************"
            call allMessage(INFO,scratchMessage)
 
         CASE DEFAULT
@@ -4336,25 +4490,25 @@ C
       SUBROUTINE ALLOC_SPROTCOORS_MEM( )
         IMPLICIT NONE
 
-        ALLOCATE( SLAMR(MNP), SFEAR(MNP) ) ;
-        ALLOCATE( RVELF(2,2,MNP), RVELI(2,2,MNP) ) ;
-        ALLOCATE( UVECTMP(MNP), VVECTMP(MNP) ) ;
+        ALLOCATE( SLAMR(MNP), SFEAR(MNP) )
+        ALLOCATE( RVELF(2,2,MNP), RVELI(2,2,MNP) )
+        ALLOCATE( UVECTMP(MNP), VVECTMP(MNP) )
 
-        SLAMR = 0.0_SZ ;
-        SFEAR = 0.0_SZ ;
+        SLAMR = 0.0_SZ
+        SFEAR = 0.0_SZ
 
-        RVELF = 0.0_SZ ;
-        RVELI = 0.0_SZ ;
+        RVELF = 0.0_SZ
+        RVELI = 0.0_SZ
 
-        UVECTMP = 0.0_SZ ;
-        VVECTMP = 0.0_SZ ;
+        UVECTMP = 0.0_SZ
+        VVECTMP = 0.0_SZ
 
 ! To be used in neighb()
-        ALLOCATE( EXVR(3,MNE), EYVR(3,MNE) ) ;
-        EXVR = 0.0_SZ ;
-        EYVR = 0.0_SZ ;
+        ALLOCATE( EXVR(3,MNE), EYVR(3,MNE) )
+        EXVR = 0.0_SZ
+        EYVR = 0.0_SZ
 
-        RETURN ;
+        RETURN
       END SUBROUTINE ALLOC_SPROTCOORS_MEM
 
       SUBROUTINE COMP_ROTSPCOORD_VARS( ICS )
@@ -4370,16 +4524,16 @@ C
         call allMessage(DEBUG,"Enter.")
 #endif
 
-        CALL CHECK_RTOTMAT( ROTMAT, IERR ) ;
+        CALL CHECK_RTOTMAT( ROTMAT, IERR )
 
-        CALL SPCOORSROTS( ROTMAT, SLAMR, SFEAR, SLAM, SFEA, NP ) ;
+        CALL SPCOORSROTS( ROTMAT, SLAMR, SFEAR, SLAM, SFEA, NP )
 
         CALL SPVECROTSMAT( RVELF, RVELI, ROTMAT,
-     &                     SLAMR, SFEAR, SLAM, SFEA, NP ) ;
+     &                     SLAMR, SFEAR, SLAM, SFEA, NP )
 
         DO II = 1, NP
            CALL CYLINDERMAP( X(II), Y(II),
-     &          SLAMR(II), SFEAR(II), SLAM0, SFEA0, ICS ) ;
+     &          SLAMR(II), SFEAR(II), SLAM0, SFEA0, ICS )
         END DO
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4400,14 +4554,14 @@ C
         call allMessage(DEBUG,"Enter.")
 #endif
 
-        CALL CORIFVAL_ROTSPCOORD(CORIF, ROTMAT, SLAMR, SFEAR, NP) ;
+        CALL CORIFVAL_ROTSPCOORD(CORIF, ROTMAT, SLAMR, SFEAR, NP)
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
 #endif
         call unsetMessageSource()
 
-        RETURN ;
+        RETURN
       END SUBROUTINE GET_ROTSPCOORD_CORIFVAL
 
       !
@@ -4425,25 +4579,25 @@ C
         call allMessage(DEBUG,"Enter.")
 #endif
 
-        RTT = TRANSPOSE( RTOTS ) ;
+        RTT = TRANSPOSE( RTOTS )
 
-        RTT = MATMUL(RTT, RTOTS ) ;
+        RTT = MATMUL(RTT, RTOTS )
 
         ! trace of a matrix RTT
-        TR = RTT(1,1) + RTT(2,2) + RTT(3,3) ;
+        TR = RTT(1,1) + RTT(2,2) + RTT(3,3)
 
-        RTT(1,1) = 0.0 ;
-        RTT(2,2) = 0.0 ;
-        RTT(3,3) = 0.0 ;
+        RTT(1,1) = 0.0
+        RTT(2,2) = 0.0
+        RTT(3,3) = 0.0
 
-        SOFFD = SUM( MATMUL(ABS(RTT), (/ 1.0_SZ, 1.0_SZ, 1.0_SZ /)) )  ;
+        SOFFD = SUM( MATMUL(ABS(RTT), (/ 1.0_SZ, 1.0_SZ, 1.0_SZ /)) )
 
-        IERR = 0 ;
+        IERR = 0
         IF ( SOFFD > 1.0e-10_SZ ) THEN
-           IERR = 1 ;
+           IERR = 1
 
            WRITE(6,*) "Error: a given rotation matrix is not"//
-     &          " orthgonal and thus invalid" ;
+     &          " orthgonal and thus invalid"
         END IF
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4451,7 +4605,7 @@ C
 #endif
         call unsetMessageSource()
 
-        RETURN ;
+        RETURN
       END SUBROUTINE CHECK_RTOTMAT
 
       !c Define a transformation matrix from a given vector in
@@ -4471,15 +4625,15 @@ C
 #endif
 
         !c deg to rad
-        RADPHI = VARPHI*DEG2RAD ;
-        RADTHETA = THETA*DEG2RAD ;
+        RADPHI = VARPHI*DEG2RAD
+        RADTHETA = THETA*DEG2RAD
 
-        CALL GET_ROTMAT_ZNVEC( ROTMAT, RADPHI, RADTHETA )   ;
+        CALL GET_ROTMAT_ZNVEC( ROTMAT, RADPHI, RADTHETA )
 
-        WRITE(scratchMessage,'(A)') "ROTATION MATRIX: " ;
+        WRITE(scratchMessage,'(A)') "ROTATION MATRIX: "
         CALL allMessage(INFO,scratchMessage)
         scratchMessage =
-     &       "****************************************" ;
+     &       "****************************************"
         call allMessage(INFO,scratchMessage)
         WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMAT(1,:), ' |'
         CALL allMessage(INFO,scratchMessage)
@@ -4488,7 +4642,7 @@ C
         WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMAT(3,:), ' |'
         CALL allMessage(INFO,scratchMessage)
         scratchMessage =
-     &       "****************************************" ;
+     &       "****************************************"
         call allMessage(INFO,scratchMessage)
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4512,16 +4666,16 @@ C
          call allMessage(DEBUG,"Enter.")
 #endif
 
-         RAL = ALPHA*DEG2RAD ;
-         RBE = BETA*DEG2RAD ;
-         RGAM = GAMMA*DEG2RAD ;
+         RAL = ALPHA*DEG2RAD
+         RBE = BETA*DEG2RAD
+         RGAM = GAMMA*DEG2RAD
 
-         CALL GET_ROTMAT_ZXZROT( ROTMAT, RAL, RBE, RGAM )   ;
+         CALL GET_ROTMAT_ZXZROT( ROTMAT, RAL, RBE, RGAM )
 
-         WRITE(scratchMessage,'(A)') "ROTATION MATRIX: " ;
+         WRITE(scratchMessage,'(A)') "ROTATION MATRIX: "
          CALL allMessage(INFO,scratchMessage)
          scratchMessage =
-     &       "****************************************" ;
+     &       "****************************************"
          call allMessage(INFO,scratchMessage)
          WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMAT(1,:), ' |'
          CALL allMessage(INFO,scratchMessage)
@@ -4530,7 +4684,7 @@ C
          WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMAT(3,:), ' |'
          CALL allMessage(INFO,scratchMessage)
          scratchMessage =
-     &       "****************************************" ;
+     &       "****************************************"
          call allMessage(INFO,scratchMessage)
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4538,7 +4692,7 @@ C
 #endif
          call unsetMessageSource()
 
-         RETURN ;
+         RETURN
       END SUBROUTINE DRV_ROTMAT_ZXZROT
 
       !c
@@ -4561,7 +4715,7 @@ C
 #endif
         call unsetMessageSource()
 
-        RETURN ;
+        RETURN
       END SUBROUTINE DRVSPCOORSROTS1
 
       SUBROUTINE DRVSPCOORSROTS0( LONR, LATR, LONO, LATO )
@@ -4581,7 +4735,7 @@ C
 #endif
         call unsetMessageSource()
 
-        RETURN ;
+        RETURN
       END SUBROUTINE DRVSPCOORSROTS0
 
 
@@ -4610,16 +4764,16 @@ C
         call allMessage(DEBUG,"Enter.")
 #endif
 
-        ROT3 = ROTM(:,3) ;
+        ROT3 = ROTM(:,3)
 
         !c Angular speed of Earth
-        EOMEGA2 = 2.0_SZ*omega;
+        EOMEGA2 = 2.0_SZ*omega
         DO II = 1, NN
            CORIF(II) = ROT3(1)*cos( THETAR(II) )*cos( VARPHIR(II) ) +
      &          ROT3(2)*cos( THETAR(II) )*sin( VARPHIR(II) ) +
-     &          ROT3(3)*sin( THETAR(II) ) ;
+     &          ROT3(3)*sin( THETAR(II) )
 
-           CORIF(II) = EOMEGA2*CORIF(II) ;
+           CORIF(II) = EOMEGA2*CORIF(II)
         END DO
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4627,7 +4781,7 @@ C
 #endif
         call unsetMessageSource()
 
-        RETURN ;
+        RETURN
       END SUBROUTINE CORIFVAL_ROTSPCOORD
 
       !
@@ -4661,7 +4815,7 @@ C
 #endif
         call unsetMessageSource()
 
-        RETURN ;
+        RETURN
       END SUBROUTINE DRVMAP2DSPVEC
       !
       ! Map two vectors in spherical coordinates
@@ -4686,11 +4840,11 @@ C
 #endif
 
         DO  II = 1, NN
-           VO = (/ VPHIO(II), VTHETAO(II) /)  ;
-           VR = MATMUL( SPRV(1:2,1:2,II), VO ) ;
+           VO = (/ VPHIO(II), VTHETAO(II) /)
+           VR = MATMUL( SPRV(1:2,1:2,II), VO )
 
-           VPHIR(II) = VR(1) ;
-           VTHETAR(II) = VR(2) ;
+           VPHIR(II) = VR(1)
+           VTHETAR(II) = VR(2)
         END DO
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4698,7 +4852,7 @@ C
 #endif
 
         call unsetMessageSource()
-        RETURN ;
+        RETURN
       END SUBROUTINE MAP2DSPVECS
       ! Given a radius vector (\varphi,\theta) (in rad)
       ! of z', the new z after rotation, return
@@ -4715,26 +4869,26 @@ C
         call allMessage(DEBUG,"Enter.")
 #endif
 
-        RTOT = 0.0_SZ ;
+        RTOT = 0.0_SZ
 
-        RTOT(1,1) = sin( VARPHIN ) ;
-        RTOT(2,1) = sin( THETAN )*cos( VARPHIN ) ;
-        RTOT(3,1) = cos( THETAN )*cos( VARPHIN ) ;
+        RTOT(1,1) = sin( VARPHIN )
+        RTOT(2,1) = sin( THETAN )*cos( VARPHIN )
+        RTOT(3,1) = cos( THETAN )*cos( VARPHIN )
 
-        RTOT(1,2) = -cos( VARPHIN ) ;
-        RTOT(2,2) = sin( THETAN )*sin( VARPHIN ) ;
-        RTOT(3,2) = cos( THETAN )*sin( VARPHIN ) ;
+        RTOT(1,2) = -cos( VARPHIN )
+        RTOT(2,2) = sin( THETAN )*sin( VARPHIN )
+        RTOT(3,2) = cos( THETAN )*sin( VARPHIN )
 
-        RTOT(1,3) = 0.0_SZ ;
-        RTOT(2,3) = -cos( THETAN ) ;
-        RTOT(3,3) =  sin( THETAN ) ;
+        RTOT(1,3) = 0.0_SZ
+        RTOT(2,3) = -cos( THETAN )
+        RTOT(3,3) =  sin( THETAN )
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
 #endif
         call unsetMessageSource()
 
-        RETURN ;
+        RETURN
       END SUBROUTINE GET_ROTMAT_ZNVEC
 
 
@@ -4754,38 +4908,38 @@ C
 #endif
 
         ! A rotation around z-axis
-        RM2D = RTOT2DMAT( AL ) ;
+        RM2D = RTOT2DMAT( AL )
 
-        RTMP = 0.0_SZ ;
-        RTMP(3,3) = 1.0_SZ ;
-        RTMP(1:2,1:2) = RM2D ;
+        RTMP = 0.0_SZ
+        RTMP(3,3) = 1.0_SZ
+        RTMP(1:2,1:2) = RM2D
 
-        RTOT = RTMP ;
+        RTOT = RTMP
 
         ! A rotation around x'-axis
-        RM2D = RTOT2DMAT( BE ) ;
+        RM2D = RTOT2DMAT( BE )
 
-        RTMP = 0.0_SZ ;
-        RTMP(1,1) = 1.0_SZ ;
-        RTMP(2:3,2:3) = RM2D ;
+        RTMP = 0.0_SZ
+        RTMP(1,1) = 1.0_SZ
+        RTMP(2:3,2:3) = RM2D
 
-        RTOT = MATMUL( RTOT, RTMP ) ;
+        RTOT = MATMUL( RTOT, RTMP )
 
         ! A rotation around z''-axis
-        RM2D = RTOT2DMAT( GAM ) ;
+        RM2D = RTOT2DMAT( GAM )
 
-        RTMP = 0.0_SZ ;
-        RTMP(3,3) = 1.0_SZ ;
-        RTMP(1:2,1:2) = RM2D ;
+        RTMP = 0.0_SZ
+        RTMP(3,3) = 1.0_SZ
+        RTMP(1:2,1:2) = RM2D
 
-        RTOT = MATMUL( RTOT, RTMP ) ;
+        RTOT = MATMUL( RTOT, RTMP )
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
 #endif
         call unsetMessageSource()
 
-        RETURN ;
+        RETURN
       END SUBROUTINE GET_ROTMAT_ZXZROT
 
       FUNCTION RTOT2DMAT( ALPHA ) RESULT( RM )
@@ -4799,17 +4953,17 @@ C
         call allMessage(DEBUG,"Enter.")
 #endif
 
-        RM(1,1) = cos(ALPHA) ;
-        RM(2,1) = -sin(ALPHA) ;
-        RM(1,2) = sin(ALPHA) ;
-        RM(2,2) = cos(ALPHA) ;
+        RM(1,1) = cos(ALPHA)
+        RM(2,1) = -sin(ALPHA)
+        RM(1,2) = sin(ALPHA)
+        RM(2,2) = cos(ALPHA)
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
 #endif
         call unsetMessageSource()
 
-        RETURN ;
+        RETURN
       END FUNCTION RTOT2DMAT
 
 
@@ -4850,21 +5004,21 @@ C
 #endif
 
          DO IP = 1, NN
-           TRT = 0.0_SZ ;
+           TRT = 0.0_SZ
 
            ! T' = T(varphi',theta')
-           TP = CT2SP_VECTRANSMAT( LONR(IP), LATR(IP) ) ;
+           TP = CT2SP_VECTRANSMAT( LONR(IP), LATR(IP) )
 
            ! T = T(varphi,theta)
-           TM = CT2SP_VECTRANSMAT( LONO(IP), LATO(IP) ) ;
-           TM = TRANSPOSE( TM ) ; ! T^{T}
+           TM = CT2SP_VECTRANSMAT( LONO(IP), LATO(IP) )
+           TM = TRANSPOSE( TM ) ! T^{T}
 
            ! T' R T^{T}
-           TRT = MATMUL( RTOTS, TM ) ;
-           TRT = MATMUL( TP, TRT ) ;
+           TRT = MATMUL( RTOTS, TM )
+           TRT = MATMUL( TP, TRT )
 
-           RVELF(1:2,1:2,IP) = TRT(2:3,2:3) ; ! forward transform
-           RVELI(:,:,IP) = TRANSPOSE( RVELF(:,:,IP) ) ; ! inverse transform
+           RVELF(1:2,1:2,IP) = TRT(2:3,2:3) ! forward transform
+           RVELI(:,:,IP) = TRANSPOSE( RVELF(:,:,IP) ) ! inverse transform
          END DO
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4872,7 +5026,7 @@ C
 #endif
          call unsetMessageSource()
 
-         RETURN ;
+         RETURN
       END SUBROUTINE SPVECROTSMAT
 
       !
@@ -4890,24 +5044,24 @@ C
         call allMessage(DEBUG,"Enter.")
 #endif
 
-        TM(1,1) = cos( THETA )*cos( VARPHI ) ;
-        TM(2,1) = -sin( VARPHI ) ;
-        TM(3,1) = -sin( THETA )*cos( VARPHI ) ;
+        TM(1,1) = cos( THETA )*cos( VARPHI )
+        TM(2,1) = -sin( VARPHI )
+        TM(3,1) = -sin( THETA )*cos( VARPHI )
 
-        TM(1,2) = cos( THETA )*sin( VARPHI ) ;
-        TM(2,2) = cos( VARPHI ) ;
-        TM(3,2) = -sin( THETA )*sin( VARPHI ) ;
+        TM(1,2) = cos( THETA )*sin( VARPHI )
+        TM(2,2) = cos( VARPHI )
+        TM(3,2) = -sin( THETA )*sin( VARPHI )
 
-        TM(1,3) = sin( THETA ) ;
-        TM(2,3) = 0.0_SZ ;
-        TM(3,3) = cos( THETA ) ;
+        TM(1,3) = sin( THETA )
+        TM(2,3) = 0.0_SZ
+        TM(3,3) = cos( THETA )
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
 #endif
         call unsetMessageSource()
 
-        RETURN ;
+        RETURN
       END FUNCTION CT2SP_VECTRANSMAT
 
       SUBROUTINE SPCOORSROTS1( RTOTS, LONR, LATR, LONO, LATO, NN )
@@ -4928,18 +5082,18 @@ C
 #endif
 
         DO IP = 1, NN
-           LLO = LONO( IP ) ;
-           LTO = LATO( IP ) ;
+           LLO = LONO( IP )
+           LTO = LATO( IP )
 
-           XP(1) = cos( LTO )*cos( LLO ) ;
-           XP(2) = cos( LTO )*sin( LLO ) ;
-           XP(3) = sin( LTO ) ;
+           XP(1) = cos( LTO )*cos( LLO )
+           XP(2) = cos( LTO )*sin( LLO )
+           XP(3) = sin( LTO )
 
-           XPR = MATMUL( RTOTS, XP) ;
+           XPR = MATMUL( RTOTS, XP)
 
            LATR(IP) = atan2( XPR(3), SQRT(XPR(1)*XPR(1)
      &                                  + XPR(2)*XPR(2)) )
-           LONR(IP) = atan2( XPR(2), XPR(1) ) ;
+           LONR(IP) = atan2( XPR(2), XPR(1) )
         END DO
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4947,7 +5101,7 @@ C
 #endif
         call unsetMessageSource()
 
-        RETURN ;
+        RETURN
       END SUBROUTINE SPCOORSROTS1
 
       SUBROUTINE SPCOORSROTS0( RTOTS, LONR, LATR, LONO, LATO )
@@ -4966,24 +5120,24 @@ C
         call allMessage(DEBUG,"Enter.")
 #endif
 
-        LLO = LONO  ;
-        LTO = LATO  ;
+        LLO = LONO
+        LTO = LATO
 
-        XP(1) = cos( LTO )*cos( LLO ) ;
-        XP(2) = cos( LTO )*sin( LLO ) ;
-        XP(3) = sin( LTO ) ;
+        XP(1) = cos( LTO )*cos( LLO )
+        XP(2) = cos( LTO )*sin( LLO )
+        XP(3) = sin( LTO )
 
-        XPR = MATMUL( RTOTS, XP) ;
+        XPR = MATMUL( RTOTS, XP)
 
-        LATR = atan2( XPR(3), SQRT(XPR(1)*XPR(1) + XPR(2)*XPR(2)) ) ;
-        LONR = atan2( XPR(2), XPR(1) ) ;
+        LATR = atan2( XPR(3), SQRT(XPR(1)*XPR(1) + XPR(2)*XPR(2)) )
+        LONR = atan2( XPR(2), XPR(1) )
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
 #endif
         call unsetMessageSource()
 
-        RETURN ;
+        RETURN
       END SUBROUTINE SPCOORSROTS0
 !******************************************************************************
 !                                                                             *
@@ -5009,21 +5163,21 @@ C
          Y= PHI*Rearth
       CASE (20) !c Equal area map
          X= Rearth*(RLAMBDA-RLAMBDA0)*COS(PHI0)
-         Y= Rearth*SIN(PHI)/COS(PHI0) ;
+         Y= Rearth*SIN(PHI)/COS(PHI0)
       CASE (22) ! Mercartor
-         X= Rearth*(RLAMBDA-RLAMBDA0)*COS(PHI0)  ;
-         Y= Rearth*log(tan(PHI) + 1.0d0/cos(PHI))*cos(PHI0) ;
+         X= Rearth*(RLAMBDA-RLAMBDA0)*COS(PHI0)
+         Y= Rearth*log(tan(PHI) + 1.0d0/cos(PHI))*cos(PHI0)
       CASE (23) ! Miller, Compromised Mercator'
-         X= Rearth*(RLAMBDA-RLAMBDA0)*COS(PHI0)  ;
+         X= Rearth*(RLAMBDA-RLAMBDA0)*COS(PHI0)
          Y= 1.25d0*Rearth*log(tan(0.25D0*PI + 0.4d0*PHI))*cos(PHI0)
       CASE (24) ! Gall stereographic
-         X = 0.5D0*SQRT(2.D0)*RLAMBDA ;
+         X = 0.5D0*SQRT(2.D0)*RLAMBDA
          Y = Rearth*(1.0 + 0.5D0*SQRT(2.D0))*tan( 0.5D0*PHI )
       CASE DEFAULT
          WRITE(6,'(A)') "Error in cylindermap(): "
          WRITE(6,'(A,I1,A)') "   Mapping type =  ", MTYPE,
-     &                      " has not been implemented" ;
-         WRITE(6,'(A)') "  Valid MTYPE = 2, 20-24" ;
+     &                      " has not been implemented"
+         WRITE(6,'(A)') "  Valid MTYPE = 2, 20-24"
       END SELECT
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -5031,7 +5185,7 @@ C
 #endif
       call unsetMessageSource()
 
-      RETURN ;
+      RETURN
       END SUBROUTINE CYLINDERMAP
 
       SUBROUTINE SFAC_ELEAVG( SFAELES, SFNODES, NM, NE )
@@ -5050,14 +5204,14 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
 
-      ONETRD = 1.0_SZ/3.0_SZ ;
+      ONETRD = 1.0_SZ/3.0_SZ
       DO IE = 1, NE
-         NMI1 = NM(IE,1) ;
-         NMI2 = NM(IE,2) ;
-         NMI3 = NM(IE,3) ;
+         NMI1 = NM(IE,1)
+         NMI2 = NM(IE,2)
+         NMI3 = NM(IE,3)
 
          SFAELES(IE) = (SFNODES(NMI1) +
-     &        SFNODES(NMI2) + SFNODES(NMI3))*ONETRD ;
+     &        SFNODES(NMI2) + SFNODES(NMI3))*ONETRD
       END DO
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -5065,7 +5219,7 @@ C
 #endif
       call unsetMessageSource()
 
-      RETURN ;
+      RETURN
       END SUBROUTINE SFAC_ELEAVG
 
       SUBROUTINE CAL_ELXV_SPCOOR( XVE, YVE, LONVE, LATVE, ICS, SFLAG )
@@ -5093,16 +5247,16 @@ C
 #endif
 
       !c Rad -> deg
-      LATM(:) = LATVE(1:3)*RAD2DEG ;
+      LATM(:) = LATVE(1:3)*RAD2DEG
 
       !c Adjust so that 0 <= lon <= 360
-      LONM(:) = MODULO( LONVE(1:3)*RAD2DEG, 360.0_SZ ) ;
-      LONTMP = LONM ;
+      LONM(:) = MODULO( LONVE(1:3)*RAD2DEG, 360.0_SZ )
+      LONTMP = LONM
 
       CALL CAL_JAC( Jac1, LONM, LATM )
-      CALL CAL_EDGELENGTH( DLED1, LONM, LATM ) ;
+      CALL CAL_EDGELENGTH( DLED1, LONM, LATM )
 
-      SPF = 0 ;
+      SPF = 0
       IF (  Jac1 < 0.0_SZ .OR.
      &     (Jac1 > 0.0_SZ .AND. DLED1 > 360.0_SZ ) ) THEN
          !c An element has a circular index.
@@ -5111,42 +5265,42 @@ C
          !c A wrapped node is on the left of 180
          IF ( COUNT( LONM > 180.0_SZ ) == 1 ) THEN
             IDX = sum( merge( (/ 1, 2, 3 /),
-     &           (/ 0, 0, 0 /), LONM > 180.0_SZ ) ) ;
+     &           (/ 0, 0, 0 /), LONM > 180.0_SZ ) )
 
-            LONM(IDX) = LONM(IDX) - 360.0_SZ ;
+            LONM(IDX) = LONM(IDX) - 360.0_SZ
          END IF
 
          !c A wrapped node is on the right of 180
          IF ( COUNT( LONM < 180.0_SZ ) == 1 ) THEN
             IDX = sum( merge( (/ 1, 2, 3 /),
-     &           (/ 0, 0, 0 /), LONM < 180.0_SZ ) ) ;
+     &           (/ 0, 0, 0 /), LONM < 180.0_SZ ) )
 
-            LONM(IDX) = LONM(IDX) + 360.0_SZ ;
+            LONM(IDX) = LONM(IDX) + 360.0_SZ
          END IF
 
          CALL CAL_JAC( Jac2, LONM, LATM )
-         CALL CAL_EDGELENGTH( DLED2, LONM, LATM ) ;
+         CALL CAL_EDGELENGTH( DLED2, LONM, LATM )
 
-         SPF = 1 ;
+         SPF = 1
          IF ( Jac2 < 0.0_SZ .OR.
      &        (Jac1 > 0.0_SZ .AND. DLED2 > DLED1) ) THEN
-            LONM = LONTMP ;
-            SPF = 0 ;
+            LONM = LONTMP
+            SPF = 0
          END IF
       END IF
 
       !c deg -> rad
-      LONM = LONM*DEG2RAD ;
-      LATM = LATM*DEG2RAD ;
+      LONM = LONM*DEG2RAD
+      LATM = LATM*DEG2RAD
       DO II = 1, 3
          CALL CYLINDERMAP(XC, YC, LONM(II), LATM(II), SLAM0, SFEA0, ICS)
 
-         XVE(II) = XC ;
-         YVE(II) = YC ;
+         XVE(II) = XC
+         YVE(II) = YC
       END DO
 
       IF ( PRESENT( SFLAG ) ) THEN
-         SFLAG = SPF ;
+         SFLAG = SPF
       END IF
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -5154,7 +5308,7 @@ C
 #endif
       call unsetMessageSource()
 
-      RETURN ;
+      RETURN
 
       CONTAINS
 
@@ -5167,13 +5321,13 @@ C
            REAL (SZ), dimension(3):: DLX, DLY
 
            DLX = (/ LON(2) - LON(1),
-     &          LON(3) - LON(2), LON(1) - LON(3) /) ;
+     &          LON(3) - LON(2), LON(1) - LON(3) /)
            DLY = (/ LAT(2) - LAT(1),
-     &          LAT(3) - LAT(2), LAT(1) - LAT(3) /) ;
+     &          LAT(3) - LAT(2), LAT(1) - LAT(3) /)
 
-           DEDGE = SQRT( SUM(DLX*DLX + DLY*DLY) ) ;
+           DEDGE = SQRT( SUM(DLX*DLX + DLY*DLY) )
 
-           RETURN ;
+           RETURN
          END SUBROUTINE CAL_EDGELENGTH
 
          SUBROUTINE CAL_JAC( Jac, LON, LAT )
@@ -5183,12 +5337,12 @@ C
 
            REAL (SZ):: XR(2), XS(2)
 
-           XR = 0.5_SZ*(/ LON(2) - LON(1), LAT(2) - LAT(1) /) ;
-           XS = 0.5_SZ*(/ LON(3) - LON(1), LAT(3) - LAT(1) /) ;
+           XR = 0.5_SZ*(/ LON(2) - LON(1), LAT(2) - LAT(1) /)
+           XS = 0.5_SZ*(/ LON(3) - LON(1), LAT(3) - LAT(1) /)
 
-           Jac = (XR(1)*XS(2) - XR(2)*XS(1)) ; ! Find Jacobian
+           Jac = (XR(1)*XS(2) - XR(2)*XS(1)) ! Find Jacobian
 
-           RETURN ;
+           RETURN
          END SUBROUTINE CAL_JAC
 
       END SUBROUTINE CAL_ELXV_SPCOOR
@@ -5217,73 +5371,73 @@ C
 
         SELECT CASE( ICS )
         CASE (1)                  !c Cartesian
-           SFAC = 1.0_SZ ;
+           SFAC = 1.0_SZ
         CASE (2)                !c Original SWE form in spherical coordinates
            DO I=1,NP
-              SFAC(I)=COS(SFEA0)/COS(SFEAV(I)) ;
+              SFAC(I)=COS(SFEA0)/COS(SFEAV(I))
            END DO
 
-           SFCX = SFAC ;
-           SFMX = SFAC ;
+           SFCX = SFAC
+           SFMX = SFAC
         CASE (20,21,22)         ! Alternative SWE form in spherical coordinates
-           MEXP = MOD(ICS,20) ;
+           MEXP = MOD(ICS,20)
 !......ICS = 20 : Equal area projection
 !......    = 21 : CPP
 !.....     = 22 : Mercartor
 !......from WP
            DO I = 1, NP
-              SFCT(I) = cos(SFEAV(I))**MEXP ;
-              SFCX(I) = cos(SFEA0)*( cos(SFEAV(I))**(MEXP - 1) ) ;
-              SFCY(I) = cos(SFEA0)**(MEXP - 1) ;
+              SFCT(I) = cos(SFEAV(I))**MEXP
+              SFCX(I) = cos(SFEA0)*( cos(SFEAV(I))**(MEXP - 1) )
+              SFCY(I) = cos(SFEA0)**(MEXP - 1)
 
-              SFMX(I) = cos(SFEA0)/COS(SFEAV(I)) ;
-              SFMY(I) = SFMX(I)**(MEXP - 1) ;
+              SFMX(I) = cos(SFEA0)/COS(SFEAV(I))
+              SFMY(I) = SFMX(I)**(MEXP - 1)
 
-              TANPHI(I) = (TAN(SFEAV(I))/Rearth) ;
-              YCSFAC(I) = cos( SFEAV(I) ) ;
+              TANPHI(I) = (TAN(SFEAV(I))/Rearth)
+              YCSFAC(I) = cos( SFEAV(I) )
            END DO
         CASE (23)
 !.......ICS = 23: Miller - compromised Mercator
            DO I = 1, NP
-              SFCT(I) = cos(SFEAV(I))*COS(4.D0*SFEAV(I)/5.D0) ;
-              SFCX(I) = cos(SFEA0)*COS(4.D0*SFEAV(I)/5.D0) ;
-              SFCY(I) = cos(SFEA0) ;
+              SFCT(I) = cos(SFEAV(I))*COS(4.D0*SFEAV(I)/5.D0)
+              SFCX(I) = cos(SFEA0)*COS(4.D0*SFEAV(I)/5.D0)
+              SFCY(I) = cos(SFEA0)
 
-              SFMX(I) = cos(SFEA0)/COS(SFEAV(I)) ;
-              SFMY(I) = cos(SFEA0)/COS(4.D0*SFEAV(I)/5.D0) ;
+              SFMX(I) = cos(SFEA0)/COS(SFEAV(I))
+              SFMY(I) = cos(SFEA0)/COS(4.D0*SFEAV(I)/5.D0)
 
-              TANPHI(I) = (TAN(SFEAV(I))/Rearth) ;
-              YCSFAC(I) = cos( SFEAV(I) ) ;
+              TANPHI(I) = (TAN(SFEAV(I))/Rearth)
+              YCSFAC(I) = cos( SFEAV(I) )
            END DO
         CASE (24)
 !......ICS = 24: Gall Stereographic projection
-           RFAC1 = 0.5D0*SQRT(2.D0) ;
-           RFAC2 = 0.5D0*(1.D0 + 0.5D0*SQRT(2.D0)) ;
+           RFAC1 = 0.5D0*SQRT(2.D0)
+           RFAC2 = 0.5D0*(1.D0 + 0.5D0*SQRT(2.D0))
 
            DO I = 1, NP
-              RFAC3 = cos(0.5D0*SFEAV(I))**2 ;
+              RFAC3 = cos(0.5D0*SFEAV(I))**2
 
               SFCT(I) = cos(SFEAV(I))*RFAC3
-              SFCX(I) = RFAC1*RFAC3 ;
-              SFCY(I) = RFAC2 ;
+              SFCX(I) = RFAC1*RFAC3
+              SFCY(I) = RFAC2
 
-              SFMX(I) = RFAC1/cos(SFEAV(I)) ;
-              SFMY(I) = RFAC2/RFAC3 ;
+              SFMX(I) = RFAC1/cos(SFEAV(I))
+              SFMY(I) = RFAC2/RFAC3
 
-              TANPHI(I) = (TAN(SFEAV(I))/Rearth) ;
-              YCSFAC(I) = cos( SFEAV(I) ) ;
+              TANPHI(I) = (TAN(SFEAV(I))/Rearth)
+              YCSFAC(I) = cos( SFEAV(I) )
            END DO
         END SELECT
 
 !     COMPUTE ELEMENT AVERAGE FROM NODAL VECTORS ADJUSTING EQUATIONS
 !     TO CYLINDER COORDINATES
-        CALL SFAC_ELEAVG( SFacEle, SFAC, NM, NE ) ;
-        CALL SFAC_ELEAVG( SFCXEle, SFCX, NM, NE ) ;
-        CALL SFAC_ELEAVG( SFCYEle, SFCY, NM, NE ) ;
-        CALL SFAC_ELEAVG( SFMXEle, SFMX, NM, NE ) ;
-        CALL SFAC_ELEAVG( SFMYEle, SFMY, NM, NE ) ;
-        CALL SFAC_ELEAVG( YCSFacEle, YCSFAC, NM, NE ) ;
-        CALL SFAC_ELEAVG( TANPHIEle, TANPHI, NM, NE ) ;
+        CALL SFAC_ELEAVG( SFacEle, SFAC, NM, NE )
+        CALL SFAC_ELEAVG( SFCXEle, SFCX, NM, NE )
+        CALL SFAC_ELEAVG( SFCYEle, SFCY, NM, NE )
+        CALL SFAC_ELEAVG( SFMXEle, SFMX, NM, NE )
+        CALL SFAC_ELEAVG( SFMYEle, SFMY, NM, NE )
+        CALL SFAC_ELEAVG( YCSFacEle, YCSFAC, NM, NE )
+        CALL SFAC_ELEAVG( TANPHIEle, TANPHI, NM, NE )
 
 !      Only need the  averages of these...
         DEALLOCATE( SFMY, SFCX, SFCY, YCSFAC )
@@ -5293,7 +5447,7 @@ C
 #endif
         call unsetMessageSource()
 
-        RETURN ;
+        RETURN
       END SUBROUTINE COMPUTE_CYLINPROJ_SFAC
 !.....
 !     ------------------------------------------------------------------

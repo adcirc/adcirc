@@ -10,8 +10,8 @@ C                                          drop MNPROC in fort.15 (t.campbell)*
 C                                          various bug fixes in RBCs          *
 c                                          ZSURFBUOY/BCPG calc                *
 C  v40.02m002 - 12/22 - jjw/vjp - Vic suggested to avoid compiler conflicts   *
-C****************************************************************************** 
-C 
+C******************************************************************************
+C
       MODULE ITPACKV
 C
 C  vjp  9/19/99
@@ -495,7 +495,7 @@ c                 with the eigenvalues of the conjugate gradient
 c                 polynomial.
 c
 c ... local itpackv references --
-c          chgcon, iterm , parcon, pjac  , pstop 
+c          chgcon, iterm , parcon, pjac  , pstop
 c
 c     description of variables in common blocks in routine jcg
 c
@@ -513,21 +513,21 @@ C
       dumy1(1) = 0.0d0 !jgf46.00 added
       dumy2(1) = 0.0d0 !jgf46.00 added
       if(nperseg.gt.0)then
-          CALL UPDATER_W_PERBC(d,dumy1,dumy2,1) ;
+          CALL UPDATER_W_PERBC(d,dumy1,dumy2,1)
       else
           CALL UPDATER(d,dumy1,dumy2,1)
       endif
 #endif
- 
+
       do 10 i = 1,n
          dtwd(i) = 0.0d0
    10 continue
       call pjac (n,ndim,maxnz,jcoef,coef,d,dtwd)
 
-C       
+C
 c ... test for stopping
 c
-       if (q1 .OR.  ((in .gt.5) .AND. 
+       if (q1 .OR.  ((in .gt.5) .AND.
      1        (mod(in,5).ne. 0))) then
 
 #ifdef CMPI
@@ -559,11 +559,11 @@ c
       con = cme
       call pstop_nrms (n,unorm,dnrm,con,1,q1)
       if (halt) go to 50
- 
+
 
 
        ! ... compute rho and gamma - acceleration parameters
- 
+
 
    20 call parcon (dtnrm,c1,c2,c3,c4,gamold,rhoold,1)
 c
@@ -1111,7 +1111,7 @@ c
 c     to facilitate convergence, rparm(1) should be set to
 c          500.*srelpr or larger
 c
-cvjp--Determine macheps 
+cvjp--Determine macheps
 c
       srelpr = 1.0d0
     2 srelpr = 0.5d0*srelpr
@@ -1334,7 +1334,7 @@ c
       eigvns = -d(1)
 c
       return
-      end function 
+      end function
 
 
       real(sz) function eigvss (n,tri,start,zeta,itmax,ier)
@@ -1801,7 +1801,7 @@ c
       rhoold = rho
       gamold = gamma
 c
-c ... compute gamma (in+1) 
+c ... compute gamma (in+1)
 c
 c ... for jacobi or reduced system cg
 c
@@ -1940,7 +1940,7 @@ c
 C      maxm1 = maxnz-1  !jgf46.00 commented out
 C      call ymasx2 (ndim,n,maxm1,coef(1,2),jcoef(1,2),rhs,u)!jgf46.00 comm.out
 C     jgf46.00 Begin add.
-      do j = 2,maxnz ! jgf50.03: st3 from maxnz-1, Bug fix, 06.02.2010 
+      do j = 2,maxnz ! jgf50.03: st3 from maxnz-1, Bug fix, 06.02.2010
       do i = 1,n
          rhs(i) = rhs(i) - coef(i,j)*u(jcoef(i,j))
       enddo
@@ -2629,7 +2629,7 @@ C      if (fa*fb.gt.0.0) go to 110 jgf46.00 commented out
 C     jgf46.00 Begin add.
 c cvjp 2/10/06  replaced because produced NaNs
 c     if (fa*fb.gt.0.0d0) go to 110
-            
+
       if ( (fa > 0.0d0 .and. fb > 0.0d0) .or.
      &     (fa < 0.0d0 .and. fb < 0.0d0) ) then
         go to 110
@@ -2728,7 +2728,7 @@ cjjw/vjpm002 - modified/added the following 5 lines
       fb = determ(itmax,n,tri,tri(ib3),tri(ib4),s)
       ic = ic+1
 C      if (fb*fc.le.0.0) go to 20 !jgf46.00 commented out
-C     jgf46.00 Begin add. 
+C     jgf46.00 Begin add.
 cvjp 2/10/06 replace because produced NaNs
 c     if (fb*fc.le.0.0d0) go to 20
 
@@ -2827,10 +2827,10 @@ c
       ddot = 0.0D0
       sdot = ddot
 c
-      if (n.gt.0) then  
+      if (n.gt.0) then
         do i = 1,n
            ddot = ddot + sx(i)*sy(i)
-        enddo 
+        enddo
         sdot = ddot
       endif
 c

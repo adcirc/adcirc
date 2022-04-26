@@ -2,7 +2,7 @@
       USE PRE_GLOBAL
       IMPLICIT NONE
 C----------------------------------------------------------------------
-C  INTERFACE ROUTINE FOR PADCIRC TO USE THE METIS 4.0 LIBRARY 
+C  INTERFACE ROUTINE FOR PADCIRC TO USE THE METIS 4.0 LIBRARY
 C  A GRAPH PARTITION TOOL, FOR DOMAIN DECOMPOSITION
 C  Version 2.1  vjp  6/7/2006
 C  Redimensioned CO_NODES and IDUALS and added bounds test
@@ -28,17 +28,17 @@ C...... DW
 
         integer :: contiguous ! number of nodes on a boundary within a particular subdomain
         integer :: subdomainNumber ! subdomain that a boundary node falls within
-        
+
         EXTERNAL metis_partgraphkway,metis_estimatememory
 C
         ALLOCATE ( ITVECT(MNP),ITVECT2(MNP) )
         ALLOCATE ( NUMDUALS(MNP) )
-        ALLOCATE ( XADJ(MNP+1), VWGTS(MNP), NEDGES(MNP) ) 
+        ALLOCATE ( XADJ(MNP+1), VWGTS(MNP), NEDGES(MNP) )
         ALLOCATE ( NEDLOC(MNP) )
 C
 C--COMPUTE INDEX OF WEIR DUALS WHICH IS ZERO IF NOT A WEIR NODE
 C
-        DO INODE=1, MNP   
+        DO INODE=1, MNP
            NUMDUALS(INODE) = 0
         ENDDO
         DO J=1, NWEIR
@@ -47,20 +47,20 @@ C
         ENDDO
 
         MAXDUALS = 0
-        DO J=1, MNP    
+        DO J=1, MNP
            IF (NUMDUALS(J) .ge. MAXDUALS) MAXDUALS = NUMDUALS(J)
         ENDDO
 
-        write(*,'(a,i0,a)') 
+        write(*,'(a,i0,a)')
      &   'INFO: This mesh has ',NWEIR,' weir node pairs.'
-        write(*,'(a,i0,a)') 
+        write(*,'(a,i0,a)')
      &  'INFO: Maximum number of duals for any weir node is ',maxduals,
      &  '.'
 
         ALLOCATE ( IDUALS(MAXDUALS,MNP) )
 
 
-        DO INODE=1, MNP   
+        DO INODE=1, MNP
         DO K=1, MAXDUALS
            IDUALS(K,INODE) = 0
         ENDDO
@@ -88,14 +88,14 @@ C...... DW, periodic boundary conditions
 C...... - a workaround approach based on a temporary connectivity table
 C......   that uses the periodic node indices
         IF ( NPERBC > 0 ) THEN
-           ALLOCATE( NNEG_TMP(3,MNE) ) ;
-           NNEG_TMP = NNEG ; ! dummy arr holding the original element table
+           ALLOCATE( NNEG_TMP(3,MNE) )
+           NNEG_TMP = NNEG ! dummy arr holding the original element table
 
-           ALLOCATE( PERBC_IDN_MAP(MNP) ) ; ! create mapping between the original node indice and perbc node indices
+           ALLOCATE( PERBC_IDN_MAP(MNP) ) ! create mapping between the original node indice and perbc node indices
            DO J = 1,MNP
-              PERBC_IDN_MAP(J) = J;
+              PERBC_IDN_MAP(J) = J
            ENDDO
-           PERBC_IDN_MAP(IPERCONN(1:NPERBC,2)) = IPERCONN(1:NPERBC,1) ;
+           PERBC_IDN_MAP(IPERCONN(1:NPERBC,2)) = IPERCONN(1:NPERBC,1)
 
            DO I = 1, MNE
                NNEG(:,I) = PERBC_IDN_MAP( NNEG(:,I) ) ;  ! swicth to the element with the node-per bc indices !
@@ -116,7 +116,7 @@ C-------------------------------------------------------------
         ENDDO
 
         DO J=1, 3
-           DO IEL=1, MNE  
+           DO IEL=1, MNE
               INODE = NNEG(J,IEL)
               NCOUNT = NEDLOC(INODE) + 2
               MNED = MNED + 2
@@ -140,7 +140,7 @@ c       print *, "total number of edges = ", MNED
 
         ALLOCATE ( ADJNCY(MNED), EWGTS(MNED) )
         ALLOCATE ( CO_NODES(MNEDLOC,MNP) )
- 
+
 C
 C--COMPUTE CO_NODES LISTS AND NUMBER OF EDGES CONTAINING A NODE
 C
@@ -148,7 +148,7 @@ C
            NEDGES(INODE) = 0
         ENDDO
 C
-        DO IEL=1, MNE  
+        DO IEL=1, MNE
            INODE = NNEG(1,IEL)
            CO_NODES(NEDGES(INODE)+1,INODE) = NNEG(2,IEL)
            CO_NODES(NEDGES(INODE)+2,INODE) = NNEG(3,IEL)
@@ -162,7 +162,7 @@ C
            NEDGES(INODE) = NCOUNT
         ENDDO
 C
-        DO IEL=1, MNE  
+        DO IEL=1, MNE
            INODE = NNEG(2,IEL)
            CO_NODES(NEDGES(INODE)+1,INODE) = NNEG(3,IEL)
            CO_NODES(NEDGES(INODE)+2,INODE) = NNEG(1,IEL)
@@ -176,7 +176,7 @@ C
            NEDGES(INODE) = NCOUNT
         ENDDO
 C
-        DO IEL=1, MNE  
+        DO IEL=1, MNE
            INODE = NNEG(3,IEL)
            CO_NODES(NEDGES(INODE)+1,INODE) = NNEG(1,IEL)
            CO_NODES(NEDGES(INODE)+2,INODE) = NNEG(2,IEL)
@@ -189,12 +189,12 @@ C
            ENDDO
            NEDGES(INODE) = NCOUNT
         ENDDO
- 
+
 C
 C  REMOVE REDUNDANCY IN NODE LISTS
 C
         NEDGETOT = 0           !  This will be twice number of edges
-        DO INODE = 1,MNP   
+        DO INODE = 1,MNP
            DO J=1, NEDGES(INODE)
               ITVECT(J) = CO_NODES(J,INODE)
            ENDDO
@@ -217,8 +217,8 @@ C
                  CALL EXIT(1)
               ELSE
 C.....DW, periodic bcs allow isolated nodes if they are a periodic slave node
-                 CO_NODES(1,INODE) = INODE ;
-                 NCOUNT = 1 ;
+                 CO_NODES(1,INODE) = INODE
+                 NCOUNT = 1
                  IF ( COUNT((IPERCONN(:,2) - INODE) == 0) == 0) THEN
                     print *, "node = ",INODE," is isolated"
                     CALL EXIT(1)
@@ -262,7 +262,7 @@ C
 C
 C  COMPUTE WEIGHTS OF THE GRAPH VERTICES
 C
-      DO INODE = 1,MNP   
+      DO INODE = 1,MNP
          VWGTS(INODE) = NEDGES(INODE)
          if ( strictBoundaries.eqv..true. ) then
             vwgts(inode) = vwgts(inode) + boundaryWeights(inode)
@@ -282,7 +282,7 @@ C...... DW
 C    Original implementation
             EWGTS(ITOT)  = (VWGTS(JNODE)+VWGTS(INODE))
 
-C            EWGTS(ITOT) = 1 ;
+C            EWGTS(ITOT) = 1
 C...... DW
          ENDDO
          XADJ(INODE+1) = ITOT+1
@@ -317,7 +317,7 @@ C
       OPTYPE = 2
       CALL metis_estimatememory(MNP,XADJ,ADJNCY,NUMFLAG,
      &        OPTYPE,NBYTES)
- 
+
       print *, ""
       print *, "Grid Partition Data"
       print *, "METIS 4.0 will require approximately ",nbytes," bytes"
@@ -325,10 +325,10 @@ C
       CALL metis_partgraphkway( MNP,XADJ,ADJNCY,VWGTS,EWGTS,
      &      WEIGHTFLAG,NUMFLAG,NPARTS,OPTIONS,EDGECUT,PROC)
 C
-      print *, "Total Edges Cut = ",EDGECUT 
+      print *, "Total Edges Cut = ",EDGECUT
 !      !
 !      ! @jasonfleming: Add code to detect boundaries that have less
-!      ! than three nodes in a subdomain. 
+!      ! than three nodes in a subdomain.
 !      do k=1, nbou
 !         contiguous = 1
 !         subdomainNumber = proc(nbvv(k,1))
@@ -340,21 +340,21 @@ C
 !            ! check to see if this boundary node is in the same subdomain
 !            ! as the previous one on this boundary
 !            if ( proc(nbvv(k,j)).eq.subdomainNumber ) then
-!               ! same subdomain, increment the number of nodes on this 
+!               ! same subdomain, increment the number of nodes on this
 !               ! boundary in this subdomain
 !               contiguous = contiguous + 1
 !            else
-!               ! this boundary node is on a different subdomain than 
+!               ! this boundary node is on a different subdomain than
 !              ! the previous one in this string
 !               !
-!               ! check to see if there were too few nodes 
+!               ! check to see if there were too few nodes
 !               if ( contiguous.lt.3 ) then
 !                  print *, 'boundary with less than 3 nodes in a subdomain:'
 !                  write(*,'(a,a,i0)') trim(nvellmsg(k)),
 !     &              ' in subdomain ',subdomainNumber
 !                  do i=1,contiguous
 !                     write(*,'(a,i0,a,i0)') 'fulldomain node number ',nbvv(k,j-contiguous),
-!     &               ' in subdomain ',proc(nbvv(k,j-contiguous)) 
+!     &               ' in subdomain ',proc(nbvv(k,j-contiguous))
 !                  end do
 !               endif
 !               subdomainNumber = proc(nbvv(k,j))
@@ -367,7 +367,7 @@ C
       OPEN(990,FILE='partmesh.txt')
 C...... BEG DW, periodic bcs
       IF ( NPERBC > 0 ) THEN
-         PROC( IPERCONN(1:NPERBC,2) ) = PROC(IPERCONN(1:NPERBC,1) ) ;
+         PROC( IPERCONN(1:NPERBC,2) ) = PROC(IPERCONN(1:NPERBC,1) )
       END IF
 C...... END DW
       DO I=1, MNP
@@ -377,16 +377,16 @@ C...... END DW
 
 C...... DW, periodic bcs
       IF ( NPERBC > 0 ) THEN
-         NNEG = NNEG_TMP ; ! restore the orignial element table
-         DEALLOCATE( NNEG_TMP ) ; ! free memory
-         DEALLOCATE( PERBC_IDN_MAP ) ;
+         NNEG = NNEG_TMP ! restore the orignial element table
+         DEALLOCATE( NNEG_TMP ) ! free memory
+         DEALLOCATE( PERBC_IDN_MAP )
       END IF
 C...... DW
 
       deallocate(iduals)
       deallocate(itvect,itvect2)
       deallocate(numduals)
-      deallocate(xadj,vwgts,nedges) 
+      deallocate(xadj,vwgts,nedges)
       deallocate(nedloc)
 
  100  FORMAT(4I10)

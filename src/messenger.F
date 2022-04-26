@@ -6,12 +6,12 @@ C
       USE SIZES
       USE GLOBAL, ONLY: C3D, COMM,
      &    IMAP_STAE_LG, IMAP_STAV_LG, IMAP_STAM_LG, IMAP_STAC_LG,
-     &    COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, WRITER_ID, 
+     &    COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, WRITER_ID,
      &    SIG_TERM, FLOAT_TYPE, REALTYPE, DBLETYPE,
      &    DEBUG, ECHO, INFO, WARNING, ERROR, CPL2STWAVE,Flag_ElevError,
      &    screenMessage, logMessage, allMessage, setMessageSource,
-     &    unsetMessageSource, scratchMessage     
-     
+     &    unsetMessageSource, scratchMessage
+
 #ifdef HAVE_MPI_MOD
       USE MPI
 #endif
@@ -30,7 +30,7 @@ C  Message-Passing Array space
 
       INTEGER :: MPI_COMM_ADCIRC ! Local communicator
       INTEGER :: NEIGHPROC  ! number of subdomains neighboring this one
-      INTEGER :: RDIM  ! total send/recieve requests when passing info 
+      INTEGER :: RDIM  ! total send/recieve requests when passing info
                         ! between subdomain neighbors, =2*neighproc
       INTEGER :: IERR  ! error status of mpi subroutine call
       INTEGER :: TAG = 100
@@ -64,7 +64,7 @@ C---------------------end of data declarations--------------------------------C
 
 
 C----------------------------------------------------------------------
-C   S U B R O U T I N E    M S G _ I N I T 
+C   S U B R O U T I N E    M S G _ I N I T
 C----------------------------------------------------------------------
 C  Routine performs following steps:
 C   (1)  define mpi data types to be used
@@ -133,7 +133,7 @@ C...  Create a communicator for computation
       !
       ! if we have dedicated writer processors, then for each one
       ! create a group and communicator that includes
-      ! that one dedicated writer processor and all the compute 
+      ! that one dedicated writer processor and all the compute
       ! processors ... so if we have 4 dedicated writer processors
       ! there will be 4 writer communicators and 4 writer groups
       ! ... in each one of these the writer is the highest rank processor
@@ -192,13 +192,13 @@ C...     Create communicators for global file writings
 #endif
       call unsetMessageSource()
       RETURN
-C---------------------------------------------------------------------      
+C---------------------------------------------------------------------
       END SUBROUTINE MSG_INIT
 C---------------------------------------------------------------------
 
 
 C---------------------------------------------------------------------
-C      S U B R O U T I N E   M S G _ F I N I 
+C      S U B R O U T I N E   M S G _ F I N I
 C---------------------------------------------------------------------
 C  Delete MPI resources and Shutdown MPI library.
 C  vjp  8/29/1999
@@ -213,7 +213,7 @@ C---------------------------------------------------------------------
 C
       call setMessageSource("msg_fini")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
 C
       IF(MNWPROC > 0) THEN
@@ -238,15 +238,15 @@ C
           ENDDO
         ENDIF
       ENDIF
-      
+
       IF (subdomainFatalError.eqv..true.) THEN
          ! jgf50.82: Return the rank of the offending processor
-         ! as the error code        
+         ! as the error code
          CALL MPI_ABORT(MPI_COMM_ADCIRC,MYPROC,IERR)
       ENDIF
 
       ! tcm v51.32  added a "go nuclear" option for killing
-      ! all MPI processes when Elevation Greater than Error 
+      ! all MPI processes when Elevation Greater than Error
       ! elevation is exceeded, not just the mpi processes owned
       ! by ADCIRC when coupled with STWAVE via CSTORM-MS
       ! Note: mpi_comm_world is defined in mpich.f
@@ -273,7 +273,7 @@ C
 #endif
       call unsetMessageSource()
       RETURN
-C---------------------------------------------------------------------      
+C---------------------------------------------------------------------
       END SUBROUTINE MSG_FINI
 C---------------------------------------------------------------------
 
@@ -309,7 +309,7 @@ C---------------------------------------------------------------------
 C
       call setMessageSource("msg_table")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
 C
       FileFound = .FALSE.
@@ -497,7 +497,7 @@ C---------------------------------------------------------------------
 C---------------------------------------------------------------------
 
 C---------------------------------------------------------------------
-C     S U B R O U T I N E   M S G _ S T A R T 
+C     S U B R O U T I N E   M S G _ S T A R T
 C---------------------------------------------------------------------
 C  Routine allocates message-passing space
 C  vjp  10/01/2006
@@ -510,10 +510,10 @@ C---------------------------------------------------------------------
 C
       call setMessageSource("msg_start")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
-C      
-      
+C
+
       ALLOCATE ( ISENDBUF(MNP,NEIGHPROC), IRECVBUF(MNP,NEIGHPROC) )
       ALLOCATE ( REQ_I1(RDIM),REQ_I2(RDIM) )
       ALLOCATE ( REQ_R1(RDIM),REQ_R2(RDIM),REQ_R3(RDIM) )
@@ -537,15 +537,15 @@ C
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()      
+      call unsetMessageSource()
       RETURN
-C---------------------------------------------------------------------      
+C---------------------------------------------------------------------
       END SUBROUTINE MSG_START
 C---------------------------------------------------------------------
 
 
 C---------------------------------------------------------------------
-C     S U B R O U T I N E   U P D A T E  I 
+C     S U B R O U T I N E   U P D A T E  I
 C---------------------------------------------------------------------
 C  Update 1 or 2 Integer Arrays's Ghost Cells using asynchronous
 C  and persistent message-passing.
@@ -562,9 +562,9 @@ C---------------------------------------------------------------------
 C
       call setMessageSource("updatei")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
-C 
+C
                              !..Pack 1 or 2 Messages
       DO J=1,NEIGHPROC
          NCOUNT = 0
@@ -647,7 +647,7 @@ C
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()      
+      call unsetMessageSource()
       RETURN
 C---------------------------------------------------------------------
       END SUBROUTINE UPDATEI
@@ -676,17 +676,17 @@ C---------------------------------------------------------------------
 C
       call setMessageSource("updater")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
-C 
-      ! 
+C
+      !
       ! loop over neighboring subdomains
       DO J=1,NEIGHPROC
          NCOUNT = 0
          ! loop over nodes shared as ghost nodes with this neighboring subdomain
          DO I=1,NNODSEND(J)
             NCOUNT = NCOUNT+1
-            ! store the array values in the send buffer            
+            ! store the array values in the send buffer
             SENDBUF(NCOUNT,J)=VEC1(ISENDLOC(I,J))
          ENDDO
          IF (NMSG.GT.1) THEN
@@ -731,7 +731,7 @@ C
       SELECT CASE(NMSG)
       CASE(1)
          TOT = 0
-         ! keep looping until the total number of completed communications 
+         ! keep looping until the total number of completed communications
          ! equals the total number that were requested
          DO WHILE (TOT.LT.RDIM)
             DO N=1, RDIM
@@ -752,7 +752,7 @@ C
                      NCOUNT = 0
                      DO I=1,NNODRECV(J)
                         NCOUNT = NCOUNT+1
-                        ! update this subdomain's ghost value with the real 
+                        ! update this subdomain's ghost value with the real
                         ! value from the other subdomain
                         VEC1(IRECVLOC(I,J)) = RECVBUF(NCOUNT,J)
                      ENDDO
@@ -816,25 +816,25 @@ cdebug     print *, myproc, tot,nfini,INDX(1),INDX(2)
            ENDDO
         ENDDO
       END SELECT
- 
+
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       RETURN
-C--------------------------------------------------------------------- 
+C---------------------------------------------------------------------
       END SUBROUTINE UPDATER
 C---------------------------------------------------------------------
 
 C..... DW:, for periodic bcs (this subroutine looks a bit ugly and probably does belongs here)
-C        - experiment periodic boundary conditions 
+C        - experiment periodic boundary conditions
 C        - use in updating the pseudo residual of slave nodes when they are ghost nodes
 C          0. Assign  the residual of slave nodes to a temporay vector
 C          1. Owner PE assigns the residual of the periodic-primary nodes to theirs slave nodes
 C          2. Update ghost nodes through CALL UPDATER()
 C          3. Restore the residual of slave nodes
       SUBROUTINE UPDATER_W_PERBC( VEC1, VEC2, VEC3, NMSG )
-      USE global, only: NPERSEG, NNPERBC, IPERCONN  
+      USE global, only: NPERSEG, NNPERBC, IPERCONN
 
       IMPLICIT NONE
 
@@ -845,42 +845,42 @@ C          3. Restore the residual of slave nodes
       INTEGER,  INTENT(IN) ::  NMSG
       REAL(SZ), INTENT(INOUT) ::  VEC1(*),VEC2(*),VEC3(*)
 
-      REAL(SZ):: VECTMP(NNPERBC,NMSG) ;
+      REAL(SZ):: VECTMP(NNPERBC,NMSG)
 
       IF ( NPERSEG > 0 ) THEN
-         VECTMP(:,1) = VEC1(IPERCONN(1:NNPERBC,2)) ;
-         VEC1(IPERCONN(1:NNPERBC,2)) = VEC1(IPERCONN(1:NNPERBC,1)) ;
-         
+         VECTMP(:,1) = VEC1(IPERCONN(1:NNPERBC,2))
+         VEC1(IPERCONN(1:NNPERBC,2)) = VEC1(IPERCONN(1:NNPERBC,1))
+
          IF ( NMSG == 2 ) THEN
-            VECTMP(:,2) = VEC2(IPERCONN(1:NNPERBC,2)) ;
-            VEC2(IPERCONN(1:NNPERBC,2)) = VEC2(IPERCONN(1:NNPERBC,1)) ;
+            VECTMP(:,2) = VEC2(IPERCONN(1:NNPERBC,2))
+            VEC2(IPERCONN(1:NNPERBC,2)) = VEC2(IPERCONN(1:NNPERBC,1))
          ELSEIF ( NMSG == 3 ) THEN
-            VECTMP(:,2) = VEC2(IPERCONN(1:NNPERBC,2)) ;
-            VEC2(IPERCONN(1:NNPERBC,2)) = VEC2(IPERCONN(1:NNPERBC,1)) ;
-            
-            VECTMP(:,3) = VEC3(IPERCONN(1:NNPERBC,2)) ;
-            VEC3(IPERCONN(1:NNPERBC,2)) = VEC3(IPERCONN(1:NNPERBC,1)) ;
+            VECTMP(:,2) = VEC2(IPERCONN(1:NNPERBC,2))
+            VEC2(IPERCONN(1:NNPERBC,2)) = VEC2(IPERCONN(1:NNPERBC,1))
+
+            VECTMP(:,3) = VEC3(IPERCONN(1:NNPERBC,2))
+            VEC3(IPERCONN(1:NNPERBC,2)) = VEC3(IPERCONN(1:NNPERBC,1))
          ENDIF
       END IF
 
-      CALL UPDATER( VEC1, VEC2, VEC3, NMSG ) ; 
+      CALL UPDATER( VEC1, VEC2, VEC3, NMSG )
 
       IF ( NPERSEG > 0 ) THEN
          VEC1(IPERCONN(1:NNPERBC,2)) = VECTMP(:,1)
          IF ( NMSG == 2 ) THEN
-            VEC2(IPERCONN(1:NNPERBC,2)) = VECTMP(:,2)  ;
+            VEC2(IPERCONN(1:NNPERBC,2)) = VECTMP(:,2)
          ELSEIF ( NMSG == 3 ) THEN
-            VEC2(IPERCONN(1:NNPERBC,2)) = VECTMP(:,2)  ;
-            VEC3(IPERCONN(1:NNPERBC,2)) = VECTMP(:,3)  ;
+            VEC2(IPERCONN(1:NNPERBC,2)) = VECTMP(:,2)
+            VEC3(IPERCONN(1:NNPERBC,2)) = VECTMP(:,3)
          END IF
       END IF
 
-      RETURN ;
+      RETURN
       END SUBROUTINE UPDATER_W_PERBC
 C..... DW
 C
 C---------------------------------------------------------------------
-C     S U B R O U T I N E   U P D A T E R 3 D 
+C     S U B R O U T I N E   U P D A T E R 3 D
 C---------------------------------------------------------------------
 C  Update 1 Three-dimensional Real Arrays's Ghost Cells using asynchronous
 C  and persistent message-passing.
@@ -896,9 +896,9 @@ C---------------------------------------------------------------------
 C
       call setMessageSource("updater3d")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
-C       
+C
                              !..Pack Messages
       DO J=1,NEIGHPROC
          NCOUNT = 0
@@ -943,14 +943,14 @@ C
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()      
+      call unsetMessageSource()
       RETURN
 C---------------------------------------------------------------------
       END SUBROUTINE UPDATER3D
 C---------------------------------------------------------------------
 
 C---------------------------------------------------------------------
-C     S U B R O U T I N E   U P D A T E C  3 D 
+C     S U B R O U T I N E   U P D A T E C  3 D
 C---------------------------------------------------------------------
 C  Update 1 Three-dimensional Complex Arrays' Ghost Cells using asynchronous
 C  and persistent message-passing.
@@ -965,9 +965,9 @@ C---------------------------------------------------------------------
 C
       call setMessageSource("updatec3d")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
-C       
+C
                              !..Pack Messages
       DO J=1,NEIGHPROC
          NCOUNT = 0
@@ -1051,15 +1051,15 @@ C---------------------------------------------------------------------
 C
       call setMessageSource("psdot")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
-C 
+C
       gsum = 0.0d0
       if (n.le.0) then
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Return.")
 #endif
-         call unsetMessageSource()    
+         call unsetMessageSource()
          return
       endif
 
@@ -1078,7 +1078,7 @@ C
 #endif
       call unsetMessageSource()
       return
-C---------------------------------------------------------------------      
+C---------------------------------------------------------------------
       end function psdot
 C---------------------------------------------------------------------
 
@@ -1103,15 +1103,15 @@ C---------------------------------------------------------------------
 C
       call setMessageSource("ps2dots")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
-C 
+C
       dot3rray(1:3) = 0.0D0
-      if (n.le.0) then 
+      if (n.le.0) then
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Return.")
 #endif
-         call unsetMessageSource()      
+         call unsetMessageSource()
          return
       endif
 
@@ -1119,9 +1119,9 @@ C
 
       do i = 1,n
           if(.not.RESNODE(I))cycle
-          lsum(1) = lsum(1)  + sd(i)*sd(i)   
+          lsum(1) = lsum(1)  + sd(i)*sd(i)
           lsum(2) = lsum(2)  + sd(i)*sdt(i)
-      enddo    
+      enddo
 
       kount=2
       call MPI_ALLREDUCE( lsum, gsum, kount, DBLETYPE,
@@ -1132,13 +1132,13 @@ C
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()      
+      call unsetMessageSource()
       return
-C---------------------------------------------------------------------      
+C---------------------------------------------------------------------
       end subroutine ps2dots
-C---------------------------------------------------------------------      
-      
-      
+C---------------------------------------------------------------------
+
+
 C---------------------------------------------------------------------
 C     S U B R O U T I N E   P S 3 D O T S
 C---------------------------------------------------------------------
@@ -1161,15 +1161,15 @@ C---------------------------------------------------------------------
 C
       call setMessageSource("ps3dots")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
-C 
+C
       dot3rray(1:3) = 0D0
-      if (n.le.0) then 
+      if (n.le.0) then
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Return.")
 #endif
-         call unsetMessageSource()      
+         call unsetMessageSource()
          return
       endif
 
@@ -1180,19 +1180,19 @@ C
           lsum(1) = lsum(1)  + sd(i)*sd(i)
           lsum(2) = lsum(2)  + sd(i)*sdt(i)
           lsum(3) = lsum(3)  + su(i)*su(i)
-      enddo    
+      enddo
 
       kount=3
       call MPI_ALLREDUCE( lsum, gsum, kount, DBLETYPE,
      &     MPI_SUM, COMM, ierr)
       dot3rray(1:3) = gsum(1:3)
-C      
+C
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()      
+      call unsetMessageSource()
       return
-C---------------------------------------------------------------------      
+C---------------------------------------------------------------------
       end subroutine ps3dots
 C---------------------------------------------------------------------
 
@@ -1211,9 +1211,9 @@ C---------------------------------------------------------------------
 C
       call setMessageSource("allnodes")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
-C       
+C
       LNODES = 0
       DO I=1,MNP
          IF (RESNODE(I)) LNODES = LNODES + 1
@@ -1240,7 +1240,7 @@ C---------------------------------------------------------------------
         use sizes,only:sz
         implicit none
         real(sz),intent(in)  :: global_array(:)
-        integer,intent(in)   :: mapping(:) 
+        integer,intent(in)   :: mapping(:)
         integer,intent(in)   :: np_global
         integer,intent(in)   :: np_local
         real(sz)             :: global_array_local(np_global)
@@ -1251,7 +1251,7 @@ C---------------------------------------------------------------------
         call setMessageSource("mapToSubdomainRealMPI")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG, "Enter.")
-#endif        
+#endif
 
         if(myproc.eq.0)then
             global_array_local(1:np_global) = global_array(1:np_global)
@@ -1265,7 +1265,7 @@ C---------------------------------------------------------------------
 
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG, "Return.")
-#endif        
+#endif
         call unsetMessageSource()
 
 !---------------------------------------------------------------------
@@ -1283,7 +1283,7 @@ C---------------------------------------------------------------------
       include 'mpif.h'
 #endif
         integer,intent(in)  :: global_array(*)
-        integer,intent(in)  :: mapping(*) 
+        integer,intent(in)  :: mapping(*)
         integer,intent(in)  :: np_global
         integer,intent(in)  :: np_local
         integer             :: global_array_local(np_global)
@@ -1294,7 +1294,7 @@ C---------------------------------------------------------------------
         call setMessageSource("mapToSubdomainIntMPI")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG, "Enter.")
-#endif        
+#endif
 
         if(myproc.eq.0)then
             global_array_local(1:np_global) = global_array(1:np_global)
@@ -1308,7 +1308,7 @@ C---------------------------------------------------------------------
 
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG, "Return.")
-#endif        
+#endif
         call unsetMessageSource()
 
 !---------------------------------------------------------------------
@@ -1340,9 +1340,9 @@ C
 C
       call setMessageSource("wetdrysum")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
-C 
+C
       SumNCChange = 0
       kount=1
       call MPI_ALLREDUCE( NCCHANGE, SumNCChange, kount, MPI_INTEGER,
@@ -1354,7 +1354,7 @@ C
 #endif
       call unsetMessageSource()
       RETURN
-C---------------------------------------------------------------------      
+C---------------------------------------------------------------------
       END SUBROUTINE WetDrySum
 C---------------------------------------------------------------------
 
@@ -1376,9 +1376,9 @@ C------------------------------------------------------------------------------
 C
       call setMessageSource("warnelevsum")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
-C 
+C
       SumWarnElevExceeded = 0
       kount=1
       call MPI_ALLREDUCE( WarnElevExceeded, SumWarnElevExceeded, kount,
@@ -1408,17 +1408,17 @@ C---------------------------------------------------------------------
 C
       call setMessageSource("msg_ibcast")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
-C       
+C
       CALL MPI_BCAST(array, n, mpi_integer,0,comm,ierr)
 C
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource() 
+      call unsetMessageSource()
       RETURN
-C---------------------------------------------------------------------      
+C---------------------------------------------------------------------
       END SUBROUTINE MSG_IBCAST
 C---------------------------------------------------------------------
 
@@ -1436,9 +1436,9 @@ C---------------------------------------------------------------------
 C
       call setMessageSource("msg_lbcast")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
-C       
+C
       CALL MPI_BCAST(array, n, mpi_logical, 0, comm, ierr)
 C
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -1446,7 +1446,7 @@ C
 #endif
       call unsetMessageSource()
       RETURN
-C---------------------------------------------------------------------      
+C---------------------------------------------------------------------
       END SUBROUTINE MSG_LBCAST
 C---------------------------------------------------------------------
 
@@ -1466,9 +1466,9 @@ C---------------------------------------------------------------------
 C
       call setMessageSource("msg_cbcast")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
-C       
+C
       CALL MPI_BCAST(msg, n, mpi_character, 0, comm, ierr)
 
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -1476,7 +1476,7 @@ C
 #endif
       call unsetMessageSource()
       RETURN
-C---------------------------------------------------------------------      
+C---------------------------------------------------------------------
       END SUBROUTINE MSG_CBCAST
 C---------------------------------------------------------------------
 
@@ -1496,17 +1496,17 @@ C---------------------------------------------------------------------
 C
       call setMessageSource("msg_rbcast")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
-C       
+C
       CALL MPI_BCAST(array, n, realtype,0,comm,ierr)
-      
+
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()      
+      call unsetMessageSource()
       RETURN
-C---------------------------------------------------------------------      
+C---------------------------------------------------------------------
       END SUBROUTINE MSG_RBCAST
 C---------------------------------------------------------------------
 
@@ -1530,9 +1530,9 @@ C---------------------------------------------------------------------
 C
       call setMessageSource("msg_rbcastd")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
-C 
+C
       allocate( buffer(in*jn*kn) )
 !
       ntimes = in*jn*kn / limit_buff
@@ -1571,13 +1571,13 @@ c
          enddo
       enddo
       deallocate( buffer, nbox )
-      
+
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()      
+      call unsetMessageSource()
       RETURN
-C---------------------------------------------------------------------      
+C---------------------------------------------------------------------
       END SUBROUTINE MSG_RBCASTD
 C---------------------------------------------------------------------
 
@@ -1591,10 +1591,10 @@ C      use messenger
 #endif
       integer myerr
       call mpi_barrier(comm,myerr)
-      
-C---------------------------------------------------------------------      
+
+C---------------------------------------------------------------------
       end subroutine MSG_BARRIER
-C---------------------------------------------------------------------      
+C---------------------------------------------------------------------
 !=============================================================================
 
       END MODULE MESSENGER

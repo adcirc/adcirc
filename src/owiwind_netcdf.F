@@ -591,7 +591,7 @@
      &        NC_IDG)
 #else
           NC_IDG = IG
-#endif  
+#endif
           ! Read number of cells in longitude, latitude.
           NC_ERR = NF90_INQ_DIMID(NC_IDG,"xi",NC_DIM)
           NC_ERR = NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,LEN=NumLon)

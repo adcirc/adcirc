@@ -12,27 +12,27 @@ C-----------------------------------------------------------------------
 #ifdef DATETIME
       use datetime_module, only: datetime, timedelta, strptime
 #endif
-      use nodalattributes, only: LoadIT_Fric, NOLIBF, HBREAK 
+      use nodalattributes, only: LoadIT_Fric, NOLIBF, HBREAK
       implicit none
 
 !     WJP notes on variables and interpolation.
-!     McDougall & Parker (2014) (TEOS-10 creators) note that 
+!     McDougall & Parker (2014) (TEOS-10 creators) note that
 !     interpolation of nonconservative variables such as in-situ temp
-!     (T), in-situ density (S), potential density, etc, is not good 
+!     (T), in-situ density (S), potential density, etc, is not good
 !     oceanographic practice. Instead we should interpolate Conservative
-!     Temperature (theta) and Absolute Salinity (SA) before then 
-!     calculating N (buoyancy frequency) and rho (in-situ density) on 
+!     Temperature (theta) and Absolute Salinity (SA) before then
+!     calculating N (buoyancy frequency) and rho (in-situ density) on
 !     our grid. Thus, we read in T and S from the third-party 3D
 !     baroclinic model, interpolate these to our grid and in the
 !     temporal dimension. To save space we only read in two timesteps at
 !     a time and interpolate between these. SA and theta are then
-!     converted to N and rho (or sigma_T) as required. 
+!     converted to N and rho (or sigma_T) as required.
 
       CHARACTER(LEN=100) :: densityFileName ! Name of the BC3D NETCDF file (fort.11.nc by default)
       INTEGER  :: NX, NY, NYc, NYs, NXc, NYY, NYYY, NXo, NT, SL ! dimensions of 3D BC model required
       INTEGER  :: XI, YI, XIc, YIc, YIs  ! the 'start' locations in the NETCDF file
       REAL(SZ) :: BC3D_DT    ! Delta T for the 3D Baroclinic inputs
-      INTEGER  :: BC3D_IT    ! 3D BC temporal iteration number 
+      INTEGER  :: BC3D_IT    ! 3D BC temporal iteration number
       INTEGER  :: NP11       ! Number of nodes when reading from fort.11
       INTEGER  :: densityTimeIterator  ! BC3D time step iteraton skipper (usually 1)
       real(sz),allocatable,dimension(:) :: BC3D_Lon, BC3D_Lat, BXE, BYE,
@@ -40,12 +40,12 @@ C-----------------------------------------------------------------------
       real(sz),allocatable,dimension(:,:) :: BC3D_NM, BC3D_NB, BC3D_BX,
      &          BC3D_SigTS, BC3D_BY, BC3D_MLD, BC3D_CD, BC3D_DX, BC3D_DY
       logical,allocatable,dimension(:,:) :: NSkip
-      real(sz),parameter :: LatUL = 89d9, DFV = 1d0 
+      real(sz),parameter :: LatUL = 89d9, DFV = 1d0
 #ifdef DATETIME
       type(datetime) :: CurDT
 #endif
 !     Variables for temporal integration
-      real(sz) :: DTIME1, DTIME2 
+      real(sz) :: DTIME1, DTIME2
       real(sz),allocatable,dimension(:,:) :: VIDBCPDXOH_F, VIDBCPDYOH_F,
      &      SigTS_F, NB_F, NM_F, MLD_F, CD_F, VIDISPDXOH_F, VIDISPDYOH_F
       integer,allocatable  :: indm(:,:), indx(:,:), indy(:,:), inds(:,:)
@@ -57,11 +57,11 @@ C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
 C...  Allocate space for Arrays dimensioned by MNP
-C... 
+C...
       SUBROUTINE ALLOC_BC3D_to_2D()
       use sizes, only : mnp, mne
       IMPLICIT NONE
-C  
+C
       allocate ( VIDBCPDXOH_F(2,MNP),VIDBCPDYOH_F(2,MNP))
       VIDBCPDXOH_F = 0.0d0 ; VIDBCPDYOH_F = 0.0d0
       allocate (SigTS_F(2,MNP))
@@ -72,12 +72,12 @@ C
       allocate ( VIDISPDXOH_F(2,MNE),VIDISPDYOH_F(2,MNE))
       VIDISPDXOH_F = 0.0d0 ; VIDISPDYOH_F = 0.0d0
       allocate (NB_F(2,MNP),NM_F(2,MNP))
-      NB_F = 0.0d0; NM_F = 0.0d0 
+      NB_F = 0.0d0; NM_F = 0.0d0
       allocate(indm(4,MNP),weightsm(4,MNP))
       allocate(indx(4,MNP),indy(4,MNP),inds(4,MNP))
       allocate(weightsx(4,MNP),weightsy(4,MNP),weightss(4,MNP))
       allocate(BXE(MNP),BYE(MNP),DXE(MNP),DYE(MNP))
-      BXE = 0.0d0; BYE = 0.0d0; DXE = 0.0d0; DYE = 0.0d0;
+      BXE = 0.0d0; BYE = 0.0d0; DXE = 0.0d0; DYE = 0.0d0
 C-----------------------------------------------------------------------
       END SUBROUTINE ALLOC_BC3D_to_2D
 C-----------------------------------------------------------------------
@@ -88,26 +88,26 @@ C     S U B R O U T I N E  R E A D _ B C 3 D _ N E T C D F
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE Read_BC3D_NetCDF()
-      use netcdf, only: nf90_open, nf90_close, nf90_nowrite 
+      use netcdf, only: nf90_open, nf90_close, nf90_nowrite
       implicit none
       integer :: nc_id
- 
+
       call setMessageSource("Read_BC3D_NetCDF")
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 
-      ! Open NETCDF 
+      ! Open NETCDF
       call Check_err(nf90_open(densityFileName,nf90_nowrite,nc_id))
-    
-      ! On first call: 
+
+      ! On first call:
       ! Get the dimensions and time and spatial arrays of the data,
       ! and calculate the interpolant coefficients
       ! On > first call: check the datetimes and update BC3D_DT
       call Get_LonLatDepthTime(nc_id)
 
       if (abs(iden).ne.7) then
-         ! Read all the necessary temporal varying data 
+         ! Read all the necessary temporal varying data
          ! Depth-averaged east-west baroclinic pressure graidient
          BC3D_BX = read_nc_var(NC_ID,'BPGX',BC3D_IT,XIc,NXc,YI,NY)
          ! Depth-averaged north-south baroclinic pressure graidient
@@ -146,7 +146,7 @@ C-----------------------------------------------------------------------
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-      
+
 C-----------------------------------------------------------------------
       END SUBROUTINE Read_BC3D_NetCDF
 C-----------------------------------------------------------------------
@@ -159,27 +159,27 @@ C-----------------------------------------------------------------------
       implicit none
       integer,intent(in) :: NC_ID
       integer  :: Temp_ID, i, j, ic, jc, js, indt(4), numfound !ind(2,indmax), cc
-      real(sz) :: Lon_s, Lat_s, Lat_e, Lon_e, xx, yy, wt(4), 
+      real(sz) :: Lon_s, Lat_s, Lat_e, Lon_e, xx, yy, wt(4),
      &            Lonn_s, Lonn_e, x1, y1, xl, yl, xu, yu !, x2, y2, x3, y3 !, ww(indmax)
       real(sz),allocatable :: Lonc(:), Lon(:), Latc(:), Lat(:), Lats(:)
-#ifdef DATETIME       
+#ifdef DATETIME
       type(timedelta) :: DT
       type(datetime)  :: TNDT, TNDT1
       character(len=16) :: TSS
-#endif        
+#endif
 
       if (BC3D_IT > 1) then
          ! Check times if not first iteration
 #ifdef DATETIME
          call Check_err(NF90_INQ_VARID(NC_ID,'time',Temp_ID))
          ! Get current and next date times and update BC3D_DT
-         call check_err(nf90_get_var(nc_id, Temp_ID,        
+         call check_err(nf90_get_var(nc_id, Temp_ID,
      &                  TSS,start=[1, BC3D_IT],count=[SL, 1]))
          TNDT = strptime(trim(TSS),"%Y-%m-%d %H:%M")
          call check_err(nf90_get_var(nc_id, Temp_ID, TSS,
      &      start=[1, BC3D_IT+densityTimeIterator],count=[SL, 1]))
          TNDT1 = strptime(trim(TSS),"%Y-%m-%d %H:%M")
-         DT = TNDT1 - TNDT 
+         DT = TNDT1 - TNDT
          if (abs(DT%total_seconds() - BC3D_DT) > 1d-6) then
             BC3D_DT = DT%total_seconds()
             write(16,*) 'BC3D_DT is changed to ',BC3D_DT
@@ -205,11 +205,11 @@ C-----------------------------------------------------------------------
          call Check_err(NF90_INQ_DIMID(NC_ID,'NYYY',Temp_ID))
          call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NYYY))
       endif
-      ! Allocate the lat and lon  arrays first 
+      ! Allocate the lat and lon  arrays first
       allocate(BC3D_Lat(NY),BC3D_Lon(NX),
      &         BC3D_Latc(NYY),BC3D_Lonc(NX),BC3D_Lats(NYYY))
 
-      ! Read the latitude, longitude variables 
+      ! Read the latitude, longitude variables
       call Check_err(NF90_INQ_VARID(NC_ID,'lat',Temp_ID))
       call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,BC3D_Lat))
       call Check_err(NF90_INQ_VARID(NC_ID,'lon',Temp_ID))
@@ -232,7 +232,7 @@ C-----------------------------------------------------------------------
 #ifdef DATETIME
       ! Let's get the start time index
       do BC3D_IT = 1,NT
-         call check_err(nf90_get_var(nc_id, Temp_ID,        
+         call check_err(nf90_get_var(nc_id, Temp_ID,
      &                  TSS,start=[1, BC3D_IT],count=[SL, 1]))
          TNDT = strptime(trim(TSS),"%Y-%m-%d %H:%M")
          DT   = CurDT - TNDT
@@ -241,7 +241,7 @@ C-----------------------------------------------------------------------
       call check_err(nf90_get_var(nc_id, Temp_ID, TSS,
      &     start=[1, BC3D_IT+densityTimeIterator],count=[SL, 1]))
       TNDT1 = strptime(trim(TSS),"%Y-%m-%d %H:%M")
-      DT = TNDT1 - TNDT 
+      DT = TNDT1 - TNDT
       BC3D_DT = DT%total_seconds()
 #else
       ! Just set at 3 hrs
@@ -260,24 +260,24 @@ C-----------------------------------------------------------------------
          Lonn_e = rad2deg*minval(slam,slam >= 0d0)
          Lonn_s = rad2deg*maxval(slam,slam <= 0d0)
          ! If the difference is smaller than the original orientation
-         if (360d0 - (Lonn_e - Lonn_s) < Lon_e - Lon_s) then 
-            Lon_s = Lonn_e; Lon_e = Lonn_s;
+         if (360d0 - (Lonn_e - Lonn_s) < Lon_e - Lon_s) then
+            Lon_s = Lonn_e; Lon_e = Lonn_s
          endif
       endif
 
-      ! Correct mesh bounds if BC3D is 0 to 360 
-      Lonn_s = Lon_s; Lonn_e = Lon_e;
+      ! Correct mesh bounds if BC3D is 0 to 360
+      Lonn_s = Lon_s; Lonn_e = Lon_e
       if (BC3D_Lon(NX).gt.180d0) then
-         if (Lon_s < 0d0) Lon_s = Lon_s + 360d0;
-         if (Lon_e < 0d0) Lon_e = Lon_e + 360d0;
+         if (Lon_s < 0d0) Lon_s = Lon_s + 360d0
+         if (Lon_e < 0d0) Lon_e = Lon_e + 360d0
          if (Lon_s > Lon_e) then
-            Lonn_s = Lon_e; Lonn_e = Lon_s;
+            Lonn_s = Lon_e; Lonn_e = Lon_s
          else
-            Lonn_s = Lon_s; Lonn_e = Lon_e;
+            Lonn_s = Lon_s; Lonn_e = Lon_e
          endif
       endif
-      
-      ! Test the bounds 
+
+      ! Test the bounds
       if (BC3D_Lon(1) > Lonn_s.or.BC3D_Lat(1) > Lat_s.or.
      &    Lonn_e > BC3D_Lon(NX).or.Lat_e > BC3D_Lat(NY)) then
           call allMessage(Error,'Part of 3DBC domain is not '
@@ -294,8 +294,8 @@ C-----------------------------------------------------------------------
           ! For longitude (with buffer)
           NXo = NX
           XI  = max(1,binarysearch(NXo, BC3D_Lon, Lon_s) - 1)
-          i   = min(NXo,binarysearch(NXo, BC3D_Lon, Lon_e) + 2) 
-          NX  = i - XI + 1; if (NX <  0) NX = NX + NXo;
+          i   = min(NXo,binarysearch(NXo, BC3D_Lon, Lon_e) + 2)
+          NX  = i - XI + 1; if (NX <  0) NX = NX + NXo
 
 
           ! For latitude (with buffer)
@@ -319,7 +319,7 @@ C-----------------------------------------------------------------------
           if (abs(IDEN).ne.7) then
              XIc = max(1,binarysearch(NXo, BC3D_Lonc, Lon_s) - 1)
              ic  = min(NXo,binarysearch(NXo, BC3D_Lonc, Lon_e) + 2)
-             NXc = ic - XIc + 1; if (NXc <  0) NXc = NXc + NXo;
+             NXc = ic - XIc + 1; if (NXc <  0) NXc = NXc + NXo
 
              YIc = max(1,binarysearch(NYY, BC3D_Latc, Lat_s) - 1)
              jc  = min(NYY,binarysearch(NYY, BC3D_Latc, Lat_e) + 2)
@@ -356,7 +356,7 @@ C-----------------------------------------------------------------------
           endif
 
           ! Compute the interpolants
-          do i = 1,NP  
+          do i = 1,NP
              xx = rad2deg*slam(i)
              ! Convert our numbers if grids are 0 to 360
              if (minval(Lon) >= 0d0.and.xx < 0d0) xx = xx + 360d0
@@ -419,16 +419,16 @@ C-----------------------------------------------------------------------
       FUNCTION read_nc_var(NC_ID,varname,BCIT_IN,XIin,NXin,YIin,NYin)
      & result (Var)
       use netcdf
-         
+
       implicit none
 
       integer,intent(in) :: NC_ID, BCIT_IN, XIin, NXin, YIin, NYin
       character(*),intent(in) :: varname
-      integer :: Temp_ID, Xe 
+      integer :: Temp_ID, Xe
       real(sz) :: Var(NXin,NYin)
 
       call Check_err(NF90_INQ_VARID(NC_ID,trim(varname),Temp_ID))
-      Xe = NXo - XIin + 1;
+      Xe = NXo - XIin + 1
       if (NXin > Xe) then
          call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,Var(1:Xe,:),
      &                  start=[XIin,YIin,BCIT_IN],count=[Xe,NYin,1]))
@@ -496,21 +496,21 @@ C
       DTIME1  = floor(TimeLoc/60d0)*60d0
 #ifdef DATETIME
       CurDT   = basedatetime + timedelta(minutes=floor(DTIME1/60d0))
-#endif            
+#endif
       call Read_BC3D_Netcdf()
       ! Put the first value on ADCIRC grid
-      call Put_BC3D_on_ADCIRC_Grid() 
+      call Put_BC3D_on_ADCIRC_Grid()
       call logMessage(ECHO,'Read and processed 1st BC3D '
      &                         //'timesnap'
 #ifdef DATETIME
      &                         //': '//CurDT%isoformat(' ')
-#endif               
-     &                         ) 
+#endif
+     &                         )
       ! WJP Get the start time and the next data time
       ! Put the first values in first position
       if (abs(IDEN).ne.7) then
-         VIDBCPDXOH_F(1,:) = VIDBCPDXOH_F(2,:) 
-         VIDBCPDYOH_F(1,:) = VIDBCPDYOH_F(2,:) 
+         VIDBCPDXOH_F(1,:) = VIDBCPDXOH_F(2,:)
+         VIDBCPDYOH_F(1,:) = VIDBCPDYOH_F(2,:)
          SigTS_F(1,:)      = SigTS_F(2,:)
       endif
       if (LoadIT_Fric) then
@@ -544,8 +544,8 @@ C
      &                         //'timesnap'
 #ifdef DATETIME
      &                         //': '//CurDT%isoformat(' ')
-#endif               
-     &                         ) 
+#endif
+     &                         )
 C
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -564,11 +564,11 @@ C-----------------------------------------------------------------------
       use mesh, only: np, ne, uvectmp, vvectmp, DRVMAP2DSPVEC
       use global, only: IFSPROTS
       implicit none
-      
+
       integer, intent(in) :: flag
-      real(8),intent(in)  :: TimeLoc 
+      real(8),intent(in)  :: TimeLoc
       real(sz)            :: DTRATIO
-      integer             :: J,JKI 
+      integer             :: J,JKI
 C
       call setMessageSource("Update_BC3D_Info")
 #if defined(ALL_TRACE)
@@ -582,8 +582,8 @@ C
             DTIME1 = DTIME2
             if (IDEN.ne.7) then
                SigTS_F(1,:)      = SigTS_F(2,:)
-               VIDBCPDXOH_F(1,:) = VIDBCPDXOH_F(2,:) 
-               VIDBCPDYOH_F(1,:) = VIDBCPDYOH_F(2,:) 
+               VIDBCPDXOH_F(1,:) = VIDBCPDXOH_F(2,:)
+               VIDBCPDYOH_F(1,:) = VIDBCPDYOH_F(2,:)
             endif
             if (LoadIT_Fric) then
                NB_F(1,:)      = NB_F(2,:)
@@ -597,8 +597,8 @@ C
                endif
             endif
             if (IDEN.eq.6) then
-               VIDISPDXOH_F(1,:) = VIDISPDXOH_F(2,:) 
-               VIDISPDYOH_F(1,:) = VIDISPDYOH_F(2,:) 
+               VIDISPDXOH_F(1,:) = VIDISPDXOH_F(2,:)
+               VIDISPDYOH_F(1,:) = VIDISPDYOH_F(2,:)
             endif
             IF (flag > 0) THEN
 #ifdef ADCNETCDF
@@ -606,9 +606,9 @@ C
 #ifdef DATETIME
                CurDT = CurDT + timedelta(minutes=nint(BC3D_DT/60d0))
 #endif
-               ! Read from netcdf 
+               ! Read from netcdf
                CALL Read_BC3D_NetCDF()
-               
+
                ! BC3D_DT may have been changed above..
                DTIME2 = DTIME1 + BC3D_DT
                ! Calculate the BPG, free surface density, buoyancy
@@ -618,8 +618,8 @@ C
      &                         //'timesnap'
 #ifdef DATETIME
      &                         //': '//CurDT%isoformat(' ')
-#endif               
-     &                         ) 
+#endif
+     &                         )
 #endif
             ELSEIF (flag < 0) THEN
                ! Read next values from fort.11
@@ -649,10 +649,10 @@ C
          ENDDO
 C        DW/WJP: rotate BCP if coordinate transform
          IF ( IFSPROTS .eq. 1 ) THEN
-            UVECTMP(1:NP) = BXE(1:NP);
-            VVECTMP(1:NP) = BYE(1:NP);
+            UVECTMP(1:NP) = BXE(1:NP)
+            VVECTMP(1:NP) = BYE(1:NP)
             CALL DRVMAP2DSPVEC( BXE, BYE,
-     &             UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
+     &             UVECTMP, VVECTMP, NP, FWD = .TRUE. )
          ENDIF
       endif
       IF (LoadIT_Fric) then
@@ -678,18 +678,18 @@ C        DW/WJP: rotate BCP if coordinate transform
       IF (abs(IDEN).eq.6) THEN
          ! This is interpolated onto element and put back onto node in
          ! another subroutine (FBPG_Disp_from_BC3D)
-         DO J = 1,NP 
-            DXE(J) = VIDISPDXOH_F(1,J) + DTRATIO * 
+         DO J = 1,NP
+            DXE(J) = VIDISPDXOH_F(1,J) + DTRATIO *
      &               (VIDISPDXOH_F(2,J) - VIDISPDXOH_F(1,J))
-            DYE(J) = VIDISPDYOH_F(1,J) + DTRATIO * 
+            DYE(J) = VIDISPDYOH_F(1,J) + DTRATIO *
      &               (VIDISPDYOH_F(2,J) - VIDISPDYOH_F(1,J))
          ENDDO
 C        DW/WJP: rotate dispersion gradients if coordinate transform
          IF ( IFSPROTS .eq. 1 ) THEN
-            UVECTMP(1:NP) = DXE(1:NP);
-            VVECTMP(1:NP) = DYE(1:NP);
+            UVECTMP(1:NP) = DXE(1:NP)
+            VVECTMP(1:NP) = DYE(1:NP)
             CALL DRVMAP2DSPVEC( DXE, DYE,
-     &            UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
+     &            UVECTMP, VVECTMP, NP, FWD = .TRUE. )
          ENDIF
       ENDIF
 C
@@ -708,25 +708,25 @@ C-----------------------------------------------------------------------
 
       use mesh, only : np, ne
       implicit none
-      
-      integer :: i, j, ii, jj, icount 
+
+      integer :: i, j, ii, jj, icount
 C
       call setMessageSource("Put_3DBC_on_ADCIRC_Grid")
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-  
+
       ! Interpolate to our mesh
       IDEN7: if (abs(iden).ne.7) then
-      do i = 1,NP  
+      do i = 1,NP
          if (BC3D_SigTS(indm(1,i),indm(2,i)) < -1d2.or.
      &       BC3D_SigTS(indm(3,i),indm(2,i)) < -1d2.or.
      &       BC3D_SigTS(indm(1,i),indm(4,i)) < -1d2.or.
      &       BC3D_SigTS(indm(3,i),indm(4,i)) < -1d2) then
              SigTS_F(2,i) = -999d0
          else
-             SigTS_F(2,i) = 
-     &                  BC3D_SigTS(indm(1,i),indm(2,i))*weightsm(1,i) + 
+             SigTS_F(2,i) =
+     &                  BC3D_SigTS(indm(1,i),indm(2,i))*weightsm(1,i) +
      &                  BC3D_SigTS(indm(3,i),indm(2,i))*weightsm(2,i) +
      &                  BC3D_SigTS(indm(1,i),indm(4,i))*weightsm(3,i) +
      &                  BC3D_SigTS(indm(3,i),indm(4,i))*weightsm(4,i)
@@ -734,13 +734,13 @@ C
       enddo
       do i = 1,NP
          if (weightsx(1,i).le.1d0) then
-            ! Linear interpolation 
-            VIDBCPDXOH_F(2,i) = BC3D_BX(indx(1,i),indx(2,i))*weightsx(1,i) + 
+            ! Linear interpolation
+            VIDBCPDXOH_F(2,i) = BC3D_BX(indx(1,i),indx(2,i))*weightsx(1,i) +
      &                  BC3D_BX(indx(3,i),indx(2,i))*weightsx(2,i) +
      &                  BC3D_BX(indx(1,i),indx(4,i))*weightsx(3,i) +
      &                  BC3D_BX(indx(3,i),indx(4,i))*weightsx(4,i)
          else
-            ! The grid-averaging "conservative" (approximately) interpolation 
+            ! The grid-averaging "conservative" (approximately) interpolation
             VIDBCPDXOH_F(2,i) = 0.0d0
             icount = 0
             do ii = indx(1,i),indx(3,i)
@@ -752,8 +752,8 @@ C
             VIDBCPDXOH_F(2,i) = VIDBCPDXOH_F(2,i)/icount
          endif
          if (weightsy(1,i).le.1d0) then
-            ! Linear interpolation 
-            VIDBCPDYOH_F(2,i) = BC3D_BY(indy(1,i),indy(2,i))*weightsy(1,i) + 
+            ! Linear interpolation
+            VIDBCPDYOH_F(2,i) = BC3D_BY(indy(1,i),indy(2,i))*weightsy(1,i) +
      &                  BC3D_BY(indy(3,i),indy(2,i))*weightsy(2,i) +
      &                  BC3D_BY(indy(1,i),indy(4,i))*weightsy(3,i) +
      &                  BC3D_BY(indy(3,i),indy(4,i))*weightsy(4,i)
@@ -771,12 +771,12 @@ C
       enddo
       endif IDEN7
       if (LoadIT_Fric) then
-         do i = 1,NP  
-            NB_F(2,i) = BC3D_NB(indm(1,i),indm(2,i))*weightsm(1,i) + 
+         do i = 1,NP
+            NB_F(2,i) = BC3D_NB(indm(1,i),indm(2,i))*weightsm(1,i) +
      &                  BC3D_NB(indm(3,i),indm(2,i))*weightsm(2,i) +
      &                  BC3D_NB(indm(1,i),indm(4,i))*weightsm(3,i) +
      &                  BC3D_NB(indm(3,i),indm(4,i))*weightsm(4,i)
-            NM_F(2,i) = BC3D_NM(indm(1,i),indm(2,i))*weightsm(1,i) + 
+            NM_F(2,i) = BC3D_NM(indm(1,i),indm(2,i))*weightsm(1,i) +
      &                  BC3D_NM(indm(3,i),indm(2,i))*weightsm(2,i) +
      &                  BC3D_NM(indm(1,i),indm(4,i))*weightsm(3,i) +
      &                  BC3D_NM(indm(3,i),indm(4,i))*weightsm(4,i)
@@ -791,8 +791,8 @@ C
      &             BC3D_MLD(indm(3,i),indm(4,i)).eq.DFV) then
                    MLD_F(2,i) = DFV
               else
-                   MLD_F(2,i) = 
-     &                  BC3D_MLD(indm(1,i),indm(2,i))*weightsm(1,i) + 
+                   MLD_F(2,i) =
+     &                  BC3D_MLD(indm(1,i),indm(2,i))*weightsm(1,i) +
      &                  BC3D_MLD(indm(3,i),indm(2,i))*weightsm(2,i) +
      &                  BC3D_MLD(indm(1,i),indm(4,i))*weightsm(3,i) +
      &                  BC3D_MLD(indm(3,i),indm(4,i))*weightsm(4,i)
@@ -801,14 +801,14 @@ C
          else
             do i = 1,NP
                if (weightss(1,i).le.1d0) then
-                  CD_F(2,i) = 
-     &                  BC3D_CD(inds(1,i),inds(2,i))*weightss(1,i) + 
+                  CD_F(2,i) =
+     &                  BC3D_CD(inds(1,i),inds(2,i))*weightss(1,i) +
      &                  BC3D_CD(inds(3,i),inds(2,i))*weightss(2,i) +
      &                  BC3D_CD(inds(1,i),inds(4,i))*weightss(3,i) +
      &                  BC3D_CD(inds(3,i),inds(4,i))*weightss(4,i)
                else
-                  ! The grid-averaging "conservative" (approximately) interpolation 
-                  CD_F(2,i) = 0.0d0;
+                  ! The grid-averaging "conservative" (approximately) interpolation
+                  CD_F(2,i) = 0.0d0
                   icount = 0
                   do ii = inds(1,i),inds(3,i)
                      do jj = inds(2,i),inds(4,i)
@@ -824,17 +824,17 @@ C
       if (abs(iden).eq.6) then
          do i = 1,NP
             if (weightss(1,i).le.1d0) then
-               ! Linear interpolation 
-               VIDISPDXOH_F(2,i) = BC3D_DX(inds(1,i),inds(2,i))*weightss(1,i) + 
+               ! Linear interpolation
+               VIDISPDXOH_F(2,i) = BC3D_DX(inds(1,i),inds(2,i))*weightss(1,i) +
      &                  BC3D_DX(inds(3,i),inds(2,i))*weightss(2,i) +
      &                  BC3D_DX(inds(1,i),inds(4,i))*weightss(3,i) +
      &                  BC3D_DX(inds(3,i),inds(4,i))*weightss(4,i)
-               VIDISPDYOH_F(2,i) = BC3D_DY(inds(1,i),inds(2,i))*weightss(1,i) + 
+               VIDISPDYOH_F(2,i) = BC3D_DY(inds(1,i),inds(2,i))*weightss(1,i) +
      &                  BC3D_DY(inds(3,i),inds(2,i))*weightss(2,i) +
      &                  BC3D_DY(inds(1,i),inds(4,i))*weightss(3,i) +
      &                  BC3D_DY(inds(3,i),inds(4,i))*weightss(4,i)
             else
-               ! The grid-averaging "conservative" (approximately) interpolation 
+               ! The grid-averaging "conservative" (approximately) interpolation
                VIDISPDXOH_F(2,i) = 0.0d0; VIDISPDYOH_F(2,i) = 0.0d0
                icount = 0
                do ii = inds(1,i),inds(3,i)
@@ -848,7 +848,7 @@ C
                VIDISPDYOH_F(2,i) = VIDISPDYOH_F(2,i)/icount
             endif
          enddo
-      endif 
+      endif
 C
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -863,17 +863,17 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE FBPG_Disp_from_BC3D
 
-      USE GLOBAL, ONLY: G, IFNLFA, IFNLCT, RAMP, NODECODE, NOFF, 
-     &                  ETA2, RhoWat0 
-      USE SPONGELAYER, ONLY: NO_BPG_IN_SPONGE 
-      USE NodalAttributes, ONLY: absorblayer_sigma_mnx, 
+      USE GLOBAL, ONLY: G, IFNLFA, IFNLCT, RAMP, NODECODE, NOFF,
+     &                  ETA2, RhoWat0
+      USE SPONGELAYER, ONLY: NO_BPG_IN_SPONGE
+      USE NodalAttributes, ONLY: absorblayer_sigma_mnx,
      &                           absorblayer_sigma_mny
       USE MESH, ONLY: NE, NM, NP, DP, AREAS, NODELE, FDXE, FDYE,
      &      NEITABELE, NEITAB, NNEIGH, SFAC, TOTALAREA, SFacEle
       USE BOUNDARIES, ONLY: NVELME, ME2GW, NBV
- 
+
       IMPLICIT NONE
-      
+
       INTEGER :: IE             !element loop counter
       INTEGER :: J, K, NBDI     !node loop counter
       INTEGER :: NCELE          !element code
@@ -900,10 +900,10 @@ C
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      
+
       ! Initialize the nodal values
-      VIDISPDXOH = 0.0d0; VIDISPDYOH = 0.0d0;
-      VIDBCPDXOH = 0.0d0; VIDBCPDYOH = 0.0d0;
+      VIDISPDXOH = 0.0d0; VIDISPDYOH = 0.0d0
+      VIDBCPDXOH = 0.0d0; VIDBCPDYOH = 0.0d0
 #ifndef NOFSBPG
       ! Loop over each element and get the free surface BCP gradient
       ! and add on the already known elemental gradients
@@ -922,20 +922,20 @@ C
 
          AreaIE2 = Areas(IE)
          AreaEle = 0.5d0*NCEle*AreaIE2
-        
-         FDX1 = FDXE(1,IE)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-         FDX2 = FDXE(2,IE)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-         FDX3 = FDXE(3,IE)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-         FDY1 = FDYE(1,IE) ;    !c  FDY1=X(NM3)-X(NM2) !a1
-         FDY2 = FDYE(2,IE) ;    !c  FDY2=X(NM1)-X(NM3) !a2
-         FDY3 = FDYE(3,IE) ;    !c  FDY3=X(NM2)-X(NM1) !a3
+
+         FDX1 = FDXE(1,IE)*SFacAvg !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
+         FDX2 = FDXE(2,IE)*SFacAvg !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
+         FDX3 = FDXE(3,IE)*SFacAvg !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
+         FDY1 = FDYE(1,IE)    !c  FDY1=X(NM3)-X(NM2) !a1
+         FDY2 = FDYE(2,IE)    !c  FDY2=X(NM1)-X(NM3) !a2
+         FDY3 = FDYE(3,IE)    !c  FDY3=X(NM2)-X(NM1) !a3
          FDX1O2A = FDX1/AreaIE2 !dphi1/dx
          FDY1O2A = FDY1/AreaIE2 !dphi1/dy
          FDX2O2A = FDX2/AreaIE2 !dphi2/dx
          FDY2O2A = FDY2/AreaIE2 !dphi2/dy
          FDX3O2A = FDX3/AreaIE2 !dphi3/dx
          FDY3O2A = FDY3/AreaIE2 !dphi3/dy
-           
+
          !Use free surface density only if all non-zero
          IF (SigTS(NM1) < -1d2.or.SigTS(NM2) < -1d2.or.
      &       SigTS(NM3) < -1d2) THEN
@@ -944,16 +944,16 @@ C
             DARhoMRho0N3 = 0d0
          ELSE
             DARhoMRho0N1 = SigTS(NM1)
-            DARhoMRho0N2 = SigTS(NM2) 
+            DARhoMRho0N2 = SigTS(NM2)
             DARhoMRho0N3 = SigTS(NM3)
          ENDIF
 
          ! Add on free surface baroclinic pressure on the element
-         VIDBCPDXOHN1 = G/RhoWat0*(DARhoMRho0N1*EtaN1*FDX1O2A 
+         VIDBCPDXOHN1 = G/RhoWat0*(DARhoMRho0N1*EtaN1*FDX1O2A
      &                + DARhoMRho0N2*EtaN2*FDX2O2A
      &                + DARhoMRho0N3*EtaN3*FDX3O2A)
- 
-         VIDBCPDYOHN1 = G/RhoWat0*(DARhoMRho0N1*EtaN1*FDY1O2A 
+
+         VIDBCPDYOHN1 = G/RhoWat0*(DARhoMRho0N1*EtaN1*FDY1O2A
      &                + DARhoMRho0N2*EtaN2*FDY2O2A
      &                + DARhoMRho0N3*EtaN3*FDY3O2A)
 
@@ -984,10 +984,10 @@ C
          ! If need to omit from sponge..
          IF ( NO_BPG_IN_SPONGE ) THEN
             IF ( absorblayer_sigma_mnx(J,1) > 1.0e-9 ) THEN
-               VIDBCPDXOH(J) = 0.0d0; VIDISPDXOH(J) = 0.0d0; 
+               VIDBCPDXOH(J) = 0.0d0; VIDISPDXOH(J) = 0.0d0
             ENDIF
             IF ( absorblayer_sigma_mny(J,1) > 1.0e-9 ) THEN
-               VIDBCPDYOH(J) = 0.0d0; VIDISPDYOH(J) = 0.0d0; 
+               VIDBCPDYOH(J) = 0.0d0; VIDISPDYOH(J) = 0.0d0
             ENDIF
          ENDIF
       ENDDO
@@ -996,8 +996,8 @@ C
       !   K = ME2GW(J)
       !   !IF (LBCODEI(K).GT.) cycle
       !   NBDI = NBV(K)
-      !   VIDBCPDXOH(NBDI) = 0; VIDBCPDYOH(NBDI) = 0;
-      !   VIDISPDXOH(NBDI) = 0; VIDISPDYOH(NBDI) = 0;
+      !   VIDBCPDXOH(NBDI) = 0; VIDBCPDYOH(NBDI) = 0
+      !   VIDISPDXOH(NBDI) = 0; VIDISPDYOH(NBDI) = 0
       !ENDDO
 C
 #if defined(ALL_TRACE)
@@ -1015,7 +1015,7 @@ C-----------------------------------------------------------------------
 #ifdef CMPI
       USE MESSENGER
 #endif
-      IMPLICIT NONE 
+      IMPLICIT NONE
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
 #ifdef ALL_TRACE
       REAL, ALLOCATABLE :: dummy(:)
@@ -1033,7 +1033,7 @@ C
          ! a stack trace to determine the line number of the netcdf call
          ! that went bad ... this assumes that the code was compiled with
          ! debugging symbols, bounds checking, and stack trace turned on.
-      write(6,*) 'myproc = ',myProc      
+      write(6,*) 'myproc = ',myProc
       dummy(1) = 99.9d0
 #endif
 

@@ -39,15 +39,15 @@ C
 #endif
       USE SIZES, ONLY : SZ, MNP, MNWPROH
       USE GLOBAL, ONLY : UU1, VV1, QX1, QY1, QX2, QY2, UU2, VV2, MOM_LV_X,
-     &    MOM_LV_Y, WSX2, WSY2, PR1, PR2, TiP1, TiP2, UU0, VV0, QY0, 
-     &    GWCE_LV, TRANS_LV_B, TRANS_LV_A, WSX1, WSY1, dp1, dp2, QN0, 
+     &    MOM_LV_Y, WSX2, WSY2, PR1, PR2, TiP1, TiP2, UU0, VV0, QY0,
+     &    GWCE_LV, TRANS_LV_B, TRANS_LV_A, WSX1, WSY1, dp1, dp2, QN0,
      &    EN0, EN1, EN2, CICE1, CICE2, CICEOUT, RSNX1, RSNX2, RSNY1, RSNY2,
-     &    QX0, QN1, QN2, RSNXOUT, RSNYOUT, LNM_BC1, LNM_BC2, 
+     &    QX0, QN1, QN2, RSNXOUT, RSNYOUT, LNM_BC1, LNM_BC2,
      &    QNIN1, QNIN2, ENIN1, ENIN2, EtaDisc, NIBNODECODE,
      &    BCHGTIMINC, ETA2,ElevDisc, BTIME1, BTIME2, BTIME_END, C2D_PTrans,
      &    C2DDI, C3D, C3DVS, CBAROCLINIC, CGWCE_New, CHOTHS, CICE_TIME1,
-     &    CICE_TIME2, CICE_TIMINC, BTIMINC, CME_New_C1, CME_New_C2, 
-     &    CME_New_NC, CPRECOR, CTiP, DRAMP, DRampElev, DRampExtFlux, 
+     &    CICE_TIME2, CICE_TIMINC, BTIMINC, CME_New_C1, CME_New_C2,
+     &    CME_New_NC, CPRECOR, CTiP, DRAMP, DRampElev, DRampExtFlux,
      &    DRampIntFlux, DRampMete, DRampTip, DRampWRad, DTDP, DTDPHS,
      &    DUnRampMete, ENDWAVE, ErrorElev, Flag_ElevError, FluxSettlingIT,
      &    FluxSettlingTime, FTIMINC, IFNLFA, H0, IHOT, IM, INFO, WARNING,
@@ -58,10 +58,10 @@ C
      &    RBCTIME1, RBCTIME2, RBCTIMEINC, REFTIM, RES_BC_FLAG, RhoWat0,
      &    RSTIME1, RSTIME2, NWS, RSTIMINC, SCREENUNIT, SIGT0, STATIM, TK,
      &    WVNXOUT, WVNYOUT, WarnElev, PERT, FACET, FFT, AMIGT, SALTPHA,
-     &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF, 
+     &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF,
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
      &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
-     &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
+     &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM,
      &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE
 #ifdef CSWAN
      &  , waveWindMultiplier
@@ -69,10 +69,10 @@ C
       USE GWCE, ONLY : solveGWCE, numitr
       USE MOMENTUM, ONLY : solveMomentumEq
       USE WETDRY, ONLY : computeWettingAndDrying
-      USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart, 
+      USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart,
      &    writeWarnElev, collectInundationData, collectMinMaxData
       USE MESH, ONLY : NE, NP, DP, SLAM, SFEA, ICS, TotalArea,
-     &                  MJU, Areas, SFAC 
+     &                  MJU, Areas, SFAC
       USE BOUNDARIES, ONLY : NOPE, NETA, NBOU, NVEL, LBCODEI, NBV, SIII,
      &    NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, NFLUXIBP, NFLUXRBC, CSII,
      &    BARLANHT, BARLANCFSP, NVELL, IBCONN, BARINHT, BARINCFSP,
@@ -86,14 +86,14 @@ C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET
 C.....sb46.28sb03 added 09/xx/2006
       USE RS2,ONLY : RS2INIT,RS2GET
-      USE NodalAttributes, ONLY : 
+      USE NodalAttributes, ONLY :
      &     Apply2DBottomFriction,
      &     Apply2DInternalWaveDrag,
      &     Apply3DBottomFriction
      &    ,GeoidOffset
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS,
-     &    writeFort066, writeFort067, writeFort065, 
-     &    readFort020, readFort021, readFort019 
+     &    writeFort066, writeFort067, writeFort065,
+     &    readFort020, readFort021, readFort019
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
       USE GLOBAL_3DVS, ONLY:
      &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA, Z0B,NFEN
@@ -105,7 +105,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       USE MESSENGER
       USE HSWRITER, ONLY: writeHotstart_through_HSwriter  !st3 100711 for hsfile
 #endif
-      
+
 #ifdef CSWAN
 Casey 090302: We need these values from other places.
       USE OWIWIND,     ONLY: WindMultiplier
@@ -176,8 +176,8 @@ C   TCM v50.66.02 -- Added for Time Varying Bathymetry
       REAL(SZ) :: ARG, ARGJ, RFF
 C....... DW
       REAL(SZ):: RAMPTMP
-      LOGICAL, SAVE:: FIRST_ADJ_ABS_LAYER = .TRUE. 
-      LOGICAL, SAVE:: FIRST_ENTER = .TRUE. 
+      LOGICAL, SAVE:: FIRST_ADJ_ABS_LAYER = .TRUE.
+      LOGICAL, SAVE:: FIRST_ENTER = .TRUE.
       INTEGER:: NBDI, istep
 C.......
 
@@ -320,15 +320,15 @@ Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
          !jgf49.44: Cover the case where the ramp length is zero.
          IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
       ENDIF
-C     
+C
 C------DW
       IF ( LoadAbsLayerSigma ) THEN
          IF (  FIRST_ADJ_ABS_LAYER ) THEN
-            CALL Adjust_Sponge_Sigma( abs(DTDP) ) ;
+            CALL Adjust_Sponge_Sigma( abs(DTDP) )
 
-            FIRST_ADJ_ABS_LAYER = .FALSE. ;
+            FIRST_ADJ_ABS_LAYER = .FALSE.
          END IF
-      END IF   
+      END IF
 C-----END DW
 
 C-------------------TEMPORAL RAMP-------------------------------------
@@ -360,7 +360,7 @@ C...  Transport
          IF(IM.EQ.10) THEN
            TRANS_LV_B(I)=0.D0
            TRANS_LV_A(I)=0.D0
-           ENDIF
+         ENDIF
 
 C...  Wind (& wave radiation stress if used)
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
@@ -371,9 +371,9 @@ C...  Wind (& wave radiation stress if used)
             PR1(I)=PR2(I)
             PR2(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
          ELSE
-C WJP 02.26.2018 inserted from Dam's code    
-!c dw ------------- otherwise, tide run could fail      
-            PR2(I) = PRBCKGRND_MH2O 
+C WJP 02.26.2018 inserted from Dam's code
+!c dw ------------- otherwise, tide run could fail
+            PR2(I) = PRBCKGRND_MH2O
          END IF
 
 C     TIP..Tidal potential forcing
@@ -391,40 +391,40 @@ C     TIP..Tidal potential forcing
       endif
 C
 C.............................DW, sponge layer ..................
-      ! Get 
+      ! Get
       !   Eta2_AbsLayer, uu2_AbsLayer, vv2_AbsLayer
       IF ( LoadAbsLayerSigma ) THEN
          !
          IF ( .NOT. FIRST_ENTER ) THEN
-            !c u_{ext}^{n + 1} -- > eta2, 
+            !c u_{ext}^{n + 1} -- > eta2,
             CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev,
      &           GeoidOffset )
          ELSE
 
-            RampTMP = RampElev ;
+            RampTMP = RampElev
             DO istep = 2, 1, -1
                IF ( NRamp > 0 ) THEN
                   RampTMP=TANH((2.D0*(TimeLoc - istep*DTDP)/86400.D0)/DRampElev)
                END IF
-               RampTMP = max(0.D0,RampTMP) ;                   
-               
+               RampTMP = max(0.D0,RampTMP)
+
                !  u_{ext}^{n + 1 - istep} --> uu2
                CALL GETABSLAYEREXT( IT - istep, TimeLoc - istep*DTDP,
      &              TimeH - istep*DTDP, RampTMP,
      &              GeoidOffset )
 
-               CALL SPONGE_SHIFT_SOLN( ) ; 
-               ! eta1 --> eta0, eta2 --> eta1, u2 --> u1          
+               CALL SPONGE_SHIFT_SOLN( )
+               ! eta1 --> eta0, eta2 --> eta1, u2 --> u1
             END DO
-            !c u_{ext}^{n + 1} -- > eta2, 
+            !c u_{ext}^{n + 1} -- > eta2,
             CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev,
      &           GeoidOffset )
-            FIRST_ENTER = .FALSE. ;
+            FIRST_ENTER = .FALSE.
          END IF
          !
       END IF
 C.... END DW..........................................................
-      
+
 C...TCM V50.66.01 -- ADDING TIME DEPENDENT BATHYMETRY
 C... so that total water column height is unchanged
 C
@@ -459,7 +459,7 @@ C...     DEPTHS ARE > OR = TO H0.
                   IF (DP2(I).LT.H0) DP2(I) = H0
                ENDDO
             ENDIF
-            write(scratchMessage,'(A36,1X,E15.8,1X,A5)') 
+            write(scratchMessage,'(A36,1X,E15.8,1X,A5)')
      &         'BATHYMETRY RECORDS UPDATED AT TIME =',TIMELOC,'(SEC)'
             call allMessage(INFO,scratchMessage)
          ENDIF  !test for updating bathymetry records
@@ -526,14 +526,14 @@ C.......If time is during the bathymetry change interval, then update bathymetry
                ETA2(I) = ETA2TMP        !updating elevation
             ENDDO !I
          ENDIF
-C         
+C
          IF (timeloc.EQ.BTIME_END) THEN
             write(scratchMessage,'(A42,1X,E15.8,1X,A5)')
      &         'Bathymetry values are now fixed at time =',timeloc,'(sec).'
             call allMessage(INFO,scratchMessage)
             DO I=1,NP
                DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be to get to the final bathy value
-               DP(I) = DP2(I)         !updating bathymetry to final value 
+               DP(I) = DP2(I)         !updating bathymetry to final value
                ETA2TMP = ETA2(I)-DPTMP !subtracting elevation by incremental amount
                ETA2(I) = ETA2TMP       !updating elevation
             ENDDO !I
@@ -556,13 +556,13 @@ C     2DDI.Set up the 2D friction coefficient
             CALL Apply2DInternalWaveDrag(NP, TK, TKM, UU1, VV1, DP, IT)
          ELSE
             CALL Apply2DInternalWaveDrag(NP, TK, TKM)
-         ENDIF 
+         ENDIF
       endif
 C..RJW Set up the 3D friction coefficient
       if (C3D) then
          CALL Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G, IFNLFA, NP, TK, NFEN, Z0B)
       endif
-      
+
 C-------------------BOTTOM FRICTION-------------------------------------
 C
 C
@@ -596,7 +596,8 @@ C
       ENDIF
 
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-      if (ncice.ne.0.and.ncice.ne.14) then
+C++ GML added ncice .ne. 17
+      if (ncice.ne.0.and.(ncice.ne.14) .and. (ncice.ne.17)) then
          CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
          do i=1,np
             CICEOUT(I) = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
@@ -612,7 +613,7 @@ C     jgf: update water level correction fields
 C
 C---------------------BEGIN MET FORCING----------------------------------------
 
-      call getMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
+      call getMeteorologicalForcing(nws, wsx2, wsy2, pr2,
      &   wvnxout, wvnyout, timeloc)
 C
 C----------------------END MET FORCING----------------------------------------
@@ -632,10 +633,10 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
          select case(abs(nws))
          case(12,16)
             do i=1,np
-               swan_wx2(i,2) = wvnxout(i) * waveWindMultiplier 
-     &                         / ( rampMete * windMultiplier ) 
-               swan_wy2(i,2) = wvnyout(i) * waveWindMultiplier 
-     &                         / ( rampMete * windMultiplier ) 
+               swan_wx2(i,2) = wvnxout(i) * waveWindMultiplier
+     &                         / ( rampMete * windMultiplier )
+               swan_wy2(i,2) = wvnyout(i) * waveWindMultiplier
+     &                         / ( rampMete * windMultiplier )
             end do
          case default
             do i=1,np
@@ -647,8 +648,8 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 #endif
       IF(NRS.NE.0) THEN
 
-         if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3)) then
-            IF(TimeLoc.GT.RSTIME2) THEN
+        if((NRS.eq.1) .or. (NRS.eq.2) .or. (NRS.eq.3) .or. (NRS.eq.5)) then  !saeed added 5
+            IF (TimeLoc.GT.RSTIME2) THEN
                RSTIME1=RSTIME2
                RSTIME2=RSTIME2+RSTIMINC
                DO I=1,NP
@@ -678,8 +679,21 @@ C             into RSNX1/RSNY1, and then load the future forces into RSNX2/RSNY2
                  ENDDO
                ENDIF
 #endif
+C... v50.xx sm -- nrs=5 for NUOPC coupling wave data from coupler
+               NRS5: IF (NRS == 5) THEN    ! saeed
+
+                  DO I=1,NP
+                   RSX = RSNX1(I)
+                   RSY = RSNY1(I)
+                   RSNX1(I) = RSNX2(I)
+                   RSNY1(I) = RSNY2(I)
+                   RSNX2(I) = RSNX2(I) + (RSNX2(I)-RSX) ! extrapolate: 2*Rc - Rp
+                   RSNY2(I) = RSNY2(I) + (RSNY2(I)-RSY)
+                 ENDDO
+               ENDIF NRS5 !(NRS = 5)
 
             ENDIF
+
             RStRatio=(TimeLoc-RSTIME1)/RSTIMINC
             DO I=1,NP
                RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
@@ -689,12 +703,13 @@ C             into RSNX1/RSNY1, and then load the future forces into RSNX2/RSNY2
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef CSWAN
 Casey 090302: Added these lines for output to the rads.64 file.
-               IF(ABS(NRS).EQ.3) then
+               IF(ABS(NRS).EQ.3 .OR. ABS(NRS).EQ.5) then ! dw added NRS==5
                   RSNXOUT(I) = RSX
                   RSNYOUT(I) = RSY
                ENDIF
 !#endif
             ENDDO
+
          ENDIF  !nrs = 1,2,or 3
 
          ! Tightly Coupled Code with STWAVE
@@ -938,7 +953,7 @@ C...  COBELL - MOVED TO WEIR_BOUNDARY.F
             SELECT CASE(LBCODEI(I))
             CASE(3,13,23)
                 CALL COMPUTE_EXTERNAL_BOUNDARY_FLUX(I,TIMELOC,QN2(I))
-            END SELECT 
+            END SELECT
           END DO
         ENDIF
 
@@ -968,15 +983,15 @@ C
 C...ZC - SIMPLIFIED THIS SECTION, MOVED FLUX COMPUTATION TO WEIR_BOUNDARY.F
 C   USE THE COMPILER FLAGS TO CHANGE IMPLEMENTATION:
 C        -DORIGWEIR - JOANNES WESTERINK ET AL IMPLEMENTATION (ORIGINAL)
-C                     THIS DOES NOT APPEAR TO HAVE BEEN USED IN QUITE 
+C                     THIS DOES NOT APPEAR TO HAVE BEEN USED IN QUITE
 C                     SOME TIME
-C         DEFAULT   - SHINTARO BUNYA/SEIZO TANAKA IMPLEMENTATION FOR 
+C         DEFAULT   - SHINTARO BUNYA/SEIZO TANAKA IMPLEMENTATION FOR
 C                     CHECKING FOR A WET EDGE BEFORE PASSING FLOW
 C                     ACROSS A WEIR
       IF(NFLUXIB.EQ.1) THEN
          NIBNODECODE(:) = 0
-         I = 0                         
-         DO K = 1, NBOU  
+         I = 0
+         DO K = 1, NBOU
             SELECT CASE(LBCODEI(I+1))
                 CASE(4,24,5,25)
                     DO J = 1,NVELL(K)*2
@@ -986,8 +1001,8 @@ C                     ACROSS A WEIR
                     ENDDO
                 CASE DEFAULT
                     I = I + NVELL(K)
-            END SELECT    
-         ENDDO 
+            END SELECT
+         ENDDO
       ENDIF
 
 C...
@@ -1003,19 +1018,18 @@ C...
                 QN2(I) = QN2(I) + PIPE_FLUX
             ENDIF
          ENDDO
-      ENDIF 
+      ENDIF
 
       if(subdomainOn.and.enforceBN.eq.1) call readFort019(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)  ! NCSU Subdomain
-      
 
 
 
 
 !----------------------SOLVE GWCE---------------------------------------
 C...
-C...  Compute new water surface elevation 
+C...  Compute new water surface elevation
       call solveGWCE(it, timeloc, timeh)
 
 !---------------------END SOLVE GWCE------------------------------------
@@ -1035,17 +1049,17 @@ C...
 C-------------END OF 2DDI MOMENTUM EQUATION SOLUTION--------------------
 C...
 
-C.....DW - ABS SPONGE LAYER     
+C.....DW - ABS SPONGE LAYER
       IF ( C2DDI .AND. LoadAbsLayerSigma .AND. (sponge_dis_mthd == 0) ) THEN
-         CALL SPONGE_OPSPLIT0( IT, DTDP/2, TimeLoc, TimeH)  
+         CALL SPONGE_OPSPLIT0( IT, DTDP/2, TimeLoc, TimeH)
       END IF
 
       IF ( LoadAbsLayerSigma ) THEN
-         CALL SPONGE_SHIFT_SOLN( ) 
+         CALL SPONGE_SHIFT_SOLN( )
       END IF
-C     
+C
 C.....END DW
-C     
+C
 
 C...
 C...  3DVS Momentum Equation Solution
@@ -1091,8 +1105,8 @@ C...
 C...  Collect maximum values of variables   v46.50 sb 11/11/2006
       call collectMinMaxData(timeloc)
       !
-      ! jgf52.08.01: If detailed inundation output was requested, 
-      ! collect detailed inundation data. 
+      ! jgf52.08.01: If detailed inundation output was requested,
+      ! collect detailed inundation data.
       if (inundationOutput.eqv..true.) then
          call collectInundationData(timeloc, it)
       endif
@@ -1101,10 +1115,10 @@ C...
 C...  WRITE OUTPUT
 C...
 C
-      ! NCSU Subdomain Modeling   
-      if (subdomainOn.and.NOUTGS.eq.1) call writeFort065(it) 
-      if (subdomainOn.and.NOUTGS.eq.2) call writeFort066(it) 
-      if (subdomainOn.and.NOUTGS.eq.2) call writeFort067(it) 
+      ! NCSU Subdomain Modeling
+      if (subdomainOn.and.NOUTGS.eq.1) call writeFort065(it)
+      if (subdomainOn.and.NOUTGS.eq.2) call writeFort066(it)
+      if (subdomainOn.and.NOUTGS.eq.2) call writeFort067(it)
 C
 C     jgf49.44: If harmonic analysis was requested and the current time
 C     is within the harmonic analysis period, update the left hand side
@@ -1155,7 +1169,7 @@ C...  SAVE THE CURRENT TIME LEVEL OF BARRIER INTO THE PREVIOUS TIME LEVEL
       ENDIF
       IF(NFLUXB.EQ.1)THEN
         BARLANHT1(:)=BARLANHT2(:)
-      ENDIF  
+      ENDIF
 
 C...
 c...  find and print to unit 6, the maximum elevation, the maximum
@@ -1257,7 +1271,7 @@ C     output the global node number to debug the local PE fort.14s
          ENDIF
          call WarnElevSum(ErrorElevExceeded)  ! Clint's Zombie Slayer 2010.08.07
          IF( ErrorElevExceeded /= 0 ) THEN    !  Finalize MPI Environment,
-           Flag_ElevError = .true. 
+           Flag_ElevError = .true.
            CALL MSG_FINI()                    !  if there are Error Elvation nodes.
            CALL EXIT(1)                             !
          ENDIF                                !st3
@@ -1682,21 +1696,21 @@ C  FROM THE FULL 3D INTEGRAL USING INFORMATION FROM A 3D BAROCLINIC MODEL.    *
 C  IN THE LATTER CASE MOMENTUM DISPERSION IS ALSO ESTIMATED                   *
 c                                                                             *
 c******************************************************************************
-      
+
       SUBROUTINE BPG2D(IT,TimeLoc)
 
       USE SIZES, ONLY : SZ, myproc
-      USE GLOBAL, ONLY: G, IFNLFA, IFNLCT, IDEN, RAMP, NODECODE, NOFF, 
+      USE GLOBAL, ONLY: G, IFNLFA, IFNLCT, IDEN, RAMP, NODECODE, NOFF,
      &    VIDBCPDXOH, VIDBCPDYOH, ETA2, SigT0, DTDP, DASigT, RhoWat0,
      &    IFSFM
-      USE MESH, ONLY : NE, NM, FDXE, FDYE, NP, DP, AREAS, NODELE, 
+      USE MESH, ONLY : NE, NM, FDXE, FDYE, NP, DP, AREAS, NODELE,
      &      NEITABELE, NEITAB, NNEIGH, TOTALAREA,
      &      SFacEle, SFMYEle, SFMXEle
       USE Couple2BC3D, ONLY : Update_BC3D_Info, FBPG_Disp_from_BC3D
       IMPLICIT NONE
-    
-      INTEGER,INTENT(IN) :: IT 
-      REAL(8),INTENT(IN) :: TimeLoc 
+
+      INTEGER,INTENT(IN) :: IT
+      REAL(8),INTENT(IN) :: TimeLoc
       INTEGER :: IE             !element loop counter
       INTEGER :: J              !node loop counter
       INTEGER :: K              !vertical node loop counter (1-top, BCK-last z contour)
@@ -1705,7 +1719,7 @@ c******************************************************************************
       INTEGER :: NM1,NM2,NM3    !local node numbers used to compute gradients
       INTEGER :: NC1,NC2,NC3    !local node codes
 
-      REAL(SZ) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
+      REAL(SZ) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac
       REAL(SZ) :: AreaIE2, AreaEle
       REAL(SZ) :: H2N1, H2N2, H2N3
       REAL(SZ) :: FDX1, FDX2, FDX3
@@ -1720,20 +1734,20 @@ c******************************************************************************
       REAL(SZ) :: VIDBCPDYOHN1,VIDBCPDYOHN2,VIDBCPDYOHN3
       REAL(SZ) :: VIDBCPDXOHAvgArea,VIDBCPDYOHAvgArea
 
-      ! For the Coupling to 3D Baroclinic mode 
+      ! For the Coupling to 3D Baroclinic mode
       IF (abs(IDEN).ge.5) THEN
-         ! Update the 3D BC Information for the current timestep 
-         call Update_BC3D_Info(IDEN,TimeLoc) 
+         ! Update the 3D BC Information for the current timestep
+         call Update_BC3D_Info(IDEN,TimeLoc)
 
-         if (abs(IDEN).ne.7) then         
+         if (abs(IDEN).ne.7) then
             ! Calculating the full Baroclinic pressure gradient and
             ! momentum dispersion terms required at every timestep
-            ! from the 3D BC information that is on a longer time scale 
+            ! from the 3D BC information that is on a longer time scale
             call FBPG_Disp_from_BC3D()
-         endif 
+         endif
          RETURN
-      ENDIF  
-     
+      ENDIF
+
       ! For the depth-averaged baroclinic mode without coupling
       DO IE=1,NE
          NM1=NM(IE,1)
@@ -1751,20 +1765,20 @@ c******************************************************************************
          EtaN3=IFNLFA*Eta2(NM3)
          SFacAvg= SFacEle(IE)
 C..... BEG DW/WJP
-         SFmxAvg= SFMXEle(IE) ; 
-         SFmyAvg= SFMYEle(IE) ; 
-         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-         sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+         SFmxAvg= SFMXEle(IE)
+         SFmyAvg= SFMYEle(IE)
+         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
+         sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg
 C..... END DW/WJP
 
          AreaIE2=Areas(IE)
          AreaEle=NCEle*AreaIE2*0.5d0
-         FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
-         FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
-         FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
-         FDY1 = FDYE(1,IE)*sfdyfac ; !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
-         FDY2 = FDYE(2,IE)*sfdyfac ; !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
-         FDY3 = FDYE(3,IE)*sfdyfac ; !c FDY3=(X(NM2)-X(NM1))*MY !a3*my         
+         FDX1 = FDXE(1,IE)*sfdxfac !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
+         FDX2 = FDXE(2,IE)*sfdxfac !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
+         FDX3 = FDXE(3,IE)*sfdxfac !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
+         FDY1 = FDYE(1,IE)*sfdyfac !c FDY1=(X(NM3)-X(NM2))*MY !a1*my
+         FDY2 = FDYE(2,IE)*sfdyfac !c FDY2=(X(NM1)-X(NM3))*MY !a2*my
+         FDY3 = FDYE(3,IE)*sfdyfac !c FDY3=(X(NM2)-X(NM1))*MY !a3*my
          FDX1O2A=FDX1/AreaIE2 !dphi1/dx
          FDY1O2A=FDY1/AreaIE2 !dphi1/dy
          FDX2O2A=FDX2/AreaIE2 !dphi2/dx
@@ -1852,7 +1866,7 @@ C
      &      setMessageSource, unsetMessageSource, allMessage,
      &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
      &      ETA2, SIGT0, H0, DTDP
-      USE MESH, ONLY : NM, X, Y, NP, DP, AREAS, NODELE, 
+      USE MESH, ONLY : NM, X, Y, NP, DP, AREAS, NODELE,
      &      NEITABELE, NEITAB, NNEIGH, SFAC
       USE GLOBAL_3DVS, ONLY : BCP, BPG, NFEN, SIGT, SIGMA, IDEN,
      &      GORhoOAMB, AMB, B, IY
@@ -1976,9 +1990,9 @@ C
 
             f1 = ( (SigmaMP       - Sigma(NFEN-1)) * (SigmaMP       - Sigma(NFEN-2)) )
      &         / ( (Sigma(NFEN)   - Sigma(NFEN-1)) * (Sigma(NFEN)   - Sigma(NFEN-2)) )
-            f2 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-2)) ) 
+            f2 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-2)) )
      &         / ( (Sigma(NFEN-1) - Sigma(NFEN))   * (Sigma(NFEN-1) - Sigma(NFEN-2)) )
-            f3 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-1)) ) 
+            f3 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-1)) )
      &         / ( (Sigma(NFEN-2) - Sigma(NFEN))   * (Sigma(NFEN-2) - Sigma(NFEN-1)) )
 
             SigT_mid_point = f1 * SigT(NH,NFEN) + f2 * SigT(NH,NFEN-1) + f3 * SigT(NH,NFEN-2)
@@ -1990,20 +2004,20 @@ C
             ! 4. evaluate the integral at the rest of the vertical nodes
             Do k = NFEN-2, 1, -1
 
-                ! 4.1. 
+                ! 4.1.
                SigmaMP = ( Sigma(k+1) + Sigma(k) ) / 2.0d0
 
                f1 = ( (SigmaMP    - Sigma(k+1)) * (SigmaMP    - Sigma(k)) )
      &            / ( (Sigma(k+2) - Sigma(k+1)) * (Sigma(k+2) - Sigma(k)) )
-               f2 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k)) ) 
+               f2 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k)) )
      &            / ( (Sigma(k+1) - Sigma(k+2)) * (Sigma(k+1) - Sigma(k)) )
-               f3 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k+1)) ) 
+               f3 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k+1)) )
      &            / ( (Sigma(k)   - Sigma(k+2)) * (Sigma(k)   - Sigma(k+1)) )
 
                SigT_mid_point = f1 * SigT(NH,k+2) + f2 * SigT(NH,k+1) + f3 * SigT(NH,k)
 
                 ! 4.2. evaluate the integral
-               BCP (NH,k) = BCP (NH,k+1) + (1.0/6.0) * ( Sigma(k+1) - Sigma(k) ) * HGORhoOAMB 
+               BCP (NH,k) = BCP (NH,k+1) + (1.0/6.0) * ( Sigma(k+1) - Sigma(k) ) * HGORhoOAMB
      &                    * ( (SigT(NH,k+1)-SigT0) + 4.0d0 * (SigT_mid_point-SigT0) +  (SigT(NH,k)-SigT0) )
 
             End Do
@@ -2183,9 +2197,9 @@ c     integrate over the vertical first and differentiate second.
 
             f1 = ( (SigmaMP       - Sigma(NFEN-1)) * (SigmaMP       - Sigma(NFEN-2)) )
      &         / ( (Sigma(NFEN)   - Sigma(NFEN-1)) * (Sigma(NFEN)   - Sigma(NFEN-2)) )
-            f2 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-2)) ) 
+            f2 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-2)) )
      &         / ( (Sigma(NFEN-1) - Sigma(NFEN))   * (Sigma(NFEN-1) - Sigma(NFEN-2)) )
-            f3 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-1)) ) 
+            f3 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-1)) )
      &         / ( (Sigma(NFEN-2) - Sigma(NFEN))   * (Sigma(NFEN-2) - Sigma(NFEN-1)) )
 
             BCPG_mid_point = f1 * BCPG(NFEN) + f2 * BCPG(NFEN-1) + f3 * BCPG(NFEN-2)
@@ -2196,14 +2210,14 @@ c     integrate over the vertical first and differentiate second.
             ! 4. evaluate the integral at the rest of the vertical nodes
             Do k = NFEN-2, 1, -1
 
-                ! 4.1. 
+                ! 4.1.
                SigmaMP = ( Sigma(k+1) + Sigma(k) ) / 2.0d0
 
                f1 = ( (SigmaMP    - Sigma(k+1)) * (SigmaMP    - Sigma(k)) )
      &            / ( (Sigma(k+2) - Sigma(k+1)) * (Sigma(k+2) - Sigma(k)) )
-               f2 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k)) ) 
+               f2 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k)) )
      &            / ( (Sigma(k+1) - Sigma(k+2)) * (Sigma(k+1) - Sigma(k)) )
-               f3 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k+1)) ) 
+               f3 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k+1)) )
      &            / ( (Sigma(k)   - Sigma(k+2)) * (Sigma(k)   - Sigma(k+1)) )
 
                BCPG_mid_point = f1 * BCPG(k+2) + f2 * BCPG(k+1) + f3 * BCPG(k)
@@ -2257,38 +2271,38 @@ C
 
 
 !----------------------------------------------------------------------------------------------------------------------------------------------------
-! arash - print out a vertical slice of Salinity 
+! arash - print out a vertical slice of Salinity
 ! times for Kendra's problem: 1, 3.4, 4, 12, 20, 30
-!       time_local = IT * DTDP 
+!       time_local = IT * DTDP
 !       day_local = time_local / ( 24.0d0 * 3600.0d0 )
 ! Kendra's example:
-!      If ( (abs(time_local - 1.0d-3) < diff_tol) .or. 
+!      If ( (abs(time_local - 1.0d-3) < diff_tol) .or.
 !     &     (abs(time_local - 1.0d0) < diff_tol) .or.
 !     &     (abs(time_local - 2.0d0) < diff_tol) .or.
 !     &     (abs(time_local - 3.0d0) < diff_tol) .or.
 !     &     (abs(time_local - 3.4d0) < diff_tol) .or.
-!     &     (abs(time_local - 4.0d0) < diff_tol) .or.   
+!     &     (abs(time_local - 4.0d0) < diff_tol) .or.
 !     &     (abs(time_local - 8.0d0) < diff_tol) .or.
-!     &     (abs(time_local -12.0d0) < diff_tol) .or.   
+!     &     (abs(time_local -12.0d0) < diff_tol) .or.
 !     &     (abs(time_local -16.0d0) < diff_tol) .or.
-!     &     (abs(time_local -20.0d0) < diff_tol) .or.   
+!     &     (abs(time_local -20.0d0) < diff_tol) .or.
 !     &     (abs(time_local -25.0d0) < diff_tol) .or.
 !     &     (abs(time_local -30.0d0) < diff_tol) .or.
 !     &     (abs(time_local-100.0d0) < diff_tol) .or.
-!     &     (abs(time_local-300.0d0) < diff_tol)  
+!     &     (abs(time_local-300.0d0) < diff_tol)
 !     &   ) Then
 
 ! Casey's example
-!      If ( (abs(time_local  -   1.0d0) < diff_tol) .or. 
+!      If ( (abs(time_local  -   1.0d0) < diff_tol) .or.
 !     &     (abs(time_local  - 300.0d0) < diff_tol) .or.
-!     &     (abs(time_local  -3600.0d0) < diff_tol) .or.   
+!     &     (abs(time_local  -3600.0d0) < diff_tol) .or.
 !     &     (abs(time_local -21600.0d0) < diff_tol) .or. ! 6 hours
-!     &     (abs(day_local -     1.0d0) < diff_tol) .or.   
-!     &     (abs(day_local -     4.0d0) < diff_tol) .or.   
-!     &     (abs(day_local -    10.0d0) < diff_tol) .or.   
-!     &     (abs(day_local -    40.0d0) < diff_tol) .or.   
-!     &     (abs(day_local -    100.0d0) < diff_tol) .or.   
-!     &     (abs(day_local -    180.0d0) < diff_tol) 
+!     &     (abs(day_local -     1.0d0) < diff_tol) .or.
+!     &     (abs(day_local -     4.0d0) < diff_tol) .or.
+!     &     (abs(day_local -    10.0d0) < diff_tol) .or.
+!     &     (abs(day_local -    40.0d0) < diff_tol) .or.
+!     &     (abs(day_local -    100.0d0) < diff_tol) .or.
+!     &     (abs(day_local -    180.0d0) < diff_tol)
 !     &   ) Then
 
 !         Do NH = 1 , NP                             ! loop on all horizontal nodes
@@ -2358,7 +2372,7 @@ C     jgf46.00 Explicitly declared the following variables
          SigAbov=b
          GOTO 100
       ENDIF
-      
+
       IF(SigmaNN.GE.a) THEN     !into air use surface
          LAbov=NFEN
          BCPressNN=BCP(NN,LAbov)
@@ -2489,7 +2503,7 @@ C     jgf46.00 Explicitly declared the following variables
 
 ! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
 ! arash 150513
-      IF(SigmaNN.GE.(1.0001d0*a)) THEN            ! in the air - non-existent 
+      IF(SigmaNN.GE.(1.0001d0*a)) THEN            ! in the air - non-existent
          BCPressNN=-999.0d0
 !--------------------------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------------------------
@@ -2553,7 +2567,7 @@ C     jgf46.00 Explicitly declared the following variables
 ! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
  99   Continue
 
-! arash added this because of the terminations at the SURA model. 
+! arash added this because of the terminations at the SURA model.
 ! this shouldn't be needed though.
 ! 0.
 !      If ( loop_situation == 0 ) Then
@@ -2633,32 +2647,32 @@ C     jgf46.00 Explicitly declared the following variables
 !      end if
 
 ! 2- compute the shape functions
-      top = ((SigmaNN - Sigma(k2)) * (SigmaNN - Sigma(k3)) * 
-     &       (SigmaNN - Sigma(k4))) 
-      bot = ((Sigma(k1)-Sigma(k2)) * (Sigma(k1)-Sigma(k3)) * 
-     &       (Sigma(k1)-Sigma(k4))) 
+      top = ((SigmaNN - Sigma(k2)) * (SigmaNN - Sigma(k3)) *
+     &       (SigmaNN - Sigma(k4)))
+      bot = ((Sigma(k1)-Sigma(k2)) * (Sigma(k1)-Sigma(k3)) *
+     &       (Sigma(k1)-Sigma(k4)))
       f1  = top / bot
 
-      top = ((SigmaNN - Sigma(k1)) * (SigmaNN - Sigma(k3)) * 
+      top = ((SigmaNN - Sigma(k1)) * (SigmaNN - Sigma(k3)) *
      &       (SigmaNN - Sigma(k4)))
-      bot = ((Sigma(k2)-Sigma(k1)) * (Sigma(k2)-Sigma(k3)) * 
+      bot = ((Sigma(k2)-Sigma(k1)) * (Sigma(k2)-Sigma(k3)) *
      &       (Sigma(k2)-Sigma(k4)))
       f2  = top / bot
 
-      top = ((SigmaNN - Sigma(k1)) * (SigmaNN - Sigma(k2)) * 
+      top = ((SigmaNN - Sigma(k1)) * (SigmaNN - Sigma(k2)) *
      &       (SigmaNN - Sigma(k4)))
-      bot = ((Sigma(k3)-Sigma(k1)) * (Sigma(k3)-Sigma(k2)) * 
+      bot = ((Sigma(k3)-Sigma(k1)) * (Sigma(k3)-Sigma(k2)) *
      &       (Sigma(k3)-Sigma(k4)))
       f3  = top / bot
 
-      top = ((SigmaNN - Sigma(k1)) * (SigmaNN - Sigma(k2)) * 
+      top = ((SigmaNN - Sigma(k1)) * (SigmaNN - Sigma(k2)) *
      &       (SigmaNN - Sigma(k3)))
-      bot = ((Sigma(k4)-Sigma(k1)) * (Sigma(k4)-Sigma(k2)) * 
+      bot = ((Sigma(k4)-Sigma(k1)) * (Sigma(k4)-Sigma(k2)) *
      &       (Sigma(k4)-Sigma(k3)))
       f4  = top / bot
 
 ! 3- interpolate
-      BCPressNN = f1 * BCP(NN,k1) + f2 * BCP(NN,k2) 
+      BCPressNN = f1 * BCP(NN,k1) + f2 * BCP(NN,k2)
      &          + f3 * BCP(NN,k3) + f4 * BCP(NN,k4)
 
 ! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
@@ -2702,7 +2716,7 @@ C**********************************************************************
        INTEGER :: NeiTab(NP,MNEI), NNeigh(NP)
        REAL(8), ALLOCATABLE :: Weights(:)
        ! velocities are stored as complex quantities: u+i*v
-       Complex(8), ALLOCATABLE :: quantity_smooth(:,:) 
+       Complex(8), ALLOCATABLE :: quantity_smooth(:,:)
        Complex(8), ALLOCATABLE :: inarray_vertical (:)
        Complex(8) :: quantity(NP,NFEN)
        Complex(8) :: interpolated_value
@@ -2739,7 +2753,7 @@ C**********************************************************************
           Weights = 0.0d0
           Do J = 1, NNeigh ( I ) ! also includes node I
              Neighbor_Node = NeiTab ( I , J )
-             numerator = ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2 
+             numerator = ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2
              denominator = 2.0d0 * sigma_Gauss**2
              Weights (J) = exp ( -1.0 * numerator / denominator )
           End Do

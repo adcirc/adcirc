@@ -66,10 +66,10 @@ C
       integer, parameter :: SPARSE_ASCII = 4
       integer, parameter :: NETCDF4 = 5
       integer, parameter :: XDMF = 7
-      character(len=20) :: formatString(0:7) = (/ 'OFF         ', 
-     &   'ASCII       ', 'BINARY      ', 'NETCDF3     ', 'SPARSE_ASCII', 
+      character(len=20) :: formatString(0:7) = (/ 'OFF         ',
+     &   'ASCII       ', 'BINARY      ', 'NETCDF3     ', 'SPARSE_ASCII',
      &   'NETCDF4     ', 'UNDEF       ', 'XDMF        ' /)
-           
+
       !
       ! parameters related to input files
       !
@@ -78,7 +78,7 @@ C
       LOGICAL :: meshFileNameSpecified ! .true. if the user explicitly gave the fn
       CHARACTER(2048) :: meshFileName ! if different from the default fort.14
       ! name of full domain mesh file in parallel (only used by XDMF in parallel)
-      CHARACTER(2048) :: meshFileName_g 
+      CHARACTER(2048) :: meshFileName_g
       !
       ! control (fort.15) file
       INTEGER :: controlType
@@ -91,7 +91,7 @@ C
       INTEGER :: naType
       LOGICAL :: naFileNameSpecified ! .true. if the user explicitly gave the fn
       CHARACTER(2048) :: naFileName ! if different from the default fort.14
-  
+
 
 C---------------------end of data declarations--------------------------------C
 
@@ -103,14 +103,14 @@ C     S U B R O U T I N E   M A K E _ D I R N A M E
 C-----------------------------------------------------------------------
 C     jgf: Determine which directories (paths) should be used
 C     to locate input files and write output files; process command
-C     line options related to file i/o. 
+C     line options related to file i/o.
 C
 C     jgf51.21.11: Added capability to allow user to specify name and
-C     file format of the mesh file.  
+C     file format of the mesh file.
 C-----------------------------------------------------------------------
       SUBROUTINE MAKE_DIRNAME()
 !tcm v50.85 added for windows builds
-#ifdef CMPI      
+#ifdef CMPI
 #ifdef WINDOWS
       USE IFPORT
 #endif
@@ -118,7 +118,7 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: LNAME, IARGC, ARGCOUNT, I, iprefix, res
       CHARACTER(2048) :: CMDLINEARG
-      CHARACTER(2000) :: wholeCommandLine ! used to launch this executable, for log message 
+      CHARACTER(2000) :: wholeCommandLine ! used to launch this executable, for log message
       CHARACTER(8)    :: PREFIX(2) = (/ '/PE0000 ', '/DOM0000' /)
       logical         :: fileFound
       logical(4) :: dir_result
@@ -133,17 +133,17 @@ C-----------------------------------------------------------------------
       WRITE_LOCAL_HARM_FILES = .FALSE.
       !
       ! defaults
-      meshType = ASCII 
+      meshType = ASCII
       meshFileNameSpecified = .false.
       meshFileName = 'fort.14'
       meshFileName_g = 'fort.14' ! used by XDMF writer in parallel to read mesh
-      
-      controlType = ASCII 
+
+      controlType = ASCII
       controlFileNameSpecified = .false.
-      controlFileName = 'fort.15' 
+      controlFileName = 'fort.15'
       controlFileName_g = 'fort.15' ! used by XDMF writer in parallel to read metadata
-      
-      naType = ASCII 
+
+      naType = ASCII
       naFileNameSpecified = .false.
       naFileName = 'fort.13'
 
@@ -159,17 +159,17 @@ Cobell 110518: Add compiler flag for local hot start.
 
       if (ARGCOUNT > 0) then
          !
-         ! jgf51.21.41: Echo the entire command line that was used to 
+         ! jgf51.21.41: Echo the entire command line that was used to
          ! launch this executable.
          i=0
          wholeCommandLine(:) = ' '
-         do while (i.lt.argcount) 
+         do while (i.lt.argcount)
             call getarg(i, cmdlinearg)
-            wholeCommandLine = ' ' // trim(adjustl(wholeCommandLine)) 
-     &         // ' ' // trim(adjustl(cmdlinearg)) 
-            i=i+1          
+            wholeCommandLine = ' ' // trim(adjustl(wholeCommandLine))
+     &         // ' ' // trim(adjustl(cmdlinearg))
+            i=i+1
          end do
-         if (myproc.eq.0) then 
+         if (myproc.eq.0) then
             write(*,'(a,a)') 'ECHO: Application launched with: '
      &         // trim(adjustl(wholeCommandLine))
          endif
@@ -180,7 +180,7 @@ Cobell 110518: Add compiler flag for local hot start.
             i = i + 1
             call getarg(i, CMDLINEARG)
             select case(cmdlinearg(1:2))
-            case("-I","-i") 
+            case("-I","-i")
                i = i + 1
                call getarg(i,INPUTDIR)
                if (myProc.eq.0) then
@@ -223,7 +223,7 @@ Cobell 110518: Add compiler flag for local hot start.
             case("-M","-m")
                ! jgf51.21.11: Added options related to the mesh file
                select case(cmdlinearg(1:4))
-               case("-MFT","-mft") ! mesh file type 
+               case("-MFT","-mft") ! mesh file type
                   i = i + 1
                   call getarg(i, CMDLINEARG)
                   select case(trim(cmdlinearg))
@@ -241,10 +241,10 @@ Cobell 110518: Add compiler flag for local hot start.
                case("-MFN","-mfn") ! mesh file name
                   meshFileNameSpecified = .true.
                   i = i + 1
-                  call getarg(i,meshFileName)                                 
+                  call getarg(i,meshFileName)
                case default
                   ! jgf51.44: -m by itself triggers subdomain harmonic
-                  ! analysis output files. 
+                  ! analysis output files.
                   if ( len(trim(cmdlinearg)).eq.2 ) then
                      WRITE_LOCAL_HARM_FILES = .TRUE.
                      if (myProc.eq.0) then
@@ -260,7 +260,7 @@ Cobell 110518: Add compiler flag for local hot start.
             case("-N","-n")
                ! jgf51.21.11: Added options related to the nodal attributes file
                select case(cmdlinearg(1:4))
-               case("-NFT","-nft") ! nodal attributes file type 
+               case("-NFT","-nft") ! nodal attributes file type
                   i = i + 1
                   call getarg(i, CMDLINEARG)
                   select case(trim(cmdlinearg))
@@ -270,7 +270,7 @@ Cobell 110518: Add compiler flag for local hot start.
                      naType = XDMF
                   case default
                      if (myProc.eq.0) then
-                        write(*,*) 
+                        write(*,*)
      &                   "WARNING: The nodal attributes file type '",
      &                   trim(cmdlinearg),
      &               "' is not valid. Valid types are ascii and xdmf."
@@ -279,7 +279,7 @@ Cobell 110518: Add compiler flag for local hot start.
                case("-NFN","-nfn") ! nodal attributes file name
                   naFileNameSpecified = .true.
                   i = i + 1
-                  call getarg(i,naFileName)                                 
+                  call getarg(i,naFileName)
                case default
                   if (myProc.eq.0) then
                      write(*,*) "WARNING: The command line option '",
@@ -363,7 +363,7 @@ C... tcm v49.67 -- additions for Windows based PC compilations
 #else
       WRITE(LOCALDIR,'(A)') TRIM(ROOTDIR)
 #endif
-      ! 
+      !
       ! jgf51.21.27: Form mesh file name and nodal attributes file name.
       if (meshFileNameSpecified.eqv..false.) then
          meshFileName = trim(LOCALDIR)//'/fort.14'
@@ -387,7 +387,7 @@ C     jgf49.17.01 Summarize and log results.
             write(*,*)
      &         "INFO: ADCIRC will write subdomain hotstart files."
          endif
-         if ((WRITE_LOCAL_HARM_FILES.eqv..TRUE.).AND.(MNPROC.GT.1)) then 
+         if ((WRITE_LOCAL_HARM_FILES.eqv..TRUE.).AND.(MNPROC.GT.1)) then
             write(*,*) 'INFO: ADCIRC will write '
      &                    //  'subdomain harmonic analysis files.'
          endif
