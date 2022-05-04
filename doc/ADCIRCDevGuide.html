@@ -1,1333 +1,1547 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
-    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+        "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
-<meta name="generator" content="AsciiDoc 8.6.6" />
-<title>The ADCIRC Developers Guide</title>
-<style type="text/css">
-/* Shared CSS for AsciiDoc xhtml11 and html5 backends */
-
-/* Default font. */
-body {
-  font-family: Georgia,serif;
-}
-
-/* Title font. */
-h1, h2, h3, h4, h5, h6,
-div.title, caption.title,
-thead, p.table.header,
-#toctitle,
-#author, #revnumber, #revdate, #revremark,
-#footer {
-  font-family: Arial,Helvetica,sans-serif;
-}
-
-body {
-  margin: 1em 5% 1em 5%;
-}
-
-a {
-  color: blue;
-  text-decoration: underline;
-}
-a:visited {
-  color: fuchsia;
-}
-
-em {
-  font-style: italic;
-  color: navy;
-}
-
-strong {
-  font-weight: bold;
-  color: #083194;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  color: #527bbd;
-  margin-top: 1.2em;
-  margin-bottom: 0.5em;
-  line-height: 1.3;
-}
-
-h1, h2, h3 {
-  border-bottom: 2px solid silver;
-}
-h2 {
-  padding-top: 0.5em;
-}
-h3 {
-  float: left;
-}
-h3 + * {
-  clear: left;
-}
-h5 {
-  font-size: 1.0em;
-}
-
-div.sectionbody {
-  margin-left: 0;
-}
-
-hr {
-  border: 1px solid silver;
-}
-
-p {
-  margin-top: 0.5em;
-  margin-bottom: 0.5em;
-}
-
-ul, ol, li > p {
-  margin-top: 0;
-}
-ul > li     { color: #aaa; }
-ul > li > * { color: black; }
-
-pre {
-  padding: 0;
-  margin: 0;
-}
-
-#author {
-  color: #527bbd;
-  font-weight: bold;
-  font-size: 1.1em;
-}
-#email {
-}
-#revnumber, #revdate, #revremark {
-}
-
-#footer {
-  font-size: small;
-  border-top: 2px solid silver;
-  padding-top: 0.5em;
-  margin-top: 4.0em;
-}
-#footer-text {
-  float: left;
-  padding-bottom: 0.5em;
-}
-#footer-badges {
-  float: right;
-  padding-bottom: 0.5em;
-}
-
-#preamble {
-  margin-top: 1.5em;
-  margin-bottom: 1.5em;
-}
-div.imageblock, div.exampleblock, div.verseblock,
-div.quoteblock, div.literalblock, div.listingblock, div.sidebarblock,
-div.admonitionblock {
-  margin-top: 1.0em;
-  margin-bottom: 1.5em;
-}
-div.admonitionblock {
-  margin-top: 2.0em;
-  margin-bottom: 2.0em;
-  margin-right: 10%;
-  color: #606060;
-}
-
-div.content { /* Block element content. */
-  padding: 0;
-}
-
-/* Block element titles. */
-div.title, caption.title {
-  color: #527bbd;
-  font-weight: bold;
-  text-align: left;
-  margin-top: 1.0em;
-  margin-bottom: 0.5em;
-}
-div.title + * {
-  margin-top: 0;
-}
-
-td div.title:first-child {
-  margin-top: 0.0em;
-}
-div.content div.title:first-child {
-  margin-top: 0.0em;
-}
-div.content + div.title {
-  margin-top: 0.0em;
-}
-
-div.sidebarblock > div.content {
-  background: #ffffee;
-  border: 1px solid #dddddd;
-  border-left: 4px solid #f0f0f0;
-  padding: 0.5em;
-}
-
-div.listingblock > div.content {
-  border: 1px solid #dddddd;
-  border-left: 5px solid #f0f0f0;
-  background: #f8f8f8;
-  padding: 0.5em;
-}
-
-div.quoteblock, div.verseblock {
-  padding-left: 1.0em;
-  margin-left: 1.0em;
-  margin-right: 10%;
-  border-left: 5px solid #f0f0f0;
-  color: #888;
-}
-
-div.quoteblock > div.attribution {
-  padding-top: 0.5em;
-  text-align: right;
-}
-
-div.verseblock > pre.content {
-  font-family: inherit;
-  font-size: inherit;
-}
-div.verseblock > div.attribution {
-  padding-top: 0.75em;
-  text-align: left;
-}
-/* DEPRECATED: Pre version 8.2.7 verse style literal block. */
-div.verseblock + div.attribution {
-  text-align: left;
-}
-
-div.admonitionblock .icon {
-  vertical-align: top;
-  font-size: 1.1em;
-  font-weight: bold;
-  text-decoration: underline;
-  color: #527bbd;
-  padding-right: 0.5em;
-}
-div.admonitionblock td.content {
-  padding-left: 0.5em;
-  border-left: 3px solid #dddddd;
-}
-
-div.exampleblock > div.content {
-  border-left: 3px solid #dddddd;
-  padding-left: 0.5em;
-}
-
-div.imageblock div.content { padding-left: 0; }
-span.image img { border-style: none; }
-a.image:visited { color: white; }
-
-dl {
-  margin-top: 0.8em;
-  margin-bottom: 0.8em;
-}
-dt {
-  margin-top: 0.5em;
-  margin-bottom: 0;
-  font-style: normal;
-  color: navy;
-}
-dd > *:first-child {
-  margin-top: 0.1em;
-}
-
-ul, ol {
-    list-style-position: outside;
-}
-ol.arabic {
-  list-style-type: decimal;
-}
-ol.loweralpha {
-  list-style-type: lower-alpha;
-}
-ol.upperalpha {
-  list-style-type: upper-alpha;
-}
-ol.lowerroman {
-  list-style-type: lower-roman;
-}
-ol.upperroman {
-  list-style-type: upper-roman;
-}
-
-div.compact ul, div.compact ol,
-div.compact p, div.compact p,
-div.compact div, div.compact div {
-  margin-top: 0.1em;
-  margin-bottom: 0.1em;
-}
-
-tfoot {
-  font-weight: bold;
-}
-td > div.verse {
-  white-space: pre;
-}
-
-div.hdlist {
-  margin-top: 0.8em;
-  margin-bottom: 0.8em;
-}
-div.hdlist tr {
-  padding-bottom: 15px;
-}
-dt.hdlist1.strong, td.hdlist1.strong {
-  font-weight: bold;
-}
-td.hdlist1 {
-  vertical-align: top;
-  font-style: normal;
-  padding-right: 0.8em;
-  color: navy;
-}
-td.hdlist2 {
-  vertical-align: top;
-}
-div.hdlist.compact tr {
-  margin: 0;
-  padding-bottom: 0;
-}
-
-.comment {
-  background: yellow;
-}
-
-.footnote, .footnoteref {
-  font-size: 0.8em;
-}
-
-span.footnote, span.footnoteref {
-  vertical-align: super;
-}
-
-#footnotes {
-  margin: 20px 0 20px 0;
-  padding: 7px 0 0 0;
-}
-
-#footnotes div.footnote {
-  margin: 0 0 5px 0;
-}
-
-#footnotes hr {
-  border: none;
-  border-top: 1px solid silver;
-  height: 1px;
-  text-align: left;
-  margin-left: 0;
-  width: 20%;
-  min-width: 100px;
-}
-
-div.colist td {
-  padding-right: 0.5em;
-  padding-bottom: 0.3em;
-  vertical-align: top;
-}
-div.colist td img {
-  margin-top: 0.3em;
-}
-
-@media print {
-  #footer-badges { display: none; }
-}
-
-#toc {
-  margin-bottom: 2.5em;
-}
-
-#toctitle {
-  color: #527bbd;
-  font-size: 1.1em;
-  font-weight: bold;
-  margin-top: 1.0em;
-  margin-bottom: 0.1em;
-}
-
-div.toclevel1, div.toclevel2, div.toclevel3, div.toclevel4 {
-  margin-top: 0;
-  margin-bottom: 0;
-}
-div.toclevel2 {
-  margin-left: 2em;
-  font-size: 0.9em;
-}
-div.toclevel3 {
-  margin-left: 4em;
-  font-size: 0.9em;
-}
-div.toclevel4 {
-  margin-left: 6em;
-  font-size: 0.9em;
-}
-
-span.aqua { color: aqua; }
-span.black { color: black; }
-span.blue { color: blue; }
-span.fuchsia { color: fuchsia; }
-span.gray { color: gray; }
-span.green { color: green; }
-span.lime { color: lime; }
-span.maroon { color: maroon; }
-span.navy { color: navy; }
-span.olive { color: olive; }
-span.purple { color: purple; }
-span.red { color: red; }
-span.silver { color: silver; }
-span.teal { color: teal; }
-span.white { color: white; }
-span.yellow { color: yellow; }
-
-span.aqua-background { background: aqua; }
-span.black-background { background: black; }
-span.blue-background { background: blue; }
-span.fuchsia-background { background: fuchsia; }
-span.gray-background { background: gray; }
-span.green-background { background: green; }
-span.lime-background { background: lime; }
-span.maroon-background { background: maroon; }
-span.navy-background { background: navy; }
-span.olive-background { background: olive; }
-span.purple-background { background: purple; }
-span.red-background { background: red; }
-span.silver-background { background: silver; }
-span.teal-background { background: teal; }
-span.white-background { background: white; }
-span.yellow-background { background: yellow; }
-
-span.big { font-size: 2em; }
-span.small { font-size: 0.6em; }
-
-span.underline { text-decoration: underline; }
-span.overline { text-decoration: overline; }
-span.line-through { text-decoration: line-through; }
-
-
-/*
- * xhtml11 specific
- *
- * */
-
-tt {
-  font-family: monospace;
-  font-size: inherit;
-  color: navy;
-}
-
-div.tableblock {
-  margin-top: 1.0em;
-  margin-bottom: 1.5em;
-}
-div.tableblock > table {
-  border: 3px solid #527bbd;
-}
-thead, p.table.header {
-  font-weight: bold;
-  color: #527bbd;
-}
-p.table {
-  margin-top: 0;
-}
-/* Because the table frame attribute is overriden by CSS in most browsers. */
-div.tableblock > table[frame="void"] {
-  border-style: none;
-}
-div.tableblock > table[frame="hsides"] {
-  border-left-style: none;
-  border-right-style: none;
-}
-div.tableblock > table[frame="vsides"] {
-  border-top-style: none;
-  border-bottom-style: none;
-}
-
-
-/*
- * html5 specific
- *
- * */
-
-.monospaced {
-  font-family: monospace;
-  font-size: inherit;
-  color: navy;
-}
-
-table.tableblock {
-  margin-top: 1.0em;
-  margin-bottom: 1.5em;
-}
-thead, p.tableblock.header {
-  font-weight: bold;
-  color: #527bbd;
-}
-p.tableblock {
-  margin-top: 0;
-}
-table.tableblock {
-  border-width: 3px;
-  border-spacing: 0px;
-  border-style: solid;
-  border-color: #527bbd;
-  border-collapse: collapse;
-}
-th.tableblock, td.tableblock {
-  border-width: 1px;
-  padding: 4px;
-  border-style: solid;
-  border-color: #527bbd;
-}
-
-table.tableblock.frame-topbot {
-  border-left-style: hidden;
-  border-right-style: hidden;
-}
-table.tableblock.frame-sides {
-  border-top-style: hidden;
-  border-bottom-style: hidden;
-}
-table.tableblock.frame-none {
-  border-style: hidden;
-}
-
-th.tableblock.halign-left, td.tableblock.halign-left {
-  text-align: left;
-}
-th.tableblock.halign-center, td.tableblock.halign-center {
-  text-align: center;
-}
-th.tableblock.halign-right, td.tableblock.halign-right {
-  text-align: right;
-}
-
-th.tableblock.valign-top, td.tableblock.valign-top {
-  vertical-align: top;
-}
-th.tableblock.valign-middle, td.tableblock.valign-middle {
-  vertical-align: middle;
-}
-th.tableblock.valign-bottom, td.tableblock.valign-bottom {
-  vertical-align: bottom;
-}
-
-
-/*
- * manpage specific
- *
- * */
-
-body.manpage h1 {
-  padding-top: 0.5em;
-  padding-bottom: 0.5em;
-  border-top: 2px solid silver;
-  border-bottom: 2px solid silver;
-}
-body.manpage h2 {
-  border-style: none;
-}
-body.manpage div.sectionbody {
-  margin-left: 3em;
-}
-
-@media print {
-  body.manpage div#toc { display: none; }
-}
-@media screen {
-  body {
-    max-width: 50em; /* approximately 80 characters wide */
-    margin-left: 16em;
-  }
-
-  #toc {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 13em;
-    padding: 0.5em;
-    padding-bottom: 1.5em;
-    margin: 0;
-    overflow: auto;
-    border-right: 3px solid #f8f8f8;
-    background-color: white;
-  }
-
-  #toc .toclevel1 {
-    margin-top: 0.5em;
-  }
-
-  #toc .toclevel2 {
-    margin-top: 0.25em;
-    display: list-item;
-    color: #aaaaaa;
-  }
-
-  #toctitle {
-    margin-top: 0.5em;
-  }
-}
-</style>
-<script type="text/javascript">
-/*<![CDATA[*/
-var asciidoc = {  // Namespace.
+    <meta content="application/xhtml+xml; charset=UTF-8" http-equiv="Content-Type"/>
+    <meta content="AsciiDoc 8.6.6" name="generator"/>
+    <title>The ADCIRC Developers Guide</title>
+    <style type="text/css">
+        /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
+
+        /* Default font. */
+        body {
+            font-family: Georgia, serif;
+        }
+
+        /* Title font. */
+        h1, h2, h3, h4, h5, h6,
+        div.title, caption.title,
+        thead, p.table.header,
+        #toctitle,
+        #author, #revnumber, #revdate, #revremark,
+        #footer {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            margin: 1em 5% 1em 5%;
+        }
+
+        a {
+            color: blue;
+            text-decoration: underline;
+        }
+
+        a:visited {
+            color: fuchsia;
+        }
+
+        em {
+            font-style: italic;
+            color: navy;
+        }
+
+        strong {
+            font-weight: bold;
+            color: #083194;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            color: #527bbd;
+            margin-top: 1.2em;
+            margin-bottom: 0.5em;
+            line-height: 1.3;
+        }
+
+        h1, h2, h3 {
+            border-bottom: 2px solid silver;
+        }
+
+        h2 {
+            padding-top: 0.5em;
+        }
+
+        h3 {
+            float: left;
+        }
+
+        h3 + * {
+            clear: left;
+        }
+
+        h5 {
+            font-size: 1.0em;
+        }
+
+        div.sectionbody {
+            margin-left: 0;
+        }
+
+        hr {
+            border: 1px solid silver;
+        }
+
+        p {
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+        }
+
+        ul, ol, li > p {
+            margin-top: 0;
+        }
+
+        ul > li {
+            color: #aaa;
+        }
+
+        ul > li > * {
+            color: black;
+        }
+
+        pre {
+            padding: 0;
+            margin: 0;
+        }
+
+        #author {
+            color: #527bbd;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        #email {
+        }
+
+        #revnumber, #revdate, #revremark {
+        }
+
+        #footer {
+            font-size: small;
+            border-top: 2px solid silver;
+            padding-top: 0.5em;
+            margin-top: 4.0em;
+        }
+
+        #footer-text {
+            float: left;
+            padding-bottom: 0.5em;
+        }
+
+        #footer-badges {
+            float: right;
+            padding-bottom: 0.5em;
+        }
+
+        #preamble {
+            margin-top: 1.5em;
+            margin-bottom: 1.5em;
+        }
+
+        div.imageblock, div.exampleblock, div.verseblock,
+        div.quoteblock, div.literalblock, div.listingblock, div.sidebarblock,
+        div.admonitionblock {
+            margin-top: 1.0em;
+            margin-bottom: 1.5em;
+        }
+
+        div.admonitionblock {
+            margin-top: 2.0em;
+            margin-bottom: 2.0em;
+            margin-right: 10%;
+            color: #606060;
+        }
+
+        div.content { /* Block element content. */
+            padding: 0;
+        }
+
+        /* Block element titles. */
+        div.title, caption.title {
+            color: #527bbd;
+            font-weight: bold;
+            text-align: left;
+            margin-top: 1.0em;
+            margin-bottom: 0.5em;
+        }
+
+        div.title + * {
+            margin-top: 0;
+        }
+
+        td div.title:first-child {
+            margin-top: 0.0em;
+        }
+
+        div.content div.title:first-child {
+            margin-top: 0.0em;
+        }
+
+        div.content + div.title {
+            margin-top: 0.0em;
+        }
+
+        div.sidebarblock > div.content {
+            background: #ffffee;
+            border: 1px solid #dddddd;
+            border-left: 4px solid #f0f0f0;
+            padding: 0.5em;
+        }
+
+        div.listingblock > div.content {
+            border: 1px solid #dddddd;
+            border-left: 5px solid #f0f0f0;
+            background: #f8f8f8;
+            padding: 0.5em;
+        }
+
+        div.quoteblock, div.verseblock {
+            padding-left: 1.0em;
+            margin-left: 1.0em;
+            margin-right: 10%;
+            border-left: 5px solid #f0f0f0;
+            color: #888;
+        }
+
+        div.quoteblock > div.attribution {
+            padding-top: 0.5em;
+            text-align: right;
+        }
+
+        div.verseblock > pre.content {
+            font-family: inherit;
+            font-size: inherit;
+        }
+
+        div.verseblock > div.attribution {
+            padding-top: 0.75em;
+            text-align: left;
+        }
+
+        /* DEPRECATED: Pre version 8.2.7 verse style literal block. */
+        div.verseblock + div.attribution {
+            text-align: left;
+        }
+
+        div.admonitionblock .icon {
+            vertical-align: top;
+            font-size: 1.1em;
+            font-weight: bold;
+            text-decoration: underline;
+            color: #527bbd;
+            padding-right: 0.5em;
+        }
+
+        div.admonitionblock td.content {
+            padding-left: 0.5em;
+            border-left: 3px solid #dddddd;
+        }
+
+        div.exampleblock > div.content {
+            border-left: 3px solid #dddddd;
+            padding-left: 0.5em;
+        }
+
+        div.imageblock div.content {
+            padding-left: 0;
+        }
+
+        span.image img {
+            border-style: none;
+        }
+
+        a.image:visited {
+            color: white;
+        }
+
+        dl {
+            margin-top: 0.8em;
+            margin-bottom: 0.8em;
+        }
+
+        dt {
+            margin-top: 0.5em;
+            margin-bottom: 0;
+            font-style: normal;
+            color: navy;
+        }
+
+        dd > *:first-child {
+            margin-top: 0.1em;
+        }
+
+        ul, ol {
+            list-style-position: outside;
+        }
+
+        ol.arabic {
+            list-style-type: decimal;
+        }
+
+        ol.loweralpha {
+            list-style-type: lower-alpha;
+        }
+
+        ol.upperalpha {
+            list-style-type: upper-alpha;
+        }
+
+        ol.lowerroman {
+            list-style-type: lower-roman;
+        }
+
+        ol.upperroman {
+            list-style-type: upper-roman;
+        }
+
+        div.compact ul, div.compact ol,
+        div.compact p, div.compact p,
+        div.compact div, div.compact div {
+            margin-top: 0.1em;
+            margin-bottom: 0.1em;
+        }
+
+        tfoot {
+            font-weight: bold;
+        }
+
+        td > div.verse {
+            white-space: pre;
+        }
+
+        div.hdlist {
+            margin-top: 0.8em;
+            margin-bottom: 0.8em;
+        }
+
+        div.hdlist tr {
+            padding-bottom: 15px;
+        }
+
+        dt.hdlist1.strong, td.hdlist1.strong {
+            font-weight: bold;
+        }
+
+        td.hdlist1 {
+            vertical-align: top;
+            font-style: normal;
+            padding-right: 0.8em;
+            color: navy;
+        }
+
+        td.hdlist2 {
+            vertical-align: top;
+        }
+
+        div.hdlist.compact tr {
+            margin: 0;
+            padding-bottom: 0;
+        }
+
+        .comment {
+            background: yellow;
+        }
+
+        .footnote, .footnoteref {
+            font-size: 0.8em;
+        }
+
+        span.footnote, span.footnoteref {
+            vertical-align: super;
+        }
+
+        #footnotes {
+            margin: 20px 0 20px 0;
+            padding: 7px 0 0 0;
+        }
+
+        #footnotes div.footnote {
+            margin: 0 0 5px 0;
+        }
+
+        #footnotes hr {
+            border: none;
+            border-top: 1px solid silver;
+            height: 1px;
+            text-align: left;
+            margin-left: 0;
+            width: 20%;
+            min-width: 100px;
+        }
+
+        div.colist td {
+            padding-right: 0.5em;
+            padding-bottom: 0.3em;
+            vertical-align: top;
+        }
+
+        div.colist td img {
+            margin-top: 0.3em;
+        }
+
+        @media print {
+            #footer-badges {
+                display: none;
+            }
+        }
+
+        #toc {
+            margin-bottom: 2.5em;
+        }
+
+        #toctitle {
+            color: #527bbd;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-top: 1.0em;
+            margin-bottom: 0.1em;
+        }
+
+        div.toclevel1, div.toclevel2, div.toclevel3, div.toclevel4 {
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+
+        div.toclevel2 {
+            margin-left: 2em;
+            font-size: 0.9em;
+        }
+
+        div.toclevel3 {
+            margin-left: 4em;
+            font-size: 0.9em;
+        }
+
+        div.toclevel4 {
+            margin-left: 6em;
+            font-size: 0.9em;
+        }
+
+        span.aqua {
+            color: aqua;
+        }
+
+        span.black {
+            color: black;
+        }
+
+        span.blue {
+            color: blue;
+        }
+
+        span.fuchsia {
+            color: fuchsia;
+        }
+
+        span.gray {
+            color: gray;
+        }
+
+        span.green {
+            color: green;
+        }
+
+        span.lime {
+            color: lime;
+        }
+
+        span.maroon {
+            color: maroon;
+        }
+
+        span.navy {
+            color: navy;
+        }
+
+        span.olive {
+            color: olive;
+        }
+
+        span.purple {
+            color: purple;
+        }
+
+        span.red {
+            color: red;
+        }
+
+        span.silver {
+            color: silver;
+        }
+
+        span.teal {
+            color: teal;
+        }
+
+        span.white {
+            color: white;
+        }
+
+        span.yellow {
+            color: yellow;
+        }
+
+        span.aqua-background {
+            background: aqua;
+        }
+
+        span.black-background {
+            background: black;
+        }
+
+        span.blue-background {
+            background: blue;
+        }
+
+        span.fuchsia-background {
+            background: fuchsia;
+        }
+
+        span.gray-background {
+            background: gray;
+        }
+
+        span.green-background {
+            background: green;
+        }
+
+        span.lime-background {
+            background: lime;
+        }
+
+        span.maroon-background {
+            background: maroon;
+        }
+
+        span.navy-background {
+            background: navy;
+        }
+
+        span.olive-background {
+            background: olive;
+        }
+
+        span.purple-background {
+            background: purple;
+        }
+
+        span.red-background {
+            background: red;
+        }
+
+        span.silver-background {
+            background: silver;
+        }
+
+        span.teal-background {
+            background: teal;
+        }
+
+        span.white-background {
+            background: white;
+        }
+
+        span.yellow-background {
+            background: yellow;
+        }
+
+        span.big {
+            font-size: 2em;
+        }
+
+        span.small {
+            font-size: 0.6em;
+        }
+
+        span.underline {
+            text-decoration: underline;
+        }
+
+        span.overline {
+            text-decoration: overline;
+        }
+
+        span.line-through {
+            text-decoration: line-through;
+        }
+
+
+        /*
+         * xhtml11 specific
+         *
+         * */
+
+        tt {
+            font-family: monospace;
+            font-size: inherit;
+            color: navy;
+        }
+
+        div.tableblock {
+            margin-top: 1.0em;
+            margin-bottom: 1.5em;
+        }
+
+        div.tableblock > table {
+            border: 3px solid #527bbd;
+        }
+
+        thead, p.table.header {
+            font-weight: bold;
+            color: #527bbd;
+        }
+
+        p.table {
+            margin-top: 0;
+        }
+
+        /* Because the table frame attribute is overriden by CSS in most browsers. */
+        div.tableblock > table[frame="void"] {
+            border-style: none;
+        }
+
+        div.tableblock > table[frame="hsides"] {
+            border-left-style: none;
+            border-right-style: none;
+        }
+
+        div.tableblock > table[frame="vsides"] {
+            border-top-style: none;
+            border-bottom-style: none;
+        }
+
+
+        /*
+         * html5 specific
+         *
+         * */
+
+        .monospaced {
+            font-family: monospace;
+            font-size: inherit;
+            color: navy;
+        }
+
+        table.tableblock {
+            margin-top: 1.0em;
+            margin-bottom: 1.5em;
+        }
+
+        thead, p.tableblock.header {
+            font-weight: bold;
+            color: #527bbd;
+        }
+
+        p.tableblock {
+            margin-top: 0;
+        }
+
+        table.tableblock {
+            border-width: 3px;
+            border-spacing: 0px;
+            border-style: solid;
+            border-color: #527bbd;
+            border-collapse: collapse;
+        }
+
+        th.tableblock, td.tableblock {
+            border-width: 1px;
+            padding: 4px;
+            border-style: solid;
+            border-color: #527bbd;
+        }
+
+        table.tableblock.frame-topbot {
+            border-left-style: hidden;
+            border-right-style: hidden;
+        }
+
+        table.tableblock.frame-sides {
+            border-top-style: hidden;
+            border-bottom-style: hidden;
+        }
+
+        table.tableblock.frame-none {
+            border-style: hidden;
+        }
+
+        th.tableblock.halign-left, td.tableblock.halign-left {
+            text-align: left;
+        }
+
+        th.tableblock.halign-center, td.tableblock.halign-center {
+            text-align: center;
+        }
+
+        th.tableblock.halign-right, td.tableblock.halign-right {
+            text-align: right;
+        }
+
+        th.tableblock.valign-top, td.tableblock.valign-top {
+            vertical-align: top;
+        }
+
+        th.tableblock.valign-middle, td.tableblock.valign-middle {
+            vertical-align: middle;
+        }
+
+        th.tableblock.valign-bottom, td.tableblock.valign-bottom {
+            vertical-align: bottom;
+        }
+
+
+        /*
+         * manpage specific
+         *
+         * */
+
+        body.manpage h1 {
+            padding-top: 0.5em;
+            padding-bottom: 0.5em;
+            border-top: 2px solid silver;
+            border-bottom: 2px solid silver;
+        }
+
+        body.manpage h2 {
+            border-style: none;
+        }
+
+        body.manpage div.sectionbody {
+            margin-left: 3em;
+        }
+
+        @media print {
+            body.manpage div#toc {
+                display: none;
+            }
+        }
+
+        @media screen {
+            body {
+                max-width: 50em; /* approximately 80 characters wide */
+                margin-left: 16em;
+            }
+
+            #toc {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: 13em;
+                padding: 0.5em;
+                padding-bottom: 1.5em;
+                margin: 0;
+                overflow: auto;
+                border-right: 3px solid #f8f8f8;
+                background-color: white;
+            }
+
+            #toc .toclevel1 {
+                margin-top: 0.5em;
+            }
+
+            #toc .toclevel2 {
+                margin-top: 0.25em;
+                display: list-item;
+                color: #aaaaaa;
+            }
+
+            #toctitle {
+                margin-top: 0.5em;
+            }
+        }
+    </style>
+    <script type="text/javascript">
+        /*<![CDATA[*/
+        var asciidoc = {  // Namespace.
 
 /////////////////////////////////////////////////////////////////////
 // Table Of Contents generator
 /////////////////////////////////////////////////////////////////////
 
-/* Author: Mihai Bazon, September 2002
- * http://students.infoiasi.ro/~mishoo
- *
- * Table Of Content generator
- * Version: 0.4
- *
- * Feel free to use this script under the terms of the GNU General Public
- * License, as long as you do not remove or alter this notice.
- */
+            /* Author: Mihai Bazon, September 2002
+             * http://students.infoiasi.ro/~mishoo
+             *
+             * Table Of Content generator
+             * Version: 0.4
+             *
+             * Feel free to use this script under the terms of the GNU General Public
+             * License, as long as you do not remove or alter this notice.
+             */
 
- /* modified by Troy D. Hanson, September 2006. License: GPL */
- /* modified by Stuart Rackham, 2006, 2009. License: GPL */
+            /* modified by Troy D. Hanson, September 2006. License: GPL */
+            /* modified by Stuart Rackham, 2006, 2009. License: GPL */
 
 // toclevels = 1..4.
-toc: function (toclevels) {
+            toc: function (toclevels) {
 
-  function getText(el) {
-    var text = "";
-    for (var i = el.firstChild; i != null; i = i.nextSibling) {
-      if (i.nodeType == 3 /* Node.TEXT_NODE */) // IE doesn't speak constants.
-        text += i.data;
-      else if (i.firstChild != null)
-        text += getText(i);
-    }
-    return text;
-  }
+                function getText(el) {
+                    var text = "";
+                    for (var i = el.firstChild; i != null; i = i.nextSibling) {
+                        if (i.nodeType == 3 /* Node.TEXT_NODE */) // IE doesn't speak constants.
+                            text += i.data;
+                        else if (i.firstChild != null)
+                            text += getText(i);
+                    }
+                    return text;
+                }
 
-  function TocEntry(el, text, toclevel) {
-    this.element = el;
-    this.text = text;
-    this.toclevel = toclevel;
-  }
+                function TocEntry(el, text, toclevel) {
+                    this.element = el;
+                    this.text = text;
+                    this.toclevel = toclevel;
+                }
 
-  function tocEntries(el, toclevels) {
-    var result = new Array;
-    var re = new RegExp('[hH]([2-'+(toclevels+1)+'])');
-    // Function that scans the DOM tree for header elements (the DOM2
-    // nodeIterator API would be a better technique but not supported by all
-    // browsers).
-    var iterate = function (el) {
-      for (var i = el.firstChild; i != null; i = i.nextSibling) {
-        if (i.nodeType == 1 /* Node.ELEMENT_NODE */) {
-          var mo = re.exec(i.tagName);
-          if (mo && (i.getAttribute("class") || i.getAttribute("className")) != "float") {
-            result[result.length] = new TocEntry(i, getText(i), mo[1]-1);
-          }
-          iterate(i);
-        }
-      }
-    }
-    iterate(el);
-    return result;
-  }
+                function tocEntries(el, toclevels) {
+                    var result = new Array;
+                    var re = new RegExp('[hH]([2-' + (toclevels + 1) + '])');
+                    // Function that scans the DOM tree for header elements (the DOM2
+                    // nodeIterator API would be a better technique but not supported by all
+                    // browsers).
+                    var iterate = function (el) {
+                        for (var i = el.firstChild; i != null; i = i.nextSibling) {
+                            if (i.nodeType == 1 /* Node.ELEMENT_NODE */) {
+                                var mo = re.exec(i.tagName);
+                                if (mo && (i.getAttribute("class") || i.getAttribute("className")) != "float") {
+                                    result[result.length] = new TocEntry(i, getText(i), mo[1] - 1);
+                                }
+                                iterate(i);
+                            }
+                        }
+                    }
+                    iterate(el);
+                    return result;
+                }
 
-  var toc = document.getElementById("toc");
-  if (!toc) {
-    return;
-  }
+                var toc = document.getElementById("toc");
+                if (!toc) {
+                    return;
+                }
 
-  // Delete existing TOC entries in case we're reloading the TOC.
-  var tocEntriesToRemove = [];
-  var i;
-  for (i = 0; i < toc.childNodes.length; i++) {
-    var entry = toc.childNodes[i];
-    if (entry.nodeName == 'div'
-     && entry.getAttribute("class")
-     && entry.getAttribute("class").match(/^toclevel/))
-      tocEntriesToRemove.push(entry);
-  }
-  for (i = 0; i < tocEntriesToRemove.length; i++) {
-    toc.removeChild(tocEntriesToRemove[i]);
-  }
+                // Delete existing TOC entries in case we're reloading the TOC.
+                var tocEntriesToRemove = [];
+                var i;
+                for (i = 0; i < toc.childNodes.length; i++) {
+                    var entry = toc.childNodes[i];
+                    if (entry.nodeName == 'div'
+                        && entry.getAttribute("class")
+                        && entry.getAttribute("class").match(/^toclevel/))
+                        tocEntriesToRemove.push(entry);
+                }
+                for (i = 0; i < tocEntriesToRemove.length; i++) {
+                    toc.removeChild(tocEntriesToRemove[i]);
+                }
 
-  // Rebuild TOC entries.
-  var entries = tocEntries(document.getElementById("content"), toclevels);
-  for (var i = 0; i < entries.length; ++i) {
-    var entry = entries[i];
-    if (entry.element.id == "")
-      entry.element.id = "_toc_" + i;
-    var a = document.createElement("a");
-    a.href = "#" + entry.element.id;
-    a.appendChild(document.createTextNode(entry.text));
-    var div = document.createElement("div");
-    div.appendChild(a);
-    div.className = "toclevel" + entry.toclevel;
-    toc.appendChild(div);
-  }
-  if (entries.length == 0)
-    toc.parentNode.removeChild(toc);
-},
+                // Rebuild TOC entries.
+                var entries = tocEntries(document.getElementById("content"), toclevels);
+                for (var i = 0; i < entries.length; ++i) {
+                    var entry = entries[i];
+                    if (entry.element.id == "")
+                        entry.element.id = "_toc_" + i;
+                    var a = document.createElement("a");
+                    a.href = "#" + entry.element.id;
+                    a.appendChild(document.createTextNode(entry.text));
+                    var div = document.createElement("div");
+                    div.appendChild(a);
+                    div.className = "toclevel" + entry.toclevel;
+                    toc.appendChild(div);
+                }
+                if (entries.length == 0)
+                    toc.parentNode.removeChild(toc);
+            },
 
 
 /////////////////////////////////////////////////////////////////////
 // Footnotes generator
 /////////////////////////////////////////////////////////////////////
 
-/* Based on footnote generation code from:
- * http://www.brandspankingnew.net/archive/2005/07/format_footnote.html
- */
+            /* Based on footnote generation code from:
+             * http://www.brandspankingnew.net/archive/2005/07/format_footnote.html
+             */
 
-footnotes: function () {
-  // Delete existing footnote entries in case we're reloading the footnodes.
-  var i;
-  var noteholder = document.getElementById("footnotes");
-  if (!noteholder) {
-    return;
-  }
-  var entriesToRemove = [];
-  for (i = 0; i < noteholder.childNodes.length; i++) {
-    var entry = noteholder.childNodes[i];
-    if (entry.nodeName == 'div' && entry.getAttribute("class") == "footnote")
-      entriesToRemove.push(entry);
-  }
-  for (i = 0; i < entriesToRemove.length; i++) {
-    noteholder.removeChild(entriesToRemove[i]);
-  }
+            footnotes: function () {
+                // Delete existing footnote entries in case we're reloading the footnodes.
+                var i;
+                var noteholder = document.getElementById("footnotes");
+                if (!noteholder) {
+                    return;
+                }
+                var entriesToRemove = [];
+                for (i = 0; i < noteholder.childNodes.length; i++) {
+                    var entry = noteholder.childNodes[i];
+                    if (entry.nodeName == 'div' && entry.getAttribute("class") == "footnote")
+                        entriesToRemove.push(entry);
+                }
+                for (i = 0; i < entriesToRemove.length; i++) {
+                    noteholder.removeChild(entriesToRemove[i]);
+                }
 
-  // Rebuild footnote entries.
-  var cont = document.getElementById("content");
-  var spans = cont.getElementsByTagName("span");
-  var refs = {};
-  var n = 0;
-  for (i=0; i<spans.length; i++) {
-    if (spans[i].className == "footnote") {
-      n++;
-      var note = spans[i].getAttribute("data-note");
-      if (!note) {
-        // Use [\s\S] in place of . so multi-line matches work.
-        // Because JavaScript has no s (dotall) regex flag.
-        note = spans[i].innerHTML.match(/\s*\[([\s\S]*)]\s*/)[1];
-        spans[i].innerHTML =
-          "[<a id='_footnoteref_" + n + "' href='#_footnote_" + n +
-          "' title='View footnote' class='footnote'>" + n + "</a>]";
-        spans[i].setAttribute("data-note", note);
-      }
-      noteholder.innerHTML +=
-        "<div class='footnote' id='_footnote_" + n + "'>" +
-        "<a href='#_footnoteref_" + n + "' title='Return to text'>" +
-        n + "</a>. " + note + "</div>";
-      var id =spans[i].getAttribute("id");
-      if (id != null) refs["#"+id] = n;
-    }
-  }
-  if (n == 0)
-    noteholder.parentNode.removeChild(noteholder);
-  else {
-    // Process footnoterefs.
-    for (i=0; i<spans.length; i++) {
-      if (spans[i].className == "footnoteref") {
-        var href = spans[i].getElementsByTagName("a")[0].getAttribute("href");
-        href = href.match(/#.*/)[0];  // Because IE return full URL.
-        n = refs[href];
-        spans[i].innerHTML =
-          "[<a href='#_footnote_" + n +
-          "' title='View footnote' class='footnote'>" + n + "</a>]";
-      }
-    }
-  }
-},
+                // Rebuild footnote entries.
+                var cont = document.getElementById("content");
+                var spans = cont.getElementsByTagName("span");
+                var refs = {};
+                var n = 0;
+                for (i = 0; i < spans.length; i++) {
+                    if (spans[i].className == "footnote") {
+                        n++;
+                        var note = spans[i].getAttribute("data-note");
+                        if (!note) {
+                            // Use [\s\S] in place of . so multi-line matches work.
+                            // Because JavaScript has no s (dotall) regex flag.
+                            note = spans[i].innerHTML.match(/\s*\[([\s\S]*)]\s*/)[1];
+                            spans[i].innerHTML =
+                                "[<a id='_footnoteref_" + n + "' href='#_footnote_" + n +
+                                "' title='View footnote' class='footnote'>" + n + "</a>]";
+                            spans[i].setAttribute("data-note", note);
+                        }
+                        noteholder.innerHTML +=
+                            "<div class='footnote' id='_footnote_" + n + "'>" +
+                            "<a href='#_footnoteref_" + n + "' title='Return to text'>" +
+                            n + "</a>. " + note + "</div>";
+                        var id = spans[i].getAttribute("id");
+                        if (id != null) refs["#" + id] = n;
+                    }
+                }
+                if (n == 0)
+                    noteholder.parentNode.removeChild(noteholder);
+                else {
+                    // Process footnoterefs.
+                    for (i = 0; i < spans.length; i++) {
+                        if (spans[i].className == "footnoteref") {
+                            var href = spans[i].getElementsByTagName("a")[0].getAttribute("href");
+                            href = href.match(/#.*/)[0];  // Because IE return full URL.
+                            n = refs[href];
+                            spans[i].innerHTML =
+                                "[<a href='#_footnote_" + n +
+                                "' title='View footnote' class='footnote'>" + n + "</a>]";
+                        }
+                    }
+                }
+            },
 
-install: function(toclevels) {
-  var timerId;
+            install: function (toclevels) {
+                var timerId;
 
-  function reinstall() {
-    asciidoc.footnotes();
-    if (toclevels) {
-      asciidoc.toc(toclevels);
-    }
-  }
+                function reinstall() {
+                    asciidoc.footnotes();
+                    if (toclevels) {
+                        asciidoc.toc(toclevels);
+                    }
+                }
 
-  function reinstallAndRemoveTimer() {
-    clearInterval(timerId);
-    reinstall();
-  }
+                function reinstallAndRemoveTimer() {
+                    clearInterval(timerId);
+                    reinstall();
+                }
 
-  timerId = setInterval(reinstall, 500);
-  if (document.addEventListener)
-    document.addEventListener("DOMContentLoaded", reinstallAndRemoveTimer, false);
-  else
-    window.onload = reinstallAndRemoveTimer;
-}
+                timerId = setInterval(reinstall, 500);
+                if (document.addEventListener)
+                    document.addEventListener("DOMContentLoaded", reinstallAndRemoveTimer, false);
+                else
+                    window.onload = reinstallAndRemoveTimer;
+            }
 
-}
-asciidoc.install(2);
-/*]]>*/
-</script>
+        }
+        asciidoc.install(2);
+        /*]]>*/
+    </script>
 </head>
 <body class="article">
 <div id="header">
-<h1>The ADCIRC Developers Guide</h1>
-<div id="toc">
-  <div id="toctitle">Table of Contents</div>
-  <noscript><p><b>JavaScript must be enabled in your browser to display the table of contents.</b></p></noscript>
-</div>
+    <h1>The ADCIRC Developers Guide</h1>
+    <div id="toc">
+        <div id="toctitle">Table of Contents</div>
+        <noscript><p><b>JavaScript must be enabled in your browser to display the table of contents.</b></p></noscript>
+    </div>
 </div>
 <div id="content">
-<div class="sect1">
-<h2 id="_introduction">Introduction</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>This document describes how to build ADCIRC and ADCIRC+SWAN, as well
-as the guidelines that ADCIRC developers should use when developing
-new code for ADCIRC and its related utilities. It also presents a
-short tutorial for Subversion (svn), the version control software
-that we use to coordinate development and ease the task of merging
-in new features.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_build_it">Build It</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>This section contains details for building ADCIRC executables and
-describes the directories and files related to the build process.
-For a more complete description of the files and directories that
-are included with the ADCIRC source code, see the official ADCIRC
-documentation on adcirc.org:</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>http://adcirc.org/home/documentation/generic-adcirc-compile-time-operations/</tt></pre>
-</div></div>
-<div class="paragraph"><p>The ADCIRC source tree contains a directory called <em>work</em> where the
-ADCIRC and ADCIRC+SWAN executables are built. This directory contains
-the following files:</p></div>
-<div class="dlist"><div class="title">Definitions</div><dl>
-<dt class="hdlist1">
-<em>config.guess</em>
-</dt>
-<dd>
-<p>
-    A shell script that is called automatically by make during the
-    build process to guess the hardware and operating system that
-    are being used in the build process. You can execute this
-    shell script yourself on the command line to see what it guesses
-    and confirm that it is guessing correctly. The resulting platform
-    guess is then used automatically in the <em>cmplrflags.mk</em> file.
-</p>
-</dd>
-<dt class="hdlist1">
-<em>cmplrflags.mk</em>
-</dt>
-<dd>
-<p>
-    Contains sets of compiler flags that are appropriate for various
-    platforms. The build process uses the output from <em>config.guess</em>
-    to select the appropriate set of compiler flags. In the past, in
-    the days of many varieties of proprietary unix, the hardware
-    type and operating system type were sufficient to determine
-    which compiler flags to select. Now that most installations of
-    ADCIRC are on linux, it is often necessary to provide additional
-    hints about which set of compiler flags to use, and these
-    additional hints are provided on the command line when make is
-    executed, as described below.
-</p>
-</dd>
-<dt class="hdlist1">
-<em>makefile</em>
-</dt>
-<dd>
-<p>
-    The makefile contains instructions for building <em>adcirc</em>,
-    <em>padcirc</em>, <em>padcswan</em> (if the SWAN source code is also present),
-    <em>adcprep</em>, <em>adcpost</em>, <em>hstime</em>, and <em>aswip</em> on linux or unix.
-</p>
-</dd>
-</dl></div>
-<div class="paragraph"><p>When building ADCIRC for the first time on a new (to me) platform, I
-normally begin by going to the ADCIRC <em>work</em> directory</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>cd work</tt></pre>
-</div></div>
-<div class="paragraph"><p>and running <em>config.guess</em> manually to see what it guesses about the
-platform architecture.</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>./config.guess</tt></pre>
-</div></div>
-<div class="paragraph"><p>Then I open up the <em>cmplrflags.mk</em> file, to see if the relevant
-platform and/or compiler is defined in the file, and if it is, how
-it is triggered on the make command line with the <tt>compiler=</tt>
-notation.</p></div>
-<div class="paragraph"><p>I also test the availability of the compilers that I will be using
-by executing the <tt>which</tt> command. For example, if I&#8217;m using the
-Intel compilers, I&#8217;ll type <tt>which ifort</tt>. If I&#8217;ll be running ADCIRC
-in parallel, I&#8217;d also try <tt>which icc</tt> and <tt>which mpif90</tt> to make
-sure they&#8217;re all available. If they&#8217;re not, I take it up with my
-local sysadmin.</p></div>
-<div class="paragraph"><p>Looking in the <em>cmplrflags.mk</em>, I would find (for example) that I
-can use a set of Intel-appropriate compiler flags by setting
-<tt>compiler=intel</tt> on the make command line. As a result, my first
-tentative step in building all the ADCIRC executables would be</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>make adcirc compiler=intel</tt></pre>
-</div></div>
-<div class="paragraph"><p>Assuming that this completes successfully, I would try</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>make padcirc compiler=intel</tt></pre>
-</div></div>
-<div class="paragraph"><p>Now that padcirc has been built successfully, the parallelization
-modules used by parallel SWAN are available (they share the same
-libraries). In other words, <strong>the <em>padcswan</em> build depends on the
-<em>padcirc</em> build</strong>, so <em>padcirc</em> must be built before <em>padcswan</em>. If
-you&#8217;d like to build ADCIRC+SWAN, it is time to switch to the SWAN
-subdirectory.</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>cd ../swan</tt></pre>
-</div></div>
-<div class="paragraph"><p>SWAN has a completely separate build system, since it is normally a
-completely separate code. But the SWAN build system must solve the
-same problems as the ADCIRC build system, that is, detecting the
-nature of the underlying platform and suggesting an appropriate set
-of compiler flags.</p></div>
-<div class="paragraph"><p>The SWAN build system has a perl script called <em>platform.pl</em> that
-performs much the same function as <em>config.guess</em> does for ADCIRC.
-The difference is that <em>plaform.pl</em> picks the compiler flags and
-writes them to a file called <em>macros.inc</em> for use during the build
-process.</p></div>
-<div class="paragraph"><p>Several sets of <em>macros.inc</em> files are already available in the
-ADCIRC source code for use with certain platforms; type <tt>ls macros*</tt>
-to see the currently available choices. To write a set of compiler
-flags for your platform, type</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>perl ./platform.pl</tt></pre>
-</div></div>
-<div class="paragraph"><p>You may want to have a look at the resulting <em>macros.inc</em> file to be
-sure that it represents the compiler you&#8217;re using. If it looks ok,
-the next step is to create a test build of <em>punswan</em>. You won&#8217;t
-actually use <em>punswan</em>; in fact, you&#8217;ll completely delete it, even
-if it builds successfully. You&#8217;re just trying to build it to test
-the validity of your compiler flags.</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>make punswan</tt></pre>
-</div></div>
-<div class="paragraph"><p>Once <em>punswan</em> builds successfully, go ahead and get rid of it as
-well as any object files that were built along the way with</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>make clobber</tt></pre>
-</div></div>
-<div class="paragraph"><p>Now you&#8217;re ready to switch back to the work subdirectory and build
-<em>padcswan</em>, if you&#8217;re interested in that:</p></div>
-<div class="literalblock">
-<div class="content">
+    <div class="sect1">
+        <h2 id="_introduction">Introduction</h2>
+        <div class="sectionbody">
+            <div class="paragraph"><p>This document describes how to build ADCIRC and ADCIRC+SWAN, as well
+                as the guidelines that ADCIRC developers should use when developing
+                new code for ADCIRC and its related utilities. It also presents a
+                short tutorial for Subversion (svn), the version control software
+                that we use to coordinate development and ease the task of merging
+                in new features.</p></div>
+        </div>
+    </div>
+    <div class="sect1">
+        <h2 id="_build_it">Build It</h2>
+        <div class="sectionbody">
+            <div class="paragraph"><p>This section contains details for building ADCIRC executables and
+                describes the directories and files related to the build process.
+                For a more complete description of the files and directories that
+                are included with the ADCIRC source code, see the official ADCIRC
+                documentation on adcirc.org:</p></div>
+            <div class="literalblock">
+                <div class="content">
+                    <pre><tt>http://adcirc.org/home/documentation/generic-adcirc-compile-time-operations/</tt></pre>
+                </div>
+            </div>
+            <div class="paragraph"><p>The ADCIRC source tree contains a directory called <em>work</em> where the
+                ADCIRC and ADCIRC+SWAN executables are built. This directory contains
+                the following files:</p></div>
+            <div class="dlist">
+                <div class="title">Definitions</div>
+                <dl>
+                    <dt class="hdlist1">
+                        <em>config.guess</em>
+                    </dt>
+                    <dd>
+                        <p>
+                            A shell script that is called automatically by make during the
+                            build process to guess the hardware and operating system that
+                            are being used in the build process. You can execute this
+                            shell script yourself on the command line to see what it guesses
+                            and confirm that it is guessing correctly. The resulting platform
+                            guess is then used automatically in the <em>cmplrflags.mk</em> file.
+                        </p>
+                    </dd>
+                    <dt class="hdlist1">
+                        <em>cmplrflags.mk</em>
+                    </dt>
+                    <dd>
+                        <p>
+                            Contains sets of compiler flags that are appropriate for various
+                            platforms. The build process uses the output from <em>config.guess</em>
+                            to select the appropriate set of compiler flags. In the past, in
+                            the days of many varieties of proprietary unix, the hardware
+                            type and operating system type were sufficient to determine
+                            which compiler flags to select. Now that most installations of
+                            ADCIRC are on linux, it is often necessary to provide additional
+                            hints about which set of compiler flags to use, and these
+                            additional hints are provided on the command line when make is
+                            executed, as described below.
+                        </p>
+                    </dd>
+                    <dt class="hdlist1">
+                        <em>makefile</em>
+                    </dt>
+                    <dd>
+                        <p>
+                            The makefile contains instructions for building <em>adcirc</em>,
+                            <em>padcirc</em>, <em>padcswan</em> (if the SWAN source code is also present),
+                            <em>adcprep</em>, <em>adcpost</em>, <em>hstime</em>, and <em>aswip</em> on linux or unix.
+                        </p>
+                    </dd>
+                </dl>
+            </div>
+            <div class="paragraph"><p>When building ADCIRC for the first time on a new (to me) platform, I
+                normally begin by going to the ADCIRC <em>work</em> directory</p></div>
+            <div class="literalblock">
+                <div class="content">
+                    <pre><tt>cd work</tt></pre>
+                </div>
+            </div>
+            <div class="paragraph"><p>and running <em>config.guess</em> manually to see what it guesses about the
+                platform architecture.</p></div>
+            <div class="literalblock">
+                <div class="content">
+                    <pre><tt>./config.guess</tt></pre>
+                </div>
+            </div>
+            <div class="paragraph"><p>Then I open up the <em>cmplrflags.mk</em> file, to see if the relevant
+                platform and/or compiler is defined in the file, and if it is, how
+                it is triggered on the make command line with the <tt>compiler=</tt>
+                notation.</p></div>
+            <div class="paragraph"><p>I also test the availability of the compilers that I will be using
+                by executing the <tt>which</tt> command. For example, if I&#8217;m using the
+                Intel compilers, I&#8217;ll type <tt>which ifort</tt>. If I&#8217;ll be running ADCIRC
+                in parallel, I&#8217;d also try <tt>which icc</tt> and <tt>which mpif90</tt> to make
+                sure they&#8217;re all available. If they&#8217;re not, I take it up with my
+                local sysadmin.</p></div>
+            <div class="paragraph"><p>Looking in the <em>cmplrflags.mk</em>, I would find (for example) that I
+                can use a set of Intel-appropriate compiler flags by setting
+                <tt>compiler=intel</tt> on the make command line. As a result, my first
+                tentative step in building all the ADCIRC executables would be</p></div>
+            <div class="literalblock">
+                <div class="content">
+                    <pre><tt>make adcirc compiler=intel</tt></pre>
+                </div>
+            </div>
+            <div class="paragraph"><p>Assuming that this completes successfully, I would try</p></div>
+            <div class="literalblock">
+                <div class="content">
+                    <pre><tt>make padcirc compiler=intel</tt></pre>
+                </div>
+            </div>
+            <div class="paragraph"><p>Now that padcirc has been built successfully, the parallelization
+                modules used by parallel SWAN are available (they share the same
+                libraries). In other words, <strong>the <em>padcswan</em> build depends on the
+                    <em>padcirc</em> build</strong>, so <em>padcirc</em> must be built before <em>padcswan</em>. If
+                you&#8217;d like to build ADCIRC+SWAN, it is time to switch to the SWAN
+                subdirectory.</p></div>
+            <div class="literalblock">
+                <div class="content">
+                    <pre><tt>cd ../swan</tt></pre>
+                </div>
+            </div>
+            <div class="paragraph"><p>SWAN has a completely separate build system, since it is normally a
+                completely separate code. But the SWAN build system must solve the
+                same problems as the ADCIRC build system, that is, detecting the
+                nature of the underlying platform and suggesting an appropriate set
+                of compiler flags.</p></div>
+            <div class="paragraph"><p>The SWAN build system has a perl script called <em>platform.pl</em> that
+                performs much the same function as <em>config.guess</em> does for ADCIRC.
+                The difference is that <em>plaform.pl</em> picks the compiler flags and
+                writes them to a file called <em>macros.inc</em> for use during the build
+                process.</p></div>
+            <div class="paragraph"><p>Several sets of <em>macros.inc</em> files are already available in the
+                ADCIRC source code for use with certain platforms; type <tt>ls macros*</tt>
+                to see the currently available choices. To write a set of compiler
+                flags for your platform, type</p></div>
+            <div class="literalblock">
+                <div class="content">
+                    <pre><tt>perl ./platform.pl</tt></pre>
+                </div>
+            </div>
+            <div class="paragraph"><p>You may want to have a look at the resulting <em>macros.inc</em> file to be
+                sure that it represents the compiler you&#8217;re using. If it looks ok,
+                the next step is to create a test build of <em>punswan</em>. You won&#8217;t
+                actually use <em>punswan</em>; in fact, you&#8217;ll completely delete it, even
+                if it builds successfully. You&#8217;re just trying to build it to test
+                the validity of your compiler flags.</p></div>
+            <div class="literalblock">
+                <div class="content">
+                    <pre><tt>make punswan</tt></pre>
+                </div>
+            </div>
+            <div class="paragraph"><p>Once <em>punswan</em> builds successfully, go ahead and get rid of it as
+                well as any object files that were built along the way with</p></div>
+            <div class="literalblock">
+                <div class="content">
+                    <pre><tt>make clobber</tt></pre>
+                </div>
+            </div>
+            <div class="paragraph"><p>Now you&#8217;re ready to switch back to the work subdirectory and build
+                <em>padcswan</em>, if you&#8217;re interested in that:</p></div>
+            <div class="literalblock">
+                <div class="content">
 <pre><tt>cd ../work
 make padcswan compiler=intel</tt></pre>
-</div></div>
-<div class="paragraph"><p>Once <em>padcswan</em> has been built successfully, you can build
-<em>adcprep</em>, the program that prepares your input files for a parallel
-run. If you also plan to run ADCIRC+SWAN in parallel, then add the
-<tt>SWAN=enable</tt> string to the make command line, as follows:</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>make adcprep compiler=intel SWAN=enable</tt></pre>
-</div></div>
-<div class="paragraph"><p>You&#8217;ll see the invokation of your C compiler during the build
-process for <em>adcprep</em>, since <em>adcprep</em> uses the metis library (which
-is written in C) to perform domain decomposition.</p></div>
-<div class="paragraph"><p>Once you&#8217;ve successfully built <em>adcprep</em>, the main set of
-executables is complete. However, there are a couple utility
-programs you may like to build as well. The first of these is a very
-small program called <em>hstime</em> whose only purpose is to read the time
-in seconds from an ADCIRC hotstart file and write it out to the
-console window. Use a command like <em>make hstime compiler=intel</em> to
-build this utility.</p></div>
-<div class="paragraph"><p>The final executable that you may like to build is <em>aswip</em>, the
-Asymmetric Wind Input Preprocessor. This utility program is required
-for the use of an asymmetric vortex model for tropical cyclones in
-ADCIRC. One wrinkle for this program is that it calls many
-subroutines inside ADCIRC, therefore <strong>there is a dependency of
-<em>aswip</em> on <em>adcirc</em></strong>, meaning that <em>adcirc</em> executable must be built
-first in order for <em>aswip</em> to be built successfully. It is built
-analogously with the other ADCIRC executables, with a command like
-<em>make aswip compiler=intel</em>.</p></div>
-<div class="paragraph"><p>Another issue with the building of <em>aswip</em> is that it is built
-inside the same directory as <em>adcirc</em>, and both programs have a
-"main" program section inside them, creating a conflict. Therefore,
-in order to rebuild <em>adcirc</em> after <em>aswip</em> has been built, <em>aswip</em>
-its object file must be deleted first, to avoid a build error when
-<em>adcirc</em> is rebuilt.</p></div>
-<div class="paragraph"><p>All of the above instructions will build the ADCIRC executables
-without support for NetCDF input or output. This was done
-intentionally, to simplify the build process and avoid complications
-resulting from the vagaries of building with NetCDF.</p></div>
-<div class="paragraph"><p>On the other hand, the use of NetCDF is recommended as a result of
-the many advantages of NetCDF files. ADCIRC actually supports the
-use of three different NetCDF capabilities: NetCDF3, NetCDF4
-(classic model), and NetCDF4 with internal compression.</p></div>
-<div class="paragraph"><p>If you&#8217;ve already built all the executables without NetCDF, its
-necessary to get rid of them so that you can build with NetCDF.</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>make clobber</tt></pre>
-</div></div>
-<div class="paragraph"><p>To enable compilation with NetCDF3, the command line listed at the
-beginning of these instructions for building ADCIRC would be
-modified as follows:</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>make adcirc compiler=intel NETCDF=enable NETCDFHOME=/usr</tt></pre>
-</div></div>
-<div class="paragraph"><p>with the NETCDFHOME variable indicating the directory where NetCDF
-was installed. The ADCIRC build system expects this directory to
-contain <tt>include/netcdf.inc</tt>.</p></div>
-<div class="paragraph"><p>If NetCDF4 without internal compression is installed on your
-platform, the above would change to the following:</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>make adcirc compiler=intel NETCDF=enable NETCDFHOME=/usr NETCDF4=enable</tt></pre>
-</div></div>
-<div class="paragraph"><p>in which case the directory specified in the NETCDFHOME variable
-would also be expected to contain the <tt>include/netcdf.mod</tt> Fortran
-module file.</p></div>
-<div class="paragraph"><p>Finally, if your NetCDF4 installation supports internal compression
-(only introduced in NetCDF4 version 4.1), and you want ADCIRC to
-automatically make use of internal compression, change the above
-command line as follows:</p></div>
-<div class="literalblock">
-<div class="content">
+                </div>
+            </div>
+            <div class="paragraph"><p>Once <em>padcswan</em> has been built successfully, you can build
+                <em>adcprep</em>, the program that prepares your input files for a parallel
+                run. If you also plan to run ADCIRC+SWAN in parallel, then add the
+                <tt>SWAN=enable</tt> string to the make command line, as follows:</p></div>
+            <div class="literalblock">
+                <div class="content">
+                    <pre><tt>make adcprep compiler=intel SWAN=enable</tt></pre>
+                </div>
+            </div>
+            <div class="paragraph"><p>You&#8217;ll see the invokation of your C compiler during the build
+                process for <em>adcprep</em>, since <em>adcprep</em> uses the metis library (which
+                is written in C) to perform domain decomposition.</p></div>
+            <div class="paragraph"><p>Once you&#8217;ve successfully built <em>adcprep</em>, the main set of
+                executables is complete. However, there are a couple utility
+                programs you may like to build as well. The first of these is a very
+                small program called <em>hstime</em> whose only purpose is to read the time
+                in seconds from an ADCIRC hotstart file and write it out to the
+                console window. Use a command like <em>make hstime compiler=intel</em> to
+                build this utility.</p></div>
+            <div class="paragraph"><p>The final executable that you may like to build is <em>aswip</em>, the
+                Asymmetric Wind Input Preprocessor. This utility program is required
+                for the use of an asymmetric vortex model for tropical cyclones in
+                ADCIRC. One wrinkle for this program is that it calls many
+                subroutines inside ADCIRC, therefore <strong>there is a dependency of
+                    <em>aswip</em> on <em>adcirc</em></strong>, meaning that <em>adcirc</em> executable must be built
+                first in order for <em>aswip</em> to be built successfully. It is built
+                analogously with the other ADCIRC executables, with a command like
+                <em>make aswip compiler=intel</em>.</p></div>
+            <div class="paragraph"><p>Another issue with the building of <em>aswip</em> is that it is built
+                inside the same directory as <em>adcirc</em>, and both programs have a
+                "main" program section inside them, creating a conflict. Therefore,
+                in order to rebuild <em>adcirc</em> after <em>aswip</em> has been built, <em>aswip</em>
+                its object file must be deleted first, to avoid a build error when
+                <em>adcirc</em> is rebuilt.</p></div>
+            <div class="paragraph"><p>All of the above instructions will build the ADCIRC executables
+                without support for NetCDF input or output. This was done
+                intentionally, to simplify the build process and avoid complications
+                resulting from the vagaries of building with NetCDF.</p></div>
+            <div class="paragraph"><p>On the other hand, the use of NetCDF is recommended as a result of
+                the many advantages of NetCDF files. ADCIRC actually supports the
+                use of three different NetCDF capabilities: NetCDF3, NetCDF4
+                (classic model), and NetCDF4 with internal compression.</p></div>
+            <div class="paragraph"><p>If you&#8217;ve already built all the executables without NetCDF, its
+                necessary to get rid of them so that you can build with NetCDF.</p></div>
+            <div class="literalblock">
+                <div class="content">
+                    <pre><tt>make clobber</tt></pre>
+                </div>
+            </div>
+            <div class="paragraph"><p>To enable compilation with NetCDF3, the command line listed at the
+                beginning of these instructions for building ADCIRC would be
+                modified as follows:</p></div>
+            <div class="literalblock">
+                <div class="content">
+                    <pre><tt>make adcirc compiler=intel NETCDF=enable NETCDFHOME=/usr</tt></pre>
+                </div>
+            </div>
+            <div class="paragraph"><p>with the NETCDFHOME variable indicating the directory where NetCDF
+                was installed. The ADCIRC build system expects this directory to
+                contain <tt>include/netcdf.inc</tt>.</p></div>
+            <div class="paragraph"><p>If NetCDF4 without internal compression is installed on your
+                platform, the above would change to the following:</p></div>
+            <div class="literalblock">
+                <div class="content">
+                    <pre><tt>make adcirc compiler=intel NETCDF=enable NETCDFHOME=/usr NETCDF4=enable</tt></pre>
+                </div>
+            </div>
+            <div class="paragraph"><p>in which case the directory specified in the NETCDFHOME variable
+                would also be expected to contain the <tt>include/netcdf.mod</tt> Fortran
+                module file.</p></div>
+            <div class="paragraph"><p>Finally, if your NetCDF4 installation supports internal compression
+                (only introduced in NetCDF4 version 4.1), and you want ADCIRC to
+                automatically make use of internal compression, change the above
+                command line as follows:</p></div>
+            <div class="literalblock">
+                <div class="content">
 <pre><tt>make adcirc compiler=intel NETCDF=enable NETCDFHOME=/usr NETCDF4=enable
 NETCDF4_COMPRESSION=enable</tt></pre>
-</div></div>
-<div class="paragraph"><p>These changes in the make command line must be made for the build of
-each of the ADCIRC executables so that they are all consistent.</p></div>
-<div class="paragraph"><p>In general, building ADCIRC with NetCDF support is tedious and
-usually requires several rounds of emails to local sysadmins to
-determine the right combination of compiler flags and options,
-because they vary siginificantly from platform to platform. Have a
-look at the NetCDF-related compiler flags in <em>cmplrflags.mk</em> for
-ideas to get you started.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_development_strategy">Development Strategy</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>The ADCIRC development strategy consists of the maintenance of two
-separate versions at any given time: the stable version and the
-development version. The stable version only receives bug fixes,
-while the development version receives bug fixes as well as new
-features.</p></div>
-<div class="paragraph"><p>At some point, the development version becomes stable. At that time,
-a stable branch is created from it, and then new features are added
-to the previosly stable code, creating a new development version. At
-that time, the major version number will be incremented, e.g.,
-stable v48.xx will become the next development version as v49.00.</p></div>
-<div class="paragraph"><p>The minor version number is changed each time there is a change in
-the code and the modified code is committed back to the repository.
-Details of the implementation of this strategy with Subversion are
-provided in the section entitled "Subversion".</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_coding_standards">Coding Standards</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>ADCIRC has had many individual contributors and has received code
-accretions over many years. A set of uniform coding standards has
-not been defined, and as a result, ADCIRC contains many different
-styles of Fortran. This section provides a set of style guidelines
-for contributing code to ADCIRC.</p></div>
-<div class="sect2">
-<h3 id="_the_basics">The Basics</h3>
-<div class="ulist"><ul>
-<li>
-<p>
-IMPLICIT NONE at the beginning of each subroutine.
-</p>
-</li>
-<li>
-<p>
-Fixed form, never exceeding the 72 column limit, even for comment
-lines.
-</p>
-</li>
-<li>
-<p>
-When adding code to an existing subroutine, make the new code
-match the style of the surrounding code, even if you&#8217;d prefer
-another style.
-</p>
-</li>
-</ul></div>
-</div>
-<div class="sect2">
-<h3 id="_maintainability">Maintainability</h3>
-<div class="paragraph"><p>When adding code that will be used in slightly different ways in
-different contexts, make it a subroutine, rather than cutting and
-pasting several times and making small changes to each
-cut-and-pasted section. Although it is faster to write code with
-cut-and-paste, the resulting code is harder to maintain, since each
-cut-and-pasted section will have to be modified individually later.
-Also, it is easier to make mistakes when working with cut-and-pasted
-code.</p></div>
-<div class="paragraph"><p>Rick has expressed a desire for greater modularity &#8230; particularly
-with the number of variables in the global module. When adding a
-major new feature, please consider the modularity of the data it
-requires. In other words, if new variables can be made private to a
-particular module rather than global, please do so.</p></div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_release_process">Release Process</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>The release process informal, but generally includes the following
-steps:</p></div>
-<div class="ulist"><ul>
-<li>
-<p>
-Set and stick to a list of new features as the goal for the new
-release.
-</p>
-</li>
-<li>
-<p>
-Have a consensus among ADCIRC developers that the goal has been
-achieved.
-</p>
-</li>
-<li>
-<p>
-Run tests that cover the new features as well as making sure old
-features still work.
-</p>
-</li>
-<li>
-<p>
-Fix issues revealed by failed tests.
-</p>
-</li>
-<li>
-<p>
-Distribute the release candidate code to collaborative users to
-make sure their runs perform as expected on the new code.
-</p>
-</li>
-<li>
-<p>
-Fix issues revealed by user dismay.
-</p>
-</li>
-<li>
-<p>
-Update the docs to reflect the changes. If input files or file
-formats have changed, produce release notes to highlight the changes.
-</p>
-</li>
-<li>
-<p>
-Publicly announce, release, and brag about a shiny new version of
-ADCIRC.
-</p>
-</li>
-</ul></div>
-<div class="paragraph"><p>These tests are often referred to as "regression tests," i.e., a
-means to detect a regression in correctness or functionality due to
-changes in the code. A regression test suite can be built up pretty
-easily.  There are a number of small test cases on adcirc.org, so
-the initial set of tests should consist of those. We may also want
-to differentiate between tests for correctness and tests for
-functionality. The former is making sure you&#8217;re getting the expected
-model results and the latter is making sure that nothing is broken
-(i.e., adcprep, i/o, message passing, etc).</p></div>
-<div class="paragraph"><p>The test suite gets built up based on different purposes.  One may
-want to exercise more options and more cases, but it is also
-important to test for known bugs that might have been reintroduced.
-In otherwords, once a bug is discovered and fixed, a test should be
-created specifically for that bug to make sure it doesn&#8217;t appear
-again.</p></div>
-<div class="paragraph"><p>And lastly, a small test suite should be included with each
-distribution and a more comprehensive should be created that runs
-during development and before a release. A step in this direction
-has been made using ant in the autotest directory.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_subversion">Subversion</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>Subversion is a version control system. That is, it provides a means
-for many software developers to collaborate on a single software
-project.</p></div>
-<div class="paragraph"><p>A subversion repository is a storehouse of code for a particular
-project. Subversion repositories consist of a trunk, which is the
-mainline code that everyone shares, and any number of branches that
-are created by and for individual users.</p></div>
-<div class="paragraph"><p>A branch may be created by a developer that has a lot of changes to
-make over a longer period of time. This lone developer can work on a
-branch without affecting the mainline code. Once the changes in the
-branch are satisfactory, the branch can be merged back to the trunk,
-making the changes available to all.</p></div>
-<div class="paragraph"><p>A further advantage of Subversion is that it automates the process
-of merging new features into ADCIRC. For example, in the past,
-without Subversion, developers modified their local copies of ADCIRC
-and wanted to merge the modifications into the mainline code. This
-required hours or days of painstakingly examining each change they
-had made and cutting and pasting the changes one by one into the
-up-to-date version of ADCIRC. With Subversion, the software examines
-the changes that were made locally and makes corresponding changes
-to the mainline version in an automated way.</p></div>
-<div class="sect2">
-<h3 id="_policies">Policies</h3>
-<div class="paragraph"><p>Working with subversion requires greater coordination among ADCIRC
-developers. For example, if two developers change the same line of
-code in two different branches in two different ways, this will
-create a conflict that will have to be resolved manually.</p></div>
-<div class="paragraph"><p>Furthermore, if one developer makes changes to trunk that prevent
-the code from compiling, it will be difficult for other developers
-to continue working if they update to the latest code. As a result,
-ADCIRC development with Subversion will adhere to the following
-policies:</p></div>
-<div class="ulist"><ul>
-<li>
-<p>
-Communicate. Jason Fleming is responsible for making sure ADCIRC
-development is smooth, pain-free and productive---when in doubt,
-email him (<a href="mailto:jason.fleming@seahorsecoastal.com">jason.fleming@seahorsecoastal.com</a>).
-</p>
-</li>
-<li>
-<p>
-Also use the adcirc-dev mailing list to keep everyone informed of
-what you are doing.
-</p>
-</li>
-<li>
-<p>
-If you are not on the adcirc-dev mailing list and would like to be,
-email Jason Fleming.
-</p>
-</li>
-<li>
-<p>
-Make a branch to develop new features, rather than making changes
-to trunk.
-</p>
-</li>
-<li>
-<p>
-Don&#8217;t commit changes to trunk that prevent the code from
-compiling, at least on your platform. You should also confirm that
-your code compiles with and without NetCDF.
-</p>
-</li>
-</ul></div>
-</div>
-<div class="sect2">
-<h3 id="_instructions">Instructions</h3>
-<div class="paragraph"><p>Comprehensive documentation for Subversion is available:
-<a href="http://svnbook.red-bean.com/">http://svnbook.red-bean.com/</a>.</p></div>
-<div class="paragraph"><p>The ADCIRC code is hosted at the following Subversion repository
-location:</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>https://adcirc.renci.org/svn/adcirc</tt></pre>
-</div></div>
-<div class="paragraph"><p>To check out code from the trunk, please type</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>svn checkout https://adcirc.renci.org/svn/adcirc/trunk</tt></pre>
-</div></div>
-<div class="paragraph"><p>Here are a few examples of things that we commonly do with svn.</p></div>
-<div class="sect3">
-<h4 id="_compare_revisions">Compare Revisions</h4>
-<div class="paragraph"><p>In order to see the changes between revisions of the repository,
-type (for example)</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>svn diff  -r 15:16 owiwind.F</tt></pre>
-</div></div>
-</div>
-<div class="sect3">
-<h4 id="_package_up_code_from_repository">Package Up Code From Repository</h4>
-<div class="paragraph"><p>In order to create a tar file that contains just the ADCIRC code and
-excludes the .svn directories, the first step is to export the code
-to a new subdirectory. For example:</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>svn export ./trunk ./adc99_99</tt></pre>
-</div></div>
-<div class="paragraph"><p>Would copy the local files under version control from the trunk
-subdir to the adc99_99 subdir, excluding the .svn files. Particular
-revisions of the svn repository can also be extracted, see the svn
-documentation for details on how to do this.</p></div>
-</div>
-<div class="sect3">
-<h4 id="_pull_old_version_from_repository">Pull Old Version from Repository</h4>
-<div class="paragraph"><p>One advantage of using svn is that it is easy to go back to an older
-version of the code, if necessary. The first thing to do in this
-case is usually to look at the svn log to see what changes were
-made, so that you can select the right version of the repository to
-extract. Go to the subdirectory of the code tree that you want an
-older version of and issue the command</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>svn log</tt></pre>
-</div></div>
-<div class="paragraph"><p>Look at the log entries, and note the revision that you&#8217;d like to
-extract. Let&#8217;s say you want to retrieve adcirc48/trunk at revision
-65 of the repository (for example). Issue the following command:</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>svn checkout -r 65 https://adcirc.renci.org/svn/adcirc/trunk</tt></pre>
-</div></div>
-</div>
-<div class="sect3">
-<h4 id="_make_a_branch">Make a Branch</h4>
-<div class="paragraph"><p>To make a branch off trunk to add a new feature and call it the
-myfeature branch:</p></div>
-<div class="literalblock">
-<div class="content">
+                </div>
+            </div>
+            <div class="paragraph"><p>These changes in the make command line must be made for the build of
+                each of the ADCIRC executables so that they are all consistent.</p></div>
+            <div class="paragraph"><p>In general, building ADCIRC with NetCDF support is tedious and
+                usually requires several rounds of emails to local sysadmins to
+                determine the right combination of compiler flags and options,
+                because they vary siginificantly from platform to platform. Have a
+                look at the NetCDF-related compiler flags in <em>cmplrflags.mk</em> for
+                ideas to get you started.</p></div>
+        </div>
+    </div>
+    <div class="sect1">
+        <h2 id="_development_strategy">Development Strategy</h2>
+        <div class="sectionbody">
+            <div class="paragraph"><p>The ADCIRC development strategy consists of the maintenance of two
+                separate versions at any given time: the stable version and the
+                development version. The stable version only receives bug fixes,
+                while the development version receives bug fixes as well as new
+                features.</p></div>
+            <div class="paragraph"><p>At some point, the development version becomes stable. At that time,
+                a stable branch is created from it, and then new features are added
+                to the previosly stable code, creating a new development version. At
+                that time, the major version number will be incremented, e.g.,
+                stable v48.xx will become the next development version as v49.00.</p></div>
+            <div class="paragraph"><p>The minor version number is changed each time there is a change in
+                the code and the modified code is committed back to the repository.
+                Details of the implementation of this strategy with Subversion are
+                provided in the section entitled "Subversion".</p></div>
+        </div>
+    </div>
+    <div class="sect1">
+        <h2 id="_coding_standards">Coding Standards</h2>
+        <div class="sectionbody">
+            <div class="paragraph"><p>ADCIRC has had many individual contributors and has received code
+                accretions over many years. A set of uniform coding standards has
+                not been defined, and as a result, ADCIRC contains many different
+                styles of Fortran. This section provides a set of style guidelines
+                for contributing code to ADCIRC.</p></div>
+            <div class="sect2">
+                <h3 id="_the_basics">The Basics</h3>
+                <div class="ulist">
+                    <ul>
+                        <li>
+                            <p>
+                                IMPLICIT NONE at the beginning of each subroutine.
+                            </p>
+                        </li>
+                        <li>
+                            <p>
+                                Fixed form, never exceeding the 72 column limit, even for comment
+                                lines.
+                            </p>
+                        </li>
+                        <li>
+                            <p>
+                                When adding code to an existing subroutine, make the new code
+                                match the style of the surrounding code, even if you&#8217;d prefer
+                                another style.
+                            </p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="sect2">
+                <h3 id="_maintainability">Maintainability</h3>
+                <div class="paragraph"><p>When adding code that will be used in slightly different ways in
+                    different contexts, make it a subroutine, rather than cutting and
+                    pasting several times and making small changes to each
+                    cut-and-pasted section. Although it is faster to write code with
+                    cut-and-paste, the resulting code is harder to maintain, since each
+                    cut-and-pasted section will have to be modified individually later.
+                    Also, it is easier to make mistakes when working with cut-and-pasted
+                    code.</p></div>
+                <div class="paragraph"><p>Rick has expressed a desire for greater modularity &#8230; particularly
+                    with the number of variables in the global module. When adding a
+                    major new feature, please consider the modularity of the data it
+                    requires. In other words, if new variables can be made private to a
+                    particular module rather than global, please do so.</p></div>
+            </div>
+        </div>
+    </div>
+    <div class="sect1">
+        <h2 id="_release_process">Release Process</h2>
+        <div class="sectionbody">
+            <div class="paragraph"><p>The release process informal, but generally includes the following
+                steps:</p></div>
+            <div class="ulist">
+                <ul>
+                    <li>
+                        <p>
+                            Set and stick to a list of new features as the goal for the new
+                            release.
+                        </p>
+                    </li>
+                    <li>
+                        <p>
+                            Have a consensus among ADCIRC developers that the goal has been
+                            achieved.
+                        </p>
+                    </li>
+                    <li>
+                        <p>
+                            Run tests that cover the new features as well as making sure old
+                            features still work.
+                        </p>
+                    </li>
+                    <li>
+                        <p>
+                            Fix issues revealed by failed tests.
+                        </p>
+                    </li>
+                    <li>
+                        <p>
+                            Distribute the release candidate code to collaborative users to
+                            make sure their runs perform as expected on the new code.
+                        </p>
+                    </li>
+                    <li>
+                        <p>
+                            Fix issues revealed by user dismay.
+                        </p>
+                    </li>
+                    <li>
+                        <p>
+                            Update the docs to reflect the changes. If input files or file
+                            formats have changed, produce release notes to highlight the changes.
+                        </p>
+                    </li>
+                    <li>
+                        <p>
+                            Publicly announce, release, and brag about a shiny new version of
+                            ADCIRC.
+                        </p>
+                    </li>
+                </ul>
+            </div>
+            <div class="paragraph"><p>These tests are often referred to as "regression tests," i.e., a
+                means to detect a regression in correctness or functionality due to
+                changes in the code. A regression test suite can be built up pretty
+                easily. There are a number of small test cases on adcirc.org, so
+                the initial set of tests should consist of those. We may also want
+                to differentiate between tests for correctness and tests for
+                functionality. The former is making sure you&#8217;re getting the expected
+                model results and the latter is making sure that nothing is broken
+                (i.e., adcprep, i/o, message passing, etc).</p></div>
+            <div class="paragraph"><p>The test suite gets built up based on different purposes. One may
+                want to exercise more options and more cases, but it is also
+                important to test for known bugs that might have been reintroduced.
+                In otherwords, once a bug is discovered and fixed, a test should be
+                created specifically for that bug to make sure it doesn&#8217;t appear
+                again.</p></div>
+            <div class="paragraph"><p>And lastly, a small test suite should be included with each
+                distribution and a more comprehensive should be created that runs
+                during development and before a release. A step in this direction
+                has been made using ant in the autotest directory.</p></div>
+        </div>
+    </div>
+    <div class="sect1">
+        <h2 id="_subversion">Subversion</h2>
+        <div class="sectionbody">
+            <div class="paragraph"><p>Subversion is a version control system. That is, it provides a means
+                for many software developers to collaborate on a single software
+                project.</p></div>
+            <div class="paragraph"><p>A subversion repository is a storehouse of code for a particular
+                project. Subversion repositories consist of a trunk, which is the
+                mainline code that everyone shares, and any number of branches that
+                are created by and for individual users.</p></div>
+            <div class="paragraph"><p>A branch may be created by a developer that has a lot of changes to
+                make over a longer period of time. This lone developer can work on a
+                branch without affecting the mainline code. Once the changes in the
+                branch are satisfactory, the branch can be merged back to the trunk,
+                making the changes available to all.</p></div>
+            <div class="paragraph"><p>A further advantage of Subversion is that it automates the process
+                of merging new features into ADCIRC. For example, in the past,
+                without Subversion, developers modified their local copies of ADCIRC
+                and wanted to merge the modifications into the mainline code. This
+                required hours or days of painstakingly examining each change they
+                had made and cutting and pasting the changes one by one into the
+                up-to-date version of ADCIRC. With Subversion, the software examines
+                the changes that were made locally and makes corresponding changes
+                to the mainline version in an automated way.</p></div>
+            <div class="sect2">
+                <h3 id="_policies">Policies</h3>
+                <div class="paragraph"><p>Working with subversion requires greater coordination among ADCIRC
+                    developers. For example, if two developers change the same line of
+                    code in two different branches in two different ways, this will
+                    create a conflict that will have to be resolved manually.</p></div>
+                <div class="paragraph"><p>Furthermore, if one developer makes changes to trunk that prevent
+                    the code from compiling, it will be difficult for other developers
+                    to continue working if they update to the latest code. As a result,
+                    ADCIRC development with Subversion will adhere to the following
+                    policies:</p></div>
+                <div class="ulist">
+                    <ul>
+                        <li>
+                            <p>
+                                Communicate. Jason Fleming is responsible for making sure ADCIRC
+                                development is smooth, pain-free and productive---when in doubt,
+                                email him (<a href="mailto:jason.fleming@seahorsecoastal.com">jason.fleming@seahorsecoastal.com</a>).
+                            </p>
+                        </li>
+                        <li>
+                            <p>
+                                Also use the adcirc-dev mailing list to keep everyone informed of
+                                what you are doing.
+                            </p>
+                        </li>
+                        <li>
+                            <p>
+                                If you are not on the adcirc-dev mailing list and would like to be,
+                                email Jason Fleming.
+                            </p>
+                        </li>
+                        <li>
+                            <p>
+                                Make a branch to develop new features, rather than making changes
+                                to trunk.
+                            </p>
+                        </li>
+                        <li>
+                            <p>
+                                Don&#8217;t commit changes to trunk that prevent the code from
+                                compiling, at least on your platform. You should also confirm that
+                                your code compiles with and without NetCDF.
+                            </p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="sect2">
+                <h3 id="_instructions">Instructions</h3>
+                <div class="paragraph"><p>Comprehensive documentation for Subversion is available:
+                    <a href="http://svnbook.red-bean.com/">http://svnbook.red-bean.com/</a>.</p></div>
+                <div class="paragraph"><p>The ADCIRC code is hosted at the following Subversion repository
+                    location:</p></div>
+                <div class="literalblock">
+                    <div class="content">
+                        <pre><tt>https://adcirc.renci.org/svn/adcirc</tt></pre>
+                    </div>
+                </div>
+                <div class="paragraph"><p>To check out code from the trunk, please type</p></div>
+                <div class="literalblock">
+                    <div class="content">
+                        <pre><tt>svn checkout https://adcirc.renci.org/svn/adcirc/trunk</tt></pre>
+                    </div>
+                </div>
+                <div class="paragraph"><p>Here are a few examples of things that we commonly do with svn.</p></div>
+                <div class="sect3">
+                    <h4 id="_compare_revisions">Compare Revisions</h4>
+                    <div class="paragraph"><p>In order to see the changes between revisions of the repository,
+                        type (for example)</p></div>
+                    <div class="literalblock">
+                        <div class="content">
+                            <pre><tt>svn diff  -r 15:16 owiwind.F</tt></pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="sect3">
+                    <h4 id="_package_up_code_from_repository">Package Up Code From Repository</h4>
+                    <div class="paragraph"><p>In order to create a tar file that contains just the ADCIRC code and
+                        excludes the .svn directories, the first step is to export the code
+                        to a new subdirectory. For example:</p></div>
+                    <div class="literalblock">
+                        <div class="content">
+                            <pre><tt>svn export ./trunk ./adc99_99</tt></pre>
+                        </div>
+                    </div>
+                    <div class="paragraph"><p>Would copy the local files under version control from the trunk
+                        subdir to the adc99_99 subdir, excluding the .svn files. Particular
+                        revisions of the svn repository can also be extracted, see the svn
+                        documentation for details on how to do this.</p></div>
+                </div>
+                <div class="sect3">
+                    <h4 id="_pull_old_version_from_repository">Pull Old Version from Repository</h4>
+                    <div class="paragraph"><p>One advantage of using svn is that it is easy to go back to an older
+                        version of the code, if necessary. The first thing to do in this
+                        case is usually to look at the svn log to see what changes were
+                        made, so that you can select the right version of the repository to
+                        extract. Go to the subdirectory of the code tree that you want an
+                        older version of and issue the command</p></div>
+                    <div class="literalblock">
+                        <div class="content">
+                            <pre><tt>svn log</tt></pre>
+                        </div>
+                    </div>
+                    <div class="paragraph"><p>Look at the log entries, and note the revision that you&#8217;d like to
+                        extract. Let&#8217;s say you want to retrieve adcirc48/trunk at revision
+                        65 of the repository (for example). Issue the following command:</p></div>
+                    <div class="literalblock">
+                        <div class="content">
+                            <pre><tt>svn checkout -r 65 https://adcirc.renci.org/svn/adcirc/trunk</tt></pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="sect3">
+                    <h4 id="_make_a_branch">Make a Branch</h4>
+                    <div class="paragraph"><p>To make a branch off trunk to add a new feature and call it the
+                        myfeature branch:</p></div>
+                    <div class="literalblock">
+                        <div class="content">
 <pre><tt>svn copy https://adcirc.renci.org/svn/adcirc/trunk
  https://adcirc.renci.org/svn/adcirc/branches/myfeature
  --message "Creating branch to add myfeature"</tt></pre>
-</div></div>
-<div class="paragraph"><p>Then to start using the newly created branch:</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>svn checkout https://adcirc.renci.org/svn/adcirc/branches/myfeature</tt></pre>
-</div></div>
+                        </div>
+                    </div>
+                    <div class="paragraph"><p>Then to start using the newly created branch:</p></div>
+                    <div class="literalblock">
+                        <div class="content">
+                            <pre><tt>svn checkout https://adcirc.renci.org/svn/adcirc/branches/myfeature</tt></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="sect1">
+        <h2 id="_appendix_a_this_document">Appendix A: This Document</h2>
+        <div class="sectionbody">
+            <div class="paragraph"><p>This document was prepared from the text file ADCIRCDevGuide.txt
+                using software called asciidoc (<a href="http://www.methods.co.nz/asciidoc/">http://www.methods.co.nz/asciidoc/</a>).
+                The document can be formatted as an html page with the command</p></div>
+            <div class="literalblock">
+                <div class="content">
+                    <pre><tt>asciidoc -a toc2 ADCIRCDevGuide.txt</tt></pre>
+                </div>
+            </div>
+            <div class="paragraph"><p>or formatted as a pdf with the command</p></div>
+            <div class="literalblock">
+                <div class="content">
+                    <pre><tt>a2x --format=pdf -a toc2 ADCIRCDevGuide.txt</tt></pre>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+<div id="footnotes">
+    <hr/>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_appendix_a_this_document">Appendix A: This Document</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>This document was prepared from the text file ADCIRCDevGuide.txt
-using software called asciidoc (<a href="http://www.methods.co.nz/asciidoc/">http://www.methods.co.nz/asciidoc/</a>).
-The document can be formatted as an html page with the command</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>asciidoc -a toc2 ADCIRCDevGuide.txt</tt></pre>
-</div></div>
-<div class="paragraph"><p>or formatted as a pdf with the command</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>a2x --format=pdf -a toc2 ADCIRCDevGuide.txt</tt></pre>
-</div></div>
-</div>
-</div>
-</div>
-<div id="footnotes"><hr /></div>
 <div id="footer">
-<div id="footer-text">
-Last updated 2013-05-06 12:57:01 EDT
-</div>
+    <div id="footer-text">
+        Last updated 2013-05-06 12:57:01 EDT
+    </div>
 </div>
 </body>
 </html>
