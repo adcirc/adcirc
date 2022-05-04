@@ -8,45 +8,41 @@
 #include <windows.h>
 #endif
 
-void f_makedir(char* path, int len)
-{
-  char *dirnm;
+void f_makedir(char *path, int len) {
+    char *dirnm;
 
-  dirnm = (char *) malloc(len+1);
-  memcpy(dirnm, path, len);
+    dirnm = (char *) malloc(len + 1);
+    memcpy(dirnm, path, len);
 
-  dirnm[len] = '\0';
+    dirnm[len] = '\0';
 
 #ifdef _WIN32
-  CreateDirectory(dirnm,NULL);
+    CreateDirectory(dirnm,NULL);
 #else
-  mkdir(dirnm, 0755);
+    mkdir(dirnm, 0755);
 #endif
 
 
-  free(dirnm);
+    free(dirnm);
 }
 
-void MAKEDIR(protoFSTRING(fpath) protoLenFSTRING(fpath))
-{
-  char *path  = FCD2CP(fpath);
-  int   len   = FCDLEN(fpath);
+void MAKEDIR(protoFSTRING(fpath)protoLenFSTRING(fpath)) {
+    char *path = FCD2CP(fpath);
+    int len = FCDLEN(fpath);
 
-  f_makedir(path, len);
+    f_makedir(path, len);
 }
 
-void makedir(protoFSTRING(fpath) protoLenFSTRING(fpath))
-{
-  char *path  = FCD2CP(fpath);
-  int   len   = FCDLEN(fpath);
+void makedir(protoFSTRING(fpath)protoLenFSTRING(fpath)) {
+    char *path = FCD2CP(fpath);
+    int len = FCDLEN(fpath);
 
-  f_makedir(path, len);
+    f_makedir(path, len);
 }
 
-void makedir_(protoFSTRING(fpath) protoLenFSTRING(fpath))
-{
-  char *path  = FCD2CP(fpath);
-  int   len   = FCDLEN(fpath);
+void makedir_(protoFSTRING(fpath)protoLenFSTRING(fpath)) {
+    char *path = FCD2CP(fpath);
+    int len = FCDLEN(fpath);
 
-  f_makedir(path, len);
+    f_makedir(path, len);
 }

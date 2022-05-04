@@ -11,22 +11,22 @@
 #endif
 
 #ifndef PASTE2
-#  define PASTE2(a,b) gEnErIcPaste2(a,b)
-#  define gEnErIcPaste2(a,b) a##b
+#  define PASTE2(a, b) gEnErIcPaste2(a,b)
+#  define gEnErIcPaste2(a, b) a##b
 #endif
 
 #if (defined(BSD_FOR_TYPE))
-#  define CP2FCD(cp,len,fcd) do{fcd = cp; PASTE2(fcd,_len)=len;}while(0)
+#  define CP2FCD(cp, len, fcd) do{fcd = cp; PASTE2(fcd,_len)=len;}while(0)
 #  define FCD2CP(s) s
 #  define FCDLEN(s) PASTE2(s,_len)
 #  define FDESC(s) char * s; static int PASTE2(s,_len)
-#  define FSTRING(a,comma) comma char * a
+#  define FSTRING(a, comma) comma char * a
 #  define protoFSTRING(a)  char * a
 #  define protoLenFSTRING(a) , int PASTE2(a,_len)
 #  if (defined(NO_TRAILING_UNDERSCORE) || defined(_IBMR2))
 #    define FORTRAN_NAME(UN,ln) ln
 #  else
-#    define FORTRAN_NAME(UN,ln) PASTE2(ln,_)
+#    define FORTRAN_NAME(UN, ln) PASTE2(ln,_)
 #  endif
 #endif
 
@@ -40,8 +40,6 @@
 #  define protoLenFSTRING(a)
 #  define FORTRAN_NAME(UN,ln) UN
 #endif
-
-
 
 
 #endif /* CFI_H */
