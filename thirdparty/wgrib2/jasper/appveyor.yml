@@ -3,20 +3,20 @@ version: 1.0.{build}
 
 # build worker image (VM template)
 image:
-    - Visual Studio 2015
-    - Visual Studio 2013
+  - Visual Studio 2015
+  - Visual Studio 2013
 
 configuration:
-    - Release
-    - Debug
+  - Release
+  - Debug
 
 platform:
-    - Win64
-    #- Win32
+  - Win64
+  #- Win32
 
 # The commands to be run at the very beginning, before repository cloning.
 init:
-    - git config --global core.autocrlf input
+  - git config --global core.autocrlf input
 
 # The commands to run just before building.
 #before_build:
@@ -30,5 +30,5 @@ init:
 
 # The command to run for building.
 build_script:
-    - build\appveyor\build.bat
+  - build\appveyor\build.bat
 

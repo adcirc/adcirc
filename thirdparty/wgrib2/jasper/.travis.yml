@@ -11,19 +11,19 @@ sudo: required
 #sudo: required
 
 os:
-    - linux
-    - osx
+  - linux
+  - osx
 
 #osx_image:
 #    - xcode7.3
 #    #- xcode8
 
 compiler:
-    - clang
-    - gcc
+  - clang
+  - gcc
 
 before_install:
-    - build/travis/prebuild
+  - build/travis/prebuild
 #    - bash --version
 #    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install freeglut; fi
 #    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
@@ -33,10 +33,10 @@ before_install:
 #install:
 
 script:
-    - build/travis/build
+  - build/travis/build
 
 notifications:
-    email:
-        on_success: change
-        on_failure: always
+  email:
+    on_success: change
+    on_failure: always
 
