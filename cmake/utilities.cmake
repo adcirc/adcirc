@@ -1,4 +1,4 @@
-if(BUILD_UTILITIES)
+if (BUILD_UTILITIES)
 
   add_executable(adccmp util/adccmp.F)
   add_executable(p15 wind/p15.F)
@@ -9,11 +9,11 @@ if(BUILD_UTILITIES)
   add_executable(inflate util/inflate.F)
   add_executable(hstime util/hstime.F)
 
-  if(NETCDF_WORKING)
+  if (NETCDF_WORKING)
     add_executable(adcircResultsComparison util/adcircResultsComparison.F90)
     addcompilerflags(adcircResultsComparison)
     addnetcdf(adcircResultsComparison)
-  endif(NETCDF_WORKING)
+  endif (NETCDF_WORKING)
 
   addcompilerflags(adccmp)
   addcompilerflags(p15)
@@ -25,14 +25,14 @@ if(BUILD_UTILITIES)
   addcompilerflags(hstime)
 
   install(
-    TARGETS adccmp
-            p15
-            owi22
-            build13
-            buildstwave23
-            hot2asc
-            inflate
-            hstime
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+          TARGETS adccmp
+          p15
+          owi22
+          build13
+          buildstwave23
+          hot2asc
+          inflate
+          hstime
+          RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-endif(BUILD_UTILITIES)
+endif (BUILD_UTILITIES)
