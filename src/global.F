@@ -57,6 +57,8 @@ C..   Ali's full dispersion coefficient for M2
       REAL(SZ) :: Ad = 0.0050189_SZ ! coefficient of depth (default)
       REAL(SZ) :: Cs = 1500.0_SZ ! Speed of sound in water
       REAL(SZ) :: Cs2 ! Speed of sound in water^2
+      REAL(SZ), PARAMETER :: TWOB = 2d0*0.4779d0
+      REAL(SZ), PARAMETER :: GM2  = 3.486d0**2
 C     jgf46.21 Added support for IBTYPE=52.
       REAL(SZ),ALLOCATABLE, TARGET ::   ElevDisc(:)
       REAL(SZ) FluxSettlingTime
@@ -66,6 +68,14 @@ C... v49.48 tcm -- added for coupling with STWAVE (NRS=4)
       REAL(8)  :: ENDWAVE     ! End of Wave Service
       LOGICAL  :: CPL2STWAVE = .FALSE.  !Coupled to STWAVE (NRS=4)
       LOGICAL  :: Flag_ElevError = .FALSE.  
+
+C
+C... v50.xx sm -- added for coupling with NOUPC Cap
+      LOGICAL   ::  NUOPC4MET = .FALSE.  ! assign in CAP
+      LOGICAL   ::  NUOPC4WAV = .FALSE.  ! assign in CAP
+C
+C
+
 C      real(sz) rampriver,drampriver,rampriver1,rampriver2
 C     jgf46.08 Fine grained ramp functions (jgf46.21 split flux b.c.s)
       REAL(SZ) RampExtFlux,DRampExtFlux ! Ramp for external flux b.c.s
@@ -1455,7 +1465,8 @@ C
       windDragOut(:) = 0.d0
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-      IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4)) then
+!   nrs = 5 -- Saeed's nuopc implementation
+      IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4).or.(ABS(NRS).EQ.5)) then
 !#ifdef CSWAN
 Casey 090302: Added the next line for output of radiation stress gradients.
          ALLOCATE ( RSNXOUT(MNP),RSNYOUT(MNP) )
