@@ -596,7 +596,8 @@ C
       ENDIF
 
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-      if (ncice.ne.0.and.ncice.ne.14) then
+C++ GML added ncice .ne. 17
+      if (ncice.ne.0.and.(ncice.ne.14) .and. (ncice.ne.17)) then
          CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
          do i=1,np
             CICEOUT(I) = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
@@ -647,7 +648,8 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 #endif
       IF(NRS.NE.0) THEN
 
-         if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3)) then
+        if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3) .or. (nrs.eq.5)) then  !saeed added 5
+!          if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3)) then
             IF(TimeLoc.GT.RSTIME2) THEN
                RSTIME1=RSTIME2
                RSTIME2=RSTIME2+RSTIMINC
@@ -678,8 +680,21 @@ C             into RSNX1/RSNY1, and then load the future forces into RSNX2/RSNY2
                  ENDDO
                ENDIF
 #endif
+C... v50.xx sm -- nrs=5 for NUOPC coupling wave data from coupler
+               NRS5: IF (NRS == 5) THEN    ! saeed
+
+                  DO I=1,NP
+                   RSX = RSNX1(I)
+                   RSY = RSNY1(I)
+                   RSNX1(I) = RSNX2(I)
+                   RSNY1(I) = RSNY2(I)
+                   RSNX2(I) = RSNX2(I) + (RSNX2(I)-RSX) ! extrapolate: 2*Rc - Rp
+                   RSNY2(I) = RSNY2(I) + (RSNY2(I)-RSY)
+                 ENDDO
+               ENDIF NRS5 !(NRS = 5)
 
             ENDIF
+
             RStRatio=(TimeLoc-RSTIME1)/RSTIMINC
             DO I=1,NP
                RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))

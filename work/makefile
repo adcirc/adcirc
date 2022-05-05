@@ -122,7 +122,7 @@ ifeq ($(BUILDTYPE),adcprep)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
   ifeq ($(NETCDF),enable)
-    LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
+    LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff $(FLIBS)
   else
     LIBS  := -Lodir_metis -lmetis $(FLIBS)
   endif
@@ -138,7 +138,7 @@ ifeq ($(BUILDTYPE),adcprep_be)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
   ifeq ($(NETCDF),enable)
-    LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
+    LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff $(FLIBS)
   else
     LIBS  := -Lodir_metis_be -lmetis_be $(FLIBS)
   endif
@@ -154,7 +154,7 @@ ifeq ($(BUILDTYPE),adcirc)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
   ifeq ($(NETCDF),enable)
-    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
+    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff $(FLIBS)
   endif
   #MSG_MOBJ:= $(O_DIR)globalio.o
   MSG_MOBJ:=
@@ -170,7 +170,7 @@ ifeq ($(BUILDTYPE),adcswan)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
   ifeq ($(NETCDF),enable)
-    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
+    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff $(FLIBS)
   endif
   MSG_MOBJ:= $(O_DIR)globalio.o
   ifneq ($(wildcard $(SRCDIR)/work/.swanlastcompile),)
@@ -193,7 +193,7 @@ ifeq ($(BUILDTYPE),$(PARALLEL_ADCIRC))
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
   ifeq ($(NETCDF),enable)
-    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
+    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff $(FLIBS)
   endif
   #MSG_MOBJ:= $(O_DIR)messenger.o $(O_DIR)writer.o
   MSG_MOBJ:=
@@ -209,7 +209,7 @@ ifeq ($(BUILDTYPE),padcswan)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
   ifeq ($(NETCDF),enable)
-    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
+    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff $(FLIBS)
   endif
   #MSG_MOBJ:= $(O_DIR)messenger.o $(O_DIR)writer.o
   MSG_MOBJ:=
@@ -233,9 +233,9 @@ ifeq ($(BUILDTYPE),$(LIBADC))
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
   ifeq ($(NETCDF),enable)
-    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
+    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff $(FLIBS)
   endif
-  MSG_MOBJ:=
+  MSG_MOBJ:= $(O_DIR)messenger.o
 endif
 #                                      p15
 ifeq ($(BUILDTYPE),p15)
@@ -356,12 +356,19 @@ ADC_MSRC   =  version.F sizes.F global.F
 POST_MSRC  =  post_global.F
 HARM_MSRC  =  harm.F
 VORT_MSRC  =  vortex.F
+
+ifeq ($(NETCDF),enable)
 WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F owiwind_netcdf.F
+else
+WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F
+endif
+
 SOLV_MSRC  =  itpackv.F
 NA_MSRC    =  nodalattr.F
 NC_MSRC    =  netcdfio.F
 GIO_MSRC   =  globalio.F
 WRIT_MSRC  =  write_output.F
+WRITER_MSRC = writer.F 
 #Casey 090302: Add file for coupling to unstructured SWAN.
 COUP_MSRC  =  couple2swan.F
 #tcm v49.48.01 Adding File for kdtree2 fast search algorithm
@@ -401,9 +408,9 @@ COUP_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(COUP_MSRC)  )
 KDTREE_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(KDTREE_MSRC) )
 ## DW
 SPG_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(SPG_MSRC) )
-## WJP
+WRITER_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(WRITER_MSRC) )
+# WJP
 BC3D_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(BC3D_MSRC) )
-
 
 ############################# Source & Object Files ######################
 #meb 04/20/2004 - added machdep.F onto POST_SRC
@@ -584,15 +591,26 @@ ifeq ($(XDMF),enable)
    ADCIRC_DEP := $(ADCIRC_DEP) $(XDMF_MOBJ)
    ADCSWAN_DEP := $(ADCSWAN_DEP) $(XDMF_MOBJ)
 endif
+
    adcirc ::  $(ADCIRC_DEP)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
    $(PARALLEL_ADCIRC) :: $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
 
+ifeq ($(NETCDF),enable)
    $(LIBADC) :: $(O_DIR) $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
-	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ)
+	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
+                 $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
+                 $(WRITER_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ) 
 	ar -ts $@
+else
+   $(LIBADC) :: $(O_DIR) $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
+	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
+                     $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
+                     $(WRITER_MOBJ) $(SUBD_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ)
+	ar -ts $@
+endif
 
 #Casey 080106: Added the following lines.
    adcswan :: $(O_DIR)
@@ -651,13 +669,16 @@ endif
 ########################## Misc Commands ####################################
 
 clean:
-	rm -f odir*/*.o  odir*/*.mod sizes.o
-	rm -f  ../thirdparty/swan/*.f ../thirdparty/swan/*.for ../thirdparty/swan/*.f90
-clobber:
-	rm -r -f odir*
-	rm -f adcprep adcprep_be adcirc $(PARALLEL_ADCIRC) adcswan padcswan p15 owi22 build13 aswip \
-           build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost adccmp libadc.a
+	rm -f *.o odir*/*.o  *.mod odir*/*.mod actualflags.txt
 	rm -f  ../thirdparty/swan/*.f ../thirdparty/swan/*.for ../thirdparty/swan/*.f90 .swanlastcompile
+	rm -f ../thirdparty/nuopc/*.o ../thirdparty/nuopc/*.mod
+	rm -f ../util/estofs_tide_fac/estofs_tide_fac
+
+clobber: clean
+	rm -r -f odir* util*
+	rm -f adcprep adcprep_be adcirc $(PARALLEL_ADCIRC) adcswan padcswan p15 owi22 build13 aswip \
+	      build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost adccmp libadc.a
+
 help:
 	@echo "This makefile supports the following:"
 	@echo "make all        - makes all seven targets"
@@ -735,7 +756,7 @@ else
 $(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)mesh.o $(O_DIR)hashtable.o
 endif
 
-$(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)subdomain.o $(O_DIR)momentum.o
+$(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum.o
 $(O_DIR)momentum.o    :  momentum.F $(O_DIR)subdomain.o
 $(O_DIR)wetdry.o      :  wetdry.F $(O_DIR)subdomain.o
 $(O_DIR)messenger.o   :  messenger.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)global_3dvs.o
@@ -761,6 +782,7 @@ else
 $(O_DIR)itpackv.o     :  itpackv.F $(O_DIR)sizes.o
 endif
 $(O_DIR)netcdfio.o    :  netcdfio.F  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(GWCE_MOBJ) $(O_DIR)global_3dvs.o
+
 #Casey 090302: Added the next line.
 $(O_DIR)couple2swan.o :  couple2swan.F $(O_DIR)write_output.o
 # jgf51.21.22: modularized mesh and boundaries
@@ -795,7 +817,8 @@ $(O_DIR)subdomain.o   : subdomain.F $(O_DIR)mesh.o
 endif
 $(O_DIR)global_3dvs.o : global_3dvs.F $(O_DIR)global.o $(O_DIR)boundaries.o
 # DW
-$(O_DIR)sponge_layer.o : sponge_layer.F $(ADC_MOBJ) $(SOLV_MOBJ)
+$(O_DIR)sponge_layer.o : sponge_layer.F $(O_DIR)quadrature.o $(ADC_MOBJ)
+$(O_DIR)quadrature.o : quadrature.F
 # WJP
 $(O_DIR)couple2baroclinic3D.o : couple2baroclinic3D.F $(ADC_MOBJ) $(SPG_MOBJ)
 

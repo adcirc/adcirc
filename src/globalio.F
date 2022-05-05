@@ -218,6 +218,14 @@ C! CMPI
                   if ( descript % isStation.eqv..false. ) then
                      if ( nodecode(i).eq.0 ) then
                         buf(iglobal-ioffset) = descript % alternate_value
+#ifdef ADCNETCDF
+#ifdef WDVAL_NETCDF
+! DW to prevent NaN in matlab
+
+                        buf(iglobal-ioffset) = descript % alternate_value
+     &                      + sign(100.0, descript%alternate_value)
+#endif
+#endif
                      endif
                   endif
                endif
@@ -309,10 +317,19 @@ C! CMPI
         iglobal = descript % imap(i)
         if (istart <= iglobal .and. iglobal <= iend) then
           j = 2*(iglobal - ioffset) - 1
-          if(descript%considerWetDry.and.nodecode(i).eq.0.and.
-     &       (.not.descript%isStation))then              
+          if(descript%considerWetDry.and.nodecode(i).eq.0)then
             buf(j)     = descript % alternate_value
             buf(j + 1) = descript % alternate_value
+
+#ifdef ADCNETCDF
+#ifdef WDVAL_NETCDF
+            buf(j)     = descript % alternate_value +
+     &             sign(100.0,descript%alternate_value)
+            buf(j + 1) = descript % alternate_value +
+     &             sign(100.0,descript%alternate_value)
+#endif
+#endif
+
           else
             buf(j)     = descript % array(i)
             buf(j + 1) = descript % array2(i)

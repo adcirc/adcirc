@@ -2244,7 +2244,7 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
 C
-      DO 11 J=nfen-1,1,-1
+      DO J=nfen-1,1,-1
          IF(ABS(B(J+1)).EQ.0.) then
             write(screenunit,*) 'Diagonal term in the VS matrix is zero'
             write(screenunit,*) '*********** Fatal error *************'
@@ -2255,7 +2255,7 @@ C
          P1=C(J)/B(J+1)
          B(J)=B(J)-A(J+1)*P1
          R(J)=R(J)-R(J+1)*P1
- 11   CONTINUE
+      END DO
 
       IF(ABS(B(1)).EQ.0.) then
          write(screenunit,*) 'B1 term in the VS matrix is zero'
@@ -2267,8 +2267,9 @@ C
 
       U(1)=R(1)/B(1)
 
-      DO 12 J=2,nfen
- 12      U(J)=(R(J)-A(J)*U(J-1))/B(J)
+      DO J=2,nfen
+         U(J)=(R(J)-A(J)*U(J-1))/B(J)
+      END DO
 
 #if defined(VSMY_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

@@ -2918,12 +2918,12 @@ C.... end WP
                   ! If it is the first time that the slope limiter
                   ! has been activated at this node, write a log 
                   ! message. 
-                  eslcount(nm(ie,i)) = eslcount(nm(ie,i))+1 ! for output file
-                  if (eslcount(nm(ie,i)).eq.1) then
+                  if (eslcount(nm(ie,i)).eq.0) then
                      write(scratchMessage,1983) nodeNumber,dEta2Mag, 
      &                     elemental_slope_limiter_grad_max(NM(IE,I)),
      &                     it, timeLoc
                      call allMessage(INFO,scratchMessage)
+                     eslcount(nm(ie,i)) = 1 ! for output file
                   endif
                   elemental_slope_limiter_active(NM(IE,I)) = .true.
                else
