@@ -117,15 +117,3 @@ popd >/dev/null 2>&1
 # build ADCIRC NUOPC
 make nuopc
 
-# build `tide_fac` executable from ESTOFS
-pushd ${ADCDIR}/work >/dev/null 2>&1
-  if [ ! -d util ]; then
-    mkdir -p util
-  else
-    [ -f util/tide_fac ] && rm -f util/tide_fac
-  fi
-popd >/dev/null 2>&1
-pushd ${ADCDIR}/util/estofs_tide_fac >/dev/null 2>&1
-  make
-  cp -f estofs_tide_fac ${ADCDIR}/work/util/tide_fac
-popd >/dev/null 2>&1
