@@ -960,11 +960,13 @@ C.... tcm v48.4641 additions for ice
      &     .OR.(NWS.EQ.19))THEN
         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
 C++! GML added 5
-        IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4).OR.(NRS.EQ.5))) 
+        IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4))) 
      &         READ(15,*) WTIMINC,RSTIMINC
-        IF((NCICE.EQ.0).AND.(NRS.EQ.3)) THEN  !Casey 090825: Fix for NRS = 3.
+        IF((NCICE.EQ.0).AND.((NRS.EQ.3).OR.(NRS.EQ.5))) THEN  !Casey 090825: Fix for NRS = 3.
           IF(ABS(NWS).EQ.8) THEN
               READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,RSTIMINC
+           ELSEIF (ABS(NWS).EQ.20) THEN
+              READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,RSTIMINC
            ELSE
               READ(15,*) WTIMINC,RSTIMINC
            ENDIF
@@ -972,7 +974,7 @@ C++! GML added 5
         IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,CICE_TIMINC
 C++! GML added 5
         IF((NCICE.GE.1).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4).OR.(NRS.EQ.5)))
-     &                READ(15,*) WTIMINC,RSTIMINC,CICE_TIMINC
+     &                READ(15,*) WTIMINC,RSTIMINC,CICE_TIMINC ! NEED TO BE FIXED FOR NWS=20
         IF((NCICE.GE.1).AND.(NRS.EQ.3)) THEN  !Casey 090825: Fix for NRS = 3.
           IF(ABS(NWS).EQ.8) THEN
               READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,
