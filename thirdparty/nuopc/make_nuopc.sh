@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Panagiotis Velissariou <panagiotis.velissariou@noaa.gov> - 05/22/2022
 # Panagiotis Velissariou <panagiotis.velissariou@noaa.gov> - 07/20/2021
 # Panagiotis Velissariou <panagiotis.velissariou@noaa.gov> - 12/05/2020
 # Original by: moghimis@gmail.com - 01/31/2020
@@ -19,6 +20,41 @@ else
   readonly scrNAME="$(basename "$(realpath -s "${BASH_SOURCE[0]}")")"
   readonly scrDIR="$(cd "$(dirname "$(realpath -s "${BASH_SOURCE[0]}")")" && pwd -P)"
 fi
+
+reportError()
+{
+  local -i errval=0
+  local errmsg
+
+  if [ -z "${1:-}"  ]; then
+    errmsg="Compilation failed."
+  else
+    errmsg="Compilation of ${1} failed."
+  fi
+  
+  if [ "${2:-UNDEF}" -eq "${2}" ]; then
+    errval=${2}
+  fi
+
+  if [ ${errval} -ne 0 ]; then
+    echo
+    echo "========================================"
+    echo "   ${errmsg}"
+    echo "   Exiting the build sequence now ..."
+    echo "========================================"
+    echo
+
+    exit ${errval}
+  else
+    echo
+    echo "========================================"
+    echo "   ${errmsg}"
+    echo "========================================"
+    echo
+
+    return 1
+  fi
+}
 
 ###====================
 ### Get the script arguments: env. file and compiler
@@ -93,7 +129,11 @@ pushd ${ADCDIR}/work >/dev/null 2>&1
 
   # Mandatory components
   make compiler=${comp_opt} libadc.a
+    err=$?
+    [ ${err} -ne 0 ] && reportError "libadc.a" ${err}
   make compiler=${comp_opt} adcprep
+    err=$?
+    [ ${err} -ne 0 ] && reportError "adcprep" ${err}
 
   # Optional components
   for iexe in ${adc_exe}
@@ -101,12 +141,18 @@ pushd ${ADCDIR}/work >/dev/null 2>&1
     case "${iexe}" in
       adcirc)
         make compiler=${comp_opt} adcirc
+          err=$?
+          [ ${err} -ne 0 ] && reportError "adcirc"
         ;;
       padcirc)
         make compiler=${comp_opt} padcirc
+          err=$?
+          [ ${err} -ne 0 ] && reportError "padcirc"
         ;;
       aswip)
         make compiler=${comp_opt} aswip
+          err=$?
+          [ ${err} -ne 0 ] && reportError "aswip"
         ;;
       *) ;; #Do nothing
     esac
