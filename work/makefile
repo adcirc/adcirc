@@ -299,7 +299,7 @@ ifeq ($(BUILDTYPE),hstime)
   O_DIR:=$(SRCDIR)/work/odir12/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(DA)
   ifeq ($(NETCDF),enable)
-    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
+    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff $(FLIBS)
   endif
   VPATH :=  $(SRCDIR)/util
   MSG_MOBJ:=
@@ -321,7 +321,7 @@ ifeq ($(BUILDTYPE),aswip)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
   ifeq ($(NETCDF),enable)
-    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
+    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff $(FLIBS)
   endif
   MSG_MOBJ:= $(O_DIR)globalio.o
 endif
