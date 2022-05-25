@@ -862,9 +862,8 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE FBPG_Disp_from_BC3D
 
-      USE GLOBAL, ONLY: IFNLFA, IFNLCT, RAMP, NODECODE, NOFF, 
-     &                  ETA2, IFSFM 
-      USE CONSTANTS, ONLY: G, RhoWat0
+      USE GLOBAL, ONLY: G, IFNLFA, IFNLCT, RAMP, NODECODE, NOFF, 
+     &                  ETA2, RhoWat0, IFSFM 
       USE SPONGELAYER, ONLY: NO_BPG_IN_SPONGE 
       USE NodalAttributes, ONLY: absorblayer_sigma_mnx, 
      &                           absorblayer_sigma_mny
