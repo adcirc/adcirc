@@ -387,14 +387,14 @@ C-----------------------------------------------------------------------
                    endif
                 enddo  
                 ! For x-gradient variable (BC3D_BX)
-				! CPB 12/08/2021 switch from conserve_interp to bl_interp for proper 
-				! wrapping around the prime meridian
-				call bl_interp(NXc,Lonc,NY,Lat,xx,yy,indt,wt)
+                ! CPB 12/08/2021 switch from conserve_interp to bl_interp for proper 
+                ! wrapping around the prime meridian
+                call bl_interp(NXc,Lonc,NY,Lat,xx,yy,indt,wt)
                 indx(:,i) = indt
                 weightsx(:,i) = wt
                 ! For y-gradient variable (BC3D_BY)
-				! CPB 12/08/2021 switch from conserve_interp to bl_interp for proper 
-				! wrapping around the prime meridian
+                ! CPB 12/08/2021 switch from conserve_interp to bl_interp for proper 
+                ! wrapping around the prime meridian
                 call bl_interp(NX,Lon,NYc,Latc,xx,yy,indt,wt) 
                 indy(:,i) = indt
                 weightsy(:,i) = wt
@@ -862,12 +862,13 @@ C-----------------------------------------------------------------------
       SUBROUTINE FBPG_Disp_from_BC3D
 
       USE GLOBAL, ONLY: G, IFNLFA, IFNLCT, RAMP, NODECODE, NOFF, 
-     &                  ETA2, RhoWat0 
+     &                  ETA2, RhoWat0, IFSFM 
       USE SPONGELAYER, ONLY: NO_BPG_IN_SPONGE 
       USE NodalAttributes, ONLY: absorblayer_sigma_mnx, 
      &                           absorblayer_sigma_mny
       USE MESH, ONLY: NE, NM, NP, DP, AREAS, NODELE, FDXE, FDYE,
-     &      NEITABELE, NEITAB, NNEIGH, SFAC, TOTALAREA, SFacEle
+     &      NEITABELE, NEITAB, NNEIGH, SFAC, TOTALAREA, SFacEle,
+     &      SFMXEle, SFMYEle
       USE BOUNDARIES, ONLY: NVELME, ME2GW, NBV
  
       IMPLICIT NONE
@@ -879,7 +880,7 @@ C-----------------------------------------------------------------------
       INTEGER :: NM1,NM2,NM3    !local node numbers used to compute gradients
       INTEGER :: NC1,NC2,NC3    !local node codes
 
-      REAL(SZ) :: SFacAvg
+      REAL(SZ) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac
       REAL(SZ) :: AreaIE2, AreaEle
       REAL(SZ) :: FDX1, FDX2, FDX3
       REAL(SZ) :: FDY1, FDY2, FDY3
@@ -917,23 +918,28 @@ C
          EtaN2 = IFNLFA*Eta2(NM2)
          EtaN3 = IFNLFA*Eta2(NM3)
          SFacAvg = SFacEle(IE)
+         ! CPB 5/25/2022: correct rotated coordinates
+         SFmxAvg = SFMXEle(IE) ;
+         SFmyAvg = SFMYEle(IE) ;
+         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ; 
+         sfdyfac = (1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ; 
+
+         FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
+         FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
+         FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
+         FDY1 = FDYE(1,IE)*sfdyfac ; !c  FDY1=X(NM3)-X(NM2) !a1
+         FDY2 = FDYE(2,IE)*sfdyfac ; !c  FDY2=X(NM1)-X(NM3) !a2
+         FDY3 = FDYE(3,IE)*sfdyfac ; !c  FDY3=X(NM2)-X(NM1) !a3
 
          AreaIE2 = Areas(IE)
          AreaEle = 0.5d0*NCEle*AreaIE2
         
-         FDX1 = FDXE(1,IE)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-         FDX2 = FDXE(2,IE)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-         FDX3 = FDXE(3,IE)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-         FDY1 = FDYE(1,IE) ;    !c  FDY1=X(NM3)-X(NM2) !a1
-         FDY2 = FDYE(2,IE) ;    !c  FDY2=X(NM1)-X(NM3) !a2
-         FDY3 = FDYE(3,IE) ;    !c  FDY3=X(NM2)-X(NM1) !a3
          FDX1O2A = FDX1/AreaIE2 !dphi1/dx
          FDY1O2A = FDY1/AreaIE2 !dphi1/dy
          FDX2O2A = FDX2/AreaIE2 !dphi2/dx
          FDY2O2A = FDY2/AreaIE2 !dphi2/dy
          FDX3O2A = FDX3/AreaIE2 !dphi3/dx
-         FDY3O2A = FDY3/AreaIE2 !dphi3/dy
-           
+         FDY3O2A = FDY3/AreaIE2 !dphi3/dy 
          !Use free surface density only if all non-zero
          IF (SigTS(NM1) < -1d2.or.SigTS(NM2) < -1d2.or.
      &       SigTS(NM3) < -1d2) THEN
