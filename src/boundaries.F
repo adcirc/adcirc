@@ -321,7 +321,7 @@ C     ---------
             !write(6,'("i=",i0)') i !jgfdebug
          endif
          select case(ibtype_orig(i))
-         case(0,1,2,10,11,12,20,21,22,30,32,52,94)
+         case(0,1,2,10,11,12,20,21,22,30,32,52,94,40)
             allocate(simpleFluxBoundaries(sfCount)%nodes(nvell(i)))
             allocate(simpleFluxBoundaries(sfCount)%xdmf_nodes(nvell(i)))
             sfCount = sfCount + 1
