@@ -329,6 +329,9 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE ::   FFF(:),FFACE(:)
       REAL(SZ),ALLOCATABLE ::   ESBIN1(:),ESBIN2(:)
       REAL(SZ),ALLOCATABLE ::   TEMP_LV_A(:,:),TEMP_LV_B(:,:)
+C- DMW 2022/6 Factor for slope limiting on elevation gradient
+      REAL(SZ),ALLOCATABLE ::   ALPHAL(:)
+C- DMW      
       REAL(SZ),ALLOCATABLE ::   QN0(:),QN1(:)
       REAL(SZ),ALLOCATABLE, TARGET :: QN2(:)
       REAL(SZ),ALLOCATABLE ::   EN0(:),EN1(:),EN2(:)
@@ -798,6 +801,8 @@ C     elements to the structure
       !
       ! inundationOutput can be set to .true. in read_input()
       logical :: inundationOutput = .false. 
+      real(sz) :: slim = 0.0d0
+      logical :: windlim = .false.
 C
 C     jgf49.44: Log levels, in order from largest amount of log messages
 C     written (DEBUG) to fewest log messages written (ERROR). Compared
@@ -1140,6 +1145,10 @@ C
       qy1(:) = -99999.d0
       ALLOCATE ( NNODECODE(MNP))
       nnodecode(:) = -99999
+C- DMW 2022/6 Factor for slope limiting on elevation gradient
+      ALLOCATE ( ALPHAL(MNE) )
+      ALPHAL(:) = 1.D0
+C- DMW
       ALLOCATE ( NOFF(MNE) )
       noff(:) = -99999
       ALLOCATE ( NIBNODECODE(MNP))
