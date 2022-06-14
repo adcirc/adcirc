@@ -2335,6 +2335,11 @@ c...     wjp additions for density Control Namelist
             write(15,'(3A)') '  densityForcingType="',TRIM(densityForcingType),'"   /'
             write(15,*) '! -- End density Control NameList --'
          ENDIF
+         IF (FOUND_LIM_NML) THEN
+            WRITE(15,'(a,f15.8,a,l,a)')
+     &         "&limitControl slim=",slim,
+     &         " windlim=",windlim, " /"
+         ENDIF
 
          CLOSE(15)
 C

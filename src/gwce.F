@@ -231,7 +231,7 @@ C
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
      &   TKM, NPERSEG, NTIP, NNPERBC, IPERCONN, VIDispDXOH, Bd, Ad, Cs2,
-     &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, 
+     &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, H0, windlim,
      &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
@@ -1221,6 +1221,32 @@ C
          IF ((NWS.NE.0).OR.(NRS.NE.0)) THEN     !wind or radiation stress
             fwsx1 = 1.D0 ; fwsx2 = 1.D0 ; fwsx3 = 1.D0 ;
             fwsy1 = 1.D0 ; fwsy2 = 1.D0 ; fwsy3 = 1.D0 ;
+C- DMW 2022/06 tail off wind forcing in shallow water using a tanh as a function of water column height.
+            IF (WINDLIM.eqv..true.) THEN
+               IF ((H1N1 .LE. 3.d0*H0) .AND. (H1N1 .GT. H0)) THEN
+                  fwsx1 = .5d0*tanh(8.d0*(H1N1-(2.d0*H0))/(3.d0*H0))+.5d0
+                  fwsy1 = fwsx1
+               ELSEIF (H1N1 .LE. H0) THEN
+                  fwsx1 = 0.d0
+                  fwsy1 = 0.d0
+               ENDIF
+               IF ((H1N2 .LE. 3.d0*H0) .AND. (H1N2 .GT. H0)) THEN
+                  fwsx2 = .5d0*tanh(8.d0*(H1N2-(2.d0*H0))/(3.d0*H0))+.5d0
+                  fwsy2 = fwsx2
+               ELSEIF (H1N2 .LE. H0) THEN
+                  fwsx2 = 0.d0
+                  fwsy2 = 0.d0
+               ENDIF
+               IF ((H1N3 .LE. 3.d0*H0) .AND. (H1N3 .GT. H0)) THEN
+                  fwsx3 = .5d0*tanh(8.d0*(H1N3-(2.d0*H0))/(3.d0*H0))+.5d0
+                  fwsy3 = fwsx3
+               ELSEIF (H1N3 .LE. H0) THEN
+                  fwsx3 = 0.d0
+                  fwsy3 = 0.d0
+               ENDIF
+            ENDIF
+C-DMW            
+            
             IF ( NO_MET_IN_SPONGE ) THEN
                IF ( absorblayer_sigma_mnx(NM1,1) > 1e-9 ) fwsx1 = 0.D0
                IF ( absorblayer_sigma_mnx(NM2,1) > 1e-9 ) fwsx2 = 0.D0

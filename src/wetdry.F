@@ -124,12 +124,15 @@ CWET...
       use nodalattributes,only: loadSubgridBarrier
       use global, only : noff, nodecode, nnodecode, eta2, tk, nolifa,
      &    bsx1, bsy1, btime_end, C2DDI, C3D, g, h0, ifnlfa, nddt,
-     &    nibnodecode, ilump, ncchange, tkm
+     &    nibnodecode, ilump, ncchange, tkm, alphal, IFSFM, slim
 #ifdef CMPI
      &    ,idumy
       use messenger
 #endif
-      use mesh, only : ne, np, dp, mju, totalArea, nm, x, y, areas
+      use mesh, only : ne, np, nm, dp, mju, totalArea, nm, x, y, areas
+C- DMW 2022/06 variables needed for slope limiting                      
+     &    ,sfac, SFacEle, SFMYEle, SFMXEle, FDXE, FDYE
+C- DMW     
       use nodalattributes, only : BFCdLLimit, fgamma, ftheta, fric,
      &   manningsn, hbreak, ifhybf, ifnlbf, iflinbf, loadManningsN,
      &   loadZ0B_var, z0b_var, loadSubgridBarrier
@@ -156,7 +159,12 @@ CWET...
       integer :: nbnctot
       integer :: i
       integer :: ie
-
+C- DMW 2022/06 variables needed for slope limiting
+      real(sz) :: sfacavg, SFmxAvg, SFmyAvg!, slim
+      real(sz) :: DETAM, DPM, sfdxfac, sfdyfac, dpn1, dpn2, dpn3
+      real(sz) :: detadxa, detadya, dpdxa, dpdya
+      real(sz) :: fdx1, fdx2, fdx3, fdy1, fdy2, fdy3
+C- DMW      
       if (nolifa.ne.2) then
          return ! wetting and drying is not active 
       endif
@@ -1047,7 +1055,66 @@ CWET...
                  ENDIF
              ENDDO
          ENDIF
-
+C- DMW 2022/06 Compute a slope limiting factor for scaling down the 
+C elevation gradient if the slope of the water surface aligned with the 
+C bathy slope becomes too large, i.e., when it exceeds slim.
+         ALPHAL(:) = 1.D0
+         !SLIM = 1.D-4
+         
+         DO I=1,NE
+            NM1=NM(I,1)
+            NM2=NM(I,2)
+            NM3=NM(I,3)
+            NC1=NODECODE(NM1)
+            NC2=NODECODE(NM2)
+            NC3=NODECODE(NM3)
+            NCEle=NC1*NC2*NC3*NOFF(I)
+            IF ((NCEle.EQ.1)) THEN
+               SFacAvg = SFacEle(I)
+               SFmxAvg = SFMXEle(I)  
+               SFmyAvg = SFMYEle(I)  
+               sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
+               sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+               
+               FDX1 = FDXE(1,I)*sfdxfac  !b1
+               FDX2 = FDXE(2,I)*sfdxfac  !b2
+               FDX3 = FDXE(3,I)*sfdxfac  !b3
+               FDY1 = FDYE(1,I)*sfdyfac  !a1
+               FDY2 = FDYE(2,I)*sfdyfac  !a2
+               FDY3 = FDYE(3,I)*sfdyfac  !a3
+               
+               ETAN1 = ETA2(NM1)
+               ETAN2 = ETA2(NM2)
+               ETAN3 = ETA2(NM3)
+               
+               DPN1 = DP(NM1)
+               DPN2 = DP(NM2)
+               DPN3 = DP(NM3)
+               DPDXA = DPN1*FDX1 + DPN2*FDX2 + DPN3*FDX3
+               DPDYA = DPN1*FDY1 + DPN2*FDY2 + DPN3*FDY3
+               
+               DETADXA = ETAN1*FDX1 + ETAN2*FDX2 + ETAN3*FDX3
+               DETADYA = ETAN1*FDY1 + ETAN2*FDY2 + ETAN3*FDY3
+               
+               DETAM = ABS(((1.D0/AREAS(I))*(DETADXA*-DPDXA + DETADYA*-DPDYA))/(SQRT(DPDXA*DPDXA + DPDYA*DPDYA)))
+                  
+               IF((DPN1.LE.0.D0).OR.(DPN2.LE.0.D0).OR.(DPN3.LE.0.D0) ) THEN
+                  DPM = SQRT(DPDXA*DPDXA + DPDYA*DPDYA)/AREAS(I)
+                  IF (DPM .GT. 1D-5) THEN
+                     ALPHAL(I) = SLIM*(SQRT(DPDXA*DPDXA + DPDYA*DPDYA)/
+     &                   ((1.D0/AREAS(I))*(DETADXA*-DPDXA + DETADYA*-DPDYA)))
+                  ELSE
+                     DETAM = SQRT(DETADXA*DETADXA + DETADYA*DETADYA)/AREAS(I)
+                     ALPHAL(I) = SLIM/DETAM
+                  ENDIF
+                  ALPHAL(I) = ABS(ALPHAL(I))
+                  !IF (ALPHAL(I) .LE. 0.D0) ALPHAL(I) = 1.D0
+                  IF (ALPHAL(I) .GE. 1.D0) ALPHAL(I) = 1.D0
+               ENDIF
+                  
+            ENDIF 
+         ENDDO
+C- DMW
 #ifdef CMPI
          !jgf48.4619 implementing Seizo's changes for Lumped, fully
          ! explicit operation. In that case, the GWCE LHS matrix is
