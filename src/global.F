@@ -801,7 +801,7 @@ C     elements to the structure
       !
       ! inundationOutput can be set to .true. in read_input()
       logical :: inundationOutput = .false. 
-      real(sz) :: slim = 0.0d0
+      real(sz) :: slim = 1.d9
       logical :: windlim = .false.
 C
 C     jgf49.44: Log levels, in order from largest amount of log messages
