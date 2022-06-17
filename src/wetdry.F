@@ -1069,36 +1069,34 @@ C bathy slope becomes too large, i.e., when it exceeds slim.
             NC2=NODECODE(NM2)
             NC3=NODECODE(NM3)
             NCEle=NC1*NC2*NC3*NOFF(I)
-            IF ((NCEle.EQ.1)) THEN
-               SFacAvg = SFacEle(I)
-               SFmxAvg = SFMXEle(I)  
-               SFmyAvg = SFMYEle(I)  
-               sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-               sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
-               
-               FDX1 = FDXE(1,I)*sfdxfac  !b1
-               FDX2 = FDXE(2,I)*sfdxfac  !b2
-               FDX3 = FDXE(3,I)*sfdxfac  !b3
-               FDY1 = FDYE(1,I)*sfdyfac  !a1
-               FDY2 = FDYE(2,I)*sfdyfac  !a2
-               FDY3 = FDYE(3,I)*sfdyfac  !a3
-               
-               ETAN1 = ETA2(NM1)
-               ETAN2 = ETA2(NM2)
-               ETAN3 = ETA2(NM3)
-               
+            IF (NCEle.EQ.1) THEN               
                DPN1 = DP(NM1)
                DPN2 = DP(NM2)
-               DPN3 = DP(NM3)
-               DPDXA = DPN1*FDX1 + DPN2*FDX2 + DPN3*FDX3
-               DPDYA = DPN1*FDY1 + DPN2*FDY2 + DPN3*FDY3
-               
-               DETADXA = ETAN1*FDX1 + ETAN2*FDX2 + ETAN3*FDX3
-               DETADYA = ETAN1*FDY1 + ETAN2*FDY2 + ETAN3*FDY3
-               
-               DETAM = ABS(((1.D0/AREAS(I))*(DETADXA*-DPDXA + DETADYA*-DPDYA))/(SQRT(DPDXA*DPDXA + DPDYA*DPDYA)))
-                  
+               DPN3 = DP(NM3)   
                IF((DPN1.LE.0.D0).OR.(DPN2.LE.0.D0).OR.(DPN3.LE.0.D0) ) THEN
+               
+                  SFacAvg = SFacEle(I)
+                  SFmxAvg = SFMXEle(I)  
+                  SFmyAvg = SFMYEle(I)  
+                  sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
+                  sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+               
+                  FDX1 = FDXE(1,I)*sfdxfac  !b1
+                  FDX2 = FDXE(2,I)*sfdxfac  !b2
+                  FDX3 = FDXE(3,I)*sfdxfac  !b3
+                  FDY1 = FDYE(1,I)*sfdyfac  !a1
+                  FDY2 = FDYE(2,I)*sfdyfac  !a2
+                  FDY3 = FDYE(3,I)*sfdyfac  !a3
+               
+                  ETAN1 = ETA2(NM1)
+                  ETAN2 = ETA2(NM2)
+                  ETAN3 = ETA2(NM3)
+                  
+                  DPDXA = DPN1*FDX1 + DPN2*FDX2 + DPN3*FDX3
+                  DPDYA = DPN1*FDY1 + DPN2*FDY2 + DPN3*FDY3
+               
+                  DETADXA = ETAN1*FDX1 + ETAN2*FDX2 + ETAN3*FDX3
+                  DETADYA = ETAN1*FDY1 + ETAN2*FDY2 + ETAN3*FDY3
                   DPM = SQRT(DPDXA*DPDXA + DPDYA*DPDYA)/AREAS(I)
                   IF (DPM .GT. 1D-5) THEN
                      ALPHAL(I) = SLIM*(SQRT(DPDXA*DPDXA + DPDYA*DPDYA)/
