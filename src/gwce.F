@@ -231,7 +231,7 @@ C
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
      &   TKM, NPERSEG, NTIP, NNPERBC, IPERCONN, VIDispDXOH, Bd, Ad, Cs2,
-     &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, H0, windlim,
+     &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, H0, ALPHAL, windlim,
      &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
@@ -447,8 +447,8 @@ C              Ali et al. formula
                   Ma2   = G*DPavg/Cs2
                   Cfac = (1.0_SZ - 0.25_SZ*Ma2 - Ad*DPavg**Bd)**2
                endif
-               
-               GA00DPAvgOAreaIE4 = A00*G*DPAvg*Cfac/AreaIE4
+               ! DMW 2022/06 Apply slope limiting to gravity
+               GA00DPAvgOAreaIE4 = ALPHAL(IE)*A00*G*DPAvg*Cfac/AreaIE4
                Tau0Avg = (Tau0Var(NMI1)+Tau0Var(NMI2)+Tau0Var(NMI3))/3.d0
 
 C........... DW, Absorbing layer
@@ -1184,12 +1184,14 @@ C        Ali et al. formula
             Ma2    = G*DPavg/Cs2
             CfacS0 = (1.0_SZ - 0.25_SZ*Ma2 - Ad*DPavgS0**Bd)**2
          endif
-
-         GDPAvgOAreaIE4 = G*DPAvg*Cfac/AreaIE4
-         GDPAvgOAreaIE4_S0 = G*DPAvgS0*CfacS0/AreaIE4
+         ! DMW 2022/06 Apply slope limiting to gravity
+         GDPAvgOAreaIE4 = ALPHAL(IE)*G*DPAvg*Cfac/AreaIE4
+         ! DMW 2022/06 Apply slope limiting to gravity
+         GDPAvgOAreaIE4_S0 = ALPHAL(IE)*G*DPAvgS0*CfacS0/AreaIE4
 C....  END DW & WJP
          HAvg=(H1N1+H1N2+H1N3)/3.d0
-         GHAvg=G*HAvg
+         ! DMW 2022/06 Apply slope limiting to gravity
+         GHAvg=ALPHAL(IE)*G*HAvg
          GHAvgOAreaIE2=GHAvg/AreaIE2
          BSXAvg=(BSXN1+BSXN2+BSXN3)/3.d0
          BSYAvg=(BSYN1+BSYN2+BSYN3)/3.d0
@@ -1223,22 +1225,22 @@ C
             fwsy1 = 1.D0 ; fwsy2 = 1.D0 ; fwsy3 = 1.D0 ;
 C- DMW 2022/06 tail off wind forcing in shallow water using a tanh as a function of water column height.
             IF (WINDLIM.eqv..true.) THEN
-               IF ((H1N1 .LE. 3.d0*H0) .AND. (H1N1 .GT. H0)) THEN
-                  fwsx1 = .5d0*tanh(8.d0*(H1N1-(2.d0*H0))/(3.d0*H0))+.5d0
+               IF ((H1N1 .LE. 4.d0*H0) .AND. (H1N1 .GT. H0)) THEN
+                  fwsx1 = .5d0*tanh(8.d0*(H1N1-(2.5d0*H0))/(4.d0*H0))+.5d0
                   fwsy1 = fwsx1
                ELSEIF (H1N1 .LE. H0) THEN
                   fwsx1 = 0.d0
                   fwsy1 = 0.d0
                ENDIF
-               IF ((H1N2 .LE. 3.d0*H0) .AND. (H1N2 .GT. H0)) THEN
-                  fwsx2 = .5d0*tanh(8.d0*(H1N2-(2.d0*H0))/(3.d0*H0))+.5d0
+               IF ((H1N2 .LE. 4.d0*H0) .AND. (H1N2 .GT. H0)) THEN
+                  fwsx2 = .5d0*tanh(8.d0*(H1N2-(2.5d0*H0))/(4.d0*H0))+.5d0
                   fwsy2 = fwsx2
                ELSEIF (H1N2 .LE. H0) THEN
                   fwsx2 = 0.d0
                   fwsy2 = 0.d0
                ENDIF
-               IF ((H1N3 .LE. 3.d0*H0) .AND. (H1N3 .GT. H0)) THEN
-                  fwsx3 = .5d0*tanh(8.d0*(H1N3-(2.d0*H0))/(3.d0*H0))+.5d0
+               IF ((H1N3 .LE. 4.d0*H0) .AND. (H1N3 .GT. H0)) THEN
+                  fwsx3 = .5d0*tanh(8.d0*(H1N3-(2.5d0*H0))/(4.d0*H0))+.5d0
                   fwsy3 = fwsx3
                ELSEIF (H1N3 .LE. H0) THEN
                   fwsx3 = 0.d0
@@ -1289,7 +1291,8 @@ C........DW: begin add absorbing layer term
          MsFacRS_T = ((SigmaAvg/(2.D0*DT))*AreaIE/12.D0)*sponge_dis_mthd
 C......... end DW
 C
-         GOAreaIE4=G/AreaIE4
+         ! DMW 2022/06 Apply slope limiting to gravity
+         GOAreaIE4=ALPHAL(IE)*G/AreaIE4
          Tau0SpaVar=(QX1Avg*Tau0XGrad2A+QY1Avg*Tau0YGrad2A)/6.d0
          A00pB00=A00+B00
 
