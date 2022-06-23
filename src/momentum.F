@@ -689,9 +689,9 @@ C      DispY=0.D0
          ENDIF
 C- DMW 2022/06 tail off wind forcing in shallow water using a tanh as a function of water column height.
          IF (WINDLIM.eqv..true.) THEN
-            IF ((H2 .LE. 3.D0*H0) .AND. (H2 .GT. H0)) THEN
-               WSX = (.5d0*tanh(8.d0*(H2-(2.d0*H0))/(3.d0*H0))+.5d0)*WSX
-               WSY = (.5d0*tanh(8.d0*(H2-(2.d0*H0))/(3.d0*H0))+.5d0)*WSY
+            IF ((H2 .LE. 4.D0*H0) .AND. (H2 .GT. H0)) THEN
+               WSX = (.5d0*tanh(8.d0*(H2-(2.5d0*H0))/(4.d0*H0))+.5d0)*WSX
+               WSY = (.5d0*tanh(8.d0*(H2-(2.5d0*H0))/(4.d0*H0))+.5d0)*WSY
             ELSEIF (H2 .LE. H0) THEN
                WSX = 0.D0
                WSY = 0.D0
