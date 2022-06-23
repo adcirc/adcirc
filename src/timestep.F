@@ -158,6 +158,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       REAL(8) FDX1O2A, FDX2O2A, FDX3O2A, FDY1O2A, FDY2O2A, FDY3O2A
       REAL(8),intent(out) :: TimeLoc
+      REAL(8) TimeLocFluxSettling
       REAL(8) TimeH
       REAL(8) runperccomplete
 C   kmd48.33bc - added in the heat flux variables
@@ -206,14 +207,21 @@ C     jgf46.21 Combined flux/radiation b.c. for rivers
 C...  COMPUTE MASTER TIME WHICH IS REFERENCED TO THE BEGINNING TIME OF
 C...  THE MODEL RUN
 C...
+C...  TIMEH: HARMONIC CALCULATIONS ARE MADE FOR TIME WHICH INCLUDES THE REFTIM
+C...  TO ALLOW FOR THE POSSIBILITY THAT THE EQUILIBRIUM ARGUMENTS MAY
+C...  BE FOR A TIME OTHER THAN THE MODEL STARTING TIME.
+C...  
+C...  Computation of TimeLoc and TimeH are consolidated. SB,ZC,RL 2022-06-22
+C...
       TimeLoc=IT*DTDP + StaTim*86400.D0
-C    kmd48.33bc - added for the changes in the timestep in the hot start files
+      TimeH=IT*DTDP + (StaTim - RefTim)*86400.D0
       IF (CHOTHS.eqv..true.) THEN
          IF ((ITHS+1).EQ.IT) THEN
            StaTimHS=((IT-1)*DTDPHS)/86400.D0
            RefTimHS=((IT-1)*DTDP)/86400.D0
          END IF
          TimeLoc=IT*DTDP + (StaTimHS - RefTimHS)*86400.D0
+         TimeH=IT*DTDP + ((StaTimHS - StaTim) - RefTim)*86400.D0
       END IF
 
 C...  HARMONIC CALCULATIONS ARE MADE FOR TIME WHICH INCLUDES THE REFTIM
@@ -231,6 +239,8 @@ C...
       END IF
 
 C-------------------TEMPORAL RAMP-------------------------------------
+C...  THIS SECTION IS REWRITTEN BY SB, ZC, and RL 2022-06-22
+C...
 C...  NOTE: MOVED HERE BY DW/WJP : May 3rd 2018
 C...  DEFINE Ramp FUNCTION FOR BOUNDARY ELEVATION FORCING, WIND AND PRESSURE
 C.... FORCING AND TIDAL POTENTIAL FORCING
@@ -238,8 +248,7 @@ C...
 C
 C     jgf46.08 Calculate ramp functions.
 C     jgf46.21 Modify to match behavior of 46.02
-      SELECT CASE(NRamp)
-      CASE(0)
+      IF(NRamp.EQ.0) THEN
          Ramp=1.0D0
          RampExtFlux=1.0D0
          RampIntFlux=1.0D0
@@ -247,43 +256,21 @@ C     jgf46.21 Modify to match behavior of 46.02
          RampTip=1.0D0
          RampMete=1.0D0
          RampWRad=1.0D0
-Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
-C    kmd48.33bc - ramp changes with baroclinic when timestep is changed
-      CASE(1)
-         !jgf51.51.21: Fixed the case where nramp=1 but dramp=0.0d0.
-         if (dramp.lt.1.0e-6) then
-            Ramp=1.0d0
-            RampExtFlux=1.0D0
-            RampIntFlux=1.0D0
-            RampElev=1.0D0
-            RampTip=1.0D0
-            RampMete=1.0D0
-            RampWRad=1.0D0
-         else
-            ramp=tanh((2.d0*timeloc/86400.d0)/dramp)
-            RampExtFlux=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-            RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-            RampElev=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-            RampTip=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-            RampMete=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-            RampWRad=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-         endif
-      CASE(2,3,4,5,6,7,8)
+      ELSE
          Ramp=TANH((2.D0*TimeLoc/86400.D0)/DRamp)
          RampExtFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampExtFlux)
          RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampIntFlux)
          RampElev=TANH((2.D0*TimeLoc/86400.D0)/DRampElev)
          RampTip=TANH((2.D0*TimeLoc/86400.D0)/DRampTip)
-Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
          RampMete=TANH((2.D0*(TimeLoc/86400.D0-DUnRampMete))/DRampMete)
          RampWRad=TANH((2.D0*TimeLoc/86400.D0)/DRampWRad)
-      END SELECT
+      ENDIF
 C
 C     jgf46.21 If there is an external flux (i.e. river) boundary, turn
 C     off all forcings except the river flux forcing for the duration of
 C     the FluxSettlingTime. When the FluxSettlingTime has ended, turn
 C     all forcings back on.
-      IF (NRamp.gt.1) THEN
+      IF (NRamp.gt.1.AND.FluxSettlingIT.GT.0) THEN
          IF(IT.LT.(FluxSettlingIT+10)) THEN
             Ramp=0.0
             RampIntFlux=0.0
@@ -292,34 +279,37 @@ C     all forcings back on.
             RampMete=0.0
             RampWRad=0.0
          ELSE
-            Ramp=TANH((2.D0*(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRamp)
+            TimeLocFluxSettling=(IT-FluxSettlingIT-10)*DTDP
+     &           + StaTim*86400.D0
+            IF (CHOTHS.eqv..true.) THEN
+               TimeLocFluxSettling=(IT-FluxSettlingIT-10)*DTDP
+     &           + (StaTimHS - RefTimHS)*86400.D0
+            END IF
+
+            Ramp=TANH((2.D0*TimeLocFluxSettling/86400.D0)/DRamp)
             RampIntFlux=TANH((2.D0
-     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampIntFlux)
+     &           *TimeLocFluxSettling/86400.D0)/DRampIntFlux)
             RampElev=TANH((2.D0
-     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampElev)
+     &           *TimeLocFluxSettling/86400.D0)/DRampElev)
             RampTip=TANH((2.D0
-     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampTip)
-            RampMete=TANH((2.D0
-     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampMete)
+     &           *TimeLocFluxSettling/86400.D0)/DRampTip)
+            IF(NRamp.ne.8) then
+               RampMete=TANH((2.D0
+     &           *TimeLocFluxSettling/86400.D0)/DRampMete)
+            ENDIF
             RampWRad=TANH((2.D0
-     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampWRad)
-Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
-            IF(NRamp.eq.8) then
-               RampMete=TANH((2.D0*((((IT)*DTDP)/86400.D0)-DUnRampMete))/DRampMete)
-            endif
+     &           *TimeLocFluxSettling/86400.D0)/DRampWRad)
          ENDIF
-         !jgf49.44: Cover the case where the ramp length is zero.
-         IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
-         IF (DRampExtFlux.lt.1.0e-6) RampExtFlux = 1.0d0
-         IF (DRampIntFlux.lt.1.0e-6) RampIntFlux = 1.0d0
-         IF (DRampElev.lt.1.0e-6) RampElev = 1.0d0
-         IF (DRampTip.lt.1.0e-6) RampTip = 1.0d0
-         IF (DRampMete.lt.1.0e-6) RampMete = 1.0d0
-         IF (DRampWRad.lt.1.0e-6) RampWRad = 1.0d0
-      ELSE
-         !jgf49.44: Cover the case where the ramp length is zero.
-         IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
       ENDIF
+
+      !jgf49.44: Cover the case where the ramp length is zero.
+      IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
+      IF (DRampExtFlux.lt.1.0e-6) RampExtFlux = 1.0d0
+      IF (DRampIntFlux.lt.1.0e-6) RampIntFlux = 1.0d0
+      IF (DRampElev.lt.1.0e-6) RampElev = 1.0d0
+      IF (DRampTip.lt.1.0e-6) RampTip = 1.0d0
+      IF (DRampMete.lt.1.0e-6) RampMete = 1.0d0
+      IF (DRampWRad.lt.1.0e-6) RampWRad = 1.0d0
 C     
 C------DW
       IF ( LoadAbsLayerSigma ) THEN
