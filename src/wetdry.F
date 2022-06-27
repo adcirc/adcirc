@@ -161,7 +161,7 @@ C- DMW
       integer :: ie
 C- DMW 2022/06 variables needed for slope limiting
       real(sz) :: sfacavg, SFmxAvg, SFmyAvg!, slim
-      real(sz) :: DETAM, DPM, sfdxfac, sfdyfac, dpn1, dpn2, dpn3
+      real(sz) :: DETAM, DPM, sfdxfac, sfdyfac, hn1, hn2, hn3
       real(sz) :: detadxa, detadya, dpdxa, dpdya
       real(sz) :: fdx1, fdx2, fdx3, fdy1, fdy2, fdy3
 C- DMW      
@@ -1070,10 +1070,11 @@ C bathy slope becomes too large, i.e., when it exceeds slim.
             NC3=NODECODE(NM3)
             NCEle=NC1*NC2*NC3*NOFF(I)
             IF (NCEle.EQ.1) THEN               
-               DPN1 = DP(NM1)
-               DPN2 = DP(NM2)
-               DPN3 = DP(NM3)   
-               IF((DPN1.LE.0.D0).OR.(DPN2.LE.0.D0).OR.(DPN3.LE.0.D0) ) THEN
+
+               HN1 = ETA2(NM1) + DP(NM1)
+               HN2 = ETA2(NM2) + DP(NM2)
+               HN3 = ETA2(NM3) + DP(NM3)
+               IF((HN1.LE.5.D-1).OR.(HN2.LE.5.D-1).OR.(HN3.LE.5.D-1) ) THEN
                
                   SFacAvg = SFacEle(I)
                   SFmxAvg = SFMXEle(I)  
@@ -1105,8 +1106,8 @@ C bathy slope becomes too large, i.e., when it exceeds slim.
                      DETAM = SQRT(DETADXA*DETADXA + DETADYA*DETADYA)/AREAS(I)
                      ALPHAL(I) = SLIM/DETAM
                   ENDIF
-                  ALPHAL(I) = ABS(ALPHAL(I))
-                  !IF (ALPHAL(I) .LE. 0.D0) ALPHAL(I) = 1.D0
+                  !ALPHAL(I) = ABS(ALPHAL(I))
+                  IF (ALPHAL(I) .LE. 0.D0) ALPHAL(I) = 1.D0
                   IF (ALPHAL(I) .GE. 1.D0) ALPHAL(I) = 1.D0
                ENDIF
                   
