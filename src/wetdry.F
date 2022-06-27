@@ -160,7 +160,7 @@ C- DMW
       integer :: i
       integer :: ie
 C- DMW 2022/06 variables needed for slope limiting
-      real(sz) :: sfacavg, SFmxAvg, SFmyAvg!, slim
+      real(sz) :: sfacavg, SFmxAvg, SFmyAvg, DPN1, DPN2, DPN3
       real(sz) :: DETAM, DPM, sfdxfac, sfdyfac, hn1, hn2, hn3
       real(sz) :: detadxa, detadya, dpdxa, dpdya
       real(sz) :: fdx1, fdx2, fdx3, fdy1, fdy2, fdy3
@@ -1093,6 +1093,10 @@ C bathy slope becomes too large, i.e., when it exceeds slim.
                   ETAN2 = ETA2(NM2)
                   ETAN3 = ETA2(NM3)
                   
+                  DPN1 = DP(NM1)
+                  DPN2 = DP(NM2)
+                  DPN3 = DP(NM3)
+
                   DPDXA = DPN1*FDX1 + DPN2*FDX2 + DPN3*FDX3
                   DPDYA = DPN1*FDY1 + DPN2*FDY2 + DPN3*FDY3
                
@@ -1107,8 +1111,8 @@ C bathy slope becomes too large, i.e., when it exceeds slim.
                      ALPHAL(I) = SLIM/DETAM
                   ENDIF
                   !ALPHAL(I) = ABS(ALPHAL(I))
-                  IF (ALPHAL(I) .LE. 0.D0) ALPHAL(I) = 1.D0
-                  IF (ALPHAL(I) .GE. 1.D0) ALPHAL(I) = 1.D0
+                  !IF (ALPHAL(I) .LE. 0.D0) ALPHAL(I) = 1.D0
+                  !IF (ALPHAL(I) .GE. 1.D0) ALPHAL(I) = 1.D0
                ENDIF
                   
             ENDIF 
