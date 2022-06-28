@@ -1110,9 +1110,9 @@ C bathy slope becomes too large, i.e., when it exceeds slim.
                      DETAM = SQRT(DETADXA*DETADXA + DETADYA*DETADYA)/AREAS(I)
                      ALPHAL(I) = SLIM/DETAM
                   ENDIF
-                  !ALPHAL(I) = ABS(ALPHAL(I))
-                  !IF (ALPHAL(I) .LE. 0.D0) ALPHAL(I) = 1.D0
-                  !IF (ALPHAL(I) .GE. 1.D0) ALPHAL(I) = 1.D0
+                  
+                  IF (ALPHAL(I) .LE. 0.D0) ALPHAL(I) = 1.D0
+                  IF (ALPHAL(I) .GE. 1.D0) ALPHAL(I) = 1.D0
                ENDIF
                   
             ENDIF 
