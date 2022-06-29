@@ -906,15 +906,22 @@ C......FILE IF IT IS REQUIRED
          DO J=1,NVEL
             QNIN1(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32))
-     &           READ(20,*) QNIN1(J)
+     &           .OR.(LBCODEI(J).EQ.22))THEN
+                READ(20,*) QNIN1(J)
+            ELSEIF(LBCODEI(J).EQ.32)THEN
+                READ(20,*) QNIN1(J), ENIN1(J)
+            ENDIF
          END DO
          DO J=1,NVEL
             QNIN2(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32))
-     &           READ(20,*) QNIN2(J)
+     &           .OR.(LBCODEI(J).EQ.22))THEN
+                READ(20,*) QNIN2(J)
+            ELSEIF(LBCODEI(J).EQ.32)THEN
+                READ(20,*) QNIN2(J), ENIN2(J)
+            ENDIF
          END DO
+
          DO IT=1,ITHS-1
             TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
             IF(TIMEIT.GT.QTIME2) THEN
@@ -922,32 +929,42 @@ C......FILE IF IT IS REQUIRED
                QTIME2=QTIME2+FTIMINC
                DO J=1,NVEL
                   IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &                 .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
+     &                 .OR.(LBCODEI(J).EQ.22))THEN
                      QNIN1(J)=QNIN2(J)
                      READ(20,*) QNIN2(J)
+                  ELSEIF(LBCODEI(J).EQ.32)THEN
+                     QNIN1(J)=QNIN2(J)
+                     ENIN1(J)=ENIN2(J)
+                     READ(20,*) QNIN2(J), ENIN2(J)
                   ENDIF
                END DO
             ENDIF
          END DO
+
          QTRATIO=(TIMEIT-QTIME1)/FTIMINC
-         DO I=1,NVEL
-            QN1(I)=RampExtFlux1*(QNIN1(I)+QTRATIO*(QNIN2(I)-QNIN1(I)))
-         END DO
+         QN1=RampExtFlux1*(QNIN1+QTRATIO*(QNIN2-QNIN1))
+         EN1=RampExtFlux1*(ENIN1+QTRATIO*(ENIN2-ENIN1))
+
          IF(TimeLoc.GT.QTIME2) THEN
             QTIME1=QTIME2
             QTIME2=QTIME1+FTIMINC
             DO J=1,NVEL
                IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &              .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
+     &              .OR.(LBCODEI(J).EQ.22))THEN
                   QNIN1(J)=QNIN2(J)
                   READ(20,*) QNIN2(J)
+               ELSEIF(LBCODEI(J).EQ.32)THEN
+                  QNIN1(J)=QNIN2(J)
+                  ENIN1(J)=ENIN2(J)
+                  READ(20,*) QNIN2(J), ENIN2(J)
                ENDIF
             END DO
          ENDIF
+
          QTRATIO=(TimeLoc-QTIME1)/FTIMINC
-         DO I=1,NVEL
-            QN2(I)=RampExtFlux2*(QNIN1(I)+QTRATIO*(QNIN2(I)-QNIN1(I)))
-         END DO
+         QN2=RampExtFlux2*(QNIN1+QTRATIO*(QNIN2-QNIN1))
+         EN2=RampExtFlux2*(ENIN1+QTRATIO*(ENIN2-ENIN1))
+
       ENDIF
 
 ! kmd - added in a option to start the river information at the hot start time
@@ -957,9 +974,6 @@ C......FILE IF IT IS REQUIRED
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1978)
          WRITE(16,1978)
 ! 1978    FORMAT(/,1X,'LOCATING NORMAL FLOW INFORMATION IN UNIT 20',/)
-C         IF (MYPROC.EQ.7) THEN
-C            PRINT *, "Made it to the reading in of the river file"
-C         END IF
          OPEN(20,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
          READ(20,*) FTIMINC
          QTIME1=TIMELOC
@@ -967,34 +981,43 @@ C         END IF
          DO J=1,NVEL
             QNIN1(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32))
-     &           READ(20,*) QNIN1(J)
+     &           .OR.(LBCODEI(J).EQ.22))THEN
+               READ(20,*) QNIN1(J)
+            ELSEIF(LBCODEI(J).EQ.32)THEN
+               READ(20,*) QNIN1(J), ENIN1(J)
+            ENDIF
          END DO
          DO J=1,NVEL
             QNIN2(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32))
-     &           READ(20,*) QNIN2(J)
+     &           .OR.(LBCODEI(J).EQ.22))THEN
+                READ(20,*) QNIN2(J)
+            ELSEIF(LBCODEI(J).EQ.32)THEN
+                READ(20,*) QNIN2(J), ENIN2(J)
+            ENDIF
          END DO
-         QTRATIO=(TIMEIT-QTIME1)/FTIMINC
-         DO I=1,NVEL
-            QN1(I)=RampExtFlux1*(QNIN1(I)+QTRATIO*(QNIN2(I)-QNIN1(I)))
-         END DO
+         QTRATIO=(TIMELOC-QTIME1)/FTIMINC
+         QN1=RampExtFlux1*(QNIN1+QTRATIO*(QNIN2-QNIN1))
+         EN1=RampExtFlux1*(ENIN1+QTRATIO*(ENIN2-ENIN1))
+
          IF(TIMELOC.GT.QTIME2) THEN
             QTIME1=QTIME2
             QTIME2=QTIME1+FTIMINC
             DO J=1,NVEL
                IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &              .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
+     &              .OR.(LBCODEI(J).EQ.22))THEN
                   QNIN1(J)=QNIN2(J)
                   READ(20,*) QNIN2(J)
+               ELSEIF(LBCODEI(J).EQ.32)THEN
+                  QNIN1(J)=QNIN2(J)
+                  ENIN1(J)=ENIN2(J)
+                  READ(20,*) QNIN2(J),ENIN2(J)
                ENDIF
             END DO
          ENDIF
          QTRATIO=(TIMELOC-QTIME1)/FTIMINC
-         DO I=1,NVEL
-            QN2(I)=RampExtFlux2*(QNIN1(I)+QTRATIO*(QNIN2(I)-QNIN1(I)))
-         END DO
+         QN2=RampExtFlux2*(QNIN1+QTRATIO*(QNIN2-QNIN1))
+         EN2=RampExtFlux2*(ENIN1+QTRATIO*(ENIN2-ENIN1))
       ENDIF
 
 C......RESTART THE PERIODIC NORMAL FLOW BOUNDARY CONDITION

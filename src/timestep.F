@@ -842,8 +842,6 @@ C...
             END DO
           END DO
          END IF
-!---------------------------------------------------------------------------------------------------
-! arash wanted to debug, and everything seems to be fine.
 
          IF((NFFR.EQ.0).OR.(NFFR.EQ.-1)) THEN
             IF(TimeLoc.GT.QTIME2) THEN
@@ -854,34 +852,17 @@ C...
      &                 .OR.(LBCODEI(J).EQ.22)) THEN
                      QNIN1(J)=QNIN2(J)
                      READ(20,*) QNIN2(J)
-
-!                     write(*,*) 'inside timestep: IT = ', IT
-!                     write(*,*) 'inside timestep: J, QNIN2 = ', J, QNIN2(J)
-!                      QNIN2 = 0.0d0  ! arash
-
-                  ENDIF
-                  IF(LBCODEI(J).EQ.32) THEN
+                  ELSEIF(LBCODEI(J).EQ.32) THEN
                      QNIN1(J)=QNIN2(J)
                      ENIN1(J)=ENIN2(J)
                      READ(20,*) QNIN2(J),ENIN2(J)
-
-!                     write(*,*) 'inside timestep: IT = ', IT
-!                     write(*,*) 'inside timestep: we should not be here!'
-
                   ENDIF
                END DO
             ENDIF
-!---------------------------------------------------------------------------------------------------
+
             QTRATIO=(TimeLoc-QTIME1)/FTIMINC
-
-!            if (myproc == 12) write(*,*) 'QTRATIO = ', QTRATIO
-            !write(*,*) 'myproc =', myproc
-
-
-            DO I=1,NVEL
-               QN2(I)=RampExtFlux*(QNIN1(I)+QTRATIO*(QNIN2(I)-QNIN1(I)))
-               EN2(I)=RampExtFlux*(ENIN1(I)+QTRATIO*(ENIN2(I)-ENIN1(I)))
-            END DO
+            QN2=RampExtFlux*(QNIN1+QTRATIO*(QNIN2-QNIN1))
+            EN2=RampExtFlux*(ENIN1+QTRATIO*(ENIN2-ENIN1))
          ENDIF
 
 CRAL_add_42.06f

@@ -199,7 +199,7 @@ C
          QN0(I)=0.D0
       END DO
 
-      IF((NFLUXF.EQ.1).AND.(NFFR.EQ.0)) THEN
+      IF(NFLUXF.EQ.1.AND.NFFR.LE.0)THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
          WRITE(16,1112)
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1979)
