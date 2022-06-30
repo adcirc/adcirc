@@ -156,8 +156,10 @@ C- DMW
       real(sz) :: deldist,deleta
       real(sz) :: htot
       real(sz) :: h1
+      real(sz) :: tk_tmp(np)
+      integer :: tk_cnt(np)
       integer :: nbnctot
-      integer :: i
+      integer :: i,j,k,kk
       integer :: ie
 C- DMW 2022/06 variables needed for slope limiting
       real(sz) :: sfacavg, SFmxAvg, SFmyAvg, DPN1, DPN2, DPN3
@@ -172,6 +174,8 @@ C- DMW
 CWET...
 CWET...WET/DRY - INITIALIZATIONS FOR WET/DRY LOOP
 CWET...
+         TK_TMP(:) = 0.D0
+         TK_CNT(:) = 0
          DO I=1,NP
             NIBCNT(I) = 0
          ENDDO
@@ -285,8 +289,21 @@ c                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+                           TK_CNT(NM123) = TK_CNT(NM123) + 1
+                           TK_TMP(NM123) = TK_TMP(NM123) + TK(NM123)
                            !WJP needed for internal_tide stuff
                            TKM(1:2,NM123) = TK(NM123) 
+                           IF (NM123 .EQ. NM2) THEN
+                              TK(NM1) = TK(NM123)
+                              TK_CNT(NM1) = TK_CNT(NM1) + 1
+                              TK_TMP(NM1) = TK_TMP(NM1) + TK(NM1)
+                              TKM(1:2,NM1) = TK(NM1)
+                           ELSE
+                              TK(NM2) = TK(NM123)
+                              TK_CNT(NM2) = TK_CNT(NM2) + 1
+                              TK_TMP(NM2) = TK_TMP(NM2) + TK(NM2)
+                              TKM(1:2,NM2) = TK(NM2)
+                           ENDIF
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -378,8 +395,21 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+                           TK_CNT(NM123) = TK_CNT(NM123) + 1
+                           TK_TMP(NM123) = TK_TMP(NM123) + TK(NM123)
                            !WJP needed for internal_tide stuff
                            TKM(1:2,NM123) = TK(NM123) 
+                           IF (NM123 .EQ. NM2) THEN
+                              TK(NM3) = TK(NM123)
+                              TK_CNT(NM3) = TK_CNT(NM3) + 1
+                              TK_TMP(NM3) = TK_TMP(NM3) + TK(NM3)
+                              TKM(1:2,NM3) = TK(NM3)
+                           ELSE
+                              TK(NM2) = TK(NM123)
+                              TK_CNT(NM2) = TK_CNT(NM2) + 1
+                              TK_TMP(NM2) = TK_TMP(NM2) + TK(NM2)
+                              TKM(1:2,NM2) = TK(NM2)
+                           ENDIF
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -471,8 +501,21 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+                           TK_CNT(NM123) = TK_CNT(NM123) + 1
+                           TK_TMP(NM123) = TK_TMP(NM123) + TK(NM123)
                            !WJP needed for internal_tide stuff
                            TKM(1:2,NM123) = TK(NM123) 
+                           IF (NM123 .EQ. NM1) THEN
+                              TK(NM3) = TK(NM123)
+                              TK_CNT(NM3) = TK_CNT(NM3) + 1
+                              TK_TMP(NM3) = TK_TMP(NM3) + TK(NM3)
+                              TKM(1:2,NM3) = TK(NM3)
+                           ELSE
+                              TK(NM1) = TK(NM123)
+                              TK_CNT(NM1) = TK_CNT(NM1) + 1
+                              TK_TMP(NM1) = TK_TMP(NM1) + TK(NM1)
+                              TKM(1:2,NM1) = TK(NM1)
+                           ENDIF
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -519,13 +562,28 @@ CWET...
             NIBCNT(NM3) = NIBCNT(NM3) + NBNCTOT
 
          ENDDO
-
+C-- DMW 202204 For any node where TK is computed more than once in the above loop,
+C    compute the mean TK and save this value in both the TK and TKM arrays. 
+C    This prevents the value of TK from depending on the ordering of elems. 
+         DO I=1,NP
+            IF (TK_CNT(I) .GT. 1) THEN
+               TK(I) = TK_TMP(I)/DBLE(TK_CNT(I))
+               TKM(1:2,I) = TK(I)            
+            ENDIF
+         ENDDO   
          if (subdomainOn.and.enforceBN.eq.1) call enforceWDcb() ! NCSU Subdomain
          if (subdomainOn.and.enforceBN.eq.2) call enforceWDob() ! NCSU Subdomain
 
 C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
 #ifdef CMPI
          CALL UPDATEI(NNODECODE,NIBCNT,2)
+C-- DMW 202204 Update FRIC, TK, and ETA2 at ghost nodes as well 
+         CALL UPDATER(FRIC,TK,ETA2,3)
+         ! DMW 20220307 a lazy way of also updating TKM at ghost nodes                            
+         DO I = 1,NP
+            TKM(1:2,I) = TK(I) 
+         ENDDO
+C-- DMW
 #endif
 
 
