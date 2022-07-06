@@ -1028,7 +1028,7 @@ C         write(16,*) 'Allocating IceDescript' !tcm v49.64.01 added for ice
       ! DW
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
      &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN 
-         if ( (ncice .ne. 0) .and. (ncice .ne. 14) ) then 
+         if (ncice .ne. 0)  then 
            CALL REAL_FIELD_ALLOCATE( NOUTGW, CICEOUT_g, NP_G ) ;
          endif
          ! ALLOCATE(CICEOUT_g(NP_G))
@@ -1053,7 +1053,7 @@ C... v49.64.01 tcm -- added for ice stations
       ! DW
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
-         if ( (ncice .ne. 0) .and. (ncice .ne. 14) ) then 
+         if (ncice .ne. 0) then 
             CALL REAL_FIELD_ALLOCATE( NOUTM, RMICE00_g, NSTAM_G ) ;
          endif 
         ! ALLOCATE(RMICE00_g(NSTAM_G))
