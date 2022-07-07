@@ -4412,7 +4412,6 @@ C
         inputtype = "" ; 
         read( FUNIT, *) inputtype ;
 
-        WRITE(*,'(a)') ""
         scratchMessage = 
      &       "**** Solve SWE in the rotated coordinate frame ****" ; 
         call allMessage(INFO,scratchMessage)
