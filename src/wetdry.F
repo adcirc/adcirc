@@ -579,10 +579,6 @@ C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
          CALL UPDATEI(NNODECODE,NIBCNT,2)
 C-- DMW 202204 Update FRIC, TK, and ETA2 at ghost nodes as well 
          CALL UPDATER(FRIC,TK,ETA2,3)
-         ! DMW 20220307 a lazy way of also updating TKM at ghost nodes                            
-         DO I = 1,NP
-            TKM(1:2,I) = TK(I) 
-         ENDDO
 C-- DMW
 #endif
 
