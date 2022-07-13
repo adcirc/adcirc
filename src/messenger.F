@@ -1257,7 +1257,7 @@ C---------------------------------------------------------------------
             global_array_local(1:np_global) = global_array(1:np_global)
         endif
 
-        call mpi_bcast(global_array_local,np_global,realtype,0,GROUP_COMP,ierr)
+        call mpi_bcast(global_array_local,np_global,realtype,0,COMM_COMP,ierr)
 
         do sd_node_number=1,np_local
            local_array(sd_node_number) = global_array(abs(mapping(sd_node_number)))
@@ -1300,7 +1300,7 @@ C---------------------------------------------------------------------
             global_array_local(1:np_global) = global_array(1:np_global)
         endif
 
-        call mpi_bcast(global_array_local,np_global,mpi_integer,0,GROUP_COMP,ierr)
+        call mpi_bcast(global_array_local,np_global,mpi_integer,0,COMM_COMP,ierr)
 
         do sd_node_number=1,np_local
            local_array(sd_node_number) = global_array(abs(mapping(sd_node_number)))
