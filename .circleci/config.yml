@@ -90,7 +90,7 @@ jobs:
         - *default_testenv
         - run: 
             name: Build ADCIRC without external libraries using CMake
-            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DCMAKE_Fortran_FLAGS="-O0"; make -j4 
+            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" -DCMAKE_C_FLAGS_RELEASE="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4"; make -j4 
         - save_cache:
             <<: *cache_key_base 
             paths: 
@@ -103,7 +103,7 @@ jobs:
         - *default_testenv
         - run: 
             name: Build ADCIRC with netCDF using CMake
-            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DNETCDFHOME=/usr -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS="-O0" ; make -j4
+            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DNETCDFHOME=/usr -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" -DCMAKE_C_FLAGS_RELEASE="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" ; make -j4
         - save_cache:
             <<: *cache_key_netcdf
             paths: 
@@ -115,7 +115,7 @@ jobs:
         - checkout
         - run: 
             name: Build ADCIRC with netCDF and XDMF using CMake
-            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DNETCDFHOME=/usr -DXDMFHOME=/usr -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS="-O0" ; make -j4
+            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DNETCDFHOME=/usr -DXDMFHOME=/usr -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" -DCMAKE_C_FLAGS_RELEASE="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4"; make -j4
   build_cmake_with_netcdf_and_xdmf_grib:
       <<: *default_env
       steps:
@@ -123,7 +123,7 @@ jobs:
         - *default_testenv
         - run: 
             name: Build ADCIRC with netCDF and XDMF using CMake
-            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DNETCDFHOME=/usr -DXDMFHOME=/usr -DBUILD_UTILITIES=ON -DENABLE_DATETIME=ON -DENABLE_GRIB2=ON -DCMAKE_Fortran_FLAGS="-march=native -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" -DCMAKE_C_FLAGS="-O3 -march=native -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" ; make -j4
+            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DNETCDFHOME=/usr -DXDMFHOME=/usr -DBUILD_UTILITIES=ON -DENABLE_DATETIME=ON -DENABLE_GRIB2=ON -DCMAKE_Fortran_FLAGS="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" -DCMAKE_C_FLAGS="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" ; make -j4
         - save_cache:
             <<: *cache_key_grib2 
             paths: 
