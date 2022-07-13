@@ -167,7 +167,7 @@ C----- END DW
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceUVOB, 
      &                       enforceUVCB
       USE SPONGELAYER
-      USE WIND, ONLY: PRBCKGRND_MH2O 
+      USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter 
 
       IMPLICIT NONE
 
@@ -202,7 +202,7 @@ C----- END DW
       REAL(SZ) V1AvgDU1DYA, V1AvgDV1DYA
       REAL(SZ) VelNorm, VelTan
       REAL(SZ) VIDBCPDX, VIDBCPDY
-      REAL(SZ) WSX, WSY
+      REAL(SZ) WSX, WSY, fwind
       REAL(SZ) ZNGLHS,ZNGRHS1,ZNGRHS2
       REAL(SZ) DispX, DispY, CorifA
 
@@ -686,18 +686,17 @@ C      DispY=0.D0
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
             WSX=DTO2*IFWIND*(WSX1(I)/H1+WSX2(I)/H2)
             WSY=DTO2*IFWIND*(WSY1(I)/H1+WSY2(I)/H2)
-         ENDIF
-C- DMW 2022/06 tail off wind forcing in shallow water using a tanh as a function of water column height.
-         IF (WINDLIM.eqv..true.) THEN
-            IF ((H2 .LE. 4.D0*H0) .AND. (H2 .GT. H0)) THEN
-               WSX = (.5d0*tanh(8.d0*(H2-(2.5d0*H0))/(4.d0*H0))+.5d0)*WSX
-               WSY = (.5d0*tanh(8.d0*(H2-(2.5d0*H0))/(4.d0*H0))+.5d0)*WSY
-            ELSEIF (H2 .LE. H0) THEN
-               WSX = 0.D0
-               WSY = 0.D0
+            
+C.....      DMW 202207 tail off wind forcing in very shallow water
+            IF (WINDLIM.eqv..true.) THEN
+               CALL windLimiter(H2,fwind)
+               WSX = fwind*WSX
+               WSY = fwind*WSY
             ENDIF
+C.....      DMW
+
          ENDIF
-C- DMW
+
 C......  DW : BEGIN !c absorbing layer
          IF (NO_MET_IN_SPONGE) THEN
            IF ( absorblayer_sigma_mnx(I,1) > 1e-9 ) WSX = 0.D0 
@@ -1011,13 +1010,14 @@ C
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
      & SMAG_LOWER_LIM, NODECODE, VIDISPDXOH, VIDISPDYOH, IFSFM, 
-     & CBaroclinic, CAliDisp, Cs2, Ad, Bd, G
+     & CBaroclinic, CAliDisp, Cs2, Ad, Bd, G, windlim
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &   NEITAB, NEITABELE, NNEIGH, FDXE, FDYE,
      &   SFacEle, SFMYEle, SFMXEle, TANPHI   
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI, 
      &   CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
+      USE WIND, ONLY: windLimiter 
        
       IMPLICIT NONE
 
@@ -1052,7 +1052,7 @@ C
       REAL(SZ) V1N1, V1N2, V1N3, V1Avg, V1DQX1DYA, V1DQY1DYA
       REAL(SZ) :: VCOEFXX, VCOEFYY, VCOEFXY, VCOEFYX
       REAL(SZ) VIDBCPDX, VIDBCPDY
-      REAL(SZ) WSX, WSY
+      REAL(SZ) WSX, WSY, fwind
       REAL(SZ) ZNGLHS,ZNGRHS1,ZNGRHS2
       REAL(SZ) DispX, DispY, CorifA
 
@@ -1500,6 +1500,15 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
          IF (NWS.NE.0.OR.NRS.NE.0) THEN
             WSX=DTO2*IFWIND*(WSX1(I)+WSX2(I))
             WSY=DTO2*IFWIND*(WSY1(I)+WSY2(I))
+            
+C.....      DMW 202207 tail off wind forcing in very shallow water
+            IF (WINDLIM.eqv..true.) THEN
+               CALL windLimiter(H2,fwind)
+               WSX = fwind*WSX
+               WSY = fwind*WSY
+            ENDIF
+C.....      DMW
+            
          ENDIF
          VCOEFXX = DTO2*TKM(1,I) 
          VCOEFYY = DTO2*TKM(2,I)
@@ -1758,12 +1767,14 @@ C
      & NRS, IFWIND, WSX1, WSY1, WSX2, WSY2, QX2, QY2, QN2, UU2, VV2,
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
-     & SMAG_LOWER_LIM, NODECODE, UU0, VV0, QX0, QY0, TK2, CBaroclinic
+     & SMAG_LOWER_LIM, NODECODE, UU0, VV0, QX0, QY0, TK2, CBaroclinic,
+     & windlim
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &                  NEITAB, NEITABELE, NNEIGH, SFAC
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
      &   CSII, SIII, ME2GW, NBV, LBCODEI, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
+      USE WIND, ONLY: windLimiter 
 
       IMPLICIT NONE
 
@@ -1798,7 +1809,7 @@ C
       REAL(SZ) VCoef1, VCoef2
       REAL(SZ) VelNorm, VelTan
       REAL(SZ) VIDBCPDX, VIDBCPDY
-      REAL(SZ) WSX, WSY
+      REAL(SZ) WSX, WSY, fwind
       REAL(SZ) ZNGLHS,ZNGRHS1,ZNGRHS2
 
 ckmd   Added in parameters for the pc algorithm
@@ -2271,6 +2282,15 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
             WSX=DTO2*IFWIND*(WSX1(I)/H1+WSX2(I)/H2)
             WSY=DTO2*IFWIND*(WSY1(I)/H1+WSY2(I)/H2)
+            
+C.....      DMW 202207 tail off wind forcing in very shallow water
+            IF (WINDLIM.eqv..true.) THEN
+               CALL windLimiter(H2,fwind)
+               WSX = fwind*WSX
+               WSY = fwind*WSY
+            ENDIF
+C.....      DMW         
+   
          ENDIF
 ckmd
 ckmd  Added time weights to tau terms in the momentum equation here.

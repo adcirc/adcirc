@@ -258,7 +258,7 @@ C... DW
 #endif
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB, 
      &  checkChange, enforceEOB, enforceEIB, enforceGWCELVOB
-      USE WIND, ONLY: PRBCKGRND_MH2O 
+      USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter
 
       IMPLICIT NONE
 
@@ -1223,31 +1223,17 @@ C
          IF ((NWS.NE.0).OR.(NRS.NE.0)) THEN     !wind or radiation stress
             fwsx1 = 1.D0 ; fwsx2 = 1.D0 ; fwsx3 = 1.D0 ;
             fwsy1 = 1.D0 ; fwsy2 = 1.D0 ; fwsy3 = 1.D0 ;
-C- DMW 2022/06 tail off wind forcing in shallow water using a tanh as a function of water column height.
+            
+C.....      DMW 202207 tail off wind forcing in very shallow water
             IF (WINDLIM.eqv..true.) THEN
-               IF ((H1N1 .LE. 4.d0*H0) .AND. (H1N1 .GT. H0)) THEN
-                  fwsx1 = .5d0*tanh(8.d0*(H1N1-(2.5d0*H0))/(4.d0*H0))+.5d0
-                  fwsy1 = fwsx1
-               ELSEIF (H1N1 .LE. H0) THEN
-                  fwsx1 = 0.d0
-                  fwsy1 = 0.d0
-               ENDIF
-               IF ((H1N2 .LE. 4.d0*H0) .AND. (H1N2 .GT. H0)) THEN
-                  fwsx2 = .5d0*tanh(8.d0*(H1N2-(2.5d0*H0))/(4.d0*H0))+.5d0
-                  fwsy2 = fwsx2
-               ELSEIF (H1N2 .LE. H0) THEN
-                  fwsx2 = 0.d0
-                  fwsy2 = 0.d0
-               ENDIF
-               IF ((H1N3 .LE. 4.d0*H0) .AND. (H1N3 .GT. H0)) THEN
-                  fwsx3 = .5d0*tanh(8.d0*(H1N3-(2.5d0*H0))/(4.d0*H0))+.5d0
-                  fwsy3 = fwsx3
-               ELSEIF (H1N3 .LE. H0) THEN
-                  fwsx3 = 0.d0
-                  fwsy3 = 0.d0
-               ENDIF
+               CALL windLimiter(H1N1,fwsx1)
+               fwsy1 = fwsx1
+               CALL windLimiter(H1N2,fwsx2)
+               fwsy2 = fwsx2
+               CALL windLimiter(H1N3,fwsx3)
+               fwsy3 = fwsx3
             ENDIF
-C-DMW            
+C.....      DMW            
             
             IF ( NO_MET_IN_SPONGE ) THEN
                IF ( absorblayer_sigma_mnx(NM1,1) > 1e-9 ) fwsx1 = 0.D0
@@ -1880,7 +1866,7 @@ C
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
      &   TKM, NPERSEG, NNPERBC, IPERCONN, UU0, VV0, QX0, QY0, TK0, TK2, 
-     &   QX2, QY2, UU2, VV2
+     &   QX2, QY2, UU2, VV2, windlim
 #ifdef CMPI
      &   , dumy1, dumy2
 #endif
@@ -1894,6 +1880,7 @@ C
 #ifdef CMPI
       USE MESSENGER
 #endif
+      USE WIND, ONLY: windLimiter
 
       IMPLICIT NONE
 
@@ -1968,6 +1955,8 @@ ckmd   Added in parameters for the pc algorithm
       INTEGER :: nbdj
       REAL(SZ) :: rff
       REAL(SZ) :: qforcei, qforcej
+      REAL(SZ):: fwsx1, fwsx2, fwsx3
+      REAL(SZ):: fwsy1, fwsy2, fwsy3
 
       call setMessageSource("gwce_new_pc")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -2453,8 +2442,22 @@ C...     Compute elemental averages
          MXAvg=MX           !lateral stresses are constant over an element
          MYAvg=MY           !lateral stresses are constant over an element
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN     !wind or radiation stress
-            WSXAvg=(WSX1(NM1)+WSX1(NM2)+WSX1(NM3))/3.d0
-            WSYAvg=(WSY1(NM1)+WSY1(NM2)+WSY1(NM3))/3.d0
+            fwsx1 = 1.D0 ; fwsx2 = 1.D0 ; fwsx3 = 1.D0 ;
+            fwsy1 = 1.D0 ; fwsy2 = 1.D0 ; fwsy3 = 1.D0 ;
+            
+C.....      DMW 202207 tail off wind forcing in very shallow water
+            IF (WINDLIM.eqv..true.) THEN
+               CALL windLimiter(H1N1,fwsx1)
+               fwsy1 = fwsx1
+               CALL windLimiter(H1N2,fwsx2)
+               fwsy2 = fwsx2
+               CALL windLimiter(H1N3,fwsx3)
+               fwsy3 = fwsx3
+            ENDIF
+C.....      DMW            
+         
+            WSXAvg=(fwsx1*WSX1(NM1)+fwsx2*WSX1(NM2)+fwsx3*WSX1(NM3))/3.d0
+            WSYAvg=(fwsy1*WSY1(NM1)+fwsy2*WSY1(NM2)+fwsy3*WSY1(NM3))/3.d0
          ENDIF
          IF (C3D.or.(CBaroclinic.and.abs(IDEN).eq.5)) THEN !3D velocity dispersion
             DispXAvg=IFNLCT*DispX

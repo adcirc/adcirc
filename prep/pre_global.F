@@ -304,8 +304,6 @@ Casey 180318: Added NWS=13
       character(len=10) :: dynamicWaterLevelCorrectionRampReferenceTime = 'hotstart'
       
       logical :: FOUND_LIM_NML = .false. ! for namelist 
-      !real(sz) :: slim = 0.d0
-      !logical :: windlim = .false.
 C
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX

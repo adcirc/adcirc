@@ -9292,9 +9292,45 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       end subroutine check_err
 C-----------------------------------------------------------------------
+
+
 #endif
 C.....END WJP (NWS = 14) ..............................................
 #endif
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   W I N D L I M I T E R 
+C-----------------------------------------------------------------------
+
+C.... DMW 202207 tail off wind forcing in very shallow water using a tanh,
+C.... as a function of water column height.
+
+      subroutine windLimiter(H,fwind)
+      use global, only : h0
+      
+      IMPLICIT NONE
+      
+      REAL(SZ), intent(in) :: H
+      REAL(SZ), intent(out) :: fwind
+      
+      call setMessageSource("windLimiter")
+#ifdef ALL_TRACE
+      call allMessage(DEBUG,"Enter.")
+#endif
+      fwind = 1.d0
+      IF ((H .LE. 4.d0*H0) .AND. (H .GT. H0)) THEN
+         fwind = .5d0*tanh(8.d0*(H-(2.5d0*H0))/(4.d0*H0))+.5d0
+      ELSEIF (H .LE. H0) THEN
+         fwind = 0.d0
+      ENDIF
+
+#ifdef ALL_TRACE
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      end subroutine WindLimiter
+C-----------------------------------------------------------------------
 C----------------------------------------------------------------------
       END MODULE
 C----------------------------------------------------------------------
