@@ -509,7 +509,7 @@ C-----------------------------------------------------------------------
      &          XdmfAddAttribute(descript % xdmfMD % xdmfFortranObj, 
      &          'IBCONN'//CHAR(0), 
      &          XDMF_ATTRIBUTE_CENTER_NODE, XDMF_ATTRIBUTE_TYPE_SCALAR, nvell(i), 
-     &          XDMF_ARRAY_TYPE_INT32, internalFluxBoundaries(ifCount)%xdmf_ibconn) ! zero offset
+     &          XDMF_ARRAY_TYPE_INT32, dble(internalFluxBoundaries(ifCount)%xdmf_ibconn)) ! zero offset
             internalFluxBoundaries(ifCount)%attributeIDs(2) = 
      &          XdmfAddAttribute(descript % xdmfMD % xdmfFortranObj, 
      &          'BARINHT'//CHAR(0), 
@@ -541,7 +541,7 @@ C-----------------------------------------------------------------------
      &          'IBCONN'//CHAR(0),
      &          XDMF_ATTRIBUTE_CENTER_NODE, XDMF_ATTRIBUTE_TYPE_SCALAR, nvell(i), 
      &          XDMF_ARRAY_TYPE_INT32, 
-     &          internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn(:)) ! zero offset
+     &          dble(internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn(:))) ! zero offset
             internalFluxBoundariesWithPipes(ifwpCount)%attributeIDs(2) = 
      &          XdmfAddAttribute(descript % xdmfMD % xdmfFortranObj, 
      &          'BARINHT'//CHAR(0), 
@@ -584,7 +584,7 @@ C-----------------------------------------------------------------------
             ifwpCount = ifwpCount + 1
          case default
             write(6,
-     &       '("ERROR: File contains IBTYPE=",i0," which is invalid.")'), ibtype_orig(i)
+     &       '("ERROR: File contains IBTYPE=",i0," which is invalid.")') ibtype_orig(i)
          end select
       end do
 #endif
@@ -678,7 +678,7 @@ C-----------------------------------------------------------------------
      &          nvell(i), XDMF_ARRAY_TYPE_INT32)
             ifwpCount = ifwpCount + 1
          case default
-            write(6,'("ERROR: File contains IBTYPE=",i0," which is not a valid flux boundary type.")'), ibtype_orig(i)
+            write(6,'("ERROR: File contains IBTYPE=",i0," which is not a valid flux boundary type.")') ibtype_orig(i)
          end select
       end do
 #endif

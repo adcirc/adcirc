@@ -812,6 +812,7 @@
       logical :: fileFound
       integer i, j, k
       real(8), allocatable :: tempCoord(:,:)
+      real(8),allocatable :: dmyrealarray(:)
       !
 
       call setMessageSource("readMeshXDMF")
@@ -1210,9 +1211,12 @@
                   call replaceNullsWithSpaces(itemName)
                   select case(trim(itemName))
                   case("IBCONN")      ! paired (back face) nodes
+                     allocate(dmyrealarray(1:size(internalFluxBoundaries(ifCount)%xdmf_ibconn)))
                      call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
-     &                   internalFluxBoundaries(ifCount)%xdmf_ibconn, XDMF_ARRAY_TYPE_INT32,
+     &                   dmyrealarray, XDMF_ARRAY_TYPE_INT32,
      &                   nvell(fluxCount), startIndex, arrayStride, valueStride)
+                     internalFluxBoundaries(ifCount)%xdmf_ibconn = int(dmyrealarray)
+                     deallocate(dmyrealarray)
                   case("BARINHT")     ! barrier height at each node and its paired node
                      call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
      &                  internalFluxBoundaries(ifCount)%barinht, XDMF_ARRAY_TYPE_FLOAT64,
@@ -1251,10 +1255,13 @@
                   call replaceNullsWithSpaces(itemName)
                   select case(trim(itemName))
                   case("IBCONN")  ! paired (i.e., back face) nodes
+                     allocate(dmyrealarray(1:size(internalFluxBoundaries(ifwpCount)%xdmf_ibconn)))
                      call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
-     &                  internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn,
+     &                  dmyrealarray,
      &                  XDMF_ARRAY_TYPE_INT32,
      &                   nvell(fluxCount), startIndex, arrayStride, valueStride)
+                     internalFluxBoundaries(ifwpCount)%xdmf_ibconn = int(dmyrealarray)
+                     deallocate(dmyrealarray)
                   case("BARINHT") ! barrier height at each node and its paired node
                      call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
      &                   internalFluxBoundariesWithPipes(ifwpCount)%barinht,
