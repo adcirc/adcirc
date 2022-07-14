@@ -49,7 +49,11 @@ get_cache_grib2: &get_cache_grib2
          <<: *cache_key_grib2
 
 upload_coverage: &upload_coverage
-     codecov/upload
+    codecov/upload
+
+upload_artifacts: &upload_artifacts
+    get_artifacts:
+
 
 #...List of jobs in the workflow
 jobs:
@@ -82,7 +86,7 @@ jobs:
             command: cd work ; cp ../thirdparty/swan/macros.inc.gfortran ../thirdparty/swan/macros.inc
         - run: 
             name: Build ADCIRC with netCDF and XDMF using legacy makefile
-            command: cd work ; make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=/usr XDMF=enable XDMFHOME=/usr/local
+            command: cd work ; make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=/usr XDMF=enable XDMFHOME=/usr
   build_cmake_without_netcdf:
       <<: *default_env
       steps:
@@ -115,7 +119,7 @@ jobs:
         - checkout
         - run: 
             name: Build ADCIRC with netCDF and XDMF using CMake
-            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DXDMFHOME=/usr/local -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" -DCMAKE_C_FLAGS_RELEASE="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4"; make -j4
+            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DXDMFHOME=/usr -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" -DCMAKE_C_FLAGS_RELEASE="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4"; make -j4
   build_cmake_with_netcdf_and_xdmf_grib:
       <<: *default_env
       steps:
@@ -123,7 +127,7 @@ jobs:
         - *default_testenv
         - run: 
             name: Build ADCIRC with Grib, netCDF, and XDMF using CMake
-            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DXDMFHOME=/usr/local -DBUILD_UTILITIES=ON -DENABLE_DATETIME=ON -DENABLE_GRIB2=ON -DCMAKE_Fortran_FLAGS="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" -DCMAKE_C_FLAGS="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" ; make -j4
+            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DXDMFHOME=/usr -DBUILD_UTILITIES=ON -DENABLE_DATETIME=ON -DENABLE_GRIB2=ON -DCMAKE_Fortran_FLAGS="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" -DCMAKE_C_FLAGS="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" ; make -j4
         - save_cache:
             <<: *cache_key_grib2 
             paths: 
@@ -142,6 +146,14 @@ jobs:
             name: <<parameters.test_name>>
             command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build adcirc/<<parameters.test_name>>
             no_output_timeout: 7200
+        - run:
+            name: Store artifacts
+            command: |
+              mkdir -p /tmp/artifacts
+              find /root/adcirc-cg-testsuite/adcirc/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
+            when: on_fail
+        - store_artifacts: 
+           path: /tmp/artifacts
         - *upload_coverage
   test_netcdf:
       <<: *default_env
@@ -156,6 +168,14 @@ jobs:
             name: <<parameters.test_name>>
             command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build adcirc/<<parameters.test_name>>
             no_output_timeout: 7200
+        - run:
+            name: Store artifacts
+            command: |
+              mkdir -p /tmp/artifacts
+              find /root/adcirc-cg-testsuite/adcirc/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
+            when: on_fail
+        - store_artifacts: 
+           path: /tmp/artifacts
         - *upload_coverage
   test_grib2:
       <<: *default_env
@@ -170,6 +190,14 @@ jobs:
             name: <<parameters.test_name>>
             command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build adcirc/<<parameters.test_name>>
             no_output_timeout: 7200
+        - run:
+            name: Store artifacts
+            command: |
+              mkdir -p /tmp/artifacts
+              find /root/adcirc-cg-testsuite/adcirc/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
+            when: on_fail
+        - store_artifacts: 
+           path: /tmp/artifacts
         - *upload_coverage
 workflows:
   version: 2.1
@@ -233,3 +261,5 @@ workflows:
                         - adcirc_shinnecock_inlet-parallel
                         - adcirc_timevaryingweirs-parallel
                         
+
+
