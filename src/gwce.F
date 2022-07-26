@@ -231,7 +231,7 @@ C
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
      &   TKM, NPERSEG, NTIP, NNPERBC, IPERCONN, VIDispDXOH, Bd, Ad, Cs2,
-     &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, 
+     &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, H0, ALPHAL, windlim,
      &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
@@ -258,7 +258,7 @@ C... DW
 #endif
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB, 
      &  checkChange, enforceEOB, enforceEIB, enforceGWCELVOB
-      USE WIND, ONLY: PRBCKGRND_MH2O 
+      USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter
 
       IMPLICIT NONE
 
@@ -447,8 +447,8 @@ C              Ali et al. formula
                   Ma2   = G*DPavg/Cs2
                   Cfac = (1.0_SZ - 0.25_SZ*Ma2 - Ad*DPavg**Bd)**2
                endif
-               
-               GA00DPAvgOAreaIE4 = A00*G*DPAvg*Cfac/AreaIE4
+               ! DMW 2022/06 Apply slope limiting to gravity
+               GA00DPAvgOAreaIE4 = ALPHAL(IE)*A00*G*DPAvg*Cfac/AreaIE4
                Tau0Avg = (Tau0Var(NMI1)+Tau0Var(NMI2)+Tau0Var(NMI3))/3.d0
 
 C........... DW, Absorbing layer
@@ -1184,12 +1184,14 @@ C        Ali et al. formula
             Ma2    = G*DPavg/Cs2
             CfacS0 = (1.0_SZ - 0.25_SZ*Ma2 - Ad*DPavgS0**Bd)**2
          endif
-
-         GDPAvgOAreaIE4 = G*DPAvg*Cfac/AreaIE4
-         GDPAvgOAreaIE4_S0 = G*DPAvgS0*CfacS0/AreaIE4
+         ! DMW 2022/06 Apply slope limiting to gravity
+         GDPAvgOAreaIE4 = ALPHAL(IE)*G*DPAvg*Cfac/AreaIE4
+         ! DMW 2022/06 Apply slope limiting to gravity
+         GDPAvgOAreaIE4_S0 = ALPHAL(IE)*G*DPAvgS0*CfacS0/AreaIE4
 C....  END DW & WJP
          HAvg=(H1N1+H1N2+H1N3)/3.d0
-         GHAvg=G*HAvg
+         ! DMW 2022/06 Apply slope limiting to gravity
+         GHAvg=ALPHAL(IE)*G*HAvg
          GHAvgOAreaIE2=GHAvg/AreaIE2
          BSXAvg=(BSXN1+BSXN2+BSXN3)/3.d0
          BSYAvg=(BSYN1+BSYN2+BSYN3)/3.d0
@@ -1221,6 +1223,18 @@ C
          IF ((NWS.NE.0).OR.(NRS.NE.0)) THEN     !wind or radiation stress
             fwsx1 = 1.D0 ; fwsx2 = 1.D0 ; fwsx3 = 1.D0 ;
             fwsy1 = 1.D0 ; fwsy2 = 1.D0 ; fwsy3 = 1.D0 ;
+            
+C.....      DMW 202207 tail off wind forcing in very shallow water
+            IF (WINDLIM.eqv..true.) THEN
+               CALL windLimiter(H1N1,fwsx1)
+               fwsy1 = fwsx1
+               CALL windLimiter(H1N2,fwsx2)
+               fwsy2 = fwsx2
+               CALL windLimiter(H1N3,fwsx3)
+               fwsy3 = fwsx3
+            ENDIF
+C.....      DMW            
+            
             IF ( NO_MET_IN_SPONGE ) THEN
                IF ( absorblayer_sigma_mnx(NM1,1) > 1e-9 ) fwsx1 = 0.D0
                IF ( absorblayer_sigma_mnx(NM2,1) > 1e-9 ) fwsx2 = 0.D0
@@ -1263,7 +1277,8 @@ C........DW: begin add absorbing layer term
          MsFacRS_T = ((SigmaAvg/(2.D0*DT))*AreaIE/12.D0)*sponge_dis_mthd
 C......... end DW
 C
-         GOAreaIE4=G/AreaIE4
+         ! DMW 2022/06 Apply slope limiting to gravity
+         GOAreaIE4=ALPHAL(IE)*G/AreaIE4
          Tau0SpaVar=(QX1Avg*Tau0XGrad2A+QY1Avg*Tau0YGrad2A)/6.d0
          A00pB00=A00+B00
 
@@ -1851,7 +1866,7 @@ C
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
      &   TKM, NPERSEG, NNPERBC, IPERCONN, UU0, VV0, QX0, QY0, TK0, TK2, 
-     &   QX2, QY2, UU2, VV2
+     &   QX2, QY2, UU2, VV2, windlim
 #ifdef CMPI
      &   , dumy1, dumy2
 #endif
@@ -1865,6 +1880,7 @@ C
 #ifdef CMPI
       USE MESSENGER
 #endif
+      USE WIND, ONLY: windLimiter
 
       IMPLICIT NONE
 
@@ -1939,6 +1955,8 @@ ckmd   Added in parameters for the pc algorithm
       INTEGER :: nbdj
       REAL(SZ) :: rff
       REAL(SZ) :: qforcei, qforcej
+      REAL(SZ):: fwsx1, fwsx2, fwsx3
+      REAL(SZ):: fwsy1, fwsy2, fwsy3
 
       call setMessageSource("gwce_new_pc")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -2424,8 +2442,22 @@ C...     Compute elemental averages
          MXAvg=MX           !lateral stresses are constant over an element
          MYAvg=MY           !lateral stresses are constant over an element
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN     !wind or radiation stress
-            WSXAvg=(WSX1(NM1)+WSX1(NM2)+WSX1(NM3))/3.d0
-            WSYAvg=(WSY1(NM1)+WSY1(NM2)+WSY1(NM3))/3.d0
+            fwsx1 = 1.D0 ; fwsx2 = 1.D0 ; fwsx3 = 1.D0 ;
+            fwsy1 = 1.D0 ; fwsy2 = 1.D0 ; fwsy3 = 1.D0 ;
+            
+C.....      DMW 202207 tail off wind forcing in very shallow water
+            IF (WINDLIM.eqv..true.) THEN
+               CALL windLimiter(H1N1,fwsx1)
+               fwsy1 = fwsx1
+               CALL windLimiter(H1N2,fwsx2)
+               fwsy2 = fwsx2
+               CALL windLimiter(H1N3,fwsx3)
+               fwsy3 = fwsx3
+            ENDIF
+C.....      DMW            
+         
+            WSXAvg=(fwsx1*WSX1(NM1)+fwsx2*WSX1(NM2)+fwsx3*WSX1(NM3))/3.d0
+            WSYAvg=(fwsy1*WSY1(NM1)+fwsy2*WSY1(NM2)+fwsy3*WSY1(NM3))/3.d0
          ENDIF
          IF (C3D.or.(CBaroclinic.and.abs(IDEN).eq.5)) THEN !3D velocity dispersion
             DispXAvg=IFNLCT*DispX

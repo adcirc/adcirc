@@ -512,6 +512,7 @@ C...tcm v51.20.03 Local variables for external station location files
      &          noffActive, StatPartWetFix, How2FixStatPartWet
       ! jgf52.08.02 : For inundation output files.
       namelist /inundationOutputControl/ inundationOutput, inunThresh
+      !namelist /limitControl/ slim, windlim
 C
 C.....tcm v52.30.01 added for Smag_Control
       INTEGER :: IOS_Smag = 0
@@ -642,6 +643,17 @@ Casey 180318: Added NWS=13
       else
          call logMessage(INFO,
      &         'The wetDryControl namelist was not found.')
+      endif
+      rewind(15)  !Return to the top of the fort.15 file
+
+      READ(UNIT = 15, NML = limitControl,IOSTAT = ios)
+      if ( ios.ge.0) then
+         FOUND_LIM_NML = .true.
+         call logMessage(INFO,
+     &         'The limitControl namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The limitControl namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
 
