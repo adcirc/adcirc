@@ -2493,8 +2493,9 @@ c     &      ETA2(NNBB1),'ETA2(NNBB2)=',ETA2(NNBB2)
      &                          ETA2(NNBB1),'ETA2(NNBB2)=',ETA2(NNBB2)
                            write(16,*)'I=',I,'J=',J,'ETA2=',ETA2(NNBB1),
      &                      ' PUMPING OFF'
-                           write(78,*)TIMELOC,I,J,NNBB1,NNBB2,ETA2(NNBB1),
+                           write(78,201)TIMELOC,I,J,NNBB1,NNBB2,ETA2(NNBB1),
      &                                 ISPUMPING(I)
+  201  FORMAT(F12.2,1x,I5,1x,I5,1x,I8,1x,I8,1x,F8.5,1x,I2)
                         ENDIF
                      ELSE ! not pumping
                         IF (ETA2(NNBB1).GT.PUMPONWL(I)) THEN
@@ -2504,7 +2505,7 @@ c     &      ETA2(NNBB1),'ETA2(NNBB2)=',ETA2(NNBB2)
      &                          ETA2(NNBB1),'ETA2(NNBB2)=',ETA2(NNBB2)
                            write(16,*)'I=',I,'J=',J,'ETA2=',ETA2(NNBB1),
      &                      ' PUMPING ON'
-                           write(78,*)TIMELOC,I,J,NNBB1,NNBB2,ETA2(NNBB1),
+                           write(78,201)TIMELOC,I,J,NNBB1,NNBB2,ETA2(NNBB1),
      &                                 ISPUMPING(I)
                         ENDIF
                      ENDIF

@@ -1,0 +1,40 @@
+Using the Weir-Pump internal barrier boundary condition
+
+The capability to specify that an internal barrier (weir) has an embedded pump
+that can transfer water across the barrier has been implemented following the methodology
+developed by Nathan Dill for a prior ADCIRC release. For each node pair configured with a pump, 
+the model pump turns on when the water level at the front face of the weir exceeds a specified
+threshold (PUMPONWL). The pump turns off when the water level subsequently falls below
+a specified threshold (PUMPOFFWL). Additionally, the user must specify the pump’s flow rate
+per unit width (PUMPQ). Unlike the flow over the weir, which can be in either direction, the pump
+flow is unidirectional (from the front face to the back face).
+
+The specification of a weir with pumps is set in the fort.14 mesh file using IBTYPE=6 or IBTYPE=26
+(note that only IBTYPE=26 has been extensively tested at this time). The pump control parameters are set in the 
+fort.14 similarly to those for the weir with pipes boundary. For node pair j of normal flow boundary k,
+the user must specify:
+NBVV(k,j), IBCONN(k,j), BARINHT(k,j), BARINCFSB(k,j), BARINCFSP(k,j), PUMPQ(k,j), PUMPONWL(k,j), PUMPOFFWL(k,j)
+where NBVV(k,j) is the node number on the front face of the weir (flow is directed from this node to the back side node),
+IBCONN(k,j) is the node number on the back face of the weir that will receive the pump flow,
+BARINHT(k,j) is the weir height,
+BARINCFSB(k,j) is the coefficient of free surface subcritical flow over the weir,
+BARINCFSP(k,j) is the coefficient of free surface supercritical flow over the weir,
+PUMPQ(k,j) is the pump flow rate per unit width (m^2/s or ft^2/s)
+PUMPONWL(k,j) is the water level at the front side node (NBVV), which if exceeded turns the pump on.
+PUMPOFFWL(k,j) is the water level at the front side node (NBVV), which if the water level is lower than
+(and the pump is running) turns the pump off.
+
+Note that if the water level at node NBVV(k,j) is between PUMPOFFWL and PUMPONWL, the pump may
+either be running (if PUMPONWL was previously exceeded) or not (if PUMPONWL was never exceeded or
+if, with the pump running, the water level dropped below PUMPOFFWL). This presents a potential problem for
+simulations starting from hotstart output since at present, there is no information in the hotstart file to indicate the
+pump state (pumping or not). If the water level at the hotstart time is either above PUMPONWL or below PUMPOFFWL,
+there is no problem (the pump is turned on in the former case and off in the latter case). However, if the water level
+is between PUMPOFFWL and PUMPONWL, there is an ambiguity as the pump could have either been on or off
+when the hotstart file was written. At the present time, this situation is handled by setting the pump to off in
+this case (PUMPOFFWL < ZETA < PUMPONWL). 
+
+Diagnostic output relating to the operation of pumps, that is the times that pumps turn on and turn off,
+is directed to the fort.16 files (for parallel runs in the PE* directories for mesh tiles containing weir/pump
+node pairs). It is also written to the (new) fort.78 text file, although there are still issues to be worked out
+with this. The problem at present is that, for a parallel run, the node numbers (NBVV and IBCONN) used
