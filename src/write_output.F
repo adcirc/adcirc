@@ -1044,7 +1044,7 @@ C         write(16,*) 'Allocating IceDescript' !tcm v49.64.01 added for ice
       IceDescript % array                => CICEOUT
       IceDescript % array_g              => CICEOUT_g
       IceDescript % field_name           = 'Ice'
-      if (ncice.eq.0.or.ncice.eq.14) then
+      if (ncice.eq.0) then
          IceDescript % writeFlag         = .false.
       endif
 
