@@ -77,6 +77,7 @@ C      River_et_WSE          "initial_river_elevation"
 C      IT_Fric               "internal_tide_friction"
 C      OverlandReductionFactor  "overland_reduction_factor"
 C      subgridBarrier        "subgrid_barrier"
+C      CondensedNodes        "condensed_nodes"
 C
 C-----------------------------------------------------------------------
       MODULE NodalAttributes
@@ -104,6 +105,17 @@ Corbitt 120321: Allow Advection to be Turned on Locally instead of Globally
       INTEGER              :: AdvectionStateNoOfVals
       REAL(SZ)             :: AdvectionStateDefVal
       REAL(SZ),ALLOCATABLE :: AdvectionState(:)
+Csb   Specify node groups for 1D condensation.
+      LOGICAL              :: LoadCondensedNodes
+      LOGICAL              :: FoundCondensedNodes
+      CHARACTER(LEN=80)    :: CondensedNodesUnits
+      INTEGER              :: CondensedNodesNoOfVals
+      INTEGER              :: CondensedNodesDefVal(4)
+      INTEGER,ALLOCATABLE  :: CondensedNodes(:,:)
+      INTEGER,ALLOCATABLE  :: NCondensedNodes(:)
+      INTEGER,ALLOCATABLE  :: ListCondensedNodes(:,:)
+      INTEGER              :: NListCondensedNodes
+      INTEGER,ALLOCATABLE  :: NNodesListCondensedNodes(:)
 C
 C     The following flags are .true. if the corresponding data are
 C     required for the run, according to the unit 15 control file
@@ -371,6 +383,11 @@ Corbitt 120321:
       FoundAdvectionState    = .FALSE.
       AdvectionStateNoOfVals = 1
       AdvectionStateDefVal   = 0.D0
+Csb
+      LoadCondensedNodes     = .False.
+      FoundCondensedNodes    = .FALSE.
+      CondensedNodesNoOfVals = 3
+      CondensedNodesDefVal   = 0
 C
       LoadTau0           = .False.
       LoadStartDry       = .False.
@@ -625,6 +642,9 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
 Corbitt 120321: Allow advection to be turned on locally instead of globally
          CASE("advection_state")
             FoundAdvectionState = .TRUE.
+Csb
+         CASE("condensed_nodes")
+            FoundCondensedNodes = .TRUE.
          CASE("elemental_slope_limiter")
             FoundEleSlopeLim = .TRUE.
          CASE("initial_river_elevation")            
@@ -857,6 +877,7 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
      &   ((LoadSwanWaveRefrac).and.(.not.FoundSwanWaveRefrac)).or.
 Corbitt 120321: Allow advection to be turned on locally instead of globally
      &   ((LoadAdvectionState).and.(.not.FoundAdvectionState)).or.
+     &   ((LoadCondensedNodes).and.(.not.FoundCondensedNodes)).or.
      &   ((LoadEleSlopeLim).and.(.not.FoundEleSlopeLim)).or.
      &   ((LoadRiver_et_WSE).and.(.not.FoundRiver_et_WSE)).or.     
      &   ((LoadIT_Fric).and.(.not.FoundIT_Fric)).or. 
@@ -901,6 +922,7 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
       ALLOCATE(SwanWaveRefrac(NumOfNodes))
 Corbitt 120321: Allow advection to be turned on locally instead of globally
       ALLOCATE(AdvectionState(NumOfNodes))
+      ALLOCATE(CondensedNodes(NumOfNodes,CondensedNodesNoOfVals))
       ALLOCATE(River_et_WSE(NumOfNodes))  ! tcm 20140502 v51.27
       ALLOCATE(OverlandReductionFactor(NumOfNodes))
       ALLOCATE(elemental_slope_limiter_grad_max(NumOfNodes))
@@ -1026,6 +1048,8 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
 Corbitt 120321: Allow advection to be turned on locally instead of globally
          CASE("advection_state")
             LoadAdvectionState = .True.
+         CASE("condensed_nodes")
+            LoadCondensedNodes = .True.
          CASE("elemental_slope_limiter")
             LoadEleSlopeLim = .TRUE.
          CASE("initial_river_elevation")  ! tcm 20140502 v51.27
@@ -1208,6 +1232,12 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
             READ(13,'(A80)') AdvectionStateUnits
             READ(13,*) AdvectionStateNoOfVals
             READ(13,*) AdvectionStateDefVal
+         CASE("condensed_nodes")
+            FoundCondensedNodes = .TRUE.
+            READ(13,'(A80)') CondensedNodesUnits
+            READ(13,*) CondensedNodesNoOfVals
+            READ(13,*) (CondensedNodesDefVal(j),
+     &                  j=1,CondensedNodesNoOfVals)
          CASE("elemental_slope_limiter")
             FoundEleSlopeLim = .TRUE.
             READ(13,'(A80)') EleSlopeLimUnits
@@ -1382,6 +1412,15 @@ Corbitt 120321: Allow Advection to be handled locally instead of globally.
          CASE("advection_state")
             IF (LoadAdvectionState) THEN
                CALL LoadAttrVec(AdvectionState,AdvectionStateDefVal,
+     &              NumNodesNotDefault, NScreen, MyProc, NAbOut)
+            ELSE
+               SkipDataSet = .TRUE.
+            ENDIF
+         CASE("condensed_nodes")
+            IF (LoadCondensedNodes) THEN
+               CALL LoadAttrMatNodeNo(CondensedNodes,
+     &              CondensedNodesNoOfVals,
+     &              CondensedNodesDefVal,
      &              NumNodesNotDefault, NScreen, MyProc, NAbOut)
             ELSE
                SkipDataSet = .TRUE.
@@ -1608,6 +1647,73 @@ C
       RETURN
 C     ----------------------------------------------------------------
       END SUBROUTINE LoadAttrMat
+C     ----------------------------------------------------------------
+
+
+
+C     ----------------------------------------------------------------
+C         S U B R O U T I N E     L O A D  A T T R  M A T  N O D E  N O
+C     ----------------------------------------------------------------
+C
+C     Subroutine to load a single set of nodal attributes from
+C     the Nodal Attributes File (unit 13) if there is more than one
+C     value per node.
+C
+C     Added for integer node no attributes. Based on LoadAttrMat. SB
+C
+C     ----------------------------------------------------------------
+      SUBROUTINE LoadAttrMatNodeNo(AttributeData, NumCol, Default,
+     &     NumNodesNotDef, NScreen, MyProc, NAbOut, NodesNotDef )
+      USE MESH,ONLY:node_dict,find
+      IMPLICIT NONE
+      INTEGER, intent(in) :: NumCol  ! number of columns in the matrix
+      INTEGER, intent(out),
+     &     dimension(NumOfNodes,NumCol) :: AttributeData
+      INTEGER, intent(in), dimension(NumCol) :: Default ! default values
+      INTEGER, intent(in) :: NumNodesNotDef  ! number of nodes spec. in file
+      INTEGER, intent(in) :: NScreen ! 1 for debug info to screen (unit 6)
+      INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
+      INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
+      INTEGER             :: TempAttData(NumCol) 
+      INTEGER             :: NodeNum ! node label listed in the file
+      INTEGER             :: DictNode ! node position in array
+C------ DW
+      INTEGER, optional::  NodesNotDef(:)
+C------
+C
+C     Set all nodes to user-specified default values.
+      IF (NABOUT.EQ.0) WRITE(16,1001)
+      DO i=1, NumOfNodes
+         DO j=1, NumCol
+            AttributeData(i,j)=Default(j)
+         END DO
+      END DO
+C
+      IF (NABOUT.EQ.0) WRITE(16,1005)
+      IF (NABOUT.EQ.0) WRITE(16,*) NumCol,ubound(AttributeData),NumNodesNotDef
+      DO i=1, NumNodesNotDef
+         READ(13,*) NodeNum, (TempAttData(j),j=1,NumCol)
+         DictNode = find(node_dict,NodeNum)
+         DO j=1,NumCol
+            TempAttData(j) = find(node_dict,TempAttData(j))
+         END DO
+         IF ( present(NodesNotDef) ) THEN
+            NodesNotDef(i) = DictNode 
+         END IF
+         AttributeData(DictNode,:) = TempAttData(:)
+         IF (NABOUT.EQ.0) WRITE(16,1010) NodeNum,
+     &        (AttributeData(DictNode,j),j=1,NumCol)
+      END DO
+C
+ 1001 FORMAT(/,10X,'Set all nodes to the default values of ',/,
+     &     99I11,/)
+ 1005 FORMAT(/,10X,'Now setting the following nodes to these values:',
+     &     /,10X,'NODE',5X,'DATA',5X/)
+ 1010 FORMAT(7X,I8,6X,12(1X,I11))
+C
+      RETURN
+C     ----------------------------------------------------------------
+      END SUBROUTINE LoadAttrMatNODENO
 C     ----------------------------------------------------------------
 
 
@@ -2082,6 +2188,7 @@ C
       REAL(SZ) BALPHA! BALPHA(2) is constriction fraction
       REAL(SZ) BDELX ! BDELX(3) is effective delx
       REAL(SZ) MLDrat ! MLD ratio to depth
+      REAL(SZ) HT, WCH, ManN
 
 
       !...Reset the friction to original values
@@ -2102,29 +2209,40 @@ C
 C     Step 0. Convert Manning's N to Cd, if necessary.
       IF (LoadManningsN) THEN
          DO I=1, NP
+            HT = DP(I)+IFNLFA*ETA2(I)
             IF(LoadSubgridBarrier)THEN
                 IF(subgridBarrierOvertopping(I).AND.
      &             SubgridBarrierNoOfVals.EQ.2)THEN
                     FRIC(I)=g*subgridBarrier(I,2)**2.d0
-     &                   /( ( DP(I)+IFNLFA*ETA2(I) )**(1.d0/3.d0) ) 
+     &                   /( ( HT )**(1.d0/3.d0) ) 
                     IF(FRIC(I).LT.BFCdLLimit) THEN
                        FRIC(I) = BFCdLLimit
                     ENDIF
                 ELSE
                     IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
                     FRIC(I)=g*ManningsN(I)**2.d0
-     &                   /( ( DP(I)+IFNLFA*ETA2(I) )**(1.d0/3.d0) ) ! sb46.28sb02
+     &                   /( ( HT )**(1.d0/3.d0) ) ! sb46.28sb02
                     IF(FRIC(I).LT.BFCdLLimit) THEN
                        FRIC(I) = BFCdLLimit
                     ENDIF
                 ENDIF
             ELSE
                 IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
-                FRIC(I)=g*ManningsN(I)**2.d0
-     &               /( ( DP(I)+IFNLFA*ETA2(I) )**(1.d0/3.d0) ) ! sb46.28sb02
-                !sb46.28sb02  Lower limit is applied here.
-                IF(FRIC(I).LT.BFCdLLimit) THEN
-                   FRIC(I) = BFCdLLimit
+                IF (ManningsN(I).gt.1.d0) THEN
+                   WCH = floor(ManningsN(I))
+                   ManN = ManningsN(I) - WCH
+                   FRIC(I)=g*((1.D0+2.D0*HT/WCH)**(2.D0/3.D0)*ManN)**2.d0
+     &               /( HT**(1.d0/3.d0) )
+                   IF(FRIC(I).LT.BFCdLLimit) THEN
+                      FRIC(I) = BFCdLLimit
+                   ENDIF
+                ELSE
+                   FRIC(I)=g*ManningsN(I)**2.d0
+     &               /( ( HT )**(1.d0/3.d0) ) ! sb46.28sb02
+                   !sb46.28sb02  Lower limit is applied here.
+                   IF(FRIC(I).LT.BFCdLLimit) THEN
+                      FRIC(I) = BFCdLLimit
+                   ENDIF
                 ENDIF
             ENDIF
          ENDDO
@@ -2803,6 +2921,105 @@ C     ----------------------------------------------------------------
       END SUBROUTINE na_terminate
 C     ----------------------------------------------------------------
 
+
+C     ----------------------------------------------------------------
+C        S U B R O U T I N E   P R E P  C O N D E N S E D   N O D E S
+C     ----------------------------------------------------------------
+C     Parepare list of condensed nodes
+C     ----------------------------------------------------------------
+      SUBROUTINE PrepCondensedNodes()
+C     ----------------------------------------------------------------
+      USE SIZES,ONLY : SZ,MNVEL
+      USE MESH,ONLY : NP,LBArray_Pointer,X,Y
+      USE BOUNDARIES,ONLY : CSIICN,SIIICN
+      IMPLICIT NONE
+      INTEGER :: I,J,K,II,I1,I2,J1,J2
+      INTEGER :: JMAX
+      REAL(SZ) :: X1,Y1,X2,Y2,DX,DY,LEN
+      LOGICAL :: ON_THE_SAME_BOUNDARY
+
+      IF (.NOT.LoadCondensedNodes) RETURN
+
+      NListCondensedNodes = 0
+      JMAX = 0
+      DO I=1,NP
+         IF(CondensedNodes(I,1).NE.0) THEN
+            NListCondensedNodes = NListCondensedNodes + 1
+            DO J=1,CondensedNodesNoOfVals
+               IF(CondensedNodes(I,J).EQ.0) EXIT
+               IF(JMAX.LT.J) JMAX = J
+            ENDDO
+         ENDIF
+      ENDDO
+
+      ALLOCATE(NCondensedNodes(NumOfNodes))
+      ALLOCATE(ListCondensedNodes(NListCondensedNodes,JMAX+1))
+      ALLOCATE(NNodesListCondensedNodes(NListCondensedNodes))
+
+      NCondensedNodes(:) = 0
+
+      K = 0
+      DO I=1,NP
+         IF(CondensedNodes(I,1).GT.0) THEN
+            K = K + 1
+            ListCondensedNodes(K,1) = I
+            DO J=1,CondensedNodesNoOfVals
+               IF(CondensedNodes(I,J).LE.0) EXIT
+               II = CondensedNodes(I,J)
+               NCondensedNodes(I) = J+1
+               ListCondensedNodes(K,J+1) = II
+               NNodesListCondensedNodes(K) = J+1
+               CondensedNodes(II,1) = -I ! To tell that node II is one of condensed nodes
+            ENDDO
+            DO J=1,CondensedNodesNoOfVals
+               IF(CondensedNodes(I,J).LE.0) EXIT
+               II = CondensedNodes(I,J)
+               NCondensedNodes(II) = NCondensedNodes(I)
+            ENDDO
+         ENDIF
+      ENDDO
+
+      ALLOCATE(CSIICN(MNVEL),SIIICN(MNVEL))
+      CSIICN = 0.D0
+      SIIICN = 0.D0
+
+      DO I=1,NP
+         IF((CondensedNodes(I,1) > 0).AND.
+     &      (NCondensedNodes(I).EQ.2)) THEN
+            I1 = I
+            I2 = CondensedNodes(I,1)
+
+            J1 = LBArray_Pointer(I1)
+            J2 = LBArray_Pointer(I2)
+            IF(J1<1.OR.J2<1) CYCLE
+            IF(J1.EQ.(J2+1).OR.
+     &         J1.EQ.(J2-1)) THEN ! Whether Nodes J1 and J2 are on the same boundary.
+               ON_THE_SAME_BOUNDARY = .TRUE.
+            ELSE
+               ON_THE_SAME_BOUNDARY = .FALSE.
+            END IF
+            IF(ON_THE_SAME_BOUNDARY) CYCLE
+
+            X1 = X(I1)
+            Y1 = Y(I1)
+            X2 = X(I2)
+            Y2 = Y(I2)
+            DX = X1 - X2
+            DY = Y1 - Y2
+            LEN = SQRT(DX*DX + DY*DY)
+            DX = DX/LEN
+            DY = DY/LEN
+
+            CSIICN(J1) = DX
+            SIIICN(J1) = DY
+
+            CSIICN(J2) = DX
+            SIIICN(J2) = DY
+         END IF
+      END DO
+
+      END SUBROUTINE PrepCondensedNodes
+C     ----------------------------------------------------------------
 
 C-----------------------------------------------------------------------
       END MODULE NodalAttributes

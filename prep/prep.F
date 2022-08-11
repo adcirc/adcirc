@@ -657,14 +657,14 @@ C  This section for prep15
          ENDDO
       ENDDO
       !zc...If we're using time varying weirs, we need to
-      !     find out which processors have weir (4,24) boundaries
+      !     find out which processors have weir (4,24,64) boundaries
       !     in the case that we're not passing through PREP14
       IF(USE_TVW)THEN
         ALLOCATE(ISWEIR(1:NNODG))
         ISWEIR(:) = .FALSE.
         DO K=1,NBOU
             SELECT CASE(IBTYPE(K))
-                CASE(4,24,5,25)
+                CASE(4,24,64,5,25)
                     DO J=1,NVELL(K)
                         ISWEIR(NBVV(K,J))=.TRUE.
                         ISWEIR(IBCONNR(K,J))=.TRUE.
@@ -794,8 +794,13 @@ C        Transcribe attribute names from full domain file to subdomains.
                WRITE(sdu(IPROC),'(A80)') AttrName(k)!tgaf13mod
                WRITE(sdu(IPROC),'(A80)') Units
                WRITE(sdu(IPROC),*) NoOfVals(k)
-               WRITE(sdu(IPROC),'(12(1x,e16.9))')
-     &          (DefaultVal(m),m=1,NoOfVals(k))
+               if (trim(adjustl(AttrName(k))).eq."condensed_nodes") then !sb20221013
+                  WRITE(sdu(IPROC),'(99(1x,i10))')
+     &             (NINT(DefaultVal(m)),m=1,NoOfVals(k))
+               else
+                  WRITE(sdu(IPROC),'(12(1x,e16.9))')
+     &             (DefaultVal(m),m=1,NoOfVals(k))
+               end if
             END DO
          END DO
 C
@@ -981,7 +986,13 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
                IF (Mode.eq.0) SDNumND(iproc,k) = SDNumND(iproc,k)+1
                IF (Mode.eq.1) THEN
                   SDNode = IMAP_NOD_GL(2,NodeNum)
-                  WRITE(sdu(iproc),1100) NodeNum,(AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
+                  IF (trim(adjustl(curAttrName)).eq."condensed_nodes") THEN !sb20221022
+                     WRITE(sdu(iproc),1101) NodeNum,
+     &                  (NINT(AttrData(j)),j=1,NumCol(curAttrInd))!tgaf13mod
+                  ELSE
+                     WRITE(sdu(iproc),1100) NodeNum,
+     &                  (AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
+                  ENDIF
                ENDIF
             ELSE
                DO m=1, ITOTPROC(NodeNum)
@@ -993,8 +1004,13 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
                         ENDIF
                         IF (Mode.eq.1) THEN
                            SDNode = IMAP_NOD_GL2(2*(m-1)+2,NodeNum)
-                           WRITE(sdu(iproc),1100) NodeNum,
-     &                          (AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
+                           IF (trim(adjustl(curAttrName)).eq."condensed_nodes") THEN !sb20221022
+                              WRITE(sdu(iproc),1101) NodeNum,
+     &                             (NINT(AttrData(j)),j=1,NumCol(curAttrInd))
+                           ELSE
+                              WRITE(sdu(iproc),1100) NodeNum,
+     &                             (AttrData(j),j=1,NumCol(curAttrInd))!tgaf13mod
+                           ENDIF
                         ENDIF
                      ENDIF
                   END DO
@@ -1013,6 +1029,7 @@ C
  1021 FORMAT('contains invalid name: ',A80)
  1031 FORMAT('WARNING: Processed only one column of unrecognized ',A80)
  1100 FORMAT(I10,32000(2X,E16.8))
+ 1101 FORMAT(I10,32000(2X,I10))
 C
       RETURN
 C     ----------------------------------------------------------------
@@ -1130,8 +1147,12 @@ C        Transcribe header information into subdomain unit 13 files
                write(sdu(iproc),'(a)') trim(adjustl(na(i)%attrName))
                write(sdu(iproc),'(a)') trim(adjustl(na(i)%units))
                write(sdu(iproc),'(99(i0))') na(i)%numVals
-               write(sdu(iproc),'(99(F15.7))') (na(i)%defaultVals(j), j=1,na(i)%numVals)
-            end do
+               if (trim(adjustl(na(i)%attrName)).eq."condensed_nodes") then !sb20221013
+                  write(sdu(iproc),'(99(I10))') (nint(na(i)%defaultVals(j)), j=1,na(i)%numVals)
+               else
+                  write(sdu(iproc),'(99(F15.7))') (na(i)%defaultVals(j), j=1,na(i)%numVals)
+               end if
+         end do
          end do
 C
 C        Allocate and initialize the matrix for the number of Non Default
@@ -1282,7 +1303,7 @@ C
             select case(IBTYPE(K))
             !
             ! weir boundaries
-            case(4,24,5,25)
+            case(4,24,64,5,25)
                DO I = 1,NVELL(K)
                   INDX = NBVV(K,I)
                   INDEX2 = IBCONNR(K,I)
@@ -1491,7 +1512,7 @@ C     jgf46.21 Added support for IBTYPE=52.
                DISC = DISC + NVELLP(K)
             case(3,13,23)
                BBN = BBN + NVELLP(K)
-            case(4,24)
+            case(4,24,64)
                IBP = IBP + NVELLP(K)
             case(5,25)
                IBPPipe = IBPPipe + NVELLP(K)
@@ -1658,7 +1679,7 @@ C
                      WRITE(14,81) LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC)),
      &                            BAR1(K,INDX),BAR2(K,INDX)
                   ENDDO
-               case(4,24)
+               case(4,24,64)
                   IF(USE_TVW)NWEIRBNDRY(IPROC) = 1
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)

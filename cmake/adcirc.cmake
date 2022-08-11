@@ -6,6 +6,7 @@ if(BUILD_ADCIRC)
       ${CMAKE_SOURCE_DIR}/src/global.F
       ${CMAKE_SOURCE_DIR}/src/boundaries.F
       ${CMAKE_SOURCE_DIR}/src/mesh.F
+      ${CMAKE_SOURCE_DIR}/src/vew1d.F
       ${CMAKE_SOURCE_DIR}/src/global_3dvs.F
       ${CMAKE_SOURCE_DIR}/src/harm.F
       ${CMAKE_SOURCE_DIR}/wind/vortex.F

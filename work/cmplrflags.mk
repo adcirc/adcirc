@@ -177,7 +177,12 @@ ifeq ($(compiler),gfortran)
         FFLAGS2 := $(FFLAGS2) -I/usr/lib64/gfortran/modules
         FFLAGS3 := $(FFLAGS3) -I/usr/lib64/gfortran/modules
      endif
-     FLIBS      := $(FLIBS) -lnetcdff
+     ifeq ($(MACHINENAME),wsl2-ubuntu)
+        NETCDFHOME := /usr
+        FFLAGS1 := $(FFLAGS1) -I/usr/include
+        FFLAGS2 := $(FFLAGS2) -I/usr/include
+        FFLAGS3 := $(FFLAGS3) -I/usr/include
+     endif
   endif
   IMODS 	:=  -I
   CC		:= gcc

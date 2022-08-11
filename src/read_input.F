@@ -114,6 +114,7 @@ C-----------------------------------------------------------------------
      &     NoLiBF, NWP, Tau0, HBreak, FTheta, FGamma, Tau, CF,
      &     InitNAModule, ReadNodalAttr, InitNodalAttr, ESLM, ESLC,
      &     Tau0FullDomainMin, Tau0FullDomainMax, Z0b_var,
+     &     PrepCondensedNodes,   ! SB
 C ....DW
      &     LoadAbsLayerSigma, FoundAbsLayerSigma 
       USE SPONGELAYER, ONLY: SpongeLayerRelatedPrep, FLAGSPONGEELEM
@@ -264,7 +265,7 @@ C...
 4312  FORMAT(/,'**** W A R N I N G ****',/
             ' You are running ADCIRC in SINGLE PRECISION! ',/
             ' It is always recommended that you run ADCIRC in ',/
-            ' DOUBLE PRECISION ONLY.'
+            ' DOUBLE PRECISION ONLY.')
 #else
       WRITE(16,*) '      - CODE SETUP TO RUN WITH 8 byte REALS'
 #endif
@@ -2947,7 +2948,7 @@ C     the beginning of this subroutine.)
 C     jgf51.12.13: Adjust node table based on ics, nolifa, h0,
 C     slam0, sfea0. Check for sufficient precision. Compute neighbor table.
       call initializeMesh()
-            
+
 C   For Sponge layer
       IF ( LoadAbsLayerSigma .AND. FoundAbsLayerSigma ) THEN
          CALL FLAGSPONGEELEM()
@@ -4741,8 +4742,17 @@ c     CALL READ_INPUT_3DDSS(STATIM,NT)
 C     RJWW jgf46.00 Initialize nodal attributes, now that grid has been read
 C     in from unit 14 file.
 C     RJW IOOS move until after ZOB definition
-      CALL InitNodalAttr(DP, NP, G, NScreen, ScreenUnit, MyProc, NAbOut, Z0B)
+      CALL InitNodalAttr
+     &  (DP, NP, G, NScreen, ScreenUnit, MyProc, NAbOut, Z0B)
 CS
+C...  SB
+C     Preparation of condensed nodes  SB
+      call PrepCondensedNodes()
+      
+C     Recompute a & b coefficients            
+      CALL RecomputeFDXEFDYEAtCondensedNodes()
+      
+C...  SB END
 
 C...  INITIALIZE NIBNODECODE(I)
       DO I=1,NP
@@ -4975,7 +4985,138 @@ c******************************************************************************
       END SUBROUTINE READ_INPUT
 c******************************************************************************
 
+c******************************************************************************
+      SUBROUTINE RecomputeFDXEFDYEAtCondensedNodes()
+c******************************************************************************
+      USE SIZES
+      USE Mesh,ONLY : NE,NM,X,Y,FDXE,FDYE,AREAS
+      USE NodalAttributes, ONLY : LoadCondensedNodes
+      IMPLICIT NONE
+      INTEGER :: NM1,NM2,NM3
+      INTEGER :: IE
+      INTEGER :: STATUS
+      REAL(SZ) :: x1,y1,x2,y2,x3,y3
+      REAL(SZ) x2mx1,x3mx2,x1mx3,y2my1,y3my2,y1my3
 
+      if (.not.LoadCondensedNodes) RETURN
+      
+      do ie=1,NE
+         nm1 = nm(ie,1)
+         nm2 = nm(ie,2)
+         nm3 = nm(ie,3)
+
+         call get_new_xy(nm1,nm2,nm3,x1,y1,x2,y2,x3,y3,status)
+
+         if (status.ne.0) then
+            cycle
+         endif
+
+         X2mX1 = (X2 - X1);
+         X3mX2 = (X3 - X2);
+         X1mX3 = (X1 - X3);
+         Y2mY1 = (Y2 - Y1);
+         Y3mY2 = (Y3 - Y2);
+         Y1mY3 = (Y1 - Y3);
+
+!.....   For later use for FDX1, FDY1 in gwce, momentum 
+         FDXE(1,IE) = -Y3mY2 ; !b1
+         FDXE(2,IE) = -Y1mY3 ; !b2
+         FDXE(3,IE) = -Y2mY1 ; !b3
+         FDYE(1,IE) =  X3mX2 ; !a1
+         FDYE(2,IE) =  X1mX3 ; !a2
+         FDYE(3,IE) =  X2mX1 ; !a3
+
+!.....   compute and store 2 x element areas
+         AREAS(IE)=(X1mX3)*(-Y3mY2)+(X3mX2)*(Y1mY3)
+      end do
+
+      RETURN
+
+      CONTAINS
+         SUBROUTINE GET_New_XY
+     &              (NM1,NM2,NM3,X1,Y1,X2,Y2,X3,Y3,STATUS)
+         USE MESH, ONLY : X,Y,findIBTYPEAtNode
+         USE NodalAttributes, ONLY : NCondensedNodes,CondensedNodes
+         USE VEW1D, ONLY : GET_STREAMDIRECTION_AT_ELEMENT
+
+         IMPLICIT NONE
+
+         INTEGER,INTENT(IN) :: NM1,NM2,NM3
+         REAL(SZ),INTENT(OUT) :: X1,Y1,X2,Y2,X3,Y3
+         INTEGER,INTENT(OUT) :: STATUS
+         REAL(SZ) :: XX,YY
+         REAL(SZ) :: SX,SY,NX,NY,CAX,CAY,CBX,CBY,DX,DY,LEN
+         INTEGER :: IA1,IA2,IB1,IB2
+         INTEGER :: IBTYPE_A1,IBTYPE_A2,IBTYPE_B1
+         LOGICAL :: ON_BOUNDARY
+
+         CALL GET_STREAMDIRECTION_AT_ELEMENT
+     &        (NM1,NM2,NM3,IA1,IA2,IB1,IB2,
+     &         CAX,CAY,CBX,CBY,SX,SY,STATUS)
+
+         IF (STATUS.NE.0) RETURN
+
+         NX = -SY
+         NY = SX
+
+         XX = X(IA1)
+         YY = Y(IA1)
+         DX = XX - CAX
+         DY = YY - CAY
+         LEN = DX*NX + DY*NY
+         XX = CAX + LEN * NX
+         YY = CAY + LEN * NY
+         IF (IA1.EQ.NM1) THEN
+            X1 = XX
+            Y1 = YY
+         ELSE IF (IA1.EQ.NM2) THEN
+            X2 = XX
+            Y2 = YY
+         ELSE
+            X3 = XX
+            Y3 = YY
+         END IF
+
+         XX = X(IA2)
+         YY = Y(IA2)
+         DX = XX - CAX
+         DY = YY - CAY
+         LEN = DX*NX + DY*NY
+         XX = CAX + LEN * NX
+         YY = CAY + LEN * NY
+         IF (IA2.EQ.NM1) THEN
+            X1 = XX
+            Y1 = YY
+         ELSE IF (IA2.EQ.NM2) THEN
+            X2 = XX
+            Y2 = YY
+         ELSE
+            X3 = XX
+            Y3 = YY
+         END IF
+
+         XX = X(IB1)
+         YY = Y(IB1)
+         DX = XX - CBX
+         DY = YY - CBY
+         LEN = DX*NX + DY*NY
+         XX = CBX + LEN * NX
+         YY = CBY + LEN * NY
+         IF (IB1.EQ.NM1) THEN
+            X1 = XX
+            Y1 = YY
+         ELSE IF (IB1.EQ.NM2) THEN
+            X2 = XX
+            Y2 = YY
+         ELSE
+            X3 = XX
+            Y3 = YY
+         END IF
+
+         RETURN
+         END SUBROUTINE GET_New_XY
+
+      END SUBROUTINE RecomputeFDXEFDYEAtCondensedNodes
 
 c******************************************************************************
 C   Subroutine to read in 3D portion of fort.15 file                          *

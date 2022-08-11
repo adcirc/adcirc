@@ -418,7 +418,7 @@ C     jgf46.21 Added support for IBTYPE=52.
          case(3,13,23)
             NFLUXB=1
             NBBN=NBBN+NBN
-         case(4,24)
+         case(4,24,64)
             NFLUXI=1
             NIBP=NIBP+NBN
          case(5,25)

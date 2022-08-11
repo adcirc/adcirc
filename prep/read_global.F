@@ -209,7 +209,7 @@ C
                NBVV(K,I) = find(node_dict,n1)
               IBCONNR(K,I) = 0
             ENDDO
-         case(4,24)
+         case(4,24,64)
             DO I=1,NVELL(K)
                READ(14,*) n1,IBCONNR(K,I),
      &                    BAR1(K,I),BAR2(K,I),BAR3(K,I)
@@ -1318,7 +1318,7 @@ C........CHECK FOR WEIR FLUX BOUNDARIES
         SELECT CASE(LBCODE(I))
             CASE(3,13,23)
                 NFLUXB = 1
-            CASE(4,24)
+            CASE(4,24,64)
                 NFLUXIB = 1
             CASE(5,25)
                 NFLUXIBP = 1
