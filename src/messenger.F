@@ -49,6 +49,7 @@ C  Message-Passing Array space
       INTEGER, ALLOCATABLE :: STAT_I1(:,:), STAT_I2(:,:)
       INTEGER, ALLOCATABLE :: REQ_R1(:), REQ_R2(:), REQ_R3(:)
       INTEGER, ALLOCATABLE :: STAT_R1(:,:), STAT_R2(:,:), STAT_R3(:,:)
+      INTEGER, ALLOCATABLE :: REQ_M4R(:), STAT_M4R(:,:) !sb 10/13/2022
       INTEGER, ALLOCATABLE :: REQ_R3D(:), STAT_R3D(:,:)
       INTEGER, ALLOCATABLE :: REQ_C3D(:), STAT_C3D(:,:)
       INTEGER, ALLOCATABLE :: INDX(:)
@@ -522,6 +523,8 @@ C
       ALLOCATE ( STAT_R1(MPI_STATUS_SIZE,RDIM),
      &           STAT_R2(MPI_STATUS_SIZE,RDIM),
      &           STAT_R3(MPI_STATUS_SIZE,RDIM) )
+      ALLOCATE ( REQ_M4R(RDIM) ) !sb 10/13/2022
+      ALLOCATE ( STAT_M4R(MPI_STATUS_SIZE,RDIM) ) !sb 10/13/2022
 
       IF (C3D) THEN
          ALLOCATE ( SENDBUF(2*MNP*MNFEN,NEIGHPROC) )
@@ -656,7 +659,7 @@ C---------------------------------------------------------------------
 C---------------------------------------------------------------------
 C     S U B R O U T I N E   U P D A T E R
 C---------------------------------------------------------------------
-C  Update 1, 2, or 3 Integer Arrays's Ghost Cells using asynchronous
+C  Update 1, 2, or 3 Real Arrays's Ghost Cells using asynchronous
 C  and persistent message-passing.
 C
 C  vjp  8/06/1999
@@ -824,6 +827,103 @@ cdebug     print *, myproc, tot,nfini,INDX(1),INDX(2)
       RETURN
 C--------------------------------------------------------------------- 
       END SUBROUTINE UPDATER
+C---------------------------------------------------------------------
+
+C---------------------------------------------------------------------
+C     S U B R O U T I N E   U P D A T E M A T 4 R
+C---------------------------------------------------------------------
+C  Update a 4-row real matrix's ghost cells using asynchronous
+C  and persistent message-passing.
+C
+C  sb  10/13/2022
+C---------------------------------------------------------------------
+      SUBROUTINE UPDATEM4R( M4R )
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+      REAL(SZ), INTENT(INOUT) ::  M4R(:,:)
+      integer :: j  ! loop counter for neighboring subdomains
+      integer :: i  ! loop counter for nodes shared with a neighboring subdomain
+      integer :: nfini ! number of just-completed requests
+      integer :: n     ! loop counter for just-completed requests
+      integer :: tot   ! total number of completed requests
+      integer :: ncount ! num values passed to a particular subdomain neighbor
+      integer :: ir ! loop counter for rows
+C
+      call setMessageSource("updater")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C 
+      ! 
+      ! loop over neighboring subdomains
+      DO J=1,NEIGHPROC
+         NCOUNT = 0
+         DO IR=1,4
+            ! loop over nodes shared as ghost nodes with this neighboring subdomain
+            DO I=1,NNODSEND(J)
+                  NCOUNT = NCOUNT+1
+                  ! store the matrix values in the send buffer            
+                  SENDBUF(NCOUNT,J)=M4R(IR,ISENDLOC(I,J))
+            ENDDO
+         ENDDO
+      ENDDO
+      IF (NCOUNT > MNP) THEN
+         WRITE(*,'(A)') 
+     &     'INSUFFICIENT MEMORY ALLOCATION FOR SENDBUF. TERMINATING.'
+         CALL MSG_FINI()
+         STOP
+      ENDIF
+      !
+      ! receive and send data to each neighboring subdomain, populating
+      ! the request handler array
+      DO J=1,NEIGHPROC
+         CALL MPI_IRECV( RECVBUF(1,J), 4*NNODRECV(J),
+     &      REALTYPE,IPROC(J), TAG, COMM, REQ_M4R(J),IERR)
+         CALL MPI_ISEND( SENDBUF(1,J), 4*NNODSEND(J),
+     &      REALTYPE,IPROC(J), TAG, COMM, REQ_M4R(J+NEIGHPROC),IERR)
+      ENDDO
+
+      TOT = 0
+      ! keep looping until the total number of completed communications 
+      ! equals the total number that were requested
+      DO WHILE (TOT.LT.RDIM)
+         DO N=1, RDIM
+            INDX(N) = 0 ! zero out the array of just-completed requests
+         ENDDO
+         CALL MPI_WAITSOME( RDIM,REQ_M4R,NFINI,INDX,STAT_M4R,IERR )
+         ! add the number of just-completed requests to the total
+         TOT = TOT + NFINI
+         ! loop over the just-completed requests
+         DO N=1, NFINI
+            ! if the request has just completed (TODO: I don't see how
+            ! indx(n) can be greater than rdim
+            IF (INDX(N).GT.0.AND.INDX(N).LE.RDIM)  THEN
+               ! if the request that just completed is a receive
+               IF (INDX(N).LE.NEIGHPROC) THEN
+                  ! j = subdomain neighbor number that sent this data
+                  J = INDX(N)
+                  NCOUNT = 0
+                  DO IR=1,4
+                     DO I=1,NNODRECV(J)
+                        NCOUNT = NCOUNT+1
+                        ! update this subdomain's ghost value with the real 
+                        ! value from the other subdomain
+                        M4R(IR,IRECVLOC(I,J)) = RECVBUF(NCOUNT,J)
+                     ENDDO
+                  ENDDO
+               ENDIF
+            ENDIF
+         ENDDO
+      ENDDO
+ 
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      RETURN
+C--------------------------------------------------------------------- 
+      END SUBROUTINE UPDATEM4R
 C---------------------------------------------------------------------
 
 C..... DW:, for periodic bcs (this subroutine looks a bit ugly and probably does belongs here)
@@ -1034,6 +1134,36 @@ C---------------------------------------------------------------------
       END SUBROUTINE UPDATEC3D
 C---------------------------------------------------------------------
 
+C---------------------------------------------------------------------
+C     F U N C T I O N   M S G _ M A X
+C---------------------------------------------------------------------
+C  Find a maximum integer value
+C---------------------------------------------------------------------
+      function msg_imax( v ) result(vmax)
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+      integer n, i
+      integer kount
+      integer v, vmax
+C
+      call setMessageSource("psdot")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C 
+      kount = 1
+      call MPI_ALLREDUCE( v, vmax, kount, MPI_INTEGER,
+     &     MPI_MAX, COMM, ierr)
+
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+C---------------------------------------------------------------------      
+      end function msg_imax
+C---------------------------------------------------------------------
 
 C---------------------------------------------------------------------
 C     F U N C T I O N   P S D O T

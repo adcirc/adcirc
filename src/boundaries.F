@@ -17,6 +17,7 @@ C     ------------------------------------------------------------------
       implicit none
       REAL(SZ),ALLOCATABLE ::   BNDLEN2O3(:)
       REAL(SZ),ALLOCATABLE ::   CSII(:),SIII(:)
+      REAL(SZ),ALLOCATABLE ::   CSIICN(:),SIIICN(:) ! normal direction at condensed nodes 09/22/2022 SB
       INTEGER,ALLOCATABLE ::    ME2GW(:)
       INTEGER,ALLOCATABLE ::    NBV(:),LBCODEI(:)
  
@@ -34,6 +35,7 @@ C.....for internal barrier boundaries with flowthrough pipes
       REAL(SZ),ALLOCATABLE ::   BARINHT(:),BARINCFSB(:),BARINCFSP(:)
       REAL(SZ),ALLOCATABLE ::   PIPEHT(:),PIPECOEF(:),PIPEDIAM(:)
       INTEGER, ALLOCATABLE ::   IBCONN(:)
+      INTEGER, ALLOCATABLE ::   ISSUBMERGED64(:) ! used to identify submerged ibtype=64 weir  SB
       ! these arrays will only be needed temporarily, between reading 
       ! the ascii mesh file and initializing the boundaries
       REAL(SZ),ALLOCATABLE ::   BARLANHTR(:,:),BARLANCFSPR(:,:)
@@ -58,6 +60,7 @@ C.....for internal barrier boundaries with flowthrough pipes
       INTEGER  IM,JGW,JKI,JME
       INTEGER  NFLUXIBP,NPIPE
       integer  nfluxb,nfluxf,nfluxib,nfluxrbc,nfluxgbc
+      integer  nfluxib64, nfluxib64_gbl !sb flag to indicate that ibtype=64 (vertical element wall) boundary exists
       real(sz) :: costset
       real(sz) :: anginn
 
@@ -108,7 +111,7 @@ C.....for internal barrier boundaries with flowthrough pipes
       integer :: numExternalFluxBoundaries 
       integer :: efCount   ! index into the externalFluxBoundaries array
       !
-      ! flux boundaries where ibtype = 4, 24
+      ! flux boundaries where ibtype = 4, 24, 64
       type internalFluxBoundary_t
          integer :: indexNum               ! order within the fort.14 file
          integer :: informationID              ! xdmf ID for IBTYPE info
@@ -260,6 +263,7 @@ C     ---------
       allocate ( pipeht(mnvel),pipecoef(mnvel),pipediam(mnvel))
       allocate ( ibconn(mnvel))
       allocate ( nbvv(mnbou,0:mnvel))
+      allocate ( issubmerged64(mnvel))
       allocate ( bndlen2o3(mnvel))
       allocate ( ntran1(mnvel),ntran2(mnvel))
       allocate ( btran3(mnvel),btran4(mnvel),btran5(mnvel))
@@ -331,7 +335,7 @@ C     ---------
             allocate(externalFluxBoundaries(efCount)%barlancfsp(nvell(i)))
             allocate(externalFluxBoundaries(efCount)%xdmf_nodes(nvell(i)))
             efCount = efCount + 1
-         case(4,24)        
+         case(4,24,64)        
             allocate(internalFluxBoundaries(ifCount)%nodes(nvell(i)))
             allocate(internalFluxBoundaries(ifCount)%ibconn(nvell(i)))
             allocate(internalFluxBoundaries(ifCount)%barinht(nvell(i)))
@@ -435,6 +439,7 @@ C     ------------------------------------------------------------------
       allocate ( barinht(mnvel),barincfsb(mnvel),barincfsp(mnvel))
       allocate ( pipeht(mnvel),pipecoef(mnvel),pipediam(mnvel))
       allocate ( ibconn(mnvel))  
+      allocate ( issubmerged64(mnvel))
 
       allocate ( nbvv(mnbou,0:mnvel))
       allocate ( nvell(mnbou), ibtype(mnbou), ibtype_orig(mnbou))
@@ -489,7 +494,7 @@ C     ------------------------------------------------------------------
       nweir = 0
       do k = 1,nbou
          select case(ibtype(k))
-         case(4,24)
+         case(4,24,64)
             nweir = nweir + nvell(k)
          case(5,25)
             print *, 'error: ibtype 5 and 25 not supported by adcprep.'

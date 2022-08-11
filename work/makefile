@@ -356,6 +356,7 @@ ADC_MSRC   =  version.F sizes.F global.F
 POST_MSRC  =  post_global.F
 HARM_MSRC  =  harm.F
 VORT_MSRC  =  vortex.F
+VW1D_MSRC  =  vew1d.F
 
 ifeq ($(NETCDF),enable)
 WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F owiwind_netcdf.F
@@ -398,6 +399,7 @@ SOLV_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SOLV_MSRC) )
 ADC_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(ADC_MSRC)  )
 HARM_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(HARM_MSRC)  )
 VORT_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(VORT_MSRC)  )
+VW1D_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(VW1D_MSRC)  )
 WIND_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(WIND_MSRC)  )
 NA_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NA_MSRC)  )
 NC_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NC_MSRC)  )
@@ -417,7 +419,7 @@ BC3D_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(BC3D_MSRC) )
 
 METIS_SRC  =  metis.F
 PREP_SRC   =  adcprep.F decomp.F prep_weir.F read_global.F prep.F interp.F machdep.F
-ADC_SRC    =  adcirc.F weir_boundary.F wetdry.F read_input.F cstart.F hstart.F gwce.F momentum.F timestep.F vsmy.F transport.F
+ADC_SRC    =  adcirc.F weir_boundary.F wetdry.F read_input.F cstart.F hstart.F gwce.F momentum.F vew1d.F timestep.F vsmy.F transport.F
 POST_SRC   =  adcpost.F post.F compare.F diffmerge.F machdep.F
 P15_SRC    =  p15.F
 OWI_SRC    =  owi22.F
@@ -756,8 +758,8 @@ else
 $(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)mesh.o $(O_DIR)hashtable.o
 endif
 
-$(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum.o
-$(O_DIR)momentum.o    :  momentum.F $(O_DIR)subdomain.o
+$(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum.o
+$(O_DIR)momentum.o    :  momentum.F $(O_DIR)vew1d.o $(O_DIR)subdomain.o
 $(O_DIR)wetdry.o      :  wetdry.F $(O_DIR)subdomain.o
 $(O_DIR)messenger.o   :  messenger.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)global_3dvs.o
 #!st3 100711: Added globalio.o to writer.F for HSWRITER MODULE
