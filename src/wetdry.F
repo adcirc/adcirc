@@ -259,9 +259,9 @@ C-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207
                            VEL=sqrt((g*H1/FRIC(NM123))*(DELETA/DELDIST))
                         ELSE
                            TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-&                                  (IFNLBF+IFHYBF*
-&                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
-&                          0.0001d0)
+     &                                  (IFNLBF+IFHYBF*
+     &                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
+     &                          0.0001d0)
                            VEL=G*(DELETA/DELDIST)/TKWET
                         ENDIF   
                      ELSEIF(C3D)THEN
@@ -375,9 +375,9 @@ C-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207
                            VEL=sqrt((g*H1/FRIC(NM123))*(DELETA/DELDIST))
                         ELSE
                            TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-&                                  (IFNLBF+IFHYBF*
-&                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
-&                          0.0001d0)
+     &                                  (IFNLBF+IFHYBF*
+     &                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
+     &                          0.0001d0)
                            VEL=G*(DELETA/DELDIST)/TKWET
                         ENDIF
 
@@ -491,9 +491,9 @@ C-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207
                            VEL=sqrt((g*H1/FRIC(NM123))*(DELETA/DELDIST))
                         ELSE
                            TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-&                                  (IFNLBF+IFHYBF*
-&                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
-&                          0.0001d0)
+     &                                  (IFNLBF+IFHYBF*
+     &                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
+     &                          0.0001d0)
                            VEL=G*(DELETA/DELDIST)/TKWET
                         ENDIF
                      ELSEIF(C3D)THEN
@@ -1306,7 +1306,7 @@ C..... bathy slope becomes too large, i.e., when it exceeds slim.
                   DPM = SQRT(DPDXA*DPDXA + DPDYA*DPDYA)/AREAS(I)
                   IF (DPM .GT. 1D-5) THEN
                      ALPHAL(I) = SLIM*(SQRT(DPDXA*DPDXA + DPDYA*DPDYA)/
-     &                   ((1.D0/AREAS(I))*(DETADXA*-DPDXA + DETADYA*-DPDYA)))
+     &                   ((1.D0/AREAS(I))*(DETADXA*(-DPDXA) + DETADYA*(-DPDYA))))
                   ELSE
                      DETAM = SQRT(DETADXA*DETADXA + DETADYA*DETADYA)/AREAS(I)
                      ALPHAL(I) = SLIM/DETAM
