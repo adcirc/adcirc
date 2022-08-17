@@ -2147,10 +2147,7 @@ C              ... Cd as a power function [a(x^b-1)] of x = MLD
 C              ... Cd directly from the 3D model (MLD here)
                FRIC(I) = CF + MLD(I)
             ENDIF
-            TK(I)   = FRIC(I) * UV1 / H1 !nonlinear
-            IF (TK(I) .GT. 2.0D0/DTDP) THEN
-               TK(I) = 2.0D0/DTDP
-            ENDIF
+            TK(I) = MIN(FRIC(I) * UV1 / H1, 2.0/DTDP)
          ENDDO
 C
       ELSE
@@ -2160,13 +2157,11 @@ C        with the sea floor.
          DO I=1, NP
             UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
             H1  = DP(I) + IFNLFA*ETA2(I)
-            TK(I)= FRIC(I)*
-     &            (IFLINBF +                                         ! linear
-     &            (UV1/H1) * (IFNLBF +                               ! nonlinear
-     &            IFHYBF*(1+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)) ) ! hybrid
-            IF (TK(I) .GT. 2.0D0/DTDP) THEN
-               TK(I) = 2.0D0/DTDP
-            ENDIF
+            TK(I) = MIN(FRIC(I)*
+     &                     (IFLINBF +                                          ! linear
+     &                     (UV1/H1) * (IFNLBF +                               ! nonlinear
+     &                     IFHYBF*(1+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)) ), ! hybrid 
+     &                  2.0/DTDP)
          END DO
 C
       ENDIF NOLIBFRIC
@@ -2183,10 +2178,7 @@ C     pilings, if required.
             BDELX = BridgePilings(I,3)
             FricBP=(H1/BDELX)*BK*(BK+5.d0*Fr*Fr-0.6d0)
      &           *(BALPHA+15.d0*BALPHA**4)
-            TK(I)=TK(I)+FricBP*UV1/H1
-            IF (TK(I) .GT. 2.0D0/DTDP) THEN
-               TK(I) = 2.0D0/DTDP
-            ENDIF
+            TK(I) = MIN(TK(I)+FricBP*UV1/H1, 2.0/DTDP)
          END DO
       ENDIF
 C

@@ -224,12 +224,6 @@ C Logicals added for adcprep paths
 #endif
       NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,rhoAir,
      &                       invertedBarometerOnElevationBoundary,nPowellSearchDomains
-     
-C.... DMW 202207 Namelists for controlling slope/wind limiting (limitControl) and
-C.... "new" formula for computing vel in wetting/drying routine (velwdControl)
-      namelist /limitControl/ slim, windlim
-      namelist /velwdControl/ directvelWD, useHF
-C.... DMW
 
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &    TOUTF_TVW,NSPOOL_TVW
@@ -271,11 +265,6 @@ c.... !wjp added for warnElev namelist
       integer :: densityTimeIterator = 1 ! BC3D time step iteration skipper
       NAMELIST /densityControl/ densityRunType, densityFileName, 
      &  densityTimeIterator, densityForcingType
-C.... DMW 202207 Namelists for controlling slope/wind limiting (limitControl) and
-C.... "new" formula for computing vel in wetting/drying routine (velwdControl)
-      LOGICAL :: FOUND_LIM_NML = .false.
-      LOGICAL :: FOUND_VWD_NML = .false.
-C.... DMW
 
 C---------------------end of data declarations--------------------------------C
 
@@ -662,25 +651,6 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          found_metCon_nml = .true.  !tcm v50.79 added
       ENDIF
       REWIND(15)
- 
-C.... DMW 202207 Namelist for controlling slope/wind limiting 
-      READ(UNIT=15,NML=limitControl,IOSTAT=IOS)
-      IF (IOS.gt.0) THEN
-         write(*,*) "INFO: The limitControl namelist was not found."
-      ELSE
-         FOUND_LIM_NML = .true.  
-      ENDIF
-      REWIND(15)
-      
-C.... DMW 202207 Namelist for controlling "new" formula for computing vel in wetting/drying routine
-      READ(UNIT=15,NML=velwdControl,IOSTAT=IOS)
-      IF (IOS.gt.0) THEN
-         write(*,*) "INFO: The velwdControl namelist was not found."
-      ELSE
-         FOUND_VWD_NML = .true.  
-      ENDIF
-      REWIND(15)
-C.... DMW
 
       ! zc: Add namelist for user to control time varying weirs
       IOS = 0

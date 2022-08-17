@@ -2279,13 +2279,18 @@ Casey 180318: Added NWS=13
 
          ! wet dry control
          if (foundWetDryControlNameList) then
-            WRITE(15,'(a,l,a,l,a,l,a,l,a,i1,a)')
+            WRITE(15,'(a,l,a,l,a,l,a,l,a,i1,a,f15.4,a,l,a,l,a,l,a)')
      &         "&wetDryControl outputNodeCode=",outputNodeCode,
      &         " outputNOFF=",outputNOFF," noffActive=",noffActive,
      &         " StatPartWetFix=",StatPartWetFix,
-     &         " How2FixStatPartWet=",How2FixStatPartWet, " /"
+     &         " How2FixStatPartWet=",How2FixStatPartWet,
+C....    DMW 202207 Add in options for controlling slope/wind limiting and "new" formula for computing vel in wetting/drying routine
+     &         " slim=",slim,
+     &         " windlim=",windlim,
+     &         " directvelWD=",directvelWD,
+     &         " useHF=",useHF," /"
+C....    DMW
          endif
-
          ! jgf52.08.02: inundation output control
          if (foundInundationOutputControlNamelist) then
             write(15,'(a,l,a,f15.8,a)')
@@ -2335,18 +2340,7 @@ c...     wjp additions for density Control Namelist
             write(15,'(3A)') '  densityForcingType="',TRIM(densityForcingType),'"   /'
             write(15,*) '! -- End density Control NameList --'
          ENDIF
-C....    DMW 202207 Namelist for controlling slope/wind limiting
-         IF (FOUND_LIM_NML) THEN
-            WRITE(15,'(a,f15.4,a,l,a)')
-     &         "&limitControl slim=",slim,
-     &         " windlim=",windlim, " /"
-         ENDIF
-C....    DMW 202207 Namelist for controlling "new" formula for computing vel in wetting/drying routine
-         IF (FOUND_VWD_NML) THEN
-            WRITE(15,'(a,l,a,l,a)')
-     &         "&velwdControl directvelWD=",directvelWD," useHF=",useHF," /"
-         ENDIF
-C....    DMW
+
          CLOSE(15)
 C
  1000 CONTINUE
