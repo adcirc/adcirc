@@ -167,12 +167,12 @@ C
      &  rhoAir, invertedBarometerOnElevationBoundary, nPowellSearchDomains
       NAMELIST /subdomainModeling/ subdomainOn
       NAMELIST /wetDryControl/ outputNodeCode, outputNOFF,
-     &  noffActive, StatPartWetFix, How2FixStatPartWet
+     &  noffActive, StatPartWetFix, How2FixStatPartWet,
+C.... DMW 202207 Add options for controlling slope/wind limiting and
+C.... "new" formula for computing vel in wetting/drying routine
+     &  slim, windlim, directvelWD, useHF
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
-C.... DMW 202207 Namelists for controlling slope/wind limiting (limitControl) and
-C.... "new" formula for computing vel in wetting/drying routine (velwdControl)
-      NAMELIST /limitControl/ slim, windlim
-      NAMELIST /velwdControl/ directvelWD,useHF
+
 C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
@@ -474,7 +474,18 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,i1)') "How2FixStatPartWet=",
      &   How2FixStatPartWet
+C.... DMW 202207 Add options for controlling slope/wind limiting and
+C.... "new" formula for computing vel in wetting/drying routine  
       call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,e15.8)') "slim=",slim
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "windLim=",windLim
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "directvelWD=",directvelWD
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "useHF=",useHF
+      call logMessage(ECHO,trim(scratchMessage))
+C.... DMW
       rewind(15)
 
       ! jgf52.08.01: Add a namelist for the user to control
@@ -488,24 +499,6 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
-C.... DMW 202207 Namelists for controlling slope/wind limiting (limitControl) and
-C.... "new" formula for computing vel in wetting/drying routine (velwdControl)      
-      namelistSpecifier = 'limitControl'
-      READ(UNIT=15,NML=limitControl,IOSTAT=IOS)
-      call logNamelistReadStatus(namelistSpecifier,ios)
-      write(scratchMessage,'(a,e15.8)') "slim=",slim
-      call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,'(a,l)') "windLim=",windLim
-      call logMessage(ECHO,trim(scratchMessage))
-      rewind(15)
-      
-      namelistSpecifier = 'velwdControl'
-      READ(UNIT=15,NML=velwdControl,IOSTAT=IOS)
-      call logNamelistReadStatus(namelistSpecifier,ios)
-      write(scratchMessage,'(a,l,a,l)') "directvelWD=",directvelWD," useHF=",useHF
-      call logMessage(ECHO,trim(scratchMessage))
-      rewind(15)
-C.... DMW
 c...  tcm v52.30.01 Addtions for Using Smagorinsky Namelist Options
 c...  read through the fort.15 file for the namelist (Smag_Control) for
 c...  the namelist options for using Smagorinsky.  This namelist must be at the

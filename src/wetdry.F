@@ -258,11 +258,10 @@ C-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207
                         ELSEIF (directvelWD) THEN
                            VEL=sqrt((g*H1/FRIC(NM123))*(DELETA/DELDIST))
                         ELSE
-                           TKWET=FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-     &                        (IFNLBF+IFHYBF*
-     &                        (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
-
-                           IF(TKWET.LT.0.0001d0) TKWET=0.0001d0
+                           TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
+&                                  (IFNLBF+IFHYBF*
+&                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
+&                          0.0001d0)
                            VEL=G*(DELETA/DELDIST)/TKWET
                         ENDIF   
                      ELSEIF(C3D)THEN
@@ -288,14 +287,13 @@ C    ....         third node met criteria and is also wet
                         NNODECODE(NM3)=1
 c. RJW merged 08/26/20008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
-c                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
-                           TK(NM123)=FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
+
+                           TK(NM123) = MIN(
+     &                     FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
-     &                        (FGAMMA/FTHETA)))
-                           IF (TK(NM123) .GT. 2.0D0/DTDP) THEN
-                              TK(NM123) = 2.0D0/DTDP
-                           ENDIF
+     &                        (FGAMMA/FTHETA))), 
+     &                     2.0D0/DTDP)
                            TK_CNT(NM123) = TK_CNT(NM123) + 1
                            TK_TMP(NM123) = TK_TMP(NM123) + TK(NM123)
                            !WJP needed for internal_tide stuff
@@ -376,11 +374,10 @@ C-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207
                         ELSEIF (directvelWD) THEN
                            VEL=sqrt((g*H1/FRIC(NM123))*(DELETA/DELDIST))
                         ELSE
-                           TKWET=FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-     &                        (IFNLBF+IFHYBF*
-     &                        (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
-
-                           IF(TKWET.LT.0.0001d0) TKWET=0.0001d0
+                           TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
+&                                  (IFNLBF+IFHYBF*
+&                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
+&                          0.0001d0)
                            VEL=G*(DELETA/DELDIST)/TKWET
                         ENDIF
 
@@ -406,13 +403,12 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                         NNODECODE(NM1)=1
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
-                           TK(NM123)=FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
+                           TK(NM123) = MIN(
+     &                     FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
-     &                        (FGAMMA/FTHETA)))
-                           IF (TK(NM123) .GT. 2.0D0/DTDP) THEN
-                              TK(NM123) = 2.0D0/DTDP
-                           ENDIF
+     &                        (FGAMMA/FTHETA))), 
+     &                     2.0D0/DTDP)
                            TK_CNT(NM123) = TK_CNT(NM123) + 1
                            TK_TMP(NM123) = TK_TMP(NM123) + TK(NM123)
                            !WJP needed for internal_tide stuff
@@ -494,11 +490,10 @@ C-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207
                         ELSEIF (directvelWD) THEN
                            VEL=sqrt((g*H1/FRIC(NM123))*(DELETA/DELDIST))
                         ELSE
-                           TKWET=FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-     &                        (IFNLBF+IFHYBF*
-     &                        (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
-
-                           IF(TKWET.LT.0.0001d0) TKWET=0.0001d0
+                           TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
+&                                  (IFNLBF+IFHYBF*
+&                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
+&                          0.0001d0)
                            VEL=G*(DELETA/DELDIST)/TKWET
                         ENDIF
                      ELSEIF(C3D)THEN
@@ -523,13 +518,12 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                         NNODECODE(NM2)=1
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
-                           TK(NM123)=FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
+                           TK(NM123) = MIN(
+     &                     FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
-     &                        (FGAMMA/FTHETA)))
-                           IF (TK(NM123) .GT. 2.0D0/DTDP) THEN
-                              TK(NM123) = 2.0D0/DTDP
-                           ENDIF
+     &                        (FGAMMA/FTHETA))), 
+     &                     2.0D0/DTDP)
                            TK_CNT(NM123) = TK_CNT(NM123) + 1
                            TK_TMP(NM123) = TK_TMP(NM123) + TK(NM123)
                            !WJP needed for internal_tide stuff
@@ -1318,7 +1312,6 @@ C..... bathy slope becomes too large, i.e., when it exceeds slim.
                      ALPHAL(I) = SLIM/DETAM
                   ENDIF
                   
-                  !ALPHAL(I) = ABS(ALPHAL(I))
                   IF (ALPHAL(I) .LE. 0.D0) ALPHAL(I) = 1.D0
                   IF (ALPHAL(I) .GE. 1.D0) ALPHAL(I) = 1.D0
                ENDIF

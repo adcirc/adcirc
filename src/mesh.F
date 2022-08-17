@@ -4616,7 +4616,7 @@ C
         REAL (SZ):: VARPHI, THETA ! in deg
 
         !c local c!
-        REAL(SZ) :: RADPHI, RADTHETA, ROTMATOUT(1,3)
+        REAL(SZ) :: RADPHI, RADTHETA, ROTMATOUT(3)
 
         call setMessageSource("DRV_ROTMAT_ZNVEC")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
