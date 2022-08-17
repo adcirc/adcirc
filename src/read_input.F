@@ -62,8 +62,9 @@ C-----------------------------------------------------------------------
      &   alloc_main4b, alloc_main5, alloc_main7, alloc_main8, 
      &   alloc_main10, alloc_main12, alloc_main13, alloc_main9,
      &   alloc_main6, openfileforread, nhoutonce, omega, IFSPROTS,
-     &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp,
-     &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim
+     &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
+     &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
+     &   directvelWD,useHF
 #if defined CSWAN || defined ADCSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
@@ -168,7 +169,11 @@ C
       NAMELIST /wetDryControl/ outputNodeCode, outputNOFF,
      &  noffActive, StatPartWetFix, How2FixStatPartWet
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
+C.... DMW 202207 Namelists for controlling slope/wind limiting (limitControl) and
+C.... "new" formula for computing vel in wetting/drying routine (velwdControl)
       NAMELIST /limitControl/ slim, windlim
+      NAMELIST /velwdControl/ directvelWD,useHF
+C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
       NAMELIST /dynamicWaterLevelCorrectionControl/ dynamicWaterLevelCorrectionFileName, 
@@ -482,7 +487,9 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       write(scratchMessage,'(a,e15.8)') "inunThresh=",inunThresh
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
-      
+
+C.... DMW 202207 Namelists for controlling slope/wind limiting (limitControl) and
+C.... "new" formula for computing vel in wetting/drying routine (velwdControl)      
       namelistSpecifier = 'limitControl'
       READ(UNIT=15,NML=limitControl,IOSTAT=IOS)
       call logNamelistReadStatus(namelistSpecifier,ios)
@@ -491,7 +498,14 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       write(scratchMessage,'(a,l)') "windLim=",windLim
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
-
+      
+      namelistSpecifier = 'velwdControl'
+      READ(UNIT=15,NML=velwdControl,IOSTAT=IOS)
+      call logNamelistReadStatus(namelistSpecifier,ios)
+      write(scratchMessage,'(a,l,a,l)') "directvelWD=",directvelWD," useHF=",useHF
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+C.... DMW
 c...  tcm v52.30.01 Addtions for Using Smagorinsky Namelist Options
 c...  read through the fort.15 file for the namelist (Smag_Control) for
 c...  the namelist options for using Smagorinsky.  This namelist must be at the

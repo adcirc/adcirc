@@ -2335,12 +2335,18 @@ c...     wjp additions for density Control Namelist
             write(15,'(3A)') '  densityForcingType="',TRIM(densityForcingType),'"   /'
             write(15,*) '! -- End density Control NameList --'
          ENDIF
+C....    DMW 202207 Namelist for controlling slope/wind limiting
          IF (FOUND_LIM_NML) THEN
-            WRITE(15,'(a,f15.8,a,l,a)')
+            WRITE(15,'(a,f15.4,a,l,a)')
      &         "&limitControl slim=",slim,
      &         " windlim=",windlim, " /"
          ENDIF
-
+C....    DMW 202207 Namelist for controlling "new" formula for computing vel in wetting/drying routine
+         IF (FOUND_VWD_NML) THEN
+            WRITE(15,'(a,l,a,l,a)')
+     &         "&velwdControl directvelWD=",directvelWD," useHF=",useHF," /"
+         ENDIF
+C....    DMW
          CLOSE(15)
 C
  1000 CONTINUE
