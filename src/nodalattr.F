@@ -2062,7 +2062,7 @@ C
 C     ----------------------------------------------------------------
       SUBROUTINE Apply2DBottomFriction(UU1, VV1, DP, ETA2, G,
      &     IFNLFA, NP, TK)
-      USE GLOBAL, ONLY: MLD
+      USE GLOBAL, ONLY: MLD, DTDP
 C      USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
@@ -2148,6 +2148,9 @@ C              ... Cd directly from the 3D model (MLD here)
                FRIC(I) = CF + MLD(I)
             ENDIF
             TK(I)   = FRIC(I) * UV1 / H1 !nonlinear
+            IF (TK(I) .GT. 2.0D0/DTDP) THEN
+               TK(I) = 2.0D0/DTDP
+            ENDIF
          ENDDO
 C
       ELSE
@@ -2161,6 +2164,9 @@ C        with the sea floor.
      &            (IFLINBF +                                         ! linear
      &            (UV1/H1) * (IFNLBF +                               ! nonlinear
      &            IFHYBF*(1+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)) ) ! hybrid
+            IF (TK(I) .GT. 2.0D0/DTDP) THEN
+               TK(I) = 2.0D0/DTDP
+            ENDIF
          END DO
 C
       ENDIF NOLIBFRIC
@@ -2178,6 +2184,9 @@ C     pilings, if required.
             FricBP=(H1/BDELX)*BK*(BK+5.d0*Fr*Fr-0.6d0)
      &           *(BALPHA+15.d0*BALPHA**4)
             TK(I)=TK(I)+FricBP*UV1/H1
+            IF (TK(I) .GT. 2.0D0/DTDP) THEN
+               TK(I) = 2.0D0/DTDP
+            ENDIF
          END DO
       ENDIF
 C

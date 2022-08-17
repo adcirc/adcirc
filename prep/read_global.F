@@ -512,7 +512,7 @@ C...tcm v51.20.03 Local variables for external station location files
      &          noffActive, StatPartWetFix, How2FixStatPartWet
       ! jgf52.08.02 : For inundation output files.
       namelist /inundationOutputControl/ inundationOutput, inunThresh
-      !namelist /limitControl/ slim, windlim
+
 C
 C.....tcm v52.30.01 added for Smag_Control
       INTEGER :: IOS_Smag = 0
@@ -646,6 +646,7 @@ Casey 180318: Added NWS=13
       endif
       rewind(15)  !Return to the top of the fort.15 file
 
+C.... DMW 202207 Namelist for controlling slope/wind limiting
       READ(UNIT = 15, NML = limitControl,IOSTAT = ios)
       if ( ios.ge.0) then
          FOUND_LIM_NML = .true.
@@ -656,6 +657,19 @@ Casey 180318: Added NWS=13
      &         'The limitControl namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
+      
+C.... DMW 202207 Namelist for controlling "new" formula for computing vel in wetting/drying routine
+      READ(UNIT = 15, NML = velwdControl,IOSTAT = ios)
+      if ( ios.ge.0) then
+         FOUND_VWD_NML = .true.
+         call logMessage(INFO,
+     &         'The velwdControl namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The velwdControl namelist was not found.')
+      endif
+      rewind(15)  !Return to the top of the fort.15 file
+C.... DMW
 
       read(unit=15,nml=inundationOutputControl,iostat=ios)
       if ( ios.ge.0) then
