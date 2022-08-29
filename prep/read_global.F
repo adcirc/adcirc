@@ -509,10 +509,14 @@ C...tcm v51.20.03 Local variables for external station location files
       INTEGER :: IOS_STATIONS
       INTEGER :: ios_wetDry
       namelist /wetDryControl/ outputNodeCode, outputNOFF,
-     &          noffActive, StatPartWetFix, How2FixStatPartWet
+     &          noffActive, StatPartWetFix, How2FixStatPartWet,
+C.... DMW 202207 Add options for controlling slope/wind limiting and
+C.... "new" formula for computing vel in wetting/drying routine 
+     &          slim, windlim, directvelWD, useHF
+C.... DMW
       ! jgf52.08.02 : For inundation output files.
       namelist /inundationOutputControl/ inundationOutput, inunThresh
-      !namelist /limitControl/ slim, windlim
+
 C
 C.....tcm v52.30.01 added for Smag_Control
       INTEGER :: IOS_Smag = 0
@@ -643,17 +647,6 @@ Casey 180318: Added NWS=13
       else
          call logMessage(INFO,
      &         'The wetDryControl namelist was not found.')
-      endif
-      rewind(15)  !Return to the top of the fort.15 file
-
-      READ(UNIT = 15, NML = limitControl,IOSTAT = ios)
-      if ( ios.ge.0) then
-         FOUND_LIM_NML = .true.
-         call logMessage(INFO,
-     &         'The limitControl namelist was found.')
-      else
-         call logMessage(INFO,
-     &         'The limitControl namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
 

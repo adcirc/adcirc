@@ -4616,7 +4616,7 @@ C
         REAL (SZ):: VARPHI, THETA ! in deg
 
         !c local c!
-        REAL(SZ) :: RADPHI, RADTHETA
+        REAL(SZ) :: RADPHI, RADTHETA, ROTMATOUT(3)
 
         call setMessageSource("DRV_ROTMAT_ZNVEC")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4634,11 +4634,14 @@ C
         scratchMessage =  
      &       "****************************************" ;  
         call allMessage(INFO,scratchMessage)
-        WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMAT(1,:), ' |' 
+        ROTMATOUT = ROTMAT(1,:)
+        WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMATOUT, ' |' 
         CALL allMessage(INFO,scratchMessage)
-        WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMAT(2,:), ' |' 
+        ROTMATOUT = ROTMAT(2,:)
+        WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMATOUT, ' |' 
         CALL allMessage(INFO,scratchMessage)
-        WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMAT(3,:), ' |' 
+        ROTMATOUT = ROTMAT(3,:)
+        WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMATOUT, ' |' 
         CALL allMessage(INFO,scratchMessage)
         scratchMessage =  
      &       "****************************************" ;  

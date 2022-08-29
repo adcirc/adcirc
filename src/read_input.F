@@ -62,8 +62,9 @@ C-----------------------------------------------------------------------
      &   alloc_main4b, alloc_main5, alloc_main7, alloc_main8, 
      &   alloc_main10, alloc_main12, alloc_main13, alloc_main9,
      &   alloc_main6, openfileforread, nhoutonce, omega, IFSPROTS,
-     &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp,
-     &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim
+     &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
+     &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
+     &   directvelWD,useHF
 #if defined CSWAN || defined ADCSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
@@ -166,9 +167,13 @@ C
      &  rhoAir, invertedBarometerOnElevationBoundary, nPowellSearchDomains
       NAMELIST /subdomainModeling/ subdomainOn
       NAMELIST /wetDryControl/ outputNodeCode, outputNOFF,
-     &  noffActive, StatPartWetFix, How2FixStatPartWet
+     &  noffActive, StatPartWetFix, How2FixStatPartWet,
+C.... DMW 202207 Add options for controlling slope/wind limiting and
+C.... "new" formula for computing vel in wetting/drying routine
+     &  slim, windlim, directvelWD, useHF
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
-      NAMELIST /limitControl/ slim, windlim
+
+C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
       NAMELIST /dynamicWaterLevelCorrectionControl/ dynamicWaterLevelCorrectionFileName, 
@@ -469,7 +474,18 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,i1)') "How2FixStatPartWet=",
      &   How2FixStatPartWet
+C.... DMW 202207 Add options for controlling slope/wind limiting and
+C.... "new" formula for computing vel in wetting/drying routine  
       call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,e15.8)') "slim=",slim
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "windLim=",windLim
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "directvelWD=",directvelWD
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "useHF=",useHF
+      call logMessage(ECHO,trim(scratchMessage))
+C.... DMW
       rewind(15)
 
       ! jgf52.08.01: Add a namelist for the user to control
@@ -480,15 +496,6 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       write(scratchMessage,'(a,l)') "inundationOutput=",inundationOutput
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,e15.8)') "inunThresh=",inunThresh
-      call logMessage(ECHO,trim(scratchMessage))
-      rewind(15)
-      
-      namelistSpecifier = 'limitControl'
-      READ(UNIT=15,NML=limitControl,IOSTAT=IOS)
-      call logNamelistReadStatus(namelistSpecifier,ios)
-      write(scratchMessage,'(a,e15.8)') "slim=",slim
-      call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,'(a,l)') "windLim=",windLim
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 

@@ -53,8 +53,8 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=gnu
 #compiler=g95
 #compiler=gfortran
-#compiler=intel
-compiler=intel-ND
+compiler=intel
+#compiler=intel-ND
 #compiler=intel-lonestar
 #compiler=intel-sgi
 #compiler=cray_xt3
@@ -311,7 +311,7 @@ ifeq ($(compiler),intel)
   MSGLIBS       :=
   ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),hatteras)
-        NETCDFHOME  :=$(shell nc-config --prefix)
+        NETCDFHOME  :=$(shell nf-config --prefix)
         FLIBS       :=$(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
         FFLAGS1     :=$(FFLAGS1) -I$(NETCDFHOME)/include
         FFLAGS2     :=$(FFLAGS1)

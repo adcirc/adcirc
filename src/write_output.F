@@ -1372,17 +1372,10 @@ C      IF (mnproc.gt.1) THEN
 !      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
      &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
-                         
-          ! DW, since ESLDescript%writeFlag = .false.,
-          !   a global array will not be reseved for this field.
-          CALL REAL_FIELD_ALLOCATE( OFF, 
-     &         ESLCOUNT_G, NP_G, 0.d0 ) ;
-!C------------ DW
-!          if ( writeESLNodes ) then
-!             CALL REAL_FIELD_ALLOCATE( OFF, 
-!    &            ESLONOFF_g, NP_G, 0.d0 ) ;
-!          endif    
-!C------------
+          if ( LoadEleSlopeLim ) then
+             CALL REAL_FIELD_ALLOCATE( 1, 
+     &            ESLCOUNT_G, NP_G, 0.d0 ) ;
+          endif    
          ! ALLOCATE(ESLONOFF_g(NP_G))
          ! ESLONOFF_g(:) = 0.d0
       ENDIF
