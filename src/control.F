@@ -10,6 +10,8 @@
       ! reading/writing for adcirc as well as adcprep in future versions.
       !----------------------------------------------------------------
       module control
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       use sizes, only : sz
       use wind,only: nwlon,nwlat,wlatmax,wlonmin,wlatinc,wloninc
       implicit none
@@ -217,64 +219,64 @@
       !
       CALL openFileForRead(15,trim(controlFileName),ios)
       !
-      read(15,fmt='(a80)',err=10,end=20,iostat=ios) rundes
+      read(AMPI_LUN(15),fmt='(a80)',err=10,end=20,iostat=ios) rundes
       linenum = linenum + 1
-      read(15,fmt='(a80)',err=10,end=20,iostat=ios) runid
+      read(AMPI_LUN(15),fmt='(a80)',err=10,end=20,iostat=ios) runid
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nfover
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nfover
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nabout
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nabout
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nscreen
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nscreen
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) ihot
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) ihot
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) ics
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) ics
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) im
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) im
       linenum = linenum + 1
       if ((im.eq.21).or.(im.eq.31)) then
-         read(15,*,err=10,end=20,iostat=ios) iden
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) iden
          linenum = linenum + 1
       endif
-      read(15,*,err=10,end=20,iostat=ios) nolibf
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nolibf
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nolifa
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nolifa
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nolica
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nolica
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nolicat
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nolicat
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nwp
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nwp
       linenum = linenum + 1
       if (nwp.ne.0) then
          allocate(attrName(nwp))
          do i=1, nwp
-            read(15,*,err=10,end=20,iostat=ios) attrName(i)
+            read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) attrName(i)
             linenum = linenum + 1
          end do
       endif
-      read(15,*,err=10,end=20,iostat=ios) ncor
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) ncor
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) ntip
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) ntip
       linenum = linenum + 1
-      read(15,fmt=*,err=10,end=20,iostat=ios) nws
+      read(AMPI_LUN(15),fmt=*,err=10,end=20,iostat=ios) nws
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nramp
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nramp
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) g
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) g
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) tau0
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) tau0
       linenum = linenum + 1
       if ((tau0.le.-5.0).and.(tau0.ge.-5.99)) then
-         read(15,*,err=10,end=20,iostat=ios) tau0fulldomainmin, tau0fulldomainmax
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) tau0fulldomainmin, tau0fulldomainmax
          linenum = linenum + 1
       endif
-      read(15,*,err=10,end=20,iostat=ios) dtdp
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) dtdp
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) statim
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) statim
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) reftim
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) reftim
       linenum = linenum + 1
       !
       ! parse the digits of nws
@@ -293,7 +295,7 @@
       !
       ! now use the ncice, nrs, and nws values to parse the wtiminc line
       if ((nws.ne.0).or.(nrs.ne.0).or.(ncice.ne.0)) then
-         read(15,'(a80)',err=10,end=20,iostat=ios) wtimincLine
+         read(AMPI_LUN(15),'(a80)',err=10,end=20,iostat=ios) wtimincLine
       endif
       numFields = 0
       select case(abs(nws))
@@ -331,80 +333,80 @@ c     arc add nws13 190110
      &       irefyr,irefmo,irefday,irefhr,stormnumber,bladj,purevortex,purebackground,wtiminc
          numFields = 9
       case default
-         write(6,'("ERROR: The value of nws is ",i6," but this is not a valid value.")') nws
+         write(AMPI_LUN(6),'("ERROR: The value of nws is ",i6," but this is not a valid value.")') nws
          CALL EXIT(1)
       end select
       if ((nrs.ne.0).or.(ncice.ne.0)) then
          call parseWaveAndIceTimeIncrements(wtimincLine,numFields)
       endif
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) rnday
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) rnday
       linenum = linenum + 1
       select case(nramp)
       case(0,1)
-         read(15,*,err=10,end=20,iostat=ios) dramp
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) dramp
       case(2)
-         read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
-     &       fluxsettlingtime
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) dramp,drampextflux,
+     &      fluxsettlingtime
       case(3)
-         read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
-     &       fluxsettlingtime,drampintflux
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) dramp,drampextflux,
+     &      fluxsettlingtime,drampintflux
       case(4)
-         read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
-     &       fluxsettlingtime,drampintflux, drampelev
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) dramp,drampextflux,
+     &      fluxsettlingtime,drampintflux, drampelev
       case(5)
-         read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
-     &       fluxsettlingtime,drampintflux,drampelev,dramptip
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) dramp,drampextflux,
+     &      fluxsettlingtime,drampintflux,drampelev,dramptip
       case(6)
-         read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
-     &    fluxsettlingtime,drampintflux,drampelev,dramptip,drampmete
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) dramp,drampextflux,
+     &   fluxsettlingtime,drampintflux,drampelev,dramptip,drampmete
       case(7)
-         read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
-     &    fluxsettlingtime,drampintflux,drampelev,dramptip,
-     &    drampmete,drampwrad
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) dramp,drampextflux,
+     &   fluxsettlingtime,drampintflux,drampelev,dramptip,
+     &   drampmete,drampwrad
       case(8)
-         read(15,*,err=10,end=20,iostat=ios) dramp,drampextflux,
-     &    fluxsettlingtime,drampintflux,drampelev,dramptip,drampmete,
-     &    drampwrad,dunrampmete
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) dramp,drampextflux,
+     &   fluxsettlingtime,drampintflux,drampelev,dramptip,drampmete,
+     &   drampwrad,dunrampmete
       case default
-         write(6,'(a,i0,a)') 'ERROR: The value of nramp is ',nramp,
-     &    ' but this is not a valid value.'
+         write(AMPI_LUN(6),'(a,i0,a)') 'ERROR: The value of nramp is ',nramp,
+     &   ' but this is not a valid value.'
          CALL EXIT(1)
       end select
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) a00,b00,c00
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) a00,b00,c00
       linenum = linenum + 1
       if (nolifa.eq.2) then
-         read(15,*,err=10,end=20,iostat=ios) h0,nodedrymin,nodewetmin,velmin
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) h0,nodedrymin,nodewetmin,velmin
       else
-         read(15,*,err=10,end=20,iostat=ios) h0
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) h0
       endif
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) slam0,sfea0
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) slam0,sfea0
       linenum = linenum + 1
       select case(nolibf)
       case(0)
-         read(15,*,err=10,end=20,iostat=ios) tau
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) tau
       case(1)
-         read(15,*,err=10,end=20,iostat=ios) cf
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) cf
       case(2)
-         read(15,*,err=10,end=20,iostat=ios) cf,hbreak,ftheta,fgamma
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) cf,hbreak,ftheta,fgamma
       case default
-         write(6,'(a,i0,a)') 'ERROR: The value of nolibf is ',nolibf,
-     &       ' but this is not a valid value.'
+         write(AMPI_LUN(6),'(a,i0,a)') 'ERROR: The value of nolibf is ',nolibf,
+     &      ' but this is not a valid value.'
          CALL EXIT(1)
       end select
       linenum = linenum + 1
       if (im.eq.10) then
-         read(15,*,err=10,end=20,iostat=ios) eslm,eslc
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) eslm,eslc
          linenum = linenum + 1
       else
-        read(15,*,err=10,end=20,iostat=ios) eslm
+        read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) eslm
         linenum = linenum + 1
       endif
-      read(15,*,err=10,end=20,iostat=ios) cori
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) cori
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) ntif
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) ntif
       linenum = linenum + 1
       if (ntif.ne.0) then
          allocate(tipotag(ntif))
@@ -414,14 +416,14 @@ c     arc add nws13 190110
          allocate(fft(ntif))
          allocate(facet(ntif))
          do i=1,ntif
-            read(15,'(a5)',err=10,end=20,iostat=ios)  tipotag(i)
+            read(AMPI_LUN(15),'(a5)',err=10,end=20,iostat=ios)  tipotag(i)
             linenum = linenum + 1
-            read(15,*,err=10,end=20,iostat=ios)
-     &          tpk(i),amigt(i),etrf(i),fft(i),facet(i)
+            read(AMPI_LUN(15),*,err=10,end=20,iostat=ios)
+     &         tpk(i),amigt(i),etrf(i),fft(i),facet(i)
             linenum = linenum + 1
          end do
       endif
-      read(15,*,err=10,end=20,iostat=ios) nbfr
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nbfr
       linenum = linenum + 1
       if (nbfr.ne.0) then
          allocate(bountag(nbfr))
@@ -429,27 +431,27 @@ c     arc add nws13 190110
          allocate(ff(nbfr))
          allocate(face(nbfr))
          do i=1, nbfr
-            read(15,'(a5)',err=10,end=20,iostat=ios) bountag(i)
+            read(AMPI_LUN(15),'(a5)',err=10,end=20,iostat=ios) bountag(i)
             linenum = linenum + 1
-            read(15,*,err=10,end=20,iostat=ios) amig(i),ff(i),face(i)
+            read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) amig(i),ff(i),face(i)
             linenum = linenum + 1
          end do
          allocate(nbfr_alpha(nbfr))
          allocate(emo(nbfr,neta))
          allocate(efa(nbfr,neta))
          do i=1, nbfr
-            read(15,'(a10)',err=10,end=20,iostat=ios) nbfr_alpha(i)
+            read(AMPI_LUN(15),'(a10)',err=10,end=20,iostat=ios) nbfr_alpha(i)
             linenum = linenum + 1
             do j=1,neta
-               read(15,*,err=10,end=20,iostat=ios) emo(i,j),efa(i,j)
+               read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) emo(i,j),efa(i,j)
                linenum = linenum + 1
             end do
          end do
       endif
-      read(15,*,err=10,end=20,iostat=ios) anginn
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) anginn
       linenum = linenum + 1
       if (nfluxf.ne.0) then
-         read(15,*,err=10,end=20,iostat=ios) nffr
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nffr
          linenum = linenum + 1
       endif
       if ((nfluxf.ne.0).and.(nffr.gt.0)) then
@@ -461,18 +463,18 @@ c     arc add nws13 190110
          allocate(qnam(nffr,nvel))
          allocate(qnph(nffr,nvel))
          do i=1,nffr
-            read(15,'(a5)',err=10,end=20,iostat=ios) fbountag(i)
+            read(AMPI_LUN(15),'(a5)',err=10,end=20,iostat=ios) fbountag(i)
             linenum = linenum + 1
-            read(15,*,err=10,end=20,iostat=ios) famig(i),fff(i),fface(i)
+            read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) famig(i),fff(i),fface(i)
             linenum = linenum + 1
          end do
          do i=1,nffr
-            read(15,'(a10)',err=10,end=20,iostat=ios) nffr_alpha(i)
+            read(AMPI_LUN(15),'(a10)',err=10,end=20,iostat=ios) nffr_alpha(i)
             linenum = linenum + 1
             do j=1,nvel
                select case(lbcodei(j))
                case(2,12,22,52)
-                  read(15,*,err=10,end=20,iostat=ios) qnam(i,j), qnph(i,j)
+                  read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) qnam(i,j), qnph(i,j)
                   linenum = linenum + 1
                case default
                   cycle
@@ -480,43 +482,43 @@ c     arc add nws13 190110
             end do
          end do
       endif
-      read(15,*,err=10,end=20,iostat=ios) noute,toutse,toutfe,nspoole
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) noute,toutse,toutfe,nspoole
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nstae
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nstae
       linenum = linenum + 1
       call readStations(nstae, xel, yel)
-      read(15,*,err=10,end=20,iostat=ios) noutv,toutsv,toutfv,nspoolv
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) noutv,toutsv,toutfv,nspoolv
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nstav
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nstav
       linenum = linenum + 1
       call readStations(nstav, xev, yev)
       if (im.eq.10) then
-         read(15,*,err=10,end=20,iostat=ios) noutc,toutsc,toutfc,nspoolc
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) noutc,toutsc,toutfc,nspoolc
          linenum = linenum + 1
-         read(15,*,err=10,end=20,iostat=ios) nstac
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nstac
          linenum = linenum + 1
          call readStations(nstac, xec, yec)
       endif
       if (nws.ne.0) then
-         read(15,*,err=10,end=20,iostat=ios) noutm,toutsm,toutfm,nspoolm
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) noutm,toutsm,toutfm,nspoolm
          linenum = linenum + 1
-         read(15,*,err=10,end=20,iostat=ios) nstam
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nstam
          linenum = linenum + 1
          call readStations(nstam, xem, yem)
       endif
-      read(15,*,err=10,end=20,iostat=ios) noutge,toutsge,toutfge,nspoolge
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) noutge,toutsge,toutfge,nspoolge
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) noutgv,toutsgv,toutfgv,nspoolgv
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) noutgv,toutsgv,toutfgv,nspoolgv
       linenum = linenum + 1
       if (im.eq.10) then
-         read(15,*,err=10,end=20,iostat=ios) noutgc,toutsgc,toutfgc,nspoolgc
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) noutgc,toutsgc,toutfgc,nspoolgc
          linenum = linenum + 1
       endif
       if (nws.ne.0) then
-         read(15,*,err=10,end=20,iostat=ios) noutgw,toutsgw,toutfgw,nspoolgw
+         read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) noutgw,toutsgw,toutfgw,nspoolgw
          linenum = linenum + 1
       endif
-      read(15,*,err=10,end=20,iostat=ios) nfreq
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nfreq
       linenum = linenum + 1
       if (nfreq.ne.0) then
          allocate(namefr(nfreq))
@@ -524,19 +526,19 @@ c     arc add nws13 190110
          allocate(haff(nfreq))
          allocate(haface(nfreq))
          do i=1,nfreq
-            read(15,'(a10)',err=10,end=20,iostat=ios) namefr(i)
+            read(AMPI_LUN(15),'(a10)',err=10,end=20,iostat=ios) namefr(i)
             linenum = linenum + 1
-            read(15,*,err=10,end=20,iostat=ios) hafreq(i),haff(i),haface(i)
+            read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) hafreq(i),haff(i),haface(i)
             linenum = linenum + 1
          end do
       endif
-      read(15,*,err=10,end=20,iostat=ios) thas,thaf,nhainc,fmv
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) thas,thaf,nhainc,fmv
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nhase,nhasv,nhage,nhagv
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nhase,nhasv,nhage,nhagv
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nhstar,nhsinc
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) nhstar,nhsinc
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) ititer,isldia,convcr,itmax
+      read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) ititer,isldia,convcr,itmax
       linenum = linenum + 1
       !
       ! read metadata if netcdf or xdmf format was specified in the output
@@ -562,41 +564,41 @@ c     arc add nws13 190110
       end do outputSpec
       ! now read metadata if any output format indicated it
       if (readMetaData.eqv..true.) then
-         read(15,'(a80)',err=10,end=20,iostat=ios) title
+         read(AMPI_LUN(15),'(a80)',err=10,end=20,iostat=ios) title
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) institution
+         read(AMPI_LUN(15),'(a80)',err=10,end=20,iostat=ios) institution
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) source
+         read(AMPI_LUN(15),'(a80)',err=10,end=20,iostat=ios) source
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) history
+         read(AMPI_LUN(15),'(a80)',err=10,end=20,iostat=ios) history
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) references
+         read(AMPI_LUN(15),'(a80)',err=10,end=20,iostat=ios) references
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) comments
+         read(AMPI_LUN(15),'(a80)',err=10,end=20,iostat=ios) comments
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) host
+         read(AMPI_LUN(15),'(a80)',err=10,end=20,iostat=ios) host
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) convention
+         read(AMPI_LUN(15),'(a80)',err=10,end=20,iostat=ios) convention
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) contact
+         read(AMPI_LUN(15),'(a80)',err=10,end=20,iostat=ios) contact
          linenum = linenum + 1
-         read(15,'(a80)',err=10,end=20,iostat=ios) base_date
+         read(AMPI_LUN(15),'(a80)',err=10,end=20,iostat=ios) base_date
       endif
       !
       if (verbose.eqv..true.) then
          call echoControlFile(6)
       endif
-      close(15)
+      close(AMPI_LUN(15))
       return
- 10   write(6,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
-     &    ' gave the following error code: ',ios,'.'
+ 10   write(AMPI_LUN(6),'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
+     &   ' gave the following error code: ',ios,'.'
       call echoControlFile(6)
-      close(15)
+      close(AMPI_LUN(15))
       CALL EXIT(1)
- 20   write(6,'(a,i0,a)') 'ERROR: Reached premature end of file on line ',
-     &    lineNum,'.'
+ 20   write(AMPI_LUN(6),'(a,i0,a)') 'ERROR: Reached premature end of file on line ',
+     &   lineNum,'.'
       call echoControlFile(6)
-      close(15)
+      close(AMPI_LUN(15))
       CALL EXIT(1)
       !---------------------------------------------------------------------
       end subroutine readControlFile
@@ -616,17 +618,17 @@ c     arc add nws13 190110
          allocate(stax(nsta))
          allocate(stay(nsta))
          do i=1,nsta
-            read(15,*,err=10,end=20,iostat=ios) stax(i), stay(i)
+            read(AMPI_LUN(15),*,err=10,end=20,iostat=ios) stax(i), stay(i)
             linenum = linenum + 1
          end do
       endif
       return
- 10   write(6,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
-     &   ' gave the following error code: ',ios,'.'
+ 10   write(AMPI_LUN(6),'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
+     &  ' gave the following error code: ',ios,'.'
       call echoControlFile(6)
       CALL EXIT(1)
- 20   write(6,'(a,i0,a)')
-     &   'ERROR: Reached premature end of file on line ',lineNum,'.'
+ 20   write(AMPI_LUN(6),'(a,i0,a)')
+     &  'ERROR: Reached premature end of file on line ',lineNum,'.'
       call echoControlFile(6)
       CALL EXIT(1)
       !---------------------------------------------------------------------
@@ -699,12 +701,12 @@ c     arc add nws13 190110
          numFields = numFields + 1
       endif
       return
-  10  write(6,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
-     &  ' gave the following error code: ',ios,'.'
+  10  write(AMPI_LUN(6),'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
+     & ' gave the following error code: ',ios,'.'
       call echoControlFile(6)
       CALL EXIT(1)
- 20   write(6,'(a,i0,a)') 'ERROR: Reached premature end of file on line '
-     & ,lineNum,'.'
+ 20   write(AMPI_LUN(6),'(a,i0,a)') 'ERROR: Reached premature end of file on line '
+     &,lineNum,'.'
       call echoControlFile(6)
       CALL EXIT(1)
       !---------------------------------------------------------------------
@@ -730,71 +732,71 @@ c     arc add nws13 190110
       ! initialization
       echoLine = 1
       !
-      write(6,*) 'INFO: Echoing control file after reading ',
-     &  lineNum,' lines.'
-      write(echoUnit,fmt='(A,10x,"! rundes")') trim(rundes)
+      write(AMPI_LUN(6),*) 'INFO: Echoing control file after reading ',
+     & lineNum,' lines.'
+      write(AMPI_LUN(echoUnit),fmt='(A,10x,"! rundes")') trim(rundes)
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(A,10x,"! runid")') trim(runid)
+      write(AMPI_LUN(echoUnit),fmt='(A,10x,"! runid")') trim(runid)
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0,10x,"! nfover")') nfover
+      write(AMPI_LUN(echoUnit),fmt='(i0,10x,"! nfover")') nfover
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0,10x,"! nabout")') nabout
+      write(AMPI_LUN(echoUnit),fmt='(i0,10x,"! nabout")') nabout
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! nscreen")') nscreen
+      write(AMPI_LUN(echoUnit),fmt='(i0, 10x, "! nscreen")') nscreen
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0,10x,"! ihot")') ihot
+      write(AMPI_LUN(echoUnit),fmt='(i0,10x,"! ihot")') ihot
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! ics")') ics
+      write(AMPI_LUN(echoUnit),fmt='(i0, 10x, "! ics")') ics
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! im")') im
+      write(AMPI_LUN(echoUnit),fmt='(i0, 10x, "! im")') im
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if ((im.eq.21).or.(im.eq.31)) then
-         write(echoUnit,fmt='(i0, 10x, "! iden")') iden
+         write(AMPI_LUN(echoUnit),fmt='(i0, 10x, "! iden")') iden
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       endif
-      write(echoUnit,fmt='(i0, 10x, "! nolibf")') nolibf
+      write(AMPI_LUN(echoUnit),fmt='(i0, 10x, "! nolibf")') nolibf
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! nolifa")') nolifa
+      write(AMPI_LUN(echoUnit),fmt='(i0, 10x, "! nolifa")') nolifa
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! nolica")') nolica
+      write(AMPI_LUN(echoUnit),fmt='(i0, 10x, "! nolica")') nolica
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! nolicat")') nolicat
+      write(AMPI_LUN(echoUnit),fmt='(i0, 10x, "! nolicat")') nolicat
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! nwp")') nwp
+      write(AMPI_LUN(echoUnit),fmt='(i0, 10x, "! nwp")') nwp
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if (nwp.ne.0) then
          do i=1, nwp
-            write(echoUnit,fmt='(a, 10x, "! attrname")') trim(attrName(i))
+            write(AMPI_LUN(echoUnit),fmt='(a, 10x, "! attrname")') trim(attrName(i))
             echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          end do
       endif
-      write(echoUnit,fmt='(i0, 10x, "! ncor")') ncor
+      write(AMPI_LUN(echoUnit),fmt='(i0, 10x, "! ncor")') ncor
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! ntip")') ntip
+      write(AMPI_LUN(echoUnit),fmt='(i0, 10x, "! ntip")') ntip
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       controlnws = 1000 * ncice + 100 * nrs + abs(nws)
       if (nws.ne.0) then
          controlnws = controlnws * abs(nws)/nws ! to get the sign right
       endif
-      write(echoUnit,fmt='(i0, 10x, "! nws")') controlnws
+      write(AMPI_LUN(echoUnit),fmt='(i0, 10x, "! nws")') controlnws
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0, 10x, "! nramp")') nramp
+      write(AMPI_LUN(echoUnit),fmt='(i0, 10x, "! nramp")') nramp
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(f10.5, 10x, "! g")') g
+      write(AMPI_LUN(echoUnit),fmt='(f10.5, 10x, "! g")') g
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(f6.3, 10x, "! tau0")') tau0
+      write(AMPI_LUN(echoUnit),fmt='(f6.3, 10x, "! tau0")') tau0
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if ((tau0.le.-5.0).and.(tau0.ge.-5.99)) then
-         write(echoUnit,
-     & fmt='(f6.3, f6.3, 10x, "! tau0fulldomainmin tau0fulldomainmax")')
-     & tau0fulldomainmin, tau0fulldomainmax
+         write(AMPI_LUN(echoUnit),
+     &fmt='(f6.3, f6.3, 10x, "! tau0fulldomainmin tau0fulldomainmax")')
+     &tau0fulldomainmin, tau0fulldomainmax
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       endif
-      write(echoUnit,fmt='(f15.7, 10x, "1 dtdp")') dtdp
+      write(AMPI_LUN(echoUnit),fmt='(f15.7, 10x, "1 dtdp")') dtdp
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(f15.7, 10x, "! statim")') statim
+      write(AMPI_LUN(echoUnit),fmt='(f15.7, 10x, "! statim")') statim
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(f15.7, 10x, "! reftim")') reftim
+      write(AMPI_LUN(echoUnit),fmt='(f15.7, 10x, "! reftim")') reftim
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       wtimincLine = ''
       wtimincComment = ''
@@ -809,7 +811,7 @@ c     arc add nws13 190110
          write(wtimincLine,*) irefyr,irefmo,irefday,irefhr,irefmin,refsec
          wtimincLine = trim(wtimincLine) //
      &    ' ! irefyr,irefmo,irefday,irefhr,irefmin,refsec'
-         write(echoUnit,'(a)') trim(wtimincLine)
+         write(AMPI_LUN(echoUnit),'(a)') trim(wtimincLine)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          write(wtimincLine,*) nwlat,nwlon,wlatmax,wlonmin,wlatinc,wloninc,wtiminc
          wtimincComment =
@@ -828,8 +830,8 @@ c     arc add nws13 190110
      &    ' ! irefyr,irefmo,irefday,irefhr,stormnumber,bladj,wtiminc,'
      &   // ' purevortex, purebackground'
       case default
-         write(echoUnit,'(a,i0,a)') 'ERROR: The value of nws is ',nws,
-     &    ' but this is not a valid value.'
+         write(AMPI_LUN(echoUnit),'(a,i0,a)') 'ERROR: The value of nws is ',nws,
+     &   ' but this is not a valid value.'
          CALL EXIT(1)
       end select
       if (nrs.gt.0) then
@@ -843,139 +845,139 @@ c     arc add nws13 190110
           wtimincComment = trim(wtimincComment) // ',cice_timinc'
       endif
       if ((nws.ne.0).or.(nrs.ne.0).or.(ncice.ne.0)) then
-         write(echoUnit,'(a)') trim(wtimincLine) // trim(wtimincComment)
+         write(AMPI_LUN(echoUnit),'(a)') trim(wtimincLine) // trim(wtimincComment)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       endif
-      write(echoUnit,fmt='(e20.10, 10x, "! rnday")') rnday
+      write(AMPI_LUN(echoUnit),fmt='(e20.10, 10x, "! rnday")') rnday
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       !
       select case(nramp)
       case(0,1)
-         write(echoUnit,fmt='(9f6.3,10x,"! dramp")') dramp
+         write(AMPI_LUN(echoUnit),fmt='(9f6.3,10x,"! dramp")') dramp
       case(2)
-         write(echoUnit,
-     &    fmt='(9f6.3,10x,"! dramp,drampextflux,fluxsettlingtime")')
-     &       dramp,drampextflux,fluxsettlingtime
+         write(AMPI_LUN(echoUnit),
+     &   fmt='(9f6.3,10x,"! dramp,drampextflux,fluxsettlingtime")')
+     &      dramp,drampextflux,fluxsettlingtime
       case(3)
-         write(echoUnit,
-     &    fmt='(9f6.3,10x,' //
-     &    '"! dramp,drampextflux,fluxsettlingtime,drampintflux")')
-     &       dramp,drampextflux,fluxsettlingtime,drampintflux
+         write(AMPI_LUN(echoUnit),
+     &   fmt='(9f6.3,10x,' //
+     &   '"! dramp,drampextflux,fluxsettlingtime,drampintflux")')
+     &      dramp,drampextflux,fluxsettlingtime,drampintflux
       case(4)
-         write(echoUnit,fmt='(9f6.3,10x,'//
-     & '"! dramp,drampextflux,fluxsettlingtime,drampintflux, drampelev")')
-     &       dramp,drampextflux,fluxsettlingtime,drampintflux, drampelev
+         write(AMPI_LUN(echoUnit),fmt='(9f6.3,10x,'//
+     &'"! dramp,drampextflux,fluxsettlingtime,drampintflux, drampelev")')
+     &      dramp,drampextflux,fluxsettlingtime,drampintflux, drampelev
       case(5)
-         write(echoUnit,fmt='(9f6.3,10x,'//
-     & '"! dramp,drampextflux,fluxsettlingtime,drampintflux,'//
-     & 'drampelev,dramptip")')
-     & dramp,drampextflux,fluxsettlingtime,drampintflux,drampelev,dramptip
+         write(AMPI_LUN(echoUnit),fmt='(9f6.3,10x,'//
+     &'"! dramp,drampextflux,fluxsettlingtime,drampintflux,'//
+     &'drampelev,dramptip")')
+     &dramp,drampextflux,fluxsettlingtime,drampintflux,drampelev,dramptip
       case(6)
-         write(echoUnit,fmt='(9f6.3,10x,'//
-     &    '"! dramp,drampextflux,fluxsettlingtime,drampintflux,'//
-     &    'drampelev,dramptip,drampmete")')
-     &    dramp,drampextflux,fluxsettlingtime,drampintflux,drampelev,dramptip,drampmete
+         write(AMPI_LUN(echoUnit),fmt='(9f6.3,10x,'//
+     &   '"! dramp,drampextflux,fluxsettlingtime,drampintflux,'//
+     &   'drampelev,dramptip,drampmete")')
+     &   dramp,drampextflux,fluxsettlingtime,drampintflux,drampelev,dramptip,drampmete
       case(7)
-         write(echoUnit,fmt='(9f6.3,10x,'//
-     &    '"! dramp,drampextflux,fluxsettlingtime,drampintflux,'//
-     &    'drampelev,dramptip,drampmete,drampwrad")')
-     &   dramp,drampextflux,fluxsettlingtime,drampintflux,
-     &              drampelev,dramptip,drampmete,drampwrad
+         write(AMPI_LUN(echoUnit),fmt='(9f6.3,10x,'//
+     &   '"! dramp,drampextflux,fluxsettlingtime,drampintflux,'//
+     &   'drampelev,dramptip,drampmete,drampwrad")')
+     &  dramp,drampextflux,fluxsettlingtime,drampintflux,
+     &             drampelev,dramptip,drampmete,drampwrad
       case(8)
-         write(echoUnit,fmt='(9f6.3,10x,'//
-     &    '"! dramp,drampextflux,fluxsettlingtime,drampintflux,'//
-     &    'drampelev,dramptip,drampmete,drampwrad,drampunmete")')
-     &     dramp,drampextflux,fluxsettlingtime,drampintflux,
-     &     drampelev,dramptip,drampmete,drampwrad,dunrampmete
+         write(AMPI_LUN(echoUnit),fmt='(9f6.3,10x,'//
+     &   '"! dramp,drampextflux,fluxsettlingtime,drampintflux,'//
+     &   'drampelev,dramptip,drampmete,drampwrad,drampunmete")')
+     &    dramp,drampextflux,fluxsettlingtime,drampintflux,
+     &    drampelev,dramptip,drampmete,drampwrad,dunrampmete
       case default
-         write(echoUnit,'(a,i0,a)') 'ERROR: The value of nramp is ',nramp,
-     &    ' but this is not a valid value.'
+         write(AMPI_LUN(echoUnit),'(a,i0,a)') 'ERROR: The value of nramp is ',nramp,
+     &   ' but this is not a valid value.'
          CALL EXIT(1)
       end select
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(3f6.3, 10x, "! a00, b00, c00")') a00,b00,c00
+      write(AMPI_LUN(echoUnit),fmt='(3f6.3, 10x, "! a00, b00, c00")') a00,b00,c00
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if (nolifa.eq.2) then
-         write(echoUnit,
-     &    fmt='(f15.7, i2, i2, f6.3, 10x, "! h0, int, int, velmin")')
-     &       h0,nodedrymin,nodewetmin,velmin
+         write(AMPI_LUN(echoUnit),
+     &   fmt='(f15.7, i2, i2, f6.3, 10x, "! h0, int, int, velmin")')
+     &      h0,nodedrymin,nodewetmin,velmin
       else
-         write(echoUnit,fmt='(f15.7,10x,"! h0")') h0
+         write(AMPI_LUN(echoUnit),fmt='(f15.7,10x,"! h0")') h0
       endif
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(2f15.7,10x,"! slam0, sfea0")') slam0,sfea0
+      write(AMPI_LUN(echoUnit),fmt='(2f15.7,10x,"! slam0, sfea0")') slam0,sfea0
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       select case(nolibf)
       case(0)
-         write(echoUnit,fmt='(f15.7,10x,"! tau")') tau
+         write(AMPI_LUN(echoUnit),fmt='(f15.7,10x,"! tau")') tau
       case(1)
-         write(echoUnit,fmt='(f15.7,10x,"! cf")') cf
+         write(AMPI_LUN(echoUnit),fmt='(f15.7,10x,"! cf")') cf
       case(2)
-         write(echoUnit,fmt='(4f15.7,10x,"! cf, hbreak, ftheta, fgamma")')
-     &       cf,hbreak,ftheta,fgamma
+         write(AMPI_LUN(echoUnit),fmt='(4f15.7,10x,"! cf, hbreak, ftheta, fgamma")')
+     &      cf,hbreak,ftheta,fgamma
       case default
-         write(echoUnit,'(a,i0,a)') 'ERROR: the value of nolibf is ',nolibf,
-     &    ' but this is not a valid value.'
+         write(AMPI_LUN(echoUnit),'(a,i0,a)') 'ERROR: the value of nolibf is ',nolibf,
+     &   ' but this is not a valid value.'
          CALL EXIT(1)
       end select
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if (im.eq.10) then
-         write(echoUnit,fmt='(2f15.7,10x,"! eslm, eslc")') eslm,eslc
+         write(AMPI_LUN(echoUnit),fmt='(2f15.7,10x,"! eslm, eslc")') eslm,eslc
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       else
-        write(echoUnit,fmt='(f15.7,10x,"! eslm")') eslm
+        write(AMPI_LUN(echoUnit),fmt='(f15.7,10x,"! eslm")') eslm
         echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       endif
-      write(echoUnit,fmt='(f15.7,10x,"! cori")') cori
+      write(AMPI_LUN(echoUnit),fmt='(f15.7,10x,"! cori")') cori
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0,10x, "! ntif")') ntif
+      write(AMPI_LUN(echoUnit),fmt='(i0,10x, "! ntif")') ntif
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       do i=1,ntif
-         write(echoUnit,'(a5,10x,"! tipotag")')  trim(tipotag(i))
+         write(AMPI_LUN(echoUnit),'(a5,10x,"! tipotag")')  trim(tipotag(i))
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,
-     &    fmt='(5f15.7,10x,"! tpk(i),amigt(i),etrf(i),fft(i),facet(i)")')
-     &    tpk(i),amigt(i),etrf(i),fft(i),facet(i)
+         write(AMPI_LUN(echoUnit),
+     &   fmt='(5f15.7,10x,"! tpk(i),amigt(i),etrf(i),fft(i),facet(i)")')
+     &   tpk(i),amigt(i),etrf(i),fft(i),facet(i)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       end do
-      write(echoUnit,fmt='(i0,10x,"! nbfr")') nbfr
+      write(AMPI_LUN(echoUnit),fmt='(i0,10x,"! nbfr")') nbfr
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       do i=1, nbfr
-         write(echoUnit,'(a5,10x,"! bountag")') trim(bountag(i))
+         write(AMPI_LUN(echoUnit),'(a5,10x,"! bountag")') trim(bountag(i))
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(3f15.7,10x,"! amig(i),ff(i),face(i)")') amig(i),ff(i),face(i)
+         write(AMPI_LUN(echoUnit),fmt='(3f15.7,10x,"! amig(i),ff(i),face(i)")') amig(i),ff(i),face(i)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       end do
       do i=1, nbfr
-         write(echoUnit,'(a10,10x,"! alpha(i)")') nbfr_alpha(i)
+         write(AMPI_LUN(echoUnit),'(a10,10x,"! alpha(i)")') nbfr_alpha(i)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          do j=1,neta
-            write(echoUnit,fmt='(2f15.7,10x,"! emo(i,j), efa(i,j)")') emo(i,j),efa(i,j)
+            write(AMPI_LUN(echoUnit),fmt='(2f15.7,10x,"! emo(i,j), efa(i,j)")') emo(i,j),efa(i,j)
             echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          end do
       end do
-      write(echoUnit,fmt='(f15.7,10x,"! anginn")') anginn
+      write(AMPI_LUN(echoUnit),fmt='(f15.7,10x,"! anginn")') anginn
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if ((nfluxf.ne.0).and.(nffr.ne.0)) then
-         write(echoUnit,fmt='(i0,10x,"! nffr")') nffr
+         write(AMPI_LUN(echoUnit),fmt='(i0,10x,"! nffr")') nffr
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          if (nffr.gt.0) then
             do i=1,nffr
-               write(echoUnit,'(a5,10x,"! fbountag(i)")') fbountag(i)
+               write(AMPI_LUN(echoUnit),'(a5,10x,"! fbountag(i)")') fbountag(i)
                echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-               write(echoUnit,
-     &             fmt='(3f6.3,10x,"! famig(i),fff(i),fface(i)")')
-     &              famig(i),fff(i),fface(i)
+               write(AMPI_LUN(echoUnit),
+     &            fmt='(3f6.3,10x,"! famig(i),fff(i),fface(i)")')
+     &             famig(i),fff(i),fface(i)
                echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
             end do
             do i=1,nffr
-               write(echoUnit,'(a10,10x,"! nffr_alpha(i)")') nffr_alpha(i)
+               write(AMPI_LUN(echoUnit),'(a10,10x,"! nffr_alpha(i)")') nffr_alpha(i)
                echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
                do j=1,nvel
                   select case(lbcodei(j))
                   case(2,12,22,52)
-                     write(echoUnit,
-     &                 fmt='(2f6.3,10x,"! qnam(i,j), qnph(i,j)")') qnam(i,j), qnph(i,j)
+                     write(AMPI_LUN(echoUnit),
+     &                fmt='(2f6.3,10x,"! qnam(i,j), qnph(i,j)")') qnam(i,j), qnph(i,j)
                      echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
                   case default
                      cycle
@@ -984,78 +986,78 @@ c     arc add nws13 190110
             end do
          endif
       endif
-      write(echoUnit,
-     &  fmt='(i0,1x,2f6.3,1x,i0,10x,"! noute,toutse,toutfe,nspoole")')
-     &  noute,toutse,toutfe,nspoole
+      write(AMPI_LUN(echoUnit),
+     & fmt='(i0,1x,2f6.3,1x,i0,10x,"! noute,toutse,toutfe,nspoole")')
+     & noute,toutse,toutfe,nspoole
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0,10x,"! nstae")') nstae
+      write(AMPI_LUN(echoUnit),fmt='(i0,10x,"! nstae")') nstae
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       call echoStations(nstae, xel, yel, echoUnit)
-      write(echoUnit,
-     &  fmt='(i0,1x,2f15.7,1x,i0,10x,"! noutv,toutsv,toutfv,nspoolv")')
-     &  noutv,toutsv,toutfv,nspoolv
+      write(AMPI_LUN(echoUnit),
+     & fmt='(i0,1x,2f15.7,1x,i0,10x,"! noutv,toutsv,toutfv,nspoolv")')
+     & noutv,toutsv,toutfv,nspoolv
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0,10x,"! nstav")') nstav
+      write(AMPI_LUN(echoUnit),fmt='(i0,10x,"! nstav")') nstav
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       call echoStations(nstav, xev, yev, echoUnit)
       if (im.eq.10) then
-         write(echoUnit,
-     &     fmt='(i0,1x,2f15.7,1x,i0,10x,"! noutc,toutsc,toutfc,nspoolc")')
-     &     noutc,toutsc,toutfc,nspoolc
+         write(AMPI_LUN(echoUnit),
+     &    fmt='(i0,1x,2f15.7,1x,i0,10x,"! noutc,toutsc,toutfc,nspoolc")')
+     &    noutc,toutsc,toutfc,nspoolc
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(i0,10x,"! nstac")') nstac
+         write(AMPI_LUN(echoUnit),fmt='(i0,10x,"! nstac")') nstac
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          call echoStations(nstac, xec, yec, echoUnit)
       endif
       if (nws.ne.0) then
-         write(echoUnit,
-     &    fmt='(i0,1x,2f15.7,1x,i0,10x,"! noutm,toutsm,toutfm,nspoolm")')
-     &    noutm,toutsm,toutfm,nspoolm
+         write(AMPI_LUN(echoUnit),
+     &   fmt='(i0,1x,2f15.7,1x,i0,10x,"! noutm,toutsm,toutfm,nspoolm")')
+     &   noutm,toutsm,toutfm,nspoolm
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(i0,10x,"! nstam")') nstam
+         write(AMPI_LUN(echoUnit),fmt='(i0,10x,"! nstam")') nstam
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          call echoStations(nstam, xem, yem, echoUnit)
       endif
-      write(echoUnit,fmt='(i0,1x,2f15.7,1x,i0,10x,'//
-     &   '"! noutge,toutsge,toutfge,nspoolge")') noutge,toutsge,toutfge,nspoolge
+      write(AMPI_LUN(echoUnit),fmt='(i0,1x,2f15.7,1x,i0,10x,'//
+     &  '"! noutge,toutsge,toutfge,nspoolge")') noutge,toutsge,toutfge,nspoolge
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0,1x,2f15.7,1x,i0,10x,'//
-     & '"! noutgv,toutsgv,toutfgv,nspoolgv")') noutgv,toutsgv,toutfgv,nspoolgv
+      write(AMPI_LUN(echoUnit),fmt='(i0,1x,2f15.7,1x,i0,10x,'//
+     &'"! noutgv,toutsgv,toutfgv,nspoolgv")') noutgv,toutsgv,toutfgv,nspoolgv
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if (im.eq.10) then
-         write(echoUnit,
-     & fmt='(i0,1x,2f15.7,1x,i0,10x,"! noutgc,toutsgc,toutfgc,nspoolgc")')
-     &  noutgc,toutsgc,toutfgc,nspoolgc
+         write(AMPI_LUN(echoUnit),
+     &fmt='(i0,1x,2f15.7,1x,i0,10x,"! noutgc,toutsgc,toutfgc,nspoolgc")')
+     & noutgc,toutsgc,toutfgc,nspoolgc
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       endif
       if (nws.ne.0) then
-         write(echoUnit,
-     & fmt='(i0,1x,2f15.7,1x,i0,10x,"! noutgw,toutsgw,toutfgw,nspoolgw")')
-     &  noutgw,toutsgw,toutfgw,nspoolgw
+         write(AMPI_LUN(echoUnit),
+     &fmt='(i0,1x,2f15.7,1x,i0,10x,"! noutgw,toutsgw,toutfgw,nspoolgw")')
+     & noutgw,toutsgw,toutfgw,nspoolgw
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       endif
-      write(echoUnit,fmt='(i0,10x,"! nfreq")') nfreq
+      write(AMPI_LUN(echoUnit),fmt='(i0,10x,"! nfreq")') nfreq
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if (nfreq.ne.0) then
          do i=1,nfreq
-            write(echoUnit,'(a10,10x,"! namefr(i)")') namefr(i)
+            write(AMPI_LUN(echoUnit),'(a10,10x,"! namefr(i)")') namefr(i)
             echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-            write(echoUnit,
-     &       fmt='(3f15.7,10x,"! hafreq(i),haff(i),haface(i)")') hafreq(i),haff(i),haface(i)
+            write(AMPI_LUN(echoUnit),
+     &      fmt='(3f15.7,10x,"! hafreq(i),haff(i),haface(i)")') hafreq(i),haff(i),haface(i)
             echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          end do
       endif
-      write(echoUnit,
-     &  fmt='(2f15.7,1x,i0,1x,f15.7,10x,"! thas,thaf,nhainc,fmv")') thas,thaf,nhainc,fmv
+      write(AMPI_LUN(echoUnit),
+     & fmt='(2f15.7,1x,i0,1x,f15.7,10x,"! thas,thaf,nhainc,fmv")') thas,thaf,nhainc,fmv
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,
-     & fmt='(i0,1x,i0,1x,i0,1x,i0,10x,"! nhase,nhasv,nhage,nhagv")') nhase,nhasv,nhage,nhagv
+      write(AMPI_LUN(echoUnit),
+     &fmt='(i0,1x,i0,1x,i0,1x,i0,10x,"! nhase,nhasv,nhage,nhagv")') nhase,nhasv,nhage,nhagv
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0,1x,i0,10x,"! nhstar,nhsinc")') nhstar,nhsinc
+      write(AMPI_LUN(echoUnit),fmt='(i0,1x,i0,10x,"! nhstar,nhsinc")') nhstar,nhsinc
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,
-     & fmt='(i0,1x,i0,f15.7,1x,i0,10x,"! ititer,isldia,convcr,itmax")')
-     &  ititer,isldia,convcr,itmax
+      write(AMPI_LUN(echoUnit),
+     &fmt='(i0,1x,i0,f15.7,1x,i0,10x,"! ititer,isldia,convcr,itmax")')
+     & ititer,isldia,convcr,itmax
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       !
       ! read metadata if netcdf or xdmf format was specified in the output
@@ -1071,25 +1073,25 @@ c     arc add nws13 190110
       outputSpecifiers(9) = nhstar
       ! now write metadata if any output format indicated it
       if (readMetaData.eqv..true.) then
-         write(echoUnit,fmt='(a)') trim(title)
+         write(AMPI_LUN(echoUnit),fmt='(a)') trim(title)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(institution)
+         write(AMPI_LUN(echoUnit),fmt='(a)') trim(institution)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(source)
+         write(AMPI_LUN(echoUnit),fmt='(a)') trim(source)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(history)
+         write(AMPI_LUN(echoUnit),fmt='(a)') trim(history)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(references)
+         write(AMPI_LUN(echoUnit),fmt='(a)') trim(references)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(comments)
+         write(AMPI_LUN(echoUnit),fmt='(a)') trim(comments)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(host)
+         write(AMPI_LUN(echoUnit),fmt='(a)') trim(host)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(convention)
+         write(AMPI_LUN(echoUnit),fmt='(a)') trim(convention)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(contact)
+         write(AMPI_LUN(echoUnit),fmt='(a)') trim(contact)
          echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-         write(echoUnit,fmt='(a)') trim(base_date)
+         write(AMPI_LUN(echoUnit),fmt='(a)') trim(base_date)
       endif
       !---------------------------------------------------------------------
       end subroutine echoControlFile
@@ -1107,7 +1109,7 @@ c     arc add nws13 190110
       integer :: i
       if (nsta.ne.0) then
          do i=1,nsta
-            write(echoUnit,fmt='(2f15.7,10x,"! lon lat")') stax(i), stay(i)
+            write(AMPI_LUN(echoUnit),fmt='(2f15.7,10x,"! lon lat")') stax(i), stay(i)
             echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
          end do
       endif

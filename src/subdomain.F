@@ -15,6 +15,8 @@ C    |                                                                      |
 C    ========================================================================
 
       module subdomain
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       use sizes, only : sz, globaldir
       use global, only : DEBUG, ECHO, INFO, WARNING, ERROR, logMessage,
      &                    allMessage, scratchMessage, setMessageSource,
@@ -90,32 +92,33 @@ C    ========================================================================
          endif
 
          if (myproc.eq.0) print *, "Subdomain Active"
-         open(1015, file=trim(globaldir)//'/'//'fort.015')
-         read(1015,*) NOUTGS 
-         read(1015,*) NSPOOLGS
-         read(1015,*) enforceBN
+         open(AMPI_LUN(1015), file=trim(globaldir)//'/'//'fort.015')
+         call AMPI_LUN_REGISTER(AMPI_LUN(1015), file=trim(globaldir)//'/'//'fort.015')
+         read(AMPI_LUN(1015),*) NOUTGS 
+         read(AMPI_LUN(1015),*) NSPOOLGS
+         read(AMPI_LUN(1015),*) enforceBN
          select case(noutgs)
          case(0)
             ! subdomain run (no b.c. recording)
          case(1)
             ! open ocean boundary nodes:
-            read(1015,*) ncbnr
+            read(AMPI_LUN(1015),*) ncbnr
             allocate(cbnr(ncbnr))
             do i=1, ncbnr
-               read(1015,*) cbnr(i)
+               read(AMPI_LUN(1015),*) cbnr(i)
             enddo
          case(2)
             ! outer boundary nodes:
-            read(1015,*) nobnr
+            read(AMPI_LUN(1015),*) nobnr
             allocate(obnr(nobnr))
             do i=1, nobnr
-               read(1015,*) obnr(i)
+               read(AMPI_LUN(1015),*) obnr(i)
             enddo
             ! inner boundary nodes:
-            read(1015,*) nibnr
+            read(AMPI_LUN(1015),*) nibnr
             allocate(ibnr(nibnr))
             do i=1, nibnr
-               read(1015,*) ibnr(i)
+               read(AMPI_LUN(1015),*) ibnr(i)
             enddo
          case default        
             call allMessage(ERROR,'The NOUTGS value is invalid.')
@@ -208,42 +211,48 @@ C     | during a full run. This subroutine is called within timestep.F
          if (it.eq.1) then
 #ifdef CMPI
              write(procLoc,'(A2,I4.4)') "PE",myproc
-             open(1065,file=procLoc//'/'//'fort.065', status='REPLACE')
-             write(1065,*) 'Subdomain Modeling CBN output'
-             write(1065,*) nspoolgs,localncbnr,int(rnday*86400/(dt*nspoolgs)),
-     &                      " ! NSPOOLGS,lncbnr,tsteps"
+             open(AMPI_LUN(1065),file=procLoc//'/'//'fort.065', status='REPLACE')
+             call AMPI_LUN_REGISTER(AMPI_LUN(1065),file=procLoc//'/'//'fort.065', status='REPLACE')
+             write(AMPI_LUN(1065),*) 'Subdomain Modeling CBN output'
+             write(AMPI_LUN(1065),*) nspoolgs,localncbnr,int(rnday*86400/(dt*nspoolgs)),
+     &                     " ! NSPOOLGS,lncbnr,tsteps"
 #else
-             open(1065,file='fort.065',status='REPLACE')
-             write(1065,*) 'Subdomain Modeling CBN output'
-             write(1065,*) nspoolgs,ncbnr,int(rnday*86400/(dt*nspoolgs)), 
-     &                     " ! NSPOOLGS,ncbnr,tsteps"
+             open(AMPI_LUN(1065),file='fort.065',status='REPLACE')
+             call AMPI_LUN_REGISTER(AMPI_LUN(1065),file='fort.065',status='REPLACE')
+             write(AMPI_LUN(1065),*) 'Subdomain Modeling CBN output'
+             write(AMPI_LUN(1065),*) nspoolgs,ncbnr,int(rnday*86400/(dt*nspoolgs)), 
+     &                    " ! NSPOOLGS,ncbnr,tsteps"
 #endif 
-             close(1065)
+             close(AMPI_LUN(1065))
          endif
 
          if(mod(it,NSPOOLGS).eq.0) then
 #ifdef CMPI
              write(procLoc,'(A2,I4.4)') "PE",myproc
-             open(1065,file=procLoc//'/'//'fort.065',
-     &            access='SEQUENTIAL', position='APPEND')
-             write(1065,*) it, "! Timestep"
+             open(AMPI_LUN(1065),file=procLoc//'/'//'fort.065',
+     &           access='SEQUENTIAL', position='APPEND')
+             call AMPI_LUN_REGISTER(AMPI_LUN(1065),file=procLoc//'/'//'fort.065',
+     &           access='SEQUENTIAL', position='APPEND')
+             write(AMPI_LUN(1065),*) it, "! Timestep"
              do i=1,localncbnr
                  n = localcbnr(i)
                  gn = nodes_lg(n)
-                 write(1065,*) gn, eta2(n), uu2(n)
-                 write(1065,*) vv2(n), nodecode(n)
+                 write(AMPI_LUN(1065),*) gn, eta2(n), uu2(n)
+                 write(AMPI_LUN(1065),*) vv2(n), nodecode(n)
              enddo
 #else
-             open(1065,file='fort.065',access='SEQUENTIAL',
-     &            position='APPEND')
-             write(1065,*) it, "! Timestep"
+             open(AMPI_LUN(1065),file='fort.065',access='SEQUENTIAL',
+     &           position='APPEND')
+             call AMPI_LUN_REGISTER(AMPI_LUN(1065),file='fort.065',access='SEQUENTIAL',
+     &           position='APPEND')
+             write(AMPI_LUN(1065),*) it, "! Timestep"
              do i=1,ncbnr
                  n = cbnr(i)
-                 write(1065,*) n, eta2(n), uu2(n)
-                 write(1065,*) vv2(n), nodecode(n)
+                 write(AMPI_LUN(1065),*) n, eta2(n), uu2(n)
+                 write(AMPI_LUN(1065),*) vv2(n), nodecode(n)
              enddo
 #endif
-             close(1065)
+             close(AMPI_LUN(1065))
          endif
 
       END SUBROUTINE writeFort065
@@ -274,42 +283,48 @@ C     | during a full run. This subroutine is called within timestep.F
          if (it.eq.1) then
 #ifdef CMPI
              write(procLoc,'(A2,I4.4)') "PE",myproc
-             open(1066,file=procLoc//'/'//'fort.066', status='REPLACE')
-             write(1066,*) 'Subdomain Modeling OBN output'
-             write(1066,*) nspoolgs,localnobnr,int(rnday*86400/(dt*nspoolgs)),
-     &                     " ! NSPOOLSG,lnobnr,tsteps"
+             open(AMPI_LUN(1066),file=procLoc//'/'//'fort.066', status='REPLACE')
+             call AMPI_LUN_REGISTER(AMPI_LUN(1066),file=procLoc//'/'//'fort.066', status='REPLACE')
+             write(AMPI_LUN(1066),*) 'Subdomain Modeling OBN output'
+             write(AMPI_LUN(1066),*) nspoolgs,localnobnr,int(rnday*86400/(dt*nspoolgs)),
+     &                    " ! NSPOOLSG,lnobnr,tsteps"
 #else
-             open(1066,file='fort.066',status='REPLACE')
-             write(1066,*) 'Subdomain Modeling OBN output'
-             write(1066,*) nspoolgs, nobnr,int(rnday*86400/(dt*nspoolgs)),
-     &                     " ! NSPOOLGS,nobnr,tsteps"
+             open(AMPI_LUN(1066),file='fort.066',status='REPLACE')
+             call AMPI_LUN_REGISTER(AMPI_LUN(1066),file='fort.066',status='REPLACE')
+             write(AMPI_LUN(1066),*) 'Subdomain Modeling OBN output'
+             write(AMPI_LUN(1066),*) nspoolgs, nobnr,int(rnday*86400/(dt*nspoolgs)),
+     &                    " ! NSPOOLGS,nobnr,tsteps"
 #endif 
-             close(1066)
+             close(AMPI_LUN(1066))
          endif
 
          if(mod(it,NSPOOLGS).eq.0) then
 #ifdef CMPI
              write(procLoc,'(A2,I4.4)') "PE",myproc
-             open(1066,file=procLoc//'/'//'fort.066',
-     &            access='SEQUENTIAL', position='APPEND')
-             write(1066,*) it, "! Timestep"
+             open(AMPI_LUN(1066),file=procLoc//'/'//'fort.066',
+     &           access='SEQUENTIAL', position='APPEND')
+             call AMPI_LUN_REGISTER(AMPI_LUN(1066),file=procLoc//'/'//'fort.066',
+     &           access='SEQUENTIAL', position='APPEND')
+             write(AMPI_LUN(1066),*) it, "! Timestep"
              do i=1,localnobnr
                  n = localobnr(i)
                  gn = nodes_lg(n)
-                 write(1066,*) gn, etas(n), uu2(n)
-                 write(1066,*) vv2(n), nodecode(n)
+                 write(AMPI_LUN(1066),*) gn, etas(n), uu2(n)
+                 write(AMPI_LUN(1066),*) vv2(n), nodecode(n)
              enddo
 #else
-             open(1066,file='fort.066',access='SEQUENTIAL',
-     &            position='APPEND')
-             write(1066,*) it, "! Timestep"
+             open(AMPI_LUN(1066),file='fort.066',access='SEQUENTIAL',
+     &           position='APPEND')
+             call AMPI_LUN_REGISTER(AMPI_LUN(1066),file='fort.066',access='SEQUENTIAL',
+     &           position='APPEND')
+             write(AMPI_LUN(1066),*) it, "! Timestep"
              do i=1,nobnr
                  n = obnr(i)
-                 write(1066,*) n, etas(n), uu2(n)
-                 write(1066,*) vv2(n), nodecode(n)
+                 write(AMPI_LUN(1066),*) n, etas(n), uu2(n)
+                 write(AMPI_LUN(1066),*) vv2(n), nodecode(n)
              enddo
 #endif
-             close(1066)
+             close(AMPI_LUN(1066))
          endif
 
       END SUBROUTINE writeFort066
@@ -340,40 +355,46 @@ C     | within timestep.F
          if (it.eq.1) then
 #ifdef CMPI
              write(procLoc,'(A2,I4.4)') "PE",myproc
-             open(1067,file=procLoc//'/'//'fort.067', status='REPLACE')
-             write(1067,*) 'Subdomain Modeling IBN output'
-             write(1067,*) nspoolgs,localnibnr,int(rnday*86400/(dt*nspoolgs)),
-     &                     " ! NSPOOLGS,lnibnr,tsteps"
+             open(AMPI_LUN(1067),file=procLoc//'/'//'fort.067', status='REPLACE')
+             call AMPI_LUN_REGISTER(AMPI_LUN(1067),file=procLoc//'/'//'fort.067', status='REPLACE')
+             write(AMPI_LUN(1067),*) 'Subdomain Modeling IBN output'
+             write(AMPI_LUN(1067),*) nspoolgs,localnibnr,int(rnday*86400/(dt*nspoolgs)),
+     &                    " ! NSPOOLGS,lnibnr,tsteps"
 #else
-             open(1067,file='fort.067',status='REPLACE')
-             write(1067,*) 'Subdomain Modeling IBN output'
-             write(1067,*) nspoolgs, nibnr, int(rnday*86400/(dt*nspoolgs)),
-     &                     " ! NSPOOLGS,nibnr,tsteps"
+             open(AMPI_LUN(1067),file='fort.067',status='REPLACE')
+             call AMPI_LUN_REGISTER(AMPI_LUN(1067),file='fort.067',status='REPLACE')
+             write(AMPI_LUN(1067),*) 'Subdomain Modeling IBN output'
+             write(AMPI_LUN(1067),*) nspoolgs, nibnr, int(rnday*86400/(dt*nspoolgs)),
+     &                    " ! NSPOOLGS,nibnr,tsteps"
 #endif 
-             close(1067)
+             close(AMPI_LUN(1067))
          endif
 
          if(mod(it,NSPOOLGS).eq.0) then
 #ifdef CMPI
              write(procLoc,'(A2,I4.4)') "PE",myproc
-             open(1067,file=procLoc//'/'//'fort.067',
-     &            access='SEQUENTIAL', position='APPEND')
-             write(1067,*) it, "! Timestep"
+             open(AMPI_LUN(1067),file=procLoc//'/'//'fort.067',
+     &           access='SEQUENTIAL', position='APPEND')
+             call AMPI_LUN_REGISTER(AMPI_LUN(1067),file=procLoc//'/'//'fort.067',
+     &           access='SEQUENTIAL', position='APPEND')
+             write(AMPI_LUN(1067),*) it, "! Timestep"
              do i=1,localnibnr
                  n = localibnr(i)
                  gn = nodes_lg(n)
-                 write(1067,*) gn, etas(n)
+                 write(AMPI_LUN(1067),*) gn, etas(n)
              enddo
 #else
-             open(1067,file='fort.067',access='SEQUENTIAL',
-     &            position='APPEND')
-             write(1067,*) it, "! Timestep"
+             open(AMPI_LUN(1067),file='fort.067',access='SEQUENTIAL',
+     &           position='APPEND')
+             call AMPI_LUN_REGISTER(AMPI_LUN(1067),file='fort.067',access='SEQUENTIAL',
+     &           position='APPEND')
+             write(AMPI_LUN(1067),*) it, "! Timestep"
              do i=1,nibnr
                  n = ibnr(i)
-                 write(1067,*) n, etas(n)
+                 write(AMPI_LUN(1067),*) n, etas(n)
              enddo
 #endif
-             close(1067)
+             close(AMPI_LUN(1067))
          endif
 
       END SUBROUTINE writeFort067
@@ -396,15 +417,17 @@ C     | finds the proper place in the b.c. file.
          REAL(8), intent(in) :: TimeLoc
 #ifdef CMPI
          write(procLoc,'(A2,I4.4)') "PE",myproc
-         open(1019, file=procLoc//'/'//'fort.019')
+         open(AMPI_LUN(1019), file=procLoc//'/'//'fort.019')
+         call AMPI_LUN_REGISTER(AMPI_LUN(1019), file=procLoc//'/'//'fort.019')
 #else
-         open(1019, file=trim(globaldir)//'/'//'fort.019')
+         open(AMPI_LUN(1019), file=trim(globaldir)//'/'//'fort.019')
+         call AMPI_LUN_REGISTER(AMPI_LUN(1019), file=trim(globaldir)//'/'//'fort.019')
 #endif
-         read(1019,*) ! Header
-         read(1019,*) sbtiminc, ncbn
+         read(AMPI_LUN(1019),*) ! Header
+         read(AMPI_LUN(1019),*) sbtiminc, ncbn
          allocate(cbn(ncbn))
          do i=1,ncbn
-             read(1019,*) cbn(i)
+             read(AMPI_LUN(1019),*) cbn(i)
          enddo
          if (abs(ncbn-neta).gt.1) then
              print *, "WARNING: ncbn=!neta"
@@ -422,10 +445,10 @@ C     | finds the proper place in the b.c. file.
              wdcbn1(i)=0
          enddo
          ! Read the first set of boundary conditions:
-         read (1019,*) n
+         read (AMPI_LUN(1019),*) n
          do i=1,ncbn
-             read (1019,*) n,ecbn2(i),ucbn2(i)
-             read (1019,*) vcbn2(i),wdcbn2(i)
+             read (AMPI_LUN(1019),*) n,ecbn2(i),ucbn2(i)
+             read (AMPI_LUN(1019),*) vcbn2(i),wdcbn2(i)
              wdcbn1(i)=wdcbn2(i) !ensure that the wet nodes begin wet
          enddo
 
@@ -448,15 +471,17 @@ C     | This subroutine opens fort.019 for a cold-started model
 
 #ifdef CMPI
          write(procLoc,'(A2,I4.4)') "PE",myproc
-         open(1019, file=procLoc//'/'//'fort.019')
+         open(AMPI_LUN(1019), file=procLoc//'/'//'fort.019')
+         call AMPI_LUN_REGISTER(AMPI_LUN(1019), file=procLoc//'/'//'fort.019')
 #else
-         open(1019, file=trim(globaldir)//'/'//'fort.019')
+         open(AMPI_LUN(1019), file=trim(globaldir)//'/'//'fort.019')
+         call AMPI_LUN_REGISTER(AMPI_LUN(1019), file=trim(globaldir)//'/'//'fort.019')
 #endif
-         read(1019,*) ! Header
-         read(1019,*) sbtiminc, ncbn
+         read(AMPI_LUN(1019),*) ! Header
+         read(AMPI_LUN(1019),*) sbtiminc, ncbn
          allocate(cbn(ncbn))
          do i=1,ncbn
-             read(1019,*) cbn(i)
+             read(AMPI_LUN(1019),*) cbn(i)
          enddo
          if (abs(ncbn-neta).gt.1) then
             print *, "WARNING: ncbn=!neta"
@@ -475,10 +500,10 @@ C     | This subroutine opens fort.019 for a cold-started model
          enddo
 
          ! Read the first set of boundary conditions:
-         read (1019,*) n
+         read (AMPI_LUN(1019),*) n
          do i=1,ncbn
-             read (1019,*) n,ecbn2(i),ucbn2(i)
-             read (1019,*) vcbn2(i),wdcbn2(i)
+             read (AMPI_LUN(1019),*) n,ecbn2(i),ucbn2(i)
+             read (AMPI_LUN(1019),*) vcbn2(i),wdcbn2(i)
              wdcbn1(i)=wdcbn2(i) !ensure that the wet nodes begin wet
          enddo
 
@@ -507,15 +532,15 @@ C     | a subdomain run. This subroutine is called within timestep.F.
          endif
 
          if (mod(it,sbtiminc).eq.0) then
-             read (1019,*) n
+             read (AMPI_LUN(1019),*) n
 !             print *, "Reading fort.019 at timestep",n
              do i=1,ncbn
                  ecbn1(i) = ecbn2(i)
                  ucbn1(i) = ucbn2(i)
                  vcbn1(i) = vcbn2(i)
                  wdcbn1(i) = wdcbn2(i)
-                 read (1019,*) n,ecbn2(i),ucbn2(i)
-                 read (1019,*) vcbn2(i),wdcbn2(i)
+                 read (AMPI_LUN(1019),*) n,ecbn2(i),ucbn2(i)
+                 read (AMPI_LUN(1019),*) vcbn2(i),wdcbn2(i)
              enddo
          endif
 
@@ -552,15 +577,17 @@ C     | a subdomain run. This subroutine is called within timestep.F.
          if (it.eq.1) then
 #ifdef CMPI
              write(procLoc,'(A2,I4.4)') "PE",myproc
-             open(1020, file=procLoc//'/'//'fort.020')
+             open(AMPI_LUN(1020), file=procLoc//'/'//'fort.020')
+             call AMPI_LUN_REGISTER(AMPI_LUN(1020), file=procLoc//'/'//'fort.020')
 #else
-             open(1020, file=trim(globaldir)//'/'//'fort.020')
+             open(AMPI_LUN(1020), file=trim(globaldir)//'/'//'fort.020')
+             call AMPI_LUN_REGISTER(AMPI_LUN(1020), file=trim(globaldir)//'/'//'fort.020')
 #endif
-             read(1020,*) ! Header
-             read(1020,*) sbtiminc, nobn
+             read(AMPI_LUN(1020),*) ! Header
+             read(AMPI_LUN(1020),*) sbtiminc, nobn
              allocate(obn(nobn))
              do i=1,nobn
-                 read(1020,*) obn(i)
+                 read(AMPI_LUN(1020),*) obn(i)
              enddo
              allocate(eobn2(nobn),uobn2(nobn),vobn2(nobn))
              allocate(wdobn1(nobn),wdobn2(nobn))
@@ -569,11 +596,11 @@ C     | a subdomain run. This subroutine is called within timestep.F.
          endif
 
          !if (mod(it,sbtiminc).eq.0) then
-             read (1020,*) n
+             read (AMPI_LUN(1020),*) n
              do i=1,nobn
                  wdobn1(i) = wdobn2(i)
-                 read (1020,*) n,eobn2(i),uobn2(i)
-                 read (1020,*) vobn2(i),wdobn2(i)
+                 read (AMPI_LUN(1020),*) n,eobn2(i),uobn2(i)
+                 read (AMPI_LUN(1020),*) vobn2(i),wdobn2(i)
                  setEob(i) = eobn2(i)
                  setUob(i) = uobn2(i)
                  setVob(i) = vobn2(i)
@@ -604,24 +631,26 @@ C     | This subroutine is called within timestep.F.
          if (it.eq.1) then
 #ifdef CMPI
              write(procLoc,'(A2,I4.4)') "PE",myproc
-             open(1021, file=procLoc//'/'//'fort.021')
+             open(AMPI_LUN(1021), file=procLoc//'/'//'fort.021')
+             call AMPI_LUN_REGISTER(AMPI_LUN(1021), file=procLoc//'/'//'fort.021')
 #else
-             open(1021, file=trim(globaldir)//'/'//'fort.021')
+             open(AMPI_LUN(1021), file=trim(globaldir)//'/'//'fort.021')
+             call AMPI_LUN_REGISTER(AMPI_LUN(1021), file=trim(globaldir)//'/'//'fort.021')
 #endif
-             read(1021,*) ! Header
-             read(1021,*) sbtiminc, nibn
+             read(AMPI_LUN(1021),*) ! Header
+             read(AMPI_LUN(1021),*) sbtiminc, nibn
              allocate(ibn(nibn))
              do i=1,nibn
-                 read(1021,*) ibn(i)
+                 read(AMPI_LUN(1021),*) ibn(i)
              enddo
              allocate(eibn2(nibn),setEib(nibn))
          endif
 
 !         if (mod(it,sbtiminc).eq.0) then
-             read (1021,*) n
+             read (AMPI_LUN(1021),*) n
 !             print *, "Reading fort.021 at timestep",n
              do i=1,nibn
-                 read (1021,*) n,eibn2(i)
+                 read (AMPI_LUN(1021),*) n,eibn2(i)
                  setEib(i) = eibn2(i)
              enddo
 !         endif

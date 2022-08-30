@@ -22,6 +22,8 @@ C     CALCULATIONS AND THE DIFFERENT TIME LEVELS ASSOCIATED WITH
 C     A TIME VARYING WEIR.
 C-----------------------------------------------------------------------
         MODULE WEIR
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
             USE GLOBAL,ONLY:SZ
             IMPLICIT NONE
             REAL(SZ),ALLOCATABLE     :: BARINHT1(:)    !...Internal Barrier elevation at previous timestep
@@ -107,6 +109,8 @@ C  TIME VARYING WEIR BOUNDARIES. THESE ROUTINES ARE USED TO SETUP AND
 C  CALCULATE THE ELEVATIONS THROUGHOUT THE SIMULATION
 C-----------------------------------------------------------------------
         MODULE TIME_VARYING_WEIR_BOUNDARY
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
             USE SIZES, ONLY: SZ,MYPROC,LOCALDIR,GLOBALDIR
             USE ADCIRC_MOD, ONLY: ADCIRC_TERMINATE
             USE GLOBAL, ONLY: SCREENUNIT,logMessage,allMessage,
@@ -1061,7 +1065,7 @@ C-----------------------------------------------------------------------
                     CALL unsetMessageSource()
                     RETURN
                 ENDIF
-                READ(99,*) NTIMEVARYINGWEIRS
+                READ(AMPI_LUN(99),*) NTIMEVARYINGWEIRS
                 IF(NTIMEVARYINGWEIRS.GT.0)THEN
                     CALL ALLOCATE_TIMEVARYINGWEIRS()
 #ifdef CMPI
@@ -1084,40 +1088,44 @@ C-----------------------------------------------------------------------
                     RETURN
                 ENDIF
 
-                OPEN(UNIT=98,FILE=TRIM(LOCALDIR)//'/namelist.scratch',
-     &             STATUS='REPLACE',ACTION='WRITE')
+                OPEN(UNIT=AMPI_LUN(98),FILE=TRIM(LOCALDIR)//'/namelist.scratch',
+     &            STATUS='REPLACE',ACTION='WRITE')
+                call AMPI_LUN_REGISTER(UNIT=AMPI_LUN(98),FILE=TRIM(LOCALDIR)//'/namelist.scratch',
+     &            STATUS='REPLACE',ACTION='WRITE')
                     
 C...............READ IN UNFORMATTED NAMELIST, WRITE TO FORMATTED NAMELIST
                 DO I = 1,NTIMEVARYINGWEIRS
 C...................MODIFY LINE FOR NAMELIST FORMATTING
-                    READ(99,'(A)') InputString
+                    READ(AMPI_LUN(99),'(A)') InputString
                     modifiedString = "&TimeVaryingWeir "//
      &                  TRIM(ADJUSTL(InputString))//" /"
-                    WRITE(98,'(A)') TRIM(ADJUSTL(modifiedString))
+                    WRITE(AMPI_LUN(98),'(A)') TRIM(ADJUSTL(modifiedString))
                 ENDDO  
-                CLOSE(98)
+                CLOSE(AMPI_LUN(98))
 
 C...............OPEN FORMATTED NAMELIST FILE, READ IN NUMBER OF SCHEDULES
 C               WE WILL NEED TO PARSE
-                OPEN(UNIT=98,FILE=TRIM(LOCALDIR)//'/namelist.scratch',
-     &                  ACTION="READ")
+                OPEN(UNIT=AMPI_LUN(98),FILE=TRIM(LOCALDIR)//'/namelist.scratch',
+     &                 ACTION="READ")
+                call AMPI_LUN_REGISTER(UNIT=AMPI_LUN(98),FILE=TRIM(LOCALDIR)//'/namelist.scratch',
+     &                 ACTION="READ")
                 NSCHEDULES = 0
                 NSCHEDULES_RAW = 0
                 DO I = 1,NTIMEVARYINGWEIRS
                     CALL NULLIFY_TVW_NML()
-                    READ(98,NML=TimeVaryingWeir,IOSTAT=IOS,ERR=200)
+                    READ(AMPI_LUN(98),NML=TimeVaryingWeir,IOSTAT=IOS,ERR=200)
                     IF(.NOT.ISNULL(S=SCHEDULEFILE))THEN
                         NSCHEDULES_RAW = NSCHEDULES_RAW + 1
                     ENDIF
                 ENDDO
                 IF(NSCHEDULES_RAW.GT.0)THEN
-                    REWIND(98)
+                    REWIND(AMPI_LUN(98))
                     IDX = 0
                     ALLOCATE(SCHEDULE_LIST_RAW(1:NSCHEDULES_RAW))
 C...................READ BACK IN A LIST CONTAINING THE SCHEDULE FILE NAMES
                     DO I = 1,NTIMEVARYINGWEIRS
                         CALL NULLIFY_TVW_NML()
-                        READ(98,NML=TimeVaryingWeir,IOSTAT=IOS)
+                        READ(AMPI_LUN(98),NML=TimeVaryingWeir,IOSTAT=IOS)
                         IF(.NOT.ISNULL(S=SCHEDULEFILE))THEN
                             IDX = IDX + 1
                             SCHEDULE_LIST_RAW(IDX) = SCHEDULEFILE
@@ -1134,15 +1142,17 @@ C...................FIND OUT HOW MANY UNIQUE SCHEDULES THERE ARE
                     ENDDO    
                 ENDIF    
 
-                CLOSE(98)
+                CLOSE(AMPI_LUN(98))
 C...............OPEN FORMATTED NAMELIST FILE, READ IN 
-                OPEN(UNIT=98,FILE=TRIM(LOCALDIR)//'/namelist.scratch',
-     &                  ACTION="READ")
+                OPEN(UNIT=AMPI_LUN(98),FILE=TRIM(LOCALDIR)//'/namelist.scratch',
+     &                 ACTION="READ")
+                call AMPI_LUN_REGISTER(UNIT=AMPI_LUN(98),FILE=TRIM(LOCALDIR)//'/namelist.scratch',
+     &                 ACTION="READ")
                 DO I = 1,NTIMEVARYINGWEIRS
 C...................READ IN NAMELIST LINE
                     CALL NULLIFY_TVW_NML()
-                    READ(98,NML=TimeVaryingWeir,ERR=200,
-     &                   IOSTAT=IOS)
+                    READ(AMPI_LUN(98),NML=TimeVaryingWeir,ERR=200,
+     &                  IOSTAT=IOS)
 
                     IF(VARYTYPE.EQ.3)THEN
                         IF(ISNULL(TimeStartDay))TimeStartDay=0D0
@@ -1438,18 +1448,18 @@ C-----------------------------------------------------------------------
                 IF(EXISTS)THEN
                     OPEN(FILE=TRIM(GLOBALDIR)//"/"//TRIM(MYFILE),
      &                  UNIT=99,ACTION="READ")
-                    READ(99,*) MYSCHED%NSECTIONS
+                    READ(AMPI_LUN(99),*) MYSCHED%NSECTIONS
                     ALLOCATE(MYSCHED%SECTION(1:MYSCHED%NSECTIONS))
                     OPEN(FILE=TRIM(LOCALDIR)//"/namelist2.scratch",
      &                  UNIT=97,ACTION="WRITE")
                     DO I = 1,MYSCHED%NSECTIONS
-                        READ(99,'(A)') OrigLine
+                        READ(AMPI_LUN(99),'(A)') OrigLine
                         WRITE(modLine,'(3A)') "&Schedule ",
      &                       TRIM(OrigLine)," /"
-                        WRITE(97,'(A)') TRIM(modLine)
+                        WRITE(AMPI_LUN(97),'(A)') TRIM(modLine)
                     ENDDO
-                    CLOSE(97)
-                    CLOSE(99)
+                    CLOSE(AMPI_LUN(97))
+                    CLOSE(AMPI_LUN(99))
                     OPEN(FILE=TRIM(LOCALDIR)//"/namelist2.scratch",
      &                  UNIT=97,ACTION="READ")
                     DO I = 1,MYSCHED%NSECTIONS
@@ -1464,7 +1474,7 @@ C-----------------------------------------------------------------------
                         HOT           = 0
                         ZF            = -99999D0
                         DELTA         = -99999D0
-                        READ(97,NML=SCHEDULE)
+                        READ(AMPI_LUN(97),NML=SCHEDULE)
                         IF(HOT.EQ.1)THEN
                             SELECT CASE(IHOT)
                                 CASE(17,67,68,367,368,567,568)
@@ -1511,7 +1521,7 @@ C-----------------------------------------------------------------------
                             ENDIF    
                         ENDIF    
                     ENDDO
-                    CLOSE(97,STATUS="DELETE")
+                    CLOSE(AMPI_LUN(97),STATUS="DELETE")
                  ENDIF   
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
@@ -1851,6 +1861,8 @@ C   THIS MODULE CONTAINS THE ROUTINES FOR THE WEIR OVERTOPPING FLUX
 C   CALCULATIONS FOR INTERNAL AND EXTERNAL WEIR TYPE BOUNDARIES.
 C-----------------------------------------------------------------------
         MODULE WEIR_FLUX
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
             USE GLOBAL,ONLY:G,ETA2,RAMPINTFLUX,
      &          setMessageSource,unsetMessageSource,DEBUG,allMessage    
             USE BOUNDARIES,ONLY: LBCODEI,NBV

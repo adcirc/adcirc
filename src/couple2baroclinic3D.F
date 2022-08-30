@@ -1,6 +1,8 @@
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       MODULE Couple2BC3D
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
@@ -182,7 +184,7 @@ C-----------------------------------------------------------------------
          DT = TNDT1 - TNDT 
          if (abs(DT%total_seconds() - BC3D_DT) > 1d-6) then
             BC3D_DT = DT%total_seconds()
-            write(16,*) 'BC3D_DT is changed to ',BC3D_DT
+            write(AMPI_LUN(16),*) 'BC3D_DT is changed to ',BC3D_DT
          endif
 #endif
          return
@@ -282,10 +284,10 @@ C-----------------------------------------------------------------------
           call allMessage(Error,'Part of 3DBC domain is not '
      &                   //'contained within this subdomain. '
      &                   //'Try download again')
-          write(16,*) BC3D_Lon(1), Lon_s
-          write(16,*) BC3D_Lon(NX), Lon_e
-          write(16,*) BC3D_Lat(1), Lat_s
-          write(16,*) BC3D_Lat(NY), Lat_e
+          write(AMPI_LUN(16),*) BC3D_Lon(1), Lon_s
+          write(AMPI_LUN(16),*) BC3D_Lon(NX), Lon_e
+          write(AMPI_LUN(16),*) BC3D_Lat(1), Lat_s
+          write(AMPI_LUN(16),*) BC3D_Lat(NY), Lat_e
           call BC3DTerminate()
       else
           ! Now find only the portions of lat lon required for this
@@ -301,11 +303,11 @@ C-----------------------------------------------------------------------
           j   = min(NY,binarysearch(NY, BC3D_Lat, Lat_e) + 2)
           NY  = j - YI + 1
 
-          write(16,*) 'BC3D_IT = ',BC3D_IT, 'BC3D_DT = ',BC3D_DT
-          write(16,*) 'Lon: ',BC3D_Lon(XI), BC3D_Lon(i)
-          write(16,*) 'Lat: ',BC3D_Lat(YI), BC3D_Lat(j)
-          write(16,*) 'XI = ',XI, 'i = ', i, 'NX = ',NX
-          write(16,*) 'YI = ',YI, 'j = ', j, 'NY = ',NY
+          write(AMPI_LUN(16),*) 'BC3D_IT = ',BC3D_IT, 'BC3D_DT = ',BC3D_DT
+          write(AMPI_LUN(16),*) 'Lon: ',BC3D_Lon(XI), BC3D_Lon(i)
+          write(AMPI_LUN(16),*) 'Lat: ',BC3D_Lat(YI), BC3D_Lat(j)
+          write(AMPI_LUN(16),*) 'XI = ',XI, 'i = ', i, 'NX = ',NX
+          write(AMPI_LUN(16),*) 'YI = ',YI, 'j = ', j, 'NY = ',NY
           allocate(Lon(NX),Lat(NY))
           Lat  = BC3D_Lat(YI:j)
           if (i > XI) then
@@ -322,10 +324,10 @@ C-----------------------------------------------------------------------
              YIc = max(1,binarysearch(NYY, BC3D_Latc, Lat_s) - 1)
              jc  = min(NYY,binarysearch(NYY, BC3D_Latc, Lat_e) + 2)
              NYc = jc - YIc + 1
-             write(16,*) 'Lonc: ',BC3D_Lonc(XIc), BC3D_Lonc(ic)
-             write(16,*) 'Latc: ',BC3D_Latc(YIc), BC3D_Latc(jc)
-             write(16,*) 'XIc = ',XIc, 'ic = ', ic, 'NXc = ',NXc
-             write(16,*) 'YIc = ',YIc, 'jc = ', jc, 'NYc = ',NYc
+             write(AMPI_LUN(16),*) 'Lonc: ',BC3D_Lonc(XIc), BC3D_Lonc(ic)
+             write(AMPI_LUN(16),*) 'Latc: ',BC3D_Latc(YIc), BC3D_Latc(jc)
+             write(AMPI_LUN(16),*) 'XIc = ',XIc, 'ic = ', ic, 'NXc = ',NXc
+             write(AMPI_LUN(16),*) 'YIc = ',YIc, 'jc = ', jc, 'NYc = ',NYc
              allocate(Lonc(NXc),Latc(NYc))
              allocate(BC3D_BX(NXc,NY),BC3D_BY(NX,NYc),BC3D_SigTS(NX,NY))
              Latc = BC3D_Latc(YIc:jc)
@@ -620,8 +622,8 @@ C
             ELSEIF (flag < 0) THEN
                ! Read next values from fort.11
                DO J = 1,NP11
-                  READ(11,*) JKI,VIDBCPDXOH_F(2,JKI),
-     &                       VIDBCPDYOH_F(2,JKI),SigTS_F(2,JKI)
+                  READ(AMPI_LUN(11),*) JKI,VIDBCPDXOH_F(2,JKI),
+     &                      VIDBCPDYOH_F(2,JKI),SigTS_F(2,JKI)
                END DO
                DTIME2 = DTIME1 + BC3D_DT
             ENDIF
@@ -1029,7 +1031,7 @@ C
          ! a stack trace to determine the line number of the netcdf call
          ! that went bad ... this assumes that the code was compiled with
          ! debugging symbols, bounds checking, and stack trace turned on.
-      write(6,*) 'myproc = ',myProc      
+      write(AMPI_LUN(6),*) 'myproc = ',myProc      
       dummy(1) = 99.9d0
 #endif
 

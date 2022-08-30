@@ -39,6 +39,8 @@
       !                                            files. Added in fort.51-54.nc
       !=================================================================
       MODULE NETCDFIO
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE SIZES, ONLY : SZ, OFF, ASCII, BINARY, SPARSE_ASCII, NETCDF3,
      &   NETCDF4, XDMF
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,

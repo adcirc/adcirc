@@ -57,6 +57,8 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C******************************************************************************
 
       module gwce
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       use sizes, only : sz
       use global, only : DEBUG, INFO, WARNING, ERROR, logMessage, 
      &   setMessageSource, unsetMessageSource, allMessage
@@ -608,26 +610,27 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
                IF(COEF(I,1).EQ.0.d0) COEF(I,1)=EP
                IF(COEF(I,1).LT.0.d0) THEN                  
                   IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
-     &              WRITE(ScreenUnit,1019) I,COEF(I,1)
-                  WRITE(16,1019) I,COEF(I,1)
+     &             WRITE(AMPI_LUN(ScreenUnit),1019) I,COEF(I,1)
+                  WRITE(AMPI_LUN(16),1019) I,COEF(I,1)
                   DIE = .TRUE.
                ENDIF
             ENDDO
             IF (DIE) THEN
                ! jgfdebug
-               open(899,file='debug.txt',status='replace',action='write')
+               open(AMPI_LUN(899),file='debug.txt',status='replace',action='write')
+               call AMPI_LUN_REGISTER(AMPI_LUN(899),file='debug.txt',status='replace',action='write')
                   do i=1,np
                      if (coef(i,1).lt.0.d0) then
                         do j=2,nneighele(i)
                            if (neitabele(i,j).ne.0) then
-                              write(6,
-     & '("Node ",i0," element ",i0," area=",f15.7)') i, j, 
-     &  areas(neitabele(i,j))
+                              write(AMPI_LUN(6),
+     &'("Node ",i0," element ",i0," area=",f15.7)') i, j, 
+     & areas(neitabele(i,j))
                            endif
                         enddo
                      endif
                   enddo
-               close(899)
+               close(AMPI_LUN(899))
                ! end jgfdebug
                CALL gwceTerminate()
             ENDIF
@@ -654,8 +657,8 @@ C.....      Check that all the diagonal elements in "COEFD" are > 0.
                IF(COEFD(I).EQ.0.d0) COEFD(I)=EP
                IF(COEFD(I).LT.0.d0) THEN
                   IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
-     &              WRITE(ScreenUnit,1019) I,COEFD(I)
-                  WRITE(16,1019) I,COEFD(I)
+     &             WRITE(AMPI_LUN(ScreenUnit),1019) I,COEFD(I)
+                  WRITE(AMPI_LUN(16),1019) I,COEFD(I)
  1019             FORMAT(/,1X,'!!!!!!!!  ERROR  !!!!!!!',
      &              /,1X,'THE DIAGONAL TERM IN THE EQUATION FOR NODE ',I10,
      &                '= ',E15.6,' AND IS <= 0',/)
@@ -1491,7 +1494,7 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
                ETIME2=ETIME1+ETIMINC
                DO J=1,NETA
                   ESBIN1(J)=ESBIN2(J)
-                  READ(19,*) ESBIN2(J)
+                  READ(AMPI_LUN(19),*) ESBIN2(J)
                END DO
             ENDIF
             ETRATIO=(TimeLoc-ETIME1)/ETIMINC
@@ -2677,7 +2680,7 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
             ETIME2=ETIME1+ETIMINC
             DO J=1,NETA
                ESBIN1(J)=ESBIN2(J)
-               READ(19,*) ESBIN2(J)
+               READ(AMPI_LUN(19),*) ESBIN2(J)
             END DO
          ENDIF
          ETRATIO=(TimeLoc-ETIME1)/ETIMINC

@@ -56,6 +56,8 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
       module momentum
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       use sizes, only : sz
       use global, only : DEBUG, INFO, WARNING, ERROR, setMessageSource,
      &   allMessage, logMessage, unsetMessageSource
@@ -1689,16 +1691,16 @@ C...  Compute velocities
             UU2(I)=QX2(I)/H2
             VV2(I)=QY2(I)/H2
             ELSE
-            WRITE(16,*) ''
-            WRITE(16,*) ''
-            WRITE(16,*) '*******************************************'
-            WRITE(16,*) '*******************************************'
-            WRITE(16,*) 'WARNING: Total water depth = 0 at node  ',I
-            WRITE(16,*) '         Velocities set = -999.'
-            WRITE(16,*) '*******************************************'
-            WRITE(16,*) '*******************************************'
-            WRITE(16,*) ''
-            WRITE(16,*) ''
+            WRITE(AMPI_LUN(16),*) ''
+            WRITE(AMPI_LUN(16),*) ''
+            WRITE(AMPI_LUN(16),*) '*******************************************'
+            WRITE(AMPI_LUN(16),*) '*******************************************'
+            WRITE(AMPI_LUN(16),*) 'WARNING: Total water depth = 0 at node  ',I
+            WRITE(AMPI_LUN(16),*) '         Velocities set = -999.'
+            WRITE(AMPI_LUN(16),*) '*******************************************'
+            WRITE(AMPI_LUN(16),*) '*******************************************'
+            WRITE(AMPI_LUN(16),*) ''
+            WRITE(AMPI_LUN(16),*) ''
             UU2(I)=-999.
             VV2(I)=-999.
          ENDIF
