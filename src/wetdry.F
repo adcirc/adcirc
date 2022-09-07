@@ -126,7 +126,7 @@ CWET...
      &    bsx1, bsy1, btime_end, C2DDI, C3D, g, h0, ifnlfa, nddt, dtdp,
      &    nibnodecode, ilump, ncchange, tkm, directvelWD, useHF
 #ifdef CMPI
-     &    ,idumy
+     &    ,idumy,dumy1,dumy2
       use messenger
 #endif
       use mesh, only : ne, np, nm, dp, mju, totalArea, nm, x, y, areas
@@ -153,7 +153,7 @@ CWET...
       real(sz) :: deldist,deleta
       real(sz) :: htot
       real(sz) :: h1
-      real(sz) :: tk_tmp(np)
+      real(sz) :: tk_tmp(np),tmp1(np),tmp2(np),tmp3(np)
       integer :: tk_cnt(np)
       integer :: nbnctot
       integer :: i,j,k,kk
@@ -602,6 +602,13 @@ C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
          CALL UPDATEI(NNODECODE,NIBCNT,2)
 C-- DMW 202204 Update FRIC, TK, and ETA2 at ghost nodes as well 
          CALL UPDATER(FRIC,TK,ETA2,3)
+         tmp1 = TKM(1,:)
+         tmp2 = TKM(2,:)
+         tmp3 = TKM(3,:)
+         CALL UPDATER(tmp1,tmp2,tmp3,3)
+         TKM(1,:) = tmp1
+         TKM(2,:) = tmp2
+         TKM(3,:) = tmp3 
 C-- DMW
 #endif
 
@@ -1091,6 +1098,7 @@ cjjwnote - may have to pass TotalArea and mju as well
 C     Use Message-Passing to update nnodecode at ghost nodes
 #ifdef CMPI
          CALL UPDATEI(NNODECODE,IDUMY,1)
+         CALL UPDATER(TotalArea,DUMY1,DUMY2,1)
 #endif
 CWET...
 CWET...WET/DRY SECTION - PART 5 - RESET NODECODE USING NNODECODE
