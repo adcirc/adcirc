@@ -901,6 +901,13 @@ C..... End DW
          ENDDO
 
       ENDIF
+      
+#ifdef CMPI
+      IF ((CGWCE_LS_2PartQ).OR.(CGWCE_LS_2PartSQ).OR(.CGWCE_LS_2PartV).OR.(CGWCE_LS_2PartSV)) THEN
+         CALL UPDATER(LSXX,LSXY,DUMY1,2)
+         CALL UPDATER(LSYX,LSYY,DUMY1,2)
+      ENDIF
+#endif
 
 C...  Assemble the GWCE RHS except for the boundary integral terms
 
