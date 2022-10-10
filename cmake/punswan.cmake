@@ -98,6 +98,8 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
   addmpi(templib_punmsglib)
   addmpi(templib_punswan1)
   addmpi(punswan)
+  addnetcdf(punswan)
+  addxdmf(punswan)
 
   set_directory_properties(
     PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
