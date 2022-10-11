@@ -31,7 +31,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/mpi_check.cmake)
 # ##############################################################################
 # ...Compiler specific options
 get_filename_component(Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
-if(Fortran_COMPILER_NAME MATCHES "gfortran.*")
+if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
   # gfortran
   set(Fortran_LINELENGTH_FLAG
       "-ffixed-line-length-none"
@@ -45,7 +45,7 @@ if(Fortran_COMPILER_NAME MATCHES "gfortran.*")
         CACHE STRING "Compiler specific flags")
   endif(ARCH EQUAL 64)
 
-elseif(Fortran_COMPILER_NAME MATCHES "ifort.*")
+elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPILER_ID} STREQUAL "IntelLLVM")
   # ifort
   set(Fortran_LINELENGTH_FLAG
       "-132"
@@ -92,7 +92,7 @@ elseif(Fortran_COMPILER_NAME MATCHES "pgf90.*")
         CACHE STRING "Compiler specific flags")
   endif(ARCH EQUAL 64)
 
-else(Fortran_COMPILER_NAME MATCHES "gfortran.*")
+else()
   message("CMAKE_Fortran_COMPILER full path: " ${CMAKE_Fortran_COMPILER})
   message("Fortran compiler: " ${Fortran_COMPILER_NAME})
   message(
@@ -105,4 +105,4 @@ else(Fortran_COMPILER_NAME MATCHES "gfortran.*")
   set(Fortran_COMPILER_SPECIFIC_FLAG
       ""
       CACHE STRING "Compiler specific flags")
-endif(Fortran_COMPILER_NAME MATCHES "gfortran.*")
+endif()
