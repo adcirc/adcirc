@@ -1121,14 +1121,11 @@ C-----------------------------------------------------------------------
       USE MESH, ONLY : NE, NP
       USE GLOBAL_IO, ONLY: packOne, unpackOne, 
      &    packTwo, unpackTwo, HEADER_MAX
-      USE MESSENGER
 !
       IMPLICIT NONE
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
       INTEGER :: STAT(MPI_STATUS_SIZE)
       integer :: i
+      integer :: ierr
 
       REAL(8), intent(in) :: TimeLoc
       INTEGER, intent(in) :: IT
