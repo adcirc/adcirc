@@ -20,7 +20,9 @@ orbs:
 #...Aliases used to shorthand this job script
 default_env: &default_env
     docker:
-      - image: zcobell/adcirc:20220713 
+      - image: zcobell/adcirc_ci_development:latest
+    environment:
+      BASH_ENV: /etc/environment
 
 default_testenv: &default_testenv
      run:
@@ -51,10 +53,6 @@ get_cache_grib2: &get_cache_grib2
 upload_coverage: &upload_coverage
     codecov/upload
 
-upload_artifacts: &upload_artifacts
-    get_artifacts:
-
-
 #...List of jobs in the workflow
 jobs:
   build_legacy_without_netcdf:
@@ -73,10 +71,10 @@ jobs:
         - checkout
         - run: 
             name: Configure SWAN for legacy makefile
-            command: cd work ; cp ../thirdparty/swan/macros.inc.gfortran ../thirdparty/swan/macros.inc
+            command: cd work ; cp ../thirdparty/swan/macros.inc.circleci ../thirdparty/swan/macros.inc
         - run: 
             name: Build ADCIRC with netCDF using legacy makefile
-            command: cd work ; make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan NETCDF=enable NETCDF4=enable     NETCDF4_COMPRESSION=enable NETCDFHOME=/usr
+            command: cd work ; make compiler=circleci NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=$NETCDF_FORTRAN_HOME HDF5HOME=$HDF5HOME NETCDF_C_HOME=$NETCDFHOME adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan
   build_legacy_with_netcdf_and_xdmf:
       <<: *default_env
       steps:
@@ -86,7 +84,7 @@ jobs:
             command: cd work ; cp ../thirdparty/swan/macros.inc.gfortran ../thirdparty/swan/macros.inc
         - run: 
             name: Build ADCIRC with netCDF and XDMF using legacy makefile
-            command: cd work ; make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=/usr XDMF=enable XDMFHOME=/usr
+            command: cd work ; make compiler=circleci NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=$NETCDF_FORTRAN_HOME HDF5HOME=$HDF5HOME NETCDF_C_HOME=$NETCDFHOME XDMF=enable XDMFHOME=/opt/xdmf adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan 
   build_cmake_without_netcdf:
       <<: *default_env
       steps:
@@ -94,7 +92,7 @@ jobs:
         - *default_testenv
         - run: 
             name: Build ADCIRC without external libraries using CMake
-            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" -DCMAKE_C_FLAGS_RELEASE="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4"; make -j4 
+            command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise"; make -j4
         - save_cache:
             <<: *cache_key_base 
             paths: 
@@ -107,7 +105,7 @@ jobs:
         - *default_testenv
         - run: 
             name: Build ADCIRC with netCDF using CMake
-            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DNETCDFHOME=/usr -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" -DCMAKE_C_FLAGS_RELEASE="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" ; make -j4
+            command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME; make -j4
         - save_cache:
             <<: *cache_key_netcdf
             paths: 
@@ -119,7 +117,7 @@ jobs:
         - checkout
         - run: 
             name: Build ADCIRC with netCDF and XDMF using CMake
-            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DXDMFHOME=/usr -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" -DCMAKE_C_FLAGS_RELEASE="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4"; make -j4
+            command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME -DXDMFHOME=$XDMFHOME; make -j4
   build_cmake_with_netcdf_and_xdmf_grib:
       <<: *default_env
       steps:
@@ -127,7 +125,7 @@ jobs:
         - *default_testenv
         - run: 
             name: Build ADCIRC with Grib, netCDF, and XDMF using CMake
-            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DXDMFHOME=/usr -DBUILD_UTILITIES=ON -DENABLE_DATETIME=ON -DENABLE_GRIB2=ON -DCMAKE_Fortran_FLAGS="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" -DCMAKE_C_FLAGS="-O3 -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans -funroll-loops -fprofile-arcs -ftest-coverage -g -funroll-loops --param max-unroll-times=4" ; make -j4
+            command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DBUILD_UTILITIES=ON -DENABLE_DATETIME=ON -DENABLE_GRIB2=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME -DXDMFHOME=$XDMFHOME; make -j4
         - save_cache:
             <<: *cache_key_grib2 
             paths: 
@@ -154,7 +152,6 @@ jobs:
             when: on_fail
         - store_artifacts: 
            path: /tmp/artifacts
-        - *upload_coverage
   test_netcdf:
       <<: *default_env
       parameters:
@@ -176,7 +173,6 @@ jobs:
             when: on_fail
         - store_artifacts: 
            path: /tmp/artifacts
-        - *upload_coverage
   test_grib2:
       <<: *default_env
       parameters:
@@ -198,7 +194,6 @@ jobs:
             when: on_fail
         - store_artifacts: 
            path: /tmp/artifacts
-        - *upload_coverage
 workflows:
   version: 2.1
   build_and_test:
