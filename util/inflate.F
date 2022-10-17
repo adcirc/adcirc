@@ -45,7 +45,8 @@
          in = 5
       else
          in = 1
-         open(in,file=filefrom,action="read")
+         open(AMPI_LUN(in),file=filefrom,action="read")
+         call AMPI_LUN_REGISTER(AMPI_LUN(in),file=filefrom,action="read")
       endif
 
       if(fileto.eq."STDOUT") then
@@ -55,15 +56,17 @@
          if (chunksOut) then
              chunkNum = 10
              chunkFileName = "chunk.10"
-             open(out,file=chunkFileName,action="write")
+             open(AMPI_LUN(out),file=chunkFileName,action="write")
+             call AMPI_LUN_REGISTER(AMPI_LUN(out),file=chunkFileName,action="write")
          else
-             open(out,file=fileto,action="write")
+             open(AMPI_LUN(out),file=fileto,action="write")
+             call AMPI_LUN_REGISTER(AMPI_LUN(out),file=fileto,action="write")
          endif
       endif
 
-      read(in,'(a80)') line
-      write(out,10) line
-      read(in,*) nsnaps,nodes,dtdp,nspoolge,k
+      read(AMPI_LUN(in),'(a80)') line
+      write(AMPI_LUN(out),10) line
+      read(AMPI_LUN(in),*) nsnaps,nodes,dtdp,nspoolge,k
 C
 C     jgf47.05 Set nsnaps to the actual number of datasets in the 
 C     file, so that SMS can use it.
@@ -75,7 +78,7 @@ C     jgf47.07 Determine how many datasets will appear in each chunk
       endif      
 C
 C     Begin writing output file
-      write(out,15) nsnaps,nodes,dtdp,nspoolge,k
+      write(AMPI_LUN(out),15) nsnaps,nodes,dtdp,nspoolge,k
 
       allocate(u(nodes))
       allocate(v(nodes))
@@ -88,67 +91,69 @@ C     file is appended
       snapNum = 1 
       if(k.eq.1) then
          do 
-            read(in,*,end=95) time, iter, np, default
+            read(AMPI_LUN(in),*,end=95) time, iter, np, default
             if (chunksOut) then
                 if (snapNum.gt.numSnapsPerChunk) then
-                    close(out)
+                    close(AMPI_LUN(out))
                     chunkNum = chunkNum + 1
                     write(chunkFileName(7:8),2) chunkNum
-                    open(out,file=chunkFileName,action="write")
+                    open(AMPI_LUN(out),file=chunkFileName,action="write")
+                    call AMPI_LUN_REGISTER(AMPI_LUN(out),file=chunkFileName,action="write")
                     snapNum = 1
                 endif
             endif
-            write(out,20) time,iter
+            write(AMPI_LUN(out),20) time,iter
             do j=1,nodes
                u(j) = default
             enddo
             do j=1,np
-               read(in,*) nnum,x
+               read(AMPI_LUN(in),*) nnum,x
                u(nnum) = x
             enddo
             do j=1,nodes
                write(buf,30) j, u(j)
-               write(out,*) trim(adjustl(buf))
+               write(AMPI_LUN(out),*) trim(adjustl(buf))
             end do
             i = i + 1
             snapNum = snapNum + 1
          enddo
       else
          do 
-            read(in,*,end=95) time, iter, np, default
+            read(AMPI_LUN(in),*,end=95) time, iter, np, default
             if (chunksOut) then
                 if (snapNum.gt.numSnapsPerChunk) then
-                    close(out)
+                    close(AMPI_LUN(out))
                     chunkNum = chunkNum + 1
                     write(chunkFileName(7:8),2) chunkNum
-                    open(out,file=chunkFileName,action="write")
+                    open(AMPI_LUN(out),file=chunkFileName,action="write")
+                    call AMPI_LUN_REGISTER(AMPI_LUN(out),file=chunkFileName,action="write")
                     snapNum = 1
                 endif
             endif
-            write(out,20) time,iter
+            write(AMPI_LUN(out),20) time,iter
             do j=1,nodes
                u(j) = default
                v(j) = default
             enddo
             do j=1,np
-               read(in,*) nnum,x,y
+               read(AMPI_LUN(in),*) nnum,x,y
                u(nnum) = x
                v(nnum) = y
             enddo
             do j=1,nodes
                write(buf,40) j, u(j), v(j)
-               write(out,*) trim(adjustl(buf))
+               write(AMPI_LUN(out),*) trim(adjustl(buf))
             end do
             i = i + 1
          enddo
       endif
 
 95    continue
-      write(0,*) 'PROCESSED ', i,' datasets'
+      write(AMPI_LUN(0),*) 'PROCESSED ', i,' datasets'
       deallocate(u,v)
 
-      close(1)
-      close(2)
+      close(AMPI_LUN(1))
+      close(AMPI_LUN(2))
 
   2   format(i2)
  10   format(a80) 
@@ -184,18 +189,18 @@ C     ----------------------------------------------------------------
 
       nsnaps = 0
       do 
-         read(in,*,end=195) skiptime, skipiter, np, skipdefault
+         read(AMPI_LUN(in),*,end=195) skiptime, skipiter, np, skipdefault
          do j=1,np
-            read(in,*) skipped
+            read(AMPI_LUN(in),*) skipped
          enddo
          nsnaps = nsnaps + 1
       enddo
 
-195   write(0,*) 'Finished counting. File contains ', nsnaps, 
-     &           ' datasets.'
-      rewind(in)
-      read(in,*) skipped
-      read(in,*) skipped
+195   write(AMPI_LUN(0),*) 'Finished counting. File contains ', nsnaps, 
+     &          ' datasets.'
+      rewind(AMPI_LUN(in))
+      read(AMPI_LUN(in),*) skipped
+      read(AMPI_LUN(in),*) skipped
       return
 C     ----------------------------------------------------------------
       end subroutine countsnaps

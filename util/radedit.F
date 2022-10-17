@@ -25,30 +25,32 @@
       print *, "nsteps:", nsteps
 
       in = 10
-      open(in, file=fnameIn)
+      open(AMPI_LUN(in), file=fnameIn)
+      call AMPI_LUN_REGISTER(AMPI_LUN(in), file=fnameIn)
 
       fnameOut = trim(fnameIn)//".new"
 
       out = 11
-      open(out, file= fnameOut)
+      open(AMPI_LUN(out), file= fnameOut)
+      call AMPI_LUN_REGISTER(AMPI_LUN(out), file= fnameOut)
 
       
-      read(in,*) ni, nj, x , y
-      read(in,*) buf
+      read(AMPI_LUN(in),*) ni, nj, x , y
+      read(AMPI_LUN(in),*) buf
 
-      write(out,*) ni, nj, x, y
-      write(out,*) buf
+      write(AMPI_LUN(out),*) ni, nj, x, y
+      write(AMPI_LUN(out),*) buf
 
       allocate (rs(2, ni, nj))
 
       do istep = 1, nsteps
 
         do j = nj, 1, -1
-          read(in,*, iostat=ios) ((rs(k,i,j), k= 1,2), i = 1,ni)
+          read(AMPI_LUN(in),*, iostat=ios) ((rs(k,i,j), k= 1,2), i = 1,ni)
         end do
 
         do j = nj, 1, -1
-          write(out,1000) ((rs(k,i,j), k= 1,2), i = 1,ni)
+          write(AMPI_LUN(out),1000) ((rs(k,i,j), k= 1,2), i = 1,ni)
         end do
 
       end do

@@ -108,47 +108,47 @@ do while (i.lt.argcount)
    call getarg(i, cmdlineopt)
    select case(trim(cmdlineopt))
    case("--verbose")
-      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // "."
+      write(AMPI_LUN(6),'(a)') "INFO: Processing " // trim(cmdlineopt) // "."
       verbose = .true.
    case("--nodalattributes")
-      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // "."
+      write(AMPI_LUN(6),'(a)') "INFO: Processing " // trim(cmdlineopt) // "."
       convertOutputData = .false.
    case("--meshfile")
       i = i + 1
       call getarg(i, cmdlinearg)
-      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // & 
+      write(AMPI_LUN(6),'(a)') "INFO: Processing " // trim(cmdlineopt) // & 
          " " // trim(cmdlinearg) // "."
       meshFileName = trim(cmdlinearg)
    case("--datafile")
       i = i + 1
       call getarg(i, dataFileName)     
-      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // &
+      write(AMPI_LUN(6),'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // &
          trim(dataFileName) // "."
    case("--controlfile")
       i = i + 1
       call getarg(i, controlFileName)
-      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt)  // " " // &
+      write(AMPI_LUN(6),'(a)') "INFO: Processing " // trim(cmdlineopt)  // " " // &
          trim(controlFileName) // "."
    case("--lightdatalimit")
       i = i + 1
       call getarg(i, cmdlinearg)
-      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // & 
+      write(AMPI_LUN(6),'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // & 
          trim(cmdlinearg) // "."
-      read(cmdlinearg,*) lightdatalimit
+      read(AMPI_LUN(cmdlinearg),*) lightdatalimit
    case("--starting-dataset")
       i = i + 1
       call getarg(i, cmdlinearg)
-      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // & 
+      write(AMPI_LUN(6),'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // & 
          trim(cmdlinearg) // "."
-      read(cmdlinearg,*) startingDataset
+      read(AMPI_LUN(cmdlinearg),*) startingDataset
    case("--ending-dataset")
       i = i + 1
       call getarg(i, cmdlinearg)
-      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // & 
+      write(AMPI_LUN(6),'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // & 
          trim(cmdlinearg) // "."
-      read(cmdlinearg,*) endingDataset
+      read(AMPI_LUN(cmdlinearg),*) endingDataset
    case default
-      write(6,'(a)') "WARNING: Command line option '" // &
+      write(AMPI_LUN(6),'(a)') "WARNING: Command line option '" // &
          TRIM(cmdlineopt) // "' was not recognized."
    end select
 end do
@@ -159,14 +159,15 @@ call constructFluxBoundaryTypesArray() ! create LBCODEI array
 !
 ! read ADCIRC control data from ascii file unless otherwise specified
 if (trim(adjustl(controlFileName)).ne."none") then
-   write(6,'(a)') 'INFO: Reading control file.'
+   write(AMPI_LUN(6),'(a)') 'INFO: Reading control file.'
    call readControlFile(controlFileName,verbose)
    if (verbose.eqv..true.) then
-      write(6,'(a)') 'INFO: Echoing control file.'
-      open(25,file='echo.15',status='replace')
+      write(AMPI_LUN(6),'(a)') 'INFO: Echoing control file.'
+      open(AMPI_LUN(25),file='echo.15',status='replace')
+      call AMPI_LUN_REGISTER(AMPI_LUN(25),file='echo.15',status='replace')
       call echoControlFile(25)
-      close(25)
-      write(6,'(a)') 'INFO: Finished echoing control file.'!
+      close(AMPI_LUN(25))
+      write(AMPI_LUN(6),'(a)') 'INFO: Finished echoing control file.'!
    endif
    ! modify projection string if indicated by the fort.15
    select case(ics)
@@ -227,7 +228,7 @@ else
    ! Check to see if the data file is a nodal attributes file (with a
    ! .13 extension)
    if (trim(dataFileExtension).eq.'13') then
-      write(6,'(a)') 'INFO: The data file to be converted is a nodal attributes input file.'
+      write(AMPI_LUN(6),'(a)') 'INFO: The data file to be converted is a nodal attributes input file.'
       convertOutputData = .false.
    endif
 endif
@@ -343,22 +344,22 @@ case('13')
    call readNodalAttributesFile(dataFileName)
    call writeNodalAttributesXDMF(xdmfFortranObj)
 case default  ! includes fort.13 and none
-   write(6,'(A)') 'ERROR: adcirc2xdmf cannot convert ' // trim(dataFileName) // ' files.'
+   write(AMPI_LUN(6),'(A)') 'ERROR: adcirc2xdmf cannot convert ' // trim(dataFileName) // ' files.'
    stop
 end select
 !
 ! if we are writing plain old ADCIRC data
 if (convertOutputData.eqv..true.) then
    call openFileForRead(UnitNumber, trim(dataFileName))
-   read(unitNumber,'(A80)') topcomment ! comment line at the top
+   read(AMPI_LUN(unitNumber),'(A80)') topcomment ! comment line at the top
    ! jgf: Can't rely on the NumSnaps value; in general, it will not
    ! actually reflect the number of datasets in the file.
-   read(unitNumber,*) numSnaps, numNodes, tinterval, tsinterval, nCol
+   read(AMPI_LUN(unitNumber),*) numSnaps, numNodes, tinterval, tsinterval, nCol
    if (np.ne.numNodes) then
-      write(6,*) 'ERROR: The output file contains ',NumNodes,        &
+      write(AMPI_LUN(6),*) 'ERROR: The output file contains ',NumNodes,        &
          ' nodes, but the mesh file contains ',np,' nodes.'
-      write(6,*) 'ERROR: The output file does not correspond to the mesh file.'
-      close(unitNumber)
+      write(AMPI_LUN(6),*) 'ERROR: The output file does not correspond to the mesh file.'
+      close(AMPI_LUN(unitNumber))
       stop
    endif
    !
@@ -375,35 +376,35 @@ if (convertOutputData.eqv..true.) then
       attributeType = XDMF_ATTRIBUTE_TYPE_VECTOR
       numValues = 3*numNodes
    case default
-      write(6,*) 'ERROR: The ADCIRC output file contains ',nCol,        &
+      write(AMPI_LUN(6),*) 'ERROR: The ADCIRC output file contains ',nCol,        &
          ' columns, but adcirc2xdmf only supports 1 or 2 column data.'
-      write(6,*) 'ERROR: adcirc2xdmf cannot continue.'
-      close(unitNumber)
+      write(AMPI_LUN(6),*) 'ERROR: adcirc2xdmf cannot continue.'
+      close(AMPI_LUN(unitNumber))
       stop   
    end select
    !
-   write(6,'(A)') 'INFO: Adding unstuctured mesh dataset.'
+   write(AMPI_LUN(6),'(A)') 'INFO: Adding unstuctured mesh dataset.'
    do   ! jgf: loop until we run out of data
-      read(unitNumber,'(A)',END=2,ERR=2) line
+      read(AMPI_LUN(unitNumber),'(A)',END=2,ERR=2) line
       ! if this is the first dataset, we will need to discover the format
       ! of the file: sparse ascii, or full ascii
       if (formatKnown.eqv..false.) then
          ! try to read extra info that are only present in sparse ascii files
-         read(line,*,END=1, ERR=1) timeSec, timeStep, numNodesNonDefault, defaultValue
+         read(AMPI_LUN(line),*,END=1, ERR=1) timeSec, timeStep, numNodesNonDefault, defaultValue
          sparseAsciiFile = .true. ! we only get to this line if the extra values were present
    1     if ( sparseAsciiFile .eqv..false. ) then
-            write(6,'(A)') 'INFO: The ascii file is not in sparse format.'
+            write(AMPI_LUN(6),'(A)') 'INFO: The ascii file is not in sparse format.'
          endif
          formatKnown = .true. ! skip the format discovery for remaining datasets
       endif
       !
       ! we know the format of the file, now use the appropriate read statement
       if (sparseAsciiFile.eqv..false.) then
-         read(line,*) timeSec, timeStep ! dataset time in seconds, time step number      
+         read(AMPI_LUN(line),*) timeSec, timeStep ! dataset time in seconds, time step number      
          numNodesNonDefault = numNodes
          defaultValue = -99999.0d0
       else
-         read(line,*) timeSec, timeStep, numNodesNonDefault, defaultValue    
+         read(AMPI_LUN(line),*) timeSec, timeStep, numNodesNonDefault, defaultValue    
       endif
       ! 
       ! now read the data from the ascii ADCIRC file
@@ -411,12 +412,12 @@ if (convertOutputData.eqv..true.) then
       case(1) ! scalar data
          data_array1 = defaultValue
          do n=1,numNodesNonDefault
-            read(unitNumber,*) j, data_array1(j)
+            read(AMPI_LUN(unitNumber),*) j, data_array1(j)
          end do
       case(2) ! 2D vector data
          data_array3 = defaultValue
          do n=1,numNodesNonDefault
-            read(unitNumber,*) j, data_array3(1,j), data_array3(2,j)
+            read(AMPI_LUN(unitNumber),*) j, data_array3(1,j), data_array3(2,j)
          end do
          data_array3(3,:) = 0.d0
       case default
@@ -425,7 +426,7 @@ if (convertOutputData.eqv..true.) then
       !
       ! skip to the next dataset if this dataset was not specified by the user
       if (ss.lt.startingDataset) then
-         write(6,fmt='(I4)',advance='no') ss
+         write(AMPI_LUN(6),fmt='(I4)',advance='no') ss
          ss = ss + 1
          cycle
       endif
@@ -461,7 +462,7 @@ if (convertOutputData.eqv..true.) then
       end select
       !
       ! set the time step of this dataset in the XDMF file
-      write(timeStepString,'(i0)') timeStep
+      write(AMPI_LUN(timeStepString),'(i0)') timeStep
       timeStepID = XdmfAddInformation(xdmfFortranObj, 'IT'//CHAR(0), &
       trim(timeStepString)//CHAR(0))
       ! 
@@ -470,7 +471,7 @@ if (convertOutputData.eqv..true.) then
       ! created above with this new unstructured mesh, also associates any
       ! informations or attributes with the new mesh, immediately writing
       ! it to the hdf5 file if the last argument is set to .true. 
-      write(6,fmt='(I4)',advance='no') ss
+      write(AMPI_LUN(6),fmt='(I4)',advance='no') ss
       call XdmfAddGrid(xdmfFortranObj,trim(agrid)//char(0), writeToHDF5)
       ss = ss + 1
       !
@@ -481,7 +482,7 @@ if (convertOutputData.eqv..true.) then
          exit
       endif
    end do
-   2  close(unitNumber) ! jump to here when all data sets have been read.
+   2  close(AMPI_LUN(unitNumber)) ! jump to here when all data sets have been read.
    !
    ! close this grid collection, writing it to the heavy data (HDF5) file
    ! if the value of writeToHDF5 is .true.; further grids cannot 
@@ -564,7 +565,7 @@ do b = 1, numSimpleFluxBoundaries
    !   XDMF_ARRAY_TYPE_INT32, ibtypeGeom ) 
    !deallocate(ibtypeGeom)
           
-   write(boundaryName,'("fluxBoundary",i0,"_ibtype",i0)') &
+   write(AMPI_LUN(boundaryName),'("fluxBoundary",i0,"_ibtype",i0)') &
       simpleFluxBoundaries(b)%indexNum, ibtype_orig(simpleFluxBoundaries(b)%indexNum)  
       
    call xdmfAddGridCurvilinear(xdmfFortranObj,trim(boundaryName)//char(0), writeToHDF5)
@@ -601,7 +602,7 @@ do b = 1, numExternalFluxBoundaries
    leveeDimensionsID = xdmfSetDimensions(xdmfFortranObj, 3, XDMF_ARRAY_TYPE_INT32, leveeDimensions)
    leveeGeometryID = xdmfSetGeometry(xdmfFortranObj, XDMF_GEOMETRY_TYPE_XYZ, numCoord, &
       XDMF_ARRAY_TYPE_FLOAT64, externalFluxBoundaries(b)%leveeGeom)    
-   write(boundaryName,'("fluxBoundary",i0,"_ibtype",i0)') &
+   write(AMPI_LUN(boundaryName),'("fluxBoundary",i0,"_ibtype",i0)') &
       externalFluxBoundaries(b)%indexNum, ibtype_orig(externalFluxBoundaries(b)%indexNum)  
    call xdmfAddGridCurvilinear(xdmfFortranObj,trim(boundaryName)//char(0), writeToHDF5)
 end do
@@ -656,7 +657,7 @@ do b = 1, numInternalFluxBoundaries
    !attributeID = XdmfAddAttribute(xdmfFortranObj, 'ibtype'//CHAR(0), &
    !      XDMF_ATTRIBUTE_CENTER_NODE, XDMF_ATTRIBUTE_TYPE_SCALAR, &
    !      numCoord, XDMF_ARRAY_TYPE_INT32, internalFluxBoundaries(b)%ibtypeAttribute)   
-   write(boundaryName,'("fluxBoundary",i0,"_ibtype",i0)') &
+   write(AMPI_LUN(boundaryName),'("fluxBoundary",i0,"_ibtype",i0)') &
       internalFluxBoundaries(b)%indexNum, ibtype_orig(internalFluxBoundaries(b)%indexNum)  
    call xdmfAddGridCurvilinear(xdmfFortranObj,trim(boundaryName)//char(0), writeToHDF5)
 end do
@@ -706,7 +707,7 @@ do b = 1, numInternalFluxBoundariesWithPipes
    leveeDimensionsID = xdmfSetDimensions(xdmfFortranObj, 3, XDMF_ARRAY_TYPE_INT32, leveeDimensions)
    leveeGeometryID = xdmfSetGeometry(xdmfFortranObj, XDMF_GEOMETRY_TYPE_XYZ, numCoord, &
       XDMF_ARRAY_TYPE_FLOAT64, internalFluxBoundariesWithPipes(b)%leveeGeom)    
-   write(boundaryName,'("fluxBoundary",i0,"_ibtype",i0)') &
+   write(AMPI_LUN(boundaryName),'("fluxBoundary",i0,"_ibtype",i0)') &
       internalFluxBoundariesWithPipes(b)%indexNum, ibtype_orig(internalFluxBoundariesWithPipes(b)%indexNum)  
    call xdmfAddGridCurvilinear(xdmfFortranObj,trim(boundaryName)//char(0), writeToHDF5)
 end do
@@ -732,6 +733,8 @@ END PROGRAM adcirc2xdmf
 ! jgf: Writes all nodal attributes to an XDMF file.
 !-----------------------------------------------------------------------
 subroutine writeNodalAttributesXDMF(xdmfFortranObj)
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
 use nodalattr
 implicit none
 include 'Xdmf.f'
@@ -762,7 +765,7 @@ do i=1,numNodalAttributes
       allocate(na(i)%xdmfMatrix(na(i)%numVals,1:numMeshNodes))
       attributeType = XDMF_ATTRIBUTE_TYPE_MATRIX
    case default
-      write(6,*) 'ERROR: The nodal attribute "',trim(adjustl(na(i)%attrName)), &
+      write(AMPI_LUN(6),*) 'ERROR: The nodal attribute "',trim(adjustl(na(i)%attrName)), &
          '" has ',na(i)%numVals,' values at each node, but adcirc2xdmf ', &
          'does not recognize this nodal attribute.'
       stop   
@@ -804,16 +807,16 @@ informationID = XdmfAddInformation(xdmfFortranObj, &
       'numMeshNodes'//char(0), trim(adjustl(numMeshNodesString))//char(0))      
 
 do i=1,numNodalAttributes
-   write(6,'(A)') 'INFO: Adding nodal attribute to XDMF.'
+   write(AMPI_LUN(6),'(A)') 'INFO: Adding nodal attribute to XDMF.'
    ! set the metadata for this nodal attribute
    unitsID = XdmfAddInformation(xdmfFortranObj, &
       trim(adjustl(na(i)%attrName)) // ' units' // CHAR(0), &
       trim(adjustl(na(i)%units))//CHAR(0)) 
-   write(numValsString,*) na(i)%numVals 
+   write(AMPI_LUN(numValsString),*) na(i)%numVals 
    numValsID = XdmfAddInformation(xdmfFortranObj, & 
       trim(adjustl(na(i)%attrName)) // ' number_of_values'//CHAR(0), &
       trim(adjustl(numValsString))//CHAR(0))
-   write(defaultValsString,*) (na(i)%defaultVals(j), j=1,na(i)%numVals)
+   write(AMPI_LUN(defaultValsString),*) (na(i)%defaultVals(j), j=1,na(i)%numVals)
    defaultValsID = XdmfAddInformation(xdmfFortranObj,  &
       trim(adjustl(na(i)%attrName)) // ' default_values'//CHAR(0), &
       trim(adjustl(defaultValsString))//CHAR(0))
@@ -835,6 +838,8 @@ end subroutine writeNodalAttributesXDMF
 ! Write the metadata for the variable of interest.
 !----------------------------------------------------------------------
 subroutine writeMetaData(xdmfFortranObj, md)
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
 use adcmesh
 implicit none
 include 'Xdmf.f' 
@@ -881,6 +886,8 @@ end subroutine writeMetaData
 ! to set boundary types, etc. 
 !----------------------------------------------------------------------
 subroutine addBoundaries(xdmfFortranObj)
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
 use adcmesh
 implicit none
 include 'Xdmf.f' 
@@ -917,7 +924,7 @@ efCount = 1
 ifCount = 1
 ifwpCount = 1 
 do i=1, nbou 
-   write(fluxBoundaryType,'(i0)') ibtype_orig(i) 
+   write(AMPI_LUN(fluxBoundaryType),'(i0)') ibtype_orig(i) 
    select case(ibtype_orig(i))
    case(0,1,2,10,11,12,20,21,22,30,52)
       !xdmfFluxB(1:nvell(i)) = simpleFluxBoundaries(sfCount)%nodes(:) - 1
@@ -1018,7 +1025,7 @@ do i=1, nbou
          nvell(i), XDMF_ARRAY_TYPE_INT32)
       ifwpCount = ifwpCount + 1
    case default
-      write(6,'("ERROR: File contains IBTYPE=",i0," which is not a valid flux boundary type.")'), ibtype_orig(i)
+      write(AMPI_LUN(6),'("ERROR: File contains IBTYPE=",i0," which is not a valid flux boundary type.")'), ibtype_orig(i)
    end select
 end do
 !----------------------------------------------------------------------
@@ -1032,6 +1039,8 @@ end subroutine addBoundaries
 ! Add boundary references to each grid in the collection.
 !----------------------------------------------------------------------
 subroutine addBoundaryReferences(xdmfFortranObj)
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
 use adcmesh
 implicit none
 include 'Xdmf.f' 
@@ -1052,7 +1061,7 @@ efCount = 1
 ifCount = 1
 ifwpCount = 1 
 do i=1, nbou 
-   write(fluxBoundaryType,'(i0)') ibtype_orig(i)
+   write(AMPI_LUN(fluxBoundaryType),'(i0)') ibtype_orig(i)
    select case(ibtype_orig(i))
    case(0,1,2,10,11,12,20,21,22,30,52)  
       simpleFluxBoundaries(sfCount)%informationID = &
@@ -1099,7 +1108,7 @@ do i=1, nbou
          nvell(i), XDMF_ARRAY_TYPE_INT32)
       ifwpCount = ifwpCount + 1
    case default
-      write(6,'("ERROR: File contains IBTYPE=",i0," which is not a valid flux boundary type.")'), ibtype_orig(i)
+      write(AMPI_LUN(6),'("ERROR: File contains IBTYPE=",i0," which is not a valid flux boundary type.")'), ibtype_orig(i)
    end select
 end do
 !----------------------------------------------------------------------

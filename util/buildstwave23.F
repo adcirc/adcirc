@@ -69,20 +69,22 @@
       write(*,*) ""
       write(*,*) ""
 
-      open(1,file=inputfile,status="old",action="read")
-      open(2,file=outputfile,action="write")
+      open(AMPI_LUN(1),file=inputfile,status="old",action="read")
+      call AMPI_LUN_REGISTER(AMPI_LUN(1),file=inputfile,status="old",action="read")
+      open(AMPI_LUN(2),file=outputfile,action="write")
+      call AMPI_LUN_REGISTER(AMPI_LUN(2),file=outputfile,action="write")
 
-      read(1,*) type
+      read(AMPI_LUN(1),*) type
       if(type.ne.1.and.type.ne.2) then
          print *, 'type must be 1 or 2.'
          print *, 'program will be terminated.'
       endif
-      read(1,*) geoGridFile
-      read(1,*) ns
+      read(AMPI_LUN(1),*) geoGridFile
+      read(AMPI_LUN(1),*) ns
 
-      write(2,'(i1,a)') type, 
+      write(AMPI_LUN(2),'(i1,a)') type, 
      &' ! 1: rad vecs included; 2: rad vecs not included'
-      write(2,'(i1,a)') ns, ' ! number of stwave grids'
+      write(AMPI_LUN(2),'(i1,a)') ns, ' ! number of stwave grids'
 
 
       allocate(simfiles(ns),radfiles(ns),spgfiles(ns))
@@ -92,30 +94,31 @@
       allocate(endoffile(ns))
 
       do i=1,ns
-         read(1,*)  ! skip a line
-         read(1,'(A100)') simfiles(i)
-         read(1,'(A100)') radfiles(i)
-         read(1,'(A100)') spgfiles(i)
-         read(1,*) fullplanes(i)
-         read(1,*) nbs(i)
+         read(AMPI_LUN(1),*)  ! skip a line
+         read(AMPI_LUN(1),'(A100)') simfiles(i)
+         read(AMPI_LUN(1),'(A100)') radfiles(i)
+         read(AMPI_LUN(1),'(A100)') spgfiles(i)
+         read(AMPI_LUN(1),*) fullplanes(i)
+         read(AMPI_LUN(1),*) nbs(i)
          if(type.eq.2) then
-            read(1, *) x0s(i), y0s(i), azimuths(i)
+            read(AMPI_LUN(1), *) x0s(i), y0s(i), azimuths(i)
             if(fullplanes(i).eq.1) then
-               read (1,*) nis(i), njs(i), dxincs(i), dyincs(i)
+               read (AMPI_LUN(1),*) nis(i), njs(i), dxincs(i), dyincs(i)
             else
-               read (1,*) nis(i), njs(i), dxincs(i)
+               read (AMPI_LUN(1),*) nis(i), njs(i), dxincs(i)
                dyincs(i) = dxincs(i)
             endif
          endif
       enddo
 
-      close(1)
+      close(AMPI_LUN(1))
 
       !read adcirc grid in geophysical coordinates
       print *, 'reading adcirc grid :', geoGridFile
-      open(14,file=geoGridFile,status='old',action='read')
-      read(14,'(A80)') title
-      read(14,*) ne, np
+      open(AMPI_LUN(14),file=geoGridFile,status='old',action='read')
+      call AMPI_LUN_REGISTER(AMPI_LUN(14),file=geoGridFile,status='old',action='read')
+      read(AMPI_LUN(14),'(A80)') title
+      read(AMPI_LUN(14),*) ne, np
 
       print *, ' grid id = ', trim(title)
       print *, ' np = ',np,', ne = ',ne
@@ -123,14 +126,14 @@
       allocate(xy(2,np),nm(3,ne))
 
       do i=1,np
-         read(14,*) idum, xy(1,i), xy(2,i), rdum
+         read(AMPI_LUN(14),*) idum, xy(1,i), xy(2,i), rdum
       enddo
 
       do i=1,ne
-         read(14,*) idum, idum, nm(1,i), nm(2,i), nm(3,i)
+         read(AMPI_LUN(14),*) idum, idum, nm(1,i), nm(2,i), nm(3,i)
       enddo
 
-      close(14)
+      close(AMPI_LUN(14))
 
       allocate(elemInside(ne))
 
@@ -142,8 +145,9 @@
 
          if(type.eq.1) then
             !simfile
-            open(1,file=simfiles(s),status="old",action="read")
-            read (1, *) dummyc, x0, y0, azimuth
+            open(AMPI_LUN(1),file=simfiles(s),status="old",action="read")
+            call AMPI_LUN_REGISTER(AMPI_LUN(1),file=simfiles(s),status="old",action="read")
+            read (AMPI_LUN(1), *) dummyc, x0, y0, azimuth
 
             print *, ' stwave grid info'
             print *, ' ID     = ', dummyc
@@ -151,15 +155,16 @@
             print *, ' y0     = ', y0
             print *, ' azimuth= ',azimuth
 
-            close(1)
+            close(AMPI_LUN(1))
 
             !radfile
             rfids(s) = s+20
-            open(rfids(s),file=radfiles(s),status="old",action="read")
+            open(AMPI_LUN(rfids(s)),file=radfiles(s),status="old",action="read")
+            call AMPI_LUN_REGISTER(AMPI_LUN(rfids(s)),file=radfiles(s),status="old",action="read")
             if(fullplanes(s).eq.1) then
-               read (rfids(s),*) ni, nj, dxinc, dyinc
+               read (AMPI_LUN(rfids(s)),*) ni, nj, dxinc, dyinc
             else
-               read (rfids(s),*) ni, nj, dxinc
+               read (AMPI_LUN(rfids(s)),*) ni, nj, dxinc
                dyinc = dxinc
             endif
 
@@ -195,9 +200,10 @@
          print *, ''
          print *, 'reading adcirc grid :', trim(spgfiles(s))
 
-         open(14,file=spgfiles(s),status='old',action='read')
-         read(14,'(A80)') title
-         read(14,*) spne, spnp
+         open(AMPI_LUN(14),file=spgfiles(s),status='old',action='read')
+         call AMPI_LUN_REGISTER(AMPI_LUN(14),file=spgfiles(s),status='old',action='read')
+         read(AMPI_LUN(14),'(A80)') title
+         read(AMPI_LUN(14),*) spne, spnp
 
          print *, ' grid id = ', trim(title)
          print *, ' np = ',np,', ne = ',ne
@@ -205,14 +211,14 @@
          allocate(spxy(2,np),spnm(3,ne))
          
          do i=1,np
-            read(14,*) idum, spxy(1,i), spxy(2,i), rdum
+            read(AMPI_LUN(14),*) idum, spxy(1,i), spxy(2,i), rdum
          enddo
 
          do i=1,ne
-            read(14,*) idum, idum, spnm(1,i), spnm(2,i), spnm(3,i)
+            read(AMPI_LUN(14),*) idum, idum, spnm(1,i), spnm(2,i), spnm(3,i)
          enddo
 
-         close(14)
+         close(AMPI_LUN(14))
     
 
          if(spnp.ne.np) then
@@ -377,9 +383,9 @@
      &                 real(i-i1)/real(i1-i2)
                   endif
                   if(x.gt.0) then
-                     write(0,*) '2 x,y=',x,y,i,j,stwlonlat(1,i1,j),
-     &                 (stwlonlat(1,i1+1,j) - stwlonlat(1,i1,j))*(i-i1),
-     &                 (stwlonlat(1,i1+1,j) - stwlonlat(1,i1,j)), (i-i1)
+                     write(AMPI_LUN(0),*) '2 x,y=',x,y,i,j,stwlonlat(1,i1,j),
+     &                (stwlonlat(1,i1+1,j) - stwlonlat(1,i1,j))*(i-i1),
+     &                (stwlonlat(1,i1+1,j) - stwlonlat(1,i1,j)), (i-i1)
                      stop
                   endif
                else if(i1.ne.0.and.i2.ne.(ni+1)) then
@@ -446,31 +452,31 @@
          print *, ''
          print *, 'writing header'
 
-         write(2,'(a,1x,i2)') '# grid ', s
+         write(AMPI_LUN(2),'(a,1x,i2)') '# grid ', s
          if(type.eq.2) then
-            write(2,'(a)') trim(simfiles(s))
-            write(2,'(a)') trim(radfiles(s))
-            write(2,'(i2,1x,a)') nbs(s), 
-     &      ' ! number of blank snaps to be inserted at the beginning'
-            write(2,'(3(f14.4,1x),a)') real(x0s(s)), real(y0s(s)), 
-     &      real(azimuths(s)),'  !x0 y0 azimuths'
+            write(AMPI_LUN(2),'(a)') trim(simfiles(s))
+            write(AMPI_LUN(2),'(a)') trim(radfiles(s))
+            write(AMPI_LUN(2),'(i2,1x,a)') nbs(s), 
+     &     ' ! number of blank snaps to be inserted at the beginning'
+            write(AMPI_LUN(2),'(3(f14.4,1x),a)') real(x0s(s)), real(y0s(s)), 
+     &     real(azimuths(s)),'  !x0 y0 azimuths'
          endif
 
-         write(2,'(i2,1x,a)') 
-     &     fullplanes(s), ' ! 0: half plane 1: full plane'
+         write(AMPI_LUN(2),'(i2,1x,a)') 
+     &    fullplanes(s), ' ! 0: half plane 1: full plane'
 
          if(fullplanes(s).eq.1) then
-            write(2,100) nis(s), njs(s), real(dxincs(s)), 
-     &                   real(dyincs(s)),'  !ni nj dxinc dyinc'
+            write(AMPI_LUN(2),100) nis(s), njs(s), real(dxincs(s)), 
+     &                  real(dyincs(s)),'  !ni nj dxinc dyinc'
          else
-            write(2,101) nis(s), njs(s), real(dxincs(s)),' !ni nj dxinc'
+            write(AMPI_LUN(2),101) nis(s), njs(s), real(dxincs(s)),' !ni nj dxinc'
          endif
 
  100     FORMAT(i6,i6,1x,f10.4,1x,f10.4,1x,a)
  101     FORMAT(i6,i6,1x,f10.4,1x,a)
 
          do j=1,nj
-            write(2,'(5E15.7)') ((stwlonlat(k,i,j), k=1,2), i=1,ni)
+            write(AMPI_LUN(2),'(5E15.7)') ((stwlonlat(k,i,j), k=1,2), i=1,ni)
          enddo
 
          deallocate(stwxy)
@@ -495,29 +501,29 @@
          snapCnt = snapCnt + 1
          print *, ''
          print *, ' snap ',snapCnt
-         write(2,*) ' # snap ', snapCnt
+         write(AMPI_LUN(2),*) ' # snap ', snapCnt
          do s=1,ns
-            write(2,*) ' ## grid ', s
+            write(AMPI_LUN(2),*) ' ## grid ', s
             if(nbs(s).gt.0) then
                nbs(s) = nbs(s) - 1
-               write(2,*) 0,'  !this snap is 0: inactive, 1: active'
+               write(AMPI_LUN(2),*) 0,'  !this snap is 0: inactive, 1: active'
                cycle
             endif
 
             fid = rfids(s)
 
-            read (fid,*,iostat=ios) spectrum_id ! spectrum identifier
+            read (AMPI_LUN(fid),*,iostat=ios) spectrum_id ! spectrum identifier
 
             if(ios.ne.0) then
                if(endoffile(s).eq.0) then
                   print *, '  stwave grid ',s,' is done.'
                endif
                endoffile(s) = 1
-               write(2,*) 0,'  !this snap is 0: inactive, 1: active'
+               write(AMPI_LUN(2),*) 0,'  !this snap is 0: inactive, 1: active'
                cycle
             endif
                
-            write(2,*) 1,'  !this snap is 0: inactive, 1: active'
+            write(AMPI_LUN(2),*) 1,'  !this snap is 0: inactive, 1: active'
 
             print *, '  spectrum id = ', spectrum_id, '(grid ',s,')'
             
@@ -527,13 +533,13 @@
             allocate(wxyrs(2,ni,nj))
 
             do j = nj, 1, -1
-                read (fid,*,iostat=ios) ((wxyrs(k,i,j),k=1,2),i=1,ni)
+                read (AMPI_LUN(fid),*,iostat=ios) ((wxyrs(k,i,j),k=1,2),i=1,ni)
                 if(ios.ne.0) then
                    print *, ' .rad file is not complete.'
                    print *, ' program will be terminated.'
                    stop
                 endif
-                write(2,'(5E15.7)',iostat=ios) ((wxyrs(k,i,j),k=1,2),i=1,ni)
+                write(AMPI_LUN(2),'(5E15.7)',iostat=ios) ((wxyrs(k,i,j),k=1,2),i=1,ni)
                 if(ios.ne.0) then
                    print *, ' error deteced in writing output file.'
                    print *, ' program will be terminated.'
@@ -554,7 +560,7 @@
 
  9999 continue
 
-      close(2)
+      close(AMPI_LUN(2))
 
       print *, ''
       print *, 'done.'

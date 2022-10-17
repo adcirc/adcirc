@@ -21,16 +21,17 @@ c-------------------------------------------------------------------------
       real(8),allocatable :: startdry(:), vcanopy(:), z0land(:,:)
       real(8),allocatable :: fric(:)
 
-      open(14,file='fort.14')
-      read(14,'(A)') agrid
-      read(14,*) ne,np
+      open(AMPI_LUN(14),file='fort.14')
+      call AMPI_LUN_REGISTER(AMPI_LUN(14),file='fort.14')
+      read(AMPI_LUN(14),'(A)') agrid
+      read(AMPI_LUN(14),*) ne,np
 
       allocate( x(np), y(np), dp(np) )
 
       do i=1,np
-         read(14,*) idumy,x(i),y(i),dp(i)
+         read(AMPI_LUN(14),*) idumy,x(i),y(i),dp(i)
       enddo
-      close(14)
+      close(AMPI_LUN(14))
 
       allocate( startdry(np), vcanopy(np), z0land(np,12), fric(np) )
 
@@ -38,46 +39,47 @@ c-----------------------------------------------------------------------
 c   read variable descriptors
 c-----------------------------------------------------------------------
 
-      open(13,file='fort.13')
-      read(13,'(A)') agrid2
+      open(AMPI_LUN(13),file='fort.13')
+      call AMPI_LUN_REGISTER(AMPI_LUN(13),file='fort.13')
+      read(AMPI_LUN(13),'(A)') agrid2
       print *, agrid2
-      read(13,*)  np
+      read(AMPI_LUN(13),*)  np
       print *, "np = ",np
-      read(13,*)  nattr
+      read(AMPI_LUN(13),*)  nattr
       print *, "nattr = ", nattr
       do i=1, nattr
-         read(13,'(A)') attr
+         read(AMPI_LUN(13),'(A)') attr
          print *, "found attribute = ",trim(attr)
 
-         read(13,'(A)') inline
+         read(AMPI_LUN(13),'(A)') inline
          print *, "units = ", trim(inline)
 
-         read(13,*) idumy   
+         read(AMPI_LUN(13),*) idumy   
          print *, "values per node = ", idumy      
 
          if (trim(attr).eq. prim_weight) then
-           read(13,*) prim_weight_def 
+           read(AMPI_LUN(13),*) prim_weight_def 
            print *, "prim_weight default = ", prim_weight_def
 
          elseif (trim(attr).eq. mannings) then
-           read(13,*) mannings_def 
+           read(AMPI_LUN(13),*) mannings_def 
            print *, "mannings default = ", mannings_def
 
          elseif (trim(attr).eq. surface_substate) then
-           read(13,*) surface_substate_def 
+           read(AMPI_LUN(13),*) surface_substate_def 
            print *, "surface_substate default = ", surface_substate_def
 
          elseif (trim(attr).eq. surface_canopy) then
-           read(13,*) surface_canopy_def 
+           read(AMPI_LUN(13),*) surface_canopy_def 
            print *, "surface_canopy default = ", surface_canopy_def
 
          elseif (trim(attr).eq. surface_derl) then
-           read(13,*) surface_derl_def(1:12) 
+           read(AMPI_LUN(13),*) surface_derl_def(1:12) 
            print *, "surface_derl default = "
            print *, surface_derl(1:12)
 
          elseif (trim(attr).eq. sea_surface_hag) then
-           read(13,*) sea_surface_hag_def 
+           read(AMPI_LUN(13),*) sea_surface_hag_def 
            print *, "surface_surface_hag default = ", sea_surface_hag_def
          endif
       enddo
@@ -87,86 +89,88 @@ c  read variable values
 c-----------------------------------------------------------------------
         
       do i=1, nattr
-         read(13,'(A)') attr
+         read(AMPI_LUN(13),'(A)') attr
          print *, "processing: ",trim(attr)
          if (trim(attr).eq. prim_weight) then
-           read(13,*) ncount           
+           read(AMPI_LUN(13),*) ncount           
            print *, "ncount = ", ncount
            do j=1, ncount
-              read(13,'(A)') inline
+              read(AMPI_LUN(13),'(A)') inline
            enddo
          elseif (trim(attr).eq. mannings) then
            do j=1, np
               fric(j) = mannings_def
            enddo 
-           read(13,*) ncount           
+           read(AMPI_LUN(13),*) ncount           
            print *, "ncount = ", ncount
            do j=1, ncount
-              read(13,*) inode, value
+              read(AMPI_LUN(13),*) inode, value
               fric(inode) = value
            enddo
          elseif (trim(attr).eq. surface_substate) then
            do j=1, np
               startdry(j) = surface_substate_def 
            enddo 
-           read(13,*) ncount           
+           read(AMPI_LUN(13),*) ncount           
            print *, "ncount = ", ncount
            do j=1, ncount
-              read(13,*) inode, value
+              read(AMPI_LUN(13),*) inode, value
               startdry(inode) = 1.0  
            enddo
          elseif (trim(attr).eq. surface_canopy) then
            do j=1, np
               vcanopy(j) = surface_canopy_def   
            enddo 
-           read(13,*) ncount           
+           read(AMPI_LUN(13),*) ncount           
            print *, "ncount = ", ncount
            do j=1, ncount
-              read(13,*) inode, value
+              read(AMPI_LUN(13),*) inode, value
               vcanopy(inode) = value
            enddo
          elseif (trim(attr).eq. surface_derl) then
            do j=1, np
               z0land(j,1:12) = surface_derl_def(1:12)
            enddo 
-           read(13,*) ncount           
+           read(AMPI_LUN(13),*) ncount           
            print *, "ncount = ", ncount
            do j=1, ncount
-              read(13,*) inode, z0land(inode,1:12)
+              read(AMPI_LUN(13),*) inode, z0land(inode,1:12)
            enddo
          elseif (trim(attr).eq. sea_surface_hag) then
-           read(13,*) ncount           
+           read(AMPI_LUN(13),*) ncount           
            print *, "ncount = ", ncount
            if (ncount .gt. 0) then
              do j=1, ncount
-              read(13,'(A)') inline
+              read(AMPI_LUN(13),'(A)') inline
              enddo
            endif
          endif
       enddo
-      close(13)
+      close(AMPI_LUN(13))
 
 c Write fort.12 file
 
       print *, "writing fort.12 file"
-      open(12,file='fort.12')
-      write(12,'(A)') agrid2
-      write(12,*) ne,np
+      open(AMPI_LUN(12),file='fort.12')
+      call AMPI_LUN_REGISTER(AMPI_LUN(12),file='fort.12')
+      write(AMPI_LUN(12),'(A)') agrid2
+      write(AMPI_LUN(12),*) ne,np
       do i=1,np
-         write(12,'(I8,16E17.9)') i,x(i),y(i),startdry(i),
-     &     (z0land(i,j),j=1, 12),vcanopy(i)
+         write(AMPI_LUN(12),'(I8,16E17.9)') i,x(i),y(i),startdry(i),
+     &    (z0land(i,j),j=1, 12),vcanopy(i)
       enddo  
-      close(12)
+      close(AMPI_LUN(12))
 
 c Write fort.21 file
 
       print *, "writing fort.21 file"
-      OPEN(21,FILE='fort.21')
-      write(21,'(A)') agrid
+      OPEN(AMPI_LUN(21),FILE='fort.21')
+      call AMPI_LUN_REGISTER(AMPI_LUN(21),FILE='fort.21')
+      write(AMPI_LUN(21),'(A)') agrid
       do i=1, np
-         write(21,'(I8,E17.9)') i, fric(i)
+         write(AMPI_LUN(21),'(I8,E17.9)') i, fric(i)
       enddo
-      close(21)
+      close(AMPI_LUN(21))
 C
       stop
       end

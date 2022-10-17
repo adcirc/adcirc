@@ -18,6 +18,8 @@
 !-----------------------------------------------------------------------
 
         MODULE adcircCompare_module
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
 #ifdef ADCNETCDF            
             USE NETCDF
 #endif           
@@ -65,7 +67,7 @@
                 I = 0
                 DO
                     I = I + 1
-                    INQUIRE(UNIT=I,OPENED=ISOPEN)
+                    INQUIRE(UNIT=AMPI_LUN(I),OPENED=ISOPEN)
                     IF(ISOPEN)CYCLE
                     GETFREEUNIT = I
                     EXIT
@@ -494,10 +496,10 @@
 
                 io = getFreeUnit()
                 OPEN(FILE=TRIM(filename),UNIT=io,ACTION="READ")
-                READ(io,'(A)') header
-                READ(io,'(A)') header
-                READ(io,'(A)') header
-                CLOSE(io)
+                READ(AMPI_LUN(io),'(A)') header
+                READ(AMPI_LUN(io),'(A)') header
+                READ(AMPI_LUN(io),'(A)') header
+                CLOSE(AMPI_LUN(io))
 
                 READ(header,*,ERR=100,END=100) JunkR,JunkI,JunkI,JunkR
                 checkFormat_fullFormatAscii = .FALSE.
@@ -517,10 +519,10 @@
 
                 io = getFreeUnit()
                 OPEN(FILE=TRIM(filename),UNIT=io,ACTION="READ")
-                READ(io,'(A)') header
-                READ(io,'(A)') header
-                READ(io,'(A)') header
-                CLOSE(io)
+                READ(AMPI_LUN(io),'(A)') header
+                READ(AMPI_LUN(io),'(A)') header
+                READ(AMPI_LUN(io),'(A)') header
+                CLOSE(AMPI_LUN(io))
 
                 READ(header,*,ERR=100,END=100) JunkR,JunkI,JunkI,JunkR
                 checkFormat_sparseFormatAscii = .TRUE.
@@ -561,9 +563,9 @@
                 CHARACTER(200)          :: header
                 io = getFreeUnit()
                 OPEN(FILE=TRIM(filename),UNIT=io,ACTION="READ")
-                READ(io,'(A)') header
-                READ(io,'(A)') header
-                CLOSE(io)
+                READ(AMPI_LUN(io),'(A)') header
+                READ(AMPI_LUN(io),'(A)') header
+                CLOSE(AMPI_LUN(io))
                 ! FIXME: the numsnaps in the ascii output file header
                 ! will be wrong if the file has been appended after 
                 ! hotstart (numsnaps is computed and written at cold
@@ -608,8 +610,8 @@
                 IF(filetype.EQ.1.OR.filetype.EQ.4)THEN
                     fileunit = getFreeUnit()
                     OPEN(FILE=TRIM(filename),UNIT=fileunit,ACTION="READ")
-                    READ(fileunit,*) header
-                    READ(fileunit,*) header
+                    READ(AMPI_LUN(fileunit),*) header
+                    READ(AMPI_LUN(fileunit),*) header
                 ELSEIF(filetype.EQ.3)THEN
 #ifdef ADCNETCDF                    
                     CALL CHECK(NF90_OPEN(TRIM(filename),NF90_NOWRITE,fileunit))
@@ -627,7 +629,7 @@
                 INTEGER,INTENT(IN) :: filetype
 
                 IF(filetype.EQ.1.OR.filetype.EQ.4)THEN
-                    CLOSE(fileunit)
+                    CLOSE(AMPI_LUN(fileunit))
                 ELSEIF(filetype.EQ.3)THEN
                     !CALL CHECK(NF90_CLOSE(fileunit))
                 ELSE
@@ -648,9 +650,9 @@
                 INTEGER               :: I,J
                 INTEGER               :: junki
 
-                READ(io_unit,*) time,timestep
+                READ(AMPI_LUN(io_unit),*) time,timestep
                 DO I = 1,nnodes
-                   READ(io_unit,*) junkI,(nodalData(I,J),J=1,nvalues)
+                   READ(AMPI_LUN(io_unit),*) junkI,(nodalData(I,J),J=1,nvalues)
                 ENDDO
 
                 RETURN
@@ -669,10 +671,10 @@
                 INTEGER               :: I,J
                 REAL(8)               :: defaultvalue
 
-                READ(io_unit,*) time,timestep,nnondefault,defaultvalue
+                READ(AMPI_LUN(io_unit),*) time,timestep,nnondefault,defaultvalue
                 nodaldata(:,:) = defaultvalue
                 DO I = 1,nnondefault
-                    READ(io_unit,*) node,(nodalData(node,J),J=1,nvalues)
+                    READ(AMPI_LUN(io_unit),*) node,(nodalData(node,J),J=1,nvalues)
                 ENDDO
 
                 RETURN

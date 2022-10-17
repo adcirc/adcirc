@@ -1,4 +1,6 @@
       MODULE lsq
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
 
 !  Module for unconstrained linear least-squares calculations.
 !  The algorithm is suitable for updating LS calculations as more

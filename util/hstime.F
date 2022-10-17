@@ -40,28 +40,28 @@ C
          CASE("-n") 
             netCDFFormat = .true.
 #ifndef ADCNETCDF
-            WRITE(0,*) "ERROR: hstime: NetCDF hotstart format was " //
-     &     " specified but hstime was not compiled with NetCDF support." //
-     &     " You must recompile hstime with NetCDF support." 
-            write(6,*) 'null'
+            WRITE(AMPI_LUN(0),*) "ERROR: hstime: NetCDF hotstart format was " //
+     &    " specified but hstime was not compiled with NetCDF support." //
+     &    " You must recompile hstime with NetCDF support." 
+            write(AMPI_LUN(6),*) 'null'
             STOP
 #endif
          CASE("-f")
             i = i + 1
             CALL getArg(i,fileName)
          CASE DEFAULT
-            write(0,*) "ERROR: hstime: command line option '",
-     &         cmdLineArg(1:2),"' was not recognized."
-            write(6,*) 'null'
+            write(AMPI_LUN(0),*) "ERROR: hstime: command line option '",
+     &        cmdLineArg(1:2),"' was not recognized."
+            write(AMPI_LUN(6),*) 'null'
             stop
          END SELECT
       END DO
 C
       INQUIRE(FILE=TRIM(fileName),EXIST=fileFound)
       IF (fileFound.eqv..false.) THEN
-         WRITE(0,*) "ERROR: hstime: the hotstart file '",
-     &      TRIM(fileName),"' was not found."
-         write(6,*) 'null'
+         WRITE(AMPI_LUN(0),*) "ERROR: hstime: the hotstart file '",
+     &     TRIM(fileName),"' was not found."
+         write(AMPI_LUN(6),*) 'null'
          STOP
       ENDIF         
 C
@@ -75,10 +75,10 @@ C
          call check_err(iret)        
          !jgf51.41: Check to make sure the file actually has data.
          if (timesLen.eq.0) then
-            write(6,*) 'null' ! return nothing to stdout 
-            close(99)
+            write(AMPI_LUN(6),*) 'null' ! return nothing to stdout 
+            close(AMPI_LUN(99))
             ! write an error message to stderr for analyst
-            write(0,*) 'ERROR: hstime: Hotstart file contains no data.'
+            write(AMPI_LUN(0),*) 'ERROR: hstime: Hotstart file contains no data.'
             stop
          endif
          allocate(times(timesLen))
@@ -91,18 +91,20 @@ C
          call check_err(iret)        
 #endif
       ELSE
-         OPEN(99,FILE=TRIM(fileName),ACCESS='DIRECT',RECL=8,
-     &      ACTION='READ',IOSTAT=errorIO,STATUS='OLD')
+         OPEN(AMPI_LUN(99),FILE=TRIM(fileName),ACCESS='DIRECT',RECL=8,
+     &     ACTION='READ',IOSTAT=errorIO,STATUS='OLD')
+         call AMPI_LUN_REGISTER(AMPI_LUN(99),FILE=TRIM(fileName),ACCESS='DIRECT',RECL=8,
+     &     ACTION='READ',IOSTAT=errorIO,STATUS='OLD')
          IF (errorIO.gt.0) THEN
-            WRITE(0,*) "ERROR: hstime: I/O error when opening existing
-     &         hotstart file '",TRIM(fileName),"'."
-            write(6,*) 'null'
+            WRITE(AMPI_LUN(0),*) "ERROR: hstime: I/O error when opening existing
+     &        hotstart file '",TRIM(fileName),"'."
+            write(AMPI_LUN(6),*) 'null'
             STOP
          ENDIF
          IHOTSTP=3
-         READ(99,REC=IHOTSTP) TIMEHSF
+         READ(AMPI_LUN(99),REC=IHOTSTP) TIMEHSF
          WRITE(*,*) TIMEHSF
-         CLOSE(99)           
+         CLOSE(AMPI_LUN(99))           
       ENDIF
       END PROGRAM hstime
 C
@@ -112,8 +114,8 @@ C
       include 'netcdf.inc'
       INTEGER, intent(in) :: iret
       if (iret .ne. NF_NOERR) then
-         WRITE(0,*) "ERROR: hstime: ",nf_strerror(iret)
-         write(6,*) 'null'
+         WRITE(AMPI_LUN(0),*) "ERROR: hstime: ",nf_strerror(iret)
+         write(AMPI_LUN(6),*) 'null'
          stop
       endif
       end subroutine check_err

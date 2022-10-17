@@ -60,6 +60,8 @@
       !
       !=================================================================
       MODULE vortex
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE SIZES, ONLY : sz
       USE GLOBAL, ONLY : sphericalDistance, deg2rad, rad2deg,
      &                   omega, mb2pa, rhoAir, kt2ms, nm2m, m2nm,
