@@ -37,6 +37,44 @@ ifeq ($(compiler),gnu)
      MULTIPLE := TRUE
   endif
 endif
+ifeq ($(compiler),ampi)
+  PPFC		:=  ampif90 -pieglobals -DAMPI_COMP -module CommonLBs
+  FC		:=  ampif90 -pieglobals -DAMPI_COMP -module CommonLBs
+  PFC		:=  ampif90 -pieglobals -DAMPI_COMP -module CommonLBs
+#  for easier debugging, without migration, in p=vp mode with charm
+#  built non-smp
+#  PPFC		:=  ampif90 -DAMPI_COMP
+#  FC		:=  ampif90 -DAMPI_COMP
+#  PFC		:=  ampif90 -DAMPI_COMP
+  FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-none -march=corei7-avx -m64
+
+  ifeq ($(DEBUG),full)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND -DDEBUG_WARN_ELEV
+  endif	
+  FFLAGS2	:=  $(FFLAGS1)
+  FFLAGS3	:=  $(FFLAGS1)
+  DA		:=  -DREAL8 -DLINUX -DCSCA
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
+  DPRE		:=  -DREAL8 -DLINUX
+  IMODS 	:=  -I
+  CC		:= gcc
+  CCBE		:= $(CC)
+  CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX -march=corei7-avx -m64
+  CLIBS	:=
+  LIBS		:= 
+  MSGLIBS	:=
+  ifeq ($(NETCDF),enable)
+        FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
+  endif
+  $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else
+     MULTIPLE := TRUE
+  endif
+endif
+
+
 endif
 #$(MACHINE)
 
@@ -50,10 +88,10 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 # ***NOTE*** User must select between various Linux setups
 #            by commenting/uncommenting the appropriate compiler
 #
-#compiler=gnu
+compiler=gnu
 #compiler=g95
 #compiler=gfortran
-compiler=intel
+#compiler=intel
 #compiler=intel-ND
 #compiler=intel-lonestar
 #compiler=intel-sgi
@@ -114,6 +152,7 @@ ifeq ($(compiler),gfortran)
      XDMFPATH    := /home/jason/projects/XDMF/Code/latestCode
      XDMFLIBPATH := /home/jason/projects/XDMF/Code/testLatest
   endif
+
   PPFC		:=  gfortran
   FC		:=  gfortran
   PFC		:=  mpif90

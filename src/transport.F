@@ -31,6 +31,8 @@ C                     boundary conditions on the ocean boundary.
 C
 C  kmd48.33bc add variables from global for boundary conditions and
 C             removed ScreenUnit
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL, ONLY: NODECODE, NOFF,  
      &                  HFLUX, sponge, TTBCTIME1, TTBCTIME2,TTBCRATIO,
      &                  q_heat1, q_heat2, TTBCTIMEINC, BCFLAG_TEMP 
@@ -427,7 +429,7 @@ C   kmd48.33 add information for the top temperature boundary condition
               TTBCTIME2=TTBCTIME1+TTBCTIMEINC
               DO NumofNodes=1,NP
                  q_heat1(NumofNodes)=q_heat2(NumofNodes)
-                 READ(38,*) NOD, q_heat2(NumofNodes)
+                 READ(AMPI_LUN(38),*) NOD, q_heat2(NumofNodes)
               END DO
            END IF ! ends time if loop
            TTBCRATIO=(TimeLoc-TTBCTIME1)/TTBCTIMEINC
@@ -450,7 +452,7 @@ C   kmd48.33 add information for the top temperature boundary condition
               DO NumofNodes=1,NP
                  q_heat1(NumofNodes)=q_heat2(NumofNodes)
               END DO
-              READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
+              READ(AMPI_LUN(38),*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
               DO NumofNodes=1,NP
                 q_heat2(NumofNodes)=-TMP(NumofNodes,1)-
      &               TMP(NumofNodes,2)+TMP(NumofNodes,3)-
@@ -479,7 +481,7 @@ C   kmd48.33 add information for the top temperature boundary condition
               DO NumofNodes=1,NP
                  q_heat1(NumofNodes)=q_heat2(NumofNodes)
               END DO
-              READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
+              READ(AMPI_LUN(38),*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
               DO NumofNodes=1,NP
                 q_heat2(NumofNodes)=TMP(NumofNodes,4)+
      &               TMP(NumofNodes,3)-TMP(NumofNodes,1)+
@@ -1300,6 +1302,8 @@ C    Adapted from Numerical Recipes chapter 2                          *
 C***********************************************************************
 c
       SUBROUTINE TRIDAG2(A,B,C,R,U,N)
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL, ONLY: ScreenUnit
       USE GLOBAL_3DVS, ONLY : SZ
       IMPLICIT NONE
@@ -1313,8 +1317,8 @@ c     check for zero elements on diagonal
 c     
       DO J=1,N
          if(B(j).EQ.0.) then
-            write(screenunit,*) 'Problem in Tridag Solver.  ',
-     +           'B array value in row ',j,' = 0'
+            write(AMPI_LUN(screenunit),*) 'Problem in Tridag Solver.  ',
+     +          'B array value in row ',j,' = 0'
             CALL EXIT(1)
          endif
       end do
@@ -1324,8 +1328,8 @@ c
          GAM(J) = C(J-1)/BET
          BET=B(J)-A(J)*GAM(J)
          if (BET.EQ.0) then
-            write(screenunit,*) ' Problem in Tridag Solver.  ',
-     +           ' BET  = 0.  Solver failed.'
+            write(AMPI_LUN(screenunit),*) ' Problem in Tridag Solver.  ',
+     +          ' BET  = 0.  Solver failed.'
             CALL EXIT(1)
          endif
          U(J)=(R(J)-A(J)*U(J-1))/BET
@@ -1542,10 +1546,10 @@ C*************************************************************************
  100  CONTINUE
 
       IF(IDiag.EQ.2) THEN
-         WRITE(2,*) '******** cubic_vertical_interpolation **********'
-         WRITE(2,*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
-     &        '      transN2_z'
-         WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,transN2_z
+         WRITE(AMPI_LUN(2),*) '******** cubic_vertical_interpolation **********'
+         WRITE(AMPI_LUN(2),*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
+     &       '      transN2_z'
+         WRITE(AMPI_LUN(2),777) NN,J,SigmaNN,SigBelo,SigAbov,transN2_z
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
 

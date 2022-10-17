@@ -12,6 +12,8 @@ C     ------------------------------------------------------------------
 !     module. 
 C     ------------------------------------------------------------------
       module boundaries
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
 C     ------------------------------------------------------------------
       use sizes, only : sz
       implicit none
@@ -354,8 +356,8 @@ C     ---------
      &         internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn(nvell(i)))            
             ifwpCount = ifwpCount + 1            
          case default
-             write(6,'(a,i0,a)') "ERROR: The boundary type ",ibtype_orig(i),
-     &        " was found in the file but is not valid."
+             write(AMPI_LUN(6),'(a,i0,a)') "ERROR: The boundary type ",ibtype_orig(i),
+     &       " was found in the file but is not valid."
              CALL EXIT(1)
          end select
       end do
@@ -586,8 +588,8 @@ C     ------------------------------------------------------------------
             print *, 'error: ibtype 5 and 25 not supported by adcprep.'
             CALL EXIT(1)
          case default
-            write(6,'(a,i0,a)') 'ERROR: ibtype ',ibtype(k),
-     &          ' not supported by adcprep.'
+            write(AMPI_LUN(6),'(a,i0,a)') 'ERROR: ibtype ',ibtype(k),
+     &         ' not supported by adcprep.'
          end select
       end do    
 

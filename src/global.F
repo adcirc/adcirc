@@ -10,6 +10,8 @@ C                                                                             *
 C******************************************************************************
 C
       MODULE GLOBAL
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE SIZES, ONLY : SZ 
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
 #ifdef DATETIME
@@ -879,13 +881,19 @@ C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
 C...
 C     cms51.06: moved fort.33 file from read_input.F to here
 #ifdef CMPI
-      OPEN(16,FILE=trim(localdir)//'/'//'fort.16', ACTION='WRITE',
-     &    STATUS='REPLACE')
-      OPEN(33,FILE=trim(localdir)//'/'//'fort.33', ACTION='WRITE',
-     &    STATUS='REPLACE')
+      OPEN(AMPI_LUN(16),FILE=trim(localdir)//'/'//'fort.16', ACTION='WRITE',
+     &   STATUS='REPLACE')
+      call AMPI_LUN_REGISTER(AMPI_LUN(16),FILE=trim(localdir)//'/'//'fort.16', ACTION='WRITE',
+     &   STATUS='REPLACE')
+      OPEN(AMPI_LUN(33),FILE=trim(localdir)//'/'//'fort.33', ACTION='WRITE',
+     &   STATUS='REPLACE')
+      call AMPI_LUN_REGISTER(AMPI_LUN(33),FILE=trim(localdir)//'/'//'fort.33', ACTION='WRITE',
+     &   STATUS='REPLACE')
 #else
-      OPEN(16,FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
-      OPEN(33,FILE='fort.33', ACTION='WRITE', STATUS='REPLACE')
+      OPEN(AMPI_LUN(16),FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
+      call AMPI_LUN_REGISTER(AMPI_LUN(16),FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
+      OPEN(AMPI_LUN(33),FILE='fort.33', ACTION='WRITE', STATUS='REPLACE')
+      call AMPI_LUN_REGISTER(AMPI_LUN(33),FILE='fort.33', ACTION='WRITE', STATUS='REPLACE')
 #endif
 C--------------------------------------------------------------------
       END SUBROUTINE openLogFile
@@ -921,16 +929,16 @@ C
          IF (NSCREEN.ne.0) THEN
             IF (level.ge.NABOUT) THEN
 #ifdef FULL_STACK
-               write(screenUnit,331,advance="no")
-     &             trim(logLevelNames(level+2)),
-     &             (trim(messageSources(j)),j=1,sourceNumber)
-               write(screenUnit,332) trim(message)
+               write(AMPI_LUN(screenUnit),331,advance="no")
+     &            trim(logLevelNames(level+2)),
+     &            (trim(messageSources(j)),j=1,sourceNumber)
+               write(AMPI_LUN(screenUnit),332) trim(message)
 #else
-               write(screenUnit,333) trim(logLevelNames(level+2)),
-     &             trim(messageSources(sourceNumber)), trim(message)
+               write(AMPI_LUN(screenUnit),333) trim(logLevelNames(level+2)),
+     &            trim(messageSources(sourceNumber)), trim(message)
 #endif
 !#ifdef FLUSH_MESSAGES
-               flush(screenUnit)
+               flush(AMPI_LUN(screenUnit))
 !#endif
             ENDIF
          ENDIF
@@ -964,15 +972,15 @@ C--------------------------------------------------------------------
 C
       IF (level.ge.NABOUT) THEN
 #ifdef FULL_STACK
-         write(16,331,advance="no") trim(logLevelNames(level+2)),
-     &       (trim(messageSources(j)),j=1,sourceNumber)
-         write(16,332) trim(message)
+         write(AMPI_LUN(16),331,advance="no") trim(logLevelNames(level+2)),
+     &      (trim(messageSources(j)),j=1,sourceNumber)
+         write(AMPI_LUN(16),332) trim(message)
 #else
-         write(16,333) trim(logLevelNames(level+2)),
-     &       trim(messageSources(sourceNumber)), trim(message)
+         write(AMPI_LUN(16),333) trim(logLevelNames(level+2)),
+     &      trim(messageSources(sourceNumber)), trim(message)
 #endif
 !#ifdef FLUSH_MESSAGES
-               flush(16)
+               flush(AMPI_LUN(16))
 !#endif
       ENDIF
 331   FORMAT(A,": ",A,50(:,"->",A))
@@ -1074,8 +1082,10 @@ C     Check to see if file exists
       endif
 C
 C     Open existing file
-      OPEN(lun,FILE=trim(filename),STATUS='OLD',
-     & ACTION='READ',IOSTAT=errorIO)
+      OPEN(AMPI_LUN(lun),FILE=trim(filename),STATUS='OLD',
+     &ACTION='READ',IOSTAT=errorIO)
+      call AMPI_LUN_REGISTER(AMPI_LUN(lun),FILE=trim(filename),STATUS='OLD',
+     &ACTION='READ',IOSTAT=errorIO)
       if (errorIO.ne.0) then
           write(scratchMessage,25) trim(filename)
   25      format("Could not open the file '",A,"'.")
@@ -1547,7 +1557,7 @@ C...
       case('XDMF')
          typeHolder = 7
       case default
-         write(6,'("WARNING: Unrecognized format ",i0,".")') trim(typeString)
+         write(AMPI_LUN(6),'("WARNING: Unrecognized format ",i0,".")') trim(typeString)
       end select
       !----------------------------------------------------------------------
       end subroutine getFormatInteger

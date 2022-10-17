@@ -2,6 +2,8 @@ C
 C--------DW for sponge layer
 C     
       MODULE SPONGELAYER 
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       
       USE GLOBAL, ONLY: STATIM, IFNLFA, ETA2, UU2, VV2, G, QX2, QY2
       USE SIZES, ONLY: SZ
@@ -117,11 +119,11 @@ C--------DW
       
         SELECT CASE( sponge_dis_mthd )
         CASE (0)
-          write(16,*) "Sponge Layer: use an operator 
-     & splitting in discretization" 
+          write(AMPI_LUN(16),*) "Sponge Layer: use an operator 
+     &splitting in discretization" 
         CASE (1)
-          write(16,*) "Sponge Layer: implement in GWCE
-     & and Non conservative Momentum equation" 
+          write(AMPI_LUN(16),*) "Sponge Layer: implement in GWCE
+     &and Non conservative Momentum equation" 
         END SELECT
 
       END IF
@@ -200,7 +202,8 @@ C     update QX
         REAL(8), parameter:: SMALL = 1.0D-10 ;
 
         IF ( NumNodesAbsLayer(1) > 0 ) THEN
-           OPEN(unit=550,FILE='spgelment.dat') ;
+           OPEN(unit=AMPI_LUN(550),FILE='spgelment.dat') ;
+           call AMPI_LUN_REGISTER(unit=AMPI_LUN(550),FILE='spgelment.dat') ;
  
            !     Flag element inside a sponge layer
            allocate( spgflag(NE) ) ; spgflag = .FALSE. ;
@@ -210,10 +213,10 @@ C     update QX
               IF ( sum(abs(SSIGMA_ETA(idx,1))) > SMALL ) THEN
                  spgflag(IE) = .TRUE. ;
 
-                 WRITE(550,*) IE ; 
+                 WRITE(AMPI_LUN(550),*) IE ; 
               END IF  
            END DO
-           CLOSE(550) ; 
+           CLOSE(AMPI_LUN(550)) ; 
 
         END IF
 
@@ -344,29 +347,29 @@ C     update QX
 
            SELECT CASE(AbsLayerType) 
            CASE (0)
-             write(16,*) "Sponge Layer: Fully Absorbing"
+             write(AMPI_LUN(16),*) "Sponge Layer: Fully Absorbing"
              AbsLayerNBF = 0 ;
              NO_MET_IN_SPONGE = .true.
              NO_BPG_IN_SPONGE = .true.
-             write(16,*) "MET and BPG turned off in sponge!"
+             write(AMPI_LUN(16),*) "MET and BPG turned off in sponge!"
            CASE (1)
-             write(16,*) "Sponge Layer: Generating(Tides)-Absorbing"
+             write(AMPI_LUN(16),*) "Sponge Layer: Generating(Tides)-Absorbing"
              NO_MET_IN_SPONGE = .true.
              NO_BPG_IN_SPONGE = .true.
-             write(16,*) "MET and BPG turned off in sponge!"
+             write(AMPI_LUN(16),*) "MET and BPG turned off in sponge!"
              CALL READFORT53001()
              CALL READFORT54001()
            CASE (2)
-             write(16,*) "Sponge Layer: Generating(Tides+Arb)-Absorbing"
+             write(AMPI_LUN(16),*) "Sponge Layer: Generating(Tides+Arb)-Absorbing"
              NO_MET_IN_SPONGE = .true.
              NO_BPG_IN_SPONGE = .true.
-             write(16,*) "MET and BPG turned off in sponge!"
+             write(AMPI_LUN(16),*) "MET and BPG turned off in sponge!"
              CALL READFORT53001()
              CALL READFORT54001()
              CALL READFORT2001(.true.)
            CASE (-1)
-             write(16,*) "Sponge Layer: Generating(Arbitrary)-Absorbing"
-             write(16,*) "MET and BPG kept on in sponge!"
+             write(AMPI_LUN(16),*) "Sponge Layer: Generating(Arbitrary)-Absorbing"
+             write(AMPI_LUN(16),*) "MET and BPG kept on in sponge!"
              CALL READFORT2001(.true.)
              AbsLayerNBF = 0 ;
            END SELECT
@@ -393,11 +396,13 @@ C     update QX
         DEGRAD = PIL/180.D0 ; 
 
         FUNIT = 531 ; 
-        OPEN(UNIT = FUNIT, 
-     &     FILE=TRIM(INPUTDIR)//'/'//'fort.53001', IOSTAT = IOS ) ;
+        OPEN(UNIT =AMPI_LUN( FUNIT), 
+     &    FILE=TRIM(INPUTDIR)//'/'//'fort.53001', IOSTAT = IOS ) ;
+        call AMPI_LUN_REGISTER(UNIT =AMPI_LUN( FUNIT), 
+     &    FILE=TRIM(INPUTDIR)//'/'//'fort.53001', IOSTAT = IOS ) ;
 
 
-        READ(FUNIT,*) AbsLayerNBF ; 
+        READ(AMPI_LUN(FUNIT),*) AbsLayerNBF ; 
         IF ( .NOT. ALLOCATED(AbsLayerEtaAMIG) ) THEN
            ALLOCATE(AbsLayerEtaAMIG(AbsLayerNBF)) ; 
         END IF
@@ -412,8 +417,8 @@ C     update QX
         END IF
 
         DO KK = 1, AbsLayerNBF
-           READ(FUNIT,*)  AbsLayerEtaAMIG(KK), AbsLayerEtaFF(KK), 
-     &            AbsLayerEtaFACE(KK), IGNOREMSG ;
+           READ(AMPI_LUN(FUNIT),*)  AbsLayerEtaAMIG(KK), AbsLayerEtaFF(KK), 
+     &           AbsLayerEtaFACE(KK), IGNOREMSG ;
 
            AbsLayerEtaFACE(KK) = AbsLayerEtaFACE(KK)*DEGRAD ; 
 
@@ -424,7 +429,7 @@ C     update QX
            END IF
         END DO
 
-        READ(FUNIT,*) NPTMP
+        READ(AMPI_LUN(FUNIT),*) NPTMP
         IF ( NPTMP /= NumNodesAbsLayer(1) ) THEN
            PRINT*, "Error in READFORT53001(): 1" ; 
            CALL EXIT(1)
@@ -438,7 +443,7 @@ C     update QX
         END IF       
 
         DO KK = 1, NPTMP
-           READ(FUNIT,*) KTMP
+           READ(AMPI_LUN(FUNIT),*) KTMP
            
            ! PRINT*, KTMP, AbsLayer_Eta_NodesID(KK)
            IF ( KTMP /= AbsLayer_Eta_NodesID(KK) ) THEN
@@ -447,7 +452,7 @@ C     update QX
            END IF
            
            DO JJ = 1, AbsLayerNBF
-              READ(FUNIT,*) AbsLayerEtaEMO(KK,JJ), AbsLayerEtaEFA(KK,JJ) ;
+              READ(AMPI_LUN(FUNIT),*) AbsLayerEtaEMO(KK,JJ), AbsLayerEtaEFA(KK,JJ) ;
 
               !
               ! AbsLayerEtaEFA(KK,JJ) = AbsLayerEtaEFA(KK,JJ)*DEGRAD ;
@@ -457,8 +462,8 @@ C     update QX
         AbsLayerEtaEFA = AbsLayerEtaEFA*DEGRAD ;
 
 
-        CLOSE(FUNIT) ;         
-        WRITE(16,*) "DONE READING FORT.53001" 
+        CLOSE(AMPI_LUN(FUNIT)) ;         
+        WRITE(AMPI_LUN(16),*) "DONE READING FORT.53001" 
 
         RETURN ;
       END SUBROUTINE READFORT53001
@@ -476,11 +481,13 @@ C     update QX
         DEGRAD = PIL/180.D0 ; 
 
         FUNIT = 541 ; 
-        OPEN(UNIT = FUNIT, 
-     &     FILE=TRIM(INPUTDIR)//'/'//'fort.54001', IOSTAT = IOS ) ;
+        OPEN(UNIT =AMPI_LUN( FUNIT), 
+     &    FILE=TRIM(INPUTDIR)//'/'//'fort.54001', IOSTAT = IOS ) ;
+        call AMPI_LUN_REGISTER(UNIT =AMPI_LUN( FUNIT), 
+     &    FILE=TRIM(INPUTDIR)//'/'//'fort.54001', IOSTAT = IOS ) ;
                 
 
-        READ(FUNIT,*) NBF ;
+        READ(AMPI_LUN(FUNIT),*) NBF ;
         IF ( NBF /= AbsLayerNBF ) THEN
            PRINT*, "Error: READFORT54001, inconsistant o. of freq" ;
            CALL EXIT(1)
@@ -500,8 +507,8 @@ C     update QX
         END IF
 
         DO KK = 1, AbsLayerNBF
-           READ(FUNIT,*)  AbsLayerQAMIG(KK), AbsLayerQFF(KK), 
-     &            AbsLayerQFACE(KK), IGNOREMSG ;
+           READ(AMPI_LUN(FUNIT),*)  AbsLayerQAMIG(KK), AbsLayerQFF(KK), 
+     &           AbsLayerQFACE(KK), IGNOREMSG ;
 
            AbsLayerQFACE(KK)=AbsLayerQFACE(KK)*DEGRAD ;
 
@@ -515,7 +522,7 @@ C     update QX
 
         END DO
 
-        READ(FUNIT,*) NPTMP
+        READ(AMPI_LUN(FUNIT),*) NPTMP
         IF ( NPTMP /= NumNodesAbsLayer(2) .AND. 
      &                NPTMP /= NumNodesAbsLayer(3) ) THEN
            PRINT*, "Error in READFORT54001(): 1" ; 
@@ -536,7 +543,7 @@ C     update QX
         END IF       
 
         DO KK = 1, NPTMP
-           READ(FUNIT,*) KTMP
+           READ(AMPI_LUN(FUNIT),*) KTMP
            
            IF ( KTMP /= AbsLayer_MnX_NodesID(KK) ) THEN
              PRINT*, "Error in READFORT53001(): 2" ; 
@@ -544,10 +551,10 @@ C     update QX
            END IF
 
            DO JJ = 1, AbsLayerNBF
-              READ(FUNIT,*) AbsLayerQxEMO(KK,JJ), 
-     &          AbsLayerQxEFA(KK,JJ),
-     &          AbsLayerQyEMO(KK,JJ), 
-     &          AbsLayerQyEFA(KK,JJ) ;  
+              READ(AMPI_LUN(FUNIT),*) AbsLayerQxEMO(KK,JJ), 
+     &         AbsLayerQxEFA(KK,JJ),
+     &         AbsLayerQyEMO(KK,JJ), 
+     &         AbsLayerQyEFA(KK,JJ) ;  
 
 !              AbsLayerQxEFA(KK,JJ) = AbsLayerQxEFA(KK,JJ)*DEGRAD ;
 !              AbsLayerQyEFA(KK,JJ) = AbsLayerQyEFA(KK,JJ)*DEGRAD ;
@@ -557,9 +564,9 @@ C     update QX
         AbsLayerQxEFA = AbsLayerQxEFA*DEGRAD ;
         AbsLayerQyEFA = AbsLayerQyEFA*DEGRAD ;    
 
-        CLOSE(FUNIT) ;         
+        CLOSE(AMPI_LUN(FUNIT)) ;         
 
-        WRITE(16,*) "DONE READING FORT.54001"
+        WRITE(AMPI_LUN(16),*) "DONE READING FORT.54001"
 
         RETURN ;
       END SUBROUTINE READFORT54001
@@ -575,9 +582,11 @@ C     update QX
         FUNIT = 201 ; 
         NPTMP = NumNodesAbsLayer(1)
         IF (FIRST_CALL) THEN
-           OPEN(UNIT = FUNIT, 
-     &         FILE=TRIM(INPUTDIR)//'/'//'fort.2001', IOSTAT = IOS )
-           READ(FUNIT,*) SPTIMINC
+           OPEN(UNIT =AMPI_LUN( FUNIT), 
+     &        FILE=TRIM(INPUTDIR)//'/'//'fort.2001', IOSTAT = IOS )
+           call AMPI_LUN_REGISTER(UNIT =AMPI_LUN( FUNIT), 
+     &        FILE=TRIM(INPUTDIR)//'/'//'fort.2001', IOSTAT = IOS )
+           READ(AMPI_LUN(FUNIT),*) SPTIMINC
            SPTIME1 = STATIM*86400.d0
            SPTIME2 = SPTIME1 + SPTIMINC
            allocate(ArbEta0(NumNodesAbsLayer(1))); 
@@ -589,9 +598,9 @@ C     update QX
            ArbEta0 = 0.D0 ; ArbUU0 = 0.D0 ; ArbVV0 = 0.D0 ;
            ! reading in new value
            DO KK = 1,NPTMP
-              READ(FUNIT,*) ArbEta0(KK), ArbUU0(KK), ArbVV0(KK)
+              READ(AMPI_LUN(FUNIT),*) ArbEta0(KK), ArbUU0(KK), ArbVV0(KK)
            END DO
-           WRITE(16,*) "READ IN FIRST TIMESTEP DATA FOR FORT.2001" 
+           WRITE(AMPI_LUN(16),*) "READ IN FIRST TIMESTEP DATA FOR FORT.2001" 
         ELSE
            ! Updating "0" Arb vectors
            ArbEta0 = ArbEta 
@@ -602,10 +611,10 @@ C     update QX
         ArbEta = 0.D0 ; ArbUU = 0.D0 ; ArbVV = 0.D0 ;
         ! reading in new value
         DO KK = 1,NPTMP
-           READ(FUNIT,*) ArbEta(KK), ArbUU(KK), ArbVV(KK)
+           READ(AMPI_LUN(FUNIT),*) ArbEta(KK), ArbUU(KK), ArbVV(KK)
         END DO
 
-        WRITE(16,*) "READ IN NEW TIMESTEP DATA FOR FORT.2001" 
+        WRITE(AMPI_LUN(16),*) "READ IN NEW TIMESTEP DATA FOR FORT.2001" 
         RETURN ;
       END SUBROUTINE READFORT2001
 

@@ -73,6 +73,8 @@ C******************************************************************************
 C******************************************************************************
 C******************************************************************************
       MODULE ADCIRC_Mod
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
 C******************************************************************************
 C******************************************************************************
 
@@ -127,7 +129,10 @@ C
       REAL(SZ) :: StaTimHS
       REAL(SZ) :: RefTimHS
       REAL(SZ) :: TimeLoc
-      INTEGER :: iargc    ! function to return the number of command line arguments
+      INTEGER :: iargc          ! function to return the number of command line arguments
+#ifdef AMPI_COMP      
+      INTEGER :: ierr
+#endif      
       INTEGER :: argcount ! number of command line arguments
       CHARACTER(2048) :: cmdlinearg ! a single command line argument
       INTEGER :: i        ! command line argument counter
@@ -141,13 +146,17 @@ C
          i = 0
          do while (i.lt.argcount)
             i = i + 1
+#ifndef AMPI_COMP             
             call getarg(i, cmdlinearg)
+#else
+            call ampi_get_command_argument(i-1, cmdlinearg, argcount, ierr)
+#endif            
             select case(cmdlinearg(1:2))
             case("-V","-v") 
                ! write the version number string ... actually it is
                ! a series of two or three numbers with two digits 
                ! separated by dots, e.g., 51.02 or 51.52.07
-               write(6,'(a)') trim(adc_version)                 
+               write(AMPI_LUN(6),'(a)') trim(adc_version)                 
                CALL EXIT(0) 
             case default
                ! do nothing, this is some other command line argument
@@ -205,7 +214,7 @@ C
       FileFmtVersion =
      &   VERSION_NUMBER(FileFmtMajor, FileFmtMinor, FileFmtRev)
       IF ((NSCREEN.NE.0).AND.(MYPROC.EQ.0)) THEN
-         WRITE(ScreenUnit,'(a)')"ADCIRC Version is "//ADC_VERSION
+         WRITE(AMPI_LUN(ScreenUnit),'(a)')"ADCIRC Version is "//ADC_VERSION
       ENDIF
 
       !jgf49.44: Allocate memory for reading and writing full domain arrays
@@ -280,7 +289,7 @@ C...
             ! the IHOT value was vetted already, so this code should
             ! not be reachable
             IF ((NSCREEN.ne.0).and.(myProc.eq.0)) THEN
-               WRITE(screenUnit,*) "ERROR: IHOT=",IHOT," is not valid."
+               WRITE(AMPI_LUN(screenUnit),*) "ERROR: IHOT=",IHOT," is not valid."
             ENDIF
       END SELECT
 
@@ -347,10 +356,10 @@ Corbitt 1203022: Local Advection Flags
       GORho=G/RhoWat0
       GORhoOAMB=GORho/AMB
 
-      WRITE(16,1112)
-      WRITE(16,17931)
-      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,17931)
+      WRITE(AMPI_LUN(16),1112)
+      WRITE(AMPI_LUN(16),17931)
+      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),1112)
+      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),17931)
  1112 FORMAT(/,1X,79('_'))
 17931 FORMAT(//,1X,'LIMITED RUNTIME INFORMATION SECTION ',//)
 
@@ -371,6 +380,9 @@ C******************************************************************************
 C*    ADCIRC run routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Run(NTIME_STP)
+#ifdef HAVE_MPI_MOD
+      USE MPI
+#endif
       USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
       USE GLOBAL, ONLY : iTime, DEBUG, INFO, setMessageSource, allMessage,
      &   unsetMessageSource, statim, dtdp, screenunit, logMessage
@@ -389,6 +401,8 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
 C
       INTEGER, OPTIONAL :: NTIME_STP
       REAL(8) :: TimeLoc
+      INTEGER :: LB_FREQ
+      INTEGER :: IERR
 C
       call setMessageSource("ADCIRC_Run")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
@@ -432,6 +446,14 @@ C             to then call the SWAN time-stepping subroutine.
         !   zc - moved this here so that output occurs after
         !        the SWAN time step has been completed.
         CALL writeOutput2D(ITIME,TimeLoc) ! =>see write_output.F
+#ifdef AMPI_COMP
+        LB_FREQ=10
+        IF(MOD(ITIME, LB_FREQ).EQ.0)THEN
+C          TODO: uncomment below for load balancing:
+          CALL AMPI_MIGRATE(AMPI_INFO_LB_SYNC, IERR)
+        ENDIF
+#endif
+
 100   CONTINUE
 C
       IF (PRESENT(NTIME_STP)) THEN
@@ -586,10 +608,10 @@ C-----------------------------------------------------------------------
      &      MPI_2INTEGER,MPI_MAXLOC,COMM,IERR)
         IF(TERM_GLOBAL(2).NE.0)THEN
             IF(MYPROC.EQ.0)THEN
-                WRITE(ScreenUnit,'(A,I5)') "ERROR: ADCIRC Terminating "//
-     &          "from error originating from MYPROC = ",TERM_GLOBAL(2)
-                WRITE(ScreenUnit,'(A)')    "       Check the local PE "//
-     &          "fort.16 output file for details."
+                WRITE(AMPI_LUN(ScreenUnit),'(A,I5)') "ERROR: ADCIRC Terminating "//
+     &         "from error originating from MYPROC = ",TERM_GLOBAL(2)
+                WRITE(AMPI_LUN(ScreenUnit),'(A)')    "       Check the local PE "//
+     &         "fort.16 output file for details."
             ENDIF
             CALL ADCIRC_TERMINATE()
         ENDIF

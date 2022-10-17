@@ -11,6 +11,8 @@ C******************************************************************************
 
 
       SUBROUTINE VSSTUP()
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL_3DVS
       USE MESH, ONLY : NP      
       IMPLICIT NONE
@@ -101,6 +103,8 @@ c******************************************************************************
       SUBROUTINE VSSOL(IT,TimeLoc)
 C   kmd48.33bc added variable declarations for baroclinic boundary conditions
 c.RJW merged 08282008 Casey 071219: Added the following variable declarations from GLOBAL.
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL, ONLY : NODECODE, NOFF,
      &                   RES_BC_FLAG,
      &                   SBCTIME1, SBCTIME2, TBCTIME1,
@@ -1591,12 +1595,12 @@ C              boundary conditions
             IF(TimeLoc.GT.SBCTIME2) THEN
                SBCTIME1=SBCTIME2
                SBCTIME2=SBCTIME1+SBCTIMEINC
-               READ(36,'(A)') CDUM80
+               READ(AMPI_LUN(36),'(A)') CDUM80
                DO NumofBCNode=1,NETA
                  DO J=1,NFEN
                    RESSAL1(NumofBCNode,J)=RESSAL2(NumofBCNode,J)
                  END DO
-                 READ(36,*) NOD,(RESSAL2(NumofBCNode,J),J=1,NFEN)
+                 READ(AMPI_LUN(36),*) NOD,(RESSAL2(NumofBCNode,J),J=1,NFEN)
                END DO
             END IF
             SBCRATIO=(TimeLoc-SBCTIME1)/SBCTIMEINC
@@ -1613,12 +1617,12 @@ C              boundary conditions
             IF(TimeLoc.GT.TBCTIME2) THEN
                TBCTIME1=TBCTIME2
                TBCTIME2=TBCTIME1+TBCTIMEINC
-               READ(37,'(A)') CDUM80
+               READ(AMPI_LUN(37),'(A)') CDUM80
                DO NumofBCNode=1,NETA
                  DO J=1,NFEN
                    RESTEMP1(NumofBCNode,J)=RESTEMP2(NumofBCNode,J)
                  END DO
-                 READ(37,*) NOD,(RESTEMP2(NumofBCNode,J),J=1,NFEN)
+                 READ(AMPI_LUN(37),*) NOD,(RESTEMP2(NumofBCNode,J),J=1,NFEN)
                END DO
             END IF
             TBCRATIO=(TimeLoc-TBCTIME1)/TBCTIMEINC
@@ -1645,14 +1649,14 @@ C              boundary conditions
                   END DO
 Casey 140701: Shouldn't read the vertex number.
 C                 READ(39,*) NOD, (BCRivSalN2(J,K),K=1,NFEN)
-                  READ(39,*) (BCRivSalN2(J,K),K=1,NFEN)
+                  READ(AMPI_LUN(39),*) (BCRivSalN2(J,K),K=1,NFEN)
                ELSE IF (IDEN.EQ.3) THEN
                   DO K=1,NFEN
                      BCRivTempN1(J,K)=BCRivTempN2(J,K)
                   END DO
 Casey 140701: Shouldn't read the vertex number.
 C                 READ(39,*) NOD, (BCRivTempN2(J,K),K=1,NFEN)
-                  READ(39,*) (BCRivTempN2(J,K),K=1,NFEN)
+                  READ(AMPI_LUN(39),*) (BCRivTempN2(J,K),K=1,NFEN)
                ELSE IF (IDEN.EQ.4) THEN
                   DO K=1,NFEN
                      BCRivSalN1(J,K)=BCRivSalN2(J,K)
@@ -1660,7 +1664,7 @@ C                 READ(39,*) NOD, (BCRivTempN2(J,K),K=1,NFEN)
                   END DO
 Casey 140701: Shouldn't read the vertex number.
 C                 READ(39,*) NOD, (BCRivSalN2(J,K),BCRivTempN2(J,K),K=1,NFEN)
-                  READ(39,*) (BCRivSalN2(J,K),BCRivTempN2(J,K),K=1,NFEN)
+                  READ(AMPI_LUN(39),*) (BCRivSalN2(J,K),BCRivTempN2(J,K),K=1,NFEN)
 
                   ! arash debug -----------------------------------------------------------------------------
 !                  BCRivSalN1(:,:) = 0.0
@@ -1916,6 +1920,8 @@ C
 Cjgfdebug USE GLOBAL, ONLY : ScreenUnit
 Cjgfdebug  USE GLOBAL_3DVS, ONLY : SZ,LOCALDIR,IEVC,EVMIN,EVCON,EVTOT,SIGMA,
 Cjgfdebug     &     NFEN,Z0B,Z0S,A,B,AMB,NSCREEN,NWS,DELT
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL_3DVS, ONLY : SZ,IEVC,EVMIN,EVCON,EVTOT,SIGMA,
      &     NFEN,Z0B,Z0S,A,B,AMB,setMessageSource, unsetMessageSource,
      &     logMessage, allMessage, DEBUG, ECHO, INFO, WARNING, ERROR
@@ -2231,6 +2237,8 @@ C***********************************************************************
 C
 C  kmd48.33bc changed to use Implicit None
       SUBROUTINE TRIDIAG(A,B,C,R,U,nfen)
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL, ONLY : SZ, ScreenUnit, setMessageSource,
      &   unsetMessageSource, logMessage, allMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
@@ -2246,10 +2254,10 @@ C
 C
       DO J=nfen-1,1,-1
          IF(ABS(B(J+1)).EQ.0.) then
-            write(screenunit,*) 'Diagonal term in the VS matrix is zero'
-            write(screenunit,*) '*********** Fatal error *************'
-            write(1,*) 'Diagonal term in the VS matrix is zero'
-            write(1,*) '*********** Fatal error *************'
+            write(AMPI_LUN(screenunit),*) 'Diagonal term in the VS matrix is zero'
+            write(AMPI_LUN(screenunit),*) '*********** Fatal error *************'
+            write(AMPI_LUN(1),*) 'Diagonal term in the VS matrix is zero'
+            write(AMPI_LUN(1),*) '*********** Fatal error *************'
             CALL EXIT(1)
          endif
          P1=C(J)/B(J+1)
@@ -2258,10 +2266,10 @@ C
       END DO
 
       IF(ABS(B(1)).EQ.0.) then
-         write(screenunit,*) 'B1 term in the VS matrix is zero'
-         write(screenunit,*) '*********** Fatal error *************'
-         write(1,*) 'B1 term in the VS matrix is zero'
-         write(1,*) '*********** Fatal error *************'
+         write(AMPI_LUN(screenunit),*) 'B1 term in the VS matrix is zero'
+         write(AMPI_LUN(screenunit),*) '*********** Fatal error *************'
+         write(AMPI_LUN(1),*) 'B1 term in the VS matrix is zero'
+         write(AMPI_LUN(1),*) '*********** Fatal error *************'
          CALL EXIT(1)
       endif
 
@@ -2295,6 +2303,8 @@ C                          R.L. 06/22/05                               *
 C***********************************************************************
 
       Subroutine VSDISP(it,node,H,UU,VV,Duu,Duv,Dvv)
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL, ONLY : ScreenUnit, allMessage, DEBUG, scratchMessage
 Cjgfdebug      USE GLOBAL_3DVS, ONLY : Qkp1,SZ,NFEN,SIGMA,GAMMA,AMB,I,NSCREEN
       USE GLOBAL_3DVS, ONLY : Qkp1,SZ,NFEN,SIGMA,GAMMA,AMB,IY,
@@ -2378,39 +2388,39 @@ c
  100  continue
 
       if(Txx.lt.0.) then
-         write(screenunit,1001)
+         write(AMPI_LUN(screenunit),1001)
  1001    format(/'**** Serious Error Detected in SUBROUTINE VSDISP ***'/
      +        '          the partial uu dispersion term < 0        '/
      +        '        Diagnostic information written to unit 1    ')
-         write(screenunit,1101) node,it
-         write(1,1002)
+         write(AMPI_LUN(screenunit),1101) node,it
+         write(AMPI_LUN(1),1002)
  1002    format(/'**** Serious Error Detected in SUBROUTINE VSDISP ***'/
      +        '          the partial uu dispersion term < 0        ')
-         write(1,1101) node,it
-         write(1,1021)
+         write(AMPI_LUN(1),1101) node,it
+         write(AMPI_LUN(1),1021)
          do m=1,NFEN            !ntotn -> NFEN
-            write(1,1022) sigMA(m), gamma(m) !sigtot -> sigMA
+            write(AMPI_LUN(1),1022) sigMA(m), gamma(m) !sigtot -> sigMA
          enddo
-         write(1,2101) Txx
+         write(AMPI_LUN(1),2101) Txx
  2101    format('  Par uu = ',e14.6,' It will be set to 0.')
          Txx = 0.d0
       endif
 
       if(Tyy.lt.0.) then
-         write(screenunit,1003)
+         write(AMPI_LUN(screenunit),1003)
  1003    format(/'**** Serious Error Detected in SUBROUTINE VSSOL ****'/
      +        '          the partial vv dispersion term < 0        '/
      +        '       Diagnostic information written to unit 1    ')
-         write(screenunit,1101) node,it
-         write(1,1004)
+         write(AMPI_LUN(screenunit),1101) node,it
+         write(AMPI_LUN(1),1004)
  1004    format(/'**** Serious Error Detected in SUBROUTINE VSSOL ****'/
      +        '          the partial vv dispersion term < 0        ')
-         write(1,1101) node,it
-         write(1,1021)
+         write(AMPI_LUN(1),1101) node,it
+         write(AMPI_LUN(1),1021)
          do m=1,NFEN            !ntotn -> NFEN
-            write(1,1022) sigMA(m),gamma(m) !sigtot -> sigMA
+            write(AMPI_LUN(1),1022) sigMA(m),gamma(m) !sigtot -> sigMA
          enddo
-         write(1,2102) Tyy
+         write(AMPI_LUN(1),2102) Tyy
  2102    format('  Par vv = ',e14.6,' It will be set to 0.')
          Tyy = 0.d0
       endif
@@ -2450,6 +2460,8 @@ c***********************************************************************
 
       subroutine InmINT()
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL_3DVS, ONLY : Sigma, NFEN, INM, setMessageSource,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
@@ -2501,6 +2513,8 @@ c***********************************************************************
 
       subroutine LVnInt()
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL_3DVS, ONLY : Sigma, NFEN, LVN, setMessageSource,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
@@ -2536,6 +2550,8 @@ c***********************************************************************
 
       subroutine KQnmInt(KQnm,Kq)
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL_3DVS, ONLY : SZ,SIGMA,NFEN,MNFEN, setMessageSource,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
@@ -2749,6 +2765,8 @@ c     Space Physics, 20, 851-875, 1982.
 c
 c************************************************************************
       subroutine turb(nh,H,bsx_loc,bsy_loc,wsx,wsy,istart,Z0B1)
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE SIZES
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
 Cjgfdebug      USE GLOBAL_3DVS, EXCEPT_BSX => BSX ,EXCEPT_BSY => BSY
@@ -3262,6 +3280,8 @@ C    Adapted from Numerical Recipes chapter 2                          *
 C***********************************************************************
 c
       SUBROUTINE TRIDAG(A,B,C,R,U,N)
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL, ONLY : ScreenUnit
       USE GLOBAL_3DVS, ONLY : SZ, setMessageSource,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
@@ -3280,8 +3300,8 @@ c     check for zero elements on diagonal
 c
       DO J=1,N
          if(B(j).EQ.0.) then
-            write(screenunit,*) 'Problem in Tridag Solver.  ',
-     +           'B array value in row ',j,' = 0'
+            write(AMPI_LUN(screenunit),*) 'Problem in Tridag Solver.  ',
+     +          'B array value in row ',j,' = 0'
             CALL EXIT(1)
          endif
       end do
@@ -3291,8 +3311,8 @@ c
          GAM(J) = C(J-1)/BET
          BET=B(J)-A(J)*GAM(J)
          if (BET.EQ.0) then
-            write(screenunit,*) ' Problem in Tridag Solver.  ',
-     +           ' BET  = 0.  Solver failed.'
+            write(AMPI_LUN(screenunit),*) ' Problem in Tridag Solver.  ',
+     +          ' BET  = 0.  Solver failed.'
             CALL EXIT(1)
          endif
          U(J)=(R(J)-A(J)*U(J-1))/BET
@@ -3401,6 +3421,8 @@ C***************************************************************************
 C
 C  kmd48.33bc changed to follow the global IO format
       SUBROUTINE HSTART3D_OUT(IT)
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE SIZES
       USE GLOBAL
       USE GLOBAL_3DVS
@@ -3682,25 +3704,25 @@ C     kmd48.33bc write out results in global IO format
 
          IF((MYPROC.eq.0).or.
      &      (WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-            WRITE(hss % lun,REC=IHOTSTP) IDen  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) IDen  ;  IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) N3DSD  ;  IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) I3DSDRec  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) N3DSD  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) I3DSDRec  ;  IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) N3DSV  ;  IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) I3DSVRec  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) N3DSV  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) I3DSVRec  ;  IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) N3DST  ;  IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) I3DSTRec  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) N3DST  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) I3DSTRec  ;  IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) N3DGD  ;  IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) I3DGDRec  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) N3DGD  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) I3DGDRec  ;  IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) N3DGV  ;  IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) I3DGVRec  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) N3DGV  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) I3DGVRec  ;  IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) N3DGT  ;  IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) I3DGTRec  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) N3DGT  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) I3DGTRec  ;  IHOTSTP = IHOTSTP + 1
          ENDIF
 C
          IF ((MNPROC.gt.1).and.(myProc.eq.0).and.
@@ -4032,6 +4054,8 @@ C
 !        Fluid Dynamics". Later, we can update this to include more
 !        complex equations of state.
 C   kmd48.33bc need to add variables for new equation of state
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL_3DVS, ONLY : SAL, TEMP, SIGT, IDEN, NFEN, SZ,
      &                        SIGMA, EQNSTATE, A, B, setMessageSource,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
@@ -4300,6 +4324,8 @@ C*****************************************************************************
 
        Subroutine Gaussian_filter_complex ( X, Y, NeiTab, NNeigh, quantity, NP, NFEN, MNEI )
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
        Use Global,      Only : IFNLFA, ETA2, nodecode
        Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B, Biharmonic_viscosity_modified_Leith
@@ -4505,6 +4531,8 @@ C*****************************************************************************
 
        Subroutine Gaussian_filter_complex_new ( X, Y, NeiTab, NNeigh, quantity, NP, NFEN, MNEI )
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
        Use Global,      Only : IFNLFA, ETA2
        USE Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B, Biharmonic_viscosity_modified_Leith
@@ -4668,6 +4696,8 @@ C*************************************************************************
 
       Subroutine linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, interpolated_value, J )
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL_3DVS
       IMPLICIT NONE
       Complex(SZ) :: interpolated_value
@@ -4798,10 +4828,10 @@ C*************************************************************************
  100  CONTINUE
 
       IF(IDiag.EQ.2) THEN
-         WRITE(2,*) '******** linear_vertical_interpolation **********'
-         WRITE(2,*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
-     &        '      interpolated_value'
-         WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,interpolated_value
+         WRITE(AMPI_LUN(2),*) '******** linear_vertical_interpolation **********'
+         WRITE(AMPI_LUN(2),*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
+     &       '      interpolated_value'
+         WRITE(AMPI_LUN(2),777) NN,J,SigmaNN,SigBelo,SigAbov,interpolated_value
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
 
@@ -4823,6 +4853,8 @@ C**********************************************************************
 
        Subroutine Gaussian_filter_real ( X, Y, NeiTab, NNeigh, quantity, NP, NFEN, MNEI )
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
        Use Global,      Only : IFNLFA, ETA2
        Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B, qkp1, Biharmonic_viscosity_modified_Leith
@@ -4994,6 +5026,8 @@ C*************************************************************************
 
       Subroutine linear_vertical_interpolation_real ( inarray_vertical, SigmaNN, interpolated_value, J )
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL_3DVS
       IMPLICIT NONE
       real(SZ) :: interpolated_value
@@ -5124,10 +5158,10 @@ C*************************************************************************
  100  CONTINUE
 
       IF(IDiag.EQ.2) THEN
-         WRITE(2,*) '******** linear_vertical_interpolation **********'
-         WRITE(2,*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
-     &        '      interpolated_value'
-         WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,interpolated_value
+         WRITE(AMPI_LUN(2),*) '******** linear_vertical_interpolation **********'
+         WRITE(AMPI_LUN(2),*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
+     &       '      interpolated_value'
+         WRITE(AMPI_LUN(2),777) NN,J,SigmaNN,SigBelo,SigAbov,interpolated_value
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
 
@@ -5150,6 +5184,8 @@ C     input argument and returns the new value of the file counter
 C     at the end of the write.
 C--------------------------------------------------------------------
       SUBROUTINE binaryWrite2D(array, length, lun, counter)
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, DEBUG,
      &                    allMessage
@@ -5166,7 +5202,7 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
        DO i=1, length
-          WRITE(lun,REC=counter) array(i)
+          WRITE(AMPI_LUN(lun),REC=counter) array(i)
           counter = counter + 1
        END DO
 C

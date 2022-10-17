@@ -37,6 +37,8 @@ C
 #ifdef IEEE_DEBUG
       USE, INTRINSIC :: IEEE_ARITHMETIC
 #endif
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE SIZES, ONLY : SZ, MNP, MNWPROH
       USE GLOBAL, ONLY : UU1, VV1, QX1, QY1, QX2, QY2, UU2, VV2, MOM_LV_X,
      &    MOM_LV_Y, WSX2, WSY2, PR1, PR2, TiP1, TiP2, UU0, VV0, QY0, 
@@ -440,7 +442,7 @@ C
             END DO
 !!!        go get new record for all nodes
             DO I=1,NP
-               READ(141,*) IJK,DP2(IJK)
+               READ(AMPI_LUN(141),*) IJK,DP2(IJK)
             ENDDO
 C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
 C...     DEPTHS ARE > OR = TO H0.
@@ -742,10 +744,10 @@ Casey 140701: Added the following IF statement.
             IF(TimeLoc.GT.RBCTIME2) THEN
                RBCTIME1=RBCTIME2
                RBCTIME2=RBCTIME2+RBCTIMEINC
-               READ(35,'(A)') CDUM80
+               READ(AMPI_LUN(35),'(A)') CDUM80
                DO I=1,NETA
                  LNM_BC1(I)=LNM_BC2(I)
-                 READ(35,*) NOD,LNM_BC2(I)
+                 READ(AMPI_LUN(35),*) NOD,LNM_BC2(I)
                END DO
             END IF
             RBCRATIO=(TimeLoc-RBCTIME1)/RBCTIMEINC
@@ -852,7 +854,7 @@ C...
                   IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &                 .OR.(LBCODEI(J).EQ.22)) THEN
                      QNIN1(J)=QNIN2(J)
-                     READ(20,*) QNIN2(J)
+                     READ(AMPI_LUN(20),*) QNIN2(J)
 
 !                     write(*,*) 'inside timestep: IT = ', IT
 !                     write(*,*) 'inside timestep: J, QNIN2 = ', J, QNIN2(J)
@@ -862,7 +864,7 @@ C...
                   IF(LBCODEI(J).EQ.32) THEN
                      QNIN1(J)=QNIN2(J)
                      ENIN1(J)=ENIN2(J)
-                     READ(20,*) QNIN2(J),ENIN2(J)
+                     READ(AMPI_LUN(20),*) QNIN2(J),ENIN2(J)
 
 !                     write(*,*) 'inside timestep: IT = ', IT
 !                     write(*,*) 'inside timestep: we should not be here!'
@@ -1134,7 +1136,7 @@ C...
                CALL writeHotstart_through_hswriter(TimeLoc,IT)  !st3 hsfile
 #endif
             else
-               write(6,*) 'HS writer does not support C3D'
+               write(AMPI_LUN(6),*) 'HS writer does not support C3D'
             endif
          else
             if (NHOUTONCE) then
@@ -1203,13 +1205,13 @@ C     the screen.
 #ifdef CMPI
          IF(MYPROC.EQ.0.AND.ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
-               WRITE(ScreenUnit,1991)
-     &            IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,
-     &            VELMAX,KVMAX,MYPROC
+               WRITE(AMPI_LUN(ScreenUnit),1991)
+     &           IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,
+     &           VELMAX,KVMAX,MYPROC
             ELSE
-               WRITE(ScreenUnit,1991)
-     &            IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,
-     &            KVMAX,MYPROC
+               WRITE(AMPI_LUN(ScreenUnit),1991)
+     &           IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,
+     &           KVMAX,MYPROC
 
             ENDIF
  1991       FORMAT(1X,'TIME STEP =',I8,1x,F6.2,'% COMPLETE',
@@ -1223,11 +1225,11 @@ C     the screen.
          IF(ELMAX.GT.WarnElev) THEN
 C     WJP 03.27.2018 with the addition of the hash table we now need to
 C     output the global node number to debug the local PE fort.14s
-            WRITE(ScreenUnit,1993)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
-     &           VELMAX,NODES_LG(KVMAX),MYPROC
-            WRITE(16,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),
-     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(AMPI_LUN(ScreenUnit),1993)
+     &          IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
+     &          VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(AMPI_LUN(16),1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+     &          NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
  1993       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
@@ -1245,11 +1247,11 @@ C     output the global node number to debug the local PE fort.14s
          ErrorElevExceeded = 0                ! Clint's Zombie Slyaer
          IF(ELMAX.GT.ErrorElev) THEN
 
-            WRITE(ScreenUnit,1995)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
-     &           VELMAX,NODES_LG(KVMAX),MYPROC
-            WRITE(16,1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
-     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(AMPI_LUN(ScreenUnit),1995)
+     &          IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
+     &          VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(AMPI_LUN(16),1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+     &          NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
  1995       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
@@ -1268,11 +1270,11 @@ C     output the global node number to debug the local PE fort.14s
 #else
          IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
-               WRITE(ScreenUnit,1992)
-     &              IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+               WRITE(AMPI_LUN(ScreenUnit),1992)
+     &             IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
             ELSE
-               WRITE(ScreenUnit,1992)
-     &              IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX
+               WRITE(AMPI_LUN(ScreenUnit),1992)
+     &             IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX
             ENDIF
  1992       FORMAT(1X,'TIME STEP =',I8,1x,F6.2,'% COMPLETE',
      &           5X,'ITERATIONS =',I5,
@@ -1281,9 +1283,9 @@ C     output the global node number to debug the local PE fort.14s
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8)
          ENDIF
          IF(ELMAX.GT.WarnElev) THEN
-            WRITE(ScreenUnit,1994)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16,1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(AMPI_LUN(ScreenUnit),1994)
+     &          IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(AMPI_LUN(16),1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1994       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
@@ -1294,11 +1296,11 @@ C     output the global node number to debug the local PE fort.14s
 #endif
          ENDIF
          IF(ELMAX.GT.ErrorElev) THEN
-            write(6,*) 'elmax, errorelev',elmax, errorelev !jgf
+            write(AMPI_LUN(6),*) 'elmax, errorelev',elmax, errorelev !jgf
             Flag_ElevError = .true.
-            WRITE(ScreenUnit,1996)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16,1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(AMPI_LUN(ScreenUnit),1996)
+     &          IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(AMPI_LUN(16),1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1996       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
@@ -1338,6 +1340,8 @@ C*******************************************************************************
 C
       SUBROUTINE SCALAR_TRANS_2D (IT,TimeLoc)
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL, only: ch1, trans_lv_b, nodecode, noff, lumpt, dtdp,
      &    trans_lv_a, soursin, uu1, vv1, ifnlfa, eta1, bedstr, tk,
      &    rhowat0, setmessagesource, unsetmessagesource, DEBUG,
@@ -1649,6 +1653,8 @@ C
 
       SUBROUTINE CALC_SIGMAT_2D ()
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL
 
       INTEGER NH
@@ -1689,6 +1695,8 @@ c******************************************************************************
       
       SUBROUTINE BPG2D(IT,TimeLoc)
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE SIZES, ONLY : SZ, myproc
       USE GLOBAL, ONLY: G, IFNLFA, IFNLCT, IDEN, RAMP, NODECODE, NOFF, 
      &    VIDBCPDXOH, VIDBCPDYOH, ETA2, SigT0, DTDP, DASigT, RhoWat0,
@@ -1850,6 +1858,8 @@ c******************************************************************************
 
 Casey: Added the following variable declarations from GLOBAL.
 C
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY: IFNLFA, IFNLCT,
      &      NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH,
@@ -2328,6 +2338,8 @@ C*************************************************************************
 C
       SUBROUTINE ZSURFBUOY(SigmaNN,BCPressNN,NN,J)
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL_3DVS
       IMPLICIT NONE
       REAL(SZ) :: BCPressNN
@@ -2409,10 +2421,10 @@ C     jgf46.00 Explicitly declared the following variables
  100  CONTINUE
 
       IF(IDiag.EQ.2) THEN
-         WRITE(2,*) '******** ZSURFBUOY **********'
-         WRITE(2,*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
-     &        '      BCPressNN'
-         WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,BCPressNN
+         WRITE(AMPI_LUN(2),*) '******** ZSURFBUOY **********'
+         WRITE(AMPI_LUN(2),*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
+     &       '      BCPressNN'
+         WRITE(AMPI_LUN(2),777) NN,J,SigmaNN,SigBelo,SigAbov,BCPressNN
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
 
@@ -2440,6 +2452,8 @@ C*************************************************************************
 C
       SUBROUTINE ZSURFBUOY_p3 (SigmaNN,BCPressNN,NN,J)
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL_3DVS
       IMPLICIT NONE
       REAL(SZ) :: BCPressNN
@@ -2669,10 +2683,10 @@ C     jgf46.00 Explicitly declared the following variables
  100  CONTINUE
 
       IF(IDiag.EQ.2) THEN
-         WRITE(2,*) '******** ZSURFBUOY_p3 **********'
-         WRITE(2,*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
-     &        '      BCPressNN'
-         WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,BCPressNN
+         WRITE(AMPI_LUN(2),*) '******** ZSURFBUOY_p3 **********'
+         WRITE(AMPI_LUN(2),*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
+     &       '      BCPressNN'
+         WRITE(AMPI_LUN(2),777) NN,J,SigmaNN,SigBelo,SigAbov,BCPressNN
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
 
@@ -2689,6 +2703,8 @@ C**********************************************************************
 
        Subroutine Gaussian_filter_complex_BPG ( X, Y, NeiTab, NNeigh, quantity, NP, NFEN, MNEI )
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
        Use Global,      Only : IFNLFA, ETA2
        Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B
