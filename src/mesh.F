@@ -237,7 +237,7 @@
              numSimpleFluxBoundaries = numSimpleFluxBoundaries + 1
          case(3,13,23)
              numExternalFluxBoundaries = numExternalFluxBoundaries + 1
-         case(4,24)
+         case(4,24,64)
              numInternalFluxBoundaries = numInternalFluxBoundaries + 1
              ! jgf51.52.24: added nvell(k) for boundaries with backside
              ! nodes, since these are to be included in nvel.
@@ -462,7 +462,7 @@
          ! paired node number, the barrier elevation above the Geoid and the
          ! coefficients of supercritical and subcritical flow for the nodes
          ! in the Kth boundary segment.
-         case(4,24)
+         case(4,24,64)
             internalFluxBoundaries(ifCount)%indexNum = k
             do j = 1, nvell(k)
                read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
@@ -812,6 +812,7 @@
       logical :: fileFound
       integer i, j, k
       real(8), allocatable :: tempCoord(:,:)
+      real(8),allocatable :: dmyrealarray(:)
       !
 
       call setMessageSource("readMeshXDMF")
@@ -1039,7 +1040,7 @@
                   numSimpleFluxBoundaries = numSimpleFluxBoundaries + 1
                case(3,13,23)
                   numExternalFluxBoundaries = numExternalFluxBoundaries + 1
-               case(4,24)
+               case(4,24,64)
                   numInternalFluxBoundaries = numInternalFluxBoundaries + 1
                case(5,25)
                   numInternalFluxBoundariesWithPipes = numInternalFluxBoundariesWithPipes + 1
@@ -1195,7 +1196,7 @@
                   end select
                end do
                efCount = efCount + 1
-            case(4,24)  ! internal barrier boundary (e.g., subgrid scale levee)
+            case(4,24,64)  ! internal barrier boundary (e.g., subgrid scale levee)
                internalFluxBoundaries(ifCount)%indexNum = fluxCount
                ! get the node numbers on the boundary
                call xdmfRetrieveSetValues(xdmfFortranObj, setIndex,
@@ -1210,9 +1211,12 @@
                   call replaceNullsWithSpaces(itemName)
                   select case(trim(itemName))
                   case("IBCONN")      ! paired (back face) nodes
+                     allocate(dmyrealarray(1:size(internalFluxBoundaries(ifCount)%xdmf_ibconn)))
                      call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
-     &                   internalFluxBoundaries(ifCount)%xdmf_ibconn, XDMF_ARRAY_TYPE_INT32,
+     &                   dmyrealarray, XDMF_ARRAY_TYPE_INT32,
      &                   nvell(fluxCount), startIndex, arrayStride, valueStride)
+                     internalFluxBoundaries(ifCount)%xdmf_ibconn = int(dmyrealarray)
+                     deallocate(dmyrealarray)
                   case("BARINHT")     ! barrier height at each node and its paired node
                      call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
      &                  internalFluxBoundaries(ifCount)%barinht, XDMF_ARRAY_TYPE_FLOAT64,
@@ -1251,10 +1255,13 @@
                   call replaceNullsWithSpaces(itemName)
                   select case(trim(itemName))
                   case("IBCONN")  ! paired (i.e., back face) nodes
+                     allocate(dmyrealarray(1:size(internalFluxBoundaries(ifwpCount)%xdmf_ibconn)))
                      call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
-     &                  internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn,
+     &                  dmyrealarray,
      &                  XDMF_ARRAY_TYPE_INT32,
      &                   nvell(fluxCount), startIndex, arrayStride, valueStride)
+                     internalFluxBoundaries(ifwpCount)%xdmf_ibconn = int(dmyrealarray)
+                     deallocate(dmyrealarray)
                   case("BARINHT") ! barrier height at each node and its paired node
                      call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
      &                   internalFluxBoundariesWithPipes(ifwpCount)%barinht,
@@ -1359,7 +1366,7 @@
             barlancfspr(fluxCount,1:nvell(fluxCount)) =
      &               externalFluxBoundaries(efCount)%barlancfsp
             efCount = efCount + 1
-         case(4,24)  ! internal barrier boundary (e.g., subgrid scale levee)
+         case(4,24,64)  ! internal barrier boundary (e.g., subgrid scale levee)
             ! populate adcirc-native arrays
             nbvv(fluxCount,1:nvell(fluxCount)) =
      &             internalFluxBoundaries(ifCount)%nodes
@@ -1769,6 +1776,9 @@
       subroutine initializeBoundaries()
       use global, only : deg2rad, rad2deg, nbfr, c2ddi, pi, ifsprots
       use boundaries
+#ifdef CMPI
+      USE MESSENGER, ONLY : msg_imax  !sb msg_imax added 10/13/2022
+#endif
       implicit none
       integer  nprbi, nbvk
       integer i, j, k, n, ick, iprbi !local loop counters
@@ -1866,6 +1876,7 @@
       NFLUXB=0
       NFLUXIB=0
       NFLUXIBP=0
+      NFLUXIB64=0
       NFLUXRBC=0
       NFLUXGBC=0
       NVELEXT=0
@@ -1874,7 +1885,8 @@
       ! each segment and setting up boundary arrays
       NBOULOOP: DO K=1,NBOU
 !        write out flow boundary information to unit 16
-         IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
+         IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24).OR.
+     &      (IBTYPE(K).EQ.64)) THEN
             WRITE(16,28) K,NVELL(K),K,2*NVELL(K)
  28         FORMAT(///,5X,'TOTAL NUMBER OF PAIRS FOR FLOW BOUNDARY',
      &           ' SEGMENT',2X,i0,2X,'=',2X,i0,
@@ -1899,7 +1911,7 @@
      &           7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(2)
             NFLUXF=1
-            WRITE(16,2342)
+            WRITE(16,2342) 
  2342       FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &           7X,'SPECIFIED NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &           7X,'AND FREE TANGENTIAL SLIP',/)
@@ -2107,6 +2119,24 @@
      &          7X,'The momentum equations are used to compute the',/,
      &          7X,'velocity field the same as for a nonboundary ',
      &          'node.',/)
+         CASE(64)
+           NFLUXIB=1
+           NFLUXIB64=1
+           WRITE(16,6533)
+ 6533      FORMAT(5X,'THIS SEGMENT IS AN VERTICAL ELEMENT WALL BOUNDARY:',/,
+     &            7X,'EACH NODE PAIR IS TREATED AS IF THEY ARE A SINGL',
+     &               'E NODE IF THE WATER HEIGHTS ON BOTH SIDES',/,
+     &            7X,'EXCEED THE BARRIER HEIGHTS.',/,
+     &            7X,'OTHERWISE, WITH CROSS BARRIER FLOW TREATED ',
+     &               ' AS A NATURAL NORMAL FLOW BOUNDARY CONDITION',/,
+     &            7X,'WHICH LEAVES/ENTERS THE DOMAIN ON ONE SIDE OF ',
+     &               ' THE BARRIER AND ENTERS/LEAVES THE DOMAIN ON THE',
+     &          /,7X,'CORRESPONDING OPPOSITE SIDE OF THE BARRIER ',/,
+     &            7X,'FLOW RATE AND DIRECTION ARE BASED ON BARRIER ',
+     &               ' HEIGHT, SURFACE WATER ELEVATION',/,
+     &            7X,'ON BOTH SIDES OF THE BARRIER, BARRIER COEFFICIEN',
+     &               'T AND THE APPROPRIATE BARRIER FLOW FORMULA',/,
+     &            7X,'FREE TANGENTIAL SLIP IS ALLOWED.',/)
          END SELECT
          !
          ! set the constants used in setting up the boundary arrays
@@ -2114,7 +2144,7 @@
          case(3,13,23)
             nprbi = 1
             npipe = 0
-         case(4,24)
+         case(4,24,64)
             nprbi = 2
             npipe = 0
          case(5,25)
@@ -2166,7 +2196,8 @@
             ENDIF
 
 !...        WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES
-            IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
+            IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24).OR.
+     &         (IBTYPE(K).EQ.64)) THEN
                IF(IPRBI.EQ.1) THEN
                   WRITE(16,1842)
  1842            FORMAT(/,5X,'FRONT FACE OF INTERNAL BARRIER BOUNDARY',/)
@@ -2492,7 +2523,8 @@
      &                       (LBCODEI(JGW).EQ.32).OR.
      &                       (LBCODEI(JGW).EQ.40).OR.
      &                       (LBCODEI(JGW).EQ.41).OR.
-     &                       (LBCODEI(JGW).EQ.52)) ME2GW(JME)=JGW
+     &                       (LBCODEI(JGW).EQ.52).OR.
+     &                       (LBCODEI(JGW).EQ.64)) ME2GW(JME)=JGW
                      ENDIF
                   ENDIF
                ENDIF
@@ -2517,7 +2549,8 @@
      &                    (LBCODEI(JGW).EQ.32).OR.
      &                    (LBCODEI(JGW).EQ.40).OR.
      &                    (LBCODEI(JGW).EQ.41).OR.
-     &                    (LBCODEI(JGW).EQ.52)) ME2GW(1)=JGW
+     &                    (LBCODEI(JGW).EQ.52).OR.
+     &                    (LBCODEI(JGW).EQ.64)) ME2GW(1)=JGW
                   ENDIF
                ENDIF
 
@@ -2529,7 +2562,8 @@
                ENDIF
 
 !...........   LOAD INTERNAL BARRIER BOUNDARY INFORMATION INTO THE CORRECT VECTORS
-               IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
+               IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24).OR.
+     &            (IBTYPE(K).EQ.64)) THEN
                   IBCONN(JGW)=IBCONNR(K,I)
                   BARINHT(JGW)=BARINHTR(K,I)
                   BARINCFSB(JGW)=BARINCFSBR(K,I)
@@ -2576,7 +2610,8 @@
                   ENDIF
                ENDIF
 !...........   CHECK INTERNAL BARRIER HEIGHTS AGAINST DEPTHS
-               IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
+               IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24).OR.
+     &            (IBTYPE(K).EQ.64)) THEN
                   IF(BARINHT(JGW).LT.-DP(NBV(JGW))) THEN
                      write(scratchMessage,8368)
      &                    JGW,NBV(JGW),BARINHT(JGW),DP(NBV(JGW))
@@ -2638,7 +2673,7 @@
 !...  ANY EXTERNAL BARRIER BOUNDARY. IF THIS DOES OCCUR, TAKE
 !...  APPROPRIATE ACTION
                IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24).OR.
-     &              (IBTYPE(K).EQ.5)
+     &              (IBTYPE(K).EQ.64).OR.(IBTYPE(K).EQ.5)
      &              .OR.(IBTYPE(K).EQ.25)) THEN
                   DO ICK=1,NVELEXT
 !...  CHECK IF OVERLAP EXISTS
@@ -2695,7 +2730,8 @@
      &               '(NATURAL NO NORMAL FLOW WITH SLIP BOUNDARY) ')
                            LBCODEI(ICK)=20
                         ENDIF
-                        IF(((IBTYPE(K).EQ.24).AND.(LBCODEI(ICK).EQ.10))
+                        IF((((IBTYPE(K).EQ.24).OR.(IBTYPE(K).EQ.64))
+     &                       .AND.(LBCODEI(ICK).EQ.10))
      &                       .OR.((IBTYPE(K).EQ.25)
      &                       .AND.(LBCODEI(ICK).EQ.10))) THEN
                            WRITE(16,8570) JGW,ICK,ICK
@@ -2718,6 +2754,12 @@
             END DO NVELL_LOOP ! I = 1,NVELL(K)
          END DO  LOOPPRBI !IPRBI=1,NPRBI
       END DO NBOULOOP  ! K=1,NBOU
+
+Csb...10/13/2022 moved from an earlier section
+      IF (ALLOCATED(ISSUBMERGED64)) THEN
+         ISSUBMERGED64(:) = 0
+      ENDIF
+Csb...
 
 !...  ONCE ALL FLOW BOUNDARY NODES HAVE BEEN PROCESSED, CHECK TO MAKE
 !...  SURE THAT JGW LE MNVEL.  NOTE, JME MUST BE < JGW.
@@ -2810,7 +2852,8 @@
      &                4X,'SUB-CRIT. INT. BAR. COEF.',
      &                4X,'SUPER-CRIT. INT. BAR. COEF.',/)
          DO J=1,NVEL
-            IF((LBCODEI(J).EQ.4).OR.(LBCODEI(J).EQ.24)) THEN
+            IF((LBCODEI(J).EQ.4).OR.(LBCODEI(J).EQ.24).OR.
+     &         (LBCODEI(J).EQ.64)) THEN
                WRITE(16,2325) NBV(J),IBCONN(J),BARINHT(J),
      &                       BARINCFSB(J),BARINCFSP(J)
  2325         FORMAT(5X,i0,7X,i0,6X,F14.5,12X,F12.3,17X,F12.3)
@@ -2854,6 +2897,15 @@
             ENDIF
          END DO
       ENDIF
+
+!sb...
+#ifdef CMPI
+      nfluxib64_gbl = msg_imax(nfluxib64)
+#else
+      nfluxib64_gbl = nfluxib64
+#endif
+!sb...
+
 !jjwm001 - end add
       ! jgf51.11.18: Free memory associated with the reading of the
       ! levee and culvert parameters since it is no longer needed
@@ -5451,7 +5503,21 @@ C
         
         RETURN ; 
       END SUBROUTINE COMPUTE_CYLINPROJ_SFAC
-!.....
+
+!-----------------------------------------------------------------------
+      function findIBTYPEAtNode(I) RESULT(IBTYPE)
+!-----------------------------------------------------------------------
+      use boundaries,only : LBCODEI
+      implicit none
+      integer,intent(in) :: i
+      integer :: j,ibtype
+      ibtype = -1
+      j = lbarray_pointer(i)
+      if (j > 0) then
+         ibtype = lbcodei(j)
+      end if
+      end function findIBTYPEAtNode
+      
 !     ------------------------------------------------------------------
       end module mesh
 !     ------------------------------------------------------------------

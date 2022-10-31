@@ -152,26 +152,41 @@ C*******************************************************************************
      &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y, TKM, NPERSEG, NNPERBC, 
      &  IPERCONN, VIDispDXOH, VIDispDYOH, IFSFM, adcirc_norm2, CAliDisp,
      &  usingDynamicWaterLevelCorrection, Cs2, Ad, Bd, G, windlim,
-     &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, H0
+     &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, H0,
+     &  flgNodesMultipliedByTotalArea, ilump
+#ifdef CMPI
+     &  , dumy1
+#endif
       USE MESH, ONLY : NE, NP, NM, DP, Areas, TotalArea,
      &     NNeigh, NeiTab, NeiTabEle, MJU, FDXE, FDYE,
-     &     SWITCH_ELTAB_PERBC, SFacEle, SFMYEle, SFMXEle, TANPHI 
+     &     SWITCH_ELTAB_PERBC, SFacEle, SFMYEle, SFMXEle, TANPHI,
+     &     X, Y
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
+     &    NBOU, NVELL, IBCONN, ISSUBMERGED64, NFLUXIB, NFLUXIB64_GBL,
      &    CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3                 
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal,
      &     NOLIBF,
 C----- DW: begin !c absorbing layer
      &     LoadAbsLayerSigma, absorblayer_sigma_eta,
-     &     absorblayer_sigma_mnx, absorblayer_sigma_mny
+     &     absorblayer_sigma_mnx, absorblayer_sigma_mny,
 C----- END DW
+     &     LoadCondensedNodes, CondensedNodes, NCondensedNodes,
+     &     ListCondensedNodes, NListCondensedNodes,
+     &     NNodesListCondensedNodes
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceUVOB, 
      &                       enforceUVCB
       USE SPONGELAYER
       USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter 
+C... SB
+      USE VEW1D, ONLY :
+     &     ROTATE_AT_CONDENSEDNODES_ALL,
+     &     ROTATEBACK_AT_CONDENSEDNODES_ALL,
+     &     REMOVE_NORMAL_AT_CONDENSEDNODES
+C... SB
 
       IMPLICIT NONE
 
-      INTEGER IE, I, J, N                           !local loop counters
+      INTEGER IE, I, J, N, K, L                       !local loop counters
       INTEGER  NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCEle, NCI
       INTEGER NBDI
@@ -218,6 +233,19 @@ C..... DW
       REAL(SZ):: pr1_NM1, pr1_NM2, pr1_NM3
       REAL(SZ):: pr2_NM1, pr2_NM2, pr2_NM3
 C......DW
+C..... SB
+      INTEGER:: NNBB1, NNBB2
+      INTEGER:: NCIBC
+      INTEGER:: IA1, IA2, IB1, IB2
+      INTEGER:: ROT_STATUS
+      REAL(SZ):: fBUF1, fBUF2
+      REAL(SZ):: COEFIB64
+      REAL(SZ):: CS, SI, CSCS, CSSI, SISI ! cos, sin, cos*cos, cos*sin (=sin*cos), sin*sin
+      REAL(SZ):: SX, SY, LEN
+C.....
+C......SB For Elemental summation form
+      REAL(SZ):: TotalArea1, TotalArea2
+C......
       call setMessageSource("mom_eqs_new_nc")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -275,6 +303,17 @@ Corbitt 120322: Localized Advection
          QY1N1=QY1(NM1)
          QY1N2=QY1(NM2)
          QY1N3=QY1(NM3)
+C..... SB
+C        For condensed nodes 2022-09-14
+C        Remove the normal component of the load vector at the condensed nodes
+         IF (LoadCondensedNodes) THEN
+            CALL ROTATE_AT_CONDENSEDNODES_ALL
+     &        (NM1,NM2,NM3,
+     &         U1N1,V1N1,U1N2,V1N2,U1N3,V1N3,
+     &         QX1N1,QY1N1,QX1N2,QY1N2,QX1N3,QY1N3,
+     &         ROT_STATUS)
+         ENDIF
+C..... SB
          SFacAvg = SFacEle(IE)
 C..... BEG DW/WJP
          SFmxAvg= SFMXEle(IE) ; 
@@ -601,6 +640,19 @@ C...  LATERAL VISCOUS TERMS
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
+C... SB 2022-09-14
+C        For condensed nodes
+C        Remove the normal component of the load vector at the condensed nodes
+         IF (LoadCondensedNodes.AND.ROT_STATUS.EQ.0) THEN
+            CALL ROTATEBACK_AT_CONDENSEDNODES_ALL
+     &        (NM1,NM2,NM3,
+     &         TEMP_LV_A1,TEMP_LV_B1,
+     &         TEMP_LV_A2,TEMP_LV_B2,
+     &         TEMP_LV_A3,TEMP_LV_B3,
+     &         ROT_STATUS)
+         ENDIF
+Csb...
+
 C     Original (incorrect) area integration - for historical comparison
 
          IF (CME_AreaInt_Orig) THEN
@@ -716,6 +768,19 @@ C        WJP 05.28.2019: Add the Spherical coordinate correction term
 C        (refer; Kolar et al., 1994, doi:10.1080/00221689409498786)
 C        Equation (41) [refer also Eq. (37)]
          CorifA  = CORIF(I) + IFNLCT*TANPHI(I)*UU1(I)
+
+Csb...   For condensed nodes 2022-08-22
+C        Remove the normal component of the load vector at the condensed nodes
+         IF (LoadCondensedNodes) THEN
+            CALL REMOVE_NORMAL_AT_CONDENSEDNODES
+     &           (MOM_LV_X(I),MOM_LV_Y(I),I,ROT_STATUS)
+            IF (ROT_STATUS.EQ.0) THEN
+               CALL REMOVE_NORMAL_AT_CONDENSEDNODES
+     &           (WSX,WSY,I,ROT_STATUS)
+               CorifA = 0.D0    ! Coriolis force is removed here.
+            ENDIF
+         ENDIF
+Csb...
          VCOEFXY = DTO2*(TKM(3,I) - CorifA)
          VCOEFYX = DTO2*(TKM(3,I) + CorifA)
       
@@ -745,11 +810,10 @@ C...     DW, absorbing layers
 C...     DW
 
 C        WJP 02.24.2018 Get the lefthand side momentum 
-         AUV(1,I) = 1d0 + VCOEFXX*NCI
-         AUV(2,I) = 1d0 + VCOEFYY*NCI
-         AUV(3,I) = VCOEFXY*NCI
-         AUV(4,I) = VCOEFYX*NCI
-      
+        AUV(1,I) = 1d0 + VCOEFXX*NCI
+        AUV(2,I) = 1d0 + VCOEFYY*NCI
+        AUV(3,I) = VCOEFXY*NCI
+        AUV(4,I) = VCOEFYX*NCI
       END DO
 
 C...  Modify the momentum equations to impose velocity boundary
@@ -884,6 +948,189 @@ C.....DW
          ENDIF
 
       ENDDO
+
+C<<.. SECTION FOR VEW1D (=1D channel)   08-11-2022 SB
+C.... Nodal equations at IBTYPE=64 VEW boundary nodes and at condensed nodes are
+C.... summed up together in the following part. First, the value on the front side,
+C.... i.e., the floodplain side, is summed to the back side, i.e., the channel side.
+C.... Secondly, the values at the condensed nodes which are most likely on channel
+C.... beds are summed together. Notice that by this second step the nodes on channel
+C.... bed hold the sum of all the values on the floodplain side and the grouped 
+C.... condensed nodes. And then finally, the value on the backside, i.e. on the
+C.... channel bed, is copied to the front side, i.e., the floodplain side. Through
+C.... this procedure, the values at the floodplain nodes and (condensed) channel nodes
+C.... have the same values on both sides of the equations.
+C 
+C     
+
+C     VEW: Sum front side values to back side
+      IF((NFLUXIB64_GBL.GT.0).AND.(ILUMP.NE.0)) THEN
+         flgNodesMultipliedByTotalArea(:) = 0  ! Initialize flags for nodes multiplied by total areas
+
+         I = 0                         
+         DO K = 1, NBOU
+            SELECT CASE(LBCODEI(I+1))
+               CASE(64)
+               DO J = 1,NVELL(K)
+                  I = I + 1
+                  IF(ISSUBMERGED64(I).NE.0) THEN
+                     NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
+                     NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
+              
+                     IF(NODECODE(NNBB1).NE.0.AND.NODECODE(NNBB2).NE.0) THEN
+                        IF ((flgNodesMultipliedByTotalArea(NNBB1).eq.0).and.
+     &                      (TotalArea(NNBB1).ne.0.d0)) THEN
+                           IF (CME_AreaInt_Corr) THEN       !Correct area integration
+                              TotalArea1 = TotalArea(NNBB1)
+                           ENDIF
+                           IF (CME_AreaInt_Orig) THEN       !Original (incorrect) area integration
+                              TotalArea1 = MJU(NNBB1)
+                           ENDIF
+                        ELSE
+                           TotalArea1 = 1.D0
+                        ENDIF
+                        IF ((flgNodesMultipliedByTotalArea(NNBB2).eq.0).and.
+     &                      (TotalArea(NNBB2).ne.0.d0)) THEN
+                           IF (CME_AreaInt_Corr) THEN       !Correct area integration
+                              TotalArea2 = TotalArea(NNBB2)
+                           ENDIF
+                           IF (CME_AreaInt_Orig) THEN       !Original (incorrect) area integration
+                              TotalArea2 = MJU(NNBB2)
+                           ENDIF
+                        ELSE
+                           TotalArea2 = 1.D0
+                        ENDIF
+
+                        AUV(1,NNBB2) = TotalArea1*AUV(1,NNBB1) + TotalArea2*AUV(1,NNBB2)
+                        AUV(2,NNBB2) = TotalArea1*AUV(2,NNBB1) + TotalArea2*AUV(2,NNBB2)
+                        AUV(3,NNBB2) = TotalArea1*AUV(3,NNBB1) + TotalArea2*AUV(3,NNBB2)
+                        AUV(4,NNBB2) = TotalArea1*AUV(4,NNBB1) + TotalArea2*AUV(4,NNBB2)
+
+                        MOM_LV_X(NNBB2) =
+     &                       TotalArea1*MOM_LV_X(NNBB1) + TotalArea2*MOM_LV_X(NNBB2)
+                        MOM_LV_Y(NNBB2) =
+     &                       TotalArea1*MOM_LV_Y(NNBB1) + TotalArea2*MOM_LV_Y(NNBB2)
+
+                        AUV(1,NNBB1) = 0.D0    ! Set zero to avoid duplicated additions
+                        AUV(2,NNBB1) = 0.D0    !
+                        AUV(3,NNBB1) = 0.D0    !
+                        AUV(4,NNBB1) = 0.D0    !
+                        MOM_LV_X(NNBB1) = 0.D0 !
+                        MOM_LV_Y(NNBB1) = 0.D0 !
+                        
+                        flgNodesMultipliedByTotalArea(NNBB1) = 1
+                        flgNodesMultipliedByTotalArea(NNBB2) = 1
+                     ENDIF
+                  ENDIF
+               ENDDO
+               I = I + NVELL(K)
+               CASE(4,24,5,25)
+               I = I + NVELL(K)*2
+               CASE DEFAULT
+               I = I + NVELL(K)
+            END SELECT    
+         ENDDO 
+      ENDIF
+
+C.... CONDENSED NODES: Summing up the values at condensed nodes
+      IF((LoadCondensedNodes).AND.(ILump.NE.0)) THEN
+         DO K=1,NListCondensedNodes
+            I = ListCondensedNodes(K,1)
+            IF((NODECODE(I).NE.0)) THEN
+               ! 1) Mutiply LHS & RHS by total area at Node I
+               IF ((flgNodesMultipliedByTotalArea(I).eq.0).and.
+     &             (TotalArea(I).ne.0.d0)) THEN
+                  IF (CME_AreaInt_Corr) THEN       !Correct area integration
+                     TotalArea1 = TotalArea(I)
+                  ENDIF
+                  IF (CME_AreaInt_Orig) THEN       !Original (incorrect) area integration
+                     TotalArea1 = MJU(I)
+                  ENDIF
+               ELSE
+                  TotalArea1 = 1.D0
+               ENDIF
+               AUV(1,I) = TotalArea1*AUV(1,I)
+               AUV(2,I) = TotalArea1*AUV(2,I)
+               AUV(3,I) = TotalArea1*AUV(3,I)
+               AUV(4,I) = TotalArea1*AUV(4,I)
+               MOM_LV_X(I) = TotalArea1*MOM_LV_X(I)
+               MOM_LV_Y(I) = TotalArea1*MOM_LV_Y(I)
+
+               ! 2) Sum them up
+               DO L=2,NNodesListCondensedNodes(K)
+                  J = ListCondensedNodes(K,L)
+                  IF ((flgNodesMultipliedByTotalArea(J).eq.0).and.
+     &               (TotalArea(J).ne.0.d0)) THEN
+                     IF (CME_AreaInt_Corr) THEN       !Correct area integration
+                        TotalArea1 = TotalArea(J)
+                     ENDIF
+                     IF (CME_AreaInt_Orig) THEN       !Original (incorrect) area integration
+                        TotalArea1 = MJU(J)
+                     ENDIF
+                  ELSE
+                     TotalArea1 = 1.D0
+                  ENDIF
+                  AUV(1,I) = AUV(1,I) + TotalArea1*AUV(1,J)
+                  AUV(2,I) = AUV(2,I) + TotalArea1*AUV(2,J)
+                  AUV(3,I) = AUV(3,I) + TotalArea1*AUV(3,J)
+                  AUV(4,I) = AUV(4,I) + TotalArea1*AUV(4,J)
+                  MOM_LV_X(I) = MOM_LV_X(I) + TotalArea1*MOM_LV_X(J)
+                  MOM_LV_Y(I) = MOM_LV_Y(I) + TotalArea1*MOM_LV_Y(J)
+               ENDDO
+
+               ! 3) Distribute them
+               DO L=2,NNodesListCondensedNodes(K)
+                  J = ListCondensedNodes(K,L)
+                  AUV(1,J) = AUV(1,I)
+                  AUV(2,J) = AUV(2,I)
+                  AUV(3,J) = AUV(3,I)
+                  AUV(4,J) = AUV(4,I)
+                  MOM_LV_X(J) = MOM_LV_X(I)
+                  MOM_LV_Y(J) = MOM_LV_Y(I)
+               ENDDO
+            ENDIF
+         ENDDO
+      ENDIF
+
+#ifdef CMPI
+      IF ((NFLUXIB64_GBL.GT.0.OR.LoadCondensedNodes)
+     &    .AND.(ILump.NE.0)) THEN
+         CALL UPDATEM4R(AUV)
+         CALL UPDATER(MOM_LV_X,MOM_LV_Y,DUMY1,2)
+      ENDIF
+#endif            
+
+C     VEW: Copy values from back side to front side
+      IF((NFLUXIB64_GBL.GT.0).AND.(ILUMP.NE.0)) THEN
+         I = 0                         
+         DO K = 1, NBOU
+            SELECT CASE(LBCODEI(I+1))
+                CASE(64)
+                    DO J = 1,NVELL(K)
+                        I = I + 1
+                        IF(ISSUBMERGED64(I).NE.0) THEN
+                           NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
+                           NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
+                           IF(NODECODE(NNBB1).NE.0.AND.NODECODE(NNBB2).NE.0) THEN
+                              AUV(1,NNBB1) = AUV(1,NNBB2)
+                              AUV(2,NNBB1) = AUV(2,NNBB2)
+                              AUV(3,NNBB1) = AUV(3,NNBB2)
+                              AUV(4,NNBB1) = AUV(4,NNBB2)
+                              MOM_LV_X(NNBB1) = MOM_LV_X(NNBB2)
+                              MOM_LV_Y(NNBB1) = MOM_LV_Y(NNBB2)
+                           ENDIF
+                        ENDIF
+                     ENDDO
+                     I = I + NVELL(K)
+                  CASE(4,24,5,25)
+                     I = I + NVELL(K)*2
+                  CASE DEFAULT
+                     I = I + NVELL(K)
+            END SELECT    
+         ENDDO 
+      ENDIF
+
+
 C...
 C...  SOLVE FOR VELOCITY AT NEW LEVEL  (s+1)
 C...

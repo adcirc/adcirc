@@ -7,6 +7,7 @@ if(BUILD_ADCPREP)
       ${CMAKE_SOURCE_DIR}/src/boundaries.F
       ${CMAKE_SOURCE_DIR}/src/hashtable.F
       ${CMAKE_SOURCE_DIR}/src/mesh.F
+      ${CMAKE_SOURCE_DIR}/src/vew1d.F
       ${CMAKE_SOURCE_DIR}/src/global_3dvs.F
       ${CMAKE_SOURCE_DIR}/wind/vortex.F
       ${CMAKE_SOURCE_DIR}/src/owiwind.F

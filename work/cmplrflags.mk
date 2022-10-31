@@ -177,7 +177,12 @@ ifeq ($(compiler),gfortran)
         FFLAGS2 := $(FFLAGS2) -I/usr/lib64/gfortran/modules
         FFLAGS3 := $(FFLAGS3) -I/usr/lib64/gfortran/modules
      endif
-     FLIBS      := $(FLIBS) -lnetcdff
+     ifeq ($(MACHINENAME),wsl2-ubuntu)
+        NETCDFHOME := /usr
+        FFLAGS1 := $(FFLAGS1) -I/usr/include
+        FFLAGS2 := $(FFLAGS2) -I/usr/include
+        FFLAGS3 := $(FFLAGS3) -I/usr/include
+     endif
   endif
   IMODS 	:=  -I
   CC		:= gcc
@@ -870,24 +875,24 @@ endif
 #
 # Compiler Flags for CircleCI Build Server
 ifeq ($(compiler),circleci)
-  PPFC		:=  gfortran
-  FC		:=  gfortran
+  PPFC		:=  ifort
+  FC		:=  ifort
   PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O0 -g -mcmodel=medium -ffixed-line-length-none -m64
+  FFLAGS1	:=  $(INCDIRS) -O0 -132
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA
   DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
   DPRE		:=  -DREAL8 -DLINUX -DADCSWAN
   IMODS 	:=  -I
-  CC		:= gcc
+  CC		:= icx
   CCBE		:= $(CC)
-  CFLAGS	:= $(INCDIRS) -O0 -g -mcmodel=medium -DLINUX -m64
+  CFLAGS	:= $(INCDIRS) -O0 -mcmodel=medium -DLINUX -m64
   CLIBS	:=
   LIBS		:=
   MSGLIBS	:=
   ifeq ($(NETCDF),enable)
-     FLIBS          := $(FLIBS) -lnetcdff
+     FLIBS          := $(FLIBS) -L${NETCDF_C_HOME}/lib -lnetcdff
   endif
   $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)

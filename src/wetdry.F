@@ -122,17 +122,23 @@ CWET...
       subroutine computeWettingAndDrying(it)
       use sizes, only : sz, mne, mnp
       use nodalattributes,only: loadSubgridBarrier
-      use global, only : noff, nodecode, nnodecode, eta2, tk, nolifa,
+      use global, only : noff, nodecode, nnodecode, eta1, eta2, tk,
+     &    nolifa,
      &    bsx1, bsy1, btime_end, C2DDI, C3D, g, h0, ifnlfa, nddt, dtdp,
      &    nibnodecode, ilump, ncchange, tkm, directvelWD, useHF
 #ifdef CMPI
-     &    ,idumy
+     &    ,idumy,dumy1,dumy2
       use messenger
 #endif
-      use mesh, only : ne, np, nm, dp, mju, totalArea, nm, x, y, areas
+      use mesh, only : ne, np, nm, dp, mju, totalArea, nm, x, y, areas,
+     &   LBArray_Pointer, nneighele, neitabele
       use nodalattributes, only : BFCdLLimit, fgamma, ftheta, fric,
      &   manningsn, hbreak, ifhybf, ifnlbf, iflinbf, loadManningsN,
-     &   loadZ0B_var, z0b_var, loadSubgridBarrier
+     &   loadZ0B_var, z0b_var, loadSubgridBarrier,
+     &   loadCondensedNodes,
+     &   ListCondensedNodes, NListCondensedNodes,
+     &   NNodesListCondensedNodes
+      USE BOUNDARIES, ONLY : IBCONN, ISSUBMERGED64, NFLUXIB64_GBL
       use global_3dvs, only : a, b, islip, kp, z0b, sigma, evtot, q
       use subdomain, only : subdomainOn, enforceBN, enforceWDcb, enforceWDob
       implicit none
@@ -153,12 +159,16 @@ CWET...
       real(sz) :: deldist,deleta
       real(sz) :: htot
       real(sz) :: h1
-      real(sz) :: tk_tmp(np)
+      real(sz) :: tk_tmp(np),tmp1(np),tmp2(np),tmp3(np)
       integer :: tk_cnt(np)
       integer :: nbnctot
-      integer :: i,j,k,kk
+      integer :: i,j,k,kk,l
       integer :: ie          
       real(sz) :: tknf !dmw 202207, added for "new" formula for vel 
+      integer :: nnc
+      integer :: nnbb2
+      integer :: nwetele
+  
       if (nolifa.ne.2) then
          return ! wetting and drying is not active 
       endif
@@ -196,13 +206,35 @@ CWET...
                   NNODECODE(I)=0
                   NODECODE(I)=0
                   NCCHANGE=NCCHANGE+1 !NCCHANGE=0 set near beginning of GWCE
-C                  ENDIF
                ENDIF
             ENDIF
          ENDDO
 CWET...
 CWET...END WET/DRY SECTION - PART 1
 CWET...
+
+C.....
+C.....Nodal Wetting Criteria for the ibtype=64 weir boundary
+C.....Check the node if it is along the ibtype=64 weir boundary and if the weir is
+C.....submerged. If it is the case, set the nnodecode to 1.   SB
+C.....
+         IF (NFLUXIB64_GBL.GT.0) THEN
+            DO I=1,NP
+               IF(LBArray_Pointer(I).GT.0) THEN
+                  J = LBArray_Pointer(I)
+                  IF((ISSUBMERGED64(J).GT.0).AND.(NODECODE(I).EQ.0)) THEN
+                     NNBB2=IBCONN(J)
+                     ETA2(I) = ETA2(NNBB2)
+                     HTOT=DP(I)+ETA2(I)
+                     IF(HTOT.GT.HOFF) THEN
+                        NNODECODE(I)=1
+                        NODECODE(I)=1
+                        NCCHANGE=NCCHANGE+1 !NCCHANGE=0 set near beginning of GWCE
+                     ENDIF
+                  ENDIF
+               ENDIF
+            ENDDO
+         ENDIF
 
 cjjwC     Use Message-Passing to update nodecode and nnodecode at ghost nodes
 cjjw#ifdef CMPI
@@ -602,6 +634,13 @@ C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
          CALL UPDATEI(NNODECODE,NIBCNT,2)
 C-- DMW 202204 Update FRIC, TK, and ETA2 at ghost nodes as well 
          CALL UPDATER(FRIC,TK,ETA2,3)
+         tmp1 = TKM(1,:)
+         tmp2 = TKM(2,:)
+         tmp3 = TKM(3,:)
+         CALL UPDATER(tmp1,tmp2,tmp3,3)
+         TKM(1,:) = tmp1
+         TKM(2,:) = tmp2
+         TKM(3,:) = tmp3 
 C-- DMW
 #endif
 
@@ -1040,6 +1079,61 @@ CWET...
 CWET...END WET/DRY SECTION  - PART 3
 CWET...
 
+C.....
+C.....Nodal Drying Criteria for the ibtype=64 weir boundary
+C.....Check the node if it is along the ibtype=64 weir boundary and if the weir is
+C.....submerged. If it is the case and the node does not belong to at least 
+C.....one wet element, set the nnodecode back to 0.   SB
+C.....
+         IF (NFLUXIB64_GBL.GT.0) THEN
+            DO I=1,NP
+               IF(LBArray_Pointer(I).GT.0) THEN
+                  J = LBArray_Pointer(I)
+                  IF((ISSUBMERGED64(J).GT.0).AND.(NNODECODE(I).EQ.1)) THEN
+                     NNBB2=IBCONN(J)
+                     NWetEle = 0
+                     DO K=1,NNeighEle(I)
+                        IE = NeiTabEle(I,K)
+                        NCTOT = NNODECODE(NM(IE,1)) + 
+     &                          NNODECODE(NM(IE,2)) + NNODECODE(NM(IE,3))
+                        IF (NCTOT.EQ.3) THEN
+                           NWetEle = NWetEle + 1
+                        ENDIF
+                     ENDDO
+                     IF (NWetEle.EQ.0) THEN
+                        NNODECODE(I) = 0
+                     ENDIF
+                  ENDIF
+               ENDIF
+            ENDDO
+         ENDIF
+
+C.....
+C..... Section for condensed nodes
+C..... Setting the same nodecode value at grouped condensed nodes   SB
+C.....
+      IF(LoadCondensedNodes) THEN
+         DO K=1,NListCondensedNodes
+            I = ListCondensedNodes(K,1)
+            ! 0) DEFAULT VALUE
+            NNC = NNODECODE(I)
+            ! 1) FIND UPDATED VALUE 
+            DO L=2,NNodesListCondensedNodes(K)
+               J = ListCondensedNodes(K,L)
+               IF(NNODECODE(J).NE.NODECODE(J)) THEN
+                  NNC = NNODECODE(J)
+                  EXIT ! EXiT THE LOOP IF AN UPDATED NODECODE IS FOUND
+               ENDIF
+            ENDDO
+            ! 2) DISTRIBUTE IT
+            NNODECODE(I) = NNC
+            DO L=2,NNodesListCondensedNodes(K)
+               J = ListCondensedNodes(K,L)
+               NNODECODE(J) = NNC
+            ENDDO
+         ENDDO
+      ENDIF
+
 CWET...
 CWET...START WET/DRY SECTION PART 4 - NODAL DRYING LOOP D2
 CWET...Update number of active elements (MJU) and the total area (TotalArea) connected
@@ -1091,6 +1185,7 @@ cjjwnote - may have to pass TotalArea and mju as well
 C     Use Message-Passing to update nnodecode at ghost nodes
 #ifdef CMPI
          CALL UPDATEI(NNODECODE,IDUMY,1)
+         CALL UPDATER(TotalArea,DUMY1,DUMY2,1)
 #endif
 CWET...
 CWET...WET/DRY SECTION - PART 5 - RESET NODECODE USING NNODECODE

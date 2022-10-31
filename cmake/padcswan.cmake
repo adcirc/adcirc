@@ -82,6 +82,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_SOURCE_DIR}/src/global_3dvs.F
       ${CMAKE_SOURCE_DIR}/src/messenger.F
       ${CMAKE_SOURCE_DIR}/src/mesh.F
+      ${CMAKE_SOURCE_DIR}/src/vew1d.F
       ${CMAKE_SOURCE_DIR}/src/harm.F
       ${CMAKE_SOURCE_DIR}/wind/vortex.F
       ${CMAKE_SOURCE_DIR}/src/wind.F

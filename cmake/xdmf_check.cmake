@@ -1,5 +1,7 @@
 if(ENABLE_OUTPUT_XDMF)
 
+  find_package( HDF5 COMPONENTS C HL )
+
   set(xdmf_f90_code
       "
         PROGRAM XDMFCHECK
@@ -43,11 +45,11 @@ if(ENABLE_OUTPUT_XDMF)
       LINK_LIBRARIES ${XDMF_LibXdmfUtils}
       LINK_LIBRARIES ${XDMF_LibXdmf}
       LINK_LIBRARIES ${XDMF_AdditionalLibs}
+      LINK_LIBRARIES ${HDF5_LIBRARIES}
       OUTPUT_VARIABLE XDMFLOG)
 
     if(XDMF_TEST)
       set(XDMF_WORKING TRUE)
-      link_directories(${XDMFHOME}/lib)
     else(XDMF_TEST)
       message(
         SEND_ERROR
