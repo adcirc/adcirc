@@ -265,6 +265,11 @@ c.... !wjp added for warnElev namelist
       integer :: densityTimeIterator = 1 ! BC3D time step iteration skipper
       NAMELIST /densityControl/ densityRunType, densityFileName, 
      &  densityTimeIterator, densityForcingType
+      ! itfric control namelist
+      LOGICAL :: FOUND_ITFRIC_NML = .FALSE. !
+      LOGICAL :: resynthTidalVelo = .FALSE. ! true or false
+      CHARACTER(len=100) :: tidalVeloFileName = 'tidalVelo.nc' ! filename
+      NAMELIST /itFricControl/ resynthTidalVelo, tidalVeloFilename      
 
 C---------------------end of data declarations--------------------------------C
 
@@ -752,6 +757,15 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          write(*,*) "INFO: The density Control namelist was not found."
       ELSE
          found_density_nml = .true.  
+      ENDIF
+      REWIND(15)
+
+
+      READ(UNIT=15,NML=itFricControl,IOSTAT=IOS)
+      IF (IOS.gt.0) THEN
+         write(*,*) "INFO: The itFric Control namelist was not found."
+      ELSE
+         found_itfric_nml = .true.  
       ENDIF
       REWIND(15)
 C

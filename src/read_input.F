@@ -141,6 +141,7 @@ Casey 180318: Added NWS=13
      &                          NWS13GroupForPowell,
      &                          NWS13WindMultiplier
 #endif
+      USE INTERNALTIDE, ONLY: resynthTidalVelo, tidalVeloFilename
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
       INTEGER NTimeVaryingWeir
@@ -186,6 +187,8 @@ C.... DMW
       NAMELIST /AliDispersionControl/ CAliDisp, Cs, Ad, Bd
       NAMELIST /densityControl/ densityRunType, densityFileName, 
      &  densityTimeIterator, densityForcingType
+C...  CPB 9/2022: itFricControl namelist
+      NAMELIST /itFricControl/ resynthTidalVelo, tidalVeloFilename      
 #ifdef ADCNETCDF
       NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,
      &    NWS13WindMultiplier,NWS13GroupForPowell
@@ -671,10 +674,42 @@ C     WJP add namelist
          IDEN = 6
       elseif (trim(densityForcingType).eq.'Buoyancyfrequencies') then
          IDEN = 7
+      elseif (trim(densityForcingType).eq.'BCForcingOnADCIRCGrid') then
+         IDEN = 8
+      elseif (trim(densityForcingType).eq.'BuoyancyFrequenciesonGrid') then
+         IDEN = 9         
       endif
 !     Make sure to include the sign
       IDEN = IDEN*IDENsign
       if (IDEN.ne.0) CBaroclinic = .true.
+C...
+
+C...  CPB 9/2022: add ITFricControl Namelist
+C...     This namelist can be used to alter the behavior of the internal
+C...  tide dissipation mechanism. The default behavior uses the total
+C...  velocity in both the gwce and the momentum equation and groups
+C...  internal tide dissipation with boundary layer dissipation in the
+C...  TKM matrix. Setting resynthTidalVelo = .TRUE. results in the
+C...  internal tide dissipation being calculated from a harmonic
+C...  decomposition of tidal velocities and treated as a forcing term on
+C...  the RHS of both the momentum and gwc equations.
+C...
+      ! default to not resynthesizing tidal velocity
+      resynthTidalVelo = .false.
+      tidalVeloFileName = 'tidalVelo.nc'
+      ! read namelist
+      namelistSpecifier = 'itFricControl'
+      read(unit=15,nml=itFricControl,iostat=IOS)
+      call logNameListReadStatus(namelistSpecifier,ios)
+      ! write scratch messages
+      write(scratchMessage,'(a,l)') "resynthTidalVelo=",resynthTidalVelo
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,a)') "tidalVeloFileName=",
+     &      trim(tidalVeloFileName)
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+C...
+C...  END CPB
 
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
@@ -1172,9 +1207,16 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
      &                        //'with buoyancy frequency'
          case(7)
             densityForcingType = ' buoyancy frequency only'
+         case(8)
+            densityForcingType = ' depth-integrated baroclinic '
+     &                        //'gradients with buoyancy frequency'
+     &                        //' pre-computed on ADCIRC grid'
+         case(9)
+            densityForcingType = ' buoyancy frequency pre-computed on '
+     &                         //'ADCIRC grid only'            
          case default
             call allMessage(ERROR,
-     &       'The absolute value of IDEN must be <= 7.')
+     &       'The absolute value of IDEN must be <= 9.')
             call adcirc_terminate()
          end select
         call logMessage(INFO,'This run will be'//trim(densityDimensions)

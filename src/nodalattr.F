@@ -332,7 +332,10 @@ C------------------ For absorbing layer, DW
 
       integer :: filtL = 25 ! Length of moving-mean filter [hrs]
       REAL(SZ), ALLOCATABLE:: UAV(:,:), VAV(:,:) 
-
+C
+C.....CPB 9/2022: for computing tidal velocities in
+C                 apply2dinternalwavedrag
+      REAL(SZ), ALLOCATABLE, PRIVATE :: UT(:), VT(:)
 
 C------------------
 C     Make i,j,k private DW
@@ -904,6 +907,8 @@ C     ----------------------------------------------------------------
 C     Allocate memory to hold our data.
       subroutine allocateNodalAttributes()
       use mesh,only:ne
+      USE INTERNALTIDE, ONLY: resynthTidalVelo
+      USE GLOBAL, ONLY: NTIF
       implicit none
       ALLOCATE(TAU0VAR(NumOfNodes),TAU0BASE(NumOfNodes)) ! jjw&sb46.39sb01
       ALLOCATE(STARTDRY(NumOfNodes))
@@ -934,6 +939,9 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
       IF ( LoadIT_Fric ) THEN
          ALLOCATE(IT_Fric(NumOfNodes,IT_FricNoOfVals))
          ALLOCATE(UAV(filtL,NumOfNodes),VAV(filtL,NumOfNodes))
+         IF (resynthTidalVelo) THEN
+            ALLOCATE( UT(NumOfNodes), VT(NumOfNodes) )
+         ENDIF         
       END IF   
       OverlandReductionFactor(:) = 1D0/30D0
       IF ( LoadAbsLayerSigma ) THEN
@@ -2383,25 +2391,34 @@ C     the scalar version in here too
 C     WJP 02.24.2018 put into v53.dev
 C     WJP 07.24.2018 updated for baroclinic coupling type 
 C     ----------------------------------------------------------------
-      SUBROUTINE Apply2DInternalWaveDrag(NP, TK, TKM, U, V, DP, IT)
-      USE GLOBAL, ONLY: CBaroclinic, CORIF, DTDP, NB, NM, IDEN, IFSPROTS
+      SUBROUTINE Apply2DInternalWaveDrag(NP, TK, TKM, timeh, U, V, DP,
+     & IT)      
+      USE GLOBAL, ONLY: CBaroclinic, CORIF, DTDP, NB, NM, IDEN,
+     &                  IFSPROTS, RAMP
       USE MESH, ONLY: DRVMAP2DSPVEC, UVECTMP, VVECTMP, RVELF
+      USE INTERNALTIDE, ONLY: resynthTidalVelo, CALC_TIDAL_VELO
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
-      REAL(SZ), intent(in), dimension(NP) :: TK   ! scalar friction
-      REAL(SZ), intent(inout), dimension(3,NP) :: TKM
+      REAL(SZ), intent(in), dimension(:) :: TK   ! scalar friction
+      REAL(SZ), intent(inout), dimension(:,:) :: TKM
       INTEGER,  intent(in), optional :: IT          ! temporal interations
       REAL(SZ), intent(in), dimension(NP),optional :: U    ! x-dir velocities
       REAL(SZ), intent(in), dimension(NP),optional :: V    ! y-dir velocities
       REAL(SZ), intent(in), dimension(NP),optional :: DP   ! depth
       REAL(SZ), allocatable :: Hx(:), Hy(:)
-      INTEGER  :: I, L, Lm, Lind 
+      INTEGER  :: I, J, L, Lm, Lind 
       REAL(SZ) :: omega = 1.4052d-4 ![rad/s] M2 tidal frequency
       REAL(SZ) :: hr = 3600.0_SZ ! means one hour in seconds
       REAL(SZ) :: SmallV = 1d-10 ! A small value
       REAL(SZ) :: Fit, alpha2, gamma2, slope2, uavnow, vavnow 
       REAL(SZ) :: Nmdiff, Nbdiff, Fdiff, adju, adjv, adjuv
       logical, save ::  first_entry = .TRUE.
+      ! CPB: for tidal velocities
+      REAL(SZ) :: cosAMIGT, sinAMIGT, DissTidal, DissTotal, jjwgamma,
+     &            Cxx, Cyy, Cxy
+      REAL(SZ), intent(in), optional :: timeh
+      INTEGER :: NCYC
+      REAL(SZ),DIMENSION(:),ALLOCATABLE :: Udmy, Vdmy      
 C     Compute TKM by adding wave drag contribution to 
 C     current value of the bottom friction, TK
       LoadITFric: IF (LoadIT_Fric) THEN
@@ -2441,9 +2458,18 @@ C              (unnecessary for IT_FricNoOfVals == 1)
                ENDIF
             ENDIF
          ENDIF
+         IF (resynthTidalVelo) THEN
+            ALLOCATE( Udmy(NP), Vdmy(NP) )
+            Udmy = 0d0
+            Vdmy = 0d0
+            CALL CALC_TIDAL_VELO(Udmy,Vdmy,timeh)
+            UT = Udmy
+            VT = Vdmy
+            DEALLOCATE( Udmy, Vdmy )
+         ENDIF
          Baroc: IF (CBaroclinic.and.abs(IDEN).ge.5) THEN
 C           2DDI ADCIRC with baroclinic coupling
-            if (abs(IDEN).ne.7) then
+            if (abs(IDEN).ne.7.AND.(.NOT.resynthTidalVelo)) then
 C              Filtering lengths if have baroclinic ocean currents
                L  = floor((IT-1)*DTDP/hr) ! Get the current hour number
                Lm = floor((IT-2)*DTDP/hr) ! Get the previous hour number
@@ -2466,7 +2492,7 @@ C           4th and 5th columns are the Jx and Jy slopes
                   IF (omega > NB(I).or.omega < CORIF(I)) THEN
                      ! No freely propagating internal tides
                      TKM(1:2,I) = TK(I)
-                     TKM(3,I)   = 0.0d0
+                     TKM(3:5,I)   = 0.0d0
                   ELSE 
                      ! Have freely propagating internal tides
                      ! Get coefficient
@@ -2482,6 +2508,7 @@ C           4th and 5th columns are the Jx and Jy slopes
                      TKM(2,I) = TK(I) + 2*Fit*IT_Fric(I,3)*IT_Fric(I,5)
                      TKM(3,I) = Fit*(IT_Fric(I,2)*IT_Fric(I,5) +  
      &                               IT_Fric(I,3)*IT_Fric(I,4))
+                     TKM(4:5,I) = 0d0
                   ENDIF 
                ENDDO
             ELSEIF (IT_FricNoOfVals == 3.or.IT_FricNoOfVals == 1) THEN
@@ -2491,22 +2518,27 @@ C           For the scalar Zaron & Egbert (2006) type
 C           1st column is coefficient, 2nd column is the squared hypotenuse slope
                adjuv = 1d0; adju = 1d0; adjv = 1d0;
                DO I = 1,NP
-                  NBdiff = (NB(I)**2 - omega**2)
-                  NMdiff = (NM(I)**2 - omega**2)
-                  Fdiff  = (omega**2 - CORIF(I)**2)
+                  NBdiff = (NB(I)**2d0 - omega**2d0)
+                  NMdiff = (NM(I)**2d0 - omega**2d0)
+                  Fdiff  = (omega**2d0 - CORIF(I)**2d0)
                   IF (NBdiff.le.SmallV.or.Nmdiff.le.SmallV.or.
      &                Fdiff.le.SmallV) THEN
                      ! No freely propagating internal tides
                      TKM(1:2,I) = TK(I)
-                     TKM(3,I)   = 0.0d0
+                     TKM(3:5,I)   = 0.0d0
                   ELSE 
                      ! Have freely propagating internal tides
                      ! Get the full coefficient
-                     Fit = IT_Fric(I,1)*sqrt(NBdiff*Nmdiff)/omega
+                     IF (NBdiff*NMdiff.LT.0d0) THEN
+                        Fit = 0d0
+                     ELSE
+                        Fit = IT_Fric(I,1)*sqrt(NBdiff*Nmdiff)/omega
+                     ENDIF
                      ! Check criticality of slope
                      alpha2 = Fdiff / NBdiff
+                     IF (alpha2.LT.0d0) Fit = 0d0
                      if (IT_FricNoOfVals == 3) then
-                        slope2 = IT_Fric(I,2)**2 + IT_Fric(I,3)**2
+                        slope2 = IT_Fric(I,2)**2d0 + IT_Fric(I,3)**2d0
                      else
                         slope2 = IT_Fric(I,2)
                      endif
@@ -2515,7 +2547,7 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                      ! (saturates out at high criticalities) 
                      Fit = Fit / max(1d0,gamma2)                   
                      ! Calculate adjustment based on tidal residual
-                     if (abs(IDEN).ne.7) then
+                     if (abs(IDEN).ne.7.AND.(.NOT.resynthTidalVelo)) then
                         ! Calculate the adjustment factors based on the delayed moving mean
                         if (L.ge.1) then
                            uavnow = sum(UAV(1:L,I)) / L
@@ -2526,20 +2558,44 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                         adjuv = 0.5d0*(adju + adjv)
                      endif
                      ! Implement the friction with possible adjustment
-                     if (IT_FricNoOfVals == 3) then
-                        TKM(1,I) = TK(I) + adju*Fit*IT_Fric(I,2)**2
-                        TKM(2,I) = TK(I) + adjv*Fit*IT_Fric(I,3)**2
+                     IF (IT_FricNoOfVals.EQ.3.AND.resynthTidalVelo) THEN
+                        ! Cxx = Fit*hx^2=Fit*IT_Fric(I,2)^2
+                        ! Cyy = Fit*hy^2=Fit*IT_Fric(I,3)^2
+                        ! Cxy = Fit*hx*hy=Fit*IT_Fric(I,2)*IT_Fric(I,3)
+                        Cxx = Fit*IT_Fric(I,2)**2d0
+                        Cxy = Fit*IT_Fric(I,2)*IT_Fric(I,3)
+                        Cyy = Fit*IT_Fric(I,3)**2d0
+                        TKM(1,I) = TK(I)
+                        TKM(2,I) = TK(I)
+                        TKM(3,I) = 0d0
+                        TKM(4,I) = Cxx*UT(I) + Cxy*VT(I)
+                        TKM(5,I) = Cxy*UT(I) + Cyy*VT(I)
+                     ELSEIF (IT_FricNoOfVals == 3) then
+                        TKM(1,I) = TK(I) + adju*Fit*IT_Fric(I,2)**2d0
+                        TKM(2,I) = TK(I) + adjv*Fit*IT_Fric(I,3)**2d0
                         TKM(3,I) = adjuv*Fit*IT_Fric(I,2)*IT_Fric(I,3)
+                        TKM(4:5,I) = 0d0
                      else
                         TKM(1:2,I) = TK(I) + adjuv*Fit*IT_Fric(I,2)
-                        TKM(3,I)   = 0.0d0
+                        TKM(3:5,I)   = 0.0d0
                      endif
                   ENDIF 
                ENDDO
             endif
          ELSE
 C           Normal 2DDI ADCIRC without baroclinic coupling
-            IF (IT_FricNoOfVals == 3) THEN
+            IF (IT_FricNoOfVals == 3.AND.resynthTidalvelo) THEN
+               DO I=1,NP 
+                  Cxx = IT_Fric(I,1)
+                  Cyy = IT_Fric(I,2)
+                  Cxy = IT_Fric(I,3)
+                  TKM(1,I) = TK(I)
+                  TKM(2,I) = TK(I)
+                  TKM(3,I) = 0d0
+                  TKM(4,I) = Cxx*UT(I) + Cxy*VT(I)
+                  TKM(5,I) = Cxy*UT(I) + Cyy*VT(I)
+               END DO
+            ELSEIF (IT_FricNoOfVals == 3) THEN
 C              Use the "Nonlocal" Nycander (2005) or "Local" Lyard et al. (2004) 
 C              type tensor wave drag
 C              Using three columns of data for the different segments of the matrix
@@ -2547,13 +2603,14 @@ C              Using three columns of data for the different segments of the mat
                   TKM(1,I) = TK(I) + IT_Fric(I,1)
                   TKM(2,I) = TK(I) + IT_Fric(I,2)
                   TKM(3,I) = IT_Fric(I,3) 
+                  TKM(4:5,I) = 0d0
                END DO
             ELSEIF (IT_FricNoOfVals == 1) THEN
 C              For the scalar type Zaron & Egbert (2006) type
                DO I=1,NP 
                   TKM(1,I) = TK(I) + IT_Fric(I,1) 
                   TKM(2,I) = TKM(1,I)
-                  TKM(3,I) = 0.0d0
+                  TKM(3:5,I) = 0.0d0
                ENDDO
             ENDIF
          ENDIF Baroc
@@ -2561,7 +2618,7 @@ C              For the scalar type Zaron & Egbert (2006) type
 C       In case we did not load ITFric
         TKM(1,:) = TK
         TKM(2,:) = TK
-        TKM(3,:) = 0.0d0
+        TKM(3:5,:) = 0.0d0
       ENDIF LoadITFric
 
       RETURN
