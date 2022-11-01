@@ -119,7 +119,7 @@ Casey 100205: Add a variable for writing of SWAN hot-start files.
       USE WEIR_FLUX
       USE SPONGELAYER, ONLY: LoadAbsLayerSigma, sponge_dis_mthd, sponge_opsplit0,
      &     adjust_sponge_sigma, getabslayerext, sponge_shift_soln
-
+      USE INTERNALTIDE, ONLY: resynthTidalVelo
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
 C
@@ -541,11 +541,12 @@ C     2DDI.Set up the 2D friction coefficient
          CALL Apply2DBottomFriction(UU1, VV1, DP, ETA2, G, IFNLFA, NP, TK)
          ! WJP 02.24.2018 Get the wave drag coefficients
          ! that are put into TKM (which include TK from bottom friction)
-         IF (CBaroclinic) THEN
-            CALL Apply2DInternalWaveDrag(NP, TK, TKM, UU1, VV1, DP, IT)
+         IF (CBaroclinic.OR.resynthTidalVelo) THEN
+            CALL Apply2DInternalWaveDrag(NP, TK, TKM, timeh, UU1, VV1, 
+     & DP, IT)
          ELSE
-            CALL Apply2DInternalWaveDrag(NP, TK, TKM)
-         ENDIF 
+            CALL Apply2DInternalWaveDrag(NP, TK, TKM, timeh)
+         ENDIF         
       endif
 C..RJW Set up the 3D friction coefficient
       if (C3D) then
@@ -1722,7 +1723,7 @@ c******************************************************************************
          ! Update the 3D BC Information for the current timestep 
          call Update_BC3D_Info(IDEN,TimeLoc) 
 
-         if (abs(IDEN).ne.7) then         
+         if (abs(IDEN).ne.7.AND.abs(IDEN).ne.9) then
             ! Calculating the full Baroclinic pressure gradient and
             ! momentum dispersion terms required at every timestep
             ! from the 3D BC information that is on a longer time scale 

@@ -753,6 +753,17 @@ c..
       endif
       rewind(15)  !Return to the top of the fort.15 file
 
+      read(unit=15,nml=itFricControl,iostat=ios)
+      if ( ios.ge.0) then
+         FOUND_ITFRIC_NML = .true.
+         call logMessage(INFO,
+     &         'The itFric control namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The itFric control namelist was not found.')
+      endif
+      rewind(15)  !Return to the top of the fort.15 file      
+
       READ(15,80) RUNDES
 C
       READ(15,80) RUNID
