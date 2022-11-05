@@ -162,7 +162,9 @@
       cLon = lon
       Vmax = vm
       ! evaluate basic physical params
-      corio = 2.0d0 * omega * SIN(deg2rad*cLat)
+!P.V 11/04/2022 use absolute coriolis to account for Southern Hemisphere
+      !corio = 2.0d0 * omega * SIN(deg2rad*cLat)
+      corio = ABS(2.0d0 * omega * SIN(deg2rad*cLat))
       B = (Vmax*kt2ms)**2 * RhoAir * EXP(1.d0)
      &             / ((Pn - Pc) * mb2pa)
       B = MAX( MIN(B,2.5d0), 1.0d0) ! limit B to range 1.0->2.5
@@ -186,7 +188,9 @@
       cLon = lon
       Vmax = vm
       ! evaluate basic physical params
-      corio = 2.0d0 * omega * SIN(deg2rad*cLat)
+!P.V 11/04/2022 use absolute coriolis to account for Southern Hemisphere
+      !corio = 2.0d0 * omega * SIN(deg2rad*cLat)
+      corio = ABS(2.0d0 * omega * SIN(deg2rad*cLat))
       B = (Vmax*kt2ms)**2 * RhoAir * EXP(1.d0)
      &             / ((Pn - Pc) * mb2pa)
       Phi=1.d0
@@ -221,7 +225,9 @@
       cLat = lat
       cLon = lon
       ! evaluate basic physical params
-      corio = 2.0d0 * omega * SIN(deg2rad*cLat)
+!P.V 11/04/2022 use absolute coriolis to account for Southern Hemisphere
+      !corio = 2.0d0 * omega * SIN(deg2rad*cLat)
+      corio = ABS(2.0d0 * omega * SIN(deg2rad*cLat))      
       END SUBROUTINE setVortex
 
 
@@ -699,8 +705,17 @@
       ! now reduce the wind speed to the surface
       speed = speed * windReduction
 
-      u = -speed * COS(deg2rad*angle)
-      v =  speed * SIN(deg2rad*angle)
+!P.V 11/04/2022 to account for Southern Hemisphere
+      !u = -speed * COS(deg2rad*angle)
+      !v =  speed * SIN(deg2rad*angle)
+      ! Caution with SH/NH
+      if(cLat.lt.0.0_SZ) then
+      u =  speed * COS(DEG2RAD * angle)
+      v = -speed * SIN(DEG2RAD * angle)
+      else
+      u = -speed * COS(DEG2RAD * angle)
+      v =  speed * SIN(DEG2RAD * angle)
+      endif
       !
       ! Alter wind direction by adding a frictional inflow angle
       CALL rotate(u,v, fang(dist,rmx), cLat, uf,vf)
