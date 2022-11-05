@@ -304,7 +304,7 @@ ifeq ($(compiler),intel)
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
   DPRE          :=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
      DPRE          := $(DPRE) -DADCSWAN
