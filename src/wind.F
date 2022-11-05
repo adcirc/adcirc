@@ -5096,8 +5096,11 @@ C     Compute the distances based on haversine formula for distance along a sphe
 C     Compute coriolis
          coriolis = 2.0d0 * omega * sin(YCOOR(I)*DEG2RAD)
 C     Compute pressure field
-         PRESS(I)=(cpress+(centralPressureDeficit)*
-     &        EXP(-(RMW*1000.d0/RAD(I))**B)) / (RHOWAT0*G)
+!P.V 11/04/2022 to account for Southern Hemisphere
+!         PRESS(I)=(cpress+(centralPressureDeficit)*
+!     &        EXP(-(RMW*1000.d0/RAD(I))**B)) / (RHOWAT0*G)
+         PRESS(I)=cpress+(centralPressureDeficit)*
+     &        EXP(-(RMW*1000.d0/RAD(I))**B)
 C     Compute velocity field with absolute around 
 C     CORIOLIS for the Southern Hempisphere
          V_r(I) = sqrt(
@@ -5117,8 +5120,18 @@ C     Apply mutliplier for Storm2 in LPFS ensemble.
          V_r(I) = V_r(I) * WindMultiplier
 C
 C     Find the velocity components.
+!P.V 11/04/2022 to account for Southern Hemisphere
+        !WVNX(I)=-V_r(I)*SIN(THETA(I))
+        !WVNY(I)= V_r(I)*COS(THETA(I))
+        ! Find the wind velocity components (caution to SH/NH)
+        if(lat.lt.0.d0) then ! SH
+         WVNX(I)= V_r(I)*SIN(THETA(I))
+         WVNY(I)=-V_r(I)*COS(THETA(I))
+        else ! NH
          WVNX(I)=-V_r(I)*SIN(THETA(I))
          WVNY(I)= V_r(I)*COS(THETA(I))
+        endif
+ 
 C
 C     jgf46.19 Convert wind velocity from top of atmospheric boundary
 C     layer (which is what the Holland curve fit produces) to wind
@@ -5143,6 +5156,17 @@ C            WVNX(I)=0.0d0
 C            WVNY(I)=0.0d0
 C         ENDIF
 C
+!P.V 11/04/2022
+        PRESS(I) = max(0.85d5,min(1.1e5,PRESS(I))) !Typhoon Tip 870 hPa ... 12-oct-1979
+        WVNX(I)  = max(-200.d0,min(200.d0,WVNX(I)))
+        WVNY(I)  = max(-200.d0,min(200.d0,WVNY(I)))
+        !-------------------------------------------
+        ! Convert atmospheric pressure (Pascals) to
+        ! atmospheric pressure-induced water surface
+        ! elevation (meters).
+        !-------------------------------------------
+        PRESS(I) = PRESS(I) / (RHOWAT0*G)
+
       END DO
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -6787,7 +6811,9 @@ C     we are running off the end of the data.
      &                         wtratio*(cHollBs2(:)-cHollBs1(:))
       cVmwBL   =  cVmwBL1(:) +
      &                         wtratio*(cVmwBL2(:)-cVmwBL1(:))
-      corio = 2.0d0 * omega * SIN(deg2rad*cLat)
+      !P.V 11/04/2022
+      !Using absolute value for coriolis for Southern Hemisphere
+      corio = ABS(2.0d0 * omega * SIN(deg2rad*cLat))
 
 !Jie debug GAHM
 !         WRITE(16,700) 'Temporal interpolation:',
@@ -6880,6 +6906,13 @@ C     we are running off the end of the data.
          CALL uvpr(dist(i),aziangle(i),crmaxw(i),crmaxwTrue(i),
      &        cHollBs(i),cVmwBL(i),cPhiFactor(i),stormMotionU,
      &        stormMotionV,geofactor,wvnx(i),wvny(i),press(i))
+
+
+         !P.V 11/04/2022
+         press(i) = max(0.85d5,min(1.1e5,press(i)))  ! Typhoon Tip 870 hPa ... 12-oct-1979
+         wvnx(i)  = max(-200.d0,min(200.d0,wvnx(i)))
+         wvny(i)  = max(-200.d0,min(200.d0,wvny(i)))
+
          !-------------------------------------------
          ! Convert atmospheric pressure (Pascals) to
          ! atmospheric pressure-induced water surface
