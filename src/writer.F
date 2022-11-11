@@ -157,8 +157,8 @@ C     then goes back to waiting for another signal.
 C-----------------------------------------------------------------------
       subroutine writer_main ()
       use global, only : ScreenUnit
-      use messenger, only: msg_barrier, mpi_comm_adcirc, mpi_integer, 
-     &                     mpi_status_size
+      use mpi
+      use messenger, only: msg_barrier, mpi_comm_adcirc
       IMPLICIT NONE
       integer :: sig, ierr, waittime, nextProc, prevProc, sig_dummy
       integer :: mpistat(mpi_status_size)
@@ -958,9 +958,11 @@ C     subroutine is only called by processor 0.
 C-----------------------------------------------------------------------
       subroutine writer_pause()
       use global
-      use messenger
+      use messenger, only: tag, comm_writeh
+      use mpi
       implicit none
       integer i
+      integer ierr
 C
       call setMessageSource("writer_pause")
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)
@@ -1061,9 +1063,11 @@ C...  Main loop
 !
       subroutine HSWRITER_PAUSE()
       use global
-      use messenger
+      use messenger, only: tag, comm_writeh
+      use mpi
       implicit none
       integer i
+      integer ierr
 
       DO I=1,MNWPROH
          CALL MPI_SEND( SIG_PAUSE, 1, MPI_INTEGER, MNPROC,
