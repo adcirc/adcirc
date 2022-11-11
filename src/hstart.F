@@ -82,11 +82,6 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
       use Couple2BC3D, only: Initial_BC3D_NetCDF
 #endif
       IMPLICIT NONE
-#ifdef CMPI       
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
-#endif
       interface
          SUBROUTINE binaryRead2D(array, length, lun, counter)
          USE SIZES, ONLY : SZ

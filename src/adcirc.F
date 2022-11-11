@@ -571,15 +571,10 @@ C-----------------------------------------------------------------------
       SUBROUTINE ADCIRC_CheckLocalTerminate()
         USE MESSENGER
         USE GLOBAL,ONLY: terminate_localproc, screenUnit
-#ifdef HAVE_MPI_MOD
         USE MPI
-#endif        
         IMPLICIT NONE
         INTEGER :: TERM_LOCAL(2)
         INTEGER :: TERM_GLOBAL(2)
-#ifndef HAVE_MPI_MOD
-        INCLUDE 'mpif.h'
-#endif
         TERM_LOCAL(1) = TERMINATE_LOCALPROC
         TERM_LOCAL(2) = MYPROC
         CALL MPI_ALLREDUCE(TERM_LOCAL,TERM_GLOBAL,1,

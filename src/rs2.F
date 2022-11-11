@@ -779,16 +779,8 @@ c$$$      subroutine rs2get_type1(rsnx,rsny,np)
 c$$$      use sizes
 c$$$#ifdef CMPI     
 c$$$      use messenger, only: msg_fini, msg_ibcast, msg_cbcast, msg_rbcast
-c$$$#ifdef HAVE_MPI_MOD
-c$$$      use mpi
-c$$$      implicit none
-c$$$#else
-c$$$      implicit none
-c$$$      include 'mpif.h'
-c$$$#endif
-c$$$#else
-c$$$      implicit none
 c$$$#endif 
+c$$$      implicit none
 c$$$      integer,intent(in) :: np
 c$$$      real(sz),intent(out) :: rsnx(:),rsny(:)
 c$$$      integer :: i,j,k,s,n,ni,nj,fid,ios(1)
@@ -975,16 +967,8 @@ C***********************************************************************
 #ifdef CMPI
 Casey 090327: Implement Seizo's changes for buffering the radiation stress gradients.     
       use messenger, only: msg_fini, msg_ibcast, msg_cbcast, msg_rbcastd
-#ifdef HAVE_MPI_MOD
-      use mpi
-      implicit none
-#else
-      implicit none
-      include 'mpif.h'
 #endif 
-#else
       implicit none
-#endif 
 
       integer,intent(in) :: np
       real(sz),intent(out) :: rsnx(:),rsny(:)
