@@ -11,9 +11,7 @@
       use GLOBAL
       use MESH, ONLY : NP, AGRID
 #ifdef CMPI
-#ifdef HAVE_MPI_MOD
       use mpi
-#endif
 #endif
       contains
 
@@ -73,11 +71,6 @@ C--------------------------------------------------------------------
       USE SIZES
       USE GLOBAL
       implicit none
-#ifdef CMPI
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
-#endif
       type (OutputDataDescript_t) :: descript
       external pack_cmd
       external unpack_cmd
@@ -635,9 +628,6 @@ C
       integer, intent(in) :: it
       external write_cmd   
 #ifdef CMPI
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
       integer      :: ierr, status(MPI_STATUS_SIZE), request
       integer      :: nGWetNodes
       integer      :: iglobal
@@ -835,9 +825,6 @@ C
       integer, intent(in) :: it
       external write_cmd   
 #ifdef CMPI
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
       integer      :: ierr, status(MPI_STATUS_SIZE), request
       integer      :: nGWetNodes
       integer      :: iglobal
