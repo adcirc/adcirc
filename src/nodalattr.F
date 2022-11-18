@@ -2555,6 +2555,8 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                            if (abs(U(I)) > 1d-3) adju = 1d0-uavnow/U(I)
                            if (abs(V(I)) > 1d-3) adjv = 1d0-vavnow/V(I)
                         endif
+                        adju = 1d0
+                        adjv = 1d0
                         adjuv = 0.5d0*(adju + adjv)
                      endif
                      ! Implement the friction with possible adjustment
