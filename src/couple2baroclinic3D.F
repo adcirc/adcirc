@@ -461,11 +461,12 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE Read_BC3D_NetCDF_on_ADCIRC_Grid(NC_ID)
       use netcdf
-      use mesh, only : np 
+      use mesh, only : np,sfea,slam 
       use sizes, only : mnproc,myproc, localdir
       use global, only : nodes_lg, np_g
 #ifdef CMPI
       use messenger, only : MapToSubdomainRealMPI
+      USE GL2LOC_MAPPING, ONLY : MAPTOLOCAL_REAL
 #endif      
       use global, ONLY: rad2deg
       implicit none
@@ -499,28 +500,37 @@ C-----------------------------------------------------------------------
       ! allocate dummy array
       ALLOCATE( tmp(NP) )
       tmp = 0d0
-      ! BPGX
       IF (ABS(IDEN).NE.9) THEN
-         CALL MapToSubdomainRealMPI(np_g,NP,tmp,nodes_lg,bpgx_g)
+         ! BPGX
+         CALL MAPTOLOCAL_REAL(bpgx_g,tmp)
          VIDBCPDXOH_F(2,:) = tmp
+!         OPEN(111,FILE=TRIM(LOCALDIR)//'/'//'fort.111',
+!     &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
+!         do II = 1,np
+!            write(111,7638) SLAM(II),SFEA(II),VIDBCPDXOH_F(2,II)
+!         ENDDO
+! 7638 FORMAT(2X,e20.4,2x,e20.4,2x,e20.4)
+!         CLOSE(111)
+!         WRITE(16,*) 'Mapped bpgx_g'
+!         CALL BC3DTERMINATE()
          ! BPGY
-         CALL MapToSubdomainRealMPI(np_g,NP,tmp,nodes_lg,bpgy_g)
+         CALL MAPTOLOCAL_REAL(bpgy_g,tmp)
          VIDBCPDYOH_F(2,:) = tmp
          ! SigTS
-         CALL MapToSubdomainRealMPI(np_g,NP,tmp,nodes_lg,sigts_g)
+         CALL MAPTOLOCAL_REAL(sigts_g,tmp)
          SigTS_F(2,:)      = tmp
       ENDIF
       IF (LoadIT_Fric) THEN
          ! NB
-         CALL MapToSubdomainRealMPI(np_g,NP,tmp,nodes_lg,nb_g)
+         CALL MAPTOLOCAL_REAL(nb_g,tmp)
          NB_F(2,:) = tmp
          ! NM
-         CALL MapToSubdomainRealMPI(np_g,NP,tmp,nodes_lg,nm_g)
+         CALL MAPTOLOCAL_REAL(nb_g,tmp)
          NM_F(2,:) = tmp
       ENDIF
       IF (NOLIBF.EQ.3) THEN
          ! MLD
-         CALL MapToSubdomainRealMPI(np_g,NP,tmp,nodes_lg,mld_g)
+         CALL MAPTOLOCAL_REAL(mld_g,tmp)
          MLD_F(2,:) = tmp
       ENDIF
       DEALLOCATE( tmp )
