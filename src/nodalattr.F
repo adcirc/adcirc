@@ -2485,8 +2485,8 @@ C              Filtering lengths if have baroclinic ocean currents
                      UAV(Lind,I) = U(I)   
                      VAV(Lind,I) = V(I)   
                   ENDDO
-                  L = min(L,filtL)  
                endif
+               L = min(L,filtL)  
             endif
             IF (IT_FricNoOfVals == 5) THEN
 C           Use the "Nonlocal" Nycander (2005) type tensor wave drag
@@ -2554,6 +2554,7 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                      if (abs(IDEN).ne.7.AND.(.NOT.resynthTidalVelo)) then
                         ! Calculate the adjustment factors based on the delayed moving mean
                         if (L.ge.1) then
+                           L = min(L,filtL)
                            uavnow = sum(UAV(1:L,I)) / L
                            vavnow = sum(VAV(1:L,I)) / L
                            if (abs(U(I)) > 1d-3) adju = 1d0-uavnow/U(I)
