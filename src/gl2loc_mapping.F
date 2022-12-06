@@ -17,25 +17,15 @@ C----------------------------------------------------------------------
       USE MPI
 #ENDIF      
       IMPLICIT NONE
-      ! Define derived datatype for mapping. The format is fairly
-      ! simple. GLIDX will be of size MNPROC and for each subdomain will
-      ! contain the number of local nodes and the global node number of
-      ! each local node. This will be stored on core 0
-      TYPE :: GLIDX
-         INTEGER :: NumNodes
-         INTEGER,ALLOCATABLE :: GL(:)
-         REAL(SZ),ALLOCATABLE :: realbuffer(:)
-      END TYPE GLIDX
       ! Start of variables used
-      TYPE(GLIDX),DIMENSION(:),ALLOCATABLE,PRIVATE :: GL2LOC
-      ! array of send requests
-      INTEGER,DIMENSION(:),ALLOCATABLE,PRIVATE :: SEND_REQ
-      ! array of send statuses
-      INTEGER,DIMENSION(:,:),ALLOCATABLE,PRIVATE :: SEND_STAT
-      INTEGER,PRIVATE :: NPmax ! max number of points in a subdomain
-      ! to prevent allocation/deallocation slowing us down define
-      ! variables that persist
-      REAL(SZ),ALLOCATABLE,PRIVATE :: tmp_real(:)
+      INTEGER,DIMENSION(:),ALLOCATABLE,PRIVATE :: GL2LOC
+      ! sending information
+      REAL(SZ),DIMENSION(:),ALLOCATABLE,PRIVATE :: SENDBUF_REAL
+      ! counts of data to send and displacements
+      INTEGER,DIMENSION(:),ALLOCATABLE,PRIVATE :: SENDCOUNTS, DISPLS
+      ! recieving info
+      REAL(SZ),DIMENSION(:),ALLOCATABLE,PRIVATE :: RECVBUF_REAL
+      INTEGER,PRIVATE :: RECVCOUNT
 
 C----------------------------------------------------------------------
       CONTAINS
@@ -63,33 +53,16 @@ C----------------------------------------------------------------------
       ! that has size equal to the maximum number of nodes on a
       ! processor.
 #IFDEF CMPI
-      ! loop through each processor and build the local arrays
       IF (MYPROC.EQ.0) THEN
-         ! handle processor 0 first
-         DO jj = 1,GL2LOC(1)%NumNodes
-            LOCALDATA(jj) = GLOBALDATA(GL2LOC(1)%GL(jj))
+         ! Put global data into sendbufr in the correct order
+         DO kk = 1,sum(SENDCOUNTS)
+            SENDBUF_REAL(kk) = GLOBALDATA(GL2LOC(kk))
          ENDDO
-         ! handle rest of processors
-         DO kk = 2,MNPROC
-            tmp_real = 0_SZ
-            DO jj = 1,GL2LOC(kk)%NumNodes
-               GL2LOC(kk)%realbuffer(jj) = GLOBALDATA(GL2LOC(kk)%GL(jj))
-            ENDDO
-            WRITE(16,*) 'About to send info to proc ',kk
-            CALL MPI_ISEND(GL2LOC(kk)%realbuffer,
-     &                     GL2LOC(kk)%NumNodes, REALTYPE, kk-1,
-     &                     TAG, COMM, SEND_REQ(kk-1), ierr) 
-            WRITE(16,*) 'Just sent info to proc ',kk
-         ENDDO
-         CALL MPI_WAITALL(MNPROC-1, SEND_REQ, SEND_STAT, ierr)
-         WRITE(16,*) 'Done waiting on sends'
-      ELSE
-         WRITE(16,*) 'About to receive data from proc 0'
-         CALL MPI_IRECV(LOCALDATA, NP, REALTYPE, 0, MPI_ANY_TAG, COMM,
-     &                  RECV_REQ, ierr)
-         WRITE(16,*) 'Just received data from proc 0'
-         CALL MPI_WAIT(RECV_REQ, RECV_STAT, ierr)
       ENDIF
+      CALL MPI_SCATTERV(SENDBUF_REAL,SENDCOUNTS,DISPLS,REALTYPE,
+     &                  RECVBUF_REAL,RECVCOUNT,REALTYPE,
+     &                  0,COMM,ierr)
+      LOCALDATA = RECVBUF_REAL
 #ELSE
       LOCALDATA = GLOBALDATA      
 #ENDIF
@@ -103,7 +76,7 @@ C----------------------------------------------------------------------
       LOGICAL,SAVE :: first_call = .TRUE.
       INTEGER :: localNumNodes
       INTEGER,ALLOCATABLE :: local_gl2loc(:)
-      INTEGER :: kk, ierr, TAG
+      INTEGER :: kk, ii, ierr, TAG, dmycounter
 #IFDEF CMPI      
       INTEGER :: stat(MPI_STATUS_SIZE)
 #ELSE
@@ -111,51 +84,50 @@ C----------------------------------------------------------------------
 #ENDIF      
       TAG = 100
 #IFDEF CMPI
-      ! Return if we have already build the table
+      ! Return if we have already built the table
       IF (first_call.EQV..FALSE.) RETURN
       first_call = .FALSE.
-      ! make dummy variables to put in gl2loc on each processor
-      localNumNodes = NP
-      NPmax = localNumNodes
-      ALLOCATE( local_gl2loc(localNumNodes) )
-      DO kk = 1,localNumNodes
-         local_gl2loc(kk) = abs(nodes_lg(kk))
-      END DO
-      WRITE(16,*) 'PROC ',MYPROC,' built local_gl2loc'
-      ! First, put the data from proc 0 in the proper place in GL2LOC
+      ! On processor 0, allocate sendcounts and displs
       IF (MYPROC.EQ.0) THEN
-         ! allocate send requests for irecv/isend. Note that we only
-         ! need MNPROC-1 request tags since we don't send to proc 0
-         ALLOCATE( SEND_REQ(MNPROC-1) )
-         ALLOCATE( SEND_STAT(MPI_STATUS_SIZE,MNPROC-1) )
-         ALLOCATE( GL2LOC(MNPROC) )
-         GL2LOC(1)%NumNodes = localNumNodes
-         ALLOCATE( GL2LOC(1)%GL(GL2LOC(1)%NumNodes) )
-         GL2LOC(1)%GL = local_gl2loc
-         DEALLOCATE( local_gl2loc )
-         ! Gather all the mapping info onto proc 0
-         DO kk = 1,MNPROC-1
-            CALL MPI_RECV(localNumNodes, 1, MPI_INTEGER, kk, 
-     &                    MPI_ANY_TAG, COMM, stat, ierr)
-            ALLOCATE( local_gl2loc(localNumNodes) )
-            CALL MPI_RECV(local_gl2loc, localNumNodes, MPI_INTEGER, kk,
-     &                    MPI_ANY_TAG, COMM, stat, ierr)
-            GL2LOC(kk+1)%NumNodes = localNumNodes
-            ALLOCATE( GL2LOC(kk+1)%GL(GL2LOC(kk+1)%NumNodes) )
-            ALLOCATE( GL2LOC(kk+1)%realbuffer(GL2LOC(kk+1)%NumNodes) )
-            GL2LOC(kk+1)%GL = local_gl2loc
-            DEALLOCATE( local_gl2loc )
-            ! check if NP of this is greater than NPmax
-            NPmax = max(NPmax,localNumNodes)
-         END DO
-         WRITE(16,*) 'Received all mapping info'
+         ALLOCATE( SENDCOUNTS(MNPROC) )
+         ALLOCATE( DISPLS(MNPROC) )
       ELSE
-         CALL MPI_SEND(localNumNodes, 1, MPI_INTEGER, 0, TAG, COMM,ierr)
-         CALL MPI_SEND(local_gl2loc, localNumNodes, MPI_INTEGER, 0, TAG,
-     &                 COMM,ierr)
-         DEALLOCATE( local_gl2loc )
-         WRITE(16,*) 'Sent mapping info to proc 1'
+         ALLOCATE( sendcounts(1) )
+         ALLOCATE( DISPLS(1) )
       ENDIF
+      ! get recvcount on all processors 
+      RECVCOUNT = NP
+      ! allocate recvbuf_real
+      ALLOCATE( RECVBUF_REAL(RECVCOUNT) )
+      ! build local mapping tables
+      ALLOCATE( local_gl2loc(RECVCOUNT) )
+      DO kk = 1,RECVCOUNT
+         local_gl2loc(kk) = ABS(nodes_lg(kk))
+      ENDDO
+      ! gather all recvcount values on proc 0
+      CALL MPI_GATHER(RECVCOUNT, 1, MPI_INTEGER,
+     &                SENDCOUNTS, 1, MPI_INTEGER, 
+     &                0, COMM, ierr)
+      IF (MYPROC.eq.0) THEN
+         DISPLS(1) = 0
+         DO kk = 2,MNPROC
+            DISPLS(kk) = SUM(SENDCOUNTS(1:kk-1))
+         ENDDO
+         ! allocate gl2loc
+         ALLOCATE( GL2LOC(SUM(SENDCOUNTS)) )
+         ALLOCATE( SENDBUF_REAL(SUM(SENDCOUNTS)) )
+         DO kk = 1,MNPROC
+            WRITE(16,*) SENDCOUNTS(kk)
+         ENDDO   
+      ELSE
+         ALLOCATE( SENDBUF_REAL(1) )
+         ALLOCATE( gl2loc(1) )
+      ENDIF
+      ! make total mapping
+      CALL MPI_GATHERV(local_gl2loc, RECVCOUNT, MPI_INTEGER,
+     &                 GL2LOC, SENDCOUNTS, DISPLS, MPI_INTEGER,
+     &                 0, COMM, ierr)
+      RETURN
 #ENDIF
 C----------------------------------------------------------------------
       END SUBROUTINE BUILD_GL2LOC
