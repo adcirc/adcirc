@@ -504,15 +504,15 @@ C-----------------------------------------------------------------------
          ! BPGX
          CALL MAPTOLOCAL_REAL(bpgx_g,tmp)
          VIDBCPDXOH_F(2,:) = tmp
-         OPEN(111,FILE=TRIM(LOCALDIR)//'/'//'fort.111',
-     &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
-         do II = 1,np
-            write(111,7638) ABS(NODES_LG(ii)),VIDBCPDXOH_F(2,II)
-         ENDDO
- 7638 FORMAT(2X,I8,2x,e20.4)
-         CLOSE(111)
-         WRITE(16,*) 'Mapped bpgx_g'
-         CALL BC3DTERMINATE()
+!         OPEN(111,FILE=TRIM(LOCALDIR)//'/'//'fort.111',
+!     &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
+!         do II = 1,np
+!            write(111,7638) ABS(NODES_LG(ii)),VIDBCPDXOH_F(2,II)
+!         ENDDO
+! 7638 FORMAT(2X,I8,2x,e20.4)
+!         CLOSE(111)
+!         WRITE(16,*) 'Mapped bpgx_g'
+!         CALL BC3DTERMINATE()
          ! BPGY
          CALL MAPTOLOCAL_REAL(bpgy_g,tmp)
          VIDBCPDYOH_F(2,:) = tmp
