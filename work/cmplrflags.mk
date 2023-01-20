@@ -36,8 +36,8 @@ ifeq ($(compiler),gnu)
   FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-none -m64
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
-  DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI 
+  DA		:=  -DREAL8 -DLINUX -DCSCA -DSKIP_DRY
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DSKIP_DRY
   DPRE		:=  -DREAL8 -DLINUX
   IMODS 	:=  -I
   CC		:= gcc
@@ -262,8 +262,8 @@ ifeq ($(compiler),intel)
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
-  DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DA            :=  -DREAL8 -DLINUX -DCSCA -DSKIP_DRY
+  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DSKIP_DRY
   DPRE          :=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
      DPRE          := $(DPRE) -DADCSWAN
@@ -375,8 +375,8 @@ ifeq ($(compiler),intel-ND)
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
-  DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI #-DNOFSBPG #-DNOIVB -DPOWELL
+  DA            :=  -DREAL8 -DLINUX -DCSCA -DSKIP_DRY
+  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DSKIP_DRY #-DNOFSBPG #-DNOIVB -DPOWELL
   DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
   ifeq ($(SWAN),enable)
      DPRE       := $(DPRE) -DADCSWAN
@@ -1022,8 +1022,8 @@ ifeq ($(compiler),gfortran)
   endif
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
-  DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DA		:=  -DREAL8 -DLINUX -DCSCA -DSKIP_DRY
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DSKIP_DRY
   DPRE		:=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
      DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
