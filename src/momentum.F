@@ -275,8 +275,10 @@ C     WJP: initialize baroclinic pressure gradients to zero
 C...  SET NODAL VALUES FOR EACH ELEMENT
 
 
+#ifndef SKIP_DRY
 Corbitt 120322: Localized Advection
-         IF (LoadAdvectionState) CALL ADVECTLOCAL(IE)
+         IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
+#endif
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -285,6 +287,10 @@ Corbitt 120322: Localized Advection
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
          NCELE=NC1*NC2*NC3*NOFF(IE)
+#ifdef SKIP_DRY
+         IF(NCELE.EQ.0) CYCLE
+         IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
+#endif
          U1N1=UU1(NM1)
          U1N2=UU1(NM2)
          U1N3=UU1(NM3)
@@ -696,10 +702,14 @@ C           AND AUV
          NM1=NM(IE,1)
          NM2=NM(IE,2)
          NM3=NM(IE,3)
+#ifdef SKIP_DRY              
          NC1=NODECODE(NM1)
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
          NCEle=NC1*NC2*NC3*NOFF(IE)
+
+         IF(NCEle.EQ.0) CYCLE
+#endif
          MOM_LV_X(NM1)=MOM_LV_X(NM1)+TEMP_LV_A(IE,1)
          MOM_LV_X(NM2)=MOM_LV_X(NM2)+TEMP_LV_A(IE,2)
          MOM_LV_X(NM3)=MOM_LV_X(NM3)+TEMP_LV_A(IE,3)
@@ -723,6 +733,9 @@ C      DispY=0.D0
       SPNGCOEF_Y = 0.D0
       DO I=1,NP
          NCI=NODECODE(I)
+#ifdef SKIP_DRY
+         IF(NCI.EQ.0) CYCLE
+#endif
          IF (TotalArea(I).ne.0.d0) THEN
             IF (CME_AreaInt_Corr) THEN       !Correct area integration
                MOM_LV_X(I)=MOM_LV_X(I)/TotalArea(I)
@@ -826,6 +839,9 @@ C...  AUV12=-AUV21)
          NBDI=NBV(I)
          H2=DP(NBDI)+IFNLFA*ETA2(NBDI)
          NCI=NODECODE(NBDI)
+#ifdef SKIP_DRY
+         IF(NCI.EQ.0) CYCLE
+#endif
 
 C      Specified essential normal flow and free tangential slip
 
@@ -1141,6 +1157,9 @@ C.....velocity can be zeroed out to obtain an essential zero velocity at
 C.....interface nodes.
 
       DO I = 1,NP
+#ifdef SKIP_DRY
+         IF(NODECODE(I).EQ.0) CYCLE
+#endif
          ! WJP 02.24.2018 Performing the final solve
          DDU    = AUV(1,I)*AUV(2,I)-AUV(3,I)*AUV(4,I)
          UU2(I) = (MOM_LV_X(I)*AUV(2,I)-MOM_LV_Y(I)*AUV(3,I))/DDU
@@ -1181,6 +1200,9 @@ C...
                NC2=NODECODE(NM2)
                NC3=NODECODE(NM3)
                NCEle=NC1*NC2*NC3*NOFF(NEleZNG(I))
+#ifdef SKIP_DRY
+               IF(NCEle.EQ.0) CYCLE
+#endif
                UU2(NBDI)=NCEle*(UU2(NM1)*ZNGIF1(I)+UU2(NM2)*ZNGIF2(I)
      &                                            +UU2(NM3)*ZNGIF3(I))
                VV2(NBDI)=NCEle*(VV2(NM1)*ZNGIF1(I)+VV2(NM2)*ZNGIF2(I)
@@ -1192,6 +1214,9 @@ C...
 C...  Compute fluxes
 
       DO I=1,NP
+#ifdef SKIP_DRY
+         IF(NODECODE(I).EQ.0) CYCLE
+#endif
          H2 = DP(I)+IFNLFA*ETA2(I)
          QX2(I) = UU2(I)*H2
          QY2(I) = VV2(I)*H2

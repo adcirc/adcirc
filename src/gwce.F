@@ -426,6 +426,9 @@ C              WJP 02.24.2018 Get the infinity norm of the matrix
                NC2=NodeCode(NMI2)
                NC3=NodeCode(NMI3)
                NCEle=NC1*NC2*NC3*NOFF(IE)
+#ifdef SKIP_DRY
+               IF(NCEle.EQ.0) CYCLE
+#endif
 
                SFacAvg = SFacEle(IE)
 C.... Beg DW/WJP:
@@ -544,6 +547,9 @@ C              Assemble the LHS matrix
                NC2=NodeCode(NMI2)
                NC3=NodeCode(NMI3)
                NCEle=NC1*NC2*NC3*NOFF(IE)
+#ifdef SKIP_DRY
+               IF(NCEle.EQ.0) CYCLE
+#endif
 
                Tau0Avg=(Tau0Var(NMI1)+Tau0Var(NMI2)+Tau0Var(NMI3))/3.d0
 C
@@ -650,6 +656,9 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
             ! Seizo: Explicit scheme can solve localy. (the efect is small?)
             EP=0.0D0
             DO I=1,NP
+#ifdef SKIP_DRY
+               IF(NODECODE(I).EQ.0) CYCLE
+#endif
                EP=EP+Coefd(I)*Coefd(I)
             ENDDO
             EP=SQRT(EP/NP)
@@ -664,6 +673,9 @@ C......  DW
 C.....      Check that all the diagonal elements in "COEFD" are > 0.
             DIE = .FALSE.
             DO I=1,NP
+#ifdef SKIP_DRY
+               IF(NODECODE(I).EQ.0) CYCLE
+#endif
                IF(COEFD(I).EQ.0.d0) COEFD(I)=EP
                IF(COEFD(I).LT.0.d0) THEN
                   IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
@@ -745,6 +757,9 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
             NC2=NODECODE(NM2)
             NC3=NODECODE(NM3)
             NCEle=NC1*NC2*NC3*NOFF(IE)
+#ifdef SKIP_DRY
+            IF(NCEle.EQ.0) CYCLE
+#endif
             SFacAvg = SFacEle(IE)
             SFmxAvg=SFMXEle(IE) ;
             SFmyAvg=SFMYEle(IE) ;
@@ -795,6 +810,9 @@ C........ END DW:
          ENDDO
 
          DO I=1,NP
+#ifdef SKIP_DRY
+            IF(NODECODE(I).EQ.0) CYCLE
+#endif
             IF(TotalArea(I).NE.0.) THEN
                H2=DP(I)+IFNLFA*ETA2(I)
                H2OTotalArea=H2/TotalArea(I)
@@ -839,6 +857,9 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
             NC2=NODECODE(NM2)
             NC3=NODECODE(NM3)
             NCEle=NC1*NC2*NC3*NOFF(IE)
+#ifdef SKIP_DRY
+            IF(NCEle.EQ.0) CYCLE
+#endif
             SFacAvg = SFacEle(IE)
 C..... Beg DW:
             SFmxAvg=SFMXEle(IE) ;
@@ -892,6 +913,9 @@ C..... End DW
          ENDDO
 
          DO I=1,NP
+#ifdef SKIP_DRY
+            IF(NODECODE(I).EQ.0) CYCLE
+#endif
             IF(TotalArea(I).NE.0.) THEN
                IF (CGWCE_LS_2PartQ) THEN          !nonsymmetric
                   LSXX(I)=LSXX(I)/TotalArea(I)
@@ -928,8 +952,10 @@ C...  Assemble the GWCE RHS except for the boundary integral terms
 
 C...     Set nodal values for each element
 
+#ifndef SKIP_DRY
 Corbitt 120322: Localized Advection
-         IF (LoadAdvectionState) CALL ADVECTLOCAL(IE)
+         IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
+#endif
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -938,6 +964,10 @@ Corbitt 120322: Localized Advection
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
          NCELE=NC1*NC2*NC3*NOFF(IE)
+#ifdef SKIP_DRY
+         IF(NCEle.EQ.0) CYCLE
+         IF(LoadAdvectionState) CALL ADVECTLOCAL(IE)
+#endif
          E0N1=ETA1(NM1)
          E0N2=ETA1(NM2)
          E0N3=ETA1(NM3)
@@ -1496,6 +1526,9 @@ C...  Save the elevation at the past time step into Eta1 and zero out Eta2
 ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
 
       DO I=1,NP
+#ifdef SKIP_DRY 
+        IF(NODECODE(I).EQ.0) CYCLE 
+#endif          
          IF(CPRECOR) THEN
             ETAS0(I)=ETAS(I)
             Eta0(I)=Eta1(I)
@@ -1873,6 +1906,9 @@ C...  JCG ITERATIVE MATRIX SOLVER
      &        IWKSP,NW,WKSP,IPARM,RPARM,IER)
          NUMITR=IPARM(1)
          DO I=1,NP
+#ifdef SKIP_DRY 
+            IF(NODECODE(I).EQ.0) CYCLE 
+#endif                                                       
             ETA2(I) = NODECODE(I)*ETAS(I)+ETA1(I) !COMPUTE NEW ELEVATIONS
          END DO
       ELSE ! lumped LHS
@@ -1886,6 +1922,9 @@ C...  JCG ITERATIVE MATRIX SOLVER
          ENDDO
          NUMITR=0
          DO I=1,NP
+#ifdef SKIP_DRY 
+            IF(NODECODE(I).EQ.0) CYCLE 
+#endif
             ETA2(I)=NODECODE(I)*ETAS(I)+ETA1(I) !COMPUTE NEW ELEVATIONS
          END DO
       ENDIF
