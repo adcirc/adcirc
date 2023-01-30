@@ -330,8 +330,6 @@ C------------------ For absorbing layer, DW
       REAL(SZ), ALLOCATABLE:: AbsLayerQxEMO(:,:), AbsLayerQxEFA(:,:)
       REAL(SZ), ALLOCATABLE:: AbsLayerQyEMO(:,:), AbsLayerQyEFA(:,:)
 
-      integer :: filtL = 25 ! Length of moving-mean filter [hrs]
-      REAL(SZ), ALLOCATABLE:: UAV(:,:), VAV(:,:) 
 C
 C.....CPB 9/2022: for computing tidal velocities in
 C                 apply2dinternalwavedrag
@@ -938,7 +936,6 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
       elemental_slope_limiter_max_exceeded(:) = .FALSE.
       IF ( LoadIT_Fric ) THEN
          ALLOCATE(IT_Fric(NumOfNodes,IT_FricNoOfVals))
-         ALLOCATE(UAV(filtL,NumOfNodes),VAV(filtL,NumOfNodes))
          IF (resynthTidalVelo) THEN
             ALLOCATE( UT(NumOfNodes), VT(NumOfNodes) )
          ENDIF         
@@ -2396,7 +2393,8 @@ C     ----------------------------------------------------------------
       USE GLOBAL, ONLY: CBaroclinic, CORIF, DTDP, NB, NM, IDEN,
      &                  IFSPROTS, RAMP
       USE MESH, ONLY: DRVMAP2DSPVEC, UVECTMP, VVECTMP, RVELF
-      USE INTERNALTIDE, ONLY: resynthTidalVelo, CALC_TIDAL_VELO
+      USE INTERNALTIDE, ONLY: resynthTidalVelo, CALC_TIDAL_VELO, UNTIDE,
+     &                        UBar, VBar
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
       REAL(SZ), intent(in), dimension(:) :: TK   ! scalar friction
@@ -2406,11 +2404,11 @@ C     ----------------------------------------------------------------
       REAL(SZ), intent(in), dimension(NP),optional :: V    ! y-dir velocities
       REAL(SZ), intent(in), dimension(NP),optional :: DP   ! depth
       REAL(SZ), allocatable :: Hx(:), Hy(:)
-      INTEGER  :: I, J, L, Lm, Lind 
+      INTEGER  :: I, J 
       REAL(SZ) :: omega = 1.4052d-4 ![rad/s] M2 tidal frequency
       REAL(SZ) :: hr = 3600.0_SZ ! means one hour in seconds
       REAL(SZ) :: SmallV = 1d-10 ! A small value
-      REAL(SZ) :: Fit, alpha2, gamma2, slope2, uavnow, vavnow 
+      REAL(SZ) :: Fit, alpha2, gamma2, slope2
       REAL(SZ) :: Nmdiff, Nbdiff, Fdiff, adju, adjv, adjuv
       logical, save ::  first_entry = .TRUE.
       ! CPB: for tidal velocities
@@ -2470,19 +2468,7 @@ C              (unnecessary for IT_FricNoOfVals == 1)
          Baroc: IF (CBaroclinic.and.abs(IDEN).ge.5) THEN
 C           2DDI ADCIRC with baroclinic coupling
             if (abs(IDEN).ne.7.AND.(.NOT.resynthTidalVelo)) then
-C              Filtering lengths if have baroclinic ocean currents
-               L  = floor((IT-1)*DTDP/hr) ! Get the current hour number
-               Lm = floor((IT-2)*DTDP/hr) ! Get the previous hour number
-               if (L > Lm) then
-                  ! Store new hour velocities
-                  ! Get actual index (wrap around)
-                  Lind = L - filtL*floor((IT-1)*DTDP/filtL/hr) + 1
-                  DO I = 1,NP
-                     UAV(Lind,I) = U(I)   
-                     VAV(Lind,I) = V(I)   
-                  ENDDO
-               endif
-               L = min(L,filtL)  
+               CALL UNTIDE(U,V,IT)
             endif
             IF (IT_FricNoOfVals == 5) THEN
 C           Use the "Nonlocal" Nycander (2005) type tensor wave drag
@@ -2516,8 +2502,8 @@ C           For the "Local" Lyard et al. (2004) type tensor wave drag
 C           1st column is coefficient, 2nd and 3rd columns are the Hx and Hy slopes
 C           For the scalar Zaron & Egbert (2006) type
 C           1st column is coefficient, 2nd column is the squared hypotenuse slope
-               adjuv = 1d0; adju = 1d0; adjv = 1d0;
                DO I = 1,NP
+                  adju = 1d0; adjv = 1d0;
                   NBdiff = (NB(I)**2d0 - omega**2d0)
                   NMdiff = (NM(I)**2d0 - omega**2d0)
                   Fdiff  = (omega**2d0 - CORIF(I)**2d0)
@@ -2549,15 +2535,11 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                      ! Calculate adjustment based on tidal residual
                      if (abs(IDEN).ne.7.AND.(.NOT.resynthTidalVelo)) then
                         ! Calculate the adjustment factors based on the delayed moving mean
-                        if (L.ge.1) then
-                           L = min(L,filtL)
-                           uavnow = sum(UAV(1:L,I)) / L
-                           vavnow = sum(VAV(1:L,I)) / L
-                           if (abs(U(I)) > 1d-3) adju = 1d0-uavnow/U(I)
-                           if (abs(V(I)) > 1d-3) adjv = 1d0-vavnow/V(I)
-                        endif
-                        adju = 1d0
-                        adjv = 1d0
+                        IF (ABS(U(I)).GT.1d-3.AND.
+     &                      ABS(V(I)).GT.1d-3) THEN
+                           adju = 1d0-UBar(I)/U(I)
+                           adjv = 1d0-VBar(I)/V(I)
+                        ENDIF
                         adjuv = 0.5d0*(adju + adjv)
                      endif
                      ! Implement the friction with possible adjustment
