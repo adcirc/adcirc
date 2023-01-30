@@ -275,7 +275,8 @@ C
          READ(LOC2(IPROC),'(A85)')  INLINE
          READ(LOC2(IPROC),3645) NTRSPE,NUMSTNS,DTE,NSTEMP,ITEMPE
          IF (NUMSTNS.NE.NSTAEP(IPROC)) THEN
-            CALL EXIT(1) 'Inconsistency in Number of Elevation Stations'
+            write(*,*) 'Inconsistency in Number of Elevation Stations'
+            CALL EXIT(1) 
          ENDIF
       ENDDO
 C
@@ -409,7 +410,8 @@ C
          IREC(IPROC) = IREC(IPROC)+5
          CLOSE(LOC2(IPROC))    ! Flush the Write Buffer
          IF (NUMSTNS.NE.NSTAEP(IPROC)) THEN
-            CALL EXIT(1) 'Inconsistency in Number of Elevation Stations'
+            write(*,*) 'Inconsistency in Number of Elevation Stations'
+            CALL EXIT(1)
          ENDIF
          OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
       ENDDO
@@ -526,7 +528,8 @@ C
          READ(LOC2(IPROC),'(A85)')  INLINE
          READ(LOC2(IPROC),3645) NTRSPV,NUMSTNS,DTV,NSTEMP,ITEMPV
          IF (NUMSTNS.NE.NSTAVP(IPROC)) THEN
-            CALL EXIT(1) 'Inconsistency in Number of Velocity Stations'
+            write(*,*) 'Inconsistency in Number of Velocity Stations'
+            CALL EXIT(1) 
          ENDIF
       ENDDO
 C
@@ -660,7 +663,8 @@ C
          IREC(IPROC) = IREC(IPROC)+5
          CLOSE(LOC2(IPROC))    ! Flush the Write Buffer
          IF (NUMSTNS.NE.NSTAVP(IPROC)) THEN
-            CALL EXIT(1) 'Inconsistency in Number of Velocity Stations'
+            write(*,*) 'Inconsistency in Number of Velocity Stations'
+            CALL EXIT(1) 
          ENDIF
          OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
       ENDDO
@@ -784,7 +788,8 @@ C
          READ(LOC2(IPROC),3645)  NDSETGE,NP,DTE,NSTEMP,ITEMPE
          IF (NP.NE.NNODP(IPROC)) THEN
            print *, "NP = ",NP," NNODP = ",NNODP(IPROC)
-           CALL EXIT(1) 'Inconsistency in number of local nodes'
+           write(*,*) 'Inconsistency in number of local nodes'
+           CALL EXIT(1) 
          ENDIF
       ENDDO
       OPEN(UNIT=63,FILE='fort.63')
@@ -1037,7 +1042,8 @@ C
          READ(LOC2(IPROC),'(A85)')  INLINE
          READ(LOC2(IPROC),3645) NDSETGV,NP,DTV,NSTEMP,ITEMPV
          IF (NP.NE.NNODP(IPROC)) THEN
-           CALL EXIT(1) 'Inconsistency in number of local nodes'
+           write(*,*) 'Inconsistency in number of local nodes'
+           CALL EXIT(1) 
          ENDIF
       ENDDO
       OPEN(UNIT=64,FILE='fort.64')
@@ -1172,7 +1178,8 @@ C
          IREC(IPROC) = IREC(IPROC)+5
          CLOSE(LOC2(IPROC))    ! Flush the Write Buffer
          IF (NP.NE.NNODP(IPROC)) THEN
-           CALL EXIT(1) 'Inconsistency in number of local nodes'
+           write(*,*) 'Inconsistency in number of local nodes'
+           CALL EXIT(1) 
          ENDIF
          OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
       ENDDO
@@ -1886,7 +1893,8 @@ C     Open All Local Sequential Formatted fort.71 files
             READ(LOC2(IPROC),'(A85)') INLINE
             READ(LOC2(IPROC),3645) NTRSPM,NUMSTNS,DTM,NSTEMP,ITEMPM
             IF (NUMSTNS.NE.NSTAMP(IPROC)) THEN
-               CALL EXIT(1) 'ERROR: Inconsistency in no. of atm. pres. sta.'
+              write(*,*) 'ERROR: Inconsistency in no. of atm. pres. sta'
+              CALL EXIT(1)
             ENDIF
          ENDDO
 C     
@@ -2012,7 +2020,8 @@ C
             IREC(IPROC) = IREC(IPROC)+5
             CLOSE(LOC2(IPROC))   ! Flush the Write Buffer
             IF (NSTAM.NE.NSTAMP(IPROC)) THEN
-               CALL EXIT(1) 'ERROR: Inconsistency in no. of atm. pres. sta.'
+               write(*,*) 'ERROR: Inconsistency in no. of atm. pres. sta.'
+               CALL EXIT(1)
             ENDIF
             OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
      &           RECL=NBYTE)
@@ -2152,7 +2161,8 @@ C
             READ(LOC2(IPROC),'(A85)')  INLINE
             READ(LOC2(IPROC),3645) NTRSPM,NUMSTNS,DTM,NSTEMP,ITEMPM
             IF (NUMSTNS.NE.NSTAMP(IPROC)) THEN
-               CALL EXIT(1) 'ERROR: Inconsistency in number of vel. stations.'
+               write(*,*) 'ERROR: Inconsistency in number of vel. stations.'
+               CALL EXIT(1)
             ENDIF
          ENDDO
 C     
@@ -2283,7 +2293,8 @@ C
             IREC(IPROC) = IREC(IPROC)+5
             CLOSE(LOC2(IPROC))   ! Flush the Write Buffer
             IF (NUMSTNS.NE.NSTAMP(IPROC)) THEN
-               CALL EXIT(1) 'ERROR: Inconsistency in number of vel. stations.'
+               write(*,*) 'ERROR: Inconsistency in number of vel. stations.'
+               CALL EXIT(1) 
             ENDIF
             OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),
      &           ACCESS='DIRECT',RECL=NBYTE)
@@ -2438,7 +2449,8 @@ C     Read header information from each fort.73 file
          READ(LOC2(IPROC),3645)  NDSETSGW,NP,DTGW,NSTEMP,ITEMPGW
          IF (NP.NE.NNODP(IPROC)) THEN
             print *, "NP = ",NP," NNODP(",IPROC,") = ",NNODP(IPROC)
-            CALL EXIT(1) 'ERROR: Inconsistency in expected subdomain nodes.'
+            write(*,*) 'ERROR: Inconsistency in expected subdomain nodes.'
+            CALL EXIT(1) 
          ENDIF
       ENDDO
 C     Create fort.73 file for full domain
@@ -2686,7 +2698,8 @@ C
          READ(LOC2(IPROC),'(A85)')  INLINE
          READ(LOC2(IPROC),3645) NDSETGV,NP,DTV,NSTEMP,ITEMPV
          IF (NP.NE.NNODP(IPROC)) THEN
-           CALL EXIT(1) 'Inconsistency in number of local nodes'
+           write(*,*) 'Inconsistency in number of local nodes'
+           CALL EXIT(1) 
          ENDIF
       ENDDO
       OPEN(UNIT=74,FILE='fort.74')
@@ -2815,7 +2828,8 @@ C
          IREC(IPROC) = IREC(IPROC)+5
          CLOSE(LOC2(IPROC))    ! Flush the Write Buffer
          IF (NP.NE.NNODP(IPROC)) THEN
-           CALL EXIT(1) 'Inconsistency in number of local nodes'
+           write(*,*) 'Inconsistency in number of local nodes'
+           CALL EXIT(1)
          ENDIF
          OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
       ENDDO
@@ -2948,7 +2962,8 @@ C     Open All Local Sequential Formatted fort.91 files
             READ(LOC2(IPROC),'(A85)') INLINE
             READ(LOC2(IPROC),3645) NTRSPM,NUMSTNS,DTM,NSTEMP,ITEMPM
             IF (NUMSTNS.NE.NSTAMP(IPROC)) THEN
-               CALL EXIT(1) 'ERROR: Inconsistency in no. of ice conc. sta.'
+               write(*,*) 'ERROR: Inconsistency in no. of ice conc. sta.'
+               CALL EXIT(1) 
             ENDIF
          ENDDO
 C     
@@ -3074,7 +3089,8 @@ C
             IREC(IPROC) = IREC(IPROC)+5
             CLOSE(LOC2(IPROC))   ! Flush the Write Buffer
             IF (NSTAM.NE.NSTAMP(IPROC)) THEN
-               CALL EXIT(1) 'ERROR: Inconsistency in no. of ice conc. sta.'
+               write(*,*) 'ERROR: Inconsistency in no. of ice conc. sta.'
+               CALL EXIT(1) 
             ENDIF
             OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
      &           RECL=NBYTE)
@@ -3219,7 +3235,8 @@ C     Read header information from each fort.93 file
          READ(LOC2(IPROC),3645)  NDSETSGW,NP,DTGW,NSTEMP,ITEMPGW
          IF (NP.NE.NNODP(IPROC)) THEN
             print *, "NP = ",NP," NNODP(",IPROC,") = ",NNODP(IPROC)
-            CALL EXIT(1) 'ERROR: Inconsistency in expected subdomain nodes.'
+            write(*,*) 'ERROR: Inconsistency in expected subdomain nodes.'
+            CALL EXIT(1) 
          ENDIF
       ENDDO
 C     Create fort.93 file for full domain
@@ -4239,7 +4256,8 @@ C
          READ(LOC2(IPROC),'(A85)')  INLINE
          READ(LOC2(IPROC),3645) NDSET,NSTA,DT,NSPO3DSD,NFEN,IRTYPE
          IF (NSTA.NE.NNSTA3DDP(IPROC)) THEN
-            CALL EXIT(1) 'Inconsistency in number of 3D density stations.'
+            write(*,*) 'Inconsistency in number of 3D density stations.'
+            CALL EXIT(1) 
          ENDIF
       ENDDO
 C
@@ -4260,7 +4278,8 @@ C
          NVar=3
       CASE DEFAULT  ! fall-through
          PRINT *, 'IDEN = ',IDEN
-         CALL EXIT(1) 'ERROR: This value of IDEN is not allowed.'
+         write(*,*) 'ERROR: This value of IDEN is not allowed.'
+         CALL EXIT(1) 
 
       END SELECT
 
@@ -4404,7 +4423,8 @@ C
          READ(LOC2(IPROC),'(A85)')  INLINE
          READ(LOC2(IPROC),3645) NDSET,NSTA,DT,NSPO3DSV,NFEN,IRTYPE
          IF (NSTA.NE.NNSTA3DVP(IPROC)) THEN
-            CALL EXIT(1) 'Inconsistency in number of 3D velocity stations.'
+            write(*,*) 'Inconsistency in number of 3D velocity stations.'
+            CALL EXIT(1)
          ENDIF
       ENDDO
 C
@@ -4554,7 +4574,8 @@ C
          READ(LOC2(IPROC),'(A85)')  INLINE
          READ(LOC2(IPROC),3645) NDSET,NSTA,DT,NSPO3DST,NFEN,IRTYPE
          IF (NSTA.NE.NNSTA3DTP(IPROC)) THEN
-            CALL EXIT(1) 'Inconsistency in number of 3D turbulence stations.'
+            write(*,*) 'Inconsistency in number of 3D turbulence stations.'
+            CALL EXIT(1) 
          ENDIF
       ENDDO
 C
@@ -4716,7 +4737,8 @@ C
          READ(LOC2(IPROC),'(A85)')  INLINE
          READ(LOC2(IPROC),3645) NDSET,NP,DT,NSPO3DGD,NFEN,IRTYPE
          IF (NP.NE.NNODP(IPROC)) THEN
-            CALL EXIT(1) 'Inconsistency in number of local nodes.'
+            write(*,*) 'Inconsistency in number of local nodes.'
+            CALL EXIT(1) 
          ENDIF
       ENDDO
       OPEN(UNIT=44,FILE='fort.44')
@@ -4916,7 +4938,8 @@ C
          READ(LOC2(IPROC),'(A85)')  INLINE
          READ(LOC2(IPROC),3645) NDSET,NP,DT,NSPO3DGV,NFEN,IRTYPE
          IF (NP.NE.NNODP(IPROC)) THEN
-           CALL EXIT(1) 'Inconsistency in number of local nodes'
+           write(*,*) 'Inconsistency in number of local nodes'
+           CALL EXIT(1) 
          ENDIF
       ENDDO
       OPEN(UNIT=45,ACTION='WRITE',FILE='fort.45')
@@ -5050,7 +5073,8 @@ C
          READ(LOC2(IPROC),'(A85)')  INLINE
          READ(LOC2(IPROC),3646) NDSET,NP,DT,NSPO3DGT,NFEN,IRTYPE
          IF (NP.NE.NNODP(IPROC)) THEN
-           CALL EXIT(1) 'Inconsistency in number of local nodes.'
+           write(*,*) 'Inconsistency in number of local nodes.'
+           CALL EXIT(1) 
          ENDIF
       ENDDO
       OPEN(UNIT=46,FILE='fort.46')
@@ -5189,7 +5213,8 @@ C
          READ(LOC2(IPROC),'(A85)')  INLINE
          READ(LOC2(IPROC),3645) NDSET,NP,DT,NSPO3DGD,IRTYPE
          IF (NP.NE.NNODP(IPROC)) THEN
-            CALL EXIT(1) 'Inconsistency in number of local nodes.'
+            write(*,*) 'Inconsistency in number of local nodes.'
+            CALL EXIT(1) 
          ENDIF
       ENDDO
       OPEN(UNIT=47,FILE='fort.47')

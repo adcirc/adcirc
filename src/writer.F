@@ -17,9 +17,6 @@ C
      &     sig_val, sig_write, sig_ini, sig_pause, comm_writer, 
      &     sig_term, sig_mesh, writer_id
       use messenger, only: tag, msg_fini
-#ifdef HAVE_MPI_MOD
-      use mpi
-#endif
       implicit none
       ! tcm v50.27 increased size from 3 to 4, cobell increase to 6,
       ! jgf51.21.27 decreased size of intbuf to 5
@@ -160,11 +157,9 @@ C     then goes back to waiting for another signal.
 C-----------------------------------------------------------------------
       subroutine writer_main ()
       use global, only : ScreenUnit
+      use mpi
       use messenger, only: msg_barrier, mpi_comm_adcirc
       IMPLICIT NONE
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
       integer :: sig, ierr, waittime, nextProc, prevProc, sig_dummy
       integer :: mpistat(mpi_status_size)
       character(len=16) :: TimeIni
@@ -236,10 +231,8 @@ C-----------------------------------------------------------------------
       subroutine sendDataToWriter(descript, TimeLoc, it, store_cmd)
       use sizes, only : myproc
       use global      
+      use mpi
       implicit none
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
       type (OutputDataDescript_t), intent(in) :: descript
       real(8) :: TimeLoc  ! output time in seconds
       integer :: it      ! current time step
@@ -349,10 +342,8 @@ C     before receiving the actual output data. The data are not actually
 C     written in this subroutine.
 C-----------------------------------------------------------------------
       subroutine writer_recv_values()
+      use mpi
       implicit none
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
       integer :: num, i, j
       integer :: ierr
       integer :: bufsize
@@ -505,10 +496,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE FLUSH_WRITERS()
       use sizes, only : myproc
       use global
+      use mpi
       implicit none
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
       INTEGER I,IERR
 
       call setMessageSource("flush_writers")
@@ -571,9 +560,6 @@ C-----------------------------------------------------------------------
       use XDMFIO, only : initOutputXDMF, writeOutArrayXDMF, writeControlXDMF
 #endif
       implicit none
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
       integer :: ierr
       integer :: ibuf,i,j    ! loop counters
       integer :: nnondefval  ! non default values for sparse output
@@ -814,10 +800,8 @@ C-----------------------------------------------------------------------
       subroutine sendInitWriterXDMF(descript)
       use sizes, only : myproc
       use global      
+      use mpi
       implicit none
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
       type (OutputDataDescript_t), intent(in) :: descript
       character(len=80) :: fileKeyword
       character(len=80) :: fileValue
@@ -903,15 +887,12 @@ C-----------------------------------------------------------------------
       use global
       use mesh, only : readMesh, x, y, slam, sfea
       use sizes, only: MESHFILENAME,CONTROLFILENAME
-
+      use mpi
 #ifdef ADCXDMF
       use xdmfio, only : meshInitialized
       use control, only : readControlFile
 #endif
       implicit none
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
       integer      :: ierr
       integer      :: mpistat(mpi_status_size)
       character(len=8) :: cdigit              !st3 100708: split file
@@ -977,12 +958,11 @@ C     subroutine is only called by processor 0.
 C-----------------------------------------------------------------------
       subroutine writer_pause()
       use global
-      use messenger
+      use messenger, only: tag, comm_writeh
+      use mpi
       implicit none
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
       integer i
+      integer ierr
 C
       call setMessageSource("writer_pause")
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)
@@ -1025,9 +1005,7 @@ C
         USE GLOBAL
         USE MESSENGER, ONLY: TAG, COMM_WRITEH, COMM_HSLEEP, WRITER_ID,
      &       SIG_TERM, MSG_FINI
-#ifdef HAVE_MPI_MOD
         use mpi
-#endif
       IMPLICIT NONE
       INTEGER :: WCOMMID, WCOMM
       CONTAINS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!?
@@ -1042,9 +1020,6 @@ C
       SUBROUTINE HSWRITER_MAIN ()
         USE GLOBAL,ONLY : ScreenUnit
         IMPLICIT NONE
-#ifndef HAVE_MPI_MOD
-        include 'mpif.h'
-#endif
         INTEGER :: SIG,IERR
         INTEGER :: STAT(MPI_STATUS_SIZE)
 
@@ -1088,12 +1063,11 @@ C...  Main loop
 !
       subroutine HSWRITER_PAUSE()
       use global
-      use messenger
+      use messenger, only: tag, comm_writeh
+      use mpi
       implicit none
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
       integer i
+      integer ierr
 
       DO I=1,MNWPROH
          CALL MPI_SEND( SIG_PAUSE, 1, MPI_INTEGER, MNPROC,
@@ -1535,11 +1509,6 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
       END SUBROUTINE writeHotstart_through_HSwriter
 !
       SUBROUTINE GET_NEXT_HSWRITER_COMM(NEXT_WCOMM)
-#ifdef CMPI      
-#ifndef HAVE_MPI_MOD      
-      include 'mpif.h'
-#endif      
-#endif
       INTEGER,intent(inout) :: NEXT_WCOMM
       INTEGER :: NEXT_WCOMMID
 
@@ -1557,11 +1526,6 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
       subroutine collectFullDomainArrayw(descript, pack_cmd, unpack_cmd)
 !     !--------------------------------------------------------------
       implicit none
-#ifdef CMPI
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
-#endif
       type (OutputDataDescript_t) :: descript
       external pack_cmd
       external unpack_cmd
@@ -1622,11 +1586,6 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
      &                                     pack_cmd, unpack_cmd)
 !     !--------------------------------------------------------------
       implicit none
-#ifdef CMPI
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
-#endif
       type (OutputDataDescript_t) :: descript
       external pack_cmd
       external unpack_cmd

@@ -10,50 +10,9 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #            by commenting/uncommenting the appropriate compiler
 #
 #compiler=gnu
-ifeq ($(compiler),gnu)
-  PPFC		:=  gfortran
-  FC		:=  gfortran
-  PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-none -march=corei7-avx -m64 -static
-  FFLAGS2	:=  $(FFLAGS1)
-  FFLAGS3	:=  $(FFLAGS1)
-  DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
-  DPRE		:=  -DREAL8 -DLINUX
-  IMODS 	:=  -I
-  CC		:= gcc
-  CCBE		:= $(CC)
-  CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX -march=corei7-avx -m64 -static-libgcc
-  CLIBS	:=
-  LIBS		:=
-  MSGLIBS	:=
-  ifeq ($(NETCDF),enable)
-        FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
-  endif
-  $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
-  ifneq ($(FOUND),TRUE)
-     FOUND := TRUE
-  else
-     MULTIPLE := TRUE
-  endif
-endif
-endif
-#$(MACHINE)
-
-
-
-########################################################################
-# Compiler flags for Linux operating system on 64bit x86 CPU
-#
-ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
-#
-# ***NOTE*** User must select between various Linux setups
-#            by commenting/uncommenting the appropriate compiler
-#
-#compiler=gnu
 #compiler=g95
 #compiler=gfortran
-compiler=intel
+#compiler=intel
 #compiler=intel-ND
 #compiler=intel-lonestar
 #compiler=intel-sgi
@@ -74,16 +33,16 @@ ifeq ($(compiler),gnu)
   PPFC		:=  gfortran
   FC		:=  gfortran
   PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-none -march=k8 -m64
+  FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-none -m64
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI 
   DPRE		:=  -DREAL8 -DLINUX
   IMODS 	:=  -I
   CC		:= gcc
   CCBE		:= $(CC)
-  CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX -march=k8 -m64
+  CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX -m64
   CLIBS	:=
   LIBS		:=
   MSGLIBS	:=
@@ -238,7 +197,7 @@ ifeq ($(compiler),intel)
   CFLAGS        := $(INCDIRS) -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
   FLIBS         :=
   ifeq ($(DEBUG),full)
-     CFLAGS        := $(INCDIRS) -g -O0 -march=k8 -m64 -mcmodel=medium -DLINUX
+     CFLAGS        := $(INCDIRS) -g -O0 -m64 -mcmodel=medium -DLINUX
   endif
   ifeq ($(DEBUG),full)
      FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -check all -ftrapuv -fpe0 -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
@@ -436,7 +395,7 @@ ifeq ($(compiler),intel-ND)
      FLIBS         := $(FLIBS) -lwgrib2_api -lwgrib2 -ljasper -L$(WGRIB2HOME)
   endif
   ifeq ($(DEBUG),full)
-     CFLAGS     := $(INCDIRS) -g -O0 -m64 -march=k8 -mcmodel=medium -DLINUX
+     CFLAGS     := $(INCDIRS) -g -O0 -m64 -mcmodel=medium -DLINUX
   endif
   ifeq ($(NETCDF),enable)
      #HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
@@ -475,7 +434,7 @@ ifeq ($(compiler),intel-sgi)
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1) -assume buffered_stdout
   DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA
+  DP            :=  -DREAL8 -DLINUX -DCMPI -DCSCA
   DPRE          :=  -DREAL8 -DLINUX
   CFLAGS        :=  $(INCDIRS) -DLINUX
   IMODS         :=  -module
@@ -515,8 +474,8 @@ ifeq ($(compiler),cray_xt3)
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics
   DA  	        :=  -DREAL8 -DLINUX -DCSCA
-  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA -DDEBUG_WARN_ELEV
-#  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA
+  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DCSCA -DDEBUG_WARN_ELEV
+#  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DCSCA
   DPRE	        :=  -DREAL8 -DLINUX
   CFLAGS	:=  -c89 $(INCDIRS) -DLINUX
   IMODS		:=  -module
@@ -553,7 +512,7 @@ ifeq ($(compiler),cray_xt4)
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics
   DA  	        :=  -DREAL8 -DLINUX -DCSCA
-  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA
+  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DCSCA
   DPRE	        :=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
      DPRE	        :=  -DREAL8 -DLINUX -DADCSWAN
@@ -597,7 +556,7 @@ ifeq ($(compiler),cray_xt5)
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics
   DA  	        :=  -DREAL8 -DLINUX -DCSCA
-  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA
+  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DCSCA
   DPRE	        :=  -DREAL8 -DLINUX
   CFLAGS	:=  -c89 $(INCDIRS) -DLINUX
   IMODS		:=  -module
@@ -631,7 +590,7 @@ ifeq ($(compiler),xtintel)
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1) -assume buffered_stdout
   DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA
+  DP            :=  -DREAL8 -DLINUX -DCMPI -DCSCA
   DPRE          :=  -DREAL8 -DLINUX
   CFLAGS        :=  $(INCDIRS) -DLINUX
   IMODS         :=  -module
@@ -693,7 +652,7 @@ ifeq ($(compiler),utils)
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics
   DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA
+  DP            :=  -DREAL8 -DLINUX -DCMPI -DCSCA
   DPRE          :=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
      DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
@@ -766,7 +725,7 @@ ifeq ($(compiler),diamond)
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
+  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI 
   DPRE          :=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
      DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
@@ -816,7 +775,7 @@ ifeq ($(compiler),garnet)
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1) #-r8 -Mr8 -Mr8intrinsics
   DA  	        :=  -DREAL8 -DLINUX -DCSCA
-  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA
+  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DCSCA
   DPRE	        :=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
      DPRE	        :=  -DREAL8 -DLINUX -DADCSWAN
@@ -882,7 +841,7 @@ ifeq ($(compiler),circleci)
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI 
   DPRE		:=  -DREAL8 -DLINUX -DADCSWAN
   IMODS 	:=  -I
   CC		:= icx
@@ -958,7 +917,7 @@ ifeq ($(compiler),intel)
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA  	        :=  -DREAL8 -DLINUX -DCSCA
-  DP  	        :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
+  DP  	        :=  -DREAL8 -DLINUX -DCSCA -DCMPI 
   DPRE	        :=  -DREAL8 -DLINUX
   IMODS 	:=  -I
   CC            := icc
