@@ -2683,7 +2683,7 @@ c
 c SUBROUTINES
 c
 c turb        : main module - handles input, run control and output.
-c TRIDAG      : tridiagonal matrix solver
+c ADC_TRIDAG  : tridiagonal matrix solver
 c
 c
 c USER'S GUIDE
@@ -3087,7 +3087,7 @@ c     &         -KQnm(n,2)*coef5*q2prev(n)     !lumping
 
 c     Solve the system for q2
 
-      CALL TRIDAG(Mqa,Mqb,Mqc,LVq,q2,nfen)
+      CALL ADC_TRIDAG(Mqa,Mqb,Mqc,LVq,q2,nfen)
 
 c     Transfer to global array and check for zero or negative values
 c     (generally for startup)
@@ -3171,7 +3171,7 @@ c
 
 c     Solve the system for q2l
 
-         CALL TRIDAG(Mqa,Mqb,Mqc,LVq,q2l,nfen)
+         CALL ADC_TRIDAG(Mqa,Mqb,Mqc,LVq,q2l,nfen)
 
 c     Transfer to global array and check for stability limit
 
@@ -3240,7 +3240,7 @@ C***********************************************************************
 
 
 C***********************************************************************
-C Subroutine tridag                                                    *
+C Subroutine ADC_TRIDAG                                                *
 C                                                                      *
 C     -----------------------------------------------------------------*
 C     |SOLVER FOR A VECTOR U OF LENGTH N FROM A SET OF LINEAR          *
@@ -3261,7 +3261,7 @@ C                                                                      *
 C    Adapted from Numerical Recipes chapter 2                          *
 C***********************************************************************
 c
-      SUBROUTINE TRIDAG(A,B,C,R,U,N)
+      SUBROUTINE ADC_TRIDAG(A,B,C,R,U,N)
       USE GLOBAL, ONLY : ScreenUnit
       USE GLOBAL_3DVS, ONLY : SZ, setMessageSource,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
@@ -3271,7 +3271,7 @@ c
       REAL(SZ) :: A(N),B(N),C(N),R(N),U(N)
       REAL(SZ) :: BET,GAM(N)
 
-      call setMessageSource("tridag")
+      call setMessageSource("ADC_tridag")
 #if defined(VSMY_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
@@ -3307,7 +3307,7 @@ c
       call unsetMessageSource()
       RETURN
 C***********************************************************************
-      END SUBROUTINE TRIDAG
+      END SUBROUTINE ADC_TRIDAG
 C***********************************************************************
 
 
