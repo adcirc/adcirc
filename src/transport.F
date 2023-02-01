@@ -1259,7 +1259,7 @@ C     Decompose and solve the system
  989     CONTINUE ! This addresses the Goto statement associated with the 
                   ! wetting and drying operation
   
-       CALL TRIDAG2(Mkm1trans,Mktrans,Mkp1trans,Frtrans,Gammatrans,NFEN)
+       CALL ADC_TRIDAG2(Mkm1trans,Mktrans,Mkp1trans,Frtrans,Gammatrans,NFEN)
 
 C      Need to save the transport results by putting them into 
 C      outgoing variables 
@@ -1276,9 +1276,9 @@ C     Finish loop over horizontal nodes to compute the horizontal velocity
       END SUBROUTINE TRANS_3D
 
 C  This subroutine utilized to solve the matrix - just changed the name
-C  to tridag2
+C  to ADC_TRIDAG2
 C***********************************************************************
-C Subroutine tridag2                                                    *
+C Subroutine ADC_TRIDAG2                                                    *
 C                                                                      *
 C     -----------------------------------------------------------------*
 C     |SOLVER FOR A VECTOR U OF LENGTH N FROM A SET OF LINEAR          *
@@ -1299,7 +1299,7 @@ C                                                                      *
 C    Adapted from Numerical Recipes chapter 2                          *
 C***********************************************************************
 c
-      SUBROUTINE TRIDAG2(A,B,C,R,U,N)
+      SUBROUTINE ADC_TRIDAG2(A,B,C,R,U,N)
       USE GLOBAL, ONLY: ScreenUnit
       USE GLOBAL_3DVS, ONLY : SZ
       IMPLICIT NONE
