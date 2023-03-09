@@ -121,7 +121,6 @@ Casey 100205: Add a variable for writing of SWAN hot-start files.
       USE WEIR_FLUX
       USE SPONGELAYER, ONLY: LoadAbsLayerSigma, sponge_dis_mthd, sponge_opsplit0,
      &     adjust_sponge_sigma, getabslayerext, sponge_shift_soln
-      USE INTERNALTIDE, ONLY: resynthTidalVelo
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
 C
@@ -540,19 +539,20 @@ C-------------------BOTTOM FRICTION-------------------------------------
 C
 C     2DDI.Set up the 2D friction coefficient
       if (C2DDI) then
-         CALL Apply2DBottomFriction(UU1, VV1, DP, ETA2, G, IFNLFA, NP, TK)
+         CALL Apply2DBottomFriction(UU1, VV1, DP, ETA2, G, IFNLFA, NP,
+     &                              TK, IT)
          ! WJP 02.24.2018 Get the wave drag coefficients
          ! that are put into TKM (which include TK from bottom friction)
-         IF (CBaroclinic.OR.resynthTidalVelo) THEN
-            CALL Apply2DInternalWaveDrag(NP, TK, TKM, timeh, UU1, VV1, 
-     & DP, IT)
+         IF (CBaroclinic) THEN
+            CALL Apply2DInternalWaveDrag(NP, TK, TKM, UU1, VV1, DP, IT)
          ELSE
-            CALL Apply2DInternalWaveDrag(NP, TK, TKM, timeh)
+            CALL Apply2DInternalWaveDrag(NP, TK, TKM)
          ENDIF         
       endif
 C..RJW Set up the 3D friction coefficient
       if (C3D) then
-         CALL Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G, IFNLFA, NP, TK, NFEN, Z0B)
+         CALL Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G, IFNLFA, NP,
+     &                              TK, NFEN, Z0B)
       endif
       
 C-------------------BOTTOM FRICTION-------------------------------------

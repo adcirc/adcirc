@@ -44,11 +44,7 @@ C----------------------------------------------------------------------
 #ENDIF     
       TAG = 24
       ! build the global mapping (GL2LOC) if this is the first call
-!      IF (MYPROC.EQ.0) THEN
-!         WRITE(16,*) 'About to build gl2loc'
-!      ENDIF
       CALL BUILD_GL2LOC()
-!      WRITE(16,*) 'Built Global-to-Local mapping'
       ! To avoid allocating/deallocating a bunch just use a dmy array
       ! that has size equal to the maximum number of nodes on a
       ! processor.

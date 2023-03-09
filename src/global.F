@@ -1170,7 +1170,7 @@ C- DMW
       trans_lv_b = -99999.d0
       ALLOCATE ( SOURSIN(MNP))
       soursin = -99999.d0
-      ALLOCATE ( TK(MNP), TKM(5,MNP))
+      ALLOCATE ( TK(MNP), TKM(3,MNP))
       tk  = -99999.d0
       tkm = -99999.d0
       ALLOCATE ( UU2(MNP),VV2(MNP))

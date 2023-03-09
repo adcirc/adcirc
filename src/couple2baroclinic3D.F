@@ -94,7 +94,7 @@ C-----------------------------------------------------------------------
       implicit none
       integer :: nc_id
  
-      !call setMessageSource("Read_BC3D_NetCDF")
+      call setMessageSource("Read_BC3D_NetCDF")
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
@@ -114,6 +114,7 @@ C-----------------------------------------------------------------------
 #ifdef ALL_TRACE
          call allMessage(DEBUG,"Return.")
 #endif
+         call unsetMessageSource()
          return
       ENDIF
       if (abs(iden).ne.7) then     
@@ -155,7 +156,7 @@ C-----------------------------------------------------------------------
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
-      !call unsetMessageSource()
+      call unsetMessageSource()
       
 C-----------------------------------------------------------------------
       END SUBROUTINE Read_BC3D_NetCDF
@@ -464,7 +465,6 @@ C-----------------------------------------------------------------------
       use sizes, only : mnproc,myproc, localdir
       use global, only : nodes_lg, np_g
 #ifdef CMPI
-      use messenger, only : MapToSubdomainRealMPI
       USE GL2LOC_MAPPING, ONLY : MAPTOLOCAL_REAL
 #endif      
       use global, ONLY: rad2deg
@@ -503,15 +503,6 @@ C-----------------------------------------------------------------------
          ! BPGX
          CALL MAPTOLOCAL_REAL(bpgx_g,tmp)
          VIDBCPDXOH_F(2,:) = tmp
-!         OPEN(111,FILE=TRIM(LOCALDIR)//'/'//'fort.111',
-!     &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
-!         do II = 1,np
-!            write(111,7638) ABS(NODES_LG(ii)),VIDBCPDXOH_F(2,II)
-!         ENDDO
-! 7638 FORMAT(2X,I8,2x,e20.4)
-!         CLOSE(111)
-!         WRITE(16,*) 'Mapped bpgx_g'
-!         CALL BC3DTERMINATE()
          ! BPGY
          CALL MAPTOLOCAL_REAL(bpgy_g,tmp)
          VIDBCPDYOH_F(2,:) = tmp

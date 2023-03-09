@@ -2361,16 +2361,6 @@ c...     wjp additions for density Control Namelist
             write(15,'(3A)') '  densityForcingType="',TRIM(densityForcingType),'"   /'
             write(15,*) '! -- End density Control NameList --'
          ENDIF
-c...     CPB additions for itFric Control Namelist if found in fort.15
-         IF (FOUND_ITFRIC_NML) then  
-            write(15,*) '! -- Begin itFric Control NameList --'
-            WRITE(15,*) '&itFricControl'
-            WRITE(15,*) 'resynthTidalVelo = ',resynthTidalVelo
-            WRITE(15,*) 'tidalveloFileName = "',TRIM(tidalVeloFileName),
-     &                  '"'
-            WRITE(15,*) '/'
-            write(15,*) '! -- End itFric Control NameList --'
-         ENDIF         
 
          CLOSE(15)
 C
@@ -7615,7 +7605,7 @@ C---------------------------------------------------------------------------
       SUBROUTINE prepNetCDF()
 #ifdef ADCNETCDF
       use sizes, only : ASCII, XDMF, myproc
-      USE PRESIZES, ONLY: NM, MNTIF, MNE, MNP
+      USE eRESIZES, ONLY: NM, MNTIF, MNE, MNP
       USE HARM, ONLY : IHARIND, CHARMV, NHASE, NHASV, NHAGE, NHAGV
       USE VERSION
       USE PRE_GLOBAL, ONLY: NSTAE, NOUTE, RUNDES, RUNID, AGRID,
