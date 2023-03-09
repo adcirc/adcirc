@@ -797,9 +797,9 @@ C         ENDIF
 
 C        WJP 02.24.2018 Get the righthand side momentum 
          MOM_LV_X(I) = NCI*(MOM_LV_X(I)+WSX+(1.D0-VCOEFXX)*UU1(I) 
-     &               - VCOEFXY*VV1(I) - TKM(4,I)*DT) !-VIDBCPDX) !-DispX)
+     &               - VCOEFXY*VV1(I))
          MOM_LV_Y(I) = NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCOEFYY)*VV1(I)
-     &               - VCOEFYX*UU1(I) - TKM(5,I)*DT) !-VIDBCPDY) !-DispY)
+     &               - VCOEFYX*UU1(I))
 
 C...     DW, absorbing layers
          IF (MOM_SPONGE) THEN

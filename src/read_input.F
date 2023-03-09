@@ -144,7 +144,6 @@ Casey 180318: Added NWS=13
      &                          NWS13GroupForPowell,
      &                          NWS13WindMultiplier
 #endif
-      USE INTERNALTIDE, ONLY: resynthTidalVelo, tidalVeloFilename
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
       INTEGER NTimeVaryingWeir
@@ -169,7 +168,8 @@ C
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
       NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,
-     &  rhoAir, invertedBarometerOnElevationBoundary, nPowellSearchDomains
+     &  rhoAir, invertedBarometerOnElevationBoundary,
+     &  nPowellSearchDomains
       NAMELIST /subdomainModeling/ subdomainOn
       NAMELIST /wetDryControl/ outputNodeCode, outputNOFF,
      &  noffActive, StatPartWetFix, How2FixStatPartWet,
@@ -181,17 +181,18 @@ C.... "new" formula for computing vel in wetting/drying routine
 C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
-      NAMELIST /dynamicWaterLevelCorrectionControl/ dynamicWaterLevelCorrectionFileName, 
-     &  dynamicWaterLevelCorrectionSkipSnaps, dynamicWaterLevelCorrectionMultiplier, 
-     &  dynamicWaterLevelCorrectionRampStart, dynamicWaterLevelCorrectionRampEnd,
+      NAMELIST /dynamicWaterLevelCorrectionControl/
+     &  dynamicWaterLevelCorrectionFileName,
+     &  dynamicWaterLevelCorrectionSkipSnaps,
+     &  dynamicWaterLevelCorrectionMultiplier,
+     &  dynamicWaterLevelCorrectionRampStart,
+     &  dynamicWaterLevelCorrectionRampEnd,
      &  dynamicWaterLevelCorrectionRampReferenceTime
       NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
      &  WarnElevDumpLimit, ErrorElev
       NAMELIST /AliDispersionControl/ CAliDisp, Cs, Ad, Bd
       NAMELIST /densityControl/ densityRunType, densityFileName, 
      &  densityTimeIterator, densityForcingType
-C...  CPB 9/2022: itFricControl namelist
-      NAMELIST /itFricControl/ resynthTidalVelo, tidalVeloFilename      
 #ifdef ADCNETCDF
       NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,
      &    NWS13WindMultiplier,NWS13GroupForPowell
@@ -687,32 +688,6 @@ C     WJP add namelist
       if (IDEN.ne.0) CBaroclinic = .true.
 C...
 
-C...  CPB 9/2022: add ITFricControl Namelist
-C...     This namelist can be used to alter the behavior of the internal
-C...  tide dissipation mechanism. The default behavior uses the total
-C...  velocity in both the gwce and the momentum equation and groups
-C...  internal tide dissipation with boundary layer dissipation in the
-C...  TKM matrix. Setting resynthTidalVelo = .TRUE. results in the
-C...  internal tide dissipation being calculated from a harmonic
-C...  decomposition of tidal velocities and treated as a forcing term on
-C...  the RHS of both the momentum and gwc equations.
-C...
-      ! default to not resynthesizing tidal velocity
-      resynthTidalVelo = .false.
-      tidalVeloFileName = 'tidalVelo.nc'
-      ! read namelist
-      namelistSpecifier = 'itFricControl'
-      read(unit=15,nml=itFricControl,iostat=IOS)
-      call logNameListReadStatus(namelistSpecifier,ios)
-      ! write scratch messages
-      write(scratchMessage,'(a,l)') "resynthTidalVelo=",resynthTidalVelo
-      call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,'(a,a)') "tidalVeloFileName=",
-     &      trim(tidalVeloFileName)
-      call logMessage(ECHO,trim(scratchMessage))
-      rewind(15)
-C...
-C...  END CPB
 
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
