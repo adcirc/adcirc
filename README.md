@@ -29,7 +29,7 @@ Engineers (USACE), Federal Emergency Management Agency (FEMA), National Oceanogr
 ## Development Branch Status
 The current development branch is tested on CircleCI
 
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/adcirc/adcirc/tree/development.svg?style=svg&circle-token=fce414f256521ceb74fc284b2d4167fee7ada372)](https://dl.circleci.com/status-badge/redirect/gh/adcirc/adcirc/tree/development)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/adcirc/adcirc/tree/development.svg?style=svg&circle-token=6f58abcf1e3cffe166b038b5b481090faa308ac0)](https://dl.circleci.com/status-badge/redirect/gh/adcirc/adcirc/tree/development)
 
 # Gallery
 
