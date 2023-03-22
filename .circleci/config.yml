@@ -27,7 +27,7 @@ default_env: &default_env
 default_testenv: &default_testenv
      run:
        name: Retrieve Test Suite
-       command: git clone --depth=1 -b v56 https://github.com/adcirc/adcirc-cg-testsuite.git /root/adcirc-cg-testsuite
+       command: git clone --depth=1 -b fort24_netcdf https://github.com/adcirc/adcirc-cg-testsuite.git /root/adcirc-cg-testsuite
 
 cache_key_base: &cache_key_base
       key: adcirc-base-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
@@ -247,6 +247,7 @@ workflows:
                         - adcirc_global_nws10-2d
                         - adcirc_global-tide-2d
                         - adcirc_global-tide+surge-2d
+                        - adcirc_global-tide+surge-netcdfsal-2d
                         - adcirc_ideal_channel-2d-parallel
                         - adcirc_ideal_channel-woffset-2d-parallel
                         - adcirc_internal_overflow

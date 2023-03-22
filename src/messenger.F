@@ -1343,7 +1343,7 @@ C---------------------------------------------------------------------
         call mpi_bcast(global_array_local,np_global,realtype,0,COMM_COMP,ierr)
 
         do sd_node_number=1,np_local
-           local_array(sd_node_number) = global_array(abs(mapping(sd_node_number)))
+           local_array(sd_node_number) = global_array_local(abs(mapping(sd_node_number)))
         end do
 
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
