@@ -3403,6 +3403,7 @@ C
       CHARACTER(len=80) header   ! header comments in unit 24 files
       CHARACTER(len=80) ConstName ! label for constituent
       LOGICAL success        ! .true. if all files opened successfully
+      LOGICAL netcdf_file_exists
       REAL(SZ), ALLOCATABLE :: SALTAMP(:), SALTPHS(:)
 C     jgf48.47 Do the decomposition for a max of 256 subdomains at a
 C     time ... some platforms/compilers limit the number of files that
@@ -3412,6 +3413,14 @@ C     can be open at any one time.
       INTEGER endProc
       INTEGER deltaProc
       REAL(SZ) Frequency    ! Frequency of constituent
+
+
+      !...Check if we'll be using netcdf or ascii
+      inquire(file="fort.24.nc",exist=netcdf_file_exists)
+      if(netcdf_file_exists)then
+          return
+      endif
+
 C
 C     Perform decomposition over range of subdomains.
       startProc = 1

@@ -247,6 +247,9 @@ C     jgf45.08 put this here so it can be used in hot start
       ELSE
          IFNLFA=1
       ENDIF
+      
+      !...Read the self attraction and loading file (fort.24)
+      call readSelfAttractionAndLoadingFile()
 
 C...************* Make the L_N Tidal potential multiple function *************
 C... WJP: Feb 21 2018; moved here before hstart Feb 27 2019
