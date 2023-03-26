@@ -109,7 +109,8 @@ $(O_DIR)sizes.$(EXTO) \
 $(O_DIR)global.$(EXTO) \
 $(O_DIR)global_3dvs.$(EXTO) \
 $(O_DIR)version.$(EXTO) \
-$(O_DIR)messenger.$(EXTO)
+$(O_DIR)messenger.$(EXTO) \
+$(O_DIR)boundaries.$(EXTO)
 
 UNHCAT_EXE = unhcat.exe
 UNHCAT_OBJS = HottifySWAN.$(EXTO)
