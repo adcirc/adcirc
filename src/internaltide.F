@@ -18,6 +18,8 @@ C---------------------------------------------------------------------C
       ! averaged velocities so we don't calculate them every single time
       ! step
       REAL(SZ),ALLOCATABLE :: UBar(:), VBar(:)
+      ! weights for filters
+      REAL(SZ),ALLOCATABLE,PRIVATE :: wts(:)
 C---------------------------------------------------------------------C
       CONTAINS
 C---------------------------------------------------------------------C
@@ -37,7 +39,7 @@ C---------------------------------------------------------------------C
       REAL(SZ),INTENT(IN),DIMENSION(:) :: U_i, V_i ! current velocity
       INTEGER,INTENT(IN) :: TimeStep    ! current time step
       REAL(SZ) :: filtL = 25d0*3600d0        ! filter length (s)
-      REAL(SZ) :: Fs = 12d0*60d0             ! sampling frequency (s)
+      REAL(SZ) :: Fs = 12d0*60d0             ! sampling interval (s)
       INTEGER,SAVE :: NS = 1   ! number of samples
       LOGICAL,SAVE :: first_call = .TRUE.
       ! need indices to check if the current and previous time step are
@@ -85,8 +87,209 @@ C---------------------------------------------------------------------C
             ISTA = ISTA + 1
          ENDIF
       ENDIF
-
+C-----------------------------------------------------------------------
       END SUBROUTINE UNTIDE
+C-----------------------------------------------------------------------
+C---------------------------------------------------------------------C
+      SUBROUTINE Eigen_neg_to_pos(a,b,c)
+C---------------------------------------------------------------------C
+C     Checks the eigenvalues of a 2x2 symmetric matrix of the form:
+C        A = | a, b |
+C            | b, c |
+C     If any of the eigenvalues are negative, this subroutine modifies
+C     the matrix to be the closest positive semi-definite matrix. If
+C     not, it returns the unmodified values of a, b, and c
+C---------------------------------------------------------------------C
+      IMPLICIT NONE
+      REAL(SZ),INTENT(INOUT) :: a, b, c
+      REAL(SZ) :: L, Etemp, S, W, P, F
+      REAL(SZ),DIMENSION(2) :: E, v, Utemp
+      REAL(SZ),DIMENSION(2,2) :: U, HC, Ediag
+      INTEGER :: m, ii
+      ! eigenvalues of a 2x2 symmetric matrix:
+      E(1) = ( 1d0/2d0 ) * ( a + c - SQRT( a**2d0 - 2d0*a*c + 
+     &                       4d0*b**2d0 + c**2d0 ) )
+      E(2) = ( 1d0/2d0 ) * ( a + c + SQRT( a**2d0 - 2d0*a*c + 
+     &                       4d0*b**2d0 + c**2d0 ) )
+      U(1,1) = - ( 1d0/( 2d0*b ) ) * ( c - a + SQRT( a**2d0 - 2d0*a*c 
+     &                                + 4d0*b**2d0 + c**2d0) )
+      U(2,1) = 1
+      U(1,2) = ( 1d0/( 2d0*b ) ) * ( a - c + SQRT( a**2d0 - 2d0*a*c 
+     &                                + 4d0*b**2d0 + c**2d0) )
+      U(2,2) = 1
+      ! normalize eigenvectors
+      L = sqrt(U(1,1)**2+U(2,1)**2)
+      U(1,1) = U(1,1)/L
+      U(2,1) = U(2,1)/L
+      L = sqrt(U(1,2)**2+U(2,2)**2)
+      U(1,2) = U(1,2)/L
+      U(2,2) = U(2,2)/L
+      ! sort eigenvalues from smallest to greatest
+      IF ( E(2).LT.E(1) ) THEN
+         Etemp = E(2)
+         E(2) = E(1)
+         E(1) = Etemp
+         Utemp = U(:,2)
+         U(:,2) = U(:,1)
+         U(:,1) = Utemp
+      ENDIF
+      m = COUNT(E.LT.0d0)
+      IF (m.GT.0) THEN
+         ! find sum of negative eigenvalues
+         S = 0d0
+         DO ii = 1,m
+            S = S + E(ii)
+         ENDDO
+         W = (S*S*100) + 1
+         P = ABS(E(m))
+         DO ii = 1,m
+            F = E(ii)
+            E(ii) = P*(S-F)*(S-F)/W
+         ENDDO
+         ! make diagonal matrix of new eigenvalues
+         DO ii = 1,2
+            Ediag(ii,ii) = E(ii)
+         ENDDO
+         HC = MATMUL(U,MATMUL(Ediag,TRANSPOSE(U)))
+         a = HC(1,1)
+         b = HC(1,2)
+         c = HC(2,2)
+      ENDIF   
+C---------------------------------------------------------------------C
+      END SUBROUTINE Eigen_neg_to_pos
+C---------------------------------------------------------------------C
+C---------------------------------------------------------------------C
+      SUBROUTINE MunkHPFilter(U_i,V_i,TimeStep)
+C---------------------------------------------------------------------C
+C     This subroutine applies a high-pass filter derived from the
+C     so-called Munk "Tide Killer" filter to the velocity field. The 
+C     coefficients for the original, low pass filter can be found at: 
+C
+C        https://www.sonel.org/Filters-for-the-daily-mean-sea.html
+C
+C     The high-pass filter is derived from the normalized, nonrecursive
+C     low-pass filter as:
+C
+C        W^{HP}_0 = 1-W^{LP}_0
+C        W^{HP}_k = -W^{LP}_k   (k not equal to 0)
+C
+C     The filter is applied as:
+C
+C        y_n = \sum_{k=-m}^m W_k * x_{n+k}
+C
+C     Note that the output of the filter is lagged by 25 hours from the
+C     current time step (which is fine since we are going to apply this
+C     to the internal wave drag and 25 hours is approximately twice the
+C     semi-diurnal period).
+C
+C     Written by: Coleman Blakely 3/2023
+C---------------------------------------------------------------------C
+      USE MESH, ONLY : NP
+      USE GLOBAL, ONLY: DTDP
+      IMPLICIT NONE
+      REAL(SZ),INTENT(IN),DIMENSION(:) :: U_i, V_i ! current velocity
+      INTEGER,INTENT(IN) :: TimeStep    ! current time step
+      REAL(SZ) :: filtL = 49d0*3600d0        ! filter length (s)
+      REAL(SZ) :: T = 60d0*60d0             ! sampling interval (s)
+      INTEGER,SAVE :: NS = 1   ! number of samples
+      LOGICAL,SAVE :: first_call = .TRUE.
+      ! need indices to check if the current and previous time step are
+      ! in the same 1 hour window
+      INTEGER :: L, Lm           
+      INTEGER :: ii, kk ! for loops
+      ! for populating the UAV, VAV matrices at the start of the run
+      INTEGER,SAVE :: ISTA
+
+      IF ( first_call ) THEN
+         first_call = .FALSE.
+         NS = FLOOR(filtL/T)
+         ista = 1
+         ALLOCATE( UAV(NP,NS), VAV(NP,NS) )
+         UAV = 0d0
+         VAV = 0d0
+         ALLOCATE( UBar(NP), VBar(NP) )
+         UBar = 0d0
+         VBar = 0d0
+         CALL CalcMunkWeights()
+      ENDIF
+      ! check if this and the previous timestep are in the same hour
+      L = FLOOR(TimeStep*DTDP/T)
+      Lm = FLOOR((TimeStep-1)*DTDP/T)
+      IF ( L.GT.Lm ) THEN
+         ! check if we are >= 49 hours into the run
+         IF ( ISTA.GT.NS ) THEN
+            DO ii = 1,NP
+               DO kk = 1,NS-1
+                  UAV(ii,kk) = UAV(ii,kk+1)
+                  VAV(ii,kk) = VAV(ii,kk+1)
+               ENDDO
+               UAV(ii,NS) = U_i(ii)
+               VAV(ii,NS) = V_i(ii)
+            ENDDO
+            UBar = 0d0
+            VBar = 0d0
+            DO ii = 1,NP
+               DO kk = 1,NS
+                  UBar(ii) = UBar(ii) + wts(kk)*UAV(ii,kk)
+                  VBar(ii) = VBar(ii) + wts(kk)*VAV(ii,kk)
+               ENDDO
+            ENDDO
+         ELSE
+            ! if we do not have a 49 hr record yet just use a lagged
+            ! average
+            DO ii = 1,NP
+               UAV(ii,ISTA) = U_i(ii)
+               VAV(ii,ISTA) = V_i(ii)
+               UBar(ii) = U_i(ii) - SUM(UAV(ii,1:ISTA))/DBLE(ISTA)
+               VBar(ii) = V_i(ii) - SUM(VAV(ii,1:ISTA))/DBLE(ISTA)
+            ENDDO
+            ISTA = ISTA + 1
+         ENDIF
+      ENDIF
+C---------------------------------------------------------------------C
+      END SUBROUTINE MunkHPFilter
+C---------------------------------------------------------------------C
+C---------------------------------------------------------------------C
+      SUBROUTINE CalcMunkWeights()
+C---------------------------------------------------------------------C
+C     This subroutine sets up the filter weights for use in the
+C     high-pass filter derived from the so-called Munk "Tide Killer"
+C     low-pass filter. 
+C---------------------------------------------------------------------C
+      IMPLICIT NONE
+      REAL(SZ),DIMENSION(25) :: LPwts   ! original weights (one sided)
+      INTEGER :: NS = 49                ! length of HP filter needed
+      REAL(SZ) :: K                     ! for normalizing the LP filter
+      INTEGER :: ii                     ! for loops
+      !
+      ! allocate weights
+      ALLOCATE( wts(NS) )
+      ! define low-pass filter weights (not normalized and one-sided)
+      LPwts = (/395287,386839,370094,354118,338603,325633,314959,
+     &          300054,278167,251492,234033,219260,208050,195518,
+     &          180727,165525,146225,122665,101603,85349,72261,
+     &          60772,47028,30073,13307 /)
+      ! find sum to normalize low pass filter
+      K = LPwts(1)
+      DO ii = 2,25
+         K = K + 2d0*LPwts(ii)
+      END DO
+      ! normalize low pass filter weights
+      DO ii = 1,25
+         LPwts(ii) = LPwts(ii)/K
+      END DO
+      ! turn one-sided low-pass filter into two-sided high-pass filter
+      DO ii = 1,24
+         ! -m to -1
+         wts(ii) = -LPwts(26-ii)
+         ! 1 to m
+         wts(ii+25) = -LPwts(ii+1)
+      END DO
+      ! 0 (center point)
+      wts(25) = 1 - LPwts(1)
+C---------------------------------------------------------------------C
+      END SUBROUTINE CalcMunkWeights
+C---------------------------------------------------------------------C
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   C H E C K  _  E R R
 C-----------------------------------------------------------------------
@@ -142,10 +345,10 @@ C
       call allMessage(INFO,"ADCIRC Terminating.")
 
 #ifdef ALL_TRACE
-         ! intentionally create a segmentation fault so that we can get
-         ! a stack trace to determine the line number of the netcdf call
-         ! that went bad ... this assumes that the code was compiled with
-         ! debugging symbols, bounds checking, and stack trace turned on.
+      ! intentionally create a segmentation fault so that we can get
+      ! a stack trace to determine the line number of the netcdf call
+      ! that went bad ... this assumes that the code was compiled with
+      ! debugging symbols, bounds checking, and stack trace turned on.
       write(6,*) 'myproc = ',myProc      
       dummy(1) = 99.9d0
 #endif
@@ -164,9 +367,9 @@ C
       call allMessage(DEBUG,"Return.") ! should be unreachable
 #endif
       !call unsetMessageSource()
-!-----------------------------------------------------------------------
+C---------------------------------------------------------------------C
       END SUBROUTINE ITFRICTERMINATE
-!-----------------------------------------------------------------------      
+C---------------------------------------------------------------------C
 C---------------------------------------------------------------------C
       END MODULE INTERNALTIDE
 C---------------------------------------------------------------------C

@@ -7605,7 +7605,7 @@ C---------------------------------------------------------------------------
       SUBROUTINE prepNetCDF()
 #ifdef ADCNETCDF
       use sizes, only : ASCII, XDMF, myproc
-      USE eRESIZES, ONLY: NM, MNTIF, MNE, MNP
+      USE PRESIZES, ONLY: NM, MNTIF, MNE, MNP
       USE HARM, ONLY : IHARIND, CHARMV, NHASE, NHASV, NHAGE, NHAGV
       USE VERSION
       USE PRE_GLOBAL, ONLY: NSTAE, NOUTE, RUNDES, RUNID, AGRID,
