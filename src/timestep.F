@@ -87,8 +87,9 @@ C.....sb46.28sb03 added 09/xx/2006
       USE NodalAttributes, ONLY : 
      &     Apply2DBottomFriction,
      &     Apply2DInternalWaveDrag,
-     &     Apply3DBottomFriction
-     &    ,GeoidOffset
+     &     Apply3DBottomFriction,
+     &     Apply2DMomentumDisp,
+     &     GeoidOffset
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS, 
      &    writeFort066, writeFort067, writeFort065, 
      &    readFort020, readFort021, readFort019 
@@ -538,11 +539,15 @@ C
 C     2DDI.Set up the 2D friction coefficient
       if (C2DDI) then
          CALL Apply2DBottomFriction(UU1, VV1, DP, ETA2, G, IFNLFA, NP,
-     &                              TK, IT)
+     &                              TK)
          ! WJP 02.24.2018 Get the wave drag coefficients
          ! that are put into TKM (which include TK from bottom friction)
          IF (CBaroclinic) THEN
             CALL Apply2DInternalWaveDrag(NP, TK, TKM, UU1, VV1, DP, IT)
+            ! CPB 3/9/2023: vertically averaged momentum dispersion as a
+            ! power law function. If NOLIBF =/= 3 then this just returns
+            CALL Apply2DMomentumDisp(UU1, VV1, DP, ETA2, IFNLFA, NP,
+     &                               TKM)
          ELSE
             CALL Apply2DInternalWaveDrag(NP, TK, TKM)
          ENDIF         

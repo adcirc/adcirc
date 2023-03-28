@@ -1772,7 +1772,7 @@ C
 C     ERROR CHECK: If Chezy, Manning's or Quadratic friction was loaded
 C     from the nodal attributes file, NOLIBF must be 1.
       IF ((LoadChezy.or.LoadManningsN.or.LoadQuadraticFric).and.
-     &     NoLiBF.ne.1) THEN
+     &     NoLiBF.ne.1.AND.NOLIBF.NE.3) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9800)
          WRITE(16,9800)
  9800    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
@@ -2174,7 +2174,6 @@ C     ----------------------------------------------------------------
       SUBROUTINE Apply2DBottomFriction(UU1, VV1, DP, ETA2, G,
      &     IFNLFA, NP, TK)
       USE GLOBAL, ONLY: MLD, DTDP
-      USE INTERNALTIDE, ONLY: UBar, VBar
 C      USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
@@ -2265,11 +2264,13 @@ C     ... Combined Cd for bottom friction and momentum dispersion
             UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
             H1  = DP(I) + IFNLFA*ETA2(I)
             IF (HBREAK.gt.0d0) then
+C..............CPB 3/9/2023: moved calculation of Cd as a power function
+C              to a separate subroutine "apply2DMomentumDisp"
 C              ... Cd as a power function [a(x^b-1)] of x = MLD
-               FRIC(I) = CF + HBREAK*(max(4d-3,MLD(I))**FTHETA - 1d0)
+               FRIC(I) = CF ! + HBREAK*(max(4d-3,MLD(I))**FTHETA - 1d0)
             ELSE
 C              ... Cd directly from the 3D model (MLD here)
-               FRIC(I) = CF + MLD(I)
+               FRIC(I) = FRIC(I) + MLD(I)
             ENDIF
             TK(I) = MIN(FRIC(I) * UV1 / H1, 2.0/DTDP)
          ENDDO
@@ -2394,7 +2395,7 @@ C     ----------------------------------------------------------------
       USE GLOBAL, ONLY: CBaroclinic, CORIF, DTDP, NB, NM, IDEN,
      &                  IFSPROTS, RAMP
       USE MESH, ONLY: DRVMAP2DSPVEC, UVECTMP, VVECTMP, RVELF
-      USE INTERNALTIDE, ONLY: UNTIDE, UBar, VBar
+      USE INTERNALTIDE, ONLY: UNTIDE, UBar, VBar, MunkHPFilter
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
       REAL(SZ), intent(in), dimension(:) :: TK   ! scalar friction
@@ -2458,7 +2459,8 @@ C              (unnecessary for IT_FricNoOfVals == 1)
          Baroc: IF (CBaroclinic.and.abs(IDEN).ge.5) THEN
 C           2DDI ADCIRC with baroclinic coupling
             if (abs(IDEN).ne.7) then
-               CALL UNTIDE(U,V,IT)
+               !CALL UNTIDE(U,V,IT)
+               CALL MunkHPFilter(U,V,IT)
             endif
             IF (IT_FricNoOfVals == 5) THEN
 C           Use the "Nonlocal" Nycander (2005) type tensor wave drag
@@ -2526,8 +2528,8 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                         ! Calculate the adjustment factors based on the delayed moving mean
                         IF (ABS(U(I)).GT.1d-3.AND.
      &                      ABS(V(I)).GT.1d-3) THEN
-                           adju = 1d0-UBar(I)/U(I)
-                           adjv = 1d0-VBar(I)/V(I)
+                           adju = UBar(I)/U(I)
+                           adjv = VBar(I)/V(I)
                         ENDIF
                         adjuv = 0.5d0*(adju + adjv)
                      endif
@@ -2573,6 +2575,75 @@ C       In case we did not load ITFric
       RETURN
 C     ----------------------------------------------------------------
       END SUBROUTINE Apply2DInternalWaveDrag
+C     ----------------------------------------------------------------
+C     ----------------------------------------------------------------
+C     S U B R O U T I N E
+C     A P P L Y  2 D  M O M E N T U M D I S P
+C     ----------------------------------------------------------------
+C     CPB 3/9/2023: This subroutine applies momentum dispersion as a
+C     power function of mixed-layer depth calculated from a
+C     tide-omitting OGCM. It applies a Cd calculated from the power
+C     function fit to the non-tidal portion of velocity calculated using
+C     a 25-hour lagged average filter.
+C
+C     ----------------------------------------------------------------
+      SUBROUTINE Apply2DMomentumDisp(UU1, VV1, DP, ETA2,
+     &     IFNLFA, NP, TKM)
+      USE GLOBAL, ONLY: MLD, DTDP
+      USE INTERNALTIDE, ONLY: UBar, VBar, Eigen_neg_to_pos
+C      USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
+      IMPLICIT NONE
+      INTEGER, intent(in) :: NP                   ! number of nodes in grid
+      REAL(SZ), intent(in), dimension(NP) :: UU1  ! x-dir velocities
+      REAL(SZ), intent(in), dimension(NP) :: VV1  ! y-dir velocities
+      REAL(SZ), intent(in), dimension(NP) :: DP   ! bathymetric depths
+      REAL(SZ), intent(in), dimension(NP) :: ETA2 ! water surf. elevations
+      INTEGER, intent(in) :: IFNLFA               ! nonlin. finite amp. flag
+      REAL(SZ), intent(inout), dimension(:,:) :: TKM! bl/itfric matrix
+C
+      REAL(SZ) :: UVBar, UV1  ! non-tidal velocity magnitude
+      REAL(SZ) :: H1    ! total depth
+      REAL(SZ) :: Cd    ! Cd estimated as a power function
+      REAL(SZ) :: adju, adjv ! adjustment to apply only to nontidal vel
+      REAL(SZ) :: a, b, c ! for ensuring positive semidefinite
+      
+      ! if nolibf =/=3 then simply return
+      IF (NOLIBF.NE.3.OR.HBREAK.LE.0d0) RETURN
+C
+C     ... Combined Cd for bottom friction and momentum dispersion
+      DO I = 1,NP
+         IF (DP(I).LT.1000d0) CYCLE
+         UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
+         H1  = DP(I) + IFNLFA*ETA2(I)
+         UVBar = SQRT(UBar(I)*UBar(I)+VBar(I)*VBar(I))
+         H1  = DP(I) + IFNLFA*ETA2(I)
+C        ... Cd as a power function [a(x^b-1)] of x = MLD
+         Cd = HBREAK*(max(4d-3,MLD(I))**FTHETA - 1d0)
+         ! adjust to put in TKM matrix
+         IF ( ABS(UU1(I)).GT.1d-3
+     &        .AND.ABS(VV1(I)).GT.1d-3 ) THEN
+            adju = UBar(I)/UU1(I)
+            adjv = VBar(I)/VV1(I)
+         ELSE
+            adju = 1d0
+            adjv = 1d0
+         ENDIF
+         TKM(1,I) = TKM(1,I) + Cd*adju*UVBar/H1
+         TKM(2,I) = TKM(2,I) + Cd*adjv*UVBar/H1
+         ! ensure matrix is positive semi-definite
+         a = TKM(1,I)
+         b = TKM(3,I)
+         c = TKM(2,I)
+         CALL Eigen_neg_to_pos(a,b,c)
+         TKM(1,I) = a
+         TKM(3,I) = b
+         TKM(2,I) = c
+      ENDDO
+C
+C
+      RETURN
+C     ----------------------------------------------------------------
+      END SUBROUTINE Apply2DMomentumDisp
 C     ----------------------------------------------------------------
 
 !     ----------------------------------------------------------------
