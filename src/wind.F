@@ -117,6 +117,8 @@ C
 #else
       ! jgf50.32 Provide backward compatibility with hardcoded POWELL
       ! support.
+#warning The flag -DPOWELL is deprecated and will be removed in a future release. Please use the &metcontrol name list functionality to avoid issues
+      
       CHARACTER(len=10) :: DragLawString = 'Powell'
       INTEGER :: dragLawType = DRAGLAW_POWELL
 #endif

@@ -710,6 +710,7 @@ C
 #else
 C     jgf46.10 Add user-controllable warning, output, and stop criteria
 C     for elevations. 
+#warning The -DDEBUG_WARN_ELEV flag will be removed in a future release. Please begin using the &warnElevControl namelist to avoid future issues 
       READ(15,*) NFOVER, WarnElev, iWarnElevDump, WarnElevDumpLimit,
      &  ErrorElev
 #endif
