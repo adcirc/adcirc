@@ -34,7 +34,7 @@ if(ENABLE_OUTPUT_XDMF)
   if(${XDMFHOME} STREQUAL "XDMF-NOTFOUND")
     message(SEND_ERROR "Specify the XDMF path on the following screen")
   else(${XDMFHOME} STREQUAL "XDMF-NOTFOUND")
-    file(WRITE "${CMAKE_BINARY_DIR}/CMakeFiles/xdmfcheck.f90" "${xdmf_f90_code}")
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/xdmfcheck.f90" "${xdmf_f90_code}")
 
     try_compile(
       XDMF_TEST "${CMAKE_CURRENT_BINARY_DIR}"

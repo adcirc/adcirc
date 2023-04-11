@@ -7,8 +7,9 @@ C-----------------------------------------------------------------------
       USE SIZES,  ONLY: SZ, MNEI
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
      &          setMessageSource, unsetMessageSource, allMessage,
-     &          scratchMessage, logMessage, SigT0, SigTS, NB, NM, MLD,
+     &          scratchMessage, logMessage, NB, NM, MLD, SigTS,
      &          VIDBCPDXOH, VIDBCPDYOH, VIDISPDXOH, VIDISPDYOH, IDEN
+      USE CONSTANTS, ONLY: SigT0
 #ifdef DATETIME
       use datetime_module, only: datetime, timedelta, strptime
 #endif
@@ -155,7 +156,7 @@ C-----------------------------------------------------------------------
       use netcdf
       use mesh, ONLY: slam, sfea, binarysearch, bl_interp, np, ne, nm,
      &                conserve_interp, neitabele, nodele !indmax
-      use global, ONLY: rad2deg
+      use constants, ONLY: rad2deg
       implicit none
       integer,intent(in) :: NC_ID
       integer  :: Temp_ID, i, j, ic, jc, js, indt(4), numfound !ind(2,indmax), cc
@@ -861,8 +862,9 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE FBPG_Disp_from_BC3D
 
-      USE GLOBAL, ONLY: G, IFNLFA, IFNLCT, RAMP, NODECODE, NOFF, 
-     &                  ETA2, RhoWat0, IFSFM 
+      USE GLOBAL, ONLY: IFNLFA, IFNLCT, RAMP, NODECODE, NOFF, 
+     &                  ETA2, IFSFM 
+      USE CONSTANTS, ONLY: G, RhoWat0
       USE SPONGELAYER, ONLY: NO_BPG_IN_SPONGE 
       USE NodalAttributes, ONLY: absorblayer_sigma_mnx, 
      &                           absorblayer_sigma_mny

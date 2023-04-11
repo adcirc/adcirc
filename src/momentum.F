@@ -76,7 +76,8 @@ C******************************************************************************
 !----------------------------------------------------------------------
       subroutine initMomentumEq()
       use sizes, only : mnp
-      use global, only : dt, g
+      use global, only : dt
+      use constants, only: g
       implicit none
 
       !WJP 02.24.2018 I only put this in Mom_Eqs_New_NC so far..
@@ -151,12 +152,13 @@ C*******************************************************************************
      &  TiP1, TiP2, WSX2, WSY2, TK, CORIF, WSX1, WSY1, VIDBCPDXOH,
      &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y, TKM, NPERSEG, NNPERBC, 
      &  IPERCONN, VIDispDXOH, VIDispDYOH, IFSFM, adcirc_norm2, CAliDisp,
-     &  usingDynamicWaterLevelCorrection, Cs2, Ad, Bd, G, windlim,
+     &  usingDynamicWaterLevelCorrection, windlim,
      &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, H0,
      &  flgNodesMultipliedByTotalArea, ilump
 #ifdef CMPI
      &  , dumy1
 #endif
+      USE CONSTANTS, ONLY: Cs2, Ad, Bd, G
       USE MESH, ONLY : NE, NP, NM, DP, Areas, TotalArea,
      &     NNeigh, NeiTab, NeiTabEle, MJU, FDXE, FDYE,
      &     SWITCH_ELTAB_PERBC, SFacEle, SFMYEle, SFMXEle, TANPHI,
@@ -1257,7 +1259,7 @@ C
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
      & SMAG_LOWER_LIM, NODECODE, VIDISPDXOH, VIDISPDYOH, IFSFM, 
-     & CBaroclinic, CAliDisp, Cs2, Ad, Bd, G, windlim
+     & CBaroclinic, CAliDisp, windlim
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &   NEITAB, NEITABELE, NNEIGH, FDXE, FDYE,
      &   SFacEle, SFMYEle, SFMXEle, TANPHI   
@@ -1265,6 +1267,7 @@ C
      &   CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
       USE WIND, ONLY: windLimiter 
+      USE CONSTANTS, ONLY: Cs2, Ad, Bd, G
        
       IMPLICIT NONE
 

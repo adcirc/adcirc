@@ -111,6 +111,7 @@ c.RJW merged 08282008 Casey 071219: Added the following variable declarations fr
 Casey 140701: Prevent depths from becoming negative in bottom roughness calculations.
      &                   H0
       USE GLOBAL_3DVS
+      USE CONSTANTS, ONLY: G
       USE WRITE_OUTPUT, ONLY : writeOutput3D
       USE MESH, ONLY : NP, DP, NM, X, Y, NODELE, AREAS, LBArray_Pointer,  
      &                  NEITABELE, NEITAB, NNEIGH, SFAC
@@ -2753,6 +2754,7 @@ c************************************************************************
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
 Cjgfdebug      USE GLOBAL_3DVS, EXCEPT_BSX => BSX ,EXCEPT_BSY => BSY
       USE GLOBAL_3DVS
+      USE CONSTANTS, ONLY: G
 Crjwdebug     USE NodalAttributes, ONLY : Z0B_var
       IMPLICIT NONE
 
@@ -4036,7 +4038,8 @@ C   kmd48.33bc need to add variables for new equation of state
      &                        SIGMA, EQNSTATE, A, B, setMessageSource,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
 Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
-      USE GLOBAL, ONLY : RHOWAT0, ETA2, IFNLFA, G
+      USE GLOBAL, ONLY : ETA2, IFNLFA
+      USE CONSTANTS, ONLY: RHOWAT0, G
       USE MESH, ONLY : NP, DP
       IMPLICIT NONE
       INTEGER NH,N

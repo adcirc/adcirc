@@ -21,7 +21,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL, only: toutsge, toutfge, nspoolge, im, ff, bountag, 
      &   noutge, use_tvw, nscreen, nabout, nfover, warnelev, ihot, hss,
      &   smag_lower_lim, iwarnelevdump, warnelevdump, errorelev, c2ddi,
-     &   usenetcdf, cgwce_new, cme_new_nc, cme_ls_ibpv, cgwce_ls_kgq, g,
+     &   usenetcdf, cgwce_new, cme_new_nc, cme_ls_ibpv, cgwce_ls_kgq,
      &   cgwce_advec_nc, cme_areaInt_corr, ilump, c2d_ptrans, c3ddss,
      &   cbaroclinic, c3dvs, cgwce_ls_2partv, cgwce_ls_2partq, iden, dt,
      &   cme_new_c2, cme_ls_ibpq, cgwce_lump, cme_ls_ibpsv, cme_orig,h0,
@@ -31,11 +31,11 @@ C-----------------------------------------------------------------------
      &   nolifa, nolicat, dtdp, nramp, nrs, cprecor, dtdphs, statim, nt,
      &   cice_timinc, reftim, refsec, rstiminc, rnday, dramp, drampelev,
      &   fluxsettlingtime, drampextflux, drampintflux, dunrampmete, day,
-     &   dramptip, drampmete, drampwrad, rhoair, nddt, nodedrymin, tree,
+     &   dramptip, drampmete, drampwrad, nddt, nodedrymin, tree,
      &   nodewetmin, srchdp, kdresults, vidbcpdxoh, vidbcpdyoh, tpk,
      &   dasigt, dasalt, datemp, daconc, corif, ntif, amigt, vidispdxoh,
-     &   tipotag, cori, etrf, fft, facet, pert, saltamp, nbfr, deg2rad,
-     &   saltamp, saltpha, amig, face, per, csmag_eh, rad2deg, fbountag,
+     &   tipotag, cori, etrf, fft, facet, pert, saltamp, nbfr, 
+     &   saltamp, saltpha, amig, face, per, csmag_eh, fbountag,
      &   elevalpha, emo, efa, qnam, qnph, nffr, fff, famig, fface, fper,
      &   alpha, enam, enph, usenetcdfoutput, inundationoutput, ntcyfe,
      &   warnelevdumpcounter, smag_upper_lim, outputwinddrag, ntrspe,
@@ -51,8 +51,8 @@ C-----------------------------------------------------------------------
      &   tvw, ntcys_tvw, ntcyf_tvw, noutgc, toutsgc, toutfgc, nspoolgc,
      &   warnelevdumplimit, toutse, toutfe, nspoole, staiv1, staiv2,
      &   staiv3, toutfc, noutgw, nspoolgw, toutfgw, toutsgw, noutgw,
-     &   ndsetsc, ntcyfgc, ntcysgc, ndsets_tvw, Ad, Bd, Cs, Cs2, 
-     &   smag_comp_flag, wavewindmultiplier, np_g, nibnodecode, ititer,
+     &   ndsetsc, ntcyfgc, ntcysgc, ndsets_tvw,
+     &   smag_comp_flag, np_g, nibnodecode, ititer,
      &   ne_g, nstae_g, nstav_g, nstam_g, nstac_g, netcdf_avail, title,
      &   nstac_g, nstam_g, institution, references, history, source,
      &   nout_tvw, touts_tvw, toutf_tvw, nspool_tvw, btiminc,vidispdyoh,
@@ -61,7 +61,7 @@ C-----------------------------------------------------------------------
      &   alloc_main1a, alloc_main2, alloc_main3, alloc_main4a, 
      &   alloc_main4b, alloc_main5, alloc_main7, alloc_main8, 
      &   alloc_main10, alloc_main12, alloc_main13, alloc_main9,
-     &   alloc_main6, openfileforread, nhoutonce, omega, IFSPROTS,
+     &   alloc_main6, openfileforread, nhoutonce, IFSPROTS,
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
      &   directvelWD,useHF
@@ -74,6 +74,9 @@ C-----------------------------------------------------------------------
      &   ,basedatetime
 #endif
      &   ,NUOPC4WAV, NUOPC4MET
+      USE CONSTANTS, ONLY: G, Ad, Bd, Cs, Cs2,
+     &                     waveWindMultiplier,deg2rad,rhoAir,
+     &                     rad2deg,omega
 
       USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP, NP,
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries,
@@ -5119,7 +5122,8 @@ C    kmd48.33bc - added the variables from Global
      &                  TTBCTIMEINC, SPONGEDIST, Sponge,
      &                  scratchMessage, INFO, DEBUG, ERROR, allMessage,
      &                  setMessageSource, logMessage, unsetMessageSource,
-     &                  OUTPUTSPONGE, screenMessage, ECHO, sec2day
+     &                  OUTPUTSPONGE, screenMessage, ECHO
+      USE CONSTANTS, ONLY: sec2day
       USE MESH, ONLY : NP, DP, X, Y
       USE BOUNDARIES, ONLY : NETA, NOPE, NBD
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
@@ -5872,8 +5876,9 @@ C-----------------------------------------------------------------------
      &   staTime, tsPeriod, startTime, endTime, startTS, endTS, nSets,
      &   tsCounter, recCounter)
       USE GLOBAL, ONLY : scratchMessage, ECHO, INFO, WARNING, ERROR,
-     &   DTDP, Day2Sec, NT, setMessageSource, logMessage, allMessage,
+     &   DTDP, NT, setMessageSource, logMessage, allMessage,
      &   unsetMessageSource, DEBUG, screenMessage, useNetCDF
+      USE CONSTANTS, ONLY: day2sec
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
@@ -6024,7 +6029,8 @@ C-----------------------------------------------------------------------
      &                        lat, lon, sta1, sta2, sta3, stat_lun,
      &                        Description)
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, parse, IFSPROTS,
+      USE CONSTANTS, ONLY: DEG2RAD, RAD2DEG
+      USE GLOBAL, ONLY : parse, IFSPROTS,
      &   a2f, DEBUG, allMessage, setMessageSource, unsetMessageSource
       USE MESH, ONLY : ICS, SLAM0, SFEA0, DRVSPCOORSROTS, CYLINDERMAP
       IMPLICIT NONE

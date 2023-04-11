@@ -88,16 +88,17 @@ C                  WAS. (ASCII)                                        *
 C      UNIT 67 or 68 : HOT START FILES (BINARY)                        *
 c                                                                      *
 c***********************************************************************
-C
+
       MODULE HARM
-C
+
       USE SIZES, ONLY : SZ, MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR,
      &                   WRITE_LOCAL_HARM_FILES
       USE GLOBAL, ONLY : screenMessage, logMessage, DEBUG, ECHO, INFO,
-     &                   WARNING, ERROR, setMessageSource, pi, IFSPROTS,
+     &                   WARNING, ERROR, setMessageSource, IFSPROTS,
      &                   unsetMessageSource, allMessage, scratchMessage
-C
-C
+      USE CONSTANTS, ONLY: pi
+
+
       ! jgf49.44: parameters describing the harmonic constituents to be
       ! included in the harmonic analysis of model results
       INTEGER :: IHARIND ! =1 if harmonic analysis was requested, 0 otherwise

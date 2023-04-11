@@ -9,7 +9,7 @@ if(MPI_FOUND)
             CALL MPI_INIT(IERR)
             END PROGRAM
     ")
-  file(WRITE "${CMAKE_BINARY_DIR}/CMakeFiles/mpif90_mod_check.f90" "${mpi_f90mod_check}")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mpif90_mod_check.f90" "${mpi_f90mod_check}")
   try_compile(
     MPI_COMPILE "${CMAKE_CURRENT_BINARY_DIR}"
     "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mpif90_mod_check.f90"

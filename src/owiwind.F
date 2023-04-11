@@ -256,7 +256,8 @@
       SUBROUTINE NWS12GET(WVNX,WVNY,PRN,NP,PRdeflt,HasData)
 !-----------------------------------------------------------------------
         USE SIZES,ONLY: MYPROC,MNPROC,GBLINPUTDIR
-        USE GLOBAL,ONLY: RHOWAT0, G, NWS
+        USE GLOBAL,ONLY: NWS
+        USE CONSTANTS, ONLY: RHOWAT0, G
         IMPLICIT NONE
         INTEGER,intent(in)     :: NP
         REAL(SZ),intent(out)   :: WVNX(:),WVNY(:),PRN(:)
@@ -376,7 +377,7 @@
 !-----------------------------------------------------------------------
       subroutine findStormCenter(eyeLat, eyeLon, foundEye)
 !-----------------------------------------------------------------------
-        use GLOBAL,only:PRBCKGRND
+        use CONSTANTS,only:PRBCKGRND
         implicit none
         intrinsic               :: minloc
         real(sz), intent(inout) :: eyeLat(3)
@@ -1069,7 +1070,7 @@
 !-----------------------------------------------------------------------
       SUBROUTINE NWS12INTERP(idx, NP)
 !-----------------------------------------------------------------------
-      USE GLOBAL, ONLY : RAD2DEG
+      USE CONSTANTS, ONLY : RAD2DEG
       USE MESH, ONLY : SLAM, SFEA
 
       IMPLICIT NONE

@@ -558,7 +558,8 @@ C     station.
 C-----------------------------------------------------------------------
       SUBROUTINE initStationFile(sta, descript1, reterr)
       USE SIZES, ONLY : MNPROC
-      USE GLOBAL, ONLY : SNAMLEN, OutputDataDescript_t, RAD2DEG,
+      USE CONSTANTS, ONLY: RAD2DEG
+      USE GLOBAL, ONLY : SNAMLEN, OutputDataDescript_t,
      &                   IHOT, NWS, STATNAME, STATNAMEV,
      &                   STATNAMEM, IDEN
       USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET
@@ -4065,7 +4066,8 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Initializes NetCDF coordinates.
 C-----------------------------------------------------------------------
       SUBROUTINE initNetCDFCoord(myMesh)
-      USE GLOBAL, ONLY : NP_G, NE_G, RAD2DEG
+      USE GLOBAL, ONLY : NP_G, NE_G
+      USE CONSTANTS, ONLY: RAD2DEG
       USE MESH, ONLY : X, Y, SLAM, SFEA, ICS, NM,
      &  SLAM0, SFEA0
       USE BOUNDARIES, ONLY : NBOU, NVEL, NOPE, NBVV, NVDLL, NBDV, NVELL,
@@ -5310,7 +5312,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE initNetCDFHotstart(lun, Elev1Descript,
      &   Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
      &   NodeCodeDescript, NOFFDescript, ncerror)
-      USE GLOBAL, ONLY : OutputDataDescript_t, G, IM, IMHS, C3D, NE_G, NP_G
+      USE GLOBAL, ONLY : OutputDataDescript_t, IM, IMHS, C3D, NE_G, NP_G
+      USE CONSTANTS, ONLY: G
       USE MESH, ONLY : ICS
       IMPLICIT NONE
 C
@@ -9586,7 +9589,8 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Defines data that are common to all netCDF files.
 C-----------------------------------------------------------------------
       subroutine defineMeshVariables(ncid, myMesh, myFile)
-      USE GLOBAL, ONLY : RAD2DEG, C3D, scratchMessage
+      USE GLOBAL, ONLY : C3D, scratchMessage
+      USE CONSTANTS, ONLY: RAD2DEG
       USE MESH, ONLY : SLAM0, SFEA0, AGRID
       USE GLOBAL_3DVS, ONLY : NFEN
       USE SIZES, ONLY : SZ
@@ -10155,13 +10159,14 @@ C-----------------------------------------------------------------------
       subroutine defineMetaData(ncid)
       USE VERSION
       USE MESH, ONLY : ICS, AGRID, SLAM0, SFEA0
+      USE CONSTANTS, ONLY: RAD2DEG
       USE GLOBAL, ONLY : RUNDES, title, institution, source,
      &                   history, references, comments, host,
      &                   convention, contact, dtdp, ihot,
      &                   nolifa, nolica, nolicat,
      &                   ncor, ntip, nws, nramp, statim,
      &                   reftim, rnday, dramp, h0,
-     &                   cori, ntif, nbfr, RAD2DEG, C3D, inunThresh,
+     &                   cori, ntif, nbfr, C3D, inunThresh,
      &                   inundationOutput, runid
       USE GLOBAL_3DVS, ONLY : iden, islip, kp, z0s, z0b, theta1, theta2,
      &   ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd, nvsd, nltd,
@@ -10536,7 +10541,7 @@ C     jgf49.17.02 Puts the right units label based on whether ADCIRC was
 C     run with English units or SI units.
 C-----------------------------------------------------------------------
       subroutine putUnitsAttribute(ncid, var_id, metric, english)
-      USE GLOBAL, ONLY : G
+      USE CONSTANTS, ONLY : G
       IMPLICIT NONE
       INTEGER ncid
       INTEGER var_id
@@ -10690,7 +10695,8 @@ C-----------------------------------------------------------------------
       USE BOUNDARIES, ONLY : NBOU, NVEL, NOPE, NBVV, NVDLL, NBDV, NVELL,
      &   IBTYPE, IBTYPEE, NETA
       USE VERSION, ONLY : FileFmtRev, FileFmtMinor, FileFmtMajor
-      USE GLOBAL, ONLY : base_date, SNAMLEN, RAD2DEG, NODECODE, G,
+      USE CONSTANTS, ONLY: G, RAD2DEG
+      USE GLOBAL, ONLY : base_date, SNAMLEN, NODECODE,
      &   NP_G, NE_G, im, iestp, nscoue, ivstp, nscouv,
      &   icstp, nscouc, ipstp, iwstp, nscoum, igep, nscouge, igvp,
      &   nscougv, igcp, nscougc, igpp, igwp, nscougw,
