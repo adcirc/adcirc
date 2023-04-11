@@ -46,9 +46,9 @@ c--------------------data declarations end here-------------------------------c
      *  itmax1,loop,idgts
       integer j, nandex, lnans, gnans, iimax !jgf46.00 add
       integer jcoef(ndim,maxnz),iwksp(3*n),iparm(12)
-      real(sz) timi1,timj1,temp,time1,time2,timi2,timj2,digit1,
+      real(8) timi1,timj1,temp,time1,time2,timi2,timj2,digit1,
      *   digit2,tol
-      real(sz) coef(ndim,maxnz),rhs(n),u(n),wksp(nw),rparm(12)
+      real(8) coef(ndim,maxnz),rhs(n),u(n),wksp(nw),rparm(12)
 c
 c *** begin -- itpackv common
 c
@@ -58,7 +58,7 @@ c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
 c
-      real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
+      real(8) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
@@ -441,11 +441,11 @@ c
 C
       integer n,ndim,maxnz,i,j
       integer jcoef(ndim,maxnz)
-      real(sz) coef(ndim,maxnz)
-      real(sz) u(n),u1(n),d(n),d1(n),dtwd(n),tri(*)
-      real(sz) gamold,rhoold,rhotmp,dnrm,con,dtnrm,c1,c2,c3,c4
-      real(sz) dumy1(1),dumy2(1),del3nrms(3),unorm
-      real(sz) vic1, vic2 !jgf46.00 added
+      real(8) coef(ndim,maxnz)
+      real(8) u(n),u1(n),d(n),d1(n),dtwd(n),tri(*)
+      real(8) gamold,rhoold,rhotmp,dnrm,con,dtnrm,c1,c2,c3,c4
+      real(8) dumy1(1),dumy2(1),del3nrms(3),unorm
+      real(8) vic1, vic2 !jgf46.00 added
       logical q1
 c
 c *** begin -- itpackv common
@@ -456,7 +456,7 @@ c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
 c
-      real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
+      real(8) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
@@ -588,8 +588,8 @@ c
       implicit none
       integer i,n,ndim,maxnz,idgts
       integer jcoef(ndim,maxnz)
-      real(sz)  digit1,digit2,bnrm,rnrm,temp
-      real(sz) coef(ndim,maxnz),rhs(n),u(n),work(n)
+      real(8)  digit1,digit2,bnrm,rnrm,temp
+      real(8) coef(ndim,maxnz),rhs(n),u(n),work(n)
 c
 c *** begin -- itpackv common
 c
@@ -599,7 +599,7 @@ c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
 c
-      real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
+      real(8) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
@@ -701,7 +701,7 @@ c
       implicit none
       integer n,iflag
       logical q1
-      real(sz) u(n),dnrm,con,ccon,uold,tr,tl
+      real(8) u(n),dnrm,con,ccon,uold,tr,tl
 c
 c *** begin -- itpackv common
 c
@@ -711,7 +711,7 @@ c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
 c
-      real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
+      real(8) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
@@ -789,7 +789,7 @@ c
       implicit none
       integer n,iflag
       logical q1
-      real(sz) unrm,dnrm,con,ccon,uold,tr,tl
+      real(8) unrm,dnrm,con,ccon,uold,tr,tl
 c
 c *** begin -- itpackv common
 c
@@ -799,7 +799,7 @@ c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
 c
-      real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
+      real(8) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
@@ -872,8 +872,8 @@ c
       subroutine chgcon (ldt,tri,gamold,rhoold,ibmth)
       implicit none
       integer ldt,ibmth,ip,ier
-      real(sz) tri(ldt,4)
-      real(sz) gamold,rhoold,cmold,start,end1
+      real(8) tri(ldt,4)
+      real(8) gamold,rhoold,cmold,start,end1
 c
 c *** begin -- itpackv common
 c
@@ -883,7 +883,7 @@ c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
 c
-      real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
+      real(8) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
@@ -1005,11 +1005,11 @@ c
       return
       end  subroutine
 
-      real(sz) function determ (ldt,n,tri,wk1,wk2,xlmda)
+      real(8) function determ (ldt,n,tri,wk1,wk2,xlmda)
       implicit none
       integer ldt,n,i,l
-      real(sz) xlmda
-      real(sz) tri(ldt,2),wk1(n),wk2(n)
+      real(8) xlmda
+      real(8) tri(ldt,2),wk1(n),wk2(n)
 c
 c     determ computes the determinant of a symmetric
 c     tridiagonal matrix given by tri. det(tri - xlmda*i) = 0
@@ -1050,7 +1050,7 @@ c
       subroutine dfault (iparm,rparm)
       implicit none
       integer iparm(12)
-      real(sz) rparm(12), temp
+      real(8) rparm(12), temp
 c
 c *** begin -- itpackv common
 c
@@ -1060,7 +1060,7 @@ c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
 c
-      real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
+      real(8) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
@@ -1152,7 +1152,7 @@ c
       implicit none
       integer n,i,j,ndim,maxnz,icall
       integer jcoef(ndim,maxnz),iparm(12)
-      real(sz) coef(ndim,maxnz),rhs(n),rparm(12)
+      real(8) coef(ndim,maxnz),rhs(n),rparm(12)
 c
 c *** begin -- itpackv common
 c
@@ -1162,7 +1162,7 @@ c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
 c
-      real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
+      real(8) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
@@ -1297,10 +1297,10 @@ c
       end  subroutine
 
 
-      real(sz) function eigvns (ldt,n,tri,d,e2,ier)
+      real(8) function eigvns (ldt,n,tri,d,e2,ier)
       implicit none
       integer ldt,n,i,ier
-      real(sz) tri(ldt,*),d(n),e2(n)
+      real(8) tri(ldt,*),d(n),e2(n)
 c
 c ... eigvns computes the largest eigenvalue of a symmetric
 c     tridiagonal matrix for conjugate gradient acceleration.
@@ -1337,10 +1337,10 @@ c
       end function 
 
 
-      real(sz) function eigvss (n,tri,start,zeta,itmax,ier)
+      real(8) function eigvss (n,tri,start,zeta,itmax,ier)
       implicit none
       integer n,itmax,itmp,ier,maxfn,nsig
-      real(sz) tri(*),start,eps,a,b,zeta
+      real(8) tri(*),start,eps,a,b,zeta
 c
 c ... eigvss computes the largest eigenvalue of a symmetric
 c     tridiagonal matrix for conjugate gradient acceleration.
@@ -1385,7 +1385,7 @@ c
       subroutine eqrt1s (d,e2,n,m,isw,ier)
       implicit none
       integer n,m,i,j,k,isw,ier,ii,k1
-      real(sz) d(n),e2(n),err,s,tot,p,q,qp,r,delta,f,ep,dlam
+      real(8) d(n),e2(n),err,s,tot,p,q,qp,r,delta,f,ep,dlam
 c
 c *** begin -- itpackv common
 c
@@ -1395,7 +1395,7 @@ c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
 c
-      real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
+      real(8) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
@@ -1589,7 +1589,7 @@ c
       subroutine iterm (n,coef,u,wk,imthd)
       implicit none
       integer n,i,ip,imthd
-      real(sz) coef(n,*),u(n),wk(n),qtff
+      real(8) coef(n,*),u(n),wk(n),qtff
 c
 c *** begin -- itpackv common
 c
@@ -1599,7 +1599,7 @@ c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
 c
-      real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
+      real(8) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
@@ -1757,7 +1757,7 @@ c
       subroutine parcon (dtnrm,c1,c2,c3,c4,gamold,rhotmp,ibmth)
       implicit none
       integer ip,ibmth
-      real(sz) dtnrm,c1,c2,c3,c4,gamold,rhotmp,rhoold
+      real(8) dtnrm,c1,c2,c3,c4,gamold,rhotmp,rhoold
 c
 c *** begin -- itpackv common
 c
@@ -1767,7 +1767,7 @@ c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
 c
-      real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
+      real(8) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
@@ -1865,7 +1865,7 @@ c ... specifications for arguments
 c
       integer ndim, maxnz, n, i, j
       integer jcoef(ndim,maxnz),p(*),iwork(n)
-      real(sz) coef(ndim,maxnz),work(n)
+      real(8) coef(ndim,maxnz),work(n)
 c
       if (n.le.0) return
       do 50 j = 1,maxnz
@@ -1891,7 +1891,7 @@ c
       implicit none
       integer i,n
       integer p(n)
-      real(sz) v(n),work(n)
+      real(8) v(n),work(n)
 c
 c ... pervec permutes a vector as dictated by the permutation
 c ... vector p.  if p(i) = j, then v(j) gets v(i).
@@ -1917,7 +1917,7 @@ c
 C      integer n,ndim,maxnz,maxm1 !jgf46.00 commented out
       integer i,j,n,ndim,maxnz    !jgf46.00 added
       integer jcoef(ndim,maxnz)
-      real(sz) coef(ndim,maxnz),u(n),rhs(n)
+      real(8) coef(ndim,maxnz),u(n),rhs(n)
 c
 c ... pjac performs one jacobi iteration.
 c
@@ -1955,7 +1955,7 @@ C     jgf46.00 End add.
 C      integer n,ndim,maxnz,maxm1 !jgf46.00 commented out
       integer i,j,n,ndim,maxnz    !jgf46.00 added
       integer jcoef(ndim,maxnz)
-      real(sz) coef(ndim,maxnz),b(n),c(n)
+      real(8) coef(ndim,maxnz),b(n),c(n)
 c
 c ... pmult computes c = a*b, a matrix-vector product.  matrix
 c     a is assumed to be stored in the coef, jcoef ellpack
@@ -2209,7 +2209,7 @@ c
       implicit none
       integer i,j,jcol,n,ndim,maxnz
       integer jcoef(ndim,maxnz)
-      real(sz) coef(ndim,maxnz),rhs(n),work(n),tol
+      real(8) coef(ndim,maxnz),rhs(n),work(n),tol
 c
 c ... sbelm is designed to remove rows of the matrix for which
 c ... all off-diagonal elements are very small (less than tol).
@@ -2265,7 +2265,7 @@ c
       implicit none
       integer i,j,n,ndim,maxnz,nsgncg,ier
       integer jcoef(ndim,maxnz)
-      real(sz) coef(ndim,maxnz),rhs(n),u(n),work(n),save
+      real(8) coef(ndim,maxnz),rhs(n),u(n),work(n),save
 c
 c *** begin -- itpackv common
 c
@@ -2275,7 +2275,7 @@ c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
 c
-      real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
+      real(8) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
@@ -2410,7 +2410,7 @@ c
       implicit none
       integer i,j,n,ndim,maxnz
       integer jcoef(ndim,maxnz)
-      real(sz) coef(ndim,maxnz),rhs(n),u(n),work(n)
+      real(8) coef(ndim,maxnz),rhs(n),u(n),work(n)
 c
 c ... unscal reverses the scaling done in routine scal.
 c
@@ -2479,7 +2479,7 @@ c
 c ... specifications for arguments
 c
       integer n, iswt, nout, k, kupper, i, j, jm1
-      real(sz)  v(n)
+      real(8)  v(n)
 c
 c        if (n .le. 0) return
 c
@@ -2507,8 +2507,8 @@ c
       USE SIZES
       implicit none
       integer n,ier,nsig,maxfn,ib3,ib4,ic
-      real(sz) a,b,c,d,e,eps,p,q,r,s,t,fa,fb,fc,tol,rm,rone,temp
-      real(sz) tri(*)
+      real(8) a,b,c,d,e,eps,p,q,r,s,t,fa,fb,fc,tol,rm,rone,temp
+      real(8) tri(*)
 c
 c *** begin -- itpackv common
 c
@@ -2518,7 +2518,7 @@ c
       logical adapt,betadt,caseii,halt,partad
       common /itcom2/ adapt,betadt,caseii,halt,partad
 c
-      real(sz) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
+      real(8) bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
      *   qt,rho,rrr,sige,sme,specr,spr,srelpr,stptst,udnm,zeta
 c
       common /itcom3/ bdelnm,betab,cme,delnnm,delsnm,ff,gamma,omega,qa,
@@ -2649,11 +2649,7 @@ C     jgf46.00 End add.
       fc = fa
    30 continue
 
-#ifdef REAL8
       tol = t*max(abs(b),0.1d0)
-#else
-      tol = t*max(abs(b),0.1e0)
-#endif
 
       rm = (c-b)*0.5d0
 c
@@ -2718,11 +2714,7 @@ c
       fa = fb
       temp = d
 cjjw/vjpm002 - modified/added the following 5 lines
-#ifdef REAL8
       if (abs(temp).le.0.5d0*tol) temp = sign(0.5d0*tol,rm)
-#else
-      if (abs(temp).le.0.5e0*tol) temp = sign(0.5e0*tol,rm)
-#endif
       b = b+temp
       s = b
       fb = determ(itmax,n,tri,tri(ib3),tri(ib4),s)
@@ -2818,10 +2810,10 @@ C
 C*****************************************************************
 C
 
-      real(sz) function sdot(n,sx,incx,sy,incy)
+      real(8) function sdot(n,sx,incx,sy,incy)
       implicit none
       integer i,n,incx,incy
-      real(sz) sx(*),sy(*)
+      real(8) sx(*),sy(*)
       REAL*8 ddot
 c
       ddot = 0.0D0
@@ -2840,7 +2832,7 @@ c
       integer function ismin (n,sx,incx)
       implicit none
       integer n,incx,ns,i,ii
-      real(sz) sx(*),smin,xval
+      real(8) sx(*),smin,xval
 c
 c     find smallest index of minimum value of single precision sx.
 c
@@ -2881,7 +2873,7 @@ c
       subroutine  scopy(n,sx,incx,sy,incy)
       implicit none
       integer n,incx,incy,ix,iy,i,m,mp1,ns
-      real(sz) sx(*),sy(*)
+      real(8) sx(*),sy(*)
 c
 c     copy single precision sx to single precision sy.
 c

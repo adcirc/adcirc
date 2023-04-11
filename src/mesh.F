@@ -16,7 +16,7 @@
       module mesh
 !     ------------------------------------------------------------------
       use hashtable
-      use sizes, only: sz, meshFileName, mne, mnp, mnope, mneta, myproc,
+      use sizes, only: meshFileName, mne, mnp, mnope, mneta, myproc,
      &   mnbou, mnvel, nprec, meshtype, ascii, xdmf, mnei, GBLINPUTDIR
       use global, only: DEBUG, INFO, ECHO, WARNING, ERROR,
      &   scratchMessage, logMessage, screenMessage, allMessage,
@@ -38,8 +38,8 @@
                       ! 22 = Mercator (conformal) cylindrical,
                       ! 23 = Miller cylindrical,
                       ! 24 = Gall-Stereographic cylindrical)
-      real(sz),allocatable, target ::  dp(:)  ! bathymetric depth
-      real(sz),allocatable         :: dp_orig(:) ! original bathymetric depth
+      real(8),allocatable, target ::  dp(:)  ! bathymetric depth
+      real(8),allocatable         :: dp_orig(:) ! original bathymetric depth
       integer,allocatable :: nm(:,:)          ! element table size(ne,3)
       real(8),allocatable :: x(:)   ! x cartesian node locations x(np)
       real(8),allocatable :: y(:)   ! y cartesian node locations y(np)
@@ -58,41 +58,41 @@
       integer, allocatable :: neitabele(:,:) !(MNP,MNei)table of neighboring elements for each node
       real(8), allocatable :: areas(:) !(MNE) = 2*Element Area
       real(8), allocatable :: totalarea(:)
-      real(sz), allocatable :: bcxy(:,:)  ! element barycenters for kdtree
-      real(sz), allocatable :: rmax(:)    ! element radii for kdtree
-      real(sz), allocatable :: csi(:),sii(:)
+      real(8), allocatable :: bcxy(:,:)  ! element barycenters for kdtree
+      real(8), allocatable :: rmax(:)    ! element radii for kdtree
+      real(8), allocatable :: csi(:),sii(:)
       real(8) :: slam0,sfea0 !center point of CPP spherical projection
       integer  :: neimin,neimax
  
-      real(sz) :: theta ! rotation around y-axis
-      real(sz) :: beta  ! rotation around z-axis
+      real(8) :: theta ! rotation around y-axis
+      real(8) :: beta  ! rotation around z-axis
       !c  FDXE(1:3,1:NE) -- b1, b2, b3
       !c  FDYE(1:3,1:NE) -- a1, a2, a3
-      REAL (SZ), ALLOCATABLE:: FDXE(:,:), FDYE(:,:) 
+      REAL(8), ALLOCATABLE:: FDXE(:,:), FDYE(:,:) 
       INTEGER:: NELNDTAB
       INTEGER, ALLOCATABLE:: PERBC_ELNDTAB(:,:) 
       
-      REAL (SZ), POINTER, DIMENSION(:,:):: EXV, EYV ! Nov 22, 2019
-      REAL (SZ), POINTER, DIMENSION(:,:):: EXVO, EYVO
-      REAL (SZ), POINTER, DIMENSION(:,:):: EXVR, EYVR
-      REAL (SZ), ALLOCATABLE, DIMENSION(:):: SFEAR, SLAMR
+      REAL(8), POINTER, DIMENSION(:,:):: EXV, EYV ! Nov 22, 2019
+      REAL(8), POINTER, DIMENSION(:,:):: EXVO, EYVO
+      REAL(8), POINTER, DIMENSION(:,:):: EXVR, EYVR
+      REAL(8), ALLOCATABLE, DIMENSION(:):: SFEAR, SLAMR
       !c Matrix mapping two Cartesian frames
-      REAL (SZ):: ROTMAT(3,3) = reshape( (/ 1.0, 0.0, 0.0, 
+      REAL(8):: ROTMAT(3,3) = reshape( (/ 1.0, 0.0, 0.0, 
      &                             0.0, 1.0, 0.0,
      &                             0.0, 0.0, 1.0 /), (/3, 3/)) ;  
       !c 
       !c RVELF: V(\varphi,\theta)  -> V'(\varphi',\theta')
       !c RVELI: V'(\varphi,\theta) -> V(\varphi,\theta)
-      REAL (SZ), ALLOCATABLE, DIMENSION(:,:,:) :: RVELF, RVELI   
+      REAL(8), ALLOCATABLE, DIMENSION(:,:,:) :: RVELF, RVELI   
       
       ! Temporary vectors
-      REAL (SZ), ALLOCATABLE, DIMENSION(:):: UVECTMP, VVECTMP
+      REAL(8), ALLOCATABLE, DIMENSION(:):: UVECTMP, VVECTMP
  
       ! The correction factors
-      REAL (SZ), allocatable, DIMENSION(:) :: SFac, SFMX, SFMY, SFCT,
+      REAL(8), allocatable, DIMENSION(:) :: SFac, SFMX, SFMY, SFCT,
      &    SFCX, SFCY, YCSFAC, TANPHI ! spherical coordinate tan(lat)/R ratio
 !...  Element averages of these...
-      REAL (SZ), allocatable, DIMENSION(:) :: SfacEle, SFCYEle, SFCXEle,
+      REAL(8), allocatable, DIMENSION(:) :: SfacEle, SFCYEle, SFCXEle,
      &    SFMXEle, SFMYEle, YCSFACEle, TANPHIEle 
 
       ! Overload a functions 
@@ -597,7 +597,7 @@
       CHARACTER (LEN=*):: meshfileName
       INTEGER:: nn(:)
 
-      REAL (SZ), allocatable:: vx(:,:), bxy(:) ! node, bathymetry
+      REAL (8), allocatable:: vx(:,:), bxy(:) ! node, bathymetry
       INTEGER, allocatable:: etov(:,:) ! element connectity table
       INTEGER, allocatable, optional:: nodeLabel(:)
 
@@ -1481,14 +1481,14 @@
       real(8) avgxy,dif1r,dif2r,dif3r
 !     v49.48.02 tcm added these local variable for computing
 !     multiple values like element radius and areas, etc...
-      real(sz) x2mx1,x3mx2,x1mx3,y2my1,y3my2,y1my3
-      real(sz) Lon21,Lon32,Lon13
-      real(sz) lened1,lened2,lened3
-      !real(sz) :: slamr, sfear
+      real(8) x2mx1,x3mx2,x1mx3,y2my1,y3my2,y1my3
+      real(8) Lon21,Lon32,Lon13
+      real(8) lened1,lened2,lened3
+      !real(8) :: slamr, sfear
       real(8) :: slamr1, sfear1, slamr2, sfear2, slamr3, sfear3
       integer :: i, j
       integer :: SFLAG, NMM(3)
-      REAL (SZ), dimension(3):: LONVE, LATVE
+      REAL (8), dimension(3):: LONVE, LATVE
 
       call setMessageSource("initializeMesh")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -1788,17 +1788,17 @@
       real(8) xli,xlj,xlk,yli,ylk,ylj
       real(8) xgi,xgj,xgk,ygi,ygk,ygj
       real(8) x1,x2,x3,x4,y1,y2,y3,y4
-      real(sz) xl, lonJI, lonKJ, lonIK 
-      real(sz) costheta,costheta1,cross,cross1
-      real(sz) theta,theta1
-      real(sz) dotvec
-      real(sz) vecnorm,vl1x,vl1y,vl2x,vl2y
+      real(8) xl, lonJI, lonKJ, lonIK 
+      real(8) costheta,costheta1,cross,cross1
+      real(8) theta,theta1
+      real(8) dotvec
+      real(8) vecnorm,vl1x,vl1y,vl2x,vl2y
       integer  jnmm,kmin,n1,n2,n3
       real(8) aemin,ae,aa,a1,a2,a3
       logical :: flg_iblen2   ! tcm v51.15 20130906 added for special case of
                                ! interior boundaries of length 2 in parallel jobs
       logical :: calctheta    ! .true. if theta is to be calculated at a flux boundary node
-      real(sz) :: ZNGFicNodeDist,ZNGFicNodeDistTemp
+      real(8) :: ZNGFicNodeDist,ZNGFicNodeDistTemp
       logical :: ibtype52 = .false.
       real(8) :: delx,dely
       real(8) :: slamrI, slamrK, slamrJ, sfearI, sfearJ, sfearK
@@ -2957,12 +2957,12 @@ Csb...
       allocate( bcxy(2,mne), rmax(mne) )
 
       ALLOCATE ( FDXE(3,MNE), FDYE(3,MNE) ) ;
-      FDXE = 0.0_SZ ; 
-      FDYE = 0.0_SZ ;
+      FDXE = 0.0D0 ; 
+      FDYE = 0.0D0 ;
       
       ALLOCATE( EXVO(3,MNE), EYVO(3,MNE) ) ; 
-      EXVO = 0.0_SZ ;
-      EYVO = 0.0_SZ ; 
+      EXVO = 0.0D0 ;
+      EYVO = 0.0D0 ; 
       EXV => EXVO ; 
       EYV => EYVO ; 
 
@@ -2973,26 +2973,26 @@ Csb...
      &          SFCX(MNP), SFCY(MNP), YCSFAC(MNP),
      &          SFCT(MNP), TANPHI(MNP) )
 
-      SFCT = 1.0_SZ ; 
-      SFCX = 1.0_SZ ; 
-      SFCY = 1.0_SZ ;
+      SFCT = 1.0D0 ; 
+      SFCX = 1.0D0 ; 
+      SFCY = 1.0D0 ;
         
-      SFMX = 1.0_SZ ;
-      SFMY = 1.0_SZ ; 
+      SFMX = 1.0D0 ;
+      SFMY = 1.0D0 ; 
 
-      TANPHI = 0.0_SZ ;
-      YCSFAC = 1.0_SZ ;
+      TANPHI = 0.0D0 ;
+      YCSFAC = 1.0D0 ;
         
       ALLOCATE( SfacEle(MNE), SFCYEle(MNE), SFCXEle(MNE),
      &          SFMXEle(MNE), SFMYEle(MNE), YCSFacEle(MNE),
      &          TANPHIEle(MNE) ) 
-      SFacEle = 1.0_SZ ; 
-      SFCYEle = 1.0_SZ ;
-      SFCXEle = 1.0_SZ ; 
-      SFMYEle = 1.0_SZ ;
-      SFMXEle = 1.0_SZ ;
-      YCSFacEle = 1.0_SZ ;
-      TANPHIEle = 0.0_SZ ;
+      SFacEle = 1.0D0 ; 
+      SFCYEle = 1.0D0 ;
+      SFCXEle = 1.0D0 ; 
+      SFMYEle = 1.0D0 ;
+      SFMXEle = 1.0D0 ;
+      YCSFacEle = 1.0D0 ;
+      TANPHIEle = 0.0D0 ;
       !
       ! initialize to something troublesome to make it easy to spot issues
       slam = -99999.d0
@@ -3360,7 +3360,7 @@ Csb...
       subroutine totalAreaCalc()
       use global, only : nodecode, nnodecode, noff
       implicit none
-      real(sz) :: areaEle
+      real(8) :: areaEle
       integer nm1, nm2, nm3  ! node numbers around an element
       integer ncele          ! wet/dry indicator (zero if dry)
       integer :: i           ! node loop counter
@@ -3501,9 +3501,9 @@ Csb...
       subroutine getMeshForPrep(prepAgrid, prepX, prepY, prepDP)
       implicit none
       character(len=80), intent(out) :: prepAgrid
-      real(sz), intent(out) :: prepX(:)
-      real(sz), intent(out) :: prepY(:)
-      real(sz), intent(out) :: prepDP(:)
+      real(8), intent(out) :: prepX(:)
+      real(8), intent(out) :: prepY(:)
+      real(8), intent(out) :: prepDP(:)
 
       call setMessageSource("getMeshForPrep")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4063,8 +4063,8 @@ Csb...
 !-----------------------------------------------------------------------
       FUNCTION haversine(deglon1,deglon2,deglat1,deglat2) result (dist)
           ! great circle distance -- adapted from Matlab 
-          real(sz),intent(in) :: deglat1,deglon1,deglat2,deglon2
-          real(sz) :: a,c,dist,dlat,dlon,lat1,lat2
+          real(8),intent(in) :: deglat1,deglon1,deglat2,deglon2
+          real(8) :: a,c,dist,dlat,dlon,lat1,lat2
  
           dlat = deg2rad*(deglat2-deglat1)
           dlon = deg2rad*(deglon2-deglon1)
@@ -4086,15 +4086,15 @@ Csb...
           ! endif
           implicit none
           integer, intent(in) :: length
-          real(sz), dimension(length), intent(in) :: array
+          real(8), dimension(length), intent(in) :: array
           !f2py depend(length) array
-          real(sz), intent(in) :: value
-          real(sz), intent(in), optional :: delta
+          real(8), intent(in) :: value
+          real(8), intent(in), optional :: delta
 
           integer :: binarysearch
 
           integer :: left, middle, right, orientation
-          real(sz) :: d
+          real(8) :: d
 
           if (present(delta) .eqv. .true.) then
              d = delta
@@ -4140,14 +4140,14 @@ Csb...
           ! specified by x_array and the grid y values specified by y_array
           implicit none
           integer, intent(in) :: xp, yp           
-          real(sz), dimension(xp), intent(in) :: x_array
-          real(sz), dimension(yp), intent(in) :: y_array
-          real(sz), intent(in) :: x,y
-          real(sz), intent(out) :: w(4)
+          real(8), dimension(xp), intent(in) :: x_array
+          real(8), dimension(yp), intent(in) :: y_array
+          real(8), intent(in) :: x,y
+          real(8), intent(out) :: w(4)
           integer, intent(out) :: ii(4)
       
-          real(sz) :: denom, x1, x2, y1, y2
-          real(sz) :: x2x1, y2y1, x2x, y2y, xx1, yy1
+          real(8) :: denom, x1, x2, y1, y2
+          real(8) :: x2x1, y2y1, x2x, y2y, xx1, yy1
           integer  :: i, j, ir, jr
 
           i = binarysearch(xp, x_array, x)
@@ -4226,15 +4226,15 @@ Csb...
           implicit none
           integer, intent(in) :: xp, yp           
           real, dimension(xp,yp), intent(in) :: x_mat, y_mat
-          real(sz), intent(in) :: x,y
-          real(sz), intent(out) :: w(4)
+          real(8), intent(in) :: x,y
+          real(8), intent(out) :: w(4)
           integer, intent(out) :: ii(4)
-          real(sz), dimension(xp) :: x_array
-          real(sz), dimension(yp) :: y_array
-          real(sz) :: x11, x21, x12, x22, x_vec(yp)
-          real(sz) :: y11, y21, y12, y22, y_vec(yp)
-          real(sz) :: d11, d12, d21, d22, denom
-          real(sz) :: p(2), a(2), b(2), c(2), d(2)
+          real(8), dimension(xp) :: x_array
+          real(8), dimension(yp) :: y_array
+          real(8) :: x11, x21, x12, x22, x_vec(yp)
+          real(8) :: y11, y21, y12, y22, y_vec(yp)
+          real(8) :: d11, d12, d21, d22, denom
+          real(8) :: p(2), a(2), b(2), c(2), d(2)
           integer  :: i, j, jj, ir, jr, ia, xi, yi, ind
           type(kdtree2), pointer :: tree
           type(kdtree2_result) :: kdresult(1)
@@ -4313,14 +4313,14 @@ Csb...
           ! inside the triangle specified by x1, y1, x2, y2, x3, y3
           implicit none
           integer, intent(in) :: xp, yp           
-          real(sz), dimension(xp), intent(in) :: x_array
-          real(sz), dimension(yp), intent(in) :: y_array
-          real(sz), intent(in) :: x1 ,y1, x2, y2, x3, y3
+          real(8), dimension(xp), intent(in) :: x_array
+          real(8), dimension(yp), intent(in) :: y_array
+          real(8), intent(in) :: x1 ,y1, x2, y2, x3, y3
           integer, intent(out) :: ii(4)
-          real(sz), intent(out) :: ww(4)
+          real(8), intent(out) :: ww(4)
       
           integer  :: is, ie, js, je
-          real(sz) :: x1xm, x2xm, y1ym, y2ym
+          real(8) :: x1xm, x2xm, y1ym, y2ym
 
           ! Get starting and ending indices for loop
           is = binarysearch(xp, x_array, x2)
@@ -4360,7 +4360,7 @@ Csb...
       END SUBROUTINE conserve_interp
 !-----------------------------------------------------------------------
       function PtinTri(p, a, b, c)
-        real(sz), intent(in)  :: p(2), a(2), b(2), c(2)
+        real(8), intent(in)  :: p(2), a(2), b(2), c(2)
         logical :: PtinTri
 
         if (SameSide(p, a, b, c).and.Sameside(p, b, a, c).and.
@@ -4373,8 +4373,8 @@ Csb...
       end function PtinTri
 !-----------------------------------------------------------------------
       function SameSide(p1, p2, a, b)
-        real(sz), intent(in)  :: p1(2), p2(2), a(2), b(2)
-        real(sz) :: cp1, cp2
+        real(8), intent(in)  :: p1(2), p2(2), a(2), b(2)
+        real(8) :: cp1, cp2
         logical :: SameSide
   
         ! cross (b-a) with (p1-a) 
@@ -4390,8 +4390,8 @@ Csb...
       end function SameSide
 !-----------------------------------------------------------------------
       function calcarea(x1,y1,x2,y2,x3,y3)
-        real(sz), intent(in) :: x1 ,y1, x2, y2, x3, y3
-        real(sz) :: calcarea
+        real(8), intent(in) :: x1 ,y1, x2, y2, x3, y3
+        real(8) :: calcarea
 
         calcarea = 0.5d0*abs(x1*(y2-y3) + x2*(y3-y1) + x3*(y1-y2)) 
 
@@ -4445,11 +4445,11 @@ C
         CHARACTER (len=100) :: inputtype
 
         INTEGER:: II
-        REAL(SZ):: PHIN, THETAN 
+        REAL(8):: PHIN, THETAN 
         CHARACTER (LEN=300):: IGNOREMSG, MSG
 
         ! Euler angle
-        REAL(SZ):: AL, BE, GAM
+        REAL(8):: AL, BE, GAM
 
         call setMessageSource("ReadFortRots")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4545,19 +4545,19 @@ C
         ALLOCATE( RVELF(2,2,MNP), RVELI(2,2,MNP) ) ; 
         ALLOCATE( UVECTMP(MNP), VVECTMP(MNP) ) ; 
       
-        SLAMR = 0.0_SZ ; 
-        SFEAR = 0.0_SZ ;
+        SLAMR = 0.0D0 ; 
+        SFEAR = 0.0D0 ;
         
-        RVELF = 0.0_SZ ; 
-        RVELI = 0.0_SZ ;
+        RVELF = 0.0D0 ; 
+        RVELI = 0.0D0 ;
 
-        UVECTMP = 0.0_SZ ; 
-        VVECTMP = 0.0_SZ ; 
+        UVECTMP = 0.0D0 ; 
+        VVECTMP = 0.0D0 ; 
         
 ! To be used in neighb()
         ALLOCATE( EXVR(3,MNE), EYVR(3,MNE) ) ; 
-        EXVR = 0.0_SZ ; 
-        EYVR = 0.0_SZ ;
+        EXVR = 0.0D0 ; 
+        EYVR = 0.0D0 ;
         
         RETURN ;    
       END SUBROUTINE ALLOC_SPROTCOORS_MEM
@@ -4598,7 +4598,7 @@ C
       SUBROUTINE GET_ROTSPCOORD_CORIFVAL( CORIF ) 
         IMPLICIT NONE
       
-        REAL (SZ):: CORIF(:)
+        REAL(8) :: CORIF(:)
 
         call setMessageSource("GET_ROTSPCOORD_CORIFVAL")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4620,10 +4620,10 @@ C
         IMPLICIT NONE
 
         INTEGER:: IERR
-        REAL (SZ), intent(in):: RTOTS(3,3)
+        REAL(8), intent(in):: RTOTS(3,3)
 
         !c local c!
-        REAL (SZ):: RTT(3,3), TR, SOFFD
+        REAL(8) :: RTT(3,3), TR, SOFFD
 
         call setMessageSource("CHECK_RTOTMAT")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4641,10 +4641,10 @@ C
         RTT(2,2) = 0.0 ;
         RTT(3,3) = 0.0 ;
         
-        SOFFD = SUM( MATMUL(ABS(RTT), (/ 1.0_SZ, 1.0_SZ, 1.0_SZ /)) )  ;
+        SOFFD = SUM( MATMUL(ABS(RTT), (/ 1.0D0, 1.0D0, 1.0D0 /)) )  ;
 
         IERR = 0 ;
-        IF ( SOFFD > 1.0e-10_SZ ) THEN
+        IF ( SOFFD > 1.0e-10 ) THEN
            IERR = 1 ; 
            
            WRITE(6,*) "Error: a given rotation matrix is not"// 
@@ -4665,10 +4665,10 @@ C
       SUBROUTINE DRV_ROTMAT_ZNVEC( VARPHI, THETA )
         IMPLICIT NONE
 
-        REAL (SZ):: VARPHI, THETA ! in deg
+        REAL(8) :: VARPHI, THETA ! in deg
 
         !c local c!
-        REAL(SZ) :: RADPHI, RADTHETA, ROTMATOUT(3)
+        REAL(8) :: RADPHI, RADTHETA, ROTMATOUT(3)
 
         call setMessageSource("DRV_ROTMAT_ZNVEC")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4710,10 +4710,10 @@ C
       SUBROUTINE DRV_ROTMAT_ZXZROT( ALPHA, BETA, GAMMA )
          IMPLICIT NONE
 
-         REAL (SZ):: ALPHA, BETA, GAMMA
+         REAL(8) :: ALPHA, BETA, GAMMA
 
          ! local !
-         REAL (SZ):: RAL, RBE, RGAM
+         REAL(8) :: RAL, RBE, RGAM
 
          call setMessageSource("DRV_ROTMAT_ZXZROT")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4755,7 +4755,7 @@ C
         IMPLICIT NONE
 
         INTEGER:: NN
-        REAL (SZ), dimension(:):: LONR, LATR, LONO, LATO
+        REAL(8), dimension(:):: LONR, LATR, LONO, LATO
 
         call setMessageSource("DRVSPCOORSROTS1")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4775,7 +4775,7 @@ C
       SUBROUTINE DRVSPCOORSROTS0( LONR, LATR, LONO, LATO )
         IMPLICIT NONE
 
-        REAL (SZ):: LONR, LATR, LONO, LATO
+        REAL(8) :: LONR, LATR, LONO, LATO
         
         call setMessageSource("DRVSPCOORSROTS0")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4806,12 +4806,12 @@ C
       
          !     dummy !
         INTEGER:: NN
-        REAL (SZ):: ROTM(3,3)
-        REAL (SZ), DIMENSION(:):: CORIF, VARPHIR, THETAR
+        REAL(8) :: ROTM(3,3)
+        REAL(8), DIMENSION(:):: CORIF, VARPHIR, THETAR
         
         ! local c!
         INTEGER:: II
-        REAL (SZ):: EOMEGA2, ROT3(3)
+        REAL(8) :: EOMEGA2, ROT3(3)
 
         call setMessageSource("CORIFVAL_ROTSPCOORD")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4821,7 +4821,7 @@ C
         ROT3 = ROTM(:,3) ; 
 
         !c Angular speed of Earth  
-        EOMEGA2 = 2.0_SZ*omega;
+        EOMEGA2 = 2.0D0*omega;
         DO II = 1, NN
            CORIF(II) = ROT3(1)*cos( THETAR(II) )*cos( VARPHIR(II) ) + 
      &          ROT3(2)*cos( THETAR(II) )*sin( VARPHIR(II) ) +
@@ -4849,7 +4849,7 @@ C
 
         INTEGER:: NN
         LOGICAL:: FWD
-        REAL (SZ), DIMENSION(:):: UUD, VVD, UUS, VVS
+        REAL(8), DIMENSION(:):: UUD, VVD, UUS, VVS
 
         call setMessageSource("DRVMAP2DSPVEC")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4880,13 +4880,13 @@ C
 
         ! dummy !
         INTEGER:: NN
-        REAL (SZ):: SPRV(:,:,:)
-        REAL (SZ), DIMENSION(:):: VPHIR, VTHETAR
-        REAL (SZ), DIMENSION(:):: VPHIO, VTHETAO
+        REAL(8) :: SPRV(:,:,:)
+        REAL(8), DIMENSION(:):: VPHIR, VTHETAR
+        REAL(8), DIMENSION(:):: VPHIO, VTHETAO
 
         ! local !
         INTEGER:: II
-        REAL (SZ):: VO(2), VR(2)
+        REAL(8) :: VO(2), VR(2)
 
         call setMessageSource("MAP2DSPVECS")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4915,15 +4915,15 @@ C
       SUBROUTINE GET_ROTMAT_ZNVEC( RTOT, VARPHIN, THETAN )   
         IMPLICIT NONE
       
-        REAL (SZ):: RTOT(:,:) 
-        REAL (SZ):: VARPHIN, THETAN
+        REAL(8) :: RTOT(:,:) 
+        REAL(8) :: VARPHIN, THETAN
 
         call setMessageSource("GET_ROTMAT_ZNVEC")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Enter.")
 #endif
       
-        RTOT = 0.0_SZ ;
+        RTOT = 0.0D0 ;
       
         RTOT(1,1) = sin( VARPHIN ) ; 
         RTOT(2,1) = sin( THETAN )*cos( VARPHIN ) ;
@@ -4933,7 +4933,7 @@ C
         RTOT(2,2) = sin( THETAN )*sin( VARPHIN ) ;
         RTOT(3,2) = cos( THETAN )*sin( VARPHIN ) ; 
         
-        RTOT(1,3) = 0.0_SZ ;
+        RTOT(1,3) = 0.0D0 ;
         RTOT(2,3) = -cos( THETAN ) ; 
         RTOT(3,3) =  sin( THETAN ) ; 
 
@@ -4950,11 +4950,11 @@ C
         IMPLICIT NONE
 
         ! dummy !
-        REAL (SZ):: RTOT(:,:) 
-        REAL (SZ):: AL, BE, GAM
+        REAL(8) :: RTOT(:,:) 
+        REAL(8) :: AL, BE, GAM
 
         ! local !
-        REAL (SZ):: RTMP(3,3), RM2D(2,2)
+        REAL(8) :: RTMP(3,3), RM2D(2,2)
         
         call setMessageSource("GET_ROTMAT_ZXZROT")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4964,8 +4964,8 @@ C
         ! A rotation around z-axis
         RM2D = RTOT2DMAT( AL ) ;
 
-        RTMP = 0.0_SZ ;
-        RTMP(3,3) = 1.0_SZ ;
+        RTMP = 0.0D0 ;
+        RTMP(3,3) = 1.0D0 ;
         RTMP(1:2,1:2) = RM2D ; 
 
         RTOT = RTMP ; 
@@ -4973,8 +4973,8 @@ C
         ! A rotation around x'-axis    
         RM2D = RTOT2DMAT( BE ) ;
 
-        RTMP = 0.0_SZ ; 
-        RTMP(1,1) = 1.0_SZ ;
+        RTMP = 0.0D0 ; 
+        RTMP(1,1) = 1.0D0 ;
         RTMP(2:3,2:3) = RM2D ; 
 
         RTOT = MATMUL( RTOT, RTMP ) ; 
@@ -4982,8 +4982,8 @@ C
         ! A rotation around z''-axis
         RM2D = RTOT2DMAT( GAM ) ; 
 
-        RTMP = 0.0_SZ ;
-        RTMP(3,3) = 1.0_SZ ;
+        RTMP = 0.0D0 ;
+        RTMP(3,3) = 1.0D0 ;
         RTMP(1:2,1:2) = RM2D ; 
 
         RTOT = MATMUL( RTOT, RTMP ) ; 
@@ -4999,8 +4999,8 @@ C
       FUNCTION RTOT2DMAT( ALPHA ) RESULT( RM )
         IMPLICIT NONE
 
-        REAL (SZ):: ALPHA
-        REAL (SZ):: RM(2,2) 
+        REAL(8) :: ALPHA
+        REAL(8) :: RM(2,2) 
 
         call setMessageSource("RTOT2DMAT")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -5042,15 +5042,15 @@ C
          IMPLICIT NONE
 
          ! Dummys !
-         REAL (SZ), DIMENSION(:,:,:):: RVELF, RVELI 
+         REAL(8), DIMENSION(:,:,:):: RVELF, RVELI 
 
-         INTEGER:: NN
-         REAL (SZ):: RTOTS(3,3)
-         REAL (SZ), DIMENSION(:):: LONR, LATR, LONO, LATO          
+         INTEGER :: NN
+         REAL(8) :: RTOTS(3,3)
+         REAL(8), DIMENSION(:):: LONR, LATR, LONO, LATO          
 
          ! local !
          INTEGER:: IP
-         REAL (SZ), DIMENSION(3,3):: TP, TM, TRT 
+         REAL(8), DIMENSION(3,3):: TP, TM, TRT 
 
          call setMessageSource("SPVECROTSMAT")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -5058,7 +5058,7 @@ C
 #endif
 
          DO IP = 1, NN
-           TRT = 0.0_SZ ; 
+           TRT = 0.0D0 ; 
         
            ! T' = T(varphi',theta')
            TP = CT2SP_VECTRANSMAT( LONR(IP), LATR(IP) ) ;
@@ -5090,8 +5090,8 @@ C
       FUNCTION CT2SP_VECTRANSMAT( VARPHI, THETA ) RESULT(TM)
         IMPLICIT NONE
 
-        REAL (SZ):: TM(3,3)
-        REAL (SZ), intent(in):: VARPHI, THETA
+        REAL(8) :: TM(3,3)
+        REAL(8), intent(in):: VARPHI, THETA
 
         call setMessageSource("CT2SP_VECTRANSMAT")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -5107,7 +5107,7 @@ C
         TM(3,2) = -sin( THETA )*sin( VARPHI ) ; 
         
         TM(1,3) = sin( THETA ) ; 
-        TM(2,3) = 0.0_SZ ; 
+        TM(2,3) = 0.0D0 ; 
         TM(3,3) = cos( THETA ) ;    
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -5122,13 +5122,13 @@ C
         IMPLICIT NONE
 
         !c dummy c!
-        INTEGER:: NN
-        REAL (SZ):: RTOTS(3,3)
-        REAL (SZ), dimension(:):: LONR, LATR, LONO, LATO
+        INTEGER :: NN
+        REAL(8) :: RTOTS(3,3)
+        REAL(8), dimension(:):: LONR, LATR, LONO, LATO
 
         !c local c!
-        INTEGER:: IP
-        REAL (SZ):: XP(3), XPR(3), LLO, LTO
+        INTEGER :: IP
+        REAL(8) :: XP(3), XPR(3), LLO, LTO
 
         call setMessageSource("SPCOORSROTS1")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -5162,12 +5162,12 @@ C
         IMPLICIT NONE
 
         !c dummy c!
-        REAL (SZ):: RTOTS(3,3)
-        REAL (SZ):: LONR, LATR, LONO, LATO
+        REAL(8) :: RTOTS(3,3)
+        REAL(8) :: LONR, LATR, LONO, LATO
 
         !c local c!
         INTEGER:: IP
-        REAL (SZ):: XP(3), XPR(3), LLO, LTO
+        REAL(8) :: XP(3), XPR(3), LLO, LTO
 
         call setMessageSource("SPCOORSROTS0")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -5247,18 +5247,18 @@ C
       IMPLICIT NONE
 
       INTEGER :: NM(:,:), NE
-      REAL(SZ), dimension(:) :: SFAELES, SFNODES
+      REAL(8), dimension(:) :: SFAELES, SFNODES
       
       ! local
-      INTEGER:: IE, NMI1, NMI2, NMI3
-      REAL (SZ):: ONETRD 
+      INTEGER :: IE, NMI1, NMI2, NMI3
+      REAL(8) :: ONETRD 
 
       call setMessageSource("SFAC_ELEAVG")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
       
-      ONETRD = 1.0_SZ/3.0_SZ ;
+      ONETRD = 1.0D0/3.0D0 ;
       DO IE = 1, NE
          NMI1 = NM(IE,1) ; 
          NMI2 = NM(IE,2) ; 
@@ -5287,15 +5287,15 @@ C
       !c   LONVE, LATVE -- input
       INTEGER, optional:: SFLAG
       INTEGER:: ICS
-      REAL (SZ), DIMENSION(:):: XVE, YVE, LONVE, LATVE
+      REAL(8), DIMENSION(:):: XVE, YVE, LONVE, LATVE
       
       !c Local 
-      INTEGER:: II, IDX, SPF
-      REAL (SZ):: XC, YC
-      REAL (SZ):: Jac1, Jac2
-      REAL (SZ), dimension(3):: LONM, LATM, LONTMP
-      REAL (SZ), dimension(3):: DLX, DL
-      REAL (SZ):: DLED1, DLED2
+      INTEGER :: II, IDX, SPF
+      REAL(8) :: XC, YC
+      REAL(8) :: Jac1, Jac2
+      REAL(8), dimension(3):: LONM, LATM, LONTMP
+      REAL(8), dimension(3):: DLX, DL
+      REAL(8):: DLED1, DLED2
 
       call setMessageSource("CAL_ELXV_SPCOOR")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -5306,40 +5306,40 @@ C
       LATM(:) = LATVE(1:3)*RAD2DEG ;
 
       !c Adjust so that 0 <= lon <= 360 
-      LONM(:) = MODULO( LONVE(1:3)*RAD2DEG, 360.0_SZ ) ; 
+      LONM(:) = MODULO( LONVE(1:3)*RAD2DEG, 360.0D0 ) ; 
       LONTMP = LONM ; 
 
       CALL CAL_JAC( Jac1, LONM, LATM )
       CALL CAL_EDGELENGTH( DLED1, LONM, LATM ) ; 
    
       SPF = 0 ; 
-      IF (  Jac1 < 0.0_SZ .OR. 
-     &     (Jac1 > 0.0_SZ .AND. DLED1 > 360.0_SZ ) ) THEN
+      IF (  Jac1 < 0.0D0 .OR. 
+     &     (Jac1 > 0.0D0 .AND. DLED1 > 360.0D0 ) ) THEN
          !c An element has a circular index. 
          !c Put a wrapped node on the other side
 
          !c A wrapped node is on the left of 180
-         IF ( COUNT( LONM > 180.0_SZ ) == 1 ) THEN
+         IF ( COUNT( LONM > 180.0D0 ) == 1 ) THEN
             IDX = sum( merge( (/ 1, 2, 3 /), 
-     &           (/ 0, 0, 0 /), LONM > 180.0_SZ ) ) ;
+     &           (/ 0, 0, 0 /), LONM > 180.0D0 ) ) ;
 
-            LONM(IDX) = LONM(IDX) - 360.0_SZ ; 
+            LONM(IDX) = LONM(IDX) - 360.0D0 ; 
          END IF
          
          !c A wrapped node is on the right of 180
-         IF ( COUNT( LONM < 180.0_SZ ) == 1 ) THEN
+         IF ( COUNT( LONM < 180.0D0 ) == 1 ) THEN
             IDX = sum( merge( (/ 1, 2, 3 /), 
-     &           (/ 0, 0, 0 /), LONM < 180.0_SZ ) ) ;
+     &           (/ 0, 0, 0 /), LONM < 180.0D0 ) ) ;
             
-            LONM(IDX) = LONM(IDX) + 360.0_SZ ; 
+            LONM(IDX) = LONM(IDX) + 360.0D0 ; 
          END IF        
 
          CALL CAL_JAC( Jac2, LONM, LATM )
          CALL CAL_EDGELENGTH( DLED2, LONM, LATM ) ; 
 
          SPF = 1 ;
-         IF ( Jac2 < 0.0_SZ .OR.
-     &        (Jac1 > 0.0_SZ .AND. DLED2 > DLED1) ) THEN
+         IF ( Jac2 < 0.0D0 .OR.
+     &        (Jac1 > 0.0D0 .AND. DLED2 > DLED1) ) THEN
             LONM = LONTMP ;  
             SPF = 0 ; 
          END IF
@@ -5371,10 +5371,10 @@ C
          SUBROUTINE CAL_EDGELENGTH( DEDGE, LON, LAT ) 
            IMPLICIT NONE
 
-           REAL (SZ):: DEDGE, LON(3), LAT(3)
+           REAL(8) :: DEDGE, LON(3), LAT(3)
 
            !c local c!
-           REAL (SZ), dimension(3):: DLX, DLY
+           REAL(8), dimension(3):: DLX, DLY
 
            DLX = (/ LON(2) - LON(1), 
      &          LON(3) - LON(2), LON(1) - LON(3) /) ; 
@@ -5389,12 +5389,12 @@ C
          SUBROUTINE CAL_JAC( Jac, LON, LAT )
            IMPLICIT NONE
 
-           REAL (SZ):: Jac, LON(3), LAT(3)
+           REAL(8) :: Jac, LON(3), LAT(3)
 
-           REAL (SZ):: XR(2), XS(2)
+           REAL(8) :: XR(2), XS(2)
 
-           XR = 0.5_SZ*(/ LON(2) - LON(1), LAT(2) - LAT(1) /) ; 
-           XS = 0.5_SZ*(/ LON(3) - LON(1), LAT(3) - LAT(1) /) ; 
+           XR = 0.5D0*(/ LON(2) - LON(1), LAT(2) - LAT(1) /) ; 
+           XS = 0.5D0*(/ LON(3) - LON(1), LAT(3) - LAT(1) /) ; 
 
            Jac = (XR(1)*XS(2) - XR(2)*XS(1)) ; ! Find Jacobian
 
@@ -5407,11 +5407,11 @@ C
         IMPLICIT NONE
 
 ! dummy !
-        REAL (SZ):: SLAMV(:), SFEAV(:)
+        REAL(8) :: SLAMV(:), SFEAV(:)
        
         ! local !
         INTEGER:: I, MEXP
-        REAL (SZ):: RFAC1, RFAC2, RFAC3
+        REAL(8) :: RFAC1, RFAC2, RFAC3
 
         call setMessageSource("COMPUTE_CYLINPROJ_SFAC")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -5427,7 +5427,7 @@ C
 
         SELECT CASE( ICS )
         CASE (1)                  !c Cartesian
-           SFAC = 1.0_SZ ; 
+           SFAC = 1.0D0 ; 
         CASE (2)                !c Original SWE form in spherical coordinates
            DO I=1,NP
               SFAC(I)=COS(SFEA0)/COS(SFEAV(I)) ;

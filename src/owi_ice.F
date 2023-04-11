@@ -12,7 +12,7 @@ C******************************************************************************
 C 
       MODULE OWI_ICE
 C
-      USE SIZES,ONLY : SZ,MYPROC
+      USE SIZES,ONLY : MYPROC
       USE GLOBAL,ONLY : NSCREEN, ScreenUnit
 #ifdef CMPI
       USE MESSENGER,ONLY : MSG_FINI
@@ -24,20 +24,20 @@ C
 !      character :: part1*12,part2*7,part3*6
       character :: owiheader*80
 
-      real(SZ), dimension(:,:), allocatable :: CiceR,CiceB
-      real(SZ), dimension(:), allocatable :: latR,longR,latB,longB
-      real(SZ) :: Along, Alat
-      real(SZ) :: ramp,rampfrac
-      real(SZ) :: Cice1
-      real(SZ) :: Cice_env
+      real(8), dimension(:,:), allocatable :: CiceR,CiceB
+      real(8), dimension(:), allocatable :: latR,longR,latB,longB
+      real(8) :: Along, Alat
+      real(8) :: ramp,rampfrac
+      real(8) :: Cice1
+      real(8) :: Cice_env
       integer(8):: date1R,date2R,date1B,date2B
       integer(8):: date1ice,date2ice
       integer :: iLatR,iLongR,iCYMDHR,iMinR
-      real(SZ)  :: dxR,dyR,swlatR,swlongR
+      real(8)  :: dxR,dyR,swlatR,swlongR
       integer :: iLatB,iLongB,iCYMDHB,iMinB
-      real(SZ)  :: dxB,dyB,swlatB,swlongB
+      real(8)  :: dxB,dyB,swlatB,swlongB
       integer,save :: iLatc,iLongc,iCYMDHc,iMinc
-      real(SZ)  :: dxc,dyc,swlatc,swlongc
+      real(8)  :: dxc,dyc,swlatc,swlongc
       integer :: isnapR,updateR
       integer :: isnapB,updateB
 
@@ -46,9 +46,9 @@ C
       integer,allocatable :: swpointsR(:,:)
       integer,allocatable :: swpointsB(:,:)
 
-      real(SZ) :: w,w1,w2,w3,w4
-      real(SZ),allocatable :: wR(:,:)
-      real(SZ),allocatable :: wB(:,:)
+      real(8) :: w,w1,w2,w3,w4
+      real(8),allocatable :: wR(:,:)
+      real(8),allocatable :: wB(:,:)
 
       CHARACTER FNAME*60
 
@@ -68,11 +68,11 @@ C***********************************************************************
 
       SUBROUTINE NCICE1_INIT(Ciceval,NP)
 
-      USE SIZES, ONLY : SZ,MYPROC, GBLINPUTDIR
+      USE SIZES, ONLY : MYPROC, GBLINPUTDIR
 
       IMPLICIT NONE
       INTEGER   NP,I
-      REAL(SZ)  Ciceval(*)
+      REAL(8)  Ciceval(*)
 
       allocate(swpointsB(NP,2),wB(NP,4))
       allocate(swpointsR(NP,2),wR(NP,4))
@@ -204,8 +204,8 @@ C***********************************************************************
       IMPLICIT NONE
 
       INTEGER   NP,I,J,XI,YI,K,ibar
-      REAL(SZ)  Ciceval(*)
-      REAL(SZ)  CV(4),CVbar
+      REAL(8)  Ciceval(*)
+      REAL(8)  CV(4),CVbar
       CHARACTER*80 PBLJAGF
 
 
@@ -372,7 +372,7 @@ c      end if
                 ibar = ibar + 1
              endif
           enddo
-          if (ibar.gt.0) CVbar = CVbar/real(ibar,sz)
+          if (ibar.gt.0) CVbar = CVbar/real(ibar,8)
           do k=1,4
              if (CV(k).lt.0.d0) CV(k) = CVbar
           enddo
@@ -408,7 +408,7 @@ c      end if
                 ibar = ibar + 1
              endif
           enddo
-          if (ibar.gt.0) CVbar = CVbar/real(ibar,sz)
+          if (ibar.gt.0) CVbar = CVbar/real(ibar,8)
           do k=1,4
              if (CV(k).lt.0.d0) CV(k) = CVbar
           enddo
@@ -511,7 +511,7 @@ C***********************************************************************
       IMPLICIT NONE
 
       INTEGER   NP,I,J,K,XI,YI
-      REAL(SZ)  adcLat,adcLong
+      REAL(8)  adcLat,adcLong
 
       WRITE(16,*) ''
       WRITE(16,*) 'BASIN-SCALE ICE MAPPING UPDATED'
@@ -600,7 +600,7 @@ C***********************************************************************
       IMPLICIT NONE
 
       INTEGER   NP,I,J,K,XI,YI
-      REAL(SZ)  adcLat,adcLong
+      REAL(8)  adcLat,adcLong
 
       WRITE(16,*) ''
       WRITE(16,*) 'REGION-SCALE ICE MAPPING UPDATED'

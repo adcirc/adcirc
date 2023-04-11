@@ -6,7 +6,7 @@ C                                                              05 Feb 2007, sb
 C******************************************************************************
 C
       module writer
-      use sizes, only : sz, mnproc, mnwproc, OFF, ASCII, SPARSE_ASCII,
+      use sizes, only : mnproc, mnwproc, OFF, ASCII, SPARSE_ASCII,
      &     NETCDF3, NETCDF4, XDMF, iSplit, globalDir, meshType, 
      &     controlType, meshFileName_g, controlFileName_g
       use global, only: c3d, comm,
@@ -25,7 +25,7 @@ C
       integer, parameter :: numIntMetadata = 7
       integer :: intBuf(numIntMetadata)  ! used to transmit pieces of descript via mpi
       integer, parameter :: numRealMetadata = 2
-      real(sz) :: reBuf(numRealMetadata) ! used to transmit pieces of descript via mpi
+      real(8) :: reBuf(numRealMetadata) ! used to transmit pieces of descript via mpi
       !
       ! maximum number of buffers that each writer processor has
       ! for storing data; each writer will only allocate the space that

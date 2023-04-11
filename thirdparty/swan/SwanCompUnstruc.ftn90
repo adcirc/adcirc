@@ -89,7 +89,7 @@ subroutine SwanCompUnstruc ( ac2, ac1, compda, spcsig, spcdir, xytst, cross, it 
     use SwanGridobjects
     use SwanCompdata
     use m_parall
-!PUN    use SIZES, only: SZ, MNPROC
+!PUN    use SIZES, only: MNPROC
 !PUN    use MESSENGER
 !ADC    use couple2adcirc, only: MakeBoundariesReflective
 !ADC    use NodalAttributes, only: FoundSwanWaveRefrac, LoadSwanWaveRefrac, SwanWaveRefrac
@@ -181,8 +181,8 @@ subroutine SwanCompUnstruc ( ac2, ac1, compda, spcsig, spcdir, xytst, cross, it 
     real                                  :: dal3      ! just another coefficent for the 4 wave-wave interactions
     real                                  :: dhdx      ! derivative of depth in x-direction
     real                                  :: dhdy      ! derivative of depth in y-direction
-!PUN    real(SZ), dimension(1)                :: dum1      ! a dummy real meant for UPDATER
-!PUN    real(SZ), dimension(1)                :: dum2      ! a dummy real meant for UPDATER
+!PUN    real(8), dimension(1)                :: dum1      ! a dummy real meant for UPDATER
+!PUN    real(8), dimension(1)                :: dum2      ! a dummy real meant for UPDATER
     real                                  :: dummy     ! dummy variable (to be used in existing SWAN routine call)
     real                                  :: duxdx     ! derivative of ux2 to x
     real                                  :: duxdy     ! derivative of ux2 to y
@@ -260,7 +260,7 @@ subroutine SwanCompUnstruc ( ac2, ac1, compda, spcsig, spcdir, xytst, cross, it 
     real, dimension(:,:), allocatable     :: sa2       ! explicit interaction contribution of second quadruplet (unfolded space)
     real, dimension(:,:), allocatable     :: sfnl      ! total interaction contribution of quadruplets to the right-hand side
     real, dimension(:,:,:,:), allocatable :: swtsda    ! several source terms computed at test points
-!PUN    real(SZ), dimension(:), allocatable   :: temp      ! temporary array to store high precision data for UPDATER
+!PUN    real(8), dimension(:), allocatable   :: temp      ! temporary array to store high precision data for UPDATER
     real, dimension(:), allocatable       :: tmcurr    ! mean period at current iteration level
     real, dimension(:), allocatable       :: tmdifc    ! difference in mean period of current and one before previous iteration
     real, dimension(:), allocatable       :: tmprev    ! mean period at previous iteration level
@@ -1126,7 +1126,7 @@ subroutine SwanCompUnstruc ( ac2, ac1, compda, spcsig, spcdir, xytst, cross, it 
 !TIMG!PUN          call SWTSTA(213)
 !PUN          do id = 1, MDC
 !PUN             do is = 1, MSC
-!PUN                temp(:) = real(ac2(id,is,:),SZ)
+!PUN                temp(:) = real(ac2(id,is,:),8)
 !PUN                call UPDATER(temp,dum1,dum2,1)
 !PUN                ac2(id,is,:) = real(temp(:),4)
 !PUN             enddo
@@ -1243,7 +1243,7 @@ subroutine SwanCompUnstruc ( ac2, ac1, compda, spcsig, spcdir, xytst, cross, it 
 !PUN       if ( MNPROC>1 ) then
 !TIMG!PUN          call SWTSTA(213)
 !PUN          do j = 1, MCMVAR
-!PUN             temp(:) = real(compda(:,j),SZ)
+!PUN             temp(:) = real(compda(:,j),8)
 !PUN             call UPDATER(temp,dum1,dum2,1)
 !PUN             compda(:,j) = real(temp(:),4)
 !PUN          enddo

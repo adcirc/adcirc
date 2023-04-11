@@ -4,7 +4,6 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
-      USE SIZES,  ONLY: SZ
       USE WRITE_OUTPUT, ONLY : terminate
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
      &          setMessageSource, unsetMessageSource, allMessage,
@@ -44,17 +43,17 @@ C             and SWAN.  If InterpoWeight = 0, then the value
 C             is taken from the beginning of the coupling interval.
 C             If InterpoWeight = 1, then the value is taken from
 C             the end of the coupling interval.
-      REAL(SZ) :: InterpoWeight
+      REAL(8) :: InterpoWeight
 
 Casey 090302: The following arrays will contain the ADCIRC values
 C             that may be passed to SWAN.
-      REAL(SZ),ALLOCATABLE :: SWAN_ETA2(:,:)
-      REAL(SZ),ALLOCATABLE :: SWAN_UU2(:,:)
-      REAL(SZ),ALLOCATABLE :: SWAN_VV2(:,:)
-      REAL(SZ),ALLOCATABLE :: SWAN_WX2(:,:)
-      REAL(SZ),ALLOCATABLE :: SWAN_WY2(:,:)
+      REAL(8),ALLOCATABLE :: SWAN_ETA2(:,:)
+      REAL(8),ALLOCATABLE :: SWAN_UU2(:,:)
+      REAL(8),ALLOCATABLE :: SWAN_VV2(:,:)
+      REAL(8),ALLOCATABLE :: SWAN_WX2(:,:)
+      REAL(8),ALLOCATABLE :: SWAN_WY2(:,:)
 Casey 091216: Added another array.
-      REAL(SZ),ALLOCATABLE :: SWAN_Z0(:,:)
+      REAL(8),ALLOCATABLE :: SWAN_Z0(:,:)
 
 Casey 090302: These variables control SWAN output.
       ! jgf51.21.25: Added target attribute to file position counters
@@ -68,9 +67,9 @@ Casey 090302: These variables control SWAN output.
       INTEGER              :: SWAN_VOQR(NMOVAR)
 
 Casey 090303: Add variable for maximum SWAN output.
-      REAL(SZ),ALLOCATABLE        :: SWAN_MAX(:,:)
-      REAL(SZ),ALLOCATABLE,TARGET :: SWAN_MAXTEMP(:)
-      REAL(SZ),ALLOCATABLE,TARGET :: SWAN_MAXTEMP_G(:) !...Cobell added
+      REAL(8),ALLOCATABLE        :: SWAN_MAX(:,:)
+      REAL(8),ALLOCATABLE,TARGET :: SWAN_MAXTEMP(:)
+      REAL(8),ALLOCATABLE,TARGET :: SWAN_MAXTEMP_G(:) !...Cobell added
 
 Casey 100205: Add variables for writing of SWAN hot-start files.
       INTEGER              :: SwanHotStartUnit
@@ -80,7 +79,7 @@ Casey 120302: Merging ice changes from Taylor Asher.
 CTGA 110912:  Implementing SWAN ice handling.  This variable is set to
 C             0 wherever ice reaches/exceeds a threshold value
       INTEGER,ALLOCATABLE :: ICY(:)
-      REAL(SZ),ALLOCATABLE :: SWAN_CICE2(:,:)
+      REAL(8),ALLOCATABLE :: SWAN_CICE2(:,:)
 
 C-----------------------------------------------------------------------
       CONTAINS
@@ -200,7 +199,6 @@ C-----------------------------------------------------------------------
       SUBROUTINE ComputeWaveDrivenForces
 
       USE GLOBAL, ONLY: NODECODE, NOFF, RSNX2, RSNY2, IFSFM
-      USE SIZES, ONLY: SZ
       USE MESH, ONLY : NE, NM, NP, AREAS, NODELE, NEITABELE,
      &    FDXE, FDYE, SFacEle, SFMYEle, SFMXEle
       USE BOUNDARIES, ONLY : NBDV, NBOU, NBVV, NOPE, NVDLL, NVELL
@@ -224,26 +222,26 @@ C-----------------------------------------------------------------------
 #else
       LOGICAL :: Marcel = .false.
 #endif
-      REAL(SZ),ALLOCATABLE :: DSXXDX(:)
-      REAL(SZ),ALLOCATABLE :: DSXYDY(:)
-      REAL(SZ),ALLOCATABLE :: DSXYDX(:)
-      REAL(SZ),ALLOCATABLE :: DSYYDY(:)
+      REAL(8),ALLOCATABLE :: DSXXDX(:)
+      REAL(8),ALLOCATABLE :: DSXYDY(:)
+      REAL(8),ALLOCATABLE :: DSXYDX(:)
+      REAL(8),ALLOCATABLE :: DSYYDY(:)
 
-      REAL(SZ)             :: NCELE
+      REAL(8)             :: NCELE
 
-      REAL(SZ),ALLOCATABLE :: TEMP_SXX(:)
-      REAL(SZ),ALLOCATABLE :: TEMP_SXY(:)
-      REAL(SZ),ALLOCATABLE :: TEMP_SYY(:)
+      REAL(8),ALLOCATABLE :: TEMP_SXX(:)
+      REAL(8),ALLOCATABLE :: TEMP_SXY(:)
+      REAL(8),ALLOCATABLE :: TEMP_SYY(:)
 
-      REAL(SZ) :: TOTALAREA
-      REAL(SZ) :: FDX1, FDX2, FDX3
-      REAL(SZ) :: FDY1, FDY2, FDY3
-      REAL(SZ) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
+      REAL(8) :: TOTALAREA
+      REAL(8) :: FDX1, FDX2, FDX3
+      REAL(8) :: FDY1, FDY2, FDY3
+      REAL(8) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
 
 !     Upper limit on Radiation stresses
-!     Default - don't limit (set to high value) but may want to use: UL = 0.1_SZ     
+!     Default - don't limit (set to high value) but may want to use: UL = 0.1D0   
 !     (0.1 m^2/s^2 is equivalent to 175 m/s wind speeds!)
-      REAL(SZ),parameter :: UL = 999_SZ 
+      REAL(8),parameter :: UL = 999D0 
 
       call setMessageSource("ComputeWaveDrivenForces")
 #if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
@@ -308,7 +306,7 @@ C..... BEG DW/WJP
            SFmxAvg= SFMXEle(IE) ; 
            SFmyAvg= SFMYEle(IE) ; 
            sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-           sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+           sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
 
            FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
            FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
@@ -493,10 +491,10 @@ C-----------------------------------------------------------------------
 
       INTEGER  :: IN
 
-      REAL(SZ) :: H
-      REAL(SZ) :: K = 0.4D0
-      REAL(SZ) :: N
-      REAL(SZ) :: Z0
+      REAL(8) :: H
+      REAL(8) :: K = 0.4D0
+      REAL(8) :: N
+      REAL(8) :: Z0
 
       call setMessageSource("Manning2Madsen")
 #if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
@@ -599,7 +597,6 @@ C-----------------------------------------------------------------------
      &                        MNPROC,
      &                        MNWPROC,
      &                        NBYTE,
-     &                        SZ,
      &                        MYPROC,
      &                        numFormats
       USE SwanGriddata, ONLY: nverts,
@@ -678,11 +675,11 @@ C-----------------------------------------------------------------------
       REAL(4)                       :: SWAN_NED(MSC)
       REAL(4),ALLOCATABLE           :: SWAN_VOQ(:,:)
       REAL(4)                       :: SWAN_WK(MSC)
-      REAL(SZ),POINTER              :: SwanOut(:)
-      REAL(SZ),POINTER              :: SwanOut2(:)
-      REAL(SZ),POINTER              :: SwanMaxOut(:)
-C      REAL(SZ),TARGET               :: SwanOut_g(NP_G)
-C      REAL(SZ),TARGET               :: SwanOut2_g(NP_G)
+      REAL(8),POINTER              :: SwanOut(:)
+      REAL(8),POINTER              :: SwanOut2(:)
+      REAL(8),POINTER              :: SwanMaxOut(:)
+C      REAL(8),TARGET               :: SwanOut_g(NP_G)
+C      REAL(8),TARGET               :: SwanOut2_g(NP_G)
       REAL(4)                       :: XC(NP)
       REAL(4)                       :: YC(NP)
       CHARACTER(len=12) :: fileExt ! character string representing integer file extension
@@ -1142,8 +1139,8 @@ C      INTEGER,SAVE :: SwanTimeStep ! Counter for SWAN time steps.
 
 Casey 120302: Merging ice changes from Taylor Asher.
 CTGA 110912:  Full SWAN ice implementation.  Adding variables.
-      REAL(SZ)             :: SWAN_PIC
-      REAL(SZ)             :: ICETIMEFRAC
+      REAL(8)             :: SWAN_PIC
+      REAL(8)             :: ICETIMEFRAC
 
       call setMessageSource("padcswan_run")
 #if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)

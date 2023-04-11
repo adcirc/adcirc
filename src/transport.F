@@ -47,7 +47,7 @@ C  kmd48.33bc add implicit none if not in parallel
 #ifdef CMPI
       USE MESSENGER
       IMPLICIT NONE
-      REAL(SZ) :: DUMV1(1),DUMV2(1)
+      REAL(8) :: DUMV1(1),DUMV2(1)
 #else
       IMPLICIT NONE
 #endif
@@ -59,9 +59,9 @@ C
       INTEGER :: TEMPSTOP
 
 C     Additional local variables that are passed into or out of the subroutine
-      REAL(SZ), DIMENSION(MNP,MNFEN), INTENT(IN) :: inarray
-      REAL(SZ), DIMENSION(MNP,MNFEN), INTENT(OUT) :: outarray
-      REAL(SZ), INTENT(IN) :: diffhoriz, diffvert, TimeLoc
+      REAL(8), DIMENSION(MNP,MNFEN), INTENT(IN) :: inarray
+      REAL(8), DIMENSION(MNP,MNFEN), INTENT(OUT) :: outarray
+      REAL(8), INTENT(IN) :: diffhoriz, diffvert, TimeLoc
       INTEGER, INTENT(IN) :: field 
 
 C     Local variables 
@@ -76,20 +76,20 @@ C     Local variables
       INTEGER :: tbc            !top boundary condition
 
 C     Local variables used again from the vsmy.F subroutine
-      REAL(SZ) :: WSigma(MNFEN) !"sigma" vertical velocity
-      REAL(SZ) :: Zk            !z depth of any node k in the vertical
-      REAL(SZ) :: DelSig        ! sigma(k+1)-sigma(k)
-      REAL(SZ) :: DelSigO2      !(sigma(k)-sigma(k-1))/2
-      REAL(SZ) :: SigmaMAOAMB   !(sigma(k)-A)/(a-b)
-      REAL(SZ) :: SigmaMBOAMB   !(sigma(k)-B)/(a-b)
-      REAL(SZ) :: SigAvgMAOAMB  !((sigma(k)+sigma(k-1))/2.d0 - A)/AMB
-      REAL(SZ) :: SigmaNN       !Sigma value of a neighbor node
-      REAL(SZ) :: EtaN1,EtaN2,EtaN3,EtaNFirst !nodal values of NolIFA(Eta1+Eta2)/2
-      REAL(SZ) :: hN1,hN2,hN3,hNFirst !nodal values of DP
-      REAL(SZ) :: Un,Vn         !real,imaginary components of qn
-      REAL(SZ) :: RCLtrans       
+      REAL(8) :: WSigma(MNFEN) !"sigma" vertical velocity
+      REAL(8) :: Zk            !z depth of any node k in the vertical
+      REAL(8) :: DelSig        ! sigma(k+1)-sigma(k)
+      REAL(8) :: DelSigO2      !(sigma(k)-sigma(k-1))/2
+      REAL(8) :: SigmaMAOAMB   !(sigma(k)-A)/(a-b)
+      REAL(8) :: SigmaMBOAMB   !(sigma(k)-B)/(a-b)
+      REAL(8) :: SigAvgMAOAMB  !((sigma(k)+sigma(k-1))/2.d0 - A)/AMB
+      REAL(8) :: SigmaNN       !Sigma value of a neighbor node
+      REAL(8) :: EtaN1,EtaN2,EtaN3,EtaNFirst !nodal values of NolIFA(Eta1+Eta2)/2
+      REAL(8) :: hN1,hN2,hN3,hNFirst !nodal values of DP
+      REAL(8) :: Un,Vn         !real,imaginary components of qn
+      REAL(8) :: RCLtrans       
 
-      REAL(SZ) :: SFacAvg  !  kmd48.33bc add in spherical factors
+      REAL(8) :: SFacAvg  !  kmd48.33bc add in spherical factors
 
 
       REAL(8) :: KNVnm(MNFEN,3) !integral used in vertical diffusion term for the salinity field
@@ -111,66 +111,64 @@ C     Local variables
       REAL(8) :: Hsp1Hsp1OAMBAMBtrans !(Hsp1/(a-b))^2
 !      REAL(8) :: NTVTot(MNFEN)      ! transport diffusion coefficients
       REAL(8) :: tempbcskp1,tempbcsk,topbcs ! top boundary conditions variables for temperature
-      REAL(SZ) :: cpwater=4000.0d0          ! variable utilized in the top boundary condition for temperature
+      REAL(8) :: cpwater=4000.0d0          ! variable utilized in the top boundary condition for temperature
       REAL(8) :: saltbcskp1,saltbcsk        ! top boundary conditions variables for salinity (later implementation) 
 
-      REAL(SZ) :: Frtrans(MNFEN)     !right side forcing vector
-      REAL(SZ) :: Mkm1trans(MNFEN)   !1st column (k-1) in left side compact storage matrix
-      REAL(SZ) :: Mktrans(MNFEN)     !2nd column (k) in left side compact storage matrix
-      REAL(SZ) :: Mkp1trans(MNFEN)   !3rd column (k+1) in left side cpmpact storage matrix
-      REAL(SZ) :: LAdvectrans(MNFEN) !lateral advection term in transport eqn
-      REAL(SZ) :: LDiffusion(MNFEN) !lateral diffusion term in transport eqn
-      REAL(SZ) :: VAdvectrans(MNFEN) !vertical advection term in transport eqn
-      REAL(SZ) :: VDiffusion(MNFEN) !vertical diffusion term in transport eqn
-      !jgf48.50 Declare COMPLEX as size SZ
-      COMPLEX(SZ) :: qn,qN1,qN2,qN3,qNFirst !nodal values of q
-      REAL(SZ) :: transN1,transN2,transN3,transNFirst !nodal values of transport equation
-      REAL(SZ) :: UnDtransDX,VnDtransDY  !derivatives used in lateral advection
-      REAL(SZ) :: UnDtransDX2A,VnDtransDY2A !UnDqDX,UnDqDY)*2*Element Area
-      REAL(SZ) :: DtransDXDPhiDX2A,DtransDYDPhiDY2A !derivatives used in lateral diffusion calc.
-      REAL(SZ) :: DtransDSigmakm1,DtransDSigmakp1 !vertical deriv. of q from k-1,k and k,k+1
-      !jgf48.50 Declare COMPLEX as size SZ
-      COMPLEX(SZ) :: QSave(MNP,MNFEN) !Used in the testing of the transport equation (remove if works correctly)
-      REAL(SZ) :: WSave(MNP,MNFEN) !Used in the testing of the transport equation (remove if works correctly)
+      REAL(8) :: Frtrans(MNFEN)     !right side forcing vector
+      REAL(8) :: Mkm1trans(MNFEN)   !1st column (k-1) in left side compact storage matrix
+      REAL(8) :: Mktrans(MNFEN)     !2nd column (k) in left side compact storage matrix
+      REAL(8) :: Mkp1trans(MNFEN)   !3rd column (k+1) in left side cpmpact storage matrix
+      REAL(8) :: LAdvectrans(MNFEN) !lateral advection term in transport eqn
+      REAL(8) :: LDiffusion(MNFEN) !lateral diffusion term in transport eqn
+      REAL(8) :: VAdvectrans(MNFEN) !vertical advection term in transport eqn
+      REAL(8) :: VDiffusion(MNFEN) !vertical diffusion term in transport eqn
+      COMPLEX(8) :: qn,qN1,qN2,qN3,qNFirst !nodal values of q
+      REAL(8) :: transN1,transN2,transN3,transNFirst !nodal values of transport equation
+      REAL(8) :: UnDtransDX,VnDtransDY  !derivatives used in lateral advection
+      REAL(8) :: UnDtransDX2A,VnDtransDY2A !UnDqDX,UnDqDY)*2*Element Area
+      REAL(8) :: DtransDXDPhiDX2A,DtransDYDPhiDY2A !derivatives used in lateral diffusion calc.
+      REAL(8) :: DtransDSigmakm1,DtransDSigmakp1 !vertical deriv. of q from k-1,k and k,k+1
+      COMPLEX(8) :: QSave(MNP,MNFEN) !Used in the testing of the transport equation (remove if works correctly)
+      REAL(8) :: WSave(MNP,MNFEN) !Used in the testing of the transport equation (remove if works correctly)
 
 C     Variables for the weak implementation of the open ocean boundary condtion
-      REAL(SZ) :: WBC(MNP,MNFEN) 
-      REAL(SZ) :: RESWBC(MNP,MNFEN)
-      REAL(SZ) :: NORM1(3)
-      REAL(SZ) :: TOTRES, RESWBCN
-      REAL(SZ) :: VELDOTNORM, AVERESN, AVEUN, AVEVN, AVEWN
-      REAL(SZ) :: Hsp1OAMBN1, Hsp1OAMBN2
-      REAL(SZ) :: Hsp1N1, Hsp1N2
-      REAL(SZ) :: XDIST1, YDIST1, ZDIST1, XDIST2, YDIST2, ZDIST2
-      REAL(SZ) :: ZVN1, ZVN2, ZVN3, ZVN4
-      REAL(SZ) :: XSQUARE, YSQUARE, LENGTHEDGE, ref 
+      REAL(8) :: WBC(MNP,MNFEN) 
+      REAL(8) :: RESWBC(MNP,MNFEN)
+      REAL(8) :: NORM1(3)
+      REAL(8) :: TOTRES, RESWBCN
+      REAL(8) :: VELDOTNORM, AVERESN, AVEUN, AVEVN, AVEWN
+      REAL(8) :: Hsp1OAMBN1, Hsp1OAMBN2
+      REAL(8) :: Hsp1N1, Hsp1N2
+      REAL(8) :: XDIST1, YDIST1, ZDIST1, XDIST2, YDIST2, ZDIST2
+      REAL(8) :: ZVN1, ZVN2, ZVN3, ZVN4
+      REAL(8) :: XSQUARE, YSQUARE, LENGTHEDGE, ref 
       INTEGER :: NM1, NM2, VM1, VM2
       INTEGER :: NBC, BCSEC             !output loop counter
 
 C  kmd48.33bc added in variables used in the heat flux boundary condition
       INTEGER :: NumofNodes, NOD, J
-      REAL(SZ), ALLOCATABLE :: TMP(:,:)
+      REAL(8), ALLOCATABLE :: TMP(:,:)
 
 !----------------------------------------------------------------------------------------------------------------------------------------------------
 ! af: new variables to compute the horizontal diffusion at the xyz coordinate system, similar to the computation of BPG.
 ! to this end, we interpolate c (quantity to be transported) at the same z levels, and compute horizontal spatial derivatives.
-      REAL(SZ) :: transN1_z, transN2_z, transN3_z, transNFirst_z  !nodal values of transport equation (at the same z)
-      Real(Sz) :: diff_tol = 1.0d-5
-      Real(Sz) :: minimum_diffusion
-      Real(Sz) :: max_diffusion
-      REAL(SZ) :: inarray_vertical(NFEN) 
-      REAL(SZ) :: diffusion_ratio = 0.20d0
+      REAL(8) :: transN1_z, transN2_z, transN3_z, transNFirst_z  !nodal values of transport equation (at the same z)
+      Real(8) :: diff_tol = 1.0d-5
+      Real(8) :: minimum_diffusion
+      Real(8) :: max_diffusion
+      REAL(8) :: inarray_vertical(NFEN) 
+      REAL(8) :: diffusion_ratio = 0.20d0
 
 ! af 01/04/2016: Biharmonic viscosity for transport
-      Real(SZ) :: DSalOrTempDXDPhiDX2A, DSalOrTempDYDPhiDY2A
-      Real(SZ) :: Biharmonic_DSalOrTempDXDPhiDX2A, Biharmonic_DSalOrTempDYDPhiDY2A
-!      Real(SZ) :: d_dx_SalOrTemp_element, d_dy_SalOrTemp_element
-      Real(SZ) :: SalOrTempN_z, SalOrTempN1_z, SalOrTempN2_z, SalOrTempN3_z, SalOrTempNFirst_z
-      Real(SZ) :: Biharmonic_SalOrTempN_z, Biharmonic_SalOrTempN1_z, Biharmonic_SalOrTempN2_z, Biharmonic_SalOrTempN3_z
-      Real(SZ) :: Biharmonic_SalOrTempNFirst_z
-      Real(SZ) :: Hs, HsOAMB, HsN2
-      Real(SZ) :: Biharmonic_viscosity
-      Real(SZ) :: Biharmonic_LDiffusion(MNFEN) !lateral diffusion term in transport eqn - biharmonic diffusion
+      Real(8) :: DSalOrTempDXDPhiDX2A, DSalOrTempDYDPhiDY2A
+      Real(8) :: Biharmonic_DSalOrTempDXDPhiDX2A, Biharmonic_DSalOrTempDYDPhiDY2A
+!      Real(8) :: d_dx_SalOrTemp_element, d_dy_SalOrTemp_element
+      Real(8) :: SalOrTempN_z, SalOrTempN1_z, SalOrTempN2_z, SalOrTempN3_z, SalOrTempNFirst_z
+      Real(8) :: Biharmonic_SalOrTempN_z, Biharmonic_SalOrTempN1_z, Biharmonic_SalOrTempN2_z, Biharmonic_SalOrTempN3_z
+      Real(8) :: Biharmonic_SalOrTempNFirst_z
+      Real(8) :: Hs, HsOAMB, HsN2
+      Real(8) :: Biharmonic_viscosity
+      Real(8) :: Biharmonic_LDiffusion(MNFEN) !lateral diffusion term in transport eqn - biharmonic diffusion
 
 C*************************************************************************************
 C     Compute 3D transport equation
@@ -1301,12 +1299,11 @@ C***********************************************************************
 c
       SUBROUTINE ADC_TRIDAG2(A,B,C,R,U,N)
       USE GLOBAL, ONLY: ScreenUnit
-      USE GLOBAL_3DVS, ONLY : SZ
       IMPLICIT NONE
       INTEGER :: J, N
 
-      REAL(SZ) :: A(N),B(N),C(N),R(N),U(N)
-      REAL(SZ) :: BET,GAM(N)
+      REAL(8) :: A(N),B(N),C(N),R(N),U(N)
+      REAL(8) :: BET,GAM(N)
 
 c     
 c     check for zero elements on diagonal
@@ -1389,8 +1386,8 @@ C*************************************************************************
 
       USE GLOBAL_3DVS
       IMPLICIT NONE
-      REAL(SZ) :: transN2_z
-      REAL(SZ) :: SigmaNN     !Sigma value of a neighbor node
+      REAL(8) :: transN2_z
+      REAL(8) :: SigmaNN     !Sigma value of a neighbor node
 
       INTEGER NN
       INTEGER J
@@ -1400,16 +1397,16 @@ C*************************************************************************
       INTEGER LAbov
       INTEGER LTry
       INTEGER IDiag
-      REAL(SZ) SigBelo
-      REAL(SZ) SigAbov
-      REAL(SZ) SigTry
+      REAL(8) SigBelo
+      REAL(8) SigAbov
+      REAL(8) SigTry
 ! af: variables for cubic interpolation
       Integer  :: k1, k2, k3, k4                 ! nodes used for cubic polynomial
-      REAL(SZ) :: f1, f2, f3, f4                 ! shape functions
-      REAL(SZ) :: top, bot
+      REAL(8) :: f1, f2, f3, f4                 ! shape functions
+      REAL(8) :: top, bot
       Integer  :: loop_situation = 0
 
-      REAL(SZ) :: inarray_vertical
+      REAL(8) :: inarray_vertical
       Dimension  inarray_vertical ( NFEN )
 
       call setMessageSource("cubic_vertical_interpolation")

@@ -22,23 +22,22 @@ C     CALCULATIONS AND THE DIFFERENT TIME LEVELS ASSOCIATED WITH
 C     A TIME VARYING WEIR.
 C-----------------------------------------------------------------------
         MODULE WEIR
-            USE GLOBAL,ONLY:SZ
             IMPLICIT NONE
-            REAL(SZ),ALLOCATABLE     :: BARINHT1(:)    !...Internal Barrier elevation at previous timestep
-            REAL(SZ),ALLOCATABLE     :: BARINHT2(:)    !...Internal Barrier elevation at current timestep
-            REAL(SZ),ALLOCATABLE     :: BARLANHT1(:)   !...External Barrier elevation at previous timestep
-            REAL(SZ),ALLOCATABLE     :: BARLANHT2(:)   !...External Barrier elevation at current timestep
-            REAL(SZ), PARAMETER      :: BARMIN=0.04D0
-            REAL(SZ), PARAMETER      :: BARMIN64=0.04D0
-            REAL(SZ), PARAMETER      :: SUBMIN64=0.04D0
+            REAL(8),ALLOCATABLE     :: BARINHT1(:)    !...Internal Barrier elevation at previous timestep
+            REAL(8),ALLOCATABLE     :: BARINHT2(:)    !...Internal Barrier elevation at current timestep
+            REAL(8),ALLOCATABLE     :: BARLANHT1(:)   !...External Barrier elevation at previous timestep
+            REAL(8),ALLOCATABLE     :: BARLANHT2(:)   !...External Barrier elevation at current timestep
+            REAL(8), PARAMETER      :: BARMIN=0.04D0
+            REAL(8), PARAMETER      :: BARMIN64=0.04D0
+            REAL(8), PARAMETER      :: SUBMIN64=0.04D0
 
             !...Averaging information in time for boundaries. 
             !   This was previously zeroed out in the code, but the
             !   option is maintained.
 #ifdef AVERAGEWEIRFLOW 
-            REAL(SZ),ALLOCATABLE     :: RBARWL1AVG(:),RBARWL2AVG(:)
-            REAL(SZ),ALLOCATABLE     :: RPIPEWL1AVG(:),RPIPEWL2AVG(:)
-            REAL(SZ),PARAMETER       :: BARAVGWT = 0.0D0
+            REAL(8),ALLOCATABLE     :: RBARWL1AVG(:),RBARWL2AVG(:)
+            REAL(8),ALLOCATABLE     :: RPIPEWL1AVG(:),RPIPEWL2AVG(:)
+            REAL(8),PARAMETER       :: BARAVGWT = 0.0D0
             INTEGER                  :: IBSTART 
 #endif            
             
@@ -109,7 +108,7 @@ C  TIME VARYING WEIR BOUNDARIES. THESE ROUTINES ARE USED TO SETUP AND
 C  CALCULATE THE ELEVATIONS THROUGHOUT THE SIMULATION
 C-----------------------------------------------------------------------
         MODULE TIME_VARYING_WEIR_BOUNDARY
-            USE SIZES, ONLY: SZ,MYPROC,LOCALDIR,GLOBALDIR
+            USE SIZES, ONLY: MYPROC,LOCALDIR,GLOBALDIR
             USE ADCIRC_MOD, ONLY: ADCIRC_TERMINATE
             USE GLOBAL, ONLY: SCREENUNIT,logMessage,allMessage,
      &          setMessageSource,unsetMessageSource,ERROR,INFO,ECHO,
@@ -119,14 +118,14 @@ C-----------------------------------------------------------------------
 
             IMPLICIT NONE
 
-            REAL(SZ),ALLOCATABLE     :: BARHT_FINAL(:)          !...Final elevation for time varying boundary
-            REAL(SZ),ALLOCATABLE     :: BAR_LOCATIONS(:,:)      !...Location array for boundary conditions
-            REAL(SZ),ALLOCATABLE     :: GHOST_LOCATIONS(:,:)    !...Location array for the ghost nodes
-            REAL(SZ),ALLOCATABLE     :: BAR_DEG_START(:)        !...Start time for time varying boundary
-            REAL(SZ),ALLOCATABLE     :: BAR_DEG_END(:)          !...End time for time varying boundary
-            REAL(SZ),ALLOCATABLE     :: BAR_ETA_MAX(:)          !...Used if the boundary changes at a critical water surface elevation
-            REAL(SZ),ALLOCATABLE     :: BAR_FAILURE_START(:)    !...Used to track the first if ETA_MAX has been exceeded
-            REAL(SZ),ALLOCATABLE     :: BAR_FAILURE_DURATION(:) !...Amount of time it takes an ETA_MAX barrier to fail to ZF
+            REAL(8),ALLOCATABLE     :: BARHT_FINAL(:)          !...Final elevation for time varying boundary
+            REAL(8),ALLOCATABLE     :: BAR_LOCATIONS(:,:)      !...Location array for boundary conditions
+            REAL(8),ALLOCATABLE     :: GHOST_LOCATIONS(:,:)    !...Location array for the ghost nodes
+            REAL(8),ALLOCATABLE     :: BAR_DEG_START(:)        !...Start time for time varying boundary
+            REAL(8),ALLOCATABLE     :: BAR_DEG_END(:)          !...End time for time varying boundary
+            REAL(8),ALLOCATABLE     :: BAR_ETA_MAX(:)          !...Used if the boundary changes at a critical water surface elevation
+            REAL(8),ALLOCATABLE     :: BAR_FAILURE_START(:)    !...Used to track the first if ETA_MAX has been exceeded
+            REAL(8),ALLOCATABLE     :: BAR_FAILURE_DURATION(:) !...Amount of time it takes an ETA_MAX barrier to fail to ZF
             LOGICAL,ALLOCATABLE      :: BAR_DEG(:)              !...T/F this node is a time varying boundary
             INTEGER,ALLOCATABLE      :: BAR_VARYTYPE(:)         !...Type of variation to apply to this boundary node
             TYPE(KDTREE2),POINTER    :: BARRIER_SEARCHTREE      !...Search tree for boundary nodes
@@ -134,15 +133,15 @@ C-----------------------------------------------------------------------
 
 C...........CHARACTERIZES A SECTION OF THE SCHEDULE
             TYPE BSCHED
-                REAL(SZ) :: BAR_DEG_START             !...Time to begin this change
-                REAL(SZ) :: BAR_DEG_END               !...Time to end this change
-                REAL(SZ) :: BARHT_FINAL               !...Elevation at the end time for this section
+                REAL(8) :: BAR_DEG_START             !...Time to begin this change
+                REAL(8) :: BAR_DEG_END               !...Time to end this change
+                REAL(8) :: BARHT_FINAL               !...Elevation at the end time for this section
                                                       !   Flag Values:
                                                       !     -99990 = Nodal elevation (minimum value)
                                                       !     -99993 = fort.14 weir elevation
                                                       !     -99991 = Add BARHT_DELTA
                                                       !     -99992 = Subtract BARHT_DELTA
-                REAL(SZ) :: BARHT_DELTA
+                REAL(8) :: BARHT_DELTA
             END TYPE
 
 C...........CHARACTERIZES THE SCHEDULE. BASED ON NUMBER OF FILES
@@ -162,9 +161,9 @@ C           AND IS BASED UPON THE INDIVIDUAL BOUNDARY NODE
                 INTEGER                  :: NLOOPS        !...How many times should it loop
                 INTEGER                  :: LOOPSCOMPLETE !...How many loops we've completed
                 INTEGER,POINTER          :: NSECTIONS     !...How many sections are in the schedule
-                REAL(SZ)                 :: PREVEND       !...Previous schedule end
-                REAL(SZ)                 :: BARHT_START   !...Starting barrier height
-                REAL(SZ)                 :: OFFSET        !...Offset from starting time in schedule
+                REAL(8)                 :: PREVEND       !...Previous schedule end
+                REAL(8)                 :: BARHT_START   !...Starting barrier height
+                REAL(8)                 :: OFFSET        !...Offset from starting time in schedule
                 TYPE(BSCHED),POINTER     :: SECTION(:)    !...A section of the schedule containing a variation
             END TYPE    
             TYPE(BARRIER_SCHEDULE_T),ALLOCATABLE,TARGET   :: SCHEDULE(:)
@@ -173,14 +172,14 @@ C           AND IS BASED UPON THE INDIVIDUAL BOUNDARY NODE
             
 C...........THESE VARIABLES ARE PART OF THE NAMELIST THAT IS READ IN
             CHARACTER(200)   :: ScheduleFile
-            REAL(SZ) :: X1,X2,Y1,Y2
-            REAL(SZ) :: ZF,ETA_MAX
-            REAL(SZ) :: TimeStartDay,TimeStartHour,TimeStartMin
-            REAL(SZ) :: TimeStartSec
-            REAL(SZ) :: TimeEndDay,TimeEndHour,TimeEndMin,TimeEndSec
-            REAL(SZ) :: FailureDurationDay,FailureDurationHour
-            REAL(SZ) :: FailureDurationMin,FailureDurationSec
-            REAL(SZ) :: HOTADD
+            REAL(8) :: X1,X2,Y1,Y2
+            REAL(8) :: ZF,ETA_MAX
+            REAL(8) :: TimeStartDay,TimeStartHour,TimeStartMin
+            REAL(8) :: TimeStartSec
+            REAL(8) :: TimeEndDay,TimeEndHour,TimeEndMin,TimeEndSec
+            REAL(8) :: FailureDurationDay,FailureDurationHour
+            REAL(8) :: FailureDurationMin,FailureDurationSec
+            REAL(8) :: HOTADD
             INTEGER  :: VaryType,HOT
             INTEGER  :: LOOP,NLOOPS
 
@@ -381,12 +380,12 @@ C-----------------------------------------------------------------------
                 USE MESSENGER,ONLY: RESNODE
 #endif                
                 IMPLICIT NONE
-                REAL(SZ),INTENT(IN)  :: LAT
-                REAL(SZ),INTENT(IN)  :: LON
-                REAL(SZ)             :: LAT_TEMP,LON_TEMP
-                REAL(SZ)             :: LATR,LONR
-                REAL(SZ)             :: EPS
-                REAL(SZ)             :: X,Y
+                REAL(8),INTENT(IN)  :: LAT
+                REAL(8),INTENT(IN)  :: LON
+                REAL(8)             :: LAT_TEMP,LON_TEMP
+                REAL(8)             :: LATR,LONR
+                REAL(8)             :: EPS
+                REAL(8)             :: X,Y
                 INTEGER,INTENT(OUT)  :: IDX
                 INTEGER,PARAMETER    :: SEARCHDEPTH = 2
                 TYPE(KDTREE2_RESULT) :: KDRESULTS(SEARCHDEPTH)
@@ -491,9 +490,9 @@ C-----------------------------------------------------------------------
 
                 INTEGER,INTENT(IN)   :: MYIDX
                 CHARACTER(20)        :: VC
-                REAL(SZ),INTENT(IN)  :: TIMELOC
-                REAL(SZ),INTENT(IN)  :: BAR_HEIGHT_CURRENT
-                REAL(SZ),INTENT(OUT) :: BAR_HEIGHT
+                REAL(8),INTENT(IN)  :: TIMELOC
+                REAL(8),INTENT(IN)  :: BAR_HEIGHT_CURRENT
+                REAL(8),INTENT(OUT) :: BAR_HEIGHT
 
                 CALL setMessageSource("COMPUTE_BARRIER_HEIGHT")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
@@ -596,13 +595,13 @@ C-----------------------------------------------------------------------
                 IMPLICIT NONE
 
                 INTEGER,INTENT(IN)     :: MYIDX
-                REAL(SZ),INTENT(IN)    :: TIMELOC
-                REAL(SZ),INTENT(IN)    :: BAR_HEIGHT_CURRENT
-                REAL(SZ),INTENT(OUT)   :: BAR_HEIGHT
-                REAL(SZ),INTENT(IN),OPTIONAL :: BARHT_START
-                REAL(SZ)               :: BAR_DZ,BAR_DT
-                REAL(SZ)               :: BAR_START
-                REAL(SZ)               :: DEPTH
+                REAL(8),INTENT(IN)    :: TIMELOC
+                REAL(8),INTENT(IN)    :: BAR_HEIGHT_CURRENT
+                REAL(8),INTENT(OUT)   :: BAR_HEIGHT
+                REAL(8),INTENT(IN),OPTIONAL :: BARHT_START
+                REAL(8)               :: BAR_DZ,BAR_DT
+                REAL(8)               :: BAR_START
+                REAL(8)               :: DEPTH
 
 
 
@@ -732,12 +731,12 @@ C-----------------------------------------------------------------------
                 IMPLICIT NONE
 
                 INTEGER,INTENT(IN)     :: MYIDX
-                REAL(SZ),INTENT(IN)    :: TIMELOC
-                REAL(SZ),INTENT(IN)    :: BAR_HEIGHT_CURRENT
-                REAL(SZ),INTENT(OUT)   :: BAR_HEIGHT
-                REAL(SZ)               :: BAR_DZ,BAR_DT
-                REAL(SZ)               :: BAR_START
-                REAL(SZ)               :: DEPTH
+                REAL(8),INTENT(IN)    :: TIMELOC
+                REAL(8),INTENT(IN)    :: BAR_HEIGHT_CURRENT
+                REAL(8),INTENT(OUT)   :: BAR_HEIGHT
+                REAL(8)               :: BAR_DZ,BAR_DT
+                REAL(8)               :: BAR_START
+                REAL(8)               :: DEPTH
 
                 CALL setMessageSource("COMPUTE_BARRIER_HEIGHT_ETAMAX")
 #if defined(TVW_TRACE) || defined(ALL_TRACE) 
@@ -799,13 +798,13 @@ C-----------------------------------------------------------------------
                 USE BOUNDARIES,ONLY:IBCONN,NBV,LBCODEI,BARLANHT,BARINHT
                 IMPLICIT NONE
                 INTEGER,INTENT(IN)   :: MYIDX
-                REAL(SZ),INTENT(IN)  :: TIMELOC
-                REAL(SZ),INTENT(IN)  :: BAR_HEIGHT_CURRENT
-                REAL(SZ),INTENT(OUT) :: BAR_HEIGHT
+                REAL(8),INTENT(IN)  :: TIMELOC
+                REAL(8),INTENT(IN)  :: BAR_HEIGHT_CURRENT
+                REAL(8),INTENT(OUT) :: BAR_HEIGHT
 
-                REAL(SZ)             :: PREVEND
-                REAL(SZ)             :: BARHT_START
-                REAL(SZ)             :: OFFSET
+                REAL(8)             :: PREVEND
+                REAL(8)             :: BARHT_START
+                REAL(8)             :: OFFSET
                 INTEGER              :: MYSEC
                 INTEGER              :: NNBB1,NNBB2
 
@@ -1035,7 +1034,7 @@ C-----------------------------------------------------------------------
                 
                 CHARACTER(2000)  :: InputString,modifiedString
                 CHARACTER(1024),ALLOCATABLE :: SCHEDULE_LIST_RAW(:)
-                REAL(SZ) :: OFFSET
+                REAL(8) :: OFFSET
                 INTEGER  :: IDX,IDX2
                 INTEGER  :: I,IOS
                 INTEGER  :: NTIMEVARYINGWEIRS
@@ -1420,8 +1419,8 @@ C-----------------------------------------------------------------------
                 TYPE(BARRIER_SCHEDULE_T),INTENT(OUT) :: MYSCHED
                 
                 CHARACTER(500) :: origLine,modLine
-                REAL(SZ) :: BAR_DEG_START,BAR_DEG_END
-                REAL(SZ) :: DELTA,HOTSEC
+                REAL(8) :: BAR_DEG_START,BAR_DEG_END
+                REAL(8) :: DELTA,HOTSEC
                 INTEGER  :: I
                 LOGICAL  :: exists
 
@@ -1643,10 +1642,10 @@ C  FALSE IF IT WAS.
 C-----------------------------------------------------------------------
             LOGICAL FUNCTION ISNULL(R,I,S)
                 IMPLICIT NONE
-                REAL(SZ),INTENT(IN),OPTIONAL     :: R
+                REAL(8),INTENT(IN),OPTIONAL     :: R
                 INTEGER,INTENT(IN),OPTIONAL      :: I
                 CHARACTER(*),INTENT(IN),OPTIONAL :: S
-                REAL(SZ)            :: EPS
+                REAL(8)            :: EPS
                 
                 CALL setMessageSource("ISNULL")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
@@ -1857,7 +1856,6 @@ C-----------------------------------------------------------------------
             USE GLOBAL,ONLY:ETA2,RAMPINTFLUX,
      &          setMessageSource,unsetMessageSource,DEBUG,allMessage    
             USE BOUNDARIES,ONLY: LBCODEI,NBV
-            USE SIZES,ONLY:SZ
             USE TIME_VARYING_WEIR_BOUNDARY,ONLY:COMPUTE_BARRIER_HEIGHT,
      &              BAR_DEG
             USE WEIR
@@ -1882,9 +1880,9 @@ C-----------------------------------------------------------------------
                 IMPLICIT NONE
                 INTEGER,INTENT(IN)     :: BARRIER_INDEX
                 INTEGER                :: NNBB
-                REAL(SZ),INTENT(IN)    :: TIMELOC
-                REAL(SZ),INTENT(OUT)   :: FLUX
-                REAL(SZ)               :: RBARWL
+                REAL(8),INTENT(IN)    :: TIMELOC
+                REAL(8),INTENT(OUT)   :: FLUX
+                REAL(8)               :: RBARWL
 
                 CALL setMessageSource("COMPUTE_EXTERNAL_BOUNDARY_FLUX")
 #if defined(WEIR_TRACE) || defined(ALL_TRACE)
@@ -1940,15 +1938,15 @@ C-----------------------------------------------------------------------
                 INTEGER,INTENT(IN),TARGET   :: BARRIER_INDEX
                 INTEGER,INTENT(IN),TARGET   :: BOUNDARY
                 INTEGER,INTENT(IN),TARGET   :: BOUNDARYNODE
-                REAL(SZ),INTENT(IN)         :: TIMELOC
-                REAL(SZ),INTENT(OUT)        :: FLUX
+                REAL(8),INTENT(IN)         :: TIMELOC
+                REAL(8),INTENT(OUT)        :: FLUX
 
                 INTEGER                     :: NNBB1,NNBB2
                 INTEGER                     :: NNBB1WN,NNBB2WN
                 INTEGER                     :: FLOWDIR
                 INTEGER,POINTER             :: I,J,K
-                REAL(SZ)                    :: RBARWL1,RBARWL2
-                REAL(SZ)                    :: RBARWL1F,RBARWL2F
+                REAL(8)                    :: RBARWL1,RBARWL2
+                REAL(8)                    :: RBARWL1F,RBARWL2F
 
                 CALL setMessageSource("COMPUTE_INTERNAL_BOUNDARY_FLUX")
 #if defined(WEIR_TRACE) || defined(ALL_TRACE) 
@@ -2135,16 +2133,16 @@ C-----------------------------------------------------------------------
                 INTEGER,INTENT(IN),TARGET   :: BARRIER_INDEX
                 INTEGER,INTENT(IN),TARGET   :: BOUNDARY
                 INTEGER,INTENT(IN),TARGET   :: BOUNDARYNODE
-                REAL(SZ),INTENT(IN)         :: TIMELOC
-                REAL(SZ),INTENT(OUT)        :: FLUX
+                REAL(8),INTENT(IN)         :: TIMELOC
+                REAL(8),INTENT(OUT)        :: FLUX
                 LOGICAL,INTENT(IN)          :: ISFRONT
 
                 INTEGER                     :: NNBB1,NNBB2
                 INTEGER                     :: NNBB1WN,NNBB2WN
                 INTEGER                     :: FLOWDIR
                 INTEGER,POINTER             :: I,J,K
-                REAL(SZ)                    :: RBARWL1,RBARWL2,RBARWLL
-                REAL(SZ)                    :: RBARWL1F,RBARWL2F
+                REAL(8)                    :: RBARWL1,RBARWL2,RBARWLL
+                REAL(8)                    :: RBARWL1F,RBARWL2F
 
                 CALL setMessageSource("COMPUTE_INTERNAL_BOUNDARY_FLUX")
 #if defined(WEIR_TRACE) || defined(ALL_TRACE) 
@@ -2322,14 +2320,14 @@ C-----------------------------------------------------------------------
 
                 IMPLICIT NONE
                 INTEGER,INTENT(IN)     :: IDX
-                REAL(SZ),INTENT(IN)    :: TIMELOC
-                REAL(SZ),INTENT(OUT)   :: FLUX
+                REAL(8),INTENT(IN)    :: TIMELOC
+                REAL(8),INTENT(OUT)   :: FLUX
 
                 INTEGER                :: NNBB1
                 INTEGER                :: NNBB2
 
-                REAL(SZ)               :: RBARWL1
-                REAL(SZ)               :: RBARWL2
+                REAL(8)               :: RBARWL1
+                REAL(8)               :: RBARWL2
                 
                 CALL setMessageSource("COMPUTE_CROSS_BARRIER_PIPE_FLUX")
 #if defined(WEIR_TRACE) || defined(ALL_TRACE) 
@@ -2470,15 +2468,15 @@ C-----------------------------------------------------------------------
                 INTEGER,INTENT(IN),TARGET   :: BARRIER_INDEX
                 INTEGER,INTENT(IN),TARGET   :: BOUNDARY
                 INTEGER,INTENT(IN),TARGET   :: BOUNDARYNODE
-                REAL(SZ),INTENT(IN)         :: TIMELOC
-                REAL(SZ),INTENT(OUT)        :: FLUX
+                REAL(8),INTENT(IN)         :: TIMELOC
+                REAL(8),INTENT(OUT)        :: FLUX
 
                 INTEGER                     :: NNBB1,NNBB2
                 INTEGER                     :: NNBB1WN,NNBB2WN
                 INTEGER                     :: FLOWDIR
                 INTEGER,POINTER             :: I,J,K
-                REAL(SZ)                    :: RBARWL1,RBARWL2
-                REAL(SZ)                    :: RBARWL1F,RBARWL2F
+                REAL(8)                    :: RBARWL1,RBARWL2
+                REAL(8)                    :: RBARWL1F,RBARWL2F
                 
                 
                 CALL setMessageSource("COMPUTE_INTERNAL_BOUNDARY_FLUX")

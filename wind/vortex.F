@@ -60,7 +60,6 @@
       !
       !=================================================================
       MODULE vortex
-      USE SIZES, ONLY : sz
       USE CONSTANTS, ONLY : deg2rad, rad2deg,
      &                   omega, mb2pa, rhoAir, kt2ms, nm2m, m2nm,
      &                   ms2kt, Rearth, windReduction, one2ten
@@ -94,39 +93,39 @@
                                                  ! provided
       INTEGER, PARAMETER :: nPoints = nQuads+2   ! Number of (theta, Rmax)
                                                  ! points for curve fit
-      REAL(sz), DIMENSION(nPoints) :: Rmaxes     ! Radius of maximum winds
-      REAL(sz), DIMENSION(nPoints,4) :: Rmaxes4  ! (nautical miles)
-      REAL(sz) :: Pn                          ! Ambient surface pressure (mb)
-      REAL(sz) :: Pc                          ! Surface pressure at center of
+      REAL(8), DIMENSION(nPoints) :: Rmaxes     ! Radius of maximum winds
+      REAL(8), DIMENSION(nPoints,4) :: Rmaxes4  ! (nautical miles)
+      REAL(8) :: Pn                          ! Ambient surface pressure (mb)
+      REAL(8) :: Pc                          ! Surface pressure at center of
                                               ! storm (mb)
-      REAL(sz) :: cLat                        ! Latitude  of storm center
+      REAL(8) :: cLat                        ! Latitude  of storm center
                                               ! (degrees north)
-      REAL(sz) :: cLon                        ! Longitude of storm center
+      REAL(8) :: cLon                        ! Longitude of storm center
                                               ! (degrees east )
-      REAL(sz) :: Vmax                        ! Max sustained wind velocity
+      REAL(8) :: Vmax                        ! Max sustained wind velocity
                                               ! in storm (knots)
-      REAL(sz) :: B                           ! Exponential shape parameter
-      REAL(sz) :: corio                       ! Coriolis force (1/s)
-      REAL(sz) :: Vr                          ! Velocity @ wind radii (knots)
-      REAL(sz) :: Phi
-      REAL(sz), DIMENSION(nPoints) :: Bs        
-      REAL(sz), DIMENSION(nPoints) :: Phis    ! Correction factor to B and Vh
-      REAL(sz), DIMENSION(nPoints) :: VmBL
-      REAL(sz), DIMENSION(nPoints,4) :: Bs4        
-      REAL(sz), DIMENSION(nPoints,4) :: Phis4    ! Correction factor to B and Vh
-      REAL(sz), DIMENSION(nPoints,4) :: VmBL4
+      REAL(8) :: B                           ! Exponential shape parameter
+      REAL(8) :: corio                       ! Coriolis force (1/s)
+      REAL(8) :: Vr                          ! Velocity @ wind radii (knots)
+      REAL(8) :: Phi
+      REAL(8), DIMENSION(nPoints) :: Bs        
+      REAL(8), DIMENSION(nPoints) :: Phis    ! Correction factor to B and Vh
+      REAL(8), DIMENSION(nPoints) :: VmBL
+      REAL(8), DIMENSION(nPoints,4) :: Bs4        
+      REAL(8), DIMENSION(nPoints,4) :: Phis4    ! Correction factor to B and Vh
+      REAL(8), DIMENSION(nPoints,4) :: VmBL4
       INTEGER,  DIMENSION(nPoints,4) :: QuadFlag4  
-      REAL(sz), DIMENSION(nPoints,4) :: QuadIr4        
-      REAL(sz), DIMENSION(nQuads) :: VrQuadrant
-      REAL(sz), DIMENSION(nQuads) :: radius   ! Wind radii - the distance
+      REAL(8), DIMENSION(nPoints,4) :: QuadIr4        
+      REAL(8), DIMENSION(nQuads) :: VrQuadrant
+      REAL(8), DIMENSION(nQuads) :: radius   ! Wind radii - the distance
                                               ! winds of velocity Vr extend
                                               ! outward from center of storm
                                               ! (nautical miles)
       INTEGER  :: quad                        ! Quadrant counter
 
-      REAL(sz) :: latestRmax                  ! most recently calculated
+      REAL(8) :: latestRmax                  ! most recently calculated
                                               ! value of fitted rmax
-      REAL(sz) :: latestAngle                 ! angle of the most recently
+      REAL(8) :: latestAngle                 ! angle of the most recently
                                               ! calculated node w.r.t. the
                                               ! storm location
       LOGICAL :: useQuadrantVr
@@ -151,11 +150,11 @@
       !    A new vortex is created with essential parameters calculated.
       !=================================================================
       SUBROUTINE newVortex(pinf, p0, lat, lon, vm)
-      REAL(sz), INTENT(IN) :: Pinf
-      REAL(sz), INTENT(IN) :: P0
-      REAL(sz), INTENT(IN) :: lat
-      REAL(sz), INTENT(IN) :: lon
-      REAL(sz), INTENT(IN) :: vm
+      REAL(8), INTENT(IN) :: Pinf
+      REAL(8), INTENT(IN) :: P0
+      REAL(8), INTENT(IN) :: lat
+      REAL(8), INTENT(IN) :: lon
+      REAL(8), INTENT(IN) :: vm
       ! set instance variables
       Pn = pinf
       Pc = p0
@@ -176,11 +175,11 @@
 
       ! A new vortex is created for the full gradient wind balance
       SUBROUTINE newVortexFull(pinf, p0, lat, lon, vm)
-      REAL(sz), INTENT(IN) :: Pinf
-      REAL(sz), INTENT(IN) :: P0
-      REAL(sz), INTENT(IN) :: lat
-      REAL(sz), INTENT(IN) :: lon
-      REAL(sz), INTENT(IN) :: vm
+      REAL(8), INTENT(IN) :: Pinf
+      REAL(8), INTENT(IN) :: P0
+      REAL(8), INTENT(IN) :: lat
+      REAL(8), INTENT(IN) :: lon
+      REAL(8), INTENT(IN) :: vm
       ! set instance variables
       Pn = pinf
       Pc = p0
@@ -214,10 +213,10 @@
       !    Aim is to define Pn, Pc, and corio
       !=================================================================
       SUBROUTINE setVortex(pinf, p0, lat, lon)
-      REAL(sz), INTENT(IN) :: Pinf
-      REAL(sz), INTENT(IN) :: P0
-      REAL(sz), INTENT(IN) :: lat
-      REAL(sz), INTENT(IN) :: lon
+      REAL(8), INTENT(IN) :: Pinf
+      REAL(8), INTENT(IN) :: P0
+      REAL(8), INTENT(IN) :: lat
+      REAL(8), INTENT(IN) :: lon
       ! set instance variables
       Pn = pinf
       Pc = p0
@@ -242,16 +241,16 @@
       ! works for nws19 but for the simplified nws20
       !===============================================================
       SUBROUTINE calcRmaxes()
-!              REAL(sz), EXTERNAL  :: func
-      REAL(sz)            :: root        ! Radius of maximum winds
-      REAL(sz), PARAMETER :: innerRadius = 1.d0
-      REAL(sz), PARAMETER :: outerRadius = 400.d0
-      REAL(sz), PARAMETER :: accuracy    = 0.0001d0
-      REAL(sz), PARAMETER :: zoom        = 0.01d0
+!              REAL(8), EXTERNAL  :: func
+      REAL(8)            :: root        ! Radius of maximum winds
+      REAL(8), PARAMETER :: innerRadius = 1.d0
+      REAL(8), PARAMETER :: outerRadius = 400.d0
+      REAL(8), PARAMETER :: accuracy    = 0.0001d0
+      REAL(8), PARAMETER :: zoom        = 0.01d0
       INTEGER , PARAMETER :: itmax = 3
-      REAL(sz)            :: r1,r2, r3,r4, dr
+      REAL(8)            :: r1,r2, r3,r4, dr
       INTEGER             :: n, iter, i
-      REAL(sz) :: vicinity
+      REAL(8) :: vicinity
 
       !-----------------------------
       ! Loop over quadrants of storm
@@ -311,18 +310,18 @@
       ! Jie 2013.02 added looping procedures to calculate Bs and Phis
       !===============================================================
       SUBROUTINE calcRmaxesFull()
-!              REAL(sz), EXTERNAL  :: func
-      REAL(sz)            :: root        ! Radius of maximum winds
-      REAL(sz), PARAMETER :: innerRadius = 1.d0
-      REAL(sz), PARAMETER :: outerRadius = 500.d0
-      REAL(sz), PARAMETER :: accuracy    = 0.0001d0
-      REAL(sz), PARAMETER :: zoom        = 0.01d0
+!              REAL(8), EXTERNAL  :: func
+      REAL(8)            :: root        ! Radius of maximum winds
+      REAL(8), PARAMETER :: innerRadius = 1.d0
+      REAL(8), PARAMETER :: outerRadius = 500.d0
+      REAL(8), PARAMETER :: accuracy    = 0.0001d0
+      REAL(8), PARAMETER :: zoom        = 0.01d0
       INTEGER , PARAMETER :: itmax = 3
-      REAL(sz)            :: r1,r2, r3,r4, dr
+      REAL(8)            :: r1,r2, r3,r4, dr
       INTEGER             :: n, iter, i, norootflg
-      REAL(sz) :: vicinity
-      REAL(sz) :: B_new, B_new1
-      REAL(sz) :: Phi_new
+      REAL(8) :: vicinity
+      REAL(8) :: B_new, B_new1
+      REAL(8) :: Phi_new
       INTEGER , PARAMETER :: cont = 400 ! Max # of iterations
       INTEGER :: icont,ibcont                        ! iteration counter
  211  FORMAT(a7,x,i2,x,a38)
@@ -443,10 +442,10 @@
       !====================================================
       FUNCTION VhWithCoriFull(testRmax)
 
-      REAL(sz), INTENT(IN) :: testRmax
-      REAL(sz) :: VhWithCoriFull
-      REAL(sz) :: thisVr ! the radial wind speed we've been given
-      REAL(sz) :: Vh
+      REAL(8), INTENT(IN) :: testRmax
+      REAL(8) :: VhWithCoriFull
+      REAL(8) :: thisVr ! the radial wind speed we've been given
+      REAL(8) :: Vh
       !-------------------------
       ! func(x = Rmax) = Vh - Vr
       !-------------------------
@@ -483,10 +482,10 @@
       !====================================================
       FUNCTION VhWithCori(testRmax)
 
-      REAL(sz), INTENT(IN) :: testRmax
-      REAL(sz) :: VhWithCori
-      REAL(sz) :: thisVr ! the radial wind speed we've been given
-      REAL(sz) :: Vh
+      REAL(8), INTENT(IN) :: testRmax
+      REAL(8) :: VhWithCori
+      REAL(8) :: thisVr ! the radial wind speed we've been given
+      REAL(8) :: Vh
       !-------------------------
       ! func(x = Rmax) = Vh - Vr
       !-------------------------
@@ -506,9 +505,9 @@
 
 
       !===============================================================
-      REAL(sz) FUNCTION VhNoCori(testRmax)
-      REAL(sz), INTENT(IN) :: testRmax
-      REAL(sz) :: thisVr ! the radial wind speed we've been given
+      REAL(8) FUNCTION VhNoCori(testRmax)
+      REAL(8), INTENT(IN) :: testRmax
+      REAL(8) :: thisVr ! the radial wind speed we've been given
       if ( getUseQuadrantVr().eqv..true. ) then
          thisVr = VrQuadrant(quad)
       else
@@ -538,15 +537,15 @@
       !    findRoot    root returned
       !==============================================================
       FUNCTION findRoot(func, x1, x2, dx, a,b)
-      REAL(sz), EXTERNAL :: func
-      REAL(sz), INTENT(IN) :: x1, x2   ! Search interval [x1,x2]
-      REAL(sz), INTENT(IN) :: dx       ! Marching increment
-      REAL(sz), INTENT(OUT) :: a, b    ! x values that bracket root
-      REAL(sz) :: findRoot             ! The root found
+      REAL(8), EXTERNAL :: func
+      REAL(8), INTENT(IN) :: x1, x2   ! Search interval [x1,x2]
+      REAL(8), INTENT(IN) :: dx       ! Marching increment
+      REAL(8), INTENT(OUT) :: a, b    ! x values that bracket root
+      REAL(8) :: findRoot             ! The root found
 
       INTEGER , PARAMETER :: itmax = 400 ! Max # of iterations
       INTEGER :: iter                        ! iteration counter
-      REAL(sz) :: fa,fb                      ! function values f(x)
+      REAL(8) :: fa,fb                      ! function values f(x)
       !
       ! Initialize left side of interval
       a  = x1
@@ -606,32 +605,32 @@
       !=================================================================
       SUBROUTINE uvp(lat,lon, uTrans,vTrans, u,v, p)
 
-      REAL(sz), INTENT(IN)  :: lat
-      REAL(sz), INTENT(IN)  :: lon
-      REAL(sz), INTENT(IN)  :: uTrans
-      REAL(sz), INTENT(IN)  :: vTrans
+      REAL(8), INTENT(IN)  :: lat
+      REAL(8), INTENT(IN)  :: lon
+      REAL(8), INTENT(IN)  :: uTrans
+      REAL(8), INTENT(IN)  :: vTrans
 
-      REAL(sz), INTENT(OUT) :: u
-      REAL(sz), INTENT(OUT) :: v
-      REAL(sz), INTENT(OUT) :: p
+      REAL(8), INTENT(OUT) :: u
+      REAL(8), INTENT(OUT) :: v
+      REAL(8), INTENT(OUT) :: p
 
-      REAL(sz) :: TransSpdX  !NWS8-style translation speed
-      REAL(sz) :: TransSpdY  !NWS8-style translation speed
+      REAL(8) :: TransSpdX  !NWS8-style translation speed
+      REAL(8) :: TransSpdY  !NWS8-style translation speed
 
-      REAL(sz) :: avgLat
-      REAL(sz) :: dx
-      REAL(sz) :: dy
-      REAL(sz) :: dist
-      REAL(sz) :: rmx
-      REAL(sz) :: angle
-      REAL(sz) :: speed
-      REAL(sz) :: maxspeed
-      REAL(sz) :: uf
-      REAL(sz) :: vf
-      REAL(sz) :: damp
-      REAL(sz) :: percentCoriolis
-      REAL(sz) :: speedAtRmax
-      REAL(sz) :: vmaxFactor
+      REAL(8) :: avgLat
+      REAL(8) :: dx
+      REAL(8) :: dy
+      REAL(8) :: dist
+      REAL(8) :: rmx
+      REAL(8) :: angle
+      REAL(8) :: speed
+      REAL(8) :: maxspeed
+      REAL(8) :: uf
+      REAL(8) :: vf
+      REAL(8) :: damp
+      REAL(8) :: percentCoriolis
+      REAL(8) :: speedAtRmax
+      REAL(8) :: vmaxFactor
       INTEGER :: i
 
       !------------------------------------------------------
@@ -773,30 +772,30 @@
       
       SUBROUTINE uvpr(idist,iangle,irmx,irmx_true,iB,iVm,iPhi,
      &                uTrans,vTrans,geof, u,v,p)
-      REAL(sz), INTENT(IN)  :: idist
-      REAL(sz), INTENT(IN)  :: iangle
-      REAL(sz), INTENT(IN)  :: irmx
-      REAL(sz), INTENT(IN)  :: irmx_true
-      REAL(sz), INTENT(IN)  :: iB
-      REAL(sz), INTENT(IN)  :: iVm
-      REAL(sz), INTENT(IN)  :: iPhi
-      REAL(sz), INTENT(IN)  :: uTrans
-      REAL(sz), INTENT(IN)  :: vTrans
+      REAL(8), INTENT(IN)  :: idist
+      REAL(8), INTENT(IN)  :: iangle
+      REAL(8), INTENT(IN)  :: irmx
+      REAL(8), INTENT(IN)  :: irmx_true
+      REAL(8), INTENT(IN)  :: iB
+      REAL(8), INTENT(IN)  :: iVm
+      REAL(8), INTENT(IN)  :: iPhi
+      REAL(8), INTENT(IN)  :: uTrans
+      REAL(8), INTENT(IN)  :: vTrans
       INTEGER , INTENT(IN)  :: geof
 
-      REAL(sz), INTENT(OUT) :: u
-      REAL(sz), INTENT(OUT) :: v
-      REAL(sz), INTENT(OUT) :: p
+      REAL(8), INTENT(OUT) :: u
+      REAL(8), INTENT(OUT) :: v
+      REAL(8), INTENT(OUT) :: p
 
-      REAL(sz) :: TransSpdX  !NWS8-style translation speed
-      REAL(sz) :: TransSpdY  !NWS8-style translation speed
-      REAL(sz) :: rmx
-      REAL(sz) :: avgLat
-      REAL(sz) :: speed
-      REAL(sz) :: uf
-      REAL(sz) :: vf
-      REAL(sz) :: damp
-      REAL(sz) :: percentCoriolis
+      REAL(8) :: TransSpdX  !NWS8-style translation speed
+      REAL(8) :: TransSpdY  !NWS8-style translation speed
+      REAL(8) :: rmx
+      REAL(8) :: avgLat
+      REAL(8) :: speed
+      REAL(8) :: uf
+      REAL(8) :: vf
+      REAL(8) :: damp
+      REAL(8) :: percentCoriolis
       INTEGER :: i
       
       rmx=irmx
@@ -911,12 +910,12 @@
       ! case(3): 4 situations
       ! case(4): 5 situations                    
       !=================================================================
-      REAL(sz) FUNCTION spInterp(angle,dist,opt)
-      REAL(sz), INTENT(IN) :: angle,dist  
+      REAL(8) FUNCTION spInterp(angle,dist,opt)
+      REAL(8), INTENT(IN) :: angle,dist  
       INTEGER, INTENT(IN)  :: opt
-      REAL(sz), DIMENSION(nPoints,4) :: param 
-      REAL(sz) :: temp1, temp2  
-      REAL(sz) :: delta_angle
+      REAL(8), DIMENSION(nPoints,4) :: param 
+      REAL(8) :: temp1, temp2  
+      REAL(8) :: delta_angle
       INTEGER  :: iquad
 
       if (opt == 1) then
@@ -961,11 +960,11 @@
       END FUNCTION spInterp
       
       
-      REAL(sz)  FUNCTION interpR(val,quad,r)
-      REAL(sz), DIMENSION(nPoints,4),INTENT(IN) :: val 
+      REAL(8)  FUNCTION interpR(val,quad,r)
+      REAL(8), DIMENSION(nPoints,4),INTENT(IN) :: val 
       INTEGER, INTENT(IN) :: quad
-      REAL(sz), INTENT(IN) :: r 
-      REAL(sz) :: fac
+      REAL(8), INTENT(IN) :: r 
+      REAL(8) :: fac
       INTEGER  :: total_Isot
       
       total_Isot=sum(QuadFlag4(quad,:))
@@ -1039,10 +1038,10 @@
       !    Rmw          Radius of maximum winds (meters) from curve fit
       !                      I DO NOT BELIEVE IT IS IN METERS rjw
       !=================================================================
-      REAL(sz) FUNCTION Rmw(angle)
-      REAL(sz), INTENT(IN) :: angle
+      REAL(8) FUNCTION Rmw(angle)
+      REAL(8), INTENT(IN) :: angle
       INTEGER :: base_quadrant
-      REAL(sz) :: delta_angle
+      REAL(8) :: delta_angle
       if (angle.le.45.0d0) then
          base_quadrant = 5
          delta_angle = 45.d0 + angle
@@ -1093,15 +1092,15 @@ C     &            + Rmaxes(base_quadrant)
       !    yr          y component of rotated vector
       !========================================================
       SUBROUTINE rotate(x,y, angle, whichWay, xr,yr)
-      REAL(sz), INTENT(IN)  :: x
-      REAL(sz), INTENT(IN)  :: y
-      REAL(sz), INTENT(IN)  :: angle
-      REAL(sz), INTENT(IN)  :: whichWay
+      REAL(8), INTENT(IN)  :: x
+      REAL(8), INTENT(IN)  :: y
+      REAL(8), INTENT(IN)  :: angle
+      REAL(8), INTENT(IN)  :: whichWay
 
-      REAL(sz), INTENT(OUT) :: xr
-      REAL(sz), INTENT(OUT) :: yr
+      REAL(8), INTENT(OUT) :: xr
+      REAL(8), INTENT(OUT) :: yr
 
-      REAL(sz) :: A, cosA, sinA
+      REAL(8) :: A, cosA, sinA
 
       A = SIGN(1.d0, whichWay) * deg2rad * angle
       cosA = COS(A)
@@ -1122,9 +1121,9 @@ C     &            + Rmaxes(base_quadrant)
       ! On output:
       !    fang        frictional inflow angle (degrees)
       !=======================================================
-      REAL(sz) FUNCTION fang(r, rmx)
-      REAL(sz), INTENT(IN) :: r
-      REAL(sz), INTENT(IN) :: rmx
+      REAL(8) FUNCTION fang(r, rmx)
+      REAL(8), INTENT(IN) :: r
+      REAL(8), INTENT(IN) :: rmx
 
       IF (0.0d0 <= r .AND. r < rmx) THEN
          fang = 10.0d0 * r/rmx
@@ -1155,19 +1154,19 @@ C     &            + Rmaxes(base_quadrant)
       !============================================================
       SUBROUTINE uvtrans(latOld,lonOld, latNew,lonNew, tOld,tNew,
      &                         uTrans,vTrans)
-      REAL(sz), INTENT(IN)  :: latOld
-      REAL(sz), INTENT(IN)  :: lonOld
-      REAL(sz), INTENT(IN)  :: latNew
-      REAL(sz), INTENT(IN)  :: lonNew
-      REAL(sz), INTENT(IN)  :: tOld
-      REAL(sz), INTENT(IN)  :: tNew
-      REAL(sz), INTENT(OUT) :: uTrans
-      REAL(sz), INTENT(OUT) :: vTrans
+      REAL(8), INTENT(IN)  :: latOld
+      REAL(8), INTENT(IN)  :: lonOld
+      REAL(8), INTENT(IN)  :: latNew
+      REAL(8), INTENT(IN)  :: lonNew
+      REAL(8), INTENT(IN)  :: tOld
+      REAL(8), INTENT(IN)  :: tNew
+      REAL(8), INTENT(OUT) :: uTrans
+      REAL(8), INTENT(OUT) :: vTrans
 C
-      REAL(sz) :: dx
-      REAL(sz) :: dy
-      REAL(sz) :: dt
-      REAL(sz) :: avgLat
+      REAL(8) :: dx
+      REAL(8) :: dy
+      REAL(8) :: dt
+      REAL(8) :: avgLat
 
       avgLat = (latOld + latNew) / 2.d0
       dx = sphericalDistance( ((lonNew-lonOld)*deg2rad),
@@ -1195,9 +1194,9 @@ C
       !    y          y (meters)
       !=================================================================
       SUBROUTINE latlon2xy(lat,lon, lat0,lon0, x,y)
-      REAL(sz), INTENT(IN)  :: lat ,lon
-      REAL(sz), INTENT(IN)  :: lat0,lon0
-      REAL(sz), INTENT(OUT) :: x,y
+      REAL(8), INTENT(IN)  :: lat ,lon
+      REAL(8), INTENT(IN)  :: lat0,lon0
+      REAL(8), INTENT(OUT) :: x,y
 
       x = deg2rad * Rearth * (lon - lon0) * COS(deg2rad*lat0)
       y = deg2rad * Rearth * lat
@@ -1217,9 +1216,9 @@ C
       !    lon        Longitude (degrees east )
       !=================================================================
       SUBROUTINE xy2latlon(x,y, lat0,lon0, lat,lon)
-      REAL(sz), INTENT(IN)  :: x,y
-      REAL(sz), INTENT(IN)  :: lat0,lon0
-      REAL(sz), INTENT(OUT) :: lat ,lon
+      REAL(8), INTENT(IN)  :: x,y
+      REAL(8), INTENT(IN)  :: lat0,lon0
+      REAL(8), INTENT(OUT) :: lat ,lon
 
       lat = y / (deg2rad * Rearth)
       lon = lon0 + x / (deg2rad * Rearth * COS(deg2rad*lat0))
@@ -1238,7 +1237,7 @@ C
       !            2 extra values to tie down circular periodicity
       !===============================================================
       SUBROUTINE fitRmaxes()
-      REAL(sz)            :: root        ! Radius of maximum winds
+      REAL(8)            :: root        ! Radius of maximum winds
       INTEGER             :: n, iter,i
 
       !
@@ -1249,7 +1248,7 @@ C
       END SUBROUTINE fitRmaxes
 
       SUBROUTINE fitRmaxes4()
-      REAL(sz)            :: root        ! Radius of maximum winds
+      REAL(8)            :: root        ! Radius of maximum winds
       INTEGER             :: n, iter,i
       !
       ! Generate 2 additional points for curve-fit
@@ -1281,31 +1280,31 @@ C
       END SUBROUTINE setUseQuadrantVr
 
       SUBROUTINE setIsotachWindSpeeds(vrq)
-         REAL(sz), DIMENSION(4), INTENT(IN) :: vrq
+         REAL(8), DIMENSION(4), INTENT(IN) :: vrq
          VrQuadrant(:) = vrq(:)
       END SUBROUTINE setIsotachWindSpeeds
 
       SUBROUTINE setIsotachWindSpeed(sp)
-         REAL(sz), INTENT(IN) :: sp
+         REAL(8), INTENT(IN) :: sp
          Vr = sp
       END SUBROUTINE setIsotachWindSpeed
 
       SUBROUTINE setIsotachRadii(ir)
-         REAL(sz), DIMENSION(4), INTENT(IN) :: ir
+         REAL(8), DIMENSION(4), INTENT(IN) :: ir
          radius(:) = ir(:)
       END SUBROUTINE setIsotachRadii
 
-      REAL(sz) FUNCTION getShapeParameter()
+      REAL(8) FUNCTION getShapeParameter()
          getShapeParameter = B
       END FUNCTION getShapeParameter
 
       SUBROUTINE setShapeParameter(param)
-         REAL(sz) :: param
+         REAL(8) :: param
          B = param
       END SUBROUTINE setShapeParameter
 
       SUBROUTINE getRmaxes(rmaxw)
-         REAL(sz), DIMENSION(4), INTENT(OUT) :: rmaxw
+         REAL(8), DIMENSION(4), INTENT(OUT) :: rmaxw
          INTEGER :: i
          do i=1,4
             rmaxw(i) = Rmaxes(i+1)
@@ -1313,18 +1312,18 @@ C
       END SUBROUTINE getRmaxes
 
       SUBROUTINE setRmaxes(rmaxw)
-         REAL(sz), DIMENSION(4), INTENT(IN) :: rmaxw
+         REAL(8), DIMENSION(4), INTENT(IN) :: rmaxw
          INTEGER :: i
          do i=1,4
             Rmaxes(i+1) = rmaxw(i)
          end do
       END SUBROUTINE setRmaxes
 
-      REAL(sz) FUNCTION getLatestRmax()
+      REAL(8) FUNCTION getLatestRmax()
          getLatestRmax = latestRmax
       END FUNCTION getLatestRmax
 
-      REAL(sz) FUNCTION getLatestAngle()
+      REAL(8) FUNCTION getLatestAngle()
          getLatestAngle = latestAngle
       END FUNCTION getLatestAngle
 
@@ -1339,7 +1338,7 @@ C
       END SUBROUTINE setUseVmaxesBL
       
       SUBROUTINE getVmaxesBL(vmaxw)
-         REAL(sz), DIMENSION(4), INTENT(OUT) :: vmaxw
+         REAL(8), DIMENSION(4), INTENT(OUT) :: vmaxw
          INTEGER :: i
          do i=1,4
             vmaxw(i) = VmBL(i+1)
@@ -1347,7 +1346,7 @@ C
       END SUBROUTINE getVmaxesBL
 
       SUBROUTINE setVmaxesBL(vmaxw)
-         REAL(sz), DIMENSION(4), INTENT(IN) :: vmaxw
+         REAL(8), DIMENSION(4), INTENT(IN) :: vmaxw
          INTEGER :: i
          do i=1,4
             VmBL(i+1) = vmaxw(i)
@@ -1355,7 +1354,7 @@ C
       END SUBROUTINE setVmaxesBL  
       
       FUNCTION getShapeParameters()
-         REAL(sz),DIMENSION(4) :: getShapeParameters
+         REAL(8),DIMENSION(4) :: getShapeParameters
          INTEGER :: i
          do i=1,4
             getShapeParameters(i) = Bs(i+1)
@@ -1363,7 +1362,7 @@ C
       END FUNCTION getShapeParameters   
       
       FUNCTION getPhiFactors()
-         REAL(sz),DIMENSION(4) :: getPhiFactors
+         REAL(8),DIMENSION(4) :: getPhiFactors
          INTEGER :: i
          do i=1,4
             getPhiFactors(i) = Phis(i+1)

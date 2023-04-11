@@ -91,7 +91,7 @@ c***********************************************************************
 
       MODULE HARM
 
-      USE SIZES, ONLY : SZ, MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR,
+      USE SIZES, ONLY : MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR,
      &                   WRITE_LOCAL_HARM_FILES
       USE GLOBAL, ONLY : screenMessage, logMessage, DEBUG, ECHO, INFO,
      &                   WARNING, ERROR, setMessageSource, IFSPROTS,
@@ -105,9 +105,9 @@ c***********************************************************************
       LOGICAL :: CHARMV=.false.  ! .true. for timeseries reconstruction
       INTEGER :: NFREQ                      ! number of frequencies
       CHARACTER*10,ALLOCATABLE :: NAMEFR(:) ! "M2", "S2", etc
-      REAL(SZ), ALLOCATABLE :: HAFREQ(:)    ! frequency (rad/s)
-      REAL(SZ), ALLOCATABLE :: HAFF(:)      ! nodal factor
-      REAL(SZ), ALLOCATABLE :: HAFACE(:)    ! equilibrium argument (deg)
+      REAL(8), ALLOCATABLE :: HAFREQ(:)    ! frequency (rad/s)
+      REAL(8), ALLOCATABLE :: HAFF(:)      ! nodal factor
+      REAL(8), ALLOCATABLE :: HAFACE(:)    ! equilibrium argument (deg)
 C
       INTEGER :: NZ ! nz=0 if there is a steady component, nz=1 otherwise
       INTEGER :: NF ! nf=0 if no steady constituent, nf=1 otherwise
@@ -123,26 +123,26 @@ C
       INTEGER :: ITUD   ! time step of most recent HA update
       REAL(8) :: TIMEUD ! model time of most recent HA update
 C
-      REAL(SZ), ALLOCATABLE :: HA(:,:) ! LHS matrix
+      REAL(8), ALLOCATABLE :: HA(:,:) ! LHS matrix
       INTEGER :: MM ! 2nd dim of HA matrix; 2x num freqs (+ steady)
-      REAL(SZ), ALLOCATABLE :: HAP(:)  ! used in matrix solution
-      REAL(SZ), ALLOCATABLE :: HAX(:)  ! used in matrix solution
+      REAL(8), ALLOCATABLE :: HAP(:)  ! used in matrix solution
+      REAL(8), ALLOCATABLE :: HAX(:)  ! used in matrix solution
 C
 C     Load Vectors
-      REAL(SZ), ALLOCATABLE, TARGET :: GLOELV(:,:) ! fulldomain elevation
-      REAL(SZ), ALLOCATABLE, TARGET :: GLOULV(:,:) ! fulldomain u velocity
-      REAL(SZ), ALLOCATABLE, TARGET :: GLOVLV(:,:) ! fulldomain v velocity
-      REAL(SZ), ALLOCATABLE, TARGET :: STAELV(:,:) ! station elevation
-      REAL(SZ), ALLOCATABLE, TARGET :: STAULV(:,:) ! station u velocity
-      REAL(SZ), ALLOCATABLE, TARGET :: STAVLV(:,:) ! station v velocity
+      REAL(8), ALLOCATABLE, TARGET :: GLOELV(:,:) ! fulldomain elevation
+      REAL(8), ALLOCATABLE, TARGET :: GLOULV(:,:) ! fulldomain u velocity
+      REAL(8), ALLOCATABLE, TARGET :: GLOVLV(:,:) ! fulldomain v velocity
+      REAL(8), ALLOCATABLE, TARGET :: STAELV(:,:) ! station elevation
+      REAL(8), ALLOCATABLE, TARGET :: STAULV(:,:) ! station u velocity
+      REAL(8), ALLOCATABLE, TARGET :: STAVLV(:,:) ! station v velocity
 C
 C     Arrays for time series reconstruction.
-      REAL(SZ),ALLOCATABLE,TARGET :: XVELAV(:)
-      REAL(SZ),ALLOCATABLE,TARGET :: YVELAV(:)
-      REAL(SZ),ALLOCATABLE,TARGET :: XVELVA(:)
-      REAL(SZ),ALLOCATABLE,TARGET :: YVELVA(:)
-      REAL(SZ),ALLOCATABLE,TARGET :: ELAV(:)
-      REAL(SZ),ALLOCATABLE,TARGET :: ELVA(:)
+      REAL(8),ALLOCATABLE,TARGET :: XVELAV(:)
+      REAL(8),ALLOCATABLE,TARGET :: YVELAV(:)
+      REAL(8),ALLOCATABLE,TARGET :: XVELVA(:)
+      REAL(8),ALLOCATABLE,TARGET :: YVELVA(:)
+      REAL(8),ALLOCATABLE,TARGET :: ELAV(:)
+      REAL(8),ALLOCATABLE,TARGET :: ELVA(:)
 C
 C     jgf49.44: Parameters that control the spatial locations where
 C     harmonic analysis is performed:
@@ -153,39 +153,39 @@ C     harmonic analysis is performed:
 C
 C     jgf49.44: Parameters that control the calculation of harmonic
 C     constituents:
-      REAL(SZ) :: THAS ! number of days b/f harmonic analysis starts
-      REAL(SZ) :: THAF ! number of days at which harmonic analysis ends
+      REAL(8) :: THAS ! number of days b/f harmonic analysis starts
+      REAL(8) :: THAF ! number of days at which harmonic analysis ends
       INTEGER :: NHAINC ! time step increment for including data in HA
-      REAL(SZ) :: FMV  ! fraction of HA period for means and var. calcs (0to1)
+      REAL(8) :: FMV  ! fraction of HA period for means and var. calcs (0to1)
 C
 C     jgf49.44: Harmonic analysis hotstarting:
-      REAL(SZ), ALLOCATABLE, TARGET :: GLOELV_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: STAELV_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: GLOULV_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: GLOVLV_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: STAULV_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: STAVLV_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: ELAV_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: ELVA_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: XVELAV_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: YVELAV_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: XVELVA_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: YVELVA_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: GLOELV_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: STAELV_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: GLOULV_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: GLOVLV_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: STAULV_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: STAVLV_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: ELAV_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: ELVA_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: XVELAV_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: YVELAV_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: XVELVA_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: YVELVA_g(:)
 C
 C     jgf49.44: Equivalence variables for reading in hotstart data, either
 C     in serial or in parallel.
-      REAL(SZ), POINTER :: STAELV_pt(:,:),STAULV_pt(:,:),STAVLV_pt(:,:)
-      REAL(SZ), POINTER :: GLOELV_pt(:,:),GLOULV_pt(:,:),GLOVLV_pt(:,:)
-      REAL(SZ), POINTER :: ELAV_pt(:), ELVA_pt(:)
-      REAL(SZ), POINTER :: XVELAV_pt(:), YVELAV_pt(:)
-      REAL(SZ), POINTER :: XVELVA_pt(:), YVELVA_pt(:)
+      REAL(8), POINTER :: STAELV_pt(:,:),STAULV_pt(:,:),STAVLV_pt(:,:)
+      REAL(8), POINTER :: GLOELV_pt(:,:),GLOULV_pt(:,:),GLOVLV_pt(:,:)
+      REAL(8), POINTER :: ELAV_pt(:), ELVA_pt(:)
+      REAL(8), POINTER :: XVELAV_pt(:), YVELAV_pt(:)
+      REAL(8), POINTER :: XVELVA_pt(:), YVELVA_pt(:)
 C
 C     jgf49.44: The following variables are read from the hotstart file and
 C     later compared with the values from the fort.15 to ensure that they
 C     match.
       INTEGER INHASE, INHASV, INHAGE, INHAGV, IFLAG
       INTEGER INFREQ, INSTAE, INSTAV, INP, INZ, INF, IMM, IICALL
-      REAL(SZ),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)
+      REAL(8),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)
       CHARACTER*10,ALLOCATABLE :: INAMEFR(:)
 C
       CHARACTER*16 FNAME
@@ -196,40 +196,40 @@ C     jgf49.44: Raised output variables to module level and added
 C     full domain counterparts for globalio. These arrays represent
 C     magnitudes and phases for each frequency at each station or node.
 C     Stations:
-      REAL(SZ), ALLOCATABLE, TARGET :: EMAG(:,:)    ! elevation magnitudes
-      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDE(:,:) ! elevation phases
-      REAL(SZ), ALLOCATABLE, TARGET :: UMAG(:,:)    ! u velocity magnitudes
-      REAL(SZ), ALLOCATABLE, TARGET :: VMAG(:,:)    ! v velocity magnitudes
-      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDU(:,:) ! u velocity phases
-      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDV(:,:) ! v velocity phases
+      REAL(8), ALLOCATABLE, TARGET :: EMAG(:,:)    ! elevation magnitudes
+      REAL(8), ALLOCATABLE, TARGET :: PHASEDE(:,:) ! elevation phases
+      REAL(8), ALLOCATABLE, TARGET :: UMAG(:,:)    ! u velocity magnitudes
+      REAL(8), ALLOCATABLE, TARGET :: VMAG(:,:)    ! v velocity magnitudes
+      REAL(8), ALLOCATABLE, TARGET :: PHASEDU(:,:) ! u velocity phases
+      REAL(8), ALLOCATABLE, TARGET :: PHASEDV(:,:) ! v velocity phases
 C     Nodes:
-      REAL(SZ), ALLOCATABLE, TARGET :: EMAGT(:,:)    ! elevation magnitudes
-      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDEN(:,:) ! elevation phases
-      REAL(SZ), ALLOCATABLE, TARGET :: UMAGT(:,:)    ! u velocity magnitudes
-      REAL(SZ), ALLOCATABLE, TARGET :: VMAGT(:,:)    ! v velocity magnitudes
-      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDUT(:,:) ! u velocity phases
-      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDVT(:,:) ! v velocity phases
+      REAL(8), ALLOCATABLE, TARGET :: EMAGT(:,:)    ! elevation magnitudes
+      REAL(8), ALLOCATABLE, TARGET :: PHASEDEN(:,:) ! elevation phases
+      REAL(8), ALLOCATABLE, TARGET :: UMAGT(:,:)    ! u velocity magnitudes
+      REAL(8), ALLOCATABLE, TARGET :: VMAGT(:,:)    ! v velocity magnitudes
+      REAL(8), ALLOCATABLE, TARGET :: PHASEDUT(:,:) ! u velocity phases
+      REAL(8), ALLOCATABLE, TARGET :: PHASEDVT(:,:) ! v velocity phases
 C     Time series reconstruction:
-      REAL(SZ), ALLOCATABLE, TARGET :: EAV(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: ESQ(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: EAVDIF(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: EVADIF(:)
+      REAL(8), ALLOCATABLE, TARGET :: EAV(:)
+      REAL(8), ALLOCATABLE, TARGET :: ESQ(:)
+      REAL(8), ALLOCATABLE, TARGET :: EAVDIF(:)
+      REAL(8), ALLOCATABLE, TARGET :: EVADIF(:)
 C
-      REAL(SZ), ALLOCATABLE, TARGET :: UAV(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: USQ(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: UAVDIF(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: UVADIF(:)
+      REAL(8), ALLOCATABLE, TARGET :: UAV(:)
+      REAL(8), ALLOCATABLE, TARGET :: USQ(:)
+      REAL(8), ALLOCATABLE, TARGET :: UAVDIF(:)
+      REAL(8), ALLOCATABLE, TARGET :: UVADIF(:)
 C
-      REAL(SZ), ALLOCATABLE, TARGET :: VAV(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: VSQ(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: VAVDIF(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: VVADIF(:)
+      REAL(8), ALLOCATABLE, TARGET :: VAV(:)
+      REAL(8), ALLOCATABLE, TARGET :: VSQ(:)
+      REAL(8), ALLOCATABLE, TARGET :: VAVDIF(:)
+      REAL(8), ALLOCATABLE, TARGET :: VVADIF(:)
 
       !jgf51.52.01: Variables used in adcpost.
-      REAL(SZ), ALLOCATABLE,TARGET :: XELAV(:)
-      REAL(SZ), ALLOCATABLE,TARGET :: YELAV(:)
-      REAL(SZ), ALLOCATABLE,TARGET :: XELVA(:)
-      REAL(SZ), ALLOCATABLE,TARGET :: YELVA(:)
+      REAL(8), ALLOCATABLE,TARGET :: XELAV(:)
+      REAL(8), ALLOCATABLE,TARGET :: YELAV(:)
+      REAL(8), ALLOCATABLE,TARGET :: XELVA(:)
+      REAL(8), ALLOCATABLE,TARGET :: YELVA(:)
      
 
 C-----------------END OF DECLARATIONS---------------------------------------
@@ -643,9 +643,9 @@ C--------------------------------------------------------------------
       REAL(8), intent(in) :: timeh ! time (sec) incl. STATIM and REFTIM
 C
       INTEGER :: i, j              ! loop counters
-      REAL(SZ) :: EE1, EE2, EE3    ! nodal elevations around an element
-      REAL(SZ) :: U11, U22, U33    ! nodal u velocities around an element
-      REAL(SZ) :: V11, V22, V33    ! nodal v velocities around an element
+      REAL(8) :: EE1, EE2, EE3    ! nodal elevations around an element
+      REAL(8) :: U11, U22, U33    ! nodal u velocities around an element
+      REAL(8) :: V11, V22, V33    ! nodal v velocities around an element
       INTEGER :: n                 ! loop counter
 C
       call setMessageSource("updateHarmonicAnalysis")
@@ -768,7 +768,7 @@ c
       SUBROUTINE LSQUPDLHS(TIMELOC,IT)
       IMPLICIT NONE
       INTEGER IT,I,J,I1,I2,J1,J2
-      REAL(SZ) TF1,TF2
+      REAL(8) TF1,TF2
       REAL(8) TIMELOC
 C
       call setMessageSource("LSQUPDLHS")
@@ -838,8 +838,8 @@ c
       SUBROUTINE LSQUPDES(STAE,NSTAE)
       IMPLICIT NONE
       INTEGER NSTAE,N,I,I1,I2
-      REAL(SZ) TF1,CTF1,STF1
-      REAL(SZ) STAE(MNSTAE)
+      REAL(8) TF1,CTF1,STF1
+      REAL(8) STAE(MNSTAE)
 C
       call setMessageSource("LSQUPDES")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
@@ -894,8 +894,8 @@ c
       SUBROUTINE LSQUPDVS(STAU,STAV,NSTAV)
       IMPLICIT NONE
       INTEGER NSTAV,N,I,I1,I2
-      REAL(SZ) TF1,CTF1,STF1
-      REAL(SZ) STAU(MNSTAV),STAV(MNSTAV)
+      REAL(8) TF1,CTF1,STF1
+      REAL(8) STAU(MNSTAV),STAV(MNSTAV)
 C
       call setMessageSource("LSQUPDVS")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
@@ -952,8 +952,8 @@ c
       SUBROUTINE LSQUPDEG(GLOE,NP)
       IMPLICIT NONE
       INTEGER I,NP,N,I1,I2
-      REAL(SZ) TF1,CTF1,STF1
-      REAL(SZ) GLOE(MNP)
+      REAL(8) TF1,CTF1,STF1
+      REAL(8) GLOE(MNP)
 C
       call setMessageSource("LSQUPDEG")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
@@ -1010,8 +1010,8 @@ c
       SUBROUTINE LSQUPDVG(GLOU,GLOV,NP)
       IMPLICIT NONE
       INTEGER NP,I1,I2,N,I,J
-      REAL(SZ) TF1,CTF1,STF1
-      REAL(SZ) GLOU(MNP),GLOV(MNP)
+      REAL(8) TF1,CTF1,STF1
+      REAL(8) GLOU(MNP),GLOV(MNP)
 C
       call setMessageSource("LSQUPDVG")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
@@ -1134,7 +1134,7 @@ c
       subroutine fulsol(idecom)
       implicit none
       integer idecom,i,j,ir,ire,k,jr
-      real(sz),allocatable ::  c(:),y(:)
+      real(8),allocatable ::  c(:),y(:)
 C
       call setMessageSource("fulsol")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
@@ -1230,7 +1230,7 @@ c
       IMPLICIT NONE
       INTEGER N,I,J,K,I1,I2
       REAL(8) CONVRD
-      REAL(SZ) PHASEE
+      REAL(8) PHASEE
 C
       call setMessageSource("LSQSOLES")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
@@ -1294,8 +1294,8 @@ c
       IMPLICIT NONE
       INTEGER I,J,N,K,I1,I2
       REAL(8) CONVRD
-      REAL(SZ) PHASEU,PHASEV
-      REAL(SZ),ALLOCATABLE :: Y(:)
+      REAL(8) PHASEU,PHASEV
+      REAL(8),ALLOCATABLE :: Y(:)
 C
       call setMessageSource("LSQSOLVS")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
@@ -1382,9 +1382,9 @@ c
       integer J,N,K,I,I1,I2,IT,IFR,NEAVMAX,NEAVMIN,
      &  NEVAMAX,NEVAMIN
       REAL(8)  CONVRD
-      REAL(SZ) EAVMAX,EVAMAX,EAVMIN,EVAMIN
-      REAL(SZ) TIMELOC,RSE,FTIME
-      REAL(SZ),ALLOCATABLE  ::  PHASEE(:),EMAG(:)
+      REAL(8) EAVMAX,EVAMAX,EAVMIN,EVAMIN
+      REAL(8) TIMELOC,RSE,FTIME
+      REAL(8),ALLOCATABLE  ::  PHASEE(:),EMAG(:)
 C
       call setMessageSource("LSQSOLEG")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
@@ -1526,12 +1526,12 @@ c
       INTEGER I,J,N,K,I1,I2,IT,IFR
       INTEGER NUAVMAX,NUAVMIN,NVAVMAX,NVAVMIN,NUVAMAX,NUVAMIN,
      &  NVVAMAX,NVVAMIN
-      REAL(SZ) TIMELOC,FTIME,RSU,RSV
-      REAL(SZ) UAVMAX,VAVMAX,UVAMAX,VVAMAX,UAVMIN,VAVMIN,
+      REAL(8) TIMELOC,FTIME,RSU,RSV
+      REAL(8) UAVMAX,VAVMAX,UVAMAX,VVAMAX,UAVMIN,VAVMIN,
      & UVAMIN,VVAMIN
       REAL(8) CONVRD
-      REAL(SZ),ALLOCATABLE :: UMAGG(:),VMAGG(:),PHASEUG(:),PHASEVG(:)
-      REAL(SZ),ALLOCATABLE :: Y(:)
+      REAL(8),ALLOCATABLE :: UMAGG(:),VMAGG(:),PHASEUG(:),PHASEVG(:)
+      REAL(8),ALLOCATABLE :: Y(:)
 C
       call setMessageSource("LSQSOLVG")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
@@ -1736,7 +1736,7 @@ C     file. Based on HAHOTS, written by rl.
 C     WJP 02.20.2018: Allowing for > 1 options for netcdf output
 C--------------------------------------------------------------------
       SUBROUTINE readBinaryHAHotstart(lun, counter)
-      USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
+      USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : NSTAE, NSTAE_G, NSTAV, NSTAV_G,
      &                   ITHS, IMAP_STAE_LG, NP_G, NODES_LG,
      &                   IMAP_STAV_LG
@@ -1984,7 +1984,7 @@ C--------------------------------------------------------------------
       USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER :: i    ! loop counter
-      REAL(SZ) FDIFF  ! difference between frequencies btw hotstart and fort.15
+      REAL(8) FDIFF  ! difference between frequencies btw hotstart and fort.15
       CHARACTER(len=1024) :: message
 C
       call setMessageSource("checkHAHotstart")
@@ -2195,11 +2195,10 @@ C     harmonic analysis arrays from binary hotstart file.
 C--------------------------------------------------------------------
       SUBROUTINE binaryRead3D(array, iLength, jLength, lun,
      &                        counter)
-      USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
      &                    allMessage, DEBUG
       IMPLICIT NONE
-      REAL(SZ), intent(out), dimension(ilength,jlength) :: array ! data to read from the hotstart file
+      REAL(8), intent(out), dimension(ilength,jlength) :: array ! data to read from the hotstart file
       INTEGER, intent(in) :: iLength  ! the number of horiz values to read
       INTEGER, intent(in) :: jLength  ! the number of layers
       INTEGER, intent(in) :: lun     ! fortran logical unit number to read from

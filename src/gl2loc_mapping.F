@@ -10,7 +10,7 @@ C     others.
 C
 C     Written by: Coleman Blakely 11/2022
 C----------------------------------------------------------------------
-      USE SIZES, ONLY : MNPROC, MYPROC, SZ
+      USE SIZES, ONLY : MNPROC, MYPROC
       USE MESH, ONLY : NP ! local number of nodes
       USE GLOBAL, ONLY : nodes_lg, np_g, COMM, realtype
 !#ifdef HAVE_MPI_MOD
@@ -21,11 +21,11 @@ C----------------------------------------------------------------------
       ! Start of variables used
       INTEGER,DIMENSION(:),ALLOCATABLE,PRIVATE :: GL2LOC
       ! sending information
-      REAL(SZ),DIMENSION(:),ALLOCATABLE,PRIVATE :: SENDBUF_REAL
+      REAL(8),DIMENSION(:),ALLOCATABLE,PRIVATE :: SENDBUF_REAL
       ! counts of data to send and displacements
       INTEGER,DIMENSION(:),ALLOCATABLE,PRIVATE :: SENDCOUNTS, DISPLS
       ! recieving info
-      REAL(SZ),DIMENSION(:),ALLOCATABLE,PRIVATE :: RECVBUF_REAL
+      REAL(8),DIMENSION(:),ALLOCATABLE,PRIVATE :: RECVBUF_REAL
       INTEGER,PRIVATE :: RECVCOUNT
 
 C----------------------------------------------------------------------
@@ -34,8 +34,8 @@ C----------------------------------------------------------------------
       SUBROUTINE MAPTOLOCAL_REAL(GLOBALDATA,LOCALDATA)
 C----------------------------------------------------------------------
       IMPLICIT NONE
-      REAL(SZ),INTENT(IN) :: GLOBALDATA(:)
-      REAL(SZ),INTENT(OUT) :: LOCALDATA(:)
+      REAL(8),INTENT(IN) :: GLOBALDATA(:)
+      REAL(8),INTENT(OUT) :: LOCALDATA(:)
       INTEGER :: kk, ierr, jj, TAG
 #ifdef CMPI      
       INTEGER :: RECV_REQ

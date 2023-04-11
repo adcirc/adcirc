@@ -5,7 +5,6 @@ C
       
       USE GLOBAL, ONLY: STATIM, IFNLFA, ETA2, UU2, VV2, QX2, QY2
       USE CONSTANTS, ONLY: G
-      USE SIZES, ONLY: SZ
       USE MESH, ONLY: NP, NM, NE, DP, X
 !      USE WIND
 !      USE ITPACKV
@@ -34,22 +33,22 @@ C
       IMPLICIT NONE
 
       !c For AbsLayerType == 1  
-      REAL(SZ), ALLOCATABLE:: pert_eta_abslayer(:), pert_vel_abslayer(:)
+      REAL(8), ALLOCATABLE:: pert_eta_abslayer(:), pert_vel_abslayer(:)
       
-      REAL(SZ), ALLOCATABLE:: eta2_abslayer(:), eta1_abslayer(:),
+      REAL(8), ALLOCATABLE:: eta2_abslayer(:), eta1_abslayer(:),
      &                     eta0_abslayer(:)  ! (s + 1, s, s-1) !      
 
-      REAL(SZ), ALLOCATABLE:: uu2_abslayer(:), uu1_abslayer(:) ! (s+1,s) !
-      REAL(SZ), ALLOCATABLE:: vv2_abslayer(:), vv1_abslayer(:) ! (s+1,s) !
+      REAL(8), ALLOCATABLE:: uu2_abslayer(:), uu1_abslayer(:) ! (s+1,s) !
+      REAL(8), ALLOCATABLE:: vv2_abslayer(:), vv1_abslayer(:) ! (s+1,s) !
 
-      REAL(SZ), private, ALLOCATABLE:: WorkVecEta(:)
-      REAL(SZ), private, ALLOCATABLE:: WorkVecUU(:)
-      REAL(SZ), private, ALLOCATABLE:: WorkVecVV(:)
-      REAL(SZ), private, ALLOCATABLE:: ArbEta0(:), ArbEta(:)
-      REAL(SZ), private, ALLOCATABLE:: ArbUU0(:), ArbUU(:)
-      REAL(SZ), private, ALLOCATABLE:: ArbVV0(:), ArbVV(:)
+      REAL(8), private, ALLOCATABLE:: WorkVecEta(:)
+      REAL(8), private, ALLOCATABLE:: WorkVecUU(:)
+      REAL(8), private, ALLOCATABLE:: WorkVecVV(:)
+      REAL(8), private, ALLOCATABLE:: ArbEta0(:), ArbEta(:)
+      REAL(8), private, ALLOCATABLE:: ArbUU0(:), ArbUU(:)
+      REAL(8), private, ALLOCATABLE:: ArbVV0(:), ArbVV(:)
 
-      REAL(SZ) :: SPTIMINC, SPTIME1, SPTIME2
+      REAL(8) :: SPTIMINC, SPTIME1, SPTIME2
 
       LOGICAL, allocatable:: spgflag(:)
 
@@ -60,8 +59,8 @@ C-------------
  
 C-------------
 C-------------DW: sponge layers (2015)
-      REAL(SZ), ALLOCATABLE:: MCOEFSPG(:,:) !c mass matrix 
-      REAL(SZ), ALLOCATABLE:: MCOEFSPGD(:) !c lumped mass matrix
+      REAL(8), ALLOCATABLE:: MCOEFSPG(:,:) !c mass matrix 
+      REAL(8), ALLOCATABLE:: MCOEFSPGD(:) !c lumped mass matrix
 C------------
 C------------
 
@@ -99,7 +98,7 @@ C--------DW
       SUBROUTINE Adjust_Sponge_Sigma( DT )
       IMPLICIT NONE
 
-      REAL(SZ):: DT
+      REAL(8):: DT
 
       REAL(8):: SIGMAX
       LOGICAL, SAVE:: first = .TRUE. 
@@ -142,13 +141,13 @@ C
 C     Dummy variables     
 C     
       INTEGER:: IT
-      REAL(SZ):: DT, TimeLoc, TimeH
+      REAL(8):: DT, TimeLoc, TimeH
 C     
 C     Local variables
 C     
       INTEGER:: I
-      REAL(SZ):: DTD2, SG(3), CNLHS(3), CNRHS, SIGMAX, H2    
-      REAL(SZ), parameter:: smalleps = 1.D-12 ; 
+      REAL(8):: DTD2, SG(3), CNLHS(3), CNRHS, SIGMAX, H2    
+      REAL(8), parameter:: smalleps = 1.D-12 ; 
 
       DTD2 = DT/2.D0 ;
 !!$ SIGMAX = 0.8/DT ;
@@ -228,8 +227,8 @@ C     update QX
         INTEGER:: pc
 
         !c local variables c!
-        INTEGER:: II, IE, idx(3)
-        REAL (SZ):: sigmaval(3)
+        INTEGER :: II, IE, idx(3)
+        REAL(8) :: sigmaval(3)
 
         LOGICAL, SAVE:: FirstEnter = .TRUE. 
 
@@ -276,9 +275,9 @@ C     update QX
      
         INTEGER:: SSDUM(4)
         INTEGER:: allowabstype(4) = (/ 0, 1, -1, 2 /) ; 
-        REAL(SZ), parameter:: SMALL = 1.D-10  ;
+        REAL(8), parameter:: SMALL = 1.D-10  ;
 
-        REAL(SZ), pointer:: SSIGM_PT(:,:)
+        REAL(8), pointer:: SSIGM_PT(:,:)
         INTEGER, pointer:: AbsLayerid_PTS(:)
         !
         IF ( NumNodesAbsLayer(1) > 0 ) THEN
@@ -388,7 +387,7 @@ C     update QX
 
         INTEGER:: KK, JJ, NPTMP, KTMP
         CHARACTER (LEN=300):: IGNOREMSG 
-        REAL(SZ):: PIL, DEGRAD  
+        REAL(8):: PIL, DEGRAD  
 
         PIL = ACOS(-1.D0) ;
         DEGRAD = PIL/180.D0 ; 
@@ -471,7 +470,7 @@ C     update QX
 
         INTEGER:: KK, JJ, NPTMP, KTMP, NBF
         CHARACTER (LEN=300):: IGNOREMSG 
-        REAL(SZ):: PIL, DEGRAD  
+        REAL(8):: PIL, DEGRAD  
 
         PIL = ACOS(-1.D0) ;
         DEGRAD = PIL/180.D0 ; 
@@ -615,12 +614,12 @@ C     update QX
         IMPLICIT NONE
 
         INTEGER:: IT
-        REAL(SZ):: TimeLoc, TimeH
-        REAL(SZ):: RampVal
-        REAL(SZ) :: GeoidOffset(:) 
+        REAL(8):: TimeLoc, TimeH
+        REAL(8):: RampVal
+        REAL(8) :: GeoidOffset(:) 
 
         INTEGER:: I, J
-        REAL(SZ):: ARG, ARGT, RFF, NCYC, DTRATIO
+        REAL(8):: ARG, ARGT, RFF, NCYC, DTRATIO
 
 C.............................DW, generating layer ..............
         IF ( LoadAbsLayerSigma .AND. SUM(NumNodesAbsLayer) > 0 ) THEN
@@ -775,11 +774,11 @@ c$$$      SUBROUTINE LAYERSOLTEST1( IT, TimeLoc, TimeH, RampVal )
 c$$$        IMPLICIT NONE 
 c$$$
 c$$$        INTEGER:: IT
-c$$$        REAL(SZ):: TimeLoc, TimeH
-c$$$        REAL(SZ):: RampVal
+c$$$        REAL(8):: TimeLoc, TimeH
+c$$$        REAL(8):: RampVal
 c$$$        
-c$$$        REAL(SZ):: bb, R2, L, xc 
-c$$$        REAL(SZ):: CVEL, LS, DY, XX, YY, CVV
+c$$$        REAL(8):: bb, R2, L, xc 
+c$$$        REAL(8):: CVEL, LS, DY, XX, YY, CVV
 c$$$        INTEGER:: I, NIDX
 c$$$
 c$$$        bb = 74.D0 ;
@@ -826,11 +825,11 @@ C$$$
         IMPLICIT NONE 
 
         INTEGER:: IT
-        REAL(SZ):: TimeLoc, TimeH
-        REAL(SZ):: RampVal
+        REAL(8):: TimeLoc, TimeH
+        REAL(8):: RampVal
         
-        REAL(SZ):: bb, R2, L, xc, LDA, PI 
-        REAL(SZ):: CVEL, LS, DY, XX, YY, CVV
+        REAL(8):: bb, R2, L, xc, LDA, PI 
+        REAL(8):: CVEL, LS, DY, XX, YY, CVV
         INTEGER:: I, NIDX
 
         bb = 74.D0 ;

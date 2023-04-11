@@ -5,7 +5,7 @@ C                                                                      *
 C***********************************************************************
 C
        MODULE WIND
-       USE SIZES, ONLY : SZ, LOCALDIR
+       USE SIZES, ONLY : LOCALDIR
        USE GLOBAL, ONLY : ScreenUnit, setMessageSource, allMessage,
      &    screenMessage, logMessage, unsetMessageSource,
      &    DEBUG, ECHO, INFO, WARNING, ERROR, scratchMessage,
@@ -36,27 +36,27 @@ C... v50.xx sm -- nws=17 for NUOPC coupling hwrf data
 #endif
       logical nwsOK     ! true if NWS value in fort.15 is allowed
 
-      real(sz), allocatable :: wvnx1(:) ! wind velocity in x-dir at each node at prev ts
-      real(sz), allocatable :: wvny1(:) ! wind velocity in y-dir at each node at prev ts
-      real(sz), allocatable :: wvnx2(:) ! wind velocity in x-dir at each node at new ts
-      real(sz), allocatable :: wvny2(:) ! wind velocity in y-dir at each node at new ts
-      real(sz), allocatable :: prn1(:) ! barometric presssure at each node at prev ts
-      real(sz), allocatable :: prn2(:) ! barometric pressure at each node at new ts
-      real(sz), allocatable :: w(:,:)  ! static weights for main nws13 grid
+      real(8), allocatable :: wvnx1(:) ! wind velocity in x-dir at each node at prev ts
+      real(8), allocatable :: wvny1(:) ! wind velocity in y-dir at each node at prev ts
+      real(8), allocatable :: wvnx2(:) ! wind velocity in x-dir at each node at new ts
+      real(8), allocatable :: wvny2(:) ! wind velocity in y-dir at each node at new ts
+      real(8), allocatable :: prn1(:) ! barometric presssure at each node at prev ts
+      real(8), allocatable :: prn2(:) ! barometric pressure at each node at new ts
+      real(8), allocatable :: w(:,:)  ! static weights for main nws13 grid
 
-      real(sz) :: wtime1 ! time associated with previous met dataset
-      real(sz) :: wtime2 ! time associated with new met dataset
-      real(sz) :: wtime1i ! intermediate NWS13 interpolation timestep
-      real(sz) :: wtime2i ! intermediate NWS13 interpolation timestep
-      real(sz) :: wtiminc ! time increment between met datasets (seconds)
-      real(sz) :: wtimed ! time in seconds associated with a dataset
-      real(sz) :: wreftim ! met reference time
+      real(8) :: wtime1 ! time associated with previous met dataset
+      real(8) :: wtime2 ! time associated with new met dataset
+      real(8) :: wtime1i ! intermediate NWS13 interpolation timestep
+      real(8) :: wtime2i ! intermediate NWS13 interpolation timestep
+      real(8) :: wtiminc ! time increment between met datasets (seconds)
+      real(8) :: wtimed ! time in seconds associated with a dataset
+      real(8) :: wreftim ! met reference time
 
 Casey 110518: Added for Mark Powell's sectorial wind drag.
       REAL(8)  :: EyeLat(3) = 0.D0
       REAL(8)  :: EyeLon(3) = 0.D0
       LOGICAL  :: FoundEye
-      REAL(SZ),allocatable :: PWeight(:,:)
+      REAL(8),allocatable :: PWeight(:,:)
       Logical,allocatable :: foundSector(:)
 C
       ! related to NWS=11
@@ -68,14 +68,14 @@ C
       integer :: NWSGGWI
 
       integer  :: NWLON,NWLAT
-      real(sz) :: WLATMAX,WLONMIN,WLATINC,WLONINC
+      real(8) :: WLATMAX,WLONMIN,WLATINC,WLONINC
       integer  :: IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN
 
       REAL(8), PARAMETER :: TWOPI=PI*2.D0
       REAL(8), PARAMETER :: HFPI=PI/2.D0
       REAL(8), PARAMETER :: mperdeg  = Rearth * pi / 180.0d0
-      real(sz) :: prbckgrnd_mH2O, RhoWat0g
-      real(sz) :: airwaterdensityrat
+      real(8) :: prbckgrnd_mH2O, RhoWat0g
+      real(8) :: airwaterdensityrat
 
       INTEGER StormNumber !jgf46.28 For Holland Wind model wind multiplier
       REAL(8) WindRefTime !jgf46.29 seconds since beginning of year, this
@@ -85,24 +85,24 @@ C
       ! jgf49.1001 Variables for use in NWS=29, for embedding an asymmetric
       ! vortex from NWS19 into an OWI basin scale met field from NAM
       ! using NWS12
-      REAL(SZ) vortexRMW  ! Rmax of vortex data, nautical miles
-      REAL(SZ) vortexLat  ! @center of vortex, degrees west latitude
-      REAL(SZ) vortexLon  ! @center of vortex, degrees north longitude
-      REAL(SZ), ALLOCATABLE :: vortexWVNX2(:) ! u wind vel from vortex model
-      REAL(SZ), ALLOCATABLE :: vortexWVNY2(:) ! v wind vel from vortex model
-      REAL(SZ), ALLOCATABLE :: vortexPRN2(:)  ! bar. press. from vortex model
+      REAL(8) vortexRMW  ! Rmax of vortex data, nautical miles
+      REAL(8) vortexLat  ! @center of vortex, degrees west latitude
+      REAL(8) vortexLon  ! @center of vortex, degrees north longitude
+      REAL(8), ALLOCATABLE :: vortexWVNX2(:) ! u wind vel from vortex model
+      REAL(8), ALLOCATABLE :: vortexWVNY2(:) ! v wind vel from vortex model
+      REAL(8), ALLOCATABLE :: vortexPRN2(:)  ! bar. press. from vortex model
       !
       ! radial extent of unblended vortex winds, normalized to current Rmax
-      REAL(SZ) pureVortex
+      REAL(8) pureVortex
       !
       ! radial distance to point where vortex effects insignificant,
       ! normalized to current Rmax
-      REAL(SZ) pureBackground
+      REAL(8) pureBackground
       !
       ! jgf50.32: The wind drag limit was originally set to 0.002d0
       ! in v46 ... the higher value of 0.0035d0 was used in ~v48 and
       ! is now the default.
-      REAL(SZ) :: WindDragLimit = 0.0035d0   ! maximum wind drag value
+      REAL(8) :: WindDragLimit = 0.0035d0   ! maximum wind drag value
 
       ! jgf50.32: If DragLawString is not set in the fort.15 input file,
       ! it will remain 'default'; this will cause 'Garratt' to be used
@@ -141,53 +141,53 @@ C
       type hWindData_t
          ! input data from fort.22
          character(1024)   :: file_name    ! full path to HWind file
-         real(sz)          :: cycleTime    ! time (sec) relative to ADCIRC cold start or REFTIM
-         real(sz)          :: Pc           ! storm central pressure (mb) or -1 when using p-w rel
-         real(sz)          :: rampVal      ! ramping multiplier for this dataset
+         real(8)          :: cycleTime    ! time (sec) relative to ADCIRC cold start or REFTIM
+         real(8)          :: Pc           ! storm central pressure (mb) or -1 when using p-w rel
+         real(8)          :: rampVal      ! ramping multiplier for this dataset
          ! input data from hwind files themselves
-         real(sz)          :: dh           ! grid spacing (m) (assumed uniform)
+         real(8)          :: dh           ! grid spacing (m) (assumed uniform)
          integer           :: nh           ! number of grid points (assumed same x and y dirs)
-         real(sz)          :: cLon         ! longitude of center of storm (deg)
-         real(sz)          :: cLat         ! latitude of center of storm (deg)
-         real(sz), allocatable :: u(:,:)   ! east wind velocity (m/s)
-         real(sz), allocatable :: v(:,:)   ! north wind velocity (m/s)
+         real(8)          :: cLon         ! longitude of center of storm (deg)
+         real(8)          :: cLat         ! latitude of center of storm (deg)
+         real(8), allocatable :: u(:,:)   ! east wind velocity (m/s)
+         real(8), allocatable :: v(:,:)   ! north wind velocity (m/s)
          ! derived data
          integer           :: indexLimit   ! data extent in index space (-indexLimit:indexLimit)
-         real(sz)          :: vmax         ! maximum wind speed in the dataset (m/s)
-         real(sz)          :: rmax         ! distance from storm center to vmax (nm)
-         real(sz)          :: rmaxAngle    ! +CCW from east (deg) angle to rmax
+         real(8)          :: vmax         ! maximum wind speed in the dataset (m/s)
+         real(8)          :: rmax         ! distance from storm center to vmax (nm)
+         real(8)          :: rmaxAngle    ! +CCW from east (deg) angle to rmax
          logical           :: loaded       ! .true. if we have loaded the data from file
       end type hWindData_t
       type(hWindData_t), allocatable, target :: hWindFiles(:) ! array of info about HWind files
       ! jgf50.38.05: Added the following for processing HWind data
-      real(sz), allocatable :: wvnx_work(:) ! working array for wind u-velocity
-      real(sz), allocatable :: wvny_work(:) ! working array for wind v-velocity
+      real(8), allocatable :: wvnx_work(:) ! working array for wind u-velocity
+      real(8), allocatable :: wvny_work(:) ! working array for wind v-velocity
       real(8), allocatable :: x_mercator(:) ! mesh lons in mercator, origin at storm center
       real(8), allocatable :: y_mercator(:) ! mesh lats in mercator, origin at storm center
       integer, allocatable :: x_indices(:)  ! i index of each mesh node in hwind grid
       integer, allocatable :: y_indices(:)  ! j index of each mesh node in hwind grid
-      real(sz), allocatable :: w1(:)        ! interp. weight for q11
-      real(sz), allocatable :: w2(:)        ! interp. weight for q21
-      real(sz), allocatable :: w3(:)        ! interp. weight for q22
-      real(sz), allocatable :: w4(:)        ! interp. weight for q12
-      real(sz), allocatable :: windSpeeds(:) ! u,v magnitude (m/s); used to find Vmax and Rmax
+      real(8), allocatable :: w1(:)        ! interp. weight for q11
+      real(8), allocatable :: w2(:)        ! interp. weight for q21
+      real(8), allocatable :: w3(:)        ! interp. weight for q22
+      real(8), allocatable :: w4(:)        ! interp. weight for q12
+      real(8), allocatable :: windSpeeds(:) ! u,v magnitude (m/s); used to find Vmax and Rmax
       logical, allocatable  :: inside(:)    ! true if a node is in the hwind bounding box
       integer               :: numFiles     ! number of hwind files listed in fort.22
       character(1024)       :: metComment   ! comment line at top of fort.22
-      real(sz)              :: hWindMultiplier ! all hwind u,v multiplied by this
+      real(8)              :: hWindMultiplier ! all hwind u,v multiplied by this
       character(32)         :: pressureWindRelationship ! dvorak, etc
       integer               :: currentCycle ! number of most recent
                                             ! applicable hwind file
-      real(sz)              :: angleNow     ! +CCW from east (degrees) from storm center rmaxNow
+      real(8)              :: angleNow     ! +CCW from east (degrees) from storm center rmaxNow
                                             ! (deg) used by aswip to analyze radial vel
 
       ! tcm 51.06.02: used to keep track of GFDL Met files and data
       type gfdl_Data_t
          ! input data from fort.22
          character(1024)   :: file_name    ! full path to GFDL met files
-         real(sz)          :: cycleTime    ! time (sec) relative to ADCIRC cold start or REFTIM
-         real(sz)          :: rampVal          ! ramping multiplier for this dataset
-         real(sz)          :: max_extrap_dist  ! maximum distance for extrapolating values (meters)
+         real(8)          :: cycleTime    ! time (sec) relative to ADCIRC cold start or REFTIM
+         real(8)          :: rampVal          ! ramping multiplier for this dataset
+         real(8)          :: max_extrap_dist  ! maximum distance for extrapolating values (meters)
          integer           :: numFiles         !total number of GFDL met Files to be read
          ! input data from gfdl met files themselves
          integer           :: nh           ! number of grid points
@@ -195,8 +195,8 @@ C
          logical           :: loaded       ! .true. if we have loaded the data from file
       end type gfdl_Data_t
       type(gfdl_Data_t), allocatable, target :: gfdl_Files(:) ! array of info about GFDL Met files
-      real(sz) :: GFDL_max_extrap_dist     ! maximum distance for extrapolating values (meters)
-      real(sz) :: GFDL_WindMultiplier      ! all GFDL wind u,v's multiplied by this
+      real(8) :: GFDL_max_extrap_dist     ! maximum distance for extrapolating values (meters)
+      real(8) :: GFDL_WindMultiplier      ! all GFDL wind u,v's multiplied by this
       !
       ! jgf52.51.21: Fixes for NWS10. Changed from NWLAT and NWLON to
       ! latb and lonb and moved from read_input() to wind module and
@@ -207,10 +207,10 @@ C
       integer, allocatable ::  n00(:),n10(:),n11(:),n01(:)
       ! interpolation factors from mesh vertex to four corners of
       ! gaussian grid
-      real(sz), allocatable :: d00(:),d10(:),d11(:),d01(:)
-      real(sz), allocatable :: colrab(:),dummy(:),gclat(:),gclon(:)
+      real(8), allocatable :: d00(:),d10(:),d11(:),d01(:)
+      real(8), allocatable :: colrab(:),dummy(:),gclat(:),gclon(:)
       ! met values on gaussian grid vertices
-      real(sz), allocatable ::  ug(:), vg(:), pg(:), ig(:)
+      real(8), allocatable ::  ug(:), vg(:), pg(:), ig(:)
       integer :: nws10DatasetCounter ! indicates which dataset to read
 
       ! jgf52.30.09: Needed for vortex models with storm centers described
@@ -221,29 +221,29 @@ C
       ! jgf: variables needed for water level correction data
       ! from control file
       character(len=2048) :: dynamicWaterLevelCorrectionFileName='null' ! water level correction file
-      real(sz) :: dynamicWaterLevelCorrectionRampStart = 0.d0 ! seconds after run start
-      real(sz) :: dynamicWaterLevelCorrectionRampEnd = 0.d0   ! seconds after run start
+      real(8) :: dynamicWaterLevelCorrectionRampStart = 0.d0 ! seconds after run start
+      real(8) :: dynamicWaterLevelCorrectionRampEnd = 0.d0   ! seconds after run start
       integer :: dynamicWaterLevelCorrectionSkipSnaps = 0 ! number of correction data sets to skip
       character(len=10) :: dynamicWaterLevelCorrectionRampReferenceTime='hotstart' ! coldstart or hotstart
-      real(sz) :: dynamicWaterLevelCorrectionMultiplier = 1.d0 ! multiply each correction value by this
+      real(8) :: dynamicWaterLevelCorrectionMultiplier = 1.d0 ! multiply each correction value by this
       ! limited to this module
       integer, parameter :: dynamicWaterLevelCorrectionUn = 21 ! i/o unit number for water lvl correction
       integer :: dynamicWaterLevelCorrectionBlankSnaps = 0 ! counter for initial blank snaps
       integer :: dynamicWaterLevelCorrectionDataSetCounter=0 ! counts real datasets read from file
       logical :: dynamicWaterLevelCorrectionIsConstant=.false. ! true if only one dataset provided
-      real(sz), allocatable :: dynamicWaterLevelCorrectionsOld_m(:) ! from file in m
-      real(sz), allocatable :: dynamicWaterLevelCorrectionsNew_m(:) ! from file in m
-      real(sz), allocatable :: dynamicWaterLevelCorrectionFD(:) ! hold fulldomain data in parallel
+      real(8), allocatable :: dynamicWaterLevelCorrectionsOld_m(:) ! from file in m
+      real(8), allocatable :: dynamicWaterLevelCorrectionsNew_m(:) ! from file in m
+      real(8), allocatable :: dynamicWaterLevelCorrectionFD(:) ! hold fulldomain data in parallel
       character(len=2048) :: dynamicWaterLevelCorrectionComment = 'null' ! comment from correction file
-      real(sz) :: dynamicWaterLevelCorrectionTimeIncrement = 0.d0 ! correction time increment (s)
-      real(sz) :: dynamicWaterLevelCorrectionTimeNew = 0.d0 ! time of latest dataset (s)
-      real(sz) :: dynamicWaterLevelCorrectionTimeOld = 0.d0 ! time of previous dataset (s)
-      real(sz) :: dynamicWaterLevelCorrectionDefaultValue = 0.d0 ! for otherwise unspecified nodes (m)
+      real(8) :: dynamicWaterLevelCorrectionTimeIncrement = 0.d0 ! correction time increment (s)
+      real(8) :: dynamicWaterLevelCorrectionTimeNew = 0.d0 ! time of latest dataset (s)
+      real(8) :: dynamicWaterLevelCorrectionTimeOld = 0.d0 ! time of previous dataset (s)
+      real(8) :: dynamicWaterLevelCorrectionDefaultValue = 0.d0 ! for otherwise unspecified nodes (m)
       integer :: dynamicWaterLevelCorrectionCurrentLine ! used in error messages
       logical :: dynamicWaterLevelCorrectionFileEnded = .false. ! true when all data have been read
 #ifdef DATETIME
       integer :: ub, ubc ! size of weightsp and indp interpolant weights
-      real(sz),allocatable :: weightsp(:,:,:) 
+      real(8),allocatable :: weightsp(:,:,:) 
       integer,allocatable  :: indp(:,:,:) 
       character(len=200) :: Pfile, Wfile, Pinv, Winv, Cinv, Cfile
       character(len=200) :: Pfile1, Wfile1, Pinv1, Winv1
@@ -253,9 +253,9 @@ C
       logical :: grb2flag
       integer :: NT, NTC
 #endif
-      real(sz) :: wtime1_12 ! time associated with previous met dataset
-      real(sz) :: wtime2_12 ! time associated with new met dataset
-      real(sz) :: wtiminc_12 ! time increment between met datasets (seconds)
+      real(8) :: wtime1_12 ! time associated with previous met dataset
+      real(8) :: wtime2_12 ! time associated with new met dataset
+      real(8) :: wtiminc_12 ! time increment between met datasets (seconds)
       logical  :: change_14 ! true when the NWS = 14 data has been updated
       logical,allocatable :: hasdata(:) ! if OWI data exists at this vertex       
       !...Function interface for wind drag
@@ -443,10 +443,10 @@ C----------------------------------------------------------------------
 !>    @param[in] NodeNumber adcirc mesh node index
 !>    @result wind drag coefficient
 !     ----------------------------------------------------------------
-      REAL(SZ) FUNCTION WindDrag(WindSpeed, NodeNumber)
+      REAL(8) FUNCTION WindDrag(WindSpeed, NodeNumber)
         USE GLOBAL,ONLY: windDragOut
         IMPLICIT NONE
-        REAL(SZ) :: WindSpeed
+        REAL(8) :: WindSpeed
         INTEGER  :: NodeNumber
         WindDrag = f_computeWindDrag(windSpeed,NodeNumber)
         windDragOut(nodeNumber) = windDrag
@@ -702,11 +702,11 @@ C          modifications are done to the incoming wind drag
 C          coefficient values.
 C
 C     ----------------------------------------------------------------
-      REAL(SZ) FUNCTION WindIceDrag(WindDrag,PercentIce)
+      REAL(8) FUNCTION WindIceDrag(WindDrag,PercentIce)
       implicit none
-      REAL(SZ) :: PercentIce
-      REAL(SZ) :: pic, WindDrag, IceDrag, Cform
-      REAL(SZ) :: Cskin = 1.5d-3, Cform_max = 3.67d-3, beta = 0.6d0
+      REAL(8) :: PercentIce
+      REAL(8) :: pic, WindDrag, IceDrag, Cform
+      REAL(8) :: Cskin = 1.5d-3, Cform_max = 3.67d-3, beta = 0.6d0
 C
       SELECT CASE(TRIM(DragLawString))
 C
@@ -780,15 +780,15 @@ C     ----------------------------------------------------------------
       USE MESH, ONLY : SLAM, SFEA
       IMPLICIT NONE
       INTEGER, intent(in) :: i  ! node number
-      REAL(SZ), intent(out):: bf       ! blend factor, 0 to 1
-      REAL(SZ) XCOOR ! longitude of node in degrees
-      REAL(SZ) YCOOR ! latitude of node in degrees
+      REAL(8), intent(out):: bf       ! blend factor, 0 to 1
+      REAL(8) XCOOR ! longitude of node in degrees
+      REAL(8) YCOOR ! latitude of node in degrees
 C     distance from center of vortex to mesh node:
-      REAL(SZ) DX    ! longitude distance in radians
-      REAL(SZ) DY    ! latitude distance in radians
-      REAL(SZ) rad   ! point-to-point distance over a sphere, in meters
-      REAL(SZ) vortexOnly ! radial distance to edge of pure vortex, meters
-      REAL(SZ) backgroundOnly ! radial dist to undisturbed background, meters
+      REAL(8) DX    ! longitude distance in radians
+      REAL(8) DY    ! latitude distance in radians
+      REAL(8) rad   ! point-to-point distance over a sphere, in meters
+      REAL(8) vortexOnly ! radial distance to edge of pure vortex, meters
+      REAL(8) backgroundOnly ! radial dist to undisturbed background, meters
 C
       XCOOR=SLAM(I)*RAD2DEG
       YCOOR=SFEA(I)*RAD2DEG
@@ -891,25 +891,25 @@ C----------------------------------------------------------------------
 #endif
       implicit none
       integer, intent(in) :: nws
-      real(sz), intent(out) :: wsx2(:)
-      real(sz), intent(out) :: wsy2(:)
-      real(sz), intent(out) :: pr2(:)
-      real(sz), intent(out) :: wvnxout(:)
-      real(sz), intent(out) :: wvnyout(:)
-      real(sz), intent(in) :: timeloc
-      real(sz) :: windx ! wind vel (m/s) in x-dir
-      real(sz) :: windy ! wind vel (m/s) in y-dir
+      real(8), intent(out) :: wsx2(:)
+      real(8), intent(out) :: wsy2(:)
+      real(8), intent(out) :: pr2(:)
+      real(8), intent(out) :: wvnxout(:)
+      real(8), intent(out) :: wvnyout(:)
+      real(8), intent(in) :: timeloc
+      real(8) :: windx ! wind vel (m/s) in x-dir
+      real(8) :: windy ! wind vel (m/s) in y-dir
 
-      real(sz) :: prdiff
-      real(sz) :: vortexPRDIFF
-      real(sz) :: wDragCo
-      real(sz) :: windMag
-      real(sz) :: wtratio ! used to time interpolated between met datasets
-      real(sz) :: cicenow, icedragco, ctratio, icemag, icex, icey 
+      real(8) :: prdiff
+      real(8) :: vortexPRDIFF
+      real(8) :: wDragCo
+      real(8) :: windMag
+      real(8) :: wtratio ! used to time interpolated between met datasets
+      real(8) :: cicenow, icedragco, ctratio, icemag, icex, icey 
       integer :: nhg ! node number temp
-      real(sz) :: bf ! blend factor for multiple sets of wind data
+      real(8) :: bf ! blend factor for multiple sets of wind data
       integer :: i ! node loop counter
-      real(sz) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
+      real(8) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
 
       call setMessageSource("getMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -1808,11 +1808,11 @@ Casey 180318: Added for NWS=13
 #endif
       implicit none
       integer, intent(in) :: nws
-      real(sz) :: windx ! wind vel (m/s) in x-dir
-      real(sz) :: windy ! wind vel (m/s) in y-dir
-      real(sz) :: wtratio ! used to time interpolated between met datasets
+      real(8) :: windx ! wind vel (m/s) in x-dir
+      real(8) :: windy ! wind vel (m/s) in y-dir
+      real(8) :: wtratio ! used to time interpolated between met datasets
       integer :: nhg ! node number temp
-      real(sz) :: bf ! blend factor for multiple sets of wind data
+      real(8) :: bf ! blend factor for multiple sets of wind data
       integer :: i ! node loop counter
 
       call setMessageSource("coldStartMeteorologicalForcing")
@@ -2125,28 +2125,28 @@ C----------------------------------------------------------------------
 #endif
       implicit none
       integer, intent(in) :: nws
-      real(sz), intent(out) :: wsx2(:)
-      real(sz), intent(out) :: wsy2(:)
-      real(sz), intent(out) :: pr2(:)
-      real(sz), intent(out) :: wvnxout(:)
-      real(sz), intent(out) :: wvnyout(:)
-      real(sz), intent(in) :: timeloc
-      real(sz), intent(in) :: rampMete2   ! Ramp for wind and atmospheric pressure @ITHS
-      real(sz) :: timeit
-      real(sz) :: windx ! wind vel (m/s) in x-dir
-      real(sz) :: windy ! wind vel (m/s) in y-dir
-      real(sz) :: prdiff
-      real(sz) :: wDragCo
-      real(sz) :: windMag
-      real(sz) :: wtratio ! used to time interpolated between met datasets
-      real(sz) :: cicenow, ctratio 
+      real(8), intent(out) :: wsx2(:)
+      real(8), intent(out) :: wsy2(:)
+      real(8), intent(out) :: pr2(:)
+      real(8), intent(out) :: wvnxout(:)
+      real(8), intent(out) :: wvnyout(:)
+      real(8), intent(in) :: timeloc
+      real(8), intent(in) :: rampMete2   ! Ramp for wind and atmospheric pressure @ITHS
+      real(8) :: timeit
+      real(8) :: windx ! wind vel (m/s) in x-dir
+      real(8) :: windy ! wind vel (m/s) in y-dir
+      real(8) :: prdiff
+      real(8) :: wDragCo
+      real(8) :: windMag
+      real(8) :: wtratio ! used to time interpolated between met datasets
+      real(8) :: cicenow, ctratio 
       integer :: nhg ! node number temp
-      real(sz) :: bf ! blend factor for multiple sets of wind data
-      real(sz) :: vortexPRDIFF
+      real(8) :: bf ! blend factor for multiple sets of wind data
+      real(8) :: vortexPRDIFF
       integer :: it
       integer :: i ! node loop counter
       integer :: j
-      real(sz) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
+      real(8) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
       integer :: TimeLoc_NM ! timeloc to the nearest minute
 
       call setMessageSource("hotStartMeteorologicalForcing")
@@ -3312,9 +3312,9 @@ C***********************************************************************
       INTEGER NScreen,ScreenUnit
       REAL*8 XCOOR,YCOOR
       INTEGER  LATIND1,LATIND2,LONIND1,LONIND2
-      REAL(SZ) WSPEED,WDIR
-      REAL(SZ) WLATM,WLONM,XWRATIO,YWRATIO
-      REAL(SZ),ALLOCATABLE,SAVE :: WVXFN(:,:),WVYFN(:,:)
+      REAL(8) WSPEED,WDIR
+      REAL(8) WLATM,WLONM,XWRATIO,YWRATIO
+      REAL(8),ALLOCATABLE,SAVE :: WVXFN(:,:),WVYFN(:,:)
       INTEGER :: IWYR, IWMO, IWDAY, IWHR
 
       call setMessageSource("nws3get")
@@ -3414,7 +3414,7 @@ C***********************************************************************
       USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER   I,NHG
-      REAL(SZ)  RHOWATG
+      REAL(8)  RHOWATG
       CHARACTER*80 PBLJAGF
 
       call setMessageSource("nws4get")
@@ -3541,12 +3541,12 @@ C***********************************************************************
       IMPLICIT NONE
       INTEGER, SAVE :: FIRSTCALL = 0
       INTEGER :: I,J
-      REAL(SZ) :: RHOWATG
+      REAL(8) :: RHOWATG
       INTEGER  LATIND1,LATIND2,LONIND1,LONIND2
-      REAL(SZ) XWRATIO,YWRATIO
-      REAL(SZ) WLATM,WLONM
-      REAL(SZ) :: XCOOR,YCOOR
-      REAL(SZ),SAVE,ALLOCATABLE :: WVXFN(:,:),WVYFN(:,:),PRN(:,:)
+      REAL(8) XWRATIO,YWRATIO
+      REAL(8) WLATM,WLONM
+      REAL(8) :: XCOOR,YCOOR
+      REAL(8),SAVE,ALLOCATABLE :: WVXFN(:,:),WVYFN(:,:),PRN(:,:)
 
       call setMessageSource("nws6get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -3678,11 +3678,11 @@ C     ----------------------------------------------------------------
 
       INTEGER I                     ! node loop counter
       INTEGER K, J                  ! latitude, longitude loop counters
-      REAL(SZ) RHOWATG             ! ref. dens. of water * grav. constant
+      REAL(8) RHOWATG             ! ref. dens. of water * grav. constant
       INTEGER  LATIND1,LATIND2,LONIND1,LONIND2
-      REAL(SZ) WLATM,WLONM,XWRATIO,YWRATIO
+      REAL(8) WLATM,WLONM,XWRATIO,YWRATIO
       REAL(8) XCOOR,YCOOR
-      REAL(SZ), SAVE, ALLOCATABLE :: WVXFN(:,:),WVYFN(:,:),PRN(:,:)
+      REAL(8), SAVE, ALLOCATABLE :: WVXFN(:,:),WVYFN(:,:),PRN(:,:)
       LOGICAL, SAVE :: MemoryAllocated = .False.
 
       call setMessageSource("nws7get")
@@ -3763,7 +3763,7 @@ C     ----------------------------------------------------------------
       use global, only : ihot, ncice
       use mesh, only : np, slam, sfea
       implicit none
-      real(sz) :: gdlon
+      real(8) :: gdlon
       integer :: j, jj ! loop counters
 
       call setMessageSource("nws10init")
@@ -3841,8 +3841,8 @@ C***********************************************************************
 
 C
 C...Compute estimated DLAT, true DLON for Gaussian grid
-      DLAT=PI/REAL(LATB-1,KIND=SZ)
-      DLON=TWOPI/REAL(LONB,KIND=SZ)
+      DLAT=PI/REAL(LATB-1,KIND=8)
+      DLON=TWOPI/REAL(LONB,KIND=8)
       N=0
 
 C...Loop through all the nodes in the grid to be interpolated onto and
@@ -3970,14 +3970,14 @@ C***********************************************************************
       use sizes, only : gblinputdir
       use mesh, only : np, slam, sfea
       implicit none
-      real(sz), intent(out) :: ull(:),vll(:),pll(:) ! mesh met values
-      real(sz), intent(out), optional :: ill(:) ! mesh ice values
+      real(8), intent(out) :: ull(:),vll(:),pll(:) ! mesh met values
+      real(8), intent(out), optional :: ill(:) ! mesh ice values
       !
-      real(sz) :: rhowatg ! density of water * gravitational acceleration
-      real(sz) :: p1,p2,p3,p4 ! pressure at 4 corners of gaussian grid cell
-      real(sz) :: u1,u2,u3,u4 ! east velocity at 4 corners of gaussian grid cell
-      real(sz) :: v1,v2,v3,v4 ! north velocity at 4 corners of gaussian grid cell
-      real(sz) :: i1,i2,i3,i4 ! ice concentration at 4 corners of gaussian grid cell
+      real(8) :: rhowatg ! density of water * gravitational acceleration
+      real(8) :: p1,p2,p3,p4 ! pressure at 4 corners of gaussian grid cell
+      real(8) :: u1,u2,u3,u4 ! east velocity at 4 corners of gaussian grid cell
+      real(8) :: v1,v2,v3,v4 ! north velocity at 4 corners of gaussian grid cell
+      real(8) :: i1,i2,i3,i4 ! ice concentration at 4 corners of gaussian grid cell
       character(len=8) :: fname1 ! name of GFS file to read
       integer :: iext        ! numerical extension to file name
       integer :: ios = 0     ! i/o status for opening the fort.xxx files
@@ -4083,10 +4083,10 @@ C***********************************************************************
       SUBROUTINE GLATS(LGGHAF,COLRAD,WGT,WGTCS,RCS2)
       USE SIZES
       IMPLICIT NONE
-      REAL(SZ) COLRAD(*),WGT(*),WGTCS(*),RCS2(*)
+      REAL(8) COLRAD(*),WGT(*),WGTCS(*),RCS2(*)
       INTEGER LGGHAF,L2,K,K1,ITER
-      REAL(SZ) SI,SCALEVAL,RL2,DRAD,RAD,P1,P2,EPS,PHI,X,W,SN,RC
-      real(sz) :: dradz ! initial guess that represents a distance between gridpoints (radian)
+      REAL(8) SI,SCALEVAL,RL2,DRAD,RAD,P1,P2,EPS,PHI,X,W,SN,RC
+      real(8) :: dradz ! initial guess that represents a distance between gridpoints (radian)
       integer :: multiple ! yf51.52.25: reduce initial guess for DRAD for T1534 grid
 
       call setMessageSource("glats")
@@ -4167,14 +4167,14 @@ C***********************************************************************
       USE SIZES
       IMPLICIT NONE
       INTEGER N,I
-      REAL(SZ) RAD,P,X,Y1,Y2,Y3,G
+      REAL(8) RAD,P,X,Y1,Y2,Y3,G
 C
       X = COS(RAD)
       Y1 = 1.0d0
       Y2=X
       DO 1 I=2,N
          G=X*Y2
-         Y3=G-Y1+G-(G-Y1)/REAL(I,KIND=SZ)
+         Y3=G-Y1+G-(G-Y1)/REAL(I,KIND=8)
          Y1=Y2
          Y2=Y3
  1    CONTINUE
@@ -4221,11 +4221,11 @@ C***********************************************************************
       INTEGER I,IEXT,IDIG1,IDIG2,IDIG3,KERR,N
       INTEGER IYEAR,IMONTH,IDAY,IHOUR
       REAL*8 RHOWATG100,FLONDEG,FLATDEG
-      REAL(SZ) P1,P2,P3,U1,U2,U3,V1,V2,V3,UE29,VE29,CBETAU,SBETAU
+      REAL(8) P1,P2,P3,U1,U2,U3,V1,V2,V3,UE29,VE29,CBETAU,SBETAU
 C
       INTEGER,SAVE,ALLOCATABLE ::  N1(:),N2(:),N3(:)
-      REAL(SZ),SAVE,ALLOCATABLE :: D1(:),D2(:),D3(:),BETAU(:)
-      REAL(SZ),SAVE,ALLOCATABLE :: UE(:),VE(:),PE(:)
+      REAL(8),SAVE,ALLOCATABLE :: D1(:),D2(:),D3(:),BETAU(:)
+      REAL(8),SAVE,ALLOCATABLE :: UE(:),VE(:),PE(:)
 C
       CHARACTER*1 FNAME2(8)
       CHARACTER*8 FNAME1
@@ -4344,13 +4344,13 @@ C***********************************************************************
       integer nn1,nn2,nn3,node,icode,nwlon,nwlat,ifflag
       integer i,j,im2,jm2,n,ia,ja,na,ib,jb,nb,ic,jc,nc,id,jd,nd,
      &  ie,je,ne,ig,jg,ng,if
-      real(sz) dd1,dd2,dd3,betau,ri,x1,x2,x3,x4,y1,y2,y3,y4
-      real(sz) aemin,areas,a1,a2,a3,aa,ae,lambda
+      real(8) dd1,dd2,dd3,betau,ri,x1,x2,x3,x4,y1,y2,y3,y4
+      real(8) aemin,areas,a1,a2,a3,aa,ae,lambda
       real(8) lamda0,phi0,rphi0,cphi0,sphi0,tphi0,dlamda,dphi,rdlamda,
      &       rdphi,rflat,tflat,sflat,cflat,a,rlamar,cphiicrlamda,phiarg,
      &       rphii,rlamda,ri1,ri2,rj,dgtora,flon,flat
-      real(sz) lamda,lamdaa,lamdab,lamdac,lamdad,lamdae,lamdag
-      real(sz) phi,phia,phib,phic,phid,phie,phig
+      real(8) lamda,lamdaa,lamdab,lamdac,lamdad,lamdae,lamdag
+      real(8) phi,phia,phib,phic,phid,phie,phig
 c
       icode=0
       nwlon=181
@@ -4810,7 +4810,7 @@ C***********************************************************************
       implicit none
       integer i,j,n,nwlon,nwlat,im2,jm2,i1,i2,i1p1,i1m1,i2p1,i2m1,
      &     i3p1,i3m1
-      real(sz) lamda,phi,phii,dlon,dlat,dlnt,arg,betau1,betau2,betau3
+      real(8) lamda,phi,phii,dlon,dlat,dlnt,arg,betau1,betau2,betau3
       real(8) lamda0,phi0,rphi0,cphi0,sphi0,tphi0,dlamda,dphi,rdlamda,
      &     rdphi,a,rlamar,phiarg,rlamda,dgtora
 c
@@ -4869,8 +4869,8 @@ C***********************************************************************
       subroutine betaucalc(i1,j1,dd1,i2,j2,dd2,i3,j3,dd3,betau)
       implicit none
       integer i1,j1,i2,j2,i3,j3,n,i1p1,i1m1,i2p1,i2m1,i3p1,i3m1
-      real(sz) dd1,dd2,dd3,betau
-      real(sz) lamda,lamdap1,lamdam1,phi,phip1,phim1,dlon,dlat,
+      real(8) dd1,dd2,dd3,betau
+      real(8) lamda,lamdap1,lamdam1,phi,phip1,phim1,dlon,dlat,
      &     dlnt,arg,betau1,betau2,betau3,dgtora
 c
       dgtora=deg2rad
@@ -4971,20 +4971,20 @@ C     ----------------------------------------------------------------
       USE MESH, ONLY : X, Y, SLAM, SFEA, NP, ICS
       USE CONSTANTS, ONLY : RHOWAT0, G, mb2pa
       IMPLICIT NONE
-      REAL(SZ), intent(in) :: TIMELOC
-      REAL(SZ), intent(out), dimension(NP) :: WVNX,WVNY
-      REAL(SZ), intent(out), dimension(NP) :: PRESS
+      REAL(8), intent(in) :: TIMELOC
+      REAL(8), intent(out), dimension(NP) :: WVNX,WVNY
+      REAL(8), intent(out), dimension(NP) :: PRESS
       INTEGER I, J
-      REAL(SZ),SAVE,ALLOCATABLE :: RAD(:),DX(:),DY(:)
-      REAL(SZ),SAVE,ALLOCATABLE :: XCOOR(:),YCOOR(:) !lat and lon of nodes
-      REAL(SZ),SAVE,ALLOCATABLE :: V_r(:)            !wind sp. as fn. of dist
-      REAL(SZ),SAVE,ALLOCATABLE :: THETA(:)
-      REAL(SZ) :: TVX,TVY,RRP,RMW,A,B,WTRATIO
-      REAL(SZ) :: TransSpdX, TransSpdY
-      REAL(SZ) :: TM, cpress, lon, lat, spd
-      REAL(SZ) :: ts        ! storm translation speed, m/s
-      REAL(SZ) :: WindMultiplier         ! for storm 2 in LPFS ensemble
-      REAL(SZ) :: centralPressureDeficit ! difference btw ambient and cpress
+      REAL(8),SAVE,ALLOCATABLE :: RAD(:),DX(:),DY(:)
+      REAL(8),SAVE,ALLOCATABLE :: XCOOR(:),YCOOR(:) !lat and lon of nodes
+      REAL(8),SAVE,ALLOCATABLE :: V_r(:)            !wind sp. as fn. of dist
+      REAL(8),SAVE,ALLOCATABLE :: THETA(:)
+      REAL(8) :: TVX,TVY,RRP,RMW,A,B,WTRATIO
+      REAL(8) :: TransSpdX, TransSpdY
+      REAL(8) :: TM, cpress, lon, lat, spd
+      REAL(8) :: ts        ! storm translation speed, m/s
+      REAL(8) :: WindMultiplier         ! for storm 2 in LPFS ensemble
+      REAL(8) :: centralPressureDeficit ! difference btw ambient and cpress
 C
       REAL(8) :: omega, coriolis
       REAL(8) :: mperdeg
@@ -5202,21 +5202,21 @@ C
       USE GLOBAL, ONLY : RNDAY
       USE VORTEX, ONLY : uvtrans
       IMPLICIT NONE
-      REAL(SZ),intent(in) :: TIMELOC
-      REAL(SZ),intent(out) :: LatOut, LonOut, CPressOut
-      REAL(SZ),intent(out) :: SpdOut, RRPOut, RMWOut, TVXOut, TVYOut
+      REAL(8),intent(in) :: TIMELOC
+      REAL(8),intent(out) :: LatOut, LonOut, CPressOut
+      REAL(8),intent(out) :: SpdOut, RRPOut, RMWOut, TVXOut, TVYOut
 C
       INTEGER, ALLOCATABLE, SAVE :: iYear(:),iMth(:),iDay(:),iHr(:)
       INTEGER, ALLOCATABLE, SAVE :: iLat(:),iLon(:)
       CHARACTER(1), ALLOCATABLE, SAVE :: ns(:), ew(:)
       INTEGER, ALLOCATABLE, SAVE :: iSpd(:),iCPress(:),iRRP(:),iRMW(:)
-      REAL(SZ), ALLOCATABLE, SAVE :: Lat(:),Lon(:),Spd(:)
-      REAL(SZ), ALLOCATABLE, SAVE :: CPress(:),RRP(:),RMW(:)
-      REAL(SZ), ALLOCATABLE, SAVE :: TVX(:), TVY(:)      ! jgf46.32jgf9
+      REAL(8), ALLOCATABLE, SAVE :: Lat(:),Lon(:),Spd(:)
+      REAL(8), ALLOCATABLE, SAVE :: CPress(:),RRP(:),RMW(:)
+      REAL(8), ALLOCATABLE, SAVE :: TVX(:), TVY(:)      ! jgf46.32jgf9
       CHARACTER(len=4), ALLOCATABLE, SAVE :: CastType(:) !hindcast,forecast
       INTEGER, ALLOCATABLE, SAVE :: iFcstInc(:) ! hours
-      REAL(SZ), ALLOCATABLE, SAVE :: FcstInc(:) ! seconds
-      REAL(SZ),SAVE :: WTRATIO          !time ratio used for interpolation
+      REAL(8), ALLOCATABLE, SAVE :: FcstInc(:) ! seconds
+      REAL(8),SAVE :: WTRATIO          !time ratio used for interpolation
       REAL(8), ALLOCATABLE, SAVE :: CastTime(:) ! seconds since start of year
       INTEGER,SAVE :: iNowcastCPress, iNowcastRRP, iNowcastRMW
       LOGICAL,SAVE :: FIRSTCALL = .True.
@@ -5592,18 +5592,18 @@ C23456
       REAL(8), PARAMETER :: Rho_Air = 1.15d0                ! kg/ m/m/m
       INTEGER, SAVE :: FIRSTCALL = 0
       INTEGER NP,I,J,ICS
-      REAL(SZ) RHOWAT0,G,WTIME1,WTIME2,TIMELOC,WTIMINC
-      REAL(SZ) X(*),Y(*),SLAM(*),SFEA(*)
-      REAL(SZ) WVNX(*),WVNY(*),PRESS(*)
+      REAL(8) RHOWAT0,G,WTIME1,WTIME2,TIMELOC,WTIMINC
+      REAL(8) X(*),Y(*),SLAM(*),SFEA(*)
+      REAL(8) WVNX(*),WVNY(*),PRESS(*)
 ! LOCAL VARIABLES
-      REAL(SZ),SAVE,ALLOCATABLE :: RAD(:),DX(:),DY(:),XCOOR (:),YCOOR(:)
-      REAL(SZ),SAVE,ALLOCATABLE :: EARG(:)
-      REAL(SZ),SAVE,ALLOCATABLE :: VG(:),THETA(:)
-      REAL(SZ),SAVE :: XC1,YC1,DP1,TVX1,TVY1,RMW1,A1,B1
-      REAL(SZ),SAVE :: XC2,YC2,DP2,TVX2,TVY2,RMW2,A2,B2
-      REAL(SZ) :: XC,YC,DP,TVX,TVY,RMW,A,B,WTRATIO
-      REAL(SZ) :: Central_Pressure,T1,T2,T3,D,N,TT,TM
-      REAL(SZ),SAVE :: RHOWATG
+      REAL(8),SAVE,ALLOCATABLE :: RAD(:),DX(:),DY(:),XCOOR (:),YCOOR(:)
+      REAL(8),SAVE,ALLOCATABLE :: EARG(:)
+      REAL(8),SAVE,ALLOCATABLE :: VG(:),THETA(:)
+      REAL(8),SAVE :: XC1,YC1,DP1,TVX1,TVY1,RMW1,A1,B1
+      REAL(8),SAVE :: XC2,YC2,DP2,TVX2,TVY2,RMW2,A2,B2
+      REAL(8) :: XC,YC,DP,TVX,TVY,RMW,A,B,WTRATIO
+      REAL(8) :: Central_Pressure,T1,T2,T3,D,N,TT,TM
+      REAL(8),SAVE :: RHOWATG
       IF (FIRSTCALL.EQ.0) THEN
          FIRSTCALL = 1
          RHOWATG=RHOWAT0*G
@@ -5781,37 +5781,37 @@ C     ----------------------------------------------------------------
       INTEGER  :: ient,itpc
       INTEGER  :: i, nwi
       INTEGER  :: num_entry
-      REAL(sz) :: TIMELOC, time1, wtratio
+      REAL(8) :: TIMELOC, time1, wtratio
       REAL( 8), SAVE, ALLOCATABLE :: xcoor(:),ycoor(:)
       REAL( 8) :: wvnx(np),wvny(np), press(np)
-      REAL(sz) :: RhoWatG
+      REAL(8) :: RhoWatG
 
-      REAL(SZ),DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
+      REAL(8),DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ilat,ilon,atcfRMW
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ilat1,ilon1,atcfRMW1
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ispd,icpress
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ispd1,icpress1
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: iyear,imth,iday,ihr
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE ::iyear1,imth1,iday1,ihr1
-      REAL(sz), SAVE ::  lat1, lon1,  spd1,  cpress1,  rmw1
-      REAL(sz), SAVE ::  dt, told, cLat1, cLon1
+      REAL(8), SAVE ::  lat1, lon1,  spd1,  cpress1,  rmw1
+      REAL(8), SAVE ::  dt, told, cLat1, cLon1
       CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE, SAVE:: type! hindcast/nowcast or forecast?
       CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE, SAVE:: type1 !hindcast/nowcast or forecast?
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::iFcstInc1, iFcstInc ! hours between forecasts
       INTEGER , SAVE :: firstCall = 0
       LOGICAL , SAVE :: firstTime = .TRUE.
-      REAL(sz),DIMENSION(:),ALLOCATABLE,SAVE :: HollB,HollB1
+      REAL(8),DIMENSION(:),ALLOCATABLE,SAVE :: HollB,HollB1
       INTEGER ,DIMENSION(:),ALLOCATABLE,SAVE :: advr,advr1
-      REAL(sz), SAVE :: Vmax
-      REAL(sz), SAVE :: Vr
-      REAL(sz), SAVE, DIMENSION(4) :: r
-      REAL(sz), SAVE :: Pn
-      REAL(sz), SAVE :: Pc
-      REAL(sz), SAVE :: cLat
-      REAL(sz), SAVE :: cLon
-      REAL(sz), SAVE :: cHollB
-      REAL(sz) , DIMENSION(4), SAVE :: crmaxw
-      REAL(sz), SAVE :: timeOffset
+      REAL(8), SAVE :: Vmax
+      REAL(8), SAVE :: Vr
+      REAL(8), SAVE, DIMENSION(4) :: r
+      REAL(8), SAVE :: Pn
+      REAL(8), SAVE :: Pc
+      REAL(8), SAVE :: cLat
+      REAL(8), SAVE :: cLon
+      REAL(8), SAVE :: cHollB
+      REAL(8) , DIMENSION(4), SAVE :: crmaxw
+      REAL(8), SAVE :: timeOffset
 !-------------------------------
       INTEGER,SAVE :: icyc
 !------------------------------
@@ -5820,26 +5820,26 @@ C     ----------------------------------------------------------------
       INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: isotachs_per_cycle1
       INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: ipn,ipn1,cycle_num1
 
-      REAL(sz) , DIMENSION(:,:), ALLOCATABLE,SAVE :: rmaxw,rmaxw1
-      REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::CycleTime,CycleTime1
-      REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::uTrans1,uTrans
-      REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::vTrans1,vTrans
-      REAL(sz), DIMENSION(:), ALLOCATABLE, SAVE :: h_speed
+      REAL(8) , DIMENSION(:,:), ALLOCATABLE,SAVE :: rmaxw,rmaxw1
+      REAL(8) , DIMENSION(:), ALLOCATABLE,SAVE::CycleTime,CycleTime1
+      REAL(8) , DIMENSION(:), ALLOCATABLE,SAVE::uTrans1,uTrans
+      REAL(8) , DIMENSION(:), ALLOCATABLE,SAVE::vTrans1,vTrans
+      REAL(8), DIMENSION(:), ALLOCATABLE, SAVE :: h_speed
       INTEGER , DIMENSION(:,:), ALLOCATABLE,SAVE::quadflag,quadflag1
       INTEGER ,DIMENSION(:),ALLOCATABLE,SAVE :: ivr, dir,speed
-      REAL(sz), SAVE :: dx,dy
-      REAL(sz) :: VmaxBL
-      REAL(sz) :: stormMotionU
-      REAL(sz) :: stormMotionV
-      REAL(sz) :: stormMotion
+      REAL(8), SAVE :: dx,dy
+      REAL(8) :: VmaxBL
+      REAL(8) :: stormMotionU
+      REAL(8) :: stormMotionV
+      REAL(8) :: stormMotion
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ivr1, dir1, speed1
       INTEGER , DIMENSION(:,:),ALLOCATABLE, SAVE :: ir,ir1
       CHARACTER(LEN = 10),DIMENSION(:),ALLOCATABLE,SAVE::name,name1
-      REAL(sz),SAVE :: timeOld,timeNew
-      REAL(sz) :: uTransNow, vTransNow ! time-interpolated overland speed, kts
+      REAL(8),SAVE :: timeOld,timeNew
+      REAL(8) :: uTransNow, vTransNow ! time-interpolated overland speed, kts
       CHARACTER(1) ew,ns
       INTEGER, SAVE :: num_cycles ! num unique date/times in the fort.22
-      REAL(sz) :: rndaySeconds ! end time of the run in seconds
+      REAL(8) :: rndaySeconds ! end time of the run in seconds
 
 C
       call setMessageSource("nws19get")
@@ -6328,14 +6328,14 @@ C***********************************************************************
       INTEGER  :: ient
       INTEGER  :: i, j
       INTEGER  :: num_entry
-      REAL(sz) :: TIMELOC, wtratio
+      REAL(8) :: TIMELOC, wtratio
       REAL( 8), SAVE, ALLOCATABLE :: xcoor(:),ycoor(:)
       REAL( 8) :: wvnx(np),wvny(np), press(np)
-      REAL(sz) :: RhoWatG
-      REAL(sz) :: corio                       ! Coriolis force (1/s)
+      REAL(8) :: RhoWatG
+      REAL(8) :: corio                       ! Coriolis force (1/s)
 
-      !REAL(SZ),DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
-      ! jgf53.dev: FIXME this should be REAL(SZ) as above
+      !REAL(8),DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
+      ! jgf53.dev: FIXME this should be REAL(8) as above
       REAL,DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ilat,ilon,atcfRMW
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ilat1,ilon1,atcfRMW1
@@ -6348,31 +6348,31 @@ C***********************************************************************
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::iFcstInc1, iFcstInc ! hours between forecasts
       INTEGER , SAVE :: firstCall = 0
       LOGICAL , SAVE :: firstTime = .TRUE.
-      REAL(sz),DIMENSION(:),ALLOCATABLE,SAVE :: HollB,HollB1
-      REAL(sz),DIMENSION(:,:),ALLOCATABLE,SAVE :: VmaxesBL1,HollBs1
-      REAL(sz),DIMENSION(:,:,:),ALLOCATABLE,SAVE :: HollBs,VmaxesBL
+      REAL(8),DIMENSION(:),ALLOCATABLE,SAVE :: HollB,HollB1
+      REAL(8),DIMENSION(:,:),ALLOCATABLE,SAVE :: VmaxesBL1,HollBs1
+      REAL(8),DIMENSION(:,:,:),ALLOCATABLE,SAVE :: HollBs,VmaxesBL
       INTEGER ,DIMENSION(:),ALLOCATABLE,SAVE :: advr,advr1
-      REAL(sz), SAVE :: Vr
-      REAL(sz), SAVE, DIMENSION(4) :: r
-      REAL(sz), SAVE :: Pn
-      REAL(sz), SAVE :: Pc
-      REAL(sz), SAVE :: cLat
-      REAL(sz), SAVE :: cLon
-      REAL(SZ), SAVE :: told
+      REAL(8), SAVE :: Vr
+      REAL(8), SAVE, DIMENSION(4) :: r
+      REAL(8), SAVE :: Pn
+      REAL(8), SAVE :: Pc
+      REAL(8), SAVE :: cLat
+      REAL(8), SAVE :: cLon
+      REAL(8), SAVE :: told
       ! save parameters for each node
       ! change them to allocatable, save Aug. 2013, Jie
-      REAL(sz), ALLOCATABLE, SAVE :: cHollBs1(:), cHollBs2(:)
-      REAL(sz), ALLOCATABLE, SAVE :: cPhiFactor1(:), cPhiFactor2(:)
-      REAL(sz), ALLOCATABLE, SAVE :: cVmwBL1(:), cVmwBL2(:)
-      REAL(sz), ALLOCATABLE, SAVE :: crmaxw1(:), crmaxw2(:)
-      REAL(sz), ALLOCATABLE, SAVE :: crmaxwTrue1(:), crmaxwTrue2(:)
-      REAL(sz), ALLOCATABLE, SAVE :: cHollBs(:)
-      REAL(sz), ALLOCATABLE, SAVE :: cPhiFactor(:)
-      REAL(sz), ALLOCATABLE, SAVE :: cVmwBL(:)
-      REAL(sz), ALLOCATABLE, SAVE :: crmaxw(:)
-      REAL(sz), ALLOCATABLE, SAVE :: crmaxwTrue(:)
-      REAL(sz), ALLOCATABLE, SAVE :: aziangle(:), dist(:)
-      REAL(sz), SAVE :: timeOffset
+      REAL(8), ALLOCATABLE, SAVE :: cHollBs1(:), cHollBs2(:)
+      REAL(8), ALLOCATABLE, SAVE :: cPhiFactor1(:), cPhiFactor2(:)
+      REAL(8), ALLOCATABLE, SAVE :: cVmwBL1(:), cVmwBL2(:)
+      REAL(8), ALLOCATABLE, SAVE :: crmaxw1(:), crmaxw2(:)
+      REAL(8), ALLOCATABLE, SAVE :: crmaxwTrue1(:), crmaxwTrue2(:)
+      REAL(8), ALLOCATABLE, SAVE :: cHollBs(:)
+      REAL(8), ALLOCATABLE, SAVE :: cPhiFactor(:)
+      REAL(8), ALLOCATABLE, SAVE :: cVmwBL(:)
+      REAL(8), ALLOCATABLE, SAVE :: crmaxw(:)
+      REAL(8), ALLOCATABLE, SAVE :: crmaxwTrue(:)
+      REAL(8), ALLOCATABLE, SAVE :: aziangle(:), dist(:)
+      REAL(8), SAVE :: timeOffset
 !-------------------------------
       INTEGER,SAVE :: icyc
       INTEGER,SAVE :: isot
@@ -6382,34 +6382,34 @@ C***********************************************************************
       INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: isotachs_per_cycle1
       INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: ipn,ipn1,cycle_num1
 
-      REAL(sz) , DIMENSION(:,:), ALLOCATABLE,SAVE :: rmaxw1
-      REAL(sz) , DIMENSION(:,:,:), ALLOCATABLE,SAVE :: rmaxw
-      REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::CycleTime,CycleTime1
-      REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::uTrans1,uTrans
-      REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::vTrans1,vTrans
-      REAL(sz), DIMENSION(:), ALLOCATABLE, SAVE :: h_speed
+      REAL(8) , DIMENSION(:,:), ALLOCATABLE,SAVE :: rmaxw1
+      REAL(8) , DIMENSION(:,:,:), ALLOCATABLE,SAVE :: rmaxw
+      REAL(8) , DIMENSION(:), ALLOCATABLE,SAVE::CycleTime,CycleTime1
+      REAL(8) , DIMENSION(:), ALLOCATABLE,SAVE::uTrans1,uTrans
+      REAL(8) , DIMENSION(:), ALLOCATABLE,SAVE::vTrans1,vTrans
+      REAL(8), DIMENSION(:), ALLOCATABLE, SAVE :: h_speed
       INTEGER , DIMENSION(:,:), ALLOCATABLE,SAVE::quadflag1
       INTEGER , DIMENSION(:,:,:), ALLOCATABLE,SAVE::quadflag
       INTEGER ,DIMENSION(:),ALLOCATABLE,SAVE :: ivr, dir,speed
-      REAL(sz), SAVE :: dx,dy
-      REAL(sz) :: VmaxBL
-      REAL(sz) :: stormMotionU
-      REAL(sz) :: stormMotionV
-      REAL(sz) :: stormMotion
+      REAL(8), SAVE :: dx,dy
+      REAL(8) :: VmaxBL
+      REAL(8) :: stormMotionU
+      REAL(8) :: stormMotionV
+      REAL(8) :: stormMotion
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ivr1, dir1, speed1
       INTEGER , DIMENSION(:,:),ALLOCATABLE, SAVE :: ir1
       INTEGER , DIMENSION(:,:,:),ALLOCATABLE, SAVE :: ir
       CHARACTER(LEN = 10),DIMENSION(:),ALLOCATABLE,SAVE::name,name1
-      REAL(sz),SAVE :: timeNew
-      REAL(sz) :: uTransNow, vTransNow ! time-interpolated overland speed, kts
-      REAL(sz) :: dirNow ! Jie
-      REAL(sz) :: numRmaxes ! number of Rmax values selected by user
+      REAL(8),SAVE :: timeNew
+      REAL(8) :: uTransNow, vTransNow ! time-interpolated overland speed, kts
+      REAL(8) :: dirNow ! Jie
+      REAL(8) :: numRmaxes ! number of Rmax values selected by user
       CHARACTER(1) ew,ns
       INTEGER, SAVE :: num_cycles ! num unique date/times in the fort.22
 
-      REAL(sz) :: rndaySeconds ! end time of the run in seconds
-      real(sz) :: newVortexRMW ! average Rmax at icyc   (next fort.22 time value)
-      real(sz) :: oldVortexRMW ! average Rmax at icyc-1 (previous fort.22 time value)
+      REAL(8) :: rndaySeconds ! end time of the run in seconds
+      real(8) :: newVortexRMW ! average Rmax at icyc   (next fort.22 time value)
+      real(8) :: oldVortexRMW ! average Rmax at icyc-1 (previous fort.22 time value)
 
       call setMessageSource("nws20get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -7192,27 +7192,27 @@ C***********************************************************************
       use constants, only : mb2pa, m2nm, nm2m
       use mesh, only : slam, sfea, np, dp
       implicit none
-      real(sz), intent(out) :: wvnx(:)  ! wind u-velocity (m/s)
-      real(sz), intent(out) :: wvny(:)  ! wind v-velocity (m/s)
-      real(sz), intent(out) :: press(:) ! barometric pressure (mH2O)
+      real(8), intent(out) :: wvnx(:)  ! wind u-velocity (m/s)
+      real(8), intent(out) :: wvny(:)  ! wind v-velocity (m/s)
+      real(8), intent(out) :: press(:) ! barometric pressure (mH2O)
       real(8), intent(in) :: timeloc    ! adcirc time, seconds since coldstart
 C
-      real(sz) :: wtratio  ! time weighting factor for time interpolation
-      real(sz) :: cLonNow  ! time interpolated longitude at center of storm
-      real(sz) :: cLatNow  ! time interpolated latitude at center of storm
-      real(sz) :: rampValNow  ! time interpolated met ramp value
-      real(sz) :: k_0      ! constant used in mercator projection
-      real(sz) :: y_mercator_0 ! mercator y coord at center of storm
-      real(sz) :: rmaxNow  ! (nm) used in estimating central pressure
-      real(sz) :: pc       ! (mbar) used to find pressure field
-      real(sz) :: B        ! Holland cyclone shape parameter
-      real(sz) :: dist     ! (m) distance from storm center to mesh node
-      real(sz) :: dxNow,dyNow ! (nm) x and y distance from storm center rmaxNow
-      real(sz) :: vmaxNow  ! (m/s) time interpolated fulldomain vmax
-      real(sz) :: oldDX, oldDY ! (nm) distances to rmax in last hwind cycle
-      real(sz) :: newDX, newDY ! (nm) distances to rmax in next hwind cycle
-      real(sz) :: angle    ! (nm) angle to location of mesh vmax (on subdomain in parallel)
-      real(sz) :: maxSpeed ! (m/s) max wind speed on mesh (subdomain in parallel)
+      real(8) :: wtratio  ! time weighting factor for time interpolation
+      real(8) :: cLonNow  ! time interpolated longitude at center of storm
+      real(8) :: cLatNow  ! time interpolated latitude at center of storm
+      real(8) :: rampValNow  ! time interpolated met ramp value
+      real(8) :: k_0      ! constant used in mercator projection
+      real(8) :: y_mercator_0 ! mercator y coord at center of storm
+      real(8) :: rmaxNow  ! (nm) used in estimating central pressure
+      real(8) :: pc       ! (mbar) used to find pressure field
+      real(8) :: B        ! Holland cyclone shape parameter
+      real(8) :: dist     ! (m) distance from storm center to mesh node
+      real(8) :: dxNow,dyNow ! (nm) x and y distance from storm center rmaxNow
+      real(8) :: vmaxNow  ! (m/s) time interpolated fulldomain vmax
+      real(8) :: oldDX, oldDY ! (nm) distances to rmax in last hwind cycle
+      real(8) :: newDX, newDY ! (nm) distances to rmax in next hwind cycle
+      real(8) :: angle    ! (nm) angle to location of mesh vmax (on subdomain in parallel)
+      real(8) :: maxSpeed ! (m/s) max wind speed on mesh (subdomain in parallel)
       integer  :: maxNode  ! mesh node on which maxSpeed occurs
       integer  :: i        ! loop counter
 C
@@ -7413,10 +7413,10 @@ C     ----------------------------------------------------------------
       implicit none
       integer, intent(in) :: cn ! cycle number of file to load
 C
-      real(sz), allocatable    :: windMag(:,:) ! hwind speeds, used to find hwind vmax
-      real(sz)                 :: dx, dy ! distances (m) to location of vmax
+      real(8), allocatable    :: windMag(:,:) ! hwind speeds, used to find hwind vmax
+      real(8)                 :: dx, dy ! distances (m) to location of vmax
       integer                  :: maxIndices(2) !i,j indices of hwind vmax
-      real(sz)                 :: throwAwayCoordinate ! dummy variable
+      real(8)                 :: throwAwayCoordinate ! dummy variable
       integer                  :: numValues ! total number of u,v velocity pairs
       integer                  :: indexLimit ! abs(array bounds)
       integer                  :: errorio ! nonzero if there was an i/o error
@@ -7587,17 +7587,17 @@ C     ----------------------------------------------------------------
       subroutine hWindInterpolateVelocity(wvnx, wvny, cn, rv, tw)
       use mesh, only : np
       implicit none
-      real(sz), intent(out) :: wvnx(:) ! wind u-velocity
-      real(sz), intent(out) :: wvny(:) ! wind v-velocity
+      real(8), intent(out) :: wvnx(:) ! wind u-velocity
+      real(8), intent(out) :: wvny(:) ! wind v-velocity
       integer, intent(in)   :: cn      ! cycle number, or hwind file number
-      real(sz), intent(in)  :: rv      ! ramp value from hwind file
-      real(sz), intent(in)  :: tw      ! time weighting for time interpolation
+      real(8), intent(in)  :: rv      ! ramp value from hwind file
+      real(8), intent(in)  :: tw      ! time weighting for time interpolation
 C
-      real(sz)              :: dh      ! readability shorthand for hwind dh
+      real(8)              :: dh      ! readability shorthand for hwind dh
       integer               :: il      ! readability shorthand for hwind integerLimit
-      real(sz), pointer     :: hwu(:,:)! readability shorthand for hwind u
-      real(sz), pointer     :: hwv(:,:)! readability shorthand for hwind v
-      real(sz)              :: oneOverW2 ! 1/w**2 ; const in interp weights
+      real(8), pointer     :: hwu(:,:)! readability shorthand for hwind u
+      real(8), pointer     :: hwv(:,:)! readability shorthand for hwind v
+      real(8)              :: oneOverW2 ! 1/w**2 ; const in interp weights
       integer               :: i       ! loop counter
 C
       call setMessageSource("hwindinterpolatevelocity")
@@ -7682,7 +7682,7 @@ C          Lines 4-end -- cycleTime  rampValue  filename
 C
 
        subroutine init_gfdl(timeloc)
-       use sizes, only : globaldir, sz
+       use sizes, only : globaldir 
        use global, only : ihot, nws, nabout, openFileForRead,
      &                setMessageSource,unsetMessageSource,allMessage,
      &                logMessage,scratchMessage,DEBUG,ECHO,INFO,
@@ -7691,7 +7691,7 @@ C
       use mesh, only : np, x, y, slam0, sfea0
       implicit none
 
-      real(sz), intent(in) :: timeloc ! adcirc time in seconds since coldstart
+      real(8), intent(in) :: timeloc ! adcirc time in seconds since coldstart
 C
       logical :: fileFound   ! true if the file could be found
       integer :: errorio     ! .gt. 1 if there was an i/o error
@@ -7940,22 +7940,22 @@ C
        USE KDTREE2_MODULE     ! USED FOR FAST SEARCHING
 
        IMPLICIT NONE
-       REAL(SZ), ALLOCATABLE :: XY_GFDL(:,:),XLOC(:)
-       REAL(SZ), ALLOCATABLE :: PRESS_GFDL(:)
-       REAL(SZ), ALLOCATABLE :: U_WIND_GFDL(:),V_WIND_GFDL(:)
-       REAL(SZ), ALLOCATABLE :: WTS(:)
+       REAL(8), ALLOCATABLE :: XY_GFDL(:,:),XLOC(:)
+       REAL(8), ALLOCATABLE :: PRESS_GFDL(:)
+       REAL(8), ALLOCATABLE :: U_WIND_GFDL(:),V_WIND_GFDL(:)
+       REAL(8), ALLOCATABLE :: WTS(:)
        INTEGER, ALLOCATABLE :: LOCS(:),II2(:)
 
-       REAL(SZ) :: LON_GFDL,LAT_GFDL,TOL,DIST, LonR, LatR
-       REAL(SZ) :: RPTS_GFDL,UTMP,VTMP,TTMP,MTMP,SPTMP,PTMP
-       REAL(SZ) :: LONGTMP,LATTMP,HTMP,NTMP,XSTA,YSTA,MAXDIST
-       REAL(SZ), INTENT(IN) :: SLAM0,SFEA0
-       REAL(SZ), INTENT(IN) :: MAX_INTERP_DIST
-       REAL(SZ), INTENT(OUT) :: ADC_U_WIND(NADCPTS),ADC_V_WIND(NADCPTS)
-       REAL(SZ), INTENT(OUT) :: ADC_PRESS(NADCPTS)
-       REAL(SZ), INTENT(IN)  :: ADC_X(NADCPTS),ADC_Y(NADCPTS)
-!       REAL(SZ), PARAMETER ::  PI=3.141592653589793D0
-!       REAL(SZ), PARAMETER ::  DEG2RAD = PI/180.D0  ! DEGREES TO RADIANS
+       REAL(8) :: LON_GFDL,LAT_GFDL,TOL,DIST, LonR, LatR
+       REAL(8) :: RPTS_GFDL,UTMP,VTMP,TTMP,MTMP,SPTMP,PTMP
+       REAL(8) :: LONGTMP,LATTMP,HTMP,NTMP,XSTA,YSTA,MAXDIST
+       REAL(8), INTENT(IN) :: SLAM0,SFEA0
+       REAL(8), INTENT(IN) :: MAX_INTERP_DIST
+       REAL(8), INTENT(OUT) :: ADC_U_WIND(NADCPTS),ADC_V_WIND(NADCPTS)
+       REAL(8), INTENT(OUT) :: ADC_PRESS(NADCPTS)
+       REAL(8), INTENT(IN)  :: ADC_X(NADCPTS),ADC_Y(NADCPTS)
+!       REAL(8), PARAMETER ::  PI=3.141592653589793D0
+!       REAL(8), PARAMETER ::  DEG2RAD = PI/180.D0  ! DEGREES TO RADIANS
 
        INTEGER :: NPTS_GFDL,SRCHDP,LUN,ERRORIO,ITC,I,IEK,IP,INCELL
        INTEGER, INTENT(IN) :: NADCPTS
@@ -7999,7 +7999,7 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
 !       READ(LUN,'(F10.4)') RPTS_GFDL
 !       NPTS_GFDL = INT(RPTS_GFDL)
         read(LUN,'(I10)') NPTS_GFDL
-        rpts_gfdl = real(npts_gfdl,sz)
+        rpts_gfdl = real(npts_gfdl,8)
 
 !       tcm 20130507 -- changed the read above due to changes in GFDL ASCII files
 
@@ -8184,9 +8184,9 @@ C
       integer :: i,numFiles,currentCycle
       logical :: cycleTimeFound
       real(8), intent(in) :: timeloc   ! adcirc time, seconds since coldstart
-      real(sz), intent(out) :: wvnx(:)  ! wind u-velocity (m/s)
-      real(sz), intent(out) :: wvny(:)  ! wind v-velocity (m/s)
-      real(sz), intent(out) :: press(:)  !barometric pressure (mH20)
+      real(8), intent(out) :: wvnx(:)  ! wind u-velocity (m/s)
+      real(8), intent(out) :: wvny(:)  ! wind v-velocity (m/s)
+      real(8), intent(out) :: press(:)  !barometric pressure (mH20)
 
       call setMessageSource("nws16get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -8284,11 +8284,11 @@ C***********************************************************************
       use global, only : nabout
       use mesh, only : np
       implicit none
-      real(sz), intent(out), dimension(np) :: rsnx
-      real(sz), intent(out), dimension(np) :: rsny
+      real(8), intent(out), dimension(np) :: rsnx
+      real(8), intent(out), dimension(np) :: rsny
       integer :: nhg
       integer, save :: lineNum = 0
-      real(sz) :: rsnxRaw, rsnyRaw
+      real(8) :: rsnxRaw, rsnyRaw
       character*80 pbljagf
       integer :: errorio
 C
@@ -8388,7 +8388,7 @@ C----------------------------------------------------------------------
       use global, only : nabout, np_g
       use mesh, only : np
       implicit none
-      real(sz), intent(in) :: timesec ! adcirc model time (s)
+      real(8), intent(in) :: timesec ! adcirc model time (s)
       integer :: errorio ! i/o error condition code
 
       call setMessageSource("initDynamicWaterLevelCorrection")
@@ -8546,9 +8546,9 @@ C----------------------------------------------------------------------
       subroutine getDynamicWaterLevelCorrections(dynamicWaterLevelCorrectionsArray, timesec)
       use mesh, only : np
       implicit none
-      real(sz), intent(in) :: timesec ! current adcirc time
-      real(sz), intent(out) :: dynamicWaterLevelCorrectionsArray(np)
-      real(sz) :: dynamicWaterLevelCorrectionRamp ! linear time varying ramp value
+      real(8), intent(in) :: timesec ! current adcirc time
+      real(8), intent(out) :: dynamicWaterLevelCorrectionsArray(np)
+      real(8) :: dynamicWaterLevelCorrectionRamp ! linear time varying ramp value
       integer :: i ! jgfdebug
       call setMessageSource("getDynamicWaterLevelCorrections")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -8635,7 +8635,7 @@ C----------------------------------------------------------------------
       implicit none
       integer :: numCorrectionValues
       integer :: nhg ! fulldomain node number
-      real(sz) :: correction_val ! water level correction value at that node
+      real(8) :: correction_val ! water level correction value at that node
       integer :: fd_node_number ! full domain node number
       integer :: sd_node_number ! subdomain node number
       logical :: nextCorrectionDataSetFound ! true if a # is found in 2nd col
@@ -8955,12 +8955,12 @@ C----------------------------------------------------------------------
       use kdtree2_module, only: kdtree2, kdtree2_create
       implicit none
 
-      real(sz),intent(out) :: PRN2(NP), WVNX2(NP), WVNY2(NP)
-      real(sz),intent(out),optional :: CICE2(NP)
+      real(8),intent(out) :: PRN2(NP), WVNX2(NP), WVNY2(NP)
+      real(8),intent(out),optional :: CICE2(NP)
       integer :: i, ii, nxp, nyp, indt(4), NTkeep, xi, yi, cc
       real,allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice, lat, lon
-      real(sz), allocatable ::  lonv(:), latv(:), XY(:,:)
-      real(sz) :: xx, yy, wt(4) 
+      real(8), allocatable ::  lonv(:), latv(:), XY(:,:)
+      real(8) :: xx, yy, wt(4) 
       logical :: regular_grid
       type(kdtree2), pointer :: tree
 
@@ -9378,8 +9378,8 @@ C.... as a function of water column height.
       
       IMPLICIT NONE
       
-      REAL(SZ), intent(in) :: H
-      REAL(SZ), intent(out) :: fwind
+      REAL(8), intent(in) :: H
+      REAL(8), intent(out) :: fwind
       
       call setMessageSource("windLimiter")
 #ifdef ALL_TRACE
