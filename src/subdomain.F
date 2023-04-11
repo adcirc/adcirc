@@ -15,7 +15,7 @@ C    |                                                                      |
 C    ========================================================================
 
       module subdomain
-      use sizes, only : sz, globaldir
+      use sizes, only : globaldir
       use global, only : DEBUG, ECHO, INFO, WARNING, ERROR, logMessage,
      &                    allMessage, scratchMessage, setMessageSource,
      &                    unsetMessageSource 
@@ -26,12 +26,12 @@ C    ========================================================================
       integer,allocatable :: cbnr(:), obnr(:), ibnr(:)
       integer,allocatable :: localcbnr(:), localobnr(:), localibnr(:) 
       integer :: sbtiminc, nobn, nibn, ncbn
-      real(sz),allocatable :: eobn1(:),uobn1(:),vobn1(:),eibn1(:) 
-      real(sz),allocatable :: eobn2(:),uobn2(:),vobn2(:),eibn2(:)
-      real(sz),allocatable :: ecbn1(:),ucbn1(:),vcbn1(:)
-      real(sz),allocatable :: ecbn2(:),ucbn2(:),vcbn2(:)
-      real(sz),allocatable :: setEob(:), setUob(:), setEcb(:), setUcb(:)
-      real(sz),allocatable :: setVob(:), setVcb(:), setEib(:)
+      real(8),allocatable :: eobn1(:),uobn1(:),vobn1(:),eibn1(:) 
+      real(8),allocatable :: eobn2(:),uobn2(:),vobn2(:),eibn2(:)
+      real(8),allocatable :: ecbn1(:),ucbn1(:),vcbn1(:)
+      real(8),allocatable :: ecbn2(:),ucbn2(:),vcbn2(:)
+      real(8),allocatable :: setEob(:), setUob(:), setEcb(:), setUcb(:)
+      real(8),allocatable :: setVob(:), setVcb(:), setEib(:)
       integer,allocatable :: setWDob(:), setWDcb(:)
       integer,allocatable :: wdobn1(:),wdobn2(:),wdcbn1(:),wdcbn2(:)
       integer,allocatable :: cbn(:),obn(:),ibn(:)  

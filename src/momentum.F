@@ -56,15 +56,14 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
       module momentum
-      use sizes, only : sz
       use global, only : DEBUG, INFO, WARNING, ERROR, setMessageSource,
      &   allMessage, logMessage, unsetMessageSource
       implicit none
 
-      real(sz),allocatable :: auv(:,:) ! WJP allowing for the case auv11 ~= auv22
-      real(sz),allocatable :: auv11(:), auv12(:)! For the pc subroutine
-      real(sz) :: dto2  ! time step divided by 2.0
-      real(sz) :: go2   ! gravitational acceleration divided by 2.0
+      real(8),allocatable :: auv(:,:) ! WJP allowing for the case auv11 ~= auv22
+      real(8),allocatable :: auv11(:), auv12(:)! For the pc subroutine
+      real(8) :: dto2  ! time step divided by 2.0
+      real(8) :: go2   ! gravitational acceleration divided by 2.0
       
       contains
 
@@ -194,59 +193,59 @@ C... SB
       INTEGER NBDI
       INTEGER NNFirst
 
-      REAL(SZ) BTP1N1, BTP1N2, BTP1N3, BTP2N1, BTP2N2, BTP2N3
-      REAL(SZ) DBTPDXA, DBTPDYA, DBTPDX1A, DBTPDY1A, DBTPDX2A, DBTPDY2A
-      REAL(SZ) DBCPDX1A, DBCPDY1A, DBCPDX2A, DBCPDY2A
-      REAL(SZ) DBCPDX3A, DBCPDY3A, DDU
-      REAL(SZ) DQX1DX, DQX1DY, DQY1DX, DQY1DY
-      REAL(SZ) DU1DX, DU1DY, DV1DX, DV1DY
-      REAL(SZ) DU1DXA, DU1DYA, DV1DXA, DV1DYA
-      REAL(SZ) EVMH1N1, EVMH1N2, EVMH1N3, EVMEle, EVMSmag
-      REAL(SZ) H1, H1N1, H1N2, H1N3, H1Avg
-      REAL(SZ) H2, H2N1, H2N2, H2N3, H2Avg
-      REAL(SZ) LSXXN1, LSXXN2, LSXXN3
-      REAL(SZ) LSXYN1, LSXYN2, LSXYN3
-      REAL(SZ) LSYXN1, LSYXN2, LSYXN3
-      REAL(SZ) LSYYN1, LSYYN2, LSYYN3
-      REAL(SZ) QX1N1, QX1N2, QX1N3
-      REAL(SZ) QY1N1, QY1N2, QY1N3
-      REAL(SZ) SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
-      REAL(SZ) TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
-      REAL(SZ) TEMP_LV_B1, TEMP_LV_B2, TEMP_LV_B3
-      REAL(SZ) U1N1, U1N2, U1N3, U1Avg
-      REAL(SZ) U1AvgDU1DXA, U1AvgDV1DXA
-      REAL(SZ) V1N1, V1N2, V1N3, V1Avg
-      REAL(SZ) V1AvgDU1DYA, V1AvgDV1DYA
-      REAL(SZ) VelNorm, VelTan
-      REAL(SZ) VIDBCPDX, VIDBCPDY
-      REAL(SZ) WSX, WSY, fwind
-      REAL(SZ) ZNGLHS,ZNGRHS1,ZNGRHS2
-      REAL(SZ) DispX, DispY, CorifA
+      REAL(8) BTP1N1, BTP1N2, BTP1N3, BTP2N1, BTP2N2, BTP2N3
+      REAL(8) DBTPDXA, DBTPDYA, DBTPDX1A, DBTPDY1A, DBTPDX2A, DBTPDY2A
+      REAL(8) DBCPDX1A, DBCPDY1A, DBCPDX2A, DBCPDY2A
+      REAL(8) DBCPDX3A, DBCPDY3A, DDU
+      REAL(8) DQX1DX, DQX1DY, DQY1DX, DQY1DY
+      REAL(8) DU1DX, DU1DY, DV1DX, DV1DY
+      REAL(8) DU1DXA, DU1DYA, DV1DXA, DV1DYA
+      REAL(8) EVMH1N1, EVMH1N2, EVMH1N3, EVMEle, EVMSmag
+      REAL(8) H1, H1N1, H1N2, H1N3, H1Avg
+      REAL(8) H2, H2N1, H2N2, H2N3, H2Avg
+      REAL(8) LSXXN1, LSXXN2, LSXXN3
+      REAL(8) LSXYN1, LSXYN2, LSXYN3
+      REAL(8) LSYXN1, LSYXN2, LSYXN3
+      REAL(8) LSYYN1, LSYYN2, LSYYN3
+      REAL(8) QX1N1, QX1N2, QX1N3
+      REAL(8) QY1N1, QY1N2, QY1N3
+      REAL(8) SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
+      REAL(8) TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
+      REAL(8) TEMP_LV_B1, TEMP_LV_B2, TEMP_LV_B3
+      REAL(8) U1N1, U1N2, U1N3, U1Avg
+      REAL(8) U1AvgDU1DXA, U1AvgDV1DXA
+      REAL(8) V1N1, V1N2, V1N3, V1Avg
+      REAL(8) V1AvgDU1DYA, V1AvgDV1DYA
+      REAL(8) VelNorm, VelTan
+      REAL(8) VIDBCPDX, VIDBCPDY
+      REAL(8) WSX, WSY, fwind
+      REAL(8) ZNGLHS,ZNGRHS1,ZNGRHS2
+      REAL(8) DispX, DispY, CorifA
 
       REAL(8) AreaIE, AreaIE2
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       INTEGER :: nele
-      REAL(SZ) :: VCOEFXX, VCOEFYY, VCOEFXY, VCOEFYX
-      REAL(SZ) :: Ma2, Cfac1 = 1.0_SZ, Cfac2 = 1.0_SZ
-      REAL(SZ), PARAMETER :: THIRD = 1.0_SZ/3.0_SZ
+      REAL(8) :: VCOEFXX, VCOEFYY, VCOEFXY, VCOEFYX
+      REAL(8) :: Ma2, Cfac1 = 1.0D0, Cfac2 = 1.0D0
+      REAL(8), PARAMETER :: THIRD = 1.0D0/3.0D0
 C..... DW
       LOGICAL :: MOM_SPONGE = .false.
       REAL(8) :: SPNGCOEF_X, SPNGCOEF_Y
-      REAL(SZ):: pr1_NM1, pr1_NM2, pr1_NM3
-      REAL(SZ):: pr2_NM1, pr2_NM2, pr2_NM3
+      REAL(8):: pr1_NM1, pr1_NM2, pr1_NM3
+      REAL(8):: pr2_NM1, pr2_NM2, pr2_NM3
 C......DW
 C..... SB
       INTEGER:: NNBB1, NNBB2
       INTEGER:: NCIBC
       INTEGER:: IA1, IA2, IB1, IB2
       INTEGER:: ROT_STATUS
-      REAL(SZ):: fBUF1, fBUF2
-      REAL(SZ):: COEFIB64
-      REAL(SZ):: CS, SI, CSCS, CSSI, SISI ! cos, sin, cos*cos, cos*sin (=sin*cos), sin*sin
-      REAL(SZ):: SX, SY, LEN
+      REAL(8):: fBUF1, fBUF2
+      REAL(8):: COEFIB64
+      REAL(8):: CS, SI, CSCS, CSSI, SISI ! cos, sin, cos*cos, cos*sin (=sin*cos), sin*sin
+      REAL(8):: SX, SY, LEN
 C.....
 C......SB For Elemental summation form
-      REAL(SZ):: TotalArea1, TotalArea2
+      REAL(8):: TotalArea1, TotalArea2
 C......
       call setMessageSource("mom_eqs_new_nc")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -321,7 +320,7 @@ C..... BEG DW/WJP
          SFmxAvg= SFMXEle(IE) ; 
          SFmyAvg= SFMYEle(IE) ; 
          sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-         sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+         sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
 C..... END DW/WJP
 
          AreaIE2 = Areas(IE)
@@ -437,15 +436,15 @@ C...  WJP: For the new dispersion relation
             ! time 1
             H1Avg = THIRD*(H1N1 + H1N2 + H1N3)
             Ma2   = G*H1Avg/Cs2
-            Cfac1 = (1.0_SZ - 0.25_SZ*Ma2 - Ad*H1Avg**Bd)**2
+            Cfac1 = (1.0D0 - 0.25D0*Ma2 - Ad*H1Avg**Bd)**2
             ! time 2
             H2Avg = THIRD*(H2N1 + H2N2 + H2N3)
             Ma2   = G*H2Avg/Cs2
-            Cfac2 = (1.0_SZ - 0.25_SZ*Ma2 - Ad*H2Avg**Bd)**2
+            Cfac2 = (1.0D0 - 0.25D0*Ma2 - Ad*H2Avg**Bd)**2
          ENDIF
 
-         DBTPDXA = 0.5_SZ*(Cfac1*DBTPDX1A + Cfac2*DBTPDX2A)
-         DBTPDYA = 0.5_SZ*(Cfac1*DBTPDY1A + Cfac2*DBTPDY2A)
+         DBTPDXA = 0.5D0*(Cfac1*DBTPDX1A + Cfac2*DBTPDX2A)
+         DBTPDYA = 0.5D0*(Cfac1*DBTPDY1A + Cfac2*DBTPDY2A)
  
 C...  WJP: Compute the baroclinic pressure gradient from a 3D ocean model
          IF (CBaroclinic) THEN
@@ -897,7 +896,7 @@ C.....DW
                   SFmxAvg = SFMXEle(NEle)
                   SFmyAvg = SFMYEle(NEle)
                   sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-                  sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+                  sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
                   FDX1 = FDXE(1,NEle)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
                   FDX2 = FDXE(2,NEle)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
                   FDX3 = FDXE(3,NEle)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
@@ -922,7 +921,7 @@ C.....DW
                SFmxAvg = SFMXEle(NEle)
                SFmyAvg = SFMYEle(NEle)
                sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-               sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+               sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
                FDX1 = FDXE(1,NEle)*sfdxfac ; 
                FDX2 = FDXE(2,NEle)*sfdxfac ;
                FDX3 = FDXE(3,NEle)*sfdxfac ; 
@@ -1277,39 +1276,39 @@ C
       INTEGER NBDI
       INTEGER NNFirst
 
-      REAL(SZ) BTP1N1, BTP1N2, BTP1N3, BTP2N1, BTP2N2, BTP2N3
-      REAL(SZ) DBTPDXA, DBTPDYA
-      REAL(SZ) DDU
-      REAL(SZ) DU1DX, DU1DY, DV1DX, DV1DY
-      REAL(SZ) DU1DX2A, DU1DY2A, DV1DX2A, DV1DY2A
-      REAL(SZ) DQX1DX, DQX1DY, DQY1DX, DQY1DY
-      REAL(SZ) DQX1DX2A, DQX1DY2A, DQY1DX2A, DQY1DY2A
-      REAL(SZ) DU1QX1DXA, DV1QX1DYA, DU1QY1DXA, DV1QY1DYA
-      REAL(SZ) EVMH1N1, EVMH1N2, EVMH1N3, EVMEle, EVMSmag
-      REAL(SZ) H1, H1N1, H1N2, H1N3, H1Avg, GH1Avg
-      REAL(SZ) H2, H2N1, H2N2, H2N3, H2Avg, GH2Avg
-      REAL(SZ) LSXXN1, LSXXN2, LSXXN3
-      REAL(SZ) LSXYN1, LSXYN2, LSXYN3
-      REAL(SZ) LSYXN1, LSYXN2, LSYXN3
-      REAL(SZ) LSYYN1, LSYYN2, LSYYN3
-      REAL(SZ) QTan
-      REAL(SZ) QX1N1, QX1N2, QX1N3, QX1Avg, QX1DU1DXA, QX1DV1DYA
-      REAL(SZ) QY1N1, QY1N2, QY1N3, QY1Avg, QY1DU1DXA, QY1DV1DYA
-      REAL(SZ) SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
-      REAL(SZ) TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
-      REAL(SZ) TEMP_LV_B1, TEMP_LV_B2, TEMP_LV_B3
-      REAL(SZ) U1N1, U1N2, U1N3, U1Avg, U1DQX1DXA, U1DQY1DXA
-      REAL(SZ) V1N1, V1N2, V1N3, V1Avg, V1DQX1DYA, V1DQY1DYA
-      REAL(SZ) :: VCOEFXX, VCOEFYY, VCOEFXY, VCOEFYX
-      REAL(SZ) VIDBCPDX, VIDBCPDY
-      REAL(SZ) WSX, WSY, fwind
-      REAL(SZ) ZNGLHS,ZNGRHS1,ZNGRHS2
-      REAL(SZ) DispX, DispY, CorifA
+      REAL(8) BTP1N1, BTP1N2, BTP1N3, BTP2N1, BTP2N2, BTP2N3
+      REAL(8) DBTPDXA, DBTPDYA
+      REAL(8) DDU
+      REAL(8) DU1DX, DU1DY, DV1DX, DV1DY
+      REAL(8) DU1DX2A, DU1DY2A, DV1DX2A, DV1DY2A
+      REAL(8) DQX1DX, DQX1DY, DQY1DX, DQY1DY
+      REAL(8) DQX1DX2A, DQX1DY2A, DQY1DX2A, DQY1DY2A
+      REAL(8) DU1QX1DXA, DV1QX1DYA, DU1QY1DXA, DV1QY1DYA
+      REAL(8) EVMH1N1, EVMH1N2, EVMH1N3, EVMEle, EVMSmag
+      REAL(8) H1, H1N1, H1N2, H1N3, H1Avg, GH1Avg
+      REAL(8) H2, H2N1, H2N2, H2N3, H2Avg, GH2Avg
+      REAL(8) LSXXN1, LSXXN2, LSXXN3
+      REAL(8) LSXYN1, LSXYN2, LSXYN3
+      REAL(8) LSYXN1, LSYXN2, LSYXN3
+      REAL(8) LSYYN1, LSYYN2, LSYYN3
+      REAL(8) QTan
+      REAL(8) QX1N1, QX1N2, QX1N3, QX1Avg, QX1DU1DXA, QX1DV1DYA
+      REAL(8) QY1N1, QY1N2, QY1N3, QY1Avg, QY1DU1DXA, QY1DV1DYA
+      REAL(8) SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
+      REAL(8) TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
+      REAL(8) TEMP_LV_B1, TEMP_LV_B2, TEMP_LV_B3
+      REAL(8) U1N1, U1N2, U1N3, U1Avg, U1DQX1DXA, U1DQY1DXA
+      REAL(8) V1N1, V1N2, V1N3, V1Avg, V1DQX1DYA, V1DQY1DYA
+      REAL(8) :: VCOEFXX, VCOEFYY, VCOEFXY, VCOEFYX
+      REAL(8) VIDBCPDX, VIDBCPDY
+      REAL(8) WSX, WSY, fwind
+      REAL(8) ZNGLHS,ZNGRHS1,ZNGRHS2
+      REAL(8) DispX, DispY, CorifA
 
       REAL(8) AREAIE, AREAIE2
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       INTEGER :: nele
-      REAL(SZ) :: Ma2, Cfac 
+      REAL(8) :: Ma2, Cfac 
 
       call setMessageSource("mom_eqs_new_conserv")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -1361,7 +1360,7 @@ C..... BEG DW/WJP
          SFmxAvg= SFMXEle(IE) ; 
          SFmyAvg= SFMYEle(IE) ; 
          sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-         sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+         sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
 C..... END DW/WJP
 
          AreaIE2 = Areas(IE)
@@ -1442,11 +1441,11 @@ C.... WJP: For the new dispersion relation
          IF (CAliDisp) THEN
             ! time 1
             Ma2    = G*H1avg/Cs2
-            Cfac   = (1.0_SZ - 0.25_SZ*Ma2 - Ad*H1Avg**Bd)**2
+            Cfac   = (1.0D0 - 0.25D0*Ma2 - Ad*H1Avg**Bd)**2
             GH1Avg = Cfac*GH1Avg
             ! time 2
             Ma2    = G*H2avg/Cs2
-            Cfac   = (1.0_SZ - 0.25_SZ*Ma2 - Ad*H2Avg**Bd)**2
+            Cfac   = (1.0D0 - 0.25D0*Ma2 - Ad*H2Avg**Bd)**2
             GH2Avg = Cfac*GH2Avg
          ENDIF
 
@@ -1848,7 +1847,7 @@ C     fluxes at the previous time step.
                   SFmxAvg = SFMXEle(NEle)
                   SFmyAvg = SFMYEle(NEle)
                   sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-                  sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+                  sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
                   FDX1 = FDXE(1,NEle)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
                   FDX2 = FDXE(2,NEle)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
                   FDX3 = FDXE(3,NEle)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
@@ -1872,7 +1871,7 @@ C     fluxes at the previous time step.
                SFmxAvg = SFMXEle(NEle)
                SFmyAvg = SFMYEle(NEle)
                sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-               sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+               sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
                FDX1 = FDXE(1,NEle)*sfdxfac ; 
                FDX2 = FDXE(2,NEle)*sfdxfac ;
                FDX3 = FDXE(3,NEle)*sfdxfac ; 
@@ -2034,51 +2033,51 @@ C
       INTEGER NBDI
       INTEGER NNFirst
 
-      REAL(SZ) BTP1N1, BTP1N2, BTP1N3, BTP2N1, BTP2N2, BTP2N3
-      REAL(SZ) DBTPDXA, DBTPDYA
-      REAL(SZ) DDU
-      REAL(SZ) DQX1DX, DQX1DY, DQY1DX, DQY1DY
-      REAL(SZ) DU1DX, DU1DY, DV1DX, DV1DY
-      REAL(SZ) DU1DXA, DU1DYA, DV1DXA, DV1DYA
-      REAL(SZ) EVMH1N1, EVMH1N2, EVMH1N3, EVMEle, EVMSmag
-      REAL(SZ) H1, H1N1, H1N2, H1N3
-      REAL(SZ) H2, H2N1, H2N2, H2N3
-      REAL(SZ) LSXXN1, LSXXN2, LSXXN3
-      REAL(SZ) LSXYN1, LSXYN2, LSXYN3
-      REAL(SZ) LSYXN1, LSYXN2, LSYXN3
-      REAL(SZ) LSYYN1, LSYYN2, LSYYN3
-      REAL(SZ) QX1N1, QX1N2, QX1N3
-      REAL(SZ) QY1N1, QY1N2, QY1N3
-      REAL(SZ) SFacAvg
-      REAL(SZ) TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
-      REAL(SZ) TEMP_LV_B1, TEMP_LV_B2, TEMP_LV_B3
-      REAL(SZ) U1N1, U1N2, U1N3, U1Avg
-      REAL(SZ) U1AvgDU1DXA, U1AvgDV1DXA
-      REAL(SZ) V1N1, V1N2, V1N3, V1Avg
-      REAL(SZ) V1AvgDU1DYA, V1AvgDV1DYA
-      REAL(SZ) VCoef1, VCoef2
-      REAL(SZ) VelNorm, VelTan
-      REAL(SZ) VIDBCPDX, VIDBCPDY
-      REAL(SZ) WSX, WSY, fwind
-      REAL(SZ) ZNGLHS,ZNGRHS1,ZNGRHS2
+      REAL(8) BTP1N1, BTP1N2, BTP1N3, BTP2N1, BTP2N2, BTP2N3
+      REAL(8) DBTPDXA, DBTPDYA
+      REAL(8) DDU
+      REAL(8) DQX1DX, DQX1DY, DQY1DX, DQY1DY
+      REAL(8) DU1DX, DU1DY, DV1DX, DV1DY
+      REAL(8) DU1DXA, DU1DYA, DV1DXA, DV1DYA
+      REAL(8) EVMH1N1, EVMH1N2, EVMH1N3, EVMEle, EVMSmag
+      REAL(8) H1, H1N1, H1N2, H1N3
+      REAL(8) H2, H2N1, H2N2, H2N3
+      REAL(8) LSXXN1, LSXXN2, LSXXN3
+      REAL(8) LSXYN1, LSXYN2, LSXYN3
+      REAL(8) LSYXN1, LSYXN2, LSYXN3
+      REAL(8) LSYYN1, LSYYN2, LSYYN3
+      REAL(8) QX1N1, QX1N2, QX1N3
+      REAL(8) QY1N1, QY1N2, QY1N3
+      REAL(8) SFacAvg
+      REAL(8) TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
+      REAL(8) TEMP_LV_B1, TEMP_LV_B2, TEMP_LV_B3
+      REAL(8) U1N1, U1N2, U1N3, U1Avg
+      REAL(8) U1AvgDU1DXA, U1AvgDV1DXA
+      REAL(8) V1N1, V1N2, V1N3, V1Avg
+      REAL(8) V1AvgDU1DYA, V1AvgDV1DYA
+      REAL(8) VCoef1, VCoef2
+      REAL(8) VelNorm, VelTan
+      REAL(8) VIDBCPDX, VIDBCPDY
+      REAL(8) WSX, WSY, fwind
+      REAL(8) ZNGLHS,ZNGRHS1,ZNGRHS2
 
 ckmd   Added in parameters for the pc algorithm
-      REAL(SZ) QX0N1, QX0N2, QX0N3
-      REAL(SZ) QY0N1, QY0N2, QY0N3
-      REAL(SZ) QX2N1, QX2N2, QX2N3
-      REAL(SZ) QY2N1, QY2N2, QY2N3
-      REAL(SZ) U0N1, U0N2, U0N3, U0Avg
-      REAL(SZ) U0AvgDU0DXA, U0AvgDV0DXA
-      REAL(SZ) V0N1, V0N2, V0N3, V0Avg
-      REAL(SZ) V0AvgDU0DYA, V0AvgDV0DYA
-      REAL(SZ) U2N1, U2N2, U2N3, U2Avg
-      REAL(SZ) U2AvgDU2DXA, U2AvgDV2DXA
-      REAL(SZ) V2N1, V2N2, V2N3, V2Avg
-      REAL(SZ) V2AvgDU2DYA, V2AvgDV2DYA
-      REAL(SZ) DU0DXA, DU0DYA, DV0DXA, DV0DYA
-      REAL(SZ) DU2DXA, DU2DYA, DV2DXA, DV2DYA
-      REAL(SZ) timewtmom0,timewtmom1,timewtmom2,timebfflag
-      REAL(SZ) VCoef12, AUV22, AUV21
+      REAL(8) QX0N1, QX0N2, QX0N3
+      REAL(8) QY0N1, QY0N2, QY0N3
+      REAL(8) QX2N1, QX2N2, QX2N3
+      REAL(8) QY2N1, QY2N2, QY2N3
+      REAL(8) U0N1, U0N2, U0N3, U0Avg
+      REAL(8) U0AvgDU0DXA, U0AvgDV0DXA
+      REAL(8) V0N1, V0N2, V0N3, V0Avg
+      REAL(8) V0AvgDU0DYA, V0AvgDV0DYA
+      REAL(8) U2N1, U2N2, U2N3, U2Avg
+      REAL(8) U2AvgDU2DXA, U2AvgDV2DXA
+      REAL(8) V2N1, V2N2, V2N3, V2Avg
+      REAL(8) V2AvgDU2DYA, V2AvgDV2DYA
+      REAL(8) DU0DXA, DU0DYA, DV0DXA, DV0DYA
+      REAL(8) DU2DXA, DU2DYA, DV2DXA, DV2DYA
+      REAL(8) timewtmom0,timewtmom1,timewtmom2,timebfflag
+      REAL(8) VCoef12, AUV22, AUV21
 
 
       REAL(8) AreaIE, AreaIE2

@@ -93,7 +93,7 @@ C----------------------------------------------------------------------------
 
       MODULE PRESIZES
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      USE CONSTANTS, ONLY: waveWindMultiplier
+      USE CONSTANTS, ONLY: waveWindMultiplier, Ad, Bd, Cs
       USE GLOBAL, ONLY :
      &    USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,
      &    outputWindDrag,slim,windlim,directvelWD,useHF
@@ -115,17 +115,7 @@ Casey 180318: Added NWS=13
 C
       IMPLICIT NONE
 C
-C...SET NUMBER OF BYTES "SZ" IN REAL(SZ) DECLARATIONS
-C...SET "NBYTE" FOR PROCESSING INPUT DATA RECORD LENGTH
-
-#ifdef REAL4
-      INTEGER, PARAMETER :: SZ = 4
-      INTEGER, PARAMETER :: NBYTE=4
-#endif
-#ifdef REAL8
-      INTEGER, PARAMETER :: SZ = 8
       INTEGER, PARAMETER :: NBYTE=8
-#endif
 
 C...SET MAX OF DIGITS OF PRECISION "NPREC" THE GRID CAN BE EXPECTED TO HAVE
 C...NOTE: IF THE GRID WAS BUILT ON A 32 BIT COMPUTER, IT SHOULD BE
@@ -242,8 +232,8 @@ Casey 180318: Added NWS=13
       logical :: meshHasWeirWithPipes
       ! Warn Elev control namelist
 c.... !wjp added for warnElev namelist
-      REAL(SZ) :: WarnElev = 20.0  !
-      REAL(SZ) :: ErrorElev = 1000.0  !
+      REAL(8) :: WarnElev = 20.0  !
+      REAL(8) :: ErrorElev = 1000.0  !
       LOGICAL :: WarnElevDump = .FALSE.  
       INTEGER :: WarnElevDumpLimit = 50  !
       LOGICAL :: WARN_ELEV_FLAG = .FALSE.   
@@ -251,9 +241,6 @@ c.... !wjp added for warnElev namelist
       NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
      &  WarnElevDumpLimit, ErrorElev
       ! Ali Dispersion control namelist
-      REAL(SZ) :: Bd = 0.23394_SZ  ! exponent of depth (default)
-      REAL(SZ) :: Ad = 0.0050189_SZ ! coefficient of depth (default)
-      REAL(SZ) :: Cs = 1500.0_SZ ! Speed of sound in water
       LOGICAL :: CAliDisp= .false.  !
       LOGICAL :: FOUND_ALIDISP_NML = .false.  !
       NAMELIST /AliDispersionControl/ CAliDisp, Cs, Ad, Bd
@@ -506,7 +493,7 @@ C
       INTEGER :: NHASE,NHASV,NHAGE,NHAGV
       REAL(8) RSTIMINC,DT,STATIM,REFTIM,WTIMINC
       REAL(8) CICE_TIMINC !tcm v49.64.01 -- added for ice
-      REAL(SZ) GRAVITY,TAU0,RDUM,A00,B00,C00,THAS,THAF,FMV
+      REAL(8) GRAVITY,TAU0,RDUM,A00,B00,C00,THAS,THAF,FMV
       INTEGER IEVC,I3DSD,I3DSV,I3DST
       CHARACTER*95 LINEI
       CHARACTER*1 CHARI(95)

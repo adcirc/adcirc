@@ -13,8 +13,7 @@ C...
 C...BRING IN NECESSARY VARIABLES FROM GLOBAL
 C...
       USE SIZES,
-     &     ONLY : SZ, !size of reals (4 or 8 bytes), set during compile time
-     &     NBYTE,
+     &     ONLY: NBYTE,
      &     MNP,
      &     MNE,
      &     MNEI,
@@ -60,127 +59,127 @@ C...DECLARE 3D GLOBAL ARRAYS
       ! jgf: Explicitly declare pointer variables instead of assigning
       ! them in the USE GLOBAL, ONLY statement above.
       ! BSX(MNP),BSY(MNP) = bottom stress computed after velocity solution
-      REAL(SZ), POINTER :: BSX(:)  ! => BSX1
-      REAL(SZ), POINTER :: BSY(:)  ! => BSY1
+      REAL(8), POINTER :: BSX(:)  ! => BSX1
+      REAL(8), POINTER :: BSY(:)  ! => BSY1
       ! UU(MNP),VV(MNP) = vertically averaged velocity components
-      REAL(SZ), POINTER :: UU(:)   ! => UU2
-      REAL(SZ), POINTER :: VV(:)   ! => VV2
-      REAL(SZ), POINTER :: DAFluxX(:)   ! => QX2
-      REAL(SZ), POINTER :: DAFluxY(:)   ! => QY2
+      REAL(8), POINTER :: UU(:)   ! => UU2
+      REAL(8), POINTER :: VV(:)   ! => VV2
+      REAL(8), POINTER :: DAFluxX(:)   ! => QX2
+      REAL(8), POINTER :: DAFluxY(:)   ! => QY2
       ! DUU(MNP),DVV(MNP),DUV(MNP) = velocity dispersion terms
-      REAL(SZ), POINTER :: DUU(:)       ! => DUU1
-      REAL(SZ), POINTER :: DUV(:)       ! => DUV1
-      REAL(SZ), POINTER :: DVV(:)       ! => DVV1
+      REAL(8), POINTER :: DUU(:)       ! => DUU1
+      REAL(8), POINTER :: DUV(:)       ! => DUV1
+      REAL(8), POINTER :: DVV(:)       ! => DVV1
       ! BTP(MNP) = barotropic pressure (incl TP & wl) at time levels s+1/2
-      REAL(SZ), POINTER :: BTP(:)       ! => MOM_LV_X
+      REAL(8), POINTER :: BTP(:)       ! => MOM_LV_X
       ! QNORMSP1(MNVel) = specified normal flux boundary condition at time level s+1
-      REAL(SZ), POINTER :: QNORMSP1(:)  ! => QN2
-      REAL(SZ), POINTER :: DelT    !DelT = altername for timestep real(8)                
+      REAL(8), POINTER :: QNORMSP1(:)  ! => QN2
+      REAL(8), POINTER :: DelT    !DelT = altername for timestep real(8)                
 
 c.RJW merged 9/02/2008 Casey 071219: Added the following variable for cumulative mass balance.
-      REAL(SZ) :: MASSCUM
+      REAL(8) :: MASSCUM
 
-      COMPLEX(SZ),ALLOCATABLE  :: Gamma(:)   !  Gamma(NFEN): horizontal velocity solution in the complex form u+iv for a specific node
-      COMPLEX(SZ),ALLOCATABLE  :: Q(:,:)     !  Q(MNP,NFEN): horizontal velocity solution in the complex form u+iv for all nodes
-      REAL(SZ),ALLOCATABLE :: SIGMA(:)       !  Sigma(NFEN): stretched vertical coordinate levels (-1 to 1)
-      REAL(SZ),ALLOCATABLE :: EVTot(:)       !  EVTot(NFEN): vertical eddy viscosity values at a node
-      REAL(SZ),ALLOCATABLE :: INM(:,:)       !  INM(NFEN,3): Integral used in vertical FE assembly
-      REAL(SZ),ALLOCATABLE :: LVN(:)         !  LVN(NFEN): Integral used in vertical FE assembly
-      REAL(SZ),ALLOCATABLE,TARGET :: WZ(:,:)        !  WZ(MNP,NFEN): "z" vertical velocity, all nodes
-      REAL(SZ),ALLOCATABLE,TARGET :: SIGT(:,:)      !  SIGT(MNP,NFEN): sigma T, all nodes
-      REAL(SZ),ALLOCATABLE,TARGET :: Temp(:,:)      !  TEMP(MNP,NFEN): temperature, all nodes
-      REAL(SZ),ALLOCATABLE,TARGET :: Sal(:,:)       !  Sal(MNP,NFEN): salinity, all nodes
-      REAL(SZ),ALLOCATABLE :: BCP(:,:)       !  BCP(MNP,NFEN): baroclinic pressure, integrated down from surface,all nodes
-      REAL(SZ),ALLOCATABLE,TARGET :: Q20(:,:)       !  Q20(MNP,NFEN): Turbulent Kinetic Energy computed by Mellor-Yamada L2.5 closure, all nodes
-      REAL(SZ),ALLOCATABLE,TARGET :: L(:,:)         !  L(MNP,NFEN): turbulent length scale computed by Mellor-Yamada L2.5 closure, all nodes
-      REAL(SZ),ALLOCATABLE,TARGET :: EV(:,:)        !  EV(MNP,NFEN): Vertical eddy viscosity, all nodes
+      COMPLEX(8),ALLOCATABLE  :: Gamma(:)   !  Gamma(NFEN): horizontal velocity solution in the complex form u+iv for a specific node
+      COMPLEX(8),ALLOCATABLE  :: Q(:,:)     !  Q(MNP,NFEN): horizontal velocity solution in the complex form u+iv for all nodes
+      REAL(8),ALLOCATABLE :: SIGMA(:)       !  Sigma(NFEN): stretched vertical coordinate levels (-1 to 1)
+      REAL(8),ALLOCATABLE :: EVTot(:)       !  EVTot(NFEN): vertical eddy viscosity values at a node
+      REAL(8),ALLOCATABLE :: INM(:,:)       !  INM(NFEN,3): Integral used in vertical FE assembly
+      REAL(8),ALLOCATABLE :: LVN(:)         !  LVN(NFEN): Integral used in vertical FE assembly
+      REAL(8),ALLOCATABLE,TARGET :: WZ(:,:)        !  WZ(MNP,NFEN): "z" vertical velocity, all nodes
+      REAL(8),ALLOCATABLE,TARGET :: SIGT(:,:)      !  SIGT(MNP,NFEN): sigma T, all nodes
+      REAL(8),ALLOCATABLE,TARGET :: Temp(:,:)      !  TEMP(MNP,NFEN): temperature, all nodes
+      REAL(8),ALLOCATABLE,TARGET :: Sal(:,:)       !  Sal(MNP,NFEN): salinity, all nodes
+      REAL(8),ALLOCATABLE :: BCP(:,:)       !  BCP(MNP,NFEN): baroclinic pressure, integrated down from surface,all nodes
+      REAL(8),ALLOCATABLE,TARGET :: Q20(:,:)       !  Q20(MNP,NFEN): Turbulent Kinetic Energy computed by Mellor-Yamada L2.5 closure, all nodes
+      REAL(8),ALLOCATABLE,TARGET :: L(:,:)         !  L(MNP,NFEN): turbulent length scale computed by Mellor-Yamada L2.5 closure, all nodes
+      REAL(8),ALLOCATABLE,TARGET :: EV(:,:)        !  EV(MNP,NFEN): Vertical eddy viscosity, all nodes
 
 ! arash 12/08/2015: variables for biharmonic viscosity operator
-      COMPLEX(SZ),ALLOCATABLE  :: Biharmonic_auxiliary_var(:,:)         ! since we need to compute the Laplacian twice, we need an auxiliary variable to store the first Laplacian for U and V.
+      COMPLEX(8),ALLOCATABLE  :: Biharmonic_auxiliary_var(:,:)         ! since we need to compute the Laplacian twice, we need an auxiliary variable to store the first Laplacian for U and V.
 ! arash 12/21/2015: variables for modified Leith viscosity
-      COMPLEX(SZ),ALLOCATABLE  :: d_dx_q_nodes (:,:), d_dy_q_nodes (:,:)
+      COMPLEX(8),ALLOCATABLE  :: d_dx_q_nodes (:,:), d_dy_q_nodes (:,:)
 ! arash 01/04/2016: biharmonic for transport equation
-      Real(SZ),Allocatable  :: Biharmonic_viscosity_modified_Leith (:,:)
-      Real(SZ),ALLOCATABLE  :: Biharmonic_auxiliary_var_SalOrTemp (:,:)
-      Real(SZ),ALLOCATABLE  :: d_dx_SalOrTemp_nodes (:,:), d_dy_SalOrTemp_nodes (:,:)
+      REAL(8),Allocatable  :: Biharmonic_viscosity_modified_Leith (:,:)
+      REAL(8),ALLOCATABLE  :: Biharmonic_auxiliary_var_SalOrTemp (:,:)
+      REAL(8),ALLOCATABLE  :: d_dx_SalOrTemp_nodes (:,:), d_dy_SalOrTemp_nodes (:,:)
 
 C     kmd45.12 Added in variables for transport
 
-      REAL(SZ),ALLOCATABLE :: Gammatrans(:)  !  Gammatrans(NFEN): horizontal transport soln for a specific node
-      REAL(SZ),ALLOCATABLE :: Tempkp1(:,:)   !  Tempkp1(MNP,NFEN): temperature of all nodes at future time level
-      REAL(SZ),ALLOCATABLE :: Salkp1(:,:)    !  Salkp1(MNP,NFEN): salinity of all nodes at future time level
+      REAL(8),ALLOCATABLE :: Gammatrans(:)  !  Gammatrans(NFEN): horizontal transport soln for a specific node
+      REAL(8),ALLOCATABLE :: Tempkp1(:,:)   !  Tempkp1(MNP,NFEN): temperature of all nodes at future time level
+      REAL(8),ALLOCATABLE :: Salkp1(:,:)    !  Salkp1(MNP,NFEN): salinity of all nodes at future time level
 
 C     kmd45.12 Added in these variables for the top boundary conditions
 C     associated with the temperature field
 
-      REAL(SZ), ALLOCATABLE, TARGET :: qsurfkp1(:)
-      REAL(SZ), ALLOCATABLE :: qsurf(:)
+      REAL(8), ALLOCATABLE, TARGET :: qsurfkp1(:)
+      REAL(8), ALLOCATABLE :: qsurf(:)
 
 C     kmd45.12 Added in the variables for saving 3D velocities for two
 C     time levels
 
-      COMPLEX(SZ),ALLOCATABLE  :: Qkp1(:,:) !  Qkp1(MNP,NFEN): horiz vel in the complex form u+iv for all nodes at the future time level
+      COMPLEX(8),ALLOCATABLE  :: Qkp1(:,:) !  Qkp1(MNP,NFEN): horiz vel in the complex form u+iv for all nodes at the future time level
 !arash 2016 Mar 22
-      COMPLEX(SZ),ALLOCATABLE  :: Qkm1(:,:) !  Qkm1(MNP,NFEN): horiz vel in the complex form u+iv for all nodes at the previous time level
-      REAL(SZ),ALLOCATABLE :: WZkm1(:,:)    !  WZkm1(MNP,NFEN): "z" vertical velocity at all nodes for the previous time level
+      COMPLEX(8),ALLOCATABLE  :: Qkm1(:,:) !  Qkm1(MNP,NFEN): horiz vel in the complex form u+iv for all nodes at the previous time level
+      REAL(8),ALLOCATABLE :: WZkm1(:,:)    !  WZkm1(MNP,NFEN): "z" vertical velocity at all nodes for the previous time level
 
-      REAL(SZ),ALLOCATABLE :: WZkp1(:,:)    !  WZkp1(MNP,NFEN): "z" vertical velocity at all nodes for the future time level
+      REAL(8),ALLOCATABLE :: WZkp1(:,:)    !  WZkp1(MNP,NFEN): "z" vertical velocity at all nodes for the future time level
 
 !     kmd45.12 added in for baroclinic changes
 
-      COMPLEX(SZ), ALLOCATABLE :: BPG(:,:)
-      COMPLEX(SZ), ALLOCATABLE :: BPG_nodes(:,:)
+      COMPLEX(8), ALLOCATABLE :: BPG(:,:)
+      COMPLEX(8), ALLOCATABLE :: BPG_nodes(:,:)
 
 C     kmd48.33bc - added these variables for the vertical diffusion terms in the transport equation
 C              Note: terms used when vertical eddy viscosity is defined from Mellor-Yamada
-      REAL(SZ),ALLOCATABLE :: NTVTot(:)     !  NTVTot(NFEN): vertical diffusion values for transport
-      REAL(SZ),ALLOCATABLE :: DV(:,:)       !  DV(MNP,NFEN): Vertical diffusion, all nodes
+      REAL(8),ALLOCATABLE :: NTVTot(:)     !  NTVTot(NFEN): vertical diffusion values for transport
+      REAL(8),ALLOCATABLE :: DV(:,:)       !  DV(MNP,NFEN): Vertical diffusion, all nodes
 
 C     kmd48.33bc - added these variables for boundary condtions
-      REAL(SZ),ALLOCATABLE :: RESSAL(:,:)    !  RESSAL(NETA,NFEN): Vertical salinity boundary condition used in transport
-      REAL(SZ),ALLOCATABLE :: RESSAL1(:,:)   !  RESSAL1(NETA,NFEN): Vertical salinity boundary condition used in transport
-      REAL(SZ),ALLOCATABLE :: RESSAL2(:,:)   !  RESSAL2(NETA,NFEN): Vertical salinity boundary condition used in transport
-      REAL(SZ),ALLOCATABLE :: RESTEMP(:,:)   !  RESTEMP(NETA,NFEN): Vertical temperature boundary condition used in transport
-      REAL(SZ),ALLOCATABLE :: RESTEMP1(:,:)  !  RESTEMP1(NETA,NFEN): Vertical temperature boundary condition used in transport
-      REAL(SZ),ALLOCATABLE :: RESTEMP2(:,:)  !  RESTEMP2(NETA,NFEN): Vertical temperature boundary condition used in transport
+      REAL(8),ALLOCATABLE :: RESSAL(:,:)    !  RESSAL(NETA,NFEN): Vertical salinity boundary condition used in transport
+      REAL(8),ALLOCATABLE :: RESSAL1(:,:)   !  RESSAL1(NETA,NFEN): Vertical salinity boundary condition used in transport
+      REAL(8),ALLOCATABLE :: RESSAL2(:,:)   !  RESSAL2(NETA,NFEN): Vertical salinity boundary condition used in transport
+      REAL(8),ALLOCATABLE :: RESTEMP(:,:)   !  RESTEMP(NETA,NFEN): Vertical temperature boundary condition used in transport
+      REAL(8),ALLOCATABLE :: RESTEMP1(:,:)  !  RESTEMP1(NETA,NFEN): Vertical temperature boundary condition used in transport
+      REAL(8),ALLOCATABLE :: RESTEMP2(:,:)  !  RESTEMP2(NETA,NFEN): Vertical temperature boundary condition used in transport
 C     ! kmd - added these variables for river boundary conditions in baroclinic simulation
-      REAL(SZ),ALLOCATABLE :: BCRivSal(:,:)    !  BCRivSal(NVEL,NFEN) : Vertical salinity boundary information for rivers
-      REAL(SZ),ALLOCATABLE :: BCRivSalN1(:,:)  !  BCRivSal(NVEL,NFEN) : Vertical salinity boundary information for rivers
-      REAL(SZ),ALLOCATABLE :: BCRivSalN2(:,:)  !  BCRivSal(NVEL,NFEN) : Vertical salinity boundary information for rivers
-      REAL(SZ),ALLOCATABLE :: BCRivTemp(:,:)   !  BCRivTemp(NVEL,NFEN): Vertical temperature boundary information for rivers
-      REAL(SZ),ALLOCATABLE :: BCRivTempN1(:,:) !  BCRivTemp(NVEL,NFEN): Vertical temperature boundary information for rivers
-      REAL(SZ),ALLOCATABLE :: BCRivTempN2(:,:) !  BCRivTemp(NVEL,NFEN): Vertical temperature boundary information for rivers
+      REAL(8),ALLOCATABLE :: BCRivSal(:,:)    !  BCRivSal(NVEL,NFEN) : Vertical salinity boundary information for rivers
+      REAL(8),ALLOCATABLE :: BCRivSalN1(:,:)  !  BCRivSal(NVEL,NFEN) : Vertical salinity boundary information for rivers
+      REAL(8),ALLOCATABLE :: BCRivSalN2(:,:)  !  BCRivSal(NVEL,NFEN) : Vertical salinity boundary information for rivers
+      REAL(8),ALLOCATABLE :: BCRivTemp(:,:)   !  BCRivTemp(NVEL,NFEN): Vertical temperature boundary information for rivers
+      REAL(8),ALLOCATABLE :: BCRivTempN1(:,:) !  BCRivTemp(NVEL,NFEN): Vertical temperature boundary information for rivers
+      REAL(8),ALLOCATABLE :: BCRivTempN2(:,:) !  BCRivTemp(NVEL,NFEN): Vertical temperature boundary information for rivers
 
 C...  DECLARE 3D GLOBAL SCALARS
 
-      REAL(SZ) :: GORho                ! = G/RhoWat0
-      REAL(SZ) :: GORhoOAMB            ! = GORho/AMB
+      REAL(8) :: GORho                ! = G/RhoWat0
+      REAL(8) :: GORhoOAMB            ! = GORho/AMB
       INTEGER  :: IGC                  !vertical grid code
-      REAL(SZ) :: KP                   !3D bottom friction coefficient
-      REAL(SZ) :: EVMin, EVCon         !minimum vertical eddy viscosity and vertical eddy viscosity constant
-      REAL(SZ) :: Z0S, Z0B             !surface and bottom roughnesses 
-      REAL(SZ) :: Alp1,Alp2,Alp3       !time stepping coefficients
-      REAL(SZ) :: DTALP2, DT1MALP2     !DelT*alpha2, DelT*(1-alpha2)
-      REAL(SZ) :: DTALP3, DT1MALP3     !DelT*alpha3, DelT*(1-alpha3)
-      REAL(SZ) :: THETA1, THETA2       !timestepping coefficients for MY L2.5 TKE calculations
-      REAL(SZ), PARAMETER ::  A= 1.D0  !Value of Sigma at the surface
-      REAL(SZ), PARAMETER ::  B=-1.D0  !Value of Sigma at the bottom
-      REAL(SZ), PARAMETER ::  AMB=A-B
+      REAL(8) :: KP                   !3D bottom friction coefficient
+      REAL(8) :: EVMin, EVCon         !minimum vertical eddy viscosity and vertical eddy viscosity constant
+      REAL(8) :: Z0S, Z0B             !surface and bottom roughnesses 
+      REAL(8) :: Alp1,Alp2,Alp3       !time stepping coefficients
+      REAL(8) :: DTALP2, DT1MALP2     !DelT*alpha2, DelT*(1-alpha2)
+      REAL(8) :: DTALP3, DT1MALP3     !DelT*alpha3, DelT*(1-alpha3)
+      REAL(8) :: THETA1, THETA2       !timestepping coefficients for MY L2.5 TKE calculations
+      REAL(8), PARAMETER ::  A= 1.D0  !Value of Sigma at the surface
+      REAL(8), PARAMETER ::  B=-1.D0  !Value of Sigma at the bottom
+      REAL(8), PARAMETER ::  AMB=A-B
 
       INTEGER  :: NFEN                 !Number of nodes in the vertical
       INTEGER  :: ISLIP                !bottom slip coefficient flag (0=no slip, 1=linear, 2=quadratic)
       INTEGER  :: IEVC                 !eddy viscosity flag determine type of EV used
 
-      COMPLEX(SZ) :: IDTALP1              !i*DelT*alpha1
-      COMPLEX(SZ) :: IDT1MALP1            !i*DelT*(1-alpha1)
-      COMPLEX(SZ),  PARAMETER ::  iy=(0.0d0, 1.0d0)   !imaginary i
+      COMPLEX(8) :: IDTALP1              !i*DelT*alpha1
+      COMPLEX(8) :: IDT1MALP1            !i*DelT*(1-alpha1)
+      COMPLEX(8),  PARAMETER ::  iy=(0.0d0, 1.0d0)   !imaginary i
 
 C...Terms added for the transport parameters !kmd45.11 transport
-      REAL(SZ) :: NLSD, NVSD           !diffusion coefficients for the salinity field
-      REAL(SZ) :: NLTD, NVTD           !diffusion coefficients for the temperature field
-      REAL(SZ) :: Alp4                 !time weighting coefficient for the vertical diffusion term in the transport equation
+      REAL(8) :: NLSD, NVSD           !diffusion coefficients for the salinity field
+      REAL(8) :: NLTD, NVTD           !diffusion coefficients for the temperature field
+      REAL(8) :: Alp4                 !time weighting coefficient for the vertical diffusion term in the transport equation
       INTEGER :: NTF                  !Flag for the top boundary condition for the temperature field in the transport equation
-      REAL(SZ) :: DTALP4, DT1MALP4     !DelT*alpha4, DelT*(1-alpha4)
+      REAL(8) :: DTALP4, DT1MALP4     !DelT*alpha4, DelT*(1-alpha4)
 
 C   kmd48.33bc - added term for baroclinic
       INTEGER :: EQNSTATE ! determine equation of state to be used
@@ -191,12 +190,12 @@ C...Declare and initialize logical variables
       LOGICAL  :: C3D_PTrans     = .FALSE.      !if true, then 3D passive scalar transport included
       LOGICAL  :: turb_allocated = .FALSE.
 C
-      REAL(SZ) :: TO3DSDS, TO3DSDF !3D Density station output start & end times
-      REAL(SZ) :: TO3DSVS, TO3DSVF !3D Velocity station output start&end times
-      REAL(SZ) :: TO3DSTS, TO3DSTF !3D Turbulence station output start&end times
-      REAL(SZ) :: TO3DGDS, TO3DGDF !3D Global density output start&end times
-      REAL(SZ) :: TO3DGVS, TO3DGVF !3D Global velocity output start&end times
-      REAL(SZ) :: TO3DGTS, TO3DGTF !3D Global turbulence output start&end times
+      REAL(8) :: TO3DSDS, TO3DSDF !3D Density station output start & end times
+      REAL(8) :: TO3DSVS, TO3DSVF !3D Velocity station output start&end times
+      REAL(8) :: TO3DSTS, TO3DSTF !3D Turbulence station output start&end times
+      REAL(8) :: TO3DGDS, TO3DGDF !3D Global density output start&end times
+      REAL(8) :: TO3DGVS, TO3DGVF !3D Global velocity output start&end times
+      REAL(8) :: TO3DGTS, TO3DGTF !3D Global turbulence output start&end times
 C...3D Station Density Output (fort.41)
 
 C     I3DSD    - flag for 3D station density output
@@ -216,9 +215,9 @@ C       If ABS(I3DSD)=1, output is ascii. If ABS(I3DSD)=2, output is binary.
       REAL(8),ALLOCATABLE :: StaI3DD1(:)   !interpolating factor used to compute output at 3D density station N
       REAL(8),ALLOCATABLE :: StaI3DD2(:)   !interpolating factor used to compute output at 3D density station N
       REAL(8),ALLOCATABLE :: StaI3DD3(:)   !interpolating factor used to compute output at 3D density station N
-      REAL(SZ),ALLOCATABLE,TARGET :: SigTSta(:,:)   !3D Sigma T station output - not a global variable but easier to allocate here
-      REAL(SZ),ALLOCATABLE,TARGET :: TempSta(:,:)   !3D Temperature station output - not a global variable but easier to allocate here
-      REAL(SZ),ALLOCATABLE,TARGET :: SalSta(:,:)    !3D Salinity station output - not a global variable but easier to allocate here
+      REAL(8),ALLOCATABLE,TARGET :: SigTSta(:,:)   !3D Sigma T station output - not a global variable but easier to allocate here
+      REAL(8),ALLOCATABLE,TARGET :: TempSta(:,:)   !3D Temperature station output - not a global variable but easier to allocate here
+      REAL(8),ALLOCATABLE,TARGET :: SalSta(:,:)    !3D Salinity station output - not a global variable but easier to allocate here
       CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMED(:)!density station names
       REAL(8),ALLOCATABLE,TARGET :: XED(:)  ! station x coordinate (cartesian)
       REAL(8),ALLOCATABLE,TARGET :: YED(:)  ! station y coordinate (cartesian)
@@ -242,9 +241,8 @@ C...3D Velocity station output variables
       REAL(8),ALLOCATABLE :: StaI3DV1(:)   !interpolating factor used to compute output at 3D velocity station N
       REAL(8),ALLOCATABLE :: StaI3DV2(:)   !interpolating factor used to compute output at 3D velocity station N
       REAL(8),ALLOCATABLE :: StaI3DV3(:)   !interpolating factor used to compute output at 3D velocity station N
-      REAL(SZ),ALLOCATABLE,TARGET :: WZSta(:,:)     !vertical velocity station output - not a global variable but easier to allocate here
-      !jgf48.50 Declare COMPLEX as size SZ
-      COMPLEX(SZ),ALLOCATABLE,TARGET :: qSta(:,:)       !3D velocity station output - not a global variable but easier to allocate here
+      REAL(8),ALLOCATABLE,TARGET :: WZSta(:,:)     !vertical velocity station output - not a global variable but easier to allocate here
+      COMPLEX(8),ALLOCATABLE,TARGET :: qSta(:,:)       !3D velocity station output - not a global variable but easier to allocate here
       CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMEV3D(:) !vel station names
       REAL(8),ALLOCATABLE,TARGET :: XE3DV(:)  ! station x coordinate (cartesian)
       REAL(8),ALLOCATABLE,TARGET :: YE3DV(:)  ! station y coordinate (cartesian)
@@ -267,9 +265,9 @@ C...3D Turbulence station output variables
       REAL(8),ALLOCATABLE :: StaI3DT1(:)   !interpolating factor used to compute output at 3D turbulence station N
       REAL(8),ALLOCATABLE :: StaI3DT2(:)   !interpolating factor used to compute output at 3D turbulence station N
       REAL(8),ALLOCATABLE :: StaI3DT3(:)   !interpolating factor used to compute output at 3D turbulence station N
-      REAL(SZ),ALLOCATABLE, TARGET :: q20Sta(:,:)    !TKE station output - not a global variable but easier to allocate here
-      REAL(SZ),ALLOCATABLE, TARGET :: lSta(:,:)      !turb length scale station output - not a global variable but easier to allocate here
-      REAL(SZ),ALLOCATABLE, TARGET :: EVSta(:,:)     !vertical viscosity station output - not a global variable but easier to allocate here
+      REAL(8),ALLOCATABLE, TARGET :: q20Sta(:,:)    !TKE station output - not a global variable but easier to allocate here
+      REAL(8),ALLOCATABLE, TARGET :: lSta(:,:)      !turb length scale station output - not a global variable but easier to allocate here
+      REAL(8),ALLOCATABLE, TARGET :: EVSta(:,:)     !vertical viscosity station output - not a global variable but easier to allocate here
       CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMET(:) !turb station names
       REAL(8),ALLOCATABLE,TARGET :: XET(:)  ! station x coordinate (cartesian)
       REAL(8),ALLOCATABLE,TARGET :: YET(:)  ! station y coordinate (cartesian)
@@ -310,21 +308,21 @@ C     jgf49.44: These variables represent fulldomain arrays and are
 C     used in hstart.F for reading fulldomain hotstart files as well as in
 C     write_output.F/writeHotstart and writer.F/writeHotstart_through_HSwriter
 C     for writing fulldomain hotstart files.
-      REAL(SZ), ALLOCATABLE, TARGET :: DUU_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: DUV_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: DVV_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: UU_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: VV_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: BSX_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: BSY_g(:)
-      COMPLEX(SZ), ALLOCATABLE :: Q_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: WZ_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: q20_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: l_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: EV_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: SigT_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: Sal_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: Temp_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: DUU_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: DUV_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: DVV_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: UU_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: VV_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: BSX_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: BSY_g(:)
+      COMPLEX(8), ALLOCATABLE :: Q_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: WZ_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: q20_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: l_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: EV_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: SigT_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: Sal_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: Temp_g(:,:)
 C
 C     global array sizes for use in globalio
       integer,allocatable,target :: imap_sta3Dd_lg(:)
@@ -462,7 +460,7 @@ c
 
       IMPLICIT NONE
       INTEGER :: IGC,N,NFEN2,IANS,NUM,I,NH
-      REAL(SZ) :: H,DETA,SSTAR,DENOM,SIG0,SS,SB,RP,AVAL,EPS
+      REAL(8) :: H,DETA,SSTAR,DENOM,SIG0,SS,SB,RP,AVAL,EPS
 C
       call setMessageSource("fegrids")
 #if defined(GLOBAL_3DVS_TRACE) || defined(ALL_TRACE)

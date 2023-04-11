@@ -47,7 +47,7 @@
          INTEGER, PARAMETER :: dp = SELECTED_REAL_KIND(p=15, r=307)
 
          !--------------------------------------------------
-         ! Set number of bytes "sz" in REAL(sz) declarations
+         ! Set number of bytes "sz" in REAL(8) declarations
          !--------------------------------------------------
 #ifdef REAL8
 !        INTEGER, PARAMETER :: sz = 8

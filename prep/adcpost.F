@@ -62,7 +62,7 @@ C
       CHARACTER DUM  ! variable used in waiting for menu choice  
       INTEGER I,PE,PRECIS,ISP,NWTYPE
 
-      REAL(SZ) TOL,SCALEVAL
+      REAL(8) TOL,SCALEVAL
       LOGICAL FOUND
       CHARACTER DIRCMD*72,CMD*6,PENUM*6,PHASE*9,ISET*6,DIR1*80,DIR2*80,
      &     CONVDIR*6,HOTANS*1

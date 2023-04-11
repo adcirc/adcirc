@@ -70,11 +70,10 @@ CWET...If MJU < NODELE for any node, it must lie along the wet/dry interface.  S
 CWET...further comments at the end of the momentum equation solution section.
 CWET...
       module wetdry
-      use sizes, only : sz
       
-      real(sz) :: habsmin
-      real(sz) :: hoff
-      real(sz) :: velmin
+      real(8) :: habsmin
+      real(8) :: hoff
+      real(8) :: velmin
       
       integer,allocatable ::    nibcnt(:)
       integer,allocatable ::    noffold(:)
@@ -120,7 +119,7 @@ CWET...
 !     Determines which nodes should be wet and which should be dry.
 !----------------------------------------------------------------------
       subroutine computeWettingAndDrying(it)
-      use sizes, only : sz, mne, mnp
+      use sizes, only : mne, mnp
       use nodalattributes,only: loadSubgridBarrier
       use constants, only: g
       use global, only : noff, nodecode, nnodecode, eta1, eta2, tk,
@@ -144,28 +143,28 @@ CWET...
       use subdomain, only : subdomainOn, enforceBN, enforceWDcb, enforceWDob
       implicit none
       integer, intent(in) :: it ! time step number
-      complex(sz) :: duds !jgf48.50 declare size SZ instead of plain COMPLEX
+      complex(8) :: duds 
       integer :: nc1, nc2, nc3
       integer :: nm1, nm2, nm3
       integer :: nm123
       integer :: ncele
       integer :: nctot
-      real(sz) :: kslip
-      real(sz) :: vel
-      real(sz) :: z0b1
-      real(sz) :: areaEle
-      real(sz) :: tkWet
-      real(sz) :: etaN1,etaN2,etaN3
-      real(sz) :: hTotN1,hTotN2,hTotN3      
-      real(sz) :: deldist,deleta
-      real(sz) :: htot
-      real(sz) :: h1
-      real(sz) :: tk_tmp(np),tmp1(np),tmp2(np),tmp3(np)
+      real(8) :: kslip
+      real(8) :: vel
+      real(8) :: z0b1
+      real(8) :: areaEle
+      real(8) :: tkWet
+      real(8) :: etaN1,etaN2,etaN3
+      real(8) :: hTotN1,hTotN2,hTotN3      
+      real(8) :: deldist,deleta
+      real(8) :: htot
+      real(8) :: h1
+      real(8) :: tk_tmp(np),tmp1(np),tmp2(np),tmp3(np)
       integer :: tk_cnt(np)
       integer :: nbnctot
       integer :: i,j,k,kk,l
       integer :: ie          
-      real(sz) :: tknf !dmw 202207, added for "new" formula for vel 
+      real(8) :: tknf !dmw 202207, added for "new" formula for vel 
       integer :: nnc
       integer :: nnbb2
       integer :: nwetele
@@ -1269,7 +1268,6 @@ c.....
 !-----------------------------------------------------------------------
       subroutine applySubgridBarrier()
 !-----------------------------------------------------------------------
-          USE SIZES,ONLY: SZ
           USE MESH,ONLY: DP,DP_ORIG,NM,NE
           USE GLOBAL,ONLY: ETA2,NOFF,H0,NODECODE,NCCHANGE,ILUMP
           USE NODALATTRIBUTES,ONLY: SubgridBarrier,
@@ -1279,11 +1277,11 @@ c.....
 #endif          
           IMPLICIT NONE
           INTEGER  :: I,NM1,NM2,NM3,NCELE
-          REAL(SZ) :: SB1,SB2,SB3
-          REAL(SZ) :: ETABAR,BARHEIGHT
-          REAL(SZ) :: DOT,DOT1,DOT2,DOT3
-          REAL(SZ) :: E1,E2,E3,ETA
-          REAL(SZ),PARAMETER :: SBDT = 50D0
+          REAL(8) :: SB1,SB2,SB3
+          REAL(8) :: ETABAR,BARHEIGHT
+          REAL(8) :: DOT,DOT1,DOT2,DOT3
+          REAL(8) :: E1,E2,E3,ETA
+          REAL(8),PARAMETER :: SBDT = 50D0
 
           NOFF_SG(:) = 1
 
@@ -1349,11 +1347,11 @@ C..... bathy slope becomes too large, i.e., when it exceeds slim.
          use global, only : eta2, noff, nodecode, alphal, IFSFM, slim
          IMPLICIT NONE
          INTEGER  :: I,NM1,NM2,NM3,NC1,NC2,NC3,NCELE
-         real(sz) :: sfacavg, SFmxAvg, SFmyAvg, DPN1, DPN2, DPN3
-         real(sz) :: DETAM, DPM, sfdxfac, sfdyfac, hn1, hn2, hn3
-         real(sz) :: detadxa, detadya, dpdxa, dpdya
-         real(sz) :: fdx1, fdx2, fdx3, fdy1, fdy2, fdy3
-         real(sz) :: etaN1, etaN2, etaN3
+         real(8) :: sfacavg, SFmxAvg, SFmyAvg, DPN1, DPN2, DPN3
+         real(8) :: DETAM, DPM, sfdxfac, sfdyfac, hn1, hn2, hn3
+         real(8) :: detadxa, detadya, dpdxa, dpdya
+         real(8) :: fdx1, fdx2, fdx3, fdy1, fdy2, fdy3
+         real(8) :: etaN1, etaN2, etaN3
          
          
          ALPHAL(:) = 1.D0
@@ -1377,7 +1375,7 @@ C..... bathy slope becomes too large, i.e., when it exceeds slim.
                   SFmxAvg = SFMXEle(I)  
                   SFmyAvg = SFMYEle(I)  
                   sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-                  sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+                  sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
                
                   FDX1 = FDXE(1,I)*sfdxfac  !b1
                   FDX2 = FDXE(2,I)*sfdxfac  !b2

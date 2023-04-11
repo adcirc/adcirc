@@ -4,7 +4,6 @@ C     M O D U L E    A S Y M M E T R I C  V O R T E X  P R O C E S S I N G
 C
 C-----------------------------------------------------------------------
       module asymmetricVortexProcessing
-         use sizes, only : sz
          use constants, only: g, rhowat0, prbckgrnd, deg2rad,
      &                        rad2deg, ms2kt, ten2one, windReduction
          use global, only : 
@@ -26,65 +25,65 @@ C-----------------------------------------------------------------------
          integer,dimension(:),allocatable :: iyear, imth, iday, ihr
          character(len=4),dimension(:),allocatable :: castType! hindcast/nowcast or forecast?
          integer,dimension(:),allocatable :: ilat,ilon
-         real(sz),dimension(:),allocatable :: rlat,rlon
+         real(8),dimension(:),allocatable :: rlat,rlon
          integer,dimension(:),allocatable :: ispd,icpress
          integer , dimension(:,:), allocatable :: irad ! working isotach radii
          integer ,dimension(:),allocatable :: ivr, dir, speed
-         real(sz) , dimension(:,:), allocatable :: rmaxw
+         real(8) , dimension(:,:), allocatable :: rmaxw
          integer ,dimension(:),allocatable :: ipn
          CHARACTER(1) :: ns ! N or S in latitude column
          CHARACTER(1) :: ew ! E or W in longitude column
          integer  :: ient,icyc,itpc,method,j,iquadrot,nquadrot,approach
-         real(sz),dimension(:),allocatable::cycletime
+         real(8),dimension(:),allocatable::cycletime
          integer,dimension(:),allocatable::atcfrmw
-         real(sz) :: vmax !,speedmax,rmax,rmaxmax
-         real(sz) :: vr,speedmax2
-         real(sz) :: vmax_pseudo
-         real(sz), dimension(4) ::rmaxw_temp
-         real(sz), dimension(4) ::vmaxesbl_temp
-         real(sz), dimension(4) :: r
-         real(sz) ,dimension(:),allocatable :: uTrans, vTrans
-         real(sz) ,dimension(:),allocatable :: uTrans2, vTrans2
-         REAL(sz),DIMENSION(:),ALLOCATABLE :: HollB
-         REAL(sz),DIMENSION(:,:),ALLOCATABLE :: HollBs
-         REAL(sz),DIMENSION(:,:),ALLOCATABLE :: PhiFactors
-         REAL(sz),DIMENSION(:,:),ALLOCATABLE :: VmaxesBL
+         real(8) :: vmax !,speedmax,rmax,rmaxmax
+         real(8) :: vr,speedmax2
+         real(8) :: vmax_pseudo
+         real(8), dimension(4) ::rmaxw_temp
+         real(8), dimension(4) ::vmaxesbl_temp
+         real(8), dimension(4) :: r
+         real(8) ,dimension(:),allocatable :: uTrans, vTrans
+         real(8) ,dimension(:),allocatable :: uTrans2, vTrans2
+         REAL(8),DIMENSION(:),ALLOCATABLE :: HollB
+         REAL(8),DIMENSION(:,:),ALLOCATABLE :: HollBs
+         REAL(8),DIMENSION(:,:),ALLOCATABLE :: PhiFactors
+         REAL(8),DIMENSION(:,:),ALLOCATABLE :: VmaxesBL
          CHARACTER (LEN = 10),DIMENSION(:),ALLOCATABLE :: stormname
          INTEGER, DIMENSION(0:5) :: lookup_radii ! periodic interpolation
-         real(sz) :: pn
-         real(sz) :: pc
-         real(sz) :: clat
-         real(sz) :: clon
-         real(sz) :: dx,dy,dr
-         real(sz) :: rhowatg
-         real(sz) :: theta
-         real(sz), dimension(4) :: gamma ! factor applied to the StormMotion
-         real(sz), dimension(4) :: quadRotateAngle, quadRotateAngle_new
-         real(sz), dimension(4) :: rmaxwHighIso
-         real(sz), dimension(4) :: epsilonAngle
+         real(8) :: pn
+         real(8) :: pc
+         real(8) :: clat
+         real(8) :: clon
+         real(8) :: dx,dy,dr
+         real(8) :: rhowatg
+         real(8) :: theta
+         real(8), dimension(4) :: gamma ! factor applied to the StormMotion
+         real(8), dimension(4) :: quadRotateAngle, quadRotateAngle_new
+         real(8), dimension(4) :: rmaxwHighIso
+         real(8), dimension(4) :: epsilonAngle
          integer, dimension(4) :: irr
          logical, dimension(4) :: vioflag
          integer , dimension(:,:), allocatable :: ir   ! given isotach radii
          integer , dimension(:,:), allocatable :: quadflag
          integer ,dimension(:),allocatable :: cycle_num
          integer ,dimension(:),allocatable :: isotachs_per_cycle
-         real(sz) ,dimension(:),allocatable :: h_speed, h_dir
-         real(sz) :: vmaxbl ! max sustained wind at top of atm. b.l.
-         real(sz) :: vrbl   ! wind vel at top of atm. b.l. at wind radius
-         real(sz), dimension(4) :: quadrantvr
-         real(sz), dimension(4) :: quadrantangles
-         real(sz), dimension(4) :: quadrantvecangles
-         real(sz), dimension(4) :: VmwBL
+         real(8) ,dimension(:),allocatable :: h_speed, h_dir
+         real(8) :: vmaxbl ! max sustained wind at top of atm. b.l.
+         real(8) :: vrbl   ! wind vel at top of atm. b.l. at wind radius
+         real(8), dimension(4) :: quadrantvr
+         real(8), dimension(4) :: quadrantangles
+         real(8), dimension(4) :: quadrantvecangles
+         real(8), dimension(4) :: VmwBL
          integer,  dimension(4) :: VmwBLflag
-         real(sz), allocatable :: cyclesecs(:) ! time in seconds that each cycle
+         real(8), allocatable :: cyclesecs(:) ! time in seconds that each cycle
                                                ! corresponds to
-         real(sz), allocatable :: cyclelons(:) ! longitudes for each cycle
-         real(sz), allocatable :: cyclelats(:) ! latitudes for each cycle
-         real(sz), allocatable :: cycledirs(:) ! directions for each cycle
+         real(8), allocatable :: cyclelons(:) ! longitudes for each cycle
+         real(8), allocatable :: cyclelats(:) ! latitudes for each cycle
+         real(8), allocatable :: cycledirs(:) ! directions for each cycle
          LOGICAL :: writeNWS19,writeNWS20 ! .false. if we don't want to write it
-         REAL(sz) :: rmax_percent  ! desired percentage change in Rmax relative to the
+         REAL(8) :: rmax_percent  ! desired percentage change in Rmax relative to the
                            ! value calculated from isotach radii data (0 to 100)
-         REAL(sz) :: forecastRmax ! constant Rmax value for the duration of the
+         REAL(8) :: forecastRmax ! constant Rmax value for the duration of the
                                ! forecast (nautical miles)
          LOGICAL :: constantRmax ! .true. if forecastRmax was specified as
                               ! something .gt. zero
@@ -92,7 +91,7 @@ C-----------------------------------------------------------------------
                               ! change in Rmax
          LOGICAL :: percentSpecified ! .true. if percent was specified and is
                                   ! something other than 100 percent
-         REAL(sz) :: vmax_percent  ! desired percentage change in Vmax relative to the
+         REAL(8) :: vmax_percent  ! desired percentage change in Vmax relative to the
                                 ! given value (original Vmax still used to
                                 ! calculate Rmax
          INTEGER :: radii_sum ! record radius values for filling in missing vals
@@ -100,12 +99,12 @@ C-----------------------------------------------------------------------
          INTEGER :: first_entry    ! first entry in the cycle
          INTEGER :: last_entry     ! last entry in the cycle
          LOGICAL :: higher_isotach ! true if a valid Rmax exists at higher isotach
-         REAL(sz) :: stormMotion  ! portion of Vmax attributable to storm motio
-         REAL(sz) :: stormMotionU ! U portion of Vmax attributable to storm motion
-         REAL(sz) :: stormMotionV ! V portion of Vmax attributable to storm motion
-         REAL(sz) :: U_Vr
-         REAL(sz) :: V_Vr
-         REAL(sz) :: temp  
+         REAL(8) :: stormMotion  ! portion of Vmax attributable to storm motio
+         REAL(8) :: stormMotionU ! U portion of Vmax attributable to storm motion
+         REAL(8) :: stormMotionV ! V portion of Vmax attributable to storm motion
+         REAL(8) :: U_Vr
+         REAL(8) :: V_Vr
+         REAL(8) :: temp  
 
       !-------------------------------------------------------------
       contains
@@ -1078,7 +1077,7 @@ C
 C-----------------------------------------------------------------------
       module diagnosticOutput
 
-      use sizes, only : sz, globaldir, mnp
+      use sizes, only : globaldir, mnp
       use constants, only: deg2rad, rad2deg, ten2one, g, rhowat0, 
      &  prbckgrnd, m2nm
       use global, only : nws, openFileForRead,
@@ -1100,21 +1099,21 @@ C-----------------------------------------------------------------------
       LOGICAL :: nodesFromFile ! .true. if we are supposed to load a list of nodes     
 C
 C     Variables for recording domain extents
-      REAL(sz) :: xmin ! smallest x coordinate in mesh
-      REAL(sz) :: ymin ! smallest y coordinate in mesh
-      REAL(sz) :: xmax ! largest x coordinate in mesh
-      REAL(sz) :: ymax ! largest y coordinate in mesh
+      REAL(8) :: xmin ! smallest x coordinate in mesh
+      REAL(8) :: ymin ! smallest y coordinate in mesh
+      REAL(8) :: xmax ! largest x coordinate in mesh
+      REAL(8) :: ymax ! largest y coordinate in mesh
       INTEGER :: num_outputs ! number of writes to output file
       INTEGER :: iout        ! output counter
-      REAL(sz), ALLOCATABLE :: outputSecs(:) ! time in seconds for output
-      REAL(sz), ALLOCATABLE :: outputLons(:) ! longitudes at each output time
-      REAL(sz), ALLOCATABLE :: outputLats(:) ! latitudes at each output time
-      REAL(sz), ALLOCATABLE :: outputDirs(:) ! storm direction at output times
-      REAL(sz) :: interp   ! time interpolation factor for time varying params
-      REAL(sz) :: trigDir
-      REAL(sz) :: azimuth  ! angle of node w.r.t. vortex (radians)
-      REAL(sz) :: vtest    ! wind speed along Rmax curve
-      REAL(sz) :: vmax_azimuth ! azimuthal angle at which vmax occurs
+      REAL(8), ALLOCATABLE :: outputSecs(:) ! time in seconds for output
+      REAL(8), ALLOCATABLE :: outputLons(:) ! longitudes at each output time
+      REAL(8), ALLOCATABLE :: outputLats(:) ! latitudes at each output time
+      REAL(8), ALLOCATABLE :: outputDirs(:) ! storm direction at output times
+      REAL(8) :: interp   ! time interpolation factor for time varying params
+      REAL(8) :: trigDir
+      REAL(8) :: azimuth  ! angle of node w.r.t. vortex (radians)
+      REAL(8) :: vtest    ! wind speed along Rmax curve
+      REAL(8) :: vmax_azimuth ! azimuthal angle at which vmax occurs
       INTEGER, PARAMETER :: radial_extent = 400 ! (nm) max dist. to write V,P
       INTEGER, PARAMETER :: quadrant_radial_resolution = 2 ! data points per nm
       INTEGER, PARAMETER :: spatial_radial_increment = 1
@@ -1128,32 +1127,32 @@ C     Variables for recording domain extents
       CHARACTER(80) :: station_output_name ! name of output at given stations
       CHARACTER(80) :: spatial_file_name ! file containing spatial output
       CHARACTER(80) :: scratch  ! throw-away line from file
-      REAL(sz) :: output_increment    ! time increment for output (seconds)
+      REAL(8) :: output_increment    ! time increment for output (seconds)
       LOGICAL :: defaultOutputIncrement = .true. ! equal to cycle time incr.
       INTEGER :: frame ! output frame number to render (0 for all frames)
       INTEGER :: cell_list_size ! size of elements list for vtk output
       LOGICAL :: meshFileReadComplete ! only need to read fort.14 once
       CHARACTER(1024) :: elementTableFileName !needed to post process spatialvp
       LOGICAL :: elementTableProvided = .false. ! changes output format!
-      REAL(sz), ALLOCATABLE :: nodex(:) ! cpp projected x coord (meters)
-      REAL(sz), ALLOCATABLE :: nodey(:) ! cpp projected x coord (meters)
+      REAL(8), ALLOCATABLE :: nodex(:) ! cpp projected x coord (meters)
+      REAL(8), ALLOCATABLE :: nodey(:) ! cpp projected x coord (meters)
       INTEGER, ALLOCATABLE :: outer_boundary_nodes(:) ! node numbers
       INTEGER, ALLOCATABLE :: inner_boundary_nodes(:) ! node numbers
-      REAL(sz), DIMENSION(:), ALLOCATABLE :: pressure
-      REAL(sz), DIMENSION(:), ALLOCATABLE :: radial_speed
-      REAL(sz), DIMENSION(:), ALLOCATABLE :: tempspd
+      REAL(8), DIMENSION(:), ALLOCATABLE :: pressure
+      REAL(8), DIMENSION(:), ALLOCATABLE :: radial_speed
+      REAL(8), DIMENSION(:), ALLOCATABLE :: tempspd
 
-      REAL(sz) :: totalWindStress ! magnitude, summed over all nodes
-      REAL(sz) :: windMag ! wind speed, m/s
-      REAL(sz) :: windDragCoef ! wind drag coefficient
-      REAL(sz) :: stressX  ! wind stress in x-dir
-      REAL(sz) :: stressY  ! wind stress in y-dir
+      REAL(8) :: totalWindStress ! magnitude, summed over all nodes
+      REAL(8) :: windMag ! wind speed, m/s
+      REAL(8) :: windDragCoef ! wind drag coefficient
+      REAL(8) :: stressX  ! wind stress in x-dir
+      REAL(8) :: stressY  ! wind stress in y-dir
       REAL(8) :: timeOffset ! like a hotstart time
-      REAL(sz) :: owi_skip ! total number of owi snaps to be skipped
-      REAL(sz) :: owi_output_factor !frequency to output owi snaps
-      real(sz) :: dist     ! (m) distance from storm center to mesh node
-      real(sz) :: angle    ! (nm) angle to location of mesh vmax (on subdomain in parallel)
-      real(sz) :: maxSpeed ! (m/s) max wind speed on mesh (subdomain in parallel)
+      REAL(8) :: owi_skip ! total number of owi snaps to be skipped
+      REAL(8) :: owi_output_factor !frequency to output owi snaps
+      real(8) :: dist     ! (m) distance from storm center to mesh node
+      real(8) :: angle    ! (nm) angle to location of mesh vmax (on subdomain in parallel)
+      real(8) :: maxSpeed ! (m/s) max wind speed on mesh (subdomain in parallel)
       integer  :: maxNode  ! mesh node on which maxSpeed occurs
       !-------------------------------------------------------------
       contains
@@ -1169,7 +1168,7 @@ C     Variables for recording domain extents
       implicit none
       integer :: i
       integer :: errorio
-      real(sz) :: PWeight(3,np)
+      real(8) :: PWeight(3,np)
       logical  :: foundSector(np)
 
 !      nodesFromMesh=.false.
@@ -1367,10 +1366,10 @@ C
       use owiwind, only : findStormCenter
       implicit none
       integer :: i, j, npp
-      real(sz) :: vmax
-      real(sz) :: dr
-      real(sz) :: rhowatg
-      real(sz) :: PWeight(3,np)
+      real(8) :: vmax
+      real(8) :: dr
+      real(8) :: rhowatg
+      real(8) :: PWeight(3,np)
       logical  :: foundSector(np)
       
       RhoWatG = RhoWat0 * g
@@ -1571,9 +1570,9 @@ C
       use mesh, only: np
       implicit none
       integer :: i, j
-      real(sz) :: dr
-      real(sz) :: rhowatg
-      real(sz) :: PWeight(3,np)
+      real(8) :: dr
+      real(8) :: rhowatg
+      real(8) :: PWeight(3,np)
       logical  :: foundSector(np)
       !
       RhoWatG = RhoWat0 * g
@@ -1766,10 +1765,10 @@ C
       implicit none
       integer :: i,j
       integer :: errorio
-      real(sz) :: dr
-      real(sz) :: dx
-      real(sz) :: dy
-      real(sz) :: rhowatg
+      real(8) :: dr
+      real(8) :: dx
+      real(8) :: dy
+      real(8) :: rhowatg
       integer :: nhy
 
       RhoWatG = RhoWat0 * g
@@ -2064,12 +2063,12 @@ C
       implicit none
       integer :: i,j
       integer :: errorio
-      real(sz) :: dr
-      real(sz) :: dx
-      real(sz) :: dy
-      real(sz) :: rhowatg
+      real(8) :: dr
+      real(8) :: dx
+      real(8) :: dy
+      real(8) :: rhowatg
       integer :: nhy
-      real(sz) :: PWeight(3,np)
+      real(8) :: PWeight(3,np)
       logical  :: foundSector(np)
 
       RhoWatG = RhoWat0 * g
@@ -2434,11 +2433,11 @@ C
       implicit none
       integer :: i,j
       integer :: errorio
-      real(sz) :: dr
-      real(sz) :: dx
-      real(sz) :: dy
-      real(sz) :: rhowatg
-      real(sz) :: PWeight(3,np)
+      real(8) :: dr
+      real(8) :: dx
+      real(8) :: dy
+      real(8) :: rhowatg
+      real(8) :: PWeight(3,np)
       logical  :: foundSector(np)
 
       RhoWatG = RhoWat0 * g

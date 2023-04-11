@@ -3,20 +3,19 @@
  
       IMPLICIT NONE
 
-!C     INTEGER, parameter:: SZ = 8
       INTEGER, private:: pcub, ncubs
-      REAL(SZ), private, pointer:: cub2d(:,:)
-      REAL(SZ), private, allocatable:: brscub2d(:,:)
-      REAL(SZ), private, allocatable:: workvec(:)
+      REAL(8), private, pointer:: cub2d(:,:)
+      REAL(8), private, allocatable:: brscub2d(:,:)
+      REAL(8), private, allocatable:: workvec(:)
 
       TYPE MATARR
           INTEGER :: mdim
-          REAL(SZ), POINTER :: ARRVAL(:,:)
+          REAL(8), POINTER :: ARRVAL(:,:)
       END TYPE MATARR
     
       TYPE VECARR
          INTEGER :: mdim
-         REAL(SZ), POINTER :: VECVAL(:)
+         REAL(8), POINTER :: VECVAL(:)
       END TYPE VECARR
 
       CONTAINS
@@ -98,7 +97,7 @@
       SUBROUTINE InterpDefaultCub2D( fxy, fv )
         IMPLICIT NONE
 
-        REAL(SZ), dimension(:):: fxy, fv
+        REAL(8), dimension(:):: fxy, fv
 
         CALL barycentricinterp( fxy, fv, brscub2d, ncubs ) ;
 
@@ -114,7 +113,7 @@
          IMPLICIT NONE
 
          INTEGER:: II, JJ
-         REAL(SZ):: S(3,3), fv(:)
+         REAL(8):: S(3,3), fv(:)
 
          workvec = 0.D0 ;
          CALL InterpDefaultCub2D( workvec, fv ) ;
@@ -138,8 +137,8 @@ C============================================================
         IMPLICIT NONE
 
         INTEGER:: nrs
-        REAL(SZ), dimension(:):: fxy, fv
-        REAL(SZ):: brs(:,:)
+        REAL(8), dimension(:):: fxy, fv
+        REAL(8):: brs(:,:)
 
 
         fxy(1:nrs) = fv(1)*brs(1:nrs,1) + 
@@ -153,7 +152,7 @@ C============================================================
         IMPLICIT NONE
          
         INTEGER:: nrs
-        REAL(SZ):: brs(:,:), r(:), s(:)
+        REAL(8):: brs(:,:), r(:), s(:)
 
         INTEGER:: I
 
@@ -171,11 +170,11 @@ C============================================================
       IMPLICIT NONE
 
       INTEGER:: pcub
-      REAL(SZ), pointer:: cub2d(:,:)
+      REAL(8), pointer:: cub2d(:,:)
 
 
       INTEGER:: p1D, sk, ii, jj, ncub
-      REAL(SZ), allocatable:: x1D(:,:), x2D(:,:)
+      REAL(8), allocatable:: x1D(:,:), x2D(:,:)
 
       SELECT CASE( pcub ) 
       case( 1 )

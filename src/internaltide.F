@@ -8,18 +8,17 @@ C     velocities here. I plan to move more of the subroutine into this
 C     module to hopefully make it a little clearer what is happening in
 C     that subroutine.
 C---------------------------------------------------------------------C
-      USE SIZES, ONLY: SZ
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
      &          setMessageSource, unsetMessageSource, allMessage,
      &          scratchMessage, logMessage      
       IMPLICIT NONE
       ! stored velocity samples for moving average calculation
-      REAL(SZ),ALLOCATABLE,PRIVATE :: UAV(:,:), VAV(:,:)        
+      REAL(8),ALLOCATABLE,PRIVATE :: UAV(:,:), VAV(:,:)        
       ! averaged velocities so we don't calculate them every single time
       ! step
-      REAL(SZ),ALLOCATABLE :: UBar(:), VBar(:)
+      REAL(8),ALLOCATABLE :: UBar(:), VBar(:)
       ! weights for filters
-      REAL(SZ),ALLOCATABLE,PRIVATE :: wts(:)
+      REAL(8),ALLOCATABLE,PRIVATE :: wts(:)
 C---------------------------------------------------------------------C
       CONTAINS
 C---------------------------------------------------------------------C
@@ -51,10 +50,10 @@ C---------------------------------------------------------------------C
       USE MESH, ONLY : NP
       USE GLOBAL, ONLY: DTDP
       IMPLICIT NONE
-      REAL(SZ),INTENT(IN),DIMENSION(:) :: U_i, V_i ! current velocity
+      REAL(8),INTENT(IN),DIMENSION(:) :: U_i, V_i ! current velocity
       INTEGER,INTENT(IN) :: TimeStep    ! current time step
-      REAL(SZ) :: filtL = 49d0*3600d0        ! filter length (s)
-      REAL(SZ) :: T = 60d0*60d0             ! sampling interval (s)
+      REAL(8) :: filtL = 49d0*3600d0        ! filter length (s)
+      REAL(8) :: T = 60d0*60d0             ! sampling interval (s)
       INTEGER,SAVE :: NS = 1   ! number of samples
       LOGICAL,SAVE :: first_call = .TRUE.
       ! need indices to check if the current and previous time step are
@@ -119,9 +118,9 @@ C     high-pass filter derived from the so-called Munk "Tide Killer"
 C     low-pass filter. 
 C---------------------------------------------------------------------C
       IMPLICIT NONE
-      REAL(SZ),DIMENSION(25) :: LPwts   ! original weights (one sided)
+      REAL(8),DIMENSION(25) :: LPwts   ! original weights (one sided)
       INTEGER :: NS = 49                ! length of HP filter needed
-      REAL(SZ) :: K                     ! for normalizing the LP filter
+      REAL(8) :: K                     ! for normalizing the LP filter
       INTEGER :: ii                     ! for loops
       !
       ! allocate weights

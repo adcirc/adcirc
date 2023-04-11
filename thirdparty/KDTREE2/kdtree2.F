@@ -10,7 +10,6 @@
 
 
       module kdtree2_precision_module
-      use sizes, only: sz
       integer, parameter :: sp = kind(0.0)
       integer, parameter :: dp = kind(0.0d0)
 
@@ -26,7 +25,7 @@
 
       !integer, parameter :: kdkind = sp  
       !integer, parameter :: kdkind = dp  
-      integer, parameter :: kdkind = sz  !Set to the same type as ADCIRC
+      integer, parameter :: kdkind = 8  !Set to the same type as ADCIRC
       public :: kdkind
 
       end module kdtree2_precision_module
