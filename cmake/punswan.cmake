@@ -101,20 +101,19 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
   addnetcdf(punswan)
   addxdmf(punswan)
 
-  set_directory_properties(
-    PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
-               ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source)
+  set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
+                                      ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_parallel_source)
 
-  target_include_directories(
+  target_include_directories(templib_punswan1 PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_punmsglib)
+  target_include_directories(punswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_punswan1)
+  target_include_directories(punswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_punmsglib)
+
+  target_link_libraries(
+    punswan
+    templib_punmsglib
     templib_punswan1
-    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_punmsglib)
-  target_include_directories(
-    punswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_punswan1)
-  target_include_directories(
-    punswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_punmsglib)
-
-  target_link_libraries(punswan templib_punmsglib templib_punswan1 mkdir
-                        ${MPI_Fortran_LIBRARIES})
+    mkdir
+    ${MPI_Fortran_LIBRARIES})
 
   add_dependencies(templib_punmsglib templib_punswan1)
   add_dependencies(punswan templib_punswan1)

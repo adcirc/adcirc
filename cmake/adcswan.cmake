@@ -120,9 +120,7 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   # ...SWAN Configuration
   swanconfigureadcswan()
 
-  set_directory_properties(
-    PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
-               ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source)
+  set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_BINARY_DIR}/CMakeFiles/swan_serial_source)
 
   add_library(templib_swan1serial STATIC ${SWAN1SERIAL_SOURCES})
   add_library(templib_swan2serial STATIC ${SWAN2SERIAL_SOURCES})
@@ -137,27 +135,24 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   target_compile_definitions(templib_adcswan1 PRIVATE CSWAN)
   target_compile_definitions(adcswan PRIVATE CSWAN)
 
-  target_include_directories(
+  target_include_directories(templib_adcswan1 PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
+  target_include_directories(templib_swan2serial PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
+  target_include_directories(templib_swan2serial PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan1)
+  target_include_directories(adcswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan1)
+  target_include_directories(adcswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
+  target_include_directories(adcswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan2serial)
+
+  target_link_libraries(
+    adcswan
     templib_adcswan1
-    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
-  target_include_directories(
     templib_swan2serial
-    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
-  target_include_directories(
+    templib_swan1serial)
+
+  add_dependencies(
+    adcswan
+    templib_adcswan1
     templib_swan2serial
-    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan1)
-  target_include_directories(
-    adcswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_adcswan1)
-  target_include_directories(
-    adcswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
-  target_include_directories(
-    adcswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan2serial)
-
-  target_link_libraries(adcswan templib_adcswan1 templib_swan2serial
-                        templib_swan1serial)
-
-  add_dependencies(adcswan templib_adcswan1 templib_swan2serial
-                   templib_swan1serial)
+    templib_swan1serial)
   add_dependencies(templib_swan2serial templib_adcswan1 templib_swan1serial)
   add_dependencies(templib_adcswan1 templib_swan1serial)
 

@@ -55,13 +55,11 @@ add_library(metis STATIC ${METIS_SOURCES})
 target_include_directories(metis PRIVATE ${CMAKE_SOURCE_DIR}/metis/Lib)
 set_target_properties(metis PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-# ...In gcc-10+, we need to ignore some things that were elevated to errors.
-# This is a thirdparty library, so adcirc devs are in nofix mode
+# ...In gcc-10+, we need to ignore some things that were elevated to errors. This is a thirdparty library, so adcirc
+# devs are in nofix mode
 get_filename_component(C_COMPILER_NAME ${CMAKE_C_COMPILER} NAME)
 if(${C_COMPILER_NAME} MATCHES "gcc.*" OR ${C_COMPILER_NAME} MATCHES "cc")
-  if(${CMAKE_C_COMPILER_VERSION} VERSION_GREATER 10
-     OR ${CMAKE_C_COMPILER_VERSION} VERSION_EQUAL 10)
-    set_target_properties(metis PROPERTIES COMPILE_FLAGS
-                                           "-Wno-implicit-function-declaration")
+  if(${CMAKE_C_COMPILER_VERSION} VERSION_GREATER 10 OR ${CMAKE_C_COMPILER_VERSION} VERSION_EQUAL 10)
+    set_target_properties(metis PROPERTIES COMPILE_FLAGS "-Wno-implicit-function-declaration")
   endif()
 endif()

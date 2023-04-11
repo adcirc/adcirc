@@ -49,8 +49,7 @@ if(BUILD_LIBADCIRC_STATIC)
   set_target_properties(libadcirc_static PROPERTIES OUTPUT_NAME "adcirc")
   addcompilerflags(libadcirc_static)
   addmpi(libadcirc_static)
-  set_target_properties(libadcirc_static PROPERTIES ARCHIVE_OUTPUT_DIRECTORY
-                                                    ${CMAKE_BINARY_DIR})
+  set_target_properties(libadcirc_static PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
   install(
     TARGETS libadcirc_static
@@ -62,8 +61,7 @@ endif(BUILD_LIBADCIRC_STATIC)
 
 if(BUILD_LIBADCIRC_SHARED)
   set(LIBMKDIR2_SOURCES prep/mkdir.c)
-  set(LIBADC_SHARED_SOURCES ${LIBADC_SOURCES}
-                            ${CMAKE_BINARY_DIR}/CMakeFiles/version_cmake.F)
+  set(LIBADC_SHARED_SOURCES ${LIBADC_SOURCES} ${CMAKE_BINARY_DIR}/CMakeFiles/version_cmake.F)
 
   add_library(mkdir2 STATIC ${LIBMKDIR2_SOURCES})
   add_library(libadcirc_shared SHARED ${LIBADC_SHARED_SOURCES})
@@ -83,9 +81,7 @@ if(BUILD_LIBADCIRC_SHARED)
     set_property(TARGET libadcirc_shared PROPERTY MACOSX_RPATH ON)
   endif()
 
-  set_target_properties(
-    libadcirc_shared PROPERTIES VERSION ${ADCIRC_VERSION_STRING}
-                                SOVERSION ${ADCIRC_VERSION_MAJOR})
+  set_target_properties(libadcirc_shared PROPERTIES VERSION ${ADCIRC_VERSION_STRING} SOVERSION ${ADCIRC_VERSION_MAJOR})
   write_basic_package_version_file(
     libadcircConfigVersion.cmake
     VERSION ${ADCIRC_VERSION_STRING}
@@ -97,8 +93,7 @@ if(BUILD_LIBADCIRC_SHARED)
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libadcircConfigVersion.cmake
-          DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libadcircConfigVersion.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake)
 
   if(${CMAKE_INSTALL_PREFIX} STREQUAL "/usr/local")
     install(
