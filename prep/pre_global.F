@@ -42,8 +42,8 @@ C                                    ! I-th Node on Land Boundary Segment K
       INTEGER,ALLOCATABLE::WEIRD(:)
 
 C.... DW, periodic bc
-      INTEGER:: NPERBC 
-      INTEGER, ALLOCATABLE:: IPERCONN(:,:), IPERPTR(:) ! a simple sparse CRS format 
+      INTEGER:: NPERBC
+      INTEGER, ALLOCATABLE:: IPERCONN(:,:), IPERPTR(:) ! a simple sparse CRS format
 C.... DW
 
       TYPE(ipair),ALLOCATABLE, TARGET :: node_dict(:)
@@ -74,7 +74,7 @@ C                                   ! Ith Flow Boundary Node
       INTEGER EXIST_FLUX
       LOGICAL APERIODIC_FLOW_BC     ! .true. if EXIST_FLUX is .true. .AND.
                                     ! NFFR=0 in fort.15
-                                    
+
       ! @jasonfleming: add boundary weights for perturbing the domain
       ! decomposition in subroutine metis()
       logical :: strictBoundaries ! true if subdomain boundaries must match fulldomain
@@ -259,6 +259,25 @@ c.... tcm v50.66.02 added for time varying bathymetry
       LOGICAL :: FOUND_TBC_NML   !flag to determine if the timebathycontrol namelist was present
       NAMELIST /TimeBathyControl/ NDDT,BTIMINC,BCHGTIMINC
 
+C.. v55 - kmd - added for rainfall
+      LOGICAL :: FOUND_rainCon_NML = .FALSE.
+      INTEGER :: NCRAIN
+      REAL(8) :: CRAIN_TIMINC
+      NAMELIST /rainfallcontrol/ NCRAIN, CRAIN_TIMINC
+
+C.. v55 - kmd - added for point source information
+      LOGICAL :: FOUND_psCon_NML = .FALSE.
+      INTEGER :: NCPSOURCE
+      REAL(8) :: CPS_TIMINC
+      REAL(8) :: CPS_RAMP
+      REAL(8),ALLOCATABLE, TARGET ::  XPS(:),YPS(:),SLPS(:),SFPS(:)
+      INTEGER,ALLOCATABLE :: NNSPS(:)
+      INTEGER,ALLOCATABLE :: IMAP_STAPS_LG(:,:), STAPS_SHARE(:)
+      INTEGER,ALLOCATABLE :: FeatureID(:)
+      REAL(8),ALLOCATABLE :: TNLON(:), TNLAT(:)
+      INTEGER :: NumPS
+      NAMELIST /psourcecontrol/ NCPSOURCE, CPS_TIMINC, CPS_RAMP
+
 c.... !tcm v52.30.01 added for forced use of Smagorinski Eddy Viscosity
       REAL(8) :: SMAG_UPPER_LIM = 100.d0  ! m^2/s (default upper limit)
       REAL(8) :: SMAG_LOWER_LIM = 1.0d-8  ! m^2/s (default lower limit)
@@ -280,7 +299,7 @@ Casey 180318: Added NWS=13
       LOGICAL :: FOUND_OWINC_NML
 #endif
 
-      logical :: foundWetDryControlNamelist = .false. ! for namelist 
+      logical :: foundWetDryControlNamelist = .false. ! for namelist
       logical :: outputNodeCode = .false.
       logical :: outputNOFF = .false.
       logical :: noffActive = .true.
@@ -289,18 +308,18 @@ Casey 180318: Added NWS=13
 
       ! jgf52.08.02: For inundation output control. Wanted to just
       ! use the variables of the same name from the write_output module,
-      ! but this must wait until build dependencies are resolved. 
+      ! but this must wait until build dependencies are resolved.
       logical :: foundInundationOutputControlNamelist = .false.
       logical :: inundationOutput = .false.
       real(sz) :: inunThresh = 0.6d0
 
       ! jgf: added support for water level correction
-      logical :: foundCorrectionControlNamelist = .false. 
-      character(len=2048) :: dynamicWaterLevelCorrectionFileName='null' ! water level correction file 
-      integer :: dynamicWaterLevelCorrectionSkipSnaps=0 ! number of correction data sets to skip 
+      logical :: foundCorrectionControlNamelist = .false.
+      character(len=2048) :: dynamicWaterLevelCorrectionFileName='null' ! water level correction file
+      integer :: dynamicWaterLevelCorrectionSkipSnaps=0 ! number of correction data sets to skip
       real(sz) :: dynamicWaterLevelCorrectionMultiplier = 1.d0 ! multiply each correction value by this
       real(sz) :: dynamicWaterLevelCorrectionRampStart = 0.d0 ! seconds after run start
-      real(sz) :: dynamicWaterLevelCorrectionRampEnd = 0.d0   ! seconds after run start     
+      real(sz) :: dynamicWaterLevelCorrectionRampEnd = 0.d0   ! seconds after run start
       character(len=10) :: dynamicWaterLevelCorrectionRampReferenceTime = 'hotstart'
 
 C     SOLVER  section
@@ -576,7 +595,7 @@ C
       nbytes = nbytes + 4*mnpp*mnproc + 4*mnep*mnproc + 12*mnep*mnproc
       ALLOCATE(EL_SHARE(NELG))
       EL_SHARE(:)   = -1
-      
+
       nbytes = nbytes + mnep
       call memory_alloc(nbytes)
       print *,"from alloc_main2: "
@@ -601,7 +620,7 @@ C
       deallocate(nnep)
       nbytes = nbytes + 4*mnpp*mnproc + 4*mnep*mnproc + 12*mnep*mnproc
       deallocate(el_share)
-      
+
       nbytes = nbytes + mnep
       call memory_dealloc(nbytes)
       print *,"from dealloc_main2: "

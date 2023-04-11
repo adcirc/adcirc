@@ -18,6 +18,7 @@ if(BUILD_PADCIRC)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_rain.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/globalio.F

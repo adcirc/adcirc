@@ -16,6 +16,7 @@ set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_rain.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/globalio.F
@@ -40,6 +41,7 @@ set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F)
+
 
 if(BUILD_LIBADCIRC_STATIC)
 

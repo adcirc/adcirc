@@ -12,6 +12,7 @@ SRCDIR?=$(shell dirname $(PWD))
 #  vjp 9/18/2006  made mods for Robert McLay's globalio module
 #  vjp 9/19/2006  made mods for Shintaro's winds and waves
 #  tcm 03/30/2011 added owi_ice module v49.64.01
+#  kmd 10/05/2020 added owi_rain module v55
 
 ########################################################################
 #  Get Canonical Machine NAME from config.guess
@@ -91,7 +92,7 @@ ifeq ($(XDMF),enable)
      $(warning (INFO) XDMF library path is $(XDMFHOME).)
 endif
 
-FFLAGSGSW :=  
+FFLAGSGSW :=
 ifeq ($(GRIB2),enable)
      PPFC    := $(PPFC) -DGRIB2API
      PFC     := $(PFC) -DGRIB2API
@@ -101,7 +102,7 @@ ifeq ($(GRIB2),enable)
      FFLAGS4 := $(FFLAGS4) -DGRIB2API
      FFLAGSGSW := $(FFLAGSGSW) -I$(WGRIB2HOME)
 endif
-ifeq ($(DATETIME),enable) 
+ifeq ($(DATETIME),enable)
      PPFC    := $(PPFC) -DDATETIME
      PFC     := $(PFC) -DDATETIME
      FFLAGS1 := $(FFLAGS1) -DDATETIME
@@ -352,16 +353,16 @@ BND_MSRC   =  boundaries.F
 PREP_MSRC  =  presizes.F
 PGLO_MSRC  =  pre_global.F
 3D_MSRC    =  global_3dvs.F
-ADC_MSRC   =  version.F sizes.F constants.F global.F 
+ADC_MSRC   =  version.F sizes.F constants.F global.F
 POST_MSRC  =  post_global.F
 HARM_MSRC  =  harm.F
 VORT_MSRC  =  vortex.F
 VW1D_MSRC  =  vew1d.F
 
 ifeq ($(NETCDF),enable)
-WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F owiwind_netcdf.F
+WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F owiwind_netcdf.F owi_rain.F
 else
-WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F
+WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F owi_rain.F
 endif
 
 SOLV_MSRC  =  itpackv.F
@@ -369,7 +370,7 @@ NA_MSRC    =  nodalattr.F
 NC_MSRC    =  netcdfio.F
 GIO_MSRC   =  globalio.F
 WRIT_MSRC  =  write_output.F
-WRITER_MSRC = writer.F 
+WRITER_MSRC = writer.F
 #Casey 090302: Add file for coupling to unstructured SWAN.
 COUP_MSRC  =  couple2swan.F
 #tcm v49.48.01 Adding File for kdtree2 fast search algorithm
@@ -604,7 +605,7 @@ ifeq ($(NETCDF),enable)
    $(LIBADC) :: $(O_DIR) $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
 	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
                  $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
-                 $(WRITER_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ) 
+                 $(WRITER_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ)
 	ar -ts $@
 else
    $(LIBADC) :: $(O_DIR) $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
@@ -778,6 +779,7 @@ $(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(NA_MOB
 $(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ)
 $(O_DIR)owiwind_netcdf.o : owiwind_netcdf.F
 $(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ)
+$(O_DIR)owi_rain.o    :  owi_rain.F  $(VORT_MOBJ)
 $(O_DIR)rs2.o         :  rs2.F  $(VORT_MOBJ)
 ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(PARALLEL_ADCIRC) padcswan))
 $(O_DIR)itpackv.o     :  itpackv.F $(O_DIR)sizes.o $(O_DIR)messenger.o

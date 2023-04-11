@@ -85,6 +85,10 @@ C   fort.68    Global Hot Start file
 C   fort.150   METIS input information
 C   fort.151   METIS output information
 C   fort.141   Global Time-Variant Bathymetry
+C   fort.426   Global node/source for point source
+C   fort.428   Global lon/lat location for point source
+C   fort.429   Global NWM feature information for point source
+C   fort.430   Global discharges for point source
 C
 C  When a parallel ADCIRC job is run, each PExxxx takes its input from its
 C  subdirectory PExxxx and writes local output files to the same directory.
@@ -395,7 +399,7 @@ C
       CALL setMessageSource("prepinput")
 #if defined(ALL_TRACE)
       CALL allMessage(DEBUG,"Enter")
-#endif      
+#endif
 
 C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
       if (PREP_13) then
@@ -406,11 +410,11 @@ C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
         CALL PREP13()
 C================= DW, for sponge layer
         IF ( prep5354flag ) THEN
-           CALL PREP5354( 53001 ) 
-           CALL PREP5354( 54001 ) 
+           CALL PREP5354( 53001 )
+           CALL PREP5354( 54001 )
         END IF
         IF ( prep2001flag ) THEN
-           CALL PREP20( .true. ) 
+           CALL PREP20( .true. )
         END IF
 C=================
         GO TO 9999
@@ -720,37 +724,37 @@ C================= DW, for sponge layer
         IF ( prep5354flag ) THEN
            F5354R = .FALSE.
            DO JJ = 1, NWP
-              IF ( (TRIM(useNodalAttrNames(JJ)) .eq. 
+              IF ( (TRIM(useNodalAttrNames(JJ)) .eq.
      &             "sponge_generator_layer" ) ) THEN
                  F5354R = .TRUE.
-                 PRINT*, "Prepping 5354" 
-                 EXIT 
+                 PRINT*, "Prepping 5354"
+                 EXIT
               END IF
-           END DO       
+           END DO
            IF ( F5354R ) THEN
-              CALL PREP5354( 53001 ) 
-              CALL PREP5354( 54001 ) 
+              CALL PREP5354( 53001 )
+              CALL PREP5354( 54001 )
            END IF
         END IF
         IF ( prep2001flag ) THEN
            F5354R = .FALSE.
            DO JJ = 1, NWP
-              IF ( (TRIM(useNodalAttrNames(JJ)) .eq. 
+              IF ( (TRIM(useNodalAttrNames(JJ)) .eq.
      &             "sponge_generator_layer" ) ) THEN
                  F5354R = .TRUE.
-                 PRINT*, "Prepping 2001" 
-                 EXIT 
+                 PRINT*, "Prepping 2001"
+                 EXIT
               END IF
-           END DO       
+           END DO
            IF ( F5354R ) THEN
-              CALL PREP20( .true. ) 
+              CALL PREP20( .true. )
            END IF
         END IF
         IF ( prep5354flag .or. prep2001flag ) THEN
            if (allocated(useNodalAttrNames)) then
               DEALLOCATE(useNodalAttrNames)
            endif
-        ENDIF 
+        ENDIF
 C=================
       endif
 C
@@ -833,6 +837,20 @@ C
          ENDIF
       ENDIF
 
+C... kmd 55 add information for point source information
+C    Files dependent on ncpsource (fort.426/428/429/430)
+C
+C-- If required to write a Point Source file for each PE
+C
+      IF (PREP_ALL) THEN
+         IF ((ABS(NCPSOURCE).EQ.1).OR.(ABS(NCPSOURCE).EQ.2)) THEN
+            CALL PREP426()  ! need to find local adcirc nodes
+         ELSE IF (ABS(NCPSOURCE).EQ.3) THEN
+            CALL PREPPSLOC() ! Set up for lon/lat point source
+         ELSE IF (ABS(NCPSOURCE).EQ.4) THEN
+            CALL PREPPSNWM() ! Set up NWM feature information
+         END IF
+      END IF 
 
 C  kmd48.33bc add information for 3D baroclinic simulations
       IF (PREP_ALL) THEN

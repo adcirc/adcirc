@@ -1,5 +1,5 @@
 C***********************************************************************
-C                     M O D U L E   W E T   D R Y      
+C                     M O D U L E   W E T   D R Y
 C***********************************************************************
 C     Executes wetting and drying algorithm.
 C***********************************************************************
@@ -71,18 +71,18 @@ CWET...further comments at the end of the momentum equation solution section.
 CWET...
       module wetdry
       use sizes, only : sz
-      
+
       real(sz) :: habsmin
       real(sz) :: hoff
       real(sz) :: velmin
-      
+
       integer,allocatable ::    nibcnt(:)
       integer,allocatable ::    noffold(:)
       integer,allocatable ::    noff_sg(:)
 
       ! jgf52.08.08: Enable analyst to remove NOFF from wetting and
       ! drying algorithm; .true. by default to conform with prior
-      ! ADCIRC versions. 
+      ! ADCIRC versions.
       LOGICAL :: noffActive = .true.
 
       contains
@@ -126,13 +126,15 @@ CWET...
       use global, only : noff, nodecode, nnodecode, eta1, eta2, tk,
      &    nolifa,
      &    bsx1, bsy1, btime_end, C2DDI, C3D, h0, ifnlfa, nddt, dtdp,
-     &    nibnodecode, ilump, ncchange, tkm, directvelWD, useHF
+     &    nibnodecode, ilump, ncchange, tkm, directvelWD, useHF,
+     &    divbytotalarea, ncpsource !cms v55 -- added for point source active check
 #ifdef CMPI
      &    ,idumy,dumy1,dumy2
       use messenger
 #endif
       use mesh, only : ne, np, nm, dp, mju, totalArea, nm, x, y, areas,
-     &   LBArray_Pointer, nneighele, neitabele
+     &   LBArray_Pointer, nneighele, neitabele,
+     &    totalareacalc !cms v55 -- added for point source active check
       use nodalattributes, only : BFCdLLimit, fgamma, ftheta, fric,
      &   manningsn, hbreak, ifhybf, ifnlbf, iflinbf, loadManningsN,
      &   loadZ0B_var, z0b_var, loadSubgridBarrier,
@@ -156,7 +158,7 @@ CWET...
       real(sz) :: areaEle
       real(sz) :: tkWet
       real(sz) :: etaN1,etaN2,etaN3
-      real(sz) :: hTotN1,hTotN2,hTotN3      
+      real(sz) :: hTotN1,hTotN2,hTotN3
       real(sz) :: deldist,deleta
       real(sz) :: htot
       real(sz) :: h1
@@ -164,14 +166,14 @@ CWET...
       integer :: tk_cnt(np)
       integer :: nbnctot
       integer :: i,j,k,kk,l
-      integer :: ie          
-      real(sz) :: tknf !dmw 202207, added for "new" formula for vel 
+      integer :: ie
+      real(sz) :: tknf !dmw 202207, added for "new" formula for vel
       integer :: nnc
       integer :: nnbb2
       integer :: nwetele
-  
+
       if (nolifa.ne.2) then
-         return ! wetting and drying is not active 
+         return ! wetting and drying is not active
       endif
 
 CWET...
@@ -184,7 +186,7 @@ CWET...
          ELSE
             TKNF = 1.D0
          ENDIF
-          
+
          DO I=1,NP
             NIBCNT(I) = 0
          ENDDO
@@ -296,7 +298,7 @@ C-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207
      &                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
      &                          0.0001d0)
                            VEL=G*(DELETA/DELDIST)/TKWET
-                        ENDIF   
+                        ENDIF
                      ELSEIF(C3D)THEN
 C solve for the depth averaged velocity,U, from the relation :
 C        tau=rho*g*(h+eta)*(deta/dx)=rho*Cd*|U|*U
@@ -325,12 +327,12 @@ c. RJW merged 08/26/20008 Casey 071219: Added the following logic to obtain the 
      &                     FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
-     &                        (FGAMMA/FTHETA))), 
+     &                        (FGAMMA/FTHETA))),
      &                     2.0D0/DTDP)
                            TK_CNT(NM123) = TK_CNT(NM123) + 1
                            TK_TMP(NM123) = TK_TMP(NM123) + TK(NM123)
                            !WJP needed for internal_tide stuff
-                           TKM(1:2,NM123) = TK(NM123) 
+                           TKM(1:2,NM123) = TK(NM123)
                            IF (NM123 .EQ. NM2) THEN
                               TK(NM1) = TK(NM123)
                               TK_CNT(NM1) = TK_CNT(NM1) + 1
@@ -401,7 +403,7 @@ C<<                     Convert Manning's N to Cd, if necessary.
                           ENDIF
                         ENDIF
 C>>
-C-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207                  
+C-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207
                         IF (directvelWD.AND.useHF) THEN
                            VEL=sqrt(g*H1*DELETA/DELDIST)
                         ELSEIF (directvelWD) THEN
@@ -440,12 +442,12 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
      &                     FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
-     &                        (FGAMMA/FTHETA))), 
+     &                        (FGAMMA/FTHETA))),
      &                     2.0D0/DTDP)
                            TK_CNT(NM123) = TK_CNT(NM123) + 1
                            TK_TMP(NM123) = TK_TMP(NM123) + TK(NM123)
                            !WJP needed for internal_tide stuff
-                           TKM(1:2,NM123) = TK(NM123) 
+                           TKM(1:2,NM123) = TK(NM123)
                            IF (NM123 .EQ. NM2) THEN
                               TK(NM3) = TK(NM123)
                               TK_CNT(NM3) = TK_CNT(NM3) + 1
@@ -517,7 +519,7 @@ C<<                     Convert Manning's N to Cd, if necessary.
                           ENDIF
                         ENDIF
 C>>
-C-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207                  
+C-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207
                         IF (directvelWD.AND.useHF) THEN
                            VEL=sqrt(g*H1*DELETA/DELDIST)
                         ELSEIF (directvelWD) THEN
@@ -555,12 +557,12 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
      &                     FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
-     &                        (FGAMMA/FTHETA))), 
+     &                        (FGAMMA/FTHETA))),
      &                     2.0D0/DTDP)
                            TK_CNT(NM123) = TK_CNT(NM123) + 1
                            TK_TMP(NM123) = TK_TMP(NM123) + TK(NM123)
                            !WJP needed for internal_tide stuff
-                           TKM(1:2,NM123) = TK(NM123) 
+                           TKM(1:2,NM123) = TK(NM123)
                            IF (NM123 .EQ. NM1) THEN
                               TK(NM3) = TK(NM123)
                               TK_CNT(NM3) = TK_CNT(NM3) + 1
@@ -619,21 +621,21 @@ CWET...
 
          ENDDO
 C-- DMW 202204 For any node where TK is computed more than once in the above loop,
-C    compute the mean TK and save this value in both the TK and TKM arrays. 
-C    This prevents the value of TK from depending on the ordering of elems. 
+C    compute the mean TK and save this value in both the TK and TKM arrays.
+C    This prevents the value of TK from depending on the ordering of elems.
          DO I=1,NP
             IF (TK_CNT(I) .GT. 1) THEN
                TK(I) = TK_TMP(I)/DBLE(TK_CNT(I))
-               TKM(1:2,I) = TK(I)            
+               TKM(1:2,I) = TK(I)
             ENDIF
-         ENDDO   
+         ENDDO
          if (subdomainOn.and.enforceBN.eq.1) call enforceWDcb() ! NCSU Subdomain
          if (subdomainOn.and.enforceBN.eq.2) call enforceWDob() ! NCSU Subdomain
 
 C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
 #ifdef CMPI
          CALL UPDATEI(NNODECODE,NIBCNT,2)
-C-- DMW 202204 Update FRIC, TK, and ETA2 at ghost nodes as well 
+C-- DMW 202204 Update FRIC, TK, and ETA2 at ghost nodes as well
          CALL UPDATER(FRIC,TK,ETA2,3)
          tmp1 = TKM(1,:)
          tmp2 = TKM(2,:)
@@ -641,7 +643,7 @@ C-- DMW 202204 Update FRIC, TK, and ETA2 at ghost nodes as well
          CALL UPDATER(tmp1,tmp2,tmp3,3)
          TKM(1,:) = tmp1
          TKM(2,:) = tmp2
-         TKM(3,:) = tmp3 
+         TKM(3,:) = tmp3
 C-- DMW
 #endif
 
@@ -649,8 +651,8 @@ C-- DMW
 Cwet...
 CWET... ELEMENTAL WETTING CRITERIA WETBATHYCHANGE
 C*******************************************************************************************
-C tcm v50.66.01 -- This is an additional test for wetting only when time varying 
-C                  bathymetry is used and is only performed during the period of 
+C tcm v50.66.01 -- This is an additional test for wetting only when time varying
+C                  bathymetry is used and is only performed during the period of
 C                  bathymetry evolution.
 C
          IF ((NDDT.NE.0).AND.(IT.LE.BTIME_END+1) ) THEN
@@ -669,7 +671,7 @@ C
                      HTOTN2=DP(NM2)+ETA2(NM2)
                      HTOTN3=DP(NM3)+ETA2(NM3)
 
-!                    if all nodes have a depth greater than or equal to 
+!                    if all nodes have a depth greater than or equal to
 !                    hoff = 1.2*H0, then make the element wet
                      IF( (HTOTN1.GE.HOFF).AND.(HTOTN2.GE.HOFF).AND.
      &                   (HTOTN3.GE.HOFF) ) THEN
@@ -697,7 +699,7 @@ C<<                           Convert Manning's N to Cd, if necessary.
      &                          (1.D0+(HBREAK/H1)**FTHETA)**
      &                          (FGAMMA/FTHETA)))
                               !WJP needed for internal_tide stuff
-                              TKM(1:2,NM123) = TK(NM123) 
+                              TKM(1:2,NM123) = TK(NM123)
                            ELSEIF(C3D)THEN
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -755,7 +757,7 @@ C<<                        Convert Manning's N to Cd, if necessary.
      &                          (1.D0+(HBREAK/H1)**FTHETA)**
      &                          (FGAMMA/FTHETA)))
                               !WJP needed for internal_tide stuff
-                              TKM(1:2,NM123) = TK(NM123) 
+                              TKM(1:2,NM123) = TK(NM123)
                            ELSEIF(C3D)THEN
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -813,7 +815,7 @@ C<<                         Convert Manning's N to Cd, if necessary.
      &                           (1.D0+(HBREAK/H1)**FTHETA)**
      &                           (FGAMMA/FTHETA)))
                               !WJP needed for internal_tide stuff
-                              TKM(1:2,NM123) = TK(NM123) 
+                              TKM(1:2,NM123) = TK(NM123)
                            ELSEIF(C3D)THEN
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -921,7 +923,7 @@ C...Find the heighest point on the bed in the element.  sb v46.28.sb05.06 11/01/
 #endif
 #ifndef SB_WETDRY
                ! jgf52.08.08: Analyst can eliminate noff from
-               ! consideration in fort.15 file. 
+               ! consideration in fort.15 file.
                if (noffActive.eqv..true.) then
 C...ABC pattern
                   IF((ETAN1.GE.ETAN2).AND.(ETAN2.GT.ETAN3)) THEN
@@ -946,7 +948,7 @@ C...ACB pattern
                endif
 #else
                ! jgf52.08.08: Analyst can eliminate noff from
-               ! consideration in fort.15 file. 
+               ! consideration in fort.15 file.
                if (noffActive.eqv..true.) then
 C...ABC pattern
                   IF((ETAN1.GE.ETAN2).AND.(ETAN2.GT.ETAN3)) THEN
@@ -999,7 +1001,7 @@ C...This is applied only when NOFF flag of the element at the previous time step
 C...is 0, which means that this logic works to prevent an element from
 C...re-wetting.
 C...sb v46.52.03
-               if (noffActive.eqv..true.) then 
+               if (noffActive.eqv..true.) then
                   IF(NOFFOLD(I).EQ.0) THEN
                      IF(HTOTN1.GE.HTOTN2.AND.HTOTN1.GE.HTOTN3) THEN
                         IF(ETAN1.LT.(-DPMIN+H0)) NOFF(I) = 0
@@ -1083,7 +1085,7 @@ CWET...
 C.....
 C.....Nodal Drying Criteria for the ibtype=64 weir boundary
 C.....Check the node if it is along the ibtype=64 weir boundary and if the weir is
-C.....submerged. If it is the case and the node does not belong to at least 
+C.....submerged. If it is the case and the node does not belong to at least
 C.....one wet element, set the nnodecode back to 0.   SB
 C.....
          IF (NFLUXIB64_GBL.GT.0) THEN
@@ -1095,7 +1097,7 @@ C.....
                      NWetEle = 0
                      DO K=1,NNeighEle(I)
                         IE = NeiTabEle(I,K)
-                        NCTOT = NNODECODE(NM(IE,1)) + 
+                        NCTOT = NNODECODE(NM(IE,1)) +
      &                          NNODECODE(NM(IE,2)) + NNODECODE(NM(IE,3))
                         IF (NCTOT.EQ.3) THEN
                            NWetEle = NWetEle + 1
@@ -1118,7 +1120,7 @@ C.....
             I = ListCondensedNodes(K,1)
             ! 0) DEFAULT VALUE
             NNC = NNODECODE(I)
-            ! 1) FIND UPDATED VALUE 
+            ! 1) FIND UPDATED VALUE
             DO L=2,NNodesListCondensedNodes(K)
                J = ListCondensedNodes(K,L)
                IF(NNODECODE(J).NE.NODECODE(J)) THEN
@@ -1228,10 +1230,10 @@ CWET...
                  ENDIF
              ENDDO
          ENDIF
-         
+
 C.....   DMW 202207 Compute a slope limiting factor if needed
          call computeAlpha()
-         
+
 #ifdef CMPI
          !jgf48.4619 implementing Seizo's changes for Lumped, fully
          ! explicit operation. In that case, the GWCE LHS matrix is
@@ -1248,6 +1250,33 @@ CWET...
 CWET...END WET/DRY SECTION - PART 6
 CWET...
 
+CPS...
+CPS... START ACTIVE NODE CHECK FOR POINT SOURCE FORCING
+CPS...
+       ! cms-v53 -- added check for wetted total area after wet/dry
+       ! for use in point source forcing - moved to wetdry.F in v55
+       ! to conform to modularized timestep structure.
+       !
+       ! Update the TotalArea and develop the information needed
+       ! for active point sources with the newly updated wetting
+       ! and drying values
+       IF (NCPSOURCE .NE. 0) THEN
+          CALL totalAreaCalc()
+          DO I=1,NP
+             IF (TotalArea(I) .EQ. 0.D0) THEN
+                DivByTotalArea(I) = 0.D0
+              ELSE
+                 DivByTotalArea(I) = 1.D0/TotalArea(I)
+              END IF
+           END DO
+        ENDIF
+
+        ! Finally, need to update the isActive array due to
+        ! wet/dry changes (not needed until option 4 is active)
+        ! Will need to add lines 3224-3240 of timestep.F in v53 later
+CPS...
+CPS... END ACTIVE NODE CHECK FOR POINT SOURCE FORCING
+CPS...
 c.....
 !-----------------------------------------------------------------------
       end subroutine computeWettingAndDrying
@@ -1258,13 +1287,13 @@ c.....
 !   Apply a subgrid barrier.
 !
 !   Assumptions: When the subgrid barrier is not being overtopped,
-!                the cross-barrier flow is disabled and the nodes 
-!                are placed at the elevation found in the mesh 
-!                geometry. When the barrier becomes overtopped, 
-!                the nodes are elevated temporarily during the 
+!                the cross-barrier flow is disabled and the nodes
+!                are placed at the elevation found in the mesh
+!                geometry. When the barrier becomes overtopped,
+!                the nodes are elevated temporarily during the
 !                overtopping process. When the overtopping
 !                concludes, the nodes are returned to their mesh
-!                specified elevations and the cross-barrier flow 
+!                specified elevations and the cross-barrier flow
 !                is turned off again
 !-----------------------------------------------------------------------
       subroutine applySubgridBarrier()
@@ -1276,7 +1305,7 @@ c.....
      &                              SubgridBarrierOvertopping
 #ifdef CMPI
           USE MESSENGER,ONLY:wetDrySum
-#endif          
+#endif
           IMPLICIT NONE
           INTEGER  :: I,NM1,NM2,NM3,NCELE
           REAL(SZ) :: SB1,SB2,SB3
@@ -1338,14 +1367,14 @@ c.....
       end subroutine applySubgridBarrier
 !-----------------------------------------------------------------------
 
-C..... DMW 202207 Compute a slope limiting factor for scaling down the 
-C..... elevation gradient if the slope of the water surface aligned with the 
+C..... DMW 202207 Compute a slope limiting factor for scaling down the
+C..... elevation gradient if the slope of the water surface aligned with the
 C..... bathy slope becomes too large, i.e., when it exceeds slim.
 !-----------------------------------------------------------------------
       subroutine computeAlpha()
 !-----------------------------------------------------------------------
          USE MESH,ONLY: DP,NM,NE,sfac,SFacEle,SFMYEle,SFMXEle,FDXE,FDYE,
-     &    areas         
+     &    areas
          use global, only : eta2, noff, nodecode, alphal, IFSFM, slim
          IMPLICIT NONE
          INTEGER  :: I,NM1,NM2,NM3,NC1,NC2,NC3,NCELE
@@ -1354,10 +1383,10 @@ C..... bathy slope becomes too large, i.e., when it exceeds slim.
          real(sz) :: detadxa, detadya, dpdxa, dpdya
          real(sz) :: fdx1, fdx2, fdx3, fdy1, fdy2, fdy3
          real(sz) :: etaN1, etaN2, etaN3
-         
-         
+
+
          ALPHAL(:) = 1.D0
-         
+
          DO I=1,NE
             NM1=NM(I,1)
             NM2=NM(I,2)
@@ -1366,37 +1395,37 @@ C..... bathy slope becomes too large, i.e., when it exceeds slim.
             NC2=NODECODE(NM2)
             NC3=NODECODE(NM3)
             NCEle=NC1*NC2*NC3*NOFF(I)
-            IF (NCEle.EQ.1) THEN               
+            IF (NCEle.EQ.1) THEN
 
                HN1 = ETA2(NM1) + DP(NM1)
                HN2 = ETA2(NM2) + DP(NM2)
                HN3 = ETA2(NM3) + DP(NM3)
                IF((HN1.LE.5.D-1).OR.(HN2.LE.5.D-1).OR.(HN3.LE.5.D-1) ) THEN
-               
+
                   SFacAvg = SFacEle(I)
-                  SFmxAvg = SFMXEle(I)  
-                  SFmyAvg = SFMYEle(I)  
+                  SFmxAvg = SFMXEle(I)
+                  SFmyAvg = SFMYEle(I)
                   sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
                   sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
-               
+
                   FDX1 = FDXE(1,I)*sfdxfac  !b1
                   FDX2 = FDXE(2,I)*sfdxfac  !b2
                   FDX3 = FDXE(3,I)*sfdxfac  !b3
                   FDY1 = FDYE(1,I)*sfdyfac  !a1
                   FDY2 = FDYE(2,I)*sfdyfac  !a2
                   FDY3 = FDYE(3,I)*sfdyfac  !a3
-               
+
                   ETAN1 = ETA2(NM1)
                   ETAN2 = ETA2(NM2)
                   ETAN3 = ETA2(NM3)
-                  
+
                   DPN1 = DP(NM1)
                   DPN2 = DP(NM2)
                   DPN3 = DP(NM3)
 
                   DPDXA = DPN1*FDX1 + DPN2*FDX2 + DPN3*FDX3
                   DPDYA = DPN1*FDY1 + DPN2*FDY2 + DPN3*FDY3
-               
+
                   DETADXA = ETAN1*FDX1 + ETAN2*FDX2 + ETAN3*FDX3
                   DETADYA = ETAN1*FDY1 + ETAN2*FDY2 + ETAN3*FDY3
                   DPM = SQRT(DPDXA*DPDXA + DPDYA*DPDYA)/AREAS(I)
@@ -1407,12 +1436,12 @@ C..... bathy slope becomes too large, i.e., when it exceeds slim.
                      DETAM = SQRT(DETADXA*DETADXA + DETADYA*DETADYA)/AREAS(I)
                      ALPHAL(I) = SLIM/DETAM
                   ENDIF
-                  
+
                   IF (ALPHAL(I) .LE. 0.D0) ALPHAL(I) = 1.D0
                   IF (ALPHAL(I) .GE. 1.D0) ALPHAL(I) = 1.D0
                ENDIF
-                  
-            ENDIF 
+
+            ENDIF
          ENDDO
 C- DMW
 
@@ -1425,4 +1454,3 @@ C- DMW
       end module wetDry
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-

@@ -244,9 +244,9 @@ Casey 180318: Added NWS=13
 c.... !wjp added for warnElev namelist
       REAL(SZ) :: WarnElev = 20.0  !
       REAL(SZ) :: ErrorElev = 1000.0  !
-      LOGICAL :: WarnElevDump = .FALSE.  
+      LOGICAL :: WarnElevDump = .FALSE.
       INTEGER :: WarnElevDumpLimit = 50  !
-      LOGICAL :: WARN_ELEV_FLAG = .FALSE.   
+      LOGICAL :: WARN_ELEV_FLAG = .FALSE.
       LOGICAL :: FOUND_WARNELEV_NML = .false.  !
       NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
      &  WarnElevDumpLimit, ErrorElev
@@ -263,7 +263,7 @@ c.... !wjp added for warnElev namelist
       character(len=100) :: densityForcingType = 'SigmaT' ! sigmaT, salinity, etc
       character(len=100) :: densityFileName = 'fort.11.nc' ! filename
       integer :: densityTimeIterator = 1 ! BC3D time step iteration skipper
-      NAMELIST /densityControl/ densityRunType, densityFileName, 
+      NAMELIST /densityControl/ densityRunType, densityFileName,
      &  densityTimeIterator, densityForcingType
 
 C---------------------end of data declarations--------------------------------C
@@ -325,7 +325,7 @@ C
          ENDIF
       ELSE
          DO WHILE(.NOT.FOUND)
-            WRITE(*,*) 
+            WRITE(*,*)
      &        'Enter the name of the ADCIRC UNIT 14 (Grid) file:'
             READ(*,'(a60)') GRID
             INQUIRE(FILE=trim(GRID),EXIST=FOUND)
@@ -545,6 +545,21 @@ C.... tcm v52.30.01 additions for Smagorinski Eddy Viscosity Namelist
       LOGICAL :: FOUND_Smag_NML = .false. ! flag to determine if the Smag_Control namelist was present
       NAMELIST /Smag_Control/ SMAG_UPPER_LIM,SMAG_LOWER_LIM,SMAG_COMP_FLAG
 
+C..v55 - kmd - additions for rainfall namelist control
+      INTEGER :: NCRAIN
+      INTEGER :: IOS_RAIN
+      REAL(8) :: CRAIN_TIMINC
+      LOGICAL :: FOUND_raincon_NML = .FALSE.
+      NAMELIST /rainfallcontrol/ NCRAIN, CRAIN_TIMINC
+
+C..v55 - kmd - additions for point source namelist control
+      INTEGER :: NCPSOURCE
+      INTEGER :: IOS_PS
+      REAL(8) :: CPS_TIMINC
+      REAL(8) :: CPS_RAMP
+      LOGICAL :: FOUND_pscon_NML = .FALSE.
+      NAMELIST /psourcecontrol/ NCPSOURCE, CPS_TIMINC, CPS_RAMP
+
 #ifdef ADCNETCDF
       NETCDF_AVAIL = .true.
 #else
@@ -583,7 +598,7 @@ C
          ENDIF
       ELSE
          DO WHILE(.NOT.FOUND)
-            WRITE(*,*) 
+            WRITE(*,*)
      &        'Enter the name of ADCIRC UNIT 15 (Run Info) file:'
             READ(*,'(A)') RUNINFO
             INQUIRE(FILE=trim(RUNINFO),EXIST=FOUND)
@@ -735,24 +750,42 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The WarnElevControl namelist was not found."
       ELSE
-         found_WarnElev_nml = .true.  
+         found_WarnElev_nml = .true.
       ENDIF
       REWIND(15)
-      
+
       READ(UNIT=15,NML=AliDispersionControl,IOSTAT=IOS)
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The AliDisp Control namelist was not found."
       ELSE
-         found_AliDisp_nml = .true.  
+         found_AliDisp_nml = .true.
       ENDIF
       REWIND(15)
-      
+
       READ(UNIT=15,NML=densityControl,IOSTAT=IOS)
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The density Control namelist was not found."
       ELSE
-         found_density_nml = .true.  
+         found_density_nml = .true.
       ENDIF
+      REWIND(15)
+
+C..v55 - kmd - additions for rainfall
+      READ(UNIT=15,NML=rainfallcontrol,IOSTAT=IOS_RAIN)
+      IF (IOS_RAIN.LT.0) THEN
+         WRITE(*,*) "INFO: The rainfallcontrol namelist was not found."
+      ELSE
+         found_raincon_nml = .true.
+      END IF
+      REWIND(15)
+
+C..v55 - kmd - additions for point source
+      READ(UNIT=15,NML=psourcecontrol,IOSTAT=IOS_PS)
+      IF (IOS_PS.LT.0) THEN
+         WRITE(*,*) "INFO: The psourcecontrol namelist was not found."
+      ELSE
+         found_pscon_nml = .true.
+      END IF
       REWIND(15)
 C
 C
@@ -834,7 +867,7 @@ c        C3DDSS = .TRUE.
          IF ((IM.GE.111111).AND.(IM.LE.534328)) THEN
             C2DDI = .TRUE.
             IF (IM-int(IM*0.1)*10 > 4) THEN
-                ! Setting Baroclinic true 
+                ! Setting Baroclinic true
                 CBaroclinic = .TRUE.
             ENDIF
          ELSEIF ((IM.GE.611111).AND.(IM.LE.634322)) THEN
@@ -962,7 +995,7 @@ C.... tcm v48.4641 additions for ice
      &     .OR.(NWS.EQ.19))THEN
         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
 C++! GML added 5
-        IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4))) 
+        IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4)))
      &         READ(15,*) WTIMINC,RSTIMINC
         IF((NCICE.EQ.0).AND.((NRS.EQ.3).OR.(NRS.EQ.5))) THEN  !Casey 090825: Fix for NRS = 3.
           IF(ABS(NWS).EQ.8) THEN
@@ -1411,7 +1444,7 @@ C
       IF(NRS.GE.1) WRITE(*,3018) ! sb46.28sb03
       IF(NWS.EQ.10) WRITE(*,3019)
       IF(NWS.EQ.11) WRITE(*,3020)
-C     sb46.28sb01 added NWS=12: OWI format 
+C     sb46.28sb01 added NWS=12: OWI format
       IF(ABS(NWS).EQ.12) WRITE(*,3023)
       IF(ABS(NWS).EQ.19) WRITE(*,3219)
       IF(ABS(NWS).EQ.20) WRITE(*,3220)
