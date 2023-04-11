@@ -35,6 +35,7 @@ C
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       USE SIZES, ONLY : inputDir, globalDir, mnproc
       USE GLOBAL
+      USE CONSTANTS, ONLY: G, PI
       USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4
       USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXIB, NFLUXIBP,
      &    NOPE, NVEL, BndBCRiver, LBCODEI, NBV, BARLANHT, BARLANCFSP,
@@ -85,7 +86,7 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
       interface
          SUBROUTINE binaryRead2D(array, length, lun, counter)
          USE SIZES, ONLY : SZ
-         REAL(SZ), intent(out) :: array(:) ! the data to read from the hotstart file
+         REAL(SZ), intent(out) :: array(length) ! the data to read from the hotstart file
          INTEGER, intent(in) :: length  ! the number of values to read
          INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
          INTEGER, intent(inout) :: counter ! i/o position in the file

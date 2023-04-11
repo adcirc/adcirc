@@ -56,8 +56,8 @@ if(ENABLE_OUTPUT_NETCDF)
     message(SEND_ERROR "Specify the netCDF path on the following screen")
   else(NOT NETCDF_FOUND)
 
-    file(WRITE "${CMAKE_BINARY_DIR}/CMakeFiles/netcdf3check.f90" "${netcdf3_f90_code}")
-    file(WRITE "${CMAKE_BINARY_DIR}/CMakeFiles/netcdf4check.f90" "${netcdf4_f90_code}")
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/netcdf3check.f90" "${netcdf3_f90_code}")
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/netcdf4check.f90" "${netcdf4_f90_code}")
     try_compile(
       NETCDF_TEST1 "${CMAKE_CURRENT_BINARY_DIR}"
       "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/netcdf3check.f90"

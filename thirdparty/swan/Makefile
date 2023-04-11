@@ -106,6 +106,7 @@ HCAT_OBJS = swanhcat.$(EXTO)
 MSG_OBJS = \
 $(O_DIR)mkdir.$(EXTO) \
 $(O_DIR)sizes.$(EXTO) \
+$(O_DIR)constants.$(EXTO) \
 $(O_DIR)global.$(EXTO) \
 $(O_DIR)global_3dvs.$(EXTO) \
 $(O_DIR)version.$(EXTO) \

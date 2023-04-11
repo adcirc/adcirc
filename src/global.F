@@ -11,54 +11,13 @@ C******************************************************************************
 C
       MODULE GLOBAL
       USE SIZES, ONLY : SZ 
+      USE CONSTANTS, ONLY: DEG2RAD
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
 #ifdef DATETIME
       use datetime_module, only: datetime
 #endif
       IMPLICIT NONE
       SAVE
-C...
-C...SET GLOBAL PHYSICAL CONSTANTS
-C...
-      REAL(sz) :: g = 9.80665 !default gravitational acceleration
-C.....nominal density of water RHOWAT0
-      REAL(SZ), PARAMETER ::  RhoWat0=1000.D0
-C.....Sigma T value of reference density
-      REAL(SZ), PARAMETER ::  SigT0=RHOWAT0-1000.D0
-C.....Background Atmospheric Pressure in mb
-      REAL(SZ), PARAMETER :: PRBCKGRND = 1013.0d0   !tcm 20100617 v49.16 Added
-      REAL(SZ), PARAMETER :: TBCKGRND = 288.15d0    !wjp degrees kelvin 
-      REAL(SZ), PARAMETER :: RAir = 287.058d0        !wjp specific gas
-constant 
-      REAL(sz) :: rhoAir = 1.293d0 !PRBCKGRND*100d0/(RAir*TBCKGRND)  !wjp Ideal Gas Law kg/m^3
-      REAL(8) :: windReduction = 0.9d0
-      REAL(8) :: one2ten = 0.8928d0
-      REAL(8) :: ten2one = 1.d0/0.8928d0
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      REAL(SZ) :: WaveWindMultiplier = 1.D0
-C.....PI etc
-      REAL(8), PARAMETER ::  PI=3.141592653589793D0
-      REAL(8), PARAMETER ::  DEG2RAD = PI/180.D0  ! degrees to radians
-      REAL(8), PARAMETER ::  RAD2DEG = 180.D0/PI  ! radians to degrees
-      REAL(8), PARAMETER ::  e=2.718281828459045d0
-C.....Days to seconds conversion
-      REAL(8), PARAMETER :: day2sec=24.d0*3600.d0
-      REAL(8), PARAMETER :: sec2day=1.d0/day2sec
-      ! jgf50.38.03: Additional useful constants
-      REAL(8), PARAMETER :: Rearth = 6378206.4d0 ! radius of earth (m)
-      REAL(8), PARAMETER :: nm2m = 1852.d0 ! nautical miles to meters
-      REAL(8), PARAMETER :: m2nm = 1.d0/nm2m ! meters to nautical miles
-      REAL(8), PARAMETER :: kt2ms = nm2m / 3600.0 ! knots to m/s
-      REAL(8), PARAMETER :: ms2kt = 1.d0 / kt2ms ! m/s to knots
-      REAL(8), PARAMETER :: omega = 7.29212d-5
-      REAL(8), PARAMETER :: mb2pa = 100.d0
-C..   Ali's full dispersion coefficient for M2
-      REAL(SZ) :: Bd = 0.23394_SZ  ! exponent of depth (default)
-      REAL(SZ) :: Ad = 0.0050189_SZ ! coefficient of depth (default)
-      REAL(SZ) :: Cs = 1500.0_SZ ! Speed of sound in water
-      REAL(SZ) :: Cs2 ! Speed of sound in water^2
-      REAL(SZ), PARAMETER :: TWOB = 2d0*0.4779d0
-      REAL(SZ), PARAMETER :: GM2  = 3.486d0**2
 C     jgf46.21 Added support for IBTYPE=52.
       REAL(SZ),ALLOCATABLE, TARGET ::   ElevDisc(:)
       REAL(SZ) FluxSettlingTime
@@ -73,8 +32,6 @@ C
 C... v50.xx sm -- added for coupling with NOUPC Cap
       LOGICAL   ::  NUOPC4MET = .FALSE.  ! assign in CAP
       LOGICAL   ::  NUOPC4WAV = .FALSE.  ! assign in CAP
-C
-C
 
 C      real(sz) rampriver,drampriver,rampriver1,rampriver2
 C     jgf46.08 Fine grained ramp functions (jgf46.21 split flux b.c.s)
@@ -1113,6 +1070,7 @@ C     jgf49.1001 Function to get the distance along the surface of
 C     a sphere (the earth's surface in this case).
 C     ----------------------------------------------------------------
       REAL(SZ) FUNCTION sphericalDistance(dx, dy, y1, y2)
+      use constants,only: deg2rad, rearth
       IMPLICIT NONE
       REAL(SZ), intent(in) :: DX    ! longitude distance in radians
       REAL(SZ), intent(in) :: DY    ! latitude distance in radians

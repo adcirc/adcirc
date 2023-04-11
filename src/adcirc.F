@@ -98,12 +98,13 @@ C******************************************************************************
       USE GLOBAL, ONLY : usingDynamicWaterLevelCorrection,
      &   dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, 
      &   dynamicWaterLevelCorrectionSta, DEBUG, INFO, allMessage, itime, dtdp, statim,
-     &   CHotHS, dtdpHS, g, FileFmtVersion, ifnlcat, nabout, ncchange,
+     &   CHotHS, dtdpHS, FileFmtVersion, ifnlcat, nabout, ncchange,
      &   ifnlcate, ifnlct, ifnlcte, ifnlfa, ifwind, ihot, im, iths,
-     &   nolica, nolicat, nolifa, nscreen, nstae, nt, rhowat0, screenunit,
+     &   nolica, nolicat, nolifa, nscreen, nstae, nt, screenunit,
      &   version_number, initLogging, setMessageSource, screenMessage,
      &   openLogFile, unsetMessageSource, np_global, rnp_global,
      &   scratchMessage, CTIP, L_N, writer_id
+      USE CONSTANTS, ONLY: g, rhowat0
       USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB 
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np, SFEA
       USE GWCE, ONLY : initGWCE

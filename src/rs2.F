@@ -406,7 +406,7 @@ C***********************************************************************
 
       subroutine rs2init_type2(rsnx,rsny,np)
       use sizes
-      use global,only : rad2deg
+      use constants,only : rad2deg
       use mesh, only : slam, sfea
       implicit none
       integer,intent(in) :: np

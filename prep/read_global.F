@@ -1937,7 +1937,8 @@ C     tjc  6/24/02
 C---------------------------------------------------------------------
       SUBROUTINE READ15_3DVS()
       USE PRE_GLOBAL
-      USE GLOBAL, ONLY : parse, a2f, SNAMLEN, deg2rad, day2sec
+      USE CONSTANTS, ONLY: deg2rad, day2sec
+      USE GLOBAL, ONLY : parse, a2f, SNAMLEN
       USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET, SIGMA,
      &    FEGRIDS
       USE MESH, only : CYLINDERMAP

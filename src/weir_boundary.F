@@ -1853,7 +1853,8 @@ C   THIS MODULE CONTAINS THE ROUTINES FOR THE WEIR OVERTOPPING FLUX
 C   CALCULATIONS FOR INTERNAL AND EXTERNAL WEIR TYPE BOUNDARIES.
 C-----------------------------------------------------------------------
         MODULE WEIR_FLUX
-            USE GLOBAL,ONLY:G,ETA2,RAMPINTFLUX,
+            USE CONSTANTS, ONLY: G
+            USE GLOBAL,ONLY:ETA2,RAMPINTFLUX,
      &          setMessageSource,unsetMessageSource,DEBUG,allMessage    
             USE BOUNDARIES,ONLY: LBCODEI,NBV
             USE SIZES,ONLY:SZ
@@ -2315,7 +2316,8 @@ C  CONDITIONS (CROSS BARRIER PIPES)
 C-----------------------------------------------------------------------
             SUBROUTINE COMPUTE_CROSS_BARRIER_PIPE_FLUX(IDX,TIMELOC,FLUX)
                 USE BOUNDARIES,ONLY:NBV,IBCONN,PIPEHT,PIPEDIAM,PIPECOEF
-                USE GLOBAL,ONLY: G,PI,NODECODE,NIBNODECODE,ETA2,
+                USE CONSTANTS, ONLY: G, PI
+                USE GLOBAL,ONLY: NODECODE,NIBNODECODE,ETA2,
      &                           RampIntFlux           
 
                 IMPLICIT NONE

@@ -92,7 +92,8 @@ C
 C----------------------------------------------------------------------------
 C
       PROGRAM ADCPREP
-      USE GLOBAL, ONLY : screenUnit, initLogging, Rearth, deg2rad, rad2deg
+      USE GLOBAL, ONLY : screenUnit, initLogging
+      USE CONSTANTS, ONLY: Rearth, deg2rad, rad2deg
       USE SIZES, ONLY : meshFileName, meshFileNameSpecified, meshType,
      &  ASCII, XDMF, naFileNameSpecified, naFileName, naType, controlFileName,
      &  controlType, controlFileNameSpecified, globaldir, myproc

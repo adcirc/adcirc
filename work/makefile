@@ -352,7 +352,7 @@ BND_MSRC   =  boundaries.F
 PREP_MSRC  =  presizes.F
 PGLO_MSRC  =  pre_global.F
 3D_MSRC    =  global_3dvs.F
-ADC_MSRC   =  version.F sizes.F global.F 
+ADC_MSRC   =  version.F sizes.F constants.F global.F 
 POST_MSRC  =  post_global.F
 HARM_MSRC  =  harm.F
 VORT_MSRC  =  vortex.F
@@ -679,7 +679,7 @@ clean:
 clobber: clean
 	rm -r -f odir* util*
 	rm -f adcprep adcprep_be adcirc $(PARALLEL_ADCIRC) adcswan padcswan p15 owi22 build13 aswip \
-	      build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost adccmp libadc.a
+	      build12 buildstwave23 hot2asc inflate hstime constants.o sizes.o adcpost adccmp libadc.a
 
 help:
 	@echo "This makefile supports the following:"
@@ -750,7 +750,8 @@ $(O_DIR)aswip.o      :  aswip.F $(VORT_MOBJ) $(NA_MOBJ)
 
 $(O_DIR)version.o     :  version.F
 $(O_DIR)sizes.o       :  sizes.F
-$(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o $(O_DIR)kdtree2.o
+$(O_DIR)constants.o   :  constants.F $(O_DIR)sizes.o
+$(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o $(O_DIR)constants.o $(O_DIR)kdtree2.o
 
 ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(PARALLEL_ADCIRC) padcswan))
 $(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)messenger.o
