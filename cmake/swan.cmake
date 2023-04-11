@@ -79,9 +79,7 @@ if(BUILD_SWAN AND PERL_FOUND)
 
   addcompilerflagsswan(swan ${ADDITIONAL_FLAGS_SWAN})
 
-  set_directory_properties(
-    PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
-               ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source)
+  set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_BINARY_DIR}/CMakeFiles/swanonly_serial_source)
 
   install(TARGETS swan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

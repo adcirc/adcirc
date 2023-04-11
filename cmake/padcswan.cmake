@@ -124,9 +124,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
   # ...SWAN Configuration
   swanconfigurepadcswan()
 
-  set_directory_properties(
-    PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
-               ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source)
+  set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_BINARY_DIR}/CMakeFiles/swan_parallel_source)
 
   add_library(templib_swan1parallel STATIC ${SWAN1PARALLEL_SOURCES})
   add_library(templib_swan2parallel STATIC ${SWAN2PARALLEL_SOURCES})
@@ -151,29 +149,26 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
   target_compile_definitions(templib_padcswan1 PRIVATE CSWAN)
   target_compile_definitions(padcswan PRIVATE CSWAN)
 
-  target_include_directories(
-    templib_padcswan1
-    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
-  target_include_directories(
-    templib_swan2parallel
-    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_padcswan1)
-  target_include_directories(
-    templib_swan2parallel
-    PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
-  target_include_directories(
-    padcswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_padcswan1)
-  target_include_directories(
-    padcswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
-  target_include_directories(
-    padcswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan2parallel)
+  target_include_directories(templib_padcswan1 PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
+  target_include_directories(templib_swan2parallel PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_padcswan1)
+  target_include_directories(templib_swan2parallel PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
+  target_include_directories(padcswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_padcswan1)
+  target_include_directories(padcswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
+  target_include_directories(padcswan PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/templib_swan2parallel)
 
-  target_link_libraries(padcswan templib_swan2parallel templib_padcswan1
-                        templib_swan1parallel)
+  target_link_libraries(
+    padcswan
+    templib_swan2parallel
+    templib_padcswan1
+    templib_swan1parallel)
 
   add_dependencies(padcswan templib_swan2parallel templib_padcswan1)
-  add_dependencies(templib_swan2parallel templib_padcswan1
-                   templib_swan1parallel)
-  add_dependencies(templib_padcswan1 mkdir version templib_swan1parallel)
+  add_dependencies(templib_swan2parallel templib_padcswan1 templib_swan1parallel)
+  add_dependencies(
+    templib_padcswan1
+    mkdir
+    version
+    templib_swan1parallel)
 
   install(TARGETS padcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
