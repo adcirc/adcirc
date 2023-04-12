@@ -2210,7 +2210,7 @@ C...  Initialize variables to zero if these forcings are not used
 
       IF (CTIP) THEN
       ELSE
-        TiPN1=0.d0
+        TiPN1=0.d0! kmd-v53 -- added for precipitation and point source terms
         TiPN2=0.d0
         TiPN3=0.d0
       ENDIF
