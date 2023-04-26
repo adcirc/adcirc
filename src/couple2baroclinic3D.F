@@ -99,7 +99,7 @@ C-----------------------------------------------------------------------
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-
+      WRITE(16,*) 'inside read_bc3d_netcdf'
       ! Open NETCDF 
       call Check_err(nf90_open(densityFileName,nf90_nowrite,nc_id))
     
@@ -109,6 +109,7 @@ C-----------------------------------------------------------------------
       ! On > first call: check the datetimes and update BC3D_DT
       call Get_LonLatDepthTime(nc_id)
       IF (abs(IDEN).GE.8) THEN
+         WRITE(16,*) 'IDEN >= 8'
          CALL Read_BC3D_NetCDF_on_ADCIRC_Grid(nc_id)
          ! Close NETCDF
          call Check_err(nf90_close(nc_id))
@@ -481,6 +482,7 @@ C-----------------------------------------------------------------------
       INTEGER :: ii
       ! on processor 0 we have to read in the values
       IF (MYPROC.EQ.0) THEN
+         WRITE(16,*) 'Proc 0 reading in vals'
          ALLOCATE( bpgx_g(np_g), bpgy_g(np_g), sigts_g(np_g) )
          bpgx_g  = read_nc_var_adc(NC_ID,'BPGX',BC3D_IT,np_g)
          bpgy_g  = read_nc_var_adc(NC_ID,'BPGY',BC3D_IT,np_g)
@@ -637,19 +639,20 @@ C
       DTIME1  = floor(TimeLoc/60d0)*60d0
 #ifdef DATETIME
       CurDT   = basedatetime + timedelta(minutes=floor(DTIME1/60d0))
-#endif            
+#endif           
+      WRITE(16,*) 'About to read_bc3d_netcdf in initial_...' 
       call Read_BC3D_Netcdf()
       ! Put the first value on ADCIRC grid
       ! CPB 9/2022: added logical for IDEN case 8
       IF (abs(IDEN).LT.8) THEN
          call Put_BC3D_on_ADCIRC_Grid() 
       ENDIF
-!      call logMessage(ECHO,'Read and processed 1st BC3D '
-!     &                         //'timesnap'
-!#ifdef DATETIME
-!     &                         //': '//CurDT%isoformat(' ')
-!#endif               
-!     &                         ) 
+      call logMessage(ECHO,'Read and processed 1st BC3D '
+     &                         //'timesnap'
+#ifdef DATETIME
+     &                         //': '//CurDT%isoformat(' ')
+#endif               
+     &                         ) 
       ! WJP Get the start time and the next data time
       ! Put the first values in first position
       if (abs(IDEN).ne.7.AND.abs(IDEN).NE.9) then
@@ -686,12 +689,12 @@ C
       IF (abs(IDEN).LT.8) THEN
          call Put_BC3D_on_ADCIRC_Grid() 
       ENDIF
-!      call logMessage(ECHO,'Read and processed 2nd BC3D '
-!     &                         //'timesnap'
-!#ifdef DATETIME
-!     &                         //': '//CurDT%isoformat(' ')
-!#endif               
-!     &                         ) 
+      call logMessage(ECHO,'Read and processed 2nd BC3D '
+     &                         //'timesnap'
+#ifdef DATETIME
+     &                         //': '//CurDT%isoformat(' ')
+#endif               
+     &                         ) 
 C
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
