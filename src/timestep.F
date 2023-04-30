@@ -224,7 +224,7 @@ C...
 C...  TIMEH: HARMONIC CALCULATIONS ARE MADE FOR TIME WHICH INCLUDES THE REFTIM
 C...  TO ALLOW FOR THE POSSIBILITY THAT THE EQUILIBRIUM ARGUMENTS MAY
 C...  BE FOR A TIME OTHER THAN THE MODEL STARTING TIME.
-C...
+C...  
 C...  Computation of TimeLoc and TimeH are consolidated. SB,ZC,RL 2022-06-22
 C...
       TimeLoc=IT*DTDP + StaTim*86400.D0
@@ -324,7 +324,7 @@ C     all forcings back on.
       IF (DRampTip.lt.1.0e-6) RampTip = 1.0d0
       IF (DRampMete.lt.1.0e-6) RampMete = 1.0d0
       IF (DRampWRad.lt.1.0e-6) RampWRad = 1.0d0
-C
+C     
 C------DW
       IF ( LoadAbsLayerSigma ) THEN
          IF (  FIRST_ADJ_ABS_LAYER ) THEN
@@ -332,7 +332,7 @@ C------DW
 
             FIRST_ADJ_ABS_LAYER = .FALSE. ;
          END IF
-      END IF
+      END IF   
 C-----END DW
 
 C... v55.## - cms  Added ramp for point source (completely separate
@@ -385,7 +385,7 @@ C...  Wind (& wave radiation stress if used)
          ELSE
 C WJP 02.26.2018 inserted from Dam's code
 !c dw ------------- otherwise, tide run could fail
-            PR2(I) = PRBCKGRND_MH2O
+            PR2(I) = PRBCKGRND_MH2O 
          END IF
 
 C     TIP..Tidal potential forcing
@@ -403,14 +403,14 @@ C     TIP..Tidal potential forcing
       endif
 C
 C.............................DW, sponge layer ..................
-      ! Get
+      ! Get 
       !   Eta2_AbsLayer, uu2_AbsLayer, vv2_AbsLayer
       IF ( LoadAbsLayerSigma ) THEN
          !
          IF ( .NOT. FIRST_ENTER ) THEN
-            !c u_{ext}^{n + 1} -- > eta2,
+            !c u_{ext}^{n + 1} -- > eta2, 
             CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev,
-     &           GeoidOffset )
+     &           GeoidOffset ) 
          ELSE
 
             RampTMP = RampElev ;
@@ -418,25 +418,25 @@ C.............................DW, sponge layer ..................
                IF ( NRamp > 0 ) THEN
                   RampTMP=TANH((2.D0*(TimeLoc - istep*DTDP)/86400.D0)/DRampElev)
                END IF
-               RampTMP = max(0.D0,RampTMP) ;
-
+               RampTMP = max(0.D0,RampTMP) ;                   
+               
                !  u_{ext}^{n + 1 - istep} --> uu2
                CALL GETABSLAYEREXT( IT - istep, TimeLoc - istep*DTDP,
      &              TimeH - istep*DTDP, RampTMP,
-     &              GeoidOffset )
+     &              GeoidOffset ) 
 
-               CALL SPONGE_SHIFT_SOLN( ) ;
-               ! eta1 --> eta0, eta2 --> eta1, u2 --> u1
+               CALL SPONGE_SHIFT_SOLN( ) ; 
+               ! eta1 --> eta0, eta2 --> eta1, u2 --> u1          
             END DO
-            !c u_{ext}^{n + 1} -- > eta2,
+            !c u_{ext}^{n + 1} -- > eta2, 
             CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev,
-     &           GeoidOffset )
+     &           GeoidOffset ) 
             FIRST_ENTER = .FALSE. ;
          END IF
          !
       END IF
 C.... END DW..........................................................
-
+      
 C...TCM V50.66.01 -- ADDING TIME DEPENDENT BATHYMETRY
 C... so that total water column height is unchanged
 C
@@ -471,7 +471,7 @@ C...     DEPTHS ARE > OR = TO H0.
                   IF (DP2(I).LT.H0) DP2(I) = H0
                ENDDO
             ENDIF
-            write(scratchMessage,'(A36,1X,E15.8,1X,A5)')
+            write(scratchMessage,'(A36,1X,E15.8,1X,A5)') 
      &         'BATHYMETRY RECORDS UPDATED AT TIME =',TIMELOC,'(SEC)'
             call allMessage(INFO,scratchMessage)
          ENDIF  !test for updating bathymetry records
@@ -538,14 +538,14 @@ C.......If time is during the bathymetry change interval, then update bathymetry
                ETA2(I) = ETA2TMP        !updating elevation
             ENDDO !I
          ENDIF
-C
+C         
          IF (timeloc.EQ.BTIME_END) THEN
             write(scratchMessage,'(A42,1X,E15.8,1X,A5)')
      &         'Bathymetry values are now fixed at time =',timeloc,'(sec).'
             call allMessage(INFO,scratchMessage)
             DO I=1,NP
                DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be to get to the final bathy value
-               DP(I) = DP2(I)         !updating bathymetry to final value
+               DP(I) = DP2(I)         !updating bathymetry to final value 
                ETA2TMP = ETA2(I)-DPTMP !subtracting elevation by incremental amount
                ETA2(I) = ETA2TMP       !updating elevation
             ENDDO !I
@@ -568,13 +568,13 @@ C     2DDI.Set up the 2D friction coefficient
             CALL Apply2DInternalWaveDrag(NP, TK, TKM, UU1, VV1, DP, IT)
          ELSE
             CALL Apply2DInternalWaveDrag(NP, TK, TKM)
-         ENDIF
+         ENDIF 
       endif
 C..RJW Set up the 3D friction coefficient
       if (C3D) then
          CALL Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G, IFNLFA, NP, TK, NFEN, Z0B)
       endif
-
+      
 C-------------------BOTTOM FRICTION-------------------------------------
 C
 C
@@ -625,7 +625,7 @@ C     jgf: update water level correction fields
 C
 C---------------------BEGIN MET FORCING----------------------------------------
 
-      call getMeteorologicalForcing(nws, wsx2, wsy2, pr2,
+      call getMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
      &   wvnxout, wvnyout, timeloc)
 C
 C----------------------END MET FORCING----------------------------------------
@@ -761,10 +761,10 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
          select case(abs(nws))
          case(12,16)
             do i=1,np
-               swan_wx2(i,2) = wvnxout(i) * waveWindMultiplier
-     &                         / ( rampMete * windMultiplier )
-               swan_wy2(i,2) = wvnyout(i) * waveWindMultiplier
-     &                         / ( rampMete * windMultiplier )
+               swan_wx2(i,2) = wvnxout(i) * waveWindMultiplier 
+     &                         / ( rampMete * windMultiplier ) 
+               swan_wy2(i,2) = wvnyout(i) * waveWindMultiplier 
+     &                         / ( rampMete * windMultiplier ) 
             end do
          case default
             do i=1,np
@@ -868,12 +868,12 @@ Casey 090302: Added these lines for output to the rads.64 file.
 C     jgf48.4627 Skip past GWCE and momentum calculations if only
 C     meteorological output was requested.
       IF (.NOT.METONLY) THEN
-C
-CC   kmd48.33 - added in information for the elevation boundary conditions
-CC              used in prognostic runs. The diagnostic information is read
-CC              in once and used during the simulation. Note that there is
-CC              no ramp utilized for this boundary condition.
-C      IF((C3D).AND.(RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN
+
+C   kmd48.33 - added in information for the elevation boundary conditions
+C              used in prognostic runs. The diagnostic information is read
+C              in once and used during the simulation. Note that there is
+C              no ramp utilized for this boundary condition.
+      IF((C3D).AND.(RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN
          IF ((ABS(RES_BC_FLAG).GE.1).AND.(NOPE.GT.0)) THEN
 Casey 140701: Added the following IF statement.
            IF(BCFLAG_LNM.EQ.1)THEN
@@ -1062,7 +1062,7 @@ C...  COBELL - MOVED TO WEIR_BOUNDARY.F
             SELECT CASE(LBCODEI(I))
             CASE(3,13,23)
                 CALL COMPUTE_EXTERNAL_BOUNDARY_FLUX(I,TIMELOC,QN2(I))
-            END SELECT
+            END SELECT 
           END DO
         ENDIF
 
