@@ -234,7 +234,7 @@ C
      &   TKM, NPERSEG, NTIP, NNPERBC, IPERCONN, VIDispDXOH,
      &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, H0, ALPHAL, windlim,
      &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1,
-     &   COEFDTemp, COEFDTempMem  ! Added for VED1D  08-11-2022 SB
+     &   COEFDTemp, COEFDTempMem,  ! Added for VED1D  08-11-2022 SB
      &   RainfallCurr, RainODT, totalrain, PSCurr, PSODT, ! kmd-v53 -- added for precipitation and point source terms
      &   NCRAIN, NCPSOURCE, CPS_RAMP
 
