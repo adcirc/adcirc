@@ -322,11 +322,6 @@ Casey 180318: Added NWS=13
       real(sz) :: dynamicWaterLevelCorrectionRampEnd = 0.d0   ! seconds after run start
       character(len=10) :: dynamicWaterLevelCorrectionRampReferenceTime = 'hotstart'
 
-<<<<<<< HEAD
-=======
-      logical :: FOUND_LIM_NML = .false. ! for namelist
-C
->>>>>>> Adding hydrology (precipitation and source nodes river connection) and variable Manning values as nodal attribute
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX
       REAL(SZ) CONVCR
