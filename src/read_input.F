@@ -6643,7 +6643,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE ReadPointSourceLocs(ps_lun)
 
       use sizes, only : sz, MyProc, numPS
-      use CONSTANTS, only : DEG2RAD, RAD2DEG, IFSPROTS,
+      use CONSTANTS, only : DEG2RAD, RAD2DEG
+      use global, only : IFSPROTS,
      &   allMessage, setMessageSource, unsetMessageSource,
      &   nearNode !, toNode, featureId
       use mesh, only : ICS, SLAM0, SFEA0, DRVSPCOORSROTS, CYLINDERMAP
