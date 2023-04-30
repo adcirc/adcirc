@@ -511,7 +511,7 @@ C
 C***********************************************************************
 
       SUBROUTINE NCRAIN1_INTERP_BASIN(NP)
-      USE GLOBAL,ONLY : RAD2DEG
+      USE CONSTANTS, ONLY: RAD2DEG
       USE MESH, ONLY : SLAM, SFEA
 
       IMPLICIT NONE
@@ -603,7 +603,7 @@ C
 C***********************************************************************
 
       SUBROUTINE NCRAIN1_INTERP_REGION(NP)
-      USE GLOBAL,ONLY : RAD2DEG
+      USE CONSTANTS, ONLY: RAD2DEG
       USE MESH, ONLY : SLAM, SFEA
       IMPLICIT NONE
 
