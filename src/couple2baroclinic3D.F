@@ -43,7 +43,7 @@ C-----------------------------------------------------------------------
       logical,allocatable,dimension(:,:) :: NSkip
       real(sz),parameter :: LatUL = 89d9, DFV = 1d0 
 #ifdef DATETIME
-      type(datetime) :: CurDT
+      type(datetime),private :: CurDT
 #endif
 !     Variables for temporal integration
       real(sz) :: DTIME1, DTIME2 
@@ -109,7 +109,6 @@ C-----------------------------------------------------------------------
       ! On > first call: check the datetimes and update BC3D_DT
       call Get_LonLatDepthTime(nc_id)
       IF (abs(IDEN).GE.8) THEN
-         WRITE(16,*) 'IDEN >= 8'
          CALL Read_BC3D_NetCDF_on_ADCIRC_Grid(nc_id)
          ! Close NETCDF
          call Check_err(nf90_close(nc_id))
@@ -223,11 +222,25 @@ C-----------------------------------------------------------------------
          DT   = CurDT - TNDT
          if (DT%total_seconds() <= 0) exit
       enddo
+      write(16,*) 'TNDT = ',TNDT%isoformat(' ')
+      WRITE(16,*) 'bc3d_it = ',bc3d_it
+      write(16,*) 'DT = ',DT%total_seconds()
+      IF (DT%total_seconds().LT.0) THEN
+         BC3D_IT = BC3D_IT - 1
+         call check_err(nf90_get_var(nc_id, Temp_ID,        
+     &                  TSS,start=[1, BC3D_IT],count=[SL, 1]))
+         TNDT = CurDT
+      ENDIF
+      !write(16,*) 'bc3d_it = ',bc3d_it
       call check_err(nf90_get_var(nc_id, Temp_ID, TSS,           
      &     start=[1, BC3D_IT+densityTimeIterator],count=[SL, 1]))
       TNDT1 = strptime(trim(TSS),"%Y-%m-%d %H:%M")
       DT = TNDT1 - TNDT 
       BC3D_DT = DT%total_seconds()
+      write(16,*) 'tndt = ',tndt%isoformat(' ')
+      write(16,*) 'tndt1 = ',tndt1%isoformat(' ')
+      write(16,*) 'bc3d_dt = ',bc3d_dt
+      !call bc3dterminate()
 #else
       ! Just set at 3 hrs
       BC3D_DT = 3600d0*3d0
@@ -482,7 +495,6 @@ C-----------------------------------------------------------------------
       INTEGER :: ii
       ! on processor 0 we have to read in the values
       IF (MYPROC.EQ.0) THEN
-         WRITE(16,*) 'Proc 0 reading in vals'
          ALLOCATE( bpgx_g(np_g), bpgy_g(np_g), sigts_g(np_g) )
          bpgx_g  = read_nc_var_adc(NC_ID,'BPGX',BC3D_IT,np_g)
          bpgy_g  = read_nc_var_adc(NC_ID,'BPGY',BC3D_IT,np_g)
@@ -637,11 +649,14 @@ C
       BC3D_IT = 1
       ! Times are rounded down to nearest minute
       DTIME1  = floor(TimeLoc/60d0)*60d0
+      WRITE(16,*) 'in initial_bc3d_netcdf,'
+      write(16,*) 'DTIME1 = ',DTIME1
 #ifdef DATETIME
       CurDT   = basedatetime + timedelta(minutes=floor(DTIME1/60d0))
 #endif           
       WRITE(16,*) 'About to read_bc3d_netcdf in initial_...' 
       call Read_BC3D_Netcdf()
+      DTIME2 = DTIME1 + BC3D_DT
       ! Put the first value on ADCIRC grid
       ! CPB 9/2022: added logical for IDEN case 8
       IF (abs(IDEN).LT.8) THEN
@@ -684,7 +699,7 @@ C
 #endif
       CALL Read_BC3D_Netcdf()
       ! BC3D_DT may have been updated in Read_BC3D..
-      DTIME2 = DTIME1 + BC3D_DT
+!      DTIME2 = DTIME1 + BC3D_DT
       ! Put the second value on ADCIRC grid
       IF (abs(IDEN).LT.8) THEN
          call Put_BC3D_on_ADCIRC_Grid() 
