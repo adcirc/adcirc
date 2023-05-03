@@ -112,9 +112,6 @@ C----------------------------------------------------------------------
          ! allocate gl2loc
          ALLOCATE( GL2LOC(SUM(SENDCOUNTS)) )
          ALLOCATE( SENDBUF_REAL(SUM(SENDCOUNTS)) )
-         DO kk = 1,MNPROC
-            WRITE(16,*) SENDCOUNTS(kk)
-         ENDDO   
       ELSE
          ALLOCATE( SENDBUF_REAL(1) )
          ALLOCATE( gl2loc(1) )

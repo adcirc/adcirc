@@ -8921,7 +8921,7 @@ C----------------------------------------------------------------------
       ! Show the date in str_date format
       call logMessage(ECHO,'CurDT strng: '//
      &                CurDT%strftime("%Y-%m-%d %H:%M"))
-      WRITE(16,*) 'NT = ',NTC
+      WRITE(16,*) 'NT = ',NT
       ! Compute the interpolating factors and indices on the first step
       if (.not.allocated(indp)) then
          ub = 2; ubc = 1;
@@ -9298,6 +9298,7 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
 
       INTEGER, intent(in) :: iret
+      integer,allocatable :: dmy
 
       call setMessageSource("check_err")
 #ifdef ALL_TRACE
