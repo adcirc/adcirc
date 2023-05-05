@@ -1488,7 +1488,7 @@ C     full domain data.
 C-----------------------------------------------------------------------
       SUBROUTINE initNodalDataFile(dat, descript1, reterr,
      &   descript2, descript3)
-      USE SIZES, ONLY : MNWPROC, MNPROC
+      USE SIZES, ONLY : MNWPROC, MNPROC, MYPROC
       USE GLOBAL, ONLY : OutputDataDescript_t, NWS, C3D, IDEN, NE_G, NP_G
       USE GLOBAL_3DVS, ONLY : NFEN
       USE MESH, ONLY : ICS
@@ -1545,7 +1545,8 @@ Cobell...   The writers don't read the fort.15, so they need to
 C           assume ADCPREP has placed the correct info on the first
 C           pass, then call updateMetaData.
             IF ((MNWPROC.GT.0).AND.
-     &           (writerReadMetaData.eqv..false.)) THEN
+     &          (writerReadMetaData.eqv..false.).AND.
+     &          (MYPROC.NE.0)) THEN
                 CALL ReadMetaData(dat%ncid,dat%myFile)
                 writerReadMetaData=.TRUE.
                 dat%myMesh%num_nodes = NP_G
