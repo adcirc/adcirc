@@ -36,5 +36,11 @@ this case (PUMPOFFWL < ZETA < PUMPONWL).
 
 Diagnostic output relating to the operation of pumps, that is the times that pumps turn on and turn off,
 is directed to the fort.16 files (for parallel runs in the PE* directories for mesh tiles containing weir/pump
-node pairs). It is also written to the (new) fort.78 text file, although there are still issues to be worked out
-with this. The problem at present is that, for a parallel run, the node numbers (NBVV and IBCONN) used
+node pairs). It is also written to the (new) fort.78 text file. The information written to the fort.78 file is:
+column 1: model time at which the pump state changed.
+column 2: barrier index
+column 3: boundary node
+column 4: global node number on front (source) face of weir
+column 5: global node number on back (receiving) face of weir
+column 6: surface elevation (eta) at front face node
+column 7: pumping state (0 = pump off, 1 = pump on)
