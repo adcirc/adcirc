@@ -2451,7 +2451,10 @@ C..................INWARD SUBMERGED DISCHARGE -> CASE 6
 
                 USE BOUNDARIES,ONLY:BARINCFSB,BARINCFSP,ISPUMPING,
      &              NVELL,IBCONN,BARINHT,PUMPQ,PUMPONWL,PUMPOFFWL
-                USE GLOBAL,ONLY:NIBNODECODE,TVW,USE_TVW,NODECODE,ETA2
+                USE GLOBAL,ONLY:NIBNODECODE,TVW,USE_TVW,NODECODE,ETA2,
+     &              NODES_LG
+                USE SIZES,ONLY:MNPROC
+
                 IMPLICIT NONE
                 INTEGER,INTENT(IN),TARGET   :: BARRIER_INDEX
                 INTEGER,INTENT(IN),TARGET   :: BOUNDARY
@@ -2460,8 +2463,7 @@ C..................INWARD SUBMERGED DISCHARGE -> CASE 6
                 REAL(SZ),INTENT(OUT)        :: FLUX
 
                 INTEGER                     :: NNBB1,NNBB2
-                INTEGER                     :: NNBB1WN,NNBB2WN
-                INTEGER                     :: FLOWDIR
+                INTEGER                     :: NNBB1G,NNBB2G
                 INTEGER,POINTER             :: I,J,K
                 REAL(SZ)                    :: RBARWL1,RBARWL2
                 REAL(SZ)                    :: RBARWL1F,RBARWL2F
@@ -2476,8 +2478,8 @@ C...............SIMPLIFY VARIABLES
                 J => BOUNDARYNODE
                 K => BOUNDARY
 
-                NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
-                NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
+                NNBB1=NBV(I)     ! LOCAL NODE NUMBER ON THIS SIDE OF BARRIER
+                NNBB2=IBCONN(I)  ! LOCAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
 
 c           write(*,*)'I=',I,'J=',J,'K=',K,'NVELL(K)=',NVELL(K),
 c     &      'ISPUMPING(I)=',ISPUMPING(I)
@@ -2493,8 +2495,16 @@ c     &      ETA2(NNBB1),'ETA2(NNBB2)=',ETA2(NNBB2)
      &                          ETA2(NNBB1),'ETA2(NNBB2)=',ETA2(NNBB2)
                            write(16,*)'I=',I,'J=',J,'ETA2=',ETA2(NNBB1),
      &                      ' PUMPING OFF'
-                           write(78,201)TIMELOC,I,J,NNBB1,NNBB2,ETA2(NNBB1),
+                           IF ( MNPROC.GT.1 ) THEN
+                            ! get global node numbers for output
+                              NNBB1G=NODES_LG(NNBB1)
+                              NNBB2G=NODES_LG(NNBB2)
+                              write(78,201)TIMELOC,I,J,NNBB1G,NNBB2G,ETA2(NNBB1),
      &                                 ISPUMPING(I)
+                           ELSE
+                              write(78,201)TIMELOC,I,J,NNBB1,NNBB2,ETA2(NNBB1),
+     &                                 ISPUMPING(I)
+                           ENDIF
   201  FORMAT(F12.2,1x,I5,1x,I5,1x,I8,1x,I8,1x,F8.5,1x,I2)
                         ENDIF
                      ELSE ! not pumping
@@ -2505,8 +2515,16 @@ c     &      ETA2(NNBB1),'ETA2(NNBB2)=',ETA2(NNBB2)
      &                          ETA2(NNBB1),'ETA2(NNBB2)=',ETA2(NNBB2)
                            write(16,*)'I=',I,'J=',J,'ETA2=',ETA2(NNBB1),
      &                      ' PUMPING ON'
-                           write(78,201)TIMELOC,I,J,NNBB1,NNBB2,ETA2(NNBB1),
+                           IF ( MNPROC.GT.1 ) THEN
+                            ! get global node numbers for output
+                              NNBB1G=NODES_LG(NNBB1)
+                              NNBB2G=NODES_LG(NNBB2)
+                              write(78,201)TIMELOC,I,J,NNBB1G,NNBB2G,ETA2(NNBB1),
      &                                 ISPUMPING(I)
+                           ELSE
+                              write(78,201)TIMELOC,I,J,NNBB1,NNBB2,ETA2(NNBB1),
+     &                                 ISPUMPING(I)
+                           ENDIF
                         ENDIF
                      ENDIF
                      IF (ISPUMPING(I).eq.1) THEN   
