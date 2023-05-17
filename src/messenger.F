@@ -331,7 +331,7 @@ Casey 100209: Changed from FMT=3015.
 
 C Read Global number of nodes and Local-to_Global node map ( used by module global_io )
       READ(18,3015) NP_G
-      ALLOCATE ( m(MNP) )
+      ALLOCATE ( NODES_LG(MNP) )
       DO I=1,MNP
          READ(18,*) NODES_LG(I)
       ENDDO
