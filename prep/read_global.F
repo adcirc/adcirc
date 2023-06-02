@@ -230,6 +230,7 @@ C
                NWEIR = NWEIR+1
                WEIR(NWEIR) = NBVV(K,I)
                WEIRD(NWEIR) = IBCONNR(K,I)
+            ENDDO
          case(6,26)
             DO I =1,NVELL(K)
                READ(14,*) n1,n2, 

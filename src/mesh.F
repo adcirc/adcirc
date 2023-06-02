@@ -2021,7 +2021,7 @@
 C        write out flow boundary information to unit 16
          IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)
      &      .OR.(IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)
-     &      .OR.(IBTYPE(K).EQ.6).OR.(IBTYPE(K).EQ.26))
+     &      .OR.(IBTYPE(K).EQ.6).OR.(IBTYPE(K).EQ.26)
      &      .OR.(IBTYPE(K).EQ.64)) THEN
             WRITE(16,28) K,NVELL(K),K,2*NVELL(K)
  28         FORMAT(///,5X,'TOTAL NUMBER OF PAIRS FOR FLOW BOUNDARY',
