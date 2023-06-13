@@ -795,9 +795,9 @@ C        Remove the normal component of the load vector at the condensed nodes
             CALL REMOVE_NORMAL_AT_CONDENSEDNODES
      &           (MOM_LV_X(I),MOM_LV_Y(I),I,ROT_STATUS)
             IF (ROT_STATUS.EQ.0) THEN
-               CALL REMOVE_NORMAL_AT_CONDENSEDNODES
-     &           (WSX,WSY,I,ROT_STATUS)
                CorifA = 0.D0    ! Coriolis force is removed here.
+               CALL REMOVE_NORMAL_AT_CONDENSEDNODES ! Surface friction in the channel normal direction is removed.
+     &              (WSX,WSY,I,ROT_STATUS)
             ENDIF
          ENDIF
 Csb...

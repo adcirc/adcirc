@@ -3112,13 +3112,6 @@ C     ----------------------------------------------------------------
             J1 = LBArray_Pointer(I1)
             J2 = LBArray_Pointer(I2)
             IF(J1<1.OR.J2<1) CYCLE
-            IF(J1.EQ.(J2+1).OR.
-     &         J1.EQ.(J2-1)) THEN ! Whether Nodes J1 and J2 are on the same boundary.
-               ON_THE_SAME_BOUNDARY = .TRUE.
-            ELSE
-               ON_THE_SAME_BOUNDARY = .FALSE.
-            END IF
-            IF(ON_THE_SAME_BOUNDARY) CYCLE
 
             X1 = X(I1)
             Y1 = Y(I1)

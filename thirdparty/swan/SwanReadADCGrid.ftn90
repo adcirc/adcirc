@@ -185,7 +185,7 @@ subroutine SwanReadADCGrid
 !PUN       else
 !PUN          read(ndsd, *, end=950, err=910) n2, itype, vm
 !PUN       endif
-       if ( itype /= 4 .and. itype /= 24 ) then
+       if ( itype /= 4 .and. itype /= 24 .and. itype /= 64 ) then  ! itype /= 64 is added  9/1/2023 sb
           do k = 1, n2
              read(ndsd, *, end=950, err=910) ivert
 !NADC             vmark(ivert) = vm
@@ -197,7 +197,10 @@ subroutine SwanReadADCGrid
 !NADC             vmark(ivert ) = vm
 !NADC             vmark(ivert1) = vm
 !ADC            vmark(find(node_dict,ivert )) = vm
-!ADC            vmark(find(node_dict,ivert1)) = vm
+!ADC            n3 = find(node_dict,ivert1)
+!ADC            if(n3 > 0) then
+!ADC               vmark(n3) = vm
+!ADC            endif
           enddo
        endif
     enddo

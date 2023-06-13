@@ -150,11 +150,11 @@ CWET...
       use messenger
 #endif
       use mesh, only : ne, np, nm, dp, mju, totalArea, nm, x, y, areas,
-     &   LBArray_Pointer, nneighele, neitabele
+     &   LBArray_Pointer, nneighele, neitabele, onIBTYP64Floodplain
       use nodalattributes, only : BFCdLLimit, fgamma, ftheta, fric,
      &   manningsn, hbreak, ifhybf, ifnlbf, iflinbf, loadManningsN,
      &   loadZ0B_var, z0b_var, loadSubgridBarrier,
-     &   loadCondensedNodes,
+     &   loadCondensedNodes, NCondensedNodes,
      &   ListCondensedNodes, NListCondensedNodes,
      &   NNodesListCondensedNodes
       USE BOUNDARIES, ONLY : IBCONN, ISSUBMERGED64, NFLUXIB64_GBL
@@ -187,6 +187,7 @@ CWET...
       integer :: nnc
       integer :: nnbb2
       integer :: nwetele
+      integer :: ibtype64floodplaincnt = 0
   
       if (nolifa.ne.2) then
          return ! wetting and drying is not active 
@@ -271,8 +272,22 @@ CWET...
 CWET...
 CWET...Nodal Wetting Criteria W1: This depends on changes that occurred in D1
 CWET...
+            ! Count number of nodes along ibtype=64 boundary 10/16/2023 sb
+            IF(NFLUXIB64_GBL.gt.0) THEN
+               IBTYPE64FLOODPLAINCNT = 0
+               IF(onIBTYP64Floodplain(NM1)) THEN
+                  IBTYPE64FLOODPLAINCNT = IBTYPE64FLOODPLAINCNT + 1
+               ENDIF
+               IF(onIBTYP64Floodplain(NM2)) THEN
+                  IBTYPE64FLOODPLAINCNT = IBTYPE64FLOODPLAINCNT + 1
+               ENDIF
+               IF(onIBTYP64Floodplain(NM3)) THEN
+                  IBTYPE64FLOODPLAINCNT = IBTYPE64FLOODPLAINCNT + 1
+               ENDIF
+            ENDIF
+
             NCTOT=NODECODE(NM1)+NODECODE(NM2)+NODECODE(NM3)
-            IF(NCTOT.EQ.2) THEN
+            IF((NCTOT.EQ.2) .AND. (IBTYPE64FLOODPLAINCNT.NE.3)) THEN  ! (IBTYPE64FLOODPLAINCNT.NE.3) is added to avoid excessie wetting when all three nodes of an element on a floodplain are on a IBTYPE=64 boundary. 10/16/2023 sb
                ETAN1=ETA2(NM1)
                ETAN2=ETA2(NM2)
                ETAN3=ETA2(NM3)
