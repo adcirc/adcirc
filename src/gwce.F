@@ -3172,7 +3172,9 @@ C*************************************************************************
       use NodalAttributes, ONLY : LoadEleSlopeLim,
      &     elemental_slope_limiter_active,
      &     elemental_slope_limiter_grad_max,
-     &     elemental_slope_limiter_max_exceeded
+     &     elemental_slope_limiter_max_exceeded,
+     &     LoadCondensedNodes, NCondensedNodes
+
       implicit none
       INTEGER, intent(in) :: IT
       Real(8), intent(in) :: TimeLoc
@@ -3241,6 +3243,8 @@ C.... end WP
          DO I=1,3
             ! If the limiter is on already, go to the next node. 
             IF (elemental_slope_limiter_active(NM(IE,I))) CYCLE
+            ! If this is one of the condensed nodes, go to the next node. 10/12/2023 sb
+            IF (LoadCondensedNodes .AND. NCondensedNodes(NM(IE,I)) > 0) CYCLE
             ! Compare the elemental slope to the maximum elemental gradient.
             grad_check: IF (dEta2Mag.GE.
      &           ABS(elemental_slope_limiter_grad_max(NM(IE,I)))) THEN
@@ -3280,7 +3284,6 @@ C.... end WP
             endif grad_check
          enddo ! loop around nodes of an element
       enddo ! loop over the elements
-
 
 1983  format('Elemental slope limiter turned on at fulldomain node ',i0,
      &  ' where the elemental slope is ',1pE12.4E3,

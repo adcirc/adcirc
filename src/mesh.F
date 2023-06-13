@@ -5539,6 +5539,29 @@ C
       end if
       end function findIBTYPEAtNode
       
+!-----------------------------------------------------------------------
+      function onIBTYP64Floodplain(I) RESULT(onFloodplain)
+!-----------------------------------------------------------------------
+      use boundaries,only : LBCODEI, NBV, NBVV, IBCONN
+      implicit none
+      integer,intent(in) :: i
+      integer :: j,jj,nnbb1,nnbb2,ibtype
+      logical :: onFloodplain
+      onFloodplain = .FALSE.
+      j = lbarray_pointer(i)
+      if (j > 0) then
+         ibtype = lbcodei(j)
+         if (ibtype == 64) Then
+            nnbb1 = nbv(j)
+            nnbb2 = ibconn(j)
+            jj = lbarray_pointer(nnbb2)
+            if (j < jj) THEN ! Front side (= floodpain) appears first in lbarray_pointer.
+               onFloodplain = .TRUE.
+            end if
+         end if
+      end if
+      end function onIBTYP64Floodplain
+
 !     ------------------------------------------------------------------
       end module mesh
 !     ------------------------------------------------------------------
