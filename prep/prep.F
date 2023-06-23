@@ -34,7 +34,7 @@ C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER I,J
       INTEGER iproc          ! subdomain index
       CHARACTER*80 header1, header2  ! header comments in unit 10 files
@@ -167,7 +167,7 @@ C---------------------------------------------------------------------------
       use memory_usage
       use presizes, only: IDEN
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER I,J,eof,K
       INTEGER iproc          ! subdomain index
       CHARACTER*80 header1, header2  ! header comments in unit 11 files
@@ -484,7 +484,7 @@ C---------------------------------------------------------------------------
       USE PREP_WEIR,ONLY:NWEIRBNDRY
       use memory_usage
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER I, J, K, IPROC, INDX, ITEMP, idumy
       CHARACTER(14) LOCFN
       CHARACTER(80) skipped
@@ -718,7 +718,7 @@ C---------------------------------------------------------------------------
       use nodalattributes
       IMPLICIT NONE
 C
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER ll             ! line loop counter
       INTEGER m              ! attribute default value counter
       INTEGER :: k
@@ -1046,7 +1046,7 @@ C---------------------------------------------------------------------------
       use sizes, only : naFileName
       implicit none
 
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       integer :: iproc          ! subdomain loop counter
       integer :: sdu(nproc)     ! subdomain unit number for unit 13 files
       integer :: Mode           !=0 to count, =1 to write
@@ -1752,7 +1752,7 @@ C---------------------------------------------------------------------------C
       use subprep, only : subdomainOn, found_sm_nml ! NCSU Subdomain Modeling
       use nodalattributes, only : outputTau0
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER I,J,K,M,JG,JP,KK, ios_stations
       INTEGER INDX,ITOT,ILNODE,IPROC,IPROC2,ITYPE,NUMS(10)
       CHARACTER LOCFN*80,PE*6,LOCSTATFN*20
@@ -2581,7 +2581,7 @@ C  tcm V50.21 -- Changed all I8 formats to I12                              C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER N1, N2, N3, KMIN
       INTEGER I,J,K,M,ITEMP,IPR,IPR1
       INTEGER INDX,ITOT,IEL,IELG,ILNODE,IPROC,ITYPE
@@ -2853,7 +2853,7 @@ C                                                                           C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER I,J,IPROC,EOF
       INTEGER SDU(NPROC) ! subdomain unit numbers
       LOGICAL Success    ! .true. if files opened without errors
@@ -2937,7 +2937,7 @@ C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER IPROC
       INTEGER INDEX14, I, FLUX_NUM
       REAL(SZ)  FLUX_INC, FLUX_VAL
@@ -3038,7 +3038,7 @@ C---------------------------------------------------------------------------
 !      use memory_usage
 !C
 !      IMPLICIT NONE
-!      integer :: nbytes = 0
+!      integer(8) :: nbytes = 0
 !      INTEGER I,J,IPROC
 !      INTEGER SDU(NPROC) ! subdomain unit numbers
 !      LOGICAL Success    ! .true. if files opened without errors
@@ -3130,7 +3130,7 @@ C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       LOGICAL FOUND,DONE
       INTEGER I,J,IPROC,IPROC2,ILNODE,INDX,NHG,LINDEX
       CHARACTER*80 PBLJAGF
@@ -3393,7 +3393,7 @@ C---------------------------------------------------------------------------
       use memory_usage
       IMPLICIT NONE
 C
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER i              ! node loop counter
       INTEGER k              ! constituent loop counter
       INTEGER ll             ! line loop counter
@@ -3524,7 +3524,7 @@ C
       INTEGER:: FUNIT
       INTEGER:: NCOMP
 
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER i                 ! node loop counter
       INTEGER k                 ! attribute loop counter
       INTEGER ll                ! line loop counter
@@ -3794,7 +3794,7 @@ C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       LOGICAL FOUND,DONE
       INTEGER I,J,IPROC,IPROC2,ILNODE,INDX,NHG,LINDEX
       CHARACTER*80 PBLJAGF
@@ -3964,7 +3964,7 @@ C                   Added by Kendra Dresback (Aug. 18, 2007)                C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      INTEGER :: nbytes = 0
+      INTEGER(8) :: nbytes = 0
       INTEGER I,J,IPROC
       INTEGER SDU(NPROC) ! subdomain unit numbers
       LOGICAL Success    ! .true. if files opened without errors
@@ -4043,7 +4043,7 @@ C                Added by Kendra Dresback (January 15, 2008)                C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER I,J,IPROC
       INTEGER SDU(NPROC) ! subdomain unit numbers
       LOGICAL Success    ! .true. if files opened without errors
@@ -4129,7 +4129,7 @@ C                Added by Kendra Dresback (January 15, 2008)                C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER I,J,IPROC
       INTEGER SDU(NPROC) ! subdomain unit numbers
       LOGICAL Success    ! .true. if files opened without errors
@@ -4215,7 +4215,7 @@ C                Added by Kendra Dresback (October 15, 2008)                C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER I,J,IPROC
       INTEGER SDU(NPROC) ! subdomain unit numbers
       LOGICAL Success    ! .true. if files opened without errors
@@ -4310,7 +4310,7 @@ C
       USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER IPROC
       INTEGER INDEX14, I
       REAL(SZ) :: FLUX_INC
@@ -4451,7 +4451,7 @@ C                                                                           C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       LOGICAL FOUND
       INTEGER I,J,IPROC,IINDX,IHOTSTP, not_active
       INTEGER IMHSF,ITHSF
@@ -4891,7 +4891,7 @@ C                                                                           C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       LOGICAL FOUND
       INTEGER I,J,IPROC,INDX,IHOTSTP, not_active
       INTEGER IMHSF,ITHSF, NH, N
@@ -5449,7 +5449,7 @@ C                                                                           C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       LOGICAL FOUND
       INTEGER I,J,IPROC,INDX,IHOTSTP, not_active
       INTEGER IMHSF,ITHSF,IVALUE,IDUMY, NH, N
