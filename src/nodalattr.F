@@ -1456,12 +1456,16 @@ C 09232016 WP : Spatially varying linear internal tide friction
      &              OverlandReductionFactorDefaultValue,
      &              NumNodesNotDefault,nScreen,MyProc,
      &              NAbOut)
+            ELSE
+              SkipDataSet = .True.
             ENDIF
          CASE("subgrid_barrier")
              IF(LoadSubgridBarrier)THEN
                  CALL LoadAttrMat(SubgridBarrier,SubgridBarrierNoOfVals,
      &              subgridBarrierDefaultValue,NumNodesNotDefault,
      &              nScreen,MyProc,NAbOut)
+             ELSE
+               SkipDataSet = .True.
              ENDIF
 C          WP
 !------- DW ---- Absorbing layer -----------
