@@ -514,6 +514,9 @@ C.... DMW 202207 Add options for controlling slope/wind limiting and
 C.... "new" formula for computing vel in wetting/drying routine 
      &          slim, windlim, directvelWD, useHF
 C.... DMW
+!JLW: adding subgrid control namelist
+      integer :: ios_subgrid
+      namelist /subgridControl/ level0, level1
       ! jgf52.08.02 : For inundation output files.
       namelist /inundationOutputControl/ inundationOutput, inunThresh
 
@@ -647,6 +650,18 @@ Casey 180318: Added NWS=13
       else
          call logMessage(INFO,
      &         'The wetDryControl namelist was not found.')
+      endif
+      rewind(15)  !Return to the top of the fort.15 file
+
+!JLW: adding subgrid control namelist
+      READ(UNIT = 15, NML = subgridControl,IOSTAT = ios_subgrid)
+      if ( ios_subgrid.ge.0) then
+         foundSubgridControlNamelist = .true.
+         call logMessage(INFO,
+     &         'The subgridControl namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The subgridControl namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
 

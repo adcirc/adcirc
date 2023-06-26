@@ -2174,6 +2174,10 @@ C     ----------------------------------------------------------------
       SUBROUTINE Apply2DBottomFriction(UU1, VV1, DP, ETA2, G,
      &     IFNLFA, NP, TK)
       USE GLOBAL, ONLY: MLD, DTDP
+!JLW: incorporate subgrid
+      USE subgrid, ONLY: level0, level1
+     &   , cmfVertETA2, cfVertETA2, subgridVertList
+     &   , wetDepthVertETA2
 C      USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
@@ -2214,41 +2218,55 @@ C
 C     Step 0. Convert Manning's N to Cd, if necessary.
       IF (LoadManningsN) THEN
          DO I=1, NP
-            HT = DP(I)+IFNLFA*ETA2(I)
-            IF(LoadSubgridBarrier)THEN
-                IF(subgridBarrierOvertopping(I).AND.
-     &             SubgridBarrierNoOfVals.EQ.2)THEN
-                    FRIC(I)=g*subgridBarrier(I,2)**2.d0
-     &                   /( ( HT )**(1.d0/3.d0) ) 
-                    IF(FRIC(I).LT.BFCdLLimit) THEN
-                       FRIC(I) = BFCdLLimit
-                    ENDIF
-                ELSE
-                    IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
-                    FRIC(I)=g*ManningsN(I)**2.d0
-     &                   /( ( HT )**(1.d0/3.d0) ) ! sb46.28sb02
-                    IF(FRIC(I).LT.BFCdLLimit) THEN
-                       FRIC(I) = BFCdLLimit
-                    ENDIF
-                ENDIF
+!JLW: adding subgrid
+            IF(level0)THEN
+               IF(subgridVertList(I).EQ.1)THEN
+                  IF(level1)THEN
+                     FRIC(I) = cmfVertETA2(I)
+                  ELSE
+                     FRIC(I) = cfVertETA2(I)
+                  ENDIF
+               ELSE
+                  FRIC(I) = g*ManningsN(I)**2.d0
+     &               /((DP(I)+IFNLFA*ETA2(I))**(1.d0/3.d0))
+               ENDIF
             ELSE
-                IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
-                IF (ManningsN(I).gt.1.d0) THEN
-                   WCH = floor(ManningsN(I))
-                   ManN = ManningsN(I) - WCH
-                   FRIC(I)=g*((1.D0+2.D0*HT/WCH)**(2.D0/3.D0)*ManN)**2.d0
-     &               /( HT**(1.d0/3.d0) )
-                   IF(FRIC(I).LT.BFCdLLimit) THEN
-                      FRIC(I) = BFCdLLimit
+               HT = DP(I)+IFNLFA*ETA2(I)
+               IF(LoadSubgridBarrier)THEN
+                   IF(subgridBarrierOvertopping(I).AND.
+     &                SubgridBarrierNoOfVals.EQ.2)THEN
+                       FRIC(I)=g*subgridBarrier(I,2)**2.d0
+     &                      /( ( HT )**(1.d0/3.d0) ) 
+                       IF(FRIC(I).LT.BFCdLLimit) THEN
+                          FRIC(I) = BFCdLLimit
+                       ENDIF
+                   ELSE
+                       IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
+                       FRIC(I)=g*ManningsN(I)**2.d0
+     &                      /( ( HT )**(1.d0/3.d0) ) ! sb46.28sb02
+                       IF(FRIC(I).LT.BFCdLLimit) THEN
+                          FRIC(I) = BFCdLLimit
+                       ENDIF
                    ENDIF
-                ELSE
-                   FRIC(I)=g*ManningsN(I)**2.d0
-     &               /( ( HT )**(1.d0/3.d0) ) ! sb46.28sb02
-                   !sb46.28sb02  Lower limit is applied here.
-                   IF(FRIC(I).LT.BFCdLLimit) THEN
-                      FRIC(I) = BFCdLLimit
+               ELSE
+                   IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
+                   IF (ManningsN(I).gt.1.d0) THEN
+                      WCH = floor(ManningsN(I))
+                      ManN = ManningsN(I) - WCH
+                      FRIC(I)=g*((1.D0+2.D0*HT/WCH)**(2.D0/3.D0)*ManN)**2.d0
+     &                  /( HT**(1.d0/3.d0) )
+                      IF(FRIC(I).LT.BFCdLLimit) THEN
+                         FRIC(I) = BFCdLLimit
+                      ENDIF
+                   ELSE
+                      FRIC(I)=g*ManningsN(I)**2.d0
+     &                  /( ( HT )**(1.d0/3.d0) ) ! sb46.28sb02
+                      !sb46.28sb02  Lower limit is applied here.
+                      IF(FRIC(I).LT.BFCdLLimit) THEN
+                         FRIC(I) = BFCdLLimit
+                      ENDIF
                    ENDIF
-                ENDIF
+               ENDIF
             ENDIF
          ENDDO
       ELSEIF (LoadChezy) THEN
@@ -2281,7 +2299,15 @@ C     .. Step 1. Apply friction arising from turbulent viscous interaction
 C        with the sea floor.
          DO I=1, NP
             UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
-            H1  = DP(I) + IFNLFA*ETA2(I)
+            IF(level0)THEN
+               IF(subgridVertList(I).EQ.1)THEN
+                  H1 = wetDepthVertETA2(I)
+               ELSE
+                  H1 = DP(I) + IFNLFA*ETA2(I)
+               ENDIF
+            ELSE
+               H1  = DP(I) + IFNLFA*ETA2(I)
+            ENDIF
             TK(I) = MIN(FRIC(I)*
      &                     (IFLINBF +                                          ! linear
      &                     (UV1/H1) * (IFNLBF +                               ! nonlinear

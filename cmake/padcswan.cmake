@@ -105,6 +105,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum.F
@@ -114,7 +115,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
   set(PADCSWAN_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2swan.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/adcirc.F
-      src/subdomain.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_boundary.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/read_input.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/cstart.F

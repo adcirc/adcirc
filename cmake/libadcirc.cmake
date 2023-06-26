@@ -41,7 +41,10 @@ set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F)
+
 if(BUILD_LIBADCIRC_STATIC)
 
   add_library(libadcirc_static STATIC ${LIBADC_SOURCES})

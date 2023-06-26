@@ -1267,6 +1267,11 @@ C
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
       USE WIND, ONLY: windLimiter 
       USE CONSTANTS, ONLY: Cs2, Ad, Bd, G
+      USE subgrid, ONLY: level0, level1
+     &   , wetFracVertETA2, subgridVertList
+     &   , gridDepthEleETA1, gridDepthEleETA2
+     &   , cadvEleETA2, gridDepthVertETA2
+     &   , NCEleArray
        
       IMPLICIT NONE
 
@@ -1309,6 +1314,8 @@ C
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       INTEGER :: nele
       REAL(8) :: Ma2, Cfac 
+!JLW: adding a couple of variables needed
+      REAL(8) :: HGAvg2, CADV1, CADV2, CADV3
 
       call setMessageSource("mom_eqs_new_conserv")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -1336,19 +1343,38 @@ Corbitt 120322: Localized Advection
          NC1=NODECODE(NM1)
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
-         NCELE=NC1*NC2*NC3*NOFF(IE)
+!JLW: move to after subgrid section
+!         NCELE=NC1*NC2*NC3*NOFF(IE)
          U1N1=UU1(NM1)
          U1N2=UU1(NM2)
          U1N3=UU1(NM3)
          V1N1=VV1(NM1)
          V1N2=VV1(NM2)
          V1N3=VV1(NM3)
-         H1N1=DP(NM1)+IFNLFA*ETA1(NM1)
-         H1N2=DP(NM2)+IFNLFA*ETA1(NM2)
-         H1N3=DP(NM3)+IFNLFA*ETA1(NM3)
-         H2N1=DP(NM1)+IFNLFA*ETA2(NM1)
-         H2N2=DP(NM2)+IFNLFA*ETA2(NM2)
-         H2N3=DP(NM3)+IFNLFA*ETA2(NM3)
+!JLW: add subgrid lookup
+         IF(level0)THEN
+            H1N1 = gridDepthEleETA1(IE,1)   
+            H1N2 = gridDepthEleETA1(IE,2)   
+            H1N3 = gridDepthEleETA1(IE,3)   
+            H2N1 = gridDepthEleETA2(IE,1)   
+            H2N2 = gridDepthEleETA2(IE,2)   
+            H2N3 = gridDepthEleETA2(IE,3)   
+            NCELE = NCEleArray(IE)
+!JLW: possibly add control to turn off advection
+            IF(level1)THEN
+               CADV1 = cadvEleETA2(IE,1)
+               CADV2 = cadvEleETA2(IE,2)
+               CADV3 = cadvEleETA2(IE,3)
+            ENDIF
+         ELSE
+            NCELE=NC1*NC2*NC3*NOFF(IE)
+            H1N1=DP(NM1)+IFNLFA*ETA1(NM1)
+            H1N2=DP(NM2)+IFNLFA*ETA1(NM2)
+            H1N3=DP(NM3)+IFNLFA*ETA1(NM3)
+            H2N1=DP(NM1)+IFNLFA*ETA2(NM1)
+            H2N2=DP(NM2)+IFNLFA*ETA2(NM2)
+            H2N3=DP(NM3)+IFNLFA*ETA2(NM3)
+         ENDIF
          QX1N1=QX1(NM1)
          QX1N2=QX1(NM2)
          QX1N3=QX1(NM3)
@@ -1457,14 +1483,26 @@ C.... WJP: For the new dispersion relation
 C...  Compute the advective term gradients for the element version 1
 
          IF (CME_New_C1) THEN
-            DU1QX1DXA=(U1N1*QX1N1*FDX1+U1N2*QX1N2*FDX2+U1N3*QX1N3*FDX3)
-     &                                                            *0.5d0
-            DV1QX1DYA=(V1N1*QX1N1*FDY1+V1N2*QX1N2*FDY2+V1N3*QX1N3*FDY3)
-     &                                                            *0.5d0
-            DU1QY1DXA=(U1N1*QY1N1*FDX1+U1N2*QY1N2*FDX2+U1N3*QY1N3*FDX3)
-     &                                                            *0.5d0
-            DV1QY1DYA=(V1N1*QY1N1*FDY1+V1N2*QY1N2*FDY2+V1N3*QY1N3*FDY3)
-     &                                                            *0.5d0
+!JLW: add correction to advection
+            IF(level1)THEN
+               DU1QX1DXA=(CADV1*U1N1*QX1N1*FDX1+CADV2*U1N2*QX1N2*FDX2
+     &            +CADV3*U1N3*QX1N3*FDX3)*0.5d0
+               DV1QX1DYA=(CADV1*V1N1*QX1N1*FDY1+CADV2*V1N2*QX1N2*FDY2
+     &            +CADV3*V1N3*QX1N3*FDY3)*0.5d0
+               DU1QY1DXA=(CADV1*U1N1*QY1N1*FDX1+CADV2*U1N2*QY1N2*FDX2
+     &            +CADV3*U1N3*QY1N3*FDX3)*0.5d0
+               DV1QY1DYA=(CADV1*V1N1*QY1N1*FDY1+CADV2*V1N2*QY1N2*FDY2
+     &            +CADV3*V1N3*QY1N3*FDY3)*0.5d0
+            ELSE
+               DU1QX1DXA=(U1N1*QX1N1*FDX1+U1N2*QX1N2*FDX2
+     &            +U1N3*QX1N3*FDX3)*0.5d0
+               DV1QX1DYA=(V1N1*QX1N1*FDY1+V1N2*QX1N2*FDY2
+     &            +V1N3*QX1N3*FDY3)*0.5d0
+               DU1QY1DXA=(U1N1*QY1N1*FDX1+U1N2*QY1N2*FDX2
+     &            +U1N3*QY1N3*FDX3)*0.5d0
+               DV1QY1DYA=(V1N1*QY1N1*FDY1+V1N2*QY1N2*FDY2
+     &            +V1N3*QY1N3*FDY3)*0.5d0
+            ENDIF
          ENDIF
 
 C...  Compute the advective term gradients for the element version 2
@@ -1749,6 +1787,11 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
          IF (NWS.NE.0.OR.NRS.NE.0) THEN
             WSX=DTO2*IFWIND*(WSX1(I)+WSX2(I))
             WSY=DTO2*IFWIND*(WSY1(I)+WSY2(I))
+!JLW: add subgrid correction
+            IF(level0)THEN
+               WSX = WSX*wetFracVertETA2(I)
+               WSY = WSY*wetFracVertETA2(I)
+            ENDIF
             
 C.....      DMW 202207 tail off wind forcing in very shallow water
             IF (WINDLIM.eqv..true.) THEN
@@ -1953,23 +1996,51 @@ C...
 C...  Compute velocities
 
       DO I=1,NP
-         H2=DP(I)+IFNLFA*ETA2(I)
-         IF(H2.NE.0.) THEN
-            UU2(I)=QX2(I)/H2
-            VV2(I)=QY2(I)/H2
+         IF(level0)THEN
+            H2 = gridDepthVertETA2(I)
+            IF(subgridVertList(I).EQ.1)THEN
+               IF(H2.GT.0.d0)THEN
+                  UU2(I)=QX2(I)/H2
+                  VV2(I)=QY2(I)/H2
+               ENDIF
             ELSE
-            WRITE(16,*) ''
-            WRITE(16,*) ''
-            WRITE(16,*) '*******************************************'
-            WRITE(16,*) '*******************************************'
-            WRITE(16,*) 'WARNING: Total water depth = 0 at node  ',I
-            WRITE(16,*) '         Velocities set = -999.'
-            WRITE(16,*) '*******************************************'
-            WRITE(16,*) '*******************************************'
-            WRITE(16,*) ''
-            WRITE(16,*) ''
-            UU2(I)=-999.
-            VV2(I)=-999.
+            IF(H2.NE.0.) THEN
+               UU2(I)=QX2(I)/H2
+               VV2(I)=QY2(I)/H2
+               ELSE
+               WRITE(16,*) ''
+               WRITE(16,*) ''
+               WRITE(16,*) '*******************************************'
+               WRITE(16,*) '*******************************************'
+               WRITE(16,*) 'WARNING: Total water depth = 0 at node  ',I
+               WRITE(16,*) '         Velocities set = -999.'
+               WRITE(16,*) '*******************************************'
+               WRITE(16,*) '*******************************************'
+               WRITE(16,*) ''
+               WRITE(16,*) ''
+               UU2(I)=-999.
+               VV2(I)=-999.
+            ENDIF
+            ENDIF
+         ELSE
+            H2=DP(I)+IFNLFA*ETA2(I)
+            IF(H2.NE.0.) THEN
+               UU2(I)=QX2(I)/H2
+               VV2(I)=QY2(I)/H2
+               ELSE
+               WRITE(16,*) ''
+               WRITE(16,*) ''
+               WRITE(16,*) '*******************************************'
+               WRITE(16,*) '*******************************************'
+               WRITE(16,*) 'WARNING: Total water depth = 0 at node  ',I
+               WRITE(16,*) '         Velocities set = -999.'
+               WRITE(16,*) '*******************************************'
+               WRITE(16,*) '*******************************************'
+               WRITE(16,*) ''
+               WRITE(16,*) ''
+               UU2(I)=-999.
+               VV2(I)=-999.
+            ENDIF
          ENDIF
       ENDDO
 
