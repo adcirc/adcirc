@@ -1,0 +1,55 @@
+Intel(R) Advisor can now assist with vectorization and show optimization
+  report messages with your source code.
+See "https://software.intel.com/en-us/intel-advisor-xe" for details.
+
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINING OPTION VALUES:
+  -inline-factor: 100
+  -inline-min-size: 30
+  -inline-max-size: 230
+  -inline-max-total-size: 2000
+  -inline-max-per-routine: 10000
+  -inline-max-per-compile: 500000
+
+
+Begin optimization report for: version._
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (version._) [1] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/cmake/CMakeFiles/version_cmake.F(1,14)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/cmake/CMakeFiles/version_cmake.F(1,14):remark #34051: REGISTER ALLOCATION : [version._] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/cmake/CMakeFiles/version_cmake.F:1
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    0[ reg_null]
+        
+    Routine temporaries
+        Total         :       6
+            Global    :       0
+            Local     :       6
+        Regenerable   :       0
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================

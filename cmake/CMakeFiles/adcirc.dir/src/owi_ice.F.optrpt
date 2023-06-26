@@ -1,0 +1,2453 @@
+Intel(R) Advisor can now assist with vectorization and show optimization
+  report messages with your source code.
+See "https://software.intel.com/en-us/intel-advisor-xe" for details.
+
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINING OPTION VALUES:
+  -inline-factor: 100
+  -inline-min-size: 30
+  -inline-max-size: 230
+  -inline-max-total-size: 2000
+  -inline-max-per-routine: 10000
+  -inline-max-per-compile: 500000
+
+
+Begin optimization report for: owi_ice._
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (owi_ice._) [1] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(13,14)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(13,14):remark #34051: REGISTER ALLOCATION : [owi_ice._] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:13
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    0[ reg_null]
+        
+    Routine temporaries
+        Total         :       6
+            Global    :       0
+            Local     :       6
+        Regenerable   :       0
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_INTERP_BASIN
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_INTERP_BASIN) [2] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(508,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+<Peeled loop for vectorization>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+<Peeled loop for vectorization>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(544,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (573:11) and YI (561:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(553,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(561,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11)
+   <Remainder>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(508,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_interp_basin_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:508
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    5[ rax rdx rcx rsi rdi]
+        
+    Routine temporaries
+        Total         :      21
+            Global    :      10
+            Local     :      11
+        Regenerable   :       2
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_INTERP_BASIN [future_cpu_23]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_INTERP_BASIN) [2] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(508,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+<Peeled loop for vectorization>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+<Peeled loop for vectorization>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(544,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (573:11) and YI (561:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(553,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(561,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11)
+   <Remainder>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(508,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_interp_basin_.a] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:508
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   63[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm31 k0-k7]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   36[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm20 k1]
+        
+    Routine temporaries
+        Total         :     489
+            Global    :     132
+            Local     :     357
+        Regenerable   :      85
+        Spilled       :      23
+        
+    Routine stack
+        Variables     :     136 bytes*
+            Reads     :       3 [3.00e+00 ~ 0.3%]
+            Writes    :       9 [9.00e+00 ~ 0.9%]
+        Spills        :     144 bytes*
+            Reads     :      24 [8.56e+00 ~ 0.9%]
+            Writes    :      20 [1.20e+01 ~ 1.2%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_INTERP_BASIN [core_4th_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_INTERP_BASIN) [2] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(508,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(544,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (573:11) and YI (561:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(553,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(561,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11)
+   <Remainder>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(508,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_interp_basin_.V] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:508
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     499
+            Global    :     118
+            Local     :     381
+        Regenerable   :      83
+        Spilled       :      23
+        
+    Routine stack
+        Variables     :     136 bytes*
+            Reads     :       3 [3.00e+00 ~ 0.3%]
+            Writes    :       9 [9.00e+00 ~ 0.8%]
+        Spills        :     144 bytes*
+            Reads     :      24 [8.56e+00 ~ 0.8%]
+            Writes    :      20 [1.20e+01 ~ 1.1%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_INTERP_BASIN [core_2nd_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_INTERP_BASIN) [2] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(508,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(544,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (573:11) and YI (561:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(553,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(561,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11)
+   <Remainder>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(508,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_interp_basin_.R] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:508
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     521
+            Global    :     118
+            Local     :     403
+        Regenerable   :      83
+        Spilled       :      23
+        
+    Routine stack
+        Variables     :     136 bytes*
+            Reads     :       3 [3.00e+00 ~ 0.3%]
+            Writes    :       9 [9.00e+00 ~ 0.8%]
+        Spills        :     144 bytes*
+            Reads     :      24 [8.56e+00 ~ 0.7%]
+            Writes    :      20 [1.20e+01 ~ 1.1%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_INTERP_BASIN [core_i7_sse4_2]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_INTERP_BASIN) [2] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(508,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(544,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (573:11) and YI (561:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(553,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(561,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11)
+   <Remainder>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(508,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_interp_basin_.P] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:508
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   29[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm14]
+        
+    Routine temporaries
+        Total         :     479
+            Global    :     118
+            Local     :     361
+        Regenerable   :      89
+        Spilled       :      23
+        
+    Routine stack
+        Variables     :     136 bytes*
+            Reads     :       3 [3.00e+00 ~ 0.3%]
+            Writes    :       9 [9.00e+00 ~ 0.9%]
+        Spills        :     144 bytes*
+            Reads     :      24 [8.56e+00 ~ 0.9%]
+            Writes    :      20 [1.20e+01 ~ 1.2%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_INTERP_BASIN [generic]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_INTERP_BASIN) [2] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(508,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(544,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (573:11) and YI (561:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(553,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(561,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11)
+   <Remainder>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(508,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_interp_basin_.A] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:508
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   29[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm14]
+        
+    Routine temporaries
+        Total         :     479
+            Global    :     118
+            Local     :     361
+        Regenerable   :      89
+        Spilled       :      23
+        
+    Routine stack
+        Variables     :     136 bytes*
+            Reads     :       3 [3.00e+00 ~ 0.3%]
+            Writes    :       9 [9.00e+00 ~ 0.9%]
+        Spills        :     144 bytes*
+            Reads     :      24 [8.56e+00 ~ 0.9%]
+            Writes    :      20 [1.20e+01 ~ 1.2%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_INTERP_REGION
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_INTERP_REGION) [3] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(597,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+<Peeled loop for vectorization>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+<Peeled loop for vectorization>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(633,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (660:11) and YI (648:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(641,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(648,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11)
+   <Remainder>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(597,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_interp_region_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:597
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    5[ rax rdx rcx rsi rdi]
+        
+    Routine temporaries
+        Total         :      21
+            Global    :      10
+            Local     :      11
+        Regenerable   :       2
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_INTERP_REGION [future_cpu_23]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_INTERP_REGION) [3] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(597,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+<Peeled loop for vectorization>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+<Peeled loop for vectorization>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(633,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (660:11) and YI (648:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(641,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(648,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11)
+   <Remainder>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(597,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_interp_region_.a] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:597
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   63[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm31 k0-k7]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   36[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm20 k1]
+        
+    Routine temporaries
+        Total         :     489
+            Global    :     132
+            Local     :     357
+        Regenerable   :      85
+        Spilled       :      23
+        
+    Routine stack
+        Variables     :     136 bytes*
+            Reads     :       3 [3.00e+00 ~ 0.3%]
+            Writes    :       9 [9.00e+00 ~ 0.9%]
+        Spills        :     144 bytes*
+            Reads     :      24 [8.56e+00 ~ 0.9%]
+            Writes    :      20 [1.20e+01 ~ 1.2%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_INTERP_REGION [core_4th_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_INTERP_REGION) [3] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(597,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(633,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (660:11) and YI (648:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(641,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(648,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11)
+   <Remainder>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(597,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_interp_region_.V] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:597
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     499
+            Global    :     118
+            Local     :     381
+        Regenerable   :      83
+        Spilled       :      23
+        
+    Routine stack
+        Variables     :     136 bytes*
+            Reads     :       3 [3.00e+00 ~ 0.3%]
+            Writes    :       9 [9.00e+00 ~ 0.8%]
+        Spills        :     144 bytes*
+            Reads     :      24 [8.56e+00 ~ 0.8%]
+            Writes    :      20 [1.20e+01 ~ 1.1%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_INTERP_REGION [core_2nd_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_INTERP_REGION) [3] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(597,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(633,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (660:11) and YI (648:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(641,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(648,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11)
+   <Remainder>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(597,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_interp_region_.R] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:597
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     521
+            Global    :     118
+            Local     :     403
+        Regenerable   :      83
+        Spilled       :      23
+        
+    Routine stack
+        Variables     :     136 bytes*
+            Reads     :       3 [3.00e+00 ~ 0.3%]
+            Writes    :       9 [9.00e+00 ~ 0.8%]
+        Spills        :     144 bytes*
+            Reads     :      24 [8.56e+00 ~ 0.7%]
+            Writes    :      20 [1.20e+01 ~ 1.1%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_INTERP_REGION [core_i7_sse4_2]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_INTERP_REGION) [3] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(597,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(633,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (660:11) and YI (648:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(641,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(648,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11)
+   <Remainder>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(597,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_interp_region_.P] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:597
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   29[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm14]
+        
+    Routine temporaries
+        Total         :     479
+            Global    :     118
+            Local     :     361
+        Regenerable   :      89
+        Spilled       :      23
+        
+    Routine stack
+        Variables     :     136 bytes*
+            Reads     :       3 [3.00e+00 ~ 0.3%]
+            Writes    :       9 [9.00e+00 ~ 0.9%]
+        Spills        :     144 bytes*
+            Reads     :      24 [8.56e+00 ~ 0.9%]
+            Writes    :      20 [1.20e+01 ~ 1.2%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_INTERP_REGION [generic]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_INTERP_REGION) [3] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(597,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(633,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (660:11) and YI (648:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(641,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(648,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11)
+   <Remainder>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(597,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_interp_region_.A] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:597
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   29[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm14]
+        
+    Routine temporaries
+        Total         :     479
+            Global    :     118
+            Local     :     361
+        Regenerable   :      89
+        Spilled       :      23
+        
+    Routine stack
+        Variables     :     136 bytes*
+            Reads     :       3 [3.00e+00 ~ 0.3%]
+            Writes    :       9 [9.00e+00 ~ 0.9%]
+        Spills        :     144 bytes*
+            Reads     :      24 [8.56e+00 ~ 0.9%]
+            Writes    :      20 [1.20e+01 ~ 1.2%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_GET
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_GET) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(201,18)
+  -> INLINE: (256,14) OWI_ICE::NCICE1_INTERP_BASIN
+  -> INLINE: (315,16) OWI_ICE::NCICE1_INTERP_REGION
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+   <Remainder loop for vectorization>
+      remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Peeled loop for vectorization>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Peeled loop for vectorization>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(544,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (573:11) and YI (561:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(553,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(561,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   <Remainder>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Peeled loop for vectorization>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Peeled loop for vectorization>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(633,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (660:11) and YI (648:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(641,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(648,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   <Remainder>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(356,14)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(369,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(376,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(405,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(412,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+   <Remainder loop for vectorization>
+      remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(201,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_get_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:201
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    6[ rax rdx rcx rsi rdi r8]
+        
+    Routine temporaries
+        Total         :      28
+            Global    :      11
+            Local     :      17
+        Regenerable   :       2
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_GET [future_cpu_23]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_GET) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(201,18)
+  -> INLINE: (256,14) OWI_ICE::NCICE1_INTERP_BASIN
+  -> INLINE: (315,16) OWI_ICE::NCICE1_INTERP_REGION
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+   <Remainder loop for vectorization>
+      remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Peeled loop for vectorization>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Peeled loop for vectorization>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(544,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (573:11) and YI (561:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(553,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(561,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   <Remainder>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Peeled loop for vectorization>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Peeled loop for vectorization>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(633,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (660:11) and YI (648:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(641,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(648,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   <Remainder>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(356,14)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(369,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(376,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(405,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(412,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+   <Remainder loop for vectorization>
+      remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(220,11):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(474,9):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(201,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_get_.a] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:201
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   63[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm31 k0-k7]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   38[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm21 k0-k1]
+        
+    Routine temporaries
+        Total         :    1903
+            Global    :     392
+            Local     :    1511
+        Regenerable   :     789
+        Spilled       :      92
+        
+    Routine stack
+        Variables     :    1280 bytes*
+            Reads     :       6 [1.52e-02 ~ 0.0%]
+            Writes    :     175 [1.40e+01 ~ 6.9%]
+        Spills        :     624 bytes*
+            Reads     :     116 [2.54e+00 ~ 1.3%]
+            Writes    :     111 [1.29e+00 ~ 0.6%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_GET [core_4th_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_GET) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(201,18)
+  -> INLINE: (256,14) OWI_ICE::NCICE1_INTERP_BASIN
+  -> INLINE: (315,16) OWI_ICE::NCICE1_INTERP_REGION
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(544,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (573:11) and YI (561:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(553,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(561,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   <Remainder>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(633,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (660:11) and YI (648:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(641,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(648,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   <Remainder>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(356,14)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(369,11)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+      remark #25436: completely unrolled by 4  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(376,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(405,11)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+      remark #25436: completely unrolled by 4  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(412,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(220,11):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(474,9):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(201,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_get_.V] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:201
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :    1891
+            Global    :     358
+            Local     :    1533
+        Regenerable   :     782
+        Spilled       :     103
+        
+    Routine stack
+        Variables     :    1280 bytes*
+            Reads     :       6 [1.52e-02 ~ 0.0%]
+            Writes    :     175 [1.40e+01 ~ 6.9%]
+        Spills        :     728 bytes*
+            Reads     :     155 [2.71e+00 ~ 1.3%]
+            Writes    :     135 [1.40e+00 ~ 0.7%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_GET [core_2nd_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_GET) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(201,18)
+  -> INLINE: (256,14) OWI_ICE::NCICE1_INTERP_BASIN
+  -> INLINE: (315,16) OWI_ICE::NCICE1_INTERP_REGION
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+   <Peeled loop for vectorization>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(544,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (573:11) and YI (561:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(553,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(561,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   <Remainder>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(633,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (660:11) and YI (648:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(641,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(648,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   <Remainder>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(356,14)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(369,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(376,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(405,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(412,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+   <Peeled loop for vectorization>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(220,11):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(474,9):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(201,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_get_.R] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:201
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :    2001
+            Global    :     361
+            Local     :    1640
+        Regenerable   :     787
+        Spilled       :     106
+        
+    Routine stack
+        Variables     :    1280 bytes*
+            Reads     :       6 [1.52e-02 ~ 0.0%]
+            Writes    :     175 [1.40e+01 ~ 5.7%]
+        Spills        :     752 bytes*
+            Reads     :     172 [2.94e+00 ~ 1.2%]
+            Writes    :     132 [1.44e+00 ~ 0.6%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_GET [core_i7_sse4_2]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_GET) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(201,18)
+  -> INLINE: (256,14) OWI_ICE::NCICE1_INTERP_BASIN
+  -> INLINE: (315,16) OWI_ICE::NCICE1_INTERP_REGION
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+   <Peeled loop for vectorization>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(544,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (573:11) and YI (561:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(553,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(561,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   <Remainder>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(633,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (660:11) and YI (648:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(641,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(648,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   <Remainder>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(356,14)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(369,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(376,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(405,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(412,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+   <Peeled loop for vectorization>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(220,11):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(474,9):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(201,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_get_.P] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:201
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :    1926
+            Global    :     364
+            Local     :    1562
+        Regenerable   :     798
+        Spilled       :      89
+        
+    Routine stack
+        Variables     :    1280 bytes*
+            Reads     :       6 [1.52e-02 ~ 0.0%]
+            Writes    :     175 [1.40e+01 ~ 5.7%]
+        Spills        :     656 bytes*
+            Reads     :     115 [2.77e+00 ~ 1.1%]
+            Writes    :     104 [1.32e+00 ~ 0.5%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_GET [generic]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_GET) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(201,18)
+  -> INLINE: (256,14) OWI_ICE::NCICE1_INTERP_BASIN
+  -> INLINE: (315,16) OWI_ICE::NCICE1_INTERP_REGION
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(219,9)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(536,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(539,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(544,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (573:11) and YI (561:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(553,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(550,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(561,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(558,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(446,14)
+   <Remainder>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(625,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(628,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+<Remainder loop for vectorization>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(633,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed ANTI dependence between YI (660:11) and YI (648:15)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(641,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(639,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   <Remainder>
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(648,15) ]
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(646,11) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(623,16)
+   <Remainder>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(356,14)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(369,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(376,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(405,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(412,11)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(473,7)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(220,11):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(474,9):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(201,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_get_.A] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:201
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :    1916
+            Global    :     358
+            Local     :    1558
+        Regenerable   :     796
+        Spilled       :      85
+        
+    Routine stack
+        Variables     :    1280 bytes*
+            Reads     :       6 [1.52e-02 ~ 0.0%]
+            Writes    :     175 [1.40e+01 ~ 6.3%]
+        Spills        :     624 bytes*
+            Reads     :     101 [2.76e+00 ~ 1.2%]
+            Writes    :      94 [1.30e+00 ~ 0.6%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: OWI_ICE::NCICE1_INIT
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (OWI_ICE::NCICE1_INIT) [5] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(69,18)
+  -> (175,14) OWI_ICE::NCICE1_GET
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(174,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F(69,18):remark #34051: REGISTER ALLOCATION : [owi_ice_mp_ncice1_init_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/owi_ice.F:69
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   15[ rax rdx rcx rbx rbp rsi rdi r8-r15]
+        
+    Routine temporaries
+        Total         :     494
+            Global    :      79
+            Local     :     415
+        Regenerable   :     299
+        Spilled       :       8
+        
+    Routine stack
+        Variables     :    6968 bytes*
+            Reads     :      16 [9.21e+00 ~ 2.3%]
+            Writes    :      95 [4.10e+01 ~ 10.1%]
+        Spills        :      16 bytes*
+            Reads     :       2 [4.81e-01 ~ 0.1%]
+            Writes    :       2 [4.81e-01 ~ 0.1%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================

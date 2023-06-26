@@ -1,0 +1,3069 @@
+Intel(R) Advisor can now assist with vectorization and show optimization
+  report messages with your source code.
+See "https://software.intel.com/en-us/intel-advisor-xe" for details.
+
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINING OPTION VALUES:
+  -inline-factor: 100
+  -inline-min-size: 30
+  -inline-max-size: 230
+  -inline-max-total-size: 2000
+  -inline-max-per-routine: 10000
+  -inline-max-per-compile: 500000
+
+
+Begin optimization report for: quadraturetri._
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (quadraturetri._) [1] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(1,14)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(1,14):remark #34051: REGISTER ALLOCATION : [quadraturetri._] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:1
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    0[ reg_null]
+        
+    Routine temporaries
+        Total         :       6
+            Global    :       0
+            Local     :       6
+        Regenerable   :       0
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::ALLOCMATARR
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::ALLOCMATARR) [2] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(25,18)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(25,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_allocmatarr_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:25
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    9[ rax rdx rcx rsi rdi r8-r9 r14-r15]
+        
+    Routine temporaries
+        Total         :      51
+            Global    :      12
+            Local     :      39
+        Regenerable   :       5
+        Spilled       :       2
+        
+    Routine stack
+        Variables     :       8 bytes*
+            Reads     :       1 [1.00e+00 ~ 1.9%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::ALLOCVECARR
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::ALLOCVECARR) [3] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(42,18)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(42,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_allocvecarr_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:42
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    9[ rax rdx rcx rbp rsi rdi r8-r9 r12]
+        
+    Routine temporaries
+        Total         :      52
+            Global    :      11
+            Local     :      41
+        Regenerable   :       8
+        Spilled       :       2
+        
+    Routine stack
+        Variables     :       8 bytes*
+            Reads     :       1 [1.00e+00 ~ 2.1%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::COMPELMMSFH
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::COMPELMMSFH) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(113,18)
+  -> INLINE: (120,15) QUADRATURETRI::INTERPDEFAULTCUB2D
+    -> INLINE: (103,14) QUADRATURETRI::BARYCENTRICINTERP
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+   <Remainder loop for vectorization>
+      remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Peeled loop for vectorization, Multiversioned v1>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,37)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+   <Multiversioned v1>
+      remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+      remark #25461: Imperfect Loop Unroll-Jammed by 2   (pre-vector) 
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Peeled loop for vectorization>
+         remark #15301: PEEL LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 2
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+         remark #15301: REMAINDER LOOP WAS VECTORIZED
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+   <Remainder, Multiversioned v1>
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Peeled loop for vectorization>
+         remark #15301: PEEL LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+         remark #15301: REMAINDER LOOP WAS VECTORIZED
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+   <Multiversioned v2>
+      remark #25461: Imperfect Loop Unroll-Jammed by 2   (pre-vector) 
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Peeled loop for vectorization>
+         remark #15335: peel loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 2
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 1
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+         remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 2
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+   <Remainder, Multiversioned v2>
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Peeled loop for vectorization>
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(113,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_compelmmsfh_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:113
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    6[ rax rdx rcx rsi rdi r8]
+        
+    Routine temporaries
+        Total         :      31
+            Global    :      11
+            Local     :      20
+        Regenerable   :       2
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::COMPELMMSFH [future_cpu_23]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::COMPELMMSFH) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(113,18)
+  -> INLINE: (120,15) QUADRATURETRI::INTERPDEFAULTCUB2D
+    -> INLINE: (103,14) QUADRATURETRI::BARYCENTRICINTERP
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+   <Remainder loop for vectorization>
+      remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Peeled loop for vectorization, Multiversioned v1>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,37)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+   <Multiversioned v1>
+      remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+      remark #25461: Imperfect Loop Unroll-Jammed by 2   (pre-vector) 
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Peeled loop for vectorization>
+         remark #15301: PEEL LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 2
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+         remark #15301: REMAINDER LOOP WAS VECTORIZED
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+   <Remainder, Multiversioned v1>
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Peeled loop for vectorization>
+         remark #15301: PEEL LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+         remark #15301: REMAINDER LOOP WAS VECTORIZED
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+   <Multiversioned v2>
+      remark #25461: Imperfect Loop Unroll-Jammed by 2   (pre-vector) 
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Peeled loop for vectorization>
+         remark #15335: peel loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 2
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 1
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+         remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 2
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+   <Remainder, Multiversioned v2>
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Peeled loop for vectorization>
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(113,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_compelmmsfh_.a] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:113
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   63[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm31 k0-k7]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   52[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm31 k1-k6]
+        
+    Routine temporaries
+        Total         :     615
+            Global    :     194
+            Local     :     421
+        Regenerable   :      37
+        Spilled       :      50
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :     352 bytes*
+            Reads     :      97 [3.17e+02 ~ 4.1%]
+            Writes    :      58 [6.51e+01 ~ 0.8%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::COMPELMMSFH [core_4th_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::COMPELMMSFH) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(113,18)
+  -> INLINE: (120,15) QUADRATURETRI::INTERPDEFAULTCUB2D
+    -> INLINE: (103,14) QUADRATURETRI::BARYCENTRICINTERP
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,37)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+   <Multiversioned v1>
+      remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+      remark #25461: Imperfect Loop Unroll-Jammed by 2   (pre-vector) 
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Peeled loop for vectorization>
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 2
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 1
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+   <Remainder, Multiversioned v1>
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Peeled loop for vectorization>
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+         remark #15301: REMAINDER LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+   <Multiversioned v2>
+      remark #25461: Imperfect Loop Unroll-Jammed by 2   (pre-vector) 
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Peeled loop for vectorization>
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 2
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 1
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+   <Remainder, Multiversioned v2>
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Peeled loop for vectorization>
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+         remark #15301: REMAINDER LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(113,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_compelmmsfh_.V] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:113
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     532
+            Global    :     156
+            Local     :     376
+        Regenerable   :      17
+        Spilled       :      48
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :     328 bytes*
+            Reads     :     117 [4.15e+02 ~ 6.1%]
+            Writes    :      61 [8.62e+01 ~ 1.3%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::COMPELMMSFH [core_3rd_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::COMPELMMSFH) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(113,18)
+  -> INLINE: (120,15) QUADRATURETRI::INTERPDEFAULTCUB2D
+    -> INLINE: (103,14) QUADRATURETRI::BARYCENTRICINTERP
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,37)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+      remark #25461: Imperfect Loop Unroll-Jammed by 2   (pre-vector) 
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Peeled loop for vectorization>
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 2
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 1
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+   <Remainder>
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Peeled loop for vectorization>
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+         remark #15301: REMAINDER LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(113,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_compelmmsfh_.S] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:113
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     599
+            Global    :     124
+            Local     :     475
+        Regenerable   :      13
+        Spilled       :      39
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :     272 bytes*
+            Reads     :      64 [4.34e+02 ~ 4.2%]
+            Writes    :      42 [7.25e+01 ~ 0.7%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::COMPELMMSFH [core_2nd_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::COMPELMMSFH) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(113,18)
+  -> INLINE: (120,15) QUADRATURETRI::INTERPDEFAULTCUB2D
+    -> INLINE: (103,14) QUADRATURETRI::BARYCENTRICINTERP
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,37)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+      remark #25461: Imperfect Loop Unroll-Jammed by 2   (pre-vector) 
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Peeled loop for vectorization>
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 2
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 1
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+   <Remainder>
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Peeled loop for vectorization>
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+         remark #15301: REMAINDER LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(113,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_compelmmsfh_.R] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:113
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     599
+            Global    :     124
+            Local     :     475
+        Regenerable   :      13
+        Spilled       :      39
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :     272 bytes*
+            Reads     :      64 [4.34e+02 ~ 4.2%]
+            Writes    :      42 [7.25e+01 ~ 0.7%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::COMPELMMSFH [core_i7_sse4_2]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::COMPELMMSFH) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(113,18)
+  -> INLINE: (120,15) QUADRATURETRI::INTERPDEFAULTCUB2D
+    -> INLINE: (103,14) QUADRATURETRI::BARYCENTRICINTERP
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,37)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+      remark #25461: Imperfect Loop Unroll-Jammed by 2   (pre-vector) 
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 1
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Alternate Alignment Vectorized Loop>
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 1
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+   <Remainder>
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(113,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_compelmmsfh_.P] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:113
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     380
+            Global    :     106
+            Local     :     274
+        Regenerable   :      12
+        Spilled       :      36
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :     240 bytes*
+            Reads     :      51 [2.84e+02 ~ 4.7%]
+            Writes    :      40 [1.03e+02 ~ 1.7%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::COMPELMMSFH [generic]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::COMPELMMSFH) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(113,18)
+  -> INLINE: (120,15) QUADRATURETRI::INTERPDEFAULTCUB2D
+    -> INLINE: (103,14) QUADRATURETRI::BARYCENTRICINTERP
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(120,15)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,37)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+      remark #25461: Imperfect Loop Unroll-Jammed by 2   (pre-vector) 
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 1
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Alternate Alignment Vectorized Loop>
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 1
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(123,12)
+   <Remainder>
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+         remark #15300: LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(124,26)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(119,10):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(113,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_compelmmsfh_.A] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:113
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     379
+            Global    :      98
+            Local     :     281
+        Regenerable   :      12
+        Spilled       :      36
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :     240 bytes*
+            Reads     :      50 [2.84e+02 ~ 4.3%]
+            Writes    :      40 [1.03e+02 ~ 1.6%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::BARYCENTRICINTERP
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::BARYCENTRICINTERP) [5] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(137,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Peeled loop for vectorization, Multiversioned v1>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(137,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_barycentricinterp_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:137
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    8[ rax rdx rcx rsi rdi r8-r10]
+        
+    Routine temporaries
+        Total         :      42
+            Global    :      13
+            Local     :      29
+        Regenerable   :       2
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::BARYCENTRICINTERP [future_cpu_23]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::BARYCENTRICINTERP) [5] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(137,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Peeled loop for vectorization, Multiversioned v1>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(137,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_barycentricinterp_.a] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:137
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   63[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm31 k0-k7]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   50[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm31 k1-k4]
+        
+    Routine temporaries
+        Total         :     219
+            Global    :      72
+            Local     :     147
+        Regenerable   :       8
+        Spilled       :      14
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      64 bytes*
+            Reads     :       8 [1.38e+01 ~ 2.8%]
+            Writes    :       8 [3.60e+00 ~ 0.7%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::BARYCENTRICINTERP [core_4th_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::BARYCENTRICINTERP) [5] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(137,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(137,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_barycentricinterp_.V] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:137
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     192
+            Global    :      61
+            Local     :     131
+        Regenerable   :       1
+        Spilled       :      13
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      56 bytes*
+            Reads     :       7 [1.34e+01 ~ 3.2%]
+            Writes    :       7 [3.15e+00 ~ 0.8%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::BARYCENTRICINTERP [core_2nd_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::BARYCENTRICINTERP) [5] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(137,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(137,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_barycentricinterp_.R] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:137
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     332
+            Global    :      60
+            Local     :     272
+        Regenerable   :       2
+        Spilled       :      18
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :     104 bytes*
+            Reads     :      14 [2.07e+01 ~ 2.6%]
+            Writes    :      13 [5.85e+00 ~ 0.7%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::BARYCENTRICINTERP [core_i7_sse4_2]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::BARYCENTRICINTERP) [5] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(137,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Alternate Alignment Vectorized Loop, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(137,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_barycentricinterp_.P] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:137
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     264
+            Global    :      58
+            Local     :     206
+        Regenerable   :       2
+        Spilled       :      13
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      56 bytes*
+            Reads     :       7 [1.34e+01 ~ 2.1%]
+            Writes    :       7 [3.15e+00 ~ 0.5%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::BARYCENTRICINTERP [generic]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::BARYCENTRICINTERP) [5] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(137,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Alternate Alignment Vectorized Loop, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(137,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_barycentricinterp_.A] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:137
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     274
+            Global    :      56
+            Local     :     218
+        Regenerable   :       1
+        Spilled       :      14
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      64 bytes*
+            Reads     :       8 [1.38e+01 ~ 2.2%]
+            Writes    :       8 [3.60e+00 ~ 0.6%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::RSBARYCENTRICCOORDS
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::RSBARYCENTRICCOORDS) [6] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(152,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Multiversioned v1>
+   remark #25045: Fused Loops: ( 160 161 162 )
+
+   remark #25228: Loop multiversioned for Data Dependence
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(161,9)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(162,9)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Multiversioned v2>
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(152,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_rsbarycentriccoords_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:152
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    8[ rax rdx rcx rsi rdi r8-r10]
+        
+    Routine temporaries
+        Total         :      37
+            Global    :      13
+            Local     :      24
+        Regenerable   :       2
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::RSBARYCENTRICCOORDS [future_cpu_23]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::RSBARYCENTRICCOORDS) [6] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(152,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Multiversioned v1>
+   remark #25045: Fused Loops: ( 160 161 162 )
+
+   remark #25228: Loop multiversioned for Data Dependence
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(161,9)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(162,9)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Multiversioned v2>
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(152,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_rsbarycentriccoords_.a] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:152
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   63[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm31 k0-k7]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   27[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm12]
+        
+    Routine temporaries
+        Total         :     148
+            Global    :      60
+            Local     :      88
+        Regenerable   :      11
+        Spilled       :      11
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      48 bytes*
+            Reads     :      16 [7.25e+00 ~ 2.4%]
+            Writes    :       8 [2.25e+00 ~ 0.8%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::RSBARYCENTRICCOORDS [core_4th_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::RSBARYCENTRICCOORDS) [6] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(152,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Multiversioned v1>
+   remark #25045: Fused Loops: ( 160 161 162 )
+
+   remark #25228: Loop multiversioned for Data Dependence
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(161,9)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(162,9)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Multiversioned v2>
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(152,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_rsbarycentriccoords_.V] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:152
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   27[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm12]
+        
+    Routine temporaries
+        Total         :     128
+            Global    :      53
+            Local     :      75
+        Regenerable   :      10
+        Spilled       :       9
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      32 bytes*
+            Reads     :       9 [4.05e+00 ~ 1.4%]
+            Writes    :       6 [2.25e+00 ~ 0.8%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::RSBARYCENTRICCOORDS [core_i7_sse4_2]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::RSBARYCENTRICCOORDS) [6] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(152,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Multiversioned v1>
+   remark #25045: Fused Loops: ( 160 161 162 )
+
+   remark #25228: Loop multiversioned for Data Dependence
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(161,9)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(162,9)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Multiversioned v2>
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(152,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_rsbarycentriccoords_.P] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:152
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   20[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm5]
+        
+    Routine temporaries
+        Total         :     136
+            Global    :      55
+            Local     :      81
+        Regenerable   :      12
+        Spilled       :       9
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      32 bytes*
+            Reads     :       9 [4.05e+00 ~ 1.3%]
+            Writes    :       6 [2.25e+00 ~ 0.7%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::RSBARYCENTRICCOORDS [generic]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::RSBARYCENTRICCOORDS) [6] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(152,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Multiversioned v1>
+   remark #25045: Fused Loops: ( 160 161 162 )
+
+   remark #25228: Loop multiversioned for Data Dependence
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(161,9)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(162,9)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Multiversioned v2>
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(152,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_rsbarycentriccoords_.A] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:152
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   20[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm5]
+        
+    Routine temporaries
+        Total         :     136
+            Global    :      55
+            Local     :      81
+        Regenerable   :      12
+        Spilled       :       9
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      32 bytes*
+            Reads     :       9 [4.05e+00 ~ 1.3%]
+            Writes    :       6 [2.25e+00 ~ 0.7%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::GETQUADRATURE2DTRI
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::GETQUADRATURE2DTRI) [7] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(169,18)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(216,10)
+   remark #25045: Fused Loops: ( 216 217 218 219 220 221 222 223 224 225 226 227 )
+
+   remark #15553: loop was not vectorized: number of iterations (3) is insufficient for vectorization
+   remark #25436: completely unrolled by 3  
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(217,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(218,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(219,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(220,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(221,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(222,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(223,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(224,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(225,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(226,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(227,10)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(207,10)
+   remark #25045: Fused Loops: ( 207 208 209 210 211 212 213 )
+
+   remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   remark #25436: completely unrolled by 3  
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(208,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(209,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(210,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(211,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(212,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(213,10)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(199,10)
+   remark #25045: Fused Loops: ( 199 200 201 202 203 204 )
+
+   remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   remark #25436: completely unrolled by 3  
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(200,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(201,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(202,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(203,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(204,10)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(191,10)
+   remark #25045: Fused Loops: ( 191 192 193 194 195 196 )
+
+   remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   remark #25436: completely unrolled by 3  
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(192,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(193,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(194,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(195,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(196,10)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(186,10)
+   remark #25045: Fused Loops: ( 186 187 188 )
+
+   remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   remark #25436: completely unrolled by 3  
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(187,10)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(188,10)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(183,10)
+   remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   remark #25436: completely unrolled by 3  
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(169,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_getquadrature2dtri_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:169
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   13[ rax rdx rcx rbx rbp rsi rdi r8-r11 r14-r15]
+        
+    Routine temporaries
+        Total         :     166
+            Global    :      12
+            Local     :     154
+        Regenerable   :      87
+        Spilled       :       4
+        
+    Routine stack
+        Variables     :     296 bytes*
+            Reads     :      14 [1.07e+00 ~ 1.1%]
+            Writes    :      34 [2.71e+01 ~ 28.9%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::INTERPDEFAULTCUB2D
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::INTERPDEFAULTCUB2D) [8] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(98,18)
+  -> INLINE: (103,14) QUADRATURETRI::BARYCENTRICINTERP
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Peeled loop for vectorization, Multiversioned v1>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(98,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_interpdefaultcub2d_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:98
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    6[ rax rdx rcx rsi rdi r8]
+        
+    Routine temporaries
+        Total         :      28
+            Global    :      11
+            Local     :      17
+        Regenerable   :       2
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::INTERPDEFAULTCUB2D [future_cpu_23]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::INTERPDEFAULTCUB2D) [8] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(98,18)
+  -> INLINE: (103,14) QUADRATURETRI::BARYCENTRICINTERP
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Peeled loop for vectorization, Multiversioned v1>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(98,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_interpdefaultcub2d_.a] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:98
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   63[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm31 k0-k7]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   50[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm31 k1-k4]
+        
+    Routine temporaries
+        Total         :     218
+            Global    :      71
+            Local     :     147
+        Regenerable   :      11
+        Spilled       :      14
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      64 bytes*
+            Reads     :       8 [1.38e+01 ~ 2.8%]
+            Writes    :       8 [3.60e+00 ~ 0.7%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::INTERPDEFAULTCUB2D [core_4th_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::INTERPDEFAULTCUB2D) [8] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(98,18)
+  -> INLINE: (103,14) QUADRATURETRI::BARYCENTRICINTERP
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(98,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_interpdefaultcub2d_.V] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:98
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     191
+            Global    :      60
+            Local     :     131
+        Regenerable   :       4
+        Spilled       :      14
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      64 bytes*
+            Reads     :       8 [1.38e+01 ~ 3.3%]
+            Writes    :       8 [3.60e+00 ~ 0.9%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::INTERPDEFAULTCUB2D [core_2nd_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::INTERPDEFAULTCUB2D) [8] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(98,18)
+  -> INLINE: (103,14) QUADRATURETRI::BARYCENTRICINTERP
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(98,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_interpdefaultcub2d_.R] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:98
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     331
+            Global    :      59
+            Local     :     272
+        Regenerable   :       5
+        Spilled       :      18
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :     104 bytes*
+            Reads     :      14 [2.07e+01 ~ 2.6%]
+            Writes    :      13 [5.85e+00 ~ 0.7%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::INTERPDEFAULTCUB2D [core_i7_sse4_2]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::INTERPDEFAULTCUB2D) [8] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(98,18)
+  -> INLINE: (103,14) QUADRATURETRI::BARYCENTRICINTERP
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(98,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_interpdefaultcub2d_.P] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:98
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     225
+            Global    :      59
+            Local     :     166
+        Regenerable   :       4
+        Spilled       :      14
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      64 bytes*
+            Reads     :       8 [1.38e+01 ~ 2.8%]
+            Writes    :       8 [3.60e+00 ~ 0.7%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::INTERPDEFAULTCUB2D [generic]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::INTERPDEFAULTCUB2D) [8] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(98,18)
+  -> INLINE: (103,14) QUADRATURETRI::BARYCENTRICINTERP
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(145,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(103,14)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(98,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_interpdefaultcub2d_.A] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:98
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     210
+            Global    :      51
+            Local     :     159
+        Regenerable   :       4
+        Spilled       :      14
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      64 bytes*
+            Reads     :       8 [1.38e+01 ~ 2.8%]
+            Writes    :       8 [3.60e+00 ~ 0.7%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::FETCHDEFAULTNCUB2D
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::FETCHDEFAULTNCUB2D) [9] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(88,18)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(88,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_fetchdefaultncub2d_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:88
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    3[ rax rdx rdi]
+        
+    Routine temporaries
+        Total         :      10
+            Global    :       0
+            Local     :      10
+        Regenerable   :       1
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::GETDEFAULTCUB2D
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::GETDEFAULTCUB2D) [10] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(59,18)
+  -> (75,14) QUADRATURETRI::GETQUADRATURE2DTRI
+  -> INLINE: (80,14) QUADRATURETRI::RSBARYCENTRICCOORDS
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Peeled loop for vectorization, Multiversioned v1>
+   remark #15335: peel loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Multiversioned v1>
+   remark #25045: Fused Loops: ( 160 161 162 )
+
+   remark #25228: Loop multiversioned for Data Dependence
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(161,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(162,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Peeled loop for vectorization, Multiversioned v2>
+   remark #15335: peel loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Multiversioned v2>
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(59,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_getdefaultcub2d_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:59
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    5[ rax rdx rcx rsi rdi]
+        
+    Routine temporaries
+        Total         :      21
+            Global    :      10
+            Local     :      11
+        Regenerable   :       2
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::GETDEFAULTCUB2D [future_cpu_23]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::GETDEFAULTCUB2D) [10] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(59,18)
+  -> (75,14) QUADRATURETRI::GETQUADRATURE2DTRI
+  -> INLINE: (80,14) QUADRATURETRI::RSBARYCENTRICCOORDS
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Peeled loop for vectorization, Multiversioned v1>
+   remark #15335: peel loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Multiversioned v1>
+   remark #25045: Fused Loops: ( 160 161 162 )
+
+   remark #25228: Loop multiversioned for Data Dependence
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(161,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(162,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Peeled loop for vectorization, Multiversioned v2>
+   remark #15335: peel loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Multiversioned v2>
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(59,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_getdefaultcub2d_.a] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:59
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   63[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm31 k0-k7]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   33[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm9 zmm16-zmm24]
+        
+    Routine temporaries
+        Total         :     365
+            Global    :      87
+            Local     :     278
+        Regenerable   :      40
+        Spilled       :      10
+        
+    Routine stack
+        Variables     :      16 bytes*
+            Reads     :       2 [2.00e+00 ~ 0.4%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      40 bytes*
+            Reads     :      27 [8.10e+00 ~ 1.7%]
+            Writes    :       7 [1.80e+00 ~ 0.4%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::GETDEFAULTCUB2D [core_4th_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::GETDEFAULTCUB2D) [10] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(59,18)
+  -> (75,14) QUADRATURETRI::GETQUADRATURE2DTRI
+  -> INLINE: (80,14) QUADRATURETRI::RSBARYCENTRICCOORDS
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Multiversioned v1>
+   remark #25045: Fused Loops: ( 160 161 162 )
+
+   remark #25228: Loop multiversioned for Data Dependence
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(161,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(162,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Peeled loop for vectorization, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Multiversioned v2>
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(59,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_getdefaultcub2d_.V] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:59
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     353
+            Global    :      82
+            Local     :     271
+        Regenerable   :      40
+        Spilled       :      10
+        
+    Routine stack
+        Variables     :      16 bytes*
+            Reads     :       2 [2.00e+00 ~ 0.4%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      40 bytes*
+            Reads     :      27 [8.10e+00 ~ 1.7%]
+            Writes    :       7 [1.80e+00 ~ 0.4%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::GETDEFAULTCUB2D [core_2nd_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::GETDEFAULTCUB2D) [10] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(59,18)
+  -> (75,14) QUADRATURETRI::GETQUADRATURE2DTRI
+  -> INLINE: (80,14) QUADRATURETRI::RSBARYCENTRICCOORDS
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Multiversioned v1>
+   remark #25045: Fused Loops: ( 160 161 162 )
+
+   remark #25228: Loop multiversioned for Data Dependence
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(161,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(162,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Peeled loop for vectorization, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Multiversioned v2>
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(59,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_getdefaultcub2d_.R] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:59
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     373
+            Global    :      86
+            Local     :     287
+        Regenerable   :      44
+        Spilled       :      10
+        
+    Routine stack
+        Variables     :      16 bytes*
+            Reads     :       2 [2.00e+00 ~ 0.4%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      40 bytes*
+            Reads     :      27 [8.10e+00 ~ 1.5%]
+            Writes    :       7 [1.80e+00 ~ 0.3%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::GETDEFAULTCUB2D [core_i7_sse4_2]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::GETDEFAULTCUB2D) [10] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(59,18)
+  -> (75,14) QUADRATURETRI::GETQUADRATURE2DTRI
+  -> INLINE: (80,14) QUADRATURETRI::RSBARYCENTRICCOORDS
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Multiversioned v1>
+   remark #25045: Fused Loops: ( 160 161 162 )
+
+   remark #25228: Loop multiversioned for Data Dependence
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(161,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(162,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Alternate Alignment Vectorized Loop, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Multiversioned v2>
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Alternate Alignment Vectorized Loop, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(59,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_getdefaultcub2d_.P] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:59
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   20[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm5]
+        
+    Routine temporaries
+        Total         :     341
+            Global    :      71
+            Local     :     270
+        Regenerable   :      42
+        Spilled       :      10
+        
+    Routine stack
+        Variables     :      16 bytes*
+            Reads     :       2 [2.00e+00 ~ 0.4%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      40 bytes*
+            Reads     :      19 [5.85e+00 ~ 1.2%]
+            Writes    :      10 [3.60e+00 ~ 0.8%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: QUADRATURETRI::GETDEFAULTCUB2D [generic]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (QUADRATURETRI::GETDEFAULTCUB2D) [10] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(59,18)
+  -> (75,14) QUADRATURETRI::GETQUADRATURE2DTRI
+  -> INLINE: (80,14) QUADRATURETRI::RSBARYCENTRICCOORDS
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Multiversioned v1>
+   remark #25045: Fused Loops: ( 160 161 162 )
+
+   remark #25228: Loop multiversioned for Data Dependence
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(161,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(162,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Alternate Alignment Vectorized Loop, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Multiversioned v2>
+   remark #15301: FUSED LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Alternate Alignment Vectorized Loop, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(160,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(80,14)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F(59,18):remark #34051: REGISTER ALLOCATION : [quadraturetri_mp_getdefaultcub2d_.A] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/quadrature.F:59
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   20[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm5]
+        
+    Routine temporaries
+        Total         :     341
+            Global    :      71
+            Local     :     270
+        Regenerable   :      42
+        Spilled       :      10
+        
+    Routine stack
+        Variables     :      16 bytes*
+            Reads     :       2 [2.00e+00 ~ 0.4%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      40 bytes*
+            Reads     :      19 [5.85e+00 ~ 1.2%]
+            Writes    :      10 [3.60e+00 ~ 0.7%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================

@@ -1,0 +1,1943 @@
+Intel(R) Advisor can now assist with vectorization and show optimization
+  report messages with your source code.
+See "https://software.intel.com/en-us/intel-advisor-xe" for details.
+
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINING OPTION VALUES:
+  -inline-factor: 100
+  -inline-min-size: 30
+  -inline-max-size: 230
+  -inline-max-total-size: 2000
+  -inline-max-per-routine: 10000
+  -inline-max-per-compile: 500000
+
+
+Begin optimization report for: rs2._
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (rs2._) [1] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(16,14)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(16,14):remark #34051: REGISTER ALLOCATION : [rs2._] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:16
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    0[ reg_null]
+        
+    Routine temporaries
+        Total         :       6
+            Global    :       0
+            Local     :       6
+        Regenerable   :       0
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2GET
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2GET) [2] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(753,18)
+  -> INLINE: (764,14) RS2::RS2GET_TYPE2
+    -> INLINE: (1079,16) RS2::RS2GET_TYPE2_TERMINATE
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Peeled loop for vectorization, Multiversioned v1>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Multiversioned v2>
+   remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   remark #25439: unrolled with remainder by 2  
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Remainder, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1005,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+   remark #15541: outer loop was not auto-vectorized: consider using SIMD directive
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1065,13) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1066,15) ]
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1092,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(753,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2get_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:753
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    7[ rax rdx rcx rsi rdi r8-r9]
+        
+    Routine temporaries
+        Total         :      35
+            Global    :      12
+            Local     :      23
+        Regenerable   :       2
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2GET [future_cpu_23]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2GET) [2] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(753,18)
+  -> INLINE: (764,14) RS2::RS2GET_TYPE2
+    -> INLINE: (1079,16) RS2::RS2GET_TYPE2_TERMINATE
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Peeled loop for vectorization, Multiversioned v1>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Multiversioned v2>
+   remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   remark #25439: unrolled with remainder by 2  
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Remainder, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1005,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+   remark #15541: outer loop was not auto-vectorized: consider using SIMD directive
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1065,13) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1066,15) ]
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1092,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(753,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2get_.a] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:753
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   63[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm31 k0-k7]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm7 zmm16-zmm22 k1]
+        
+    Routine temporaries
+        Total         :     807
+            Global    :     146
+            Local     :     661
+        Regenerable   :     426
+        Spilled       :      32
+        
+    Routine stack
+        Variables     :    1620 bytes*
+            Reads     :      25 [8.72e+00 ~ 1.6%]
+            Writes    :     166 [5.62e+01 ~ 10.4%]
+        Spills        :     216 bytes*
+            Reads     :      36 [4.11e+01 ~ 7.6%]
+            Writes    :      31 [1.54e+01 ~ 2.9%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2GET [core_4th_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2GET) [2] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(753,18)
+  -> INLINE: (764,14) RS2::RS2GET_TYPE2
+    -> INLINE: (1079,16) RS2::RS2GET_TYPE2_TERMINATE
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Multiversioned v2>
+   remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   remark #25439: unrolled with remainder by 2  
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Remainder, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1005,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+   remark #15541: outer loop was not auto-vectorized: consider using SIMD directive
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1065,13) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1066,15) ]
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1092,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(753,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2get_.V] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:753
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   23[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm8]
+        
+    Routine temporaries
+        Total         :     797
+            Global    :     143
+            Local     :     654
+        Regenerable   :     424
+        Spilled       :      32
+        
+    Routine stack
+        Variables     :    1620 bytes*
+            Reads     :      25 [8.72e+00 ~ 1.6%]
+            Writes    :     166 [5.62e+01 ~ 10.4%]
+        Spills        :     216 bytes*
+            Reads     :      36 [4.11e+01 ~ 7.6%]
+            Writes    :      31 [1.54e+01 ~ 2.9%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2GET [core_3rd_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2GET) [2] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(753,18)
+  -> INLINE: (764,14) RS2::RS2GET_TYPE2
+    -> INLINE: (1079,16) RS2::RS2GET_TYPE2_TERMINATE
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1005,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+   remark #15541: outer loop was not auto-vectorized: consider using SIMD directive
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1065,13) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1066,15) ]
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1092,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(753,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2get_.S] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:753
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     816
+            Global    :     152
+            Local     :     664
+        Regenerable   :     426
+        Spilled       :      39
+        
+    Routine stack
+        Variables     :    1620 bytes*
+            Reads     :      25 [8.72e+00 ~ 1.4%]
+            Writes    :     166 [5.62e+01 ~ 9.3%]
+        Spills        :     264 bytes*
+            Reads     :      44 [4.31e+01 ~ 7.1%]
+            Writes    :      38 [1.64e+01 ~ 2.7%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2GET [core_2nd_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2GET) [2] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(753,18)
+  -> INLINE: (764,14) RS2::RS2GET_TYPE2
+    -> INLINE: (1079,16) RS2::RS2GET_TYPE2_TERMINATE
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1005,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+   remark #15541: outer loop was not auto-vectorized: consider using SIMD directive
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1065,13) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1066,15) ]
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1092,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(753,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2get_.R] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:753
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     816
+            Global    :     152
+            Local     :     664
+        Regenerable   :     426
+        Spilled       :      39
+        
+    Routine stack
+        Variables     :    1620 bytes*
+            Reads     :      25 [8.72e+00 ~ 1.4%]
+            Writes    :     166 [5.62e+01 ~ 9.3%]
+        Spills        :     264 bytes*
+            Reads     :      44 [4.31e+01 ~ 7.1%]
+            Writes    :      38 [1.64e+01 ~ 2.7%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2GET [generic]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2GET) [2] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(753,18)
+  -> INLINE: (764,14) RS2::RS2GET_TYPE2
+    -> INLINE: (1079,16) RS2::RS2GET_TYPE2_TERMINATE
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Alternate Alignment Vectorized Loop, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1005,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+   remark #15541: outer loop was not auto-vectorized: consider using SIMD directive
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1065,13) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1066,15) ]
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1092,9) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(764,14)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(753,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2get_.A] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:753
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   23[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm8]
+        
+    Routine temporaries
+        Total         :     802
+            Global    :     130
+            Local     :     672
+        Regenerable   :     425
+        Spilled       :      30
+        
+    Routine stack
+        Variables     :    1620 bytes*
+            Reads     :      25 [8.72e+00 ~ 1.5%]
+            Writes    :     166 [5.62e+01 ~ 9.5%]
+        Spills        :     200 bytes*
+            Reads     :      34 [4.23e+01 ~ 7.1%]
+            Writes    :      29 [1.64e+01 ~ 2.8%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2GET_TYPE2_TERMINATE
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2GET_TYPE2_TERMINATE) [3] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1143,18)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1143,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2get_type2_terminate_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:1143
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   11[ rax rdx rcx rbx rbp rsi rdi r8-r9 r14-r15]
+        
+    Routine temporaries
+        Total         :     103
+            Global    :      18
+            Local     :      85
+        Regenerable   :      68
+        Spilled       :       4
+        
+    Routine stack
+        Variables     :     304 bytes*
+            Reads     :       8 [3.19e+00 ~ 3.7%]
+            Writes    :      25 [1.26e+01 ~ 14.6%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2GET_TYPE2
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2GET_TYPE2) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(965,18)
+  -> INLINE: (1079,16) RS2::RS2GET_TYPE2_TERMINATE
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Peeled loop for vectorization, Multiversioned v1>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Multiversioned v2>
+   remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   remark #25439: unrolled with remainder by 2  
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Remainder, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1005,7)
+   remark #15541: outer loop was not auto-vectorized: consider using SIMD directive
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1065,13)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1066,15) ]
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1092,9)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(965,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2get_type2_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:965
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    7[ rax rdx rcx rsi rdi r8-r9]
+        
+    Routine temporaries
+        Total         :      35
+            Global    :      12
+            Local     :      23
+        Regenerable   :       2
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2GET_TYPE2 [future_cpu_23]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2GET_TYPE2) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(965,18)
+  -> INLINE: (1079,16) RS2::RS2GET_TYPE2_TERMINATE
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Peeled loop for vectorization, Multiversioned v1>
+   remark #15301: PEEL LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Multiversioned v2>
+   remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   remark #25439: unrolled with remainder by 2  
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Remainder, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1005,7)
+   remark #15541: outer loop was not auto-vectorized: consider using SIMD directive
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1065,13)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1066,15) ]
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1092,9)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(965,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2get_type2_.a] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:965
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   63[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm31 k0-k7]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm7 zmm16-zmm22 k1]
+        
+    Routine temporaries
+        Total         :     772
+            Global    :     145
+            Local     :     627
+        Regenerable   :     394
+        Spilled       :      32
+        
+    Routine stack
+        Variables     :    1524 bytes*
+            Reads     :      25 [2.62e+01 ~ 1.7%]
+            Writes    :     160 [1.63e+02 ~ 10.6%]
+        Spills        :     216 bytes*
+            Reads     :      35 [1.25e+02 ~ 8.1%]
+            Writes    :      30 [4.85e+01 ~ 3.2%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2GET_TYPE2 [core_4th_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2GET_TYPE2) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(965,18)
+  -> INLINE: (1079,16) RS2::RS2GET_TYPE2_TERMINATE
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Multiversioned v2>
+   remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   remark #25439: unrolled with remainder by 2  
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Remainder, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1005,7)
+   remark #15541: outer loop was not auto-vectorized: consider using SIMD directive
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1065,13)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1066,15) ]
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1092,9)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(965,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2get_type2_.V] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:965
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   23[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm8]
+        
+    Routine temporaries
+        Total         :     762
+            Global    :     142
+            Local     :     620
+        Regenerable   :     392
+        Spilled       :      32
+        
+    Routine stack
+        Variables     :    1524 bytes*
+            Reads     :      25 [2.62e+01 ~ 1.7%]
+            Writes    :     160 [1.63e+02 ~ 10.6%]
+        Spills        :     216 bytes*
+            Reads     :      35 [1.25e+02 ~ 8.1%]
+            Writes    :      30 [4.85e+01 ~ 3.2%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2GET_TYPE2 [core_3rd_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2GET_TYPE2) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(965,18)
+  -> INLINE: (1079,16) RS2::RS2GET_TYPE2_TERMINATE
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1005,7)
+   remark #15541: outer loop was not auto-vectorized: consider using SIMD directive
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1065,13)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1066,15) ]
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1092,9)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(965,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2get_type2_.S] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:965
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     781
+            Global    :     151
+            Local     :     630
+        Regenerable   :     394
+        Spilled       :      38
+        
+    Routine stack
+        Variables     :    1524 bytes*
+            Reads     :      25 [2.62e+01 ~ 1.5%]
+            Writes    :     160 [1.63e+02 ~ 9.4%]
+        Spills        :     248 bytes*
+            Reads     :      41 [1.30e+02 ~ 7.6%]
+            Writes    :      34 [5.00e+01 ~ 2.9%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2GET_TYPE2 [core_2nd_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2GET_TYPE2) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(965,18)
+  -> INLINE: (1079,16) RS2::RS2GET_TYPE2_TERMINATE
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Remainder loop for vectorization, Multiversioned v1>
+   remark #15301: REMAINDER LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1005,7)
+   remark #15541: outer loop was not auto-vectorized: consider using SIMD directive
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1065,13)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1066,15) ]
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1092,9)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(965,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2get_type2_.R] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:965
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     781
+            Global    :     151
+            Local     :     630
+        Regenerable   :     394
+        Spilled       :      38
+        
+    Routine stack
+        Variables     :    1524 bytes*
+            Reads     :      25 [2.62e+01 ~ 1.5%]
+            Writes    :     160 [1.63e+02 ~ 9.4%]
+        Spills        :     248 bytes*
+            Reads     :      41 [1.30e+02 ~ 7.6%]
+            Writes    :      34 [5.00e+01 ~ 2.9%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2GET_TYPE2 [generic]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2GET_TYPE2) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(965,18)
+  -> INLINE: (1079,16) RS2::RS2GET_TYPE2_TERMINATE
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Peeled loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Multiversioned v1>
+   remark #25233: Loop multiversioned for stride tests on Assumed shape arrays
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Alternate Alignment Vectorized Loop, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Remainder loop for vectorization, Multiversioned v1>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Multiversioned v2>
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(995,7)
+<Remainder loop for vectorization, Multiversioned v2>
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1005,7)
+   remark #15541: outer loop was not auto-vectorized: consider using SIMD directive
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1065,13)
+      remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1066,15) ]
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(1092,9)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(965,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2get_type2_.A] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:965
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   23[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm8]
+        
+    Routine temporaries
+        Total         :     767
+            Global    :     129
+            Local     :     638
+        Regenerable   :     393
+        Spilled       :      31
+        
+    Routine stack
+        Variables     :    1524 bytes*
+            Reads     :      25 [2.62e+01 ~ 1.5%]
+            Writes    :     160 [1.63e+02 ~ 9.6%]
+        Spills        :     208 bytes*
+            Reads     :      35 [1.29e+02 ~ 7.6%]
+            Writes    :      30 [5.23e+01 ~ 3.1%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2INIT_TYPE2
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2INIT_TYPE2) [5] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(407,18)
+  -> INLINE: (717,18) RS2::RS2GET
+    -> (764,14) RS2::RS2GET_TYPE2
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(450,7)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(450,7)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(450,7)
+   <Remainder loop for vectorization>
+      remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(454,7)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(481,9)
+      remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+      remark #15346: vector dependence: assumed FLOW dependence between at (482:11) and at (482:11)
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(489,9)
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(490,11)
+         remark #15300: LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(490,11)
+      <Remainder loop for vectorization>
+         remark #15301: REMAINDER LOOP WAS VECTORIZED
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+   <Distributed chunk1>
+      remark #25426: Loop Distributed (2 way) 
+      remark #15301: PARTIAL LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+   <Remainder loop for vectorization, Distributed chunk1>
+      remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+      remark #25438: unrolled without remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+   <Distributed chunk2>
+      remark #15301: PARTIAL LOOP WAS VECTORIZED
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(521,11)
+         remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+         remark #15346: vector dependence: assumed FLOW dependence between NCELLSINSEARCHBINS(P) (539:18) and NCELLSINSEARCHBINS(P) (541:18)
+
+         LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+            remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+            remark #15346: vector dependence: assumed FLOW dependence between NCELLSINSEARCHBINS(P) (539:18) and NCELLSINSEARCHBINS(P) (541:18)
+         LOOP END
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+   <Remainder loop for vectorization, Distributed chunk2>
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(521,11)
+         remark #25460: No loop optimizations reported
+
+         LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+            remark #25439: unrolled with remainder by 2  
+            remark #25456: Number of Array Refs Scalar Replaced In Loop: 4
+         LOOP END
+
+         LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+         <Remainder>
+         LOOP END
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(550,9)
+      remark #15541: outer loop was not auto-vectorized: consider using SIMD directive
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(559,11)
+         remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(563,25) ]
+         remark #25438: unrolled without remainder by 2  
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 2
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(568,11)
+         remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(625,15) ]
+      LOOP END
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(683,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed FLOW dependence between rfids_(S) (684:9) and at (685:50)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(713,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed FLOW dependence between at (760:9) and at (766:10)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(714,9)
+      remark #15521: loop was not vectorized: loop control variable was not identified. Explicitly compute the iteration count before executing the loop or try using canonical loop form from OpenMP specification
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7)
+   <Remainder loop for vectorization>
+      remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(407,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2init_type2_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:407
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    7[ rax rdx rcx rsi rdi r8-r9]
+        
+    Routine temporaries
+        Total         :      31
+            Global    :      12
+            Local     :      19
+        Regenerable   :       2
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2INIT_TYPE2 [future_cpu_23]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2INIT_TYPE2) [5] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(407,18)
+  -> INLINE: (717,18) RS2::RS2GET
+    -> (764,14) RS2::RS2GET_TYPE2
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(450,7)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(450,7)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(450,7)
+   <Remainder loop for vectorization>
+      remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(454,7)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(481,9)
+      remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+      remark #15346: vector dependence: assumed FLOW dependence between at (482:11) and at (482:11)
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(489,9)
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(490,11)
+         remark #15300: LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(490,11)
+      <Remainder loop for vectorization>
+         remark #15301: REMAINDER LOOP WAS VECTORIZED
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+   <Distributed chunk1>
+      remark #25426: Loop Distributed (2 way) 
+      remark #15301: PARTIAL LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+   <Remainder loop for vectorization, Distributed chunk1>
+      remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+      remark #25438: unrolled without remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+   <Distributed chunk2>
+      remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(538,28) ]
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(521,11)
+         remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+         remark #15346: vector dependence: assumed FLOW dependence between NCELLSINSEARCHBINS(P) (539:18) and NCELLSINSEARCHBINS(P) (541:18)
+
+         LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+            remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+            remark #15346: vector dependence: assumed FLOW dependence between NCELLSINSEARCHBINS(P) (539:18) and NCELLSINSEARCHBINS(P) (541:18)
+            remark #25439: unrolled with remainder by 2  
+            remark #25456: Number of Array Refs Scalar Replaced In Loop: 4
+         LOOP END
+
+         LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+         <Remainder>
+         LOOP END
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(550,9)
+      remark #15541: outer loop was not auto-vectorized: consider using SIMD directive
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(559,11)
+         remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(563,25) ]
+         remark #25438: unrolled without remainder by 2  
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 2
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(568,11)
+         remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(625,15) ]
+      LOOP END
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(683,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed FLOW dependence between rfids_(S) (684:9) and at (685:50)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(713,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed FLOW dependence between at (760:9) and at (766:10)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(714,9)
+      remark #15521: loop was not vectorized: loop control variable was not identified. Explicitly compute the iteration count before executing the loop or try using canonical loop form from OpenMP specification
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7)
+   <Remainder loop for vectorization>
+      remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(458,9):remark #34000: call to memcpy implemented inline with loads and stores with proven source (alignment, offset): (64, 0), and destination (alignment, offset): (1, 0)
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(460,9):remark #34000: call to memcpy implemented inline with loads and stores with proven source (alignment, offset): (64, 0), and destination (alignment, offset): (1, 0)
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(407,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2init_type2_.a] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:407
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   63[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm31 k0-k7]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   48[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm27 k1-k6]
+        
+    Routine temporaries
+        Total         :    1930
+            Global    :     302
+            Local     :    1628
+        Regenerable   :     598
+        Spilled       :      54
+        
+    Routine stack
+        Variables     :    3852 bytes*
+            Reads     :      68 [4.45e+00 ~ 1.9%]
+            Writes    :     239 [5.39e+01 ~ 23.2%]
+        Spills        :     544 bytes*
+            Reads     :     113 [5.61e+00 ~ 2.4%]
+            Writes    :      76 [1.84e+00 ~ 0.8%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2INIT_TYPE2 [core_4th_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2INIT_TYPE2) [5] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(407,18)
+  -> INLINE: (717,18) RS2::RS2GET
+    -> (764,14) RS2::RS2GET_TYPE2
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(450,7)
+   remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(450,7)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(450,7)
+   <Remainder>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(454,7)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(481,9)
+      remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+      remark #15346: vector dependence: assumed FLOW dependence between at (482:11) and at (482:11)
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(489,9)
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(490,11)
+         remark #15300: LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(490,11)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+   <Distributed chunk1>
+      remark #25426: Loop Distributed (2 way) 
+      remark #15301: PARTIAL LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+   <Distributed chunk2>
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(521,11)
+         remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+         remark #15346: vector dependence: assumed FLOW dependence between NCELLSINSEARCHBINS(P) (539:18) and NCELLSINSEARCHBINS(P) (541:18)
+
+         LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+            remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+            remark #15346: vector dependence: assumed FLOW dependence between NCELLSINSEARCHBINS(P) (539:18) and NCELLSINSEARCHBINS(P) (541:18)
+            remark #25439: unrolled with remainder by 2  
+            remark #25456: Number of Array Refs Scalar Replaced In Loop: 4
+         LOOP END
+
+         LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+         <Remainder>
+         LOOP END
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(550,9)
+      remark #15541: outer loop was not auto-vectorized: consider using SIMD directive
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(559,11)
+         remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(563,25) ]
+         remark #25438: unrolled without remainder by 2  
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 2
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(568,11)
+         remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(625,15) ]
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+   <Remainder loop for vectorization, Distributed chunk1>
+      remark #25436: completely unrolled by 2  
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(683,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed FLOW dependence between rfids_(S) (684:9) and at (685:50)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(713,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed FLOW dependence between at (760:9) and at (766:10)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(714,9)
+      remark #15521: loop was not vectorized: loop control variable was not identified. Explicitly compute the iteration count before executing the loop or try using canonical loop form from OpenMP specification
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(458,9):remark #34000: call to memcpy implemented inline with loads and stores with proven source (alignment, offset): (32, 0), and destination (alignment, offset): (1, 0)
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(460,9):remark #34000: call to memcpy implemented inline with loads and stores with proven source (alignment, offset): (32, 0), and destination (alignment, offset): (1, 0)
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(407,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2init_type2_.V] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:407
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :    1868
+            Global    :     278
+            Local     :    1590
+        Regenerable   :     589
+        Spilled       :      55
+        
+    Routine stack
+        Variables     :    3852 bytes*
+            Reads     :      70 [4.47e+00 ~ 2.0%]
+            Writes    :     239 [5.39e+01 ~ 23.7%]
+        Spills        :     416 bytes*
+            Reads     :     127 [5.61e+00 ~ 2.5%]
+            Writes    :      76 [1.81e+00 ~ 0.8%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2INIT_TYPE2 [core_2nd_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2INIT_TYPE2) [5] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(407,18)
+  -> INLINE: (717,18) RS2::RS2GET
+    -> (764,14) RS2::RS2GET_TYPE2
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(450,7)
+   remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(450,7)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(450,7)
+   <Remainder>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(454,7)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(481,9)
+      remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+      remark #15346: vector dependence: assumed FLOW dependence between at (482:11) and at (482:11)
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(489,9)
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(490,11)
+         remark #15300: LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(490,11)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+   <Distributed chunk1>
+      remark #25426: Loop Distributed (2 way) 
+      remark #15301: PARTIAL LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+   <Distributed chunk2>
+      remark #15301: PARTIAL LOOP WAS VECTORIZED
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(521,11)
+         remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+         remark #15346: vector dependence: assumed FLOW dependence between NCELLSINSEARCHBINS(P) (539:18) and NCELLSINSEARCHBINS(P) (541:18)
+
+         LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+            remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+            remark #15346: vector dependence: assumed FLOW dependence between NCELLSINSEARCHBINS(P) (539:18) and NCELLSINSEARCHBINS(P) (541:18)
+         LOOP END
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+   <Remainder loop for vectorization, Distributed chunk2>
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(521,11)
+         remark #25460: No loop optimizations reported
+
+         LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+            remark #25439: unrolled with remainder by 2  
+            remark #25456: Number of Array Refs Scalar Replaced In Loop: 4
+         LOOP END
+
+         LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+         <Remainder>
+         LOOP END
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(550,9)
+      remark #15541: outer loop was not auto-vectorized: consider using SIMD directive
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(559,11)
+         remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(563,25) ]
+         remark #25438: unrolled without remainder by 2  
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 2
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(568,11)
+         remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(625,15) ]
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+   <Remainder loop for vectorization, Distributed chunk1>
+      remark #25436: completely unrolled by 2  
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(683,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed FLOW dependence between rfids_(S) (684:9) and at (685:50)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(713,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed FLOW dependence between at (760:9) and at (766:10)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(714,9)
+      remark #15521: loop was not vectorized: loop control variable was not identified. Explicitly compute the iteration count before executing the loop or try using canonical loop form from OpenMP specification
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(458,9):remark #34000: call to memcpy implemented inline with loads and stores with proven source (alignment, offset): (16, 0), and destination (alignment, offset): (1, 0)
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(460,9):remark #34000: call to memcpy implemented inline with loads and stores with proven source (alignment, offset): (16, 0), and destination (alignment, offset): (1, 0)
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(407,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2init_type2_.R] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:407
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :    2089
+            Global    :     335
+            Local     :    1754
+        Regenerable   :     594
+        Spilled       :      61
+        
+    Routine stack
+        Variables     :    3852 bytes*
+            Reads     :      76 [4.51e+00 ~ 1.8%]
+            Writes    :     239 [5.39e+01 ~ 21.5%]
+        Spills        :     536 bytes*
+            Reads     :     161 [8.88e+00 ~ 3.5%]
+            Writes    :      84 [2.21e+00 ~ 0.9%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2INIT_TYPE2 [generic]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2INIT_TYPE2) [5] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(407,18)
+  -> INLINE: (717,18) RS2::RS2GET
+    -> (764,14) RS2::RS2GET_TYPE2
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(450,7)
+   remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(450,7)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+      remark #25439: unrolled with remainder by 2  
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(450,7)
+   <Remainder>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(454,7)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(481,9)
+      remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+      remark #15346: vector dependence: assumed FLOW dependence between at (482:11) and at (482:11)
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(489,9)
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(490,11)
+         remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+         remark #25439: unrolled with remainder by 2  
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(490,11)
+      <Remainder>
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+   <Distributed chunk1>
+      remark #25426: Loop Distributed (2 way) 
+      remark #15301: PARTIAL LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+   <Distributed chunk2>
+      remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(521,11)
+         remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+         remark #15346: vector dependence: assumed FLOW dependence between NCELLSINSEARCHBINS(P) (539:18) and NCELLSINSEARCHBINS(P) (541:18)
+
+         LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+            remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+            remark #15346: vector dependence: assumed FLOW dependence between NCELLSINSEARCHBINS(P) (539:18) and NCELLSINSEARCHBINS(P) (541:18)
+            remark #25439: unrolled with remainder by 2  
+            remark #25456: Number of Array Refs Scalar Replaced In Loop: 4
+         LOOP END
+
+         LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+         <Remainder>
+         LOOP END
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(550,9)
+      remark #15541: outer loop was not auto-vectorized: consider using SIMD directive
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(559,11)
+         remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(563,25) ]
+         remark #25438: unrolled without remainder by 2  
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 2
+      LOOP END
+
+      LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(568,11)
+         remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(625,15) ]
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(522,13)
+   <Remainder loop for vectorization, Distributed chunk1>
+      remark #25436: completely unrolled by 2  
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(683,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed FLOW dependence between rfids_(S) (684:9) and at (685:50)
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(713,7)
+   remark #15344: loop was not vectorized: vector dependence prevents vectorization. First dependence is shown below. Use level 5 report for details
+   remark #15346: vector dependence: assumed FLOW dependence between at (760:9) and at (766:10)
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(714,9)
+      remark #15521: loop was not vectorized: loop control variable was not identified. Explicitly compute the iteration count before executing the loop or try using canonical loop form from OpenMP specification
+   LOOP END
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7)
+   remark #25408: memset generated
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(458,9):remark #34000: call to memcpy implemented inline with loads and stores with proven source (alignment, offset): (16, 0), and destination (alignment, offset): (1, 0)
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(460,9):remark #34000: call to memcpy implemented inline with loads and stores with proven source (alignment, offset): (16, 0), and destination (alignment, offset): (1, 0)
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(723,7):remark #34026: call to memset implemented as a call to optimized library version
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(407,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2init_type2_.A] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:407
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :    1861
+            Global    :     282
+            Local     :    1579
+        Regenerable   :     586
+        Spilled       :      53
+        
+    Routine stack
+        Variables     :    3852 bytes*
+            Reads     :      72 [4.59e+00 ~ 1.9%]
+            Writes    :     239 [5.39e+01 ~ 22.1%]
+        Spills        :     384 bytes*
+            Reads     :     144 [5.62e+00 ~ 2.3%]
+            Writes    :      72 [1.80e+00 ~ 0.7%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: RS2::RS2INIT
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (RS2::RS2INIT) [6] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(57,18)
+  -> (84,14) RS2::RS2INIT_TYPE2
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F(57,18):remark #34051: REGISTER ALLOCATION : [rs2_mp_rs2init_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/rs2.F:57
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   12[ rax rdx rcx rbx rbp rsi rdi r8-r9 r13-r15]
+        
+    Routine temporaries
+        Total         :     146
+            Global    :      20
+            Local     :     126
+        Regenerable   :     111
+        Spilled       :       5
+        
+    Routine stack
+        Variables     :    2352 bytes*
+            Reads     :       4 [3.03e+00 ~ 2.3%]
+            Writes    :      34 [2.49e+01 ~ 18.5%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================

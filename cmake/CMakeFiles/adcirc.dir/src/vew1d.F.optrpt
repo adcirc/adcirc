@@ -1,0 +1,1244 @@
+Intel(R) Advisor can now assist with vectorization and show optimization
+  report messages with your source code.
+See "https://software.intel.com/en-us/intel-advisor-xe" for details.
+
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINING OPTION VALUES:
+  -inline-factor: 100
+  -inline-min-size: 30
+  -inline-max-size: 230
+  -inline-max-total-size: 2000
+  -inline-max-per-routine: 10000
+  -inline-max-per-compile: 500000
+
+
+Begin optimization report for: vew1d._
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (vew1d._) [1] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(11,14)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(11,14):remark #34051: REGISTER ALLOCATION : [vew1d._] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:11
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    0[ reg_null]
+        
+    Routine temporaries
+        Total         :       6
+            Global    :       0
+            Local     :       6
+        Regenerable   :       0
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::GET_STREAMDIRECTION_AT_ELEMENT
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::GET_STREAMDIRECTION_AT_ELEMENT) [2] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(17,18)
+  -> INLINE: (44,10) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (48,15) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (52,15) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (56,15) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (60,15) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (64,15) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (72,13) VEW1D::FIND_IB2
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(44,10)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(48,15)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(52,15)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(56,15)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(60,15)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(64,15)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(375,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(72,13)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(404,14) ]
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(17,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_get_streamdirection_at_element_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:17
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    8[ rax rdx rcx rbx rsi rdi r8-r9]
+        
+    Routine temporaries
+        Total         :      33
+            Global    :      13
+            Local     :      20
+        Regenerable   :       1
+        Spilled       :       4
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::GET_STREAMDIRECTION_AT_ELEMENT [core_4th_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::GET_STREAMDIRECTION_AT_ELEMENT) [2] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(17,18)
+  -> INLINE: (44,10) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (48,15) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (52,15) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (56,15) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (60,15) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (64,15) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (72,13) VEW1D::FIND_IB2
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(44,10)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(48,15)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(52,15)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(56,15)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(60,15)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(64,15)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(375,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(72,13)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(404,14) ]
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(17,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_get_streamdirection_at_element_.V] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:17
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   31[ rax rdx rcx rbx rbp rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     228
+            Global    :      84
+            Local     :     144
+        Regenerable   :      30
+        Spilled       :      40
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :     272 bytes*
+            Reads     :      91 [2.66e+00 ~ 4.2%]
+            Writes    :      57 [1.55e+00 ~ 2.5%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::GET_STREAMDIRECTION_AT_ELEMENT [generic]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::GET_STREAMDIRECTION_AT_ELEMENT) [2] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(17,18)
+  -> INLINE: (44,10) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (48,15) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (52,15) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (56,15) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (60,15) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (64,15) VEW1D::CONDENSEDNODEPAIRFOUND
+  -> INLINE: (72,13) VEW1D::FIND_IB2
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(44,10)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(48,15)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(52,15)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(56,15)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(60,15)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(64,15)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(375,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(72,13)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(404,14) ]
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(17,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_get_streamdirection_at_element_.A] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:17
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   22[ rax rdx rcx rbx rbp rsi rdi r8-r15 zmm0-zmm6]
+        
+    Routine temporaries
+        Total         :     241
+            Global    :      84
+            Local     :     157
+        Regenerable   :      30
+        Spilled       :      39
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :     248 bytes*
+            Reads     :      73 [2.54e+00 ~ 4.2%]
+            Writes    :      50 [1.39e+00 ~ 2.3%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::ROTATE_AT_CONDENSEDNODES
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::ROTATE_AT_CONDENSEDNODES) [3] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(113,18)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(113,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_rotate_at_condensednodes_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:113
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    7[ rax rdx rcx rbx rsi rdi r8]
+        
+    Routine temporaries
+        Total         :      29
+            Global    :      12
+            Local     :      17
+        Regenerable   :       1
+        Spilled       :       2
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::ROTATE_AT_CONDENSEDNODES [core_4th_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::ROTATE_AT_CONDENSEDNODES) [3] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(113,18)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(113,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_rotate_at_condensednodes_.V] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:113
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   22[ rax rdx rcx rsi rdi r8-r11 r15 zmm0-zmm11]
+        
+    Routine temporaries
+        Total         :      76
+            Global    :      18
+            Local     :      58
+        Regenerable   :      11
+        Spilled       :       1
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::ROTATE_AT_CONDENSEDNODES [generic]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::ROTATE_AT_CONDENSEDNODES) [3] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(113,18)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(113,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_rotate_at_condensednodes_.A] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:113
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   18[ rax rdx rcx rbp rsi rdi r8-r11 zmm0-zmm7]
+        
+    Routine temporaries
+        Total         :      78
+            Global    :      18
+            Local     :      60
+        Regenerable   :      11
+        Spilled       :       1
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::ROTATEBACK_AT_CONDENSEDNODES
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::ROTATEBACK_AT_CONDENSEDNODES) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(165,18)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(165,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_rotateback_at_condensednodes_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:165
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    5[ rax rdx rcx rsi rdi]
+        
+    Routine temporaries
+        Total         :      21
+            Global    :      10
+            Local     :      11
+        Regenerable   :       1
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::ROTATEBACK_AT_CONDENSEDNODES [core_4th_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::ROTATEBACK_AT_CONDENSEDNODES) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(165,18)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(165,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_rotateback_at_condensednodes_.V] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:165
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   22[ rax rdx rcx rsi rdi r8-r11 zmm0-zmm12]
+        
+    Routine temporaries
+        Total         :      84
+            Global    :      16
+            Local     :      68
+        Regenerable   :      14
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::ROTATEBACK_AT_CONDENSEDNODES [generic]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::ROTATEBACK_AT_CONDENSEDNODES) [4] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(165,18)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(165,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_rotateback_at_condensednodes_.A] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:165
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   17[ rax rdx rcx rsi rdi r8-r11 zmm0-zmm7]
+        
+    Routine temporaries
+        Total         :      86
+            Global    :      16
+            Local     :      70
+        Regenerable   :      14
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::ROTATE_AT_CONDENSEDNODES_ALL
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::ROTATE_AT_CONDENSEDNODES_ALL) [5] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(214,18)
+  -> INLINE: (231,12) VEW1D::GET_STREAMDIRECTION_AT_ELEMENT
+    -> INLINE: (44,10) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (48,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (52,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (56,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (60,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (64,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (72,13) VEW1D::FIND_IB2
+  -> INLINE: (237,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+  -> INLINE: (238,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+  -> INLINE: (240,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+  -> INLINE: (241,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+  -> INLINE: (243,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+  -> INLINE: (244,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(375,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(404,14) ]
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(214,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_rotate_at_condensednodes_all_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:214
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    8[ rax rdx rcx rbx rsi rdi r8-r9]
+        
+    Routine temporaries
+        Total         :      33
+            Global    :      13
+            Local     :      20
+        Regenerable   :       1
+        Spilled       :       4
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::ROTATE_AT_CONDENSEDNODES_ALL [core_4th_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::ROTATE_AT_CONDENSEDNODES_ALL) [5] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(214,18)
+  -> INLINE: (231,12) VEW1D::GET_STREAMDIRECTION_AT_ELEMENT
+    -> INLINE: (44,10) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (48,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (52,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (56,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (60,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (64,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (72,13) VEW1D::FIND_IB2
+  -> INLINE: (237,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+  -> INLINE: (238,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+  -> INLINE: (240,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+  -> INLINE: (241,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+  -> INLINE: (243,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+  -> INLINE: (244,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(375,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(404,14) ]
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(214,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_rotate_at_condensednodes_all_.V] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:214
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   27[ rax rdx rcx rbx rbp rsi rdi r8-r15 zmm0-zmm11]
+        
+    Routine temporaries
+        Total         :     587
+            Global    :     135
+            Local     :     452
+        Regenerable   :      93
+        Spilled       :      52
+        
+    Routine stack
+        Variables     :      12 bytes*
+            Reads     :       3 [1.22e-02 ~ 0.0%]
+            Writes    :       3 [1.61e-01 ~ 0.2%]
+        Spills        :     368 bytes*
+            Reads     :     130 [3.13e+00 ~ 4.2%]
+            Writes    :      83 [2.04e+00 ~ 2.7%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::ROTATE_AT_CONDENSEDNODES_ALL [generic]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::ROTATE_AT_CONDENSEDNODES_ALL) [5] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(214,18)
+  -> INLINE: (231,12) VEW1D::GET_STREAMDIRECTION_AT_ELEMENT
+    -> INLINE: (44,10) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (48,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (52,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (56,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (60,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (64,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (72,13) VEW1D::FIND_IB2
+  -> INLINE: (237,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+  -> INLINE: (238,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+  -> INLINE: (240,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+  -> INLINE: (241,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+  -> INLINE: (243,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+  -> INLINE: (244,12) VEW1D::ROTATE_AT_CONDENSEDNODES
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(375,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(231,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(404,14) ]
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(214,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_rotate_at_condensednodes_all_.A] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:214
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   24[ rax rdx rcx rbx rbp rsi rdi r8-r15 zmm0-zmm8]
+        
+    Routine temporaries
+        Total         :     614
+            Global    :     135
+            Local     :     479
+        Regenerable   :      93
+        Spilled       :      54
+        
+    Routine stack
+        Variables     :      12 bytes*
+            Reads     :       3 [1.22e-02 ~ 0.0%]
+            Writes    :       3 [1.61e-01 ~ 0.2%]
+        Spills        :     360 bytes*
+            Reads     :     126 [3.41e+00 ~ 4.5%]
+            Writes    :      85 [1.98e+00 ~ 2.6%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::ROTATEBACK_AT_CONDENSEDNODES_ALL
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::ROTATEBACK_AT_CONDENSEDNODES_ALL) [6] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(250,18)
+  -> INLINE: (266,12) VEW1D::GET_STREAMDIRECTION_AT_ELEMENT
+    -> INLINE: (44,10) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (48,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (52,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (56,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (60,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (64,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (72,13) VEW1D::FIND_IB2
+  -> INLINE: (272,12) VEW1D::ROTATEBACK_AT_CONDENSEDNODES
+  -> INLINE: (273,12) VEW1D::ROTATEBACK_AT_CONDENSEDNODES
+  -> INLINE: (274,12) VEW1D::ROTATEBACK_AT_CONDENSEDNODES
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(375,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(404,14) ]
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(250,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_rotateback_at_condensednodes_all_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:250
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    8[ rax rdx rcx rbx rsi rdi r8-r9]
+        
+    Routine temporaries
+        Total         :      33
+            Global    :      13
+            Local     :      20
+        Regenerable   :       1
+        Spilled       :       4
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::ROTATEBACK_AT_CONDENSEDNODES_ALL [core_4th_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::ROTATEBACK_AT_CONDENSEDNODES_ALL) [6] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(250,18)
+  -> INLINE: (266,12) VEW1D::GET_STREAMDIRECTION_AT_ELEMENT
+    -> INLINE: (44,10) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (48,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (52,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (56,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (60,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (64,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (72,13) VEW1D::FIND_IB2
+  -> INLINE: (272,12) VEW1D::ROTATEBACK_AT_CONDENSEDNODES
+  -> INLINE: (273,12) VEW1D::ROTATEBACK_AT_CONDENSEDNODES
+  -> INLINE: (274,12) VEW1D::ROTATEBACK_AT_CONDENSEDNODES
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(375,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(404,14) ]
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(250,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_rotateback_at_condensednodes_all_.V] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:250
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   28[ rax rdx rcx rbx rbp rsi rdi r8-r15 zmm0-zmm12]
+        
+    Routine temporaries
+        Total         :     407
+            Global    :     111
+            Local     :     296
+        Regenerable   :      66
+        Spilled       :      52
+        
+    Routine stack
+        Variables     :      12 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       3 [1.61e-01 ~ 0.2%]
+        Spills        :     368 bytes*
+            Reads     :     127 [3.10e+00 ~ 4.7%]
+            Writes    :      80 [2.01e+00 ~ 3.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::ROTATEBACK_AT_CONDENSEDNODES_ALL [generic]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::ROTATEBACK_AT_CONDENSEDNODES_ALL) [6] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(250,18)
+  -> INLINE: (266,12) VEW1D::GET_STREAMDIRECTION_AT_ELEMENT
+    -> INLINE: (44,10) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (48,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (52,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (56,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (60,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (64,15) VEW1D::CONDENSEDNODEPAIRFOUND
+    -> INLINE: (72,13) VEW1D::FIND_IB2
+  -> INLINE: (272,12) VEW1D::ROTATEBACK_AT_CONDENSEDNODES
+  -> INLINE: (273,12) VEW1D::ROTATEBACK_AT_CONDENSEDNODES
+  -> INLINE: (274,12) VEW1D::ROTATEBACK_AT_CONDENSEDNODES
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(375,7) inlined into /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(266,12)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(404,14) ]
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(250,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_rotateback_at_condensednodes_all_.A] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:250
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   23[ rax rdx rcx rbx rbp rsi rdi r8-r15 zmm0-zmm7]
+        
+    Routine temporaries
+        Total         :     425
+            Global    :     111
+            Local     :     314
+        Regenerable   :      66
+        Spilled       :      53
+        
+    Routine stack
+        Variables     :      12 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       3 [1.61e-01 ~ 0.2%]
+        Spills        :     360 bytes*
+            Reads     :     123 [3.38e+00 ~ 5.1%]
+            Writes    :      82 [1.95e+00 ~ 2.9%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::REMOVE_NORMAL_AT_CONDENSEDNODES
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::REMOVE_NORMAL_AT_CONDENSEDNODES) [7] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(280,18)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(280,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_remove_normal_at_condensednodes_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:280
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    6[ rax rdx rcx rsi rdi r8]
+        
+    Routine temporaries
+        Total         :      25
+            Global    :      11
+            Local     :      14
+        Regenerable   :       1
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::REMOVE_NORMAL_AT_CONDENSEDNODES [core_4th_gen_avx]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::REMOVE_NORMAL_AT_CONDENSEDNODES) [7] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(280,18)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(280,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_remove_normal_at_condensednodes_.V] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:280
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   20[ rax rdx rcx rsi rdi r8-r11 zmm0-zmm10]
+        
+    Routine temporaries
+        Total         :      80
+            Global    :      17
+            Local     :      63
+        Regenerable   :      11
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::REMOVE_NORMAL_AT_CONDENSEDNODES [generic]
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::REMOVE_NORMAL_AT_CONDENSEDNODES) [7] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(280,18)
+
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(280,18):remark #34051: REGISTER ALLOCATION : [vew1d_mp_remove_normal_at_condensednodes_.A] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:280
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   15[ rax rdx rcx rsi rdi r8-r11 zmm0-zmm5]
+        
+    Routine temporaries
+        Total         :      81
+            Global    :      17
+            Local     :      64
+        Regenerable   :      11
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::CONDENSEDNODEPAIRFOUND
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::CONDENSEDNODEPAIRFOUND) [8] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(341,16)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(355,7)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(356,33) ]
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(341,16):remark #34051: REGISTER ALLOCATION : [vew1d_mp_condensednodepairfound_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:341
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :    9[ rax rdx rcx rsi rdi r8-r11]
+        
+    Routine temporaries
+        Total         :      38
+            Global    :      18
+            Local     :      20
+        Regenerable   :       3
+        Spilled       :       0
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: VEW1D::FIND_IB2
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (VEW1D::FIND_IB2) [9] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(364,16)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(375,7)
+   remark #15520: loop was not vectorized: loop with multiple exits cannot be vectorized unless it meets search loop idiom criteria   [ /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(404,14) ]
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+/rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F(364,16):remark #34051: REGISTER ALLOCATION : [vew1d_mp_find_ib2_] /rsstu/users/j/jcdietri/NSF-PREEVENTS-2017-2021/jlwoodr3/adcirc_development/adcirc/src/vew1d.F:364
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   15[ rax rdx rcx rbx rbp rsi rdi r8-r15]
+        
+    Routine temporaries
+        Total         :      69
+            Global    :      25
+            Local     :      44
+        Regenerable   :      13
+        Spilled       :      15
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      88 bytes*
+            Reads     :      21 [2.83e+01 ~ 18.0%]
+            Writes    :      11 [7.90e+00 ~ 5.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================

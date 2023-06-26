@@ -1,22 +1,3 @@
-!-------------------------------------------------------------------------------!
-!
-! ADCIRC - The ADvanced CIRCulation model
-! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
-! 
-! This program is free software: you can redistribute it and/or modify
-! it under the terms of the GNU Lesser General Public License as published by
-! the Free Software Foundation, either version 3 of the License, or
-! (at your option) any later version.
-! 
-! This program is distributed in the hope that it will be useful,
-! but WITHOUT ANY WARRANTY; without even the implied warranty of
-! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-! GNU General Public License for more details.
-! 
-! You should have received a copy of the GNU Lesser General Public License
-! along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!
-!-------------------------------------------------------------------------------!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                         M O D U L E  S U B G R I D
 !
@@ -27,6 +8,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       module subgrid
+      use sizes, only: sz
       use global, only: nodecode, nnodecode
      &   , eta2, tk, tkm, nolifa, tkm
      &   , H0, ifnlfa, uu1, vv1, ncchange
@@ -37,7 +19,7 @@
 ! JLW: initialize the arrays for use in the subgrid
 ! code
       implicit none
-      CHARACTER(200) :: subgridFilename
+
       ! Flag for subgrid corrections to wetting and drying
       LOGICAL :: level0
       ! Flag for subgrid corrections to bottom friction and advection
@@ -47,77 +29,77 @@
       ! Number of possible phi values
       INTEGER :: numPhi
       ! Array of Phi values from 0 to 1
-      REAL(8), DIMENSION(:), ALLOCATABLE :: setPhi
+      REAL(SZ), DIMENSION(:), ALLOCATABLE :: setPhi
       ! Max depth used for calculating lookup table
-      REAL(8):: maxLookupDepth
+      REAL(SZ):: maxLookupDepth
       ! Min depth used for calculating lookup table
-      REAL(8) :: minLookupDepth
+      REAL(SZ) :: minLookupDepth
       ! Array of element numbers in the subgrid area
       INTEGER, DIMENSION(:), ALLOCATABLE :: subgridEleList
       ! Depths corresponding to each phi value on the element
-      REAL(8), DIMENSION(:,:,:), ALLOCATABLE :: wetFracDepthEle
+      REAL(SZ), DIMENSION(:,:,:), ALLOCATABLE :: wetFracDepthEle
       ! Grid Averaged Total Water Depths corresponding to each phi valu
       ! ! on the element
-      REAL(8), DIMENSION(:,:,:), ALLOCATABLE :: gridDepthEle
+      REAL(SZ), DIMENSION(:,:,:), ALLOCATABLE :: gridDepthEle
       ! Area of sub elements
-      REAL(8), DIMENSION(:,:), ALLOCATABLE :: area
+      REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: area
       ! Advection corrections corresponding to each phi value on the
       ! element
-      REAL(8), DIMENSION(:,:,:), ALLOCATABLE :: cadvEle
+      REAL(SZ), DIMENSION(:,:,:), ALLOCATABLE :: cadvEle
       ! averaged bottom friction coefficient without level 1 correction
-      REAL(8), DIMENSION(:,:), ALLOCATABLE :: cfVertTab
+      REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: cfVertTab
       ! averaged bottom friction coefficient with level 1 correction
-      REAL(8), DIMENSION(:,:), ALLOCATABLE :: cmfVertTab
+      REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: cmfVertTab
       ! Grid Averaged Total Water Depths corresponding to each phi valu
       ! on the vertex
-      REAL(8), DIMENSION(:,:), ALLOCATABLE :: gridDepthVertTab
+      REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: gridDepthVertTab
       ! Wet Averaged Total Water Depths corresponding to each phi value
       ! on the vertex
-      REAL(8), DIMENSION(:,:), ALLOCATABLE :: wetDepthVertTab
+      REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: wetDepthVertTab
       ! Depths corresponding to each phi value on the vertex
-      REAL(8), DIMENSION(:,:), ALLOCATABLE :: wetFracVertTab
+      REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: wetFracVertTab
       ! Array of vertex numbers in the subgrid area
       INTEGER, DIMENSION(:), ALLOCATABLE :: subgridVertList
       !! Array of elemental wet fractions for zeta at TS k
-      !REAL(8), DIMENSION(:,:), ALLOCATABLE :: wetFracEleETA1
+      !REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: wetFracEleETA1
       ! Array of elemental wet fractions for zeea at TS k+1
-      REAL(8), DIMENSION(:,:), ALLOCATABLE :: wetFracEleETA2
+      REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: wetFracEleETA2
       ! Array of elemental grid depths for zeta at k
-      REAL(8), DIMENSION(:,:), ALLOCATABLE :: gridDepthEleETA1
+      REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: gridDepthEleETA1
       ! Array of elemental grid depths for zeta at k+1
-      REAL(8), DIMENSION(:,:), ALLOCATABLE :: gridDepthEleETA2
+      REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: gridDepthEleETA2
       !! Array of elemental advection corrections for zeta at k
-      !REAL(8), DIMENSION(:,:), ALLOCATABLE :: cadvEleETA1
+      !REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: cadvEleETA1
       ! Array of elemental advection corrections for zeta at k+1
-      REAL(8), DIMENSION(:,:), ALLOCATABLE :: cadvEleETA2
+      REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: cadvEleETA2
       ! Array of elemental average wet fractions for the entire element
       ! for zeta at k
-      REAL(8), DIMENSION(:), ALLOCATABLE :: wetFracAvgETA1
+      REAL(SZ), DIMENSION(:), ALLOCATABLE :: wetFracAvgETA1
       ! Array of elemental average wet fractions for the entire element
       ! for zeta at k+1
-      REAL(8), DIMENSION(:), ALLOCATABLE :: wetFracAvgETA2
+      REAL(SZ), DIMENSION(:), ALLOCATABLE :: wetFracAvgETA2
       !! Array to hold average elemental grid depths
-      !REAL(8), DIMENSION(:), ALLOCATABLE :: HGAvgETA1
+      !REAL(SZ), DIMENSION(:), ALLOCATABLE :: HGAvgETA1
       !! Array to hold average elemental grid depths
-      !REAL(8), DIMENSION(:), ALLOCATABLE :: HGAvgETA2
+      !REAL(SZ), DIMENSION(:), ALLOCATABLE :: HGAvgETA2
       ! Array to hold wet/dry state of element
       INTEGER, DIMENSION(:), ALLOCATABLE :: NCEleArray
       ! Array to hold vertex averged wet fractions for zeta at k+1
-      REAL(8), DIMENSION(:), ALLOCATABLE :: wetFracVertETA2
+      REAL(SZ), DIMENSION(:), ALLOCATABLE :: wetFracVertETA2
       ! Array to hold vertex grid water depths for zeta at k+1
-      REAL(8), DIMENSION(:), ALLOCATABLE :: gridDepthVertETA2
+      REAL(SZ), DIMENSION(:), ALLOCATABLE :: gridDepthVertETA2
       ! Array to hold vertex wet water depths for zeta at k+1
-      REAL(8), DIMENSION(:), ALLOCATABLE :: wetDepthVertETA2
+      REAL(SZ), DIMENSION(:), ALLOCATABLE :: wetDepthVertETA2
       ! Array to hold vertex bottom friction coefficients for zeta at
       ! k+1
-      REAL(8), DIMENSION(:), ALLOCATABLE :: cfVertETA2
+      REAL(SZ), DIMENSION(:), ALLOCATABLE :: cfVertETA2
       ! Array to hold vertex corrected bottom friction coefficients for
       ! zeta at k+1
-      REAL(8), DIMENSION(:), ALLOCATABLE :: cmfVertETA2
+      REAL(SZ), DIMENSION(:), ALLOCATABLE :: cmfVertETA2
       ! Minimum depth in depth array used to preprocess lookup table 
-      REAL(8) :: minDepth
+      REAL(SZ) :: minDepth
       ! Maximum depth in depth array used to preprocess lookup table 
-      REAL(8) :: maxDepth
+      REAL(SZ) :: maxDepth
 
       contains
 
@@ -215,9 +197,8 @@
 ! AT THE BOTTOM OF THIS FILE.
 
       subroutine readSubgridLookup
-#ifdef ADCNETCDF          
       use netcdf
-      use global, only: imap_el_lg, nodes_lg, allMessage, ERROR
+      use global, only: imap_el_lg, nodes_lg
       
       implicit none
 
@@ -227,26 +208,18 @@
       ! Used for transfering from global to local
       integer :: currEle, currNode
       ! Arrays for holding global variables
-      REAL(8), DIMENSION(:,:,:), ALLOCATABLE :: globalEleLookup
-      REAL(8), DIMENSION(:,:), ALLOCATABLE :: globalVertLookup
-      REAL(8), DIMENSION(:,:), ALLOCATABLE :: globalarea
+      REAL(SZ), DIMENSION(:,:,:), ALLOCATABLE :: globalEleLookup
+      REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: globalVertLookup
+      REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: globalarea
       INTEGER, DIMENSION(:), ALLOCATABLE :: globalSubEleList
       INTEGER, DIMENSION(:), ALLOCATABLE :: globalSubVertList
       ! variables needed to read in main NETCDF lookup table
       INTEGER :: NC_ERR, IS, NC_ID, NC_VAR, NC_DIM_ELEM, NC_DIM_VERT
       INTEGER :: I
-      LOGICAL :: file_exists
-
-      INQUIRE(FILE=TRIM(subgridFilename), EXIST=file_exists)
-      IF(.NOT.file_exists)THEN
-          call allMessage(ERROR, "subgrid lookup file does not exist")
-          call terminate()
-          call exit(1) 
-      ENDIF
 
 !JLW: adding subgrid lookup table read in
 !JLW: first open subgrid lookup table and read in dimensions
-      CALL CHECK(NF90_OPEN(TRIM(subgridFilename),NF90_NOWRITE,NC_ID))
+      CALL CHECK(NF90_OPEN("avgVars.nc",NF90_NOWRITE,NC_ID))
       
       CALL CHECK(NF90_INQ_DIMID(NC_ID,"numEle",NC_VAR))
       CALL CHECK(NF90_INQUIRE_DIMENSION(NC_ID,NC_VAR,len=numElems))
@@ -475,8 +448,6 @@
 !JLW: close netcdf lookup table file
       NC_ERR = NF90_CLOSE(NC_ID)
 
-#endif ADCNETCDF      
-
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
       end subroutine readSubgridLookup
@@ -637,7 +608,7 @@
 
       subroutine getVertLookup
 
-      use sizes, only : mne, mnp
+      use sizes, only : sz, mne, mnp
       use mesh, only : ne, np, dp, mju, totalArea, nm, x, y, areas
      &   , NNeigh, NeiTab
 
@@ -776,28 +747,14 @@
 ! CONSISTS OF A SIMPLE CHECK OF TOTAL WATER DEPTH H. IN ADDITION,
 ! UPDATED COEFFICIENTS OF FRICTION AND AREAS ARE ALSO UPDATED.
 
-      subroutine subgridwetdry(BFCdLLimit, fric, fgamma, ftheta, 
-     &                         manningsn, hbreak, loadManningsN,
-     &                         iflinbf, ifnlbf, ifhybf)
+      subroutine subgridwetdry
 
-!      use NodalAttributes, only: BFCdLLimit, fric
-!     &   , fgamma, ftheta, manningsn, hbreak, loadManningsN
-!     &   , iflinbf, ifnlbf, ifhybf 
+      use NodalAttributes, only: BFCdLLimit, fric
+     &   , fgamma, ftheta, manningsn, hbreak, loadManningsN
+     &   , iflinbf, ifnlbf, ifhybf 
+      use constants, only: g
 
-      USE ADC_CONSTANTS, only: g
-      IMPLICIT NONE
-
-      REAL(8), INTENT(IN)    :: BFCdLLimit
-      REAL(8), INTENT(IN)    :: fgamma
-      REAL(8), INTENT(IN)    :: ftheta
-      REAL(8), INTENT(IN)    :: hbreak
-      LOGICAL, INTENT(IN)    :: loadManningsN
-      INTEGER, INTENT(IN)    :: iflinbf
-      INTEGER, INTENT(IN)    :: ifnlbf
-      INTEGER, INTENT(IN)    :: ifhybf
-      REAL(8), INTENT(INOUT) :: fric(*)
-      REAL(8), INTENT(INOUT) :: manningsn(*)
-
+      implicit none
       integer :: ie, i, j
       real(8) :: areaEle
       integer :: NCEle
@@ -927,8 +884,7 @@
 !---------------------------------------------------------------------
 
 !JLW: add subroutine for reading in netcdf
-#ifdef ADCNETCDF      
-      SUBROUTINE Check(Status)          
+      SUBROUTINE Check(Status)
         USE netcdf
         INTEGER,INTENT(IN) :: Status
         IF(Status.NE.NF90_NOERR)THEN
@@ -936,42 +892,13 @@
      &         ,TRIM(NF90_STRERROR(Status)),"."
             STOP
         ENDIF
+
 !---------------------------------------------------------------------
 !---------------------------------------------------------------------
       END SUBROUTINE
-#endif
 !---------------------------------------------------------------------
 !---------------------------------------------------------------------
 
-      SUBROUTINE terminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      USE MESSENGER
-#endif
-      USE GLOBAL, ONLY: INFO,allMessage,
-     &                  setMessageSource,unsetMessageSource
-      IMPLICIT NONE
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-      call setMessageSource("terminate")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
 
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1)
-C
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-      END SUBROUTINE terminate
 
       end module subgrid

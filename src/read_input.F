@@ -1,22 +1,3 @@
-!-------------------------------------------------------------------------------!
-!
-! ADCIRC - The ADvanced CIRCulation model
-! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
-! 
-! This program is free software: you can redistribute it and/or modify
-! it under the terms of the GNU Lesser General Public License as published by
-! the Free Software Foundation, either version 3 of the License, or
-! (at your option) any later version.
-! 
-! This program is distributed in the hope that it will be useful,
-! but WITHOUT ANY WARRANTY; without even the implied warranty of
-! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-! GNU General Public License for more details.
-! 
-! You should have received a copy of the GNU Lesser General Public License
-! along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!
-!-------------------------------------------------------------------------------!
 C******************************************************************************
 C PADCIRC VERSION 46.00 xx/xx/2006                                            *
 C  last changes in this file VERSION 46.00                                    *
@@ -93,7 +74,7 @@ C-----------------------------------------------------------------------
      &   ,basedatetime
 #endif
      &   ,NUOPC4WAV, NUOPC4MET
-      USE ADC_CONSTANTS, ONLY: G, Ad, Bd, Cs, Cs2,
+      USE CONSTANTS, ONLY: G, Ad, Bd, Cs, Cs2,
      &                     waveWindMultiplier,deg2rad,rhoAir,
      &                     rad2deg,omega
 
@@ -137,8 +118,6 @@ C-----------------------------------------------------------------------
      &     InitNAModule, ReadNodalAttr, InitNodalAttr, ESLM, ESLC,
      &     Tau0FullDomainMin, Tau0FullDomainMax, Z0b_var,
      &     PrepCondensedNodes,   ! SB
-C.....SB
-     &     activateVEW1DChannelWetPerimeter,
 C ....DW
      &     LoadAbsLayerSigma, FoundAbsLayerSigma 
       USE SPONGELAYER, ONLY: SpongeLayerRelatedPrep, FLAGSPONGEELEM
@@ -166,14 +145,14 @@ Casey 180318: Added NWS=13
      &                          NWS13WindMultiplier
 #endif
 !JLW: add subgrid 
-      USE subgrid, only: subgridFilename, level0, level1
+      USE subgrid, only: level0, level1
 
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
       INTEGER NTimeVaryingWeir
       INTEGER IDUM80
       INTEGER IMDig1,IMDig2,IMDig3,IMDig4,IMDig5,IMDig6
-      REAL(8) RampVal
+      REAL(SZ) RampVal
       CHARACTER(len=80) :: CDUM80
       LOGICAL fileFound
       INTEGER :: I, J, JKI, JJ, NP2, IDENsign
@@ -192,8 +171,7 @@ C
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
       NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,
-     &  rhoAir, invertedBarometerOnElevationBoundary,
-     &  nPowellSearchDomains
+     &  rhoAir, invertedBarometerOnElevationBoundary, nPowellSearchDomains
       NAMELIST /subdomainModeling/ subdomainOn
       NAMELIST /wetDryControl/ outputNodeCode, outputNOFF,
      &  noffActive, StatPartWetFix, How2FixStatPartWet,
@@ -201,17 +179,13 @@ C.... DMW 202207 Add options for controlling slope/wind limiting and
 C.... "new" formula for computing vel in wetting/drying routine
      &  slim, windlim, directvelWD, useHF
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
-C.... SB
-      NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter
+
 C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
-      NAMELIST /dynamicWaterLevelCorrectionControl/
-     &  dynamicWaterLevelCorrectionFileName,
-     &  dynamicWaterLevelCorrectionSkipSnaps,
-     &  dynamicWaterLevelCorrectionMultiplier,
-     &  dynamicWaterLevelCorrectionRampStart,
-     &  dynamicWaterLevelCorrectionRampEnd,
+      NAMELIST /dynamicWaterLevelCorrectionControl/ dynamicWaterLevelCorrectionFileName, 
+     &  dynamicWaterLevelCorrectionSkipSnaps, dynamicWaterLevelCorrectionMultiplier, 
+     &  dynamicWaterLevelCorrectionRampStart, dynamicWaterLevelCorrectionRampEnd,
      &  dynamicWaterLevelCorrectionRampReferenceTime
       NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
      &  WarnElevDumpLimit, ErrorElev
@@ -223,7 +197,7 @@ C.... DMW
      &    NWS13WindMultiplier,NWS13GroupForPowell
 #endif
 !JLW: adding subgrid namelist
-      NAMELIST /subgridControl/ subgridFilename, level0, level1
+      NAMELIST /subgridControl/ level0, level1
 
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
@@ -292,6 +266,17 @@ C...
 #ifdef CMACHSUN
       WRITE(16,*) '      - CODE SETUP TO RUN ON SUN 4 OR SPARC ',
      &            'COMPUTERS'
+#endif
+
+#ifdef REAL4
+      WRITE(16,*) '      - CODE SETUP TO RUN WITH 4 byte REALS'
+      WRITE(16,4312)
+4312  FORMAT(/,'**** W A R N I N G ****',/
+            ' You are running ADCIRC in SINGLE PRECISION! ',/
+            ' It is always recommended that you run ADCIRC in ',/
+            ' DOUBLE PRECISION ONLY.')
+#else
+      WRITE(16,*) '      - CODE SETUP TO RUN WITH 8 byte REALS'
 #endif
 
 #ifdef CVEC
@@ -529,9 +514,6 @@ C.... DMW
       namelistSpecifier = 'subgridControl'
       read(unit=15,nml=subgridControl,iostat=IOS)
       call logNameListReadStatus(namelistSpecifier,ios)
-      write(scratchMessage,*)
-     &   "subgridFilename=",TRIM(ADJUSTL(subgridFilename))
-      call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "level0=",level0
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "level1=",level1
@@ -618,16 +600,6 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       endif
       rewind(15)
 
-C     Channel wet perimeter for bottom friction 11/06/2023 sb
-      namelistSpecifier = 'VEW1DChannelControl'
-      activateVEW1DChannelWetPerimeter = .false.
-      READ(UNIT=15,NML=VEW1DChannelControl,IOSTAT=ios)
-      call logNamelistReadStatus(namelistSpecifier, ios)
-      write(scratchMessage,'(a,l1)') "activateVEW1DChannelWetPerimeter=",
-     &   activateVEW1DChannelWetPerimeter
-      call logMessage(ECHO,trim(scratchMessage))
-      rewind(15)
-
 C     jgf46.10 Add user-controllable warning, output, and stop criteria
 C     for elevations. Initialize default values.
       WarnElev = 20.0         ! default
@@ -656,8 +628,8 @@ C     WJP add namelist
       read(unit=15,nml=AliDispersionControl,iostat=IOS)
       call logNameListReadStatus(namelistSpecifier,ios)
 !     Process the speed of sound squared
-      if (Cs.le.0.0D0) then
-         Cs2 = huge(0.0D0)
+      if (Cs.le.0.0_SZ) then
+         Cs2 = huge(0.0_SZ)
       else
          Cs2 = Cs*Cs
       endif
@@ -719,16 +691,10 @@ C     WJP add namelist
          IDEN = 6
       elseif (trim(densityForcingType).eq.'Buoyancyfrequencies') then
          IDEN = 7
-      elseif (trim(densityForcingType).eq.'BCForcingOnADCIRCGrid') then
-         IDEN = 8
-      elseif (trim(densityForcingType).eq.'BuoyancyFrequenciesonGrid') then
-         IDEN = 9         
       endif
 !     Make sure to include the sign
       IDEN = IDEN*IDENsign
       if (IDEN.ne.0) CBaroclinic = .true.
-C...
-
 
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
@@ -1227,16 +1193,9 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
      &                        //'with buoyancy frequency'
          case(7)
             densityForcingType = ' buoyancy frequency only'
-         case(8)
-            densityForcingType = ' depth-integrated baroclinic '
-     &                        //'gradients with buoyancy frequency'
-     &                        //' pre-computed on ADCIRC grid'
-         case(9)
-            densityForcingType = ' buoyancy frequency pre-computed on '
-     &                         //'ADCIRC grid only'            
          case default
             call allMessage(ERROR,
-     &       'The absolute value of IDEN must be <= 9.')
+     &       'The absolute value of IDEN must be <= 7.')
             call adcirc_terminate()
          end select
         call logMessage(INFO,'This run will be'//trim(densityDimensions)
@@ -5039,8 +4998,8 @@ c******************************************************************************
       INTEGER :: NM1,NM2,NM3
       INTEGER :: IE
       INTEGER :: STATUS
-      REAL(8) :: x1,y1,x2,y2,x3,y3
-      REAL(8) x2mx1,x3mx2,x1mx3,y2my1,y3my2,y1my3
+      REAL(SZ) :: x1,y1,x2,y2,x3,y3
+      REAL(SZ) x2mx1,x3mx2,x1mx3,y2my1,y3my2,y1my3
 
       if (.not.LoadCondensedNodes) RETURN
       
@@ -5086,10 +5045,10 @@ c******************************************************************************
          IMPLICIT NONE
 
          INTEGER,INTENT(IN) :: NM1,NM2,NM3
-         REAL(8),INTENT(OUT) :: X1,Y1,X2,Y2,X3,Y3
+         REAL(SZ),INTENT(OUT) :: X1,Y1,X2,Y2,X3,Y3
          INTEGER,INTENT(OUT) :: STATUS
-         REAL(8) :: XX,YY
-         REAL(8) :: SX,SY,NX,NY,CAX,CAY,CBX,CBY,DX,DY,LEN
+         REAL(SZ) :: XX,YY
+         REAL(SZ) :: SX,SY,NX,NY,CAX,CAY,CBX,CBY,DX,DY,LEN
          INTEGER :: IA1,IA2,IB1,IB2
          INTEGER :: IBTYPE_A1,IBTYPE_A2,IBTYPE_B1
          LOGICAL :: ON_BOUNDARY
@@ -5182,7 +5141,7 @@ C    kmd48.33bc - added the variables from Global
      &                  scratchMessage, INFO, DEBUG, ERROR, allMessage,
      &                  setMessageSource, logMessage, unsetMessageSource,
      &                  OUTPUTSPONGE, screenMessage, ECHO
-      USE ADC_CONSTANTS, ONLY: sec2day
+      USE CONSTANTS, ONLY: sec2day
       USE MESH, ONLY : NP, DP, X, Y
       USE BOUNDARIES, ONLY : NETA, NOPE, NBD
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
@@ -5198,16 +5157,16 @@ C...  Declaration and definition of local variables used in this subroutine
       REAL(8), intent(in)  :: StaTime          !Model start time
       INTEGER, intent(in)  :: NT   !Total number of time steps in model run
 C
-      REAL(8) :: HH1  !domain averaged depth used for some vertical FE grids
+      REAL(SZ) :: HH1  !domain averaged depth used for some vertical FE grids
       INTEGER  :: N,K,NN,J         !loop counters
       INTEGER  :: NH               !horizontal node loop counter
       CHARACTER(len=80) :: CDUM80
 
 C    kmd48.33bc - additional variables for sponge layers
-      REAL(8) :: Xloc1, Xloc2, Yloc1, Yloc2, Xloc, Yloc
-      REAL(8) :: distloc, distpoint, slope1, slope2, xpoint
-      REAL(8) :: ypoint, xpart, ypart
-      REAL(8),ALLOCATABLE :: compdist(:)
+      REAL(SZ) :: Xloc1, Xloc2, Yloc1, Yloc2, Xloc, Yloc
+      REAL(SZ) :: distloc, distpoint, slope1, slope2, xpoint
+      REAL(SZ) :: ypoint, xpart, ypart
+      REAL(SZ),ALLOCATABLE :: compdist(:)
       INTEGER :: BCnode, counter
       INTEGER, ALLOCATABLE :: nodedist(:)
       INTEGER :: IDen3D ! second instance of IDEN in the fort.15 file
@@ -5937,7 +5896,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL, ONLY : scratchMessage, ECHO, INFO, WARNING, ERROR,
      &   DTDP, NT, setMessageSource, logMessage, allMessage,
      &   unsetMessageSource, DEBUG, screenMessage, useNetCDF
-      USE ADC_CONSTANTS, ONLY: day2sec
+      USE CONSTANTS, ONLY: day2sec
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
@@ -6087,7 +6046,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE readStations(names, num_stations, nnv, xcoord, ycoord,
      &                        lat, lon, sta1, sta2, sta3, stat_lun,
      &                        Description)
-      USE ADC_CONSTANTS, ONLY: DEG2RAD, RAD2DEG
+      USE SIZES, ONLY : SZ
+      USE CONSTANTS, ONLY: DEG2RAD, RAD2DEG
       USE GLOBAL, ONLY : parse, IFSPROTS,
      &   a2f, DEBUG, allMessage, setMessageSource, unsetMessageSource
       USE MESH, ONLY : ICS, SLAM0, SFEA0, DRVSPCOORSROTS, CYLINDERMAP
@@ -6095,18 +6055,18 @@ C-----------------------------------------------------------------------
       CHARACTER(50) :: names(num_stations)
       INTEGER num_stations, stat_lun
       INTEGER, dimension(num_stations) :: nnv
-      REAL(8), dimension(num_stations) :: xcoord
-      REAL(8), dimension(num_stations) :: ycoord
-      REAL(8), dimension(num_stations) :: lat
-      REAL(8), dimension(num_stations) :: lon
-      REAL(8), dimension(num_stations) :: sta1
-      REAL(8), dimension(num_stations) :: sta2
-      REAL(8), dimension(num_stations) :: sta3
+      REAL(SZ), dimension(num_stations) :: xcoord
+      REAL(SZ), dimension(num_stations) :: ycoord
+      REAL(SZ), dimension(num_stations) :: lat
+      REAL(SZ), dimension(num_stations) :: lon
+      REAL(SZ), dimension(num_stations) :: sta1
+      REAL(SZ), dimension(num_stations) :: sta2
+      REAL(SZ), dimension(num_stations) :: sta3
       INTEGER I
       CHARACTER(132) STATLINE
       CHARACTER(50) LVAR(3)
       CHARACTER(30), INTENT(IN) :: Description
-      real(8) :: lonR, latR
+      real(sz) :: lonR, latR
 C
       call setMessageSource("readStations")
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
@@ -6175,7 +6135,7 @@ C-----------------------------------------------------------------------
 
       SUBROUTINE kdtsearch(InputXCoordinate, InputYCoordinate,
      &     OutputElement, StationNumber, Description)
-      use sizes, only : MyProc
+      use sizes, only : sz, MyProc
       use global, only : NFOver, NScreen, ScreenUnit, srchdp, tree,
      &   kdresults, DEBUG, screenMessage, allMessage, setMessageSource,
      &   unsetMessageSource
@@ -6186,8 +6146,8 @@ C-----------------------------------------------------------------------
       USE MESSENGER, ONLY : msg_fini
 #endif
       implicit none
-      REAL(8), intent(in) :: InputXCoordinate                  ! cartesian
-      REAL(8), intent(in) :: InputYCoordinate                  ! cartesian
+      REAL(sz), intent(in) :: InputXCoordinate                  ! cartesian
+      REAL(sz), intent(in) :: InputYCoordinate                  ! cartesian
       INTEGER, intent(out) :: OutputElement
       INTEGER, intent(in) :: StationNumber                     ! for err. mesg.
       CHARACTER(len=30), intent(in) :: Description             ! for err. mesg.
@@ -6195,12 +6155,12 @@ C-----------------------------------------------------------------------
       INTEGER Element         ! element loop counter
       INTEGER ClosestElement  ! element with closest match
       INTEGER :: ielm(3),itc,iek
-      REAL(8) X1, X2, X3, X4, Y1, Y2, Y3, Y4,Xsta,Ysta       ! geometry
-      REAL(8) A1, A2, A3, AE, AREASK, AA            ! area
-      real(8) :: elmmin(2),xelm(3),yelm(3),dist
+      REAL(sz) X1, X2, X3, X4, Y1, Y2, Y3, Y4,Xsta,Ysta       ! geometry
+      REAL(sz) A1, A2, A3, AE, AREASK, AA            ! area
+      real(sz) :: elmmin(2),xelm(3),yelm(3),dist
       LOGICAL ElementFound  ! .true. when a corresponding element is found
 
-      REAL(8), PARAMETER :: Tolerance = 1.0d-5     ! area difference for match
+      REAL(sz), PARAMETER :: Tolerance = 1.0d-5     ! area difference for match
 C
       call setMessageSource("kdtsearch")
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
@@ -6317,7 +6277,7 @@ C
 C-----------------------------------------------------------------------
       SUBROUTINE CoordinateToElement(InputXCoordinate, InputYCoordinate,
      &     OutputElement, StationNumber, Description)
-      USE SIZES, ONLY : MyProc
+      USE SIZES, ONLY : SZ, MyProc
       USE GLOBAL, ONLY: NFOver, NScreen, screenMessage, allMessage,
      & DEBUG, ScreenUnit, setMessageSource, unsetMessageSource
       USE MESH, ONLY : NE, NM, X, Y, Areas
@@ -6524,7 +6484,7 @@ C-----------------------------------------------------------------------
      &      openfileforread, allMessage, ERROR, scratchMessage,
      &      tipotag, nodes_lg, np_global
         USE MESH, ONLY: NP, node_dict
-        USE SIZES, ONLY: INPUTDIR, GBLINPUTDIR, MYPROC
+        USE SIZES, ONLY: INPUTDIR, GBLINPUTDIR, SZ, MYPROC
         USE HASHTABLE, ONLY: find
         USE ADCIRC_MOD, ONLY: adcirc_terminate
 #ifdef CMPI
@@ -6551,9 +6511,9 @@ C-----------------------------------------------------------------------
         INTEGER :: I, J, K, IDX, JJ
         INTEGER :: dmy_int
         LOGICAL :: netcdf_file_found
-        REAL(8),ALLOCATABLE :: amp(:), pha(:)
-        REAL(8),ALLOCATABLE :: amp_g(:), pha_g(:)
-        REAL(8) :: dmy_real
+        REAL(SZ),ALLOCATABLE :: amp(:), pha(:)
+        REAL(SZ),ALLOCATABLE :: amp_g(:), pha_g(:)
+        REAL(SZ) :: dmy_real
         CHARACTER(200) :: filename_netcdf
         CHARACTER(20)  :: const_name
         CHARACTER(20)  :: dmy_char
