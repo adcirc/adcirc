@@ -287,6 +287,11 @@ Casey 180318: Added NWS=13
       logical :: StatPartWetFix = .false.  ! tcm v53.01.02
       integer :: How2FixStatPartWet = 0    ! tcm v52.01.02 (Can also be 1 in v54.)
 
+!JLW: add subgrid namelist control
+      logical :: foundSubgridControlNamelist = .false.
+      logical :: level0 = .true. 
+      logical :: level1 = .false.
+
       ! jgf52.08.02: For inundation output control. Wanted to just
       ! use the variables of the same name from the write_output module,
       ! but this must wait until build dependencies are resolved. 

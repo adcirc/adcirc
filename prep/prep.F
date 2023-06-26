@@ -2298,6 +2298,14 @@ Casey 180318: Added NWS=13
          WRITE(15,*) "&subdomainModeling subdomainOn=",subdomainOn," /"
          endif
 
+!JLW: adding subgridcontrol namelist
+         if(foundSubgridControlNamelist)then
+            WRITE(15,*)
+     &         "&subgridControl level0=",level0,
+     &         " level1=",level1," /"
+         endif
+
+
          ! wet dry control
          if (foundWetDryControlNameList) then
             WRITE(15,'(a,l,a,l,a,l,a,l,a,i1,a,f15.4,a,l,a,l,a,l,a)')
