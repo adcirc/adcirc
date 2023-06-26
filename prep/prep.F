@@ -1,22 +1,3 @@
-!-------------------------------------------------------------------------------!
-!
-! ADCIRC - The ADvanced CIRCulation model
-! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
-! 
-! This program is free software: you can redistribute it and/or modify
-! it under the terms of the GNU Lesser General Public License as published by
-! the Free Software Foundation, either version 3 of the License, or
-! (at your option) any later version.
-! 
-! This program is distributed in the hope that it will be useful,
-! but WITHOUT ANY WARRANTY; without even the implied warranty of
-! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-! GNU General Public License for more details.
-! 
-! You should have received a copy of the GNU Lesser General Public License
-! along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!
-!-------------------------------------------------------------------------------!
 C----------------------------------------------------------------------------
 C
 C                           MODULE PREP
@@ -53,20 +34,20 @@ C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       INTEGER I,J
       INTEGER iproc          ! subdomain index
       CHARACTER*80 header1, header2  ! header comments in unit 10 files
       CHARACTER*80 nvn_nvp           ! string representing nfen, np
-      REAL(8) nvn           ! number of vertical nodes from unit 10 file
-      REAL(8) nvp           ! number of horizontal nodes from unit 10 file
+      REAL(SZ) nvn           ! number of vertical nodes from unit 10 file
+      REAL(SZ) nvp           ! number of horizontal nodes from unit 10 file
       INTEGER nhnn           ! horizontal nodes counter
       INTEGER nvnn           ! vertical nodes counter
       INTEGER sdu(nproc)     ! subdomain unit numbers for unit 10 files
-      REAL(8), ALLOCATABLE :: fdData2D(:)   !(MNP)      full domain data
-      REAL(8), ALLOCATABLE :: fdData3D(:,:) !(MNP,NFEN) full domain data
-      REAL(8), ALLOCATABLE :: sdData2D(:)   !(MNP)      subdomain data
-      REAL(8), ALLOCATABLE :: sdData3D(:,:) !(MNP,NFEN) subdomain data
+      REAL(SZ), ALLOCATABLE :: fdData2D(:)   !(MNP)      full domain data
+      REAL(SZ), ALLOCATABLE :: fdData3D(:,:) !(MNP,NFEN) full domain data
+      REAL(SZ), ALLOCATABLE :: sdData2D(:)   !(MNP)      subdomain data
+      REAL(SZ), ALLOCATABLE :: sdData3D(:,:) !(MNP,NFEN) subdomain data
       LOGICAL success        ! .true. if all files opened successfully
 
       CALL OpenPrepFiles(10, 'initial concentration         ',
@@ -186,7 +167,7 @@ C---------------------------------------------------------------------------
       use memory_usage
       use presizes, only: IDEN
       IMPLICIT NONE
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       INTEGER I,J,eof,K
       INTEGER iproc          ! subdomain index
       CHARACTER*80 header1, header2  ! header comments in unit 11 files
@@ -200,14 +181,14 @@ C---------------------------------------------------------------------------
       INTEGER looper         ! timesnap looper
       INTEGER nodepnw
       CHARACTER*120, ALLOCATABLE :: FD2D_MSG(:), FD_MSG(:,:)
-!      REAL(8), ALLOCATABLE :: fdData1(:,:) !(MNP,NFEN) full domain data
-!      REAL(8), ALLOCATABLE :: fdData2(:,:) !(MNP,NFEN) full domain data
-!      REAL(8), ALLOCATABLE :: sdData1(:,:) !(MNP,NFEN) subdomain data
-!      REAL(8), ALLOCATABLE :: sdData2(:,:) !(MNP,NFEN) subdomain data
-!      REAL(8), ALLOCATABLE :: fdData2D(:)  !(MNP)    2D full domain data
-!      REAL(8), ALLOCATABLE :: sdData2D(:)  !(MNP)    2D subdomain data
-!      REAL(8), ALLOCATABLE :: fdData2D2(:) !(MNP)    2D full domain data
-!      REAL(8), ALLOCATABLE :: sdData2D2(:) !(MNP)    2D subdomain data
+!      REAL(SZ), ALLOCATABLE :: fdData1(:,:) !(MNP,NFEN) full domain data
+!      REAL(SZ), ALLOCATABLE :: fdData2(:,:) !(MNP,NFEN) full domain data
+!      REAL(SZ), ALLOCATABLE :: sdData1(:,:) !(MNP,NFEN) subdomain data
+!      REAL(SZ), ALLOCATABLE :: sdData2(:,:) !(MNP,NFEN) subdomain data
+!      REAL(SZ), ALLOCATABLE :: fdData2D(:)  !(MNP)    2D full domain data
+!      REAL(SZ), ALLOCATABLE :: sdData2D(:)  !(MNP)    2D subdomain data
+!      REAL(SZ), ALLOCATABLE :: fdData2D2(:) !(MNP)    2D full domain data
+!      REAL(SZ), ALLOCATABLE :: sdData2D2(:) !(MNP)    2D subdomain data
       LOGICAL success        ! .true. if all files opened successfully
 
       if (IDEN.lt.5) then
@@ -503,7 +484,7 @@ C---------------------------------------------------------------------------
       USE PREP_WEIR,ONLY:NWEIRBNDRY
       use memory_usage
       IMPLICIT NONE
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       INTEGER I, J, K, IPROC, INDX, ITEMP, idumy
       CHARACTER(14) LOCFN
       CHARACTER(80) skipped
@@ -737,7 +718,7 @@ C---------------------------------------------------------------------------
       use nodalattributes
       IMPLICIT NONE
 C
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       INTEGER ll             ! line loop counter
       INTEGER m              ! attribute default value counter
       INTEGER :: k
@@ -748,7 +729,7 @@ C
       CHARACTER(len=80),ALLOCATABLE ::  AttrName(:) ! label for attribute!tgaf13mod
       CHARACTER(len=80) Units    ! label for physical units
       CHARACTER(len=80) Skipped  ! data we want to skip over
-      REAL(8) DefaultVal(12) ! default value of attribute
+      REAL(SZ) DefaultVal(12) ! default value of attribute
       INTEGER, ALLOCATABLE :: NoOfVals(:) ! at each node for each attribute
       INTEGER Mode           !=0 to count, =1 to write
       LOGICAL success        ! .true. if all files opened successfully
@@ -921,7 +902,7 @@ C
       INTEGER iproc              ! subdomain loop counter
       INTEGER iproc2             ! mapped subdomain
       CHARACTER(len=80) curAttrName ! label for current attribute!tgaf13mod
-      REAL(8), ALLOCATABLE :: AttrData(:)  ! attribute data
+      REAL(SZ), ALLOCATABLE :: AttrData(:)  ! attribute data
       INTEGER :: curAttrInd      ! index corresponding to currently named attribute
 
       CHARACTER(len=80) Skipped  ! data we want to skip over
@@ -1065,7 +1046,7 @@ C---------------------------------------------------------------------------
       use sizes, only : naFileName
       implicit none
 
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       integer :: iproc          ! subdomain loop counter
       integer :: sdu(nproc)     ! subdomain unit number for unit 13 files
       integer :: Mode           !=0 to count, =1 to write
@@ -1080,7 +1061,7 @@ C     can be open at any one time.
       integer :: endProc
       integer :: deltaProc
       integer :: errorIO
-      real(8), allocatable :: diff(:) ! difference between nodal value and default value
+      real(sz), allocatable :: diff(:) ! difference between nodal value and default value
       logical, allocatable :: areDefaultValues(:)
       integer :: nonDefaultCount
       integer :: i,j,k
@@ -1771,7 +1752,7 @@ C---------------------------------------------------------------------------C
       use subprep, only : subdomainOn, found_sm_nml ! NCSU Subdomain Modeling
       use nodalattributes, only : outputTau0
       IMPLICIT NONE
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       INTEGER I,J,K,M,JG,JP,KK, ios_stations
       INTEGER INDX,ITOT,ILNODE,IPROC,IPROC2,ITYPE,NUMS(10)
       CHARACTER LOCFN*80,PE*6,LOCSTATFN*20
@@ -2320,9 +2301,7 @@ Casey 180318: Added NWS=13
 !JLW: adding subgridcontrol namelist
          if(foundSubgridControlNamelist)then
             WRITE(15,*)
-     &         "&subgridControl",
-     &         " subgridFilename='",trim(adjustl(subgridFilename)),
-     &         "' level0=",level0,
+     &         "&subgridControl level0=",level0,
      &         " level1=",level1," /"
          endif
 
@@ -2365,13 +2344,6 @@ c...     tcm v52.30.01 additions for Smag_Control Namelist
      &       trim(dynamicWaterLevelCorrectionRampReferenceTime),
      &       '", dynamicWaterLevelCorrectionRampStart=',dynamicWaterLevelCorrectionRampStart,
      &       ', dynamicWaterLevelCorrectionRampEnd=',dynamicWaterLevelCorrectionRampEnd,'  /'
-         endif
-
-C....    SB VEW1D channel control namelist
-         if (foundVEW1DChannelControlNamelist) then
-            write(15,'(a,l,a)')
-     &       '&VEW1DChannelControl activateVEW1DChannelWetPerimeter=',
-     &       activateVEW1DChannelWetPerimeter," /"
          endif
 
 C...     wjp additions for WarnElev Namelist
@@ -2617,7 +2589,7 @@ C  tcm V50.21 -- Changed all I8 formats to I12                              C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       INTEGER N1, N2, N3, KMIN
       INTEGER I,J,K,M,ITEMP,IPR,IPR1
       INTEGER INDX,ITOT,IEL,IELG,ILNODE,IPROC,ITYPE
@@ -2889,7 +2861,7 @@ C                                                                           C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       INTEGER I,J,IPROC,EOF
       INTEGER SDU(NPROC) ! subdomain unit numbers
       LOGICAL Success    ! .true. if files opened without errors
@@ -2973,10 +2945,10 @@ C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       INTEGER IPROC
       INTEGER INDEX14, I, FLUX_NUM
-      REAL(8)  FLUX_INC, FLUX_VAL
+      REAL(SZ)  FLUX_INC, FLUX_VAL
       CHARACTER(80) :: FLUX_MSG
       INTEGER SDU(NPROC)  ! subdomain unit numbers
       LOGICAL Success     ! .true. if all files open without error
@@ -3074,7 +3046,7 @@ C---------------------------------------------------------------------------
 !      use memory_usage
 !C
 !      IMPLICIT NONE
-!      integer(8) :: nbytes = 0
+!      integer :: nbytes = 0
 !      INTEGER I,J,IPROC
 !      INTEGER SDU(NPROC) ! subdomain unit numbers
 !      LOGICAL Success    ! .true. if files opened without errors
@@ -3166,7 +3138,7 @@ C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       LOGICAL FOUND,DONE
       INTEGER I,J,IPROC,IPROC2,ILNODE,INDX,NHG,LINDEX
       CHARACTER*80 PBLJAGF
@@ -3177,10 +3149,10 @@ C      CHARACTER FNAME*60,LOCFN*14,CMD1*63,CMD2*7,CMD*70,INLINE*80
       INTEGER SDU(NPROC)  ! subdomain unit numbers
       LOGICAL Success     ! .true. if all files open without error
       INTEGER,ALLOCATABLE  :: NG(:)
-      REAL(8),ALLOCATABLE :: WVNXG(:),WVNYG(:),PRG(:)
-      REAL(8),ALLOCATABLE :: WVNXL(:),WVNYL(:),PRL(:)
-      REAL(8) U,V,PR
-      REAL(8) RHOWAT     !jgfdebug46.02
+      REAL(SZ),ALLOCATABLE :: WVNXG(:),WVNYG(:),PRG(:)
+      REAL(SZ),ALLOCATABLE :: WVNXL(:),WVNYL(:),PRL(:)
+      REAL(SZ) U,V,PR
+      REAL(SZ) RHOWAT     !jgfdebug46.02
 C     jgf48.47 Do the decomposition for a max of 256 subdomains at a
 C     time ... some platforms/compilers limit the number of files that
 C     can be open at any one time.
@@ -3359,7 +3331,7 @@ C
       CHARACTER*80 PBLJAGF
       INTEGER SDU(NPROC)  ! subdomain unit numbers
       LOGICAL Success     ! .true. if all files open without error
-      REAL(8)                U,V
+      REAL(SZ)                U,V
 C
 C--Open Global Wave Stress File ( UNIT 23 )
 C
@@ -3429,7 +3401,7 @@ C---------------------------------------------------------------------------
       use memory_usage
       IMPLICIT NONE
 C
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       INTEGER i              ! node loop counter
       INTEGER k              ! constituent loop counter
       INTEGER ll             ! line loop counter
@@ -3440,7 +3412,7 @@ C
       CHARACTER(len=80) ConstName ! label for constituent
       LOGICAL success        ! .true. if all files opened successfully
       LOGICAL netcdf_file_exists
-      REAL(8), ALLOCATABLE :: SALTAMP(:), SALTPHS(:)
+      REAL(SZ), ALLOCATABLE :: SALTAMP(:), SALTPHS(:)
 C     jgf48.47 Do the decomposition for a max of 256 subdomains at a
 C     time ... some platforms/compilers limit the number of files that
 C     can be open at any one time.
@@ -3448,7 +3420,7 @@ C     can be open at any one time.
       INTEGER startProc
       INTEGER endProc
       INTEGER deltaProc
-      REAL(8) Frequency    ! Frequency of constituent
+      REAL(SZ) Frequency    ! Frequency of constituent
 
 
       !...Check if we'll be using netcdf or ascii
@@ -3560,7 +3532,7 @@ C
       INTEGER:: FUNIT
       INTEGER:: NCOMP
 
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       INTEGER i                 ! node loop counter
       INTEGER k                 ! attribute loop counter
       INTEGER ll                ! line loop counter
@@ -3576,7 +3548,7 @@ C      CHARACTER(len=80) AttrName ! label for attribute
 C      CHARACTER(len=80) Units   ! label for physical units
 
       CHARACTER(len=80) Skipped ! data we want to skip over
-      REAL(8) DefaultVal(12)   ! default value of attribute
+      REAL(SZ) DefaultVal(12)   ! default value of attribute
       INTEGER NoOfVals          ! at each node for an attribute
       INTEGER Mode              !=0 to count, =1 to write
       LOGICAL success           ! .true. if all files opened successfully
@@ -3591,7 +3563,7 @@ C     can be open at any one time.
       INTEGER deltaProc
       
       INTEGER:: NBF
-      REAL(8), dimension(32):: AMIGv, FFv, FACEv ! Maximum 32 Consituent
+      REAL(SZ), dimension(32):: AMIGv, FFv, FACEv ! Maximum 32 Consituent
       CHARACTER (LEN=300):: IGNOREMSG 
       
       INTEGER:: KK
@@ -3723,7 +3695,7 @@ C
       INTEGER m                 ! mapping loop counter
       INTEGER iproc             ! subdomain loop counter
       INTEGER iproc2              ! mapped subdomain
-      REAL(8):: AttrData(NBF, 4) ! attribute data
+      REAL(SZ):: AttrData(NBF, 4) ! attribute data
       CHARACTER(len=80) Skipped   ! data we want to skip over
 C     
       CHARACTER (len=80):: FMT
@@ -3830,16 +3802,16 @@ C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       LOGICAL FOUND,DONE
       INTEGER I,J,IPROC,IPROC2,ILNODE,INDX,NHG,LINDEX
       CHARACTER*80 PBLJAGF
       INTEGER SDU(NPROC)  ! subdomain unit numbers
       LOGICAL Success     ! .true. if all files open without error
       INTEGER,ALLOCATABLE  :: NG(:)
-      REAL(8),ALLOCATABLE :: DPG(:)  !global array
-      REAL(8),ALLOCATABLE :: DPL(:)  !local array
-      REAL(8) DPTMP
+      REAL(SZ),ALLOCATABLE :: DPG(:)  !global array
+      REAL(SZ),ALLOCATABLE :: DPL(:)  !local array
+      REAL(SZ) DPTMP
 C     jgf48.47 Do the decomposition for a max of 256 subdomains at a
 C     time ... some platforms/compilers limit the number of files that
 C     can be open at any one time.
@@ -4000,7 +3972,7 @@ C                   Added by Kendra Dresback (Aug. 18, 2007)                C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      INTEGER(8) :: nbytes = 0
+      INTEGER :: nbytes = 0
       INTEGER I,J,IPROC
       INTEGER SDU(NPROC) ! subdomain unit numbers
       LOGICAL Success    ! .true. if files opened without errors
@@ -4079,15 +4051,15 @@ C                Added by Kendra Dresback (January 15, 2008)                C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       INTEGER I,J,IPROC
       INTEGER SDU(NPROC) ! subdomain unit numbers
       LOGICAL Success    ! .true. if files opened without errors
       CHARACTER*40  ETIMINC,GRIDINC
       INTEGER :: NODP, M
       INTEGER,ALLOCATABLE :: NOD(:)
-      REAL(8),ALLOCATABLE :: SalBC(:,:)
-      REAL(8),ALLOCATABLE :: RESBCBINP(:)
+      REAL(SZ),ALLOCATABLE :: SalBC(:,:)
+      REAL(SZ),ALLOCATABLE :: RESBCBINP(:)
 
 
 C
@@ -4165,15 +4137,15 @@ C                Added by Kendra Dresback (January 15, 2008)                C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       INTEGER I,J,IPROC
       INTEGER SDU(NPROC) ! subdomain unit numbers
       LOGICAL Success    ! .true. if files opened without errors
       CHARACTER*40  ETIMINC
       INTEGER :: NODP, M
       INTEGER,ALLOCATABLE :: NOD(:)
-      REAL(8),ALLOCATABLE :: TempBC(:,:)
-      REAL(8),ALLOCATABLE :: RESBCBINP(:)
+      REAL(SZ),ALLOCATABLE :: TempBC(:,:)
+      REAL(SZ),ALLOCATABLE :: RESBCBINP(:)
 
 C
 C--Enter, Locate, Open, and Read the ADCIRC UNIT 37
@@ -4251,15 +4223,15 @@ C                Added by Kendra Dresback (October 15, 2008)                C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       INTEGER I,J,IPROC
       INTEGER SDU(NPROC) ! subdomain unit numbers
       LOGICAL Success    ! .true. if files opened without errors
       CHARACTER*40  ETIMINC,GRIDINC
       INTEGER :: NODP, M, NFLUX
       INTEGER,ALLOCATABLE :: NOD(:)
-      REAL(8),ALLOCATABLE :: TopTempBC(:,:)
-      REAL(8),ALLOCATABLE :: RESBCBINP(:,:)
+      REAL(SZ),ALLOCATABLE :: TopTempBC(:,:)
+      REAL(SZ),ALLOCATABLE :: RESBCBINP(:,:)
 
 
 C
@@ -4346,20 +4318,20 @@ C
       USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       INTEGER IPROC
       INTEGER INDEX14, I
-      REAL(8) :: FLUX_INC
+      REAL(SZ) :: FLUX_INC
 ! arash June 23 2016 added RIVBCSTATIM
-      REAL(8) :: RIVBCSTATIM
-      REAL(8),ALLOCATABLE ::  FLUX_VAL(:,:)
+      REAL(SZ) :: RIVBCSTATIM
+      REAL(SZ),ALLOCATABLE ::  FLUX_VAL(:,:)
       INTEGER SDU(NPROC)  ! subdomain unit numbers
       LOGICAL Success     ! .true. if all files open without error
       INTEGER INDX ! full domain node number for a flow boundary node
       INTEGER J,M     ! counter for subdomains that corrsp. to a single f.d. node
       INTEGER IPROC2! PE of a subdomain that matches a single full domain node
       INTEGER, ALLOCATABLE :: NOD(:)
-      REAL(8),ALLOCATABLE ::  RESBCBINP(:)
+      REAL(SZ),ALLOCATABLE ::  RESBCBINP(:)
 
 C     Open full domain and subdomain fort.20 files
       CALL OpenPrepFiles(39, 'aperiodic river temp and salinity   ',
@@ -4487,7 +4459,7 @@ C                                                                           C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       LOGICAL FOUND
       INTEGER I,J,IPROC,IINDX,IHOTSTP, not_active
       INTEGER IMHSF,ITHSF
@@ -4497,7 +4469,7 @@ C
       EQUIVALENCE (FNAM8(1),FNAME1)
 
       INTEGER,ALLOCATABLE  :: LOC2(:),NOFF(:), domA(:)
-      REAL(8),ALLOCATABLE :: ETA1(:),ETA2(:),EtaDisc(:),
+      REAL(SZ),ALLOCATABLE :: ETA1(:),ETA2(:),EtaDisc(:),
      &    UU2(:),VV2(:),CH1(:)
       REAL(8) TIMEHSF
       integer :: InputFileFmtVn, NP_G_IN, NE_G_IN, NP_A_IN, NE_A_IN
@@ -4512,14 +4484,14 @@ C
       INTEGER ITHAS,ITHAF,ITMV,IHABEG,ICHA
       CHARACTER*10,ALLOCATABLE     ::  INAMEFR(:)
       REAL(8)  TIMEUD
-      REAL(8),ALLOCATABLE ::  HA(:,:)
-      REAL(8),ALLOCATABLE ::  ELAV(:),ELVA(:),XVELAV(:),XVELVA(:),
+      REAL(SZ),ALLOCATABLE ::  HA(:,:)
+      REAL(SZ),ALLOCATABLE ::  ELAV(:),ELVA(:),XVELAV(:),XVELVA(:),
      &                                         YVELAV(:),YVELVA(:)
-      REAL(8),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)
-      REAL(8),ALLOCATABLE ::  GLOELV(:,:)
-      REAL(8),ALLOCATABLE ::  GLOULV(:,:),GLOVLV(:,:)
-      REAL(8),ALLOCATABLE ::  STAELV(:,:)
-      REAL(8),ALLOCATABLE ::  STAULV(:,:),STAVLV(:,:)
+      REAL(SZ),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)
+      REAL(SZ),ALLOCATABLE ::  GLOELV(:,:)
+      REAL(SZ),ALLOCATABLE ::  GLOULV(:,:),GLOVLV(:,:)
+      REAL(SZ),ALLOCATABLE ::  STAELV(:,:)
+      REAL(SZ),ALLOCATABLE ::  STAULV(:,:),STAVLV(:,:)
 #endif
 C
 C--   Open the Initial Condition Start File based on the value of IHOT from
@@ -4927,7 +4899,7 @@ C                                                                           C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       LOGICAL FOUND
       INTEGER I,J,IPROC,INDX,IHOTSTP, not_active
       INTEGER IMHSF,ITHSF, NH, N
@@ -4937,7 +4909,7 @@ C
       EQUIVALENCE (FNAM8(1),FNAME1)
 
       INTEGER,ALLOCATABLE  :: LOC2(:),NOFF(:), domA(:)
-      REAL(8),ALLOCATABLE :: ETA1(:),ETA2(:),EtaDisc(:),
+      REAL(SZ),ALLOCATABLE :: ETA1(:),ETA2(:),EtaDisc(:),
      &    UU2(:),VV2(:),CH1(:)
       REAL(8) TIMEHSF
       integer :: InputFileFmtVn, NP_G_IN, NE_G_IN, NP_A_IN, NE_A_IN
@@ -4947,17 +4919,17 @@ C
       INTEGER IHARIND,ITHAS,ITHAF,ITMV,IHABEG,ICHA
       CHARACTER*10,ALLOCATABLE     ::  INAMEFR(:)
       REAL(8)  TIMEUD
-      REAL(8),ALLOCATABLE ::  HA(:,:)
-      REAL(8),ALLOCATABLE ::  ELAV(:),ELVA(:),XVELAV(:),XVELVA(:),
+      REAL(SZ),ALLOCATABLE ::  HA(:,:)
+      REAL(SZ),ALLOCATABLE ::  ELAV(:),ELVA(:),XVELAV(:),XVELVA(:),
      &                                         YVELAV(:),YVELVA(:)
-      REAL(8),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)
-      REAL(8),ALLOCATABLE ::  GLOELV(:,:)
-      REAL(8),ALLOCATABLE ::  GLOULV(:,:),GLOVLV(:,:)
-      REAL(8),ALLOCATABLE ::  STAELV(:,:)
-      REAL(8),ALLOCATABLE ::  STAULV(:,:),STAVLV(:,:)
-      REAL(8) TIME
+      REAL(SZ),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)
+      REAL(SZ),ALLOCATABLE ::  GLOELV(:,:)
+      REAL(SZ),ALLOCATABLE ::  GLOULV(:,:),GLOVLV(:,:)
+      REAL(SZ),ALLOCATABLE ::  STAELV(:,:)
+      REAL(SZ),ALLOCATABLE ::  STAULV(:,:),STAVLV(:,:)
+      REAL(SZ) TIME
 
-      REAL(8) DUMMY
+      REAL(SZ) DUMMY
       INTEGER IDUMMY
       INTEGER LUN
       INTEGER NHS
@@ -5485,7 +5457,7 @@ C                                                                           C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      integer(8) :: nbytes = 0
+      integer :: nbytes = 0
       LOGICAL FOUND
       INTEGER I,J,IPROC,INDX,IHOTSTP, not_active
       INTEGER IMHSF,ITHSF,IVALUE,IDUMY, NH, N
@@ -5495,7 +5467,7 @@ C
       EQUIVALENCE (FNAM8(1),FNAME1)
 
       INTEGER,ALLOCATABLE  :: LOC2(:),NOFF(:), domA(:)
-      REAL(8),ALLOCATABLE :: ETA1(:),ETA2(:),EtaDisc(:),
+      REAL(SZ),ALLOCATABLE :: ETA1(:),ETA2(:),EtaDisc(:),
      &    UU2(:),VV2(:),CH1(:)
       REAL(8) TIMEHSF, RVALUE
       integer :: InputFileFmtVn, NP_G_IN, NE_G_IN, NP_A_IN, NE_A_IN
@@ -5507,14 +5479,14 @@ C
       INTEGER IHARIND,ITHAS,ITHAF,ITMV,IHABEG,ICHA
       CHARACTER*10,ALLOCATABLE     ::  INAMEFR(:)
       REAL(8)  TIMEUD
-      REAL(8),ALLOCATABLE ::  HA(:,:)
-      REAL(8),ALLOCATABLE ::  ELAV(:),ELVA(:),XVELAV(:),XVELVA(:),
+      REAL(SZ),ALLOCATABLE ::  HA(:,:)
+      REAL(SZ),ALLOCATABLE ::  ELAV(:),ELVA(:),XVELAV(:),XVELVA(:),
      &                                         YVELAV(:),YVELVA(:)
-      REAL(8),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)
-      REAL(8),ALLOCATABLE ::  GLOELV(:,:)
-      REAL(8),ALLOCATABLE ::  GLOULV(:,:),GLOVLV(:,:)
-      REAL(8),ALLOCATABLE ::  STAELV(:,:)
-      REAL(8),ALLOCATABLE ::  STAULV(:,:),STAVLV(:,:)
+      REAL(SZ),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)
+      REAL(SZ),ALLOCATABLE ::  GLOELV(:,:)
+      REAL(SZ),ALLOCATABLE ::  GLOULV(:,:),GLOVLV(:,:)
+      REAL(SZ),ALLOCATABLE ::  STAELV(:,:)
+      REAL(SZ),ALLOCATABLE ::  STAULV(:,:),STAVLV(:,:)
 #endif
 C
 C--   Open Appropriate Hot Start File based on the value of IHOT from
@@ -7677,8 +7649,7 @@ C---------------------------------------------------------------------------
      &    theta2, ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd,
      &    nvsd, nltd, nvtd, alp4, C3D, X3DD, Y3DD, SL3DD, SF3DD,
      &    X3DV, Y3DV, SL3DV, SF3DV, X3DT, Y3DT, SL3DT, SF3DT, C3D,
-     &    foundCorrectionControlNamelist, NCICE, !GML added NCICE 20210727
-     &    foundVEW1DChannelControlNamelist
+     &    foundCorrectionControlNamelist, NCICE !GML added NCICE 20210727
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE NETCDFIO, ONLY : setADCIRCParameters, initNetCDFOutputFile,
      &    initNetCDFHotstart3D, initNetCDFHotstart,

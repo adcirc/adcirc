@@ -1,0 +1,2 @@
+/usr/bin/ar qc CMakeFiles/libmkdir.a CMakeFiles/mkdir.dir/prep/mkdir.c.o
+/usr/bin/ranlib CMakeFiles/libmkdir.a

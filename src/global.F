@@ -1,22 +1,3 @@
-!-------------------------------------------------------------------------------!
-!
-! ADCIRC - The ADvanced CIRCulation model
-! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
-! 
-! This program is free software: you can redistribute it and/or modify
-! it under the terms of the GNU Lesser General Public License as published by
-! the Free Software Foundation, either version 3 of the License, or
-! (at your option) any later version.
-! 
-! This program is distributed in the hope that it will be useful,
-! but WITHOUT ANY WARRANTY; without even the implied warranty of
-! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-! GNU General Public License for more details.
-! 
-! You should have received a copy of the GNU Lesser General Public License
-! along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!
-!-------------------------------------------------------------------------------!
 C******************************************************************************
 C PADCIRC VERSION 45.12 03/17/2006                                            *
 C  last changes in this file VERSION 45.08                                    *
@@ -28,16 +9,9 @@ C routines.  The 3D exclusive variables are declared in global_3DVS           *
 C                                                                             *
 C******************************************************************************
 C
-
-!...Throw some warnings about deprecated flags
-#ifdef REAL8
-#warning The flag -DREAL8 is deprecated. Please discontinue use. As of version 56, it has no effect
-#elif REAL4
-#warning The flag -DREAL4 is deprecated. Please discontinue use. As of version 56, it has no effect
-#endif
-
       MODULE GLOBAL
-      USE ADC_CONSTANTS, ONLY: DEG2RAD
+      USE SIZES, ONLY : SZ 
+      USE CONSTANTS, ONLY: DEG2RAD
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
 #ifdef DATETIME
       use datetime_module, only: datetime
@@ -45,8 +19,8 @@ C
       IMPLICIT NONE
       SAVE
 C     jgf46.21 Added support for IBTYPE=52.
-      REAL(8),ALLOCATABLE, TARGET ::   ElevDisc(:)
-      REAL(8) FluxSettlingTime
+      REAL(SZ),ALLOCATABLE, TARGET ::   ElevDisc(:)
+      REAL(SZ) FluxSettlingTime
       INTEGER  FluxSettlingIT
 C... v49.48 tcm -- added for coupling with STWAVE (NRS=4)
       REAL(8)  :: STARTWAVE   ! Start of Wave Service
@@ -59,24 +33,24 @@ C... v50.xx sm -- added for coupling with NOUPC Cap
       LOGICAL   ::  NUOPC4MET = .FALSE.  ! assign in CAP
       LOGICAL   ::  NUOPC4WAV = .FALSE.  ! assign in CAP
 
-C      real(8) rampriver,drampriver,rampriver1,rampriver2
+C      real(sz) rampriver,drampriver,rampriver1,rampriver2
 C     jgf46.08 Fine grained ramp functions (jgf46.21 split flux b.c.s)
-      REAL(8) RampExtFlux,DRampExtFlux ! Ramp for external flux b.c.s
-      REAL(8) RampIntFlux,DRampIntFlux ! Ramp for internal flux b.c.s
-      REAL(8) RampElev,DRampElev    ! Ramp for elevation boundary conditions.
-      REAL(8) RampTip,DRampTip      ! Ramp for tidal potential
-      REAL(8) RampMete,DRampMete    ! Ramp for wind and atmospheric pressure
-      REAL(8) RampWRad,DRampWRad    ! Ramp for wave radiation stress
+      REAL(SZ) RampExtFlux,DRampExtFlux ! Ramp for external flux b.c.s
+      REAL(SZ) RampIntFlux,DRampIntFlux ! Ramp for internal flux b.c.s
+      REAL(SZ) RampElev,DRampElev    ! Ramp for elevation boundary conditions.
+      REAL(SZ) RampTip,DRampTip      ! Ramp for tidal potential
+      REAL(SZ) RampMete,DRampMete    ! Ramp for wind and atmospheric pressure
+      REAL(SZ) RampWRad,DRampWRad    ! Ramp for wave radiation stress
 Corbitt 1203022: Added Zachs Fix for Assigning a Start Time to Mete Ramping
-      REAL(8) DUnRampMete           ! Time to not have ramped Mete
+      REAL(SZ) DUnRampMete           ! Time to not have ramped Mete
 C
 C     jgf46.10 user-controlled warning, dump and error levels on elevations
-      REAL(8) WarnElev       ! elevation at which a warning is issued
+      REAL(SZ) WarnElev       ! elevation at which a warning is issued
       INTEGER iWarnElevDump   ! 1 to dump warning elevs to fort.69
       LOGICAL WarnElevDump    ! .True. if iWarnElevDump.eq.1
       INTEGER WarnElevDumpLimit ! max dumps; ADCIRC terminates if exceeded
       INTEGER WarnElevDumpCounter ! counter for number of elev dumps to fort.69
-      REAL(8) ErrorElev      ! ADCIRC terminates if this elev is exceeded
+      REAL(SZ) ErrorElev      ! ADCIRC terminates if this elev is exceeded
       INTEGER :: screenUnit = 6 ! jgf46.19 I/O unit where screen output is sent
       INTEGER :: Terminate_LocalProc = 0 ! zc - allow a single processor to initiate code shutdown
 C
@@ -92,8 +66,8 @@ C     Variables related to hotstarting.
       ! iLump=1 for lumped mass matrix 
       integer :: ilump 
 
-      real(8),allocatable,target ::   mom_lv_x(:)
-      real(8),allocatable ::   mom_lv_y(:)
+      real(sz),allocatable,target ::   mom_lv_x(:)
+      real(sz),allocatable ::   mom_lv_y(:)
 
       !-----------------------------------------------------------------
       !        F U L L   D O M A I N   V A R I A B L E S   
@@ -123,51 +97,51 @@ C     used in hstart.F for reading fulldomain hotstart files as well as in
 C     write_output.F/writeHotstart and
 C     writer.F/writeHotstart_through_HSwriter
 C     for writing fulldomain hotstart files.
-      REAL(8), ALLOCATABLE, TARGET :: ETA1_g(:)
-      REAL(8), ALLOCATABLE, TARGET :: ETA2_g(:)
-      REAL(8), ALLOCATABLE, TARGET :: EtaDisc_g(:)
-      REAL(8), ALLOCATABLE, TARGET :: UU2_g(:)
-      REAL(8), ALLOCATABLE, TARGET :: VV2_g(:)
-      REAL(8), ALLOCATABLE, TARGET :: CH1_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: ETA1_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: ETA2_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: EtaDisc_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: UU2_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: VV2_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: CH1_g(:)
       INTEGER, ALLOCATABLE, TARGET :: labels_g(:)
       INTEGER, ALLOCATABLE, TARGET :: NodeCode_g(:)
       INTEGER, ALLOCATABLE :: NNodeCode_g(:)
       INTEGER, ALLOCATABLE, TARGET :: NOFF_g(:)
       ! full domain min and max files in parallel
       !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
-      REAL(8),ALLOCATABLE, TARGET :: HOT_ETAMAX_G(:)
-      REAL(8),ALLOCATABLE, TARGET :: ETAMAX_Time(:) 
-      REAL(8),ALLOCATABLE, TARGET :: ETAMAX_Time_G(:) 
-      REAL(8),ALLOCATABLE, TARGET :: HOT_UMAX_G(:)
-      REAL(8),ALLOCATABLE, TARGET :: UMAX_Time(:) 
-      REAL(8),ALLOCATABLE, TARGET :: UMAX_Time_G(:) 
-      REAL(8),ALLOCATABLE, TARGET :: HOT_PrMin_G(:)
-      REAL(8),ALLOCATABLE, TARGET :: PrMin_Time(:) 
-      REAL(8),ALLOCATABLE, TARGET :: PrMin_Time_G(:) 
-      REAL(8),ALLOCATABLE, TARGET :: HOT_WVNOutMax_G(:)
-      REAL(8),ALLOCATABLE, TARGET :: WVNOutMax_Time(:) 
-      REAL(8),ALLOCATABLE, TARGET :: WVNOutMax_Time_G(:) 
-      REAL(8),ALLOCATABLE, TARGET :: HOT_RSNMax_g(:)
-      REAL(8),ALLOCATABLE, TARGET :: RSNMax_Time(:) 
-      REAL(8),ALLOCATABLE, TARGET :: RSNMax_Time_G(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: HOT_ETAMAX_G(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: ETAMAX_Time(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: ETAMAX_Time_G(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: HOT_UMAX_G(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: UMAX_Time(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: UMAX_Time_G(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: HOT_PrMin_G(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: PrMin_Time(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: PrMin_Time_G(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: HOT_WVNOutMax_G(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: WVNOutMax_Time(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: WVNOutMax_Time_G(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax_g(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time_G(:) 
      
 #if defined CSWAN || defined ADCSWAN
       !...Global SWAN Arrays
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_HSOut_g(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_DIROut_g(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_TM01Out_g(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_TPSOut_g(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_WINDXOut_g(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_WINDYOut_g(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_TM02Out_g(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_TMM10Out_g(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_HSMaxOut_g(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_DIRMaxOut_g(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_TM01MaxOut_g(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_TPSMaxOut_g(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_WINDMaxOut_g(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_TM02MaxOut_g(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_TMM10MaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIROut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM01Out_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TPSOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDXOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDYOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02Out_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10Out_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSMaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIRMaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM01MaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TPSMaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDMaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02MaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10MaxOut_g(:)
 #endif
       
       ! mappings from subdomain to fulldomain for stations
@@ -179,8 +153,8 @@ C
 C     jgf48.03 Variable, arrays, and datastructure that are used by both
 C     globalio and writer modules
       integer, parameter :: BUFSIZE_MAX = 131072
-      real(8) :: buf(BUFSIZE_MAX)
-      real(8) :: resultBuf(BUFSIZE_MAX)
+      real(sz) :: buf(BUFSIZE_MAX)
+      real(sz) :: resultBuf(BUFSIZE_MAX)
       integer :: integerBuffer(BUFSIZE_MAX)
       integer :: integerResultBuffer(BUFSIZE_MAX)
       integer                    :: float_type
@@ -219,56 +193,56 @@ C             RESELEM is the number of processors on which each element appears.
 c.
 #ifdef CMPI
       INTEGER, ALLOCATABLE ::   IDUMY(:)
-      REAL(8),ALLOCATABLE ::   DUMY1(:),DUMY2(:)
+      REAL(SZ),ALLOCATABLE ::   DUMY1(:),DUMY2(:)
 #endif
       !jgf50.44: Added variable to record the time that the min or max
       ! has occurred
-      REAL(8),ALLOCATABLE, TARGET ::  ETA1(:), ETA2(:), UU2(:), VV2(:)
-      REAL(8),ALLOCATABLE, TARGET ::  ETAMAX(:) ! v46.50 sb 11/11/2006
-      REAL(8),ALLOCATABLE, TARGET ::  UMAX(:) ! v46.50 sb 11/11/2006
-      REAL(8),ALLOCATABLE, TARGET ::  ET00(:), UU00(:), VV00(:)
-      REAL(8),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
-      REAL(8),ALLOCATABLE, TARGET ::  RMICE00(:), CICEOUT(:) !v49.64.01 tcm -added for ice concentration
+      REAL(SZ),ALLOCATABLE, TARGET ::  ETA1(:), ETA2(:), UU2(:), VV2(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  ETAMAX(:) ! v46.50 sb 11/11/2006
+      REAL(SZ),ALLOCATABLE, TARGET ::  UMAX(:) ! v46.50 sb 11/11/2006
+      REAL(SZ),ALLOCATABLE, TARGET ::  ET00(:), UU00(:), VV00(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  RMICE00(:), CICEOUT(:) !v49.64.01 tcm -added for ice concentration
 
-      REAL(8),ALLOCATABLE, TARGET ::  Pr2(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  Pr2(:)
 #ifdef CSWAN
-      REAL(8),ALLOCATABLE, TARGET ::  SWAN_WDragCo(:) !MVB
+      REAL(SZ),ALLOCATABLE, TARGET ::  SWAN_WDragCo(:) !MVB
 #endif
-      REAL(8),ALLOCATABLE, TARGET ::  windDragOut(:) !MVB 
+      REAL(SZ),ALLOCATABLE, TARGET ::  windDragOut(:) !MVB 
 
-      REAL(8),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
-      REAL(8),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
+      REAL(SZ),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
+      REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
       
-      real(8), allocatable, target :: wvnxout(:) ! output wind velocity in x-dir at each node 
-      real(8), allocatable, target :: wvnyout(:) ! output wind velocity in y-dir at each node 
+      real(sz), allocatable, target :: wvnxout(:) ! output wind velocity in x-dir at each node 
+      real(sz), allocatable, target :: wvnyout(:) ! output wind velocity in y-dir at each node 
 
-      real(8),allocatable :: gwce_lv(:)
+      real(sz),allocatable :: gwce_lv(:)
 
 
       
 #if defined CSWAN || defined ADCSWAN     
       !...Local SWAN Arrays
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_HSOut(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_DIROut(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_TM01Out(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_TPSOut(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_WINDXOut(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_WINDYOut(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_TM02Out(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_TMM10Out(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_HSMaxOut(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_DIRMaxOut(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_TM01MaxOut(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_TPSMaxOut(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_WINDMaxOut(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_TM02MaxOut(:)
-      REAL(8), ALLOCATABLE, TARGET      :: SWAN_TMM10MaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIROut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM01Out(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TPSOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDXOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDYOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02Out(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10Out(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSMaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIRMaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM01MaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TPSMaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDMaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02MaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10MaxOut(:)
 #endif      
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef CSWAN
 Casey 090302: Added the following arrays for output of radiation stress gradients.
-      REAL(8),ALLOCATABLE, TARGET :: RSNXOUT(:), RSNYOUT(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: RSNXOUT(:), RSNYOUT(:)
 !#endif
       LOGICAL :: outputWindDrag = .false. ! true if wind drag data should be written to output file
 
@@ -287,76 +261,78 @@ Cobell 20120510: Added logicals for turning on/off swan output files
 Cobell - Added for Time Varying Weirs, Set to default values
       LOGICAL                      :: USE_TVW = .FALSE.     !..From namelist, used time varying weirs
       CHARACTER(80)                :: TVW_FILE = 'fort.tvw' !..From namelist, file for time varying weirs
-      REAL(8),ALLOCATABLE,TARGET  :: TVW(:)                !..Current elevation of weirs, for output
+      REAL(SZ),ALLOCATABLE,TARGET  :: TVW(:)                !..Current elevation of weirs, for output
 
 
 Cobell -  Added the following for output of ESL at end of run
-      REAL(8),ALLOCATABLE, TARGET :: ESLCOUNT(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: ESLCOUNT(:)
 
-      REAL(8),ALLOCATABLE, TARGET ::  CC00(:)
-      REAL(8),ALLOCATABLE, TARGET ::  EtaDisc(:) ! vjp 9/2006 added for hotstart file
-      REAL(8),ALLOCATABLE, TARGET ::   CH1(:)
-      REAL(8),ALLOCATABLE ::   ETAS(:), UU0(:),VV0(:)
-      REAL(8),ALLOCATABLE ::   UU1(:),VV1(:)
-      REAL(8),ALLOCATABLE ::   QX1(:)
-      REAL(8),ALLOCATABLE,TARGET ::   QX2(:)
-      REAL(8),ALLOCATABLE ::   QY1(:)
-      REAL(8),ALLOCATABLE,TARGET ::   QY2(:)
-      REAL(8),ALLOCATABLE ::   QX0(:),QY0(:)
-      REAL(8),ALLOCATABLE ::   TK0(:),TK2(:)
-      REAL(8),ALLOCATABLE ::  DP1(:),DP2(:) !TCM V50.66.01 FOR TIME VARYING BATHYMETRY
+      REAL(SZ),ALLOCATABLE, TARGET ::  CC00(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  EtaDisc(:) ! vjp 9/2006 added for hotstart file
+      REAL(SZ),ALLOCATABLE, TARGET ::   CH1(:)
+      REAL(SZ),ALLOCATABLE ::   ETAS(:), UU0(:),VV0(:)
+      REAL(SZ),ALLOCATABLE ::   UU1(:),VV1(:)
+      REAL(SZ),ALLOCATABLE ::   QX1(:)
+      REAL(SZ),ALLOCATABLE,TARGET ::   QX2(:)
+      REAL(SZ),ALLOCATABLE ::   QY1(:)
+      REAL(SZ),ALLOCATABLE,TARGET ::   QY2(:)
+      REAL(SZ),ALLOCATABLE ::   QX0(:),QY0(:)
+      REAL(SZ),ALLOCATABLE ::   TK0(:),TK2(:)
+      REAL(SZ),ALLOCATABLE ::  DP1(:),DP2(:) !TCM V50.66.01 FOR TIME VARYING BATHYMETRY
 
-      REAL(8),ALLOCATABLE ::   CORIF(:)
-      REAL(8),ALLOCATABLE ::   TPK(:),FFT(:)
-      REAL(8),ALLOCATABLE ::   FACET(:),ETRF(:)
-      REAL(8),ALLOCATABLE ::   FFF(:),FFACE(:)
-      REAL(8),ALLOCATABLE ::   ESBIN1(:),ESBIN2(:)
-      REAL(8),ALLOCATABLE ::   TEMP_LV_A(:,:),TEMP_LV_B(:,:)
+      REAL(SZ),ALLOCATABLE ::   CORIF(:)
+      REAL(SZ),ALLOCATABLE ::   TPK(:),FFT(:)
+      REAL(SZ),ALLOCATABLE ::   FACET(:),ETRF(:)
+      REAL(SZ),ALLOCATABLE ::   FFF(:),FFACE(:)
+      REAL(SZ),ALLOCATABLE ::   ESBIN1(:),ESBIN2(:)
+      REAL(SZ),ALLOCATABLE ::   TEMP_LV_A(:,:),TEMP_LV_B(:,:)
+      
+      
  
 C- DMW 2022/6 Factor for slope limiting on elevation gradient
-      REAL(8),ALLOCATABLE ::   ALPHAL(:)
+      REAL(SZ),ALLOCATABLE ::   ALPHAL(:)
 C- DMW      
-      REAL(8),ALLOCATABLE ::   QN0(:),QN1(:)
-      REAL(8),ALLOCATABLE, TARGET :: QN2(:)
-      REAL(8),ALLOCATABLE ::   EN0(:),EN1(:),EN2(:)
-      REAL(8),ALLOCATABLE ::   QNAM(:,:),QNPH(:,:)
-      REAL(8),ALLOCATABLE ::   ENAM(:,:),ENPH(:,:)
-      REAL(8),ALLOCATABLE ::   QNIN1(:),QNIN2(:)
-      REAL(8),ALLOCATABLE ::   ENIN1(:),ENIN2(:)
+      REAL(SZ),ALLOCATABLE ::   QN0(:),QN1(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: QN2(:)
+      REAL(SZ),ALLOCATABLE ::   EN0(:),EN1(:),EN2(:)
+      REAL(SZ),ALLOCATABLE ::   QNAM(:,:),QNPH(:,:)
+      REAL(SZ),ALLOCATABLE ::   ENAM(:,:),ENPH(:,:)
+      REAL(SZ),ALLOCATABLE ::   QNIN1(:),QNIN2(:)
+      REAL(SZ),ALLOCATABLE ::   ENIN1(:),ENIN2(:)
       !
       ! spatial interpolating factors for elevation stations
-      real(8),allocatable, target :: staie1(:),staie2(:),staie3(:)
+      real(sz),allocatable, target :: staie1(:),staie2(:),staie3(:)
       real(8), allocatable, target :: xev(:) ! x coords of current vel stations
       real(8), allocatable, target :: yev(:) ! y coords of current vel stations
       real(8), allocatable, target :: slev(:)! longitudes of current vel sta
       real(8), allocatable, target :: sfev(:)! latitudes of current vel sta
 
       ! spatial interpolating factors for velocity stations
-      real(8),allocatable, target ::   staiv1(:),staiv2(:),staiv3(:)
+      real(sz),allocatable, target ::   staiv1(:),staiv2(:),staiv3(:)
       real(8), allocatable, target ::   xec(:),yec(:),slec(:),sfec(:)
       ! spatial interpolating factors for concentration stations
-      real(8),allocatable ::   staic1(:),staic2(:),staic3(:)
+      real(sz),allocatable ::   staic1(:),staic2(:),staic3(:)
 
       ! spatial interpolating factors for meteorological stations
-      real(8),allocatable, target ::   staim1(:),staim2(:),staim3(:)
+      real(sz),allocatable, target ::   staim1(:),staim2(:),staim3(:)
       real(8), allocatable, target :: xem(:) ! x coords of met stations
       real(8), allocatable, target :: yem(:) ! y coords of met stations
       real(8), allocatable, target :: slem(:) ! longitudes of met stations
       real(8), allocatable, target :: sfem(:) ! latitudes of met stations
 
-      REAL(8),ALLOCATABLE ::   TRANS_LV_B(:),TRANS_LV_A(:)
-      REAL(8),ALLOCATABLE ::   SOURSIN(:)
-      REAL(8),ALLOCATABLE ::   WSX1(:),WSY1(:),PR1(:)
-      REAL(8),ALLOCATABLE ::   WSX2(:),WSY2(:)
-      REAL(8),ALLOCATABLE ::   PRN1(:)
-      REAL(8),ALLOCATABLE ::   PRN2(:)
-      REAL(8),ALLOCATABLE ::   RSNX1(:),RSNY1(:),RSNX2(:),RSNY2(:)
-      REAL(8),ALLOCATABLE ::   CICE1(:),CICE2(:)   !v49.64.01 tcm -- added
+      REAL(SZ),ALLOCATABLE ::   TRANS_LV_B(:),TRANS_LV_A(:)
+      REAL(SZ),ALLOCATABLE ::   SOURSIN(:)
+      REAL(SZ),ALLOCATABLE ::   WSX1(:),WSY1(:),PR1(:)
+      REAL(SZ),ALLOCATABLE ::   WSX2(:),WSY2(:)
+      REAL(SZ),ALLOCATABLE ::   PRN1(:)
+      REAL(SZ),ALLOCATABLE ::   PRN2(:)
+      REAL(SZ),ALLOCATABLE ::   RSNX1(:),RSNY1(:),RSNX2(:),RSNY2(:)
+      REAL(SZ),ALLOCATABLE ::   CICE1(:),CICE2(:)   !v49.64.01 tcm -- added
                                                     !for ice concentration
-      REAL(8),ALLOCATABLE, TARGET :: RSNMax(:) ! v46.50 sb 11/11/2006
+      REAL(SZ),ALLOCATABLE, TARGET :: RSNMax(:) ! v46.50 sb 11/11/2006
 
-      REAL(8),ALLOCATABLE :: TK(:)     ! WJP bottom frictiom
-      REAL(8),ALLOCATABLE :: TKM(:,:)  ! symmetrical friction matrix
+      REAL(SZ),ALLOCATABLE :: TK(:)     ! WJP bottom frictiom
+      REAL(SZ),ALLOCATABLE :: TKM(:,:)  ! symmetrical friction matrix
       REAL(8),ALLOCATABLE :: EMO(:,:),EFA(:,:)
       REAL(8),ALLOCATABLE,TARGET :: XEL(:)  ! x-coords of elevation stations
       REAL(8),ALLOCATABLE,TARGET :: YEL(:)  ! y-coords of elevation stations
@@ -364,20 +340,20 @@ C- DMW
       REAL(8),ALLOCATABLE,TARGET :: SFEL(:) ! longitudes of elevation stations
 
 
-      REAL(8),ALLOCATABLE,TARGET ::   DUU1(:),DUV1(:),DVV1(:)
-      REAL(8),ALLOCATABLE,TARGET ::   BSX1(:),BSY1(:)
-      REAL(8),ALLOCATABLE ::   TIP1(:),TIP2(:)
-      REAL(8),ALLOCATABLE ::   L_N(:,:)    ! WJP The array for TIP multiplier
-      REAL(8),ALLOCATABLE ::   SALTAMP(:,:),SALTPHA(:,:)
-      REAL(8),ALLOCATABLE ::   OBCCOEF(:,:),COEF(:,:)
-      REAL(8),ALLOCATABLE,TARGET ::   COEFD(:) !jgf48.4619 from Seizo (Lumped GWCE)
-      REAL(8),ALLOCATABLE,TARGET ::   COEFDTempMem(:) !Added for VEW1D  08-11-2022 SB
-      REAL(8),POINTER ::   COEFDTemp(:) !Added for VEW1D  08-11-2022 SB
+      REAL(SZ),ALLOCATABLE,TARGET ::   DUU1(:),DUV1(:),DVV1(:)
+      REAL(SZ),ALLOCATABLE,TARGET ::   BSX1(:),BSY1(:)
+      REAL(SZ),ALLOCATABLE ::   TIP1(:),TIP2(:)
+      REAL(SZ),ALLOCATABLE ::   L_N(:,:)    ! WJP The array for TIP multiplier
+      REAL(SZ),ALLOCATABLE ::   SALTAMP(:,:),SALTPHA(:,:)
+      REAL(SZ),ALLOCATABLE ::   OBCCOEF(:,:),COEF(:,:)
+      REAL(SZ),ALLOCATABLE,TARGET ::   COEFD(:) !jgf48.4619 from Seizo (Lumped GWCE)
+      REAL(SZ),ALLOCATABLE,TARGET ::   COEFDTempMem(:) !Added for VEW1D  08-11-2022 SB
+      REAL(SZ),POINTER ::   COEFDTemp(:) !Added for VEW1D  08-11-2022 SB
       INTEGER :: NBFR, NCOR
 C    kmd48.33bc - added variables for the levels of no motion and top temperature boundary condition
-      REAL(8),ALLOCATABLE ::   LNM_BC1(:), LNM_BC2(:), LNM_BC(:) ! level of no motion
-      REAL(8),ALLOCATABLE ::   q_heat1(:), q_heat2(:), HFLUX(:)  ! top temperature
-      REAL(8),ALLOCATABLE, TARGET :: Sponge(:)  ! sponge information for boundary conditions
+      REAL(SZ),ALLOCATABLE ::   LNM_BC1(:), LNM_BC2(:), LNM_BC(:) ! level of no motion
+      REAL(SZ),ALLOCATABLE ::   q_heat1(:), q_heat2(:), HFLUX(:)  ! top temperature
+      REAL(SZ),ALLOCATABLE, TARGET :: Sponge(:)  ! sponge information for boundary conditions
 
       INTEGER,ALLOCATABLE, TARGET ::    NOFF(:), NODECODE(:)
       INTEGER,ALLOCATABLE ::    NNODECODE(:)
@@ -392,20 +368,20 @@ C    kmd48.33bc - added variables for the levels of no motion and top temperatur
       INTEGER,ALLOCATABLE ::    IPV(:)
 C
 C.....for buoyancy forcing
-      REAL(8),ALLOCATABLE ::   DASigT(:), DASalt(:), DATemp(:)
-      REAL(8),ALLOCATABLE ::   VIDBCPDXOH(:), VIDBCPDYOH(:)
-      REAL(8),ALLOCATABLE ::   SigTS(:), NM(:), NB(:), MLD(:)
+      REAL(SZ),ALLOCATABLE ::   DASigT(:), DASalt(:), DATemp(:)
+      REAL(SZ),ALLOCATABLE ::   VIDBCPDXOH(:), VIDBCPDYOH(:)
+      REAL(SZ),ALLOCATABLE ::   SigTS(:), NM(:), NB(:), MLD(:)
 C.....for scalar transport
-      REAL(8),ALLOCATABLE ::   DAConc(:)
+      REAL(SZ),ALLOCATABLE ::   DAConc(:)
       
 !     The vertically-integrated momentum dispersion terms     
-      REAL(8),ALLOCATABLE ::   VIDISPDXOH(:), VIDISPDYOH(:)
+      REAL(SZ),ALLOCATABLE ::   VIDISPDXOH(:), VIDISPDYOH(:)
 
 C.....for VEW1D sb
       INTEGER,ALLOCATABLE  :: flgNodesMultipliedByTotalArea(:)
 
 
-      REAL(8) DT
+      REAL(SZ) DT
 C                                
       INTEGER NOLICA,NOLIFA,IHOT,IDEN
       INTEGER :: NSCREEN = 1
@@ -493,13 +469,13 @@ C     jgf51.14: Moved the parameters that control output timing
 C     from read_input.F to here so that they can be used to recalculate
 C     starting and ending time step for output when the time step
 C     size has changed after a hotstart. 
-      REAL(8) TOUTSC
-      REAL(8) TOUTSE,TOUTFE
-      REAL(8) TOUTSV,TOUTFV
-      REAL(8) TOUTFGC, TOUTFGE, TOUTFGV, TOUTFGW, TOUTF_TVW
-      REAL(8) TOUTFM, TOUTSGC, TOUTSGE, TOUTSGV, TOUTSGW, TOUTSM, TOUTS_TVW
+      REAL(SZ) TOUTSC
+      REAL(SZ) TOUTSE,TOUTFE
+      REAL(SZ) TOUTSV,TOUTFV
+      REAL(SZ) TOUTFGC, TOUTFGE, TOUTFGV, TOUTFGW, TOUTF_TVW
+      REAL(SZ) TOUTFM, TOUTSGC, TOUTSGE, TOUTSGV, TOUTSGW, TOUTSM, TOUTS_TVW
 
-      REAL(8),ALLOCATABLE ::   RPIPEWL1AVG(:),RPIPEWL2AVG(:)
+      REAL(SZ),ALLOCATABLE ::   RPIPEWL1AVG(:),RPIPEWL2AVG(:)
       INTEGER  NODEDRYMIN,NODEWETMIN
       INTEGER  IM
       INTEGER :: NABOUT = 0
@@ -590,27 +566,27 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       INTEGER  RES_BC_FLAG  ! boundary condition flag for salinity and temperature
       INTEGER  BCFLAG_LNM   ! boundary condition flag for levels of no motion
       INTEGER  BCFLAG_TEMP  ! boundary condition flag for heat flux (top temperature)
-      REAL(8) RBCTIMEINC, RBCTIME1, RBCTIME2  ! time information for level of no motion
-      REAL(8) SBCTIMEINC, SBCTIME1, SBCTIME2  ! time information for salinity
-      REAL(8) TBCTIMEINC, TBCTIME1, TBCTIME2  ! time information for temperature
-      REAL(8) TTBCTIMEINC, TTBCTIME1, TTBCTIME2  ! time information for heat flux (top temperature)
-      REAL(8) BCSTATIM, RBCRATIO
-      REAL(8) SBCSTATIM, SBCRATIO
-      REAL(8) TBCSTATIM, TBCRATIO
-      REAL(8) TTBCSTATIM, TTBCRATIO
-      REAL(8) SPONGEDIST  ! distance information for the sponge layer
+      REAL(SZ) RBCTIMEINC, RBCTIME1, RBCTIME2  ! time information for level of no motion
+      REAL(SZ) SBCTIMEINC, SBCTIME1, SBCTIME2  ! time information for salinity
+      REAL(SZ) TBCTIMEINC, TBCTIME1, TBCTIME2  ! time information for temperature
+      REAL(SZ) TTBCTIMEINC, TTBCTIME1, TTBCTIME2  ! time information for heat flux (top temperature)
+      REAL(SZ) BCSTATIM, RBCRATIO
+      REAL(SZ) SBCSTATIM, SBCRATIO
+      REAL(SZ) TBCSTATIM, TBCRATIO
+      REAL(SZ) TTBCSTATIM, TTBCRATIO
+      REAL(SZ) SPONGEDIST  ! distance information for the sponge layer
       LOGICAL :: OUTPUTSPONGE  =  .FALSE.
-      REAL(8) RIVBCTIMINC, RIVBCTIME1, RIVBCTIME2  ! time information for river - baroclinic
-      REAL(8) BCRivRATIO, RIVBCSTATIM
-      REAL(8) BEDSTR
-      REAL(8) COND
-      REAL(8) RAMP, RBARWL
-      REAL(8) RBARWL1,RBARWL1F, RBARWL2, RBARWL2F
-      REAL(8) TIMEIT, TOUTFC
-      REAL(8) CORI
-      REAL(8) DAY,DRAMP
-      REAL(8) H0
-      REAL(8) RNDAY
+      REAL(SZ) RIVBCTIMINC, RIVBCTIME1, RIVBCTIME2  ! time information for river - baroclinic
+      REAL(SZ) BCRivRATIO, RIVBCSTATIM
+      REAL(SZ) BEDSTR
+      REAL(SZ) COND
+      REAL(SZ) RAMP, RBARWL
+      REAL(SZ) RBARWL1,RBARWL1F, RBARWL2, RBARWL2F
+      REAL(SZ) TIMEIT, TOUTFC
+      REAL(SZ) CORI
+      REAL(SZ) DAY,DRAMP
+      REAL(SZ) H0
+      REAL(SZ) RNDAY
       REAL(8)  RNP_GLOBAL
       REAL(8)  REFSEC   ! required to run in either 32-bit or 64-bit
 
@@ -677,11 +653,11 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       INTEGER, TARGET :: IBSTP  ! position in station bathy output file      
       REAL(8) :: BTIMINC ! TIME INCREMENT (SECONDS) FOR BATHYMETRY CHANGES USED FOR TIME VARYING BATHYMETRY
       REAL(8) :: BCHGTIMINC ! time increment (seconds) over which bathymetry changes during a btimeinc interval
-      REAL(8),ALLOCATABLE, TARGET ::  DP00(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  DP00(:)
 
 ! TCM v52.30.01 ADDITIONS FOR USING SMAGORINSKY eddy MODEL OPTIONS
-      REAL(8) :: SMAG_UPPER_LIM = 100.d0  ! m^2/s (default upper limit)
-      REAL(8) :: SMAG_LOWER_LIM = 1.0d-8  ! m^2/s (default lower limit)
+      REAL(SZ) :: SMAG_UPPER_LIM = 100.d0  ! m^2/s (default upper limit)
+      REAL(SZ) :: SMAG_LOWER_LIM = 1.0d-8  ! m^2/s (default lower limit)
       LOGICAL :: SMAG_COMP_FLAG = .FALSE.   !BY DEFAULT DO NOT USE SMAG
 ! TCM v53.01.02 Addition for special nearest neighbor station interpolation when
 !           station location occurs in a partially wet / partially dry element
@@ -713,14 +689,14 @@ C     kmd48.33bc - added variables for 3D boundary conditions
          integer :: units_id
          character(80) :: positive
          integer :: positive_id
-         real(8), allocatable :: data_array3(:,:)
+         real(sz), allocatable :: data_array3(:,:)
       end type xdmfMetaData_t
       !
       ! info required for dedicated writers
       type writerData_t
          logical :: bufferInitialized  !.true. if memory has been allocated
          logical :: bufferLoaded       !.true. if buffered data must be written
-         real(8) :: myTime
+         real(sz) :: myTime
          integer :: myTimeStep
       end type writerData_t
 C
@@ -733,11 +709,11 @@ C     elements to the structure
         CHARACTER(1024)   :: file_name ! name of output file
         character(20)     :: field_name !Name of the field associated with the data structure
         integer           :: specifier  ! output format from fort.15 (NOUTE,etc)
-        REAL(8)          :: initial_value
+        REAL(SZ)          :: initial_value
         logical           :: ConsiderWetDry ! Flag for considering nodes wet/dry status
-        real(8)          :: alternate_value  ! Value that can be used as an alternate value
-        REAL(8), pointer :: x_coord(:) ! x-coord or longitude (station or mesh)
-        REAL(8), pointer :: y_coord(:) ! y-coord or lat (station or mesh)
+        real(sz)          :: alternate_value  ! Value that can be used as an alternate value
+        REAL(SZ), pointer :: x_coord(:) ! x-coord or longitude (station or mesh)
+        REAL(SZ), pointer :: y_coord(:) ! y-coord or lat (station or mesh)
         ! num_items_per_record is number of "tuples", i.e.
         ! it is equal to 1 if scalar, 2 if 2D vector, 3 if 3D vector, etc
         integer           :: num_items_per_record
@@ -748,18 +724,18 @@ C     elements to the structure
         integer           :: num_records_this
         integer,  pointer :: imap(:)   ! local-to-global mapping
         integer,  pointer :: iarray(:)
-        REAL(8), pointer :: array(:)  ! scalar data or 1st component of vector
-        REAL(8), pointer :: array2(:) ! 2nd component of vector
-        REAL(8), pointer :: array3(:) ! 3rd component of vector
-        REAL(8), pointer :: array2D(:,:) ! subdomain matrix
+        REAL(SZ), pointer :: array(:)  ! scalar data or 1st component of vector
+        REAL(SZ), pointer :: array2(:) ! 2nd component of vector
+        REAL(SZ), pointer :: array3(:) ! 3rd component of vector
+        REAL(SZ), pointer :: array2D(:,:) ! subdomain matrix
         logical :: isInteger ! .true. if this is an integer array
         INTEGER, pointer  :: iarray_g(:) ! full domain integer
-        REAL(8), pointer :: array_g(:)  ! full domain data scalar etc
-        REAL(8), pointer :: array2_g(:) ! full domain 2nd vec component
-        REAL(8), pointer :: array3_g(:) ! full domain 3rd vec component
-        REAL(8), pointer :: array2D_g(:,:) ! fulldomain matrix
-        REAL(8), pointer :: hotstart(:) ! from hotstart (used by min max)
-        REAL(8), pointer :: hotstart_g(:) ! from hotstart (used by min max)
+        REAL(SZ), pointer :: array_g(:)  ! full domain data scalar etc
+        REAL(SZ), pointer :: array2_g(:) ! full domain 2nd vec component
+        REAL(SZ), pointer :: array3_g(:) ! full domain 3rd vec component
+        REAL(SZ), pointer :: array2D_g(:,:) ! fulldomain matrix
+        REAL(SZ), pointer :: hotstart(:) ! from hotstart (used by min max)
+        REAL(SZ), pointer :: hotstart_g(:) ! from hotstart (used by min max)
         logical :: writeFlag ! .true. if the data should be written during this run
         logical :: isStation ! .true. if the data represent a recording station
         logical :: divideByDepth ! .true. if the solution must be divided by depth b/f output
@@ -767,17 +743,17 @@ C     elements to the structure
         logical :: useWriter ! .true. if a dedicated writer should be used to write these data
         integer :: file_extension  ! end of the file name       
         character(len=32) :: file_basename  ! usually 'fort' but sometimes 'rads' etc
-        real(8), pointer :: interped_array(:) ! array that stations spatially interpolate
-        real(8), pointer :: interped_array2(:) ! array2 that stations spatially interpolate
+        real(sz), pointer :: interped_array(:) ! array that stations spatially interpolate
+        real(sz), pointer :: interped_array2(:) ! array2 that stations spatially interpolate
         integer :: startTimeStep ! time step after which output should begin
         integer :: endTimeStep   ! last time step when output should occur    
         integer :: outputTimeStepIncrement ! num time steps between outputs          
         integer, pointer :: spoolCounter ! counts time steps between outputs
         integer, pointer :: filepos ! keeps track of position in output files
         integer, pointer :: elements(:) ! array of elements that contain the stations
-        real(8), pointer :: interp_fac1(:) ! array of interp. factors for stations
-        real(8), pointer :: interp_fac2(:) ! array of interp. factors for stations        
-        real(8), pointer :: interp_fac3(:) ! array of interp. factors for stations
+        real(sz), pointer :: interp_fac1(:) ! array of interp. factors for stations
+        real(sz), pointer :: interp_fac2(:) ! array of interp. factors for stations        
+        real(sz), pointer :: interp_fac3(:) ! array of interp. factors for stations
         logical :: initialized ! .true. if initialization has occurred (netcdf, xdmf)
         logical :: minmax_timestamp ! .true. if a time stamp will be written to a max file
         logical :: readMaxMin ! .true. if max/min file should be read upon hotstart
@@ -787,13 +763,13 @@ C     elements to the structure
       !
       ! inunThresh is used to set a minimum inundation depth for 
       ! accumulating inundationTime for detailed inundation output
-      real(8) :: inunThresh = 0.6d0
+      real(sz) :: inunThresh = 0.6d0
       !
       ! inundationOutput can be set to .true. in read_input()
       logical :: inundationOutput = .false. 
 C.... DMW 202207 Added controls for slope/wind limiting and for using "new" vel formula in wet/dry routine.
 C....  Set these controls to off by default. (Large value on slim effectively assures limiter is not applied anywhere.)
-      real(8) :: slim = 1.d9
+      real(sz) :: slim = 1.d9
       logical :: windlim = .false.
       
       logical :: directvelWD = .false.,  useHF = .false.
@@ -821,10 +797,10 @@ C     v49.48.01 tcm 20110126 Variables related to kdtree searches
       TYPE(KDTREE2_RESULT), ALLOCATABLE :: KDRESULTS(:)
 
       !jgf: water level offset at two time levels
-      real(8), allocatable :: dynamicWaterLevelCorrection1(:)
-      real(8), allocatable, target :: dynamicWaterLevelCorrection2(:)
+      real(sz), allocatable :: dynamicWaterLevelCorrection1(:)
+      real(sz), allocatable, target :: dynamicWaterLevelCorrection2(:)
       logical :: usingDynamicWaterLevelCorrection = .false.
-      real(8), allocatable, target :: dynamicWaterLevelCorrectionSta(:)
+      real(sz), allocatable, target :: dynamicWaterLevelCorrectionSta(:)
 
 C----- DW --- periodic bc 
       INTEGER:: NPERSEG, NNPERBC
@@ -1096,13 +1072,13 @@ C     ----------------------------------------------------------------
 C     jgf49.1001 Function to get the distance along the surface of
 C     a sphere (the earth's surface in this case).
 C     ----------------------------------------------------------------
-      REAL(8) FUNCTION sphericalDistance(dx, dy, y1, y2)
-      USE ADC_CONSTANTS,only: deg2rad, rearth
+      REAL(SZ) FUNCTION sphericalDistance(dx, dy, y1, y2)
+      use constants,only: deg2rad, rearth
       IMPLICIT NONE
-      REAL(8), intent(in) :: DX    ! longitude distance in radians
-      REAL(8), intent(in) :: DY    ! latitude distance in radians
-      REAL(8), intent(in) :: y1    ! degrees latitude of starting point
-      REAL(8), intent(in) :: y2    ! degrees latitude of ending point
+      REAL(SZ), intent(in) :: DX    ! longitude distance in radians
+      REAL(SZ), intent(in) :: DY    ! latitude distance in radians
+      REAL(SZ), intent(in) :: y1    ! degrees latitude of starting point
+      REAL(SZ), intent(in) :: y2    ! degrees latitude of ending point
 C
 C     compute the distances based on haversine formula for
 C     distance along a sphere
@@ -2009,8 +1985,8 @@ C     available to different parts of ADCIRC.
       pure function adcirc_norm2(x)
 !-----------------------------------------------------------------------
         implicit none
-        real(8), intent(in) :: x(:)
-        real(8)             :: adcirc_norm2
+        real(SZ), intent(in) :: x(:)
+        real(sz)             :: adcirc_norm2
 #ifdef NOF2008
         intrinsic            :: dot_product, sqrt
         adcirc_norm2 = sqrt(dot_product(x,x))
