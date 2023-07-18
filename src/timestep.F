@@ -362,7 +362,7 @@ C...  Wind (& wave radiation stress if used)
             PR1(I)=PR2(I)
             PR2(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
          ELSE
-C WJP 02.26.2018 inserted from Dam's code    
+C WJP 02.26.2018 inserted from Dams code    
 !c dw ------------- otherwise, tide run could fail      
             PR2(I) = PRBCKGRND_MH2O 
          END IF

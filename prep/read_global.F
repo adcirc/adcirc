@@ -895,7 +895,7 @@ C
       READ(15,80) NWSMSG
       READ(NWSMSG,*) NWS
 
-C....tcm v49.46 -- added logic to handle multiple NRS types (100's place)
+C....tcm v49.46 -- added logic to handle multiple NRS types (100s place)
 C.....tcm v49.64.01 Additions for ice
       IF(NWS.EQ.0) THEN
          NWS = 0
@@ -926,7 +926,7 @@ Casey 180318: Added NWS=13
      &       (ABS(NWS).NE.14).AND.(ABS(NWS).NE.19).AND.
      &       (ABS(NWS).NE.20) .AND. (ABS(NWS).ne.30) .AND. (NWS.NE.10) .AND.
      &       (ABS(NWS).NE.29) .AND. (ABS(NWS).ne.16) .AND.
-     &       (ABS(NWS).NE.17))THEN                             !PV added NWS=17 for NUOPC atm. forcing
+     &       (ABS(NWS).NE.17) .AND. (ABS(NWS).ne.67))THEN                             !PV added NWS=17 for NUOPC atm. forcing
            print *,"ERROR: Value for NWS not supported by parallel code"
            CALL EXIT(1)
         ENDIF
@@ -948,7 +948,7 @@ C...  xyc v52.30: note:Not sure if NWS.EQ.7 here should be removed
 C     jgf46.08 Modified to accomodate fine grained ramp functions.
       READ(15,80) RAMPMSG
       READ(RAMPMSG,*) NRAMP
-Corbitt 120322: Includes Zach's Wind Ramping
+Corbitt 120322: Includes Zachs Wind Ramping
       IF ((NRAMP.NE.0).AND.(NRAMP.GT.8)) THEN
          print *, "Value for NRAMP not allowed"
          IF (NFOVER.EQ.1) THEN
@@ -1057,7 +1057,7 @@ C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
      &     .OR.(ABS(NWS).EQ.15) !jgf50.38.05: Added NWS=15 for HWind.
      &     .OR.(ABS(NWS).EQ.20) !jie: Added NWS=20 for GAHM
      &     .OR.(ABS(NWS).EQ.13) ! arc added nws13 190110
-     &     .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.16)) THEN
+     &     .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.16) .OR.(ABS(NWS).EQ.67)) THEN
          READ(15,80) WSMSG1
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(WSMSG1,*) WTIMINC
          IF((NCICE.EQ.0).AND.
@@ -1082,7 +1082,7 @@ C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
          ENDIF
       ENDIF
 C
-C     jgf49.0804 Added NWS29 VortexOWI -- don't think we need to
+C     jgf49.0804 Added NWS29 VortexOWI -- dont think we need to
 C     parse out the WTIMINC or other parameters.
       ! jgf: Added NWS30.
       IF (((ABS(NWS)).EQ.29).or.(abs(NWS).eq.30)) THEN
@@ -1340,7 +1340,6 @@ C...
 C
       READ(15,80) NSTAEMSG
       READ(NSTAEMSG,*) NSTAE
-      write(6,*) 'nstae=',nstae ! jgfdebug
       !tcm v51.20.03 -- addition for external elevation station file
       if (NSTAE < 0 ) then
          WRITE(*,*) "External File Used for Elevation Station Locations"

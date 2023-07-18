@@ -867,7 +867,7 @@ C
 C               and Temperature forcing
          C2D_BTrans = .TRUE.
       CASE(-4)! 2DDI Diagnostic Baroclinic ADCIRC run with Salinity
-C               and Temperature forcing'
+C               and Temperature forcing
          ! do nothing
       CASE(-5)! 2DDI Diagnostic Baroclinic ADCIRC run reading from fort.11
 C               with pre-computed BPG
@@ -1038,7 +1038,13 @@ C..... saeed added,
         IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,CICE_TIMINC            !SKIP OVER WTIMINC
         IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC,CICE_TIMINC
       ENDIF
-
+      
+C..... brian added for CoPe project
+      IF(ABS(NWS).EQ.67) THEN
+         IF(NRS.EQ.0) READ(15,*) WTIMINC
+         IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+      ENDIF
+      
       DO IL=1,2                                    !SKIP OVER RNDAY,DRAMP
          READ(15,*) RDUM
       ENDDO
@@ -1275,7 +1281,6 @@ C
       CALL setFormatUsage(NHAGE)
       CALL setFormatUsage(NHAGV)
       READ(15,*) NHSTAR,IDUM                          !SKIP OVER NHSTAR,NHSINC
-      PRINT *, "NHSTAR = ", NHSTAR
       IF ((ABS(NHSTAR).EQ.3).OR.(ABS(NHSTAR).EQ.367)
      &    .OR.(ABS(NHSTAR).EQ.368).OR.
      &    (ABS(NHSTAR).EQ.5).OR.(ABS(NHSTAR).EQ.567)

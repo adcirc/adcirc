@@ -1583,7 +1583,7 @@ C     jie      ADDed NWS=20(generalized asymmetric vortex winds)
 C     sb46.28sb01 Added NWS=12 (OWI format) 09/xx/2006
 C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
 C     tcm v49.46 Added NWS = 4xx for tight coupling with STWAVE
-C     tcm v49.64.01 Added NWS = 1xxx's for ice concentration
+C     tcm v49.64.01 Added NWS = 1xxxs for ice concentration
       NCICE = 0  !set ice type to be 0
 C
       READ(15,FMT=*,END=99998,ERR=99999) NWS
@@ -1643,7 +1643,7 @@ C.... SET WAVE RADIATION STRESS FLAG AND ADJUST NWS ACCORDINGLY
 !          NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
 !       ENDIF
 ! #endif
-C.... tcm v49.46 rewrote to combine different 100's power NRS
+C.... tcm v49.46 rewrote to combine different 100s power NRS
       NRS = 0
       IF(NWS.EQ.0) THEN
          NWS = 0
@@ -2054,6 +2054,15 @@ C     jgf49.1001 Added option to embed NWS19 in a NAM background wind field
      &    /,9X,'THE OWI FILES BEGIN AT THE HOTSTART TIME.',
      &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
      &    /,9X,'WITH THE MODEL TIME STEP.')
+      ENDIF
+
+      ! bob: Added NWS67 option for CoPe project
+      IF(ABS(NWS).EQ.67) THEN
+         WRITE(16,3406) NWS
+ 3406    FORMAT(/,5X,'NWS = ',I2,
+     &    /,9X,'HURRICANE PARAMETERS AND A VANILLA ',
+     &    /,9X,'HOLLAND MODEL ARE USED TO FORCE THE COMPUTATION',
+     &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22.')
       ENDIF
 
       IF(NRS.EQ.0) THEN
@@ -2694,6 +2703,10 @@ C saeed added  TODO: I should remove this partialy: cap should provide the time 
         IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC, RSTIMINC, CICE_TIMINC
       ENDIF
 
+      IF(ABS(NWS).EQ.67) THEN
+         IF(NRS.EQ.0) READ(15,*) WTIMINC
+         IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+      ENDIF
 
       IF(NWS.NE.0) WRITE(16,1117) WTIMINC
  1117 FORMAT(5X,'WIND TIME INCREMENT (SEC) = ',F10.2,/)
