@@ -144,6 +144,7 @@ Casey 180318: Added NWS=13
      &                          NWS13GroupForPowell,
      &                          NWS13WindMultiplier
 #endif
+      USE INTERNALTIDE, ONLY : filterType, tideVeloFilename
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
       INTEGER NTimeVaryingWeir
@@ -191,6 +192,8 @@ C.... DMW
       NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
      &  WarnElevDumpLimit, ErrorElev
       NAMELIST /AliDispersionControl/ CAliDisp, Cs, Ad, Bd
+C...  CPB 7/2023: itFricControl namelist
+      NAMELIST /itFricControl/ filterType, tideVeloFilename    
       NAMELIST /densityControl/ densityRunType, densityFileName, 
      &  densityTimeIterator, densityForcingType
 #ifdef ADCNETCDF
@@ -687,7 +690,29 @@ C     WJP add namelist
       IDEN = IDEN*IDENsign
       if (IDEN.ne.0) CBaroclinic = .true.
 C...
-
+C...
+C...  CPB 9/2022: add ITFricControl Namelist
+C...     This namelist can be used to alter the behavior of the internal
+C...  tide dissipation mechanism when operating in coupled OGCM-ADCIRC
+C...  mode. The default behavior uses a high pass version of the Munk
+C...  "Tide Killer" Filter 
+C...
+      ! default to using the munk high pass filter
+      filterType = 'MunkHP'
+      tideVeloFileName = 'tidalVelo.nc'
+      ! read namelist
+      namelistSpecifier = 'itFricControl'
+      read(unit=15,nml=itFricControl,iostat=IOS)
+      call logNameListReadStatus(namelistSpecifier,ios)
+      ! write scratch messages
+      write(scratchMessage,'(a,a)') "filterType=",TRIM(filterType)
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,a)') "tideVeloFileName=",
+     &      trim(tideVeloFileName)
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+C...
+C...  END CPB
 
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN

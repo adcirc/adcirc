@@ -2361,7 +2361,16 @@ c...     wjp additions for density Control Namelist
             write(15,'(3A)') '  densityForcingType="',TRIM(densityForcingType),'"   /'
             write(15,*) '! -- End density Control NameList --'
          ENDIF
-
+c...     CPB additions for itFric Control Namelist if found in fort.15
+         IF (FOUND_ITFRIC_NML) then  
+            write(15,*) '! -- Begin itFric Control NameList --'
+            WRITE(15,*) '&itFricControl'
+            WRITE(15,*) 'filterType = "',TRIM(filterType),'"'
+            WRITE(15,*) 'tideVeloFileName = "',TRIM(tideVeloFileName),
+     &                  '"'
+            WRITE(15,*) '/'
+            write(15,*) '! -- End itFric Control NameList --'
+         ENDIF    
          CLOSE(15)
 C
  1000 CONTINUE
