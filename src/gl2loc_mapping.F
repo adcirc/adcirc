@@ -13,7 +13,7 @@ C----------------------------------------------------------------------
       USE SIZES, ONLY : MNPROC, MYPROC, SZ
       USE MESH, ONLY : NP ! local number of nodes
       USE GLOBAL, ONLY : nodes_lg, np_g, COMM, realtype
-#IFDEF HAVE_MPI_MOD
+#IFDEF CMPI
       USE MPI
 #ENDIF      
       IMPLICIT NONE

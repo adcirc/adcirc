@@ -167,7 +167,8 @@ C-----------------------------------------------------------------------
       use netcdf
       use mesh, ONLY: slam, sfea, binarysearch, bl_interp, np, ne, nm,
      &                conserve_interp, neitabele, nodele !indmax
-      use global, ONLY: rad2deg, np_g, ne_g
+      use global, ONLY: np_g, ne_g
+      use constants, ONLY: rad2deg
       implicit none
       integer,intent(in) :: NC_ID
       integer  :: Temp_ID, i, j, ic, jc, js, indt(4), numfound !ind(2,indmax), cc
@@ -482,7 +483,7 @@ C-----------------------------------------------------------------------
 #ifdef CMPI
       USE GL2LOC_MAPPING, ONLY : MAPTOLOCAL_REAL
 #endif      
-      use global, ONLY: rad2deg
+      use constants, ONLY: rad2deg
       implicit none
       INTEGER,INTENT(IN) :: NC_ID
       ! global arrays
@@ -1031,8 +1032,9 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE FBPG_Disp_from_BC3D
 
-      USE GLOBAL, ONLY: G, IFNLFA, IFNLCT, RAMP, NODECODE, NOFF, 
-     &                  ETA2, RhoWat0, IFSFM 
+      USE GLOBAL, ONLY: IFNLFA, IFNLCT, RAMP, NODECODE, NOFF,
+     &                  ETA2, IFSFM
+      USE CONSTANTS, ONLY: G, RhoWat0
       USE SPONGELAYER, ONLY: NO_BPG_IN_SPONGE 
       USE NodalAttributes, ONLY: absorblayer_sigma_mnx, 
      &                           absorblayer_sigma_mny
