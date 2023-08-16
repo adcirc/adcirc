@@ -1456,12 +1456,16 @@ C 09232016 WP : Spatially varying linear internal tide friction
      &              OverlandReductionFactorDefaultValue,
      &              NumNodesNotDefault,nScreen,MyProc,
      &              NAbOut)
+            ELSE
+              SkipDataSet = .True.
             ENDIF
          CASE("subgrid_barrier")
              IF(LoadSubgridBarrier)THEN
                  CALL LoadAttrMat(SubgridBarrier,SubgridBarrierNoOfVals,
      &              subgridBarrierDefaultValue,NumNodesNotDefault,
      &              nScreen,MyProc,NAbOut)
+             ELSE
+               SkipDataSet = .True.
              ENDIF
 C          WP
 !------- DW ---- Absorbing layer -----------
@@ -2594,7 +2598,8 @@ C     ----------------------------------------------------------------
 !     ----------------------------------------------------------------
       SUBROUTINE ApplyDirectionalWindReduction(NodeNumber, WindDragCo,
      &     WindMag, BathymetricDepth, Elevation, WindX, WindY)
-        USE GLOBAL,ONLY:RAD2DEG,G,h0
+        USE GLOBAL,ONLY:h0
+        USE CONSTANTS,ONLY:RAD2DEG,G
         implicit none
         intrinsic               :: atan2
         integer,  intent(in)    :: NodeNumber 

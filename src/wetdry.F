@@ -122,9 +122,10 @@ CWET...
       subroutine computeWettingAndDrying(it)
       use sizes, only : sz, mne, mnp
       use nodalattributes,only: loadSubgridBarrier
+      use constants, only: g
       use global, only : noff, nodecode, nnodecode, eta1, eta2, tk,
      &    nolifa,
-     &    bsx1, bsy1, btime_end, C2DDI, C3D, g, h0, ifnlfa, nddt, dtdp,
+     &    bsx1, bsy1, btime_end, C2DDI, C3D, h0, ifnlfa, nddt, dtdp,
      &    nibnodecode, ilump, ncchange, tkm, directvelWD, useHF
 #ifdef CMPI
      &    ,idumy,dumy1,dumy2

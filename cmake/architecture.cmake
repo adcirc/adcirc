@@ -1,33 +1,31 @@
-message( STATUS "System Architecture Detected: ${CMAKE_SYSTEM_PROCESSOR}")
+message(STATUS "System Architecture Detected: ${CMAKE_SYSTEM_PROCESSOR}")
 
-include(${CMAKE_SOURCE_DIR}/cmake/mpi_check.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/mpi_check.cmake)
 
-# ##############################################################################
+# ######################################################################################################################
 # ...Compiler specific options
-get_filename_component(Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
 if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
   # gfortran
   set(Fortran_LINELENGTH_FLAG
       "-ffixed-line-length-none"
-      CACHE STRING
-            "Compiler specific flag to enable extended Fortran line length")
+      CACHE STRING "Compiler specific flag to enable extended Fortran line length")
 
   # 64 bit array sizing
-  if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64" )
+  if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
     set(Fortran_COMPILER_SPECIFIC_FLAG
         "-mcmodel=medium"
         CACHE STRING "Compiler specific flags")
   else()
     set(Fortran_COMPILER_SPECIFIC_FLAG
-        "" CACHE STRING "Compiler specific flag")
+        ""
+        CACHE STRING "Compiler specific flag")
   endif()
 
 elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPILER_ID} STREQUAL "IntelLLVM")
   # ifort
   set(Fortran_LINELENGTH_FLAG
       "-132"
-      CACHE STRING
-            "Compiler specific flag to enable extended Fortran line length")
+      CACHE STRING "Compiler specific flag to enable extended Fortran line length")
 
   # Heap array allocation
   execute_process(COMMAND sh -c "ulimit -s" OUTPUT_VARIABLE STACKSIZE)
@@ -55,12 +53,11 @@ elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPILER
       ${ifort_FLAG_TRIMMED}
       CACHE STRING "Compiler specific flags")
 
-elseif(Fortran_COMPILER_NAME MATCHES "pgf90.*")
+elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "PGI")
   # pgf90
   set(Fortran_LINELENGTH_FLAG
       "-Mextend"
-      CACHE STRING
-            "Compiler specific flag to enable extended Fortran line length")
+      CACHE STRING "Compiler specific flag to enable extended Fortran line length")
 
   # 64 bit array sizing
   if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
@@ -70,15 +67,12 @@ elseif(Fortran_COMPILER_NAME MATCHES "pgf90.*")
   endif()
 
 else()
-  message("CMAKE_Fortran_COMPILER full path: " ${CMAKE_Fortran_COMPILER})
-  message("Fortran compiler: " ${Fortran_COMPILER_NAME})
-  message(
-    "No known predefined Fortran extended line length flag known. Please manually set the Fortran_LINELENGTH_FLAG"
-  )
+  message(WARNING "Unknown Fortran Compiler. Fortran Compiler ID detected as ${CMAKE_Fortran_COMPILER_ID}")
+  message(WARNING
+    "No known predefined Fortran extended line length flag known. Please manually set the Fortran_LINELENGTH_FLAG")
   set(Fortran_LINELENGTH_FLAG
       ""
-      CACHE STRING
-            "Compiler specific flag to enable extended Fortran line length")
+      CACHE STRING "Compiler specific flag to enable extended Fortran line length")
   set(Fortran_COMPILER_SPECIFIC_FLAG
       ""
       CACHE STRING "Compiler specific flags")

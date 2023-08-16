@@ -10,7 +10,7 @@ C                     current for ADCIRC v46.34   09/20/2006
 C----------------------------------------------------------------------------
 
       MODULE PRE_GLOBAL
-      USE GLOBAL,ONLY: REarth,DEG2RAD,RAD2DEG
+      USE CONSTANTS,ONLY: REarth,DEG2RAD,RAD2DEG
       USE GLOBAL_3DVS, ONLY: NFEN
       USE PRESIZES
       USE VERSION
@@ -436,7 +436,7 @@ c----------------------------------------------------------------------
       SUBROUTINE ALLOC_MAIN1()
 c----------------------------------------------------------------------
       use memory_usage
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
 C
 C     Allocate space for Arrays except those dimensioned by MNPP and MNEP
 C
@@ -566,7 +566,7 @@ C---------------------------------------------------------------------
 C---------------------------------------------------------------------
       SUBROUTINE ALLOC_MAIN2()
       use memory_usage
-      integer nbytes
+      integer(8) :: nbytes
 C
 C     Allocate space for Arrays dimensioned by MNPP and MNEP
 C
@@ -592,7 +592,7 @@ C---------------------------------------------------------------------
 C---------------------------------------------------------------------
       subroutine dealloc_main2()
       use memory_usage
-      integer nbytes
+      integer(8) :: nbytes
 C
 C     Deallocate space for Arrays dimensioned by MNPP and MNEP
 C

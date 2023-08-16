@@ -3,7 +3,8 @@ C--------DW for sponge layer
 C     
       MODULE SPONGELAYER 
       
-      USE GLOBAL, ONLY: STATIM, IFNLFA, ETA2, UU2, VV2, G, QX2, QY2
+      USE GLOBAL, ONLY: STATIM, IFNLFA, ETA2, UU2, VV2, QX2, QY2
+      USE CONSTANTS, ONLY: G
       USE SIZES, ONLY: SZ
       USE MESH, ONLY: NP, NM, NE, DP, X
 !      USE WIND

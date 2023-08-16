@@ -55,17 +55,15 @@ C
      &    inundationOutput, ITHS, METONLY, NCICE, NDDT, NFFR, NHSINC,
      &    NHSTAR, NOLIFA, NRamp, NRS, NSCREEN, NTIF, QTIME1, QTIME2, Ramp,
      &    RampElev, RampExtFlux, RampMete, RampTip, RampWRad, RBCRATIO,
-     &    RBCTIME1, RBCTIME2, RBCTIMEINC, REFTIM, RES_BC_FLAG, RhoWat0,
-     &    RSTIME1, RSTIME2, NWS, RSTIMINC, SCREENUNIT, SIGT0, STATIM, TK,
+     &    RBCTIME1, RBCTIME2, RBCTIMEINC, REFTIM, RES_BC_FLAG, 
+     &    RSTIME1, RSTIME2, NWS, RSTIMINC, SCREENUNIT, STATIM, TK,
      &    WVNXOUT, WVNYOUT, WarnElev, PERT, FACET, FFT, AMIGT, SALTPHA,
      &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF, 
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
      &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
      &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE
-#ifdef CSWAN
-     &  , waveWindMultiplier
-#endif
+      USE CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier
       USE GWCE, ONLY : solveGWCE, numitr
       USE MOMENTUM, ONLY : solveMomentumEq
       USE WETDRY, ONLY : computeWettingAndDrying
@@ -842,8 +840,6 @@ C...
             END DO
           END DO
          END IF
-!---------------------------------------------------------------------------------------------------
-! arash wanted to debug, and everything seems to be fine.
 
          IF((NFFR.EQ.0).OR.(NFFR.EQ.-1)) THEN
             IF(TimeLoc.GT.QTIME2) THEN
@@ -854,34 +850,17 @@ C...
      &                 .OR.(LBCODEI(J).EQ.22)) THEN
                      QNIN1(J)=QNIN2(J)
                      READ(20,*) QNIN2(J)
-
-!                     write(*,*) 'inside timestep: IT = ', IT
-!                     write(*,*) 'inside timestep: J, QNIN2 = ', J, QNIN2(J)
-!                      QNIN2 = 0.0d0  ! arash
-
-                  ENDIF
-                  IF(LBCODEI(J).EQ.32) THEN
+                  ELSEIF(LBCODEI(J).EQ.32) THEN
                      QNIN1(J)=QNIN2(J)
                      ENIN1(J)=ENIN2(J)
                      READ(20,*) QNIN2(J),ENIN2(J)
-
-!                     write(*,*) 'inside timestep: IT = ', IT
-!                     write(*,*) 'inside timestep: we should not be here!'
-
                   ENDIF
                END DO
             ENDIF
-!---------------------------------------------------------------------------------------------------
+
             QTRATIO=(TimeLoc-QTIME1)/FTIMINC
-
-!            if (myproc == 12) write(*,*) 'QTRATIO = ', QTRATIO
-            !write(*,*) 'myproc =', myproc
-
-
-            DO I=1,NVEL
-               QN2(I)=RampExtFlux*(QNIN1(I)+QTRATIO*(QNIN2(I)-QNIN1(I)))
-               EN2(I)=RampExtFlux*(ENIN1(I)+QTRATIO*(ENIN2(I)-ENIN1(I)))
-            END DO
+            QN2=RampExtFlux*(QNIN1+QTRATIO*(QNIN2-QNIN1))
+            EN2=RampExtFlux*(ENIN1+QTRATIO*(ENIN2-ENIN1))
          ENDIF
 
 CRAL_add_42.06f
@@ -1352,8 +1331,9 @@ C
 
       USE GLOBAL, only: ch1, trans_lv_b, nodecode, noff, lumpt, dtdp,
      &    trans_lv_a, soursin, uu1, vv1, ifnlfa, eta1, bedstr, tk,
-     &    rhowat0, setmessagesource, unsetmessagesource, DEBUG,
+     &    setmessagesource, unsetmessagesource, DEBUG,
      &    allMessage
+      USE CONSTANTS, ONLY: rhowat0
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, SFAC
       USE NodalAttributes, ONLY: EVC
       use sizes, only: sz
@@ -1702,8 +1682,9 @@ c******************************************************************************
       SUBROUTINE BPG2D(IT,TimeLoc)
 
       USE SIZES, ONLY : SZ, myproc
-      USE GLOBAL, ONLY: G, IFNLFA, IFNLCT, IDEN, RAMP, NODECODE, NOFF, 
-     &    VIDBCPDXOH, VIDBCPDYOH, ETA2, SigT0, DTDP, DASigT, RhoWat0,
+      USE CONSTANTS, ONLY: G, RhoWat0, SigT0
+      USE GLOBAL, ONLY: IFNLFA, IFNLCT, IDEN, RAMP, NODECODE, NOFF, 
+     &    VIDBCPDXOH, VIDBCPDYOH, ETA2, DTDP, DASigT, 
      &    IFSFM
       USE MESH, ONLY : NE, NM, FDXE, FDYE, NP, DP, AREAS, NODELE, 
      &      NEITABELE, NEITAB, NNEIGH, TOTALAREA,
@@ -1867,7 +1848,8 @@ C
      &      NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH,
      &      setMessageSource, unsetMessageSource, allMessage,
      &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
-     &      ETA2, SIGT0, H0, DTDP
+     &      ETA2, H0, DTDP
+      USE CONSTANTS, ONLY: SigT0
       USE MESH, ONLY : NM, X, Y, NP, DP, AREAS, NODELE, 
      &      NEITABELE, NEITAB, NNEIGH, SFAC
       USE GLOBAL_3DVS, ONLY : BCP, BPG, NFEN, SIGT, SIGMA, IDEN,

@@ -389,9 +389,8 @@
       SUBROUTINE NWS13GET(TimeLoc,WVNX2,WVNY2,PRN2,
      &    WTIME2,EyeLonR,EyeLatR,FoundEye,W)
 !-----------------------------------------------------------------------
-      USE GLOBAL, ONLY: G,
-     &                  RHOWAT0,
-     &                  RNDAY
+      USE CONSTANTS, ONLY: G, RHOWAT0
+      USE GLOBAL, ONLY: RNDAY
       USE MESH, ONLY: NP
       USE netcdf
       USE SIZES, ONLY: MYPROC
@@ -906,7 +905,7 @@
 !-----------------------------------------------------------------------
       SUBROUTINE NWS13INTERP(IG,NumLon,NumLat,Lon,Lat,ILon,ILat,W)
 !-----------------------------------------------------------------------
-      USE GLOBAL, ONLY: RAD2DEG
+      USE CONSTANTS, ONLY: RAD2DEG
       USE kdtree2_module
       USE MESH, ONLY: NP, SLAM, SFEA
 

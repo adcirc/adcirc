@@ -24,6 +24,7 @@ C...
      &     INPUTDIR,
      &     LOCALDIR
      
+      USE CONSTANTS, ONLY: RhoWat0, G, SigT0
       USE GLOBAL,
      &     ONLY :
      &       WSX1, WSY1,     !WSX1(MNP),WSY1(MNP) = Wind stress components at time level s
@@ -41,7 +42,6 @@ Corbitt 120328: Apply Advection Locally
      &       IHOTSTP,        !hotstart file record counter
      &       NWS,
      &       IDen,           !flag telling whether salinity, temperature and/or sigmaT are being used
-     &       RhoWat0, SigT0, G,
      &       RUNDES, RDES4, RDES8,
      &       RUNID, RID4, RID8,
      &       CBaroclinic,

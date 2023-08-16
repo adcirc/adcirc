@@ -256,7 +256,8 @@
       SUBROUTINE NWS12GET(WVNX,WVNY,PRN,NP,PRdeflt,HasData)
 !-----------------------------------------------------------------------
         USE SIZES,ONLY: MYPROC,MNPROC,GBLINPUTDIR
-        USE GLOBAL,ONLY: RHOWAT0, G, NWS
+        USE GLOBAL,ONLY: NWS
+        USE CONSTANTS, ONLY: RHOWAT0, G
         IMPLICIT NONE
         INTEGER,intent(in)     :: NP
         REAL(SZ),intent(out)   :: WVNX(:),WVNY(:),PRN(:)
@@ -376,7 +377,7 @@
 !-----------------------------------------------------------------------
       subroutine findStormCenter(eyeLat, eyeLon, foundEye)
 !-----------------------------------------------------------------------
-        use GLOBAL,only:PRBCKGRND
+        use CONSTANTS,only:PRBCKGRND
         implicit none
         intrinsic               :: minloc
         real(sz), intent(inout) :: eyeLat(3)
@@ -682,8 +683,11 @@
         integer,intent(in)   :: node
         real(sz),intent(out) :: u,v,p
         logical,intent(out)  :: isSet
-        integer              :: j,xi,yi
-        real(sz)             :: w1,w2,w3,w4
+        integer              :: i,j,xi,yi
+        real(sz)             :: ui(4)
+        real(sz)             :: vi(4)
+        real(sz)             :: pi(4)
+        real(sz),parameter   :: flag = -999.0
 
         call setMessageSource("owi_interpolateToMesh")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -698,17 +702,26 @@
               xi = owi(j)%interpPoints(node,1)
               yi = owi(j)%interpPoints(node,2)
               
-              w1=owi(j)%weight(node,1)
-              w2=owi(j)%weight(node,2)
-              w3=owi(j)%weight(node,3)
-              w4=owi(j)%weight(node,4)
+              ui = (/ owi(j)%u(xi,yi), owi(j)%u(xi+1,yi), 
+     &                owi(j)%u(xi+1,yi+1), owi(j)%u(xi,yi+1) /)
+              vi = (/ owi(j)%v(xi,yi), owi(j)%v(xi+1,yi), 
+     &                owi(j)%v(xi+1,yi+1), owi(j)%v(xi,yi+1) /)
+              pi = (/ owi(j)%p(xi,yi), owi(j)%p(xi+1,yi), 
+     &                owi(j)%p(xi+1,yi+1), owi(j)%p(xi,yi+1) /)
 
-              u=w1*owi(j)%u(xi,yi)+w2*owi(j)%u(xi+1,yi)+w3*
-     &           owi(j)%u(xi+1,yi+1)+w4*owi(j)%u(xi,yi+1)
-              v=w1*owi(j)%v(xi,yi)+w2*owi(j)%v(xi+1,yi)+w3*
-     &           owi(j)%v(xi+1,yi+1)+w4*owi(j)%v(xi,yi+1)
-              p=w1*owi(j)%p(xi,yi)+w2*owi(j)%p(xi+1,yi)+w3*
-     &           owi(j)%p(xi+1,yi+1)+w4*owi(j)%p(xi,yi+1)
+              if(any(ui.eq.flag).or.
+     &           any(vi.eq.flag).or.
+     &           any(pi.eq.flag))cycle
+        
+              u=0.0
+              v=0.0
+              p=0.0
+              
+              do i=1,4
+                  u = u + owi(j)%weight(node,i)*ui(i)
+                  v = v + owi(j)%weight(node,i)*vi(i)
+                  p = p + owi(j)%weight(node,i)*pi(i)
+              enddo
 
               isSet = .true.
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -1057,7 +1070,7 @@
 !-----------------------------------------------------------------------
       SUBROUTINE NWS12INTERP(idx, NP)
 !-----------------------------------------------------------------------
-      USE GLOBAL, ONLY : RAD2DEG
+      USE CONSTANTS, ONLY : RAD2DEG
       USE MESH, ONLY : SLAM, SFEA
 
       IMPLICIT NONE

@@ -4,8 +4,8 @@
       ! vjp 10/6/2006
 
       type MemoryDescript_t
-        integer           :: highmem
-        integer           :: currmem
+        integer(8) :: highmem
+        integer(8) :: currmem
       end type MemoryDescript_t
 
       type (MemoryDescript_t),save :: mem_descript
@@ -26,8 +26,8 @@
       end subroutine memory_status
 
 
-      subroutine memory_alloc( nbytes)
-      integer nbytes
+      subroutine memory_alloc(nbytes)
+      integer(8),intent(in) :: nbytes
       mem_descript % currmem =  mem_descript % currmem + nbytes
       if (mem_descript % currmem > mem_descript % highmem) then
          mem_descript % highmem =  mem_descript % currmem + nbytes
@@ -36,7 +36,7 @@
 
 
       subroutine memory_dealloc( nbytes)
-      integer nbytes
+      integer(8),intent(in) :: nbytes
       mem_descript % currmem =  mem_descript % currmem - nbytes
       end subroutine memory_dealloc
 
@@ -93,10 +93,10 @@ C----------------------------------------------------------------------------
 
       MODULE PRESIZES
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+      USE CONSTANTS, ONLY: waveWindMultiplier
       USE GLOBAL, ONLY :
      &    USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,
-     &    WaveWindMultiplier,outputWindDrag,slim,windlim,directvelWD,
-     &    useHF
+     &    outputWindDrag,slim,windlim,directvelWD,useHF
 #if defined CSWAN || defined ADCSWAN
      &   ,SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &    SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
@@ -288,7 +288,7 @@ C     the reading of the fort.15 file.
       SUBROUTINE SIZEUP14()
       use memory_usage
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER, ALLOCATABLE :: NNEIGH(:)
       INTEGER  I,IL,IDUM,N,N1,N2,N3,NDIF1,NDIF2,NDIF3,NBN,NVEL,
      &  IK,IBN,NBBN,NFLUXB,NFLUXI,NFLUXIPipe,NIBP,NIBPPipe,IBTYPE,IBN1,NETA
@@ -492,7 +492,7 @@ C
       use memory_usage
 
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER  I,IL,IDUM,N,N1,N2,N3,NDIF1,NDIF2,NDIF3,
      &  IM,NWP,NCOR,NTIP,NWS,NRAMP,IREFYR,NTIF,IL1,Il2,NHARF,NHAINC,IDUM2,
      &  ITITER,ILUMP,IHOT

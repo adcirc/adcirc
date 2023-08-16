@@ -247,6 +247,7 @@ workflows:
                         - adcirc_global_nws10-2d
                         - adcirc_global-tide-2d
                         - adcirc_global-tide+surge-2d
+                        - adcirc_global-tide+surge-netcdfsal-2d
                         - adcirc_ideal_channel-2d-parallel
                         - adcirc_ideal_channel-woffset-2d-parallel
                         - adcirc_internal_overflow

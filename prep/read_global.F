@@ -40,7 +40,7 @@ C---------------------------------------------------------------------
       use memory_usage
       implicit none
 
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER I,J,JW,K,ITEMP,ITYPE
       INTEGER DISC,BBN,IBP,I1
       INTEGER MAXNEIGH
@@ -388,7 +388,8 @@ C----------------------------------------------------------------------
      &    getBoundariesForPrep
       implicit none
       integer, allocatable :: nneigh(:)
-      integer :: i, j, k, nbytes
+      integer :: i, j, k
+      integer(8) :: nbytes
       !
       !
       call getMeshSizesForPrep(nnodg, nelg)
@@ -479,7 +480,7 @@ C
 C    ===================================================================
 
 
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       REAL(SZ) RSTIMINC
       INTEGER N1, N2, N3, KMIN, JG, INDX
       INTEGER I,J,K,M
@@ -1937,13 +1938,14 @@ C     tjc  6/24/02
 C---------------------------------------------------------------------
       SUBROUTINE READ15_3DVS()
       USE PRE_GLOBAL
-      USE GLOBAL, ONLY : parse, a2f, SNAMLEN, deg2rad, day2sec
+      USE CONSTANTS, ONLY: deg2rad, day2sec
+      USE GLOBAL, ONLY : parse, a2f, SNAMLEN
       USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET, SIGMA,
      &    FEGRIDS
       USE MESH, only : CYLINDERMAP
       use memory_usage
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER I,J,K,M,N                                        ! loop counters
       CHARACTER(50) LVAR(3)
       REAL(8) :: STATIME

@@ -21,7 +21,8 @@
       use global, only: DEBUG, INFO, ECHO, WARNING, ERROR,
      &   scratchMessage, logMessage, screenMessage, allMessage,
      &   setMessageSource, openFileForRead, unsetMessageSource,
-     &   scratchFormat, deg2rad, rad2deg, pi, omega, Rearth
+     &   scratchFormat
+      use constants, only: deg2rad, rad2deg, pi, omega, rearth
 
       implicit none
        
@@ -1470,7 +1471,7 @@
 !     are used to locate the elements that contain the stations.
 !     ------------------------------------------------------------------
       subroutine initializeMesh()
-      use global, only : deg2rad, pi, rad2deg, h0, nolifa, nbfr, ncor, 
+      use global, only : h0, nolifa, nbfr, ncor, 
      &                   ntip, ifsprots
       use boundaries
 
@@ -1774,7 +1775,8 @@
 !     fort.15 control file, including ANGINN.
 !     ------------------------------------------------------------------
       subroutine initializeBoundaries()
-      use global, only : deg2rad, rad2deg, nbfr, c2ddi, pi, ifsprots
+      use global, only : nbfr, c2ddi, ifsprots
+      use constants, only: pi
       use boundaries
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_imax  !sb msg_imax added 10/13/2022
@@ -3108,7 +3110,6 @@ Csb...
 !       NEIMAX - 1+MAXIMUM NUMBER OF NEIGHBORS FOR ANY NODE
 !     ------------------------------------------------------------------
       SUBROUTINE NEIGHB()
-      USE GLOBAL, ONLY : rad2deg
       IMPLICIT NONE
       INTEGER :: N,NN,I,J,JJ,K,JLOW
       INTEGER :: NN1,NN2,NN3,NE1,NE2,NE3
@@ -3413,7 +3414,7 @@ Csb...
 !     Lon,Lat is in radians.
 !     ------------------------------------------------------------------
       SUBROUTINE INVCP(XXCP,YYCP,RLAMBDA,PHI,RLAMBDA0,PHI0)
-      USE GLOBAL, ONLY : Rearth
+      USE CONSTANTS, ONLY : Rearth
       IMPLICIT NONE
       REAL*8 XXCP,YYCP,RLAMBDA,PHI,RLAMBDA0,PHI0
 
@@ -4061,7 +4062,6 @@ Csb...
       END SUBROUTINE SWITCH_ELTAB_PERBC
 !-----------------------------------------------------------------------
       FUNCTION haversine(deglon1,deglon2,deglat1,deglat2) result (dist)
-          use global, only: deg2rad, Rearth 
           ! great circle distance -- adapted from Matlab 
           real(sz),intent(in) :: deglat1,deglon1,deglat2,deglon2
           real(sz) :: a,c,dist,dlat,dlon,lat1,lat2
@@ -5277,6 +5277,8 @@ C
       END SUBROUTINE SFAC_ELEAVG 
     
       SUBROUTINE CAL_ELXV_SPCOOR( XVE, YVE, LONVE, LATVE, ICS, SFLAG )
+
+      USE CONSTANTS, ONLY: RAD2DEG
 
       IMPLICIT NONE
 

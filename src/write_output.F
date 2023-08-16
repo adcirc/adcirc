@@ -354,7 +354,8 @@ C----------------------------------------------------------------------
      &   dynamicWaterLevelCorrectionSpoolCounter, dynamicWaterLevelCorrection2, 
      &   usingdynamicWaterLevelCorrection, dynamicWaterLevelCorrectionStaSpoolCounter, 
      &   dynamicWaterLevelCorrectionFilePos, dynamicWaterLevelCorrectionSta,
-     &   dynamicWaterLevelCorrectionStaFilePos, PRBCKGRND
+     &   dynamicWaterLevelCorrectionStaFilePos
+      USE CONSTANTS, ONLY: PRBCKGRND
 
       USE MESH, ONLY : NP, NE, DP, NM, ICS, labels
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim,

@@ -21,7 +21,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL, only: toutsge, toutfge, nspoolge, im, ff, bountag, 
      &   noutge, use_tvw, nscreen, nabout, nfover, warnelev, ihot, hss,
      &   smag_lower_lim, iwarnelevdump, warnelevdump, errorelev, c2ddi,
-     &   usenetcdf, cgwce_new, cme_new_nc, cme_ls_ibpv, cgwce_ls_kgq, g,
+     &   usenetcdf, cgwce_new, cme_new_nc, cme_ls_ibpv, cgwce_ls_kgq,
      &   cgwce_advec_nc, cme_areaInt_corr, ilump, c2d_ptrans, c3ddss,
      &   cbaroclinic, c3dvs, cgwce_ls_2partv, cgwce_ls_2partq, iden, dt,
      &   cme_new_c2, cme_ls_ibpq, cgwce_lump, cme_ls_ibpsv, cme_orig,h0,
@@ -31,11 +31,11 @@ C-----------------------------------------------------------------------
      &   nolifa, nolicat, dtdp, nramp, nrs, cprecor, dtdphs, statim, nt,
      &   cice_timinc, reftim, refsec, rstiminc, rnday, dramp, drampelev,
      &   fluxsettlingtime, drampextflux, drampintflux, dunrampmete, day,
-     &   dramptip, drampmete, drampwrad, rhoair, nddt, nodedrymin, tree,
+     &   dramptip, drampmete, drampwrad, nddt, nodedrymin, tree,
      &   nodewetmin, srchdp, kdresults, vidbcpdxoh, vidbcpdyoh, tpk,
      &   dasigt, dasalt, datemp, daconc, corif, ntif, amigt, vidispdxoh,
-     &   tipotag, cori, etrf, fft, facet, pert, saltamp, nbfr, deg2rad,
-     &   saltamp, saltpha, amig, face, per, csmag_eh, rad2deg, fbountag,
+     &   tipotag, cori, etrf, fft, facet, pert, saltamp, nbfr, 
+     &   saltamp, saltpha, amig, face, per, csmag_eh, fbountag,
      &   elevalpha, emo, efa, qnam, qnph, nffr, fff, famig, fface, fper,
      &   alpha, enam, enph, usenetcdfoutput, inundationoutput, ntcyfe,
      &   warnelevdumpcounter, smag_upper_lim, outputwinddrag, ntrspe,
@@ -51,8 +51,8 @@ C-----------------------------------------------------------------------
      &   tvw, ntcys_tvw, ntcyf_tvw, noutgc, toutsgc, toutfgc, nspoolgc,
      &   warnelevdumplimit, toutse, toutfe, nspoole, staiv1, staiv2,
      &   staiv3, toutfc, noutgw, nspoolgw, toutfgw, toutsgw, noutgw,
-     &   ndsetsc, ntcyfgc, ntcysgc, ndsets_tvw, Ad, Bd, Cs, Cs2, 
-     &   smag_comp_flag, wavewindmultiplier, np_g, nibnodecode, ititer,
+     &   ndsetsc, ntcyfgc, ntcysgc, ndsets_tvw,
+     &   smag_comp_flag, np_g, nibnodecode, ititer,
      &   ne_g, nstae_g, nstav_g, nstam_g, nstac_g, netcdf_avail, title,
      &   nstac_g, nstam_g, institution, references, history, source,
      &   nout_tvw, touts_tvw, toutf_tvw, nspool_tvw, btiminc,vidispdyoh,
@@ -61,7 +61,7 @@ C-----------------------------------------------------------------------
      &   alloc_main1a, alloc_main2, alloc_main3, alloc_main4a, 
      &   alloc_main4b, alloc_main5, alloc_main7, alloc_main8, 
      &   alloc_main10, alloc_main12, alloc_main13, alloc_main9,
-     &   alloc_main6, openfileforread, nhoutonce, omega, IFSPROTS,
+     &   alloc_main6, openfileforread, nhoutonce, IFSPROTS,
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
      &   directvelWD,useHF
@@ -74,6 +74,9 @@ C-----------------------------------------------------------------------
      &   ,basedatetime
 #endif
      &   ,NUOPC4WAV, NUOPC4MET
+      USE CONSTANTS, ONLY: G, Ad, Bd, Cs, Cs2,
+     &                     waveWindMultiplier,deg2rad,rhoAir,
+     &                     rad2deg,omega
 
       USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP, NP,
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries,
@@ -707,6 +710,7 @@ C
 #else
 C     jgf46.10 Add user-controllable warning, output, and stop criteria
 C     for elevations. 
+#warning The -DDEBUG_WARN_ELEV flag will be removed in a future release. Please begin using the &warnElevControl namelist to avoid future issues 
       READ(15,*) NFOVER, WarnElev, iWarnElevDump, WarnElevDumpLimit,
      &  ErrorElev
 #endif
@@ -3295,35 +3299,8 @@ C....
          ENDIF
       END DO
 
-C...  LINES TO USE EARTH LOAD/SELF-ATTRACTION PART OF TIDAL POTENTIAL FORCING
-
       CALL ALLOC_MAIN4b()
-      IF(NTIP.EQ.2) THEN
-         ! WJP 02.24.2018 reading prepped fort.24 for padcirc
-         ! OPEN(24,FILE='fort.24')
-         CALL openFileForRead(24,TRIM(INPUTDIR)//'/'//'fort.24',ios)
-         IF (ios.gt.0) THEN
-             CALL ADCIRC_Terminate()
-         ENDIF
-         DO I=1,NTIF
-            READ(24,9930)
- 9930       FORMAT(///)
-            DO J=1,NP
-               ! WJP: mapping to local node numbers
-               READ(24,*) JJ,SALTAMP(I,find(node_dict,JJ)),
-     &                    SALTPHA(I,find(node_dict,JJ))
-            END DO
-         END DO
-         CLOSE(24)
-         SALTPHA = SALTPHA*DEG2RAD
-      ELSE
-         DO I=1,NTIF
-            DO J=1,NP
-               SALTAMP(I,J)=0.d0
-               SALTPHA(I,J)=0.d0
-            END DO
-         END DO
-      ENDIF
+
 C...
 C...  OUTPUT TO UNIT 16 INFORMATION ABOUT TIDAL POTENTIAL FORCING
 C...  OUTPUT WILL VARY DEPENDING ON VALUES OF NTIP,NTIF AND NCOR
@@ -5146,7 +5123,8 @@ C    kmd48.33bc - added the variables from Global
      &                  TTBCTIMEINC, SPONGEDIST, Sponge,
      &                  scratchMessage, INFO, DEBUG, ERROR, allMessage,
      &                  setMessageSource, logMessage, unsetMessageSource,
-     &                  OUTPUTSPONGE, screenMessage, ECHO, sec2day
+     &                  OUTPUTSPONGE, screenMessage, ECHO
+      USE CONSTANTS, ONLY: sec2day
       USE MESH, ONLY : NP, DP, X, Y
       USE BOUNDARIES, ONLY : NETA, NOPE, NBD
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
@@ -5899,8 +5877,9 @@ C-----------------------------------------------------------------------
      &   staTime, tsPeriod, startTime, endTime, startTS, endTS, nSets,
      &   tsCounter, recCounter)
       USE GLOBAL, ONLY : scratchMessage, ECHO, INFO, WARNING, ERROR,
-     &   DTDP, Day2Sec, NT, setMessageSource, logMessage, allMessage,
+     &   DTDP, NT, setMessageSource, logMessage, allMessage,
      &   unsetMessageSource, DEBUG, screenMessage, useNetCDF
+      USE CONSTANTS, ONLY: day2sec
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
@@ -6051,7 +6030,8 @@ C-----------------------------------------------------------------------
      &                        lat, lon, sta1, sta2, sta3, stat_lun,
      &                        Description)
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, parse, IFSPROTS,
+      USE CONSTANTS, ONLY: DEG2RAD, RAD2DEG
+      USE GLOBAL, ONLY : parse, IFSPROTS,
      &   a2f, DEBUG, allMessage, setMessageSource, unsetMessageSource
       USE MESH, ONLY : ICS, SLAM0, SFEA0, DRVSPCOORSROTS, CYLINDERMAP
       IMPLICIT NONE
@@ -6475,3 +6455,192 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       end subroutine logNamelistReadStatus
 C-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+      subroutine readSelfAttractionAndLoadingFile
+!-----------------------------------------------------------------------
+!     Read the Self Attraction and Loading file (fort.24.*) into the
+!     variables SALTPHA and SALTAMP. Set them to zero if the forcing
+!     is turned off
+!-----------------------------------------------------------------------
+        USE GLOBAL, ONLY: SALTAMP, SALTPHA, NTIP, NTIF, DEG2RAD, 
+     &      openfileforread, allMessage, ERROR, scratchMessage,
+     &      tipotag, nodes_lg, np_global
+        USE MESH, ONLY: NP, node_dict
+        USE SIZES, ONLY: INPUTDIR, GBLINPUTDIR, SZ, MYPROC
+        USE HASHTABLE, ONLY: find
+        USE ADCIRC_MOD, ONLY: adcirc_terminate
+#ifdef CMPI
+        USE MESSENGER, only: mapToSubdomainRealMPI, allnodes
+#endif
+#ifdef ADCNETCDF        
+        USE NETCDFIO, ONLY: check_err
+        USE NETCDF
+#endif        
+        IMPLICIT NONE
+        INTEGER :: ios
+        INTEGER :: ncid
+        INTEGER :: dimid_node
+        INTEGER :: dimid_nconst
+        INTEGER :: dimid_charlen
+        INTEGER :: varid_const
+        INTEGER :: varid_freq
+        INTEGER :: varid_amp
+        INTEGER :: varid_pha
+        INTEGER :: char_len
+        INTEGER :: np_global_sal
+        INTEGER :: n_node_sal
+        INTEGER :: n_const_sal
+        INTEGER :: I, J, K, IDX, JJ
+        INTEGER :: dmy_int
+        LOGICAL :: netcdf_file_found
+        REAL(SZ),ALLOCATABLE :: amp(:), pha(:)
+        REAL(SZ),ALLOCATABLE :: amp_g(:), pha_g(:)
+        REAL(SZ) :: dmy_real
+        CHARACTER(200) :: filename_netcdf
+        CHARACTER(20)  :: const_name
+        CHARACTER(20)  :: dmy_char
+        CHARACTER,ALLOCATABLE :: sal_const(:,:)
+
+        IF(NTIP.EQ.2) THEN
+           filename_netcdf = TRIM(GBLINPUTDIR)//'/'//"fort.24.nc"
+
+#ifdef CMPI
+            np_global_sal = np_global
+#else
+            np_global_sal = np
+#endif            
+
+#ifdef ADCNETCDF
+           INQUIRE(FILE=TRIM(filename_netcdf), EXIST=netcdf_file_found)
+#else
+           netcdf_file_found = .false.
+#endif           
+           IF(netcdf_file_found)THEN
+#ifdef ADCNETCDF               
+
+            allocate(amp(1:np),pha(1:np))
+            allocate(amp_g(1:np_global_sal),pha_g(1:np_global_sal))
+
+            IF(MYPROC.EQ.0)THEN
+
+              CALL check_err(nf90_open(TRIM(filename_netcdf),
+     &                   NF90_NOWRITE,ncid))
+              CALL check_err(nf90_inq_dimid(ncid, "node", dimid_node))
+              CALL check_err(nf90_inq_dimid(ncid, "num_constituents",
+     &                   dimid_nconst))
+              CALL check_err(nf90_inq_dimid(ncid, "char_len", dimid_charlen))
+
+              CALL check_err(nf90_inquire_dimension(ncid, dimid_node, len=n_node_sal))
+              CALL check_err(nf90_inquire_dimension(ncid, dimid_nconst, len=n_const_sal))
+              CALL check_err(nf90_inquire_dimension(ncid, dimid_charlen, len=char_len))
+
+              CALL check_err(nf90_inq_varid(ncid, "constituents", varid_const))
+              CALL check_err(nf90_inq_varid(ncid, "frequency", varid_freq))
+              CALL check_err(nf90_inq_varid(ncid, "sal_amplitude", varid_amp))
+              CALL check_err(nf90_inq_varid(ncid, "sal_phase", varid_pha))
+
+              IF(n_const_sal.NE.ntif)THEN
+                 WRITE(scratchMessage, "(A)") 
+     &               "Invalid number of harmonic "//
+     &               "constituents in SAL file"
+                 call allMessage(ERROR, scratchMessage)
+                 call adcirc_terminate()
+              ENDIF
+              
+              allocate(sal_const(1:n_const_sal, 1:char_len))
+              CALL check_err(nf90_get_var(ncid, varid_const, sal_const, 
+     &           start=(/1,1/), count=(/n_const_sal,char_len/)))
+
+              DO I = 1, ntif
+                 DO J = 1, n_const_sal
+                     const_name = ""
+                     DO K=1, char_len
+                         const_name(K:K) = sal_const(J,K)
+                     ENDDO
+                     IF(TRIM(TIPOTAG(I)).EQ.TRIM(const_name))THEN
+                         CALL check_err(nf90_get_var(ncid, varid_amp, 
+     &                       amp_g, start=(/J,1/),count=(/1,np_global_sal/)))
+                         CALL check_err(nf90_get_var(ncid, varid_pha,
+     &                       pha_g, start=(/J,1/),count=(/1,np_global_sal/)))
+                         pha_g = pha_g * DEG2RAD
+#ifdef CMPI                         
+                         call mapToSubdomainRealMPI(np_global_sal, NP, amp, nodes_lg, amp_g)
+                         call mapToSubdomainRealMPI(np_global_sal, NP, pha, nodes_lg, pha_g)
+#else
+                         pha = pha_g
+                         amp = amp_g
+#endif                         
+                         SALTAMP(I,:) = amp
+                         SALTPHA(I,:) = pha
+
+                         EXIT
+                     ENDIF
+                     IF(J.EQ.n_const_sal)THEN
+                         write(scratchmessage, '(2A)') 
+     &                       "Error loading SAL: Could not find ", 
+     &                       TRIM(const_name)
+                         call allMessage(ERROR,scratchMessage)
+                         call adcirc_terminate()
+                     ENDIF
+                 ENDDO
+              ENDDO
+              CALL check_err(nf90_close(ncid))
+            ELSE
+#ifdef CMPI            
+                DO I=1, NTIF
+                    call mapToSubdomainRealMPI(np_global_sal, NP, amp, nodes_lg, amp_g)
+                    call mapToSubdomainRealMPI(np_global_sal, NP, pha, nodes_lg, pha_g)
+                    SALTAMP(I,:) = amp
+                    SALTPHA(I,:) = pha
+                ENDDO
+
+#endif                
+            ENDIF
+
+#endif               
+           ELSE
+             CALL openFileForRead(24,TRIM(INPUTDIR)//'/'//'fort.24',ios)
+             IF (ios.gt.0) THEN
+                 CALL ADCIRC_Terminate()
+             ENDIF
+             DO I=1,NTIF
+                READ(24, *) dmy_char, dmy_char
+                READ(24, *) dmy_real
+                READ(24, *) dmy_int
+                READ(24, '(A)') const_name
+                const_name = TRIM(ADJUSTL(const_name))
+
+                !...Find the constituent
+                IDX = -1
+                DO J=1,NTIF
+                    IF(TRIM(TIPOTAG(J)).EQ.TRIM(const_name))THEN
+                        IDX = J
+                        EXIT
+                    ENDIF
+                ENDDO
+                IF(IDX.EQ.-1)THEN
+                    write(scratchmessage, '(2A)') 
+     &                  "Error loading SAL: Could not find ", 
+     &                  TRIM(const_name)
+                    call allMessage(ERROR,scratchMessage)
+                    call adcirc_terminate()
+                ENDIF
+
+                DO J=1,NP
+                   ! WJP: mapping to local node numbers
+                   READ(24,*) JJ,SALTAMP(IDX,find(node_dict,JJ)),
+     &                        SALTPHA(IDX,find(node_dict,JJ))
+                END DO
+             END DO
+             CLOSE(24)
+             SALTPHA = SALTPHA*DEG2RAD
+           ENDIF
+        ELSE
+           SALTAMP = 0D0
+           SALTPHA = 0D0
+        ENDIF
+
+!-----------------------------------------------------------------------
+      end subroutine readSelfAttractionAndLoadingFile
+!-----------------------------------------------------------------------

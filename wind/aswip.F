@@ -5,10 +5,10 @@ C
 C-----------------------------------------------------------------------
       module asymmetricVortexProcessing
          use sizes, only : sz
+         use constants, only: g, rhowat0, prbckgrnd, deg2rad,
+     &                        rad2deg, ms2kt, ten2one, windReduction
          use global, only : 
-     &                   g, rhowat0, prbckgrnd,
-     &                   deg2rad, rad2deg, ms2kt, ten2one,
-     &                   nws, windReduction, sphericalDistance,
+     &                   nws, sphericalDistance,
      &                   DEBUG, WARNING, ERROR, INFO, screenunit,
      &                   setMessageSource, allMessage, openFileForRead,
      &                   screenMessage, initLogging, scratchMessage
@@ -1079,9 +1079,10 @@ C-----------------------------------------------------------------------
       module diagnosticOutput
 
       use sizes, only : sz, globaldir, mnp
-      use global, only : nws, prbckgrnd,
-     &   deg2rad, rad2deg, ten2one, g, rhowat0, openFileForRead,
-     &   ihot,  m2nm, sphericaldistance  ! Jie 09/2013
+      use constants, only: deg2rad, rad2deg, ten2one, g, rhowat0, 
+     &  prbckgrnd, m2nm
+      use global, only : nws, openFileForRead,
+     &   ihot,  sphericaldistance  ! Jie 09/2013
       use mesh, only : slam, sfea, np, ics
       use wind, only : hWindData_t, hWindFiles, nws15init, nws19get,
      &   writeFullCircleRmaxes, writeRadialVandP, writeSpatialVandP,
