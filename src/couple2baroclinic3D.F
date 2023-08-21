@@ -83,18 +83,18 @@ C
 C-----------------------------------------------------------------------
       END SUBROUTINE ALLOC_BC3D_to_2D
 C-----------------------------------------------------------------------
-C
-#ifdef ADCNETCDF
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E  R E A D _ B C 3 D _ N E T C D F
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE Read_BC3D_NetCDF()
+#ifdef ADCNETCDF
       use netcdf, only: nf90_open, nf90_close, nf90_nowrite 
+#endif
       implicit none
       integer :: nc_id
- 
       call setMessageSource("Read_BC3D_NetCDF")
+#ifdef ADCNETCDF
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
@@ -156,6 +156,11 @@ C-----------------------------------------------------------------------
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
+#else
+      WRITE(16,*) 'ERROR: NetCDF is required to run ADCIRC2D+.'
+     &          //' Recompile with NetCDF'
+     &          //' and try again.'
+#endif
       call unsetMessageSource()
       
 C-----------------------------------------------------------------------
@@ -163,7 +168,9 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE Get_LonLatDepthTime(NC_ID)
+#ifdef ADCNETCDF
       use netcdf
+#endif
       use mesh, ONLY: slam, sfea, binarysearch, bl_interp, np, ne, nm,
      &                conserve_interp, neitabele, nodele !indmax
       use global, ONLY: rad2deg, np_g, ne_g
@@ -178,7 +185,7 @@ C-----------------------------------------------------------------------
       type(datetime)  :: TNDT, TNDT1
       character(len=16) :: TSS
 #endif        
-
+#ifdef ADCNETCDF
       if (BC3D_IT > 1) then
          WRITE(16,*) 'BC3D_IT = ',BC3D_IT
          ! Check times if not first iteration
@@ -470,11 +477,18 @@ C-----------------------------------------------------------------------
           if (abs(IDEN).ne.7) deallocate(Lonc,Latc)
           if (abs(IDEN).eq.6) deallocate(Lats)
       endif
+#else
+      WRITE(16,*) 'ERROR: NetCDF is required to run ADCIRC2D+.'
+     &          //' Recompile with NetCDF'
+     &          //' and try again.'
+#endif
       END SUBROUTINE Get_LonLatDepthTime
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE Read_BC3D_NetCDF_on_ADCIRC_Grid(NC_ID)
+#ifdef ADCNETCDF
       use netcdf
+#endif
       use mesh, only : np,sfea,slam 
       use sizes, only : mnproc,myproc, localdir
       use global, only : nodes_lg, np_g
@@ -492,6 +506,7 @@ C-----------------------------------------------------------------------
       ! temporary looping variable to write out values to see if this is
       ! working
       INTEGER :: ii
+#ifdef ADCNETCDF
       ! on processor 0 we have to read in the values
       IF (MYPROC.EQ.0) THEN
          ALLOCATE( bpgx_g(np_g), bpgy_g(np_g), sigts_g(np_g) )
@@ -548,6 +563,11 @@ C-----------------------------------------------------------------------
             DEALLOCATE( mld_g )
          ENDIF
       ENDIF
+#else
+      WRITE(16,*) 'ERROR: NetCDF is required to run ADCIRC2D+.'
+     &          //' Recompile with NetCDF'
+     &          //' and try again.'
+#endif
       END SUBROUTINE Read_BC3D_NetCDF_on_ADCIRC_Grid
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
@@ -716,14 +736,12 @@ C
       !call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE Initial_BC3D_NetCDF
-C
-#endif
+C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E  U P D A T E _ B C 3 D _ I N F O
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE Update_BC3D_Info(flag,TimeLoc)
-
       use mesh, only: np, ne, uvectmp, vvectmp, DRVMAP2DSPVEC
       use global, only: IFSPROTS
       implicit none
@@ -872,7 +890,6 @@ C     S U B R O U T I N E  P U T _ B C 3 D _ O N _ A D C I R C _ G R I D
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE Put_BC3D_on_ADCIRC_Grid()
-
       use mesh, only : np, ne
       implicit none
       

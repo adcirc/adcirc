@@ -13,9 +13,9 @@ C----------------------------------------------------------------------
       USE SIZES, ONLY : MNPROC, MYPROC, SZ
       USE MESH, ONLY : NP ! local number of nodes
       USE GLOBAL, ONLY : nodes_lg, np_g, COMM, realtype
-#IFDEF HAVE_MPI_MOD
+#ifdef HAVE_MPI_MOD
       USE MPI
-#ENDIF      
+#endif      
       IMPLICIT NONE
       ! Start of variables used
       INTEGER,DIMENSION(:),ALLOCATABLE,PRIVATE :: GL2LOC
@@ -36,19 +36,19 @@ C----------------------------------------------------------------------
       REAL(SZ),INTENT(IN) :: GLOBALDATA(:)
       REAL(SZ),INTENT(OUT) :: LOCALDATA(:)
       INTEGER :: kk, ierr, jj, TAG
-#IFDEF CMPI      
+#ifdef CMPI      
       INTEGER :: RECV_REQ
       INTEGER :: RECV_STAT(MPI_STATUS_SIZE), TEST_STAT(MPI_STATUS_SIZE)
-#ELSE
+#else
       INTEGER :: loc_mess_stat
-#ENDIF     
+#endif     
       TAG = 24
       ! build the global mapping (GL2LOC) if this is the first call
       CALL BUILD_GL2LOC()
       ! To avoid allocating/deallocating a bunch just use a dmy array
       ! that has size equal to the maximum number of nodes on a
       ! processor.
-#IFDEF CMPI
+#ifdef CMPI
       IF (MYPROC.EQ.0) THEN
          ! Put global data into sendbufr in the correct order
          DO kk = 1,sum(SENDCOUNTS)
@@ -59,9 +59,9 @@ C----------------------------------------------------------------------
      &                  RECVBUF_REAL,RECVCOUNT,REALTYPE,
      &                  0,COMM,ierr)
       LOCALDATA = RECVBUF_REAL
-#ELSE
+#else
       LOCALDATA = GLOBALDATA      
-#ENDIF
+#endif
 C----------------------------------------------------------------------
       END SUBROUTINE MAPTOLOCAL_REAL
 C----------------------------------------------------------------------
@@ -73,13 +73,13 @@ C----------------------------------------------------------------------
       INTEGER :: localNumNodes
       INTEGER,ALLOCATABLE :: local_gl2loc(:)
       INTEGER :: kk, ii, ierr, TAG, dmycounter
-#IFDEF CMPI      
+#ifdef CMPI      
       INTEGER :: stat(MPI_STATUS_SIZE)
-#ELSE
+#else
       INTEGER :: stat
-#ENDIF      
+#endif      
       TAG = 100
-#IFDEF CMPI
+#ifdef CMPI
       ! Return if we have already built the table
       IF (first_call.EQV..FALSE.) RETURN
       first_call = .FALSE.
@@ -121,7 +121,7 @@ C----------------------------------------------------------------------
      &                 GL2LOC, SENDCOUNTS, DISPLS, MPI_INTEGER,
      &                 0, COMM, ierr)
       RETURN
-#ENDIF
+#endif
 C----------------------------------------------------------------------
       END SUBROUTINE BUILD_GL2LOC
 C----------------------------------------------------------------------
