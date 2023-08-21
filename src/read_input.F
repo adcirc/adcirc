@@ -144,6 +144,7 @@ Casey 180318: Added NWS=13
      &                          NWS13GroupForPowell,
      &                          NWS13WindMultiplier
 #endif
+      USE INTERNALTIDE, ONLY : filterType, tideVeloFilename
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
       INTEGER NTimeVaryingWeir
@@ -168,7 +169,8 @@ C
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
       NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,
-     &  rhoAir, invertedBarometerOnElevationBoundary, nPowellSearchDomains
+     &  rhoAir, invertedBarometerOnElevationBoundary,
+     &  nPowellSearchDomains
       NAMELIST /subdomainModeling/ subdomainOn
       NAMELIST /wetDryControl/ outputNodeCode, outputNOFF,
      &  noffActive, StatPartWetFix, How2FixStatPartWet,
@@ -180,13 +182,18 @@ C.... "new" formula for computing vel in wetting/drying routine
 C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
-      NAMELIST /dynamicWaterLevelCorrectionControl/ dynamicWaterLevelCorrectionFileName, 
-     &  dynamicWaterLevelCorrectionSkipSnaps, dynamicWaterLevelCorrectionMultiplier, 
-     &  dynamicWaterLevelCorrectionRampStart, dynamicWaterLevelCorrectionRampEnd,
+      NAMELIST /dynamicWaterLevelCorrectionControl/
+     &  dynamicWaterLevelCorrectionFileName,
+     &  dynamicWaterLevelCorrectionSkipSnaps,
+     &  dynamicWaterLevelCorrectionMultiplier,
+     &  dynamicWaterLevelCorrectionRampStart,
+     &  dynamicWaterLevelCorrectionRampEnd,
      &  dynamicWaterLevelCorrectionRampReferenceTime
       NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
      &  WarnElevDumpLimit, ErrorElev
       NAMELIST /AliDispersionControl/ CAliDisp, Cs, Ad, Bd
+C...  CPB 7/2023: itFricControl namelist
+      NAMELIST /itFricControl/ filterType, tideVeloFilename    
       NAMELIST /densityControl/ densityRunType, densityFileName, 
      &  densityTimeIterator, densityForcingType
 #ifdef ADCNETCDF
@@ -674,10 +681,38 @@ C     WJP add namelist
          IDEN = 6
       elseif (trim(densityForcingType).eq.'Buoyancyfrequencies') then
          IDEN = 7
+      elseif (trim(densityForcingType).eq.'BCForcingOnADCIRCGrid') then
+         IDEN = 8
+      elseif (trim(densityForcingType).eq.'BuoyancyFrequenciesonGrid') then
+         IDEN = 9         
       endif
 !     Make sure to include the sign
       IDEN = IDEN*IDENsign
       if (IDEN.ne.0) CBaroclinic = .true.
+C...
+C...
+C...  CPB 9/2022: add ITFricControl Namelist
+C...     This namelist can be used to alter the behavior of the internal
+C...  tide dissipation mechanism when operating in coupled OGCM-ADCIRC
+C...  mode. The default behavior uses a high pass version of the Munk
+C...  "Tide Killer" Filter 
+C...
+      ! default to using the munk high pass filter
+      filterType = 'MunkHP'
+      tideVeloFileName = 'tidalVelo.nc'
+      ! read namelist
+      namelistSpecifier = 'itFricControl'
+      read(unit=15,nml=itFricControl,iostat=IOS)
+      call logNameListReadStatus(namelistSpecifier,ios)
+      ! write scratch messages
+      write(scratchMessage,'(a,a)') "filterType=",TRIM(filterType)
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,a)') "tideVeloFileName=",
+     &      trim(tideVeloFileName)
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+C...
+C...  END CPB
 
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
@@ -1176,9 +1211,16 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
      &                        //'with buoyancy frequency'
          case(7)
             densityForcingType = ' buoyancy frequency only'
+         case(8)
+            densityForcingType = ' depth-integrated baroclinic '
+     &                        //'gradients with buoyancy frequency'
+     &                        //' pre-computed on ADCIRC grid'
+         case(9)
+            densityForcingType = ' buoyancy frequency pre-computed on '
+     &                         //'ADCIRC grid only'            
          case default
             call allMessage(ERROR,
-     &       'The absolute value of IDEN must be <= 7.')
+     &       'The absolute value of IDEN must be <= 9.')
             call adcirc_terminate()
          end select
         call logMessage(INFO,'This run will be'//trim(densityDimensions)

@@ -87,8 +87,9 @@ C.....sb46.28sb03 added 09/xx/2006
       USE NodalAttributes, ONLY : 
      &     Apply2DBottomFriction,
      &     Apply2DInternalWaveDrag,
-     &     Apply3DBottomFriction
-     &    ,GeoidOffset
+     &     Apply3DBottomFriction,
+     &     Apply2DMomentumDisp,
+     &     GeoidOffset
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS, 
      &    writeFort066, writeFort067, writeFort065, 
      &    readFort020, readFort021, readFort019 
@@ -119,7 +120,6 @@ Casey 100205: Add a variable for writing of SWAN hot-start files.
       USE WEIR_FLUX
       USE SPONGELAYER, ONLY: LoadAbsLayerSigma, sponge_dis_mthd, sponge_opsplit0,
      &     adjust_sponge_sigma, getabslayerext, sponge_shift_soln
-
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
 C
@@ -538,18 +538,24 @@ C-------------------BOTTOM FRICTION-------------------------------------
 C
 C     2DDI.Set up the 2D friction coefficient
       if (C2DDI) then
-         CALL Apply2DBottomFriction(UU1, VV1, DP, ETA2, G, IFNLFA, NP, TK)
+         CALL Apply2DBottomFriction(UU1, VV1, DP, ETA2, G, IFNLFA, NP,
+     &                              TK)
          ! WJP 02.24.2018 Get the wave drag coefficients
          ! that are put into TKM (which include TK from bottom friction)
          IF (CBaroclinic) THEN
             CALL Apply2DInternalWaveDrag(NP, TK, TKM, UU1, VV1, DP, IT)
+            ! CPB 3/9/2023: vertically averaged momentum dispersion as a
+            ! power law function. If NOLIBF =/= 3 then this just returns
+            CALL Apply2DMomentumDisp(UU1, VV1, DP, ETA2, IFNLFA, NP,
+     &                               TKM)
          ELSE
             CALL Apply2DInternalWaveDrag(NP, TK, TKM)
-         ENDIF 
+         ENDIF         
       endif
 C..RJW Set up the 3D friction coefficient
       if (C3D) then
-         CALL Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G, IFNLFA, NP, TK, NFEN, Z0B)
+         CALL Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G, IFNLFA, NP,
+     &                              TK, NFEN, Z0B)
       endif
       
 C-------------------BOTTOM FRICTION-------------------------------------
@@ -1722,7 +1728,7 @@ c******************************************************************************
          ! Update the 3D BC Information for the current timestep 
          call Update_BC3D_Info(IDEN,TimeLoc) 
 
-         if (abs(IDEN).ne.7) then         
+         if (abs(IDEN).ne.7.AND.abs(IDEN).ne.9) then
             ! Calculating the full Baroclinic pressure gradient and
             ! momentum dispersion terms required at every timestep
             ! from the 3D BC information that is on a longer time scale 

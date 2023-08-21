@@ -21,7 +21,7 @@ C
       use messenger, only : msg_fini
 #endif
 #ifdef DATETIME
-      use datetime_module, only: datetime, timedelta
+      use datetime_module, only: datetime, timedelta, strptime
 #endif
 #if defined(DATETIME) && (defined(GRIB2API) || defined(ADCNETCDF))
       integer, parameter :: allowable_nws(21)
@@ -249,7 +249,7 @@ C
       character(len=200) :: Pfile1, Wfile1, Pinv1, Winv1
       character(len=200) :: Pvar, Uvar, Vvar, Cvar, Tvar, Lonvar, Latvar
       character(len=200) :: Tdim, Londim, Latdim, Tformat
-      type(datetime) :: CurDT
+      type(datetime) :: CurDT, refdate, stepdate
       logical :: grb2flag
       integer :: NT, NTC
 #endif
@@ -8749,13 +8749,16 @@ C----------------------------------------------------------------------
       USE MESSENGER, ONLY : MSG_FINI
 #endif
       IMPLICIT NONE
+      INTEGER,ALLOCATABLE :: dmy(:)
 C
       call setMessageSource("windTerminate")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 C
+      dmy(10) = 1
       call allMessage(ERROR,"ADCIRC terminating.")
+      ! intentionally create seg fault
 #ifdef CMPI
       call msg_fini()
 #endif
@@ -8964,7 +8967,7 @@ C----------------------------------------------------------------------
       ! Show the date in str_date format
       call logMessage(ECHO,'CurDT strng: '//
      &                CurDT%strftime("%Y-%m-%d %H:%M"))
-
+      WRITE(16,*) 'NT = ',NT
       ! Compute the interpolating factors and indices on the first step
       if (.not.allocated(indp)) then
          ub = 2; ubc = 1;
@@ -9161,7 +9164,8 @@ C----------------------------------------------------------------------
       character(len=19),allocatable :: TimeStr(:) 
       character(len=200) :: str_date
       integer :: i, NC_ID, Temp_ID, Lat_ID, Lon_ID, NX, NY, TL, ndims
-
+      ! CPB 4/20/2023
+      REAL(8),ALLOCATABLE :: NCTIMES(:)
       ! Getting the date in str_date format
       if (grb2flag) then
          str_date = ':start_FT='//CurDT%strftime("%Y%m%d%H")//'0000:'
@@ -9197,9 +9201,10 @@ C----------------------------------------------------------------------
             call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NX))
             call Check_err(NF90_INQ_DIMID(NC_ID,Tdim,Temp_ID))
             call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=TL))
-            allocate(data2(NX,NY),data22(NX,NY),TimeStr(TL))
+            allocate(data2(NX,NY),data22(NX,NY))
             if (NT.eq.0) then
                if (Tformat(1:1).eq.'%') then
+                  ALLOCATE( TIMESTR(TL) )
                   call Check_err(NF90_INQ_VARID(NC_ID,Tvar,Temp_ID))
                   call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
                   ! Determine the first timestep index
@@ -9209,6 +9214,23 @@ C----------------------------------------------------------------------
                      if (trim(str_date).eq.TimeStr(NT)) exit
                   enddo
                   call logMessage(ECHO,'Starting from '//TimeStr(NT))
+                  DEALLOCATE( TIMESTR )
+               ELSEIF (Tvar.eq.'refdate') THEN
+                  ALLOCATE( NCTIMES(TL) )
+                  refdate = strptime(trim(Tformat),"%Y-%m-%dT%H:%M:%S")
+                  CALL CHECK_ERR(NF90_INQ_VARID(NC_ID,TDIM,TEMP_ID))
+                  call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,NCTIMES))
+                  DO NT = 1,TL
+                     stepdate = refdate +
+     &                          timedelta(seconds=INT(NCTIMES(NT)))
+                     IF (stepdate.EQ.curDT) THEN
+                        WRITE(16,*) 'stepdate = ',stepdate%isoformat(' ')
+                        EXIT
+                     ENDIF
+                  ENDDO
+                  DEALLOCATE( NCTIMES )
+                  WRITE(16,*) ' CurDT = ',CurDT%isoformat(' ')
+                  WRITE(16,*) ' netcdfDT = ',stepdate%isoformat(' ')
                else
                   call logMessage(ECHO,'Assume to start from beginning')
                   NT = 1 
@@ -9322,6 +9344,7 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
 
       INTEGER, intent(in) :: iret
+      integer,allocatable :: dmy
 
       call setMessageSource("check_err")
 #ifdef ALL_TRACE
