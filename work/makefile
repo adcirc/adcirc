@@ -352,7 +352,7 @@ BND_MSRC   =  boundaries.F
 PREP_MSRC  =  presizes.F
 PGLO_MSRC  =  pre_global.F
 3D_MSRC    =  global_3dvs.F
-ADC_MSRC   =  version.F sizes.F constants.F global.F gl2loc_mapping.F internaltide.F
+ADC_MSRC   =  version.F sizes.F constants.F global.F
 POST_MSRC  =  post_global.F
 HARM_MSRC  =  harm.F
 VORT_MSRC  =  vortex.F
@@ -670,7 +670,7 @@ endif
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
    aswip ::   $(ADCIRC_DEP) $(ASW_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(WIND_MOBJ) $(NA_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
+	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(WIND_MOBJ) $(ITTIDE_MOBJ) $(GL2LOC_MOBJ) $(NA_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
 
    adccmp :  $(O_DIR) $(CMP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
@@ -754,7 +754,7 @@ $(O_DIR)diffmerge.o   :  diffmerge.F
 #  asymmetric hurricane wind model
 
 $(O_DIR)vortex.o      :  vortex.F
-$(O_DIR)aswip.o      :  aswip.F $(VORT_MOBJ) $(NA_MOBJ)
+$(O_DIR)aswip.o      :  aswip.F $(VORT_MOBJ) $(ITTIDE_MOBJ) $(GL2LOC_MOBJ) $(NA_MOBJ)
 
 #  adcirc & $(PARALLEL_ADCIRC) modules
 
