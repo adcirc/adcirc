@@ -594,13 +594,11 @@ C
       !call setMessageSource("BC3DTerminate")
 #ifdef ALL_TRACE
       call allMessage(DEBUG,"Enter.")
-#endif
       call allMessage(INFO,"ADCIRC Terminating.")
-#ifdef ALL_TRACE
-         ! intentionally create a segmentation fault so that we can get
-         ! a stack trace to determine the line number of the netcdf call
-         ! that went bad ... this assumes that the code was compiled with
-         ! debugging symbols, bounds checking, and stack trace turned on.
+      ! intentionally create a segmentation fault so that we can get
+      ! a stack trace to determine the line number of the netcdf call
+      ! that went bad ... this assumes that the code was compiled with
+      ! debugging symbols, bounds checking, and stack trace turned on.
       write(6,*) 'myproc = ',myProc      
       dummy(1) = 99.9d0
 #endif
