@@ -376,7 +376,7 @@ ifeq ($(compiler),intel-ND)
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI #-DNOFSBPG #-DNOIVB -DPOWELL
+  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD #-DNOFSBPG #-DNOIVB -DPOWELL
   DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
   ifeq ($(SWAN),enable)
      DPRE       := $(DPRE) -DADCSWAN
@@ -387,11 +387,11 @@ ifeq ($(compiler),intel-ND)
   CFLAGS        := $(INCDIRS) -O3 -m64 -mcmodel=medium -DLINUX
   FLIBS         := 
   ifeq ($(DATETIME),enable)
-     DATETIMEHOME  := /pontus/gling/ADCIRC_Codes/adcirc-cg-GLOBAL_WP_20200513/lib/datetime-fortran/
+     DATETIMEHOME  := /asclepius/cblakely/libs/OC-GTSM_utility/libs/datetime-fortran/build/
      FLIBS         := -ldatetime -L$(DATETIMEHOME)lib/
   endif
   ifeq ($(GRIB2),enable)
-     WGRIB2HOME    := /pontus/gling/ADCIRC_Codes/adcirc-cg-GLOBAL_WP_20200513/lib/grib2/lib/
+     WGRIB2HOME    := /asclepius/cblakely/libs/grib2/lib/
      FLIBS         := $(FLIBS) -lwgrib2_api -lwgrib2 -ljasper -L$(WGRIB2HOME)
   endif
   ifeq ($(DEBUG),full)

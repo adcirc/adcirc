@@ -265,6 +265,8 @@ c.... !wjp added for warnElev namelist
       integer :: densityTimeIterator = 1 ! BC3D time step iteration skipper
       NAMELIST /densityControl/ densityRunType, densityFileName, 
      &  densityTimeIterator, densityForcingType
+      ! itfric control namelist
+      LOGICAL :: FOUND_ITFRIC_NML = .FALSE. !
 
 C---------------------end of data declarations--------------------------------C
 
@@ -754,6 +756,8 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          found_density_nml = .true.  
       ENDIF
       REWIND(15)
+
+
 C
 C
 C  Initialize all runtime option logicals to false
