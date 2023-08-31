@@ -168,7 +168,8 @@ C
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
       NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,
-     &  rhoAir, invertedBarometerOnElevationBoundary, nPowellSearchDomains
+     &  rhoAir, invertedBarometerOnElevationBoundary,
+     &  nPowellSearchDomains
       NAMELIST /subdomainModeling/ subdomainOn
       NAMELIST /wetDryControl/ outputNodeCode, outputNOFF,
      &  noffActive, StatPartWetFix, How2FixStatPartWet,
@@ -180,9 +181,12 @@ C.... "new" formula for computing vel in wetting/drying routine
 C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
-      NAMELIST /dynamicWaterLevelCorrectionControl/ dynamicWaterLevelCorrectionFileName, 
-     &  dynamicWaterLevelCorrectionSkipSnaps, dynamicWaterLevelCorrectionMultiplier, 
-     &  dynamicWaterLevelCorrectionRampStart, dynamicWaterLevelCorrectionRampEnd,
+      NAMELIST /dynamicWaterLevelCorrectionControl/
+     &  dynamicWaterLevelCorrectionFileName,
+     &  dynamicWaterLevelCorrectionSkipSnaps,
+     &  dynamicWaterLevelCorrectionMultiplier,
+     &  dynamicWaterLevelCorrectionRampStart,
+     &  dynamicWaterLevelCorrectionRampEnd,
      &  dynamicWaterLevelCorrectionRampReferenceTime
       NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
      &  WarnElevDumpLimit, ErrorElev
@@ -674,10 +678,16 @@ C     WJP add namelist
          IDEN = 6
       elseif (trim(densityForcingType).eq.'Buoyancyfrequencies') then
          IDEN = 7
+      elseif (trim(densityForcingType).eq.'BCForcingOnADCIRCGrid') then
+         IDEN = 8
+      elseif (trim(densityForcingType).eq.'BuoyancyFrequenciesonGrid') then
+         IDEN = 9         
       endif
 !     Make sure to include the sign
       IDEN = IDEN*IDENsign
       if (IDEN.ne.0) CBaroclinic = .true.
+C...
+
 
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
@@ -1176,9 +1186,16 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
      &                        //'with buoyancy frequency'
          case(7)
             densityForcingType = ' buoyancy frequency only'
+         case(8)
+            densityForcingType = ' depth-integrated baroclinic '
+     &                        //'gradients with buoyancy frequency'
+     &                        //' pre-computed on ADCIRC grid'
+         case(9)
+            densityForcingType = ' buoyancy frequency pre-computed on '
+     &                         //'ADCIRC grid only'            
          case default
             call allMessage(ERROR,
-     &       'The absolute value of IDEN must be <= 7.')
+     &       'The absolute value of IDEN must be <= 9.')
             call adcirc_terminate()
          end select
         call logMessage(INFO,'This run will be'//trim(densityDimensions)

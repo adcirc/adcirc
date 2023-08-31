@@ -352,7 +352,7 @@ BND_MSRC   =  boundaries.F
 PREP_MSRC  =  presizes.F
 PGLO_MSRC  =  pre_global.F
 3D_MSRC    =  global_3dvs.F
-ADC_MSRC   =  version.F sizes.F constants.F global.F 
+ADC_MSRC   =  version.F sizes.F constants.F global.F #gl2loc_mapping.F internaltide.F
 POST_MSRC  =  post_global.F
 HARM_MSRC  =  harm.F
 VORT_MSRC  =  vortex.F
@@ -379,6 +379,9 @@ XDMF_MSRC = xdmfio.F
 SPG_MSRC = quadrature.F sponge_layer.F
 # WJP 3D baroclinic coupling
 BC3D_MSRC = couple2baroclinic3D.F
+# CPB baroclinic internal tide updates
+GL2LOC_MSRC = gl2loc_mapping.F
+ITTIDE_MSRC = internaltide.F
 
 HASH_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(HASH_MSRC) )
 WD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(WD_MSRC) )
@@ -413,6 +416,9 @@ SPG_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(SPG_MSRC) )
 WRITER_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(WRITER_MSRC) )
 # WJP
 BC3D_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(BC3D_MSRC) )
+# CPB
+GL2LOC_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(GL2LOC_MSRC) )
+ITTIDE_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(ITTIDE_MSRC) )
 
 ############################# Source & Object Files ######################
 #meb 04/20/2004 - added machdep.F onto POST_SRC
@@ -583,8 +589,8 @@ endif
    adcpost ::  $(POST_OBJ) $(HARM_MOBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
-ADCIRC_DEP := $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
-ADCSWAN_DEP := $(NA_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
+ADCIRC_DEP := $(ADC_MOBJ) $(HAS_MOBJ) $(MESH_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
+ADCSWAN_DEP := $(ADC_MOBJ) $(HAS_MOBJ) $(MESH_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
 ifeq ($(NETCDF),enable)
    ADCIRC_DEP := $(ADCIRC_DEP) $(NC_MOBJ)
    ADCSWAN_DEP := $(ADCSWAN_DEP) $(NC_MOBJ)
@@ -597,20 +603,24 @@ endif
    adcirc ::  $(ADCIRC_DEP)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
-   $(PARALLEL_ADCIRC) :: $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
+   $(PARALLEL_ADCIRC) :: $(ADC_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
 
 ifeq ($(NETCDF),enable)
-   $(LIBADC) :: $(O_DIR) $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
-	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
-                 $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
+   $(LIBADC) :: $(O_DIR) $(ADC_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(MSG_MOBJ) \
+	        $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
+	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) \
+	         $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
+                 $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
                  $(WRITER_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ) 
 	ar -ts $@
 else
-   $(LIBADC) :: $(O_DIR) $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
-	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
-                     $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
-                     $(WRITER_MOBJ) $(SUBD_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ)
+   $(LIBADC) :: $(O_DIR) $(ADC_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(MSG_MOBJ) \
+	        $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
+	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) \
+	         $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
+                 $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
+                 $(WRITER_MOBJ) $(SUBD_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ) 
 	ar -ts $@
 endif
 
@@ -621,7 +631,7 @@ endif
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 
    padcswan :: $(O_DIR)
-   padcswan :: $(NA_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
+   padcswan :: $(NA_MOBJ) $(ADC_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS) $(LDFLAGS)
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 
@@ -660,7 +670,7 @@ endif
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
    aswip ::   $(ADCIRC_DEP) $(ASW_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(WIND_MOBJ) $(NA_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
+	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(HAS_MOBJ) $(MESH_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(WIND_MOBJ) $(NA_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
 
    adccmp :  $(O_DIR) $(CMP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
@@ -752,11 +762,13 @@ $(O_DIR)version.o     :  version.F
 $(O_DIR)sizes.o       :  sizes.F
 $(O_DIR)constants.o   :  constants.F $(O_DIR)sizes.o
 $(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o $(O_DIR)constants.o $(O_DIR)kdtree2.o
+$(O_DIR)internaltide.o : internaltide.F $(O_DIR)sizes.o $(O_DIR)global.o
+$(O_DIR)gl2loc_mapping.o : gl2loc_mapping.F $(O_DIR)sizes.o $(O_DIR)global.o
 
 ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(PARALLEL_ADCIRC) padcswan))
-$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)messenger.o
+$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)messenger.o $(O_DIR)internaltide.o
 else
-$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)mesh.o $(O_DIR)hashtable.o
+$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)internaltide.o
 endif
 
 $(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum.o
