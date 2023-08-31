@@ -1079,13 +1079,14 @@ C
          ENDIF
          IF (C2DDI) THEN                       !2D bottom friction
             !WJP taking into account the symmetrical friction matrix
+            ! CPB: added resynthesized tidal velocity option
             BSXN1 = TKM(1,NM1)*QX1N1 + TKM(3,NM1)*QY1N1
             BSYN1 = TKM(3,NM1)*QX1N1 + TKM(2,NM1)*QY1N1
             BSXN2 = TKM(1,NM2)*QX1N2 + TKM(3,NM2)*QY1N2
             BSYN2 = TKM(3,NM2)*QX1N2 + TKM(2,NM2)*QY1N2
             BSXN3 = TKM(1,NM3)*QX1N3 + TKM(3,NM3)*QY1N3
             BSYN3 = TKM(3,NM3)*QX1N3 + TKM(2,NM3)*QY1N3
-         ENDIF
+         ENDIF         
          IF (C3D) THEN                         !3D bottom friction
             BSXN1=BSX1(NM1)
             BSXN2=BSX1(NM2)

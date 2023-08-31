@@ -43,7 +43,7 @@ C-----------------------------------------------------------------------
       logical,allocatable,dimension(:,:) :: NSkip
       real(sz),parameter :: LatUL = 89d9, DFV = 1d0 
 #ifdef DATETIME
-      type(datetime) :: CurDT
+      type(datetime),private :: CurDT
 #endif
 !     Variables for temporal integration
       real(sz) :: DTIME1, DTIME2 
@@ -74,9 +74,11 @@ C
       VIDISPDXOH_F = 0.0d0 ; VIDISPDYOH_F = 0.0d0
       allocate (NB_F(2,MNP),NM_F(2,MNP))
       NB_F = 0.0d0; NM_F = 0.0d0 
-      allocate(indm(4,MNP),weightsm(4,MNP))
-      allocate(indx(4,MNP),indy(4,MNP),inds(4,MNP))
-      allocate(weightsx(4,MNP),weightsy(4,MNP),weightss(4,MNP))
+      IF (IDEN.LT.8) THEN
+         allocate(indm(4,MNP),weightsm(4,MNP))
+         allocate(indx(4,MNP),indy(4,MNP),inds(4,MNP))
+         allocate(weightsx(4,MNP),weightsy(4,MNP),weightss(4,MNP))
+      ENDIF
       allocate(BXE(MNP),BYE(MNP),DXE(MNP),DYE(MNP))
       BXE = 0.0d0; BYE = 0.0d0; DXE = 0.0d0; DYE = 0.0d0;
 C-----------------------------------------------------------------------
@@ -97,7 +99,7 @@ C-----------------------------------------------------------------------
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-
+      WRITE(16,*) 'inside read_bc3d_netcdf'
       ! Open NETCDF 
       call Check_err(nf90_open(densityFileName,nf90_nowrite,nc_id))
     
@@ -106,7 +108,16 @@ C-----------------------------------------------------------------------
       ! and calculate the interpolant coefficients
       ! On > first call: check the datetimes and update BC3D_DT
       call Get_LonLatDepthTime(nc_id)
-
+      IF (abs(IDEN).GE.8) THEN
+         CALL Read_BC3D_NetCDF_on_ADCIRC_Grid(nc_id)
+         ! Close NETCDF
+         call Check_err(nf90_close(nc_id))
+#ifdef ALL_TRACE
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         return
+      ENDIF
       if (abs(iden).ne.7) then     
          ! Read all the necessary temporal varying data 
          ! Depth-averaged east-west baroclinic pressure graidient
@@ -157,6 +168,7 @@ C-----------------------------------------------------------------------
       use mesh, ONLY: slam, sfea, binarysearch, bl_interp, np, ne, nm,
      &                conserve_interp, neitabele, nodele !indmax
       use constants, ONLY: rad2deg
+      use global, ONLY: np_g, ne_g
       implicit none
       integer,intent(in) :: NC_ID
       integer  :: Temp_ID, i, j, ic, jc, js, indt(4), numfound !ind(2,indmax), cc
@@ -168,8 +180,8 @@ C-----------------------------------------------------------------------
       type(datetime)  :: TNDT, TNDT1
       character(len=16) :: TSS
 #endif        
-
       if (BC3D_IT > 1) then
+         WRITE(16,*) 'BC3D_IT = ',BC3D_IT
          ! Check times if not first iteration
 #ifdef DATETIME
          call Check_err(NF90_INQ_VARID(NC_ID,'time',Temp_ID))
@@ -177,9 +189,11 @@ C-----------------------------------------------------------------------
          call check_err(nf90_get_var(nc_id, Temp_ID,        
      &                  TSS,start=[1, BC3D_IT],count=[SL, 1]))
          TNDT = strptime(trim(TSS),"%Y-%m-%d %H:%M")
+         WRITE(16,*) 'TNDT = ',TSS
          call check_err(nf90_get_var(nc_id, Temp_ID, TSS,
      &      start=[1, BC3D_IT+densityTimeIterator],count=[SL, 1]))
          TNDT1 = strptime(trim(TSS),"%Y-%m-%d %H:%M")
+         WRITE(16,*) 'TNDT1 = ',TSS
          DT = TNDT1 - TNDT 
          if (abs(DT%total_seconds() - BC3D_DT) > 1d-6) then
             BC3D_DT = DT%total_seconds()
@@ -188,12 +202,77 @@ C-----------------------------------------------------------------------
 #endif
          return
       endif
-
       ! First call
       call check_err(nf90_inq_dimid(nc_id,'time', Temp_ID))
       call Check_err(nf90_inquire_dimension(nc_id,Temp_ID,len=NT))
       call check_err(nf90_inq_dimid(nc_id,'strlen', Temp_ID))
       call Check_err(nf90_inquire_dimension(nc_id,Temp_ID,len=SL))
+      ! CPB 9/2022: moved the timestep check here to limit how much
+      ! rewriting of this subroutine I need to do.
+      ! Get the timestep and starting time
+      call Check_err(NF90_INQ_VARID(NC_ID,'time',Temp_ID))
+      BC3D_DT = 0d0
+      if (iden.gt.0) then
+#ifdef DATETIME
+      ! Let's get the start time index
+      do BC3D_IT = 1,NT
+         call check_err(nf90_get_var(nc_id, Temp_ID,        
+     &                  TSS,start=[1, BC3D_IT],count=[SL, 1]))
+         TNDT = strptime(trim(TSS),"%Y-%m-%d %H:%M")
+         DT   = CurDT - TNDT
+         if (DT%total_seconds() <= 0) exit
+      enddo
+      write(16,*) 'TNDT = ',TNDT%isoformat(' ')
+      WRITE(16,*) 'bc3d_it = ',bc3d_it
+      write(16,*) 'DT = ',DT%total_seconds()
+      IF (DT%total_seconds().LT.0) THEN
+         BC3D_IT = BC3D_IT - 1
+         call check_err(nf90_get_var(nc_id, Temp_ID,        
+     &                  TSS,start=[1, BC3D_IT],count=[SL, 1]))
+         TNDT = CurDT
+      ENDIF
+      !write(16,*) 'bc3d_it = ',bc3d_it
+      call check_err(nf90_get_var(nc_id, Temp_ID, TSS,           
+     &     start=[1, BC3D_IT+densityTimeIterator],count=[SL, 1]))
+      TNDT1 = strptime(trim(TSS),"%Y-%m-%d %H:%M")
+      DT = TNDT1 - TNDT 
+      BC3D_DT = DT%total_seconds()
+#else
+      ! Just set at 3 hrs
+      BC3D_DT = 3600d0*3d0
+#endif
+      endif
+      ! CPB 2/2022: in case where baroclinic forces are calculated on
+      ! ADCIRC grid (IDEN = 8) we don't need to check the nx, ny, etc
+      ! but we do want to verify that the input file has the correct
+      ! number of nodes and such.
+      IF (IDEN.GE.8) THEN
+         ! check if the number of nodes is correct
+         call Check_err(NF90_INQ_DIMID(NC_ID,'node',Temp_ID))
+         call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NY))
+         IF (NY.NE.NP_G) THEN
+            WRITE(16,*) 'ERROR: Baroclinic forcing input (fort.11.nc) '
+     &                //'does not have the correct number of nodes for '
+     &                //'IDEN = 8. Check your input files to make sure '
+     &                //'you have BC3D forcing for each node in the '
+     &                //'model or change which baroclinic forcing '
+     &                //'method you are using.'
+            call BC3DTerminate()
+         ENDIF
+         ! check if the number of elements is correct
+         call Check_err(NF90_INQ_DIMID(NC_ID,'nele',Temp_ID))
+         call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NY))
+         IF (NY.NE.NE_G) THEN
+            WRITE(16,*) 'ERROR: Baroclinic forcing input (fort.11.nc) '
+     &                //'does not have the correct number of elements'
+     &                //' for IDEN = 8. Check your input files to make '
+     &                //'sure you have BC3D forcing for each node in '
+     &                //'the model or change which baroclinic forcing '
+     &                //'method you are using.'
+            call BC3DTerminate()
+         ENDIF
+         return
+      ENDIF
       call Check_err(NF90_INQ_DIMID(NC_ID,'NY',Temp_ID))
       call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NY))
       call Check_err(NF90_INQ_DIMID(NC_ID,'NX',Temp_ID))
@@ -225,30 +304,6 @@ C-----------------------------------------------------------------------
          call Check_err(NF90_INQ_VARID(NC_ID,'lats',Temp_ID))
          call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,BC3D_Lats))
       endif     
- 
-      ! Get the timestep and starting time
-      call Check_err(NF90_INQ_VARID(NC_ID,'time',Temp_ID))
-      BC3D_DT = 0d0
-      if (iden.gt.0) then
-#ifdef DATETIME
-      ! Let's get the start time index
-      do BC3D_IT = 1,NT
-         call check_err(nf90_get_var(nc_id, Temp_ID,        
-     &                  TSS,start=[1, BC3D_IT],count=[SL, 1]))
-         TNDT = strptime(trim(TSS),"%Y-%m-%d %H:%M")
-         DT   = CurDT - TNDT
-         if (DT%total_seconds() <= 0) exit
-      enddo
-      call check_err(nf90_get_var(nc_id, Temp_ID, TSS,           
-     &     start=[1, BC3D_IT+densityTimeIterator],count=[SL, 1]))
-      TNDT1 = strptime(trim(TSS),"%Y-%m-%d %H:%M")
-      DT = TNDT1 - TNDT 
-      BC3D_DT = DT%total_seconds()
-#else
-      ! Just set at 3 hrs
-      BC3D_DT = 3600d0*3d0
-#endif
-      endif
  
       ! Get bounds of the mesh
       Lat_s = max(-79.99d0,rad2deg*minval(sfea))
@@ -345,7 +400,9 @@ C-----------------------------------------------------------------------
              Lats = BC3D_Lats(YIs:js)
           endif
   
-          if (LoadIT_Fric) allocate(BC3D_NB(NX,NY),BC3D_NM(NX,NY))
+          if (LoadIT_Fric) then
+             allocate(BC3D_NB(NX,NY),BC3D_NM(NX,NY))
+          endif
           if (NOLIBF.eq.3) then
              if (HBREAK.gt.0d0) then
                 allocate(BC3D_MLD(NX,NY))
@@ -415,6 +472,102 @@ C-----------------------------------------------------------------------
       END SUBROUTINE Get_LonLatDepthTime
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
+      SUBROUTINE Read_BC3D_NetCDF_on_ADCIRC_Grid(NC_ID)
+      use netcdf
+      use mesh, only : np,sfea,slam 
+      use sizes, only : mnproc,myproc, localdir
+      use global, only : nodes_lg, np_g
+#ifdef CMPI
+      USE GL2LOC_MAPPING, ONLY : MAPTOLOCAL_REAL
+#endif      
+      implicit none
+      INTEGER,INTENT(IN) :: NC_ID
+      ! global arrays
+      REAL(SZ),ALLOCATABLE,DIMENSION(:) :: bpgx_g, bpgy_g, sigts_g, 
+     &                                     nb_g, nm_g, mld_g
+      ! local array
+      REAL(SZ),ALLOCATABLE,DIMENSION(:) :: tmp
+      ! temporary looping variable to write out values to see if this is
+      ! working
+      INTEGER :: ii
+      ! on processor 0 we have to read in the values
+      IF (MYPROC.EQ.0) THEN
+         ALLOCATE( bpgx_g(np_g), bpgy_g(np_g), sigts_g(np_g) )
+         bpgx_g  = read_nc_var_adc(NC_ID,'BPGX',BC3D_IT,np_g)
+         bpgy_g  = read_nc_var_adc(NC_ID,'BPGY',BC3D_IT,np_g)
+         sigts_g = read_nc_var_adc(NC_ID,'SigTS',BC3D_IT,np_g)
+         IF (LoadIT_Fric) THEN
+            ALLOCATE( nb_g(np_g), nm_g(np_g) )
+            nb_g = read_nc_var_adc(NC_ID,'NB',BC3D_IT,np_g)
+            nm_g = read_nc_var_adc(NC_ID,'NM',BC3D_IT,np_g)
+         ENDIF
+         IF (NOLIBF.EQ.3) THEN
+            ALLOCATE( mld_g(np_g) )
+            mld_g = read_nc_var_adc(NC_ID,'MLD',BC3D_IT,np_g)
+         ENDIF
+      ENDIF
+#ifdef CMPI
+      ! use mapToSubdomainRealMPI to distribute to the processors
+      ! allocate dummy array
+      ALLOCATE( tmp(NP) )
+      tmp = 0d0
+      IF (ABS(IDEN).NE.9) THEN
+         ! BPGX
+         CALL MAPTOLOCAL_REAL(bpgx_g,tmp)
+         VIDBCPDXOH_F(2,:) = tmp
+         ! BPGY
+         CALL MAPTOLOCAL_REAL(bpgy_g,tmp)
+         VIDBCPDYOH_F(2,:) = tmp
+         ! SigTS
+         CALL MAPTOLOCAL_REAL(sigts_g,tmp)
+         SigTS_F(2,:)      = tmp
+      ENDIF
+      IF (LoadIT_Fric) THEN
+         ! NB
+         CALL MAPTOLOCAL_REAL(nb_g,tmp)
+         NB_F(2,:) = tmp
+         ! NM
+         CALL MAPTOLOCAL_REAL(nb_g,tmp)
+         NM_F(2,:) = tmp
+      ENDIF
+      IF (NOLIBF.EQ.3) THEN
+         ! MLD
+         CALL MAPTOLOCAL_REAL(mld_g,tmp)
+         MLD_F(2,:) = tmp
+      ENDIF
+      DEALLOCATE( tmp )
+#else
+      IF (ABS(IDEN).NE.9) THEN
+         ! BPGX
+         VIDBCPDXOH_F(2,:) = bpgx_g
+         ! BPGY
+         VIDBCPDYOH_F(2,:) = bpgy_g
+         ! SigTS
+         SigTS_F(2,:)      = sigts_g
+      ENDIF
+      IF (LoadIT_Fric) THEN
+         ! NB
+         NB_F(2,:) = nb_g
+         ! NM
+         NM_F(2,:) = nm_g
+      ENDIF
+      IF (NOLIBF.EQ.3) THEN
+         ! MLD
+         MLD_F(2,:) = mld_g
+      ENDIF
+#endif
+      IF (MYPROC.EQ.0) THEN
+         DEALLOCATE( bpgx_g, bpgy_g, sigts_g )
+         IF (LoadIT_Fric) THEN
+            DEALLOCATE( nb_g, nm_g )
+         ENDIF
+         IF (NOLIBF.EQ.3) THEN
+            DEALLOCATE( mld_g )
+         ENDIF
+      ENDIF
+      END SUBROUTINE Read_BC3D_NetCDF_on_ADCIRC_Grid
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       FUNCTION read_nc_var(NC_ID,varname,BCIT_IN,XIin,NXin,YIin,NYin)
      & result (Var)
       use netcdf
@@ -442,6 +595,25 @@ C-----------------------------------------------------------------------
       END FUNCTION read_nc_var
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
+      FUNCTION read_nc_var_adc(NC_ID,varname,BCIT_IN,NumNodes)
+     & result (Var)
+      use netcdf
+         
+      implicit none
+
+      integer,intent(in) :: NC_ID, BCIT_IN, NumNodes
+      character(*),intent(in) :: varname
+      integer :: Temp_ID
+      real(sz) :: Var(NumNodes)
+
+      call Check_err(NF90_INQ_VARID(NC_ID,trim(varname),Temp_ID))
+      call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,Var,
+     &               start=[1,BCIT_IN],count=[NumNodes,1]))
+C
+C-----------------------------------------------------------------------
+      END FUNCTION read_nc_var_adc
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
 C     S U B R O U T I N E   C H E C K  _  E R R
 C-----------------------------------------------------------------------
 C     jgf49.17.02 Checks the return value from netCDF calls; if there
@@ -459,7 +631,7 @@ C-----------------------------------------------------------------------
 
       INTEGER, intent(in) :: iret
 
-      call setMessageSource("check_err")
+      !call setMessageSource("check_err")
 #ifdef ALL_TRACE
       call allMessage(DEBUG,"Enter.")
 #endif
@@ -470,7 +642,7 @@ C-----------------------------------------------------------------------
 #ifdef ALL_TRACE
       call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()
+      !call unsetMessageSource()
 C-----------------------------------------------------------------------
       end subroutine check_err
 C-----------------------------------------------------------------------
@@ -485,7 +657,7 @@ C-----------------------------------------------------------------------
       implicit none
       real*8,intent(in) :: TimeLoc
 C
-      call setMessageSource("Initial_BC3D_NetCDF")
+      !call setMessageSource("Initial_BC3D_NetCDF")
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
@@ -493,12 +665,19 @@ C
       BC3D_IT = 1
       ! Times are rounded down to nearest minute
       DTIME1  = floor(TimeLoc/60d0)*60d0
+      WRITE(16,*) 'in initial_bc3d_netcdf,'
+      write(16,*) 'DTIME1 = ',DTIME1
 #ifdef DATETIME
       CurDT   = basedatetime + timedelta(minutes=floor(DTIME1/60d0))
-#endif            
+#endif           
+      WRITE(16,*) 'About to read_bc3d_netcdf in initial_...' 
       call Read_BC3D_Netcdf()
+      DTIME2 = DTIME1 + BC3D_DT
       ! Put the first value on ADCIRC grid
-      call Put_BC3D_on_ADCIRC_Grid() 
+      ! CPB 9/2022: added logical for IDEN case 8
+      IF (abs(IDEN).LT.8) THEN
+         call Put_BC3D_on_ADCIRC_Grid() 
+      ENDIF
       call logMessage(ECHO,'Read and processed 1st BC3D '
      &                         //'timesnap'
 #ifdef DATETIME
@@ -507,7 +686,7 @@ C
      &                         ) 
       ! WJP Get the start time and the next data time
       ! Put the first values in first position
-      if (abs(IDEN).ne.7) then
+      if (abs(IDEN).ne.7.AND.abs(IDEN).NE.9) then
          VIDBCPDXOH_F(1,:) = VIDBCPDXOH_F(2,:) 
          VIDBCPDYOH_F(1,:) = VIDBCPDYOH_F(2,:) 
          SigTS_F(1,:)      = SigTS_F(2,:)
@@ -536,9 +715,11 @@ C
 #endif
       CALL Read_BC3D_Netcdf()
       ! BC3D_DT may have been updated in Read_BC3D..
-      DTIME2 = DTIME1 + BC3D_DT
+!      DTIME2 = DTIME1 + BC3D_DT
       ! Put the second value on ADCIRC grid
-      CALL Put_BC3D_on_ADCIRC_Grid()
+      IF (abs(IDEN).LT.8) THEN
+         call Put_BC3D_on_ADCIRC_Grid() 
+      ENDIF
       call logMessage(ECHO,'Read and processed 2nd BC3D '
      &                         //'timesnap'
 #ifdef DATETIME
@@ -549,7 +730,7 @@ C
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()
+      !call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE Initial_BC3D_NetCDF
 C
@@ -569,7 +750,7 @@ C-----------------------------------------------------------------------
       real(sz)            :: DTRATIO
       integer             :: J,JKI 
 C
-      call setMessageSource("Update_BC3D_Info")
+      !call setMessageSource("Update_BC3D_Info")
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
@@ -579,7 +760,7 @@ C
          IF (TimeLoc.GT.DTIME2) THEN
             ! Updating new time and arrays
             DTIME1 = DTIME2
-            if (IDEN.ne.7) then
+            if (IDEN.ne.7.AND.abs(IDEN).NE.9) then
                SigTS_F(1,:)      = SigTS_F(2,:)
                VIDBCPDXOH_F(1,:) = VIDBCPDXOH_F(2,:) 
                VIDBCPDYOH_F(1,:) = VIDBCPDYOH_F(2,:) 
@@ -610,15 +791,15 @@ C
                
                ! BC3D_DT may have been changed above..
                DTIME2 = DTIME1 + BC3D_DT
-               ! Calculate the BPG, free surface density, buoyancy
-               ! frequency, and dispersion terms on the ADCIRC grid
-               CALL Put_BC3D_on_ADCIRC_Grid()
-               call logMessage(ECHO,'Read and processed new BC3D '
-     &                         //'timesnap'
+               IF (IDEN.LT.8) THEN
+                  ! Calculate the BPG, free surface density, buoyancy
+                  ! frequency, and dispersion terms on the ADCIRC grid
+                  CALL Put_BC3D_on_ADCIRC_Grid()
+               ENDIF
 #ifdef DATETIME
-     &                         //': '//CurDT%isoformat(' ')
+               WRITE(16,*) 'Read and processed new BC3D timesnap: '
+     &                     //CurDT%isoformat(' ')
 #endif               
-     &                         ) 
 #endif
             ELSEIF (flag < 0) THEN
                ! Read next values from fort.11
@@ -636,7 +817,7 @@ C
       ENDIF
 
       ! Linear interpolate all the values in time
-      if (abs(IDEN).ne.7) then
+      if (abs(IDEN).ne.7.AND.abs(IDEN).NE.9) then
          DO J = 1,NP
            SigTS(J) = SigTS_F(1,J) + DTRATIO*(SigTS_F(2,J)-SigTS_F(1,J))
            ! This is interpolated onto element and put back onto node in
@@ -695,7 +876,7 @@ C
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()
+      !call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE Update_BC3D_Info
 C
@@ -710,7 +891,7 @@ C-----------------------------------------------------------------------
       
       integer :: i, j, ii, jj, icount 
 C
-      call setMessageSource("Put_3DBC_on_ADCIRC_Grid")
+      !call setMessageSource("Put_3DBC_on_ADCIRC_Grid")
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
@@ -852,7 +1033,7 @@ C
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()
+      !call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE Put_BC3D_on_ADCIRC_Grid
 C
@@ -897,7 +1078,7 @@ C-----------------------------------------------------------------------
       REAL(SZ) :: VIDBCPDXOHAvgArea,VIDBCPDYOHAvgArea
 
 C
-      call setMessageSource("FBPG_Disp_from_3DBC")
+      !call setMessageSource("FBPG_Disp_from_3DBC")
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
@@ -1009,7 +1190,7 @@ C
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()
+      !call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE FBPG_Disp_from_BC3D
 C-----------------------------------------------------------------------
@@ -1027,7 +1208,7 @@ C-----------------------------------------------------------------------
       REAL, ALLOCATABLE :: dummy(:)
 #endif
 C
-      call setMessageSource("BC3DTerminate")
+      !call setMessageSource("BC3DTerminate")
 #ifdef ALL_TRACE
       call allMessage(DEBUG,"Enter.")
 #endif
@@ -1056,7 +1237,7 @@ C
 #ifdef ALL_TRACE
       call allMessage(DEBUG,"Return.") ! should be unreachable
 #endif
-      call unsetMessageSource()
+      !call unsetMessageSource()
 !-----------------------------------------------------------------------
       END SUBROUTINE BC3DTerminate
 !-----------------------------------------------------------------------

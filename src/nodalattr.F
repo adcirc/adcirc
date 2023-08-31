@@ -330,9 +330,10 @@ C------------------ For absorbing layer, DW
       REAL(SZ), ALLOCATABLE:: AbsLayerQxEMO(:,:), AbsLayerQxEFA(:,:)
       REAL(SZ), ALLOCATABLE:: AbsLayerQyEMO(:,:), AbsLayerQyEFA(:,:)
 
-      integer :: filtL = 25 ! Length of moving-mean filter [hrs]
-      REAL(SZ), ALLOCATABLE:: UAV(:,:), VAV(:,:) 
-
+C
+C.....CPB 9/2022: for computing tidal velocities in
+C                 apply2dinternalwavedrag
+      REAL(SZ), ALLOCATABLE, PRIVATE :: UT(:), VT(:)
 
 C------------------
 C     Make i,j,k private DW
@@ -904,6 +905,7 @@ C     ----------------------------------------------------------------
 C     Allocate memory to hold our data.
       subroutine allocateNodalAttributes()
       use mesh,only:ne
+      USE GLOBAL, ONLY: NTIF
       implicit none
       ALLOCATE(TAU0VAR(NumOfNodes),TAU0BASE(NumOfNodes)) ! jjw&sb46.39sb01
       ALLOCATE(STARTDRY(NumOfNodes))
@@ -933,7 +935,6 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
       elemental_slope_limiter_max_exceeded(:) = .FALSE.
       IF ( LoadIT_Fric ) THEN
          ALLOCATE(IT_Fric(NumOfNodes,IT_FricNoOfVals))
-         ALLOCATE(UAV(filtL,NumOfNodes),VAV(filtL,NumOfNodes))
       END IF   
       OverlandReductionFactor(:) = 1D0/30D0
       IF ( LoadAbsLayerSigma ) THEN
@@ -1771,7 +1772,7 @@ C
 C     ERROR CHECK: If Chezy, Manning's or Quadratic friction was loaded
 C     from the nodal attributes file, NOLIBF must be 1.
       IF ((LoadChezy.or.LoadManningsN.or.LoadQuadraticFric).and.
-     &     NoLiBF.ne.1) THEN
+     &     NoLiBF.ne.1.AND.NOLIBF.NE.3) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9800)
          WRITE(16,9800)
  9800    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
@@ -2263,11 +2264,13 @@ C     ... Combined Cd for bottom friction and momentum dispersion
             UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
             H1  = DP(I) + IFNLFA*ETA2(I)
             IF (HBREAK.gt.0d0) then
+C..............CPB 3/9/2023: moved calculation of Cd as a power function
+C              to a separate subroutine "apply2DMomentumDisp"
 C              ... Cd as a power function [a(x^b-1)] of x = MLD
-               FRIC(I) = CF + HBREAK*(max(4d-3,MLD(I))**FTHETA - 1d0)
+               FRIC(I) = CF ! + HBREAK*(max(4d-3,MLD(I))**FTHETA - 1d0)
             ELSE
 C              ... Cd directly from the 3D model (MLD here)
-               FRIC(I) = CF + MLD(I)
+               FRIC(I) = FRIC(I) + MLD(I)
             ENDIF
             TK(I) = MIN(FRIC(I) * UV1 / H1, 2.0/DTDP)
          ENDDO
@@ -2387,25 +2390,33 @@ C     the scalar version in here too
 C     WJP 02.24.2018 put into v53.dev
 C     WJP 07.24.2018 updated for baroclinic coupling type 
 C     ----------------------------------------------------------------
-      SUBROUTINE Apply2DInternalWaveDrag(NP, TK, TKM, U, V, DP, IT)
-      USE GLOBAL, ONLY: CBaroclinic, CORIF, DTDP, NB, NM, IDEN, IFSPROTS
+      SUBROUTINE Apply2DInternalWaveDrag(NP, TK, TKM, U, V, DP,
+     & IT)      
+      USE GLOBAL, ONLY: CBaroclinic, CORIF, DTDP, NB, NM, IDEN,
+     &                  IFSPROTS, RAMP
       USE MESH, ONLY: DRVMAP2DSPVEC, UVECTMP, VVECTMP, RVELF
+      USE INTERNALTIDE, ONLY: UBar, VBar, MunkHPFilter
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
-      REAL(SZ), intent(in), dimension(NP) :: TK   ! scalar friction
-      REAL(SZ), intent(inout), dimension(3,NP) :: TKM
+      REAL(SZ), intent(in), dimension(:) :: TK   ! scalar friction
+      REAL(SZ), intent(inout), dimension(:,:) :: TKM
       INTEGER,  intent(in), optional :: IT          ! temporal interations
       REAL(SZ), intent(in), dimension(NP),optional :: U    ! x-dir velocities
       REAL(SZ), intent(in), dimension(NP),optional :: V    ! y-dir velocities
       REAL(SZ), intent(in), dimension(NP),optional :: DP   ! depth
       REAL(SZ), allocatable :: Hx(:), Hy(:)
-      INTEGER  :: I, L, Lm, Lind 
+      INTEGER  :: I, J 
       REAL(SZ) :: omega = 1.4052d-4 ![rad/s] M2 tidal frequency
       REAL(SZ) :: hr = 3600.0_SZ ! means one hour in seconds
       REAL(SZ) :: SmallV = 1d-10 ! A small value
-      REAL(SZ) :: Fit, alpha2, gamma2, slope2, uavnow, vavnow 
+      REAL(SZ) :: Fit, alpha2, gamma2, slope2
       REAL(SZ) :: Nmdiff, Nbdiff, Fdiff, adju, adjv, adjuv
       logical, save ::  first_entry = .TRUE.
+      ! CPB: for tidal velocities
+      REAL(SZ) :: cosAMIGT, sinAMIGT, DissTidal, DissTotal, jjwgamma,
+     &            Cxx, Cyy, Cxy
+      INTEGER :: NCYC
+      REAL(SZ),DIMENSION(:),ALLOCATABLE :: Udmy, Vdmy      
 C     Compute TKM by adding wave drag contribution to 
 C     current value of the bottom friction, TK
       LoadITFric: IF (LoadIT_Fric) THEN
@@ -2448,19 +2459,7 @@ C              (unnecessary for IT_FricNoOfVals == 1)
          Baroc: IF (CBaroclinic.and.abs(IDEN).ge.5) THEN
 C           2DDI ADCIRC with baroclinic coupling
             if (abs(IDEN).ne.7) then
-C              Filtering lengths if have baroclinic ocean currents
-               L  = floor((IT-1)*DTDP/hr) ! Get the current hour number
-               Lm = floor((IT-2)*DTDP/hr) ! Get the previous hour number
-               if (L > Lm) then
-                  ! Store new hour velocities
-                  ! Get actual index (wrap around)
-                  Lind = L - filtL*floor((IT-1)*DTDP/filtL/hr) + 1
-                  DO I = 1,NP
-                     UAV(Lind,I) = U(I)   
-                     VAV(Lind,I) = V(I)   
-                  ENDDO
-                  L = min(L,filtL)  
-               endif
+               CALL MunkHPFilter(U,V,IT)
             endif
             IF (IT_FricNoOfVals == 5) THEN
 C           Use the "Nonlocal" Nycander (2005) type tensor wave drag
@@ -2493,11 +2492,11 @@ C           For the "Local" Lyard et al. (2004) type tensor wave drag
 C           1st column is coefficient, 2nd and 3rd columns are the Hx and Hy slopes
 C           For the scalar Zaron & Egbert (2006) type
 C           1st column is coefficient, 2nd column is the squared hypotenuse slope
-               adjuv = 1d0; adju = 1d0; adjv = 1d0;
                DO I = 1,NP
-                  NBdiff = (NB(I)**2 - omega**2)
-                  NMdiff = (NM(I)**2 - omega**2)
-                  Fdiff  = (omega**2 - CORIF(I)**2)
+                  adju = 1d0; adjv = 1d0;adjuv = 1d0;
+                  NBdiff = (NB(I)**2d0 - omega**2d0)
+                  NMdiff = (NM(I)**2d0 - omega**2d0)
+                  Fdiff  = (omega**2d0 - CORIF(I)**2d0)
                   IF (NBdiff.le.SmallV.or.Nmdiff.le.SmallV.or.
      &                Fdiff.le.SmallV) THEN
                      ! No freely propagating internal tides
@@ -2506,11 +2505,16 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                   ELSE 
                      ! Have freely propagating internal tides
                      ! Get the full coefficient
-                     Fit = IT_Fric(I,1)*sqrt(NBdiff*Nmdiff)/omega
+                     IF (NBdiff*NMdiff.LT.0d0) THEN
+                        Fit = 0d0
+                     ELSE
+                        Fit = IT_Fric(I,1)*sqrt(NBdiff*Nmdiff)/omega
+                     ENDIF
                      ! Check criticality of slope
                      alpha2 = Fdiff / NBdiff
+                     IF (alpha2.LT.0d0) Fit = 0d0
                      if (IT_FricNoOfVals == 3) then
-                        slope2 = IT_Fric(I,2)**2 + IT_Fric(I,3)**2
+                        slope2 = IT_Fric(I,2)**2d0 + IT_Fric(I,3)**2d0
                      else
                         slope2 = IT_Fric(I,2)
                      endif
@@ -2521,18 +2525,17 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                      ! Calculate adjustment based on tidal residual
                      if (abs(IDEN).ne.7) then
                         ! Calculate the adjustment factors based on the delayed moving mean
-                        if (L.ge.1) then
-                           uavnow = sum(UAV(1:L,I)) / L
-                           vavnow = sum(VAV(1:L,I)) / L
-                           if (abs(U(I)) > 1d-3) adju = 1d0-uavnow/U(I)
-                           if (abs(V(I)) > 1d-3) adjv = 1d0-vavnow/V(I)
-                        endif
+                        IF (ABS(U(I)).GT.1d-3.AND.
+     &                      ABS(V(I)).GT.1d-3) THEN
+                           adju = UBar(I)/U(I)
+                           adjv = VBar(I)/V(I)
+                        ENDIF
                         adjuv = 0.5d0*(adju + adjv)
                      endif
                      ! Implement the friction with possible adjustment
-                     if (IT_FricNoOfVals == 3) then
-                        TKM(1,I) = TK(I) + adju*Fit*IT_Fric(I,2)**2
-                        TKM(2,I) = TK(I) + adjv*Fit*IT_Fric(I,3)**2
+                     IF (IT_FricNoOfVals == 3) then
+                        TKM(1,I) = TK(I) + adju*Fit*IT_Fric(I,2)**2d0
+                        TKM(2,I) = TK(I) + adjv*Fit*IT_Fric(I,3)**2d0
                         TKM(3,I) = adjuv*Fit*IT_Fric(I,2)*IT_Fric(I,3)
                      else
                         TKM(1:2,I) = TK(I) + adjuv*Fit*IT_Fric(I,2)
@@ -2571,6 +2574,74 @@ C       In case we did not load ITFric
       RETURN
 C     ----------------------------------------------------------------
       END SUBROUTINE Apply2DInternalWaveDrag
+C     ----------------------------------------------------------------
+C     ----------------------------------------------------------------
+C     S U B R O U T I N E
+C     A P P L Y  2 D  M O M E N T U M D I S P
+C     ----------------------------------------------------------------
+C     CPB 3/9/2023: This subroutine applies momentum dispersion as a
+C     power function of mixed-layer depth calculated from a
+C     tide-omitting OGCM. It applies a Cd calculated from the power
+C     function fit to the non-tidal portion of velocity calculated using
+C     a 25-hour lagged average filter.
+C
+C     ----------------------------------------------------------------
+      SUBROUTINE Apply2DMomentumDisp(UU1, VV1, DP, ETA2,
+     &     IFNLFA, NP, TKM)
+      USE GLOBAL, ONLY: MLD, DTDP
+      USE INTERNALTIDE, ONLY: UBar, VBar
+C      USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
+      IMPLICIT NONE
+      INTEGER, intent(in) :: NP                   ! number of nodes in grid
+      REAL(SZ), intent(in), dimension(NP) :: UU1  ! x-dir velocities
+      REAL(SZ), intent(in), dimension(NP) :: VV1  ! y-dir velocities
+      REAL(SZ), intent(in), dimension(NP) :: DP   ! bathymetric depths
+      REAL(SZ), intent(in), dimension(NP) :: ETA2 ! water surf. elevations
+      INTEGER, intent(in) :: IFNLFA               ! nonlin. finite amp. flag
+      REAL(SZ), intent(inout), dimension(:,:) :: TKM! bl/itfric matrix
+C
+      REAL(SZ) :: UVBar, UV1  ! non-tidal velocity magnitude
+      REAL(SZ) :: H1    ! total depth
+      REAL(SZ) :: Cd    ! Cd estimated as a power function
+      REAL(SZ) :: adju, adjv ! adjustment to apply only to nontidal vel
+      REAL(SZ) :: a, b, c ! for ensuring positive semidefinite
+      
+      ! if nolibf =/=3 then simply return
+      IF (NOLIBF.NE.3.OR.HBREAK.LE.0d0) RETURN
+C
+C     ... Combined Cd for bottom friction and momentum dispersion
+      DO I = 1,NP
+         IF (DP(I).LT.1000d0) CYCLE
+         UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
+         H1  = DP(I) + IFNLFA*ETA2(I)
+         UVBar = SQRT(UBar(I)*UBar(I)+VBar(I)*VBar(I))
+         H1  = DP(I) + IFNLFA*ETA2(I)
+C        ... Cd as a power function [a(x^b-1)] of x = MLD
+         Cd = HBREAK*(max(4d-3,MLD(I))**FTHETA - 1d0)
+         ! adjust to put in TKM matrix
+         IF ( ABS(UU1(I)).GT.1d-3
+     &        .AND.ABS(VV1(I)).GT.1d-3 ) THEN
+            adju = UBar(I)/UU1(I)
+            adjv = VBar(I)/VV1(I)
+         ELSE
+            adju = 1d0
+            adjv = 1d0
+         ENDIF
+         TKM(1,I) = TKM(1,I) + Cd*adju*UVBar/H1
+         TKM(2,I) = TKM(2,I) + Cd*adjv*UVBar/H1
+         ! ensure matrix is positive semi-definite
+         a = TKM(1,I)
+         b = TKM(3,I)
+         c = TKM(2,I)
+         TKM(1,I) = a
+         TKM(3,I) = b
+         TKM(2,I) = c
+      ENDDO
+C
+C
+      RETURN
+C     ----------------------------------------------------------------
+      END SUBROUTINE Apply2DMomentumDisp
 C     ----------------------------------------------------------------
 
 !     ----------------------------------------------------------------
