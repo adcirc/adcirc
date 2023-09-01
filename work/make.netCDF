@@ -1,0 +1,80 @@
+#!/bin/sh 
+
+#mpi=openmpi
+mach_cmplr="MACHINENAME=hatteras compiler=intel" 
+swan=enable
+netcdf=enable
+netcdf4=enable 
+nccompression=  #  enable
+debug=    #  full
+#extra="acis"
+extra=
+linkexe="true"
+
+codes=('adcprep' 'adcirc' 'adcswan' 'padcirc' 'padcswan' 'hstime' 'aswip')
+
+module purge
+module load icc/2022.0.2
+module load env_icc/any
+module load hdf5/1.12.1-intel
+module load netcdf-c/4.8.1-intel
+module load netcdf-fortran/4.5.4-intel
+module load mvapich2/2.3.7-intel
+
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/bblanton/lib
+
+echo ' '
+echo %%%%%%%%%%%%%%%%%%%%%
+echo ' '
+echo Loaded modules:
+module -l list
+echo ' '
+echo %%%%%%%%%%%%%%%%%%%%%
+echo ' '
+which mpif90
+echo ' '
+echo %%%%%%%%%%%%%%%%%%%%%
+echo ' '
+
+l=`grep ADC_VERSION ../version_default.F`
+tag=`echo $l  | awk -F = '{print $2}' | sed s/\"//g | tr -d ' '`
+if [ "$netcdf" == "enable" ] ; then
+        tag=`printf '%s.NETCDF' $tag`
+fi
+if [ "$netcdf4" == "enable" ] ; then
+        tag=`printf '%s.NETCDF4' $tag`
+fi
+if [ "$nccompression" == "enable" ] ; then
+        tag=`printf '%s.NETCDF4_COMPRESSION' $tag`
+fi
+
+if [ "$extra"  ] ; then
+        tag=`printf '%s.%s' $tag $extra`
+fi
+
+if [ "$#" -eq 0 ]
+then
+
+        make clobber
+
+        for f in "${codes[@]}"; 
+        do 
+                make $f SWAN=$swan NETCDF=$netcdf NETCDF4=$netcdf4 NETCDF4_COMPRESSION=$nccompression $mach_cmplr
+                mv $f $f.$tag
+                if [ "$linkexe" == "true" ] ; then
+                        ln -sf $f.$tag $f
+                fi
+        done
+
+else
+
+        rm -rf $1.$tag $1
+        echo make $1 SWAN=$swan NETCDF=$netcdf NETCDF4=$netcdf4 DEBUG=$debug NETCDF4_COMPRESSION=$nccompression $mach_cmplr
+        make $1 SWAN=$swan NETCDF=$netcdf NETCDF4=$netcdf4 DEBUG=$debug NETCDF4_COMPRESSION=$nccompression $mach_cmplr
+
+        mv $1 $1.$tag
+        if [ "$linkexe" == "true" ] ; then
+                ln -sf $1.$tag $1
+        fi
+fi
+
