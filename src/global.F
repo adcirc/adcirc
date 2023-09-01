@@ -330,6 +330,7 @@ C- DMW
 
       REAL(SZ),ALLOCATABLE :: TK(:)     ! WJP bottom frictiom
       REAL(SZ),ALLOCATABLE :: TKM(:,:)  ! symmetrical friction matrix
+      REAL(SZ), ALLOCATABLE :: ADRAGU(:), ADRAGV(:)
       REAL(8),ALLOCATABLE :: EMO(:,:),EFA(:,:)
       REAL(8),ALLOCATABLE,TARGET :: XEL(:)  ! x-coords of elevation stations
       REAL(8),ALLOCATABLE,TARGET :: YEL(:)  ! y-coords of elevation stations

@@ -2393,9 +2393,9 @@ C     ----------------------------------------------------------------
       SUBROUTINE Apply2DInternalWaveDrag(NP, TK, TKM, U, V, DP,
      & IT)      
       USE GLOBAL, ONLY: CBaroclinic, CORIF, DTDP, NB, NM, IDEN,
-     &                  IFSPROTS, RAMP
+     &                  IFSPROTS, RAMP, ADRAGU, ADRAGV
       USE MESH, ONLY: DRVMAP2DSPVEC, UVECTMP, VVECTMP, RVELF
-      USE INTERNALTIDE, ONLY: UNTIDE, UBar, VBar, MunkHPFilter
+      USE INTERNALTIDE, ONLY: UNTIDE, UBar, VBar, MunkLPFilter
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
       REAL(SZ), intent(in), dimension(:) :: TK   ! scalar friction
@@ -2460,7 +2460,8 @@ C              (unnecessary for IT_FricNoOfVals == 1)
 C           2DDI ADCIRC with baroclinic coupling
             if (abs(IDEN).ne.7) then
                !CALL UNTIDE(U,V,IT)
-               CALL MunkHPFilter(U,V,IT)
+               !CALL MunkHPFilter(U,V,IT)
+               CALL MunkLPFilter(U,V,IT)
             endif
             IF (IT_FricNoOfVals == 5) THEN
 C           Use the "Nonlocal" Nycander (2005) type tensor wave drag
@@ -2535,9 +2536,14 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                      endif
                      ! Implement the friction with possible adjustment
                      IF (IT_FricNoOfVals == 3) then
-                        TKM(1,I) = TK(I) + adju*Fit*IT_Fric(I,2)**2d0
-                        TKM(2,I) = TK(I) + adjv*Fit*IT_Fric(I,3)**2d0
-                        TKM(3,I) = adjuv*Fit*IT_Fric(I,2)*IT_Fric(I,3)
+                        Cxx = Fit*IT_Fric(I,2)**2d0
+                        Cyy = Fit*IT_Fric(I,3)**2d0
+                        Cxx = Fit*IT_Fric(I,2)*IT_Fric(I,3)
+                        TKM(1,I) = TK(I) + Fit*IT_Fric(I,2)**2d0
+                        TKM(2,I) = TK(I) + Fit*IT_Fric(I,3)**2d0
+                        TKM(3,I) = Fit*IT_Fric(I,2)*IT_Fric(I,3)
+                        ADRAGU(I) = Cxx*UBar(I) + Cxy*VBar(I)
+                        ADRAGV(I) = Cxy*UBar(I) + Cyy*VBar(I)
                      else
                         TKM(1:2,I) = TK(I) + adjuv*Fit*IT_Fric(I,2)
                         TKM(3,I)   = 0.0d0

@@ -11,7 +11,7 @@ C---------------------------------------------------------------------C
       USE SIZES, ONLY: SZ
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
      &          setMessageSource, unsetMessageSource, allMessage,
-     &          scratchMessage, logMessage      
+     &          scratchMessage, logMessage, ADRAGU, ADRAGV
       IMPLICIT NONE
       ! stored velocity samples for moving average calculation
       REAL(SZ),ALLOCATABLE,PRIVATE :: UAV(:,:), VAV(:,:)        
@@ -210,7 +210,7 @@ C---------------------------------------------------------------------C
          ALLOCATE( UBar(NP), VBar(NP) )
          UBar = 0d0
          VBar = 0d0
-         CALL CalcMunkWeights()
+         CALL CalcMunkHPWeights()
       ENDIF
       ! check if this and the previous timestep are in the same hour
       L = FLOOR(TimeStep*DTDP/T)
@@ -250,7 +250,126 @@ C---------------------------------------------------------------------C
       END SUBROUTINE MunkHPFilter
 C---------------------------------------------------------------------C
 C---------------------------------------------------------------------C
-      SUBROUTINE CalcMunkWeights()
+      SUBROUTINE MunkLPFilter(U_i,V_i,TimeStep)
+C---------------------------------------------------------------------C
+C     This subroutine applies a low-pass filter derived from the
+C     so-called Munk "Tide Killer" filter to the velocity field. The 
+C     coefficients for the original, low pass filter can be found at: 
+C
+C        https://www.sonel.org/Filters-for-the-daily-mean-sea.html
+C
+C
+C     Written by: Coleman Blakely 3/2023
+C---------------------------------------------------------------------C
+      USE MESH, ONLY : NP
+      USE GLOBAL, ONLY: DTDP
+      IMPLICIT NONE
+      REAL(SZ),INTENT(IN),DIMENSION(:) :: U_i, V_i ! current velocity
+      INTEGER,INTENT(IN) :: TimeStep    ! current time step
+      REAL(SZ) :: filtL = 49d0*3600d0        ! filter length (s)
+      REAL(SZ) :: T = 60d0*60d0             ! sampling interval (s)
+      INTEGER,SAVE :: NS = 1   ! number of samples
+      LOGICAL,SAVE :: first_call = .TRUE.
+      ! need indices to check if the current and previous time step are
+      ! in the same 1 hour window
+      INTEGER :: L, Lm           
+      INTEGER :: ii, kk ! for loops
+      ! for populating the UAV, VAV matrices at the start of the run
+      INTEGER,SAVE :: ISTA
+
+      IF ( first_call ) THEN
+         first_call = .FALSE.
+         NS = FLOOR(filtL/T)
+         ista = 1
+         ALLOCATE( UAV(NP,NS), VAV(NP,NS) )
+         UAV = 0d0
+         VAV = 0d0
+         ALLOCATE( UBar(NP), VBar(NP) )
+         UBar = 0d0
+         VBar = 0d0
+         ALLOCATE( ADRAGU(NP), ADRAGV(NP) )
+         CALL CalcMunkLPWeights()
+      ENDIF
+      ! check if this and the previous timestep are in the same hour
+      L = FLOOR(TimeStep*DTDP/T)
+      Lm = FLOOR((TimeStep-1)*DTDP/T)
+      IF ( L.GT.Lm ) THEN
+         ! check if we are >= 49 hours into the run
+         IF ( ISTA.GT.NS ) THEN
+            DO ii = 1,NP
+               DO kk = 1,NS-1
+                  UAV(ii,kk) = UAV(ii,kk+1)
+                  VAV(ii,kk) = VAV(ii,kk+1)
+               ENDDO
+               UAV(ii,NS) = U_i(ii)
+               VAV(ii,NS) = V_i(ii)
+            ENDDO
+            UBar = 0d0
+            VBar = 0d0
+            DO ii = 1,NP
+               DO kk = 1,NS
+                  UBar(ii) = UBar(ii) + wts(kk)*UAV(ii,kk)
+                  VBar(ii) = VBar(ii) + wts(kk)*VAV(ii,kk)
+               ENDDO
+            ENDDO
+         ELSE
+            ! if we do not have a 49 hr record yet just use a lagged
+            ! average
+            DO ii = 1,NP
+               UAV(ii,ISTA) = U_i(ii)
+               VAV(ii,ISTA) = V_i(ii)
+               UBar(ii) = SUM(UAV(ii,1:ISTA))/DBLE(ISTA)
+               VBar(ii) = SUM(VAV(ii,1:ISTA))/DBLE(ISTA)
+            ENDDO
+            ISTA = ISTA + 1
+         ENDIF
+      ENDIF
+C---------------------------------------------------------------------C
+      END SUBROUTINE MunkLPFilter
+C---------------------------------------------------------------------C
+C---------------------------------------------------------------------C
+      SUBROUTINE CalcMunkLPWeights()
+C---------------------------------------------------------------------C
+C     This subroutine sets up the filter weights for use in the
+C     high-pass filter derived from the so-called Munk "Tide Killer"
+C     low-pass filter. 
+C---------------------------------------------------------------------C
+      IMPLICIT NONE
+      REAL(SZ),DIMENSION(25) :: LPwts   ! original weights (one sided)
+      INTEGER :: NS = 49                ! length of HP filter needed
+      REAL(SZ) :: K                     ! for normalizing the LP filter
+      INTEGER :: ii                     ! for loops
+      !
+      ! allocate weights
+      ALLOCATE( wts(NS) )
+      ! define low-pass filter weights (not normalized and one-sided)
+      LPwts = (/395287,386839,370094,354118,338603,325633,314959,
+     &          300054,278167,251492,234033,219260,208050,195518,
+     &          180727,165525,146225,122665,101603,85349,72261,
+     &          60772,47028,30073,13307 /)
+      ! find sum to normalize low pass filter
+      K = LPwts(1)
+      DO ii = 2,25
+         K = K + 2d0*LPwts(ii)
+      END DO
+      ! normalize low pass filter weights
+      DO ii = 1,25
+         LPwts(ii) = LPwts(ii)/K
+      END DO
+      ! turn one-sided low-pass filter into two-sided high-pass filter
+      DO ii = 1,24
+         ! -m to -1
+         wts(ii) = LPwts(26-ii)
+         ! 1 to m
+         wts(ii+25) = LPwts(ii+1)
+      END DO
+      ! 0 (center point)
+      wts(25) = LPwts(1)
+C---------------------------------------------------------------------C
+      END SUBROUTINE CalcMunkLPWeights
+C---------------------------------------------------------------------C
+C---------------------------------------------------------------------C
+      SUBROUTINE CalcMunkHPWeights()
 C---------------------------------------------------------------------C
 C     This subroutine sets up the filter weights for use in the
 C     high-pass filter derived from the so-called Munk "Tide Killer"
@@ -288,7 +407,7 @@ C---------------------------------------------------------------------C
       ! 0 (center point)
       wts(25) = 1 - LPwts(1)
 C---------------------------------------------------------------------C
-      END SUBROUTINE CalcMunkWeights
+      END SUBROUTINE CalcMunkHPWeights
 C---------------------------------------------------------------------C
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   C H E C K  _  E R R
