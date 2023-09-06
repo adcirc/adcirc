@@ -2538,7 +2538,7 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                      IF (IT_FricNoOfVals == 3) then
                         Cxx = Fit*IT_Fric(I,2)**2d0
                         Cyy = Fit*IT_Fric(I,3)**2d0
-                        Cxx = Fit*IT_Fric(I,2)*IT_Fric(I,3)
+                        Cxy = Fit*IT_Fric(I,2)*IT_Fric(I,3)
                         TKM(1,I) = TK(I) + Fit*IT_Fric(I,2)**2d0
                         TKM(2,I) = TK(I) + Fit*IT_Fric(I,3)**2d0
                         TKM(3,I) = Fit*IT_Fric(I,2)*IT_Fric(I,3)
