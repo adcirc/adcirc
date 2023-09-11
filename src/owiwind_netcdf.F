@@ -832,8 +832,8 @@
                 sWdir = 0.
               ELSE
                 sWdir = ATAN2(UU(iV),VV(iV))
-                UU(IV) = -Wind(IV)*SIN(sWDir)
-                VV(IV) = -Wind(IV)*COS(sWDir)
+                UU(IV) = Wind(IV)*SIN(sWDir)
+                VV(IV) = Wind(IV)*COS(sWDir)
               ENDIF
               ! Casey 200528
               PRN2(IV) = PP(IV)
