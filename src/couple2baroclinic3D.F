@@ -508,6 +508,15 @@ C-----------------------------------------------------------------------
             ALLOCATE( mld_g(np_g) )
             mld_g = read_nc_var_adc(NC_ID,'MLD',BC3D_IT,np_g)
          ENDIF
+      ELSE
+         ALLOCATE( bpgx_g(1), bpgy_g(1), sigts_g(1) )
+         IF (LoadIT_Fric) THEN
+            ALLOCATE( nb_g(1), nm_g(1) )
+         ENDIF
+         IF (NOLIBF.EQ.3) THEN
+            ALLOCATE( mld_g(1) )
+         ENDIF
+         
       ENDIF
 #ifdef CMPI
       ! use mapToSubdomainRealMPI to distribute to the processors
@@ -530,7 +539,7 @@ C-----------------------------------------------------------------------
          CALL MAPTOLOCAL_REAL(nb_g,tmp)
          NB_F(2,:) = tmp
          ! NM
-         CALL MAPTOLOCAL_REAL(nb_g,tmp)
+         CALL MAPTOLOCAL_REAL(nm_g,tmp)
          NM_F(2,:) = tmp
       ENDIF
       IF (NOLIBF.EQ.3) THEN
@@ -540,14 +549,12 @@ C-----------------------------------------------------------------------
       ENDIF
       DEALLOCATE( tmp )
 #endif
-      IF (MYPROC.EQ.0) THEN
-         DEALLOCATE( bpgx_g, bpgy_g, sigts_g )
-         IF (LoadIT_Fric) THEN
-            DEALLOCATE( nb_g, nm_g )
-         ENDIF
-         IF (NOLIBF.EQ.3) THEN
-            DEALLOCATE( mld_g )
-         ENDIF
+      DEALLOCATE( bpgx_g, bpgy_g, sigts_g )
+      IF (LoadIT_Fric) THEN
+         DEALLOCATE( nb_g, nm_g )
+      ENDIF
+      IF (NOLIBF.EQ.3) THEN
+         DEALLOCATE( mld_g )
       ENDIF
       END SUBROUTINE Read_BC3D_NetCDF_on_ADCIRC_Grid
 C-----------------------------------------------------------------------

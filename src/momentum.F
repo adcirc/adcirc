@@ -154,7 +154,7 @@ C*******************************************************************************
      &  IPERCONN, VIDispDXOH, VIDispDYOH, IFSFM, adcirc_norm2, CAliDisp,
      &  usingDynamicWaterLevelCorrection, windlim,
      &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, H0,
-     &  flgNodesMultipliedByTotalArea, ilump
+     &  flgNodesMultipliedByTotalArea, ilump, ADRAGU, ADRAGV
 #ifdef CMPI
      &  , dumy1
 #endif
@@ -797,9 +797,9 @@ C         ENDIF
 
 C        WJP 02.24.2018 Get the righthand side momentum 
          MOM_LV_X(I) = NCI*(MOM_LV_X(I)+WSX+(1.D0-VCOEFXX)*UU1(I) 
-     &               - VCOEFXY*VV1(I))
+     &               - VCOEFXY*VV1(I)+DT*ADRAGU(I))
          MOM_LV_Y(I) = NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCOEFYY)*VV1(I)
-     &               - VCOEFYX*UU1(I))
+     &               - VCOEFYX*UU1(I)+DT*ADRAGV(I))
 
 C...     DW, absorbing layers
          IF (MOM_SPONGE) THEN
@@ -1259,7 +1259,7 @@ C
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
      & SMAG_LOWER_LIM, NODECODE, VIDISPDXOH, VIDISPDYOH, IFSFM, 
-     & CBaroclinic, CAliDisp, windlim, ADRAGU, ADRAGV
+     & CBaroclinic, CAliDisp, windlim
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &   NEITAB, NEITABELE, NNEIGH, FDXE, FDYE,
      &   SFacEle, SFMYEle, SFMXEle, TANPHI   
@@ -1780,9 +1780,9 @@ C         ENDIF
 
 C        WJP 02.24.2018 Get the righthand side momentum 
          MOM_LV_X(I) = NCI*(MOM_LV_X(I)+WSX+(1.D0-VCOEFXX)*QX1(I) 
-     &               - VCOEFXY*QY1(I) + DT*ADRAGU(I)) !-VIDBCPDX) !-DispX)
+     &               - VCOEFXY*QY1(I))!-VIDBCPDX) !-DispX)
          MOM_LV_Y(I) = NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCOEFYY)*QY1(I)
-     &               - VCOEFYX*QX1(I) + DT*ADRAGV(I)) !-VIDBCPDY) !-DispY)
+     &               - VCOEFYX*QX1(I)) !-VIDBCPDY) !-DispY)
          
 C        WJP 02.24.2018 Get the lefthand side momentum 
          AUV(1,I) = 1d0 + VCOEFXX*NCI

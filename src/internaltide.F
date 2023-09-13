@@ -288,6 +288,9 @@ C---------------------------------------------------------------------C
          UBar = 0d0
          VBar = 0d0
          ALLOCATE( ADRAGU(NP), ADRAGV(NP) )
+         ADRAGU = 0d0
+         ADRAGV = 0d0
+         write(16,*) "Allocated ADRAGU and ADRAGV"
          CALL CalcMunkLPWeights()
       ENDIF
       ! check if this and the previous timestep are in the same hour

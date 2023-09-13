@@ -2523,7 +2523,8 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                      gamma2 = slope2 / alpha2
                      ! Divide coefficient by criticality if > 1
                      ! (saturates out at high criticalities) 
-                     Fit = Fit / max(1d0,gamma2)                   
+                     Fit = Fit / max(1d0,gamma2)
+                     Fit = max(0d0,Fit)
                      ! Calculate adjustment based on tidal residual
                      if (abs(IDEN).ne.7) then
                         ! Calculate the adjustment factors based on the delayed moving mean
