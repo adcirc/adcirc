@@ -62,7 +62,7 @@ C----------------------------------------------------------------------
       LOCALDATA = RECVBUF_REAL
 #else
       LOCALDATA = GLOBALDATA      
-#ENDIF
+#endif
 C----------------------------------------------------------------------
       END SUBROUTINE MAPTOLOCAL_REAL
 C----------------------------------------------------------------------
@@ -74,13 +74,13 @@ C----------------------------------------------------------------------
       INTEGER :: localNumNodes
       INTEGER,ALLOCATABLE :: local_gl2loc(:)
       INTEGER :: kk, ii, ierr, TAG, dmycounter
-#IFDEF CMPI      
+#ifdef CMPI      
       INTEGER :: stat(MPI_STATUS_SIZE)
-#ELSE
+#else
       INTEGER :: stat
-#ENDIF      
+#endif      
       TAG = 100
-#IFDEF CMPI
+#ifdef CMPI
       ! Return if we have already built the table
       IF (first_call.EQV..FALSE.) RETURN
       first_call = .FALSE.
@@ -123,7 +123,7 @@ C----------------------------------------------------------------------
      &                 0, COMM, ierr)
       DEALLOCATE( local_gl2loc )
       RETURN
-#ENDIF
+#endif
 C----------------------------------------------------------------------
       END SUBROUTINE BUILD_GL2LOC
 C----------------------------------------------------------------------
