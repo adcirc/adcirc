@@ -99,7 +99,6 @@ C-----------------------------------------------------------------------
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      WRITE(16,*) 'inside read_bc3d_netcdf'
       ! Open NETCDF 
       call Check_err(nf90_open(densityFileName,nf90_nowrite,nc_id))
     
@@ -181,7 +180,6 @@ C-----------------------------------------------------------------------
       character(len=16) :: TSS
 #endif        
       if (BC3D_IT > 1) then
-         WRITE(16,*) 'BC3D_IT = ',BC3D_IT
          ! Check times if not first iteration
 #ifdef DATETIME
          call Check_err(NF90_INQ_VARID(NC_ID,'time',Temp_ID))
@@ -189,11 +187,9 @@ C-----------------------------------------------------------------------
          call check_err(nf90_get_var(nc_id, Temp_ID,        
      &                  TSS,start=[1, BC3D_IT],count=[SL, 1]))
          TNDT = strptime(trim(TSS),"%Y-%m-%d %H:%M")
-         WRITE(16,*) 'TNDT = ',TSS
          call check_err(nf90_get_var(nc_id, Temp_ID, TSS,
      &      start=[1, BC3D_IT+densityTimeIterator],count=[SL, 1]))
          TNDT1 = strptime(trim(TSS),"%Y-%m-%d %H:%M")
-         WRITE(16,*) 'TNDT1 = ',TSS
          DT = TNDT1 - TNDT 
          if (abs(DT%total_seconds() - BC3D_DT) > 1d-6) then
             BC3D_DT = DT%total_seconds()
@@ -222,9 +218,6 @@ C-----------------------------------------------------------------------
          DT   = CurDT - TNDT
          if (DT%total_seconds() <= 0) exit
       enddo
-      write(16,*) 'TNDT = ',TNDT%isoformat(' ')
-      WRITE(16,*) 'bc3d_it = ',bc3d_it
-      write(16,*) 'DT = ',DT%total_seconds()
       IF (DT%total_seconds().LT.0) THEN
          BC3D_IT = BC3D_IT - 1
          call check_err(nf90_get_var(nc_id, Temp_ID,        
@@ -527,7 +520,7 @@ C-----------------------------------------------------------------------
          CALL MAPTOLOCAL_REAL(nb_g,tmp)
          NB_F(2,:) = tmp
          ! NM
-         CALL MAPTOLOCAL_REAL(nb_g,tmp)
+         CALL MAPTOLOCAL_REAL(nm_g,tmp)
          NM_F(2,:) = tmp
       ENDIF
       IF (NOLIBF.EQ.3) THEN
@@ -657,20 +650,24 @@ C-----------------------------------------------------------------------
       implicit none
       real*8,intent(in) :: TimeLoc
 C
-      !call setMessageSource("Initial_BC3D_NetCDF")
+      call setMessageSource("Initial_BC3D_NetCDF")
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
+
+#ifndef DATETIME
+      call allMessage(WARNING, 
+     &    "DateTime library is not enabled. It is recommended "//
+     &    "for use with netCDF BC3D forcing")
+#endif
+
       ! Read first value in time 
       BC3D_IT = 1
       ! Times are rounded down to nearest minute
       DTIME1  = floor(TimeLoc/60d0)*60d0
-      WRITE(16,*) 'in initial_bc3d_netcdf,'
-      write(16,*) 'DTIME1 = ',DTIME1
 #ifdef DATETIME
       CurDT   = basedatetime + timedelta(minutes=floor(DTIME1/60d0))
 #endif           
-      WRITE(16,*) 'About to read_bc3d_netcdf in initial_...' 
       call Read_BC3D_Netcdf()
       DTIME2 = DTIME1 + BC3D_DT
       ! Put the first value on ADCIRC grid
@@ -707,7 +704,10 @@ C
          VIDISPDYOH_F(1,:) = VIDISPDYOH_F(2,:) 
       endif
       ! Return if diagnostic
-      if (IDEN.lt.0) return
+      if (IDEN.lt.0) then
+          call unsetMessageSource()
+          return
+      endif
       ! Read next value in time
       BC3D_IT = BC3D_IT + densityTimeIterator
 #ifdef DATETIME
@@ -730,7 +730,7 @@ C
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
-      !call unsetMessageSource()
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE Initial_BC3D_NetCDF
 C
@@ -796,10 +796,6 @@ C
                   ! frequency, and dispersion terms on the ADCIRC grid
                   CALL Put_BC3D_on_ADCIRC_Grid()
                ENDIF
-#ifdef DATETIME
-               WRITE(16,*) 'Read and processed new BC3D timesnap: '
-     &                     //CurDT%isoformat(' ')
-#endif               
 #endif
             ELSEIF (flag < 0) THEN
                ! Read next values from fort.11

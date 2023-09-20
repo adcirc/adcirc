@@ -20,7 +20,7 @@ orbs:
 #...Aliases used to shorthand this job script
 default_env: &default_env
     docker:
-      - image: zcobell/adcirc_ci_development:latest
+      - image: zcobell/adcirc-ci-container:latest
     environment:
       BASH_ENV: /etc/environment
 
@@ -117,7 +117,7 @@ jobs:
         - checkout
         - run: 
             name: Build ADCIRC with netCDF and XDMF using CMake
-            command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME -DXDMFHOME=$XDMFHOME; make -j4
+            command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME -DXDMFHOME=$XDMFHOME -DHDF5_ROOT=$HDF5HOME; make -j4
   build_cmake_with_netcdf_and_xdmf_grib:
       <<: *default_env
       steps:
@@ -257,6 +257,8 @@ workflows:
                         - adcirc_shinnecock_inlet
                         - adcirc_shinnecock_inlet-parallel
                         - adcirc_timevaryingweirs-parallel
+                        - adcirc_baroclinic_2d_serial
+                        - adcirc_baroclinic_2d_parallel
                         
 
 
