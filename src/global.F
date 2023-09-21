@@ -1132,6 +1132,9 @@ C- DMW
       ALLOCATE ( TK(MNP), TKM(3,MNP))
       tk  = -99999.d0
       tkm = -99999.d0
+      ALLOCATE( ADRAGU(MNP), ADRAGV(MNP) )
+      ADRAGU = 0d0
+      ADRAGV = 0d0
       ALLOCATE ( UU2(MNP),VV2(MNP))
       uu2(:) = -99999.d0
       vv2(:) = -99999.d0

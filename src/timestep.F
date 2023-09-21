@@ -549,7 +549,8 @@ C     2DDI.Set up the 2D friction coefficient
             CALL Apply2DMomentumDisp(UU1, VV1, DP, ETA2, IFNLFA, NP,
      &                               TKM)
          ELSE
-            CALL Apply2DInternalWaveDrag(NP, TK, TKM)
+C            CALL Apply2DInternalWaveDrag(NP, TK, TKM)
+            CALL Apply2DInternalWaveDrag(NP, TK, TKM, UU1, VV1, DP, IT)
          ENDIF         
       endif
 C..RJW Set up the 3D friction coefficient

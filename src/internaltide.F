@@ -11,7 +11,7 @@ C---------------------------------------------------------------------C
       USE SIZES, ONLY: SZ
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
      &          setMessageSource, unsetMessageSource, allMessage,
-     &          scratchMessage, logMessage, ADRAGU, ADRAGV
+     &          scratchMessage, logMessage
       IMPLICIT NONE
       ! stored velocity samples for moving average calculation
       REAL(SZ),ALLOCATABLE,PRIVATE :: UAV(:,:), VAV(:,:)        
@@ -261,8 +261,10 @@ C
 C
 C     Written by: Coleman Blakely 3/2023
 C---------------------------------------------------------------------C
+      USE SIZES, ONLY : MYPROC
       USE MESH, ONLY : NP
-      USE GLOBAL, ONLY: DTDP
+      USE GLOBAL, ONLY: DTDP, np_g
+      USE GL2LOC_MAPPING, ONLY : GATHERGLOBAL_REAL  
       IMPLICIT NONE
       REAL(SZ),INTENT(IN),DIMENSION(:) :: U_i, V_i ! current velocity
       INTEGER,INTENT(IN) :: TimeStep    ! current time step
@@ -276,6 +278,10 @@ C---------------------------------------------------------------------C
       INTEGER :: ii, kk ! for loops
       ! for populating the UAV, VAV matrices at the start of the run
       INTEGER,SAVE :: ISTA
+      !
+      REAL(SZ),ALLOCATABLE,DIMENSION(:) :: UGlobal, VGlobal, 
+     &                                     UBarGlobal, VBarGlobal
+      LOGICAL,SAVE :: firstwrite=.true.
 
       IF ( first_call ) THEN
          first_call = .FALSE.
@@ -287,10 +293,6 @@ C---------------------------------------------------------------------C
          ALLOCATE( UBar(NP), VBar(NP) )
          UBar = 0d0
          VBar = 0d0
-         ALLOCATE( ADRAGU(NP), ADRAGV(NP) )
-         ADRAGU = 0d0
-         ADRAGV = 0d0
-         write(16,*) "Allocated ADRAGU and ADRAGV"
          CALL CalcMunkLPWeights()
       ENDIF
       ! check if this and the previous timestep are in the same hour
@@ -315,6 +317,36 @@ C---------------------------------------------------------------------C
                   VBar(ii) = VBar(ii) + wts(kk)*VAV(ii,kk)
                ENDDO
             ENDDO
+            IF (MYPROC.EQ.0) THEN
+               ALLOCATE( UGlobal(NP_G), VGLOBAL(NP_G),
+     &                   UBarGlobal(NP_G), VBarGlobal(NP_G) )
+            ELSE
+               ALLOCATE( UGlobal(1), VGlobal(1), 
+     &                   UBarGlobal(1), VBarGlobal(1) )
+            ENDIF
+            CALL GATHERGLOBAL_REAL(UGlobal,U_i)
+            CALL GATHERGLOBAL_REAL(VGlobal,V_i)
+            CALL GATHERGLOBAL_REAL(UBarGlobal,UBar)
+            CALL GATHERGLOBAL_REAL(VBarGlobal,VBar)
+            IF (MYPROC.EQ.0.and..false.) THEN
+               IF (firstwrite.EQV..TRUE.) THEN
+                  OPEN(111,FILE='velocities.txt',
+     &                     STATUS='REPLACE',
+     &                     ACCESS='SEQUENTIAL',ACTION='WRITE')
+                  firstwrite = .FALSE.
+               ELSE
+                  OPEN(111,FILE='velocities.txt',STATUS='OLD',
+     &                 ACCESS='APPEND',ACTION='WRITE')
+               ENDIF
+               WRITE(111,*) NP_G
+               DO ii = 1,NP_G
+                  WRITE(111,7638) ii, UGlobal(ii), VGlobal(ii),
+     &                            UBarGlobal(ii), VBarGlobal(ii)
+               ENDDO
+ 7638 FORMAT(2x, i8, 2x, 4E15.4E3)
+               CLOSE(111)
+            ENDIF
+            DEALLOCATE( UGlobal, VGlobal, UBarGlobal, VBarGlobal )
          ELSE
             ! if we do not have a 49 hr record yet just use a lagged
             ! average
@@ -337,6 +369,7 @@ C     This subroutine sets up the filter weights for use in the
 C     high-pass filter derived from the so-called Munk "Tide Killer"
 C     low-pass filter. 
 C---------------------------------------------------------------------C
+      USE SIZES, ONLY : MYPROC
       IMPLICIT NONE
       REAL(SZ),DIMENSION(25) :: LPwts   ! original weights (one sided)
       INTEGER :: NS = 49                ! length of HP filter needed
@@ -368,6 +401,14 @@ C---------------------------------------------------------------------C
       END DO
       ! 0 (center point)
       wts(25) = LPwts(1)
+      IF (MYPROC.EQ.0) THEN
+         OPEN(111,FILE='lp_weights.txt',STATUS='REPLACE',
+     &            ACCESS='SEQUENTIAL',ACTION='WRITE')
+         DO ii = 1,NS
+            WRITE(111,*) ii, wts(ii)
+         ENDDO
+         CLOSE(111)
+      ENDIF
 C---------------------------------------------------------------------C
       END SUBROUTINE CalcMunkLPWeights
 C---------------------------------------------------------------------C

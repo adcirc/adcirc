@@ -355,7 +355,8 @@ C...... DW
       LOGICAL :: ETA_SPONGE = .false., GWCE_SPONGE = .false.
       REAL(SZ) :: Ma2, Cfac = 1.0_SZ, CfacS0 = 1.0_SZ
       INTEGER :: NNBB1, NNBB2  ! Added for VEW1D  08-11-2022 SB
-      REAL(SZ):: fBuf          !
+      REAL(SZ):: fBuf 
+      ! cpb temp
 
       IF ( LoadAbsLayerSigma ) THEN
          IF (NumNodesAbsLayer(1) > 0 ) ETA_SPONGE = .true.

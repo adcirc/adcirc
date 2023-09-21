@@ -126,5 +126,42 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
       END SUBROUTINE BUILD_GL2LOC
 C----------------------------------------------------------------------
+C----------------------------------------------------------------------
+      SUBROUTINE GATHERGLOBAL_REAL(GLOBALDATA,LOCALDATA)
+C----------------------------------------------------------------------
+      IMPLICIT NONE
+      REAL(SZ),INTENT(OUT) :: GLOBALDATA(:)
+      REAL(SZ),INTENT(IN) :: LOCALDATA(:)
+      REAL(SZ),ALLOCATABLE :: TEMPDATA(:)
+      INTEGER :: kk, ierr, jj, TAG
+#ifdef CMPI
+      INTEGER :: RECV_REQ
+      INTEGER :: RECV_STAT(MPI_STATUS_SIZE), TEST_STAT(MPI_STATUS_SIZE)
+      TAG = 25
+      IF (MYPROC.EQ.0) THEN
+         ALLOCATE( TEMPDATA(SUM(SENDCOUNTS)) )
+      ELSE
+         ALLOCATE( TEMPDATA(1) )
+      ENDIF
+      ! build the global mapping (GL2LOC) if this is the first call
+      CALL BUILD_GL2LOC()
+      ! To avoid allocating/deallocating a bunch just use a dmy array
+      ! that has size equal to the maximum number of nodes on a
+      ! processor.
+      CALL MPI_GATHERV(LOCALDATA, NP, REALTYPE,
+     &                 TEMPDATA, SENDCOUNTS, DISPLS, REALTYPE,
+     &                 0, COMM,IERR)
+      IF (MYPROC.EQ.0) THEN
+         DO kk = 1,sum(SENDCOUNTS)
+            GLOBALDATA(GL2LOC(KK)) = TEMPDATA(kk)
+         ENDDO
+      ENDIF
+      DEALLOCATE( TEMPDATA )
+#else
+      GLOBALDATA = LOCALDATA
+#ENDIF
+C----------------------------------------------------------------------
+      END SUBROUTINE GATHERGLOBAL_REAL
+C----------------------------------------------------------------------
       ENDMODULE GL2LOC_MAPPING 
 C----------------------------------------------------------------------

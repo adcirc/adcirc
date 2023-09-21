@@ -2459,9 +2459,9 @@ C              (unnecessary for IT_FricNoOfVals == 1)
          Baroc: IF (CBaroclinic.and.abs(IDEN).ge.5) THEN
 C           2DDI ADCIRC with baroclinic coupling
             if (abs(IDEN).ne.7) then
-               !CALL UNTIDE(U,V,IT)
+               CALL UNTIDE(U,V,IT)
                !CALL MunkHPFilter(U,V,IT)
-               CALL MunkLPFilter(U,V,IT)
+               !CALL MunkLPFilter(U,V,IT)
             endif
             IF (IT_FricNoOfVals == 5) THEN
 C           Use the "Nonlocal" Nycander (2005) type tensor wave drag
@@ -2540,11 +2540,13 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                         Cxx = Fit*IT_Fric(I,2)**2d0
                         Cyy = Fit*IT_Fric(I,3)**2d0
                         Cxy = Fit*IT_Fric(I,2)*IT_Fric(I,3)
-                        TKM(1,I) = TK(I) + Fit*IT_Fric(I,2)**2d0
-                        TKM(2,I) = TK(I) + Fit*IT_Fric(I,3)**2d0
-                        TKM(3,I) = Fit*IT_Fric(I,2)*IT_Fric(I,3)
-                        ADRAGU(I) = Cxx*UBar(I) + Cxy*VBar(I)
-                        ADRAGV(I) = Cxy*UBar(I) + Cyy*VBar(I)
+                        TKM(1,I) = TK(I)! + Fit*IT_Fric(I,2)**2d0
+                        TKM(2,I) = TK(I)! + Fit*IT_Fric(I,3)**2d0
+                        TKM(3,I) = 0d0!Fit*IT_Fric(I,2)*IT_Fric(I,3)
+                        ADRAGU(I) = -(Cxx*(U(I)-UBar(I)) +
+     &                                Cxy*(V(I)-VBar(I)))
+                        ADRAGV(I) = -(Cxy*(U(I)-UBar(I))
+     &                              + Cyy*(V(I)-VBar(I)))
                      else
                         TKM(1:2,I) = TK(I) + adjuv*Fit*IT_Fric(I,2)
                         TKM(3,I)   = 0.0d0
@@ -2559,9 +2561,11 @@ C              Use the "Nonlocal" Nycander (2005) or "Local" Lyard et al. (2004)
 C              type tensor wave drag
 C              Using three columns of data for the different segments of the matrix
                DO I=1,NP 
-                  TKM(1,I) = TK(I) + IT_Fric(I,1)
-                  TKM(2,I) = TK(I) + IT_Fric(I,2)
-                  TKM(3,I) = IT_Fric(I,3) 
+                  TKM(1,I) = TK(I) !+ IT_Fric(I,1)
+                  TKM(2,I) = TK(I) !+ IT_Fric(I,2)
+                  TKM(3,I) = 0d0!IT_Fric(I,3) 
+                  ADRAGU(I) = -(IT_Fric(I,1)*U(I)+IT_Fric(I,3)*V(I))
+                  ADRAGV(I) = -(IT_Fric(I,3)*U(I)+IT_Fric(I,2)*V(I))
                END DO
             ELSEIF (IT_FricNoOfVals == 1) THEN
 C              For the scalar type Zaron & Egbert (2006) type
