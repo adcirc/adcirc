@@ -2301,7 +2301,9 @@ Casey 180318: Added NWS=13
 !JLW: adding subgridcontrol namelist
          if(foundSubgridControlNamelist)then
             WRITE(15,*)
-     &         "&subgridControl level0=",level0,
+     &         "&subgridControl"
+     &         " subgridFilename='",trim(adjustl(subgridFilename)),
+     &         "' level0=",level0,
      &         " level1=",level1," /"
          endif
 

@@ -18,7 +18,7 @@
 ! JLW: initialize the arrays for use in the subgrid
 ! code
       implicit none
-
+      CHARACTER(200) :: subgridFilename
       ! Flag for subgrid corrections to wetting and drying
       LOGICAL :: level0
       ! Flag for subgrid corrections to bottom friction and advection
@@ -198,7 +198,7 @@
       subroutine readSubgridLookup
 #ifdef ADCNETCDF          
       use netcdf
-      use global, only: imap_el_lg, nodes_lg
+      use global, only: imap_el_lg, nodes_lg, allMessage, ERROR
       
       implicit none
 
@@ -216,10 +216,18 @@
       ! variables needed to read in main NETCDF lookup table
       INTEGER :: NC_ERR, IS, NC_ID, NC_VAR, NC_DIM_ELEM, NC_DIM_VERT
       INTEGER :: I
+      LOGICAL :: file_exists
+
+      INQUIRE(FILE=TRIM(subgridFilename), EXIST=file_exists)
+      IF(.NOT.file_exists)THEN
+          call allMessage(ERROR, "subgrid lookup file does not exist")
+          call terminate()
+          call exit(1) 
+      ENDIF
 
 !JLW: adding subgrid lookup table read in
 !JLW: first open subgrid lookup table and read in dimensions
-      CALL CHECK(NF90_OPEN("avgVars.nc",NF90_NOWRITE,NC_ID))
+      CALL CHECK(NF90_OPEN(TRIM(subgridFilename),NF90_NOWRITE,NC_ID))
       
       CALL CHECK(NF90_INQ_DIMID(NC_ID,"numEle",NC_VAR))
       CALL CHECK(NF90_INQUIRE_DIMENSION(NC_ID,NC_VAR,len=numElems))
@@ -916,6 +924,35 @@
 !---------------------------------------------------------------------
 !---------------------------------------------------------------------
 
+      SUBROUTINE terminate(NO_MPI_FINALIZE)
+#ifdef CMPI
+      USE MESSENGER
+#endif
+      USE GLOBAL, ONLY: INFO,allMessage,
+     &                  setMessageSource,unsetMessageSource
+      IMPLICIT NONE
+      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+      call setMessageSource("terminate")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
+      call allMessage(INFO,"ADCIRC Terminating.")
+
+#ifdef CMPI
+      subdomainFatalError = .true.
+      IF (PRESENT(NO_MPI_FINALIZE)) THEN
+        CALL MSG_FINI(NO_MPI_FINALIZE)
+      ELSE
+        CALL MSG_FINI()
+      ENDIF
+#endif
+      CALL EXIT(1)
+C
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
+      END SUBROUTINE terminate
 
       end module subgrid

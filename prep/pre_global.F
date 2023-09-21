@@ -289,6 +289,7 @@ Casey 180318: Added NWS=13
 
 !JLW: add subgrid namelist control
       logical :: foundSubgridControlNamelist = .false.
+      character(200) :: subgridFilename
       logical :: level0 = .true. 
       logical :: level1 = .false.
 
