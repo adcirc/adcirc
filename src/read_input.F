@@ -145,7 +145,7 @@ Casey 180318: Added NWS=13
      &                          NWS13WindMultiplier
 #endif
 !JLW: add subgrid 
-      USE subgrid, only: level0, level1
+      USE subgrid, only: subgridFilename, level0, level1
 
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
@@ -201,7 +201,7 @@ C.... DMW
      &    NWS13WindMultiplier,NWS13GroupForPowell
 #endif
 !JLW: adding subgrid namelist
-      NAMELIST /subgridControl/ level0, level1
+      NAMELIST /subgridControl/ subgridFilename, level0, level1
 
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
@@ -507,6 +507,9 @@ C.... DMW
       namelistSpecifier = 'subgridControl'
       read(unit=15,nml=subgridControl,iostat=IOS)
       call logNameListReadStatus(namelistSpecifier,ios)
+      write(scratchMessage,*)
+     &   "subgridFilename=",TRIM(ADJUSTL(subgridFilename))
+      call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "level0=",level0
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "level1=",level1
