@@ -2393,9 +2393,10 @@ C     ----------------------------------------------------------------
       SUBROUTINE Apply2DInternalWaveDrag(NP, TK, TKM, U, V, DP,
      & IT)      
       USE GLOBAL, ONLY: CBaroclinic, CORIF, DTDP, NB, NM, IDEN,
-     &                  IFSPROTS, RAMP, ADRAGU, ADRAGV
+     &                  IFSPROTS, RAMP, ADRAGU, ADRAGV, np_g
       USE MESH, ONLY: DRVMAP2DSPVEC, UVECTMP, VVECTMP, RVELF
       USE INTERNALTIDE, ONLY: UNTIDE, UBar, VBar, MunkLPFilter
+      USE GL2LOC_MAPPING, ONLY : GATHERGLOBAL_REAL  
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
       REAL(SZ), intent(in), dimension(:) :: TK   ! scalar friction
@@ -2416,7 +2417,12 @@ C     ----------------------------------------------------------------
       REAL(SZ) :: cosAMIGT, sinAMIGT, DissTidal, DissTotal, jjwgamma,
      &            Cxx, Cyy, Cxy
       INTEGER :: NCYC
-      REAL(SZ),DIMENSION(:),ALLOCATABLE :: Udmy, Vdmy      
+      REAL(SZ),DIMENSION(:),ALLOCATABLE :: Udmy, Vdmy
+      !
+      REAL(SZ),DIMENSION(:,:),ALLOCATABLE :: TEMPDATA, TEMPDATAGLOBAL
+      LOGICAL,SAVE :: FIRSTWRITE=.true.
+      INTEGER,SAVE :: COUNTER1 = 1, COUNTER2 = 1
+      LOGICAL :: writetime=.false.
 C     Compute TKM by adding wave drag contribution to 
 C     current value of the bottom friction, TK
       LoadITFric: IF (LoadIT_Fric) THEN
@@ -2459,9 +2465,9 @@ C              (unnecessary for IT_FricNoOfVals == 1)
          Baroc: IF (CBaroclinic.and.abs(IDEN).ge.5) THEN
 C           2DDI ADCIRC with baroclinic coupling
             if (abs(IDEN).ne.7) then
-               CALL UNTIDE(U,V,IT)
+               !CALL UNTIDE(U,V,IT)
                !CALL MunkHPFilter(U,V,IT)
-               !CALL MunkLPFilter(U,V,IT)
+               CALL MunkLPFilter(U,V,IT)
             endif
             IF (IT_FricNoOfVals == 5) THEN
 C           Use the "Nonlocal" Nycander (2005) type tensor wave drag
@@ -2494,8 +2500,24 @@ C           For the "Local" Lyard et al. (2004) type tensor wave drag
 C           1st column is coefficient, 2nd and 3rd columns are the Hx and Hy slopes
 C           For the scalar Zaron & Egbert (2006) type
 C           1st column is coefficient, 2nd column is the squared hypotenuse slope
+               ADRAGU = 0d0
+               ADRAGV = 0d0
+               writetime = .false.
+               IF (COUNTER1.GT.5880) THEN
+                  writetime = .true.
+                  ALLOCATE(TEMPDATA(NP,9))
+                  IF (MYPROC.EQ.0) THEN
+                     ALLOCATE(TEMPDATAGLOBAL(NP_G,9))
+                  ELSE
+                     ALLOCATE(TEMPDATAGLOBAL(1,9))
+                  ENDIF
+                  TEMPDATA = 0d0
+                  TEMPDATAGLOBAL = 0d0
+               ELSE
+                  !COUNTER1 = COUNTER1 + 1
+               ENDIF
                DO I = 1,NP
-                  adju = 1d0; adjv = 1d0;
+                  adju = 1d0; adjv = 1d0;adjuv = 1d0;
                   NBdiff = (NB(I)**2d0 - omega**2d0)
                   NMdiff = (NM(I)**2d0 - omega**2d0)
                   Fdiff  = (omega**2d0 - CORIF(I)**2d0)
@@ -2504,6 +2526,19 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                      ! No freely propagating internal tides
                      TKM(1:2,I) = TK(I)
                      TKM(3,I)   = 0.0d0
+                     ADRAGU(I) = 0d0
+                     ADRAGV(I) = 0d0
+                     IF (writetime.eqv..true.) THEN
+                        TEMPDATA(I,1) = -999d0
+                        TEMPDATA(I,2) = IT_FRIC(I,2)
+                        TEMPDATA(I,3) = IT_FRIC(I,3)
+                        TEMPDATA(I,4) = U(I)
+                        TEMPDATA(I,5) = V(I)
+                        TEMPDATA(I,6) = UBar(I)
+                        TEMPDATA(I,7) = VBar(I)
+                        TEMPDATA(I,8) = 0d0
+                        TEMPDATA(I,9) = 0d0
+                     ENDIF
                   ELSE 
                      ! Have freely propagating internal tides
                      ! Get the full coefficient
@@ -2551,9 +2586,78 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                         TKM(1:2,I) = TK(I) + adjuv*Fit*IT_Fric(I,2)
                         TKM(3,I)   = 0.0d0
                      endif
-                  ENDIF 
+                     IF (writetime.eqv..true.) THEN
+                        TEMPDATA(I,1) = Fit
+                        TEMPDATA(I,2) = IT_FRIC(I,2)
+                        TEMPDATA(I,3) = IT_FRIC(I,3)
+                        TEMPDATA(I,4) = U(I)
+                        TEMPDATA(I,5) = V(I)
+                        TEMPDATA(I,6) = UBar(I)
+                        TEMPDATA(I,7) = VBar(I)
+                        TEMPDATA(I,8) = ADRAGU(I)
+                        TEMPDATA(I,9) = ADRAGV(I)
+                     ENDIF
+                  ENDIF
                ENDDO
-            endif
+               ! CPB: WRITE
+               IF (writetime.eqv..true.) THEN
+                  ! F_it
+                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,1),
+     &                                   TEMPDATA(:,1))
+                  ! Hx
+                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,2),
+     &                                   TEMPDATA(:,2))
+                  ! Hy
+                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,3),
+     &                                   TEMPDATA(:,3))
+                  ! U
+                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,4),
+     &                                   TEMPDATA(:,4))
+                  ! V
+                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,5),
+     &                                   TEMPDATA(:,5))
+                  ! UBar
+                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,6),
+     &                                   TEMPDATA(:,6))
+                  ! VBar
+                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,7),
+     &                                   TEMPDATA(:,7))
+                  ! ADRAGU
+                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,8),
+     &                                   TEMPDATA(:,8))
+                  ! ADRAGV
+                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,9),
+     &                                   TEMPDATA(:,9))
+                  IF (MYPROC.EQ.0) THEN
+                     IF (FIRSTWRITE.EQV..TRUE.) THEN
+                        OPEN(111,ACCESS='SEQUENTIAL',ACTION='WRITE',
+     &                       FILE='ALLVARS.txt',STATUS='REPLACE')
+                        firstwrite = .false.
+                     ELSE
+                        OPEN(111,ACCESS='APPEND',ACTION='WRITE',
+     &                       FILE='ALLVARS.txt',STATUS='OLD')
+                     ENDIF
+                     WRITE(111,*) NP_G
+                     DO I=1,NP_G
+                        WRITE(111,7638) I,
+     &                                  TEMPDATAGLOBAL(I,1),
+     &                                  TEMPDATAGLOBAL(I,2),
+     &                                  TEMPDATAGLOBAL(I,3),
+     &                                  TEMPDATAGLOBAL(I,4),
+     &                                  TEMPDATAGLOBAL(I,5),
+     &                                  TEMPDATAGLOBAL(I,6),
+     &                                  TEMPDATAGLOBAL(I,7),
+     &                                  TEMPDATAGLOBAL(I,8),
+     &                                  TEMPDATAGLOBAL(I,9)
+                     ENDDO
+                     CLOSE(111)
+ 7638 FORMAT(2x,i8,2x,9E20.5E4)
+                  ENDIF
+                  DEALLOCATE( TEMPDATA, TEMPDATAGLOBAL )
+                  COUNTER1 = 5760
+               ENDIF
+               ! ENDCPB
+            ENDIF
          ELSE
 C           Normal 2DDI ADCIRC without baroclinic coupling
             IF (IT_FricNoOfVals == 3) THEN
@@ -2984,6 +3088,7 @@ C     ----------------------------------------------------------------
      &   DEBUG, ECHO, INFO, WARNING, ERROR  
       IMPLICIT NONE 
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+      REAL(SZ),ALLOCATABLE :: dmy(:)
 C
       call setMessageSource("terminate")
 #if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
@@ -2994,6 +3099,7 @@ C
 
 #ifdef CMPI
       subdomainFatalError = .true.
+      dmy(1) = 1d0
       IF (PRESENT(NO_MPI_FINALIZE)) THEN
         CALL MSG_FINI(NO_MPI_FINALIZE)
       ELSE

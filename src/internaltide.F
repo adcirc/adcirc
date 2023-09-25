@@ -278,10 +278,6 @@ C---------------------------------------------------------------------C
       INTEGER :: ii, kk ! for loops
       ! for populating the UAV, VAV matrices at the start of the run
       INTEGER,SAVE :: ISTA
-      !
-      REAL(SZ),ALLOCATABLE,DIMENSION(:) :: UGlobal, VGlobal, 
-     &                                     UBarGlobal, VBarGlobal
-      LOGICAL,SAVE :: firstwrite=.true.
 
       IF ( first_call ) THEN
          first_call = .FALSE.
@@ -317,36 +313,6 @@ C---------------------------------------------------------------------C
                   VBar(ii) = VBar(ii) + wts(kk)*VAV(ii,kk)
                ENDDO
             ENDDO
-            IF (MYPROC.EQ.0) THEN
-               ALLOCATE( UGlobal(NP_G), VGLOBAL(NP_G),
-     &                   UBarGlobal(NP_G), VBarGlobal(NP_G) )
-            ELSE
-               ALLOCATE( UGlobal(1), VGlobal(1), 
-     &                   UBarGlobal(1), VBarGlobal(1) )
-            ENDIF
-            CALL GATHERGLOBAL_REAL(UGlobal,U_i)
-            CALL GATHERGLOBAL_REAL(VGlobal,V_i)
-            CALL GATHERGLOBAL_REAL(UBarGlobal,UBar)
-            CALL GATHERGLOBAL_REAL(VBarGlobal,VBar)
-            IF (MYPROC.EQ.0.and..false.) THEN
-               IF (firstwrite.EQV..TRUE.) THEN
-                  OPEN(111,FILE='velocities.txt',
-     &                     STATUS='REPLACE',
-     &                     ACCESS='SEQUENTIAL',ACTION='WRITE')
-                  firstwrite = .FALSE.
-               ELSE
-                  OPEN(111,FILE='velocities.txt',STATUS='OLD',
-     &                 ACCESS='APPEND',ACTION='WRITE')
-               ENDIF
-               WRITE(111,*) NP_G
-               DO ii = 1,NP_G
-                  WRITE(111,7638) ii, UGlobal(ii), VGlobal(ii),
-     &                            UBarGlobal(ii), VBarGlobal(ii)
-               ENDDO
- 7638 FORMAT(2x, i8, 2x, 4E15.4E3)
-               CLOSE(111)
-            ENDIF
-            DEALLOCATE( UGlobal, VGlobal, UBarGlobal, VBarGlobal )
          ELSE
             ! if we do not have a 49 hr record yet just use a lagged
             ! average
@@ -401,14 +367,6 @@ C---------------------------------------------------------------------C
       END DO
       ! 0 (center point)
       wts(25) = LPwts(1)
-      IF (MYPROC.EQ.0) THEN
-         OPEN(111,FILE='lp_weights.txt',STATUS='REPLACE',
-     &            ACCESS='SEQUENTIAL',ACTION='WRITE')
-         DO ii = 1,NS
-            WRITE(111,*) ii, wts(ii)
-         ENDDO
-         CLOSE(111)
-      ENDIF
 C---------------------------------------------------------------------C
       END SUBROUTINE CalcMunkLPWeights
 C---------------------------------------------------------------------C
