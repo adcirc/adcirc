@@ -5786,7 +5786,7 @@ C     ----------------------------------------------------------------
       REAL( 8) :: wvnx(np),wvny(np), press(np)
       REAL(8) :: RhoWatG
 
-      REAL(8),DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
+      REAL,DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ilat,ilon,atcfRMW
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ilat1,ilon1,atcfRMW1
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ispd,icpress
@@ -6336,7 +6336,7 @@ C***********************************************************************
 
       !REAL(8),DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
       ! jgf53.dev: FIXME this should be REAL(8) as above
-      REAL,DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
+      REAL(8),DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ilat,ilon,atcfRMW
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ilat1,ilon1,atcfRMW1
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ispd,icpress
@@ -9137,6 +9137,9 @@ C----------------------------------------------------------------------
 #ifdef ADCNETCDF
       use netcdf
 #endif
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
+     &                           BcastToLocal_Int
+      USE SIZES, ONLY : MYPROC
       implicit none
       integer :: iret, iter
       !integer,intent(in) :: startI(4), endI(4)
@@ -9176,74 +9179,94 @@ C----------------------------------------------------------------------
          else 
             ! Read lon and lat
 #ifdef ADCNETCDF
-            call Check_err(NF90_OPEN(fileN,nf90_nowrite,NC_ID))
-            call Check_err(NF90_INQ_DIMID(NC_ID,Latdim,Temp_ID))
-            call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NY))
-            call Check_err(NF90_INQ_DIMID(NC_ID,Londim,Temp_ID))
-            call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NX))
-            call Check_err(NF90_INQ_DIMID(NC_ID,Tdim,Temp_ID))
-            call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=TL))
-            allocate(data2(NX,NY),data22(NX,NY))
-            if (NT.eq.0) then
-               if (Tformat(1:1).eq.'%') then
-                  ALLOCATE( TIMESTR(TL) )
-                  call Check_err(NF90_INQ_VARID(NC_ID,Tvar,Temp_ID))
-                  call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
-                  ! Determine the first timestep index
-                  str_date = CurDT%strftime(trim(Tformat)) 
-                  write(16,*) 'Str_date: ',trim(str_date)
-                  do NT = 1,TL
-                     if (trim(str_date).eq.TimeStr(NT)) exit
-                  enddo
-                  call logMessage(ECHO,'Starting from '//TimeStr(NT))
-                  DEALLOCATE( TIMESTR )
-               ELSEIF (Tvar.eq.'refdate') THEN
-                  ALLOCATE( NCTIMES(TL) )
-                  refdate = strptime(trim(Tformat),"%Y-%m-%dT%H:%M:%S")
-                  CALL CHECK_ERR(NF90_INQ_VARID(NC_ID,TDIM,TEMP_ID))
-                  call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,NCTIMES))
-                  DO NT = 1,TL
-                     stepdate = refdate +
-     &                          timedelta(seconds=INT(NCTIMES(NT)))
-                     IF (stepdate.EQ.curDT) THEN
-                        WRITE(16,*) 'stepdate = ',stepdate%isoformat(' ')
-                        EXIT
-                     ENDIF
-                  ENDDO
-                  DEALLOCATE( NCTIMES )
-                  WRITE(16,*) ' CurDT = ',CurDT%isoformat(' ')
-                  WRITE(16,*) ' netcdfDT = ',stepdate%isoformat(' ')
-               else
-                  call logMessage(ECHO,'Assume to start from beginning')
-                  NT = 1 
+            IF (MYPROC.EQ.0) THEN
+               call Check_err(NF90_OPEN(fileN,nf90_nowrite,NC_ID))
+               call Check_err(NF90_INQ_DIMID(NC_ID,Latdim,Temp_ID))
+               call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,
+     &                                               len=NY))
+               call Check_err(NF90_INQ_DIMID(NC_ID,Londim,Temp_ID))
+               call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,
+     &                                               len=NX))
+               call Check_err(NF90_INQ_DIMID(NC_ID,Tdim,Temp_ID))
+               call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,
+     &                                               len=TL))
+               allocate(data2(NX,NY),data22(NX,NY))
+               if (NT.eq.0) then
+                  IF (Tformat(1:1).eq.'%') THEN
+                     ALLOCATE( TIMESTR(TL) )
+                     call Check_err(NF90_INQ_VARID(NC_ID,Tvar,Temp_ID))
+                     call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
+                     ! Determine the first timestep index
+                     str_date = CurDT%strftime(trim(Tformat)) 
+                     write(16,*) 'Str_date: ',trim(str_date)
+                     do NT = 1,TL
+                        if (trim(str_date).eq.TimeStr(NT)) exit
+                     enddo
+                     call logMessage(ECHO,'Starting from '//TimeStr(NT))
+                     DEALLOCATE( TIMESTR )
+                  ELSEIF (Tvar.eq.'refdate') THEN
+                     ALLOCATE( NCTIMES(TL) )
+                     refdate = strptime(trim(Tformat),
+     &                                  "%Y-%m-%dT%H:%M:%S")
+                     CALL CHECK_ERR(NF90_INQ_VARID(NC_ID,TDIM,TEMP_ID))
+                     call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,NCTIMES))
+                     DO NT = 1,TL
+                        stepdate = refdate +
+     &                             timedelta(seconds=INT(NCTIMES(NT)))
+                        IF (stepdate.EQ.curDT) THEN
+                           WRITE(16,*) 'stepdate = ',
+     &                                stepdate%isoformat(' ')
+                           EXIT
+                        ENDIF
+                     ENDDO
+                     DEALLOCATE( NCTIMES )
+                     WRITE(16,*) ' CurDT = ',CurDT%isoformat(' ')
+                     WRITE(16,*) ' netcdfDT = ',stepdate%isoformat(' ')
+                  else
+                     call logMessage(ECHO,
+     &                               'Assume to start from beginning')
+                     NT = 1 
+                  endif
+                  write(16,*) ' Starting time indice = ',NT
+                  NTC = NT
                endif
-               write(16,*) ' Starting time indice = ',NT
-               NTC = NT
-            endif
-            call Check_err(NF90_INQ_VARID(NC_ID,Latvar,Lat_ID))
-            call Check_err(nf90_inquire_variable(NC_ID,Lat_ID,
+               call Check_err(NF90_INQ_VARID(NC_ID,Latvar,Lat_ID))
+               call Check_err(nf90_inquire_variable(NC_ID,Lat_ID,
      &                     ndims=ndims))
-            call Check_err(NF90_INQ_VARID(NC_ID,Lonvar,Lon_ID))
-            write(16,*) 'Lon/Lat dimensions = ',ndims
-            if (ndims.eq.3) then
-               call Check_err(NF90_GET_VAR(NC_ID,Lat_ID,data22,
-     &                        start=[1, 1, NT],count=[NX, NY, 1]))
-               call Check_err(NF90_GET_VAR(NC_ID,Lon_ID,data2,
-     &                        start=[1, 1, NT],count=[NX, NY, 1]))
-            elseif (ndims.eq.2) then
-               call Check_err(NF90_GET_VAR(NC_ID,Lat_ID,data22))
-               call Check_err(NF90_GET_VAR(NC_ID,Lon_ID,data2))
-            else
-               call Check_err(NF90_GET_VAR(NC_ID,Lat_ID,data22(1,:)))
-               call Check_err(NF90_GET_VAR(NC_ID,Lon_ID,data2(:,1)))
-               do i = 2,NX
-                  data22(i,:) = data22(1,:)
-               enddo
-               do i = 2,NY
-                  data2(:,i) = data2(:,1)
-               enddo
-            endif
-            call Check_err(NF90_CLOSE(NC_ID))
+               call Check_err(NF90_INQ_VARID(NC_ID,Lonvar,Lon_ID))
+               write(16,*) 'Lon/Lat dimensions = ',ndims
+               if (ndims.eq.3) then
+                  call Check_err(NF90_GET_VAR(NC_ID,Lat_ID,data22,
+     &                           start=[1, 1, NT],count=[NX, NY, 1]))
+                  call Check_err(NF90_GET_VAR(NC_ID,Lon_ID,data2,
+     &                           start=[1, 1, NT],count=[NX, NY, 1]))
+               elseif (ndims.eq.2) then
+                  call Check_err(NF90_GET_VAR(NC_ID,Lat_ID,data22))
+                  call Check_err(NF90_GET_VAR(NC_ID,Lon_ID,data2))
+               else
+                  call Check_err(NF90_GET_VAR(NC_ID,Lat_ID,data22(1,:)))
+                  call Check_err(NF90_GET_VAR(NC_ID,Lon_ID,data2(:,1)))
+                  do i = 2,NX
+                     data22(i,:) = data22(1,:)
+                  enddo
+                  do i = 2,NY
+                     data2(:,i) = data2(:,1)
+                  enddo
+               endif
+               call Check_err(NF90_CLOSE(NC_ID))
+            ENDIF
+            write(16,*) "about to bcst Nx, etc"
+            CALL BcastToLocal_Int(NX)
+            CALL BcastToLocal_Int(NY)
+            CALL BcastToLocal_Int(NT)
+            CALL BcastToLocal_Int(NTC)
+            IF (MYPROC.NE.0) THEN
+               ALLOCATE( data2(NX,NY), data22(NX,NY) )
+            ENDIF
+            write(16,*) "about to bcast data22, data2"
+            CALL BcastToLocal_2DRealArray(data22,NX,NY)
+            write(16,*) "bcasted data22"
+            CALL BcastToLocal_2DRealArray(data2,NX,NY)
 #endif
          endif
          return
@@ -9277,16 +9300,23 @@ C.....
       else
          ! NETCDF
 #ifdef ADCNETCDF
-         call Check_err(NF90_OPEN(fileN,nf90_nowrite,NC_ID))
-         call Check_err(NF90_INQ_DIMID(NC_ID,Latdim,Temp_ID))
-         call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NY))
-         call Check_err(NF90_INQ_DIMID(NC_ID,Londim,Temp_ID))
-         call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NX))
+         IF (MYPROC.EQ.0) THEN
+            call Check_err(NF90_OPEN(fileN,nf90_nowrite,NC_ID))
+            call Check_err(NF90_INQ_DIMID(NC_ID,Latdim,Temp_ID))
+            call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NY))
+            call Check_err(NF90_INQ_DIMID(NC_ID,Londim,Temp_ID))
+            call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NX))
+         ENDIF
+         CALL BcastToLocal_Int(NX)
+         CALL BcastToLocal_Int(NY)
          allocate(data2(NX,NY))
-         call Check_err(NF90_INQ_VARID(NC_ID,var,Temp_ID))
-         call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,data2,
-     &                  start=[1, 1, NT],count=[NX, NY, 1]))
-         call Check_err(NF90_CLOSE(NC_ID))
+         IF (MYPROC.EQ.0) THEN
+            call Check_err(NF90_INQ_VARID(NC_ID,var,Temp_ID))
+            call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,data2,
+     &                     start=[1, 1, NT],count=[NX, NY, 1]))
+            call Check_err(NF90_CLOSE(NC_ID))
+         ENDIF
+         CALL BCastToLocal_2DRealArray(Data2,NX,NY)
 #endif
       endif
 C----------------------------------------------------------------------
