@@ -246,7 +246,7 @@ C
       real(8),allocatable :: weightsp(:,:,:) 
       integer,allocatable  :: indp(:,:,:) 
       character(len=200) :: Pfile, Wfile, Pinv, Winv, Cinv, Cfile
-      character(len=200) :: Pfile1, Wfile1, Pinv1, Winv1
+      character(len=200) :: Wfile1, Pinv1, Winv1
       character(len=200) :: Pvar, Uvar, Vvar, Cvar, Tvar, Lonvar, Latvar
       character(len=200) :: Tdim, Londim, Latdim, Tformat
       type(datetime) :: CurDT, refdate, stepdate
@@ -8775,17 +8775,14 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
 #ifdef DATETIME
 C----------------------------------------------------------------------
+      SUBROUTINE NWS14INIT()
+C----------------------------------------------------------------------
 C.... WJP Adding in subroutines for GRB2 reading below (NWS = 14)
 C.... or netcdf (depending on what is present)
-      SUBROUTINE NWS14INIT()
-#ifdef GRIB2API
-      use wgrib2api
-#endif
-      use global, only: ncice
-      use sizes, only: myProc
-#ifdef CMPI
-      use messenger, only: msg_barrier
-#endif
+C....
+C.... CPB 10/2023: reorganized this subroutine to make it more readable
+C.... as well as to improve input for TACC
+C----------------------------------------------------------------------
       implicit none
       
       integer :: iret, PvarInd
@@ -8795,160 +8792,230 @@ C.... or netcdf (depending on what is present)
       CurDT = basedatetime + timedelta(minutes=floor(WTIME1/60d0))
       NT = 0; NTC = 0;
 
-      ! Set the file names
-      ! Trying to read from grib2
-      grb2flag = .true.
+      ! check if we are using grib2 or netcdf input files:
+      CALL NWS14CHECK_FILETYPE()
+
+      ! set filenames appropriately
+      CALL NWS14SET_FILENAMES()
+
+      ! make grib2 .inv files (returns if using netcdf)
+      CALL NWS14GRB2_MAKE_INV()
+
+      ! read fort.22 to get netCDF variable info (returns if using
+      ! grib2)
+      CALL NWS14NC_READ_F22()
+
+      ! get dimensions of met files and calculate all interpolant
+      ! weights ahead of time. This includes determining the index of
+      ! the starting snap if we are using netCDF
+     ! CALL NWS14_GETLONLATTIME()
+
+      call allMessage(ECHO,'Finished init of NWS14')
+C----------------------------------------------------------------------
+      END SUBROUTINE NWS14INIT
+C----------------------------------------------------------------------
+C----------------------------------------------------------------------
+      SUBROUTINE NWS14CHECK_FILETYPE()
+C----------------------------------------------------------------------
+C     CPB 10/2023: This subroutine simply checks whether we are using
+C     grib2 or netCDF winds in NWS14 and sets the grb2flag logical
+C     appropriately. It does this by:
+C        1. Checking if the pressure grib2 file (fort.221.grb2) exists
+C        2. If it does not exist or if we are compiled without grib2
+C           then it checks if the pressure netCDF file (fort.221.nc)
+C           exists.
+C        3. If neither exist we abort with an error message.
+C----------------------------------------------------------------------
+      implicit none
+      logical :: Fexists
+
       Pfile = 'fort.221.grb2'
-      Pinv  = 'fort.221.inv'
-      Wfile = 'fort.222.grb2'
-      Wfile1 = 'fort.222.grb2'
-      Winv  = 'fort.222.inv'
-      Cfile = 'fort.225.grb2'
-      Cinv  = 'fort.225.inv'
-
-      Pfile1 = 'fort.223.grb2'
-      Pinv1  = 'fort.223.inv'
-      !Wfile1 = 'fort.224.grb2'
-      Winv1  = 'fort.224.inv'
-
-      Pvar = 'S'  ! searching for PRMSL or MSLET or PRES:SURFACE
-                  ! prev: :PRMSL:mean sea level:'
-      Uvar = ':UGRD:10 m above ground:' 
-      Vvar = ':VGRD:10 m above ground:' 
-      Cvar = ':ICEC:surface:' 
+      INQUIRE(file=Pfile,exist=Fexists)
 #ifdef GRIB2API
-      ! Don't check if no grib
-      inquire(file=Pfile,exist=Fexists)
-      if (.not.Fexists) then
+      IF (Fexists) THEN
+         grb2flag = .TRUE.
+         RETURN
+      ENDIF
 #endif
-         ! No grib2 file, check for netcdf file
-         grb2flag = .false.
+      Pfile = 'fort.221.nc'
+      INQUIRE(file=Pfile,exist=Fexists)
+      IF (Fexists) THEN
+         grb2flag = .FALSE.
+         RETURN
+      ELSE
+         call allMessage(ERROR,
+     &       'Neither .grb2 nor .nc wind files exist. Or, if .grb2 '//
+     &       'files exist, did you compile with GRIB2 compiler flags?')
+         call windTerminate()
+      ENDIF
+
+C----------------------------------------------------------------------
+      END SUBROUTINE NWS14CHECK_FILETYPE
+C----------------------------------------------------------------------
+C----------------------------------------------------------------------
+      SUBROUTINE NWS14SET_FILENAMES()
+C----------------------------------------------------------------------
+C     CPB 10/2023: This subroutine sets the met forcing filenames based
+C     on grb2flag as well as the existence or lack thereof of various
+C     files.
+C----------------------------------------------------------------------
+      implicit none
+      logical :: Fexists
+      ! grib2
+      IF (grb2flag) THEN
+         Pfile = 'fort.221.grb2'
+         Pinv  = 'fort.221.inv'
+         Wfile = 'fort.222.grb2'
+         Winv  = 'fort.222.inv'
+         Cfile = 'fort.225.grb2'
+         Cinv  = 'fort.225.inv'
+
+         Pvar = 'S'  ! searching for PRMSL or MSLET or PRES:SURFACE
+                     ! prev: :PRMSL:mean sea level:'
+         Uvar = ':UGRD:10 m above ground:'
+         Vvar = ':VGRD:10 m above ground:'
+         Cvar = ':ICEC:surface:'
+         RETURN
+      ELSEIF (.NOT.grb2flag) THEN
          Pfile = 'fort.221.nc'
          Wfile = 'fort.222.nc'
          Wfile1 = 'fort.222.nc'
          Cfile = 'fort.225.nc'
-         Pfile1 = 'fort.223.nc'
-         !Wfile1 = 'fort.224.nc'
-         inquire(file=Pfile,exist=Fexists)
-         if (.not.Fexists) then
-            call allMessage(ERROR,
-     &       'Neither .grb2 nor .nc wind files exist. Or, if .grb2 '//
-     &       'files exist, did you compile with GRIB2 compiler flags?')
-            call windTerminate()
-         endif
-         inquire(file=Wfile,exist=Fexists)
-         if (.not.Fexists) then
-            ! Must be using two files one for each of u and v
+         ! check if we are using two different wind files
+         INQUIRE(FILE=Wfile,exist=Fexists)
+         IF (.NOT.Fexists) THEN
+            ! using 2 wind files
             Wfile = 'fort.222u.nc'
             Wfile1 = 'fort.222v.nc'
-         endif 
-         inquire(file='fort.22',exist=Fexists)
-         if (.not.Fexists) then
-            call allMessage(ERROR,'fort.22 header file required to '//
-     &                            'specify netcdf var names.')
-            call windTerminate()
-         else
-            ! Read netcdf dim/var names and datestr format from fort.22
-            open(22,file='fort.22')
-               read(22,*) Tdim    ! Time dimension name
-               read(22,*) Tvar    ! Time variable name
-               read(22,*) Tformat ! Format of time datestr
-               read(22,*) Londim  ! Lon dimension name
-               read(22,*) Lonvar  ! Lon var name
-               read(22,*) Latdim  ! Lat dimension name
-               read(22,*) Latvar  ! Lat var name
-               read(22,*) Pvar    ! Pressure var name
-               read(22,*) Uvar    ! U10 var name
-               read(22,*) Vvar    ! V10 Var name
-               if (NCICE.eq.14) then
-                  read(22,*) Cvar ! Ice var name
-               endif
-            close(22)
-            PvarInd = index(Pvar,'HPa')
-            if (PvarInd > 0) then
-              rhoWat0g = rhoWat0g/100d0
-              Pvar = Pvar(1:PvarInd-1)
-              write(16,*) 'Pressure is in Hpa, New Pvar = ',trim(Pvar)
-            endif 
-        endif 
+         ENDIF
+         RETURN
+      ELSE
+         ! should be unreachable
+         CALL windTerminate()
+      ENDIF
+C----------------------------------------------------------------------
+      END SUBROUTINE NWS14SET_FILENAMES
+C----------------------------------------------------------------------
+C----------------------------------------------------------------------
+      SUBROUTINE NWS14GRB2_MAKE_INV()
+C----------------------------------------------------------------------
+C     CPB 10/2023: This subroutine makes the .inv files for grib2
+C     meteorological forcing files. If we are not using grib2 then it
+C     just returns
+C----------------------------------------------------------------------
+      USE SIZES, ONLY : MYPROC
 #ifdef GRIB2API
-      endif
-      if (grb2flag) then
-#ifdef CMPI
-      ! only get header with one processor
-      if (myProc.eq.0) then
+      USE wgrib2api
 #endif
-!     make header files
-      inquire(file=Pinv,exist=Fexists)
-      if (.not.Fexists) then
-         iret = grb2_mk_inv(Pfile, Pinv)
-         if (iret.ne.0) then
-            call allMessage(ERROR,
-     &                     'Fatal error in reading fort.221.grb2.')
-            call windTerminate()
-         endif
-         call allMessage(ECHO,'successfully read fort.221.grb2 '
-     &                      //'and wrote out fort.221.inv file')
-      endif
-      inquire(file=Winv,exist=Fexists)
-      if (.not.Fexists) then
-         iret = grb2_mk_inv(Wfile, Winv)
-         if (iret.ne.0) then
-            call allMessage(ERROR,
-     &                      'Fatal error in reading fort.222.grb2.')
-            call windTerminate()
-         endif
-         call allMessage(ECHO,'successfully read fort.222.grb2 '
-     &                      //'and wrote out fort.222.inv file')
-      endif
-      if (NCICE.eq.14) then
-         inquire(file=Cinv,exist=Fexists)
+      USE GLOBAL, ONLY : NCICE
+#ifdef CMPI
+      USE MESSENGER, ONLY: MSG_BARRIER
+#endif
+      implicit none
+      logical :: Fexists
+      integer :: iret
+      ! return if we are using netcdf
+      IF (.NOT.grb2flag) THEN
+         RETURN
+      ENDIF
+#ifdef GRIB2API
+#ifdef CMPI
+      ! only do this on proc 0
+      IF (MYPROC.EQ.0) THEN
+#endif
+         ! pressure file (fort.221.grb2)
+         inquire(file=Pinv,exist=Fexists)
          if (.not.Fexists) then
-            iret = grb2_mk_inv(Cfile, Cinv)
+            iret = grb2_mk_inv(Pfile, Pinv)
             if (iret.ne.0) then
                call allMessage(ERROR,
-     &                      'Fatal error in reading fort.225.grb2.')
+     &                        'Fatal error in reading fort.221.grb2.')
                call windTerminate()
             endif
-            call allMessage(ECHO,'successfully read fort.225.grb2 '
-     &                      //'and wrote out fort.225.inv file')
+            call allMessage(ECHO,'successfully read fort.221.grb2 '
+     &                         //'and wrote out fort.221.inv file')
          endif
-      endif
-!      inquire(file=Pfile1,exist=Fexists)
-!      if (Fexists) then
-!         inquire(file=Pinv1,exist=Fexists)
-!         if (.not.Fexists) then
-!         iret = grb2_mk_inv(Pfile1, Pinv1)
-!         if (iret.ne.0) then
-!            call allMessage(ERROR,
-!     &                     'Fatal error in reading fort.223.grb2.')
-!            call windTerminate()
-!         endif
-!         call allMessage(ECHO,'successfully read fort.223.grb2 '
-!     &                      //'and wrote out fort.223.inv file')
-!         endif
-!         inquire(file=Winv1,exist=Fexists)
-!         if (.not.Fexists) then
-!         iret = grb2_mk_inv(Wfile1, Winv1)
-!         if (iret.ne.0) then
-!            call allMessage(ERROR,
-!     &                      'Fatal error in reading fort.224.grb2.')
-!            call windTerminate()
-!         endif
-!         call allMessage(ECHO,'successfully read fort.224.grb2 '
-!     &                      //'and wrote out fort.224.inv file')
-!         endif
-!     endif
+         ! wind file (fort.222.grb2)
+         inquire(file=Winv,exist=Fexists)
+         if (.not.Fexists) then
+            iret = grb2_mk_inv(Wfile, Winv)
+            if (iret.ne.0) then
+               call allMessage(ERROR,
+     &                         'Fatal error in reading fort.222.grb2.')
+               call windTerminate()
+            endif
+            call allMessage(ECHO,'successfully read fort.222.grb2 '
+     &                         //'and wrote out fort.222.inv file')
+         endif
+         ! ice file (if we are using it) (fort.225.grb2)
+         if (NCICE.eq.14) then
+            inquire(file=Cinv,exist=Fexists)
+            if (.not.Fexists) then
+               iret = grb2_mk_inv(Cfile, Cinv)
+               if (iret.ne.0) then
+                  call allMessage(ERROR,
+     &                         'Fatal error in reading fort.225.grb2.')
+                  call windTerminate()
+               endif
+               call allMessage(ECHO,'successfully read fort.225.grb2 '
+     &                         //'and wrote out fort.225.inv file')
+            endif
+         endif
 #ifdef CMPI
-      endif
-      ! Wait til procesor one has written header
-      call MSG_BARRIER()
+      ENDIF
+      ! wait until .inv files are all written before proceeding
+      CALL MSG_BARRIER()
 #endif
-      endif
 #endif
-      call allMessage(ECHO,'Finished init of NWS14')
 C----------------------------------------------------------------------
-      END SUBROUTINE NWS14INIT
+      END SUBROUTINE NWS14GRB2_MAKE_INV
+C----------------------------------------------------------------------
+C----------------------------------------------------------------------
+      SUBROUTINE NWS14NC_READ_F22()
+C----------------------------------------------------------------------
+C     CPB 10/2023: This subroutine reads the fort.22 file for NWS14 to
+C     get netcdf variable names as well as starting indices for reading
+C     in the met data. If we are using grib2 it just returns
+C----------------------------------------------------------------------
+      USE SIZES, ONLY : MYPROC
+      USE GLOBAL, ONLY : NCICE
+      implicit none
+      logical :: Fexists
+      integer :: ierr, PvarInd
+      ! return if we are using grib2
+      IF (grb2flag) THEN
+         RETURN
+      ENDIF
+      ! open the fort.22
+      OPEN(22,file='fort.22',ACTION='READ',IOSTAT=ierr)
+      ! if we had trouble opening then abort
+      IF (ierr.NE.0) THEN
+         call allMessage(ERROR,'Unable to open fort.22.')
+         call windTerminate()
+      ENDIF
+      read(22,*) Tdim    ! Time dimension name
+      read(22,*) Tvar    ! Time variable name
+      read(22,*) Tformat ! Format of time datestr
+      read(22,*) Londim  ! Lon dimension name
+      read(22,*) Lonvar  ! Lon var name
+      read(22,*) Latdim  ! Lat dimension name
+      read(22,*) Latvar  ! Lat var name
+      read(22,*) Pvar    ! Pressure var name
+      read(22,*) Uvar    ! U10 var name
+      read(22,*) Vvar    ! V10 Var name
+      if (NCICE.eq.14) then
+         read(22,*) Cvar ! Ice var name
+      endif
+      close(22)
+      PvarInd = index(Pvar,'HPa')
+      if (PvarInd > 0) then
+         rhoWat0g = rhoWat0g/100d0
+         Pvar = Pvar(1:PvarInd-1)
+         write(16,*) 'Pressure is in Hpa, New Pvar = ',trim(Pvar)
+      endif
+C----------------------------------------------------------------------
+      END SUBROUTINE NWS14NC_READ_F22
+C----------------------------------------------------------------------
 C----------------------------------------------------------------------
       SUBROUTINE NWS14GET(WVNX2,WVNY2,PRN2,CICE2)
       use mesh, only: NP, SLAM, SFEA, bl_interp, bl_interp2
