@@ -62,7 +62,8 @@ C
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
      &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
-     &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE
+     &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE,
+     &    deltaOffset
 #ifdef CSWAN
      &  , waveWindMultiplier
 #endif
@@ -604,6 +605,7 @@ C---------------------WATER LEVEL OFFSET-----------------------------------
 C     jgf: update water level correction fields
       if (usingDynamicWaterLevelCorrection.eqv..true.) then
          call getDynamicWaterLevelCorrections(dynamicWaterLevelCorrection2, timeloc)
+         deltaOffset=dynamicWaterLevelCorrection2-dynamicWaterLevelCorrection1
       endif
 
 C

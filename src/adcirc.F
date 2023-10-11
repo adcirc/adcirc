@@ -103,7 +103,7 @@ C******************************************************************************
      &   nolica, nolicat, nolifa, nscreen, nstae, nt, rhowat0, screenunit,
      &   version_number, initLogging, setMessageSource, screenMessage,
      &   openLogFile, unsetMessageSource, np_global, rnp_global,
-     &   scratchMessage, CTIP, L_N, writer_id
+     &   scratchMessage, CTIP, L_N, writer_id, deltaOffset
       USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB 
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np, SFEA
       USE GWCE, ONLY : initGWCE
@@ -312,6 +312,7 @@ C...  attached to each node
       if (usingDynamicWaterLevelCorrection.eqv..true.) then
          allocate(dynamicWaterLevelCorrection1(np))
          allocate(dynamicWaterLevelCorrection2(np)) ! used in timestepping
+         allocate(deltaOffset(np)) !time difference in offset tgaContOffset
          allocate(dynamicWaterLevelCorrectionSta(mnstae))
          call initDynamicWaterLevelCorrection(timeloc) ! initializes the i/o 
          call getDynamicWaterLevelCorrections(dynamicWaterLevelCorrection2, timeloc) ! populate 

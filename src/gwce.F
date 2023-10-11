@@ -232,7 +232,8 @@ C
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
      &   TKM, NPERSEG, NTIP, NNPERBC, IPERCONN, VIDispDXOH, Bd, Ad, Cs2,
      &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, 
-     &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1
+     &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1, 
+     &   deltaOffset
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
@@ -1712,7 +1713,8 @@ C...  JCG ITERATIVE MATRIX SOLVER
      &        IWKSP,NW,WKSP,IPARM,RPARM,IER)
          NUMITR=IPARM(1)
          DO I=1,NP
-            ETA2(I) = NODECODE(I)*ETAS(I)+ETA1(I) !COMPUTE NEW ELEVATIONS
+CtgaContOffset            ETA2(I) = NODECODE(I)*ETAS(I)+ETA1(I) !COMPUTE NEW ELEVATIONS
+            ETA2(I)=NODECODE(I)*(ETAS(I)+deltaOffset(I))+ETA1(I) !COMPUTE NEW ELEVATIONS tgaContOffset
          END DO
       ELSE ! lumped LHS
          DO I = 1, NP
@@ -1725,7 +1727,8 @@ C...  JCG ITERATIVE MATRIX SOLVER
          ENDDO
          NUMITR=0
          DO I=1,NP
-            ETA2(I)=NODECODE(I)*ETAS(I)+ETA1(I) !COMPUTE NEW ELEVATIONS
+CtgaContOffset            ETA2(I)=NODECODE(I)*ETAS(I)+ETA1(I) !COMPUTE NEW ELEVATIONS
+            ETA2(I)=NODECODE(I)*(ETAS(I)+deltaOffset(I))+ETA1(I) !COMPUTE NEW ELEVATIONS tgaContOffset
          END DO
       ENDIF
 
