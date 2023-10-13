@@ -247,6 +247,7 @@ C
       integer,allocatable  :: indp(:,:,:) 
       character(len=200) :: Pfile, Wfile, Pinv, Winv, Cinv, Cfile
       character(len=200) :: Wfile1, Pinv1, Winv1
+      INTEGER :: PfileNCID, WfileNCID, CfileNCID, Wfile1NCID
       character(len=200) :: Pvar, Uvar, Vvar, Cvar, Tvar, Lonvar, Latvar
       character(len=200) :: Tdim, Londim, Latdim, Tformat
       type(datetime) :: CurDT, refdate, stepdate
@@ -8805,10 +8806,8 @@ C----------------------------------------------------------------------
       ! grib2)
       CALL NWS14NC_READ_F22()
 
-      ! get dimensions of met files and calculate all interpolant
-      ! weights ahead of time. This includes determining the index of
-      ! the starting snap if we are using netCDF
-     ! CALL NWS14_GETLONLATTIME()
+      ! Calculate the interpolant weights
+      !CALL NWS14_CALC_INTERP_WTS()
 
       call allMessage(ECHO,'Finished init of NWS14')
 C----------------------------------------------------------------------
@@ -8833,6 +8832,7 @@ C----------------------------------------------------------------------
       INQUIRE(file=Pfile,exist=Fexists)
 #ifdef GRIB2API
       IF (Fexists) THEN
+
          grb2flag = .TRUE.
          RETURN
       ENDIF
@@ -8857,8 +8857,17 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
 C     CPB 10/2023: This subroutine sets the met forcing filenames based
 C     on grb2flag as well as the existence or lack thereof of various
-C     files.
+C     files. It also opens the netcdf files in read only mode to
+C     eliminate opening/closing the files repeatedly
 C----------------------------------------------------------------------
+#ifdef ADCNETCDF
+      use netcdf
+#endif
+#ifdef CMPI
+      USE MESSENGER, ONLY: MSG_BARRIER
+#endif
+      USE SIZES, ONLY : MYPROC
+      USE GLOBAL, ONLY : NCICE
       implicit none
       logical :: Fexists
       ! grib2
@@ -8866,6 +8875,7 @@ C----------------------------------------------------------------------
          Pfile = 'fort.221.grb2'
          Pinv  = 'fort.221.inv'
          Wfile = 'fort.222.grb2'
+         Wfile1 = 'fort.222.grb2'
          Winv  = 'fort.222.inv'
          Cfile = 'fort.225.grb2'
          Cinv  = 'fort.225.inv'
@@ -8888,6 +8898,25 @@ C----------------------------------------------------------------------
             Wfile = 'fort.222u.nc'
             Wfile1 = 'fort.222v.nc'
          ENDIF
+         ! create dummy names for the inventory files
+         Pinv = 'dmy'
+         Winv = 'dmy'
+         Cinv = 'dmy'
+#ifdef ADCNETCDF
+#ifdef CMPI
+         IF (MYPROC.EQ.0) THEN
+#endif
+            call Check_err(NF90_OPEN(Pfile,nf90_nowrite,PfileNCID))
+            call Check_err(NF90_OPEN(Wfile,nf90_nowrite,WfileNCID))
+            call Check_err(NF90_OPEN(Wfile1,nf90_nowrite,Wfile1NCID))
+            IF (NCICE.EQ.14) THEN
+               call Check_err(NF90_OPEN(Cfile,nf90_nowrite,CfileNCID))
+            ENDIF
+#ifdef CMPI
+         ENDIF
+         CALL MSG_BARRIER()
+#endif
+#endif
          RETURN
       ELSE
          ! should be unreachable
@@ -9017,6 +9046,40 @@ C----------------------------------------------------------------------
       END SUBROUTINE NWS14NC_READ_F22
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------
+      SUBROUTINE NWS14_CALC_INTERP_WTS()
+C----------------------------------------------------------------------
+C     CPB 10/2023: This subroutine calculates the interpolation indices
+C     (indp) and weights (weightsp) to interpolate from the grib2 or
+C     netcdf input meterological forcing to the ADCIRC grid. 
+C----------------------------------------------------------------------
+      implicit none
+      logical :: Fexists
+
+      Pfile = 'fort.221.grb2'
+      INQUIRE(file=Pfile,exist=Fexists)
+#ifdef GRIB2API
+      IF (Fexists) THEN
+
+         grb2flag = .TRUE.
+         RETURN
+      ENDIF
+#endif
+      Pfile = 'fort.221.nc'
+      INQUIRE(file=Pfile,exist=Fexists)
+      IF (Fexists) THEN
+         grb2flag = .FALSE.
+         RETURN
+      ELSE
+         call allMessage(ERROR,
+     &       'Neither .grb2 nor .nc wind files exist. Or, if .grb2 '//
+     &       'files exist, did you compile with GRIB2 compiler flags?')
+         call windTerminate()
+      ENDIF
+
+C----------------------------------------------------------------------
+      END SUBROUTINE NWS14_CALC_INTERP_WTS
+C----------------------------------------------------------------------
+C----------------------------------------------------------------------
       SUBROUTINE NWS14GET(WVNX2,WVNY2,PRN2,CICE2)
       use mesh, only: NP, SLAM, SFEA, bl_interp, bl_interp2
       use kdtree2_module, only: kdtree2, kdtree2_create
@@ -9041,28 +9104,52 @@ C----------------------------------------------------------------------
          ! Check dimensions
          do ii = 1,ub
             if (ii.eq.1) then
-               call READNWS14(Pfile,Pinv,Pvar,lon,lat)
+               IF (grb2flag) THEN
+                  CALL READNWS14LatLon_grib2(Pfile,Pinv,Pvar,lat,lon)
+               ELSE
+                  CALL READNWS14LatLon_netCDF(Pfile,PfileNCID,lat,lon)
+               ENDIF
                nxp = ubound(lon,1); nyp = ubound(lat,2)
             elseif (ii.eq.2) then
-               call READNWS14(Wfile,Winv,Uvar,lon,lat)
+               IF (grb2flag) THEN
+                  CALL READNWS14LatLon_grib2(Wfile,Winv,Uvar,lat,lon)
+               ELSE
+                  CALL READNWS14LatLon_netCDF(Wfile,WfileNCID,lat,lon)
+               ENDIF
                if (nxp.eq.ubound(lon,1).and.nyp.eq.ubound(lat,2)) then
                   ub = 1; exit
                endif
                nxp = ubound(lon,1); nyp = ubound(lat,2)
             else
-               call READNWS14(Cfile,Cinv,Cvar,lon,lat)
+               IF (grb2flag) THEN
+                  CALL READNWS14LatLon_grib2(Cfile,Cinv,Cvar,lat,lon)
+               ELSE
+                  CALL READNWS14LatLon_netCDF(Cfile,CfileNCID,lat,lon)
+               ENDIF
                if (nxp.eq.ubound(lon,1).and.nyp.eq.ubound(lat,2)) then
                   ubc = 2;
                endif
             endif
          enddo
          allocate(indp(ub,4,np),weightsp(ub,4,np))
+         ! get starting time index if we are using netcdf
+         IF (.NOT.grb2flag) THEN
+            CALL READNWS14_NC_StaTime(Pfile, PfileNCID)
+         ENDIF
          ! Make the interpolant weights
          do ii = 1,ub
             if (ii.eq.1) then
-               call READNWS14(Pfile,Pinv,Pvar,lon,lat)
+               IF (grb2flag) THEN
+                  CALL READNWS14LatLon_grib2(Pfile,Pinv,Pvar,lat,lon)
+               ELSE
+                  CALL READNWS14LatLon_netCDF(Pfile,PfileNCID,lat,lon)
+               ENDIF
             else
-               call READNWS14(Wfile,Winv,Uvar,lon,lat)
+               IF (grb2flag) THEN
+                  CALL READNWS14LatLon_grib2(Wfile,Winv,Uvar,lat,lon)
+               ELSE
+                  CALL READNWS14LatLon_netCDF(Wfile,WfileNCID,lat,lon)
+               ENDIF
             endif
             nxp = ubound(lon,1); nyp = ubound(lat,2)
             ! Check if structured regular..
@@ -9223,122 +9310,6 @@ C----------------------------------------------------------------------
          str_date = ':start_FT='//CurDT%strftime("%Y%m%d%H")//'0000:'
       endif      
 
-      if (present(data22)) then
-         if (grb2flag) then 
-            ! GRIB2
-            iret = -1; iter = 0
-            do while (iret.le.0.and.iter < 10) 
-               if (iter > 0) then
-                  call logMessage(WARNING,'Trying to read again '//var)
-                  call sleep(5)
-               endif
-#ifdef GRIB2API
-               iret = grb2_inq(fileN,invN,var,str_date,
-     &                         lat=data22,lon=data2)
-#endif
-               iter = iter + 1
-            enddo
-            if (iret.gt.0) then
-               call logMessage(ECHO,'Successfully read LatLon '//var)
-            else
-               call ArnoldSchwarzenegger(iret,var,fileN)
-            endif
-         else 
-            ! Read lon and lat
-#ifdef ADCNETCDF
-            IF (MYPROC.EQ.0) THEN
-               call Check_err(NF90_OPEN(fileN,nf90_nowrite,NC_ID))
-               call Check_err(NF90_INQ_DIMID(NC_ID,Latdim,Temp_ID))
-               call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,
-     &                                               len=NY))
-               call Check_err(NF90_INQ_DIMID(NC_ID,Londim,Temp_ID))
-               call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,
-     &                                               len=NX))
-               call Check_err(NF90_INQ_DIMID(NC_ID,Tdim,Temp_ID))
-               call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,
-     &                                               len=TL))
-               allocate(data2(NX,NY),data22(NX,NY))
-               if (NT.eq.0) then
-                  IF (Tformat(1:1).eq.'%') THEN
-                     ALLOCATE( TIMESTR(TL) )
-                     call Check_err(NF90_INQ_VARID(NC_ID,Tvar,Temp_ID))
-                     call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
-                     ! Determine the first timestep index
-                     str_date = CurDT%strftime(trim(Tformat)) 
-                     write(16,*) 'Str_date: ',trim(str_date)
-                     do NT = 1,TL
-                        if (trim(str_date).eq.TimeStr(NT)) exit
-                     enddo
-                     call logMessage(ECHO,'Starting from '//TimeStr(NT))
-                     DEALLOCATE( TIMESTR )
-                  ELSEIF (Tvar.eq.'refdate') THEN
-                     ALLOCATE( NCTIMES(TL) )
-                     refdate = strptime(trim(Tformat),
-     &                                  "%Y-%m-%dT%H:%M:%S")
-                     CALL CHECK_ERR(NF90_INQ_VARID(NC_ID,TDIM,TEMP_ID))
-                     call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,NCTIMES))
-                     DO NT = 1,TL
-                        stepdate = refdate +
-     &                             timedelta(seconds=INT(NCTIMES(NT)))
-                        IF (stepdate.EQ.curDT) THEN
-                           WRITE(16,*) 'stepdate = ',
-     &                                stepdate%isoformat(' ')
-                           EXIT
-                        ENDIF
-                     ENDDO
-                     DEALLOCATE( NCTIMES )
-                     WRITE(16,*) ' CurDT = ',CurDT%isoformat(' ')
-                     WRITE(16,*) ' netcdfDT = ',stepdate%isoformat(' ')
-                  else
-                     call logMessage(ECHO,
-     &                               'Assume to start from beginning')
-                     NT = 1 
-                  endif
-                  write(16,*) ' Starting time indice = ',NT
-                  NTC = NT
-               endif
-               call Check_err(NF90_INQ_VARID(NC_ID,Latvar,Lat_ID))
-               call Check_err(nf90_inquire_variable(NC_ID,Lat_ID,
-     &                     ndims=ndims))
-               call Check_err(NF90_INQ_VARID(NC_ID,Lonvar,Lon_ID))
-               write(16,*) 'Lon/Lat dimensions = ',ndims
-               if (ndims.eq.3) then
-                  call Check_err(NF90_GET_VAR(NC_ID,Lat_ID,data22,
-     &                           start=[1, 1, NT],count=[NX, NY, 1]))
-                  call Check_err(NF90_GET_VAR(NC_ID,Lon_ID,data2,
-     &                           start=[1, 1, NT],count=[NX, NY, 1]))
-               elseif (ndims.eq.2) then
-                  call Check_err(NF90_GET_VAR(NC_ID,Lat_ID,data22))
-                  call Check_err(NF90_GET_VAR(NC_ID,Lon_ID,data2))
-               else
-                  call Check_err(NF90_GET_VAR(NC_ID,Lat_ID,data22(1,:)))
-                  call Check_err(NF90_GET_VAR(NC_ID,Lon_ID,data2(:,1)))
-                  do i = 2,NX
-                     data22(i,:) = data22(1,:)
-                  enddo
-                  do i = 2,NY
-                     data2(:,i) = data2(:,1)
-                  enddo
-               endif
-               call Check_err(NF90_CLOSE(NC_ID))
-            ENDIF
-            write(16,*) "about to bcst Nx, etc"
-            CALL BcastToLocal_Int(NX)
-            CALL BcastToLocal_Int(NY)
-            CALL BcastToLocal_Int(NT)
-            CALL BcastToLocal_Int(NTC)
-            IF (MYPROC.NE.0) THEN
-               ALLOCATE( data2(NX,NY), data22(NX,NY) )
-            ENDIF
-            write(16,*) "about to bcast data22, data2"
-            CALL BcastToLocal_2DRealArray(data22,NX,NY)
-            write(16,*) "bcasted data22"
-            CALL BcastToLocal_2DRealArray(data2,NX,NY)
-#endif
-         endif
-         return
-      endif
-
       if (grb2flag) then
          ! GRIB2
          iret = -1; iter = 0
@@ -9389,7 +9360,215 @@ C.....
 C----------------------------------------------------------------------
       END SUBROUTINE READNWS14
 C----------------------------------------------------------------------
+C----------------------------------------------------------------------
+      SUBROUTINE READNWS14LatLon_grib2(fileN,invN,var,lat,lon)
+C----------------------------------------------------------------------
+C     CPB 10/2023: Reads in the lat and lon from a grib2 format
+C     meteorological file. NOTE: reads in on Proc 0 and broadcasts
+C----------------------------------------------------------------------
+#ifdef GRIB2API
+      use wgrib2api
+#endif
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
+     &                           BcastToLocal_Int
+      USE SIZES, ONLY : MYPROC
+      implicit none
+      integer :: iret, iter
+      character(len=200),intent(in) :: var, fileN, invN
+      real,allocatable,intent(out) :: lat(:,:), lon(:,: )
+      integer :: NX, NY
+      character(len=200) :: str_date
+      CALL setMessageSource("READNWS14LatLon_grib2")
+      ! Getting the date in str_date format
+      str_date = ':start_FT='//CurDT%strftime("%Y%m%d%H")//'0000:'
+      ! read in on core 0
+      IF (MYPROC.EQ.0) THEN
+         iret = -1; iter = 0
+         do while (iret.le.0.and.iter < 10) 
+            if (iter > 0) then
+               call logMessage(WARNING,'Trying to read again '//var)
+               call sleep(5)
+            endif
+#ifdef GRIB2API
+            iret = grb2_inq(fileN,invN,var,str_date,
+     &                      lat=lat,lon=lon)
+#endif
+            iter = iter + 1
+         enddo
+      ENDIF
+      ! broadcast status of read
+      CALL BcastToLocal_Int(iret)
+      if (iret.gt.0) then
+         call logMessage(ECHO,'Successfully read LatLon '//var)
+      else
+         call ArnoldSchwarzenegger(iret,var,fileN)
+      endif
+      ! broadcast data
+      IF (MYPROC.EQ.0) THEN
+         NX = UBOUND(lon,1)
+         NY = UBOUND(lat,2)
+      ENDIF
+      CALL BcastToLocaL_Int(NX)
+      Call BcastToLocal_Int(NY)
+      IF (MYPROC.NE.0) THEN
+         ALLOCATE( lat(NX,NY), lon(NX,NY) )
+      ENDIF
+      ! latitude
+      CALL BcastToLocal_2DRealArray(lat,NX,NY)
+      ! longitude
+      CALL BcastToLocal_2DRealArray(lon,NX,NY)
+      CALL unsetMessageSource()
+C----------------------------------------------------------------------
+      END SUBROUTINE READNWS14LatLon_grib2
+C----------------------------------------------------------------------
+C----------------------------------------------------------------------
+      SUBROUTINE READNWS14LatLon_netCDF(fileN,ncid,lat,lon)
+C----------------------------------------------------------------------
+C     CPB 10/2023: Reads in the lat and lon from a netCDF format
+C     meteorological forcing file. NOTE: reads in on Proc 0 and
+C     broadcasts.
+C----------------------------------------------------------------------
+#ifdef ADCNETCDF
+      use netcdf
+#endif
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
+     &                           BcastToLocal_Int
+      USE SIZES, ONLY : MYPROC
+      implicit none
+      INTEGER,INTENT(IN) :: ncid ! already opened ncid tag
+      character(len=200),intent(in) :: fileN
+      real,allocatable,intent(out) :: lat(:,:), lon(:,:)
+      integer :: i, Temp_ID, Lat_ID, Lon_ID, NX, NY, ndims
+      CALL setMessageSource("READNWS14LatLon_netCDF")
+#ifdef ADCNETCDF
+      IF (MYPROC.EQ.0) THEN
+         call Check_err(NF90_INQ_DIMID(ncid,Latdim,Temp_ID))
+         call Check_err(NF90_INQUIRE_DIMENSION(ncid,Temp_ID,
+     &                                         len=NY))
+         call Check_err(NF90_INQ_DIMID(ncid,Londim,Temp_ID))
+         call Check_err(NF90_INQUIRE_DIMENSION(ncid,Temp_ID,
+     &                                         len=NX))
+         allocate(lon(NX,NY),lat(NX,NY))
+         call Check_err(NF90_INQ_VARID(ncid,Latvar,Lat_ID))
+         call Check_err(nf90_inquire_variable(ncid,Lat_ID,
+     &               ndims=ndims))
+         call Check_err(NF90_INQ_VARID(ncid,Lonvar,Lon_ID))
+         if (ndims.eq.3) then
+            call Check_err(NF90_GET_VAR(ncid,Lat_ID,lat,
+     &                     start=[1, 1, NT],count=[NX, NY, 1]))
+            call Check_err(NF90_GET_VAR(ncid,Lon_ID,lon,
+     &                     start=[1, 1, NT],count=[NX, NY, 1]))
+         elseif (ndims.eq.2) then
+            call Check_err(NF90_GET_VAR(ncid,Lat_ID,lat))
+            call Check_err(NF90_GET_VAR(ncid,Lon_ID,lon))
+         else
+            call Check_err(NF90_GET_VAR(ncid,Lat_ID,lat(1,:)))
+            call Check_err(NF90_GET_VAR(ncid,Lon_ID,lon(:,1)))
+            do i = 2,NX
+               lat(i,:) = lat(1,:)
+            enddo
+            do i = 2,NY
+               lon(:,i) = lon(:,1)
+            enddo
+         endif
+      ENDIF
+      CALL BcastToLocal_Int(NX)
+      CALL BcastToLocal_Int(NY)
+      IF (MYPROC.NE.0) THEN
+         ALLOCATE( lon(NX,NY), lat(NX,NY) )
+      ENDIF
+      CALL BcastToLocal_2DRealArray(lon,NX,NY)
+      CALL BcastToLocal_2DRealArray(lat,NX,NY)
+#endif
+      CALL unsetMessageSource()
+C----------------------------------------------------------------------
+      END SUBROUTINE READNWS14LatLon_netCDF
+C----------------------------------------------------------------------
+C----------------------------------------------------------------------
+      SUBROUTINE READNWS14_NC_StaTime(FileN, NC_ID)
+C----------------------------------------------------------------------
+C       CPB 10/2023: Sets the time index from which we start reading in
+C       netCDF meteorological forcing. NOTE: reads in on proc 0 and
+C       broadcasts.
+C----------------------------------------------------------------------
+#ifdef ADCNETCDF
+      use netcdf
+#endif
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_Int
+      USE SIZES, ONLY : MYPROC
+      implicit none
+      integer :: iret, iter
+      INTEGER,INTENT(IN) :: NC_ID
+      character(len=200),intent(in) :: fileN
+      character(len=19),allocatable :: TimeStr(:) 
+      character(len=200) :: str_date
+      integer :: i, Temp_ID, TL
+      ! CPB 4/20/2023
+      REAL(8),ALLOCATABLE :: NCTIMES(:)
+#ifdef ADCNETCDF
+      IF (MYPROC.EQ.0) THEN
+         call Check_err(NF90_INQ_DIMID(NC_ID,Tdim,Temp_ID))
+         call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,
+     &                                         len=TL))
+         ! once I am done this shoudln't be possible to reach with NT ~=
+         ! 0 but I will leave it at this interim stage
+         if (NT.eq.0) then
+            IF (Tformat(1:1).eq.'%') THEN
+               ! in this case the netCDF files have a datetime variable
+               ! so we can determine where to start based off of that
+               ALLOCATE( TIMESTR(TL) )
+               call Check_err(NF90_INQ_VARID(NC_ID,Tvar,Temp_ID))
+               call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
+               ! Determine the first timestep index
+               str_date = CurDT%strftime(trim(Tformat)) 
+               write(16,*) 'Str_date: ',trim(str_date)
+               do NT = 1,TL
+                  if (trim(str_date).eq.TimeStr(NT)) exit
+               enddo
+               call logMessage(ECHO,'Starting from '//TimeStr(NT))
+               DEALLOCATE( TIMESTR )
+            ELSEIF (Tvar.eq.'refdate') THEN
+               ! in this case the reference date for the netCDF file is
+               ! provided in the fort.22 and the units of the time
+               ! variable are in the form of "seconds since refdate".
+               ! This allows us to find the start index
+               ALLOCATE( NCTIMES(TL) )
+               refdate = strptime(trim(Tformat),
+     &                            "%Y-%m-%dT%H:%M:%S")
+               CALL CHECK_ERR(NF90_INQ_VARID(NC_ID,TDIM,TEMP_ID))
+               call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,NCTIMES))
+               DO NT = 1,TL
+                  stepdate = refdate +
+     &                       timedelta(seconds=INT(NCTIMES(NT)))
+                  IF (stepdate.EQ.curDT) THEN
+                     WRITE(16,*) 'stepdate = ',
+     &                          stepdate%isoformat(' ')
+                     EXIT
+                  ENDIF
+               ENDDO
+               DEALLOCATE( NCTIMES )
+               WRITE(16,*) ' CurDT = ',CurDT%isoformat(' ')
+               WRITE(16,*) ' netcdfDT = ',stepdate%isoformat(' ')
+            else
+               ! If neither of those two things are true we just assume
+               ! we start at the beginning of the file
+               call logMessage(ECHO,
+     &                         'Assume to start from beginning')
+               NT = 1 
+            endif
+            NTC = NT
+         endif
+      ENDIF
+      CALL BcastToLocal_Int(NT)
+      CALL BcastToLocal_Int(NTC)
+#endif
+      return
+C----------------------------------------------------------------------
+      END SUBROUTINE READNWS14_NC_StaTime
+C----------------------------------------------------------------------
+C----------------------------------------------------------------------
       SUBROUTINE ArnoldSchwarzenegger(iret,var,fileN)
+C----------------------------------------------------------------------
       IMPLICIT NONE
       integer,intent(in) :: iret
       character(len=200),intent(in) :: var, fileN

@@ -149,12 +149,9 @@ C----------------------------------------------------------------------
       REAL(8),ALLOCATABLE :: TMP(:)
       INTEGER :: ii, jj, NumVals, kk, ierr
 #ifdef CMPI
-      write(16,*) "inside bcast to local 2d real"
       NumVals = NX*NY
       ALLOCATE( TMP(NumVals) )
-      write(16,*) "allocated tmp"
       IF (MYPROC.EQ.0) THEN
-         write(16,*) "myproc filling out tmp"
          kk = 1
          DO ii = 1,NX
             DO jj = 1,NY
@@ -163,10 +160,7 @@ C----------------------------------------------------------------------
             ENDDO
          ENDDO
       ENDIF
-      write(16,*) "about to bcast"
-
       CALL MPI_BCAST(TMP,NumVals,REALTYPE,0,COMM,ierr)
-      write(16,*) "bcast-ed"
       kk = NumVals
       DO ii = NX,1,-1
          DO jj = NY,1,-1
