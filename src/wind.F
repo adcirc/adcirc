@@ -8807,7 +8807,7 @@ C----------------------------------------------------------------------
       CALL NWS14NC_READ_F22()
 
       ! Calculate the interpolant weights
-      !CALL NWS14_CALC_INTERP_WTS()
+      CALL NWS14_CALC_INTERP_WTS()
 
       call allMessage(ECHO,'Finished init of NWS14')
 C----------------------------------------------------------------------
@@ -8885,6 +8885,13 @@ C----------------------------------------------------------------------
          Uvar = ':UGRD:10 m above ground:'
          Vvar = ':VGRD:10 m above ground:'
          Cvar = ':ICEC:surface:'
+         ! Assign dummy values to ncid variables
+         PfileNCID = -9999
+         WfileNCID = -9999
+         Wfile1NCID = -9999
+         IF (NCICE.EQ.14) THEN
+            CfileNCID = -9999
+         ENDIF
          RETURN
       ELSEIF (.NOT.grb2flag) THEN
          Pfile = 'fort.221.nc'
@@ -8902,6 +8909,11 @@ C----------------------------------------------------------------------
          Pinv = 'dmy'
          Winv = 'dmy'
          Cinv = 'dmy'
+         ! create dummy names for the grib2 variables
+         Pvar = 'dmy'
+         Uvar = 'dmy'
+         Vvar = 'dmy'
+         Cvar = 'dmy'
 #ifdef ADCNETCDF
 #ifdef CMPI
          IF (MYPROC.EQ.0) THEN
@@ -9042,6 +9054,9 @@ C----------------------------------------------------------------------
          Pvar = Pvar(1:PvarInd-1)
          write(16,*) 'Pressure is in Hpa, New Pvar = ',trim(Pvar)
       endif
+      ! get starting time index for netcdf file
+      CALL READNWS14_NC_StaTime(Pfile, PfileNCID)
+      RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE NWS14NC_READ_F22
 C----------------------------------------------------------------------
@@ -9050,39 +9065,112 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
 C     CPB 10/2023: This subroutine calculates the interpolation indices
 C     (indp) and weights (weightsp) to interpolate from the grib2 or
-C     netcdf input meterological forcing to the ADCIRC grid. 
+C     netcdf input meterological forcing to the ADCIRC grid. NWS = 14
+C     was originally set up to use NOAA CFSv2/GFS met forcing products.
+C     These meteorological products provide two different resolutions
+C     for wind forcing but not for pressure (or ice). To limit
+C     pre-processing necessary to use these products, this subroutine
+C     checks to see if the wind and pressure have the same dimensions.
+C     If so, it only allocates one set of interpolant indices (indp) and
+C     weights (weightsp). If they are different then it stores two
+C     different sets. If necessary, it also checks the dimensions of the
+C     ice forcing and sets the interpolants for ice to be equal to
+C     either the wind or pressure forcing depending on the grid.
 C----------------------------------------------------------------------
+      use mesh, only: NP, SLAM, SFEA, bl_interp, bl_interp2
+      use kdtree2_module, only: kdtree2, kdtree2_create
+      USE GLOBAL, ONLY : NCICE
       implicit none
-      logical :: Fexists
-
-      Pfile = 'fort.221.grb2'
-      INQUIRE(file=Pfile,exist=Fexists)
-#ifdef GRIB2API
-      IF (Fexists) THEN
-
-         grb2flag = .TRUE.
-         RETURN
+      integer :: i, ii, nxp, nyp, indt(4), NTkeep, xi, yi, cc
+      real,allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice, lat, lon
+      real(8), allocatable ::  lonv(:), latv(:), XY(:,:)
+      real(8) :: xx, yy, wt(4) 
+      logical :: regular_grid
+      type(kdtree2), pointer :: tree
+      ! determine if wind/pressure/ice grids match or not.
+      ! assume grids are the same to start
+      ub = 1
+      ubc = 1 ! index where we store the ice data (will match either
+              ! wind or pressure). Assume match pressure first.
+      ! get pressure dimensions
+      CALL READNWS14LatLon(Pfile,lat,lon,Pinv,Pvar,PfileNCID)
+      nxp = ubound(lon,1); nyp = ubound(lat,2)
+      ! get wind dimensions and see if they match pressure
+      CALL READNWS14LatLon(Wfile,lat,lon,Winv,Uvar,WfileNCID)
+      if (nxp.NE.ubound(lon,1).OR.nyp.NE.ubound(lat,2)) then
+         ! if we don't match both lat and lon then we need to store two
+         ! interpolation indices/weights
+         ub = 2
+         nxp = ubound(lon,1)
+         nyp = ubound(lat,2)
+      endif
+      ! If winds and pressure do not match, then check ice file to see
+      ! whether we should use wind or pressure interpolants. If wind and
+      ! pressure DO match then we assume ice also matches.
+      IF (NCICE.EQ.14.AND.ub.EQ.2) THEN
+         CALL READNWS14LatLon(Cfile,lat,lon,Cinv,Cvar,CfileNCID)
+         IF (nxp.EQ.ubound(lon,1).AND.nyp.EQ.ubound(lat,2)) THEN
+            ! match winds
+            ubc = 2
+         ENDIF
       ENDIF
-#endif
-      Pfile = 'fort.221.nc'
-      INQUIRE(file=Pfile,exist=Fexists)
-      IF (Fexists) THEN
-         grb2flag = .FALSE.
-         RETURN
-      ELSE
-         call allMessage(ERROR,
-     &       'Neither .grb2 nor .nc wind files exist. Or, if .grb2 '//
-     &       'files exist, did you compile with GRIB2 compiler flags?')
-         call windTerminate()
-      ENDIF
-
+      ! Allocate the indices and weights
+      allocate(indp(ub,4,np),weightsp(ub,4,np))
+      ! Make the interpolant weights. If w 
+      do ii = 1,ub
+         if (ii.eq.1) then
+            CALL READNWS14LatLon(Pfile,lat,lon,Pinv,Pvar,PfileNCID)
+         else
+            CALL READNWS14LatLon(Wfile,lat,lon,Winv,Uvar,WfileNCID)
+         endif
+         nxp = ubound(lon,1); nyp = ubound(lat,2)
+         ! Check if structured regular..
+         if (abs(lon(1,1) - lon(1,nyp)) < 1d-6) then
+            regular_grid = .true. 
+            allocate(lonv(nxp),latv(nyp))
+            lonv = lon(:,1)
+            latv = lat(1,:)
+         else       
+            regular_grid = .false. 
+            ! Convert point matrices to 2 X (NXP*NYP) point vector
+            allocate(XY(2,nxp*nyp))
+            cc = 0
+            do xi = 1,nxp
+               do yi = 1,nyp
+                  cc = cc + 1
+                  XY(1,cc) = lon(xi,yi)
+                  XY(2,cc) = lat(xi,yi)
+               enddo
+            enddo
+            ! Create the search tree
+            tree => kdtree2_create(XY) 
+         endif
+         ! Loop over each node and interpolate
+         do i = 1,np
+            xx = rad2deg*slam(i)
+            ! Convert our numbers if grids are 0 to 360
+            if (maxval(lon).gt.180d0.and.xx < 0d0) xx = xx + 360d0
+            yy = rad2deg*sfea(i)
+            if (regular_grid) then
+               call bl_interp(nxp,lonv,nyp,latv,xx,yy,indt,wt)
+            else
+               call bl_interp2(nxp,nyp,lon,lat,xx,yy,indt,wt,tree)
+            endif
+            indp(ii,:,i) = indt
+            weightsp(ii,:,i) = wt
+         enddo
+         if (regular_grid) then
+            deallocate(lon,lat,latv,lonv)
+         else
+            deallocate(lon,lat,XY)
+         endif
+      enddo
 C----------------------------------------------------------------------
       END SUBROUTINE NWS14_CALC_INTERP_WTS
-C----------------------------------------------------------------------
+C------------------------------------------------------1----------------
 C----------------------------------------------------------------------
       SUBROUTINE NWS14GET(WVNX2,WVNY2,PRN2,CICE2)
       use mesh, only: NP, SLAM, SFEA, bl_interp, bl_interp2
-      use kdtree2_module, only: kdtree2, kdtree2_create
       implicit none
 
       real(8),intent(out) :: PRN2(NP), WVNX2(NP), WVNY2(NP)
@@ -9092,122 +9180,10 @@ C----------------------------------------------------------------------
       real(8), allocatable ::  lonv(:), latv(:), XY(:,:)
       real(8) :: xx, yy, wt(4) 
       logical :: regular_grid
-      type(kdtree2), pointer :: tree
 
       ! Show the date in str_date format
       call logMessage(ECHO,'CurDT strng: '//
      &                CurDT%strftime("%Y-%m-%d %H:%M"))
-      ! Compute the interpolating factors and indices on the first step
-      if (.not.allocated(indp)) then
-         ub = 2; ubc = 1;
-         if (present(CICE2)) ub = 3
-         ! Check dimensions
-         do ii = 1,ub
-            if (ii.eq.1) then
-               IF (grb2flag) THEN
-                  CALL READNWS14LatLon_grib2(Pfile,Pinv,Pvar,lat,lon)
-               ELSE
-                  CALL READNWS14LatLon_netCDF(Pfile,PfileNCID,lat,lon)
-               ENDIF
-               nxp = ubound(lon,1); nyp = ubound(lat,2)
-            elseif (ii.eq.2) then
-               IF (grb2flag) THEN
-                  CALL READNWS14LatLon_grib2(Wfile,Winv,Uvar,lat,lon)
-               ELSE
-                  CALL READNWS14LatLon_netCDF(Wfile,WfileNCID,lat,lon)
-               ENDIF
-               if (nxp.eq.ubound(lon,1).and.nyp.eq.ubound(lat,2)) then
-                  ub = 1; exit
-               endif
-               nxp = ubound(lon,1); nyp = ubound(lat,2)
-            else
-               IF (grb2flag) THEN
-                  CALL READNWS14LatLon_grib2(Cfile,Cinv,Cvar,lat,lon)
-               ELSE
-                  CALL READNWS14LatLon_netCDF(Cfile,CfileNCID,lat,lon)
-               ENDIF
-               if (nxp.eq.ubound(lon,1).and.nyp.eq.ubound(lat,2)) then
-                  ubc = 2;
-               endif
-            endif
-         enddo
-         allocate(indp(ub,4,np),weightsp(ub,4,np))
-         ! get starting time index if we are using netcdf
-         IF (.NOT.grb2flag) THEN
-            CALL READNWS14_NC_StaTime(Pfile, PfileNCID)
-         ENDIF
-         ! Make the interpolant weights
-         do ii = 1,ub
-            if (ii.eq.1) then
-               IF (grb2flag) THEN
-                  CALL READNWS14LatLon_grib2(Pfile,Pinv,Pvar,lat,lon)
-               ELSE
-                  CALL READNWS14LatLon_netCDF(Pfile,PfileNCID,lat,lon)
-               ENDIF
-            else
-               IF (grb2flag) THEN
-                  CALL READNWS14LatLon_grib2(Wfile,Winv,Uvar,lat,lon)
-               ELSE
-                  CALL READNWS14LatLon_netCDF(Wfile,WfileNCID,lat,lon)
-               ENDIF
-            endif
-            nxp = ubound(lon,1); nyp = ubound(lat,2)
-            ! Check if structured regular..
-            if (abs(lon(1,1) - lon(1,nyp)) < 1d-6) then
-               regular_grid = .true. 
-               allocate(lonv(nxp),latv(nyp))
-               lonv = lon(:,1)
-               latv = lat(1,:)
-            else       
-               regular_grid = .false. 
-               ! Convert point matrices to 2 X (NXP*NYP) point vector
-               allocate(XY(2,nxp*nyp))
-               cc = 0
-               do xi = 1,nxp
-                  do yi = 1,nyp
-                     cc = cc + 1
-                     XY(1,cc) = lon(xi,yi)
-                     XY(2,cc) = lat(xi,yi)
-                  enddo
-               enddo
-               ! Create the search tree
-               tree => kdtree2_create(XY) 
-            endif
-            ! Loop over each node and interpolate
-            do i = 1,np
-               xx = rad2deg*slam(i)
-               ! Convert our numbers if grids are 0 to 360
-               if (maxval(lon).gt.180d0.and.xx < 0d0) xx = xx + 360d0
-               yy = rad2deg*sfea(i)
-               if (regular_grid) then
-                  call bl_interp(nxp,lonv,nyp,latv,xx,yy,indt,wt)
-               else
-                  call bl_interp2(nxp,nyp,lon,lat,xx,yy,indt,wt,tree)
-               endif
-               indp(ii,:,i) = indt
-               weightsp(ii,:,i) = wt
-#ifdef DEBUG_NWS14
-               if (i.gt.1) cycle 
-               write(16,*) 'NWS=14 Interpolating check: xx',xx,'yy',yy
-               write(16,*) 'Lon',lon(indt(1),indt(2)),
-     &                           lon(indt(3),indt(2)),
-     &                           lon(indt(1),indt(4)),
-     &                           lon(indt(3),indt(4))
-               write(16,*) 'Lat',lat(indt(1),indt(2)),
-     &                           lat(indt(3),indt(2)),
-     &                           lat(indt(1),indt(4)),
-     &                           lat(indt(3),indt(4))
-               write(16,*) 'Weights',wt
-               write(16,*) 'Indices',indt
-#endif
-            enddo
-            if (regular_grid) then
-               deallocate(lon,lat,latv,lonv)
-            else
-               deallocate(lon,lat,XY)
-            endif
-         enddo
-      endif
       
       ! Get the Pressure
       !':PRMSL:mean sea level:'
@@ -9361,6 +9337,29 @@ C----------------------------------------------------------------------
       END SUBROUTINE READNWS14
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------
+      SUBROUTINE READNWS14LatLon(fileN,lat,lon,invN,var,ncid)
+C----------------------------------------------------------------------
+C     CPB 10/2023: Added to make NWS = 14 more more readable. Simply 
+C     calls the appropriate subroutine based on the filetype we are 
+C     using.
+C----------------------------------------------------------------------
+      implicit none
+      CHARACTER(len=200),INTENT(IN) :: fileN
+      REAL,ALLOCATABLE,INTENT(OUT) :: lat(:,:),lon(:,:)
+      CHARACTER(LEN=200),INTENT(IN),OPTIONAL :: var, invN
+      INTEGER,INTENT(IN),OPTIONAL :: ncid
+      IF (grb2flag) THEN
+         CALL READNWS14LatLon_grib2(fileN,invN,var,lat,lon)
+      ELSEIF (.NOT.grb2flag) THEN
+         CALL READNWS14LatLon_netCDF(fileN,ncid,lat,lon)
+      ELSE
+         ! should be unreachable
+         CALL windterminate()
+      ENDIF
+C----------------------------------------------------------------------
+      END SUBROUTINE READNWS14LatLon
+C----------------------------------------------------------------------
+C----------------------------------------------------------------------
       SUBROUTINE READNWS14LatLon_grib2(fileN,invN,var,lat,lon)
 C----------------------------------------------------------------------
 C     CPB 10/2023: Reads in the lat and lon from a grib2 format
@@ -9506,61 +9505,63 @@ C----------------------------------------------------------------------
       ! CPB 4/20/2023
       REAL(8),ALLOCATABLE :: NCTIMES(:)
 #ifdef ADCNETCDF
+#ifdef CMPI
       IF (MYPROC.EQ.0) THEN
+#endif
          call Check_err(NF90_INQ_DIMID(NC_ID,Tdim,Temp_ID))
          call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,
      &                                         len=TL))
-         ! once I am done this shoudln't be possible to reach with NT ~=
-         ! 0 but I will leave it at this interim stage
-         if (NT.eq.0) then
-            IF (Tformat(1:1).eq.'%') THEN
-               ! in this case the netCDF files have a datetime variable
-               ! so we can determine where to start based off of that
-               ALLOCATE( TIMESTR(TL) )
-               call Check_err(NF90_INQ_VARID(NC_ID,Tvar,Temp_ID))
-               call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
-               ! Determine the first timestep index
-               str_date = CurDT%strftime(trim(Tformat)) 
-               write(16,*) 'Str_date: ',trim(str_date)
-               do NT = 1,TL
-                  if (trim(str_date).eq.TimeStr(NT)) exit
-               enddo
-               call logMessage(ECHO,'Starting from '//TimeStr(NT))
-               DEALLOCATE( TIMESTR )
-            ELSEIF (Tvar.eq.'refdate') THEN
-               ! in this case the reference date for the netCDF file is
-               ! provided in the fort.22 and the units of the time
-               ! variable are in the form of "seconds since refdate".
-               ! This allows us to find the start index
-               ALLOCATE( NCTIMES(TL) )
-               refdate = strptime(trim(Tformat),
-     &                            "%Y-%m-%dT%H:%M:%S")
-               CALL CHECK_ERR(NF90_INQ_VARID(NC_ID,TDIM,TEMP_ID))
-               call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,NCTIMES))
-               DO NT = 1,TL
-                  stepdate = refdate +
-     &                       timedelta(seconds=INT(NCTIMES(NT)))
-                  IF (stepdate.EQ.curDT) THEN
-                     WRITE(16,*) 'stepdate = ',
-     &                          stepdate%isoformat(' ')
-                     EXIT
-                  ENDIF
-               ENDDO
-               DEALLOCATE( NCTIMES )
-               WRITE(16,*) ' CurDT = ',CurDT%isoformat(' ')
-               WRITE(16,*) ' netcdfDT = ',stepdate%isoformat(' ')
-            else
-               ! If neither of those two things are true we just assume
-               ! we start at the beginning of the file
-               call logMessage(ECHO,
-     &                         'Assume to start from beginning')
-               NT = 1 
-            endif
-            NTC = NT
+         IF (Tformat(1:1).eq.'%') THEN
+            ! in this case the netCDF files have a datetime variable
+            ! so we can determine where to start based off of that
+            CALL logMessage(ECHO,"fort.22 indicates that a "
+     &          //"datetime variable is provided. Starting index "
+     &          //"will be calculated.")
+            ALLOCATE( TIMESTR(TL) )
+            call Check_err(NF90_INQ_VARID(NC_ID,Tvar,Temp_ID))
+            call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
+            ! Determine the first timestep index
+            str_date = CurDT%strftime(trim(Tformat)) 
+            do NT = 1,TL
+               if (trim(str_date).eq.TimeStr(NT)) exit
+            enddo
+            call logMessage(ECHO,'Starting from '//TimeStr(NT))
+            DEALLOCATE( TIMESTR )
+         ELSEIF (Tvar.eq.'refdate') THEN
+            ! in this case the reference date for the netCDF file is
+            ! provided in the fort.22 and the units of the time
+            ! variable are in the form of "seconds since refdate".
+            ! This allows us to find the start index
+            CALL logMessage(ECHO,"fort.22 provides a reference "
+     &          //"date. Starting time index will be calculated.")
+            ALLOCATE( NCTIMES(TL) )
+            refdate = strptime(trim(Tformat),
+     &                         "%Y-%m-%dT%H:%M:%S")
+            CALL CHECK_ERR(NF90_INQ_VARID(NC_ID,TDIM,TEMP_ID))
+            call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,NCTIMES))
+            DO NT = 1,TL
+               stepdate = refdate +
+     &                    timedelta(seconds=INT(NCTIMES(NT)))
+               IF (stepdate.EQ.curDT) THEN
+                  EXIT
+               ENDIF
+            ENDDO
+            DEALLOCATE( NCTIMES )
+         else
+            ! If neither of those two things are true we just assume
+            ! we start at the beginning of the file
+            call logMessage(ECHO,
+     &                      'Neither a datetime variable nor a '
+     &          //'reference date were provided. Assume met forcing '
+     &          //'starts at the beginning of the netCDF file.')
+            NT = 1 
          endif
-      ENDIF
+         NTC = NT
+#ifdef CMPI
+      endif
       CALL BcastToLocal_Int(NT)
       CALL BcastToLocal_Int(NTC)
+#endif
 #endif
       return
 C----------------------------------------------------------------------
