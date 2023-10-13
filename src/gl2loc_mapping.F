@@ -136,6 +136,8 @@ C----------------------------------------------------------------------
 
 #ifdef CMPI
       CALL MPI_BCast(Val,1,MPI_Integer,0,COMM,ierr)
+#else
+      Val = Val
 #endif
 C----------------------------------------------------------------------
       END SUBROUTINE BcastToLocal_Int
