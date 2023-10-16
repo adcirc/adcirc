@@ -2405,7 +2405,7 @@ C     ----------------------------------------------------------------
       REAL(8), allocatable :: Hx(:), Hy(:)
       INTEGER  :: I, J 
       REAL(8) :: omega = 1.4052d-4 ![rad/s] M2 tidal frequency
-      REAL(8) :: hr = 3600.0_SZ ! means one hour in seconds
+      REAL(8) :: hr = 3600d0 ! means one hour in seconds
       REAL(8) :: SmallV = 1d-10 ! A small value
       REAL(8) :: Fit, alpha2, gamma2, slope2
       REAL(8) :: Nmdiff, Nbdiff, Fdiff, adju, adjv, adjuv
@@ -2661,18 +2661,18 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
          ELSE
 C           Normal 2DDI ADCIRC without baroclinic coupling
             IF (IT_FricNoOfVals == 3) THEN
-               CALL RESYNTH_TIDES(IT)
+C               CALL RESYNTH_TIDES(IT)
 C              Use the "Nonlocal" Nycander (2005) or "Local" Lyard et al. (2004) 
 C              type tensor wave drag
 C              Using three columns of data for the different segments of the matrix
                DO I=1,NP 
-                  TKM(1,I) = TK(I) !+ IT_Fric(I,1)
-                  TKM(2,I) = TK(I) !+ IT_Fric(I,2)
-                  TKM(3,I) = 0d0!IT_Fric(I,3) 
-                  ADRAGU(I) = -(IT_Fric(I,1)*UTide(I) +
-     &                          IT_Fric(I,3)*VTide(I))
-                  ADRAGV(I) = -(IT_Fric(I,3)*UTide(I) + 
-     &                          IT_Fric(I,2)*VTide(I))
+                  TKM(1,I) = TK(I) + IT_Fric(I,1)
+                  TKM(2,I) = TK(I) + IT_Fric(I,2)
+                  TKM(3,I) = IT_Fric(I,3) 
+C                  ADRAGU(I) = -(IT_Fric(I,1)*UTide(I) +
+C     &                          IT_Fric(I,3)*VTide(I))
+C                  ADRAGV(I) = -(IT_Fric(I,3)*UTide(I) + 
+C     &                          IT_Fric(I,2)*VTide(I))
                END DO
             ELSEIF (IT_FricNoOfVals == 1) THEN
 C              For the scalar type Zaron & Egbert (2006) type
@@ -3089,7 +3089,7 @@ C     ----------------------------------------------------------------
      &   DEBUG, ECHO, INFO, WARNING, ERROR  
       IMPLICIT NONE 
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-      REAL(SZ),ALLOCATABLE :: dmy(:)
+      REAL(8),ALLOCATABLE :: dmy(:)
 C
       call setMessageSource("terminate")
 #if defined(NODALATTR_TRACE) || defined(ALL_TRACE)

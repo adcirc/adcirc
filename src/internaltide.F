@@ -39,12 +39,12 @@ C---------------------------------------------------------------------C
       IMPLICIT NONE
       INTEGER,INTENT(IN) :: TimeStep    ! current time step
       INTEGER :: NCYC ! for calculating argument to pass to cosine
-      REAL(SZ) :: ARGT
-      REAL(SZ) :: StaTim_tmp, StaTimHS, TimeH
+      REAL(8) :: ARGT
+      REAL(8) :: StaTim_tmp, StaTimHS, TimeH
       LOGICAL,SAVE :: first_call = .TRUE.
       INTEGER :: ii, jj ! for loops
       INTEGER,SAVE :: counter = 1
-      REAL(SZ),ALLOCATABLE,DIMENSION(:) :: Udir, Vdir
+      REAL(8),ALLOCATABLE,DIMENSION(:) :: Udir, Vdir
 
       IF ( first_call ) THEN
          first_call = .FALSE.
@@ -146,7 +146,7 @@ C---------------------------------------------------------------------C
       INTEGER :: NC_ID, Temp_id, ua_id, ug_id, va_id, vg_id
       INTEGER :: constlen, num_const, node
       INTEGER :: ii,jj ! looping vars
-      REAL(SZ),ALLOCATABLE :: tmp_g(:,:), tmp_l(:)
+      REAL(8),ALLOCATABLE :: tmp_g(:,:), tmp_l(:)
       LOGICAL :: const_found
 
       ! determine if this tidesfile will actually work
@@ -251,10 +251,10 @@ C---------------------------------------------------------------------C
       USE MESH, ONLY : NP
       USE GLOBAL, ONLY: DTDP
       IMPLICIT NONE
-      REAL(SZ),INTENT(IN),DIMENSION(:) :: U_i, V_i ! current velocity
+      REAL(8),INTENT(IN),DIMENSION(:) :: U_i, V_i ! current velocity
       INTEGER,INTENT(IN) :: TimeStep    ! current time step
-      REAL(SZ) :: filtL = 25d0*3600d0        ! filter length (s)
-      REAL(SZ) :: Fs = 12d0*60d0             ! sampling interval (s)
+      REAL(8) :: filtL = 25d0*3600d0        ! filter length (s)
+      REAL(8) :: Fs = 12d0*60d0             ! sampling interval (s)
       INTEGER,SAVE :: NS = 1   ! number of samples
       LOGICAL,SAVE :: first_call = .TRUE.
       ! need indices to check if the current and previous time step are
