@@ -232,7 +232,7 @@
          ! count the total number of each type of boundary for later
          ! use in memory allocation
          select case(ibtype_orig(k))
-         case(0,1,2,10,11,12,20,21,22,30,32,52,94,102,112,122,152)
+         case(0,1,2,10,11,12,20,21,22,30,32,40,52,94,102,112,122,152)
              numSimpleFluxBoundaries = numSimpleFluxBoundaries + 1
          case(3,13,23)
              numExternalFluxBoundaries = numExternalFluxBoundaries + 1
@@ -428,7 +428,7 @@
          ! flux boundaries (mainland, island, river)
          ! For NON BARRIER type boundaries, read the node numbers for the Kth
          ! boundary segment
-         case(0,1,2,10,11,12,20,21,22,30,32,52,102,112,122,152)
+         case(0,1,2,10,11,12,20,21,22,30,32,40,52,102,112,122,152)
             simpleFluxBoundaries(sfCount)%indexNum = k
             do j = 1, nvell(k)
                read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) n1
@@ -1193,7 +1193,7 @@
       ! populate adcirc-native arrays
       do fluxCount=1,nbou
          select case(ibtype_orig(fluxCount))  
-         case(0,1,2,10,11,12,20,21,22,30,32,52,94,102,112,122,152)
+         case(0,1,2,10,11,12,20,21,22,30,32,40,52,94,102,112,122,152)
             nbvv(fluxCount,1:nvell(fluxCount)) = simpleFluxBoundaries(sfCount)%nodes
             sfCount = sfCount + 1
          case(3,13,23)
@@ -2245,10 +2245,11 @@
      &                    ZNGFicNodeDist=ZNGFicNodeDistTemp
 
                   ENDDO  !N=2,NNeigh(NBVI)
-
+                  
                   ZNGFicNodeDist=1.001d0*ZNGFicNodeDist
                   X4=X(NBVI)-ZNGFicNodeDist*CSII(JGW)
                   Y4=Y(NBVI)-ZNGFicNodeDist*SIII(JGW)
+
                   AEMIN=1.0E+25
 
                   DO N=1,NE
