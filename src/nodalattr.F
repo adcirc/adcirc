@@ -333,7 +333,7 @@ C------------------ For absorbing layer, DW
 C
 C.....CPB 9/2022: for computing tidal velocities in
 C                 apply2dinternalwavedrag
-      REAL(SZ), ALLOCATABLE, PRIVATE :: UT(:), VT(:)
+      !REAL(SZ), ALLOCATABLE, PRIVATE :: UT(:), VT(:)
 
 C------------------
 C     Make i,j,k private DW
@@ -2395,7 +2395,8 @@ C     ----------------------------------------------------------------
       USE GLOBAL, ONLY: CBaroclinic, CORIF, DTDP, NB, NM, IDEN,
      &                  IFSPROTS, RAMP, ADRAGU, ADRAGV, np_g
       USE MESH, ONLY: DRVMAP2DSPVEC, UVECTMP, VVECTMP, RVELF
-      USE INTERNALTIDE, ONLY: UNTIDE, UBar, VBar, MunkLPFilter
+      USE INTERNALTIDE, ONLY: UNTIDE, UBar, VBar, MunkLPFilter,
+     &                        RESYNTH_TIDES, UTide, VTide
       USE GL2LOC_MAPPING, ONLY : GATHERGLOBAL_REAL  
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
@@ -2465,9 +2466,10 @@ C              (unnecessary for IT_FricNoOfVals == 1)
          Baroc: IF (CBaroclinic.and.abs(IDEN).ge.5) THEN
 C           2DDI ADCIRC with baroclinic coupling
             if (abs(IDEN).ne.7) then
-               !CALL UNTIDE(U,V,IT)
+               CALL UNTIDE(U,V,IT)
                !CALL MunkHPFilter(U,V,IT)
-               CALL MunkLPFilter(U,V,IT)
+               !CALL MunkLPFilter(U,V,IT)
+               !CALL RESYNTH_TIDES(IT)
             endif
             IF (IT_FricNoOfVals == 5) THEN
 C           Use the "Nonlocal" Nycander (2005) type tensor wave drag
@@ -2565,9 +2567,11 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                         ! Calculate the adjustment factors based on the delayed moving mean
                         IF (ABS(U(I)).GT.1d-3.AND.
      &                      ABS(V(I)).GT.1d-3) THEN
-                           adju = UBar(I)/U(I)
-                           adjv = VBar(I)/V(I)
+                           !adju = UBar(I)/U(I)
+                           !adjv = VBar(I)/V(I)
                         ENDIF
+                        adju = 1d0
+                        adjv = 1d0
                         adjuv = 0.5d0*(adju + adjv)
                      endif
                      ! Implement the friction with possible adjustment
@@ -2580,8 +2584,8 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                         TKM(3,I) = 0d0!Fit*IT_Fric(I,2)*IT_Fric(I,3)
                         ADRAGU(I) = -(Cxx*(U(I)-UBar(I)) +
      &                                Cxy*(V(I)-VBar(I)))
-                        ADRAGV(I) = -(Cxy*(U(I)-UBar(I))
-     &                              + Cyy*(V(I)-VBar(I)))
+                        ADRAGV(I) = -(Cxy*(U(I)-UBar(I)) +
+     &                                Cyy*(V(I)-VBar(I)))
                      else
                         TKM(1:2,I) = TK(I) + adjuv*Fit*IT_Fric(I,2)
                         TKM(3,I)   = 0.0d0
@@ -2661,6 +2665,7 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
          ELSE
 C           Normal 2DDI ADCIRC without baroclinic coupling
             IF (IT_FricNoOfVals == 3) THEN
+               CALL RESYNTH_TIDES(IT)
 C              Use the "Nonlocal" Nycander (2005) or "Local" Lyard et al. (2004) 
 C              type tensor wave drag
 C              Using three columns of data for the different segments of the matrix
@@ -2668,8 +2673,10 @@ C              Using three columns of data for the different segments of the mat
                   TKM(1,I) = TK(I) !+ IT_Fric(I,1)
                   TKM(2,I) = TK(I) !+ IT_Fric(I,2)
                   TKM(3,I) = 0d0!IT_Fric(I,3) 
-                  ADRAGU(I) = -(IT_Fric(I,1)*U(I)+IT_Fric(I,3)*V(I))
-                  ADRAGV(I) = -(IT_Fric(I,3)*U(I)+IT_Fric(I,2)*V(I))
+                  ADRAGU(I) = -(IT_Fric(I,1)*UTide(I) +
+     &                          IT_Fric(I,3)*VTide(I))
+                  ADRAGV(I) = -(IT_Fric(I,3)*UTide(I) + 
+     &                          IT_Fric(I,2)*VTide(I))
                END DO
             ELSEIF (IT_FricNoOfVals == 1) THEN
 C              For the scalar type Zaron & Egbert (2006) type

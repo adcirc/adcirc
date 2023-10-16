@@ -9073,23 +9073,6 @@ C----------------------------------------------------------------------
          NT = NTkeep
       endif
 
-      ! Get the Pressure
-      !':PRMSL:mean sea level:'
-      call READNWS14(Pfile,Pinv,Pvar,Pmsl)
-
-      ! Get the U-winds
-      call READNWS14(Wfile,Winv,Uvar,U10)
-
-      ! Get the V-winds
-      call READNWS14(Wfile1,Winv,Vvar,V10)
-
-      ! Get the ice concentration if required
-      if (present(CICE2)) then
-         NTkeep = NT; NT = NTC
-         call READNWS14(Cfile,Cinv,Cvar,Cice)
-         NT = NTkeep
-      endif      
-
       ! Doing the interpolation from their grid to ours
       do i = 1,np
          if (indp(1,1,i) < 0) then
