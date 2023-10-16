@@ -8,20 +8,19 @@ C     velocities here. I plan to move more of the subroutine into this
 C     module to hopefully make it a little clearer what is happening in
 C     that subroutine.
 C---------------------------------------------------------------------C
-      USE SIZES, ONLY: SZ
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
      &          setMessageSource, unsetMessageSource, allMessage,
      &          scratchMessage, logMessage
       IMPLICIT NONE
       ! stored velocity samples for moving average calculation
-      REAL(SZ),ALLOCATABLE,PRIVATE :: UAV(:,:), VAV(:,:)        
+      REAL(8),ALLOCATABLE,PRIVATE :: UAV(:,:), VAV(:,:)        
       ! averaged velocities so we don't calculate them every single time
       ! step
-      REAL(SZ),ALLOCATABLE :: UBar(:), VBar(:), UTide(:), VTide(:)
+      REAL(8),ALLOCATABLE :: UBar(:), VBar(:), UTide(:), VTide(:)
       ! weights for filters
-      REAL(SZ),ALLOCATABLE,PRIVATE :: wts(:)
+      REAL(8),ALLOCATABLE,PRIVATE :: wts(:)
       ! values needed to resynthesize tides
-      REAL(SZ),ALLOCATABLE,PRIVATE :: UTamp(:,:), UTphs(:,:),
+      REAL(8),ALLOCATABLE,PRIVATE :: UTamp(:,:), UTphs(:,:),
      &                                VTamp(:,:), VTphs(:,:)
 C---------------------------------------------------------------------C
       CONTAINS
@@ -51,7 +50,6 @@ C---------------------------------------------------------------------C
          first_call = .FALSE.
          CALL READ_TIDESFILE()
          ALLOCATE( UTide(NP), VTide(NP) )
-         WRITE(16,*) "Successfully read tidesfile"
       ENDIF
       ! calculate time
       TimeH=TimeStep*DTDP + (StaTim - RefTim)*86400.D0
@@ -308,74 +306,6 @@ C-----------------------------------------------------------------------
       END SUBROUTINE UNTIDE
 C-----------------------------------------------------------------------
 C---------------------------------------------------------------------C
-      SUBROUTINE Eigen_neg_to_pos(a,b,c)
-C---------------------------------------------------------------------C
-C     Checks the eigenvalues of a 2x2 symmetric matrix of the form:
-C        A = | a, b |
-C            | b, c |
-C     If any of the eigenvalues are negative, this subroutine modifies
-C     the matrix to be the closest positive semi-definite matrix. If
-C     not, it returns the unmodified values of a, b, and c
-C---------------------------------------------------------------------C
-      IMPLICIT NONE
-      REAL(SZ),INTENT(INOUT) :: a, b, c
-      REAL(SZ) :: L, Etemp, S, W, P, F
-      REAL(SZ),DIMENSION(2) :: E, v, Utemp
-      REAL(SZ),DIMENSION(2,2) :: U, HC, Ediag
-      INTEGER :: m, ii
-      ! eigenvalues of a 2x2 symmetric matrix:
-      E(1) = ( 1d0/2d0 ) * ( a + c - SQRT( a**2d0 - 2d0*a*c + 
-     &                       4d0*b**2d0 + c**2d0 ) )
-      E(2) = ( 1d0/2d0 ) * ( a + c + SQRT( a**2d0 - 2d0*a*c + 
-     &                       4d0*b**2d0 + c**2d0 ) )
-      U(1,1) = - ( 1d0/( 2d0*b ) ) * ( c - a + SQRT( a**2d0 - 2d0*a*c 
-     &                                + 4d0*b**2d0 + c**2d0) )
-      U(2,1) = 1
-      U(1,2) = ( 1d0/( 2d0*b ) ) * ( a - c + SQRT( a**2d0 - 2d0*a*c 
-     &                                + 4d0*b**2d0 + c**2d0) )
-      U(2,2) = 1
-      ! normalize eigenvectors
-      L = sqrt(U(1,1)**2+U(2,1)**2)
-      U(1,1) = U(1,1)/L
-      U(2,1) = U(2,1)/L
-      L = sqrt(U(1,2)**2+U(2,2)**2)
-      U(1,2) = U(1,2)/L
-      U(2,2) = U(2,2)/L
-      ! sort eigenvalues from smallest to greatest
-      IF ( E(2).LT.E(1) ) THEN
-         Etemp = E(2)
-         E(2) = E(1)
-         E(1) = Etemp
-         Utemp = U(:,2)
-         U(:,2) = U(:,1)
-         U(:,1) = Utemp
-      ENDIF
-      m = COUNT(E.LT.0d0)
-      IF (m.GT.0) THEN
-         ! find sum of negative eigenvalues
-         S = 0d0
-         DO ii = 1,m
-            S = S + E(ii)
-         ENDDO
-         W = (S*S*100) + 1
-         P = ABS(E(m))
-         DO ii = 1,m
-            F = E(ii)
-            E(ii) = P*(S-F)*(S-F)/W
-         ENDDO
-         ! make diagonal matrix of new eigenvalues
-         DO ii = 1,2
-            Ediag(ii,ii) = E(ii)
-         ENDDO
-         HC = MATMUL(U,MATMUL(Ediag,TRANSPOSE(U)))
-         a = HC(1,1)
-         b = HC(1,2)
-         c = HC(2,2)
-      ENDIF   
-C---------------------------------------------------------------------C
-      END SUBROUTINE Eigen_neg_to_pos
-C---------------------------------------------------------------------C
-C---------------------------------------------------------------------C
       SUBROUTINE MunkHPFilter(U_i,V_i,TimeStep)
 C---------------------------------------------------------------------C
 C     This subroutine applies a high-pass filter derived from the
@@ -404,10 +334,10 @@ C---------------------------------------------------------------------C
       USE MESH, ONLY : NP
       USE GLOBAL, ONLY: DTDP
       IMPLICIT NONE
-      REAL(SZ),INTENT(IN),DIMENSION(:) :: U_i, V_i ! current velocity
+      REAL(8),INTENT(IN),DIMENSION(:) :: U_i, V_i ! current velocity
       INTEGER,INTENT(IN) :: TimeStep    ! current time step
-      REAL(SZ) :: filtL = 49d0*3600d0        ! filter length (s)
-      REAL(SZ) :: T = 60d0*60d0             ! sampling interval (s)
+      REAL(8) :: filtL = 49d0*3600d0        ! filter length (s)
+      REAL(8) :: T = 60d0*60d0             ! sampling interval (s)
       INTEGER,SAVE :: NS = 1   ! number of samples
       LOGICAL,SAVE :: first_call = .TRUE.
       ! need indices to check if the current and previous time step are
@@ -436,10 +366,8 @@ C---------------------------------------------------------------------C
          ! check if we are >= 49 hours into the run
          IF ( ISTA.GT.NS ) THEN
             DO ii = 1,NP
-               DO kk = 1,NS-1
-                  UAV(ii,kk) = UAV(ii,kk+1)
-                  VAV(ii,kk) = VAV(ii,kk+1)
-               ENDDO
+               UAV(ii,1:NS-1) = UAV(ii,2:NS)
+               VAV(ii,1:NS-1) = VAV(ii,2:NS)
                UAV(ii,NS) = U_i(ii)
                VAV(ii,NS) = V_i(ii)
             ENDDO
@@ -483,10 +411,10 @@ C---------------------------------------------------------------------C
       USE GLOBAL, ONLY: DTDP, np_g
       USE GL2LOC_MAPPING, ONLY : GATHERGLOBAL_REAL  
       IMPLICIT NONE
-      REAL(SZ),INTENT(IN),DIMENSION(:) :: U_i, V_i ! current velocity
+      REAL(8),INTENT(IN),DIMENSION(:) :: U_i, V_i ! current velocity
       INTEGER,INTENT(IN) :: TimeStep    ! current time step
-      REAL(SZ) :: filtL = 49d0*3600d0        ! filter length (s)
-      REAL(SZ) :: T = 60d0*60d0             ! sampling interval (s)
+      REAL(8) :: filtL = 49d0*3600d0        ! filter length (s)
+      REAL(8) :: T = 60d0*60d0             ! sampling interval (s)
       INTEGER,SAVE :: NS = 1   ! number of samples
       LOGICAL,SAVE :: first_call = .TRUE.
       ! need indices to check if the current and previous time step are
@@ -554,9 +482,9 @@ C     low-pass filter.
 C---------------------------------------------------------------------C
       USE SIZES, ONLY : MYPROC
       IMPLICIT NONE
-      REAL(SZ),DIMENSION(25) :: LPwts   ! original weights (one sided)
+      REAL(8),DIMENSION(25) :: LPwts   ! original weights (one sided)
       INTEGER :: NS = 49                ! length of HP filter needed
-      REAL(SZ) :: K                     ! for normalizing the LP filter
+      REAL(8) :: K                     ! for normalizing the LP filter
       INTEGER :: ii                     ! for loops
       !
       ! allocate weights
@@ -595,9 +523,9 @@ C     high-pass filter derived from the so-called Munk "Tide Killer"
 C     low-pass filter. 
 C---------------------------------------------------------------------C
       IMPLICIT NONE
-      REAL(SZ),DIMENSION(25) :: LPwts   ! original weights (one sided)
+      REAL(8),DIMENSION(25) :: LPwts   ! original weights (one sided)
       INTEGER :: NS = 49                ! length of HP filter needed
-      REAL(SZ) :: K                     ! for normalizing the LP filter
+      REAL(8) :: K                     ! for normalizing the LP filter
       INTEGER :: ii                     ! for loops
       !
       ! allocate weights

@@ -20,7 +20,7 @@ orbs:
 #...Aliases used to shorthand this job script
 default_env: &default_env
     docker:
-      - image: zcobell/adcirc_ci_development:latest
+      - image: zcobell/adcirc-ci-container:latest
     environment:
       BASH_ENV: /etc/environment
 
@@ -28,6 +28,13 @@ default_testenv: &default_testenv
      run:
        name: Retrieve Test Suite
        command: git clone --depth=1 -b v56 https://github.com/adcirc/adcirc-cg-testsuite.git /root/adcirc-cg-testsuite
+
+cache_key_build_base: &cache_key_build_base
+      key: adcirc-build-base-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
+
+get_cache_build_base: &get_cache_build_base
+        restore_cache:
+            <<: *cache_key_build_base
 
 cache_key_base: &cache_key_base
       key: adcirc-base-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
@@ -50,9 +57,6 @@ get_cache_grib2: &get_cache_grib2
      restore_cache:
          <<: *cache_key_grib2
 
-upload_coverage: &upload_coverage
-    codecov/upload
-
 #...List of jobs in the workflow
 jobs:
   build_legacy_without_netcdf:
@@ -65,6 +69,7 @@ jobs:
         - run: 
             name: Build ADCIRC without external libraries using legacy makefile
             command: cd work ; make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan
+
   build_legacy_with_netcdf:
       <<: *default_env
       steps:
@@ -75,6 +80,7 @@ jobs:
         - run: 
             name: Build ADCIRC with netCDF using legacy makefile
             command: cd work ; make compiler=circleci NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=$NETCDF_FORTRAN_HOME HDF5HOME=$HDF5HOME NETCDF_C_HOME=$NETCDFHOME adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan
+
   build_legacy_with_netcdf_and_xdmf:
       <<: *default_env
       steps:
@@ -85,11 +91,22 @@ jobs:
         - run: 
             name: Build ADCIRC with netCDF and XDMF using legacy makefile
             command: cd work ; make compiler=circleci NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=$NETCDF_FORTRAN_HOME HDF5HOME=$HDF5HOME NETCDF_C_HOME=$NETCDFHOME XDMF=enable XDMFHOME=/opt/xdmf adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan 
-  build_cmake_without_netcdf:
+
+  build_base:
       <<: *default_env
       steps:
         - checkout
         - *default_testenv
+        - save_cache:
+            <<: *cache_key_build_base
+            paths:
+                - /root/project
+                - /root/adcirc-cg-testsuite
+
+  build_cmake_without_netcdf:
+      <<: *default_env
+      steps:
+        - *get_cache_build_base
         - run: 
             name: Build ADCIRC without external libraries using CMake
             command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise"; make -j4
@@ -98,11 +115,11 @@ jobs:
             paths: 
                 - /root/project
                 - /root/adcirc-cg-testsuite
+
   build_cmake_with_netcdf:
       <<: *default_env
       steps:
-        - checkout
-        - *default_testenv
+        - *get_cache_build_base
         - run: 
             name: Build ADCIRC with netCDF using CMake
             command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME; make -j4
@@ -111,18 +128,19 @@ jobs:
             paths: 
                 - /root/project
                 - /root/adcirc-cg-testsuite
+
   build_cmake_with_netcdf_and_xdmf:
       <<: *default_env
       steps:
-        - checkout
+        - *get_cache_build_base
         - run: 
             name: Build ADCIRC with netCDF and XDMF using CMake
-            command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME -DXDMFHOME=$XDMFHOME; make -j4
+            command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME -DXDMFHOME=$XDMFHOME -DHDF5_ROOT=$HDF5HOME; make -j4
+
   build_cmake_with_netcdf_and_xdmf_grib:
       <<: *default_env
       steps:
-        - checkout
-        - *default_testenv
+        - *get_cache_build_base
         - run: 
             name: Build ADCIRC with Grib, netCDF, and XDMF using CMake
             command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DBUILD_UTILITIES=ON -DENABLE_DATETIME=ON -DENABLE_GRIB2=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME -DXDMFHOME=$XDMFHOME; make -j4
@@ -131,6 +149,7 @@ jobs:
             paths: 
                 - /root/project
                 - /root/adcirc-cg-testsuite
+
   test_base:
       <<: *default_env
       parameters:
@@ -198,13 +217,22 @@ workflows:
   version: 2.1
   build_and_test:
     jobs:
-      - build_cmake_with_netcdf_and_xdmf
-      - build_cmake_without_netcdf
-      - build_cmake_with_netcdf
       - build_legacy_without_netcdf
       - build_legacy_with_netcdf
       - build_legacy_with_netcdf_and_xdmf
-      - build_cmake_with_netcdf_and_xdmf_grib
+      - build_base
+      - build_cmake_with_netcdf_and_xdmf:
+            requires:
+              - build_base
+      - build_cmake_without_netcdf:
+            requires:
+              - build_base
+      - build_cmake_with_netcdf:
+            requires:
+              - build_base
+      - build_cmake_with_netcdf_and_xdmf_grib:
+            requires:
+              - build_base
       - test_base:
             requires: 
                 - build_cmake_without_netcdf
@@ -257,6 +285,8 @@ workflows:
                         - adcirc_shinnecock_inlet
                         - adcirc_shinnecock_inlet-parallel
                         - adcirc_timevaryingweirs-parallel
+                        - adcirc_baroclinic_2d_serial
+                        - adcirc_baroclinic_2d_parallel
                         
 
 

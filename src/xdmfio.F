@@ -8,7 +8,6 @@ C     write output module.
 C----------------------------------------------------------------------
       module xdmfio
 C----------------------------------------------------------------------
-      use sizes, only : sz
       logical :: release = .true.  ! .true. to release memory after writing data to HDF5
       logical :: writeToHDF5 = .true. ! .true. if XdmfAddGrid should immediately write mesh
       integer :: lightDataLimit = 10 ! max values to save as light data (xml)
@@ -1151,8 +1150,8 @@ C-----------------------------------------------------------------------
       implicit none
       include 'adcirc_Xdmf.f'
       integer, intent(in) :: nsta
-      real(sz), intent(in) :: stax(:)
-      real(sz), intent(in) :: stay(:)
+      real(8), intent(in) :: stax(:)
+      real(8), intent(in) :: stay(:)
       character(len=80), intent(in) :: stationType
       integer*8, intent(in) :: xdmfFortranObj ! XDMF object to receive data
       integer :: informationID ! information index, used as ID to insert array

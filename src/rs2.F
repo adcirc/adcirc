@@ -33,13 +33,13 @@ C
       integer,save,allocatable,dimension(:) :: endoffile
 
       integer,allocatable,dimension(:,:,:) :: rsij
-      real(sz),allocatable,dimension(:,:,:) :: rscnf
+      real(8),allocatable,dimension(:,:,:) :: rscnf
 
-      real(sz),allocatable,dimension(:) :: dxincs,dyincs
-      real(sz),allocatable,dimension(:) :: x0s,y0s,azimuths
+      real(8),allocatable,dimension(:) :: dxincs,dyincs
+      real(8),allocatable,dimension(:) :: x0s,y0s,azimuths
 
       integer :: numSets,numBlankSnaps,cntSnaps,numSkipSnaps
-      real(SZ) :: windMultiplier
+      real(8) :: windMultiplier
 
 
       PUBLIC
@@ -58,7 +58,7 @@ C***********************************************************************
       use sizes
       implicit none
       integer,intent(in) :: np
-      real(sz),intent(out) :: rsnx(:),rsny(:)
+      real(8),intent(out) :: rsnx(:),rsny(:)
 
       if(myproc.eq.0) then
         write(screenunit,*)
@@ -109,21 +109,21 @@ c$$$      use sizes
 c$$$      use global,only : slam,sfea,rad2deg
 c$$$      implicit none
 c$$$      integer,intent(in) :: np
-c$$$      real(sz),intent(out) :: rsnx(:),rsny(:)
+c$$$      real(8),intent(out) :: rsnx(:),rsny(:)
 c$$$      integer ::  c,i,j,k,n,p,s,ni,nj
-c$$$      real(sz) :: lon,lat
-c$$$      real(sz) :: dxinc,dyinc
-c$$$      real(sz) :: stwlon1,stwlat1,stwlon2,stwlat2
-c$$$      real(sz) :: stwlon3,stwlat3,stwlon4,stwlat4
-c$$$      real(sz) :: x1,y1,x2,y2,x3,y3
-c$$$      real(sz) :: subarea1,subarea2,subarea3,subarea4,totalarea
-c$$$      real(sz),dimension(:,:,:), allocatable :: stwlonlat
-c$$$      real(sz) :: stwlonmin,stwlonmax,stwlatmin,stwlatmax
+c$$$      real(8) :: lon,lat
+c$$$      real(8) :: dxinc,dyinc
+c$$$      real(8) :: stwlon1,stwlat1,stwlon2,stwlat2
+c$$$      real(8) :: stwlon3,stwlat3,stwlon4,stwlat4
+c$$$      real(8) :: x1,y1,x2,y2,x3,y3
+c$$$      real(8) :: subarea1,subarea2,subarea3,subarea4,totalarea
+c$$$      real(8),dimension(:,:,:), allocatable :: stwlonlat
+c$$$      real(8) :: stwlonmin,stwlonmax,stwlatmin,stwlatmax
 c$$$      integer,parameter :: nSearchBins = 50
 c$$$      integer,allocatable :: nCellsInSearchBins(:)
 c$$$      integer,allocatable :: searchBins(:,:,:)
-c$$$      real(sz),allocatable :: searchBinPartitions(:)
-c$$$      real(sz) :: p1,p2,cmax,cmin,tol
+c$$$      real(8),allocatable :: searchBinPartitions(:)
+c$$$      real(8) :: p1,p2,cmax,cmin,tol
 c$$$
 c$$$
 c$$$      write(*,'(a)') 'RS2INIT_TYPE1: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
@@ -410,21 +410,21 @@ C***********************************************************************
       use mesh, only : slam, sfea
       implicit none
       integer,intent(in) :: np
-      real(sz),intent(out) :: rsnx(:),rsny(:)
+      real(8),intent(out) :: rsnx(:),rsny(:)
       integer ::  c,i,j,k,n,p,s,ni,nj
-      real(sz) :: lon,lat
-      real(sz) :: dxinc,dyinc
-      real(sz) :: stwlon1,stwlat1,stwlon2,stwlat2
-      real(sz) :: stwlon3,stwlat3,stwlon4,stwlat4
-      real(sz) :: x1,y1,x2,y2,x3,y3
-      real(sz) :: subarea1,subarea2,subarea3,subarea4,totalarea
-      real(sz),dimension(:,:,:), allocatable :: stwlonlat
-      real(sz) :: stwlonmin,stwlonmax,stwlatmin,stwlatmax
+      real(8) :: lon,lat
+      real(8) :: dxinc,dyinc
+      real(8) :: stwlon1,stwlat1,stwlon2,stwlat2
+      real(8) :: stwlon3,stwlat3,stwlon4,stwlat4
+      real(8) :: x1,y1,x2,y2,x3,y3
+      real(8) :: subarea1,subarea2,subarea3,subarea4,totalarea
+      real(8),dimension(:,:,:), allocatable :: stwlonlat
+      real(8) :: stwlonmin,stwlonmax,stwlatmin,stwlatmax
       integer,parameter :: nSearchBins = 50
       integer,allocatable :: nCellsInSearchBins(:)
       integer,allocatable :: searchBins(:,:,:)
-      real(sz),allocatable :: searchBinPartitions(:)
-      real(sz) :: p1,p2,cmax,cmin,tol
+      real(8),allocatable :: searchBinPartitions(:)
+      real(8) :: p1,p2,cmax,cmin,tol
 
 
       read(23,*,err=99999) ns    !number of stwave grid files
@@ -754,7 +754,7 @@ C***********************************************************************
       implicit none
 
       integer,intent(in) :: np
-      real(sz),intent(out) :: rsnx(:),rsny(:)
+      real(8),intent(out) :: rsnx(:),rsny(:)
 
       if(type.eq.1) then
         write(*,'(a)') 'RS2GET: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
@@ -782,13 +782,13 @@ c$$$      use messenger, only: msg_fini, msg_ibcast, msg_cbcast, msg_rbcast
 c$$$#endif 
 c$$$      implicit none
 c$$$      integer,intent(in) :: np
-c$$$      real(sz),intent(out) :: rsnx(:),rsny(:)
+c$$$      real(8),intent(out) :: rsnx(:),rsny(:)
 c$$$      integer :: i,j,k,s,n,ni,nj,fid,ios(1)
 c$$$      integer :: isActive(1)
 c$$$      character(100) dummyc, spectrum_id(1)
-c$$$      real(sz), dimension(:,:,:), allocatable :: rsxy
-c$$$      real(sz) :: rsx,rsy,rsx1,rsx2,rsx3,rsy1,rsy2,rsy3,cnf1,cnf2,cnf3
-c$$$      real(sz) :: angle_st,pi
+c$$$      real(8), dimension(:,:,:), allocatable :: rsxy
+c$$$      real(8) :: rsx,rsy,rsx1,rsx2,rsx3,rsy1,rsy2,rsy3,cnf1,cnf2,cnf3
+c$$$      real(8) :: angle_st,pi
 c$$$
 c$$$      write(*,'(a)') 'RS2GET_TYPE1: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
 c$$$      CALL EXIT(1)
@@ -971,13 +971,13 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
       implicit none
 
       integer,intent(in) :: np
-      real(sz),intent(out) :: rsnx(:),rsny(:)
+      real(8),intent(out) :: rsnx(:),rsny(:)
       integer :: i,j,k,s,n,ni,nj,fid,ios(1)
       integer :: isActive(1)
       character(100) dummyc, spectrum_id(1)
-      real(sz), dimension(:,:,:), allocatable :: rsxy
-      real(sz) :: rsx,rsy,rsx1,rsx2,rsx3,rsy1,rsy2,rsy3,cnf1,cnf2,cnf3
-      real(sz) :: angle_st,pi
+      real(8), dimension(:,:,:), allocatable :: rsxy
+      real(8) :: rsx,rsy,rsx1,rsx2,rsx3,rsy1,rsy2,rsy3,cnf1,cnf2,cnf3
+      real(8) :: angle_st,pi
 
       if(myproc.eq.0) then
         write(screenunit,*)

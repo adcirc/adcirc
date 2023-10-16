@@ -22,14 +22,13 @@ C                                                                      *
 C***********************************************************************
 
       SUBROUTINE TIMECONV(IYR,IMO,IDAY,IHR,IMIN,SEC,TIMESEC)
-      USE PRESIZES, ONLY : SZ
       IMPLICIT NONE
       REAL(8) TIMESEC
 C     jgf46.00 Explicitly declared the following variables
       INTEGER IDAY
       INTEGER IHR
       INTEGER IMIN
-      REAL(SZ) SEC
+      REAL(8) SEC
       INTEGER IMO
       INTEGER ILEAP
       INTEGER IYR
@@ -83,7 +82,7 @@ C
 C      DIMENSION X(*),Y(*),SLAM(*),SFEA(*),WVNX(*),WVNY(*) !jgf46.00 comm. out
       DIMENSION WVNX(*),WVNY(*)
 C RAWMET
-      REAL(SZ),ALLOCATABLE :: WVXFN(:,:),WVYFN(:,:),PRN(:,:)
+      REAL(8),ALLOCATABLE :: WVXFN(:,:),WVYFN(:,:),PRN(:,:)
 C     jgf46.00 Explicitly declared the following variables
       INTEGER IWTIME
       INTEGER IWYR
@@ -100,8 +99,8 @@ C     jgf46.00 Explicitly declared the following variables
       INTEGER LATIND2
       INTEGER LONIND1
       INTEGER LONIND2
-      REAL(SZ) WSPEED
-      REAL(SZ) WDIR
+      REAL(8) WSPEED
+      REAL(8) WDIR
       REAL(8) YCOOR
       REAL(8) XCOOR
       REAL(8), DIMENSION(NP) :: SFEA
@@ -211,7 +210,7 @@ cjjw - re-ordered the subroutine call
       IMPLICIT NONE
       INTEGER NP, I, NHG
 cjjw - fixed info here by adding rhowatg
-      REAL(SZ) WVNX(*),WVNY(*),PRN(*),RHOWAT,RHOWATG
+      REAL(8) WVNX(*),WVNY(*),PRN(*),RHOWAT,RHOWATG
       REAL(8) G
       CHARACTER*80 PBLJAGF
       LOGICAL DONE
@@ -291,8 +290,8 @@ C
       IMPLICIT NONE
       INTEGER,ALLOCATABLE :: N00(:),N10(:),N11(:),N01(:)
       REAL(8),ALLOCATABLE :: D00(:),D10(:),D11(:),D01(:) !jgf45.07 distances?
-      REAL(SZ),ALLOCATABLE :: UG(:),VG(:),PG(:)
-      REAL(SZ),ALLOCATABLE :: COLRAB(:),DUMMY(:),GCLAT(:),GCLON(:)
+      REAL(8),ALLOCATABLE :: UG(:),VG(:),PG(:)
+      REAL(8),ALLOCATABLE :: COLRAB(:),DUMMY(:),GCLAT(:),GCLON(:)
 C      DIMENSION FLAT(*),FLON(*)      !jgf46.00 comm. out
 C      DIMENSION ULL(*),VLL(*),PLL(*) !jgf46.00 comm. out
       INTEGER KGDS(200)
@@ -308,11 +307,11 @@ Cvjp  Modified Logic to return if file not found
 C
       LOGICAL FOUND
 C     jgf46.00 Explicitly declared the following variables:
-      REAL(SZ), DIMENSION(*) :: PLL
-      REAL(SZ), DIMENSION(*) :: ULL
-      REAL(SZ), DIMENSION(*) :: VLL
-      REAL(SZ) RHOWAT
-      REAL(SZ) G
+      REAL(8), DIMENSION(*) :: PLL
+      REAL(8), DIMENSION(*) :: ULL
+      REAL(8), DIMENSION(*) :: VLL
+      REAL(8) RHOWAT
+      REAL(8) G
       INTEGER NWSGGWI
       INTEGER J
       INTEGER JJ
@@ -328,24 +327,24 @@ C     jgf46.00 Explicitly declared the following variables:
       INTEGER LENKGDS
       INTEGER NWORDS
       INTEGER N
-      REAL(SZ) GDLON
+      REAL(8) GDLON
       REAL(8), PARAMETER  ::  PI=3.141592653589793D0 !jgf46.00 was implicit??
       REAL(8), PARAMETER  ::  TWOPI=2.0D0*PI         !jgf46.00 was implicit??
-      REAL(SZ), DIMENSION(*) :: FLAT
-      REAL(SZ), DIMENSION(*) :: FLON
-      REAL(SZ) P1
-      REAL(SZ) P2
-      REAL(SZ) P3
-      REAL(SZ) P4
-      REAL(SZ) U1
-      REAL(SZ) U2
-      REAL(SZ) U3
-      REAL(SZ) U4
-      REAL(SZ) V1
-      REAL(SZ) V2
-      REAL(SZ) V3
-      REAL(SZ) V4
-      REAL(SZ) RHOWATG
+      REAL(8), DIMENSION(*) :: FLAT
+      REAL(8), DIMENSION(*) :: FLON
+      REAL(8) P1
+      REAL(8) P2
+      REAL(8) P3
+      REAL(8) P4
+      REAL(8) U1
+      REAL(8) U2
+      REAL(8) U3
+      REAL(8) U4
+      REAL(8) V1
+      REAL(8) V2
+      REAL(8) V3
+      REAL(8) V4
+      REAL(8) RHOWATG
 C
       RHOWATG=RHOWAT*G !jgf46.00 this implicitly declared and not initialized??
 C
@@ -467,28 +466,27 @@ C***********************************************************************
 CCCC      %INCLUDE DBGLATS ;
 CCCC  HALF PRECISION COLRAD,WGT,WGTCS,RCS2
 C     DOUBLE PRECISION COLRAD,WGT,WGTCS,RCS2
-      USE PRESIZES, ONLY : SZ
       IMPLICIT NONE
 
 C      DIMENSION COLRAD(*),WGT(*),WGTCS(*),RCS2(*) !jgf46.00 comm. out
 C     jgf46.00 Explicitly declare the following variables.
-      REAL(SZ) EPS
-      REAL(SZ) SI
-      REAL(SZ) RL2
-      REAL(SZ) SCALEVAL
-      REAL(SZ) RAD
-      REAL(SZ) PHI
-      REAL(SZ) P1
-      REAL(SZ) P2
-      REAL(SZ) SN
-      REAL(SZ) RC
+      REAL(8) EPS
+      REAL(8) SI
+      REAL(8) RL2
+      REAL(8) SCALEVAL
+      REAL(8) RAD
+      REAL(8) PHI
+      REAL(8) P1
+      REAL(8) P2
+      REAL(8) SN
+      REAL(8) RC
       REAL(8) PI
       REAL(8) DRAD
       REAL(8) DRADZ
       REAL(8) X
       REAL(8) W
-      REAL(SZ), DIMENSION(*) :: RCS2
-      REAL(SZ), DIMENSION(*) :: COLRAD
+      REAL(8), DIMENSION(*) :: RCS2
+      REAL(8), DIMENSION(*) :: COLRAD
       REAL(8), DIMENSION(*) :: WGT
       REAL(8), DIMENSION(*) :: WGTCS
       INTEGER K1
@@ -593,7 +591,6 @@ C***********************************************************************
 
       SUBROUTINE G2RINI(GCLON,GCLAT,FLON,FLAT,N00,N10,N11,N01,D00,D10,
      &                                          D11,D01,NP,LONB,LATB)
-      USE PRESIZES, ONLY : SZ
       IMPLICIT NONE
 C     jgf46.00 commented next three lines out
 C      DIMENSION GCLAT(*),GCLON(*)
@@ -603,14 +600,14 @@ C      DIMENSION N00(*),N10(*),N11(*),N01(*),D00(*),D10(*),D11(*),D01(*)
       INTEGER, SAVE :: ICALL
       DATA ICALL/0/
 C     jgf46.00 Explicitly declared the following variables.
-      REAL(SZ), DIMENSION(*) :: GCLAT
-      REAL(SZ), DIMENSION(*) :: GCLON
-      REAL(SZ), DIMENSION(*) :: FLAT
-      REAL(SZ), DIMENSION(*) :: FLON
-      REAL(SZ), DIMENSION(*) :: D00
-      REAL(SZ), DIMENSION(*) :: D10
-      REAL(SZ), DIMENSION(*) :: D11
-      REAL(SZ), DIMENSION(*) :: D01
+      REAL(8), DIMENSION(*) :: GCLAT
+      REAL(8), DIMENSION(*) :: GCLON
+      REAL(8), DIMENSION(*) :: FLAT
+      REAL(8), DIMENSION(*) :: FLON
+      REAL(8), DIMENSION(*) :: D00
+      REAL(8), DIMENSION(*) :: D10
+      REAL(8), DIMENSION(*) :: D11
+      REAL(8), DIMENSION(*) :: D01
       INTEGER, DIMENSION(*) :: N00
       INTEGER, DIMENSION(*) :: N10
       INTEGER, DIMENSION(*) :: N11
@@ -626,18 +623,18 @@ C     jgf46.00 Explicitly declared the following variables.
       INTEGER LONP1
       INTEGER LAT
       INTEGER LATP1
-      REAL(SZ) DLAT
-      REAL(SZ) DLON
-      REAL(SZ) FLONWORK
-      REAL(SZ) COLAT
-      REAL(SZ) DDLAT
-      REAL(SZ) XLAT
-      REAL(SZ) DFLAT1
-      REAL(SZ) DFLAT
-      REAL(SZ) DDLON
-      REAL(SZ) XLON
-      REAL(SZ) DFLON
-      REAL(SZ) DFLON1
+      REAL(8) DLAT
+      REAL(8) DLON
+      REAL(8) FLONWORK
+      REAL(8) COLAT
+      REAL(8) DDLAT
+      REAL(8) XLAT
+      REAL(8) DFLAT1
+      REAL(8) DFLAT
+      REAL(8) DDLON
+      REAL(8) XLON
+      REAL(8) DFLON
+      REAL(8) DFLON1
       REAL(8) PI
       REAL(8) HFPI
       REAL(8) TWOPI
@@ -782,8 +779,8 @@ C
       IMPLICIT NONE
       INTEGER NWLON,NWLAT,I,N
       INTEGER,ALLOCATABLE :: N1(:),N2(:),N3(:)
-      REAL(SZ),ALLOCATABLE    :: D1(:),D2(:),D3(:),BETAU(:)
-      REAL(SZ),ALLOCATABLE    :: UE(:),VE(:),PE(:)
+      REAL(8),ALLOCATABLE    :: D1(:),D2(:),D3(:),BETAU(:)
+      REAL(8),ALLOCATABLE    :: UE(:),VE(:),PE(:)
 C      DIMENSION FLAT(*),FLON(*)      !jgf46.00 commented out
 C      DIMENSION ULL(*),VLL(*),PLL(*) !jgf46.00 commented out
       CHARACTER*1 FNAME2(8)
@@ -791,23 +788,23 @@ C      DIMENSION ULL(*),VLL(*),PLL(*) !jgf46.00 commented out
       EQUIVALENCE (FNAME1,FNAME2)
       LOGICAL FOUND
 C     jgf46.00 Explicitly declared the following variables.
-      REAL(SZ), DIMENSION(*) :: FLAT
-      REAL(SZ), DIMENSION(*) :: FLON
-      REAL(SZ), DIMENSION(*) :: ULL
-      REAL(SZ), DIMENSION(*) :: VLL
-      REAL(SZ), DIMENSION(*) :: PLL
+      REAL(8), DIMENSION(*) :: FLAT
+      REAL(8), DIMENSION(*) :: FLON
+      REAL(8), DIMENSION(*) :: ULL
+      REAL(8), DIMENSION(*) :: VLL
+      REAL(8), DIMENSION(*) :: PLL
       REAL(8) PI
       REAL(8) HFPI
       REAL(8) TWOPI
       REAL(8) DEG2RAD
-      REAL(SZ) RHOWATG100
-      REAL(SZ) RHOWAT
-      REAL(SZ) G
+      REAL(8) RHOWATG100
+      REAL(8) RHOWAT
+      REAL(8) G
       INTEGER NWSEGWI
       INTEGER IDSETFLG
       INTEGER NP
-      REAL(SZ) FLONDEG
-      REAL(SZ) FLATDEG
+      REAL(8) FLONDEG
+      REAL(8) FLATDEG
       INTEGER IEXT
       INTEGER IDIG1
       INTEGER IDIG2
@@ -817,20 +814,20 @@ C     jgf46.00 Explicitly declared the following variables.
       INTEGER IMONTH
       INTEGER IDAY
       INTEGER IHOUR
-      REAL(SZ) P1
-      REAL(SZ) P2
-      REAL(SZ) P3
-      REAL(SZ) U1
-      REAL(SZ) U2
-      REAL(SZ) U3
-      REAL(SZ) DFLON1
-      REAL(SZ) V1
-      REAL(SZ) V2
-      REAL(SZ) V3
-      REAL(SZ) UE29
-      REAL(SZ) VE29
-      REAL(SZ) CBETAU
-      REAL(SZ) SBETAU
+      REAL(8) P1
+      REAL(8) P2
+      REAL(8) P3
+      REAL(8) U1
+      REAL(8) U2
+      REAL(8) U3
+      REAL(8) DFLON1
+      REAL(8) V1
+      REAL(8) V2
+      REAL(8) V3
+      REAL(8) UE29
+      REAL(8) VE29
+      REAL(8) CBETAU
+      REAL(8) SBETAU
 C
 C  INTERP11
       ALLOCATE ( N1(MNWP),N2(MNWP),N3(MNWP) )
@@ -947,7 +944,6 @@ C                    Written by R.L.       1/12/98                     *
 C***********************************************************************
 
       subroutine e29search(node,FLON,FLAT,NN1,NN2,NN3,DD1,DD2,DD3,betau)
-      use presizes, only : sz
       implicit none
       real(8) lamda0,phi0,rphi0,cphi0,sphi0,tphi0,dlamda,dphi,rdlamda,
      &       rdphi,rflat,tflat,sflat,cflat,a,rlamar,cphiicrlamda,phiarg,
@@ -956,7 +952,7 @@ C***********************************************************************
       real(8) phi,phia,phib,phic,phid,phie,phig
 C     jgf46.00 Explicitly declared the following variables.
       integer node, nn1, nn2, nn3
-      real(sz) betau, dd1, dd2, dd3, flat, flon, ri
+      real(8) betau, dd1, dd2, dd3, flat, flon, ri
       real(8) X1, X2, X3, X4, Y1, Y2, Y3, Y4
       real(8) AEMIN, AREAS, A1, A2, A3, AA, AE
       integer icode, nwlon, nwlat, i, j
@@ -1407,14 +1403,13 @@ C                    Written by R.L.       1/11/98                     *
 C***********************************************************************
 
       subroutine e29calc(i,j,lamda,phi,n)
-      use presizes, only : sz
       implicit none
       real(8) lamda0,phi0,rphi0,cphi0,sphi0,tphi0,dlamda,dphi,rdlamda,
      &       rdphi,a,rlamar,phiarg,rlamda,dgtora
       real(8) lamda,phi
 C     jgf46.00 Explicitly declared the following variables
       integer nwlon, nwlat, jm2, im2, j, i1, i, i2, n, i1p1, i1m1, j1
-      real(sz) phii, dlon, dlat, dlnt, arg, betau1
+      real(8) phii, dlon, dlat, dlnt, arg, betau1
       intrinsic :: mod, sin, cos, sqrt, asin
 
       nwlon=181
@@ -1470,14 +1465,13 @@ C                    Written by R.L.       1/12/98                     *
 C***********************************************************************
 
       subroutine betaucalc(i1,j1,dd1,i2,j2,dd2,i3,j3,dd3,betau)
-      use presizes, only : sz
       implicit none
       real(8) lamda,lamdap1,lamdam1,phi,phip1,phim1
 C     jgf46.00 Explicitly declared the following variables
       integer i1, i1p1, i1m1, n, i2, i2p1, i2m1, j2, i3, i3p1
       integer i3m1, j3, j1
-      real(sz) dgtora, dlon, dlat, dlnt, arg, betau1, betau2, betau3
-      real(sz) betau, dd1, dd2, dd3
+      real(8) dgtora, dlon, dlat, dlnt, arg, betau1, betau2, betau3
+      real(8) betau, dd1, dd2, dd3
       intrinsic :: asin
 
 

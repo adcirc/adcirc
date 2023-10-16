@@ -4,7 +4,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
-      USE SIZES,  ONLY: SZ, MNEI
+      USE SIZES,  ONLY: MNEI
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
      &          setMessageSource, unsetMessageSource, allMessage,
      &          scratchMessage, logMessage, NB, NM, MLD, SigTS,
@@ -32,25 +32,25 @@ C-----------------------------------------------------------------------
       CHARACTER(LEN=100) :: densityFileName ! Name of the BC3D NETCDF file (fort.11.nc by default)
       INTEGER  :: NX, NY, NYc, NYs, NXc, NYY, NYYY, NXo, NT, SL ! dimensions of 3D BC model required
       INTEGER  :: XI, YI, XIc, YIc, YIs  ! the 'start' locations in the NETCDF file
-      REAL(SZ) :: BC3D_DT    ! Delta T for the 3D Baroclinic inputs
+      REAL(8) :: BC3D_DT    ! Delta T for the 3D Baroclinic inputs
       INTEGER  :: BC3D_IT    ! 3D BC temporal iteration number 
       INTEGER  :: NP11       ! Number of nodes when reading from fort.11
       INTEGER  :: densityTimeIterator  ! BC3D time step iteraton skipper (usually 1)
-      real(sz),allocatable,dimension(:) :: BC3D_Lon, BC3D_Lat, BXE, BYE,
+      real(8),allocatable,dimension(:) :: BC3D_Lon, BC3D_Lat, BXE, BYE,
      &                         DXE, DYE, BC3D_Lats, BC3D_Lonc, BC3D_Latc
-      real(sz),allocatable,dimension(:,:) :: BC3D_NM, BC3D_NB, BC3D_BX,
+      real(8),allocatable,dimension(:,:) :: BC3D_NM, BC3D_NB, BC3D_BX,
      &          BC3D_SigTS, BC3D_BY, BC3D_MLD, BC3D_CD, BC3D_DX, BC3D_DY
       logical,allocatable,dimension(:,:) :: NSkip
-      real(sz),parameter :: LatUL = 89d9, DFV = 1d0 
+      real(8),parameter :: LatUL = 89d9, DFV = 1d0 
 #ifdef DATETIME
       type(datetime),private :: CurDT
 #endif
 !     Variables for temporal integration
-      real(sz) :: DTIME1, DTIME2 
-      real(sz),allocatable,dimension(:,:) :: VIDBCPDXOH_F, VIDBCPDYOH_F,
+      real(8) :: DTIME1, DTIME2 
+      real(8),allocatable,dimension(:,:) :: VIDBCPDXOH_F, VIDBCPDYOH_F,
      &      SigTS_F, NB_F, NM_F, MLD_F, CD_F, VIDISPDXOH_F, VIDISPDYOH_F
       integer,allocatable  :: indm(:,:), indx(:,:), indy(:,:), inds(:,:)
-      real(sz),allocatable :: weightsm(:,:), weightsx(:,:),
+      real(8),allocatable :: weightsm(:,:), weightsx(:,:),
      &                        weightsy(:,:), weightss(:,:)
 
 C-----------------------------------------------------------------------
@@ -99,7 +99,6 @@ C-----------------------------------------------------------------------
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      WRITE(16,*) 'inside read_bc3d_netcdf'
       ! Open NETCDF 
       call Check_err(nf90_open(densityFileName,nf90_nowrite,nc_id))
     
@@ -172,15 +171,14 @@ C-----------------------------------------------------------------------
       implicit none
       integer,intent(in) :: NC_ID
       integer  :: Temp_ID, i, j, ic, jc, js, indt(4), numfound !ind(2,indmax), cc
-      real(sz) :: Lon_s, Lat_s, Lat_e, Lon_e, xx, yy, wt(4), 
+      real(8) :: Lon_s, Lat_s, Lat_e, Lon_e, xx, yy, wt(4), 
      &            Lonn_s, Lonn_e, x1, y1, xl, yl, xu, yu !, x2, y2, x3, y3 !, ww(indmax)
-      real(sz),allocatable :: Lonc(:), Lon(:), Latc(:), Lat(:), Lats(:)
+      real(8),allocatable :: Lonc(:), Lon(:), Latc(:), Lat(:), Lats(:)
 #ifdef DATETIME       
       type(timedelta) :: DT
       type(datetime)  :: TNDT, TNDT1
       character(len=16) :: TSS
 #endif        
-
       if (BC3D_IT > 1) then
          WRITE(16,*) 'BC3D_IT = ',BC3D_IT
          ! Check times if not first iteration
@@ -223,9 +221,6 @@ C-----------------------------------------------------------------------
          DT   = CurDT - TNDT
          if (DT%total_seconds() <= 0) exit
       enddo
-      write(16,*) 'TNDT = ',TNDT%isoformat(' ')
-      WRITE(16,*) 'bc3d_it = ',bc3d_it
-      write(16,*) 'DT = ',DT%total_seconds()
       IF (DT%total_seconds().LT.0) THEN
          BC3D_IT = BC3D_IT - 1
          call check_err(nf90_get_var(nc_id, Temp_ID,        
@@ -238,10 +233,6 @@ C-----------------------------------------------------------------------
       TNDT1 = strptime(trim(TSS),"%Y-%m-%d %H:%M")
       DT = TNDT1 - TNDT 
       BC3D_DT = DT%total_seconds()
-      write(16,*) 'tndt = ',tndt%isoformat(' ')
-      write(16,*) 'tndt1 = ',tndt1%isoformat(' ')
-      write(16,*) 'bc3d_dt = ',bc3d_dt
-      !call bc3dterminate()
 #else
       ! Just set at 3 hrs
       BC3D_DT = 3600d0*3d0
@@ -405,7 +396,9 @@ C-----------------------------------------------------------------------
              Lats = BC3D_Lats(YIs:js)
           endif
   
-          if (LoadIT_Fric) allocate(BC3D_NB(NX,NY),BC3D_NM(NX,NY))
+          if (LoadIT_Fric) then
+             allocate(BC3D_NB(NX,NY),BC3D_NM(NX,NY))
+          endif
           if (NOLIBF.eq.3) then
              if (HBREAK.gt.0d0) then
                 allocate(BC3D_MLD(NX,NY))
@@ -486,10 +479,10 @@ C-----------------------------------------------------------------------
       implicit none
       INTEGER,INTENT(IN) :: NC_ID
       ! global arrays
-      REAL(SZ),ALLOCATABLE,DIMENSION(:) :: bpgx_g, bpgy_g, sigts_g, 
+      REAL(8),ALLOCATABLE,DIMENSION(:) :: bpgx_g, bpgy_g, sigts_g, 
      &                                     nb_g, nm_g, mld_g
       ! local array
-      REAL(SZ),ALLOCATABLE,DIMENSION(:) :: tmp
+      REAL(8),ALLOCATABLE,DIMENSION(:) :: tmp
       ! temporary looping variable to write out values to see if this is
       ! working
       INTEGER :: ii
@@ -516,7 +509,6 @@ C-----------------------------------------------------------------------
          IF (NOLIBF.EQ.3) THEN
             ALLOCATE( mld_g(1) )
          ENDIF
-         
       ENDIF
 #ifdef CMPI
       ! use mapToSubdomainRealMPI to distribute to the processors
@@ -568,7 +560,7 @@ C-----------------------------------------------------------------------
       integer,intent(in) :: NC_ID, BCIT_IN, XIin, NXin, YIin, NYin
       character(*),intent(in) :: varname
       integer :: Temp_ID, Xe 
-      real(sz) :: Var(NXin,NYin)
+      real(8) :: Var(NXin,NYin)
 
       call Check_err(NF90_INQ_VARID(NC_ID,trim(varname),Temp_ID))
       Xe = NXo - XIin + 1;
@@ -595,7 +587,7 @@ C-----------------------------------------------------------------------
       integer,intent(in) :: NC_ID, BCIT_IN, NumNodes
       character(*),intent(in) :: varname
       integer :: Temp_ID
-      real(sz) :: Var(NumNodes)
+      real(8) :: Var(NumNodes)
 
       call Check_err(NF90_INQ_VARID(NC_ID,trim(varname),Temp_ID))
       call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,Var,
@@ -652,6 +644,13 @@ C
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
+
+#ifndef DATETIME
+      call allMessage(WARNING, 
+     &    "DateTime library is not enabled. It is recommended "//
+     &    "for use with netCDF BC3D forcing")
+#endif
+
       ! Read first value in time 
       BC3D_IT = 1
       ! Times are rounded down to nearest minute
@@ -661,7 +660,6 @@ C
 #ifdef DATETIME
       CurDT   = basedatetime + timedelta(minutes=floor(DTIME1/60d0))
 #endif           
-      WRITE(16,*) 'About to read_bc3d_netcdf in initial_...' 
       call Read_BC3D_Netcdf()
       DTIME2 = DTIME1 + BC3D_DT
       ! Put the first value on ADCIRC grid
@@ -698,7 +696,10 @@ C
          VIDISPDYOH_F(1,:) = VIDISPDYOH_F(2,:) 
       endif
       ! Return if diagnostic
-      if (IDEN.lt.0) return
+      if (IDEN.lt.0) then
+          call unsetMessageSource()
+          return
+      endif
       ! Read next value in time
       BC3D_IT = BC3D_IT + densityTimeIterator
 #ifdef DATETIME
@@ -738,7 +739,7 @@ C-----------------------------------------------------------------------
       
       integer, intent(in) :: flag
       real(8),intent(in)  :: TimeLoc 
-      real(sz)            :: DTRATIO
+      real(8)            :: DTRATIO
       integer             :: J,JKI 
 C
       !call setMessageSource("Update_BC3D_Info")
@@ -787,10 +788,6 @@ C
                   ! frequency, and dispersion terms on the ADCIRC grid
                   CALL Put_BC3D_on_ADCIRC_Grid()
                ENDIF
-#ifdef DATETIME
-               WRITE(16,*) 'Read and processed new BC3D timesnap: '
-     &                     //CurDT%isoformat(' ')
-#endif               
 #endif
             ELSEIF (flag < 0) THEN
                ! Read next values from fort.11
@@ -1054,19 +1051,19 @@ C-----------------------------------------------------------------------
       INTEGER :: NM1,NM2,NM3    !local node numbers used to compute gradients
       INTEGER :: NC1,NC2,NC3    !local node codes
 
-      REAL(SZ) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac
-      REAL(SZ) :: AreaIE2, AreaEle
-      REAL(SZ) :: FDX1, FDX2, FDX3
-      REAL(SZ) :: FDY1, FDY2, FDY3
-      REAL(SZ) :: FDX1O2A, FDX2O2A, FDX3O2A
-      REAL(SZ) :: FDY1O2A, FDY2O2A, FDY3O2A
-      REAL(SZ) :: EtaN1, EtaN2, EtaN3
-      REAL(SZ) :: DEta2DX, DEta2DY
-      REAL(SZ) :: DRhoDX, DRhoDY
-      REAL(SZ) :: DARhoMRho0N1,DARhoMRho0N2,DARhoMRho0N3
-      REAL(SZ) :: VIDBCPDXOHN1,VIDBCPDXOHN2,VIDBCPDXOHN3
-      REAL(SZ) :: VIDBCPDYOHN1,VIDBCPDYOHN2,VIDBCPDYOHN3
-      REAL(SZ) :: VIDBCPDXOHAvgArea,VIDBCPDYOHAvgArea
+      REAL(8) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac
+      REAL(8) :: AreaIE2, AreaEle
+      REAL(8) :: FDX1, FDX2, FDX3
+      REAL(8) :: FDY1, FDY2, FDY3
+      REAL(8) :: FDX1O2A, FDX2O2A, FDX3O2A
+      REAL(8) :: FDY1O2A, FDY2O2A, FDY3O2A
+      REAL(8) :: EtaN1, EtaN2, EtaN3
+      REAL(8) :: DEta2DX, DEta2DY
+      REAL(8) :: DRhoDX, DRhoDY
+      REAL(8) :: DARhoMRho0N1,DARhoMRho0N2,DARhoMRho0N3
+      REAL(8) :: VIDBCPDXOHN1,VIDBCPDXOHN2,VIDBCPDXOHN3
+      REAL(8) :: VIDBCPDYOHN1,VIDBCPDYOHN2,VIDBCPDYOHN3
+      REAL(8) :: VIDBCPDXOHAvgArea,VIDBCPDYOHAvgArea
 
 C
       !call setMessageSource("FBPG_Disp_from_3DBC")
@@ -1096,7 +1093,7 @@ C
          SFmxAvg = SFMXEle(IE) ;
          SFmyAvg = SFMYEle(IE) ;
          sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ; 
-         sfdyfac = (1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ; 
+         sfdyfac = (1 - IFSFM)*1.0D0  + IFSFM*SFmyAvg ; 
 
          FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
          FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2

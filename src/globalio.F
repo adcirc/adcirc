@@ -744,7 +744,7 @@ C
          implicit none
          type(outputdatadescript_t),intent(in) :: descript
          integer,intent(in)                    :: it
-         real(sz)                              :: timeloc
+         real(8)                              :: timeloc
          integer                               :: i
 
          IF ( (MNPROC.gt.1).and.(MyProc.eq.0)
@@ -1631,17 +1631,17 @@ C----------------------------------------------------------------------
       integer :: node                 ! node number of the min/max data
       character(len=80) :: skipline  ! dummy variable for min/max header data
       integer :: rawNode              ! node number, as read from file
-      real(sz) :: rawDatum            ! array member value at node, as read from file
+      real(8) :: rawDatum            ! array member value at node, as read from file
       integer :: irawDatum            ! array member value at node, as read from file
       integer :: numLinesInMinMaxFile ! count the lines to report to log file
       logical :: tooFewMinMaxLines    ! true if couldn't read enough lines from file
       integer :: ErrorIO              ! zero if file opened successfully
       integer :: i
       integer :: ndsetmax,size_this,nspoolmax,irtype,ffv
-      real(sz) :: time_this
+      real(8) :: time_this
       character(20) :: dmstr
       integer, pointer :: idata(:)
-      real(sz), pointer :: rdata(:)
+      real(8), pointer :: rdata(:)
       real(8) :: TimeMM ! timestamp of the min/max data in seconds since cold start
       integer :: ITMM ! time step of the min/max data in seconds since cold start
 
@@ -1800,9 +1800,9 @@ C----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER IJK
       INTEGER, intent(in) :: lun
-      REAL(SZ), intent(in) :: defval
-      REAL(SZ),intent(inout) ::  rval(*)
-      REAL(SZ) :: tmpval
+      REAL(8), intent(in) :: defval
+      REAL(8),intent(inout) ::  rval(*)
+      REAL(8) :: tmpval
       CHARACTER*80 cdum80
 C
       call setMessageSource("nddt2get")
@@ -1855,7 +1855,7 @@ C-----------------------------------------------------------------------
       logical, intent(out) :: fileFound ! .true. if file found and opened
       integer :: ios  ! i/o status
       integer,allocatable :: itmp0(:),itmp1(:)
-      real(sz),allocatable :: tmp0(:),tmp1(:)
+      real(8),allocatable :: tmp0(:),tmp1(:)
 C
       call setMessageSource("readAndMapToSubdomainMaxMin")
 #if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)

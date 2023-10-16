@@ -51,7 +51,7 @@ C  Message-Passing Array space
       INTEGER, ALLOCATABLE :: REQ_R3D(:), STAT_R3D(:,:)
       INTEGER, ALLOCATABLE :: REQ_C3D(:), STAT_C3D(:,:)
       INTEGER, ALLOCATABLE :: INDX(:)
-      REAL(SZ),ALLOCATABLE :: SENDBUF(:,:), RECVBUF(:,:)
+      REAL(8),ALLOCATABLE :: SENDBUF(:,:), RECVBUF(:,:)
       !jgf50.82: Create a flag for unrecoverable issue on a subdomain
       LOGICAL :: subdomainFatalError ! true if mpi_abort should be called
 
@@ -87,15 +87,9 @@ C
 #endif
 C
       subdomainFatalError = .false.
-#ifdef REAL4
-      REALTYPE = MPI_REAL
-      DBLETYPE = MPI_DOUBLE_PRECISION
-      float_type = REALTYPE                    ! used in globalio
-#else
       REALTYPE = MPI_DOUBLE_PRECISION
       DBLETYPE = MPI_DOUBLE_PRECISION
       float_type = REALTYPE                    ! used in globalio
-#endif
       IF (PRESENT(MPI_COMM)) THEN
 C.......Duplicate communicator passed from outside
         CALL MPI_COMM_DUP (MPI_COMM,MPI_COMM_ADCIRC,IERR)
@@ -649,7 +643,7 @@ C  vjp  8/06/1999
 C---------------------------------------------------------------------
       SUBROUTINE UPDATER( VEC1, VEC2, VEC3, NMSG )
       INTEGER,  INTENT(IN) ::  NMSG ! number of arrays to pass
-      REAL(SZ), INTENT(INOUT) ::  VEC1(*),VEC2(*),VEC3(*)
+      REAL(8), INTENT(INOUT) ::  VEC1(*),VEC2(*),VEC3(*)
       integer :: j  ! loop counter for neighboring subdomains
       integer :: i  ! loop counter for nodes shared with a neighboring subdomain
       integer :: nfini ! number of just-completed requests
@@ -818,7 +812,7 @@ C
 C  sb  10/13/2022
 C---------------------------------------------------------------------
       SUBROUTINE UPDATEM4R( M4R )
-      REAL(SZ), INTENT(INOUT) ::  M4R(:,:)
+      REAL(8), INTENT(INOUT) ::  M4R(:,:)
       integer :: j  ! loop counter for neighboring subdomains
       integer :: i  ! loop counter for nodes shared with a neighboring subdomain
       integer :: nfini ! number of just-completed requests
@@ -917,9 +911,9 @@ C          3. Restore the residual of slave nodes
 
 
       INTEGER,  INTENT(IN) ::  NMSG
-      REAL(SZ), INTENT(INOUT) ::  VEC1(*),VEC2(*),VEC3(*)
+      REAL(8), INTENT(INOUT) ::  VEC1(*),VEC2(*),VEC3(*)
 
-      REAL(SZ):: VECTMP(NNPERBC,NMSG) ;
+      REAL(8):: VECTMP(NNPERBC,NMSG) ;
 
       IF ( NPERSEG > 0 ) THEN
          VECTMP(:,1) = VEC1(IPERCONN(1:NNPERBC,2)) ;
@@ -962,7 +956,7 @@ C
 C  tjc  6/24/2002
 C---------------------------------------------------------------------
       SUBROUTINE UPDATER3D( VEC )
-      REAL(SZ), INTENT(INOUT) ::  VEC(MNP,MNFEN)
+      REAL(8), INTENT(INOUT) ::  VEC(MNP,MNFEN)
       INTEGER :: N,I,J,K,NCOUNT,NFINI,TOT
 C
       call setMessageSource("updater3d")
@@ -1028,7 +1022,7 @@ C  and persistent message-passing.
 C  tjc  6/24/2002
 C---------------------------------------------------------------------
       SUBROUTINE UPDATEC3D( VEC )
-      COMPLEX(SZ), INTENT(INOUT) ::  VEC(MNP,MNFEN)
+      COMPLEX(8), INTENT(INOUT) ::  VEC(MNP,MNFEN)
       INTEGER :: N,I,J,K,NCOUNT,NFINI,TOT
 C
       call setMessageSource("updatec3d")
@@ -1078,13 +1072,8 @@ C     &        REALTYPE,IPROC(J), TAG, COMM, REQ_C3D(J+NEIGHPROC),IERR)
                 DO I=1,NNODRECV(J)
                    DO K=1,MNFEN
                       !jgf48.50 Make sure CMPLX returns the right KIND
-#ifdef REAL4
-                      VEC(IRECVLOC(I,J),K) = CMPLX(RECVBUF(NCOUNT+1,J),
-     &                           RECVBUF(NCOUNT+2,J),4)
-#else
                       VEC(IRECVLOC(I,J),K) = CMPLX(RECVBUF(NCOUNT+1,J),
      &                           RECVBUF(NCOUNT+2,J),8)
-#endif
                       NCOUNT = NCOUNT+2
                    ENDDO
                 ENDDO
@@ -1138,7 +1127,7 @@ C---------------------------------------------------------------------
       function psdot( n, sx, sy ) result(gsum)
       integer n, i
       real(8) lsum,gsum
-      real(sz) sx(*),sy(*)
+      real(8) sx(*),sy(*)
       integer kount !jgf46.00 added
 C
       call setMessageSource("psdot")
@@ -1184,8 +1173,8 @@ C---------------------------------------------------------------------
       subroutine ps2dots( n, sd, sdt ,dot3rray)
       implicit none
       integer,intent(in) :: n
-      real(sz),intent(in) :: sd(n),sdt(n)
-      real(sz),intent(inout) :: dot3rray(3)
+      real(8),intent(in) :: sd(n),sdt(n)
+      real(8),intent(inout) :: dot3rray(3)
       integer i
       real(8) lsum(2),gsum(2)
       integer kount             !jgf46.00 added
@@ -1238,9 +1227,9 @@ C---------------------------------------------------------------------
       subroutine ps3dots( n, sd, sdt ,su, dot3rray)
       implicit none
       integer,intent(in)     :: n
-      real(sz),intent(in)    :: sd(n),sdt(n),su(n)
-      real(sz),intent(inout) :: dot3rray(3)
-      real(sz)               :: gsum(3)
+      real(8),intent(in)    :: sd(n),sdt(n),su(n)
+      real(8),intent(inout) :: dot3rray(3)
+      real(8)               :: gsum(3)
       integer i
       real(8) lsum(3)
       integer kount             ! jgf46.00 added
@@ -1321,14 +1310,13 @@ C---------------------------------------------------------------------
 ! Mapping to a subdomain for parallel code to avoid all processors
 ! reading the same file at the same time
 !---------------------------------------------------------------------
-        use sizes,only:sz
         implicit none
-        real(sz),intent(in)  :: global_array(:)
+        real(8),intent(in)  :: global_array(:)
         integer,intent(in)   :: mapping(:) 
         integer,intent(in)   :: np_global
         integer,intent(in)   :: np_local
-        real(sz)             :: global_array_local(np_global)
-        real(sz),intent(out) :: local_array(:)
+        real(8)             :: global_array_local(np_global)
+        real(8),intent(out) :: local_array(:)
         integer              :: sd_node_number
         integer              :: ierr
         call setMessageSource("mapToSubdomainRealMPI")
@@ -1548,7 +1536,7 @@ C  vjp  9/26/2006
 C---------------------------------------------------------------------
       SUBROUTINE MSG_RBCAST( array, n)
       INTEGER n
-      REAL(sz) array(:,:,:)
+      REAL(8) array(:,:,:)
 C
       call setMessageSource("msg_rbcast")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -1575,9 +1563,9 @@ Casey 090327: Implement Seizo's buffering of radiation stress broadcasts.
 C---------------------------------------------------------------------
       SUBROUTINE MSG_RBCASTD( array, in, jn, kn)
       INTEGER, INTENT(IN) :: in, jn, kn
-      REAL(sz), INTENT(INOUT) :: array(in,jn,kn)
+      REAL(8), INTENT(INOUT) :: array(in,jn,kn)
       INTEGER i, j, k, icount, ntimes, nlast
-      REAL(sz), ALLOCATABLE :: buffer(:)
+      REAL(8), ALLOCATABLE :: buffer(:)
       INTEGER, ALLOCATABLE :: nbox(:)
       INTEGER, Parameter :: limit_buff=1000000
 C

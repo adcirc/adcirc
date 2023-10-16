@@ -1,9 +1,3 @@
-if(PRECISION_8BYTE)
-  set(PRECISION_FLAG "REAL8")
-else(PRECISION_8BYTE)
-  set(PRECISION_FLAG "REAL4")
-  message(WARNING "Using double precision is recommended on modern computing systems. Recommend turning on PRECISION_8BYTE as is the default")
-endif(PRECISION_8BYTE)
 
 if(SUN)
   set(MACHINE_FLAG "CMACHSUN")

@@ -1,6 +1,3 @@
-# ...Option for 8-byte real numbers (or 4-byte if turned off)
-option(PRECISION_8BYTE "Use 8-byte real numbers instead of 4-byte." ON)
-mark_as_advanced(PRECISION_8BYTE)
 
 # ######################################################################################################################
 # ...Output format options

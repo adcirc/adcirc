@@ -230,7 +230,7 @@ C
       INTEGER I,J,K,L,IPROC,IDUM
       INTEGER NTRSPE,NSTEMP,ITSE,ITEMPE,NUMSTNS
       INTEGER OREC
-      REAL(SZ) DTE
+      REAL(8) DTE
       REAL(8) TIMEOUTSE
       CHARACTER*80  OUTMSG
       CHARACTER*85  INLINE
@@ -239,7 +239,7 @@ C
       LOGICAL FOUND
 
       INTEGER,ALLOCATABLE :: LOC2(:),IREC(:)
-      REAL(SZ),ALLOCATABLE ::   ETBIN(:),ETBINP(:)
+      REAL(8),ALLOCATABLE ::   ETBIN(:),ETBINP(:)
       CHARACTER*80,ALLOCATABLE ::  ETASC(:),ETASCP(:)
       CHARACTER*14,ALLOCATABLE ::  LOCNAME(:)
 
@@ -484,7 +484,7 @@ C
       INTEGER I,J,K,L,IPROC,IDUM
       INTEGER NTRSPV,NSTEMP,ITSV,ITEMPV,NUMSTNS
       INTEGER OREC
-      REAL(SZ) DTV
+      REAL(8) DTV
       REAL(8) TIMEOUTSV 
       CHARACTER*80 OUTMSG
       CHARACTER*85  INLINE
@@ -493,8 +493,8 @@ C
       LOGICAL FOUND
 
       INTEGER,ALLOCATABLE :: LOC2(:),IREC(:)
-      REAL(SZ),ALLOCATABLE ::  UUBIN(:),VVBIN(:)
-      REAL(SZ),ALLOCATABLE ::  UUBINP(:),VVBINP(:)
+      REAL(8),ALLOCATABLE ::  UUBIN(:),VVBIN(:)
+      REAL(8),ALLOCATABLE ::  UUBINP(:),VVBINP(:)
       CHARACTER*80,ALLOCATABLE :: UUASC(:),UUASCP(:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
 
@@ -741,8 +741,8 @@ C
       INTEGER I,J,K,L,IPROC,IDUM
       INTEGER NDSETGE,NSTEMP,NP,ITE,ITEMPE,INDX
       INTEGER OREC
-      REAL(SZ) DTE
-      REAL(SZ) ETA
+      REAL(8) DTE
+      REAL(8) ETA
       REAL(8) TIMEOUTE 
       CHARACTER*80 OUTMSG
       CHARACTER*85 INLINE
@@ -751,7 +751,7 @@ C
       LOGICAL FOUND
 
       INTEGER, ALLOCATABLE  ::  LOC2(:),IREC(:)
-      REAL(SZ), ALLOCATABLE  ::  ETBIN(:),ETBINP(:)
+      REAL(8), ALLOCATABLE  ::  ETBIN(:),ETBINP(:)
       CHARACTER*80, ALLOCATABLE  ::  ETASC(:),ETASCP(:)
       CHARACTER*14, ALLOCATABLE  ::  LOCNAME(:)
 
@@ -994,8 +994,8 @@ C
       INTEGER I,J,K,L,IPROC,IDUM
       INTEGER NDSETGV,NSTEMP,NP,ITV,ITEMPV,INDX
       INTEGER OREC
-      REAL(SZ) DTV
-      REAL(SZ) U1,V1
+      REAL(8) DTV
+      REAL(8) U1,V1
       REAL(8) TIMEOUTV
       CHARACTER*80  OUTMSG
       CHARACTER*85 INLINE
@@ -1004,8 +1004,8 @@ C
       LOGICAL FOUND
 
       INTEGER,ALLOCATABLE  :: LOC2(:),IREC(:)
-      REAL(SZ),ALLOCATABLE  ::  UUBIN(:),VVBIN(:)
-      REAL(SZ),ALLOCATABLE  ::  UUBINP(:),VVBINP(:)
+      REAL(8),ALLOCATABLE  ::  UUBIN(:),VVBIN(:)
+      REAL(8),ALLOCATABLE  ::  UUBINP(:),VVBINP(:)
       CHARACTER*80,ALLOCATABLE  ::  UU(:),UUP(:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
 
@@ -1859,11 +1859,11 @@ c     actual data
       INTEGER NUMSTNS ! number of subdomain meteorlogical recording stations
       INTEGER NSTEMP  ! time step interval at which fort.71 is written
       INTEGER ITEMPM  ! record type (1=elev.,2=vel.,3=3D vel.)
-      REAL(SZ) DTM    ! total time: DT*NSPOOLM = step size * no. time steps
+      REAL(8) DTM    ! total time: DT*NSPOOLM = step size * no. time steps
       INTEGER ITSM    ! model time step number
       REAL(8)TIMEOUTSM! model time
-      REAL(SZ),ALLOCATABLE::AtmPresBIN(:)    ! full domain atm. pres. val.(bin)
-      REAL(SZ),ALLOCATABLE::AtmPresBINP(:)   ! subdomain atm. pres. val. (bin)
+      REAL(8),ALLOCATABLE::AtmPresBIN(:)    ! full domain atm. pres. val.(bin)
+      REAL(8),ALLOCATABLE::AtmPresBINP(:)   ! subdomain atm. pres. val. (bin)
       INTEGER,ALLOCATABLE::StaNum(:)         ! recording station number
       CHARACTER(len=80),ALLOCATABLE::AtmPresASC(:) ! atmospheric pressure data
 C
@@ -2122,17 +2122,17 @@ c     file stuff
       INTEGER,ALLOCATABLE::LOC2(:) ! unit numbers of subdomains
       CHARACTER*14,ALLOCATABLE::LOCNAME(:) ! subdomain dir./file names
 c     actual data 
-      REAL(SZ) DTM    ! total time: DT*NSPOOLM = step size * no. time steps
-      REAL(SZ)TIMEOUTSM! model time
+      REAL(8) DTM    ! total time: DT*NSPOOLM = step size * no. time steps
+      REAL(8)TIMEOUTSM! model time
       INTEGER NTRSPM  ! number of data sets to be written to fort.72
       INTEGER NSTEMP  ! time step interval at which fort.72 is written
       INTEGER ITSM    ! model time step number
       INTEGER ITEMPM  ! record type (1=elev.,2=vel.,3=3D vel.)
       INTEGER NUMSTNS ! number of subdomain meteorlogical recording stations
-      REAL(SZ),ALLOCATABLE::UWindVelBIN(:)  ! fulldomain u wind velocity values
-      REAL(SZ),ALLOCATABLE::VWindVelBIN(:)  ! fulldomain v wind velocity values
-      REAL(SZ),ALLOCATABLE::UWindVelBINP(:) ! subdomain u wind velocity values
-      REAL(SZ),ALLOCATABLE::VWindVelBINP(:) ! subdomain v wind velocity values
+      REAL(8),ALLOCATABLE::UWindVelBIN(:)  ! fulldomain u wind velocity values
+      REAL(8),ALLOCATABLE::VWindVelBIN(:)  ! fulldomain v wind velocity values
+      REAL(8),ALLOCATABLE::UWindVelBINP(:) ! subdomain u wind velocity values
+      REAL(8),ALLOCATABLE::VWindVelBINP(:) ! subdomain v wind velocity values
       CHARACTER*80,ALLOCATABLE::WindASC(:)  ! full domain wind vel.. val.
       CHARACTER*80,ALLOCATABLE::WindASCP(:) ! subdomain wind vel. val.
 C
@@ -2404,7 +2404,7 @@ C     file stuff
 C     actual data
       INTEGER NDSETSGW! number of data sets to be written to fort.73
       INTEGER NP      ! number of nodes in the subdomain grid
-      REAL(SZ) DTGW   ! total time: DT*NSPOOLGW = step size * no. time steps
+      REAL(8) DTGW   ! total time: DT*NSPOOLGW = step size * no. time steps
       INTEGER NSTEMP  ! time step interval at which fort.73 is written
       INTEGER ITEMPGW ! record type (1=elev.,2=vel.,3=3D vel.)
 C
@@ -2413,8 +2413,8 @@ C
 C
       CHARACTER*80,ALLOCATABLE::AtmPresSC(:) !full domain atm. pressure values
       CHARACTER*80,ALLOCATABLE::AtmPresSCP(:)!subdomain atm. pressure values
-      REAL(SZ),ALLOCATABLE::AtmPresBIN(:)    ! full domain atm. pres. val.(bin)
-      REAL(SZ),ALLOCATABLE::AtmPresBINP(:)   ! subdomain atm. pres. val. (bin)
+      REAL(8),ALLOCATABLE::AtmPresBIN(:)    ! full domain atm. pres. val.(bin)
+      REAL(8),ALLOCATABLE::AtmPresBINP(:)   ! subdomain atm. pres. val. (bin)
 C
       ALLOCATE (LOC2(MNPROC),IREC(MNPROC))
       ALLOCATE (AtmPresBIN(MNP),AtmPresBINP(MNPP))
@@ -2651,7 +2651,7 @@ C
       INTEGER I,J,K,L,IPROC
       INTEGER NDSETGV,NSTEMP,NP,ITV,ITEMPV,INDX
       INTEGER OREC
-      REAL(SZ) DTV
+      REAL(8) DTV
       REAL(8) TIMEOUTV
       CHARACTER*80  OUTMSG
       CHARACTER*85 INLINE
@@ -2660,8 +2660,8 @@ C
       LOGICAL FOUND
 
       INTEGER,ALLOCATABLE  :: LOC2(:),IREC(:)
-      REAL(SZ),ALLOCATABLE  ::  UUBIN(:),VVBIN(:)
-      REAL(SZ),ALLOCATABLE  ::  UUBINP(:),VVBINP(:)
+      REAL(8),ALLOCATABLE  ::  UUBIN(:),VVBIN(:)
+      REAL(8),ALLOCATABLE  ::  UUBINP(:),VVBINP(:)
       CHARACTER*80,ALLOCATABLE  ::  UU(:),UUP(:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
 
@@ -2928,11 +2928,11 @@ c     actual data
       INTEGER NUMSTNS ! number of subdomain meteorlogical recording stations
       INTEGER NSTEMP  ! time step interval at which fort.91 is written
       INTEGER ITEMPM  ! record type (1=elev.,2=vel.,3=3D vel.)
-      REAL(SZ) DTM    ! total time: DT*NSPOOLM = step size * no. time steps
+      REAL(8) DTM    ! total time: DT*NSPOOLM = step size * no. time steps
       INTEGER ITSM    ! model time step number
       REAL(8)TIMEOUTSM! model time
-      REAL(SZ),ALLOCATABLE::CiceBIN(:)    ! full domain ice concent. val.(bin)
-      REAL(SZ),ALLOCATABLE::CiceBINP(:)   ! subdomain ice concent. val. (bin)
+      REAL(8),ALLOCATABLE::CiceBIN(:)    ! full domain ice concent. val.(bin)
+      REAL(8),ALLOCATABLE::CiceBINP(:)   ! subdomain ice concent. val. (bin)
       INTEGER,ALLOCATABLE::StaNum(:)         ! recording station number
       CHARACTER(len=80),ALLOCATABLE::CiceASC(:) ! ice concentration data
 C
@@ -3190,7 +3190,7 @@ C     file stuff
 C     actual data
       INTEGER NDSETSGW! number of data sets to be written to fort.93
       INTEGER NP      ! number of nodes in the subdomain grid
-      REAL(SZ) DTGW   ! total time: DT*NSPOOLGW = step size * no. time steps
+      REAL(8) DTGW   ! total time: DT*NSPOOLGW = step size * no. time steps
       INTEGER NSTEMP  ! time step interval at which fort.93 is written
       INTEGER ITEMPGW ! record type (1=elev.,2=vel.,3=3D vel.)
 C
@@ -3199,8 +3199,8 @@ C
 C
       CHARACTER*80,ALLOCATABLE::CiceSC(:) !full domain ice concentration values
       CHARACTER*80,ALLOCATABLE::CiceSCP(:)!subdomain ice concentration values
-      REAL(SZ),ALLOCATABLE::CiceBIN(:)    ! full domain ice conc. val.(bin)
-      REAL(SZ),ALLOCATABLE::CiceBINP(:)   ! subdomain ice conc. val. (bin)
+      REAL(8),ALLOCATABLE::CiceBIN(:)    ! full domain ice conc. val.(bin)
+      REAL(8),ALLOCATABLE::CiceBINP(:)   ! subdomain ice conc. val. (bin)
 C
       ALLOCATE (LOC2(MNPROC),IREC(MNPROC))
       ALLOCATE (CiceBIN(MNP),CiceBINP(MNPP))
@@ -3453,14 +3453,14 @@ C     LOGICAL CHARMV
      &        IGEP,NSCOUGE,IGVP,NSCOUGV,IGCP,NSCOUGC,IGPP,IGWP,NSCOUGW
       CHARACTER FNAME*60,LOCFN*14
       INTEGER,ALLOCATABLE  :: LOC2(:),NODECODE(:),NOFF(:)
-      REAL(SZ),ALLOCATABLE :: ETA1(:),ETA2(:),UU2(:),VV2(:),CH1(:)
+      REAL(8),ALLOCATABLE :: ETA1(:),ETA2(:),UU2(:),VV2(:),CH1(:)
 C  kmd48.33bc updates for 3d output of hotstart information
-      REAL(SZ),ALLOCATABLE :: EtaDisc(:)
-      REAL(SZ),ALLOCATABLE :: DUU(:),DUV(:),DVV(:),UU(:),VV(:)
-      REAL(SZ),ALLOCATABLE :: BSX(:),BSY(:)
-      REAL(SZ),ALLOCATABLE :: REALQ(:,:),IMAGQ(:,:),WZ(:,:)
-      REAL(SZ),ALLOCATABLE :: q20(:,:),l(:,:),SIGT(:,:)
-      REAL(SZ),ALLOCATABLE :: SAL(:,:),TEMP(:,:)
+      REAL(8),ALLOCATABLE :: EtaDisc(:)
+      REAL(8),ALLOCATABLE :: DUU(:),DUV(:),DVV(:),UU(:),VV(:)
+      REAL(8),ALLOCATABLE :: BSX(:),BSY(:)
+      REAL(8),ALLOCATABLE :: REALQ(:,:),IMAGQ(:,:),WZ(:,:)
+      REAL(8),ALLOCATABLE :: q20(:,:),l(:,:),SIGT(:,:)
+      REAL(8),ALLOCATABLE :: SAL(:,:),TEMP(:,:)
 
       REAL(8) TIMEHSF
       INTEGER :: NSTAEX, NSTAVX
@@ -4210,7 +4210,7 @@ C---------------------------------------------------------------------------
       INTEGER I,J,K,L,IPROC,IDUM
       INTEGER NDSET,NSTEMP,NP,IT,ITEMP,IG
       INTEGER OREC
-      REAL(SZ) DT
+      REAL(8) DT
       REAL(8) TIMEOUT
       CHARACTER*80  OUTMSG
       CHARACTER*85 INLINE
@@ -4219,9 +4219,9 @@ C---------------------------------------------------------------------------
       LOGICAL FOUND
 
       INTEGER,ALLOCATABLE  :: LOC2(:),IREC(:)
-      REAL(SZ),ALLOCATABLE  ::  SIGMA(:,:)
-      REAL(SZ),ALLOCATABLE  ::  SDVar(:,:,:)  ! subdomain station data
-      REAL(SZ),ALLOCATABLE  ::  FDvar(:,:,:)  ! full domain station data
+      REAL(8),ALLOCATABLE  ::  SIGMA(:,:)
+      REAL(8),ALLOCATABLE  ::  SDVar(:,:,:)  ! subdomain station data
+      REAL(8),ALLOCATABLE  ::  FDvar(:,:,:)  ! full domain station data
       INTEGER NVar  ! number of density-related vars in the run
       INTEGER M     ! counter for NVar
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
@@ -4378,7 +4378,7 @@ C---------------------------------------------------------------------------
       INTEGER I,J,K,L,IPROC,IDUM
       INTEGER NDSET,NSTEMP,NP,IT,ITEMP,IG
       INTEGER OREC
-      REAL(SZ) DT
+      REAL(8) DT
       REAL(8) TIMEOUT
       CHARACTER*80  OUTMSG
       CHARACTER*85 INLINE
@@ -4387,9 +4387,9 @@ C---------------------------------------------------------------------------
       LOGICAL FOUND
 
       INTEGER,ALLOCATABLE  :: LOC2(:),IREC(:)
-      REAL(SZ),ALLOCATABLE  ::  SIGMA(:)
-      REAL(SZ),ALLOCATABLE  ::  SDVar(:,:,:)  ! subdomain station data
-      REAL(SZ),ALLOCATABLE  ::  FDvar(:,:,:)  ! full domain station data
+      REAL(8),ALLOCATABLE  ::  SIGMA(:)
+      REAL(8),ALLOCATABLE  ::  SDVar(:,:,:)  ! subdomain station data
+      REAL(8),ALLOCATABLE  ::  FDvar(:,:,:)  ! full domain station data
       INTEGER NVar  ! number of density-related vars in the run
       INTEGER M     ! counter for NVar
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
@@ -4530,7 +4530,7 @@ C---------------------------------------------------------------------------
       INTEGER I,J,K,L,IPROC,IDUM
       INTEGER NDSET,NSTEMP,NP,IT,ITEMP,IG
       INTEGER OREC
-      REAL(SZ) DT
+      REAL(8) DT
       REAL(8) TIMEOUT
       CHARACTER*80  OUTMSG
       CHARACTER*85 INLINE
@@ -4538,9 +4538,9 @@ C---------------------------------------------------------------------------
       CHARACTER*8 RDES8(8),RID8(6),AID8(6)
       LOGICAL FOUND
       INTEGER,ALLOCATABLE  :: LOC2(:),IREC(:)
-      REAL(SZ),ALLOCATABLE  ::  SIGMA(:)
-      REAL(SZ),ALLOCATABLE  ::  SDVar(:,:,:)  ! subdomain station data
-      REAL(SZ),ALLOCATABLE  ::  FDvar(:,:,:)  ! full domain station data
+      REAL(8),ALLOCATABLE  ::  SIGMA(:)
+      REAL(8),ALLOCATABLE  ::  SDVar(:,:,:)  ! subdomain station data
+      REAL(8),ALLOCATABLE  ::  FDvar(:,:,:)  ! full domain station data
       INTEGER NVar  ! number of density-related vars in the run
       INTEGER M     ! counter for NVar
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
@@ -4685,7 +4685,7 @@ C---------------------------------------------------------------------------
       INTEGER OREC
       INTEGER N      ! loop counter
       INTEGER IRTYPE ! record type, elevation=1, velocity=2, 3Dvelocity=3
-      REAL(SZ) DT
+      REAL(8) DT
       REAL(8) TIMEOUT
       CHARACTER*80  OUTMSG
       CHARACTER*85 INLINE
@@ -4694,8 +4694,8 @@ C---------------------------------------------------------------------------
       LOGICAL FOUND
 
       INTEGER,ALLOCATABLE  :: LOC2(:),LOC1(:),IREC(:)
-      REAL(SZ),ALLOCATABLE  ::  SIGMA(:),VAR1(:,:),VAR2(:,:),VAR3(:,:)
-      REAL(SZ),ALLOCATABLE  ::  VAR1P(:,:),VAR2P(:,:),VAR3P(:,:)
+      REAL(8),ALLOCATABLE  ::  SIGMA(:),VAR1(:,:),VAR2(:,:),VAR3(:,:)
+      REAL(8),ALLOCATABLE  ::  VAR1P(:,:),VAR2P(:,:),VAR3P(:,:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:),LOCNAME1(:)
 
       ALLOCATE (LOC2(MNPROC),IREC(MNPROC),LOC1(MNPROC))
@@ -4895,7 +4895,7 @@ C
       INTEGER OREC
       INTEGER N      ! loop counter
       INTEGER IRTYPE ! record type, elevation=1, velocity=2, 3Dvelocity=3
-      REAL(SZ) DT
+      REAL(8) DT
       REAL(8) TIMEOUT
       CHARACTER*80  OUTMSG
       CHARACTER*85 INLINE
@@ -4905,8 +4905,8 @@ C
       LOGICAL FOUND
 
       INTEGER,ALLOCATABLE  :: LOC2(:),IREC(:)
-      REAL(SZ),ALLOCATABLE  ::  SIGMA(:),VAR1(:,:),VAR2(:,:),VAR3(:,:)
-      REAL(SZ),ALLOCATABLE  ::  VAR1P(:,:),VAR2P(:,:),VAR3P(:,:)
+      REAL(8),ALLOCATABLE  ::  SIGMA(:),VAR1(:,:),VAR2(:,:),VAR3(:,:)
+      REAL(8),ALLOCATABLE  ::  VAR1P(:,:),VAR2P(:,:),VAR3P(:,:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
 
       ALLOCATE (LOC2(MNPROC),IREC(MNPROC))
@@ -5031,7 +5031,7 @@ C---------------------------------------------------------------------------C
       INTEGER OREC
       INTEGER N      ! loop counter
       INTEGER IRTYPE ! record type, elevation=1, velocity=2, 3Dvelocity=3
-      REAL(SZ) DT
+      REAL(8) DT
       REAL(8) TIMEOUT
       CHARACTER*80  OUTMSG
       CHARACTER*85 INLINE
@@ -5039,8 +5039,8 @@ C---------------------------------------------------------------------------C
       CHARACTER*8 RDES8(8),RID8(6),AID8(6)
       LOGICAL FOUND
       INTEGER,ALLOCATABLE  :: LOC2(:),IREC(:)
-      REAL(SZ),ALLOCATABLE  ::  SIGMA(:),VAR1(:,:),VAR2(:,:),VAR3(:,:)
-      REAL(SZ),ALLOCATABLE  ::  VAR1P(:,:),VAR2P(:,:),VAR3P(:,:)
+      REAL(8),ALLOCATABLE  ::  SIGMA(:),VAR1(:,:),VAR2(:,:),VAR3(:,:)
+      REAL(8),ALLOCATABLE  ::  VAR1P(:,:),VAR2P(:,:),VAR3P(:,:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
 
       ALLOCATE (LOC2(MNPROC),IREC(MNPROC))
@@ -5170,7 +5170,7 @@ C---------------------------------------------------------------------------
       INTEGER OREC
       INTEGER N      ! loop counter
       INTEGER IRTYPE ! record type, elevation=1, velocity=2, 3Dvelocity=3
-      REAL(SZ) DT
+      REAL(8) DT
       REAL(8) TIMEOUTE 
       CHARACTER*80  OUTMSG
       CHARACTER*85 INLINE

@@ -141,57 +141,57 @@ c.RJW merged 08282008 Casey 071219: Added the following local variable declarati
       INTEGER :: LBP            !value of LBArray_Pointer at present horizontal node
 Cjgfdebug      INTEGER :: NN             !output loop counter
 
-      REAL(SZ) :: KSlip         !equavalent linear slip coeff
-      REAL(SZ) :: Z0B1          !Bottom roughness length (from mannings, const or from Z0Bvar)
-      REAL(SZ) :: WSXsNH,WSYsNH !Wind stress components at time level s at node NH
+      REAL(8) :: KSlip         !equavalent linear slip coeff
+      REAL(8) :: Z0B1          !Bottom roughness length (from mannings, const or from Z0Bvar)
+      REAL(8) :: WSXsNH,WSYsNH !Wind stress components at time level s at node NH
 
-      REAL(SZ) :: WSigma(MNFEN) !"sigma" vertical velocity
-      REAL(SZ) :: Wf            !weighting coefficient in adjoint correction to w
-      REAL(SZ) :: WfOHH         !Wf/(H time level s+1)^2
-      REAL(SZ) :: WZSurfBC      !surface boundary condition value of w
-      REAL(SZ) :: WZSurf        !computed value of w at surface
-      REAL(SZ) :: WZCorrection  !adjoint correction compute for w
+      REAL(8) :: WSigma(MNFEN) !"sigma" vertical velocity
+      REAL(8) :: Wf            !weighting coefficient in adjoint correction to w
+      REAL(8) :: WfOHH         !Wf/(H time level s+1)^2
+      REAL(8) :: WZSurfBC      !surface boundary condition value of w
+      REAL(8) :: WZSurf        !computed value of w at surface
+      REAL(8) :: WZCorrection  !adjoint correction compute for w
 
 C   kmd48.33bc add in spherical factors
-      REAL(SZ) :: SFacAvg
-Cjgfdebug      REAL(SZ) :: Zk            !z depth of any node k in the vertical
-Cjgfdebug      REAL(SZ) :: DelSig        ! sigma(k+1)-sigma(k)
-      REAL(SZ) :: DelSigO2      !(sigma(k)-sigma(k-1))/2
-      REAL(SZ) :: SigmaMAOAMB   !(sigma(k)-A)/(a-b)
-      REAL(SZ) :: SigmaMBOAMB   !(sigma(k)-B)/(a-b)
-      REAL(SZ) :: SigAvgMAOAMB  !((sigma(k)+sigma(k-1))/2.d0 - A)/AMB
-Cjgfdebug      REAL(SZ) :: SigmaNN       !Sigma value of a neighbor node
+      REAL(8) :: SFacAvg
+Cjgfdebug      REAL(8) :: Zk            !z depth of any node k in the vertical
+Cjgfdebug      REAL(8) :: DelSig        ! sigma(k+1)-sigma(k)
+      REAL(8) :: DelSigO2      !(sigma(k)-sigma(k-1))/2
+      REAL(8) :: SigmaMAOAMB   !(sigma(k)-A)/(a-b)
+      REAL(8) :: SigmaMBOAMB   !(sigma(k)-B)/(a-b)
+      REAL(8) :: SigAvgMAOAMB  !((sigma(k)+sigma(k-1))/2.d0 - A)/AMB
+Cjgfdebug      REAL(8) :: SigmaNN       !Sigma value of a neighbor node
 
-      REAL(SZ) :: VelNorm,VelTan !-QNormsp1(NH)/Hsp1 at flux boundary node
-      REAL(SZ) :: CLBP,SLBP     !local values of CSII, SIII at boundary node LBP
-      REAL(SZ) :: Auv1km1,Auv2km1 !initial real,imaginary parts of Mkm1 at flux boundary node
-      REAL(SZ) :: Auv1km1star,Auv2km1star !rotated real,imaginary parts of Mkm1 at flux boundary node
-Cjgfdebug      REAL(SZ) :: Auv1k1,Auv2k1 !initial real,imaginary parts of Mk at flux boundary node
-Cjgfdebug      REAL(SZ) :: Auv1k1star,Auv2k1star !rotated real,imaginary parts of Mk at flux boundary node
-      REAL(SZ) :: Auv1kp1,Auv2kp1 !initial real,imaginary parts of Mkp1 at flux boundary node
-      REAL(SZ) :: Auv1kp1star,Auv2kp1star !rotated real,imaginary parts of Mkp1 at flux boundary node
+      REAL(8) :: VelNorm,VelTan !-QNormsp1(NH)/Hsp1 at flux boundary node
+      REAL(8) :: CLBP,SLBP     !local values of CSII, SIII at boundary node LBP
+      REAL(8) :: Auv1km1,Auv2km1 !initial real,imaginary parts of Mkm1 at flux boundary node
+      REAL(8) :: Auv1km1star,Auv2km1star !rotated real,imaginary parts of Mkm1 at flux boundary node
+Cjgfdebug      REAL(8) :: Auv1k1,Auv2k1 !initial real,imaginary parts of Mk at flux boundary node
+Cjgfdebug      REAL(8) :: Auv1k1star,Auv2k1star !rotated real,imaginary parts of Mk at flux boundary node
+      REAL(8) :: Auv1kp1,Auv2kp1 !initial real,imaginary parts of Mkp1 at flux boundary node
+      REAL(8) :: Auv1kp1star,Auv2kp1star !rotated real,imaginary parts of Mkp1 at flux boundary node
 
-      REAL(SZ) :: EtaN1,EtaN2,EtaN3,EtaNFirst !nodal values of IFNLFA(Eta1+Eta2)/2
-      REAL(SZ) :: hN1,hN2,hN3,hNFirst !nodal values of DP
-      REAL(SZ) :: DUDX(MNFEN),DVDY(MNFEN) !horizontal derivatives of velocity used to compute w
-      REAL(SZ) :: Un,Vn         !real,imaginary components of qn
-      REAL(SZ) :: DelU,DelV     !real, imaginary parts of q(k)-q(k-1)
+      REAL(8) :: EtaN1,EtaN2,EtaN3,EtaNFirst !nodal values of IFNLFA(Eta1+Eta2)/2
+      REAL(8) :: hN1,hN2,hN3,hNFirst !nodal values of DP
+      REAL(8) :: DUDX(MNFEN),DVDY(MNFEN) !horizontal derivatives of velocity used to compute w
+      REAL(8) :: Un,Vn         !real,imaginary components of qn
+      REAL(8) :: DelU,DelV     !real, imaginary parts of q(k)-q(k-1)
 
-      REAL(SZ) :: BTPN1,BTPN2,BTPN3,BTPNFirst !nodal values of BTP
-      REAL(SZ) :: BTPDX2A,BTPDY2A !(Horiz. grads of BTP)*2*Element Area
+      REAL(8) :: BTPN1,BTPN2,BTPN3,BTPNFirst !nodal values of BTP
+      REAL(8) :: BTPDX2A,BTPDY2A !(Horiz. grads of BTP)*2*Element Area
 
-Cjgfdebug      REAL(SZ) :: BCPN1,BCPN2,BCPN3,BCPNFirst !nodal values of BCP
-Cjgfdebug      REAL(SZ) :: BCPDX2A,BCPDY2A !(Horiz. grads of BCP)*2*Element Area
-Cjgfdebug      REAL(SZ) :: SigTAvg       !avg SigT between 2 vertical nodes
-Cjgfdebug      REAL(SZ) :: HGORhoOAMB    !depth*gravity/(reference density)/(a-b)
+Cjgfdebug      REAL(8) :: BCPN1,BCPN2,BCPN3,BCPNFirst !nodal values of BCP
+Cjgfdebug      REAL(8) :: BCPDX2A,BCPDY2A !(Horiz. grads of BCP)*2*Element Area
+Cjgfdebug      REAL(8) :: SigTAvg       !avg SigT between 2 vertical nodes
+Cjgfdebug      REAL(8) :: HGORhoOAMB    !depth*gravity/(reference density)/(a-b)
 
-Cjgfdebug      REAL(SZ) :: DBCPDX2A
-Cjgfdebug      REAL(SZ) :: DBCPDY2A
-      REAL(SZ) :: RCL
-      REAL(SZ) :: Auv1k
-      REAL(SZ) :: Auv2k
-      REAL(SZ) :: Auv1kstar
-      REAL(SZ) :: Auv2kstar
+Cjgfdebug      REAL(8) :: DBCPDX2A
+Cjgfdebug      REAL(8) :: DBCPDY2A
+      REAL(8) :: RCL
+      REAL(8) :: Auv1k
+      REAL(8) :: Auv2k
+      REAL(8) :: Auv1kstar
+      REAL(8) :: Auv2kstar
 
       REAL(8) :: KVnm(MNFEN,3)  !integral used in vertical stress term
       REAL(8) :: TimeLoc           !model time at time level s+1
@@ -216,54 +216,54 @@ Casey 140701: Prevent depths from becoming negative in bottom roughness calculat
 ! arash 12/14/2015
       Real(8) :: Biharmonic_viscosity
 
-      COMPLEX(SZ) :: Fr(MNFEN)      !right side forcing vector
-      COMPLEX(SZ) :: Frstar         !rotated right side forcing vector at flux boundary node
-      COMPLEX(SZ) :: Mkm1(MNFEN)    !1st column (k-1) in left side compact storage matrix
-      COMPLEX(SZ) :: Mk(MNFEN)      !2nd column (k) in left side compact storage matrix
-      COMPLEX(SZ) :: Mkp1(MNFEN)    !3rd column (k+1) in left side cpmpact storage matrix
-      COMPLEX(SZ) :: LAdvec(MNFEN)  !lateral advection term in momentum eqn
-      COMPLEX(SZ) :: LStress(MNFEN) !lateral stress term in momentum eqn
+      COMPLEX(8) :: Fr(MNFEN)      !right side forcing vector
+      COMPLEX(8) :: Frstar         !rotated right side forcing vector at flux boundary node
+      COMPLEX(8) :: Mkm1(MNFEN)    !1st column (k-1) in left side compact storage matrix
+      COMPLEX(8) :: Mk(MNFEN)      !2nd column (k) in left side compact storage matrix
+      COMPLEX(8) :: Mkp1(MNFEN)    !3rd column (k+1) in left side cpmpact storage matrix
+      COMPLEX(8) :: LAdvec(MNFEN)  !lateral advection term in momentum eqn
+      COMPLEX(8) :: LStress(MNFEN) !lateral stress term in momentum eqn
 ! arash 12/14/2015
-      COMPLEX(SZ) :: Biharmonic_LStress(MNFEN) !lateral stress term in momentum eqn - biharmonic viscosity
+      COMPLEX(8) :: Biharmonic_LStress(MNFEN) !lateral stress term in momentum eqn - biharmonic viscosity
 
-      COMPLEX(SZ) :: VAdvec(MNFEN)  !vertical advection term in momentum eqn
-      COMPLEX(SZ) :: VStress(MNFEN) !vertical stress term in momentum eqn
-Cjgfdebug      COMPLEX(SZ) :: BCPG(MNFEN)    !baroclinic pressure gradient
-      COMPLEX(SZ) :: BTPG           !total barotropic pressure gradient (incl TP & water level)
-      COMPLEX(SZ) :: CCR,CCL        !coeffs used on right,left side of momentum eqn
-      COMPLEX(SZ) :: VIVel          !vertically integrated velocity
-      COMPLEX(SZ) :: DUDS           !complex vertical velocity gradient between bottom two nodes
-      COMPLEX(SZ) :: qn,qN1,qN2,qN3,qNFirst !nodal values of q
-Cjgfdebug      COMPLEX(SZ) :: UnDqDX,VnDqDY  !derivatives used in lateral advection
-      COMPLEX(SZ) :: UnDqDX2A,VnDqDY2A !UnDqDX,UnDqDY)*2*Element Area
-      COMPLEX(SZ) :: DqDXDPhiDX2A,DqDYDPhiDY2A !derivatives used in lateral stress calc.
+      COMPLEX(8) :: VAdvec(MNFEN)  !vertical advection term in momentum eqn
+      COMPLEX(8) :: VStress(MNFEN) !vertical stress term in momentum eqn
+Cjgfdebug      COMPLEX(8) :: BCPG(MNFEN)    !baroclinic pressure gradient
+      COMPLEX(8) :: BTPG           !total barotropic pressure gradient (incl TP & water level)
+      COMPLEX(8) :: CCR,CCL        !coeffs used on right,left side of momentum eqn
+      COMPLEX(8) :: VIVel          !vertically integrated velocity
+      COMPLEX(8) :: DUDS           !complex vertical velocity gradient between bottom two nodes
+      COMPLEX(8) :: qn,qN1,qN2,qN3,qNFirst !nodal values of q
+Cjgfdebug      COMPLEX(8) :: UnDqDX,VnDqDY  !derivatives used in lateral advection
+      COMPLEX(8) :: UnDqDX2A,VnDqDY2A !UnDqDX,UnDqDY)*2*Element Area
+      COMPLEX(8) :: DqDXDPhiDX2A,DqDYDPhiDY2A !derivatives used in lateral stress calc.
 ! arash 12/14/2015
-      COMPLEX(SZ) :: Biharmonic_DqDXDPhiDX2A, Biharmonic_DqDYDPhiDY2A !derivatives of Biharmonic auxiliary variables.
-      COMPLEX(SZ) :: Biharmonic_qn, Biharmonic_qN1, Biharmonic_qN2, Biharmonic_qN3, Biharmonic_qNFirst
+      COMPLEX(8) :: Biharmonic_DqDXDPhiDX2A, Biharmonic_DqDYDPhiDY2A !derivatives of Biharmonic auxiliary variables.
+      COMPLEX(8) :: Biharmonic_qn, Biharmonic_qN1, Biharmonic_qN2, Biharmonic_qN3, Biharmonic_qNFirst
 ! arash 12/21/2015: modified Leith viscosity
-      COMPLEX(SZ) :: d_dx_q_element, d_dy_q_element
-      COMPLEX(SZ) :: d_dx_qNFirst, d_dy_qNFirst
-      COMPLEX(SZ) :: d2_dx2_q_element, d2_dy2_q_element, d2_dxy_q_element
-      COMPLEX(SZ) :: d_dx_qN1, d_dx_qN2, d_dx_qN3, d_dy_qN1, d_dy_qN2, d_dy_qN3
+      COMPLEX(8) :: d_dx_q_element, d_dy_q_element
+      COMPLEX(8) :: d_dx_qNFirst, d_dy_qNFirst
+      COMPLEX(8) :: d2_dx2_q_element, d2_dy2_q_element, d2_dxy_q_element
+      COMPLEX(8) :: d_dx_qN1, d_dx_qN2, d_dx_qN3, d_dy_qN1, d_dy_qN2, d_dy_qN3
       Real(8)     :: modified_Leith_delta_x, modified_Leith_Lambda_vorticity, modified_Leith_Lambda_divergence
       Real(8)     :: modified_Leith_grad_vorticity, modified_Leith_grad_divergence
 ! arash 01/04/2016: compute diffusion at z-levels
-      REAL(SZ)    :: Zk            !z depth of any node k in the vertical
-      REAL(SZ)    :: SigmaNN       !Sigma value of a neighbor node
+      REAL(8)    :: Zk            !z depth of any node k in the vertical
+      REAL(8)    :: SigmaNN       !Sigma value of a neighbor node
       REAL(8)     :: HsN2          !Total water depth at time level s at local node N2
-      COMPLEX(SZ) :: qN_z, qN1_z, qN2_z, qN3_z, qNFirst_z !nodal values of q at z-levels
-      COMPLEX(SZ) :: Biharmonic_qn_z, Biharmonic_qN1_z, Biharmonic_qN2_z, Biharmonic_qN3_z, Biharmonic_qNFirst_z
-      COMPLEX(SZ) :: d_dx_qN1_z, d_dx_qN2_z, d_dx_qN3_z, d_dy_qN1_z, d_dy_qN2_z, d_dy_qN3_z
-      COMPLEX(SZ) :: d_dx_qNFirst_z, d_dy_qNFirst_z
-      Complex(SZ) :: inarray_vertical(NFEN) 
+      COMPLEX(8) :: qN_z, qN1_z, qN2_z, qN3_z, qNFirst_z !nodal values of q at z-levels
+      COMPLEX(8) :: Biharmonic_qn_z, Biharmonic_qN1_z, Biharmonic_qN2_z, Biharmonic_qN3_z, Biharmonic_qNFirst_z
+      COMPLEX(8) :: d_dx_qN1_z, d_dx_qN2_z, d_dx_qN3_z, d_dy_qN1_z, d_dy_qN2_z, d_dy_qN3_z
+      COMPLEX(8) :: d_dx_qNFirst_z, d_dy_qNFirst_z
+      Complex(8) :: inarray_vertical(NFEN) 
 
-      COMPLEX(SZ) :: DqDSigmakm1,DqDSigmakp1 !vertical deriv. of q from k-1,k and k,k+1
-      COMPLEX(SZ) :: DqDX2A(MNFEN)  !horizontal derivatives of complex
-      COMPLEX(SZ) :: DqDY2A(MNFEN)  !velocity used in w calc
+      COMPLEX(8) :: DqDSigmakm1,DqDSigmakp1 !vertical deriv. of q from k-1,k and k,k+1
+      COMPLEX(8) :: DqDX2A(MNFEN)  !horizontal derivatives of complex
+      COMPLEX(8) :: DqDY2A(MNFEN)  !velocity used in w calc
 ! arash Feb/18/2016
       INTEGER     :: Neighbor_Node
-      REAL(SZ)    :: length, length_max
-      REAL(SZ)    :: velocity_magnitude, element_peclet_number
+      REAL(8)    :: length, length_max
+      REAL(8)    :: velocity_magnitude, element_peclet_number
 
 C   kmd48.33bc added the following variables for boundary conditions
       INTEGER :: J, NumofBCNode
@@ -1915,32 +1915,32 @@ C******************************************************************************
 C
        SUBROUTINE EDDYVIS(H,UU,VV,WSX,WSY,BSX,BSY,NODE,IT,Z0B1)
 Cjgfdebug USE GLOBAL, ONLY : ScreenUnit
-Cjgfdebug  USE GLOBAL_3DVS, ONLY : SZ,LOCALDIR,IEVC,EVMIN,EVCON,EVTOT,SIGMA,
+Cjgfdebug  USE GLOBAL_3DVS, ONLY : LOCALDIR,IEVC,EVMIN,EVCON,EVTOT,SIGMA,
 Cjgfdebug     &     NFEN,Z0B,Z0S,A,B,AMB,NSCREEN,NWS,DELT
-      USE GLOBAL_3DVS, ONLY : SZ,IEVC,EVMIN,EVCON,EVTOT,SIGMA,
+      USE GLOBAL_3DVS, ONLY : IEVC,EVMIN,EVCON,EVTOT,SIGMA,
      &     NFEN,Z0B,Z0S,A,B,AMB,setMessageSource, unsetMessageSource,
      &     logMessage, allMessage, DEBUG, ECHO, INFO, WARNING, ERROR
 Crjwdebug  USE NodalAttributes, ONLY : Z0B_var
       IMPLICIT NONE
       REAL(8) :: H
-      REAL(SZ) :: UU,VV,WSX,WSY,BSX,BSY
-      REAL(SZ) :: Z0B1
+      REAL(8) :: UU,VV,WSX,WSY,BSX,BSY
+      REAL(8) :: Z0B1
 
 C     jgf46.00 explicitly declared the following variables
       INTEGER NODE
       INTEGER, SAVE :: istart = 0
       INTEGER IT
       INTEGER J
-      REAL(SZ) RKAPPA
-      REAL(SZ) OMEGA
-      REAL(SZ) EVBASE
-      REAL(SZ) SLOPE
-      REAL(SZ) BREAK
-      REAL(SZ) EVBEGIN
-      REAL(SZ) USTARB
-      REAL(SZ) USTARS
-      REAL(SZ) UAVMAG
-      REAL(SZ) UAVMAGS
+      REAL(8) RKAPPA
+      REAL(8) OMEGA
+      REAL(8) EVBASE
+      REAL(8) SLOPE
+      REAL(8) BREAK
+      REAL(8) EVBEGIN
+      REAL(8) USTARB
+      REAL(8) USTARS
+      REAL(8) UAVMAG
+      REAL(8) UAVMAGS
 
       call setMessageSource("eddyvis")
 #if defined(VSMY_TRACE) || defined(ALL_TRACE)
@@ -2232,13 +2232,13 @@ C***********************************************************************
 C
 C  kmd48.33bc changed to use Implicit None
       SUBROUTINE TRIDIAG(A,B,C,R,U,nfen)
-      USE GLOBAL, ONLY : SZ, ScreenUnit, setMessageSource,
+      USE GLOBAL, ONLY : ScreenUnit, setMessageSource,
      &   unsetMessageSource, logMessage, allMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
       INTEGER :: J,nfen
 
-      COMPLEX(SZ) :: A(nfen), B(nfen), C(nfen), R(nfen), U(nfen)
-      COMPLEX(SZ) :: P1
+      COMPLEX(8) :: A(nfen), B(nfen), C(nfen), R(nfen), U(nfen)
+      COMPLEX(8) :: P1
 C
       call setMessageSource("tridiag")
 #if defined(VSMY_TRACE) || defined(ALL_TRACE)
@@ -2297,13 +2297,13 @@ C***********************************************************************
 
       Subroutine VSDISP(it,node,H,UU,VV,Duu,Duv,Dvv)
       USE GLOBAL, ONLY : ScreenUnit, allMessage, DEBUG, scratchMessage
-Cjgfdebug      USE GLOBAL_3DVS, ONLY : Qkp1,SZ,NFEN,SIGMA,GAMMA,AMB,I,NSCREEN
-      USE GLOBAL_3DVS, ONLY : Qkp1,SZ,NFEN,SIGMA,GAMMA,AMB,IY,
+Cjgfdebug      USE GLOBAL_3DVS, ONLY : Qkp1,NFEN,SIGMA,GAMMA,AMB,I,NSCREEN
+      USE GLOBAL_3DVS, ONLY : Qkp1,NFEN,SIGMA,GAMMA,AMB,IY,
      &    setMessageSource,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
 
-      REAL(SZ) :: UU,VV,Duu,Duv,Dvv
+      REAL(8) :: UU,VV,Duu,Duv,Dvv
       REAL(8) :: delst,D1P1,Txx,Txy,Tyy,Ump,Vmp,Um,Vm,H
 C     jgf46.00 explicitly declared the following variables
       INTEGER it
@@ -2317,15 +2317,15 @@ Cjgfdebug      INTEGER n
 Cjgfdebug      INTEGER istart
 Cjgfdebug      INTEGER il
 Cjgfdebug      INTEGER ibc
-Cjgfdebug      REAL(SZ) rkap
-Cjgfdebug      REAL(SZ) B1
-Cjgfdebug      REAL(SZ) B123
-Cjgfdebug      REAL(SZ) g2
-Cjgfdebug      REAL(SZ) g3
-Cjgfdebug      REAL(SZ) g4
-Cjgfdebug      REAL(SZ) g5
-Cjgfdebug      REAL(SZ) g6
-Cjgfdebug      REAL(SZ) E1
+Cjgfdebug      REAL(8) rkap
+Cjgfdebug      REAL(8) B1
+Cjgfdebug      REAL(8) B123
+Cjgfdebug      REAL(8) g2
+Cjgfdebug      REAL(8) g3
+Cjgfdebug      REAL(8) g4
+Cjgfdebug      REAL(8) g5
+Cjgfdebug      REAL(8) g6
+Cjgfdebug      REAL(8) E1
 c
 c     parameters
 c
@@ -2537,10 +2537,10 @@ c***********************************************************************
 
       subroutine KQnmInt(KQnm,Kq)
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : SZ,SIGMA,NFEN,MNFEN, setMessageSource,
+      USE GLOBAL_3DVS, ONLY : SIGMA,NFEN,MNFEN, setMessageSource,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
-      REAL(SZ) :: KQnm(MNFEN,3),Kq(MNFEN)
+      REAL(8) :: KQnm(MNFEN,3),Kq(MNFEN)
       REAL(8) :: EM,EP
       INTEGER n
 
@@ -2758,45 +2758,45 @@ Cjgfdebug      USE GLOBAL_3DVS, EXCEPT_BSX => BSX ,EXCEPT_BSY => BSY
 Crjwdebug     USE NodalAttributes, ONLY : Z0B_var
       IMPLICIT NONE
 
-      COMPLEX(SZ) :: dQdz,dQdz1,dQdz2
+      COMPLEX(8) :: dQdz,dQdz1,dQdz2
       REAL(8) :: H,H_crit
 
-      REAL(SZ) :: bsx_loc,bsy_loc,WSX,WSY
-      REAL(SZ),SAVE :: H2
+      REAL(8) :: bsx_loc,bsy_loc,WSX,WSY
+      REAL(8),SAVE :: H2
 C  kmd48.33bc need to change Sh to an array for transport
-      REAL(SZ),SAVE,ALLOCATABLE :: Sh(:)
-      REAL(SZ) :: Z0Sw
-      REAL(SZ) :: Z0B1
-      REAL(SZ),SAVE,ALLOCATABLE :: KQnm(:,:)
-      REAL(SZ),SAVE,ALLOCATABLE :: Mqa(:),Mqb(:),Mqc(:)
-      REAL(SZ),SAVE,ALLOCATABLE :: LVq(:),Sm(:)
-      REAL(SZ),SAVE,ALLOCATABLE :: q2(:),q2prev(:)
-      REAL(SZ),SAVE,ALLOCATABLE :: q2l(:),q2lprev(:)
-      REAL(SZ),SAVE,ALLOCATABLE :: wall(:),rmlen(:),rmlen2(:)
-      REAL(SZ),SAVE,ALLOCATABLE :: BVfreq2(:),spgrad2(:)
-      REAL(SZ),SAVE,ALLOCATABLE :: Kq(:),Km(:),Kh(:)
-      REAL(SZ),SAVE,ALLOCATABLE :: prod(:),diss(:)
+      REAL(8),SAVE,ALLOCATABLE :: Sh(:)
+      REAL(8) :: Z0Sw
+      REAL(8) :: Z0B1
+      REAL(8),SAVE,ALLOCATABLE :: KQnm(:,:)
+      REAL(8),SAVE,ALLOCATABLE :: Mqa(:),Mqb(:),Mqc(:)
+      REAL(8),SAVE,ALLOCATABLE :: LVq(:),Sm(:)
+      REAL(8),SAVE,ALLOCATABLE :: q2(:),q2prev(:)
+      REAL(8),SAVE,ALLOCATABLE :: q2l(:),q2lprev(:)
+      REAL(8),SAVE,ALLOCATABLE :: wall(:),rmlen(:),rmlen2(:)
+      REAL(8),SAVE,ALLOCATABLE :: BVfreq2(:),spgrad2(:)
+      REAL(8),SAVE,ALLOCATABLE :: Kq(:),Km(:),Kh(:)
+      REAL(8),SAVE,ALLOCATABLE :: prod(:),diss(:)
 C     jgf46.00 explicitly declared the following variables
 C     jgf46.12 gave them SAVE and PARAMETER properties (from jgf45.18)
       INTEGER nh, istart, n
       INTEGER,SAVE :: il, ibc
-      REAL(SZ), PARAMETER :: rkap = 0.41d0
-      REAL(SZ), PARAMETER :: B1 = 16.6d0
-      REAL(SZ), PARAMETER :: g2 = 0.39327d0
-      REAL(SZ), PARAMETER :: g3 = 3.0858d0
-      REAL(SZ), PARAMETER :: g4 = 34.676d0
-      REAL(SZ), PARAMETER :: g5 = 6.1272d0
-      REAL(SZ), PARAMETER :: g6 = 0.49393d0
-      REAL(SZ), PARAMETER :: E1 = 1.8d0
-      REAL(SZ), PARAMETER :: E2 = 1.33d0
-      REAL(SZ), PARAMETER :: E3 = 0.25d0
-      REAL(SZ), PARAMETER :: q2min=1.d-8
-      REAL(SZ), SAVE :: B123, Sq, sig, rl1, rl2, HOamb, zval, HOamb2
-      REAL(SZ), SAVE :: dsig, drhodz, dudz, dvdz, dsig1, dsig2
-      REAL(SZ), SAVE :: drhodz1, drhodz2, BSlay, SSlay, db, db2, ds, ds2
-      REAL(SZ), SAVE :: qprev, qlprev, Gh, tdiss, elmax
-      REAL(SZ), SAVE :: coef1, coef2, coef3, coef4, coef5
-      REAL(SZ) :: USTARS
+      REAL(8), PARAMETER :: rkap = 0.41d0
+      REAL(8), PARAMETER :: B1 = 16.6d0
+      REAL(8), PARAMETER :: g2 = 0.39327d0
+      REAL(8), PARAMETER :: g3 = 3.0858d0
+      REAL(8), PARAMETER :: g4 = 34.676d0
+      REAL(8), PARAMETER :: g5 = 6.1272d0
+      REAL(8), PARAMETER :: g6 = 0.49393d0
+      REAL(8), PARAMETER :: E1 = 1.8d0
+      REAL(8), PARAMETER :: E2 = 1.33d0
+      REAL(8), PARAMETER :: E3 = 0.25d0
+      REAL(8), PARAMETER :: q2min=1.d-8
+      REAL(8), SAVE :: B123, Sq, sig, rl1, rl2, HOamb, zval, HOamb2
+      REAL(8), SAVE :: dsig, drhodz, dudz, dvdz, dsig1, dsig2
+      REAL(8), SAVE :: drhodz1, drhodz2, BSlay, SSlay, db, db2, ds, ds2
+      REAL(8), SAVE :: qprev, qlprev, Gh, tdiss, elmax
+      REAL(8), SAVE :: coef1, coef2, coef3, coef4, coef5
+      REAL(8) :: USTARS
 
       call setMessageSource("turb")
 #if defined(VSMY_TRACE) || defined(ALL_TRACE)
@@ -3265,13 +3265,13 @@ C***********************************************************************
 c
       SUBROUTINE ADC_TRIDAG(A,B,C,R,U,N)
       USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : SZ, setMessageSource,
+      USE GLOBAL_3DVS, ONLY : setMessageSource,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
       INTEGER :: J, N
 
-      REAL(SZ) :: A(N),B(N),C(N),R(N),U(N)
-      REAL(SZ) :: BET,GAM(N)
+      REAL(8) :: A(N),B(N),C(N),R(N),U(N)
+      REAL(8) :: BET,GAM(N)
 
       call setMessageSource("ADC_tridag")
 #if defined(VSMY_TRACE) || defined(ALL_TRACE)
@@ -3327,8 +3327,8 @@ C
 !      SUBROUTINE ZSURFBUOY(SigmaNN,BCPressNN,NN,J)
 !      USE GLOBAL, ONLY : ScreenUnit
 !      USE GLOBAL_3DVS
-!      REAL(SZ) :: BCPressNN
-!      REAL(SZ) :: SigmaNN     !Sigma value of a neighbor node
+!      REAL(8) :: BCPressNN
+!      REAL(8) :: SigmaNN     !Sigma value of a neighbor node
 !
 !      IF(SigmaNN.LE.1.0001*b) THEN !if into ground then skip
 !         SigBelo=-999
@@ -3436,11 +3436,11 @@ C     jgf49.49.02: Added variables for 3D fields
       type(OutputDataDescript_t), save :: WZDescript
       type(OutputDataDescript_t), save :: Q20Descript
       type(OutputDataDescript_t), save :: LDescript
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: rp(:,:) !real part subdomain data
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: ip(:,:) !imaginary part subdom dat
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: rp_g(:,:) !real part fulldomain
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: ip_g(:,:) !imaginary part fulldom
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: layer(:) ! horiz layer in 3D
+      REAL(8), ALLOCATABLE, TARGET, SAVE :: rp(:,:) !real part subdomain data
+      REAL(8), ALLOCATABLE, TARGET, SAVE :: ip(:,:) !imaginary part subdom dat
+      REAL(8), ALLOCATABLE, TARGET, SAVE :: rp_g(:,:) !real part fulldomain
+      REAL(8), ALLOCATABLE, TARGET, SAVE :: ip_g(:,:) !imaginary part fulldom
+      REAL(8), ALLOCATABLE, TARGET, SAVE :: layer(:) ! horiz layer in 3D
       INTEGER :: numHotstartWrites
       INTEGER :: nextLun
 
@@ -4034,7 +4034,7 @@ C
 !        Fluid Dynamics". Later, we can update this to include more
 !        complex equations of state.
 C   kmd48.33bc need to add variables for new equation of state
-      USE GLOBAL_3DVS, ONLY : SAL, TEMP, SIGT, IDEN, NFEN, SZ,
+      USE GLOBAL_3DVS, ONLY : SAL, TEMP, SIGT, IDEN, NFEN, 
      &                        SIGMA, EQNSTATE, A, B, setMessageSource,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
 Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
@@ -4043,66 +4043,66 @@ Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
       USE MESH, ONLY : NP, DP
       IMPLICIT NONE
       INTEGER NH,N
-      REAL(SZ) :: T_alpha=0.00017d0, S_beta=0.00076d0
-!      REAL(SZ) :: T_ref=10.0d0, S_ref=35.0d0
-      REAL(SZ) :: T_ref, S_ref ! changed to new values
+      REAL(8) :: T_alpha=0.00017d0, S_beta=0.00076d0
+!      REAL(8) :: T_ref=10.0d0, S_ref=35.0d0
+      REAL(8) :: T_ref, S_ref ! changed to new values
 !Kendra: Parameters for the 2nd equation of state
-      REAL(SZ), PARAMETER :: Q1 = 196637339.d0
-      REAL(SZ), PARAMETER :: Q2 = 196668.928d0
-      REAL(SZ), PARAMETER :: a1 = 1446045.44d0
-      REAL(SZ), PARAMETER :: a2 = -10769.1980d0
-      REAL(SZ), PARAMETER :: a3 = 85.2955498d0
-      REAL(SZ), PARAMETER :: b1 = 579854.265d0
-      REAL(SZ), PARAMETER :: b2 = -1477.31528d0
-      REAL(SZ), PARAMETER :: b3 = 419.489109d0
-      REAL(SZ), PARAMETER :: c1 = 2001.22349d0
-      REAL(SZ), PARAMETER :: c2 = 0.0213851025d0
-      REAL(SZ), PARAMETER :: c3 = 0.968784141d0
-      REAL(SZ), PARAMETER :: c4 = -0.00654785602d0
-      REAL(SZ), PARAMETER :: c5 = -0.00000250468726d0
-      REAL(SZ), PARAMETER :: c6 = 0.0000000628902345d0
-      REAL(SZ), PARAMETER :: c7 = 0.00000000282414763d0
-      REAL(SZ), PARAMETER :: d1 = 1433.02205d0
-      REAL(SZ), PARAMETER :: d2 = -9.09231525d0
-      REAL(SZ), PARAMETER :: d3 = 0.0791654429d0
-      REAL(SZ), PARAMETER :: d4 = 0.0000398630534d0
-      REAL(SZ), PARAMETER :: e1 = 417.831720d0
-      REAL(SZ), PARAMETER :: e2 = -1.87581316d0
-      REAL(SZ), PARAMETER :: e3 = -0.0000387902837d0
-      REAL(SZ), PARAMETER :: f1 = 1.00765828d0
-      REAL(SZ), PARAMETER :: f2 = 0.000312912597d0
-      REAL(SZ), PARAMETER :: T_max=40.d0, T_min=0.d0
-      REAL(SZ), PARAMETER :: S_max=42.d0, S_min=0.d0
+      REAL(8), PARAMETER :: Q1 = 196637339.d0
+      REAL(8), PARAMETER :: Q2 = 196668.928d0
+      REAL(8), PARAMETER :: a1 = 1446045.44d0
+      REAL(8), PARAMETER :: a2 = -10769.1980d0
+      REAL(8), PARAMETER :: a3 = 85.2955498d0
+      REAL(8), PARAMETER :: b1 = 579854.265d0
+      REAL(8), PARAMETER :: b2 = -1477.31528d0
+      REAL(8), PARAMETER :: b3 = 419.489109d0
+      REAL(8), PARAMETER :: c1 = 2001.22349d0
+      REAL(8), PARAMETER :: c2 = 0.0213851025d0
+      REAL(8), PARAMETER :: c3 = 0.968784141d0
+      REAL(8), PARAMETER :: c4 = -0.00654785602d0
+      REAL(8), PARAMETER :: c5 = -0.00000250468726d0
+      REAL(8), PARAMETER :: c6 = 0.0000000628902345d0
+      REAL(8), PARAMETER :: c7 = 0.00000000282414763d0
+      REAL(8), PARAMETER :: d1 = 1433.02205d0
+      REAL(8), PARAMETER :: d2 = -9.09231525d0
+      REAL(8), PARAMETER :: d3 = 0.0791654429d0
+      REAL(8), PARAMETER :: d4 = 0.0000398630534d0
+      REAL(8), PARAMETER :: e1 = 417.831720d0
+      REAL(8), PARAMETER :: e2 = -1.87581316d0
+      REAL(8), PARAMETER :: e3 = -0.0000387902837d0
+      REAL(8), PARAMETER :: f1 = 1.00765828d0
+      REAL(8), PARAMETER :: f2 = 0.000312912597d0
+      REAL(8), PARAMETER :: T_max=40.d0, T_min=0.d0
+      REAL(8), PARAMETER :: S_max=42.d0, S_min=0.d0
 !Kendra: Variables for the 2nd equation of state
-      REAL(SZ) :: P1, P2
-      REAL(SZ) :: p(NP), RHO(NP,NFEN)
-      REAL(SZ) :: R_ref
-      REAL(SZ) :: Hs, HsOAMB, Zk
-      REAL(SZ) :: Z(NP,NFEN)
+      REAL(8) :: P1, P2
+      REAL(8) :: p(NP), RHO(NP,NFEN)
+      REAL(8) :: R_ref
+      REAL(8) :: Hs, HsOAMB, Zk
+      REAL(8) :: Z(NP,NFEN)
 !Kendra: Parameters for the 3rd equation of state
-      REAL(SZ), PARAMETER :: c00=999.842594d0, c11=0.06793952d0
-      REAL(SZ), PARAMETER :: c12=-0.00909529d0, c13=0.0001001685d0
-      REAL(SZ), PARAMETER :: c14=-0.000001120083d0, c15=0.000000006536332d0
-      REAL(SZ), PARAMETER :: c21=0.824493d0, c22=-0.0040899d0
-      REAL(SZ), PARAMETER :: c23=0.000076438d0, c24=0.00000082467d0
-      REAL(SZ), PARAMETER :: c25=0.0000000053875d0, c31=-0.00572466d0
-      REAL(SZ), PARAMETER :: c32=0.00010227d0, c33=-0.0000016546d0
-      REAL(SZ), PARAMETER :: c41=0.00048314d0
-      REAL(SZ), PARAMETER :: d00=190925.6d0, d11=2098.925d0
-      REAL(SZ), PARAMETER :: d12=-30.41638d0, d13=-0.01852732d0
-      REAL(SZ), PARAMETER :: d14=-0.0001361629d0, d21=1044.077d0
-      REAL(SZ), PARAMETER :: d22=-65.00517d0, d23=1.553190d0
-      REAL(SZ), PARAMETER :: d24=0.002326469d0, d31=-55.87545d0
-      REAL(SZ), PARAMETER :: d32=7.390729d0, d33=-0.1909078d0
-      REAL(SZ), PARAMETER :: d41=-4.721788d0, d42=-0.1028859d0
-      REAL(SZ), PARAMETER :: d43=0.002512549d0, d44=0.000005939910d0
-      REAL(SZ), PARAMETER :: d51=0.1571896d0, d52=0.002598241d0
-      REAL(SZ), PARAMETER :: d53=0.00007267926d0, d61=-0.02042967d0
-      REAL(SZ), PARAMETER :: d71=0.0001045941d0, d72=-0.000000005782165d0
-      REAL(SZ), PARAMETER :: d73=0.000001296821d0, d81=-0.000002595994d0
-      REAL(SZ), PARAMETER :: d82=-0.00000001248266d0, d83=-0.00000003508914d0
+      REAL(8), PARAMETER :: c00=999.842594d0, c11=0.06793952d0
+      REAL(8), PARAMETER :: c12=-0.00909529d0, c13=0.0001001685d0
+      REAL(8), PARAMETER :: c14=-0.000001120083d0, c15=0.000000006536332d0
+      REAL(8), PARAMETER :: c21=0.824493d0, c22=-0.0040899d0
+      REAL(8), PARAMETER :: c23=0.000076438d0, c24=0.00000082467d0
+      REAL(8), PARAMETER :: c25=0.0000000053875d0, c31=-0.00572466d0
+      REAL(8), PARAMETER :: c32=0.00010227d0, c33=-0.0000016546d0
+      REAL(8), PARAMETER :: c41=0.00048314d0
+      REAL(8), PARAMETER :: d00=190925.6d0, d11=2098.925d0
+      REAL(8), PARAMETER :: d12=-30.41638d0, d13=-0.01852732d0
+      REAL(8), PARAMETER :: d14=-0.0001361629d0, d21=1044.077d0
+      REAL(8), PARAMETER :: d22=-65.00517d0, d23=1.553190d0
+      REAL(8), PARAMETER :: d24=0.002326469d0, d31=-55.87545d0
+      REAL(8), PARAMETER :: d32=7.390729d0, d33=-0.1909078d0
+      REAL(8), PARAMETER :: d41=-4.721788d0, d42=-0.1028859d0
+      REAL(8), PARAMETER :: d43=0.002512549d0, d44=0.000005939910d0
+      REAL(8), PARAMETER :: d51=0.1571896d0, d52=0.002598241d0
+      REAL(8), PARAMETER :: d53=0.00007267926d0, d61=-0.02042967d0
+      REAL(8), PARAMETER :: d71=0.0001045941d0, d72=-0.000000005782165d0
+      REAL(8), PARAMETER :: d73=0.000001296821d0, d81=-0.000002595994d0
+      REAL(8), PARAMETER :: d82=-0.00000001248266d0, d83=-0.00000003508914d0
 !Kendra: Variables for the 3rd equation of state
-      REAL(SZ) :: Kappa
+      REAL(8) :: Kappa
 
       call setMessageSource("calc_sigmat_3D")
 #if defined(VSMY_TRACE) || defined(ALL_TRACE)
@@ -4673,8 +4673,8 @@ C*************************************************************************
 
       USE GLOBAL_3DVS
       IMPLICIT NONE
-      Complex(SZ) :: interpolated_value
-      REAL(SZ) :: SigmaNN     !Sigma value of a neighbor node
+      Complex(8) :: interpolated_value
+      REAL(8) :: SigmaNN     !Sigma value of a neighbor node
 
       INTEGER NN
       INTEGER J
@@ -4684,16 +4684,16 @@ C*************************************************************************
       INTEGER LAbov
       INTEGER LTry
       INTEGER IDiag
-      REAL(SZ) SigBelo
-      REAL(SZ) SigAbov
-      REAL(SZ) SigTry
+      REAL(8) SigBelo
+      REAL(8) SigAbov
+      REAL(8) SigTry
 ! af: variables for cubic interpolation
 !      Integer  :: k1, k2, k3, k4                 ! nodes used for cubic polynomial
-!      REAL(SZ) :: f1, f2, f3, f4                 ! shape functions
-!      REAL(SZ) :: top, bot
+!      REAL(8) :: f1, f2, f3, f4                 ! shape functions
+!      REAL(8) :: top, bot
 !      Integer  :: loop_situation = 0
 
-      Complex(SZ) :: inarray_vertical
+      Complex(8) :: inarray_vertical
       Dimension  inarray_vertical ( NFEN )
 
       call setMessageSource("cubic_vertical_interpolation")
@@ -4999,8 +4999,8 @@ C*************************************************************************
 
       USE GLOBAL_3DVS
       IMPLICIT NONE
-      real(SZ) :: interpolated_value
-      REAL(SZ) :: SigmaNN     !Sigma value of a neighbor node
+      real(8) :: interpolated_value
+      REAL(8) :: SigmaNN     !Sigma value of a neighbor node
 
       INTEGER NN
       INTEGER J
@@ -5010,16 +5010,16 @@ C*************************************************************************
       INTEGER LAbov
       INTEGER LTry
       INTEGER IDiag
-      REAL(SZ) SigBelo
-      REAL(SZ) SigAbov
-      REAL(SZ) SigTry
+      REAL(8) SigBelo
+      REAL(8) SigAbov
+      REAL(8) SigTry
 ! af: variables for cubic interpolation
 !      Integer  :: k1, k2, k3, k4                 ! nodes used for cubic polynomial
-!      REAL(SZ) :: f1, f2, f3, f4                 ! shape functions
-!      REAL(SZ) :: top, bot
+!      REAL(8) :: f1, f2, f3, f4                 ! shape functions
+!      REAL(8) :: top, bot
 !      Integer  :: loop_situation = 0
 
-      real(SZ) :: inarray_vertical
+      real(8) :: inarray_vertical
       Dimension  inarray_vertical ( NFEN )
 
       call setMessageSource("linear_vertical_interpolation")
@@ -5147,17 +5147,16 @@ C**********************************************************************
 C--------------------------------------------------------------------
 C     S U B R O U T I N E      B I N A R Y   W R I T E   2 D
 C--------------------------------------------------------------------
-C     jgf49.49.01: Writes a real(sz) array with the specified length
+C     jgf49.49.01: Writes a real(8) array with the specified length
 C     to a binary hotstart file; takes the file counter as an
 C     input argument and returns the new value of the file counter
 C     at the end of the write.
 C--------------------------------------------------------------------
       SUBROUTINE binaryWrite2D(array, length, lun, counter)
-      USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, DEBUG,
      &                    allMessage
       IMPLICIT NONE
-      REAL(SZ), intent(in), dimension(length) :: array ! data to write
+      REAL(8), intent(in), dimension(length) :: array ! data to write
       INTEGER, intent(in) :: length  ! the number of values to write
       INTEGER, intent(in) :: lun     ! fortran logical unit number to write to
       INTEGER, intent(inout) :: counter ! i/o position in the file

@@ -15,7 +15,6 @@ C    |                                                                      |
 C    ========================================================================
 
       module subprep
-      use sizes, only : sz
       use global, only : DEBUG, ECHO, INFO, WARNING, ERROR, 
      &  openFileForRead, scratchMessage, logMessage, allMessage,
      &  setMessageSource, unsetMessageSource
@@ -24,7 +23,7 @@ C   NCSU Subdomain Modeling variables:
        logical :: subdomainOn
        integer :: enforceBN
        integer :: psbtiminc, pncbn, pnobn, pnibn
-       real(sz) :: pebn,pubn,pvbn
+       real(8) :: pebn,pubn,pvbn
        integer,allocatable :: pcbn(:),pncbnp(:) 
        integer,allocatable :: pobn(:),pnobnp(:) 
        integer,allocatable :: pibn(:),pnibnp(:) 

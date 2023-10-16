@@ -92,7 +92,7 @@ C******************************************************************************
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       USE VERSION, ONLY : adc_version, fileFmtMajor, fileFmtMinor, 
      &   FileFmtRev
-      USE SIZES, ONLY : sz, rootDir, mnproc, mnwproc, mnallproc, myproc,
+      USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
      &   read_local_hot_start_files, make_dirname, write_local_harm_files,
      &   get_numwriters, mnstae
       USE GLOBAL, ONLY : usingDynamicWaterLevelCorrection,
@@ -125,9 +125,9 @@ C******************************************************************************
 C
       INTEGER, OPTIONAL :: COMM
       CHARACTER(*), OPTIONAL :: ROOTD
-      REAL(SZ) :: StaTimHS
-      REAL(SZ) :: RefTimHS
-      REAL(SZ) :: TimeLoc
+      REAL(8) :: StaTimHS
+      REAL(8) :: RefTimHS
+      REAL(8) :: TimeLoc
       INTEGER :: iargc    ! function to return the number of command line arguments
       INTEGER :: argcount ! number of command line arguments
       CHARACTER(2048) :: cmdlinearg ! a single command line argument

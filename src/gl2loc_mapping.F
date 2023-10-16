@@ -10,7 +10,7 @@ C     others.
 C
 C     Written by: Coleman Blakely 11/2022
 C----------------------------------------------------------------------
-      USE SIZES, ONLY : MNPROC, MYPROC, SZ
+      USE SIZES, ONLY : MNPROC, MYPROC
       USE MESH, ONLY : NP ! local number of nodes
       USE GLOBAL, ONLY : nodes_lg, np_g, COMM, realtype
 !#ifdef HAVE_MPI_MOD
@@ -21,11 +21,11 @@ C----------------------------------------------------------------------
       ! Start of variables used
       INTEGER,DIMENSION(:),ALLOCATABLE,PRIVATE :: GL2LOC
       ! sending information
-      REAL(SZ),DIMENSION(:),ALLOCATABLE,PRIVATE :: SENDBUF_REAL
+      REAL(8),DIMENSION(:),ALLOCATABLE,PRIVATE :: SENDBUF_REAL
       ! counts of data to send and displacements
       INTEGER,DIMENSION(:),ALLOCATABLE,PRIVATE :: SENDCOUNTS, DISPLS
       ! recieving info
-      REAL(SZ),DIMENSION(:),ALLOCATABLE,PRIVATE :: RECVBUF_REAL
+      REAL(8),DIMENSION(:),ALLOCATABLE,PRIVATE :: RECVBUF_REAL
       INTEGER,PRIVATE :: RECVCOUNT
 
 C----------------------------------------------------------------------
@@ -34,8 +34,8 @@ C----------------------------------------------------------------------
       SUBROUTINE MAPTOLOCAL_REAL(GLOBALDATA,LOCALDATA)
 C----------------------------------------------------------------------
       IMPLICIT NONE
-      REAL(SZ),INTENT(IN) :: GLOBALDATA(:)
-      REAL(SZ),INTENT(OUT) :: LOCALDATA(:)
+      REAL(8),INTENT(IN) :: GLOBALDATA(:)
+      REAL(8),INTENT(OUT) :: LOCALDATA(:)
       INTEGER :: kk, ierr, jj, TAG
 #ifdef CMPI      
       INTEGER :: RECV_REQ
@@ -62,7 +62,7 @@ C----------------------------------------------------------------------
       LOCALDATA = RECVBUF_REAL
 #else
       LOCALDATA = GLOBALDATA      
-#ENDIF
+#endif
 C----------------------------------------------------------------------
       END SUBROUTINE MAPTOLOCAL_REAL
 C----------------------------------------------------------------------
@@ -74,13 +74,13 @@ C----------------------------------------------------------------------
       INTEGER :: localNumNodes
       INTEGER,ALLOCATABLE :: local_gl2loc(:)
       INTEGER :: kk, ii, ierr, TAG, dmycounter
-#IFDEF CMPI      
+#ifdef CMPI      
       INTEGER :: stat(MPI_STATUS_SIZE)
-#ELSE
+#else
       INTEGER :: stat
-#ENDIF      
+#endif      
       TAG = 100
-#IFDEF CMPI
+#ifdef CMPI
       ! Return if we have already built the table
       IF (first_call.EQV..FALSE.) RETURN
       first_call = .FALSE.
@@ -121,8 +121,9 @@ C----------------------------------------------------------------------
       CALL MPI_GATHERV(local_gl2loc, RECVCOUNT, MPI_INTEGER,
      &                 GL2LOC, SENDCOUNTS, DISPLS, MPI_INTEGER,
      &                 0, COMM, ierr)
+      DEALLOCATE( local_gl2loc )
       RETURN
-#ENDIF
+#endif
 C----------------------------------------------------------------------
       END SUBROUTINE BUILD_GL2LOC
 C----------------------------------------------------------------------
@@ -130,9 +131,9 @@ C----------------------------------------------------------------------
       SUBROUTINE GATHERGLOBAL_REAL(GLOBALDATA,LOCALDATA)
 C----------------------------------------------------------------------
       IMPLICIT NONE
-      REAL(SZ),INTENT(OUT) :: GLOBALDATA(:)
-      REAL(SZ),INTENT(IN) :: LOCALDATA(:)
-      REAL(SZ),ALLOCATABLE :: TEMPDATA(:)
+      REAL(8),INTENT(OUT) :: GLOBALDATA(:)
+      REAL(8),INTENT(IN) :: LOCALDATA(:)
+      REAL(8),ALLOCATABLE :: TEMPDATA(:)
       INTEGER :: kk, ierr, jj, TAG
 #ifdef CMPI
       INTEGER :: RECV_REQ
@@ -159,9 +160,58 @@ C----------------------------------------------------------------------
       DEALLOCATE( TEMPDATA )
 #else
       GLOBALDATA = LOCALDATA
-#ENDIF
+#endif
 C----------------------------------------------------------------------
       END SUBROUTINE GATHERGLOBAL_REAL
+C----------------------------------------------------------------------
+C----------------------------------------------------------------------
+      SUBROUTINE BcastToLocal_Int(Val)
+C----------------------------------------------------------------------
+      IMPLICIT NONE
+      INTEGER,INTENT(INOUT) :: Val
+      INTEGER :: ierr
+
+#ifdef CMPI
+      CALL MPI_BCast(Val,1,MPI_Integer,0,COMM,ierr)
+#else
+      Val = Val
+#endif
+C----------------------------------------------------------------------
+      END SUBROUTINE BcastToLocal_Int
+C----------------------------------------------------------------------
+C----------------------------------------------------------------------
+      SUBROUTINE BcastToLocal_2DRealArray(Val,NX, NY)
+C----------------------------------------------------------------------
+      IMPLICIT NONE
+      REAL,INTENT(INOUT) :: Val(:,:)
+      INTEGER,INTENT(IN) :: NX, NY
+      REAL(8),ALLOCATABLE :: TMP(:)
+      INTEGER :: ii, jj, NumVals, kk, ierr
+#ifdef CMPI
+      NumVals = NX*NY
+      ALLOCATE( TMP(NumVals) )
+      IF (MYPROC.EQ.0) THEN
+         kk = 1
+         DO ii = 1,NX
+            DO jj = 1,NY
+               TMP(kk) = Val(ii,jj)
+               kk = kk + 1
+            ENDDO
+         ENDDO
+      ENDIF
+      CALL MPI_BCAST(TMP,NumVals,REALTYPE,0,COMM,ierr)
+      kk = NumVals
+      DO ii = NX,1,-1
+         DO jj = NY,1,-1
+            Val(ii,jj) = TMP(kk)
+            kk = kk - 1
+         ENDDO
+      ENDDO
+      
+      DEALLOCATE( TMP )
+#endif
+C----------------------------------------------------------------------
+      END SUBROUTINE BcastToLocal_2DRealArray
 C----------------------------------------------------------------------
       ENDMODULE GL2LOC_MAPPING 
 C----------------------------------------------------------------------

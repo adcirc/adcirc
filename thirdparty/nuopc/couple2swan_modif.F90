@@ -14,7 +14,6 @@
 #define ONLY_COMP_FORCES
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-      USE SIZES,  ONLY: SZ
       USE WRITE_OUTPUT, ONLY : terminate
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR, &
                 setMessageSource, unsetMessageSource, allMessage, &
@@ -24,9 +23,9 @@
 
 !asey 090302: These arrays contain the radiation stresses.
 !asey 090820: Be explicit about the size of these REAL variables.
-      REAL(SZ) ,ALLOCATABLE :: ADCIRC_SXX(:,:)
-      REAL(SZ) ,ALLOCATABLE :: ADCIRC_SXY(:,:)
-      REAL(SZ) ,ALLOCATABLE :: ADCIRC_SYY(:,:)
+      REAL(8) ,ALLOCATABLE :: ADCIRC_SXX(:,:)
+      REAL(8) ,ALLOCATABLE :: ADCIRC_SXY(:,:)
+      REAL(8) ,ALLOCATABLE :: ADCIRC_SYY(:,:)
 
 !asey 090302: The interpolation weight controls which value
 !             is taken when information is passed between ADCIRC
@@ -34,7 +33,7 @@
 !             is taken from the beginning of the coupling interval.
 !             If InterpoWeight = 1, then the value is taken from
 !             the end of the coupling interval.
-      REAL(SZ) :: InterpoWeight
+      REAL(8) :: InterpoWeight
 
 !-----------------------------------------------------------------------
       CONTAINS
@@ -48,7 +47,6 @@
       SUBROUTINE ComputeWaveDrivenForces
 
       USE GLOBAL, ONLY: NODECODE, NOFF, RSNX2, RSNY2
-      USE SIZES, ONLY: SZ
       USE MESH, ONLY : NE, NM, NP, X, Y, AREAS, NODELE, NEITABELE
       USE BOUNDARIES, ONLY : NBDV, NBOU, NBVV, NOPE, NVDLL, NVELL
 
@@ -65,18 +63,18 @@
 
       LOGICAL :: Marcel = .FALSE.
 
-      REAL(SZ),ALLOCATABLE :: DSXXDX(:)
-      REAL(SZ),ALLOCATABLE :: DSXYDY(:)
-      REAL(SZ),ALLOCATABLE :: DSXYDX(:)
-      REAL(SZ),ALLOCATABLE :: DSYYDY(:)
+      REAL(8),ALLOCATABLE :: DSXXDX(:)
+      REAL(8),ALLOCATABLE :: DSXYDY(:)
+      REAL(8),ALLOCATABLE :: DSXYDX(:)
+      REAL(8),ALLOCATABLE :: DSYYDY(:)
 
-      REAL(SZ)             :: NCELE
+      REAL(8)             :: NCELE
 
-      REAL(SZ),ALLOCATABLE :: TEMP_SXX(:)
-      REAL(SZ),ALLOCATABLE :: TEMP_SXY(:)
-      REAL(SZ),ALLOCATABLE :: TEMP_SYY(:)
+      REAL(8),ALLOCATABLE :: TEMP_SXX(:)
+      REAL(8),ALLOCATABLE :: TEMP_SXY(:)
+      REAL(8),ALLOCATABLE :: TEMP_SYY(:)
 
-      REAL(SZ) :: TOTALAREA
+      REAL(8) :: TOTALAREA
 
       call setMessageSource("ComputeWaveDrivenForces")
 #if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)

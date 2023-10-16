@@ -464,7 +464,6 @@ C---------------------------------------------------------------------
       USE HARM, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
      &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,
      &                 IHARIND, ALLOC_MAIN14, CHARMV
-      USE PRESIZES, ONLY : SZ
       USE PREP_WEIR
       USE NODALATTRIBUTES, ONLY : outputTau0
       use memory_usage
@@ -481,7 +480,7 @@ C    ===================================================================
 
 
       integer(8) :: nbytes = 0
-      REAL(SZ) RSTIMINC
+      REAL(8) RSTIMINC
       INTEGER N1, N2, N3, KMIN, JG, INDX
       INTEGER I,J,K,M
       INTEGER IG1,IG2,IG3,IL1,IL2,IL3
@@ -1950,7 +1949,7 @@ C---------------------------------------------------------------------
       INTEGER I,J,K,M,N                                        ! loop counters
       CHARACTER(50) LVAR(3)
       REAL(8) :: STATIME
-      REAL(sz) :: HH1 ! domain averaged depth
+      REAL(8) :: HH1 ! domain averaged depth
       INTEGER :: NH   ! horizontal node counter
 C
 C     jgf49.43.19: Moved memory allocation for number of 3D stations
@@ -2445,7 +2444,7 @@ C----------------------------------------------------------------------
       TYPE(KDTREE2_RESULT), ALLOCATABLE :: KDRESULTS(:)
       LOGICAL ElementFound  ! .true. when a corresponding element is found
       INTEGER ClosestElement  ! element with closest match
-      REAL(sz), PARAMETER :: Tolerance = 1.0d-5     ! area difference for match
+      REAL(8), PARAMETER :: Tolerance = 1.0d-5     ! area difference for match
 
       ElementFound = .false.
 

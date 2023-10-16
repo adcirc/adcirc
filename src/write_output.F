@@ -12,7 +12,6 @@ C dry.
 C----------------------------------------------------------------------
       MODULE WRITE_OUTPUT
 C----------------------------------------------------------------------
-      USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : OutputDataDescript_t, setMessageSource,
      &  unsetMessageSource, DEBUG, allMessage, screenMessage, ERROR,
      &  netcdf_avail
@@ -73,39 +72,39 @@ Cobell Added a descript for time varying weir tracking
       type(OutputDataDescript_t), target :: labelsDescript
 
 C     jgf48.03 Full domain arrays used when writing globalio output.
-      real(sz), allocatable, target :: et00_g(:)
-      real(sz), allocatable, target :: uu00_g(:)
-      real(sz), allocatable, target :: vv00_g(:)
-      real(sz), allocatable, target :: tau0var_g(:)
-      real(sz), allocatable, target :: rmp00_g(:)
-      real(sz), allocatable, target :: rmu00_g(:)
-      real(sz), allocatable, target :: rmv00_g(:)
-      real(sz), allocatable, target :: pr2_g(:)
-      real(sz), allocatable, target :: wvnxout_g(:)
-      real(sz), allocatable, target :: wvnyout_g(:)
-      real(sz), allocatable, target :: cc00_g(:)
-      real(sz), allocatable, target :: ciceout_g(:)  !tcm v49.64.01 added for ice
-      real(sz), allocatable, target :: rmice00_g(:)  !tcm v49.64.01 added for ice
-      real(sz), allocatable, target :: etamax_g(:)
-      real(sz), allocatable, target :: umax_g(:)
-      real(sz), allocatable, target :: prmin_g(:)
-      real(sz), allocatable, target :: wvnoutmax_g(:)
-      real(sz), allocatable, target :: rsnmax_g(:)
-      real(sz), allocatable, target :: sponge_g(:)
-      real(sz), allocatable, target :: eslcount_g(:) !zc added for esl on/off output
-      real(sz), allocatable, target :: dpout_g(:)    !tcm v50.66.01 added time varying bathy
-      real(sz), allocatable, target :: dp00_g(:)  !tcm v50.66.01 added time varying bathy
+      real(8), allocatable, target :: et00_g(:)
+      real(8), allocatable, target :: uu00_g(:)
+      real(8), allocatable, target :: vv00_g(:)
+      real(8), allocatable, target :: tau0var_g(:)
+      real(8), allocatable, target :: rmp00_g(:)
+      real(8), allocatable, target :: rmu00_g(:)
+      real(8), allocatable, target :: rmv00_g(:)
+      real(8), allocatable, target :: pr2_g(:)
+      real(8), allocatable, target :: wvnxout_g(:)
+      real(8), allocatable, target :: wvnyout_g(:)
+      real(8), allocatable, target :: cc00_g(:)
+      real(8), allocatable, target :: ciceout_g(:)  !tcm v49.64.01 added for ice
+      real(8), allocatable, target :: rmice00_g(:)  !tcm v49.64.01 added for ice
+      real(8), allocatable, target :: etamax_g(:)
+      real(8), allocatable, target :: umax_g(:)
+      real(8), allocatable, target :: prmin_g(:)
+      real(8), allocatable, target :: wvnoutmax_g(:)
+      real(8), allocatable, target :: rsnmax_g(:)
+      real(8), allocatable, target :: sponge_g(:)
+      real(8), allocatable, target :: eslcount_g(:) !zc added for esl on/off output
+      real(8), allocatable, target :: dpout_g(:)    !tcm v50.66.01 added time varying bathy
+      real(8), allocatable, target :: dp00_g(:)  !tcm v50.66.01 added time varying bathy
       ! Casey 090302: Added these arrays for output of radiation stress gradients.
       ! tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-      real(sz), allocatable, target :: rsnxout_g(:)
-      real(sz), allocatable, target :: rsnyout_g(:)
+      real(8), allocatable, target :: rsnxout_g(:)
+      real(8), allocatable, target :: rsnyout_g(:)
       !jgf52.05: Added for normal output of wet/dry quantities (nodecode and noff)
       integer, allocatable, target :: nodecode_out_g(:)
       integer, allocatable, target :: noff_out_g(:)
-      real(sz), allocatable, target :: windDragOut_g(:)
+      real(8), allocatable, target :: windDragOut_g(:)
       ! jgf: Added support for water level offset
-      real(sz), allocatable, target :: dynamicWaterLevelCorrection2_g(:)
-      real(sz), allocatable, target :: dynamicWaterLevelCorrectionSta_g(:)
+      real(8), allocatable, target :: dynamicWaterLevelCorrection2_g(:)
+      real(8), allocatable, target :: dynamicWaterLevelCorrectionSta_g(:)
       !
       !  H A R M O N I C   A N A L Y S I S   D A T A
       !
@@ -124,34 +123,34 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       type(OutputDataDescript_t) :: MVDescript
 C
 C     Fulldomain Stations in parallel:
-      REAL(SZ), ALLOCATABLE, TARGET :: EMAG_g(:,:)    ! elevation magnitudes
-      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDE_g(:,:) ! elevation phases
-      REAL(SZ), ALLOCATABLE, TARGET :: UMAG_g(:,:)    ! u velocity magnitudes
-      REAL(SZ), ALLOCATABLE, TARGET :: VMAG_g(:,:)    ! v velocity magnitudes
-      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDU_g(:,:) ! u velocity phases
-      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDV_g(:,:) ! v velocity phases
+      REAL(8), ALLOCATABLE, TARGET :: EMAG_g(:,:)    ! elevation magnitudes
+      REAL(8), ALLOCATABLE, TARGET :: PHASEDE_g(:,:) ! elevation phases
+      REAL(8), ALLOCATABLE, TARGET :: UMAG_g(:,:)    ! u velocity magnitudes
+      REAL(8), ALLOCATABLE, TARGET :: VMAG_g(:,:)    ! v velocity magnitudes
+      REAL(8), ALLOCATABLE, TARGET :: PHASEDU_g(:,:) ! u velocity phases
+      REAL(8), ALLOCATABLE, TARGET :: PHASEDV_g(:,:) ! v velocity phases
 C     Fulldomain Nodes in parallel:
-      REAL(SZ), ALLOCATABLE, TARGET :: EMAGT_g(:,:)    ! elevation magnitudes
-      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDEN_g(:,:) ! elevation phases
-      REAL(SZ), ALLOCATABLE, TARGET :: UMAGT_g(:,:)    ! u velocity magnitudes
-      REAL(SZ), ALLOCATABLE, TARGET :: VMAGT_g(:,:)    ! v velocity magnitudes
-      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDUT_g(:,:) ! u velocity phases
-      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDVT_g(:,:) ! v velocity phases
+      REAL(8), ALLOCATABLE, TARGET :: EMAGT_g(:,:)    ! elevation magnitudes
+      REAL(8), ALLOCATABLE, TARGET :: PHASEDEN_g(:,:) ! elevation phases
+      REAL(8), ALLOCATABLE, TARGET :: UMAGT_g(:,:)    ! u velocity magnitudes
+      REAL(8), ALLOCATABLE, TARGET :: VMAGT_g(:,:)    ! v velocity magnitudes
+      REAL(8), ALLOCATABLE, TARGET :: PHASEDUT_g(:,:) ! u velocity phases
+      REAL(8), ALLOCATABLE, TARGET :: PHASEDVT_g(:,:) ! v velocity phases
 C     Fulldomain Time means and variance calculation in parallel:
-      REAL(SZ), ALLOCATABLE, TARGET :: EAV_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: ESQ_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: EAVDIF_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: EVADIF_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: EAV_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: ESQ_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: EAVDIF_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: EVADIF_g(:)
 C
-      REAL(SZ), ALLOCATABLE, TARGET :: UAV_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: USQ_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: UAVDIF_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: UVADIF_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: UAV_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: USQ_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: UAVDIF_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: UVADIF_g(:)
 C
-      REAL(SZ), ALLOCATABLE, TARGET :: VAV_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: VSQ_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: VAVDIF_g(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: VVADIF_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: VAV_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: VSQ_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: VAVDIF_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: VVADIF_g(:)
       !
       !    3 D   D A T A
       !
@@ -176,25 +175,25 @@ C
       type(OutputDataDescript_t) :: EVDescript
 C
 C     parts of complex variables
-      REAL(SZ), ALLOCATABLE, TARGET :: rp(:,:) !real part subdomain data
-      REAL(SZ), ALLOCATABLE, TARGET :: ip(:,:) !imaginary part subdom dat
-      REAL(SZ), ALLOCATABLE, TARGET :: rp_g(:,:) !real part fulldomain
-      REAL(SZ), ALLOCATABLE, TARGET :: ip_g(:,:) !imaginary part fulldom
-      REAL(SZ), ALLOCATABLE, TARGET :: rpSta(:,:) !real part subd sta
-      REAL(SZ), ALLOCATABLE, TARGET :: ipSta(:,:) !im part subdom sta
-      REAL(SZ), ALLOCATABLE, TARGET :: rpSta_g(:,:) !real part fd sta
-      REAL(SZ), ALLOCATABLE, TARGET :: ipSta_g(:,:) !im part fd sta
+      REAL(8), ALLOCATABLE, TARGET :: rp(:,:) !real part subdomain data
+      REAL(8), ALLOCATABLE, TARGET :: ip(:,:) !imaginary part subdom dat
+      REAL(8), ALLOCATABLE, TARGET :: rp_g(:,:) !real part fulldomain
+      REAL(8), ALLOCATABLE, TARGET :: ip_g(:,:) !imaginary part fulldom
+      REAL(8), ALLOCATABLE, TARGET :: rpSta(:,:) !real part subd sta
+      REAL(8), ALLOCATABLE, TARGET :: ipSta(:,:) !im part subdom sta
+      REAL(8), ALLOCATABLE, TARGET :: rpSta_g(:,:) !real part fd sta
+      REAL(8), ALLOCATABLE, TARGET :: ipSta_g(:,:) !im part fd sta
 C
-      REAL(SZ), ALLOCATABLE, TARGET :: qsurfkp1_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: qsurfkp1_g(:)
 C
-      REAL(SZ), ALLOCATABLE, TARGET :: q20Sta_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: lSta_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: EVSta_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: SigTSta_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: SalSta_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: TempSta_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: WZSta_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: TVW_g(:)
+      REAL(8), ALLOCATABLE, TARGET :: q20Sta_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: lSta_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: EVSta_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: SigTSta_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: SalSta_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: TempSta_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: WZSta_g(:,:)
+      REAL(8), ALLOCATABLE, TARGET :: TVW_g(:)
       !
       !  H O T S T A R T   D A T A
       !
@@ -273,10 +272,10 @@ C
       !
       ! maxInunDepth is used for a new min/max file, where the maximum
       ! total water column depth of inundation is recorded.
-      real(sz), allocatable, target :: maxInunDepth(:)
-      real(sz), allocatable, target :: maxInunDepth_time(:)
-      real(sz), allocatable, target :: maxInunDepth_g(:)
-      real(sz), allocatable, target :: maxInunDepth_time_g(:)
+      real(8), allocatable, target :: maxInunDepth(:)
+      real(8), allocatable, target :: maxInunDepth_time(:)
+      real(8), allocatable, target :: maxInunDepth_g(:)
+      real(8), allocatable, target :: maxInunDepth_time_g(:)
       type(OutputDataDescript_t), target :: maxInunDepthDescript
       !
       ! penultimateNodeCode is used as a temp array to record the
@@ -286,18 +285,18 @@ C
       ! inundationTime records the total time an initiallyDry node
       ! has been wet (deeper than thresh)
       type(OutputDataDescript_t), target :: inundationTimeDescript
-      real(sz), allocatable, target :: inundationTime(:)
+      real(8), allocatable, target :: inundationTime(:)
       ! record the time of onset of inundation beyond the threshold
-      real(sz), allocatable, target :: inundationTime_onset(:)
-      real(sz), allocatable, target :: inundationTime_g(:)
-      real(sz), allocatable, target :: inundationTime_onset_g(:)
+      real(8), allocatable, target :: inundationTime_onset(:)
+      real(8), allocatable, target :: inundationTime_g(:)
+      real(8), allocatable, target :: inundationTime_onset_g(:)
       !
       ! everDried is used to record whether a node has ever become dry,
       ! which is useful to know when computing tidal phases and amplitudes
-      real(sz), allocatable, target :: everDried(:)
-      real(sz), allocatable, target :: everDried_time(:)
-      real(sz), allocatable, target :: everDried_g(:)
-      real(sz), allocatable, target :: everDried_time_g(:)
+      real(8), allocatable, target :: everDried(:)
+      real(8), allocatable, target :: everDried_time(:)
+      real(8), allocatable, target :: everDried_g(:)
+      real(8), allocatable, target :: everDried_time_g(:)
       type(OutputDataDescript_t), target :: everDriedDescript
 
       ! jgf52.05: Set via fort.15 namelist in read_input.F.
@@ -314,7 +313,7 @@ C----------------------------------------------------------------------
 C     jgf51.21.24: Initialize 2D output data structures.
 C----------------------------------------------------------------------
       SUBROUTINE initOutput2D(timeloc)
-      USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
+      USE SIZES, ONLY : INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
      &                  GLOBALDIR, OFF, ASCII, NETCDF3, NETCDF4, XDMF,
      &                  numFormats, write_local_files, localdir,
      &                  controlFileName
@@ -1719,8 +1718,8 @@ C----------------------------------------------------------------------
          ! 
          SUBROUTINE REAL_FIELD_ALLOCATE( OUTFLAG, VECVAR, NDIM, VALINIT )
             INTEGER:: OUTFLAG, NDIM
-            REAL (SZ), allocatable:: VECVAR(:)
-            REAL (SZ), optional:: VALINIT 
+            REAL (8), allocatable:: VECVAR(:)
+            REAL (8), optional:: VALINIT 
 
             IF ( OUTFLAG .NE. OFF ) THEN
                IF ( .NOT. ALLOCATED(VECVAR) ) THEN
@@ -1765,7 +1764,7 @@ C     including hotstart and harmonic analysis.
 C
 C----------------------------------------------------------------------
       SUBROUTINE writeOutput2D(IT,TimeLoc)
-      USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
+      USE SIZES, ONLY : INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
      &                  GLOBALDIR, OFF
       USE GLOBAL, only: nt, noutge, noutgv, noutgw, nws, nrs,
      &   inundationOutput
@@ -1997,20 +1996,19 @@ C-----------------------------------------------------------------------
 C     jgf51.21.24: Performs station interpolations on a single array.
 C-----------------------------------------------------------------------
       subroutine stationArrayInterp(descript, fromArray, toArray)
-      use sizes, only : sz
       use global, only : nodecode, OutputDataDescript_t, IFNLFA, ETA2, NOFF,
      &                   allMessage, DEBUG, setMessageSource, unsetMessageSource,
      &                   StatPartWetFix,How2FixStatPartWet, h0
       use mesh, only : dp, nm
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
-      real(sz), intent(in) :: fromArray(:)
-      real(sz), intent(out) :: toArray(:)
+      real(8), intent(in) :: fromArray(:)
+      real(8), intent(out) :: toArray(:)
       integer :: e
-      real(sz) :: d1, d2, d3
-      real(sz) :: H2N1, H2N2, H2N3
-      real(sz) :: tmpwts(3)
-      real(sz) :: wlstn,wdstn,dpstn
+      real(8) :: d1, d2, d3
+      real(8) :: H2N1, H2N2, H2N3
+      real(8) :: tmpwts(3)
+      real(8) :: wlstn,wdstn,dpstn
       integer :: ilocmaxwt(1)
       integer :: ncele,ncsum
       integer :: i, j
@@ -2132,7 +2130,7 @@ C     jgf49.44: Subroutine to write harmonic analysis output files
 C     in serial or in parallel using globalio.
 C----------------------------------------------------------------------
       SUBROUTINE writeHarmonicAnalysisOutput(ITIME)
-      USE SIZES, ONLY : SZ, MNHARF, LOCALDIR, GLOBALDIR,
+      USE SIZES, ONLY : MNHARF, LOCALDIR, GLOBALDIR,
      &                  WRITE_LOCAL_FILES, MNPROC, MYPROC, MNP,
      &                  WRITE_LOCAL_HARM_FILES
 C RJW added MNPROC and MYPROC
@@ -2821,7 +2819,7 @@ C     output for a 3D run.
 C----------------------------------------------------------------------
       SUBROUTINE initOutput3D(lun, specifier, nset, nPerSet, nPerSet_g,
      &                        tsPeriod, outputShape, recNum)
-      USE SIZES, ONLY : SZ, LOCALDIR, GLOBALDIR, MNPROC,
+      USE SIZES, ONLY : LOCALDIR, GLOBALDIR, MNPROC,
      &   WRITE_LOCAL_FILES, NBYTE, Myproc
 C RJW added myproc
 C MYPROC,
@@ -3022,7 +3020,7 @@ C     jgf48.11 Moved from vsmy.F to write_output.F.
 C     jgf49.43 Rewrote for globalio.
 C-----------------------------------------------------------------------
       SUBROUTINE writeOutput3D(TimeLoc,IT)
-      USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC,
+      USE SIZES, ONLY : INPUTDIR, NBYTE, MNWPROC,
      &    WRITE_LOCAL_FILES, MNPROC, GLOBALDIR, MYPROC
 C RJW added MYPROC
       USE GLOBAL, ONLY : ScreenUnit, BCFLAG_TEMP, scratchMessage,
@@ -3049,11 +3047,11 @@ C RJW added MYPROC
       INTEGER NC1, NC2, NC3, NCEle
       INTEGER NM1, NM2, NM3
       INTEGER :: NN, NH, NEle, N1, N2, N3, k, i
-      REAL(SZ) C1, C2, C3
-      REAL(SZ) EE1, EE2, EE3
-      REAL(SZ) H2, H2N1, H2N2, H2N3
-      REAL(SZ) U11, U22, U33
-      REAL(SZ) V11, V22, V33
+      REAL(8) C1, C2, C3
+      REAL(8) EE1, EE2, EE3
+      REAL(8) H2, H2N1, H2N2, H2N3
+      REAL(8) U11, U22, U33
+      REAL(8) V11, V22, V33
       LOGICAL, SAVE :: FirstCall = .true.
       LOGICAL, dimension(14) :: netcdf_error
 C
@@ -5558,7 +5556,7 @@ C-----------------------------------------------------------------------
 C
       INTEGER I ! node loop counter
       type(OutputDataDescript_t), SAVE :: DebugElevDescript
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ETA_DEBUG_g(:)
+      REAL(8), SAVE, ALLOCATABLE, TARGET :: ETA_DEBUG_g(:)
 
       call setMessageSource("writeWarnElev")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)

@@ -61,9 +61,9 @@ C
       INTEGER NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCELE
 
-      REAL(SZ) HTOT
+      REAL(8) HTOT
 !kmd - Evan's updates for rivers above MSL
-!      REAL(SZ),ALLOCATABLE :: et_WSE(:)
+!      REAL(8),ALLOCATABLE :: et_WSE(:)
       LOGICAL FOUND
 
 C     jgf48.4628 Add capability to turn off solution if only met output
@@ -1346,7 +1346,7 @@ ckmd  additional variable for baroclinic boundary conditions
       INTEGER :: NumofBCNodes
       INTEGER :: NOD, J, NumofNodes, K
       INTEGER :: IINDX
-      REAL(SZ), ALLOCATABLE :: TMP(:,:)
+      REAL(8), ALLOCATABLE :: TMP(:,:)
 C
       call setMessageSource("coldstart_3D")
 #if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
